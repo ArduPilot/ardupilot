@@ -51,17 +51,7 @@ static uint32_t start_ms;
 /*
   declare constant app_descriptor in flash
  */
-const struct app_descriptor app_descriptor __attribute__((section(".app_descriptor"))) = {
-    .sig = { 0x40, 0xa2, 0xe4, 0xf1, 0x64, 0x68, 0x91, 0x06 },
-    .image_crc1 = 0,
-    .image_crc2 = 0,
-    .image_size = 0,
-    .git_hash = 0,
-    .version_major = AP::fwversion().major,
-    .version_minor = AP::fwversion().minor,
-    .board_id = APJ_BOARD_ID,
-    .reserved = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff }
-};
+const struct app_descriptor app_descriptor __attribute__((section(".app_descriptor")));
 
 void AP_Periph_FW::init()
 {
