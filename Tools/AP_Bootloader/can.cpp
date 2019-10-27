@@ -581,8 +581,8 @@ bool can_check_firmware(void)
     const uint8_t desc_len = offsetof(app_descriptor, version_major) - offsetof(app_descriptor, image_crc1);
     uint32_t len1 = ((const uint8_t *)&ad->image_crc1) - flash;
     uint32_t len2 = ad->image_size - (len1 + desc_len);
-    uint32_t crc1 = crc_crc32(0, flash, len1);
-    uint32_t crc2 = crc_crc32(0, (const uint8_t *)&ad->version_major, len2);
+    uint32_t crc1 = crc32_small(0, flash, len1);
+    uint32_t crc2 = crc32_small(0, (const uint8_t *)&ad->version_major, len2);
     if (crc1 != ad->image_crc1 || crc2 != ad->image_crc2) {
         printf("Bad app CRC 0x%08x:0x%08x 0x%08x:0x%08x\n", ad->image_crc1, ad->image_crc2, crc1, crc2);
         return false;
