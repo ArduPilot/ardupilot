@@ -408,8 +408,8 @@ bool AP_Proximity_LightWareSF40C::process_reply()
 
         case RequestType_DistanceMeasurement:
         {
-            float angle_deg = (float)atof(element_buf[0]);
-            float distance_m = (float)atof(element_buf[1]);
+            float angle_deg = strtof(element_buf[0], NULL);
+            float distance_m = strtof(element_buf[1], NULL);
             uint8_t sector;
             if (convert_angle_to_sector(angle_deg, sector)) {
                 _angle[sector] = angle_deg;
