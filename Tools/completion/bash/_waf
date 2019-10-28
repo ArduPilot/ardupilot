@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+
+_waf()
+{
+    local cur prev opts
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    # TODO: generate for waf help
+    opts="--help -h"
+    opts+=" -j --jobs"
+    opts+=" -v --verbose"
+    opts+=" --debug"
+    opts+=" --bootloader"
+    opts+=" --default-parameters"
+    opts+=" --enable-sfml"
+    opts+=" --enable-sfml-audio"
+    opts+=" --sitl-osd"
+    opts+=" --sitl-rgbled"
+    opts+=" --build-dates"
+    opts+=" --sitl-flash-storage"
+    opts+=" --upload"
+    opts+=" --board"
+
+    opts+=" AP_Periph"
+    opts+=" copter"
+    opts+=" heli"
+    opts+=" plane"
+    opts+=" rover"
+    opts+=" sub"
+    opts+=" antennatracker"
+    opts+=" tools"
+    opts+=" examples"
+    opts+=" bootloader"
+    opts+=" iofirmware"
+    opts+=" list"
+    opts+=" all"
+    opts+=" build"
+    opts+=" configure"
+    opts+=" clean"
+    opts+=" distclean"
+
+    # Prevent word reuse TODO: add -vvv case
+    lim=$((COMP_CWORD - 1))
+    for i in $( seq 0 $lim )
+    do
+        if [[ $opts == *"${COMP_WORDS[i]}"* ]]; then
+          opts=${opts/" ${COMP_WORDS[i]}"}
+          opts=${opts/" --${COMP_WORDS[i]}"}
+        fi
+    done
+
+    # TODO: generate for waf help
+    case $prev in 
+	--board)
+		opts="CubeBlack bbbmini fmuv2 fmuv3 fmuv4 iomcu sitl"
+	    COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+	    return 0
+	    ;;
+	esac
+
+    COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+}
+
+
+complete -F _waf waf
