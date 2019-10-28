@@ -157,6 +157,9 @@ public:
     // get Serial Port
     AP_HAL::UARTDriver *get_serial_by_id(uint8_t id);
 
+    // accessors for AP_Periph to set baudrate and type
+    void set_protocol_and_baud(uint8_t sernum, enum SerialProtocol protocol, uint32_t baudrate);
+
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
