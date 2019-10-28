@@ -1,0 +1,141 @@
+#!/usr/bin/env bash
+
+_sim_vehicle() {
+  local cur prev opts
+  COMPREPLY=()
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  prev="${COMP_WORDS[COMP_CWORD - 1]}"
+
+  # TODO: generate for waf help
+  opts="--help -h"
+  opts+=" -j --jobs"
+  opts+=" -N --no-rebuild"
+  opts+=" -D --debug"
+  opts+=" -c --clean"
+  opts+=" -I --instance"
+  opts+=" -V --valgrind"
+  opts+=" --callgrind"
+  opts+=" -T --tracker"
+  opts+=" -A --sitl-instance-args"
+  opts+=" -G --gdb"
+  opts+=" -g --gdb-stopped"
+  opts+=" --lldb"
+  opts+=" --lldb-stopped"
+  opts+=" -d --delay-start"
+  opts+=" -B --breakpoint"
+  opts+=" -M --mavlink-gimbal"
+  opts+=" -L --location"
+  opts+=" -l --custom-location"
+  opts+=" -S --speedup"
+  opts+=" -t --tracker-location"
+  opts+=" -w --wipe-eeprom"
+  opts+=" -m --mavproxy-args"
+  opts+=" --strace"
+  opts+=" --model"
+  opts+=" --use-dir"
+  opts+=" --no-mavproxy"
+  opts+=" --fresh-params"
+  opts+=" --mcast"
+  opts+=" --osd"
+  opts+=" --tonealarm"
+  opts+=" --rgbled"
+  opts+=" --add-param-file"
+  opts+=" --no-extra-ports"
+  opts+=" -Z --swarm"
+  opts+=" --flash-storage"
+  opts+=" --out"
+  opts+=" --map"
+  opts+=" --console"
+  opts+=" --aircraft"
+  opts+=" --moddebug"
+  opts+=" -v --vehicle"
+  opts+=" -f --frame"
+
+  # Prevent word reuse TODO: add -vvv case
+  lim=$((COMP_CWORD - 1))
+  for i in $(seq 0 $lim); do
+    if [[ $opts == *"${COMP_WORDS[i]}"* ]]; then
+      opts=${opts/" ${COMP_WORDS[i]}"/}
+      opts=${opts/" --${COMP_WORDS[i]}"/}
+    fi
+  done
+
+  # TODO: generate for waf help
+  case $prev in
+  -v | --vehicle)
+    opts="ArduCopter AntennaTracker APMrover2 ArduSub ArduPlane"
+    COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+    return 0
+    ;;
+  -f | --frame)
+    opts=""
+    if [[ ${COMP_WORDS[@]} == *"ArduCopter"* ]]; then
+      opts+=" +"
+      opts+=" X"
+      opts+=" airsim-copter"
+      opts+=" coaxcopter"
+      opts+=" djix"
+      opts+=" dodeca-hexa"
+      opts+=" gazebo-iris"
+      opts+=" heli"
+      opts+=" heli-compound"
+      opts+=" heli-dual"
+      opts+=" hexa"
+      opts+=" octa"
+      opts+=" octa-quad"
+      opts+=" quad"
+      opts+=" scrimmage-copter"
+      opts+=" singlecopter"
+      opts+=" tri"
+      opts+=" y6"
+      COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+      return 0
+    fi
+    if [[ ${COMP_WORDS[@]} == *"AntennaTracker"* ]]; then
+      opts+=" tracker"
+      COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+      return 0
+    fi
+    if [[ ${COMP_WORDS[@]} == *"APMrover2"* ]]; then
+      opts+=" balancebot"
+      opts+=" gazebo-rover"
+      opts+=" rover"
+      opts+=" rover-skid"
+      opts+=" sailboat"
+      opts+=" sailboat-motor"
+      opts+=" balancebot"
+      COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+      return 0
+    fi
+    if [[ ${COMP_WORDS[@]} == *"ArduSub"* ]]; then
+      opts+=" gazebo-bluerov2"
+      opts+=" vectored"
+      COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+      return 0
+    fi
+    if [[ ${COMP_WORDS[@]} == *"ArduPlane"* ]]; then
+      opts+=" CRRCSim"
+      opts+=" gazebo-zephyr"
+      opts+=" jsbsim"
+      opts+=" plane"
+      opts+=" plane-dspoilers"
+      opts+=" plane-elevon"
+      opts+=" plane-jet"
+      opts+=" plane-tailsitter"
+      opts+=" plane-vtailjet"
+      opts+=" quadplane"
+      opts+=" quadplane-cl84"
+      opts+=" quadplane-tilttrivec"
+      opts+=" quadplane-tri"
+      opts+=" scrimmage-plane"
+      COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+      return 0
+    fi
+    ;;
+  esac
+
+  COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+}
+
+complete -F _sim_vehicle sim_vehicle.py
+
