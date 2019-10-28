@@ -22,6 +22,7 @@ public:
         k_param_airspeed,
         k_param_rangefinder,
         k_param_flash_bootloader,
+        k_param_rangefinder_baud,
     };
 
     AP_Int16 format_version;
@@ -38,6 +39,9 @@ public:
     AP_Int8 flash_bootloader;
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_RANGEFINDER
+    AP_Int32 rangefinder_baud;
+#endif
     Parameters() {}
 };
 
