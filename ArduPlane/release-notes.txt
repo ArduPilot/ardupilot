@@ -1,3 +1,15 @@
+Release 4.0.0, 28th October 2019
+--------------------------------
+
+The final release of stable 4.0.0 has just one change from beta4,
+which is to fix a bug in the new TAKEOFF flight mode.
+
+Many thanks to everyone who has been testing the 4.0 release, and
+special thanks to Henry for his fantastic work in bringing the wiki up
+to date for this release!
+
+Happy flying!
+
 Release 4.0.0beta4, 19th October 2019
 ------------------------------------
 
