@@ -120,6 +120,9 @@ void AP_Periph_FW::init()
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_RANGEFINDER
+    const uint8_t sernum = 3; // uartB
+    hal.uartB->begin(g.rangefinder_baud);
+    serial_manager.set_protocol_and_baud(sernum, AP_SerialManager::SerialProtocol_Rangefinder, g.rangefinder_baud);
     rangefinder.init(ROTATION_NONE);
 #endif
     
@@ -197,6 +200,9 @@ void AP_Periph_FW::update()
 #endif
 #ifdef HAL_PERIPH_ENABLE_BARO
         hal.uartA->printf("BARO H=%u P=%.2f T=%.2f\n", baro.healthy(), baro.get_pressure(), baro.get_temperature());
+#endif
+#ifdef HAL_PERIPH_ENABLE_RANGEFINDER
+        hal.uartA->printf("RNG %u %ucm\n", rangefinder.num_sensors(), rangefinder.distance_cm_orient(ROTATION_NONE));
 #endif
         hal.scheduler->delay(1);
         show_stack_usage();
