@@ -1,10 +1,47 @@
-# CAN Peripheral Firmware
+# AP_Periph UAVCAN Peripheral Firmware
 
-This is an ArduPilot based CAN peripheral firmware. Currently two
-targets are supported:
+This is an ArduPilot based UAVCAN peripheral firmware. This firmware
+takes advantage of the wide range of sensor drivers in ArduPilot to
+make building a UAVCAN periheral firmware easy.
+
+The AP_Periph firmware is based on the same ChibiOS hwdef.dat system
+that is used to define pinouts for STM32 based flight controllers
+supported by ArduPilot. That means you can add support for a new
+UAVCAN peripheral based on the STM32 by just writing a simple
+hwdef.dat that defines the pinout of your device.
+
+Currently we have three targets building for AP_Periph firmwares:
 
  - A STM32F103 128k flash part made by mRobotics (target f103-GPS)
  - A STM32F412 512k flash part made by CUAV (target CUAV_GPS)
+ - A STM32F105 256k flash part (used in ZubaxGNSSv2)
+
+More are planned soon.
+
+# Features
+
+The AP_Periph firmware can be configured to enable a wide range of
+UAVCAN sensor types. Support is included for:
+
+ - GPS modules (including RTK GPS)
+ - Magnetometers (SPI or I2C)
+ - Barometers (SPI or I2C)
+ - Airspeed sensors (I2C)
+ - Rangefinders (UART or I2C)
+ - ADSB (Ping ADSB receiver on UART)
+ - LEDs (GPIO, I2C or WS2812 serial)
+ - Safety LED and Safety Switch
+ - Buzzer (tonealarm or simple GPIO)
+
+An AP_Periph UAVCAN firmware supports these UAVCAN features:
+
+ - dynamic or static CAN node allocation
+ - firmware upload
+ - automatically generated bootloader
+ - parameter storage in flash
+ - easy bootloader update
+ - high resiliance features using watchdog, CRC and board checks
+ - firmware update via MissionPlanner or uavcan-gui-tool
 
 # Building
 
