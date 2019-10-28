@@ -81,6 +81,8 @@ void Submarine::calculate_forces(const struct sitl_input &input, Vector3f &rot_a
     calculate_drag_force(gyro, frame_property.angular_drag_coefficient, angular_drag_forces);
     // Add forces in body frame accel
     rot_accel -= angular_drag_forces / frame_property.weight;
+
+    add_shove_forces(rot_accel, body_accel);
 }
 
 /**
