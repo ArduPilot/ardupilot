@@ -1342,7 +1342,7 @@ void AP_BLHeli::read_telemetry_packet(void)
     td.voltage = (buf[1]<<8) | buf[2];
     td.current = (buf[3]<<8) | buf[4];
     td.consumption = (buf[5]<<8) | buf[6];
-    td.rpm = ((buf[7]<<8) | buf[8]) * motor_poles;
+    td.rpm = ((buf[7]<<8) | buf[8]) * 100 * 2 / motor_poles;
     td.timestamp_ms = AP_HAL::millis();
 
     last_telem[last_telem_esc] = td;
