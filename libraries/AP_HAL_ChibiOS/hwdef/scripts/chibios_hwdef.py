@@ -1217,6 +1217,7 @@ def write_PWM_config(f):
     f.write('\n')
     f.write('// PWM output config\n')
     groups = []
+    have_complementary = False
     for t in sorted(pwm_timers):
         group = len(groups) + 1
         n = int(t[3:])
@@ -1235,6 +1236,7 @@ def write_PWM_config(f):
             chan_list[chan - 1] = pwm - 1
             if compl:
                 chan_mode[chan - 1] = 'PWM_COMPLEMENTARY_OUTPUT_ACTIVE_HIGH'
+                have_complementary = True
             else:
                 chan_mode[chan - 1] = 'PWM_OUTPUT_ACTIVE_HIGH'
             alt_functions[chan - 1] = p.af
@@ -1277,6 +1279,8 @@ def write_PWM_config(f):
                  alt_functions[0], alt_functions[1], alt_functions[2], alt_functions[3],
                  pal_lines[0], pal_lines[1], pal_lines[2], pal_lines[3]))
     f.write('#define HAL_PWM_GROUPS %s\n\n' % ','.join(groups))
+    if have_complementary:
+        f.write('#define STM32_PWM_USE_ADVANCED TRUE\n')
 
 
 def write_ADC_config(f):
