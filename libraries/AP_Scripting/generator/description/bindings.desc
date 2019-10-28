@@ -13,6 +13,8 @@ userdata Location method get_distance float Location
 userdata Location method offset void float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX
 userdata Location method get_vector_from_origin_NEU boolean Vector3f'Null
 userdata Location method get_bearing float Location
+userdata Location method get_distance_NED Vector3f Location
+userdata Location method get_distance_NE Vector2f Location
 
 include AP_AHRS/AP_AHRS.h
 
