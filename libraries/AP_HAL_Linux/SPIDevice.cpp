@@ -205,13 +205,12 @@ void SPIBus::end_cb()
 
 void SPIBus::open(uint16_t subdev)
 {
-    char path[sizeof("/dev/spidevXXXXX.XXXXX")];
-
     /* Already open by another device */
     if (fd[subdev] >= 0) {
         return;
     }
 
+    char path[32];
     snprintf(path, sizeof(path), "/dev/spidev%u.%u", bus, subdev);
     fd[subdev] = ::open(path, O_RDWR | O_CLOEXEC);
     if (fd[subdev] < 0) {
