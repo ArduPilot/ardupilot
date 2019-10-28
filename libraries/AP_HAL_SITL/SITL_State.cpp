@@ -279,7 +279,7 @@ bool SITL_State::_read_rc_sitl_input()
         return true;
     }
     default:
-        fprintf(stderr, "Malformed SITL RC input (%li)", size);
+        fprintf(stderr, "Malformed SITL RC input (%ld)", (long)size);
     }
     return false;
 }
