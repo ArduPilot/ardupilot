@@ -4634,6 +4634,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         destdir = os.path.dirname(dest)
         if not os.path.exists(destdir):
             os.mkdir(destdir)
+        self.progress("Copying (%s) to (%s)" % (source, dest))
         shutil.copy(source, dest)
 
     def remove_example_script(self, scriptname):
@@ -4646,6 +4647,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             pass
 
     def test_scripting_simple_loop(self):
+        self.start_subtest("Scripting simple loop")
         ex = None
         example_script = "simple_loop.lua"
         messages = []
@@ -4657,8 +4659,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         try:
             self.set_parameter("SCR_ENABLE", 1)
             self.install_example_script(example_script)
-            self.delay_sim_time(10)
             self.reboot_sitl()
+            self.delay_sim_time(10)
         except Exception as e:
             ex = e
         self.remove_example_script(example_script)
@@ -4679,6 +4681,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise NotAchievedException("Expected at least three hellos")
 
     def test_scripting_hello_world(self):
+        self.start_subtest("Scripting hello world")
         ex = None
         example_script = "hello_world.lua"
         messages = []
