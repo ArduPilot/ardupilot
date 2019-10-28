@@ -49,7 +49,11 @@ void ModeLoiter::update()
             yaw_error_cd = wrap_180_cd(_desired_yaw_cd - ahrs.yaw_sensor);
             _desired_speed = -_desired_speed;
         }
-
+        if(g2.loit_type == 2){
+            _desired_yaw_cd = wrap_180_cd(_desired_yaw_cd + 18000);
+            yaw_error_cd = wrap_180_cd(_desired_yaw_cd - ahrs.yaw_sensor);
+            _desired_speed = -_desired_speed;     
+        }
         // reduce desired speed if yaw_error is large
         // 45deg of error reduces speed to 75%, 90deg of error reduces speed to 50%
         float yaw_error_ratio = 1.0f - constrain_float(fabsf(yaw_error_cd / 9000.0f), 0.0f, 1.0f) * 0.5f;
