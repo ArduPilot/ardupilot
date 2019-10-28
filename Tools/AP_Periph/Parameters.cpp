@@ -71,6 +71,10 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_RANGEFINDER
+    GSCALAR(rangefinder_baud, "RNGFND_BAUDRATE", 115200),
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_RANGEFINDER
     // Rangefinder driver
     // @Group: RNGFND
     // @Path: ../../libraries/AP_RangeFinder/Rangefinder.cpp
