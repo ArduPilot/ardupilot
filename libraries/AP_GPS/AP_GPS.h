@@ -579,6 +579,9 @@ private:
 
     // used for flight testing with GPS loss
     bool _force_disable_gps;
+
+    // used to ensure we continue sending status messages if we ever detected the second GPS
+    bool has_had_second_instance;
 };
 
 namespace AP {
