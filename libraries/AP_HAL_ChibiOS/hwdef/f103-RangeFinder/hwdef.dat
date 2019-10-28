@@ -11,3 +11,6 @@ define HAL_PERIPH_ENABLE_RANGEFINDER
 define RANGEFINDER_MAX_INSTANCES 1
 
 define HAL_SERIAL3_PROTOCOL SerialProtocol_Rangefinder
+
+# we're too low on flash with old compler for bootloader
+define HAL_NO_ROMFS_SUPPORT
