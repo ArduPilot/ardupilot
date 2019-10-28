@@ -1191,7 +1191,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
       emit_checker(arg->type, arg_count, skipped, "    ", "argument");
       arg_count++;
     }
-    if (arg->type.type != TYPE_LITERAL || arg->type.flags & TYPE_FLAGS_NULLABLE) {
+    if (arg->type.type == TYPE_LITERAL || arg->type.flags & TYPE_FLAGS_NULLABLE) {
       skipped++;
     }
     arg = arg->next;
