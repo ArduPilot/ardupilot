@@ -73,9 +73,9 @@ void AirSim::send_servos(const struct sitl_input &input)
 	if (send_ret != sizeof(pkt)) {
 		if (send_ret <= 0) {
 			printf("Unable to send servo output to %s:%u - Error: %s, Return value: %ld\n",
-					 airsim_ip, airsim_control_port, strerror(errno), send_ret);
+                   airsim_ip, airsim_control_port, strerror(errno), (long)send_ret);
 		} else {
-			printf("Sent %ld bytes instead of %ld bytes\n", send_ret, sizeof(pkt));
+			printf("Sent %ld bytes instead of %lu bytes\n", (long)send_ret, (unsigned long)sizeof(pkt));
 		}
 	}
 }
