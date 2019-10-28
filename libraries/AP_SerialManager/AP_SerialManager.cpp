@@ -614,6 +614,15 @@ void AP_SerialManager::disable_passthru(void)
     passthru_port2.set_and_notify(-1);
 }
 
+// accessor for AP_Periph to set baudrate and type
+void AP_SerialManager::set_protocol_and_baud(uint8_t sernum, enum SerialProtocol protocol, uint32_t baudrate)
+{
+    if (sernum <= ARRAY_SIZE(state)) {
+        state[sernum].protocol.set(protocol);
+        state[sernum].baud.set(baudrate);
+    }
+}
+
 
 namespace AP {
 
