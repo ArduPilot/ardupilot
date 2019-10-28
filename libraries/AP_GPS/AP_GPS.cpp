@@ -602,6 +602,9 @@ found_gps:
         timing[instance].last_message_time_ms = now;
         timing[instance].delta_time_ms = GPS_TIMEOUT_MS;
         new_gps->broadcast_gps_type();
+        if (instance == 1) {
+            has_had_second_instance = true;
+        }
     }
 }
 
@@ -989,7 +992,8 @@ void AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
 #if GPS_MAX_RECEIVERS > 1
 void AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
 {
-    if (num_instances < 2 || status(1) <= AP_GPS::NO_GPS) {
+    // always send the message once we've ever seen the GPS
+    if (!has_had_second_instance) {
         return;
     }
 
