@@ -969,6 +969,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPPTR(mode_zigzag_ptr, "ZIGZ_", 38, ParametersG2, ModeZigZag),
 #endif
 
+    // @Param: CHUTE_TRIG_DELAY
+    // @DisplayName: Parachute trigger delay
+    // @Description: The time it will take before automatic parachute will trigger
+    // @Units: ms
+    // @Range: 250 5000
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("CHUTE_TRIG_DELAY", 39, ParametersG2, parachute_trigger_delay, 500),
+
     AP_GROUPEND
 };
 
