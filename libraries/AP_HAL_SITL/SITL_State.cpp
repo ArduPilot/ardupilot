@@ -223,6 +223,78 @@ int SITL_State::sim_fd(const char *name, const char *arg)
         }
         vicon = new SITL::Vicon();
         return vicon->fd();
+    } else if (streq(name, "benewake_tf02")) {
+        if (benewake_tf02 != nullptr) {
+            AP_HAL::panic("Only one benewake_tf02 at a time");
+        }
+        benewake_tf02 = new SITL::RF_Benewake_TF02();
+        return benewake_tf02->fd();
+    } else if (streq(name, "benewake_tf03")) {
+        if (benewake_tf03 != nullptr) {
+            AP_HAL::panic("Only one benewake_tf03 at a time");
+        }
+        benewake_tf03 = new SITL::RF_Benewake_TF03();
+        return benewake_tf03->fd();
+    } else if (streq(name, "benewake_tfmini")) {
+        if (benewake_tfmini != nullptr) {
+            AP_HAL::panic("Only one benewake_tfmini at a time");
+        }
+        benewake_tfmini = new SITL::RF_Benewake_TFmini();
+        return benewake_tfmini->fd();
+    } else if (streq(name, "lightwareserial")) {
+        if (lightwareserial != nullptr) {
+            AP_HAL::panic("Only one lightwareserial at a time");
+        }
+        lightwareserial = new SITL::RF_LightWareSerial();
+        return lightwareserial->fd();
+    } else if (streq(name, "lanbao")) {
+        if (lanbao != nullptr) {
+            AP_HAL::panic("Only one lanbao at a time");
+        }
+        lanbao = new SITL::RF_Lanbao();
+        return lanbao->fd();
+    } else if (streq(name, "blping")) {
+        if (blping != nullptr) {
+            AP_HAL::panic("Only one blping at a time");
+        }
+        blping = new SITL::RF_BLping();
+        return blping->fd();
+    } else if (streq(name, "leddarone")) {
+        if (leddarone != nullptr) {
+            AP_HAL::panic("Only one leddarone at a time");
+        }
+        leddarone = new SITL::RF_LeddarOne();
+        return leddarone->fd();
+    } else if (streq(name, "ulanding_v0")) {
+        if (ulanding_v0 != nullptr) {
+            AP_HAL::panic("Only one ulanding_v0 at a time");
+        }
+        ulanding_v0 = new SITL::RF_uLanding_v0();
+        return ulanding_v0->fd();
+    } else if (streq(name, "ulanding_v1")) {
+        if (ulanding_v1 != nullptr) {
+            AP_HAL::panic("Only one ulanding_v1 at a time");
+        }
+        ulanding_v1 = new SITL::RF_uLanding_v1();
+        return ulanding_v1->fd();
+    } else if (streq(name, "maxsonarseriallv")) {
+        if (maxsonarseriallv != nullptr) {
+            AP_HAL::panic("Only one maxsonarseriallv at a time");
+        }
+        maxsonarseriallv = new SITL::RF_MaxsonarSerialLV();
+        return maxsonarseriallv->fd();
+    } else if (streq(name, "wasp")) {
+        if (wasp != nullptr) {
+            AP_HAL::panic("Only one wasp at a time");
+        }
+        wasp = new SITL::RF_Wasp();
+        return wasp->fd();
+    } else if (streq(name, "nmea")) {
+        if (nmea != nullptr) {
+            AP_HAL::panic("Only one nmea at a time");
+        }
+        nmea = new SITL::RF_NMEA();
+        return nmea->fd();
     }
 
     AP_HAL::panic("unknown simulated device: %s", name);
@@ -234,6 +306,66 @@ int SITL_State::sim_fd_write(const char *name)
             AP_HAL::panic("No vicon created");
         }
         return vicon->write_fd();
+    } else if (streq(name, "benewake_tf02")) {
+        if (benewake_tf02 == nullptr) {
+            AP_HAL::panic("No benewake_tf02 created");
+        }
+        return benewake_tf02->write_fd();
+    } else if (streq(name, "benewake_tf03")) {
+        if (benewake_tf03 == nullptr) {
+            AP_HAL::panic("No benewake_tf03 created");
+        }
+        return benewake_tf03->write_fd();
+    } else if (streq(name, "benewake_tfmini")) {
+        if (benewake_tfmini == nullptr) {
+            AP_HAL::panic("No benewake_tfmini created");
+        }
+        return benewake_tfmini->write_fd();
+    } else if (streq(name, "lightwareserial")) {
+        if (lightwareserial == nullptr) {
+            AP_HAL::panic("No lightwareserial created");
+        }
+        return lightwareserial->write_fd();
+    } else if (streq(name, "lanbao")) {
+        if (lanbao == nullptr) {
+            AP_HAL::panic("No lanbao created");
+        }
+        return lanbao->write_fd();
+    } else if (streq(name, "blping")) {
+        if (blping == nullptr) {
+            AP_HAL::panic("No blping created");
+        }
+        return blping->write_fd();
+    } else if (streq(name, "leddarone")) {
+        if (leddarone == nullptr) {
+            AP_HAL::panic("No leddarone created");
+        }
+        return leddarone->write_fd();
+    } else if (streq(name, "ulanding_v0")) {
+        if (ulanding_v0 == nullptr) {
+            AP_HAL::panic("No ulanding_v0 created");
+        }
+        return ulanding_v0->write_fd();
+    } else if (streq(name, "ulanding_v1")) {
+        if (ulanding_v1 == nullptr) {
+            AP_HAL::panic("No ulanding_v1 created");
+        }
+        return ulanding_v1->write_fd();
+    } else if (streq(name, "maxsonarseriallv")) {
+        if (maxsonarseriallv == nullptr) {
+            AP_HAL::panic("No maxsonarseriallv created");
+        }
+        return maxsonarseriallv->write_fd();
+    } else if (streq(name, "wasp")) {
+        if (wasp == nullptr) {
+            AP_HAL::panic("No wasp created");
+        }
+        return wasp->write_fd();
+    } else if (streq(name, "nmea")) {
+        if (nmea == nullptr) {
+            AP_HAL::panic("No nmea created");
+        }
+        return nmea->write_fd();
     }
     AP_HAL::panic("unknown simulated device: %s", name);
 }
@@ -370,6 +502,42 @@ void SITL_State::_fdm_input_local(void)
         vicon->update(sitl_model->get_location(),
                       sitl_model->get_position(),
                       attitude);
+    }
+    if (benewake_tf02 != nullptr) {
+        benewake_tf02->update(sitl_model->get_range());
+    }
+    if (benewake_tf03 != nullptr) {
+        benewake_tf03->update(sitl_model->get_range());
+    }
+    if (benewake_tfmini != nullptr) {
+        benewake_tfmini->update(sitl_model->get_range());
+    }
+    if (lightwareserial != nullptr) {
+        lightwareserial->update(sitl_model->get_range());
+    }
+    if (lanbao != nullptr) {
+        lanbao->update(sitl_model->get_range());
+    }
+    if (blping != nullptr) {
+        blping->update(sitl_model->get_range());
+    }
+    if (leddarone != nullptr) {
+        leddarone->update(sitl_model->get_range());
+    }
+    if (ulanding_v0 != nullptr) {
+        ulanding_v0->update(sitl_model->get_range());
+    }
+    if (ulanding_v1 != nullptr) {
+        ulanding_v1->update(sitl_model->get_range());
+    }
+    if (maxsonarseriallv != nullptr) {
+        maxsonarseriallv->update(sitl_model->get_range());
+    }
+    if (wasp != nullptr) {
+        wasp->update(sitl_model->get_range());
+    }
+    if (nmea != nullptr) {
+        nmea->update(sitl_model->get_range());
     }
 
     if (_sitl && _use_fg_view) {
