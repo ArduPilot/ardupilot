@@ -4685,7 +4685,8 @@ bool GCS_MAVLINK::mavlink_coordinate_frame_to_location_alt_frame(const MAV_FRAME
 
 uint64_t GCS_MAVLINK::capabilities() const
 {
-    uint64_t ret = 0;
+    uint64_t ret = MAV_PROTOCOL_CAPABILITY_PARAM_FLOAT |
+        MAV_PROTOCOL_CAPABILITY_COMPASS_CALIBRATION;
 
     AP_SerialManager::SerialProtocol mavlink_protocol = AP::serialmanager().get_mavlink_protocol(chan);
     if (mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLink2) {
