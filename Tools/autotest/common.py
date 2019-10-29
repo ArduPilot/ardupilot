@@ -1548,8 +1548,9 @@ class AutoTest(ABC):
             raise NotAchievedException("Did not get AUTOPILOT_VERSION")
         return m.capabilities
 
-    def do_get_autopilot_capabilities(self):
+    def test_get_autopilot_capabilities(self):
         self.assert_capability(mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_PARAM_FLOAT)
+        self.assert_capability(mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_COMPASS_CALIBRATION)
 
     def get_mode_from_mode_mapping(self, mode):
         """Validate and return the mode number from a string or int."""
