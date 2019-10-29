@@ -621,7 +621,11 @@ void NavEKF2::check_log_write(void)
 // Initialise the filter
 bool NavEKF2::InitialiseFilter(void)
 {
+    init_failure = INIT_FAILURES::UNKNOWN;
     if (_enable == 0) {
+        if (_ahrs->get_ekf_type() == 2) {
+            init_failure = INIT_FAILURES::NO_ENABLE;
+        }
         return false;
     }
     const AP_InertialSensor &ins = AP::ins();
@@ -642,20 +646,26 @@ bool NavEKF2::InitialiseFilter(void)
     
     if (core == nullptr) {
 
-        // don't run multiple filters for 1 IMU
+        // this prevents dereferencing a null _ahrs pointer in NavEKF2_core::getEulerAngles
+        if (ins.get_accel_count() == 0) {
+            init_failure = INIT_FAILURES::NO_IMUS;
+            return false;
+        }
+        if (_imuMask == 0) {
+            init_failure = INIT_FAILURES::NO_MASK;
+            return false;
+        }
+
+        // don't allow more filters than IMUs
         uint8_t mask = (1U<<ins.get_accel_count())-1;
         _imuMask.set(_imuMask.get() & mask);
         
         // count IMUs from mask
-        num_cores = 0;
-        for (uint8_t i=0; i<7; i++) {
-            if (_imuMask & (1U<<i)) {
-                num_cores++;
-            }
-        }
+        num_cores = __builtin_popcount(_imuMask);
 
         // check if there is enough memory to create the EKF cores
         if (hal.util->available_memory() < sizeof(NavEKF2_core)*num_cores + 4096) {
+            init_failure = INIT_FAILURES::NO_MEM;
             gcs().send_text(MAV_SEVERITY_CRITICAL, "NavEKF2: not enough memory");
             _enable.set(0);
             return false;
@@ -665,6 +675,7 @@ bool NavEKF2::InitialiseFilter(void)
         core = (NavEKF2_core*)hal.util->malloc_type(sizeof(NavEKF2_core)*num_cores, AP_HAL::Util::MEM_FAST);
         if (core == nullptr) {
             _enable.set(0);
+            init_failure = INIT_FAILURES::NO_ALLOC;
             gcs().send_text(MAV_SEVERITY_CRITICAL, "NavEKF2: allocation failed");
             return false;
         }
@@ -1455,7 +1466,7 @@ uint32_t NavEKF2::getLastVelNorthEastReset(Vector2f &vel) const
 const char *NavEKF2::prearm_failure_reason(void) const
 {
     if (!core) {
-        return "no EKF2 cores";
+        return init_failure_reason[int(init_failure)];
     }
     for (uint8_t i = 0; i < num_cores; i++) {
         const char * failure = core[i].prearm_failure_reason();
