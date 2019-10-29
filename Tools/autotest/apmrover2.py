@@ -4792,7 +4792,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
             ("GetCapabilities",
              "Get Capabilities",
-             self.do_get_autopilot_capabilities),
+             self.test_get_autopilot_capabilities),
 
             ("DO_SET_MODE",
              "Set mode via MAV_COMMAND_DO_SET_MODE",
