@@ -28,10 +28,6 @@
  */
 #pragma once
 
-//#ifndef HAL_HAVE_DUAL_USB_CDC
-//#define HAL_HAVE_DUAL_USB_CDC 0
-//#endif
-
 #if defined(__cplusplus)
 extern "C" {
 #endif
