@@ -24,6 +24,18 @@
 #include <SITL/SIM_Gimbal.h>
 #include <SITL/SIM_ADSB.h>
 #include <SITL/SIM_Vicon.h>
+#include <SITL/SIM_RF_Benewake_TF02.h>
+#include <SITL/SIM_RF_Benewake_TF03.h>
+#include <SITL/SIM_RF_Benewake_TFmini.h>
+#include <SITL/SIM_RF_LightWareSerial.h>
+#include <SITL/SIM_RF_Lanbao.h>
+#include <SITL/SIM_RF_BLping.h>
+#include <SITL/SIM_RF_LeddarOne.h>
+#include <SITL/SIM_RF_uLanding_v0.h>
+#include <SITL/SIM_RF_uLanding_v1.h>
+#include <SITL/SIM_RF_MaxsonarSerialLV.h>
+#include <SITL/SIM_RF_Wasp.h>
+#include <SITL/SIM_RF_NMEA.h>
 #include <AP_HAL/utility/Socket.h>
 
 class HAL_SITL;
@@ -223,6 +235,32 @@ private:
 
     // simulated vicon system:
     SITL::Vicon *vicon;
+
+    // simulated Benewake tf02 rangefinder:
+    SITL::RF_Benewake_TF02 *benewake_tf02;
+    // simulated Benewake tf03 rangefinder:
+    SITL::RF_Benewake_TF03 *benewake_tf03;
+    // simulated Benewake tfmini rangefinder:
+    SITL::RF_Benewake_TFmini *benewake_tfmini;
+
+    // simulated LightWareSerial rangefinder:
+    SITL::RF_LightWareSerial *lightwareserial;
+    // simulated Lanbao rangefinder:
+    SITL::RF_Lanbao *lanbao;
+    // simulated BLping rangefinder:
+    SITL::RF_BLping *blping;
+    // simulated LeddarOne rangefinder:
+    SITL::RF_LeddarOne *leddarone;
+    // simulated uLanding v0 rangefinder:
+    SITL::RF_uLanding_v0 *ulanding_v0;
+    // simulated uLanding v1 rangefinder:
+    SITL::RF_uLanding_v1 *ulanding_v1;
+    // simulated MaxsonarSerialLV rangefinder:
+    SITL::RF_MaxsonarSerialLV *maxsonarseriallv;
+    // simulated Wasp rangefinder:
+    SITL::RF_Wasp *wasp;
+    // simulated NMEA rangefinder:
+    SITL::RF_NMEA *nmea;
 
     // output socket for flightgear viewing
     SocketAPM fg_socket{true};
