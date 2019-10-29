@@ -622,6 +622,9 @@ void NavEKF2::check_log_write(void)
 bool NavEKF2::InitialiseFilter(void)
 {
     if (_enable == 0) {
+        if (_ahrs->get_ekf_type() == 2) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "AHRS_EKF_TYPE=2 but EKF2 not enabled");
+        }
         return false;
     }
     const AP_InertialSensor &ins = AP::ins();
@@ -642,17 +645,22 @@ bool NavEKF2::InitialiseFilter(void)
     
     if (core == nullptr) {
 
-        // don't run multiple filters for 1 IMU
+        // this prevents dereferencing a null _ahrs pointer in NavEKF2_core::getEulerAngles
+        if (ins.get_accel_count() == 0) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "EK2 enabled but no IMUs available");
+            return false;
+        }
+        if (_imuMask == 0) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "EK2 enabled but EK2_IMU_MASK=0");
+            return false;
+        }
+
+        // don't allow more filters than IMUs
         uint8_t mask = (1U<<ins.get_accel_count())-1;
         _imuMask.set(_imuMask.get() & mask);
         
         // count IMUs from mask
-        num_cores = 0;
-        for (uint8_t i=0; i<7; i++) {
-            if (_imuMask & (1U<<i)) {
-                num_cores++;
-            }
-        }
+        num_cores = __builtin_popcount(_imuMask);
 
         // check if there is enough memory to create the EKF cores
         if (hal.util->available_memory() < sizeof(NavEKF2_core)*num_cores + 4096) {
