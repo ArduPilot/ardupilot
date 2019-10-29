@@ -224,6 +224,17 @@ int SITL_State::sim_fd(const char *name, const char *arg)
         vicon = new SITL::Vicon();
         return vicon->fd();
     }
+
+    AP_HAL::panic("unknown simulated device: %s", name);
+}
+int SITL_State::sim_fd_write(const char *name)
+{
+    if (streq(name, "vicon")) {
+        if (vicon == nullptr) {
+            AP_HAL::panic("No vicon created");
+        }
+        return vicon->write_fd();
+    }
     AP_HAL::panic("unknown simulated device: %s", name);
 }
 
