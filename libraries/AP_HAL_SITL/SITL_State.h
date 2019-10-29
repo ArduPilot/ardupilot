@@ -44,6 +44,7 @@
 // #include <SITL/SIM_Frsky_SPortPassthrough.h>
 #include <SITL/SIM_PS_RPLidarA2.h>
 
+#include <SITL/SIM_RichenPower.h>
 #include <AP_HAL/utility/Socket.h>
 
 class HAL_SITL;
