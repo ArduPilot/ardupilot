@@ -342,6 +342,9 @@ int SITL_State::sim_fd(const char *name, const char *arg)
         }
         rplidara2 = new SITL::PS_RPLidarA2();
         return rplidara2->fd();
+    } else if (streq(name, "richenpower")) {
+        sitl_model->set_richenpower(&_sitl->richenpower_sim);
+        return _sitl->richenpower_sim.fd();
     }
 
     AP_HAL::panic("unknown simulated device: %s", name);
@@ -428,6 +431,8 @@ int SITL_State::sim_fd_write(const char *name)
             AP_HAL::panic("No rplidara2 created");
         }
         return rplidara2->write_fd();
+    } else if (streq(name, "richenpower")) {
+        return _sitl->richenpower_sim.write_fd();
     }
     AP_HAL::panic("unknown simulated device: %s", name);
 }
