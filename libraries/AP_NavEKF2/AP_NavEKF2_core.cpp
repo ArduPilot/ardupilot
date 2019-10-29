@@ -336,6 +336,9 @@ void NavEKF2_core::InitialiseVariables()
     yawAlignComplete = false;
     have_table_earth_field = false;
 
+    // initialise pre-arm message
+    hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string), "EKF2 still initialising");
+
     InitialiseVariablesMag();
 }
 
