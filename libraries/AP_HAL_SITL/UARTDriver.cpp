@@ -104,10 +104,11 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
             _uart_baudrate = baudrate;
             _uart_start_connection();
         } else if (strcmp(devtype, "sim") == 0) {
-            ::printf("SIM connection %s:%s on port %u\n", args1, args2, _portNumber);
             if (!_connected) {
+                ::printf("SIM connection %s:%s on port %u\n", args1, args2, _portNumber);
                 _connected = true;
                 _fd = _sitlState->sim_fd(args1, args2);
+                _fd_write = _sitlState->sim_fd_write(args1);
             }
         } else if (strcmp(devtype, "udpclient") == 0) {
             // udp client connection
@@ -177,15 +178,19 @@ void UARTDriver::flush(void)
 {
 }
 
+// size_t UARTDriver::write(uint8_t c)
+// {
+//     if (txspace() <= 0) {
+//         return 0;
+//     }
+//     _writebuffer.write(&c, 1);
+//     return 1;
+// }
+
 size_t UARTDriver::write(uint8_t c)
 {
-    if (txspace() <= 0) {
-        return 0;
-    }
-    _writebuffer.write(&c, 1);
-    return 1;
+    return write(&c, 1);
 }
-
 size_t UARTDriver::write(const uint8_t *buffer, size_t size)
 {
     if (txspace() <= size) {
@@ -196,8 +201,16 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
     }
     if (_unbuffered_writes) {
         // write buffer straight to the file descriptor
-        const ssize_t nwritten = ::write(_fd, buffer, size);
+        int fd = _fd_write;
+        if (fd == -1) {
+            fd = _fd;
+        }
+        const ssize_t nwritten = ::write(fd, buffer, size);
         if (nwritten == -1 && errno != EAGAIN && _uart_path) {
+            if (_fd_write != -1) {
+                close(_fd_write);
+                _fd_write = 1;
+            }
             close(_fd);
             _fd = -1;
             _connected = false;
@@ -650,8 +663,16 @@ void UARTDriver::_timer_tick(void)
         if (readptr && navail > 0) {
             navail = MIN(navail, max_bytes);
             if (!_use_send_recv) {
-                nwritten = ::write(_fd, readptr, navail);
+                int fd = _fd_write;
+                if (fd == -1) {
+                    fd = _fd;
+                }
+                nwritten = ::write(fd, readptr, navail);
                 if (nwritten == -1 && errno != EAGAIN && _uart_path) {
+                    if (_fd_write != -1){
+                        close(_fd_write);
+                        _fd_write = -1;
+                    }
                     close(_fd);
                     _fd = -1;
                     _connected = false;
