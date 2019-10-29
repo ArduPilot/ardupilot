@@ -1321,7 +1321,6 @@ float GCS_MAVLINK_Copter::vfr_hud_alt() const
 uint64_t GCS_MAVLINK_Copter::capabilities() const
 {
     return (MAV_PROTOCOL_CAPABILITY_MISSION_FLOAT |
-            MAV_PROTOCOL_CAPABILITY_PARAM_FLOAT |
             MAV_PROTOCOL_CAPABILITY_MISSION_INT |
             MAV_PROTOCOL_CAPABILITY_COMMAND_INT |
             MAV_PROTOCOL_CAPABILITY_SET_POSITION_TARGET_LOCAL_NED |
@@ -1331,7 +1330,6 @@ uint64_t GCS_MAVLINK_Copter::capabilities() const
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
             (copter.terrain.enabled() ? MAV_PROTOCOL_CAPABILITY_TERRAIN : 0) |
 #endif
-            MAV_PROTOCOL_CAPABILITY_COMPASS_CALIBRATION |
             GCS_MAVLINK::capabilities());
 }
 
