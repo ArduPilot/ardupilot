@@ -569,13 +569,6 @@ mission_failed:
 } // end handle mavlink
 
 
-uint64_t GCS_MAVLINK_Tracker::capabilities() const
-{
-    return (MAV_PROTOCOL_CAPABILITY_PARAM_FLOAT |
-            MAV_PROTOCOL_CAPABILITY_COMPASS_CALIBRATION |
-            GCS_MAVLINK::capabilities());
-}
-
 /*
  *  a delay() callback that processes MAVLink packets. We set this as the
  *  callback in long running library initialisation routines to allow
