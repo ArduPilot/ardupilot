@@ -2,7 +2,7 @@
 
 This is an ArduPilot based UAVCAN peripheral firmware. This firmware
 takes advantage of the wide range of sensor drivers in ArduPilot to
-make building a UAVCAN periheral firmware easy.
+make building a UAVCAN peripheral firmware easy.
 
 The AP_Periph firmware is based on the same ChibiOS hwdef.dat system
 that is used to define pinouts for STM32 based flight controllers
@@ -52,7 +52,7 @@ Using f103-GPS as an example, build the main firmware like this:
 
 that will build a file build/f103-GPS/bin/AP_Periph.bin. You can
 now load that using the CAN bootloader and either uavcan_gui_tool or
-MissionPlanner.
+MissionPlanner SLCAN support.
 
 # Flashing
 
