@@ -385,6 +385,9 @@ void NavEKF3_core::InitialiseVariables()
     storedBodyOdm.reset();
     storedWheelOdm.reset();
 
+    // initialise pre-arm message
+    hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string), "EKF3 still initialising");
+
     InitialiseVariablesMag();
 }
 
