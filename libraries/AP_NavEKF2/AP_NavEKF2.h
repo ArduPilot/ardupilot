@@ -361,6 +361,8 @@ private:
     NavEKF2_core *core = nullptr;
     const AP_AHRS *_ahrs;
     const RangeFinder &_rng;
+    
+    EKF_Init_Failure initFailure;
 
     uint32_t _frameTimeUsec;        // time per IMU frame
     uint8_t  _framesPerPrediction;  // expected number of IMU frames per prediction
