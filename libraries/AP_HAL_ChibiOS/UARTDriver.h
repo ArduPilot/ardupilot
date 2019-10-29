@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #pragma once
@@ -25,47 +25,58 @@
 #define RX_BOUNCE_BUFSIZE 128U
 #define TX_BOUNCE_BUFSIZE 64U
 
-// enough for uartA to uartG, plus IOMCU
-#define UART_MAX_DRIVERS 8
+// enough for uartA to uartH, plus IOMCU
+#define UART_MAX_DRIVERS 9
 
 class ChibiOS::UARTDriver : public AP_HAL::UARTDriver {
 public:
     UARTDriver(uint8_t serial_num);
 
-    void begin(uint32_t b);
-    void begin(uint32_t b, uint16_t rxS, uint16_t txS);
-    void end();
-    void flush();
-    bool is_initialized();
-    void set_blocking_writes(bool blocking);
-    bool tx_pending();
+    void begin(uint32_t b) override;
+    void begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
+    void end() override;
+    void flush() override;
+    bool is_initialized() override;
+    void set_blocking_writes(bool blocking) override;
+    bool tx_pending() override;
 
 
     uint32_t available() override;
     uint32_t txspace() override;
     int16_t read() override;
+    int16_t read_locked(uint32_t key) override;
     void _timer_tick(void) override;
 
-    size_t write(uint8_t c);
-    size_t write(const uint8_t *buffer, size_t size);
+    size_t write(uint8_t c) override;
+    size_t write(const uint8_t *buffer, size_t size) override;
 
     // lock a port for exclusive use. Use a key of 0 to unlock
-    bool lock_port(uint32_t key) override;
+    bool lock_port(uint32_t write_key, uint32_t read_key) override;
+
+    // control optional features
+    bool set_options(uint8_t options) override;
+    uint8_t get_options(void) const override;
 
     // write to a locked port. If port is locked and key is not correct then 0 is returned
     // and write is discarded
     size_t write_locked(const uint8_t *buffer, size_t size, uint32_t key) override;
-    
+
     struct SerialDef {
         BaseSequentialStream* serial;
         bool is_usb;
+#ifndef HAL_UART_NODMA
         bool dma_rx;
         uint8_t dma_rx_stream_id;
         uint32_t dma_rx_channel_id;
         bool dma_tx;
         uint8_t dma_tx_stream_id;
-        uint32_t dma_tx_channel_id; 
+        uint32_t dma_tx_channel_id;
+#endif
         ioline_t rts_line;
+        int8_t rxinv_gpio;
+        uint8_t rxinv_polarity;
+        int8_t txinv_gpio;
+        uint8_t txinv_polarity;
         uint8_t get_index(void) const {
             return uint8_t(this - &_serial_tab[0]);
         }
@@ -96,9 +107,15 @@ public:
       A return value of zero means the HAL does not support this API
      */
     uint64_t receive_time_constraint_us(uint16_t nbytes) override;
-    
+
+    uint32_t bw_in_kilobytes_per_second() const override {
+        if (sdef.is_usb) {
+            return 200;
+        }
+        return _baudrate/(9*1024);
+    }
+
 private:
-    bool tx_bounce_buf_ready;
     const SerialDef &sdef;
 
     // thread used for all UARTs
@@ -111,8 +128,9 @@ private:
     uint8_t serial_num;
 
     // key for a locked port
-    uint32_t lock_key;
-    
+    uint32_t lock_write_key;
+    uint32_t lock_read_key;
+
     uint32_t _baudrate;
     uint16_t tx_len;
 #if HAL_USE_SERIAL == TRUE
@@ -129,20 +147,27 @@ private:
 
     // we use in-task ring buffers to reduce the system call cost
     // of ::read() and ::write() in the main loop
+#ifndef HAL_UART_NODMA
+    bool tx_bounce_buf_ready;
     uint8_t *rx_bounce_buf;
     uint8_t *tx_bounce_buf;
+#endif
     ByteBuffer _readbuf{0};
     ByteBuffer _writebuf{0};
     Semaphore _write_mutex;
+#ifndef HAL_UART_NODMA
     const stm32_dma_stream_t* rxdma;
     const stm32_dma_stream_t* txdma;
-    virtual_timer_t tx_timeout;    
+#endif
+    virtual_timer_t tx_timeout;
     bool _in_timer;
     bool _blocking_writes;
     bool _initialised;
     bool _device_initialised;
     bool _lock_rx_in_timer_tick = false;
+#ifndef HAL_UART_NODMA
     Shared_DMA *dma_handle;
+#endif
     static const SerialDef _serial_tab[];
 
     // timestamp for receiving data on the UART, avoiding a lock
@@ -155,26 +180,50 @@ private:
     uint32_t _last_write_completed_us;
     uint32_t _first_write_started_us;
     uint32_t _total_written;
-    
+
+    // we remember cr2 and cr2 options from set_options to apply on sdStart()
+    uint32_t _cr3_options;
+    uint32_t _cr2_options;
+    uint8_t _last_options;
+
+    // half duplex control. After writing we throw away bytes for 4 byte widths to
+    // prevent reading our own bytes back
+    bool half_duplex;
+    uint32_t hd_read_delay_us;
+    uint32_t hd_write_us;
+    void half_duplex_setup_delay(uint16_t len);
+
     // set to true for unbuffered writes (low latency writes)
     bool unbuffered_writes;
-    
+
+#if CH_CFG_USE_EVENTS == TRUE
+    // listener for parity error events
+    event_listener_t ev_listener;
+    bool parity_enabled;
+#endif
+
+#ifndef HAL_UART_NODMA
     static void rx_irq_cb(void* sd);
+#endif
     static void rxbuff_full_irq(void* self, uint32_t flags);
     static void tx_complete(void* self, uint32_t flags);
     static void handle_tx_timeout(void *arg);
 
+#ifndef HAL_UART_NODMA
     void dma_tx_allocate(Shared_DMA *ctx);
     void dma_tx_deallocate(Shared_DMA *ctx);
+#endif
     void update_rts_line(void);
 
     void check_dma_tx_completion(void);
+#ifndef HAL_UART_NODMA
     void write_pending_bytes_DMA(uint32_t n);
+#endif
     void write_pending_bytes_NODMA(uint32_t n);
     void write_pending_bytes(void);
 
     void receive_timestamp_update(void);
-    
+
     void thread_init();
     static void uart_thread(void *);
 };
