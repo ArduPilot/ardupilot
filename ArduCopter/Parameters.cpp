@@ -1110,7 +1110,7 @@ void Copter::load_parameters(void)
 
 }
 
-// handle conversion of PID gains from Copter-3.3 to Copter-3.4
+// handle conversion of PID gains
 void Copter::convert_pid_parameters(void)
 {
     // conversion info
@@ -1140,6 +1140,7 @@ void Copter::convert_pid_parameters(void)
         { Parameters::k_param_pid_rate_yaw,   7, AP_PARAM_FLOAT, "ATC_RAT_YAW_ILMI" },
 #endif
     };
+    // conversion from Copter-3.3 to Copter-3.4
     const AP_Param::ConversionInfo angle_and_filt_conversion_info[] = {
         { Parameters::k_param_p_stabilize_roll, 0, AP_PARAM_FLOAT, "ATC_ANG_RLL_P" },
         { Parameters::k_param_p_stabilize_pitch, 0, AP_PARAM_FLOAT, "ATC_ANG_PIT_P" },
@@ -1156,7 +1157,7 @@ void Copter::convert_pid_parameters(void)
         { Parameters::k_param_pid_accel_z, 1, AP_PARAM_FLOAT, "PSC_ACCZ_I" },
         { Parameters::k_param_pid_accel_z, 2, AP_PARAM_FLOAT, "PSC_ACCZ_D" },
         { Parameters::k_param_pid_accel_z, 5, AP_PARAM_FLOAT, "PSC_ACCZ_IMAX" },
-        { Parameters::k_param_pid_accel_z, 6, AP_PARAM_FLOAT, "PSC_ACCZ_FILT" },
+        { Parameters::k_param_pid_accel_z, 6, AP_PARAM_FLOAT, "PSC_ACCZ_FLTE" },
         { Parameters::k_param_p_alt_hold, 0, AP_PARAM_FLOAT, "PSC_POSZ_P" },
         { Parameters::k_param_p_pos_xy, 0, AP_PARAM_FLOAT, "PSC_POSXY_P" },
     };
@@ -1233,7 +1234,7 @@ void Copter::convert_pid_parameters(void)
     AP_Param::set_defaults_from_table(heli_defaults_table, ARRAY_SIZE(heli_defaults_table));
 #endif
 
-    // attitude control filter parameter changes (from _FILT to FLTD, FLTE, FLTT) for Copter-4.0
+    // attitude and position control filter parameter changes (from _FILT to FLTD, FLTE, FLTT) for Copter-4.0
     // magic numbers shown below are discovered by setting AP_PARAM_KEY_DUMP = 1
     const AP_Param::ConversionInfo ff_and_filt_conversion_info[] = {
 #if FRAME_CONFIG == HELI_FRAME
@@ -1252,6 +1253,7 @@ void Copter::convert_pid_parameters(void)
         { Parameters::k_param_attitude_control, 450, AP_PARAM_FLOAT, "ATC_RAT_PIT_FF" },
         { Parameters::k_param_attitude_control, 451, AP_PARAM_FLOAT, "ATC_RAT_YAW_FF" },
 #endif
+        { Parameters::k_param_pos_control, 388, AP_PARAM_FLOAT, "PSC_ACCZ_FLTE" },
     };
     uint8_t filt_table_size = ARRAY_SIZE(ff_and_filt_conversion_info);
     for (uint8_t i=0; i<filt_table_size; i++) {
