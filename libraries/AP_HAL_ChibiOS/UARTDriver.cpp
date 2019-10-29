@@ -86,7 +86,7 @@ void UARTDriver::uart_thread(void* arg)
 
     uart_thread_ctx = chThdGetSelfX();
     while (true) {
-        eventmask_t mask = chEvtWaitAnyTimeout(~0, chTimeMS2I(1));
+        eventmask_t mask = chEvtWaitAnyTimeout(~0, MS2ST(1));
         uint32_t now = AP_HAL::micros();
         if (now - last_thread_run_us >= 1000) {
             // run them all if it's been more than 1ms since we ran
@@ -223,20 +223,17 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         if (!_device_initialised) {
             if ((SerialUSBDriver*)sdef.serial == &SDU1) {
                 sduObjectInit(&SDU1);
-                sduStart(&SDU1, &serusbcfg1);
-#if HAL_HAVE_DUAL_USB_CDC
-                sduObjectInit(&SDU2);
-                sduStart(&SDU2, &serusbcfg2);
-#endif
+                sduStart(&SDU1, &serusbcfg);
+
                 /*
                 * Activates the USB driver and then the USB bus pull-up on D+.
                 * Note, a delay is inserted in order to not have to disconnect the cable
                 * after a reset.
                 */
-                usbDisconnectBus(serusbcfg1.usbp);
+                usbDisconnectBus(serusbcfg.usbp);
                 hal.scheduler->delay_microseconds(1500);
-                usbStart(serusbcfg1.usbp, &usbcfg);
-                usbConnectBus(serusbcfg1.usbp);
+                usbStart(serusbcfg.usbp, &usbcfg);
+                usbConnectBus(serusbcfg.usbp);
             }
             _device_initialised = true;
         }
@@ -249,22 +246,23 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
             //setup Rx DMA
             if(!_device_initialised) {
                 if(sdef.dma_rx) {
+                    rxdma = STM32_DMA_STREAM(sdef.dma_rx_stream_id);
                     osalDbgAssert(rxdma == nullptr, "double DMA allocation");
                     chSysLock();
-                    rxdma = dmaStreamAllocI(sdef.dma_rx_stream_id,
+                    bool dma_allocated = dmaStreamAllocate(rxdma,
                                             12,  //IRQ Priority
                                             (stm32_dmaisr_t)rxbuff_full_irq,
                                             (void *)this);
-                    osalDbgAssert(rxdma, "stream alloc failed");
+                    osalDbgAssert(!dma_allocated, "stream alloc failed");
                     chSysUnlock();
 #if defined(STM32F7) || defined(STM32H7)
                     dmaStreamSetPeripheral(rxdma, &((SerialDriver*)sdef.serial)->usart->RDR);
 #else
                     dmaStreamSetPeripheral(rxdma, &((SerialDriver*)sdef.serial)->usart->DR);
 #endif // STM32F7
-#if STM32_DMA_SUPPORTS_DMAMUX
-                    dmaSetRequestSource(rxdma, sdef.dma_rx_channel_id);
-#endif
+//#if STM32_DMA_SUPPORTS_DMAMUX
+//                    dmaSetRequestSource(rxdma, sdef.dma_rx_channel_id);
+//#endif
                 }
                 if (sdef.dma_tx) {
                     // we only allow for sharing of the TX DMA channel, not the RX
@@ -349,27 +347,38 @@ void UARTDriver::dma_tx_allocate(Shared_DMA *ctx)
         return;
     }
     chSysLock();
-    txdma = dmaStreamAllocI(sdef.dma_tx_stream_id,
-                            12,  //IRQ Priority
-                            (stm32_dmaisr_t)tx_complete,
-                            (void *)this);
-    osalDbgAssert(txdma, "stream alloc failed");
+ //   txdma = dmaStreamAllocI(sdef.dma_tx_stream_id,
+ //                           12,  //IRQ Priority
+ //                           (stm32_dmaisr_t)tx_complete,
+ //                           (void *)this);
+ //   osalDbgAssert(txdma, "stream alloc failed");
+
+                    txdma = STM32_DMA_STREAM(sdef.dma_tx_stream_id);
+                    osalDbgAssert(rxdma == nullptr, "double DMA allocation");
+                    chSysLock();
+                    bool dma_allocated = dmaStreamAllocate(txdma,
+                                            12,  //IRQ Priority
+                                            (stm32_dmaisr_t)tx_complete,
+                                            (void *)this);
+                    osalDbgAssert(!dma_allocated, "stream alloc failed");
+
+
     chSysUnlock();
 #if defined(STM32F7) || defined(STM32H7)
     dmaStreamSetPeripheral(txdma, &((SerialDriver*)sdef.serial)->usart->TDR);
 #else
     dmaStreamSetPeripheral(txdma, &((SerialDriver*)sdef.serial)->usart->DR);
 #endif // STM32F7
-#if STM32_DMA_SUPPORTS_DMAMUX
-    dmaSetRequestSource(txdma, sdef.dma_tx_channel_id);
-#endif
+//#if STM32_DMA_SUPPORTS_DMAMUX
+//    dmaSetRequestSource(txdma, sdef.dma_tx_channel_id);
+//#endif
 #endif // HAL_USE_SERIAL
 }
 
 void UARTDriver::dma_tx_deallocate(Shared_DMA *ctx)
 {
     chSysLock();
-    dmaStreamFreeI(txdma);
+    dmaStreamRelease(txdma);
     txdma = nullptr;
     chSysUnlock();
 }
@@ -685,7 +694,7 @@ bool UARTDriver::wait_timeout(uint16_t n, uint32_t timeout_ms)
         if (now - t0 >= timeout_ms) {
             break;
         }
-        chEvtWaitAnyTimeout(EVT_DATA, chTimeMS2I(timeout_ms - (now - t0)));
+        chEvtWaitAnyTimeout(EVT_DATA, MS2ST(timeout_ms - (now - t0)));
     }
     return available() >= n;
 }
@@ -778,7 +787,7 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
                      STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
     dmaStreamEnable(txdma);
     uint32_t timeout_us = ((1000000UL * (tx_len+2) * 10) / _baudrate) + 500;
-    chVTSet(&tx_timeout, chTimeUS2I(timeout_us), handle_tx_timeout, this);
+    chVTSet(&tx_timeout, US2ST(timeout_us), handle_tx_timeout, this);
 }
 #endif // HAL_UART_NODMA
 

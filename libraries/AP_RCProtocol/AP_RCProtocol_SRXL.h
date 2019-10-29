@@ -43,7 +43,6 @@ public:
     void process_byte(uint8_t byte, uint32_t baudrate) override;
 private:
     void _process_byte(uint32_t timestamp_us, uint8_t byte);
-    static uint16_t srxl_crc16(uint16_t crc, uint8_t new_byte);
     int srxl_channels_get_v1v2(uint16_t max_values, uint8_t *num_values, uint16_t *values, bool *failsafe_state);
     int srxl_channels_get_v5(uint16_t max_values, uint8_t *num_values, uint16_t *values, bool *failsafe_state);
     uint8_t buffer[SRXL_FRAMELEN_MAX];       /* buffer for raw srxl frame data in correct order --> buffer[0]=byte0  buffer[1]=byte1  */

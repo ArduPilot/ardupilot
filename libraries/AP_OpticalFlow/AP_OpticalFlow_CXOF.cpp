@@ -57,7 +57,7 @@ AP_OpticalFlow_CXOF::AP_OpticalFlow_CXOF(OpticalFlow &_frontend, AP_HAL::UARTDri
 // detect the device
 AP_OpticalFlow_CXOF *AP_OpticalFlow_CXOF::detect(OpticalFlow &_frontend)
 {
-    AP_SerialManager *serial_manager = AP::serialmanager().get_instance();
+    AP_SerialManager *serial_manager = AP::serialmanager().get_singleton();
     if (serial_manager == nullptr) {
         return nullptr;
     }

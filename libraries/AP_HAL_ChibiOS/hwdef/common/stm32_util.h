@@ -30,8 +30,9 @@ void show_stack_usage(void);
 
 // allocation functions in malloc.c    
 size_t mem_available(void);
-void *malloc_ccm(size_t size);
 void *malloc_dma(size_t size);
+void *malloc_sdcard_dma(size_t size);
+void *malloc_fastmem(size_t size);
 thread_t *thread_create_alloc(size_t size, const char *name, tprio_t prio, tfunc_t pf, void *arg);
 
 // flush all dcache
@@ -56,7 +57,9 @@ uint32_t get_fattime(void);
 enum rtc_boot_magic {
     RTC_BOOT_OFF  = 0,
     RTC_BOOT_HOLD = 0xb0070001,
-    RTC_BOOT_FAST = 0xb0070002
+    RTC_BOOT_FAST = 0xb0070002,
+    RTC_BOOT_CANBL = 0xb0080000, // ORd with 8 bit local node ID
+    RTC_BOOT_FWOK = 0xb0093a26 // indicates FW ran for 30s
 };
     
 // see if RTC registers is setup for a fast reboot
@@ -75,15 +78,18 @@ void malloc_init(void);
   read mode of a pin. This allows a pin config to be read, changed and
   then written back
  */
-#if defined(STM32F7) || defined(STM32F4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4)
 iomode_t palReadLineMode(ioline_t line);
 #endif
 
-// get RTC backup register
-uint32_t get_rtc_backup(uint8_t n);
+// set n RTC backup registers starting at given idx
+void set_rtc_backup(uint8_t idx, const uint32_t *v, uint8_t n);
 
-// set RTC backup register
-void set_rtc_backup(uint8_t n, uint32_t v);
+// get RTC backup registers starting at given idx
+void get_rtc_backup(uint8_t idx, uint32_t *v, uint8_t n);
+
+void stm32_cacheBufferInvalidate(const void *p, size_t size);
+void stm32_cacheBufferFlush(const void *p, size_t size);
 
 #ifdef __cplusplus
 }

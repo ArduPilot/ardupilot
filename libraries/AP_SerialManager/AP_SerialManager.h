@@ -24,9 +24,10 @@
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Param/AP_Param.h>
+#include <AP_Math/AP_Math.h>
 
 // we have hal.uartA to hal.uartH
-#define SERIALMANAGER_NUM_PORTS 8
+#define SERIALMANAGER_NUM_PORTS 7
 
  // console default baud rates and buffer sizes
 #ifdef HAL_SERIAL0_BAUD_DEFAULT
