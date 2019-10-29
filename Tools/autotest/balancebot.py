@@ -117,7 +117,7 @@ inherit Rover's tests!'''
 
             ("GetCapabilities",
              "Get Capabilities",
-             self.do_get_autopilot_capabilities),
+             self.test_get_autopilot_capabilities),
 
             ("DO_SET_MODE",
              "Set mode via MAV_COMMAND_DO_SET_MODE",
