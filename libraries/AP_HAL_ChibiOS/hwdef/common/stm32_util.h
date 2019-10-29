@@ -80,10 +80,13 @@ iomode_t palReadLineMode(ioline_t line);
 #endif
 
 // get RTC backup register
-uint32_t get_rtc_backup(uint8_t n);
+//uint32_t get_rtc_backup(uint8_t n);
 
-// set RTC backup register
-void set_rtc_backup(uint8_t n, uint32_t v);
+// get RTC backup registers starting at given idx
+//void get_rtc_backup(uint8_t idx, uint32_t *v, uint8_t n);
+
+void stm32_cacheBufferInvalidate(const void *p, size_t size);
+void stm32_cacheBufferFlush(const void *p, size_t size);
 
 #ifdef __cplusplus
 }

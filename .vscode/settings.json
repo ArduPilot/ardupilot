@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "stm32_dma.h": "c",
+        "hrt.h": "c",
+        "stm32_util.h": "c",
+        "stdint.h": "c"
+    }
+}

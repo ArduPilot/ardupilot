@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stm32_dma.h>
+#include <cache.h>
 #include <hrt.h>
 
 static int64_t utc_time_offset;
@@ -299,3 +300,13 @@ iomode_t palReadLineMode(ioline_t line)
     return ret;
 }
 #endif
+
+void stm32_cacheBufferInvalidate(const void *p, size_t size)
+{
+    cacheBufferInvalidate(p, size);
+}
+
+void stm32_cacheBufferFlush(const void *p, size_t size)
+{
+    cacheBufferFlush(p, size);
+}
