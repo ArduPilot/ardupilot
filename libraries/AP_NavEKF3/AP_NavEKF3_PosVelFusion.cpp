@@ -1108,7 +1108,7 @@ void NavEKF3_core::FuseBodyVel()
                 faultStatus.bad_xvel = true;
                 return;
             }
-            varInnovBodyVel[0] = t77;
+            varInnovBodyVel[0] = t76;
 
             // calculate innovation for X axis observation
             innovBodyVel[0] = bodyVelPred.x - bodyOdmDataDelayed.vel.x;
@@ -1280,7 +1280,7 @@ void NavEKF3_core::FuseBodyVel()
                 faultStatus.bad_yvel = true;
                 return;
             }
-            varInnovBodyVel[1] = t77;
+            varInnovBodyVel[1] = t76;
 
             // calculate innovation for Y axis observation
             innovBodyVel[1] = bodyVelPred.y - bodyOdmDataDelayed.vel.y;
@@ -1452,7 +1452,7 @@ void NavEKF3_core::FuseBodyVel()
                 faultStatus.bad_zvel = true;
                 return;
             }
-            varInnovBodyVel[2] = t77;
+            varInnovBodyVel[2] = t76;
 
             // calculate innovation for Z axis observation
             innovBodyVel[2] = bodyVelPred.z - bodyOdmDataDelayed.vel.z;
