@@ -313,7 +313,7 @@ void AP_ToshibaCAN::loop()
                     if (esc_id < TOSHIBACAN_MAX_NUM_ESCS) {
                         WITH_SEMAPHORE(_telem_sem);
                         _telemetry[esc_id].rpm = be16toh(reply_data.rpm);
-                        _telemetry[esc_id].millivolts = be16toh(reply_data.millivolts);
+                        _telemetry[esc_id].voltage_mv = be16toh(reply_data.voltage_mv);
                         _telemetry[esc_id].count++;
                         _telemetry[esc_id].new_data = true;
                         _esc_present_bitmask |= ((uint32_t)1 << esc_id);
@@ -431,7 +431,7 @@ void AP_ToshibaCAN::update()
             if (_telemetry[i].new_data) {
                 logger->Write_ESC(i, time_us,
                               _telemetry[i].rpm * 100U,
-                              _telemetry[i].millivolts * 0.1f,
+                              _telemetry[i].voltage_mv * 0.1f,
                               0,
                               _telemetry[i].temperature * 100.0f,
                               0);
@@ -481,7 +481,7 @@ void AP_ToshibaCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
             for (uint8_t j = 0; j < 4; j++) {
                 uint8_t esc_id = i * 4 + j;
                 temperature[j] = _telemetry[esc_id].temperature;
-                voltage[j] = _telemetry[esc_id].millivolts * 0.1f;
+                voltage[j] = _telemetry[esc_id].voltage_mv * 0.1f;
                 rpm[j] = _telemetry[esc_id].rpm;
                 count[j] = _telemetry[esc_id].count;
             }
