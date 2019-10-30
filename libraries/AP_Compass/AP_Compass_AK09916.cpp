@@ -193,7 +193,6 @@ bool AP_Compass_AK09916::init()
     AP_HAL::Semaphore *bus_sem = _bus->get_semaphore();
 
     if (!bus_sem || !_bus->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        hal.console->printf("AK09916: Unable to get bus semaphore\n");
         return false;
     }
 
