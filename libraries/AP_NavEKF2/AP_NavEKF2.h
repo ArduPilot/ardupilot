@@ -493,27 +493,25 @@ private:
     // time of last lane switch
     uint32_t lastLaneSwitch_ms;
 
-    enum class INIT_FAILURES {
-        OK,
-        NO_MEM, 
+    enum class InitFailures {
+        UNKNOWN,
         NO_ENABLE, 
         NO_IMUS, 
         NO_MASK, 
+        NO_MEM, 
         NO_ALLOC,
-        UNKNOWN,
         NUM_INIT_FAILURES
     };
     // initialization failure reasons
-    const char* init_failure_reason[int(INIT_FAILURES::NUM_INIT_FAILURES)] {
-        "OK",
-        "insufficient memory available",
-        "EK2_enable is false",
-        "no IMUs available",
-        "EK2_IMU_MASK is zero",
-        "memory allocation failed",
-        "unknown initialization failure"
+    const char* initFailureReason[int(InitFailures::NUM_INIT_FAILURES)] {
+        "EKF2: unknown initialization failure",
+        "EKF2: EK2_enable is false",
+        "EKF2: no IMUs available",
+        "EKF2: EK2_IMU_MASK is zero",
+        "EKF2: insufficient memory available",
+        "EKF2: memory allocation failed"
     };
-    INIT_FAILURES init_failure;
+    InitFailures initFailure;
 
     // update the yaw reset data to capture changes due to a lane switch
     // new_primary - index of the ekf instance that we are about to switch to as the primary
