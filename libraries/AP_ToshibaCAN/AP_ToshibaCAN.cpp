@@ -313,9 +313,18 @@ void AP_ToshibaCAN::loop()
                     if (esc_id < TOSHIBACAN_MAX_NUM_ESCS) {
                         WITH_SEMAPHORE(_telem_sem);
                         _telemetry[esc_id].rpm = be16toh(reply_data.rpm);
-                        _telemetry[esc_id].voltage_mv = be16toh(reply_data.voltage_mv);
+                        _telemetry[esc_id].current_ca = MAX((int16_t)be16toh(reply_data.current_ma), 0) * (4.0f * 0.1f);    // milli-amps to centi-amps
+                        _telemetry[esc_id].voltage_cv = be16toh(reply_data.voltage_mv) * 0.1f;  // millivolts to centi-volts
                         _telemetry[esc_id].count++;
                         _telemetry[esc_id].new_data = true;
+                        // update total current
+                        const uint32_t now_ms = AP_HAL::millis();
+                        const uint32_t diff_ms = now_ms - _telemetry[esc_id].last_update_ms;
+                        if (diff_ms <= 1000) {
+                            // convert centi-amps miiliseconds to mAh
+                            _telemetry[esc_id].current_tot_mah += _telemetry[esc_id].current_ca * diff_ms * centiamp_ms_to_mah;
+                        }
+                        _telemetry[esc_id].last_update_ms = now_ms;
                         _esc_present_bitmask |= ((uint32_t)1 << esc_id);
                     }
                 }
@@ -431,10 +440,10 @@ void AP_ToshibaCAN::update()
             if (_telemetry[i].new_data) {
                 logger->Write_ESC(i, time_us,
                               _telemetry[i].rpm * 100U,
-                              _telemetry[i].voltage_mv * 0.1f,
-                              0,
+                              _telemetry[i].voltage_cv,
+                              _telemetry[i].current_ca,
                               _telemetry[i].temperature * 100.0f,
-                              0);
+                              constrain_float(_telemetry[i].current_tot_mah, 0, UINT16_MAX));
                 _telemetry[i].new_data = false;
             }
         }
@@ -473,15 +482,18 @@ void AP_ToshibaCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
             // arrays to hold output
             uint8_t temperature[4] {};
             uint16_t voltage[4] {};
+            uint16_t current[4] {};
+            uint16_t current_tot[4] {};
             uint16_t rpm[4] {};
             uint16_t count[4] {};
-            uint16_t nosup[4] {};   // single empty array for unsupported current and current_tot
 
             // fill in output arrays
             for (uint8_t j = 0; j < 4; j++) {
                 uint8_t esc_id = i * 4 + j;
                 temperature[j] = _telemetry[esc_id].temperature;
-                voltage[j] = _telemetry[esc_id].voltage_mv * 0.1f;
+                voltage[j] = _telemetry[esc_id].voltage_cv;
+                current[j] = _telemetry[esc_id].current_ca;
+                current_tot[j] = constrain_float(_telemetry[esc_id].current_tot_mah, 0, UINT16_MAX);
                 rpm[j] = _telemetry[esc_id].rpm;
                 count[j] = _telemetry[esc_id].count;
             }
@@ -489,13 +501,13 @@ void AP_ToshibaCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
             // send messages
             switch (i) {
                 case 0:
-                    mavlink_msg_esc_telemetry_1_to_4_send((mavlink_channel_t)mav_chan, temperature, voltage, nosup, nosup, rpm, count);
+                    mavlink_msg_esc_telemetry_1_to_4_send((mavlink_channel_t)mav_chan, temperature, voltage, current, current_tot, rpm, count);
                     break;
                 case 1:
-                    mavlink_msg_esc_telemetry_5_to_8_send((mavlink_channel_t)mav_chan, temperature, voltage, nosup, nosup, rpm, count);
+                    mavlink_msg_esc_telemetry_5_to_8_send((mavlink_channel_t)mav_chan, temperature, voltage, current, current_tot, rpm, count);
                     break;
                 case 2:
-                    mavlink_msg_esc_telemetry_9_to_12_send((mavlink_channel_t)mav_chan, temperature, voltage, nosup, nosup, rpm, count);
+                    mavlink_msg_esc_telemetry_9_to_12_send((mavlink_channel_t)mav_chan, temperature, voltage, current, current_tot, rpm, count);
                     break;
                 default:
                     break;
