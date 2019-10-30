@@ -21,6 +21,7 @@
 #include <unistd.h>
 
 #ifdef WITH_SITL_RGBLED
+#include <SITL/SITL.h>
 
 #include "SITL_SFML_LED.h"
 
@@ -32,9 +33,52 @@ SITL_SFML_LED::SITL_SFML_LED():
 {
 }
 
+/*
+  update simulation of WS2812 (NeoPixel) serial LEDs
+ */
+void SITL_SFML_LED::update_serial_LEDs()
+{
+    static sf::RenderWindow *w;
+    static sf::RectangleShape *leds[16][32];
+
+    SITL::SITL *sitl = AP::sitl();
+    if (sitl == nullptr || sitl->led.send_counter == 0) {
+        // no SerialLEDs set
+        return;
+    }
+    if (w == nullptr) {
+        uint8_t max_leds = 0;
+        for (uint8_t i=0; i<16; i++) {
+            max_leds = MAX(max_leds, sitl->led.num_leds[i]);
+        }
+        w = new sf::RenderWindow(sf::VideoMode(32*(serialLED_size+1), 16*(serialLED_size+1)), "SerialLED");
+        if (!w) {
+            return;
+        }
+        w->clear(sf::Color(0, 0, 0, 255));
+    }
+
+    for (uint8_t chan=0; chan<16; chan++) {
+        for (uint8_t led=0; led<sitl->led.num_leds[chan]; led++) {
+            uint8_t *rgb = &sitl->led.rgb[chan][led].rgb[0];
+
+            if (leds[chan][led] == nullptr) {
+                leds[chan][led] = new sf::RectangleShape(sf::Vector2f(serialLED_size, serialLED_size));
+                if (!leds[chan][led]) {
+                    return;
+                }
+                leds[chan][led]->setPosition(led*(serialLED_size+1), chan*(serialLED_size+1));
+            }
+            leds[chan][led]->setFillColor(sf::Color(rgb[0], rgb[1], rgb[2], 255));
+            w->draw(*leds[chan][led]);
+        }
+    }
+    w->display();
+}
+
 void SITL_SFML_LED::update_thread(void)
 {
-    sf::RenderWindow *w;
+    sf::RenderWindow *w = nullptr;
     {
         WITH_SEMAPHORE(AP::notify().sf_window_mutex);
         w = new sf::RenderWindow(sf::VideoMode(width, height), "LED");
@@ -64,6 +108,8 @@ void SITL_SFML_LED::update_thread(void)
                 w->clear(sf::Color(red, green, blue, 255));
                 w->display();
             }
+
+            update_serial_LEDs();
         }
         usleep(10000);
     }
