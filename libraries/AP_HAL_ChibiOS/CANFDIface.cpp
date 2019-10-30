@@ -86,9 +86,9 @@ inline void handleInterrupt(uavcan::uint8_t iface_index, uavcan::uint8_t line_in
     UAVCAN_ASSERT(iface_index < UAVCAN_STM32_NUM_IFACES);
     if (ifaces[iface_index] == UAVCAN_NULLPTR) {
         //Just reset all the interrupts and return
-        ifaces[iface_index]->can_reg()->IR = FDCAN_IR_RF0N;
-        ifaces[iface_index]->can_reg()->IR = FDCAN_IR_RF1N;
-        ifaces[iface_index]->can_reg()->IR = FDCAN_IR_TEFN;
+        fdcan::Can[iface_index]->IR = FDCAN_IR_RF0N;
+        fdcan::Can[iface_index]->IR = FDCAN_IR_RF1N;
+        fdcan::Can[iface_index]->IR = FDCAN_IR_TEFN;
         UAVCAN_ASSERT(0);
         return;
     }
