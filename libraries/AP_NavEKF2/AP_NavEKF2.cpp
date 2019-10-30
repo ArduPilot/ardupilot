@@ -621,10 +621,10 @@ void NavEKF2::check_log_write(void)
 // Initialise the filter
 bool NavEKF2::InitialiseFilter(void)
 {
-    init_failure = INIT_FAILURES::UNKNOWN;
+    initFailure = InitFailures::UNKNOWN;
     if (_enable == 0) {
         if (_ahrs->get_ekf_type() == 2) {
-            init_failure = INIT_FAILURES::NO_ENABLE;
+            initFailure = InitFailures::NO_ENABLE;
         }
         return false;
     }
@@ -648,11 +648,11 @@ bool NavEKF2::InitialiseFilter(void)
 
         // this prevents dereferencing a null _ahrs pointer in NavEKF2_core::getEulerAngles
         if (ins.get_accel_count() == 0) {
-            init_failure = INIT_FAILURES::NO_IMUS;
+            initFailure = InitFailures::NO_IMUS;
             return false;
         }
         if (_imuMask == 0) {
-            init_failure = INIT_FAILURES::NO_MASK;
+            initFailure = InitFailures::NO_MASK;
             return false;
         }
 
@@ -665,7 +665,7 @@ bool NavEKF2::InitialiseFilter(void)
 
         // check if there is enough memory to create the EKF cores
         if (hal.util->available_memory() < sizeof(NavEKF2_core)*num_cores + 4096) {
-            init_failure = INIT_FAILURES::NO_MEM;
+            initFailure = InitFailures::NO_MEM;
             gcs().send_text(MAV_SEVERITY_CRITICAL, "NavEKF2: not enough memory");
             _enable.set(0);
             return false;
@@ -675,7 +675,7 @@ bool NavEKF2::InitialiseFilter(void)
         core = (NavEKF2_core*)hal.util->malloc_type(sizeof(NavEKF2_core)*num_cores, AP_HAL::Util::MEM_FAST);
         if (core == nullptr) {
             _enable.set(0);
-            init_failure = INIT_FAILURES::NO_ALLOC;
+            initFailure = InitFailures::NO_ALLOC;
             gcs().send_text(MAV_SEVERITY_CRITICAL, "NavEKF2: allocation failed");
             return false;
         }
@@ -1466,7 +1466,7 @@ uint32_t NavEKF2::getLastVelNorthEastReset(Vector2f &vel) const
 const char *NavEKF2::prearm_failure_reason(void) const
 {
     if (!core) {
-        return init_failure_reason[int(init_failure)];
+        return initFailureReason[int(initFailure)];
     }
     for (uint8_t i = 0; i < num_cores; i++) {
         const char * failure = core[i].prearm_failure_reason();
