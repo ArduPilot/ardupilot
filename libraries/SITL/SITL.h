@@ -302,6 +302,15 @@ public:
     Buzzer buzzer_sim;
     ToneAlarm tonealarm_sim;
     SIM_Precland precland_sim;
+
+    struct {
+        // LED state, for serial LED emulation
+        struct {
+            uint8_t rgb[3];
+        } rgb[16][32];
+        uint8_t num_leds[16];
+        uint32_t send_counter;
+    } led;
 };
 
 } // namespace SITL
