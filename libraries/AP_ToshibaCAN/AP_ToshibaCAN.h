@@ -69,10 +69,10 @@ private:
     // telemetry data (rpm, voltage)
     HAL_Semaphore _telem_sem;
     struct telemetry_info_t {
-        uint16_t rpm;
-        uint16_t millivolts;
-        uint16_t temperature;
-        uint16_t count;
+        uint16_t rpm;               // rpm
+        uint16_t voltage_mv;        // voltage in millivolts
+        uint16_t temperature;       // temperature in degrees
+        uint16_t count;             // total number of packets sent
         bool new_data;
     } _telemetry[TOSHIBACAN_MAX_NUM_ESCS];
     uint32_t _telemetry_req_ms;     // system time (in milliseconds) to request data from escs (updated at 10hz)
@@ -137,7 +137,7 @@ private:
             uint8_t state:7;
             uint16_t rpm;
             uint16_t reserved;
-            uint16_t millivolts;
+            uint16_t voltage_mv;    // voltage in millivolts
             uint8_t position_est_error;
         };
         uint8_t data[8];
