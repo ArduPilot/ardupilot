@@ -1,5 +1,7 @@
 #pragma once
 // auto generated bindings, don't manually edit
+#include <SRV_Channel/SRV_Channel.h>
+#include <AP_SerialLED/AP_SerialLED.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Relay/AP_Relay.h>
