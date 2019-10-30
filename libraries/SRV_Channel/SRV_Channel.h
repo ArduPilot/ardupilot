@@ -487,6 +487,11 @@ public:
     // get E - stop
     static bool get_emergency_stop() { return emergency_stop;}
 
+    // singleton for Lua
+    static SRV_Channels *get_singleton(void) {
+        return _singleton;
+    }
+
 private:
     struct {
         bool k_throttle_reversible:1;
