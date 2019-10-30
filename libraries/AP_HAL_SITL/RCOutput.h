@@ -18,6 +18,13 @@ public:
     void cork(void) override;
     void push(void) override;
 
+    /*
+      Serial LED emulation
+     */
+    bool set_neopixel_num_LEDs(const uint16_t chan, uint8_t num_leds) override;
+    void set_neopixel_rgb_data(const uint16_t chan, uint32_t ledmask, uint8_t red, uint8_t green, uint8_t blue) override;
+    void neopixel_send(void) override;
+    
 private:
     SITL_State *_sitlState;
     uint16_t _freq_hz;
