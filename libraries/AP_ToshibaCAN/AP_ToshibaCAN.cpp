@@ -325,7 +325,7 @@ void AP_ToshibaCAN::loop()
                             _telemetry[esc_id].current_tot_mah += _telemetry[esc_id].current_ca * diff_ms * centiamp_ms_to_mah;
                         }
                         _telemetry[esc_id].last_update_ms = now_ms;
-                        _esc_present_bitmask |= ((uint32_t)1 << esc_id);
+                        _esc_present_bitmask_recent |= ((uint32_t)1 << esc_id);
                     }
                 }
 
@@ -347,10 +347,13 @@ void AP_ToshibaCAN::loop()
                     if (esc_id < TOSHIBACAN_MAX_NUM_ESCS) {
                         WITH_SEMAPHORE(_telem_sem);
                         _telemetry[esc_id].temperature = temp_max < 20 ? 0 : temp_max / 5 - 20;
-                        _esc_present_bitmask |= ((uint32_t)1 << esc_id);
+                        _esc_present_bitmask_recent |= ((uint32_t)1 << esc_id);
                     }
                 }
             }
+
+            // update bitmask of escs that replied
+            update_esc_present_bitmask();
         }
 
         // success!
@@ -402,6 +405,23 @@ bool AP_ToshibaCAN::read_frame(uavcan::CanFrame &recv_frame, uavcan::MonotonicTi
 
     // read frame and return success
     return (_can_driver->getIface(CAN_IFACE_INDEX)->receive(recv_frame, time, utc_time, flags) == 1);
+}
+
+// update esc_present_bitmask
+void AP_ToshibaCAN::update_esc_present_bitmask()
+{
+    // recently detected escs are immediately considered present
+    _esc_present_bitmask |= _esc_present_bitmask_recent;
+
+    // escs that don't respond disappear in 1 to 2 seconds
+    // set the _esc_present_bitmask to the "recent" bitmask and
+    // clear the "recent" bitmask every second
+    uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - _esc_present_update_ms > 1000) {
+        _esc_present_bitmask = _esc_present_bitmask_recent;
+        _esc_present_bitmask_recent = 0;
+        _esc_present_update_ms = now_ms;
+    }
 }
 
 // called from SRV_Channels
