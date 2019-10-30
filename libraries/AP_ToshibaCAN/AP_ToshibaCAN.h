@@ -41,6 +41,9 @@ public:
     // send ESC telemetry messages over MAVLink
     void send_esc_telemetry_mavlink(uint8_t mav_chan);
 
+    // return a bitmask of escs that are "present" which means they are responding to requests.  Bitmask matches RC outputs
+    uint16_t get_present_mask() const { return _esc_present_bitmask; }
+
 private:
 
     // loop to send output to ESCs in background thread
@@ -51,6 +54,9 @@ private:
 
     // read frame on CAN bus, returns true on success
     bool read_frame(uavcan::CanFrame &recv_frame, uavcan::MonotonicTime timeout);
+
+    // update esc_present_bitmask
+    void update_esc_present_bitmask();
 
     bool _initialized;
     char _thread_name[9];
@@ -82,8 +88,10 @@ private:
     uint8_t _telemetry_temp_req_counter;    // counter used to trigger temp data requests from ESCs (10x slower than other telem data)
     const float centiamp_ms_to_mah = 1.0f / 360000.0f;  // for converting centi-amps milliseconds to mAh
 
-    // bitmask of which escs seem to be present
-    uint16_t _esc_present_bitmask;
+    // variables for updating bitmask of responsive escs
+    uint16_t _esc_present_bitmask;      // bitmask of which escs seem to be present
+    uint16_t _esc_present_bitmask_recent;   // bitmask of escs that have responded in the last second
+    uint32_t _esc_present_update_ms;    // system time _esc_present_bitmask was last updated
 
     // structure for sending motor lock command to ESC
     union motor_lock_cmd_t {
