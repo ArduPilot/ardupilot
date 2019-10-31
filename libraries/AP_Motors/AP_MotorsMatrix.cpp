@@ -142,7 +142,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     float   throttle_thrust_max;        // throttle thrust maximum value, 0.0 - 1.0
     float   throttle_thrust_best_rpy;   // throttle providing maximum roll, pitch and yaw range without climbing
     float   rpy_scale = 1.0f;           // this is used to scale the roll, pitch and yaw to fit within the motor limits
-    float   yaw_allowed;                // amount of yaw we can fit in
+    float   yaw_allowed = 1.0f;         // amount of yaw we can fit in
     float   thr_adj;                    // the difference between the pilot's desired throttle and throttle_thrust_best_rpy
 
     // apply voltage and air pressure compensation
@@ -171,13 +171,6 @@ void AP_MotorsMatrix::output_armed_stabilizing()
 
     // calculate the highest allowed average thrust that will provide maximum control range
     throttle_thrust_best_rpy = MIN(0.5f, throttle_avg_max);
-
-    // calculate the maximum yaw control that can be used
-    // todo: make _yaw_headroom 0 to 1
-    yaw_allowed = (float)_yaw_headroom / 1000.0f;
-
-    // increase yaw headroom to 50% if thrust boost enabled
-    yaw_allowed = _thrust_boost_ratio * 0.5f + (1.0f - _thrust_boost_ratio) * yaw_allowed;
 
     // calculate throttle that gives most possible room for yaw which is the lower of:
     //      1. 0.5f - (rpy_low+rpy_high)/2.0 - this would give the maximum possible margin above the highest motor and below the lowest
@@ -228,6 +221,16 @@ void AP_MotorsMatrix::output_armed_stabilizing()
             }
         }
     }
+
+    // calculate the maximum yaw control that can be used
+    // todo: make _yaw_headroom 0 to 1
+    float yaw_allowed_min = (float)_yaw_headroom / 1000.0f;
+
+    // increase yaw headroom to 50% if thrust boost enabled
+    yaw_allowed_min = _thrust_boost_ratio * 0.5f + (1.0f - _thrust_boost_ratio) * yaw_allowed_min;
+
+    // Let yaw access minimum amount of head room
+    yaw_allowed = MAX(yaw_allowed, yaw_allowed_min);
 
     // Include the lost motor scaled by _thrust_boost_ratio to smoothly transition this motor in and out of the calculation
     if (_thrust_boost && motor_enabled[_motor_lost_index]) {
