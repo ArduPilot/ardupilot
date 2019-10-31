@@ -118,6 +118,7 @@ uint32_t RGBLed::get_colour_sequence(void) const
     // gps failsafe pattern : flashing yellow and blue
     // ekf_bad pattern : flashing yellow and red
     if (AP_Notify::flags.failsafe_radio ||
+        AP_Notify::flags.failsafe_gcs ||
         AP_Notify::flags.failsafe_battery ||
         AP_Notify::flags.ekf_bad ||
         AP_Notify::flags.gps_glitching ||
