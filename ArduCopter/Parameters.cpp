@@ -466,6 +466,15 @@ const AP_Param::Info Copter::var_info[] = {
     GSCALAR(acro_rp_expo,  "ACRO_RP_EXPO",    ACRO_RP_EXPO_DEFAULT),
 #endif
 
+    // @Param: CRACHK_DELAY
+    // @DisplayName: Crash check delay
+    // @Description: Crash check delay time
+    // @Units: s
+    // @Range: 0.1 2.0
+    // @Increment: 0.1
+    // @User: Advanced
+    GSCALAR(crachk_delay, "CRACHK_DELAY", CRASH_CHECK_TRIGGER_SEC),
+
     // variables not in the g class which contain EEPROM saved variables
 
 #if CAMERA == ENABLED

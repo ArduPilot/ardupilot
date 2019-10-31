@@ -373,6 +373,8 @@ public:
 
         // 254,255: reserved
 
+        k_param_crachk_delay = 256,
+
         // the k_param_* space is 9-bits in size
         // 511: reserved
     };
@@ -464,6 +466,8 @@ public:
     AP_Float                acro_balance_pitch;
     AP_Int8                 acro_trainer;
     AP_Float                acro_rp_expo;
+
+    AP_Float crachk_delay;  // Crash check delay
 
     // Note: keep initializers here in the same order as they are declared
     // above.

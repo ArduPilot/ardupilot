@@ -1,7 +1,6 @@
 #include "Copter.h"
 
-// Code to detect a crash main ArduCopter code
-#define CRASH_CHECK_TRIGGER_SEC         2       // 2 seconds inverted indicates a crash
+// Code to detect a crash main ArduCopter code    // 2 seconds inverted indicates a crash
 #define CRASH_CHECK_ANGLE_DEVIATION_DEG 30.0f   // 30 degrees beyond angle max is signal we are inverted
 #define CRASH_CHECK_ACCEL_MAX           3.0f    // vehicle must be accelerating less than 3m/s/s to be considered crashed
 
@@ -51,8 +50,8 @@ void Copter::crash_check()
     // we may be crashing
     crash_counter++;
 
-    // check if crashing for 2 seconds
-    if (crash_counter >= (CRASH_CHECK_TRIGGER_SEC * scheduler.get_loop_rate_hz())) {
+    // check if crashing for range from 0.1 to 2.0 seconds
+    if (crash_counter >= (g.crachk_delay * scheduler.get_loop_rate_hz())) {
         AP::logger().Write_Error(LogErrorSubsystem::CRASH_CHECK, LogErrorCode::CRASH_CHECK_CRASH);
         // keep logging even if disarmed:
         AP::logger().set_force_log_disarmed(true);

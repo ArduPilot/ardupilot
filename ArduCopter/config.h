@@ -776,3 +776,7 @@
 #ifndef HAL_FRAME_TYPE_DEFAULT
 #define HAL_FRAME_TYPE_DEFAULT AP_Motors::MOTOR_FRAME_TYPE_X
 #endif
+
+#ifndef CRASH_CHECK_TRIGGER_SEC
+#define CRASH_CHECK_TRIGGER_SEC  2.0f  // 2 seconds inverted indicates a crash
+#endif
