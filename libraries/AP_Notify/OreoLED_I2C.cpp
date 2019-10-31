@@ -87,6 +87,10 @@ void OreoLED_I2C::update()
         return;    // don't go any further if the Pixhawk is is in radio failsafe
     }
 
+    if (mode_failsafe_gcs()) {
+        return;    // don't go any further if the Pixhawk is is in gcs failsafe
+    }
+
     set_standard_colors();
 
     if (mode_failsafe_batt()) {
@@ -156,6 +160,20 @@ bool OreoLED_I2C::mode_failsafe_radio()
         set_rgb(OREOLED_BACKRIGHT, OREOLED_PATTERN_STROBE, 255, 0, 0,0,0,0,PERIOD_SLOW,0);
     }
     return AP_Notify::flags.failsafe_radio;
+}
+
+
+// Procedure for when Pixhawk is in GCS failsafe
+// LEDs perform alternating yellow X pattern
+bool OreoLED_I2C::mode_failsafe_gcs()
+{
+    if (AP_Notify::flags.failsafe_gcs) {
+        set_rgb(OREOLED_FRONTLEFT, OREOLED_PATTERN_STROBE, 255, 50, 0,0,0,0,PERIOD_SLOW,0);
+        set_rgb(OREOLED_FRONTRIGHT, OREOLED_PATTERN_STROBE, 255, 50, 0,0,0,0,PERIOD_SLOW,PO_ALTERNATE);
+        set_rgb(OREOLED_BACKLEFT, OREOLED_PATTERN_STROBE, 255, 50, 0,0,0,0,PERIOD_SLOW,PO_ALTERNATE);
+        set_rgb(OREOLED_BACKRIGHT, OREOLED_PATTERN_STROBE, 255, 50, 0,0,0,0,PERIOD_SLOW,0);
+    }
+    return AP_Notify::flags.failsafe_gcs;
 }
 
 
