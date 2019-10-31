@@ -43,7 +43,7 @@ struct CanRxItem {
     {
     }
 };
-class CAN: public AP_HAL::CAN {
+class CAN: public AP_HAL::CANHal {
     friend class CANManager;
     friend class ::SLCANRouter;
     struct TxItem {
