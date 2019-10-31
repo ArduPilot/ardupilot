@@ -47,7 +47,7 @@ def pin_compare(p1, p2):
     return 1
 
 def parse_af_table(fname, table):
-    csvt = csv.reader(open(fname,'rb'))
+    csvt = csv.reader(open(fname,'r'))
     i = 0
     aflist = []
     for row in csvt:
@@ -63,6 +63,8 @@ def parse_af_table(fname, table):
             row = row[1:]
         pin = row[0]
         for i in range(len(aflist)):
+            if len(row) <= i+1:
+                break
             af = aflist[i]
             s = row[i+1]
             s = s.replace('_\r', '_')
