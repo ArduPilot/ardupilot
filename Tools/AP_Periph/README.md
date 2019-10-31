@@ -15,8 +15,9 @@ Currently we have three targets building for AP_Periph firmwares:
  - A STM32F103 128k flash part made by mRobotics (target f103-GPS)
  - A STM32F412 512k flash part made by CUAV (target CUAV_GPS)
  - A STM32F105 256k flash part (used in ZubaxGNSSv2)
+ - A STM32F303 256k flash part made by mRobotics (target f303-GPS)
 
-More are planned soon.
+More can be added using the hwdef.dat system
 
 # Features
 
