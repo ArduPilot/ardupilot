@@ -1,17 +1,17 @@
-# hw definition file for processing by chibios_pins.py
+g# hw definition file for processing by chibios_pins.py
 
 # MCU class and specific type
-MCU STM32F103 STM32F103xB
+MCU STM32F303 STM32F303xC
 
-# bootloader starts firmware at 25k
-FLASH_RESERVE_START_KB 25
+# bootloader starts firmware at 26k
+FLASH_RESERVE_START_KB 26
 
-# store parameters in pages 23 and 24
-define STORAGE_FLASH_PAGE 23
+# store parameters in pages 11 and 12
+define STORAGE_FLASH_PAGE 11
 define HAL_STORAGE_SIZE 800
 
 # board ID for firmware load
-APJ_BOARD_ID 1000
+APJ_BOARD_ID 1004
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1
@@ -24,8 +24,8 @@ OSCILLATOR_HZ 8000000
 
 define CH_CFG_ST_FREQUENCY 1000
 
-# assume the 128k flash part for now
-FLASH_SIZE_KB 128
+# assume the 256k flash part for now
+FLASH_SIZE_KB 256
 
 # board voltage
 STM32_VDD 330U
@@ -57,10 +57,12 @@ PA5 SPI1_SCK SPI1
 PA6 SPI1_MISO SPI1
 PA7 SPI1_MOSI SPI1
 
+SPIDEV rm3100 SPI1 DEVID1 MAG_CS MODE0 1*MHZ 1*MHZ
+
 # analog input
 # PA5 VIN5 ADC1
-define HAL_USE_ADC TRUE
-define STM32_ADC_USE_ADC1 TRUE
+define HAL_USE_ADC FALSE
+define STM32_ADC_USE_ADC1 FALSE
 define HAL_DISABLE_ADC_DRIVER TRUE
 
 define HAL_NO_GPIO_IRQ
@@ -72,9 +74,6 @@ define PORT_INT_REQUIRED_STACK 64
 # avoid timer and RCIN threads to save memory
 define HAL_NO_TIMER_THREAD
 define HAL_NO_RCIN_THREAD
-
-#defined to turn off undef warnings
-define __FPU_PRESENT 0
 
 define HAL_USE_RTC FALSE
 define DISABLE_SERIAL_ESC_COMM TRUE
@@ -117,6 +116,8 @@ define HAL_BUILD_AP_PERIPH
 
 # only one I2C bus
 I2C_ORDER I2C1
+
+COMPASS RM3100 SPI:rm3100 false ROTATION_NONE
 
 define HAL_I2C_CLEAR_ON_TIMEOUT 0
 
