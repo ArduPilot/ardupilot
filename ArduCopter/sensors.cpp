@@ -33,7 +33,7 @@ void Copter::read_rangefinder(void)
 #if RANGEFINDER_TILT_CORRECTION == ENABLED
     const float tilt_correction = MAX(0.707f, ahrs.get_rotation_body_to_ned().c.z);
 #else
-    const float tile_correction = 1.0f;
+    const float tilt_correction = 1.0f;
 #endif
 
     // iterate through downward and upward facing lidar
