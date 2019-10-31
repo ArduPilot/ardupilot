@@ -110,7 +110,14 @@ bool Copter::ekf_over_threshold()
     if (mag_variance.length() >= g.fs_ekf_thresh) {
         over_thresh_count++;
     }
-    if (!optflow.healthy() && (vel_variance >= (2.0f * g.fs_ekf_thresh))) {
+    bool vel_variance_bad = vel_variance >= (2.0f * g.fs_ekf_thresh);
+#if OPTFLOW == ENABLED
+    if (optflow.healthy()) {
+        // velocity variance can be bad but optical flow can provide positioning
+        vel_variance_bad = false;
+    }
+#endif
+    if (vel_variance_bad) {
         over_thresh_count += 2;
     } else if (vel_variance >= g.fs_ekf_thresh) {
         over_thresh_count++;
