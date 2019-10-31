@@ -114,6 +114,14 @@ for t in $CI_BUILD_TARGET; do
         $waf configure --board f103-GPS
         $waf clean
         $waf AP_Periph
+        echo "Building f303 bootloader"
+        $waf configure --board f303-GPS --bootloader
+        $waf clean
+        $waf bootloader
+        echo "Building f303 peripheral fw"
+        $waf configure --board f303-GPS
+        $waf clean
+        $waf AP_Periph
         continue
     fi
     

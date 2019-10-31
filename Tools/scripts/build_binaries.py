@@ -586,6 +586,7 @@ is bob we will attempt to checkout bob-AVR'''
         return ["f103-GPS",
                 "f103-ADSB",
                 "f103-RangeFinder",
+                "f303-GPS",
                 "CUAV_GPS",
                 "ZubaxGNSS",
                 ]
