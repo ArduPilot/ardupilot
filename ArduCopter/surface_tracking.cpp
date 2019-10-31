@@ -39,11 +39,13 @@ float Copter::SurfaceTracking::adjust_climb_rate(float target_rate)
     }
     valid_for_logging = true;
 
+#if AC_AVOID_ENABLED == ENABLED
     // upward facing terrain following never gets closer than avoidance margin
     if (surface == Surface::CEILING) {
         const float margin_cm = copter.avoid.enabled() ? copter.avoid.get_margin() * 100.0f : 0.0f;
         target_dist_cm = MAX(target_dist_cm, margin_cm);
     }
+#endif
 
     // calc desired velocity correction from target rangefinder alt vs actual rangefinder alt (remove the error already passed to Altitude controller to avoid oscillations)
     const float distance_error = (target_dist_cm - rf_state.alt_cm) - (dir * current_alt_error);
