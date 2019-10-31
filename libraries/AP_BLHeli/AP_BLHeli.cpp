@@ -1300,7 +1300,7 @@ bool AP_BLHeli::get_telem_data(uint8_t esc_index, struct telem_data &td)
 float AP_BLHeli::get_average_motor_frequency_hz() const
 {
     float motor_freq = 0.0f;
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     uint8_t valid_escs = 0;
     // average the rpm of each motor as reported by BLHeli and convert to Hz
     for (uint8_t i = 0; i < num_motors; i++) {
@@ -1309,7 +1309,7 @@ float AP_BLHeli::get_average_motor_frequency_hz() const
             motor_freq += last_telem[i].rpm / 60.0f;
         }
     }
-    if (valid_escs) {
+    if (valid_escs > 0) {
         motor_freq /= valid_escs;
     }
 
