@@ -205,7 +205,7 @@ void ToyMode::update()
     
     if (!done_first_update) {
         done_first_update = true;
-        copter.set_mode(Mode::Number(primary_mode[0].get()), MODE_REASON_TMODE);
+        copter.set_mode(Mode::Number(primary_mode[0].get()), ModeReason::TOY_MODE);
         copter.motors->set_thrust_compensation_callback(FUNCTOR_BIND_MEMBER(&ToyMode::thrust_limiting, void, float *, uint8_t));
     }
 
@@ -428,7 +428,7 @@ void ToyMode::update()
                 /*
                   support auto-switching to ALT_HOLD, then upgrade to LOITER once GPS available
                  */
-                if (set_and_remember_mode(Mode::Number::ALT_HOLD, MODE_REASON_TMODE)) {
+                if (set_and_remember_mode(Mode::Number::ALT_HOLD, ModeReason::TOY_MODE)) {
                     gcs().send_text(MAV_SEVERITY_INFO, "Tmode: ALT_HOLD update arm");
 #if AC_FENCE == ENABLED
                     copter.fence.enable(false);
@@ -436,7 +436,7 @@ void ToyMode::update()
                     if (!copter.arming.arm(AP_Arming::Method::MAVLINK)) {
                         // go back to LOITER
                         gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: ALT_HOLD arm failed");
-                        set_and_remember_mode(Mode::Number::LOITER, MODE_REASON_TMODE);
+                        set_and_remember_mode(Mode::Number::LOITER, ModeReason::TOY_MODE);
                     } else {
                         upgrade_to_loiter = true;
 #if 0
@@ -458,7 +458,7 @@ void ToyMode::update()
 #if 0
             AP_Notify::flags.hybrid_loiter = false;
 #endif
-        } else if (copter.position_ok() && set_and_remember_mode(Mode::Number::LOITER, MODE_REASON_TMODE)) {
+        } else if (copter.position_ok() && set_and_remember_mode(Mode::Number::LOITER, ModeReason::TOY_MODE)) {
 #if AC_FENCE == ENABLED
             copter.fence.enable(true);
 #endif
@@ -468,7 +468,7 @@ void ToyMode::update()
 
     if (copter.control_mode == Mode::Number::RTL && (flags & FLAG_RTL_CANCEL) && throttle_near_max) {
         gcs().send_text(MAV_SEVERITY_INFO, "Tmode: RTL cancel");        
-        set_and_remember_mode(Mode::Number::LOITER, MODE_REASON_TMODE);
+        set_and_remember_mode(Mode::Number::LOITER, ModeReason::TOY_MODE);
     }
     
     enum Mode::Number old_mode = copter.control_mode;
@@ -619,9 +619,9 @@ void ToyMode::update()
             load_test.running = false;
             gcs().send_text(MAV_SEVERITY_INFO, "Tmode: load_test off");
             copter.init_disarm_motors();
-            copter.set_mode(Mode::Number::ALT_HOLD, MODE_REASON_TMODE);
+            copter.set_mode(Mode::Number::ALT_HOLD, ModeReason::TOY_MODE);
         } else {
-            copter.set_mode(Mode::Number::ALT_HOLD, MODE_REASON_TMODE);
+            copter.set_mode(Mode::Number::ALT_HOLD, ModeReason::TOY_MODE);
 #if AC_FENCE == ENABLED
             copter.fence.enable(false);
 #endif
@@ -646,7 +646,7 @@ void ToyMode::update()
 #if AC_FENCE == ENABLED
         copter.fence.enable(false);
 #endif
-        if (set_and_remember_mode(new_mode, MODE_REASON_TX_COMMAND)) {
+        if (set_and_remember_mode(new_mode, ModeReason::TOY_MODE)) {
             gcs().send_text(MAV_SEVERITY_INFO, "Tmode: mode %s", copter.flightmode->name4());
             // force fence on in all GPS flight modes
 #if AC_FENCE == ENABLED
@@ -659,7 +659,7 @@ void ToyMode::update()
             if (new_mode == Mode::Number::RTL) {
                 // if we can't RTL then land
                 gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: LANDING");
-                set_and_remember_mode(Mode::Number::LAND, MODE_REASON_TMODE);
+                set_and_remember_mode(Mode::Number::LAND, ModeReason::TOY_MODE);
 #if AC_FENCE == ENABLED
                 if (copter.landing_with_GPS()) {
                     copter.fence.enable(true);
@@ -674,7 +674,7 @@ void ToyMode::update()
 /*
   set a mode, remembering what mode we set, and the previous mode we were in
  */
-bool ToyMode::set_and_remember_mode(Mode::Number mode, mode_reason_t reason)
+bool ToyMode::set_and_remember_mode(Mode::Number mode, ModeReason reason)
 {
     if (copter.control_mode == mode) {
         return true;
