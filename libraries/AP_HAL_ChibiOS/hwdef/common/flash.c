@@ -118,6 +118,9 @@ static const uint32_t flash_memmap[STM32_FLASH_NPAGES] = { KB(32), KB(32), KB(32
 #elif defined(STM32F105_MCUCONF)
 #define STM32_FLASH_NPAGES (BOARD_FLASH_SIZE/2)
 #define STM32_FLASH_FIXED_PAGE_SIZE 2
+#elif defined(STM32F303_MCUCONF)
+#define STM32_FLASH_NPAGES (BOARD_FLASH_SIZE/2)
+#define STM32_FLASH_FIXED_PAGE_SIZE 2
 #else
 #error "Unsupported processor for flash.c"
 #endif
@@ -366,7 +369,7 @@ bool stm32_flash_erasepage(uint32_t page)
         FLASH->CR2 |= FLASH_CR_START;
         while (FLASH->SR2 & FLASH_SR_QW) ;
     }
-#elif defined(STM32F1)
+#elif defined(STM32F1) || defined(STM32F3)
     FLASH->CR = FLASH_CR_PER;
     FLASH->AR = stm32_flash_getpageaddr(page);
     FLASH->CR |= FLASH_CR_STRT;
@@ -556,7 +559,7 @@ uint32_t _flash_fail_addr;
 uint32_t _flash_fail_count;
 uint8_t *_flash_fail_buf;
 
-#if defined(STM32F1)
+#if defined(STM32F1) || defined(STM32F3)
 static bool stm32_flash_write_f1(uint32_t addr, const void *buf, uint32_t count)
 {
     uint8_t *b = (uint8_t *)buf;
@@ -616,11 +619,11 @@ failed:
 #endif
     return false;
 }
-#endif // STM32F1
+#endif // STM32F1 or STM32F3
 
 bool stm32_flash_write(uint32_t addr, const void *buf, uint32_t count)
 {
-#if defined(STM32F1)
+#if defined(STM32F1) || defined(STM32F3)
     return stm32_flash_write_f1(addr, buf, count);
 #elif defined(STM32F4) || defined(STM32F7)
     return stm32_flash_write_f4f7(addr, buf, count);
