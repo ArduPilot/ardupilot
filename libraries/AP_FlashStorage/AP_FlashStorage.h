@@ -39,10 +39,10 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if defined(STM32F1)
+#if defined(STM32F1) || defined(STM32F3)
 /*
-  the STM32F1 can't change individual bits from 1 to 0 unless all bits in
-  the 16 bit word are 1
+  the STM32F1 and STM32F3 can't change individual bits from 1 to 0
+  unless all bits in the 16 bit word are 1
  */
 #define AP_FLASHSTORAGE_MULTI_WRITE 0
 #else
