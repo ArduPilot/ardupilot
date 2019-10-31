@@ -168,7 +168,7 @@ bool AC_AutoTune::init_internals(bool _use_poshold,
         if (success) {
             // reset gains to tuning-start gains (i.e. low I term)
             load_gains(GAIN_INTRA_TEST);
-            Log_Write_Event(EVENT_AUTOTUNE_RESTART);
+            AP::logger().Write_Event(Log_Event::DATA_AUTOTUNE_RESTART);
             update_gcs(AUTOTUNE_MESSAGE_STARTED);
         }
         break;
@@ -177,7 +177,7 @@ bool AC_AutoTune::init_internals(bool _use_poshold,
         // we have completed a tune and the pilot wishes to test the new gains in the current flight mode
         // so simply apply tuning gains (i.e. do not change flight mode)
         load_gains(GAIN_TUNED);
-        Log_Write_Event(EVENT_AUTOTUNE_PILOT_TESTING);
+        AP::logger().Write_Event(Log_Event::DATA_AUTOTUNE_PILOT_TESTING);
         break;
     }
 
@@ -196,7 +196,7 @@ void AC_AutoTune::stop()
     attitude_control->use_sqrt_controller(true);
 
     update_gcs(AUTOTUNE_MESSAGE_STOPPED);
-    Log_Write_Event(EVENT_AUTOTUNE_OFF);
+    AP::logger().Write_Event(Log_Event::DATA_AUTOTUNE_OFF);
 
     // Note: we leave the mode as it was so that we know how the autotune ended
     // we expect the caller will change the flight mode back to the flight mode indicated by the flight mode switch
@@ -862,7 +862,7 @@ void AC_AutoTune::control_attitude()
                 if (complete) {
                     mode = SUCCESS;
                     update_gcs(AUTOTUNE_MESSAGE_SUCCESS);
-                    Log_Write_Event(EVENT_AUTOTUNE_SUCCESS);
+                    AP::logger().Write_Event(Log_Event::DATA_AUTOTUNE_SUCCESS);
                     AP_Notify::events.autotune_complete = true;
                 } else {
                     AP_Notify::events.autotune_next_axis = true;
@@ -954,7 +954,7 @@ void AC_AutoTune::backup_gains_and_initialise()
     tune_yaw_sp = attitude_control->get_angle_yaw_p().kP();
     tune_yaw_accel = attitude_control->get_accel_yaw_max();
 
-    Log_Write_Event(EVENT_AUTOTUNE_INITIALISED);
+    AP::logger().Write_Event(Log_Event::DATA_AUTOTUNE_INITIALISED);
 }
 
 // load_orig_gains - set gains to their original values
@@ -1213,7 +1213,7 @@ void AC_AutoTune::save_tuning_gains()
 
     // update GCS and log save gains event
     update_gcs(AUTOTUNE_MESSAGE_SAVED_GAINS);
-    Log_Write_Event(EVENT_AUTOTUNE_SAVEDGAINS);
+    AP::logger().Write_Event(Log_Event::DATA_AUTOTUNE_SAVEDGAINS);
 
     reset();
 }
@@ -1398,7 +1398,7 @@ void AC_AutoTune::updating_rate_d_up(float &tune_d, float tune_d_min, float tune
                 // We have reached minimum D gain so stop tuning
                 tune_d = tune_d_min;
                 counter = AUTOTUNE_SUCCESS_COUNT;
-                Log_Write_Event(EVENT_AUTOTUNE_REACHED_LIMIT);
+                AP::logger().Write_Event(Log_Event::DATA_AUTOTUNE_REACHED_LIMIT);
             }
         }
     } else if ((meas_rate_max < rate_target*(1.0f-AUTOTUNE_D_UP_DOWN_MARGIN)) && (tune_p <= tune_p_max)) {
@@ -1407,7 +1407,7 @@ void AC_AutoTune::updating_rate_d_up(float &tune_d, float tune_d_min, float tune
         tune_p += tune_p*tune_p_step_ratio;
         if (tune_p >= tune_p_max) {
             tune_p = tune_p_max;
-            Log_Write_Event(EVENT_AUTOTUNE_REACHED_LIMIT);
+            AP::logger().Write_Event(Log_Event::DATA_AUTOTUNE_REACHED_LIMIT);
         }
     } else {
         // we have a good measurement of bounce back
@@ -1428,7 +1428,7 @@ void AC_AutoTune::updating_rate_d_up(float &tune_d, float tune_d_min, float tune
                 if (tune_d >= tune_d_max) {
                     tune_d = tune_d_max;
                     counter = AUTOTUNE_SUCCESS_COUNT;
-                    Log_Write_Event(EVENT_AUTOTUNE_REACHED_LIMIT);
+                    AP::logger().Write_Event(Log_Event::DATA_AUTOTUNE_REACHED_LIMIT);
                 }
             } else {
                 ignore_next = false;
@@ -1453,7 +1453,7 @@ void AC_AutoTune::updating_rate_d_down(float &tune_d, float tune_d_min, float tu
                 // We have reached minimum D so stop tuning
                 tune_d = tune_d_min;
                 counter = AUTOTUNE_SUCCESS_COUNT;
-                Log_Write_Event(EVENT_AUTOTUNE_REACHED_LIMIT);
+                AP::logger().Write_Event(Log_Event::DATA_AUTOTUNE_REACHED_LIMIT);
             }
         }
     } else if ((meas_rate_max < rate_target*(1.0f-AUTOTUNE_D_UP_DOWN_MARGIN)) && (tune_p <= tune_p_max)) {
@@ -1462,7 +1462,7 @@ void AC_AutoTune::updating_rate_d_down(float &tune_d, float tune_d_min, float tu
         tune_p += tune_p*tune_p_step_ratio;
         if (tune_p >= tune_p_max) {
             tune_p = tune_p_max;
-            Log_Write_Event(EVENT_AUTOTUNE_REACHED_LIMIT);
+            AP::logger().Write_Event(Log_Event::DATA_AUTOTUNE_REACHED_LIMIT);
         }
     } else {
         // we have a good measurement of bounce back
@@ -1486,7 +1486,7 @@ void AC_AutoTune::updating_rate_d_down(float &tune_d, float tune_d_min, float tu
             if (tune_d <= tune_d_min) {
                 tune_d = tune_d_min;
                 counter = AUTOTUNE_SUCCESS_COUNT;
-                Log_Write_Event(EVENT_AUTOTUNE_REACHED_LIMIT);
+                AP::logger().Write_Event(Log_Event::DATA_AUTOTUNE_REACHED_LIMIT);
             }
         }
     }
@@ -1511,14 +1511,14 @@ void AC_AutoTune::updating_rate_p_up_d_down(float &tune_d, float tune_d_min, flo
         // do not decrease the D term past the minimum
         if (tune_d <= tune_d_min) {
             tune_d = tune_d_min;
-            Log_Write_Event(EVENT_AUTOTUNE_REACHED_LIMIT);
+            AP::logger().Write_Event(Log_Event::DATA_AUTOTUNE_REACHED_LIMIT);
         }
         // decrease P gain to match D gain reduction
         tune_p -= tune_p*tune_p_step_ratio;
         // do not decrease the P term past the minimum
         if (tune_p <= tune_p_min) {
             tune_p = tune_p_min;
-            Log_Write_Event(EVENT_AUTOTUNE_REACHED_LIMIT);
+            AP::logger().Write_Event(Log_Event::DATA_AUTOTUNE_REACHED_LIMIT);
         }
         // cancel change in direction
         positive_direction = !positive_direction;
@@ -1534,7 +1534,7 @@ void AC_AutoTune::updating_rate_p_up_d_down(float &tune_d, float tune_d_min, flo
             if (tune_p >= tune_p_max) {
                 tune_p = tune_p_max;
                 counter = AUTOTUNE_SUCCESS_COUNT;
-                Log_Write_Event(EVENT_AUTOTUNE_REACHED_LIMIT);
+                AP::logger().Write_Event(Log_Event::DATA_AUTOTUNE_REACHED_LIMIT);
             }
         } else {
             ignore_next = false;
@@ -1566,7 +1566,7 @@ void AC_AutoTune::updating_angle_p_down(float &tune_p, float tune_p_min, float t
         if (tune_p <= tune_p_min) {
             tune_p = tune_p_min;
             counter = AUTOTUNE_SUCCESS_COUNT;
-            Log_Write_Event(EVENT_AUTOTUNE_REACHED_LIMIT);
+            AP::logger().Write_Event(Log_Event::DATA_AUTOTUNE_REACHED_LIMIT);
         }
     }
 }
@@ -1593,7 +1593,7 @@ void AC_AutoTune::updating_angle_p_up(float &tune_p, float tune_p_max, float tun
             if (tune_p >= tune_p_max) {
                 tune_p = tune_p_max;
                 counter = AUTOTUNE_SUCCESS_COUNT;
-                Log_Write_Event(EVENT_AUTOTUNE_REACHED_LIMIT);
+                AP::logger().Write_Event(Log_Event::DATA_AUTOTUNE_REACHED_LIMIT);
             }
         } else {
             ignore_next = false;
