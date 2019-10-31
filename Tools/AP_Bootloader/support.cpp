@@ -11,6 +11,7 @@
 #include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
 #include "support.h"
 #include "mcu_f1.h"
+#include "mcu_f3.h"
 #include "mcu_f4.h"
 #include "mcu_f7.h"
 #include "mcu_h7.h"
