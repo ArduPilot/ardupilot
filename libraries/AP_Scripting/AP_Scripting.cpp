@@ -61,7 +61,7 @@ const AP_Param::GroupInfo AP_Scripting::var_info[] = {
     // @Increment: 1024
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("HEAP_SIZE", 3, AP_Scripting, _script_heap_size, 41*1024),
+    AP_GROUPINFO("HEAP_SIZE", 3, AP_Scripting, _script_heap_size, 42*1024),
 
     AP_GROUPINFO("DEBUG_LVL", 4, AP_Scripting, _debug_level, 1),
 
