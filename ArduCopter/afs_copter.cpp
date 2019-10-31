@@ -18,7 +18,7 @@ AP_AdvancedFailsafe_Copter::AP_AdvancedFailsafe_Copter(AP_Mission &_mission) :
 void AP_AdvancedFailsafe_Copter::terminate_vehicle(void)
 {
     if (_terminate_action == TERMINATE_ACTION_LAND) {
-        copter.set_mode(LAND, MODE_REASON_TERMINATE);
+        copter.set_mode(Mode::Number::LAND, ModeReason::TERMINATE);
     } else {
         // stop motors
         copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
@@ -62,10 +62,10 @@ void AP_AdvancedFailsafe_Copter::setup_IO_failsafe(void)
 AP_AdvancedFailsafe::control_mode AP_AdvancedFailsafe_Copter::afs_mode(void)
 {
     switch (copter.control_mode) {
-    case AUTO:
-    case GUIDED:
-    case RTL:
-    case LAND:
+    case Mode::Number::AUTO:
+    case Mode::Number::GUIDED:
+    case Mode::Number::RTL:
+    case Mode::Number::LAND:
         return AP_AdvancedFailsafe::AFS_AUTO;
     default:
         break;
