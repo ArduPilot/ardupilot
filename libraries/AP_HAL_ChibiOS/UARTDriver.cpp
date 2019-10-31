@@ -257,7 +257,7 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
                                             (void *)this);
                     osalDbgAssert(rxdma, "stream alloc failed");
                     chSysUnlock();
-#if defined(STM32F7) || defined(STM32H7)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3)
                     dmaStreamSetPeripheral(rxdma, &((SerialDriver*)sdef.serial)->usart->RDR);
 #else
                     dmaStreamSetPeripheral(rxdma, &((SerialDriver*)sdef.serial)->usart->DR);
@@ -355,7 +355,7 @@ void UARTDriver::dma_tx_allocate(Shared_DMA *ctx)
                             (void *)this);
     osalDbgAssert(txdma, "stream alloc failed");
     chSysUnlock();
-#if defined(STM32F7) || defined(STM32H7)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3)
     dmaStreamSetPeripheral(txdma, &((SerialDriver*)sdef.serial)->usart->TDR);
 #else
     dmaStreamSetPeripheral(txdma, &((SerialDriver*)sdef.serial)->usart->DR);
@@ -397,6 +397,7 @@ void UARTDriver::tx_complete(void* self, uint32_t flags)
 }
 
 
+#ifndef HAL_UART_NODMA
 void UARTDriver::rx_irq_cb(void* self)
 {
 #if HAL_USE_SERIAL == TRUE
@@ -418,6 +419,7 @@ void UARTDriver::rx_irq_cb(void* self)
 #endif // STM32F7
 #endif // HAL_USE_SERIAL
 }
+#endif
 
 void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
 {
