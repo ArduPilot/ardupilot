@@ -38,18 +38,18 @@ MAV_DISTANCE_SENSOR AP_RangeFinder_Backend::get_mav_distance_sensor_type() const
     return _get_mav_distance_sensor_type();
 }
 
-RangeFinder::RangeFinder_Status AP_RangeFinder_Backend::status() const {
+RangeFinder::Status AP_RangeFinder_Backend::status() const {
     if (type() == RangeFinder::Type::NONE) {
         // turned off at runtime?
-        return RangeFinder::RangeFinder_NotConnected;
+        return RangeFinder::Status::NotConnected;
     }
     return state.status;
 }
 
 // true if sensor is returning data
 bool AP_RangeFinder_Backend::has_data() const {
-    return ((state.status != RangeFinder::RangeFinder_NotConnected) &&
-            (state.status != RangeFinder::RangeFinder_NoData));
+    return ((state.status != RangeFinder::Status::NotConnected) &&
+            (state.status != RangeFinder::Status::NoData));
 }
 
 // update status based on distance measurement
@@ -57,21 +57,21 @@ void AP_RangeFinder_Backend::update_status()
 {
     // check distance
     if ((int16_t)state.distance_cm > params.max_distance_cm) {
-        set_status(RangeFinder::RangeFinder_OutOfRangeHigh);
+        set_status(RangeFinder::Status::OutOfRangeHigh);
     } else if ((int16_t)state.distance_cm < params.min_distance_cm) {
-        set_status(RangeFinder::RangeFinder_OutOfRangeLow);
+        set_status(RangeFinder::Status::OutOfRangeLow);
     } else {
-        set_status(RangeFinder::RangeFinder_Good);
+        set_status(RangeFinder::Status::Good);
     }
 }
 
 // set status and update valid count
-void AP_RangeFinder_Backend::set_status(RangeFinder::RangeFinder_Status _status)
+void AP_RangeFinder_Backend::set_status(RangeFinder::Status _status)
 {
     state.status = _status;
 
     // update valid count
-    if (_status == RangeFinder::RangeFinder_Good) {
+    if (_status == RangeFinder::Status::Good) {
         if (state.range_valid_count < 10) {
             state.range_valid_count++;
         }

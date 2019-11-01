@@ -151,7 +151,7 @@ void AP_RangeFinder_PWM::update(void)
             if (!was_out_of_range) {
                 // we are above the power saving range. Disable the sensor
                 hal.gpio->write(params.stop_pin, false);
-                set_status(RangeFinder::RangeFinder_NoData);
+                set_status(RangeFinder::Status::NoData);
                 state.distance_cm = 0;
                 state.voltage_mv = 0;
                 was_out_of_range = oor;
@@ -168,7 +168,7 @@ void AP_RangeFinder_PWM::update(void)
     if (!get_reading(state.distance_cm)) {
         // failure; consider changing our state
         if (AP_HAL::millis() - state.last_reading_ms > 200) {
-            set_status(RangeFinder::RangeFinder_NoData);
+            set_status(RangeFinder::Status::NoData);
         }
         return;
     }

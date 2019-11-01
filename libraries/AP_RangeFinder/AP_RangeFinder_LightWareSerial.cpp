@@ -123,6 +123,6 @@ void AP_RangeFinder_LightWareSerial::update(void)
         state.last_reading_ms = AP_HAL::millis();
         update_status();
     } else if (AP_HAL::millis() - state.last_reading_ms > 200) {
-        set_status(RangeFinder::RangeFinder_NoData);
+        set_status(RangeFinder::Status::NoData);
     }
 }

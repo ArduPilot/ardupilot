@@ -773,7 +773,7 @@ void AP_RangeFinder_VL53L0X::update(void)
         counter = 0;
         update_status();
     } else {
-        set_status(RangeFinder::RangeFinder_NoData);
+        set_status(RangeFinder::Status::NoData);
     }
 }
 
