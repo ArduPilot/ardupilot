@@ -13,42 +13,15 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_HAL/AP_HAL.h>
 #include "AP_RangeFinder_LightWareSerial.h"
-#include <AP_SerialManager/AP_SerialManager.h>
+
+#include <AP_HAL/AP_HAL.h>
 #include <ctype.h>
 
 extern const AP_HAL::HAL& hal;
 
 #define LIGHTWARE_DIST_MAX_CM           10000
 #define LIGHTWARE_OUT_OF_RANGE_ADD_CM   100
-
-/* 
-   The constructor also initialises the rangefinder. Note that this
-   constructor is not called until detect() returns true, so we
-   already know that we should setup the rangefinder
-*/
-AP_RangeFinder_LightWareSerial::AP_RangeFinder_LightWareSerial(RangeFinder::RangeFinder_State &_state,
-                                                               AP_RangeFinder_Params &_params,
-                                                               uint8_t serial_instance) :
-    AP_RangeFinder_Backend(_state, _params)
-{
-    const AP_SerialManager &serial_manager = AP::serialmanager();
-    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);
-    if (uart != nullptr) {
-        uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance));
-    }
-}
-
-/* 
-   detect if a Lightware rangefinder is connected. We'll detect by
-   trying to take a reading on Serial. If we get a result the sensor is
-   there.
-*/
-bool AP_RangeFinder_LightWareSerial::detect(uint8_t serial_instance)
-{
-    return AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance) != nullptr;
-}
 
 // read - return last value measured by sensor
 bool AP_RangeFinder_LightWareSerial::get_reading(uint16_t &reading_cm)
