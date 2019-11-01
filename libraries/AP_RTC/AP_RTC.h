@@ -40,7 +40,7 @@ public:
      */
     bool get_system_clock_utc(uint8_t &hour, uint8_t &min, uint8_t &sec, uint16_t &ms);
     
-    bool get_local_time(uint8_t &hour, uint8_t &min, uint8_t &sec, uint16_t &ms);
+    bool get_local_time(uint16_t &year, uint8_t &month, uint8_t &day, uint8_t &hour, uint8_t &min, uint8_t &sec, uint16_t &ms);
 
     uint32_t get_time_utc(int32_t hour, int32_t min, int32_t sec, int32_t ms);
 

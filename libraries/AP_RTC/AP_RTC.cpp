@@ -109,7 +109,7 @@ bool AP_RTC::get_system_clock_utc(uint8_t &hour, uint8_t &min, uint8_t &sec, uin
     return true;
 }
 
-bool AP_RTC::get_local_time(uint8_t &hour, uint8_t &min, uint8_t &sec, uint16_t &ms)
+bool AP_RTC::get_local_time(uint16_t &year, uint8_t &month, uint8_t &day, uint8_t &hour, uint8_t &min, uint8_t &sec, uint16_t &ms)
 {
      // get local time of day in ms
     uint64_t time_ms = 0;
@@ -125,12 +125,50 @@ bool AP_RTC::get_local_time(uint8_t &hour, uint8_t &min, uint8_t &sec, uint16_t 
     uint32_t sec_ms = (ms_local % (60 * 1000)) - ms;
     uint32_t min_ms = (ms_local % (60 * 60 * 1000)) - sec_ms - ms;
     uint32_t hour_ms = (ms_local % (24 * 60 * 60 * 1000)) - min_ms - sec_ms - ms;
+    
 
     // convert times as milliseconds into appropriate units
     sec = sec_ms / 1000;
     min = min_ms / (60 * 1000);
     hour = hour_ms / (60 * 60 * 1000);
+    
+    // calculate human calendar date
+    const uint32_t secs_day   =  86400; //  24* 60 * 60
+    const uint16_t days_year =    365; // no leapyear
+    const uint16_t days_4years   =   1461; //   4 * 365 +  1
+    const uint32_t days_100years =  36524; // 100 * 365 +  25 - 1
+    const uint32_t days_400years = 146097; // 400 * 365 + 100 - 4 + 1
+    const uint32_t days_epoch = 719468; // days from jan 1st 0000 to march 1st 1970
 
+    uint32_t days_n = days_epoch + (ms_local / (secs_day * 1000));
+    uint32_t temp = 0;
+
+    // gregorian leapyear convention: false if divisible by 100 unless divisible by 400
+    temp = (days_n + days_100years + 1) * 4 / days_400years - 1;
+    year = temp * 100;
+    days_n -= days_100years * temp + temp / 4;
+
+    // julian leapyear convention: true if divisible by 4
+    temp = (days_n + days_year + 1) * 4 / days_4years - 1;
+    year += temp;
+    days_n -= days_year * temp + temp / 4;
+
+    // daysN now contains days of year passed since last march 1st
+    //  153 = 31 + 30 + 31 + 30 + 31 days for march - july
+    //  153 = 31 + 30 + 31 + 30 + 31 days for august - december
+    //          31 + 28                days for january and february
+    //    + 2: correct rounding
+    //    + 1: days are 1 based
+    month = (5 * days_n + 2) / 153;
+    day = days_n - (month * 153 + 2) / 5 + 1;
+
+    // correct from march based year to january base
+    month += 3;
+    if (month > 12) {
+        month -= 12;
+        ++year;
+    }
+        
     return true;
 }
 
