@@ -1,27 +1,14 @@
 #pragma once
 
 #include "RangeFinder.h"
-#include "RangeFinder_Backend.h"
+#include "RangeFinder_Backend_Serial.h"
 
-class AP_RangeFinder_Benewake : public AP_RangeFinder_Backend
+class AP_RangeFinder_Benewake : public AP_RangeFinder_Backend_Serial
 {
 
 public:
 
-    enum benewake_model_type {
-        BENEWAKE_TF02 = 0,
-        BENEWAKE_TFmini = 1,
-        BENEWAKE_TF03 = 2,
-    };
-
-    // constructor
-    AP_RangeFinder_Benewake(RangeFinder::RangeFinder_State &_state,
-                            AP_RangeFinder_Params &_params,
-                            uint8_t serial_instance,
-                            benewake_model_type model);
-
-    // static detection function
-    static bool detect(uint8_t serial_instance);
+    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
 
     // update state
     void update(void) override;
@@ -32,14 +19,15 @@ protected:
         return MAV_DISTANCE_SENSOR_LASER;
     }
 
+    virtual float model_dist_max_cm() const = 0;
+    virtual bool has_signal_byte() const { return false; }
+
 private:
 
     // get a reading
     // distance returned in reading_cm
     bool get_reading(uint16_t &reading_cm);
 
-    AP_HAL::UARTDriver *uart = nullptr;
-    benewake_model_type model_type;
     uint8_t linebuf[10];
     uint8_t linebuf_len;
 };
