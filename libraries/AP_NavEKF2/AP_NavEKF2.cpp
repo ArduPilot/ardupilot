@@ -646,22 +646,22 @@ bool NavEKF2::InitialiseFilter(void)
     
     if (core == nullptr) {
 
-        // this prevents dereferencing a null _ahrs pointer in NavEKF2_core::getEulerAngles
-        if (ins.get_accel_count() == 0) {
-            initFailure = InitFailures::NO_IMUS;
-            return false;
-        }
-        if (_imuMask == 0) {
-            initFailure = InitFailures::NO_MASK;
-            return false;
-        }
-
         // don't allow more filters than IMUs
         uint8_t mask = (1U<<ins.get_accel_count())-1;
         _imuMask.set(_imuMask.get() & mask);
         
         // count IMUs from mask
         num_cores = __builtin_popcount(_imuMask);
+
+        // abort if num_cores is zero
+        if (num_cores == 0) {
+            if (ins.get_accel_count() == 0) {
+                initFailure = InitFailures::NO_IMUS;
+            } else {
+                initFailure = InitFailures::NO_MASK;
+            }
+            return false;
+        }
 
         // check if there is enough memory to create the EKF cores
         if (hal.util->available_memory() < sizeof(NavEKF2_core)*num_cores + 4096) {
@@ -690,7 +690,16 @@ bool NavEKF2::InitialiseFilter(void)
         for (uint8_t i=0; i<7; i++) {
             if (_imuMask & (1U<<i)) {
                 if(!core[num_cores].setup_core(i, num_cores)) {
-                    return false;
+                    // if first core setup fails, free memory, zero the core pointer and abort
+                    if (num_cores == 0) {
+                        hal.util->free_type(core, sizeof(NavEKF2_core)*num_cores, AP_HAL::Util::MEM_FAST);
+                        core = nullptr;
+                        initFailure = InitFailures::NO_SETUP;
+                        return false;
+                    }
+                    gcs().send_text(MAV_SEVERITY_WARNING, "NavEKF2: core %d setup failed", num_cores);
+                    // don't return here, just break the loop and finish initializing
+                    break;
                 }
                 num_cores++;
             }
