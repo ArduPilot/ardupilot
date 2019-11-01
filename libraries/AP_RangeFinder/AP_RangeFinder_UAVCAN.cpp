@@ -102,14 +102,14 @@ void AP_RangeFinder_UAVCAN::update()
     WITH_SEMAPHORE(_sem);
     if ((AP_HAL::millis() - _last_reading_ms) > 500) {
         //if data is older than 500ms, report NoData
-        set_status(RangeFinder::RangeFinder_NoData);
-    } else if (_status == RangeFinder::RangeFinder_Good && new_data) {
+        set_status(RangeFinder::Status::NoData);
+    } else if (_status == RangeFinder::Status::Good && new_data) {
         //copy over states
         state.distance_cm = _distance_cm;
         state.last_reading_ms = _last_reading_ms;
         update_status();
         new_data = false;
-    } else if (_status != RangeFinder::RangeFinder_Good) {
+    } else if (_status != RangeFinder::Status::Good) {
         //handle additional states received by measurement handler
         set_status(_status);
     }
@@ -130,7 +130,7 @@ void AP_RangeFinder_UAVCAN::handle_measurement(AP_UAVCAN* ap_uavcan, uint8_t nod
             //update the states in backend instance
             driver->_distance_cm = cb.msg->range*100.0f;
             driver->_last_reading_ms = AP_HAL::millis();
-            driver->_status = RangeFinder::RangeFinder_Good;
+            driver->_status = RangeFinder::Status::Good;
             driver->new_data = true;
             break;
         }
@@ -138,13 +138,13 @@ void AP_RangeFinder_UAVCAN::handle_measurement(AP_UAVCAN* ap_uavcan, uint8_t nod
         case uavcan::equipment::range_sensor::Measurement::READING_TYPE_TOO_CLOSE:
         {
             driver->_last_reading_ms = AP_HAL::millis();
-            driver->_status = RangeFinder::RangeFinder_OutOfRangeLow;
+            driver->_status = RangeFinder::Status::OutOfRangeLow;
             break;
         }
         case uavcan::equipment::range_sensor::Measurement::READING_TYPE_TOO_FAR:
         {
             driver->_last_reading_ms = AP_HAL::millis();
-            driver->_status = RangeFinder::RangeFinder_OutOfRangeHigh;
+            driver->_status = RangeFinder::Status::OutOfRangeHigh;
             break;
         }
         default:

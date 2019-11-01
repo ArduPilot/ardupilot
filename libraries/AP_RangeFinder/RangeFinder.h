@@ -85,19 +85,19 @@ public:
         HYPERBOLA = 2
     };
 
-    enum RangeFinder_Status {
-        RangeFinder_NotConnected = 0,
-        RangeFinder_NoData,
-        RangeFinder_OutOfRangeLow,
-        RangeFinder_OutOfRangeHigh,
-        RangeFinder_Good
+    enum class Status {
+        NotConnected = 0,
+        NoData,
+        OutOfRangeLow,
+        OutOfRangeHigh,
+        Good
     };
 
     // The RangeFinder_State structure is filled in by the backend driver
     struct RangeFinder_State {
         uint16_t distance_cm;           // distance: in cm
         uint16_t voltage_mv;            // voltage in millivolts, if applicable, otherwise 0
-        enum RangeFinder_Status status; // sensor status
+        enum RangeFinder::Status status; // sensor status
         uint8_t  range_valid_count;     // number of consecutive valid readings (maxes out at 10)
         uint32_t last_reading_ms;       // system time of last successful update from sensor
 
@@ -145,7 +145,7 @@ public:
     int16_t min_distance_cm_orient(enum Rotation orientation) const;
     int16_t ground_clearance_cm_orient(enum Rotation orientation) const;
     MAV_DISTANCE_SENSOR get_mav_distance_sensor_type_orient(enum Rotation orientation) const;
-    RangeFinder_Status status_orient(enum Rotation orientation) const;
+    RangeFinder::Status status_orient(enum Rotation orientation) const;
     bool has_data_orient(enum Rotation orientation) const;
     uint8_t range_valid_count_orient(enum Rotation orientation) const;
     const Vector3f &get_pos_offset_orient(enum Rotation orientation) const;

@@ -102,7 +102,7 @@ void AP_RangeFinder_PulsedLightLRF::timer(void)
             }
             last_distance_cm = _distance_cm;
         } else {
-            set_status(RangeFinder::RangeFinder_NoData);
+            set_status(RangeFinder::Status::NoData);
         }
         if (!v2_hardware) {
             // for v2 hw we use continuous mode

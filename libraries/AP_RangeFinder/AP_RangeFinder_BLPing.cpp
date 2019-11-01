@@ -85,7 +85,7 @@ void AP_RangeFinder_BLPing::update(void)
         state.last_reading_ms = now;
         update_status();
     } else if (now - state.last_reading_ms > BLPING_TIMEOUT_MS) {
-        set_status(RangeFinder::RangeFinder_NoData);
+        set_status(RangeFinder::Status::NoData);
 
         // initialise sensor if no distances recently
         if (now - last_init_ms > BLPING_INIT_RATE_MS) {
