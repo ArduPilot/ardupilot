@@ -1310,21 +1310,21 @@ void AP_Periph_FW::can_rangefinder_update(void)
     }
     last_update_ms = now;
     rangefinder.update();
-    RangeFinder::RangeFinder_Status status = rangefinder.status_orient(ROTATION_NONE);
-    if (status <= RangeFinder::RangeFinder_NoData) {
+    RangeFinder::Status status = rangefinder.status_orient(ROTATION_NONE);
+    if (status <= RangeFinder::Status::NoData) {
         // don't send any data
         return;
     }
     uint16_t dist_cm = rangefinder.distance_cm_orient(ROTATION_NONE);
     uavcan_equipment_range_sensor_Measurement pkt {};
     switch (status) {
-    case RangeFinder::RangeFinder_OutOfRangeLow:
+    case RangeFinder::Status::OutOfRangeLow:
         pkt.reading_type = UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_READING_TYPE_TOO_CLOSE;
         break;
-    case RangeFinder::RangeFinder_OutOfRangeHigh:
+    case RangeFinder::Status::OutOfRangeHigh:
         pkt.reading_type = UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_READING_TYPE_TOO_FAR;
         break;
-    case RangeFinder::RangeFinder_Good:
+    case RangeFinder::Status::Good:
         pkt.reading_type = UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_READING_TYPE_VALID_RANGE;
         break;
     default:
