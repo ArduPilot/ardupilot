@@ -13,9 +13,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_HAL/AP_HAL.h>
 #include "AP_RangeFinder_Wasp.h"
-#include <AP_SerialManager/AP_SerialManager.h>
+
+#include <AP_HAL/AP_HAL.h>
 #include <ctype.h>
 
 extern const AP_HAL::HAL& hal;
@@ -69,24 +69,11 @@ const AP_Param::GroupInfo AP_RangeFinder_Wasp::var_info[] = {
 AP_RangeFinder_Wasp::AP_RangeFinder_Wasp(RangeFinder::RangeFinder_State &_state,
                                          AP_RangeFinder_Params &_params,
                                          uint8_t serial_instance) :
-    AP_RangeFinder_Backend(_state, _params) {
+    AP_RangeFinder_Backend_Serial(_state, _params, serial_instance)
+{
     AP_Param::setup_object_defaults(this, var_info);
 
-    const AP_SerialManager &serial_manager = AP::serialmanager();
-    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);
-    if (uart != nullptr) {
-        uart->begin(115200);
-
-        // register Wasp specific parameters
-        state.var_info = var_info;
-
-        configuration_state = WASP_CFG_PROTOCOL;
-    }
-}
-
-// detection is considered as locating a serial port
-bool AP_RangeFinder_Wasp::detect(uint8_t serial_instance) {
-    return AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance) != nullptr;
+    state.var_info = var_info;
 }
 
 // read - return last value measured by sensor
