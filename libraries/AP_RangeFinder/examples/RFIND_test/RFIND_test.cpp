@@ -19,7 +19,7 @@ void setup()
     hal.console->printf("Range Finder library test\n");
 
     // setup for analog pin 13
-    AP_Param::set_object_value(&sonar, sonar.var_info, "_TYPE", RangeFinder::RangeFinder_TYPE_PLI2C);
+    AP_Param::set_object_value(&sonar, sonar.var_info, "_TYPE", (uint8_t)RangeFinder::Type::PLI2C);
     AP_Param::set_object_value(&sonar, sonar.var_info, "_PIN", -1.0f);
     AP_Param::set_object_value(&sonar, sonar.var_info, "_SCALING", 1.0f);
 
