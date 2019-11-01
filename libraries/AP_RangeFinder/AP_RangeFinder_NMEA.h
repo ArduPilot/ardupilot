@@ -25,9 +25,6 @@ public:
 
     using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
 
-    // update state
-    void update(void) override;
-
 protected:
 
     virtual MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
@@ -45,6 +42,8 @@ private:
 
     // get a reading
     bool get_reading(uint16_t &reading_cm) override;
+
+    uint16_t read_timeout_ms() const override { return 3000; }
 
     // add a single character to the buffer and attempt to decode
     // returns true if a complete sentence was successfully decoded

@@ -20,19 +20,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-// update the state of the sensor
-void AP_RangeFinder_NMEA::update(void)
-{
-    uint32_t now = AP_HAL::millis();
-    if (get_reading(state.distance_cm)) {
-        // update range_valid state based on distance measured
-        state.last_reading_ms = now;
-        update_status();
-    } else if ((now - state.last_reading_ms) > 3000) {
-        set_status(RangeFinder::Status::NoData);
-    }
-}
-
 // return last value measured by sensor
 bool AP_RangeFinder_NMEA::get_reading(uint16_t &reading_cm)
 {

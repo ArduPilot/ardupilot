@@ -29,6 +29,8 @@ private:
     // read a distance from the sensor
     bool get_reading(uint16_t &reading_cm) override;
 
+    uint16_t read_timeout_ms() const override { return 500; }
+
     // process one byte received on serial port
     // returns true if a distance message has been successfully parsed
     // state is stored in msg structure

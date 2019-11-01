@@ -10,9 +10,6 @@ public:
 
     using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
 
-    // update state
-    void update(void) override;
-
 protected:
 
     MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
