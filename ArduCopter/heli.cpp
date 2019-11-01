@@ -24,7 +24,7 @@ void Copter::heli_init()
 void Copter::check_dynamic_flight(void)
 {
     if (motors->get_spool_state() != AP_Motors::SpoolState::THROTTLE_UNLIMITED ||
-        control_mode == Mode::Number::LAND || (control_mode==Mode::Number::RTL && mode_rtl.state() == RTL_Land) || (control_mode == Mode::Number::AUTO && mode_auto.mode() == Auto_Land)) {
+        flightmode->is_landing()) {
         heli_dynamic_flight_counter = 0;
         heli_flags.dynamic_flight = false;
         return;
@@ -89,46 +89,42 @@ void Copter::update_heli_control_dynamics(void)
     attitude_control->set_hover_roll_trim_scalar((float) hover_roll_trim_scalar_slew/(float) scheduler.get_loop_rate_hz());
 }
 
+bool Copter::should_use_landing_swash() const
+{
+    if (flightmode->has_manual_throttle() ||
+        control_mode == Mode::Number::DRIFT ||
+        control_mode == Mode::Number::SPORT) {
+        // manual modes always uses full swash range
+        return false;
+    }
+    if (flightmode->is_landing()) {
+        // landing with non-manual throttle mode always uses limit swash range
+        return true;
+    }
+    if (ap.land_complete) {
+        // when landed in non-manual throttle mode limit swash range
+        return true;
+    }
+    if (!ap.auto_armed) {
+        // when waiting to takeoff in non-manual throttle mode limit swash range
+        return true;
+    }
+    if (!heli_flags.dynamic_flight) {
+        // Just in case we are unsure of being in non-manual throttle
+        // mode, limit swash range in low speed and hovering flight.
+        // This will catch any non-manual throttle mode attempting a
+        // landing and driving the collective too low before the land
+        // complete flag is set.
+        return true;
+    }
+    return false;
+}
+
 // heli_update_landing_swash - sets swash plate flag so higher minimum is used when landed or landing
 // should be called soon after update_land_detector in main code
 void Copter::heli_update_landing_swash()
 {
-    switch (control_mode) {
-        case Mode::Number::ACRO:
-        case Mode::Number::STABILIZE:
-        case Mode::Number::DRIFT:
-        case Mode::Number::SPORT:
-            // manual modes always uses full swash range
-            motors->set_collective_for_landing(false);
-            break;
-
-        case Mode::Number::LAND:
-            // landing always uses limit swash range
-            motors->set_collective_for_landing(true);
-            break;
-
-        case Mode::Number::RTL:
-        case Mode::Number::SMART_RTL:
-            if (mode_rtl.state() == RTL_Land) {
-                motors->set_collective_for_landing(true);
-            }else{
-                motors->set_collective_for_landing(!heli_flags.dynamic_flight || ap.land_complete || !ap.auto_armed);
-            }
-            break;
-
-        case Mode::Number::AUTO:
-            if (mode_auto.mode() == Auto_Land) {
-                motors->set_collective_for_landing(true);
-            }else{
-                motors->set_collective_for_landing(!heli_flags.dynamic_flight || ap.land_complete || !ap.auto_armed);
-            }
-            break;
-
-        default:
-            // auto and hold use limited swash when landed
-            motors->set_collective_for_landing(!heli_flags.dynamic_flight || ap.land_complete || !ap.auto_armed);
-            break;
-    }
+    motors->set_collective_for_landing(should_use_landing_swash());
 }
 
 // heli_update_rotor_speed_targets - reads pilot input and passes new rotor speed targets to heli motors object
