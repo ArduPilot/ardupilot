@@ -195,7 +195,7 @@ struct PACKED log_Sonar {
 void Plane::Log_Write_Sonar()
 {
     uint16_t distance = 0;
-    if (rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::RangeFinder_Good) {
+    if (rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::Status::Good) {
         distance = rangefinder.distance_cm_orient(ROTATION_PITCH_270);
     }
 
