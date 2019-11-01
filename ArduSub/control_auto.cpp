@@ -626,12 +626,12 @@ bool Sub::auto_terrain_recover_start()
     // Check rangefinder status to see if recovery is possible
     switch (rangefinder.status_orient(ROTATION_PITCH_270)) {
 
-    case RangeFinder::RangeFinder_OutOfRangeLow:
-    case RangeFinder::RangeFinder_OutOfRangeHigh:
+    case RangeFinder::Status::OutOfRangeLow:
+    case RangeFinder::Status::OutOfRangeHigh:
 
-        // RangeFinder_Good if just one valid sample was obtained recently, but ::rangefinder_state.alt_healthy
+        // RangeFinder::Good if just one valid sample was obtained recently, but ::rangefinder_state.alt_healthy
         // requires several consecutive valid readings for wpnav to accept rangefinder data
-    case RangeFinder::RangeFinder_Good:
+    case RangeFinder::Status::Good:
         auto_mode = Auto_TerrainRecover;
         break;
 
@@ -683,17 +683,17 @@ void Sub::auto_terrain_recover_run()
 
     switch (rangefinder.status_orient(ROTATION_PITCH_270)) {
 
-    case RangeFinder::RangeFinder_OutOfRangeLow:
+    case RangeFinder::Status::OutOfRangeLow:
         target_climb_rate = wp_nav.get_default_speed_up();
         rangefinder_recovery_ms = 0;
         break;
 
-    case RangeFinder::RangeFinder_OutOfRangeHigh:
+    case RangeFinder::Status::OutOfRangeHigh:
         target_climb_rate = wp_nav.get_default_speed_down();
         rangefinder_recovery_ms = 0;
         break;
 
-    case RangeFinder::RangeFinder_Good: // exit on success (recovered rangefinder data)
+    case RangeFinder::Status::Good: // exit on success (recovered rangefinder data)
 
         target_climb_rate = 0; // Attempt to hold current depth
 
