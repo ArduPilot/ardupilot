@@ -361,7 +361,7 @@ bool RangeFinder::_add_backend(AP_RangeFinder_Backend *backend)
  */
 void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
 {
-    const RangeFinder::Type _type = (Type)params[instance].type.get();
+    const Type _type = (Type)params[instance].type.get();
     switch (_type) {
     case Type::PLI2C:
     case Type::PLI2CV3:
