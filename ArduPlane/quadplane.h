@@ -279,7 +279,12 @@ private:
     // angular error at which quad assistance is given
     AP_Int8 assist_angle;
     uint32_t angle_error_start_ms;
-    
+
+    // altitude to trigger assistance
+    AP_Int16 assist_alt;
+    uint32_t alt_error_start_ms;
+    bool in_alt_assist;
+
     // maximum yaw rate in degrees/second
     AP_Float yaw_rate_max;
 
