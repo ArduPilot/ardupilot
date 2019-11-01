@@ -21,7 +21,7 @@ protected:
 
 private:
     // get a reading
-    bool get_reading(uint16_t &reading_cm);
+    bool get_reading(uint16_t &reading_cm) override;
 
     char linebuf[10];
     uint8_t linebuf_len = 0;
