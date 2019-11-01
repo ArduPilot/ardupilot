@@ -86,19 +86,19 @@ void AP_RangeFinder_analog::update(void)
     float dist_m = 0;
     float scaling = params.scaling;
     float offset  = params.offset;
-    RangeFinder::RangeFinder_Function function = (RangeFinder::RangeFinder_Function)params.function.get();
+    RangeFinder::Function function = (RangeFinder::Function)params.function.get();
     int16_t _max_distance_cm = params.max_distance_cm;
 
     switch (function) {
-    case RangeFinder::FUNCTION_LINEAR:
+    case RangeFinder::Function::LINEAR:
         dist_m = (v - offset) * scaling;
         break;
 	  
-    case RangeFinder::FUNCTION_INVERTED:
+    case RangeFinder::Function::INVERTED:
         dist_m = (offset - v) * scaling;
         break;
 
-    case RangeFinder::FUNCTION_HYPERBOLA:
+    case RangeFinder::Function::HYPERBOLA:
         if (v <= offset) {
             dist_m = 0;
         } else {
