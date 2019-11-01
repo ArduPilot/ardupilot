@@ -80,17 +80,3 @@ bool AP_RangeFinder_Lanbao::get_reading(uint16_t &reading_cm)
     }
     return false;
 }
-
-/* 
-   update the state of the sensor
-*/
-void AP_RangeFinder_Lanbao::update(void)
-{
-    if (get_reading(state.distance_cm)) {
-        // update range_valid state based on distance measured
-        state.last_reading_ms = AP_HAL::millis();
-        update_status();
-    } else if (AP_HAL::millis() - state.last_reading_ms > 200) {
-        set_status(RangeFinder::Status::NoData);
-    }
-}

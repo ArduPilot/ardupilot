@@ -60,17 +60,3 @@ bool AP_RangeFinder_MaxsonarSerialLV::get_reading(uint16_t &reading_cm)
 
     return true;
 }
-
-/* 
-   update the state of the sensor
-*/
-void AP_RangeFinder_MaxsonarSerialLV::update(void)
-{
-    if (get_reading(state.distance_cm)) {
-        // update range_valid state based on distance measured
-        state.last_reading_ms = AP_HAL::millis();
-        update_status();
-    } else if (AP_HAL::millis() - state.last_reading_ms > 500) {
-        set_status(RangeFinder::Status::NoData);
-    }
-}
