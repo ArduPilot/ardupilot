@@ -72,6 +72,63 @@ class AutoTestSub(AutoTest):
     def arming_test_mission(self):
         return os.path.join(testdir, "ArduSub-Missions", "test_arming.txt")
 
+    def watch_altitude_maintained(self, delta=0.5, timeout=5.0):
+        """Watch and wait for the actual altitude to be maintained
+
+        Keyword Arguments:
+            delta {float} -- Maximum altitude range to be allowed from actual point (default: {0.5})
+            timeout {float} -- Timeout time in simulation seconds (default: {5.0})
+
+        Raises:
+            NotAchievedException: Exception when altitude fails to hold inside the time and
+                altitude range
+        """
+        tstart = self.get_sim_time_cached()
+        previous_altitude = self.mav.recv_match(type='VFR_HUD', blocking=True).alt
+        self.progress('Altitude to be watched: %f' % (previous_altitude))
+        while True:
+            m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+            if self.get_sim_time_cached() - tstart > timeout:
+                self.progress('Altitude hold done: %f' % (previous_altitude))
+                return
+            if abs(m.alt - previous_altitude) > delta:
+                raise NotAchievedException("Altitude not maintained: want %.2f (~%.2f) got=%.2f" % (m, delta, m.alt))
+
+    def test_alt_hold(self):
+        """Test ALT_HOLD mode
+        """
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.mavproxy.send('mode ALT_HOLD\n')
+        self.wait_mode('ALT_HOLD')
+
+
+        self.set_rc(Joystick.Throttle, 1000)
+        self.wait_altitude(alt_min=-6, alt_max=-5)
+        self.set_rc(Joystick.Throttle, 1500)
+
+        self.watch_altitude_maintained()
+
+        self.set_rc(Joystick.Throttle, 1000)
+        self.wait_altitude(alt_min=-20, alt_max=-19)
+        self.set_rc(Joystick.Throttle, 1500)
+
+        self.watch_altitude_maintained()
+
+        self.set_rc(Joystick.Throttle, 1900)
+        self.wait_altitude(alt_min=-14, alt_max=-13)
+        self.set_rc(Joystick.Throttle, 1500)
+
+        self.watch_altitude_maintained()
+
+        self.set_rc(Joystick.Throttle, 1900)
+        self.wait_altitude(alt_min=-5, alt_max=-4)
+        self.set_rc(Joystick.Throttle, 1500)
+
+        self.watch_altitude_maintained()
+
+        self.disarm_vehicle()
+
     def dive_manual(self):
         self.wait_ready_to_arm()
         self.arm_vehicle()
@@ -207,6 +264,8 @@ class AutoTestSub(AutoTest):
 
         ret.extend([
             ("DiveManual", "Dive manual", self.dive_manual),
+
+            ("AltitudeHold", "Test altitude holde mode", self.test_alt_hold),
 
             ("DiveMission",
              "Dive mission",
