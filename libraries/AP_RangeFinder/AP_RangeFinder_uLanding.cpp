@@ -215,6 +215,6 @@ void AP_RangeFinder_uLanding::update(void)
         // update range_valid state based on distance measured
         update_status();
     } else if (AP_HAL::millis() - state.last_reading_ms > 200) {
-        set_status(RangeFinder::RangeFinder_NoData);
+        set_status(RangeFinder::Status::NoData);
     }
 }
