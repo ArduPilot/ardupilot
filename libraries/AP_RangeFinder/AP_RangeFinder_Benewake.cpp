@@ -13,20 +13,18 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_HAL/AP_HAL.h>
 #include "AP_RangeFinder_Benewake.h"
-#include <AP_SerialManager/AP_SerialManager.h>
-#include <ctype.h>
+
+#include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/sparse-endian.h>
+
+#include <ctype.h>
 
 extern const AP_HAL::HAL& hal;
 
 #define BENEWAKE_FRAME_HEADER 0x59
 #define BENEWAKE_FRAME_LENGTH 9
 #define BENEWAKE_DIST_MAX_CM 32768
-#define BENEWAKE_TFMINI_OUT_OF_RANGE_CM 1200
-#define BENEWAKE_TF02_OUT_OF_RANGE_CM 2200
-#define BENEWAKE_TF03_OUT_OF_RANGE_CM 18000
 #define BENEWAKE_OUT_OF_RANGE_ADD_CM 100
 
 // format of serial packets received from benewake lidar
@@ -46,35 +44,6 @@ extern const AP_HAL::HAL& hal;
 // byte 6 (TF03)        (Reserved)
 // byte 7 (TF02 only)   TIME            Exposure time in two levels 0x03 and 0x06
 // byte 8               Checksum        Checksum byte, sum of bytes 0 to bytes 7
-
-/* 
-   The constructor also initialises the rangefinder. Note that this
-   constructor is not called until detect() returns true, so we
-   already know that we should setup the rangefinder
-*/
-AP_RangeFinder_Benewake::AP_RangeFinder_Benewake(RangeFinder::RangeFinder_State &_state,
-                                                             AP_RangeFinder_Params &_params,
-                                                             uint8_t serial_instance,
-                                                             benewake_model_type model) :
-    AP_RangeFinder_Backend(_state, _params),
-    model_type(model)
-{
-    const AP_SerialManager &serial_manager = AP::serialmanager();
-    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);
-    if (uart != nullptr) {
-        uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance));
-    }
-}
-
-/* 
-   detect if a Benewake rangefinder is connected. We'll detect by
-   trying to take a reading on Serial. If we get a result the sensor is
-   there.
-*/
-bool AP_RangeFinder_Benewake::detect(uint8_t serial_instance)
-{
-    return AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance) != nullptr;
-}
 
 // distance returned in reading_cm, signal_ok is set to true if sensor reports a strong signal
 bool AP_RangeFinder_Benewake::get_reading(uint16_t &reading_cm)
@@ -125,7 +94,7 @@ bool AP_RangeFinder_Benewake::get_reading(uint16_t &reading_cm)
                     if (dist >= BENEWAKE_DIST_MAX_CM) {
                         // this reading is out of range
                         count_out_of_range++;
-                    } else if (model_type == BENEWAKE_TFmini || model_type == BENEWAKE_TF03) {
+                    } else if (!has_signal_byte()) {
                         // no signal byte from TFmini so add distance to sum
                         sum_cm += dist;
                         count++;
@@ -156,19 +125,7 @@ bool AP_RangeFinder_Benewake::get_reading(uint16_t &reading_cm)
     if (count_out_of_range > 0) {
         // if only out of range readings return larger of
         // driver defined maximum range for the model and user defined max range + 1m
-        float model_dist_max_cm = 0.0f;
-        switch (model_type) {
-        case BENEWAKE_TFmini:
-            model_dist_max_cm = BENEWAKE_TFMINI_OUT_OF_RANGE_CM;
-            break;
-        case BENEWAKE_TF02:
-            model_dist_max_cm = BENEWAKE_TF02_OUT_OF_RANGE_CM;
-            break;
-        case BENEWAKE_TF03:
-            model_dist_max_cm = BENEWAKE_TF03_OUT_OF_RANGE_CM;
-            break;
-        }
-        reading_cm = MAX(model_dist_max_cm, max_distance_cm() + BENEWAKE_OUT_OF_RANGE_ADD_CM);
+        reading_cm = MAX(model_dist_max_cm(), max_distance_cm() + BENEWAKE_OUT_OF_RANGE_ADD_CM);
         return true;
     }
 

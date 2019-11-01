@@ -34,7 +34,9 @@
 #include "AP_RangeFinder_VL53L1X.h"
 #include "AP_RangeFinder_NMEA.h"
 #include "AP_RangeFinder_Wasp.h"
-#include "AP_RangeFinder_Benewake.h"
+#include "AP_RangeFinder_Benewake_TF02.h"
+#include "AP_RangeFinder_Benewake_TF03.h"
+#include "AP_RangeFinder_Benewake_TFMini.h"
 #include "AP_RangeFinder_Benewake_TFMiniPlus.h"
 #include "AP_RangeFinder_PWM.h"
 #include "AP_RangeFinder_BLPing.h"
@@ -500,18 +502,18 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         }
         break;
     case Type::BenewakeTF02:
-        if (AP_RangeFinder_Benewake::detect(serial_instance)) {
-            drivers[instance] = new AP_RangeFinder_Benewake(state[instance], params[instance], serial_instance++, AP_RangeFinder_Benewake::BENEWAKE_TF02);
+        if (AP_RangeFinder_Benewake_TF02::detect(serial_instance)) {
+            drivers[instance] = new AP_RangeFinder_Benewake_TF02(state[instance], params[instance], serial_instance++);
         }
         break;
     case Type::BenewakeTFmini:
-        if (AP_RangeFinder_Benewake::detect(serial_instance)) {
-            drivers[instance] = new AP_RangeFinder_Benewake(state[instance], params[instance], serial_instance++, AP_RangeFinder_Benewake::BENEWAKE_TFmini);
+        if (AP_RangeFinder_Benewake_TFMini::detect(serial_instance)) {
+            drivers[instance] = new AP_RangeFinder_Benewake_TFMini(state[instance], params[instance], serial_instance++);
         }
         break;
     case Type::BenewakeTF03:
-        if (AP_RangeFinder_Benewake::detect(serial_instance)) {
-            drivers[instance] = new AP_RangeFinder_Benewake(state[instance], params[instance], serial_instance++, AP_RangeFinder_Benewake::BENEWAKE_TF03);
+        if (AP_RangeFinder_Benewake_TF03::detect(serial_instance)) {
+            drivers[instance] = new AP_RangeFinder_Benewake_TF03(state[instance], params[instance], serial_instance++);
         }
         break;
     case Type::PWM:
