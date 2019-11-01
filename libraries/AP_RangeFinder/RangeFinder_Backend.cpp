@@ -28,18 +28,18 @@ AP_RangeFinder_Backend::AP_RangeFinder_Backend(RangeFinder::RangeFinder_State &_
         state(_state),
 		params(_params)
 {
-    _backend_type = (RangeFinder::RangeFinder_Type)params.type.get();
+    _backend_type = type();
 }
 
 MAV_DISTANCE_SENSOR AP_RangeFinder_Backend::get_mav_distance_sensor_type() const {
-    if (params.type == RangeFinder::RangeFinder_TYPE_NONE) {
+    if (type() == RangeFinder::Type::NONE) {
         return MAV_DISTANCE_SENSOR_UNKNOWN;
     }
     return _get_mav_distance_sensor_type();
 }
 
 RangeFinder::RangeFinder_Status AP_RangeFinder_Backend::status() const {
-    if (params.type == RangeFinder::RangeFinder_TYPE_NONE) {
+    if (type() == RangeFinder::Type::NONE) {
         // turned off at runtime?
         return RangeFinder::RangeFinder_NotConnected;
     }
