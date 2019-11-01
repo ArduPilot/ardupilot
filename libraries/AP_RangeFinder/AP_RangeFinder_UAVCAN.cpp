@@ -51,12 +51,12 @@ AP_RangeFinder_UAVCAN* AP_RangeFinder_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_u
     AP_RangeFinder_UAVCAN* driver = nullptr;
     //Scan through the Rangefinder params to find UAVCAN RFND with matching address.
     for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
-        if (AP::rangefinder()->params[i].type == RangeFinder::RangeFinder_TYPE_UAVCAN &&
+        if ((RangeFinder::Type)AP::rangefinder()->params[i].type.get() == RangeFinder::Type::UAVCAN &&
             AP::rangefinder()->params[i].address == address) {
             driver = (AP_RangeFinder_UAVCAN*)AP::rangefinder()->drivers[i];
         }
         //Double check if the driver was initialised as UAVCAN Type
-        if (driver != nullptr && (driver->_backend_type == RangeFinder::RangeFinder_TYPE_UAVCAN)) {
+        if (driver != nullptr && (driver->_backend_type == RangeFinder::Type::UAVCAN)) {
             if (driver->_ap_uavcan == ap_uavcan && 
                 driver->_node_id == node_id) {
                 return driver;
@@ -70,7 +70,7 @@ AP_RangeFinder_UAVCAN* AP_RangeFinder_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_u
     
     if (create_new) {
         for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
-            if (AP::rangefinder()->params[i].type == RangeFinder::RangeFinder_TYPE_UAVCAN &&
+            if ((RangeFinder::Type)AP::rangefinder()->params[i].type.get() == RangeFinder::Type::UAVCAN &&
                 AP::rangefinder()->params[i].address == address) {
                 if (AP::rangefinder()->drivers[i] != nullptr) {
                     //we probably initialised this driver as something else, reboot is required for setting

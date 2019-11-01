@@ -329,7 +329,7 @@ void RangeFinder::update(void)
 {
     for (uint8_t i=0; i<num_instances; i++) {
         if (drivers[i] != nullptr) {
-            if (params[i].type == RangeFinder_TYPE_NONE) {
+            if ((Type)params[i].type.get() == Type::NONE) {
                 // allow user to disable a rangefinder at runtime
                 state[i].status = RangeFinder_NotConnected;
                 state[i].range_valid_count = 0;
@@ -361,18 +361,18 @@ bool RangeFinder::_add_backend(AP_RangeFinder_Backend *backend)
  */
 void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
 {
-    enum RangeFinder_Type _type = (enum RangeFinder_Type)params[instance].type.get();
+    const RangeFinder::Type _type = (Type)params[instance].type.get();
     switch (_type) {
-    case RangeFinder_TYPE_PLI2C:
-    case RangeFinder_TYPE_PLI2CV3:
-    case RangeFinder_TYPE_PLI2CV3HP:
+    case Type::PLI2C:
+    case Type::PLI2CV3:
+    case Type::PLI2CV3HP:
         FOREACH_I2C(i) {
             if (_add_backend(AP_RangeFinder_PulsedLightLRF::detect(i, state[instance], params[instance], _type))) {
                 break;
             }
         }
         break;
-    case RangeFinder_TYPE_MBI2C:
+    case Type::MBI2C:
         FOREACH_I2C(i) {
             if (_add_backend(AP_RangeFinder_MaxsonarI2CXL::detect(state[instance], params[instance],
                                                                   hal.i2c_mgr->get_device(i, AP_RANGE_FINDER_MAXSONARI2CXL_DEFAULT_ADDR)))) {
@@ -380,7 +380,7 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
             }
         }
         break;
-    case RangeFinder_TYPE_LWI2C:
+    case Type::LWI2C:
         if (params[instance].address) {
             // the LW20 needs a long time to boot up, so we delay 1.5s here
             if (!hal.util->was_watchdog_armed()) {
@@ -399,7 +399,7 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
 #endif
         }
         break;
-    case RangeFinder_TYPE_TRI2C:
+    case Type::TRI2C:
         if (params[instance].address) {
             FOREACH_I2C(i) {
                 if (_add_backend(AP_RangeFinder_TeraRangerI2C::detect(state[instance], params[instance],
@@ -409,7 +409,7 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
             }
         }
         break;
-    case RangeFinder_TYPE_VL53L0X:
+    case Type::VL53L0X:
             FOREACH_I2C(i) {
                 if (_add_backend(AP_RangeFinder_VL53L0X::detect(state[instance], params[instance],
                                                                  hal.i2c_mgr->get_device(i, params[instance].address)))) {
@@ -421,7 +421,7 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
                 }
             }
         break;
-    case RangeFinder_TYPE_BenewakeTFminiPlus:
+    case Type::BenewakeTFminiPlus:
         FOREACH_I2C(i) {
             if (_add_backend(AP_RangeFinder_Benewake_TFMiniPlus::detect(state[instance], params[instance],
                                                                         hal.i2c_mgr->get_device(i, params[instance].address)))) {
@@ -430,7 +430,7 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         }
         break;
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-    case RangeFinder_TYPE_PX4_PWM:
+    case Type::PX4_PWM:
 #ifndef HAL_BUILD_AP_PERIPH
         // to ease moving from PX4 to ChibiOS we'll lie a little about
         // the backend driver...
@@ -441,48 +441,48 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         break;
 #endif
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
-    case RangeFinder_TYPE_BBB_PRU:
+    case Type::BBB_PRU:
         if (AP_RangeFinder_BBB_PRU::detect()) {
             drivers[instance] = new AP_RangeFinder_BBB_PRU(state[instance], params[instance]);
         }
         break;
 #endif
-    case RangeFinder_TYPE_LWSER:
+    case Type::LWSER:
         if (AP_RangeFinder_LightWareSerial::detect(serial_instance)) {
             drivers[instance] = new AP_RangeFinder_LightWareSerial(state[instance], params[instance], serial_instance++);
         }
         break;
-    case RangeFinder_TYPE_LEDDARONE:
+    case Type::LEDDARONE:
         if (AP_RangeFinder_LeddarOne::detect(serial_instance)) {
             drivers[instance] = new AP_RangeFinder_LeddarOne(state[instance], params[instance], serial_instance++);
         }
         break;
-    case RangeFinder_TYPE_ULANDING:
+    case Type::ULANDING:
         if (AP_RangeFinder_uLanding::detect(serial_instance)) {
             drivers[instance] = new AP_RangeFinder_uLanding(state[instance], params[instance], serial_instance++);
         }
         break;
 #if (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || \
      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO) && defined(HAVE_LIBIIO)
-    case RangeFinder_TYPE_BEBOP:
+    case Type::BEBOP:
         if (AP_RangeFinder_Bebop::detect()) {
             drivers[instance] = new AP_RangeFinder_Bebop(state[instance], params[instance]);
         }
         break;
 #endif
-    case RangeFinder_TYPE_MAVLink:
+    case Type::MAVLink:
 #ifndef HAL_BUILD_AP_PERIPH
         if (AP_RangeFinder_MAVLink::detect()) {
             drivers[instance] = new AP_RangeFinder_MAVLink(state[instance], params[instance]);
         }
 #endif
         break;
-    case RangeFinder_TYPE_MBSER:
+    case Type::MBSER:
         if (AP_RangeFinder_MaxsonarSerialLV::detect(serial_instance)) {
             drivers[instance] = new AP_RangeFinder_MaxsonarSerialLV(state[instance], params[instance], serial_instance++);
         }
         break;
-    case RangeFinder_TYPE_ANALOG:
+    case Type::ANALOG:
 #ifndef HAL_BUILD_AP_PERIPH
         // note that analog will always come back as present if the pin is valid
         if (AP_RangeFinder_analog::detect(params[instance])) {
@@ -490,44 +490,44 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         }
 #endif
         break;
-    case RangeFinder_TYPE_NMEA:
+    case Type::NMEA:
         if (AP_RangeFinder_NMEA::detect(serial_instance)) {
             drivers[instance] = new AP_RangeFinder_NMEA(state[instance], params[instance], serial_instance++);
         }
         break;
-    case RangeFinder_TYPE_WASP:
+    case Type::WASP:
         if (AP_RangeFinder_Wasp::detect(serial_instance)) {
             drivers[instance] = new AP_RangeFinder_Wasp(state[instance], params[instance], serial_instance++);
         }
         break;
-    case RangeFinder_TYPE_BenewakeTF02:
+    case Type::BenewakeTF02:
         if (AP_RangeFinder_Benewake::detect(serial_instance)) {
             drivers[instance] = new AP_RangeFinder_Benewake(state[instance], params[instance], serial_instance++, AP_RangeFinder_Benewake::BENEWAKE_TF02);
         }
         break;
-    case RangeFinder_TYPE_BenewakeTFmini:
+    case Type::BenewakeTFmini:
         if (AP_RangeFinder_Benewake::detect(serial_instance)) {
             drivers[instance] = new AP_RangeFinder_Benewake(state[instance], params[instance], serial_instance++, AP_RangeFinder_Benewake::BENEWAKE_TFmini);
         }
         break;
-    case RangeFinder_TYPE_BenewakeTF03:
+    case Type::BenewakeTF03:
         if (AP_RangeFinder_Benewake::detect(serial_instance)) {
             drivers[instance] = new AP_RangeFinder_Benewake(state[instance], params[instance], serial_instance++, AP_RangeFinder_Benewake::BENEWAKE_TF03);
         }
         break;
-    case RangeFinder_TYPE_PWM:
+    case Type::PWM:
 #ifndef HAL_BUILD_AP_PERIPH
         if (AP_RangeFinder_PWM::detect()) {
             drivers[instance] = new AP_RangeFinder_PWM(state[instance], params[instance], estimated_terrain_height);
         }
 #endif
         break;
-    case RangeFinder_TYPE_BLPing:
+    case Type::BLPing:
         if (AP_RangeFinder_BLPing::detect(serial_instance)) {
             drivers[instance] = new AP_RangeFinder_BLPing(state[instance], params[instance], serial_instance++);
         }
         break;
-    case RangeFinder_TYPE_Lanbao:
+    case Type::Lanbao:
         if (AP_RangeFinder_Lanbao::detect(serial_instance)) {
             drivers[instance] = new AP_RangeFinder_Lanbao(state[instance], params[instance], serial_instance++);
         }
@@ -548,7 +548,7 @@ AP_RangeFinder_Backend *RangeFinder::get_backend(uint8_t id) const {
         return nullptr;
     }
     if (drivers[id] != nullptr) {
-        if (drivers[id]->type() == RangeFinder_TYPE_NONE) {
+        if (drivers[id]->type() == Type::NONE) {
             // pretend it isn't here; disabled at runtime?
             return nullptr;
         }
@@ -569,7 +569,7 @@ void RangeFinder::handle_msg(const mavlink_message_t &msg)
 {
     uint8_t i;
     for (i=0; i<num_instances; i++) {
-        if ((drivers[i] != nullptr) && (params[i].type != RangeFinder_TYPE_NONE)) {
+        if ((drivers[i] != nullptr) && ((Type)params[i].type.get() != Type::NONE)) {
           drivers[i]->handle_msg(msg);
         }
     }
@@ -727,7 +727,7 @@ void RangeFinder::Log_RFND()
 bool RangeFinder::prearm_healthy(char *failure_msg, const uint8_t failure_msg_len) const
 {
     for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
-        if ((params[i].type != RangeFinder_TYPE_NONE) && (drivers[i] == nullptr)) {
+        if (((Type)params[i].type.get() != Type::NONE) && (drivers[i] == nullptr)) {
           hal.util->snprintf(failure_msg, failure_msg_len, "Rangefinder %d was not detected", i + 1);
           return false;
         }
