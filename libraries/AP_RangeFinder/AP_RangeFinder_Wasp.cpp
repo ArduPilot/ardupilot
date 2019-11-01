@@ -133,7 +133,7 @@ bool AP_RangeFinder_Wasp::get_reading(uint16_t &reading_cm) {
     }
 
     reading_cm = 100 * sum / count;
-    set_status(RangeFinder::RangeFinder_Good);
+    set_status(RangeFinder::Status::Good);
 
     return true;
 }
@@ -142,7 +142,7 @@ bool AP_RangeFinder_Wasp::get_reading(uint16_t &reading_cm) {
 
 void AP_RangeFinder_Wasp::update(void) {
     if (!get_reading(state.distance_cm)) {
-        set_status(RangeFinder::RangeFinder_NoData);
+        set_status(RangeFinder::Status::NoData);
     }
 
     if (AP_HAL::millis() - state.last_reading_ms > 500) {

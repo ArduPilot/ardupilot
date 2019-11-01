@@ -25,7 +25,7 @@ protected:
     }
 private:
     uint8_t _instance;
-    RangeFinder::RangeFinder_Status _status;
+    RangeFinder::Status _status;
     uint16_t _distance_cm;
     uint32_t _last_reading_ms;
     AP_UAVCAN* _ap_uavcan;

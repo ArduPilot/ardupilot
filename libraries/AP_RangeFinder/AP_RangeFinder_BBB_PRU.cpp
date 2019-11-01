@@ -110,7 +110,7 @@ bool AP_RangeFinder_BBB_PRU::detect()
 */
 void AP_RangeFinder_BBB_PRU::update(void)
 {
-    state.status = (RangeFinder::RangeFinder_Status)rangerpru->status;
+    state.status = (RangeFinder::Status)rangerpru->status;
     state.distance_cm = rangerpru->distance;
     state.last_reading_ms = AP_HAL::millis();
 }
