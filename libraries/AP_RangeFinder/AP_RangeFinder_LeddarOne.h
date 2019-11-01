@@ -55,7 +55,7 @@ protected:
 
 private:
     // get a reading
-    bool get_reading(uint16_t &reading_cm);
+    bool get_reading(uint16_t &reading_cm) override;
 
     // CRC16
     bool CRC16(uint8_t *aBuffer, uint8_t aLength, bool aCheck);

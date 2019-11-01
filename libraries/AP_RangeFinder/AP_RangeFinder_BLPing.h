@@ -27,7 +27,7 @@ private:
     void send_message(uint16_t msgid, const uint8_t *payload, uint16_t payload_len);
 
     // read a distance from the sensor
-    bool get_reading(uint16_t &reading_cm);
+    bool get_reading(uint16_t &reading_cm) override;
 
     // process one byte received on serial port
     // returns true if a distance message has been successfully parsed

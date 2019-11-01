@@ -51,3 +51,18 @@ bool AP_RangeFinder_Backend_Serial::detect(uint8_t serial_instance)
 {
     return AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance) != nullptr;
 }
+
+
+/*
+   update the state of the sensor
+*/
+void AP_RangeFinder_Backend_Serial::update(void)
+{
+    if (get_reading(state.distance_cm)) {
+        // update range_valid state based on distance measured
+        state.last_reading_ms = AP_HAL::millis();
+        update_status();
+    } else if (AP_HAL::millis() - state.last_reading_ms > 200) {
+        set_status(RangeFinder::Status::NoData);
+    }
+}

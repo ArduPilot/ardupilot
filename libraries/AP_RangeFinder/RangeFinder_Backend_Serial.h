@@ -23,4 +23,11 @@ protected:
     virtual uint16_t tx_bufsize() const { return 0; }
 
     AP_HAL::UARTDriver *uart = nullptr;
+
+    // update state; not all backends call this!
+    virtual void update(void) override;
+
+    // it is essential that anyone relying on the base-class update to
+    // implement this:
+    virtual bool get_reading(uint16_t &reading_cm) { return 0; }
 };
