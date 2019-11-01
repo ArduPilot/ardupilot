@@ -39,6 +39,10 @@ class Builder():
         self.config = spec["config"]
         self.autotest_build = spec["autotest_target"]
         self.target_binary = spec["target_binary"]
+        if "blacklist_options" in spec:
+            self.blacklist_options = spec["blacklist_options"]
+        else:
+            self.blacklist_options = []
 
         # list other features that have to be disabled when a feature
         # is disabled (recursion not done; be exhaustive):
@@ -71,6 +75,9 @@ class Builder():
                     continue
                 if match.group(1) in ("ENABLE", "DISABLE",
                                       "!HAL_MINIMIZE_FEATURES"):
+                    continue
+                if match.group(1) in self.blacklist_options:
+                    print("Skipping (%s)" % match.group(1))
                     continue
                 ret.append((match.group(1), match.group(2)))
         return set(ret)
@@ -215,15 +222,22 @@ specs = [
         "config": 'ArduCopter/config.h',
         "autotest_target": "build.Helicopter",
         "target_binary": "bin/arducopter-heli",
+        "blacklist_options": ["TOY_MODE_ENABLED",
+                              "MODE_ACRO_ENABLED",
+                              "AUTOTUNE_ENABLED"],
         "reverse-deps": {
             "AC_FENCE": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED"],
             "PROXIMITY_ENABLED": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED"],
             "AC_RALLY": ["AC_TERRAIN"],
             "MODE_AUTO_ENABLED": ["AC_TERRAIN", "MODE_GUIDED"],
-            "MODE_RTL_ENABLED": ["MODE_AUTO_ENABLED", "AC_TERRAIN"],
+            "MODE_RTL_ENABLED": ["MODE_AUTO_ENABLED", "AC_TERRAIN", "MODE_SMARTRTL_ENABLED"],
             "BEACON_ENABLED": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED"],
             "MODE_CIRCLE_ENABLED": ["MODE_AUTO_ENABLED", "AC_TERRAIN"],
-            "MODE_GUIDED_ENABLED": ["MODE_AUTO_ENABLED", "AC_TERRAIN"],
+            "MODE_GUIDED_ENABLED": ["MODE_AUTO_ENABLED",
+                                    "AC_TERRAIN",
+                                    "ADSB_ENABLED",
+                                    "MODE_FOLLOW_ENABLED",
+                                    "MODE_GUIDED_NOGPS_ENABLED"],
             "AC_AVOID_ENABLED": ["MODE_FOLLOW_ENABLED"],
         },
     },
@@ -277,5 +291,5 @@ for spec in specs:
 print("")
 for builder in builders:
     print("Builder: %s" % builder.description())
-    print("  Successes: %s" % builder.successes)
+#    print("  Successes: %s" % builder.successes)
     print("   Failures: %s" % builder.failures)
