@@ -32,11 +32,15 @@ AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial(
     uint8_t serial_instance) :
     AP_RangeFinder_Backend(_state, _params)
 {
-    const AP_SerialManager &serial_manager = AP::serialmanager();
-    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);
+    uart = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);
     if (uart != nullptr) {
-        uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance));
+        uart->begin(initial_baudrate(serial_instance));
     }
+}
+
+uint32_t AP_RangeFinder_Backend_Serial::initial_baudrate(const uint8_t serial_instance) const
+{
+    return AP::serialmanager().find_baudrate(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);
 }
 
 /*

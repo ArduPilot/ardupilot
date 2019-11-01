@@ -15,5 +15,8 @@ public:
 
 protected:
 
+    // baudrate used during object construction:
+    virtual uint32_t initial_baudrate(uint8_t serial_instance) const;
+
     AP_HAL::UARTDriver *uart = nullptr;
 };
