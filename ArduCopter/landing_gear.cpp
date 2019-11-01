@@ -34,18 +34,18 @@ void Copter::landinggear_update()
 
     // use rangefinder if available
     switch (rangefinder.status_orient(ROTATION_PITCH_270)) {
-    case RangeFinder::RangeFinder_NotConnected:
-    case RangeFinder::RangeFinder_NoData:
+    case RangeFinder::Status::NotConnected:
+    case RangeFinder::Status::NoData:
         // use altitude above home for non-functioning rangefinder
         break;
 
-    case RangeFinder::RangeFinder_OutOfRangeLow:
+    case RangeFinder::Status::OutOfRangeLow:
         // altitude is close to zero (gear should deploy)
         height_cm = 0;
         break;
 
-    case RangeFinder::RangeFinder_OutOfRangeHigh:
-    case RangeFinder::RangeFinder_Good:
+    case RangeFinder::Status::OutOfRangeHigh:
+    case RangeFinder::Status::Good:
         // use last good reading
         height_cm = rangefinder_state.alt_cm_filt.get();
         break;
