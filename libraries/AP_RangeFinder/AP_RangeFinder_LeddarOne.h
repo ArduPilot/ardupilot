@@ -1,7 +1,7 @@
 #pragma once
 
 #include "RangeFinder.h"
-#include "RangeFinder_Backend.h"
+#include "RangeFinder_Backend_Serial.h"
 
 // defines
 #define LEDDARONE_DEFAULT_ADDRESS 0x01
@@ -37,17 +37,12 @@ enum LeddarOne_ModbusStatus {
     LEDDARONE_MODBUS_STATE_AVAILABLE
 };
 
-class AP_RangeFinder_LeddarOne : public AP_RangeFinder_Backend
+class AP_RangeFinder_LeddarOne : public AP_RangeFinder_Backend_Serial
 {
 
 public:
-    // constructor
-    AP_RangeFinder_LeddarOne(RangeFinder::RangeFinder_State &_state,
-                             AP_RangeFinder_Params &_params,
-                             uint8_t serial_instance);
 
-    // static detection function
-    static bool detect(uint8_t serial_instance);
+    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
 
     // update state
     void update(void) override;
@@ -68,7 +63,6 @@ private:
     // parse a response message from ModBus
     LeddarOne_Status parse_response(uint8_t &number_detections);
 
-    AP_HAL::UARTDriver *uart = nullptr;
     uint32_t last_sending_request_ms;
     uint32_t last_available_ms;
 
