@@ -26,7 +26,7 @@ protected:
 
 private:
     // get a reading
-    bool get_reading(uint16_t &reading_cm);
+    bool get_reading(uint16_t &reading_cm) override;
 
     uint8_t buf[6];
     uint8_t buf_len = 0;

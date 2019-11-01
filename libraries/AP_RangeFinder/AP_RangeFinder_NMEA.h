@@ -44,7 +44,7 @@ private:
     };
 
     // get a reading
-    bool get_reading(uint16_t &reading_cm);
+    bool get_reading(uint16_t &reading_cm) override;
 
     // add a single character to the buffer and attempt to decode
     // returns true if a complete sentence was successfully decoded
