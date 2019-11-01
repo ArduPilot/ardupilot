@@ -79,10 +79,10 @@ public:
         BenewakeTF03 = 27,
     };
 
-    enum RangeFinder_Function {
-        FUNCTION_LINEAR    = 0,
-        FUNCTION_INVERTED  = 1,
-        FUNCTION_HYPERBOLA = 2
+    enum class Function {
+        LINEAR    = 0,
+        INVERTED  = 1,
+        HYPERBOLA = 2
     };
 
     enum RangeFinder_Status {
