@@ -10,9 +10,6 @@ public:
 
     using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
 
-    // update state
-    void update(void) override;
-
 protected:
 
     MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
@@ -22,6 +19,8 @@ protected:
 private:
     // get a reading
     bool get_reading(uint16_t &reading_cm) override;
+
+    uint16_t read_timeout_ms() const override { return 500; }
 
     char linebuf[10];
     uint8_t linebuf_len = 0;

@@ -173,17 +173,3 @@ bool AP_RangeFinder_uLanding::get_reading(uint16_t &reading_cm)
 
     return true;
 }
-
-/*
-   update the state of the sensor
-*/
-void AP_RangeFinder_uLanding::update(void)
-{
-    if (get_reading(state.distance_cm)) {
-        state.last_reading_ms = AP_HAL::millis();
-        // update range_valid state based on distance measured
-        update_status();
-    } else if (AP_HAL::millis() - state.last_reading_ms > 200) {
-        set_status(RangeFinder::Status::NoData);
-    }
-}
