@@ -8,6 +8,8 @@ class AP_RangeFinder_MaxsonarSerialLV : public AP_RangeFinder_Backend_Serial
 
 public:
 
+    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
+
     // update state
     void update(void) override;
 
