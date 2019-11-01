@@ -200,7 +200,7 @@ bool SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
     // expect this timeout to trigger unless there is a severe MCU
     // error
     const uint32_t timeout_us = 20000U + len * 32U;
-    msg_t msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->thread, TIME_MS2I(timeout_us));
+    msg_t msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->thread, TIME_US2I(timeout_us));
     osalSysUnlock();
     if (msg == MSG_TIMEOUT) {
         ret = false;
