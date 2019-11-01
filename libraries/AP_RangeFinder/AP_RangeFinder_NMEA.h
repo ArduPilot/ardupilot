@@ -16,19 +16,14 @@
 #pragma once
 
 #include "RangeFinder.h"
-#include "RangeFinder_Backend.h"
+#include "RangeFinder_Backend_Serial.h"
 
-class AP_RangeFinder_NMEA : public AP_RangeFinder_Backend
+class AP_RangeFinder_NMEA : public AP_RangeFinder_Backend_Serial
 {
 
 public:
-    // constructor
-    AP_RangeFinder_NMEA(RangeFinder::RangeFinder_State &_state,
-                        AP_RangeFinder_Params &_params,
-                        uint8_t serial_instance);
 
-    // static detection function
-    static bool detect(uint8_t serial_instance);
+    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
 
     // update state
     void update(void) override;
@@ -60,13 +55,11 @@ private:
     // returns true if new sentence has just passed checksum test and is validated
     bool decode_latest_term();
 
-    AP_HAL::UARTDriver *uart = nullptr;     // pointer to serial uart
-
     // message decoding related members
     char _term[15];                         // buffer for the current term within the current sentence
     uint8_t _term_offset;                   // offset within the _term buffer where the next character should be placed
     uint8_t _term_number;                   // term index within the current sentence
-    float _distance_m;                      // distance in meters parsed from a term, -1 if no distance
+    float _distance_m = -1.0f;                      // distance in meters parsed from a term, -1 if no distance
     uint8_t _checksum;                      // checksum accumulator
     bool _term_is_checksum;                 // current term is the checksum
     sentence_types _sentence_type;          // the sentence type currently being processed

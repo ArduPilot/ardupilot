@@ -13,35 +13,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_HAL/AP_HAL.h>
-#include "AP_RangeFinder_LightWareSerial.h"
-#include <AP_SerialManager/AP_SerialManager.h>
-#include <ctype.h>
 #include "AP_RangeFinder_NMEA.h"
 
+#include <AP_HAL/AP_HAL.h>
+#include <ctype.h>
+
 extern const AP_HAL::HAL& hal;
-
-// constructor initialises the rangefinder
-// Note this is called after detect() returns true, so we
-// already know that we should setup the rangefinder
-AP_RangeFinder_NMEA::AP_RangeFinder_NMEA(RangeFinder::RangeFinder_State &_state,
-                                         AP_RangeFinder_Params &_params,
-                                         uint8_t serial_instance) :
-    AP_RangeFinder_Backend(_state, _params),
-    _distance_m(-1.0f)
-{
-    const AP_SerialManager &serial_manager = AP::serialmanager();
-    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);
-    if (uart != nullptr) {
-        uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance));
-    }
-}
-
-// detect if a NMEA rangefinder by looking to see if the user has configured it
-bool AP_RangeFinder_NMEA::detect(uint8_t serial_instance)
-{
-    return AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance) != nullptr;
-}
 
 // update the state of the sensor
 void AP_RangeFinder_NMEA::update(void)
