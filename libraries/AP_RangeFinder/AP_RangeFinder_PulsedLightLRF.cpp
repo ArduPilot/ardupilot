@@ -48,7 +48,7 @@ extern const AP_HAL::HAL& hal;
 AP_RangeFinder_PulsedLightLRF::AP_RangeFinder_PulsedLightLRF(uint8_t bus,
                                                              RangeFinder::RangeFinder_State &_state,
                                                              AP_RangeFinder_Params &_params,
-                                                             RangeFinder::RangeFinder_Type _rftype)
+                                                                 RangeFinder::Type _rftype)
     : AP_RangeFinder_Backend(_state, _params)
     , _dev(hal.i2c_mgr->get_device(bus, LL40LS_ADDR))
     , rftype(_rftype)
@@ -62,7 +62,7 @@ AP_RangeFinder_PulsedLightLRF::AP_RangeFinder_PulsedLightLRF(uint8_t bus,
 AP_RangeFinder_Backend *AP_RangeFinder_PulsedLightLRF::detect(uint8_t bus,
                                                               RangeFinder::RangeFinder_State &_state,
 															  AP_RangeFinder_Params &_params,
-                                                              RangeFinder::RangeFinder_Type rftype)
+                                                                  RangeFinder::Type rftype)
 {
     AP_RangeFinder_PulsedLightLRF *sensor
         = new AP_RangeFinder_PulsedLightLRF(bus, _state, _params, rftype);
@@ -167,9 +167,9 @@ bool AP_RangeFinder_PulsedLightLRF::init(void)
     // LidarLite needs split transfers
     _dev->set_split_transfers(true);
 
-    if (rftype == RangeFinder::RangeFinder_TYPE_PLI2CV3) {
+    if (rftype == RangeFinder::Type::PLI2CV3) {
         v2_hardware = true;
-    } else if (rftype == RangeFinder::RangeFinder_TYPE_PLI2CV3HP) {
+    } else if (rftype == RangeFinder::Type::PLI2CV3HP) {
         v3hp_hardware = true;
     } else {
         // auto-detect v1 vs v2
