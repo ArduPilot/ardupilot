@@ -38,10 +38,10 @@ AP_RangeFinder_analog::AP_RangeFinder_analog(RangeFinder::RangeFinder_State &_st
     source = hal.analogin->channel(_params.pin);
     if (source == nullptr) {
         // failed to allocate a ADC channel? This shouldn't happen
-        set_status(RangeFinder::RangeFinder_NotConnected);
+        set_status(RangeFinder::Status::NotConnected);
         return;
     }
-    set_status(RangeFinder::RangeFinder_NoData);
+    set_status(RangeFinder::Status::NoData);
 }
 
 /* 

@@ -145,7 +145,7 @@ void AP_RangeFinder_Benewake_TFMiniPlus::update()
         accum.count = 0;
         update_status();
     } else if (AP_HAL::millis() - state.last_reading_ms > 200) {
-        set_status(RangeFinder::RangeFinder_NoData);
+        set_status(RangeFinder::Status::NoData);
     }
 }
 

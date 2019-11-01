@@ -316,7 +316,7 @@ void RangeFinder::init(enum Rotation orientation_default)
         }
 
         // initialise status
-        state[i].status = RangeFinder_NotConnected;
+        state[i].status = Status::NotConnected;
         state[i].range_valid_count = 0;
     }
 }
@@ -331,7 +331,7 @@ void RangeFinder::update(void)
         if (drivers[i] != nullptr) {
             if ((Type)params[i].type.get() == Type::NONE) {
                 // allow user to disable a rangefinder at runtime
-                state[i].status = RangeFinder_NotConnected;
+                state[i].status = Status::NotConnected;
                 state[i].range_valid_count = 0;
                 continue;
             }
@@ -556,11 +556,11 @@ AP_RangeFinder_Backend *RangeFinder::get_backend(uint8_t id) const {
     return drivers[id];
 };
 
-RangeFinder::RangeFinder_Status RangeFinder::status_orient(enum Rotation orientation) const
+RangeFinder::Status RangeFinder::status_orient(enum Rotation orientation) const
 {
     AP_RangeFinder_Backend *backend = find_instance(orientation);
     if (backend == nullptr) {
-        return RangeFinder_NotConnected;
+        return Status::NotConnected;
     }
     return backend->status();
 }
@@ -589,7 +589,7 @@ AP_RangeFinder_Backend *RangeFinder::find_instance(enum Rotation orientation) co
         AP_RangeFinder_Backend *backend = get_backend(i);
         if (backend != nullptr &&
             backend->orientation() == orientation &&
-            backend->status() == RangeFinder_Good) {
+            backend->status() == Status::Good) {
             return backend;
         }
     }
