@@ -48,6 +48,7 @@
 #include "AP_RangeFinder_SITL.h"
 #include "AP_RangeFinder_MSP.h"
 #include "AP_RangeFinder_USD1_CAN.h"
+#include "AP_RangeFinder_HI50.h"
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Logger/AP_Logger.h>
@@ -536,6 +537,12 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
     case Type::LeddarVu8_Serial:
         if (AP_RangeFinder_LeddarVu8::detect(serial_instance)) {
             _add_backend(new AP_RangeFinder_LeddarVu8(state[instance], params[instance], serial_instance++), instance);
+        }
+        break;
+    case Type::HI50:
+        if (AP_RangeFinder_HI50::detect(serial_instance)) {
+            _add_backend(new AP_RangeFinder_HI50(state[instance], params[instance], serial_instance++), instance);
+            break;
         }
         break;
 

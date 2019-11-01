@@ -88,6 +88,7 @@ public:
         GYUS42v2 = 31,
         MSP = 32,
         USD1_CAN = 33,
+        HI50 = 34,
         SITL = 100,
     };
 
