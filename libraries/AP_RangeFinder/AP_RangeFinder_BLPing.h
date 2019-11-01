@@ -1,20 +1,14 @@
 #pragma once
 
 #include "RangeFinder.h"
-#include "RangeFinder_Backend.h"
+#include "RangeFinder_Backend_Serial.h"
 
-class AP_RangeFinder_BLPing : public AP_RangeFinder_Backend
+class AP_RangeFinder_BLPing : public AP_RangeFinder_Backend_Serial
 {
 
 public:
 
-    // constructor
-    AP_RangeFinder_BLPing(RangeFinder::RangeFinder_State &_state,
-                          AP_RangeFinder_Params &_params,
-                          uint8_t serial_instance);
-
-    // static detection function
-    static bool detect(uint8_t serial_instance);
+    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
 
     // update state
     void update(void) override;
@@ -54,7 +48,6 @@ private:
         CRC_H
     };
 
-    AP_HAL::UARTDriver *uart;
     uint32_t last_init_ms;      // system time that sensor was last initialised
     uint16_t distance_cm;       // latest distance
 

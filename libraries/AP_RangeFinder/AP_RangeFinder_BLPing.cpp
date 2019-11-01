@@ -14,7 +14,6 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_SerialManager/AP_SerialManager.h>
 #include <GCS_MAVLink/GCS.h>
 #include "AP_RangeFinder_BLPing.h"
 
@@ -45,29 +44,6 @@
 // 7        uint8_t     dst_device_id   id of device of the intended recipient
 // 8-n      uint8_t[]   payload         message payload
 // (n+1)-(n+2)  uint16_t    checksum    the sum of all the non-checksum bytes in the message (low byte, high byte)
-
-/* 
-   The constructor also initialises the rangefinder. Note that this
-   constructor is not called until detect() returns true, so we
-   already know that we should setup the rangefinder
-*/
-AP_RangeFinder_BLPing::AP_RangeFinder_BLPing(RangeFinder::RangeFinder_State &_state,
-                                             AP_RangeFinder_Params &_params,
-                                             uint8_t serial_instance) :
-    AP_RangeFinder_Backend(_state, _params)
-{
-    const AP_SerialManager &serial_manager = AP::serialmanager();
-    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);
-    if (uart != nullptr) {
-        uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance));
-    }
-}
-
-// detect if a serial port has been setup to accept rangefinder input
-bool AP_RangeFinder_BLPing::detect(uint8_t serial_instance)
-{
-    return AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance) != nullptr;
-}
 
 /*
    update the state of the sensor
