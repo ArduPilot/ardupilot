@@ -500,7 +500,7 @@ void GCS_MAVLINK::ftp_worker(void) {
 }
 
 // calculates how much string length is needed to fit this in a list response
-int GCS_MAVLINK::emit_dir_entry(char *dest, size_t space, const char *path, const struct dirent * entry) {
+int GCS_MAVLINK::gen_dir_entry(char *dest, size_t space, const char *path, const struct dirent * entry) {
     const bool is_file = entry->d_type == DT_REG;
 
     if (space < 3) {
@@ -557,7 +557,7 @@ void GCS_MAVLINK::ftp_list_dir(struct pending_ftp &request, struct pending_ftp &
         }
 
         // check how much space would be needed to emit the listing
-        const int needed_space = emit_dir_entry((char *)response.data, sizeof(request.data), (char *)request.data, entry);
+        const int needed_space = gen_dir_entry((char *)response.data, sizeof(request.data), (char *)request.data, entry);
 
         if (needed_space < 0 || needed_space > (int)sizeof(request.data)) {
             continue;
@@ -571,7 +571,7 @@ void GCS_MAVLINK::ftp_list_dir(struct pending_ftp &request, struct pending_ftp &
     struct dirent *entry;
     while ((entry = AP::FS().readdir(dir))) {
         // figure out if we can fit the file
-        const int required_space = emit_dir_entry((char *)(response.data + index), sizeof(response.data) - index, (char *)request.data, entry);
+        const int required_space = gen_dir_entry((char *)(response.data + index), sizeof(response.data) - index, (char *)request.data, entry);
 
         // couldn't ever send this so drop it
         if (required_space < 0) {
