@@ -45,10 +45,6 @@ public:
      */
     enum safety_state safety_switch_state(void) override;
 
-    // IMU temperature control
-    void set_imu_temp(float current) override;
-    void set_imu_target_temp(int8_t *target) override;
-
     // get system ID as a string
     bool get_system_id(char buf[40]) override;
     bool get_system_id_unformatted(uint8_t buf[], uint8_t &len) override;
@@ -77,17 +73,6 @@ private:
     };
 
     static ToneAlarmPwmGroup _toneAlarm_pwm_group;
-#endif
-
-#if HAL_HAVE_IMU_HEATER
-    struct {
-        int8_t *target;
-        float integrator;
-        uint16_t count;
-        float sum;
-        uint32_t last_update_ms;
-        float output;
-    } heater;
 #endif
 
     /*
