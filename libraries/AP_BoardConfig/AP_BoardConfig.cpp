@@ -157,7 +157,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Range: -1 80
     // @Units: degC
     // @User: Advanced
-    AP_GROUPINFO("IMU_TARGTEMP", 8, AP_BoardConfig, _imu_target_temperature, HAL_IMU_TEMP_DEFAULT),
+    AP_GROUPINFO("IMU_TARGTEMP", 8, AP_BoardConfig, heater.imu_target_temperature, HAL_IMU_TEMP_DEFAULT),
 #endif
 
 #if AP_FEATURE_BOARD_DETECT
@@ -255,6 +255,30 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Units: ms
     // @User: Advanced
     AP_GROUPINFO("BOOT_DELAY", 20, AP_BoardConfig, _boot_delay_ms, HAL_DEFAULT_BOOT_DELAY),
+
+#if HAL_HAVE_IMU_HEATER
+    // @Param: IMUHEAT_P
+    // @DisplayName: IMU Heater P gain
+    // @Description: IMU Heater P gain
+    // @Range: 1 500
+    // @Increment: 1
+    // @User: Advanced
+
+    // @Param: IMUHEAT_I
+    // @DisplayName: IMU Heater I gain
+    // @Description: IMU Heater integrator gain
+    // @Range: 0 1
+    // @Increment: 0.1
+    // @User: Advanced
+
+    // @Param: IMUHEAT_IMAX
+    // @DisplayName: IMU Heater IMAX
+    // @Description: IMU Heater integrator maximum
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Advanced
+    AP_SUBGROUPINFO(heater.pi_controller, "IMUHEAT_",  21, AP_BoardConfig, AC_PI),
+#endif
     
     AP_GROUPEND
 };
@@ -262,13 +286,6 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 void AP_BoardConfig::init()
 {
     board_setup();
-
-#if HAL_HAVE_IMU_HEATER
-    // let the HAL know the target temperature. We pass a pointer as
-    // we want the user to be able to change the parameter without
-    // rebooting
-    hal.util->set_imu_target_temp((int8_t *)&_imu_target_temperature);
-#endif
 
     AP::rtc().set_utc_usec(hal.util->get_hw_rtc(), AP_RTC::SOURCE_HW);
 
@@ -373,3 +390,9 @@ bool AP_BoardConfig::safety_button_handle_pressed(uint8_t press_count)
     }
     return true;
 }
+
+namespace AP {
+    AP_BoardConfig *boardConfig(void) {
+        return AP_BoardConfig::get_singleton();
+    }
+};
