@@ -67,7 +67,13 @@ int AP_Filesystem::stat(const char *pathname, struct stat *stbuf)
 
 int AP_Filesystem::unlink(const char *pathname)
 {
-    return ::unlink(pathname);
+    // we match the FATFS interface and use unlink
+    // for both files and directories
+    int ret = ::rmdir(pathname);
+    if (ret == -1) {
+        ret = ::unlink(pathname);
+    }
+    return ret;
 }
 
 int AP_Filesystem::mkdir(const char *pathname)
