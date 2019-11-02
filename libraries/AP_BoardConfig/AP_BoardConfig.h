@@ -4,6 +4,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_RTC/AP_RTC.h>
+#include <AC_PID/AC_PI.h>
 
 #ifndef AP_FEATURE_BOARD_DETECT
 #if defined(HAL_CHIBIOS_ARCH_FMUV3) || defined(HAL_CHIBIOS_ARCH_FMUV4) || defined(HAL_CHIBIOS_ARCH_FMUV5) || defined(HAL_CHIBIOS_ARCH_MINDPXV2) || defined(HAL_CHIBIOS_ARCH_FMUV4PRO) || defined(HAL_CHIBIOS_ARCH_BRAINV51) || defined(HAL_CHIBIOS_ARCH_BRAINV52) || defined(HAL_CHIBIOS_ARCH_UBRAINV51) || defined(HAL_CHIBIOS_ARCH_COREV10) || defined(HAL_CHIBIOS_ARCH_BRAINV54)
@@ -173,6 +174,10 @@ public:
     // should be toggled
     bool safety_button_handle_pressed(uint8_t press_count);
 
+#if HAL_HAVE_IMU_HEATER
+    void set_imu_temp(float current_temp_c);
+#endif
+
 private:
     static AP_BoardConfig *_singleton;
     
@@ -211,8 +216,17 @@ private:
 
     static bool _in_sensor_config_error;
 
-    // target temperarure for IMU in Celsius, or -1 to disable
-    AP_Int8 _imu_target_temperature;
+#if HAL_HAVE_IMU_HEATER
+    struct {
+        AP_Int8 imu_target_temperature;
+        uint32_t last_update_ms;
+        AC_PI pi_controller{200, 0.3, 70};
+        uint16_t count;
+        float sum;
+        float output;
+        uint32_t last_log_ms;
+    } heater;
+#endif
 
 #if HAL_RCINPUT_WITH_AP_RADIO
     // direct attached radio
@@ -241,4 +255,8 @@ private:
     AP_Int16 _boot_delay_ms;
 
     AP_Int32 _options;
+};
+
+namespace AP {
+    AP_BoardConfig *boardConfig(void);
 };
