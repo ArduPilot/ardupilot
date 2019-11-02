@@ -683,7 +683,7 @@ private:
     static struct ftp_state ftp;
 
     static void ftp_error(struct pending_ftp &response, FTP_ERROR error); // FTP helper method for packing a NAK
-    static int emit_dir_entry(char *dest, size_t space, const char * path, const struct dirent * entry); // FTP helper for emitting a dir response
+    static int gen_dir_entry(char *dest, size_t space, const char * path, const struct dirent * entry); // FTP helper for emitting a dir response
     static void ftp_list_dir(struct pending_ftp &request, struct pending_ftp &response);
 
     bool ftp_init(void);
