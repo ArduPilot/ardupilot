@@ -15,7 +15,6 @@ def build(bld):
             'AP_Navigation',
             'AR_WPNav',
             'AP_RCMapper',
-            'AC_PID',
             'AP_Stats',
             'AP_Beacon',
             'AP_AdvancedFailsafe',
