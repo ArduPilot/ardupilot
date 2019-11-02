@@ -930,6 +930,45 @@ class AutoTestPlane(AutoTest):
         if ex is not None:
             raise ex
 
+    def test_throttle_failsafe_fence(self):
+        fence_bit = mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE
+
+        self.progress("Checking fence is not present before being configured")
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        print("%s" % str(m))
+        if (m.onboard_control_sensors_enabled & fence_bit):
+            raise NotAchievedException("Fence enabled before being configured")
+
+        self.change_mode('MANUAL')
+        self.wait_ready_to_arm()
+
+        self.load_fence("CMAC-fence.txt")
+
+        self.set_parameter("FENCE_CHANNEL", 7)
+        self.set_parameter("FENCE_ACTION", 4)
+        self.set_rc(3, 1000)
+        self.set_rc(7, 2000)
+
+        self.progress("Checking fence is initially OK")
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        print("%s" % str(m))
+        if (not (m.onboard_control_sensors_enabled & fence_bit)):
+            raise NotAchievedException("Fence not initially enabled")
+
+        self.set_parameter("THR_FS_VALUE", 960)
+        self.progress("Failing receiver (throttle-to-950)")
+        self.set_parameter("SIM_RC_FAIL", 2) # throttle-to-950
+        self.wait_mode("CIRCLE")
+        self.delay_sim_time(1) # give
+        self.drain_mav_unparsed()
+
+        self.progress("Checking fence is OK after receiver failure (bind-values)")
+        fence_bit = mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        print("%s" % str(m))
+        if (not (m.onboard_control_sensors_enabled & fence_bit)):
+            raise NotAchievedException("Fence not enabled after RC fail")
+
     def test_gripper_mission(self):
         self.context_push()
         ex = None
@@ -1548,6 +1587,10 @@ class AutoTestPlane(AutoTest):
             ("ThrottleFailsafe",
              "Fly throttle failsafe",
              self.test_throttle_failsafe),
+
+            ("ThrottleFailsafeFence",
+             "Fly fence survives throttle failsafe",
+             self.test_throttle_failsafe_fence),
 
             ("TestFlaps", "Flaps", self.fly_flaps),
 
