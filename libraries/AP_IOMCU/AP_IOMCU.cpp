@@ -44,7 +44,9 @@ enum ioevents {
 
 AP_IOMCU::AP_IOMCU(AP_HAL::UARTDriver &_uart) :
     uart(_uart)
-{}
+{
+    singleton = this;
+}
 
 #define IOMCU_DEBUG_ENABLE 0
 
@@ -53,6 +55,8 @@ AP_IOMCU::AP_IOMCU(AP_HAL::UARTDriver &_uart) :
 #else
 #define debug(fmt, args ...)
 #endif
+
+AP_IOMCU *AP_IOMCU::singleton;
 
 /*
   initialise library, starting thread
@@ -998,5 +1002,12 @@ void AP_IOMCU::check_iomcu_reset(void)
     trigger_event(IOEVENT_SET_RATES);
     trigger_event(IOEVENT_SET_DEFAULT_RATE);
 }
+
+
+namespace AP {
+    AP_IOMCU *iomcu(void) {
+        return AP_IOMCU::get_singleton();
+    }
+};
 
 #endif // HAL_WITH_IO_MCU

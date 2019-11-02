@@ -106,6 +106,10 @@ public:
     // channel group masks
     const uint8_t ch_masks[3] = { 0x03,0x0C,0xF0 };
 
+    static AP_IOMCU *get_singleton(void) {
+        return singleton;
+    }
+
 private:
     AP_HAL::UARTDriver &uart;
 
@@ -238,6 +242,8 @@ private:
     void handle_repeated_failures();
     void check_iomcu_reset();
 
+    static AP_IOMCU *singleton;
+
     enum {
         PROTO_NOP               = 0x00,
         PROTO_OK                = 0x10,
@@ -268,6 +274,10 @@ private:
 
         PROG_MULTI_MAX    = 248,      /**< protocol max is 255, must be multiple of 4 */
     };
+};
+
+namespace AP {
+    AP_IOMCU *iomcu(void);
 };
 
 #endif // HAL_WITH_IO_MCU
