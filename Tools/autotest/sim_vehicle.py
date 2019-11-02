@@ -21,6 +21,7 @@ import tempfile
 import textwrap
 import time
 import shlex
+import platform
 
 from pymavlink import mavextra
 from pysim import vehicleinfo
@@ -168,6 +169,9 @@ def under_cygwin():
     """Return if Cygwin binary exist"""
     return os.path.exists("/usr/bin/cygstart")
 
+def under_wsl():
+    """Return if running within WSL"""
+    return "microsoft" in platform.uname()[3].lower()
 
 def under_macos():
     return sys.platform == 'darwin'
@@ -637,6 +641,8 @@ def start_mavproxy(opts, stuff):
     if under_cygwin():
         cmd.append("/usr/bin/cygstart")
         cmd.append("-w")
+        cmd.append("mavproxy.exe")
+    elif under_wsl():
         cmd.append("mavproxy.exe")
     else:
         cmd.append("mavproxy.py")
