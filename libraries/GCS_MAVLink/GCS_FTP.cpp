@@ -143,6 +143,14 @@ void GCS_MAVLINK::ftp_error(struct pending_ftp &response, FTP_ERROR error) {
     }
 }
 
+// send our response back out to the system
+void GCS_MAVLINK::ftp_push_replies(pending_ftp &reply)
+{
+    while (!ftp.replies->push(reply)) { // we must fit the response, keep shoving it in
+        hal.scheduler->delay(10);
+    }
+}
+
 void GCS_MAVLINK::ftp_worker(void) {
     pending_ftp request;
     pending_ftp reply = {};
@@ -157,9 +165,7 @@ void GCS_MAVLINK::ftp_worker(void) {
         // if it's a rerequest and we still have the last response then send it
         if ((request.sysid == reply.sysid) && (request.compid = reply.compid) &&
             (request.session == reply.session) && (request.seq_number + 1 == reply.seq_number)) {
-            while (!ftp.replies->push(reply)) {
-                hal.scheduler->delay(10);
-            }
+            ftp_push_replies(reply);
             continue;
         }
 
@@ -175,9 +181,7 @@ void GCS_MAVLINK::ftp_worker(void) {
         // sanity check the request size
         if (request.size > sizeof(request.data)) {
             ftp_error(reply, FTP_ERROR::InvalidDataSize);
-            while (!ftp.replies->push(reply)) {
-                hal.scheduler->delay(10);
-            }
+            ftp_push_replies(reply);
             continue;
         }
 
@@ -477,9 +481,7 @@ void GCS_MAVLINK::ftp_worker(void) {
                             reply.burst_complete = (i == (transfer_size - 1));
                             reply.size = (uint8_t)read_bytes;
 
-                            while (!ftp.replies->push(reply)) { // we must fit the response, keep shoving it in
-                                hal.scheduler->delay(10);
-                            }
+                            ftp_push_replies(reply);
 
                             // prep the reply to be used again
                             reply.seq_number++;
@@ -497,10 +499,7 @@ void GCS_MAVLINK::ftp_worker(void) {
             }
         }
 
-        // send our response back out to the system
-        while (!ftp.replies->push(reply)) { // we must fit the response, keep shoving it in
-            hal.scheduler->delay(10);
-        }
+        ftp_push_replies(reply);
         continue;
     }
 }
