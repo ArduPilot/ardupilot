@@ -78,15 +78,17 @@ void AP_BoardConfig::board_setup_drivers(void)
     // run board auto-detection
     board_autodetect();
 
+#if HAL_HAVE_IMU_HEATER
     if (state.board_type == PX4_BOARD_PH2SLIM ||
         state.board_type == PX4_BOARD_PIXHAWK2) {
-        _imu_target_temperature.set_default(45);
-        if (_imu_target_temperature.get() < 0) {
+        heater.imu_target_temperature.set_default(45);
+        if (heater.imu_target_temperature.get() < 0) {
             // don't allow a value of -1 on the cube, or it could cook
             // the IMU
-            _imu_target_temperature.set(45);
+            heater.imu_target_temperature.set(45);
         }
     }
+#endif
 
     px4_configured_board = (enum px4_board_type)state.board_type.get();
 
