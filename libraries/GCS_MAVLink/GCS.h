@@ -690,6 +690,7 @@ private:
     void handle_file_transfer_protocol(const mavlink_message_t &msg);
     void send_ftp_replies(void);
     void ftp_worker(void);
+    void ftp_push_replies(pending_ftp &reply);
 #endif // HAVE_FILESYSTEM_SUPPORT
 
     void send_distance_sensor(const class AP_RangeFinder_Backend *sensor, const uint8_t instance) const;
