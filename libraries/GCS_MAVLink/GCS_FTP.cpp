@@ -383,7 +383,7 @@ void GCS_MAVLINK::ftp_worker(void) {
 
                         request.data[sizeof(request.data) - 1] = 0; // ensure the path is null terminated
 
-                        // actually open the file
+                        // remove the file/dir
                         if (AP::FS().unlink((char *)request.data) == -1) {
                             ftp_error(reply, FTP_ERROR::FailErrno);
                             break;
