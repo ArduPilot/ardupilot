@@ -303,7 +303,7 @@ void GCS_MAVLINK::ftp_worker(void) {
 
                         // actually open the file
                         ftp.fd = AP::FS().open((char *)request.data,
-                                               (request.opcode == FTP_OP::CreateFile) ? O_WRONLY|O_CREAT|O_TRUNC : O_CREAT|O_WRONLY|O_TRUNC);
+                                               (request.opcode == FTP_OP::CreateFile) ? O_WRONLY|O_CREAT|O_TRUNC : O_WRONLY);
                         if (ftp.fd == -1) {
                             ftp_error(reply, FTP_ERROR::FailErrno);
                             break;
@@ -503,6 +503,11 @@ void GCS_MAVLINK::ftp_worker(void) {
 int GCS_MAVLINK::emit_dir_entry(char *dest, size_t space, const char *path, const struct dirent * entry) {
     const bool is_file = entry->d_type == DT_REG;
 
+    if (space < 3) {
+        return -1;
+    }
+    dest[0] = 0;
+
     if (!is_file && entry->d_type != DT_DIR) {
         return -1; // this just forces it so we can't send this back, it's easier then sending skips to a GCS
     }
@@ -515,7 +520,7 @@ int GCS_MAVLINK::emit_dir_entry(char *dest, size_t space, const char *path, cons
         if (AP::FS().stat(full_path, &st)) {
             return -1;
         }
-        return hal.util->snprintf(dest, space, "F%s\t%d\0", entry->d_name, (int)st.st_size);
+        return hal.util->snprintf(dest, space, "F%s\t%u\0", entry->d_name, (unsigned)st.st_size);
     } else {
         return hal.util->snprintf(dest, space, "D%s\0", entry->d_name);
     }
