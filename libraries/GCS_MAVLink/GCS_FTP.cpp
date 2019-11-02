@@ -181,10 +181,15 @@ void GCS_MAVLINK::ftp_worker(void) {
             continue;
         }
 
-        // reject anything not belonging to our current session, unless we are terminating a session, then just kill it and move on
-        if (((ftp.current_session >= 0) && (request.session != ftp.current_session))
-            && ((request.opcode == FTP_OP::TerminateSession) || (request.opcode == FTP_OP::ResetSessions))) {
+        // check for session termination
+        if (request.session != ftp.current_session &&
+            (request.opcode == FTP_OP::TerminateSession || request.opcode == FTP_OP::ResetSessions)) {
+            // terminating a different session, just ack
             reply.opcode = FTP_OP::Ack;
+        } else if (ftp.fd != -1 && request.session != ftp.current_session) {
+            // if we have an open file and the session isn't right
+            // then reject. This prevents IO on the wrong file
+            ftp_error(reply, FTP_ERROR::InvalidSession);
         } else {
             // dispatch the command as needed
             switch (request.opcode) {
@@ -236,6 +241,7 @@ void GCS_MAVLINK::ftp_worker(void) {
                             break;
                         }
                         ftp.mode = FTP_FILE_MODE::Read;
+                        ftp.current_session = request.session;
 
                         reply.opcode = FTP_OP::Ack;
                         reply.size = sizeof(uint32_t);
@@ -309,6 +315,7 @@ void GCS_MAVLINK::ftp_worker(void) {
                             break;
                         }
                         ftp.mode = FTP_FILE_MODE::Write;
+                        ftp.current_session = request.session;
 
                         reply.opcode = FTP_OP::Ack;
                         break;
@@ -409,7 +416,6 @@ void GCS_MAVLINK::ftp_worker(void) {
                             read_size = AP::FS().read(fd, reply.data, sizeof(reply.data));
                             if (read_size == -1) {
                                 ftp_error(reply, FTP_ERROR::FailErrno);
-                                AP::FS().close(fd);
                                 break;
                             }
                             checksum = crc_crc32(checksum, reply.data, MIN((size_t)read_size, sizeof(reply.data)));
