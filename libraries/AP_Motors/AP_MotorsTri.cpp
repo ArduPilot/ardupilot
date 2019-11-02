@@ -18,6 +18,10 @@
 #include <GCS_MAVLink/GCS.h>
 #include "AP_MotorsTri.h"
 
+#define MEASURED_PIVOT_TOL radians(25)  // if this angle error is exceeded servo feedback will be disabled
+#define CAL_TRAVERSE_TIME 2000          // time to allow the servo to move for static voltage readings
+#define CAL_HOLD_TIME 2000              // time to average a static voltage reading over
+
 extern const AP_HAL::HAL& hal;
 
 // init
@@ -56,6 +60,13 @@ void AP_MotorsTri::init(motor_frame_class frame_class, motor_frame_type frame_ty
 
     _mav_type = MAV_TYPE_TRICOPTER;
 
+    // init the analog yaw servo feedback pin
+    _yaw_feedback = hal.analogin->channel(ANALOG_INPUT_NONE);
+    if (_yaw_servo_speed == -1) {
+        // dont init into a calibration
+        _yaw_servo_speed.set_and_save(0);
+    }
+
     // record successful initialisation if what we setup was the desired frame_class
     set_initialised_ok(frame_class == MOTOR_FRAME_TRI);
 }
@@ -90,14 +101,16 @@ void AP_MotorsTri::set_update_rate(uint16_t speed_hz)
 void AP_MotorsTri::output_to_motors()
 {
     switch (_spool_state) {
-        case SpoolState::SHUT_DOWN:
+        case SpoolState::SHUT_DOWN: {
             // sends minimum values out to the motors
             rc_write(AP_MOTORS_MOT_1, output_to_pwm(0));
             rc_write(AP_MOTORS_MOT_2, output_to_pwm(0));
             rc_write(AP_MOTORS_MOT_4, output_to_pwm(0));
-            rc_write_angle(AP_MOTORS_CH_TRI_YAW, 0);
+            float yaw_output = calibrate_yaw();
+            rc_write_angle(AP_MOTORS_CH_TRI_YAW, yaw_output);
             break;
-        case SpoolState::GROUND_IDLE:
+        }
+        case SpoolState::GROUND_IDLE: {
             // sends output to motors when armed but not flying
             set_actuator_with_slew(_actuator[1], actuator_spin_up_to_ground_idle());
             set_actuator_with_slew(_actuator[2], actuator_spin_up_to_ground_idle());
@@ -106,10 +119,15 @@ void AP_MotorsTri::output_to_motors()
             rc_write(AP_MOTORS_MOT_2, output_to_pwm(_actuator[2]));
             rc_write(AP_MOTORS_MOT_4, output_to_pwm(_actuator[4]));
             rc_write_angle(AP_MOTORS_CH_TRI_YAW, 0);
+            _cal_state = CAL_NONE;
+            if (_yaw_servo_speed == -1) {
+                _yaw_servo_speed.set_and_save(0);
+            }
             break;
+        }
         case SpoolState::SPOOLING_UP:
         case SpoolState::THROTTLE_UNLIMITED:
-        case SpoolState::SPOOLING_DOWN:
+        case SpoolState::SPOOLING_DOWN: {
             // set motor output based on thrust requests
             set_actuator_with_slew(_actuator[1], thrust_to_actuator(_thrust_right));
             set_actuator_with_slew(_actuator[2], thrust_to_actuator(_thrust_left));
@@ -117,8 +135,13 @@ void AP_MotorsTri::output_to_motors()
             rc_write(AP_MOTORS_MOT_1, output_to_pwm(_actuator[1]));
             rc_write(AP_MOTORS_MOT_2, output_to_pwm(_actuator[2]));
             rc_write(AP_MOTORS_MOT_4, output_to_pwm(_actuator[4]));
-            rc_write_angle(AP_MOTORS_CH_TRI_YAW, degrees(_pivot_angle)*100);
+            rc_write_angle(AP_MOTORS_CH_TRI_YAW, degrees(_desired_pivot_angle)*100);
+            _cal_state = CAL_NONE;
+            if (_yaw_servo_speed == -1) {
+                _yaw_servo_speed.set_and_save(0);
+            }
             break;
+        }
     }
 }
 
@@ -171,14 +194,49 @@ void AP_MotorsTri::output_armed_stabilizing()
         pitch_thrust *= -1.0f;
     }
 
-    // calculate angle of yaw pivot
-    _pivot_angle = safe_asin(yaw_thrust);
-    if (fabsf(_pivot_angle) > radians(_yaw_servo_angle_max_deg)) {
+    // calculate desired angle of yaw pivot
+    _desired_pivot_angle = safe_asin(yaw_thrust);
+    if (fabsf(_desired_pivot_angle) > radians(_yaw_servo_angle_max_deg)) {
         limit.yaw = true;
-        _pivot_angle = constrain_float(_pivot_angle, -radians(_yaw_servo_angle_max_deg), radians(_yaw_servo_angle_max_deg));
+        _desired_pivot_angle = constrain_float(_desired_pivot_angle, -radians(_yaw_servo_angle_max_deg), radians(_yaw_servo_angle_max_deg));
     }
 
-    float pivot_thrust_max = cosf(_pivot_angle);
+    /*
+        Calculate the angle the pivot is actually at
+        1. Calculate how far the pivot could have moved from the last desired angle based on the pivot speed paramiter (if set)
+        2. Calculate the position of the servo from the analog feedback pin (if set)
+        3. Compare the two to check for analog feedback failure
+    */
+    float pivot_angle;
+    if (_yaw_servo_speed <= 0) {
+        pivot_angle = _desired_pivot_angle;
+    } else {
+        // user must have speed set to use analog feedback
+        // calculate the position of the servo
+        // we only send the desired position to the servo when flying
+        if (_spool_state > SpoolState::GROUND_IDLE) {
+            pivot_angle = calculate_new_pivot(_desired_pivot_angle);
+        } else {
+            pivot_angle = calculate_new_pivot(0.0);
+        }
+
+        // if available measure the analog feedback position
+        if (_yaw_feedback->set_pin(_yaw_servo_pin)) {
+            float pivot_measured = measure_pivot_angle();
+
+            // cheack if there is a large difference between the calculated
+            if (fabsf(pivot_angle - pivot_measured) > MEASURED_PIVOT_TOL) {
+                // disable analogue feedback
+                _yaw_servo_pin.set(0);
+                gcs().send_text(MAV_SEVERITY_WARNING, "Yaw Servo Feedback Error");
+                gcs().send_text(MAV_SEVERITY_INFO, "MotorsTri: des: %.2f, calc: %.2f, mes %.2f",(double)_desired_pivot_angle,(double)pivot_angle,(double)pivot_measured);
+            } else {
+                pivot_angle = pivot_measured;
+            }
+        }
+    }
+
+    float pivot_thrust_max = cosf(pivot_angle);
     float thrust_max = 1.0f;
 
     // sanity check throttle is above zero and below current limited throttle
@@ -268,7 +326,7 @@ void AP_MotorsTri::output_armed_stabilizing()
 
     // scale pivot thrust to account for pivot angle
     // we should not need to check for divide by zero as _pivot_angle is constrained to the 5deg ~ 80 deg range
-    _thrust_rear = _thrust_rear / cosf(_pivot_angle);
+    _thrust_rear = _thrust_rear / cosf(pivot_angle);
 
     // constrain all outputs to 0.0f to 1.0f
     // test code should be run with these lines commented out as they should not do anything
@@ -360,4 +418,208 @@ float AP_MotorsTri::get_roll_factor(uint8_t i)
     }
 
     return ret;
+}
+
+// calculate the new pivot angle given its last position and speed
+float AP_MotorsTri::calculate_new_pivot(float desired_pivot_angle)
+{
+    const float max_change = radians(_yaw_servo_speed) * (1.0 / _loop_rate);
+    return constrain_float(desired_pivot_angle, _last_pivot_angle-max_change, _last_pivot_angle+max_change);
+}
+
+float AP_MotorsTri::measure_pivot_angle()
+{
+    float voltage = _yaw_feedback->voltage_latest();
+    // linear interpolation between min, trim and max to angle
+
+    // see if voltage is between min and trim
+    if (MIN(_yaw_servo_min_voltage,_yaw_servo_mid_voltage) < voltage && voltage < MAX(_yaw_servo_min_voltage,_yaw_servo_mid_voltage)) {
+        if (_yaw_servo_min_voltage < _yaw_servo_mid_voltage) {
+            return linear_interpolate(-radians(_yaw_servo_angle_max_deg), 0.0, voltage, _yaw_servo_min_voltage, _yaw_servo_mid_voltage);
+        }
+        return linear_interpolate(0.0, -radians(_yaw_servo_angle_max_deg), voltage, _yaw_servo_mid_voltage, _yaw_servo_min_voltage);
+    }
+    if (_yaw_servo_mid_voltage < _yaw_servo_max_voltage) {
+        return linear_interpolate(0.0, radians(_yaw_servo_angle_max_deg), voltage, _yaw_servo_mid_voltage, _yaw_servo_max_voltage);
+    }
+    return linear_interpolate(radians(_yaw_servo_angle_max_deg), 0.0, voltage, _yaw_servo_max_voltage, _yaw_servo_mid_voltage);
+}
+
+float AP_MotorsTri::calibrate_yaw()
+{
+
+    if (_yaw_servo_speed != -1) {
+        _cal_state = CAL_NONE;
+        return 0.0;
+    }
+    if (_cal_state == CAL_FAILED) {
+        _cal_state = CAL_NONE;
+        _yaw_servo_speed.set_and_save(0);
+        return 0.0;
+    }
+    if (!_yaw_feedback->set_pin(_yaw_servo_pin)) {
+        _cal_state = CAL_NONE;
+        _yaw_servo_speed.set_and_save(0);
+        gcs().send_text(MAV_SEVERITY_ERROR, "MotorsTri: cannot auto cal, no feedback pin not found");
+        return 0.0;
+    }
+
+    // make sure angle and pin are set correctly
+    SRV_Channels::set_angle(SRV_Channels::get_motor_function(AP_MOTORS_CH_TRI_YAW), _yaw_servo_angle_max_deg*100);
+
+    uint32_t now = AP_HAL::millis();
+
+    switch (_cal_state) {
+        case CAL_NONE: {
+            _cal_state = CAL_MIN;
+            _cal_start_ms = now;
+            FALLTHROUGH;
+        }
+
+        case CAL_MIN: {
+            if (now - _cal_start_ms > CAL_TRAVERSE_TIME) {
+                _count++;
+                _reading_sum += _yaw_feedback->voltage_latest();
+                // take average for another 5 sec
+                if (now - _cal_start_ms > CAL_TRAVERSE_TIME + CAL_HOLD_TIME && _count > 0) {
+                    _voltage_min_temp = _reading_sum / _count;
+                    _reading_sum = 0;
+                    _count = 0;
+                    _cal_start_ms = now;
+                    _cal_state = CAL_MID;
+                    gcs().send_text(MAV_SEVERITY_INFO, "MotorsTri: volt min: %.2f",(double)_voltage_min_temp);
+                }
+            }
+            return -_yaw_servo_angle_max_deg*100;
+        }
+
+        case CAL_MID: {
+            // give 5 seconds for the servo to move
+            if (now - _cal_start_ms > CAL_TRAVERSE_TIME) {
+                _count++;
+                _reading_sum += _yaw_feedback->voltage_latest();
+                // take average for another 5 sec
+                if (now - _cal_start_ms > CAL_TRAVERSE_TIME + CAL_HOLD_TIME && _count > 0) {
+                    _voltage_mid_temp = _reading_sum / _count;
+                    _reading_sum = 0;
+                    _count = 0;
+                    _cal_start_ms = now;
+                    _cal_state = CAL_MAX;
+                    gcs().send_text(MAV_SEVERITY_INFO, "MotorsTri: volt mid: %.2f",(double)_voltage_mid_temp);
+                }
+            }
+            return 0.0;
+        }
+
+        case CAL_MAX: {
+            // give 5 seconds for the servo to move
+            if (now - _cal_start_ms > CAL_TRAVERSE_TIME) {
+                _count++;
+                _reading_sum += _yaw_feedback->voltage_latest();
+                // take average for another 5 sec
+                if (now - _cal_start_ms > CAL_TRAVERSE_TIME + CAL_HOLD_TIME && _count > 0) {
+                    _voltage_max_temp = _reading_sum / _count;
+                    _reading_sum = 0;
+                    _count = 0;
+                    _cal_start_ms = now;
+                    gcs().send_text(MAV_SEVERITY_INFO, "MotorsTri: volt max: %.2f",(double)_voltage_max_temp);
+
+                    // check if the found values seem OK
+                    float voltage_diff_1 = _voltage_mid_temp - _voltage_min_temp;
+                    float voltage_diff_2 = _voltage_max_temp - _voltage_mid_temp;
+                    if (is_positive(voltage_diff_1) != is_positive(voltage_diff_1)) {
+                        gcs().send_text(MAV_SEVERITY_INFO, "MotorsTri: cal failed - mid not between min and max");
+                        _cal_state = CAL_FAILED;
+                        return 0.0;
+                    }
+                    voltage_diff_1 = fabsf(voltage_diff_1);
+                    voltage_diff_2 = fabsf(voltage_diff_2);
+                    if (voltage_diff_1 < 0.2 || voltage_diff_2 <  0.2) {
+                        gcs().send_text(MAV_SEVERITY_INFO, "MotorsTri: cal failed - too small a voltage change");
+                        _cal_state = CAL_FAILED;
+                        return 0.0;
+                    }
+                    float voltage_diff_average = (voltage_diff_1 + voltage_diff_2) * 0.5;
+                    float voltage_1_error = voltage_diff_1 - voltage_diff_average;
+                    float voltage_2_error = voltage_diff_2 - voltage_diff_average;
+                    if (voltage_1_error > voltage_diff_average * 0.25 || voltage_2_error > voltage_diff_average * 0.25) {
+                        gcs().send_text(MAV_SEVERITY_INFO, "MotorsTri: none linear result");
+                        _cal_state = CAL_FAILED;
+                        return 0.0f;
+                    }
+
+                    // we got this far so the results must be OK
+                    _yaw_servo_min_voltage.set_and_save(_voltage_min_temp);
+                    _yaw_servo_mid_voltage.set_and_save(_voltage_mid_temp);
+                    _yaw_servo_max_voltage.set_and_save(_voltage_max_temp);
+
+                    _cal_state = CAL_SPEED;
+
+                }
+            }
+            return _yaw_servo_angle_max_deg*100;
+        }
+
+        case CAL_SPEED: {
+            // move the yaw servo between min and max and measure the time to travel from -75% to + 75% of range
+            if (_count == 0) {
+                _count = 1;
+                _cal_start_ms = now;
+                _cal_last_angle = measure_pivot_angle();
+                return _yaw_servo_angle_max_deg*100;
+            }
+
+            // take 10 readings
+            if (_count >= 10) {
+                float time = (_reading_sum / (_count - 1)) * 0.001;
+                if (is_zero(time)) {
+                    gcs().send_text(MAV_SEVERITY_INFO, "MotorsTri: speed cal error");
+                    _cal_state = CAL_FAILED;
+                    return 0.0;
+                }
+                float angle = 2*0.75*_yaw_servo_angle_max_deg;
+                float speed = angle / time;
+                gcs().send_text(MAV_SEVERITY_INFO, "MotorsTri: yaw speed: %.1f",(double)speed);
+                _yaw_servo_speed.set_and_save(speed);
+                _cal_state = CAL_NONE;
+                return 0.0;
+            }
+
+            if (now - _cal_start_ms > 2000) {
+                gcs().send_text(MAV_SEVERITY_INFO, "MotorsTri: speed cal timeout");
+                _cal_state = CAL_FAILED;
+                return 0.0;
+            }
+
+            // take readings for average
+            float angle = measure_pivot_angle();
+            if (_count % 2) {
+                // going from max to min
+                if (_cal_last_angle > 0.75*radians(_yaw_servo_angle_max_deg) && angle < 0.75*radians(_yaw_servo_angle_max_deg)) {
+                    _cal_start_ms = now;
+                }
+                if (_cal_last_angle > -0.75*radians(_yaw_servo_angle_max_deg) && angle < -0.75*radians(_yaw_servo_angle_max_deg)) {
+                    _reading_sum += now - _cal_start_ms;
+                    _count++;
+                }
+                _cal_last_angle = angle;
+                return -_yaw_servo_angle_max_deg*100;
+            } else {
+                // going from min to max
+                if (_cal_last_angle < -0.75*radians(_yaw_servo_angle_max_deg) && angle > -0.75*radians(_yaw_servo_angle_max_deg)) {
+                    _cal_start_ms = now;
+                }
+                if (_cal_last_angle < 0.75*radians(_yaw_servo_angle_max_deg) && angle > 0.75*radians(_yaw_servo_angle_max_deg)) {
+                    _reading_sum += now - _cal_start_ms;
+                    _count++;
+                }
+                _cal_last_angle = angle;
+                return _yaw_servo_angle_max_deg*100;
+            }
+        }
+
+        default: {
+            return 0.0;
+        }
+    }
 }
