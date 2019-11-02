@@ -92,23 +92,25 @@ void Copter::update_heli_control_dynamics(void)
 bool Copter::should_use_landing_swash() const
 {
     if (flightmode->has_manual_throttle() || control_mode == Mode::Number::DRIFT || control_mode == Mode::Number::SPORT) {
-        // don't move suddenly when landing
+        // manual modes always uses full swash range
         return false;
     }
     if (flightmode->is_landing()) {
-        // don't move suddenly when landing
+        // landing with non-manual throttle mode always uses limit swash range
         return true;
     }
     if (ap.land_complete) {
-        // don't move suddenly when landed
+        // when landed in non-manual throttle mode limit swash range
         return true;
     }
     if (!ap.auto_armed) {
-        // if we're waiting to take off don't move too much
+        // when waiting to takeoff in non-manual throttle mode limit swash range 
         return true;
     }
     if (!heli_flags.dynamic_flight) {
-        // if we're not in up-and-away flight limit movement
+        // Just in case we are unsure of being in non-manual throttle mode, limit swash range in low speed
+        // and hovering flight.  This will catch any non-manual throttle mode attempting a landing and  
+        // driving the collective too low before the land complete flag is set.
         return true;
     }
     return false;
