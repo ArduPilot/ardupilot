@@ -160,6 +160,11 @@ bool Plane::geofence_present(void)
  */
 void Plane::geofence_update_pwm_enabled_state() 
 {
+    if (rc_failsafe_active()) {
+        // do nothing based on the radio channel value as it may be at bind value
+        return;
+    }
+
     bool is_pwm_enabled;
     if (g.fence_channel == 0) {
         is_pwm_enabled = false;
