@@ -123,67 +123,6 @@ Util::safety_state Util::safety_switch_state(void)
 #endif
 }
 
-void Util::set_imu_temp(float current)
-{
-#if HAL_HAVE_IMU_HEATER
-    if (!heater.target || *heater.target == -1) {
-        return;
-    }
-
-    // average over temperatures to remove noise
-    heater.count++;
-    heater.sum += current;
-
-    // update once a second
-    uint32_t now = AP_HAL::millis();
-    if (now - heater.last_update_ms < 1000) {
-#if defined(HAL_HEATER_GPIO_PIN)
-        // output as duty cycle to local pin. Use a random sequence to
-        // prevent a periodic change to magnetic field
-        bool heater_on = (get_random16() < uint32_t(heater.output) * 0xFFFFU / 100U);
-        hal.gpio->write(HAL_HEATER_GPIO_PIN, heater_on);
-#endif
-        return;
-    }
-    heater.last_update_ms = now;
-
-    current = heater.sum / heater.count;
-    heater.sum = 0;
-    heater.count = 0;
-
-    // experimentally tweaked for Pixhawk2
-    const float kI = 0.3f;
-    const float kP = 200.0f;
-    float target = (float)(*heater.target);
-
-    // limit to 65 degrees to prevent damage
-    target = constrain_float(target, 0, 65);
-
-    float err = target - current;
-
-    heater.integrator += kI * err;
-    heater.integrator = constrain_float(heater.integrator, 0, 70);
-
-    heater.output = constrain_float(kP * err + heater.integrator, 0, 100);
-
-    //hal.console->printf("integrator %.1f out=%.1f temp=%.2f err=%.2f\n", heater.integrator, heater.output, current, err);
-
-#if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_enabled()) {
-        // tell IOMCU to setup heater
-        iomcu.set_heater_duty_cycle(heater.output);
-    }
-#endif
-#endif // HAL_HAVE_IMU_HEATER
-}
-
-void Util::set_imu_target_temp(int8_t *target)
-{
-#if HAL_HAVE_IMU_HEATER
-    heater.target = target;
-#endif
-}
-
 #ifdef HAL_PWM_ALARM
 struct Util::ToneAlarmPwmGroup Util::_toneAlarm_pwm_group = HAL_PWM_ALARM;
 
