@@ -2,6 +2,7 @@
 #include "AP_InertialSensor.h"
 #include "AP_InertialSensor_Backend.h"
 #include <AP_Logger/AP_Logger.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 #if AP_MODULE_SUPPORTED
 #include <AP_Module/AP_Module.h>
 #include <stdio.h>
@@ -483,10 +484,15 @@ void AP_InertialSensor_Backend::_publish_temperature(uint8_t instance, float tem
     }
     _imu._temperature[instance] = temperature;
 
+#if HAL_HAVE_IMU_HEATER
     /* give the temperature to the control loop in order to keep it constant*/
     if (instance == 0) {
-        hal.util->set_imu_temp(temperature);
+        AP_BoardConfig *bc = AP::boardConfig();
+        if (bc) {
+            bc->set_imu_temp(temperature);
+        }
     }
+#endif
 }
 
 /*
