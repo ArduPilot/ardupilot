@@ -369,12 +369,16 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
         case AUX_FUNC::AVOID_ADSB:
 #if ADSB_ENABLED == ENABLED
             // enable or disable AP_Avoidance
-            if (ch_flag == HIGH) {
+            if (ch_flag == HIGH  && copter.adsb.enabled() ) {
                 copter.avoidance_adsb.enable();
                 copter.Log_Write_Event(DATA_AVOIDANCE_ADSB_ENABLE);
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "ADSB Avoidance Enabled");
+            } else if (ch_flag == HIGH && !copter.adsb.enabled() ) {
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "ADSB Avoidance not set up!");
             } else {
                 copter.avoidance_adsb.disable();
                 copter.Log_Write_Event(DATA_AVOIDANCE_ADSB_DISABLE);
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "ADSB Avoidance Disabled");
             }
 #endif
             break;
