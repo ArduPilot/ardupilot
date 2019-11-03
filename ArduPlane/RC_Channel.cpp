@@ -123,6 +123,20 @@ void RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const aux_swi
         do_aux_function_change_mode(Mode::Number::TAKEOFF, ch_flag);
         break;
 
+    case AUX_FUNC::AVOID_ADSB:
+
+        // enable or disable AP_Avoidance
+        if (ch_flag == HIGH && plane.adsb.enabled() ) {
+           plane.avoidance_adsb.enable();
+           gcs().send_text(MAV_SEVERITY_CRITICAL, "ADSB Avoidance Enabled");
+        } else if (ch_flag == HIGH && !plane.adsb.enabled() ) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "ADSB Avoidance not set up!");
+        } else {
+            plane.avoidance_adsb.disable();
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "ADSB Avoidance Disabled");
+        }
+
+            break;
 
     default:
         RC_Channel::do_aux_function(ch_option, ch_flag);
