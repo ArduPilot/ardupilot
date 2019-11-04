@@ -3317,6 +3317,7 @@ class AutoTestCopter(AutoTest):
                 raise
 
             self.progress("Testing mount ROI behaviour")
+            self.drain_mav_unparsed()
             self.test_mount_pitch(0, 0.1)
             start = self.mav.location()
             self.progress("start=%s" % str(start))
@@ -3354,6 +3355,38 @@ class AutoTestCopter(AutoTest):
                          roi_alt,
                          )
             self.test_mount_pitch(-7.5, 1)
+
+            start = self.mav.location()
+            (roi_lat, roi_lon) = mavextra.gps_offset(start.lat,
+                                                     start.lng,
+                                                     -100,
+                                                     -200)
+            roi_alt = 0
+            self.progress("Using MAV_CMD_DO_SET_ROI (COMMAND_INT)")
+            self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_SET_ROI,
+                             0,
+                             0,
+                             0,
+                             0,
+                             roi_lat*1e7,
+                             roi_lon*1e7,
+                             roi_alt,
+                             frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+            )
+            self.test_mount_pitch(-7.5, 1)
+            self.progress("Using MAV_CMD_DO_SET_ROI (COMMAND_INT), absolute-alt-frame")
+            # this is pointing essentially straight down
+            self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_SET_ROI,
+                             0,
+                             0,
+                             0,
+                             0,
+                             roi_lat*1e7,
+                             roi_lon*1e7,
+                             roi_alt,
+                             frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
+            )
+            self.test_mount_pitch(-70, 1)
 
             self.progress("checking ArduCopter yaw-aircraft-for-roi")
             try:
