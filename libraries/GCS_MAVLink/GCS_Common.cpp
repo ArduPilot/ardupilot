@@ -3850,10 +3850,17 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_int_t &p
     // x : lat
     // y : lon
     // z : alt
-    Location roi_loc;
-    roi_loc.lat = packet.x;
-    roi_loc.lng = packet.y;
-    roi_loc.alt = (int32_t)(packet.z * 100.0f);
+    Location::AltFrame frame;
+    if (!mavlink_coordinate_frame_to_location_alt_frame((MAV_FRAME)packet.frame, frame)) {
+        // unknown coordinate frame
+        return MAV_RESULT_UNSUPPORTED;
+    }
+    const Location roi_loc {
+        packet.x,
+        packet.y,
+        (int32_t)(packet.z * 100.0f),
+        frame
+    };
     return handle_command_do_set_roi(roi_loc);
 }
 
@@ -3865,10 +3872,12 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_long_t &
     // off support for MAV_CMD_DO_SET_ROI_LOCATION (which doesn't
     // support the extra fields).
 
-    Location roi_loc;
-    roi_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
-    roi_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
-    roi_loc.alt = (int32_t)(packet.param7 * 100.0f);
+    const Location roi_loc {
+        (int32_t)(packet.param5 * 1.0e7f),
+        (int32_t)(packet.param6 * 1.0e7f),
+        (int32_t)(packet.param7 * 100.0f),
+        Location::AltFrame::ABOVE_HOME
+    };
     return handle_command_do_set_roi(roi_loc);
 }
 
