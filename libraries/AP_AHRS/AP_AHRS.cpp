@@ -20,7 +20,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
-#include <AP_NMEA_Output/AP_NMEA_Output.h>
+#include <AP_NMEA/AP_NMEA_Output.h>
 
 extern const AP_HAL::HAL& hal;
 
