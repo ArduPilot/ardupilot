@@ -499,7 +499,6 @@ private:
         NO_IMUS, 
         NO_MASK, 
         NO_MEM, 
-        NO_ALLOC,
         NO_SETUP,
         NUM_INIT_FAILURES
     };
@@ -510,7 +509,6 @@ private:
         "EKF2: no IMUs available",
         "EKF2: EK2_IMU_MASK is zero",
         "EKF2: insufficient memory available",
-        "EKF2: memory allocation failed",
         "EKF2: core setup failed"
     };
     InitFailures initFailure;
