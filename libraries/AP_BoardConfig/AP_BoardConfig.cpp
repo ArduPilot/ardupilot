@@ -335,7 +335,7 @@ void AP_BoardConfig::init_safety()
 */
 bool AP_BoardConfig::_in_sensor_config_error;
 
-void AP_BoardConfig::sensor_config_error(const char *reason)
+void AP_BoardConfig::config_error(const char *fmt, ...)
 {
     _in_sensor_config_error = true;
     /*
@@ -349,9 +349,18 @@ void AP_BoardConfig::sensor_config_error(const char *reason)
         uint32_t now = AP_HAL::millis();
         if (now - last_print_ms >= 3000) {
             last_print_ms = now;
-            printf("Sensor failure: %s\n", reason);
+            va_list arg_list;
+            char printfmt[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+2];
+            hal.util->snprintf(printfmt, sizeof(printfmt), "Config error: %s\n", fmt);
+            va_start(arg_list, fmt);
+            vprintf(printfmt, arg_list);
+            va_end(arg_list);
 #if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN) && !defined(HAL_BUILD_AP_PERIPH)
-            gcs().send_text(MAV_SEVERITY_ERROR, "Check BRD_TYPE: %s", reason);
+            char taggedfmt[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+            hal.util->snprintf(taggedfmt, sizeof(taggedfmt), "Config error: %s", fmt);
+            va_start(arg_list, fmt);
+            gcs().send_textv(MAV_SEVERITY_CRITICAL, taggedfmt, arg_list);
+            va_end(arg_list);
 #endif
         }
 #if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN) && !defined(HAL_BUILD_AP_PERIPH)
