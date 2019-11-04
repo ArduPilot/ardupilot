@@ -590,7 +590,7 @@ void ModeAuto::do_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
     }
 }
 
-// do_set_yaw_speed - turn to a specified heading and achieve and given speed
+// do_set_yaw_speed - turn to a specified heading and achieve a given speed
 void ModeAuto::do_nav_set_yaw_speed(const AP_Mission::Mission_Command& cmd)
 {
     float desired_heading_cd;
