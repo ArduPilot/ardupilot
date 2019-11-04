@@ -144,6 +144,26 @@ bool ModeGuided::reached_destination() const
     return true;
 }
 
+// set desired speed in m/s
+bool ModeGuided::set_desired_speed(float speed)
+{
+    switch (_guided_mode) {
+    case Guided_WP:
+        if (!is_negative(speed)) {
+            g2.wp_nav.set_desired_speed(speed);
+            return true;
+        }
+        return false;
+    case Guided_HeadingAndSpeed:
+    case Guided_TurnRateAndSpeed:
+        // speed is set from mavlink message
+        return false;
+    case Guided_Loiter:
+        return rover.mode_loiter.set_desired_speed(speed);
+    }
+    return false;
+}
+
 // get desired location
 bool ModeGuided::get_desired_location(Location& destination) const
 {
@@ -185,10 +205,7 @@ bool ModeGuided::set_desired_location(const struct Location& destination,
 // set desired attitude
 void ModeGuided::set_desired_heading_and_speed(float yaw_angle_cd, float target_speed)
 {
-    // call parent
-    Mode::set_desired_heading_and_speed(yaw_angle_cd, target_speed);
-
-    // handle guided specific initialisation and logging
+    // initialisation and logging
     _guided_mode = ModeGuided::Guided_HeadingAndSpeed;
     _des_att_time_ms = AP_HAL::millis();
     _reached_destination = false;
