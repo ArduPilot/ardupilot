@@ -128,6 +128,7 @@ void ModeSystemId::run()
         attitude_control->set_yaw_target_to_current_heading();
         attitude_control->reset_rate_controller_I_terms();
         break;
+
     case AP_Motors::SpoolState::GROUND_IDLE:
         // Landed
         // Tradheli initializes targets when going from disarmed to armed state. 
@@ -137,12 +138,14 @@ void ModeSystemId::run()
             attitude_control->reset_rate_controller_I_terms();
         }
         break;
+
     case AP_Motors::SpoolState::THROTTLE_UNLIMITED:
         // clear landing flag above zero throttle
         if (!motors->limit.throttle_lower) {
             set_land_complete(false);
         }
         break;
+
     case AP_Motors::SpoolState::SPOOLING_UP:
     case AP_Motors::SpoolState::SPOOLING_DOWN:
         // do nothing
