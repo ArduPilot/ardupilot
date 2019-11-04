@@ -666,7 +666,7 @@ bool NavEKF2::InitialiseFilter(void)
         // check if there is enough memory to create the EKF cores
         if (hal.util->available_memory() < sizeof(NavEKF2_core)*num_cores + 4096) {
             initFailure = InitFailures::NO_MEM;
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "NavEKF2: not enough memory");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "NavEKF2: not enough memory available");
             _enable.set(0);
             return false;
         }
@@ -675,8 +675,8 @@ bool NavEKF2::InitialiseFilter(void)
         core = (NavEKF2_core*)hal.util->malloc_type(sizeof(NavEKF2_core)*num_cores, AP_HAL::Util::MEM_FAST);
         if (core == nullptr) {
             _enable.set(0);
-            initFailure = InitFailures::NO_ALLOC;
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "NavEKF2: allocation failed");
+            initFailure = InitFailures::NO_MEM;
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "NavEKF2: memory allocation failed");
             return false;
         }
 
@@ -690,16 +690,12 @@ bool NavEKF2::InitialiseFilter(void)
         for (uint8_t i=0; i<7; i++) {
             if (_imuMask & (1U<<i)) {
                 if(!core[num_cores].setup_core(i, num_cores)) {
-                    // if first core setup fails, free memory, zero the core pointer and abort
-                    if (num_cores == 0) {
-                        hal.util->free_type(core, sizeof(NavEKF2_core)*num_cores, AP_HAL::Util::MEM_FAST);
-                        core = nullptr;
-                        initFailure = InitFailures::NO_SETUP;
-                        return false;
-                    }
+                    // if any core setup fails, free memory, zero the core pointer and abort
+                    hal.util->free_type(core, sizeof(NavEKF2_core)*num_cores, AP_HAL::Util::MEM_FAST);
+                    core = nullptr;
+                    initFailure = InitFailures::NO_SETUP;
                     gcs().send_text(MAV_SEVERITY_WARNING, "NavEKF2: core %d setup failed", num_cores);
-                    // don't return here, just break the loop and finish initializing
-                    break;
+                    return false;
                 }
                 num_cores++;
             }
