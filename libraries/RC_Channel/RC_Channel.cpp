@@ -33,9 +33,11 @@ extern const AP_HAL::HAL& hal;
 #include <AC_Sprayer/AC_Sprayer.h>
 #include <AP_Camera/AP_Camera.h>
 #include <AP_Gripper/AP_Gripper.h>
+#include <AP_ADSB/AP_ADSB.h>
 #include <AP_LandingGear/AP_LandingGear.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 #include <AP_Arming/AP_Arming.h>
+#include <AP_Avoidance/AP_Avoidance.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AC_Fence/AC_Fence.h>
 
@@ -449,6 +451,7 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const aux_switch_
     switch(ch_option) {
     case AUX_FUNC::FENCE:  
     case AUX_FUNC::RC_OVERRIDE_ENABLE:
+    case AUX_FUNC::AVOID_ADSB:
     case AUX_FUNC::AVOID_PROXIMITY:
     case AUX_FUNC::MISSION_RESET:
         do_aux_function(ch_option, ch_flag);
@@ -511,6 +514,34 @@ bool RC_Channel::read_aux()
     return true;
 }
 
+
+void RC_Channel::do_aux_function_avoid_adsb(const aux_switch_pos_t ch_flag)
+{
+    AP_Avoidance *avoidance = AP::ap_avoidance();
+    if (avoidance == nullptr) {
+        return;
+    }
+    AP_ADSB *adsb = AP::ADSB();
+    if (adsb == nullptr) {
+        return;
+    }
+    if (ch_flag == HIGH) {
+        // try to enable AP_Avoidance
+        if (!adsb->enabled()) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "ADSB not enabled");
+            return;
+        }
+        avoidance->enable();
+        AP::logger().Write_Event(LogEvent::AVOIDANCE_ADSB_ENABLE);
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "ADSB Avoidance Enabled");
+        return;
+    }
+
+    // disable AP_Avoidance
+    avoidance->disable();
+    AP::logger().Write_Event(LogEvent::AVOIDANCE_ADSB_DISABLE);
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "ADSB Avoidance Disabled");
+}
 
 void RC_Channel::do_aux_function_avoid_proximity(const aux_switch_pos_t ch_flag)
 {
@@ -708,6 +739,10 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_po
         break;
     case AUX_FUNC::MISSION_RESET:
         do_aux_function_mission_reset(ch_flag);
+        break;
+
+    case AUX_FUNC::AVOID_ADSB:
+        do_aux_function_avoid_adsb(ch_flag);
         break;
 
     case AUX_FUNC::SPRAYER:
