@@ -48,25 +48,21 @@ void ModeAltHold::run()
     switch (althold_state) {
 
     case AltHold_MotorStopped:
-
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_yaw_target_to_current_heading();
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
         break;
 
     case AltHold_Landed_Ground_Idle:
-
-        attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_yaw_target_to_current_heading();
         // FALLTHROUGH
 
     case AltHold_Landed_Pre_Takeoff:
-
+        attitude_control->reset_rate_controller_I_terms();
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
         break;
 
     case AltHold_Takeoff:
-
         // initiate take-off
         if (!takeoff.running()) {
             takeoff.start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
