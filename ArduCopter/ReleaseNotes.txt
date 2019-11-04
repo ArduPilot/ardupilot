@@ -1,5 +1,23 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.0.0-rc2 04-Nov-2019
+Changes from 4.0.0-rc1
+1) Failsafe changes:
+   a) GCS failsafe triggers when telemetry connection is lost (previously only triggered when using joystick)
+   b) FS_OPTION parameter allows continue-in-auto and continue-in-pilot-modes for RC/Radio and GCS failsafe
+2) Dynamic Notch Filter supports filter range based on BLHeli ESC feedback
+3) Improved protection against high roll/pitch gains affecting altitude control
+4) Bug Fixes:
+   a) Altitude control param conversion fix (PSC_ACCZ_FILT converted to PSC_ACCZ_FLTE)
+   b) BLHeli fix to RPM calcs and telemetry (aka 0x8000 error)
+   c) ChibiOS SPI timeout fix (non-critical)
+   d) Fence upload is less strict about altitude types (fences don't have altitudes)
+   e) Motor loss detection bug fix (would sometimes think the wrong motor had failed)
+   f) Pre-arm message fix to reports AHRS/EKF issue (was blank)
+   g) Sparky2 autopilot firmware available
+   h) Startup message "AK09916: Unable to get bus semaphore" removed (was not an error)
+   i) Yaw control fix for fast descent and after large attitude disturbances
+------------------------------------------------------------------
 Copter 4.0.0-rc1 25-Oct-2019
 Changes from 3.6.11
 1) Path Planning for Object Avoidance (aka Bendy Ruler and Dijkstra's) replaces "Dodge" avoidance
