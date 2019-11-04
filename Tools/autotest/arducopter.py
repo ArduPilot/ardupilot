@@ -3891,7 +3891,7 @@ class AutoTestCopter(AutoTest):
             self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
             pos = self.mav.location()
             delta = self.get_distance(expected_loc, pos)
-            max_delta = 2
+            max_delta = 3
             self.progress("position delta=%f (want <%f)" % (delta, max_delta))
             if delta < max_delta:
                 break
