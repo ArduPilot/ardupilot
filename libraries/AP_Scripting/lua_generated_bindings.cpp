@@ -562,7 +562,7 @@ static int AP_SerialLED_set_num_LEDs(lua_State *L) {
 
     binding_argcheck(L, 3);
     const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
-    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(15, UINT8_MAX))), 2, "argument out of range");
+    luaL_argcheck(L, ((raw_data_2 >= MAX(1, 0)) && (raw_data_2 <= MIN(16, UINT8_MAX))), 2, "argument out of range");
     const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
     const lua_Integer raw_data_3 = luaL_checkinteger(L, 3);
     luaL_argcheck(L, ((raw_data_3 >= MAX(0, 0)) && (raw_data_3 <= MIN(32, UINT8_MAX))), 3, "argument out of range");
