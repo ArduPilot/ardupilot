@@ -200,6 +200,7 @@ void ModeFlip::run()
             AP::logger().Write_Event(LogEvent::FLIP_END);
         }
         break;
+
     }
     case FlipState::Abandon:
         // restore original flight mode
