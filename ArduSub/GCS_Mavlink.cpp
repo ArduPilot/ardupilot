@@ -836,7 +836,3 @@ int32_t GCS_MAVLINK_Sub::global_position_int_relative_alt() const {
     }
     return GCS_MAVLINK::global_position_int_relative_alt();
 }
-
-// dummy method to avoid linking AFS
-bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reason) { return false; }
-AP_AdvancedFailsafe *AP::advancedfailsafe() { return nullptr; }
