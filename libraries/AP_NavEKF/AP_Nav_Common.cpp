@@ -3,6 +3,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
 
+extern const AP_HAL::HAL& hal;
+
 /*
   write an EKF timing message
  */
@@ -23,3 +25,8 @@ void Log_EKF_Timing(const char *name, uint64_t time_us, const struct ekf_timing 
         (double)timing.delVelDT_min,
         (double)timing.delVelDT_max);
 }
+
+const char* EKF_Init_Failure::getFailureReason(const char* prefix) const {
+    hal.util->snprintf(const_cast<char*>(prearm_fail_string), sizeof(prearm_fail_string), "%s: %s", prefix, initFailureReason[int(failure_reason)]);
+    return prearm_fail_string;
+};

@@ -76,3 +76,35 @@ struct ekf_timing {
     float delVelDT_min;
 };
 void Log_EKF_Timing(const char *name, uint64_t time_us, const struct ekf_timing &timing);
+
+class EKF_Init_Failure {
+public:
+    enum class InitFailures {
+        UNKNOWN,
+        NO_ENABLE, 
+        NO_IMUS, 
+        NO_MASK, 
+        NO_MEM, 
+        NO_SETUP,
+        NUM_INIT_FAILURES
+    };
+    // initialization failure reasons
+    const char* initFailureReason[int(InitFailures::NUM_INIT_FAILURES)] {
+        "unknown initialization failure",
+        "EKn_enable is false",
+        "no IMUs available",
+        "EKn_IMU_MASK is zero",
+        "insufficient memory available",
+        "core setup failed"
+    };
+
+    const char* getFailureReason(const char* prefix) const;
+    
+    void set_failure_reason(InitFailures v) {
+        failure_reason = v;
+    }
+
+private:
+    InitFailures failure_reason;
+    char prearm_fail_string[41];
+};
