@@ -268,6 +268,8 @@ bool Tracker::should_log(uint32_t mask)
 
 #include <AP_Camera/AP_Camera.h>
 #include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
+#include <AP_Avoidance/AP_Avoidance.h>
+#include <AP_ADSB/AP_ADSB.h>
 
 /* dummy methods to avoid having to link against AP_Camera */
 void AP_Camera::control_msg(const mavlink_message_t &) {}
@@ -279,3 +281,6 @@ void AP_Camera::send_feedback(mavlink_channel_t chan) {}
 // dummy method to avoid linking AFS
 bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reason) {return false;}
 AP_AdvancedFailsafe *AP::advancedfailsafe() { return nullptr; }
+
+// dummy method to avoid linking AP_Avoidance
+AP_Avoidance *AP::ap_avoidance() { return nullptr; }
