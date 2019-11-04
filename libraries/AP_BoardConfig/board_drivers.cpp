@@ -116,7 +116,7 @@ void AP_BoardConfig::board_setup_drivers(void)
     case PX4_BOARD_MINDPXV2:
         break;
     default:
-        sensor_config_error("Unknown board type");
+        config_error("Unknown board type");
         break;
     }
 }
@@ -251,7 +251,7 @@ void AP_BoardConfig::validate_board_type(void)
         // configured for PIXHAWK1
 #if !defined(CONFIG_ARCH_BOARD_PX4FMU_V3) && !defined(HAL_CHIBIOS_ARCH_FMUV3)
         // force user to load the right firmware
-        sensor_config_error("Pixhawk2 requires FMUv3 firmware");        
+        config_error("Pixhawk2 requires FMUv3 firmware");        
 #endif
         state.board_type.set(PX4_BOARD_PIXHAWK2);
         hal.console->printf("Forced PIXHAWK2\n");
@@ -282,7 +282,7 @@ void AP_BoardConfig::check_cubeblack(void)
     if (!check_ms5611("ms5611_ext")) { success = false; }
 
     if (!success) {
-        sensor_config_error("Failed to init CubeBlack - sensor mismatch");
+        config_error("Failed to init CubeBlack - sensor mismatch");
     }
 #endif
 }
@@ -338,7 +338,7 @@ void AP_BoardConfig::board_autodetect(void)
         state.board_type.set(PX4_BOARD_PIXHAWK);
         hal.console->printf("Detected Pixhawk\n");
     } else {
-        sensor_config_error("Unable to detect board type");
+        config_error("Unable to detect board type");
     }
 #elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4) || defined(HAL_CHIBIOS_ARCH_FMUV4)
     // only one choice
