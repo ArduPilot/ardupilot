@@ -20,6 +20,7 @@ void AP_Mount_Backend::set_roi_target(const struct Location &target_loc)
 {
     // set the target gps location
     _state._roi_target = target_loc;
+    _state._roi_target_set_ms = AP_HAL::millis();
 
     // set the mode to GPS tracking mode
     _frontend.set_mode(_instance, MAV_MOUNT_MODE_GPS_POINT);
@@ -131,16 +132,35 @@ float AP_Mount_Backend::angle_input_rad(const RC_Channel* rc, int16_t angle_min,
     return radians(((rc->norm_input() + 1.0f) * 0.5f * (angle_max - angle_min) + angle_min)*0.01f);
 }
 
+bool AP_Mount_Backend::calc_angle_to_roi_target(Vector3f& angles_to_target_rad,
+                                                bool calc_tilt,
+                                                bool calc_pan,
+                                                bool relative_pan)
+{
+    if (_state._roi_target_set_ms == 0) {
+        return false;
+    }
+    return calc_angle_to_location(_state._roi_target, angles_to_target_rad, calc_tilt, calc_pan, relative_pan);
+}
+
 // calc_angle_to_location - calculates the earth-frame roll, tilt and pan angles (and radians) to point at the given target
-void AP_Mount_Backend::calc_angle_to_location(const struct Location &target, Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan, bool relative_pan)
+bool AP_Mount_Backend::calc_angle_to_location(const struct Location &target, Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan, bool relative_pan)
 {
     Location current_loc;
     if (!AP::ahrs().get_position(current_loc)) {
-        // completely ignore this error; ahrs will give us its best guess
+        return false;
     }
     const float GPS_vector_x = (target.lng-current_loc.lng)*cosf(ToRad((current_loc.lat+target.lat)*0.00000005f))*0.01113195f;
     const float GPS_vector_y = (target.lat-current_loc.lat)*0.01113195f;
-    const float GPS_vector_z = (target.alt-current_loc.alt);                 // baro altitude(IN CM) should be adjusted to known home elevation before take off (Set altimeter).
+    int32_t target_alt_cm = 0;
+    if (!target.get_alt_cm(Location::AltFrame::ABOVE_HOME, target_alt_cm)) {
+        return false;
+    }
+    int32_t current_alt_cm = 0;
+    if (!current_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, current_alt_cm)) {
+        return false;
+    }
+    float GPS_vector_z = target_alt_cm - current_alt_cm;
     float target_distance = 100.0f*norm(GPS_vector_x, GPS_vector_y);      // Careful , centimeters here locally. Baro/alt is in cm, lat/lon is in meters.
 
     // initialise all angles to zero
@@ -159,4 +179,5 @@ void AP_Mount_Backend::calc_angle_to_location(const struct Location &target, Vec
             angles_to_target_rad.z = wrap_PI(angles_to_target_rad.z - AP::ahrs().yaw);
         }
     }
+    return true;
 }

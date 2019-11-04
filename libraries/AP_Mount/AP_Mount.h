@@ -167,6 +167,7 @@ protected:
 
         MAV_MOUNT_MODE  _mode;              // current mode (see MAV_MOUNT_MODE enum)
         struct Location _roi_target;        // roi target location
+        uint32_t _roi_target_set_ms;
     } state[AP_MOUNT_MAX_INSTANCES];
 
 private:
