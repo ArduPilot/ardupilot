@@ -498,7 +498,7 @@ bool RCOutput::mode_requires_dma(enum output_mode mode) const
 
   This is used for both DShot and serial output
  */
-bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_width, bool active_high, const uint16_t buffer_length)
+bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_width, bool active_high, const uint16_t buffer_length, bool choose_high)
 {
 #ifndef DISABLE_DSHOT
     if (!group.dma_buffer || buffer_length != group.dma_buffer_len) {
@@ -533,16 +533,35 @@ bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_
 
     // adjust frequency to give an allowed value given the
     // clock. There is probably a better way to do this
-    uint32_t clock_hz = group.pwm_drv->clock;
+    const uint32_t original_bitrate = bitrate;
+    uint32_t freq = 0;
     uint32_t target_frequency = bitrate * bit_width;
-    uint32_t prescaler = clock_hz / target_frequency;
-    while ((clock_hz / prescaler) * prescaler != clock_hz && prescaler <= 0x8000) {
-        prescaler++;
-    }
-    uint32_t freq = clock_hz / prescaler;
-    if (prescaler > 0x8000) {
-        group.dma_handle->unlock();
-        return false;
+    while (true) {
+        uint32_t clock_hz = group.pwm_drv->clock;
+        target_frequency = bitrate * bit_width;
+        uint32_t prescaler = clock_hz / target_frequency;
+        while ((clock_hz / prescaler) * prescaler != clock_hz && prescaler <= 0x8000) {
+            prescaler++;
+        }
+        freq = clock_hz / prescaler;
+        // hal.console->printf("CLOCK=%u FREQ=%u PRE=%u BR=%u\n", clock_hz, freq/bit_width, prescaler, bitrate);
+        if (prescaler > 0x8000) {
+            group.dma_handle->unlock();
+            return false;
+        }
+        if (!choose_high) {
+            break;
+        }
+        // we want to choose a frequency that gives at least the
+        // target, erring on the high side not low side
+        uint32_t actual_bitrate = freq / bit_width;
+        if (actual_bitrate >= original_bitrate || bitrate < 10000) {
+            break;
+        }
+        bitrate += 10000;
+        if (bitrate >= 2 * original_bitrate) {
+            break;
+        }
     }
 
     group.pwm_cfg.frequency = freq;
@@ -613,7 +632,7 @@ void RCOutput::set_group_mode(pwm_group &group)
         const uint8_t channels_per_group = 4;
         const uint16_t neopixel_bit_length = bits_per_pixel * channels_per_group * group.neopixel_nleds + (pad_start_bits + pad_end_bits) * channels_per_group;
         const uint16_t neopixel_buffer_length = neopixel_bit_length * sizeof(uint32_t);
-        if (!setup_group_DMA(group, rate, bit_period, true, neopixel_buffer_length)) {
+        if (!setup_group_DMA(group, rate, bit_period, true, neopixel_buffer_length, true)) {
             group.current_mode = MODE_PWM_NONE;
             break;
         }
@@ -628,7 +647,7 @@ void RCOutput::set_group_mode(pwm_group &group)
         const uint32_t bit_period = 20;
 
         // configure timer driver for DMAR at requested rate
-        if (!setup_group_DMA(group, rate, bit_period, true, dshot_buffer_length)) {
+        if (!setup_group_DMA(group, rate, bit_period, true, dshot_buffer_length, false)) {
             group.current_mode = MODE_PWM_NONE;
             break;
         }
@@ -1135,7 +1154,7 @@ bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate, uint16_t cha
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         pwm_group &group = pwm_group_list[i];
         if (group.ch_mask & chanmask) {
-            if (!setup_group_DMA(group, baudrate, 10, false, dshot_buffer_length)) {
+            if (!setup_group_DMA(group, baudrate, 10, false, dshot_buffer_length, false)) {
                 serial_end();
                 return false;
             }
