@@ -197,6 +197,7 @@ protected:
     virtual void init_aux_function(aux_func_t ch_option, aux_switch_pos_t);
     virtual void do_aux_function(aux_func_t ch_option, aux_switch_pos_t);
 
+    void do_aux_function_avoid_adsb(const aux_switch_pos_t ch_flag);
     void do_aux_function_avoid_proximity(const aux_switch_pos_t ch_flag);
     void do_aux_function_camera_trigger(const aux_switch_pos_t ch_flag);
     void do_aux_function_fence(const aux_switch_pos_t ch_flag);
