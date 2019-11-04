@@ -209,17 +209,6 @@ bool Mode::set_desired_location(const struct Location& destination, float next_l
     return true;
 }
 
-// set desired heading and speed
-void Mode::set_desired_heading_and_speed(float yaw_angle_cd, float target_speed)
-{
-    // handle initialisation
-    _reached_destination = false;
-
-    // record targets
-    _desired_yaw_cd = yaw_angle_cd;
-    _desired_speed = target_speed;
-}
-
 // get default speed for this mode (held in WP_SPEED or RTL_SPEED)
 float Mode::get_speed_default(bool rtl) const
 {
@@ -228,22 +217,6 @@ float Mode::get_speed_default(bool rtl) const
     }
 
     return g2.wp_nav.get_default_speed();
-}
-
-// restore desired speed to default from parameter values (WP_SPEED)
-void Mode::set_desired_speed_to_default(bool rtl)
-{
-    _desired_speed = get_speed_default(rtl);
-}
-
-// set desired speed in m/s
-bool Mode::set_desired_speed(float speed)
-{
-    if (!is_negative(speed)) {
-        _desired_speed = speed;
-        return true;
-    }
-    return false;
 }
 
 // execute the mission in reverse (i.e. backing up)
