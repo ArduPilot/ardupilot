@@ -50,8 +50,10 @@ extern const AP_HAL::HAL& hal;
 #define JEDEC_ID_WINBOND_W25Q32        0xEF4016
 #define JEDEC_ID_WINBOND_W25Q64        0xEF4017
 #define JEDEC_ID_WINBOND_W25Q128       0xEF4018
+#define JEDEC_ID_WINBOND_W25Q128_DTR   0xEF7018
 #define JEDEC_ID_WINBOND_W25Q256       0xEF4019
 #define JEDEC_ID_CYPRESS_S25FL128L     0x016018
+#define JEDEC_ID_BERGMICRO_W25Q32      0xE04016
 
 void AP_Logger_DataFlash::Init()
 {
@@ -120,6 +122,11 @@ bool AP_Logger_DataFlash::getSectorCount(void)
         df_PagePerBlock = 256;
         df_PagePerSector = 16;
         break;
+    case JEDEC_ID_BERGMICRO_W25Q32:
+        blocks = 1024;
+        df_PagePerBlock = 16;
+        df_PagePerSector = 16;
+        break;
     case JEDEC_ID_WINBOND_W25Q32:
     case JEDEC_ID_MACRONIX_MX25L3206E:
         blocks = 64;
@@ -136,6 +143,7 @@ bool AP_Logger_DataFlash::getSectorCount(void)
     case JEDEC_ID_MICRON_N25Q128:
     case JEDEC_ID_WINBOND_W25Q128:
     case JEDEC_ID_CYPRESS_S25FL128L:
+    case JEDEC_ID_WINBOND_W25Q128_DTR:
         blocks = 256;
         df_PagePerBlock = 256;
         df_PagePerSector = 16;
