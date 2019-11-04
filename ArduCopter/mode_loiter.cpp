@@ -117,7 +117,6 @@ void ModeLoiter::run()
     switch (loiter_state) {
 
     case AltHold_MotorStopped:
-
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_yaw_target_to_current_heading();
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
@@ -127,7 +126,6 @@ void ModeLoiter::run()
         break;
 
     case AltHold_Takeoff:
-
         // initiate take-off
         if (!takeoff.running()) {
             takeoff.start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
@@ -152,13 +150,11 @@ void ModeLoiter::run()
         break;
 
     case AltHold_Landed_Ground_Idle:
-
-        attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_yaw_target_to_current_heading();
         // FALLTHROUGH
 
     case AltHold_Landed_Pre_Takeoff:
-
+        attitude_control->reset_rate_controller_I_terms();
         loiter_nav->init_target();
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
@@ -166,7 +162,6 @@ void ModeLoiter::run()
         break;
 
     case AltHold_Flying:
-
         // set motors to full range
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
