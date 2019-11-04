@@ -43,6 +43,15 @@ public:
     // constructor
     AP_Avoidance(class AP_ADSB &adsb);
 
+    /* Do not allow copies */
+    AP_Avoidance(const AP_Avoidance &other) = delete;
+    AP_Avoidance &operator=(const AP_Avoidance&) = delete;
+
+    // get singleton instance
+    static AP_Avoidance *get_singleton() {
+        return _singleton;
+    }
+
     // obstacle class to hold latest information for a known obstacles
     class Obstacle {
     public:
@@ -198,6 +207,8 @@ private:
 
     // multi-thread support for avoidance
     HAL_Semaphore_Recursive _rsem;
+
+    static AP_Avoidance *_singleton;
 };
 
 float closest_approach_xy(const Location &my_loc,
@@ -211,3 +222,8 @@ float closest_approach_z(const Location &my_loc,
                          const Location &obstacle_loc,
                          const Vector3f &obstacle_vel,
                          uint8_t time_horizon);
+
+
+namespace AP {
+    AP_Avoidance *ap_avoidance();
+};
