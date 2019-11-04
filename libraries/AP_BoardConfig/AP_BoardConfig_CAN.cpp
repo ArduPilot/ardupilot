@@ -171,7 +171,7 @@ void AP_BoardConfig_CAN::init()
                 _drivers[i]._driver = _drivers[i]._tcan = new AP_ToshibaCAN;
 
                 if (_drivers[i]._driver == nullptr) {
-                    AP_BoardConfig::sensor_config_error("ToshibaCAN init failed");
+                    AP_BoardConfig::config_error("ToshibaCAN init failed");
                     continue;
                 }
             } else {
