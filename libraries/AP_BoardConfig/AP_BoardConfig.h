@@ -58,11 +58,11 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     // notify user of a fatal startup error related to available sensors. 
-    static void sensor_config_error(const char *reason);
+    static void config_error(const char *reason, ...);
 
     // permit other libraries (in particular, GCS_MAVLink) to detect
     // that we're never going to boot properly:
-    static bool in_sensor_config_error(void) { return _in_sensor_config_error; }
+    static bool in_config_error(void) { return _in_sensor_config_error; }
 
     // valid types for BRD_TYPE: these values need to be in sync with the
     // values from the param description
