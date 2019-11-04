@@ -302,3 +302,9 @@ bool Sub::should_log(uint32_t mask)
     return false;
 #endif
 }
+
+#include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
+
+// dummy method to avoid linking AFS
+bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reason) { return false; }
+AP_AdvancedFailsafe *AP::advancedfailsafe() { return nullptr; }
