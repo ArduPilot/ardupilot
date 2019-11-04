@@ -52,10 +52,10 @@ public:
     virtual void set_mode(enum MAV_MOUNT_MODE mode) = 0;
 
     // set_angle_targets - sets angle targets in degrees
-    virtual void set_angle_targets(float roll, float tilt, float pan);
+    void set_angle_targets(float roll, float tilt, float pan);
 
     // set_roi_target - sets target location that mount should attempt to point towards
-    virtual void set_roi_target(const struct Location &target_loc);
+    void set_roi_target(const struct Location &target_loc);
 
     // control - control the mount
     virtual void control(int32_t pitch_or_lat, int32_t roll_or_lon, int32_t yaw_or_alt, MAV_MOUNT_MODE mount_mode);
@@ -86,8 +86,20 @@ protected:
     // angle_input_rad - convert RC input into an earth-frame target angle
     float angle_input_rad(const RC_Channel* rc, int16_t angle_min, int16_t angle_max);
 
-    // calc_angle_to_location - calculates the earth-frame roll, tilt and pan angles (and radians) to point at the given target
-    void calc_angle_to_location(const struct Location &target, Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan, bool relative_pan = true);
+    // calc_angle_to_location - calculates the earth-frame roll, tilt
+    // and pan angles (and radians) to point at the given target
+    bool calc_angle_to_location(const struct Location &target,
+                                Vector3f& angles_to_target_rad,
+                                bool calc_tilt,
+                                bool calc_pan,
+                                bool relative_pan = true) WARN_IF_UNUSED;
+    // calc_angle_to_roi_target - calculates the earth-frame roll, tilt
+    // and pan angles (and radians) to point at the ROI-target (as set
+    // by various mavlink messages)
+    bool calc_angle_to_roi_target(Vector3f& angles_to_target_rad,
+                                  bool calc_tilt,
+                                  bool calc_pan,
+                                  bool relative_pan = true) WARN_IF_UNUSED;
 
     // get the mount mode from frontend
     MAV_MOUNT_MODE get_mode(void) const { return _frontend.get_mode(_instance); }

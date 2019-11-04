@@ -70,8 +70,7 @@ void AP_Mount_SoloGimbal::update()
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
             _gimbal.set_lockedToBody(false);
-            if(AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
-                calc_angle_to_location(_state._roi_target, _angle_ef_target_rad, true, true);
+            if (calc_angle_to_roi_target(_angle_ef_target_rad, true, true)) {
             }
             break;
 
