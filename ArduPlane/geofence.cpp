@@ -500,7 +500,7 @@ void Plane::geofence_send_status(mavlink_channel_t chan)
                                       geofence_state->breach_count,
                                       geofence_state->breach_type,
                                       geofence_state->breach_time,
-                                      0);
+                                      FENCE_MITIGATE_NONE);
     }
 }
 
