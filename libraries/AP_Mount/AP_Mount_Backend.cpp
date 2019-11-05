@@ -20,7 +20,7 @@ void AP_Mount_Backend::set_roi_target(const struct Location &target_loc)
 {
     // set the target gps location
     _state._roi_target = target_loc;
-    _state._roi_target_set_ms = AP_HAL::millis();
+    _state._roi_target_set = true;
 
     // set the mode to GPS tracking mode
     _frontend.set_mode(_instance, MAV_MOUNT_MODE_GPS_POINT);
@@ -146,7 +146,7 @@ bool AP_Mount_Backend::calc_angle_to_roi_target(Vector3f& angles_to_target_rad,
                                                 bool calc_pan,
                                                 bool relative_pan) const
 {
-    if (_state._roi_target_set_ms == 0) {
+    if (!_state._roi_target_set) {
         return false;
     }
     return calc_angle_to_location(_state._roi_target, angles_to_target_rad, calc_tilt, calc_pan, relative_pan);
