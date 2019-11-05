@@ -171,7 +171,7 @@ protected:
 
         MAV_MOUNT_MODE  _mode;              // current mode (see MAV_MOUNT_MODE enum)
         struct Location _roi_target;        // roi target location
-        uint32_t _roi_target_set_ms;
+        bool _roi_target_set;
 
         uint8_t _target_sysid;           // sysid to track
         Location _target_sysid_location; // sysid target location
