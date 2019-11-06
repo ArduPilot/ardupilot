@@ -64,6 +64,8 @@ public:
     int16_t    get_radio_in() const { return radio_in;}
     void       set_radio_in(int16_t val) {radio_in = val;}
 
+    int16_t    get_radio_in_underlying() const { return radio_in_underlying;}
+
     int16_t    get_control_in() const { return control_in;}
     void       set_control_in(int16_t val) { control_in = val;}
 
@@ -196,6 +198,7 @@ protected:
 
     virtual void init_aux_function(aux_func_t ch_option, aux_switch_pos_t);
     virtual void do_aux_function(aux_func_t ch_option, aux_switch_pos_t);
+    virtual bool throttle_at_failsafe_level() const = 0;
 
     void do_aux_function_avoid_proximity(const aux_switch_pos_t ch_flag);
     void do_aux_function_camera_trigger(const aux_switch_pos_t ch_flag);
@@ -216,8 +219,12 @@ protected:
 
 private:
 
-    // pwm is stored here
-    int16_t     radio_in;
+    // pwm is stored here - but only if we think it is a good value to
+    // process.  So if we seem to be in throttle failsafe we shouldn't
+    // use any other values from the packet...
+    int16_t     radio_in;  // values from receiver that code should act on
+
+    int16_t     radio_in_underlying; // actual values from receiver
 
     // value generated from PWM normalised to configured scale
     int16_t    control_in;

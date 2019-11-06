@@ -136,7 +136,12 @@ RC_Channel::update(void)
     if (has_override() && !rc().ignore_overrides()) {
         radio_in = override_value;
     } else if (!rc().ignore_receiver()) {
-        radio_in = hal.rcin->read(ch_in);
+        const uint16_t read_value = hal.rcin->read(ch_in);
+        if (!throttle_at_failsafe_level()) {
+            radio_in = read_value;
+        }
+        // store the underlying value for the 
+        radio_in_underlying = read_value;
     } else {
         return false;
     }
