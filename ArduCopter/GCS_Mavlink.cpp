@@ -509,7 +509,7 @@ void GCS_MAVLINK_Copter::packetReceived(const mavlink_status_t &status,
 
 bool GCS_MAVLINK_Copter::params_ready() const
 {
-    if (AP_BoardConfig::in_sensor_config_error()) {
+    if (AP_BoardConfig::in_config_error()) {
         // we may never have parameters "initialised" in this case
         return true;
     }
