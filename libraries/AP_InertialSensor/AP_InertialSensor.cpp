@@ -867,7 +867,7 @@ AP_InertialSensor::detect_backends(void)
 #endif
 
     if (_backend_count == 0) {
-        AP_BoardConfig::sensor_config_error("INS: unable to initialise driver");
+        AP_BoardConfig::config_error("INS: unable to initialise driver");
     }
 }
 
