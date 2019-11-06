@@ -254,7 +254,7 @@ class AutoTestSub(AutoTest):
     def disabled_tests(self):
         ret = super(AutoTestSub, self).disabled_tests()
         ret.update({
-            "SensorConfigErrorLoop": "Sub does not instantiate AP_Stats.  Also see https://github.com/ArduPilot/ardupilot/issues/10247",
+            "ConfigErrorLoop": "Sub does not instantiate AP_Stats.  Also see https://github.com/ArduPilot/ardupilot/issues/10247",
         })
         return ret
 
