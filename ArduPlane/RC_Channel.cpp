@@ -27,6 +27,11 @@ bool RC_Channels_Plane::has_valid_input() const
     return true;
 }
 
+bool RC_Channel_Plane::throttle_at_failsafe_level() const
+{
+    return plane.throttle_at_failsafe_level();
+}
+
 void RC_Channel_Plane::do_aux_function_change_mode(const Mode::Number number,
                                                    const aux_switch_pos_t ch_flag)
 {

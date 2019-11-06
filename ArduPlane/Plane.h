@@ -184,6 +184,8 @@ private:
     RC_Channel *channel_throttle;
     RC_Channel *channel_rudder;
 
+    bool throttle_at_failsafe_level() const;
+
     AP_Logger logger;
 
     // scaled roll limit based on pitch

@@ -376,10 +376,15 @@ bool Plane::rc_throttle_value_ok(void) const
     if (!g.throttle_fs_enabled) {
         return true;
     }
+    return !throttle_at_failsafe_level();
+}
+
+bool Plane::throttle_at_failsafe_level() const
+{
     if (channel_throttle->get_reverse()) {
-        return channel_throttle->get_radio_in() < g.throttle_fs_value;
+        return channel_throttle->get_radio_in_underlying() < g.throttle_fs_value;
     }
-    return channel_throttle->get_radio_in() > g.throttle_fs_value;
+    return channel_throttle->get_radio_in_underlying() <= g.throttle_fs_value;
 }
 
 /*

@@ -13,6 +13,8 @@ protected:
                            aux_switch_pos_t ch_flag) override;
     void do_aux_function(aux_func_t ch_option, aux_switch_pos_t) override;
 
+    bool throttle_at_failsafe_level() const override;
+
 private:
 
     void do_aux_function_change_mode(Mode::Number number,
