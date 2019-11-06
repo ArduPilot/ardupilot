@@ -55,8 +55,12 @@
 extern const AP_HAL::HAL &hal;
 extern AP_Periph_FW periph;
 
+#ifndef HAL_CAN_POOL_SIZE
+#define HAL_CAN_POOL_SIZE 4000
+#endif
+
 static CanardInstance canard;
-static uint32_t canard_memory_pool[3000/4];
+static uint32_t canard_memory_pool[HAL_CAN_POOL_SIZE/sizeof(uint32_t)];
 #ifndef HAL_CAN_DEFAULT_NODE_ID
 #define HAL_CAN_DEFAULT_NODE_ID CANARD_BROADCAST_NODE_ID
 #endif
@@ -65,6 +69,10 @@ static uint8_t transfer_id;
 
 #ifndef CAN_APP_NODE_NAME
 #define CAN_APP_NODE_NAME                                               "org.ardupilot.ap_periph"
+#endif
+
+#ifndef CAN_PROBE_CONTINUOUS
+#define CAN_PROBE_CONTINUOUS 0
 #endif
 
 /*
@@ -788,7 +796,7 @@ static void processTx(void)
     }
 }
 
-static ObjectBuffer<CANRxFrame> rxbuffer{16};
+static ObjectBuffer<CANRxFrame> rxbuffer{32};
 
 static void can_rxfull_cb(CANDriver *canp, uint32_t flags)
 {
@@ -1061,7 +1069,7 @@ void AP_Periph_FW::can_mag_update(void)
 {
 #ifdef HAL_PERIPH_ENABLE_MAG
     compass.read();
-#if 1
+#if CAN_PROBE_CONTINUOUS
     if (compass.get_count() == 0) {
         static uint32_t last_probe_ms;
         uint32_t now = AP_HAL::millis();
@@ -1279,6 +1287,7 @@ void AP_Periph_FW::can_baro_update(void)
 void AP_Periph_FW::can_airspeed_update(void)
 {
 #ifdef HAL_PERIPH_ENABLE_AIRSPEED
+#if CAN_PROBE_CONTINUOUS
     if (!airspeed.healthy()) {
         uint32_t now = AP_HAL::millis();
         static uint32_t last_probe_ms;
@@ -1287,6 +1296,7 @@ void AP_Periph_FW::can_airspeed_update(void)
             airspeed.init();
         }
     }
+#endif
     uint32_t now = AP_HAL::millis();
     if (now - last_airspeed_update_ms < 50) {
         // max 20Hz data
