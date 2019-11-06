@@ -26,6 +26,7 @@
 #include <AP_UAVCAN/AP_UAVCAN.h>
 
 class FixCb;
+class Fix2Cb;
 class AuxCb;
 
 class AP_GPS_UAVCAN : public AP_GPS_Backend {
@@ -41,10 +42,12 @@ public:
     static AP_GPS_Backend* probe(AP_GPS &_gps, AP_GPS::GPS_State &_state);
 
     static void handle_fix_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const FixCb &cb);
+    static void handle_fix2_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const Fix2Cb &cb);
     static void handle_aux_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const AuxCb &cb);
 
 private:
     void handle_fix_msg(const FixCb &cb);
+    void handle_fix2_msg(const Fix2Cb &cb);
     void handle_aux_msg(const AuxCb &cb);
 
     static bool take_registry();
@@ -58,6 +61,7 @@ private:
 
     uint8_t _detected_module;
     bool seen_message;
+    bool seen_fix2;
 
     // Module Detection Registry
     static struct DetectedModules {
