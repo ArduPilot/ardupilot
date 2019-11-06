@@ -35,12 +35,25 @@ echo "Targets: $CI_BUILD_TARGET"
 echo "Compiler: $c_compiler"
 
 pymavlink_installed=0
+mavproxy_installed=0
 
 function run_autotest() {
     NAME="$1"
     BVEHICLE="$2"
     RVEHICLE="$3"
 
+    if [ $mavproxy_installed -eq 0 ]; then
+        echo "Installing MAVProxy"
+        pushd /tmp
+          git clone --recursive https://github.com/ardupilot/MAVProxy
+          pushd MAVProxy
+            python setup.py build install --user --force
+          popd
+        popd
+        mavproxy_installed=1
+        # now uninstall the version of pymavlink pulled in by MAVProxy deps:
+        pip uninstall -y pymavlink
+    fi
     if [ $pymavlink_installed -eq 0 ]; then
         echo "Installing pymavlink"
         git submodule update --init --recursive
