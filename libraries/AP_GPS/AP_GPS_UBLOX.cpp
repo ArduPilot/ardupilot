@@ -79,7 +79,7 @@ AP_GPS_UBLOX::_request_next_config(void)
     }
 
     // Ensure there is enough space for the largest possible outgoing message
-    if (port->txspace() < (int16_t)(sizeof(struct ubx_header)+sizeof(struct ubx_cfg_nav_rate)+2)) {
+    if (port->txspace() < (uint16_t)(sizeof(struct ubx_header)+sizeof(struct ubx_cfg_nav_rate)+2)) {
         // not enough space - do it next time
         return;
     }
@@ -354,7 +354,7 @@ AP_GPS_UBLOX::_verify_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate) {
 void
 AP_GPS_UBLOX::_request_port(void)
 {
-    if (port->txspace() < (int16_t)(sizeof(struct ubx_header)+2)) {
+    if (port->txspace() < (uint16_t)(sizeof(struct ubx_header)+2)) {
         // not enough space - do it next time
         return;
     }
@@ -1347,7 +1347,7 @@ AP_GPS_UBLOX::_request_message_rate(uint8_t msg_class, uint8_t msg_id)
 bool
 AP_GPS_UBLOX::_configure_message_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate)
 {
-    if (port->txspace() < (int16_t)(sizeof(struct ubx_header)+sizeof(struct ubx_cfg_msg_rate)+2)) {
+    if (port->txspace() < (uint16_t)(sizeof(struct ubx_header)+sizeof(struct ubx_cfg_msg_rate)+2)) {
         return false;
     }
 
@@ -1369,7 +1369,7 @@ AP_GPS_UBLOX::_configure_valset(ConfigKey key, const uint8_t len, const uint8_t 
     }
     struct ubx_cfg_valset msg {};
     uint8_t buf[sizeof(msg)+len];
-    if (port->txspace() < (int16_t)(sizeof(struct ubx_header)+sizeof(buf)+2)) {
+    if (port->txspace() < (uint16_t)(sizeof(struct ubx_header)+sizeof(buf)+2)) {
         return false;
     }
     msg.version = 1;
@@ -1395,7 +1395,7 @@ AP_GPS_UBLOX::_configure_valget(ConfigKey key)
         struct ubx_cfg_valget msg;
         ConfigKey key;
     } msg {};
-    if (port->txspace() < (int16_t)(sizeof(struct ubx_header)+sizeof(msg)+2)) {
+    if (port->txspace() < (uint16_t)(sizeof(struct ubx_header)+sizeof(msg)+2)) {
         return false;
     }
     msg.msg.version = 0;
