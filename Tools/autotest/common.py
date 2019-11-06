@@ -13303,7 +13303,7 @@ SERIAL5_BAUD 128
             self.progress("vtol and landed states match")
             return
 
-    def setGCSfailsafe(self, paramValue=0):
+    def setGCSfailsafe(self, paramValue):
         # Slow down the sim rate if GCS Failsafe is in use
         if paramValue == 0:
             self.set_parameters({
