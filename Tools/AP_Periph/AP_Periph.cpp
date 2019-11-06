@@ -61,8 +61,8 @@ void AP_Periph_FW::init()
 
     stm32_watchdog_pat();
 
-    hal.uartA->begin(AP_SERIALMANAGER_CONSOLE_BAUD, 32, 128);
-    hal.uartB->begin(115200, 32, 128);
+    hal.uartA->begin(AP_SERIALMANAGER_CONSOLE_BAUD, 32, 32);
+    hal.uartB->begin(115200, 128, 256);
 
     load_parameters();
 
