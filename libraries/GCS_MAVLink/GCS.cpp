@@ -204,7 +204,7 @@ bool GCS::out_of_time() const
     }
 
     // we always want to be able to send messages out while in the error loop:
-    if (AP_BoardConfig::in_sensor_config_error()) {
+    if (AP_BoardConfig::in_config_error()) {
         return false;
     }
 
