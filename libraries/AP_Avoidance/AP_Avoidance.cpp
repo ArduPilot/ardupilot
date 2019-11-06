@@ -524,11 +524,11 @@ void AP_Avoidance::update()
 
     check_for_threats();
 
-    // notify GCS of most serious thread
-    handle_threat_gcs_notify(most_serious_threat());
-
     // avoid object (if necessary)
     handle_avoidance_local(most_serious_threat());
+
+    // notify GCS of most serious thread
+    handle_threat_gcs_notify(most_serious_threat());
 }
 
 void AP_Avoidance::handle_avoidance_local(AP_Avoidance::Obstacle *threat)
