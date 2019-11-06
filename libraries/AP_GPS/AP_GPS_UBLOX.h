@@ -77,13 +77,14 @@
 #define CONFIG_RATE_PVT      (1<<13)
 #define CONFIG_TP5           (1<<14)
 #define CONFIG_RATE_TIMEGPS  (1<<15)
+#define CONFIG_TMODE_MODE    (1<<16)
 #define CONFIG_LAST          (1<<16) // this must always be the last bit
 
 #define CONFIG_REQUIRED_INITIAL (CONFIG_RATE_NAV | CONFIG_RATE_POSLLH | CONFIG_RATE_STATUS | CONFIG_RATE_VELNED)
 
 #define CONFIG_ALL (CONFIG_RATE_NAV | CONFIG_RATE_POSLLH | CONFIG_RATE_STATUS | CONFIG_RATE_SOL | CONFIG_RATE_VELNED \
                     | CONFIG_RATE_DOP | CONFIG_RATE_MON_HW | CONFIG_RATE_MON_HW2 | CONFIG_RATE_RAW | CONFIG_VERSION \
-                    | CONFIG_NAV_SETTINGS | CONFIG_GNSS | CONFIG_SBAS)
+                    | CONFIG_NAV_SETTINGS | CONFIG_GNSS | CONFIG_SBAS | CONFIG_TMODE_MODE)
 
 //Configuration Sub-Sections
 #define SAVE_CFG_IO     (1<<0)
@@ -210,6 +211,23 @@ private:
         uint8_t maxSBAS;
         uint8_t scanmode2;
         uint32_t scanmode1;
+    };
+    // F9 config keys
+    enum class ConfigKey : uint32_t {
+        TMODE_MODE = 0x20030001,
+    };
+    struct PACKED ubx_cfg_valset {
+        uint8_t version;
+        uint8_t layers;
+        uint8_t transaction;
+        uint8_t reserved[1];
+        uint32_t key;
+    };
+    struct PACKED ubx_cfg_valget {
+        uint8_t version;
+        uint8_t layers;
+        uint8_t reserved[2];
+        // variable length data, check buffer length
     };
     struct PACKED ubx_nav_posllh {
         uint32_t itow;                                  // GPS msToW
@@ -467,6 +485,7 @@ private:
         ubx_cfg_gnss gnss;
 #endif
         ubx_cfg_sbas sbas;
+        ubx_cfg_valget valget;
         ubx_nav_svinfo_header svinfo_header;
         ubx_nav_relposned relposned;
 #if UBLOX_RXM_RAW_LOGGING
@@ -515,6 +534,8 @@ private:
         MSG_CFG_SBAS = 0x16,
         MSG_CFG_GNSS = 0x3E,
         MSG_CFG_TP5 = 0x31,
+        MSG_CFG_VALSET = 0x8A,
+        MSG_CFG_VALGET = 0x8B,
         MSG_MON_HW = 0x09,
         MSG_MON_HW2 = 0x0B,
         MSG_MON_VER = 0x04,
@@ -568,6 +589,7 @@ private:
         STEP_POLL_NAV, // poll NAV settings
         STEP_POLL_GNSS, // poll GNSS
         STEP_POLL_TP5, // poll TP5
+        STEP_TMODE, // set TMODE-MODE
         STEP_DOP,
         STEP_MON_HW,
         STEP_MON_HW2,
@@ -624,6 +646,8 @@ private:
     bool havePvtMsg;
 
     bool        _configure_message_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate);
+    bool        _configure_valset(ConfigKey key, const uint8_t len, const uint8_t *value);
+    bool        _configure_valget(ConfigKey key);
     void        _configure_rate(void);
     void        _configure_sbas(bool enable);
     void        _update_checksum(uint8_t *data, uint16_t len, uint8_t &ck_a, uint8_t &ck_b);

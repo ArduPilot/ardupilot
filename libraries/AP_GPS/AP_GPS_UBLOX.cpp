@@ -210,8 +210,13 @@ AP_GPS_UBLOX::_request_next_config(void)
         } else {
             _unconfigured_messages &= ~CONFIG_VERSION;
         }
-        // no need to send the initial rates, move to checking only
-        _next_message = STEP_PVT;
+        break;
+    case STEP_TMODE:
+        if (_hardware_generation >= UBLOX_F9) {
+            if (!_configure_valget(ConfigKey::TMODE_MODE)) {
+                _next_message--;
+            }
+        }
         break;
     default:
         // this case should never be reached, do a full reset if it is hit
@@ -870,8 +875,36 @@ AP_GPS_UBLOX::_parse_gps(void)
             return false;
         }
 #endif // CONFIGURE_PPS_PIN
+        case MSG_CFG_VALGET: {
+            uint8_t cfg_len = _payload_length - sizeof(ubx_cfg_valget);
+            const uint8_t *cfg_data = (const uint8_t *)(&_buffer) + sizeof(ubx_cfg_valget);
+            while (cfg_len >= 5) {
+                ConfigKey id;
+                memcpy(&id, cfg_data, sizeof(uint32_t));
+                cfg_len -= 4;
+                cfg_data += 4;
+                switch (id) {
+                case ConfigKey::TMODE_MODE: {
+                    uint8_t mode = cfg_data[0];
+                    cfg_len -= 1;
+                    cfg_data += 1;
+                    if (mode != 0) {
+                        // ask for mode 0, to disable TIME mode
+                        mode = 0;
+                        _configure_valset(ConfigKey::TMODE_MODE, 1, &mode);
+                        _unconfigured_messages |= CONFIG_TMODE_MODE;
+                    } else {
+                        _unconfigured_messages &= ~CONFIG_TMODE_MODE;
+                    }
+                    break;
+                }
+                default:
+                    // we don't know the length so we stop parsing
+                    return false;
+                }
+            }
         }
-           
+        }
     }
 
     if (_class == CLASS_MON) {
@@ -1323,6 +1356,52 @@ AP_GPS_UBLOX::_configure_message_rate(uint8_t msg_class, uint8_t msg_id, uint8_t
     msg.msg_id    = msg_id;
     msg.rate      = rate;
     return _send_message(CLASS_CFG, MSG_CFG_MSG, &msg, sizeof(msg));
+}
+
+/*
+ *  configure F9 based key/value pair - VALSET
+ */
+bool
+AP_GPS_UBLOX::_configure_valset(ConfigKey key, const uint8_t len, const uint8_t *value)
+{
+    if (_hardware_generation < UBLOX_F9) {
+        return false;
+    }
+    struct ubx_cfg_valset msg {};
+    uint8_t buf[sizeof(msg)+len];
+    if (port->txspace() < (int16_t)(sizeof(struct ubx_header)+sizeof(buf)+2)) {
+        return false;
+    }
+    msg.version = 1;
+    msg.layers = 7; // all layers
+    msg.transaction = 0;
+    msg.key = uint32_t(key);
+    memcpy(buf, &msg, sizeof(msg));
+    memcpy(&buf[sizeof(msg)], value, len);
+    auto ret = _send_message(CLASS_CFG, MSG_CFG_VALSET, buf, sizeof(buf));
+    return ret;
+}
+
+/*
+ *  configure F9 based key/value pair - VALGET
+ */
+bool
+AP_GPS_UBLOX::_configure_valget(ConfigKey key)
+{
+    if (_hardware_generation < UBLOX_F9) {
+        return false;
+    }
+    struct {
+        struct ubx_cfg_valget msg;
+        ConfigKey key;
+    } msg {};
+    if (port->txspace() < (int16_t)(sizeof(struct ubx_header)+sizeof(msg)+2)) {
+        return false;
+    }
+    msg.msg.version = 0;
+    msg.msg.layers = 0; // ram
+    msg.key = key;
+    return _send_message(CLASS_CFG, MSG_CFG_VALGET, &msg, sizeof(msg));
 }
 
 /*
