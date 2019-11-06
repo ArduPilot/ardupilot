@@ -117,7 +117,20 @@ void Plane::stabilize_pitch(float speed_scaler)
         SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, 45*force_elevator);
         return;
     }
-    int32_t demanded_pitch = nav_pitch_cd + g.pitch_trim_cd + constrain_int32(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle), 0, 100) * g.kff_throttle_to_pitch;
+
+    // We reduce the throttle to pitch feedforward if we are slow.
+    float kff =  g.kff_throttle_to_pitch;
+
+    if (plane.airspeed_error < -4.0f) {
+        // Don't apply any pitch-up if we're slow.
+        kff = 0.0f;
+    } else {
+        // Apply proportionately, with full effect at target airspeed minus 2.
+        kff = constrain_float(plane.airspeed_error + 4.0f / 2.0f, 0.0f, 1.0f) * g.kff_throttle_to_pitch;
+    }
+
+
+    int32_t demanded_pitch = nav_pitch_cd + g.pitch_trim_cd + constrain_int32(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle), 0, 100) * kff;
     bool disable_integrator = false;
     if (control_mode == &mode_stabilize && channel_pitch->get_control_in() != 0) {
         disable_integrator = true;
