@@ -216,7 +216,7 @@ void AP_Baro::calibrate(bool save)
         do {
             update();
             if (AP_HAL::millis() - tstart > 500) {
-                AP_BoardConfig::sensor_config_error("Baro: unable to calibrate");
+                AP_BoardConfig::config_error("Baro: unable to calibrate");
             }
             hal.scheduler->delay(10);
         } while (!healthy());
@@ -233,7 +233,7 @@ void AP_Baro::calibrate(bool save)
         do {
             update();
             if (AP_HAL::millis() - tstart > 500) {
-                AP_BoardConfig::sensor_config_error("Baro: unable to calibrate");
+                AP_BoardConfig::config_error("Baro: unable to calibrate");
             }
         } while (!healthy());
         for (uint8_t i=0; i<_num_sensors; i++) {
@@ -267,7 +267,7 @@ void AP_Baro::calibrate(bool save)
     if (num_calibrated) {
         return;
     }
-    AP_BoardConfig::sensor_config_error("AP_Baro: all sensors uncalibrated");
+    AP_BoardConfig::config_error("AP_Baro: all sensors uncalibrated");
 }
 
 /*
@@ -603,7 +603,7 @@ void AP_Baro::init(void)
 #if !defined(HAL_BARO_ALLOW_INIT_NO_BARO) // most boards requires external baro
 
     if (_num_drivers == 0 || _num_sensors == 0 || drivers[0] == nullptr) {
-        AP_BoardConfig::sensor_config_error("Baro: unable to initialise driver");
+        AP_BoardConfig::config_error("Baro: unable to initialise driver");
     }
 #endif
 }
