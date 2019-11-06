@@ -163,7 +163,7 @@ void Scheduler::sitl_end_atomic() {
 
 void Scheduler::reboot(bool hold_in_bootloader)
 {
-    if (AP_BoardConfig::in_sensor_config_error()) {
+    if (AP_BoardConfig::in_config_error()) {
         // the _should_reboot flag set below is not checked by the
         // sensor-config-error loop, so force the reboot here:
         HAL_SITL::actually_reboot();
