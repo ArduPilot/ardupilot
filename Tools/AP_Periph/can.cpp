@@ -47,6 +47,7 @@
 #include <drivers/stm32/canard_stm32.h>
 #include <AP_HAL/I2CDevice.h>
 #include "../AP_Bootloader/app_comms.h"
+#include <AP_HAL/utility/RingBuffer.h>
 
 #include "i2c.h"
 #include <utility>
@@ -787,10 +788,22 @@ static void processTx(void)
     }
 }
 
+static ObjectBuffer<CANRxFrame> rxbuffer{16};
+
+static void can_rxfull_cb(CANDriver *canp, uint32_t flags)
+{
+    CANRxFrame rxmsg;
+    chSysLockFromISR();
+    while (canTryReceiveI(canp, CAN_ANY_MAILBOX, &rxmsg) == false) {
+        rxbuffer.push_force(rxmsg);
+    }
+    chSysUnlockFromISR();
+}
+
 static void processRx(void)
 {
-    CANRxFrame rxmsg {};
-    while (canReceive(&CAND1, CAN_ANY_MAILBOX, &rxmsg, TIME_IMMEDIATE) == MSG_OK) {
+    CANRxFrame rxmsg;
+    while (rxbuffer.pop(rxmsg)) {
         CanardCANFrame rx_frame {};
 
         //palToggleLine(HAL_GPIO_PIN_LED);
@@ -998,6 +1011,8 @@ void AP_Periph_FW::can_start()
     if (g.can_node >= 0 && g.can_node < 128) {
         PreferredNodeID = g.can_node;
     }
+
+    CAND1.rxfull_cb = can_rxfull_cb;
 
     canStart(&CAND1, &cancfg);
 
