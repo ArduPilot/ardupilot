@@ -3147,7 +3147,7 @@ class AutoTest(ABC):
             raise NotAchievedException("Failed to clear mission")
         self.last_wp_load = time.time()
 
-    def test_sensor_config_error_loop(self):
+    def test_config_error_loop(self):
         '''test the sensor config error loop works and that parameter sets are persistent'''
         parameter_name = "SERVO8_MIN"
         old_parameter_value = self.get_parameter(parameter_name)
@@ -3164,8 +3164,8 @@ class AutoTest(ABC):
                 self.disarm_vehicle(force=True)
 
             self.reboot_sitl(required_bootcount=1);
-            self.progress("Waiting for 'Check BRD_TYPE'")
-            self.mavproxy.expect("Check BRD_TYPE");
+            self.progress("Waiting for 'Config error'")
+            self.mavproxy.expect("Config error");
             self.progress("Setting %s to %f" % (parameter_name, new_parameter_value))
             self.set_parameter(parameter_name, new_parameter_value)
         except Exception as e:
@@ -3611,9 +3611,9 @@ switch value'''
             "Test Set Home",
              self.fly_test_set_home),
 
-            ("SensorConfigErrorLoop",
-             "Test Sensor Config Error Loop",
-             self.test_sensor_config_error_loop),
+            ("ConfigErrorLoop",
+             "Test Config Error Loop",
+             self.test_config_error_loop),
 
             ("Parameters",
              "Test Parameter Set/Get",
