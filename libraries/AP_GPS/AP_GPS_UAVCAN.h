@@ -63,8 +63,6 @@ private:
 
     uint8_t _detected_module;
     bool seen_message;
-
-    bool seen_message;
     bool seen_fix2;
     bool seen_aux;
 

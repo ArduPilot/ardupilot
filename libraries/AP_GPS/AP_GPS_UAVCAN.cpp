@@ -249,6 +249,15 @@ void AP_GPS_UAVCAN::handle_fix_msg(const FixCb &cb)
     interim_state.last_gps_time_ms = AP_HAL::millis();
 
     _new_data = true;
+    if (!seen_message) {
+        if (interim_state.status == AP_GPS::GPS_Status::NO_GPS) {
+            // the first time we see a fix message we change from
+            // NO_GPS to NO_FIX, indicating to user that a UAVCAN GPS
+            // has been seen
+            interim_state.status = AP_GPS::GPS_Status::NO_FIX;
+        }
+        seen_message = true;
+    }
 }
 
 
