@@ -43,8 +43,7 @@ function run_autotest() {
 
     if [ $pymavlink_installed -eq 0 ]; then
         echo "Installing pymavlink"
-        git submodule init
-        git submodule update
+        git submodule update --init --recursive
         (cd modules/mavlink/pymavlink && python setup.py build install --user)
         pymavlink_installed=1
     fi
