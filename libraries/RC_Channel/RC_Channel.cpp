@@ -476,11 +476,10 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const aux_switch_
         do_aux_function(ch_option, ch_flag);
         break;
     default:
-        gcs().send_text(MAV_SEVERITY_WARNING, "Failed to initialise RC function (%u)", (unsigned)ch_option);
-        char errorMsg[51];
-        hal.util->snprintf(errorMsg, sizeof(errorMsg), "Failed to initialise RC function %u for channel %u",
-                           (unsigned)ch_option, (unsigned)(this->ch_in+1));
-        AP_BoardConfig::rc_option_error(errorMsg);
+        gcs().send_text(MAV_SEVERITY_WARNING, "Failed to init: RC%u_OPTION: %u\n",
+                           (unsigned)(this->ch_in+1), (unsigned)ch_option);
+        AP_BoardConfig::config_error("Failed to init: RC%u_OPTION: %u",
+                           (unsigned)(this->ch_in+1), (unsigned)ch_option);
         break;
     }
 }
