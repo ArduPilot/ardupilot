@@ -1172,15 +1172,17 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         (double)logging.SKE_weighting,
         _flags_byte);
 
-    AP::logger().Write("TEC2", "TimeUS,pmax,pmin,KErr,PErr,EDelta,LF",
-                       "s------",
-                       "F------",
-                       "Qffffff",
+    AP::logger().Write("TEC2", "TimeUS,pmax,pmin,KErr,PErr,EDelta,LF,hdem1,hdem2",
+                       "s--------",
+                       "F--------",
+                       "Qffffffff",
                        now,
                        (double)degrees(_PITCHmaxf),
                        (double)degrees(_PITCHminf),
                        (double)logging.SKE_error,
                        (double)logging.SPE_error,
                        (double)logging.SEB_delta,
-                       (double)load_factor);
+                       (double)load_factor,
+                       (double)hgt_dem_cm/100.0f,
+                       (double)_hgt_dem);
 }
