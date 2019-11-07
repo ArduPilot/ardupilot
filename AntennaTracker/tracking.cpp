@@ -10,13 +10,13 @@ void Tracker::update_vehicle_pos_estimate()
     float dt = (AP_HAL::micros() - vehicle.last_update_us) * 1.0e-6f;
 
     // if less than 5 seconds since last position update estimate the position
-    if (dt < TRACKING_TIMEOUT_SEC) {
+    if (dt < TRACKING_TIMEOUT_SEC && !vehicle.location.is_zero()) {
         // project the vehicle position to take account of lost radio packets
         vehicle.location_estimate = vehicle.location;
         float north_offset = vehicle.vel.x * dt;
         float east_offset = vehicle.vel.y * dt;
         vehicle.location_estimate.offset(north_offset, east_offset);
-    	vehicle.location_estimate.alt += vehicle.vel.z * 100.0f * dt;
+        vehicle.location_estimate.alt += vehicle.vel.z * 100.0f * dt;
         // set valid_location flag
         vehicle.location_valid = true;
     } else {
@@ -84,6 +84,9 @@ void Tracker::update_bearing_and_distance()
  */
 void Tracker::update_tracking(void)
 {
+    // pull ADS-B update from ADS-B lib
+    adsb_tracking_update_position();
+
     // update vehicle position estimate
     update_vehicle_pos_estimate();
 
@@ -121,7 +124,7 @@ void Tracker::update_tracking(void)
         case AUTO:
             if (vehicle.location_valid) {
                 update_auto();
-            } else if (tracker.target_set) {
+            } else if (tracker.target_set || (adsb.get_special_ICAO_target() != 0)) {
                 update_scan();
             }
             break;
@@ -157,11 +160,41 @@ void Tracker::tracking_update_position(const mavlink_global_position_int_t &msg)
     vehicle.location.alt = msg.alt/10;
     vehicle.relative_alt = msg.relative_alt/10;
     vehicle.vel = Vector3f(msg.vx/100.0f, msg.vy/100.0f, msg.vz/100.0f);
-    vehicle.last_update_us = AP_HAL::micros();
+
+    const uint32_t now = AP_HAL::micros();
+    vehicle.last_update_us = now;
+    vehicle.mavlink_last_update_us = now;
     vehicle.last_update_ms = AP_HAL::millis();
+
     // log vehicle as GPS2
     if (should_log(MASK_LOG_GPS)) {
         Log_Write_Vehicle_Pos(vehicle.location.lat, vehicle.location.lng, vehicle.location.alt, vehicle.vel);
+    }
+}
+
+// update from ADS-B
+void Tracker::adsb_tracking_update_position()
+{
+    // check for valid target and that Mavlink target is lost
+    const uint32_t now_us = AP_HAL::micros();
+    const float dt = (now_us - vehicle.mavlink_last_update_us) * 1.0e-6f;
+    const uint32_t adsb_target = adsb.get_special_ICAO_target();
+    if (adsb_target == 0 || dt <= TRACKING_TIMEOUT_SEC) {
+        return;
+    }
+
+    // update target
+    AP_ADSB::adsb_vehicle_t adsb_vehicle;
+    if (adsb.get_vehicle_by_ICAO(adsb_target, adsb_vehicle)) {
+        vehicle.location = adsb.get_location(adsb_vehicle);;
+        vehicle.relative_alt = vehicle.location.alt;
+
+        vehicle.vel.x = sinf(radians(adsb_vehicle.info.heading * 0.01f)) * adsb_vehicle.info.hor_velocity * 0.01f;
+        vehicle.vel.y = cosf(radians(adsb_vehicle.info.heading * 0.01f)) * adsb_vehicle.info.hor_velocity * 0.01f;
+        vehicle.vel.z = adsb_vehicle.info.ver_velocity * 0.01f;
+
+        vehicle.last_update_us = now_us;
+        vehicle.last_update_ms = AP_HAL::millis();
     }
 }
 

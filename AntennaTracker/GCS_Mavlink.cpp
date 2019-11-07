@@ -226,6 +226,15 @@ const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("PARAMS",   8, GCS_MAVLINK_Parameters, streamRates[8],  10),
+
+    // @Param: ADSB
+    // @DisplayName: ADSB stream rate to ground station
+    // @Description: ADSB stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 50
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("ADSB",   9, GCS_MAVLINK_Parameters, streamRates[9],  5),
     AP_GROUPEND
 };
 
@@ -277,6 +286,9 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
 static const ap_message STREAM_PARAMS_msgs[] = {
     MSG_NEXT_PARAM
 };
+static const ap_message STREAM_ADSB_msgs[] = {
+    MSG_ADSB_VEHICLE
+};
 
 const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
     MAV_STREAM_ENTRY(STREAM_RAW_SENSORS),
@@ -287,6 +299,7 @@ const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
     MAV_STREAM_ENTRY(STREAM_EXTRA1),
     MAV_STREAM_ENTRY(STREAM_EXTRA3),
     MAV_STREAM_ENTRY(STREAM_PARAMS),
+    MAV_STREAM_ENTRY(STREAM_ADSB),
     MAV_STREAM_TERMINATOR // must have this at end of stream_entries
 };
 
@@ -562,6 +575,15 @@ mission_failed:
         break;
     }
 
+    case MAVLINK_MSG_ID_ADSB_VEHICLE:
+    case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CFG:
+    case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_DYNAMIC:
+    case MAVLINK_MSG_ID_UAVIONIX_ADSB_TRANSCEIVER_HEALTH_REPORT:
+    {
+        tracker.adsb.handle_message(chan, msg);
+        break;
+    }
+
     default:
         handle_common_message(msg);
         break;
@@ -619,6 +641,23 @@ void GCS_MAVLINK_Tracker::send_global_position_int()
         0,                        // Y speed cm/s (+ve East)
         0,                        // Z speed cm/s (+ve Down)
         tracker.ahrs.yaw_sensor); // compass heading in 1/100 degree
+}
+
+// try to send a message, return false if it won't fit in the serial tx buffer
+bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
+{
+    switch (id) {
+
+    case MSG_ADSB_VEHICLE: {
+        CHECK_PAYLOAD_SIZE(ADSB_VEHICLE);
+        tracker.adsb.send_adsb_vehicle(chan);
+        break;
+    }
+
+    default:
+        return GCS_MAVLINK::try_send_message(id);
+    }
+    return true;
 }
 
 
