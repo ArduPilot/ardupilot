@@ -386,9 +386,11 @@ bool AP_Terrain::allocate(void)
     if (cache == nullptr) {
         enable.set(0);
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Terrain: Allocation failed");
+        memory_alloc_failed = true;
         return false;
     }
     cache_size = TERRAIN_GRID_BLOCK_CACHE_SIZE;
+    memory_alloc_failed = false;
     return true;
 }
 

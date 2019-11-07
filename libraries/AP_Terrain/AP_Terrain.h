@@ -179,6 +179,11 @@ public:
      */
     void get_statistics(uint16_t &pending, uint16_t &loaded) const;
 
+    /*
+      returns true if initialisation failed because out-of-memory
+     */
+    bool init_failed() const { return memory_alloc_failed; }
+
 private:
     // allocate the terrain subsystem data
     bool allocate(void);
@@ -413,6 +418,9 @@ private:
 
     // status
     enum TerrainStatus system_status = TerrainStatusDisabled;
+
+    // memory allocation status
+    bool memory_alloc_failed;
 
     static AP_Terrain *singleton;
 };
