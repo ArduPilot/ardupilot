@@ -181,6 +181,9 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if WINCH_ENABLED == ENABLED
     SCHED_TASK(winch_update,          10,     50),
 #endif
+#if GENERATOR_ENABLED
+    SCHED_TASK_CLASS(AP_Generator_RichenPower,     &copter.generator,      update,    10,     50),
+#endif
 #ifdef USERHOOK_FASTLOOP
     SCHED_TASK(userhook_FastLoop,    100,     75),
 #endif
