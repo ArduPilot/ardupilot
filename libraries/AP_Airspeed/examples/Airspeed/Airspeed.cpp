@@ -18,6 +18,7 @@
  *
  */
 
+#include <AP_AHRS/AP_AHRS.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -29,6 +30,9 @@ void loop();
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 float temperature;
+
+// create an AHRS object for get_airspeed_max
+AP_AHRS_DCM ahrs;
 
 // create airspeed object
 AP_Airspeed airspeed;
