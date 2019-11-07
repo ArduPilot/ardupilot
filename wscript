@@ -157,7 +157,7 @@ def _collect_autoconfig_files(cfg):
                 paths.append(p)
 
         for p in paths:
-            if p in cfg.files or not os.path.isfile(p):
+            if p in cfg.files or not (p and os.path.isfile(p)):
                 continue
 
             with open(p, 'rb') as f:
