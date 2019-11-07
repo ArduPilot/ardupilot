@@ -1,5 +1,26 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.6.11 01-Oct-2019 / 3.6.11-rc1 16-Sep-2019
+Changes from 3.6.10
+1) EKF and IMU improvements:
+    a) IMU3 enabled by default if present
+    b) IMU3 fast sampling enabled by default on Cube autopilots
+    c) EKF protection against large baro spikes causing attitude error
+    d) EKF origin fixes (consistent across cores, set externally only when not using GPS)
+    e) EKF logging of 3rd core
+2) Minor enhancements:
+    a) Land mode supports heading requests (ie. ROI)
+    b) Support Hexa-H frame
+    c) MatekF405-STD binaries created
+    d) Benewake TFminiPlus lidar support
+3) Bug Fixes
+    a) Barometer health checks include sanity check of temperature
+    b) Lightware serial driver handles invalid distances
+    c) IO firmware fix involving delayed writes to serial ports (ChibiOS only)
+    d) CAN Compass fis to for unintialised device IDs
+    e) mRo x2.1-777 USB ID fix
+    f) ChibiOS fix for I2C storm
+------------------------------------------------------------------
 Copter 3.6.10 29-Jul-2019 / 3.6.10-rc2 2-Jul-2019
 Changes from 3.6.10-rc1
 1) mRobotics ControlZeroF7 board support

@@ -670,6 +670,9 @@ bool NavEKF2::InitialiseFilter(void)
         primary = 0;
     }
 
+    // invalidate shared origin
+    common_origin_valid = false;
+    
     // initialise the cores. We return success only if all cores
     // initialise successfully
     bool ret = true;
@@ -1024,10 +1027,22 @@ bool NavEKF2::getOriginLLH(int8_t instance, struct Location &loc) const
 // Returns false if the filter has rejected the attempt to set the origin
 bool NavEKF2::setOriginLLH(const Location &loc)
 {
+    if (_fusionModeGPS != 3) {
+        // we don't allow setting of the EKF origin unless we are
+        // flying in non-GPS mode. This is to prevent accidental set
+        // of EKF origin with invalid position or height
+        gcs().send_text(MAV_SEVERITY_WARNING, "EKF2 refusing set origin");
+        return false;
+    }
     if (!core) {
         return false;
     }
-    return core[primary].setOriginLLH(loc);
+    bool ret = false;
+    for (uint8_t i=0; i<num_cores; i++) {
+        ret |= core[i].setOriginLLH(loc);
+    }
+    // return true if any core accepts the new origin
+    return ret;
 }
 
 // return estimated height above ground level
