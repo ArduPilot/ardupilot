@@ -177,7 +177,7 @@ public:
     /*
       get some statistics for TERRAIN_REPORT
      */
-    void get_statistics(uint16_t &pending, uint16_t &loaded);
+    void get_statistics(uint16_t &pending, uint16_t &loaded) const;
 
 private:
     // allocate the terrain subsystem data
@@ -308,7 +308,7 @@ private:
     /*
       get some statistics for TERRAIN_REPORT
      */
-    uint8_t bitcount64(uint64_t b);
+    uint8_t bitcount64(uint64_t b) const;
 
     /*
       disk IO functions
