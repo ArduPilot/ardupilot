@@ -149,7 +149,7 @@ void AP_Terrain::send_request(mavlink_channel_t chan)
 /*
   count bits in a uint64_t
 */
-uint8_t AP_Terrain::bitcount64(uint64_t b)
+uint8_t AP_Terrain::bitcount64(uint64_t b) const
 {
     return __builtin_popcount((unsigned)(b&0xFFFFFFFF)) + __builtin_popcount((unsigned)(b>>32));
 }
@@ -157,7 +157,7 @@ uint8_t AP_Terrain::bitcount64(uint64_t b)
 /*
   get some statistics for TERRAIN_REPORT
 */
-void AP_Terrain::get_statistics(uint16_t &pending, uint16_t &loaded)
+void AP_Terrain::get_statistics(uint16_t &pending, uint16_t &loaded) const
 {
     pending = 0;
     loaded = 0;
