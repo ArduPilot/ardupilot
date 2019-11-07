@@ -22,8 +22,12 @@
 /*
   allow double maths on Linux and SITL to avoid problems with system headers
  */
+
 #define ALLOW_DOUBLE_MATH_FUNCTIONS
 #endif
+
+// we need to include math.h here for newer compilers (eg. g++ 7.3.1 for stm32)
+#include <math.h>
 
 #if !defined(ALLOW_DOUBLE_MATH_FUNCTIONS)
 /* give warnings if we use double precision maths functions without
