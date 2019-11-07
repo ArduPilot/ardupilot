@@ -8,6 +8,12 @@
 
 [![Autotest Status](https://autotest.ardupilot.org/autotest-badge.svg)](https://autotest.ardupilot.org/)
 
+Ardupilot is the most advanced, full-featured and reliable open source autopilot software available. It has
+been under development since 2010 by a team of diverse professional engineers and computer scientists. It is
+the only autopilot software capable of controlling almost any vehicle system imaginable, from conventional
+airplanes, multirotors, and helicopters, to boats and even submarines. And now being expanded to feature
+support for new emerging vehicle types such as quad-planes and compound helicopters.
+
 ## The ArduPilot project is made up of: ##
 
 - ArduCopter (or APM:Copter) : [code](https://github.com/ArduPilot/ardupilot/tree/master/ArduCopter), [wiki](https://ardupilot.org/copter/index.html)
