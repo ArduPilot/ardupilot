@@ -10,7 +10,7 @@ supported by ArduPilot. That means you can add support for a new
 UAVCAN peripheral based on the STM32 by just writing a simple
 hwdef.dat that defines the pinout of your device.
 
-Currently we have three targets building for AP_Periph firmwares:
+Currently we have four targets building for AP_Periph firmwares:
 
  - A STM32F103 128k flash part made by mRobotics (target f103-GPS)
  - A STM32F412 512k flash part made by CUAV (target CUAV_GPS)
@@ -79,3 +79,10 @@ To build the bootloader use this:
 
 the resulting bootloader will be in Tools/bootloaders
 
+# Firmware Builds
+
+Firmware targets are automatically built and distributed on the
+ArduPilot firmware server on firmware.ardupilot.org. These firmwares
+can be loaded using Mission Planner or the UAVCAN GUI Tool. Parameters
+for peripherals can be changed using the Mission Planner SLCAN support
+or using UAVCAN GUI Tools.
