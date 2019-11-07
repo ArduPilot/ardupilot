@@ -114,6 +114,7 @@ public:
     const Location &get_location() const { return location; }
 
     const Vector3f &get_position() const { return position; }
+    const float &get_range() const { return range; }
 
     void get_attitude(Quaternion &attitude) const {
         attitude.from_rotation_matrix(dcm);
