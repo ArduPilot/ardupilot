@@ -97,6 +97,14 @@ void Copter::motor_test_output()
 //  return true if tests can continue, false if not
 bool Copter::mavlink_motor_test_check(const GCS_MAVLINK &gcs_chan, bool check_rc)
 {
+	// check if we have start ESC auto-calibration and haven't yet restart the vehicle
+	// Note that if we press the ESC calibrate button and then directly test the motors in GCS without restart the vehicle,
+	// the motor test function would just push out the maximum PWM value which was set by the ESC_cali to the motors and lead to catastrophic consequences.
+	if (g.esc_calibrate != ESCCalibrationModes::ESCCAL_NONE){
+        gcs_chan.send_text(MAV_SEVERITY_CRITICAL,"Motor Test: Still in ESC calibration status");
+        return false;
+	}
+
     // check board has initialised
     if (!ap.initialised) {
         gcs_chan.send_text(MAV_SEVERITY_CRITICAL,"Motor Test: Board initialising");
