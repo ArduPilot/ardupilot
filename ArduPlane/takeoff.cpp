@@ -137,7 +137,7 @@ void Plane::takeoff_calc_roll(void)
     const float lim1 = 5;    
     // at 15m allow for full roll
     const float lim2 = 15;
-    if (baro_alt < auto_state.baro_takeoff_alt+lim1) {
+    if ((baro_alt < auto_state.baro_takeoff_alt+lim1) || (auto_state.highest_airspeed < g.takeoff_rotate_speed)) {
         roll_limit = g.level_roll_limit;
     } else if (baro_alt < auto_state.baro_takeoff_alt+lim2) {
         float proportion = (baro_alt - (auto_state.baro_takeoff_alt+lim1)) / (lim2 - lim1);
