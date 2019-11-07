@@ -31,6 +31,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_Terrain/AP_Terrain.h>
 
 #if HAL_WITH_UAVCAN
   #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
@@ -698,6 +699,13 @@ bool AP_Arming::system_checks(bool report)
             check_failed(ARMING_CHECK_SYSTEM, report, "Param storage failed");
             return false;
         }
+#if AP_TERRAIN_AVAILABLE
+        const AP_Terrain *terrain = AP_Terrain::get_singleton();
+        if ((terrain != nullptr) && terrain->init_failed()) {
+            check_failed(ARMING_CHECK_SYSTEM, report, "Terrain out of memory");
+            return false;
+        }
+#endif
     }
     if (AP::internalerror().errors() != 0) {
         check_failed(report, "Internal errors (0x%x)", (unsigned int)AP::internalerror().errors());
