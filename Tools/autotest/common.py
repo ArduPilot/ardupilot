@@ -563,15 +563,6 @@ class AutoTest(ABC):
             raise NotAchievedException("No cached time available")
         return x.time_boot_ms * 1.0e-3
 
-    def delay_sim_time(self, delay):
-        '''delay for delay seconds in simulation time'''
-        m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True)
-        start = m.time_boot_ms
-        while True:
-            m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True)
-            if m.time_boot_ms - start > delay * 1000:
-                return
-
     def sim_location(self):
         """Return current simulator location."""
         m = self.mav.recv_match(type='SIMSTATE', blocking=True)
@@ -583,19 +574,19 @@ class AutoTest(ABC):
     def save_wp(self, ch=7):
         """Trigger RC Aux to save waypoint."""
         self.set_rc(ch, 1000)
-        self.wait_seconds(1)
+        self.delay_sim_time(1)
         self.set_rc(ch, 2000)
-        self.wait_seconds(1)
+        self.delay_sim_time(1)
         self.set_rc(ch, 1000)
-        self.wait_seconds(1)
+        self.delay_sim_time(1)
 
     def clear_wp(self, ch=8):
         """Trigger RC Aux to clear waypoint."""
         self.progress("Clearing waypoints")
         self.set_rc(ch, 1000)
-        self.wait_seconds(0.5)
+        self.delay_sim_time(0.5)
         self.set_rc(ch, 2000)
-        self.wait_seconds(0.5)
+        self.delay_sim_time(0.5)
         self.set_rc(ch, 1000)
         self.mavproxy.send('wp list\n')
         self.mavproxy.expect('Requesting 0 waypoints')
@@ -1714,7 +1705,7 @@ class AutoTest(ABC):
     #################################################
     # WAIT UTILITIES
     #################################################
-    def wait_seconds(self, seconds_to_wait):
+    def delay_sim_time(self, seconds_to_wait):
         """Wait some second in SITL time."""
         tstart = self.get_sim_time()
         tnow = tstart

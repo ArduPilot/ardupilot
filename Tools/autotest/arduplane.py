@@ -758,10 +758,10 @@ class AutoTestPlane(AutoTest):
             # do a short flight in FBWA, watching for flaps
             # self.mavproxy.send('switch 4\n')
             # self.wait_mode('FBWA')
-            # self.wait_seconds(10)
+            # self.delay_sim_time(10)
             # self.mavproxy.send('switch 6\n')
             # self.wait_mode('MANUAL')
-            # self.wait_seconds(10)
+            # self.delay_sim_time(10)
 
             self.progress("Flaps OK")
         except Exception as e:
