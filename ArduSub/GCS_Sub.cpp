@@ -24,11 +24,6 @@ void GCS_Sub::update_vehicle_sensor_status_flags()
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
     }
-    const AP_GPS &gps = AP::gps();
-    if (gps.status() > AP_GPS::NO_GPS) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_GPS;
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_GPS;
-    }
 #if OPTFLOW == ENABLED
     const OpticalFlow *optflow = AP::opticalflow();
     if (optflow && optflow->enabled()) {
@@ -60,9 +55,6 @@ void GCS_Sub::update_vehicle_sensor_status_flags()
     control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE; // check the internal barometer only
     if (sub.sensor_health.depth) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
-    }
-    if (gps.is_healthy()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_GPS;
     }
 #if OPTFLOW == ENABLED
     if (optflow && optflow->healthy()) {
