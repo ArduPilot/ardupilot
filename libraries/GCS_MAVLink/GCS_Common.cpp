@@ -38,6 +38,7 @@
 #include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_OpticalFlow/OpticalFlow.h>
 #include <AP_Baro/AP_Baro.h>
+#include <AP_EFI/AP_EFI.h>
 
 #include <stdio.h>
 
@@ -4472,6 +4473,17 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
                 default:
                     break;
             }
+        }
+#endif
+        break;
+    }
+
+    case MSG_EFI_STATUS: {
+#if EFI_ENABLED
+        CHECK_PAYLOAD_SIZE(EFI_STATUS);
+        AP_EFI *efi = AP::EFI();
+        if (efi) {
+            efi->send_mavlink_status(chan);
         }
 #endif
         break;
