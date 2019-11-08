@@ -8,11 +8,6 @@ void GCS_Plane::update_vehicle_sensor_status_flags(void)
     if (airspeed && airspeed->enabled()) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
     }
-    const AP_GPS &gps = AP::gps();
-    if (gps.status() > AP_GPS::NO_GPS) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_GPS;
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_GPS;
-    }
 #if OPTFLOW == ENABLED
     const OpticalFlow *optflow = AP::opticalflow();
     if (optflow && optflow->enabled()) {
@@ -106,9 +101,6 @@ void GCS_Plane::update_vehicle_sensor_status_flags(void)
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION;
     }
 
-    if (gps.status() >= AP_GPS::GPS_OK_FIX_3D && gps.is_healthy()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_GPS;
-    }
 #if OPTFLOW == ENABLED
     if (optflow && optflow->healthy()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
