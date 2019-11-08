@@ -359,6 +359,7 @@ private:
     uint8_t num_cores; // number of allocated cores
     uint8_t primary;   // current primary core
     NavEKF2_core *core = nullptr;
+    bool core_malloc_failed;
     const AP_AHRS *_ahrs;
     const RangeFinder &_rng;
 
