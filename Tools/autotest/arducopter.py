@@ -187,7 +187,7 @@ class AutoTestCopter(AutoTest):
         self.progress("Cotper staging 50 meters east of home at 50 meters altitude In mode Alt Hold")
 
     # Start and stop the GCS heartbeat for GCS failsafe testing
-    def setHeartbeat(self, beating=True):
+    def setHeartbeat(self, beating):
         if beating == False:
             self.mavproxy.send('set heartbeat 0\n')
         else:
@@ -667,7 +667,7 @@ class AutoTestCopter(AutoTest):
         self.setHeartbeat(False)
         self.wait_seconds(5)
         self.wait_mode("ALT_HOLD")
-        self.setHeartbeat()
+        self.setHeartbeat(True)
         self.wait_seconds(5)
         self.wait_mode("ALT_HOLD")
         self.end_subtest("Completed GCS failsafe disabled test")
@@ -677,7 +677,7 @@ class AutoTestCopter(AutoTest):
         self.setGCSfailsafe(1)
         self.setHeartbeat(False)
         self.wait_mode("RTL")
-        self.setHeartbeat()
+        self.setHeartbeat(True)
         self.mavproxy.expect("GCS Failsafe Cleared")
         self.change_mode("LOITER")
         self.end_subtest("Completed GCS failsafe recovery test")
@@ -687,7 +687,7 @@ class AutoTestCopter(AutoTest):
         self.setHeartbeat(False)
         self.wait_mode("RTL")
         self.mav.motors_disarmed_wait()
-        self.setHeartbeat()
+        self.setHeartbeat(True)
         self.mavproxy.expect("GCS Failsafe Cleared")
         self.end_subtest("Completed GCS failsafe RTL with no options test")
 
@@ -698,7 +698,7 @@ class AutoTestCopter(AutoTest):
         self.setHeartbeat(False)
         self.wait_mode("LAND")
         self.mav.motors_disarmed_wait()
-        self.setHeartbeat()
+        self.setHeartbeat(True)
         self.mavproxy.expect("GCS Failsafe Cleared")
         self.end_subtest("Completed GCS failsafe land with no options test")
 
@@ -709,7 +709,7 @@ class AutoTestCopter(AutoTest):
         self.setHeartbeat(False)
         self.wait_mode("SMART_RTL")
         self.mav.motors_disarmed_wait()
-        self.setHeartbeat()
+        self.setHeartbeat(True)
         self.mavproxy.expect("GCS Failsafe Cleared")
         self.end_subtest("Completed GCS failsafe SmartRTL->RTL with no options test")
 
@@ -720,7 +720,7 @@ class AutoTestCopter(AutoTest):
         self.setHeartbeat(False)
         self.wait_mode("SMART_RTL")
         self.mav.motors_disarmed_wait()
-        self.setHeartbeat()
+        self.setHeartbeat(True)
         self.mavproxy.expect("GCS Failsafe Cleared")
         self.end_subtest("Completed GCS failsafe SmartRTL->Land with no options test")
 
@@ -731,7 +731,7 @@ class AutoTestCopter(AutoTest):
         self.setHeartbeat(False)
         self.wait_mode("RTL")
         self.mav.motors_disarmed_wait()
-        self.setHeartbeat()
+        self.setHeartbeat(True)
         self.mavproxy.expect("GCS Failsafe Cleared")
         self.end_subtest("Completed GCS failsafe invalid value with no options test")
 
@@ -748,7 +748,7 @@ class AutoTestCopter(AutoTest):
         self.mavproxy.expect("GCS Failsafe - Continuing Pilot Control")
         self.wait_seconds(5)
         self.wait_mode("ALT_HOLD")
-        self.setHeartbeat()
+        self.setHeartbeat(True)
         self.mavproxy.expect("GCS Failsafe Cleared")
 
         self.progress("Testing continue in auto mission")
@@ -759,7 +759,7 @@ class AutoTestCopter(AutoTest):
         self.mavproxy.expect("GCS Failsafe - Continuing Auto Mode")
         self.wait_seconds(5)
         self.wait_mode("AUTO")
-        self.setHeartbeat()
+        self.setHeartbeat(True)
         self.mavproxy.expect("GCS Failsafe Cleared")
 
         self.progress("Testing continue landing in land mode")
@@ -771,7 +771,7 @@ class AutoTestCopter(AutoTest):
         self.wait_seconds(5)
         self.wait_mode("LAND")
         self.mav.motors_disarmed_wait()
-        self.setHeartbeat()
+        self.setHeartbeat(True)
         self.mavproxy.expect("GCS Failsafe Cleared")
         self.end_subtest("Completed GCS failsafe with option bits")
 
