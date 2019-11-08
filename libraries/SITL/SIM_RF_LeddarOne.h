@@ -15,11 +15,16 @@
 /*
   Simulator for the LeddarOne rangefinder
 
-./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduPlane -A --uartF=sim:leddarone --speedup=1
+./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --uartF=sim:leddarone --speedup=1
 
 param set SERIAL5_PROTOCOL 9
 param set RNGFND1_TYPE 12
+graph RANGEFINDER.distance
+graph GLOBAL_POSITION_INT.relative_alt/1000-RANGEFINDER.distance
 reboot
+
+arm throttle
+rc 3 1600
 */
 
 #pragma once
