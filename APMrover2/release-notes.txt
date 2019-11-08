@@ -1,5 +1,17 @@
 Rover Release Notes:
 --------------------------------
+Rover 4.0.0-rc3 08-Nov-2019
+Changes from 4.0.0-rc2
+1) IMU heater control parameters (see BRD_IMUHEAT_P/I params)
+2) Bug Fixes:
+    a) DO_CHANGE_SPEED fix (was being ignored)
+    b) SET_YAW_SPEED in Guided mode made consistent with Auto mission command handling (yaw in degrees, speed in m/s)
+    c) BLHeli fix to RPM calcs and telemetry (aka 0x8000 error)
+    d) Fence upload is less strict about altitude types (fences don't have altitudes)
+    e) Pre-arm message fix to reports AHRS/EKF issue (was blank)
+    f) Sparky2 autopilot firmware available
+    g) Startup message "AK09916: Unable to get bus semaphore" removed (was not an error)  
+--------------------------------
 Rover 4.0.0-rc2 24-Oct-2019
 Changes from 4.0.0-rc1
 1) Vehicle stays in Auto mode after completing missions using RTL-within-Auto, Hold-within-Auto 
