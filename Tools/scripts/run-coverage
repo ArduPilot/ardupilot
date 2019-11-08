@@ -13,20 +13,20 @@ export CCFLAGS="$CCFLAGS -fprofile-arcs -ftest-coverage"
 export CXXFLAGS="$CXXFLAGS -fprofile-arcs -ftest-coverage"
 export LINKFLAGS="$LINKFLAGS -lgcov -coverage"
 
-# Run examples
-./waf configure --board=linux
-./waf examples
-./Tools/autotest/autotest.py run.examples
-
-# Run unit tests
-./Tools/autotest/autotest.py build.unit_tests run.unit_tests
-
-# Run main vehicle tests
 SPEEDUP=5
 TIMEOUT=14400
 
 OPTS="--speedup=$SPEEDUP --timeout=$TIMEOUT --debug --no-clean"
 
+# Run examples
+./waf configure --board=linux --debug
+./waf examples
+./Tools/autotest/autotest.py $OPTS run.examples
+
+# Run unit tests
+./Tools/autotest/autotest.py $OPTS build.unit_tests run.unit_tests
+
+# Run main vehicle tests
 ./Tools/autotest/autotest.py $OPTS build.ArduPlane fly.ArduPlane fly.QuadPlane
 ./Tools/autotest/autotest.py $OPTS build.ArduSub dive.ArduSub
 ./Tools/autotest/autotest.py $OPTS build.ArduCopter fly.ArduCopter
