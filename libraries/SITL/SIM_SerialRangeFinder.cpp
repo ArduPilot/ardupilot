@@ -61,9 +61,9 @@ uint16_t SerialRangeFinder::calculate_range_cm(float range_value) const
 
 void SerialRangeFinder::update(float range)
 {
-    // just send a chunk of data at 1Hz:
+    // just send a chunk of data at 5Hz:
     const uint32_t now = AP_HAL::millis();
-    if (now - last_sent_ms < 1000) {
+    if (now - last_sent_ms < reading_interval_ms()) {
         return;
     }
     last_sent_ms = now;
