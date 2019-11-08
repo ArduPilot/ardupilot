@@ -17,6 +17,7 @@
 #include <AP_Devo_Telem/AP_Devo_Telem.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Filesystem/AP_Filesystem_Available.h>
+#include <AP_GPS/AP_GPS.h>
 
 #include "MissionItemProtocol_Waypoints.h"
 #include "MissionItemProtocol_Rally.h"
@@ -924,6 +925,11 @@ private:
         uint8_t                 bitmask;
         mavlink_statustext_t    msg;
     };
+
+    virtual AP_GPS::GPS_Status min_status_for_gps_healthy() const {
+        // NO_FIX simply excludes NO_GPS
+        return AP_GPS::GPS_Status::NO_FIX;
+    }
 
     void update_sensor_status_flags();
 
