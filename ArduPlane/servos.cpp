@@ -378,8 +378,6 @@ void Plane::throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle)
     }
 }
     
-
-
 /*
   setup output channels all non-manual modes
  */
@@ -393,6 +391,9 @@ void Plane::set_servos_controlled(void)
     // convert 0 to 100% (or -100 to +100) into PWM
     int8_t min_throttle = aparm.throttle_min.get();
     int8_t max_throttle = aparm.throttle_max.get();
+
+    // apply idle governor
+    g2.ice_control.update_idle_governor(min_throttle);
     
     if (min_throttle < 0 && !allow_reverse_thrust()) {
         // reverse thrust is available but inhibited.
