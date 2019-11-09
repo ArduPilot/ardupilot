@@ -86,3 +86,11 @@ ArduPilot firmware server on firmware.ardupilot.org. These firmwares
 can be loaded using Mission Planner or the UAVCAN GUI Tool. Parameters
 for peripherals can be changed using the Mission Planner SLCAN support
 or using UAVCAN GUI Tools.
+
+# User Bootloader Update
+
+The bootloader is automatically stored in ROMFS in the main
+firmware. End users can update the bootloader by setting the UAVCAN
+parameter "FLASH_BOOTLOADER" to 1. After setting it to 1 the node will
+respond with a debug text message which can be seen in the UAVCAN GUI
+tool to show the result of the flash.
