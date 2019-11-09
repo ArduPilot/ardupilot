@@ -33,20 +33,23 @@ void RC_Channel_Rover::init_aux_function(const aux_func_t ch_option, const aux_s
     // init channel options
     switch (ch_option) {
     // the following functions do not need initialising:
+    case AUX_FUNC::ACRO:
+    case AUX_FUNC::ARMDISARM:
+    case AUX_FUNC::AUTO:
+    case AUX_FUNC::FOLLOW:
+    case AUX_FUNC::GUIDED:
+    case AUX_FUNC::HOLD:
+    case AUX_FUNC::LEARN_CRUISE:
+    case AUX_FUNC::LOITER:
+    case AUX_FUNC::MAINSAIL:
+    case AUX_FUNC::MANUAL:
+    case AUX_FUNC::RTL:
+    case AUX_FUNC::SAILBOAT_TACK:
     case AUX_FUNC::SAVE_TRIM:
     case AUX_FUNC::SAVE_WP:
-    case AUX_FUNC::LEARN_CRUISE:
-    case AUX_FUNC::ARMDISARM:
-    case AUX_FUNC::MANUAL:
-    case AUX_FUNC::ACRO:
+    case AUX_FUNC::SIMPLE:
+    case AUX_FUNC::SMART_RTL:
     case AUX_FUNC::STEERING:
-    case AUX_FUNC::HOLD:
-    case AUX_FUNC::AUTO:
-    case AUX_FUNC::GUIDED:
-    case AUX_FUNC::LOITER:
-    case AUX_FUNC::FOLLOW:
-    case AUX_FUNC::SAILBOAT_TACK:
-    case AUX_FUNC::MAINSAIL:
         break;
     case AUX_FUNC::SAILBOAT_MOTOR_3POS:
         do_aux_function_sailboat_motor_3pos(ch_flag);
