@@ -115,7 +115,6 @@ class Board:
             '-Wno-redundant-decls',
             '-Wno-unknown-pragmas',
             '-Wno-trigraphs',
-            '-Wno-format-contains-nul',
             '-Werror=shadow',
             '-Werror=return-type',
             '-Werror=unused-result',
@@ -141,6 +140,10 @@ class Board:
                 '-Wno-inconsistent-missing-override',
                 '-Wno-mismatched-tags',
                 '-Wno-gnu-variable-sized-type-not-at-end',
+            ]
+        else:
+            env.CFLAGS += [
+                '-Wno-format-contains-nul',
             ]
 
         if cfg.env.DEBUG:
@@ -175,7 +178,6 @@ class Board:
             '-Wno-redundant-decls',
             '-Wno-unknown-pragmas',
             '-Wno-expansion-to-defined',
-            '-Wno-format-contains-nul',
             '-Werror=attributes',
             '-Werror=format-security',
             '-Werror=format-extra-args',
@@ -227,6 +229,7 @@ class Board:
             ]
         else:
             env.CXXFLAGS += [
+                '-Wno-format-contains-nul',
                 '-Werror=unused-but-set-variable'
             ]
             (major, minor, patchlevel) = cfg.env.CC_VERSION
