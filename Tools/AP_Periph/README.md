@@ -94,3 +94,10 @@ firmware. End users can update the bootloader by setting the UAVCAN
 parameter "FLASH_BOOTLOADER" to 1. After setting it to 1 the node will
 respond with a debug text message which can be seen in the UAVCAN GUI
 tool to show the result of the flash.
+
+# Discussion and Feedback
+
+Please join the discussions at these locations:
+
+ - https://discuss.ardupilot.org/t/ap-periph-1-0-0-stable-released/49049
+ - https://gitter.im/ArduPilot/CANBUS
