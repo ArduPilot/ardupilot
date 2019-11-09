@@ -449,33 +449,31 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const aux_switch_
 {
     // init channel options
     switch(ch_option) {
-    case AUX_FUNC::FENCE:  
-    case AUX_FUNC::RC_OVERRIDE_ENABLE:
-    case AUX_FUNC::AVOID_ADSB:
-    case AUX_FUNC::AVOID_PROXIMITY:
-    case AUX_FUNC::MISSION_RESET:
-        do_aux_function(ch_option, ch_flag);
-        break;
     // the following functions do not need to be initialised:
+    case AUX_FUNC::CAMERA_TRIGGER:
+    case AUX_FUNC::CLEAR_WP:
+    case AUX_FUNC::COMPASS_LEARN:
+    case AUX_FUNC::DO_NOTHING:
+    case AUX_FUNC::LANDING_GEAR:
+    case AUX_FUNC::LOST_VEHICLE_SOUND:
     case AUX_FUNC::RELAY:
     case AUX_FUNC::RELAY2:
     case AUX_FUNC::RELAY3:
     case AUX_FUNC::RELAY4:
     case AUX_FUNC::RELAY5:
     case AUX_FUNC::RELAY6:
-    case AUX_FUNC::CAMERA_TRIGGER:
-    case AUX_FUNC::LOST_VEHICLE_SOUND:
-    case AUX_FUNC::DO_NOTHING:
-    case AUX_FUNC::CLEAR_WP:
-    case AUX_FUNC::COMPASS_LEARN:
-    case AUX_FUNC::LANDING_GEAR:
         break;
-    case AUX_FUNC::MOTOR_ESTOP:
-    case AUX_FUNC::GRIPPER:
-    case AUX_FUNC::SPRAYER:
+    case AUX_FUNC::AVOID_ADSB:
+    case AUX_FUNC::AVOID_PROXIMITY:
+    case AUX_FUNC::FENCE:
     case AUX_FUNC::GPS_DISABLE:
+    case AUX_FUNC::GRIPPER:
     case AUX_FUNC::KILL_IMU1:
     case AUX_FUNC::KILL_IMU2:
+    case AUX_FUNC::MISSION_RESET:
+    case AUX_FUNC::MOTOR_ESTOP:
+    case AUX_FUNC::RC_OVERRIDE_ENABLE:
+    case AUX_FUNC::SPRAYER:
         do_aux_function(ch_option, ch_flag);
         break;
     default:
