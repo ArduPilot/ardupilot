@@ -540,6 +540,10 @@ void SITL_State::_fdm_input_local(void)
         nmea->update(sitl_model->get_range());
     }
 
+    if (_sitl) {
+        _sitl->efi_ms.update();
+    }
+
     if (_sitl && _use_fg_view) {
         _output_to_flightgear();
     }
