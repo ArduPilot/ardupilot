@@ -1,10 +1,15 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
+
+import math
 import os
+
+from pymavlink import mavextra
 from pymavlink import mavutil
 
 from common import AutoTest
+from common import NotAchievedException
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
@@ -37,6 +42,54 @@ class AutoTestTracker(AutoTest):
     def sysid_thismav(self):
         return 2
 
+    def achieve_attitude(self, desyaw, despitch, tolerance=1, target_system=2, target_component=1):
+        '''use set_attitude_target to achieve desyaw / despitch'''
+        tstart = self.get_sim_time()
+        last_attitude_target_sent = 0
+        last_debug = 0
+        self.progress("Using set_attitude_target to achieve attitude")
+        while True:
+            now = self.get_sim_time()
+            if now - tstart > 30:
+                raise NotAchievedException("Did not achieve attitude")
+            if now - last_attitude_target_sent > 0.5:
+                last_attitude_target_sent = now
+                type_mask = (
+                    1 << 0 | # ignore roll rate
+                    1 << 6 # ignore throttle
+                )
+                self.mav.mav.set_attitude_target_send(
+                    0, # time_boot_ms
+                    target_system, # target sysid
+                    target_component, # target compid
+                    type_mask, # bitmask of things to ignore
+                    mavextra.euler_to_quat([0,
+                                            math.radians(despitch),
+                                            math.radians(desyaw)]), # att
+                    0, # yaw rate (rad/s)
+                    0, # pitch rate
+                    0, # yaw rate
+                    0) # thrust, 0 to 1, translated to a climb/descent rate
+            m = self.mav.recv_match(type='ATTITUDE', blocking=True, timeout=2)
+            if m is None:
+                raise NotAchievedException("Did not get ATTITUDE")
+            if now - last_debug > 1:
+                last_debug = now
+                self.progress("yaw=%f desyaw=%f pitch=%f despitch=%f" %
+                              (math.degrees(m.yaw), desyaw,
+                               math.degrees(m.pitch), despitch))
+            yaw_ok = abs(math.degrees(m.yaw) - desyaw) < tolerance
+            pitch_ok = abs(math.degrees(m.pitch) - despitch) < tolerance
+            if yaw_ok and pitch_ok:
+                self.progress("Achieved attitude")
+                break
+
+    def GUIDED(self):
+        self.change_mode(4) # "GUIDED"
+        self.achieve_attitude(desyaw=10, despitch=30)
+        self.achieve_attitude(desyaw=0, despitch=0)
+        self.achieve_attitude(desyaw=45, despitch=10)
+
     def disabled_tests(self):
         return {
             "ArmFeatures": "See https://github.com/ArduPilot/ardupilot/issues/10652",
@@ -46,5 +99,8 @@ class AutoTestTracker(AutoTest):
         '''return list of all tests'''
         ret = super(AutoTestTracker, self).tests()
         ret.extend([
+            ("GUIDED",
+             "Test GUIDED mode",
+             self.GUIDED),
         ])
         return ret
