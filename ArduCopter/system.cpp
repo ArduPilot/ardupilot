@@ -226,6 +226,9 @@ void Copter::init_ardupilot()
     g2.smart_rtl.init();
 #endif
 
+    // run all the vehicle initialization routines
+    init_vehicle();
+
     // initialise AP_Logger library
     logger.setVehicle_Startup_Writer(FUNCTOR_BIND(&copter, &Copter::Log_Write_Vehicle_Startup_Messages, void));
 
