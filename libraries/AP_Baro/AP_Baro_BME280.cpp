@@ -173,7 +173,6 @@ void AP_Baro_BME280::_update_temperature(int32_t temp_raw)
     WITH_SEMAPHORE(_sem);
     
     _temperature = temp;
-    _has_sample = true;
 }
 
 // calculate pressure
@@ -208,7 +207,6 @@ void AP_Baro_BME280::_update_pressure(int32_t press_raw)
     WITH_SEMAPHORE(_sem);
     
     _pressure = press;
-    _has_sample = true;
 }
 
 // calculate pressure
