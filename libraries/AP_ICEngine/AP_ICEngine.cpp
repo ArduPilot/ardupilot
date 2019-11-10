@@ -17,6 +17,7 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_Scheduler/AP_Scheduler.h>
 #include "AP_ICEngine.h"
 
 extern const AP_HAL::HAL& hal;
@@ -108,6 +109,22 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @User: Standard
     // @Range: 0 100
     AP_GROUPINFO("IDLE_PCT", 11, AP_ICEngine, idle_percent, 0),
+
+    // @Param: IDLE_RPM
+    // @DisplayName: RPM Setpoint for Idle Governor
+    // @Description: This configures the RPM that will be commanded by the idle governor. Set to -1 to disable
+    // @User: Advanced
+    AP_GROUPINFO("IDLE_RPM", 12, AP_ICEngine, idle_rpm, -1),
+
+    // @Param: ICE_IDLE_DB
+    // @DisplayName: Deadband for Idle Governor
+    // @Description: This configures the deadband that is tolerated before adjusting the idle setpoint
+    AP_GROUPINFO("IDLE_DB", 13, AP_ICEngine, idle_db, 50),
+
+    // @Param: IDLE_SLEW
+    // @DisplayName: Slew Rate for idle control
+    // @Description: This configures the slewrate used to adjust the idle setpoint in percentage points per second
+    AP_GROUPINFO("IDLE_SLEW", 14, AP_ICEngine, idle_slew, 1),
 
     AP_GROUPEND
 };
@@ -310,6 +327,76 @@ bool AP_ICEngine::engine_control(float start_control, float cold_start, float he
     state = ICE_STARTING;
     return true;
 }
+
+/*
+  Update low throttle limit to ensure steady idle for IC Engines
+  return a new min_throttle value
+*/
+void AP_ICEngine::update_idle_governor(int8_t &min_throttle)
+{
+    const int8_t min_throttle_base = min_throttle;
+
+    // Initialize idle point to min_throttle on the first run
+    static bool idle_point_initialized = false;
+    if (!idle_point_initialized) {
+        idle_governor_integrator = min_throttle;
+        idle_point_initialized = true;
+    }
+    AP_RPM *ap_rpm = AP::rpm();
+    if (!ap_rpm || rpm_instance == 0 || !ap_rpm->healthy(rpm_instance-1)) {
+        return;
+    }
+
+    // Check to make sure we have an enabled IC Engine, EFI Instance and that the idle governor is enabled
+    if (get_state() != AP_ICEngine::ICE_RUNNING || idle_rpm < 0) {
+        return;
+    }
+
+    // get current RPM feedback
+    uint32_t rpmv = ap_rpm->get_rpm(rpm_instance-1);
+
+    // Double Check to make sure engine is really running
+    if (rpmv < 1) {
+        // Reset idle point to the default value when the engine is stopped
+        idle_governor_integrator = min_throttle;
+        return;
+    }
+
+    // Override
+    min_throttle = roundf(idle_governor_integrator);
+
+    // Caclulate Error in system
+    int32_t error = idle_rpm - rpmv;
+
+    bool underspeed = error > 0;
+
+    // Don't adjust idle point when we're within the deadband
+    if (abs(error) < idle_db) {
+        return;
+    }
+
+    // Don't adjust idle point if the commanded throttle is above the
+    // current idle throttle setpoint and the RPM is above the idle
+    // RPM setpoint (Normal flight)
+    if (SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) > min_throttle && !underspeed) {
+        return;
+    }
+
+    // Calculate the change per loop to acheieve the desired slew rate of 1 percent per second
+    static const float idle_setpoint_step = idle_slew * AP::scheduler().get_loop_period_s();
+
+    // Update Integrator 
+    if (underspeed) {
+        idle_governor_integrator += idle_setpoint_step;
+    } else {
+        idle_governor_integrator -= idle_setpoint_step;
+    }
+
+    idle_governor_integrator = constrain_float(idle_governor_integrator, min_throttle_base, 40.0f);
+
+    min_throttle = roundf(idle_governor_integrator);
+}
+
 
 // singleton instance. Should only ever be set in the constructor.
 AP_ICEngine *AP_ICEngine::_singleton;
