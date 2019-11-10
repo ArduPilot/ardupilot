@@ -49,7 +49,6 @@
 //#define OSD_ENABLED           DISABLED            // disable on-screen-display support
 //#define BUTTON_ENABLED        DISABLED            // disable button support
 
-
 // features below are disabled by default on all boards
 //#define CAL_ALWAYS_REBOOT                         // flight controller will reboot after compass or accelerometer calibration completes
 //#define DISALLOW_GCS_MODE_CHANGE_DURING_RC_FAILSAFE   // disable mode changes from GCS during Radio failsafes.  Avoids a race condition for vehicle like Solo in which the RC and telemetry travel along the same link
