@@ -1524,7 +1524,7 @@ bool ModeAuto::verify_land()
             // check if we've reached the location
             if (copter.wp_nav->reached_wp_destination()) {
                 // get destination so we can use it for loiter target
-                Vector3f dest = copter.wp_nav->get_wp_destination();
+                const Vector3f& dest = copter.wp_nav->get_wp_destination();
 
                 // initialise landing controller
                 land_start(dest);
