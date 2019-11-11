@@ -286,7 +286,8 @@ private:
         void set_target_alt_cm(float target_alt_cm);
 
         // get target and actual distances (in m) for logging purposes
-        bool get_dist_for_logging(float &target_dist, float &actual_dist) const;
+        bool get_target_dist_for_logging(float &target_dist) const;
+        float get_dist_for_logging() const;
         void invalidate_for_logging() { valid_for_logging = false; }
 
         // surface tracking surface
