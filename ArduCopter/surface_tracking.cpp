@@ -86,14 +86,19 @@ void Copter::SurfaceTracking::set_target_alt_cm(float _target_alt_cm)
     last_update_ms = AP_HAL::millis();
 }
 
-bool Copter::SurfaceTracking::get_dist_for_logging(float &target_dist, float &actual_dist) const
+bool Copter::SurfaceTracking::get_target_dist_for_logging(float &target_dist) const
 {
     if (!valid_for_logging || (surface == Surface::NONE)) {
         return false;
     }
+
     target_dist = target_dist_cm * 0.01f;
-    actual_dist = ((surface == Surface::GROUND) ? copter.rangefinder_state.alt_cm : copter.rangefinder_up_state.alt_cm) * 0.01f;
     return true;
+}
+
+float Copter::SurfaceTracking::get_dist_for_logging() const
+{
+    return ((surface == Surface::CEILING) ? copter.rangefinder_up_state.alt_cm : copter.rangefinder_state.alt_cm) * 0.01f;
 }
 
 // set direction
