@@ -1,6 +1,6 @@
 #pragma once
 
-#include "RangeFinder_Backend.h"
+#include "AP_RangeFinder_Backend.h"
 
 #if HAL_WITH_UAVCAN
 #include <AP_UAVCAN/AP_UAVCAN.h>

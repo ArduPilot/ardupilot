@@ -3,7 +3,7 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_RangeFinder/RangeFinder_Backend.h>
+#include <AP_RangeFinder/AP_RangeFinder_Backend.h>
 
 void setup();
 void loop();
