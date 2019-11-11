@@ -126,7 +126,10 @@ void AP_LandingGear::deploy()
     _deployed = true;
     _have_changed = true;
 
-    gcs().send_text(MAV_SEVERITY_INFO, "LandingGear: DEPLOY");
+    // send message only if output has been configured
+    if (SRV_Channels::function_assigned(SRV_Channel::k_landing_gear_control)) {
+        gcs().send_text(MAV_SEVERITY_INFO, "LandingGear: DEPLOY");
+    }
 }
 
 /// retract - retract landing gear
@@ -139,7 +142,10 @@ void AP_LandingGear::retract()
     _deployed = false;
     _have_changed = true;
 
-    gcs().send_text(MAV_SEVERITY_INFO, "LandingGear: RETRACT");
+    // send message only if output has been configured
+    if (SRV_Channels::function_assigned(SRV_Channel::k_landing_gear_control)) {
+        gcs().send_text(MAV_SEVERITY_INFO, "LandingGear: RETRACT");
+    }
 }
 
 bool AP_LandingGear::deployed()
