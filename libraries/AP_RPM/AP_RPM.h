@@ -39,7 +39,8 @@ public:
     enum RPM_Type {
         RPM_TYPE_NONE    = 0,
         RPM_TYPE_PWM     = 1,
-        RPM_TYPE_PIN     = 2
+        RPM_TYPE_PIN     = 2,
+        RPM_TYPE_EFI     = 3
     };
 
     // The RPM_State structure is filled in by the backend driver
