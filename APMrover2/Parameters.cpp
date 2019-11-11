@@ -275,7 +275,7 @@ const AP_Param::Info Rover::var_info[] = {
     GOBJECT(L1_controller,         "NAVL1_",   AP_L1_Control),
 
     // @Group: RNGFND
-    // @Path: ../libraries/AP_RangeFinder/RangeFinder.cpp
+    // @Path: ../libraries/AP_RangeFinder/AP_RangeFinder.cpp
     GOBJECT(rangefinder,                 "RNGFND", RangeFinder),
 
     // @Group: INS_
