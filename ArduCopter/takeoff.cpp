@@ -142,7 +142,7 @@ void Mode::auto_takeoff_set_start_alt(void)
 {
     // start with our current altitude
     auto_takeoff_no_nav_alt_cm = inertial_nav.get_altitude();
-    
+
     if (is_disarmed_or_landed() || !motors->get_interlock()) {
         // we are not flying, add the wp_navalt_min
         auto_takeoff_no_nav_alt_cm += g2.wp_navalt_min * 100;
@@ -157,7 +157,7 @@ void Mode::auto_takeoff_set_start_alt(void)
 void Mode::auto_takeoff_attitude_run(float target_yaw_rate)
 {
     float nav_roll, nav_pitch;
-    
+
     if (g2.wp_navalt_min > 0 && inertial_nav.get_altitude() < auto_takeoff_no_nav_alt_cm) {
         // we haven't reached the takeoff navigation altitude yet
         nav_roll = 0;
@@ -168,7 +168,7 @@ void Mode::auto_takeoff_attitude_run(float target_yaw_rate)
         nav_roll = wp_nav->get_roll();
         nav_pitch = wp_nav->get_pitch();
     }
-    
+
     // roll & pitch from waypoint controller, yaw rate from pilot
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(nav_roll, nav_pitch, target_yaw_rate);
 }
