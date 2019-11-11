@@ -15,35 +15,30 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include "RPM_SITL.h"
+#include "RPM_EFI.h"
 
+#if EFI_ENABLED
 extern const AP_HAL::HAL& hal;
 
 /* 
    open the sensor in constructor
 */
-AP_RPM_SITL::AP_RPM_SITL(AP_RPM &_ap_rpm, uint8_t _instance, AP_RPM::RPM_State &_state) :
-    AP_RPM_Backend(_ap_rpm, _instance, _state),
-    sitl(AP::sitl())
+AP_RPM_EFI::AP_RPM_EFI(AP_RPM &_ap_rpm, uint8_t _instance, AP_RPM::RPM_State &_state) :
+    AP_RPM_Backend(_ap_rpm, _instance, _state)
 {
     instance = _instance;
 }
 
-void AP_RPM_SITL::update(void)
+void AP_RPM_EFI::update(void)
 {
-    if (sitl == nullptr) {
+    AP_EFI *efi = AP::EFI();
+    if (efi == nullptr) {
         return;
     }
-    if (instance == 0) {
-        state.rate_rpm = sitl->state.rpm1;
-    } else {
-        state.rate_rpm = sitl->state.rpm2;
-    }
+    state.rate_rpm = efi->get_rpm();
     state.rate_rpm *= ap_rpm._scaling[state.instance];
     state.signal_quality = 0.5f;
     state.last_reading_ms = AP_HAL::millis();
-
 }
 
-#endif // CONFIG_HAL_BOARD
+#endif // EFI_ENABLED
