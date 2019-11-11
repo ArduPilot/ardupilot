@@ -2,7 +2,7 @@
 
 #include "Rover.h"
 
-#include <AP_RangeFinder/RangeFinder_Backend.h>
+#include <AP_RangeFinder/AP_RangeFinder_Backend.h>
 
 bool GCS_Rover::simple_input_active() const
 {
