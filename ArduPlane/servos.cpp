@@ -327,7 +327,19 @@ void Plane::set_servos_manual_passthrough(void)
     SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, channel_roll->get_control_in_zero_dz());
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, channel_pitch->get_control_in_zero_dz());
     SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, channel_rudder->get_control_in_zero_dz());
-    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
+    int8_t throttle = get_throttle_input(true);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
+
+    if (quadplane.available() && (quadplane.options & QuadPlane::OPTION_IDLE_GOV_MANUAL)) {
+        // for quadplanes it can be useful to run the idle governor in MANUAL mode
+        // as it prevents the VTOL motors from running
+        int8_t min_throttle = aparm.throttle_min.get();
+
+        // apply idle governor
+        g2.ice_control.update_idle_governor(min_throttle);
+        throttle = MAX(throttle, min_throttle);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
+    }
 }
 
 /*
