@@ -16,7 +16,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
-#include "RangeFinder.h"
+#include "AP_RangeFinder.h"
 
 class AP_RangeFinder_Backend
 {

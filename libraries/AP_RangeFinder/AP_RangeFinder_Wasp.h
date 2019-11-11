@@ -1,7 +1,7 @@
 #pragma once
 
-#include "RangeFinder.h"
-#include "RangeFinder_Backend_Serial.h"
+#include "AP_RangeFinder.h"
+#include "AP_RangeFinder_Backend_Serial.h"
 
 // WASP 200 LRF
 // http://www.attolloengineering.com/wasp-200-lrf.html
