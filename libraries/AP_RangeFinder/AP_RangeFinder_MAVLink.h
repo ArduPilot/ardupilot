@@ -1,7 +1,7 @@
 #pragma once
 
-#include "RangeFinder.h"
-#include "RangeFinder_Backend.h"
+#include "AP_RangeFinder.h"
+#include "AP_RangeFinder_Backend.h"
 
 // Data timeout
 #define AP_RANGEFINDER_MAVLINK_TIMEOUT_MS 500

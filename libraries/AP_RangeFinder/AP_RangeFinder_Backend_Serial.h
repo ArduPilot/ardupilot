@@ -1,6 +1,6 @@
 #pragma once
 
-#include "RangeFinder_Backend.h"
+#include "AP_RangeFinder_Backend.h"
 
 class AP_RangeFinder_Backend_Serial : public AP_RangeFinder_Backend
 {
