@@ -15,8 +15,8 @@
 
 #pragma once
 
-#include "RangeFinder.h"
-#include "RangeFinder_Backend_Serial.h"
+#include "AP_RangeFinder.h"
+#include "AP_RangeFinder_Backend_Serial.h"
 
 class AP_RangeFinder_NMEA : public AP_RangeFinder_Backend_Serial
 {
