@@ -370,7 +370,7 @@ bool ModeAuto::is_landing() const
 
 bool ModeAuto::is_taking_off() const
 {
-    return _mode == Auto_TakeOff;
+    return ((_mode == Auto_TakeOff) && !wp_nav->reached_wp_destination());
 }
 
 bool ModeAuto::landing_gear_should_be_deployed() const
@@ -741,10 +741,6 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
 void ModeAuto::takeoff_run()
 {
     auto_takeoff_run();
-    if (wp_nav->reached_wp_destination()) {
-        const Vector3f target = wp_nav->get_wp_destination();
-        wp_start(target, wp_nav->origin_and_destination_are_terrain_alt());
-    }
 }
 
 // auto_wp_run - runs the auto waypoint controller
