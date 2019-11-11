@@ -1403,6 +1403,68 @@ class AutoTestPlane(AutoTest):
         if m.threat_level != 2:
             raise NotAchievedException("Expected some threat at least")
 
+    def fly_do_guided_request(self, target_system=1, target_component=1):
+        self.progress("Takeoff")
+        self.takeoff(alt=50)
+        self.set_rc(3, 1500)
+        self.start_subtest("Ensure command bounced outside guided mode")
+        desired_relative_alt = 33
+        loc = self.mav.location()
+        self.location_offset_ne(loc, 300, 300)
+        loc.alt += desired_relative_alt
+        self.mav.mav.mission_item_int_send(
+            target_system,
+            target_component,
+            0, # seq
+            mavutil.mavlink.MAV_FRAME_GLOBAL,
+            mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+            2, # current - guided-mode request
+            0, # autocontinue
+            0, # p1
+            0, # p2
+            0, # p3
+            0, # p4
+            int(loc.lat *1e7), # latitude
+            int(loc.lng *1e7), # longitude
+            loc.alt, # altitude
+            mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+        m = self.mav.recv_match(type='MISSION_ACK', blocking=True, timeout=5)
+        if m is None:
+            raise NotAchievedException("Did not get MISSION_ACK")
+        if m.type != mavutil.mavlink.MAV_MISSION_ERROR:
+            raise NotAchievedException("Did not get appropriate error")
+
+        self.start_subtest("Enter guided and flying somewhere constant")
+        self.change_mode("GUIDED")
+        self.mav.mav.mission_item_int_send(
+            target_system,
+            target_component,
+            0, # seq
+            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+            2, # current - guided-mode request
+            0, # autocontinue
+            0, # p1
+            0, # p2
+            0, # p3
+            0, # p4
+            int(loc.lat *1e7), # latitude
+            int(loc.lng *1e7), # longitude
+            desired_relative_alt, # altitude
+            mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+        m = self.mav.recv_match(type='MISSION_ACK', blocking=True, timeout=5)
+        if m is None:
+            raise NotAchievedException("Did not get MISSION_ACK")
+        if m.type != mavutil.mavlink.MAV_MISSION_ACCEPTED:
+            raise NotAchievedException("Did not get accepted response")
+        self.wait_location(loc, accuracy=100) # based on loiter radius
+        self.delay_sim_time(20)
+        self.wait_altitude(alt_min=desired_relative_alt-3,
+                           alt_max=desired_relative_alt+3,
+                           relative=True)
+
+        self.fly_home_land_and_disarm()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -1429,6 +1491,10 @@ class AutoTestPlane(AutoTest):
             ("DO_REPOSITION",
              "Test mavlink DO_REPOSITION command",
              self.fly_do_reposition),
+
+            ("GuidedRequest",
+             "Test handling of MISSION_ITEM in guided mode",
+             self.fly_do_guided_request),
 
             ("MainFlight",
              "Lots of things in one flight",
