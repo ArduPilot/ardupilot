@@ -36,6 +36,7 @@
 #include <SITL/SIM_RF_MaxsonarSerialLV.h>
 #include <SITL/SIM_RF_Wasp.h>
 #include <SITL/SIM_RF_NMEA.h>
+#include <SITL/SIM_ParticleSensor_SDS021.h>
 #include <AP_HAL/utility/Socket.h>
 
 class HAL_SITL;
@@ -261,6 +262,8 @@ private:
     SITL::RF_Wasp *wasp;
     // simulated NMEA rangefinder:
     SITL::RF_NMEA *nmea;
+    // simulated particle sensor:
+    SITL::ParticleSensor_SDS021 *sds021;
 
     // output socket for flightgear viewing
     SocketAPM fg_socket{true};
