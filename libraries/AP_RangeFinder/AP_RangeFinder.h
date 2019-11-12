@@ -33,6 +33,8 @@
 #define RANGEFINDER_PREARM_REQUIRED_CHANGE_CM   50
 #endif
 
+#define RANGEFINDER_USED_DEFAULT_I2C_ADDRESS    (-1)
+
 class AP_RangeFinder_Backend;
 
 class RangeFinder
