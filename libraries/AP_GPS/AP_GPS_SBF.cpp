@@ -404,7 +404,7 @@ void AP_GPS_SBF::mount_disk (void) const {
 
 void AP_GPS_SBF::unmount_disk (void) const {
     const char* command = "emd, DSK1, Unmount\n";
-    Debug("Unmounting disk");
+    gcs().send_text(MAV_SEVERITY_DEBUG, "SBF unmounting disk");
     port->write((const uint8_t*)command, strlen(command));
 }
 
