@@ -57,6 +57,8 @@ public:
 
     // driver specific health, returns true if the driver is healthy
     virtual bool is_healthy(void) const { return true; }
+    // returns true if the GPS is doing any logging it is expected to
+    virtual bool logging_healthy(void) const { return true; }
 
     virtual const char *name() const = 0;
 

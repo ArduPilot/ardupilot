@@ -106,6 +106,17 @@ AP_GPS_SBF::read(void)
     return ret;
 }
 
+bool AP_GPS_SBF::logging_healthy(void) const
+{
+    switch (gps._raw_data) {
+        case 1:
+        default:
+            return (RxState & SBF_DISK_MOUNTED) && (RxState & SBF_DISK_ACTIVITY);
+        case 2:
+            return ((RxState & SBF_DISK_MOUNTED) && (RxState & SBF_DISK_ACTIVITY)) || (!hal.util->get_soft_armed() && _has_been_armed);
+    }
+}
+
 bool
 AP_GPS_SBF::parse(uint8_t temp)
 {
