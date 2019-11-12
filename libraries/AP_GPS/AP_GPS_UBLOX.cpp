@@ -931,6 +931,10 @@ AP_GPS_UBLOX::_parse_gps(void)
             // check for F9. The F9 does not respond to SVINFO, so we need to use MON_VER
             // for hardware generation
             if (strncmp(_version.hwVersion, "00190000", 8) == 0) {
+                if (_hardware_generation != UBLOX_F9) {
+                    // need to ensure time mode is correctly setup on F9
+                    _unconfigured_messages |= CONFIG_TMODE_MODE;
+                }
                 _hardware_generation = UBLOX_F9;
             }
             break;
