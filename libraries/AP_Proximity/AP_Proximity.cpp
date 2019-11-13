@@ -14,7 +14,7 @@
  */
 
 #include "AP_Proximity.h"
-#include "AP_Proximity_LightWareSF40C.h"
+#include "AP_Proximity_LightWareSF40C_v09.h"
 #include "AP_Proximity_RPLidarA2.h"
 #include "AP_Proximity_TeraRangerTower.h"
 #include "AP_Proximity_TeraRangerTowerEvo.h"
@@ -280,10 +280,10 @@ void AP_Proximity::detect_instance(uint8_t instance)
     switch (get_type(instance)) {
     case Type::None:
         return;
-    case Type::SF40C:
-        if (AP_Proximity_LightWareSF40C::detect()) {
+    case Type::SF40C_v09:
+        if (AP_Proximity_LightWareSF40C_v09::detect()) {
             state[instance].instance = instance;
-            drivers[instance] = new AP_Proximity_LightWareSF40C(*this, state[instance]);
+            drivers[instance] = new AP_Proximity_LightWareSF40C_v09(*this, state[instance]);
             return;
         }
         break;
