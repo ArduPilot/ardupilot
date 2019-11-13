@@ -175,6 +175,7 @@ public:
         SURFACE_TRACKING =    75, // Surface tracking upwards or downwards
         STANDBY  =            76, // Standby mode
         TAKEOFF   =           77, // takeoff
+        RUNCAM_CONTROL =      78, // control RunCam device
         KILL_IMU1 =          100, // disable first IMU (for IMU failure testing)
         KILL_IMU2 =          101, // disable second IMU (for IMU failure testing)
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
@@ -185,8 +186,6 @@ public:
     };
     typedef enum AUX_FUNC aux_func_t;
 
-protected:
-
     // auxillary switch handling (n.b.: we store this as 2-bits!):
     enum aux_switch_pos_t : uint8_t {
         LOW,       // indicates auxiliary switch is in the low position (pwm <1200)
@@ -194,12 +193,17 @@ protected:
         HIGH       // indicates auxiliary switch is in the high position (pwm >1800)
     };
 
+    bool read_3pos_switch(aux_switch_pos_t &ret) const WARN_IF_UNUSED;
+
+protected:
+
     virtual void init_aux_function(aux_func_t ch_option, aux_switch_pos_t);
     virtual void do_aux_function(aux_func_t ch_option, aux_switch_pos_t);
 
     void do_aux_function_avoid_adsb(const aux_switch_pos_t ch_flag);
     void do_aux_function_avoid_proximity(const aux_switch_pos_t ch_flag);
     void do_aux_function_camera_trigger(const aux_switch_pos_t ch_flag);
+    void do_aux_function_runcam_control(const aux_switch_pos_t ch_flag);
     void do_aux_function_fence(const aux_switch_pos_t ch_flag);
     void do_aux_function_clear_wp(const aux_switch_pos_t ch_flag);
     void do_aux_function_gripper(const aux_switch_pos_t ch_flag);
@@ -247,7 +251,6 @@ private:
     static const uint16_t AUX_PWM_TRIGGER_HIGH = 1800;
     // pwm value below which the option will be disabled:
     static const uint16_t AUX_PWM_TRIGGER_LOW = 1200;
-    bool read_3pos_switch(aux_switch_pos_t &ret) const WARN_IF_UNUSED;
 
     // Structure used to detect and debounce switch changes
     struct {
