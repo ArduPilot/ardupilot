@@ -14,7 +14,7 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-#include "AP_Proximity_LightWareSF40C.h"
+#include "AP_Proximity_LightWareSF40C_v09.h"
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -26,7 +26,7 @@ extern const AP_HAL::HAL& hal;
    constructor is not called until detect() returns true, so we
    already know that we should setup the proximity sensor
 */
-AP_Proximity_LightWareSF40C::AP_Proximity_LightWareSF40C(AP_Proximity &_frontend,
+AP_Proximity_LightWareSF40C_v09::AP_Proximity_LightWareSF40C_v09(AP_Proximity &_frontend,
                                                          AP_Proximity::Proximity_State &_state) :
     AP_Proximity_Backend(_frontend, _state)
 {
@@ -38,13 +38,13 @@ AP_Proximity_LightWareSF40C::AP_Proximity_LightWareSF40C(AP_Proximity &_frontend
 }
 
 // detect if a Lightware proximity sensor is connected by looking for a configured serial port
-bool AP_Proximity_LightWareSF40C::detect()
+bool AP_Proximity_LightWareSF40C_v09::detect()
 {
     return AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_Lidar360, 0) != nullptr;
 }
 
 // update the state of the sensor
-void AP_Proximity_LightWareSF40C::update(void)
+void AP_Proximity_LightWareSF40C_v09::update(void)
 {
     if (uart == nullptr) {
         return;
@@ -70,17 +70,17 @@ void AP_Proximity_LightWareSF40C::update(void)
 }
 
 // get maximum and minimum distances (in meters) of primary sensor
-float AP_Proximity_LightWareSF40C::distance_max() const
+float AP_Proximity_LightWareSF40C_v09::distance_max() const
 {
     return 100.0f;
 }
-float AP_Proximity_LightWareSF40C::distance_min() const
+float AP_Proximity_LightWareSF40C_v09::distance_min() const
 {
     return 0.20f;
 }
 
 // initialise sensor (returns true if sensor is succesfully initialised)
-bool AP_Proximity_LightWareSF40C::initialise()
+bool AP_Proximity_LightWareSF40C_v09::initialise()
 {
     // set motor direction once per second
     if (_motor_direction > 1) {
@@ -110,7 +110,7 @@ bool AP_Proximity_LightWareSF40C::initialise()
 }
 
 // initialise sector angles using user defined ignore areas
-void AP_Proximity_LightWareSF40C::init_sectors()
+void AP_Proximity_LightWareSF40C_v09::init_sectors()
 {
     // use defaults if no ignore areas defined
     uint8_t ignore_area_count = get_ignore_area_count();
@@ -170,7 +170,7 @@ void AP_Proximity_LightWareSF40C::init_sectors()
 }
 
 // set speed of rotating motor
-void AP_Proximity_LightWareSF40C::set_motor_speed(bool on_off)
+void AP_Proximity_LightWareSF40C_v09::set_motor_speed(bool on_off)
 {
     // exit immediately if no uart
     if (uart == nullptr) {
@@ -191,7 +191,7 @@ void AP_Proximity_LightWareSF40C::set_motor_speed(bool on_off)
 }
 
 // set spin direction of motor
-void AP_Proximity_LightWareSF40C::set_motor_direction()
+void AP_Proximity_LightWareSF40C_v09::set_motor_direction()
 {
     // exit immediately if no uart
     if (uart == nullptr) {
@@ -212,7 +212,7 @@ void AP_Proximity_LightWareSF40C::set_motor_direction()
 }
 
 // set forward direction (to allow rotating lidar)
-void AP_Proximity_LightWareSF40C::set_forward_direction()
+void AP_Proximity_LightWareSF40C_v09::set_forward_direction()
 {
     // exit immediately if no uart
     if (uart == nullptr) {
@@ -233,7 +233,7 @@ void AP_Proximity_LightWareSF40C::set_forward_direction()
 }
 
 // request new data if required
-void AP_Proximity_LightWareSF40C::request_new_data()
+void AP_Proximity_LightWareSF40C_v09::request_new_data()
 {
     if (uart == nullptr) {
         return;
@@ -261,7 +261,7 @@ void AP_Proximity_LightWareSF40C::request_new_data()
 }
 
 // send request for sensor health
-void AP_Proximity_LightWareSF40C::send_request_for_health()
+void AP_Proximity_LightWareSF40C_v09::send_request_for_health()
 {
     if (uart == nullptr) {
         return;
@@ -273,7 +273,7 @@ void AP_Proximity_LightWareSF40C::send_request_for_health()
 }
 
 // send request for distance from the next sector
-bool AP_Proximity_LightWareSF40C::send_request_for_distance()
+bool AP_Proximity_LightWareSF40C_v09::send_request_for_distance()
 {
     if (uart == nullptr) {
         return false;
@@ -301,7 +301,7 @@ bool AP_Proximity_LightWareSF40C::send_request_for_distance()
 }
 
 // check for replies from sensor, returns true if at least one message was processed
-bool AP_Proximity_LightWareSF40C::check_for_reply()
+bool AP_Proximity_LightWareSF40C_v09::check_for_reply()
 {
     if (uart == nullptr) {
         return false;
@@ -368,7 +368,7 @@ bool AP_Proximity_LightWareSF40C::check_for_reply()
 }
 
 // process reply
-bool AP_Proximity_LightWareSF40C::process_reply()
+bool AP_Proximity_LightWareSF40C_v09::process_reply()
 {
     if (uart == nullptr) {
         return false;
@@ -436,7 +436,7 @@ bool AP_Proximity_LightWareSF40C::process_reply()
 }
 
 // clear buffers ahead of processing next message
-void AP_Proximity_LightWareSF40C::clear_buffers()
+void AP_Proximity_LightWareSF40C_v09::clear_buffers()
 {
     element_len[0] = 0;
     element_len[1] = 0;
