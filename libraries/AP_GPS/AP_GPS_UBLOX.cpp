@@ -884,23 +884,50 @@ AP_GPS_UBLOX::_parse_gps(void)
                 cfg_len -= 4;
                 cfg_data += 4;
                 switch (id) {
-                case ConfigKey::TMODE_MODE: {
-                    uint8_t mode = cfg_data[0];
-                    cfg_len -= 1;
-                    cfg_data += 1;
-                    if (mode != 0) {
-                        // ask for mode 0, to disable TIME mode
-                        mode = 0;
-                        _configure_valset(ConfigKey::TMODE_MODE, 1, &mode);
-                        _unconfigured_messages |= CONFIG_TMODE_MODE;
-                    } else {
-                        _unconfigured_messages &= ~CONFIG_TMODE_MODE;
+                    case ConfigKey::TMODE_MODE: {
+                        uint8_t mode = cfg_data[0];
+                        if (mode != 0) {
+                            // ask for mode 0, to disable TIME mode
+                            mode = 0;
+                            _configure_valset(ConfigKey::TMODE_MODE, 1, &mode);
+                            _unconfigured_messages |= CONFIG_TMODE_MODE;
+                        } else {
+                            _unconfigured_messages &= ~CONFIG_TMODE_MODE;
+                        }
+                        break;
                     }
-                    break;
+                    default:
+                        break;
                 }
-                default:
-                    // we don't know the length so we stop parsing
-                    return false;
+
+                // step over the value
+                const uint8_t key_size = ((uint32_t)id >> 28) & 0x07; // mask off the storage size
+                uint8_t step_size = 0;
+                switch (key_size) {
+                    case 0x1: // bit
+                        step_size = 1;
+                        break;
+                    case 0x2: // byte
+                        step_size = 1;
+                        break;
+                    case 0x3: // 2 bytes
+                        step_size = 2;
+                        break;
+                    case 0x4: // 4 bytes
+                        step_size = 3;
+                        break;
+                    case 0x5: // 8 bytes
+                        step_size = 4;
+                        break;
+                    default:
+                        // unknown/bad key size
+                        return false;
+                }
+                if (cfg_len <= step_size) {
+                    cfg_len = 0;
+                } else {
+                    cfg_len -= step_size;
+                    cfg_data += step_size;
                 }
             }
         }
