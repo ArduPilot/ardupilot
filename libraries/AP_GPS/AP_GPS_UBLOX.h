@@ -78,7 +78,7 @@
 #define CONFIG_TP5           (1<<14)
 #define CONFIG_RATE_TIMEGPS  (1<<15)
 #define CONFIG_TMODE_MODE    (1<<16)
-#define CONFIG_LAST          (1<<16) // this must always be the last bit
+#define CONFIG_LAST          (1<<17) // this must always be the last bit
 
 #define CONFIG_REQUIRED_INITIAL (CONFIG_RATE_NAV | CONFIG_RATE_POSLLH | CONFIG_RATE_STATUS | CONFIG_RATE_VELNED)
 
