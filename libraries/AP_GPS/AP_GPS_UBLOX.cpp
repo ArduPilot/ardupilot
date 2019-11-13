@@ -1521,7 +1521,8 @@ static const char *reasons[] = {"navigation rate",
                                 "SBAS settings",
                                 "PVT rate",
                                 "time pulse settings",
-                                "TIMEGPS rate"};
+                                "TIMEGPS rate",
+                                "Time mode settings"};
 
 static_assert((1 << ARRAY_SIZE(reasons)) == CONFIG_LAST, "UBLOX: Missing configuration description");
 
