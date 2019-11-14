@@ -37,18 +37,10 @@ _waf() {
     esac
 }
 
-# TODO : generate with regex from waf help
 (( $+functions[_waf_boards] )) ||
 _waf_boards() {
-  local boards; boards=(
-    'CubeBlack:builds CubeBlack' \
-    'bbbmini:build bbbmini' \
-    'fmuv2:build fmuv2' \
-    'fmuv3:build fmuv3' \
-    'fmuv4:build fmuv4' \
-    'iomcu:build iomcu' \
-    'sitl:build sitl'
-  )
+  # get option between board and debug, remove everything before "are", remove everything after "--debug", remove final dot, remove all comma
+  local boards; boards=( $(./waf --help | sed -n '/--board=/,/--debug/p' | sed -e 's/.*are //g' -e 's/\(--debug.*\)//g' -e 's/[.]//g' -e 's/[,]//g') )
   _describe -t boards 'board' boards "$@" && ret=0
 }
 
