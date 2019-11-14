@@ -45,9 +45,6 @@ public:
     // fetch an item in database. Undefined result when i >= _database.count.
     const OA_DbItem& get_item(uint32_t i) const { return _database.items[i]; }
 
-    // get radius (in meters) of objects in database
-    float get_accuracy() const { return _database.filter_m; }
-
     // get number of items in the database
     uint16_t database_count() const { return _database.count; }
 
@@ -65,9 +62,6 @@ private:
     void init_queue();
     void init_database();
 
-    // check queue and database sizes and adjust filter criteria to optimize use
-    void optimize_db_filter();
-
     // database item management
     void database_item_add(const OA_DbItem &item);
     void database_item_refresh(const uint16_t index, const uint32_t timestamp_ms, const float radius);
@@ -77,9 +71,6 @@ private:
     // get bitmask of gcs channels item should be sent to based on its importance
     // returns 0xFF (send to all channels) if should be sent or 0 if it should not be sent
     uint8_t get_send_to_gcs_flags(const OA_DbItemImportance importance);
-
-    // used to determine the filter radius
-    float get_radius(const OA_DbItemImportance importance);
 
     // returns true if database item "index" is close to "item"
     bool is_close_to_item_in_database(const uint16_t index, const OA_DbItem &item) const;
@@ -97,21 +88,19 @@ private:
     AP_Int16        _database_size_param;                   // db size
     AP_Int8         _database_expiry_seconds;               // objects expire after this timeout
     AP_Int8         _output_level;                          // controls which items should be sent to GCS
+    AP_Float        _beam_width;                            // beam width used when converting lidar readings to object radius
+    AP_Float        _radius_min;                            // objects minimum radius (in meters)
+    AP_Float        _dist_max;                              // objects maximum distance (in meters)
 
     struct {
         ObjectBuffer<OA_DbItem> *items;                     // thread safe incoming queue of points from proximity sensor to be put into database
         uint16_t        size;                               // cached value of _queue_size_param.
         HAL_Semaphore   sem;                                // semaphore for multi-thread use of queue
     } _queue;
+    float dist_to_radius_scalar;                            // scalar to convert the distance and beam width to an object radius
 
     struct {
         OA_DbItem       *items;                             // array of objects in the database
-        float           filter_m                = 0.2f;     // object avoidance database optimization level radius. Min distance between each fence point. Larger means lower resolution
-        const float     filter_max_m            = 10.0f;    // filter value max size allowed to grow to
-        const float     filter_min_m            = 0.011f;   // worst case resolution of int32 lat/lng value at equator is 1.1cm;
-        const float     filter_grow_rate        = 1.03f;    // db filter how fast you grow to reduce items getting into dB
-        const float     filter_shrink_rate      = 0.99f;    // db filter how fast you shrink to increase items getting into dB
-        const float     radius_grow_rate        = 1.10f;    // db item radius growth over time. Resets if refreshed, otherwise decaying items grow
         uint16_t        count;                              // number of objects in the items array
         uint16_t        size;                               // cached value of _database_size_param that sticks after initialized
     } _database;
@@ -119,10 +108,6 @@ private:
     uint16_t _next_index_to_send[MAVLINK_COMM_NUM_BUFFERS]; // index of next object in _database to send to GCS
     uint16_t _highest_index_sent[MAVLINK_COMM_NUM_BUFFERS]; // highest index in _database sent to GCS
     uint32_t _last_send_to_gcs_ms[MAVLINK_COMM_NUM_BUFFERS];// system time that send_adsb_vehicle was last called
-
-    float _radius_importance_low = _database.filter_m;
-    float _radius_importance_normal = _database.filter_m;
-    float _radius_importance_high = _database.filter_m;
 
     static AP_OADatabase *_singleton;
 };
