@@ -51,14 +51,14 @@ _waf()
         fi
     done
 
-    # TODO: generate for waf help
     case $prev in 
-	--board)
-		opts="CubeBlack bbbmini fmuv2 fmuv3 fmuv4 iomcu sitl"
-	    COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
-	    return 0
-	    ;;
-	esac
+      --board)
+        # get options between board and debug, remove everything before "are", remove everything after "--debug", remove final dot, remove all comma
+        opts=$(./waf --help | sed -n '/--board=/,/--debug/p' | sed -e 's/.*are //g' -e 's/\(--debug.*\)//g' -e 's/[.]//g' -e 's/[,]//g')
+        COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+        return 0
+        ;;
+    esac
 
     COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
 }
