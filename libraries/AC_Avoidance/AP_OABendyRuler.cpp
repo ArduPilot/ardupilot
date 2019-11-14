@@ -374,12 +374,13 @@ bool AP_OABendyRuler::calc_margin_from_object_database(const Location &start, co
 
         // convert obstacle's location to offset (in cm) from EKF origin
         Vector2f point;
-        if (!oaDb->get_item(i).loc.get_vector_xy_from_origin_NE(point)) {
+        const AP_OADatabase::OA_DbItem& item = oaDb->get_item(i);
+        if (!item.loc.get_vector_xy_from_origin_NE(point)) {
             continue;
         }
 
         // margin is distance between line segment and obstacle minus obstacle's radius
-        const float m = Vector2f::closest_distance_between_line_and_point(start_NE, end_NE, point) * 0.01f - oaDb->get_accuracy();
+        const float m = Vector2f::closest_distance_between_line_and_point(start_NE, end_NE, point) * 0.01f - item.radius;
         if (m < smallest_margin) {
             smallest_margin = m;
         }
