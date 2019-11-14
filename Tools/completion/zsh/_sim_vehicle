@@ -3,6 +3,8 @@
 
 local temp_word
 local cur cword prev
+local -a vehicles
+
 _sim_vehicle() {
   typeset -A opt_args
   local context state state_descr line curcontext="$curcontext"
@@ -58,96 +60,61 @@ _sim_vehicle() {
 
 }
 
-# TODO : generate with regex from sim_vehicle help
+_get_vehicle_type() {
+  # get the calling program, remove anything after the space == all commands arguments
+  local caller; caller=$(echo ${words[@]} | sed 's/ .*//g');
+  # get options between "vehicle type " and closing ")", remove line return, remove spaces, anything before the opening (, remove the "|" and closing ")"
+  vehicles=( $($caller --help | sed -n '/vehicle type (/,/)/p' | tr '\n' ' ' | sed -e 's/ //g' -e 's/.*(//g' -e 's/[|)]/ /g') )
+}
+
 (( $+functions[_sim_vehicle_vehicles] )) ||
 _sim_vehicle_vehicles() {
-  local vehicles; vehicles=(
-    'ArduCopter:Copter type' \
-    'AntennaTracker:Tracker type' \
-    'APMrover2:Rover type' \
-    'ArduSub:Sub type' \
-    'ArduPlane:Plane type'
-  )
+  _get_vehicle_type
   _describe -t vehicles 'vehicle' vehicles "$@" && ret=0
 }
 
-# TODO : generate with regex from sim_vehicle help
 (( $+functions[_copter_frames] )) ||
 _copter_frames() {
 search_vehicle=true
 local_current=$CURRENT
 vehicle=''
+_get_vehicle_type
+# search the vehicle type used with -v on previous arguements
+# Todo: handle failure
 while ( $search_vehicle || $local_current -eq 0 )
 do
-    case $words[$local_current] in 
-        ("ArduCopter" | "AntennaTracker" | "APMrover2" | "ArduSub" | "ArduPlane")
-            search_vehicle=false
-            vehicle=$words[$local_current]
-            ;;
-    esac
+    for w in $vehicles
+    do
+      if [ "$w" = "$words[$local_current]" ] 
+      then
+          vehicle=$words[$local_current]
+          search_vehicle=false
+          break
+      fi
+    done;
     local_current=$(( $local_current - 1 ))
 done
-local frames; 
-case $vehicle in
-    ("ArduCopter")
-       frames=(
-            '+:Copter type +' \
-            'X:Copter type X' \
-            'airsim-copter:Copter for AirSim' \
-            'coaxcopter:Copter type Coaxial' \
-            'djix:Copter type DJI X' \
-            'dodeca-hexa:Copter type Dodeca-hexa' \
-            'gazebo-iris:Copter type iris for Gazebo' \
-            'heli:Heli' \
-            'heli-compound:Heli with compound' \
-            'heli-dual:Dual Heli' \
-            'hexa:Copter type hexa' \
-            'octa:Copter type octa' \
-            'octa-quad:Copter type octa-quad' \
-            'quad:Copter type quad' \
-            'scrimmage-copter:Copter for scrimmage' \
-            'singlecopter:Copter type singlecopter' \
-            'tri:Copter type tri' \
-            'y6:Copter type y6' \
-            
-          );;
-    ("APMrover2")
-       frames=(
-            'balancebot:Balance Bot' \
-            'gazebo-rover:Rover for Gazebo' \
-            'rover:Rover type ackerman' \
-            'rover-skid:Rover type skidsteering' \
-            'sailboat:Boat type sailboat' \
-            'sailboat-motor:Boat type sailboat with motor' \
-            'balancebot:Balance Bot' \
-          );;
-   ("ArduSub")
-          frames=(
-            'gazebo-bluerov2:Sub for Gazebo' \
-            'vectored:Sub vectored' \
-          );;
-   ("AntennaTracker")
-          frames=(
-            'tracker:Antenna Tracker' \
-          );;
-    ("ArduPlane")
-       frames=(
-            'CRRCSim:Plane for CRRCSim' \
-            'gazebo-zephyr:Plane for Gazebo' \
-            'jsbsim:Plane for jsbsim' \
-            'plane:Plane type plane' \
-            'plane-dspoilers:Plane with dspoilers' \
-            'plane-elevon:Plane with elevon' \
-            'plane-jet:Plane type jet' \
-            'plane-tailsitter:Plane type tailsitter' \
-            'plane-vtailjet:Plane type vtail' \
-            'quadplane:Plane type quadplane' \
-            'quadplane-cl84:Plane type quadplane-cl84' \
-            'quadplane-tilttrivec:Plane type quadplane-tilttrivec' \
-            'quadplane-tri:Plane type quadplane-tri' \
-            'scrimmage-plane:Plane for scrimmage' \
-          );;
-    esac
+
+# get the calling program, remove anything after the space == all commands arguments
+local caller; caller=$(echo ${words[@]} | sed 's/ .*//g');
+
+# to get the vehicle list :
+# Get everything between "frame type" and "-C", remove first and last line, get line starting with caracters and ": " sequence, remove spaces and :
+local supported_vehicle_list=($($caller --help | sed -n '/frame type/,/-C/p' | sed -e '1d' -e '$d' | sed  -n 's/\(.*: \).*/\1/p' | sed -e 's/ //g' -e 's/://g'))
+
+local frames;
+local count=1;
+for v in $supported_vehicle_list
+do
+  if [ "$v" = "$vehicle" ]
+  then
+      # Get everything between "frame type" and "-C", remove first and last line and change starting space by " :", change newlines to space, remove spaces then change vehicle type enclose by ":" by newline and change "|" by space, remove first line, get line "count" that match supported_vehicle_list[count]
+      frames=($($caller --help | sed -n '/frame type/,/-C/p' | sed -e '1d' -e '$d' -e 's/^\s*A/ :A/g' | tr '\n' ' ' | sed -e 's/ //g' -e 's/:\w*:/\n/g' -e 's/[|]/ /g' | sed '1d' | sed "${count}q;d"))
+      break
+  fi
+  count=$(( $count + 1 ))
+done
+
   _describe -t frames 'frame' frames "$@" && ret=0
 }
 
