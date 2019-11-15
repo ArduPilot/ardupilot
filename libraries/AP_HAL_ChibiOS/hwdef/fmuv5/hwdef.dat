@@ -290,7 +290,7 @@ PC12 SDMMC_CK SDMMC1
 PD2 SDMMC_CMD SDMMC1
 
 # red LED marked as B/E
-PB1 LED_RED OUTPUT GPIO(90)
+PB1 LED_RED OUTPUT OPENDRAIN GPIO(90)
 
 # green LED marked as PWR. We leave this solid on, but allow
 # for it to be controlled as a relay if needed
