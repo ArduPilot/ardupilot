@@ -208,7 +208,7 @@ bool Compass::send_mag_cal_progress(const GCS_MAVLINK& link)
             cal_status == COMPASS_CAL_RUNNING_STEP_ONE ||
             cal_status == COMPASS_CAL_RUNNING_STEP_TWO) {
             uint8_t completion_pct = calibrator.get_completion_percent();
-            auto& completion_mask = calibrator.get_completion_mask();
+            const CompassCalibrator::completion_mask_t& completion_mask = calibrator.get_completion_mask();
             const Vector3f direction;
             uint8_t attempt = _calibrator[compass_id].get_attempt();
 

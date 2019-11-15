@@ -50,7 +50,7 @@ public:
     enum Rotation get_original_orientation() const { return _orig_orientation; }
 
     float get_completion_percent() const;
-    completion_mask_t& get_completion_mask();
+    const completion_mask_t& get_completion_mask() const { return _completion_mask; }
     enum compass_cal_status_t get_status() const { return _status; }
     float get_fitness() const { return sqrtf(_fitness); }
     float get_orientation_confidence() const { return _orientation_confidence; }
