@@ -1030,6 +1030,10 @@ def write_UART_config(f):
 #define HAL_USE_SERIAL HAL_USE_SERIAL_USB
 #endif
 ''')
+    num_uarts = len(devlist)
+    if 'IOMCU_UART' in config:
+        num_uarts -= 1
+    f.write('#define HAL_UART_NUM_SERIAL_PORTS %u\n' % num_uarts)
 
 def write_UART_config_bootloader(f):
     '''write UART config defines'''
