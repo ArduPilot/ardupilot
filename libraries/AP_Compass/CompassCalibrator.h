@@ -10,13 +10,13 @@
 #define COMPASS_CAL_DEFAULT_TOLERANCE 5.0f
 
 enum compass_cal_status_t {
-    COMPASS_CAL_NOT_STARTED=0,
-    COMPASS_CAL_WAITING_TO_START=1,
-    COMPASS_CAL_RUNNING_STEP_ONE=2,
-    COMPASS_CAL_RUNNING_STEP_TWO=3,
-    COMPASS_CAL_SUCCESS=4,
-    COMPASS_CAL_FAILED=5,
-    COMPASS_CAL_BAD_ORIENTATION=6,
+    COMPASS_CAL_NOT_STARTED = 0,
+    COMPASS_CAL_WAITING_TO_START = 1,
+    COMPASS_CAL_RUNNING_STEP_ONE = 2,
+    COMPASS_CAL_RUNNING_STEP_TWO = 3,
+    COMPASS_CAL_SUCCESS = 4,
+    COMPASS_CAL_FAILED = 5,
+    COMPASS_CAL_BAD_ORIENTATION = 6,
 };
 
 class CompassCalibrator {
@@ -42,7 +42,7 @@ public:
         _is_external = is_external;
         _fix_orientation = fix_orientation;
     }
-    
+
     void set_tolerance(float tolerance) { _tolerance = tolerance; }
 
     void get_calibration(Vector3f &offsets, Vector3f &diagonals, Vector3f &offdiagonals);
