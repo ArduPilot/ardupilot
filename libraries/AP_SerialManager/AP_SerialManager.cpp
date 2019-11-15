@@ -70,6 +70,7 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
+#if SERIALMANAGER_NUM_PORTS > 0
     // @Param: 0_BAUD
     // @DisplayName: Serial0 baud rate
     // @Description: The baud rate used on the USB console. Most stm32-based boards can support rates of up to 1500. If you setup a rate you cannot support and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
@@ -84,7 +85,9 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("0_PROTOCOL",  11, AP_SerialManager, state[0].protocol, SerialProtocol_MAVLink2),
-    
+#endif
+
+#if SERIALMANAGER_NUM_PORTS > 1
     // @Param: 1_PROTOCOL
     // @DisplayName: Telem1 protocol selection
     // @Description: Control what protocol to use on the Telem1 port. Note that the Frsky options require external converter hardware. See the wiki for details.
@@ -99,7 +102,9 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,256:256000,500:500000,921:921600,1500:1500000
     // @User: Standard
     AP_GROUPINFO("1_BAUD", 2, AP_SerialManager, state[1].baud, AP_SERIALMANAGER_MAVLINK_BAUD/1000),
+#endif
 
+#if SERIALMANAGER_NUM_PORTS > 2
     // @Param: 2_PROTOCOL
     // @DisplayName: Telemetry 2 protocol selection
     // @Description: Control what protocol to use on the Telem2 port. Note that the Frsky options require external converter hardware. See the wiki for details.
@@ -114,7 +119,9 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,256:256000,500:500000,921:921600,1500:1500000
     // @User: Standard
     AP_GROUPINFO("2_BAUD", 4, AP_SerialManager, state[2].baud, AP_SERIALMANAGER_MAVLINK_BAUD/1000),
+#endif
 
+#if SERIALMANAGER_NUM_PORTS > 3
     // @Param: 3_PROTOCOL
     // @DisplayName: Serial 3 (GPS) protocol selection
     // @Description: Control what protocol Serial 3 (GPS) should be used for. Note that the Frsky options require external converter hardware. See the wiki for details.
@@ -129,7 +136,9 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,256:256000,500:500000,921:921600,1500:1500000
     // @User: Standard
     AP_GROUPINFO("3_BAUD", 6, AP_SerialManager, state[3].baud, AP_SERIALMANAGER_GPS_BAUD/1000),
+#endif
 
+#if SERIALMANAGER_NUM_PORTS > 4
     // @Param: 4_PROTOCOL
     // @DisplayName: Serial4 protocol selection
     // @Description: Control what protocol Serial4 port should be used for. Note that the Frsky options require external converter hardware. See the wiki for details.
@@ -144,7 +153,9 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,256:256000,500:500000,921:921600,1500:1500000
     // @User: Standard
     AP_GROUPINFO("4_BAUD", 8, AP_SerialManager, state[4].baud, AP_SERIALMANAGER_GPS_BAUD/1000),
+#endif
 
+#if SERIALMANAGER_NUM_PORTS > 5
     // @Param: 5_PROTOCOL
     // @DisplayName: Serial5 protocol selection
     // @Description: Control what protocol Serial5 port should be used for. Note that the Frsky options require external converter hardware. See the wiki for details.
@@ -159,9 +170,11 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,256:256000,500:500000,921:921600,1500:1500000
     // @User: Standard
     AP_GROUPINFO("5_BAUD", 10, AP_SerialManager, state[5].baud, SERIAL5_BAUD),
+#endif
 
     // index 11 used by 0_PROTOCOL
         
+#if SERIALMANAGER_NUM_PORTS > 6
     // @Param: 6_PROTOCOL
     // @DisplayName: Serial6 protocol selection
     // @Description: Control what protocol Serial6 port should be used for. Note that the Frsky options require external converter hardware. See the wiki for details.
@@ -176,7 +189,9 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,256:256000,500:500000,921:921600,1500:1500000
     // @User: Standard
     AP_GROUPINFO("6_BAUD", 13, AP_SerialManager, state[6].baud, SERIAL6_BAUD),
+#endif
 
+#if SERIALMANAGER_NUM_PORTS > 1
     // @Param: 1_OPTIONS
     // @DisplayName: Telem1 options
     // @Description: Control over UART options. The InvertRX option controls invert of the receive pin. The InvertTX option controls invert of the transmit pin. The HalfDuplex option controls half-duplex (onewire) mode, where both transmit and receive is done on the transmit wire. The Swap option allows the RX and TX pins to be swapped on STM32F7 based boards.
@@ -184,7 +199,9 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("1_OPTIONS",  14, AP_SerialManager, state[1].options, 0),
+#endif
 
+#if SERIALMANAGER_NUM_PORTS > 2
     // @Param: 2_OPTIONS
     // @DisplayName: Telem2 options
     // @Description: Control over UART options. The InvertRX option controls invert of the receive pin. The InvertTX option controls invert of the transmit pin. The HalfDuplex option controls half-duplex (onewire) mode, where both transmit and receive is done on the transmit wire.
@@ -192,7 +209,9 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("2_OPTIONS",  15, AP_SerialManager, state[2].options, 0),
+#endif
 
+#if SERIALMANAGER_NUM_PORTS > 3
     // @Param: 3_OPTIONS
     // @DisplayName: Serial3 options
     // @Description: Control over UART options. The InvertRX option controls invert of the receive pin. The InvertTX option controls invert of the transmit pin. The HalfDuplex option controls half-duplex (onewire) mode, where both transmit and receive is done on the transmit wire.
@@ -200,7 +219,9 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("3_OPTIONS",  16, AP_SerialManager, state[3].options, 0),
+#endif
 
+#if SERIALMANAGER_NUM_PORTS > 4
     // @Param: 4_OPTIONS
     // @DisplayName: Serial4 options
     // @Description: Control over UART options. The InvertRX option controls invert of the receive pin. The InvertTX option controls invert of the transmit pin. The HalfDuplex option controls half-duplex (onewire) mode, where both transmit and receive is done on the transmit wire.
@@ -208,7 +229,9 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("4_OPTIONS",  17, AP_SerialManager, state[4].options, 0),
+#endif
 
+#if SERIALMANAGER_NUM_PORTS > 5
     // @Param: 5_OPTIONS
     // @DisplayName: Serial5 options
     // @Description: Control over UART options. The InvertRX option controls invert of the receive pin. The InvertTX option controls invert of the transmit pin. The HalfDuplex option controls half-duplex (onewire) mode, where both transmit and receive is done on the transmit wire.
@@ -216,7 +239,9 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("5_OPTIONS",  18, AP_SerialManager, state[5].options, 0),
+#endif
 
+#if SERIALMANAGER_NUM_PORTS > 6
     // @Param: 6_OPTIONS
     // @DisplayName: Serial6 options
     // @Description: Control over UART options. The InvertRX option controls invert of the receive pin. The InvertTX option controls invert of the transmit pin. The HalfDuplex option controls half-duplex (onewire) mode, where both transmit and receive is done on the transmit wire.
@@ -224,6 +249,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("6_OPTIONS",  19, AP_SerialManager, state[6].options, 0),
+#endif
 
     // @Param: _PASS1
     // @DisplayName: Serial passthru first port
@@ -247,6 +273,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_PASSTIMO",  22, AP_SerialManager, passthru_timeout, 15),
 
+#if SERIALMANAGER_NUM_PORTS > 7
     // @Param: 7_PROTOCOL
     // @DisplayName: Serial7 protocol selection
     // @Description: Control what protocol Serial7 port should be used for. Note that the Frsky options require external converter hardware. See the wiki for details.
@@ -269,6 +296,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("7_OPTIONS",  25, AP_SerialManager, state[7].options, 0),
+#endif
     
     AP_GROUPEND
 };
@@ -288,10 +316,12 @@ AP_SerialManager::AP_SerialManager()
 void AP_SerialManager::init_console()
 {
     // initialise console immediately at default size and baud
+#if SERIALMANAGER_NUM_PORTS > 0
     state[0].uart = hal.uartA;  // serial0, uartA, always console
     state[0].uart->begin(AP_SERIALMANAGER_CONSOLE_BAUD,
                          AP_SERIALMANAGER_CONSOLE_BUFSIZE_RX,
                          AP_SERIALMANAGER_CONSOLE_BUFSIZE_TX);
+#endif
 }
 
 extern bool g_nsh_should_exit;
@@ -303,13 +333,27 @@ void AP_SerialManager::init()
     passthru_port2.set_and_save_ifchanged(-1);
 
     // initialise pointers to serial ports
+#if SERIALMANAGER_NUM_PORTS > 1
     state[1].uart = hal.uartC;  // serial1, uartC, normally telem1
+#endif
+#if SERIALMANAGER_NUM_PORTS > 2
     state[2].uart = hal.uartD;  // serial2, uartD, normally telem2
+#endif
+#if SERIALMANAGER_NUM_PORTS > 3
     state[3].uart = hal.uartB;  // serial3, uartB, normally 1st GPS
+#endif
+#if SERIALMANAGER_NUM_PORTS > 4
     state[4].uart = hal.uartE;  // serial4, uartE, normally 2nd GPS
+#endif
+#if SERIALMANAGER_NUM_PORTS > 5
     state[5].uart = hal.uartF;  // serial5
+#endif
+#if SERIALMANAGER_NUM_PORTS > 6
     state[6].uart = hal.uartG;  // serial6
+#endif
+#if SERIALMANAGER_NUM_PORTS > 7
     state[7].uart = hal.uartH;  // serial7
+#endif
 
 #ifdef HAL_OTG1_CONFIG
     /*
@@ -323,9 +367,11 @@ void AP_SerialManager::init()
     }
 #endif
 
+#if SERIALMANAGER_NUM_PORTS > 0
     if (state[0].uart == nullptr) {
         init_console();
     }
+#endif
     
     // initialise serial ports
     for (uint8_t i=1; i<SERIALMANAGER_NUM_PORTS; i++) {
