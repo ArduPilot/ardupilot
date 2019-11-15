@@ -8,8 +8,7 @@ extern AP_HAL::HAL& hal;
 
 #if COMPASS_CAL_ENABLED
 
-void
-Compass::cal_update()
+void Compass::cal_update()
 {
     if (hal.util->get_soft_armed()) {
         return;
@@ -47,8 +46,7 @@ Compass::cal_update()
     }
 }
 
-bool
-Compass::_start_calibration(uint8_t i, bool retry, float delay)
+bool Compass::_start_calibration(uint8_t i, bool retry, float delay)
 {
     if (!healthy(i)) {
         return false;
@@ -82,8 +80,7 @@ Compass::_start_calibration(uint8_t i, bool retry, float delay)
     return true;
 }
 
-bool
-Compass::_start_calibration_mask(uint8_t mask, bool retry, bool autosave, float delay, bool autoreboot)
+bool Compass::_start_calibration_mask(uint8_t mask, bool retry, bool autosave, float delay, bool autoreboot)
 {
     _cal_autosave = autosave;
     _compass_cal_autoreboot = autoreboot;
@@ -99,8 +96,7 @@ Compass::_start_calibration_mask(uint8_t mask, bool retry, bool autosave, float 
     return true;
 }
 
-void
-Compass::start_calibration_all(bool retry, bool autosave, float delay, bool autoreboot)
+void Compass::start_calibration_all(bool retry, bool autosave, float delay, bool autoreboot)
 {
     _cal_autosave = autosave;
     _compass_cal_autoreboot = autoreboot;
@@ -112,8 +108,7 @@ Compass::start_calibration_all(bool retry, bool autosave, float delay, bool auto
     }
 }
 
-void
-Compass::_cancel_calibration(uint8_t i)
+void Compass::_cancel_calibration(uint8_t i)
 {
     AP_Notify::events.initiated_compass_cal = 0;
 
@@ -124,24 +119,21 @@ Compass::_cancel_calibration(uint8_t i)
     _calibrator[i].clear();
 }
 
-void
-Compass::_cancel_calibration_mask(uint8_t mask)
+void Compass::_cancel_calibration_mask(uint8_t mask)
 {
-    for(uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
-        if((1<<i) & mask) {
+    for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+        if ((1<<i) & mask) {
             _cancel_calibration(i);
         }
     }
 }
 
-void
-Compass::cancel_calibration_all()
+void Compass::cancel_calibration_all()
 {
     _cancel_calibration_mask(0xFF);
 }
 
-bool
-Compass::_accept_calibration(uint8_t i)
+bool Compass::_accept_calibration(uint8_t i)
 {
     CompassCalibrator& cal = _calibrator[i];
     uint8_t cal_status = cal.get_status();
@@ -172,8 +164,7 @@ Compass::_accept_calibration(uint8_t i)
     }
 }
 
-bool
-Compass::_accept_calibration_mask(uint8_t mask)
+bool Compass::_accept_calibration_mask(uint8_t mask)
 {
     bool success = true;
     for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
@@ -263,8 +254,7 @@ bool Compass::send_mag_cal_report(const GCS_MAVLINK& link)
     return true;
 }
 
-bool
-Compass::is_calibrating() const
+bool Compass::is_calibrating() const
 {
     for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
         switch(_calibrator[i].get_status()) {
@@ -280,8 +270,7 @@ Compass::is_calibrating() const
     return false;
 }
 
-uint8_t
-Compass::_get_cal_mask() const
+uint8_t Compass::_get_cal_mask() const
 {
     uint8_t cal_mask = 0;
     for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
@@ -291,7 +280,6 @@ Compass::_get_cal_mask() const
     }
     return cal_mask;
 }
-
 
 /*
   handle an incoming MAG_CAL command
@@ -326,32 +314,32 @@ MAV_RESULT Compass::handle_mag_cal_command(const mavlink_command_long_t &packet)
                 result = MAV_RESULT_FAILED;
             }
         }
-        
+
         break;
     }
 
     case MAV_CMD_DO_ACCEPT_MAG_CAL: {
         result = MAV_RESULT_ACCEPTED;
-        if(packet.param1 < 0 || packet.param1 > 255) {
+        if (packet.param1 < 0 || packet.param1 > 255) {
             result = MAV_RESULT_FAILED;
             break;
         }
-        
+
         uint8_t mag_mask = packet.param1;
-        
+
         if (mag_mask == 0) { // 0 means all
             mag_mask = 0xFF;
         }
-        
-        if(!_accept_calibration_mask(mag_mask)) {
+
+        if (!_accept_calibration_mask(mag_mask)) {
             result = MAV_RESULT_FAILED;
         }
         break;
     }
-        
+
     case MAV_CMD_DO_CANCEL_MAG_CAL: {
         result = MAV_RESULT_ACCEPTED;
-        if(packet.param1 < 0 || packet.param1 > 255) {
+        if (packet.param1 < 0 || packet.param1 > 255) {
             result = MAV_RESULT_FAILED;
             break;
         }
