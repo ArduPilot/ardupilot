@@ -3637,7 +3637,15 @@ class AutoTestCopter(AutoTest):
 
         self.do_RTL()
 
-    def test_onboard_compass_calibration(self, timeout=240):
+    def test_onboard_compass_calibration(self, timeout=300):
+        params = [
+            ("SIM_MAG_DIA_X", "COMPASS_DIA_X", 1.0),
+            ("SIM_MAG_DIA_Y", "COMPASS_DIA_Y", 1.1),
+            ("SIM_MAG_DIA_Z", "COMPASS_DIA_Z", 1.2),
+            ("SIM_MAG_ODI_X", "COMPASS_ODI_X", 0.004),
+            ("SIM_MAG_ODI_Y", "COMPASS_ODI_Y", 0.005),
+            ("SIM_MAG_ODI_Z", "COMPASS_ODI_Z", 0.006),
+        ]
         twist_x = 2.1
         twist_y = 2.2
         twist_z = 2.3
@@ -3646,6 +3654,11 @@ class AutoTestCopter(AutoTest):
         try:
             self.set_parameter("SIM_GND_BEHAV", 0)
             self.set_parameter("AHRS_EKF_TYPE", 10)
+            for param in params:
+                (_in, _out, value) = param
+                self.set_parameter(_in, value)
+                # ensure new parameters get reversed at end of test:
+                self.set_parameter(_out, self.get_parameter(_out))
             self.reboot_sitl()
 
             report = self.mav.messages.get("MAG_CAL_REPORT", None)
@@ -3655,7 +3668,7 @@ class AutoTestCopter(AutoTest):
             self.run_cmd(mavutil.mavlink.MAV_CMD_DO_START_MAG_CAL,
                          1, # bitmask of compasses to calibrate
                          0,
-                         0,
+                         1, # save without user input
                          0,
                          0,
                          0,
@@ -3670,6 +3683,14 @@ class AutoTestCopter(AutoTest):
                 report = self.mav.messages.get("MAG_CAL_REPORT", None)
                 if report is not None:
                     print("Report: %s" % str(report))
+                    # give time for things to save or whatever:
+                    self.wait_heartbeat()
+                    self.wait_heartbeat()
+                    for param in params:
+                        (_in, _out, value) = param
+                        got_value = self.get_parameter(_out)
+                        if abs(got_value - value) > value*0.15:
+                            raise NotAchievedException("%s/%s not within 15%%; got %f want=%f" % (_in, _out, got_value, value))
                     break
                 if now - last_twist_time > 5:
                     last_twist_time = now
@@ -3682,9 +3703,9 @@ class AutoTestCopter(AutoTest):
                         twist_y /= -2
                     if abs(twist_z) > 10:
                         twist_z /= -2
-                    self.set_parameter("SIM_TWIST_X", twist_x)
-                    self.set_parameter("SIM_TWIST_Y", twist_y)
-                    self.set_parameter("SIM_TWIST_Z", twist_z)
+                    self.set_parameter("SIM_TWIST_X", twist_x/10.0)
+                    self.set_parameter("SIM_TWIST_Y", twist_y/10.0)
+                    self.set_parameter("SIM_TWIST_Z", twist_z/10.0)
                     try:
                         self.set_parameter("SIM_TWIST_TIME", 100)
                     except ValueError as e:
