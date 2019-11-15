@@ -46,8 +46,8 @@ public:
     void set_tolerance(float tolerance) { _tolerance = tolerance; }
 
     void get_calibration(Vector3f &offsets, Vector3f &diagonals, Vector3f &offdiagonals);
-    enum Rotation get_orientation(void) { return _orientation; }
-    enum Rotation get_original_orientation(void) { return _orig_orientation; }
+    enum Rotation get_orientation() const { return _orientation; }
+    enum Rotation get_original_orientation() const { return _orig_orientation; }
 
     float get_completion_percent() const;
     completion_mask_t& get_completion_mask();
