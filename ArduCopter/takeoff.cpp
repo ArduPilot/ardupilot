@@ -2,6 +2,8 @@
 
 Mode::_TakeOff Mode::takeoff;
 
+float Mode::auto_takeoff_no_nav_alt_cm = 0;
+
 // This file contains the high-level takeoff logic for Loiter, PosHold, AltHold, Sport modes.
 //   The take-off can be initiated from a GCS NAV_TAKEOFF command which includes a takeoff altitude
 //   A safe takeoff speed is calculated and used to calculate a time_ms
@@ -136,6 +138,42 @@ void Mode::_TakeOff::get_climb_rates(float& pilot_climb_rate,
             pilot_climb_rate = 0.0f;
         }
     }
+}
+
+void Mode::auto_takeoff_run()
+{
+    // if not armed set throttle to zero and exit immediately
+    if (!motors->armed() || !copter.ap.auto_armed) {
+        make_safe_spool_down();
+        wp_nav->shift_wp_origin_to_current_pos();
+        return;
+    }
+
+    // process pilot's yaw input
+    float target_yaw_rate = 0;
+    if (!copter.failsafe.radio) {
+        // get pilot's desired yaw rate
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+    }
+
+    // aircraft stays in landed state until rotor speed runup has finished
+    if (motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
+        set_land_complete(false);
+    } else {
+        wp_nav->shift_wp_origin_to_current_pos();
+    }
+
+    // set motors to full range
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+
+    // run waypoint controller
+    copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
+
+    // call z-axis position controller (wpnav should have already updated it's alt target)
+    copter.pos_control->update_z_controller();
+
+    // call attitude controller
+    auto_takeoff_attitude_run(target_yaw_rate);
 }
 
 void Mode::auto_takeoff_set_start_alt(void)
