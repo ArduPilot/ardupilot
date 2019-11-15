@@ -147,11 +147,6 @@ void CompassCalibrator::update_completion_mask()
     }
 }
 
-CompassCalibrator::completion_mask_t& CompassCalibrator::get_completion_mask()
-{
-    return _completion_mask;
-}
-
 bool CompassCalibrator::check_for_timeout() {
     uint32_t tnow = AP_HAL::millis();
     if(running() && tnow - _last_sample_ms > 1000) {
