@@ -25,8 +25,6 @@ Mode::Mode(void) :
     G_Dt(copter.G_Dt)
 { };
 
-float Mode::auto_takeoff_no_nav_alt_cm = 0;
-
 // return the static controller object corresponding to supplied mode
 Mode *Copter::mode_from_mode_num(const Mode::Number mode)
 {
