@@ -92,6 +92,8 @@ public:
         GPS_TYPE_MAV = 14,
         GPS_TYPE_NOVA = 15,
         GPS_TYPE_HEMI = 16, // hemisphere NMEA
+        GPS_TYPE_UBLOX_RTK_BASE = 17,
+        GPS_TYPE_UBLOX_RTK_ROVER = 18,
     };
 
     /// GPS status codes
@@ -119,9 +121,16 @@ public:
         GPS_ENGINE_AIRBORNE_4G = 8
     };
 
-   enum GPS_Config {
+    enum GPS_Config {
        GPS_ALL_CONFIGURED = 255
-   };
+    };
+
+    // role for auto-config
+    enum GPS_Role {
+        GPS_ROLE_NORMAL,
+        GPS_ROLE_MB_BASE,
+        GPS_ROLE_MB_ROVER,
+    };
 
     /*
       The GPS_State structure is filled in by the backend driver as it
