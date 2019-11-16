@@ -60,7 +60,7 @@
 extern const AP_HAL::HAL &hal;
 
 // baudrates to try to detect GPSes with
-const uint32_t AP_GPS::_baudrates[] = {9600U, 115200U, 4800U, 19200U, 38400U, 57600U, 230400U};
+const uint32_t AP_GPS::_baudrates[] = {9600U, 115200U, 4800U, 19200U, 38400U, 57600U, 230400U, 460800U};
 
 // initialisation blobs to send to the GPS to try to get it into the
 // right mode
@@ -529,6 +529,10 @@ void AP_GPS::detect_instance(uint8_t instance)
         if (_auto_config == GPS_AUTO_CONFIG_ENABLE && new_gps == nullptr) {
             if (_type[instance] == GPS_TYPE_HEMI) {
                 send_blob_start(instance, AP_GPS_NMEA_HEMISPHERE_INIT_STRING, strlen(AP_GPS_NMEA_HEMISPHERE_INIT_STRING));
+            } else if (_type[instance] == GPS_TYPE_UBLOX_RTK_BASE ||
+                       _type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) {
+                static const char blob[] = UBLOX_SET_BINARY_460800;
+                send_blob_start(instance, blob, sizeof(blob));
             } else {
                 send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
             }
@@ -549,11 +553,25 @@ void AP_GPS::detect_instance(uint8_t instance)
           the uBlox into 115200 no matter what rate it is configured
           for.
         */
-        if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_UBLOX) &&
+        if ((_type[instance] == GPS_TYPE_AUTO ||
+             _type[instance] == GPS_TYPE_UBLOX) &&
             ((!_auto_config && _baudrates[dstate->current_baud] >= 38400) ||
              _baudrates[dstate->current_baud] == 115200) &&
             AP_GPS_UBLOX::_detect(dstate->ublox_detect_state, data)) {
-            new_gps = new AP_GPS_UBLOX(*this, state[instance], _port[instance]);
+            new_gps = new AP_GPS_UBLOX(*this, state[instance], _port[instance], GPS_ROLE_NORMAL);
+        }
+
+        if ((_type[instance] == GPS_TYPE_UBLOX_RTK_BASE ||
+             _type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) &&
+            _baudrates[dstate->current_baud] == 460800 &&
+            AP_GPS_UBLOX::_detect(dstate->ublox_detect_state, data)) {
+            GPS_Role role;
+            if (_type[instance] == GPS_TYPE_UBLOX_RTK_BASE) {
+                role = GPS_ROLE_MB_BASE;
+            } else {
+                role = GPS_ROLE_MB_ROVER;
+            }
+            new_gps = new AP_GPS_UBLOX(*this, state[instance], _port[instance], role);
         }
 #ifndef HAL_BUILD_AP_PERIPH
 #if !HAL_MINIMIZE_FEATURES
@@ -713,6 +731,23 @@ void AP_GPS::update_instance(uint8_t instance)
         }
 
         data_should_be_logged = true;
+    }
+
+    if (drivers[instance] && _type[instance] == GPS_TYPE_UBLOX_RTK_BASE) {
+        // see if a moving baseline base has some RTCMv3 data
+        // which we need to pass along to the rover
+        const uint8_t *rtcm_data;
+        uint16_t rtcm_len;
+        if (drivers[instance]->get_RTCMV3(rtcm_data, rtcm_len)) {
+            for (uint8_t i=0; i< GPS_MAX_RECEIVERS; i++) {
+                if (i != instance && _type[i] == GPS_TYPE_UBLOX_RTK_ROVER) {
+                    // pass the data to the rover
+                    inject_data(i, rtcm_data, rtcm_len);
+                    drivers[instance]->clear_RTCMV3();
+                    break;
+                }
+            }
+        }
     }
 
 #ifndef HAL_BUILD_AP_PERIPH
@@ -951,6 +986,10 @@ void AP_GPS::inject_data(const uint8_t *data, uint16_t len)
     //Support broadcasting to all GPSes.
     if (_inject_to == GPS_RTK_INJECT_TO_ALL) {
         for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+            if (_type[i] == GPS_TYPE_UBLOX_RTK_ROVER) {
+                // we don't externally inject to moving baseline rover
+                continue;
+            }
             inject_data(i, data, len);
         }
     } else {

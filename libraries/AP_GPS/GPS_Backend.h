@@ -67,6 +67,10 @@ public:
 
     virtual bool prepare_for_arming(void) { return true; }
 
+    // optional support for retrieving RTCMv3 data from a moving baseline base
+    virtual bool get_RTCMV3(const uint8_t *&bytes, uint16_t &len) { return false; }
+    virtual void clear_RTCMV3(void) {};
+
 protected:
     AP_HAL::UARTDriver *port;           ///< UART we are attached to
     AP_GPS &gps;                        ///< access to frontend (for parameters)
