@@ -49,11 +49,15 @@
 #include <unistd.h>
 #include <AP_HAL/utility/getopt_cpp.h>
 
-class ReplayVehicle {
+class ReplayVehicle : public AP_Vehicle {
 public:
     ReplayVehicle() { unused = -1; }
-    void setup();
+    // HAL::Callbacks implementation.
+    void setup() override;
+    void loop() override;
     void load_parameters(void);
+
+    virtual bool set_mode(const uint8_t new_mode, const ModeReason reason) override { return true; }
 
     AP_InertialSensor ins;
     AP_Baro barometer;
