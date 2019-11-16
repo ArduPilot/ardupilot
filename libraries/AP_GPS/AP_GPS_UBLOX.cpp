@@ -23,6 +23,7 @@
 #include <AP_HAL/Util.h>
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
+#include <stdio.h>
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
@@ -914,10 +915,10 @@ AP_GPS_UBLOX::_parse_gps(void)
                         step_size = 2;
                         break;
                     case 0x4: // 4 bytes
-                        step_size = 3;
+                        step_size = 4;
                         break;
                     case 0x5: // 8 bytes
-                        step_size = 4;
+                        step_size = 8;
                         break;
                     default:
                         // unknown/bad key size
