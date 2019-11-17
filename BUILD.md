@@ -71,7 +71,7 @@ list some basic and more used commands as example.
 
     ```
 
-* **List of available vehicle types
+* **List of available vehicle types**
 
     Here is a list of the most common vehicle build targets:
 
