@@ -107,8 +107,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(landing_gear_update, 5, 50),
 #endif
 #if EFI_ENABLED
-    SCHED_TASK(efi_update,             10,    200)
+    SCHED_TASK(efi_update,             10,    200),
 #endif
+    SCHED_TASK(update_dynamic_notch,   50,    200),
 };
 
 constexpr int8_t Plane::_failsafe_priorities[7];
