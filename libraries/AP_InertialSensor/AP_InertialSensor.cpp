@@ -673,7 +673,7 @@ AP_InertialSensor::init(uint16_t sample_rate)
     }
 }
 
-bool AP_InertialSensor::_add_backend(AP_InertialSensor_Backend *backend)
+bool AP_InertialSensor::_add_backend(AP_InertialSensor_Backend *backend, bool enabled)
 {
 
     if (!backend) {
@@ -682,7 +682,12 @@ bool AP_InertialSensor::_add_backend(AP_InertialSensor_Backend *backend)
     if (_backend_count == INS_MAX_BACKENDS) {
         AP_HAL::panic("Too many INS backends");
     }
-    _backends[_backend_count++] = backend;
+    if (enabled) {
+        _backends[_backend_count++] = backend;
+    }
+    else {
+        delete backend;
+    }
     return true;
 }
 
@@ -712,18 +717,16 @@ AP_InertialSensor::detect_backends(void)
     }
 #endif
 
-    uint8_t probe_count = 0;
     uint8_t enable_mask = uint8_t(_enable_mask.get());
-    uint8_t found_mask = 0;
+    uint8_t found_count = 0;
 
     /*
       use ADD_BACKEND() macro to allow for INS_ENABLE_MASK for enabling/disabling INS backends
      */
 #define ADD_BACKEND(x) do { \
-        if (((1U<<probe_count)&enable_mask) && _add_backend(x)) { \
-            found_mask |= (1U<<probe_count); \
+        if (_add_backend(x, ((1U<<found_count)&enable_mask))) { \
+            found_count++; \
         } \
-        probe_count++; \
 } while (0)
 
 // macro for use by HAL_INS_PROBE_LIST
@@ -854,7 +857,7 @@ AP_InertialSensor::detect_backends(void)
         break;
         
     case AP_BoardConfig::PX4_BOARD_PCNC1:
-        _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_NAME), ROTATION_ROLL_180));
+        ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_NAME), ROTATION_ROLL_180));
         break;
 
     default:
