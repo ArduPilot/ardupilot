@@ -588,6 +588,9 @@ private:
 
     bool needs_uart(GPS_Type type) const;
 
+    /// Update primary instance
+    void update_primary(void);
+    
     // Auto configure types
     enum GPS_AUTO_CONFIG {
         GPS_AUTO_CONFIG_DISABLE = 0,

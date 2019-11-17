@@ -783,6 +783,26 @@ void AP_GPS::update(void)
         }
     }
 
+    update_primary();
+
+#if defined(GPS_BLENDED_INSTANCE)
+    // copy the primary instance to the blended instance in case it is enabled later
+    state[GPS_BLENDED_INSTANCE] = state[primary_instance];
+    _blended_antenna_offset = _antenna_offset[primary_instance];
+#endif
+    
+#ifndef HAL_BUILD_AP_PERIPH
+    // update notify with gps status. We always base this on the primary_instance
+    AP_Notify::flags.gps_status = state[primary_instance].status;
+    AP_Notify::flags.gps_num_sats = state[primary_instance].num_sats;
+#endif
+}
+
+/*
+  update primary GPS instance
+ */
+void AP_GPS::update_primary(void)
+{
 #if defined(GPS_BLENDED_INSTANCE)
     // if blending is requested, attempt to calculate weighting for each GPS
     if (_auto_switch == 2) {
@@ -807,72 +827,68 @@ void AP_GPS::update(void)
         calc_blended_state();
         // set primary to the virtual instance
         primary_instance = GPS_BLENDED_INSTANCE;
-    } else {
-        // use switch logic to find best GPS
-        uint32_t now = AP_HAL::millis();
-        if (_auto_switch == 3) {
-            // select the second GPS instance
-            primary_instance = 1;
-        } else if (_auto_switch >= 1) {
-            // handling switching away from blended GPS
-            if (primary_instance == GPS_BLENDED_INSTANCE) {
-                primary_instance = 0;
-                for (uint8_t i=1; i<GPS_MAX_RECEIVERS; i++) {
-                    // choose GPS with highest state or higher number of satellites
-                    if ((state[i].status > state[primary_instance].status) ||
-                        ((state[i].status == state[primary_instance].status) && (state[i].num_sats > state[primary_instance].num_sats))) {
-                        primary_instance = i;
-                        _last_instance_swap_ms = now;
-                    }
-                }
-            } else {
-                // handle switch between real GPSs
-                for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
-                    if (i == primary_instance) {
-                        continue;
-                    }
-                    if (state[i].status > state[primary_instance].status) {
-                        // we have a higher status lock, or primary is set to the blended GPS, change GPS
-                        primary_instance = i;
-                        _last_instance_swap_ms = now;
-                        continue;
-                    }
+        return;
+    }
 
-                    bool another_gps_has_1_or_more_sats = (state[i].num_sats >= state[primary_instance].num_sats + 1);
+    if (_auto_switch == 0) {
+        // AUTO_SWITCH is 0 so no switching of GPSs, always use first instance
+        primary_instance = 0;
+        return;
+    }
 
-                    if (state[i].status == state[primary_instance].status && another_gps_has_1_or_more_sats) {
-
-                        bool another_gps_has_2_or_more_sats = (state[i].num_sats >= state[primary_instance].num_sats + 2);
-
-                        if ((another_gps_has_1_or_more_sats && (now - _last_instance_swap_ms) >= 20000) ||
-                            (another_gps_has_2_or_more_sats && (now - _last_instance_swap_ms) >= 5000)) {
-                            // this GPS has more satellites than the
-                            // current primary, switch primary. Once we switch we will
-                            // then tend to stick to the new GPS as primary. We don't
-                            // want to switch too often as it will look like a
-                            // position shift to the controllers.
-                            primary_instance = i;
-                            _last_instance_swap_ms = now;
-                        }
-                    }
-                }
+    if (_auto_switch == 3) {
+        // always select the second GPS instance
+        primary_instance = 1;
+        return;
+    }
+    
+    // use switch logic to find best GPS
+    uint32_t now = AP_HAL::millis();
+    // handling switching away from blended GPS
+    if (primary_instance == GPS_BLENDED_INSTANCE) {
+        primary_instance = 0;
+        for (uint8_t i=1; i<GPS_MAX_RECEIVERS; i++) {
+            // choose GPS with highest state or higher number of satellites
+            if ((state[i].status > state[primary_instance].status) ||
+                ((state[i].status == state[primary_instance].status) && (state[i].num_sats > state[primary_instance].num_sats))) {
+                primary_instance = i;
+                _last_instance_swap_ms = now;
             }
-        } else {
-            // AUTO_SWITCH is 0 so no switching of GPSs
-            primary_instance = 0;
+        }
+        return;
+    }
+
+    // handle switch between real GPSs
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+        if (i == primary_instance) {
+            continue;
+        }
+        if (state[i].status > state[primary_instance].status) {
+            // we have a higher status lock, or primary is set to the blended GPS, change GPS
+            primary_instance = i;
+            _last_instance_swap_ms = now;
+            continue;
         }
 
-        // copy the primary instance to the blended instance in case it is enabled later
-        state[GPS_BLENDED_INSTANCE] = state[primary_instance];
-        _blended_antenna_offset = _antenna_offset[primary_instance];
+        bool another_gps_has_1_or_more_sats = (state[i].num_sats >= state[primary_instance].num_sats + 1);
+
+        if (state[i].status == state[primary_instance].status && another_gps_has_1_or_more_sats) {
+
+            bool another_gps_has_2_or_more_sats = (state[i].num_sats >= state[primary_instance].num_sats + 2);
+
+            if ((another_gps_has_1_or_more_sats && (now - _last_instance_swap_ms) >= 20000) ||
+                (another_gps_has_2_or_more_sats && (now - _last_instance_swap_ms) >= 5000)) {
+                // this GPS has more satellites than the
+                // current primary, switch primary. Once we switch we will
+                // then tend to stick to the new GPS as primary. We don't
+                // want to switch too often as it will look like a
+                // position shift to the controllers.
+                primary_instance = i;
+                _last_instance_swap_ms = now;
+            }
+        }
     }
 #endif // GPS_BLENDED_INSTANCE
-
-#ifndef HAL_BUILD_AP_PERIPH
-    // update notify with gps status. We always base this on the primary_instance
-    AP_Notify::flags.gps_status = state[primary_instance].status;
-    AP_Notify::flags.gps_num_sats = state[primary_instance].num_sats;
-#endif
 }
 
 void AP_GPS::handle_gps_inject(const mavlink_message_t &msg)
