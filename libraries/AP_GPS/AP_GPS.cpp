@@ -841,9 +841,23 @@ void AP_GPS::update_primary(void)
         primary_instance = 1;
         return;
     }
-    
-    // use switch logic to find best GPS
+
     uint32_t now = AP_HAL::millis();
+
+    // special handling of RTK moving baseline pair. If a rover has a
+    // RTK fixed lock and yaw available then always select it as
+    // primary. This ensures that the yaw data and position/velocity
+    // data is time aligned whenever we provide yaw to the EKF
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+        if (_type[i] == GPS_TYPE_UBLOX_RTK_ROVER &&
+            state[i].status == GPS_OK_FIX_3D_RTK_FIXED &&
+            state[i].have_gps_yaw) {
+            primary_instance = i;
+            _last_instance_swap_ms = now;
+            return;
+        }
+    }
+    
     // handling switching away from blended GPS
     if (primary_instance == GPS_BLENDED_INSTANCE) {
         primary_instance = 0;
