@@ -167,14 +167,6 @@ enum LoggingParameters {
      LOG_SYSIDS_MSG,
 };
 
-// Harmonic notch update mode
-enum HarmonicNotchDynamicMode {
-    HarmonicNotch_Fixed,
-    HarmonicNotch_UpdateThrottle,
-    HarmonicNotch_UpdateRPM,
-    HarmonicNotch_UpdateBLHeli,
-};
-
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
 #define MASK_LOG_ATTITUDE_MED           (1<<1)
 #define MASK_LOG_GPS                    (1<<2)
