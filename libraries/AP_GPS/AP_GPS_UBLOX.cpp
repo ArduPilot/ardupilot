@@ -1857,6 +1857,13 @@ bool AP_GPS_UBLOX::get_lag(float &lag_sec) const
         // F9 lag not verified yet from flight log, but likely to be at least
         // as good as M8
         lag_sec = 0.12f;
+        if (role == AP_GPS::GPS_ROLE_MB_BASE ||
+            role == AP_GPS::GPS_ROLE_MB_ROVER) {
+            // the moving baseline rover will lag about 40ms from the
+            // base. We need to provide the more conservative value to
+            // ensure that the EKF allocates a larger enough buffer
+            lag_sec += 0.04;
+        }
         break;
     };
     return true;
