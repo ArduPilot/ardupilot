@@ -49,9 +49,17 @@ void ADSB_Vehicle::update(float delta_t)
             vel_min *= 10;
             vel_max *= 10;
         }
-        velocity_ef.x = Aircraft::rand_normal(vel_min, vel_max);
-        velocity_ef.y = Aircraft::rand_normal(vel_min, vel_max);
-        velocity_ef.z = Aircraft::rand_normal(0, 3);
+        type = (ADSB_EMITTER_TYPE)(rand() % (ADSB_EMITTER_TYPE_POINT_OBSTACLE + 1));
+        // don't allow surface emitters to move
+        if (type == ADSB_EMITTER_TYPE_POINT_OBSTACLE) {
+            velocity_ef.zero();
+        } else {
+            velocity_ef.x = Aircraft::rand_normal(vel_min, vel_max);
+            velocity_ef.y = Aircraft::rand_normal(vel_min, vel_max);
+            if (type < ADSB_EMITTER_TYPE_EMERGENCY_SURFACE) {
+                velocity_ef.z = Aircraft::rand_normal(-3, 3);
+            }
+        }
     }
 
     position += velocity_ef * delta_t;
@@ -203,7 +211,7 @@ void ADSB::send_report(void)
             adsb_vehicle.hor_velocity = norm(vehicle.velocity_ef.x, vehicle.velocity_ef.y) * 100;
             adsb_vehicle.ver_velocity = -vehicle.velocity_ef.z * 100;
             memcpy(adsb_vehicle.callsign, vehicle.callsign, sizeof(adsb_vehicle.callsign));
-            adsb_vehicle.emitter_type = ADSB_EMITTER_TYPE_LARGE;
+            adsb_vehicle.emitter_type = vehicle.type;
             adsb_vehicle.tslc = 1;
             adsb_vehicle.flags =
                 ADSB_FLAGS_VALID_COORDS |

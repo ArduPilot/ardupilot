@@ -38,6 +38,7 @@ private:
     char callsign[9];
     uint32_t ICAO_address;
     bool initialised = false;
+    ADSB_EMITTER_TYPE type;
 };
         
 class ADSB {
