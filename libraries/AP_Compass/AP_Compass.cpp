@@ -705,6 +705,7 @@ void Compass::_probe_external_i2c_compasses(void)
     }
 
 #if !HAL_MINIMIZE_FEATURES
+#ifndef HAL_BUILD_AP_PERIPH
     // AK09916 on ICM20948
     FOREACH_I2C_EXTERNAL(i) {
         ADD_BACKEND(DRIVER_ICM20948, AP_Compass_AK09916::probe_ICM20948(GET_I2C_DEVICE(i, HAL_COMPASS_AK09916_I2C_ADDR),
@@ -717,6 +718,7 @@ void Compass::_probe_external_i2c_compasses(void)
                                                                         GET_I2C_DEVICE(i, HAL_COMPASS_ICM20948_I2C_ADDR),
                                                                         all_external, ROTATION_PITCH_180_YAW_90));
     }
+#endif // HAL_BUILD_AP_PERIPH
 
     // lis3mdl on bus 0 with default address
     FOREACH_I2C_INTERNAL(i) {
