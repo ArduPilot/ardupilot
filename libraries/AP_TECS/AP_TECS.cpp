@@ -249,14 +249,6 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 28, AP_TECS, _options, 0),
 
-    // @Param: LAND_PMIN
-    // @DisplayName: Minimum pitch during final stage of landing
-    // @Description: This limits the pitch used during the final stage of automatic landing. During the final landing stage most planes need to keep their pitch range small to avoid stalling or descending too fast. A minimum of -5 degrees is usually good. A value of zero means to use the normal pitch limits.
-    // @Range: -5 5
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO("LAND_PMIN", 29, AP_TECS, _land_pitch_mindeg, 0),
-    
     AP_GROUPEND
 };
 
@@ -1077,9 +1069,6 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 
     if (_landing.is_flaring()) {
         // ensure we don't violate the limits for flare pitch
-        if (_land_pitch_mindeg != 0) {
-            _PITCHminf = MAX(_land_pitch_mindeg, _PITCHminf);
-        }
         if (_land_pitch_max != 0) {
             _PITCHmaxf = MIN(_land_pitch_max, _PITCHmaxf);
         }
