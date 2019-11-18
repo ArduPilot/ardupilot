@@ -81,7 +81,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @Range: 0 18000
     // @Units: cdeg
     // @Increment: 100
-    // @User: Advanced
+    // @User: Standard
     AP_GROUPINFO("CYC_MAX", 16, AP_MotorsHeli, _cyclic_max, AP_MOTORS_HELI_SWASH_CYCLIC_MAX),
 
     // @Param: SV_TEST

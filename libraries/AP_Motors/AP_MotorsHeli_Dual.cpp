@@ -46,6 +46,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Description: Feed-forward compensation to automatically add yaw input when differential collective pitch is applied.
     // @Range: -10 10
     // @Increment: 0.1
+    // @User: Standard
     AP_GROUPINFO("DCP_YAW", 11, AP_MotorsHeli_Dual, _dcp_yaw_effect, 0),
 
     // @Param: YAW_SCALER
@@ -53,6 +54,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Description: Scaler for mixing yaw into roll or pitch.
     // @Range: -10 10
     // @Increment: 0.1
+    // @User: Standard
     AP_GROUPINFO("YAW_SCALER", 12, AP_MotorsHeli_Dual, _yaw_scaler, 1.0f),
 
     // Indices 13-15 were used by RSC_PWM_MIN, RSC_PWM_MAX and RSC_PWM_REV and should not be used
