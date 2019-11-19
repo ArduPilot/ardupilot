@@ -81,6 +81,15 @@ void CompassCalibrator::clear()
     set_status(COMPASS_CAL_NOT_STARTED);
 }
 
+void CompassCalibrator::set_orientation(enum Rotation orientation, bool is_external, bool fix_orientation)
+{
+    _check_orientation = true;
+    _orientation = orientation;
+    _orig_orientation = orientation;
+    _is_external = is_external;
+    _fix_orientation = fix_orientation;
+}
+
 void CompassCalibrator::start(bool retry, float delay, uint16_t offset_max, uint8_t compass_idx)
 {
     if (running()) {
@@ -127,6 +136,8 @@ float CompassCalibrator::get_completion_percent() const
     };
 }
 
+// update completion mask based on latest sample
+// used to ensure we have collected samples in all directions
 void CompassCalibrator::update_completion_mask(const Vector3f& v)
 {
     Matrix3f softiron {
@@ -142,6 +153,7 @@ void CompassCalibrator::update_completion_mask(const Vector3f& v)
     _completion_mask[section / 8] |= 1 << (section % 8);
 }
 
+// reset and updated the completion mask using all samples in the sample buffer
 void CompassCalibrator::update_completion_mask()
 {
     memset(_completion_mask, 0, sizeof(_completion_mask));
@@ -181,6 +193,7 @@ void CompassCalibrator::update(bool &failure)
 {
     failure = false;
 
+    // collect the minimum number of samples
     if (!fitting()) {
         return;
     }
@@ -230,17 +243,17 @@ bool CompassCalibrator::fitting() const
     return running() && (_samples_collected == COMPASS_CAL_NUM_SAMPLES);
 }
 
+// initialize fitness before starting a fit
 void CompassCalibrator::initialize_fit()
 {
-    //initialize _fitness before starting a fit
     if (_samples_collected != 0) {
         _fitness = calc_mean_squared_residuals(_params);
     } else {
         _fitness = 1.0e30f;
     }
-    _ellipsoid_lambda = 1.0f;
-    _sphere_lambda = 1.0f;
     _initial_fitness = _fitness;
+    _sphere_lambda = 1.0f;
+    _ellipsoid_lambda = 1.0f;
     _fit_step = 0;
 }
 
@@ -284,6 +297,7 @@ bool CompassCalibrator::set_status(compass_cal_status_t status)
                 return false;
             }
 
+            // on first attempt delay start if requested by caller
             if (_attempt == 1 && (AP_HAL::millis()-_start_time_ms)*1.0e-3f < _delay_start_sec) {
                 return false;
             }
@@ -452,6 +466,7 @@ float CompassCalibrator::calc_mean_squared_residuals() const
     return calc_mean_squared_residuals(_params);
 }
 
+// calc the fitness given a set of parameters (offsets, diagonals, off diagonals)
 float CompassCalibrator::calc_mean_squared_residuals(const param_t& params) const
 {
     if (_sample_buffer == nullptr || _samples_collected == 0) {
@@ -465,6 +480,17 @@ float CompassCalibrator::calc_mean_squared_residuals(const param_t& params) cons
     }
     sum /= _samples_collected;
     return sum;
+}
+
+// calculate initial offsets by simply taking the average values of the samples
+void CompassCalibrator::calc_initial_offset()
+{
+    // Set initial offset to the average value of the samples
+    _params.offset.zero();
+    for (uint16_t k = 0; k < _samples_collected; k++) {
+        _params.offset -= _sample_buffer[k].get();
+    }
+    _params.offset /= _samples_collected;
 }
 
 void CompassCalibrator::calc_sphere_jacob(const Vector3f& sample, const param_t& params, float* ret) const
@@ -491,16 +517,7 @@ void CompassCalibrator::calc_sphere_jacob(const Vector3f& sample, const param_t&
     ret[3] = -1.0f * (((offdiag.y * A) + (offdiag.z * B) + (diag.z    * C))/length);
 }
 
-void CompassCalibrator::calc_initial_offset()
-{
-    // Set initial offset to the average value of the samples
-    _params.offset.zero();
-    for (uint16_t k = 0; k<_samples_collected; k++) {
-        _params.offset -= _sample_buffer[k].get();
-    }
-    _params.offset /= _samples_collected;
-}
-
+// run sphere fit to calculate diagonals and offdiagonals
 void CompassCalibrator::run_sphere_fit()
 {
     if (_sample_buffer == nullptr) {
@@ -509,6 +526,7 @@ void CompassCalibrator::run_sphere_fit()
 
     const float lma_damping = 10.0f;
 
+    // take backup of fitness and parameters so we can determine later if this fit has improved the calibration
     float fitness = _fitness;
     float fit1, fit2;
     param_t fit1_params, fit2_params;
@@ -538,7 +556,7 @@ void CompassCalibrator::run_sphere_fit()
     }
 
     //------------------------Levenberg-Marquardt-part-starts-here---------------------------------//
-    //refer: http://en.wikipedia.org/wiki/Levenberg%E2%80%93Marquardt_algorithm#Choice_of_damping_parameter
+    // refer: http://en.wikipedia.org/wiki/Levenberg%E2%80%93Marquardt_algorithm#Choice_of_damping_parameter
     for (uint8_t i = 0; i < COMPASS_CAL_NUM_SPHERE_PARAMS; i++) {
         JTJ[i*COMPASS_CAL_NUM_SPHERE_PARAMS+i] += _sphere_lambda;
         JTJ2[i*COMPASS_CAL_NUM_SPHERE_PARAMS+i] += _sphere_lambda/lma_damping;
@@ -552,6 +570,7 @@ void CompassCalibrator::run_sphere_fit()
         return;
     }
 
+    // extract radius, offset, diagonals and offdiagonal parameters
     for (uint8_t row=0; row < COMPASS_CAL_NUM_SPHERE_PARAMS; row++) {
         for (uint8_t col=0; col < COMPASS_CAL_NUM_SPHERE_PARAMS; col++) {
             fit1_params.get_sphere_params()[row] -= JTFI[col] * JTJ[row*COMPASS_CAL_NUM_SPHERE_PARAMS+col];
@@ -559,12 +578,16 @@ void CompassCalibrator::run_sphere_fit()
         }
     }
 
+    // calculate fitness of two possible sets of parameters
     fit1 = calc_mean_squared_residuals(fit1_params);
     fit2 = calc_mean_squared_residuals(fit2_params);
 
+    // decide which of the two sets of parameters is best and store in fit1_params
     if (fit1 > _fitness && fit2 > _fitness) {
+        // if neither set of parameters provided better results, increase lambda
         _sphere_lambda *= lma_damping;
     } else if (fit2 < _fitness && fit2 < fit1) {
+        // if fit2 was better we will use it. decrease lambda
         _sphere_lambda /= lma_damping;
         fit1_params = fit2_params;
         fitness = fit2;
@@ -573,6 +596,7 @@ void CompassCalibrator::run_sphere_fit()
     }
     //--------------------Levenberg-Marquardt-part-ends-here--------------------------------//
 
+    // store new parameters and update fitness
     if (!isnan(fitness) && fitness < _fitness) {
         _fitness = fitness;
         _params = fit1_params;
@@ -618,6 +642,7 @@ void CompassCalibrator::run_ellipsoid_fit()
 
     const float lma_damping = 10.0f;
 
+    // take backup of fitness and parameters so we can determine later if this fit has improved the calibration
     float fitness = _fitness;
     float fit1, fit2;
     param_t fit1_params, fit2_params;
@@ -661,6 +686,7 @@ void CompassCalibrator::run_ellipsoid_fit()
         return;
     }
 
+    // extract radius, offset, diagonals and offdiagonal parameters
     for (uint8_t row=0; row < COMPASS_CAL_NUM_ELLIPSOID_PARAMS; row++) {
         for (uint8_t col=0; col < COMPASS_CAL_NUM_ELLIPSOID_PARAMS; col++) {
             fit1_params.get_ellipsoid_params()[row] -= JTFI[col] * JTJ[row*COMPASS_CAL_NUM_ELLIPSOID_PARAMS+col];
@@ -668,12 +694,16 @@ void CompassCalibrator::run_ellipsoid_fit()
         }
     }
 
+    // calculate fitness of two possible sets of parameters
     fit1 = calc_mean_squared_residuals(fit1_params);
     fit2 = calc_mean_squared_residuals(fit2_params);
 
+    // decide which of the two sets of parameters is best and store in fit1_params
     if (fit1 > _fitness && fit2 > _fitness) {
+        // if neither set of parameters provided better results, increase lambda
         _ellipsoid_lambda *= lma_damping;
     } else if (fit2 < _fitness && fit2 < fit1) {
+        // if fit2 was better we will use it. decrease lambda
         _ellipsoid_lambda /= lma_damping;
         fit1_params = fit2_params;
         fitness = fit2;
@@ -682,6 +712,7 @@ void CompassCalibrator::run_ellipsoid_fit()
     }
     //--------------------Levenberg-part-ends-here--------------------------------//
 
+    // store new parameters and update fitness
     if (fitness < _fitness) {
         _fitness = fitness;
         _params = fit1_params;
