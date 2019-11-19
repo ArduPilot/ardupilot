@@ -203,8 +203,9 @@ void CompassCalibrator::update(bool &failure)
             if (is_equal(_fitness, _initial_fitness) || isnan(_fitness)) {  // if true, means that fitness is diverging instead of converging
                 set_status(COMPASS_CAL_FAILED);
                 failure = true;
+            } else {
+                set_status(COMPASS_CAL_RUNNING_STEP_TWO);
             }
-            set_status(COMPASS_CAL_RUNNING_STEP_TWO);
         } else {
             if (_fit_step == 0) {
                 calc_initial_offset();
