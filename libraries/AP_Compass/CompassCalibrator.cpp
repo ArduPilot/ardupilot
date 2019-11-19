@@ -73,10 +73,10 @@ CompassCalibrator::CompassCalibrator():
     _tolerance(COMPASS_CAL_DEFAULT_TOLERANCE),
     _sample_buffer(nullptr)
 {
-    clear();
+    stop();
 }
 
-void CompassCalibrator::clear()
+void CompassCalibrator::stop()
 {
     set_status(COMPASS_CAL_NOT_STARTED);
 }

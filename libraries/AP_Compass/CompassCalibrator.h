@@ -30,7 +30,7 @@ public:
 
     // start or stop the calibration
     void start(bool retry, float delay, uint16_t offset_max, uint8_t compass_idx);
-    void clear();
+    void stop();
 
     // update the state machine and calculate offsets, diagonals and offdiagonals
     void update(bool &failure);
