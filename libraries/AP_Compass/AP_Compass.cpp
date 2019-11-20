@@ -218,12 +218,6 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Calibration: 1
     AP_GROUPINFO("MOT2",    11, Compass, _state[1].motor_compensation, 0),
 
-    // @Param: PRIMARY
-    // @DisplayName: Choose primary compass
-    // @Description: If more than one compass is available, this selects which compass is the primary. When external compasses are connected, they will be ordered first. NOTE: If no external compass is attached, this parameter is ignored.
-    // @Values: 0:FirstCompass,1:SecondCompass,2:ThirdCompass
-    // @User: Advanced
-    AP_GROUPINFO("PRIMARY", 12, Compass, _primary, 0),
 #endif // HAL_COMPASS_MAX_SENSORS
 
 #if HAL_COMPASS_MAX_SENSORS > 2
@@ -292,7 +286,6 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Calibration: 1
     AP_GROUPINFO("DEV_ID",  15, Compass, _state[0].dev_id, 0),
 
-#if HAL_COMPASS_MAX_SENSORS > 1
     // @Param: DEV_ID2
     // @DisplayName: Compass2 device id
     // @Description: Second compass's device id.  Automatically detected, do not set manually
@@ -300,9 +293,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @User: Advanced
     // @Calibration: 1
     AP_GROUPINFO("DEV_ID2", 16, Compass, _state[1].dev_id, 0),
-#endif // HAL_COMPASS_MAX_SENSORS
 
-#if HAL_COMPASS_MAX_SENSORS > 2
     // @Param: DEV_ID3
     // @DisplayName: Compass3 device id
     // @Description: Third compass's device id.  Automatically detected, do not set manually
@@ -310,7 +301,6 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @User: Advanced
     // @Calibration: 1
     AP_GROUPINFO("DEV_ID3", 17, Compass, _state[2].dev_id, 0),
-#endif // HAL_COMPASS_MAX_SENSORS
 
 #if HAL_COMPASS_MAX_SENSORS > 1
     // @Param: USE2
@@ -520,26 +510,26 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Values: 0:Disabled,1:CheckOnly,2:CheckAndFix
     AP_GROUPINFO("AUTO_ROT", 35, Compass, _rotate_auto, HAL_COMPASS_AUTO_ROT_DEFAULT),
 
-    // @Param: EXP_DID
-    // @DisplayName: Compass device id expected
-    // @Description: The expected value of COMPASS_DEV_ID, used by arming checks. Setting this to -1 means "don't care."
+    // @Param: PRI_DEVID
+    // @DisplayName: Primary Compass device id
+    // @Description: Primary Compass device id, set automatically if 0. Reboot required after change.
     // @User: Advanced
-    AP_GROUPINFO("EXP_DID",  36, Compass, _state[0].expected_dev_id, -1),
+    AP_GROUPINFO("PRI_DEV",  36, Compass, _priority_did_stored_list[0], 0),
 
 #if HAL_COMPASS_MAX_SENSORS > 1
-    // @Param: EXP_DID2
-    // @DisplayName: Compass2 device id expected
-    // @Description: The expected value of COMPASS_DEV_ID2, used by arming checks. Setting this to -1 means "don't care."
+    // @Param: SEC_DID
+    // @DisplayName: Secondary Compass device id
+    // @Description: Secondary Compass device id, set automatically if 0. Reboot required after change.
     // @User: Advanced
-    AP_GROUPINFO("EXP_DID2", 37, Compass, _state[1].expected_dev_id, -1),
+    AP_GROUPINFO("SEC_DEV", 37, Compass, _priority_did_stored_list[1], 0),
 #endif // HAL_COMPASS_MAX_SENSORS
 
 #if HAL_COMPASS_MAX_SENSORS > 2
-    // @Param: EXP_DID3
-    // @DisplayName: Compass3 device id expected
-    // @Description: The expected value of COMPASS_DEV_ID3, used by arming checks. Setting this to -1 means "don't care."
+    // @Param: TER_DID
+    // @DisplayName: Tertiary Compass device id
+    // @Description: Tertiary Compass device id, set automatically if 0. Reboot required after change.
     // @User: Advanced
-    AP_GROUPINFO("EXP_DID3", 38, Compass, _state[2].expected_dev_id, -1),
+    AP_GROUPINFO("TER_DEV", 38, Compass, _priority_did_stored_list[2], 0),
 #endif // HAL_COMPASS_MAX_SENSORS
 
     // @Param: ENABLE
@@ -580,6 +570,44 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Bitmask: 0:CalRequireGPS
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 43, Compass, _options, 0),
+
+    // @Param: DEV_ID4
+    // @DisplayName: Compass4 device id
+    // @Description: Extra 4th compass's device id.  Automatically detected, do not set manually
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO("DEV_ID4", 44, Compass, extra_dev_id[0], 0),
+
+
+    // @Param: DEV_ID5
+    // @DisplayName: Compass5 device id
+    // @Description: Extra 5th compass's device id.  Automatically detected, do not set manually
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO("DEV_ID5", 45, Compass, extra_dev_id[1], 0),
+
+
+    // @Param: DEV_ID6
+    // @DisplayName: Compass6 device id
+    // @Description: Extra 6th compass's device id.  Automatically detected, do not set manually
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO("DEV_ID6", 46, Compass, extra_dev_id[2], 0),
+
+    // @Param: DEV_ID7
+    // @DisplayName: Compass7 device id
+    // @Description: Extra 7th compass's device id.  Automatically detected, do not set manually
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO("DEV_ID7", 47, Compass, extra_dev_id[3], 0),
+
+
+    // @Param: DEV_ID8
+    // @DisplayName: Compass8 device id
+    // @Description: Extra 8th compass's device id.  Automatically detected, do not set manually
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO("DEV_ID8", 48, Compass, extra_dev_id[4], 0),
 
     AP_GROUPEND
 };
