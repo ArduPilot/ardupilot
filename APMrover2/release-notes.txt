@@ -1,5 +1,17 @@
 Rover Release Notes:
 --------------------------------
+Rover 4.0.0-rc4 20-Nov-2019
+Changes from 4.0.0-rc3
+1) Lightware SF40c lidar driver for latest version
+2) UBlox F9 GPS automatic configuration
+3) UAVCAN RTK GPS support
+4) Bug Fixes:
+    a) Auxiliary switch support for RTL, SmartRTL fixed
+    b) Fence health reporting relaxed (was showing Fence Breach when fence was not setup)
+    c) RangeFinder type parameter clarified for Benewake lidar
+    d) Barometer PROBE_EXT parameter description improvement
+    e) Pixhawk4 board LED brightness fix
+--------------------------------
 Rover 4.0.0-rc3 08-Nov-2019
 Changes from 4.0.0-rc2
 1) IMU heater control parameters (see BRD_IMUHEAT_P/I params)
