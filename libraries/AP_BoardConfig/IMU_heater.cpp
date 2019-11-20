@@ -84,9 +84,9 @@ void AP_BoardConfig::set_imu_temp(float current)
         heater.last_log_ms = now;
     }
 #if 0
-    gcs().send_text(MAV_SEVERITY_INFO, "Heater: P=%.1f I=%.1f Out=%.1f Temp=%.1f",
-                    heater.output,
-                    avg);
+    gcs().send_text(MAV_SEVERITY_INFO, "Heater: Out=%.1f Temp=%.1f",
+                    double(heater.output),
+                    double(avg));
 #endif
 
 #if HAL_WITH_IO_MCU
