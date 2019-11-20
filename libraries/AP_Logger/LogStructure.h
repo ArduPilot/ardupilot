@@ -937,8 +937,9 @@ struct PACKED log_Esc {
     int32_t rpm;
     uint16_t voltage;
     uint16_t current;
-    int16_t temperature;
+    int16_t esc_temp;
     uint16_t current_tot;
+    int16_t motor_temp;
 };
 
 struct PACKED log_AIRSPEED {
@@ -1219,10 +1220,10 @@ struct PACKED log_Arm_Disarm {
 #define BARO_UNITS "smPOnsmO-"
 #define BARO_MULTS "F00B0C?0-"
 
-#define ESC_LABELS "TimeUS,RPM,Volt,Curr,Temp,CTot"
-#define ESC_FMT   "QeCCcH"
-#define ESC_UNITS "sqvAO-"
-#define ESC_MULTS "FBBBB-"
+#define ESC_LABELS "TimeUS,RPM,Volt,Curr,Temp,CTot,MotTemp"
+#define ESC_FMT   "QeCCcHc"
+#define ESC_UNITS "sqvAO-O"
+#define ESC_MULTS "FBBBB-B"
 
 #define GPA_LABELS "TimeUS,VDop,HAcc,VAcc,SAcc,YAcc,VV,SMS,Delta"
 #define GPA_FMT   "QCCCCfBIH"
