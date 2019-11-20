@@ -78,7 +78,8 @@ private:
         uint16_t rpm;               // rpm
         uint16_t voltage_cv;        // voltage in centi-volts
         uint16_t current_ca;        // current in centi-amps
-        uint16_t temperature;       // temperature in degrees
+        uint16_t esc_temp;          // esc temperature in degrees
+        uint16_t motor_temp;        // motor temperature in degrees
         uint16_t count;             // total number of packets sent
         uint32_t last_update_ms;    // system time telemetry was last update (used to calc total current)
         float current_tot_mah;      // total current in mAh
