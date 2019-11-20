@@ -109,8 +109,8 @@ private:
     bool set_status(compass_cal_status_t status);
 
     // returns true if sample should be added to buffer
-    bool accept_sample(const Vector3f &sample);
-    bool accept_sample(const CompassSample &sample);
+    bool accept_sample(const Vector3f &sample, uint16_t skip_index = UINT16_MAX);
+    bool accept_sample(const CompassSample &sample, uint16_t skip_index = UINT16_MAX);
 
     // returns true if fit is acceptable
     bool fit_acceptable();
