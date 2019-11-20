@@ -359,9 +359,7 @@ void NavEKF2_core::InitialiseVariablesMag()
 
     inhibitMagStates = true;
 
-    if (_ahrs->get_compass()) {
-        magSelectIndex = _ahrs->get_compass()->get_primary();
-    }
+    magSelectIndex = 0;
     lastMagOffsetsValid = false;
     magStateResetRequest = false;
     magStateInitComplete = false;
