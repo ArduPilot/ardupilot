@@ -32,8 +32,13 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include "AP_Filesystem_FATFS.h"
 #endif
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "AP_Filesystem_posix.h"
+#endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+#include "AP_Filesystem_esp32.h"
 #endif
 
 class AP_Filesystem {

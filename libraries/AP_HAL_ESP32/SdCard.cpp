@@ -12,6 +12,8 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#define HAL_ESP32_SDCARD 1
+
 #ifdef HAL_ESP32_SDCARD
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
@@ -24,6 +26,7 @@
 #include <sys/stat.h>
 #include <sys/unistd.h>
 #include <sys/types.h>
+#include "SPIDevice.h"
 
 sdmmc_card_t* card = nullptr;
 
@@ -68,24 +71,36 @@ done:
     unlink(fw_name);
 }
 
+#ifdef HAL_ESP32_SDSPI
+ESP32::SPIBusDesc bus_ = HAL_ESP32_SDSPI;
+#endif
+
 void mount_sdcard()
 {
-    sdmmc_host_t host = SDMMC_HOST_DEFAULT();
-    host.flags = SDMMC_HOST_FLAG_1BIT | SDMMC_HOST_FLAG_DDR;
-    host.max_freq_khz = SDMMC_FREQ_HIGHSPEED;
-    sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
-    slot_config.width = 1;
-    slot_config.flags = SDMMC_SLOT_FLAG_INTERNAL_PULLUP;
+	printf("Mounting sd \n");
+	//sdmmc_host_t host = SDMMC_HOST_DEFAULT();
+    //sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
+
+	sdmmc_host_t host = SDSPI_HOST_DEFAULT();
+    sdspi_slot_config_t slot_config = SDSPI_SLOT_CONFIG_DEFAULT();
+    slot_config.gpio_miso = bus_.miso;
+    slot_config.gpio_mosi = bus_.mosi;
+    slot_config.gpio_sck  = bus_.sclk;
+    slot_config.gpio_cs   = bus_.cs;
+
+    //host.flags = SDMMC_HOST_FLAG_1BIT | SDMMC_HOST_FLAG_DDR;
+    host.max_freq_khz = SDMMC_FREQ_PROBING;
+
     esp_vfs_fat_sdmmc_mount_config_t mount_config = {
         .format_if_mount_failed = false,
-        .max_files = 5,
-        .allocation_unit_size = 4 * 1024
+        .max_files = 10,
+        .allocation_unit_size = 512
     };
     esp_err_t ret = esp_vfs_fat_sdmmc_mount("/SDCARD", &host, &slot_config, &mount_config, &card);
     if (ret == ESP_OK) {
         mkdir("/SDCARD/APM", 0777);
         printf("sdcard is mounted\n");
-        update_fw();
+        //update_fw();
     } else {
         printf("sdcard is not mounted\n");
     }
@@ -101,6 +116,7 @@ void unmount_sdcard()
 
 void mount_sdcard()
 {
+	printf("No sdcard setup.\n");
 }
 
 void unmount_sdcard()
