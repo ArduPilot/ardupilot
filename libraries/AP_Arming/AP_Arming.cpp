@@ -396,9 +396,12 @@ bool AP_Arming::compass_checks(bool report)
             return false;
         }
         // check compass learning is on or offsets have been set
-        if (!_compass.learn_offsets_enabled() && !_compass.configured()) {
-            check_failed(ARMING_CHECK_COMPASS, report, "Compass not calibrated");
-            return false;
+        if (!_compass.learn_offsets_enabled()) {
+            char failure_msg[50] = {};
+            if (!_compass.configured(failure_msg, ARRAY_SIZE(failure_msg))) {
+                check_failed(ARMING_CHECK_COMPASS, report, "%s", failure_msg);
+                return false;
+            }
         }
 
         // check for unreasonable compass offsets
