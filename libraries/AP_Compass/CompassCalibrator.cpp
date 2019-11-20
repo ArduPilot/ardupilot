@@ -399,8 +399,9 @@ void CompassCalibrator::thin_samples()
         _sample_buffer[j] = temp;
     }
 
+    // remove any samples that are close together
     for (uint16_t i=0; i < _samples_collected; i++) {
-        if (!accept_sample(_sample_buffer[i])) {
+        if (!accept_sample(_sample_buffer[i], i)) {
             _sample_buffer[i] = _sample_buffer[_samples_collected-1];
             _samples_collected--;
             _samples_thinned++;
@@ -426,7 +427,7 @@ void CompassCalibrator::thin_samples()
  * The above equation was proved after solving for spherical triangular excess
  * and related equations.
  */
-bool CompassCalibrator::accept_sample(const Vector3f& sample)
+bool CompassCalibrator::accept_sample(const Vector3f& sample, uint16_t skip_index)
 {
     static const uint16_t faces = (2 * COMPASS_CAL_NUM_SAMPLES - 4);
     static const float a = (4.0f * M_PI / (3.0f * faces)) + M_PI / 3.0f;
@@ -439,17 +440,19 @@ bool CompassCalibrator::accept_sample(const Vector3f& sample)
     float min_distance = _params.radius * 2*sinf(theta/2);
 
     for (uint16_t i = 0; i<_samples_collected; i++) {
-        float distance = (sample - _sample_buffer[i].get()).length();
-        if (distance < min_distance) {
-            return false;
+        if (i != skip_index) {
+            float distance = (sample - _sample_buffer[i].get()).length();
+            if (distance < min_distance) {
+                return false;
+            }
         }
     }
     return true;
 }
 
-bool CompassCalibrator::accept_sample(const CompassSample& sample)
+bool CompassCalibrator::accept_sample(const CompassSample& sample, uint16_t skip_index)
 {
-    return accept_sample(sample.get());
+    return accept_sample(sample.get(), skip_index);
 }
 
 float CompassCalibrator::calc_residual(const Vector3f& sample, const param_t& params) const
