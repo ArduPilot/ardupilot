@@ -52,7 +52,7 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
                          uart_desc[uart_num].rx,
                          UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
             //uart_driver_install(p, 2*UART_FIFO_LEN, 0, 0, nullptr, 0);
-            uart_driver_install(p, 2*UART_FIFO_LEN, 2*UART_FIFO_LEN, 0, nullptr, 0);
+            uart_driver_install(p, 2*UART_FIFO_LEN, 0, 0, nullptr, 0);
             _readbuf.set_size(RX_BUF_SIZE);
             _writebuf.set_size(TX_BUF_SIZE);
             _initialized = true;
@@ -119,7 +119,7 @@ uint32_t UARTDriver::txspace()
 
 }
 
-int16_t UARTDriver::read()
+int16_t IRAM_ATTR UARTDriver::read()
 {
     if (!_initialized) {
         return -1;
@@ -131,7 +131,7 @@ int16_t UARTDriver::read()
     return byte;
 }
 
-void UARTDriver::_timer_tick(void)
+void IRAM_ATTR UARTDriver::_timer_tick(void)
 {
     if (!_initialized) {
         return;
@@ -140,7 +140,7 @@ void UARTDriver::_timer_tick(void)
     write_data();
 }
 
-void UARTDriver::read_data()
+void IRAM_ATTR UARTDriver::read_data()
 {
     uart_port_t p = uart_desc[uart_num].port;
     int count = 0;
@@ -152,7 +152,7 @@ void UARTDriver::read_data()
     } while (count > 0);
 }
 
-void UARTDriver::write_data()
+void IRAM_ATTR UARTDriver::write_data()
 {
     uart_port_t p = uart_desc[uart_num].port;
     int count = 0;
@@ -167,12 +167,12 @@ void UARTDriver::write_data()
     _write_mutex.give();
 }
 
-size_t UARTDriver::write(uint8_t c)
+size_t IRAM_ATTR UARTDriver::write(uint8_t c)
 {
     return write(&c,1);
 }
 
-size_t UARTDriver::write(const uint8_t *buffer, size_t size)
+size_t IRAM_ATTR UARTDriver::write(const uint8_t *buffer, size_t size)
 {
     if (!_initialized) {
         return 0;
