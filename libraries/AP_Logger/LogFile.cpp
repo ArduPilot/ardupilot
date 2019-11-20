@@ -780,7 +780,7 @@ bool AP_Logger_Backend::Write_Mode(uint8_t mode, const ModeReason reason)
 //   current is in centi-amps
 //   temperature is in centi-degrees Celsius
 //   current_tot is in centi-amp hours
-void AP_Logger::Write_ESC(uint8_t id, uint64_t time_us, int32_t rpm, uint16_t voltage, uint16_t current, int16_t temperature, uint16_t current_tot)
+void AP_Logger::Write_ESC(uint8_t id, uint64_t time_us, int32_t rpm, uint16_t voltage, uint16_t current, int16_t esc_temp, uint16_t current_tot, int16_t motor_temp)
 {
     // sanity check id
     if (id >= 8) {
@@ -792,8 +792,9 @@ void AP_Logger::Write_ESC(uint8_t id, uint64_t time_us, int32_t rpm, uint16_t vo
         rpm         : rpm,
         voltage     : voltage,
         current     : current,
-        temperature : temperature,
-        current_tot : current_tot
+        esc_temp    : esc_temp,
+        current_tot : current_tot,
+        motor_temp  : motor_temp
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
