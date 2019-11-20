@@ -129,6 +129,10 @@ void Sub::init_ardupilot()
 #if MOUNT == ENABLED
     // initialise camera mount
     camera_mount.init();
+    // This step ncessary so the servo is properly initialized
+    camera_mount.set_angle_targets(0, 0, 0);
+    // for some reason the call to set_angle_targets changes the mode to mavlink targeting!
+    camera_mount.set_mode(MAV_MOUNT_MODE_RC_TARGETING);
 #endif
 
 #ifdef USERHOOK_INIT
