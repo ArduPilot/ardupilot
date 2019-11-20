@@ -1,10 +1,44 @@
 #!/bin/bash
 
+# Example script for multi-vehicle simulation with AirSim
+# see http://ardupilot.org/dev/docs/sitl-with-airsim.html#multi-vehicle-simulation for details
+
+# Usage - From ardupilot root directory, run - libraries/SITL/examples/Airsim/follow-copter.sh $GCS_IP
+# $GCS_IP is the IP address of the system running the GCs, by default is 127.0.0.1
+
+# Kill all SITL binaries when exiting
+trap "killall -9 arducopter" SIGINT SIGTERM EXIT
+
 # assume we start the script from the root directory
 ROOTDIR=$PWD
 COPTER=$ROOTDIR/build/sitl/bin/arducopter
 
-GCS_IP=$1
+# Set GCS_IP address
+if [ -z $1 ]; then
+    GCS_IP="127.0.0.1"
+else
+    GCS_IP=$1
+fi
+
+# Check if Platform is Native Linux, WSL or Cygwin
+# Needed for correct multicast addressing
+unameOut="$(uname -s)"
+
+if [ "$(expr substr $unameOut 1 5)" == "Linux" ]; then
+    # Check for WSL
+    if grep -q Microsoft /proc/version; then
+        MCAST_IP_PORT="127.0.0.1:14550"
+
+    # Native Linux
+    else
+        MCAST_IP_PORT=""                    # Use default IP, port
+    fi
+
+elif [ "$(expr substr $unameOut 1 6)" == "CYGWIN" ]; then
+    MCAST_IP_PORT="0.0.0.0:14550"
+fi
+
+
 
 BASE_DEFAULTS="$ROOTDIR/Tools/autotest/default_params/copter.parm,$ROOTDIR/libraries/SITL/examples/Airsim/quadX.parm"
 
@@ -13,13 +47,16 @@ BASE_DEFAULTS="$ROOTDIR/Tools/autotest/default_params/copter.parm,$ROOTDIR/libra
 	./waf copter
 }
 
-# start up main rover in the current directory
-$COPTER --model airsim-copter --uartA udpclient:$GCS_IP --uartC mcast: --defaults $BASE_DEFAULTS &
+# start up main copter in the current directory
+$COPTER --model airsim-copter --uartA udpclient:$GCS_IP --uartC mcast:$MCAST_IP_PORT --defaults $BASE_DEFAULTS &
+
+# Set number of extra copters to be simulated, change this for increasing the count
+NCOPTERS="1"
+
 
 # now start another copter to follow the first, using
 # a separate directory to keep the eeprom.bin and logs separate
-# for increasing the number of copters, change the number in seq
-for i in $(seq 1); do
+for i in $(seq $NCOPTERS); do
     echo "Starting copter $i"
     mkdir -p copter$i
 
@@ -36,7 +73,7 @@ FOLL_SYSID $FOLL_SYSID
 FOLL_DIST_MAX 1000
 EOF
     pushd copter$i
-    $COPTER --model airsim-copter --uartA tcp:0 --uartC mcast: --instance $i --defaults $BASE_DEFAULTS,follow.parm &
+    $COPTER --model airsim-copter --uartA tcp:0 --uartC mcast:$MCAST_IP_PORT --instance $i --defaults $BASE_DEFAULTS,follow.parm &
     popd
 done
 wait
