@@ -88,20 +88,21 @@ void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
 
 void Scheduler::register_io_process(AP_HAL::MemberProc proc)
 {
+	_io_sem.take_blocking();
     for (uint8_t i = 0; i < _num_io_procs; i++) {
         if (_io_proc[i] == proc) {
+			_io_sem.give();
             return;
         }
     }
 
     if (_num_io_procs < ESP32_SCHEDULER_MAX_IO_PROCS) {
-        _io_sem.take_blocking();
         _io_proc[_num_io_procs] = proc;
         _num_io_procs++;
-        _io_sem.give();
     } else {
         printf("Out of IO processes\n");
     }
+	_io_sem.give();
 }
 
 void Scheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_us)
@@ -304,7 +305,7 @@ void Scheduler::_io_thread(void* arg)
         sched->delay_microseconds(1000);
     }
     while (true) {
-        sched->delay_microseconds(1000);
+        sched->delay_microseconds(100);
         // run registered IO processes
         sched->_run_io();
     }
@@ -317,7 +318,7 @@ void Scheduler::_storage_thread(void* arg)
         sched->delay_microseconds(10000);
     }
     while (true) {
-        sched->delay_microseconds(10000);
+        sched->delay_microseconds(1000);
         // process any pending storage writes
         hal.storage->_timer_tick();
         //print_profile();
@@ -375,7 +376,7 @@ void Scheduler::set_position(void* arg)
 	{
         sched->delay_microseconds(1000);
 	}
-	sched->delay_microseconds(1000);
+	sched->delay_microseconds(5000);
 
 
     AP_AHRS &ahrs = AP::ahrs();
@@ -386,16 +387,17 @@ void Scheduler::set_position(void* arg)
 
     if (ahrs.set_origin(ekf_origin)) {
 		printf("Set ekf origin");
+		gcs().send_text(MAV_SEVERITY_INFO, "Set ekf origin to 0");
 	}
 
 	while (true)
 	{
-        sched->delay_microseconds(100000);
+        sched->delay_microseconds(10000);
 	}
 }
 
 
-void Scheduler::_main_thread(void *arg)
+void IRAM_ATTR Scheduler::_main_thread(void *arg)
 {
     Scheduler *sched = (Scheduler *)arg;
     hal.uartA->begin(115200);
