@@ -340,13 +340,15 @@ void AP_ToshibaCAN::loop()
                     const uint16_t u_temp = ((uint16_t)recv_frame.data[0] << 2) | ((uint16_t)recv_frame.data[1] >> 6);
                     const uint16_t v_temp = (((uint16_t)recv_frame.data[1] & (uint16_t)0x3F) << 4) | (((uint16_t)recv_frame.data[2] & (uint16_t)0xF0) >> 4);
                     const uint16_t w_temp = (((uint16_t)recv_frame.data[2] & (uint16_t)0x0F) << 6) | (((uint16_t)recv_frame.data[3] & (uint16_t)0xFC) >> 2);
+                    const uint16_t motor_temp = (((uint16_t)recv_frame.data[3] & (uint16_t)0x03) << 8) | ((uint16_t)recv_frame.data[4]);
                     const uint16_t temp_max = MAX(u_temp, MAX(v_temp, w_temp));
 
                     // store repose in telemetry array
                     uint8_t esc_id = recv_frame.id - MOTOR_DATA2;
                     if (esc_id < TOSHIBACAN_MAX_NUM_ESCS) {
                         WITH_SEMAPHORE(_telem_sem);
-                        _telemetry[esc_id].temperature = temp_max < 20 ? 0 : temp_max / 5 - 20;
+                        _telemetry[esc_id].esc_temp = temp_max < 100 ? 0 : temp_max / 5 - 20;
+                        _telemetry[esc_id].motor_temp = motor_temp < 100 ? 0 : motor_temp / 5 - 20;
                         _esc_present_bitmask_recent |= ((uint32_t)1 << esc_id);
                     }
                 }
@@ -462,8 +464,9 @@ void AP_ToshibaCAN::update()
                               _telemetry[i].rpm * 100U,
                               _telemetry[i].voltage_cv,
                               _telemetry[i].current_ca,
-                              _telemetry[i].temperature * 100.0f,
-                              constrain_float(_telemetry[i].current_tot_mah, 0, UINT16_MAX));
+                              _telemetry[i].esc_temp * 100U,
+                              constrain_float(_telemetry[i].current_tot_mah, 0, UINT16_MAX),
+                              _telemetry[i].motor_temp * 100U);
                 _telemetry[i].new_data = false;
             }
         }
@@ -510,7 +513,7 @@ void AP_ToshibaCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
             // fill in output arrays
             for (uint8_t j = 0; j < 4; j++) {
                 uint8_t esc_id = i * 4 + j;
-                temperature[j] = _telemetry[esc_id].temperature;
+                temperature[j] = _telemetry[esc_id].esc_temp;
                 voltage[j] = _telemetry[esc_id].voltage_cv;
                 current[j] = _telemetry[esc_id].current_ca;
                 current_tot[j] = constrain_float(_telemetry[esc_id].current_tot_mah, 0, UINT16_MAX);
