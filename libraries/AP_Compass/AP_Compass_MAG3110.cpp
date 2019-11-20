@@ -116,12 +116,13 @@ bool AP_Compass_MAG3110::init(enum Rotation rotation)
     read();
     
     /* register the compass instance in the frontend */
-    _compass_instance = register_compass();
+    _dev->set_device_type(DEVTYPE_MAG3110);
+    if (!register_compass(_dev->get_bus_id(), _compass_instance)) {
+        return false;
+    }
+    set_dev_id(_compass_instance, _dev->get_bus_id());
 
     set_rotation(_compass_instance, rotation);
-
-    _dev->set_device_type(DEVTYPE_MAG3110);
-    set_dev_id(_compass_instance, _dev->get_bus_id());
 
     set_external(_compass_instance, true);
 
