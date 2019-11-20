@@ -253,6 +253,11 @@ bool AP_Arming_Copter::motor_checks(bool display_failure)
         return false;
     }
 
+    // further checks enabled with parameters
+    if (!check_enabled(ARMING_CHECK_PARAMETERS)) {
+        return true;
+    }
+
     // if this is a multicopter using ToshibaCAN ESCs ensure MOT_PMW_MIN = 1000, MOT_PWM_MAX = 2000
 #if HAL_WITH_UAVCAN && (FRAME_CONFIG != HELI_FRAME)
     bool tcan_active = false;
@@ -265,6 +270,7 @@ bool AP_Arming_Copter::motor_checks(bool display_failure)
         }
     }
     if (tcan_active) {
+        // check motor range parameters
         if (copter.motors->get_pwm_output_min() != 1000) {
             check_failed(display_failure, "TCAN ESCs require MOT_PWM_MIN=1000");
             return false;
