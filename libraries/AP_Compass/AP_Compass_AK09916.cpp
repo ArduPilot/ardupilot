@@ -222,7 +222,11 @@ bool AP_Compass_AK09916::init()
     _initialized = true;
 
     /* register the compass instance in the frontend */
-    _compass_instance = register_compass();
+    _bus->set_device_type(DEVTYPE_AK09916);
+    if (!register_compass(_bus->get_bus_id(), _compass_instance)) {
+        goto fail;
+    }
+    set_dev_id(_compass_instance, _bus->get_bus_id());
 
     if (_force_external) {
         set_external(_compass_instance, true);
@@ -230,9 +234,6 @@ bool AP_Compass_AK09916::init()
 
     set_rotation(_compass_instance, _rotation);
     
-    _bus->set_device_type(DEVTYPE_AK09916);
-    set_dev_id(_compass_instance, _bus->get_bus_id());
-
     bus_sem->give();
 
     _bus->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&AP_Compass_AK09916::_update, void));

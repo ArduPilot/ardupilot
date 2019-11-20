@@ -104,12 +104,15 @@ bool AP_Compass_LSM9DS1::init()
         goto errout;
     }
 
-    _compass_instance = register_compass();
+    //register compass instance
+    _dev->set_device_type(DEVTYPE_LSM9DS1);
+    if (!register_compass(_dev->get_bus_id(), _compass_instance)) {
+        goto errout;
+    }
+    set_dev_id(_compass_instance, _dev->get_bus_id());
 
     set_rotation(_compass_instance, _rotation);
 
-    _dev->set_device_type(DEVTYPE_LSM9DS1);
-    set_dev_id(_compass_instance, _dev->get_bus_id());
 
     _dev->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&AP_Compass_LSM9DS1::_update, void));
 

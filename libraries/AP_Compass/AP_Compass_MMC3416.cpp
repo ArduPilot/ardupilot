@@ -90,7 +90,12 @@ bool AP_Compass_MMC3416::init()
     dev->get_semaphore()->give();
 
     /* register the compass instance in the frontend */
-    compass_instance = register_compass();
+    dev->set_device_type(DEVTYPE_MMC3416);
+    if (!register_compass(dev->get_bus_id(), compass_instance)) {
+        return false;
+    }
+    
+    set_dev_id(compass_instance, dev->get_bus_id());
 
     printf("Found a MMC3416 on 0x%x as compass %u\n", dev->get_bus_id(), compass_instance);
     
@@ -100,9 +105,6 @@ bool AP_Compass_MMC3416::init()
         set_external(compass_instance, true);
     }
     
-    dev->set_device_type(DEVTYPE_MMC3416);
-    set_dev_id(compass_instance, dev->get_bus_id());
-
     dev->set_retries(1);
     
     // call timer() at 100Hz
