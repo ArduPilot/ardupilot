@@ -65,9 +65,9 @@ class Board:
 #                'AP_Scripting/lua/src',
 #                ]
 
-            env.CXXFLAGS += [
-                '-DHAL_HAVE_AP_ROMFS_EMBEDDED_H'
-                ]
+#            env.CXXFLAGS += [
+#                '-DHAL_HAVE_AP_ROMFS_EMBEDDED_H'
+#                ]
         else:
             cfg.options.disable_scripting = True;
 
