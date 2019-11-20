@@ -68,5 +68,19 @@ public:
 	}
 #endif // ENABLE_HEAP
 
+	/*
+	   get safety switch state
+	   */
+	   /*
+	Util::safety_state safety_switch_state(void) override
+	{
+#if HAL_USE_PWM == TRUE
+		return ((RCOutput *)hal.rcout)->_safety_switch_state();
+#else
+		return SAFETY_NONE;
+#endif
+	}
+	*/
+
 
 };
