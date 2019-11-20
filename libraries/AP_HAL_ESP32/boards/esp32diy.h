@@ -49,21 +49,36 @@
 #define HAL_ESP32_WIFI 1
 
 //TODO RCOUT config
-#define HAL_ESP32_RCOUT {GPIO_NUM_22, GPIO_NUM_21, GPIO_NUM_19, GPIO_NUM_18}
+#define HAL_ESP32_RCOUT {GPIO_NUM_26, GPIO_NUM_27, GPIO_NUM_14, GPIO_NUM_13}
 
 #define HAL_ESP32_SPI_BUSES {}
 
 #define HAL_ESP32_SPI_DEVICES {}
 
 #define HAL_ESP32_I2C_BUSES \
-	{.port=I2C_NUM_0, .sda=GPIO_NUM_14, .scl=GPIO_NUM_27, .speed=400*KHZ, .internal=true},\
-	{.port=I2C_NUM_1, .sda=GPIO_NUM_25, .scl=GPIO_NUM_26, .speed=400*KHZ, .internal=true}
+	{.port=I2C_NUM_0, .sda=GPIO_NUM_5, .scl=GPIO_NUM_18, .speed=400*KHZ, .internal=true},\
+	{.port=I2C_NUM_1, .sda=GPIO_NUM_22, .scl=GPIO_NUM_23, .speed=400*KHZ, .internal=true}
 
 
 #define HAL_ESP32_UART_DEVICES \
-    {.port=UART_NUM_0, .rx=GPIO_NUM_34, .tx=GPIO_NUM_1 },\
+    {.port=UART_NUM_0, .rx=GPIO_NUM_36, .tx=GPIO_NUM_32 },\
 	{.port=UART_NUM_1, .rx=GPIO_NUM_39, .tx=GPIO_NUM_33 },\
-	{.port=UART_NUM_2, .rx=GPIO_NUM_36, .tx=GPIO_NUM_32 }
+	{.port=UART_NUM_2, .rx=GPIO_NUM_34, .tx=GPIO_NUM_25 }
+
+//#define HAVE_FILESYSTEM_SUPPORT 1
+#define HAL_ESP32_SDCARD 1
+//#define HAL_OS_POSIX_IO 1
+#define HAL_BOARD_LOG_DIRECTORY "/SDCARD/APM/LOGS"
+#define HAL_BOARD_TERRAIN_DIRECTORY "/SDCARD/APM/TERRAIN"
+#define HAL_BOARD_STORAGE_DIRECTORY "/SDCARD/APM/STORAGE"
+#define HAL_OS_POSIX_IO 1
+
+
+#define HAL_ESP32_SDSPI \
+   {.host=VSPI_HOST, .dma_ch=1, .mosi=GPIO_NUM_19, .miso=GPIO_NUM_35, .sclk=GPIO_NUM_12, .cs=GPIO_NUM_21}
+
+
+
 
 
 
