@@ -10,17 +10,29 @@ AP_Compass_SITL::AP_Compass_SITL()
 {
     if (_sitl != nullptr) {
         _compass._setup_earth_field();
-        for (uint8_t i=0; i<SITL_NUM_COMPASSES; i++) {
-            // default offsets to correct value
+        for (uint8_t i=0; i<MAX_CONNECTED_MAGS; i++) {
+            uint32_t dev_id = _sitl->mag_devid[i];
+            if (dev_id == 0) {
+                continue;
+            }
+            uint8_t instance;
+            if (!register_compass(dev_id, instance)) {
+                continue;
+            } else if (_num_compass<MAX_SITL_COMPASSES) {
+                _compass_instance[_num_compass] = instance;
+                set_dev_id(_compass_instance[_num_compass], dev_id);
+
+                // save so the compass always comes up configured in SITL
+                save_dev_id(_compass_instance[_num_compass]);
+                _num_compass++;
+            }
+        }
+
+        // Scroll through the registered compasses, and set the offsets
+        for (uint8_t i=0; i<_num_compass; i++) {
             if (_compass.get_offsets(i).is_zero()) {
                 _compass.set_offsets(i, _sitl->mag_ofs);
             }
-            
-            _compass_instance[i] = register_compass();
-            set_dev_id(_compass_instance[i], AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_SITL, i, 0, DEVTYPE_SITL));
-
-            // save so the compass always comes up configured in SITL
-            save_dev_id(_compass_instance[i]);
         }
         
         // make first compass external
@@ -109,7 +121,7 @@ void AP_Compass_SITL::_timer()
     new_mag_data = _eliptical_corr * new_mag_data;
     new_mag_data -= _sitl->mag_ofs.get();
 
-    for (uint8_t i=0; i<SITL_NUM_COMPASSES; i++) {
+    for (uint8_t i=0; i<_num_compass; i++) {
         Vector3f f = new_mag_data;
         if (i == 0) {
             // rotate the first compass, allowing for testing of external compass rotation
@@ -126,7 +138,7 @@ void AP_Compass_SITL::_timer()
 
 void AP_Compass_SITL::read()
 {
-    for (uint8_t i=0; i<SITL_NUM_COMPASSES; i++) {
+    for (uint8_t i=0; i<_num_compass; i++) {
         drain_accumulated_samples(_compass_instance[i], nullptr);
     }
 }
