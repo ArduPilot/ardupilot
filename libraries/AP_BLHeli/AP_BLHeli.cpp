@@ -1381,7 +1381,8 @@ void AP_BLHeli::read_telemetry_packet(void)
                       td.voltage,
                       td.current,
                       td.temperature * 100U,
-                      td.consumption);
+                      td.consumption,
+                      0);
     }
     if (debug_level >= 2) {
         hal.console->printf("ESC[%u] T=%u V=%u C=%u con=%u RPM=%u t=%u\n",
