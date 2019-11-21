@@ -133,7 +133,6 @@ private:
     // calc the fitness of the parameters (offsets, diagonals, off diagonals) vs all the samples collected
     // returns 1.0e30f if the sample buffer is empty
     float calc_mean_squared_residuals(const param_t& params) const;
-    float calc_mean_squared_residuals() const;
 
     // calculate initial offsets by simply taking the average values of the samples
     void calc_initial_offset();
