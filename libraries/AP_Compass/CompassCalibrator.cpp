@@ -461,11 +461,6 @@ float CompassCalibrator::calc_residual(const Vector3f& sample, const param_t& pa
     return params.radius - (softiron*(sample+params.offset)).length();
 }
 
-float CompassCalibrator::calc_mean_squared_residuals() const
-{
-    return calc_mean_squared_residuals(_params);
-}
-
 // calc the fitness given a set of parameters (offsets, diagonals, off diagonals)
 float CompassCalibrator::calc_mean_squared_residuals(const param_t& params) const
 {
