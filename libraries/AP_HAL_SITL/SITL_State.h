@@ -41,6 +41,7 @@
 #include <SITL/SIM_Frsky_D.h>
 // #include <SITL/SIM_Frsky_SPort.h>
 // #include <SITL/SIM_Frsky_SPortPassthrough.h>
+#include <SITL/SIM_PS_RPLidarA2.h>
 
 #include <AP_HAL/utility/Socket.h>
 
@@ -273,6 +274,8 @@ private:
     SITL::Frsky_D *frsky_d;
     // SITL::Frsky_SPort *frsky_sport;
     // SITL::Frsky_SPortPassthrough *frsky_sportpassthrough;
+    // simulated NMEA rangefinder:
+    SITL::PS_RPLidarA2 *rplidara2;
 
     // output socket for flightgear viewing
     SocketAPM fg_socket{true};
