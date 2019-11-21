@@ -153,7 +153,7 @@ void CompassCalibrator::update_completion_mask(const Vector3f& v)
     _completion_mask[section / 8] |= 1 << (section % 8);
 }
 
-// reset and updated the completion mask using all samples in the sample buffer
+// reset and update the completion mask using all samples in the sample buffer
 void CompassCalibrator::update_completion_mask()
 {
     memset(_completion_mask, 0, sizeof(_completion_mask));
