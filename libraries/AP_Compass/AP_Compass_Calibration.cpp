@@ -2,6 +2,8 @@
 #include <AP_Notify/AP_Notify.h>
 #include <AP_GPS/AP_GPS.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_GPS/AP_GPS.h>
 
 #include "AP_Compass.h"
 
@@ -369,5 +371,120 @@ MAV_RESULT Compass::handle_mag_cal_command(const mavlink_command_long_t &packet)
     
     return result;
 }
+
+/*
+  get mag field with the effects of offsets, diagonals and
+  off-diagonals removed
+ */
+bool Compass::get_uncorrected_field(uint8_t instance, Vector3f &field)
+{
+    // form eliptical correction matrix and invert it. This is
+    // needed to remove the effects of the eliptical correction
+    // when calculating new offsets
+    const Vector3f &diagonals = get_diagonals(instance);
+    const Vector3f &offdiagonals = get_offdiagonals(instance);
+    Matrix3f mat {
+        diagonals.x, offdiagonals.x, offdiagonals.y,
+        offdiagonals.x,    diagonals.y, offdiagonals.z,
+        offdiagonals.y, offdiagonals.z,    diagonals.z
+    };
+    if (!mat.invert()) {
+        return false;
+    }
+
+    // get corrected field
+    field = get_field(instance);
+
+    // remove impact of diagonals and off-diagonals
+    field = mat * field;
+
+    // remove impact of offsets
+    field -= get_offsets(instance);
+
+    return true;
+}
+
+/*
+  fast compass calibration given vehicle position and yaw. This
+  results in zero diagonal and off-diagonal elements, so is only
+  suitable for vehicles where the field is close to spherical. It is
+  useful for large vehicles where moving the vehicle to calibrate it
+  is difficult.
+
+  The offsets of the selected compasses are set to values to bring
+  them into consistency with the WMM tables at the given latitude and
+  longitude. If compass_mask is zero then all enabled compasses are
+  calibrated.
+
+  This assumes that the compass is correctly scaled in milliGauss
+*/
+MAV_RESULT Compass::mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
+                                      float lat_deg, float lon_deg)
+{
+    if (is_zero(lat_deg) && is_zero(lon_deg)) {
+        Location loc;
+        // get AHRS position. If unavailable then try GPS location
+        if (!AP::ahrs().get_position(loc)) {
+            if (AP::gps().status() < AP_GPS::GPS_OK_FIX_3D) {
+                gcs().send_text(MAV_SEVERITY_ERROR, "Mag: no position available");
+                return MAV_RESULT_FAILED;
+            }
+            loc = AP::gps().location();
+        }
+        lat_deg = loc.lat * 1.0e-7;
+        lon_deg = loc.lng * 1.0e-7;
+    }
+
+    // get the magnetic field intensity and orientation
+    float intensity;
+    float declination;
+    float inclination;
+    if (!AP_Declination::get_mag_field_ef(lat_deg, lon_deg, intensity, declination, inclination)) {
+        gcs().send_text(MAV_SEVERITY_ERROR, "Mag: WMM table error");
+        return MAV_RESULT_FAILED;
+    }
+
+    // create a field vector and rotate to the required orientation
+    Vector3f field(1e3f * intensity, 0.0f, 0.0f);
+    Matrix3f R;
+    R.from_euler(0.0f, -ToRad(inclination), ToRad(declination));
+    field = R * field;
+
+    Matrix3f dcm;
+    dcm.from_euler(AP::ahrs().roll, AP::ahrs().pitch, radians(yaw_deg));
+
+    // Rotate into body frame using provided yaw
+    field = dcm.transposed() * field;
+
+    for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+        if (compass_mask != 0 && ((1U<<i) & compass_mask) == 0) {
+            // skip this compass
+            continue;
+        }
+        if (!use_for_yaw(i)) {
+            continue;
+        }
+        if (!healthy(i)) {
+            gcs().send_text(MAV_SEVERITY_ERROR, "Mag[%u]: unhealthy\n", i);
+            return MAV_RESULT_FAILED;
+        }
+
+        Vector3f measurement;
+        if (!get_uncorrected_field(i, measurement)) {
+            gcs().send_text(MAV_SEVERITY_ERROR, "Mag[%u]: bad uncorrected field", i);
+            return MAV_RESULT_FAILED;
+        }
+
+        Vector3f offsets = field - measurement;
+        set_and_save_offsets(i, offsets);
+        Vector3f one{1,1,1};
+        set_and_save_diagonals(i, one);
+        Vector3f zero{0,0,0};
+        set_and_save_offdiagonals(i, zero);
+    }
+
+    return MAV_RESULT_ACCEPTED;
+}
+
 
 #endif // COMPASS_CAL_ENABLED
