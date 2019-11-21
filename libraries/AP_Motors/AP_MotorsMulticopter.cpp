@@ -751,7 +751,7 @@ void AP_MotorsMulticopter::set_throttle_passthrough_for_esc_calibration(float th
 // output a thrust to all motors that match a given motor mask. This
 // is used to control tiltrotor motors in forward flight. Thrust is in
 // the range 0 to 1
-void AP_MotorsMulticopter::output_motor_mask(float thrust, uint8_t mask, float rudder_dt)
+void AP_MotorsMulticopter::output_motor_mask(float thrust, uint8_t mask, float rudder_dt, bool use_boost)
 {
     const int16_t pwm_min = get_pwm_output_min();
     const int16_t pwm_range = get_pwm_output_max() - pwm_min;
@@ -772,6 +772,14 @@ void AP_MotorsMulticopter::output_motor_mask(float thrust, uint8_t mask, float r
                 rc_write(i, pwm_min);
             }
         }
+    }
+
+    // Output to boost motor
+    if (use_boost) {
+        // boost throttle is in the range 0 to 1000
+        SRV_Channels::set_output_scaled(SRV_Channel::k_boost_throttle, thrust * 1000);
+    } else {
+        SRV_Channels::set_output_scaled(SRV_Channel::k_boost_throttle, 0);
     }
 }
 

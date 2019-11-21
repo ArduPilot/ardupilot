@@ -338,10 +338,10 @@ void AP_MotorsTri::thrust_compensation(void)
 /*
   override tricopter tail servo output in output_motor_mask
  */
-void AP_MotorsTri::output_motor_mask(float thrust, uint8_t mask, float rudder_dt)
+void AP_MotorsTri::output_motor_mask(float thrust, uint8_t mask, float rudder_dt, bool use_boost)
 {
     // normal multicopter output
-    AP_MotorsMulticopter::output_motor_mask(thrust, mask, rudder_dt);
+    AP_MotorsMulticopter::output_motor_mask(thrust, mask, rudder_dt, use_boost);
 
     // and override yaw servo
     rc_write_angle(AP_MOTORS_CH_TRI_YAW, 0);
