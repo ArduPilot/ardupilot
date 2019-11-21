@@ -80,8 +80,11 @@ void QuadPlane::tiltrotor_continuous_update(void)
         }
         if (!motor_test.running) {
             // the motors are all the way forward, start using them for fwd thrust
-            uint8_t mask = is_zero(tilt.current_throttle)?0:(uint8_t)tilt.tilt_mask.get();
-            motors->output_motor_mask(tilt.current_throttle, mask, plane.rudder_dt);
+            const uint8_t mask = is_zero(tilt.current_throttle)?0:(uint8_t)tilt.tilt_mask.get();
+            const bool use_boost = (options & OPTION_BOOST_FORWARD_FLIGHT) != 0;
+            motors->output_motor_mask(tilt.current_throttle, mask, plane.rudder_dt, use_boost);
+            // prevent motor shutdown
+            tilt.motors_active = true;
         }
         return;
     }
@@ -163,9 +166,10 @@ void QuadPlane::tiltrotor_binary_update(void)
 
         float new_throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)*0.01f;
         if (tilt.current_tilt >= 1) {
-            uint8_t mask = is_zero(new_throttle)?0:(uint8_t)tilt.tilt_mask.get();
+            const uint8_t mask = is_zero(new_throttle)?0:(uint8_t)tilt.tilt_mask.get();
             // the motors are all the way forward, start using them for fwd thrust
-            motors->output_motor_mask(new_throttle, mask, plane.rudder_dt);
+            const bool use_boost = (options & OPTION_BOOST_FORWARD_FLIGHT) != 0;
+            motors->output_motor_mask(new_throttle, mask, plane.rudder_dt, use_boost);
         }
     } else {
         tiltrotor_binary_slew(false);

@@ -531,6 +531,7 @@ private:
         OPTION_MISSION_LAND_FW_APPROACH=(1<<4),
         OPTION_FS_QRTL=(1<<5),
         OPTION_IDLE_GOV_MANUAL=(1<<6),
+        OPTION_BOOST_FORWARD_FLIGHT=(1<<7),
     };
 
     AP_Float takeoff_failure_scalar;

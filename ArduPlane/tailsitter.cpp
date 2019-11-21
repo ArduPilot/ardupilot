@@ -96,7 +96,8 @@ void QuadPlane::tailsitter_output(void)
             }
         }
         // set AP_MotorsMatrix throttles for forward flight
-        motors->output_motor_mask(throttle * 0.01f, mask, plane.rudder_dt);
+        const bool use_boost = (options & OPTION_BOOST_FORWARD_FLIGHT) != 0;
+        motors->output_motor_mask(throttle * 0.01f, mask, plane.rudder_dt, use_boost);
         return;
     }
 
