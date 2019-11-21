@@ -325,6 +325,12 @@ public:
 
     uint8_t get_filter_range() const { return uint8_t(_filter_range.get()); }
 
+    /*
+      fast compass calibration given vehicle position and yaw
+     */
+    MAV_RESULT mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
+                                 float lat_deg, float lon_deg);
+
 private:
     static Compass *_singleton;
     /// Register a new compas driver, allocating an instance number
@@ -350,6 +356,12 @@ private:
     // see if we already have probed a i2c driver by bus number and address
     bool _have_i2c_driver(uint8_t bus_num, uint8_t address) const;
 
+    /*
+      get mag field with the effects of offsets, diagonals and
+      off-diagonals removed
+    */
+    bool get_uncorrected_field(uint8_t instance, Vector3f &field);
+    
 #if COMPASS_CAL_ENABLED
     //keep track of which calibrators have been saved
     bool _cal_saved[COMPASS_MAX_INSTANCES];
