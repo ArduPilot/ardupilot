@@ -414,6 +414,8 @@ protected:
 
     void handle_optical_flow(const mavlink_message_t &msg);
 
+    MAV_RESULT handle_fixed_mag_cal_yaw(const mavlink_command_long_t &packet);
+
     // vehicle-overridable message send function
     virtual bool try_send_message(enum ap_message id);
     virtual void send_global_position_int();
