@@ -5,7 +5,6 @@
 #define COMPASS_CAL_NUM_SPHERE_PARAMS       4
 #define COMPASS_CAL_NUM_ELLIPSOID_PARAMS    9
 #define COMPASS_CAL_NUM_SAMPLES             300     // number of samples required before fitting begins
-#define COMPASS_CAL_DEFAULT_TOLERANCE       5.0f    // default RMS tolerance
 
 #define COMPASS_MIN_SCALE_FACTOR 0.85
 #define COMPASS_MAX_SCALE_FACTOR 1.3
@@ -170,7 +169,7 @@ private:
     // values provided by caller
     float _delay_start_sec;                 // seconds to delay start of calibration (provided by caller)
     bool _retry;                            // true if calibration should be restarted on failured (provided by caller)
-    float _tolerance;                       // worst acceptable tolerance (aka fitness).  see set_tolerance()
+    float _tolerance = 5.0;                 // worst acceptable RMS tolerance (aka fitness).  see set_tolerance()
     uint16_t _offset_max;                   // maximum acceptable offsets (provided by caller)
 
     // behavioral state
