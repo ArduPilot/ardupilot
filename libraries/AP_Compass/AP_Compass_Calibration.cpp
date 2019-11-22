@@ -31,7 +31,7 @@ void Compass::cal_update()
 
         if (_calibrator[i].running()) {
             running = true;
-        } else if (_cal_autosave && !_cal_saved[i] && _calibrator[i].get_status() == COMPASS_CAL_SUCCESS) {
+        } else if (_cal_autosave && !_cal_saved[i] && _calibrator[i].get_status() == CompassCalibrator::Status::SUCCESS) {
             _accept_calibration(i);
         }
     }
@@ -119,7 +119,7 @@ void Compass::_cancel_calibration(uint8_t i)
 {
     AP_Notify::events.initiated_compass_cal = 0;
 
-    if (_calibrator[i].running() || _calibrator[i].get_status() == COMPASS_CAL_WAITING_TO_START) {
+    if (_calibrator[i].running() || _calibrator[i].get_status() == CompassCalibrator::Status::WAITING_TO_START) {
         AP_Notify::events.compass_cal_canceled = 1;
     }
     _cal_saved[i] = false;
@@ -143,11 +143,11 @@ void Compass::cancel_calibration_all()
 bool Compass::_accept_calibration(uint8_t i)
 {
     CompassCalibrator& cal = _calibrator[i];
-    uint8_t cal_status = cal.get_status();
+    const CompassCalibrator::Status cal_status = cal.get_status();
 
-    if (_cal_saved[i] || cal_status == COMPASS_CAL_NOT_STARTED) {
+    if (_cal_saved[i] || cal_status == CompassCalibrator::Status::NOT_STARTED) {
         return true;
-    } else if (cal_status == COMPASS_CAL_SUCCESS) {
+    } else if (cal_status == CompassCalibrator::Status::SUCCESS) {
         _cal_complete_requires_reboot = true;
         _cal_saved[i] = true;
 
@@ -202,11 +202,11 @@ bool Compass::send_mag_cal_progress(const GCS_MAVLINK& link)
         }
 
         auto& calibrator = _calibrator[compass_id];
-        uint8_t cal_status = calibrator.get_status();
+        const CompassCalibrator::Status cal_status = calibrator.get_status();
 
-        if (cal_status == COMPASS_CAL_WAITING_TO_START  ||
-            cal_status == COMPASS_CAL_RUNNING_STEP_ONE ||
-            cal_status == COMPASS_CAL_RUNNING_STEP_TWO) {
+        if (cal_status == CompassCalibrator::Status::WAITING_TO_START  ||
+            cal_status == CompassCalibrator::Status::RUNNING_STEP_ONE ||
+            cal_status == CompassCalibrator::Status::RUNNING_STEP_TWO) {
             uint8_t completion_pct = calibrator.get_completion_percent();
             const CompassCalibrator::completion_mask_t& completion_mask = calibrator.get_completion_mask();
             const Vector3f direction;
@@ -215,7 +215,7 @@ bool Compass::send_mag_cal_progress(const GCS_MAVLINK& link)
             mavlink_msg_mag_cal_progress_send(
                 link.get_chan(),
                 compass_id, cal_mask,
-                cal_status, attempt, completion_pct, completion_mask,
+                (uint8_t)cal_status, attempt, completion_pct, completion_mask,
                 direction.x, direction.y, direction.z
             );
         }
@@ -237,10 +237,10 @@ bool Compass::send_mag_cal_report(const GCS_MAVLINK& link)
             return true;
         }
 
-        uint8_t cal_status = _calibrator[compass_id].get_status();
-        if (cal_status == COMPASS_CAL_SUCCESS ||
-            cal_status == COMPASS_CAL_FAILED ||
-            cal_status == COMPASS_CAL_BAD_ORIENTATION) {
+        const CompassCalibrator::Status cal_status = _calibrator[compass_id].get_status();
+        if (cal_status == CompassCalibrator::Status::SUCCESS ||
+            cal_status == CompassCalibrator::Status::FAILED ||
+            cal_status == CompassCalibrator::Status::BAD_ORIENTATION) {
             float fitness = _calibrator[compass_id].get_fitness();
             Vector3f ofs, diag, offdiag;
             float scale_factor;
@@ -250,7 +250,7 @@ bool Compass::send_mag_cal_report(const GCS_MAVLINK& link)
             mavlink_msg_mag_cal_report_send(
                 link.get_chan(),
                 compass_id, cal_mask,
-                cal_status, autosaved,
+                (uint8_t)cal_status, autosaved,
                 fitness,
                 ofs.x, ofs.y, ofs.z,
                 diag.x, diag.y, diag.z,
@@ -269,10 +269,10 @@ bool Compass::is_calibrating() const
 {
     for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
         switch(_calibrator[i].get_status()) {
-            case COMPASS_CAL_NOT_STARTED:
-            case COMPASS_CAL_SUCCESS:
-            case COMPASS_CAL_FAILED:
-            case COMPASS_CAL_BAD_ORIENTATION:
+            case CompassCalibrator::Status::NOT_STARTED:
+            case CompassCalibrator::Status::SUCCESS:
+            case CompassCalibrator::Status::FAILED:
+            case CompassCalibrator::Status::BAD_ORIENTATION:
                 break;
             default:
                 return true;
@@ -285,7 +285,7 @@ uint8_t Compass::_get_cal_mask() const
 {
     uint8_t cal_mask = 0;
     for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
-        if (_calibrator[i].get_status() != COMPASS_CAL_NOT_STARTED) {
+        if (_calibrator[i].get_status() != CompassCalibrator::Status::NOT_STARTED) {
             cal_mask |= 1 << i;
         }
     }
