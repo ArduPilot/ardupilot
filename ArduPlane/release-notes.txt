@@ -1,3 +1,40 @@
+Release 4.0.1, 22nd November 2019
+---------------------------------
+
+This is a minor release with a few bug fixes and enhancements. Changes
+are:
+
+ - Added Q_ASSIST_ALT parameter which offers a way for VTOL assistance
+   at low altitudes
+
+ - fixed channels 5 and 6 on the MatekF765-Wing
+
+ - fixed a bug with sending data on a full UART in mavlink parameter
+   download
+
+ - fixed use of UAVCAN primary GPS with UART secondary GPS
+
+ - fixed failover between rangefinders of same orientation
+
+ - added RC option for TAKEOFF mode
+
+ - fixed logging of current on secondary battery monitors
+
+ - fixed register checking on DPS280 for mRoControlZeroF7
+
+ - added clock panel to OSD
+
+ - fixed B/E led brightness on Pixhawk4
+
+ - support RTCM injection to UAVCAN GPS for RTK support
+
+ - fixed an RC failsafe bug that could cause the geofence to disable
+
+ - fixed a bug in the SDP33 airspeed driver
+
+Happy flying!
+
+
 Release 4.0.1beta1, 17th November 2019
 --------------------------------------
 
