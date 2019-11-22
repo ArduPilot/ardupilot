@@ -7,18 +7,6 @@
 #define COMPASS_CAL_NUM_SAMPLES             300     // number of samples required before fitting begins
 #define COMPASS_CAL_DEFAULT_TOLERANCE       5.0f    // default RMS tolerance
 
-// compass calibration states
-enum compass_cal_status_t {
-    COMPASS_CAL_NOT_STARTED = 0,
-    COMPASS_CAL_WAITING_TO_START = 1,
-    COMPASS_CAL_RUNNING_STEP_ONE = 2,
-    COMPASS_CAL_RUNNING_STEP_TWO = 3,
-    COMPASS_CAL_SUCCESS = 4,
-    COMPASS_CAL_FAILED = 5,
-    COMPASS_CAL_BAD_ORIENTATION = 6,
-    COMPASS_CAL_BAD_RADIUS = 7,
-};
-
 #define COMPASS_MIN_SCALE_FACTOR 0.85
 #define COMPASS_MAX_SCALE_FACTOR 1.3
 
@@ -45,8 +33,20 @@ public:
     // running is true if actively calculating offsets, diagonals or offdiagonals
     bool running() const;
 
+    // compass calibration states
+    enum class Status {
+        NOT_STARTED = 0,
+        WAITING_TO_START = 1,
+        RUNNING_STEP_ONE = 2,
+        RUNNING_STEP_TWO = 3,
+        SUCCESS = 4,
+        FAILED = 5,
+        BAD_ORIENTATION = 6,
+        BAD_RADIUS = 7,
+    };
+
     // get status of calibrations progress
-    enum compass_cal_status_t get_status() const { return _status; }
+    Status get_status() const { return _status; }
 
     // get calibration outputs (offsets, diagonals, offdiagonals) and fitness
     void get_calibration(Vector3f &offsets, Vector3f &diagonals, Vector3f &offdiagonals, float &scale_factor);
@@ -111,7 +111,7 @@ private:
     };
 
     // set status including any required initialisation
-    bool set_status(compass_cal_status_t status);
+    bool set_status(Status status);
 
     // returns true if sample should be added to buffer
     bool accept_sample(const Vector3f &sample, uint16_t skip_index = UINT16_MAX);
@@ -164,7 +164,7 @@ private:
     bool fix_radius();
 
     uint8_t _compass_idx;                   // index of the compass providing data
-    enum compass_cal_status_t _status;      // current state of calibrator
+    Status _status;                         // current state of calibrator
     uint32_t _last_sample_ms;               // system time of last sample received for timeout
 
     // values provided by caller
