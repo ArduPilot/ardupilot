@@ -397,6 +397,9 @@ public:
     uint16_t get_current_nav_index() const { 
         return _nav_cmd.index==AP_MISSION_CMD_INDEX_NONE?0:_nav_cmd.index; }
 
+    /// get_current_nav_id - return the id of the current nav command
+    uint16_t get_current_nav_id() const { return _nav_cmd.id; }
+
     /// get_prev_nav_cmd_id - returns the previous "navigation" command id
     ///     if there was no previous nav command it returns AP_MISSION_CMD_ID_NONE
     ///     we do not return the entire command to save on RAM
@@ -424,6 +427,9 @@ public:
 
     /// get_current_do_cmd - returns active "do" command
     const Mission_Command& get_current_do_cmd() const { return _do_cmd; }
+
+    /// get_current_do_cmd_id - returns id of the active "do" command
+    uint16_t get_current_do_cmd_id() const { return _do_cmd.id; }
 
     // set_current_cmd - jumps to command specified by index
     bool set_current_cmd(uint16_t index);
