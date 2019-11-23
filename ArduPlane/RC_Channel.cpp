@@ -61,6 +61,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
     case AUX_FUNC::ARMDISARM:
     case AUX_FUNC::AUTO:
     case AUX_FUNC::CIRCLE:
+    case AUX_FUNC::LOITER:
     case AUX_FUNC::GUIDED:
     case AUX_FUNC::INVERTED:
     case AUX_FUNC::MANUAL:
