@@ -106,6 +106,10 @@ void RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const aux_swi
     case AUX_FUNC::CIRCLE:
         do_aux_function_change_mode(Mode::Number::CIRCLE, ch_flag);
         break;
+            
+    case AUX_FUNC::LOITER:
+        do_aux_function_change_mode(Mode::Number::LOITER, ch_flag);
+        break;        
 
     case AUX_FUNC::GUIDED:
         do_aux_function_change_mode(Mode::Number::GUIDED, ch_flag);
