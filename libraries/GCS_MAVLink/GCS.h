@@ -289,7 +289,8 @@ protected:
     void set_ekf_origin(const Location& loc);
 
     virtual MAV_MODE base_mode() const = 0;
-    virtual MAV_STATE system_status() const = 0;
+    MAV_STATE system_status() const;
+    virtual MAV_STATE vehicle_system_status() const = 0;
 
     virtual MAV_VTOL_STATE vtol_state() const { return MAV_VTOL_STATE_UNDEFINED; }
     virtual MAV_LANDED_STATE landed_state() const { return MAV_LANDED_STATE_UNDEFINED; }
