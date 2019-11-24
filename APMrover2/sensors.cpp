@@ -20,18 +20,6 @@ void Rover::compass_save() {
     }
 }
 
-// init beacons used for non-gps position estimates
-void Rover::init_beacon()
-{
-    g2.beacon.init();
-}
-
-// init visual odometry sensor
-void Rover::init_visual_odom()
-{
-    g2.visual_odom.init();
-}
-
 // update wheel encoders
 void Rover::update_wheel_encoder()
 {
@@ -117,12 +105,6 @@ void Rover::read_rangefinders(void)
 {
     rangefinder.update();
     Log_Write_Depth();
-}
-
-// initialise proximity sensor
-void Rover::init_proximity(void)
-{
-    g2.proximity.init();
 }
 
 /*

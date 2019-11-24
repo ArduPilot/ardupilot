@@ -384,12 +384,9 @@ private:
     // sensors.cpp
     void update_compass(void);
     void compass_save(void);
-    void init_beacon();
-    void init_visual_odom();
     void update_wheel_encoder();
     void accel_cal_update(void);
     void read_rangefinders(void);
-    void init_proximity();
     void read_airspeed();
     void rpm_update(void);
 
