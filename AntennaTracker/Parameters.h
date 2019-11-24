@@ -1,6 +1,7 @@
 #pragma once
 
-#include <AP_Common/AP_Common.h>
+#include <AC_PID/AC_PID.h>
+#include <AP_Param/AP_Param.h>
 
 // Global parameter class.
 //
