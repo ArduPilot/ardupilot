@@ -99,13 +99,13 @@ void Rover::init_ardupilot()
     rangefinder.init(ROTATION_NONE);
 
     // init proximity sensor
-    init_proximity();
+    g2.proximity.init();
 
     // init beacons used for non-gps position estimation
-    init_beacon();
+    g2.beacon.init();
 
-    // init visual odometry
-    init_visual_odom();
+    // init library used for visual position estimation
+    g2.visual_odom.init();
 
     // and baro for EKF
     barometer.set_log_baro_bit(MASK_LOG_IMU);
