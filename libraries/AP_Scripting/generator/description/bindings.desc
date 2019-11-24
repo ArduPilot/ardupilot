@@ -200,7 +200,7 @@ singleton AP_Mission scheduler-semaphore
 singleton AP_Mission enum MISSION_STOPPED MISSION_RUNNING MISSION_COMPLETE
 singleton AP_Mission method state uint8_t
 singleton AP_Mission method get_current_nav_index uint16_t
-singleton AP_Mission method set_current_cmd boolean uint16_t 0 UINT16_MAX
+singleton AP_Mission method set_current_cmd boolean uint16_t 0 (ud->num_commands()-1) 
 singleton AP_Mission method get_prev_nav_cmd_id uint16_t
 singleton AP_Mission method get_current_nav_id uint16_t
 singleton AP_Mission method get_current_do_cmd_id uint16_t
