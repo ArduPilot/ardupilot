@@ -765,8 +765,6 @@ private:
     void send_servo_out(mavlink_channel_t chan);
     void send_wind(mavlink_channel_t chan);
 
-    void send_aoa_ssa(mavlink_channel_t chan);
-
     void Log_Write_Fast(void);
     void Log_Write_Attitude(void);
     void Log_Write_Performance();
