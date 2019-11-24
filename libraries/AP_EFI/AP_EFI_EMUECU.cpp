@@ -1,0 +1,108 @@
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
+#include <AP_HAL/AP_HAL.h>
+#include "AP_EFI_EMUECU.h"
+#include <unistd.h>
+
+#if EFI_ENABLED
+#include <AP_SerialManager/AP_SerialManager.h>
+
+extern const AP_HAL::HAL &hal;
+
+AP_EFI_EMUECU::AP_EFI_EMUECU(AP_EFI &_frontend):
+    AP_EFI_Backend(_frontend)
+{
+    port = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_EFI, 0);
+}
+
+
+void AP_EFI_EMUECU::update()
+{
+    if (!port) {
+        return;
+    }
+
+    uint32_t n = port->available();
+    n = MIN(n, 1200U);
+    if (n == 0) {
+        return;
+    }
+
+    while (n--) {
+        uint8_t b = port->read();
+        linebuf[line_len++] = b;
+        if (line_len == sizeof(linebuf)-1) {
+            // overflow, reset
+            line_len = 0;
+            break;
+        }
+        if (b == '\n') {
+            // got a full line
+            process_line();
+            line_len = 0;
+        }
+    }
+}
+
+/*
+  process one line of JSON
+ */
+void AP_EFI_EMUECU::process_line(void)
+{
+    for (uint16_t i=0; i<ARRAY_SIZE(keytable); i++) {
+        const struct keytable &key = keytable[i];
+
+        // find key
+        const char *p = strstr(linebuf, key.key);
+        if (!p) {
+            continue;
+        }
+
+        p += strlen(key.key);
+        if (*p++ != '"') {
+            continue;
+        }
+        if (*p++ != ':') {
+            continue;
+        }
+
+        switch (key.type) {
+        case DataType::FLOAT:
+            *((float *)key.ptr) = strtof(p, nullptr);
+            break;
+
+        case DataType::UINT16:
+            *((uint16_t *)key.ptr) = strtoul(p, nullptr, 10);
+            break;
+
+        case DataType::INT16:
+            *((int16_t *)key.ptr) = strtol(p, nullptr, 10);
+            break;
+
+        case DataType::UINT32:
+            *((uint32_t *)key.ptr) = strtoul(p, nullptr, 10);
+            break;
+        }
+    }
+
+    internal_state.engine_speed_rpm = status.rpm;
+    internal_state.intake_manifold_temperature = status.iat*0.01 + C_TO_KELVIN;
+    internal_state.cylinder_status[0].cylinder_head_temperature = status.cht*0.01 + C_TO_KELVIN;
+    internal_state.cylinder_status[0].exhaust_gas_temperature = status.egt*0.01 + C_TO_KELVIN;
+    copy_to_frontend();
+}
+
+#endif // EFI_ENABLED
