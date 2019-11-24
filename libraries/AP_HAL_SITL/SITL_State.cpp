@@ -577,6 +577,7 @@ void SITL_State::_fdm_input_local(void)
 
     if (_sitl) {
         _sitl->efi_ms.update();
+        _sitl->efi_emu.update();
     }
 
     if (_sitl && _use_fg_view) {
