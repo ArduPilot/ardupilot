@@ -41,7 +41,7 @@ protected:
 
     // dummy information:
     MAV_MODE base_mode() const override { return (MAV_MODE)MAV_MODE_FLAG_CUSTOM_MODE_ENABLED; }
-    MAV_STATE system_status() const override { return MAV_STATE_CALIBRATING; }
+    MAV_STATE vehicle_system_status() const override { return MAV_STATE_CALIBRATING; }
 
     bool set_home_to_current_location(bool _lock) override { return false; }
     bool set_home(const Location& loc, bool _lock) override { return false; }
