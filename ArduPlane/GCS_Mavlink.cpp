@@ -304,9 +304,9 @@ void GCS_MAVLINK_Plane::send_simstate() const
 #endif
 }
 
-void Plane::send_wind(mavlink_channel_t chan)
+void GCS_MAVLINK_Plane::send_wind() const
 {
-    Vector3f wind = ahrs.wind_estimate();
+    const Vector3f wind = AP::ahrs().wind_estimate();
     mavlink_msg_wind_send(
         chan,
         degrees(atan2f(-wind.y, -wind.x)), // use negative, to give
@@ -430,7 +430,7 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
 
     case MSG_WIND:
         CHECK_PAYLOAD_SIZE(WIND);
-        plane.send_wind(chan);
+        send_wind();
         break;
 
     case MSG_ADSB_VEHICLE:

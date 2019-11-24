@@ -763,7 +763,6 @@ private:
     void update_load_factor(void);
     void send_fence_status(mavlink_channel_t chan);
     void send_servo_out(mavlink_channel_t chan);
-    void send_wind(mavlink_channel_t chan);
 
     void Log_Write_Fast(void);
     void Log_Write_Attitude(void);
