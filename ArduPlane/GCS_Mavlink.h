@@ -28,6 +28,7 @@ protected:
 
     virtual bool in_hil_mode() const override;
 
+    void send_aoa_ssa();
     void send_attitude() const override;
     void send_simstate() const override;
 

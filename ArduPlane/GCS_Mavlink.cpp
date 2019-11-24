@@ -140,8 +140,10 @@ void GCS_MAVLINK_Plane::send_attitude() const
         omega.z);
 }
 
-void Plane::send_aoa_ssa(mavlink_channel_t chan)
+void GCS_MAVLINK_Plane::send_aoa_ssa()
 {
+    AP_AHRS &ahrs = AP::ahrs();
+
     mavlink_msg_aoa_ssa_send(
         chan,
         micros(),
@@ -438,7 +440,7 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
 
     case MSG_AOA_SSA:
         CHECK_PAYLOAD_SIZE(AOA_SSA);
-        plane.send_aoa_ssa(chan);
+        send_aoa_ssa();
         break;
     case MSG_LANDING:
         plane.landing.send_landing_message(chan);
