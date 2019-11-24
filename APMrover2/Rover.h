@@ -161,15 +161,6 @@ private:
     // AP_RPM Module
     AP_RPM rpm_sensor;
 
-    // Inertial Navigation EKF
-#if AP_AHRS_NAVEKF_AVAILABLE
-    NavEKF2 EKF2{&ahrs, rangefinder};
-    NavEKF3 EKF3{&ahrs, rangefinder};
-    AP_AHRS_NavEKF ahrs{EKF2, EKF3};
-#else
-    AP_AHRS_DCM ahrs;
-#endif
-
     // Arming/Disarming management class
     AP_Arming_Rover arming;
 
