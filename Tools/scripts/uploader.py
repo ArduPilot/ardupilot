@@ -632,6 +632,9 @@ class uploader(object):
                 0x449: "STM32F74x_75x",
                 0x451: "STM32F76x_77x",
             }
+            H7_IDS = {
+                0x450: "STM32H74x_75x",
+            }
 
             family = mcu_id & 0xfff
             chip_s = "%x [unknown family/revision]" % (chip)
@@ -654,12 +657,16 @@ class uploader(object):
 
                 if rev in revs:
                     (label, flawed) = revs[rev]
-                    if flawed:
+                    if flawed and family == 0x419:
                         print("  %x %s rev%s (flawed; 1M limit)" % (chip, mcu, label,))
-                    else:
+                    elif family == 0x419:
                         print("  %x %s rev%s (no 1M flaw)" % (chip, mcu, label,))
+                    else:
+                        print("  %x %s rev%s" % (chip, mcu, label,))
             elif family in F7_IDS:
                 print("  %s %08x" % (F7_IDS[family], chip))
+            elif family in H7_IDS:
+                print("  %s %08x" % (H7_IDS[family], chip))
         else:
             print("  [unavailable; bootloader too old]")
 
