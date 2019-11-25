@@ -21,7 +21,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @Param: VOLT_PIN
     // @DisplayName: Battery Voltage sensing pin
     // @Description: Sets the analog input pin that should be used for voltage monitoring.
-    // @Values: -1:Disabled, 2:Pixhawk/Pixracer/Navio2/Pixhawk2_PM1, 13:Pixhawk2_PM2, 14:CubeOrange, 13:CubeOrange_PM2, 100:PX4-v1
+    // @Values: -1:Disabled, 2:Pixhawk/Pixracer/Navio2/Pixhawk2_PM1, 13:Pixhawk2_PM2, 14:CubeOrange, 13:CubeOrange_PM2, 16:Durandal, 100:PX4-v1
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("VOLT_PIN", 2, AP_BattMonitor_Params, _volt_pin, AP_BATT_VOLT_PIN),
@@ -29,7 +29,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @Param: CURR_PIN
     // @DisplayName: Battery Current sensing pin
     // @Description: Sets the analog input pin that should be used for current monitoring.
-    // @Values: -1:Disabled, 3:Pixhawk/Pixracer/Navio2/Pixhawk2_PM1, 14:Pixhawk2_PM2, 15:CubeOrange, 4:CubeOrange_PM2, 101:PX4-v1
+    // @Values: -1:Disabled, 3:Pixhawk/Pixracer/Navio2/Pixhawk2_PM1, 14:Pixhawk2_PM2, 15:CubeOrange, 4:CubeOrange_PM2, 17:Durandal, 101:PX4-v1
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("CURR_PIN", 3, AP_BattMonitor_Params, _curr_pin, AP_BATT_CURR_PIN),
