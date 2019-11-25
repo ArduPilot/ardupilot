@@ -28,12 +28,23 @@ public:
     // constructor
     AP_Button(void);
 
+    /* Do not allow copies */
+    AP_Button(const AP_Button &other) = delete;
+    AP_Button &operator=(const AP_Button&) = delete;
+
     static const struct AP_Param::GroupInfo var_info[];
 
     // update button state and send messages, called periodically by main loop
     void update(void);
-    
+
+    static AP_Button *get_singleton(void) {
+        return _singleton;
+    }
+
 private:
+
+    static AP_Button *_singleton;
+
     AP_Int8 enable;
     AP_Int8 pin[AP_BUTTON_NUM_PINS];
 
@@ -65,3 +76,6 @@ private:
     void setup_pins();
 };
 
+namespace AP {
+    AP_Button &button();
+};
