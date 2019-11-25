@@ -134,20 +134,20 @@ void AP_MotorsUGV::setup_safety_output()
 
     if (_disarm_disable_pwm) {
         // throttle channels output zero pwm (i.e. no signal)
-        SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
-        SRV_Channels::set_safety_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
-        SRV_Channels::set_safety_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
+        SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, SRV_Channel::Limit::ZERO_PWM);
+        SRV_Channels::set_safety_limit(SRV_Channel::k_throttleLeft, SRV_Channel::Limit::ZERO_PWM);
+        SRV_Channels::set_safety_limit(SRV_Channel::k_throttleRight, SRV_Channel::Limit::ZERO_PWM);
     } else {
         // throttle channels output trim values (because rovers will go backwards if set to MIN)
-        SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-        SRV_Channels::set_safety_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-        SRV_Channels::set_safety_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+        SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, SRV_Channel::Limit::TRIM);
+        SRV_Channels::set_safety_limit(SRV_Channel::k_throttleLeft, SRV_Channel::Limit::TRIM);
+        SRV_Channels::set_safety_limit(SRV_Channel::k_throttleRight, SRV_Channel::Limit::TRIM);
     }
 
     // stop sending pwm if main CPU fails
-    SRV_Channels::set_failsafe_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
-    SRV_Channels::set_failsafe_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
-    SRV_Channels::set_failsafe_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
+    SRV_Channels::set_failsafe_limit(SRV_Channel::k_throttle, SRV_Channel::Limit::ZERO_PWM);
+    SRV_Channels::set_failsafe_limit(SRV_Channel::k_throttleLeft, SRV_Channel::Limit::ZERO_PWM);
+    SRV_Channels::set_failsafe_limit(SRV_Channel::k_throttleRight, SRV_Channel::Limit::ZERO_PWM);
 }
 
 // setup servo output ranges
@@ -604,9 +604,9 @@ void AP_MotorsUGV::output_regular(bool armed, float ground_speed, float steering
     } else {
         // handle disarmed case
         if (_disarm_disable_pwm) {
-            SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
+            SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::Limit::ZERO_PWM);
         } else {
-            SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+            SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::Limit::TRIM);
         }
     }
 
@@ -637,11 +637,11 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
     // handle simpler disarmed case
     if (!armed) {
         if (_disarm_disable_pwm) {
-            SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
-            SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
+            SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::Limit::ZERO_PWM);
+            SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::Limit::ZERO_PWM);
         } else {
-            SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-            SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+            SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::Limit::TRIM);
+            SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::Limit::TRIM);
         }
         return;
     }
@@ -709,11 +709,11 @@ void AP_MotorsUGV::output_omni(bool armed, float steering, float throttle, float
         // handle disarmed case
         if (_disarm_disable_pwm) {
             for (uint8_t i=0; i<_motors_num; i++) {
-                SRV_Channels::set_output_limit(SRV_Channels::get_motor_function(i), SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
+                SRV_Channels::set_output_limit(SRV_Channels::get_motor_function(i), SRV_Channel::Limit::ZERO_PWM);
             }
         } else {
             for (uint8_t i=0; i<_motors_num; i++) {
-                SRV_Channels::set_output_limit(SRV_Channels::get_motor_function(i), SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+                SRV_Channels::set_output_limit(SRV_Channels::get_motor_function(i), SRV_Channel::Limit::TRIM);
             }
         }
     }
