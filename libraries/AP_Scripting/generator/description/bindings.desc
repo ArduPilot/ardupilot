@@ -108,6 +108,7 @@ userdata Vector2f operator -
 include AP_Notify/AP_Notify.h
 singleton AP_Notify alias notify
 singleton AP_Notify method play_tune void string
+singleton AP_Notify method handle_rgb void uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX
 
 include AP_RangeFinder/AP_RangeFinder.h
 
