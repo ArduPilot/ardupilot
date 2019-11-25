@@ -120,7 +120,7 @@ void AP_LandingGear::set_position(LandingGearCommand cmd)
 void AP_LandingGear::deploy()
 {
     // set servo PWM to deployed position
-    SRV_Channels::set_output_limit(SRV_Channel::k_landing_gear_control, SRV_Channel::SRV_CHANNEL_LIMIT_MAX);
+    SRV_Channels::set_output_limit(SRV_Channel::k_landing_gear_control, SRV_Channel::Limit::MAX);
 
     // set deployed flag
     _deployed = true;
@@ -136,7 +136,7 @@ void AP_LandingGear::deploy()
 void AP_LandingGear::retract()
 {
     // set servo PWM to retracted position
-    SRV_Channels::set_output_limit(SRV_Channel::k_landing_gear_control, SRV_Channel::SRV_CHANNEL_LIMIT_MIN);
+    SRV_Channels::set_output_limit(SRV_Channel::k_landing_gear_control, SRV_Channel::Limit::MIN);
 
     // reset deployed flag
     _deployed = false;
