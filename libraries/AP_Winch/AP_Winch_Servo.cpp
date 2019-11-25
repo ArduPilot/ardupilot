@@ -24,7 +24,7 @@ void AP_Winch_Servo::update()
 
     // if not doing any control output trim value
     if (config.state == AP_Winch::STATE_RELAXED) {
-        SRV_Channels::set_output_limit(SRV_Channel::k_winch, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+        SRV_Channels::set_output_limit(SRV_Channel::k_winch, SRV_Channel::Limit::TRIM);
         return;
     }
 
