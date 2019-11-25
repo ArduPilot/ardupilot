@@ -38,6 +38,9 @@ extern const AP_HAL::HAL &hal;
 
 uint16_t AP_Param::sentinal_offset;
 
+// singleton instance
+AP_Param *AP_Param::_singleton;
+
 #define ENABLE_DEBUG 1
 
 #if ENABLE_DEBUG
@@ -379,6 +382,14 @@ bool AP_Param::get_base(const struct Info &info, ptrdiff_t &base)
     return true;
 }
 
+namespace AP {
+
+AP_Param *param()
+{
+    return AP_Param::get_singleton();
+}
+
+}
 
 // find the info structure given a header and a group_info table
 // return the Info structure and a pointer to the variables storage
