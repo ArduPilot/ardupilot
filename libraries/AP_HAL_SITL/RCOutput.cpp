@@ -126,3 +126,21 @@ void RCOutput::neopixel_send(void)
 }
 
 #endif
+
+void RCOutput::force_safety_off(void)
+{
+    SITL::SITL *sitl = AP::sitl();
+    if (sitl == nullptr) {
+        return;
+    }
+    sitl->force_safety_off();
+}
+
+bool RCOutput::force_safety_on(void)
+{
+    SITL::SITL *sitl = AP::sitl();
+    if (sitl == nullptr) {
+        return false;
+    }
+    return sitl->force_safety_on();
+}
