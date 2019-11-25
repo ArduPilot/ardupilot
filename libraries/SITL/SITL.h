@@ -292,6 +292,19 @@ public:
         AP_Float hdg; // 0 to 360
     } opos;
 
+    AP_Int8 _safety_switch_state;
+
+    AP_HAL::Util::safety_state safety_switch_state() const {
+        return (AP_HAL::Util::safety_state)_safety_switch_state.get();
+    }
+    void force_safety_off() {
+        _safety_switch_state = (uint8_t)AP_HAL::Util::SAFETY_ARMED;
+    }
+    bool force_safety_on() {
+        _safety_switch_state = (uint8_t)AP_HAL::Util::SAFETY_DISARMED;
+        return true;
+    }
+
     uint16_t irlock_port;
 
     void simstate_send(mavlink_channel_t chan);

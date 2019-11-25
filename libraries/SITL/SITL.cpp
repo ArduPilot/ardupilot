@@ -200,6 +200,8 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
 
     AP_GROUPINFO("EFI_TYPE",    58, SITL,  efi_type,  SITL::EFI_TYPE_NONE),
 
+    AP_GROUPINFO("SAFETY_STATE",    59, SITL,  _safety_switch_state, 0),
+
     AP_GROUPEND
 
 };
