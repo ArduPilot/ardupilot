@@ -351,11 +351,6 @@ public:
     // save trims
     void save_trim(void);
 
-    // setup for a reversible k_throttle (from -100 to 100)
-    void set_reversible_throttle(void) {
-        flags.k_throttle_reversible = true;
-    }
-
     // setup IO failsafe for all channels to trim
     static void setup_failsafe_trim_all_non_motors(void);
 
@@ -493,9 +488,6 @@ public:
     }
 
 private:
-    struct {
-        bool k_throttle_reversible:1;
-    } flags;
 
     static bool disabled_passthrough;
 
