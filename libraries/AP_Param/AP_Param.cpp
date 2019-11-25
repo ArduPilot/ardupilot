@@ -2400,6 +2400,39 @@ bool AP_Param::set_by_name(const char *name, float value)
 }
 
 /*
+  get a value by name
+ */
+bool AP_Param::get(const char *name, float &value)
+{
+    enum ap_var_type vtype;
+    AP_Param *vp = find(name, &vtype);
+    if (vp == nullptr) {
+        return false;
+    }
+    switch (vtype) {
+    case AP_PARAM_INT8:
+        value = ((AP_Int8 *)vp)->get();
+        break;
+    case AP_PARAM_INT16:
+        value = ((AP_Int16 *)vp)->get();
+        break;
+
+    case AP_PARAM_INT32:
+        value = ((AP_Int32 *)vp)->get();
+        break;
+
+    case AP_PARAM_FLOAT:
+        value = ((AP_Float *)vp)->get();
+        break;
+
+    default:
+        // not a supported type
+        return false;
+    }
+    return true;
+}
+
+/*
   set and save a value by name
  */
 bool AP_Param::set_and_save_by_name(const char *name, float value)
