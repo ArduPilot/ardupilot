@@ -832,6 +832,34 @@ static int RangeFinder_num_sensors(lua_State *L) {
     return 1;
 }
 
+static int AP_Notify_handle_rgb(lua_State *L) {
+    AP_Notify * ud = AP_Notify::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "notify not supported on this firmware");
+    }
+
+    binding_argcheck(L, 5);
+    const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(UINT8_MAX, UINT8_MAX))), 2, "argument out of range");
+    const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
+    const lua_Integer raw_data_3 = luaL_checkinteger(L, 3);
+    luaL_argcheck(L, ((raw_data_3 >= MAX(0, 0)) && (raw_data_3 <= MIN(UINT8_MAX, UINT8_MAX))), 3, "argument out of range");
+    const uint8_t data_3 = static_cast<uint8_t>(raw_data_3);
+    const lua_Integer raw_data_4 = luaL_checkinteger(L, 4);
+    luaL_argcheck(L, ((raw_data_4 >= MAX(0, 0)) && (raw_data_4 <= MIN(UINT8_MAX, UINT8_MAX))), 4, "argument out of range");
+    const uint8_t data_4 = static_cast<uint8_t>(raw_data_4);
+    const lua_Integer raw_data_5 = luaL_checkinteger(L, 5);
+    luaL_argcheck(L, ((raw_data_5 >= MAX(0, 0)) && (raw_data_5 <= MIN(UINT8_MAX, UINT8_MAX))), 5, "argument out of range");
+    const uint8_t data_5 = static_cast<uint8_t>(raw_data_5);
+    ud->handle_rgb(
+            data_2,
+            data_3,
+            data_4,
+            data_5);
+
+    return 0;
+}
+
 static int AP_Notify_play_tune(lua_State *L) {
     AP_Notify * ud = AP_Notify::get_singleton();
     if (ud == nullptr) {
@@ -1735,6 +1763,7 @@ const luaL_Reg RangeFinder_meta[] = {
 };
 
 const luaL_Reg AP_Notify_meta[] = {
+    {"handle_rgb", AP_Notify_handle_rgb},
     {"play_tune", AP_Notify_play_tune},
     {NULL, NULL}
 };
