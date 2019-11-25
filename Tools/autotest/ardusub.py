@@ -144,7 +144,7 @@ class AutoTestSub(AutoTest):
         self.set_rc(Joystick.Yaw, 1500)
 
         self.wait_distance(50, accuracy=7, timeout=100)
-        self.set_rc(Joystick.Yaw, 1550)
+        self.set_rc(Joystick.Yaw, 1525)
 
         self.wait_heading(0)
         self.set_rc(Joystick.Yaw, 1500)
