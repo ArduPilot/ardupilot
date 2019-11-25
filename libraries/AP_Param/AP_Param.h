@@ -197,6 +197,11 @@ public:
         uint16_t i;
         for (i=0; info[i].type != AP_PARAM_NONE; i++) ;
         _num_vars = i;
+
+        if (_singleton != nullptr) {
+            AP_HAL::panic("AP_Param must be singleton");
+        }
+        _singleton = this;
     }
 
     // empty constructor
@@ -479,7 +484,11 @@ public:
                              AP_HAL::BetterStream *port);
 #endif // AP_PARAM_KEY_DUMP
 
+    static AP_Param *get_singleton() { return _singleton; }
+
 private:
+    static AP_Param *_singleton;
+
     /// EEPROM header
     ///
     /// This structure is placed at the head of the EEPROM to indicate
@@ -671,6 +680,10 @@ private:
 
     // background function for saving parameters
     void save_io_handler(void);
+};
+
+namespace AP {
+    AP_Param *param();
 };
 
 /// Template class for scalar variables.
