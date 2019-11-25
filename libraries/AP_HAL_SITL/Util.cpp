@@ -124,3 +124,12 @@ void *HALSITL::Util::heap_realloc(void *heap_ptr, void *ptr, size_t new_size)
 }
 
 #endif // ENABLE_HEAP
+
+enum AP_HAL::Util::safety_state HALSITL::Util::safety_switch_state(void)
+{
+    const SITL::SITL *sitl = AP::sitl();
+    if (sitl == nullptr) {
+        return AP_HAL::Util::SAFETY_NONE;
+    }
+    return sitl->safety_switch_state();
+}

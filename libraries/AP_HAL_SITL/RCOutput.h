@@ -19,6 +19,15 @@ public:
     void push(void) override;
 
     /*
+      force the safety switch on, disabling PWM output from the IO board
+     */
+    bool force_safety_on(void) override;
+    /*
+      force the safety switch off, enabling PWM output from the IO board
+     */
+    void force_safety_off(void) override;
+
+    /*
       Serial LED emulation
      */
     bool set_neopixel_num_LEDs(const uint16_t chan, uint8_t num_leds) override;
