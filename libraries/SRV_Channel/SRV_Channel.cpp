@@ -172,16 +172,16 @@ float SRV_Channel::get_output_norm(void)
     return ret;
 }
 
-uint16_t SRV_Channel::get_limit_pwm(LimitValue limit) const
+uint16_t SRV_Channel::get_limit_pwm(Limit limit) const
 {
     switch (limit) {
-    case SRV_CHANNEL_LIMIT_TRIM:
+    case Limit::TRIM:
         return servo_trim;
-    case SRV_CHANNEL_LIMIT_MIN:
+    case Limit::MIN:
         return reversed?servo_max:servo_min;
-    case SRV_CHANNEL_LIMIT_MAX:
+    case Limit::MAX:
         return reversed?servo_min:servo_max;
-    case SRV_CHANNEL_LIMIT_ZERO_PWM:
+    case Limit::ZERO_PWM:
     default:
         return 0;
     }
