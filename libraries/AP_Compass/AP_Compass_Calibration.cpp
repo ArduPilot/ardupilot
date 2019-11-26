@@ -145,11 +145,13 @@ bool Compass::_accept_calibration(uint8_t i)
         _cal_saved[i] = true;
 
         Vector3f ofs, diag, offdiag;
-        cal.get_calibration(ofs, diag, offdiag);
+        float scale_factor;
+        cal.get_calibration(ofs, diag, offdiag, scale_factor);
 
         set_and_save_offsets(i, ofs);
         set_and_save_diagonals(i,diag);
         set_and_save_offdiagonals(i,offdiag);
+        set_and_save_scale_factor(i,scale_factor);
 
         if (_state[i].external && _rotate_auto >= 2) {
             _state[i].orientation.set_and_save_ifchanged(cal.get_orientation());
@@ -234,7 +236,8 @@ bool Compass::send_mag_cal_report(const GCS_MAVLINK& link)
             cal_status == COMPASS_CAL_BAD_ORIENTATION) {
             float fitness = _calibrator[compass_id].get_fitness();
             Vector3f ofs, diag, offdiag;
-            _calibrator[compass_id].get_calibration(ofs, diag, offdiag);
+            float scale_factor;
+            _calibrator[compass_id].get_calibration(ofs, diag, offdiag, scale_factor);
             uint8_t autosaved = _cal_saved[compass_id];
 
             mavlink_msg_mag_cal_report_send(
@@ -247,7 +250,8 @@ bool Compass::send_mag_cal_report(const GCS_MAVLINK& link)
                 offdiag.x, offdiag.y, offdiag.z,
                 _calibrator[compass_id].get_orientation_confidence(),
                 _calibrator[compass_id].get_original_orientation(),
-                _calibrator[compass_id].get_orientation()
+                _calibrator[compass_id].get_orientation(),
+                scale_factor
             );
         }
     }

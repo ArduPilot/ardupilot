@@ -16,7 +16,11 @@ enum compass_cal_status_t {
     COMPASS_CAL_SUCCESS = 4,
     COMPASS_CAL_FAILED = 5,
     COMPASS_CAL_BAD_ORIENTATION = 6,
+    COMPASS_CAL_BAD_RADIUS = 7,
 };
+
+#define COMPASS_MIN_SCALE_FACTOR 0.3
+#define COMPASS_MAX_SCALE_FACTOR 1.6
 
 class CompassCalibrator {
 public:
@@ -45,7 +49,7 @@ public:
     enum compass_cal_status_t get_status() const { return _status; }
 
     // get calibration outputs (offsets, diagonals, offdiagonals) and fitness
-    void get_calibration(Vector3f &offsets, Vector3f &diagonals, Vector3f &offdiagonals);
+    void get_calibration(Vector3f &offsets, Vector3f &diagonals, Vector3f &offdiagonals, float &scale_factor);
     float get_fitness() const { return sqrtf(_fitness); }
 
     // get corrected (and original) orientation
@@ -80,6 +84,7 @@ private:
         Vector3f offset;    // offsets
         Vector3f diag;      // diagonal scaling
         Vector3f offdiag;   // off diagonal scaling
+        float scale_factor; // scaling factor to compensate for radius error
     };
 
     // compact class for approximate attitude, to save memory
@@ -154,6 +159,9 @@ private:
     // calculate compass orientation
     Vector3f calculate_earth_field(CompassSample &sample, enum Rotation r);
     bool calculate_orientation();
+
+    // fix radius to compensate for sensor scaling errors
+    bool fix_radius();
 
     uint8_t _compass_idx;                   // index of the compass providing data
     enum compass_cal_status_t _status;      // current state of calibrator
