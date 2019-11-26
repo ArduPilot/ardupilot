@@ -509,6 +509,31 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Values: 0:Disabled,1:Enabled
     AP_GROUPINFO("ENABLE", 39, Compass, _enabled, 1),
 
+    // @Param: SCALE
+    // @DisplayName: Compass1 scale factor
+    // @Description: Scaling factor for first compass to compensate for sensor scaling errors. If this is 0 then no scaling is done
+    // @User: Standard
+    // @Range: 0 1.3
+    AP_GROUPINFO("SCALE", 40, Compass, _state[0].scale_factor, 0),
+
+#if HAL_COMPASS_MAX_SENSORS > 1
+    // @Param: SCALE2
+    // @DisplayName: Compass2 scale factor
+    // @Description: Scaling factor for 2nd compass to compensate for sensor scaling errors. If this is 0 then no scaling is done
+    // @User: Standard
+    // @Range: 0 1.3
+    AP_GROUPINFO("SCALE2", 41, Compass, _state[1].scale_factor, 0),
+#endif
+
+#if HAL_COMPASS_MAX_SENSORS > 2
+    // @Param: SCALE3
+    // @DisplayName: Compass3 scale factor
+    // @Description: Scaling factor for 3rd compass to compensate for sensor scaling errors. If this is 0 then no scaling is done
+    // @User: Standard
+    // @Range: 0 1.3
+    AP_GROUPINFO("SCALE3", 42, Compass, _state[2].scale_factor, 0),
+#endif
+    
     AP_GROUPEND
 };
 
@@ -1008,6 +1033,14 @@ Compass::set_and_save_offdiagonals(uint8_t i, const Vector3f &offdiagonals)
 }
 
 void
+Compass::set_and_save_scale_factor(uint8_t i, float scale_factor)
+{
+    if (i < COMPASS_MAX_INSTANCES) {
+        _state[i].scale_factor.set_and_save(scale_factor);
+    }
+}
+
+void
 Compass::save_offsets(uint8_t i)
 {
     _state[i].offset.save();  // save offsets
@@ -1305,6 +1338,19 @@ bool Compass::consistent() const
         if (xy_len_diff > AP_COMPASS_MAX_XY_LENGTH_DIFF) {
             return false;
         }
+    }
+    return true;
+}
+
+/*
+  return true if we have a valid scale factor
+ */
+bool Compass::have_scale_factor(uint8_t i) const
+{
+    if (i >= get_count() ||
+        _state[i].scale_factor < COMPASS_MIN_SCALE_FACTOR ||
+        _state[i].scale_factor > COMPASS_MAX_SCALE_FACTOR) {
+        return false;
     }
     return true;
 }
