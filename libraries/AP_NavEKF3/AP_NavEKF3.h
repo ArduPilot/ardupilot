@@ -25,7 +25,6 @@
 #include <AP_NavEKF/AP_Nav_Common.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Compass/AP_Compass.h>
-#include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_Logger/LogStructure.h>
 
 class NavEKF3_core;
@@ -35,7 +34,7 @@ class NavEKF3 {
     friend class NavEKF3_core;
 
 public:
-    NavEKF3(const AP_AHRS *ahrs, const RangeFinder &rng);
+    NavEKF3(const AP_AHRS *ahrs);
 
     /* Do not allow copies */
     NavEKF3(const NavEKF3 &other) = delete;
@@ -390,7 +389,6 @@ private:
     uint8_t primary;   // current primary core
     NavEKF3_core *core = nullptr;
     const AP_AHRS *_ahrs;
-    const RangeFinder &_rng;
 
     uint32_t _frameTimeUsec;        // time per IMU frame
     uint8_t  _framesPerPrediction;  // expected number of IMU frames per prediction
