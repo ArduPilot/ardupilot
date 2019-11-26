@@ -68,7 +68,7 @@ uint32_t GCS_Tracker::custom_mode() const
     return (uint32_t)tracker.mode->number();
 }
 
-MAV_STATE GCS_MAVLINK_Tracker::system_status() const
+MAV_STATE GCS_MAVLINK_Tracker::vehicle_system_status() const
 {
     if (tracker.mode == &tracker.mode_initialising) {
         return MAV_STATE_CALIBRATING;
