@@ -45,7 +45,7 @@ public:
     };
 
     // Constructor
-    AP_AHRS_NavEKF(NavEKF2 &_EKF2, NavEKF3 &_EKF3, Flags flags = FLAG_NONE);
+    AP_AHRS_NavEKF(NavEKF2 &_EKF2, NavEKF3 &_EKF3, uint8_t flags = FLAG_NONE);
 
     /* Do not allow copies */
     AP_AHRS_NavEKF(const AP_AHRS_NavEKF &other) = delete;
@@ -301,7 +301,7 @@ private:
     Vector3f _accel_ef_ekf_blended;
     const uint16_t startup_delay_ms = 1000;
     uint32_t start_time_ms = 0;
-    Flags _ekf_flags;
+    uint8_t _ekf_flags; // bitmask from Flags enumeration
 
     uint8_t ekf_type(void) const;
     void update_DCM(bool skip_ins_update);
