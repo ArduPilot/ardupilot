@@ -29,6 +29,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Notify/AP_Notify.h>                    // Notify library
 #include <AP_Param/AP_Param.h>
+#include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_Relay/AP_Relay.h>                      // APM relay
 #include <AP_RSSI/AP_RSSI.h>                        // RSSI Library
 #include <AP_SerialManager/AP_SerialManager.h>      // Serial manager library
@@ -138,8 +139,8 @@ protected:
 
     // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
-    NavEKF2 EKF2{&ahrs, rangefinder};
-    NavEKF3 EKF3{&ahrs, rangefinder};
+    NavEKF2 EKF2{&ahrs};
+    NavEKF3 EKF3{&ahrs};
     AP_AHRS_NavEKF ahrs{EKF2, EKF3};
 #else
     AP_AHRS_DCM ahrs;
