@@ -37,12 +37,16 @@ extern const AP_HAL::HAL& hal;
 // constructor
 AP_AHRS_NavEKF::AP_AHRS_NavEKF(NavEKF2 &_EKF2,
                                NavEKF3 &_EKF3,
-                               Flags flags) :
+                               uint8_t flags) :
     AP_AHRS_DCM(),
     EKF2(_EKF2),
     EKF3(_EKF3),
     _ekf_flags(flags)
 {
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
+    // Copter and Sub force the use of EKF
+    _ekf_flags |= AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF;
+#endif
     _dcm_matrix.identity();
 }
 
