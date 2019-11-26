@@ -30,6 +30,9 @@ public:
     lua_scripts(const lua_scripts &other) = delete;
     lua_scripts &operator=(const lua_scripts&) = delete;
 
+    // return true if initialisation failed
+    bool heap_allocated() const { return _heap != nullptr; }
+
     // run scripts, does not return unless an error occured
     void run(void);
 
