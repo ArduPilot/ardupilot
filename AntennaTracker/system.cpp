@@ -60,9 +60,7 @@ void Tracker::init_tracker()
 #endif
 
 #ifdef ENABLE_SCRIPTING
-    if (!scripting.init()) {
-        gcs().send_text(MAV_SEVERITY_ERROR, "Scripting failed to start");
-    }
+    scripting.init();
 #endif // ENABLE_SCRIPTING
 
     // initialise compass
