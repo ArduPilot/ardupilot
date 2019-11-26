@@ -725,6 +725,8 @@
 #define CH_CFG_SYSTEM_HALT_HOOK(reason) do {                               \
         extern void memory_flush_all(void); \
         memory_flush_all(); \
+        extern void system_halt_hook(void); \
+        system_halt_hook(); \
 } while(0)
 #endif
 
