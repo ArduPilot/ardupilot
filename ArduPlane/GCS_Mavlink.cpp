@@ -93,7 +93,7 @@ uint32_t GCS_Plane::custom_mode() const
     return plane.control_mode->mode_number();
 }
 
-MAV_STATE GCS_MAVLINK_Plane::system_status() const
+MAV_STATE GCS_MAVLINK_Plane::vehicle_system_status() const
 {
     if (plane.control_mode == &plane.mode_initializing) {
         return MAV_STATE_CALIBRATING;
