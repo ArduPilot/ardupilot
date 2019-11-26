@@ -184,6 +184,7 @@ public:
     AP_Int8  baro_count; // number of simulated baros to create
     AP_Int8 gps_hdg_enabled; // enable the output of a NMEA heading HDT sentence
     AP_Int32 loop_delay; // extra delay to add to every loop
+    AP_Float mag_scaling; // scaling factor on first compasses
 
     // EFI type
     enum EFIType {
