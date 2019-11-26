@@ -58,7 +58,7 @@ uint32_t GCS_Rover::custom_mode() const
     return rover.control_mode->mode_number();
 }
 
-MAV_STATE GCS_MAVLINK_Rover::system_status() const
+MAV_STATE GCS_MAVLINK_Rover::vehicle_system_status() const
 {
     if ((rover.failsafe.triggered != 0) || rover.failsafe.ekf) {
         return MAV_STATE_CRITICAL;
