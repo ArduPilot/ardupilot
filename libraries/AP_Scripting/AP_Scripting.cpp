@@ -79,19 +79,17 @@ AP_Scripting::AP_Scripting() {
     _singleton = this;
 }
 
-bool AP_Scripting::init(void) {
+void AP_Scripting::init(void) {
     if (!_enable) {
-        return true;
+        return;
     }
 
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Scripting::thread, void),
                                       "Scripting", SCRIPTING_STACK_SIZE, AP_HAL::Scheduler::PRIORITY_SCRIPTING, 0)) {
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Could not create scripting stack (%d)", SCRIPTING_STACK_SIZE);
+        gcs().send_text(MAV_SEVERITY_ERROR, "Scripting failed to start");
         _init_failed = true;
-        return false;
     }
-
-    return true;
 }
 
 void AP_Scripting::thread(void) {
