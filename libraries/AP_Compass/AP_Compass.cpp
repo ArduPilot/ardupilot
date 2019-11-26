@@ -533,7 +533,14 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: 0 1.3
     AP_GROUPINFO("SCALE3", 42, Compass, _state[2].scale_factor, 0),
 #endif
-    
+
+    // @Param: OPTIONS
+    // @DisplayName: Compass options
+    // @Description: This sets options to change the behaviour of the compass
+    // @Bitmask: 0:CalRequireGPS
+    // @User: Advanced
+    AP_GROUPINFO("OPTIONS", 43, Compass, _options, 0),
+
     AP_GROUPEND
 };
 
