@@ -253,7 +253,7 @@ void AC_PosControl::set_max_speed_z(float speed_down, float speed_up)
     speed_down = -fabsf(speed_down);
 
     // only update if there is a minimum of 1cm/s change and is valid
-    if (((fabsf(_speed_down_cms - speed_down) > 1.0f) || (fabsf(_speed_up_cms - speed_up) > 1.0f)) && is_positive(_speed_up_cms) && is_negative(_speed_down_cms) ) {
+    if (((fabsf(_speed_down_cms - speed_down) > 1.0f) || (fabsf(_speed_up_cms - speed_up) > 1.0f)) && is_positive(speed_up) && is_negative(speed_down) ) {
         _speed_down_cms = speed_down;
         _speed_up_cms = speed_up;
         _flags.recalc_leash_z = true;
