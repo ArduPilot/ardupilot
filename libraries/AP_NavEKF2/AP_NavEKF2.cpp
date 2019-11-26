@@ -585,9 +585,8 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     AP_GROUPEND
 };
 
-NavEKF2::NavEKF2(const AP_AHRS *ahrs, const RangeFinder &rng) :
-    _ahrs(ahrs),
-    _rng(rng)
+NavEKF2::NavEKF2(const AP_AHRS *ahrs) :
+    _ahrs(ahrs)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
