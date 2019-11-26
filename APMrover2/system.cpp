@@ -199,9 +199,7 @@ void Rover::startup_ground(void)
 #endif
 
 #ifdef ENABLE_SCRIPTING
-    if (!g2.scripting.init()) {
-        gcs().send_text(MAV_SEVERITY_ERROR, "Scripting failed to start");
-    }
+    g2.scripting.init();
 #endif // ENABLE_SCRIPTING
 
     // we don't want writes to the serial port to cause us to pause
