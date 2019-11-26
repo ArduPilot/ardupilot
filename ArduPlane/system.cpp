@@ -228,9 +228,7 @@ void Plane::startup_ground(void)
 #endif
 
 #ifdef ENABLE_SCRIPTING
-    if (!g2.scripting.init()) {
-        gcs().send_text(MAV_SEVERITY_ERROR, "Scripting failed to start");
-    }
+    g2.scripting.init();
 #endif // ENABLE_SCRIPTING
 
     // reset last heartbeat time, so we don't trigger failsafe on slow
