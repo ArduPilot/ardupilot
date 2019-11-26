@@ -72,7 +72,7 @@ uint32_t GCS_Copter::custom_mode() const
     return (uint32_t)copter.control_mode;
 }
 
-MAV_STATE GCS_MAVLINK_Copter::system_status() const
+MAV_STATE GCS_MAVLINK_Copter::vehicle_system_status() const
 {
     // set system as critical if any failsafe have triggered
     if (copter.any_failsafe_triggered())  {
