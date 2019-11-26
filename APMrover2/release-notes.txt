@@ -1,6 +1,6 @@
 Rover Release Notes:
 --------------------------------
-Rover 4.0.0-rc4 20-Nov-2019
+Rover 4.0.0 26-Nov-2019 / 4.0.0-rc4 20-Nov-2019
 Changes from 4.0.0-rc3
 1) Lightware SF40c lidar driver for latest version
 2) UBlox F9 GPS automatic configuration
