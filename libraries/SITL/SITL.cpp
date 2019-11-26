@@ -202,6 +202,8 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
 
     AP_GROUPINFO("SAFETY_STATE",    59, SITL,  _safety_switch_state, 0),
 
+    AP_GROUPINFO("MAG_SCALING",    60, SITL,  mag_scaling, 1),
+
     AP_GROUPEND
 
 };
