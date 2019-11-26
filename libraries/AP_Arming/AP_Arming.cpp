@@ -32,6 +32,7 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_Terrain/AP_Terrain.h>
+#include <AP_Scripting/AP_Scripting.h>
 
 #if HAL_WITH_UAVCAN
   #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
@@ -703,6 +704,13 @@ bool AP_Arming::system_checks(bool report)
         const AP_Terrain *terrain = AP_Terrain::get_singleton();
         if ((terrain != nullptr) && terrain->init_failed()) {
             check_failed(ARMING_CHECK_SYSTEM, report, "Terrain out of memory");
+            return false;
+        }
+#endif
+#ifdef ENABLE_SCRIPTING
+        const AP_Scripting *scripting = AP_Scripting::get_singleton();
+        if ((scripting != nullptr) && scripting->enabled() && scripting->init_failed()) {
+            check_failed(ARMING_CHECK_SYSTEM, report, "Scripting out of memory");
             return false;
         }
 #endif
