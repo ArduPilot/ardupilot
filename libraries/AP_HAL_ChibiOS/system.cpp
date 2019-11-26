@@ -20,6 +20,7 @@
 #include <AP_HAL/system.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include "hwdef/common/watchdog.h"
+#include "hwdef/common/stm32_util.h"
 
 #include <ch.h>
 #include "hal.h"
@@ -93,6 +94,25 @@ void HardFault_Handler(void) {
 
     save_fault_watchdog(__LINE__, faultType, faultAddress);
 
+#ifdef HAL_GPIO_PIN_FAULT
+    while (true) {
+        fault_printf("HARDFAULT\n");
+        fault_printf("CUR=0x%08x\n", ch.rlist.current);
+        if (ch.rlist.current) {
+            fault_printf("NAME=%s\n", ch.rlist.current->name);
+        }
+        fault_printf("FA=0x%08x\n", faultAddress);
+        fault_printf("PC=0x%08x\n", ctx.pc);
+        fault_printf("LR=0x%08x\n", ctx.lr_thd);
+        fault_printf("R0=0x%08x\n", ctx.r0);
+        fault_printf("R1=0x%08x\n", ctx.r1);
+        fault_printf("R2=0x%08x\n", ctx.r2);
+        fault_printf("R3=0x%08x\n", ctx.r3);
+        fault_printf("R12=0x%08x\n", ctx.r12);
+        fault_printf("XPSR=0x%08x\n", ctx.xpsr);
+        fault_printf("\n\n");
+    }
+#endif
     //Cause debugger to stop. Ignored if no debugger is attached
     while(1) {}
 }
