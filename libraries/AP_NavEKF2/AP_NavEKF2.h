@@ -28,7 +28,6 @@
 #include <AP_NavEKF/AP_Nav_Common.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Compass/AP_Compass.h>
-#include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_Logger/LogStructure.h>
 
 class NavEKF2_core;
@@ -38,7 +37,7 @@ class NavEKF2 {
     friend class NavEKF2_core;
 
 public:
-    NavEKF2(const AP_AHRS *ahrs, const RangeFinder &rng);
+    NavEKF2(const AP_AHRS *ahrs);
 
     /* Do not allow copies */
     NavEKF2(const NavEKF2 &other) = delete;
@@ -361,7 +360,6 @@ private:
     NavEKF2_core *core = nullptr;
     bool core_malloc_failed;
     const AP_AHRS *_ahrs;
-    const RangeFinder &_rng;
 
     uint32_t _frameTimeUsec;        // time per IMU frame
     uint8_t  _framesPerPrediction;  // expected number of IMU frames per prediction
