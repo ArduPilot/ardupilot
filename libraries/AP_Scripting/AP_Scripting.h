@@ -28,7 +28,7 @@ public:
     AP_Scripting(const AP_Scripting &other) = delete;
     AP_Scripting &operator=(const AP_Scripting&) = delete;
 
-    bool init(void);
+    void init(void);
     bool init_failed(void) const { return _init_failed; }
 
     bool enabled(void) const { return _enable != 0; };
