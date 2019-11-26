@@ -608,13 +608,16 @@ void NavEKF3_core::readGpsData()
             }
 
             if (gpsGoodToAlign && !have_table_earth_field) {
-                table_earth_field_ga = AP_Declination::get_earth_field_ga(gpsloc);
-                table_declination = radians(AP_Declination::get_declination(gpsloc.lat*1.0e-7,
+                const Compass *compass = _ahrs->get_compass();
+                if (compass && compass->have_scale_factor(magSelectIndex)) {
+                    table_earth_field_ga = AP_Declination::get_earth_field_ga(gpsloc);
+                    table_declination = radians(AP_Declination::get_declination(gpsloc.lat*1.0e-7,
                                                                             gpsloc.lng*1.0e-7));
-                have_table_earth_field = true;
-                if (frontend->_mag_ef_limit > 0) {
-                    // initialise earth field from tables
-                    stateStruct.earth_magfield = table_earth_field_ga;
+                    have_table_earth_field = true;
+                    if (frontend->_mag_ef_limit > 0) {
+                        // initialise earth field from tables
+                        stateStruct.earth_magfield = table_earth_field_ga;
+                    }
                 }
             }
 
