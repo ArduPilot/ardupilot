@@ -91,6 +91,14 @@ void get_rtc_backup(uint8_t idx, uint32_t *v, uint8_t n);
 void stm32_cacheBufferInvalidate(const void *p, size_t size);
 void stm32_cacheBufferFlush(const void *p, size_t size);
 
+#ifdef HAL_GPIO_PIN_FAULT
+// printf for fault handlers
+void fault_printf(const char *fmt, ...);
+#endif
+
+// halt hook for printing panic message
+void system_halt_hook(void);
+
 #ifdef __cplusplus
 }
 #endif
