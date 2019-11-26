@@ -29,6 +29,7 @@ public:
     AP_Scripting &operator=(const AP_Scripting&) = delete;
 
     bool init(void);
+    bool init_failed(void) const { return _init_failed; }
 
     bool enabled(void) const { return _enable != 0; };
 
@@ -45,6 +46,8 @@ private:
     AP_Int32 _script_vm_exec_count;
     AP_Int32 _script_heap_size;
     AP_Int8 _debug_level;
+
+    bool _init_failed;  // true if memory allocation failed
 
     static AP_Scripting *_singleton;
 
