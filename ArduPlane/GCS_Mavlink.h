@@ -55,7 +55,7 @@ private:
     void packetReceived(const mavlink_status_t &status, const mavlink_message_t &msg) override;
 
     MAV_MODE base_mode() const override;
-    MAV_STATE system_status() const override;
+    MAV_STATE vehicle_system_status() const override;
 
     uint8_t radio_in_rssi() const;
 
