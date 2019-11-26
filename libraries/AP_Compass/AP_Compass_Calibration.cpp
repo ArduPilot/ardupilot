@@ -1,5 +1,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Notify/AP_Notify.h>
+#include <AP_GPS/AP_GPS.h>
 #include <GCS_MAVLink/GCS.h>
 
 #include "AP_Compass.h"
@@ -53,6 +54,12 @@ bool Compass::_start_calibration(uint8_t i, bool retry, float delay)
     }
     if (!use_for_yaw(i)) {
         return false;
+    }
+    if (_options.get() & uint16_t(Option::CAL_REQUIRE_GPS)) {
+        if (AP::gps().status() < AP_GPS::GPS_OK_FIX_2D) {
+            gcs().send_text(MAV_SEVERITY_ERROR, "Compass cal requires GPS lock");
+            return false;
+        }
     }
     if (!is_calibrating()) {
         AP_Notify::events.initiated_compass_cal = 1;
