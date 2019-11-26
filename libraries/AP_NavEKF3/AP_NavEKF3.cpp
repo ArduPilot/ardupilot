@@ -607,9 +607,8 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     AP_GROUPEND
 };
 
-NavEKF3::NavEKF3(const AP_AHRS *ahrs, const RangeFinder &rng) :
-    _ahrs(ahrs),
-    _rng(rng)
+NavEKF3::NavEKF3(const AP_AHRS *ahrs) :
+    _ahrs(ahrs)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
