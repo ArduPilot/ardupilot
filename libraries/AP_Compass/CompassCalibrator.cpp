@@ -61,7 +61,11 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_GeodesicGrid.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_GPS/AP_GPS.h>
 #include <GCS_MAVLink/GCS.h>
+
+#define FIELD_RADIUS_MIN 150
+#define FIELD_RADIUS_MAX 950
 
 extern const AP_HAL::HAL& hal;
 
@@ -104,7 +108,7 @@ void CompassCalibrator::start(bool retry, float delay, uint16_t offset_max, uint
     set_status(COMPASS_CAL_WAITING_TO_START);
 }
 
-void CompassCalibrator::get_calibration(Vector3f &offsets, Vector3f &diagonals, Vector3f &offdiagonals)
+void CompassCalibrator::get_calibration(Vector3f &offsets, Vector3f &diagonals, Vector3f &offdiagonals, float &scale_factor)
 {
     if (_status != COMPASS_CAL_SUCCESS) {
         return;
@@ -113,6 +117,7 @@ void CompassCalibrator::get_calibration(Vector3f &offsets, Vector3f &diagonals, 
     offsets = _params.offset;
     diagonals = _params.diag;
     offdiagonals = _params.offdiag;
+    scale_factor = _params.scale_factor;
 }
 
 float CompassCalibrator::get_completion_percent() const
@@ -131,6 +136,7 @@ float CompassCalibrator::get_completion_percent() const
             return 100.0f;
         case COMPASS_CAL_FAILED:
         case COMPASS_CAL_BAD_ORIENTATION:
+        case COMPASS_CAL_BAD_RADIUS:
         default:
             return 0.0f;
     };
@@ -215,7 +221,7 @@ void CompassCalibrator::update(bool &failure)
         }
     } else if (_status == COMPASS_CAL_RUNNING_STEP_TWO) {
         if (_fit_step >= 35) {
-            if (fit_acceptable() && calculate_orientation()) {
+            if (fit_acceptable() && fix_radius() && calculate_orientation()) {
                 set_status(COMPASS_CAL_SUCCESS);
             } else {
                 set_status(COMPASS_CAL_FAILED);
@@ -266,6 +272,7 @@ void CompassCalibrator::reset_state()
     _params.offset.zero();
     _params.diag = Vector3f(1.0f,1.0f,1.0f);
     _params.offdiag.zero();
+    _params.scale_factor = 0;
 
     memset(_completion_mask, 0, sizeof(_completion_mask));
     initialize_fit();
@@ -336,13 +343,15 @@ bool CompassCalibrator::set_status(compass_cal_status_t status)
             return true;
 
         case COMPASS_CAL_FAILED:
-            if (_status == COMPASS_CAL_BAD_ORIENTATION) {
+            if (_status == COMPASS_CAL_BAD_ORIENTATION ||
+                _status == COMPASS_CAL_BAD_RADIUS) {
                 // don't overwrite bad orientation status
                 return false;
             }
             FALLTHROUGH;
             
         case COMPASS_CAL_BAD_ORIENTATION:
+        case COMPASS_CAL_BAD_RADIUS:
             if (_status == COMPASS_CAL_NOT_STARTED) {
                 return false;
             }
@@ -368,7 +377,7 @@ bool CompassCalibrator::set_status(compass_cal_status_t status)
 bool CompassCalibrator::fit_acceptable()
 {
     if (!isnan(_fitness) &&
-        _params.radius > 150 && _params.radius < 950 && //Earth's magnetic field strength range: 250-850mG
+        _params.radius > FIELD_RADIUS_MIN && _params.radius < FIELD_RADIUS_MAX &&
         fabsf(_params.offset.x) < _offset_max &&
         fabsf(_params.offset.y) < _offset_max &&
         fabsf(_params.offset.z) < _offset_max &&
@@ -922,4 +931,41 @@ bool CompassCalibrator::calculate_orientation(void)
     run_ellipsoid_fit();
 
     return fit_acceptable();
+}
+
+/*
+  fix radius of the fit to compensate for sensor scale factor errors
+  return false if radius is outside acceptable range
+ */
+bool CompassCalibrator::fix_radius(void)
+{
+    if (AP::gps().status() < AP_GPS::GPS_OK_FIX_2D) {
+        // we don't have a position, leave scale factor as 0. This
+        // will disable use of WMM in the EKF. Users can manually set
+        // scale factor after calibration if it is known
+        _params.scale_factor = 0;
+        return true;
+    }
+    const struct Location &loc = AP::gps().location();
+    float intensity;
+    float declination;
+    float inclination;
+    AP_Declination::get_mag_field_ef(loc.lat * 1e-7f, loc.lng * 1e-7f, intensity, declination, inclination);
+
+    float expected_radius = intensity * 1000; // mGauss
+    float correction = expected_radius / _params.radius;
+
+    if (correction > COMPASS_MAX_SCALE_FACTOR || correction < COMPASS_MIN_SCALE_FACTOR) {
+        // don't allow more than 30% scale factor correction
+        gcs().send_text(MAV_SEVERITY_ERROR, "Mag(%u) bad radius %.0f expected %.0f",
+                        _compass_idx,
+                        _params.radius,
+                        expected_radius);
+        set_status(COMPASS_CAL_BAD_RADIUS);
+        return false;
+    }
+
+    _params.scale_factor = correction;
+
+    return true;
 }
