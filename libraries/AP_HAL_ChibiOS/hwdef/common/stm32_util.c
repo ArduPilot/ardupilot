@@ -353,3 +353,74 @@ void stm32_cacheBufferFlush(const void *p, size_t size)
 {
     cacheBufferFlush(p, size);
 }
+
+
+#ifdef HAL_GPIO_PIN_FAULT
+/*
+  optional support for hard-fault debugging using soft-serial output to a pin
+  To use this setup a pin like this:
+
+    Pxx FAULT OUTPUT HIGH
+
+  for some pin Pxx
+
+  On a STM32F405 the baudrate will be around 42kBaud. Use the
+  auto-baud function on your logic analyser to decode
+*/
+/*
+  send one bit out a debug line
+ */
+static void fault_send_bit(ioline_t line, uint8_t b)
+{
+    palWriteLine(line, b);
+    for (uint32_t i=0; i<1000; i++) {
+        palWriteLine(line, b);
+    }
+}
+
+/*
+  send a byte out a debug line
+ */
+static void fault_send_byte(ioline_t line, uint8_t b)
+{
+    fault_send_bit(line, 0); // start bit
+    for (uint8_t i=0; i<8; i++) {
+        uint8_t bit = (b & (1U<<i))?1:0;
+        fault_send_bit(line, bit);
+    }
+    fault_send_bit(line, 1); // stop bit
+}
+
+/*
+  send a string out a debug line
+ */
+static void fault_send_string(const char *str)
+{
+    while (*str) {
+        fault_send_byte(HAL_GPIO_PIN_FAULT, (uint8_t)*str++);
+    }
+    fault_send_byte(HAL_GPIO_PIN_FAULT, (uint8_t)'\n');
+}
+
+void fault_printf(const char *fmt, ...)
+{
+    static char buffer[100];
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(buffer, sizeof(buffer), fmt, ap);
+    va_end(ap);
+    fault_send_string(buffer);
+}
+#endif // HAL_GPIO_PIN_HARDFAULT
+
+void system_halt_hook(void)
+{
+#ifdef HAL_GPIO_PIN_FAULT
+    // optionally print the message on a fault pin
+    while (true) {
+        fault_printf("PANIC:%s\n", ch.dbg.panic_msg);
+        fault_printf("RA0:0x%08x\n", __builtin_return_address(0));
+    }
+#endif
+}
+
