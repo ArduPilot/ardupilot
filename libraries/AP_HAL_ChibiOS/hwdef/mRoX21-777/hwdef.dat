@@ -91,13 +91,8 @@ USB_STRING_MANUFACTURER "mRo"
 USB_STRING_PRODUCT "mRoX21-777"
 USB_STRING_SERIAL  "%SERIAL%"
 
-# now define the order that I2C buses are presented in the hal.i2c API
-# in ArduPilot. For historical reasons inherited from HAL_PX4 the
-# 'external' I2C bus should be bus 1 in hal.i2c, and internal I2C bus
-# should be bus 0. On fmuv3 the STM32 I2C1 is our external bus and
-# I2C2 is our internal bus, so we need to setup the order as I2C2
-# followed by I2C1 in order to achieve the conventional order that
-# drivers expect
+# this board only has a single I2C bus so make it external
+define HAL_I2C_INTERNAL_MASK 0
 
 # order of I2C buses
 I2C_ORDER I2C1
