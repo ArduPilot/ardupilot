@@ -87,10 +87,10 @@ protected:
     bool get_ignore_area(uint8_t index, uint16_t &angle_deg, uint8_t &width_deg) const;
     bool get_next_ignore_start_or_end(uint8_t start_or_end, int16_t start_angle, int16_t &ignore_start) const;
 
-    // database helpers
-    bool database_prepare_for_push(Location &current_loc, float &current_vehicle_bearing);
-    void database_push(const float angle, const float distance);
-    void database_push(const float angle, const float distance, const uint32_t timestamp_ms, const Location &current_loc, const float current_vehicle_bearing);
+    // database helpers.  all angles are in degrees
+    bool database_prepare_for_push(Location &current_loc, float &current_heading);
+    void database_push(float angle, float distance);
+    void database_push(float angle, float distance, uint32_t timestamp_ms, const Location &current_loc, float current_heading);
 
     AP_Proximity &frontend;
     AP_Proximity::Proximity_State &state;   // reference to this instances state
