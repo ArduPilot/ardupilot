@@ -37,7 +37,7 @@ public:
     void update();
 
     // push a location into the database
-    void queue_push(const Location &loc, const uint32_t timestamp_ms, const float distance, const float angle);
+    void queue_push(const Location &loc, uint32_t timestamp_ms, float angle, float distance);
 
     // returns true if database is healthy
     bool healthy() const { return (_queue.items != nullptr) && (_database.items != nullptr); }
@@ -131,7 +131,7 @@ class AP_OADatabase {
 public:
     static AP_OADatabase *get_singleton() { return nullptr; }
     void init() {};
-    void queue_push(const Location &loc, const uint32_t timestamp_ms, const float distance, const float angle) {};
+    void queue_push(const Location &loc, uint32_t timestamp_ms, float angle, float distance) {};
     bool healthy() const { return false; }
     void send_adsb_vehicle(mavlink_channel_t chan, uint16_t interval_ms) {};
 };
