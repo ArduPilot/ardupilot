@@ -181,7 +181,7 @@ void CompassCalibrator::new_sample(const Vector3f& sample)
         set_status(COMPASS_CAL_RUNNING_STEP_ONE);
     }
 
-    if (running() && _samples_collected < COMPASS_CAL_NUM_SAMPLES && accept_sample(sample)) {
+    if (running() && _samples_collected < COMPASS_CAL_NUM_SAMPLES && accept_sample(sample, _samples_collected)) {
         update_completion_mask(sample);
         _sample_buffer[_samples_collected].set(sample);
         _sample_buffer[_samples_collected].att.set_from_ahrs();
