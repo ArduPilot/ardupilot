@@ -184,6 +184,7 @@ public:
         AIRMODE =             84, // enable / disable airmode for copter
         // entries from 100 onwards are expected to be developer
         // options used for testing
+        GENERATOR   =         85, // generator control
         KILL_IMU1 =          100, // disable first IMU (for IMU failure testing)
         KILL_IMU2 =          101, // disable second IMU (for IMU failure testing)
         CAM_MODE_TOGGLE =    102, // Momentary switch to cycle camera modes
@@ -228,6 +229,7 @@ protected:
     void do_aux_function_rc_override_enable(const AuxSwitchPos ch_flag);
     void do_aux_function_relay(uint8_t relay, bool val);
     void do_aux_function_sprayer(const AuxSwitchPos ch_flag);
+    void do_aux_function_generator(const AuxSwitchPos ch_flag);
 
     typedef int8_t modeswitch_pos_t;
     virtual void mode_switch_changed(modeswitch_pos_t new_pos) {
