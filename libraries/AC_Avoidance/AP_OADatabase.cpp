@@ -106,7 +106,7 @@ void AP_OADatabase::update()
 }
 
 // push a location into the database
-void AP_OADatabase::queue_push(const Location &loc, const uint32_t timestamp_ms, const float distance, const float angle)
+void AP_OADatabase::queue_push(const Location &loc, uint32_t timestamp_ms, float angle, float distance)
 {
     if (!healthy()) {
         return;
