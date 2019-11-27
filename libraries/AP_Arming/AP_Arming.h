@@ -166,6 +166,8 @@ protected:
 
     bool aux_auth_checks(bool display_failure);
 
+    bool generator_checks(bool report) const;
+
     virtual bool system_checks(bool report);
 
     bool can_checks(bool report);
