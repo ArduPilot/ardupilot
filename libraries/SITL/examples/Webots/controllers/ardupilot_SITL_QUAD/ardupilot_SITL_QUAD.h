@@ -5,6 +5,7 @@
 // #define DEBUG_INPUT_DATA
 // #define LINEAR_THRUST
 #define WIND_SIMULATION
+#define DEBUG_SOCKETS
 
 #define VEHICLE_DRAG_FACTOR 0.001
 
