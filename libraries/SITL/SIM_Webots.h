@@ -71,7 +71,6 @@ private:
 
     SocketAPM *sim_sock;
 
-    uint32_t no_data_counter;
     uint32_t connect_counter;
 
     double initial_time_s;
