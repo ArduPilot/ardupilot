@@ -318,15 +318,8 @@ bool Webots::sensors_receive(void)
 {
     ssize_t ret = sim_sock->recv(&sensor_buffer[sensor_buffer_len], sizeof(sensor_buffer)-sensor_buffer_len, 0);
     if (ret <= 0) {
-        no_data_counter++;
-        if (no_data_counter == 1000) {
-            no_data_counter = 0;
-            delete sim_sock;
-            sim_sock = nullptr;
-        }
         return false;
     }
-    no_data_counter = 0;
 
     // convert '\n' into nul
     while (uint8_t *p = (uint8_t *)memchr(&sensor_buffer[sensor_buffer_len], '\n', ret)) {
@@ -496,7 +489,7 @@ void Webots::update(const struct sitl_input &input)
     
     // again measure dt as dt_s but with no constraints....
     double dt_s = state.timestamp - last_state.timestamp;
-    
+    last_state = state;
     if (dt_s < 0 || dt_s > 1) {
         // cope with restarting while connected
         initial_time_s = time_now_us * 1.0e-6f;
