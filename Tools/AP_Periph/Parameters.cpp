@@ -80,6 +80,10 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Path: ../../libraries/AP_RangeFinder/Rangefinder.cpp
     GOBJECT(rangefinder, "RNGFND", RangeFinder),
 #endif
+
+#ifdef HAL_PERIPH_ENABLE_ADSB
+    GSCALAR(adsb_baudrate, "ADSB_BAUDRATE", 57600),
+#endif
     
     AP_VAREND
 };
