@@ -62,6 +62,9 @@ define HAL_GPIO_SPEKTRUM_RC 71
 # Order of I2C buses
 I2C_ORDER I2C1
 
+# this board only has a single I2C bus so make it external
+define HAL_I2C_INTERNAL_MASK 0
+
 # OEM Only
 # I2C_ORDER I2C1, I2C2, I2C3
 
