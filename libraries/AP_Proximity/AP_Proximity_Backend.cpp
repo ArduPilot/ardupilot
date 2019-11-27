@@ -370,5 +370,5 @@ void AP_Proximity_Backend::database_push(float angle, float distance, uint32_t t
 
     Location temp_loc = current_loc;
     temp_loc.offset_bearing(wrap_180(current_heading + angle), distance);
-    oaDb->queue_push(temp_loc, timestamp_ms, distance, angle);
+    oaDb->queue_push(temp_loc, timestamp_ms, angle, distance);
 }
