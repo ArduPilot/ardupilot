@@ -181,6 +181,8 @@ public:
     // accessors for AP_Periph to set baudrate and type
     void set_protocol_and_baud(uint8_t sernum, enum SerialProtocol protocol, uint32_t baudrate);
 
+    static uint32_t map_baudrate(int32_t rate);
+
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -204,8 +206,6 @@ private:
     // instance-nth UART which is running protocol protocol
     const UARTState *find_protocol_instance(enum SerialProtocol protocol,
                                       uint8_t instance) const;
-
-    uint32_t map_baudrate(int32_t rate) const;
 
     // protocol_match - returns true if the protocols match
     bool protocol_match(enum SerialProtocol protocol1, enum SerialProtocol protocol2) const;
