@@ -1104,7 +1104,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // @Group: BTN_
     // @Path: ../libraries/AP_Button/AP_Button.cpp
-    AP_SUBGROUPINFO(button, "BTN_", 1, ParametersG2, AP_Button),
+    AP_SUBGROUPPTR(button_ptr, "BTN_", 1, ParametersG2, AP_Button),
 
     // @Group: ICE_
     // @Path: ../libraries/AP_ICEngine/AP_ICEngine.cpp
@@ -1253,6 +1253,7 @@ ParametersG2::ParametersG2(void) :
 #if SOARING_ENABLED == ENABLED
     ,soaring_controller(plane.ahrs, plane.TECS_controller, plane.aparm)
 #endif
+    ,button_ptr(&plane.button)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
