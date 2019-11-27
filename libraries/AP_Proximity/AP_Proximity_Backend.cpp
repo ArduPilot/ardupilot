@@ -335,7 +335,7 @@ bool AP_Proximity_Backend::get_next_ignore_start_or_end(uint8_t start_or_end, in
 }
 
 // returns true if database is ready to be pushed to and all cached data is ready
-bool AP_Proximity_Backend::database_prepare_for_push(Location &current_loc, float &current_vehicle_bearing)
+bool AP_Proximity_Backend::database_prepare_for_push(Location &current_loc, float &current_heading)
 {
     AP_OADatabase *oaDb = AP::oadatabase();
     if (oaDb == nullptr || !oaDb->healthy()) {
@@ -346,22 +346,22 @@ bool AP_Proximity_Backend::database_prepare_for_push(Location &current_loc, floa
         return false;
     }
 
-    current_vehicle_bearing = AP::ahrs().yaw_sensor * 0.01f;
+    current_heading = AP::ahrs().yaw_sensor * 0.01f;
     return true;
 }
 
 // update Object Avoidance database with Earth-frame point
-void AP_Proximity_Backend::database_push(const float angle, const float distance)
+void AP_Proximity_Backend::database_push(float angle, float distance)
 {
     Location current_loc;
-    float current_vehicle_bearing;
-    if (database_prepare_for_push(current_loc, current_vehicle_bearing) == true) {
-        database_push(angle, distance, AP_HAL::millis(), current_loc, current_vehicle_bearing);
+    float current_heading;
+    if (database_prepare_for_push(current_loc, current_heading)) {
+        database_push(angle, distance, AP_HAL::millis(), current_loc, current_heading);
     }
 }
 
 // update Object Avoidance database with Earth-frame point
-void AP_Proximity_Backend::database_push(const float angle, const float distance, const uint32_t timestamp_ms, const Location &current_loc, const float current_vehicle_bearing)
+void AP_Proximity_Backend::database_push(float angle, float distance, uint32_t timestamp_ms, const Location &current_loc, float current_heading)
 {
     AP_OADatabase *oaDb = AP::oadatabase();
     if (oaDb == nullptr || !oaDb->healthy()) {
@@ -369,6 +369,6 @@ void AP_Proximity_Backend::database_push(const float angle, const float distance
     }
 
     Location temp_loc = current_loc;
-    temp_loc.offset_bearing(wrap_180(current_vehicle_bearing + angle), distance);
+    temp_loc.offset_bearing(wrap_180(current_heading + angle), distance);
     oaDb->queue_push(temp_loc, timestamp_ms, distance, angle);
 }
