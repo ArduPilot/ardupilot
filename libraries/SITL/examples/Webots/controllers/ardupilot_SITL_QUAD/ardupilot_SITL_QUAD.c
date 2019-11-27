@@ -56,10 +56,15 @@ static WbNodeRef world_info;
 static const double *northDirection;
 static double v[MOTOR_NUM];
 int port;
-float drafFactor = VEHICLE_DRAG_FACTOR;
+float dragFactor = VEHICLE_DRAG_FACTOR;
 
 static int timestep;
 
+
+// maxSimCycleTime limits the fasts execution path. it is very useful in SLOW MOTION.
+// Increasing simulation speed using ">>" button on webots may not be effective
+// if this value > 0.
+int maxSimCycleTime = 0; // no delay
 
 #ifdef DEBUG_USE_KB
 /*
@@ -217,15 +222,15 @@ void update_controls()
     wind_webots_axis.y =  state.wind.z - linear_velocity[1];
   }
 
-  wind_webots_axis.x = drafFactor * wind_webots_axis.x * abs(wind_webots_axis.x);
-  wind_webots_axis.z = drafFactor * wind_webots_axis.z * abs(wind_webots_axis.z);
-  wind_webots_axis.y = drafFactor * wind_webots_axis.y * abs(wind_webots_axis.y);
+  wind_webots_axis.x = dragFactor * wind_webots_axis.x * abs(wind_webots_axis.x);
+  wind_webots_axis.z = dragFactor * wind_webots_axis.z * abs(wind_webots_axis.z);
+  wind_webots_axis.y = dragFactor * wind_webots_axis.y * abs(wind_webots_axis.y);
 
   wb_emitter_send(emitter, &wind_webots_axis, sizeof(VECTOR4F));
   
   #ifdef DEBUG_WIND
   printf("wind sitl: %f %f %f %f\n",state.wind.w, state.wind.x, state.wind.y, state.wind.z);
-  printf("wind ctrl: (drafFactor) %f %f %f %f %f\n",drafFactor, wind_webots_axis.w, wind_webots_axis.x, wind_webots_axis.y, wind_webots_axis.z);
+  printf("wind ctrl: (dragFactor) %f %f %f %f %f\n",dragFactor, wind_webots_axis.w, wind_webots_axis.x, wind_webots_axis.y, wind_webots_axis.z);
   #endif
 
   #endif
@@ -298,15 +303,19 @@ bool parse_controls(const char *json)
     return true;
 }
 
-
 void run ()
 {
 
     char send_buf[1000]; //1000 just a safe margin
     char command_buffer[200];
     fd_set rfds;
+
     while (wb_robot_step(timestep) != -1) 
     {
+        for (int i=0;i<maxSimCycleTime;++i)
+        {
+          usleep(1000);
+        }
         #ifdef DEBUG_USE_KB
         process_keyboard();
         #endif
@@ -341,10 +350,10 @@ void run ()
           tv.tv_usec = 0;
           int number = select(fd + 1, &rfds, NULL, NULL, &tv);
           if (number != 0) 
-          { 
+          {
             // there is a valid connection
-                
                 int n = recv(fd, (char *)command_buffer, 200, 0);
+
                 if (n < 0) {
         #ifdef _WIN32
                   int e = WSAGetLastError();
@@ -360,6 +369,7 @@ void run ()
         #endif
                   break;
                 }
+                
                 if (n==0)
                 {
                   break;
@@ -371,12 +381,10 @@ void run ()
                 if (n > 0)
                 {
 
-                  //printf("Received %d bytes:\n", n);
                   command_buffer[n] = 0;
                   parse_controls (command_buffer);
                   update_controls();
                   
-
                 }
           }
           
@@ -407,8 +415,17 @@ void initialize (int argc, char *argv[])
         {
           if (argc > i+1 )
           {
-            drafFactor = atof (argv[i+1]);
-            printf("drag Factor %f\n",drafFactor);
+            dragFactor = atof (argv[i+1]);
+            printf("drag Factor %f\n",dragFactor);
+          }
+        }
+        else if (strcmp (argv[i],"-d")==0)
+        {
+          if (argc > i+1 )
+          {
+            // extra delay in milliseconds
+            maxSimCycleTime = atoi (argv[i+1]);
+            printf("max simulation cycle time is %d ms\n",maxSimCycleTime);
           }
         }
     }

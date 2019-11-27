@@ -45,6 +45,11 @@ static double servo_value_extra = 0;
 int port;
 
 
+// delatTime limits the fasts execution path. it is very useful in SLOW MOTION.
+// Increasing simulation speed using ">>" button on webots may not be effective
+// if this value > 0.
+int maxSimCycleTime = 0; // no delay
+
 static int timestep;
 
 
@@ -285,6 +290,11 @@ void run ()
     fd_set rfds;
     while (wb_robot_step(timestep) != -1) 
     {
+        for (int i=0;i<maxSimCycleTime;++i)
+        {
+          usleep(1000);
+        }
+        
         #ifdef DEBUG_USE_KB
         process_keyboard();
         #endif
@@ -349,11 +359,9 @@ void run ()
                 if (n > 0)
                 {
 
-                  //printf("Received %d bytes:\n", n);
                   command_buffer[n] = 0;
                   parse_controls (command_buffer);
                   update_controls();
-                  
 
                 }
           }
@@ -378,6 +386,15 @@ void initialize (int argc, char *argv[])
           if (argc > i+1 )
           {
             port = atoi (argv[i+1]);
+          }
+        }
+       else if (strcmp (argv[i],"-d")==0)
+        {
+          if (argc > i+1 )
+          {
+            // extra delay in milliseconds
+            maxSimCycleTime = atoi (argv[i+1]);
+            printf("max simulation cycle time is %d ms\n",maxSimCycleTime);
           }
         }
     }
