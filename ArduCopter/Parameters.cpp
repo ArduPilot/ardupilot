@@ -735,7 +735,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 #if BUTTON_ENABLED == ENABLED
     // @Group: BTN_
     // @Path: ../libraries/AP_Button/AP_Button.cpp
-    AP_SUBGROUPINFO(button, "BTN_", 2, ParametersG2, AP_Button),
+    AP_SUBGROUPPTR(button_ptr, "BTN_", 2, ParametersG2, AP_Button),
 #endif
 
 #if MODE_THROW_ENABLED == ENABLED
@@ -1052,6 +1052,7 @@ ParametersG2::ParametersG2(void)
 #if MODE_AUTOROTATE_ENABLED == ENABLED
     ,arot(copter.inertial_nav)
 #endif
+    ,button_ptr(&copter.button)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
