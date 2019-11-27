@@ -391,8 +391,8 @@ void AP_Proximity_LightWareSF40C::process_message()
 
         // prepare to push to object database
         Location current_loc;
-        float current_vehicle_bearing;
-        const bool database_ready = database_prepare_for_push(current_loc, current_vehicle_bearing);
+        float current_heading;
+        const bool database_ready = database_prepare_for_push(current_loc, current_heading);
 
         // process each point
         const float angle_inc_deg = (1.0f / point_total) * 360.0f;
@@ -426,7 +426,7 @@ void AP_Proximity_LightWareSF40C::process_message()
                     }
                     // send point to object avoidance database
                     if (database_ready) {
-                        database_push(angle_deg, dist_m, _last_distance_received_ms, current_loc, current_vehicle_bearing);
+                        database_push(angle_deg, dist_m, _last_distance_received_ms, current_loc, current_heading);
                     }
                 }
             }
