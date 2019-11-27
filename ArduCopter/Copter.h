@@ -528,11 +528,6 @@ private:
     AP_Parachute parachute{relay};
 #endif
 
-    // Button 
-#if BUTTON_ENABLED == ENABLED
-    AP_Button button;
-#endif
-
     // Landing Gear Controller
     AP_LandingGear landinggear;
 
