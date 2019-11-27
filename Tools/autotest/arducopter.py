@@ -4282,6 +4282,10 @@ class AutoTestCopter(AutoTest):
              "Test Camera/Antenna Mount",
              self.test_mount),
 
+            ("Button",
+             "Test Buttons",
+             self.test_button),
+
             ("RangeFinder",
              "Test RangeFinder Basic Functionality",
              self.test_rangefinder),
