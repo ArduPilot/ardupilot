@@ -22,6 +22,7 @@
 #ifdef HAL_PERIPH_ENABLE_ADSB
 
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -30,7 +31,7 @@ extern const AP_HAL::HAL &hal;
  */
 void AP_Periph_FW::adsb_init(void)
 {
-    ADSB_PORT->begin(57600, 256, 256);
+    ADSB_PORT->begin(AP_SerialManager::map_baudrate(g.adsb_baudrate), 256, 256);
 }
 
 
