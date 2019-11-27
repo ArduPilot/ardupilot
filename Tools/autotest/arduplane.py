@@ -1638,6 +1638,10 @@ class AutoTestPlane(AutoTest):
              "Test ADSB",
              self.test_adsb),
 
+            ("Button",
+             "Test Buttons",
+             self.test_button),
+
             ("AdvancedFailsafe",
              "Test Advanced Failsafe",
              self.test_advanced_failsafe),
