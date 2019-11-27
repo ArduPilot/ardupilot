@@ -580,7 +580,7 @@ void AP_SerialManager::set_blocking_writes_all(bool blocking)
  *  stm32-based boards we can do 1.5MBit, although 921600 is more
  *  reliable.
  */
-uint32_t AP_SerialManager::map_baudrate(int32_t rate) const
+uint32_t AP_SerialManager::map_baudrate(int32_t rate)
 {
     if (rate <= 0) {
         rate = 57;
