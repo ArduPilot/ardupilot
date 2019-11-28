@@ -19,3 +19,6 @@
 [submodule "modules/libcanard"]
 	path = modules/libcanard
 	url = git://github.com/ArduPilot/libcanard.git
+[submodule "modules/wolfssl"]
+	path = modules/wolfssl
+	url = https://github.com/wolfssl/wolfssl
