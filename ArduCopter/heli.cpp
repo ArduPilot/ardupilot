@@ -175,4 +175,38 @@ void Copter::heli_update_rotor_speed_targets()
     rotor_runup_complete_last = motors->rotor_runup_complete();
 }
 
+
+// heli_update_autorotation - determines if aircraft is in autorotation and sets motors flag and switches
+// to autorotation flight mode if manual collective is not being used.
+void Copter::heli_update_autorotation()
+{
+#if MODE_AUTOROTATE_ENABLED == ENABLED
+    //set autonomous autorotation flight mode
+    if (!ap.land_complete && !motors->get_interlock() && !flightmode->has_manual_throttle() && g2.arot.is_enable()) {
+        heli_flags.in_autorotation = true;
+        set_mode(Mode::Number::AUTOROTATE, ModeReason::AUTOROTATION_START);
+    } else {
+        heli_flags.in_autorotation = false;
+    }
+
+    // sets autorotation flags through out libraries
+    heli_set_autorotation(heli_flags.in_autorotation);
+    if (!ap.land_complete && g2.arot.is_enable()) {
+        motors->set_enable_bailout(true);
+    } else {
+        motors->set_enable_bailout(false);
+    }
+#else
+    heli_flags.in_autorotation = false;
+    motors->set_enable_bailout(false);
+#endif
+}
+
+#if MODE_AUTOROTATE_ENABLED == ENABLED
+// heli_set_autorotation - set the autorotation f`lag throughout libraries
+void Copter::heli_set_autorotation(bool autorotation)
+{
+    motors->set_in_autorotation(autorotation);
+}
+#endif
 #endif  // FRAME_CONFIG == HELI_FRAME
