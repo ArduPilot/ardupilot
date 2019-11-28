@@ -180,6 +180,7 @@ void RangeFinder::convert_params(void) {
     };
 
     const struct ConversionTable conversionTable[] = {
+            // rangefinder 1
             {0, 0, 0}, //0, TYPE 1
             {1, 1, 0}, //1, PIN 1
             {2, 2, 0}, //2, SCALING 1
@@ -188,16 +189,14 @@ void RangeFinder::convert_params(void) {
             {5, 5, 0}, //5, MIN_CM 1
             {6, 6, 0}, //6, MAX_CM 1
             {7, 7, 0}, //7, STOP_PIN 1
-            {8, 8, 0}, //8, SETTLE 1
-            {9, 9, 0}, //9, RMETRIC 1
-            {10, 10, 0}, //10, PWRRNG 1 (previously existed only once for all sensors)
-            {11, 11, 0}, //11, GNDCLEAR 1
-            {23, 12, 0}, //23, ADDR 1
-            {49, 13, 0}, //49, POS 1
-            {53, 14, 0}, //53, ORIENT 1
+            {9, 8, 0}, //9, RMETRIC 1
+            {10, 9, 0}, //10, PWRRNG 1 (previously existed only once for all sensors)
+            {11, 10, 0}, //11, GNDCLEAR 1
+            {23, 11, 0}, //23, ADDR 1
+            {49, 12, 0}, //49, POS 1
+            {53, 13, 0}, //53, ORIENT 1
 
-            //{57, 1, 0}, //57, backend 1
-
+            // rangefinder 2
             {12, 0, 1}, //12, TYPE 2
             {13, 1, 1}, //13, PIN 2
             {14, 2, 1}, //14, SCALING 2
@@ -206,16 +205,14 @@ void RangeFinder::convert_params(void) {
             {17, 5, 1}, //17, MIN_CM 2
             {18, 6, 1}, //18, MAX_CM 2
             {19, 7, 1}, //19, STOP_PIN 2
-            {20, 8, 1}, //20, SETTLE 2
-            {21, 9, 1}, //21, RMETRIC 2
-            //{, 10, 1}, //PWRRNG 2 (previously existed only once for all sensors)
-            {22, 11, 1}, //22, GNDCLEAR 2
-            {24, 12, 1}, //24, ADDR 2
-            {50, 13, 1}, //50, POS 2
-            {54, 14, 1}, //54, ORIENT 2
+            {21, 8, 1}, //21, RMETRIC 2
+            {10, 9, 1}, //10, PWRRNG 1 (previously existed only once for all sensors)
+            {22, 10, 1}, //22, GNDCLEAR 2
+            {24, 11, 1}, //24, ADDR 2
+            {50, 12, 1}, //50, POS 2
+            {54, 13, 1}, //54, ORIENT 2
 
-            //{58, 3, 1}, //58, backend 2
-
+            // rangefinder 3
             {25, 0, 2}, //25, TYPE 3
             {26, 1, 2}, //26, PIN 3
             {27, 2, 2}, //27, SCALING 3
@@ -224,16 +221,14 @@ void RangeFinder::convert_params(void) {
             {30, 5, 2}, //30, MIN_CM 3
             {31, 6, 2}, //31, MAX_CM 3
             {32, 7, 2}, //32, STOP_PIN 3
-            {33, 8, 2}, //33, SETTLE 3
-            {34, 9, 2}, //34, RMETRIC 3
-            //{, 10, 2}, //PWRRNG 3 (previously existed only once for all sensors)
-            {35, 11, 2}, //35, GNDCLEAR 3
-            {36, 12, 2}, //36, ADDR 3
-            {51, 13, 2}, //51, POS 3
-            {55, 14, 2}, //55, ORIENT 3
+            {34, 8, 2}, //34, RMETRIC 3
+            {10, 9, 2}, //10, PWRRNG 1 (previously existed only once for all sensors)
+            {35, 10, 2}, //35, GNDCLEAR 3
+            {36, 11, 2}, //36, ADDR 3
+            {51, 12, 2}, //51, POS 3
+            {55, 13, 2}, //55, ORIENT 3
 
-            //{59, 5, 2}, //59, backend 3
-
+            // rangefinder 4
             {37, 0, 3}, //37, TYPE 4
             {38, 1, 3}, //38, PIN 4
             {39, 2, 3}, //39, SCALING 4
@@ -242,15 +237,12 @@ void RangeFinder::convert_params(void) {
             {42, 5, 3}, //42, MIN_CM 4
             {43, 6, 3}, //43, MAX_CM 4
             {44, 7, 3}, //44, STOP_PIN 4
-            {45, 8, 3}, //45, SETTLE 4
-            {46, 9, 3}, //46, RMETRIC 4
-            //{, 10, 3}, //PWRRNG 4 (previously existed only once for all sensors)
-            {47, 11, 3}, //47, GNDCLEAR 4
-            {48, 12, 3}, //48, ADDR 4
-            {52, 13, 3}, //52, POS 4
-            {56, 14, 3}, //56, ORIENT 4
-
-            //{60, 7, 3}, //60, backend 4
+            {46, 8, 3}, //46, RMETRIC 4
+            {10, 9, 3}, //10, PWRRNG 1 (previously existed only once for all sensors)
+            {47, 10, 3}, //47, GNDCLEAR 4
+            {48, 11, 3}, //48, ADDR 4
+            {52, 12, 3}, //52, POS 4
+            {56, 13, 3}, //56, ORIENT 4
     };
 
     char param_name[17] = {0};
