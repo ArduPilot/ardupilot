@@ -294,9 +294,12 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
 // update_rotor_ramp - slews rotor output scalar between 0 and 1, outputs float scalar to _rotor_ramp_output
 void AP_MotorsHeli_RSC::update_rotor_ramp(float rotor_ramp_input, float dt)
 {
-    // sanity check ramp time
-    if (_ramp_time <= 0) {
-        _ramp_time = 1;
+    int8_t ramp_time;
+    // sanity check ramp time and enable bailout if set
+    if (_use_bailout_ramp || _ramp_time <= 0) {
+        ramp_time = 1;
+    } else {
+        ramp_time = _ramp_time;
     }
 
     // ramp output upwards towards target
@@ -306,7 +309,7 @@ void AP_MotorsHeli_RSC::update_rotor_ramp(float rotor_ramp_input, float dt)
             _rotor_ramp_output = _rotor_runup_output;
         }
         // ramp up slowly to target
-        _rotor_ramp_output += (dt / _ramp_time);
+        _rotor_ramp_output += (dt / ramp_time);
         if (_rotor_ramp_output > rotor_ramp_input) {
             _rotor_ramp_output = rotor_ramp_input;
         }
