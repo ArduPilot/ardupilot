@@ -45,11 +45,30 @@
 #include "ch.h"
 #include "hal.h"
 #include "hwdef.h"
-
 #include "bl_protocol.h"
 #include "support.h"
 #include "can.h"
 #include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
+
+#if defined(SECURE) && SECURE==1
+#include <AP_ROMFS/AP_ROMFS.h>
+#include <string.h>
+#include <wolfssl/options.h>
+//#include <wolfssl/wolfcrypt/settings.h>
+#include <wolfssl/wolfcrypt/sha256.h>
+#include <wolfssl/wolfcrypt/random.h>
+#include <wolfssl/wolfcrypt/ecc.h>
+#include <wolfssl/wolfcrypt/asn_public.h>
+
+wc_Sha256 sha;
+uint8_t firstPage[128];
+uint8_t hash[32];
+uint32_t signature[19];
+const char* ecc_qx = ECC_QX;
+const char* ecc_qy = ECC_QX;
+ecc_key publicKey;
+#endif
+
 
 // #pragma GCC optimize("O0")
 
@@ -105,6 +124,10 @@
 #define PROTO_BOOT					0x30    // boot the application
 #define PROTO_DEBUG					0x31    // emit debug information - format not defined
 #define PROTO_SET_BAUD				0x33    // baud rate on uart
+
+#define PROTO_PROTECT0				0xF0
+#define PROTO_PROTECT1				0xF1
+#define PROTO_PROTECT2				0xF2
 
 #define PROTO_PROG_MULTI_MAX    64	// maximum PROG_MULTI size
 #define PROTO_READ_MULTI_MAX    255	// size of the size field
@@ -805,6 +828,32 @@ bootloader(unsigned timeout)
             break;
         }
 
+#if defined(SECURE) && SECURE==1
+		case PROTO_PROTECT0:
+			// expect EOC
+			if (!wait_for_eoc(1000)) {
+				goto cmd_bad;
+			}
+			flash_func_protect(0);
+			break;
+
+		case PROTO_PROTECT1:
+			// expect EOC
+			if (!wait_for_eoc(1000)) {
+				goto cmd_bad;
+			}
+			flash_func_protect(1);
+			break;
+
+		case PROTO_PROTECT2:
+			// expect EOC
+			if (!wait_for_eoc(1000)) {
+				goto cmd_bad;
+			}
+			flash_func_protect(2);
+			break;
+#endif
+
         // finalise programming and boot the system
         //
         // command:			BOOT/EOC
@@ -823,6 +872,49 @@ bootloader(unsigned timeout)
 
             // program the deferred first word
             if (first_words[0] != 0xffffffff) {
+#if defined(SECURE) && SECURE==1
+                //verify signature
+                wc_InitSha256(&sha);
+                for (unsigned p = 0; p < address - 76; p += 4) {
+                    uint32_t bytes;
+
+                    if (p < sizeof(first_words) && first_words[0] != 0xFFFFFFFF) {
+                        bytes = first_words[p/4];
+                    } else {
+                        bytes = flash_func_read_word(p);
+                    }
+                    wc_Sha256Update(&sha, (uint8_t *)&bytes, sizeof(bytes));
+                }
+                for (unsigned p = 0; p < 76; p += 4) {
+                    signature[p/4] = flash_func_read_word(p + address - 76);
+                }
+                uint8_t* sigbytes = (uint8_t*)signature;
+                uint8_t siglength = 0;
+                for (uint8_t i = 0; i < 6; i++) {
+                    if(sigbytes[i] != 0) {
+                        siglength = sigbytes[i];
+                        sigbytes = &sigbytes[i+1];
+                        break;
+                    }
+                }
+                if ((siglength > 72) || (siglength == 0)) {
+                    goto cmd_fail;
+                }
+                wc_Sha256Final(&sha, hash);
+                int err = wc_ecc_init(&publicKey);
+                if (err != MP_OKAY) {
+                    goto cmd_fail;
+                } 
+                err = wc_ecc_import_raw(&publicKey, ECC_QX, ECC_QY, NULL, "SECP256R1");
+                if (err != MP_OKAY) {
+                    goto cmd_fail;
+                }
+                int ret, verified = 0;
+                ret = wc_ecc_verify_hash(sigbytes, siglength, hash, sizeof(hash), &verified, &publicKey);
+                if (verified == 0 || ret != 0) {
+                    goto cmd_fail;
+                }
+#endif
                 if (!flash_write_buffer(0, first_words, RESERVE_LEAD_WORDS)) {
                     goto cmd_fail;
                 }
