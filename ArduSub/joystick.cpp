@@ -704,10 +704,6 @@ void Sub::set_neutral_controls()
         RC_Channels::set_override(i, 1500, tnow);
     }
 
-    for (uint8_t i = 6; i < 11; i++) {
-        RC_Channels::set_override(i, 0xffff, tnow);
-    }
-
     // Clear pitch/roll trim settings
     pitchTrim = 0;
     rollTrim  = 0;
