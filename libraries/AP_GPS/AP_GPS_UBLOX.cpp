@@ -1062,7 +1062,8 @@ AP_GPS_UBLOX::_parse_gps(void)
                 state.status = AP_GPS::GPS_OK_FIX_3D;
                 break;
             case 5:
-                state.status = AP_GPS::NO_FIX;
+                // After an M8P RTK base station finishes the survey, the fix type is TIME, but its really a 3D static fix
+                state.status = AP_GPS::GPS_OK_FIX_3D_STATIC;
                 break;
             default:
                 state.status = AP_GPS::NO_FIX;
