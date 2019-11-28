@@ -182,10 +182,9 @@ AP_GPS_ERB::_parse_gps(void)
             state.time_week_ms    = _buffer.stat.time;
             state.time_week       = _buffer.stat.week;
         }
-        Debug("Message ERB STAT num_sats= %u", _buffer.stat.satellites);
         break;
     case MSG_DOPS:
-        Debug("Message ERB DOPS, hdop = %d, vdop=%d", _buffer.dops.hDOP,_buffer.dops.vDOP);
+        Debug("Message DOPS");
         state.hdop = _buffer.dops.hDOP;
         state.vdop = _buffer.dops.vDOP;
         break;
