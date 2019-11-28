@@ -240,6 +240,12 @@ void AP_GPS_UAVCAN::handle_fix_msg(const FixCb &cb)
         interim_state.num_sats = 0;
     }
 
+    if (!seen_aux) {
+        // if we haven't seen an Aux message then populate vdop and
+        // hdop from pdop. Some GPS modules don't provide the Aux message
+        interim_state.hdop = interim_state.vdop = cb.msg->pdop * 100.0;
+    }
+
     interim_state.last_gps_time_ms = AP_HAL::millis();
 
     _new_data = true;
@@ -345,6 +351,12 @@ void AP_GPS_UAVCAN::handle_fix2_msg(const Fix2Cb &cb)
         interim_state.num_sats = 0;
     }
 
+    if (!seen_aux) {
+        // if we haven't seen an Aux message then populate vdop and
+        // hdop from pdop. Some GPS modules don't provide the Aux message
+        interim_state.hdop = interim_state.vdop = cb.msg->pdop * 100.0;
+    }
+    
     interim_state.last_gps_time_ms = AP_HAL::millis();
 
     _new_data = true;
@@ -364,10 +376,12 @@ void AP_GPS_UAVCAN::handle_aux_msg(const AuxCb &cb)
     WITH_SEMAPHORE(sem);
 
     if (!uavcan::isNaN(cb.msg->hdop)) {
+        seen_aux = true;
         interim_state.hdop = cb.msg->hdop * 100.0;
     }
 
     if (!uavcan::isNaN(cb.msg->vdop)) {
+        seen_aux = true;
         interim_state.vdop = cb.msg->vdop * 100.0;
     }
 }
