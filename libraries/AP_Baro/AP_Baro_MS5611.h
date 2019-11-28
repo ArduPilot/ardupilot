@@ -27,6 +27,8 @@ public:
     };
 
     static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev, enum MS56XX_TYPE ms56xx_type = BARO_MS5611);
+
+    static uint16_t crc4(uint16_t *data);
     
 private:
     /*

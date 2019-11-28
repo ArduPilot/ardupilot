@@ -700,6 +700,9 @@ bool NavEKF3::InitialiseFilter(void)
     // Set the primary initially to be the lowest index
     primary = 0;
 
+    // invalidate shared origin
+    common_origin_valid = false;
+
     // initialise the cores. We return success only if all cores
     // initialise successfully
     bool ret = true;
@@ -781,6 +784,18 @@ void NavEKF3::UpdateFilter(void)
         }
     }
 
+    if (primary != 0 && core[0].healthy() && !hal.util->get_soft_armed()) {
+        // when on the ground and disarmed force the first lane. This
+        // avoids us ending with with a lottery for which IMU is used
+        // in each flight. Otherwise the alignment of the timing of
+        // the lane updates with the timing of GPS updates can lead to
+        // a lane other than the first one being used as primary for
+        // some flights. As different IMUs may have quite different
+        // noise characteristics this leads to inconsistent
+        // performance
+        primary = 0;
+    }
+    
     check_log_write();
 }
 
@@ -1031,10 +1046,22 @@ bool NavEKF3::getOriginLLH(int8_t instance, struct Location &loc) const
 // Returns false if the filter has rejected the attempt to set the origin
 bool NavEKF3::setOriginLLH(const Location &loc)
 {
+    if (_fusionModeGPS != 3) {
+        // we don't allow setting of the EKF origin unless we are
+        // flying in non-GPS mode. This is to prevent accidental set
+        // of EKF origin with invalid position or height
+        gcs().send_text(MAV_SEVERITY_WARNING, "EKF3 refusing set origin");
+        return false;
+    }
     if (!core) {
         return false;
     }
-    return core[primary].setOriginLLH(loc);
+    bool ret = false;
+    for (uint8_t i=0; i<num_cores; i++) {
+        ret |= core[i].setOriginLLH(loc);
+    }
+    // return true if any core accepts the new origin
+    return ret;
 }
 
 // return estimated height above ground level

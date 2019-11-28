@@ -74,6 +74,8 @@
 #define HAL_BOARD_SUBTYPE_CHIBIOS_AIRBOTF4      5012
 #define HAL_BOARD_SUBTYPE_CHIBIOS_FMUV5         5013
 #define HAL_BOARD_SUBTYPE_CHIBIOS_MATEKF405WING 5014
+#define HAL_BOARD_SUBTYPE_CHIBIOS_FMUV4PRO      5015
+#define HAL_BOARD_SUBTYPE_CHIBIOS_MROCONTROLZEROF7 5021
 
 /* InertialSensor driver types */
 #define HAL_INS_NONE         0
@@ -95,6 +97,8 @@
 #define HAL_INS_RST         21
 #define HAL_INS_LSM9DS1     22
 #define HAL_INS_ICM20789_SPI 23
+#define HAL_INS_INV2_I2C    24
+#define HAL_INS_INV2_SPI    25
 
 /* Barometer driver types */
 #define HAL_BARO_NONE        0
@@ -115,6 +119,7 @@
 #define HAL_BARO_LPS25H_IMU_I2C 17
 #define HAL_BARO_FBM320_I2C 18
 #define HAL_BARO_DPS280_I2C 19
+#define HAL_BARO_DPS280_SPI 20
 
 /* Compass driver types */
 #define HAL_COMPASS_NONE                0

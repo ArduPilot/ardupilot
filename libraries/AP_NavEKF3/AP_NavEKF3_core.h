@@ -28,6 +28,7 @@
 #include "AP_NavEKF3.h"
 #include <AP_Math/vectorN.h>
 #include <AP_NavEKF3/AP_NavEKF3_Buffer.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 
 // GPS pre-flight check bit locations
 #define MASK_GPS_NSATS      (1<<0)
@@ -344,8 +345,9 @@ public:
     // publish output observer angular, velocity and position tracking error
     void getOutputTrackingError(Vector3f &error) const;
 
-    // get the IMU index
-    uint8_t getIMUIndex(void) const { return imu_index; }
+    // get the IMU index. For now we return the gyro index, as that is most
+    // critical for use by other subsystems.
+    uint8_t getIMUIndex(void) const { return gyro_index_active; }
 
     // get timing statistics structure
     void getTimingStatistics(struct ekf_timing &timing);
@@ -353,7 +355,9 @@ public:
 private:
     // Reference to the global EKF frontend for parameters
     NavEKF3 *frontend;
-    uint8_t imu_index;
+    uint8_t imu_index; // preferred IMU index
+    uint8_t gyro_index_active; // active gyro index (in case preferred fails)
+    uint8_t accel_index_active; // active accel index (in case preferred fails)
     uint8_t core_index;
     uint8_t imu_buffer_length;
     uint8_t obs_buffer_length;
@@ -439,6 +443,8 @@ private:
         float       delAngDT;       // time interval over which delAng has been measured (sec)
         float       delVelDT;       // time interval over which delVelDT has been measured (sec)
         uint32_t    time_ms;        // measurement timestamp (msec)
+        uint8_t     gyro_index;
+        uint8_t     accel_index;
     };
 
     struct gps_elements {
@@ -501,6 +507,13 @@ private:
         float           delTime;    // time interval that the measurement was accumulated over (sec)
         uint32_t        time_ms;    // measurement timestamp (msec)
     };
+
+    // bias estimates for the IMUs that are enabled but not being used
+    // by this core.
+    struct {
+        Vector3f gyro_bias;
+        Vector3f accel_bias;
+    } inactiveBias[INS_MAX_INSTANCES];
 
     // update the navigation filter status
     void updateFilterStatus(void);
@@ -608,11 +621,14 @@ private:
     bool readDeltaAngle(uint8_t ins_index, Vector3f &dAng);
 
     // helper functions for correcting IMU data
-    void correctDeltaAngle(Vector3f &delAng, float delAngDT);
-    void correctDeltaVelocity(Vector3f &delVel, float delVelDT);
+    void correctDeltaAngle(Vector3f &delAng, float delAngDT, uint8_t gyro_index);
+    void correctDeltaVelocity(Vector3f &delVel, float delVelDT, uint8_t accel_index);
 
     // update IMU delta angle and delta velocity measurements
     void readIMUData();
+
+    // update estimate of inactive bias states
+    void learnInactiveBiases();
 
     // check for new valid GPS data and update stored measurement if available
     void readGpsData();
@@ -720,7 +736,7 @@ private:
     void controlMagYawReset();
 
     // Set the NED origin to be used until the next filter reset
-    void setOrigin();
+    void setOrigin(const Location &loc);
 
     // determine if a takeoff is expected so that we can compensate for expected barometer errors due to ground effect
     bool getTakeoffExpected();
@@ -728,8 +744,8 @@ private:
     // determine if a touchdown is expected so that we can compensate for expected barometer errors due to ground effect
     bool getTouchdownExpected();
 
-    // Assess GPS data quality and return true if good enough to align the EKF
-    bool calcGpsGoodToAlign(void);
+    // Assess GPS data quality and set gpsGoodToAlign
+    void calcGpsGoodToAlign(void);
 
     // set the class variable true if the delta angle bias variances are sufficiently small
     void checkGyroCalStatus(void);
@@ -882,6 +898,7 @@ private:
     float gpsPosAccuracy;           // estimated position accuracy in m returned by the GPS receiver
     float gpsHgtAccuracy;           // estimated height accuracy in m returned by the GPS receiver
     uint32_t lastGpsVelFail_ms;     // time of last GPS vertical velocity consistency check fail
+    uint32_t lastGpsVelPass_ms;     // time of last GPS vertical velocity consistency check pass
     uint32_t lastGpsAidBadTime_ms;  // time in msec gps aiding was last detected to be bad
     float posDownAtTakeoff;         // flight vehicle vertical position sampled at transition from on-ground to in-air and used as a reference (m)
     bool useGpsVertVel;             // true if GPS vertical velocity should be used

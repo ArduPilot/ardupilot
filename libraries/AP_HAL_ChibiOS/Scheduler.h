@@ -81,6 +81,14 @@ public:
     bool     check_called_boost(void);
 
     /*
+      inform the scheduler that we are calling an operation from the
+      main thread that may take an extended amount of time. This can
+      be used to prevent watchdog reset during expected long delays
+      A value of zero cancels the previous expected delay
+     */
+    void     expect_delay_ms(uint32_t ms) override;
+    
+    /*
       disable interrupts and return a context that can be used to
       restore the interrupt state. This can be used to protect
       critical regions
@@ -103,7 +111,8 @@ private:
     AP_HAL::Proc _failsafe;
     bool _called_boost;
     bool _priority_boosted;
-    
+    uint32_t expect_delay_start;
+    uint32_t expect_delay_length;
 
     AP_HAL::MemberProc _timer_proc[CHIBIOS_SCHEDULER_MAX_TIMER_PROCS];
     uint8_t _num_timer_procs;

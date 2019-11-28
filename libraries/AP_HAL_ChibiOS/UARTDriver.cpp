@@ -101,8 +101,7 @@ void UARTDriver::thread_init(void)
         return;
     }
 #if CH_CFG_USE_HEAP == TRUE
-    uart_thread_ctx = chThdCreateFromHeap(NULL,
-                                          THD_WORKING_AREA_SIZE(2048),
+    uart_thread_ctx = thread_create_alloc(THD_WORKING_AREA_SIZE(2048),
                                           "apm_uart",
                                           APM_UART_PRIORITY,
                                           uart_thread,
@@ -511,7 +510,7 @@ size_t UARTDriver::write(uint8_t c)
     }
 
     while (_writebuf.space() == 0) {
-        if (!_blocking_writes) {
+        if (!_blocking_writes || unbuffered_writes) {
             _write_mutex.give();
             return 0;
         }
@@ -531,8 +530,12 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
 		return 0;
 	}
 
-    if (!_write_mutex.take_nonblocking()) {
-        return 0;
+    if (_blocking_writes && unbuffered_writes) {
+        _write_mutex.take_blocking();
+    } else {
+        if (!_write_mutex.take_nonblocking()) {
+            return 0;
+        }
     }
 
     if (_blocking_writes && !unbuffered_writes) {
@@ -594,14 +597,18 @@ size_t UARTDriver::write_locked(const uint8_t *buffer, size_t size, uint32_t key
  */
 bool UARTDriver::wait_timeout(uint16_t n, uint32_t timeout_ms)
 {
-    chEvtGetAndClearEvents(EVT_DATA);
-    if (available() >= n) {
-        return true;
+    uint32_t t0 = AP_HAL::millis();
+    while (available() < n) {
+        chEvtGetAndClearEvents(EVT_DATA);
+        _wait.n = n;
+        _wait.thread_ctx = chThdGetSelfX();
+        uint32_t now = AP_HAL::millis();
+        if (now - t0 >= timeout_ms) {
+            break;
+        }
+        chEvtWaitAnyTimeout(EVT_DATA, MS2ST(timeout_ms - (now - t0)));
     }
-    _wait.n = n;
-    _wait.thread_ctx = chThdGetSelfX();
-    eventmask_t mask = chEvtWaitAnyTimeout(EVT_DATA, MS2ST(timeout_ms));
-    return (mask & EVT_DATA) != 0;
+    return available() >= n;
 }
 
 /*

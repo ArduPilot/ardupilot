@@ -97,6 +97,14 @@
 #define BOARD_PWM_COUNT_DEFAULT 8
 #endif
 
+#ifndef HAL_BRD_OPTIONS_DEFAULT
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#define HAL_BRD_OPTIONS_DEFAULT BOARD_OPTION_WATCHDOG
+#else
+#define HAL_BRD_OPTIONS_DEFAULT 0
+#endif
+#endif
+
 extern const AP_HAL::HAL& hal;
 AP_BoardConfig *AP_BoardConfig::instance;
 
@@ -223,6 +231,23 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Path: ../AP_RTC/AP_RTC.cpp
     AP_SUBGROUPINFO(rtc, "RTC", 14, AP_BoardConfig, AP_RTC),
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    // @Param: SD_SLOWDOWN
+    // @DisplayName: microSD slowdown
+    // @Description: This is a scaling factor to slow down microSD operation. It can be used on flight board and microSD card combinations where full speed is not reliable. For normal full speed operation a value of 0 should be used.
+    // @Range: 0 32
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("SD_SLOWDOWN",  17,     AP_BoardConfig, _sdcard_slowdown,  0),
+#endif
+
+    // @Param: OPTIONS
+    // @DisplayName: Board options
+    // @Description: Board specific option flags
+    // @Bitmask: 0:Enable hardware watchdog
+    // @User: Advanced
+    AP_GROUPINFO("OPTIONS", 19, AP_BoardConfig, _options, HAL_BRD_OPTIONS_DEFAULT),
+
     AP_GROUPEND
 };
 
@@ -238,6 +263,23 @@ void AP_BoardConfig::init()
 #endif
 
     AP::rtc().set_utc_usec(hal.util->get_hw_rtc(), AP_RTC::SOURCE_HW);
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && defined(USE_POSIX)
+    uint8_t slowdown = constrain_int16(_sdcard_slowdown.get(), 0, 32);
+    const uint8_t max_slowdown = 8;
+    do {
+        if (hal.util->fs_init()) {
+            break;
+        }
+        slowdown++;
+        hal.scheduler->delay(5);
+    } while (slowdown < max_slowdown);
+    if (slowdown < max_slowdown) {
+        _sdcard_slowdown.set(slowdown);
+    } else {
+        printf("SDCard failed to start\n");
+    }
+#endif
 }
 
 // set default value for BRD_SAFETY_MASK

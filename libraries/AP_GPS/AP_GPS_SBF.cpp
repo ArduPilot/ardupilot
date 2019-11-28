@@ -22,7 +22,6 @@
 
 #include "AP_GPS.h"
 #include "AP_GPS_SBF.h"
-#include <DataFlash/DataFlash.h>
 #include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
@@ -234,35 +233,6 @@ AP_GPS_SBF::parse(uint8_t temp)
     return false;
 }
 
-void
-AP_GPS_SBF::log_ExtEventPVTGeodetic(const msg4007 &temp)
-{
-    if (!should_df_log()) {
-        return;
-    }
-
-    uint64_t now = AP_HAL::micros64();
-
-    struct log_GPS_SBF_EVENT header = {
-        LOG_PACKET_HEADER_INIT(LOG_GPS_SBF_EVENT_MSG),
-        time_us:now,
-        TOW:temp.TOW,
-        WNc:temp.WNc,
-        Mode:temp.Mode,
-        Error:temp.Error,
-        Latitude:ToDeg(temp.Latitude),
-        Longitude:ToDeg(temp.Longitude),
-        Height:temp.Height,
-        Undulation:temp.Undulation,
-        Vn:temp.Vn,
-        Ve:temp.Ve,
-        Vu:temp.Vu,
-        COG:temp.COG
-    };
-
-    DataFlash_Class::instance()->WriteBlock(&header, sizeof(header));
-}
-
 bool
 AP_GPS_SBF::process_message(void)
 {
@@ -271,9 +241,6 @@ AP_GPS_SBF::process_message(void)
     Debug("BlockID %d", blockid);
 
     switch (blockid) {
-    case ExtEventPVTGeodetic:
-        log_ExtEventPVTGeodetic(sbf_msg.data.msg4007u);
-        break;
     case PVTGeodetic:
     {
         const msg4007 &temp = sbf_msg.data.msg4007u;

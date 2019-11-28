@@ -4,6 +4,7 @@
 #include "AP_OpticalFlow_SITL.h"
 #include "AP_OpticalFlow_Pixart.h"
 #include "AP_OpticalFlow_PX4Flow.h"
+#include "AP_OpticalFlow_CXOF.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -111,6 +112,9 @@ void OpticalFlow::init(void)
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
         backend = AP_OpticalFlow_Pixart::detect("pixartflow", *this);
 #endif
+        if (backend == nullptr) {
+            backend = AP_OpticalFlow_CXOF::detect(*this);
+        }
     }
 
     if (backend != nullptr) {

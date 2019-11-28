@@ -23,8 +23,10 @@ def embed_file(out, f, idx):
 
     # compress it
     compressed = tempfile.NamedTemporaryFile()
-    with gzip.open(compressed.name, mode='wb', compresslevel=9) as g:
+    f = open(compressed.name, "wb")
+    with gzip.GzipFile(fileobj=f, mode='wb', filename='', compresslevel=9, mtime=0) as g:
         g.write(contents)
+    f.close()
 
     compressed.seek(0)
     b = bytearray(compressed.read())

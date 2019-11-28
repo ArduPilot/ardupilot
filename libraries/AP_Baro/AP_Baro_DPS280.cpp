@@ -126,6 +126,7 @@ bool AP_Baro_DPS280::init()
         return false;
     }
 
+    dev->set_read_flag(0x80);
     dev->set_speed(AP_HAL::Device::SPEED_HIGH);
 
     uint8_t whoami=0;

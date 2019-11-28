@@ -11,13 +11,34 @@ public:
     int vsnprintf(char* str, size_t size,
                   const char *format, va_list ap);
 
-    void set_soft_armed(const bool b) { soft_armed = b; }
+    virtual void set_soft_armed(const bool b) { soft_armed = b; }
     bool get_soft_armed() const { return soft_armed; }
 
     void set_capabilities(uint64_t cap) { capabilities |= cap; }
     void clear_capabilities(uint64_t cap) { capabilities &= ~(cap); }
     uint64_t get_capabilities() const { return capabilities; }
 
+    // return true if the reason for the reboot was a watchdog reset
+    virtual bool was_watchdog_reset() const { return false; }
+
+    // return true if safety was off and this was a watchdog reset
+    virtual bool was_watchdog_safety_off() const { return false; }
+
+    // return true if this is a watchdog reset boot and we were armed
+    virtual bool was_watchdog_armed() const { return false; }
+
+    // backup home state for restore on watchdog reset
+    virtual void set_backup_home_state(int32_t lat, int32_t lon, int32_t alt_cm) const {}
+
+    // backup home state for restore on watchdog reset
+    virtual bool get_backup_home_state(int32_t &lat, int32_t &lon, int32_t &alt_cm) const { return false; }
+
+    // backup atttude for restore on watchdog reset
+    virtual void set_backup_attitude(int32_t roll_cd, int32_t pitch_cd, int32_t yaw_cd) const {}
+
+    // get watchdog reset attitude
+    virtual bool get_backup_attitude(int32_t &roll_cd, int32_t &pitch_cd, int32_t &yaw_cd) const { return false; }
+    
     virtual const char* get_custom_log_directory() const { return nullptr; }
     virtual const char* get_custom_terrain_directory() const { return nullptr;  }
     virtual const char *get_custom_storage_directory() const { return nullptr;  }
@@ -114,6 +135,12 @@ public:
        how much free memory do we have in bytes. If unknown return 4096
      */
     virtual uint32_t available_memory(void) { return 4096; }
+
+    /*
+      initialise (or re-initialise) filesystem storage
+     */
+    virtual bool fs_init(void) { return false; }
+
 protected:
     // we start soft_armed false, so that actuators don't send any
     // values until the vehicle code has fully started

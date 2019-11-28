@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <AP_Math/vectorN.h>
 #include <AP_NavEKF2/AP_NavEKF2_Buffer.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 
 // GPS pre-flight check bit locations
 #define MASK_GPS_NSATS      (1<<0)
@@ -301,8 +302,9 @@ public:
     // publish output observer angular, velocity and position tracking error
     void getOutputTrackingError(Vector3f &error) const;
 
-    // get the IMU index
-    uint8_t getIMUIndex(void) const { return imu_index; }
+    // get the IMU index. For now we return the gyro index, as that is most
+    // critical for use by other subsystems.
+    uint8_t getIMUIndex(void) const { return gyro_index_active; }
 
     // get timing statistics structure
     void getTimingStatistics(struct ekf_timing &timing);
@@ -324,7 +326,9 @@ public:
 private:
     // Reference to the global EKF frontend for parameters
     NavEKF2 *frontend;
-    uint8_t imu_index;
+    uint8_t imu_index; // preferred IMU index
+    uint8_t gyro_index_active; // active gyro index (in case preferred fails)
+    uint8_t accel_index_active; // active accel index (in case preferred fails)
     uint8_t core_index;
     uint8_t imu_buffer_length;
 
@@ -409,6 +413,8 @@ private:
         float       delAngDT;       // 6
         float       delVelDT;       // 7
         uint32_t    time_ms;        // 8
+        uint8_t     gyro_index;
+        uint8_t     accel_index;
     };
 
     struct gps_elements {
@@ -468,6 +474,14 @@ private:
         bool            posReset;   // true when the position measurement has been reset
     };
 
+    // bias estimates for the IMUs that are enabled but not being used
+    // by this core.
+    struct {
+        Vector3f gyro_bias;
+        Vector3f gyro_scale;
+        float accel_zbias;
+    } inactiveBias[INS_MAX_INSTANCES];
+
     // update the navigation filter status
     void  updateFilterStatus(void);
 
@@ -488,6 +502,9 @@ private:
 
     // constrain states
     void ConstrainStates();
+
+    // constrain earth field using WMM tables
+    void MagTableConstrain(void);
 
     // fuse selected position, velocity and height measurements
     void FuseVelPosNED();
@@ -574,11 +591,14 @@ private:
     bool readDeltaAngle(uint8_t ins_index, Vector3f &dAng, float &dAng_dt);
 
     // helper functions for correcting IMU data
-    void correctDeltaAngle(Vector3f &delAng, float delAngDT);
-    void correctDeltaVelocity(Vector3f &delVel, float delVelDT);
+    void correctDeltaAngle(Vector3f &delAng, float delAngDT, uint8_t gyro_index);
+    void correctDeltaVelocity(Vector3f &delVel, float delVelDT, uint8_t accel_index);
 
     // update IMU delta angle and delta velocity measurements
     void readIMUData();
+
+    // update estimate of inactive bias states
+    void learnInactiveBiases();
 
     // check for new valid GPS data and update stored measurement if available
     void readGpsData();
@@ -683,7 +703,7 @@ private:
     void controlMagYawReset();
 
     // Set the NED origin to be used until the next filter reset
-    void setOrigin();
+    void setOrigin(const Location &loc);
 
     // determine if a takeoff is expected so that we can compensate for expected barometer errors due to ground effect
     bool getTakeoffExpected();
@@ -691,8 +711,8 @@ private:
     // determine if a touchdown is expected so that we can compensate for expected barometer errors due to ground effect
     bool getTouchdownExpected();
 
-    // Assess GPS data quality and return true if good enough to align the EKF
-    bool calcGpsGoodToAlign(void);
+    // Assess GPS data quality and set gpsGoodToAlign if good enough to align the EKF
+    void calcGpsGoodToAlign(void);
 
     // return true and set the class variable true if the delta angle bias has been learned
     bool checkGyroCalStatus(void);
@@ -717,6 +737,9 @@ private:
     // Input is 1-sigma uncertainty in published declination
     void FuseDeclination(float declErr);
 
+    // return magnetic declination in radians
+    float MagDeclination(void) const;
+    
     // Propagate PVA solution forward from the fusion time horizon to the current time horizon
     // using a simple observer
     void calcOutputStates();
@@ -845,6 +868,7 @@ private:
     float gpsPosAccuracy;           // estimated position accuracy in m returned by the GPS receiver
     float gpsHgtAccuracy;           // estimated height accuracy in m returned by the GPS receiver
     uint32_t lastGpsVelFail_ms;     // time of last GPS vertical velocity consistency check fail
+    uint32_t lastGpsVelPass_ms;     // time of last GPS vertical velocity consistency check pass
     uint32_t lastGpsAidBadTime_ms;  // time in msec gps aiding was last detected to be bad
     float posDownAtTakeoff;         // flight vehicle vertical position sampled at transition from on-ground to in-air and used as a reference (m)
     bool useGpsVertVel;             // true if GPS vertical velocity should be used
@@ -1163,6 +1187,11 @@ private:
     AP_HAL::Util::perf_counter_t  _perf_TerrainOffset;
     AP_HAL::Util::perf_counter_t  _perf_FuseOptFlow;
     AP_HAL::Util::perf_counter_t  _perf_test[10];
+
+    // earth field from WMM tables
+    bool have_table_earth_field;   // true when we have initialised table_earth_field_ga
+    Vector3f table_earth_field_ga; // earth field from WMM tables
+    float table_declination;       // declination in radians from the tables
 
     // timing statistics
     struct ekf_timing timing;

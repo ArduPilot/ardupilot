@@ -19,19 +19,32 @@ extern const AP_HAL::HAL& hal;
 
    We also record the failure reason so that prearm_failure_reason()
    can give a good report to the user on why arming is failing
+
+   This sets gpsGoodToAlign class variable
 */
-bool NavEKF2_core::calcGpsGoodToAlign(void)
+void NavEKF2_core::calcGpsGoodToAlign(void)
 {
     const AP_GPS &gps = AP::gps();
 
     if (inFlight && assume_zero_sideslip() && !use_compass()) {
         // this is a special case where a plane has launched without magnetometer
         // is now in the air and needs to align yaw to the GPS and start navigating as soon as possible
-        return true;
+        gpsGoodToAlign = true;
+        return;
     }
 
     // User defined multiplier to be applied to check thresholds
     float checkScaler = 0.01f*(float)frontend->_gpsCheckScaler;
+
+    if (gpsGoodToAlign) {
+        /*
+          if we have already passed GPS alignment checks then raise
+          the check threshold so that we have some hysterisis and
+          don't continuously change from able to arm to not able to
+          arm
+         */
+        checkScaler *= 1.3f;
+    }
 
     // If we have good magnetometer consistency and bad innovations for longer than 5 seconds then we reset heading and field states
     // This enables us to handle large changes to the external magnetic field environment that occur before arming
@@ -224,16 +237,20 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
         lastGpsVelFail_ms = imuSampleTime_ms;
     }
 
-    // record time of fail
+    // record time of fail or pass
     if (gpsSpdAccFail || numSatsFail || hdopFail || hAccFail || vAccFail ||  yawFail || gpsDriftFail || gpsVertVelFail || gpsHorizVelFail) {
         lastGpsVelFail_ms = imuSampleTime_ms;
+    } else {
+        lastGpsVelPass_ms = imuSampleTime_ms;
     }
 
-    // continuous period without fail required to return a healthy status
-    if (imuSampleTime_ms - lastGpsVelFail_ms > 10000) {
-        return true;
+    // continuous period of 10s without fail required to set healthy
+    // continuous period of 5s without pass required to set unhealthy
+    if (!gpsGoodToAlign && imuSampleTime_ms - lastGpsVelFail_ms > 10000) {
+        gpsGoodToAlign = true;
+    } else if (gpsGoodToAlign && imuSampleTime_ms - lastGpsVelPass_ms > 5000) {
+        gpsGoodToAlign = false;
     }
-    return false;
 }
 
 // update inflight calculaton that determines if GPS data is good enough for reliable navigation
@@ -456,7 +473,7 @@ void NavEKF2_core::detectOptFlowTakeoff(void)
         Vector3f angRateVec;
         Vector3f gyroBias;
         getGyroBias(gyroBias);
-        bool dual_ins = ins.get_gyro_health(0) && ins.get_gyro_health(1);
+        bool dual_ins = ins.use_gyro(0) && ins.use_gyro(1);
         if (dual_ins) {
             angRateVec = (ins.get_gyro(0) + ins.get_gyro(1)) * 0.5f - gyroBias;
         } else {

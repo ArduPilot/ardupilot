@@ -18,6 +18,8 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_BoardConfig.h"
+#include <AP_Baro/AP_Baro_MS5611.h>
+#include <GCS_MAVLink/GCS.h>
 #include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
@@ -28,7 +30,12 @@ extern const AP_HAL::HAL& hal;
  */
 void AP_BoardConfig::board_init_safety()
 {
-    if (state.safety_enable.get() == 0) {
+    bool force_safety_off = (state.safety_enable.get() == 0);
+    if (!force_safety_off && hal.util->was_watchdog_safety_off()) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Forcing safety off for watchdog\n");
+        force_safety_off = true;
+    }
+    if (force_safety_off) {
         hal.rcout->force_safety_off();
         hal.rcout->force_safety_no_wait();
         // wait until safety has been turned off
@@ -145,6 +152,66 @@ bool AP_BoardConfig::spi_check_register(const char *devname, uint8_t regnum, uin
     return v == value;
 }
 
+#if defined(HAL_CHIBIOS_ARCH_CUBEBLACK)
+static bool check_ms5611(const char* devname) {
+    auto dev = hal.spi->get_device(devname);
+    if (!dev) {
+#if SPI_PROBE_DEBUG
+        hal.console->printf("%s: no device\n", devname);
+#endif
+        return false;
+    }
+
+    AP_HAL::Semaphore *dev_sem = dev->get_semaphore();
+
+    if (!dev_sem || !dev_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        return false;
+    }
+
+    static const uint8_t CMD_MS56XX_RESET = 0x1E;
+    static const uint8_t CMD_MS56XX_PROM = 0xA0;
+
+    dev->transfer(&CMD_MS56XX_RESET, 1, nullptr, 0);
+    hal.scheduler->delay(4);
+
+    uint16_t prom[8];
+    bool all_zero = true;
+    for (uint8_t i = 0; i < 8; i++) {
+        const uint8_t reg = CMD_MS56XX_PROM + (i << 1);
+        uint8_t val[2];
+        if (!dev->transfer(&reg, 1, val, sizeof(val))) {
+            dev_sem->give();
+#if SPI_PROBE_DEBUG
+            hal.console->printf("%s: transfer fail\n", devname);
+#endif
+            return false;
+        }
+        prom[i] = (val[0] << 8) | val[1];
+
+        if (prom[i] != 0) {
+            all_zero = false;
+        }
+    }
+    dev_sem->give();
+
+    uint16_t crc_read = prom[7]&0xf;
+    prom[7] &= 0xff00;
+
+    if (crc_read != AP_Baro_MS56XX::crc4(prom) || all_zero) {
+#if SPI_PROBE_DEBUG
+        hal.console->printf("%s: crc fail\n", devname);
+#endif
+        return false;
+    }
+
+#if SPI_PROBE_DEBUG
+    hal.console->printf("%s: found successfully\n", devname);
+#endif
+
+    return true;
+}
+#endif
+
 #define MPUREG_WHOAMI 0x75
 #define MPU_WHOAMI_MPU60X0  0x68
 #define MPU_WHOAMI_MPU9250  0x71
@@ -153,6 +220,7 @@ bool AP_BoardConfig::spi_check_register(const char *devname, uint8_t regnum, uin
 
 #define LSMREG_WHOAMI 0x0f
 #define LSM_WHOAMI_LSM303D 0x49
+#define LSM_WHOAMI_L3GD20 0xd4
 
 /*
   validation of the board type
@@ -188,11 +256,39 @@ void AP_BoardConfig::validate_board_type(void)
 #endif
 }
 
+
+void AP_BoardConfig::check_cubeblack(void)
+{
+#if defined(HAL_CHIBIOS_ARCH_CUBEBLACK)
+    if (state.board_type != PX4_BOARD_PIXHAWK2) {
+        state.board_type.set(PX4_BOARD_PIXHAWK2);
+    }
+
+    bool success = true;
+    if (!spi_check_register("mpu9250", MPUREG_WHOAMI, MPU_WHOAMI_MPU9250)) { success = false; }
+    if (!spi_check_register("mpu9250_ext", MPUREG_WHOAMI, MPU_WHOAMI_MPU9250)) { success = false; }
+    if (!spi_check_register("lsm9ds0_ext_g", LSMREG_WHOAMI, LSM_WHOAMI_L3GD20)) { success = false; }
+    if (!spi_check_register("lsm9ds0_ext_am", LSMREG_WHOAMI, LSM_WHOAMI_LSM303D)) { success = false; }
+    if (!check_ms5611("ms5611")) { success = false; }
+    if (!check_ms5611("ms5611_ext")) { success = false; }
+
+    if (!success) {
+        sensor_config_error("Failed to init CubeBlack - sensor mismatch");
+    }
+#endif
+}
+
+
 /*
   auto-detect board type
  */
 void AP_BoardConfig::board_autodetect(void)
 {
+#if defined(HAL_CHIBIOS_ARCH_CUBEBLACK)
+    check_cubeblack();
+    return;
+#endif
+
     if (state.board_type != PX4_BOARD_AUTO) {
         validate_board_type();
         // user has chosen a board type
@@ -241,7 +337,7 @@ void AP_BoardConfig::board_autodetect(void)
     // only one choice
     state.board_type.set_and_notify(PX4_BOARD_MINDPXV2);
     hal.console->printf("Detected MindPX-V2\n");
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4PRO)
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4PRO) || defined(HAL_CHIBIOS_ARCH_FMUV4PRO)
     // only one choice
     state.board_type.set_and_notify(PX4_BOARD_PIXHAWK_PRO);
     hal.console->printf("Detected Pixhawk Pro\n");	

@@ -899,7 +899,7 @@ private:
     bool check_if_auxsw_mode_used(uint8_t auxsw_mode_check);
     bool check_duplicate_auxsw(void);
     void reset_control_switch();
-    uint8_t read_3pos_switch(uint8_t chan);
+    bool read_3pos_switch(uint8_t chan, uint8_t &ret) const WARN_IF_UNUSED;
     void read_aux_switches();
     void init_aux_switches();
     void init_aux_switch_function(int8_t ch_option, uint8_t ch_flag);

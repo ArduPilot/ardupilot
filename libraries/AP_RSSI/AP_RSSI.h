@@ -96,8 +96,16 @@ private:
     float scale_and_constrain_float_rssi(float current_rssi_value, float low_rssi_range, float high_rssi_range);
 
     // PWM input handling
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     uint32_t get_gpio(uint8_t pin_number) const;
     static int irq_handler(int irq, void *context);
+#endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    static void irq_handler_chibios(void);
+#endif
+
+    static void irq_handler_calc_pwm(bool pin_high);
 };
 
 namespace AP {

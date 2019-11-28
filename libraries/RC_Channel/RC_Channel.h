@@ -97,7 +97,10 @@ public:
     void       set_and_save_radio_trim(int16_t val) { radio_trim.set_and_save_ifchanged(val);}
     
     bool min_max_configured() const;
-    
+
+    // return the type of the channel (angle or range)
+    uint8_t get_type() const { return type_in; }
+
 private:
 
     // pwm is stored here

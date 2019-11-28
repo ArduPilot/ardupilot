@@ -20,6 +20,9 @@
 
 extern const AP_HAL::HAL& hal;
 
+#define LIGHTWARE_DIST_MAX_CM           10000U
+#define LIGHTWARE_OUT_OF_RANGE_ADD_CM   100U
+
 /* 
    The constructor also initialises the rangefinder. Note that this
    constructor is not called until detect() returns true, so we
@@ -53,18 +56,25 @@ bool AP_RangeFinder_LightWareSerial::get_reading(uint16_t &reading_cm)
         return false;
     }
 
+    float sum = 0;              // sum of all readings taken
+    uint16_t valid_count = 0;   // number of valid readings
+    uint16_t invalid_count = 0; // number of invalid readings
+
     // read any available lines from the lidar
-    float sum = 0;
-    uint16_t count = 0;
     int16_t nbytes = uart->available();
     while (nbytes-- > 0) {
         char c = uart->read();
         if (c == '\r') {
             linebuf[linebuf_len] = 0;
-            sum += (float)atof(linebuf);
-            count++;
+            const float dist = (float)atof(linebuf);
+            if (!is_negative(dist)) {
+                sum += dist;
+                valid_count++;
+            } else {
+                invalid_count++;
+            }
             linebuf_len = 0;
-        } else if (isdigit(c) || c == '.') {
+        } else if (isdigit(c) || c == '.' || c == '-') {
             linebuf[linebuf_len++] = c;
             if (linebuf_len == sizeof(linebuf)) {
                 // too long, discard the line
@@ -73,14 +83,33 @@ bool AP_RangeFinder_LightWareSerial::get_reading(uint16_t &reading_cm)
         }
     }
 
-    // we need to write a byte to prompt another reading
-    uart->write('d');
-
-    if (count == 0) {
-        return false;
+    uint32_t now = AP_HAL::millis();
+    if (last_init_ms == 0 ||
+        (now - last_init_ms > 1000 &&
+         now - last_reading_ms > 1000)) {
+        // send enough serial transitions to trigger LW20 into serial
+        // mode. It starts in dual I2C/serial mode, and wants to see
+        // enough transitions to switch into serial mode.
+        uart->write("www\r\n");
+        last_init_ms = now;
+    } else {
+        uart->write('d');
     }
-    reading_cm = 100 * sum / count;
-    return true;
+
+    // return average of all valid readings
+    if (valid_count > 0) {
+        reading_cm = 100 * sum / valid_count;
+        return true;
+    }
+
+    // all readings were invalid so return out-of-range-high value
+    if (invalid_count > 0) {
+        reading_cm = MIN(MAX(LIGHTWARE_DIST_MAX_CM, unsigned(max_distance_cm()) + LIGHTWARE_OUT_OF_RANGE_ADD_CM), unsigned(UINT16_MAX));
+        return true;
+    }
+
+    // no readings so return false
+    return false;
 }
 
 /* 

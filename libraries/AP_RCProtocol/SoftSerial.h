@@ -1,0 +1,50 @@
+/*
+ * This file is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This file is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#pragma once
+
+#include "AP_RCProtocol.h"
+
+class SoftSerial {
+public:
+    enum serial_config {
+        SERIAL_CONFIG_8N1,  // DSM, SRXL etc, 8 bit, no parity, 1 stop bit
+        SERIAL_CONFIG_8E2I, // SBUS, 8 bit, even parity, 2 stop bits, inverted
+    };
+
+    SoftSerial(uint32_t baudrate, enum serial_config config);
+    bool process_pulse(uint32_t width_s0, uint32_t width_s1, uint8_t &b);
+
+    // get timestamp of the last byte
+    uint32_t get_byte_timestamp_us(void) const {
+        return byte_timestamp_us;
+    }
+
+private:
+    const uint32_t baudrate;
+    const uint8_t half_bit; // width of half a bit in microseconds
+    const enum serial_config config;
+
+    uint8_t data_width;
+    uint8_t byte_width;
+    uint16_t stop_mask;
+    uint32_t timestamp_us;
+    uint32_t byte_timestamp_us;
+
+    struct {
+        uint32_t byte;
+        uint16_t bit_ofs;
+    } state;
+};

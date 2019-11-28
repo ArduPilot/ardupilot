@@ -135,6 +135,9 @@ void Copter::init_ardupilot()
     // sets up motors and output to escs
     init_rc_out();
 
+    // check if we should enter esc calibration mode
+    esc_calibration_startup_check();
+
     // motors initialised so parameters can be sent
     ap.initialised_params = true;
 

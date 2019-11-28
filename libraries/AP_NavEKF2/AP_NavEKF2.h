@@ -396,6 +396,7 @@ private:
     AP_Float _useRngSwSpd;          // Maximum horizontal ground speed to use range finder as the primary height source (m/s)
     AP_Int8 _magMask;               // Bitmask forcng specific EKF core instances to use simple heading magnetometer fusion.
     AP_Int8 _originHgtMode;         // Bitmask controlling post alignment correction and reporting of the EKF origin height.
+    AP_Int16 _mag_ef_limit;         // limit on difference between WMM tables and learned earth field.
 
     // Tuning parameters
     const float gpsNEVelVarAccScale = 0.05f;       // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
@@ -424,6 +425,10 @@ private:
     const float gndEffectBaroScaler = 4.0f;        // scaler applied to the barometer observation variance when ground effect mode is active
     const uint8_t gndGradientSigma = 50;           // RMS terrain gradient percentage assumed by the terrain height estimation
     const uint8_t fusionTimeStep_ms = 10;          // The minimum time interval between covariance predictions and measurement fusions in msec
+
+    // origin set by one of the cores
+    struct Location common_EKF_origin;
+    bool common_origin_valid;
 
     struct {
         bool enabled:1;

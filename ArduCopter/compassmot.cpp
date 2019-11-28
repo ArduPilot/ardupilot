@@ -124,6 +124,8 @@ MAV_RESULT Copter::mavlink_compassmot(mavlink_channel_t chan)
         interference_pct[i] = 0.0f;
     }
 
+    hal.scheduler->expect_delay_ms(5000);
+
     // enable motors and pass through throttle
     init_rc_out();
     enable_motor_output();
@@ -135,6 +137,8 @@ MAV_RESULT Copter::mavlink_compassmot(mavlink_channel_t chan)
 
     // main run while there is no user input and the compass is healthy
     while (command_ack_start == command_ack_counter && compass.healthy() && motors->armed()) {
+        hal.scheduler->expect_delay_ms(5000);
+
         // 50hz loop
         if (millis() - last_run_time < 20) {
             // grab some compass values
@@ -227,6 +231,8 @@ MAV_RESULT Copter::mavlink_compassmot(mavlink_channel_t chan)
                                                motor_compensation[compass.get_primary()].z);
         }
     }
+
+    hal.scheduler->expect_delay_ms(0);
 
     // stop motors
     motors->output_min();

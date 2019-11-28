@@ -499,11 +499,8 @@ bool AC_WPNav::update_wpnav()
 {
     bool ret = true;
 
-    // calculate dt
-    float dt = _pos_control.time_since_last_xy_update();
-    if (dt >= 0.2f) {
-        dt = 0.0f;
-    }
+    // get dt from pos controller
+    float dt = _pos_control.get_dt();
 
     // allow the accel and speed values to be set without changing
     // out of auto mode. This makes it easier to tune auto flight
@@ -675,10 +672,8 @@ bool AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
     // mission is "active" if wpnav has been called recently and vehicle reached the previous waypoint
     bool prev_segment_exists = (_flags.reached_destination && ((AP_HAL::millis() - _wp_last_update) < 1000));
 
-    float dt = _pos_control.time_since_last_xy_update();
-    if (dt >= 0.2f) {
-        dt = 0.0f;
-    }
+    // get dt from pos controller
+    float dt = _pos_control.get_dt();
 
     // check _wp_accel_cmss is reasonable to avoid divide by zero
     if (_wp_accel_cmss <= 0) {
@@ -795,11 +790,8 @@ bool AC_WPNav::update_spline()
 
     bool ret = true;
 
-    // calculate dt
-    float dt = _pos_control.time_since_last_xy_update();
-    if (dt >= 0.2f) {
-        dt = 0.0f;
-    }
+    // get dt from pos controller
+    float dt = _pos_control.get_dt();
 
     // advance the target if necessary
     if (!advance_spline_target_along_track(dt)) {

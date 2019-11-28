@@ -15,6 +15,7 @@
 #include "SPIDevice.h"
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
 #include <AP_HAL/utility/OwnPtr.h>
 #include "Util.h"
 #include "Scheduler.h"
@@ -136,6 +137,15 @@ bool SPIDevice::set_speed(AP_HAL::Device::Speed speed)
         break;
     }
     return true;
+}
+
+/*
+  setup a bus slowdown factor for high speed mode
+ */
+void SPIDevice::set_slowdown(uint8_t slowdown)
+{
+    slowdown = constrain_int16(slowdown+1, 1, 32);
+    freq_flag_high = derive_freq_flag(device_desc.highspeed / slowdown);
 }
 
 /*

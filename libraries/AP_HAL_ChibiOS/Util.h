@@ -19,6 +19,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_ChibiOS_Namespace.h"
 #include "Semaphores.h"
+#include "AP_HAL_ChibiOS.h"
+#include <ch.h>
 
 class ChibiOS::Util : public AP_HAL::Util {
 public:
@@ -51,6 +53,34 @@ public:
     void toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) override;
 #endif
 
+#ifdef USE_POSIX
+    /*
+      initialise (or re-initialise) filesystem storage
+     */
+    bool fs_init(void) override;
+#endif
+
+    // return true if the reason for the reboot was a watchdog reset
+    bool was_watchdog_reset() const override;
+
+    // return true if safety was off and this was a watchdog reset
+    bool was_watchdog_safety_off() const override;
+
+    // return true if vehicle was armed and this was a watchdog reset
+    bool was_watchdog_armed() const override;
+
+    // backup home state for restore on watchdog reset
+    void set_backup_home_state(int32_t lat, int32_t lon, int32_t alt_cm) const override;
+
+    // backup home state for restore on watchdog reset
+    bool get_backup_home_state(int32_t &lat, int32_t &lon, int32_t &alt_cm) const override;
+
+    // backup atttude for restore on watchdog reset
+    void set_backup_attitude(int32_t roll_cd, int32_t pitch_cd, int32_t yaw_cd) const override;
+
+    // get watchdog reset attitude
+    bool get_backup_attitude(int32_t &roll_cd, int32_t &pitch_cd, int32_t &yaw_cd) const override;
+    
 private:
 #ifdef HAL_PWM_ALARM
     struct ToneAlarmPwmGroup {
@@ -85,4 +115,5 @@ private:
     uint64_t get_hw_rtc() const override;
 
     bool flash_bootloader() override;
+    void set_soft_armed(const bool b) override;
 };

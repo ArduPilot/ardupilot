@@ -100,6 +100,8 @@ static PX4UARTDriver uartDDriver(UARTD_DEFAULT_DEVICE, "APM_uartD");
 static PX4UARTDriver uartEDriver(UARTE_DEFAULT_DEVICE, "APM_uartE");
 static PX4UARTDriver uartFDriver(UARTF_DEFAULT_DEVICE, "APM_uartF");
 
+static Empty::Flash flashDriver;
+
 HAL_PX4::HAL_PX4() :
     AP_HAL::HAL(
         &uartADriver,  /* uartA */
@@ -120,6 +122,7 @@ HAL_PX4::HAL_PX4() :
         &schedulerInstance, /* scheduler */
         &utilInstance, /* util */
         nullptr,    /* no onboard optical flow */
+        &flashDriver,
         nullptr)   /* CAN */
 {}
 

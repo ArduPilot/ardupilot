@@ -21,8 +21,10 @@
 #include <chheap.h>
 #include "RCOutput.h"
 #include "hwdef/common/stm32_util.h"
+#include "hwdef/common/watchdog.h"
 #include "hwdef/common/flash.h"
 #include <AP_ROMFS/AP_ROMFS.h>
+#include "sdcard.h"
 
 #if HAL_WITH_IO_MCU
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -187,32 +189,35 @@ bool Util::flash_bootloader()
     uint32_t fw_size;
     const char *fw_name = "bootloader.bin";
 
+    hal.scheduler->expect_delay_ms(5000);
+
     uint8_t *fw = AP_ROMFS::find_decompress(fw_name, fw_size);
     if (!fw) {
         hal.console->printf("failed to find %s\n", fw_name);
+        hal.scheduler->expect_delay_ms(0);
         return false;
     }
 
-    const uint32_t addr = stm32_flash_getpageaddr(0);
+    const uint32_t addr = hal.flash->getpageaddr(0);
     if (!memcmp(fw, (const void*)addr, fw_size)) {
         hal.console->printf("Bootloader up-to-date\n");
         free(fw);
+        hal.scheduler->expect_delay_ms(0);
         return true;
     }
 
     hal.console->printf("Erasing\n");
-    if (!stm32_flash_erasepage(0)) {
+    if (!hal.flash->erasepage(0)) {
         hal.console->printf("Erase failed\n");
         free(fw);
+        hal.scheduler->expect_delay_ms(0);
         return false;
     }
     hal.console->printf("Flashing %s @%08x\n", fw_name, (unsigned int)addr);
     const uint8_t max_attempts = 10;
     for (uint8_t i=0; i<max_attempts; i++) {
-        void *context = hal.scheduler->disable_interrupts_save();
-        const int32_t written = stm32_flash_write(addr, fw, fw_size);
-        hal.scheduler->restore_interrupts(context);
-        if (written == -1 || written < fw_size) {
+        bool ok = hal.flash->write(addr, fw, fw_size);
+        if (!ok) {
             hal.console->printf("Flash failed! (attempt=%u/%u)\n",
                                 i+1,
                                 max_attempts);
@@ -221,11 +226,13 @@ bool Util::flash_bootloader()
         }
         hal.console->printf("Flash OK\n");
         free(fw);
+        hal.scheduler->expect_delay_ms(0);
         return true;
     }
 
     hal.console->printf("Flash failed after %u attempts\n", max_attempts);
     free(fw);
+    hal.scheduler->expect_delay_ms(0);
     return false;
 }
 
@@ -249,4 +256,73 @@ bool Util::get_system_id(char buf[40])
              (unsigned)serialid[11], (unsigned)serialid[10], (unsigned)serialid[9],(unsigned)serialid[8]);
     buf[39] = 0;
     return true;
+}
+
+#ifdef USE_POSIX
+/*
+  initialise filesystem
+ */
+bool Util::fs_init(void)
+{
+    return sdcard_retry();
+}
+#endif
+
+// return true if the reason for the reboot was a watchdog reset
+bool Util::was_watchdog_reset() const
+{
+    return stm32_was_watchdog_reset();
+}
+
+// return true if safety was off and this was a watchdog reset
+bool Util::was_watchdog_safety_off() const
+{
+    return stm32_was_watchdog_reset() && stm32_get_boot_backup_safety_state() == false;
+}
+
+// return true if vehicle was armed and this was a watchdog reset
+bool Util::was_watchdog_armed() const
+{
+    return stm32_was_watchdog_reset() && stm32_get_boot_backup_armed() == true;
+}
+
+/*
+  change armed state
+ */
+void Util::set_soft_armed(const bool b)
+{
+    AP_HAL::Util::set_soft_armed(b);
+    stm32_set_backup_armed(b);
+}
+
+// backup home state for restore on watchdog reset
+void Util::set_backup_home_state(int32_t lat, int32_t lon, int32_t alt_cm) const
+{
+    stm32_set_backup_home(lat, lon, alt_cm);
+}
+
+// backup home state for restore on watchdog reset
+bool Util::get_backup_home_state(int32_t &lat, int32_t &lon, int32_t &alt_cm) const
+{
+    if (was_watchdog_reset()) {
+        stm32_get_backup_home(&lat, &lon, &alt_cm);
+        return true;
+    }
+    return false;
+}
+
+// backup atttude for restore on watchdog reset
+void Util::set_backup_attitude(int32_t roll_cd, int32_t pitch_cd, int32_t yaw_cd) const
+{
+    stm32_set_attitude(roll_cd, pitch_cd, yaw_cd);
+}
+
+// get watchdog reset attitude
+bool Util::get_backup_attitude(int32_t &roll_cd, int32_t &pitch_cd, int32_t &yaw_cd) const
+{
+    if (was_watchdog_reset()) {
+        stm32_get_attitude(&roll_cd, &pitch_cd, &yaw_cd);
+        return true;
+    }
+    return false;
 }
