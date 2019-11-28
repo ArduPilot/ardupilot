@@ -70,7 +70,7 @@ void AP_NMEA_Output::update()
     const uint16_t now = AP_HAL::millis16();
 
     // only send at 10Hz
-    if (now - _last_run < 100) {
+    if (uint16_t(now - _last_run) < 100) {
         return;
     }
     _last_run = now;
