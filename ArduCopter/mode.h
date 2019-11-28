@@ -171,8 +171,9 @@ protected:
     // waypoint navigation but the user can control the yaw.
     void auto_takeoff_run();
     void auto_takeoff_set_start_alt(void);
-    void auto_takeoff_attitude_run(float target_yaw_rate);
-    // altitude below which we do no navigation in auto takeoff
+
+    // altitude above-ekf-origin below which auto takeoff does not control horizontal position
+    static bool auto_takeoff_no_nav_active;
     static float auto_takeoff_no_nav_alt_cm;
 
 public:
