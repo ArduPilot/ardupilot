@@ -147,7 +147,9 @@ AP_BattMonitor::init()
                 drivers[instance] = new AP_BattMonitor_FuelLevel_PWM(*this, state[instance], _params[instance]);
                 break;
             case AP_BattMonitor_Params::BattMonitor_TYPE_NONE:
+                break;
             default:
+                gcs().send_text(MAV_SEVERITY_WARNING, "Unknown battery monitor type %u", (uint8_t)get_type(instance));
                 break;
         }
 
