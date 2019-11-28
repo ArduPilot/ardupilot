@@ -474,7 +474,7 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @DisplayName: Tailsitter gain scaling mask
     // @Description: Bitmask of gain scaling methods to be applied: BOOST: boost gain at low throttle, ATT_THR: reduce gain at high throttle/tilt, INTERP: interpolate between fixed-wing and copter controls
     // @User: Standard
-    // @Bitmask: 1:BOOST,2:ATT_THR,4:INTERP
+    // @Bitmask: 0:BOOST,1:ATT_THR,2:INTERP
     AP_GROUPINFO("TAILSIT_GSCMSK", 17, QuadPlane, tailsitter.gain_scaling_mask, TAILSITTER_GSCL_BOOST),
 
     // @Param: TAILSIT_GSCMIN
@@ -824,42 +824,50 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
 {
     check_attitude_relax();
 
-    // tailsitter-only bodyframe roll control options
+    // tailsitter-only body-frame roll control options
     // Angle mode attitude control for pitch and body-frame roll, rate control for euler yaw.
-    if (is_tailsitter()) {
-        const float euler_pitch = plane.nav_pitch_cd * .01f;
+    if (is_tailsitter() &&
+        ((tailsitter.input_type == TAILSITTER_INPUT_BF_ROLL_M) ||
+         (tailsitter.input_type == TAILSITTER_INPUT_BF_ROLL_P))) {
 
-        int16_t roll_limit = MIN(plane.roll_limit_cd, plane.quadplane.aparm.angle_max);
+        // Since function input_euler_rate_yaw_euler_angle_pitch_bf_roll()
+        // needs body-frame roll and yaw inputs, it is necessary to rescale
+        // the plane inputs nav_roll_cd and yaw_rate_cds to represent
+        // yaw rate and roll angle, respectively.
+
+        // Get the roll and yaw ranges from parameters
+        int16_t roll_limit = plane.quadplane.aparm.angle_max;
         // separate limit for tailsitter roll, if set
         if (plane.quadplane.tailsitter.max_roll_angle > 0) {
             roll_limit = plane.quadplane.tailsitter.max_roll_angle * 100.0f;
         }
-        float roll_rate_limit_cds = plane.quadplane.yaw_rate_max * 100.0f;
 
-        float bf_yaw_cds = constrain_float(plane.nav_roll_cd, -roll_rate_limit_cds, roll_rate_limit_cds);
-        float bf_roll_cd = constrain_float(yaw_rate_cds, -roll_limit, roll_limit);
+        // Prevent a divide by zero
+        float yaw_rate_limit = ((yaw_rate_max < 1.0f) ? 1 : yaw_rate_max) * 100.0f;
+        float yaw2roll_scale = roll_limit / yaw_rate_limit;
+
         if (tailsitter.input_type == TAILSITTER_INPUT_BF_ROLL_M) {
-            // If pitch is  small (nose vertical) use roll rate limit for MC yaw rate and roll limit for MC roll angle
-            if (fabsf(euler_pitch) < 30.0f) {
-                float yaw_input_scale = roll_rate_limit_cds / roll_limit;
-                bf_yaw_cds = constrain_float(yaw_input_scale * plane.nav_roll_cd, -roll_rate_limit_cds, roll_rate_limit_cds);
-                bf_roll_cd = constrain_float(yaw_rate_cds, -roll_limit, roll_limit);
-            }
-            // multicopter style: rudder stick controls bodyframe roll when hovering
-            attitude_control->input_euler_rate_yaw_euler_angle_pitch_bf_roll_m(bf_yaw_cds,
-                                                                               plane.nav_pitch_cd,
-                                                                               bf_roll_cd);
+            // In multicopter input mode, the roll and yaw stick axes are independent of pitch
+            float m_roll_angle = yaw2roll_scale * yaw_rate_cds;
+            float m_yaw_rate = plane.nav_roll_cd / yaw2roll_scale;
+            attitude_control->input_euler_rate_yaw_euler_angle_pitch_bf_roll(false,
+                                                                             m_yaw_rate,
+                                                                             plane.nav_pitch_cd,
+                                                                             m_roll_angle);
             return;
         } else if (tailsitter.input_type == TAILSITTER_INPUT_BF_ROLL_P) {
-            // If pitch is  small (nose vertical) use roll rate limit for roll rate and roll limit for bf yaw angle
-            if (fabsf(euler_pitch) < 30.0f) {
-                bf_yaw_cds = constrain_float(plane.nav_roll_cd, -roll_limit, roll_limit);
-                bf_roll_cd = constrain_float(yaw_rate_cds, -roll_rate_limit_cds, roll_rate_limit_cds);
-            }
-            // plane style: rudder stick controls bodyframe yaw when hovering
-            attitude_control->input_euler_rate_yaw_euler_angle_pitch_bf_roll_p(bf_yaw_cds,
-                                                                               plane.nav_pitch_cd,
-                                                                               bf_roll_cd);
+            // In plane input mode, the roll and yaw stick axes rotate as pitch goes from zero to 90
+            // so it is necessary to also rotate their scaling.
+            float euler_pitch = radians(.01f * plane.nav_pitch_cd);
+            float spitch = fabsf(sinf(euler_pitch));
+            float y2r_scale = linear_interpolate(1, yaw2roll_scale, spitch, 0, 1);
+            float p_yaw_rate = plane.nav_roll_cd / y2r_scale;
+            float p_roll_angle = y2r_scale * yaw_rate_cds;
+
+            attitude_control->input_euler_rate_yaw_euler_angle_pitch_bf_roll(true,
+                                                                             p_yaw_rate,
+                                                                             plane.nav_pitch_cd,
+                                                                             p_roll_angle);
             return;
         }
     }
@@ -1304,7 +1312,14 @@ float QuadPlane::get_pilot_input_yaw_rate_cds(void) const
     }
 
     // add in rudder input
-    return plane.channel_rudder->get_control_in() * yaw_rate_max / 45;
+    float max_rate = yaw_rate_max;
+    if (is_tailsitter() &&
+        ((tailsitter.input_type == TAILSITTER_INPUT_BF_ROLL_M) ||
+         (tailsitter.input_type == TAILSITTER_INPUT_BF_ROLL_P))) {
+        // constrain max yaw rate
+        max_rate = (yaw_rate_max < 1.0f) ? 1 : yaw_rate_max;
+    }
+    return plane.channel_rudder->get_control_in() * max_rate / 45;
 }
 
 /*
@@ -2799,6 +2814,7 @@ void QuadPlane::Log_Write_QControl_Tuning()
         target_climb_rate   : target_climb_rate_cms,
         climb_rate          : int16_t(inertial_nav.get_velocity_z()),
         throttle_mix        : attitude_control->get_throttle_mix(),
+        speed_scaler         : last_spd_scaler,
     };
     plane.logger.WriteBlock(&pkt, sizeof(pkt));
 

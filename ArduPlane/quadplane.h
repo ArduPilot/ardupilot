@@ -149,6 +149,7 @@ public:
         int16_t  target_climb_rate;
         int16_t  climb_rate;
         float    throttle_mix;
+        float    speed_scaler;
     };
 
     MAV_TYPE get_mav_type(void) const;
@@ -477,7 +478,7 @@ private:
         AP_Int16 motor_mask;
         AP_Float scaling_speed_min;
         AP_Float scaling_speed_max;
-        AP_Int8 gain_scaling_mask;
+        AP_Int16 gain_scaling_mask;
     } tailsitter;
 
     // tailsitter speed scaler
