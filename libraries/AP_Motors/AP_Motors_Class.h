@@ -260,3 +260,7 @@ protected:
 private:
     static AP_Motors *_singleton;
 };
+
+namespace AP {
+    AP_Motors *motors();
+};

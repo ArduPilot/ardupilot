@@ -283,6 +283,10 @@ void AP_MotorsHeli_Single::calculate_armed_scalars()
         _main_rotor._rsc_mode.save();
         _heliflags.save_rsc_mode = false;
     }
+
+    // set bailout ramp time
+    _main_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
+    _tail_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
 }
 
 // calculate_scalars - recalculates various scalers used.
@@ -413,13 +417,13 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
     }
 
     // ensure not below landed/landing collective
-    if (_heliflags.landing_collective && collective_out < _collective_mid_pct) {
+    if (_heliflags.landing_collective && collective_out < _collective_mid_pct && !_heliflags.in_autorotation) {
         collective_out = _collective_mid_pct;
         limit.throttle_lower = true;
     }
 
-    // if servo output not in manual mode, process pre-compensation factors
-    if (_servo_mode == SERVO_CONTROL_MODE_AUTOMATED) {
+    // if servo output not in manual mode and heli is not in autorotation, process pre-compensation factors
+    if (_servo_mode == SERVO_CONTROL_MODE_AUTOMATED && !_heliflags.in_autorotation) {
         // rudder feed forward based on collective
         // the feed-forward is not required when the motor is stopped or at idle, and thus not creating torque
         // also not required if we are using external gyro

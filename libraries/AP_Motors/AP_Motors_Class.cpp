@@ -176,3 +176,10 @@ void AP_Motors::add_motor_num(int8_t motor_num)
         }
     }
 }
+
+namespace AP {
+    AP_Motors *motors()
+    {
+        return AP_Motors::get_singleton();
+    }
+}

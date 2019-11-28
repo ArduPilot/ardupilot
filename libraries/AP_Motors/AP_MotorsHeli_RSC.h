@@ -17,6 +17,7 @@
 // default main rotor ramp up time in seconds
 #define AP_MOTORS_HELI_RSC_RAMP_TIME            1       // 1 second to ramp output to main rotor ESC to setpoint
 #define AP_MOTORS_HELI_RSC_RUNUP_TIME           10      // 10 seconds for rotor to reach full speed
+#define AP_MOTORS_HELI_RSC_BAILOUT_TIME         1       // time in seconds to ramp motors when bailing out of autorotation
 
 // Throttle Curve Defaults
 #define AP_MOTORS_HELI_RSC_THRCRV_0_DEFAULT     25
@@ -116,6 +117,9 @@ public:
     // set_collective. collective for throttle curve calculation
     void        set_collective(float collective) { _collective_in = collective; }
 
+    // use bailout ramp time
+    void        use_bailout_ramp_time(bool enable) { _use_bailout_ramp = enable; }
+
     // output - update value to send to ESC/Servo
     void        output(RotorControlState state);
 
@@ -149,6 +153,7 @@ private:
     float           _rotor_rpm;                   // rotor rpm from speed sensor for governor
     float           _governor_output;             // governor output for rotor speed control
     bool            _governor_engage;             // RSC governor status flag for soft-start
+    bool            _use_bailout_ramp;            // true if allowing RSC to quickly ramp up engine
 
     // update_rotor_ramp - slews rotor output scalar between 0 and 1, outputs float scalar to _rotor_ramp_output
     void            update_rotor_ramp(float rotor_ramp_input, float dt);
