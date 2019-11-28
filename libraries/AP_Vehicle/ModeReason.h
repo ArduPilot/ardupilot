@@ -51,4 +51,6 @@ enum class ModeReason : uint8_t {
   STARTUP,
   SCRIPTING,
   UNAVAILABLE,
+  AUTOROTATION_START,
+  AUTOROTATION_BAILOUT,
 };
