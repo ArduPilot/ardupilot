@@ -82,9 +82,9 @@ void Submarine::calculate_forces(const struct sitl_input &input, Vector3f &rot_a
             output = (pwm - 1500) / 400.0; // range -1~1
         }
 
-        // 2.5 scalar for approximate real-life performance of T200 thruster
-        body_accel += t.linear * output * frame_property.thrust / frame_property.weight;
-        rot_accel += t.rotational * output * frame_property.thrust * frame_property.thruster_mount_radius / frame_property.moment_of_inertia;
+        float thrust = output * fabs(output) * frame_property.thrust; // approximate pwm to thrust function using a quadratic curve
+        body_accel += t.linear * thrust / frame_property.weight;
+        rot_accel += t.rotational * thrust * frame_property.thruster_mount_radius / frame_property.moment_of_inertia;
     }
 
     float floor_depth = calculate_sea_floor_depth(position);
