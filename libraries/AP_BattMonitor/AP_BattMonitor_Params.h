@@ -29,6 +29,7 @@ public:
         BattMonitor_TYPE_SUI6                       = 14,
         BattMonitor_TYPE_NeoDesign                  = 15,
         BattMonitor_TYPE_MAXELL                     = 16,
+        BattMonitor_TYPE_Generator                  = 17,
     };
 
     // low voltage sources (used for BATT_LOW_TYPE parameter)
