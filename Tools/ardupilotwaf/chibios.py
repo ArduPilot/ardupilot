@@ -6,7 +6,7 @@ Waf tool for ChibiOS build
 """
 
 from waflib import Errors, Logs, Task, Utils
-from waflib.TaskGen import after_method, before_method, feature
+from waflib.TaskGen import after_method, before_method, feature, before, after
 
 import os
 import shutil
@@ -35,18 +35,12 @@ def _load_dynamic_env_data(bld):
             idirs2.append(d)
     _dynamic_env_data['include_dirs'] = idirs2
 
-@feature('ch_ap_library', 'ch_ap_program')
-@before_method('process_source')
 def ch_dynamic_env(self):
-    # The generated files from configuration possibly don't exist if it's just
-    # a list command (TODO: figure out a better way to address that).
-    if self.bld.cmd == 'list':
-        return
-
+    bld = self.generator.bld
     if not _dynamic_env_data:
-        _load_dynamic_env_data(self.bld)
-    self.use += ' ch'
-    self.env.append_value('INCLUDES', _dynamic_env_data['include_dirs'])
+        _load_dynamic_env_data(bld)
+    bld.env.append_value('INCLUDES', _dynamic_env_data['include_dirs'])
+    bld.env.HAL_INCLUDE_CFLAGS = '-I' + ' -I'.join(_dynamic_env_data['include_dirs'])
 
 
 class upload_fw(Task.Task):
@@ -146,6 +140,22 @@ class generate_apj(Task.Task):
     def run(self):
         import json, time, base64, zlib
         img = open(self.inputs[0].abspath(),'rb').read()
+        #sign the image if key declared
+        if len(self.inputs) >= 2:
+            from Crypto.Signature import DSS
+            from Crypto.PublicKey import ECC
+            from Crypto.Hash import SHA256
+            key = ECC.import_key(open(self.inputs[1].abspath(), "r").read())
+            while len(img) % 4 != 0:
+                img += '\0'
+            digest = SHA256.new(img)
+            signer = DSS.new(key, 'fips-186-3', encoding='der')
+            signature = signer.sign(digest)
+            img += len(signature).to_bytes(76 - len(signature), 'big')
+            img += signature
+            # print(len(signature), len(len(signature).to_bytes(76 - len(signature), 'big')), '...............................')
+            import binascii
+
         d = {
             "board_id": int(self.env.APJ_BOARD_ID),
             "magic": "APJFWv1",
@@ -202,8 +212,11 @@ def chibios_firmware(self):
 
     generate_bin_task = self.create_task('generate_bin', src=link_output, tgt=bin_target)
     generate_bin_task.set_run_after(self.link_task)
-
-    generate_apj_task = self.create_task('generate_apj', src=bin_target, tgt=apj_target)
+    if len(self.env.SECURE_KEY) > 0 and not self.env.BOOTLOADER:
+        secure_key_pem = self.bld.srcnode.make_node(self.env.SECURE_KEY)
+        generate_apj_task = self.create_task('generate_apj', src=[bin_target,secure_key_pem], tgt=apj_target)
+    else:
+        generate_apj_task = self.create_task('generate_apj', src=bin_target, tgt=apj_target)
     generate_apj_task.set_run_after(generate_bin_task)
 
     if self.env.BUILD_ABIN:
@@ -211,7 +224,11 @@ def chibios_firmware(self):
         abin_task = self.create_task('build_abin', src=link_output, tgt=abin_target)
         abin_task.set_run_after(generate_apj_task)
 
-    bootloader_bin = self.bld.srcnode.make_node("Tools/bootloaders/%s_bl.bin" % self.env.BOARD)
+    if self.env.SECURE:
+        bootloader_bin = self.bld.srcnode.make_node("Tools/bootloaders/%s_securebl.bin" % self.env.BOARD)
+    else:
+        bootloader_bin = self.bld.srcnode.make_node("Tools/bootloaders/%s_bl.bin" % self.env.BOARD)
+        
     if self.bld.env.HAVE_INTEL_HEX:
         if os.path.exists(bootloader_bin.abspath()):
             hex_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.hex').name)
@@ -321,8 +338,8 @@ def configure(cfg):
         return bldnode.make_node(path).abspath()
     env.AP_PROGRAM_FEATURES += ['ch_ap_program']
 
-    kw = env.AP_LIBRARIES_OBJECTS_KW
-    kw['features'] = Utils.to_list(kw.get('features', [])) + ['ch_ap_library']
+    # kw = env.AP_LIBRARIES_OBJECTS_KW
+    # kw['features'] = Utils.to_list(kw.get('features', [])) + ['ch_ap_library']
 
     env.CH_ROOT = srcpath('modules/ChibiOS')
     env.AP_HAL_ROOT = srcpath('libraries/AP_HAL_ChibiOS')
@@ -375,12 +392,17 @@ def generate_hwdef_h(env):
     else:
         env.HWDEF = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % env.BOARD)
         env.BOOTLOADER_OPTION=""
+    if env.SECURE:
+        env.SECURE_OPTION="--secure"
+    else:
+        env.SECURE_OPTION=""
+
     hwdef_script = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/scripts/chibios_hwdef.py')
     hwdef_out = env.BUILDROOT
     if not os.path.exists(hwdef_out):
         os.mkdir(hwdef_out)
     python = sys.executable
-    cmd = "{0} '{1}' -D '{2}' '{3}' {4} --params '{5}'".format(python, hwdef_script, hwdef_out, env.HWDEF, env.BOOTLOADER_OPTION, env.DEFAULT_PARAMETERS)
+    cmd = "{0} '{1}' -D '{2}' '{3}' {4} --params '{5}' {6}".format(python, hwdef_script, hwdef_out, env.HWDEF, env.BOOTLOADER_OPTION, env.DEFAULT_PARAMETERS, env.SECURE_OPTION)
     return subprocess.call(cmd, shell=True)
 
 def pre_build(bld):
@@ -404,8 +426,9 @@ def build(bld):
     bld(
         # build hwdef.h from hwdef.dat. This is needed after a waf clean
         source=bld.path.ant_glob(bld.env.HWDEF),
-        rule="%s '${AP_HAL_ROOT}/hwdef/scripts/chibios_hwdef.py' -D '${BUILDROOT}' '%s' %s --params '%s'" % (
-            bld.env.get_flat('PYTHON'), bld.env.HWDEF, bld.env.BOOTLOADER_OPTION, bld.env.default_parameters),
+        rule="%s '${AP_HAL_ROOT}/hwdef/scripts/chibios_hwdef.py' -D '${BUILDROOT}' '%s' %s --params '%s' %s" % (
+            bld.env.get_flat('PYTHON'), bld.env.HWDEF, bld.env.BOOTLOADER_OPTION, bld.env.default_parameters, 
+            bld.env.SECURE_OPTION),
         group='dynamic_sources',
         target=[bld.bldnode.find_or_declare('hwdef.h'),
                 bld.bldnode.find_or_declare('ldscript.ld'),
@@ -417,6 +440,13 @@ def build(bld):
         rule="touch Makefile && BUILDDIR=${BUILDDIR_REL} CHIBIOS=${CH_ROOT_REL} AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${MAKE} pass -f '${BOARD_MK}'",
         group='dynamic_sources',
         target=bld.bldnode.find_or_declare('modules/ChibiOS/include_dirs')
+    )
+
+    bld(
+        source=bld.bldnode.find_or_declare('modules/ChibiOS/include_dirs'),
+        always=True,
+        rule=ch_dynamic_env,
+        group='dynamic_sources',
     )
 
     common_src = [bld.bldnode.find_or_declare('hwdef.h'),

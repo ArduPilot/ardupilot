@@ -8,6 +8,7 @@ import fnmatch
 import waflib
 from waflib import Utils
 from waflib.Configure import conf
+from Crypto.PublicKey import ECC
 
 _board_classes = {}
 _board = None
@@ -168,7 +169,8 @@ class Board:
         if cfg.options.bootloader:
             # don't let bootloaders try and pull scripting in
             cfg.options.disable_scripting = True
-        else:
+        
+        if not cfg.options.bootloader or cfg.options.secure_key is not None:
             env.DEFINES.update(
                 ENABLE_HEAP = 1,
             )
@@ -304,7 +306,7 @@ class Board:
             env.INCLUDES += [
                 cfg.srcnode.find_dir('modules/uavcan/libuavcan/include').abspath()
             ]
-
+ 
         if cfg.options.build_dates:
             env.build_dates = True
 
@@ -723,10 +725,31 @@ class chibios(Board):
             cfg.msg("Checking for intelhex module:", 'disabled', color='YELLOW')
             env.HAVE_INTEL_HEX = False
 
+        if cfg.options.secure_key is not None:
+            cfg.define('WOLFSSL_USER_SETTINGS', 1)
+            cfg.define('SKIP_WOLFSSL_BINDINGS', 1)
+            cfg.define('SECURE', 1)
+            env.INCLUDES += [ cfg.srcnode.find_dir('modules/wolfssl').abspath() ]
+            env.GIT_SUBMODULES += ['wolfssl']
+            env.BUILD_WOLFSSL = True
+            cfg.load('wolfssl')
+            pubkey = ECC.import_key(open(cfg.options.secure_key, 'rb').read())
+            X = hex(pubkey._point.x).upper()
+            Y = hex(pubkey._point.y).upper()
+            env.DEFINES.update(ECC_QX='"'+X[2:]+'"')
+            env.DEFINES.update(ECC_QY='"'+Y[2:]+'"')
+            env.CFLAGS += [
+                '-DSECURE=1',
+            ]
+               
+
     def build(self, bld):
         super(chibios, self).build(bld)
         bld.ap_version_append_str('CHIBIOS_GIT_VERSION', bld.git_submodule_head_hash('ChibiOS', short=True))
         bld.load('chibios')
+        if bld.env.BUILD_WOLFSSL:
+            bld.load('wolfssl')
+
 
     def pre_build(self, bld):
         '''pre-build hook that gets called before dynamic sources'''
