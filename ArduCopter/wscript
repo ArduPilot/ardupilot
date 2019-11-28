@@ -11,6 +11,7 @@ def build(bld):
             'AC_InputManager',
             'AC_PrecLand',
             'AC_Sprayer',
+            'AC_Autorotation',
             'AC_WPNav',
             'AP_Camera',
             'AP_IRLock',
