@@ -51,9 +51,9 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
         check_failed(display_failure, "Motor Interlock Enabled");
     }
 
-    // succeed if pre arm checks are disabled
+    // if pre arm checks are disabled run only the mandatory checks
     if (checks_to_perform == 0) {
-        return true;
+        return mandatory_checks(display_failure);
     }
 
     return fence_checks(display_failure)
@@ -362,17 +362,9 @@ bool AP_Arming_Copter::rc_calibration_checks(bool display_failure)
 // performs pre_arm gps related checks and returns true if passed
 bool AP_Arming_Copter::gps_checks(bool display_failure)
 {
-    AP_Notify::flags.pre_arm_gps_check = false;
-
-    const AP_AHRS_NavEKF &ahrs = AP::ahrs_navekf();
-
-    // always check if inertial nav has started and is ready
-    if (!ahrs.prearm_healthy()) {
-        const char *reason = ahrs.prearm_failure_reason();
-        if (reason == nullptr) {
-            reason = "AHRS not healthy";
-        }
-        check_failed(display_failure, "%s", reason);
+    // run mandatory gps checks first
+    if (!mandatory_gps_checks(display_failure)) {
+        AP_Notify::flags.pre_arm_gps_check = false;
         return false;
     }
 
@@ -392,46 +384,6 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
         return true;
     }
 
-    // ensure GPS is ok
-    if (!copter.position_ok()) {
-        const char *reason = ahrs.prearm_failure_reason();
-        if (reason == nullptr) {
-            if (!mode_requires_gps && fence_requires_gps) {
-                // clarify to user why they need GPS in non-GPS flight mode
-                reason = "Fence enabled, need 3D Fix";
-            } else {
-                reason = "Need 3D Fix";
-            }
-        }
-        check_failed(display_failure, "%s", reason);
-        return false;
-    }
-
-    // check for GPS glitch (as reported by EKF)
-    nav_filter_status filt_status;
-    if (ahrs.get_filter_status(filt_status)) {
-        if (filt_status.flags.gps_glitching) {
-            check_failed(display_failure, "GPS glitching");
-            return false;
-        }
-    }
-
-    // check EKF compass variance is below failsafe threshold
-    float vel_variance, pos_variance, hgt_variance, tas_variance;
-    Vector3f mag_variance;
-    Vector2f offset;
-    ahrs.get_variances(vel_variance, pos_variance, hgt_variance, mag_variance, tas_variance, offset);
-    if (copter.g.fs_ekf_thresh > 0 && mag_variance.length() >= copter.g.fs_ekf_thresh) {
-        check_failed(display_failure, "EKF compass variance");
-        return false;
-    }
-
-    // check home and EKF origin are not too far
-    if (copter.far_from_EKF_origin(ahrs.get_home())) {
-        check_failed(display_failure, "EKF-home variance");
-        return false;
-    }
-
     // return true immediately if gps check is disabled
     if (!(checks_to_perform == ARMING_CHECK_ALL || checks_to_perform & ARMING_CHECK_GPS)) {
         AP_Notify::flags.pre_arm_gps_check = true;
@@ -441,11 +393,13 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
     // warn about hdop separately - to prevent user confusion with no gps lock
     if (copter.gps.get_hdop() > copter.g.gps_hdop_good) {
         check_failed(ARMING_CHECK_GPS, display_failure, "High GPS HDOP");
+        AP_Notify::flags.pre_arm_gps_check = false;
         return false;
     }
 
     // call parent gps checks
     if (!AP_Arming::gps_checks(display_failure)) {
+        AP_Notify::flags.pre_arm_gps_check = false;
         return false;
     }
 
@@ -522,6 +476,80 @@ bool AP_Arming_Copter::proximity_checks(bool display_failure) const
 #endif
     return true;
 }
+
+// performs mandatory gps checks.  returns true if passed
+bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
+{
+    // always check if inertial nav has started and is ready
+    const AP_AHRS_NavEKF &ahrs = AP::ahrs_navekf();
+    if (!ahrs.prearm_healthy()) {
+        const char *reason = ahrs.prearm_failure_reason();
+        if (reason == nullptr) {
+            reason = "AHRS not healthy";
+        }
+        check_failed(display_failure, "%s", reason);
+        return false;
+    }
+
+    // check if flight mode requires GPS
+    bool mode_requires_gps = copter.flightmode->requires_GPS();
+
+    // check if fence requires GPS
+    bool fence_requires_gps = false;
+    #if AC_FENCE == ENABLED
+    // if circular or polygon fence is enabled we need GPS
+    fence_requires_gps = (copter.fence.get_enabled_fences() & (AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON)) > 0;
+    #endif
+
+    // return true if GPS is not required
+    if (!mode_requires_gps && !fence_requires_gps) {
+        return true;
+    }
+
+    // ensure GPS is ok
+    if (!copter.position_ok()) {
+        const char *reason = ahrs.prearm_failure_reason();
+        if (reason == nullptr) {
+            if (!mode_requires_gps && fence_requires_gps) {
+                // clarify to user why they need GPS in non-GPS flight mode
+                reason = "Fence enabled, need 3D Fix";
+            } else {
+                reason = "Need 3D Fix";
+            }
+        }
+        check_failed(display_failure, "%s", reason);
+        return false;
+    }
+
+    // check for GPS glitch (as reported by EKF)
+    nav_filter_status filt_status;
+    if (ahrs.get_filter_status(filt_status)) {
+        if (filt_status.flags.gps_glitching) {
+            check_failed(display_failure, "GPS glitching");
+            return false;
+        }
+    }
+
+    // check EKF compass variance is below failsafe threshold
+    float vel_variance, pos_variance, hgt_variance, tas_variance;
+    Vector3f mag_variance;
+    Vector2f offset;
+    ahrs.get_variances(vel_variance, pos_variance, hgt_variance, mag_variance, tas_variance, offset);
+    if (copter.g.fs_ekf_thresh > 0 && mag_variance.length() >= copter.g.fs_ekf_thresh) {
+        check_failed(display_failure, "EKF compass variance");
+        return false;
+    }
+
+    // check home and EKF origin are not too far
+    if (copter.far_from_EKF_origin(ahrs.get_home())) {
+        check_failed(display_failure, "EKF-home variance");
+        return false;
+    }
+
+    // if we got here all must be ok
+    return true;
+}
+
 
 // arm_checks - perform final checks before arming
 //  always called just before arming.  Return true if ok to arm
@@ -641,6 +669,15 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
     // has side-effects which would need to be cleaned up if one of
     // our arm checks failed
     return AP_Arming::arm_checks(method);
+}
+
+// mandatory checks that will be run if ARMING_CHECK is zero or arming forced
+bool AP_Arming_Copter::mandatory_checks(bool display_failure)
+{
+    // call mandatory gps checks and update notify status because regular gps checks will not run
+    const bool result = mandatory_gps_checks(display_failure);
+    AP_Notify::flags.pre_arm_gps_check = result;
+    return result;
 }
 
 void AP_Arming_Copter::set_pre_arm_check(bool b)
