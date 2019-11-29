@@ -67,13 +67,13 @@ uint8_t AP_NMEA_Output::_nmea_checksum(const char *str)
 
 void AP_NMEA_Output::update()
 {
-    const uint16_t now = AP_HAL::millis16();
+    const uint32_t now_ms = AP_HAL::millis();
 
     // only send at 10Hz
-    if (uint16_t(now - _last_run) < 100) {
+    if ((now_ms - _last_run_ms) < 100) {
         return;
     }
-    _last_run = now;
+    _last_run_ms = now_ms;
 
     // get time and date
     uint64_t time_usec;
