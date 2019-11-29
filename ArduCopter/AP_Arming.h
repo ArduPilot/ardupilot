@@ -34,6 +34,9 @@ protected:
     bool proximity_checks(bool display_failure) const override;
     bool arm_checks(AP_Arming::Method method) override;
 
+    // mandatory checks that cannot be bypassed.  This function will only be called if ARMING_CHECK is zero or arming forced
+    bool mandatory_checks(bool display_failure) override;
+
     // NOTE! the following check functions *DO* call into AP_Arming:
     bool ins_checks(bool display_failure) override;
     bool compass_checks(bool display_failure) override;
@@ -46,6 +49,7 @@ protected:
     bool motor_checks(bool display_failure);
     bool pilot_throttle_checks(bool display_failure);
     bool oa_checks(bool display_failure);
+    bool mandatory_gps_checks(bool display_failure);
 
     void set_pre_arm_check(bool b);
 
