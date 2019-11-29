@@ -872,7 +872,7 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
         return false;
     }
 
-    if (!do_arming_checks || (pre_arm_checks(true) && arm_checks(method))) {
+    if ((!do_arming_checks && mandatory_checks(true)) || (pre_arm_checks(true) && arm_checks(method))) {
         armed = true;
 
         //TODO: Log motor arming
