@@ -18,6 +18,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Scheduler/AP_Scheduler.h>
+#include <AP_Notify/AP_Notify.h>
 #include "AP_ICEngine.h"
 
 extern const AP_HAL::HAL& hal;
@@ -126,6 +127,12 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @Description: This configures the slewrate used to adjust the idle setpoint in percentage points per second
     AP_GROUPINFO("IDLE_SLEW", 14, AP_ICEngine, idle_slew, 1),
 
+    // @Param: OPTIONS
+    // @DisplayName: ICE options
+    // @Description: Options for ICE control
+    // @Bitmask: 0:DisableIgnitionRCFailsafe
+    AP_GROUPINFO("OPTIONS", 15, AP_ICEngine, options, 0),
+    
     AP_GROUPEND
 };
 
@@ -167,6 +174,11 @@ void AP_ICEngine::update(void)
         should_run = false;
     } else if (state != ICE_OFF) {
         should_run = true;
+    }
+
+    if ((options & uint16_t(Options::DISABLE_IGNITION_RC_FAILSAFE)) && AP_Notify::flags.failsafe_radio) {
+        // user has requested ignition kill on RC failsafe
+        should_run = false;
     }
 
     // switch on current state to work out new state

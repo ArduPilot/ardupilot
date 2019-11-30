@@ -116,6 +116,11 @@ private:
 
     // idle governor
     float idle_governor_integrator;
+
+    enum class Options : uint16_t {
+        DISABLE_IGNITION_RC_FAILSAFE=(1U<<0),
+    };
+    AP_Int16 options;
 };
 
 
