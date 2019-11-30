@@ -644,9 +644,6 @@ void AC_AutoTune::control_attitude()
             twitching_test_rate(rotation_rate, target_rate, test_rate_min, test_rate_max);
             twitching_measure_acceleration(test_accel_max, rotation_rate, rate_max);
             twitching_abort_rate(lean_angle, rotation_rate, abort_angle, test_rate_min);
-            if (lean_angle >= target_angle) {
-                step = UPDATE_GAINS;
-            }
             break;
         case RP_UP:
             twitching_test_rate(rotation_rate, target_rate*(1+0.5f*aggressiveness), test_rate_min, test_rate_max);
@@ -658,6 +655,11 @@ void AC_AutoTune::control_attitude()
             twitching_test_angle(lean_angle, rotation_rate, target_angle*(1+0.5f*aggressiveness), test_angle_min, test_angle_max, test_rate_min, test_rate_max);
             twitching_measure_acceleration(test_accel_max, rotation_rate - direction_sign * start_rate, rate_max);
             break;
+        }
+
+        // Check for failure causing reverse response
+        if (lean_angle <= -AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_CD) {
+            step = WAITING_FOR_LEVEL;
         }
 
         // log this iterations lean angle and rotation rate
@@ -779,7 +781,7 @@ void AC_AutoTune::control_attitude()
             counter = 0;
 
             // reset scaling factor
-            step_scaler = 1;
+            step_scaler = 1.0f;
 
             // move to the next tuning type
             switch (tune_type) {
@@ -911,7 +913,7 @@ void AC_AutoTune::backup_gains_and_initialise()
     step_start_time_ms = AP_HAL::millis();
     level_start_time_ms = step_start_time_ms;
     tune_type = RD_UP;
-    step_scaler = 1;
+    step_scaler = 1.0f;
 
     desired_yaw_cd = ahrs_view->yaw_sensor;
 
@@ -1306,7 +1308,7 @@ void AC_AutoTune::twitching_test_rate(float rate, float rate_target_max, float &
 void AC_AutoTune::twitching_abort_rate(float angle, float rate, float angle_max, float meas_rate_min)
 {
     if (angle >= angle_max) {
-        if (is_equal(rate, meas_rate_min) && step_scaler > 0.5) {
+        if (is_equal(rate, meas_rate_min) && step_scaler > 0.5f) {
             // we have reached the angle limit before completing the measurement of maximum and minimum
             // reduce the maximum target rate
             step_scaler *= 0.9f;
