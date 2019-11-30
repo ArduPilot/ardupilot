@@ -15,7 +15,9 @@
  
 #include <AP_HAL/AP_HAL.h>
 #include "AP_EFI_EMUECU.h"
+#include <GCS_MAVLink/GCS.h>
 #include <unistd.h>
+#include <stdio.h>
 
 #if EFI_ENABLED
 #include <AP_SerialManager/AP_SerialManager.h>
@@ -50,6 +52,7 @@ void AP_EFI_EMUECU::update()
             break;
         }
         if (b == '\n') {
+            linebuf[line_len-1] = 0;
             // got a full line
             process_line();
             line_len = 0;
@@ -62,6 +65,34 @@ void AP_EFI_EMUECU::update()
  */
 void AP_EFI_EMUECU::process_line(void)
 {
+    // special handling of var show
+    if (strchr(linebuf, '=') && line_len < 40) {
+        gcs().send_text(MAV_SEVERITY_INFO, "EMU: %s", linebuf);
+        return;
+    }
+
+    // special handling of log msg
+    if (strncmp(linebuf, "{\"log\":{\"msg\":\"", 15) == 0 && line_len > 18) {
+        const char *msg = &linebuf[15];
+        linebuf[line_len-5] = 0;
+        if (strlen(msg) < sizeof(last_log_msg)-1 && strcmp(last_log_msg, msg)) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "EMU: %s", msg);
+            strcpy(last_log_msg, msg);
+        }
+        return;
+    }
+
+    // special handling of var msg
+    if (strncmp(linebuf, "{\"var\":{\"", 9) == 0) {
+        char *ptr = nullptr;
+        const char *varname = strtok_r(&linebuf[9], " :\"{}", &ptr);
+        const char *var = strtok_r(nullptr, " :\"{}", &ptr);
+        if (varname && var) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "EMU: %s=%s", varname, var);
+        }
+        return;
+    }
+    
     for (uint16_t i=0; i<ARRAY_SIZE(keytable); i++) {
         const struct keytable &key = keytable[i];
 

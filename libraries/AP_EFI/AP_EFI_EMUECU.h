@@ -85,4 +85,5 @@ private:
 
     char linebuf[1200];
     uint16_t line_len;
+    char last_log_msg[64];
 };
