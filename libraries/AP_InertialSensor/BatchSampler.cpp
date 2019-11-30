@@ -23,7 +23,7 @@ const AP_Param::GroupInfo AP_InertialSensor::BatchSampler::var_info[] = {
 
     // @Param: BAT_OPT
     // @DisplayName: Batch Logging Options Mask
-    // @Description: Options for the BatchSampler
+    // @Description: Options for the BatchSampler. Post-filter and sensor-rate logging cannot be used at the same time.
     // @Bitmask: 0:Sensor-Rate Logging (sample at full sensor rate seen by AP), 1: Sample post-filtering
     // @User: Advanced
     AP_GROUPINFO("BAT_OPT",  3, AP_InertialSensor::BatchSampler, _batch_options_mask, 0),
