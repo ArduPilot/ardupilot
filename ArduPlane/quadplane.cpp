@@ -830,44 +830,41 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
         ((tailsitter.input_type == TAILSITTER_INPUT_BF_ROLL_M) ||
          (tailsitter.input_type == TAILSITTER_INPUT_BF_ROLL_P))) {
 
-        // Since function input_euler_rate_yaw_euler_angle_pitch_bf_roll()
-        // needs body-frame roll and yaw inputs, it is necessary to rescale
-        // the plane inputs nav_roll_cd and yaw_rate_cds to represent
-        // yaw rate and roll angle, respectively.
-
-        // Get the roll and yaw ranges from parameters
-        int16_t roll_limit = plane.quadplane.aparm.angle_max;
-        // separate limit for tailsitter roll, if set
-        if (plane.quadplane.tailsitter.max_roll_angle > 0) {
-            roll_limit = plane.quadplane.tailsitter.max_roll_angle * 100.0f;
-        }
-
-        // Prevent a divide by zero
-        float yaw_rate_limit = ((yaw_rate_max < 1.0f) ? 1 : yaw_rate_max) * 100.0f;
-        float yaw2roll_scale = roll_limit / yaw_rate_limit;
-
         if (tailsitter.input_type == TAILSITTER_INPUT_BF_ROLL_M) {
             // In multicopter input mode, the roll and yaw stick axes are independent of pitch
-            float m_roll_angle = yaw2roll_scale * yaw_rate_cds;
-            float m_yaw_rate = plane.nav_roll_cd / yaw2roll_scale;
             attitude_control->input_euler_rate_yaw_euler_angle_pitch_bf_roll(false,
-                                                                             m_yaw_rate,
+                                                                             plane.nav_roll_cd,
                                                                              plane.nav_pitch_cd,
-                                                                             m_roll_angle);
+                                                                             yaw_rate_cds);
             return;
         } else if (tailsitter.input_type == TAILSITTER_INPUT_BF_ROLL_P) {
-            // In plane input mode, the roll and yaw stick axes rotate as pitch goes from zero to 90
-            // so it is necessary to also rotate their scaling.
+            // In plane input mode, the roll and yaw sticks are swapped
+            // and their effective axes rotate from yaw to roll and vice versa
+            // as pitch goes from zero to 90.
+            // So it is necessary to also rotate their scaling.
+
+            // Get the roll angle and yaw rate limits
+            int16_t roll_limit = aparm.angle_max;
+            // separate limit for tailsitter roll, if set
+            if (tailsitter.max_roll_angle > 0) {
+                roll_limit = tailsitter.max_roll_angle * 100.0f;
+            }
+            // Prevent a divide by zero
+            float yaw_rate_limit = ((yaw_rate_max < 1.0f) ? 1 : yaw_rate_max) * 100.0f;
+            float yaw2roll_scale = roll_limit / yaw_rate_limit;
+
+            // Rotate as a function of Euler pitch and swap roll/yaw
             float euler_pitch = radians(.01f * plane.nav_pitch_cd);
             float spitch = fabsf(sinf(euler_pitch));
             float y2r_scale = linear_interpolate(1, yaw2roll_scale, spitch, 0, 1);
+
             float p_yaw_rate = plane.nav_roll_cd / y2r_scale;
-            float p_roll_angle = y2r_scale * yaw_rate_cds;
+            float p_roll_angle = -y2r_scale * yaw_rate_cds;
 
             attitude_control->input_euler_rate_yaw_euler_angle_pitch_bf_roll(true,
-                                                                             p_yaw_rate,
+                                                                             p_roll_angle,
                                                                              plane.nav_pitch_cd,
-                                                                             p_roll_angle);
+                                                                             p_yaw_rate);
             return;
         }
     }
@@ -1314,9 +1311,8 @@ float QuadPlane::get_pilot_input_yaw_rate_cds(void) const
     // add in rudder input
     float max_rate = yaw_rate_max;
     if (is_tailsitter() &&
-        ((tailsitter.input_type == TAILSITTER_INPUT_BF_ROLL_M) ||
-         (tailsitter.input_type == TAILSITTER_INPUT_BF_ROLL_P))) {
-        // constrain max yaw rate
+        tailsitter.input_type == TAILSITTER_INPUT_BF_ROLL_P) {
+        // must have a non-zero max yaw rate for scaling to work
         max_rate = (yaw_rate_max < 1.0f) ? 1 : yaw_rate_max;
     }
     return plane.channel_rudder->get_control_in() * max_rate / 45;
