@@ -1870,6 +1870,31 @@ void GCS::send_message(enum ap_message id)
 
 void GCS::update_send()
 {
+    static uint32_t last_send;
+    const uint32_t now = AP_HAL::millis();
+    static uint32_t count = 0;
+    if (now - last_send > 100) {
+        gcs().send_text(MAV_SEVERITY_INFO, "%u", count);
+
+        char buffer[300];
+        uint16_t i;
+        for (i=0; i<count;i++) {
+            const uint8_t x = i % 16;
+            if (x > 9) {
+                buffer[i] = 'A' + x - 10;
+            } else {
+                buffer[i] = '0' + x;
+            }
+        }
+        buffer[i] = '\0';
+        gcs().send_text(MAV_SEVERITY_INFO, "%s", buffer);
+        last_send = now;
+        count++;
+        if (count == sizeof(buffer)) {
+            count = 0;
+        }
+    }
+
     if (!initialised_missionitemprotocol_objects) {
         initialised_missionitemprotocol_objects = true;
         // once-only initialisation of MissionItemProtocol objects:
