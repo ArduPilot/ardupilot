@@ -350,5 +350,6 @@ void Rover::publish_osd_info()
 #endif
 
 Rover rover;
+AP_Vehicle& vehicle = rover;
 
 AP_HAL_MAIN_CALLBACKS(&rover);
