@@ -1762,7 +1762,7 @@ void GCS_MAVLINK::send_ahrs()
 void GCS::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text)
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    if (strlen(text) > MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN) {
+    if (strlen(text) > (MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN + MAVLINK_MSG_STATUSTEXT_FIELD_MORETEXT_LEN)) {
         AP_HAL::panic("Statustext (%s) too long", text);
     }
 #endif
@@ -1791,6 +1791,9 @@ void GCS::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const cha
 
     statustext.msg.severity = severity;
     strncpy(statustext.msg.text, text, sizeof(statustext.msg.text));
+    if (strlen(text) > sizeof(statustext.msg.text)) {
+        strncpy(statustext.msg.moretext, &text[50], sizeof(statustext.msg.moretext));
+    }
 
     WITH_SEMAPHORE(_statustext_sem);
     
@@ -1836,7 +1839,7 @@ void GCS::service_statustext(void)
                 mavlink_channel_t chan_index = (mavlink_channel_t)(MAVLINK_COMM_0+i);
                 if (HAVE_PAYLOAD_SPACE(chan_index, STATUSTEXT)) {
                     // we have space so send then clear that channel bit on the mask
-                    mavlink_msg_statustext_send(chan_index, statustext->msg.severity, statustext->msg.text);
+                    mavlink_msg_statustext_send(chan_index, statustext->msg.severity, statustext->msg.text, statustext->msg.moretext);
                     statustext->bitmask &= ~chan_bit;
                 }
             }
