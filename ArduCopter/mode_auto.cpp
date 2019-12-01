@@ -1166,14 +1166,14 @@ void ModeAuto::do_land(const AP_Mission::Mission_Command& cmd)
     // if location provided we fly to that location at current altitude
     if (cmd.content.location.lat != 0 || cmd.content.location.lng != 0) {
         // set state to fly to location
-        land_state = LandStateType_FlyToLocation;
+        state = State::FlyToLocation;
 
         const Location target_loc = terrain_adjusted_location(cmd);
 
         wp_start(target_loc);
     } else {
         // set landing state
-        land_state = LandStateType_Descending;
+        state = State::Descending;
 
         // initialise landing controller
         land_start();
@@ -1519,8 +1519,8 @@ bool ModeAuto::verify_land()
 {
     bool retval = false;
 
-    switch (land_state) {
-        case LandStateType_FlyToLocation:
+    switch (state) {
+        case State::FlyToLocation:
             // check if we've reached the location
             if (copter.wp_nav->reached_wp_destination()) {
                 // get destination so we can use it for loiter target
@@ -1530,11 +1530,11 @@ bool ModeAuto::verify_land()
                 land_start(dest);
 
                 // advance to next state
-                land_state = LandStateType_Descending;
+                state = State::Descending;
             }
             break;
 
-        case LandStateType_Descending:
+        case State::Descending:
             // rely on THROTTLE_LAND mode to correctly update landing status
             retval = copter.ap.land_complete && (motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE);
             break;
