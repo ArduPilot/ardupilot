@@ -90,6 +90,14 @@ class AutoTestTracker(AutoTest):
         self.achieve_attitude(desyaw=0, despitch=0)
         self.achieve_attitude(desyaw=45, despitch=10)
 
+    def MANUAL(self):
+        self.change_mode(0) # "MANUAL"
+        for x in 1200, 1600:
+            self.set_rc(1, x);
+            self.set_rc(2, x);
+            self.wait_servo_channel_value(1, x)
+            self.wait_servo_channel_value(2, x)
+
     def disabled_tests(self):
         return {
             "ArmFeatures": "See https://github.com/ArduPilot/ardupilot/issues/10652",
@@ -102,5 +110,8 @@ class AutoTestTracker(AutoTest):
             ("GUIDED",
              "Test GUIDED mode",
              self.GUIDED),
+            ("MANUAL",
+             "Test MANUAL mode",
+             self.MANUAL),
         ])
         return ret
