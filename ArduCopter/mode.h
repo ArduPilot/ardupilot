@@ -484,7 +484,11 @@ private:
     int32_t condition_value;  // used in condition commands (eg delay, change alt, etc.)
     uint32_t condition_start;
 
-    LandStateType land_state = LandStateType_FlyToLocation; // records state of land (flying to location, descending)
+    enum class State {
+        FlyToLocation = 0,
+        Descending = 1
+    };
+    State state = State::FlyToLocation;
 
     struct {
         PayloadPlaceStateType state = PayloadPlaceStateType_Calibrating_Hover_Start; // records state of place (descending, releasing, released, ...)

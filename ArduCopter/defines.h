@@ -125,11 +125,6 @@ enum SmartRTLState {
     SmartRTL_Land
 };
 
-enum LandStateType {
-    LandStateType_FlyToLocation = 0,
-    LandStateType_Descending = 1
-};
-
 enum PayloadPlaceStateType {
     PayloadPlaceStateType_FlyToLocation,
     PayloadPlaceStateType_Calibrating_Hover_Start,
