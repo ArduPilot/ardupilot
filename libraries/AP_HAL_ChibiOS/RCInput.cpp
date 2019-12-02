@@ -152,6 +152,7 @@ void RCInput::_timer_tick(void)
         for (uint8_t i=0; i<_num_channels; i++) {
             _rc_values[i] = AP::RC().read(i);
         }
+        _rssi = AP::RC().get_RSSI();
         rcin_mutex.give();
 #ifndef HAL_NO_UARTDRIVER
         rc_protocol = AP::RC().protocol_name();
@@ -180,6 +181,7 @@ void RCInput::_timer_tick(void)
         _rcin_timestamp_last_signal = last_iomcu_us;
 #ifndef HAL_NO_UARTDRIVER
         rc_protocol = iomcu.get_rc_protocol();
+        _rssi = iomcu.get_RSSI();
 #endif
     }
     rcin_mutex.give();
