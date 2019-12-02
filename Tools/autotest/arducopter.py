@@ -4766,6 +4766,30 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def test_richenpower(self):
+        self.set_parameter("SERIAL5_PROTOCOL", 30)
+        self.set_parameter("SIM_RICH_ENABLE", 1)
+        self.set_parameter("SERVO8_FUNCTION", 42)
+        self.set_parameter("SIM_RICH_CTRL", 8)
+        self.set_parameter("RC9_OPTION", 85)
+        self.set_parameter("LOG_DISARMED", 1)
+        self.customise_SITL_commandline(["--uartF=sim:richenpower"])
+        self.set_rc(9, 1000) # remember this is a switch position - stop
+        self.mavproxy.expect("requested state is not RUN")
+        self.set_rc(9, 2000) # remember this is a switch position - run
+        self.mavproxy.expect("warming up", timeout=200)
+        self.set_rc(9, 1000) # remember this is a switch position - stop
+        self.mavproxy.expect("requested state is not RUN", timeout=200)
+        self.set_message_rate_hz("GENERATOR_STATUS", 1)
+        self.drain_mav_unparsed()
+        m = self.assert_receive_message("GENERATOR_STATUS",timeout=10)
+        if m.generator_speed == 0:
+            raise NotAchievedException("Zero GENERATOR_STATUS.generator_speed")
+        self.set_message_rate_hz("GENERATOR_STATUS", -1)
+        self.set_parameter("LOG_DISARMED", 0)
+        if not self.current_onboard_log_contains_message("GEN"):
+            raise NotAchievedException("Did not find expected GEN message")
+
     def get_mission_count(self):
         return self.get_parameter("MIS_TOTAL")
 
@@ -5166,6 +5190,10 @@ class AutoTestCopter(AutoTest):
             ("AltTypes",
              "Test Different Altitude Types",
              self.test_altitude_types),
+
+            ("RichenPower",
+             "Test RichenPower generator",
+             self.test_richenpower),
 
             ("LogUpload",
              "Log upload",
