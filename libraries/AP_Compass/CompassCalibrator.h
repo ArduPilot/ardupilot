@@ -19,8 +19,8 @@ enum compass_cal_status_t {
     COMPASS_CAL_BAD_RADIUS = 7,
 };
 
-#define COMPASS_MIN_SCALE_FACTOR 0.3
-#define COMPASS_MAX_SCALE_FACTOR 1.6
+#define COMPASS_MIN_SCALE_FACTOR 0.85
+#define COMPASS_MAX_SCALE_FACTOR 1.3
 
 class CompassCalibrator {
 public:
