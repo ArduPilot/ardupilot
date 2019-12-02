@@ -67,7 +67,7 @@ private:
 
     void update_flighttime();
     void update_runtime();
-
+    HAL_Semaphore_Recursive sem;
 };
 
 namespace AP {
