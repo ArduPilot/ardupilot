@@ -71,6 +71,11 @@ public:
     // get the name of the RC protocol
     const char *get_rc_protocol(void);
 
+    // get receiver RSSI
+    int16_t get_RSSI(void) const {
+        return rc_input.rssi;
+    }
+    
     /*
       get servo rail voltage
      */
