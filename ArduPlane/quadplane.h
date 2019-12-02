@@ -443,24 +443,23 @@ private:
         bool motors_active:1;
     } tilt;
 
+    // bit 0 enables plane mode and bit 1 enables body-frame roll mode
     enum tailsitter_input {
-        TAILSITTER_INPUT_MULTICOPTER = 0,
-        TAILSITTER_INPUT_PLANE       = 1,
-        TAILSITTER_INPUT_BF_ROLL_M   = 2,
-        TAILSITTER_INPUT_BF_ROLL_P   = 3,
+        TAILSITTER_INPUT_PLANE   = (1U<<0),
+        TAILSITTER_INPUT_BF_ROLL = (1U<<1)
     };
 
     enum tailsitter_mask {
-        TAILSITTER_MASK_AILERON  = 1,
-        TAILSITTER_MASK_ELEVATOR = 2,
-        TAILSITTER_MASK_THROTTLE = 4,
-        TAILSITTER_MASK_RUDDER   = 8,
+        TAILSITTER_MASK_AILERON  = (1U<<0),
+        TAILSITTER_MASK_ELEVATOR = (1U<<1),
+        TAILSITTER_MASK_THROTTLE = (1U<<2),
+        TAILSITTER_MASK_RUDDER   = (1U<<3),
     };
 
     enum tailsitter_gscl_mask {
-        TAILSITTER_GSCL_BOOST  = 1,
-        TAILSITTER_GSCL_ATT_THR = 2,
-        TAILSITTER_GSCL_INTERP = 4,
+        TAILSITTER_GSCL_BOOST   = (1U<<0),
+        TAILSITTER_GSCL_ATT_THR = (1U<<1),
+        TAILSITTER_GSCL_INTERP  = (1U<<2),
     };
 
     // tailsitter control variables
