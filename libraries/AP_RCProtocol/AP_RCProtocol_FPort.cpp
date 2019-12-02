@@ -14,6 +14,7 @@
  */
 
 #include "AP_RCProtocol_FPort.h"
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #define FRAME_HEAD 0x7E
 #define FRAME_LEN_CONTROL 0x19
@@ -104,7 +105,7 @@ void AP_RCProtocol_FPort::decode_control(const FPort_Frame &frame)
     }
 
     bool failsafe = ((frame.control.flags & (1 << FLAGS_FAILSAFE_BIT)) != 0);
-    add_input(MAX_CHANNELS, values, failsafe);
+    add_input(MAX_CHANNELS, values, failsafe, frame.control.rssi);
 }
 
 // decode a full FPort downlink frame
