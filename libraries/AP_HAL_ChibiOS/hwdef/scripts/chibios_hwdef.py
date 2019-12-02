@@ -985,6 +985,16 @@ def write_UART_config(f):
         else:
             error("Invalid element %s in UART_ORDER" % dev)
         devlist.append('HAL_%s_CONFIG' % dev)
+        if dev + "_TX" in bylabel:
+            p = bylabel[dev + '_TX']
+            tx_line = 'PAL_LINE(GPIO%s,%uU)' % (p.port, p.pin)
+        else:
+            tx_line = "0"
+        if dev + "_RX" in bylabel:
+            p = bylabel[dev + '_RX']
+            rx_line = 'PAL_LINE(GPIO%s,%uU)' % (p.port, p.pin)
+        else:
+            rx_line = "0"
         if dev + "_RTS" in bylabel:
             p = bylabel[dev + '_RTS']
             rts_line = 'PAL_LINE(GPIO%s,%uU)' % (p.port, p.pin)
@@ -1006,10 +1016,10 @@ def write_UART_config(f):
                 "#define HAL_%s_CONFIG { (BaseSequentialStream*) &SD%u, false, "
                 % (dev, n))
             if mcu_series.startswith("STM32F1"):
-                f.write("%s, " % rts_line)
+                f.write("%s, %s, %s, " % (tx_line, rx_line, rts_line))
             else:
-                f.write("STM32_%s_RX_DMA_CONFIG, STM32_%s_TX_DMA_CONFIG, %s, " %
-                        (dev, dev, rts_line))
+                f.write("STM32_%s_RX_DMA_CONFIG, STM32_%s_TX_DMA_CONFIG, %s, %s, %s, " %
+                        (dev, dev, tx_line, rx_line, rts_line))
 
             # add inversion pins, if any
             f.write("%d, " % get_gpio_bylabel(dev + "_RXINV"))
