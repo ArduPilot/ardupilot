@@ -72,6 +72,8 @@ public:
         uint8_t dma_tx_stream_id;
         uint32_t dma_tx_channel_id;
 #endif
+        ioline_t tx_line;
+        ioline_t rx_line;
         ioline_t rts_line;
         int8_t rxinv_gpio;
         uint8_t rxinv_polarity;
