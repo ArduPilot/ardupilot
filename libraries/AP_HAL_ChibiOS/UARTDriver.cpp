@@ -1302,17 +1302,31 @@ bool UARTDriver::set_options(uint8_t options)
 
 #if defined(STM32F7) || defined(STM32H7) || defined(STM32F3)
     // F7 has built-in support for inversion in all uarts
+    ioline_t rx_line = (options & OPTION_SWAP)?sdef.tx_line:sdef.rx_line;
+    ioline_t tx_line = (options & OPTION_SWAP)?sdef.rx_line:sdef.tx_line;
     if (options & OPTION_RXINV) {
         cr2 |= USART_CR2_RXINV;
         _cr2_options |= USART_CR2_RXINV;
+        if (rx_line != 0) {
+            palLineSetPushPull(rx_line, PAL_PUSHPULL_PULLDOWN);
+        }
     } else {
         cr2 &= ~USART_CR2_RXINV;
+        if (rx_line != 0) {
+            palLineSetPushPull(rx_line, PAL_PUSHPULL_PULLUP);
+        }
     }
     if (options & OPTION_TXINV) {
         cr2 |= USART_CR2_TXINV;
         _cr2_options |= USART_CR2_TXINV;
+        if (tx_line != 0) {
+            palLineSetPushPull(tx_line, PAL_PUSHPULL_PULLDOWN);
+        }
     } else {
         cr2 &= ~USART_CR2_TXINV;
+        if (tx_line != 0) {
+            palLineSetPushPull(tx_line, PAL_PUSHPULL_PULLUP);
+        }
     }
     // F7 can also support swapping RX and TX pins
     if (options & OPTION_SWAP) {
