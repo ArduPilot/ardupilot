@@ -145,7 +145,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Param: FRAME_TYPE
     // @DisplayName: Frame Type (+, X or V)
     // @Description: Controls motor mixing for multicopter component
-    // @Values: 0:Plus, 1:X, 2:V, 3:H, 4:V-Tail, 5:A-Tail, 10:Y6B, 11:Y6F, 12:BetaFlightX, 13:DJIX, 14:ClockwiseX, 15: I
+    // @Values: 0:Plus, 1:X, 2:V, 3:H, 4:V-Tail, 5:A-Tail, 10:Y6B, 11:Y6F, 12:BetaFlightX, 13:DJIX, 14:ClockwiseX, 15:I, 16:MOTOR_FRAME_TYPE_NYT_PLUS, 17:MOTOR_FRAME_TYPE_NYT_X
     // @User: Standard
     AP_GROUPINFO("FRAME_TYPE", 31, QuadPlane, frame_type, 1),
 
@@ -276,10 +276,10 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     AP_GROUPINFO("TILT_RATE_DN", 49, QuadPlane, tilt.max_rate_down_dps, 0),
         
     // @Param: TAILSIT_INPUT
-    // @DisplayName: Tailsitter input type
-    // @Description: This controls whether stick input when hovering as a tailsitter follows the conventions for fixed wing hovering or multicopter hovering. When multicopter input is selected the roll stick will roll the aircraft in earth frame and yaw stick will yaw in earth frame. When using fixed wing input the roll and yaw sticks are swapped so that the roll stick controls earth-frame yaw and rudder controls earth-frame roll. When body-frame roll is selected, the yaw stick controls earth-frame yaw rate and the roll stick controls roll in the tailsitter's body frame.
-    // @Values: 0:MultiCopterInput,1:FixedWingInput,2:BodyFrameRoll_M,3:BodyFrameRoll_P
-    AP_GROUPINFO("TAILSIT_INPUT", 50, QuadPlane, tailsitter.input_type, TAILSITTER_INPUT_MULTICOPTER),
+    // @DisplayName: Tailsitter input type bitmask
+    // @Description: This controls whether stick input when hovering as a tailsitter follows the conventions for fixed wing hovering or multicopter hovering. When PlaneMode is not enabled (bit0 = 0) the roll stick will roll the aircraft in earth frame and yaw stick will yaw in earth frame. When PlaneMode input is enabled, the roll and yaw sticks are swapped so that the roll stick controls earth-frame yaw and rudder controls earth-frame roll. When body-frame roll is enabled (bit1 = 1), the yaw stick controls earth-frame yaw rate and the roll stick controls roll in the tailsitter's body frame when flying level.
+    // @Bitmask: 0:PlaneMode,1:BodyFrameRoll
+    AP_GROUPINFO("TAILSIT_INPUT", 50, QuadPlane, tailsitter.input_type, 0),
 
     // @Param: TAILSIT_MASK
     // @DisplayName: Tailsitter input mask
@@ -827,17 +827,16 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
     // tailsitter-only body-frame roll control options
     // Angle mode attitude control for pitch and body-frame roll, rate control for euler yaw.
     if (is_tailsitter() &&
-        ((tailsitter.input_type == TAILSITTER_INPUT_BF_ROLL_M) ||
-         (tailsitter.input_type == TAILSITTER_INPUT_BF_ROLL_P))) {
+        (tailsitter.input_type & TAILSITTER_INPUT_BF_ROLL)) {
 
-        if (tailsitter.input_type == TAILSITTER_INPUT_BF_ROLL_M) {
+        if (!(tailsitter.input_type & TAILSITTER_INPUT_PLANE)) {
             // In multicopter input mode, the roll and yaw stick axes are independent of pitch
             attitude_control->input_euler_rate_yaw_euler_angle_pitch_bf_roll(false,
                                                                              plane.nav_roll_cd,
                                                                              plane.nav_pitch_cd,
                                                                              yaw_rate_cds);
             return;
-        } else if (tailsitter.input_type == TAILSITTER_INPUT_BF_ROLL_P) {
+        } else {
             // In plane input mode, the roll and yaw sticks are swapped
             // and their effective axes rotate from yaw to roll and vice versa
             // as pitch goes from zero to 90.
@@ -1311,7 +1310,7 @@ float QuadPlane::get_pilot_input_yaw_rate_cds(void) const
     // add in rudder input
     float max_rate = yaw_rate_max;
     if (is_tailsitter() &&
-        tailsitter.input_type == TAILSITTER_INPUT_BF_ROLL_P) {
+        tailsitter.input_type & TAILSITTER_INPUT_BF_ROLL) {
         // must have a non-zero max yaw rate for scaling to work
         max_rate = (yaw_rate_max < 1.0f) ? 1 : yaw_rate_max;
     }
