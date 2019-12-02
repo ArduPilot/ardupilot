@@ -18,7 +18,7 @@ void Copter::update_precland()
     // use range finder altitude if it is valid, else try to get terrain alt
     if (rangefinder_alt_ok()) {
         height_above_ground_cm = rangefinder_state.alt_cm;
-    } else if (terrain_use()) {
+    } else if (terrain_use() && !current_loc.is_zero()) {
         if (!current_loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, height_above_ground_cm)) {
             height_above_ground_cm = current_loc.alt;
         }
