@@ -63,6 +63,7 @@ public:
     uint16_t read(uint8_t chan);
     bool new_input();
     void start_bind(void);
+    int16_t get_RSSI(void) const;
 
     // return protocol name as a string
     static const char *protocol_name_from_protocol(rcprotocol_t protocol);
