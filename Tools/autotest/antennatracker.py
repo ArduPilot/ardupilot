@@ -98,6 +98,23 @@ class AutoTestTracker(AutoTest):
             self.wait_servo_channel_value(1, x)
             self.wait_servo_channel_value(2, x)
 
+    def SERVOTEST(self):
+        self.change_mode(0) # "MANUAL"
+        # magically changes to SERVOTEST (3)
+        for value in 1900, 1200:
+            for channel in 1, 2:
+                self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_SERVO,
+                             channel,
+                             value,
+                             0,
+                             0,
+                             0,
+                             0,
+                             0,
+                             timeout=1)
+                self.wait_servo_channel_value(channel, value)
+
+
     def disabled_tests(self):
         return {
             "ArmFeatures": "See https://github.com/ArduPilot/ardupilot/issues/10652",
@@ -110,8 +127,13 @@ class AutoTestTracker(AutoTest):
             ("GUIDED",
              "Test GUIDED mode",
              self.GUIDED),
+
             ("MANUAL",
              "Test MANUAL mode",
              self.MANUAL),
+
+            ("SERVOTEST",
+             "Test SERVOTEST mode",
+             self.SERVOTEST),
         ])
         return ret
