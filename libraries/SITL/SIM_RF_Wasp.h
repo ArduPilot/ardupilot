@@ -40,6 +40,10 @@ public:
 
     uint32_t packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen) override;
 
+    // 20Hz; if Wasp driver doesn't get a reading each time its update
+    // is called it goes NoData
+    uint16_t reading_interval_ms() const override { return 50; }
+
 private:
 
     void check_configuration();
