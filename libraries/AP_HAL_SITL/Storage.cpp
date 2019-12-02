@@ -37,6 +37,9 @@ void Storage::_storage_open(void)
         hal.console->printf("open failed of " HAL_STORAGE_FILE "\n");
         return;
     }
+
+    fcntl(log_fd, F_SETFD, FD_CLOEXEC);
+
     int ret = read(log_fd, _buffer, HAL_STORAGE_SIZE);
     if (ret < 0) {
         hal.console->printf("read failed for " HAL_STORAGE_FILE "\n");
