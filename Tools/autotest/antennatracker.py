@@ -3,6 +3,7 @@
 from __future__ import print_function
 
 import math
+import operator
 import os
 
 from pymavlink import mavextra
@@ -125,6 +126,19 @@ class AutoTestTracker(AutoTest):
                          timeout=1)
             self.wait_servo_channel_value(channel, value)
 
+    def SCAN(self):
+        self.change_mode(2) # "SCAN"
+        self.set_parameter("SCAN_SPEED_YAW", 20)
+        for channel in 1, 2:
+            self.wait_servo_channel_value(channel,
+                                          1900,
+                                          timeout=90,
+                                          comparator=operator.ge)
+        for channel in 1, 2:
+            self.wait_servo_channel_value(channel,
+                                          1200,
+                                          timeout=90,
+                                          comparator=operator.le)
 
     def disabled_tests(self):
         return {
@@ -151,5 +165,8 @@ class AutoTestTracker(AutoTest):
              "Test AHRS NMEA Output can be read by out NMEA GPS",
              self.nmea_output),
 
+            ("SCAN",
+             "Test SCAN mode",
+             self.SCAN),
         ])
         return ret
