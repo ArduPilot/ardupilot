@@ -61,8 +61,8 @@ public:
     Compass compass;
     AP_SerialManager serial_manager;
     RangeFinder rng;
-    NavEKF2 EKF2{&ahrs, rng};
-    NavEKF3 EKF3{&ahrs, rng};
+    NavEKF2 EKF2{&ahrs};
+    NavEKF3 EKF3{&ahrs};
     AP_AHRS_NavEKF ahrs{EKF2, EKF3};
     AP_Vehicle::FixedWing aparm;
     AP_Airspeed airspeed;
