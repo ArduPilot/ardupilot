@@ -1,13 +1,7 @@
+#include "mode.h"
+
 #include "Tracker.h"
 
-/*
- * Auto control mode
- */
-
-/*
- * update_auto - runs the auto controller
- *  called at 50hz while control mode is 'AUTO'
- */
 void Mode::update_auto(void)
 {
     struct Tracker::NavStatus &nav_status = tracker.nav_status;
