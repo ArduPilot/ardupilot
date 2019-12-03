@@ -114,6 +114,8 @@ class AP_Frsky_Telem {
 public:
     AP_Frsky_Telem();
 
+    ~AP_Frsky_Telem();
+
     /* Do not allow copies */
     AP_Frsky_Telem(const AP_Frsky_Telem &other) = delete;
     AP_Frsky_Telem &operator=(const AP_Frsky_Telem&) = delete;
@@ -129,6 +131,13 @@ public:
     // indicates that the sensor or subsystem is present but not
     // functioning correctly
     uint32_t sensor_status_flags() const;
+
+    static AP_Frsky_Telem *get_singleton(void) {
+        return singleton;
+    }
+
+    // get next telemetry data for external consumers of SPort data
+    bool get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &data);
 
 private:
     AP_HAL::UARTDriver *_port;                  // UART used to send data to FrSky receiver
@@ -244,4 +253,23 @@ private:
     void calc_nav_alt(void);
     float format_gps(float dec);
     void calc_gps_position(void);
+
+    // setup ready for passthrough operation
+    void setup_passthrough(void);
+
+    static AP_Frsky_Telem *singleton;
+
+    // use_external_data is set when this library will
+    // be providing data to another transport, such as FPort
+    bool use_external_data;
+    struct {
+        uint8_t frame;
+        uint16_t appid;
+        uint32_t data;
+        bool pending;
+    } external_data;
+};
+
+namespace AP {
+    AP_Frsky_Telem *frsky_telem();
 };
