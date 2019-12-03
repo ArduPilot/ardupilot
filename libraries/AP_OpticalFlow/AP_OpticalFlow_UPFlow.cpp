@@ -45,6 +45,7 @@
 
 #define UPFLOW_HEADER         (uint8_t)0xFE
 #define UPFLOW_FOOTER         (uint8_t)0x55
+#define UPFLOW_VALID          (uint8_t)0xF5
 #define UPFLOW_FRAME_LENGTH              14
 #define UPFLOW_PIXEL_SCALING      (1.76e-3)
 #define UPFLOW_TIMEOUT_SEC             0.3f
@@ -155,8 +156,8 @@ void AP_OpticalFlow_UPFlow::update(void)
         }
     }
 
-    // return without updating state if no readings
-    if (count == 0) {
+    // return without updating state if no readings or reading not valid
+    if ((count == 0) || (buf[11] != UPFLOW_VALID)) {
         return;
     }
 
