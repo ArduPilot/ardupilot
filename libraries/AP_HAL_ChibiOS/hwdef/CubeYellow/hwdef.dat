@@ -458,13 +458,6 @@ define HAL_HAVE_IMU_HEATER 1
 # enable FAT filesystem support (needs a microSD defined via SDIO)
 define HAL_OS_FATFS_IO 1
 
-# enable RTSCTS support. You should define this if you have any UARTs
-with RTS/CTS pins
-define AP_FEATURE_RTSCTS 1
-
-# enable SBUS_OUT on IOMCU (if you have an IOMCU)
-define AP_FEATURE_SBUS_OUT 1
-
 # now setup the default battery pins driver analog pins and default
 # scaling for the power brick
 define HAL_BATT_VOLT_PIN 2

@@ -239,12 +239,6 @@ define STORAGE_FLASH_PAGE 22
 # enable FAT filesystem support (needs a microSD defined via SDIO)
 define HAL_OS_FATFS_IO 1
 
-# enable RTSCTS support
-define AP_FEATURE_RTSCTS 1
-
-# enable SBUS_OUT on IOMCU (if you have an IOMCU)
-define AP_FEATURE_SBUS_OUT 1
-
 # battery setup
 define HAL_BATT_VOLT_PIN 2
 define HAL_BATT_CURR_PIN 3
