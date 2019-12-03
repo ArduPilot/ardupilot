@@ -1217,7 +1217,7 @@ private:
         MIX_THROTTLE = 13,  // mixer throttle axis is being excited
     };
 
-    AP_Int8 axis;               // Controls which axis are being excited
+    AP_Int8 axis;               // Controls which axis are being excited. Set to non-zero to display other parameters
     AP_Float waveform_magnitude;// Magnitude of chirp waveform
     AP_Float frequency_start;   // Frequency at the start of the chirp
     AP_Float frequency_stop;    // Frequency at the end of the chirp
