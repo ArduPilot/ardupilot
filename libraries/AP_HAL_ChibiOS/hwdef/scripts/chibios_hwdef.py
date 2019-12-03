@@ -963,6 +963,8 @@ def write_UART_config(f):
         )
         uart_list.append(config['IOMCU_UART'][0])
         f.write('#define HAL_HAVE_SERVO_VOLTAGE 1\n') # make the assumption that IO gurantees servo monitoring
+        # all IOMCU capable boards have SBUS out
+        f.write('#define AP_FEATURE_SBUS_OUT 1\n')
     else:
         f.write('#define HAL_WITH_IO_MCU 0\n')
     f.write('\n')
