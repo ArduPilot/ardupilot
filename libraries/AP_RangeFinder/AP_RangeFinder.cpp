@@ -211,38 +211,6 @@ void RangeFinder::convert_params(void) {
             {24, 11, 1}, //24, ADDR 2
             {50, 12, 1}, //50, POS 2
             {54, 13, 1}, //54, ORIENT 2
-
-            // rangefinder 3
-            {25, 0, 2}, //25, TYPE 3
-            {26, 1, 2}, //26, PIN 3
-            {27, 2, 2}, //27, SCALING 3
-            {28, 3, 2}, //28, OFFSET 3
-            {29, 4, 2}, //29, FUNCTION 3
-            {30, 5, 2}, //30, MIN_CM 3
-            {31, 6, 2}, //31, MAX_CM 3
-            {32, 7, 2}, //32, STOP_PIN 3
-            {34, 8, 2}, //34, RMETRIC 3
-            {10, 9, 2}, //10, PWRRNG 1 (previously existed only once for all sensors)
-            {35, 10, 2}, //35, GNDCLEAR 3
-            {36, 11, 2}, //36, ADDR 3
-            {51, 12, 2}, //51, POS 3
-            {55, 13, 2}, //55, ORIENT 3
-
-            // rangefinder 4
-            {37, 0, 3}, //37, TYPE 4
-            {38, 1, 3}, //38, PIN 4
-            {39, 2, 3}, //39, SCALING 4
-            {40, 3, 3}, //40, OFFSET 4
-            {41, 4, 3}, //41, FUNCTION 4
-            {42, 5, 3}, //42, MIN_CM 4
-            {43, 6, 3}, //43, MAX_CM 4
-            {44, 7, 3}, //44, STOP_PIN 4
-            {46, 8, 3}, //46, RMETRIC 4
-            {10, 9, 3}, //10, PWRRNG 1 (previously existed only once for all sensors)
-            {47, 10, 3}, //47, GNDCLEAR 4
-            {48, 11, 3}, //48, ADDR 4
-            {52, 12, 3}, //52, POS 4
-            {56, 13, 3}, //56, ORIENT 4
     };
 
     char param_name[17] = {0};
