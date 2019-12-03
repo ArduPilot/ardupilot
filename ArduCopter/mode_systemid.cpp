@@ -10,10 +10,10 @@ const AP_Param::GroupInfo ModeSystemId::var_info[] = {
 
     // @Param: _AXIS
     // @DisplayName: System identification axis
-    // @Description: Controls which axis are being excited
+    // @Description: Controls which axis are being excited.  Set to non-zero to see more parameters
     // @User: Standard
     // @Values: 0:None, 1:Input Roll Angle, 2:Input Pitch Angle, 3:Input Yaw Angle, 4:Recovery Roll Angle, 5:Recovery Pitch Angle, 6:Recovery Yaw Angle, 7:Rate Roll, 8:Rate Pitch, 9:Rate Yaw, 10:Mixer Roll, 11:Mixer Pitch, 12:Mixer Yaw, 13:Mixer Thrust
-    AP_GROUPINFO("_AXIS", 1, ModeSystemId, axis, 0),
+    AP_GROUPINFO_FLAGS("_AXIS", 1, ModeSystemId, axis, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: _MAGNITUDE
     // @DisplayName: System identification Chirp Magnitude
@@ -74,6 +74,12 @@ ModeSystemId::ModeSystemId(void) : Mode()
 // systemId_init - initialise systemId controller
 bool ModeSystemId::init(bool ignore_checks)
 {
+    // check if enabled
+    if (axis == 0) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "No axis selected, SID_AXIS = 0");
+        return false;
+    }
+
     // if landed and the mode we're switching from does not have manual throttle and the throttle stick is too high
     if (motors->armed() && copter.ap.land_complete && !copter.flightmode->has_manual_throttle()) {
         return false;
