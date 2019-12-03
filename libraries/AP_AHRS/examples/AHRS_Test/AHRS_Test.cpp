@@ -30,9 +30,8 @@ static AP_Logger logger{logger_bitmask};
 
 class DummyVehicle {
 public:
-    RangeFinder sonar;
-    NavEKF2 EKF2{&ahrs, sonar};
-    NavEKF3 EKF3{&ahrs, sonar};
+    NavEKF2 EKF2{&ahrs};
+    NavEKF3 EKF3{&ahrs};
     AP_AHRS_NavEKF ahrs{EKF2, EKF3,
             AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
 };
