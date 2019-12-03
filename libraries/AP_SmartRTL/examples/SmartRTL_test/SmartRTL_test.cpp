@@ -20,9 +20,8 @@ static AP_SerialManager serial_manager;
 
 class DummyVehicle {
 public:
-    RangeFinder rangefinder;
-    NavEKF2 EKF2{&ahrs, rangefinder};
-    NavEKF3 EKF3{&ahrs, rangefinder};
+    NavEKF2 EKF2{&ahrs};
+    NavEKF3 EKF3{&ahrs};
     AP_AHRS_NavEKF ahrs{EKF2, EKF3, AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
 };
 
