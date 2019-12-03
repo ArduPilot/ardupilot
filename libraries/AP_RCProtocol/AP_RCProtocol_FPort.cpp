@@ -12,11 +12,20 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+/*
+  FRSky FPort implementation, with thanks to BetaFlight for
+  specification and code reference
+ */
 
 #include "AP_RCProtocol_FPort.h"
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_Frsky_Telem/AP_Frsky_Telem.h>
+
+extern const AP_HAL::HAL& hal;
 
 #define FRAME_HEAD 0x7E
+#define FRAME_DLE  0x7D
+#define FRAME_XOR  0x20
 #define FRAME_LEN_CONTROL 0x19
 #define FRAME_LEN_DOWNLINK 0x08
 #define MIN_FRAME_SIZE 12
@@ -108,10 +117,86 @@ void AP_RCProtocol_FPort::decode_control(const FPort_Frame &frame)
     add_input(MAX_CHANNELS, values, failsafe, frame.control.rssi);
 }
 
-// decode a full FPort downlink frame
+/*
+  decode a full FPort downlink frame
+*/
 void AP_RCProtocol_FPort::decode_downlink(const FPort_Frame &frame)
 {
-    // not implemented yet
+#if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
+    if (frame.downlink.prim != 0x10 && frame.downlink.prim != 0x00) {
+        // only respond to frame types 0x00 or 0x10
+        return;
+    }
+    /*
+      if we are getting FPORT over a UART then we can ask the FrSky
+      telem library for some passthrough data to send back, enabling
+      telemetry on the receiver via the same uart pin as we use for
+      incoming RC frames
+     */
+
+    AP_HAL::UARTDriver *uart = get_UART();
+    if (!uart) {
+        return;
+    }
+
+    AP_Frsky_Telem *frsky = AP::frsky_telem();
+    if (!frsky) {
+        return;
+    }
+
+    /*
+      check that we haven't been too slow in responding to the new
+      UART data. If we respond too late then we will corrupt the next
+      incoming control frame
+     */
+    uint64_t tend = uart->receive_time_constraint_us(1);
+    uint64_t now = AP_HAL::micros64();
+    uint64_t tdelay = now - tend;
+    if (tdelay > 2500) {
+        // we've been too slow in responding
+        return;
+    }
+
+    /*
+      get the SPort data from FRSky_Telem and send it as an uplink
+      packet
+     */
+    uint8_t frametype;
+    uint16_t appid;
+    uint32_t data;
+    if (frsky->get_telem_data(frametype, appid, data)) {
+        uint8_t buf[10];
+
+        buf[0] = 0x08;
+        buf[1] = 0x81;
+        buf[2] = frametype;
+        buf[3] = appid & 0xFF;
+        buf[4] = appid >> 8;
+        memcpy(&buf[5], &data, 4);
+
+        uint16_t sum = 0;
+        for (uint8_t i=0; i<sizeof(buf)-1; i++) {
+            sum += buf[i];
+        }
+        sum = 0xff - ((sum & 0xff) + (sum >> 8));
+        buf[9] = sum;
+
+        // perform byte stuffing per FPort spec
+        uint8_t len = 0;
+        uint8_t buf2[sizeof(buf)*2];
+        for (uint8_t i=0; i<sizeof(buf); i++) {
+            uint8_t c = buf[i];
+            if (c == FRAME_DLE || buf[i] == FRAME_HEAD) {
+                buf2[len++] = FRAME_DLE;
+                buf2[len++] = c ^ FRAME_XOR;
+            } else {
+                buf2[len++] = c;
+            }
+        }
+
+        uart->write(buf2, len);
+    }
+#endif
 }
 
 /*
@@ -119,6 +204,11 @@ void AP_RCProtocol_FPort::decode_downlink(const FPort_Frame &frame)
  */
 void AP_RCProtocol_FPort::process_pulse(uint32_t width_s0, uint32_t width_s1)
 {
+    if (have_UART()) {
+        // if we can use a UART we would much prefer to, as it allows
+        // us to send SPORT data out
+        return;
+    }
     uint32_t w0 = width_s0;
     uint32_t w1 = width_s1;
     if (inverted) {
@@ -143,24 +233,19 @@ void AP_RCProtocol_FPort::_process_byte(uint32_t timestamp_us, uint8_t b)
         // if we have a frame gap then this must be the start of a new
         // frame
         byte_input.ofs = 0;
-        byte_input.got_7D = false;
+        byte_input.got_DLE = false;
     }
     if (b != FRAME_HEAD && byte_input.ofs == 0) {
         // definately not FPort, missing header byte
         return;
     }
-    if (byte_input.ofs == 0 && !have_frame_gap) {
-        // must have a frame gap before the start of a new FPort frame
-        return;
-    }
 
     // handle byte-stuffing decode
-    if (byte_input.got_7D) {
-        b ^= 0x20;
-        byte_input.got_7D = false;
-    }
-    if (b == 0x7D) {
-        byte_input.got_7D = true;
+    if (byte_input.got_DLE) {
+        b ^= FRAME_XOR;
+        byte_input.got_DLE = false;
+    } else if (b == FRAME_DLE) {
+        byte_input.got_DLE = true;
         return;
     }
 
@@ -200,7 +285,7 @@ void AP_RCProtocol_FPort::_process_byte(uint32_t timestamp_us, uint8_t b)
 
 reset:
     byte_input.ofs = 0;
-    byte_input.got_7D = false;
+    byte_input.got_DLE = false;
 }
 
 // check checksum byte
