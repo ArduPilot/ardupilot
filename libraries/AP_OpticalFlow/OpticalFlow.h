@@ -50,6 +50,7 @@ public:
         CXOF = 4,
         MAVLINK = 5,
         UAVCAN = 6,
+        UPFLOW = 7,
         SITL = 10
     };
 

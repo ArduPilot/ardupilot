@@ -7,6 +7,7 @@
 #include "AP_OpticalFlow_CXOF.h"
 #include "AP_OpticalFlow_MAV.h"
 #include "AP_OpticalFlow_HereFlow.h"
+#include "AP_OpticalFlow_UPFlow.h"
 #include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
@@ -129,6 +130,9 @@ void OpticalFlow::init(uint32_t log_bit)
         break;
     case OpticalFlowType::CXOF:
         backend = AP_OpticalFlow_CXOF::detect(*this);
+        break;
+    case OpticalFlowType::UPFLOW:
+        backend = AP_OpticalFlow_UPFlow::detect(*this);
         break;
     case OpticalFlowType::MAVLINK:
         backend = AP_OpticalFlow_MAV::detect(*this);
