@@ -1001,15 +1001,18 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
 
         case MAV_FRAME_MISSION:
         case MAV_FRAME_GLOBAL:
+        case MAV_FRAME_GLOBAL_INT:
             cmd.content.location.relative_alt = 0;
             break;
 
         case MAV_FRAME_GLOBAL_RELATIVE_ALT:
+        case MAV_FRAME_GLOBAL_RELATIVE_ALT_INT:
             cmd.content.location.relative_alt = 1;
             break;
 
 #if AP_TERRAIN_AVAILABLE
         case MAV_FRAME_GLOBAL_TERRAIN_ALT:
+        case MAV_FRAME_GLOBAL_TERRAIN_ALT_INT:
             // we mark it as a relative altitude, as it doesn't have
             // home alt added
             cmd.content.location.relative_alt = 1;
