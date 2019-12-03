@@ -1040,21 +1040,42 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_location(loc, accuracy=accuracy)
         self.disarm_vehicle()
 
+    def string_for_frame(self, frame):
+        return mavutil.mavlink.enums["MAV_FRAME"][frame].name
+
+    def frames_equivalent(self, f1, f2):
+        pairs = [
+            (mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT,
+             mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT_INT),
+            (mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+             mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT),
+            (mavutil.mavlink.MAV_FRAME_GLOBAL,
+             mavutil.mavlink.MAV_FRAME_GLOBAL_INT),
+        ]
+        for pair in pairs:
+            if (f1 == pair[0] and f2 == pair[1]):
+                return True
+            if (f1 == pair[1] and f2 == pair[0]):
+                return True
+        return f1 == f2;
+
     def check_mission_items_same(self, check_atts, want, got, epsilon=None,skip_first_item=False):
+        self.progress("Checking mission items same")
         if epsilon is None:
             epsilon = 1
         if len(want) != len(got):
             raise NotAchievedException("Incorrect item count (want=%u got=%u)" % (len(want), len(got)))
+        self.progress("Checking %u items" % len(want))
         for i in range(0, len(want)):
             if skip_first_item and i == 0:
                 continue
             item = want[i]
             downloaded_item = got[i]
-            # note that we do not preserved frame for anything
+
             check_atts = ['mission_type', 'command', 'x', 'y', 'seq', 'param1']
             # z is not preserved
 
-            print("Comparing (%s) and (%s)" % (str(item), str(downloaded_item)))
+            self.progress("Comparing (%s) and (%s)" % (str(item), str(downloaded_item)))
 
             for att in check_atts:
                 item_val = getattr(item, att)
@@ -1063,6 +1084,18 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                     raise NotAchievedException(
                         "Item %u (%s) has different %s after download want=%s got=%s (got-item=%s)" %
                         (i, str(item), att, str(item_val), str(downloaded_item_val), str(downloaded_item)))
+                # for waypoint items ensure z and frame are preserved:
+            self.progress("Type is %u" % got[0].mission_type)
+            if got[0].mission_type == mavutil.mavlink.MAV_MISSION_TYPE_MISSION:
+                item_val = getattr(item, 'frame')
+                downloaded_item_val = getattr(downloaded_item, 'frame')
+                if not self.frames_equivalent(item_val, downloaded_item_val):
+                    raise NotAchievedException("Frame not same (got=%s want=%s)" %
+                                               (self.string_for_frame(downloaded_item_val),
+                                                self.string_for_frame(item_val)))
+                if abs(item.z - downloaded_item.z) > 0.00001:
+                    raise NotAchievedException("Z not preserved (got=%f want=%f)" %
+                                               (item.z, downloaded_item.z))
 
     def check_fence_items_same(self, want, got):
         check_atts = ['mission_type', 'command', 'x', 'y', 'seq', 'param1']
@@ -1072,16 +1105,33 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         check_atts = ['mission_type', 'command', 'x', 'y', 'z', 'seq', 'param1']
         return self.check_mission_items_same(check_atts, want, got, skip_first_item=True)
 
-    def check_fence_upload_download(self, items):
-        self.progress("check_fence_upload_download: upload %u items" % (len(items),))
-        self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
-                                           items)
-        self.progress("check_fence_upload_download: download items")
-        downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
+    def check_mission_item_upload_download(self, items, type, mission_type):
+        self.progress("check %s _upload/download: upload %u items" %
+                      (type, len(items),))
+        self.upload_using_mission_protocol(mission_type, items)
+        self.progress("check %s upload/download: download items" % type)
+        downloaded_items = self.download_using_mission_protocol(mission_type)
         self.progress("Downloaded items: (%s)" % str(downloaded_items))
         if len(items) != len(downloaded_items):
             raise NotAchievedException("Did not download same number of items as uploaded want=%u got=%u" % (len(items), len(downloaded_items)))
-        self.check_fence_items_same(items, downloaded_items)
+        if mission_type == mavutil.mavlink.MAV_MISSION_TYPE_FENCE:
+            self.check_fence_items_same(items, downloaded_items)
+        elif mission_type == mavutil.mavlink.MAV_MISSION_TYPE_MISSION:
+            self.check_mission_waypoint_items_same(items, downloaded_items)
+        else:
+            raise NotAchievedException("Unhandled")
+
+    def check_fence_upload_download(self, items):
+        self.check_mission_item_upload_download(
+            items,
+            "fence",
+            mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
+
+    def check_mission_upload_download(self, items):
+        self.check_mission_item_upload_download(
+            items,
+            "waypoints",
+            mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
 
     def fence_with_bad_frame(self, target_system=1, target_component=1):
         return [
@@ -1916,8 +1966,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise NotAchievedException("Fence return point not of correct type expected (%u) got %u" % (items[0].command, mavutil.mavlink.MAV_CMD_NAV_FENCE_RETURN_POINT))
         if items[0].frame != mavutil.mavlink.MAV_FRAME_GLOBAL:
             raise NotAchievedException("Unexpected frame want=%s got=%s," %
-                                       (mavutil.mavlink.enums["MAV_FRAME"][mavutil.mavlink.MAV_FRAME_GLOBAL].name,
-                                        mavutil.mavlink.enums["MAV_FRAME"][items[0].frame].name,))
+                                       (self.string_for_frame(mavutil.mavlink.MAV_FRAME_GLOBAL),
+                                        self.string_for_frame(items[0].frame)))
         got_lat = items[0].x
         want_lat = lat * 1e7
         if abs(got_lat - want_lat) > 1:
@@ -4749,6 +4799,59 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.test_scripting_hello_world()
         self.test_scripting_simple_loop()
 
+    def test_mission_frame(self, frame, target_system=1, target_component=1):
+        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_MISSION,
+                           target_system=target_system,
+                           target_component=target_component)
+        items = [
+            # first item is ignored for missions
+            self.mav.mav.mission_item_int_encode(
+                target_system,
+                target_component,
+                0, # seq
+                mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+                mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+                0, # current
+                0, # autocontinue
+                3, # p1
+                0, # p2
+                0, # p3
+                0, # p4
+                int(1.0000 *1e7), # latitude
+                int(1.0000 *1e7), # longitude
+                31.0000, # altitude
+                mavutil.mavlink.MAV_MISSION_TYPE_MISSION),
+            self.mav.mav.mission_item_int_encode(
+                target_system,
+                target_component,
+                1, # seq
+                frame,
+                mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+                0, # current
+                0, # autocontinue
+                3, # p1
+                0, # p2
+                0, # p3
+                0, # p4
+                int(1.0000 *1e7), # latitude
+                int(1.0000 *1e7), # longitude
+                31.0000, # altitude
+                mavutil.mavlink.MAV_MISSION_TYPE_MISSION),
+        ]
+
+        self.check_mission_upload_download(items)
+
+    def test_mission_frames(self, target_system=1, target_component=1):
+        for frame in (mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT_INT,
+                      mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT,
+                      mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+                      mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+                      mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
+                      mavutil.mavlink.MAV_FRAME_GLOBAL):
+            self.test_mission_frame(frame,
+                                    target_system=1,
+                                    target_component=1)
+
     def test_send_to_components(self):
         self.progress("Introducing ourselves to the autopilot as a component")
         old_srcSystem = self.mav.mav.srcSystem
@@ -4951,6 +5054,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             ("Scripting",
              "Scripting test",
              self.test_scripting),
+
+            ("MissionFrames",
+             "Upload/Download of items in different frames",
+             self.test_mission_frames),
 
             ("DownLoadLogs", "Download logs", lambda:
              self.log_download(
