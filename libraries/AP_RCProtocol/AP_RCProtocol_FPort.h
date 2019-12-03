@@ -43,7 +43,7 @@ private:
         uint8_t buf[FPORT_CONTROL_FRAME_SIZE];
         uint8_t ofs;
         uint32_t last_byte_us;
-        bool got_7D;
+        bool got_DLE;
     } byte_input;
 
     const bool inverted;
