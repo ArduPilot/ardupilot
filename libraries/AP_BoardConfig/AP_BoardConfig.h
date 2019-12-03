@@ -18,10 +18,6 @@
 #define AP_FEATURE_RTSCTS 0
 #endif
 
-#ifndef AP_FEATURE_RTSCTS
-#define AP_FEATURE_RTSCTS 0
-#endif
-
 #ifndef AP_FEATURE_SBUS_OUT
 #define AP_FEATURE_SBUS_OUT 0
 #endif
