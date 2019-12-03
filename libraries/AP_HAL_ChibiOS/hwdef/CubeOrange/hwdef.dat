@@ -232,10 +232,16 @@ SPIDEV external0m2    SPI4 DEVID5  MPU_EXT_CS   MODE2  2*MHZ  2*MHZ
 SPIDEV external0m3    SPI4 DEVID5  MPU_EXT_CS   MODE3  2*MHZ  2*MHZ
 SPIDEV pixartPC15     SPI4 DEVID13 ACCEL_EXT_CS MODE3  2*MHZ  2*MHZ
 
-# three IMUs, first two IMUs are isolated, 3rd isn't
+# Production units have three IMUs, first two IMUs are isolated, 3rd isn't
 IMU Invensense SPI:icm20602_ext ROTATION_ROLL_180_YAW_270
 IMU Invensensev2 SPI:icm20948_ext ROTATION_PITCH_180
 IMU Invensensev2 SPI:icm20948 ROTATION_YAW_270
+
+# Alpha testing units had older sensors
+# the 3 rotations for the LSM9DS0 driver are for the accel, the gyro and the H varient of the gyro
+IMU Invensense SPI:mpu9250_ext ROTATION_PITCH_180
+IMU LSM9DS0 SPI:lsm9ds0_ext_g SPI:lsm9ds0_ext_am ROTATION_ROLL_180_YAW_270 ROTATION_ROLL_180_YAW_90 ROTATION_ROLL_180_YAW_90
+IMU Invensense SPI:mpu9250 ROTATION_YAW_270
 
 define HAL_DEFAULT_INS_FAST_SAMPLE 5
 
@@ -243,8 +249,12 @@ define HAL_DEFAULT_INS_FAST_SAMPLE 5
 BARO MS56XX SPI:ms5611_ext
 BARO MS56XX SPI:ms5611
 
-# one compass as part of ICM20948
+# Production units have one compass as part of ICM20948
 COMPASS AK09916:probe_ICM20948 0 ROTATION_ROLL_180_YAW_90
+
+# Alpha testing units had two compasses. First is in the LSM303D, second in 2nd invensense
+COMPASS LSM303D SPI:lsm9ds0_ext_am ROTATION_YAW_270
+COMPASS AK8963:probe_mpu9250 1 ROTATION_YAW_270
 
 # also probe for external compasses
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
