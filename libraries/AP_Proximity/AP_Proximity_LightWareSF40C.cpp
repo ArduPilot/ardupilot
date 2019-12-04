@@ -328,9 +328,9 @@ void AP_Proximity_LightWareSF40C::process_message()
         }
 
         // prepare to push to object database
-        Location current_loc;
+        Vector2f current_pos;
         float current_heading;
-        const bool database_ready = database_prepare_for_push(current_loc, current_heading);
+        const bool database_ready = database_prepare_for_push(current_pos, current_heading);
 
         // process each point
         const float angle_inc_deg = (1.0f / point_total) * 360.0f;
@@ -386,7 +386,7 @@ void AP_Proximity_LightWareSF40C::process_message()
             // send combined distance to object database
             if ((i+1 >= point_count) || (combined_count >= PROXIMITY_SF40C_COMBINE_READINGS)) {
                 if ((combined_dist_m < INT16_MAX) && database_ready) {
-                    database_push(combined_angle_deg, combined_dist_m, _last_distance_received_ms, current_loc, current_heading);
+                    database_push(combined_angle_deg, combined_dist_m, _last_distance_received_ms, current_pos, current_heading);
                 }
                 combined_count = 0;
                 combined_dist_m = INT16_MAX;

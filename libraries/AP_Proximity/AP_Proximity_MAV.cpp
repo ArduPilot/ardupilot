@@ -104,9 +104,9 @@ void AP_Proximity_MAV::handle_msg(const mavlink_message_t &msg)
             increment *= -1;
         }
 
-        Location current_loc;
+        Vector2f current_pos;
         float current_heading;
-        const bool database_ready = database_prepare_for_push(current_loc, current_heading);
+        const bool database_ready = database_prepare_for_push(current_pos, current_heading);
 
         // initialise updated array and proximity sector angles (to closest object) and distances
         bool sector_updated[PROXIMITY_NUM_SECTORS];
@@ -144,7 +144,7 @@ void AP_Proximity_MAV::handle_msg(const mavlink_message_t &msg)
 
             // update Object Avoidance database with Earth-frame point
             if (database_ready) {
-                database_push(mid_angle, packet_distance_m, _last_update_ms, current_loc, current_heading);
+                database_push(mid_angle, packet_distance_m, _last_update_ms, current_pos, current_heading);
             }
         }
 

@@ -248,14 +248,14 @@ bool AP_Proximity_Backend::ignore_reading(uint16_t angle_deg) const
 }
 
 // returns true if database is ready to be pushed to and all cached data is ready
-bool AP_Proximity_Backend::database_prepare_for_push(Location &current_loc, float &current_heading)
+bool AP_Proximity_Backend::database_prepare_for_push(Vector2f &current_pos, float &current_heading)
 {
     AP_OADatabase *oaDb = AP::oadatabase();
     if (oaDb == nullptr || !oaDb->healthy()) {
         return false;
     }
 
-    if (!AP::ahrs().get_position(current_loc)) {
+    if (!AP::ahrs().get_relative_position_NE_origin(current_pos)) {
         return false;
     }
 
@@ -266,22 +266,22 @@ bool AP_Proximity_Backend::database_prepare_for_push(Location &current_loc, floa
 // update Object Avoidance database with Earth-frame point
 void AP_Proximity_Backend::database_push(float angle, float distance)
 {
-    Location current_loc;
+    Vector2f current_pos;
     float current_heading;
-    if (database_prepare_for_push(current_loc, current_heading)) {
-        database_push(angle, distance, AP_HAL::millis(), current_loc, current_heading);
+    if (database_prepare_for_push(current_pos, current_heading)) {
+        database_push(angle, distance, AP_HAL::millis(), current_pos, current_heading);
     }
 }
 
 // update Object Avoidance database with Earth-frame point
-void AP_Proximity_Backend::database_push(float angle, float distance, uint32_t timestamp_ms, const Location &current_loc, float current_heading)
+void AP_Proximity_Backend::database_push(float angle, float distance, uint32_t timestamp_ms, const Vector2f &current_pos, float current_heading)
 {
     AP_OADatabase *oaDb = AP::oadatabase();
     if (oaDb == nullptr || !oaDb->healthy()) {
         return;
     }
 
-    Location temp_loc = current_loc;
-    temp_loc.offset_bearing(wrap_180(current_heading + angle), distance);
-    oaDb->queue_push(temp_loc, timestamp_ms, angle, distance);
+    Vector2f temp_pos = current_pos;
+    temp_pos.offset_bearing(wrap_180(current_heading + angle), distance);
+    oaDb->queue_push(temp_pos, timestamp_ms, distance);
 }
