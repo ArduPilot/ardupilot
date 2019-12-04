@@ -1,7 +1,7 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Common/Location.h>
+#include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
 #if !HAL_MINIMIZE_FEATURES
@@ -26,7 +26,7 @@ public:
     };
 
     struct OA_DbItem {
-        Location loc;           // location of object. TODO: turn this into Vector2Int to save memory
+        Vector2f pos;           // position of the object as an offset in meters from the EKF origin
         uint32_t timestamp_ms;  // system time that object was last updated
         float radius;           // objects radius in meters
         uint8_t send_to_gcs;    // bitmask of mavlink comports to which details of this object should be sent
@@ -36,8 +36,8 @@ public:
     void init();
     void update();
 
-    // push a location into the database
-    void queue_push(const Location &loc, uint32_t timestamp_ms, float angle, float distance);
+    // push an object into the database.  Pos is the offset in meters from the EKF origin, angle is in degrees, distance in meters
+    void queue_push(const Vector2f &pos, uint32_t timestamp_ms, float distance);
 
     // returns true if database is healthy
     bool healthy() const { return (_queue.items != nullptr) && (_database.items != nullptr); }
@@ -116,7 +116,7 @@ class AP_OADatabase {
 public:
     static AP_OADatabase *get_singleton() { return nullptr; }
     void init() {};
-    void queue_push(const Location &loc, uint32_t timestamp_ms, float angle, float distance) {};
+    void queue_push(const Vector2f &pos, uint32_t timestamp_ms, float distance) {};
     bool healthy() const { return false; }
     void send_adsb_vehicle(mavlink_channel_t chan, uint16_t interval_ms) {};
 };

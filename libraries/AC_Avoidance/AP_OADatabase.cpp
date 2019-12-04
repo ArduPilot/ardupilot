@@ -133,7 +133,7 @@ void AP_OADatabase::update()
 }
 
 // push a location into the database
-void AP_OADatabase::queue_push(const Location &loc, uint32_t timestamp_ms, float angle, float distance)
+void AP_OADatabase::queue_push(const Vector2f &pos, uint32_t timestamp_ms, float distance)
 {
     if (!healthy()) {
         return;
@@ -144,7 +144,7 @@ void AP_OADatabase::queue_push(const Location &loc, uint32_t timestamp_ms, float
         return;
     }
 
-    const OA_DbItem item = {loc, timestamp_ms, MAX(_radius_min, distance * dist_to_radius_scalar), 0, AP_OADatabase::OA_DbItemImportance::Normal};
+    const OA_DbItem item = {pos, timestamp_ms, MAX(_radius_min, distance * dist_to_radius_scalar), 0, AP_OADatabase::OA_DbItemImportance::Normal};
     {
         WITH_SEMAPHORE(_queue.sem);
         _queue.items->push(item);
@@ -328,7 +328,8 @@ bool AP_OADatabase::is_close_to_item_in_database(const uint16_t index, const OA_
         return false;
     }
 
-    return (_database.items[index].loc.get_distance(item.loc) < item.radius);
+    const float distance_sq = (_database.items[index].pos - item.pos).length_squared();
+    return ((distance_sq < sq(item.radius)) || (distance_sq < sq(_database.items[index].radius)));
 }
 
 // send ADSB_VEHICLE mavlink messages
@@ -374,12 +375,15 @@ void AP_OADatabase::send_adsb_vehicle(mavlink_channel_t chan, uint16_t interval_
             continue;
         }
 
+        // convert object's position as an offset from EKF origin to Location
+        const Location item_loc(Vector3f(_database.items[idx].pos.x * 100.0f, _database.items[idx].pos.y * 100.0f, 0));
+
         mavlink_msg_adsb_vehicle_send(chan,
             idx,
-            _database.items[idx].loc.lat,
-            _database.items[idx].loc.lng,
+            item_loc.lat,
+            item_loc.lng,
             0,                          // altitude_type
-            _database.items[idx].loc.alt,
+            0,                          // altitude is always zero
             0,                          // heading
             0,                          // hor_velocity
             0,                          // ver_velocity
