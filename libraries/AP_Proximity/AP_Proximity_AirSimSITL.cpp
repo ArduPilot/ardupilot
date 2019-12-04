@@ -38,10 +38,6 @@ void AP_Proximity_AirSimSITL::update(void)
     memset(_angle, 0, sizeof(_angle));
     memset(_distance, 0, sizeof(_distance));
 
-    // only use 8 sectors to match RPLidar
-    const uint8_t nsectors = MIN(8, PROXIMITY_SECTORS_MAX);
-    const uint16_t degrees_per_sector = 360 / nsectors;
-
     for (uint16_t i=0; i<points.length; i++) {
         Vector3f &point = points.data[i];
         if (point.is_zero()) {
@@ -49,7 +45,7 @@ void AP_Proximity_AirSimSITL::update(void)
         }
         float angle_deg = wrap_360(degrees(atan2f(-point.y, point.x)));
         uint16_t angle_rounded = uint16_t(angle_deg+0.5);
-        uint8_t sector = wrap_360(angle_rounded + 22.5f) / degrees_per_sector;
+        const uint8_t sector = convert_angle_to_sector(angle_rounded);
         if (!_distance_valid[sector] || PROXIMITY_MAX_RANGE < _distance[sector]) {
             _distance_valid[sector] = true;
             const Vector2f v = Vector2f(point.x, point.y);
@@ -61,7 +57,7 @@ void AP_Proximity_AirSimSITL::update(void)
 
 #if 0
     printf("npoints=%u\n", points.length);
-    for (uint16_t i=0; i<nsectors; i++) {
+    for (uint16_t i=0; i<PROXIMITY_NUM_SECTORS; i++) {
         printf("sector[%u] ang=%.1f dist=%.1f\n", i, _angle[i], _distance[i]);
     }
 #endif

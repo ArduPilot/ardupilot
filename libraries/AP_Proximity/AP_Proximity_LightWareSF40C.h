@@ -28,7 +28,6 @@ private:
 
     // initialise sensor
     void initialise();
-    void init_sectors();
 
     // restart sensor and re-init our state
     void restart_sensor();
@@ -106,7 +105,6 @@ private:
 
     // internal variables
     AP_HAL::UARTDriver *_uart;              // uart for communicating with sensor
-    bool _sector_initialised;               // true if sectors have been initialised
     uint32_t _last_request_ms;              // system time of last request
     uint32_t _last_reply_ms;                // system time of last valid reply
     uint32_t _last_restart_ms;              // system time we restarted the sensor
