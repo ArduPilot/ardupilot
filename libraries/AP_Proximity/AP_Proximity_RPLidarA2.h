@@ -69,7 +69,6 @@ private:
 
     // initialise sensor (returns true if sensor is successfully initialised)
     bool initialise();
-    void init_sectors();
     void set_scan_mode();
 
     // send request for something from sensor
@@ -87,7 +86,6 @@ private:
     bool _information_data;
     bool _resetted;
     bool _initialised;
-    bool _sector_initialised;
 
     uint8_t _payload_length;
     uint8_t _cnt;
