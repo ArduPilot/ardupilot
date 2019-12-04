@@ -28,7 +28,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Proximity_RPLidarA2.h"
-#include <AP_SerialManager/AP_SerialManager.h>
 #include <ctype.h>
 #include <stdio.h>
 
@@ -63,32 +62,6 @@
 #define RPLIDAR_CMD_EXPRESS_SCAN       0x82
 
 extern const AP_HAL::HAL& hal;
-
-/*
-   The constructor also initialises the proximity sensor. Note that this
-   constructor is not called until detect() returns true, so we
-   already know that we should setup the proximity sensor
- */
-AP_Proximity_RPLidarA2::AP_Proximity_RPLidarA2(
-    AP_Proximity &_frontend,
-    AP_Proximity::Proximity_State &_state) :
-    AP_Proximity_Backend(_frontend, _state)
-{
-    const AP_SerialManager &serial_manager = AP::serialmanager();
-    _uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar360, 0);
-    if (_uart != nullptr) {
-        _uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Lidar360, 0));
-    }
-    _cnt = 0 ;
-    _sync_error = 0 ;
-    _byte_count = 0;
-}
-
-// detect if a RPLidarA2 proximity sensor is connected by looking for a configured serial port
-bool AP_Proximity_RPLidarA2::detect()
-{
-    return AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_Lidar360, 0) != nullptr;
-}
 
 // update the _rp_state of the sensor
 void AP_Proximity_RPLidarA2::update(void)
