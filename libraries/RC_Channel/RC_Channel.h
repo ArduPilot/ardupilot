@@ -347,6 +347,13 @@ public:
         return _override_timeout.get() * 1e3f;
     }
 
+    /*
+      get the RC input PWM value given a channel number.  Note that
+      channel numbers start at 1, as this API is designed for use in
+      LUA
+    */
+    bool get_pwm(uint8_t channel, uint16_t &pwm) const;
+
 protected:
 
     enum class Option {
