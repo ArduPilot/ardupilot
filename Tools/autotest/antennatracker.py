@@ -92,11 +92,10 @@ class AutoTestTracker(AutoTest):
 
     def MANUAL(self):
         self.change_mode(0) # "MANUAL"
-        for x in 1200, 1600:
-            self.set_rc(1, x);
-            self.set_rc(2, x);
-            self.wait_servo_channel_value(1, x)
-            self.wait_servo_channel_value(2, x)
+        for chan in 1, 2:
+            for pwm in 1200, 1600, 1367:
+                self.set_rc(chan, pwm);
+                self.wait_servo_channel_value(chan, pwm)
 
     def SERVOTEST(self):
         self.change_mode(0) # "MANUAL"
