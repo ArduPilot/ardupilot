@@ -85,6 +85,9 @@ void Tracker::init_tracker()
     // set serial ports non-blocking
     serial_manager.set_blocking_writes_all(false);
 
+    // initialise rc channels including setting mode
+    rc().init();
+
     // initialise servos
     init_servos();
 
