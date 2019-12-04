@@ -33,17 +33,6 @@ AP_Proximity_Backend::AP_Proximity_Backend(AP_Proximity &_frontend, AP_Proximity
     init_boundary();
 }
 
-// get distance in meters in a particular direction in degrees (0 is forward, angles increase in the clockwise direction)
-bool AP_Proximity_Backend::get_horizontal_distance(float angle_deg, float &distance) const
-{
-    const uint8_t sector = convert_angle_to_sector(angle_deg);
-    if (_distance_valid[sector]) {
-        distance = _distance[sector];
-        return true;
-    }
-    return false;
-}
-
 // get distance and angle to closest object (used for pre-arm check)
 //   returns true on success, false if no valid readings
 bool AP_Proximity_Backend::get_closest_object(float& angle_deg, float &distance) const
