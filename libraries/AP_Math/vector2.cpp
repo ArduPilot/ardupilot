@@ -285,6 +285,14 @@ Vector2<T> Vector2<T>::projected(const Vector2<T> &v)
     return v * (*this * v)/(v*v);
 }
 
+// extrapolate position given bearing (in degrees) and distance
+template <typename T>
+void Vector2<T>::offset_bearing(float bearing, float distance)
+{
+    x += cosf(radians(bearing)) * distance;
+    y += sinf(radians(bearing)) * distance;
+}
+
 // given a position pos_delta and a velocity v1 produce a vector
 // perpendicular to v1 maximising distance from p1
 template <typename T>
@@ -435,6 +443,7 @@ template bool Vector2<float>::is_nan(void) const;
 template bool Vector2<float>::is_inf(void) const;
 template float Vector2<float>::angle(const Vector2<float> &v) const;
 template float Vector2<float>::angle(void) const;
+template void Vector2<float>::offset_bearing(float bearing, float distance);
 template bool Vector2<float>::segment_intersection(const Vector2<float>& seg1_start, const Vector2<float>& seg1_end, const Vector2<float>& seg2_start, const Vector2<float>& seg2_end, Vector2<float>& intersection);
 template bool Vector2<float>::circle_segment_intersection(const Vector2<float>& seg_start, const Vector2<float>& seg_end, const Vector2<float>& circle_center, float radius, Vector2<float>& intersection);
 template Vector2<float> Vector2<float>::perpendicular(const Vector2<float> &pos_delta, const Vector2<float> &v1);
