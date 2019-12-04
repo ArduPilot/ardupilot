@@ -101,17 +101,29 @@ class AutoTestTracker(AutoTest):
         self.change_mode(0) # "MANUAL"
         # magically changes to SERVOTEST (3)
         for value in 1900, 1200:
-            for channel in 1, 2:
-                self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_SERVO,
-                             channel,
-                             value,
-                             0,
-                             0,
-                             0,
-                             0,
-                             0,
-                             timeout=1)
-                self.wait_servo_channel_value(channel, value)
+            channel = 1
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_SERVO,
+                         channel,
+                         value,
+                         0,
+                         0,
+                         0,
+                         0,
+                         0,
+                         timeout=1)
+            self.wait_servo_channel_value(channel, value)
+        for value in 1300, 1670:
+            channel = 2
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_SERVO,
+                         channel,
+                         value,
+                         0,
+                         0,
+                         0,
+                         0,
+                         0,
+                         timeout=1)
+            self.wait_servo_channel_value(channel, value)
 
 
     def disabled_tests(self):
