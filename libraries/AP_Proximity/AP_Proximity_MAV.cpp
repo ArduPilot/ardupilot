@@ -15,7 +15,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Proximity_MAV.h"
-#include <AP_SerialManager/AP_SerialManager.h>
 #include <ctype.h>
 #include <stdio.h>
 
