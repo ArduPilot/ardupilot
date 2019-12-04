@@ -5,6 +5,7 @@
 
 #define PROXIMITY_SF40C_TIMEOUT_MS            200   // requests timeout after 0.2 seconds
 #define PROXIMITY_SF40C_PAYLOAD_LEN_MAX       256   // maximum payload size we can accept (in some configurations sensor may send as large as 1023)
+#define PROXIMITY_SF40C_COMBINE_READINGS        7   // combine this many readings together to improve efficiency
 
 class AP_Proximity_LightWareSF40C : public AP_Proximity_Backend
 {
