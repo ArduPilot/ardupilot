@@ -154,3 +154,7 @@ singleton AP_SerialLED method send void
 include SRV_Channel/SRV_Channel.h
 singleton SRV_Channels alias SRV_Channels
 singleton SRV_Channels method find_channel boolean SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint8_t'Null
+
+include RC_Channel/RC_Channel.h
+singleton RC_Channels alias rc
+singleton RC_Channels method get_pwm boolean uint8_t 1 NUM_RC_CHANNELS uint16_t'Null
