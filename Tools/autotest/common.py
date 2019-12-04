@@ -619,6 +619,8 @@ class AutoTest(ABC):
         self.mavproxy.send("set shownoise 0\n")
         self.mavproxy.send("log download latest %s\n" % filename)
         self.mavproxy.expect("Finished downloading", timeout=timeout)
+        self.mavproxy.send("module unload log\n")
+        self.mavproxy.expect("Unloaded module log")
         self.drain_mav_unparsed()
         self.wait_heartbeat()
         self.wait_heartbeat()
