@@ -155,6 +155,9 @@ struct Vector2
     // returns this vector projected onto v
     Vector2<T> projected(const Vector2<T> &v);
 
+    // adjust position by a given bearing (in degrees) and distance
+    void offset_bearing(float bearing, float distance);
+
     // given a position p1 and a velocity v1 produce a vector
     // perpendicular to v1 maximising distance from p1
     static Vector2<T> perpendicular(const Vector2<T> &pos_delta, const Vector2<T> &v1);
