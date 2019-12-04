@@ -15,38 +15,15 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Proximity_LightWareSF40C_v09.h"
-#include <AP_SerialManager/AP_SerialManager.h>
 #include <ctype.h>
 #include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
 
-/* 
-   The constructor also initialises the proximity sensor. Note that this
-   constructor is not called until detect() returns true, so we
-   already know that we should setup the proximity sensor
-*/
-AP_Proximity_LightWareSF40C_v09::AP_Proximity_LightWareSF40C_v09(AP_Proximity &_frontend,
-                                                         AP_Proximity::Proximity_State &_state) :
-    AP_Proximity_Backend(_frontend, _state)
-{
-    const AP_SerialManager &serial_manager = AP::serialmanager();
-    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar360, 0);
-    if (uart != nullptr) {
-        uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Lidar360, 0));
-    }
-}
-
-// detect if a Lightware proximity sensor is connected by looking for a configured serial port
-bool AP_Proximity_LightWareSF40C_v09::detect()
-{
-    return AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_Lidar360, 0) != nullptr;
-}
-
 // update the state of the sensor
 void AP_Proximity_LightWareSF40C_v09::update(void)
 {
-    if (uart == nullptr) {
+    if (_uart == nullptr) {
         return;
     }
 
@@ -112,19 +89,19 @@ bool AP_Proximity_LightWareSF40C_v09::initialise()
 void AP_Proximity_LightWareSF40C_v09::set_motor_speed(bool on_off)
 {
     // exit immediately if no uart
-    if (uart == nullptr) {
+    if (_uart == nullptr) {
         return;
     }
 
     // set motor update speed
     if (on_off) {
-        uart->write("#MBS,3\r\n");  // send request to spin motor at 4.5hz
+        _uart->write("#MBS,3\r\n");  // send request to spin motor at 4.5hz
     } else {
-        uart->write("#MBS,0\r\n");  // send request to stop motor
+        _uart->write("#MBS,0\r\n");  // send request to stop motor
     }
 
     // request update motor speed
-    uart->write("?MBS\r\n");
+    _uart->write("?MBS\r\n");
     _last_request_type = RequestType_MotorSpeed;
     _last_request_ms = AP_HAL::millis();
 }
@@ -133,19 +110,19 @@ void AP_Proximity_LightWareSF40C_v09::set_motor_speed(bool on_off)
 void AP_Proximity_LightWareSF40C_v09::set_motor_direction()
 {
     // exit immediately if no uart
-    if (uart == nullptr) {
+    if (_uart == nullptr) {
         return;
     }
 
     // set motor update speed
     if (frontend.get_orientation(state.instance) == 0) {
-        uart->write("#MBD,0\r\n");  // spin clockwise
+        _uart->write("#MBD,0\r\n");  // spin clockwise
     } else {
-        uart->write("#MBD,1\r\n");  // spin counter clockwise
+        _uart->write("#MBD,1\r\n");  // spin counter clockwise
     }
 
     // request update on motor direction
-    uart->write("?MBD\r\n");
+    _uart->write("?MBD\r\n");
     _last_request_type = RequestType_MotorDirection;
     _last_request_ms = AP_HAL::millis();
 }
@@ -154,7 +131,7 @@ void AP_Proximity_LightWareSF40C_v09::set_motor_direction()
 void AP_Proximity_LightWareSF40C_v09::set_forward_direction()
 {
     // exit immediately if no uart
-    if (uart == nullptr) {
+    if (_uart == nullptr) {
         return;
     }
 
@@ -163,10 +140,10 @@ void AP_Proximity_LightWareSF40C_v09::set_forward_direction()
     int16_t yaw_corr = frontend.get_yaw_correction(state.instance);
     yaw_corr = constrain_int16(yaw_corr, -999, 999);
     snprintf(request_str, sizeof(request_str), "#MBF,%d\r\n", yaw_corr);
-    uart->write(request_str);
+    _uart->write(request_str);
 
     // request update on motor direction
-    uart->write("?MBF\r\n");
+    _uart->write("?MBF\r\n");
     _last_request_type = RequestType_ForwardDirection;
     _last_request_ms = AP_HAL::millis();
 }
@@ -174,7 +151,7 @@ void AP_Proximity_LightWareSF40C_v09::set_forward_direction()
 // request new data if required
 void AP_Proximity_LightWareSF40C_v09::request_new_data()
 {
-    if (uart == nullptr) {
+    if (_uart == nullptr) {
         return;
     }
 
@@ -202,11 +179,11 @@ void AP_Proximity_LightWareSF40C_v09::request_new_data()
 // send request for sensor health
 void AP_Proximity_LightWareSF40C_v09::send_request_for_health()
 {
-    if (uart == nullptr) {
+    if (_uart == nullptr) {
         return;
     }
 
-    uart->write("?GS\r\n");
+    _uart->write("?GS\r\n");
     _last_request_type = RequestType_Health;
     _last_request_ms = AP_HAL::millis();
 }
@@ -214,7 +191,7 @@ void AP_Proximity_LightWareSF40C_v09::send_request_for_health()
 // send request for distance from the next sector
 bool AP_Proximity_LightWareSF40C_v09::send_request_for_distance()
 {
-    if (uart == nullptr) {
+    if (_uart == nullptr) {
         return false;
     }
 
@@ -229,7 +206,7 @@ bool AP_Proximity_LightWareSF40C_v09::send_request_for_distance()
     snprintf(request_str, sizeof(request_str), "?TS,%u,%u\r\n",
              (unsigned int)PROXIMITY_SECTOR_WIDTH_DEG,
              _sector_middle_deg[_last_sector]);
-    uart->write(request_str);
+    _uart->write(request_str);
 
 
     // record request for distance
@@ -242,7 +219,7 @@ bool AP_Proximity_LightWareSF40C_v09::send_request_for_distance()
 // check for replies from sensor, returns true if at least one message was processed
 bool AP_Proximity_LightWareSF40C_v09::check_for_reply()
 {
-    if (uart == nullptr) {
+    if (_uart == nullptr) {
         return false;
     }
 
@@ -253,9 +230,9 @@ bool AP_Proximity_LightWareSF40C_v09::check_for_reply()
     //        distance data appears after a <space>
     //    distance data is comma separated so we put into separate elements (i.e. <space>angle,distance)
     uint16_t count = 0;
-    int16_t nbytes = uart->available();
+    int16_t nbytes = _uart->available();
     while (nbytes-- > 0) {
-        char c = uart->read();
+        char c = _uart->read();
         // check for end of packet
         if (c == '\r' || c == '\n') {
             if ((element_len[0] > 0)) {
@@ -309,7 +286,7 @@ bool AP_Proximity_LightWareSF40C_v09::check_for_reply()
 // process reply
 bool AP_Proximity_LightWareSF40C_v09::process_reply()
 {
-    if (uart == nullptr) {
+    if (_uart == nullptr) {
         return false;
     }
 
