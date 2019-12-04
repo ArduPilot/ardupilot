@@ -49,7 +49,7 @@ public:
     // return true if cycle count can be provided and fills in cycles argument
     bool get_cycle_count(uint16_t &cycles) const override;
 
-    void init(void) override;
+    virtual void init(void) override;
 
 protected:
 
@@ -94,6 +94,7 @@ protected:
 
     virtual void timer(void) = 0;   // timer function to read from the battery
 
+    AP_HAL::Device::PeriodicHandle timer_handle;
 };
 
 // include specific implementations
