@@ -36,7 +36,6 @@ private:
 
     // initialise sensor (returns true if sensor is successfully initialised)
     bool initialise();
-    void init_sectors();
     void set_motor_speed(bool on_off);
     void set_motor_direction();
     void set_forward_direction();
@@ -93,5 +92,4 @@ private:
     uint8_t _motor_speed;               // motor speed as reported by lidar
     uint8_t _motor_direction = 99;      // motor direction as reported by lidar
     int16_t _forward_direction = 999;   // forward direction as reported by lidar
-    bool _sector_initialised = false;
 };
