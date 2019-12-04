@@ -338,35 +338,58 @@ void AP_Proximity_LightWareSF40C::process_message()
         const float angle_correction = frontend.get_yaw_correction(state.instance);
         const uint16_t dist_min_cm = distance_min() * 100;
         const uint16_t dist_max_cm = distance_max() * 100;
+
+        // mini sectors are used to combine several readings together
+        uint8_t combined_count = 0;
+        float combined_angle_deg = 0;
+        float combined_dist_m = INT16_MAX;
         for (uint16_t i = 0; i < point_count; i++) {
             const uint16_t idx = 14 + (i * 2);
             const int16_t dist_cm = (int16_t)buff_to_uint16(_msg.payload[idx], _msg.payload[idx+1]);
             const float angle_deg = wrap_360((point_start_index + i) * angle_inc_deg * angle_sign + angle_correction);
-            if (!ignore_reading(angle_deg)) {
-                const uint8_t sector = convert_angle_to_sector(angle_deg);
-                if (sector != _last_sector) {
-                    // update boundary used for avoidance
-                    if (_last_sector != UINT8_MAX) {
-                        update_boundary_for_sector(_last_sector, false);
-                    }
-                    _last_sector = sector;
-                    // init for new sector
-                    _distance[sector] = INT16_MAX;
-                    _distance_valid[sector] = false;
+            const uint8_t sector = convert_angle_to_sector(angle_deg);
+
+            // if we've entered a new sector then finish off previous sector
+            if (sector != _last_sector) {
+                // update boundary used for avoidance
+                if (_last_sector != UINT8_MAX) {
+                    update_boundary_for_sector(_last_sector, false);
                 }
+                // init for new sector
+                _last_sector = sector;
+                _distance[sector] = INT16_MAX;
+                _distance_valid[sector] = false;
+            }
+
+            // check reading is not within an ignore zone
+            if (!ignore_reading(angle_deg)) {
+                // check distance reading is valid
                 if ((dist_cm >= dist_min_cm) && (dist_cm <= dist_max_cm)) {
-                    // use shortest valid distance for this sector's distance
                     const float dist_m = dist_cm * 0.01f;
+
+                    // update shortest distance for this sector
                     if (dist_m < _distance[sector]) {
                         _angle[sector] = angle_deg;
                         _distance[sector] = dist_m;
                         _distance_valid[sector] = true;
                     }
-                    // send point to object avoidance database
-                    if (database_ready) {
-                        database_push(angle_deg, dist_m, _last_distance_received_ms, current_loc, current_heading);
+
+                    // calculate shortest of last few readings
+                    if (dist_m < combined_dist_m) {
+                        combined_dist_m = dist_m;
+                        combined_angle_deg = angle_deg;
                     }
+                    combined_count++;
                 }
+            }
+
+            // send combined distance to object database
+            if ((i+1 >= point_count) || (combined_count >= PROXIMITY_SF40C_COMBINE_READINGS)) {
+                if ((combined_dist_m < INT16_MAX) && database_ready) {
+                    database_push(combined_angle_deg, combined_dist_m, _last_distance_received_ms, current_loc, current_heading);
+                }
+                combined_count = 0;
+                combined_dist_m = INT16_MAX;
             }
         }
         break;
