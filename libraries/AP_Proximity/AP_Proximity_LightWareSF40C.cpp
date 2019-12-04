@@ -73,10 +73,8 @@ void AP_Proximity_LightWareSF40C::update(void)
 // initialise sensor
 void AP_Proximity_LightWareSF40C::initialise()
 {
-    // initialise sectors
-    if (!_sector_initialised) {
-        init_sectors();
-    }
+    // initialise boundary
+    init_boundary();
 
     // exit immediately if we've sent initialisation requests in the last second
     uint32_t now_ms = AP_HAL::millis();
@@ -135,66 +133,6 @@ void AP_Proximity_LightWareSF40C::restart_sensor()
     _sensor_state.motor_state = MotorState::UNKNOWN;
     _sensor_state.streaming = false;
     _sensor_state.output_rate = 0;
-}
-
-// initialise sector angles using user defined ignore areas
-void AP_Proximity_LightWareSF40C::init_sectors()
-{
-    // use defaults if no ignore areas defined
-    uint8_t ignore_area_count = get_ignore_area_count();
-    if (ignore_area_count == 0) {
-        _sector_initialised = true;
-        return;
-    }
-
-    uint8_t sector = 0;
-
-    for (uint8_t i=0; i<ignore_area_count; i++) {
-
-        // get ignore area info
-        uint16_t ign_area_angle;
-        uint8_t ign_area_width;
-        if (get_ignore_area(i, ign_area_angle, ign_area_width)) {
-
-            // calculate how many degrees of space we have between this end of this ignore area and the start of the end
-            int16_t start_angle, end_angle;
-            get_next_ignore_start_or_end(1, ign_area_angle, start_angle);
-            get_next_ignore_start_or_end(0, start_angle, end_angle);
-            int16_t degrees_to_fill = wrap_360(end_angle - start_angle);
-
-            // divide up the area into sectors
-            while ((degrees_to_fill > 0) && (sector < PROXIMITY_SECTORS_MAX)) {
-                uint16_t sector_size;
-                if (degrees_to_fill >= 90) {
-                    // set sector to maximum of 45 degrees
-                    sector_size = 45;
-                } else if (degrees_to_fill > 45) {
-                    // use half the remaining area to optimise size of this sector and the next
-                    sector_size = degrees_to_fill / 2.0f;
-                } else  {
-                    // 45 degrees or less are left so put it all into the next sector
-                    sector_size = degrees_to_fill;
-                }
-                // record the sector middle and width
-                _sector_middle_deg[sector] = wrap_360(start_angle + sector_size / 2.0f);
-                _sector_width_deg[sector] = sector_size;
-
-                // move onto next sector
-                start_angle += sector_size;
-                sector++;
-                degrees_to_fill -= sector_size;
-            }
-        }
-    }
-
-    // set num sectors
-    _num_sectors = sector;
-
-    // re-initialise boundary because sector locations have changed
-    init_boundary();
-
-    // record success
-    _sector_initialised = true;
 }
 
 // send message to sensor
@@ -404,8 +342,8 @@ void AP_Proximity_LightWareSF40C::process_message()
             const uint16_t idx = 14 + (i * 2);
             const int16_t dist_cm = (int16_t)buff_to_uint16(_msg.payload[idx], _msg.payload[idx+1]);
             const float angle_deg = wrap_360((point_start_index + i) * angle_inc_deg * angle_sign + angle_correction);
-            uint8_t sector;
-            if (convert_angle_to_sector(angle_deg, sector)) {
+            if (!ignore_reading(angle_deg)) {
+                const uint8_t sector = convert_angle_to_sector(angle_deg);
                 if (sector != _last_sector) {
                     // update boundary used for avoidance
                     if (_last_sector != UINT8_MAX) {
