@@ -59,6 +59,12 @@ void AP_Compass_Backend::correct_field(Vector3f &mag, uint8_t i)
     // add in the basic offsets
     mag += offsets;
 
+    // add in scale factor, use a wide sanity check. The calibrator
+    // uses a narrower check.
+    if (_compass.have_scale_factor(i)) {
+        mag *= state.scale_factor;
+    }
+
     // apply eliptical correction
     Matrix3f mat(
         diagonals.x, offdiagonals.x, offdiagonals.y,
