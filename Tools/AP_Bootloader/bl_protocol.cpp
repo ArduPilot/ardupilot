@@ -442,7 +442,9 @@ bootloader(unsigned timeout)
     uint32_t	first_words[RESERVE_LEAD_WORDS];
     bool done_sync = false;
     bool done_get_device = false;
+    bool done_erase = false;
     static bool done_timer_init;
+    unsigned original_timeout = timeout;
 
     memset(first_words, 0xFF, sizeof(first_words));
 
@@ -576,12 +578,17 @@ bootloader(unsigned timeout)
                 // lower chance of random data on a uart triggering erase
                 goto cmd_bad;
             }
-            
+
             /* expect EOC */
             if (!wait_for_eoc(2)) {
                 goto cmd_bad;
             }
 
+            // once erase is done there is no going back, set timeout
+            // to zero
+            done_erase = true;
+            timeout = 0;
+            
             flash_set_keep_unlocked(true);
 
             // clear the bootloader LED while erasing - it stops blinking at random
@@ -891,7 +898,11 @@ bootloader(unsigned timeout)
             break;
 
 		case PROTO_SET_BAUD: {
-			/* expect arg then EOC */
+            if (!done_sync || !done_get_device) {
+                // prevent timeout going to zero on noise
+                goto cmd_bad;
+            }
+            /* expect arg then EOC */
             uint32_t baud = 0;
 
             if (cin_word(&baud, 100)) {
@@ -937,6 +948,12 @@ bootloader(unsigned timeout)
         sync_response();
         continue;
 cmd_bad:
+        // if we get a bad command it could be line noise on a
+        // uart. Set timeout back to original timeout so we don't get
+        // stuck in the bootloader
+        if (!done_erase) {
+            timeout = original_timeout;
+        }
         // send an 'invalid' response but don't kill the timeout - could be garbage
         invalid_response();
         continue;
