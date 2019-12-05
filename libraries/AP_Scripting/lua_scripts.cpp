@@ -304,6 +304,8 @@ void *lua_scripts::alloc(void *ud, void *ptr, size_t osize, size_t nsize) {
 }
 
 void lua_scripts::run(void) {
+    bool succeeded_initial_load = false;
+
     if (_heap == nullptr) {
         gcs().send_text(MAV_SEVERITY_INFO, "Lua: Unable to allocate a heap");
         return;
@@ -311,6 +313,9 @@ void lua_scripts::run(void) {
 
     // panic should be hooked first
     if (setjmp(panic_jmp)) {
+        if (!succeeded_initial_load) {
+            return;
+        }
         if (lua_state != nullptr) {
             lua_close(lua_state); // shutdown the old state
         }
@@ -348,6 +353,8 @@ void lua_scripts::run(void) {
 
     // Scan the filesystem in an appropriate manner and autostart scripts
     load_all_scripts_in_dir(L, SCRIPTING_DIRECTORY);
+
+    succeeded_initial_load = true;
 
     while (AP_Scripting::get_singleton()->enabled()) {
 #if defined(AP_SCRIPTING_CHECKS) && AP_SCRIPTING_CHECKS >= 1
