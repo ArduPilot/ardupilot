@@ -36,7 +36,7 @@ typedef struct {
 #define MAX_FILES 16
 static FAT_FILE *file_table[MAX_FILES];
 
-static bool isatty(int fileno)
+static int isatty_(int fileno)
 {
     if (fileno >= 0 && fileno <= 2) {
         return true;
@@ -54,7 +54,7 @@ static int new_file_descriptor(const char *pathname)
     FIL *fh;
 
     for (i=0; i<MAX_FILES; ++i) {
-        if (isatty(i)) {
+        if (isatty_(i)) {
             continue;
         }
         if ( file_table[i] == NULL) {
@@ -109,7 +109,7 @@ static int free_file_descriptor(int fileno)
     FAT_FILE *stream;
     FIL *fh;
 
-    if (isatty( fileno )) {
+    if (isatty_( fileno )) {
         errno = EBADF;
         return -1;
     }
@@ -139,7 +139,7 @@ static FIL *fileno_to_fatfs(int fileno)
     FAT_FILE *stream;
     FIL *fh;
 
-    if (isatty( fileno )) {
+    if (isatty_( fileno )) {
         errno = EBADF;
         return nullptr;
     }
@@ -486,7 +486,7 @@ off_t AP_Filesystem::lseek(int fileno, off_t position, int whence)
         errno = EMFILE;
         return -1;
     }
-    if (isatty(fileno)) {
+    if (isatty_(fileno)) {
         return -1;
     }
 
