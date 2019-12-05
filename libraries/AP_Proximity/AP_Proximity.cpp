@@ -24,7 +24,6 @@
 #include "AP_Proximity_SITL.h"
 #include "AP_Proximity_MorseSITL.h"
 #include "AP_Proximity_AirSimSITL.h"
-#include <AP_AHRS/AP_AHRS.h>
 
 extern const AP_HAL::HAL &hal;
 
