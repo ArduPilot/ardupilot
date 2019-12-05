@@ -15,14 +15,14 @@ local num_leds = 30
 local chan = SRV_Channels:find_channel(94)
 
 if not chan then
-    gcs:send_text(6, string.format("LEDs: channel not set"))
+    gcs:send_text(6, "LEDs: channel not set")
     return
 end
 
 -- find_channel returns 0 to 15, convert to 1 to 16
 chan = chan + 1
 
-gcs:send_text(6, string.format("LEDs: chan=" .. tostring(chan)))
+gcs:send_text(6, "LEDs: chan=" .. tostring(chan))
 
 -- initialisation code
 serialLED:set_num_LEDs(chan,  num_leds)
