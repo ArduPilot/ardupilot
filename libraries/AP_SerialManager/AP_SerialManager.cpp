@@ -482,6 +482,9 @@ void AP_SerialManager::init()
                     state[i].uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
                     break;
 
+                case SerialProtocol_Generator:
+                    break;
+
                 default:
                     state[i].uart->begin(map_baudrate(state[i].baud));
             }
