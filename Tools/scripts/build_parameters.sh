@@ -20,14 +20,6 @@ generate_parameters() {
     # generate Parameters.html, Parameters.rst etc etc:
     ./Tools/autotest/param_metadata/param_parse.py --vehicle $VEHICLE
 
-    # (Possibly) upload to the Wiki:
-    if [ -d "$WP_Auth_Dir" ]; then
-	if [ "$URL" != "NONE" ]; then
-	    AUTHFILEPATH="$WP_Auth_Dir/$AUTHFILE"
-	    ./Tools/scripts/update_wiki.py --url "$URL" $(cat $AUTHFILEPATH) --post-title="$POST_TITLE" Parameters.html
-	fi
-    fi
-
     # stash some of the results away:
     VEHICLE_PARAMS_DIR="$PARAMS_DIR/$VEHICLE"
     mkdir -p "$VEHICLE_PARAMS_DIR"
