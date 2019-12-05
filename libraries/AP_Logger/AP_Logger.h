@@ -359,7 +359,9 @@ public:
     bool vehicle_is_armed() const { return _armed; }
 
     void handle_log_send();
-    bool in_log_download() const { return transfer_activity != IDLE; }
+    bool in_log_download() const {
+        return transfer_activity != TransferActivity::IDLE;
+    }
 
     float quiet_nanf() const { return nanf("0x4152"); } // "AR"
     double quiet_nan() const { return nan("0x4152445550490a"); } // "ARDUPI"
@@ -476,11 +478,11 @@ private:
 
     /* support for retrieving logs via mavlink: */
 
-    enum transfer_activity_t : uint8_t {
+    enum class TransferActivity {
         IDLE,    // not doing anything, all file descriptors closed
         LISTING, // actively sending log_entry packets
         SENDING, // actively sending log_sending packets
-    } transfer_activity = IDLE;
+    } transfer_activity = TransferActivity::IDLE;
 
     // next log list entry to send
     uint16_t _log_next_list_entry;
