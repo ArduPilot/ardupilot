@@ -54,7 +54,7 @@ public:
 #endif
     };
 
-    enum Status {
+    enum class Status {
         NotConnected = 0,
         NoData,
         Good
