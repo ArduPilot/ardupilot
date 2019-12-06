@@ -14,6 +14,9 @@
 #include "AP_Compass_Backend.h"
 #include "Compass_PerMotor.h"
 
+#define COMPASS_MIN_SCALE_FACTOR 0.85
+#define COMPASS_MAX_SCALE_FACTOR 1.3
+
 // motor compensation types (for use with motor_comp_enabled)
 #define AP_COMPASS_MOT_COMP_DISABLED    0x00
 #define AP_COMPASS_MOT_COMP_THROTTLE    0x01
@@ -121,6 +124,9 @@ public:
     /// Return the current field as a Vector3f in milligauss
     const Vector3f &get_field(uint8_t i) const { return _state[i].field; }
     const Vector3f &get_field(void) const { return get_field(get_primary()); }
+
+    /// Return true if we have set a scale factor for a compass
+    bool have_scale_factor(uint8_t i) const;
 
     // compass calibrator interface
     void compass_cal_update();
@@ -430,6 +436,7 @@ private:
         AP_Vector3f offset;
         AP_Vector3f diagonals;
         AP_Vector3f offdiagonals;
+        AP_Float    scale_factor;
 
         // device id detected at init.
         // saved to eeprom when offsets are saved allowing ram &
