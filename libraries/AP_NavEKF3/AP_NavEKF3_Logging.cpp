@@ -346,13 +346,7 @@ void NavEKF3::Log_Write()
         struct ekf_timing timing;
         for (uint8_t i=0; i<activeCores(); i++) {
             getTimingStatistics(i, timing);
-            if (i == 0) {
-                Log_EKF_Timing("XKT1", time_us, timing);
-            } else if (i == 1) {
-                Log_EKF_Timing("XKT2", time_us, timing);
-            } else if (i == 2) {
-                Log_EKF_Timing("XKT3", time_us, timing);
-            }
+            Log_EKF_Timing("XKT", i, time_us, timing);
         }
     }
 }
