@@ -16,7 +16,6 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/sparse-endian.h>
-#include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Math/crc.h>
 #include "AP_Proximity_LightWareSF40C.h"
 
@@ -24,30 +23,6 @@ extern const AP_HAL::HAL& hal;
 
 #define PROXIMITY_SF40C_HEADER                  0xAA
 #define PROXIMITY_SF40C_DESIRED_OUTPUT_RATE     3
-#define PROXIMITY_SF40C_UART_RX_SPACE           1280
-
-/* 
-   The constructor also initialises the proximity sensor. Note that this
-   constructor is not called until detect() returns true, so we
-   already know that we should setup the proximity sensor
-*/
-AP_Proximity_LightWareSF40C::AP_Proximity_LightWareSF40C(AP_Proximity &_frontend,
-                                                         AP_Proximity::Proximity_State &_state) :
-    AP_Proximity_Backend(_frontend, _state)
-{
-    const AP_SerialManager &serial_manager = AP::serialmanager();
-    _uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar360, 0);
-    if (_uart != nullptr) {
-        // start uart with larger receive buffer
-        _uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Lidar360, 0), PROXIMITY_SF40C_UART_RX_SPACE, 0);
-    }
-}
-
-// detect if a Lightware proximity sensor is connected by looking for a configured serial port
-bool AP_Proximity_LightWareSF40C::detect()
-{
-    return AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_Lidar360, 0) != nullptr;
-}
 
 // update the state of the sensor
 void AP_Proximity_LightWareSF40C::update(void)
