@@ -83,6 +83,11 @@ Changes from 3.6.11
     b) Independent WatchDog gets improved logging
     c) EKF failsafe triggers slightly more quickly  
 ------------------------------------------------------------------
+Copter 3.6.12-rc1 06-Dec-2019
+Changes from 3.6.11
+1) More ChibiOS fixes for I2C storm 
+2) COMPASS_SCALE param to allow manual correction of compass scaling
+------------------------------------------------------------------
 Copter 3.6.11 01-Oct-2019 / 3.6.11-rc1 16-Sep-2019
 Changes from 3.6.10
 1) EKF and IMU improvements:
