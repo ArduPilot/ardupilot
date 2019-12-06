@@ -33,6 +33,7 @@ public:
         ARMING_CHECK_SYSTEM      = (1U << 13),
         ARMING_CHECK_MISSION     = (1U << 14),
         ARMING_CHECK_RANGEFINDER = (1U << 15),
+        ARMING_CHECK_CAMERA      = (1U << 16),
     };
 
     enum class Method {
@@ -123,6 +124,8 @@ protected:
     bool rangefinder_checks(bool report);
 
     bool fence_checks(bool report);
+
+    bool camera_checks(bool display_failure);
 
     virtual bool system_checks(bool report);
 
