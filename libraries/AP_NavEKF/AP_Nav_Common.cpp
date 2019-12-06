@@ -6,13 +6,16 @@
 /*
   write an EKF timing message
  */
-void Log_EKF_Timing(const char *name, uint64_t time_us, const struct ekf_timing &timing)
+void Log_EKF_Timing(const char * name, const uint8_t core, uint64_t time_us, const struct ekf_timing &timing)
 {
     AP::logger().Write(
         name,
-        "TimeUS,Cnt,IMUMin,IMUMax,EKFMin,EKFMax,AngMin,AngMax,VMin,VMax",
-        "QIffffffff",
+        "TimeUS,C,Cnt,IMUMin,IMUMax,EKFMin,EKFMax,AngMin,AngMax,VMin,VMax",
+        "s#sssssssss", // Units
+        "F-000000000", // Mults
+        "QBIffffffff", // Format
         time_us,
+        core,
         timing.count,
         (double)timing.dtIMUavg_min,
         (double)timing.dtIMUavg_max,
