@@ -75,4 +75,4 @@ struct ekf_timing {
     float delVelDT_max;
     float delVelDT_min;
 };
-void Log_EKF_Timing(const char *name, uint64_t time_us, const struct ekf_timing &timing);
+void Log_EKF_Timing(const char *name, const uint8_t core, uint64_t time_us, const struct ekf_timing &timing);
