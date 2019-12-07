@@ -583,7 +583,7 @@ class AutoTest(ABC):
             flist = glob.glob("logs/*.BIN")
             for e in ['BIN', 'bin', 'tlog']:
                 flist += glob.glob(os.path.join(logdir, '*.%s' % e))
-            print("Uploading %u logs to http://firmware.ardupilot.org/CI-Logs/%s" % (len(flist), datedir))
+            print("Uploading %u logs to https://firmware.ardupilot.org/CI-Logs/%s" % (len(flist), datedir))
             cmd = ['rsync', '-avz'] + flist + ['cilogs@autotest.ardupilot.org::CI-Logs/%s/' % datedir]
             subprocess.call(cmd)
 
