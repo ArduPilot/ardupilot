@@ -1545,7 +1545,7 @@ void AP_OSD_Screen::draw_clk(uint8_t x, uint8_t y)
 {
     AP_RTC &rtc = AP::rtc();
     uint8_t hour, min, sec;
-    uint16_t ms;
+    uint32_t ms;
     if (!rtc.get_local_time(hour, min, sec, ms)) {
     backend->write(x, y, false, "%c--:--%", SYM_CLK);
     } else {
