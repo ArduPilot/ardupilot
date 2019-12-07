@@ -658,7 +658,7 @@ is bob we will attempt to checkout bob-AVR'''
     def generate_manifest(self):
         '''generate manigest files for GCS to download'''
         self.progress("Generating manifest")
-        base_url = 'http://firmware.ardupilot.org'
+        base_url = 'https://firmware.ardupilot.org'
         generator = generate_manifest.ManifestGenerator(self.binaries,
                                                         base_url)
         content = generator.json()
