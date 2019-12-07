@@ -32,7 +32,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // 2 was PIT_MAX which has been replaced by CYC_MAX
 
     // @Param: COL_MIN
-    // @DisplayName: Collective Pitch Minimum
+    // @DisplayName: Minimum Collective Pitch
     // @Description: Lowest possible servo position in PWM microseconds for the swashplate
     // @Range: 1000 2000
     // @Units: PWM
@@ -41,7 +41,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     AP_GROUPINFO("COL_MIN", 3, AP_MotorsHeli, _collective_min, AP_MOTORS_HELI_COLLECTIVE_MIN),
 
     // @Param: COL_MAX
-    // @DisplayName: Collective Pitch Maximum
+    // @DisplayName: Maximum Collective Pitch
     // @Description: Highest possible servo position in PWM microseconds for the swashplate
     // @Range: 1000 2000
     // @Units: PWM
@@ -50,7 +50,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     AP_GROUPINFO("COL_MAX", 4, AP_MotorsHeli, _collective_max, AP_MOTORS_HELI_COLLECTIVE_MAX),
 
     // @Param: COL_MID
-    // @DisplayName: Collective Pitch Mid-Point
+    // @DisplayName: Zero-Thrust Collective Pitch 
     // @Description: Swash servo position in PWM microseconds corresponding to zero collective pitch (or zero lift for Asymmetrical blades)
     // @Range: 1000 2000
     // @Units: PWM
@@ -76,10 +76,9 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // index 15 was RSC_POWER_HIGH. Do not use this index in the future.
 
     // @Param: CYC_MAX
-    // @DisplayName: Cyclic Pitch Angle Max
-    // @Description: Maximum pitch angle of the swash plate
-    // @Range: 0 18000
-    // @Units: cdeg
+    // @DisplayName: Maximum Cyclic Pitch Angle
+    // @Description: Maximum cyclic pitch angle of the swash plate.  There are no units to this parameter.  This should be adjusted to get the desired cyclic blade pitch for the pitch and roll axes.  Typically this should be 6-7 deg (measured blade pitch angle difference between stick centered and stick max deflection.
+    // @Range: 0 4500
     // @Increment: 100
     // @User: Standard
     AP_GROUPINFO("CYC_MAX", 16, AP_MotorsHeli, _cyclic_max, AP_MOTORS_HELI_SWASH_CYCLIC_MAX),
