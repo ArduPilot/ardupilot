@@ -5,7 +5,7 @@ Import-Module BitsTransfer
 Write-Output "Starting Downloads"
 
 Write-Output "Downloading MAVProxy (1/6)"
-Start-BitsTransfer -Source "http://firmware.ardupilot.org/Tools/MAVProxy/MAVProxySetup-latest.exe" -Destination "$PSScriptRoot\MAVProxySetup-latest.exe"
+Start-BitsTransfer -Source "https://firmware.ardupilot.org/Tools/MAVProxy/MAVProxySetup-latest.exe" -Destination "$PSScriptRoot\MAVProxySetup-latest.exe"
 
 Write-Output "Downloading Cygwin x64 (2/6)"
 Start-BitsTransfer -Source "https://cygwin.com/setup-x86_64.exe" -Destination "$PSScriptRoot\setup-x86_64.exe"

@@ -21,14 +21,14 @@ pushd $HOME
 # PX4 toolchain
 dir=$ARM_ROOT
 if [ ! -d "$HOME/opt/$dir" -o ! -x "$HOME/opt/$dir/bin/arm-none-eabi-g++" ]; then
-  wget http://firmware.ardupilot.org/Tools/STM32-tools/$ARM_TARBALL
+  wget https://firmware.ardupilot.org/Tools/STM32-tools/$ARM_TARBALL
   tar -xf $ARM_TARBALL -C opt
 fi
 
 # RPi/BBB toolchain
 dir="tools-master/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64"
 if [ ! -d "$HOME/opt/$dir" -o ! -x "$HOME/opt/$dir/bin/arm-linux-gnueabihf-g++" ]; then
-  wget http://firmware.ardupilot.org/Tools/Travis/NavIO/$RPI_TARBALL
+  wget https://firmware.ardupilot.org/Tools/Travis/NavIO/$RPI_TARBALL
   tar -xf $RPI_TARBALL -C opt $dir
 fi
 

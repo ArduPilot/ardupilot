@@ -23,7 +23,7 @@ that the probe will be loaded as /dev/ttyBmpGdb
 
 Now make sure you have the right version of arm-none-eabi-gdb
 installed. We recommend version 6-2017-q2-update, which is available
-here: http://firmware.ardupilot.org/Tools/STM32-tools/
+here: https://firmware.ardupilot.org/Tools/STM32-tools/
 
 Now build ArduPilot with the --debug configure option. You may also
 like to include the --enable-asserts. Enabling asserts will slow down
