@@ -284,6 +284,11 @@ SPIDEV external5m1   SPI6 DEVID2  EXT2_CS3   MODE1  2*MHZ  2*MHZ
 SPIDEV external5m2   SPI6 DEVID2  EXT2_CS3   MODE2  2*MHZ  2*MHZ
 SPIDEV external5m3   SPI6 DEVID2  EXT2_CS3   MODE3  2*MHZ  2*MHZ
 
+# Two IMUs
+IMU Invensense SPI:icm20689 ROTATION_NONE
+IMU BMI088 SPI:bmi055_a SPI:bmi055_g ROTATION_ROLL_180_YAW_90
+# These are here for compatibility with pre-release boards
+IMU BMI055 SPI:bmi055_a SPI:bmi055_g ROTATION_ROLL_180_YAW_90
 
 # microSD support (disabled for now)
 PC8 SDMMC1_D0 SDMMC1
