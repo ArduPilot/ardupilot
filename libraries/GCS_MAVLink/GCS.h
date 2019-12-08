@@ -930,6 +930,7 @@ private:
         uint8_t                 bitmask;
         mavlink_statustext_t    msg;
     };
+    char statustext_printf_buffer[256+1];
 
     virtual AP_GPS::GPS_Status min_status_for_gps_healthy() const {
         // NO_FIX simply excludes NO_GPS
