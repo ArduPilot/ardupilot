@@ -112,6 +112,7 @@
 #define HAL_MEM_CLASS_300  4
 #define HAL_MEM_CLASS_500  5
 #define HAL_MEM_CLASS_1000 6
+#define HAL_MEM_CLASS_2000 7
 
 /* Operating system features
  *
