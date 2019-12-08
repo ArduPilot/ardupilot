@@ -37,7 +37,7 @@ const MAV_MISSION_TYPE GCS_MAVLINK::supported_mission_types[] = {
  */
 void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list)
 {
-    char text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+    char text[256+1]; // eep!  Stack!  Eeep!
     hal.util->vsnprintf(text, sizeof(text), fmt, arg_list);
     send_statustext(severity, GCS_MAVLINK::active_channel_mask() | GCS_MAVLINK::streaming_channel_mask(), text);
 }

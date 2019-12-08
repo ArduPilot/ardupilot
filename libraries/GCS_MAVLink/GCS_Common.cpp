@@ -1762,11 +1762,13 @@ void GCS_MAVLINK::send_ahrs()
 void GCS::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text)
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    if (strlen(text) > MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN) {
-        AP_HAL::panic("Statustext (%s) too long", text);
-    }
+    // if (strlen(text) > MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN) {
+    //     AP_HAL::panic("Statustext (%s) too long", text);
+    // }
 #endif
 
+    // FIXME: validate the following three calls are OK with a really
+    // long text string being passed in!
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger != nullptr) {
         logger->Write_Message(text);
@@ -1790,14 +1792,22 @@ void GCS::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const cha
     }
 
     statustext.msg.severity = severity;
-    strncpy(statustext.msg.text, text, sizeof(statustext.msg.text));
+
+    const uint8_t chunk_count = MIN((strlen(text) + sizeof(statustext.msg.text) - 1 ) / sizeof(statustext.msg.text), _status_capacity);
+    statustext.msg.chunk_count = chunk_count;
 
     WITH_SEMAPHORE(_statustext_sem);
-    
-    // The force push will ensure comm links do not block other comm links forever if they fail.
-    // If we push to a full buffer then we overwrite the oldest entry, effectively removing the
-    // block but not until the buffer fills up.
-    _statustext_queue.push_force(statustext);
+    for (uint8_t i=0; i<chunk_count; i++) {
+        statustext.msg.chunk_num = i;
+        memset(statustext.msg.text, '\0', sizeof(statustext.msg.text));
+        const char *src = &text[i*sizeof(statustext.msg.text)];
+        memcpy(statustext.msg.text, src, MIN(sizeof(statustext.msg.text), strlen(src)));
+
+        // The force push will ensure comm links do not block other comm links forever if they fail.
+        // If we push to a full buffer then we overwrite the oldest entry, effectively removing the
+        // block but not until the buffer fills up.
+        _statustext_queue.push_force(statustext);
+    }
 
     // try and send immediately if possible
     service_statustext();
@@ -1836,7 +1846,7 @@ void GCS::service_statustext(void)
                 mavlink_channel_t chan_index = (mavlink_channel_t)(MAVLINK_COMM_0+i);
                 if (HAVE_PAYLOAD_SPACE(chan_index, STATUSTEXT)) {
                     // we have space so send then clear that channel bit on the mask
-                    mavlink_msg_statustext_send(chan_index, statustext->msg.severity, statustext->msg.text);
+                    mavlink_msg_statustext_send(chan_index, statustext->msg.severity, statustext->msg.text, statustext->msg.chunk_count, statustext->msg.chunk_num);
                     statustext->bitmask &= ~chan_bit;
                 }
             }
