@@ -224,7 +224,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // @Param: ESC_CAL
     // @DisplayName: ESC Calibration
-    // @Description: This is used to calibrate the throttle range of the VTOL motors. Please read http://ardupilot.org/plane/docs/quadplane-esc-calibration.html before using. This parameter is automatically set back to 0 on every boot. This parameter only takes effect in QSTABILIZE mode. When set to 1 the output of all motors will come directly from the throttle stick when armed, and will be zero when disarmed. When set to 2 the output of all motors will be maximum when armed and zero when disarmed. Make sure you remove all properllers before using.
+    // @Description: This is used to calibrate the throttle range of the VTOL motors. Please read https://ardupilot.org/plane/docs/quadplane-esc-calibration.html before using. This parameter is automatically set back to 0 on every boot. This parameter only takes effect in QSTABILIZE mode. When set to 1 the output of all motors will come directly from the throttle stick when armed, and will be zero when disarmed. When set to 2 the output of all motors will be maximum when armed and zero when disarmed. Make sure you remove all properllers before using.
     // @Values: 0:Disabled,1:ThrottleInput,2:FullInput
     // @User: Standard
     AP_GROUPINFO("ESC_CAL", 42, QuadPlane, esc_calibration,  0),
