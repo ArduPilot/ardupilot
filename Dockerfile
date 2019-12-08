@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM ubuntu:16.04 as ardupilot-base
 WORKDIR /ardupilot
 
 RUN useradd -U -d /ardupilot ardupilot && \
@@ -27,3 +27,10 @@ ENV CCACHE_MAXSIZE=1G
 ENV PATH /usr/lib/ccache:/ardupilot/Tools:${PATH}
 ENV PATH /ardupilot/Tools/autotest:${PATH}
 ENV PATH /ardupilot/.local/bin:$PATH
+
+ 
+FROM ardupilot-base as ardupilot
+
+RUN pip2 install --upgrade future lxml pymavlink MAVProxy pexpect
+
+CMD ["/bin/bash","entrypoint.sh"]
