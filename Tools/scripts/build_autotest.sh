@@ -59,7 +59,7 @@ report() {
     cat <<EOF | mail -s 'build failed' drones-discuss@googlegroups.com
 A build of $d failed at `date`
 
-You can view the build logs at http://autotest.ardupilot.org/
+You can view the build logs at https://autotest.ardupilot.org/
 
 A log of the commits since the last attempted build is below
 
