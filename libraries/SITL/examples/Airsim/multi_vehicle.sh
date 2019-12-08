@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Example script for multi-vehicle simulation with AirSim and usage with ROS
-# see http://ardupilot.org/dev/docs/sitl-with-airsim.html#multi-vehicle-simulation for details
+# see https://ardupilot.org/dev/docs/sitl-with-airsim.html#multi-vehicle-simulation for details
 
 # Usage - From ardupilot root directory, run - libraries/SITL/examples/Airsim/multi_vehicle.sh $GCS_IP
 # $GCS_IP is the IP address of the system running the GCS, by default is 127.0.0.1
