@@ -25,6 +25,12 @@
 #include "hal.h"
 #include <hrt.h>
 
+#if CH_CFG_ST_RESOLUTION == 16
+static_assert(sizeof(systime_t) == 2, "expected 16 bit systime_t");
+#elif CH_CFG_ST_RESOLUTION == 32
+static_assert(sizeof(systime_t) == 4, "expected 32 bit systime_t");
+#endif
+
 extern const AP_HAL::HAL& hal;
 extern "C"
 {
