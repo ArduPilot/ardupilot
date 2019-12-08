@@ -44,7 +44,7 @@ help:
 	@echo "more than what this wrapper provides, it's a good idea to use waf directly."
 	@echo "The waf executable is at '$(WAF_BINARY)'."
 	@echo ""
-	@echo "For more detailed instructions see http://ardupilot.org/dev/docs/building-the-code.html"
+	@echo "For more detailed instructions see https://ardupilot.org/dev/docs/building-the-code.html"
 	@echo ""
 	@echo "Boards"
 	@echo "------"
