@@ -69,7 +69,7 @@
  *  ..and many more.
  *
  *  Code commit statistics can be found here: https://github.com/ArduPilot/ardupilot/graphs/contributors
- *  Wiki: http://copter.ardupilot.org/
+ *  Wiki: https://copter.ardupilot.org/
  *
  */
 
