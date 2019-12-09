@@ -1,0 +1,278 @@
+<?xml version="1.0"?>
+
+<!--
+This file provides the CAN protocol definition for the "ESC Velocity" speed controller manufactured by Currawong Engineering: https://www.currawongeng.com/servos-escs/esc-velocity/
+-->
+
+<Protocol name="ESCVelocity" prefix="ESC_" api="23" version="3.05" endian="big" supportSpecialFloat="false" supportInt64="false" supportFloat64="false"  comment=
+"This is the ICD for the Currawong Engineering Electronic Speed Controller (ESCVelocity). This document details the ESCVelocity command and packet structure for communication with and configuration of the ESC">
+
+    <Include name="string.h" comment="C string manipulation function header" global="true"/>
+
+    <Documentation name="Global ESC Enumerations" paragraph="1" comment="Packets in the protocol refer to these global enumerations."/>
+
+    
+    <!-- TOP LEVEL ENUMERATIONS -->
+    <Enum name="ESCDisableSequence" comment="ESC_Disable_Sequence">
+        <Value name="ESC_DISABLE_A" value="0xAA" comment="Constant value required for disabling the ESC"/>
+        <Value name="ESC_DISABLE_B" value="0xC3" comment="Constant value required for disabling the ESC"/>
+    </Enum>
+    
+    <Enum name="ESCEnableSequence" comment="ESC_Enable_Sequence">
+        <Value name="ESC_ENABLE_A" value="0xAA" comment="Constant value required for enabling the ESC"/>
+        <Value name="ESC_ENABLE_B" value="0x3C" comment="Constant value required for enabling the ESC"/>
+    </Enum>
+    
+    <Enum name="ESCOperatingModes" prefix="ESC_MODE_" lookup="true" comment="ESC Operational Modes" description="These values define the various modes of operation of the ESC">
+        <Value name="STANDBY" value="0x00" comment="ESC is in standby mode - the motor is OFF but the ESC is ready to accept motor commands"/>
+        <Value name="PWM" comment="ESC is controlling motor in open-loop mode based on a 'PWM' (Pulse Width) input"/>
+        <Value name="RPM" comment="ESC is controlling motor speed based on an RPM setpoint"/>
+        <Value name="ESC_VALID_MODES" ignorePrefix="true" comment="ESC mode counter"/>
+    </Enum>
+    
+    <Enum name="ESCCommandSources" prefix="ESC_COMMAND_SOURCE_" lookup="true" comment="ESC Command Sources" description="These values define the source that the ESC has received its most recent valid command from">
+        <Value name="NONE" value="0x00" comment="No valid command has been received"/>
+        <Value name="CAN" comment="Most recent command from CAN"/>
+        <Value name="PWM" comment="Most recent command from PWM"/>
+    </Enum>
+	
+	<Enum name="ESCMotorTemperatureSensor" prefix="ESC_MOTOR_TEMP_SENSOR_" lookup="true" comment="ESC motor temperature sensor options">
+		<Value name="OFF" value="0x00" comment="No temperature sensor selected"/>
+		<Value name="KTY84" comment="KTY84 of equivalent"/>
+		<Value name="KTY83" comment="KTY83 or equivalent"/>
+	</Enum>
+    
+    <Enum name="ESCCommandPriorities" prefix="ESC_COMMAND_PRIORITY_" lookup="true" comment="ESC Command Priorities">
+        <Value name="CAN_ONLY" value="0x00" comment="Commands only from CAN, PWM hardware input is disabled"/>
+        <Value name="CAN_PRIORITY" comment="Commands from CAN or PWM hardware input, CAN takes priority"/>
+        <Value name="PWM_PRIORITY" comment="Commands from CAN or PWM hardware input, PWM takes priority"/>
+    </Enum>
+    
+    <Enum name="ESCMotorDirections" prefix="ESC_MOTOR_DIR_" comment="Motor Direction Enumeration">
+        <Value name="FORWARD" value="0x00" comment="Forward motor direction"/>
+        <Value name="REVERSE" value="0x01" comment="Reverse motor direction"/>
+    </Enum>
+    
+    <Enum name="ESCBeepModes" prefix="ESC_BEEP_" comment="Motor beep modes enumeration">
+        <Value name="NONE" value="0b00"/>
+        <Value name="STATUS" value="0b01" comment="Motor status beeps only"/>
+        <Value name="ERROR" value="0b10" comment="Motor error beeps only"/>
+        <Value name="ALL" value="0b11" comment="All motor beeps"/>
+    </Enum>
+    
+    <Documentation name="Packet IDs" paragraph="1" comment="Packet type definitions. Each packet has an 8-bit packet identifier (ID) which is used to identify the contents of the packet"/> 
+    
+    <Enum name="ESCMultiCommandPackets" lookup="true" prefix="PKT_ESC_" comment="ESC Multi Command Packets" description="These packets can be used to send commands to 4 (four) ESCs with sequential CAN address identifiers, using a single CAN message. When sending these messages, they must be broadcast (using the special ESC broadcast address) so that each of the four target ESCs accept the CAN message.">
+        <Value name="SETPOINT_1" value ="0" comment="This packet is used to send commands to multiple ESCs with sequential CAN IDs 1 - 4"/>
+        <Value name="SETPOINT_2" comment="This packet is used to send commands to multiple ESCs with sequential CAN IDs 5 - 8"/>
+        <Value name="SETPOINT_3" comment="This packet is used to send commands to multiple ESCs with sequential CAN IDs 9 - 12"/>
+        <Value name="SETPOINT_4" comment="This packet is used to send commands to multiple ESCs with sequential CAN IDs 13 - 16"/>
+        <Value name="SETPOINT_5" comment="This packet is used to send commands to multiple ESCs with sequential CAN IDs 17 - 20"/>
+        <Value name="SETPOINT_6" comment="This packet is used to send commands to multiple ESCs with sequential CAN IDs 21 - 24"/>
+        <Value name="SETPOINT_7" comment="This packet is used to send commands to multiple ESCs with sequential CAN IDs 25 - 28"/>
+        <Value name="SETPOINT_8" comment="This packet is used to send commands to multiple ESCs with sequential CAN IDs 29 - 32"/>
+        <Value name="SETPOINT_9" comment="This packet is used to send commands to multiple ESCs with sequential CAN IDs 33 - 36"/>
+        <Value name="SETPOINT_10" comment="This packet is used to send commands to multiple ESCs with sequential CAN IDs 37 - 40"/>
+        <Value name="SETPOINT_11" comment="This packet is used to send commands to multiple ESCs with sequential CAN IDs 41 - 44"/>
+        <Value name="SETPOINT_12" comment="This packet is used to send commands to multiple ESCs with sequential CAN IDs 45 - 48"/>
+        <Value name="SETPOINT_13" comment="This packet is used to send commands to multiple ESCs with sequential CAN IDs 49 - 52"/>
+        <Value name="SETPOINT_14" comment="This packet is used to send commands to multiple ESCs with sequential CAN IDs 53 - 56"/>
+        <Value name="SETPOINT_15" comment="This packet is used to send commands to multiple ESCs with sequential CAN IDs 57 - 60"/>
+        <Value name="SETPOINT_16" comment="This packet is used to send commands to multiple ESCs with sequential CAN IDs 61 - 64"/>
+    </Enum>
+    
+    <Enum name="ESCCommandPackets" lookup="true" prefix="PKT_ESC_" comment="ESC Command Packets" description="Command packets are sent to the ESC to change its operational mode. These packets **must** be fully implemented in the connected avionics system for complete operation of the PCU">
+        <Value name="PWM_CMD" value="0x10" comment="Send a PWM (Pulse width) command to a particular ESC"/>
+        <Value name="RPM_CMD" comment="Send an RPM (Speed) command to a particular ESC"/>
+        
+        <Value name="DISABLE" value="0x20" comment="Send this packet to an ESC to disable the ESC"/>
+        <Value name="STANDBY" comment="Send this packet to an ESC to enable the ESC and place it in Standby mode"/>
+    </Enum>
+    
+    <Enum name="ESCStatusPackets" lookup="true" prefix="PKT_ESC_" comment="ESC Status Packets" description="Status packets are transmitted by the ESC at (user-configurable) intervals. These packets contain vital system information and should be fully implemented by the connected avionics device(s).">
+        <!-- Telemetry Packets -->
+        <Value name="STATUS_A" value="0x80" comment="ESC Status A telemetry packet transmitted by the ESC at regular intervals"/>
+        <Value name="STATUS_B" comment="ESC Status B telemetry packet transmitted by the ESC at regular intervals"/>
+        
+        <Value name="ACCELEROMETER" value="0x88" comment="Raw accelerometer data"/>
+    </Enum>
+    
+    <Enum name="ESCPackets" lookup="true" prefix="PKT_ESC_" comment="ESC Packets Definitions" description="ESC configuration packets. Each packet can be requested from the ESC by sending a zero-length packet of the same type.">
+        
+        <!-- System information / settings packets -->
+        <Value name="SERIAL_NUMBER" value="0x90" comment="ESC Serial Number and User ID information"/>
+        <Value name="TITLE" comment="Human-readable string descriptor (max 8 chars) of the particular ESC"/>
+        <Value name="FIRMWARE" comment="ESC Firmware information"/>
+        <Value name="SYSTEM_INFO" comment="ESC system information packet"/>
+        <Value name="TELEMETRY_SETTINGS" comment="Telemetry packet configuration"/>
+        <Value name="EEPROM" comment="ESC non-volatile data information and settings"/>
+        
+    </Enum>        
+       
+    <!-- ESC Status Bitfield -->
+    <Structure name="StatusBits" file="ESCDefines" comment="The *status* of the ESC is represented using these status bits. ESC system functionality can be quickly determined using these bits">
+        <Data name="hwInhibit" inMemoryType="bitfield1" comment="1 = Hardware inhibit is active (ESC is disabled)"/>
+        <Data name="swInhibit" inMemoryType="bitfield1" comment="1 = Software inhibit is active (ESC is disabled)"/>
+        <Data name="afwEnabled" inMemoryType="bitfield1" comment="0 = Active Freewheeling is not enabled, 1 = Active Freewheeling is enabled"/>
+        <Data name="direction" inMemoryType="bitfield1" comment="0 = Motor direction is FORWARDS, 1= Motor direction is REVERSE"/>
+        <Data name="timeout" inMemoryType="bitfield1" comment="Set if the ESC command timeout period has elapsed (and the ESC is in STANDBY mode)"/>
+        <Data name="starting" inMemoryType="bitfield1" comment="1 = in starting mode (0 = stopped or running)"/>
+        <Data name="commandSource" inMemoryType="bitfield1" comment="0 = most recent command from CAN, 1 = most recent command from PWM"/>
+        <Data name="running" inMemoryType="bitfield1" comment="ESC is running"/>
+    </Structure>
+    
+    <Structure name="WarningBits" file="ESCDefines" comment="The *warning* bits enumerate various system warnings/errors of which the user (or user software) should be made aware. These *warning* bits are transmitted in the telemetry packets such that user software is aware of any these *warning* conditions and can poll the ESC for particular packets if any further information is needed. The ESC will continue to function in the case of a *warning* state">
+        <Data name="noRPMSignal" inMemoryType="bitfield1" comment="Set if RPM signal is not detected"/>
+        <Data name="overspeed" inMemoryType="bitfield1" comment="Set if the ESC motor speed exceeds the configured warning threshold"/>
+        <Data name="overcurrent" inMemoryType="bitfield1" comment="Set if the ESC motor current (positive or negative) exceeds the configured warning threshold"/>
+        <Data name="escTemperature" inMemoryType="bitfield1" comment="Set if the internal ESC temperature is above the warning threshold"/>
+        <Data name="motorTemperature" inMemoryType="bitfield1" comment="Set if the motor temperature is above the warning threshold"/>
+        <Data name="undervoltage" inMemoryType="bitfield1" comment="Set if the input voltage is below the minimum threshold"/>
+        <Data name="overvoltage" inMemoryType="bitfield1" comment="Set if the input voltage is above the maximum threshold"/>    
+        <Data name="invalidPWMsignal" inMemoryType="bitfield1" comment="Set if hardware PWM input is enabled but invalid"/>
+    </Structure>
+    
+    <Structure name="ErrorBits" file="ESCDefines" comment="The *error* bits enumerate critical system errors that will cause the ESC to stop functioning until the error cases are alleviated">
+        <Data name="linkError" inMemoryType="bitfield1" comment="Set if communication link to the motor controller is lost"/>
+        <Data name="foldback" inMemoryType="bitfield1" comment="Set if the ESC has detected an overcurrent event and is actively folding back duty cycle"/>
+        <Data name="settingsChecksum" inMemoryType="bitfield1" comment="Set if the settings checksum does not match the programmed values"/>
+        <Data name="motorSettings" inMemoryType="bitfield1" comment="Set if the motor settings are invalid"/>
+        <Data name="reservedD" inMemoryType="bitfield1" comment="Reserved for future use"/>
+        <Data name="reservedE" inMemoryType="bitfield1" comment="Reserved for future use"/>
+        <Data name="reservedF" inMemoryType="bitfield1" comment="Reserved for future use"/>
+        <Data name="reservedG" inMemoryType="bitfield1" comment="Reserved for future use"/>
+    </Structure>
+    
+    <!-- Non-Volatile Settings Information -->
+    <Structure name="TelemetryPackets" file="ESCDefines" comment="These bits are used to determine which packets are automatically transmitted as telemetry data by the ESC. Only the packets described here can be configured as telemetry packets">
+        <Data name="statusA" inMemoryType="bitfield1" initialValue="1" comment="If this bit is set, the STATUS_A packet will be transmitted at the configured rate"/>
+        <Data name="statusB" inMemoryType="bitfield1" initialValue="1" comment="If this bit is set, the STATUS_B packet will be transmitted at the configured rate"/>
+        <Data name="statusC" inMemoryType="bitfield1" initialValue="1" comment="If this bit is set, the STATUS_C packet will be transmitted at the configured rate"/>
+        <Data name="accelerometer" inMemoryType="bitfield1" initialValue="0" comment="If this bit is set, the ACCELEROMETER packet will be transmitted at the configured rate"/>
+        
+        <Data name="statusD" inMemoryType="bitfield1" comment="If this bit is set, the STATUS_D packet will be transmitted at the configured rate"/>
+        <Data name="reservedB" inMemoryType="bitfield1" comment="Reserved for future use"/>
+        <Data name="piccoloDownlink" inMemoryType="bitfield1" comment="If this bit is set, any STATUS_x packets selected for telemetry will be mirrored on the Piccolo Downlink packet group (0x14)"/>
+        <Data name="reservedD" inMemoryType="bitfield1" comment="Reserved for future use"/>
+    </Structure>
+
+    <!-- Command Packet Definitions Start Here -->
+    
+    <Documentation name="Command Packets" paragraph="1" comment="These packets are sent to the ESC to command certain operational modes. The ESC does not acknowledge these packets"/>
+    
+    <Packet name="CommandMultipleESCs"
+            ID="PKT_ESC_SETPOINT_1 PKT_ESC_SETPOINT_2 PKT_ESC_SETPOINT_3 PKT_ESC_SETPOINT_4 PKT_ESC_SETPOINT_5 PKT_ESC_SETPOINT_6"
+            file="ESCPackets" parameterInterface="true" comment="Send this packet to command ESCs which have CAN ID values in the range {1,4} (inclusive). This packet must be sent as a broadcast packet (address = 0xFF) such that all ESCs can receive it. Similiar commands are available for commanding ESCs with ID values up to 64, using different ESC_SETPOINT_x packet ID values.">
+        <Data name="pwmValueA" inMemoryType="unsigned16" comment="The PWM (pulse width) command for ESC with CAN ID 1" units="1us per bit"/>
+        <Data name="pwmValueB" inMemoryType="unsigned16" comment="The PWM (pulse width) command for ESC with CAN ID 2" units="1us per bit"/>
+        <Data name="pwmValueC" inMemoryType="unsigned16" comment="The PWM (pulse width) command for ESC with CAN ID 3" units="1us per bit"/>
+        <Data name="pwmValueD" inMemoryType="unsigned16" comment="The PWM (pulse width) command for ESC with CAN ID 4" units="1us per bit"/>
+    </Packet>
+    
+    <Packet name="Disable" ID="PKT_ESC_DISABLE" file="ESCPackets" parameterInterface="true" comment="Send this packet to the ESC to disable it. The ESC will not accept PWM/RPM commands until it is re-enabled.">
+        <Data name="disableSequenceA" inMemoryType="null" encodedType="unsigned8" checkConstant="true" constant="ESC_DISABLE_A" comment="This value must be set for the command to be accepted"/>
+        <Data name="disableSequenceB" inMemoryType="null" encodedType="unsigned8" checkConstant="true" constant="ESC_DISABLE_B" comment="This value must be set for the command to be accepted"/>
+    </Packet>
+    
+    <Packet name="Enable" ID="PKT_ESC_STANDBY" file="ESCPackets" parameterInterface="true" comment="Send this packet to the ESC to enable it. The ESC will be placed in Standby mode.">
+        <Data name="enableSequenceA" inMemoryType="null" encodedType="unsigned8" checkConstant="true" constant="ESC_ENABLE_A" comment="This value must be set for the command to be accepted"/>
+        <Data name="enableSequenceB" inMemoryType="null" encodedType="unsigned8" checkConstant="true" constant="ESC_ENABLE_B" comment="This value must be set for the command to be included"/>
+    </Packet>
+    
+    <Packet name="PWMCommand" ID="PKT_ESC_PWM_CMD" parameterInterface="true" file="ESCPackets" comment="Send a PWM (pulse width) command to an individual ESC. The pulse width value in specified in microseconds for compatibility with standard ESC interface. Use the broadcast ID (0xFF) to send this command to all ESCs on the CAN bus.">
+        <Data name="pwmCommand" inMemoryType="unsigned16" comment="PWM command" units="1us per bit"/>
+    </Packet>
+    
+    <Packet name="RPMCommand" ID="PKT_ESC_RPM_CMD" parameterInterface="true" file="ESCPackets" comment="Send an RPM (speed) command to an individual ESC. Use the broadcast ID (0xFF) to send this command to all ESCs on the CAN bus">
+        <Data name="rpmCommand" inMemoryType="unsigned16" comment="RPM Command" units="RPM"/>
+    </Packet>
+    
+    <!--
+    STATUS PACKETS
+    -->
+    
+    <Documentation name="Status Packets" paragraph="1" comment="These packets are transmitted by the ESC at a user-configurable rate. These packets contain operational data pertaining to the status of the ESC. Each packet can also be requested (polled) by sending a zero-length packet of the same type."/>
+    
+    <Packet name="StatusA" ID="PKT_ESC_STATUS_A" file="ESCPackets" parameterInterface="true" structureInterface="true"
+            comment="The ESC_STATUS_A packet contains high-priority ESC status information. This packet is transmitted by the ESC at regular (user-configurable) intervals. It can also be requested (polled) from the ESC by sending a zero-length packet of the same type.">
+        <Data name="mode" inMemoryType="unsigned8" comment="ESC operating mode. The lower four bits indicate the operational mode of the ESC, in accordance with the ESCOperatingModes enumeration. The upper four bits are used for debugging and should be ignored for general use."/>
+        <Data name="status" struct="StatusBits" comment="ESC status bits"/>
+        <Data name="warnings" struct="WarningBits" comment="ESC warning bits"/>
+        <Data name="errors" struct="ErrorBits" comment="ESC *error* bits"/>
+        <Data name="command" inMemoryType="unsigned16" comment="ESC operational command - value depends on 'mode' available in this packet. If the ESC is disabled, data reads 0x0000. If the ESC is in open-loop PWM mode, this value is the PWM command in units of 1us, in the range 1000us to 2000us. If the ESC is in closed-loop RPM mode, this value is the RPM command in units of 1RPM"/>
+        <Data name="rpm" inMemoryType="unsigned16" comment="Motor speed" units="1RPM per bit"/>
+    </Packet>
+    
+    <Packet name="StatusB" ID="PKT_ESC_STATUS_B" file="ESCPackets" parameterInterface="true" structureInterface="true"
+            comment="The ESC_STATUS_B packet contains ESC operational information. This packet is transmitted by the ESC at regular (user-configurable) intervals. It can also be requested (polled) from the ESC by sending a zero-length packet of the same type.">
+        <Data name="voltage" inMemoryType="unsigned16" comment="ESC Rail Voltage" units="0.1V per bit"/>
+        <Data name="current" inMemoryType="signed16" units="0.1A per bit" comment="ESC Current. Current IN to the ESC is positive. Current OUT of the ESC is negative"/>
+        <Data name="dutyCycle" inMemoryType="unsigned16" comment="ESC Motor Duty Cycle" units="0.1% per bit"/>
+        <Data name="escTemperature" inMemoryType="signed8" comment="ESC Board Temperature" units="1 degree C per bit" range="-128C to +127C"/>
+        <Data name="motorTemperature" inMemoryType="unsigned8" comment="ESC Motor Temperature" units="1 degree C per bit" range="-50 to +205 (0 = -50C)"/>
+    </Packet>
+    
+    <Packet name="Accelerometer" ID="PKT_ESC_ACCELEROMETER" parameterInterface="true" structureInterface="true" file="ESCPackets"
+            comment="This packet contains raw accelerometer data from the ESC. It can be requested (polled) from the ESC by sending a zero-length packet of the same type. It can also be transmitted by the ESC at high-frequency using the high-frequency streaming functionality of the ESC">
+        <Data name="xAcc" inMemoryType="signed16" comment="X axis acceleration value" range="-0x7FFF to +0x7FFF" notes="Multiply by (0.5 * fullscale / 2^resolution) to get acceleration value in 'g' units"/>
+        <Data name="yAcc" inMemoryType="signed16" comment="Y axis acceleration value" range="-0x7FFF to +0x7FFF" notes="Multiply by (0.5 * fullscale / 2^resolution) to get acceleration value in 'g' units"/>
+        <Data name="zAcc" inMemoryType="signed16" comment="Z axis acceleration value" range="-0x7FFF to +0x7FFF" notes="Multiply by (0.5 * fullscale / 2^resolution) to get acceleration value in 'g' units"/>
+        <Data name="fullscale" inMemoryType="unsigned8" comment="Accelerometer full-scale range"/>
+        <Data name="resolution" inMemoryType="unsigned8" comment="Accelerometer measurement resolution, in 'bits'."/>
+    </Packet>
+    
+    <!-- System info / settings packets --> 
+    
+    <Documentation name="Config Packets" paragraph="1" comment="These packets provide information on the ESC system status, and allow the avionics device and/or operator to determine that the ESC is correctly configured prior to flight. To request these config packets, send a zero-length packet with the same ID to the ESC. Note: For complete ESC configuration use the cEQUIP software provided by Currawong Engineering"/>
+    
+    <Packet name="Address" ID="PKT_ESC_SERIAL_NUMBER" file="ESCPackets" structureInterface="true" parameterInterface="true" comment="This packet contains the serial number for the ESC. Additionally there are two extra values (each 16-bit) which can be programmed by the user for any purpose.">
+		<!-- The serial number was previously transmitted at 32-bit (but we are overriding the top byte to be hardware revision)
+		     For backwards compatibility, the first byte in the packet must be used so the packet definitions are not corrupted. -->
+		<Data name="HardwareRevision" inMemoryType="unsigned8" comment="ESC hardware revision"/>
+        <Data name="SerialNumber" inMemoryType="unsigned32" encodedType="unsigned24" comment="ESC Serial Number (OTP - not configurable by user)"/>
+        <Data name="UserIDA" inMemoryType="unsigned16" comment="User ID Value A - user can set this value to any value"/>
+        <Data name="UserIDB" inMemoryType="unsigned16" comment="User ID Value B - user can set this value to any value"/>
+    </Packet>
+    
+    <Packet name="Title" ID="PKT_ESC_TITLE" file="ESCPackets" parameterInterface="true" comment="This packet contains a zero-terminated string (max-length 8) used to identify the particular ESC.">
+        <Data name="ESCTitle" inMemoryType="unsigned8" array="8" comment="Description of this ESC"/>
+    </Packet>
+   
+    <Packet name="Firmware" ID="PKT_ESC_FIRMWARE" file="ESCPackets" structureInterface="true" parameterInterface="true"
+            comment="This packet contains the firmware version of the ESC">
+        <Data name="versionMajor" inMemoryType="unsigned8" comment="Major firmware version number"/>
+        <Data name="versionMinor" inMemoryType="unsigned8" comment="Minor firmware version numner"/>
+        <Data name="versionDay" inMemoryType="unsigned8" comment="Firmware release date, day-of-month" range="1-31"/>
+        <Data name="versionMonth" inMemoryType="unsigned8" comment="Firmware release data, month-of-year" range="1-12"/>
+        <Data name="versionYear" inMemoryType="unsigned16" comment="Firmware release date, year"/>
+        <Data name="firmwareChecksum" inMemoryType="unsigned16" comment="Firmware checksum"/>
+    </Packet>
+    
+    <Packet name="SystemInfo" ID="PKT_ESC_SYSTEM_INFO" file="ESCPackets" structureInterface="true" parameterInterface="true"
+            comment="This packet contains system runtime information">
+        <Data name="millisecondsSinceReset" inMemoryType="unsigned32" comment="Number of milliseconds since the ESC last experienced a reset/power-on event"/>
+        <Data name="powerCycles" inMemoryType="unsigned16" comment="Number of power cycle events that the ESC has experienced"/>
+        <Data name="resetCode" inMemoryType="unsigned8" comment="Processor RESET code for debug purposes"/>
+        <Data name="cpuOccupancy" inMemoryType="unsigned8" comment="Processor usage" units="1% per bit"/>
+    </Packet>
+    
+     <Packet name="TelemetryConfig" ID="PKT_ESC_TELEMETRY_SETTINGS" useInOtherPackets="true" file="ESCPackets" structureInterface="true" parameterInterface="true" comment="Telemetry settings (storage class)" hidden="true">
+        <Data name="period" inMemoryType="unsigned8" comment="Telemetry period" units="50ms per bit" range="0 - 250 (0.0s to 25.0s)" initialValue="4" verifyMaxValue="250" notes="0 = Telemetry disabled"/>
+        <Data name="silence" inMemoryType="unsigned8" comment="Telemetry silence period (delay after RESET before telemetry data is sent)" units="50ms per bit" initialValue="20" verifyMaxValue="250" range="0 - 250 (0.0s to 25.0s)"/>
+        <Data name="packets" struct="TelemetryPackets" comment="Bitfield describing which telemetry packets are enabled"/>
+    </Packet>
+    
+    <Packet name="TelemetrySettings" ID="PKT_ESC_TELEMETRY_SETTINGS" file="ESCPackets" parameterInterface="true" comment="This packet contains the telemetry packet configuration">
+        <Data name="settings" struct="TelemetryConfig" comment="Telemetry settings"/>
+        <Data name="apiVersion" inMemoryType="string" array="5" constant="getESCVelocityVersion()" comment="The API version of the ESC"/>
+    </Packet>
+    
+    <Packet name="EEPROMSettings" ID="PKT_ESC_EEPROM" file="ESCPackets" parameterInterface="true" structureInterface="true"
+            comment="This packet contains information on the non-volatile ESC settings">
+        <Data name="version" inMemoryType="unsigned8" comment="Version of EEPROM data"/>
+        <Data name="size" inMemoryType="unsigned16" comment="Size of settings data"/>
+        <Data name="checksum" inMemoryType="unsigned16" comment="Settings checksum"/>
+
+    </Packet>
+   
+</Protocol>
