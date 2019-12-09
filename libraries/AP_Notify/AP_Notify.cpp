@@ -113,7 +113,7 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @Param: LED_OVERRIDE
     // @DisplayName: Specifies colour source for the RGBLed
     // @Description: Specifies the source for the colours and brightness for the LED.  OutbackChallenge conforms to the MedicalExpress (https://uavchallenge.org/medical-express/) rules, essentially "Green" is disarmed (safe-to-approach), "Red" is armed (not safe-to-approach). Traffic light is a simplified color set, red when armed, yellow when the safety switch is not surpressing outputs (but disarmed), and green when outputs are surpressed and disarmed, the LED will blink faster if disarmed and failing arming checks.
-    // @Values: 0:Standard,1:MAVLink,2:OutbackChallenge,3:TrafficLight
+    // @Values: 0:Standard,1:MAVLink/Scripting,2:OutbackChallenge,3:TrafficLight
     // @User: Advanced
     AP_GROUPINFO("LED_OVERRIDE", 2, AP_Notify, _rgb_led_override, 0),
 
@@ -348,6 +348,16 @@ void AP_Notify::handle_led_control(const mavlink_message_t &msg)
     for (uint8_t i = 0; i < _num_devices; i++) {
         if (_devices[i] != nullptr) {
             _devices[i]->handle_led_control(msg);
+        }
+    }
+}
+
+// handle RGB from Scripting
+void AP_Notify::handle_rgb(uint8_t r, uint8_t g, uint8_t b, uint8_t rate_hz)
+{
+    for (uint8_t i = 0; i < _num_devices; i++) {
+        if (_devices[i] != nullptr) {
+            _devices[i]->rgb_control(r, g, b, rate_hz);
         }
     }
 }
