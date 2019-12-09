@@ -138,6 +138,9 @@ public:
     // handle a LED_CONTROL message
     static void handle_led_control(const mavlink_message_t &msg);
 
+    // handle RGB from Scripting
+    static void handle_rgb(uint8_t r, uint8_t g, uint8_t b, uint8_t rate_hz = 0);
+
     // handle a PLAY_TUNE message
     static void handle_play_tune(const mavlink_message_t &msg);
 
