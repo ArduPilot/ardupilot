@@ -19,9 +19,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
 
-#if HAL_WITH_UAVCAN
-
 #include "AP_PiccoloCAN.h"
+
+#if HAL_PICCOLO_CAN_ENABLE
 
 #include <uavcan/uavcan.hpp>
 #include <uavcan/driver/can.hpp>
@@ -621,4 +621,5 @@ uint32_t getESCVelocityPacketID(const void* pkt)
 }
 
 
-#endif // HAL_WITH_UAVCAN
+#endif // HAL_PICCOLO_CAN_ENABLE
+
