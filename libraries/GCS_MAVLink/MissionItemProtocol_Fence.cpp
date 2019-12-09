@@ -185,7 +185,6 @@ MAV_MISSION_RESULT MissionItemProtocol_Fence::allocate_receive_resources(const u
     }
 
     const uint16_t allocation_size = count * sizeof(AC_PolyFenceItem);
-    gcs().send_text(MAV_SEVERITY_DEBUG, "Allocating %u bytes for fence upload", allocation_size);
     if (allocation_size != 0) {
         _new_items = (AC_PolyFenceItem*)malloc(allocation_size);
         if (_new_items == nullptr) {
