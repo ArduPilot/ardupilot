@@ -17,9 +17,8 @@ bool Sub::althold_init()
     pos_control.set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
     pos_control.set_max_accel_z(g.pilot_accel_z);
 
-    // initialise position and desired velocity
-    pos_control.set_alt_target(inertial_nav.get_altitude());
-    pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
+    pos_control.set_target_to_stopping_point_z();
+    holding_depth = true;
 
     last_roll = ahrs.roll_sensor;
     last_pitch = ahrs.pitch_sensor;
@@ -100,6 +99,7 @@ void Sub::althold_run()
         last_roll = ahrs.roll_sensor;
         last_pitch = ahrs.pitch_sensor;
         last_yaw = ahrs.yaw_sensor;
+        holding_depth = false;
         return;
     }
 
@@ -120,29 +120,21 @@ void Sub::althold_run()
 
     // We rotate the RC inputs to the earth frame to check if the user is giving an input that would change the depth.
     Vector3f earth_frame_rc_inputs = ahrs.get_rotation_body_to_ned() * Vector3f(channel_forward->norm_input(), channel_lateral->norm_input(), (2.0f*(-0.5f+channel_throttle->norm_input())));
-    // Hold actual position until zero derivative is detected
-    static bool engageStopZ = true;
-    // Get last user velocity direction to check for zero derivative points
-    static bool lastVelocityZWasNegative = false;
 
     if (fabsf(earth_frame_rc_inputs.z) > 0.05f) { // Throttle input  above 5%
        // reset z targets to current values
+        holding_depth = false;
         pos_control.relax_alt_hold_controllers();
-        engageStopZ = true;
-        lastVelocityZWasNegative = is_negative(inertial_nav.get_velocity_z());
     } else { // hold z
-        if (ap.at_bottom) {
-            pos_control.relax_alt_hold_controllers(); // clear velocity and position targets
+        if (ap.at_surface) {
+            pos_control.set_alt_target(inertial_nav.get_altitude() - 1.0f);
+            holding_depth = true;
+        } else if (ap.at_bottom) {
             pos_control.set_alt_target(inertial_nav.get_altitude() + 10.0f); // set target to 10 cm above bottom
-        }
-
-        // Detects a zero derivative
-        // When detected, move the altitude set point to the actual position
-        // This will avoid any problem related to joystick delays
-        // or smaller input signals
-        if(engageStopZ && (lastVelocityZWasNegative ^ is_negative(inertial_nav.get_velocity_z()))) {
-            engageStopZ = false;
-            pos_control.relax_alt_hold_controllers();
+            holding_depth = true;
+        } else if (!holding_depth) {
+            pos_control.set_target_to_stopping_point_z();
+            holding_depth = true;
         }
     }
 }
