@@ -189,6 +189,8 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     // extra delay per main loop
     AP_GROUPINFO("LOOP_DELAY",  55, SITL,  loop_delay, 0),
 
+    AP_GROUPINFO("MAG_SCALING",    60, SITL,  mag_scaling, 1),
+
     AP_GROUPEND
 
 };
