@@ -19,6 +19,14 @@
 #define AP_BATT_MONITOR_RES_EST_TC_1        0.5f
 #define AP_BATT_MONITOR_RES_EST_TC_2        0.1f
 
+#ifndef HAL_BATTMON_SMBUS_ENABLE
+#define HAL_BATTMON_SMBUS_ENABLE 1
+#endif
+
+#ifndef HAL_BATTMON_FUEL_ENABLE
+#define HAL_BATTMON_FUEL_ENABLE 1
+#endif
+
 // declare backend class
 class AP_BattMonitor_Backend;
 class AP_BattMonitor_Analog;
