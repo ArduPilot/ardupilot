@@ -38,7 +38,11 @@ public:
 
     // handle LED control, only used when LED_OVERRIDE=1
     virtual void handle_led_control(const mavlink_message_t &msg) override;
-    
+
+    // RGB control
+    // give RGB and flash rate, used with scripting
+    virtual void rgb_control(uint8_t r, uint8_t g, uint8_t b, uint8_t rate_hz) override;
+
 protected:
     // methods implemented in hardware specific classes
     virtual bool hw_init(void) = 0;

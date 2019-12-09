@@ -281,3 +281,15 @@ void RGBLed::update_override(void)
         _set_rgb(0, 0, 0);
     }
 }
+
+/*
+  RGB control
+  give RGB and flash rate, used with scripting
+*/
+void RGBLed::rgb_control(uint8_t r, uint8_t g, uint8_t b, uint8_t rate_hz)
+{
+    _led_override.rate_hz = rate_hz;
+    _led_override.r = r;
+    _led_override.g = g;
+    _led_override.b = b;
+}
