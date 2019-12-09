@@ -96,7 +96,7 @@ void Sub::althold_run()
         // Sub vehicles do not stabilize roll/pitch/yaw when not auto-armed (i.e. on the ground, pilot has never raised throttle)
         attitude_control.set_throttle_out(0,true,g.throttle_filt);
         attitude_control.relax_attitude_controllers();
-        pos_control.relax_alt_hold_controllers(motors.get_throttle_hover());
+        pos_control.relax_alt_hold_controllers();
         last_roll = ahrs.roll_sensor;
         last_pitch = ahrs.pitch_sensor;
         last_yaw = ahrs.yaw_sensor;
