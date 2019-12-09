@@ -39,6 +39,8 @@
   #include <AP_Common/AP_Common.h>
   #include <AP_Vehicle/AP_Vehicle.h>
 
+  #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
+
   // To be replaced with macro saying if KDECAN library is included
   #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
     #include <AP_KDECAN/AP_KDECAN.h>
@@ -764,6 +766,26 @@ bool AP_Arming::can_checks(bool report)
                         return false;
                     }
                     break;
+#endif
+                }
+                case AP_BoardConfig_CAN::Protocol_Type_PiccoloCAN: {
+#if HAL_PICCOLO_CAN_ENABLE
+                    AP_PiccoloCAN *ap_pcan = AP_PiccoloCAN::get_pcan(i);
+
+                    if (ap_pcan != nullptr && !ap_pcan->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
+                        if (fail_msg == nullptr) {
+                            check_failed(ARMING_CHECK_SYSTEM, report, "PiccoloCAN failed");
+                        } else {
+                            check_failed(ARMING_CHECK_SYSTEM, report, "%s", fail_msg);
+                        }
+
+                        return false;
+                    }
+
+                    break;
+#else
+                    check_failed(ARMING_CHECK_SYSTEM, report, "PiccoloCAN not enabled");
+                    return false;
 #endif
                 }
                 case AP_BoardConfig_CAN::Protocol_Type_UAVCAN:
