@@ -1948,6 +1948,8 @@ const char *AP_Mission::Mission_Command::type() const {
         return "PayloadPlace";
     case MAV_CMD_DO_PARACHUTE:
         return "Parachute";
+    case MAV_CMD_DO_MOUNT_CONTROL:
+        return "MountControl";
 
     default:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
