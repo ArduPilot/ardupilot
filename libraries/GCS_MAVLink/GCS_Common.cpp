@@ -60,6 +60,7 @@
     #include <AP_KDECAN/AP_KDECAN.h>
   #endif
   #include <AP_ToshibaCAN/AP_ToshibaCAN.h>
+  #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
 #endif
 
 #include <AP_BattMonitor/AP_BattMonitor.h>
@@ -3463,6 +3464,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_preflight_can(const mavlink_command_long_
                 UNUSED_RESULT(start_stop); // prevent unused variable error
 #endif
             }
+            case AP_BoardConfig_CAN::Protocol_Type_PiccoloCAN:
+                // TODO - Run PiccoloCAN pre-flight checks here
+                break;
             case AP_BoardConfig_CAN::Protocol_Type_UAVCAN:
             case AP_BoardConfig_CAN::Protocol_Type_None:
             default:
@@ -4513,6 +4517,15 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
                     }
                     break;
                 }
+#if HAL_PICCOLO_CAN_ENABLE
+                case AP_BoardConfig_CAN::Protocol_Type_PiccoloCAN: {
+                    AP_PiccoloCAN *ap_pcan = AP_PiccoloCAN::get_pcan(i);
+                    if (ap_pcan != nullptr) {
+                        ap_pcan->send_esc_telemetry_mavlink(uint8_t(chan));
+                    }
+                    break;
+                }
+#endif
                 case AP_BoardConfig_CAN::Protocol_Type_UAVCAN:
                 case AP_BoardConfig_CAN::Protocol_Type_None:
                 default:
