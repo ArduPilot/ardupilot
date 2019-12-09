@@ -5,7 +5,7 @@
 
 #include <stdio.h>
 
-#define POLYFENCE_LOADER_DEBUGGING 1
+#define POLYFENCE_LOADER_DEBUGGING 0
 
 #if POLYFENCE_LOADER_DEBUGGING
 #define Debug(fmt, args ...)  do { gcs().send_text(MAV_SEVERITY_INFO, fmt, ## args); } while (0)
