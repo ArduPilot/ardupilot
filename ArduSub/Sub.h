@@ -338,6 +338,7 @@ private:
     // The cm/s we are moving up or down based on filtered data - Positive = UP
     int16_t climb_rate;
     float target_rangefinder_alt;      // desired altitude in cm above the ground
+    bool holding_depth;
 
     // Turn counter
     int32_t quarter_turn_count;
