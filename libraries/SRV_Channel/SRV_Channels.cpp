@@ -31,6 +31,7 @@
     #include <AP_KDECAN/AP_KDECAN.h>
   #endif
   #include <AP_ToshibaCAN/AP_ToshibaCAN.h>
+  #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
 #endif
 
 extern const AP_HAL::HAL& hal;
@@ -281,6 +282,16 @@ void SRV_Channels::push()
                 ap_tcan->update();
                 break;
             }
+#if HAL_PICCOLO_CAN_ENABLE
+            case AP_BoardConfig_CAN::Protocol_Type_PiccoloCAN: {
+                AP_PiccoloCAN *ap_pcan = AP_PiccoloCAN::get_pcan(i);
+                if (ap_pcan == nullptr) {
+                    continue;
+                }
+                ap_pcan->update();
+                break;
+            }
+#endif
             case AP_BoardConfig_CAN::Protocol_Type_None:
             default:
                 break;
