@@ -597,12 +597,10 @@ void GCS_MAVLINK::handle_param_value(const mavlink_message_t &msg)
 
 void GCS_MAVLINK::send_text(MAV_SEVERITY severity, const char *fmt, ...) const
 {
-    char text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
     va_list arg_list;
     va_start(arg_list, fmt);
-    hal.util->vsnprintf(text, sizeof(text), fmt, arg_list);
+    gcs().send_textv(severity, fmt, arg_list, (1<<chan));
     va_end(arg_list);
-    gcs().send_statustext(severity, (1<<chan), text);
 }
 
 void GCS_MAVLINK::handle_radio_status(const mavlink_message_t &msg, bool log_radio)
