@@ -102,6 +102,7 @@ static void show_timings(void)
 
     TIMEIT("micros()", AP_HAL::micros(), 200);
     TIMEIT("millis()", AP_HAL::millis(), 200);
+    TIMEIT("micros64()", AP_HAL::micros64(), 200);
 
     TIMEIT("fadd", v_out += v_f, 100);
     TIMEIT("fsub", v_out -= v_f, 100);
