@@ -1398,10 +1398,7 @@ struct PACKED log_Arm_Disarm {
     { LOG_OA_BENDYRULER_MSG, sizeof(log_OABendyRuler), \
       "OABR","QBHHfLLLL","TimeUS,Active,DesYaw,Yaw,Mar,DLat,DLng,OALat,OALng", "sbddmDUDU", "F----GGGG" }, \
     { LOG_OA_DIJKSTRA_MSG, sizeof(log_OADijkstra), \
-      "OADJ","QBBBBLLLL","TimeUS,State,Err,CurrPoint,TotPoints,DLat,DLng,OALat,OALng", "sbbbbDUDU", "F----GGGG" }
-
-// messages for more advanced boards
-#define LOG_EXTRA_STRUCTURES \
+      "OADJ","QBBBBLLLL","TimeUS,State,Err,CurrPoint,TotPoints,DLat,DLng,OALat,OALng", "sbbbbDUDU", "F----GGGG" }, \
     { LOG_IMU2_MSG, sizeof(log_IMU), \
       "IMU2",  IMU_FMT,     IMU_LABELS, IMU_UNITS, IMU_MULTS }, \
     { LOG_IMU3_MSG, sizeof(log_IMU), \
@@ -1583,7 +1580,13 @@ struct PACKED log_Arm_Disarm {
     { LOG_WHEELENCODER_MSG, sizeof(log_WheelEncoder), \
       "WENC",  "Qfbfb", "TimeUS,Dist0,Qual0,Dist1,Qual1", "sm-m-", "F0-0-" }, \
     { LOG_ADSB_MSG, sizeof(log_ADSB), \
-      "ADSB",  "QIiiiHHhH", "TimeUS,ICAO_address,Lat,Lng,Alt,Heading,Hor_vel,Ver_vel,Squark", "s-DUmhnn-", "F-GGCBCC-" }
+      "ADSB",  "QIiiiHHhH", "TimeUS,ICAO_address,Lat,Lng,Alt,Heading,Hor_vel,Ver_vel,Squark", "s-DUmhnn-", "F-GGCBCC-" }, \
+    { LOG_EVENT_MSG, sizeof(log_Event), \
+      "EV",   "QB",           "TimeUS,Id", "s-", "F-" }, \
+    { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm), \
+      "ARM", "QBH", "TimeUS,ArmState,ArmChecks", "s--", "F--" }, \
+    { LOG_ERROR_MSG, sizeof(log_Error), \
+      "ERR",   "QBB",         "TimeUS,Subsys,ECode", "s--", "F--" }
 
 
 #define LOG_SBP_STRUCTURES \
@@ -1593,16 +1596,10 @@ struct PACKED log_Arm_Disarm {
       "SBRH", "QQQQQQQQ", "TimeUS,msg_flag,1,2,3,4,5,6", "s--b----", "F--0----" }, \
     { LOG_MSG_SBPRAWM, sizeof(log_SbpRAWM), \
       "SBRM", "QQQQQQQQQQQQQQQ", "TimeUS,msg_flag,1,2,3,4,5,6,7,8,9,10,11,12,13", "s??????????????", "F??????????????" }, \
-    { LOG_EVENT_MSG, sizeof(log_Event), \
-      "EV",   "QB",           "TimeUS,Id", "s-", "F-" }, \
     { LOG_MSG_SBPEVENT, sizeof(log_SbpEvent), \
-      "SBRE", "QHIiBB", "TimeUS,GWk,GMS,ns_residual,level,quality", "s?????", "F?????" }, \
-    { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm), \
-      "ARM", "QBH", "TimeUS,ArmState,ArmChecks", "s--", "F--" }, \
-    { LOG_ERROR_MSG, sizeof(log_Error), \
-      "ERR",   "QBB",         "TimeUS,Subsys,ECode", "s--", "F--" }
+      "SBRE", "QHIiBB", "TimeUS,GWk,GMS,ns_residual,level,quality", "s?????", "F?????" }
 
-#define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_EXTRA_STRUCTURES, LOG_SBP_STRUCTURES
+#define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_SBP_STRUCTURES
 
 // message types 0 to 63 reserved for vehicle specific use
 
