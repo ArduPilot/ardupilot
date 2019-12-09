@@ -182,3 +182,6 @@ define BOARD_PWM_COUNT_DEFAULT 9
 
 define STM32_PWM_USE_ADVANCED TRUE
 
+# disable SMBUS and fuel battery monitors to save flash
+define HAL_BATTMON_SMBUS_ENABLE 0
+define HAL_BATTMON_FUEL_ENABLE 0
