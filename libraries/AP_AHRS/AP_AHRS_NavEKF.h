@@ -45,7 +45,7 @@ public:
     };
 
     // Constructor
-    AP_AHRS_NavEKF(NavEKF2 &_EKF2, NavEKF3 &_EKF3, uint8_t flags = FLAG_NONE);
+    AP_AHRS_NavEKF(uint8_t flags = FLAG_NONE);
 
     /* Do not allow copies */
     AP_AHRS_NavEKF(const AP_AHRS_NavEKF &other) = delete;
@@ -195,11 +195,11 @@ public:
 
     // return the amount of yaw angle change due to the last yaw angle reset in radians
     // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
-    uint32_t getLastYawResetAngle(float &yawAng) const override;
+    uint32_t getLastYawResetAngle(float &yawAng) override;
 
     // return the amount of NE position change in meters due to the last reset
     // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastPosNorthEastReset(Vector2f &pos) const override;
+    uint32_t getLastPosNorthEastReset(Vector2f &pos) override;
 
     // return the amount of NE velocity change in meters/sec due to the last reset
     // returns the time of the last reset or 0 if no reset has ever occurred
@@ -207,7 +207,7 @@ public:
 
     // return the amount of vertical position change due to the last reset in meters
     // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastPosDownReset(float &posDelta) const override;
+    uint32_t getLastPosDownReset(float &posDelta) override;
 
     // Resets the baro so that it reads zero at the current height
     // Resets the EKF height to zero
@@ -271,6 +271,10 @@ public:
     // check whether compass can be bypassed for arming check in case when external navigation data is available 
     bool is_ext_nav_used_for_yaw(void) const;
 
+    // these are only out here so vehicles can reference them for parameters
+    NavEKF2 EKF2;
+    NavEKF3 EKF3;
+
 private:
     enum class EKFType {
         NONE = 0,
@@ -286,8 +290,6 @@ private:
         return _ekf_flags & FLAG_ALWAYS_USE_EKF;
     }
 
-    NavEKF2 &EKF2;
-    NavEKF3 &EKF3;
     bool _ekf2_started;
     bool _ekf3_started;
     bool _force_ekf;
