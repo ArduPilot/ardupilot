@@ -426,11 +426,11 @@ void SPIDevice::test_clock_freq(void)
     hal.console->printf("Waiting for USB\n");
     for (uint8_t i=0; i<3; i++) {
         hal.scheduler->delay(1000);
-        hal.console->printf("Waiting %u\n", AP_HAL::millis());
+        hal.console->printf("Waiting %u\n", (unsigned)AP_HAL::millis());
     }
     hal.console->printf("CLOCKS=\n");
     for (uint8_t i=0; i<ARRAY_SIZE(bus_clocks); i++) {
-        hal.console->printf("%u:%u ", i+1, bus_clocks[i]);
+        hal.console->printf("%u:%u ", i+1, (unsigned)bus_clocks[i]);
     }
     hal.console->printf("\n");
 
