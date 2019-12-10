@@ -154,11 +154,11 @@ void Sub::init_ardupilot()
         // We only have onboard baro
         // No external underwater depth sensor detected
         barometer.set_primary_baro(0);
-        EKF2.set_baro_alt_noise(10.0f); // Readings won't correspond with rest of INS
-        EKF3.set_baro_alt_noise(10.0f);
+        ahrs.EKF2.set_baro_alt_noise(10.0f); // Readings won't correspond with rest of INS
+        ahrs.EKF3.set_baro_alt_noise(10.0f);
     } else {
-        EKF2.set_baro_alt_noise(0.1f);
-        EKF3.set_baro_alt_noise(0.1f);
+        ahrs.EKF2.set_baro_alt_noise(0.1f);
+        ahrs.EKF3.set_baro_alt_noise(0.1f);
     }
 
     leak_detector.init();
