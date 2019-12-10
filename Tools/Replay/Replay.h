@@ -62,6 +62,13 @@ public:
     virtual bool set_mode(const uint8_t new_mode, const ModeReason reason) override { return true; }
     virtual uint8_t get_mode() const override { return 0; }
 
+    AP_InertialSensor ins;
+    AP_Baro barometer;
+    AP_GPS gps;
+    Compass compass;
+    AP_SerialManager serial_manager;
+    RangeFinder rng;
+    AP_AHRS_NavEKF ahrs;
     AP_Vehicle::FixedWing aparm;
     AP_Airspeed airspeed;
     AP_Int32 unused; // logging is magic for Replay; this is unused
