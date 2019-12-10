@@ -144,11 +144,11 @@ public:
         return ahrs.get_accel_ef_blended();
     }
 
-    uint32_t getLastPosNorthEastReset(Vector2f &pos) const WARN_IF_UNUSED {
+    uint32_t getLastPosNorthEastReset(Vector2f &pos) WARN_IF_UNUSED {
         return ahrs.getLastPosNorthEastReset(pos);
     }
 
-    uint32_t getLastPosDownReset(float &posDelta) const WARN_IF_UNUSED {
+    uint32_t getLastPosDownReset(float &posDelta) WARN_IF_UNUSED {
         return ahrs.getLastPosDownReset(posDelta);
     }
 

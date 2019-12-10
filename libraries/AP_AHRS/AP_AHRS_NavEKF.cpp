@@ -35,12 +35,8 @@
 extern const AP_HAL::HAL& hal;
 
 // constructor
-AP_AHRS_NavEKF::AP_AHRS_NavEKF(NavEKF2 &_EKF2,
-                               NavEKF3 &_EKF3,
-                               uint8_t flags) :
+AP_AHRS_NavEKF::AP_AHRS_NavEKF(uint8_t flags) :
     AP_AHRS_DCM(),
-    EKF2(_EKF2),
-    EKF3(_EKF3),
     _ekf_flags(flags)
 {
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
@@ -1447,7 +1443,7 @@ bool AP_AHRS_NavEKF::attitudes_consistent(char *failure_msg, const uint8_t failu
 
 // return the amount of yaw angle change due to the last yaw angle reset in radians
 // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
-uint32_t AP_AHRS_NavEKF::getLastYawResetAngle(float &yawAng) const
+uint32_t AP_AHRS_NavEKF::getLastYawResetAngle(float &yawAng)
 {
     switch (ekf_type()) {
 
@@ -1470,7 +1466,7 @@ uint32_t AP_AHRS_NavEKF::getLastYawResetAngle(float &yawAng) const
 
 // return the amount of NE position change in metres due to the last reset
 // returns the time of the last reset or 0 if no reset has ever occurred
-uint32_t AP_AHRS_NavEKF::getLastPosNorthEastReset(Vector2f &pos) const
+uint32_t AP_AHRS_NavEKF::getLastPosNorthEastReset(Vector2f &pos)
 {
     switch (ekf_type()) {
 
@@ -1517,7 +1513,7 @@ uint32_t AP_AHRS_NavEKF::getLastVelNorthEastReset(Vector2f &vel) const
 
 // return the amount of vertical position change due to the last reset in meters
 // returns the time of the last reset or 0 if no reset has ever occurred
-uint32_t AP_AHRS_NavEKF::getLastPosDownReset(float &posDelta) const
+uint32_t AP_AHRS_NavEKF::getLastPosDownReset(float &posDelta)
 {
     switch (ekf_type()) {
     case EKFType::NONE:
