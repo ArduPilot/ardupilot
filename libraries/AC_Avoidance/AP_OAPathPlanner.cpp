@@ -57,11 +57,9 @@ const AP_Param::GroupInfo AP_OAPathPlanner::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("MARGIN_MAX", 3, AP_OAPathPlanner, _margin_max, OA_MARGIN_MAX_DEFAULT),
 
-#if !HAL_MINIMIZE_FEATURES
     // @Group: DB_
     // @Path: AP_OADatabase.cpp
     AP_SUBGROUPINFO(_oadatabase, "DB_", 4, AP_OAPathPlanner, AP_OADatabase),
-#endif
 
     AP_GROUPEND
 };
@@ -195,7 +193,6 @@ AP_OAPathPlanner::OA_RetState AP_OAPathPlanner::mission_avoidance(const Location
 void AP_OAPathPlanner::avoidance_thread()
 {
     while (true) {
-#if !HAL_MINIMIZE_FEATURES
 
         // if database queue needs attention, service it faster
         if (_oadatabase.process_queue()) {
@@ -211,10 +208,6 @@ void AP_OAPathPlanner::avoidance_thread()
         avoidance_latest_ms = now;
 
         _oadatabase.update();
-#else
-        hal.scheduler->delay(100);
-        const uint32_t now = AP_HAL::millis();
-#endif
 
         Location origin_new;
         Location destination_new;

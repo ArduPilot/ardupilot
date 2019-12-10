@@ -355,7 +355,6 @@ bool AP_OABendyRuler::calc_margin_from_inclusion_and_exclusion_circles(const Loc
 // on success returns true and updates margin
 bool AP_OABendyRuler::calc_margin_from_object_database(const Location &start, const Location &end, float &margin)
 {
-#if !HAL_MINIMIZE_FEATURES
     // exit immediately if db is empty
     AP_OADatabase *oaDb = AP::oadatabase();
     if (oaDb == nullptr || !oaDb->healthy()) {
@@ -386,6 +385,5 @@ bool AP_OABendyRuler::calc_margin_from_object_database(const Location &start, co
         return true;
     }
 
-#endif
     return false;
 }
