@@ -28,8 +28,8 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
 
     // @Param: TAIL_TYPE
     // @DisplayName: Tail Type
-    // @Description: Tail type selection.  Simpler yaw controller used if external gyro is selected
-    // @Values: 0:Servo only,1:Servo with ExtGyro,2:DirectDrive VarPitch,3:DirectDrive FixedPitch
+    // @Description: Tail type selection.  Simpler yaw controller used if external gyro is selected. Direct Drive Variable Pitch is used for tails that have a motor that is governed at constant speed by an ESC.  Tail pitch is still accomplished with a servo.  Direct Drive Fixed Pitch (DDFP) CW is used for helicopters with a rotor that spins clockwise when viewed from above. Direct Drive Fixed Pitch (DDFP) CCW is used for helicopters with a rotor that spins counter clockwise when viewed from above. In both DDFP cases, no servo is used for the tail and the tail motor esc is controlled by the yaw axis.
+    // @Values: 0:Servo only,1:Servo with ExtGyro,2:DirectDrive VarPitch,3:DirectDrive FixedPitch CW,4:DirectDrive FixedPitch CCW
     // @User: Standard
     AP_GROUPINFO("TAIL_TYPE", 4, AP_MotorsHeli_Single, _tail_type, AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO),
 
@@ -488,7 +488,7 @@ void AP_MotorsHeli_Single::output_to_motors()
     if (_swashplate.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
         rc_write_swash(AP_MOTORS_MOT_5, _servo5_out);
     }
-    if (_tail_type != AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH){
+    if (_tail_type != AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CW && _tail_type != AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CCW){
         rc_write_angle(AP_MOTORS_MOT_4, _servo4_out * YAW_SERVO_MAX_ANGLE);
     }
     if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
@@ -500,18 +500,22 @@ void AP_MotorsHeli_Single::output_to_motors()
         }
     }
 
+    if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CCW) {
+        _servo4_out = -_servo4_out;
+    }
+
     switch (_spool_state) {
         case SpoolState::SHUT_DOWN:
             // sends minimum values out to the motors
             update_motor_control(ROTOR_CONTROL_STOP);
-            if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH){
+            if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CW || _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CCW){
                 rc_write_angle(AP_MOTORS_MOT_4, -YAW_SERVO_MAX_ANGLE);
             }
             break;
         case SpoolState::GROUND_IDLE:
             // sends idle output to motors when armed. rotor could be static or turning (autorotation)
             update_motor_control(ROTOR_CONTROL_IDLE);
-            if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH){
+            if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CW || _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CCW){
                 rc_write_angle(AP_MOTORS_MOT_4, -YAW_SERVO_MAX_ANGLE);
             }
             break;
@@ -519,7 +523,7 @@ void AP_MotorsHeli_Single::output_to_motors()
         case SpoolState::THROTTLE_UNLIMITED:
             // set motor output based on thrust requests
             update_motor_control(ROTOR_CONTROL_ACTIVE);
-            if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH){
+            if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CW || _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CCW){
                 // constrain output so that motor never fully stops
                  _servo4_out = constrain_float(_servo4_out, -0.9f, 1.0f);
                 // output yaw servo to tail rsc
@@ -529,7 +533,7 @@ void AP_MotorsHeli_Single::output_to_motors()
         case SpoolState::SPOOLING_DOWN:
             // sends idle output to motors and wait for rotor to stop
             update_motor_control(ROTOR_CONTROL_IDLE);
-            if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH){
+            if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CW || _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CCW){
                 rc_write_angle(AP_MOTORS_MOT_4, -YAW_SERVO_MAX_ANGLE);
             }
             break;
