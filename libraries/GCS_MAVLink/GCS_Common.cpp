@@ -24,6 +24,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_RangeFinder/AP_RangeFinder_Backend.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Camera/AP_Camera.h>
@@ -39,6 +40,7 @@
 #include <AP_OpticalFlow/OpticalFlow.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_EFI/AP_EFI.h>
+#include <AP_Proximity/AP_Proximity.h>
 
 #include <stdio.h>
 
@@ -3044,6 +3046,27 @@ MAV_RESULT GCS_MAVLINK::handle_fixed_mag_cal_yaw(const mavlink_command_long_t &p
                                      packet.param4);
 }
 
+void GCS_MAVLINK::handle_distance_sensor(const mavlink_message_t &msg)
+{
+    RangeFinder *rangefinder = AP::rangefinder();
+    if (rangefinder != nullptr) {
+        rangefinder->handle_msg(msg);
+    }
+
+    AP_Proximity *proximity = AP::proximity();
+    if (proximity != nullptr) {
+        proximity->handle_msg(msg);
+    }
+}
+
+void GCS_MAVLINK::handle_obstacle_distance(const mavlink_message_t &msg)
+{
+    AP_Proximity *proximity = AP::proximity();
+    if (proximity != nullptr) {
+        proximity->handle_msg(msg);
+    }
+}
+
 /*
   handle messages which don't require vehicle specific data
  */
@@ -3218,7 +3241,17 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_OPTICAL_FLOW:
         handle_optical_flow(msg);
         break;
+
+    case MAVLINK_MSG_ID_DISTANCE_SENSOR:
+        handle_distance_sensor(msg);
+        break;
+
+    case MAVLINK_MSG_ID_OBSTACLE_DISTANCE:
+        handle_obstacle_distance(msg);
+        break;
+
     }
+
 }
 
 void GCS_MAVLINK::handle_common_mission_message(const mavlink_message_t &msg)
