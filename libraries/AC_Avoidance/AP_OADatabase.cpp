@@ -13,8 +13,6 @@
 
 #include "AP_OADatabase.h"
 
-#if !HAL_MINIMIZE_FEATURES
-
 #include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Math/AP_Math.h>
@@ -439,7 +437,6 @@ void AP_OADatabase::send_adsb_vehicle(mavlink_channel_t chan, uint16_t interval_
 
 // singleton instance
 AP_OADatabase *AP_OADatabase::_singleton;
-#endif //!HAL_MINIMIZE_FEATURES
 
 namespace AP {
 AP_OADatabase *oadatabase()
