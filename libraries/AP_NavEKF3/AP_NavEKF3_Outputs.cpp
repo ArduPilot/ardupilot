@@ -551,7 +551,7 @@ void  NavEKF3_core::getFilterGpsStatus(nav_gps_status &faults) const
 }
 
 // send an EKF_STATUS message to GCS
-void NavEKF3_core::send_status_report(mavlink_channel_t chan)
+void NavEKF3_core::send_status_report(mavlink_channel_t chan) const
 {
     // prepare flags
     uint16_t flags = 0;
