@@ -91,9 +91,7 @@ private:
     AP_OABendyRuler *_oabendyruler; // Bendy Ruler algorithm
     AP_OADijkstra *_oadijkstra;     // Dijkstra's algorithm
     AP_OADatabase _oadatabase;      // Database of dynamic objects to avoid
-#if !HAL_MINIMIZE_FEATURES
     uint32_t avoidance_latest_ms;   // last time Dijkstra's or BendyRuler algorithms ran
-#endif
 
     static AP_OAPathPlanner *_singleton;
 };
