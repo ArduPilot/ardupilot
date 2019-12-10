@@ -334,11 +334,11 @@ const AP_Param::Info Rover::var_info[] = {
 #if AP_AHRS_NAVEKF_AVAILABLE
     // @Group: EK2_
     // @Path: ../libraries/AP_NavEKF2/AP_NavEKF2.cpp
-    GOBJECTN(EKF2, NavEKF2, "EK2_", NavEKF2),
+    GOBJECTN(ahrs.EKF2, NavEKF2, "EK2_", NavEKF2),
 
     // @Group: EK3_
     // @Path: ../libraries/AP_NavEKF3/AP_NavEKF3.cpp
-    GOBJECTN(EKF3, NavEKF3, "EK3_", NavEKF3),
+    GOBJECTN(ahrs.EKF3, NavEKF3, "EK3_", NavEKF3),
 #endif
 
     // @Group: RPM
