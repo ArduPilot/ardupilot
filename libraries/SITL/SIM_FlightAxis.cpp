@@ -408,7 +408,7 @@ void FlightAxis::update(const struct sitl_input &input)
     }
 
     /*
-      the queternion convention in realflight seems to have Z negative
+      the quaternion convention in realflight seems to have Z negative
      */
     Quaternion quat(state.m_orientationQuaternion_W,
                     state.m_orientationQuaternion_Y,
@@ -453,13 +453,22 @@ void FlightAxis::update(const struct sitl_input &input)
     airspeed = state.m_airspeed_MPS;
 
     /* for pitot airspeed we need the airspeed along the X axis. We
-       can't get that from m_airspeed_MPS, so instead we canculate it
+       can't get that from m_airspeed_MPS, so instead we calculate it
        from wind vector and ground speed
      */
     Vector3f m_wind_ef(-state.m_windY_MPS,-state.m_windX_MPS,-state.m_windZ_MPS);
     Vector3f airspeed_3d_ef = m_wind_ef + velocity_ef;
     Vector3f airspeed3d = dcm.mul_transpose(airspeed_3d_ef);
 
+    if (ahrs_orientation != nullptr) {
+        enum Rotation imu_rotation = (enum Rotation)ahrs_orientation->get();
+
+        if (imu_rotation != ROTATION_NONE) {
+            Matrix3f rot;
+            rot.from_rotation(imu_rotation);
+            airspeed3d = airspeed3d * rot.transposed();
+        }
+    }
     airspeed_pitot = MAX(airspeed3d.x,0);
 
 #if 0
