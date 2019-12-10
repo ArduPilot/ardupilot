@@ -1038,14 +1038,6 @@ void GCS_MAVLINK_Rover::handleMessage(const mavlink_message_t &msg)
             break;
         }
 
-    case MAVLINK_MSG_ID_DISTANCE_SENSOR:
-        rover.rangefinder.handle_msg(msg);
-        rover.g2.proximity.handle_msg(msg);
-        break;
-    case MAVLINK_MSG_ID_OBSTACLE_DISTANCE:
-        rover.g2.proximity.handle_msg(msg);
-        break;
-
     default:
         handle_common_message(msg);
         break;
