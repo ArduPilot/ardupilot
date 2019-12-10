@@ -10,6 +10,8 @@ FUNCS:=$(abspath $(CDIR))/functions.list
 
 COMPONENT_OWNBUILDTARGET := true
 
+COMPONENT_ADD_LDFRAGMENTS += test.lf
+
 build:$(COMPONENT_LIBRARY)
 
 $(COMPONENT_LIBRARY):$(A) $(B) $(FUNCS)

@@ -1,0 +1,4 @@
+[mapping]
+archive: libAPMrover2_libs.a
+entries:
+    I2CDevice (noflash)     # places all my_src1 code/read-only data under IRAM/DRAM
