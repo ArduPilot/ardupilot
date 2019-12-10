@@ -34,7 +34,7 @@ class NavEKF3 {
     friend class NavEKF3_core;
 
 public:
-    NavEKF3(const AP_AHRS *ahrs);
+    NavEKF3();
 
     /* Do not allow copies */
     NavEKF3(const NavEKF3 &other) = delete;
