@@ -138,6 +138,9 @@ private:
                      double speedN, double speedE, double speedD,
                      double yaw, bool have_lock);
     void _update_airspeed(float airspeed);
+    //arspd fault
+    void _get_arspd_fault();
+
     void _update_gps_instance(SITL::SITL::GPSType gps_type, const struct gps_data *d, uint8_t instance);
     void _check_rc_input(void);
     bool _read_rc_sitl_input();

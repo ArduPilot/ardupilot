@@ -5,6 +5,7 @@
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Math/AP_Math.h>
+#include <iostream>
 
 class AP_Airspeed_Backend;
 
@@ -63,6 +64,7 @@ public:
 
     // return the unfiltered airspeed in m/s
     float get_raw_airspeed(uint8_t i) const {
+        //std::cout<<"unfiltered airspeed in m/s = "<<state[i].raw_airspeed<<std::endl;
         return state[i].raw_airspeed;
     }
     float get_raw_airspeed(void) const { return get_raw_airspeed(primary); }
