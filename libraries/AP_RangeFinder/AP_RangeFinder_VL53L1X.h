@@ -1280,6 +1280,7 @@ private:
     bool write_register16(uint16_t reg, uint16_t value) WARN_IF_UNUSED;
     bool write_register32(uint16_t reg, uint32_t value) WARN_IF_UNUSED;
     bool dataReady(void);
+    bool reset(void) WARN_IF_UNUSED;
     bool setDistanceMode(DistanceMode distance_mode) WARN_IF_UNUSED;
     bool setMeasurementTimingBudget(uint32_t budget_us) WARN_IF_UNUSED;
     bool getMeasurementTimingBudget(uint32_t &budget) WARN_IF_UNUSED;
