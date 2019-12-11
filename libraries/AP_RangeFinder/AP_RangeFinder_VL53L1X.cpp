@@ -42,7 +42,7 @@ AP_RangeFinder_VL53L1X::AP_RangeFinder_VL53L1X(RangeFinder::RangeFinder_State &_
    trying to take a reading on I2C. If we get a result the sensor is
    there.
 */
-AP_RangeFinder_Backend *AP_RangeFinder_VL53L1X::detect(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+AP_RangeFinder_Backend *AP_RangeFinder_VL53L1X::detect(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev, DistanceMode mode)
 {
     if (!dev) {
         return nullptr;
@@ -58,7 +58,7 @@ AP_RangeFinder_Backend *AP_RangeFinder_VL53L1X::detect(RangeFinder::RangeFinder_
 
     sensor->dev->get_semaphore()->take_blocking();
 
-    if (!sensor->check_id() || !sensor->init()) {
+    if (!sensor->check_id() || !sensor->init(mode)) {
         sensor->dev->get_semaphore()->give();
         delete sensor;
         return nullptr;
@@ -101,7 +101,7 @@ bool AP_RangeFinder_VL53L1X::reset(void) {
 /*
   initialise sensor
  */
-bool AP_RangeFinder_VL53L1X::init()
+bool AP_RangeFinder_VL53L1X::init(DistanceMode mode)
 {
     // we need to do resets and delays in order to configure the sensor, don't do this if we are trying to fast boot
     if (hal.util->was_watchdog_armed()) {
@@ -156,7 +156,7 @@ bool AP_RangeFinder_VL53L1X::init()
           write_register16(DSS_CONFIG__MANUAL_EFFECTIVE_SPADS_SELECT, 200 << 8) &&
           write_register(DSS_CONFIG__ROI_MODE_CONTROL, 2) && // REQUESTED_EFFFECTIVE_SPADS
           read_register16(MM_CONFIG__OUTER_OFFSET_MM, mm_config_outer_offset_mm) &&
-          setDistanceMode(Long) &&
+          setDistanceMode(mode) &&
           setMeasurementTimingBudget(40000) &&
           // the API triggers this change in VL53L1_init_and_start_range() once a
           // measurement is started; assumes MM1 and MM2 are disabled
@@ -185,7 +185,7 @@ bool AP_RangeFinder_VL53L1X::setDistanceMode(DistanceMode distance_mode)
     }
 
     switch (distance_mode) {
-        case Short:
+      case DistanceMode::Short:
             // from VL53L1_preset_mode_standard_ranging_short_range()
 
             if (!(// timing config
@@ -203,7 +203,7 @@ bool AP_RangeFinder_VL53L1X::setDistanceMode(DistanceMode distance_mode)
 
             break;
 
-        case Medium:
+        case DistanceMode::Medium:
             // from VL53L1_preset_mode_standard_ranging()
 
             if (!(// timing config
@@ -221,7 +221,7 @@ bool AP_RangeFinder_VL53L1X::setDistanceMode(DistanceMode distance_mode)
 
             break;
 
-        case Long:
+        case DistanceMode::Long:
             // from VL53L1_preset_mode_standard_ranging_long_range()
 
             if (!(// timing config
