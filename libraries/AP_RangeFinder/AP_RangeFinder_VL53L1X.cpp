@@ -86,14 +86,32 @@ bool AP_RangeFinder_VL53L1X::check_id(void)
     return true;
 }
 
+bool AP_RangeFinder_VL53L1X::reset(void) {
+    if (!write_register(SOFT_RESET, 0x00)) {
+        return false;
+    }
+    hal.scheduler->delay_microseconds(100);
+    if (!write_register(SOFT_RESET, 0x01)) {
+        return false;
+    }
+    hal.scheduler->delay(1000);
+    return true;
+}
+
 /*
   initialise sensor
  */
 bool AP_RangeFinder_VL53L1X::init()
 {
+    // we need to do resets and delays in order to configure the sensor, don't do this if we are trying to fast boot
+    if (hal.util->was_watchdog_armed()) {
+        return false;
+    }
+
     uint8_t pad_i2c_hv_extsup_config = 0;
     uint16_t mm_config_outer_offset_mm = 0;
-    if (!(// setup for 2.8V operation
+    if (!(reset() && // reset the chip, we make assumptions later on that we are on a clean power on of the sensor
+          // setup for 2.8V operation
           read_register(PAD_I2C_HV__EXTSUP_CONFIG, pad_i2c_hv_extsup_config) &&
           write_register(PAD_I2C_HV__EXTSUP_CONFIG,
                          pad_i2c_hv_extsup_config | 0x01) &&
