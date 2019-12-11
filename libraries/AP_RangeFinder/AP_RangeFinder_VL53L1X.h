@@ -8,8 +8,10 @@ class AP_RangeFinder_VL53L1X : public AP_RangeFinder_Backend
 {
 
 public:
+    enum class DistanceMode { Short, Medium, Long, Unknown };
+
     // static detection function
-    static AP_RangeFinder_Backend *detect(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params, AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev);
+    static AP_RangeFinder_Backend *detect(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params, AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev, DistanceMode mode);
 
     // update state
     void update(void) override;
@@ -1242,7 +1244,7 @@ private:
     // constructor
     AP_RangeFinder_VL53L1X(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
 
-    bool init();
+    bool init(DistanceMode mode);
     void timer();
 
     // check sensor ID
@@ -1267,7 +1269,6 @@ private:
     // used in DSS calculations
     static const uint16_t TargetRate = 0x0A00;
 
-    enum DistanceMode { Short, Medium, Long, Unknown };
     uint16_t fast_osc_frequency;
     uint16_t osc_calibrate_val;
     uint32_t sum_mm;

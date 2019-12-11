@@ -77,6 +77,7 @@ public:
         BenewakeTFminiPlus = 25,
         Lanbao = 26,
         BenewakeTF03 = 27,
+        VL53L1X_Short = 28,
     };
 
     enum class Function {
