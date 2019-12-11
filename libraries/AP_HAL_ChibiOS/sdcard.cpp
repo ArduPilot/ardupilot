@@ -79,9 +79,10 @@ bool sdcard_init()
         printf("Successfully mounted SDCard (slowdown=%u)\n", (unsigned)sd_slowdown);
 
         // Create APM Directory if needed
-        AP::FS().mkdir("/APM");
-        sdcard_running = true;
-        return true;
+        if (AP::FS().mkdir("/APM") == 0) {
+            sdcard_running = true;
+            return true;
+        }
     }
 #elif HAL_USE_MMC_SPI
     if (sdcard_running) {
@@ -124,8 +125,9 @@ bool sdcard_init()
         printf("Successfully mounted SDCard (slowdown=%u)\n", (unsigned)sd_slowdown);
 
         // Create APM Directory if needed
-        AP::FS().mkdir("/APM");
-        return true;
+        if (AP::FS().mkdir("/APM") == 0) {
+            return true;
+        }
     }
 #endif
     sdcard_running = false;
