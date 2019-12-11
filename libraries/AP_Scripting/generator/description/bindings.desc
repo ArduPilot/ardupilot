@@ -54,6 +54,7 @@ singleton AP_BattMonitor method pack_capacity_mah int32_t uint8_t 0 ud->num_inst
 singleton AP_BattMonitor method has_failsafed boolean
 singleton AP_BattMonitor method overpower_detected boolean uint8_t 0 ud->num_instances()
 singleton AP_BattMonitor method get_temperature boolean float'Null uint8_t 0 ud->num_instances()
+singleton AP_BattMonitor method get_cycle_count boolean uint8_t 0 ud->num_instances() uint16_t'Null
 
 include AP_GPS/AP_GPS.h
 
