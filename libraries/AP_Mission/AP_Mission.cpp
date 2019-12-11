@@ -697,6 +697,18 @@ MAV_MISSION_RESULT AP_Mission::sanity_check_params(const mavlink_mission_item_in
         isinf(packet.param4)) {
         return MAV_MISSION_INVALID_PARAM4;
     }
+    if (((nan_mask & (1 << 4)) && isnan(packet.x)) ||
+        isinf(packet.x)) {
+        return MAV_MISSION_INVALID_PARAM5_X;
+    }
+    if (((nan_mask & (1 << 5)) && isnan(packet.y)) ||
+        isinf(packet.y)) {
+        return MAV_MISSION_INVALID_PARAM6_Y;
+    }
+    if (((nan_mask & (1 << 6)) && isnan(packet.z)) ||
+        isinf(packet.z)) {
+        return MAV_MISSION_INVALID_PARAM7;
+    }
     return MAV_MISSION_ACCEPTED;
 }
 
