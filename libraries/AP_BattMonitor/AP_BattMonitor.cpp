@@ -446,6 +446,15 @@ bool AP_BattMonitor::get_temperature(float &temperature, const uint8_t instance)
     }
 }
 
+// return true if cycle count can be provided and fills in cycles argument
+bool AP_BattMonitor::get_cycle_count(uint8_t instance, uint16_t &cycles) const
+{
+    if (instance >= AP_BATT_MONITOR_MAX_INSTANCES || (drivers[instance] == nullptr)) {
+        return false;
+    }
+    return drivers[instance]->get_cycle_count(cycles);
+}
+
 bool AP_BattMonitor::arming_checks(size_t buflen, char *buffer) const
 {
     char temp_buffer[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] {};
