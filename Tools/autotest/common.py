@@ -453,6 +453,10 @@ class AutoTest(ABC):
         self.stop_SITL()
         self.start_SITL(customisations=customisations, wipe=False)
         self.wait_heartbeat()
+        # MAVProxy only checks the streamrates once every 15 seconds.
+        # Encourage it:
+        self.set_streamrate(self.sitl_streamrate()+1)
+        self.set_streamrate(self.sitl_streamrate())
         # we also need to wait for MAVProxy to requests streams again
         # - in particular, RC_CHANNELS.
         m = self.mav.recv_match(type='RC_CHANNELS', blocking=True, timeout=15)
@@ -463,6 +467,8 @@ class AutoTest(ABC):
         self.progress("Resetting SITL commandline to default")
         self.stop_SITL()
         self.start_SITL(wipe=False)
+        self.set_streamrate(self.sitl_streamrate()+1)
+        self.set_streamrate(self.sitl_streamrate())
         self.progress("Reset SITL commandline to default")
 
     def stop_SITL(self):
