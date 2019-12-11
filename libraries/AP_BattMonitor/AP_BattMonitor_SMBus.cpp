@@ -13,10 +13,21 @@ AP_BattMonitor_SMBus::AP_BattMonitor_SMBus(AP_BattMonitor &mon,
     _params._pack_capacity = 0;
 }
 
-void AP_BattMonitor_SMBus::init(void) {
+void AP_BattMonitor_SMBus::init(void)
+{
     if (_dev) {
         _dev->register_periodic_callback(100000, FUNCTOR_BIND_MEMBER(&AP_BattMonitor_SMBus::timer, void));
     }
+}
+
+// return true if cycle count can be provided and fills in cycles argument
+bool AP_BattMonitor_SMBus::get_cycle_count(uint16_t &cycles) const
+{
+    if (!_has_cycle_count) {
+        return false;
+    }
+    cycles = _cycle_count;
+    return true;
 }
 
 /// read the battery_voltage and current, should be called at 10hz
@@ -83,7 +94,8 @@ bool AP_BattMonitor_SMBus::read_temp(void)
 
 // reads the serial number if it's not already known
 // returns true if the read was successful or the number was already known
-bool AP_BattMonitor_SMBus::read_serial_number(void) {
+bool AP_BattMonitor_SMBus::read_serial_number(void)
+{
     uint16_t data;
 
     // don't recheck the serial number if we already have it
@@ -95,6 +107,16 @@ bool AP_BattMonitor_SMBus::read_serial_number(void) {
     }
 
     return false;
+}
+
+// reads the battery's cycle count
+void AP_BattMonitor_SMBus::read_cycle_count()
+{
+    // only read cycle count once
+    if (_has_cycle_count) {
+        return;
+    }
+    _has_cycle_count = read_word(BATTMONITOR_SMBUS_CYCLE_COUNT, _cycle_count);
 }
 
 // read word from register
