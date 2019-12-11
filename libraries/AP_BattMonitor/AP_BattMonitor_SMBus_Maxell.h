@@ -6,6 +6,8 @@
 #include "AP_BattMonitor_SMBus.h"
 #include <AP_HAL/I2CDevice.h>
 
+#define BATTMONITOR_SMBUS_MAXELL_NUM_CELLS 6
+
 class AP_BattMonitor_SMBus_Maxell : public AP_BattMonitor_SMBus
 {
 public:
@@ -28,4 +30,5 @@ private:
     uint8_t read_block(uint8_t reg, uint8_t* data, bool append_zero) const;
 
     uint8_t _pec_confirmed; // count of the number of times PEC has been confirmed as working
+    uint32_t _last_cell_update_ms[BATTMONITOR_SMBUS_MAXELL_NUM_CELLS];  // system time of last successful read of cell voltage
 };
