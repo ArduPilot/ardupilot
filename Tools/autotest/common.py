@@ -420,7 +420,7 @@ class AutoTest(ABC):
 
             self.mavproxy.send("set streamrate %u\n" % (streamrate))
             self.mavproxy.send("set streamrate\n")
-            self.mavproxy.expect('.*streamrate ([0-9]+)', timeout=1)
+            self.mavproxy.expect('.*streamrate ((?:-)?[0-9]+)', timeout=1)
             rate = self.mavproxy.match.group(1)
             print("rate: %s" % str(rate))
             if int(rate) == int(streamrate):
