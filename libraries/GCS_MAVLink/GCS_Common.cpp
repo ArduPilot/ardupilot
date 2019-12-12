@@ -410,7 +410,8 @@ void GCS_MAVLINK::send_ahrs2()
 
 void GCS_MAVLINK::send_ahrs3()
 {
-#if AP_AHRS_NAVEKF_AVAILABLE
+#if AP_AHRS_NAVEKF_AVAILABLE && HAL_NAVEKF2_AVAILABLE
+
     const NavEKF2 &ekf2 = AP::ahrs_navekf().get_NavEKF2_const();
     if (ekf2.activeCores() > 0 &&
         HAVE_PAYLOAD_SPACE(chan, AHRS3)) {
