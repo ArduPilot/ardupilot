@@ -224,9 +224,44 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
         }
         #endif // HELI_FRAME
 
-        // check for missing terrain data
-        if (!pre_arm_terrain_check(display_failure)) {
-            return false;
+        // checks when using range finder for RTL
+        if (copter.mode_rtl.get_alt_type() == ModeRTL::RTLAltType::RTL_ALTTYPE_TERRAIN) {
+            // get terrain source from wpnav
+            switch (copter.wp_nav->get_terrain_source()) {
+            case AC_WPNav::TerrainSource::TERRAIN_UNAVAILABLE:
+                check_failed(ARMING_CHECK_PARAMETERS, display_failure, "RTL_ALT_TYPE=1 but no terrain data");
+                return false;
+                break;
+            case AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER:
+                if (!copter.rangefinder_state.enabled || !copter.rangefinder.has_orientation(ROTATION_PITCH_270)) {
+                    check_failed(ARMING_CHECK_PARAMETERS, display_failure, "RTL_ALT_TYPE=1 but no rangefinder");
+                    return false;
+                }
+                // check if RTL_ALT is higher than rangefinder's max range
+                if (copter.g.rtl_altitude > copter.rangefinder.max_distance_cm_orient(ROTATION_PITCH_270)) {
+                    check_failed(ARMING_CHECK_PARAMETERS, display_failure, "RTL_ALT_TYPE=1 but RTL_ALT>RNGFND_MAX_CM");
+                    return false;
+                }
+                break;
+            case AC_WPNav::TerrainSource::TERRAIN_FROM_TERRAINDATABASE:
+#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
+                if (!copter.terrain.enabled()) {
+                    check_failed(ARMING_CHECK_PARAMETERS, display_failure, "RTL_ALT_TYPE=1 but terrain disabled");
+                    return false;
+                }
+                // check terrain data is loaded
+                uint16_t terr_pending, terr_loaded;
+                copter.terrain.get_statistics(terr_pending, terr_loaded);
+                if (terr_pending != 0) {
+                    check_failed(ARMING_CHECK_PARAMETERS, display_failure, "RTL_ALT_TYPE=1, waiting for terrain data");
+                    return false;
+                }
+#else
+                check_failed(ARMING_CHECK_PARAMETERS, display_failure, "RTL_ALT_TYPE=1 but terrain disabled");
+                return false;
+#endif
+                break;
+            }
         }
 
         // check adsb avoidance failsafe
@@ -423,36 +458,6 @@ bool AP_Arming_Copter::pre_arm_ekf_attitude_check()
     nav_filter_status filt_status = copter.inertial_nav.get_filter_status();
 
     return filt_status.flags.attitude;
-}
-
-// check we have required terrain data
-bool AP_Arming_Copter::pre_arm_terrain_check(bool display_failure)
-{
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-    // succeed if not using terrain data
-    if (!copter.terrain_use()) {
-        return true;
-    }
-
-    // check if terrain following is enabled, using a range finder but RTL_ALT is higher than rangefinder's max range
-    // To-Do: modify RTL return path to fly at or above the RTL_ALT and remove this check
-
-    if (copter.rangefinder_state.enabled && (copter.g.rtl_altitude > copter.rangefinder.max_distance_cm_orient(ROTATION_PITCH_270))) {
-        check_failed(ARMING_CHECK_PARAMETERS, display_failure, "RTL_ALT above rangefinder max range");
-        return false;
-    }
-
-    // show terrain statistics
-    uint16_t terr_pending, terr_loaded;
-    copter.terrain.get_statistics(terr_pending, terr_loaded);
-    bool have_all_data = (terr_pending <= 0);
-    if (!have_all_data) {
-        check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Waiting for Terrain data");
-    }
-    return have_all_data;
-#else
-    return true;
-#endif
 }
 
 // check nothing is too close to vehicle
