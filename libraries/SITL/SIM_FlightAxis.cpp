@@ -460,14 +460,8 @@ void FlightAxis::update(const struct sitl_input &input)
     Vector3f airspeed_3d_ef = m_wind_ef + velocity_ef;
     Vector3f airspeed3d = dcm.mul_transpose(airspeed_3d_ef);
 
-    if (ahrs_orientation != nullptr) {
-        enum Rotation imu_rotation = (enum Rotation)ahrs_orientation->get();
-
-        if (imu_rotation != ROTATION_NONE) {
-            Matrix3f rot;
-            rot.from_rotation(imu_rotation);
-            airspeed3d = airspeed3d * rot.transposed();
-        }
+    if (last_imu_rotation != ROTATION_NONE) {
+        airspeed3d = airspeed3d * ahrs_rotation_inv;
     }
     airspeed_pitot = MAX(airspeed3d.x,0);
 

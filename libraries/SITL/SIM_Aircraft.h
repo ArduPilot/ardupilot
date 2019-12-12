@@ -193,6 +193,8 @@ protected:
 
     // allow for AHRS_ORIENTATION
     AP_Int8 *ahrs_orientation;
+    enum Rotation last_imu_rotation;
+    Matrix3f ahrs_rotation_inv;
 
     enum GroundBehaviour {
         GROUND_BEHAVIOR_NONE = 0,
