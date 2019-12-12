@@ -106,16 +106,6 @@ enum GuidedMode {
     Guided_Angle,
 };
 
-// RTL states
-enum RTLState {
-    RTL_Starting,
-    RTL_InitialClimb,
-    RTL_ReturnHome,
-    RTL_LoiterAtHome,
-    RTL_FinalDescent,
-    RTL_Land
-};
-
 // Safe RTL states
 enum SmartRTLState {
     SmartRTL_WaitForPathCleanup,
