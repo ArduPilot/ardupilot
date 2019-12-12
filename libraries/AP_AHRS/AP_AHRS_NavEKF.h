@@ -272,14 +272,15 @@ public:
     bool is_ext_nav_used_for_yaw(void) const;
 
 private:
-    enum EKF_TYPE {EKF_TYPE_NONE=0,
-                   EKF_TYPE3=3,
-                   EKF_TYPE2=2
+    enum class EKFType {
+        NONE = 0,
+        THREE = 3,
+        TWO = 2
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-                   ,EKF_TYPE_SITL=10
+        ,SITL = 10
 #endif
     };
-    EKF_TYPE active_EKF_type(void) const;
+    EKFType active_EKF_type(void) const;
 
     bool always_use_EKF() const {
         return _ekf_flags & FLAG_ALWAYS_USE_EKF;
@@ -303,7 +304,7 @@ private:
     uint32_t start_time_ms = 0;
     uint8_t _ekf_flags; // bitmask from Flags enumeration
 
-    uint8_t ekf_type(void) const;
+    EKFType ekf_type(void) const;
     void update_DCM(bool skip_ins_update);
     void update_EKF2(void);
     void update_EKF3(void);
