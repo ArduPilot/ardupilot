@@ -816,10 +816,6 @@ void GCS_MAVLINK::handle_radio_status(const mavlink_message_t &msg, bool log_rad
     }
 }
 
-/*
-  handle an incoming mission item
-  return true if this is the last mission item, otherwise false
- */
 void GCS_MAVLINK::handle_mission_item(const mavlink_message_t &msg)
 {
     // TODO: rename packet to mission_item_int
