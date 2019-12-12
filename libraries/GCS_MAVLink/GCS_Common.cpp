@@ -3358,6 +3358,7 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration_baro()
 
 MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_command_long_t &packet)
 {
+    EXPECT_DELAY_MS(30000);
     if (is_equal(packet.param1,1.0f)) {
         if (!calibrate_gyros()) {
             return MAV_RESULT_FAILED;
