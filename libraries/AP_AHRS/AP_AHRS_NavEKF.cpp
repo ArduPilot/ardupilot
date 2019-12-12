@@ -531,11 +531,15 @@ bool AP_AHRS_NavEKF::get_secondary_attitude(Vector3f &eulers) const
 
     case EKF_TYPE3:
 
-    default:
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    case EKF_TYPE_SITL:
+#endif
         // DCM is secondary
         eulers = _dcm_attitude;
         return true;
     }
+    // since there is no default case above, this is unreachable
+    return false;
 }
 
 
@@ -552,11 +556,15 @@ bool AP_AHRS_NavEKF::get_secondary_quaternion(Quaternion &quat) const
 
     case EKF_TYPE3:
 
-    default:
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    case EKF_TYPE_SITL:
+#endif
         // DCM is secondary
         quat.from_rotation_matrix(AP_AHRS_DCM::get_rotation_body_to_ned());
         return true;
     }
+    // since there is no default case above, this is unreachable
+    return false;
 }
 
 // return secondary position solution if available
@@ -572,11 +580,15 @@ bool AP_AHRS_NavEKF::get_secondary_position(struct Location &loc) const
 
     case EKF_TYPE3:
 
-    default:
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    case EKF_TYPE_SITL:
+#endif
         // return DCM position
         AP_AHRS_DCM::get_position(loc);
         return true;
     }
+    // since there is no default case above, this is unreachable
+    return false;
 }
 
 // EKF has a better ground speed vector estimate
@@ -620,6 +632,9 @@ bool AP_AHRS_NavEKF::set_origin(const Location &loc)
 
     // return success if active EKF's origin was set
     switch (active_EKF_type()) {
+    case EKF_TYPE_NONE:
+        return false;
+
     case EKF_TYPE2:
         return ret2;
 
@@ -636,10 +651,9 @@ bool AP_AHRS_NavEKF::set_origin(const Location &loc)
             return false;
         }
 #endif
-
-    default:
-        return false;
     }
+    // since there is no default case above, this is unreachable
+    return false;
 }
 
 // return true if inertial navigation is active
@@ -708,7 +722,6 @@ bool AP_AHRS_NavEKF::get_mag_field_correction(Vector3f &vec) const
         return false;
 
     case EKF_TYPE2:
-    default:
         EKF2.getMagXYZ(-1,vec);
         return true;
 
@@ -721,6 +734,8 @@ bool AP_AHRS_NavEKF::get_mag_field_correction(Vector3f &vec) const
         return false;
 #endif
     }
+    // since there is no default case above, this is unreachable
+    return false;
 }
 
 // Get a derivative of the vertical position which is kinematically consistent with the vertical position is required by some control loops.
@@ -732,7 +747,6 @@ bool AP_AHRS_NavEKF::get_vert_pos_rate(float &velocity) const
         return false;
 
     case EKF_TYPE2:
-    default:
         velocity = EKF2.getPosDownDerivative(-1);
         return true;
 
@@ -751,6 +765,8 @@ bool AP_AHRS_NavEKF::get_vert_pos_rate(float &velocity) const
         }
 #endif
     }
+    // since there is no default case above, this is unreachable
+    return false;
 }
 
 // get latest height above ground level estimate in metres and a validity flag
@@ -761,7 +777,6 @@ bool AP_AHRS_NavEKF::get_hagl(float &height) const
         return false;
 
     case EKF_TYPE2:
-    default:
         return EKF2.getHAGL(height);
         
     case EKF_TYPE3:
@@ -778,6 +793,8 @@ bool AP_AHRS_NavEKF::get_hagl(float &height) const
     }
 #endif
     }
+    // since there is no default case above, this is unreachable
+    return false;
 }
 
 // return a relative ground position to the origin in meters
@@ -788,8 +805,7 @@ bool AP_AHRS_NavEKF::get_relative_position_NED_origin(Vector3f &vec) const
     case EKF_TYPE_NONE:
         return false;
 
-    case EKF_TYPE2:
-    default: {
+    case EKF_TYPE2: {
         Vector2f posNE;
         float posD;
         if (EKF2.getPosNE(-1,posNE) && EKF2.getPosD(-1,posD)) {
@@ -830,6 +846,8 @@ bool AP_AHRS_NavEKF::get_relative_position_NED_origin(Vector3f &vec) const
     }
 #endif
     }
+    // since there is no default case above, this is unreachable
+    return false;
 }
 
 // return a relative ground position to the home in meters
@@ -859,8 +877,7 @@ bool AP_AHRS_NavEKF::get_relative_position_NE_origin(Vector2f &posNE) const
     case EKF_TYPE_NONE:
         return false;
 
-    case EKF_TYPE2:
-    default: {
+    case EKF_TYPE2: {
         bool position_is_valid = EKF2.getPosNE(-1,posNE);
         return position_is_valid;
     }
@@ -879,6 +896,8 @@ bool AP_AHRS_NavEKF::get_relative_position_NE_origin(Vector2f &posNE) const
     }
 #endif
     }
+    // since there is no default case above, this is unreachable
+    return false;
 }
 
 // return a relative ground position to the home in meters
@@ -910,8 +929,7 @@ bool AP_AHRS_NavEKF::get_relative_position_D_origin(float &posD) const
     case EKF_TYPE_NONE:
         return false;
 
-    case EKF_TYPE2:
-    default: {
+    case EKF_TYPE2: {
         bool position_is_valid = EKF2.getPosD(-1,posD);
         return position_is_valid;
     }
@@ -932,6 +950,8 @@ bool AP_AHRS_NavEKF::get_relative_position_D_origin(float &posD) const
     }
 #endif
     }
+    // since there is no default case above, this is unreachable
+    return false;
 }
 
 // write a relative ground position to home in meters, Down
@@ -1837,10 +1857,13 @@ bool AP_AHRS_NavEKF::is_ext_nav_used_for_yaw(void) const
     switch (active_EKF_type()) {
     case EKF_TYPE2:
         return EKF2.isExtNavUsedForYaw();
-        
-    default:
+    case EKF_TYPE_NONE:
+    case EKF_TYPE3:
+    case EKF_TYPE_SITL:
         return false; 
     }
+    // since there is no default case above, this is unreachable
+    return false;
 }
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE
