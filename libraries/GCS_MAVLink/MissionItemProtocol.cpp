@@ -20,6 +20,8 @@ void MissionItemProtocol::init_send_requests(GCS_MAVLINK &_link,
 
     timelast_request_ms = AP_HAL::millis();
     link->send_message(next_item_ap_message_id());
+
+    mission_request_warning_sent = false;
 }
 
 void MissionItemProtocol::handle_mission_clear_all(const GCS_MAVLINK &_link,
@@ -189,6 +191,12 @@ void MissionItemProtocol::handle_mission_request(const GCS_MAVLINK &_link,
     }
 
     CHECK_PAYLOAD_SIZE2_VOID(_link.get_chan(), MISSION_ITEM_INT);
+
+    if (!mission_request_warning_sent) {
+        mission_request_warning_sent = true;
+        gcs().send_text(MAV_SEVERITY_WARNING, "got MISSION_REQUEST; use MISSION_REQUEST_INT!");
+    }
+
     _link.send_message(MAVLINK_MSG_ID_MISSION_ITEM, (const char*)&ret_packet);
 }
 
