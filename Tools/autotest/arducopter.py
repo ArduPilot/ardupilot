@@ -4221,7 +4221,7 @@ class AutoTestCopter(AutoTest):
 
     def fly_rangefinder_drivers(self):
         self.set_parameter("RTL_ALT", 500)
-        self.set_parameter("TERRAIN_FOLLOW", 1)
+        self.set_parameter("RTL_ALT_TYPE", 1)
         drivers = [
             ("lightwareserial",8),
             ("ulanding_v0", 11),
