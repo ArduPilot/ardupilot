@@ -1019,6 +1019,15 @@ public:
     // for reporting to GCS
     bool get_wp(Location &loc) override;
 
+    // RTL states
+    enum RTLState {
+        RTL_Starting,
+        RTL_InitialClimb,
+        RTL_ReturnHome,
+        RTL_LoiterAtHome,
+        RTL_FinalDescent,
+        RTL_Land
+    };
     RTLState state() { return _state; }
 
     // this should probably not be exposed
