@@ -819,6 +819,7 @@ void GCS_MAVLINK::handle_radio_status(const mavlink_message_t &msg, bool log_rad
 void GCS_MAVLINK::handle_mission_item(const mavlink_message_t &msg)
 {
     mavlink_mission_item_int_t mission_item_int;
+    bool send_mission_item_warning = false;
     if (msg.msgid == MAVLINK_MSG_ID_MISSION_ITEM) {
         mavlink_mission_item_t mission_item;
         mavlink_msg_mission_item_decode(&msg, &mission_item);
@@ -828,6 +829,7 @@ void GCS_MAVLINK::handle_mission_item(const mavlink_message_t &msg)
             send_mission_ack(msg, type, ret);
             return;
         }
+        send_mission_item_warning = true;
     } else {
         mavlink_msg_mission_item_int_decode(&msg, &mission_item_int);
     }
@@ -865,6 +867,10 @@ void GCS_MAVLINK::handle_mission_item(const mavlink_message_t &msg)
     if (prot == nullptr) {
         send_mission_ack(msg, type, MAV_MISSION_UNSUPPORTED);
         return;
+    }
+
+    if (send_mission_item_warning) {
+        prot->send_mission_item_warning();
     }
 
     if (!prot->receiving) {
