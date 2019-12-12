@@ -86,6 +86,10 @@ private:
     uint32_t        timelast_request_ms;
     const uint16_t  upload_timeout_ms = 8000;
 
+    // if a transfer is made with MISSION_REQUEST rather than
+    // MISSION_REQUEST we issue a warning - once per transfer.
+    bool mission_request_warning_sent = false;
+
     // support for GCS getting waypoints etc from us:
     virtual MAV_MISSION_RESULT get_item(const GCS_MAVLINK &_link,
                                         const mavlink_message_t &msg,
