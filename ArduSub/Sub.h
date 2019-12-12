@@ -572,7 +572,6 @@ private:
 #endif
     void terrain_update();
     void terrain_logging();
-    bool terrain_use();
     void init_ardupilot();
     void startup_INS_ground();
     bool position_ok();
