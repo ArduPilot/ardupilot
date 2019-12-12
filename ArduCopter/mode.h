@@ -1038,6 +1038,13 @@ public:
 
     void restart_without_terrain();
 
+    // enum for RTL_ALT_TYPE parameter
+    enum class RTLAltType {
+        RTL_ALTTYPE_RELATIVE = 0,
+        RTL_ALTTYPE_TERRAIN = 1
+    };
+    ModeRTL::RTLAltType get_alt_type() const;
+
 protected:
 
     const char *name() const override { return "RTL"; }
@@ -1075,8 +1082,14 @@ private:
         Location return_target;
         Location descent_target;
         bool land;
-        bool terrain_used;
     } rtl_path;
+
+    // return target alt type
+    enum class ReturnTargetAltType {
+        RETURN_TARGET_ALTTYPE_RELATIVE = 0,
+        RETURN_TARGET_ALTTYPE_RANGEFINDER = 1,
+        RETURN_TARGET_ALTTYPE_TERRAINDATABASE = 2
+    };
 
     // Loiter timer - Records how long we have been in loiter
     uint32_t _loiter_start_time;
