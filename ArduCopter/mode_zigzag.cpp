@@ -285,7 +285,7 @@ bool ModeZigZag::calculate_next_dest(uint8_t dest_num, bool use_wpnav_alt, Vecto
         next_dest.z = wp_nav->get_wp_destination().z;
     } else {
         // if we have a downward facing range finder then use terrain altitude targets
-        terrain_alt = copter.rangefinder_alt_ok() && wp_nav->rangefinder_used();
+        terrain_alt = copter.rangefinder_alt_ok() && wp_nav->rangefinder_used_and_healthy();
         if (terrain_alt) {
             if (!copter.surface_tracking.get_target_alt_cm(next_dest.z)) {
                 next_dest.z = copter.rangefinder_state.alt_cm_filt.get();
