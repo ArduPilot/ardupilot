@@ -93,9 +93,14 @@ void AP_BattMonitor_UAVCAN::handle_battery_info(const BattInfoCb &cb)
     if (_interim_state.last_time_micros != 0 && dt < 2000000) {
         // .0002778 is 1/3600 (conversion to hours)
         float mah = (float) ((double) _interim_state.current_amps * (double) dt * (double) 0.0000002778f);
-        _interim_state.consumed_mah += mah;
+        // _interim_state.consumed_mah += mah;
         _interim_state.consumed_wh  += 0.001f * mah * _interim_state.voltage;
     }
+    
+    // Replacing consumed_mah calculation to be calculated from state of charge
+    float capacity = static_cast<float>(_params._pack_capacity);
+    float state_of_charge = static_cast<float>(cb.msg->state_of_charge_pct);
+    _interim_state.consumed_mah = capacity - (state_of_charge / 100.0f * capacity);
 
     // record time
     _interim_state.last_time_micros = tnow;
