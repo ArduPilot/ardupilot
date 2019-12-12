@@ -888,7 +888,6 @@ private:
     // terrain.cpp
     void terrain_update();
     void terrain_logging();
-    bool terrain_use();
 
     // tuning.cpp
     void tuning();
