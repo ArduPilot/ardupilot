@@ -818,26 +818,25 @@ void GCS_MAVLINK::handle_radio_status(const mavlink_message_t &msg, bool log_rad
 
 void GCS_MAVLINK::handle_mission_item(const mavlink_message_t &msg)
 {
-    // TODO: rename packet to mission_item_int
-    mavlink_mission_item_int_t packet;
+    mavlink_mission_item_int_t mission_item_int;
     if (msg.msgid == MAVLINK_MSG_ID_MISSION_ITEM) {
         mavlink_mission_item_t mission_item;
         mavlink_msg_mission_item_decode(&msg, &mission_item);
-        MAV_MISSION_RESULT ret = AP_Mission::convert_MISSION_ITEM_to_MISSION_ITEM_INT(mission_item, packet);
+        MAV_MISSION_RESULT ret = AP_Mission::convert_MISSION_ITEM_to_MISSION_ITEM_INT(mission_item, mission_item_int);
         if (ret != MAV_MISSION_ACCEPTED) {
-            const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)packet.mission_type;
+            const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)mission_item_int.mission_type;
             send_mission_ack(msg, type, ret);
             return;
         }
     } else {
-        mavlink_msg_mission_item_int_decode(&msg, &packet);
+        mavlink_msg_mission_item_int_decode(&msg, &mission_item_int);
     }
-    const uint8_t current = packet.current;
-    const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)packet.mission_type;
+    const uint8_t current = mission_item_int.current;
+    const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)mission_item_int.mission_type;
 
     if (type == MAV_MISSION_TYPE_MISSION && (current == 2 || current == 3)) {
         struct AP_Mission::Mission_Command cmd = {};
-        MAV_MISSION_RESULT result = AP_Mission::mavlink_int_to_mission_cmd(packet, cmd);
+        MAV_MISSION_RESULT result = AP_Mission::mavlink_int_to_mission_cmd(mission_item_int, cmd);
         if (result != MAV_MISSION_ACCEPTED) {
             //decode failed
             send_mission_ack(msg, MAV_MISSION_TYPE_MISSION, result);
@@ -873,7 +872,7 @@ void GCS_MAVLINK::handle_mission_item(const mavlink_message_t &msg)
         return;
     }
 
-    prot->handle_mission_item(msg, packet);
+    prot->handle_mission_item(msg, mission_item_int);
 }
 
 ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) const
