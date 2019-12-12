@@ -182,9 +182,9 @@ uint16_t SRV_Channel::get_limit_pwm(Limit limit) const
     case Limit::MAX:
         return reversed?servo_min:servo_max;
     case Limit::ZERO_PWM:
-    default:
         return 0;
     }
+    return 0;
 }
 
 // return true if function is for a multicopter motor
