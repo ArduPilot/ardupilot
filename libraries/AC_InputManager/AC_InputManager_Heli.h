@@ -8,9 +8,9 @@
 #include "AC_InputManager.h"
 
 # define AC_ATTITUDE_HELI_STAB_COLLECTIVE_MIN_DEFAULT     0
-# define AC_ATTITUDE_HELI_STAB_COLLECTIVE_LOW_DEFAULT     400
-# define AC_ATTITUDE_HELI_STAB_COLLECTIVE_HIGH_DEFAULT    600
-# define AC_ATTITUDE_HELI_STAB_COLLECTIVE_MAX_DEFAULT     1000
+# define AC_ATTITUDE_HELI_STAB_COLLECTIVE_LOW_DEFAULT     40
+# define AC_ATTITUDE_HELI_STAB_COLLECTIVE_HIGH_DEFAULT    60
+# define AC_ATTITUDE_HELI_STAB_COLLECTIVE_MAX_DEFAULT     100
 
 /// @class  AP_InputManager_Heli
 /// @brief  Class managing the pilot's control inputs   for Conventional Helicopter
@@ -36,6 +36,9 @@ public:
 
     // set_heli_stab_col_ramp - setter function
     void set_stab_col_ramp(float ramp) { _stab_col_ramp = constrain_float(ramp, 0.0, 1.0); }
+
+    // parameter_check - returns true if input manager specific parameters are sensible, used for pre-arm check
+    bool parameter_check(char* fail_msg, uint8_t fail_msg_len) const;
 
     static const struct AP_Param::GroupInfo        var_info[];
 
