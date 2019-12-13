@@ -760,12 +760,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: User
     GSCALAR(FBWB_min_altitude_cm,   "ALT_HOLD_FBWCM", ALT_HOLD_FBW_CM),
 
-    // @Param: FLAP_IN_CHANNEL
-    // @DisplayName: Flap input channel
-    // @Description: An RC input channel to use for flaps control. If this is set to a RC channel number then that channel will be used for manual flaps control. When enabled, the percentage of flaps is taken as the percentage travel from the TRIM value of the channel to the MIN value of the channel. A value above the TRIM values will give inverse flaps (spoilers). This option needs to be enabled in conjunction with a FUNCTION setting on an output channel to one of the flap functions. When a FLAP_IN_CHANNEL is combined with auto-flaps the higher of the two flap percentages is taken.
-    // @User: User
-    GSCALAR(flapin_channel,         "FLAP_IN_CHANNEL",  0),
-
     // @Param: FLAP_1_PERCNT
     // @DisplayName: Flap 1 percentage
     // @Description: The percentage change in flap position when FLAP_1_SPEED is reached. Use zero to disable flaps
@@ -1370,6 +1364,21 @@ void Plane::load_parameters(void)
     }
 
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_PLANE);
+
+    // Convert flap to RCx_OPTION
+    AP_Int8 flap_output;
+    AP_Param::ConversionInfo flap_info = {
+        Parameters::k_param_flapin_channel_old,
+        0,
+        AP_PARAM_INT8,
+        nullptr
+    };
+    if (AP_Param::find_old_parameter(&flap_info, &flap_output) && flap_output.get() != 0) {
+        RC_Channel *flapin = rc().channel(flap_output - 1);
+        if (flapin != nullptr && !flapin->option.configured()) {
+            flapin->option.set_and_save((int16_t)RC_Channel::AUX_FUNC::FLAP); // save the new param
+        }
+    }
 
     hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));
 }
