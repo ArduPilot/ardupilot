@@ -35,23 +35,40 @@ void AP_Proximity_AirSimSITL::update(void)
     set_status(AP_Proximity::Status::Good);
 
     memset(_distance_valid, 0, sizeof(_distance_valid));
-    memset(_angle, 0, sizeof(_angle));
-    memset(_distance, 0, sizeof(_distance));
 
     for (uint16_t i=0; i<points.length; i++) {
         Vector3f &point = points.data[i];
         if (point.is_zero()) {
             continue;
         }
-        float angle_deg = wrap_360(degrees(atan2f(-point.y, point.x)));
-        uint16_t angle_rounded = uint16_t(angle_deg+0.5);
-        const uint8_t sector = convert_angle_to_sector(angle_rounded);
-        if (!_distance_valid[sector] || PROXIMITY_MAX_RANGE < _distance[sector]) {
-            _distance_valid[sector] = true;
-            const Vector2f v = Vector2f(point.x, point.y);
-            _distance[sector] = v.length();
-            _angle[sector] = angle_deg;
-            update_boundary_for_sector(sector, true);
+        const float angle_deg = wrap_360(degrees(atan2f(-point.y, point.x)));
+        const uint8_t sector = convert_angle_to_sector(angle_deg);
+
+        const Vector2f v = Vector2f(point.x, point.y);
+        const float distance_m = v.length();
+
+        if (distance_m > distance_min()) {
+            if (_last_sector == sector) {
+                if (_distance_m_last > distance_m) {
+                    _distance_m_last = distance_m;
+                    _angle_deg_last = angle_deg;
+                }
+            } else {
+                // new sector started, previous one can be updated
+                _distance_valid[_last_sector] = true;
+                _angle[_last_sector] = _angle_deg_last;
+                _distance[_last_sector] = _distance_m_last;
+
+                // update boundary
+                update_boundary_for_sector(_last_sector, true);
+
+                // initialize new sector
+                _last_sector = sector;
+                _distance_m_last = INT16_MAX;
+                _angle_deg_last = angle_deg;
+            }
+        } else {
+            _distance_valid[sector] = false;
         }
     }
 
