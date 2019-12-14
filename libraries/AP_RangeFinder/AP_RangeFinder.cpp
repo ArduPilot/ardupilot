@@ -349,11 +349,11 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
             }
 #ifdef HAL_RANGEFINDER_LIGHTWARE_I2C_BUS
             _add_backend(AP_RangeFinder_LightWareI2C::detect(state[instance], params[instance],
-                hal.i2c_mgr->get_device(HAL_RANGEFINDER_LIGHTWARE_I2C_BUS, params[instance].address)));
+                hal.i2c_mgr->get_device(HAL_RANGEFINDER_LIGHTWARE_I2C_BUS, params[instance].address == RANGEFINDER_USED_DEFAULT_I2C_ADDRESS ? 0x66 : params[instance].address)));
 #else
             FOREACH_I2C(i) {
                 if (_add_backend(AP_RangeFinder_LightWareI2C::detect(state[instance], params[instance],
-                                                                     hal.i2c_mgr->get_device(i, params[instance].address)))) {
+                                                                     hal.i2c_mgr->get_device(i, params[instance].address == RANGEFINDER_USED_DEFAULT_I2C_ADDRESS ? 0x66 : params[instance].address)))) {
                     break;
                 }
             }
@@ -364,7 +364,7 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         if (params[instance].address) {
             FOREACH_I2C(i) {
                 if (_add_backend(AP_RangeFinder_TeraRangerI2C::detect(state[instance], params[instance],
-                                                                      hal.i2c_mgr->get_device(i, params[instance].address)))) {
+                                                                      hal.i2c_mgr->get_device(i, params[instance].address == RANGEFINDER_USED_DEFAULT_I2C_ADDRESS ? 0x30 : params[instance].address)))) {
                     break;
                 }
             }
@@ -372,12 +372,13 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         break;
     case Type::VL53L0X:
             FOREACH_I2C(i) {
+                // The device I2C address is 0x29.
                 if (_add_backend(AP_RangeFinder_VL53L0X::detect(state[instance], params[instance],
-                                                                 hal.i2c_mgr->get_device(i, params[instance].address)))) {
+                                                                hal.i2c_mgr->get_device(i, params[instance].address == RANGEFINDER_USED_DEFAULT_I2C_ADDRESS ? 0x29 : params[instance].address)))) {
                     break;
                 }
                 if (_add_backend(AP_RangeFinder_VL53L1X::detect(state[instance], params[instance],
-                                                                hal.i2c_mgr->get_device(i, params[instance].address)))) {
+                                                                hal.i2c_mgr->get_device(i, params[instance].address == RANGEFINDER_USED_DEFAULT_I2C_ADDRESS ? 0x29 : params[instance].address)))) {
                     break;
                 }
             }
@@ -385,7 +386,7 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
     case Type::BenewakeTFminiPlus:
         FOREACH_I2C(i) {
             if (_add_backend(AP_RangeFinder_Benewake_TFMiniPlus::detect(state[instance], params[instance],
-                                                                        hal.i2c_mgr->get_device(i, params[instance].address)))) {
+                                                                        hal.i2c_mgr->get_device(i, params[instance].address == RANGEFINDER_USED_DEFAULT_I2C_ADDRESS ? 0x10 : params[instance].address)))) {
                 break;
             }
         }
