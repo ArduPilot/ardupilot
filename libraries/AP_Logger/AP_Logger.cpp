@@ -144,8 +144,8 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
     }
 #endif // HAVE_FILESYSTEM_SUPPORT
 
-#if LOGGER_MAVLINK_SUPPORT
-    if (_params.backend_types & uint8_t(Backend_Type::MAVLINK)) {
+#ifdef HAL_LOGGING_DATAFLASH
+    if (_params.backend_types & uint8_t(Backend_Type::BLOCK)) {
         if (_next_backend == LOGGER_MAX_BACKENDS) {
             AP_HAL::panic("Too many backends");
             return;
@@ -153,11 +153,10 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
         LoggerMessageWriter_DFLogStart *message_writer =
             new LoggerMessageWriter_DFLogStart();
         if (message_writer != nullptr)  {
-            backends[_next_backend] = new AP_Logger_MAVLink(*this,
-                                                            message_writer);
+            backends[_next_backend] = new AP_Logger_DataFlash(*this, message_writer);
         }
         if (backends[_next_backend] == nullptr) {
-            hal.console->printf("Unable to open AP_Logger_MAVLink");
+            hal.console->printf("Unable to open AP_Logger_DataFlash");
         } else {
             _next_backend++;
         }
@@ -182,9 +181,9 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
         }
     }
 #endif
-
-#ifdef HAL_LOGGING_DATAFLASH
-    if (_params.backend_types & uint8_t(Backend_Type::BLOCK)) {
+    // the "main" logging type needs to come before mavlink so that index 0 is correct
+#if LOGGER_MAVLINK_SUPPORT
+    if (_params.backend_types & uint8_t(Backend_Type::MAVLINK)) {
         if (_next_backend == LOGGER_MAX_BACKENDS) {
             AP_HAL::panic("Too many backends");
             return;
@@ -192,16 +191,17 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
         LoggerMessageWriter_DFLogStart *message_writer =
             new LoggerMessageWriter_DFLogStart();
         if (message_writer != nullptr)  {
-            backends[_next_backend] = new AP_Logger_DataFlash(*this, message_writer);
+            backends[_next_backend] = new AP_Logger_MAVLink(*this,
+                                                            message_writer);
         }
         if (backends[_next_backend] == nullptr) {
-            hal.console->printf("Unable to open AP_Logger_DataFlash");
+            hal.console->printf("Unable to open AP_Logger_MAVLink");
         } else {
             _next_backend++;
         }
     }
 #endif
-    
+
     for (uint8_t i=0; i<_next_backend; i++) {
         backends[i]->Init();
     }
