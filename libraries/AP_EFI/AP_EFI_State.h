@@ -199,4 +199,6 @@ struct EFI_State {
     // Status for each cylinder in the engine
     Cylinder_Status cylinder_status[ENGINE_MAX_CYLINDERS];
 
+    // pressure/temperature compensation
+    float pt_c;
 };

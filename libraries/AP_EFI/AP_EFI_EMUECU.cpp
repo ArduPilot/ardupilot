@@ -115,6 +115,10 @@ void AP_EFI_EMUECU::process_line(void)
             *((float *)key.ptr) = strtof(p, nullptr);
             break;
 
+        case DataType::UINT8:
+            *((uint8_t *)key.ptr) = strtoul(p, nullptr, 10);
+            break;
+
         case DataType::UINT16:
             *((uint16_t *)key.ptr) = strtoul(p, nullptr, 10);
             break;
@@ -133,6 +137,10 @@ void AP_EFI_EMUECU::process_line(void)
     internal_state.intake_manifold_temperature = status.iat*0.01 + C_TO_KELVIN;
     internal_state.cylinder_status[0].cylinder_head_temperature = status.cht*0.01 + C_TO_KELVIN;
     internal_state.cylinder_status[0].exhaust_gas_temperature = status.egt*0.01 + C_TO_KELVIN;
+    internal_state.throttle_position_percent = status.throttle_out;
+    internal_state.pt_c = status.pt_c;
+    internal_state.atmospheric_pressure_kpa = status.baro * 0.001;
+    internal_state.cylinder_status[0].injection_time_ms = status.inj_ticks * 16 * 0.001;
     copy_to_frontend();
 }
 

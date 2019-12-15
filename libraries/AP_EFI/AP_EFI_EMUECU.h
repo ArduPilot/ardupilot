@@ -66,6 +66,7 @@ private:
 
     enum class DataType {
         FLOAT = 0,
+        UINT8,
         UINT16,
         INT16,
         UINT32,
@@ -76,11 +77,15 @@ private:
         const char *key;
         void *ptr;
         DataType type;
-    } keytable[4] {
+    } keytable[8] {
                   { "rpm",    &status.rpm, DataType::UINT16 },
                   { "cht",    &status.cht, DataType::INT16 },
                   { "egt",    &status.egt, DataType::UINT32 },
                   { "iat",    &status.iat, DataType::INT16 },
+                  { "throttle_out", &status.throttle_out, DataType::FLOAT },
+                  { "pt_c", &status.pt_c, DataType::FLOAT },
+                  { "baro", &status.baro, DataType::UINT32 },
+                  { "inj_ticks", &status.inj_ticks, DataType::UINT8 },
     };
 
     char linebuf[1200];
