@@ -77,6 +77,8 @@ void AP_Logger::handle_log_request_list(GCS_MAVLINK &link, const mavlink_message
     mavlink_msg_log_request_list_decode(&msg, &packet);
 
     _log_num_logs = get_num_logs();
+    uint16_t last_log = find_last_log();
+
     if (_log_num_logs == 0) {
         _log_next_list_entry = 0;
         _log_last_list_entry = 0;        
@@ -84,11 +86,11 @@ void AP_Logger::handle_log_request_list(GCS_MAVLINK &link, const mavlink_message
         _log_next_list_entry = packet.start;
         _log_last_list_entry = packet.end;
 
-        if (_log_last_list_entry > _log_num_logs) {
-            _log_last_list_entry = _log_num_logs;
+        if (_log_last_list_entry > last_log) {
+            _log_last_list_entry = last_log;
         }
         if (_log_next_list_entry < 1) {
-            _log_next_list_entry = 1;
+            _log_next_list_entry = last_log - _log_num_logs + 1;
         }
     }
 
@@ -124,7 +126,8 @@ void AP_Logger::handle_log_request_data(GCS_MAVLINK &link, const mavlink_message
     if (transfer_activity != SENDING || _log_num_data != packet.id) {
 
         uint16_t num_logs = get_num_logs();
-        if (packet.id > num_logs || packet.id < 1) {
+        uint16_t last_log = find_last_log();
+        if (packet.id > last_log || packet.id < (last_log - num_logs + 1)) {
             // request for an invalid log; cancel any current download
             transfer_activity = IDLE;
             return;

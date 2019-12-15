@@ -6,6 +6,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <stdio.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern AP_HAL::HAL& hal;
 
@@ -28,7 +29,7 @@ void AP_Logger_Block::Init(void)
 {
     if (CardInserted()) {
         // reserve space for version in last sector
-        df_NumPages -= df_PagePerSector;
+        df_NumPages -= df_PagePerBlock;
 
         // determine and limit file backend buffersize
         uint32_t bufsize = _front._params.file_bufsize;
@@ -38,7 +39,7 @@ void AP_Logger_Block::Init(void)
         bufsize *= 1024;
 
         // If we can't allocate the full size, try to reduce it until we can allocate it
-        while (!writebuf.set_size(bufsize) && bufsize >= df_PageSize * df_PagePerSector) {
+        while (!writebuf.set_size(bufsize) && bufsize >= df_PageSize * df_PagePerBlock) {
             hal.console->printf("AP_Logger_Block: Couldn't set buffer size to=%u\n", (unsigned)bufsize);
             bufsize >>= 1;
         }
@@ -85,8 +86,8 @@ void AP_Logger_Block::FinishWrite(void)
     }
 
     // when starting a new sector, erase it
-    if ((df_PageAdr-1) % df_PagePerSector == 0) {
-        SectorErase(df_PageAdr / df_PagePerSector);
+    if ((df_PageAdr-1) % df_PagePerBlock == 0) {
+        SectorErase(df_PageAdr / df_PagePerBlock);
     }
 }
 
@@ -198,6 +199,11 @@ uint16_t AP_Logger_Block::GetFileNumber()
 void AP_Logger_Block::EraseAll()
 {
     WITH_SEMAPHORE(sem);
+    gcs().send_text(MAV_SEVERITY_INFO, "Chip erase started");
+    // reset the format version so that any incomplete erase will be caught
+    Sector4kErase(get_sector(df_NumPages+1));
+    // reset the wrapped status
+    Sector4kErase(get_sector(df_NumPages));
 
     if (erase_started) {
         // already erasing
@@ -225,6 +231,7 @@ void AP_Logger_Block::Prep()
     if (NeedErase()) {
         EraseAll();
     }
+    validate_log_structure();
 }
 
 /*
@@ -241,6 +248,51 @@ bool AP_Logger_Block::NeedErase(void)
         return false;
     }
     return true;
+}
+
+/*
+ * iterate through all of the logs files looking for ones that are corrupted and correct.
+ */
+void AP_Logger_Block::validate_log_structure()
+{
+    WITH_SEMAPHORE(sem);
+    bool wrapped = check_wrapped();
+    uint32_t page = 1;
+    uint32_t page_start = 1;
+
+    StartRead(page);
+    uint16_t file = GetFileNumber();
+    uint16_t first_file = file;
+    uint16_t next_file = file;
+    uint16_t last_file;
+
+    while (file != 0xFFFF && page <= df_NumPages && (file == next_file || (wrapped && file < next_file))) {
+        uint32_t end_page = find_last_page_of_log(file);
+        if (end_page == 0 || end_page < page) { // this can happen and may be responsible for corruption that we have seen
+            break;
+        }
+        page = end_page + 1;
+        StartRead(page);
+        file = GetFileNumber();
+        next_file++;
+        if (wrapped && file < next_file) {
+            page_start = page;
+            next_file = file;
+            first_file = file;
+        } else if (last_file < next_file) {
+            last_file = file;
+        }
+        if (file == next_file) {
+            hal.console->printf("Found complete log %d at %X-%X\n", int(file), unsigned(page), unsigned(find_last_page_of_log(file)));
+        }
+    }
+
+    if (file != 0xFFFF && file != next_file && page <= df_NumPages && page > 0) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Found corrupt log %d at 0x%04X, erasing", int(file), unsigned(page));
+        df_EraseFrom = page;
+    } else if (next_file != 0xFFFF && page > 0 && next_file > 1) { // chip is empty
+        gcs().send_text(MAV_SEVERITY_INFO, "Found %d complete logs at 0x%04X-0x%04X", int(next_file - first_file), unsigned(page_start), unsigned(page - 1));
+    }
 }
 
 /**
@@ -327,28 +379,23 @@ uint16_t AP_Logger_Block::get_num_logs(void)
     WITH_SEMAPHORE(sem);
     uint32_t lastpage;
     uint32_t last;
-    uint32_t first;
 
     if (!CardInserted() || find_last_page() == 1) {
         return 0;
     }
 
     StartRead(1);
-
-    if (GetFileNumber() == 0xFFFF) {
+    uint32_t first = GetFileNumber();
+    
+    if (first == 0xFFFF) {
         return 0;
     }
 
     lastpage = find_last_page();
     StartRead(lastpage);
     last = GetFileNumber();
-    StartRead(lastpage + 2);
-    if (GetFileNumber() == 0xFFFF) {
-        StartRead(((((lastpage-1)>>8)+1)<<8)+1);    // next sector
-    }
-    first = GetFileNumber();
-    if (first > last) {
-        StartRead(1);
+    if (check_wrapped()) {
+        StartRead(lastpage + 1);
         first = GetFileNumber();
     }
 
@@ -411,7 +458,6 @@ void AP_Logger_Block::get_log_boundaries(uint16_t log_num, uint32_t & start_page
             end_page = find_last_page_of_log((uint16_t)log_num);
             start_page = end_page + 1;
         }
-
     } else {
         if (log_num==1) {
             StartRead(df_NumPages);
@@ -449,7 +495,7 @@ bool AP_Logger_Block::check_wrapped(void)
 }
 
 
-// This funciton finds the last log number
+// This function finds the last log number
 uint16_t AP_Logger_Block::find_last_log(void)
 {
     WITH_SEMAPHORE(sem);
@@ -558,6 +604,7 @@ uint32_t AP_Logger_Block::find_last_page_of_log(uint16_t log_number)
         return bottom;
     }
 
+    gcs().send_text(MAV_SEVERITY_ERROR, "Missing last page of log %d at top=%X or bottom=%X", int(log_number), unsigned(top), unsigned(bottom));
     return 0;
 }
 
@@ -606,6 +653,7 @@ void AP_Logger_Block::io_timer(void)
         if (InErase()) {
             return;
         }
+        WITH_SEMAPHORE(sem);
         // write the logging format in the last page
         StartWrite(df_NumPages+1);
         uint32_t version = DF_LOGGING_FORMAT;
@@ -613,6 +661,28 @@ void AP_Logger_Block::io_timer(void)
         memcpy(buffer, &version, sizeof(version));
         FinishWrite();
         erase_started = false;
+        gcs().send_text(MAV_SEVERITY_INFO, "Chip erase complete");
+    }
+
+    if (df_EraseFrom > 0) {
+        WITH_SEMAPHORE(sem);
+
+        const uint32_t sectors = df_NumPages / df_PagePerSector;
+        const uint32_t sectors_in_64k = 0x10000 / (df_PagePerSector * df_PageSize);
+        uint32_t next_sector = get_sector(df_EraseFrom);
+        const uint32_t aligned_sector = sectors - (((df_NumPages - df_EraseFrom + 1) / df_PagePerSector) / sectors_in_64k) * sectors_in_64k;
+        while (next_sector < aligned_sector) {
+            Sector4kErase(next_sector);
+            next_sector++;
+        }
+        uint16_t blocks_erased = 0;
+        while (next_sector < sectors) {
+            blocks_erased++;
+            SectorErase(next_sector / sectors_in_64k);
+            next_sector += sectors_in_64k;
+        }
+        gcs().send_text(MAV_SEVERITY_WARNING, "Log corruption recovery complete, erased %d blocks", unsigned(blocks_erased));
+        df_EraseFrom = 0;
     }
 
     if (!CardInserted() || !log_write_started) {
