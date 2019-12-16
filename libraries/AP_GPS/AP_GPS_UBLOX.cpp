@@ -79,7 +79,7 @@ AP_GPS_UBLOX::_request_next_config(void)
     }
 
     // Ensure there is enough space for the largest possible outgoing message
-    if (port->txspace() < (int16_t)(sizeof(struct ubx_header)+sizeof(struct ubx_cfg_nav_rate)+2)) {
+    if (port->txspace() < (uint16_t)(sizeof(struct ubx_header)+sizeof(struct ubx_cfg_nav_rate)+2)) {
         // not enough space - do it next time
         return;
     }
@@ -210,8 +210,13 @@ AP_GPS_UBLOX::_request_next_config(void)
         } else {
             _unconfigured_messages &= ~CONFIG_VERSION;
         }
-        // no need to send the initial rates, move to checking only
-        _next_message = STEP_PVT;
+        break;
+    case STEP_TMODE:
+        if (_hardware_generation >= UBLOX_F9) {
+            if (!_configure_valget(ConfigKey::TMODE_MODE)) {
+                _next_message--;
+            }
+        }
         break;
     default:
         // this case should never be reached, do a full reset if it is hit
@@ -349,7 +354,7 @@ AP_GPS_UBLOX::_verify_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate) {
 void
 AP_GPS_UBLOX::_request_port(void)
 {
-    if (port->txspace() < (int16_t)(sizeof(struct ubx_header)+2)) {
+    if (port->txspace() < (uint16_t)(sizeof(struct ubx_header)+2)) {
         // not enough space - do it next time
         return;
     }
@@ -870,8 +875,63 @@ AP_GPS_UBLOX::_parse_gps(void)
             return false;
         }
 #endif // CONFIGURE_PPS_PIN
+        case MSG_CFG_VALGET: {
+            uint8_t cfg_len = _payload_length - sizeof(ubx_cfg_valget);
+            const uint8_t *cfg_data = (const uint8_t *)(&_buffer) + sizeof(ubx_cfg_valget);
+            while (cfg_len >= 5) {
+                ConfigKey id;
+                memcpy(&id, cfg_data, sizeof(uint32_t));
+                cfg_len -= 4;
+                cfg_data += 4;
+                switch (id) {
+                    case ConfigKey::TMODE_MODE: {
+                        uint8_t mode = cfg_data[0];
+                        if (mode != 0) {
+                            // ask for mode 0, to disable TIME mode
+                            mode = 0;
+                            _configure_valset(ConfigKey::TMODE_MODE, 1, &mode);
+                            _unconfigured_messages |= CONFIG_TMODE_MODE;
+                        } else {
+                            _unconfigured_messages &= ~CONFIG_TMODE_MODE;
+                        }
+                        break;
+                    }
+                    default:
+                        break;
         }
            
+                // step over the value
+                const uint8_t key_size = ((uint32_t)id >> 28) & 0x07; // mask off the storage size
+                uint8_t step_size = 0;
+                switch (key_size) {
+                    case 0x1: // bit
+                        step_size = 1;
+                        break;
+                    case 0x2: // byte
+                        step_size = 1;
+                        break;
+                    case 0x3: // 2 bytes
+                        step_size = 2;
+                        break;
+                    case 0x4: // 4 bytes
+                        step_size = 4;
+                        break;
+                    case 0x5: // 8 bytes
+                        step_size = 8;
+                        break;
+                    default:
+                        // unknown/bad key size
+                        return false;
+                }
+                if (cfg_len <= step_size) {
+                    cfg_len = 0;
+                } else {
+                    cfg_len -= step_size;
+                    cfg_data += step_size;
+                }
+            }
+        }
+        }
     }
 
     if (_class == CLASS_MON) {
@@ -1318,7 +1378,7 @@ AP_GPS_UBLOX::_request_message_rate(uint8_t msg_class, uint8_t msg_id)
 bool
 AP_GPS_UBLOX::_configure_message_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate)
 {
-    if (port->txspace() < (int16_t)(sizeof(struct ubx_header)+sizeof(struct ubx_cfg_msg_rate)+2)) {
+    if (port->txspace() < (uint16_t)(sizeof(struct ubx_header)+sizeof(struct ubx_cfg_msg_rate)+2)) {
         return false;
     }
 
@@ -1327,6 +1387,52 @@ AP_GPS_UBLOX::_configure_message_rate(uint8_t msg_class, uint8_t msg_id, uint8_t
     msg.msg_id    = msg_id;
     msg.rate      = rate;
     return _send_message(CLASS_CFG, MSG_CFG_MSG, &msg, sizeof(msg));
+}
+
+/*
+ *  configure F9 based key/value pair - VALSET
+ */
+bool
+AP_GPS_UBLOX::_configure_valset(ConfigKey key, const uint8_t len, const uint8_t *value)
+{
+    if (_hardware_generation < UBLOX_F9) {
+        return false;
+    }
+    struct ubx_cfg_valset msg {};
+    uint8_t buf[sizeof(msg)+len];
+    if (port->txspace() < (uint16_t)(sizeof(struct ubx_header)+sizeof(buf)+2)) {
+        return false;
+    }
+    msg.version = 1;
+    msg.layers = 7; // all layers
+    msg.transaction = 0;
+    msg.key = uint32_t(key);
+    memcpy(buf, &msg, sizeof(msg));
+    memcpy(&buf[sizeof(msg)], value, len);
+    auto ret = _send_message(CLASS_CFG, MSG_CFG_VALSET, buf, sizeof(buf));
+    return ret;
+}
+
+/*
+ *  configure F9 based key/value pair - VALGET
+ */
+bool
+AP_GPS_UBLOX::_configure_valget(ConfigKey key)
+{
+    if (_hardware_generation < UBLOX_F9) {
+        return false;
+    }
+    struct {
+        struct ubx_cfg_valget msg;
+        ConfigKey key;
+    } msg {};
+    if (port->txspace() < (uint16_t)(sizeof(struct ubx_header)+sizeof(msg)+2)) {
+        return false;
+    }
+    msg.msg.version = 0;
+    msg.msg.layers = 0; // ram
+    msg.key = key;
+    return _send_message(CLASS_CFG, MSG_CFG_VALGET, &msg, sizeof(msg));
 }
 
 /*
@@ -1442,7 +1548,8 @@ static const char *reasons[] = {"navigation rate",
                                 "SBAS settings",
                                 "PVT rate",
                                 "time pulse settings",
-                                "TIMEGPS rate"};
+                                "TIMEGPS rate",
+                                "Time mode settings"};
 
 static_assert((1 << ARRAY_SIZE(reasons)) == CONFIG_LAST, "UBLOX: Missing configuration description");
 
