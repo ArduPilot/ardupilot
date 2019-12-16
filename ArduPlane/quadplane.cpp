@@ -624,11 +624,12 @@ bool QuadPlane::setup(void)
         }
         frame_class.set_and_save(new_value);
     }
+    gcs().send_text(MAV_SEVERITY_INFO, "QuadPlane initialise, class: %u, type: %u", 
+                    (unsigned)frame_class.get(), (unsigned)frame_type.get());
     
     if (hal.util->available_memory() <
         4096 + sizeof(*motors) + sizeof(*attitude_control) + sizeof(*pos_control) + sizeof(*wp_nav) + sizeof(*ahrs_view) + sizeof(*loiter_nav)) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Not enough memory for quadplane");
-        goto failed;
+        AP_BoardConfig::config_error("Not enough memory for quadplane");
     }
 
     /*
@@ -661,10 +662,7 @@ bool QuadPlane::setup(void)
     case AP_Motors::MOTOR_FRAME_TAILSITTER:
         break;
     default:
-        hal.console->printf("Unknown frame class %u - using QUAD\n", (unsigned)frame_class.get());
-        frame_class.set(AP_Motors::MOTOR_FRAME_QUAD);
-        setup_default_channels(4);
-        break;
+        AP_BoardConfig::config_error("Unknown Q_FRAME_CLASS %u", (unsigned)frame_class.get());
     }
 
     if (tailsitter.motor_mask == 0) {
@@ -691,18 +689,15 @@ bool QuadPlane::setup(void)
         // this is a copter tailsitter with motor layout specified by frame_class and frame_type
         // tilting motors are not supported (tiltrotor control variables are ignored)
         if (tilt.tilt_mask != 0) {
-            hal.console->printf("Warning tilting motors not supported, setting tilt_mask to zero\n");
-            tilt.tilt_mask.set(0);
+            gcs().send_text(MAV_SEVERITY_INFO, "Warning: Motor tilt not supported");
         }
         rotation = ROTATION_PITCH_90;
         motors = new AP_MotorsMatrix(plane.scheduler.get_loop_rate_hz(), rc_speed);
         motors_var_info = AP_MotorsMatrix::var_info;
     }
 
-    const static char *strUnableToAllocate = "Unable to allocate";
     if (!motors) {
-        hal.console->printf("%s motors\n", strUnableToAllocate);
-        goto failed;
+        AP_BoardConfig::config_error("Unable to allocate %s", "motors");
     }
 
     AP_Param::load_object_from_eeprom(motors, motors_var_info);
@@ -710,36 +705,36 @@ bool QuadPlane::setup(void)
     // create the attitude view used by the VTOL code
     ahrs_view = ahrs.create_view(rotation, ahrs_trim_pitch);
     if (ahrs_view == nullptr) {
-        goto failed;
+        AP_BoardConfig::config_error("Unable to allocate %s", "ahrs_view");
     }
 
     attitude_control = new AC_AttitudeControl_Multi(*ahrs_view, aparm, *motors, loop_delta_t);
     if (!attitude_control) {
-        hal.console->printf("%s attitude_control\n", strUnableToAllocate);
-        goto failed;
+        AP_BoardConfig::config_error("Unable to allocate %s", "attitude_control");
     }
     AP_Param::load_object_from_eeprom(attitude_control, attitude_control->var_info);
     pos_control = new AC_PosControl(*ahrs_view, inertial_nav, *motors, *attitude_control);
     if (!pos_control) {
-        hal.console->printf("%s pos_control\n", strUnableToAllocate);
-        goto failed;
+        AP_BoardConfig::config_error("Unable to allocate %s", "pos_control");
     }
     AP_Param::load_object_from_eeprom(pos_control, pos_control->var_info);
     wp_nav = new AC_WPNav(inertial_nav, *ahrs_view, *pos_control, *attitude_control);
     if (!wp_nav) {
-        hal.console->printf("%s wp_nav\n", strUnableToAllocate);
-        goto failed;
+        AP_BoardConfig::config_error("Unable to allocate %s", "wp_nav");
     }
     AP_Param::load_object_from_eeprom(wp_nav, wp_nav->var_info);
 
     loiter_nav = new AC_Loiter(inertial_nav, *ahrs_view, *pos_control, *attitude_control);
     if (!loiter_nav) {
-        hal.console->printf("%s loiter_nav\n", strUnableToAllocate);
-        goto failed;
+        AP_BoardConfig::config_error("Unable to allocate %s", "loiter_nav");
     }
     AP_Param::load_object_from_eeprom(loiter_nav, loiter_nav->var_info);
 
     motors->init((AP_Motors::motor_frame_class)frame_class.get(), (AP_Motors::motor_frame_type)frame_type.get());
+
+    if (!motors->initialised_ok()) {
+        AP_BoardConfig::config_error("unknown Q_FRAME_TYPE %u", (unsigned)frame_type.get());
+    }
     motors->set_throttle_range(thr_min_pwm, thr_max_pwm);
     motors->set_update_rate(rc_speed);
     motors->set_interlock(true);
@@ -780,12 +775,6 @@ bool QuadPlane::setup(void)
     gcs().send_text(MAV_SEVERITY_INFO, "QuadPlane initialised");
     initialised = true;
     return true;
-    
-failed:
-    initialised = false;
-    enable.set(0);
-    gcs().send_text(MAV_SEVERITY_INFO, "QuadPlane setup failed");
-    return false;
 }
 
 /*
