@@ -1,3 +1,17 @@
+Release 4.0.2beta2, 16th December 2019
+--------------------------------------
+
+This is a minor release with a few bug fixes and enhancements. Changes
+are:
+
+ - fixed error on AHRS level trim in preflight calibration
+
+ - fixed handling of SB without BUSY on I2Cv1 devices
+
+- update bootloaders to be more robust to unexpected data
+
+Happy flying!
+
 Release 4.0.2beta1, 9th December 2019
 -------------------------------------
 
