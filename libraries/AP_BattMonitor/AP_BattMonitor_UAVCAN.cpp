@@ -100,7 +100,7 @@ void AP_BattMonitor_UAVCAN::handle_battery_info(const BattInfoCb &cb)
     // Replacing consumed_mah calculation to be calculated from state of charge
     float capacity = static_cast<float>(_params._pack_capacity);
     float state_of_charge = static_cast<float>(cb.msg->state_of_charge_pct);
-    _interim_state.consumed_mah = capacity - (state_of_charge / 100.0f * capacity);
+    _interim_state.consumed_mah = capacity * (1 - state_of_charge / 100.0f);
 
     // record time
     _interim_state.last_time_micros = tnow;
