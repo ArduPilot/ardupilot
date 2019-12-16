@@ -1,5 +1,50 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.0.0-rc3 16-Nov-2019
+Changes from 4.0.0-rc2 
+1) Flight mode and control improvements:
+   a) Auto mode Takeoff getting stuck fixed (very rare)
+   b) AutoTune protection against ESC sync loss at beginning of a twitch
+   c) SystemID mode parameters hidden by default (set SID_AXIS to non-zero to see all)
+   d) Takeoff from slanted surfaces improved by reducing I-term build-up in attitude controllers 
+2) Lua Script related enhancements:
+   a) MAV FTP support to ease uploading and downloading Lua scripts
+   b) NeoPixel/WS2812 LED control from Lua scripts
+   c) Pre-arm check that Lua scripting feature has enough memory
+3) TradHeli enhancements:
+   a) Autonomous autorotation (compile time option, not available in stable firmware)
+   b) CCW Direct Drive Fixed Pitch tail support (see H_TAIL_TYPE parameter)
+   c) Parameter description improvements
+   d) STAB_COL_1/2/3 param range changed to 0 to 100 (was 0 to 1000)
+4) Lightware SF40c driver for latest sensors with "streaming" protocol
+5) Board/Frame specfic fixes:
+   a) Hex CubeOrange IMU heater control gain tuning improvement
+   b) Holybro Durandal IMUs ordering fix so EKx_IMU_MASK bits are intuitive
+   c) Holybro Pixhawk4 B/E LED fix (was flickering)
+   d) MatekF765 PWM outputs 5 and 6 now functional
+   e) MatekF765, MatekF405 time wrap CRITICAL fix for vehicles flying more than 72min
+   f) MatekF765 LED fixes
+   g) mRobotics ControlZeroF7 I2C bus numbering fix
+   h) Solo default params updated for 4.0.0
+   i) Bootloaders for boards using STM32H7 CPUs
+   j) Bootloader protection against line noise that could cause the board to get stuck during bootup
+   k) LED timing fix for FMUv5 boards with LEDs on one of first four auxiliary PWM outputs
+6) Minor Enhancements and Bug Fixes
+   a) I2C storm High level protection
+   b) Internal errors (like I2C storms) reported to GCS by setting Heartbeat status to Critical
+   c) Dataflash Logging CTUN.TAlt and SAlt scaling fixed
+   d) DO_DIGICAM_CONTROL messages are sent using Mavlink1/2 as specified by SERIALx_PROTOCOL
+   e) DO_SET_SPEED sanity check fixed to protect against negative speeds
+   f) FrSky telemetry scheduling improvement (fixes issue in which GPS data would not be sent)
+   g) GPS auto configuration fix for non-Ublox-F9 (F9 config was interfering with other Ublox GPSs)
+   h) Landing gear DEPLOY message fix (could be displayed multiple times or when gear not configured)
+   i) Pre-arm check of position estimate when arming in Loiter even if arming is "forced"
+   j) Pre-arm check that Terrain database has enough memory
+   k) RangeFinder parameter conversion fix (some parameters were not upgraded from 3.6.x to 4.0.0)
+   l) RangeFinder TYPE parameter descriptions clarified for LidarLite and Benewake Lidars
+   m) Serial parameters hidden if they do not exist on the particular board
+   n) UAVCAN GPS fix for GPSs that don't provide "Aux" message (like the Here2)
+------------------------------------------------------------------
 Copter 4.0.0-rc2 04-Nov-2019
 Changes from 4.0.0-rc1
 1) Failsafe changes:
