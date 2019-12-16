@@ -254,7 +254,7 @@ void AirSim::recv_fdm()
 
     velocity_ef = Vector3f(state.velocity.world_linear_velocity[0],
                            state.velocity.world_linear_velocity[1],
-                           state.velocity.world_linear_velocity[0]);
+                           state.velocity.world_linear_velocity[2]);
 
     location.lat = state.gps.lat * 1.0e7;
     location.lng = state.gps.lon * 1.0e7;
