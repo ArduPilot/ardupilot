@@ -899,8 +899,8 @@ AP_GPS_UBLOX::_parse_gps(void)
                     }
                     default:
                         break;
-                }
-
+        }
+           
                 // step over the value
                 const uint8_t key_size = ((uint32_t)id >> 28) & 0x07; // mask off the storage size
                 uint8_t step_size = 0;
