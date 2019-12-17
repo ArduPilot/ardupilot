@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export PATH=$HOME/.local/bin:/usr/local/bin:$HOME/prefix/bin:$HOME/APM/px4/gcc-arm-none-eabi-4_9-2015q3/bin:$PATH
+export PATH=$HOME/.local/bin:/usr/local/bin:$HOME/prefix/bin:$HOME/gcc/active/bin:$PATH
 export PYTHONUNBUFFERED=1
 
 cd $HOME/APM || exit 1
