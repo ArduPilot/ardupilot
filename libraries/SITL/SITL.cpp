@@ -119,9 +119,11 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     AP_GROUPINFO("WIND_T_ALT"  ,16, SITL,  wind_type_alt, 60),
     AP_GROUPINFO("WIND_T_COEF", 17, SITL,  wind_type_coef, 0.01f),
     
-    AP_GROUPINFO("WIND_T_TEST", 58, SITL, wind_type_test, 0),
-    AP_GROUPINFO("TEST_ARSPD", 59, SITL, arspd_fault_value, 0),
-    AP_GROUPINFO("ARSPD_FT", 60, SITL, arspd_fault_type, 0),
+    AP_GROUPINFO("ARSPD_FT", 58, SITL, arspd_fault_type, SITL::ARSPD_FAULT_ENABLE),
+    AP_GROUPINFO("ARSPD2_FT", 59, SITL, arspd2_fault_type, SITL::ARSPD_FAULT_ENABLE),
+    AP_GROUPINFO("ARSPD_FV", 60, SITL, arspd_fault_value, 0),
+    AP_GROUPINFO("ARSPD2_FV", 61, SITL, arspd2_fault_value, 0),
+    
     
 
     AP_GROUPINFO("MAG_DIA",     18, SITL,  mag_diag, 0),

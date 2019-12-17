@@ -19,64 +19,150 @@
 #include <cstdlib>
 #include <ctime>
 
+#define ENABLE 0
+#define REMOVE 1
+#define MULTIPLY 2
+#define CLOGGED 3
+#define CONST 4
+
 using namespace std;
 extern const AP_HAL::HAL& hal;
 
 using namespace HALSITL;
 
-void SITL_State::_get_arspd_fault()
+
+static float previos_call_time = 0;
+static float fault_static = 0;
+static float fault_static_ = 0;
+
+float SITL_State::add_clogged(float airspeed, float fault)
 {
-    srand(time(NULL));
-    switch (_sitl->arspd_fault_type) {
+    fault_static_ += ((AP_HAL::millis() - previos_call_time)/1000)*(fault);
+    cout<<"CLOGGED = "<<fault_static_<<endl;
+    return ((AP_HAL::millis() - previos_call_time)/1000)*(fault);
+}
+float SITL_State::add_sum(float airspeed, float fault)
+{
+    return airspeed + fault;
+}
+float SITL_State::add_multiply(float airspeed, float fault)
+{
+    return airspeed * fault;
+}
+typedef float(*func_fault)(float, float);
+func_fault func_type_fault[] =
+{
+    HALSITL::SITL_State::add_sum, HALSITL::SITL_State::add_multiply, HALSITL::SITL_State::add_clogged
+};
+
+float SITL_State::_get_arspd_fault(float airspeed, int fault_type, float fault)
+{
+    switch (fault_type) {
+
+        case MULTIPLY:
+            cout<<"ARSPD_FAULT_MULTIPLY"<<endl;
+            //airspeed *= fault;
+            airspeed = SITL_State::_add_fault(airspeed, fault, func_type_fault[1]);
+            break;
+
+        case CLOGGED:
+            cout<<"ARSPD_FAULT_CLOGGED"<<endl;
+            airspeed += SITL_State::_add_fault(airspeed, fault, func_type_fault[2]);
+            break;
+
+        case CONST:
+            cout<<"ARPSD CONST"<<endl;
+            airspeed = SITL_State::_add_fault(airspeed, fault, func_type_fault[0]);
+            break;
+
+        case REMOVE:
+            cout<<"REMOVE"<<endl;
+            break;
+
+        default:
+            break;
+        }
+    return airspeed;
+}
+void SITL_State::_get_arspd_fault(float airspeed)
+{
+    /*switch (_sitl->arspd_fault_type) {
+
+        case SITL::SITL::ARSPD_FAULT_MULTIPLY:
+            airspeed *= _sitl->arspd_fault_value;
+            break;
+
         case SITL::SITL::ARSPD_FAULT_CLOGGED:
             cout<<"ARSPD_FAULT_CLOGGED"<<endl;
             break;
 
-        case SITL::SITL::ARSPD_FAULT_SMOOTHY:
-            cout<<"ARSPD_FAULT_SMOOTHY"<<endl;
-
-            _sitl->arspd_fault_value += 0.01 * (rand() % 101);
-            break;
-
         case SITL::SITL::ARSPD_FAULT_CONST:
+            break;
+            
         default:
         cout<<"ARSPD_FAULT_CONST"<<endl;
             break;
-        }
+        }*/
 }
+
 
 /*
   convert airspeed in m/s to an airspeed sensor value
  */
 void SITL_State::_update_airspeed(float airspeed)
 {
+    const uint64_t current_time = AP_HAL::millis();
+
     const float airspeed_ratio = 1.9936f;
     const float airspeed_offset = 2013.0f;
 
+    float true_airspeed = airspeed;
     float airspeed2 = airspeed;
-
-    const uint64_t current_time = AP_HAL::millis();
-
-    if (_sitl->arspd_fault_type != 0 && current_time % 5000 == 0)
+    float tmp = airspeed;
+    if (_sitl->arspd_fault_type != 0)
     {
-        if (airspeed2 > 0)
-            _get_arspd_fault();
+        tmp = _get_arspd_fault(airspeed, _sitl->arspd_fault_type , _sitl->arspd_fault_value);
+        cout<<"ARSPD FAULT TESTING = "<<tmp<<endl;
+        cout<<"ARSPD FAULT TESTING = "<<airspeed<<endl;
+        //!!! airspeed = _get_arspd_fault(airspeed, _sitl->arspd_fault_type, _sitl->arspd_fault_value)
+        //SITL_State::_add_fault(airspeed, _sitl->arspd_fault_value, func_type_fault[_sitl->arspd_fault_type]);
+
     }
-    airspeed2 += _sitl->arspd_fault_value;
     
+
+    
+
+
+    // switch for adding fault airspeed or airspeed2
+    if (_sitl->arspd_fault_type == 2)
+    {
+        //airspeed += _sitl->arspd_fault_value;
+        fault_static += SITL_State::_add_fault(airspeed, _sitl->arspd_fault_value, func_type_fault[_sitl->arspd_fault_type]); //((current_time - previos_call_time)/1000)*(_sitl->arspd_fault_value);
+        previos_call_time = current_time;
+    }
+    //airspeed2 += _sitl->arspd_fault_value;
+
+    cout<<"PREVIOS FAULT VALUE = "<<fault_static<<endl;
+    cout<<"CURR_TIME VALUE = "<<current_time<<endl;
+
     // Check sensor failure
     airspeed = is_zero(_sitl->arspd_fail) ? airspeed : _sitl->arspd_fail;
     airspeed2 = is_zero(_sitl->arspd2_fail) ? airspeed2 : _sitl->arspd2_fail;
-    cout<<"arspd_fault_type ="<<_sitl->arspd_fault_type<<endl;
-    cout<<"arspd_fault_value  = "<<_sitl->arspd_fault_value<<endl;
+    cout<<"arspd_fault_type ="<<(int)_sitl->arspd_fault_type<<endl;
+    cout<<"arspd2_fault_type  = "<<(int)_sitl->arspd2_fault_type<<endl;
     cout<<"ARSPD        = "<<airspeed<<endl;
     cout<<"ARSPD2       = "<<airspeed2<<endl;
     cout<<"ARSPD state  = "<<_sitl->state.airspeed<<endl;
+    cout<<"ARSPD true value ="<<true_airspeed<<endl;
+    cout<<"ARSPD fault value ="<<_sitl->arspd_fault_value<<endl;
+    cout<<"ARSPD2 fault value = "<<_sitl->arspd2_fault_value<<endl;
 
+    //cout<<"ARSPD POLIMORF = "<<SITL_State::_add_fault(true_airspeed, _sitl->arspd_fault_value, func_type_fault[_sitl->arspd_fault_type])<<endl;
+    
     // Add noise
     airspeed = airspeed + (_sitl->arspd_noise * rand_float());
     airspeed2 = airspeed2 + (_sitl->arspd_noise * rand_float());
-
+    
 
 
     if (!is_zero(_sitl->arspd_fail_pressure)) {
@@ -152,8 +238,6 @@ void SITL_State::_update_airspeed(float airspeed)
     airspeed_pin_value = airspeed_raw / 4;
     airspeed_2_pin_value = airspeed2_raw / 4;
 
-    cout<<"airsp pi = "<<airspeed_pin_value<<endl;
-    cout<<"airsp2 pi = "<<airspeed_2_pin_value<<endl;
 }
 
 #endif

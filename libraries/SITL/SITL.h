@@ -191,8 +191,9 @@ public:
     // airspeed fault control
     enum AirspeedFault {
         ARSPD_FAULT_ENABLE = 0,
+        ARSPD_FAULT_REMOVE,
+        ARSPD_FAULT_MULTIPLY,
         ARSPD_FAULT_CLOGGED,
-        ARSPD_FAULT_SMOOTHY,
         ARSPD_FAULT_CONST,
     };
     
@@ -210,8 +211,10 @@ public:
 
     AP_Float wind_type_test;
     //airspeed fault
-    AP_Int8  arspd_fault_type;
+    AP_Int8 arspd_fault_type;
     AP_Float arspd_fault_value;
+    AP_Int8 arspd2_fault_type;
+    AP_Float arspd2_fault_value;
 
     AP_Int16  baro_delay; // barometer data delay in ms
     AP_Int16  mag_delay; // magnetometer data delay in ms
