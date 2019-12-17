@@ -1,4 +1,4 @@
-# 3DR Solo with stock or black cube on Copter 3.7 only
+# 3DR Solo with stock or black cube on Copter 4 only
 ACRO_RP_P,4
 ACRO_THR_MID,0.4
 ACRO_YAW_P,1
@@ -39,6 +39,7 @@ BATT_LOW_MAH,520
 BATT_LOW_TIMER,10
 BATT_LOW_VOLT,14
 BATT_MONITOR,5
+PWM_VOLT_SEL,1
 BRD_SAFETY_MASK,16368
 BRD_SAFETYENABLE,0
 BRD_TYPE,3
