@@ -119,7 +119,7 @@ void Sub::althold_run()
         pos_control.relax_alt_hold_controllers();
     } else { // hold z
         if (ap.at_surface) {
-            pos_control.set_alt_target(inertial_nav.get_altitude() - 1.0f);
+            pos_control.set_alt_target(g.surface_depth - 5.0f); // set target to 5cm below surface level
             holding_depth = true;
         } else if (ap.at_bottom) {
             pos_control.set_alt_target(inertial_nav.get_altitude() + 10.0f); // set target to 10 cm above bottom
