@@ -44,6 +44,7 @@ Changes from 4.0.0-rc2
    l) RangeFinder TYPE parameter descriptions clarified for LidarLite and Benewake Lidars
    m) Serial parameters hidden if they do not exist on the particular board
    n) UAVCAN GPS fix for GPSs that don't provide "Aux" message (like the Here2)
+   o) NMEA Output bug fix (output was stopping after 90 seconds)
 ------------------------------------------------------------------
 Copter 4.0.0-rc2 04-Nov-2019
 Changes from 4.0.0-rc1
