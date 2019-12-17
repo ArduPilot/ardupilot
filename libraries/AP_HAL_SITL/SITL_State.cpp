@@ -295,6 +295,26 @@ int SITL_State::sim_fd(const char *name, const char *arg)
         }
         nmea = new SITL::RF_NMEA();
         return nmea->fd();
+
+    } else if (streq(name, "frsky-d")) {
+        if (frsky_d != nullptr) {
+            AP_HAL::panic("Only one frsky_d at a time");
+        }
+        frsky_d = new SITL::Frsky_D();
+        return frsky_d->fd();
+    // } else if (streq(name, "frsky-SPort")) {
+    //     if (frsky_sport != nullptr) {
+    //         AP_HAL::panic("Only one frsky_sport at a time");
+    //     }
+    //     frsky_sport = new SITL::Frsky_SPort();
+    //     return frsky_sport->fd();
+
+    // } else if (streq(name, "frsky-SPortPassthrough")) {
+    //     if (frsky_sport_passthrough != nullptr) {
+    //         AP_HAL::panic("Only one frsky_sport passthrough at a time");
+    //     }
+    //     frsky_sport = new SITL::Frsky_SPortPassthrough();
+    //     return frsky_sportpassthrough->fd();
     }
 
     AP_HAL::panic("unknown simulated device: %s", name);
@@ -366,6 +386,11 @@ int SITL_State::sim_fd_write(const char *name)
             AP_HAL::panic("No nmea created");
         }
         return nmea->write_fd();
+    } else if (streq(name, "frsky-d")) {
+        if (frsky_d == nullptr) {
+            AP_HAL::panic("No frsky-d created");
+        }
+        return frsky_d->write_fd();
     }
     AP_HAL::panic("unknown simulated device: %s", name);
 }
@@ -539,6 +564,16 @@ void SITL_State::_fdm_input_local(void)
     if (nmea != nullptr) {
         nmea->update(sitl_model->get_range());
     }
+
+    if (frsky_d != nullptr) {
+        frsky_d->update();
+    }
+    // if (frsky_sport != nullptr) {
+    //     frsky_sport->update();
+    // }
+    // if (frsky_sportpassthrough != nullptr) {
+    //     frsky_sportpassthrough->update();
+    // }
 
     if (_sitl) {
         _sitl->efi_ms.update();
