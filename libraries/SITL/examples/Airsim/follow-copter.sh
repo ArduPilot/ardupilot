@@ -38,9 +38,7 @@ elif [ "$(expr substr $unameOut 1 6)" == "CYGWIN" ]; then
     MCAST_IP_PORT="0.0.0.0:14550"
 fi
 
-
-
-BASE_DEFAULTS="$ROOTDIR/Tools/autotest/default_params/copter.parm,$ROOTDIR/libraries/SITL/examples/Airsim/quadX.parm"
+BASE_DEFAULTS="$ROOTDIR/Tools/autotest/default_params/copter.parm,$ROOTDIR/Tools/autotest/default_params/airsim-quadX.parm"
 
 [ -x "$COPTER" ] || {
 	./waf configure --board sitl
