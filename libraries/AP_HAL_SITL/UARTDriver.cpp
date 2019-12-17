@@ -209,7 +209,7 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
         if (nwritten == -1 && errno != EAGAIN && _uart_path) {
             if (_fd_write != -1) {
                 close(_fd_write);
-                _fd_write = 1;
+                _fd_write = -1;
             }
             close(_fd);
             _fd = -1;
