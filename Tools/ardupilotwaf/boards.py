@@ -140,11 +140,17 @@ class Board:
                 '-Wno-inconsistent-missing-override',
                 '-Wno-mismatched-tags',
                 '-Wno-gnu-variable-sized-type-not-at-end',
+                '-Werror=implicit-fallthrough',
             ]
         else:
             env.CFLAGS += [
                 '-Wno-format-contains-nul',
             ]
+            (major, minor, patchlevel) = cfg.env.CC_VERSION
+            if int(major) > 7 or (int(major) == 7 and int(minor) >= 4):
+                env.CXXFLAGS += [
+                    '-Werror=implicit-fallthrough',
+                ]
 
         if cfg.env.DEBUG:
             env.CFLAGS += [
@@ -227,6 +233,7 @@ class Board:
                 '-Wno-gnu-designator',
                 '-Wno-mismatched-tags',
                 '-Wno-gnu-variable-sized-type-not-at-end',
+                '-Werror=implicit-fallthrough',
             ]
         else:
             env.CXXFLAGS += [
@@ -237,6 +244,10 @@ class Board:
             if int(major) > 5 or (int(major) == 5 and int(minor) > 1):
                 env.CXXFLAGS += [
                     '-Werror=suggest-override',
+                ]
+            if int(major) > 7 or (int(major) == 7 and int(minor) >= 4):
+                env.CXXFLAGS += [
+                    '-Werror=implicit-fallthrough',
                 ]
 
         if cfg.env.DEBUG:
