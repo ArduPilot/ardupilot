@@ -7,6 +7,8 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_GPS/AP_GPS.h>
+#include <AP_Arming/AP_Arming.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -190,6 +192,16 @@ void GCS::update_sensor_status_flags()
         }
         if (!fence->sys_status_failed()) {
             control_sensors_health |= MAV_SYS_STATUS_GEOFENCE;
+        }
+    }
+
+    // give GCS status of prearm checks. This is enabled if any arming checks are enabled.
+    // it is healthy if armed or checks are passing
+    control_sensors_present |= MAV_SYS_STATUS_PREARM_CHECK;
+    if (AP::arming().get_enabled_checks()) {
+        control_sensors_enabled |= MAV_SYS_STATUS_PREARM_CHECK;
+        if (hal.util->get_soft_armed() || AP_Notify::flags.pre_arm_check) {
+            control_sensors_health |= MAV_SYS_STATUS_PREARM_CHECK;
         }
     }
 
