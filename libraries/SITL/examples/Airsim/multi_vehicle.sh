@@ -20,8 +20,7 @@ else
     GCS_IP=$1
 fi
 
-
-BASE_DEFAULTS="$ROOTDIR/Tools/autotest/default_params/copter.parm,$ROOTDIR/libraries/SITL/examples/Airsim/quadX.parm"
+BASE_DEFAULTS="$ROOTDIR/Tools/autotest/default_params/copter.parm,$ROOTDIR/Tools/autotest/default_params/airsim-quadX.parm"
 
 [ -x "$COPTER" ] || {
     ./waf configure --board sitl
