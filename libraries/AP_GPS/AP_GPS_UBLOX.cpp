@@ -90,6 +90,13 @@ AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UART
 #if CONFIGURE_PPS_PIN
     _unconfigured_messages |= CONFIG_TP5;
 #endif
+
+    if (role == AP_GPS::GPS_ROLE_MB_BASE) {
+        rtcm3_parser = new RTCM3_Parser;
+        if (rtcm3_parser == nullptr) {
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "u-blox %d: failed RTCMv3 parser allocation", state.instance + 1);
+        }
+    }
 }
 
 AP_GPS_UBLOX::~AP_GPS_UBLOX()
@@ -352,14 +359,16 @@ AP_GPS_UBLOX::_request_next_config(void)
         }
         break;
     case STEP_TMODE:
-        if (_hardware_generation >= UBLOX_F9) {
+        if (supports_F9_config()) {
             if (!_configure_valget(ConfigKey::TMODE_MODE)) {
                 _next_message--;
             }
         }
         break;
     case STEP_RTK_MOVBASE:
-        if (_hardware_generation >= UBLOX_F9) {
+        if (supports_F9_config()) {
+            static_assert(sizeof(active_config.done_mask)*8 >= ARRAY_SIZE(config_MB_Base), "done_mask too small, base");
+            static_assert(sizeof(active_config.done_mask)*8 >= ARRAY_SIZE(config_MB_Rover), "done_mask too small, rover");
             if (role == AP_GPS::GPS_ROLE_MB_BASE &&
                 !_configure_config_set(config_MB_Base, ARRAY_SIZE(config_MB_Base), CONFIG_RTK_MOVBASE)) {
                 _next_message--;
@@ -824,7 +833,6 @@ uint8_t AP_GPS_UBLOX::config_key_size(ConfigKey key) const
     case 0x1: // bit
     case 0x2: // byte
         return 1;
-        break;
     case 0x3: // 2 bytes
         return 2;
     case 0x4: // 4 bytes
@@ -1110,7 +1118,9 @@ AP_GPS_UBLOX::_parse_gps(void)
                 // see if it is in active config list
                 int8_t cfg_idx = find_active_config_index(id);
                 if (cfg_idx >= 0) {
-                    if (active_config.list[cfg_idx].value != cfg_data[0]) {
+                    const uint8_t key_size = config_key_size(id);
+                    if (cfg_len < key_size ||
+                        memcmp(&active_config.list[cfg_idx].value, cfg_data, key_size) != 0) {
                         _configure_valset(id, &active_config.list[cfg_idx].value);
                         _unconfigured_messages |= active_config.unconfig_bit;
                         active_config.done_mask &= ~(1U << cfg_idx);
@@ -1166,23 +1176,10 @@ AP_GPS_UBLOX::_parse_gps(void)
 
                     // see if RTK moving baseline base is wanted
                     if (role == AP_GPS::GPS_ROLE_MB_BASE) {
-                        rtcm3_parser = new RTCM3_Parser;
-                        if (rtcm3_parser == nullptr) {
-                            GCS_SEND_TEXT(MAV_SEVERITY_ERROR,
-                                          "GPS: u-blox %d MB Base FAILED NO MEMORY",
-                                          state.instance + 1);
-                        } else {
-                            GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                                          "GPS: u-blox %d config start MB Base",
-                                          state.instance + 1);
-                        }
                         _unconfigured_messages |= CONFIG_RTK_MOVBASE;
                     }
                     // see if RTK moving baseline rover is wanted
                     if (role == AP_GPS::GPS_ROLE_MB_ROVER) {
-                        GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                                      "GPS: u-blox %d config start MB Rover",
-                                      state.instance + 1);
                         _unconfigured_messages |= CONFIG_RTK_MOVBASE;
                     }
                 }
@@ -1632,7 +1629,7 @@ AP_GPS_UBLOX::_configure_message_rate(uint8_t msg_class, uint8_t msg_id, uint8_t
 bool
 AP_GPS_UBLOX::_configure_valset(ConfigKey key, const void *value)
 {
-    if (_hardware_generation < UBLOX_F9) {
+    if (!supports_F9_config()) {
         return false;
     }
     const uint8_t len = config_key_size(key);
@@ -1657,7 +1654,7 @@ AP_GPS_UBLOX::_configure_valset(ConfigKey key, const void *value)
 bool
 AP_GPS_UBLOX::_configure_valget(ConfigKey key)
 {
-    if (_hardware_generation < UBLOX_F9) {
+    if (!supports_F9_config()) {
         return false;
     }
     struct {
@@ -1679,9 +1676,6 @@ AP_GPS_UBLOX::_configure_valget(ConfigKey key)
 bool
 AP_GPS_UBLOX::_configure_config_set(const config_list *list, uint8_t count, uint32_t unconfig_bit)
 {
-    if (_hardware_generation < UBLOX_F9) {
-        return false;
-    }
     active_config.list = list;
     active_config.count = count;
     active_config.done_mask = 0;
@@ -1905,4 +1899,26 @@ void AP_GPS_UBLOX::clear_RTCMV3(void)
     if (rtcm3_parser) {
         rtcm3_parser->clear_packet();
     }
+}
+
+// ublox specific healthy checks
+bool AP_GPS_UBLOX::is_healthy(void) const
+{
+    if ((role == AP_GPS::GPS_ROLE_MB_BASE ||
+        role == AP_GPS::GPS_ROLE_MB_ROVER) &&
+        !supports_F9_config()) {
+        // need F9 or above for moving baseline
+        return false;
+    }
+    if (role == AP_GPS::GPS_ROLE_MB_BASE && rtcm3_parser == nullptr) {
+        // we haven't initialised RTCMv3 parser
+        return false;
+    }
+    return true;
+}
+
+// return true if GPS is capable of F9 config
+bool AP_GPS_UBLOX::supports_F9_config(void) const
+{
+    return _hardware_generation >= UBLOX_F9 && _hardware_generation != UBLOX_UNKNOWN_HARDWARE_GENERATION;
 }
