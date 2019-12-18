@@ -141,6 +141,9 @@ public:
     // support for retrieving RTCMv3 data from a moving baseline base
     bool get_RTCMV3(const uint8_t *&bytes, uint16_t &len) override;
     void clear_RTCMV3(void) override;
+
+    // ublox specific healthy checks
+    bool is_healthy(void) const override;
     
 private:
     // u-blox UBX protocol essentials
@@ -746,6 +749,9 @@ private:
 
     // find index in active_config list
     int8_t find_active_config_index(ConfigKey key) const;
+
+    // return true if GPS is capable of F9 config
+    bool supports_F9_config(void) const;
 
     // config for moving baseline base
     static const config_list config_MB_Base[];
