@@ -130,17 +130,38 @@ void Sub::motordetect_run()
         bool yaw_down = gyro.z < -0.5;
         int yaw = (+int(yaw_up) - int(yaw_down))*current_direction;
 
-        Vector3f directions(roll, pitch, yaw);
-        // Good read, not inverted
-        if (directions == motors.get_motor_angular_factors(current_motor)) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Thruster %d is ok!", current_motor + 1);
+        // Readings from the motors table
+        Vector3f motor_directions = motors.get_motor_angular_factors(current_motor);
+        // Readings we got from the tests
+        Vector3f read_directions = Vector3f(roll, pitch, yaw);
+
+        // Any correct reading counts, any inverted one invalidates the test
+        int correct_readings = 0;
+        int inverted_readings = 0;
+
+        for (int i=0; i<3; i++) {
+            // Factor read as 0 does not count
+            if (fabsf(read_directions[i]) < 0.1f || fabsf(motor_directions[i]) < 0.1f ) {
+                continue;
+            } // Correct reading
+            else if (fabsf(motor_directions[i] - read_directions[i]) < 0.1f) {
+                correct_readings += 1;
+            } // Inverted reading
+            else if (fabsf(motor_directions[i] + read_directions[i]) < 0.1f)  {
+                inverted_readings += 1;
+            }
         }
-        // Good read, inverted
-        else if (-directions == motors.get_motor_angular_factors(current_motor)) {
+        // Detected the motor at the correct direction
+        if (correct_readings > 0 && inverted_readings == 0) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Thruster %d is ok! Saving it!", current_motor + 1);
+            motors.set_reversed(current_motor, false);
+        }
+        // Motor detected and inverted
+        else if (inverted_readings > 0 && correct_readings == 0) {
             gcs().send_text(MAV_SEVERITY_INFO, "Thruster %d is reversed! Saving it!", current_motor + 1);
             motors.set_reversed(current_motor, true);
         }
-        // Bad read!
+        // Could not detect motor properly
         else {
             gcs().send_text(MAV_SEVERITY_INFO, "Bad thrust read, trying to push the other way...");
             // If we got here, we couldn't identify anything that made sense.
