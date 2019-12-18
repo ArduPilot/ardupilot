@@ -1,6 +1,7 @@
 #NOTE: Rolling Spider parameter defaults (Copter-3.6 and higher)
 ARMING_CHECK,0
-BATT_MONITOR,0
+BATT_MONITOR,13
+BATT_CAPACITY,550
 FRAME_CLASS,1
 FRAME_TYPE,1
 FS_GCS_ENABLE,5

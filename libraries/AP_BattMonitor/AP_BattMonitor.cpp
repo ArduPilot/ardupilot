@@ -6,6 +6,7 @@
 #include "AP_BattMonitor_Sum.h"
 #include "AP_BattMonitor_FuelFlow.h"
 #include "AP_BattMonitor_FuelLevel_PWM.h"
+#include "AP_BattMonitor_SIP6.h"
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -152,6 +153,11 @@ AP_BattMonitor::init()
                 drivers[instance] = new AP_BattMonitor_FuelLevel_PWM(*this, state[instance], _params[instance]);
                 break;
 #endif // HAL_BATTMON_FUEL_ENABLE
+            case AP_BattMonitor_Params::BattMonitor_TYPE_SIP6:
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ROLLING_SPIDER
+                drivers[instance] = new AP_BattMonitor_SIP6(*this, state[instance], _params[instance]);
+#endif
+                break;
             case AP_BattMonitor_Params::BattMonitor_TYPE_NONE:
             default:
                 break;
