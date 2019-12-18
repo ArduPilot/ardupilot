@@ -73,7 +73,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: TYPE
     // @DisplayName: GPS type
     // @Description: GPS type
-    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:UAVCAN,10:SBF,11:GSOF,13:ERB,14:MAV,15:NOVA,16:HemisphereNMEA
+    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:UAVCAN,10:SBF,11:GSOF,13:ERB,14:MAV,15:NOVA,16:HemisphereNMEA,17:uBlox-MovingBaseline-Base,18:uBlox-MovingBaseline-Rover
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("TYPE",    0, AP_GPS, _type[0], HAL_GPS_TYPE_DEFAULT),
@@ -82,7 +82,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: TYPE2
     // @DisplayName: 2nd GPS type
     // @Description: GPS type of 2nd GPS
-    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:UAVCAN,10:SBF,11:GSOF,13:ERB,14:MAV,15:NOVA,16:HemisphereNMEA
+    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:UAVCAN,10:SBF,11:GSOF,13:ERB,14:MAV,15:NOVA,16:HemisphereNMEA,17:uBlox-MovingBaseline-Base,18:uBlox-MovingBaseline-Rover
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("TYPE2",   1, AP_GPS, _type[1], 0),
@@ -852,8 +852,10 @@ void AP_GPS::update_primary(void)
         if (_type[i] == GPS_TYPE_UBLOX_RTK_ROVER &&
             state[i].status == GPS_OK_FIX_3D_RTK_FIXED &&
             state[i].have_gps_yaw) {
-            primary_instance = i;
-            _last_instance_swap_ms = now;
+            if (primary_instance != i) {
+                _last_instance_swap_ms = now;
+                primary_instance = i;
+            }
             return;
         }
     }
