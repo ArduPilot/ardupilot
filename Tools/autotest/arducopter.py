@@ -4492,6 +4492,7 @@ class AutoTestCopter(AutoTest):
             "Parachute": "See https://github.com/ArduPilot/ardupilot/issues/4702",
             "HorizontalAvoidFence": "See https://github.com/ArduPilot/ardupilot/issues/11525",
             "BeaconPosition": "See https://github.com/ArduPilot/ardupilot/issues/11689",
+            "MotorVibration": "See https://github.com/ArduPilot/ardupilot/issues/13072",
         }
 
 class AutoTestHeli(AutoTestCopter):
