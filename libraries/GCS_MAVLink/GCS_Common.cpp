@@ -1783,7 +1783,15 @@ void GCS::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const cha
 
     // filter destination ports to only allow active ports.
     statustext_t statustext{};
-    statustext.bitmask = (GCS_MAVLINK::active_channel_mask()  | GCS_MAVLINK::streaming_channel_mask() ) & dest_bitmask;
+    if (update_send_has_been_called) {
+        statustext.bitmask = (GCS_MAVLINK::active_channel_mask()  | GCS_MAVLINK::streaming_channel_mask() );
+    } else {
+        // we have not yet initialised the streaming-channel-mask,
+        // which is done as part of the update() call.  So just send
+        // it to all channels:
+        statustext.bitmask = (1<<_num_gcs)-1;
+    }
+    statustext.bitmask &= dest_bitmask;
     if (!statustext.bitmask) {
         // nowhere to send
         return;
@@ -1860,6 +1868,7 @@ void GCS::send_message(enum ap_message id)
 
 void GCS::update_send()
 {
+    update_send_has_been_called = true;
     if (!initialised_missionitemprotocol_objects) {
         initialised_missionitemprotocol_objects = true;
         // once-only initialisation of MissionItemProtocol objects:

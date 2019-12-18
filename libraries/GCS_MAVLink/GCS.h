@@ -949,6 +949,9 @@ private:
     // true if we have already allocated protocol objects:
     bool initialised_missionitemprotocol_objects;
 
+    // true if update_send has ever been called:
+    bool update_send_has_been_called;
+
     // handle passthru between two UARTs
     struct {
         bool enabled;
