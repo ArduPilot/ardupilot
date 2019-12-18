@@ -32,8 +32,10 @@
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_Relay/AP_Relay.h>                      // APM relay
 #include <AP_RSSI/AP_RSSI.h>                        // RSSI Library
+#include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_SerialManager/AP_SerialManager.h>      // Serial manager library
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
+#include <AP_Camera/AP_RunCam.h>
 
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
 
@@ -43,6 +45,7 @@ public:
         if (_singleton) {
             AP_HAL::panic("Too many Vehicles");
         }
+        AP_Param::setup_object_defaults(this, var_info);
         _singleton = this;
     }
 
@@ -107,6 +110,8 @@ public:
         AP_Int16 angle_max;
     };
 
+    void get_common_scheduler_tasks(const AP_Scheduler::Task*& tasks, uint8_t& num_tasks);
+
 protected:
 
     // board specific config
@@ -126,7 +131,9 @@ protected:
     RangeFinder rangefinder;
 
     AP_RSSI rssi;
-
+#if HAL_RUNCAM_ENABLED
+    AP_RunCam runcam;
+#endif
     AP_SerialManager serial_manager;
 
     AP_Relay relay;
@@ -146,6 +153,12 @@ protected:
     AP_AHRS_DCM ahrs;
 #endif
 
+    // initialize the vehicle
+    void init_vehicle();
+
+    static const struct AP_Param::GroupInfo var_info[];
+    static const struct AP_Scheduler::Task scheduler_tasks[];
+
 private:
 
     static AP_Vehicle *_singleton;
@@ -157,5 +170,7 @@ namespace AP {
 };
 
 extern const AP_HAL::HAL& hal;
+
+extern const AP_Param::Info vehicle_var_info[];
 
 #include "AP_Vehicle_Type.h"
