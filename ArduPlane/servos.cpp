@@ -412,8 +412,11 @@ void Plane::set_servos_controlled(void)
         min_throttle = 0;
     }
     
-    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF || flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
-        if(aparm.takeoff_throttle_max != 0) {
+    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF || 
+        flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND ||
+        quadplane.in_transition()) {
+
+        if (aparm.takeoff_throttle_max != 0) {
             max_throttle = aparm.takeoff_throttle_max;
         } else {
             max_throttle = aparm.throttle_max;
