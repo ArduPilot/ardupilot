@@ -208,10 +208,10 @@ void RC_Channels::read_mode_switch()
 */
 bool RC_Channels::get_pwm(uint8_t c, uint16_t &pwm) const
 {
-    if (c < 1 || c > NUM_RC_CHANNELS) {
+    RC_Channel *chan = rc_channel(c-1);
+    if (chan == nullptr) {
         return false;
     }
-    RC_Channel *chan = rc_channel(c-1);
     int16_t pwm_signed = chan->get_radio_in();
     if (pwm_signed < 0) {
         return false;
