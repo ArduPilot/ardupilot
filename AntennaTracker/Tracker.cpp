@@ -176,5 +176,6 @@ Tracker::Tracker(void)
 }
 
 Tracker tracker;
+AP_Vehicle& vehicle = tracker;
 
 AP_HAL_MAIN_CALLBACKS(&tracker);
