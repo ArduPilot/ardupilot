@@ -10,6 +10,8 @@ def build(bld):
             'AP_Beacon',
             'AP_Arming',
             'AP_Stats',
+            'AP_RCMapper',
+            'AP_OSD',
         ],
     )
 
