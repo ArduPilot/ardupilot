@@ -88,6 +88,9 @@ void Tracker::init_tracker()
     // initialise rc channels including setting mode
     rc().init();
 
+    // run all the vehicle initialization routines
+    init_vehicle();
+
     // initialise servos
     init_servos();
 
