@@ -87,6 +87,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 
 #ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
     GSCALAR(hardpoint_id, "HARDPOINT_ID", HAL_PWM_HARDPOINT_ID_DEFAULT),
+    GSCALAR(hardpoint_rate, "HARDPOINT_RATE", 100),
 #endif
     
     AP_VAREND
