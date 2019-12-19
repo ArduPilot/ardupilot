@@ -69,7 +69,19 @@ public:
 #ifdef HAL_PERIPH_ENABLE_RANGEFINDER
     RangeFinder rangefinder;
 #endif
-    
+
+#ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
+    void pwm_irq_handler(uint8_t pin, bool pin_state, uint32_t timestamp);
+    void pwm_hardpoint_init();
+    void pwm_hardpoint_update();
+    struct {
+        uint8_t last_state;
+        uint32_t last_ts_us;
+        uint32_t last_send_ms;
+        uint16_t pwm_value;
+    } pwm_hardpoint;
+#endif
+
     // setup the var_info table
     AP_Param param_loader{var_info};
 

@@ -37,6 +37,7 @@
 #include <uavcan/equipment/indication/BeepCommand.h>
 #include <uavcan/equipment/indication/LightsCommand.h>
 #include <uavcan/equipment/range_sensor/Measurement.h>
+#include <uavcan/equipment/hardpoint/Command.h>
 #include <ardupilot/indication/SafetyState.h>
 #include <ardupilot/indication/Button.h>
 #include <ardupilot/equipment/trafficmonitor/TrafficReport.h>
@@ -1036,6 +1037,53 @@ void AP_Periph_FW::can_start()
     can_wait_node_id();
 }
 
+#ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
+void AP_Periph_FW::pwm_hardpoint_init()
+{
+    hal.gpio->attach_interrupt(
+        PWM_HARDPOINT_PIN,
+        FUNCTOR_BIND_MEMBER(&AP_Periph_FW::pwm_irq_handler, void, uint8_t, bool, uint32_t), AP_HAL::GPIO::INTERRUPT_BOTH);
+
+}
+
+/*
+  called on PWM pin transition
+ */
+void AP_Periph_FW::pwm_irq_handler(uint8_t pin, bool pin_state, uint32_t timestamp)
+{
+    if (pin_state == 0 && pwm_hardpoint.last_state == 1 && pwm_hardpoint.last_ts_us != 0) {
+        uint32_t width = timestamp - pwm_hardpoint.last_ts_us;
+        if (width > 500 && width < 2500) {
+            pwm_hardpoint.pwm_value = width;
+        }
+    }
+    pwm_hardpoint.last_state = pin_state;
+    pwm_hardpoint.last_ts_us = timestamp;
+}
+
+void AP_Periph_FW::pwm_hardpoint_update()
+{
+    uint32_t now = AP_HAL::millis();
+    // send at 10Hz
+    if (now - pwm_hardpoint.last_send_ms >= 100) {
+        pwm_hardpoint.last_send_ms = now;
+        uavcan_equipment_hardpoint_Command cmd {};
+        cmd.hardpoint_id = g.hardpoint_id;
+        cmd.command = pwm_hardpoint.pwm_value;
+
+        uint8_t buffer[UAVCAN_EQUIPMENT_HARDPOINT_COMMAND_MAX_SIZE];
+        uint16_t total_size = uavcan_equipment_hardpoint_Command_encode(&cmd, buffer);
+        canardBroadcast(&canard,
+                        UAVCAN_EQUIPMENT_HARDPOINT_COMMAND_SIGNATURE,
+                        UAVCAN_EQUIPMENT_HARDPOINT_COMMAND_ID,
+                        &transfer_id,
+                        CANARD_TRANSFER_PRIORITY_LOW,
+                        &buffer[0],
+                        total_size);
+    }
+}
+#endif // HAL_PERIPH_ENABLE_PWM_HARDPOINT
+
 
 void AP_Periph_FW::can_update()
 {
@@ -1058,6 +1106,9 @@ void AP_Periph_FW::can_update()
 #endif
 #ifdef HAL_GPIO_PIN_SAFE_BUTTON
     can_safety_button_update();
+#endif
+#ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
+    pwm_hardpoint_update();
 #endif
     processTx();
     processRx();

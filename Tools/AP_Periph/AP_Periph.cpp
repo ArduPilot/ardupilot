@@ -125,6 +125,10 @@ void AP_Periph_FW::init()
     serial_manager.set_protocol_and_baud(sernum, AP_SerialManager::SerialProtocol_Rangefinder, g.rangefinder_baud);
     rangefinder.init(ROTATION_NONE);
 #endif
+
+#ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
+    pwm_hardpoint_init();
+#endif
     
     start_ms = AP_HAL::millis();
 }
