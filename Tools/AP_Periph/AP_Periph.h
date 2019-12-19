@@ -79,6 +79,7 @@ public:
         uint32_t last_ts_us;
         uint32_t last_send_ms;
         uint16_t pwm_value;
+        uint16_t highest_pwm;
     } pwm_hardpoint;
 #endif
 
