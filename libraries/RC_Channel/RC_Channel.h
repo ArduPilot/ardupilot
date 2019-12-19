@@ -294,6 +294,8 @@ public:
     }
     //end compatability functions for Plane
 
+    // this function is implemented in the child class in the vehicle
+    // code
     virtual RC_Channel *channel(uint8_t chan) = 0;
 
     uint8_t get_radio_in(uint16_t *chans, const uint8_t num_channels); // reads a block of chanel radio_in values starting from channel 0
@@ -367,7 +369,7 @@ private:
     AP_Float _override_timeout;
     AP_Int32  _options;
 
-    // flight_mode_channel_number must be overridden:
+    // flight_mode_channel_number must be overridden in vehicle specific code
     virtual int8_t flight_mode_channel_number() const = 0;
     RC_Channel *flight_mode_channel();
 
