@@ -1,6 +1,12 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 4.0.0-rc3 16-Nov-2019
+Copter 4.0.0-rc4 20-Dec-2019
+Changes from 4.0.0-rc3
+1) Compiler updated to gcc 6.3.1
+2) Solo default parameters updated
+3) Bug Fix to RCMAP channel number sanity check
+------------------------------------------------------------------
+Copter 4.0.0-rc3 16-Dec-2019
 Changes from 4.0.0-rc2 
 1) Flight mode and control improvements:
    a) Auto mode Takeoff getting stuck fixed (very rare)
