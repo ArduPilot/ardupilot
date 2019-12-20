@@ -125,6 +125,8 @@ static GPIO_Sysfs gpioDriver;
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_AERO
 static GPIO_Sysfs gpioDriver;
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ROLLING_SPIDER
+static GPIO_SIP6 gpioDriver;
 #else
 static Empty::GPIO gpioDriver;
 #endif
