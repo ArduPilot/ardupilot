@@ -4,6 +4,10 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
+#ifndef AIRSPEED_MAX_SENSORS
+#define AIRSPEED_MAX_SENSORS 2
+#endif
+
 #include "AP_HAL_SITL.h"
 #include "AP_HAL_SITL_Namespace.h"
 #include "HAL_SITL_Class.h"
@@ -41,7 +45,7 @@ public:
         ArduPlane,
         ArduSub
     };
-
+    
     int gps_pipe(void);
     int gps2_pipe(void);
     ssize_t gps_read(int fd, void *buf, size_t count);
@@ -71,6 +75,8 @@ public:
     uint16_t voltage2_pin_value;  // pin 15
     uint16_t current2_pin_value;  // pin 14
 
+    SITL::arspd_data sensors[AIRSPEED_MAX_SENSORS];
+
     // paths for UART devices
     const char *_uart_path[7] {
         "tcp:0:wait",
@@ -86,11 +92,6 @@ public:
     static bool parse_home(const char *home_str,
                            Location &loc,
                            float &yaw_degrees);
-
-    static float add_clogged(float airspeed, float fault);
-    static float add_sum(float airspeed, float fault);
-    static float add_multiply(float airspeed, float fault);
-    static float add_fault (float airspeed, float fault, float(*func)(float, float));
 
 private:
     void _parse_command_line(int argc, char * const argv[]);
@@ -143,11 +144,9 @@ private:
                      double speedN, double speedE, double speedD,
                      double yaw, bool have_lock);
     void _update_airspeed(float airspeed);
-    //arspd fault
-    //void _get_arspd_fault();
-    //float _get_arspd_fault(float airspeed);
-
-    float _get_arspd_fault(float airspeed, int fault_type, float fault);
+    //airspeed fault
+    float _get_arspd_fault(SITL::arspd_data& sensor, float airspeed);
+    void _arspd_data_init(SITL::arspd_data& sensor, int fault_type, float fault);
 
     void _update_gps_instance(SITL::SITL::GPSType gps_type, const struct gps_data *d, uint8_t instance);
     void _check_rc_input(void);

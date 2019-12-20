@@ -23,6 +23,14 @@ struct float_array {
     uint16_t length;
     float *data;
 };
+
+
+struct arspd_data {
+    int fault_type;
+    float fault;
+    float clogged_fault;
+    uint32_t time_previos_call;
+};
     
 
 struct sitl_fdm {

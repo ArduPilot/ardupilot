@@ -118,14 +118,6 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     AP_GROUPINFO("WIND_T"      ,15, SITL,  wind_type, SITL::WIND_TYPE_SQRT),
     AP_GROUPINFO("WIND_T_ALT"  ,16, SITL,  wind_type_alt, 60),
     AP_GROUPINFO("WIND_T_COEF", 17, SITL,  wind_type_coef, 0.01f),
-    
-    AP_GROUPINFO("ARSPD_FT", 58, SITL, arspd_fault_type, SITL::ARSPD_FAULT_ENABLE),
-    AP_GROUPINFO("ARSPD2_FT", 59, SITL, arspd2_fault_type, SITL::ARSPD_FAULT_ENABLE),
-    AP_GROUPINFO("ARSPD_FV", 60, SITL, arspd_fault_value, 0),
-    AP_GROUPINFO("ARSPD2_FV", 61, SITL, arspd2_fault_value, 0),
-    
-    
-
     AP_GROUPINFO("MAG_DIA",     18, SITL,  mag_diag, 0),
     AP_GROUPINFO("MAG_ODI",     19, SITL,  mag_offdiag, 0),
     AP_GROUPINFO("MAG_ORIENT",  20, SITL,  mag_orient, 0),
@@ -202,6 +194,11 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
 
     // @Path: ./SIM_ToneAlarm.cpp
     AP_SUBGROUPINFO(tonealarm_sim, "TA_", 57, SITL, ToneAlarm),
+    
+    AP_GROUPINFO("ARSPD_FT", 58, SITL, arspd_fault_type, SITL::ARSPD_FAULT_ENABLE),
+    AP_GROUPINFO("ARSPD2_FT", 59, SITL, arspd2_fault_type, SITL::ARSPD_FAULT_ENABLE),
+    AP_GROUPINFO("ARSPD_FV", 60, SITL, arspd_fault_value, 0),
+    AP_GROUPINFO("ARSPD2_FV", 61, SITL, arspd2_fault_value, 0),
 
     AP_GROUPEND
 
