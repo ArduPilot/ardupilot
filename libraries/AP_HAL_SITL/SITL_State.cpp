@@ -1,8 +1,6 @@
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <iostream>
-using namespace std;
 
 #include "AP_HAL_SITL.h"
 #include "AP_HAL_SITL_Namespace.h"
@@ -437,7 +435,6 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
 
         case SITL::SITL::WIND_TYPE_NO_LIMIT:
         default:
-            cout<<"wind_test"<<_sitl->wind_type_test<<endl;
             break;
         }
 

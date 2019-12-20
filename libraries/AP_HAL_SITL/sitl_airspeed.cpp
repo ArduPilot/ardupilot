@@ -15,9 +15,6 @@
 #include "SITL_State.h"
 #include <SITL/SITL.h>
 #include <AP_Math/AP_Math.h>
-#include <iostream>
-#include <cstdlib>
-#include <ctime>
 
 #ifndef ENABLE
     #define ENABLE   0
@@ -92,16 +89,6 @@ void SITL_State::_update_airspeed(float airspeed)
     // Check sensor failure
     airspeed = is_zero(_sitl->arspd_fail) ? airspeed : _sitl->arspd_fail;
     airspeed2 = is_zero(_sitl->arspd2_fail) ? airspeed2 : _sitl->arspd2_fail;
-    cout<<"\n";
-    cout<<"arspd_fault_type ="<<(int)_sitl->arspd_fault_type<<endl;
-    cout<<"arspd2_fault_type  = "<<(int)_sitl->arspd2_fault_type<<endl;
-    cout<<"ARSPD VALUE  = "<<airspeed<<endl;
-    cout<<"ARSPD2 VALUE = "<<airspeed2<<endl;
-    cout<<"ARSPD fault value ="<<_sitl->arspd_fault_value<<endl;
-    cout<<"ARSPD2 fault value = "<<_sitl->arspd2_fault_value<<endl;
-    cout<<"ARSPD SENSOR FAULT ="<<sensors[0].clogged_fault<<endl;
-    cout<<"ARSPD2 SENSOR FAULT = "<<sensors[1].clogged_fault<<endl;
-    cout<<"\n";
 
     // Add noise
     airspeed = airspeed + (_sitl->arspd_noise * rand_float());
@@ -123,15 +110,13 @@ void SITL_State::_update_airspeed(float airspeed)
     float airspeed_pressure = (airspeed * airspeed) / airspeed_ratio;
     float airspeed2_pressure = (airspeed2 * airspeed2) / airspeed_ratio;
 
-    cout<<"pressure = "<<airspeed_pressure<<endl; cout<<"pressure = "<<airspeed2_pressure<<endl;
-
     // flip sign here for simulating reversed pitot/static connections
     if (_sitl->arspd_signflip) airspeed_pressure *= -1;
     if (_sitl->arspd_signflip) airspeed2_pressure *= -1;
 
     float airspeed_raw = airspeed_pressure + airspeed_offset;
     float airspeed2_raw = airspeed2_pressure + airspeed_offset;
-    cout<<"airspeed raw "<<airspeed_raw<<endl;
+
     if (airspeed_raw / 4 > 0xFFFF) {
         airspeed_pin_value = 0xFFFF;
         return;
