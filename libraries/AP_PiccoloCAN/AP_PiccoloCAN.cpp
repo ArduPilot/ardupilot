@@ -364,10 +364,6 @@ void AP_PiccoloCAN::send_esc_messages(void)
 
     if (hal.util->get_soft_armed()) {
 
-#define BULK_ESC_COMMANDS
-
-#ifdef BULK_ESC_COMMANDS
-
         bool send_cmd = false;
         int16_t cmd[4];
         uint8_t idx;
@@ -415,27 +411,6 @@ void AP_PiccoloCAN::send_esc_messages(void)
                 write_frame(txFrame, timeout);
             }
         }
-
-#else
-
-        // Send an individual command to each configured ESC channel
-        for (uint8_t i = 0; i < PICCOLO_CAN_MAX_NUM_ESC; i++) {
-
-            if (_esc_info[i].newCommand) {
-                encodeESC_PWMCommandPacket(&txFrame, _esc_info[i].command);
-
-                // Set the address
-                txFrame.id &= ~0xFF;
-                txFrame.id |= (i + 1);
-
-                write_frame(txFrame, timeout);
-
-                _esc_info[i].newCommand = false;
-            }
-
-        }
-
-#endif //BULK_ESC_COMMANDS
 
     } else {
         // System is NOT armed - send a "disable" message to all ESCs on the bus
