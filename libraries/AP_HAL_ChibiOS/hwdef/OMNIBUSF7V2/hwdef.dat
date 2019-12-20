@@ -138,7 +138,7 @@ define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 # one baro
 BARO BMP280 SPI:bmp280
 
-define OSD_ENABLED ENABLED
+define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
