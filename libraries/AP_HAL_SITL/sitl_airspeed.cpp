@@ -19,37 +19,98 @@
 #include <cstdlib>
 #include <ctime>
 
-#define ENABLE 0
-#define REMOVE 1
-#define MULTIPLY 2
-#define CLOGGED 3
-#define CONST 4
+#ifndef ENABLE
+    #define ENABLE   0
+    #define CONST    1
+    #define MULTIPLY 2
+    #define CLOGGED  3
+#endif
+
+#define current_time() AP_HAL::millis()
 
 using namespace std;
 extern const AP_HAL::HAL& hal;
 
 using namespace HALSITL;
 
+class test
+{
+public:
+    static test * getInstance()
+    {
+        if (!p_instance) {
+            p_instance = new test();
+        }
+        return p_instance;
+    }
 
-static float previos_call_time = 0;
+    void update_time()
+    {
+        first_prev_call_time = current_time();
+        second_prev_call_time = current_time();
+    }
+
+
+    float get_fault_clogged(float fault)
+    {
+        if (first_prev_call_time == 0) {
+            update_time();
+        }
+        first_arspd_fault += ((current_time() - first_prev_call_time)/1000.f)*(fault);
+        update_time();
+        return first_arspd_fault;
+    }
+
+private:
+    test()
+    {
+        first_arspd_fault = 0;
+        second_arspd_fault = 0;
+        first_prev_call_time = 0;
+        second_prev_call_time = 0;
+        is_first_call = true;
+        isSecondWasCalled = true;
+    };
+    static test * p_instance;
+    float first_arspd_fault;
+    float second_arspd_fault;
+    uint32_t first_prev_call_time;
+    uint32_t second_prev_call_time;
+    bool is_first_call;
+    bool isSecondWasCalled;
+};
+
+static uint32_t previos_call_time;
 static float fault_static = 0;
-static float fault_static_ = 0;
+static bool isFirstCall = true;
+
+/*static uint32_t previos_call_time2;
+static float fault_static2 = 0;
+static bool isFirstCall2 = true;*/
 
 float SITL_State::add_clogged(float airspeed, float fault)
 {
-    fault_static_ += ((AP_HAL::millis() - previos_call_time)/1000)*(fault);
-    cout<<"CLOGGED = "<<fault_static_<<endl;
-    return ((AP_HAL::millis() - previos_call_time)/1000)*(fault);
+    fault_static += ((current_time() - previos_call_time)/1000.f)*(fault);
+    return add_sum(airspeed, fault_static);
 }
+
 float SITL_State::add_sum(float airspeed, float fault)
 {
     return airspeed + fault;
 }
+
 float SITL_State::add_multiply(float airspeed, float fault)
 {
     return airspeed * fault;
 }
+
+float SITL_State::add_fault(float airspeed, float fault, float(*func)(float, float))
+{
+    return func(airspeed, fault);
+}
+
 typedef float(*func_fault)(float, float);
+
 func_fault func_type_fault[] =
 {
     HALSITL::SITL_State::add_sum, HALSITL::SITL_State::add_multiply, HALSITL::SITL_State::add_clogged
@@ -61,89 +122,142 @@ float SITL_State::_get_arspd_fault(float airspeed, int fault_type, float fault)
 
         case MULTIPLY:
             cout<<"ARSPD_FAULT_MULTIPLY"<<endl;
-            //airspeed *= fault;
-            airspeed = SITL_State::_add_fault(airspeed, fault, func_type_fault[1]);
+            airspeed = SITL_State::add_fault(airspeed, fault, func_type_fault[fault_type - 1]);
             break;
 
         case CLOGGED:
             cout<<"ARSPD_FAULT_CLOGGED"<<endl;
-            airspeed += SITL_State::_add_fault(airspeed, fault, func_type_fault[2]);
+
+            if (isFirstCall == true) {
+                previos_call_time = current_time();
+                isFirstCall = false;
+            }
+
+            airspeed = SITL_State::add_fault(airspeed, fault, func_type_fault[fault_type - 1]);
+            //previos_call_time = current_time();
             break;
 
         case CONST:
             cout<<"ARPSD CONST"<<endl;
-            airspeed = SITL_State::_add_fault(airspeed, fault, func_type_fault[0]);
+            
             break;
-
-        case REMOVE:
-            cout<<"REMOVE"<<endl;
-            break;
+            airspeed = SITL_State::add_fault(airspeed, fault, func_type_fault[fault_type - 1]);
 
         default:
             break;
         }
+        if (fault_type != CLOGGED)
+            fault_static = 0;
+        previos_call_time = current_time();
     return airspeed;
 }
-void SITL_State::_get_arspd_fault(float airspeed)
+typedef struct
 {
-    /*switch (_sitl->arspd_fault_type) {
-
-        case SITL::SITL::ARSPD_FAULT_MULTIPLY:
-            airspeed *= _sitl->arspd_fault_value;
-            break;
-
-        case SITL::SITL::ARSPD_FAULT_CLOGGED:
-            cout<<"ARSPD_FAULT_CLOGGED"<<endl;
-            break;
-
-        case SITL::SITL::ARSPD_FAULT_CONST:
-            break;
+    int type;
+    float fault;
+    float current_fault;
+    uint32_t time_prev;
+} arspd_data;
+void arspd_data_init(arspd_data& p, int fault_type, float fault)
+{
+    if (p.type != fault_type) {
+        if (p.type == CLOGGED) {
+            p.current_fault = 0;
+            p.time_prev = 0;
+        }
             
-        default:
-        cout<<"ARSPD_FAULT_CONST"<<endl;
+        p.type = fault_type;
+    }
+    p.fault = fault;
+}
+void arspd_clogged(arspd_data& p);
+float get_arspd_fault(arspd_data& p, float airspeed)
+{
+    switch (p.type) {
+        case CONST:
+            airspeed += p.fault;
             break;
-        }*/
+        case MULTIPLY:
+            airspeed *= p.fault;
+            break;
+        case CLOGGED:
+            arspd_clogged(p);
+            airspeed += p.current_fault;
+            break;
+        default:
+            break;
+    }
+    return airspeed;
 }
 
+void arspd_clogged(arspd_data& p)
+{
+    if (p.time_prev == 0)
+        p.time_prev = current_time();
+    p.current_fault += ((current_time() - p.time_prev)/1000.f)*(p.fault);
+    p.time_prev = current_time();
+}
+test* test::p_instance = nullptr;
+test* t = test::getInstance();
+static arspd_data p_arspd_data;
 
 /*
   convert airspeed in m/s to an airspeed sensor value
  */
 void SITL_State::_update_airspeed(float airspeed)
 {
-    const uint64_t current_time = AP_HAL::millis();
-
+    cout<<"CURRENT TIME= "<<current_time()<<"\n";
     const float airspeed_ratio = 1.9936f;
     const float airspeed_offset = 2013.0f;
 
+
+    arspd_data_init(p_arspd_data, _sitl->arspd_fault_type, _sitl->arspd_fault_value);
+    //arspd_clogged(p_arspd_data);
+    //cout<<"FROM ARSTRUCT type = "<<p_arspd_data.type<<endl;
+    cout<<"\nFROM STRUCT fault = "<<get_arspd_fault(p_arspd_data, airspeed)<<endl;
+    cout<<"\n"<<endl;
+
     float true_airspeed = airspeed;
     float airspeed2 = airspeed;
-    float tmp = airspeed;
-    if (_sitl->arspd_fault_type != 0)
-    {
-        tmp = _get_arspd_fault(airspeed, _sitl->arspd_fault_type , _sitl->arspd_fault_value);
-        cout<<"ARSPD FAULT TESTING = "<<tmp<<endl;
-        cout<<"ARSPD FAULT TESTING = "<<airspeed<<endl;
-        //!!! airspeed = _get_arspd_fault(airspeed, _sitl->arspd_fault_type, _sitl->arspd_fault_value)
-        //SITL_State::_add_fault(airspeed, _sitl->arspd_fault_value, func_type_fault[_sitl->arspd_fault_type]);
-
-    }
     
+    //t->set(current_time());
+    cout<<"FAULT CLOGGED FROM TEST = "<<t->get_fault_clogged(_sitl->arspd_fault_value)<<endl;
+
+    //if (isFirstCall == false && _sitl->arspd_fault_type != CLOGGED)
+    //    previos_call_time = current_time();
+
+    /*if (isFirstCall2 == false && _sitl->arspd2_fault_type != CLOGGED)
+        previos_call_time2 = current_time();*/
+        
+    //if (_sitl->arspd_fault_type != 0)
+    //{
+        airspeed = _get_arspd_fault(airspeed, _sitl->arspd_fault_type , _sitl->arspd_fault_value);
+        cout<<"ARSPD2 VALUE FAULT TESTING = "<<airspeed<<endl;
+        cout<<"ARSPD CLEAR TESTING = "<<airspeed<<endl;
+    //}
+
+    /*if (_sitl->arspd2_fault_type != 0)
+    {
+        airspeed2 = _get_arspd_fault(airspeed2, _sitl->arspd2_fault_type , _sitl->arspd2_fault_value);
+        cout<<"ARSPD2 VALUE FAULT TESTING = "<<airspeed2<<endl;
+        cout<<"ARSPD CLEAR TESTING = "<<airspeed<<endl;
+    }*/
+    //previos_call_time = current_time();
 
     
 
 
     // switch for adding fault airspeed or airspeed2
-    if (_sitl->arspd_fault_type == 2)
+    /*if (_sitl->arspd_fault_type == 2)
     {
         //airspeed += _sitl->arspd_fault_value;
-        fault_static += SITL_State::_add_fault(airspeed, _sitl->arspd_fault_value, func_type_fault[_sitl->arspd_fault_type]); //((current_time - previos_call_time)/1000)*(_sitl->arspd_fault_value);
+        fault_static += SITL_State::add_fault(airspeed, _sitl->arspd_fault_value, func_type_fault[_sitl->arspd_fault_type]); //((current_time - previos_call_time)/1000)*(_sitl->arspd_fault_value);
         previos_call_time = current_time;
-    }
+    }*/
     //airspeed2 += _sitl->arspd_fault_value;
 
     cout<<"PREVIOS FAULT VALUE = "<<fault_static<<endl;
-    cout<<"CURR_TIME VALUE = "<<current_time<<endl;
+    //cout<<"CURR_TIME VALUE = "<<current_time<<endl;
 
     // Check sensor failure
     airspeed = is_zero(_sitl->arspd_fail) ? airspeed : _sitl->arspd_fail;
@@ -157,7 +271,7 @@ void SITL_State::_update_airspeed(float airspeed)
     cout<<"ARSPD fault value ="<<_sitl->arspd_fault_value<<endl;
     cout<<"ARSPD2 fault value = "<<_sitl->arspd2_fault_value<<endl;
 
-    //cout<<"ARSPD POLIMORF = "<<SITL_State::_add_fault(true_airspeed, _sitl->arspd_fault_value, func_type_fault[_sitl->arspd_fault_type])<<endl;
+    //cout<<"ARSPD POLIMORF = "<<SITL_State::add_fault(true_airspeed, _sitl->arspd_fault_value, func_type_fault[_sitl->arspd_fault_type])<<endl;
     
     // Add noise
     airspeed = airspeed + (_sitl->arspd_noise * rand_float());

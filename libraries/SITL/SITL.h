@@ -191,10 +191,9 @@ public:
     // airspeed fault control
     enum AirspeedFault {
         ARSPD_FAULT_ENABLE = 0,
-        ARSPD_FAULT_REMOVE,
-        ARSPD_FAULT_MULTIPLY,
-        ARSPD_FAULT_CLOGGED,
         ARSPD_FAULT_CONST,
+        ARSPD_FAULT_MULTIPLY,
+        ARSPD_FAULT_CLOGGED
     };
     
     float wind_speed_active;

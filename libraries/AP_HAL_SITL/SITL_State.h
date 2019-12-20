@@ -90,10 +90,7 @@ public:
     static float add_clogged(float airspeed, float fault);
     static float add_sum(float airspeed, float fault);
     static float add_multiply(float airspeed, float fault);
-    static float _add_fault (float airspeed, float fault, float(*func)(float, float))
-    {
-        return func(airspeed, fault);
-    }
+    static float add_fault (float airspeed, float fault, float(*func)(float, float));
 
 private:
     void _parse_command_line(int argc, char * const argv[]);
@@ -147,9 +144,9 @@ private:
                      double yaw, bool have_lock);
     void _update_airspeed(float airspeed);
     //arspd fault
-    void _get_arspd_fault();
+    //void _get_arspd_fault();
     //float _get_arspd_fault(float airspeed);
-    void _get_arspd_fault(float airspeed);
+
     float _get_arspd_fault(float airspeed, int fault_type, float fault);
 
     void _update_gps_instance(SITL::SITL::GPSType gps_type, const struct gps_data *d, uint8_t instance);
