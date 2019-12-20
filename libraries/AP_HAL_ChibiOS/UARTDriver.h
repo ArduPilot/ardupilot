@@ -164,7 +164,6 @@ private:
     bool _blocking_writes;
     bool _initialised;
     bool _device_initialised;
-    bool _lock_rx_in_timer_tick = false;
 #ifndef HAL_UART_NODMA
     Shared_DMA *dma_handle;
 #endif
@@ -212,6 +211,7 @@ private:
 #ifndef HAL_UART_NODMA
     void dma_tx_allocate(Shared_DMA *ctx);
     void dma_tx_deallocate(Shared_DMA *ctx);
+    void dma_rx_enable(void);
 #endif
     void update_rts_line(void);
 
