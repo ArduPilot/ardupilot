@@ -132,7 +132,7 @@ define BOARD_RSSI_ANA_PIN 0
 
 
 
-define OSD_ENABLED ENABLED
+define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 
 #To complementary channels work we define this
