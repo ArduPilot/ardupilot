@@ -35,6 +35,8 @@
 #define PWM_REG_RATIO_PRECISION_MASK (PWM_NB_BITS<<16)
 #define PWM_REG_SATURATION (PWM_REG_RATIO_PRECISION_MASK|PWM_TOTAL_RANGE)
 
+#define SIP6_MOTOR_EN_PIN 39
+
 using namespace Linux;
 
 static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
@@ -73,6 +75,10 @@ void RCOutput_SIP6::init()
     if (ret != 0) {
         AP_HAL::panic("ioctl PWM_DELOS_SET_CTRL failed: %s", strerror(errno));
     }
+
+    // Enable motor controllers
+    hal.gpio->pinMode(SIP6_MOTOR_EN_PIN, HAL_GPIO_OUTPUT);
+    hal.gpio->write(SIP6_MOTOR_EN_PIN, 0);
 }
 
 void RCOutput_SIP6::set_freq(uint32_t chmask, uint16_t freq_hz)
