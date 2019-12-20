@@ -75,6 +75,9 @@ public:
     // return true if a particular ESC has been detected
     bool is_esc_present(uint8_t chan, uint64_t timeout_ms = 2000);
 
+    // return true if a particular ESC is enabled
+    bool is_esc_enabled(uint8_t chan);
+
     // test if the Piccolo CAN driver is ready to be armed
     bool pre_arm_check(char* reason, uint8_t reason_len);
 

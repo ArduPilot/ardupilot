@@ -368,29 +368,38 @@ void AP_PiccoloCAN::send_esc_messages(void)
 
 #ifdef BULK_ESC_COMMANDS
 
-        bool esc_present = false;
+        bool send_cmd = false;
         int16_t cmd[4];
         uint8_t idx;
 
         // Transmit bulk command packets to 4x ESC simultaneously
         for (uint8_t ii = 0; ii < PICCOLO_CAN_MAX_GROUP_ESC; ii++) {
 
-            esc_present = false;
+            send_cmd = false;
 
             for (uint8_t jj = 0; jj < 4; jj++) {
 
                 idx = (ii * 4) + jj;
 
-                if (_esc_info[idx].newCommand) {
-                    esc_present = true;
+                /* Check if the ESC is software-inhibited.
+                 * If so, send a message to enable it.
+                 */
+                if (is_esc_present(idx) && !is_esc_enabled(idx)) {
+                    encodeESC_EnablePacket(&txFrame);
+                    txFrame.id |= (idx + 1);
+                    write_frame(txFrame, timeout);
+                }
+                else if (_esc_info[idx].newCommand) {
+                    send_cmd = true;
                     cmd[jj] = _esc_info[idx].command;
                     _esc_info[idx].newCommand = false;
                 } else {
+                    // A command of 0xFFFF is 'out of range' and will be ignored by the corresponding ESC
                     cmd[jj] = 0xFFFF;
                 }
             }
 
-            if (esc_present) {
+            if (send_cmd) {
                 encodeESC_CommandMultipleESCsPacket(
                     &txFrame,
                     cmd[0],
@@ -429,10 +438,12 @@ void AP_PiccoloCAN::send_esc_messages(void)
 #endif //BULK_ESC_COMMANDS
 
     } else {
+        // System is NOT armed - send a "disable" message to all ESCs on the bus
 
-        // TODO - Change this behavior but for now broadcast a 0% command
-        encodeESC_PWMCommandPacket(&txFrame, 900);
+        // Command all ESC into software disable mode
+        encodeESC_DisablePacket(&txFrame);
 
+        // Set the ESC address to the broadcast ID (0xFF)
         txFrame.id |= 0xFF;
 
         write_frame(txFrame, timeout);
@@ -516,6 +527,29 @@ bool AP_PiccoloCAN::is_esc_present(uint8_t chan, uint64_t timeout_ms)
 }
 
 
+bool AP_PiccoloCAN::is_esc_enabled(uint8_t chan)
+{
+    if (chan >= PICCOLO_CAN_MAX_NUM_ESC) {
+        return false;
+    }
+
+    // If the ESC is not present, we cannot determine if it is enabled or not
+    if (!is_esc_present(chan)) {
+        return false;
+    }
+
+    PiccoloESC_Info_t &esc = _esc_info[chan];
+
+    if (esc.statusA.status.hwInhibit || esc.statusA.status.swInhibit) {
+        return false;
+    }
+
+    // ESC is present, and enabled
+    return true;
+
+}
+
+
 bool AP_PiccoloCAN::pre_arm_check(char* reason, uint8_t reason_len)
 {
     // Check that each required ESC is present on the bus
@@ -537,14 +571,6 @@ bool AP_PiccoloCAN::pre_arm_check(char* reason, uint8_t reason_len)
                 snprintf(reason, reason_len, "PiccoloCAN: ESC %u is hardware inhibited", (ii + 1));
                 return false;
             }
-
-            if (esc.statusA.status.swInhibit) {
-                snprintf(reason, reason_len, "PiccoloCAN: ESC %u is software inhibited", (ii + 1));
-                return false;
-            }
-
-            // TODO - Check each ESC for further error information
-
         }
     }
 
