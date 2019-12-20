@@ -155,34 +155,35 @@ typedef struct
 {
     int type;
     float fault;
-    float current_fault;
+    float clogged_fault;
     uint32_t time_prev;
 } arspd_data;
-void arspd_data_init(arspd_data& p, int fault_type, float fault)
+void arspd_data_init(arspd_data& sensor, int fault_type, float fault)
 {
-    if (p.type != fault_type) {
-        if (p.type == CLOGGED) {
-            p.current_fault = 0;
-            p.time_prev = 0;
+    if (sensor.type != fault_type) {
+        if (sensor.type == CLOGGED) {
+            sensor.clogged_fault = 0;
+            sensor.time_prev = 0;
         }
             
-        p.type = fault_type;
+        sensor.type = fault_type;
     }
-    p.fault = fault;
+
+    sensor.fault = fault;
 }
-void arspd_clogged(arspd_data& p);
-float get_arspd_fault(arspd_data& p, float airspeed)
+void arspd_clogged(arspd_data& sensor);
+float get_arspd_fault(arspd_data& sensor, float airspeed)
 {
-    switch (p.type) {
+    switch (sensor.type) {
         case CONST:
-            airspeed += p.fault;
+            airspeed += sensor.fault;
             break;
         case MULTIPLY:
-            airspeed *= p.fault;
+            airspeed *= sensor.fault;
             break;
         case CLOGGED:
-            arspd_clogged(p);
-            airspeed += p.current_fault;
+            arspd_clogged(sensor);
+            airspeed += sensor.clogged_fault;
             break;
         default:
             break;
@@ -190,16 +191,17 @@ float get_arspd_fault(arspd_data& p, float airspeed)
     return airspeed;
 }
 
-void arspd_clogged(arspd_data& p)
+void arspd_clogged(arspd_data& sensor)
 {
-    if (p.time_prev == 0)
-        p.time_prev = current_time();
-    p.current_fault += ((current_time() - p.time_prev)/1000.f)*(p.fault);
-    p.time_prev = current_time();
+    if (sensor.time_prev == 0)
+        sensor.time_prev = current_time();
+    sensor.clogged_fault += ((current_time() - sensor.time_prev)/1000.f)*(sensor.fault);
+    sensor.time_prev = current_time();
 }
 test* test::p_instance = nullptr;
 test* t = test::getInstance();
-static arspd_data p_arspd_data;
+static arspd_data first_sensor;
+//static arspd_data second_sensor;
 
 /*
   convert airspeed in m/s to an airspeed sensor value
@@ -211,10 +213,10 @@ void SITL_State::_update_airspeed(float airspeed)
     const float airspeed_offset = 2013.0f;
 
 
-    arspd_data_init(p_arspd_data, _sitl->arspd_fault_type, _sitl->arspd_fault_value);
+    arspd_data_init(first_sensor, _sitl->arspd_fault_type, _sitl->arspd_fault_value);
     //arspd_clogged(p_arspd_data);
     //cout<<"FROM ARSTRUCT type = "<<p_arspd_data.type<<endl;
-    cout<<"\nFROM STRUCT fault = "<<get_arspd_fault(p_arspd_data, airspeed)<<endl;
+    cout<<"\nFROM STRUCT fault = "<<get_arspd_fault(first_sensor, airspeed)<<endl;
     cout<<"\n"<<endl;
 
     float true_airspeed = airspeed;
