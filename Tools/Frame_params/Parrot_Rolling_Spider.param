@@ -20,3 +20,7 @@ SCHED_LOOP_RATE,200
 EK2_GPS_TYPE,3
 GPS_TYPE,0
 BTN_ENABLE,0
+#Rangefinder is disabled by default until it works better
+#RNGFND1_TYPE,28
+RNGFND1_MIN_CM,10
+RNGFND1_MAX_CM,300

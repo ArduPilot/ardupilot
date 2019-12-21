@@ -42,6 +42,9 @@
 #include "AP_RangeFinder_BLPing.h"
 #include "AP_RangeFinder_UAVCAN.h"
 #include "AP_RangeFinder_Lanbao.h"
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ROLLING_SPIDER
+#include "AP_RangeFinder_SIP6.h"
+#endif
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Logger/AP_Logger.h>
@@ -493,6 +496,13 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
             drivers[instance] = new AP_RangeFinder_Lanbao(state[instance], params[instance], serial_instance++);
         }
         break;
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ROLLING_SPIDER
+    case Type::SIP6:
+        if (AP_RangeFinder_SIP6::detect()) {
+            drivers[instance] = new AP_RangeFinder_SIP6(state[instance], params[instance]);
+        }
+        break;
+#endif
     default:
         break;
     }
