@@ -146,6 +146,14 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     uint16_t min_tx_buffer = HAL_UART_MIN_TX_SIZE;
     uint16_t min_rx_buffer = HAL_UART_MIN_RX_SIZE;
 
+    /*
+      increase min RX size to ensure we can receive a fully utilised
+      UART if we are running our receive loop at 40Hz. This means 25ms
+      of data. Assumes 10 bits per byte, which is normal for most
+      protocols
+     */
+    min_rx_buffer = MAX(min_rx_buffer, b/(40*10));
+
     if (sdef.is_usb) {
         // give more buffer space for log download on USB
         min_tx_buffer *= 4;
