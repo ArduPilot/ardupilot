@@ -176,6 +176,7 @@ public:
         STANDBY  =            76, // Standby mode
         TAKEOFF   =           77, // takeoff
         RUNCAM_CONTROL =      78, // control RunCam device
+        RUNCAM_OSD_CONTROL =  79, // control RunCam OSD
         KILL_IMU1 =          100, // disable first IMU (for IMU failure testing)
         KILL_IMU2 =          101, // disable second IMU (for IMU failure testing)
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
@@ -204,6 +205,7 @@ protected:
     void do_aux_function_avoid_proximity(const aux_switch_pos_t ch_flag);
     void do_aux_function_camera_trigger(const aux_switch_pos_t ch_flag);
     void do_aux_function_runcam_control(const aux_switch_pos_t ch_flag);
+    void do_aux_function_runcam_osd_control(const aux_switch_pos_t ch_flag);
     void do_aux_function_fence(const aux_switch_pos_t ch_flag);
     void do_aux_function_clear_wp(const aux_switch_pos_t ch_flag);
     void do_aux_function_gripper(const aux_switch_pos_t ch_flag);
