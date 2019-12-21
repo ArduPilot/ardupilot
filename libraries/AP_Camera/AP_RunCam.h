@@ -66,6 +66,13 @@ public:
         UNKNOWN_CAMERA_OPERATION = 0xFF
     };
 
+    // control for OSD menu entry
+    enum class ControlOption {
+        STICK_YAW_RIGHT = 0x01,
+        THREE_POS_SWITCH = 0x02,
+        TWO_POS_SWITCH = 0x04
+    };
+
     // initialize the RunCam driver
     void init();
     // camera button simulation
@@ -74,6 +81,12 @@ public:
     void start_recording();
     // stop the video
     void stop_recording();
+    // enter the OSD menu
+    void enter_osd();
+    // exit the OSD menu
+    void exit_osd();
+    // OSD control determined by camera options
+    void osd_option();
     // update loop
     void update();
     // Check whether arming is allowed
@@ -161,8 +174,18 @@ private:
         START_RECORDING
     };
 
+    enum class OSDOption {
+        NONE,
+        ENTER,
+        EXIT,
+        OPTION
+    };
+
     static const uint8_t  RUNCAM_NUM_SUB_MENUS =          5;
     static const uint8_t  RUNCAM_NUM_EXPECTED_RESPONSES = 4;
+    static const uint8_t  RUNCAM_MAX_MENUS =              1;
+    static const uint8_t  RUNCAM_MAX_MENU_LENGTH =        6;
+    static const uint8_t  RUNCAM_MAX_DEVICE_TYPES =       1;
 
     // supported features, usually probed from the device
     AP_Int16 _features;
@@ -174,6 +197,10 @@ private:
     AP_Int32 _boot_delay_ms;
     // delay time to make sure a button press has been activated
     AP_Int32 _button_delay_ms;
+    // runcam type/firmware revision
+    AP_Int8 _cam_type;
+    // runcam control options
+    AP_Int8 _cam_control_option;
 
     // video on/off
     bool _video_recording = true;
@@ -193,6 +220,8 @@ private:
     bool _button_pressed;
     // OSD state machine: waiting for a response
     bool _waiting_device_response;
+    // OSD option from RC switches
+    OSDOption _osd_option;
     // OSD state mechine: in the menu, value indicates depth
     uint8_t _in_menu;
     // OSD state machine: current selection in the top menu
@@ -250,6 +279,24 @@ private:
 
         static Length _expected_responses_length[RUNCAM_NUM_EXPECTED_RESPONSES];
     } _pending_request;
+
+    // menu structure of the runcam device
+    struct Menu {
+        uint8_t _top_menu_length;
+        uint8_t _sub_menu_lengths[RUNCAM_MAX_MENU_LENGTH];
+    };
+
+    static Menu _menus[RUNCAM_MAX_DEVICE_TYPES];
+
+    // return the length of the top menu
+    uint8_t get_top_menu_length() const {
+        return _menus[_cam_type]._top_menu_length;
+    }
+
+    // return the length of a particular sub-menu
+    uint8_t get_sub_menu_length(uint8_t submenu) const {
+        return _menus[_cam_type]._sub_menu_lengths[submenu];
+    }
 
     // start the counter for a button press
     void set_button_press_timeout() {
