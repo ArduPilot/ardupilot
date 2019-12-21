@@ -49,6 +49,20 @@ const AP_Param::GroupInfo AP_RunCam::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("BTN_DELAY", 3, AP_RunCam, _button_delay_ms, 300),
 
+    // @Param: TYPE
+    // @DisplayName: RunCam device type
+    // @Description: RunCam deviee type used to determine OSD menu structure and shutter options
+    // @Values: 0:RunCam Split
+    // @User: Advanced
+    AP_GROUPINFO("TYPE", 4, AP_RunCam, _cam_type, 0),
+
+    // @Param: CONTROL
+    // @DisplayName: RunCam control option
+    // @Description: Specifies the allowed actions required to enter the OSD menu.
+    // @Bitmask: 0:Stick roll right, 1:3-way switch, 2: 2-way switch
+    // @User: Advanced
+    AP_GROUPINFO("CONTROL", 5, AP_RunCam, _cam_control_option, uint8_t(ControlOption::STICK_YAW_RIGHT)),
+
     AP_GROUPEND
 };
 
@@ -78,11 +92,11 @@ static const uint8_t RUNCAM_OSD_MENU_DEPTH = 2;
 static const uint32_t RUNCAM_INIT_INTERVAL_MS = 500;
 static const uint32_t RUNCAM_OSD_UPDATE_INTERVAL_MS = 100; // 10Hz
 
-// these are correct for the runcam split micro v2.4.4, others may vary
-// Video, Image, TV-OUT, Micro SD Card, General
-static const uint8_t RUNCAM_TOP_MENU_LENGTH = 6;
-uint8_t AP_RunCam::_sub_menu_lengths[RUNCAM_NUM_SUB_MENUS] = {
-    5, 8, 3, 3, 7
+// menu structures of runcam devices
+AP_RunCam::Menu AP_RunCam::_menus[RUNCAM_MAX_DEVICE_TYPES] = {
+    // these are correct for the runcam split micro v2.4.4, others may vary
+    // Video, Image, TV-OUT, Micro SD Card, General
+    { 6, { 5, 8, 3, 3, 7 }}
 };
 
 AP_RunCam::AP_RunCam()
@@ -92,6 +106,7 @@ AP_RunCam::AP_RunCam()
         AP_HAL::panic("AP_RunCam must be singleton");
     }
     _singleton = this;
+    _cam_type = constrain_int16(_cam_type, 0, RUNCAM_MAX_DEVICE_TYPES - 1);
 }
 
 // init the runcam device by finding a serial device configured for the RunCam protocol
@@ -132,12 +147,41 @@ bool AP_RunCam::simulate_camera_button(const ControlOperation operation)
 void AP_RunCam::start_recording() {
     debug("start recording\n");
     _video_recording = true;
+    if (_cam_control_option & uint8_t(ControlOption::THREE_POS_SWITCH) && _osd_option == OSDOption::OPTION) {
+        _osd_option = OSDOption::EXIT;
+    }
 }
 
 // stop the video
 void AP_RunCam::stop_recording() {
     debug("stop recording\n");
     _video_recording = false;
+    if (_cam_control_option & uint8_t(ControlOption::THREE_POS_SWITCH) && _osd_option == OSDOption::OPTION) {
+        _osd_option = OSDOption::EXIT;
+    }
+}
+
+// enter the OSD menu
+void AP_RunCam::enter_osd()
+{
+    if (_cam_control_option & uint8_t(ControlOption::TWO_POS_SWITCH)) {
+        _osd_option = OSDOption::ENTER;
+    }
+}
+
+// exit the OSD menu
+void AP_RunCam::exit_osd()
+{
+    if (_cam_control_option & uint8_t(ControlOption::TWO_POS_SWITCH)) {
+        _osd_option = OSDOption::EXIT;
+    }
+}
+
+// OSD control determined by camera options
+void AP_RunCam::osd_option() {
+    if (_cam_control_option & uint8_t(ControlOption::THREE_POS_SWITCH)) {
+        _osd_option = OSDOption::OPTION;
+    }
 }
 
 // input update loop
@@ -294,6 +338,7 @@ void AP_RunCam::handle_ready(Event ev)
         _top_menu_pos = -1;
         _sub_menu_pos = 0;
         _state = State::ENTERING_MENU;
+        _osd_option = OSDOption::NONE;
         break;
     case Event::START_RECORDING:
         simulate_camera_button(ControlOperation::RCDEVICE_PROTOCOL_CHANGE_START_RECORDING);
@@ -322,6 +367,7 @@ void AP_RunCam::handle_recording(Event ev)
         set_mode_change_timeout();
         _sub_menu_pos = 0;
         _top_menu_pos = -1;
+        _osd_option = OSDOption::NONE;
         _state = State::ENTERING_MENU;
         break;
     case Event::STOP_RECORDING:
@@ -373,7 +419,8 @@ AP_RunCam::Event AP_RunCam::map_rc_input_to_event() const
         result = Event::EXIT_MENU;
     }
     if (throttle == RC_Channel::MIDDLE && yaw == RC_Channel::HIGH
-        && pitch == RC_Channel::MIDDLE && roll == RC_Channel::MIDDLE) {
+        && pitch == RC_Channel::MIDDLE && roll == RC_Channel::MIDDLE
+        && _cam_control_option & uint8_t(ControlOption::STICK_YAW_RIGHT)) {
         result = Event::ENTER_MENU;
     } else if (roll == RC_Channel::LOW) {
         result = Event::IN_MENU_EXIT;
@@ -383,6 +430,10 @@ AP_RunCam::Event AP_RunCam::map_rc_input_to_event() const
         result = Event::IN_MENU_UP;
     } else if (pitch == RC_Channel::LOW) {
         result = Event::IN_MENU_DOWN;
+    } else if (_osd_option == OSDOption::ENTER || _osd_option == OSDOption::OPTION) {
+        result = Event::ENTER_MENU;
+    } else if (_osd_option == OSDOption::EXIT) {
+        result = Event::EXIT_MENU;
     } else if (_state == State::READY && _video_recording) {
         // generate an event if we are in the wrong recording state
         result = Event::START_RECORDING;
@@ -416,6 +467,7 @@ void AP_RunCam::handle_2_key_simulation_process(Event ev)
             simulate_camera_button(ControlOperation::RCDEVICE_PROTOCOL_CHANGE_MODE);
             set_mode_change_timeout();
             _state = State::EXITING_MENU;
+            _osd_option = OSDOption::NONE;
         } else {
             exit_2_key_osd_menu();
         }
@@ -425,10 +477,10 @@ void AP_RunCam::handle_2_key_simulation_process(Event ev)
         simulate_camera_button(ControlOperation::RCDEVICE_PROTOCOL_SIMULATE_WIFI_BTN);  // change setting
         set_button_press_timeout();
         // in a sub-menu and save-and-exit was selected
-        if (_in_menu > 1 && _sub_menu_pos == (_sub_menu_lengths[_top_menu_pos] - 1)) {
+        if (_in_menu > 1 && _sub_menu_pos == (get_sub_menu_length(_top_menu_pos) - 1)) {
             _in_menu--;
         // in the top-menu and save-and-exit was selected
-        } else if (_in_menu == 1 && _top_menu_pos == (RUNCAM_TOP_MENU_LENGTH - 1)) {
+        } else if (_in_menu == 1 && _top_menu_pos == (get_top_menu_length() - 1)) {
             _in_menu--;
             _state = State::EXITING_MENU;
         } else {
@@ -442,10 +494,10 @@ void AP_RunCam::handle_2_key_simulation_process(Event ev)
         set_button_press_timeout();
         if (_in_menu > 1) {
             // in a sub-menu, keep track of the selected position
-            _sub_menu_pos = (_sub_menu_pos + 1) % _sub_menu_lengths[_top_menu_pos];
+            _sub_menu_pos = (_sub_menu_pos + 1) % get_sub_menu_length(_top_menu_pos);
         } else {
             // in the top-menu, keep track of the selected position
-            _top_menu_pos = (_top_menu_pos + 1) % RUNCAM_TOP_MENU_LENGTH;
+            _top_menu_pos = (_top_menu_pos + 1) % get_top_menu_length();
         }
         break;
 
@@ -518,6 +570,7 @@ void AP_RunCam::handle_5_key_simulation_process(Event ev)
         break;
 
     case Event::EXIT_MENU:
+        _osd_option = OSDOption::NONE;
         if (_in_menu > 0) {
             // turn built-in OSD back on
             enable_osd();
