@@ -36,6 +36,11 @@ extern const AP_HAL::HAL& hal;
 #endif
 #endif
 
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ROLLING_SPIDER
+// CPU is too slow to keep up at 1000 Hz
+#define INVENSENSE_SAMPLE_RATE_HZ 500
+#endif
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 // hal.console can be accessed from bus threads on ChibiOS
 #define debug(fmt, args ...)  do {hal.console->printf("MPU: " fmt "\n", ## args); } while(0)
@@ -49,6 +54,10 @@ extern const AP_HAL::HAL& hal;
  */
 #ifndef INVENSENSE_EXT_SYNC_ENABLE
 #define INVENSENSE_EXT_SYNC_ENABLE 0
+#endif
+
+#ifndef INVENSENSE_SAMPLE_RATE_HZ
+#define INVENSENSE_SAMPLE_RATE_HZ 1000
 #endif
 
 #include "AP_InertialSensor_Invensense_registers.h"
@@ -253,8 +262,8 @@ void AP_InertialSensor_Invensense::start()
         break;
     }
 
-    _gyro_instance = _imu.register_gyro(1000, _dev->get_bus_id_devtype(gdev));
-    _accel_instance = _imu.register_accel(1000, _dev->get_bus_id_devtype(adev));
+    _gyro_instance = _imu.register_gyro(INVENSENSE_SAMPLE_RATE_HZ, _dev->get_bus_id_devtype(gdev));
+    _accel_instance = _imu.register_accel(INVENSENSE_SAMPLE_RATE_HZ, _dev->get_bus_id_devtype(adev));
 
     // setup ODR and on-sensor filtering
     _set_filter_register();
@@ -274,7 +283,7 @@ void AP_InertialSensor_Invensense::start()
     
     // set sample rate to 1000Hz and apply a software filter
     // In this configuration, the gyro sample rate is 8kHz
-    _register_write(MPUREG_SMPLRT_DIV, 0, true);
+    _register_write(MPUREG_SMPLRT_DIV, (1000 / INVENSENSE_SAMPLE_RATE_HZ) - 1, true);
     hal.scheduler->delay(1);
 
     // Gyro scale 2000º/s
@@ -673,7 +682,7 @@ void AP_InertialSensor_Invensense::_set_filter_register(void)
 
     // assume 1kHz sampling to start
     _fifo_downsample_rate = 1;
-    _backend_rate_hz = 1000;
+    _backend_rate_hz = INVENSENSE_SAMPLE_RATE_HZ;
     
     if (enable_fast_sampling(_accel_instance)) {
         _fast_sampling = (_mpu_type >= Invensense_MPU9250 && _dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI);
