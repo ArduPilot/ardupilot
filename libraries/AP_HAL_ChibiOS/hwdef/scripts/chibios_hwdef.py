@@ -938,10 +938,12 @@ def write_UART_config(f):
     devnames = "ABCDEFGH"
     sdev = 0
     idx = 0
+    num_empty_uarts = 0
     for dev in uart_list:
         if dev == 'EMPTY':
             f.write('#define HAL_UART%s_DRIVER Empty::UARTDriver uart%sDriver\n' %
                 (devnames[idx], devnames[idx]))
+            num_empty_uarts += 1
         else:
             f.write(
                 '#define HAL_UART%s_DRIVER ChibiOS::UARTDriver uart%sDriver(%u)\n'
@@ -1037,7 +1039,7 @@ def write_UART_config(f):
     num_uarts = len(devlist)
     if 'IOMCU_UART' in config:
         num_uarts -= 1
-    f.write('#define HAL_UART_NUM_SERIAL_PORTS %u\n' % num_uarts)
+    f.write('#define HAL_UART_NUM_SERIAL_PORTS %u\n' % (num_uarts+num_empty_uarts))
 
 def write_UART_config_bootloader(f):
     '''write UART config defines'''
