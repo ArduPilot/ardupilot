@@ -22,7 +22,7 @@
 #include "shared_dma.h"
 #include "Semaphores.h"
 
-#define RX_BOUNCE_BUFSIZE 128U
+#define RX_BOUNCE_BUFSIZE 64U
 #define TX_BOUNCE_BUFSIZE 64U
 
 // enough for uartA to uartH, plus IOMCU
@@ -117,6 +117,8 @@ public:
 
 private:
     const SerialDef &sdef;
+    bool rx_dma_enabled;
+    bool tx_dma_enabled;
 
     // thread used for all UARTs
     static thread_t *uart_thread_ctx;
@@ -149,7 +151,8 @@ private:
     // of ::read() and ::write() in the main loop
 #ifndef HAL_UART_NODMA
     bool tx_bounce_buf_ready;
-    uint8_t *rx_bounce_buf;
+    volatile uint8_t rx_bounce_idx;
+    uint8_t *rx_bounce_buf[2];
     uint8_t *tx_bounce_buf;
 #endif
     ByteBuffer _readbuf{0};
