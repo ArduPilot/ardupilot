@@ -21,7 +21,7 @@
 #include "RCOutput_Tap.h"
 
 #include <asm/termbits.h>
-#include <string.h>
+#include <asm/ioctls.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/types.h>

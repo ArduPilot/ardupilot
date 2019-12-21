@@ -1,5 +1,7 @@
 #pragma once
 
+#include <sys/types.h>
+
 #include <AP_Common/AP_Common.h>
 
 #include "AP_HAL_Linux.h"

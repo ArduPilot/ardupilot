@@ -39,7 +39,7 @@ static int mkdir_p(const char *path, int len, mode_t mode)
 {
     char *start, *end;
 
-    start = strndupa(path, len);
+    start = strncpy((char*) alloca(strlen(path) + 1), path, len);
     end = start + len;
 
     /*
