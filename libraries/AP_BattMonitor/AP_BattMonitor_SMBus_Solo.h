@@ -21,7 +21,7 @@ private:
     void timer(void) override;
 
     // read_block - returns number of characters read if successful, zero if unsuccessful
-    uint8_t read_block(uint8_t reg, uint8_t* data, uint8_t max_len, bool append_zero) const;
+    uint8_t read_block(uint8_t reg, uint8_t* data, uint8_t max_len) const;
 
     uint8_t _button_press_count;
 };
