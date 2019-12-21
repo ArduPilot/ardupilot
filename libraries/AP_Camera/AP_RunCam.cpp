@@ -96,7 +96,7 @@ static const uint32_t RUNCAM_OSD_UPDATE_INTERVAL_MS = 100; // 10Hz
 AP_RunCam::Menu AP_RunCam::_menus[RUNCAM_MAX_DEVICE_TYPES] = {
     // these are correct for the runcam split micro v2.4.4, others may vary
     // Video, Image, TV-OUT, Micro SD Card, General
-    { 6, { 5, 8, 3, 3, 7 }}
+    { 6, { 5, 8, 3, 3, 7 }},
 };
 
 AP_RunCam::AP_RunCam()
@@ -147,41 +147,31 @@ bool AP_RunCam::simulate_camera_button(const ControlOperation operation)
 void AP_RunCam::start_recording() {
     debug("start recording\n");
     _video_recording = true;
-    if (_cam_control_option & uint8_t(ControlOption::THREE_POS_SWITCH) && _osd_option == OSDOption::OPTION) {
-        _osd_option = OSDOption::EXIT;
-    }
+    _osd_option = OSDOption::NO_OPTION;
 }
 
 // stop the video
 void AP_RunCam::stop_recording() {
     debug("stop recording\n");
     _video_recording = false;
-    if (_cam_control_option & uint8_t(ControlOption::THREE_POS_SWITCH) && _osd_option == OSDOption::OPTION) {
-        _osd_option = OSDOption::EXIT;
-    }
+    _osd_option = OSDOption::NO_OPTION;
 }
 
 // enter the OSD menu
 void AP_RunCam::enter_osd()
 {
-    if (_cam_control_option & uint8_t(ControlOption::TWO_POS_SWITCH)) {
-        _osd_option = OSDOption::ENTER;
-    }
+    _osd_option = OSDOption::ENTER;
 }
 
 // exit the OSD menu
 void AP_RunCam::exit_osd()
 {
-    if (_cam_control_option & uint8_t(ControlOption::TWO_POS_SWITCH)) {
-        _osd_option = OSDOption::EXIT;
-    }
+    _osd_option = OSDOption::EXIT;
 }
 
 // OSD control determined by camera options
 void AP_RunCam::osd_option() {
-    if (_cam_control_option & uint8_t(ControlOption::THREE_POS_SWITCH)) {
-        _osd_option = OSDOption::OPTION;
-    }
+    _osd_option = OSDOption::OPTION;
 }
 
 // input update loop
@@ -338,7 +328,6 @@ void AP_RunCam::handle_ready(Event ev)
         _top_menu_pos = -1;
         _sub_menu_pos = 0;
         _state = State::ENTERING_MENU;
-        _osd_option = OSDOption::NONE;
         break;
     case Event::START_RECORDING:
         simulate_camera_button(ControlOperation::RCDEVICE_PROTOCOL_CHANGE_START_RECORDING);
@@ -367,7 +356,6 @@ void AP_RunCam::handle_recording(Event ev)
         set_mode_change_timeout();
         _sub_menu_pos = 0;
         _top_menu_pos = -1;
-        _osd_option = OSDOption::NONE;
         _state = State::ENTERING_MENU;
         break;
     case Event::STOP_RECORDING:
@@ -415,7 +403,8 @@ AP_RunCam::Event AP_RunCam::map_rc_input_to_event() const
         && yaw == RC_Channel::MIDDLE && pitch == RC_Channel::MIDDLE && roll == RC_Channel::MIDDLE) {
         result = Event::BUTTON_RELEASE;
     } else if (throttle == RC_Channel::MIDDLE && yaw == RC_Channel::LOW
-        && pitch == RC_Channel::MIDDLE && roll == RC_Channel::MIDDLE) {
+        && pitch == RC_Channel::MIDDLE && roll == RC_Channel::MIDDLE
+        && _cam_control_option & uint8_t(ControlOption::STICK_YAW_RIGHT)) {
         result = Event::EXIT_MENU;
     }
     if (throttle == RC_Channel::MIDDLE && yaw == RC_Channel::HIGH
@@ -430,15 +419,24 @@ AP_RunCam::Event AP_RunCam::map_rc_input_to_event() const
         result = Event::IN_MENU_UP;
     } else if (pitch == RC_Channel::LOW) {
         result = Event::IN_MENU_DOWN;
-    } else if (_osd_option == OSDOption::ENTER || _osd_option == OSDOption::OPTION) {
+    } else if (_osd_option == OSDOption::ENTER
+        && _cam_control_option & uint8_t(ControlOption::TWO_POS_SWITCH)) {
         result = Event::ENTER_MENU;
-    } else if (_osd_option == OSDOption::EXIT) {
-        result = Event::EXIT_MENU;
+    } else if (_osd_option == OSDOption::OPTION
+        && _cam_control_option & uint8_t(ControlOption::THREE_POS_SWITCH)) {
+        result = Event::ENTER_MENU;
     } else if (_state == State::READY && _video_recording) {
         // generate an event if we are in the wrong recording state
         result = Event::START_RECORDING;
     } else if (_state == State::VIDEO_RECORDING && !_video_recording) {
         result = Event::STOP_RECORDING;
+    } else if (_osd_option == OSDOption::EXIT
+        && _cam_control_option & uint8_t(ControlOption::TWO_POS_SWITCH)) {
+        result = Event::EXIT_MENU;
+    } else if (_osd_option == OSDOption::NO_OPTION
+        && _cam_control_option & uint8_t(ControlOption::THREE_POS_SWITCH)) {
+        // this is also start/stop video so prioritize that first
+        result = Event::EXIT_MENU;
     }
     return result;
 }
@@ -467,7 +465,6 @@ void AP_RunCam::handle_2_key_simulation_process(Event ev)
             simulate_camera_button(ControlOperation::RCDEVICE_PROTOCOL_CHANGE_MODE);
             set_mode_change_timeout();
             _state = State::EXITING_MENU;
-            _osd_option = OSDOption::NONE;
         } else {
             exit_2_key_osd_menu();
         }
@@ -570,7 +567,6 @@ void AP_RunCam::handle_5_key_simulation_process(Event ev)
         break;
 
     case Event::EXIT_MENU:
-        _osd_option = OSDOption::NONE;
         if (_in_menu > 0) {
             // turn built-in OSD back on
             enable_osd();

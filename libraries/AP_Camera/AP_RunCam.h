@@ -178,7 +178,8 @@ private:
         NONE,
         ENTER,
         EXIT,
-        OPTION
+        OPTION,
+        NO_OPTION
     };
 
     static const uint8_t  RUNCAM_NUM_SUB_MENUS =          5;
