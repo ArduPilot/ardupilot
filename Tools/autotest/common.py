@@ -453,7 +453,7 @@ class AutoTest(ABC):
         self.contexts[-1].sitl_commandline_customised = True
         self.stop_SITL()
         self.start_SITL(customisations=customisations, wipe=False)
-        self.wait_heartbeat()
+        self.wait_heartbeat(drain_mav=True)
         # MAVProxy only checks the streamrates once every 15 seconds.
         # Encourage it:
         self.set_streamrate(self.sitl_streamrate()+1)
@@ -1479,7 +1479,7 @@ class AutoTest(ABC):
                 ret = getattr(loc, attr)
                 break
         if ret is None:
-            raise ValueError("None of %s in loc" % str(attrs))
+            raise ValueError("None of %s in loc(%s)" % (str(attrs), str(loc)))
         return ret
 
     @staticmethod
@@ -3638,6 +3638,22 @@ switch value'''
         while self.get_sim_time_cached() - tstart < seconds:
             self.drain_mav();
             self.delay_sim_time(0.5)
+
+    def nmea_output(self):
+        self.set_parameter("SERIAL5_PROTOCOL", 20) # serial5 is NMEA output
+        self.set_parameter("GPS_TYPE2", 5) # GPS2 is NMEA
+        self.customise_SITL_commandline([
+            "--uartE=tcp:6735", # GPS2 is NMEA....
+            "--uartF=tcpclient:127.0.0.1:6735", # serial5 spews to localhost:6735
+        ])
+        gps1 = self.mav.recv_match(type="GPS_RAW_INT", blocking=True, timeout=10)
+        if gps1 is None:
+            raise NotAchievedException("Did not receive GPS_RAW_INT")
+        gps2 = self.mav.recv_match(type="GPS2_RAW", blocking=True, timeout=10)
+        if gps2 is None:
+            raise NotAchievedException("Did not receive GPS2_RAW")
+        if self.get_distance_int(gps1, gps2) > 1:
+            raise NotAchievedException("NMEA output inaccurate")
 
     def test_button(self):
         self.set_parameter("SIM_PIN_MASK", 0)
