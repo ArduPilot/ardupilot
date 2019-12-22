@@ -83,3 +83,9 @@ void Plane::rpm_update(void)
         }
     }
 }
+
+// return true if rangefinder_alt can be used
+bool Plane::rangefinder_alt_ok()
+{
+    return (rangefinder_state.in_use && rangefinder_state.in_range);
+}

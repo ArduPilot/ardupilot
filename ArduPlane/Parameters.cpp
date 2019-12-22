@@ -1004,6 +1004,12 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(camera_mount,           "MNT",  AP_Mount),
 #endif
 
+#if PRECISION_LANDING == ENABLED
+    // @Group: PLND_
+    // @Path: ../libraries/AC_PrecLand/AC_PrecLand.cpp
+    GOBJECT(precland, "PLND_", AC_PrecLand),
+#endif
+
     // @Group: LOG
     // @Path: ../libraries/AP_Logger/AP_Logger.cpp
     GOBJECT(logger,           "LOG",  AP_Logger),

@@ -1229,6 +1229,14 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
         break;
     }
 
+#if PRECISION_LANDING == ENABLED
+    case MAVLINK_MSG_ID_LANDING_TARGET:
+    {
+        plane.precland.handle_msg(msg);
+        break;
+    }
+#endif
+
     case MAVLINK_MSG_ID_SET_HOME_POSITION:
     {
         mavlink_set_home_position_t packet;

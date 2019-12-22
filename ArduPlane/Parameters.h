@@ -345,8 +345,12 @@ public:
         k_param_logger = 253, // Logging Group
 
         // 254,255: reserved
+        
+        k_param_precland = 256,// 256: precision landing object
 
         k_param_vehicle = 257, // vehicle common block of parameters
+
+        // 255: reserved
     };
 
     AP_Int16 format_version;

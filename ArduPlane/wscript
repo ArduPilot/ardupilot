@@ -24,6 +24,8 @@ def build(bld):
             'AP_Stats',
             'AP_Landing',
             'AP_Beacon',
+            'AC_PrecLand',
+            'AP_IRLock',
             'PID',
             'AP_Soaring',
             'AP_LTM_Telem',

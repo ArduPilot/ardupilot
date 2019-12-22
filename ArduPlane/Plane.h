@@ -71,6 +71,9 @@
 #include <AP_Soaring/AP_Soaring.h>
 #include <AP_BattMonitor/AP_BattMonitor.h> // Battery monitor library
 
+#include <AC_PrecLand/AC_PrecLand.h>  // Precision landing library
+#include <AP_IRLock/AP_IRLock.h>
+
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #include <AP_OSD/AP_OSD.h>
@@ -197,6 +200,11 @@ private:
     AP_Vehicle::FixedWing::Rangefinder_State rangefinder_state;
 
     AP_RPM rpm_sensor;
+
+#if PRECISION_LANDING == ENABLED
+    // Precision landing
+    AC_PrecLand precland;
+#endif
 
     AP_TECS TECS_controller{ahrs, aparm, landing};
     AP_L1_Control L1_controller{ahrs, &TECS_controller};
@@ -817,6 +825,7 @@ private:
     float rangefinder_correction(void);
     void rangefinder_height_update(void);
     void rangefinder_terrain_correction(float &height);
+    bool rangefinder_alt_ok();
     void set_next_WP(const struct Location &loc);
     void set_guided_WP(void);
     void update_home();
@@ -1013,6 +1022,10 @@ private:
     void accel_cal_update(void);
 #if SOARING_ENABLED == ENABLED
     void update_soaring();
+#endif
+#if PRECISION_LANDING == ENABLED
+    void init_precland();
+    void update_precland();
 #endif
 
     bool reversed_throttle;
