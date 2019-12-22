@@ -646,13 +646,13 @@ private:
         STEP_POLL_GNSS, // poll GNSS
         STEP_POLL_TP5, // poll TP5
         STEP_TMODE, // set TMODE-MODE
-        STEP_RTK_MOVBASE, // setup moving baseline
         STEP_DOP,
         STEP_MON_HW,
         STEP_MON_HW2,
         STEP_RAW,
         STEP_RAWX,
         STEP_VERSION,
+        STEP_RTK_MOVBASE, // setup moving baseline
         STEP_LAST
     };
 
