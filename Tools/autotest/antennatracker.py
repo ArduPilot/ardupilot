@@ -146,5 +146,10 @@ class AutoTestTracker(AutoTest):
             ("SERVOTEST",
              "Test SERVOTEST mode",
              self.SERVOTEST),
+
+            ("NMEAOutput",
+             "Test AHRS NMEA Output can be read by out NMEA GPS",
+             self.nmea_output),
+
         ])
         return ret
