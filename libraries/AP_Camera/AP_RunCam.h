@@ -36,7 +36,6 @@
 #include <AP_Arming/AP_Arming.h>
 #include <AP_OSD/AP_OSD.h>
 
-#define RUNCAM_MODE_DELAY_MS          600
 #define RUNCAM_MAX_PACKET_SIZE         64
 
 
@@ -68,9 +67,9 @@ public:
 
     // control for OSD menu entry
     enum class ControlOption {
-        STICK_YAW_RIGHT = 0x01,
-        THREE_POS_SWITCH = 0x02,
-        TWO_POS_SWITCH = 0x04
+        STICK_YAW_RIGHT = (1 << 0),
+        THREE_POS_SWITCH = (1 << 1),
+        TWO_POS_SWITCH = (1 << 2)
     };
 
     // initialize the RunCam driver
@@ -198,6 +197,8 @@ private:
     AP_Int32 _boot_delay_ms;
     // delay time to make sure a button press has been activated
     AP_Int32 _button_delay_ms;
+    // delay time to make sure a mode change has been activated
+    AP_Int32 _mode_delay_ms;
     // runcam type/firmware revision
     AP_Int8 _cam_type;
     // runcam control options
@@ -306,7 +307,7 @@ private:
     }
     // start the counter for a mode change
     void set_mode_change_timeout() {
-        _transition_timeout_ms = RUNCAM_MODE_DELAY_MS;
+        _transition_timeout_ms = _mode_delay_ms;
         _button_pressed = true;
     }
 

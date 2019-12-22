@@ -41,7 +41,7 @@ const AP_Param::GroupInfo AP_RunCam::var_info[] = {
     // @DisplayName: RunCam boot delay before allowing updates
     // @Description: Time it takes for the RunCam to become fully ready in ms. If this is too short then commands can get out of sync.
     // @User: Advanced
-    AP_GROUPINFO("BT_DELAY", 2, AP_RunCam, _boot_delay_ms, 6000),
+    AP_GROUPINFO("BT_DELAY", 2, AP_RunCam, _boot_delay_ms, 7000),
 
     // @Param: BTN_DELAY
     // @DisplayName: RunCam button delay before allowing further button presses
@@ -49,19 +49,25 @@ const AP_Param::GroupInfo AP_RunCam::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("BTN_DELAY", 3, AP_RunCam, _button_delay_ms, 300),
 
+    // @Param: MDE_DELAY
+    // @DisplayName: RunCam mode delay before allowing further button presses
+    // @Description: Time it takes for the a RunCam mode button press to be actived in ms. If this is too short then commands can get out of sync.
+    // @User: Advanced
+    AP_GROUPINFO("MDE_DELAY", 4, AP_RunCam, _mode_delay_ms, 800),
+
     // @Param: TYPE
     // @DisplayName: RunCam device type
     // @Description: RunCam deviee type used to determine OSD menu structure and shutter options
     // @Values: 0:RunCam Split
     // @User: Advanced
-    AP_GROUPINFO("TYPE", 4, AP_RunCam, _cam_type, 0),
+    AP_GROUPINFO("TYPE", 5, AP_RunCam, _cam_type, 0),
 
     // @Param: CONTROL
     // @DisplayName: RunCam control option
     // @Description: Specifies the allowed actions required to enter the OSD menu.
-    // @Bitmask: 0:Stick roll right, 1:3-way switch, 2: 2-way switch
+    // @Bitmask: 0:Stick yaw right, 1:3-way switch, 2: 2-way switch
     // @User: Advanced
-    AP_GROUPINFO("CONTROL", 5, AP_RunCam, _cam_control_option, uint8_t(ControlOption::STICK_YAW_RIGHT)),
+    AP_GROUPINFO("CONTROL", 6, AP_RunCam, _cam_control_option, uint8_t(ControlOption::STICK_YAW_RIGHT) | uint8_t(ControlOption::TWO_POS_SWITCH)),
 
     AP_GROUPEND
 };
@@ -69,7 +75,7 @@ const AP_Param::GroupInfo AP_RunCam::var_info[] = {
 #define RUNCAM_DEBUG 0
 
 #if RUNCAM_DEBUG
-#define debug(fmt, args ...) do { hal.console->printf("RunCam: " fmt, ## args); } while (0)
+#define debug(fmt, args ...) do { hal.console->printf("RunCam[%d]: " fmt, int(_state), ## args); } while (0)
 #else
 #define debug(fmt, args ...)
 #endif
@@ -160,17 +166,20 @@ void AP_RunCam::stop_recording() {
 // enter the OSD menu
 void AP_RunCam::enter_osd()
 {
+    debug("enter osd\n");
     _osd_option = OSDOption::ENTER;
 }
 
 // exit the OSD menu
 void AP_RunCam::exit_osd()
 {
+    debug("exit osd\n");
     _osd_option = OSDOption::EXIT;
 }
 
 // OSD control determined by camera options
 void AP_RunCam::osd_option() {
+    debug("osd option\n");
     _osd_option = OSDOption::OPTION;
 }
 
@@ -331,7 +340,7 @@ void AP_RunCam::handle_ready(Event ev)
         break;
     case Event::START_RECORDING:
         simulate_camera_button(ControlOperation::RCDEVICE_PROTOCOL_CHANGE_START_RECORDING);
-        set_button_press_timeout();
+        set_mode_change_timeout();
         _state = State::VIDEO_RECORDING;
         break;
     case Event::NONE:
@@ -360,7 +369,7 @@ void AP_RunCam::handle_recording(Event ev)
         break;
     case Event::STOP_RECORDING:
         simulate_camera_button(ControlOperation::RCDEVICE_PROTOCOL_CHANGE_STOP_RECORDING);
-        set_button_press_timeout();
+        set_mode_change_timeout();
         _state = State::READY;
         break;
     case Event::NONE:
@@ -425,17 +434,11 @@ AP_RunCam::Event AP_RunCam::map_rc_input_to_event() const
     } else if (_osd_option == OSDOption::OPTION
         && _cam_control_option & uint8_t(ControlOption::THREE_POS_SWITCH)) {
         result = Event::ENTER_MENU;
-    } else if (_state == State::READY && _video_recording) {
-        // generate an event if we are in the wrong recording state
-        result = Event::START_RECORDING;
-    } else if (_state == State::VIDEO_RECORDING && !_video_recording) {
-        result = Event::STOP_RECORDING;
     } else if (_osd_option == OSDOption::EXIT
         && _cam_control_option & uint8_t(ControlOption::TWO_POS_SWITCH)) {
         result = Event::EXIT_MENU;
     } else if (_osd_option == OSDOption::NO_OPTION
         && _cam_control_option & uint8_t(ControlOption::THREE_POS_SWITCH)) {
-        // this is also start/stop video so prioritize that first
         result = Event::EXIT_MENU;
     }
     return result;
@@ -448,7 +451,7 @@ void AP_RunCam::handle_2_key_simulation_process(Event ev)
 {
 #if RUNCAM_DEBUG
     if (_in_menu > 0 && ev != Event::NONE) {
-        debug("E:%d,M:%d,V:%d\n", int(ev), _in_menu, _video_recording);
+        debug("E:%d,M:%d,V:%d,O:%d\n", int(ev), _in_menu, _video_recording, int(_osd_option));
     }
 #endif
     switch (ev) {
@@ -472,15 +475,17 @@ void AP_RunCam::handle_2_key_simulation_process(Event ev)
 
     case Event::IN_MENU_ENTER:
         simulate_camera_button(ControlOperation::RCDEVICE_PROTOCOL_SIMULATE_WIFI_BTN);  // change setting
-        set_button_press_timeout();
         // in a sub-menu and save-and-exit was selected
         if (_in_menu > 1 && _sub_menu_pos == (get_sub_menu_length(_top_menu_pos) - 1)) {
+            set_button_press_timeout();
             _in_menu--;
         // in the top-menu and save-and-exit was selected
         } else if (_in_menu == 1 && _top_menu_pos == (get_top_menu_length() - 1)) {
+            set_mode_change_timeout();
             _in_menu--;
             _state = State::EXITING_MENU;
         } else {
+            set_button_press_timeout();
             _in_menu = MIN(_in_menu + 1, RUNCAM_OSD_MENU_DEPTH);
         }
         break;
@@ -530,7 +535,7 @@ void AP_RunCam::enter_2_key_osd_menu()
     disable_osd();
 
     simulate_camera_button(ControlOperation::RCDEVICE_PROTOCOL_CHANGE_MODE);
-    set_button_press_timeout();
+    set_mode_change_timeout();
     _in_menu = 1;
     _state = State::IN_MENU;
 }
@@ -544,8 +549,11 @@ void AP_RunCam::exit_2_key_osd_menu()
     if (_video_recording) {
         simulate_camera_button(ControlOperation::RCDEVICE_PROTOCOL_CHANGE_START_RECORDING);
         set_mode_change_timeout();
+        _state = State::VIDEO_RECORDING;
     }
-    _state = State::READY;
+    else {
+        _state = State::READY;
+    }
     _in_menu = 0;
 }
 
@@ -874,11 +882,10 @@ void AP_RunCam::parse_device_info(const Request& request)
 
     uint8_t featureLowBits = request._recv_buf[2];
     uint8_t featureHighBits = request._recv_buf[3];
-    if (_features == 0) {
-        _features = (featureHighBits << 8) | featureLowBits;
-    }
+    _features = (featureHighBits << 8) | featureLowBits;
     _state = State::INITIALIZED;
     gcs().send_text(MAV_SEVERITY_INFO, "RunCam device initialized, features 0x%04X\n", _features.get());
+    debug("RunCam: initialized state: video: %d, osd: %d, cam: %d\n", _video_recording, int(_osd_option), int(_cam_control_option));
 }
 
 // wait for the RunCam device to be fully ready
