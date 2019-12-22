@@ -1401,6 +1401,11 @@ bool AP_AHRS_NavEKF::attitudes_consistent(char *failure_msg, const uint8_t failu
     dcm_quat.from_rotation_matrix(get_DCM_rotation_body_to_ned());
     primary_quat.angular_difference(dcm_quat).to_axis_angle(angle_diff);
     float diff = safe_sqrt(sq(angle_diff.x)+sq(angle_diff.y));
+    // tailsitters may have a 90 degree pitch offset in the ahrs_view attitude
+    // in which case roll and yaw will also disagree with DCM
+    if (fabsf(fabsf(angle_diff.y)-M_PI_2) < ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
+        return true;
+    }
     if (diff > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
         hal.util->snprintf(failure_msg, failure_msg_len, "DCM Roll/Pitch inconsistent by %d deg", (int)degrees(diff));
         return false;
