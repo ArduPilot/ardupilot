@@ -1036,6 +1036,28 @@ void AP_GPS::inject_data(uint8_t instance, const uint8_t *data, uint16_t len)
     }
 }
 
+/*
+  get GPS yaw following mavlink GPS_RAW_INT and GPS2_RAW
+  convention. We return 0 if the GPS is not configured to provide
+  yaw. We return 65535 for a GPS configured to provide yaw that can't
+  currently provide it. We return from 1 to 36000 for yaw otherwise
+ */
+uint16_t AP_GPS::gps_yaw_cdeg(uint8_t instance) const
+{
+    if (!have_gps_yaw_configured(instance)) {
+        return 0;
+    }
+    float yaw_deg, accuracy_deg;
+    if (!gps_yaw_deg(instance, yaw_deg, accuracy_deg)) {
+        return 65535;
+    }
+    int yaw_cd = wrap_360_cd(yaw_deg * 100);
+    if (yaw_cd == 0) {
+        return 36000;
+    }
+    return yaw_cd;
+}
+
 void AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
 {
     const Location &loc = location(0);
@@ -1061,7 +1083,8 @@ void AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
         hacc * 1000,          // one-sigma standard deviation in mm
         vacc * 1000,          // one-sigma standard deviation in mm
         sacc * 1000,          // one-sigma standard deviation in mm/s
-        0);                   // TODO one-sigma heading accuracy standard deviation
+        0,                    // TODO one-sigma heading accuracy standard deviation
+        gps_yaw_cdeg(0));
 }
 
 #if GPS_MAX_RECEIVERS > 1
@@ -1086,7 +1109,8 @@ void AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
         ground_course(1)*100, // 1/100 degrees,
         num_sats(1),
         state[1].rtk_num_sats,
-        state[1].rtk_age_ms);
+        state[1].rtk_age_ms,
+        gps_yaw_cdeg(1));
 }
 #endif // GPS_MAX_RECEIVERS
 
