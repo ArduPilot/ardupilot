@@ -34,7 +34,7 @@
 #endif
 
 #ifndef HAL_DEFAULT_INS_FAST_SAMPLE
-#define HAL_DEFAULT_INS_FAST_SAMPLE 0
+#define HAL_DEFAULT_INS_FAST_SAMPLE 1
 #endif
 
 extern const AP_HAL::HAL& hal;
