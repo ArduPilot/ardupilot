@@ -97,6 +97,10 @@ AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UART
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "u-blox %d: failed RTCMv3 parser allocation", state.instance + 1);
         }
     }
+    if (role == AP_GPS::GPS_ROLE_MB_BASE ||
+        role == AP_GPS::GPS_ROLE_MB_ROVER) {
+        _unconfigured_messages |= CONFIG_RTK_MOVBASE;
+    }
 }
 
 AP_GPS_UBLOX::~AP_GPS_UBLOX()
@@ -1173,15 +1177,6 @@ AP_GPS_UBLOX::_parse_gps(void)
                 if (_hardware_generation != UBLOX_F9) {
                     // need to ensure time mode is correctly setup on F9
                     _unconfigured_messages |= CONFIG_TMODE_MODE;
-
-                    // see if RTK moving baseline base is wanted
-                    if (role == AP_GPS::GPS_ROLE_MB_BASE) {
-                        _unconfigured_messages |= CONFIG_RTK_MOVBASE;
-                    }
-                    // see if RTK moving baseline rover is wanted
-                    if (role == AP_GPS::GPS_ROLE_MB_ROVER) {
-                        _unconfigured_messages |= CONFIG_RTK_MOVBASE;
-                    }
                 }
                 _hardware_generation = UBLOX_F9;
             }
