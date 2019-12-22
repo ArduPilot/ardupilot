@@ -769,5 +769,4 @@ private:
 
     // RTCM3 parser for when in moving baseline base mode
     RTCM3_Parser *rtcm3_parser;
-    uint32_t last_yaw_ms;
 };

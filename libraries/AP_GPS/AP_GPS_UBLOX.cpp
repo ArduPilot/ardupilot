@@ -96,10 +96,11 @@ AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UART
         if (rtcm3_parser == nullptr) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "u-blox %d: failed RTCMv3 parser allocation", state.instance + 1);
         }
-    }
-    if (role == AP_GPS::GPS_ROLE_MB_BASE ||
-        role == AP_GPS::GPS_ROLE_MB_ROVER) {
         _unconfigured_messages |= CONFIG_RTK_MOVBASE;
+    }
+    if (role == AP_GPS::GPS_ROLE_MB_ROVER) {
+        _unconfigured_messages |= CONFIG_RTK_MOVBASE;
+        state.gps_yaw_configured = true;
     }
 }
 
@@ -1358,17 +1359,9 @@ AP_GPS_UBLOX::_parse_gps(void)
                 state.have_gps_yaw = true;
                 state.gps_yaw_accuracy = _buffer.relposned.accHeading * 1e-5;
                 state.have_gps_yaw_accuracy = true;
-                if (last_yaw_ms == 0) {
-                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS: got yaw lock");
-                }
-                last_yaw_ms = AP_HAL::millis();
             } else {
                 state.have_gps_yaw = false;
                 state.have_gps_yaw_accuracy = false;
-                if (last_yaw_ms && AP_HAL::millis() - last_yaw_ms > 5000) {
-                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS: lost yaw lock 0x%x", unsigned(_buffer.relposned.flags));
-                    last_yaw_ms = 0;
-                }
             }
         }
         break;
