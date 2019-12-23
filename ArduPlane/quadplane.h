@@ -11,6 +11,7 @@
 #include <AC_Avoidance/AC_Avoid.h>
 #include <AP_Proximity/AP_Proximity.h>
 #include "qautotune.h"
+#include "config.h"
 
 /*
   QuadPlane specific functionality
@@ -135,7 +136,11 @@ public:
 
     // return true if the user has set ENABLE
     bool enabled(void) const { return enable != 0; }
-    
+
+#if PRECISION_LANDING == ENABLED
+    void set_precision_loiter_enabled(bool value) { _precision_loiter_enabled = value; }
+    bool do_precision_loiter();
+#endif
     struct PACKED log_QControl_Tuning {
         LOG_PACKET_HEADER;
         uint64_t time_us;
@@ -368,6 +373,14 @@ private:
         TRANSITION_ANGLE_WAIT_VTOL,
         TRANSITION_DONE
     } transition_state;
+
+    // true when land repositioning from pilot is active
+    bool land_repo_active:1;
+
+#if PRECISION_LANDING == ENABLED
+    // Set by aux channel functionw
+    bool _precision_loiter_enabled:1;
+#endif
 
     // true when waiting for pilot throttle
     bool throttle_wait:1;

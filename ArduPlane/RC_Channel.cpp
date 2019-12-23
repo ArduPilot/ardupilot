@@ -69,6 +69,10 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
     case AUX_FUNC::TAKEOFF:
         break;
 
+    case AUX_FUNC::PRECISION_LOITER:
+        do_aux_function(ch_option, ch_flag);
+        break;
+
     case AUX_FUNC::REVERSE_THROTTLE:
         plane.have_reverse_throttle_rc_option = true;
         // setup input throttle as a range. This is needed as init_aux_function is called
@@ -130,6 +134,24 @@ void RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const aux_swi
 
     case AUX_FUNC::FLAP:
         break; // flap input label, nothing to do
+
+    case AUX_FUNC::PRECISION_LOITER:
+#if PRECISION_LANDING == ENABLED
+            switch (ch_flag) {
+                case HIGH:
+                    plane.quadplane.set_precision_loiter_enabled(true);
+                    gcs().send_text(MAV_SEVERITY_INFO, "Precision Landing enabled");
+                    break;
+                case MIDDLE:
+                    // nothing
+                    break;
+                case LOW:
+                    plane.quadplane.set_precision_loiter_enabled(false);
+                    gcs().send_text(MAV_SEVERITY_INFO, "Precision Landing disabled");
+                    break;
+            }
+#endif
+        break;
 
     default:
         RC_Channel::do_aux_function(ch_option, ch_flag);

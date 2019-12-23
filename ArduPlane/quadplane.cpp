@@ -1115,6 +1115,7 @@ void QuadPlane::init_loiter(void)
 
     // remember initial pitch
     loiter_initial_pitch_cd = MAX(plane.ahrs.pitch_sensor, 0);
+    land_repo_active = false;
 
     // prevent re-init of target position
     last_loiter_ms = AP_HAL::millis();
@@ -1127,6 +1128,7 @@ void QuadPlane::init_qland(void)
     poscontrol.state = QPOS_LAND_DESCEND;
     landing_detect.lower_limit_start_ms = 0;
     landing_detect.land_start_ms = 0;
+    land_repo_active = false;
 }
 
 
@@ -1239,17 +1241,35 @@ void QuadPlane::control_loiter()
     }
     last_loiter_ms = now;
 
-    // motors use full range
-    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+    int16_t roll_input = plane.channel_roll->get_control_in();
+    int16_t pitch_input = plane.channel_pitch->get_control_in();
+
+    // process pilot's roll and pitch input
+    loiter_nav->set_pilot_desired_acceleration(roll_input, pitch_input, plane.G_Dt);
 
     // initialize vertical speed and acceleration
     pos_control->set_max_speed_z(-pilot_velocity_z_max, pilot_velocity_z_max);
     pos_control->set_max_accel_z(pilot_accel_z);
 
-    // process pilot's roll and pitch input
-    loiter_nav->set_pilot_desired_acceleration(plane.channel_roll->get_control_in(),
-                                               plane.channel_pitch->get_control_in(),
-                                               plane.G_Dt);
+    // motors use full range
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+
+#if PRECISION_LANDING == ENABLED
+    if (do_precision_loiter()) {
+        loiter_nav->clear_pilot_desired_acceleration();
+        Vector2f target_pos, target_vel_rel;
+        if (!plane.precland.get_target_position_cm(target_pos)) {
+            target_pos.x = inertial_nav.get_position().x;
+            target_pos.y = inertial_nav.get_position().y;
+        }
+        if (!plane.precland.get_target_velocity_relative_cms(target_vel_rel)) {
+            target_vel_rel.x = -inertial_nav.get_velocity().x;
+            target_vel_rel.y = -inertial_nav.get_velocity().y;
+        }
+        pos_control->set_xy_target(target_pos.x, target_pos.y);
+        pos_control->override_vehicle_velocity_xy(-target_vel_rel);
+    }
+#endif
 
     // run loiter controller
     loiter_nav->update();
@@ -1268,7 +1288,6 @@ void QuadPlane::control_loiter()
             pos_control->set_limit_accel_xy();            
         }
     }
-    
     
     // call attitude controller with conservative smoothing gain of 4.0f
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
@@ -2297,7 +2316,7 @@ void QuadPlane::vtol_position_controller(void)
         plane.nav_controller->update_waypoint(plane.prev_WP_loc, loc);
         FALLTHROUGH;
 
-    case QPOS_LAND_FINAL:
+    case QPOS_LAND_FINAL: {
 
         // set position controller desired velocity and acceleration to zero
         pos_control->set_desired_velocity_xy(0.0f,0.0f);
@@ -2309,6 +2328,25 @@ void QuadPlane::vtol_position_controller(void)
         } else {
             pos_control->set_xy_target(poscontrol.target.x, poscontrol.target.y);
         }
+
+#if PRECISION_LANDING == ENABLED
+        bool doing_precision_landing = plane.precland.target_acquired();
+        // run precision landing
+        if (doing_precision_landing) {
+            Vector2f target_pos, target_vel_rel;
+            if (!plane.precland.get_target_position_cm(target_pos)) {
+                target_pos.x = inertial_nav.get_position().x;
+                target_pos.y = inertial_nav.get_position().y;
+            }
+            if (!plane.precland.get_target_velocity_relative_cms(target_vel_rel)) {
+                target_vel_rel.x = -inertial_nav.get_velocity().x;
+                target_vel_rel.y = -inertial_nav.get_velocity().y;
+            }
+            pos_control->set_xy_target(target_pos.x, target_pos.y);
+            pos_control->override_vehicle_velocity_xy(-target_vel_rel);
+        }
+#endif
+
         pos_control->update_xy_controller();
 
         // nav roll and pitch are controller by position controller
@@ -2320,6 +2358,7 @@ void QuadPlane::vtol_position_controller(void)
                                                                       plane.nav_pitch_cd,
                                                                       get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
         break;
+    }
 
     case QPOS_LAND_COMPLETE:
         // nothing to do
@@ -3224,3 +3263,19 @@ bool QuadPlane::in_vtol_land_sequence(void) const
 {
     return in_vtol_land_approach() || in_vtol_land_descent() || in_vtol_land_final();
 }
+
+#if PRECISION_LANDING == ENABLED
+bool QuadPlane::do_precision_loiter()
+{
+    if (!_precision_loiter_enabled) {
+        return false;
+    }
+    if (loiter_nav->get_pilot_desired_acceleration().length() > 50.0f) {
+        return false;
+    }
+    if (!plane.precland.target_acquired()) {
+        return false; // we don't have a good vector
+    }
+    return true;
+}
+#endif
