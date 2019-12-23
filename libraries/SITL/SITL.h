@@ -7,7 +7,7 @@
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Common/Location.h>
-
+#include <AP_Compass/AP_Compass.h>
 #include "SIM_Buzzer.h"
 #include "SIM_Gripper_EPM.h"
 #include "SIM_Gripper_Servo.h"
@@ -185,6 +185,7 @@ public:
     AP_Int8 gps_hdg_enabled; // enable the output of a NMEA heading HDT sentence
     AP_Int32 loop_delay; // extra delay to add to every loop
     AP_Float mag_scaling; // scaling factor on first compasses
+    AP_Int32 mag_devid[MAX_CONNECTED_MAGS]; // Mag devid
 
     // EFI type
     enum EFIType {
