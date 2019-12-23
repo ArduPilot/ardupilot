@@ -27,8 +27,12 @@ def embed_file(out, f, idx, embedded_name, uncompressed):
         blen = len(contents)
         pad = (32 - (blen % 32)) % 32
         if pad != 0:
-            contents += bytes([0xff]*pad)
-            print("Padded %u bytes for %s" % (pad, embedded_name))
+            if sys.version_info[0] >= 3:
+                contents += bytes([0xff]*pad)
+            else:
+                for i in range(pad):
+                    contents += bytes(chr(0xff))
+            print("Padded %u bytes for %s to %u" % (pad, embedded_name, len(contents)))
 
     write_encode(out, 'static const uint8_t ap_romfs_%u[] = {' % idx)
 
