@@ -68,8 +68,9 @@ public:
     // control for OSD menu entry
     enum class ControlOption {
         STICK_YAW_RIGHT = (1 << 0),
-        THREE_POS_SWITCH = (1 << 1),
-        TWO_POS_SWITCH = (1 << 2)
+        STICK_ROLL_RIGHT = (1 << 1),
+        THREE_POS_SWITCH = (1 << 2),
+        TWO_POS_SWITCH = (1 << 3)
     };
 
     // initialize the RunCam driver

@@ -64,10 +64,10 @@ const AP_Param::GroupInfo AP_RunCam::var_info[] = {
 
     // @Param: CONTROL
     // @DisplayName: RunCam control option
-    // @Description: Specifies the allowed actions required to enter the OSD menu.
-    // @Bitmask: 0:Stick yaw right, 1:3-way switch, 2: 2-way switch
+    // @Description: Specifies the allowed actions required to enter the OSD menu
+    // @Bitmask: 0:Stick yaw right,1:Stick roll right,2:3-position switch,3:2-position switch
     // @User: Advanced
-    AP_GROUPINFO("CONTROL", 6, AP_RunCam, _cam_control_option, uint8_t(ControlOption::STICK_YAW_RIGHT) | uint8_t(ControlOption::TWO_POS_SWITCH)),
+    AP_GROUPINFO("CONTROL", 6, AP_RunCam, _cam_control_option, uint8_t(ControlOption::STICK_ROLL_RIGHT) | uint8_t(ControlOption::TWO_POS_SWITCH)),
 
     AP_GROUPEND
 };
@@ -334,9 +334,12 @@ void AP_RunCam::handle_ready(Event ev)
 {
     switch (ev) {
     case Event::ENTER_MENU:
-        _top_menu_pos = -1;
-        _sub_menu_pos = 0;
-        _state = State::ENTERING_MENU;
+    case Event::IN_MENU_ENTER:
+        if (ev == Event::ENTER_MENU || _cam_control_option & uint8_t(ControlOption::STICK_ROLL_RIGHT)) {
+            _top_menu_pos = -1;
+            _sub_menu_pos = 0;
+            _state = State::ENTERING_MENU;
+        }
         break;
     case Event::START_RECORDING:
         simulate_camera_button(ControlOperation::RCDEVICE_PROTOCOL_CHANGE_START_RECORDING);
@@ -345,7 +348,6 @@ void AP_RunCam::handle_ready(Event ev)
         break;
     case Event::NONE:
     case Event::EXIT_MENU:
-    case Event::IN_MENU_ENTER:
     case Event::IN_MENU_RIGHT:
     case Event::IN_MENU_UP:
     case Event::IN_MENU_DOWN:
@@ -361,11 +363,14 @@ void AP_RunCam::handle_recording(Event ev)
 {
     switch (ev) {
     case Event::ENTER_MENU:
-        simulate_camera_button(ControlOperation::RCDEVICE_PROTOCOL_CHANGE_STOP_RECORDING);
-        set_mode_change_timeout();
-        _sub_menu_pos = 0;
-        _top_menu_pos = -1;
-        _state = State::ENTERING_MENU;
+    case Event::IN_MENU_ENTER:
+        if (ev == Event::ENTER_MENU || _cam_control_option & uint8_t(ControlOption::STICK_ROLL_RIGHT)) {
+            simulate_camera_button(ControlOperation::RCDEVICE_PROTOCOL_CHANGE_STOP_RECORDING);
+            set_mode_change_timeout();
+            _top_menu_pos = -1;
+            _sub_menu_pos = 0;
+            _state = State::ENTERING_MENU;
+        }
         break;
     case Event::STOP_RECORDING:
         simulate_camera_button(ControlOperation::RCDEVICE_PROTOCOL_CHANGE_STOP_RECORDING);
@@ -374,7 +379,6 @@ void AP_RunCam::handle_recording(Event ev)
         break;
     case Event::NONE:
     case Event::EXIT_MENU:
-    case Event::IN_MENU_ENTER:
     case Event::IN_MENU_RIGHT:
     case Event::IN_MENU_UP:
     case Event::IN_MENU_DOWN:
@@ -422,7 +426,7 @@ AP_RunCam::Event AP_RunCam::map_rc_input_to_event() const
         result = Event::ENTER_MENU;
     } else if (roll == RC_Channel::LOW) {
         result = Event::IN_MENU_EXIT;
-    } else if (roll == RC_Channel::HIGH) {
+    } else if (yaw == RC_Channel::MIDDLE && pitch == RC_Channel::MIDDLE && roll == RC_Channel::HIGH) {
         result = Event::IN_MENU_ENTER;
     } else if (pitch == RC_Channel::HIGH) {
         result = Event::IN_MENU_UP;
