@@ -153,6 +153,8 @@ void AC_WPNav::set_speed_xy(float speed_cms)
     // range check new target speed and update position controller
     if (speed_cms >= WPNAV_WP_SPEED_MIN) {
         _pos_control.set_max_speed_xy(speed_cms);
+    	// we got a reduce speed request from the mission planned
+    	if (_inav.get_speed_xy() > speed_cms) _pos_control.set_rqwpspd_reduced(true);
         // flag that wp leash must be recalculated
         _flags.recalc_wp_leash = true;
     }
@@ -399,12 +401,24 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
         // we are traveling fast in the opposite direction of travel to the waypoint so do not move the intermediate point
         _limited_speed_xy_cms = 0;
     }else{
-        // increase intermediate target point's velocity if not yet at the leash limit
-        if(dt > 0 && !reached_leash_limit) {
-            _limited_speed_xy_cms += 2.0f * _track_accel * dt;
-        }
-        // do not allow speed to be below zero or over top speed
-        _limited_speed_xy_cms = constrain_float(_limited_speed_xy_cms, 0.0f, _track_speed);
+    	if(_pos_control.get_rqwpspd_reduced()){
+    		// reduced speed according to the mission requested
+    		if(dt > 0 && !reached_leash_limit) {
+                _limited_speed_xy_cms -= 2.0f * _track_accel * dt;
+    		}
+    		// clear this flag only when we get close to the track speed term limitation
+    		if(_limited_speed_xy_cms < _track_speed) {
+    			_limited_speed_xy_cms = _track_speed;
+    			_pos_control.set_rqwpspd_reduced(false);
+    		}
+    	} else {
+            // increase intermediate target point's velocity if not yet at the leash limit
+            if(dt > 0 && !reached_leash_limit) {
+                _limited_speed_xy_cms += 2.0f * _track_accel * dt;
+            }
+            // do not allow speed to be below zero or over top speed
+            _limited_speed_xy_cms = constrain_float(_limited_speed_xy_cms, 0.0f, _track_speed);
+    	}
 
         // check if we should begin slowing down
         if (!_flags.fast_waypoint) {

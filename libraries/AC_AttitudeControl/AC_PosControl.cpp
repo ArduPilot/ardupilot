@@ -221,6 +221,7 @@ AC_PosControl::AC_PosControl(const AP_AHRS_View& ahrs, const AP_InertialNav& ina
     _flags.reset_rate_to_accel_z = true;
     _flags.freeze_ff_z = true;
     _flags.use_desvel_ff_z = true;
+    _flags.rqwpspd_reduced = false;
     _limit.pos_up = true;
     _limit.pos_down = true;
     _limit.vel_up = true;
@@ -1030,9 +1031,13 @@ void AC_PosControl::run_xy_controller(float dt)
         // Constrain _pos_error and target position
         // Constrain the maximum length of _vel_target to the maximum position correction velocity
         // TODO: replace the leash length with a user definable maximum position correction
-        if (limit_vector_length(_pos_error.x, _pos_error.y, _leash)) {
-            _pos_target.x = curr_pos.x + _pos_error.x;
-            _pos_target.y = curr_pos.y + _pos_error.y;
+        if (!_flags.rqwpspd_reduced) {
+        	// we just won't do this check when we try to reduce speed
+        	// in fact, I didn't find a better elegant idea yet
+            if (limit_vector_length(_pos_error.x, _pos_error.y, _leash)) {
+                _pos_target.x = curr_pos.x + _pos_error.x;
+                _pos_target.y = curr_pos.y + _pos_error.y;
+            }
         }
 
         _vel_target = sqrt_controller(_pos_error, kP, _accel_cms);

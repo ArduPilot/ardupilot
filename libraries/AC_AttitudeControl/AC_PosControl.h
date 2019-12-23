@@ -215,6 +215,10 @@ public:
     // clear desired velocity feed-forward in z axis
     void clear_desired_velocity_ff_z() { _flags.use_desvel_ff_z = false; }
 
+    // get and set function for the requested speed changed to reduced flag status
+    void set_rqwpspd_reduced(bool rqspd) { _flags.rqwpspd_reduced = rqspd; }
+    bool get_rqwpspd_reduced() { return _flags.rqwpspd_reduced; }
+
     // set desired acceleration in cm/s in xy axis
     void set_desired_accel_xy(float accel_lat_cms, float accel_lon_cms) { _accel_desired.x = accel_lat_cms; _accel_desired.y = accel_lon_cms; }
 
@@ -324,6 +328,7 @@ protected:
             uint16_t freeze_ff_z        : 1;    // 1 used to freeze velocity to accel feed forward for one iteration
             uint16_t use_desvel_ff_z    : 1;    // 1 to use z-axis desired velocity as feed forward into velocity step
             uint16_t vehicle_horiz_vel_override : 1; // 1 if we should use _vehicle_horiz_vel as our velocity process variable for one timestep
+            uint8_t  rqwpspd_reduced    : 1;    // true if the requested speed change to reduced in the nav control mission planning
     } _flags;
 
     // limit flags structure
