@@ -1,3 +1,20 @@
+Release 4.0.2beta3, 23th December 2019
+--------------------------------------
+
+This is a minor release with a few bug fixes and enhancements. Changes
+are:
+
+ - fixed voltage scaling on CUAVv5Nano
+ - fixed 10Hz NMEA output
+ - fixed range check on RC channel selection
+ - scale UART RX size with baudrate
+ - default fast sampling enabled on first IMU for all capable boards
+ - fixed bootloader flash alignment bug
+ - fixed PWM 5 and 6 for MatekF765-Wing
+ - support RM3100 compass on I2C
+
+Happy flying!
+
 Release 4.0.2beta2, 16th December 2019
 --------------------------------------
 
