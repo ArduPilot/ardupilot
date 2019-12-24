@@ -75,7 +75,7 @@ const AP_Param::GroupInfo SITL::var_info[] = {
     AP_GROUPINFO("WIND_DELAY",    40, SITL,  wind_delay, 0),
     AP_GROUPINFO("MAG_OFS",       41, SITL,  mag_ofs, 0),
     AP_GROUPINFO("ACC2_RND",      42, SITL,  accel2_noise, 0),
-    AP_GROUPINFO("ARSPD_FAIL",    43, SITL,  arspd_fail, 0),
+    AP_GROUPINFO("ARSPD_FAULT",   43, SITL,  arspd_fault_value, 0),
     AP_GROUPINFO("GYR_SCALE",     44, SITL,  gyro_scale, 0),
     AP_GROUPINFO("ADSB_COUNT",    45, SITL,  adsb_plane_count, -1),
     AP_GROUPINFO("ADSB_RADIUS",   46, SITL,  adsb_radius_m, 10000),
@@ -106,12 +106,12 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     AP_GROUPINFO("TEMP_TCONST",  3, SITL,  temp_tconst, 30),
     AP_GROUPINFO("TEMP_BFACTOR", 4, SITL,  temp_baro_factor, 0),
     AP_GROUPINFO("GPS_LOCKTIME", 5, SITL,  gps_lock_time, 0),
-    AP_GROUPINFO("ARSPD_FAIL_P", 6, SITL,  arspd_fail_pressure, 0),
+    AP_GROUPINFO("ARSPD_FAILP", 6, SITL,  arspd_fail_pressure, 0),
     AP_GROUPINFO("ARSPD_PITOT",  7, SITL,  arspd_fail_pitot_pressure, 0),
     AP_GROUPINFO("GPS_ALT_OFS",  8, SITL,  gps_alt_offset, 0),
     AP_GROUPINFO("ARSPD_SIGN",   9, SITL,  arspd_signflip, 0),
     AP_GROUPINFO("WIND_DIR_Z",  10, SITL,  wind_dir_z,     0),
-    AP_GROUPINFO("ARSPD2_FAIL", 11, SITL,  arspd2_fail, 0),
+    AP_GROUPINFO("ARSPD2_FAULT",11, SITL,  arspd2_fault_value, 0),
     AP_GROUPINFO("ARSPD2_FAILP",12, SITL,  arspd2_fail_pressure, 0),
     AP_GROUPINFO("ARSPD2_PITOT",13, SITL,  arspd2_fail_pitot_pressure, 0),
     AP_GROUPINFO("VICON_HSTLEN",14, SITL,  vicon_observation_history_length, 0),
@@ -194,6 +194,8 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
 
     // @Path: ./SIM_ToneAlarm.cpp
     AP_SUBGROUPINFO(tonealarm_sim, "TA_", 57, SITL, ToneAlarm),
+    AP_GROUPINFO("ARSPD_FT", 58, SITL, arspd_fault_type, SITL::ARSPD_FAULT_ENABLE),
+    AP_GROUPINFO("ARSPD2_FT", 59, SITL, arspd2_fault_type, SITL::ARSPD_FAULT_ENABLE),
 
     AP_GROUPEND
 

@@ -4,6 +4,10 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
+#ifndef AIRSPEED_MAX_SENSORS
+#define AIRSPEED_MAX_SENSORS 2
+#endif
+
 #include "AP_HAL_SITL.h"
 #include "AP_HAL_SITL_Namespace.h"
 #include "HAL_SITL_Class.h"
@@ -70,6 +74,8 @@ public:
     uint16_t current_pin_value;  // pin 12
     uint16_t voltage2_pin_value;  // pin 15
     uint16_t current2_pin_value;  // pin 14
+
+    SITL::arspd_data sensors[AIRSPEED_MAX_SENSORS];
 
     // paths for UART devices
     const char *_uart_path[7] {
@@ -138,6 +144,9 @@ private:
                      double speedN, double speedE, double speedD,
                      double yaw, bool have_lock);
     void _update_airspeed(float airspeed);
+    //airspeed fault
+    float _get_arspd_fault(SITL::arspd_data& sensor, float airspeed);
+    void _arspd_data_init(SITL::arspd_data& sensor, int fault_type, float fault);
     void _update_gps_instance(SITL::SITL::GPSType gps_type, const struct gps_data *d, uint8_t instance);
     void _check_rc_input(void);
     bool _read_rc_sitl_input();
