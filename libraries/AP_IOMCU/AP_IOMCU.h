@@ -11,7 +11,7 @@
 
 #include "ch.h"
 #include "iofirmware/ioprotocol.h"
-#include <AP_RCMapper/AP_RCMapper.h>
+#include <RC_Channel/RC_Channel.h>
 
 class AP_IOMCU {
 public:
@@ -105,8 +105,13 @@ public:
     void shutdown();
 
     // setup for FMU failsafe mixing
-    bool setup_mixing(RCMapper *rcmap, int8_t override_chan,
-                      float mixing_gain, uint16_t manual_rc_mask);
+    bool setup_mixing(const RC_Channel *channel_roll,
+                      const RC_Channel *channel_pitch,
+                      const RC_Channel *channel_throttle,
+                      const RC_Channel *channel_yaw,
+                      int8_t override_chan,
+                      float mixing_gain,
+                      uint16_t manual_rc_mask);
 
     // channel group masks
     const uint8_t ch_masks[3] = { 0x03,0x0C,0xF0 };
