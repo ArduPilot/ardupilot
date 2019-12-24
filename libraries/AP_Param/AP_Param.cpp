@@ -962,6 +962,23 @@ bool AP_Param::find_key_by_pointer(const void *ptr, uint16_t &key)
     return false;
 }
 
+/*
+  Find key to top level group parameters by pointer
+*/
+bool AP_Param::find_top_level_key_by_pointer(const void *ptr, uint16_t &key)
+{
+    for (uint16_t i=0; i<_num_vars; i++) {
+        if (_var_info[i].type != AP_PARAM_GROUP) {
+            continue;
+        }
+        if (ptr == (void **)_var_info[i].ptr) {
+            key = _var_info[i].key;
+            return true;
+        }
+    }
+    return false;
+}
+
 
 // Find a object by name.
 //
