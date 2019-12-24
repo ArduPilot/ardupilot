@@ -108,8 +108,8 @@ public:
     // loop update rate in Hz
     uint16_t update_rate_hz;
 
-    // true when motors are active
-    bool motors_on;
+    // throttle when motors are active
+    float throttle;
 
     // height above ground
     float height_agl;
@@ -248,8 +248,10 @@ public:
     // vibration frequencies in Hz on each axis
     AP_Vector3f vibe_freq;
 
-    // hover frequency to use as baseline for adding motor noise for the gyros and accels
+    // max frequency to use as baseline for adding motor noise for the gyros and accels
     AP_Float vibe_motor;
+    // minimum throttle for addition of ins noise
+    AP_Float ins_noise_throttle_min;
 
     // gyro and accel fail masks
     AP_Int8 gyro_fail_mask;
