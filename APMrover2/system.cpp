@@ -156,6 +156,9 @@ void Rover::init_ardupilot()
     rc().init();
 
     rover.g2.sailboat.init();
+    
+    //initialise IR Sensors
+    g2.ir_sensor.init();
 
     // disable safety if requested
     BoardConfig.init_safety();
