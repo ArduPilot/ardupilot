@@ -80,7 +80,7 @@ compass_list = []
 baro_list = []
 
 mcu_type = None
-
+dual_USB_enabled = False
 
 def is_int(str):
     '''check if a string is an integer'''
@@ -726,6 +726,18 @@ def copy_common_linkerscript(outdir, hwdef):
     shutil.copy(os.path.join(dirpath, "../common/common.ld"),
                 os.path.join(outdir, "common.ld"))
 
+def get_USB_IDs():
+    '''return tuple of USB VID/PID'''
+
+    global dual_USB_enabled
+    if dual_USB_enabled:
+        # use pidcodes allocated ID
+        default_vid = 0x1209
+        default_pid = 0x5740
+    else:
+        default_vid = 0x0483
+        default_pid = 0x5740
+    return (get_config('USB_VENDOR', type=int, default=default_vid), get_config('USB_PRODUCT', type=int, default=default_pid))
 
 
 def write_USB_config(f):
@@ -733,8 +745,9 @@ def write_USB_config(f):
     if not have_type_prefix('OTG'):
         return
     f.write('// USB configuration\n')
-    f.write('#define HAL_USB_VENDOR_ID %s\n' % get_config('USB_VENDOR', default=0x0483)) # default to ST
-    f.write('#define HAL_USB_PRODUCT_ID %s\n' % get_config('USB_PRODUCT', default=0x5740))
+    (USB_VID, USB_PID) = get_USB_IDs()
+    f.write('#define HAL_USB_VENDOR_ID 0x%04x\n' % int(USB_VID))
+    f.write('#define HAL_USB_PRODUCT_ID 0x%04x\n' % int(USB_PID))
     f.write('#define HAL_USB_STRING_MANUFACTURER "%s"\n' % get_config("USB_STRING_MANUFACTURER", default="ArduPilot"))
     default_product = "%BOARD%"
     if args.bootloader:
@@ -929,6 +942,7 @@ def get_extra_bylabel(label, name, default=None):
 
 def write_UART_config(f):
     '''write UART config defines'''
+    global dual_USB_enabled
     if get_config('UART_ORDER', required=False) is None:
         return
     uart_list = config['UART_ORDER']
@@ -996,6 +1010,7 @@ def write_UART_config(f):
                 '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU2, true, false, 0, 0, false, 0, 0}\n'
                 % dev)
             OTG2_index = uart_list.index(dev)
+            dual_USB_enabled = True
         elif dev.startswith('OTG'):
             f.write(
                 '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU1, true, false, 0, 0, false, 0, 0}\n'
@@ -1399,6 +1414,8 @@ def setup_apj_IDs():
     '''setup the APJ board IDs'''
     env_vars['APJ_BOARD_ID'] = get_config('APJ_BOARD_ID')
     env_vars['APJ_BOARD_TYPE'] = get_config('APJ_BOARD_TYPE', default=mcu_type)
+    (USB_VID, USB_PID) = get_USB_IDs()
+    env_vars['USBID'] = '0x%04x/0x%04x' % (USB_VID, USB_PID)
 
 def write_peripheral_enable(f):
     '''write peripheral enable lines'''
@@ -1449,7 +1466,6 @@ def write_hwdef_header(outfilename):
 ''')
 
     write_mcu_config(f)
-    write_USB_config(f)
     write_SPI_config(f)
     write_ADC_config(f)
     write_GPIO_config(f)
@@ -1458,7 +1474,6 @@ def write_hwdef_header(outfilename):
     write_BARO_config(f)
 
     write_peripheral_enable(f)
-    setup_apj_IDs()
 
     dma_resolver.write_dma_header(f, periph_list, mcu_type,
                                   dma_exclude=get_dma_exclude(periph_list),
@@ -1471,6 +1486,9 @@ def write_hwdef_header(outfilename):
         write_UART_config(f)
     else:
         write_UART_config_bootloader(f)
+
+    setup_apj_IDs()
+    write_USB_config(f)
 
     add_bootloader()
 
