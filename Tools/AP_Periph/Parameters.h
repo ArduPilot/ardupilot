@@ -26,6 +26,7 @@ public:
         k_param_adsb_baudrate,
         k_param_hardpoint_id,
         k_param_hardpoint_rate,
+        k_param_baro_enable,
     };
 
     AP_Int16 format_version;
@@ -37,7 +38,9 @@ public:
 #ifdef AP_PERIPH_HAVE_LED
     AP_Int8 led_brightness;
 #endif
-
+#ifdef HAL_PERIPH_ENABLE_BARO
+    AP_Int8 baro_enable;
+#endif
 #if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
     AP_Int8 flash_bootloader;
 #endif
