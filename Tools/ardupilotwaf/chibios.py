@@ -155,7 +155,8 @@ class generate_apj(Task.Task):
             "version": "0.1",
             "image_size": len(img),
             "git_identity": self.generator.bld.git_head_hash(short=True),
-            "board_revision": 0
+            "board_revision": 0,
+            "USBID": self.env.USBID
         }
         if self.env.build_dates:
             # we omit build_time when we don't have build_dates so that apj
