@@ -6,6 +6,7 @@
 #include "AC_Sprayer/AC_Sprayer.h"
 #include "AP_Gripper/AP_Gripper.h"
 #include "AP_Rally.h"
+#include "AR_IR/AR_IR_Sensor.h"
 
 // Global parameter class.
 //
@@ -400,6 +401,9 @@ public:
 
     // FS options
     AP_Int32 fs_options;
+    
+    // IR Sensors
+    AR_IR ir_sensor;
 };
 
 extern const AP_Param::Info var_info[];
