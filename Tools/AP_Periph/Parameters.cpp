@@ -57,6 +57,9 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Group: BARO_
     // @Path: ../../libraries/AP_Baro/AP_Baro.cpp
     GOBJECT(baro, "BARO_", AP_Baro),
+#ifdef HAL_BARO_ENABLE
+    GSCALAR(baro_enable, "BARO_ENABLE", HAL_BARO_ENABLE),
+#endif
 #endif
 
 #ifdef AP_PERIPH_HAVE_LED

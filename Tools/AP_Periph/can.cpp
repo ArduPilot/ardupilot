@@ -1377,6 +1377,11 @@ void AP_Periph_FW::can_gps_update(void)
 void AP_Periph_FW::can_baro_update(void)
 {
 #ifdef HAL_PERIPH_ENABLE_BARO
+#ifdef HAL_BARO_ENABLE
+    if (!periph.g.baro_enable) {
+        return;
+    }
+#endif // HAL_BARO_ENABLE
     baro.update();
     if (last_baro_update_ms == baro.get_last_update()) {
         return;
