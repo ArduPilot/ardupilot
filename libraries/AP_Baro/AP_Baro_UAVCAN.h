@@ -26,7 +26,7 @@ public:
 
 private:
 
-    static void _update_and_wrap_accumulator(float *accum, float val, uint8_t *count, uint8_t max_count);
+    static void _update_and_wrap_accumulator(float *accum, float val, uint8_t *count, const uint8_t max_count);
 
     uint8_t _instance;
 

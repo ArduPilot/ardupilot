@@ -124,7 +124,7 @@ AP_Baro_UAVCAN* AP_Baro_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t
 
     return nullptr;
 }
-void AP_Baro_UAVCAN::_update_and_wrap_accumulator(float *accum, float val, uint8_t *count, uint8_t max_count)
+void AP_Baro_UAVCAN::_update_and_wrap_accumulator(float *accum, float val, uint8_t *count, const uint8_t max_count)
 {
     *accum += val;
     *count += 1;
@@ -169,7 +169,7 @@ void AP_Baro_UAVCAN::update(void)
 
     WITH_SEMAPHORE(_sem_baro);
     if (new_pressure) {
-        if(_pressure_count != 0) {
+        if (_pressure_count != 0) {
             pressure = _pressure / _pressure_count;
             _pressure_count = 0;
             _pressure = 0;
