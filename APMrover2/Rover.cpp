@@ -110,6 +110,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(read_airspeed,          10,    100),
 #if OSD_ENABLED == ENABLED
     SCHED_TASK(publish_osd_info,        1,     10),
+    SCHED_TASK(read_ir,                50,    200),
 #endif
 };
 
