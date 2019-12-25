@@ -30,7 +30,8 @@ public:
         RTL          = 11,
         SMART_RTL    = 12,
         GUIDED       = 15,
-        INITIALISING = 16
+        INITIALISING = 16,
+        LINE_FOLLOWER= 17
     };
 
     // Constructor
@@ -645,6 +646,24 @@ protected:
     void _exit() override;
 
     float _desired_speed;       // desired speed in m/s
+};
+
+class ModeLineFollower : public Mode
+{
+public:
+
+    uint32_t mode_number() const override { return LINE_FOLLOWER; }
+    const char *name4() const override { return "LNFLWR"; }
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override;
+
+    // attributes for mavlink system status reporting
+    bool attitude_stabilized() const override { return false; }
+
+    //Line Follower mode does not require position or velocity estimate
+    bool requires_position() const override { return false; }
+    bool requires_velocity() const override { return true; }
 };
 
 class ModeSimple : public Mode
