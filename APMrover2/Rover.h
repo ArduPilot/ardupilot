@@ -69,6 +69,7 @@
 #include <AP_Follow/AP_Follow.h>
 #include <AP_OSD/AP_OSD.h>
 #include <AP_WindVane/AP_WindVane.h>
+#include <AR_IR/AR_IR_Sensor.h>
 
 #ifdef ENABLE_SCRIPTING
 #include <AP_Scripting/AP_Scripting.h>
@@ -118,6 +119,7 @@ public:
     friend class ModeSmartRTL;
     friend class ModeFollow;
     friend class ModeSimple;
+    friend class ModeLineFollower;
 
     friend class RC_Channel_Rover;
     friend class RC_Channels_Rover;
@@ -279,6 +281,7 @@ private:
     ModeSmartRTL mode_smartrtl;
     ModeFollow mode_follow;
     ModeSimple mode_simple;
+    ModeLineFollower mode_line_follower;
 
     // cruise throttle and speed learning
     typedef struct {
@@ -393,6 +396,7 @@ private:
     bool mavlink_set_mode(uint8_t mode);
     void startup_INS_ground(void);
     void notify_mode(const Mode *new_mode);
+    void read_ir(void);
     uint8_t check_digital_pin(uint8_t pin);
     bool should_log(uint32_t mask);
     bool is_boat() const;
