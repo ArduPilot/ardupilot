@@ -632,6 +632,11 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("FS_OPTIONS", 48, ParametersG2, fs_options, 0),
 
+
+    // @Group: IR_
+    // @Path: ../libraries/AR_IR/AR_IR_Sensor.cpp
+    AP_SUBGROUPINFO(ir_sensor, "IR_", 49, ParametersG2, AR_IR),
+
     AP_GROUPEND
 };
 
@@ -681,7 +686,8 @@ ParametersG2::ParametersG2(void)
     windvane(),
     airspeed(),
     wp_nav(attitude_control, rover.L1_controller),
-    sailboat()
+    sailboat(),
+    ir_sensor()
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
