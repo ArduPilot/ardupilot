@@ -185,17 +185,20 @@ private:
     uint32_t _first_write_started_us;
     uint32_t _total_written;
 
-    // we remember cr2 and cr2 options from set_options to apply on sdStart()
-    uint32_t _cr3_options;
+    // we remember config options from set_options to apply on sdStart()
+    uint32_t _cr1_options;
     uint32_t _cr2_options;
+    uint32_t _cr3_options;
     uint8_t _last_options;
 
     // half duplex control. After writing we throw away bytes for 4 byte widths to
     // prevent reading our own bytes back
+#if CH_CFG_USE_EVENTS == TRUE
     bool half_duplex;
-    uint32_t hd_read_delay_us;
-    uint32_t hd_write_us;
-    void half_duplex_setup_delay(uint16_t len);
+    event_listener_t hd_listener;
+    bool hd_tx_active;
+    void half_duplex_setup_tx(void);
+#endif
 
     // set to true for unbuffered writes (low latency writes)
     bool unbuffered_writes;

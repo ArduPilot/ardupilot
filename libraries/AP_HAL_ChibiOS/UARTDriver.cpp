@@ -48,10 +48,13 @@ UARTDriver *UARTDriver::uart_drivers[UART_MAX_DRIVERS];
 
 // event used to wake up waiting thread. This event number is for
 // caller threads
-#define EVT_DATA EVENT_MASK(0)
+#define EVT_DATA EVENT_MASK(10)
 
 // event for parity error
-#define EVT_PARITY EVENT_MASK(1)
+#define EVT_PARITY EVENT_MASK(11)
+
+// event for transmit end for half-duplex
+#define EVT_TRANSMIT_END EVENT_MASK(12)
 
 #ifndef HAL_UART_MIN_TX_SIZE
 #define HAL_UART_MIN_TX_SIZE 1024
@@ -98,8 +101,9 @@ void UARTDriver::uart_thread(void* arg)
             if (uart_drivers[i] == nullptr) {
                 continue;
             }
-            if ((mask & EVENT_MASK(i)) &&
-                uart_drivers[i]->_initialised) {
+            if (uart_drivers[i]->_initialised &&
+                (mask & EVENT_MASK(i) ||
+                 (uart_drivers[i]->hd_tx_active && (mask & EVT_TRANSMIT_END)))) {
                 uart_drivers[i]->_timer_tick();
             }
         }
@@ -209,8 +213,12 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         chVTObjectInit(&tx_timeout);
         tx_bounce_buf_ready = true;
     }
-    rx_dma_enabled = rx_bounce_buf[0] != nullptr && rx_bounce_buf[1] != nullptr;
-    tx_dma_enabled = tx_bounce_buf != nullptr;
+    if (half_duplex) {
+        rx_dma_enabled = tx_dma_enabled = false;
+    } else {
+        rx_dma_enabled = rx_bounce_buf[0] != nullptr && rx_bounce_buf[1] != nullptr;
+        tx_dma_enabled = tx_bounce_buf != nullptr;
+    }
 #endif
 
     /*
@@ -294,7 +302,7 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
             sercfg.speed = _baudrate;
 
             // start with options from set_options()
-            sercfg.cr1 = 0;
+            sercfg.cr1 = _cr1_options;
             sercfg.cr2 = _cr2_options;
             sercfg.cr3 = _cr3_options;
 
@@ -468,13 +476,6 @@ void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
         /*
           we have data to copy out
          */
-        if (uart_drv->half_duplex) {
-            uint32_t now = AP_HAL::micros();
-            if (now - uart_drv->hd_write_us < uart_drv->hd_read_delay_us) {
-                len = 0;
-            }
-        }
-
         stm32_cacheBufferInvalidate(uart_drv->rx_bounce_buf[bounce_idx], len);
         uart_drv->_readbuf.write(uart_drv->rx_bounce_buf[bounce_idx], len);
         uart_drv->receive_timestamp_update();
@@ -798,10 +799,6 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
         }
     }
 
-    if (half_duplex) {
-        half_duplex_setup_delay(tx_len);
-    }
-
     dmaStreamDisable(txdma);
     tx_bounce_buf_ready = false;
     osalDbgAssert(txdma != nullptr, "UART TX DMA allocation failed");
@@ -826,6 +823,10 @@ void UARTDriver::write_pending_bytes_NODMA(uint32_t n)
 {
     ByteBuffer::IoVec vec[2];
     uint16_t nwritten = 0;
+
+    if (half_duplex) {
+        half_duplex_setup_tx();
+    }
 
     const auto n_vec = _writebuf.peekiovec(vec, n);
     for (int i = 0; i < n_vec; i++) {
@@ -856,10 +857,6 @@ void UARTDriver::write_pending_bytes_NODMA(uint32_t n)
     }
 
     _total_written += nwritten;
-
-    if (half_duplex) {
-        half_duplex_setup_delay(nwritten);
-    }
 }
 
 /*
@@ -927,15 +924,24 @@ void UARTDriver::write_pending_bytes(void)
 }
 
 /*
-  setup a delay after writing bytes to a half duplex UART to prevent
-  read-back of the same bytes that we wrote. half-duplex protocols
-  tend to have quite loose timing, which makes this possible
+  setup for half duplex tramsmit. To cope with uarts that have level
+  shifters and pullups we need to play a trick where we temporarily
+  disable half-duplex while transmitting. That disables the receive
+  part of the uart on the pin which allows the transmit side to
+  correctly setup the idle voltage before the transmit starts.
  */
-void UARTDriver::half_duplex_setup_delay(uint16_t len)
+void UARTDriver::half_duplex_setup_tx(void)
 {
-    const uint16_t pad_us = 1000;
-    hd_write_us = AP_HAL::micros();
-    hd_read_delay_us = ((1000000UL * len * 10) / _baudrate) + pad_us;
+#ifdef HAVE_USB_SERIAL
+    if (!hd_tx_active) {
+        chEvtGetAndClearFlags(&hd_listener);
+        SerialDriver *sd = (SerialDriver*)(sdef.serial);
+        hd_tx_active = true;
+        sdStop(sd);
+        sercfg.cr3 &= ~USART_CR3_HDSEL;
+        sdStart(sd, &sercfg);
+    }
+#endif
 }
 
 
@@ -947,6 +953,20 @@ void UARTDriver::half_duplex_setup_delay(uint16_t len)
 void UARTDriver::_timer_tick(void)
 {
     if (!_initialised) return;
+
+#ifdef HAVE_USB_SERIAL
+    if (hd_tx_active && (chEvtGetAndClearFlags(&hd_listener) & CHN_OUTPUT_EMPTY) != 0) {
+        /*
+          half-duplex transmit has finished. We now re-enable the
+          HDSEL bit for receive
+         */
+        SerialDriver *sd = (SerialDriver*)(sdef.serial);
+        sdStop(sd);
+        sercfg.cr3 |= USART_CR3_HDSEL;
+        sdStart(sd, &sercfg);
+        hd_tx_active = false;
+    }
+#endif
 
 #ifndef HAL_UART_NODMA
     if (rx_dma_enabled && rxdma) {
@@ -1023,15 +1043,10 @@ void UARTDriver::_timer_tick(void)
                 ret = -1;
             }
 #endif
-            if (half_duplex) {
-                uint32_t now = AP_HAL::micros();
-                if (now - hd_write_us < hd_read_delay_us) {
-                    break;
-                }
+            if (!hd_tx_active) {
+                _readbuf.commit((unsigned)ret);
+                receive_timestamp_update();
             }
-            _readbuf.commit((unsigned)ret);
-
-            receive_timestamp_update();
 
             /* stop reading as we read less than we asked for */
             if ((unsigned)ret < vec[i].len) {
@@ -1361,7 +1376,21 @@ bool UARTDriver::set_options(uint8_t options)
     if (options & OPTION_HDPLEX) {
         cr3 |= USART_CR3_HDSEL;
         _cr3_options |= USART_CR3_HDSEL;
-        half_duplex = true;
+        if (!half_duplex) {
+            chEvtRegisterMaskWithFlags(chnGetEventSource((SerialDriver*)sdef.serial),
+                                       &hd_listener,
+                                       EVT_TRANSMIT_END,
+                                       CHN_OUTPUT_EMPTY);
+            half_duplex = true;
+        }
+#ifndef HAL_UART_NODMA
+        if (rx_dma_enabled && rxdma) {
+            dmaStreamDisable(rxdma);
+        }
+#endif
+        // force DMA off when using half-duplex as the timing may affect other devices
+        // sharing the DMA channel
+        rx_dma_enabled = tx_dma_enabled = false;
     } else {
         cr3 &= ~USART_CR3_HDSEL;
     }
