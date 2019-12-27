@@ -20,7 +20,6 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
 #include <RC_Channel/RC_Channel.h>
-#include <AP_RCMapper/AP_RCMapper.h>
 
 extern const AP_HAL::HAL& hal;
 

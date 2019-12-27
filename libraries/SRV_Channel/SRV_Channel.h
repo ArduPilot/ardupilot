@@ -15,7 +15,6 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_RCMapper/AP_RCMapper.h>
 #include <AP_Common/Bitmask.h>
 #include <AP_Volz_Protocol/AP_Volz_Protocol.h>
 #include <AP_RobotisServo/AP_RobotisServo.h>
