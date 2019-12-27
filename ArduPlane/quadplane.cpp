@@ -3172,3 +3172,11 @@ bool QuadPlane::in_vtol_land_final(void) const
 {
     return in_vtol_land_descent() && poscontrol.state == QPOS_LAND_FINAL;
 }
+
+/*
+  see if we are in any of the phases of a VTOL landing
+ */
+bool QuadPlane::in_vtol_land_sequence(void) const
+{
+    return in_vtol_land_approach() || in_vtol_land_descent() || in_vtol_land_final();
+}
