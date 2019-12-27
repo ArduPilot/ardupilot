@@ -82,6 +82,11 @@ public:
     // initialise storage, filling mem_buffer with current contents
     bool init(void);
 
+    // erase sectors and re-initialise
+    bool erase(void) {
+        return erase_all();
+    }
+    
     // re-initialise storage, using current mem_buffer
     bool re_initialise(void);
     
