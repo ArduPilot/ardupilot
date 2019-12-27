@@ -203,7 +203,10 @@ void panic(const char *errormsg, ...)
     va_end(ap);
 
     hal.scheduler->delay_microseconds(10000);
-    while(1) {}
+    while (1) {
+        vprintf(errormsg, ap);
+        hal.scheduler->delay(500);
+    }
 }
 
 uint32_t micros()
