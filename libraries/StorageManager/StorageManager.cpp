@@ -21,6 +21,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "StorageManager.h"
+#include <stdio.h>
 
 
 extern const AP_HAL::HAL& hal;
@@ -110,21 +111,9 @@ const StorageManager::StorageArea *StorageManager::layout = layout_default;
  */
 void StorageManager::erase(void)
 {
-    uint8_t blk[16];
-    memset(blk, 0, sizeof(blk));
-    for (uint8_t i=0; i<STORAGE_NUM_AREAS; i++) {
-        const StorageManager::StorageArea &area = StorageManager::layout[i];
-        uint16_t length = area.length;
-        uint16_t offset = area.offset;
-        for (uint16_t ofs=0; ofs<length; ofs += sizeof(blk)) {
-            uint8_t n = 16;
-            if (ofs + n > length) {
-                n = length - ofs;
-            }
-            hal.storage->write_block(offset + ofs, blk, n);
-        }
+    if (!hal.storage->erase()) {
+        ::printf("StorageManager: erase failed\n");
     }
-    
 }
 
 /*
