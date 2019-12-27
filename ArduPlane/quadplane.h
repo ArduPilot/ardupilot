@@ -553,6 +553,11 @@ private:
       are we in the final landing phase of a VTOL landing?
      */
     bool in_vtol_land_final(void) const;
+
+    /*
+      are we in any of the phases of a VTOL landing?
+     */
+    bool in_vtol_land_sequence(void) const;
     
 public:
     void motor_test_output();

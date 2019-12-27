@@ -171,7 +171,7 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
             }
             FALLTHROUGH;
         case Failsafe_Action_RTL:
-            if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND && control_mode != &mode_qland ) {
+            if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND && control_mode != &mode_qland && !quadplane.in_vtol_land_sequence()) {
                 // never stop a landing if we were already committed
                 set_mode(mode_rtl, ModeReason::BATTERY_FAILSAFE);
                 aparm.throttle_cruise.load();
