@@ -21,6 +21,7 @@
 #include "hwdef/common/flash.h"
 #include <AP_Filesystem/AP_Filesystem.h>
 #include "sdcard.h"
+#include <stdio.h>
 
 using namespace ChibiOS;
 
@@ -78,12 +79,12 @@ void Storage::_storage_open(void)
 
     log_fd = AP::FS().open(HAL_STORAGE_FILE, O_RDWR|O_CREAT);
     if (log_fd == -1) {
-        hal.console->printf("open failed of " HAL_STORAGE_FILE "\n");
+        ::printf("open failed of " HAL_STORAGE_FILE "\n");
         return;
     }
     int ret = AP::FS().read(log_fd, _buffer, CH_STORAGE_SIZE);
     if (ret < 0) {
-        hal.console->printf("read failed for " HAL_STORAGE_FILE "\n");
+        ::printf("read failed for " HAL_STORAGE_FILE "\n");
         AP::FS().close(log_fd);
         log_fd = -1;
         return;
@@ -91,7 +92,7 @@ void Storage::_storage_open(void)
     // pre-fill to full size
     if (AP::FS().lseek(log_fd, ret, SEEK_SET) != ret ||
         AP::FS().write(log_fd, &_buffer[ret], CH_STORAGE_SIZE-ret) != CH_STORAGE_SIZE-ret) {
-        hal.console->printf("setup failed for " HAL_STORAGE_FILE "\n");
+        ::printf("setup failed for " HAL_STORAGE_FILE "\n");
         AP::FS().close(log_fd);
         log_fd = -1;
         return;
@@ -222,7 +223,7 @@ void Storage::_flash_load(void)
 #ifdef STORAGE_FLASH_PAGE
     _flash_page = STORAGE_FLASH_PAGE;
 
-    hal.console->printf("Storage: Using flash pages %u and %u\n", _flash_page, _flash_page+1);
+    ::printf("Storage: Using flash pages %u and %u\n", _flash_page, _flash_page+1);
 
     if (!_flash.init()) {
         AP_HAL::panic("unable to init flash storage");
@@ -265,8 +266,8 @@ bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *
         if (now - _last_re_init_ms > 5000) {
             _last_re_init_ms = now;
             bool ok = _flash.re_initialise();
-            hal.console->printf("Storage: failed at %u:%u for %u - re-init %u\n",
-                                (unsigned)sector, (unsigned)offset, (unsigned)length, (unsigned)ok);
+            ::printf("Storage: failed at %u:%u for %u - re-init %u\n",
+                     (unsigned)sector, (unsigned)offset, (unsigned)length, (unsigned)ok);
         }
     }
     return false;
@@ -316,6 +317,28 @@ bool Storage::_flash_erase_ok(void)
 bool Storage::healthy(void)
 {
     return _initialised && AP_HAL::millis() - _last_empty_ms < 2000;
+}
+
+/*
+  erase all storage
+ */
+bool Storage::erase(void)
+{
+#if HAL_WITH_RAMTRON
+    if (using_fram) {
+        return AP_HAL::Storage::erase();
+    }
+#endif
+#ifdef USE_POSIX
+    if (using_filesystem) {
+        return AP_HAL::Storage::erase();
+    }
+#endif
+#ifdef STORAGE_FLASH_PAGE
+    return _flash.erase();
+#else
+    return false;
+#endif
 }
 
 #endif // HAL_USE_EMPTY_STORAGE
