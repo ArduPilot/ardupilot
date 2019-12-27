@@ -3657,32 +3657,91 @@ class AutoTestCopter(AutoTest):
                                        (tdelta, max_good_tdelta))
         self.progress("Vehicle returned")
 
-    def fly_dynamic_notches(self):
-        self.progress("Flying with dynamic notches")
-        # magic tridge EKF type that dramatically speeds up the test
-        self.set_parameter("AHRS_EKF_TYPE", 10)
-        self.set_parameter("INS_HNTCH_ENABLE", 1)
-        self.set_parameter("INS_HNTCH_FREQ", 80)
-        self.set_parameter("INS_HNTCH_REF", 0.35)
-        # first and third harmonic
-        self.set_parameter("INS_HNTCH_HMNCS", 5)
-        self.set_parameter("INS_NOTCH_ENABLE", 1)
-        self.set_parameter("INS_NOTCH_FREQ", 90)
-        self.reboot_sitl()
+    def hover_and_check_matched_frequency_with_fft(self, dblevel=-15, minhz=200, maxhz=300, peakhz=None, reverse=None):
+        # find a motor peak
+        self.takeoff(10, mode="ALT_HOLD")
 
-        self.set_parameter("SIM_GYR_RND", 10)
-
-        self.takeoff(10, mode="LOITER")
-
-        self.change_mode("ALT_HOLD")
-        # fly fast forrest!
-        self.set_rc(3, 1900)
-        self.set_rc(2, 1200)
-        self.wait_groundspeed(5, 1000)
-        self.set_rc(3, 1500)
-        self.set_rc(2, 1500)
+        hover_time = 15
+        tstart = self.get_sim_time()
+        self.progress("Hovering for %u seconds" % hover_time)
+        while self.get_sim_time_cached() < tstart + hover_time:
+            attitude = self.mav.recv_match(type='ATTITUDE', blocking=True)
+        vfr_hud = self.mav.recv_match(type='VFR_HUD', blocking=True)
+        tend = self.get_sim_time()
 
         self.do_RTL()
+        psd = self.mavfft_fttd(1, 0, tstart * 1.0e6, tend * 1.0e6)
+
+        # batch sampler defaults give 1024 fft and sample rate of 1kz so roughly 1hz/bin
+        freq = psd["F"][numpy.argmax(psd["X"][minhz:maxhz]) + minhz] * (1000. / 1024.)
+        peakdb = numpy.amax(psd["X"][minhz:maxhz])
+        if peakdb < dblevel or (peakhz is not None and abs(freq - peakhz) / peakhz > 0.05):
+            if reverse is not None:
+                self.progress("Did not detect a motor peak, found %fHz at %fdB" % (freq, peakdb))
+            else:
+                raise NotAchievedException("Did not detect a motor peak, found %fHz at %fdB" % (freq, peakdb))
+        else:
+            if reverse is not None:
+                raise NotAchievedException("Detected motor peak at %fHz, throttle %f%%, %fdB" % (freq, vfr_hud.throttle, peakdb))
+            else:
+                self.progress("Detected motor peak at %fHz, throttle %f%%, %fdB" % (freq, vfr_hud.throttle, peakdb))
+
+        return freq, vfr_hud, peakdb
+
+    def fly_dynamic_notches(self):
+        """Use dynamic harmonic notch to control motor noise."""
+        self.progress("Flying with dynamic notches")
+        self.context_push()
+
+        ex = None
+        try:
+            self.set_rc_default()
+            self.set_parameter("AHRS_EKF_TYPE", 10)
+            self.set_parameter("INS_LOG_BAT_MASK", 3)
+            self.set_parameter("INS_LOG_BAT_OPT", 0)
+            # set the gyro filter high so we can observe behaviour
+            self.set_parameter("INS_GYRO_FILTER", 100)
+            self.set_parameter("LOG_BITMASK", 958)
+            self.set_parameter("LOG_DISARMED", 0)
+            self.set_parameter("SIM_VIB_MOT_MAX", 350)
+            self.set_parameter("SIM_GYR_RND", 20)
+            self.reboot_sitl()
+
+            self.takeoff(10, mode="ALT_HOLD")
+
+            # find a motor peak
+            freq, vfr_hud, peakdb = self.hover_and_check_matched_frequency_with_fft(-15, 200, 300)
+
+            # now add a dynamic notch and check that the peak is squashed
+            self.set_parameter("INS_LOG_BAT_OPT", 2)
+            self.set_parameter("INS_HNTCH_ENABLE", 1)
+            self.set_parameter("INS_HNTCH_FREQ", freq)
+            self.set_parameter("INS_HNTCH_REF", vfr_hud.throttle/100.)
+            # first and third harmonic
+            self.set_parameter("INS_HNTCH_HMNCS", 5)
+            self.set_parameter("INS_HNTCH_ATT", 50)
+            self.set_parameter("INS_HNTCH_BW", freq/2)
+            self.reboot_sitl()
+
+            freq, vfr_hud, peakdb1 = self.hover_and_check_matched_frequency_with_fft(-10, 20, 350, reverse=True)
+
+            # now add double dynamic notches and check that the peak is squashed
+            self.set_parameter("INS_HNTCH_OPTS", 1)
+            self.reboot_sitl()
+
+            freq, vfr_hud, peakdb2 = self.hover_and_check_matched_frequency_with_fft(-15, 20, 350, reverse=True)
+
+            # double-notch should do better
+            if peakdb2 > peakdb1:
+                raise NotAchievedException("Double-notch peak was higher than single-notch peak %fdB < %fdB" % (peakdb2, peakdb1))
+
+        except Exception as e:
+            ex = e
+
+        self.context_pop()
+
+        if ex is not None:
+            raise ex
 
     def hover_and_check_matched_frequency(self, dblevel=-15, minhz=200, maxhz=300, fftLength=32, peakhz=None):
         # find a motor peak
