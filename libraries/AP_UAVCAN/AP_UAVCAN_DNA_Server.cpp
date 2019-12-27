@@ -438,7 +438,6 @@ void AP_UAVCAN_DNA_Server::verify_nodes(AP_UAVCAN *ap_uavcan)
         /* Only report if the node was verified, otherwise ignore
         as this could be just Bootloader to Application transition. */
         if (isNodeIDVerified(curr_verifying_node)) {
-            gcs().send_text(MAV_SEVERITY_ERROR, "UC Node %d Down!", curr_verifying_node);
             // remove verification flag for this node
             verified_mask.clear(curr_verifying_node);
         }
