@@ -105,7 +105,8 @@ private:
         RCDEVICE_PROTOCOL_FEATURE_DEVICE_SETTINGS_ACCESS = (1 << 4),
         RCDEVICE_PROTOCOL_FEATURE_DISPLAY_PORT = (1 << 5),
         RCDEVICE_PROTOCOL_FEATURE_START_RECORDING = (1 << 6),
-        RCDEVICE_PROTOCOL_FEATURE_STOP_RECORDING = (1 << 7)
+        RCDEVICE_PROTOCOL_FEATURE_STOP_RECORDING = (1 << 7),
+        FEATURES_OVERRIDE = (1 << 14)
     };
 
     // camera control commands
@@ -190,10 +191,6 @@ private:
 
     // supported features, usually probed from the device
     AP_Int16 _features;
-    // number of initialization attempts
-    AP_Int8 _init_attempts;
-    // delay between initialization attempts
-    AP_Int32 _init_attempt_interval_ms;
     // delay time to make sure the camera is fully booted
     AP_Int32 _boot_delay_ms;
     // delay time to make sure a button press has been activated
