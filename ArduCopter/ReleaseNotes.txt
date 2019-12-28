@@ -1,5 +1,9 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.0.0-rc6 28-Dec-2019
+Changes from 4.0.0-rc5
+1) Compiler updated to gcc 6.3.1 (2nd attempt)
+------------------------------------------------------------------
 Copter 4.0.0-rc5 23-Dec-2019
 Changes from 4.0.0-rc4
 1) RM3100 compass enabled on all boards
