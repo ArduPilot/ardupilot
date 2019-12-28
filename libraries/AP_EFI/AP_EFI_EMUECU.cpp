@@ -16,6 +16,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_EFI_EMUECU.h"
 #include <GCS_MAVLink/GCS.h>
+#include <SRV_Channel/SRV_Channel.h>
+#include <AP_ICEngine/AP_ICEngine.h>
 #include <unistd.h>
 #include <stdio.h>
 
@@ -36,6 +38,8 @@ void AP_EFI_EMUECU::update()
     if (!port) {
         return;
     }
+
+    send_throttle();
 
     uint32_t n = port->available();
     n = MIN(n, 1200U);
@@ -58,6 +62,25 @@ void AP_EFI_EMUECU::update()
             line_len = 0;
         }
     }
+}
+
+
+// send throttle demand
+void AP_EFI_EMUECU::send_throttle(void)
+{
+    if (port->txspace() < 20) {
+        return;
+    }
+    uint16_t throttle = 0;
+    AP_HAL::Util::safety_state safety_state = hal.util->safety_switch_state();
+    if (hal.util->get_soft_armed() && safety_state != AP_HAL::Util::SAFETY_DISARMED) {
+        AP_ICEngine *ice = AP::ice();
+        if (!ice || ice->get_state() > AP_ICEngine::ICE_OFF) {
+            throttle = 1000 + SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * 10;
+        }
+    }
+
+    port->printf("set thr_over %u\r\n", throttle);
 }
 
 /*

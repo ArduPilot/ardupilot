@@ -85,7 +85,11 @@ void AP_EFI::update()
 {
     if (backend) {
         backend->update();
-        log_status();
+        uint32_t now = AP_HAL::millis();
+        if (now - last_log_ms >= 100) {
+            last_log_ms = now;
+            log_status();
+        }
     }
 }
 

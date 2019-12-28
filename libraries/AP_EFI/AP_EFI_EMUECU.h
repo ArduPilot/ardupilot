@@ -30,6 +30,7 @@ private:
     AP_HAL::UARTDriver *port;
 
     void process_line(void);
+    void send_throttle(void);
 
     enum class ECU_State {
         INIT = 0,
@@ -58,7 +59,7 @@ private:
         uint16_t engine_start_ms;
         uint16_t engine_prime_ms;
         // outputs
-        uint8_t inj_ticks;
+        uint16_t inj_ticks;
         uint16_t thr_in;
         uint16_t pwm0_out;
         uint16_t pwm1_out;
@@ -85,10 +86,11 @@ private:
                   { "throttle_out", &status.throttle_out, DataType::FLOAT },
                   { "pt_c", &status.pt_c, DataType::FLOAT },
                   { "baro", &status.baro, DataType::UINT32 },
-                  { "inj_ticks", &status.inj_ticks, DataType::UINT8 },
+                  { "inj_ticks", &status.inj_ticks, DataType::UINT16 },
     };
 
     char linebuf[1200];
     uint16_t line_len;
     char last_log_msg[64];
+    bool done_config_log;
 };

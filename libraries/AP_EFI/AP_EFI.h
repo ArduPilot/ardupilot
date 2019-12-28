@@ -99,6 +99,8 @@ private:
 
     // write to log
     void log_status();
+
+    uint32_t last_log_ms;
 };
 
 namespace AP {
