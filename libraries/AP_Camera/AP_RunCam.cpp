@@ -886,9 +886,15 @@ void AP_RunCam::parse_device_info(const Request& request)
 
     uint8_t featureLowBits = request._recv_buf[2];
     uint8_t featureHighBits = request._recv_buf[3];
-    _features = (featureHighBits << 8) | featureLowBits;
+    if (!has_feature(Feature::FEATURES_OVERRIDE)) {
+        _features = (featureHighBits << 8) | featureLowBits;
+    }
     _state = State::INITIALIZED;
-    gcs().send_text(MAV_SEVERITY_INFO, "RunCam device initialized, features 0x%04X\n", _features.get());
+    gcs().send_text(MAV_SEVERITY_INFO, "RunCam initialized, features 0x%04X, %d-key OSD\n", _features.get(),
+        has_feature(Feature::RCDEVICE_PROTOCOL_FEATURE_SIMULATE_5_KEY_OSD_CABLE) ? 5 :
+        (has_feature(Feature::RCDEVICE_PROTOCOL_FEATURE_CHANGE_MODE) &&
+        has_feature(Feature::RCDEVICE_PROTOCOL_FEATURE_SIMULATE_WIFI_BUTTON) &&
+        has_feature(Feature::RCDEVICE_PROTOCOL_FEATURE_SIMULATE_POWER_BUTTON)) ? 2 : 0);
     debug("RunCam: initialized state: video: %d, osd: %d, cam: %d\n", _video_recording, int(_osd_option), int(_cam_control_option));
 }
 
