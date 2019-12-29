@@ -47,6 +47,9 @@ portmap = {}
 # dictionary of all config lines, indexed by first word
 config = {}
 
+# alternate pin mappings
+altmap = {}
+
 # list of all pins in config file order
 allpins = []
 
@@ -255,7 +258,7 @@ class generic_pin(object):
         '''return true if this is a CS pin'''
         return self.has_extra("CS") or self.type == "CS"
 
-    def get_MODER(self):
+    def get_MODER_value(self):
         '''return one of ALTERNATE, OUTPUT, ANALOG, INPUT'''
         if self.af is not None:
             v = "ALTERNATE"
@@ -269,9 +272,18 @@ class generic_pin(object):
             v = "OUTPUT"
         else:
             v = "INPUT"
-        return "PIN_MODE_%s(%uU)" % (v, self.pin)
+        return v
 
-    def get_OTYPER(self):
+    def get_MODER_mode(self):
+        '''return one of ALTERNATE, OUTPUT, ANALOG, INPUT'''
+        return 'PAL_STM32_MODE_' + v
+
+    def get_MODER(self):
+        '''return one of ALTERNATE, OUTPUT, ANALOG, INPUT'''
+        return "PIN_MODE_%s(%uU)" % (self.get_MODER_value(), self.pin)
+
+    
+    def get_OTYPER_value(self):
         '''return one of PUSHPULL, OPENDRAIN'''
         v = 'PUSHPULL'
         if self.type.startswith('I2C'):
@@ -281,9 +293,13 @@ class generic_pin(object):
         for e in self.extra:
             if e in values:
                 v = e
-        return "PIN_OTYPE_%s(%uU)" % (v, self.pin)
+        return v
 
-    def get_OSPEEDR(self):
+    def get_OTYPER(self):
+        '''return one of PUSHPULL, OPENDRAIN'''
+        return "PIN_OTYPE_%s(%uU)" % (self.get_OTYPER_value(), self.pin)
+
+    def get_OSPEEDR_value(self):
         '''return one of SPEED_VERYLOW, SPEED_LOW, SPEED_MEDIUM, SPEED_HIGH'''
         # on STM32F4 these speeds correspond to 2MHz, 25MHz, 50MHz and 100MHz
         values = ['SPEED_VERYLOW', 'SPEED_LOW', 'SPEED_MEDIUM', 'SPEED_HIGH']
@@ -291,9 +307,21 @@ class generic_pin(object):
         for e in self.extra:
             if e in values:
                 v = e
-        return "PIN_O%s(%uU)" % (v, self.pin)
+        return v
 
-    def get_PUPDR(self):
+    def get_OSPEEDR_int(self):
+        '''return value from 0 to 3 for speed'''
+        values = ['SPEED_VERYLOW', 'SPEED_LOW', 'SPEED_MEDIUM', 'SPEED_HIGH']
+        v = self.get_OSPEEDR_value()
+        if not v in values:
+            error("Bad OSPEED %s" % v)
+        return values.index(v)
+    
+    def get_OSPEEDR(self):
+        '''return one of SPEED_VERYLOW, SPEED_LOW, SPEED_MEDIUM, SPEED_HIGH'''
+        return "PIN_O%s(%uU)" % (self.get_OSPEEDR_value(), self.pin)
+
+    def get_PUPDR_value(self):
         '''return one of FLOATING, PULLUP, PULLDOWN'''
         values = ['FLOATING', 'PULLUP', 'PULLDOWN']
         v = 'FLOATING'
@@ -319,9 +347,13 @@ class generic_pin(object):
         for e in self.extra:
             if e in values:
                 v = e
-        return "PIN_PUPDR_%s(%uU)" % (v, self.pin)
+        return v
 
-    def get_ODR_F1(self):
+    def get_PUPDR(self):
+        '''return one of FLOATING, PULLUP, PULLDOWN wrapped in PIN_PUPDR_ macro'''
+        return "PIN_PUPDR_%s(%uU)" % (self.get_PUPDR_value(), self.pin)
+
+    def get_ODR_F1_value(self):
         '''return one of LOW, HIGH'''
         values = ['LOW', 'HIGH']
         v = 'HIGH'
@@ -337,25 +369,33 @@ class generic_pin(object):
             v = 'LOW'
             if 'PULLUP' in self.extra:
                 v = "HIGH"
-        return "PIN_ODR_%s(%uU)" % (v, self.pin)
+        return v
 
-    def get_ODR(self):
+    def get_ODR_value(self):
         '''return one of LOW, HIGH'''
         if mcu_series.startswith("STM32F1"):
-            return self.get_ODR_F1()
+            return self.get_ODR_F1_value()
         values = ['LOW', 'HIGH']
         v = 'HIGH'
         for e in self.extra:
             if e in values:
                 v = e
-        return "PIN_ODR_%s(%uU)" % (v, self.pin)
+        return v
 
-    def get_AFIO(self):
+    def get_ODR(self):
+        '''return one of LOW, HIGH wrapped in PIN_ODR macro'''
+        return "PIN_ODR_%s(%uU)" % (self.get_ODR_value(), self.pin)
+
+    def get_AFIO_value(self):
         '''return AFIO'''
         af = self.af
         if af is None:
             af = 0
-        return "PIN_AFIO_AF(%uU, %uU)" % (self.pin, af)
+        return af
+
+    def get_AFIO(self):
+        '''return AFIO wrapped in PIN_AFIO_AF macro'''
+        return "PIN_AFIO_AF(%uU, %uU)" % (self.pin, self.get_AFIO_value())
 
     def get_AFRL(self):
         '''return AFIO low 8'''
@@ -453,6 +493,19 @@ class generic_pin(object):
         if self.pin >= 8:
             return None
         return self.get_CR()
+
+    def pal_modeline(self):
+        '''return a mode line suitable for palSetModeLine()'''
+        # MODER, OTYPER, OSPEEDR, PUPDR, ODR, AFRL, AFRH
+        ret = 'PAL_STM32_MODE_' + self.get_MODER_value()
+        ret += '|PAL_STM32_OTYPE_' + self.get_OTYPER_value()
+        ret += '|PAL_STM32_SPEED(%u)' % self.get_OSPEEDR_int()
+        ret += '|PAL_STM32_PUPDR_' + self.get_PUPDR_value()
+        af = self.get_AFIO_value()
+        if af != 0:
+            ret += '|PAL_STM32_ALTERNATE(%u)' % af
+
+        return ret
 
     def __str__(self):
         str = ''
@@ -1437,6 +1490,24 @@ def get_dma_exclude(periph_list):
             dma_exclude.append(periph)
     return dma_exclude
 
+def write_alt_config(f):
+    '''write out alternate config settings'''
+    if len(altmap.keys()) == 0:
+        # no alt configs
+        return
+    f.write('''
+/* alternative configurations */
+#define PAL_STM32_SPEED(n) ((n&3U)<<3U)
+#define PAL_STM32_HIGH     0x8000U
+
+#define HAL_PIN_ALT_CONFIG { \\
+''')
+    for alt in altmap.keys():
+        for pp in altmap[alt].keys():
+            p = altmap[alt][pp]
+            f.write("    { %u, %s, PAL_LINE(GPIO%s,%uU)}, /* %s */ \\\n" % (alt, p.pal_modeline(), p.port, p.pin, str(p)))
+    f.write('}\n\n')
+
 def write_hwdef_header(outfilename):
     '''write hwdef header file'''
     print("Writing hwdef setup in %s" % outfilename)
@@ -1569,6 +1640,7 @@ def write_hwdef_header(outfilename):
                 # there were no pin definitions, use 0
                 f.write("0")
             f.write(")\n\n")
+    write_alt_config(f)
 
     if not mcu_series.startswith("STM32F1"):
         dma_required = ['SPI*', 'ADC*']
@@ -1655,15 +1727,7 @@ def process_line(line):
     # keep all config lines for later use
     alllines.append(line)
 
-    if a[0].startswith('P') and a[0][1] in ports and a[0] in config:
-        error("Pin %s redefined" % a[0])
-    
-    config[a[0]] = a[1:]
-    if a[0] == 'MCU':
-        global mcu_type, mcu_series
-        mcu_type = a[2]
-        mcu_series = a[1]
-        setup_mcu_type_defaults()
+    p = None
     if a[0].startswith('P') and a[0][1] in ports:
         # it is a port/pin definition
         try:
@@ -1677,28 +1741,51 @@ def process_line(line):
             return
 
         p = generic_pin(port, pin, label, type, extra)
+        af = get_alt_function(mcu_type, a[0], label)
+        if af is not None:
+            p.af = af
+
+        alt = p.extra_value("ALT", type=int, default=0)
+        if alt != 0:
+            if mcu_series.startswith("STM32F1"):
+                error("Alt config not allowed for F1 MCU")
+            if not alt in altmap:
+                altmap[alt] = {}
+            if p.portpin in altmap[alt]:
+                error("Pin %s ALT(%u) redefined" % (p.portpin, alt))
+            altmap[alt][p.portpin] = p
+            return
+
+        if a[0] in config:
+            error("Pin %s redefined" % a[0])
+    
+    config[a[0]] = a[1:]
+    if p is not None:
+        # add to set of pins for primary config
         portmap[port][pin] = p
         allpins.append(p)
         if not type in bytype:
             bytype[type] = []
         bytype[type].append(p)
         bylabel[label] = p
-        af = get_alt_function(mcu_type, a[0], label)
-        if af is not None:
-            p.af = af
-    if a[0] == 'SPIDEV':
+    elif a[0] == 'MCU':
+        global mcu_type, mcu_series
+        mcu_type = a[2]
+        mcu_series = a[1]
+        setup_mcu_type_defaults()
+    elif a[0] == 'SPIDEV':
         spidev.append(a[1:])
-    if a[0] == 'IMU':
+    elif a[0] == 'IMU':
         imu_list.append(a[1:])
-    if a[0] == 'COMPASS':
+    elif a[0] == 'COMPASS':
         compass_list.append(a[1:])
-    if a[0] == 'BARO':
+    elif a[0] == 'BARO':
         baro_list.append(a[1:])
-    if a[0] == 'ROMFS':
+    elif a[0] == 'ROMFS':
         romfs_add(a[1],a[2])
-    if a[0] == 'ROMFS_WILDCARD':
+    elif a[0] == 'ROMFS_WILDCARD':
         romfs_wildcard(a[1])
-    if a[0] == 'undef':
+    elif a[0] == 'undef':
         print("Removing %s" % a[1])
         config.pop(a[1], '')
         bytype.pop(a[1],'')
@@ -1723,7 +1810,7 @@ def process_line(line):
             compass_list = []
         if a[1] == 'BARO':
             baro_list = []
-    if a[0] == 'env':
+    elif a[0] == 'env':
         print("Adding environment %s" % ' '.join(a[1:]))
         if len(a[1:]) < 2:
             error("Bad env line for %s" % a[0])
