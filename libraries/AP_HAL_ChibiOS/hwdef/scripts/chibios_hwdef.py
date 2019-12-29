@@ -1470,10 +1470,10 @@ def write_hwdef_header(outfilename):
     write_peripheral_enable(f)
     setup_apj_IDs()
 
-    dma_resolver.write_dma_header(f, periph_list, mcu_type,
-                                  dma_exclude=get_dma_exclude(periph_list),
-                                  dma_priority=get_config('DMA_PRIORITY',default='TIM* SPI*', spaces=True),
-                                  dma_noshare=get_config('DMA_NOSHARE',default='', spaces=True))
+    dma_unassigned = dma_resolver.write_dma_header(f, periph_list, mcu_type,
+                                        dma_exclude=get_dma_exclude(periph_list),
+                                        dma_priority=get_config('DMA_PRIORITY',default='TIM* SPI*', spaces=True),
+                                        dma_noshare=get_config('DMA_NOSHARE',default='', spaces=True))
 
     if not args.bootloader:
         write_PWM_config(f)
@@ -1570,6 +1570,14 @@ def write_hwdef_header(outfilename):
                 f.write("0")
             f.write(")\n\n")
 
+    if not mcu_series.startswith("STM32F1"):
+        dma_required = ['SPI*', 'ADC*']
+        if 'IOMCU_UART' in config:
+            dma_required.append(config['IOMCU_UART'][0] + '*')
+        for d in dma_unassigned:
+            for r in dma_required:
+                if fnmatch.fnmatch(d, r):
+                    error("Missing required DMA for %s" % d)
 
 def build_peripheral_list():
     '''build a list of peripherals for DMA resolver to work on'''
@@ -1584,13 +1592,17 @@ def build_peripheral_list():
             if type.startswith(prefix):
                 ptx = type + "_TX"
                 prx = type + "_RX"
-                peripherals.append(ptx)
-                peripherals.append(prx)
-                if not ptx in bylabel:
-                    bylabel[ptx] = p
-                if not prx in bylabel:
-                    bylabel[prx] = p
-                
+                if prefix in ['SPI', 'I2C']:
+                    # in DMA map I2C and SPI has RX and TX suffix
+                    if not ptx in bylabel:
+                        bylabel[ptx] = p
+                    if not prx in bylabel:
+                        bylabel[prx] = p
+                if prx in bylabel:
+                    peripherals.append(prx)
+                if ptx in bylabel:
+                    peripherals.append(ptx)
+
         if type.startswith('ADC'):
             peripherals.append(type)
         if type.startswith('SDIO') or type.startswith('SDMMC'):
