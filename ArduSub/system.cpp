@@ -99,9 +99,6 @@ void Sub::init_ardupilot()
 
     relay.init();
 
-    // run all the vehicle initialization routines
-    init_vehicle();
-
     /*
      *  setup the 'main loop is dead' check. Note that this relies on
      *  the RC library being initialised.
