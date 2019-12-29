@@ -52,7 +52,7 @@ SPIDEV pixartflow SPI4 DEVID13 MPU_EXT_CS  MODE3  2*MHZ  2*MHZ
 
 # SPI2 for the cypress needs exclusive access or we will end up with
 # lost packets
-DMA_PRIORITY SPI2_*
+DMA_PRIORITY SPI2_* SPI* ADC*
 DMA_NOSHARE SPI2_*
 undef PA1
 PA1 UART4_RX UART4 NODMA
