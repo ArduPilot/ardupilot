@@ -21,7 +21,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_RTC/AP_RTC.h>
-#include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
 
 #if HAL_WITH_UAVCAN
@@ -315,6 +315,12 @@ void AP_BoardConfig::init()
         printf("SDCard failed to start\n");
     }
 #endif
+
+    // run any the vehicle initialization routines
+    AP_Vehicle *vehicle = AP::vehicle();
+    if (vehicle) {
+        vehicle->init_vehicle();
+    }
 }
 
 // set default value for BRD_SAFETY_MASK
