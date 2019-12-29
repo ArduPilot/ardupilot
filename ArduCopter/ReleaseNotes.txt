@@ -1,6 +1,6 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 4.0.0-rc6 28-Dec-2019
+Copter 4.0.0 29-Dec-2019 / 4.0.0-rc6 28-Dec-2019
 Changes from 4.0.0-rc5
 1) Compiler updated to gcc 6.3.1 (2nd attempt)
 ------------------------------------------------------------------
