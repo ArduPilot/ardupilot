@@ -51,6 +51,8 @@
 
 class ReplayVehicle : public AP_Vehicle {
 public:
+    friend class Replay;
+
     ReplayVehicle() { unused = -1; }
     // HAL::Callbacks implementation.
     void setup() override;
@@ -59,15 +61,6 @@ public:
 
     virtual bool set_mode(const uint8_t new_mode, const ModeReason reason) override { return true; }
 
-    AP_InertialSensor ins;
-    AP_Baro barometer;
-    AP_GPS gps;
-    Compass compass;
-    AP_SerialManager serial_manager;
-    RangeFinder rng;
-    NavEKF2 EKF2{&ahrs};
-    NavEKF3 EKF3{&ahrs};
-    AP_AHRS_NavEKF ahrs{EKF2, EKF3};
     AP_Vehicle::FixedWing aparm;
     AP_Airspeed airspeed;
     AP_Int32 unused; // logging is magic for Replay; this is unused
