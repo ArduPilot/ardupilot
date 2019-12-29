@@ -40,7 +40,12 @@ void AP_Vehicle::get_common_scheduler_tasks(const AP_Scheduler::Task*& tasks, ui
 }
 
 // initialize the vehicle
-void AP_Vehicle::init_vehicle() {
+void AP_Vehicle::init_vehicle()
+{
+    if (init_done) {
+        return;
+    }
+    init_done = true;
 #if HAL_RUNCAM_ENABLED
     runcam.init();
 #endif

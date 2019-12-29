@@ -112,6 +112,9 @@ public:
 
     void get_common_scheduler_tasks(const AP_Scheduler::Task*& tasks, uint8_t& num_tasks);
 
+    // initialize the vehicle. Called from AP_BoardConfig
+    void init_vehicle();
+
 protected:
 
     // board specific config
@@ -153,15 +156,13 @@ protected:
     AP_AHRS_DCM ahrs;
 #endif
 
-    // initialize the vehicle
-    void init_vehicle();
-
     static const struct AP_Param::GroupInfo var_info[];
     static const struct AP_Scheduler::Task scheduler_tasks[];
 
 private:
 
     static AP_Vehicle *_singleton;
+    bool init_done;
 
 };
 
