@@ -30,37 +30,36 @@
 #include <AP_Logger/AP_Logger.h>
 
 const AP_Param::GroupInfo AP_RunCam::var_info[] = {
+    // @Param: TYPE
+    // @DisplayName: RunCam device type
+    // @Description: RunCam deviee type used to determine OSD menu structure and shutter options
+    // @Values: 0:Disabled, 1:RunCam Split
+    AP_GROUPINFO_FLAGS("TYPE", 1, AP_RunCam, _cam_type, int(DeviceType::DISABLED), AP_PARAM_FLAG_ENABLE),
+
     // @Param: FEATURES
     // @DisplayName: RunCam features available
     // @Description: The available features of the attached RunCam device. If 0 then the RunCam device will be queried for the features it supports, otherwise this setting is used.
     // @User: Advanced
     // @Bitmask: 0:Power Button,1:WiFi Button,2:Change Mode,3:5-Key OSD,4:Settings Access,5:DisplayPort,6:Start Recording,7:Stop Recording
-    AP_GROUPINFO("FEATURES", 1, AP_RunCam, _features, 0),
+    AP_GROUPINFO("FEATURES", 2, AP_RunCam, _features, 0),
 
     // @Param: BT_DELAY
     // @DisplayName: RunCam boot delay before allowing updates
     // @Description: Time it takes for the RunCam to become fully ready in ms. If this is too short then commands can get out of sync.
     // @User: Advanced
-    AP_GROUPINFO("BT_DELAY", 2, AP_RunCam, _boot_delay_ms, 7000),
+    AP_GROUPINFO("BT_DELAY", 3, AP_RunCam, _boot_delay_ms, 7000),
 
     // @Param: BTN_DELAY
     // @DisplayName: RunCam button delay before allowing further button presses
     // @Description: Time it takes for the a RunCam button press to be actived in ms. If this is too short then commands can get out of sync.
     // @User: Advanced
-    AP_GROUPINFO("BTN_DELAY", 3, AP_RunCam, _button_delay_ms, 300),
+    AP_GROUPINFO("BTN_DELAY", 4, AP_RunCam, _button_delay_ms, 300),
 
     // @Param: MDE_DELAY
     // @DisplayName: RunCam mode delay before allowing further button presses
     // @Description: Time it takes for the a RunCam mode button press to be actived in ms. If this is too short then commands can get out of sync.
     // @User: Advanced
-    AP_GROUPINFO("MDE_DELAY", 4, AP_RunCam, _mode_delay_ms, 800),
-
-    // @Param: TYPE
-    // @DisplayName: RunCam device type
-    // @Description: RunCam deviee type used to determine OSD menu structure and shutter options
-    // @Values: 0:RunCam Split
-    // @User: Advanced
-    AP_GROUPINFO("TYPE", 5, AP_RunCam, _cam_type, 0),
+    AP_GROUPINFO("MDE_DELAY", 5, AP_RunCam, _mode_delay_ms, 800),
 
     // @Param: CONTROL
     // @DisplayName: RunCam control option
@@ -121,6 +120,19 @@ void AP_RunCam::init()
     AP_SerialManager *serial_manager = AP_SerialManager::get_singleton();
     if (serial_manager) {
         uart = serial_manager->find_serial(AP_SerialManager::SerialProtocol_RunCam, 0);
+    }
+    if (uart != nullptr) {
+        /*
+          if the user has setup a serial port as a runcam then default
+          type to the split. This makes setup a bit easier for most
+          users while still enabling parameters to be hidden for users
+          without a runcam
+         */
+        _cam_type.set_default(int8_t(DeviceType::SPLIT));
+    }
+    if (_cam_type.get() == int8_t(DeviceType::DISABLED)) {
+        uart = nullptr;
+        return;
     }
 
     if (uart == nullptr) {
@@ -186,7 +198,7 @@ void AP_RunCam::osd_option() {
 // input update loop
 void AP_RunCam::update()
 {
-    if (uart == nullptr) {
+    if (uart == nullptr || _cam_type.get() == int8_t(DeviceType::DISABLED)) {
         return;
     }
 
