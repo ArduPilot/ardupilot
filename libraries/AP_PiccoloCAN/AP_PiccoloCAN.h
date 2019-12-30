@@ -99,7 +99,7 @@ private:
     bool handle_esc_message(uavcan::CanFrame &frame);
 
     bool _initialized;
-    char _thread_name[9];
+    char _thread_name[16];
     uint8_t _driver_index;
     uavcan::ICanDriver* _can_driver;
     const uavcan::CanFrame* _select_frames[uavcan::MaxCanIfaces] { };
