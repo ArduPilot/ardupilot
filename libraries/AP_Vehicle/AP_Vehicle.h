@@ -38,6 +38,7 @@
 #include <AP_Camera/AP_RunCam.h>
 #include <AP_Hott_Telem/AP_Hott_Telem.h>
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
+#include <AP_GyroFFT/AP_GyroFFT.h>
 
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
 
@@ -196,6 +197,9 @@ protected:
     AP_RSSI rssi;
 #if HAL_RUNCAM_ENABLED
     AP_RunCam runcam;
+#endif
+#if HAL_GYROFFT_ENABLED
+    AP_GyroFFT gyro_fft;
 #endif
     AP_SerialManager serial_manager;
 
