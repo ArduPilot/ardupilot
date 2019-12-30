@@ -401,24 +401,12 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
         // we are traveling fast in the opposite direction of travel to the waypoint so do not move the intermediate point
         _limited_speed_xy_cms = 0;
     }else{
-    	if(_pos_control.get_rqwpspd_reduced()){
-    		// reduced speed according to the mission requested
-    		if(dt > 0 && !reached_leash_limit) {
-                _limited_speed_xy_cms -= 2.0f * _track_accel * dt;
-    		}
-    		// clear this flag only when we get close to the track speed term limitation
-    		if(_limited_speed_xy_cms < _track_speed) {
-    			_limited_speed_xy_cms = _track_speed;
-    			_pos_control.set_rqwpspd_reduced(false);
-    		}
-    	} else {
-            // increase intermediate target point's velocity if not yet at the leash limit
-            if(dt > 0 && !reached_leash_limit) {
-                _limited_speed_xy_cms += 2.0f * _track_accel * dt;
-            }
-            // do not allow speed to be below zero or over top speed
-            _limited_speed_xy_cms = constrain_float(_limited_speed_xy_cms, 0.0f, _track_speed);
-    	}
+        // increase intermediate target point's velocity if not yet at the leash limit
+        if(dt > 0 && !reached_leash_limit) {
+            _limited_speed_xy_cms += 2.0f * _track_accel * dt;
+        }
+        // do not allow speed to be below zero or over top speed
+        _limited_speed_xy_cms = constrain_float(_limited_speed_xy_cms, 0.0f, _track_speed);
 
         // check if we should begin slowing down
         if (!_flags.fast_waypoint) {

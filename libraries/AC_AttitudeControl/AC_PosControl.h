@@ -215,9 +215,8 @@ public:
     // clear desired velocity feed-forward in z axis
     void clear_desired_velocity_ff_z() { _flags.use_desvel_ff_z = false; }
 
-    // get and set function for the requested speed changed to reduced flag status
+    // set function for the requested speed changed to reduced flag status
     void set_rqwpspd_reduced(bool rqspd) { _flags.rqwpspd_reduced = rqspd; }
-    bool get_rqwpspd_reduced() { return _flags.rqwpspd_reduced; }
 
     // set desired acceleration in cm/s in xy axis
     void set_desired_accel_xy(float accel_lat_cms, float accel_lon_cms) { _accel_desired.x = accel_lat_cms; _accel_desired.y = accel_lon_cms; }

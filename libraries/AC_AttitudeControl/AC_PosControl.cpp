@@ -1038,6 +1038,9 @@ void AC_PosControl::run_xy_controller(float dt)
                 _pos_target.x = curr_pos.x + _pos_error.x;
                 _pos_target.y = curr_pos.y + _pos_error.y;
             }
+        }else{
+        	// check if we have reduced to the target speed and clear the flag once we reached it
+        	if (_inav.get_speed_xy() < _speed_cms) _flags.rqwpspd_reduced =false;
         }
 
         _vel_target = sqrt_controller(_pos_error, kP, _accel_cms);
