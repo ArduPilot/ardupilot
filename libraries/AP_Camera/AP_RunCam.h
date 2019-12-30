@@ -55,6 +55,11 @@ public:
         return _singleton;
     }
 
+    enum class DeviceType {
+        DISABLED = 0,
+        SPLIT = 1,
+    };
+
     // operation of camera button simulation
     enum class ControlOperation {
         RCDEVICE_PROTOCOL_SIMULATE_WIFI_BTN = 0x00, // WiFi/Mode button
