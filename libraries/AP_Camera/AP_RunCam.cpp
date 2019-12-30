@@ -34,7 +34,7 @@ const AP_Param::GroupInfo AP_RunCam::var_info[] = {
     // @DisplayName: RunCam device type
     // @Description: RunCam deviee type used to determine OSD menu structure and shutter options
     // @Values: 0:Disabled, 1:RunCam Split
-    AP_GROUPINFO_FLAGS("TYPE", 1, AP_RunCam, _cam_type, int(DeviceType::DISABLED), AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("TYPE", 1, AP_RunCam, _cam_type, int(DeviceType::Disabled), AP_PARAM_FLAG_ENABLE),
 
     // @Param: FEATURES
     // @DisplayName: RunCam features available
@@ -128,9 +128,9 @@ void AP_RunCam::init()
           users while still enabling parameters to be hidden for users
           without a runcam
          */
-        _cam_type.set_default(int8_t(DeviceType::SPLIT));
+        _cam_type.set_default(int8_t(DeviceType::Split));
     }
-    if (_cam_type.get() == int8_t(DeviceType::DISABLED)) {
+    if (_cam_type.get() == int8_t(DeviceType::Disabled)) {
         uart = nullptr;
         return;
     }
@@ -198,7 +198,7 @@ void AP_RunCam::osd_option() {
 // input update loop
 void AP_RunCam::update()
 {
-    if (uart == nullptr || _cam_type.get() == int8_t(DeviceType::DISABLED)) {
+    if (uart == nullptr || _cam_type.get() == int8_t(DeviceType::Disabled)) {
         return;
     }
 

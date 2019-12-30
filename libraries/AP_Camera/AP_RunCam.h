@@ -56,8 +56,8 @@ public:
     }
 
     enum class DeviceType {
-        DISABLED = 0,
-        SPLIT = 1,
+        Disabled = 0,
+        Split = 1,
     };
 
     // operation of camera button simulation
