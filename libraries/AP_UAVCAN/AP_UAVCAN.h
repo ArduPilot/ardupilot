@@ -176,7 +176,7 @@ private:
     uavcan::Node<0> *_node;
 
     uint8_t _driver_index;
-    char _thread_name[9];
+    char _thread_name[13];
     bool _initialized;
     ///// SRV output /////
     struct {
