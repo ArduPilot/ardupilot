@@ -365,7 +365,7 @@ void AP_PiccoloCAN::send_esc_messages(void)
     if (hal.util->get_soft_armed()) {
 
         bool send_cmd = false;
-        int16_t cmd[4];
+        int16_t cmd[4] {};
         uint8_t idx;
 
         // Transmit bulk command packets to 4x ESC simultaneously
