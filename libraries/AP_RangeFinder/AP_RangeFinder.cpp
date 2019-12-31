@@ -173,44 +173,42 @@ void RangeFinder::convert_params(void) {
         return;
     }
 
-    struct ConversionTable {
+    const struct ConversionTable {
         uint8_t old_element;
         uint8_t new_index;
         uint8_t instance;
-    };
+    } conversionTable[] = {
+        // rangefinder 1
+        {0, 0, 0}, //0, TYPE 1
+        {1, 1, 0}, //1, PIN 1
+        {2, 2, 0}, //2, SCALING 1
+        {3, 3, 0}, //3, OFFSET 1
+        {4, 4, 0}, //4, FUNCTION 1
+        {5, 5, 0}, //5, MIN_CM 1
+        {6, 6, 0}, //6, MAX_CM 1
+        {7, 7, 0}, //7, STOP_PIN 1
+        {9, 8, 0}, //9, RMETRIC 1
+        {10, 9, 0}, //10, PWRRNG 1 (previously existed only once for all sensors)
+        {11, 10, 0}, //11, GNDCLEAR 1
+        {23, 11, 0}, //23, ADDR 1
+        {49, 12, 0}, //49, POS 1
+        {53, 13, 0}, //53, ORIENT 1
 
-    const struct ConversionTable conversionTable[] = {
-            // rangefinder 1
-            {0, 0, 0}, //0, TYPE 1
-            {1, 1, 0}, //1, PIN 1
-            {2, 2, 0}, //2, SCALING 1
-            {3, 3, 0}, //3, OFFSET 1
-            {4, 4, 0}, //4, FUNCTION 1
-            {5, 5, 0}, //5, MIN_CM 1
-            {6, 6, 0}, //6, MAX_CM 1
-            {7, 7, 0}, //7, STOP_PIN 1
-            {9, 8, 0}, //9, RMETRIC 1
-            {10, 9, 0}, //10, PWRRNG 1 (previously existed only once for all sensors)
-            {11, 10, 0}, //11, GNDCLEAR 1
-            {23, 11, 0}, //23, ADDR 1
-            {49, 12, 0}, //49, POS 1
-            {53, 13, 0}, //53, ORIENT 1
-
-            // rangefinder 2
-            {12, 0, 1}, //12, TYPE 2
-            {13, 1, 1}, //13, PIN 2
-            {14, 2, 1}, //14, SCALING 2
-            {15, 3, 1}, //15, OFFSET 2
-            {16, 4, 1}, //16, FUNCTION 2
-            {17, 5, 1}, //17, MIN_CM 2
-            {18, 6, 1}, //18, MAX_CM 2
-            {19, 7, 1}, //19, STOP_PIN 2
-            {21, 8, 1}, //21, RMETRIC 2
-            {10, 9, 1}, //10, PWRRNG 1 (previously existed only once for all sensors)
-            {22, 10, 1}, //22, GNDCLEAR 2
-            {24, 11, 1}, //24, ADDR 2
-            {50, 12, 1}, //50, POS 2
-            {54, 13, 1}, //54, ORIENT 2
+        // rangefinder 2
+        {12, 0, 1}, //12, TYPE 2
+        {13, 1, 1}, //13, PIN 2
+        {14, 2, 1}, //14, SCALING 2
+        {15, 3, 1}, //15, OFFSET 2
+        {16, 4, 1}, //16, FUNCTION 2
+        {17, 5, 1}, //17, MIN_CM 2
+        {18, 6, 1}, //18, MAX_CM 2
+        {19, 7, 1}, //19, STOP_PIN 2
+        {21, 8, 1}, //21, RMETRIC 2
+        {10, 9, 1}, //10, PWRRNG 1 (previously existed only once for all sensors)
+        {22, 10, 1}, //22, GNDCLEAR 2
+        {24, 11, 1}, //24, ADDR 2
+        {50, 12, 1}, //50, POS 2
+        {54, 13, 1}, //54, ORIENT 2
     };
 
     char param_name[17] = {0};
