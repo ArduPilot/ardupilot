@@ -5021,6 +5021,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
              "Upload/Download of items in different frames",
              self.test_mission_frames),
 
+            ("AccelCal",
+             "Accelerometer Calibration testing",
+             self.accelcal),
+
             ("DownLoadLogs", "Download logs", lambda:
              self.log_download(
                  self.buildlogs_path("APMrover2-log.bin"),
