@@ -372,6 +372,12 @@ def MAVProxy_version():
 def start_MAVProxy_SITL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1:5760',
                         options=[], logfile=sys.stdout):
     """Launch mavproxy connected to a SITL instance."""
+    local_mp_modules_dir = os.path.abspath(
+        os.path.join(__file__, '..', '..', '..', 'mavproxy_modules'))
+    env = dict(os.environ)
+    env['PYTHONPATH'] = (local_mp_modules_dir +
+                         os.pathsep +
+                         env.get('PYTHONPATH', ''))
     import pexpect
     global close_list
     MAVPROXY = mavproxy_cmd()
@@ -383,7 +389,7 @@ def start_MAVProxy_SITL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1
     cmd += ' --aircraft=%s' % aircraft
     cmd += ' ' + ' '.join(options)
     cmd += ' --default-modules misc,terrain,wp,rally,fence,param,arm,mode,rc,cmdlong,output'
-    ret = pexpect.spawn(cmd, logfile=logfile, encoding=ENCODING, timeout=60)
+    ret = pexpect.spawn(cmd, logfile=logfile, encoding=ENCODING, timeout=60, env=env)
     ret.delaybeforesend = 0
     pexpect_autoclose(ret)
     return ret
