@@ -60,7 +60,7 @@ public:
     uint32_t get_rpm() const { return state.engine_speed_rpm; }
 
     // returns enabled state of EFI
-    bool enabled() const { return type != EFI_COMMUNICATION_TYPE_NONE; }
+    bool enabled() const { return type != int8_t(Protocol::NONE); }
 
     bool is_healthy() const;
 
@@ -68,10 +68,10 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     // Backend driver types
-    enum EFI_Communication_Type {
-        EFI_COMMUNICATION_TYPE_NONE      = 0,
-        EFI_COMMUNICATION_TYPE_SERIAL_MS = 1,
-        EFI_COMMUNICATION_TYPE_EMUEFI    = 2,
+    enum class Protocol {
+        NONE      = 0,
+        SERIAL_MS = 1,
+        EMUEFI    = 2,
     };
 
     static AP_EFI *get_singleton(void) {

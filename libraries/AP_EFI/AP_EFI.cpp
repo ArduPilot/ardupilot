@@ -70,13 +70,15 @@ void AP_EFI::init(void)
     }
 
     // Check for MegaSquirt Serial EFI
-    if (type == EFI_COMMUNICATION_TYPE_SERIAL_MS) {
+    switch (Protocol(type.get())) {
+    case Protocol::SERIAL_MS:
         backend = new AP_EFI_Serial_MS(*this);
-    }
-
-    // Check for MegaSquirt Serial EFI
-    if (type == EFI_COMMUNICATION_TYPE_EMUEFI) {
+        break;
+    case Protocol::EMUEFI:
         backend = new AP_EFI_EMUECU(*this);
+        break;
+    case Protocol::NONE:
+        break;
     }
 }
 
