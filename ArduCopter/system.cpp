@@ -29,11 +29,6 @@ void Copter::init_ardupilot()
                         AP::fwversion().fw_string,
                         (unsigned)hal.util->available_memory());
 
-    //
-    // Report firmware version code expect on console (check of actual EEPROM format version is done in load_parameters function)
-    //
-    report_version();
-
     // load parameters from EEPROM
     load_parameters();
 
