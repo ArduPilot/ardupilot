@@ -864,7 +864,6 @@ private:
     void print_blanks(int16_t num);
     void print_divider(void);
     void print_enabled(bool b);
-    void report_version();
 
     // switches.cpp
     void save_trim();
