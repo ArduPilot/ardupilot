@@ -867,7 +867,6 @@ private:
     void report_version();
 
     // switches.cpp
-    void read_control_switch();
     void save_trim();
     void auto_trim();
 
