@@ -141,11 +141,6 @@ void AP_RCProtocol_FPort::decode_downlink(const FPort_Frame &frame)
         return;
     }
 
-    AP_Frsky_Telem *frsky = AP::frsky_telem();
-    if (!frsky) {
-        return;
-    }
-
     /*
       check that we haven't been too slow in responding to the new
       UART data. If we respond too late then we will corrupt the next
@@ -166,7 +161,7 @@ void AP_RCProtocol_FPort::decode_downlink(const FPort_Frame &frame)
     uint8_t frametype;
     uint16_t appid;
     uint32_t data;
-    if (frsky->get_telem_data(frametype, appid, data)) {
+    if (AP_Frsky_Telem::get_telem_data(frametype, appid, data)) {
         uint8_t buf[10];
 
         buf[0] = 0x08;
@@ -187,12 +182,10 @@ void AP_RCProtocol_FPort::decode_downlink(const FPort_Frame &frame)
         uint8_t len = 0;
         uint8_t buf2[sizeof(buf)*2+1];
 
-#if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
         if (rc().fport_pad()) {
             // this padding helps on some uarts that have hw pullups
             buf2[len++] = 0xff;
         }
-#endif
 
         for (uint8_t i=0; i<sizeof(buf); i++) {
             uint8_t c = buf[i];
