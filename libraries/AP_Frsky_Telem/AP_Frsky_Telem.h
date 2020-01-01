@@ -112,7 +112,7 @@ for FrSky SPort Passthrough
 
 class AP_Frsky_Telem {
 public:
-    AP_Frsky_Telem();
+    AP_Frsky_Telem(bool external_data=false);
 
     ~AP_Frsky_Telem();
 
@@ -137,7 +137,7 @@ public:
     }
 
     // get next telemetry data for external consumers of SPort data
-    bool get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &data);
+    static bool get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &data);
 
 private:
     AP_HAL::UARTDriver *_port;                  // UART used to send data to FrSky receiver
@@ -257,6 +257,9 @@ private:
     // setup ready for passthrough operation
     void setup_passthrough(void);
 
+    // get next telemetry data for external consumers of SPort data (internal function)
+    bool _get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &data);
+    
     static AP_Frsky_Telem *singleton;
 
     // use_external_data is set when this library will
