@@ -20,6 +20,8 @@
 #include "AP_RCProtocol_FPort.h"
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <RC_Channel/RC_Channel.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -183,7 +185,15 @@ void AP_RCProtocol_FPort::decode_downlink(const FPort_Frame &frame)
 
         // perform byte stuffing per FPort spec
         uint8_t len = 0;
-        uint8_t buf2[sizeof(buf)*2];
+        uint8_t buf2[sizeof(buf)*2+1];
+
+#if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
+        if (rc().fport_pad()) {
+            // this padding helps on some uarts that have hw pullups
+            buf2[len++] = 0xff;
+        }
+#endif
+
         for (uint8_t i=0; i<sizeof(buf); i++) {
             uint8_t c = buf[i];
             if (c == FRAME_DLE || buf[i] == FRAME_HEAD) {
