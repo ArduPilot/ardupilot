@@ -559,6 +559,15 @@ def get_mcu_config(name, required=False):
         return None
     return lib.mcu[name]
 
+def make_line(label):
+    '''return a line for a label'''
+    if label in bylabel:
+        p = bylabel[label]
+        line = 'PAL_LINE(GPIO%s,%uU)' % (p.port, p.pin)
+    else:
+        line = "0"
+    return line
+
 def enable_can(f):
     '''setup for a CAN enabled board'''
     f.write('#define HAL_WITH_UAVCAN 1\n')
@@ -1038,22 +1047,11 @@ def write_UART_config(f):
         else:
             error("Invalid element %s in UART_ORDER" % dev)
         devlist.append('HAL_%s_CONFIG' % dev)
-        if dev + "_TX" in bylabel:
-            p = bylabel[dev + '_TX']
-            tx_line = 'PAL_LINE(GPIO%s,%uU)' % (p.port, p.pin)
-        else:
-            tx_line = "0"
-        if dev + "_RX" in bylabel:
-            p = bylabel[dev + '_RX']
-            rx_line = 'PAL_LINE(GPIO%s,%uU)' % (p.port, p.pin)
-        else:
-            rx_line = "0"
-        if dev + "_RTS" in bylabel:
-            p = bylabel[dev + '_RTS']
-            rts_line = 'PAL_LINE(GPIO%s,%uU)' % (p.port, p.pin)
+        tx_line = make_line(dev + '_TX')
+        rx_line = make_line(dev + '_RX')
+        rts_line = make_line(dev + '_RTS')
+        if rts_line != "0":
             have_rts_cts = True
-        else:
-            rts_line = "0"
         if dev.startswith('OTG2'):
             f.write(
                 '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU2, true, false, 0, 0, false, 0, 0}\n'
@@ -1160,14 +1158,16 @@ def write_I2C_config(f):
             error("Bad I2C_ORDER element %s" % dev)
         n = int(dev[3:])
         devlist.append('HAL_I2C%u_CONFIG' % n)
+        sda_line = make_line('I2C%u_SDA' % n)
+        scl_line = make_line('I2C%u_SCL' % n)
         f.write('''
 #if defined(STM32_I2C_I2C%u_RX_DMA_STREAM) && defined(STM32_I2C_I2C%u_TX_DMA_STREAM)
-#define HAL_I2C%u_CONFIG { &I2CD%u, STM32_I2C_I2C%u_RX_DMA_STREAM, STM32_I2C_I2C%u_TX_DMA_STREAM, HAL_GPIO_PIN_I2C%u_SCL, HAL_GPIO_PIN_I2C%u_SDA }
+#define HAL_I2C%u_CONFIG { &I2CD%u, STM32_I2C_I2C%u_RX_DMA_STREAM, STM32_I2C_I2C%u_TX_DMA_STREAM, %s, %s }
 #else
-#define HAL_I2C%u_CONFIG { &I2CD%u, SHARED_DMA_NONE, SHARED_DMA_NONE, HAL_GPIO_PIN_I2C%u_SCL, HAL_GPIO_PIN_I2C%u_SDA }
+#define HAL_I2C%u_CONFIG { &I2CD%u, SHARED_DMA_NONE, SHARED_DMA_NONE, %s, %s }
 #endif
 '''
-            % (n, n, n, n, n, n, n, n, n, n, n, n))
+            % (n, n, n, n, n, n, scl_line, sda_line, n, n, scl_line, sda_line))
     f.write('\n#define HAL_I2C_DEVICE_LIST %s\n\n' % ','.join(devlist))
 
 def parse_timer(str):
@@ -1758,7 +1758,10 @@ def process_line(line):
 
         if a[0] in config:
             error("Pin %s redefined" % a[0])
-    
+
+    if p is None and line.find('ALT(') != -1:
+        error("ALT() invalid for %s" % a[0])
+
     config[a[0]] = a[1:]
     if p is not None:
         # add to set of pins for primary config
