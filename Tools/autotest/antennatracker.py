@@ -18,6 +18,7 @@ from pymavlink import mavutil
 
 from common import AutoTest
 from common import NotAchievedException
+from common import AutoTestTimeoutException
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
@@ -160,6 +161,91 @@ class AutoTestTracker(AutoTest):
                                           timeout=90,
                                           comparator=operator.le)
 
+    def send_vehicle_position(self, loc, vehicle_pressure):
+        # send global-position-int and scaled-pressure messages
+        self.mav.mav.global_position_int_send(
+            0, # time_boot_ms
+            int(loc.lat * 1e7),
+            int(loc.lng * 1e7),
+            int(loc.alt * 1000),
+            0, # relative alt....
+            0, # Ground X Speed
+            0, # Ground Y Speed
+            0, # Ground Z Speed
+            65535 # HDG
+        )
+        self.mav.mav.scaled_pressure_send(
+            0, # time_boot_ms
+            vehicle_pressure["pressure"], # press-abs
+            0, # press-diff
+            vehicle_pressure["temperature"] # temperature
+        )
+
+    def tracking(self):
+        self.progress("SERVO1_MIN: %f" % self.get_parameter("SERVO1_MIN"))
+        self.progress("YAW_RANGE: %f" % self.get_parameter("YAW_RANGE"))
+        self.set_parameter("SYSID_TARGET", 0)
+        self.delay_sim_time(100)
+        self.change_mode("AUTO")
+        self.wait_ready_to_arm()
+
+        vehicle_gpi = self.mav.recv_match(type='GLOBAL_POSITION_INT',
+                                          blocking=True)
+        # remember that the simulated vehicle's zero is at heading 270
+        vehicle_locs = [
+            # ((n, e, d), (p, hdg))
+            ((0, -20, 0), (0, -90)),
+            ((20, -20, 0), (0, -45)),
+            ((-20, -20, 0), (0, -135)),
+            ((30, -40, 0), (0, -53)),
+            ((-30, -40, 0), (0, -126)),
+            # ((20, 0, 0), (0, 0)),
+            # ((20, 20, -20), (45, 45)),
+            # ((20, 30, -20), (61, 43)),
+            # ((20, 90, -20), (-11, 85)),
+        ]
+        for vehicle_loc in vehicle_locs:
+            ((vehicle_loc_offset_n,
+              vehicle_loc_offset_e,
+              vehicle_loc_offset_d),
+             (despitch, desyaw)) = vehicle_loc
+            self.start_subtest("New vehicle pos: %f,%f alt=%f" %
+                               (vehicle_gpi.lat, vehicle_gpi.lon, vehicle_gpi.alt))
+            vehicle_loc = mavutil.location(
+                vehicle_gpi.lat * 1.0e-7,
+                vehicle_gpi.lon * 1.0e-7,
+                vehicle_gpi.alt * 1e-3 - vehicle_loc_offset_d
+            )
+            if self.mavproxy is not None:
+                self.mavproxy.send("map icon %f %f hoop\n" %
+                                   (vehicle_loc.lat, vehicle_loc.lng))
+            self.location_offset_ne(vehicle_loc, vehicle_loc_offset_n, vehicle_loc_offset_e)
+            vehicle_sp = self.mav.recv_match(type='SCALED_PRESSURE',
+                                             blocking=True)
+            vehicle_pressure = {
+                "pressure": vehicle_sp.press_abs,
+                "temperature": vehicle_sp.temperature,
+            }
+            tstart = self.get_sim_time()
+            last_vehicle_position_message_sent = tstart
+            while True:
+                now = self.get_sim_time_cached()
+                if now - last_vehicle_position_message_sent > 0.1:
+                    self.send_vehicle_position(vehicle_loc, vehicle_pressure)
+                if now - tstart > 3000:
+                    raise NotAchievedException("Did not point at vehicle")
+                ex = None
+                try:
+                    self.wait_attitude(desyaw=desyaw,
+                                       despitch=despitch,
+                                       timeout=2,
+                                       tolerance=2)
+                except AutoTestTimeoutException as e:
+                    ex = e
+                if ex is None:
+                    # success
+                    break
+
     def disabled_tests(self):
         return {
             "ArmFeatures": "See https://github.com/ArduPilot/ardupilot/issues/10652",
@@ -181,6 +267,10 @@ class AutoTestTracker(AutoTest):
             ("SERVOTEST",
              "Test SERVOTEST mode",
              self.SERVOTEST),
+
+            ("Tracking",
+             "Test antenna tracking vehicle",
+             self.tracking),
 
             ("NMEAOutput",
              "Test AHRS NMEA Output can be read by out NMEA GPS",
