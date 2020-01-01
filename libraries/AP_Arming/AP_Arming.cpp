@@ -34,6 +34,7 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_Scripting/AP_Scripting.h>
 #include <AP_Camera/AP_RunCam.h>
+#include <AP_GyroFFT/AP_GyroFFT.h>
 
 #if HAL_WITH_UAVCAN
   #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
@@ -363,6 +364,15 @@ bool AP_Arming::ins_checks(bool report)
             check_failed(ARMING_CHECK_INS, report, "%s", failure_msg);
             return false;
         }
+
+#if HAL_GYROFFT_ENABLED
+        // Check that the noise analyser works
+        AP_GyroFFT *fft = AP::fft();
+        if (fft != nullptr && !fft->calibration_check()) {
+            check_failed(ARMING_CHECK_INS, report, "FFT self-test failed");
+            return false;
+        };
+#endif
     }
 
     return true;
@@ -949,6 +959,13 @@ bool AP_Arming::disarm()
         hal.rcout->force_safety_on();
     }
 #endif // HAL_HAVE_SAFETY_SWITCH
+
+#if HAL_GYROFFT_ENABLED
+    AP_GyroFFT *fft = AP::fft();
+    if (fft != nullptr) {
+        fft->save_params_on_disarm();
+    }
+#endif
 
     return true;
 }
