@@ -160,7 +160,8 @@ void AP_Scheduler::run(uint32_t time_available)
         const AP_Scheduler::Task& task = (i < _num_unshared_tasks) ? _tasks[i] : _common_tasks[i - _num_unshared_tasks];
 
         uint32_t dt = _tick_counter - _last_run[i];
-        uint32_t interval_ticks = _loop_rate_hz / task.rate_hz;
+        // we allow 0 to mean loop rate
+        uint32_t interval_ticks = (is_zero(task.rate_hz) ? 1 : _loop_rate_hz / task.rate_hz);
         if (interval_ticks < 1) {
             interval_ticks = 1;
         }
