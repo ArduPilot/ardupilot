@@ -39,8 +39,9 @@ extern const AP_HAL::HAL& hal;
 
 AP_Frsky_Telem *AP_Frsky_Telem::singleton;
 
-AP_Frsky_Telem::AP_Frsky_Telem(void) :
-  _statustext_queue(FRSKY_TELEM_PAYLOAD_STATUS_CAPACITY)
+AP_Frsky_Telem::AP_Frsky_Telem(bool _external_data) :
+    _statustext_queue(FRSKY_TELEM_PAYLOAD_STATUS_CAPACITY),
+    use_external_data(_external_data)
 {
     singleton = this;
 }
@@ -97,17 +98,6 @@ bool AP_Frsky_Telem::init()
     } else if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_SPort_Passthrough, 0))) {
         _protocol = AP_SerialManager::SerialProtocol_FrSky_SPort_Passthrough; // FrSky SPort and SPort Passthrough (OpenTX) protocols (X-receivers)
         setup_passthrough();
-    } else if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_RCIN, 0))) {
-        _protocol = AP_SerialManager::SerialProtocol_RCIN; // FrSky SPort over FPort
-        setup_passthrough();
-    }
-
-    if (_protocol == AP_SerialManager::SerialProtocol_RCIN) {
-        use_external_data = true;
-        setup_passthrough();
-        // we don't setup the thread, as output is driven by the AP_RCProtocol library
-        // calling get_telem_data();
-        return true;
     }
 
     if (_port != nullptr) {
@@ -1101,12 +1091,8 @@ uint32_t AP_Frsky_Telem::sensor_status_flags() const
 /*
   fetch Sport data for an external transport, such as FPort
  */
-bool AP_Frsky_Telem::get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &data)
+bool AP_Frsky_Telem::_get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &data)
 {
-    if (!use_external_data) {
-        // not initialised for external data
-        return false;
-    }
     passthrough_wfq_adaptive_scheduler(0);
     if (!external_data.pending) {
         return false;
@@ -1116,6 +1102,22 @@ bool AP_Frsky_Telem::get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &d
     data = external_data.data;
     external_data.pending = false;
     return true;
+}
+
+/*
+  fetch Sport data for an external transport, such as FPort
+ */
+bool AP_Frsky_Telem::get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &data)
+{
+    if (!singleton && !hal.util->get_soft_armed()) {
+        // if telem data is requested when we are disarmed and don't
+        // yet have a AP_Frsky_Telem object then try to allocate one
+        new AP_Frsky_Telem(true);
+    }
+    if (!singleton) {
+        return false;
+    }
+    return singleton->_get_telem_data(frame, appid, data);
 }
 
 namespace AP {
