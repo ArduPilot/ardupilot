@@ -84,7 +84,6 @@ baro_list = []
 
 mcu_type = None
 
-
 def is_int(str):
     '''check if a string is an integer'''
     try:
@@ -110,7 +109,7 @@ def get_mcu_lib(mcu):
 
 def setup_mcu_type_defaults():
     '''setup defaults for given mcu type'''
-    global pincount, ports, portmap, vtypes
+    global pincount, ports, portmap, vtypes, mcu_type
     lib = get_mcu_lib(mcu_type)
     if hasattr(lib, 'pincount'):
         pincount = lib.pincount
@@ -1723,6 +1722,7 @@ def romfs_wildcard(pattern):
 def process_line(line):
     '''process one line of pin definition file'''
     global allpins, imu_list, compass_list, baro_list
+    global mcu_type, mcu_series
     a = shlex.split(line)
     # keep all config lines for later use
     alllines.append(line)
@@ -1772,7 +1772,6 @@ def process_line(line):
         bytype[type].append(p)
         bylabel[label] = p
     elif a[0] == 'MCU':
-        global mcu_type, mcu_series
         mcu_type = a[2]
         mcu_series = a[1]
         setup_mcu_type_defaults()
