@@ -5,7 +5,6 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL/Semaphores.h>
 #include <AP_HAL/Device.h>
 
 #define TSYS01_ADDR 0x77
