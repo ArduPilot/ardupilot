@@ -1775,6 +1775,7 @@ void GCS::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const cha
         logger->Write_Message(text);
     }
 
+    frsky = AP::frsky_telem();
     if (frsky != nullptr) {
         frsky->queue_message(severity, text);
     }
