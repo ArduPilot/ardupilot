@@ -244,16 +244,25 @@ bool AC_Fence::check_fence_polygon()
 {
     const bool was_breached = _breached_fences & AC_FENCE_TYPE_POLYGON;
     const bool breached = ((_enabled_fences & AC_FENCE_TYPE_POLYGON) &&
-                           _poly_loader.breached());
+                           _poly_loader.breached());        
     if (breached) {
-        if (!was_breached) {
+        //get breach distance
+        _poly_breach_distance = _poly_loader.get_distance_breached_poly_fence();
+        
+        // check for a new breach or a breach of the backup fence
+        if ((!was_breached) || (((!is_zero(_poly_backup)) && _poly_breach_distance >= _poly_backup))) {
+            // new breach
             record_breach(AC_FENCE_TYPE_POLYGON);
+            // create a backup fence 20m further away
+             _poly_backup = _poly_breach_distance + AC_FENCE_POLY_BACKUP_DISTANCE;
             return true;
         }
         return false;
-    }
+    }   
     if (was_breached) {
         clear_breach(AC_FENCE_TYPE_POLYGON);
+        _poly_backup = 0.0f;
+        _poly_breach_distance = 0.0f;
     }
     return false;
 }
@@ -409,6 +418,9 @@ float AC_Fence::get_breach_distance(uint8_t fence_type) const
     }
     if (fence_type & AC_FENCE_TYPE_CIRCLE) {
         max = MAX(_circle_breach_distance, max);
+    }
+    if (fence_type & AC_FENCE_TYPE_POLYGON) {
+        max = MAX(_poly_breach_distance, max);
     }
     return max;
 }
