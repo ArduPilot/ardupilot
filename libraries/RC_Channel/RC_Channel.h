@@ -179,6 +179,7 @@ public:
         RUNCAM_OSD_CONTROL =  79, // control RunCam OSD
         VISODOM_CALIBRATE  =  80, // calibrate visual odometry camera's attitude
         DISARM =              81, // disarm vehicle
+        Q_ASSIST =            82, // disable, enable and force Q assist
         KILL_IMU1 =          100, // disable first IMU (for IMU failure testing)
         KILL_IMU2 =          101, // disable second IMU (for IMU failure testing)
         CAM_MODE_TOGGLE =    102, // Momentary switch to cycle camera modes
