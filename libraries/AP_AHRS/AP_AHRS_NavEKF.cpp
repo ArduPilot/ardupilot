@@ -1716,40 +1716,14 @@ bool AP_AHRS_NavEKF::get_variances(float &velVar, float &posVar, float &hgtVar, 
 
 void AP_AHRS_NavEKF::setTakeoffExpected(bool val)
 {
-    switch (ekf_type()) {
-        case EKF_TYPE2:
-        default:
-            EKF2.setTakeoffExpected(val);
-            break;
-
-        case EKF_TYPE3:
-            EKF3.setTakeoffExpected(val);
-            break;
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        case EKF_TYPE_SITL:
-            break;
-#endif
-    }
+    EKF2.setTakeoffExpected(val);
+    EKF3.setTakeoffExpected(val);
 }
 
 void AP_AHRS_NavEKF::setTouchdownExpected(bool val)
 {
-    switch (ekf_type()) {
-        case EKF_TYPE2:
-        default:
-            EKF2.setTouchdownExpected(val);
-            break;
-
-        case EKF_TYPE3:
-            EKF3.setTouchdownExpected(val);
-            break;
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        case EKF_TYPE_SITL:
-            break;
-#endif
-    }
+    EKF2.setTouchdownExpected(val);
+    EKF3.setTouchdownExpected(val);
 }
 
 bool AP_AHRS_NavEKF::getGpsGlitchStatus() const
