@@ -58,6 +58,26 @@ void RC_Channel_Plane::do_aux_function_change_mode(const Mode::Number number,
     }
 }
 
+void RC_Channel_Plane::do_aux_function_q_assist_state(aux_switch_pos_t ch_flag)
+{
+    switch(ch_flag) {
+        case HIGH:
+            gcs().send_text(MAV_SEVERITY_INFO, "QAssist: Force enabled");
+            plane.quadplane.set_q_assist_state(plane.quadplane.Q_ASSIST_STATE_ENUM::Q_ASSIST_FORCE);
+            break;
+
+        case MIDDLE:
+            gcs().send_text(MAV_SEVERITY_INFO, "QAssist: Enabled");
+            plane.quadplane.set_q_assist_state(plane.quadplane.Q_ASSIST_STATE_ENUM::Q_ASSIST_ENABLED);
+            break;
+
+        case LOW:
+            gcs().send_text(MAV_SEVERITY_INFO, "QAssist: Disabled");
+            plane.quadplane.set_q_assist_state(plane.quadplane.Q_ASSIST_STATE_ENUM::Q_ASSIST_DISABLED);
+            break;
+    }
+}
+
 void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
                                          const RC_Channel::aux_switch_pos_t ch_flag)
 {
@@ -72,6 +92,10 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
     case AUX_FUNC::MANUAL:
     case AUX_FUNC::RTL:
     case AUX_FUNC::TAKEOFF:
+        break;
+
+    case AUX_FUNC::Q_ASSIST:
+        do_aux_function(ch_option, ch_flag);
         break;
 
     case AUX_FUNC::REVERSE_THROTTLE:
@@ -135,6 +159,10 @@ void RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const aux_swi
 
     case AUX_FUNC::FLAP:
         break; // flap input label, nothing to do
+
+    case AUX_FUNC::Q_ASSIST:
+        do_aux_function_q_assist_state(ch_flag);
+        break;
 
     default:
         RC_Channel::do_aux_function(ch_option, ch_flag);
