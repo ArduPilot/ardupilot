@@ -92,7 +92,7 @@ class AutoTestSub(AutoTest):
                 self.progress('Altitude hold done: %f' % (previous_altitude))
                 return
             if abs(m.alt - previous_altitude) > delta:
-                raise NotAchievedException("Altitude not maintained: want %.2f (~%.2f) got=%.2f" % (m, delta, m.alt))
+                raise NotAchievedException("Altitude not maintained: want %.2f (+/- %.2f) got=%.2f" % (previous_altitude, delta, m.alt))
 
     def test_alt_hold(self):
         """Test ALT_HOLD mode
