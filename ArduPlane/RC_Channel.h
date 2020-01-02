@@ -17,6 +17,8 @@ private:
 
     void do_aux_function_change_mode(Mode::Number number,
                                      aux_switch_pos_t ch_flag);
+
+    void do_aux_function_q_assist_state(aux_switch_pos_t ch_flag);
 };
 
 class RC_Channels_Plane : public RC_Channels
