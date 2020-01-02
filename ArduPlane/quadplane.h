@@ -110,6 +110,9 @@ public:
     // return true when tailsitter frame configured
     bool is_tailsitter(void) const;
 
+    // return true when flying a control surface only tailsitter tailsitter
+    bool is_contol_surface_tailsitter(void) const;
+
     // return true when flying a tailsitter in VTOL
     bool tailsitter_active(void);
     
