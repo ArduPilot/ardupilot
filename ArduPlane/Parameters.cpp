@@ -359,7 +359,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: ARSPD_FBW_MAX
     // @DisplayName: Maximum Airspeed
-    // @Description: Maximum airspeed demanded in automatic throttle modes. Should be set slightly less than level flight speed at THR_MAX and also at least 50% above ARSPD_FBW_MAX to allow for accurate TECS altitude control.
+    // @Description: Maximum airspeed demanded in automatic throttle modes. Should be set slightly less than level flight speed at THR_MAX and also at least 50% above ARSPD_FBW_MIN to allow for accurate TECS altitude control.
     // @Units: m/s
     // @Range: 5 100
     // @Increment: 1
