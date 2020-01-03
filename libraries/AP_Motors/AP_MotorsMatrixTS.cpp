@@ -25,17 +25,6 @@ extern const AP_HAL::HAL& hal;
 
 #define SERVO_OUTPUT_RANGE  4500
 
-void AP_MotorsMatrixTS::output_to_motors()
-{
-    // calls calc_thrust_to_pwm(_thrust_rpyt_out[i]) for each enabled motor
-    AP_MotorsMatrix::output_to_motors();
-
-    // also actuate control surfaces
-    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron,  -_yaw_in * SERVO_OUTPUT_RANGE);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, _pitch_in * SERVO_OUTPUT_RANGE);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, _roll_in * SERVO_OUTPUT_RANGE);
-}
-
 // output_armed - sends commands to the motors
 // includes new scaling stability patch
 void AP_MotorsMatrixTS::output_armed_stabilizing()
