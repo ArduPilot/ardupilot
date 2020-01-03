@@ -54,7 +54,7 @@ public:
     bool lock_port(uint32_t write_key, uint32_t read_key) override;
 
     // control optional features
-    bool set_options(uint8_t options) override;
+    bool set_options(uint16_t options) override;
     uint8_t get_options(void) const override;
 
     // write to a locked port. If port is locked and key is not correct then 0 is returned
@@ -189,7 +189,7 @@ private:
     uint32_t _cr1_options;
     uint32_t _cr2_options;
     uint32_t _cr3_options;
-    uint8_t _last_options;
+    uint16_t _last_options;
 
     // half duplex control. After writing we throw away bytes for 4 byte widths to
     // prevent reading our own bytes back
@@ -231,6 +231,9 @@ private:
     void write_pending_bytes(void);
 
     void receive_timestamp_update(void);
+
+    // set SERIALn_OPTIONS for pullup/pulldown
+    void set_pushpull(uint16_t options);
 
     void thread_init();
     static void uart_thread(void *);
