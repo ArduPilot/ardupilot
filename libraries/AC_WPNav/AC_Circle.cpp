@@ -66,7 +66,7 @@ void AC_Circle::init(const Vector3f& center)
     calc_velocities(true);
 
     // set start angle from position
-    init_start_angle(false);
+    init_start_angle(true);
 }
 
 /// init - initialise circle controller setting center using stopping point and projecting out based on the copter's heading
