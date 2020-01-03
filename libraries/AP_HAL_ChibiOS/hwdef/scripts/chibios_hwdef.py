@@ -1122,6 +1122,8 @@ def write_UART_config(f):
     num_uarts = len(devlist)
     if 'IOMCU_UART' in config:
         num_uarts -= 1
+    if num_uarts > 8:
+        error("Exceeded max num UARTs of 8 (%u)" % num_uarts)
     f.write('#define HAL_UART_NUM_SERIAL_PORTS %u\n' % (num_uarts+num_empty_uarts))
 
 
