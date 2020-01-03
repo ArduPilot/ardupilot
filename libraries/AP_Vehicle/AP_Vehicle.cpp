@@ -49,6 +49,9 @@ void AP_Vehicle::init_vehicle()
 #if HAL_RUNCAM_ENABLED
     runcam.init();
 #endif
+#if HAL_HOTT_TELEM_ENABLED
+    hott_telem.init();
+#endif
 }
 
 AP_Vehicle *AP_Vehicle::_singleton = nullptr;
