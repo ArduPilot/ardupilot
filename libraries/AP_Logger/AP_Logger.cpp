@@ -241,7 +241,7 @@ static uint8_t count_commas(const char *string)
 /// return a unit name given its ID
 const char* AP_Logger::unit_name(const uint8_t unit_id)
 {
-    for(uint8_t i=0; i<unit_id; i++) {
+    for (uint8_t i=0; i<unit_id; i++) {
         if (_units[i].ID == unit_id) {
             return _units[i].unit;
         }
@@ -252,7 +252,7 @@ const char* AP_Logger::unit_name(const uint8_t unit_id)
 /// return a multiplier value given its ID
 double AP_Logger::multiplier_name(const uint8_t multiplier_id)
 {
-    for(uint8_t i=0; i<multiplier_id; i++) {
+    for (uint8_t i=0; i<multiplier_id; i++) {
         if (_multipliers[i].ID == multiplier_id) {
             return _multipliers[i].multiplier;
         }
@@ -1005,7 +1005,7 @@ bool AP_Logger::fill_log_write_logstructure(struct LogStructure &logstruct, cons
     // find log structure information corresponding to msg_type:
     struct log_write_fmt *f;
     for (f = log_write_fmts; f; f=f->next) {
-        if(f->msg_type == msg_type) {
+        if (f->msg_type == msg_type) {
             break;
         }
     }
