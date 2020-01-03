@@ -202,13 +202,15 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     }
 
 #ifndef HAL_UART_NODMA
-    if (rx_bounce_buf[0] == nullptr && sdef.dma_rx) {
-        rx_bounce_buf[0] = (uint8_t *)hal.util->malloc_type(RX_BOUNCE_BUFSIZE, AP_HAL::Util::MEM_DMA_SAFE);
+    if (!half_duplex && !(_last_options & OPTION_NODMA_RX)) {
+        if (rx_bounce_buf[0] == nullptr && sdef.dma_rx) {
+            rx_bounce_buf[0] = (uint8_t *)hal.util->malloc_type(RX_BOUNCE_BUFSIZE, AP_HAL::Util::MEM_DMA_SAFE);
+        }
+        if (rx_bounce_buf[1] == nullptr && sdef.dma_rx) {
+            rx_bounce_buf[1] = (uint8_t *)hal.util->malloc_type(RX_BOUNCE_BUFSIZE, AP_HAL::Util::MEM_DMA_SAFE);
+        }
     }
-    if (rx_bounce_buf[1] == nullptr && sdef.dma_rx) {
-        rx_bounce_buf[1] = (uint8_t *)hal.util->malloc_type(RX_BOUNCE_BUFSIZE, AP_HAL::Util::MEM_DMA_SAFE);
-    }
-    if (tx_bounce_buf == nullptr && sdef.dma_tx) {
+    if (tx_bounce_buf == nullptr && sdef.dma_tx && !(_last_options & OPTION_NODMA_TX)) {
         tx_bounce_buf = (uint8_t *)hal.util->malloc_type(TX_BOUNCE_BUFSIZE, AP_HAL::Util::MEM_DMA_SAFE);
         chVTObjectInit(&tx_timeout);
         tx_bounce_buf_ready = true;
@@ -1298,8 +1300,29 @@ uint64_t UARTDriver::receive_time_constraint_us(uint16_t nbytes)
     return last_receive_us;
 }
 
+/*
+ set user specified PULLUP/PULLDOWN options from SERIALn_OPTIONS
+*/
+void UARTDriver::set_pushpull(uint16_t options)
+{
+#if HAL_USE_SERIAL == TRUE && !defined(STM32F1)
+    if ((options & OPTION_PULLDOWN_RX) && sdef.rx_line) {
+        palLineSetPushPull(sdef.rx_line, PAL_PUSHPULL_PULLDOWN);
+    }
+    if ((options & OPTION_PULLDOWN_TX) && sdef.tx_line) {
+        palLineSetPushPull(sdef.tx_line, PAL_PUSHPULL_PULLDOWN);
+    }
+    if ((options & OPTION_PULLUP_RX) && sdef.rx_line) {
+        palLineSetPushPull(sdef.rx_line, PAL_PUSHPULL_PULLUP);
+    }
+    if ((options & OPTION_PULLUP_TX) && sdef.tx_line) {
+        palLineSetPushPull(sdef.tx_line, PAL_PUSHPULL_PULLUP);
+    }
+#endif
+}
+
 // set optional features, return true on success
-bool UARTDriver::set_options(uint8_t options)
+bool UARTDriver::set_options(uint16_t options)
 {
     if (sdef.is_usb) {
         // no options allowed on USB
@@ -1394,6 +1417,8 @@ bool UARTDriver::set_options(uint8_t options)
     } else {
         cr3 &= ~USART_CR3_HDSEL;
     }
+
+    set_pushpull(options);
 
     if (sd->usart->CR2 == cr2 &&
         sd->usart->CR3 == cr3) {
