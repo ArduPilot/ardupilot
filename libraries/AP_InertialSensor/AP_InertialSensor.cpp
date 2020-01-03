@@ -656,6 +656,7 @@ AP_InertialSensor_Backend *AP_InertialSensor::_find_backend(int16_t backend_id, 
 }
 
 bool AP_InertialSensor::set_gyro_window_size(uint16_t size) {
+#if HAL_WITH_DSP
     _gyro_window_size = size;
 
     // allocate FFT gyro window
@@ -676,7 +677,7 @@ bool AP_InertialSensor::set_gyro_window_size(uint16_t size) {
             }
         }
     }
-
+#endif
     return true;
 }
 
@@ -797,7 +798,8 @@ AP_InertialSensor::detect_backends(void)
     // IMUs defined by IMU lines in hwdef.dat
     HAL_INS_PROBE_LIST;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    ADD_BACKEND(AP_InertialSensor_SITL::detect(*this));
+    ADD_BACKEND(AP_InertialSensor_SITL::detect(*this, INS_SITL_SENSOR_A));
+    ADD_BACKEND(AP_InertialSensor_SITL::detect(*this, INS_SITL_SENSOR_B));
 #elif HAL_INS_DEFAULT == HAL_INS_HIL
     ADD_BACKEND(AP_InertialSensor_HIL::detect(*this));
 #elif AP_FEATURE_BOARD_DETECT
