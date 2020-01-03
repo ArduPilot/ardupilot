@@ -17,8 +17,6 @@ public:
         AP_Param::setup_object_defaults(this, var_info);
     };
 
-    virtual void        output_to_motors() override;
-
 protected:
     bool use_standard_matrix;    // True to use normal matrix mixers with yaw torque
 
