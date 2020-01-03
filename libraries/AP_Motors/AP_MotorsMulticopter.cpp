@@ -732,6 +732,9 @@ void AP_MotorsMulticopter::set_throttle_passthrough_for_esc_calibration(float th
 // the range 0 to 1
 void AP_MotorsMulticopter::output_motor_mask(float thrust, uint8_t mask, float rudder_dt)
 {
+    const int16_t pwm_min = get_pwm_output_min();
+    const int16_t pwm_range = get_pwm_output_max() - pwm_min;
+
     for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
             if (mask & (1U << i)) {
@@ -742,10 +745,10 @@ void AP_MotorsMulticopter::output_motor_mask(float thrust, uint8_t mask, float r
                  */
                 float diff_thrust = get_roll_factor(i) * rudder_dt * 0.5f;
                 set_actuator_with_slew(_actuator[i], thrust_to_actuator(thrust + diff_thrust));
-                int16_t pwm_output = get_pwm_output_min() + (get_pwm_output_max() - get_pwm_output_min()) * _actuator[i];
+                int16_t pwm_output = pwm_min + pwm_range * _actuator[i];
                 rc_write(i, pwm_output);
             } else {
-                rc_write(i, get_pwm_output_min());
+                rc_write(i, pwm_min);
             }
         }
     }

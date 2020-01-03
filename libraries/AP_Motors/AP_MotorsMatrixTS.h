@@ -19,8 +19,6 @@ public:
 
     virtual void        output_to_motors() override;
 
-    virtual void        output_motor_mask(float thrust, uint8_t mask, float rudder_dt) override;
-
 protected:
     bool enable_yaw_torque;    // differential torque for yaw control
 
