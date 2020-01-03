@@ -36,6 +36,7 @@
 #include <AP_SerialManager/AP_SerialManager.h>      // Serial manager library
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 #include <AP_Camera/AP_RunCam.h>
+#include <AP_Hott_Telem/AP_Hott_Telem.h>
 
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
 
@@ -187,6 +188,10 @@ protected:
     AP_AHRS_NavEKF ahrs{EKF2, EKF3};
 #else
     AP_AHRS_DCM ahrs;
+#endif
+
+#if HAL_HOTT_TELEM_ENABLED
+    AP_Hott_Telem hott_telem;
 #endif
 
     static const struct AP_Param::GroupInfo var_info[];
