@@ -20,7 +20,7 @@ public:
     virtual void        output_to_motors() override;
 
 protected:
-    bool enable_yaw_torque;    // differential torque for yaw control
+    bool use_standard_matrix;    // True to use normal matrix mixers with yaw torque
 
     // configures the motors for the defined frame_class and frame_type
     virtual void        setup_motors(motor_frame_class frame_class, motor_frame_type frame_type) override;

@@ -40,7 +40,7 @@ void AP_MotorsMatrixTS::output_to_motors()
 // includes new scaling stability patch
 void AP_MotorsMatrixTS::output_armed_stabilizing()
 {
-    if (enable_yaw_torque) {
+    if (use_standard_matrix) {
         AP_MotorsMatrix::output_armed_stabilizing();
         return;
     }
@@ -105,7 +105,7 @@ void AP_MotorsMatrixTS::setup_motors(motor_frame_class frame_class, motor_frame_
     }
 
     bool success = false;
-    enable_yaw_torque = true;
+    use_standard_matrix = true;
 
     switch (frame_class) {
 
@@ -118,15 +118,6 @@ void AP_MotorsMatrixTS::setup_motors(motor_frame_class frame_class, motor_frame_
             break;
         case MOTOR_FRAME_QUAD:
             switch (frame_type) {
-                case MOTOR_FRAME_TYPE_PLUS:
-                    // differential torque for yaw: rotation directions specified below
-                    add_motor(AP_MOTORS_MOT_1,  90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2);
-                    add_motor(AP_MOTORS_MOT_2, -90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4);
-                    add_motor(AP_MOTORS_MOT_3,   0, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1);
-                    add_motor(AP_MOTORS_MOT_4, 180, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3);
-
-                    success = true;
-                    break;
                 case MOTOR_FRAME_TYPE_NYT_PLUS:
                     // motors 1,2 on wings, motors 3,4 on vertical tail/subfin
                     // motors 1,2 are counter-rotating, as are motors 3,4
@@ -137,19 +128,10 @@ void AP_MotorsMatrixTS::setup_motors(motor_frame_class frame_class, motor_frame_
                     add_motor(AP_MOTORS_MOT_3,   0, 0, 1);
                     add_motor(AP_MOTORS_MOT_4, 180, 0, 3);
 
-                    enable_yaw_torque = false;
+                    use_standard_matrix = false;
                     success = true;
                     break;
-                case MOTOR_FRAME_TYPE_X:
-                    // PLUS_TS layout rotated 45 degrees about X axis
-                    // differential torque for yaw: rotation directions specified below
-                    add_motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1);
-                    add_motor(AP_MOTORS_MOT_2, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3);
-                    add_motor(AP_MOTORS_MOT_3,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4);
-                    add_motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2);
 
-                    success = true;
-                    break;
                 case MOTOR_FRAME_TYPE_NYT_X:
                     // PLUS_TS layout rotated 45 degrees about X axis
                     // no differential torque for yaw: wing and fin motors counter-rotating
@@ -158,17 +140,21 @@ void AP_MotorsMatrixTS::setup_motors(motor_frame_class frame_class, motor_frame_
                     add_motor(AP_MOTORS_MOT_3,  -45, 0, 4);
                     add_motor(AP_MOTORS_MOT_4,  135, 0, 2);
 
-                    enable_yaw_torque = false;
+                    use_standard_matrix = false;
                     success = true;
                     break;
                 default:
                     // matrixTS doesn't support the configured frame_type
-                    break;
+                    // try to use normal Matrix
+                    AP_MotorsMatrix::setup_motors(frame_class, frame_type);
+                    return;
             }
             break;
         default:
             // matrixTS doesn't support the configured frame_class
-            break;
+            // try to use normal Matrix
+            AP_MotorsMatrix::setup_motors(frame_class, frame_type);
+            return;
         } // switch frame_class
 
     // normalise factors to magnitude 0.5
