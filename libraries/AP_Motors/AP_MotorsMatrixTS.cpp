@@ -25,33 +25,6 @@ extern const AP_HAL::HAL& hal;
 
 #define SERVO_OUTPUT_RANGE  4500
 
-// output a thrust to all motors that match a given motor mask. This
-// is used to control motors enabled for forward flight. Thrust is in
-// the range 0 to 1
-void AP_MotorsMatrixTS::output_motor_mask(float thrust, uint8_t mask, float rudder_dt)
-{
-    const int16_t pwm_min = get_pwm_output_min();
-    const int16_t pwm_range = get_pwm_output_max() - pwm_min;
-
-    for (uint8_t i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
-        if (motor_enabled[i]) {
-            int16_t motor_out;
-            if (mask & (1U<<i)) {
-                /*
-                    apply rudder mixing differential thrust
-                    copter frame roll is plane frame yaw (this is only
-                    used by tiltrotors and tailsitters)
-                */
-                float diff_thrust = get_roll_factor(i) * rudder_dt * 0.5f;
-                motor_out = pwm_min + pwm_range * constrain_float(thrust + diff_thrust, 0.0f, 1.0f);
-            } else {
-                motor_out = pwm_min;
-            }
-            rc_write(i, motor_out);
-        }
-    }
-}
-
 void AP_MotorsMatrixTS::output_to_motors()
 {
     // calls calc_thrust_to_pwm(_thrust_rpyt_out[i]) for each enabled motor
