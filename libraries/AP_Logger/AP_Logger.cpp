@@ -236,7 +236,7 @@ static uint8_t count_commas(const char *string)
 /// return a unit name given its ID
 const char* AP_Logger::unit_name(const uint8_t unit_id)
 {
-    for(uint8_t i=0; i<unit_id; i++) {
+    for (uint8_t i=0; i<unit_id; i++) {
         if (_units[i].ID == unit_id) {
             return _units[i].unit;
         }
@@ -247,7 +247,7 @@ const char* AP_Logger::unit_name(const uint8_t unit_id)
 /// return a multiplier value given its ID
 double AP_Logger::multiplier_name(const uint8_t multiplier_id)
 {
-    for(uint8_t i=0; i<multiplier_id; i++) {
+    for (uint8_t i=0; i<multiplier_id; i++) {
         if (_multipliers[i].ID == multiplier_id) {
             return _multipliers[i].multiplier;
         }
@@ -588,24 +588,30 @@ void AP_Logger::set_vehicle_armed(const bool armed_state)
 
 
 // start functions pass straight through to backend:
-void AP_Logger::WriteBlock(const void *pBuffer, uint16_t size) {
+void AP_Logger::WriteBlock(const void *pBuffer, uint16_t size)
+{
     FOR_EACH_BACKEND(WriteBlock(pBuffer, size));
 }
 
-void AP_Logger::WriteCriticalBlock(const void *pBuffer, uint16_t size) {
+void AP_Logger::WriteCriticalBlock(const void *pBuffer, uint16_t size)
+{
     FOR_EACH_BACKEND(WriteCriticalBlock(pBuffer, size));
 }
 
-void AP_Logger::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical) {
+void AP_Logger::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
+{
     FOR_EACH_BACKEND(WritePrioritisedBlock(pBuffer, size, is_critical));
 }
 
 // change me to "DoTimeConsumingPreparations"?
-void AP_Logger::EraseAll() {
+void AP_Logger::EraseAll() 
+{
     FOR_EACH_BACKEND(EraseAll());
 }
+
 // change me to "LoggingAvailable"?
-bool AP_Logger::CardInserted(void) {
+bool AP_Logger::CardInserted(void)
+{
     for (uint8_t i=0; i< _next_backend; i++) {
         if (backends[i]->CardInserted()) {
             return true;
@@ -614,7 +620,8 @@ bool AP_Logger::CardInserted(void) {
     return false;
 }
 
-void AP_Logger::Prep() {
+void AP_Logger::Prep()
+{
     FOR_EACH_BACKEND(Prep());
 }
 
@@ -623,31 +630,40 @@ void AP_Logger::StopLogging()
     FOR_EACH_BACKEND(stop_logging());
 }
 
-uint16_t AP_Logger::find_last_log() const {
+uint16_t AP_Logger::find_last_log() const
+{
     if (_next_backend == 0) {
         return 0;
     }
     return backends[0]->find_last_log();
 }
-void AP_Logger::get_log_boundaries(uint16_t log_num, uint32_t & start_page, uint32_t & end_page) {
+
+void AP_Logger::get_log_boundaries(uint16_t log_num, uint32_t & start_page, uint32_t & end_page)
+{
     if (_next_backend == 0) {
         return;
     }
     backends[0]->get_log_boundaries(log_num, start_page, end_page);
 }
-void AP_Logger::get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc) {
+
+void AP_Logger::get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc)
+{
     if (_next_backend == 0) {
         return;
     }
     backends[0]->get_log_info(log_num, size, time_utc);
 }
-int16_t AP_Logger::get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) {
+
+int16_t AP_Logger::get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data)
+{
     if (_next_backend == 0) {
         return 0;
     }
     return backends[0]->get_log_data(log_num, page, offset, len, data);
 }
-uint16_t AP_Logger::get_num_logs(void) {
+
+uint16_t AP_Logger::get_num_logs(void)
+{
     if (_next_backend == 0) {
         return 0;
     }
@@ -655,7 +671,8 @@ uint16_t AP_Logger::get_num_logs(void) {
 }
 
 /* we're started if any of the backends are started */
-bool AP_Logger::logging_started(void) {
+bool AP_Logger::logging_started(void)
+{
     for (uint8_t i=0; i< _next_backend; i++) {
         if (backends[i]->logging_started()) {
             return true;
@@ -682,14 +699,16 @@ void AP_Logger::handle_mavlink_msg(GCS_MAVLINK &link, const mavlink_message_t &m
     }
 }
 
-void AP_Logger::periodic_tasks() {
+void AP_Logger::periodic_tasks()
+{
     handle_log_send();
     FOR_EACH_BACKEND(periodic_tasks());
 }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     // currently only AP_Logger_File support this:
-void AP_Logger::flush(void) {
+void AP_Logger::flush(void)
+{
      FOR_EACH_BACKEND(flush());
 }
 #endif
@@ -998,7 +1017,7 @@ bool AP_Logger::fill_log_write_logstructure(struct LogStructure &logstruct, cons
     // find log structure information corresponding to msg_type:
     struct log_write_fmt *f;
     for (f = log_write_fmts; f; f=f->next) {
-        if(f->msg_type == msg_type) {
+        if (f->msg_type == msg_type) {
             break;
         }
     }
