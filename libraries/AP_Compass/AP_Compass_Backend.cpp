@@ -34,11 +34,6 @@ void AP_Compass_Backend::rotate_field(Vector3f &mag, uint8_t instance)
 void AP_Compass_Backend::publish_raw_field(const Vector3f &mag, uint8_t instance)
 {
     Compass::mag_state &state = _compass._state[instance];
-
-    // note that we do not set last_update_usec here as otherwise the
-    // EKF and DCM would end up consuming compass data at the full
-    // sensor rate. We want them to consume only the filtered fields
-    state.last_update_ms = AP_HAL::millis();
 #if COMPASS_CAL_ENABLED
     _compass._calibrator[instance].new_sample(mag);
 #endif
