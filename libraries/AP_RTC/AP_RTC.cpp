@@ -63,6 +63,7 @@ void AP_RTC::set_utc_usec(uint64_t time_utc_usec, source_type type)
         // can't allow time to go backwards, ever
         return;
     }
+    WITH_SEMAPHORE(rsem);
 
     rtc_shift = tmp;
 
