@@ -429,7 +429,7 @@ bool AP_Arming::compass_checks(bool report)
         // check for unreasonable mag field length
         const float mag_field = _compass.get_field().length();
         if (mag_field > AP_ARMING_COMPASS_MAGFIELD_MAX || mag_field < AP_ARMING_COMPASS_MAGFIELD_MIN) {
-            check_failed(ARMING_CHECK_COMPASS, report, "Check mag field");
+            check_failed(ARMING_CHECK_COMPASS, report, "Check mag field: %4.0f, max %d, min %d", (double)mag_field, AP_ARMING_COMPASS_MAGFIELD_MAX, AP_ARMING_COMPASS_MAGFIELD_MIN);
             return false;
         }
 
