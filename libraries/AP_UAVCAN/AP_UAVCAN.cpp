@@ -32,6 +32,7 @@
 #include <uavcan/equipment/actuator/Status.hpp>
 
 #include <uavcan/equipment/esc/RawCommand.hpp>
+#include <uavcan/equipment/esc/Status.hpp>
 #include <uavcan/equipment/indication/LightsCommand.hpp>
 #include <uavcan/equipment/indication/SingleLightCommand.hpp>
 #include <uavcan/equipment/indication/BeepCommand.hpp>
@@ -123,6 +124,10 @@ static uavcan::Subscriber<ardupilot::equipment::trafficmonitor::TrafficReport, T
 // handler actuator status
 UC_REGISTRY_BINDER(ActuatorStatusCb, uavcan::equipment::actuator::Status);
 static uavcan::Subscriber<uavcan::equipment::actuator::Status, ActuatorStatusCb> *actuator_status_listener[MAX_NUMBER_OF_CAN_DRIVERS];
+
+// handler ESC status
+UC_REGISTRY_BINDER(ESCStatusCb, uavcan::equipment::esc::Status);
+static uavcan::Subscriber<uavcan::equipment::esc::Status, ESCStatusCb> *esc_status_listener[MAX_NUMBER_OF_CAN_DRIVERS];
 
 
 AP_UAVCAN::AP_UAVCAN() :
@@ -281,6 +286,11 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     actuator_status_listener[driver_index] = new uavcan::Subscriber<uavcan::equipment::actuator::Status, ActuatorStatusCb>(*_node);
     if (actuator_status_listener[driver_index]) {
         actuator_status_listener[driver_index]->start(ActuatorStatusCb(this, &handle_actuator_status));
+    }
+
+    esc_status_listener[driver_index] = new uavcan::Subscriber<uavcan::equipment::esc::Status, ESCStatusCb>(*_node);
+    if (esc_status_listener[driver_index]) {
+        esc_status_listener[driver_index]->start(ESCStatusCb(this, &handle_ESC_status));
     }
     
     _led_conf.devices_count = 0;
@@ -734,6 +744,23 @@ void AP_UAVCAN::handle_actuator_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, co
                                    cb.msg->force,
                                    cb.msg->speed,
                                    cb.msg->power_rating_pct);
+}
+
+/*
+  handle ESC status message
+ */
+void AP_UAVCAN::handle_ESC_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ESCStatusCb &cb)
+{
+    // log as CESC message
+    AP::logger().Write_ESCStatus(AP_HAL::micros64(),
+                                 cb.msg->esc_index,
+                                 cb.msg->error_count,
+                                 cb.msg->voltage,
+                                 cb.msg->current,
+                                 cb.msg->temperature - C_TO_KELVIN,
+                                 cb.msg->rpm,
+                                 cb.msg->power_rating_pct);
+
 }
 
 #endif // HAL_WITH_UAVCAN
