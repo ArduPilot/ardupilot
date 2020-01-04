@@ -1,6 +1,6 @@
 #pragma once
 
-/// @file	AC_PID_2D.h
+/// @file	AC_PID_1D.h
 /// @brief	Generic PID algorithm, with EEPROM-backed storage of constants.
 
 #include <AP_Common/AP_Common.h>
@@ -9,18 +9,18 @@
 #include <cmath>
 #include <AP_Logger/AP_Logger.h>
 
-#define AC_PID_2D_FILT_HZ_DEFAULT  20.0f   // default input filter frequency
-#define AC_PID_2D_FILT_HZ_MIN      0.01f   // minimum input filter frequency
-#define AC_PID_2D_FILT_D_HZ_DEFAULT  10.0f   // default input filter frequency
-#define AC_PID_2D_FILT_D_HZ_MIN      0.005f   // minimum input filter frequency
+#define AC_PID_1D_FILT_HZ_DEFAULT  20.0f   // default input filter frequency
+#define AC_PID_1D_FILT_HZ_MIN      0.01f   // minimum input filter frequency
+#define AC_PID_1D_FILT_D_HZ_DEFAULT  10.0f   // default input filter frequency
+#define AC_PID_1D_FILT_D_HZ_MIN      0.005f   // minimum input filter frequency
 
-/// @class	AC_PID_2D
+/// @class	AC_PID_1D
 /// @brief	Copter PID control class
-class AC_PID_2D {
+class AC_PID_1D {
 public:
 
     // Constructor for PID
-    AC_PID_2D(float initial_p, float initial_i, float initial_d, float initial_ff, float initial_imax, float initial_filt_hz, float initial_filt_d_hz, float dt);
+    AC_PID_1D(float initial_p, float initial_i, float initial_d, float initial_ff, float initial_imax, float initial_filt_hz, float initial_filt_d_hz, float dt);
 
     // set_dt - set time step in seconds
     void        set_dt(float dt);
@@ -29,20 +29,19 @@ public:
     //  target and error are filtered
     //  the derivative is then calculated and filtered
     //  the integral is then updated based on the setting of the limit flag
-    Vector2f update_all(float target_x, float target_y, Vector2f measurement, bool limit = false);
-    Vector2f update_all(float target_x, float target_y, Vector3f measurement, bool limit = false){return update_all(target_x, target_y, Vector2f(measurement.x, measurement.y), limit);}
+    float update_all(float target, float measurement, bool limit = false) {return update_all(target, measurement, (limit && is_negative(_integrator)), (limit && is_positive(_integrator)));};
+    float update_all(float target, float measurement, bool limit_neg, bool limit_pos);
 
     //  update_i - update the integral
     //  if the limit flag is set the integral is only allowed to shrink
-    void update_i(bool limit);
+    void update_i(bool limit_neg, bool limit_pos);
 
     // get_pi - get results from pid controller
-    Vector2f get_p() const;
-    Vector2f get_i() const;
-    Vector2f get_d() const;
-    Vector2f get_ff();
-    Vector2f get_error() const {return _error;}
-    float get_error_mag() const {return _error.length();}
+    float get_p() const;
+    float get_i() const;
+    float get_d() const;
+    float get_ff();
+    float get_error() const {return _error;}
 
     // reset_I - reset the integrator
     void        reset_I();
@@ -83,13 +82,11 @@ public:
     void filt_D_hz(const float v);
 
     // integrator setting functions
-    void set_integrator(Vector2f target, Vector2f measurement, Vector2f i);
-    void set_integrator(Vector2f error, Vector2f i);
-    void set_integrator(Vector3f i) { set_integrator(Vector2f(i.x, i.y)); }
-    void set_integrator(Vector2f i);
+    void set_integrator(float target, float measurement, float i);
+    void set_integrator(float error, float i);
+    void set_integrator(float i);
 
-    const AP_Logger::PID_Info& get_pid_info_x(void) const { return _pid_info_x; }
-    const AP_Logger::PID_Info& get_pid_info_y(void) const { return _pid_info_y; }
+    const AP_Logger::PID_Info& get_pid_info(void) const { return _pid_info; }
 
     // parameter var table
     static const struct AP_Param::GroupInfo        var_info[];
@@ -112,11 +109,10 @@ protected:
 
     // internal variables
     float           _dt;            // timestep in seconds
-    Vector2f        _target;        // target value to enable filtering
-    Vector2f        _error;         // error value to enable filtering
-    Vector2f        _derivative;    // last derivative for low-pass filter
-    Vector2f        _integrator;    // integrator value
+    float        _target;        // target value to enable filtering
+    float        _error;         // error value to enable filtering
+    float        _derivative;    // last derivative for low-pass filter
+    float        _integrator;    // integrator value
 
-    AP_Logger::PID_Info _pid_info_x;
-    AP_Logger::PID_Info _pid_info_y;
+    AP_Logger::PID_Info _pid_info;
 };
