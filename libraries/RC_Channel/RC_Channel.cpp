@@ -966,10 +966,14 @@ bool RC_Channel::read_3pos_switch(RC_Channel::aux_switch_pos_t &ret) const
     if (in <= 900 or in >= 2200) {
         return false;
     }
+    
+    // switch is reversed if 'reversed' option set on channel and switches reverse is allowed by RC_OPTIONS
+    bool switch_reversed = reversed && rc().switch_reverse_allowed();
+    
     if (in < AUX_PWM_TRIGGER_LOW) {
-        ret = LOW;
+        ret = switch_reversed ? HIGH : LOW;
     } else if (in > AUX_PWM_TRIGGER_HIGH) {
-        ret = HIGH;
+        ret = switch_reversed ? LOW : HIGH;
     } else {
         ret = MIDDLE;
     }
