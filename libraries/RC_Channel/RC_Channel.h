@@ -358,6 +358,11 @@ public:
         return get_singleton() != nullptr && (_options & uint32_t(Option::FPORT_PAD));
     }
 
+    // should a channel reverse option affect aux switches
+    bool switch_reverse_allowed(void) const {
+        return get_singleton() != nullptr && (_options & uint32_t(Option::ALLOW_SWITCH_REV));
+    }
+
     bool ignore_overrides() const {
         return _options & uint32_t(Option::IGNORE_OVERRIDES);
     }
@@ -381,7 +386,7 @@ public:
     float override_timeout_ms() const {
         return _override_timeout.get() * 1e3f;
     }
-
+    
     /*
       get the RC input PWM value given a channel number.  Note that
       channel numbers start at 1, as this API is designed for use in
@@ -401,6 +406,7 @@ protected:
         LOG_DATA              = (1 << 4), // log rc input bytes
         ARMING_CHECK_THROTTLE = (1 << 5), // run an arming check for neutral throttle
         ARMING_SKIP_CHECK_RPY = (1 << 6), // skip the an arming checks for the roll/pitch/yaw channels
+        ALLOW_SWITCH_REV      = (1 << 7), // honor the reversed flag on switches
     };
 
     void new_override_received() {
