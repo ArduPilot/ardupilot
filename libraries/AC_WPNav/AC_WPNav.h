@@ -3,6 +3,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_Math/scurves.h>
 #include <AP_Common/Location.h>
 #include <AP_InertialNav/AP_InertialNav.h>     // Inertial Navigation library
 #include <AC_AttitudeControl/AC_PosControl.h>      // Position control library
@@ -108,6 +109,7 @@ public:
     /// set_wp_destination waypoint using location class
     ///     returns false if conversion from location to vector from ekf origin cannot be calculated
     bool set_wp_destination(const Location& destination);
+    bool set_wp_destination_next(const Location& destination);
 
     // returns wp location using location class.
     // returns false if unable to convert from target vector to global
@@ -121,6 +123,7 @@ public:
     /// set_wp_destination waypoint using position vector (distance from ekf origin in cm)
     ///     terrain_alt should be true if destination.z is a desired altitude above terrain
     bool set_wp_destination(const Vector3f& destination, bool terrain_alt = false);
+    bool set_wp_destination_next(const Vector3f& destination, bool terrain_alt = false);
 
     /// set waypoint destination using NED position vector from ekf origin in meters
     bool set_wp_destination_NED(const Vector3f& destination_NED);
@@ -184,6 +187,7 @@ public:
 
     // get target yaw in centi-degrees (used for wp and spline navigation)
     float get_yaw() const;
+    float get_yaw_rate() const;
 
     /// set_spline_destination waypoint using location class
     ///     returns false if conversion from location to vector from ekf origin cannot be calculated
@@ -278,6 +282,7 @@ protected:
 
     // set heading used for spline and waypoint navigation
     void set_yaw_cd(float heading_cd);
+    void set_yaw_cds(float heading_cd);
 
     // references and pointers to external libraries
     const AP_InertialNav&   _inav;
@@ -292,17 +297,26 @@ protected:
     AP_Float    _wp_speed_down_cms;     // default maximum descent rate in cm/s
     AP_Float    _wp_radius_cm;          // distance from a waypoint in cm that, when crossed, indicates the wp has been reached
     AP_Float    _wp_accel_cmss;          // horizontal acceleration in cm/s/s during missions
+    AP_Float    _wp_jerk;
     AP_Float    _wp_accel_z_cmss;        // vertical acceleration in cm/s/s during missions
+
+//    scurve
+    scurves _scurve_last_leg;
+    scurves _scurve_this_leg;
+    scurves _scurve_next_leg;
 
     // waypoint controller internal variables
     uint32_t    _wp_last_update;        // time of last update_wpnav call
     Vector3f    _origin;                // starting point of trip to next waypoint in cm from ekf origin
     Vector3f    _destination;           // target destination in cm from ekf origin
     Vector3f    _pos_delta_unit;        // each axis's percentage of the total track from origin to destination
+    Vector3f    _pos_delta_unit_next;        // each axis's percentage of the total track from origin to destination
+    Vector3f    _pos_delta_unit_last;   // each axis's percentage of the total track from origin to destination
     float       _track_error_xy;        // horizontal error of the actual position vs the desired position
     float       _track_length;          // distance in cm between origin and destination
     float       _track_length_xy;       // horizontal distance in cm between origin and destination
     float       _track_desired;         // our desired distance along the track in cm
+    float       _track_scaler_dt;       // our desired distance along the track in cm
     float       _limited_speed_xy_cms;  // horizontal speed in cm/s used to advance the intermediate target towards the destination.  used to limit extreme acceleration after passing a waypoint
     float       _track_accel;           // acceleration along track
     float       _track_speed;           // speed in cm/s along track
@@ -317,6 +331,7 @@ protected:
     Vector3f    _hermite_spline_solution[4]; // array describing spline path between origin and destination
     float       _spline_vel_scaler;	    //
     float       _yaw;                   // heading according to yaw
+    float       _yaw_rate;
 
     // terrain following variables
     bool        _terrain_alt;   // true if origin and destination.z are alt-above-terrain, false if alt-above-ekf-origin
