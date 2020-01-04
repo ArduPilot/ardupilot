@@ -1,27 +1,27 @@
 /// @file	AC_PI_2D.cpp
-/// @brief	Generic PID algorithm
+/// @brief	2-axis PI controller
 
 #include <AP_Math/AP_Math.h>
 #include "AC_PI_2D.h"
 
 const AP_Param::GroupInfo AC_PI_2D::var_info[] = {
     // @Param: P
-    // @DisplayName: PID Proportional Gain
+    // @DisplayName: PI Proportional Gain
     // @Description: P Gain which produces an output value that is proportional to the current error value
     AP_GROUPINFO("P",    0, AC_PI_2D, _kp, 0),
 
     // @Param: I
-    // @DisplayName: PID Integral Gain
+    // @DisplayName: PI Integral Gain
     // @Description: I Gain which produces an output that is proportional to both the magnitude and the duration of the error
     AP_GROUPINFO("I",    1, AC_PI_2D, _ki, 0),
 
     // @Param: IMAX
-    // @DisplayName: PID Integral Maximum
+    // @DisplayName: PI Integral Maximum
     // @Description: The maximum/minimum value that the I term can output
     AP_GROUPINFO("IMAX", 2, AC_PI_2D, _imax, 0),
 
     // @Param: FILT_HZ
-    // @DisplayName: PID Input filter frequency in Hz
+    // @DisplayName: PI Input filter frequency in Hz
     // @Description: Input filter frequency in Hz
     // @Units: Hz
     AP_GROUPINFO("FILT_HZ", 3, AC_PI_2D, _filt_hz, AC_PI_2D_FILT_HZ_DEFAULT),
@@ -101,7 +101,7 @@ Vector2f AC_PI_2D::get_i()
         }
         return _integrator;
     }
-    return Vector2f();
+    return Vector2f{};
 }
 
 // get_i_shrink - get_i but do not allow integrator to grow in length (it may shrink)
@@ -116,7 +116,7 @@ Vector2f AC_PI_2D::get_i_shrink()
         }
         return _integrator;
     }
-    return Vector2f();
+    return Vector2f{};
 }
 
 Vector2f AC_PI_2D::get_pi()
