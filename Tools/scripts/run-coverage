@@ -18,6 +18,8 @@ TIMEOUT=14400
 
 OPTS="--speedup=$SPEEDUP --timeout=$TIMEOUT --debug --no-clean"
 
+rm -rf build
+
 # Run examples
 ./waf configure --board=linux --debug
 ./waf examples
