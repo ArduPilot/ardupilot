@@ -1528,6 +1528,10 @@ LOG_STRUCTURE_FROM_CAMERA \
       "PIDA", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }, \
     { LOG_PIDS_MSG, sizeof(log_PID), \
       "PIDS", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }, \
+    { LOG_PIDN_MSG, sizeof(log_PID), \
+      "PIDN", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }, \
+    { LOG_PIDE_MSG, sizeof(log_PID), \
+      "PIDE", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }, \
     { LOG_DSTL_MSG, sizeof(log_DSTL), \
       "DSTL", "QBfLLeccfeffff", "TimeUS,Stg,THdg,Lat,Lng,Alt,XT,Travel,L1I,Loiter,Des,P,I,D", "s??DUm--------", "F??000--------" }, \
     { LOG_VIBE_MSG, sizeof(log_Vibe), \
@@ -1645,6 +1649,8 @@ enum LogMessages : uint8_t {
     LOG_PIDY_MSG,
     LOG_PIDA_MSG,
     LOG_PIDS_MSG,
+    LOG_PIDN_MSG,
+    LOG_PIDE_MSG,
     LOG_DSTL_MSG,
     LOG_VIBE_MSG,
     LOG_RPM_MSG,
