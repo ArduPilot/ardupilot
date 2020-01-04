@@ -11,7 +11,7 @@ bool AC_WPNav_OA::get_oa_wp_destination(Location& destination) const
 {
     // if oa inactive return unadjusted location
     if (_oa_state == AP_OAPathPlanner::OA_NOT_REQUIRED) {
-        return get_wp_destination(destination);
+        return get_wp_destination_loc(destination);
     }
 
     // return latest destination provided by oa path planner
@@ -19,12 +19,12 @@ bool AC_WPNav_OA::get_oa_wp_destination(Location& destination) const
     return true;
 }
 
-/// set_origin_and_destination - set origin and destination waypoints using position vectors (distance from home in cm)
-///     terrain_alt should be true if origin.z and destination.z are desired altitudes above terrain (false if these are alt-above-ekf-origin)
+/// set_wp_destination waypoint using position vector (distance from ekf origin in cm)
+///     terrain_alt should be true if destination.z is a desired altitude above terrain
 ///     returns false on failure (likely caused by missing terrain data)
-bool AC_WPNav_OA::set_wp_origin_and_destination(const Vector3f& origin, const Vector3f& destination, bool terrain_alt)
+bool AC_WPNav_OA::set_wp_destination(const Vector3f& destination, bool terrain_alt)
 {
-    const bool ret = AC_WPNav::set_wp_origin_and_destination(origin, destination, terrain_alt);
+    const bool ret = AC_WPNav::set_wp_destination(destination, terrain_alt);
 
     if (ret) {
         // reset object avoidance state
