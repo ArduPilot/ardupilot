@@ -264,7 +264,7 @@ void AP_Logger_Block::validate_log_structure()
     uint16_t file = GetFileNumber();
     uint16_t first_file = file;
     uint16_t next_file = file;
-    uint16_t last_file;
+    uint16_t last_file = 0;
 
     while (file != 0xFFFF && page <= df_NumPages && (file == next_file || (wrapped && file < next_file))) {
         uint32_t end_page = find_last_page_of_log(file);
