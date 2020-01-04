@@ -105,6 +105,18 @@ public:
     // Sets and saves the yaw acceleration limit in centidegrees/s/s
     void save_accel_yaw_max(float accel_yaw_max) { _accel_yaw_max.set_and_save(accel_yaw_max); }
 
+    // get the roll angular velocity limit in radians/s
+    float get_ang_vel_roll_max() const { return _ang_vel_roll_max; }
+
+    // get the pitch angular velocity limit in radians/s
+    float get_ang_vel_pitch_max() const { return _ang_vel_pitch_max; }
+
+    // get the yaw angular velocity limit in radians/s
+    float get_ang_vel_yaw_max() const { return _ang_vel_yaw_max; }
+
+    // set the rate control input smoothing time constant
+    float get_input_tc() const { return _input_tc; }
+
     // set the rate control input smoothing time constant
     void set_input_tc(float input_tc) { _input_tc = constrain_float(input_tc, 0.0f, 1.0f); }
 
@@ -131,6 +143,9 @@ public:
 
     // Command an euler roll and pitch angle and an euler yaw rate with angular velocity feedforward and smoothing
     virtual void input_euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds);
+
+    // Command an euler roll and pitch angle and an euler yaw rate with angular velocity feedforward and smoothing
+    virtual void input_euler_angle_roll_pitch_yaw_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, float euler_yaw_rate_cds);
 
     // Command an euler roll, pitch and yaw angle with angular velocity feedforward and smoothing
     virtual void input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw);
@@ -173,6 +188,7 @@ public:
     // **NOTE** Using vector3f*deg(100) is more efficient than deg(vector3f)*100 or deg(vector3d*100) because it gives the
     // same result with the fewest multiplications. Even though it may look like a bug, it is intentional. See issue 4895.
     Vector3f get_att_target_euler_cd() const { return _attitude_target_euler_angle * degrees(100.0f); }
+    Vector3f get_att_target_euler() const { return _attitude_target_euler_angle; }
 
     // Return the body-to-NED target attitude used by the quadplane-specific attitude control input methods
     Quaternion get_attitude_target_quat() const { return _attitude_target_quat; }
@@ -384,6 +400,9 @@ protected:
     // the attitude controller as 321-intrinsic euler angle derivatives, in radians per
     // second.
     Vector3f            _attitude_target_euler_rate;
+
+    Vector3f            _attitude_desired_euler_rate;
+    Vector3f            _attitude_correction_euler_rate;
 
     // This represents a quaternion rotation in NED frame to the target (setpoint)
     // attitude used in the attitude controller.
