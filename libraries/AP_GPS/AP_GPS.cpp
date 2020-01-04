@@ -772,6 +772,8 @@ void AP_GPS::update_instance(uint8_t instance)
  */
 void AP_GPS::update(void)
 {
+    WITH_SEMAPHORE(rsem);
+
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
         update_instance(i);
     }

@@ -74,6 +74,11 @@ public:
         return _singleton;
     }
 
+    // allow threads to lock against GPS update
+    HAL_Semaphore &get_semaphore(void) {
+        return rsem;
+    }
+    
     // GPS driver types
     enum GPS_Type {
         GPS_TYPE_NONE  = 0,
@@ -488,6 +493,7 @@ protected:
 
 private:
     static AP_GPS *_singleton;
+    HAL_Semaphore_Recursive rsem;
 
     // returns the desired gps update rate in milliseconds
     // this does not provide any guarantee that the GPS is updating at the requested
