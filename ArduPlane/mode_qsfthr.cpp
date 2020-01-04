@@ -6,11 +6,15 @@ bool ModeQSFTHR::_enter()
     return plane.mode_qstabilize._enter();
 }
 
+// this update method differs from ModeQStabilize::update()
+// only in the roll_limit setting; it is higher since this is a more aerobatic
+// use case than qstabilize
+// TODO: add an argument to ModeQStabilize::update() instead of duplicating code
 void ModeQSFTHR::update()
 {
     // set nav_roll and nav_pitch using sticks
 
-    // use larger of Plane and quadplane roll limits
+    // use larger of Plane and quadplane roll limits (or just the plane limit)
     int16_t roll_limit = MAX(plane.roll_limit_cd, plane.quadplane.aparm.angle_max);
 
     float pitch_input = plane.channel_pitch->norm_input();
