@@ -222,6 +222,17 @@ void ModeAuto::wp_start(const Location& dest_loc)
     }
 }
 
+// auto_wp_start - initialises waypoint controller to implement flying to a particular destination
+void ModeAuto::wp_next(const Location& dest_loc)
+{
+    // send target to waypoint controller
+    if (!wp_nav->set_wp_destination_next(dest_loc)) {
+        // failure to set destination can only be because of missing terrain data
+        copter.failsafe_terrain_on_event();
+        return;
+    }
+}
+
 // auto_land_start - initialises controller to implement a landing
 void ModeAuto::land_start()
 {
@@ -779,7 +790,14 @@ void ModeAuto::wp_run()
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
     } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.yaw(), true);
+        attitude_control->input_euler_angle_roll_pitch_yaw_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), wp_nav->get_yaw(), wp_nav->get_yaw_rate());
+//        attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), wp_nav->get_yaw(), true);
+        AP::logger().Write("LEN3", "TimeUS,r,p,y,ry", "Qffff",
+                                                      AP_HAL::micros64(),
+                                                      (double)wp_nav->get_roll(),
+                                                      (double)wp_nav->get_pitch(),
+                                                      (double)wp_nav->get_yaw(),
+                                                      (double)wp_nav->get_yaw_rate());
     }
 }
 
@@ -866,7 +884,7 @@ void ModeAuto::circle_run()
         attitude_control->input_euler_angle_roll_pitch_yaw(copter.circle_nav->get_roll(), copter.circle_nav->get_pitch(), copter.circle_nav->get_yaw(), true);
     } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control->input_euler_angle_roll_pitch_yaw(copter.circle_nav->get_roll(), copter.circle_nav->get_pitch(), auto_yaw.yaw(), true);
+        attitude_control->input_euler_angle_roll_pitch_yaw_euler_rate_yaw(copter.circle_nav->get_roll(), copter.circle_nav->get_pitch(), auto_yaw.yaw(), true);
     }
 }
 
@@ -1142,11 +1160,12 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
                 // if next command's lat, lon is specified then do not slowdown at this waypoint
                 if ((temp_cmd.content.location.lat != 0) || (temp_cmd.content.location.lng != 0)) {
                     fast_waypoint = true;
+                    wp_next(loc_from_cmd(temp_cmd));
                 }
                 break;
             case MAV_CMD_NAV_RETURN_TO_LAUNCH:
                 // do not stop for RTL
-                fast_waypoint = true;
+//                fast_waypoint = true;
                 break;
             case MAV_CMD_NAV_TAKEOFF:
             default:
@@ -1269,10 +1288,6 @@ void ModeAuto::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
     pos_control->set_max_accel_z(wp_nav->get_accel_z());
     pos_control->set_max_speed_z(wp_nav->get_default_speed_down(),
                                  wp_nav->get_default_speed_up());
-
-    if (pos_control->is_active_z()) {
-        pos_control->freeze_ff_z();
-    }
 }
 
 // do_spline_wp - initiate move to next waypoint
