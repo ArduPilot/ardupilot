@@ -1,7 +1,7 @@
 #pragma once
 
 /// @file	AC_PD.h
-/// @brief	Generic PID algorithm, with EEPROM-backed storage of constants.
+/// @brief	Generic P controller with EEPROM-backed storage of constants.
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
