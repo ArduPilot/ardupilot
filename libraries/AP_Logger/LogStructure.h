@@ -951,6 +951,16 @@ struct PACKED log_Esc {
     int16_t motor_temp;
 };
 
+struct PACKED log_CSRV {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;     
+    uint8_t id;
+    float position;
+    float force;
+    float speed;
+    uint8_t power_pct;
+};
+
 struct PACKED log_AIRSPEED {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -1484,6 +1494,8 @@ struct PACKED log_Arm_Disarm {
       "ESC7",  ESC_FMT, ESC_LABELS, ESC_UNITS, ESC_MULTS }, \
     { LOG_ESC8_MSG, sizeof(log_Esc), \
       "ESC8",  ESC_FMT, ESC_LABELS, ESC_UNITS, ESC_MULTS }, \
+    { LOG_CSRV_MSG, sizeof(log_CSRV), \
+      "CSRV","QBfffB","TimeUS,Id,Pos,Force,Speed,Pow", "s#---%", "F-0000" }, \
     { LOG_COMPASS2_MSG, sizeof(log_Compass), \
       "MAG2",MAG_FMT,    MAG_LABELS, MAG_UNITS, MAG_MULTS }, \
     { LOG_COMPASS3_MSG, sizeof(log_Compass), \
@@ -1631,6 +1643,7 @@ enum LogMessages : uint8_t {
     LOG_ESC6_MSG,
     LOG_ESC7_MSG,
     LOG_ESC8_MSG,
+    LOG_CSRV_MSG,
     LOG_BAR2_MSG,
     LOG_ARSP_MSG,
     LOG_ATTITUDE_MSG,
