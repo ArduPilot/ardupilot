@@ -51,6 +51,7 @@
 #include <AP_OpticalFlow/AP_OpticalFlow_HereFlow.h>
 #include <AP_ADSB/AP_ADSB.h>
 #include "AP_UAVCAN_DNA_Server.h"
+#include <AP_Logger/AP_Logger.h>
 
 #define LED_DELAY_US 50000
 
@@ -118,6 +119,10 @@ static uavcan::Subscriber<ardupilot::indication::Button, ButtonCb> *safety_butto
 // handler TrafficReport
 UC_REGISTRY_BINDER(TrafficReportCb, ardupilot::equipment::trafficmonitor::TrafficReport);
 static uavcan::Subscriber<ardupilot::equipment::trafficmonitor::TrafficReport, TrafficReportCb> *traffic_report_listener[MAX_NUMBER_OF_CAN_DRIVERS];
+
+// handler actuator status
+UC_REGISTRY_BINDER(ActuatorStatusCb, uavcan::equipment::actuator::Status);
+static uavcan::Subscriber<uavcan::equipment::actuator::Status, ActuatorStatusCb> *actuator_status_listener[MAX_NUMBER_OF_CAN_DRIVERS];
 
 
 AP_UAVCAN::AP_UAVCAN() :
@@ -271,6 +276,11 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     traffic_report_listener[driver_index] = new uavcan::Subscriber<ardupilot::equipment::trafficmonitor::TrafficReport, TrafficReportCb>(*_node);
     if (traffic_report_listener[driver_index]) {
         traffic_report_listener[driver_index]->start(TrafficReportCb(this, &handle_traffic_report));
+    }
+
+    actuator_status_listener[driver_index] = new uavcan::Subscriber<uavcan::equipment::actuator::Status, ActuatorStatusCb>(*_node);
+    if (actuator_status_listener[driver_index]) {
+        actuator_status_listener[driver_index]->start(ActuatorStatusCb(this, &handle_actuator_status));
     }
     
     _led_conf.devices_count = 0;
@@ -710,6 +720,20 @@ void AP_UAVCAN::handle_traffic_report(AP_UAVCAN* ap_uavcan, uint8_t node_id, con
 
     vehicle.last_update_ms = AP_HAL::millis() - (vehicle.info.tslc * 1000);
     adsb->handle_adsb_vehicle(vehicle);
+}
+
+/*
+  handle actuator status message
+ */
+void AP_UAVCAN::handle_actuator_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ActuatorStatusCb &cb)
+{
+    // log as CSRV message
+    AP::logger().Write_ServoStatus(AP_HAL::micros64(),
+                                   cb.msg->actuator_id,
+                                   cb.msg->position,
+                                   cb.msg->force,
+                                   cb.msg->speed,
+                                   cb.msg->power_rating_pct);
 }
 
 #endif // HAL_WITH_UAVCAN
