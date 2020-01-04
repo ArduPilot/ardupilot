@@ -3647,9 +3647,18 @@ switch value'''
             "--uartF=tcpclient:127.0.0.1:6735", # serial5 spews to localhost:6735
         ])
         gps1 = self.mav.recv_match(type="GPS_RAW_INT", blocking=True, timeout=10)
+        self.progress("gps1=(%s)" % str(gps1))
         if gps1 is None:
             raise NotAchievedException("Did not receive GPS_RAW_INT")
-        gps2 = self.mav.recv_match(type="GPS2_RAW", blocking=True, timeout=10)
+        tstart = self.get_sim_time()
+        while True:
+            now = self.get_sim_time()
+            if now - tstart > 2:
+                raise NotAchievedException("NMEA output not updating?!")
+            gps2 = self.mav.recv_match(type="GPS2_RAW", blocking=True, timeout=10)
+            if gps2.time_usec != 0:
+                break
+        self.progress("gps2=(%s)" % str(gps2))
         if gps2 is None:
             raise NotAchievedException("Did not receive GPS2_RAW")
         if self.get_distance_int(gps1, gps2) > 1:
