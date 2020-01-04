@@ -816,6 +816,26 @@ void AP_Logger::Write_ServoStatus(uint64_t time_us, uint8_t id, float position, 
     WriteBlock(&pkt, sizeof(pkt));
 }
 
+/*
+  write ESC status from CAN ESC
+ */
+void AP_Logger::Write_ESCStatus(uint64_t time_us, uint8_t id, uint32_t error_count, float voltage, float current, float temperature, int32_t rpm, uint8_t power_pct)
+{
+    const struct log_CESC pkt {
+        LOG_PACKET_HEADER_INIT(LOG_CESC_MSG),
+        time_us     : time_us,
+        id          : id,
+        error_count : error_count,
+        voltage     : voltage,
+        current     : current,
+        temperature : temperature,
+        rpm         : rpm,
+        power_pct   : power_pct
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}
+
+
 // Write a Yaw PID packet
 void AP_Logger::Write_PID(uint8_t msg_type, const PID_Info &info)
 {
