@@ -799,6 +799,23 @@ void AP_Logger::Write_ESC(uint8_t id, uint64_t time_us, int32_t rpm, uint16_t vo
     WriteBlock(&pkt, sizeof(pkt));
 }
 
+/*
+  write servo status from CAN servo
+ */
+void AP_Logger::Write_ServoStatus(uint64_t time_us, uint8_t id, float position, float force, float speed, uint8_t power_pct)
+{
+    const struct log_CSRV pkt {
+        LOG_PACKET_HEADER_INIT(LOG_CSRV_MSG),
+        time_us     : time_us,
+        id          : id,
+        position    : position,
+        force       : force,
+        speed       : speed,
+        power_pct   : power_pct
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}
+
 // Write a Yaw PID packet
 void AP_Logger::Write_PID(uint8_t msg_type, const PID_Info &info)
 {
