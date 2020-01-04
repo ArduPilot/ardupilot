@@ -1559,7 +1559,13 @@ struct PACKED log_Arm_Disarm {
     { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm), \
       "ARM", "QBH", "TimeUS,ArmState,ArmChecks", "s--", "F--" }, \
     { LOG_ERROR_MSG, sizeof(log_Error), \
-      "ERR",   "QBB",         "TimeUS,Subsys,ECode", "s--", "F--" }
+      "ERR",   "QBB",         "TimeUS,Subsys,ECode", "s--", "F--" }, \
+    { LOG_PIDN_MSG, sizeof(log_PID), \
+      "PIDN", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }, \
+    { LOG_PIDE_MSG, sizeof(log_PID), \
+      "PIDE", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }, \
+    { LOG_PIDD_MSG, sizeof(log_PID), \
+      "PIDD", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }
 
 
 #define LOG_SBP_STRUCTURES \
@@ -1723,6 +1729,9 @@ enum LogMessages : uint8_t {
     LOG_ARM_DISARM_MSG,
     LOG_OA_BENDYRULER_MSG,
     LOG_OA_DIJKSTRA_MSG,
+    LOG_PIDN_MSG,
+    LOG_PIDE_MSG,
+    LOG_PIDD_MSG,
 
     _LOG_LAST_MSG_
 };
