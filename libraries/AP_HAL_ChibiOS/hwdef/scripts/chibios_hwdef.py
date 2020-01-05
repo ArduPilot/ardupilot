@@ -737,8 +737,8 @@ def get_USB_IDs():
         default_vid = 0x1209
         default_pid = 0x5740
     else:
-        default_vid = 0x0483
-        default_pid = 0x5740
+        default_vid = 0x1209
+        default_pid = 0x5741
     return (get_config('USB_VENDOR', type=int, default=default_vid), get_config('USB_PRODUCT', type=int, default=default_pid))
 
 
