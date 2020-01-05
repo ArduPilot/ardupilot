@@ -199,16 +199,14 @@ uint16_t AP_Logger_Block::GetFileNumber()
 void AP_Logger_Block::EraseAll()
 {
     WITH_SEMAPHORE(sem);
-    gcs().send_text(MAV_SEVERITY_INFO, "Chip erase started");
-    // reset the format version so that any incomplete erase will be caught
-    Sector4kErase(get_sector(df_NumPages+1));
-    // reset the wrapped status
-    Sector4kErase(get_sector(df_NumPages));
-
     if (erase_started) {
         // already erasing
         return;
     }
+
+    gcs().send_text(MAV_SEVERITY_INFO, "Chip erase started");
+    // reset the format version and wrapped status so that any incomplete erase will be caught
+    Sector4kErase(get_sector(df_NumPages));
 
     log_write_started = false;
 
@@ -275,6 +273,11 @@ void AP_Logger_Block::validate_log_structure()
         StartRead(page);
         file = GetFileNumber();
         next_file++;
+        // skip over the rest of an erased blcok
+        if (wrapped && file == 0xFFFF) {
+            StartRead((get_block(page) + 1) * df_PagePerBlock + 1);
+            file = GetFileNumber();
+        }
         if (wrapped && file < next_file) {
             page_start = page;
             next_file = file;
@@ -395,7 +398,10 @@ uint16_t AP_Logger_Block::get_num_logs(void)
     StartRead(lastpage);
     last = GetFileNumber();
     if (check_wrapped()) {
-        StartRead(lastpage + 1);
+        // if we wrapped then the rest of the block will be filled with 0xFFFF because we always erase
+        // a block before writing to it, in order to find the first page we therefore have to read after the
+        // next block boundary
+        StartRead((get_block(lastpage) + 1) * df_PagePerBlock + 1);
         first = GetFileNumber();
     }
 
@@ -523,6 +529,7 @@ uint32_t AP_Logger_Block::find_last_page(void)
         look = (top+bottom)/2;
         StartRead(look);
         look_hash = (int64_t)GetFileNumber()<<32 | df_FilePage;
+        // erased sector so can discount everything above
         if (look_hash >= 0xFFFF00000000) {
             look_hash = 0;
         }
@@ -604,7 +611,7 @@ uint32_t AP_Logger_Block::find_last_page_of_log(uint16_t log_number)
         return bottom;
     }
 
-    gcs().send_text(MAV_SEVERITY_ERROR, "Missing last page of log %d at top=%X or bottom=%X", int(log_number), unsigned(top), unsigned(bottom));
+    gcs().send_text(MAV_SEVERITY_ERROR, "No last page of log %d at top=%X or bot=%X", int(log_number), unsigned(top), unsigned(bottom));
     return 0;
 }
 
@@ -649,11 +656,12 @@ void AP_Logger_Block::io_timer(void)
         return;
     }
 
+    WITH_SEMAPHORE(sem);
+
     if (erase_started) {
         if (InErase()) {
             return;
         }
-        WITH_SEMAPHORE(sem);
         // write the logging format in the last page
         StartWrite(df_NumPages+1);
         uint32_t version = DF_LOGGING_FORMAT;
@@ -662,11 +670,10 @@ void AP_Logger_Block::io_timer(void)
         FinishWrite();
         erase_started = false;
         gcs().send_text(MAV_SEVERITY_INFO, "Chip erase complete");
+        return;
     }
 
     if (df_EraseFrom > 0) {
-        WITH_SEMAPHORE(sem);
-
         const uint32_t sectors = df_NumPages / df_PagePerSector;
         const uint32_t sectors_in_64k = 0x10000 / (df_PagePerSector * df_PageSize);
         uint32_t next_sector = get_sector(df_EraseFrom);
@@ -681,7 +688,7 @@ void AP_Logger_Block::io_timer(void)
             SectorErase(next_sector / sectors_in_64k);
             next_sector += sectors_in_64k;
         }
-        gcs().send_text(MAV_SEVERITY_WARNING, "Log corruption recovery complete, erased %d blocks", unsigned(blocks_erased));
+        gcs().send_text(MAV_SEVERITY_WARNING, "Log recovery complete, erased %d blocks", unsigned(blocks_erased));
         df_EraseFrom = 0;
     }
 
@@ -690,7 +697,6 @@ void AP_Logger_Block::io_timer(void)
     }
 
     while (writebuf.available() >= df_PageSize - sizeof(struct PageHeader)) {
-        WITH_SEMAPHORE(sem);
         struct PageHeader ph;
         ph.FileNumber = df_FileNumber;
         ph.FilePage = df_FilePage;

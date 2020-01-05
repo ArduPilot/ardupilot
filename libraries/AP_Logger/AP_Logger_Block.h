@@ -112,9 +112,14 @@ protected:
     uint32_t df_NumPages;
     bool log_write_started;
 
-    // get the next sector from the current page
+    // get the current sector from the current page
     uint32_t get_sector(uint32_t current_page) {
         return ((current_page - 1) / df_PagePerSector);
+    }
+
+    // get the current block from the current page
+    uint32_t get_block(uint32_t current_page) {
+        return ((current_page - 1) / df_PagePerBlock);
     }
 
     static const uint16_t page_size_max = 256;
