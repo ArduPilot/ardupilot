@@ -9,6 +9,7 @@
 #include <GCS_MAVLink/GCS.h>
 
 #include <stdio.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 
 #if COMPASS_LEARN_ENABLED
 
@@ -33,14 +34,15 @@ CompassLearn::CompassLearn(Compass &_compass) :
  */
 void CompassLearn::update(void)
 {
-    const AP_AHRS &ahrs = AP::ahrs();
+    const AP_Vehicle *vehicle = AP::vehicle();
     if (converged || compass.get_learn_type() != Compass::LEARN_INFLIGHT ||
-        !hal.util->get_soft_armed() || ahrs.get_time_flying_ms() < 3000) {
+        !hal.util->get_soft_armed() || vehicle->get_time_flying_ms() < 3000) {
         // only learn when flying and with enough time to be clear of
         // the ground
         return;
     }
 
+    const AP_AHRS &ahrs = AP::ahrs();
     if (!have_earth_field) {
         Location loc;
         if (!ahrs.get_position(loc)) {
