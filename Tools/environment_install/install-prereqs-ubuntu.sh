@@ -11,12 +11,17 @@ fi
 OPT="/opt"
 BASE_PKGS="build-essential ccache g++ gawk git make wget"
 PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect"
+# add some Python packages required for commonly-used MAVProxy modules:
+PYTHON_PKGS="$PYTHON_PKGS pygame"
 PX4_PKGS="python-argparse openocd flex bison libncurses5-dev \
           autoconf texinfo libftdi-dev zlib1g-dev \
           zip genromfs python-empy cmake cmake-data"
 ARM_LINUX_PKGS="g++-arm-linux-gnueabihf pkg-config-arm-linux-gnueabihf"
 # python-wxgtk packages are added to SITL_PKGS below
 SITL_PKGS="libtool libxml2-dev libxslt1-dev python-dev python-pip python-setuptools python-matplotlib python-serial python-scipy python-opencv python-numpy python-pyparsing xterm lcov gcovr"
+# add some packages required for commonly-used MAVProxy modules:
+SITL_PKGS="$SITL_PKGS libcsfml-dev libcsfml-audio2.4 libcsfml-dev libcsfml-graphics2.4 libcsfml-network2.4 libcsfml-system2.4 libcsfml-window2.4 libsfml-audio2.4 libsfml-dev libsfml-graphics2.4 libsfml-network2.4 libsfml-system2.4 libsfml-window2.4 python-yaml python3-yaml"
+
 ASSUME_YES=false
 QUIET=false
 
