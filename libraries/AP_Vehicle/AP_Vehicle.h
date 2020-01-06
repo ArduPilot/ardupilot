@@ -116,6 +116,38 @@ public:
     // initialize the vehicle. Called from AP_BoardConfig
     void init_vehicle();
 
+    /*
+      set the "likely flying" flag. This is not guaranteed to be
+      accurate, but is the vehicle codes best guess as to the whether
+      the vehicle is currently flying
+    */
+    void set_likely_flying(bool b) {
+        if (b && !likely_flying) {
+            _last_flying_ms = AP_HAL::millis();
+        }
+        likely_flying = b;
+    }
+
+    /*
+      get the likely flying status. Returns true if the vehicle code
+      thinks we are flying at the moment. Not guaranteed to be
+      accurate
+    */
+    bool get_likely_flying(void) const {
+        return likely_flying;
+    }
+
+    /*
+      return time in milliseconds since likely_flying was set
+      true. Returns zero if likely_flying is currently false
+    */
+    uint32_t get_time_flying_ms(void) const {
+        if (!likely_flying) {
+            return 0;
+        }
+        return AP_HAL::millis() - _last_flying_ms;
+    }
+
 protected:
 
     // board specific config
@@ -165,6 +197,10 @@ private:
     static AP_Vehicle *_singleton;
     bool init_done;
 
+    // true if vehicle is probably flying
+    bool likely_flying;
+    // time when likely_flying last went true
+    uint32_t _last_flying_ms;
 };
 
 namespace AP {
