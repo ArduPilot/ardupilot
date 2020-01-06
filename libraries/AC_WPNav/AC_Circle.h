@@ -10,6 +10,7 @@
 #define AC_CIRCLE_RADIUS_DEFAULT    1000.0f     // radius of the circle in cm that the vehicle will fly
 #define AC_CIRCLE_RATE_DEFAULT      20.0f       // turn rate in deg/sec.  Positive to turn clockwise, negative for counter clockwise
 #define AC_CIRCLE_ANGULAR_ACCEL_MIN 2.0f        // angular acceleration should never be less than 2deg/sec
+#define AC_CIRCLE_RADIUS_MAX        200000.0f   // maximum allowed circle radius of 2km
 
 class AC_Circle
 {
@@ -33,11 +34,18 @@ public:
     const Vector3f& get_center() const { return _center; }
 
     /// get_radius - returns radius of circle in cm
-    float get_radius() { return _radius; }
-    /// set_radius - sets circle radius in cm
-    void set_radius(float radius_cm) { _radius = radius_cm; }
+    float get_radius() const { return _radius; }
 
-    /// set_circle_rate - set circle rate in degrees per second
+    /// set_radius - sets circle radius in cm
+    void set_radius(float radius_cm);
+
+    /// get_rate - returns target rate in deg/sec held in RATE parameter
+    float get_rate() const { return _rate; }
+
+    /// get_rate_current - returns actual calculated rate target in deg/sec, which may be less than _rate
+    float get_rate_current() const { return ToDeg(_angular_vel); }
+
+    /// set_rate - set circle rate in degrees per second
     void set_rate(float deg_per_sec);
 
     /// get_angle_total - return total angle in radians that vehicle has circled
@@ -56,13 +64,16 @@ public:
     //  closest point on the circle will be placed in result
     //  result's altitude (i.e. z) will be set to the circle_center's altitude
     //  if vehicle is at the center of the circle, the edge directly behind vehicle will be returned
-    void get_closest_point_on_circle(Vector3f &result);
+    void get_closest_point_on_circle(Vector3f &result) const;
 
     /// get horizontal distance to loiter target in cm
     float get_distance_to_target() const { return _pos_control.get_distance_to_target(); }
 
     /// get bearing to target in centi-degrees
     int32_t get_bearing_to_target() const { return _pos_control.get_bearing_to_target(); }
+
+    /// true if pilot control of radius and turn rate is enabled
+    bool pilot_control_enabled() const { return _control > 0; }
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -92,6 +103,7 @@ private:
     // parameters
     AP_Float    _radius;        // maximum horizontal speed in cm/s during missions
     AP_Float    _rate;          // rotation speed in deg/sec
+    AP_Int16    _control;       // stick control enable/disable
 
     // internal variables
     Vector3f    _center;        // center of circle in cm from home
