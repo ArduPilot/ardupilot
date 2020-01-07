@@ -33,6 +33,7 @@ singleton AP_AHRS method get_velocity_NED boolean Vector3f'Null
 singleton AP_AHRS method get_relative_position_NED_home boolean Vector3f'Null
 singleton AP_AHRS method home_is_set boolean
 singleton AP_AHRS method prearm_healthy boolean
+singleton AP_AHRS method airspeed_estimate boolean float'Null
 
 include AP_Arming/AP_Arming.h
 
@@ -145,6 +146,8 @@ include AP_Vehicle/AP_Vehicle.h
 singleton AP_Vehicle alias vehicle
 singleton AP_Vehicle method set_mode boolean uint8_t 0 UINT8_MAX ModeReason::SCRIPTING'literal
 singleton AP_Vehicle method get_mode uint8_t
+singleton AP_Vehicle method get_likely_flying boolean
+singleton AP_Vehicle method get_time_flying_ms uint32_t
 
 include AP_SerialLED/AP_SerialLED.h
 singleton AP_SerialLED alias serialLED
@@ -170,3 +173,9 @@ ap_object AP_HAL::UARTDriver method set_flow_control void AP_HAL::UARTDriver::fl
 
 singleton AP_SerialManager alias serial
 singleton AP_SerialManager method find_serial AP_HAL::UARTDriver AP_SerialManager::SerialProtocol_Scripting'literal uint8_t 0 UINT8_MAX
+
+include AP_Baro/AP_Baro.h
+singleton AP_Baro alias baro
+singleton AP_Baro method get_pressure float
+singleton AP_Baro method get_temperature float
+singleton AP_Baro method get_external_temperature float
