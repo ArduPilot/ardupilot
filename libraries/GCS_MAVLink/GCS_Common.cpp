@@ -2074,10 +2074,8 @@ void GCS_MAVLINK::send_opticalflow()
     const Vector2f &flowRate = optflow->flowRate();
     const Vector2f &bodyRate = optflow->bodyRate();
 
-    float hagl;
-    if (!AP::ahrs().get_hagl(hagl)) {
-        hagl = 0;
-    }
+    float hagl = 0.0f;
+    AP::ahrs().get_hagl(hagl);
 
     // populate and send message
     mavlink_msg_optical_flow_send(
