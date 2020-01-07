@@ -22,7 +22,7 @@ void Variometer::update(const float polar_K, const float polar_B, const float po
         // Both filtered total energy rates and unfiltered are computed for the thermal switching logic and the EKF
         float aspd = 0;
         float roll = _ahrs.roll;
-        if (!_ahrs.airspeed_estimate(&aspd)) {
+        if (!_ahrs.airspeed_estimate(aspd)) {
             aspd = _aparm.airspeed_cruise_cm / 100.0f;
         }
         _aspd_filt = ASPD_FILT * aspd + (1 - ASPD_FILT) * _aspd_filt;
