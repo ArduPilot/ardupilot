@@ -251,15 +251,15 @@ public:
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
-    virtual bool airspeed_estimate(float *airspeed_ret) const WARN_IF_UNUSED;
+    virtual bool airspeed_estimate(float &airspeed_ret) const WARN_IF_UNUSED;
 
     // return a true airspeed estimate (navigation airspeed) if
     // available. return true if we have an estimate
-    bool airspeed_estimate_true(float *airspeed_ret) const WARN_IF_UNUSED {
+    bool airspeed_estimate_true(float &airspeed_ret) const WARN_IF_UNUSED {
         if (!airspeed_estimate(airspeed_ret)) {
             return false;
         }
-        *airspeed_ret *= get_EAS2TAS();
+        airspeed_ret *= get_EAS2TAS();
         return true;
     }
 

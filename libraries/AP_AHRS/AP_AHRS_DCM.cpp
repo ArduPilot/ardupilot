@@ -1039,11 +1039,11 @@ bool AP_AHRS_DCM::get_position(struct Location &loc) const
 }
 
 // return an airspeed estimate if available
-bool AP_AHRS_DCM::airspeed_estimate(float *airspeed_ret) const
+bool AP_AHRS_DCM::airspeed_estimate(float &airspeed_ret) const
 {
     bool ret = false;
     if (airspeed_sensor_enabled()) {
-        *airspeed_ret = _airspeed->get_airspeed();
+        airspeed_ret = _airspeed->get_airspeed();
         return true;
     }
 
@@ -1053,7 +1053,7 @@ bool AP_AHRS_DCM::airspeed_estimate(float *airspeed_ret) const
 
     // estimate it via GPS speed and wind
     if (have_gps()) {
-        *airspeed_ret = _last_airspeed;
+        airspeed_ret = _last_airspeed;
         ret = true;
     }
 
@@ -1061,16 +1061,16 @@ bool AP_AHRS_DCM::airspeed_estimate(float *airspeed_ret) const
         // constrain the airspeed by the ground speed
         // and AHRS_WIND_MAX
         const float gnd_speed = AP::gps().ground_speed();
-        float true_airspeed = *airspeed_ret * get_EAS2TAS();
+        float true_airspeed = airspeed_ret * get_EAS2TAS();
         true_airspeed = constrain_float(true_airspeed,
                                         gnd_speed - _wind_max,
                                         gnd_speed + _wind_max);
-        *airspeed_ret = true_airspeed / get_EAS2TAS();
+        airspeed_ret = true_airspeed / get_EAS2TAS();
     }
     if (!ret) {
         // give the last estimate, but return false. This is used by
         // dead-reckoning code
-        *airspeed_ret = _last_airspeed;
+        airspeed_ret = _last_airspeed;
     }
     return ret;
 }
