@@ -767,6 +767,7 @@ struct PACKED log_PID {
 struct PACKED log_Current {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t  instance;
     float    voltage;
     float    voltage_resting;
     float    current_amps;
@@ -801,6 +802,7 @@ struct PACKED log_ADSB {
 struct PACKED log_Current_Cells {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t  instance;
     float    voltage;
     uint16_t cell_voltages[10];
 };
@@ -1307,16 +1309,6 @@ struct PACKED log_Arm_Disarm {
 #define QUAT_UNITS  "s#????"
 #define QUAT_MULTS  "F-????"
 
-#define CURR_LABELS "TimeUS,Volt,VoltR,Curr,CurrTot,EnrgTot,Temp,Res"
-#define CURR_FMT    "Qfffffcf"
-#define CURR_UNITS  "svvA?JOw"
-#define CURR_MULTS  "F000?/?0"
-
-#define CURR_CELL_LABELS "TimeUS,Volt,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10"
-#define CURR_CELL_FMT    "QfHHHHHHHHHH"
-#define CURR_CELL_UNITS  "svvvvvvvvvvv"
-#define CURR_CELL_MULTS  "F00000000000"
-
 #define ARSP_LABELS "TimeUS,Airspeed,DiffPress,Temp,RawPress,Offset,U,Health,Hfp,Pri"
 #define ARSP_FMT "QffcffBBfB"
 #define ARSP_UNITS "snPOPP----"
@@ -1372,42 +1364,10 @@ struct PACKED log_Arm_Disarm {
       "TRIG", "QIHLLeeeccC","TimeUS,GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,GPSAlt,Roll,Pitch,Yaw", "s--DUmmmddd", "F--GGBBBBBB" }, \
     { LOG_ARSP_MSG, sizeof(log_AIRSPEED), "ARSP",  ARSP_FMT, ARSP_LABELS, ARSP_UNITS, ARSP_MULTS }, \
     { LOG_ASP2_MSG, sizeof(log_AIRSPEED), "ASP2",  ARSP_FMT, ARSP_LABELS, ARSP_UNITS, ARSP_MULTS }, \
-    { LOG_CURRENT_MSG, sizeof(log_Current), \
-      "BAT", CURR_FMT,CURR_LABELS,CURR_UNITS,CURR_MULTS },  \
-    { LOG_CURRENT2_MSG, sizeof(log_Current), \
-      "BAT2", CURR_FMT,CURR_LABELS,CURR_UNITS,CURR_MULTS }, \
-    { LOG_CURRENT3_MSG, sizeof(log_Current), \
-      "BAT3", CURR_FMT,CURR_LABELS,CURR_UNITS,CURR_MULTS }, \
-    { LOG_CURRENT4_MSG, sizeof(log_Current), \
-      "BAT4", CURR_FMT,CURR_LABELS,CURR_UNITS,CURR_MULTS }, \
-    { LOG_CURRENT5_MSG, sizeof(log_Current), \
-      "BAT5", CURR_FMT,CURR_LABELS,CURR_UNITS,CURR_MULTS }, \
-    { LOG_CURRENT6_MSG, sizeof(log_Current), \
-      "BAT6", CURR_FMT,CURR_LABELS,CURR_UNITS,CURR_MULTS }, \
-    { LOG_CURRENT7_MSG, sizeof(log_Current), \
-      "BAT7", CURR_FMT,CURR_LABELS,CURR_UNITS,CURR_MULTS }, \
-    { LOG_CURRENT8_MSG, sizeof(log_Current), \
-      "BAT8", CURR_FMT,CURR_LABELS,CURR_UNITS,CURR_MULTS }, \
-    { LOG_CURRENT9_MSG, sizeof(log_Current), \
-      "BAT9", CURR_FMT,CURR_LABELS,CURR_UNITS,CURR_MULTS }, \
+    { LOG_CURRENT_MSG, sizeof(log_Current),                     \
+      "BAT", "QBfffffcf", "TimeUS,Instance,Volt,VoltR,Curr,CurrTot,EnrgTot,Temp,Res", "s#vvA?JOw", "F-000?/?0" },  \
     { LOG_CURRENT_CELLS_MSG, sizeof(log_Current_Cells), \
-      "BCL", CURR_CELL_FMT, CURR_CELL_LABELS, CURR_CELL_UNITS, CURR_CELL_MULTS }, \
-    { LOG_CURRENT_CELLS2_MSG, sizeof(log_Current_Cells), \
-      "BCL2", CURR_CELL_FMT, CURR_CELL_LABELS, CURR_CELL_UNITS, CURR_CELL_MULTS }, \
-    { LOG_CURRENT_CELLS3_MSG, sizeof(log_Current_Cells), \
-      "BCL3", CURR_CELL_FMT, CURR_CELL_LABELS, CURR_CELL_UNITS, CURR_CELL_MULTS }, \
-    { LOG_CURRENT_CELLS4_MSG, sizeof(log_Current_Cells), \
-      "BCL4", CURR_CELL_FMT, CURR_CELL_LABELS, CURR_CELL_UNITS, CURR_CELL_MULTS }, \
-    { LOG_CURRENT_CELLS5_MSG, sizeof(log_Current_Cells), \
-      "BCL5", CURR_CELL_FMT, CURR_CELL_LABELS, CURR_CELL_UNITS, CURR_CELL_MULTS }, \
-    { LOG_CURRENT_CELLS6_MSG, sizeof(log_Current_Cells), \
-      "BCL6", CURR_CELL_FMT, CURR_CELL_LABELS, CURR_CELL_UNITS, CURR_CELL_MULTS }, \
-    { LOG_CURRENT_CELLS7_MSG, sizeof(log_Current_Cells), \
-      "BCL7", CURR_CELL_FMT, CURR_CELL_LABELS, CURR_CELL_UNITS, CURR_CELL_MULTS }, \
-    { LOG_CURRENT_CELLS8_MSG, sizeof(log_Current_Cells), \
-      "BCL8", CURR_CELL_FMT, CURR_CELL_LABELS, CURR_CELL_UNITS, CURR_CELL_MULTS }, \
-    { LOG_CURRENT_CELLS9_MSG, sizeof(log_Current_Cells), \
-      "BCL9", CURR_CELL_FMT, CURR_CELL_LABELS, CURR_CELL_UNITS, CURR_CELL_MULTS }, \
+      "BCL", "QBfHHHHHHHHHH", "TimeUS,Instance,Volt,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10", "s#vvvvvvvvvvv", "F-00000000000" }, \
 	{ LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
       "ATT", "QccccCCCC", "TimeUS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw", "sddddhhdh", "FBBBBBBBB" }, \
     { LOG_COMPASS_MSG, sizeof(log_Compass), \
@@ -1663,23 +1623,7 @@ enum LogMessages : uint8_t {
     LOG_ARSP_MSG,
     LOG_ATTITUDE_MSG,
     LOG_CURRENT_MSG,
-    LOG_CURRENT2_MSG,
-    LOG_CURRENT3_MSG,
-    LOG_CURRENT4_MSG,
-    LOG_CURRENT5_MSG,
-    LOG_CURRENT6_MSG,
-    LOG_CURRENT7_MSG,
-    LOG_CURRENT8_MSG,
-    LOG_CURRENT9_MSG,
     LOG_CURRENT_CELLS_MSG,
-    LOG_CURRENT_CELLS2_MSG,
-    LOG_CURRENT_CELLS3_MSG,
-    LOG_CURRENT_CELLS4_MSG,
-    LOG_CURRENT_CELLS5_MSG,
-    LOG_CURRENT_CELLS6_MSG,
-    LOG_CURRENT_CELLS7_MSG,
-    LOG_CURRENT_CELLS8_MSG,
-    LOG_CURRENT_CELLS9_MSG,
     LOG_COMPASS_MSG,
     LOG_COMPASS2_MSG,
     LOG_COMPASS3_MSG,
