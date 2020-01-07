@@ -749,6 +749,7 @@ private:
     bool should_use_landing_swash() const;
     void update_heli_control_dynamics(void);
     void heli_update_landing_swash();
+    float get_pilot_desired_rotor_speed() const;
     void heli_update_rotor_speed_targets();
     void heli_update_autorotation();
 #if MODE_AUTOROTATE_ENABLED == ENABLED

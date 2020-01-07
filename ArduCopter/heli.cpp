@@ -126,6 +126,17 @@ void Copter::heli_update_landing_swash()
     motors->set_collective_for_landing(should_use_landing_swash());
 }
 
+// convert motor interlock switch's position to desired rotor speed expressed as a value from 0 to 1
+// returns zero if motor interlock auxiliary switch hasn't been defined
+float Copter::get_pilot_desired_rotor_speed() const
+{
+    RC_Channel *rc_ptr = rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_INTERLOCK);
+    if (rc_ptr != nullptr) {
+        return (float)rc_ptr->get_control_in() * 0.001f;
+    }
+    return 0.0f;
+}
+
 // heli_update_rotor_speed_targets - reads pilot input and passes new rotor speed targets to heli motors object
 void Copter::heli_update_rotor_speed_targets()
 {
@@ -134,17 +145,15 @@ void Copter::heli_update_rotor_speed_targets()
 
     // get rotor control method
     uint8_t rsc_control_mode = motors->get_rsc_mode();
-    float rsc_control_deglitched = 0.0f;
-    RC_Channel *rc_ptr = rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_INTERLOCK);
-    if (rc_ptr != nullptr) {
-        rsc_control_deglitched = rotor_speed_deglitch_filter.apply((float)rc_ptr->get_control_in()) * 0.001f;
-    }
+
     switch (rsc_control_mode) {
         case ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH:
             // pass through pilot desired rotor speed from the RC
-            if (motors->get_interlock()) {
-                motors->set_desired_rotor_speed(rsc_control_deglitched);
+            if (get_pilot_desired_rotor_speed() > 0.01) {
+                ap.motor_interlock_switch = true;
+                motors->set_desired_rotor_speed(get_pilot_desired_rotor_speed());
             } else {
+                ap.motor_interlock_switch = false;
                 motors->set_desired_rotor_speed(0.0f);
             }
             break;
