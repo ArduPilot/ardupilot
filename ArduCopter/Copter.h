@@ -461,10 +461,6 @@ private:
     AC_WPNav *wp_nav;
     AC_Loiter *loiter_nav;
 
-#if MODE_CIRCLE_ENABLED == ENABLED
-    AC_Circle *circle_nav;
-#endif
-
     // System Timers
     // --------------
     // arm_time_ms - Records when vehicle was armed. Will be Zero if we are disarmed.

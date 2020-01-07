@@ -19,7 +19,7 @@ bool ModeCircle::init(bool ignore_checks)
     pos_control->set_max_accel_z(g.pilot_accel_z);
 
     // initialise circle controller including setting the circle center based on vehicle speed
-    copter.circle_nav->init();
+    circle_nav->init();
 
     return true;
 }
@@ -42,16 +42,16 @@ void ModeCircle::run()
 
     // pilot changes to circle rate and radius
     // skip if in radio failsafe
-    if (!copter.failsafe.radio && copter.circle_nav->pilot_control_enabled()) {
+    if (!copter.failsafe.radio && circle_nav->pilot_control_enabled()) {
         // update the circle controller's radius target based on pilot pitch stick inputs
-        const float radius_current = copter.circle_nav->get_radius();           // circle controller's radius target, which begins as the circle_radius parameter
+        const float radius_current = circle_nav->get_radius();                  // circle controller's radius target, which begins as the circle_radius parameter
         const float pitch_stick = channel_pitch->norm_input_dz();               // pitch stick normalized -1 to 1
         const float nav_speed = copter.wp_nav->get_default_speed_xy();          // copter WP_NAV parameter speed
         const float radius_pilot_change = (pitch_stick * nav_speed) * G_Dt;     // rate of change (pitch stick up reduces the radius, as in moving forward)
         const float radius_new = MAX(radius_current + radius_pilot_change,0);   // new radius target
 
         if (!is_equal(radius_current, radius_new)) {
-            copter.circle_nav->set_radius(radius_new);
+            circle_nav->set_radius(radius_new);
         }
 
         // update the orbicular rate target based on pilot roll stick inputs
@@ -63,8 +63,8 @@ void ModeCircle::run()
                 // no speed change, so reset speed changing flag
                 speed_changing = false;
             } else {
-                const float rate = copter.circle_nav->get_rate();           // circle controller's rate target, which begins as the circle_rate parameter
-                const float rate_current = copter.circle_nav->get_rate_current(); // current adjusted rate target, which is probably different from _rate
+                const float rate = circle_nav->get_rate();                  // circle controller's rate target, which begins as the circle_rate parameter
+                const float rate_current = circle_nav->get_rate_current();  // current adjusted rate target, which is probably different from _rate
                 const float rate_pilot_change = (roll_stick * G_Dt);        // rate of change from 0 to 1 degrees per second
                 float rate_new = rate_current;                              // new rate target
                 if (is_positive(rate)) {
@@ -81,7 +81,7 @@ void ModeCircle::run()
                 }
 
                 speed_changing = true;
-                copter.circle_nav->set_rate(rate_new);
+                circle_nav->set_rate(rate_new);
             }
         }
     }
@@ -104,17 +104,17 @@ void ModeCircle::run()
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // run circle controller
-    copter.circle_nav->update();
+    circle_nav->update();
 
     // call attitude controller
     if (pilot_yaw_override) {
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(copter.circle_nav->get_roll(),
-                                                                      copter.circle_nav->get_pitch(),
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(circle_nav->get_roll(),
+                                                                      circle_nav->get_pitch(),
                                                                       target_yaw_rate);
     } else {
-        attitude_control->input_euler_angle_roll_pitch_yaw(copter.circle_nav->get_roll(),
-                                                           copter.circle_nav->get_pitch(),
-                                                           copter.circle_nav->get_yaw(), true);
+        attitude_control->input_euler_angle_roll_pitch_yaw(circle_nav->get_roll(),
+                                                           circle_nav->get_pitch(),
+                                                           circle_nav->get_yaw(), true);
     }
 
     // update altitude target and call position controller
@@ -129,12 +129,12 @@ void ModeCircle::run()
 
 uint32_t ModeCircle::wp_distance() const
 {
-    return copter.circle_nav->get_distance_to_target();
+    return circle_nav->get_distance_to_target();
 }
 
 int32_t ModeCircle::wp_bearing() const
 {
-    return copter.circle_nav->get_bearing_to_target();
+    return circle_nav->get_bearing_to_target();
 }
 
 #endif

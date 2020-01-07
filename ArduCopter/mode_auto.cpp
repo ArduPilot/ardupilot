@@ -262,16 +262,16 @@ void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radi
         circle_center_neu = inertial_nav.get_position();
         AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_CIRCLE_INIT);
     }
-    copter.circle_nav->set_center(circle_center_neu);
+    circle_nav->set_center(circle_center_neu);
 
     // set circle radius
     if (!is_zero(radius_m)) {
-        copter.circle_nav->set_radius(radius_m * 100.0f);
+        circle_nav->set_radius(radius_m * 100.0f);
     }
 
     // check our distance from edge of circle
     Vector3f circle_edge_neu;
-    copter.circle_nav->get_closest_point_on_circle(circle_edge_neu);
+    circle_nav->get_closest_point_on_circle(circle_edge_neu);
     float dist_to_edge = (inertial_nav.get_position() - circle_edge_neu).length();
 
     // if more than 3m then fly to edge
@@ -297,7 +297,7 @@ void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radi
         // initialise yaw
         // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
         if (auto_yaw.mode() != AUTO_YAW_ROI) {
-            if (dist_to_center > copter.circle_nav->get_radius() && dist_to_center > 500) {
+            if (dist_to_center > circle_nav->get_radius() && dist_to_center > 500) {
                 auto_yaw.set_mode_to_default(false);
             } else {
                 // vehicle is within circle so hold yaw to avoid spinning as we move to edge of circle
@@ -316,7 +316,7 @@ void ModeAuto::circle_start()
     _mode = Auto_Circle;
 
     // initialise circle controller
-    copter.circle_nav->init(copter.circle_nav->get_center());
+    circle_nav->init(circle_nav->get_center());
 }
 
 // auto_spline_start - initialises waypoint controller to implement flying to a particular destination using the spline controller
@@ -581,7 +581,7 @@ uint32_t ModeAuto::wp_distance() const
 {
     switch (_mode) {
     case Auto_Circle:
-        return copter.circle_nav->get_distance_to_target();
+        return circle_nav->get_distance_to_target();
     case Auto_WP:
     case Auto_CircleMoveToEdge:
     default:
@@ -593,7 +593,7 @@ int32_t ModeAuto::wp_bearing() const
 {
     switch (_mode) {
     case Auto_Circle:
-        return copter.circle_nav->get_bearing_to_target();
+        return circle_nav->get_bearing_to_target();
     case Auto_WP:
     case Auto_CircleMoveToEdge:
     default:
@@ -856,17 +856,23 @@ void ModeAuto::rtl_run()
 void ModeAuto::circle_run()
 {
     // call circle controller
-    copter.circle_nav->update();
+    circle_nav->update();
 
     // call z-axis position controller
     pos_control->update_z_controller();
 
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control->input_euler_angle_roll_pitch_yaw(copter.circle_nav->get_roll(), copter.circle_nav->get_pitch(), copter.circle_nav->get_yaw(), true);
+        attitude_control->input_euler_angle_roll_pitch_yaw(circle_nav->get_roll(),
+                                                           circle_nav->get_pitch(),
+                                                           circle_nav->get_yaw(),
+                                                           true);
     } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control->input_euler_angle_roll_pitch_yaw(copter.circle_nav->get_roll(), copter.circle_nav->get_pitch(), auto_yaw.yaw(), true);
+        attitude_control->input_euler_angle_roll_pitch_yaw(circle_nav->get_roll(),
+                                                           circle_nav->get_pitch(),
+                                                           auto_yaw.yaw(),
+                                                           true);
     }
 }
 
@@ -1852,7 +1858,7 @@ bool ModeAuto::verify_circle(const AP_Mission::Mission_Command& cmd)
     }
 
     // check if we have completed circling
-    return fabsf(copter.circle_nav->get_angle_total()/M_2PI) >= LOWBYTE(cmd.p1);
+    return fabsf(circle_nav->get_angle_total()/M_2PI) >= LOWBYTE(cmd.p1);
 }
 
 // verify_spline_wp - check if we have reached the next way point using spline

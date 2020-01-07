@@ -23,7 +23,17 @@ Mode::Mode(void) :
     channel_throttle(copter.channel_throttle),
     channel_yaw(copter.channel_yaw),
     G_Dt(copter.G_Dt)
-{ };
+{
+#if MODE_CIRCLE_ENABLED == ENABLED
+    circle_nav = new AC_Circle(inertial_nav, *copter.ahrs_view, *pos_control);
+    if (circle_nav == nullptr) {
+        AP_HAL::panic("Unable to allocate CircleNav");
+    }
+    AP_Param::load_object_from_eeprom(circle_nav, circle_nav->var_info);
+#endif
+};
+
+AC_Circle *Mode::circle_nav;
 
 // return the static controller object corresponding to supplied mode
 Mode *Copter::mode_from_mode_num(const Mode::Number mode)

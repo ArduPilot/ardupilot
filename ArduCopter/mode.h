@@ -93,6 +93,12 @@ public:
         return pos_control->get_desired_velocity();
     }
 
+    // this is out here so Parameters.cpp can get an circle_nav.
+    // Should not be accessed directly outside the Mode hierachy
+#if MODE_CIRCLE_ENABLED == ENABLED
+    static AC_Circle *circle_nav;
+#endif
+
 protected:
 
     // navigation support functions

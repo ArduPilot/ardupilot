@@ -138,7 +138,7 @@ void Copter::tuning()
 
 #if MODE_CIRCLE_ENABLED == ENABLED
     case TUNING_CIRCLE_RATE:
-        circle_nav->set_rate(tuning_value);
+        flightmode->circle_nav->set_rate(tuning_value);
         break;
 #endif
 
