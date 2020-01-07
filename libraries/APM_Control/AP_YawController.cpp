@@ -98,7 +98,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
 	if (fabsf(bank_angle) < 1.5707964f)	{
 	    bank_angle = constrain_float(bank_angle,-1.3962634f,1.3962634f);
 	}
-	if (!_ahrs.airspeed_estimate(&aspeed)) {
+	if (!_ahrs.airspeed_estimate(aspeed)) {
 	    // If no airspeed available use average of min and max
         aspeed = 0.5f*(float(aspd_min) + float(aparm.airspeed_max));
 	}
