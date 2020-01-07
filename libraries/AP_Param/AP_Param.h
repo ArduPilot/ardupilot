@@ -666,7 +666,7 @@ private:
         AP_Param *param;
         bool force_save;
     };
-    static ObjectBuffer<struct param_save> save_queue;
+    static ObjectBuffer_TS<struct param_save> save_queue;
     static bool registered_save_handler;
 
     // background function for saving parameters
