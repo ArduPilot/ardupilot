@@ -919,8 +919,7 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
     if ((!do_arming_checks && mandatory_checks(true)) || (pre_arm_checks(true) && arm_checks(method))) {
         armed = true;
 
-        //TODO: Log motor arming
-        //Can't do this from this class until there is a unified logging library
+        Log_Write_Arm(!do_arming_checks, method); // note Log_Write_Armed takes forced not do_arming_checks
 
     } else {
         AP::logger().arming_failure();
@@ -938,6 +937,8 @@ bool AP_Arming::disarm()
     }
     armed = false;
 
+    Log_Write_Disarm(); // should be able to pass through method and/or force here?
+
 #if HAL_HAVE_SAFETY_SWITCH
     AP_BoardConfig *board_cfg = AP_BoardConfig::get_singleton();
     if ((board_cfg != nullptr) &&
@@ -945,9 +946,6 @@ bool AP_Arming::disarm()
         hal.rcout->force_safety_on();
     }
 #endif // HAL_HAVE_SAFETY_SWITCH
-
-    //TODO: Log motor disarming to the logger
-    //Can't do this from this class until there is a unified logging library.
 
     return true;
 }
@@ -1003,13 +1001,28 @@ bool AP_Arming::rc_checks_copter_sub(const bool display_failure, const RC_Channe
     return ret;
 }
 
-void AP_Arming::Log_Write_Arm_Disarm()
+void AP_Arming::Log_Write_Arm(const bool forced, const AP_Arming::Method method)
 {
-    struct log_Arm_Disarm pkt = {
+    const struct log_Arm_Disarm pkt {
         LOG_PACKET_HEADER_INIT(LOG_ARM_DISARM_MSG),
         time_us                 : AP_HAL::micros64(),
         arm_state               : is_armed(),
-        arm_checks              : get_enabled_checks()
+        arm_checks              : get_enabled_checks(),
+        forced                  : forced,
+        method                  : (uint8_t)method,
+    };
+    AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
+}
+
+void AP_Arming::Log_Write_Disarm()
+{
+    const struct log_Arm_Disarm pkt {
+        LOG_PACKET_HEADER_INIT(LOG_ARM_DISARM_MSG),
+        time_us                 : AP_HAL::micros64(),
+        arm_state               : is_armed(),
+        arm_checks              : 0,
+        forced                  : 0,
+        method                  : 0
     };
     AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
 }
