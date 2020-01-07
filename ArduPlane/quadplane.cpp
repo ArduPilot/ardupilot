@@ -1408,7 +1408,7 @@ float QuadPlane::assist_climb_rate_cms(void) const
 float QuadPlane::desired_auto_yaw_rate_cds(void) const
 {
     float aspeed;
-    if (!ahrs.airspeed_estimate(&aspeed) || aspeed < plane.aparm.airspeed_min) {
+    if (!ahrs.airspeed_estimate(aspeed) || aspeed < plane.aparm.airspeed_min) {
         aspeed = plane.aparm.airspeed_min;
     }
     if (aspeed < 1) {
@@ -1538,7 +1538,7 @@ void QuadPlane::update_transition(void)
     }
 
     float aspeed;
-    bool have_airspeed = ahrs.airspeed_estimate(&aspeed);
+    bool have_airspeed = ahrs.airspeed_estimate(aspeed);
 
     // tailsitters use angle wait, not airspeed wait
     if (is_tailsitter() && transition_state == TRANSITION_AIRSPEED_WAIT) {
@@ -1919,7 +1919,7 @@ void QuadPlane::update_throttle_hover()
     // calc average throttle if we are in a level hover and low airspeed
     if (throttle > 0.0f && fabsf(inertial_nav.get_velocity_z()) < 60 &&
         labs(ahrs_view->roll_sensor) < 500 && labs(ahrs_view->pitch_sensor) < 500 &&
-        ahrs.airspeed_estimate(&aspeed) && aspeed < plane.aparm.airspeed_min*0.3) {
+        ahrs.airspeed_estimate(aspeed) && aspeed < plane.aparm.airspeed_min*0.3) {
         // Can we set the time constant automatically
         motors->update_throttle_hover(0.01f);
     }

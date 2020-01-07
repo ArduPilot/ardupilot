@@ -96,7 +96,7 @@ struct PACKED log_Control_Tuning {
 void Plane::Log_Write_Control_Tuning()
 {
     float est_airspeed = 0;
-    ahrs.airspeed_estimate(&est_airspeed);
+    ahrs.airspeed_estimate(est_airspeed);
     
     struct log_Control_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CTUN_MSG),
