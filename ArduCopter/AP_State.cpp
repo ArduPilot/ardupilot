@@ -74,6 +74,9 @@ void Copter::set_failsafe_radio(bool b)
 void Copter::set_failsafe_gcs(bool b)
 {
     failsafe.gcs = b;
+
+    // update AP_Notify
+        AP_Notify::flags.failsafe_gcs = b;
 }
 
 // ---------------------------------------------
