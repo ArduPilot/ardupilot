@@ -1235,7 +1235,7 @@ void AP_OSD_Screen::draw_aspeed(uint8_t x, uint8_t y)
     float aspd = 0.0f;
     AP_AHRS &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
-    bool have_estimate = ahrs.airspeed_estimate(&aspd);
+    bool have_estimate = ahrs.airspeed_estimate(aspd);
     if (have_estimate) {
         backend->write(x, y, false, "%c%4d%c", SYM_ASPD, (int)u_scale(SPEED, aspd), u_icon(SPEED));
     } else {
