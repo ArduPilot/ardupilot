@@ -66,7 +66,7 @@ void Plane::read_airspeed(void)
     
     // update smoothed airspeed estimate
     float aspeed;
-    if (ahrs.airspeed_estimate(&aspeed)) {
+    if (ahrs.airspeed_estimate(aspeed)) {
         smoothed_airspeed = smoothed_airspeed * 0.8f + aspeed * 0.2f;
     }
 }
