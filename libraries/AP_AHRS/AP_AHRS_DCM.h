@@ -92,7 +92,7 @@ public:
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
-    bool airspeed_estimate(float *airspeed_ret) const override;
+    bool airspeed_estimate(float &airspeed_ret) const override;
 
     bool            use_compass() override;
 
