@@ -247,7 +247,7 @@ float GCS_MAVLINK_Plane::vfr_hud_airspeed() const
 
     // airspeed estimates are OK:
     float aspeed;
-    if (AP::ahrs().airspeed_estimate(&aspeed)) {
+    if (AP::ahrs().airspeed_estimate(aspeed)) {
         return aspeed;
     }
 
