@@ -379,7 +379,7 @@ void AP_TECS::_update_speed(float load_factor)
     // Get airspeed or default to halfway between min and max if
     // airspeed is not being used and set speed rate to zero
     bool use_airspeed = _use_synthetic_airspeed_once || _use_synthetic_airspeed.get() || _ahrs.airspeed_sensor_enabled();
-    if (!use_airspeed || !_ahrs.airspeed_estimate(&_EAS)) {
+    if (!use_airspeed || !_ahrs.airspeed_estimate(_EAS)) {
         // If no airspeed available use average of min and max
         _EAS = 0.5f * (aparm.airspeed_min.get() + (float)aparm.airspeed_max.get());
     }
