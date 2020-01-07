@@ -114,7 +114,7 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
 	
 	// Get an airspeed estimate - default to zero if none available
 	float aspeed;
-	if (!_ahrs.airspeed_estimate(&aspeed)) {
+	if (!_ahrs.airspeed_estimate(aspeed)) {
         aspeed = 0.0f;
     }
 

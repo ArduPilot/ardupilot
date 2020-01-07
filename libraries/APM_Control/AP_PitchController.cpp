@@ -239,7 +239,7 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
 int32_t AP_PitchController::get_rate_out(float desired_rate, float scaler)
 {
     float aspeed;
-	if (!_ahrs.airspeed_estimate(&aspeed)) {
+	if (!_ahrs.airspeed_estimate(aspeed)) {
 	    // If no airspeed available use average of min and max
         aspeed = 0.5f*(float(aparm.airspeed_min) + float(aparm.airspeed_max));
 	}
@@ -270,7 +270,7 @@ float AP_PitchController::_get_coordination_rate_offset(float &aspeed, bool &inv
 			bank_angle = constrain_float(bank_angle,-radians(180),-radians(100));
 		}
 	}
-	if (!_ahrs.airspeed_estimate(&aspeed)) {
+	if (!_ahrs.airspeed_estimate(aspeed)) {
 	    // If no airspeed available use average of min and max
         aspeed = 0.5f*(float(aparm.airspeed_min) + float(aparm.airspeed_max));
 	}
