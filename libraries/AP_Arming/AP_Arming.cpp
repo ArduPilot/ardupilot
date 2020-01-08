@@ -1012,6 +1012,7 @@ void AP_Arming::Log_Write_Arm(const bool forced, const AP_Arming::Method method)
         method                  : (uint8_t)method,
     };
     AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
+    AP::logger().Write_Event(LogEvent::ARMED);
 }
 
 void AP_Arming::Log_Write_Disarm()
@@ -1025,6 +1026,7 @@ void AP_Arming::Log_Write_Disarm()
         method                  : 0
     };
     AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
+    AP::logger().Write_Event(LogEvent::DISARMED);
 }
 
 AP_Arming *AP_Arming::_singleton = nullptr;
