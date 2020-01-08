@@ -121,6 +121,9 @@ public:
     //  breached(Location&) - returns true if location is outside the boundary
     bool breached(const Location& loc) const WARN_IF_UNUSED;
 
+    // returns the distance vehicle has breached the polygon fence
+    float get_distance_breached_poly_fence();
+
     // returns true if a polygonal include fence could be returned
     bool inclusion_boundary_available() const WARN_IF_UNUSED {
         return _num_loaded_inclusion_boundaries != 0;
