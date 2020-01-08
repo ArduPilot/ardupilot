@@ -1642,6 +1642,10 @@ class AutoTestPlane(AutoTest):
              "Test Buttons",
              self.test_button),
 
+            ("FRSkyD",
+             "Test FrSkyD serial output",
+             self.test_frsky_d),
+
             ("AdvancedFailsafe",
              "Test Advanced Failsafe",
              self.test_advanced_failsafe),
