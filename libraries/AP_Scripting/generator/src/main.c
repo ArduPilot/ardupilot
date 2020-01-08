@@ -1724,7 +1724,7 @@ int main(int argc, char **argv) {
     error(ERROR_GENERAL, "Unable to open the output source file: %s", file_name);
   }
 
-  fprintf(source, "// auto generated bindings, don't manually edit\n");
+  fprintf(source, "// auto generated bindings, don't manually edit.  See README.md for details.\n");
   
   trace(TRACE_GENERAL, "Sanity checking parsed input");
 
@@ -1773,7 +1773,7 @@ int main(int argc, char **argv) {
   }
   free(file_name);
   fprintf(header, "#pragma once\n");
-  fprintf(header, "// auto generated bindings, don't manually edit\n");
+  fprintf(header, "// auto generated bindings, don't manually edit.  See README.md for details.\n");
   emit_headers(header);
   fprintf(header, "#include \"lua/src/lua.hpp\"\n");
   fprintf(header, "#include <new>\n\n");
