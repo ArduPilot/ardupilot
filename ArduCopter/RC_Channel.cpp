@@ -65,7 +65,6 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const aux_
     switch(ch_option) {
     // the following functions do not need to be initialised:
     case AUX_FUNC::ALTHOLD:
-    case AUX_FUNC::ARMDISARM:
     case AUX_FUNC::AUTO:
     case AUX_FUNC::AUTOTUNE:
     case AUX_FUNC::BRAKE:
