@@ -3302,6 +3302,29 @@ class AutoTest(ABC):
         if self.armed():
             if not self.disarm_vehicle():
                 raise NotAchievedException("Failed to DISARM")
+
+        # we should find at least one Armed event and one disarmed
+        # event, and at least one ARM message for arm and disarm
+        dfreader = self.dfreader_for_current_onboard_log()
+        m = dfreader.recv_match(type="EV", condition="EV.Id==10") # armed
+        if m is None:
+            raise NotAchievedException("Did not find an Armed EV message")
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        m = dfreader.recv_match(type="EV", condition="EV.Id==11") # disarmed
+        if m is None:
+            raise NotAchievedException("Did not find a disarmed EV message")
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        m = dfreader.recv_match(type="ARM", condition="ARM.ArmState==1")
+        if m is None:
+            raise NotAchievedException("Did not find a armed ARM message")
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        m = dfreader.recv_match(type="ARM", condition="ARM.ArmState==0")
+        if m is None:
+            raise NotAchievedException("Did not find a disarmed ARM message")
+
         self.progress("ALL PASS")
     # TODO : Test arming magic;
 
