@@ -865,6 +865,74 @@ bool AC_PolyFence_loader::get_inclusion_circle(uint8_t index, Vector2f &center_p
     return true;
 }
 
+float AC_PolyFence_loader::get_distance_breached_poly_fence()
+{
+    Vector2f pos_vector;
+    if(AP::ahrs().get_relative_position_NE_origin(pos_vector)) {
+        //convert to centimeters
+        pos_vector = pos_vector *100.0f;
+    }   
+    float distance_to_poly = 0.0f;
+    bool distance_to_poly_updated=false;
+
+    //check for distance between vehicle and inclusion polygon
+    //get polygon inclusion points
+    for (uint8_t i = 0; i < _num_loaded_inclusion_boundaries; i++) {
+        const InclusionBoundary &boundary = _loaded_inclusion_boundary[i];
+        //check if outside inclusion zone    
+        if (Polygon_outside(pos_vector, boundary.points, boundary.count)) {
+            float distance_to_poly_new = Polygon_closest_distance_point(boundary.points, boundary.count,pos_vector)*0.01f;  
+            if (!distance_to_poly_updated ||(distance_to_poly_new < distance_to_poly)) {
+                distance_to_poly = distance_to_poly_new;
+                distance_to_poly_updated = true;
+            }
+        }
+    }
+    //check for distance between vehicle and exclusion polygon
+    //get polygon exclusion points
+    for (uint8_t i = 0; i < _num_loaded_exclusion_boundaries; i++) {
+        const ExclusionBoundary &boundary = _loaded_exclusion_boundary[i];
+        //check if inside exclusion zone 
+        if (!Polygon_outside(pos_vector, boundary.points, boundary.count)) {
+            float distance_to_poly_new = Polygon_closest_distance_point(boundary.points, boundary.count,pos_vector)*0.01f;
+            if (!distance_to_poly_updated || (distance_to_poly_new < distance_to_poly)) {
+                distance_to_poly = distance_to_poly_new;
+                distance_to_poly_updated = true;
+            }
+        }
+    }
+    //check for distance between vehicle and inclusion circles
+    //get circle inclusion points
+    for (uint8_t i=0; i<_num_loaded_circle_inclusion_boundaries;i++) {
+        const InclusionCircle &circle = _loaded_circle_inclusion_boundary[i];
+        const float dist_circle_sq = (pos_vector - circle.pos_cm).length_squared();
+        const float dist_circle_new = (sqrtf(dist_circle_sq))*0.01f - circle.radius;
+        //check if outside circle inclusion zone
+        if (dist_circle_new >= 0.0f) {
+            if(!distance_to_poly_updated || (dist_circle_new<distance_to_poly)) {
+                distance_to_poly_updated = true;
+                distance_to_poly = dist_circle_new;
+            }        
+        }
+    }
+
+    //check for distance between vehicle and exclusion circles
+    //get circle exclusion points   
+    for (uint8_t i=0; i<_num_loaded_circle_exclusion_boundaries;i++) {
+        const ExclusionCircle &circle = _loaded_circle_exclusion_boundary[i];
+        const float dist_circle_sq = (pos_vector - circle.pos_cm).length_squared();
+        const float dist_circle_new = circle.radius - (sqrtf(dist_circle_sq))*0.01f;
+        //check if inside circle exclusion zone
+        if (dist_circle_new >= 0.0f) {
+            if(!distance_to_poly_updated || (dist_circle_new < distance_to_poly)) {
+                distance_to_poly_updated = true;
+                distance_to_poly = dist_circle_new;
+            }        
+        }
+    }
+    return distance_to_poly;
+}
+
 bool AC_PolyFence_loader::validate_fence(const AC_PolyFenceItem *new_items, uint16_t count) const
 {
     // validate the fence items...
