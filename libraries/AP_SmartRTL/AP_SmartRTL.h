@@ -43,6 +43,10 @@ public:
     // get next point on the path to home, returns true on success
     bool pop_point(Vector3f& point);
 
+    // peek at next point on the path without removing it form the path. Returns true on success
+    // this may fail if the IO thread has taken the path semaphore
+    bool peek_point(Vector3f& point);
+
     // clear return path and set return location if position_ok is true.  This should be called as part of the arming procedure
     // if position_ok is false, SmartRTL will not be available.
     // example sketches use the method that allows providing vehicle position directly
@@ -90,6 +94,7 @@ private:
         SRTL_ADD_FAILED_NO_SEMAPHORE,
         SRTL_ADD_FAILED_PATH_FULL,
         SRTL_POP_FAILED_NO_SEMAPHORE,
+        SRTL_PEEK_FAILED_NO_SEMAPHORE,
         SRTL_DEACTIVATED_INIT_FAILED,
         SRTL_DEACTIVATED_BAD_POSITION,
         SRTL_DEACTIVATED_BAD_POSITION_TIMEOUT,
