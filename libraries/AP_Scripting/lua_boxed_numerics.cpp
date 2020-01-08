@@ -4,7 +4,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-static uint32_t coerce_to_uint32_t(lua_State *L, int arg) {
+uint32_t coerce_to_uint32_t(lua_State *L, int arg) {
     { // userdata
         const uint32_t * ud = static_cast<uint32_t *>(luaL_testudata(L, arg, "uint32_t"));
         if (ud != nullptr) {
