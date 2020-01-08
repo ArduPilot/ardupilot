@@ -51,7 +51,7 @@ class AutoTestTracker(AutoTest):
         self.progress("Using set_attitude_target to achieve attitude")
         while True:
             now = self.get_sim_time()
-            if now - tstart > 30:
+            if now - tstart > 60:
                 raise NotAchievedException("Did not achieve attitude")
             if now - last_attitude_target_sent > 0.5:
                 last_attitude_target_sent = now
