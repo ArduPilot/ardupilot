@@ -22,6 +22,7 @@
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <RC_Channel/RC_Channel.h>
+#include <AP_Math/AP_Math.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -116,7 +117,11 @@ void AP_RCProtocol_FPort::decode_control(const FPort_Frame &frame)
     }
 
     bool failsafe = ((frame.control.flags & (1 << FLAGS_FAILSAFE_BIT)) != 0);
-    add_input(MAX_CHANNELS, values, failsafe, frame.control.rssi);
+
+    // we scale rssi by 2x to make it match the value displayed in OpenTX
+    const uint8_t scaled_rssi = MIN(frame.control.rssi*2, 255);
+
+    add_input(MAX_CHANNELS, values, failsafe, scaled_rssi);
 }
 
 /*
