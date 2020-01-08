@@ -34,7 +34,6 @@ void RC_Channel_Rover::init_aux_function(const aux_func_t ch_option, const aux_s
     switch (ch_option) {
     // the following functions do not need initialising:
     case AUX_FUNC::ACRO:
-    case AUX_FUNC::ARMDISARM:
     case AUX_FUNC::AUTO:
     case AUX_FUNC::FOLLOW:
     case AUX_FUNC::GUIDED:
