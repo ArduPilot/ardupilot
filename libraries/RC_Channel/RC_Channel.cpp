@@ -451,6 +451,7 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const aux_switch_
     // init channel options
     switch(ch_option) {
     // the following functions do not need to be initialised:
+    case AUX_FUNC::ARMDISARM:
     case AUX_FUNC::CAMERA_TRIGGER:
     case AUX_FUNC::CLEAR_WP:
     case AUX_FUNC::COMPASS_LEARN:
