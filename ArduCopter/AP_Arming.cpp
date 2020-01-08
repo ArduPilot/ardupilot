@@ -784,8 +784,6 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
     // finally actually arm the motors
     copter.motors->armed(true);
 
-    AP::logger().Write_Event(LogEvent::ARMED);
-
     // log flight mode in case it was changed while vehicle was disarmed
     AP::logger().Write_Mode((uint8_t)copter.control_mode, copter.control_mode_reason);
 
@@ -852,8 +850,6 @@ bool AP_Arming_Copter::disarm()
     // we are not in the air
     copter.set_land_complete(true);
     copter.set_land_complete_maybe(true);
-
-    AP::logger().Write_Event(LogEvent::DISARMED);
 
     // send disarm command to motors
     copter.motors->armed(false);
