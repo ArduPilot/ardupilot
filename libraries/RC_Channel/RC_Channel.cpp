@@ -517,6 +517,22 @@ bool RC_Channel::read_aux()
 }
 
 
+void RC_Channel::do_aux_function_armdisarm(const aux_switch_pos_t ch_flag)
+{
+    // arm or disarm the vehicle
+    switch (ch_flag) {
+    case HIGH:
+        AP::arming().arm(AP_Arming::Method::AUXSWITCH, true);
+        break;
+    case MIDDLE:
+        // nothing
+        break;
+    case LOW:
+        AP::arming().disarm();
+        break;
+    }
+}
+
 void RC_Channel::do_aux_function_avoid_adsb(const aux_switch_pos_t ch_flag)
 {
     AP_Avoidance *avoidance = AP::ap_avoidance();
@@ -807,18 +823,7 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_po
         break;
 
     case AUX_FUNC::ARMDISARM:
-        // arm or disarm the vehicle
-        switch (ch_flag) {
-        case HIGH:
-            AP::arming().arm(AP_Arming::Method::AUXSWITCH, true);
-            break;
-        case MIDDLE:
-            // nothing
-            break;
-        case LOW:
-            AP::arming().disarm();
-            break;
-        }
+        do_aux_function_armdisarm(ch_flag);
         break;
 
     case AUX_FUNC::COMPASS_LEARN:
