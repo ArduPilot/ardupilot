@@ -144,6 +144,7 @@ singleton GCS method set_message_interval MAV_RESULT'enum uint8_t 0 MAVLINK_COMM
 include AP_Vehicle/AP_Vehicle.h
 singleton AP_Vehicle alias vehicle
 singleton AP_Vehicle method set_mode boolean uint8_t 0 UINT8_MAX ModeReason::SCRIPTING'literal
+singleton AP_Vehicle method get_mode uint8_t
 
 include AP_SerialLED/AP_SerialLED.h
 singleton AP_SerialLED alias serialLED
