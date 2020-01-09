@@ -56,6 +56,7 @@ public:
     static AP_Vehicle *get_singleton();
 
     bool virtual set_mode(const uint8_t new_mode, const ModeReason reason) = 0;
+    uint8_t virtual get_mode() const = 0;
 
     /*
       common parameters for fixed wing aircraft
