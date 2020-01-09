@@ -70,11 +70,15 @@ static bool check_result(const char *name, bool bytes, const uint16_t *values, u
 static bool test_byte_protocol(const char *name, uint32_t baudrate,
                                const uint8_t *bytes, uint8_t nbytes,
                                const uint16_t *values, uint8_t nvalues,
-                               uint8_t repeats)
+                               uint8_t repeats,
+                               int8_t pause_at)
 {
     bool ret = true;
     for (uint8_t repeat=0; repeat<repeats+4; repeat++) {
         for (uint8_t i=0; i<nbytes; i++) {
+            if (pause_at >= 0 && i == pause_at) {
+                hal.scheduler->delay(10);
+            }
             rcprot->process_byte(bytes[i], baudrate);
         }
         hal.scheduler->delay(10);
@@ -133,24 +137,34 @@ static void send_byte(uint8_t b, uint32_t baudrate)
 }
 
 /*
+  add a gap in bits
+ */
+static void send_pause(uint8_t b, uint32_t baudrate, uint32_t pause_us)
+{
+    uint32_t nbits = pause_us * 1e6 / baudrate;
+    for (uint32_t i=0; i<nbits; i++) {
+        send_bit(b, baudrate);
+    }
+}
+
+/*
   test a byte protocol handler
  */
 static bool test_pulse_protocol(const char *name, uint32_t baudrate,
                                 const uint8_t *bytes, uint8_t nbytes,
                                 const uint16_t *values, uint8_t nvalues,
-                                uint8_t repeats)
+                                uint8_t repeats, int8_t pause_at)
 {
     bool ret = true;
     for (uint8_t repeat=0; repeat<repeats+4; repeat++) {
-        for (uint16_t i=0; i<8000; i++) {
-            send_bit(1, baudrate);
-        }
+        send_pause(1, baudrate, 6000);
         for (uint8_t i=0; i<nbytes; i++) {
+            if (pause_at >= 0 && i == pause_at) {
+                send_pause(1, baudrate, 10000);
+            }
             send_byte(bytes[i], baudrate);
         }
-        for (uint16_t i=0; i<8000; i++) {
-            send_bit(1, baudrate);
-        }
+        send_pause(1, baudrate, 6000);
         if (repeat > repeats) {
             ret &= check_result(name, false, values, nvalues);
         }
@@ -164,18 +178,19 @@ static bool test_pulse_protocol(const char *name, uint32_t baudrate,
 static bool test_protocol(const char *name, uint32_t baudrate,
                           const uint8_t *bytes, uint8_t nbytes,
                           const uint16_t *values, uint8_t nvalues,
-                          uint8_t repeats=1)
+                          uint8_t repeats=1,
+                          int8_t pause_at=0)
 {
     bool ret = true;
 
     rcprot = new AP_RCProtocol();
     rcprot->init();
-    ret &= test_byte_protocol(name, baudrate, bytes, nbytes, values, nvalues, repeats);
+    ret &= test_byte_protocol(name, baudrate, bytes, nbytes, values, nvalues, repeats, pause_at);
     delete rcprot;
 
     rcprot = new AP_RCProtocol();
     rcprot->init();
-    ret &= test_pulse_protocol(name, baudrate, bytes, nbytes, values, nvalues, repeats);
+    ret &= test_pulse_protocol(name, baudrate, bytes, nbytes, values, nvalues, repeats, pause_at);
     delete rcprot;
 
     return ret;
@@ -199,6 +214,13 @@ void loop()
                                  0x39, 0x25, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
                                  0xff, 0xff, 0xff, 0xff, 0xff};
     const uint16_t dsm_output[] = {1010, 1020, 1000, 1030, 1040, 1050, 1060, 1070};
+
+    const uint8_t dsm_bytes2[] = {0x00, 0xb2, 0x80, 0x94, 0x3c, 0x02, 0x1b, 0xfe,
+                                  0x44, 0x00, 0x4c, 0x00, 0x5c, 0x00, 0xff, 0xff,
+                                  0x00, 0xb2, 0x0c, 0x03, 0x2e, 0xaa, 0x14, 0x00,
+                                  0x21, 0x56, 0x34, 0x02, 0x54, 0x00, 0xff, 0xff};
+
+    const uint16_t dsm_output2[] = {1501, 1500, 985, 1499, 1099, 1901, 1501, 1501, 1500, 1500, 1500, 1500};
 
     const uint8_t sumd_bytes[] = {0xA8, 0x01, 0x08, 0x2F, 0x50, 0x31, 0xE8, 0x21, 0xA0,
                                   0x2F, 0x50, 0x22, 0x60, 0x22, 0x60, 0x2E, 0xE0, 0x2E,
@@ -229,7 +251,8 @@ void loop()
     test_protocol("SBUS", 100000, sbus_bytes, sizeof(sbus_bytes), sbus_output, ARRAY_SIZE(sbus_output), 3);
 
     // DSM needs 8 repeats, 5 to guess the format, then 3 to pass the RCProtocol 3 frames test
-    test_protocol("DSM", 115200, dsm_bytes, sizeof(dsm_bytes), dsm_output, ARRAY_SIZE(dsm_output), 9);
+    test_protocol("DSM",  115200, dsm_bytes, sizeof(dsm_bytes), dsm_output, ARRAY_SIZE(dsm_output), 9);
+    test_protocol("DSM2", 115200, dsm_bytes2, sizeof(dsm_bytes2), dsm_output2, ARRAY_SIZE(dsm_output2), 9, 16);
 }
 
 AP_HAL_MAIN();
