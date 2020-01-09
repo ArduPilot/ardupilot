@@ -1,5 +1,5 @@
 #pragma once
-// auto generated bindings, don't manually edit
+// auto generated bindings, don't manually edit.  See README.md for details.
 #include <RC_Channel/RC_Channel.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_SerialLED/AP_SerialLED.h>
