@@ -205,7 +205,7 @@ float AP_Airspeed_SDP3X::_correct_pressure(float press)
     case AP_Airspeed::PITOT_TUBE_ORDER_NEGATIVE:
         press = -press;
         sign = -1.0f;
-    //FALLTHROUGH;
+        break;
     case AP_Airspeed::PITOT_TUBE_ORDER_POSITIVE:
         break;
     case AP_Airspeed::PITOT_TUBE_ORDER_AUTO:
