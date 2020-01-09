@@ -269,6 +269,7 @@ bool AP_RCProtocol_DSM::dsm_decode(uint32_t frame_time_ms, const uint8_t dsm_fra
 
         case 2:
             channel = 1;
+            break;
 
         default:
             break;
