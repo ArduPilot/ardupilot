@@ -75,7 +75,7 @@ Aircraft::Aircraft(const char *frame_str) :
     enum ap_var_type ptype;
     ahrs_orientation = (AP_Int8 *)AP_Param::find("AHRS_ORIENTATION", &ptype);
 
-    enum Rotation imu_rotation = (enum Rotation)ahrs_orientation->get();
+    enum Rotation imu_rotation = ahrs_orientation?(enum Rotation)ahrs_orientation->get():ROTATION_NONE;
     ahrs_rotation_inv.from_rotation(imu_rotation);
     ahrs_rotation_inv.transpose();
     last_imu_rotation = imu_rotation;
