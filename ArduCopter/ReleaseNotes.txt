@@ -1,5 +1,24 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.0.1-rc1 10-Jan-2020
+Changes from 4.0.0
+1) Circle mode allows pilot control of radius and rotation speed
+2) CAN servo feedback logged
+3) Magnetic declination tables updated
+4) Serial0 protocol forced to MAVLink (avoids accidental disabling of USB port)
+5) Bug Fixes:
+   a) TradHeli RSC RC passthrough fixed
+   b) CubeOrange and Durandal I2C timing fixed (was running slow)
+   c) Compass calibration auto orientation skips "pitch 7" which could cause cal to fail
+   d) Durandal's fourth I2C port fixed
+   e) Linux boards with CAN support fixed
+   f) Neopixel added to SERVOx_FUNCTION param description
+   g) NMEA Output fixed (was sending an extra CR)
+   h) Optflow messages sent even if EKF has no height estimate
+   i) SkyViper build fixed
+   j) Spektrum/DSM 22ms RC input fixed
+   k) "UC Node Down" message removed (was unnecessarily scary)
+------------------------------------------------------------------
 Copter 4.0.0 29-Dec-2019 / 4.0.0-rc6 28-Dec-2019
 Changes from 4.0.0-rc5
 1) Compiler updated to gcc 6.3.1 (2nd attempt)
