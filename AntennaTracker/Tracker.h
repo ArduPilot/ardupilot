@@ -224,6 +224,7 @@ private:
     void prepare_servos();
     void set_mode(Mode &newmode, ModeReason reason);
     bool set_mode(uint8_t new_mode, ModeReason reason) override;
+    uint8_t get_mode() const override { return (uint8_t)mode->number(); }
     bool should_log(uint32_t mask);
     bool start_command_callback(const AP_Mission::Mission_Command& cmd) { return false; }
     void exit_mission_callback() { return; }
