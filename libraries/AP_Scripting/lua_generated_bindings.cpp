@@ -1,4 +1,4 @@
-// auto generated bindings, don't manually edit
+// auto generated bindings, don't manually edit.  See README.md for details.
 #include "lua_generated_bindings.h"
 #include "lua_boxed_numerics.h"
 #include <RC_Channel/RC_Channel.h>
@@ -622,6 +622,19 @@ static int AP_SerialLED_set_num_LEDs(lua_State *L) {
             data_3);
 
     lua_pushboolean(L, data);
+    return 1;
+}
+
+static int AP_Vehicle_get_mode(lua_State *L) {
+    AP_Vehicle * ud = AP_Vehicle::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "vehicle not supported on this firmware");
+    }
+
+    binding_argcheck(L, 1);
+    const uint8_t data = ud->get_mode();
+
+    lua_pushinteger(L, data);
     return 1;
 }
 
@@ -1782,6 +1795,7 @@ const luaL_Reg AP_SerialLED_meta[] = {
 };
 
 const luaL_Reg AP_Vehicle_meta[] = {
+    {"get_mode", AP_Vehicle_get_mode},
     {"set_mode", AP_Vehicle_set_mode},
     {NULL, NULL}
 };
