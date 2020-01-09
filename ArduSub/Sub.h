@@ -540,6 +540,7 @@ private:
     void fence_check();
     bool set_mode(control_mode_t mode, ModeReason reason);
     bool set_mode(const uint8_t mode, const ModeReason reason) override;
+    uint8_t get_mode() const override { return (uint8_t)control_mode; }
     void update_flight_mode();
     void exit_mode(control_mode_t old_control_mode, control_mode_t new_control_mode);
     bool mode_requires_GPS(control_mode_t mode);
