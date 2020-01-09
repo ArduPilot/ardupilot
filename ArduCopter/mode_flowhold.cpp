@@ -283,7 +283,7 @@ void ModeFlowHold::run()
 
     case AltHold_Landed_Ground_Idle:
         attitude_control->set_yaw_target_to_current_heading();
-        // FALLTHROUGH
+        FALLTHROUGH;
 
     case AltHold_Landed_Pre_Takeoff:
         attitude_control->reset_rate_controller_I_terms();
