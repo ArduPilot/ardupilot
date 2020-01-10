@@ -1,5 +1,9 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.0.1-rc2 10-Jan-2020
+Changes from 4.0.1-rc1
+1) FrSky telemetry status text handling fix (Critical Fix)
+------------------------------------------------------------------
 Copter 4.0.1-rc1 10-Jan-2020
 Changes from 4.0.0
 1) Circle mode allows pilot control of radius and rotation speed
