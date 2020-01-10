@@ -37,8 +37,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-AP_Frsky_Telem::AP_Frsky_Telem(void) :
-  _statustext_queue(FRSKY_TELEM_PAYLOAD_STATUS_CAPACITY)
+AP_Frsky_Telem::AP_Frsky_Telem(void)
 {
 }
 
@@ -133,7 +132,12 @@ void AP_Frsky_Telem::passthrough_wfq_adaptive_scheduler(uint8_t prev_byte)
     check_ekf_status();
 
     // dynamic priorities
-    if (!_statustext_queue.empty()) {
+    bool queue_empty;
+    {
+        WITH_SEMAPHORE(_statustext.sem);
+        queue_empty = !_statustext.available && _statustext.queue.empty();
+    }
+    if (!queue_empty) {
         _passthrough.packet_weight[0] = 45;     // messages
         _passthrough.packet_weight[1] = 80;     // attitude
     } else {
@@ -151,7 +155,7 @@ void AP_Frsky_Telem::passthrough_wfq_adaptive_scheduler(uint8_t prev_byte)
         if (delay >= max_delay && ((now - _passthrough.packet_timer[i]) >= _sport_config.packet_min_period[i])) {
             switch (i) {
                 case 0:
-                    packet_ready = !_statustext_queue.empty();
+                    packet_ready = !queue_empty;
                     break;
                 case 5:
                     packet_ready = gcs().vehicle_initialised();
@@ -530,16 +534,20 @@ void  AP_Frsky_Telem::send_uint16(uint16_t id, uint16_t data)
  */
 bool AP_Frsky_Telem::get_next_msg_chunk(void)
 {
-    if (_statustext_queue.empty()) {
-        return false;
+    if (!_statustext.available) {
+        WITH_SEMAPHORE(_statustext.sem);
+        if (!_statustext.queue.pop(_statustext.next)) {
+            return false;
+        }
+        _statustext.available = true;
     }
 
     if (_msg_chunk.repeats == 0) { // if it's the first time get_next_msg_chunk is called for a given chunk
         uint8_t character = 0;
         _msg_chunk.chunk = 0; // clear the 4 bytes of the chunk buffer
 
-        for (int i = 3; i > -1 && _msg_chunk.char_index < sizeof(_statustext_queue[0]->text); i--) {
-            character = _statustext_queue[0]->text[_msg_chunk.char_index++];
+        for (int i = 3; i > -1 && _msg_chunk.char_index < sizeof(_statustext.next.text); i--) {
+            character = _statustext.next.text[_msg_chunk.char_index++];
 
             if (!character) {
                 break;
@@ -548,12 +556,12 @@ bool AP_Frsky_Telem::get_next_msg_chunk(void)
             _msg_chunk.chunk |= character << i * 8;
         }
 
-        if (!character || (_msg_chunk.char_index == sizeof(_statustext_queue[0]->text))) { // we've reached the end of the message (string terminated by '\0' or last character of the string has been processed)
+        if (!character || (_msg_chunk.char_index == sizeof(_statustext.next.text))) { // we've reached the end of the message (string terminated by '\0' or last character of the string has been processed)
             _msg_chunk.char_index = 0; // reset index to get ready to process the next message
             // add severity which is sent as the MSB of the last three bytes of the last chunk (bits 24, 16, and 8) since a character is on 7 bits
-            _msg_chunk.chunk |= (_statustext_queue[0]->severity & 0x4)<<21;
-            _msg_chunk.chunk |= (_statustext_queue[0]->severity & 0x2)<<14;
-            _msg_chunk.chunk |= (_statustext_queue[0]->severity & 0x1)<<7;
+            _msg_chunk.chunk |= (_statustext.next.severity & 0x4)<<21;
+            _msg_chunk.chunk |= (_statustext.next.severity & 0x2)<<14;
+            _msg_chunk.chunk |= (_statustext.next.severity & 0x1)<<7;
         }
     }
 
@@ -573,8 +581,9 @@ bool AP_Frsky_Telem::get_next_msg_chunk(void)
     
     if (_msg_chunk.repeats++ > extra_chunks ) {
         _msg_chunk.repeats = 0;
-        if (_msg_chunk.char_index == 0) { // if we're ready for the next message
-            _statustext_queue.remove(0);
+        if (_msg_chunk.char_index == 0) {
+            // we're ready for the next message
+            _statustext.available = false;
         }
     }
     return true;
@@ -594,7 +603,8 @@ void AP_Frsky_Telem::queue_message(MAV_SEVERITY severity, const char *text)
     // The force push will ensure comm links do not block other comm links forever if they fail.
     // If we push to a full buffer then we overwrite the oldest entry, effectively removing the
     // block but not until the buffer fills up.
-    _statustext_queue.push_force(statustext);
+    WITH_SEMAPHORE(_statustext.sem);
+    _statustext.queue.push_force(statustext);
 }
 
 /*

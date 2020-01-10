@@ -138,8 +138,13 @@ private:
     uint32_t check_sensor_status_timer;
     uint32_t check_ekf_status_timer;
     uint8_t _paramID;
-    
-    ObjectArray<mavlink_statustext_t> _statustext_queue;
+
+    struct {
+        HAL_Semaphore sem;
+        ObjectBuffer<mavlink_statustext_t> queue{FRSKY_TELEM_PAYLOAD_STATUS_CAPACITY};
+        mavlink_statustext_t next;
+        bool available;
+    } _statustext;
     
     struct
     {
