@@ -1,3 +1,27 @@
+Release 4.0.3beta1, 10th January 2020
+-------------------------------------
+
+This is a minor release with a few bug fixes and enhancements. The
+changes are:
+
+ - prevent failsafe action from overriding a VTOL land
+ - fixed compass calibration failures with auto-rotation detection
+ - fixed errors on STM32H7 I2C (affects CubeOrange and Durandal)
+ - fixed a race condition in FrSky passthrough telemetry
+ - fixed DSM/Spektrum parsing for 22ms protocols
+ - added fixed yaw compass calibration method
+ - re-generated magnetic field tables
+ - ensure SERIAL0_PROTOCOL is mavlink on boot
+
+The most important fix is for FrSky pass-through telemetry. Pass
+through telemetry support had a race condition which could lead to the
+flight controller generating a fault and rebooting. Until you are
+running a firmware with the fix you should disable FrSky pass-through
+telemetry by changing SERIALn_PROTOCOL from 10 to 0 on the where you
+have SPort enabled.
+
+Happy flying!
+
 Release 4.0.2, 30th December 2019
 ---------------------------------
 
