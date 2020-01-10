@@ -60,6 +60,7 @@ public:
     void load_parameters(void);
 
     virtual bool set_mode(const uint8_t new_mode, const ModeReason reason) override { return true; }
+    virtual uint8_t get_mode() const override { return 0; }
 
     AP_Vehicle::FixedWing aparm;
     AP_Airspeed airspeed;
