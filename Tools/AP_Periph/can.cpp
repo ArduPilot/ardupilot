@@ -813,7 +813,14 @@ static void can_rxfull_cb(CANDriver *canp, uint32_t flags)
 static void processRx(void)
 {
     CANRxFrame rxmsg;
-    while (rxbuffer.pop(rxmsg)) {
+    while (true) {
+        bool have_msg;
+        chSysLock();
+        have_msg = rxbuffer.pop(rxmsg);
+        chSysUnlock();
+        if (!have_msg) {
+            break;
+        }
         CanardCANFrame rx_frame {};
 
         //palToggleLine(HAL_GPIO_PIN_LED);
