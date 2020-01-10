@@ -504,10 +504,10 @@ void AP_Frsky_Telem::send_byte(uint8_t byte)
     } else { // FrSky SPort protocol (X-receivers)
         if (byte == START_STOP_SPORT) {
             _port->write(0x7D);
-            _port->write(0x5E);
+            _port->write(0x7E);
         } else if (byte == BYTESTUFF_SPORT) {
             _port->write(0x7D);
-            _port->write(0x5D);
+            _port->write(0x7D);
         } else {
             _port->write(byte);
         }
