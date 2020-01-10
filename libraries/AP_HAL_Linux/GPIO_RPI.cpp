@@ -22,6 +22,7 @@
 // Raspberry Pi GPIO memory
 #define BCM2708_PERI_BASE   0x20000000
 #define BCM2709_PERI_BASE   0x3F000000
+#define BCM2711_PERI_BASE   0xFE000000
 #define GPIO_BASE(address)  (address + 0x200000)
 
 // GPIO setup. Always use INP_GPIO(x) before OUT_GPIO(x) or SET_GPIO_ALT(x,y)
@@ -44,7 +45,14 @@ GPIO_RPI::GPIO_RPI()
 void GPIO_RPI::init()
 {
     int rpi_version = UtilRPI::from(hal.util)->get_rpi_version();
-    uint32_t gpio_address = rpi_version == 1 ? GPIO_BASE(BCM2708_PERI_BASE)   : GPIO_BASE(BCM2709_PERI_BASE);
+    uint32_t gpio_address;
+    if(rpi_version == 1) {
+        gpio_address = GPIO_BASE(BCM2708_PERI_BASE);
+    } else if (rpi_version == 2) {
+        gpio_address = GPIO_BASE(BCM2709_PERI_BASE);
+    } else {
+        gpio_address = GPIO_BASE(BCM2711_PERI_BASE);
+    }
 
     int mem_fd = open("/dev/mem", O_RDWR|O_SYNC|O_CLOEXEC);
     if (mem_fd < 0) {
