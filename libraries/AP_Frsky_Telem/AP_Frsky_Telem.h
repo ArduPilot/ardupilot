@@ -186,7 +186,7 @@ private:
     struct
     {
         const uint32_t packet_min_period[TIME_SLOT_MAX] = {
-            0,      //0x5000 text,      no rate limiter
+            28,     //0x5000 text,      25Hz
             38,     //0x5006 attitude   20Hz
             280,    //0x800  GPS        3Hz
             280,    //0x800  GPS        3Hz
@@ -224,7 +224,7 @@ private:
     
     // passthrough WFQ scheduler
     void update_avg_packet_rate();
-    void passthrough_wfq_adaptive_scheduler(uint8_t prev_byte);
+    void passthrough_wfq_adaptive_scheduler();
     // main transmission function when protocol is FrSky SPort Passthrough (OpenTX)
     void send_SPort_Passthrough(void);
     // main transmission function when protocol is FrSky SPort
