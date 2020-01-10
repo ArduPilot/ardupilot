@@ -55,6 +55,7 @@ AP_Frsky_Telem::~AP_Frsky_Telem(void)
  */
 void AP_Frsky_Telem::setup_passthrough(void)
 {
+#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
     // make frsky_telemetry available to GCS_MAVLINK (used to queue statustext messages from GCS_MAVLINK)
     // add firmware and frame info to message queue
     const char* _frame_string = gcs().frame_string();
@@ -65,12 +66,13 @@ void AP_Frsky_Telem::setup_passthrough(void)
         snprintf(firmware_buf, sizeof(firmware_buf), "%s %s", AP::fwversion().fw_string, _frame_string);
         queue_message(MAV_SEVERITY_INFO, firmware_buf);
     }
+#endif
 
     // initialize packet weights for the WFQ scheduler
-    // weight[i] = 1/_passthrough.packet_period[i]
-    // rate[i] = LinkRate * ( weight[i] / (sum(weight[1-n])) )
-    _passthrough.packet_weight[0] = 35;   // 0x5000 status text (dynamic)
-    _passthrough.packet_weight[1] = 50;   // 0x5006 Attitude and range (dynamic)
+    // priority[i] = 1/_passthrough.packet_weight[i]
+    // rate[i] = LinkRate * ( priority[i] / (sum(priority[1-n])) )
+    _passthrough.packet_weight[0] = 35;    // 0x5000 status text (dynamic)
+    _passthrough.packet_weight[1] = 50;    // 0x5006 Attitude and range (dynamic)
     _passthrough.packet_weight[2] = 550;   // 0x800 GPS lat (600 with 1 sensor)
     _passthrough.packet_weight[3] = 550;   // 0x800 GPS lon (600 with 1 sensor)
     _passthrough.packet_weight[4] = 400;   // 0x5005 Vel and Yaw
@@ -134,8 +136,10 @@ void AP_Frsky_Telem::update_avg_packet_rate()
  * WFQ scheduler
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
-void AP_Frsky_Telem::passthrough_wfq_adaptive_scheduler(uint8_t prev_byte)
+void AP_Frsky_Telem::passthrough_wfq_adaptive_scheduler()
 {
+    update_avg_packet_rate();
+
     uint32_t now = AP_HAL::millis();
     uint8_t max_delay_idx = TIME_SLOT_MAX;
     
@@ -266,8 +270,7 @@ void AP_Frsky_Telem::send_SPort_Passthrough(void)
     }
     if (prev_byte == START_STOP_SPORT) {
         if (_passthrough.new_byte == SENSOR_ID_28) { // byte 0x7E is the header of each poll request
-            update_avg_packet_rate();
-            passthrough_wfq_adaptive_scheduler(prev_byte);
+            passthrough_wfq_adaptive_scheduler();
         }
     }
 }
@@ -1103,7 +1106,7 @@ uint32_t AP_Frsky_Telem::sensor_status_flags() const
  */
 bool AP_Frsky_Telem::_get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &data)
 {
-    passthrough_wfq_adaptive_scheduler(0);
+    passthrough_wfq_adaptive_scheduler();
     if (!external_data.pending) {
         return false;
     }
@@ -1123,6 +1126,10 @@ bool AP_Frsky_Telem::get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &d
         // if telem data is requested when we are disarmed and don't
         // yet have a AP_Frsky_Telem object then try to allocate one
         new AP_Frsky_Telem(true);
+        // initialize the passthrough scheduler
+        if (singleton) {
+            singleton->setup_passthrough();
+        }
     }
     if (!singleton) {
         return false;
