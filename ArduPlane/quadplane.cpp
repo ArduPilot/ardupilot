@@ -1125,6 +1125,7 @@ void QuadPlane::init_qland(void)
     init_loiter();
     throttle_wait = false;
     poscontrol.state = QPOS_LAND_DESCEND;
+    last_land_final_agl = plane.relative_ground_altitude(plane.g.rangefinder_landing);
     landing_detect.lower_limit_start_ms = 0;
     landing_detect.land_start_ms = 0;
 }
@@ -2744,9 +2745,15 @@ void QuadPlane::check_land_complete(void)
 bool QuadPlane::check_land_final(void)
 {
     float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
-    if (height_above_ground < land_final_alt) {
+    // we require 2 readings at 10Hz to be within 5m of each other to
+    // trigger the switch to land final. This prevents a short term
+    // glitch at high altitude from triggering land final
+    const float max_change = 5;
+    if (height_above_ground < land_final_alt &&
+        fabsf(height_above_ground - last_land_final_agl) < max_change) {
         return true;
     }
+    last_land_final_agl = height_above_ground;
 
     /*
       also apply landing detector, in case we have landed in descent
@@ -2766,6 +2773,7 @@ bool QuadPlane::verify_vtol_land(void)
     if (poscontrol.state == QPOS_POSITION2 &&
         plane.auto_state.wp_distance < 2) {
         poscontrol.state = QPOS_LAND_DESCEND;
+        last_land_final_agl = plane.relative_ground_altitude(plane.g.rangefinder_landing);
         gcs().send_text(MAV_SEVERITY_INFO,"Land descend started");
         if (plane.control_mode == &plane.mode_auto) {
             // set height to mission height, so we can use the mission
