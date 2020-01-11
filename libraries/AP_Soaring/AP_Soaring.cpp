@@ -146,12 +146,15 @@ SoaringController::SoaringController(AP_AHRS &ahrs, AP_SpdHgtControl &spdHgt, co
     _throttle_suppressed(true)
 {
     AP_Param::setup_object_defaults(this, var_info);
+
+    _position_x_filter = LowPassFilter<float>(1.0/60.0);
+    _position_y_filter = LowPassFilter<float>(1.0/60.0);
 }
 
 void SoaringController::get_target(Location &wp)
 {
     wp = _ahrs.get_home();
-    wp.offset(_ekf.X[2], _ekf.X[3]);
+    wp.offset(_position_x_filter.get(), _position_y_filter.get());
 }
 
 bool SoaringController::suppress_throttle()
@@ -278,6 +281,9 @@ void SoaringController::init_thermalling()
     _thermal_start_pos = position;
 
     _vario.reset_filter(0.0);
+
+    _position_x_filter.reset(_ekf.X[2]);
+    _position_y_filter.reset(_ekf.X[3]);
 }
 
 void SoaringController::init_cruising()
@@ -308,6 +314,13 @@ void SoaringController::update_thermalling()
     _thermalability = (_ekf.X[0]*expf(-powf(_aparm.loiter_radius / _ekf.X[1], 2))) - _vario.get_exp_thermalling_sink();
 
     _prev_update_time = AP_HAL::micros64();
+
+    // Compute smoothed estimate of position
+    _position_x_filter.set_cutoff_frequency(1/(3*_vario.tau));
+    _position_y_filter.set_cutoff_frequency(1/(3*_vario.tau));
+
+    _position_x_filter.apply(_ekf.X[2], deltaT);
+    _position_y_filter.apply(_ekf.X[3], deltaT);
 
     // write log - save the data.
     AP::logger().Write("SOAR", "TimeUS,nettorate,x0,x1,x2,x3,north,east,alt,dx_w,dy_w,th", "Qfffffffffff",
