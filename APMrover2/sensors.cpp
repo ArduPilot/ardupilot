@@ -42,8 +42,7 @@ void Rover::update_wheel_encoder()
     if (!wheel_encoder_initialised) {
         wheel_encoder_initialised = true;
         for (uint8_t i = 0; i < g2.wheel_encoder.num_sensors(); i++) {
-            wheel_encoder_last_angle_rad[i] = g2.wheel_encoder.get_delta_angle(i);
-            wheel_encoder_last_reading_ms[i] = g2.wheel_encoder.get_last_reading_ms(i);
+            g2.wheel_encoder.get_delta_angle_and_last_reading_ms(i,wheel_encoder_last_angle_rad[i],wheel_encoder_last_reading_ms[i]);
         }
         return;
     }
@@ -55,8 +54,9 @@ void Rover::update_wheel_encoder()
     }
 
     // get current time, total delta angle (since startup) and update time from sensor
-    const float curr_angle_rad = g2.wheel_encoder.get_delta_angle(wheel_encoder_last_index_sent);
-    const uint32_t sensor_reading_ms = g2.wheel_encoder.get_last_reading_ms(wheel_encoder_last_index_sent);
+    float curr_angle_rad;
+    uint32_t sensor_reading_ms;
+    g2.wheel_encoder.get_delta_angle_and_last_reading_ms(wheel_encoder_last_index_sent,curr_angle_rad,sensor_reading_ms);
     const uint32_t now_ms = AP_HAL::millis();
 
     // calculate angular change (in radians)
