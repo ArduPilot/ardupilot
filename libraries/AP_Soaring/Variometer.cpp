@@ -31,7 +31,7 @@ void Variometer::update(const float polar_K, const float polar_Cd0, const float 
     _aspd_filt_constrained = _aspd_filt>minV ? _aspd_filt : minV;
 
 
-    float tau = calculate_circling_time_constant();
+    tau = calculate_circling_time_constant();
 
     float dt = (float)(AP_HAL::micros64() - _prev_update_time)/1e6;
 
