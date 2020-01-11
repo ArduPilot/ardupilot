@@ -50,6 +50,7 @@ public:
     float displayed_reading;
     float raw_climb_rate;
     float smoothed_climb_rate;
+    float tau;
 
     void update(const float polar_K, const float polar_CD0, const float polar_B);
     float calculate_aircraft_sinkrate(float phi, const float polar_K, const float polar_CD0, const float polar_B);
