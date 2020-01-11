@@ -3653,7 +3653,6 @@ class AutoTestCopter(AutoTest):
         self.do_RTL()
 
     def hover_and_check_matched_frequency(self, dblevel=-15, minhz=200, maxhz=300, peakhz=None):
-
         # find a motor peak
         self.takeoff(10, mode="ALT_HOLD")
 
