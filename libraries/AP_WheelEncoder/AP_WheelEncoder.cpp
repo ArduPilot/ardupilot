@@ -332,12 +332,21 @@ float AP_WheelEncoder::get_signal_quality(uint8_t instance) const
     return constrain_float((1.0f - ((float)state[instance].error_count / (float)state[instance].total_count)) * 100.0f, 0.0f, 100.0f);
 }
 
-// get the system time (in milliseconds) of the last update
-uint32_t AP_WheelEncoder::get_last_reading_ms(uint8_t instance) const
+// get total delta angle (in radians) measured by the wheel encoder and system time (in milliseconds) of the last update simultaneously to avoid race condition
+void AP_WheelEncoder::get_delta_angle_and_last_reading_ms(uint8_t instance,float &delta_angle, uint32_t &sensor_reading_ms ) const
 {
     // for invalid instances return zero
     if (instance >= WHEELENCODER_MAX_INSTANCES) {
-        return 0;
+        delta_angle = 0.0f;
+        sensor_reading_ms = 0;
+        return;
     }
-    return state[instance].last_reading_ms;
+    sensor_reading_ms = state[instance].last_reading_ms;
+    
+    // protect against divide by zero
+    if (_counts_per_revolution[instance] == 0) {
+        delta_angle = 0.0f;
+        return;
+    }
+    delta_angle = M_2PI * state[instance].distance_count / _counts_per_revolution[instance];
 }
