@@ -538,6 +538,8 @@ private:
     uint32_t takeoff_start_time_ms;
     uint32_t takeoff_time_limit_ms;
 
+    float last_land_final_agl;
+
     /*
       return true if current mission item is a vtol takeoff
      */
