@@ -102,9 +102,9 @@ public:
 
     // get the signal quality for a sensor (0 = extremely poor quality, 100 = extremely good quality)
     float get_signal_quality(uint8_t instance) const;
-
-    // get the system time (in milliseconds) of the last update
-    uint32_t get_last_reading_ms(uint8_t instance) const;
+        
+    // get total delta angle (in radians) measured by the wheel encoder and system time (in milliseconds) of the last update to avoid race condition
+    void get_delta_angle_and_last_reading_ms(uint8_t instance,float &delta_angle,uint32_t &sensor_reading_ms) const;
 
     static const struct AP_Param::GroupInfo var_info[];
 
