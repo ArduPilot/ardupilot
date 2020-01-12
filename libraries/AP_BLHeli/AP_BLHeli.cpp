@@ -407,7 +407,8 @@ void AP_BLHeli::msp_process_command(void)
         // get the output going to each motor
         uint8_t buf[16] {};
         for (uint8_t i = 0; i < num_motors; i++) {
-            uint16_t v = hal.rcout->read(motor_map[i]);
+            // if we have a mix of reversible and normal report a PWM of zero, this allows BLHeliSuite to conect
+            uint16_t v = mixed_type ? 0 : hal.rcout->read(motor_map[i]);
             putU16(&buf[2*i], v);
             debug("MOTOR %u val: %u",i,v);
         }
@@ -417,24 +418,28 @@ void AP_BLHeli::msp_process_command(void)
 
     case MSP_SET_MOTOR: {
         debug("MSP_SET_MOTOR");
-        // set the output to each motor
-        uint8_t nmotors = msp.dataSize / 2;
-        debug("MSP_SET_MOTOR %u", nmotors);
-        SRV_Channels::set_disabled_channel_mask(0xFFFF);
-        motors_disabled = true;
-        EXPECT_DELAY_MS(1000);
-        hal.rcout->cork();
-        for (uint8_t i = 0; i < nmotors; i++) {
-            if (i >= num_motors) {
-                break;
+        if (!mixed_type) {
+            // set the output to each motor
+            uint8_t nmotors = msp.dataSize / 2;
+            debug("MSP_SET_MOTOR %u", nmotors);
+            SRV_Channels::set_disabled_channel_mask(0xFFFF);
+            motors_disabled = true;
+            EXPECT_DELAY_MS(1000);
+            hal.rcout->cork();
+            for (uint8_t i = 0; i < nmotors; i++) {
+                if (i >= num_motors) {
+                    break;
+                }
+                uint16_t v = getU16(&msp.buf[i*2]);
+                debug("MSP_SET_MOTOR %u %u", i, v);
+                // map from a MSP value to a value in the range 1000 to 2000
+                uint16_t pwm = (v < 1000)?0:v;
+                hal.rcout->write(motor_map[i], pwm);
             }
-            uint16_t v = getU16(&msp.buf[i*2]);
-            debug("MSP_SET_MOTOR %u %u", i, v);
-            // map from a MSP value to a value in the range 1000 to 2000
-            uint16_t pwm = (v < 1000)?0:v;
-            hal.rcout->write(motor_map[i], pwm);
+            hal.rcout->push();
+        } else {
+            debug("mixed type, Motors Disabled");
         }
-        hal.rcout->push();
         break;
     }
 
@@ -1279,6 +1284,9 @@ void AP_BLHeli::update(void)
     }
     motor_mask = mask;
     debug("ESC: %u motors mask=0x%04x", num_motors, mask);
+
+    // check if we have a combination of reversable and normal
+    mixed_type = (mask != (mask & channel_reversible_mask.get())) && (channel_reversible_mask.get() != 0);
 
     if (num_motors != 0 && telem_rate > 0) {
         AP_SerialManager *serial_manager = AP_SerialManager::get_singleton();

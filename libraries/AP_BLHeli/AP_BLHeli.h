@@ -239,6 +239,9 @@ private:
     // have we locked the UART?
     bool uart_locked;
 
+    // true if we have a mix of reversable and normal ESC
+    bool mixed_type;
+
     // mapping from BLHeli motor numbers to RC output channels
     uint8_t motor_map[max_motors];
     uint16_t motor_mask;
