@@ -131,7 +131,9 @@ protected:
     AP_Int8  _enable_RC_fs;
     AP_Int8  _rc_term_manual_only;
     AP_Int8  _enable_dual_loss;
-    AP_Int16  _max_range_km;
+    AP_Int16 _max_range_km;
+    AP_Int8  _input_pin;
+    AP_Int8  _input_pin_pol;
 
     bool _heartbeat_pin_value;
 
@@ -156,6 +158,7 @@ protected:
     Location _first_location;
     bool _have_first_location;
     uint32_t _term_range_notice_ms;
+    uint8_t  _last_afs_input_pin_state;
 
     bool check_altlimit(void);
 
@@ -164,6 +167,9 @@ private:
 
     // update maximum range check
     void max_range_update();
+
+    // update the input pin check
+    void input_pin_update(void);
 };
 
 namespace AP {

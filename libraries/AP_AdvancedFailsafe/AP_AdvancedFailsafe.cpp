@@ -157,6 +157,21 @@ const AP_Param::GroupInfo AP_AdvancedFailsafe::var_info[] = {
     // @User: Advanced
     // @Units: km
     AP_GROUPINFO("MAX_RANGE",   20, AP_AdvancedFailsafe, _max_range_km,    0),
+
+    // @Param: INPUT_PIN
+    // @DisplayName: AFS trigger input pin
+    // @Description: Pin number to use to externally trigger AFS. The pin should be held for at least 2 milliseconds for reliable trigger detection. Specify high or low polarity in AFS_INPUT_POL.
+    // @Values: -1:Disabled,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("INPUT_PIN",   21, AP_AdvancedFailsafe, _input_pin, -1),
+
+    // @Param: INPUT_POL
+    // @DisplayName: Camera feedback pin polarity
+    // @Description: Polarity for AFS external input pin specified in AFS_INPUT_PIN. If this is 1 then the feedback pin should go high on trigger. If set to 0 then it should go low
+    // @Values: 0:Trigger Low,1:Trigger High
+    // @User: Advanced
+    AP_GROUPINFO("INPUT_POL",  22, AP_AdvancedFailsafe, _input_pin_pol, 0),
     
     AP_GROUPEND
 };
@@ -182,6 +197,9 @@ AP_AdvancedFailsafe::check(uint32_t last_heartbeat_ms, bool geofence_breached, u
 
     // update max range check
     max_range_update();
+
+    // check input pin
+    input_pin_update();
 
     enum control_mode mode = afs_mode();
     
@@ -454,6 +472,25 @@ void AP_AdvancedFailsafe::max_range_update(void)
         }
         _terminate.set_and_notify(1);
     }
+}
+
+/*  check the input pin assigned to AFS.
+    if the input pin (specified by AFS_INPUT_PIN) is pulled high or low (specified by AFS_INPUT_PIN_POL), terminate
+ */
+void AP_AdvancedFailsafe::input_pin_update(void)
+{
+    if (_input_pin == -1) {
+        return;
+    }
+    
+    uint8_t pin_state = hal.gpio->read(_input_pin);
+    uint8_t trigger_polarity = _input_pin_pol==0?0:1;
+    if (pin_state == trigger_polarity &&
+        _last_afs_input_pin_state != trigger_polarity) {
+         gcs().send_text(MAV_SEVERITY_CRITICAL, "Terminating due to external input pin");
+         _terminate.set_and_notify(1);
+    }
+    _last_afs_input_pin_state = pin_state;
 }
 
 namespace AP {
