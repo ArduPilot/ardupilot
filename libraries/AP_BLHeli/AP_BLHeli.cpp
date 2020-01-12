@@ -40,6 +40,9 @@ extern const AP_HAL::HAL& hal;
 // the MSP protocol on hal.console
 #define BLHELI_UART_LOCK_KEY 0x20180402
 
+// if no packets are received for this time and motor control is active BLH will disconect (stoping motors)
+#define MOTOR_ACTIVE_TIMEOUT 1000
+
 const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     // @Param: MASK
     // @DisplayName: BLHeli Channel Bitmask
@@ -1183,10 +1186,18 @@ void AP_BLHeli::run_connection_test(uint8_t chan)
  */
 void AP_BLHeli::update(void)
 {
-    if (initialised &&
-        timeout_sec &&
-        uart_locked &&
-        AP_HAL::millis() - last_valid_ms > uint32_t(timeout_sec.get())*1000U) {
+    bool motor_control_active = false;
+    for (uint8_t i = 0; i < num_motors; i++) {
+        bool reversed = ((1U<< motor_map[i]) & channel_reversible_mask.get()) != 0;
+        if (hal.rcout->read( motor_map[i]) != (reversed ? 1500 : 1000)) {
+            motor_control_active = true;
+        }
+    }
+
+    uint32_t now = AP_HAL::millis();
+    if (initialised && uart_locked &&
+        ((timeout_sec && now - last_valid_ms > uint32_t(timeout_sec.get())*1000U) || 
+        (motor_control_active && now - last_valid_ms > MOTOR_ACTIVE_TIMEOUT))) {
         // we're not processing requests any more, shutdown serial
         // output
         if (serial_start_ms) {
@@ -1195,11 +1206,17 @@ void AP_BLHeli::update(void)
         }
         if (motors_disabled) {
             motors_disabled = false;
-            SRV_Channels::set_disabled_channel_mask(0);            
+            SRV_Channels::set_disabled_channel_mask(0);
         }
         debug("Unlocked UART");
         uart->lock_port(0, 0);
         uart_locked = false;
+        if (motor_control_active) {
+            for (uint8_t i = 0; i < num_motors; i++) {
+                bool reversed = ((1U<<motor_map[i]) & channel_reversible_mask.get()) != 0;
+                hal.rcout->write(motor_map[i], reversed ? 1500 : 1000);
+            }
+        }
     }
     if (initialised || (channel_mask.get() == 0 && channel_auto.get() == 0)) {
         if (initialised && run_test.get() > 0) {
