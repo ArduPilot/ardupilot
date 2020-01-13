@@ -600,12 +600,10 @@ void GCS_MAVLINK::handle_param_value(const mavlink_message_t &msg)
 
 void GCS_MAVLINK::send_text(MAV_SEVERITY severity, const char *fmt, ...) const
 {
-    char text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
     va_list arg_list;
     va_start(arg_list, fmt);
-    hal.util->vsnprintf(text, sizeof(text), fmt, arg_list);
+    gcs().send_textv(severity, fmt, arg_list, (1<<chan));
     va_end(arg_list);
-    gcs().send_statustext(severity, (1<<chan), text);
 }
 
 void GCS_MAVLINK::handle_radio_status(const mavlink_message_t &msg, bool log_radio)
@@ -1762,13 +1760,14 @@ void GCS_MAVLINK::send_ahrs()
 /*
     send a statustext text string to specific MAVLink bitmask
 */
-void GCS::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text)
+void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, uint8_t dest_bitmask)
 {
+    char text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+    if (hal.util->vsnprintf(text, sizeof(text), fmt, arg_list) > MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    if (strlen(text) > MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN) {
         AP_HAL::panic("Statustext (%s) too long", text);
-    }
 #endif
+    }
 
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger != nullptr) {
