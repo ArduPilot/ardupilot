@@ -22,6 +22,16 @@ void GCS::get_sensor_status_flags(uint32_t &present,
     health = control_sensors_health;
 }
 
+void GCS::get_sensor_status_flags(uint32_t &present,
+                                  uint32_t &enabled,
+                                  uint32_t &health,
+                                  uint32_t &initialised)
+{
+    get_sensor_status_flags(present, enabled, health);
+
+    initialised = control_sensors_initialised;
+}
+
 MissionItemProtocol_Waypoints *GCS::_missionitemprotocol_waypoints;
 MissionItemProtocol_Rally *GCS::_missionitemprotocol_rally;
 MissionItemProtocol_Fence *GCS::_missionitemprotocol_fence;
@@ -211,6 +221,8 @@ void GCS::update_sensor_status_flags()
     }
 
     update_vehicle_sensor_status_flags();
+
+    control_sensors_initialised |= control_sensors_health;
 }
 
 bool GCS::out_of_time() const

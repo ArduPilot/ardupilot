@@ -4120,8 +4120,9 @@ void GCS_MAVLINK::send_sys_status()
     uint32_t control_sensors_present;
     uint32_t control_sensors_enabled;
     uint32_t control_sensors_health;
+    uint32_t control_sensors_initialised;
 
-    gcs().get_sensor_status_flags(control_sensors_present, control_sensors_enabled, control_sensors_health);
+    gcs().get_sensor_status_flags(control_sensors_present, control_sensors_enabled, control_sensors_health,control_sensors_initialised);
 
     const uint32_t errors = AP::internalerror().errors();
     const uint16_t errors1 = errors & 0xffff;
@@ -4142,7 +4143,8 @@ void GCS_MAVLINK::send_sys_status()
         errors1,
         errors2,
         0,  // errors3
-        errors4); // errors4
+        errors4, // errors4
+        control_sensors_initialised);
 }
 
 void GCS_MAVLINK::send_extended_sys_state() const

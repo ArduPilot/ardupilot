@@ -893,6 +893,7 @@ public:
     // update uart pass-thru
     void update_passthru();
 
+    void get_sensor_status_flags(uint32_t &present, uint32_t &enabled, uint32_t &health,  uint32_t &initialised);
     void get_sensor_status_flags(uint32_t &present, uint32_t &enabled, uint32_t &health);
     virtual bool vehicle_initialised() const { return true; }
 
@@ -913,6 +914,7 @@ protected:
     uint32_t control_sensors_present;
     uint32_t control_sensors_enabled;
     uint32_t control_sensors_health;
+    uint32_t control_sensors_initialised;
     virtual void update_vehicle_sensor_status_flags() {}
 
     GCS_MAVLINK_Parameters chan_parameters[MAVLINK_COMM_NUM_BUFFERS];
