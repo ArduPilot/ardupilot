@@ -1439,9 +1439,12 @@ void  AP_OSD_Screen::draw_flightime(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_eff(uint8_t x, uint8_t y)
 {
     AP_BattMonitor &battery = AP::battery();
-    AP_AHRS &ahrs = AP::ahrs();
-    WITH_SEMAPHORE(ahrs.get_semaphore());
-    Vector2f v = ahrs.groundspeed_vector();
+    Vector2f v;
+    {
+        AP_AHRS &ahrs = AP::ahrs();
+        WITH_SEMAPHORE(ahrs.get_semaphore());
+        v = ahrs.groundspeed_vector();
+    }
     float speed = u_scale(SPEED,v.length());
     float current_amps;
     if ((speed > 2.0) && battery.current_amps(current_amps)) {
@@ -1456,15 +1459,19 @@ void AP_OSD_Screen::draw_climbeff(uint8_t x, uint8_t y)
     char unit_icon = u_icon(DISTANCE);
     Vector3f v;
     float vspd;
-    auto &ahrs = AP::ahrs();
-    WITH_SEMAPHORE(ahrs.get_semaphore());
-    if (ahrs.get_velocity_NED(v)) {
-        vspd = -v.z;
-    } else {
+    do {
+        {
+            auto &ahrs = AP::ahrs();
+            WITH_SEMAPHORE(ahrs.get_semaphore());
+            if (ahrs.get_velocity_NED(v)) {
+                vspd = -v.z;
+                break;
+            }
+        }
         auto &baro = AP::baro();
         WITH_SEMAPHORE(baro.get_semaphore());
         vspd = baro.get_climb_rate();
-    }
+    } while (false);
     if (vspd < 0.0) {
         vspd = 0.0;
     }
