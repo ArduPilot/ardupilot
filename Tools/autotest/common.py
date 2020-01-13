@@ -3960,14 +3960,14 @@ switch value'''
         tstart = self.get_sim_time()
         while True:
             now = self.get_sim_time()
-            if now - tstart > 2:
+            if now - tstart > 20:
                 raise NotAchievedException("NMEA output not updating?!")
-            gps2 = self.mav.recv_match(type="GPS2_RAW", blocking=True, timeout=10)
+            gps2 = self.mav.recv_match(type="GPS2_RAW", blocking=True, timeout=1)
+            self.progress("gps2=%s" % str(gps2))
+            if gps2 is None:
+                continue
             if gps2.time_usec != 0:
                 break
-        self.progress("gps2=(%s)" % str(gps2))
-        if gps2 is None:
-            raise NotAchievedException("Did not receive GPS2_RAW")
         if self.get_distance_int(gps1, gps2) > 1:
             raise NotAchievedException("NMEA output inaccurate")
 
