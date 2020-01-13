@@ -461,7 +461,7 @@ void FlightAxis::update(const struct sitl_input &input)
     Vector3f airspeed3d = dcm.mul_transpose(airspeed_3d_ef);
 
     if (last_imu_rotation != ROTATION_NONE) {
-        airspeed3d = airspeed3d * ahrs_rotation_inv;
+        airspeed3d = airspeed3d * sitl->ahrs_rotation_inv;
     }
     airspeed_pitot = MAX(airspeed3d.x,0);
 
