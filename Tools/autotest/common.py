@@ -4120,7 +4120,7 @@ switch value'''
         self.progress(" yaw=%u gpi=%u" % (yaw, gpi.hdg))
         self.progress(" xy_vel=%u" % xy_vel)
         self.progress(" z_vel_dm_per_second=%u" % z_vel_dm_per_second)
-        if int(round(yaw/10,3)) == int(round(gpi.hdg/100, 3)):
+        if int(round(yaw/10.0)) == int(round(gpi.hdg/100.0)):
             self.progress("Yaw match")
             return True
               # FIXME: need to be under way to check the velocities, really....
