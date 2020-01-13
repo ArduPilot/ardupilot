@@ -590,6 +590,9 @@ static void can_safety_LED_update(void)
 
 
 #ifdef HAL_GPIO_PIN_SAFE_BUTTON
+#ifndef HAL_SAFE_BUTTON_ON
+#define HAL_SAFE_BUTTON_ON 1
+#endif
 /*
   update safety button
  */
@@ -599,7 +602,7 @@ static void can_safety_button_update(void)
     static uint8_t counter;
     uint32_t now = AP_HAL::millis();
     // send at 10Hz when pressed
-    if (!palReadLine(HAL_GPIO_PIN_SAFE_BUTTON)) {
+    if (palReadLine(HAL_GPIO_PIN_SAFE_BUTTON) != HAL_SAFE_BUTTON_ON) {
         counter = 0;
         return;
     }
