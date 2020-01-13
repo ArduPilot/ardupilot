@@ -103,7 +103,6 @@ void AP_Periph_FW::init()
 
 #ifdef HAL_PERIPH_ENABLE_BARO
     baro.init();
-    baro.calibrate(false);
 #endif
 
 #ifdef HAL_PERIPH_NEOPIXEL_COUNT
