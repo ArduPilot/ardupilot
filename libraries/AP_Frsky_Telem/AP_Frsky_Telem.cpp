@@ -35,6 +35,12 @@
 #include <stdio.h>
 #include <math.h>
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#define FRSKY_STACK_SIZE 4096
+#else
+#define FRSKY_STACK_SIZE 1024
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 AP_Frsky_Telem *AP_Frsky_Telem::singleton;
@@ -104,7 +110,7 @@ bool AP_Frsky_Telem::init()
     if (_port != nullptr) {
         if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Frsky_Telem::loop, void),
                                           "FrSky",
-                                          1024, AP_HAL::Scheduler::PRIORITY_RCIN, 1)) {
+                                          FRSKY_STACK_SIZE, AP_HAL::Scheduler::PRIORITY_RCIN, 1)) {
             return false;
         }
         // we don't want flow control for either protocol
