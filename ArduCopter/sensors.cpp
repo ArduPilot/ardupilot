@@ -1,5 +1,10 @@
 #include "Copter.h"
 
+void Copter::read_airspeed(void)
+{
+    airspeed.update(should_log(MASK_LOG_IMU));
+}
+
 // return barometric altitude in centimeters
 void Copter::read_barometer(void)
 {

@@ -1329,3 +1329,14 @@ MAV_LANDED_STATE GCS_MAVLINK_Copter::landed_state() const
     }
     return MAV_LANDED_STATE_IN_AIR;
 }
+
+float GCS_MAVLINK_Copter::vfr_hud_airspeed() const
+{
+    // Only report airspeed sensor if healthy
+    if (copter.airspeed.enabled() && copter.airspeed.healthy()) {
+        return copter.airspeed.get_airspeed();
+    }
+
+    // lying is worst:
+    return 0;
+}
