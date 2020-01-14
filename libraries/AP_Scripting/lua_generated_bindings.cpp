@@ -1,6 +1,7 @@
 // auto generated bindings, don't manually edit.  See README.md for details.
 #include "lua_generated_bindings.h"
 #include "lua_boxed_numerics.h"
+#include <AP_Baro/AP_Baro.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <RC_Channel/RC_Channel.h>
 #include <SRV_Channel/SRV_Channel.h>
@@ -529,6 +530,45 @@ const luaL_Reg Location_meta[] = {
     {NULL, NULL}
 };
 
+static int AP_Baro_get_external_temperature(lua_State *L) {
+    AP_Baro * ud = AP_Baro::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "baro not supported on this firmware");
+    }
+
+    binding_argcheck(L, 1);
+    const float data = ud->get_external_temperature();
+
+    lua_pushnumber(L, data);
+    return 1;
+}
+
+static int AP_Baro_get_temperature(lua_State *L) {
+    AP_Baro * ud = AP_Baro::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "baro not supported on this firmware");
+    }
+
+    binding_argcheck(L, 1);
+    const float data = ud->get_temperature();
+
+    lua_pushnumber(L, data);
+    return 1;
+}
+
+static int AP_Baro_get_pressure(lua_State *L) {
+    AP_Baro * ud = AP_Baro::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "baro not supported on this firmware");
+    }
+
+    binding_argcheck(L, 1);
+    const float data = ud->get_pressure();
+
+    lua_pushnumber(L, data);
+    return 1;
+}
+
 static int AP_SerialManager_find_serial(lua_State *L) {
     AP_SerialManager * ud = AP_SerialManager::get_singleton();
     if (ud == nullptr) {
@@ -658,6 +698,33 @@ static int AP_SerialLED_set_num_LEDs(lua_State *L) {
     const bool data = ud->set_num_LEDs(
             data_2,
             data_3);
+
+    lua_pushboolean(L, data);
+    return 1;
+}
+
+static int AP_Vehicle_get_time_flying_ms(lua_State *L) {
+    AP_Vehicle * ud = AP_Vehicle::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "vehicle not supported on this firmware");
+    }
+
+    binding_argcheck(L, 1);
+    const uint32_t data = ud->get_time_flying_ms();
+
+        new_uint32_t(L);
+        *static_cast<uint32_t *>(luaL_checkudata(L, -1, "uint32_t")) = data;
+    return 1;
+}
+
+static int AP_Vehicle_get_likely_flying(lua_State *L) {
+    AP_Vehicle * ud = AP_Vehicle::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "vehicle not supported on this firmware");
+    }
+
+    binding_argcheck(L, 1);
+    const bool data = ud->get_likely_flying();
 
     lua_pushboolean(L, data);
     return 1;
@@ -1589,6 +1656,27 @@ static int AP_Arming_disarm(lua_State *L) {
     return 1;
 }
 
+static int AP_AHRS_airspeed_estimate(lua_State *L) {
+    AP_AHRS * ud = AP_AHRS::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "ahrs not supported on this firmware");
+    }
+
+    binding_argcheck(L, 1);
+    float data_5002 = {};
+    ud->get_semaphore().take_blocking();
+    const bool data = ud->airspeed_estimate(
+            data_5002);
+
+    ud->get_semaphore().give();
+    if (data) {
+        lua_pushnumber(L, data_5002);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
+}
+
 static int AP_AHRS_prearm_healthy(lua_State *L) {
     AP_AHRS * ud = AP_AHRS::get_singleton();
     if (ud == nullptr) {
@@ -1815,6 +1903,13 @@ static int AP_AHRS_get_roll(lua_State *L) {
     return 1;
 }
 
+const luaL_Reg AP_Baro_meta[] = {
+    {"get_external_temperature", AP_Baro_get_external_temperature},
+    {"get_temperature", AP_Baro_get_temperature},
+    {"get_pressure", AP_Baro_get_pressure},
+    {NULL, NULL}
+};
+
 const luaL_Reg AP_SerialManager_meta[] = {
     {"find_serial", AP_SerialManager_find_serial},
     {NULL, NULL}
@@ -1838,6 +1933,8 @@ const luaL_Reg AP_SerialLED_meta[] = {
 };
 
 const luaL_Reg AP_Vehicle_meta[] = {
+    {"get_time_flying_ms", AP_Vehicle_get_time_flying_ms},
+    {"get_likely_flying", AP_Vehicle_get_likely_flying},
     {"get_mode", AP_Vehicle_get_mode},
     {"set_mode", AP_Vehicle_set_mode},
     {NULL, NULL}
@@ -1926,6 +2023,7 @@ const luaL_Reg AP_Arming_meta[] = {
 };
 
 const luaL_Reg AP_AHRS_meta[] = {
+    {"airspeed_estimate", AP_AHRS_airspeed_estimate},
     {"prearm_healthy", AP_AHRS_prearm_healthy},
     {"home_is_set", AP_AHRS_home_is_set},
     {"get_relative_position_NED_home", AP_AHRS_get_relative_position_NED_home},
@@ -2057,6 +2155,7 @@ const struct userdata_meta userdata_fun[] = {
 };
 
 const struct userdata_meta singleton_fun[] = {
+    {"baro", AP_Baro_meta, NULL},
     {"serial", AP_SerialManager_meta, NULL},
     {"rc", RC_Channels_meta, NULL},
     {"SRV_Channels", SRV_Channels_meta, NULL},
@@ -2126,6 +2225,7 @@ void load_generated_bindings(lua_State *L) {
 }
 
 const char *singletons[] = {
+    "baro",
     "serial",
     "rc",
     "SRV_Channels",
