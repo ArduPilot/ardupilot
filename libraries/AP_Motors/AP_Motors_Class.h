@@ -59,6 +59,7 @@ public:
         MOTOR_FRAME_TYPE_DJI_X = 13, // X frame, DJI ordering
         MOTOR_FRAME_TYPE_CW_X = 14, // X frame, clockwise ordering
         MOTOR_FRAME_TYPE_I = 15, // (sideways H) octo only
+        MOTOR_FRAME_TYPE_BF_X_REV = 18, // X frame, betaflight ordering, reversed motors
     };
 
     // Constructor
