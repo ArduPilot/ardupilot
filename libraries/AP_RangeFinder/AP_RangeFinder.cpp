@@ -87,7 +87,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 
     // @Group: 4_
     // @Path: AP_RangeFinder_Wasp.cpp
-    AP_SUBGROUPVARPTR(drivers[0], "4_",  60, RangeFinder, backend_var_info[3]),
+    AP_SUBGROUPVARPTR(drivers[3], "4_",  60, RangeFinder, backend_var_info[3]),
 #endif
 
 #if RANGEFINDER_MAX_INSTANCES > 4
