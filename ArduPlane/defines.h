@@ -160,6 +160,7 @@ enum FlightOptions {
     ACRO_YAW_DAMPER = (1 << 5),
     SURPRESS_TKOFF_SCALING = (1<<6),
     ENABLE_DEFAULT_AIRSPEED = (1<<7),
+    GCS_FS_HB_WAIT = (1 << 8),
 };
 
 enum CrowFlapOptions {
