@@ -71,17 +71,5 @@ matrix:
       compiler: "clang-7"
       env: CI_BUILD_TARGET="sitltest-rover sitltest-sub sitltest-balancebot"
     - if: type != cron
-      compiler: "gcc"
-      env: CI_BUILD_TARGET="unit-tests"
-    - if: type != cron
       compiler: "clang-7"
-      env: CI_BUILD_TARGET="sitl""
-    - language: python
-      python: 3.7
-      addons:  # speedup: This test does not need addons
-      compiler:
-      dist: xenial  # required for Python >= 3.7 (travis-ci/travis-ci#9069)
-      before_install: pip install flake8
-      script:
-        - EXCLUDE=./.*,./modules/gtest,./modules/ChibiOS/test,./modules/uavcan/libuavcan,./modules/libcanard
-        - flake8 . --count --exclude=$EXCLUDE --select=E901,E999,F821,F822,F823 --show-source --statistics
+      env: CI_BUILD_TARGET="unit-tests sitl"
