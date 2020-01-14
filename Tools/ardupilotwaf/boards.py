@@ -94,6 +94,11 @@ class Board:
             cfg.srcnode.find_dir('libraries/AP_Common/missing').abspath()
         ])
 
+    def cc_version_gte(self, cfg, want_major, want_minor):
+        (major, minor, patchlevel) = cfg.env.CC_VERSION
+        return (int(major) > want_major or
+                (int(major) == want_major and int(minor) >= want_minor))
+
     def configure_env(self, cfg, env):
         # Use a dictionary instead of the convetional list for definitions to
         # make easy to override them. Convert back to list before consumption.
@@ -146,8 +151,7 @@ class Board:
             env.CFLAGS += [
                 '-Wno-format-contains-nul',
             ]
-            (major, minor, patchlevel) = cfg.env.CC_VERSION
-            if int(major) > 7 or (int(major) == 7 and int(minor) >= 4):
+            if self.cc_version_gte(cfg, 7, 4):
                 env.CXXFLAGS += [
                     '-Werror=implicit-fallthrough',
                 ]
@@ -240,12 +244,11 @@ class Board:
                 '-Wno-format-contains-nul',
                 '-Werror=unused-but-set-variable'
             ]
-            (major, minor, patchlevel) = cfg.env.CC_VERSION
-            if int(major) > 5 or (int(major) == 5 and int(minor) > 1):
+            if self.cc_version_gte(cfg, 5, 2):
                 env.CXXFLAGS += [
                     '-Werror=suggest-override',
                 ]
-            if int(major) > 7 or (int(major) == 7 and int(minor) >= 4):
+            if self.cc_version_gte(cfg, 7, 4):
                 env.CXXFLAGS += [
                     '-Werror=implicit-fallthrough',
                 ]
