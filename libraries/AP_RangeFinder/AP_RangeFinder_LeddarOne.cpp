@@ -160,7 +160,7 @@ LeddarOne_Status AP_RangeFinder_LeddarOne::parse_response(uint8_t &number_detect
         }
     }
 
-    // lead_len is not 25 byte or function code is not 0x04
+    // read_len is not 25 byte or function code is not 0x04
     if (read_len != LEDDARONE_READ_BUFFER_SIZE || read_buffer[1] != LEDDARONE_MODOBUS_FUNCTION_CODE) {
         return LEDDARONE_STATE_ERR_BAD_RESPONSE;
     }
