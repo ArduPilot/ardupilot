@@ -1,5 +1,6 @@
 #pragma once
 // auto generated bindings, don't manually edit.  See README.md for details.
+#include <AP_Baro/AP_Baro.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <RC_Channel/RC_Channel.h>
 #include <SRV_Channel/SRV_Channel.h>
