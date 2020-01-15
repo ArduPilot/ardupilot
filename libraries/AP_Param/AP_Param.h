@@ -444,6 +444,7 @@ public:
 
     // set frame type flags. Used to unhide frame specific parameters
     static void set_frame_type_flags(uint16_t flags_to_set) {
+        _parameter_count = 0;
         _frame_type_flags |= flags_to_set;
     }
 
