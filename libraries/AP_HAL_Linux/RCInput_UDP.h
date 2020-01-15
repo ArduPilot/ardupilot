@@ -17,7 +17,7 @@ public:
 private:
     SocketAPM   _socket{true};
     uint16_t     _port;
-    struct rc_udp_packet _buf;
+    struct rc_udp_packet_v3 _buf;
     uint64_t _last_buf_ts;
     uint16_t _last_buf_seq;
 };
