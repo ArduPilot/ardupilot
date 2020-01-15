@@ -852,6 +852,8 @@ void AP_Logger::assert_same_fmt_for_name(const AP_Logger::log_write_fmt *f,
 
 AP_Logger::log_write_fmt *AP_Logger::msg_fmt_for_name(const char *name, const char *labels, const char *units, const char *mults, const char *fmt)
 {
+    WITH_SEMAPHORE(log_write_fmts_sem);
+
     struct log_write_fmt *f;
     for (f = log_write_fmts; f; f=f->next) {
         if (f->name == name) { // ptr comparison

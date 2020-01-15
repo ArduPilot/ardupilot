@@ -419,6 +419,7 @@ private:
         const char *units;
         const char *mults;
     } *log_write_fmts;
+    HAL_Semaphore_Recursive log_write_fmts_sem;
 
     // return (possibly allocating) a log_write_fmt for a name
     struct log_write_fmt *msg_fmt_for_name(const char *name, const char *labels, const char *units, const char *mults, const char *fmt);
