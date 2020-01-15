@@ -17,6 +17,13 @@ using namespace HALSITL;
 
 extern const AP_HAL::HAL& hal;
 
+#ifndef SITL_STACK_CHECKING_ENABLED
+//#define SITL_STACK_CHECKING_ENABLED !defined(__CYGWIN__) && !defined(__CYGWIN64__)
+// stack checking is disabled until the memory corruption issues are
+// fixed with pthread_attr_setstack.  These may be due to
+// changes in the way guard pages are handled.
+#define SITL_STACK_CHECKING_ENABLED 0
+#endif
 
 AP_HAL::Proc Scheduler::_failsafe = nullptr;
 
@@ -233,7 +240,9 @@ void Scheduler::_run_io_procs()
     hal.uartH->_timer_tick();
     hal.storage->_timer_tick();
 
+#if SITL_STACK_CHECKING_ENABLED
     check_thread_stacks();
+#endif
 
     AP::RC().update();
 }
@@ -316,7 +325,7 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
     a->name = name;
     
     pthread_attr_init(&a->attr);
-#if !defined(__CYGWIN__) && !defined(__CYGWIN64__)
+#if SITL_STACK_CHECKING_ENABLED
     if (pthread_attr_setstack(&a->attr, a->stack, alloc_stack) != 0) {
         AP_HAL::panic("Failed to set stack of size %u for thread %s", alloc_stack, name);
     }
