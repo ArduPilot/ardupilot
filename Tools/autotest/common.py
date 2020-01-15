@@ -170,7 +170,7 @@ class FRSky(object):
     def __init__(self, destination_address):
         self.destination_address = destination_address
 
-        self.buffer = ""
+        self.buffer = bytes()
         self.connected = False
         self.port = None
 
@@ -221,11 +221,11 @@ class FRSky(object):
             if e.errno not in [ errno.EAGAIN, errno.EWOULDBLOCK ]:
                 self.progress("Exception: %s" % str(e))
                 self.connected = False
-            return ""
+            return bytes()
         if len(data) == 0:
             self.progress("EOF")
             self.connected = False
-            return ""
+            return bytes()
 #        self.progress("Read %u bytes" % len(data))
         return data
 
@@ -268,7 +268,10 @@ class FRSkyD(FRSky):
             if len(self.buffer) == 0:
                 break
             consume = 1
-            b = ord(self.buffer[0])
+            if sys.version_info.major >= 3:
+                b = self.buffer[0]
+            else:
+                b = ord(self.buffer[0])
             if self.state == self.state_WANT_START_STOP_D:
                 if b != self.START_STOP_D:
                     # we may come into a stream mid-way, so we can't judge
@@ -379,18 +382,26 @@ class FRSkySPort(FRSky):
         self.data_by_id[dataid] = value
 
     def read_bytestuffed_byte(self):
-        if ord(self.buffer[0]) == 0x7D:
+        if sys.version_info.major >= 3:
+            b = self.buffer[0]
+        else:
+            b = ord(self.buffer[0])
+        if b == 0x7D:
             # byte-stuffed
             if len(self.buffer) < 2:
                 self.consume = 0
                 return None
             self.consume = 2
-            if ord(self.buffer[1]) == 0x5E:
+            if sys.version_info.major >= 3:
+                b2 = self.buffer[1]
+            else:
+                b2 = ord(self.buffer[1])
+            if b2 == 0x5E:
                 return self.START_STOP_SPORT
-            if ord(self.buffer[1]) == 0x5D:
+            if b2 == 0x5D:
                 return self.BYTESTUFF_SPORT
-            raise ValueError("Unknown stuffed byte (0x%02x)" % ord(self.buffer[1]))
-        return ord(self.buffer[0])
+            raise ValueError("Unknown stuffed byte (0x%02x)" % b2)
+        return b
 
     def calc_crc(self, byte):
         self.crc += byte
@@ -436,7 +447,10 @@ class FRSkySPort(FRSky):
             if len(self.buffer) == 0:
                 break
             self.consume = 1
-            b = ord(self.buffer[0])
+            if sys.version_info.major >= 3:
+                b = self.buffer[0]
+            else:
+                b = ord(self.buffer[0])
 #            self.progress("Have (%s) bytes state=%s b=0x%02x" % (str(len(self.buffer)), str(self.state), b));
             if self.state == self.state_WANT_FRAME_TYPE:
                 if b != self.SPORT_DATA_FRAME:
@@ -4323,7 +4337,7 @@ switch value'''
         m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=1)
         if m is None:
             raise NotAchievedException("Did not receive GLOBAL_POSITION_INT")
-        gpi_abs_alt = m.alt / 1000 # mm -> m
+        gpi_abs_alt = int(m.alt / 1000) # mm -> m
         tstart = self.get_sim_time_cached()
         while True:
             t2 = self.get_sim_time_cached()
@@ -4331,7 +4345,7 @@ switch value'''
                 raise AutoTestTimeoutException("Failed to get frsky data")
             frsky.update()
             alt = frsky.get_data(frsky.dataid_GPS_ALT_BP)
-            self.progress("Got alt (%s)" % str(alt))
+            self.progress("Got alt (%s) mav=%s" % (str(alt), str(gpi_abs_alt)))
             if alt is None:
                 continue
             self.drain_mav_unparsed()
