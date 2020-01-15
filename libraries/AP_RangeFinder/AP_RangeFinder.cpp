@@ -498,7 +498,7 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         }
         break;
     case Type::LeddarVu8_Serial:
-        if (AP_RangeFinder_Lanbao::detect(serial_instance)) {
+        if (AP_RangeFinder_LeddarVu8::detect(serial_instance)) {
             drivers[instance] = new AP_RangeFinder_LeddarVu8(state[instance], params[instance], serial_instance++);
         }
         break;
