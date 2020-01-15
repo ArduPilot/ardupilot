@@ -16,6 +16,9 @@ if [ ${RELEASE_CODENAME} == 'xenial' ]; then
 elif [ ${RELEASE_CODENAME} == 'disco' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
+elif [ ${RELEASE_CODENAME} == 'eoan' ]; then
+    SITLFML_VERSION="2.5"
+    SITLCFML_VERSION="2.5"
 else
     SITLFML_VERSION="2.4"
     SITLCFML_VERSION="2.4"
