@@ -39,7 +39,6 @@
 #include <uavcan/equipment/indication/RGB565.hpp>
 #include <ardupilot/indication/SafetyState.hpp>
 #include <ardupilot/indication/Button.hpp>
-#include <uavcan/equipment/gnss/RTCMStream.hpp>
 #include <ardupilot/equipment/trafficmonitor/TrafficReport.hpp>
 #include <uavcan/equipment/gnss/RTCMStream.hpp>
 
