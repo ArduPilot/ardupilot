@@ -1318,6 +1318,9 @@ class AutoTestPlane(AutoTest):
                                 timeout=5)
         self.mav.motors_disarmed_wait()
 
+    def sample_enable_parameter(self):
+        return "Q_ENABLE"
+
     def test_rangefinder(self):
         ex = None
         self.context_push()
