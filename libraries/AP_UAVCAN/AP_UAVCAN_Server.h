@@ -82,6 +82,8 @@ class AP_UAVCAN_Server
     //Look in the storage and check if there's a valid Server Record there
     bool isValidNodeDataAvailable(uint8_t node_id);
 
+    HAL_Semaphore_Recursive sem;
+
 public:
     AP_UAVCAN_Server(StorageAccess _storage) : storage(_storage) {}
 
