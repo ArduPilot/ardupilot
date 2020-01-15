@@ -3877,8 +3877,87 @@ switch value'''
 
         return True
 
-    def test_parameters(self):
-        '''general small tests for parameter system'''
+    def dictdiff(self, dict1, dict2):
+        fred = copy.copy(dict1)
+        for key in dict2.keys():
+            try:
+                del fred[key]
+            except:
+                pass
+        return fred
+
+    def download_parameters(self, target_system, target_component):
+        # try a simple fetch-all:
+        self.mav.mav.param_request_list_send(target_system, target_component)
+        tstart = self.get_sim_time_cached()
+        count = 0
+        expected_count = None
+        seen_ids = {}
+        id_seq = {}
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > 10:
+                raise AutoTestTimeoutException("Failed to download parameters")
+            m = self.mav.recv_match(type='PARAM_VALUE', blocking=True, timeout=1)
+            if m is None:
+                raise AutoTestTimeoutException("tardy PARAM_VALUE")
+            if m.param_index == 65535:
+                self.progress("volunteered parameter: %s" % str(m))
+                continue
+            if m.param_index >= m.param_count:
+                raise ValueError("parameter index (%u) gte parameter count (%u)" %
+                                 (m.param_index, m.param_count))
+            if expected_count is None:
+                expected_count = m.param_count
+            else:
+                if m.param_count != expected_count:
+                    raise ValueError("expected count changed")
+            if m.param_id not in seen_ids:
+                count += 1
+                seen_ids[m.param_id] = m.param_value
+                if count == expected_count:
+                    break
+
+        self.progress("Downloaded %u parameters OK" % count)
+        return (seen_ids, id_seq)
+
+    def test_parameters_download(self):
+        self.start_subtest("parameter download")
+        target_system = 1
+        target_component = 1
+        (parameters, seq_id) = self.download_parameters(target_system, target_component)
+        self.reboot_sitl()
+        (parameters2, seq2_id) = self.download_parameters(target_system, target_component)
+
+        delta = self.dictdiff(parameters, parameters2)
+        if len(delta) != 0:
+            raise ValueError("Got %u fewer parameters when downloading second time (before=%u vs after=%u) (delta=%s)" %
+                             (len(delta), len(parameters), len(parameters2), str(delta.keys())))
+
+        delta = self.dictdiff(parameters2, parameters)
+        if len(delta) != 0:
+            raise ValueError("Got %u extra parameters when downloading second time (before=%u vs after=%u) (delta=%s)" %
+                             (len(delta), len(parameters), len(parameters2), str(delta.keys())))
+
+        self.end_subsubtest("parameter download")
+
+    def test_enable_parameter(self):
+        self.start_subtest("enable parameters")
+        target_system = 1
+        target_component = 1
+        parameters = self.download_parameters(target_system, target_component)
+        enable_parameter = self.sample_enable_parameter()
+        if enable_parameter is None:
+            self.progress("Skipping enable parameter check as no enable parameter supplied")
+            return
+        self.set_parameter(enable_parameter, 1)
+        parameters2 = self.download_parameters(target_system, target_component)
+        if len(parameters) == len(parameters2):
+            raise NotAchievedException("Enable parameter did not increase no of parameters downloaded")
+        self.end_subsubtest("enable download")
+
+    def test_parameters_mis_total(self):
+        self.start_subsubtest("parameter mis_total")
         if self.is_tracker():
             # uses CMD_TOTAL not MIS_TOTAL, and it's in a scalr not a
             # group and it's generally all bad.
@@ -3899,6 +3978,11 @@ switch value'''
         self.set_parameter("MIS_OPTIONS", 1)
         if self.get_parameter("MIS_OPTIONS") != 1:
             raise NotAchievedException("Failed to set MIS_OPTIONS")
+
+    def test_parameters(self):
+        '''general small tests for parameter system'''
+        self.test_parameters_mis_total()
+        self.test_parameters_download()
 
     def disabled_tests(self):
         return {}
