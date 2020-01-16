@@ -999,9 +999,10 @@ def write_BARO_config(f):
                     dev[i] = 'std::move(%s)' % dev[i]
         n = len(devlist)+1
         devlist.append('HAL_BARO_PROBE%u' % n)
+        args = ['*this'] + dev[1:]
         f.write(
-            '#define HAL_BARO_PROBE%u %s ADD_BACKEND(AP_Baro_%s::%s(*this,%s))\n'
-            % (n, wrapper, driver, probe, ','.join(dev[1:])))
+            '#define HAL_BARO_PROBE%u %s ADD_BACKEND(AP_Baro_%s::%s(%s))\n'
+            % (n, wrapper, driver, probe, ','.join(args)))
     if len(devlist) > 0:
         f.write('#define HAL_BARO_PROBE_LIST %s\n\n' % ';'.join(devlist))
 
