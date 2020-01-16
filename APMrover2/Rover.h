@@ -429,7 +429,6 @@ private:
 
 
 public:
-    void mavlink_delay_cb();
     void failsafe_check();
     // Motor test
     void motor_test_output();
