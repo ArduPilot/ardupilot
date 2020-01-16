@@ -689,31 +689,6 @@ int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t p
     }
     uint32_t ofs = page * (uint32_t)LOGGER_PAGE_SIZE + offset;
 
-    /*
-      this rather strange bit of code is here to work around a bug
-      in file offsets in NuttX. Every few hundred blocks of reads
-      (starting at around 350k into a file) NuttX will get the
-      wrong offset for sequential reads. The offset it gets is
-      typically 128k earlier than it should be. It turns out that
-      calling lseek() with 0 offset and SEEK_CUR works around the
-      bug. We can remove this once we find the real bug.
-    */
-    if (ofs / 4096 != (ofs+len) / 4096) {
-        off_t seek_current = AP::FS().lseek(_read_fd, 0, SEEK_CUR);
-        if (seek_current == (off_t)-1) {
-            AP::FS().close(_read_fd);
-            _read_fd = -1;
-            return -1;
-        }
-        if (seek_current != (off_t)_read_offset) {
-            if (AP::FS().lseek(_read_fd, _read_offset, SEEK_SET) == (off_t)-1) {
-                AP::FS().close(_read_fd);
-                _read_fd = -1;
-                return -1;
-            }
-        }
-    }
-
     if (ofs != _read_offset) {
         if (AP::FS().lseek(_read_fd, ofs, SEEK_SET) == (off_t)-1) {
             AP::FS().close(_read_fd);
