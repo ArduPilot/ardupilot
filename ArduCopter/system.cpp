@@ -15,17 +15,6 @@ static void failsafe_check_static()
 
 void Copter::init_ardupilot()
 {
-    // initialise serial port
-    serial_manager.init_console();
-
-    hal.console->printf("\n\nInit %s"
-                        "\n\nFree RAM: %u\n",
-                        AP::fwversion().fw_string,
-                        (unsigned)hal.util->available_memory());
-
-    // load parameters from EEPROM
-    load_parameters();
-
     // time per loop - this gets updated in the main loop() based on
     // actual loop rate
     G_Dt = 1.0 / scheduler.get_loop_rate_hz();
