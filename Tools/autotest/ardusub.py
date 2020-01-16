@@ -125,6 +125,9 @@ class AutoTestSub(AutoTest):
         self.wait_altitude(alt_min=-5, alt_max=-4)
         self.set_rc(Joystick.Throttle, 1500)
 
+        # let the vehicle settle (momentum / stopping point shenanigans....)
+        self.delay_sim_time(2)
+
         self.watch_altitude_maintained()
 
         self.disarm_vehicle()
