@@ -3914,7 +3914,8 @@ switch value'''
                 raise AutoTestTimeoutException("Failed to download parameters")
             m = self.mav.recv_match(type='PARAM_VALUE', blocking=True, timeout=1)
             if m is None:
-                raise AutoTestTimeoutException("tardy PARAM_VALUE")
+                raise AutoTestTimeoutException("tardy PARAM_VALUE (have %s/%s)" % (
+                    str(count), str(expected_count)))
             if m.param_index == 65535:
                 self.progress("volunteered parameter: %s" % str(m))
                 continue
@@ -3937,7 +3938,7 @@ switch value'''
 
     def test_parameters_download(self):
         self.start_subtest("parameter download")
-        target_system = 1
+        target_system = self.sysid_thismav()
         target_component = 1
         (parameters, seq_id) = self.download_parameters(target_system, target_component)
         self.reboot_sitl()
