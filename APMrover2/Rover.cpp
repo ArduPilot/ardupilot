@@ -115,6 +115,16 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #endif
 };
 
+
+void Rover::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
+                                uint8_t &task_count,
+                                uint32_t &log_bit)
+{
+    tasks = &scheduler_tasks[0];
+    task_count = ARRAY_SIZE(scheduler_tasks);
+    log_bit = MASK_LOG_PM;
+}
+
 constexpr int8_t Rover::_failsafe_priorities[7];
 
 Rover::Rover(void) :
@@ -141,19 +151,6 @@ void Rover::stats_update(void)
 }
 #endif
 
-/*
-  setup is called when the sketch starts
- */
-void Rover::setup()
-{
-    // load the default values of variables listed in var_info[]
-    AP_Param::setup_sketch_defaults();
-
-    init_ardupilot();
-
-    // initialise the main loop scheduler
-    scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks), MASK_LOG_PM);
-}
 
 /*
   loop() is called rapidly while the sketch is running
