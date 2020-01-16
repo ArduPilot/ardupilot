@@ -446,7 +446,7 @@ bool AP_Arming::battery_checks(bool report)
 
         for (uint8_t i = 0; i < _battery.num_instances(); i++) {
             if ((_min_voltage[i] > 0.0f) && (_battery.voltage(i) < _min_voltage[i])) {
-                check_failed(ARMING_CHECK_BATTERY, report, "PreArm: Battery %d voltage %.1f below minimum %.1f",
+                check_failed(ARMING_CHECK_BATTERY, report, "Battery %d voltage %.1f below minimum %.1f",
                             i+1,
                             (double)_battery.voltage(i),
                              (double)_min_voltage[i]);
