@@ -665,7 +665,6 @@ private:
 
 
 public:
-    void mavlink_delay_cb();
     void mainloop_failsafe_check();
 };
 
