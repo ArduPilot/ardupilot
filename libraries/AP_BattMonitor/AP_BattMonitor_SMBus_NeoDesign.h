@@ -21,6 +21,5 @@ private:
     uint8_t read_block_bare(uint8_t reg, uint8_t* data, uint8_t max_len) const;
     bool read_temperature();
 
-    uint8_t _button_press_count;
     uint16_t _cell_count;
 };
