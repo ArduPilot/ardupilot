@@ -132,7 +132,6 @@ public:
     Sub(void);
 
     // HAL::Callbacks implementation.
-    void setup() override;
     void loop() override;
 
 private:
@@ -573,7 +572,10 @@ private:
 #endif
     void terrain_update();
     void terrain_logging();
-    void init_ardupilot();
+    void init_ardupilot() override;
+    void get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
+                             uint8_t &task_count,
+                             uint32_t &log_bit) override;
     void startup_INS_ground();
     bool position_ok();
     bool ekf_position_ok();
