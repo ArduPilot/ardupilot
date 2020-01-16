@@ -197,10 +197,14 @@ protected:
     static const struct AP_Param::GroupInfo var_info[];
     static const struct AP_Scheduler::Task scheduler_tasks[];
 
+    void register_scheduler_delay_callback();
+
 private:
 
     static AP_Vehicle *_singleton;
     bool init_done;
+
+    static void scheduler_delay_callback();
 
     // true if vehicle is probably flying
     bool likely_flying;
