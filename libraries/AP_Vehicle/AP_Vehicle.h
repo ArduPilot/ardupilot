@@ -163,6 +163,7 @@ public:
 protected:
 
     virtual void init_ardupilot() = 0;
+    virtual void load_parameters() = 0;
 
     // board specific config
     AP_BoardConfig BoardConfig;
