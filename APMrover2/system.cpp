@@ -6,7 +6,6 @@ The init_ardupilot function processes everything we need for an in - air restart
 *****************************************************************************/
 
 #include "Rover.h"
-#include <AP_Common/AP_FWVersion.h>
 
 static void failsafe_check_static()
 {
@@ -15,19 +14,6 @@ static void failsafe_check_static()
 
 void Rover::init_ardupilot()
 {
-    // initialise console serial port
-    serial_manager.init_console();
-
-    hal.console->printf("\n\nInit %s"
-                        "\n\nFree RAM: %u\n",
-                        AP::fwversion().fw_string,
-                        (unsigned)hal.util->available_memory());
-
-    //
-    // Check the EEPROM format version before loading any parameters from EEPROM.
-    //
-
-    load_parameters();
 #if STATS_ENABLED == ENABLED
     // initialise stats module
     g2.stats.init();
