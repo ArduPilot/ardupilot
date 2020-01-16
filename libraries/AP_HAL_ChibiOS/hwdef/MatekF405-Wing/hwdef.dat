@@ -191,3 +191,6 @@ define HAL_BATTMON_FUEL_ENABLE 0
 # disable parachute and sprayer to save flash
 define HAL_PARACHUTE_ENABLED 0
 define HAL_SPRAYER_ENABLED 0
+
+# we are low on flash on this board
+define HAL_MINIMIZE_FEATURES 1
