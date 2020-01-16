@@ -789,7 +789,7 @@ private:
     void Log_Write_AOA_SSA();
     void Log_Write_AETR();
 
-    void load_parameters(void);
+    void load_parameters(void) override;
     void convert_mixers(void);
     void adjust_altitude_target();
     void setup_glide_slope(void);
