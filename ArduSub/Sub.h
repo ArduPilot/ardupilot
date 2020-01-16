@@ -68,7 +68,6 @@
 #include <AP_JSButton/AP_JSButton.h>   // Joystick/gamepad button function assignment
 #include <AP_LeakDetector/AP_LeakDetector.h> // Leak detector
 #include <AP_TemperatureSensor/TSYS01.h>
-#include <AP_Common/AP_FWVersion.h>
 
 // Local modules
 #include "defines.h"
@@ -135,7 +134,6 @@ public:
     void loop() override;
 
 private:
-    static const AP_FWVersion fwver;
 
     // key aircraft parameters passed to multiple libraries
     AP_Vehicle::MultiCopter aparm;
@@ -451,7 +449,7 @@ private:
     void Log_Sensor_Health();
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void Log_Write_Vehicle_Startup_Messages();
-    void load_parameters(void);
+    void load_parameters(void) override;
     void userhook_init();
     void userhook_FastLoop();
     void userhook_50Hz();
