@@ -102,10 +102,8 @@ void ReplayVehicle::load_parameters(void)
     AP_Param::set_default_by_name("LOG_FILE_BUFSIZE", 60);
 }
 
-void ReplayVehicle::setup(void) 
+void ReplayVehicle::init_ardupilot(void)
 {
-    load_parameters();
-
     // we pass an empty log structure, filling the structure in with
     // either the format present in the log (if we do not emit the
     // message as a product of Replay), or the format understood in
