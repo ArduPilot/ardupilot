@@ -50,6 +50,7 @@
 #include <AP_HAL/I2CDevice.h>
 #include "../AP_Bootloader/app_comms.h"
 #include <AP_HAL/utility/RingBuffer.h>
+#include <AP_Common/AP_FWVersion.h>
 
 #include "i2c.h"
 #include <utility>

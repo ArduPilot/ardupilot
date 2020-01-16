@@ -5,8 +5,6 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
-#include <AP_Common/AP_FWVersion.h>
-#include "version.h"
 #include "../AP_Bootloader/app_comms.h"
 
 #if defined(HAL_PERIPH_NEOPIXEL_COUNT) || defined(HAL_PERIPH_ENABLE_NCP5623_LED)
