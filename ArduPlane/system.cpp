@@ -8,11 +8,6 @@
 *
 *****************************************************************************/
 
-static void mavlink_delay_cb_static()
-{
-    plane.mavlink_delay_cb();
-}
-
 static void failsafe_check_static()
 {
     plane.failsafe_check();
@@ -57,9 +52,7 @@ void Plane::init_ardupilot()
     serial_manager.init();
     gcs().setup_console();
 
-    // Register mavlink_delay_cb, which will run anytime you have
-    // more than 5ms remaining in your call to hal.scheduler->delay
-    hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
+    register_scheduler_delay_callback();
 
     // setup any board specific drivers
     BoardConfig.init();
