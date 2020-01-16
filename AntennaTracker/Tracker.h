@@ -42,7 +42,6 @@
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Stats/AP_Stats.h>                      // statistics library
 #include <AP_BattMonitor/AP_BattMonitor.h> // Battery monitor library
-#include <AP_Common/AP_FWVersion.h>
 
 // Configuration
 #include "config.h"
@@ -73,8 +72,6 @@ public:
     friend class Mode;
 
     Tracker(void);
-
-    static const AP_FWVersion fwver;
 
     // HAL::Callbacks implementation.
     void loop() override;
@@ -192,7 +189,7 @@ private:
     void log_init(void);
 
     // Parameters.cpp
-    void load_parameters(void);
+    void load_parameters(void) override;
 
     // radio.cpp
     void read_radio();
