@@ -85,6 +85,8 @@ void Plane::init_ardupilot()
     // initialise battery monitoring
     battery.init();
 
+    rssi.init();
+
     rpm_sensor.init();
 
     // setup telem slots with serial ports
