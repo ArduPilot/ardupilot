@@ -361,7 +361,7 @@ private:
     Mode *mode_from_mode_num(enum Mode::Number num);
 
     // Parameters.cpp
-    void load_parameters(void);
+    void load_parameters(void) override;
 
     // radio.cpp
     void set_control_channels(void);
