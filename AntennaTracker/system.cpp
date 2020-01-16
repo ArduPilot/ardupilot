@@ -3,7 +3,7 @@
 // mission storage
 static const StorageAccess wp_storage(StorageManager::StorageMission);
 
-void Tracker::init_tracker()
+void Tracker::init_ardupilot()
 {
     // initialise console serial port
     serial_manager.init_console();
