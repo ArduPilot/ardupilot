@@ -1,5 +1,7 @@
 #include "AP_Vehicle.h"
 
+#include <AP_Common/AP_FWVersion.h>
+
 #define SCHED_TASK(func, rate_hz, max_time_micros) SCHED_TASK_CLASS(AP_Vehicle, &vehicle, func, rate_hz, max_time_micros)
 
 /*
