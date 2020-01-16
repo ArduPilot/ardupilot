@@ -373,6 +373,31 @@ public:
     // returns true if msg_type is associated with a message
     bool msg_type_in_use(uint8_t msg_type) const;
 
+    // calculate the length of a message using fields specified in
+    // fmt; includes the message header
+    int16_t Write_calc_msg_len(const char *fmt) const;
+
+    // this structure looks much like struct LogStructure in
+    // LogStructure.h, however we need to remember a pointer value for
+    // efficiency of finding message types
+    struct log_write_fmt {
+        struct log_write_fmt *next;
+        uint8_t msg_type;
+        uint8_t msg_len;
+        uint8_t sent_mask; // bitmask of backends sent to
+        const char *name;
+        const char *fmt;
+        const char *labels;
+        const char *units;
+        const char *mults;
+    } *log_write_fmts;
+
+    // return (possibly allocating) a log_write_fmt for a name
+    struct log_write_fmt *msg_fmt_for_name(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, const bool direct_comp = false);
+
+    // output a FMT message for each backend if not already done so
+    void Safe_Write_Emit_FMT(log_write_fmt *f);
+
 protected:
 
     const struct LogStructure *_structures;
@@ -405,25 +430,9 @@ private:
      * support for dynamic Write; user-supplies name, format,
      * labels and values in a single function call.
      */
-
-    // this structure looks much like struct LogStructure in
-    // LogStructure.h, however we need to remember a pointer value for
-    // efficiency of finding message types
-    struct log_write_fmt {
-        struct log_write_fmt *next;
-        uint8_t msg_type;
-        uint8_t msg_len;
-        uint8_t sent_mask; // bitmask of backends sent to
-        const char *name;
-        const char *fmt;
-        const char *labels;
-        const char *units;
-        const char *mults;
-    } *log_write_fmts;
     HAL_Semaphore log_write_fmts_sem;
 
     // return (possibly allocating) a log_write_fmt for a name
-    struct log_write_fmt *msg_fmt_for_name(const char *name, const char *labels, const char *units, const char *mults, const char *fmt);
     const struct log_write_fmt *log_write_fmt_for_msg_type(uint8_t msg_type) const;
 
     const struct LogStructure *structure_for_msg_type(uint8_t msg_type);
@@ -433,10 +442,6 @@ private:
 
     // fill LogStructure with information about msg_type
     bool fill_log_write_logstructure(struct LogStructure &logstruct, const uint8_t msg_type) const;
-
-    // calculate the length of a message using fields specified in
-    // fmt; includes the message header
-    int16_t Write_calc_msg_len(const char *fmt) const;
 
     bool _armed;
 
