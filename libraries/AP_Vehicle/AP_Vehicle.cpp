@@ -84,7 +84,7 @@ void AP_Vehicle::scheduler_delay_callback()
     }
     if (tnow - last_5s > 5000) {
         last_5s = tnow;
-        gcs().send_text(MAV_SEVERITY_INFO, "Initialising APM");
+        gcs().send_text(MAV_SEVERITY_INFO, "Initialising ArduPilot");
     }
 
     logger.EnableWrites(true);
