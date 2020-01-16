@@ -119,8 +119,6 @@ void Plane::setup()
     // load the default values of variables listed in var_info[]
     AP_Param::setup_sketch_defaults();
 
-    rssi.init();
-
     init_ardupilot();
 
     // initialise the main loop scheduler
