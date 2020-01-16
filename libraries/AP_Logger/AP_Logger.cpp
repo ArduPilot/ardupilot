@@ -111,7 +111,6 @@ AP_Logger::AP_Logger(const AP_Int32 &log_bitmask)
 
 void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
 {
-    gcs().send_text(MAV_SEVERITY_INFO, "Preparing log system");
     if (hal.util->was_watchdog_armed()) {
         gcs().send_text(MAV_SEVERITY_INFO, "Forcing logging for watchdog reset");
         _params.log_disarmed.set(1);
@@ -209,8 +208,6 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
     Prep();
 
     EnableWrites(true);
-
-    gcs().send_text(MAV_SEVERITY_INFO, "Prepared log system");
 }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
