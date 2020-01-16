@@ -17,9 +17,7 @@ public:
 private:
 
     void timer(void) override;
-
     uint8_t read_block_bare(uint8_t reg, uint8_t* data, uint8_t max_len) const;
-    bool read_temperature();
 
-    uint16_t _cell_count;
+    uint8_t _cell_count;
 };
