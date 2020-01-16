@@ -848,6 +848,8 @@ bool AP_Filesystem::set_mtime(const char *filename, const time_t mtime_sec)
     fno.fdate = fdate;
     fno.ftime = ftime;
 
+    WITH_SEMAPHORE(sem);
+
     return f_utime(filename, (FILINFO *)&fno) == FR_OK;
 }
 
