@@ -236,7 +236,6 @@ public:
     Copter(void);
 
     // HAL::Callbacks implementation.
-    void setup() override;
     void loop() override;
 
 private:
@@ -640,7 +639,10 @@ private:
     void set_failsafe_gcs(bool b);
     void update_using_interlock();
 
-    // ArduCopter.cpp
+    // Copter.cpp
+    void get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
+                             uint8_t &task_count,
+                             uint32_t &log_bit) override;
     void fast_loop();
     void rc_loop();
     void throttle_loop();
@@ -859,7 +861,7 @@ private:
     void auto_trim();
 
     // system.cpp
-    void init_ardupilot();
+    void init_ardupilot() override;
     void startup_INS_ground();
     void update_dynamic_notch();
     bool position_ok() const;
