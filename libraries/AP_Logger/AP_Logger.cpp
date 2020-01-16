@@ -780,6 +780,19 @@ void AP_Logger::Write_Rally()
     FOR_EACH_BACKEND(Write_Rally());
 }
 
+// output a FMT message for each backend if not already done so
+void AP_Logger::Safe_Write_Emit_FMT(log_write_fmt *f)
+{
+    for (uint8_t i=0; i<_next_backend; i++) {
+        if (!(f->sent_mask & (1U<<i))) {
+            if (!backends[i]->Write_Emit_FMT(f->msg_type)) {
+                continue;
+            }
+            f->sent_mask |= (1U<<i);
+        }
+    }
+}
+
 uint32_t AP_Logger::num_dropped() const
 {
     if (_next_backend == 0) {
@@ -900,18 +913,30 @@ void AP_Logger::assert_same_fmt_for_name(const AP_Logger::log_write_fmt *f,
 }
 #endif
 
-AP_Logger::log_write_fmt *AP_Logger::msg_fmt_for_name(const char *name, const char *labels, const char *units, const char *mults, const char *fmt)
+AP_Logger::log_write_fmt *AP_Logger::msg_fmt_for_name(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, const bool direct_comp)
 {
     WITH_SEMAPHORE(log_write_fmts_sem);
 
     struct log_write_fmt *f;
     for (f = log_write_fmts; f; f=f->next) {
-        if (f->name == name) { // ptr comparison
-            // already have an ID for this name:
+        if (!direct_comp) {
+            if (f->name == name) { // ptr comparison
+                // already have an ID for this name:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-            assert_same_fmt_for_name(f, name, labels, units, mults, fmt);
+                assert_same_fmt_for_name(f, name, labels, units, mults, fmt);
 #endif
-            return f;
+                return f;
+            }
+        } else {
+            // direct comparison used from scripting where pointer is not maintained
+            char *test_name = strdup(f->name);
+            if (strcmp(test_name,name) == 0) {
+                // already have an ID for this name:
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+                assert_same_fmt_for_name(f, name, labels, units, mults, fmt);
+#endif
+                return f;
+            }
         }
     }
     f = (struct log_write_fmt *)calloc(1, sizeof(*f));
