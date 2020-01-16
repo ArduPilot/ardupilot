@@ -492,6 +492,12 @@ void Plane::update_dynamic_notch()
             ins.update_harmonic_notch_freq_hz(MAX(ref_freq, AP_BLHeli::get_singleton()->get_average_motor_frequency_hz() * ref));
             break;
 #endif
+#if HAL_GYROFFT_ENABLED
+        case HarmonicNotchDynamicMode::UpdateGyroFFT: // FFT based tracking
+            // set the harmonic notch filter frequency scaled on measured frequency
+            ins.update_harmonic_notch_freq_hz(gyro_fft.get_weighted_noise_center_freq_hz());
+            break;
+#endif
         case HarmonicNotchDynamicMode::Fixed: // static
         default:
             ins.update_harmonic_notch_freq_hz(ref_freq);
