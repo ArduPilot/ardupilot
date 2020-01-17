@@ -6,7 +6,7 @@ set -ex
 # Disable ccache for the configure phase, it's not worth it
 export CCACHE_DISABLE="true"
 
-ARM_ROOT="gcc-arm-none-eabi-4_9-2015q3"
+ARM_ROOT="gcc-arm-none-eabi-6-2017-q2-update"
 ARM_TARBALL="$ARM_ROOT-20150921-linux.tar.bz2"
 
 RPI_ROOT="master"
