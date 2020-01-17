@@ -300,8 +300,14 @@ void AP_IOMCU::read_status()
 {
     uint16_t *r = (uint16_t *)&reg_status;
     if (!read_registers(PAGE_STATUS, 0, sizeof(reg_status)/2, r)) {
+        read_status_errors++;
         return;
     }
+    if (read_status_ok == 0) {
+        // reset error count on first good read
+        read_status_errors = 0;
+    }
+    read_status_ok++;
 
     check_iomcu_reset();
 
@@ -449,6 +455,7 @@ bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint1
     if (!uart.wait_timeout(count*2+4, 10)) {
         debug("t=%u timeout read page=%u offset=%u count=%u\n",
               AP_HAL::millis(), page, offset, count);
+        protocol_fail_count++;
         return false;
     }
 
@@ -861,7 +868,7 @@ void AP_IOMCU::set_safety_mask(uint16_t chmask)
  */
 bool AP_IOMCU::healthy(void)
 {
-    return crc_is_ok && protocol_fail_count == 0 && !detected_io_reset;
+    return crc_is_ok && protocol_fail_count == 0 && !detected_io_reset && read_status_errors < read_status_ok/128U;
 }
 
 /*
