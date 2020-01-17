@@ -445,12 +445,12 @@ void UARTDriver::rx_irq_cb(void* self)
     if (!uart_drv->rx_dma_enabled) {
         return;
     }
-    dmaStreamDisable(uart_drv->rxdma);
 #if defined(STM32F7) || defined(STM32H7)
     //disable dma, triggering DMA transfer complete interrupt
     uart_drv->rxdma->stream->CR &= ~STM32_DMA_CR_EN;
 #elif defined(STM32F3)
     //disable dma, triggering DMA transfer complete interrupt
+    dmaStreamDisable(uart_drv->rxdma);
     uart_drv->rxdma->channel->CCR &= ~STM32_DMA_CR_EN;
 #else
     volatile uint16_t sr = ((SerialDriver*)(uart_drv->sdef.serial))->usart->SR;
