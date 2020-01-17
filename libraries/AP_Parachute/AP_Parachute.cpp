@@ -1,4 +1,7 @@
 #include "AP_Parachute.h"
+
+#if HAL_PARACHUTE_ENABLED
+
 #include <AP_Relay/AP_Relay.h>
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
@@ -172,3 +175,4 @@ AP_Parachute *parachute()
 }
 
 }
+#endif // HAL_PARACHUTE_ENABLED
