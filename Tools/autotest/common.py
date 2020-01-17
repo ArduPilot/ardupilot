@@ -3058,8 +3058,8 @@ class AutoTest(ABC):
                     self.mavproxy.send('dataflash_logger status\n')
                     # seen on autotest: Active Rate(3s):97.790kB/s Block:164 Missing:0 Fixed:0 Abandoned:0
                     self.mavproxy.expect("Active Rate\([0-9]s\):([0-9]+[.][0-9]+)")
-                    rate = self.mavproxy.match.group(1)
-                    self.progress("Rate: %f" % float(rate))
+                    rate = float(self.mavproxy.match.group(1))
+                    self.progress("Rate: %f" % rate)
                     if rate < 50:
                         raise NotAchievedException("Exceptionally low transfer rate")
             self.disarm_vehicle()
