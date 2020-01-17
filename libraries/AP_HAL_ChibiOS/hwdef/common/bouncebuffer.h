@@ -27,7 +27,7 @@ void bouncebuffer_init(struct bouncebuffer_t **bouncebuffer, uint32_t prealloc_b
 /*
   setup for reading from a device into memory, allocating a bouncebuffer if needed
  */
-void bouncebuffer_setup_read(struct bouncebuffer_t *bouncebuffer, uint8_t **buf, uint32_t size);
+bool bouncebuffer_setup_read(struct bouncebuffer_t *bouncebuffer, uint8_t **buf, uint32_t size);
     
 /*
   finish a read operation
@@ -37,12 +37,17 @@ void bouncebuffer_finish_read(struct bouncebuffer_t *bouncebuffer, const uint8_t
 /*
   setup for reading from memory to a device, allocating a bouncebuffer if needed
  */
-void bouncebuffer_setup_write(struct bouncebuffer_t *bouncebuffer, const uint8_t **buf, uint32_t size);
+bool bouncebuffer_setup_write(struct bouncebuffer_t *bouncebuffer, const uint8_t **buf, uint32_t size);
     
 /*
   finish a write operation
  */
 void bouncebuffer_finish_write(struct bouncebuffer_t *bouncebuffer, const uint8_t *buf);
+
+/*
+  abort an operation
+ */
+void bouncebuffer_abort(struct bouncebuffer_t *bouncebuffer);
 
 #ifdef __cplusplus
 }
