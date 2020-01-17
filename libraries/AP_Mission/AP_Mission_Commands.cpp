@@ -114,6 +114,7 @@ bool AP_Mission::start_command_camera(const AP_Mission::Mission_Command& cmd)
 
 bool AP_Mission::start_command_parachute(const AP_Mission::Mission_Command& cmd)
 {
+#if HAL_PARACHUTE_ENABLED
     AP_Parachute *parachute = AP::parachute();
     if (parachute == nullptr) {
         return false;
@@ -135,4 +136,7 @@ bool AP_Mission::start_command_parachute(const AP_Mission::Mission_Command& cmd)
     }
 
     return true;
+#else
+    return false;
+#endif // HAL_PARACHUTE_ENABLED
 }
