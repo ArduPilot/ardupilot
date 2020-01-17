@@ -221,6 +221,8 @@ private:
     uint32_t total_errors;
     uint32_t num_delayed;
     uint32_t last_iocmu_timestamp_ms;
+    uint32_t read_status_errors;
+    uint32_t read_status_ok;
 
     // firmware upload
     const char *fw_name = "io_firmware.bin";
