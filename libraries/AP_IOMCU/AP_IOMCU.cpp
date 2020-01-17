@@ -64,7 +64,7 @@ AP_IOMCU *AP_IOMCU::singleton;
 void AP_IOMCU::init(void)
 {
     // uart runs at 1.5MBit
-    uart.begin(1500*1000, 256, 256);
+    uart.begin(1500*1000, 128, 128);
     uart.set_blocking_writes(true);
     uart.set_unbuffered_writes(true);
 
@@ -100,7 +100,7 @@ void AP_IOMCU::thread_main(void)
     thread_ctx = chThdGetSelfX();
     chEvtSignal(thread_ctx, initial_event_mask);
 
-    uart.begin(1500*1000, 256, 256);
+    uart.begin(1500*1000, 128, 128);
     uart.set_blocking_writes(true);
     uart.set_unbuffered_writes(true);
 
