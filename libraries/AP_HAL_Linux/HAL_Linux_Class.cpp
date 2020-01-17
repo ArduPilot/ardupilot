@@ -262,6 +262,9 @@ void _usage(void)
     printf("\tcustom terrain path:\n");
     printf("\t                   --terrain-directory /var/APM/terrain\n");
     printf("\t                   -t /var/APM/terrain\n");
+    printf("\tcustom storage path:\n");
+    printf("\t                   --storage-directory /var/APM/storage\n");
+    printf("\t                   -s /var/APM/storage\n");
 #if AP_MODULE_SUPPORTED
     printf("\tmodule support:\n");
     printf("\t                   --module-directory %s\n", AP_MODULE_DEFAULT_DIRECTORY);
