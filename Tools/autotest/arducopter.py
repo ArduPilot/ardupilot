@@ -3451,8 +3451,8 @@ class AutoTestCopter(AutoTest):
                              0,
                              0,
                              0,
-                             roi_lat*1e7,
-                             roi_lon*1e7,
+                             int(roi_lat*1e7),
+                             int(roi_lon*1e7),
                              roi_alt,
                              frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
             )
@@ -3464,8 +3464,8 @@ class AutoTestCopter(AutoTest):
                              0,
                              0,
                              0,
-                             roi_lat*1e7,
-                             roi_lon*1e7,
+                             int(roi_lat*1e7),
+                             int(roi_lon*1e7),
                              roi_alt,
                              frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
             )
@@ -3504,8 +3504,8 @@ class AutoTestCopter(AutoTest):
                          )
             self.mav.mav.global_position_int_send(
                 0, # time boot ms
-                roi_lat * 1e7,
-                roi_lon * 1e7,
+                int(roi_lat * 1e7),
+                int(roi_lon * 1e7),
                 0 *1000, # mm alt amsl
                 0 *1000, # relalt mm UP!
                 0, # vx
@@ -3517,8 +3517,8 @@ class AutoTestCopter(AutoTest):
 
             self.mav.mav.global_position_int_send(
                 0, # time boot ms
-                roi_lat * 1e7,
-                roi_lon * 1e7,
+                int(roi_lat * 1e7),
+                int(roi_lon * 1e7),
                 670 *1000, # mm alt amsl
                 100 *1000, # mm UP!
                 0, # vx
