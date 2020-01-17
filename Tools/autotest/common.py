@@ -4446,9 +4446,9 @@ switch value'''
 
         fft_len = len(messages[0].data["X"])
         sum_fft = {
-                "X": numpy.zeros(fft_len/2+1),
-                "Y": numpy.zeros(fft_len/2+1),
-                "Z": numpy.zeros(fft_len/2+1),
+                "X": numpy.zeros(int(fft_len/2+1)),
+                "Y": numpy.zeros(int(fft_len/2+1)),
+                "Z": numpy.zeros(int(fft_len/2+1)),
             }
         sample_rate = 0
         counts = 0
