@@ -566,6 +566,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "mRoControlZeroF7",
                 "F35Lightning",
                 "speedybeef4",
+                "SuccexF4",
                 "DrotekP3Pro",
                 "VRBrain-v51",
                 "VRBrain-v52",
