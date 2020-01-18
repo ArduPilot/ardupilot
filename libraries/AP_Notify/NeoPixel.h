@@ -43,5 +43,5 @@ private:
     // periodic callback
     void timer();
     
-    HAL_Semaphore_Recursive _sem;
+    HAL_Semaphore _sem;
 };
