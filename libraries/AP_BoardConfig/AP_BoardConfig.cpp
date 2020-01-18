@@ -170,8 +170,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_GROUPINFO("TYPE", 9, AP_BoardConfig, state.board_type, BOARD_TYPE_DEFAULT),
 #endif
 
-#if AP_FEATURE_BOARD_DETECT
-#if HAL_PX4_HAVE_PX4IO || HAL_WITH_IO_MCU
+#if HAL_WITH_IO_MCU
     // @Param: IO_ENABLE
     // @DisplayName: Enable IO co-processor
     // @Description: This allows for the IO co-processor on FMUv1 and FMUv2 to be disabled
@@ -179,7 +178,6 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("IO_ENABLE", 10, AP_BoardConfig, state.io_enable, 1),
-#endif
 #endif
 
 #if HAL_RCINPUT_WITH_AP_RADIO
