@@ -347,4 +347,4 @@
 
 #include <AP_HAL_Linux/Semaphores.h>
 #define HAL_Semaphore Linux::Semaphore
-#define HAL_Semaphore_Recursive Linux::Semaphore_Recursive
+
