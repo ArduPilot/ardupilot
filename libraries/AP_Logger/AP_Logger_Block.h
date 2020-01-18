@@ -52,7 +52,7 @@ private:
         uint16_t FileNumber;
     };
 
-    HAL_Semaphore_Recursive sem;
+    HAL_Semaphore sem;
     ByteBuffer writebuf;
 
     // state variables
