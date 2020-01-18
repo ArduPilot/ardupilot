@@ -13,6 +13,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='configure all ChibiOS boards')
 parser.add_argument('--build', action='store_true', default=False, help='build as well as configure')
+parser.add_argument('--build-target', default='copter', help='build target')
 parser.add_argument('--stop', action='store_true', default=False, help='stop on build fail')
 parser.add_argument('--no-bl', action='store_true', default=False, help="don't check bootloader builds")
 parser.add_argument('--pattern', default='*')
@@ -51,8 +52,10 @@ for board in get_board_list():
     if args.build:
         if board == "iomcu":
             target = "iofirmware"
+        elif board in ['CUAV_GPS', 'ZubaxGNSS'] or board.startswith('f103') or board.startswith('f303'):
+            target = "AP_Periph"
         else:
-            target = "copter"
+            target = args.build_target
         run_program([args.python, "waf", target], "build: " + board)
     if args.no_bl:
         continue
