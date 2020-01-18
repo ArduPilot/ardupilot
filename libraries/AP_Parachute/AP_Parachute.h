@@ -23,7 +23,8 @@
 #define AP_PARACHUTE_CRITICAL_SINK_DEFAULT      0    // default critical sink speed in m/s to trigger emergency parachute
 
 #ifndef HAL_PARACHUTE_ENABLED
-#define HAL_PARACHUTE_ENABLED !HAL_MINIMIZE_FEATURES
+// default to parachute enabled to match previous configs
+#define HAL_PARACHUTE_ENABLED 1
 #endif
 
 #if HAL_PARACHUTE_ENABLED
