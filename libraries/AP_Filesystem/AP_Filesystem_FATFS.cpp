@@ -31,7 +31,7 @@ static bool remount_needed;
 // use a semaphore to ensure that only one filesystem operation is
 // happening at a time. A recursive semaphore is used to cope with the
 // mkdir() inside sdcard_retry()
-static HAL_Semaphore_Recursive sem;
+static HAL_Semaphore sem;
 
 typedef struct {
     FIL *fh;
