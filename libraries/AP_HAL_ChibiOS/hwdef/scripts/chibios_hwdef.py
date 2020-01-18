@@ -705,17 +705,26 @@ def write_mcu_config(f):
     lib = get_mcu_lib(mcu_type)
     build_info = lib.build
 
-    if mcu_series.startswith("STM32F1"):
+    if get_mcu_config('CPU_FLAGS') and get_mcu_config('CORTEX'):
+        # CPU flags specified in mcu file
+        cortex = get_mcu_config('CORTEX')
+        env_vars['CPU_FLAGS'] = get_mcu_config('CPU_FLAGS').split()
+        build_info['MCU'] = cortex
+        print("MCU Flags: %s %s" % (cortex, env_vars['CPU_FLAGS']))
+    elif mcu_series.startswith("STM32F1"):
         cortex = "cortex-m3"
         env_vars['CPU_FLAGS'] = ["-mcpu=%s" % cortex]
         build_info['MCU'] = cortex
     else:
+        # default to F4
         cortex = "cortex-m4"
         env_vars['CPU_FLAGS'] = ["-mcpu=%s" % cortex, "-mfpu=fpv4-sp-d16", "-mfloat-abi=hard"]
         build_info['MCU'] = cortex
-        if not args.bootloader:
-            env_vars['CPU_FLAGS'].append('-u_printf_float')
-            build_info['ENV_UDEFS'] = "-DCHPRINTF_USE_FLOAT=1"
+
+    if not mcu_series.startswith("STM32F1") and not args.bootloader:
+        env_vars['CPU_FLAGS'].append('-u_printf_float')
+        build_info['ENV_UDEFS'] = "-DCHPRINTF_USE_FLOAT=1"
+
     # setup build variables
     for v in build_info.keys():
         build_flags.append('%s=%s' % (v, build_info[v]))
