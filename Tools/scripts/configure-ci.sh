@@ -7,7 +7,7 @@ set -ex
 export CCACHE_DISABLE="true"
 
 ARM_ROOT="gcc-arm-none-eabi-6-2017-q2-update"
-ARM_TARBALL="$ARM_ROOT-20150921-linux.tar.bz2"
+ARM_TARBALL="$ARM_ROOT-linux.tar.bz2"
 
 RPI_ROOT="master"
 RPI_TARBALL="$RPI_ROOT.tar.gz"
