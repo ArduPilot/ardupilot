@@ -115,7 +115,7 @@ protected:
     AP_InertialSensor &_imu;
 
     // semaphore for access to shared frontend data
-    HAL_Semaphore_Recursive _sem;
+    HAL_Semaphore _sem;
 
     //Default Clip Limit
     float _clip_limit = 15.5f * GRAVITY_MSS;
