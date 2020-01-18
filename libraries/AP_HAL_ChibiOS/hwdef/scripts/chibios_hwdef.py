@@ -63,8 +63,14 @@ allpins = []
 # list of configs by type
 bytype = {}
 
+# list of alt configs by type
+alttype = {}
+
 # list of configs by label
 bylabel = {}
+
+# list of alt configs by label
+altlabel = {}
 
 # list of SPI devices
 spidev = []
@@ -167,7 +173,7 @@ def get_alt_function(mcu, pin, function):
 
 def have_type_prefix(ptype):
     '''return True if we have a peripheral starting with the given peripheral type'''
-    for t in bytype.keys():
+    for t in list(bytype.keys()) + list(alttype.keys()):
         if t.startswith(ptype):
             return True
     return False
@@ -872,7 +878,7 @@ def write_SPI_table(f):
 def write_SPI_config(f):
     '''write SPI config defines'''
     global spi_list
-    for t in bytype.keys():
+    for t in list(bytype.keys()) + list(alttype.keys()):
         if t.startswith('SPI'):
             spi_list.append(t)
     spi_list = sorted(spi_list)
@@ -1515,7 +1521,7 @@ def setup_apj_IDs():
 def write_peripheral_enable(f):
     '''write peripheral enable lines'''
     f.write('// peripherals enabled\n')
-    for type in sorted(bytype.keys()):
+    for type in sorted(list(bytype.keys()) + list(alttype.keys())):
         if type.startswith('USART') or type.startswith('UART'):
             dstr = 'STM32_SERIAL_USE_%-6s' % type
             f.write('#ifndef %s\n' % dstr)
@@ -1533,11 +1539,14 @@ def get_dma_exclude(periph_list):
     '''return list of DMA devices to exclude from DMA'''
     dma_exclude = []
     for periph in periph_list:
-        if periph not in bylabel:
-            continue
-        p = bylabel[periph]
-        if p.has_extra('NODMA'):
-            dma_exclude.append(periph)
+        if periph in bylabel:
+            p = bylabel[periph]
+            if p.has_extra('NODMA'):
+                dma_exclude.append(periph)
+        if periph in altlabel:
+            p = altlabel[periph]
+            if p.has_extra('NODMA'):
+                dma_exclude.append(periph)
     return dma_exclude
 
 
@@ -1710,7 +1719,11 @@ def build_peripheral_list():
     peripherals = []
     done = set()
     prefixes = ['SPI', 'USART', 'UART', 'I2C']
-    for p in allpins:
+    periph_pins = allpins[:]
+    for alt in altmap.keys():
+        for p in altmap[alt].keys():
+            periph_pins.append(altmap[alt][p])
+    for p in periph_pins:
         type = p.type
         if type in done:
             continue
@@ -1724,9 +1737,9 @@ def build_peripheral_list():
                         bylabel[ptx] = p
                     if prx not in bylabel:
                         bylabel[prx] = p
-                if prx in bylabel:
+                if prx in bylabel or prx in altlabel:
                     peripherals.append(prx)
-                if ptx in bylabel:
+                if ptx in bylabel or ptx in altlabel:
                     peripherals.append(ptx)
 
         if type.startswith('ADC'):
@@ -1812,6 +1825,11 @@ def process_line(line):
             if p.portpin in altmap[alt]:
                 error("Pin %s ALT(%u) redefined" % (p.portpin, alt))
             altmap[alt][p.portpin] = p
+            # we need to add alt pins into bytype[] so they are enabled in chibios config
+            if type not in alttype:
+                alttype[type] = []
+            alttype[type].append(p)
+            altlabel[label] = p
             return
 
         if a[0] in config:
