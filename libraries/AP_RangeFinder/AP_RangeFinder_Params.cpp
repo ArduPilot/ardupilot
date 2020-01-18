@@ -27,7 +27,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
 
     // @Param: OFFSET
     // @DisplayName: rangefinder offset
-    // @Description: Offset in volts for zero distance for analog rangefinders. Offset added to distance in centimeters for PWM and I2C Lidars
+    // @Description: Offset in volts for zero distance for analog rangefinders. Offset added to distance in centimeters for PWM lidars
     // @Units: V
     // @Increment: 0.001
     // @User: Standard
