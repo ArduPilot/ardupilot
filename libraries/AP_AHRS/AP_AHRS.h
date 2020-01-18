@@ -559,7 +559,7 @@ protected:
     void update_nmea_out();
 
     // multi-thread access support
-    HAL_Semaphore_Recursive _rsem;
+    HAL_Semaphore _rsem;
 
     AHRS_VehicleClass _vehicle_class;
 
