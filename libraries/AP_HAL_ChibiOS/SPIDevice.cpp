@@ -220,7 +220,7 @@ bool SPIDevice::clock_pulse(uint32_t n)
 {
     if (!cs_forced) {
         //special mode to init sdcard without cs asserted
-        bus.semaphore.take(HAL_SEMAPHORE_BLOCK_FOREVER);
+        bus.semaphore.take_blocking();
         acquire_bus(true, true);
         spiIgnore(spi_devices[device_desc.bus].driver, n);
         acquire_bus(false, true);
