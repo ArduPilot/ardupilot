@@ -58,10 +58,8 @@ void DeviceBus::bus_thread(void *arg)
                     callback->next_usec += callback->period_usec;
                 }
                 // call it with semaphore held
-                if (binfo->semaphore.take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-                    callback->cb();
-                    binfo->semaphore.give();
-                }
+                WITH_SEMAPHORE(binfo->semaphore);
+                callback->cb();
             }
         }
 

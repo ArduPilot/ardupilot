@@ -90,7 +90,7 @@ uint16_t RCInput::read(uint8_t channel)
     if (!_init || (channel >= MIN(RC_INPUT_MAX_CHANNELS, _num_channels))) {
         return 0;
     }
-    rcin_mutex.take(HAL_SEMAPHORE_BLOCK_FOREVER);
+    rcin_mutex.take_blocking();
     uint16_t v = _rc_values[channel];
     rcin_mutex.give();
 #if HAL_RCINPUT_WITH_AP_RADIO
@@ -145,7 +145,7 @@ void RCInput::_timer_tick(void)
 #endif
 
     if (AP::RC().new_input()) {
-        rcin_mutex.take(HAL_SEMAPHORE_BLOCK_FOREVER);
+        rcin_mutex.take_blocking();
         _rcin_timestamp_last_signal = AP_HAL::micros();
         _num_channels = AP::RC().num_channels();
         _num_channels = MIN(_num_channels, RC_INPUT_MAX_CHANNELS);
@@ -163,7 +163,7 @@ void RCInput::_timer_tick(void)
 #if HAL_RCINPUT_WITH_AP_RADIO
     if (radio && radio->last_recv_us() != last_radio_us) {
         last_radio_us = radio->last_recv_us();
-        rcin_mutex.take(HAL_SEMAPHORE_BLOCK_FOREVER);
+        rcin_mutex.take_blocking();
         _rcin_timestamp_last_signal = last_radio_us;
         _num_channels = radio->num_channels();
         _num_channels = MIN(_num_channels, RC_INPUT_MAX_CHANNELS);
@@ -175,7 +175,7 @@ void RCInput::_timer_tick(void)
 #endif
 
 #if HAL_WITH_IO_MCU
-    rcin_mutex.take(HAL_SEMAPHORE_BLOCK_FOREVER);
+    rcin_mutex.take_blocking();
     if (AP_BoardConfig::io_enabled() &&
         iomcu.check_rcinput(last_iomcu_us, _num_channels, _rc_values, RC_INPUT_MAX_CHANNELS)) {
         _rcin_timestamp_last_signal = last_iomcu_us;
@@ -204,7 +204,7 @@ void RCInput::_timer_tick(void)
 bool RCInput::rc_bind(int dsmMode)
 {
 #if HAL_WITH_IO_MCU
-    rcin_mutex.take(HAL_SEMAPHORE_BLOCK_FOREVER);
+    rcin_mutex.take_blocking();
     if (AP_BoardConfig::io_enabled()) {
         iomcu.bind_dsm(dsmMode);
     }
