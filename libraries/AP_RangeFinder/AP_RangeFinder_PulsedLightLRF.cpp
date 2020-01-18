@@ -159,9 +159,10 @@ static const struct settings_table settings_v3hp[] = {
  */
 bool AP_RangeFinder_PulsedLightLRF::init(void)
 {
-    if (!_dev || !_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (!_dev) {
         return false;
     }
+    _dev->get_semaphore()->take_blocking();
     _dev->set_retries(3);
 
     // LidarLite needs split transfers
