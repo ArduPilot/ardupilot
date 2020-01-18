@@ -189,10 +189,6 @@
 #define HAL_OS_FATFS_IO 0
 #endif
 
-#ifndef HAL_PX4_HAVE_PX4IO
-#define HAL_PX4_HAVE_PX4IO 0
-#endif
-
 #ifndef HAL_COMPASS_DEFAULT
 #define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
 #endif
