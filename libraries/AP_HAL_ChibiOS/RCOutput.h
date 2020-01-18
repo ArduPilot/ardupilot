@@ -23,10 +23,6 @@
 
 #if HAL_USE_PWM == TRUE
 
-#if !STM32_DMA_ADVANCED
-#define DISABLE_DSHOT
-#endif
-
 class ChibiOS::RCOutput : public AP_HAL::RCOutput {
 public:
     void     init() override;
@@ -129,7 +125,7 @@ public:
       enable telemetry request for a mask of channels. This is used
       with DShot to get telemetry feedback
      */
-    void set_telem_request_mask(uint16_t mask) override { telem_request_mask = (mask >> chan_offset); }
+    void set_telem_request_mask(uint16_t mask) override;
 
     /*
       get safety switch state, used by Util.cpp

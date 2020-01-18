@@ -714,17 +714,19 @@ void RCOutput::set_output_mode(uint16_t mask, enum output_mode mode)
          mode == MODE_PWM_ONESHOT125) &&
         (mask & ((1U<<chan_offset)-1)) &&
         AP_BoardConfig::io_enabled()) {
-        iomcu_oneshot125 = (mode == MODE_PWM_ONESHOT125);
-        // also setup IO to use a 1Hz frequency, so we only get output
-        // when we trigger
-        iomcu.set_freq(io_fast_channel_mask, 1);
-        return iomcu.set_oneshot_mode();
+            iomcu_oneshot125 = (mode == MODE_PWM_ONESHOT125);
+            // also setup IO to use a 1Hz frequency, so we only get output
+            // when we trigger
+            iomcu.set_freq(io_fast_channel_mask, 1);
     }
-    if (mode == MODE_PWM_BRUSHED &&
-        (mask & ((1U<<chan_offset)-1)) &&
-        AP_BoardConfig::io_enabled()) {
-        return iomcu.set_brushed_mode();
-    }
+    if ((mode == MODE_PWM_ONESHOT ||
+         mode == MODE_PWM_ONESHOT125 ||
+         mode == MODE_PWM_BRUSHED ||
+         mode >= MODE_PWM_DSHOT150) &&
+         (mask & ((1U<<chan_offset)-1)) &&
+         AP_BoardConfig::io_enabled()) {
+             return iomcu.set_output_mode(mask, mode);
+         }
 #endif
 }
 
@@ -1060,7 +1062,9 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
     stm32_cacheBufferFlush(group.dma_buffer, buffer_length);
     dmaStreamSetMemory0(group.dma, group.dma_buffer);
     dmaStreamSetTransactionSize(group.dma, buffer_length/sizeof(uint32_t));
+#if STM32_DMA_ADVANCED
     dmaStreamSetFIFO(group.dma, STM32_DMA_FCR_DMDIS | STM32_DMA_FCR_FTH_FULL);
+#endif //#if STM32_DMA_ADVANCED
     dmaStreamSetMode(group.dma,
                      STM32_DMA_CR_CHSEL(group.dma_up_channel) |
                      STM32_DMA_CR_DIR_M2P | STM32_DMA_CR_PSIZE_WORD | STM32_DMA_CR_MSIZE_WORD |
@@ -1080,12 +1084,10 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
  */
 void RCOutput::dma_unlock(void *p)
 {
-#if STM32_DMA_ADVANCED
     pwm_group *group = (pwm_group *)p;
     chSysLockFromISR();
     group->dma_handle->unlock_from_IRQ();
     chSysUnlockFromISR();
-#endif
 }
 
 /*
@@ -1444,6 +1446,21 @@ void RCOutput::serial_end(void)
     }
     serial_group = nullptr;
 #endif //#ifndef DISABLE_SERIAL_ESC_COMM
+}
+
+/*
+  enable telemetry request for a mask of channels. This is used
+  with DShot to get telemetry feedback
+ */
+void RCOutput::set_telem_request_mask(uint16_t mask)
+{
+    telem_request_mask = (mask >> chan_offset);
+#if HAL_WITH_IO_MCU
+    if ((mask & ((1U<<chan_offset)-1)) &&
+        AP_BoardConfig::io_enabled()) {
+        return iomcu.set_dshot_telem(mask);
+    }
+#endif
 }
 
 /*
