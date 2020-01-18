@@ -57,7 +57,7 @@ public:
 private:
 
     static AP_RTC *_singleton;
-    HAL_Semaphore_Recursive rsem;
+    HAL_Semaphore rsem;
 
     source_type rtc_source_type = SOURCE_NONE;
     int64_t rtc_shift;
