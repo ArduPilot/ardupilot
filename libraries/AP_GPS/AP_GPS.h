@@ -493,7 +493,7 @@ protected:
 
 private:
     static AP_GPS *_singleton;
-    HAL_Semaphore_Recursive rsem;
+    HAL_Semaphore rsem;
 
     // returns the desired gps update rate in milliseconds
     // this does not provide any guarantee that the GPS is updating at the requested
