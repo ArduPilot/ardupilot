@@ -39,7 +39,7 @@ extern const AP_HAL::HAL& hal;
 // storage object
 StorageAccess AP_Mission::_storage(StorageManager::StorageMission);
 
-HAL_Semaphore_Recursive AP_Mission::_rsem;
+HAL_Semaphore AP_Mission::_rsem;
 
 ///
 /// public mission methods
