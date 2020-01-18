@@ -200,7 +200,7 @@ SPIBus::~SPIBus()
 
 void SPIBus::start_cb()
 {
-    sem.take(HAL_SEMAPHORE_BLOCK_FOREVER);
+    sem.take_blocking();
 }
 
 void SPIBus::end_cb()
