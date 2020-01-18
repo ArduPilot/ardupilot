@@ -4054,7 +4054,19 @@ switch value'''
             self.assert_capability(mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_FLIGHT_TERMINATION)
             self.set_parameter("AFS_TERM_ACTION", 42)
             self.load_sample_mission()
-            self.change_mode("AUTO") # must go to auto for AFS to latch on
+            messages = []
+            def my_message_hook(mav, m):
+                if m.get_type() != 'STATUSTEXT':
+                    return
+                messages.append(m)
+            self.install_message_hook(my_message_hook)
+            try:
+                self.change_mode("AUTO") # must go to auto for AFS to latch on
+            finally:
+                self.remove_message_hook(my_message_hook)
+
+            if "AFS State: AFS_AUTO" not in [x.text for x in messages]:
+                self.wait_statustext("AFS State: AFS_AUTO")
             self.change_mode("MANUAL")
             self.start_subtest("RC Failure")
             self.set_parameter("AFS_RC_FAIL_TIME", 1)
