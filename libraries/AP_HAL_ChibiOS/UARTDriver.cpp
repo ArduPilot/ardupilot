@@ -622,13 +622,7 @@ size_t UARTDriver::write(uint8_t c)
     if (lock_write_key != 0) {
         return 0;
     }
-    if (unbuffered_writes && _blocking_writes) {
-        _write_mutex.take_blocking();
-    } else {
-        if (!_write_mutex.take_nonblocking()) {
-            return 0;
-        }
-    }
+    _write_mutex.take_blocking();
 
     if (!_initialised) {
         _write_mutex.give();
@@ -640,7 +634,10 @@ size_t UARTDriver::write(uint8_t c)
             _write_mutex.give();
             return 0;
         }
+        // release the semaphore while sleeping
+        _write_mutex.give();
         hal.scheduler->delay(1);
+        _write_mutex.take_blocking();
     }
     size_t ret = _writebuf.write(&c, 1);
     if (unbuffered_writes) {
@@ -657,19 +654,10 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
 		return 0;
 	}
 
-    if (_blocking_writes && unbuffered_writes) {
-        _write_mutex.take_blocking();
-    } else {
-        if (!_write_mutex.take_nonblocking()) {
-            return 0;
-        }
-    }
-
     if (_blocking_writes && !unbuffered_writes) {
         /*
           use the per-byte delay loop in write() above for blocking writes
          */
-        _write_mutex.give();
         size_t ret = 0;
         while (size--) {
             if (write(*buffer++) != 1) break;
@@ -678,11 +666,12 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
         return ret;
     }
 
+    WITH_SEMAPHORE(_write_mutex);
+
     size_t ret = _writebuf.write(buffer, size);
     if (unbuffered_writes) {
         write_pending_bytes();
     }
-    _write_mutex.give();
     return ret;
 }
 
@@ -713,14 +702,8 @@ size_t UARTDriver::write_locked(const uint8_t *buffer, size_t size, uint32_t key
     if (lock_write_key != 0 && key != lock_write_key) {
         return 0;
     }
-    if (!_write_mutex.take_nonblocking()) {
-        return 0;
-    }
-    size_t ret = _writebuf.write(buffer, size);
-
-    _write_mutex.give();
-
-    return ret;
+    WITH_SEMAPHORE(_write_mutex);
+    return _writebuf.write(buffer, size);
 }
 
 /*
@@ -1091,9 +1074,8 @@ void UARTDriver::_timer_tick(void)
         // provided by the write() call, but if the write is larger
         // than the DMA buffer size then there can be extra bytes to
         // send here, and they must be sent with the write lock held
-        _write_mutex.take_blocking();
+        WITH_SEMAPHORE(_write_mutex);
         write_pending_bytes();
-        _write_mutex.give();
     } else {
         write_pending_bytes();
     }
