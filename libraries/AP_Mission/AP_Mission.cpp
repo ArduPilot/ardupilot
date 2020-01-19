@@ -31,6 +31,14 @@ const AP_Param::GroupInfo AP_Mission::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  2, AP_Mission, _options, AP_MISSION_OPTIONS_DEFAULT),
 
+    // @Param: MAX_WP_DIST
+    // @DisplayName: Maximum allowed distance to first waypoint.
+    // @Description: Maximum allowed distance in meters to first waypoint for a pre-arm check. Prevents a fly away. Set param to 0, to disable the feature. 
+    // @Units: m
+    // @Range: 10 100000
+    // @User: Advanced
+    AP_GROUPINFO("MAX_WP_DIST",   3 ,  AP_Mission, _max_nav_dist, 0),
+
     AP_GROUPEND
 };
 
@@ -1968,6 +1976,19 @@ bool AP_Mission::contains_item(MAV_CMD command) const
         }
         if (tmp.id == command) {
             return true;
+        }
+    }
+    return false;
+}
+
+//get first navigation command which also has valid location
+bool AP_Mission::get_first_nav_cmd_with_loc(Mission_Command& cmd) 
+{
+    for (uint8_t i = 1; i < (unsigned)_cmd_total; i++) {
+        if (get_next_nav_cmd(i, cmd)) {
+            if (stored_in_location(cmd.id)) {
+                return true;
+            }
         }
     }
     return false;
