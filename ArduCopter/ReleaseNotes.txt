@@ -1,5 +1,16 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.0.1-rc3 19-Jan-2020
+Changes from 4.0.1-rc2
+1) Bug Fixes:
+    a) Semaphore fixes for Logging, Filesystem and UAVCAN Dyanmic Node Allocation
+    b) RangeFinder parameter fix (4th rangefinder was using 1st rangefinder's params)
+    c) TradHeli STB_COL_x parameter description fixed
+2) Minor Enhancements:
+    a) Autorotate flight mode renamed to Heli_Autorotate
+    b) Solo default parameters updated
+    c) "Prepared log system" initialisation message removed
+------------------------------------------------------------------
 Copter 4.0.1-rc2 10-Jan-2020
 Changes from 4.0.1-rc1
 1) FrSky telemetry status text handling fix (Critical Fix)
