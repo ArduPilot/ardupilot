@@ -75,11 +75,13 @@ void QuadPlane::tiltrotor_continuous_update(void)
         if (!hal.util->get_soft_armed()) {
             tilt.current_throttle = 0;
         } else {
+            // prevent motor shutdown
+            tilt.motors_active = true;
+        }
+        if (!motor_test.running) {
             // the motors are all the way forward, start using them for fwd thrust
             uint8_t mask = is_zero(tilt.current_throttle)?0:(uint8_t)tilt.tilt_mask.get();
             motors->output_motor_mask(tilt.current_throttle, mask, plane.rudder_dt);
-            // prevent motor shutdown
-            tilt.motors_active = true;
         }
         return;
     }
@@ -373,7 +375,8 @@ void QuadPlane::tiltrotor_vectored_yaw(void)
  */
 void QuadPlane::tiltrotor_bicopter(void)
 {
-    if (tilt.tilt_type != TILT_TYPE_BICOPTER) {
+    if (tilt.tilt_type != TILT_TYPE_BICOPTER || motor_test.running) {
+        // don't override motor test with motors_output
         return;
     }
 
