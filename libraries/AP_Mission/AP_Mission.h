@@ -480,6 +480,12 @@ public:
     // returns true if the mission contains the requested items
     bool contains_item(MAV_CMD command) const;
 
+    //return maximum dist to first wp parameter
+    uint32_t get_max_arm_dist(void) const { return (uint32_t)_max_nav_dist; }
+
+    //get first navigation command which also has valid location
+    bool get_first_nav_cmd_with_loc(Mission_Command& cmd);
+
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -555,6 +561,7 @@ private:
     AP_Int16                _cmd_total;  // total number of commands in the mission
     AP_Int8                 _restart;   // controls mission starting point when entering Auto mode (either restart from beginning of mission or resume from last command run)
     AP_Int16                _options;    // bitmask options for missions, currently for mission clearing on reboot but can be expanded as required
+    AP_Int32                _max_nav_dist; //maximum allowed distance to first waypoint
 
     // pointer to main program functions
     mission_cmd_fn_t        _cmd_start_fn;  // pointer to function which will be called when a new command is started
