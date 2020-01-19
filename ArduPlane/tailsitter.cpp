@@ -54,7 +54,8 @@ bool QuadPlane::tailsitter_active(void)
  */
 void QuadPlane::tailsitter_output(void)
 {
-    if (!is_tailsitter()) {
+    if (!is_tailsitter() || motor_test.running) {
+        // if motor test is running we don't want to overwrite it with output_motor_mask or motors_output
         return;
     }
 
@@ -88,18 +89,14 @@ void QuadPlane::tailsitter_output(void)
                 SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, 0);
                 pos_control->get_accel_z_pid().set_integrator(throttle*10);
 
-                if (mask == 0) {
-                    // override AP_MotorsTailsitter throttles during back transition
-                    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
-                    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, throttle);
-                    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle);
-                }
-            }
-            if (mask != 0) {
-                // set AP_MotorsMatrix throttles enabled for forward flight
-                motors->output_motor_mask(throttle * 0.01f, mask, plane.rudder_dt);
+                // override AP_MotorsTailsitter throttles during back transition
+                SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
+                SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, throttle);
+                SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle);
             }
         }
+        // set AP_MotorsMatrix throttles for forward flight
+        motors->output_motor_mask(throttle * 0.01f, mask, plane.rudder_dt);
         return;
     }
 
