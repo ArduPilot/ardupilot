@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+
+_ap_bin()
+{
+    local cur opts
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+
+    opts="--help -h"
+	  opts+=" --wipe -w"
+		opts+=" --unhide-groups -u"
+		opts+=" --speedup -s SPEEDUP"
+		opts+=" --rate -r"
+		opts+=" --console -C"
+		opts+=" --instance -I"
+		opts+=" --synthetic-clock -S"
+		opts+=" --home -O"
+		opts+=" --model -M"
+		opts+=" --config"
+		opts+=" --fg -F"
+		opts+=" --disable-fgview"
+		opts+=" --gimbal"
+		opts+=" --autotest-dir"
+		opts+=" --defaults"
+		opts+=" --uartA"
+		opts+=" --uartB"
+		opts+=" --uartC"
+		opts+=" --uartD"
+		opts+=" --uartE"
+		opts+=" --uartF"
+		opts+=" --uartG"
+		opts+=" --uartH"
+		opts+=" --rtscts"
+		opts+=" --base-port"
+		opts+=" --rc-in-port"
+		opts+=" --sim-address"
+		opts+=" --sim-port-in"
+		opts+=" --sim-port-out"
+		opts+=" --irlock-port"
+    COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+}
+
+
+complete -F _ap_bin arducopter
+complete -F _ap_bin arduplane
+complete -F _ap_bin ardusub
+complete -F _ap_bin arducopter
