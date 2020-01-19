@@ -49,12 +49,29 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Increment: 0.001
     // @User: Standard
 
-    // @Param: RAT_RLL_FILT
-    // @DisplayName: Roll axis rate controller input frequency in Hz
-    // @Description: Roll axis rate controller input frequency in Hz
-    // @Units: Hz
-    // @Range: 1 20
+    // @Param: RAT_RLL_FLTT
+    // @DisplayName: Roll axis rate controller target frequency in Hz
+    // @Description: Roll axis rate controller target frequency in Hz
+    // @Range: 1 50
     // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: RAT_RLL_FLTE
+    // @DisplayName: Roll axis rate controller error frequency in Hz
+    // @Description: Roll axis rate controller error frequency in Hz
+    // @Range: 1 50
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: RAT_RLL_FLTD
+    // @DisplayName: Roll axis rate controller derivative frequency in Hz
+    // @Description: Roll axis rate controller derivative frequency in Hz
+    // @Range: 1 50
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
     AP_SUBGROUPINFO(_pid_rate_roll, "RAT_RLL_", 2, AC_AttitudeControl_Heli, AC_HELI_PID),
 
     // @Param: RAT_PIT_P
@@ -92,12 +109,29 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Increment: 0.001
     // @User: Standard
 
-    // @Param: RAT_PIT_FILT
-    // @DisplayName: Pitch axis rate controller input frequency in Hz
-    // @Description: Pitch axis rate controller input frequency in Hz
-    // @Units: Hz
-    // @Range: 1 20
+    // @Param: RAT_PIT_FLTT
+    // @DisplayName: Pitch axis rate controller target frequency in Hz
+    // @Description: Pitch axis rate controller target frequency in Hz
+    // @Range: 1 50
     // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: RAT_PIT_FLTE
+    // @DisplayName: Pitch axis rate controller error frequency in Hz
+    // @Description: Pitch axis rate controller error frequency in Hz
+    // @Range: 1 50
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: RAT_PIT_FLTD
+    // @DisplayName: Pitch axis rate controller derivative frequency in Hz
+    // @Description: Pitch axis rate controller derivative frequency in Hz
+    // @Range: 1 50
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
     AP_SUBGROUPINFO(_pid_rate_pitch, "RAT_PIT_", 3, AC_AttitudeControl_Heli, AC_HELI_PID),
 
     // @Param: RAT_YAW_P
@@ -135,12 +169,29 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Increment: 0.001
     // @User: Standard
 
-    // @Param: RAT_YAW_FILT
-    // @DisplayName: Yaw axis rate controller input frequency in Hz
-    // @Description: Yaw axis rate controller input frequency in Hz
-    // @Units: Hz
-    // @Range: 1 20
+    // @Param: RAT_YAW_FLTT
+    // @DisplayName: Yaw axis rate controller target frequency in Hz
+    // @Description: Yaw axis rate controller target frequency in Hz
+    // @Range: 1 50
     // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: RAT_YAW_FLTE
+    // @DisplayName: Yaw axis rate controller error frequency in Hz
+    // @Description: Yaw axis rate controller error frequency in Hz
+    // @Range: 1 50
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: RAT_YAW_FLTD
+    // @DisplayName: Yaw axis rate controller derivative frequency in Hz
+    // @Description: Yaw axis rate controller derivative frequency in Hz
+    // @Range: 1 50
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
     AP_SUBGROUPINFO(_pid_rate_yaw, "RAT_YAW_", 4, AC_AttitudeControl_Heli, AC_HELI_PID),
 
     // @Param: PIRO_COMP
