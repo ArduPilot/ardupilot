@@ -71,10 +71,6 @@ void Copter::init_ardupilot()
     // init winch and wheel encoder
     winch_init();
 
-    // initialise notify system
-    notify.init();
-    notify_flight_mode();
-
     // initialise battery monitor
     battery.init();
 
@@ -186,6 +182,24 @@ void Copter::init_ardupilot()
     // set INS to HIL mode
     ins.set_hil_mode();
 #endif
+
+    // Setting the flight mode of the flight mode switch
+    int8_t flightCH = copter.g.flight_mode_chan.get();
+    uint16_t ch_in = rc().channel(flightCH - 1)->get_radio_in();
+    int8_t position = 0;
+    if      (ch_in < 1231) position = 0;
+    else if (ch_in < 1361) position = 1;
+    else if (ch_in < 1491) position = 2;
+    else if (ch_in < 1621) position = 3;
+    else if (ch_in < 1750) position = 4;
+    else position = 5;
+    
+    control_mode = (enum Mode::Number)flight_modes[position].get();
+    flightmode = mode_from_mode_num(control_mode);
+
+    // initialise notify system
+    notify.init();
+    notify_flight_mode();
 
     // read Baro pressure at ground
     //-----------------------------
