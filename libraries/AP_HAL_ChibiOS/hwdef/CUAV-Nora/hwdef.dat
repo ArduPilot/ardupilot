@@ -11,7 +11,6 @@ USB_STRING_MANUFACTURER "ArduPilot"
 USB_STRING_PRODUCT "%BOARD%"
 USB_STRING_SERIAL  "%SERIAL%"
 
-
 # board ID for firmware load
 APJ_BOARD_ID 1009
 
@@ -35,16 +34,15 @@ UART_ORDER OTG1 USART1 USART2 USART6 UART4 UART8 UART7 OTG2
 # default the 2nd interface to MAVLink2 until MissionPlanner updates drivers
 define HAL_OTG2_PROTOCOL SerialProtocol_MAVLink2
 
-define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_FMUV5
 define HAL_CHIBIOS_ARCH_FMUV5 1
-define BOARD_TYPE_DEFAULT 24
 
 # now we define the pins that USB is connected on
 PA11 OTG_FS_DM OTG1
 PA12 OTG_FS_DP OTG1
 
 # Port switching for USB HS and FS,high = USB_FS , LOW = USB_HS
-PH15 USB_EN OUTPUT HIGH
+PH15 USB_HS_ENABLE OUTPUT HIGH
+define USB_HW_ENABLE_HS 0
 
 # these are the pins for SWD debugging with a STlinkv2 or black-magic probe
 PA13 JTMS-SWDIO SWD
@@ -259,7 +257,7 @@ COMPASS IST8310 I2C:ALL_INTERNAL:0x0E false ROTATION_ROLL_180_YAW_90
 COMPASS RM3100 SPI:rm3100 false ROTATION_NONE 
  
 
-# microSD support (disabled for now)
+# microSD support
 PC8 SDMMC1_D0 SDMMC1
 PC9 SDMMC1_D1 SDMMC1
 PC10 SDMMC1_D2 SDMMC1
@@ -283,19 +281,13 @@ define HAL_GPIO_LED_OFF 1
 define HAL_HAVE_PIXRACER_LED
 
 # enable RAMTROM parameter storage
-define HAL_STORAGE_SIZE 32768
+define HAL_STORAGE_SIZE 16384
 define HAL_WITH_RAMTRON 1
 
 # allow to have have a dedicated safety switch pin
 define HAL_HAVE_SAFETY_SWITCH 1
 PE12 LED_SAFETY OUTPUT
 PE10 SAFETY_IN INPUT PULLDOWN
-
-# also probe for external compasses
-
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
-define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
-define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 
 # enable FAT filesystem support (needs a microSD defined via SDMMC)
 define HAL_OS_FATFS_IO 1
