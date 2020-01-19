@@ -104,7 +104,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Param: MIS_ITEMS
     // @DisplayName: Required mission items
     // @Description: Bitmask of mission items that are required to be planned in order to arm the aircraft
-    // @Bitmask: 0:Land,1:VTOL Land,2:DO_LAND_START,3:Takeoff,4:VTOL Takeoff,5:Rallypoint
+    // @Bitmask: 0:Land,1:VTOL Land,2:DO_LAND_START,3:Takeoff,4:VTOL Takeoff,5:Rallypoint, 6:Maximum distance to first waypoint
     // @User: Advanced
     AP_GROUPINFO("MIS_ITEMS",    7,     AP_Arming, _required_mission_items, 0),
 
@@ -612,6 +612,24 @@ bool AP_Arming::mission_checks(bool report)
                 return false;
             }
           }
+
+        if (_required_mission_items & MIS_ITEM_CHECK_NAV_DIST) {
+            AP_Mission::Mission_Command cmd;
+            Location ahrs_loc;
+            if (!AP::ahrs().get_position(ahrs_loc)) {
+                check_failed(ARMING_CHECK_MISSION, report, "Can't check distance to waypoint without position");
+                return false;
+            }
+            if (mission-> get_first_nav_cmd_with_loc(cmd)) {
+                uint32_t max_dist = mission->get_max_arm_dist();
+                float dist_to_wp = ahrs_loc.get_distance(cmd.content.location);
+                //fail if distance to first nav cmd is more than the allowed distance
+                if (dist_to_wp > max_dist && max_dist) {
+                    check_failed(ARMING_CHECK_MISSION, report, "Check distance to first waypoint");
+                    return false;
+                }
+            }      
+        }
     }
 
     return true;
