@@ -1122,14 +1122,8 @@ AP_GPS_UBLOX::_parse_gps(void)
                 offset_dist > min_separation &&
                 fabsf(offset_dist - rel_dist) / MIN(offset_dist, rel_dist) < strict_length_error_allowed) {
                 float rotation_offset_rad;
-                if (offset0.is_zero()) {
-                    rotation_offset_rad = Vector2f(offset1.x, offset1.y).angle();
-                } else if (offset1.is_zero()) {
-                    rotation_offset_rad = Vector2f(offset0.x, offset0.y).angle();
-                } else {
-                    const Vector3f diff = offset0 - offset1;
-                    rotation_offset_rad = Vector2f(diff.x, diff.y).angle();
-                }
+                const Vector3f diff = offset0 - offset1;
+                rotation_offset_rad = Vector2f(diff.x, diff.y).angle();
                 if (state.instance != 0) {
                     rotation_offset_rad += M_PI;
                 }
