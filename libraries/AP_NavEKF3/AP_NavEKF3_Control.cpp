@@ -40,14 +40,13 @@ void NavEKF3_core::controlFilterModes()
 /*
   return effective value for _magCal for this core
  */
-uint8_t NavEKF3_core::effective_magCal(void) const
+NavEKF3_core::MagCal NavEKF3_core::effective_magCal(void) const
 {
     // force use of simple magnetic heading fusion for specified cores
     if (frontend->_magMask & core_index) {
-        return 2;
-    } else {
-        return frontend->_magCal;
+        return MagCal::NEVER;
     }
+    return MagCal(frontend->_magCal.get());
 }
 
 // Determine if learning of wind and magnetic field will be enabled and set corresponding indexing limits to
@@ -92,16 +91,16 @@ void NavEKF3_core::setWindMagStateLearningMode()
     }
 
     // Determine if learning of magnetic field states has been requested by the user
-    uint8_t magCal = effective_magCal();
+    MagCal magCal = effective_magCal();
     bool magCalRequested =
-            ((magCal == 0) && inFlight) || // when flying
-            ((magCal == 1) && manoeuvring)  || // when manoeuvring
-            ((magCal == 3) && finalInflightYawInit && finalInflightMagInit) || // when initial in-air yaw and mag field reset is complete
-            (magCal == 4); // all the time
+        ((magCal == MagCal::WHEN_FLYING) && inFlight) || // when flying
+        ((magCal == MagCal::WHEN_MANOEUVRING) && manoeuvring)  || // when manoeuvring
+        ((magCal == MagCal::AFTER_FIRST_CLIMB) && finalInflightYawInit && finalInflightMagInit) || // when initial in-air yaw and mag field reset is complete
+        (magCal == MagCal::ALWAYS); // all the time
 
     // Deny mag calibration request if we aren't using the compass, it has been inhibited by the user,
     // we do not have an absolute position reference or are on the ground (unless explicitly requested by the user)
-    bool magCalDenied = !use_compass() || (magCal == 2) || (onGround && magCal != 4);
+    bool magCalDenied = !use_compass() || (magCal == MagCal::NEVER) || (onGround && magCal != MagCal::ALWAYS);
 
     // Inhibit the magnetic field calibration if not requested or denied
     bool setMagInhibit = !magCalRequested || magCalDenied;
@@ -450,7 +449,7 @@ bool NavEKF3_core::readyToUseRangeBeacon(void) const
 // return true if we should use the compass
 bool NavEKF3_core::use_compass(void) const
 {
-    return (frontend->_magCal != 5) && _ahrs->get_compass() && _ahrs->get_compass()->use_for_yaw(magSelectIndex) && !allMagSensorsFailed;
+    return effective_magCal() != MagCal::EXTERNAL_YAW && _ahrs->get_compass() && _ahrs->get_compass()->use_for_yaw(magSelectIndex) && !allMagSensorsFailed;
 }
 
 /*
