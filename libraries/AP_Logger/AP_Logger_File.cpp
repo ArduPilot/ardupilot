@@ -776,7 +776,7 @@ void AP_Logger_File::PrepForArming()
 /*
   start writing to a new log file
  */
-uint16_t AP_Logger_File::start_new_log(void)
+void AP_Logger_File::start_new_log(void)
 {
     stop_logging();
 
@@ -785,7 +785,7 @@ uint16_t AP_Logger_File::start_new_log(void)
     if (_open_error) {
         // we have previously failed to open a file - don't try again
         // to prevent us trying to open files while in flight
-        return 0xFFFF;
+        return;
     }
 
     if (_read_fd != -1) {
@@ -796,7 +796,7 @@ uint16_t AP_Logger_File::start_new_log(void)
     if (disk_space_avail() < _free_space_min_avail && disk_space() > 0) {
         hal.console->printf("Out of space for logging\n");
         _open_error = true;
-        return 0xffff;
+        return;
     }
 
     uint16_t log_num = find_last_log();
@@ -809,7 +809,7 @@ uint16_t AP_Logger_File::start_new_log(void)
     }
     if (!write_fd_semaphore.take(1)) {
         _open_error = true;
-        return 0xFFFF;
+        return;
     }
     if (_write_filename) {
         free(_write_filename);
@@ -819,7 +819,7 @@ uint16_t AP_Logger_File::start_new_log(void)
     if (_write_filename == nullptr) {
         _open_error = true;
         write_fd_semaphore.give();
-        return 0xFFFF;
+        return;
     }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
@@ -841,7 +841,7 @@ uint16_t AP_Logger_File::start_new_log(void)
                  _write_filename, strerror(saved_errno));
         hal.console->printf("Log open fail for %s - %s\n",
                             _write_filename, strerror(saved_errno));
-        return 0xFFFF;
+        return;
     }
     _last_write_ms = AP_HAL::millis();
     _write_offset = 0;
@@ -858,7 +858,7 @@ uint16_t AP_Logger_File::start_new_log(void)
     free(fname);
     if (fd == -1) {
         _open_error = true;
-        return 0xFFFF;
+        return;
     }
 
     char buf[30];
@@ -869,10 +869,10 @@ uint16_t AP_Logger_File::start_new_log(void)
 
     if (written < to_write) {
         _open_error = true;
-        return 0xFFFF;
+        return;
     }
 
-    return log_num;
+    return;
 }
 
 
