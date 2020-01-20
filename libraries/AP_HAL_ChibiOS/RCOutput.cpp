@@ -1336,7 +1336,7 @@ bool RCOutput::serial_write_bytes(const uint8_t *bytes, uint16_t len)
  */
 void RCOutput::serial_bit_irq(void)
 {
-    systime_t now = chVTGetSystemTimeX();
+    systime_t now = AP_HAL::micros();
     uint8_t bit = palReadLine(irq.line);
     bool send_signal = false;
 
