@@ -131,3 +131,7 @@ define BOARD_PWM_COUNT_DEFAULT 4
 
 #font for the osd
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+
+# disable parachute and sprayer to save flash
+define HAL_PARACHUTE_ENABLED 0
+define HAL_SPRAYER_ENABLED 0
