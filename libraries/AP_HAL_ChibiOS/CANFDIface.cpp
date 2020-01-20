@@ -576,7 +576,7 @@ bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
     //TODO: Do timing calculations for FDCAN
     can_->NBTP = ((timings.sjw << FDCAN_NBTP_NSJW_Pos)   |
                   (timings.bs1 << FDCAN_NBTP_NTSEG1_Pos) |
-                  (timings.bs2 << FDCAN_NBTP_TSEG2_Pos)  |
+                  (timings.bs2 << FDCAN_NBTP_NTSEG2_Pos)  |
                   (timings.prescaler << FDCAN_NBTP_NBRP_Pos));
 
     //RX Config
