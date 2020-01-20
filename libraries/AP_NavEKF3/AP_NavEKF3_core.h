@@ -367,6 +367,16 @@ public:
     // get timing statistics structure
     void getTimingStatistics(struct ekf_timing &timing);
 
+    // values for EK3_MAG_CAL
+    enum class MagCal {
+        WHEN_FLYING = 0,
+        WHEN_MANOEUVRING = 1,
+        NEVER = 2,
+        AFTER_FIRST_CLIMB = 3,
+        ALWAYS = 4,
+        EXTERNAL_YAW = 5,
+    };
+
 private:
     // Reference to the global EKF frontend for parameters
     NavEKF3 *frontend;
@@ -830,7 +840,7 @@ private:
     void recordMagReset();
 
     // effective value of MAG_CAL
-    uint8_t effective_magCal(void) const;
+    MagCal effective_magCal(void) const;
 
     // calculate the variances for the rotation vector equivalent
     Vector3f calcRotVecVariances(void);
