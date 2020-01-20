@@ -70,7 +70,7 @@ struct PACKED FPort_Frame {
             uint8_t crc;
             uint8_t end;
         } control;
-        struct {
+        struct PACKED {
             uint8_t prim;
             uint16_t appid;
             uint8_t data[4];
@@ -179,6 +179,8 @@ void AP_RCProtocol_FPort::decode_downlink(const FPort_Frame &frame)
         uint16_t sum = 0;
         for (uint8_t i=0; i<sizeof(buf)-1; i++) {
             sum += buf[i];
+            sum += sum >> 8;
+            sum &= 0xFF;              
         }
         sum = 0xff - ((sum & 0xff) + (sum >> 8));
         buf[9] = sum;
