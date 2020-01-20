@@ -414,7 +414,7 @@ uint16_t AP_Logger_Block::get_num_logs(void)
 
 
 // This function starts a new log file in the AP_Logger
-uint16_t AP_Logger_Block::start_new_log(void)
+void AP_Logger_Block::start_new_log(void)
 {
     WITH_SEMAPHORE(sem);
     uint32_t last_page = find_last_page();
@@ -424,7 +424,7 @@ uint16_t AP_Logger_Block::start_new_log(void)
     if (find_last_log() == 0 || GetFileNumber() == 0xFFFF) {
         SetFileNumber(1);
         StartWrite(1);
-        return 1;
+        return;
     }
 
     uint16_t new_log_num;
@@ -444,7 +444,7 @@ uint16_t AP_Logger_Block::start_new_log(void)
         SetFileNumber(new_log_num);
         StartWrite(last_page + 1);
     }
-    return new_log_num;
+    return;
 }
 
 // This function finds the first and last pages of a log file
