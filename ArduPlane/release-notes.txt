@@ -1,5 +1,5 @@
-Release 4.0.3beta2, 18th January 2020
--------------------------------------
+Release 4.0.3, 21st January 2020
+--------------------------------
 
 This is a minor release with a few bug fixes and enhancements. The
 changes since beta1 are:
@@ -7,15 +7,6 @@ changes since beta1 are:
  - fixed 3 missing semaphore waits
  - fixed checking for bouncebuffer allocation on microSD card IO
  - fixed incorrect param count
-
-Happy flying!
-
-Release 4.0.3beta1, 10th January 2020
--------------------------------------
-
-This is a minor release with a few bug fixes and enhancements. The
-changes are:
-
  - prevent failsafe action from overriding a VTOL land
  - fixed compass calibration failures with auto-rotation detection
  - fixed errors on STM32H7 I2C (affects CubeOrange and Durandal)
