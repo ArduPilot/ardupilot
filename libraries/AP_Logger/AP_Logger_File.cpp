@@ -1033,21 +1033,12 @@ bool AP_Logger_File::io_thread_alive() const
 
 bool AP_Logger_File::logging_failed() const
 {
-    if (!_initialised) {
+    if (!_initialised ||
+        _open_error ||
+        !io_thread_alive() ||  // No heartbeat in a second.  IO thread is dead?! Very Not Good.
+        _last_write_failed) {
         return true;
     }
-    if (_open_error) {
-        return true;
-    }
-    if (!io_thread_alive()) {
-        // No heartbeat in a second.  IO thread is dead?! Very Not
-        // Good.
-        return true;
-    }
-    if (_last_write_failed) {
-        return true;
-    }
-
     return false;
 }
 
