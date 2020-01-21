@@ -26,8 +26,8 @@ fi
 
 BASE_PKGS="build-essential ccache g++ gawk git make wget"
 PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect"
-# add some Python packages required for commonly-used MAVProxy modules:
-PYTHON_PKGS="$PYTHON_PKGS pygame"
+# add some Python packages required for commonly-used MAVProxy modules and hex file generation:
+PYTHON_PKGS="$PYTHON_PKGS pygame intelhex"
 PX4_PKGS="python-argparse openocd flex bison libncurses5-dev \
           autoconf texinfo libftdi-dev zlib1g-dev \
           zip genromfs python-empy cmake cmake-data"
@@ -123,6 +123,7 @@ fi
 
 $APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS $ARM_LINUX_PKGS
 pip2 -q install --user -U $PYTHON_PKGS
+
 
 if [ ! -d $OPT/$ARM_ROOT ]; then
     (
