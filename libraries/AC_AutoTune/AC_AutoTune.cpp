@@ -1210,7 +1210,7 @@ void AC_AutoTune::save_tuning_gains()
         orig_yaw_rff = attitude_control->get_rate_yaw_pid().ff();
         orig_yaw_rLPF = attitude_control->get_rate_yaw_pid().filt_E_hz();
         orig_yaw_sp = attitude_control->get_angle_yaw_p().kP();
-        orig_yaw_accel = attitude_control->get_accel_pitch_max();
+        orig_yaw_accel = attitude_control->get_accel_yaw_max();
     }
 
     // update GCS and log save gains event
