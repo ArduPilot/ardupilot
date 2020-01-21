@@ -1048,7 +1048,6 @@ private:
                   "_failsafe_priorities is missing the sentinel");
 
 public:
-    void mavlink_delay_cb();
     void failsafe_check(void);
 };
 

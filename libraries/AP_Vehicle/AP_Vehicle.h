@@ -183,9 +183,7 @@ protected:
 
     // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
-    NavEKF2 EKF2{&ahrs};
-    NavEKF3 EKF3{&ahrs};
-    AP_AHRS_NavEKF ahrs{EKF2, EKF3};
+    AP_AHRS_NavEKF ahrs;
 #else
     AP_AHRS_DCM ahrs;
 #endif
@@ -197,10 +195,14 @@ protected:
     static const struct AP_Param::GroupInfo var_info[];
     static const struct AP_Scheduler::Task scheduler_tasks[];
 
+    void register_scheduler_delay_callback();
+
 private:
 
     static AP_Vehicle *_singleton;
     bool init_done;
+
+    static void scheduler_delay_callback();
 
     // true if vehicle is probably flying
     bool likely_flying;

@@ -54,6 +54,49 @@ void AP_Vehicle::init_vehicle()
 #endif
 }
 
+
+/*
+ *  a delay() callback that processes MAVLink packets. We set this as the
+ *  callback in long running library initialisation routines to allow
+ *  MAVLink to process packets while waiting for the initialisation to
+ *  complete
+ */
+void AP_Vehicle::scheduler_delay_callback()
+{
+    static uint32_t last_1hz, last_50hz, last_5s;
+
+    AP_Logger &logger = AP::logger();
+
+    // don't allow potentially expensive logging calls:
+    logger.EnableWrites(false);
+
+    const uint32_t tnow = AP_HAL::millis();
+    if (tnow - last_1hz > 1000) {
+        last_1hz = tnow;
+        gcs().send_message(MSG_HEARTBEAT);
+        gcs().send_message(MSG_SYS_STATUS);
+    }
+    if (tnow - last_50hz > 20) {
+        last_50hz = tnow;
+        gcs().update_receive();
+        gcs().update_send();
+        _singleton->notify.update();
+    }
+    if (tnow - last_5s > 5000) {
+        last_5s = tnow;
+        gcs().send_text(MAV_SEVERITY_INFO, "Initialising ArduPilot");
+    }
+
+    logger.EnableWrites(true);
+}
+
+void AP_Vehicle::register_scheduler_delay_callback()
+{
+    // Register scheduler_delay_cb, which will run anytime you have
+    // more than 5ms remaining in your call to hal.scheduler->delay
+    hal.scheduler->register_delay_callback(scheduler_delay_callback, 5);
+}
+
 AP_Vehicle *AP_Vehicle::_singleton = nullptr;
 
 AP_Vehicle *AP_Vehicle::get_singleton()

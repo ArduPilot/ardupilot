@@ -69,7 +69,7 @@ const AP_Param::Info ReplayVehicle::var_info[] = {
 
     // @Group: EK2_
     // @Path: ../libraries/AP_NavEKF2/AP_NavEKF2.cpp
-    GOBJECTN(EKF2, NavEKF2, "EK2_", NavEKF2),
+    GOBJECTN(ahrs.EKF2, NavEKF2, "EK2_", NavEKF2),
     
     // @Group: COMPASS_
     // @Path: ../libraries/AP_Compass/AP_Compass.cpp
@@ -81,7 +81,7 @@ const AP_Param::Info ReplayVehicle::var_info[] = {
     
     // @Group: EK3_
     // @Path: ../libraries/AP_NavEKF3/AP_NavEKF3.cpp
-    GOBJECTN(EKF3, NavEKF3, "EK3_", NavEKF3),
+    GOBJECTN(ahrs.EKF3, NavEKF3, "EK3_", NavEKF3),
 
     AP_VAREND
 };
@@ -119,8 +119,8 @@ void ReplayVehicle::setup(void)
     ahrs.set_correct_centrifugal(true);
     ahrs.set_ekf_use(true);
 
-    EKF2.set_enable(true);
-    EKF3.set_enable(true);
+    ahrs.EKF2.set_enable(true);
+    ahrs.EKF3.set_enable(true);
 
     printf("Starting disarmed\n");
     hal.util->set_soft_armed(false);
@@ -731,9 +731,9 @@ void Replay::log_check_generate(void)
     Vector3f velocity;
     Location loc {};
 
-    _vehicle.EKF2.getEulerAngles(-1,euler);
-    _vehicle.EKF2.getVelNED(-1,velocity);
-    _vehicle.EKF2.getLLH(loc);
+    _vehicle.ahrs.EKF2.getEulerAngles(-1,euler);
+    _vehicle.ahrs.EKF2.getVelNED(-1,velocity);
+    _vehicle.ahrs.EKF2.getLLH(loc);
 
     _vehicle.logger.Write(
         "CHEK",
@@ -765,9 +765,9 @@ void Replay::log_check_solution(void)
     Vector3f velocity;
     Location loc {};
 
-    _vehicle.EKF2.getEulerAngles(-1,euler);
-    _vehicle.EKF2.getVelNED(-1,velocity);
-    _vehicle.EKF2.getLLH(loc);
+    _vehicle.ahrs.EKF2.getEulerAngles(-1,euler);
+    _vehicle.ahrs.EKF2.getVelNED(-1,velocity);
+    _vehicle.ahrs.EKF2.getLLH(loc);
 
     float roll_error  = degrees(fabsf(euler.x - check_state.euler.x));
     float pitch_error = degrees(fabsf(euler.y - check_state.euler.y));

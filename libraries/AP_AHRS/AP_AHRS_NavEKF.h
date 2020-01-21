@@ -23,6 +23,14 @@
 
 #include <AP_HAL/AP_HAL.h>
 
+#ifndef HAL_NAVEKF2_AVAILABLE
+#define HAL_NAVEKF2_AVAILABLE 1
+#endif
+
+#ifndef HAL_NAVEKF3_AVAILABLE
+#define HAL_NAVEKF3_AVAILABLE 1
+#endif
+
 #define AP_AHRS_NAVEKF_AVAILABLE 1
 #include "AP_AHRS.h"
 
@@ -45,7 +53,7 @@ public:
     };
 
     // Constructor
-    AP_AHRS_NavEKF(NavEKF2 &_EKF2, NavEKF3 &_EKF3, uint8_t flags = FLAG_NONE);
+    AP_AHRS_NavEKF(uint8_t flags = FLAG_NONE);
 
     /* Do not allow copies */
     AP_AHRS_NavEKF(const AP_AHRS_NavEKF &other) = delete;
@@ -89,19 +97,23 @@ public:
     bool use_compass() override;
 
     // we will need to remove these to fully hide which EKF we are using
+#if HAL_NAVEKF2_AVAILABLE
     NavEKF2 &get_NavEKF2(void) {
         return EKF2;
     }
     const NavEKF2 &get_NavEKF2_const(void) const {
         return EKF2;
     }
+#endif
 
+#if HAL_NAVEKF3_AVAILABLE
     NavEKF3 &get_NavEKF3(void) {
         return EKF3;
     }
     const NavEKF3 &get_NavEKF3_const(void) const {
         return EKF3;
     }
+#endif
 
     // return secondary attitude solution if available, as eulers in radians
     bool get_secondary_attitude(Vector3f &eulers) const override;
@@ -195,11 +207,11 @@ public:
 
     // return the amount of yaw angle change due to the last yaw angle reset in radians
     // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
-    uint32_t getLastYawResetAngle(float &yawAng) const override;
+    uint32_t getLastYawResetAngle(float &yawAng) override;
 
     // return the amount of NE position change in meters due to the last reset
     // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastPosNorthEastReset(Vector2f &pos) const override;
+    uint32_t getLastPosNorthEastReset(Vector2f &pos) override;
 
     // return the amount of NE velocity change in meters/sec due to the last reset
     // returns the time of the last reset or 0 if no reset has ever occurred
@@ -207,7 +219,7 @@ public:
 
     // return the amount of vertical position change due to the last reset in meters
     // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastPosDownReset(float &posDelta) const override;
+    uint32_t getLastPosDownReset(float &posDelta) override;
 
     // Resets the baro so that it reads zero at the current height
     // Resets the EKF height to zero
@@ -271,11 +283,23 @@ public:
     // check whether compass can be bypassed for arming check in case when external navigation data is available 
     bool is_ext_nav_used_for_yaw(void) const;
 
+    // these are only out here so vehicles can reference them for parameters
+#if HAL_NAVEKF2_AVAILABLE
+    NavEKF2 EKF2;
+#endif
+#if HAL_NAVEKF3_AVAILABLE
+    NavEKF3 EKF3;
+#endif
+
 private:
     enum class EKFType {
         NONE = 0,
+#if HAL_NAVEKF3_AVAILABLE
         THREE = 3,
+#endif
+#if HAL_NAVEKF2_AVAILABLE
         TWO = 2
+#endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         ,SITL = 10
 #endif
@@ -286,10 +310,14 @@ private:
         return _ekf_flags & FLAG_ALWAYS_USE_EKF;
     }
 
-    NavEKF2 &EKF2;
-    NavEKF3 &EKF3;
+#if HAL_NAVEKF2_AVAILABLE
+    void update_EKF2(void);
     bool _ekf2_started;
+#endif
+#if HAL_NAVEKF3_AVAILABLE
     bool _ekf3_started;
+    void update_EKF3(void);
+#endif
     bool _force_ekf;
     
     // rotation from vehicle body to NED frame
@@ -306,8 +334,6 @@ private:
 
     EKFType ekf_type(void) const;
     void update_DCM(bool skip_ins_update);
-    void update_EKF2(void);
-    void update_EKF3(void);
 
     // get the index of the current primary IMU
     uint8_t get_primary_IMU_index(void) const;

@@ -245,8 +245,6 @@ private:
             FUNCTOR_BIND_MEMBER(&Tracker::start_command_callback, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Tracker::verify_command_callback, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Tracker::exit_mission_callback, void)};
-public:
-    void mavlink_delay_cb();
 };
 
 extern Tracker tracker;

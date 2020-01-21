@@ -607,10 +607,10 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     AP_GROUPEND
 };
 
-NavEKF3::NavEKF3(const AP_AHRS *ahrs) :
-    _ahrs(ahrs)
+NavEKF3::NavEKF3()
 {
     AP_Param::setup_object_defaults(this, var_info);
+   _ahrs = &AP::ahrs();
 }
 
 /*
