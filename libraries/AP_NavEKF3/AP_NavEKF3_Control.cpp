@@ -42,11 +42,14 @@ void NavEKF3_core::controlFilterModes()
  */
 NavEKF3_core::MagCal NavEKF3_core::effective_magCal(void) const
 {
+    MagCal magcal = MagCal(frontend->_magCal.get());
+
     // force use of simple magnetic heading fusion for specified cores
-    if (frontend->_magMask & core_index) {
+    if (magcal != MagCal::EXTERNAL_YAW && (frontend->_magMask & core_index)) {
         return MagCal::NEVER;
     }
-    return MagCal(frontend->_magCal.get());
+
+    return magcal;
 }
 
 // Determine if learning of wind and magnetic field will be enabled and set corresponding indexing limits to
@@ -96,6 +99,7 @@ void NavEKF3_core::setWindMagStateLearningMode()
         ((magCal == MagCal::WHEN_FLYING) && inFlight) || // when flying
         ((magCal == MagCal::WHEN_MANOEUVRING) && manoeuvring)  || // when manoeuvring
         ((magCal == MagCal::AFTER_FIRST_CLIMB) && finalInflightYawInit && finalInflightMagInit) || // when initial in-air yaw and mag field reset is complete
+        ((magCal == MagCal::EXTERNAL_YAW_FALLBACK) && inFlight) ||
         (magCal == MagCal::ALWAYS); // all the time
 
     // Deny mag calibration request if we aren't using the compass, it has been inhibited by the user,
