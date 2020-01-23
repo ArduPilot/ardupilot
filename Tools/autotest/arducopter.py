@@ -3183,8 +3183,8 @@ class AutoTestCopter(AutoTest):
 #                          (m.pointing_a, m.pointing_b, m.pointing_c))
             mount_pitch = m.pointing_a/100.0 # centidegrees to degrees
             if abs(despitch - mount_pitch) > despitch_tolerance:
-                self.progress("Mount pitch incorrect: %f != %f" %
-                              (mount_pitch, despitch))
+                self.progress("Mount pitch incorrect: got=%f want=%f (+/- %f)" %
+                              (mount_pitch, despitch, despitch_tolerance))
                 success_start = 0
                 continue
             self.progress("Mount pitch correct: %f degrees == %f" %
