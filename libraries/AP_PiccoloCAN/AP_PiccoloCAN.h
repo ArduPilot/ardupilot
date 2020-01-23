@@ -80,6 +80,9 @@ public:
     // send ESC telemetry messages over MAVLink
     void send_esc_telemetry_mavlink(uint8_t mav_chan);
 
+    // return true if a particular ESC is 'active' on the Piccolo interface
+    bool is_esc_channel_active(uint8_t chan);
+
     // return true if a particular ESC has been detected
     bool is_esc_present(uint8_t chan, uint64_t timeout_ms = 2000);
 
