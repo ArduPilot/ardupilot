@@ -151,7 +151,8 @@ void AP_PiccoloCAN::loop()
     // How often to transmit CAN messages (milliseconds)
 #define CMD_TX_PERIOD 10
 
-    uint16_t txCounter = 0;
+    uint16_t esc_tx_counter = 0;
+    uint16_t srv_tx_counter = 0;
 
     // CAN Frame ID components
     uint8_t frame_id_group;     // Piccolo message group
@@ -172,13 +173,22 @@ void AP_PiccoloCAN::loop()
         // 1ms loop delay
         hal.scheduler->delay_microseconds(1 * 1000);
 
-        // Transmit CAN commands at regular intervals
-        if (txCounter++ > CMD_TX_PERIOD) {
+        // Transmit ESC commands at regular intervals
+        if (esc_tx_counter++ > _esc_ms) {
+            esc_tx_counter = 0;
 
-            txCounter = 0;
+            if (_esc_ms >= PICCOLO_MSG_RATE_MS_MIN) {
+                send_esc_messages();
+            }
+        }
 
-            // Transmit ESC commands
-            send_esc_messages();
+        // Transmit servo commands at regular intervals
+        if (srv_tx_counter++ > _srv_ms) {
+            srv_tx_counter = 0;
+
+            if (_srv_ms >= PICCOLO_MSG_RATE_MS_MIN) {
+                // TODO - Transmit servo messages
+            }
         }
 
         // Look for any message responses on the CAN bus
