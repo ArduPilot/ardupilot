@@ -4,6 +4,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
+#include <AP_Math/AP_Math.h>
 
 #define NUM_RC_CHANNELS 16
 
@@ -427,8 +428,22 @@ public:
         return _options & uint32_t(Option::ARMING_SKIP_CHECK_RPY);
     }
 
-    float override_timeout_ms() const {
-        return _override_timeout.get() * 1e3f;
+
+    // returns true if overrides should time out.  If true is returned
+    // then returned_timeout_ms will contain the timeout in
+    // milliseconds, with 0 meaning overrides are disabled.
+    bool get_override_timeout_ms(uint32_t &returned_timeout_ms) const {
+        const float value = _override_timeout.get();
+        if (is_positive(value)) {
+            returned_timeout_ms = uint32_t(value * 1e3f);
+            return true;
+        }
+        if (is_zero(value)) {
+            returned_timeout_ms = 0;
+            return true;
+        }
+        // overrides will not time out
+        return false;
     }
 
     // get mask of enabled protocols
