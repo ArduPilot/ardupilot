@@ -772,8 +772,82 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 if m.chan3_raw == normal_rc_throttle:
                     break
 
+            self.start_subtest("Check override time of zero disables overrides")
+            old = self.get_parameter("RC_OVERRIDE_TIME")
+            ch = 2
+            self.set_rc(ch, 1000)
+            channels = [65535] * 18
+            channels[ch-1] = 1700
+            self.progress("Sending override message")
+
+            self.mav.mav.rc_channels_override_send(
+                1, # target system
+                1, # targe component
+                *channels
+            )
+            self.wait_rc_channel_value(ch, 1700)
+            self.set_parameter("RC_OVERRIDE_TIME", 0)
+            self.wait_rc_channel_value(ch, 1000)
+            self.set_parameter("RC_OVERRIDE_TIME", old)
+            self.wait_rc_channel_value(ch, 1700)
+
+            self.mav.mav.rc_channels_override_send(
+                1, # target system
+                1, # targe component
+                *channels
+            )
+            self.wait_rc_channel_value(ch, 1700)
+            self.set_parameter("RC_OVERRIDE_TIME", 0)
+            self.wait_rc_channel_value(ch, 1000)
+            self.set_parameter("RC_OVERRIDE_TIME", old)
+            self.wait_rc_channel_value(ch, 1700)
+
+            self.start_subtest("Check override time of -1 disables override timeouts")
+            self.progress("Ensuring timeout works")
+            self.wait_rc_channel_value(ch, 1000, timeout=5)
+            self.set_parameter("RC_OVERRIDE_TIME", 10)
+            self.progress("Sending override message")
+            self.mav.mav.rc_channels_override_send(
+                1, # target system
+                1, # targe component
+                *channels
+            )
+            self.wait_rc_channel_value(ch, 1700)
+            tstart = self.get_sim_time()
+            self.wait_rc_channel_value(ch, 1000, timeout=12)
+            delta = self.get_sim_time() - tstart
+            if delta > 12:
+                raise NotAchievedException("Took too long to revert RC channel value (delta=%f)" % delta)
+            if delta < 9:
+                raise NotAchievedException("Didn't take long enough to revert RC channel value (delta=%f)" % delta)
+            self.progress("Disabling RC override timeout")
+            self.set_parameter("RC_OVERRIDE_TIME", -1)
+            self.mav.mav.rc_channels_override_send(
+                1, # target system
+                1, # targe component
+                *channels
+            )
+            self.wait_rc_channel_value(ch, 1700)
+            tstart = self.get_sim_time()
+            while True:
+                # warning: this is get_sim_time() and can slurp messages on you!
+                delta = self.get_sim_time() - tstart
+                if delta > 20:
+                    break
+                m = self.mav.recv_match(type='RC_CHANNELS',
+                                        blocking=True,
+                                        timeout=1)
+                if m is None:
+                    raise NotAchievedException("Did not get RC_CHANNELS")
+                channel_field = "chan%u_raw" % ch
+                m_value = getattr(m, channel_field)
+                if m_value != 1700:
+                    raise NotAchievedException("Value reverted after %f seconds when it should not have (got=%u) (want=%u)" % (delta, m_value, 1700))
+            self.set_parameter("RC_OVERRIDE_TIME", old)
+
         except Exception as e:
-            self.progress("Exception caught")
+            self.progress("Exception caught: %s" %
+                          self.get_exception_stacktrace(e))
             ex = e
 
         self.context_pop()
