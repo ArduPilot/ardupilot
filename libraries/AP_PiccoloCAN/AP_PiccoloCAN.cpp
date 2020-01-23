@@ -274,12 +274,11 @@ void AP_PiccoloCAN::update()
     /* Read out the ESC commands from the channel mixer */
     for (uint8_t i = 0; i < PICCOLO_CAN_MAX_NUM_ESC; i++) {
 
-        // Check each channel to determine if a motor function is assigned
-        SRV_Channel::Aux_servo_function_t motor_function = SRV_Channels::get_motor_function(i);
-
-        if (SRV_Channels::function_assigned(motor_function)) {
+        if (is_esc_channel_active(i)) {
 
             uint16_t output = 0;
+            
+            SRV_Channel::Aux_servo_function_t motor_function = SRV_Channels::get_motor_function(i);
 
             if (SRV_Channels::get_output_pwm(motor_function, output)) {
 
@@ -398,7 +397,9 @@ void AP_PiccoloCAN::send_esc_messages(void)
     // TODO - How to buffer CAN messages properly?
     // Sending more than 2 messages at each loop instance means that sometimes messages are dropped
 
-    if (hal.util->get_soft_armed()) {
+    // No ESCs are selected? Don't send anything
+    if (_esc_bm == 0x00) {
+    } else if (hal.util->get_soft_armed()) {
 
         bool send_cmd = false;
         int16_t cmd[4] {};
@@ -412,6 +413,11 @@ void AP_PiccoloCAN::send_esc_messages(void)
             for (uint8_t jj = 0; jj < 4; jj++) {
 
                 idx = (ii * 4) + jj;
+
+                // Skip an ESC if the motor channel is not enabled
+                if (!is_esc_channel_active(idx)) {
+                    continue;
+                }
 
                 /* Check if the ESC is software-inhibited.
                  * If so, send a message to enable it.
@@ -511,9 +517,32 @@ bool AP_PiccoloCAN::handle_esc_message(AP_HAL::CANFrame &frame)
 }
 
 
+/**
+ * Check if a given ESC channel is "active" (has been configured correctly)
+ */
+bool AP_PiccoloCAN::is_esc_channel_active(uint8_t chan)
+{
+    // First check if the particular ESC channel is enabled in the channel mask
+    if (((_esc_bm >> chan) & 0x01) == 0x00) {
+        return false;
+    }
+
+    // Check if a motor function is assigned for this motor channel
+    SRV_Channel::Aux_servo_function_t motor_function = SRV_Channels::get_motor_function(chan);
+
+    if (SRV_Channels::function_assigned(motor_function)) {
+        return true;
+    }
+
+    return false;
+}
+
+
+/**
+ * Determine if an ESC is present on the CAN bus (has telemetry data been received)
+ */
 bool AP_PiccoloCAN::is_esc_present(uint8_t chan, uint64_t timeout_ms)
 {
-
     if (chan >= PICCOLO_CAN_MAX_NUM_ESC) {
         return false;
     }
@@ -537,6 +566,9 @@ bool AP_PiccoloCAN::is_esc_present(uint8_t chan, uint64_t timeout_ms)
 }
 
 
+/**
+ * Check if a given ESC is enabled (both hardware and software enable flags)
+ */
 bool AP_PiccoloCAN::is_esc_enabled(uint8_t chan)
 {
     if (chan >= PICCOLO_CAN_MAX_NUM_ESC) {
@@ -565,10 +597,8 @@ bool AP_PiccoloCAN::pre_arm_check(char* reason, uint8_t reason_len)
     // Check that each required ESC is present on the bus
     for (uint8_t ii = 0; ii < PICCOLO_CAN_MAX_NUM_ESC; ii++) {
 
-        SRV_Channel::Aux_servo_function_t motor_function = SRV_Channels::get_motor_function(ii);
-
-        // There is a motor function assigned to this channel
-        if (SRV_Channels::function_assigned(motor_function)) {
+        // Skip any ESC channels where the motor channel is not enabled
+        if (is_esc_channel_active(ii)) {
 
             if (!is_esc_present(ii)) {
                 snprintf(reason, reason_len, "ESC %u not detected", ii + 1);
