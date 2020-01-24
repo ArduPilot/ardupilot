@@ -162,9 +162,9 @@ void AP_MotorsHeli_Quad::calculate_roll_pitch_collective_factors()
             // reverse yaw for H frame
             clockwise = !clockwise;
         }
-        _rollFactor[CH_1+i]       = -0.5*sinf(radians(angles[i]))/cos45;
-        _pitchFactor[CH_1+i]      =  0.5*cosf(radians(angles[i]))/cos45;
-        _yawFactor[CH_1+i]        = clockwise?-0.5:0.5;
+        _rollFactor[CH_1+i]       = -0.25*sinf(radians(angles[i]))/cos45;
+        _pitchFactor[CH_1+i]      =  0.25*cosf(radians(angles[i]))/cos45;
+        _yawFactor[CH_1+i]        = clockwise?-0.25:0.25;
         _collectiveFactor[CH_1+i] = 1;
     }
 }
@@ -233,17 +233,17 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
         limit.throttle_lower = true;
     }
 
-    float collective_range = (_collective_max - _collective_min)*0.001f;
+    float collective_range = (_collective_max - _collective_min) * 0.001f;
 
     if (_heliflags.inverted_flight) {
-        collective_out = 1 - collective_out;
+        collective_out = 1.0f - collective_out;
     }
 
     // feed power estimate into main rotor controller
     _main_rotor.set_collective(fabsf(collective_out));
 
-    // scale collective to -1 to 1
-    collective_out = collective_out*2-1;
+    // rescale collective for overhead calc
+    collective_out -= _collective_mid_pct;
 
     // reserve some collective for attitude control
     collective_out *= collective_range;
@@ -258,11 +258,11 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
     // see if we need to scale down yaw_out
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
         float y = _yawFactor[CH_1+i] * yaw_out;
-        if (_out[i] < 0) {
+        if (_out[i] < 0.0f) {
             // the slope of the yaw effect changes at zero collective
             y = -y;
         }
-        if (_out[i] * (_out[i] + y) < 0) {
+        if (_out[i] * (_out[i] + y) < 0.0f) {
             // applying this yaw demand would change the sign of the
             // collective, which means the yaw would not be applied
             // evenly. We scale down the overall yaw demand to prevent
@@ -275,13 +275,19 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
     // now apply the yaw correction
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
         float y = _yawFactor[CH_1+i] * yaw_out;
-        if (_out[i] < 0) {
+        if (_out[i] < 0.0f) {
             // the slope of the yaw effect changes at zero collective
             y = -y;
         }
         _out[i] += y;
     }
 
+    for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
+        // scale output to 0 to 1
+        _out[i] += _collective_mid_pct;
+        // scale output to -1 to 1 for servo output
+        _out[i] = _out[i] * 2.0f - 1.0f;
+    }
 }
 
 void AP_MotorsHeli_Quad::output_to_motors()
