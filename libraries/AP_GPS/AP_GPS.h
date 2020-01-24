@@ -467,6 +467,11 @@ public:
     // handle possibly fragmented RTCM injection data
     void handle_gps_rtcm_fragment(uint8_t flags, const uint8_t *data, uint8_t len);
 
+    // get configured type by instance
+    GPS_Type get_type(uint8_t instance) const {
+        return instance>=GPS_MAX_RECEIVERS? GPS_Type::GPS_TYPE_NONE : GPS_Type(_type[instance].get());
+    }
+
 protected:
 
     // configuration parameters
