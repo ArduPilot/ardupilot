@@ -1139,6 +1139,9 @@ void AP_Periph_FW::can_update()
 void AP_Periph_FW::can_mag_update(void)
 {
 #ifdef HAL_PERIPH_ENABLE_MAG
+    if (!compass.enabled()) {
+        return;
+    }
     compass.read();
 #if CAN_PROBE_CONTINUOUS
     if (compass.get_count() == 0) {
@@ -1184,6 +1187,9 @@ void AP_Periph_FW::can_mag_update(void)
 void AP_Periph_FW::can_gps_update(void)
 {
 #ifdef HAL_PERIPH_ENABLE_GPS
+    if (gps.get_type(0) == AP_GPS::GPS_Type::GPS_TYPE_NONE) {
+        return;
+    }
     gps.update();
     if (last_gps_update_ms == gps.last_message_time_ms()) {
         return;
@@ -1450,6 +1456,9 @@ void AP_Periph_FW::can_baro_update(void)
 void AP_Periph_FW::can_airspeed_update(void)
 {
 #ifdef HAL_PERIPH_ENABLE_AIRSPEED
+    if (!airspeed.enabled()) {
+        return;
+    }
 #if CAN_PROBE_CONTINUOUS
     if (!airspeed.healthy()) {
         uint32_t now = AP_HAL::millis();
@@ -1511,6 +1520,9 @@ void AP_Periph_FW::can_airspeed_update(void)
 void AP_Periph_FW::can_rangefinder_update(void)
 {
 #ifdef HAL_PERIPH_ENABLE_RANGEFINDER
+    if (rangefinder.get_type(0) == RangeFinder::Type::NONE) {
+        return;
+    }
     if (rangefinder.num_sensors() == 0) {
         uint32_t now = AP_HAL::millis();
         static uint32_t last_probe_ms;
