@@ -143,8 +143,7 @@ bool AP_RangeFinder_TeraRangerI2C::process_raw_measure(uint16_t raw_distance, ui
       return false;
   } else if (raw_distance == 0x0000) {
       // Too close
-      output_distance_cm =  params.min_distance_cm;
-      return true;
+      return false;
   } else if (raw_distance == 0x0001) {
       // Unable to measure
       return false;
