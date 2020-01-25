@@ -107,17 +107,26 @@ class AutoTestSub(AutoTest):
         self.wait_altitude(alt_min=-6, alt_max=-5)
         self.set_rc(Joystick.Throttle, 1500)
 
+        # let the vehicle settle (momentum / stopping point shenanigans....)
+        self.delay_sim_time(1)
+
         self.watch_altitude_maintained()
 
         self.set_rc(Joystick.Throttle, 1000)
         self.wait_altitude(alt_min=-20, alt_max=-19)
         self.set_rc(Joystick.Throttle, 1500)
 
+        # let the vehicle settle (momentum / stopping point shenanigans....)
+        self.delay_sim_time(1)
+
         self.watch_altitude_maintained()
 
         self.set_rc(Joystick.Throttle, 1900)
         self.wait_altitude(alt_min=-14, alt_max=-13)
         self.set_rc(Joystick.Throttle, 1500)
+
+        # let the vehicle settle (momentum / stopping point shenanigans....)
+        self.delay_sim_time(1)
 
         self.watch_altitude_maintained()
 
@@ -126,7 +135,7 @@ class AutoTestSub(AutoTest):
         self.set_rc(Joystick.Throttle, 1500)
 
         # let the vehicle settle (momentum / stopping point shenanigans....)
-        self.delay_sim_time(2)
+        self.delay_sim_time(1)
 
         self.watch_altitude_maintained()
 
