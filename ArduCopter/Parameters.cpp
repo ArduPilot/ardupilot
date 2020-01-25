@@ -605,6 +605,15 @@ const AP_Param::Info Copter::var_info[] = {
     // @Path: ../libraries/AC_Avoidance/AC_Avoid.cpp
 #if AC_AVOID_ENABLED == ENABLED
     GOBJECT(avoid,      "AVOID_",   AC_Avoid),
+
+    // @Param: PREARM_DISTANCE
+    // @DisplayName: Pre-arm check distance
+    // @Description: Pre-arm check distance when AVOIDANCE function is enabled.
+    // @Units: m
+    // @Range: 0.1 100
+    // @Increment: 0.1
+    // @User: Advanced
+    GSCALAR(prearm_distance,     "PREARM_DISTANCE",   0.6f),
 #endif
 
 #if AC_RALLY == ENABLED
