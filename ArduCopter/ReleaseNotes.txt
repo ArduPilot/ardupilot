@@ -1,6 +1,6 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 4.0.1-rc3 19-Jan-2020
+Copter 4.0.1 25-Jan-2020 / 4.0.1-rc3 19-Jan-2020
 Changes from 4.0.1-rc2
 1) Bug Fixes:
     a) Semaphore fixes for Logging, Filesystem and UAVCAN Dyanmic Node Allocation
