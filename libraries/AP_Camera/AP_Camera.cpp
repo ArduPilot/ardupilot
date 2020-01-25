@@ -320,20 +320,15 @@ void AP_Camera::control(float session, float zoom_pos, float zoom_step, float fo
  */
 void AP_Camera::send_feedback(mavlink_channel_t chan) const
 {
-    const AP_AHRS &ahrs = AP::ahrs();
-    Location current_loc;
-    if (!ahrs.get_position(current_loc)) {
-        // completely ignore this failure!  AHRS will provide its best guess.
-    }
 
     int32_t altitude = 0;
-    if (!current_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, altitude)) {
+    if (feedback.location.initialised() && !feedback.location.get_alt_cm(Location::AltFrame::ABSOLUTE, altitude)) {
         // completely ignore this failure!  this is a shouldn't-happen
         // as current_loc should never be in an altitude we can't
         // convert.
     }
     int32_t altitude_rel = 0;
-    if (!current_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, altitude_rel)) {
+    if (feedback.location.initialised() && !feedback.location.get_alt_cm(Location::AltFrame::ABOVE_HOME, altitude_rel)) {
         // completely ignore this failure!  this is a shouldn't-happen
         // as current_loc should never be in an altitude we can't
         // convert.
@@ -341,11 +336,14 @@ void AP_Camera::send_feedback(mavlink_channel_t chan) const
 
     mavlink_msg_camera_feedback_send(
         chan,
-        AP::gps().time_epoch_usec(),
+        feedback.timestamp_us,
         0, 0, _image_index,
-        current_loc.lat, current_loc.lng,
+        feedback.location.lat,
+        feedback.location.lng,
         altitude*1e-2f, altitude_rel*1e-2f,
-        ahrs.roll_sensor*1e-2f, ahrs.pitch_sensor*1e-2f, ahrs.yaw_sensor*1e-2f,
+        feedback.roll_sensor*1e-2f,
+        feedback.pitch_sensor*1e-2f,
+        feedback.yaw_sensor*1e-2f,
         0.0f, CAMERA_FEEDBACK_PHOTO, _camera_trigger_logged);
 }
 
@@ -411,7 +409,7 @@ void AP_Camera::update()
  */
 void AP_Camera::feedback_pin_isr(uint8_t pin, bool high, uint32_t timestamp_us)
 {
-    _feedback_timestamp_us = timestamp_us;
+    _feedback_trigger_timestamp_us = timestamp_us;
     _camera_trigger_count++;
 }
 
@@ -425,7 +423,7 @@ void AP_Camera::feedback_pin_timer(void)
     uint8_t trigger_polarity = _feedback_polarity==0?0:1;
     if (pin_state == trigger_polarity &&
         _last_pin_state != trigger_polarity) {
-        _feedback_timestamp_us = AP_HAL::micros();
+        _feedback_trigger_timestamp_us = AP_HAL::micros();
         _camera_trigger_count++;
     }
     _last_pin_state = pin_state;
@@ -464,7 +462,10 @@ void AP_Camera::setup_feedback_callback(void)
 void AP_Camera::log_picture()
 {
     if (!using_feedback_pin()) {
-        gcs().send_message(MSG_CAMERA_FEEDBACK);
+        // if we're using a feedback pin then when the event occurs we
+        // stash the feedback data.  Since we're not using a feedback
+        // pin, we just use "now".
+        prep_mavlink_msg_camera_feedback(AP::gps().time_epoch_usec());
     }
 
     AP_Logger *logger = AP_Logger::get_singleton();
@@ -497,6 +498,20 @@ void AP_Camera::take_picture()
     GCS_MAVLINK::send_to_components(MAVLINK_MSG_ID_COMMAND_LONG, (char*)&cmd_msg, sizeof(cmd_msg));
 }
 
+void AP_Camera::prep_mavlink_msg_camera_feedback(uint64_t timestamp_us)
+{
+    const AP_AHRS &ahrs = AP::ahrs();
+    if (!ahrs.get_position(feedback.location)) {
+        // completely ignore this failure!  AHRS will provide its best guess.
+    }
+    feedback.timestamp_us = timestamp_us;
+    feedback.roll_sensor = ahrs.roll_sensor;
+    feedback.pitch_sensor = ahrs.pitch_sensor;
+    feedback.yaw_sensor = ahrs.yaw_sensor;
+
+    gcs().send_message(MSG_CAMERA_FEEDBACK);
+}
+
 /*
   update camera trigger - 50Hz
  */
@@ -505,10 +520,12 @@ void AP_Camera::update_trigger()
     trigger_pic_cleanup();
     
     if (_camera_trigger_logged != _camera_trigger_count) {
-        uint32_t timestamp32 = _feedback_timestamp_us;
+        uint32_t timestamp32 = _feedback_trigger_timestamp_us;
         _camera_trigger_logged = _camera_trigger_count;
 
-        gcs().send_message(MSG_CAMERA_FEEDBACK);
+        // we should consider doing this inside the ISR and pin_timer
+        prep_mavlink_msg_camera_feedback(_feedback_trigger_timestamp_us);
+
         AP_Logger *logger = AP_Logger::get_singleton();
         if (logger != nullptr) {
             if (logger->should_log(log_camera_bit)) {
