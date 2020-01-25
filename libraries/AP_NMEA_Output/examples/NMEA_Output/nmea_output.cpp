@@ -73,7 +73,6 @@ void setup(void)
     compass.init();
     if(compass.read()) {
         hal.console->printf("Enabling compass\n");
-        vehicle.ahrs.set_compass(&compass);
     } else {
         hal.console->printf("No compass detected\n");
     }
