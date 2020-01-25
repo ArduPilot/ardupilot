@@ -589,6 +589,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "f103-ADSB",
                 "f103-RangeFinder",
                 "f303-GPS",
+                "f303-Universal",
                 "CUAV_GPS",
                 "ZubaxGNSS",
                 ]
