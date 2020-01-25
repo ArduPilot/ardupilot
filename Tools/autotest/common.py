@@ -2121,11 +2121,12 @@ class AutoTest(ABC):
 
             climb_rate = alt - previous_alt
             previous_alt = alt
-            if self.get_sim_time_cached() - last_wait_alt_msg > 1:
-                self.progress("Wait Altitude: Cur:%.02f min_alt:%.02f climb_rate: %.02f"
-                              % (alt, alt_min, climb_rate))
+            ok = alt >= alt_min and alt <= alt_max
+            if ok or self.get_sim_time_cached() - last_wait_alt_msg > 1:
+                self.progress("Wait Altitude: Cur:%.02f min:%.02f max:%.02f climb_rate: %.02f"
+                              % (alt, alt_min, alt_max, climb_rate))
                 last_wait_alt_msg = self.get_sim_time_cached()
-            if alt >= alt_min and alt <= alt_max:
+            if ok:
                 self.progress("Altitude OK")
                 return True
         raise WaitAltitudeTimout("Failed to attain altitude range")
