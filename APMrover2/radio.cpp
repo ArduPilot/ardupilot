@@ -31,11 +31,9 @@ void Rover::set_control_channels(void)
     g2.sailboat.init_rc_in();
 
     // Allow to reconfigure output when not armed
-    if (!arming.is_armed()) {
-        g2.motors.setup_servo_output();
-        // For a rover safety is TRIM throttle
-        g2.motors.setup_safety_output();
-    }
+    g2.motors.setup_servo_output();
+    // For a rover safety is TRIM throttle
+    g2.motors.setup_safety_output();
 
     // setup correct scaling for ESCs like the UAVCAN PX4ESC which
     // take a proportion of speed. Default to 1000 to 2000 for systems without
