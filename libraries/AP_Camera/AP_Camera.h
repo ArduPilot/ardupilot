@@ -116,7 +116,16 @@ private:
 
     uint32_t        _camera_trigger_count;
     uint32_t        _camera_trigger_logged;
-    uint32_t        _feedback_timestamp_us;
+    uint32_t        _feedback_trigger_timestamp_us;
+    struct {
+        uint64_t        timestamp_us;
+        Location        location; // place where most recent image was taken
+        int32_t         roll_sensor;
+        int32_t         pitch_sensor;
+        int32_t         yaw_sensor;
+    } feedback;
+    void prep_mavlink_msg_camera_feedback(uint64_t timestamp_us);
+
     bool            _timer_installed;
     bool            _isr_installed;
     uint8_t         _last_pin_state;
