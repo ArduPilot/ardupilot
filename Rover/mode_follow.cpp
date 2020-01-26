@@ -72,6 +72,8 @@ void ModeFollow::update()
     // run steering and throttle controllers
     calc_steering_to_heading(desired_yaw_cd);
     calc_throttle(desired_speed, true);
+
+    calc_and_set_roll_pitch();
 }
 
 // return desired heading (in degrees) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)

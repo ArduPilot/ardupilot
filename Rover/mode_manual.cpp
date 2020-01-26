@@ -37,4 +37,18 @@ void ModeManual::update()
     g2.motors.set_throttle(desired_throttle);
     g2.motors.set_steering(desired_steering, false);
     g2.motors.set_lateral(desired_lateral);
+
+    // Output manual roll and pitch
+    float roll = 0.0f;
+    RC_Channel *rollin = rc().find_channel_for_option(RC_Channel::AUX_FUNC::ROLL);
+    if (rollin != nullptr) {
+        roll = rollin->norm_input() * SERVO_MAX;
+    }
+    float pitch = 0.0f;
+    RC_Channel *pitchin = rc().find_channel_for_option(RC_Channel::AUX_FUNC::PITCH);
+    if (pitchin != nullptr) {
+        pitch = pitchin->norm_input() * SERVO_MAX;
+    }
+
+    g2.motors.set_roll_pitch(roll, pitch);
 }

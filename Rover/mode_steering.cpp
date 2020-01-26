@@ -52,4 +52,6 @@ void ModeSteering::update()
 
     // run speed to throttle controller
     calc_throttle(desired_speed, true);
+
+    calc_and_set_roll_pitch();
 }

@@ -354,6 +354,8 @@ bool Mode::stop_vehicle()
     // do not attempt to steer
     g2.motors.set_steering(0.0f);
 
+    calc_and_set_roll_pitch();
+
     // return true once stopped
     return stopped;
 }
@@ -434,6 +436,8 @@ void Mode::navigate_to_waypoint()
         // call turn rate steering controller
         calc_steering_from_turn_rate(g2.wp_nav.get_turn_rate_rads());
     }
+
+    calc_and_set_roll_pitch();
 }
 
 // calculate steering output given a turn rate
@@ -484,6 +488,50 @@ void Mode::set_steering(float steering_value)
     }
     steering_value = constrain_float(steering_value, -4500.0f, 4500.0f);
     g2.motors.set_steering(steering_value);
+}
+
+// Calculate the pilot desired roll and pitch angles in radians
+void Mode::get_pilot_desired_roll_pitch(float &target_roll, float &target_pitch)
+{
+    // conatrain to the angle set by ANGLE_MAX
+
+    RC_Channel *rollin = rc().find_channel_for_option(RC_Channel::AUX_FUNC::ROLL);
+    if (rollin != nullptr) {
+        target_roll = rollin->norm_input() * radians(10);
+    } else {
+        float lat_accel = 0.0f;
+        g2.attitude_control.get_lat_accel(lat_accel);
+
+        // calculate roll angle required to bring resultant total acceleration in line with boat frame Z
+        target_roll = constrain_float(atan2f(lat_accel, GRAVITY_MSS),-radians(10),radians(10));
+    }
+
+    RC_Channel *pitchin = rc().find_channel_for_option(RC_Channel::AUX_FUNC::PITCH);
+    if (pitchin != nullptr) {
+        target_pitch = pitchin->norm_input() * radians(10);
+    }
+}
+
+// pass target angles to attitude control and output result to motors
+void Mode::calc_roll_pitch(float target_roll, float target_pitch)
+{
+    // apply PID's
+    const float roll = g2.attitude_control.get_servo_out_from_roll(target_roll, rover.G_Dt) * SERVO_MAX;
+    const float pitch = g2.attitude_control.get_servo_out_from_pitch(target_pitch, rover.G_Dt) * SERVO_MAX;
+
+    // output to motors
+    g2.motors.set_roll_pitch(roll, pitch);
+}
+
+// get desired lean angles and output to motors
+void Mode::calc_and_set_roll_pitch()
+{
+    float target_roll = 0.0f;
+    float target_pitch = 0.0f;
+
+    get_pilot_desired_roll_pitch(target_roll,target_pitch);
+
+    calc_roll_pitch(target_roll,target_pitch);
 }
 
 Mode *Rover::mode_from_mode_num(const enum Mode::Number num)

@@ -191,6 +191,9 @@ protected:
     //  reversed should be true if the vehicle is intentionally backing up which allows the pilot to increase the backing up speed by pulling the throttle stick down
     float calc_speed_nudge(float target_speed, bool reversed);
 
+    // calculate target roll and pitch angles and output
+    void calc_and_set_roll_pitch();
+
 protected:
 
     // decode pilot steering and throttle inputs and return in steer_out and throttle_out arguments
@@ -198,6 +201,12 @@ protected:
     // throttle_out is in the range -100 ~ +100
     void get_pilot_input(float &steering_out, float &throttle_out);
     void set_steering(float steering_value);
+
+    // Calculate the pilot desired roll and pitch angles in degrees
+    void get_pilot_desired_roll_pitch(float &roll, float &pitch);
+
+    // pass target angles to attitude control and output result to motors
+    void calc_roll_pitch(float target_roll, float target_pitch);
 
     // references to avoid code churn:
     class AP_AHRS &ahrs;
