@@ -584,12 +584,22 @@ void SRV_Channels::set_trim_to_pwm_for(SRV_Channel::Aux_servo_function_t functio
     }
 }
 
-// set the trim for a function channel to min output
+// set the trim for a function channel to min output respectively max output when reversed is set
 void SRV_Channels::set_trim_to_min_for(SRV_Channel::Aux_servo_function_t function)
 {
     for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
         if (channels[i].function == function) {
             channels[i].servo_trim.set(channels[i].get_reversed()?channels[i].servo_max:channels[i].servo_min);
+        }
+    }
+}
+
+// set the trim for a function channel to min output
+void SRV_Channels::set_trim_to_min2_for(SRV_Channel::Aux_servo_function_t function)
+{
+    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
+        if (channels[i].function == function) {
+            channels[i].servo_trim.set(channels[i].servo_min);
         }
     }
 }

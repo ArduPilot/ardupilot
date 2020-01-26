@@ -145,9 +145,11 @@ void AP_MotorsUGV::setup_safety_output()
 {
     if (_pwm_type == PWM_TYPE_BRUSHED_WITH_RELAY) {
         // set trim to min to set duty cycle range (0 - 100%) to servo range
-        SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttle);
-        SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttleLeft);
-        SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttleRight);
+        // do not use function SRV_Channels::set_trim_to_min_for because this will set trim to MAX
+        // when reversed is set, causing the rover motor to run full speed at minimum throttle
+        SRV_Channels::set_trim_to_min2_for(SRV_Channel::k_throttle);
+        SRV_Channels::set_trim_to_min2_for(SRV_Channel::k_throttleLeft);
+        SRV_Channels::set_trim_to_min2_for(SRV_Channel::k_throttleRight);
     }
 
     if (_disarm_disable_pwm) {
