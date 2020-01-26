@@ -59,8 +59,7 @@ public:
         ArduSub
     };
 
-    int gps_pipe(void);
-    int gps2_pipe(void);
+    int gps_pipe(uint8_t index);
     ssize_t gps_read(int fd, void *buf, size_t count);
     uint16_t pwm_output[SITL_NUM_CHANNELS];
     uint16_t pwm_input[SITL_RC_INPUT_CHANNELS];
@@ -131,7 +130,7 @@ private:
     };
 
 #define MAX_GPS_DELAY 100
-    gps_data _gps_data[MAX_GPS_DELAY];
+    gps_data _gps_data[2][MAX_GPS_DELAY];
 
     bool _gps_has_basestation_position;
     gps_data _gps_basestation_data;
