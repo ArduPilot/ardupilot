@@ -775,7 +775,10 @@ private:
 
     // update timing statistics structure
     void updateTimingStatistics(void);
-    
+
+    // correct gps data for antenna position
+    void CorrectGPSForAntennaOffset(gps_elements &gps_data);
+
     // Length of FIFO buffers used for non-IMU sensor data.
     // Must be larger than the time period defined by IMU_BUFFER_LENGTH
     static const uint32_t OBS_BUFFER_LENGTH = 5;
