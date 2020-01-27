@@ -94,6 +94,9 @@ USB_STRING_SERIAL  "%SERIAL%"
 # followed by I2C1 in order to achieve the conventional order that
 # drivers expect
 
+// no internal I2C bus
+#undef HAL_I2C_INTERNAL_MASK
+
 # order of I2C buses
 I2C_ORDER I2C2 I2C1
 
