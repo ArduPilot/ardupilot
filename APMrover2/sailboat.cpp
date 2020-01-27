@@ -442,6 +442,11 @@ float Sailboat::calc_heading(float desired_heading_cd)
 // set state of motor
 void Sailboat::set_motor_state(UseMotor state, bool report_failure)
 {
+    if (!sail_enabled()) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Sailboat: change failed, sail not enabled");
+        return;
+    }
+
     // always allow motor to be disabled
     if (state == UseMotor::USE_MOTOR_NEVER) {
         motor_state = state;
