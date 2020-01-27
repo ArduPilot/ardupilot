@@ -28,6 +28,9 @@ STM32_VDD 330U
 
 define HAL_STORAGE_SIZE 16384
 
+// no internal I2C bus
+#undef HAL_I2C_INTERNAL_MASK
+
 # order of I2C buses
 I2C_ORDER I2C2 I2C1
 
