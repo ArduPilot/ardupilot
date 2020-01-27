@@ -492,7 +492,7 @@ AP_AHRS_DCM::drift_correction_yaw(void)
         return;
     }
     
-    if (AP_AHRS_DCM::use_compass()) {
+    if (use_compass()) {
         /*
           we are using compass for yaw
          */
@@ -862,7 +862,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     // reduce the impact of the gps/accelerometers on yaw when we are
     // flat, but still allow for yaw correction using the
     // accelerometers at high roll angles as long as we have a GPS
-    if (AP_AHRS_DCM::use_compass()) {
+    if (use_compass()) {
         if (have_gps() && is_equal(gps_gain.get(), 1.0f)) {
             error[besti].z *= sinf(fabsf(roll));
         } else {
