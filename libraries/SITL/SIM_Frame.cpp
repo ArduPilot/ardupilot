@@ -189,6 +189,42 @@ static Motor firefly_motors[] =
     Motor(AP_MOTORS_MOT_6, -60, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  6, -1, 0, 0, 6, 0, -90)
 };
 
+// http://static.dji.com/uploads/photos/2014/2/supported_multi_rotor.png
+static Motor dji_x6_motors[] =
+{
+    Motor(AP_MOTORS_MOT_1,  30, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1),
+    Motor(AP_MOTORS_MOT_2, -30, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  6),
+    Motor(AP_MOTORS_MOT_3, -90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 5),
+    Motor(AP_MOTORS_MOT_4,-150, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4),
+    Motor(AP_MOTORS_MOT_5, 150, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3),
+    Motor(AP_MOTORS_MOT_6,  90, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2)
+};
+
+static Motor dji_x8_motors[] =
+{
+    Motor(AP_MOTORS_MOT_1,   22.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1),
+    Motor(AP_MOTORS_MOT_2,  -22.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 8),
+    Motor(AP_MOTORS_MOT_3,  -67.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  7),
+    Motor(AP_MOTORS_MOT_4, -112.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 6),
+    Motor(AP_MOTORS_MOT_5, -157.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  5),
+    Motor(AP_MOTORS_MOT_6,  157.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4),
+    Motor(AP_MOTORS_MOT_7,  112.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3),
+    Motor(AP_MOTORS_MOT_8,   67.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2)
+};
+
+static Motor dji_quad8_motors[] =
+{
+  // https://fpv-community.de/threads/x8-mischer-so-ver%C3%A4ndern-das-es-f%C3%BCr-wookong-auch-passt.18942/
+    Motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1),
+    Motor(AP_MOTORS_MOT_2,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  7),
+    Motor(AP_MOTORS_MOT_3, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 5),
+    Motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3),
+    Motor(AP_MOTORS_MOT_5,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2),
+    Motor(AP_MOTORS_MOT_6,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 8),
+    Motor(AP_MOTORS_MOT_7, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  6),
+    Motor(AP_MOTORS_MOT_8,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4)
+};
+
 /*
   table of supported frame types. String order is important for
   partial name matching
@@ -213,7 +249,10 @@ static Frame supported_frames[] =
     Frame("tilttrivec",3, tilttri_vectored_motors),
     Frame("tilttri",   3, tilttri_motors),
     Frame("y6",        6, y6_motors),
-    Frame("firefly",   6, firefly_motors)
+    Frame("firefly",   6, firefly_motors),
+    Frame("djix6",     6, dji_x6_motors),
+    Frame("djix8",     8, dji_x8_motors),
+    Frame("djiquad8",  8, dji_quad8_motors)
 };
 
 void Frame::init(float _mass, float _hover_throttle, float _terminal_velocity, float _terminal_rotation_rate)
