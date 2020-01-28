@@ -42,20 +42,19 @@ void AP_Vehicle::setup()
 
     load_parameters();
 
-    // time per loop - this gets updated in the main loop() based on
-    // actual loop rate.  Note carefully that scheduler().init() has
-    // NOT been called yet!
-    G_Dt = scheduler.get_loop_period_s();
-
-    // init_ardupilot is where the vehicle does most of its initialisation.
-    init_ardupilot();
-
     // initialise the main loop scheduler
     const AP_Scheduler::Task *tasks;
     uint8_t task_count;
     uint32_t log_bit;
     get_scheduler_tasks(tasks, task_count, log_bit);
     AP::scheduler().init(tasks, task_count, log_bit);
+
+    // time per loop - this gets updated in the main loop() based on
+    // actual loop rate
+    G_Dt = scheduler.get_loop_period_s();
+
+    // init_ardupilot is where the vehicle does most of its initialisation.
+    init_ardupilot();
 }
 
 void AP_Vehicle::loop()
