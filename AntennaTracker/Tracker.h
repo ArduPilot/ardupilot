@@ -73,14 +73,8 @@ public:
 
     Tracker(void);
 
-    // HAL::Callbacks implementation.
-    void loop() override;
-
 private:
     Parameters g;
-
-    // main loop scheduler
-    AP_Scheduler scheduler;
 
     uint32_t start_time_ms = 0;
 
