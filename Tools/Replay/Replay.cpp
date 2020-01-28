@@ -130,10 +130,6 @@ void ReplayVehicle::init_ardupilot(void)
     ins.set_hil_mode();
 }
 
-void ReplayVehicle::loop()
-{
-}
-
 Replay replay(replayvehicle);
 
 void Replay::usage(void)
