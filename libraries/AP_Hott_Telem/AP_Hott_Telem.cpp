@@ -362,11 +362,8 @@ void AP_Hott_Telem::send_Vario(void)
         }
     } else {
         strncpy(msg.text[1], "DISARM", sizeof(msg.text[1]));
-        if (AP_Notify::flags.pre_arm_check) {
-            strncpy(msg.text[2], "CK:PASS", sizeof(msg.text[2])+1);
-        } else {
-            strncpy(msg.text[2], "CK:FAIL", sizeof(msg.text[2])+1);
-        }
+        const char *ck = AP_Notify::flags.pre_arm_check ? "CK:PASS" : "CK:FAIL";
+        memcpy(msg.text[2], ck, MIN(strlen(ck), sizeof(msg.text[2])));
     }
 
     send_packet((const uint8_t *)&msg, sizeof(msg));
