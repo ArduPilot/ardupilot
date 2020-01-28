@@ -73,14 +73,6 @@ AP_Scheduler::AP_Scheduler(scheduler_fastloop_fn_t fastloop_fn) :
     _singleton = this;
 
     AP_Param::setup_object_defaults(this, var_info);
-
-    // only allow 50 to 2000 Hz
-    if (_loop_rate_hz < 50) {
-        _loop_rate_hz.set(50);
-    } else if (_loop_rate_hz > 2000) {
-        _loop_rate_hz.set(2000);
-    }
-    _last_loop_time_s = 1.0 / _loop_rate_hz;
 }
 
 /*
@@ -95,6 +87,14 @@ AP_Scheduler *AP_Scheduler::get_singleton()
 // initialise the scheduler
 void AP_Scheduler::init(const AP_Scheduler::Task *tasks, uint8_t num_tasks, uint32_t log_performance_bit)
 {
+    // only allow 50 to 2000 Hz
+    if (_loop_rate_hz < 50) {
+        _loop_rate_hz.set(50);
+    } else if (_loop_rate_hz > 2000) {
+        _loop_rate_hz.set(2000);
+    }
+    _last_loop_time_s = 1.0 / _loop_rate_hz;
+
     AP_Vehicle* vehicle = AP::vehicle();
     if (vehicle != nullptr) {
         vehicle->get_common_scheduler_tasks(_common_tasks, _num_tasks);
