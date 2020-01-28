@@ -56,12 +56,15 @@ public:
         MOTOR_FRAME_TYPE_Y6B = 10,
         MOTOR_FRAME_TYPE_Y6F = 11, // for FireFlyY6
         MOTOR_FRAME_TYPE_BF_X = 12, // X frame, betaflight ordering
-        MOTOR_FRAME_TYPE_DJI_X = 13, // X frame, DJI ordering
+        MOTOR_FRAME_TYPE_DJI_X = 13, // X quadcopter frame, DJI ordering
         MOTOR_FRAME_TYPE_CW_X = 14, // X frame, clockwise ordering
         MOTOR_FRAME_TYPE_I = 15, // (sideways H) octo only
         MOTOR_FRAME_TYPE_NYT_PLUS = 16, // plus frame, no differential torque for yaw
         MOTOR_FRAME_TYPE_NYT_X = 17, // X frame, no differential torque for yaw
         MOTOR_FRAME_TYPE_BF_X_REV = 18, // X frame, betaflight ordering, reversed motors
+        MOTOR_FRAME_TYPE_DJI_X6 = 19, //X  hexacopter frame, DJI ordering
+        MOTOR_FRAME_TYPE_DJI_X8 = 20, //X octocopter frame, DJI ordering
+        MOTOR_FRAME_TYPE_DJI_QUAD8 = 21, //X coax octocopter frame, DJI ordering        
     };
 
     // Constructor
@@ -198,7 +201,7 @@ public:
                     PWM_TYPE_DSHOT600   = 6,
                     PWM_TYPE_DSHOT1200  = 7};
     pwm_type            get_pwm_type(void) const { return (pwm_type)_pwm_type.get(); }
-    
+
 protected:
     // output functions that should be overloaded by child classes
     virtual void        output_armed_stabilizing() = 0;
@@ -209,7 +212,7 @@ protected:
 
     // add a motor to the motor map
     void add_motor_num(int8_t motor_num);
-    
+
     // update the throttle input filter
     virtual void update_throttle_filter() = 0;
 
