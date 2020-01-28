@@ -174,8 +174,7 @@ public:
     void update() override;
 
     bool isHeadingLinedUp(const Location loiterCenterLoc, const Location targetLoc);
-    bool isHeadingLinedUp(const float bearing);
-    bool isHeadingLinedUp(const int32_t bearing_cd);
+    bool isHeadingLinedUp_cd(const int32_t bearing_cd);
 
 protected:
 
