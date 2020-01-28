@@ -109,15 +109,15 @@ class AutoTestSoaring(AutoTest):
 
         # Now set FBWB mode
         self.change_mode('FBWB')
-        self.wait_seconds(5)
+        self.delay_sim_time(5)
 
         # Now disable soaring (should hold altitude)
         self.set_parameter("SOAR_ENABLE", 0)
-        self.wait_seconds(10)
+        self.delay_sim_time(10)
 
         #And reenable. This should force throttle-down
         self.set_parameter("SOAR_ENABLE", 1)
-        self.wait_seconds(10)
+        self.delay_sim_time(10)
 
         # Now wait for descent and check RTL
         self.wait_altitude(alt_min-10, alt_min, timeout=600, relative=True)
