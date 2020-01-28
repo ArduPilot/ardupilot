@@ -55,7 +55,6 @@ public:
 
     ReplayVehicle() { unused = -1; }
     // HAL::Callbacks implementation.
-    void loop() override;
     void load_parameters(void) override;
     void get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
                              uint8_t &task_count,
