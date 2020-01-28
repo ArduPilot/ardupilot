@@ -52,6 +52,11 @@ class VehicleInfo(object):
                 "default_params_filename": ["default_params/copter.parm",
                                             "default_params/copter-hexa.parm" ],
             },
+            "hexa-dji": {
+                "make_target": "sitl",
+                "waf_target": "bin/arducopter",
+                "default_params_filename": "default_params/copter.parm",
+            },
             "octa-quad": {
                 "make_target": "sitl",
                 "waf_target": "bin/arducopter",
@@ -63,6 +68,11 @@ class VehicleInfo(object):
                 "waf_target": "bin/arducopter",
                 "default_params_filename": ["default_params/copter.parm",
                                             "default_params/copter-octa.parm" ],
+            },
+            "octa-dji": {
+                "make_target": "sitl",
+                "waf_target": "bin/arducopter",
+                "default_params_filename": "default_params/copter.parm",
             },
             "tri": {
                 "make_target": "sitl",
