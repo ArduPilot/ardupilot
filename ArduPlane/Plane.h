@@ -160,9 +160,6 @@ public:
 
     Plane(void);
 
-    // HAL::Callbacks implementation.
-    void loop() override;
-
 private:
 
     // key aircraft parameters passed to multiple libraries
@@ -171,9 +168,6 @@ private:
     // Global parameters are all contained within the 'g' and 'g2' classes.
     Parameters g;
     ParametersG2 g2;
-
-    // main loop scheduler
-    AP_Scheduler scheduler;
 
     // mapping between input channels
     RCMapper rcmap;
@@ -725,11 +719,6 @@ private:
     } target_altitude {};
 
     float relative_altitude;
-
-    // INS variables
-    // The main loop execution time.  Seconds
-    // This is the time between calls to the DCM algorithm and is the Integration time for the gyros.
-    float G_Dt = 0.02f;
 
     // loop performance monitoring:
     AP::PerfInfo perf_info;

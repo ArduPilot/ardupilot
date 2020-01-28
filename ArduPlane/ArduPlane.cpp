@@ -123,12 +123,6 @@ void Plane::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
 
 constexpr int8_t Plane::_failsafe_priorities[7];
 
-void Plane::loop()
-{
-    scheduler.loop();
-    G_Dt = scheduler.get_loop_period_s();
-}
-
 // update AHRS system
 void Plane::ahrs_update()
 {
