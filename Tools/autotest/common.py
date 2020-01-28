@@ -4265,6 +4265,52 @@ switch value'''
             "--uartF=tcp:6735" # serial5 spews to localhost:6735
         ])
         frsky = FRSkyPassThrough(("127.0.0.1", 6735))
+
+        # waiting until we are ready to arm should ensure our wanted
+        # statustext doesn't get blatted out of the ArduPilot queue by
+        # random messages.
+        self.wait_ready_to_arm()
+
+        # test we get statustext strings.  This relies on ArduPilot
+        # emitting statustext strings when we fetch parameters.
+        self.mavproxy.send("param fetch\n")
+        tstart = self.get_sim_time_cached()
+        old_data = None
+        text = ""
+        while True:
+            now = self.get_sim_time()
+            if now - tstart > 60: # it can take a *long* time to get these messages down!
+                raise NotAchievedException("Did not get statustext in time")
+            frsky.update()
+            data = frsky.get_data(0x5000) # no timestamping on this data, so we can't catch legitimate repeats.
+            if data is None:
+                continue
+            # frsky sends each quartet three times; skip the suplicates.
+            if old_data is not None and old_data == data:
+                continue
+            old_data = data
+            self.progress("Got (0x%x)" % data)
+            severity = 0
+            last = False
+            for i in 3, 2, 1, 0:
+                x = (data >> i*8) & 0xff
+                text += chr(x & 0x7f)
+                self.progress("  x=0x%02x" % x)
+                if x & 0x80:
+                    severity += 1 << i
+                self.progress("Text sev=%u: %s" % (severity, str(text)))
+                if (x & 0x7f) == 0x00:
+                    last = True
+            if last:
+                m = re.match("Ardu(Plane|Copter|Rover|Tracker|Sub) V[345]", text)
+                if m is not None:
+                    want_sev = mavutil.mavlink.MAV_SEVERITY_INFO
+                    if severity != want_sev:
+                        raise NotAchievedException("Incorrect severity; want=%u got=%u" % (want_sev, severity))
+                    self.progress("Got statustext (%s)" % m.group(0))
+                    break
+                text = ""
+
         self.wait_ready_to_arm()
         self.drain_mav_unparsed()
         # anything with a lambda in here needs a proper test written.
