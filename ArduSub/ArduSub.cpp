@@ -91,13 +91,6 @@ void Sub::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
 
 constexpr int8_t Sub::_failsafe_priorities[5];
 
-void Sub::loop()
-{
-    scheduler.loop();
-    G_Dt = scheduler.get_loop_period_s();
-}
-
-
 // Main loop - 400hz
 void Sub::fast_loop()
 {
