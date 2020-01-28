@@ -100,9 +100,9 @@ void AP_InertialSensor_SITL::generate_accel()
                 else if (phase_incr < -M_PI) {
                     phase += 2 * M_PI;
                 }
-                xAccel += sinf(phase) * calculate_noise(accel_noise, noise_variation);
-                yAccel += sinf(phase) * calculate_noise(accel_noise, noise_variation);
-                zAccel += sinf(phase) * calculate_noise(accel_noise, noise_variation);
+                xAccel += sinf(phase) * calculate_noise(accel_noise * sitl->vibe_motor_scale, noise_variation);
+                yAccel += sinf(phase) * calculate_noise(accel_noise * sitl->vibe_motor_scale, noise_variation);
+                zAccel += sinf(phase) * calculate_noise(accel_noise * sitl->vibe_motor_scale, noise_variation);
             }
         }
 
@@ -199,9 +199,9 @@ void AP_InertialSensor_SITL::generate_gyro()
                 else if (phase_incr < -M_PI) {
                     phase += 2 * M_PI;
                 }
-                p += sinf(phase) * calculate_noise(gyro_noise, noise_variation);
-                q += sinf(phase) * calculate_noise(gyro_noise, noise_variation);
-                r += sinf(phase) * calculate_noise(gyro_noise, noise_variation);
+                p += sinf(phase) * calculate_noise(gyro_noise * sitl->vibe_motor_scale, noise_variation);
+                q += sinf(phase) * calculate_noise(gyro_noise * sitl->vibe_motor_scale, noise_variation);
+                r += sinf(phase) * calculate_noise(gyro_noise * sitl->vibe_motor_scale, noise_variation);
             }
         }
 
