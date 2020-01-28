@@ -49,6 +49,7 @@ public:
         return true;
     }
     void set_output_mode(uint16_t mask, enum output_mode mode) override;
+    bool get_output_mode_banner(char banner_msg[], uint8_t banner_msg_len) const override;
 
     float scale_esc_to_unity(uint16_t pwm) override {
         return 2.0 * ((float) pwm - _esc_pwm_min) / (_esc_pwm_max - _esc_pwm_min) - 1.0;
@@ -294,8 +295,8 @@ private:
     // widest pulse for oneshot triggering
     uint16_t trigger_widest_pulse;
 
-    // are we using oneshot125 for the iomcu?
-    bool iomcu_oneshot125;
+    // iomcu output mode (pwm, oneshot or oneshot125)
+    enum output_mode iomcu_mode = MODE_PWM_NORMAL;
 
     // find a channel group given a channel number
     struct pwm_group *find_chan(uint8_t chan, uint8_t &group_idx);
