@@ -64,20 +64,6 @@ void Tracker::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
     log_bit = (uint32_t)-1;
 }
 
-/**
-   loop() is called continuously 
- */
-void Tracker::loop()
-{
-    // wait for an INS sample
-    ins.wait_for_sample();
-
-    // tell the scheduler one tick has passed
-    scheduler.tick();
-
-    scheduler.run(19900UL);
-}
-
 void Tracker::one_second_loop()
 {
     // make it possible to change orientation at runtime
