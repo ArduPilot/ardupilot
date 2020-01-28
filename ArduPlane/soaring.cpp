@@ -142,7 +142,7 @@ void Plane::update_soaring() {
             }
 
         case Mode::Number::CRUISE: {
-            const bool headingLinedupToCruise = plane.mode_loiter.isHeadingLinedUp(cruise_state.locked_heading_cd);
+            const bool headingLinedupToCruise = plane.mode_loiter.isHeadingLinedUp_cd(cruise_state.locked_heading_cd);
             if (cruise_state.locked_heading && !headingLinedupToCruise && loiterStatus!=SoaringController::LoiterStatus::ALT_TOO_LOW && timer<20e3) {
                 break;
             }

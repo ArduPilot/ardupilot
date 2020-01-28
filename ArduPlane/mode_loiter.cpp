@@ -29,6 +29,9 @@ void ModeLoiter::update()
 
 bool ModeLoiter::isHeadingLinedUp(const Location loiterCenterLoc, const Location targetLoc)
 {
+    // Return true if current heading is aligned to vector to targetLoc.
+    // Tolerance is initially 10 degrees and grows at 10 degrees for each loiter circle completed.
+
     const uint16_t loiterRadius = abs(plane.aparm.loiter_radius);
     if (loiterCenterLoc.get_distance(targetLoc) < loiterRadius + loiterRadius*0.05) {
         /* Whenever next waypoint is within the loiter radius plus 5%,
@@ -40,17 +43,15 @@ bool ModeLoiter::isHeadingLinedUp(const Location loiterCenterLoc, const Location
 
     // Bearing in centi-degrees
     const int32_t bearing_cd = plane.current_loc.get_bearing_to(targetLoc);
-    return isHeadingLinedUp(bearing_cd);
+    return isHeadingLinedUp_cd(bearing_cd);
 }
 
-bool ModeLoiter::isHeadingLinedUp(const float bearing)
-{
-    const int32_t bearing_cd = bearing*100;
-    return isHeadingLinedUp(bearing_cd);
-}
 
-bool ModeLoiter::isHeadingLinedUp(const int32_t bearing_cd)
+bool ModeLoiter::isHeadingLinedUp_cd(const int32_t bearing_cd)
 {
+    // Return true if current heading is aligned to bearing_cd.
+    // Tolerance is initially 10 degrees and grows at 10 degrees for each loiter circle completed.
+
     // get current heading.
     const int32_t heading_cd = plane.gps.ground_course_cd();
 
