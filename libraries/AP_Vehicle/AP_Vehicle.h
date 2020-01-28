@@ -65,6 +65,9 @@ public:
     // which is called from setup().
     void setup(void) override final;
 
+    // HAL::Callbacks implementation.
+    void loop() override final;
+
     bool virtual set_mode(const uint8_t new_mode, const ModeReason reason) = 0;
     uint8_t virtual get_mode() const = 0;
 
@@ -172,6 +175,14 @@ protected:
     // board specific config for CAN bus
     AP_BoardConfig_CAN BoardConfig_CAN;
 #endif
+
+    // main loop scheduler
+    AP_Scheduler scheduler{FUNCTOR_BIND_MEMBER(&AP_Vehicle::fast_loop, void)};
+    virtual void fast_loop() { }
+
+    // IMU variables
+    // Integration time; time last loop took to run
+    float G_Dt;
 
     // sensor drivers
     AP_GPS gps;
