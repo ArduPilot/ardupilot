@@ -73,13 +73,12 @@ bool RCInput::new_input()
     if (!_init) {
         return false;
     }
-    if (!rcin_mutex.take_nonblocking()) {
-        return false;
+    bool valid;
+    {
+        WITH_SEMAPHORE(rcin_mutex);
+        valid = _rcin_timestamp_last_signal != _last_read;
+        _last_read = _rcin_timestamp_last_signal;
     }
-    bool valid = _rcin_timestamp_last_signal != _last_read;
-
-    _last_read = _rcin_timestamp_last_signal;
-    rcin_mutex.give();
 
 #if HAL_RCINPUT_WITH_AP_RADIO
     if (!_radio_init) {
@@ -134,7 +133,7 @@ uint8_t RCInput::read(uint16_t* periods, uint8_t len)
         memcpy(periods, _rc_values, len*sizeof(periods[0]));
     }
 #if HAL_RCINPUT_WITH_AP_RADIO
-    if (radio && channel == 0) {
+    if (radio) {
         // hook to allow for update of radio on main thread, for mavlink sends
         radio->update();
     }
