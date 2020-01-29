@@ -552,6 +552,15 @@ void AP_ToshibaCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
     }
 }
 
+// return total usage time in seconds
+uint32_t AP_ToshibaCAN::get_usage_seconds(uint8_t esc_id) const
+{
+    if (esc_id >= TOSHIBACAN_MAX_NUM_ESCS) {
+        return 0;
+    }
+    return _telemetry[esc_id].usage_sec;
+}
+
 // helper function to create motor_request_data_cmd_t
 AP_ToshibaCAN::motor_request_data_cmd_t AP_ToshibaCAN::get_motor_request_data_cmd(uint8_t request_id) const
 {
