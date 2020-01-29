@@ -147,13 +147,13 @@ void RCInput::_timer_tick(void)
     if (!_init) {
         return;
     }
-    AP_RCProtocol &rcprot = AP::RC();
-
 #ifndef HAL_NO_UARTDRIVER
     const char *rc_protocol = nullptr;
 #endif
 
 #ifndef HAL_BUILD_AP_PERIPH
+    AP_RCProtocol &rcprot = AP::RC();
+
 #if HAL_USE_ICU == TRUE
     if (pulse_input_enabled) {
         const uint32_t *p;
