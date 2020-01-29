@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: ArduPilot Forum
+    url: https://github.community/
+    about: Please ask user questions on https://discuss.ardupilot.org/
