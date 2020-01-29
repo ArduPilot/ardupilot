@@ -1,6 +1,7 @@
 // auto generated bindings, don't manually edit.  See README.md for details.
 #include "lua_generated_bindings.h"
 #include "lua_boxed_numerics.h"
+#include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <RC_Channel/RC_Channel.h>
@@ -529,6 +530,30 @@ const luaL_Reg Location_meta[] = {
     {"get_distance", Location_get_distance},
     {NULL, NULL}
 };
+
+static int AP_ESC_Telem_get_usage_seconds(lua_State *L) {
+    AP_ESC_Telem * ud = AP_ESC_Telem::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "esc_telem not supported on this firmware");
+    }
+
+    binding_argcheck(L, 2);
+    const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(NUM_SERVO_CHANNELS, UINT8_MAX))), 2, "argument out of range");
+    const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
+    uint32_t data_5003 = {};
+    const bool data = ud->get_usage_seconds(
+            data_2,
+            data_5003);
+
+    if (data) {
+        new_uint32_t(L);
+        *static_cast<uint32_t *>(luaL_checkudata(L, -1, "uint32_t")) = data_5003;
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
+}
 
 static int AP_Baro_get_external_temperature(lua_State *L) {
     AP_Baro * ud = AP_Baro::get_singleton();
@@ -1903,6 +1928,11 @@ static int AP_AHRS_get_roll(lua_State *L) {
     return 1;
 }
 
+const luaL_Reg AP_ESC_Telem_meta[] = {
+    {"get_usage_seconds", AP_ESC_Telem_get_usage_seconds},
+    {NULL, NULL}
+};
+
 const luaL_Reg AP_Baro_meta[] = {
     {"get_external_temperature", AP_Baro_get_external_temperature},
     {"get_temperature", AP_Baro_get_temperature},
@@ -2155,6 +2185,7 @@ const struct userdata_meta userdata_fun[] = {
 };
 
 const struct userdata_meta singleton_fun[] = {
+    {"esc_telem", AP_ESC_Telem_meta, NULL},
     {"baro", AP_Baro_meta, NULL},
     {"serial", AP_SerialManager_meta, NULL},
     {"rc", RC_Channels_meta, NULL},
@@ -2225,6 +2256,7 @@ void load_generated_bindings(lua_State *L) {
 }
 
 const char *singletons[] = {
+    "esc_telem",
     "baro",
     "serial",
     "rc",
