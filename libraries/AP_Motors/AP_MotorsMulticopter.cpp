@@ -487,8 +487,7 @@ int16_t AP_MotorsMulticopter::get_pwm_output_max() const
 bool AP_MotorsMulticopter::check_mot_pwm_params() 
 {
     if ((_pwm_min == 0 && _pwm_max !=0) || (_pwm_min != 0 && _pwm_max == 0) ||
-     (_pwm_min < 0 || _pwm_min < 0) || (_pwm_min > _pwm_max))
-    {
+        (_pwm_min < 0 || _pwm_min < 0) || (_pwm_min > _pwm_max)) {
         return true;
     }
     return false;
