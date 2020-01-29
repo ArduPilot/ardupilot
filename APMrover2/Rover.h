@@ -127,7 +127,6 @@ public:
     Rover(void);
 
     // HAL::Callbacks implementation.
-    void setup(void) override;
     void loop(void) override;
 
 private:
@@ -362,7 +361,7 @@ private:
     Mode *mode_from_mode_num(enum Mode::Number num);
 
     // Parameters.cpp
-    void load_parameters(void);
+    void load_parameters(void) override;
 
     // radio.cpp
     void set_control_channels(void);
@@ -384,8 +383,13 @@ private:
     // Steering.cpp
     void set_servos(void);
 
+    // Rover.cpp
+    void get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
+                             uint8_t &task_count,
+                             uint32_t &log_bit) override;
+
     // system.cpp
-    void init_ardupilot();
+    void init_ardupilot() override;
     void startup_ground(void);
     void update_ahrs_flyforward();
     bool set_mode(Mode &new_mode, ModeReason reason);

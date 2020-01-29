@@ -3,18 +3,8 @@
 // mission storage
 static const StorageAccess wp_storage(StorageManager::StorageMission);
 
-void Tracker::init_tracker()
+void Tracker::init_ardupilot()
 {
-    // initialise console serial port
-    serial_manager.init_console();
-
-    hal.console->printf("\n\nInit %s\n\nFree RAM: %u\n",
-                        AP::fwversion().fw_string,
-                        (unsigned)hal.util->available_memory());
-
-    // Check the EEPROM format version before loading any parameters from EEPROM
-    load_parameters();
-
     // initialise stats module
     stats.init();
 

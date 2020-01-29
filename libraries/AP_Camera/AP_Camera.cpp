@@ -400,19 +400,22 @@ void AP_Camera::setup_feedback_callback(void)
 // log_picture - log picture taken and send feedback to GCS
 void AP_Camera::log_picture()
 {
+    if (!using_feedback_pin()) {
+        gcs().send_message(MSG_CAMERA_FEEDBACK);
+    }
+
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger == nullptr) {
         return;
     }
+    if (!logger->should_log(log_camera_bit)) {
+        return;
+    }
+
     if (!using_feedback_pin()) {
-        gcs().send_message(MSG_CAMERA_FEEDBACK);
-        if (logger->should_log(log_camera_bit)) {
-            logger->Write_Camera(current_loc);
-        }
+        logger->Write_Camera(current_loc);
     } else {
-        if (logger->should_log(log_camera_bit)) {
-            logger->Write_Trigger(current_loc);
-        }
+        logger->Write_Trigger(current_loc);
     }
 }
 

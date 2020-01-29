@@ -151,6 +151,7 @@ public:
         k_pitch_out             = 125,
         k_thrust_out            = 126,
         k_yaw_out               = 127,
+        k_wingsail_elevator     = 128,
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 

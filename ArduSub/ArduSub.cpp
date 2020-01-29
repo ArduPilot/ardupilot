@@ -80,18 +80,16 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
 #endif
 };
 
-constexpr int8_t Sub::_failsafe_priorities[5];
-
-void Sub::setup()
+void Sub::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
+                                 uint8_t &task_count,
+                                 uint32_t &log_bit)
 {
-    // Load the default values of variables listed in var_info[]s
-    AP_Param::setup_sketch_defaults();
-
-    init_ardupilot();
-
-    // initialise the main loop scheduler
-    scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks), MASK_LOG_PM);
+    tasks = &scheduler_tasks[0];
+    task_count = ARRAY_SIZE(scheduler_tasks);
+    log_bit = MASK_LOG_PM;
 }
+
+constexpr int8_t Sub::_failsafe_priorities[5];
 
 void Sub::loop()
 {

@@ -1763,56 +1763,90 @@ void GCS_MAVLINK::send_ahrs()
 */
 void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, uint8_t dest_bitmask)
 {
-    char text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
-    if (hal.util->vsnprintf(text, sizeof(text), fmt, arg_list) > MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1) {
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        AP_HAL::panic("Statustext (%s) too long", text);
-#endif
-    }
+    char first_piece_of_text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1]{};
 
+    do {
+        WITH_SEMAPHORE(_statustext_sem);
+        // send_text can be called from multiple threads; we must
+        // protect the "text" member with _statustext_sem
+        hal.util->vsnprintf(statustext_printf_buffer, sizeof(statustext_printf_buffer), fmt, arg_list);
+        memcpy(first_piece_of_text, statustext_printf_buffer, ARRAY_SIZE(first_piece_of_text));
+
+        // filter destination ports to only allow active ports.
+        statustext_t statustext{};
+        if (update_send_has_been_called) {
+            statustext.bitmask = (GCS_MAVLINK::active_channel_mask()  | GCS_MAVLINK::streaming_channel_mask() );
+        } else {
+            // we have not yet initialised the streaming-channel-mask,
+            // which is done as part of the update() call.  So just send
+            // it to all channels:
+            statustext.bitmask = (1<<_num_gcs)-1;
+        }
+        statustext.bitmask &= dest_bitmask;
+        if (!statustext.bitmask) {
+            // nowhere to send
+            break;
+        }
+
+        statustext.msg.severity = severity;
+
+        static uint16_t msgid;
+        if (strlen(statustext_printf_buffer) > sizeof(statustext.msg.text)) {
+            msgid++;
+            if (msgid == 0) {
+                msgid = 1;
+            }
+            statustext.msg.id = msgid;
+        }
+
+        const char *remainder = statustext_printf_buffer;
+        for (uint8_t i=0; i<_status_capacity; i++) {
+            statustext.msg.chunk_seq = i;
+            const size_t remainder_len = strlen(remainder);
+            // note that remainder_len may be zero here!
+            uint16_t n = MIN(sizeof(statustext.msg.text), remainder_len);
+            if (i == _status_capacity -1 && n == sizeof(statustext.msg.text)) {
+                // fantastic.  This us a very long statustext and
+                // we've actually managed to push everything else out
+                // of the queue - this is the last chunk, so we MUST
+                // null-terminate.
+                n -= 1;
+            }
+            memset(statustext.msg.text, '\0', sizeof(statustext.msg.text));
+            memcpy(statustext.msg.text, remainder, n);
+            // The force push will ensure comm links do not block other comm links forever if they fail.
+            // If we push to a full buffer then we overwrite the oldest entry, effectively removing the
+            // block but not until the buffer fills up.
+            _statustext_queue.push_force(statustext);
+            remainder = &remainder[n];
+
+            // note that remainder_len here is the remainder length for
+            // the *old* remainder!
+            if (remainder_len < sizeof(statustext.msg.text) || statustext.msg.id == 0) {
+                break;
+            }
+        }
+
+        // try and send immediately if possible
+        service_statustext();
+    } while (false);
+
+    // given we don't really know what these methods get up to, we
+    // don't hold the statustext semaphore while doing them:
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger != nullptr) {
-        logger->Write_Message(text);
+        logger->Write_Message(first_piece_of_text);
     }
 
     frsky = AP::frsky_telem();
     if (frsky != nullptr) {
-        frsky->queue_message(severity, text);
+        frsky->queue_message(severity, first_piece_of_text);
     }
 
     AP_Notify *notify = AP_Notify::get_singleton();
     if (notify) {
-        notify->send_text(text);
+        notify->send_text(first_piece_of_text);
     }
-
-    // filter destination ports to only allow active ports.
-    statustext_t statustext{};
-    if (update_send_has_been_called) {
-        statustext.bitmask = (GCS_MAVLINK::active_channel_mask()  | GCS_MAVLINK::streaming_channel_mask() );
-    } else {
-        // we have not yet initialised the streaming-channel-mask,
-        // which is done as part of the update() call.  So just send
-        // it to all channels:
-        statustext.bitmask = (1<<_num_gcs)-1;
-    }
-    statustext.bitmask &= dest_bitmask;
-    if (!statustext.bitmask) {
-        // nowhere to send
-        return;
-    }
-
-    statustext.msg.severity = severity;
-    strncpy(statustext.msg.text, text, sizeof(statustext.msg.text));
-
-    WITH_SEMAPHORE(_statustext_sem);
-    
-    // The force push will ensure comm links do not block other comm links forever if they fail.
-    // If we push to a full buffer then we overwrite the oldest entry, effectively removing the
-    // block but not until the buffer fills up.
-    _statustext_queue.push_force(statustext);
-
-    // try and send immediately if possible
-    service_statustext();
 }
 
 /*
@@ -1848,7 +1882,7 @@ void GCS::service_statustext(void)
                 mavlink_channel_t chan_index = (mavlink_channel_t)(MAVLINK_COMM_0+i);
                 if (HAVE_PAYLOAD_SPACE(chan_index, STATUSTEXT)) {
                     // we have space so send then clear that channel bit on the mask
-                    mavlink_msg_statustext_send(chan_index, statustext->msg.severity, statustext->msg.text);
+                    mavlink_msg_statustext_send(chan_index, statustext->msg.severity, statustext->msg.text, statustext->msg.id, statustext->msg.chunk_seq);
                     statustext->bitmask &= ~chan_bit;
                 }
             }
@@ -3574,6 +3608,18 @@ MAV_RESULT GCS_MAVLINK::handle_command_get_home_position(const mavlink_command_l
     return MAV_RESULT_ACCEPTED;
 }
 
+MAV_RESULT GCS_MAVLINK::handle_command_debug_trap(const mavlink_command_long_t &packet)
+{
+    // magic number must be supplied to trap; you must *really* mean it.
+    if (uint32_t(packet.param1) != 32451) {
+        return MAV_RESULT_DENIED;
+    }
+    if (hal.util->trap()) {
+        return MAV_RESULT_ACCEPTED;
+    }
+    return MAV_RESULT_UNSUPPORTED;
+}
+
 MAV_RESULT GCS_MAVLINK::handle_command_do_gripper(const mavlink_command_long_t &packet)
 {
     AP_Gripper *gripper = AP::gripper();
@@ -3739,6 +3785,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
 
     case MAV_CMD_GET_HOME_POSITION:
         result = handle_command_get_home_position(packet);
+        break;
+
+    case MAV_CMD_DEBUG_TRAP:
+        result = handle_command_debug_trap(packet);
         break;
 
     case MAV_CMD_PREFLIGHT_STORAGE:

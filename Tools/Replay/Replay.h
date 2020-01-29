@@ -55,9 +55,11 @@ public:
 
     ReplayVehicle() { unused = -1; }
     // HAL::Callbacks implementation.
-    void setup() override;
     void loop() override;
-    void load_parameters(void);
+    void load_parameters(void) override;
+    void get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
+                             uint8_t &task_count,
+                             uint32_t &log_bit) override { };
 
     virtual bool set_mode(const uint8_t new_mode, const ModeReason reason) override { return true; }
     virtual uint8_t get_mode() const override { return 0; }
@@ -75,6 +77,10 @@ public:
     struct LogStructure log_structure[256] = {
     };
     AP_Logger logger{unused};
+
+protected:
+
+    void init_ardupilot() override;
 
 private:
     Parameters g;

@@ -161,7 +161,6 @@ public:
     Plane(void);
 
     // HAL::Callbacks implementation.
-    void setup() override;
     void loop() override;
 
 private:
@@ -790,7 +789,7 @@ private:
     void Log_Write_AOA_SSA();
     void Log_Write_AETR();
 
-    void load_parameters(void);
+    void load_parameters(void) override;
     void convert_mixers(void);
     void adjust_altitude_target();
     void setup_glide_slope(void);
@@ -896,7 +895,10 @@ private:
     void read_airspeed(void);
     void rpm_update(void);
     void efi_update(void);
-    void init_ardupilot();
+    void init_ardupilot() override;
+    void get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
+                             uint8_t &task_count,
+                             uint32_t &log_bit) override;
     void startup_ground(void);
     bool set_mode(Mode& new_mode, const ModeReason reason);
     bool set_mode(const uint8_t mode, const ModeReason reason) override;

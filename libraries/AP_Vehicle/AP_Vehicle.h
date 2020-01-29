@@ -56,6 +56,15 @@ public:
 
     static AP_Vehicle *get_singleton();
 
+    // setup() is called once during vehicle startup to initialise the
+    // vehicle object and the objects it contains.  The
+    // AP_HAL_MAIN_CALLBACKS pragma creates a main(...) function
+    // referencing an object containing setup() and loop() functions.
+    // A vehicle is not expected to override setup(), but
+    // subclass-specific initialisation can be done in init_ardupilot
+    // which is called from setup().
+    void setup(void) override final;
+
     bool virtual set_mode(const uint8_t new_mode, const ModeReason reason) = 0;
     uint8_t virtual get_mode() const = 0;
 
@@ -117,6 +126,8 @@ public:
     // initialize the vehicle. Called from AP_BoardConfig
     void init_vehicle();
 
+    virtual void get_scheduler_tasks(const AP_Scheduler::Task *&tasks, uint8_t &task_count, uint32_t &log_bit) = 0;
+
     /*
       set the "likely flying" flag. This is not guaranteed to be
       accurate, but is the vehicle codes best guess as to the whether
@@ -150,6 +161,9 @@ public:
     }
 
 protected:
+
+    virtual void init_ardupilot() = 0;
+    virtual void load_parameters() = 0;
 
     // board specific config
     AP_BoardConfig BoardConfig;

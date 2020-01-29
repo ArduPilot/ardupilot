@@ -1,5 +1,4 @@
 #include "Plane.h"
-#include <AP_Common/AP_FWVersion.h>
 
 /*****************************************************************************
 *   The init_ardupilot function processes everything we need for an in - air restart
@@ -15,18 +14,6 @@ static void failsafe_check_static()
 
 void Plane::init_ardupilot()
 {
-    // initialise serial port
-    serial_manager.init_console();
-
-    hal.console->printf("\n\nInit %s"
-                        "\n\nFree RAM: %u\n",
-                        AP::fwversion().fw_string,
-                        (unsigned)hal.util->available_memory());
-
-    //
-    // Check the EEPROM format version before loading any parameters from EEPROM
-    //
-    load_parameters();
 
 #if STATS_ENABLED == ENABLED
     // initialise stats module
@@ -84,6 +71,8 @@ void Plane::init_ardupilot()
 
     // initialise battery monitoring
     battery.init();
+
+    rssi.init();
 
     rpm_sensor.init();
 

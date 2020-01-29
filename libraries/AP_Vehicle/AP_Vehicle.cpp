@@ -1,5 +1,7 @@
 #include "AP_Vehicle.h"
 
+#include <AP_Common/AP_FWVersion.h>
+
 #define SCHED_TASK(func, rate_hz, max_time_micros) SCHED_TASK_CLASS(AP_Vehicle, &vehicle, func, rate_hz, max_time_micros)
 
 /*
@@ -21,6 +23,35 @@ AP_Vehicle& vehicle = *AP_Vehicle::get_singleton();
 #else
 extern AP_Vehicle& vehicle;
 #endif
+
+/*
+  setup is called when the sketch starts
+ */
+void AP_Vehicle::setup()
+{
+    // load the default values of variables listed in var_info[]
+    AP_Param::setup_sketch_defaults();
+
+    // initialise serial port
+    serial_manager.init_console();
+
+    hal.console->printf("\n\nInit %s"
+                        "\n\nFree RAM: %u\n",
+                        AP::fwversion().fw_string,
+                        (unsigned)hal.util->available_memory());
+
+    load_parameters();
+
+    // init_ardupilot is where the vehicle does most of its initialisation.
+    init_ardupilot();
+
+    // initialise the main loop scheduler
+    const AP_Scheduler::Task *tasks;
+    uint8_t task_count;
+    uint32_t log_bit;
+    get_scheduler_tasks(tasks, task_count, log_bit);
+    AP::scheduler().init(tasks, task_count, log_bit);
+}
 
 /*
   common scheduler table for fast CPUs - all common vehicle tasks
@@ -112,4 +143,3 @@ AP_Vehicle *vehicle()
 }
 
 };
-
