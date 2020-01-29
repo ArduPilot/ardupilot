@@ -404,25 +404,31 @@ def get_user_locations_path():
     return user_locations_path
 
 
-def find_new_spawn(loc, file_path):
-    (lat, lon, alt, heading) = loc.split(",")
+def find_offsets(instances, file_path):
+    offsets = {}
     swarminit_filepath = os.path.join(autotest_dir, "swarminit.txt")
-    for path2 in [file_path, swarminit_filepath]:
-        if os.path.isfile(path2):
-            with open(path2, 'r') as swd:
-                next(swd)
-                for lines in swd:
-                    if len(lines) == 0:
+    comment_regex = re.compile("\s*#.*")
+    for path in [file_path, swarminit_filepath]:
+        if os.path.isfile(path):
+            with open(path, 'r') as fd:
+                for line in fd:
+                    line = re.sub(comment_regex, "", line)
+                    line = line.rstrip("\n")
+                    if len(line) == 0:
                         continue
-                    (instance, offset) = lines.split("=")
-                    if ((int)(instance) == (int)(cmd_opts.instance)):
-                        (x, y, z, head) = offset.split(",")
-                        g = mavextra.gps_offset((float)(lat), (float)(lon), (float)(x), (float)(y))
-                        loc = str(g[0])+","+str(g[1])+","+str(alt+z)+","+str(head)
-                        return loc
-        g = mavextra.gps_newpos((float)(lat), (float)(lon), 90, 20*(int)(cmd_opts.instance))
-        loc = str(g[0])+","+str(g[1])+","+str(alt)+","+str(heading)
-        return loc
+                    (instance, offset) = line.split("=")
+                    instance = (int)(instance)
+                    if (instance not in offsets) and (instance in instances):
+                        offsets[instance] = [ (float)(x) for x in offset.split(",") ]
+                        continue
+                    if len(offsets) == len(instances):
+                        return offsets
+        if len(offsets) == len(instances):
+            return offsets
+    for instance in instances:
+        if instance not in offsets:
+            offsets[instance] = [90.0, 20.0 * instance, 0.0, None]
+    return offsets
 
 
 def find_location_by_name(locname):
@@ -442,12 +448,22 @@ def find_location_by_name(locname):
                     continue
                 (name, loc) = line.split("=")
                 if name == locname:
-                    if cmd_opts.swarm is not None:
-                        loc = find_new_spawn(loc, cmd_opts.swarm)
-                    return loc
+                    return [ (float)(x) for x in loc.split(",") ]
 
     print("Failed to find location (%s)" % cmd_opts.location)
     sys.exit(1)
+
+
+def find_spawns(loc, offsets):
+    lat, lon, alt, heading = loc
+    spawns = {}
+    for k in offsets:
+        (x, y, z, head) = offsets[k]
+        if head is None:
+            head = heading
+        g = mavextra.gps_offset(lat, lon, x, y)
+        spawns[k] = ",".join([str(g[0]), str(g[1]), str(alt+z), str(head)])
+    return spawns
 
 
 def progress_cmd(what, cmd):
@@ -476,7 +492,7 @@ def run_cmd_blocking(what, cmd, quiet=False, check=False, **kw):
     return ret
 
 
-def run_in_terminal_window(name, cmd):
+def run_in_terminal_window(name, cmd, **kw):
 
     """Execute the run_in_terminal_window.sh command for cmd"""
     global windowID
@@ -486,7 +502,7 @@ def run_in_terminal_window(name, cmd):
 
     if under_macos() and os.environ.get('DISPLAY'):
         # on MacOS record the window IDs so we can close them later
-        out = subprocess.Popen(runme, stdout=subprocess.PIPE).communicate()[0]
+        out = subprocess.Popen(runme, stdout=subprocess.PIPE, **kw).communicate()[0]
         out = out.decode('utf-8')
         p = re.compile('tab 1 of window id (.*)')
 
@@ -505,7 +521,7 @@ def run_in_terminal_window(name, cmd):
         else:
             progress("Cannot find %s process terminal" % name)
     else:
-        subprocess.Popen(runme)
+        subprocess.Popen(runme, **kw)
 
 
 tracker_uarta = None  # blemish
@@ -536,7 +552,7 @@ def start_antenna_tracker(opts):
     os.chdir(oldpwd)
 
 
-def start_vehicle(binary, opts, stuff, loc=None):
+def start_vehicle(binary, opts, stuff, spawns=None):
     """Run the ArduPilot binary"""
 
     cmd_name = opts.vehicle
@@ -586,9 +602,6 @@ def start_vehicle(binary, opts, stuff, loc=None):
 
     cmd.append(binary)
     cmd.append("-S")
-    cmd.append("-I" + str(opts.instance))
-    if loc is not None:
-        cmd.extend(["--home", loc])
     if opts.wipe_eeprom:
         cmd.append("-w")
     cmd.extend(["--model", stuff["model"]])
@@ -622,7 +635,14 @@ def start_vehicle(binary, opts, stuff, loc=None):
     if opts.mcast:
         cmd.extend(["--uartA mcast:"])
 
-    run_in_terminal_window(cmd_name, cmd)
+    old_dir = os.getcwd()
+    for i, i_dir in zip(instances, instance_dir):
+        c = ["-I" + str(i)]
+        if spawns is not None:
+            c.extend(["--home", spawns[i]])
+        os.chdir(i_dir)
+        run_in_terminal_window(cmd_name, cmd + c)
+    os.chdir(old_dir)
 
 
 def start_mavproxy(opts, stuff):
@@ -638,26 +658,6 @@ def start_mavproxy(opts, stuff):
         cmd.append("mavproxy.exe")
     else:
         cmd.append("mavproxy.py")
-
-    if opts.hil:
-        cmd.extend(["--load-module", "HIL"])
-    else:
-        if opts.mcast:
-            cmd.extend(["--master", "mcast:"])
-        else:
-            cmd.extend(["--master", mavlink_port])
-        if stuff["sitl-port"] and not opts.no_rcin:
-            cmd.extend(["--sitl", simout_port])
-
-    if not opts.no_extra_ports:
-        ports = [p + 10 * cmd_opts.instance for p in [14550, 14551]]
-        for port in ports:
-            if os.path.isfile("/ardupilot.vagrant"):
-                # We're running inside of a vagrant guest; forward our
-                # mavlink out to the containing host OS
-                cmd.extend(["--out", "10.0.2.2:" + str(port)])
-            else:
-                cmd.extend(["--out", "127.0.0.1:" + str(port)])
 
     if opts.tracker:
         cmd.extend(["--load-module", "tracker"])
@@ -739,8 +739,36 @@ def start_mavproxy(opts, stuff):
     if old is not None:
         env['PYTHONPATH'] += os.path.pathsep + old
 
-    run_cmd_blocking("Run MavProxy", cmd, env=env)
-    progress("MAVProxy exited")
+    old_dir = os.getcwd()
+    for i, i_dir in zip(instances, instance_dir):
+        c = []
+
+        if not opts.no_extra_ports:
+            ports = [p + 10 * i for p in [14550, 14551]]
+            for port in ports:
+                if os.path.isfile("/ardupilot.vagrant"):
+                    # We're running inside of a vagrant guest; forward our
+                    # mavlink out to the containing host OS
+                    c.extend(["--out", "10.0.2.2:" + str(port)])
+                else:
+                    c.extend(["--out", "127.0.0.1:" + str(port)])
+
+        if opts.hil:
+            c.extend(["--load-module", "HIL"])
+        else:
+            if opts.mcast:
+                c.extend(["--master", "mcast:"])
+            else:
+                c.extend(["--master", "tcp:127.0.0.1:" + str(5760 + 10 * i)])
+            if stuff["sitl-port"] and not opts.no_rcin:
+                c.extend(["--sitl", "127.0.0.1:" + str(5501 + 10 * i)])
+
+        os.chdir(i_dir)
+        if i == instances[-1]:
+            run_cmd_blocking("Run MavProxy", cmd + c, env=env)
+        else:
+            run_in_terminal_window("Run MavProxy", cmd + c, env=env)
+    os.chdir(old_dir)
 
 
 vehicle_options_string = '|'.join(vinfo.options.keys())
@@ -838,6 +866,14 @@ group_sim.add_option("-I", "--instance",
                      default=0,
                      type='int',
                      help="instance of simulator")
+group_sim.add_option("-n", "--count",
+                     type='int',
+                     default=1,
+                     help="vehicle count; if this is specified, -I is used as a base-value")
+group_sim.add_option("-i", "--instances",
+                     default=None,
+                     type='string',
+                     help="a space delimited list of instances to spawn; if specified, overrides -I and -n.")
 group_sim.add_option("-V", "--valgrind",
                      action='store_true',
                      default=False,
@@ -1042,6 +1078,14 @@ if (cmd_opts.gdb or cmd_opts.gdb_stopped) and (cmd_opts.lldb or cmd_opts.lldb_st
     print("May not use lldb with gdb")
     sys.exit(1)
 
+if cmd_opts.instance < 0:
+    print("May not specify a negative instance ID")
+    sys.exit(1)
+
+if cmd_opts.count < 1:
+    print("May not specify a count less than 1")
+    sys.exit(1)
+
 if cmd_opts.strace and cmd_opts.valgrind:
     print("valgrind and strace almost certainly not a good idea")
 
@@ -1088,10 +1132,6 @@ You could also try changing directory to e.g. the ArduCopter subdirectory
 if cmd_opts.frame is None:
     cmd_opts.frame = vinfo.options[cmd_opts.vehicle]["default_frame"]
 
-# setup ports for this instance
-mavlink_port = "tcp:127.0.0.1:" + str(5760 + 10 * cmd_opts.instance)
-simout_port = "127.0.0.1:" + str(5501 + 10 * cmd_opts.instance)
-
 frame_infos = vinfo.options_for_frame(cmd_opts.frame,
                                       cmd_opts.vehicle,
                                       cmd_opts)
@@ -1101,6 +1141,18 @@ if not os.path.exists(vehicle_dir):
     print("vehicle directory (%s) does not exist" % (vehicle_dir,))
     sys.exit(1)
 
+if cmd_opts.instances is not None:
+    instances = set()
+    for i in cmd_opts.instances.split(' '):
+        i = (int)(i)
+        if i < 0:
+            print("May not specify a negative instance ID")
+            sys.exit(1)
+        instances.add(i)
+    instances = sorted(instances) # to list
+else:
+    instances = range(cmd_opts.instance, cmd_opts.instance + cmd_opts.count)
+
 if not cmd_opts.hil:
     if cmd_opts.instance == 0:
         kill_tasks()
@@ -1109,7 +1161,7 @@ if cmd_opts.tracker:
     start_antenna_tracker(cmd_opts)
 
 if cmd_opts.custom_location:
-    location = cmd_opts.custom_location
+    location = [ (float)(x) for x in cmd_opts.custom_location.split(",") ]
     progress("Starting up at %s" % (location,))
 elif cmd_opts.location is not None:
     location = find_location_by_name(cmd_opts.location)
@@ -1117,15 +1169,38 @@ elif cmd_opts.location is not None:
 else:
     progress("Starting up at SITL location")
     location = None
+if cmd_opts.swarm is not None:
+    offsets = find_offsets(instances, cmd_opts.swarm)
+else:
+    offsets = { x: [0.0, 0.0, 0.0, None] for x in instances }
+if location is not None:
+    spawns = find_spawns(location, offsets)
+else:
+    spawns = None
 
 if cmd_opts.use_dir is not None:
-    new_dir = cmd_opts.use_dir
+    base_dir = os.path.realpath(cmd_opts.use_dir)
     try:
-        os.makedirs(os.path.realpath(new_dir))
+        os.makedirs(base_dir)
     except OSError as exception:
         if exception.errno != errno.EEXIST:
             raise
-    os.chdir(new_dir)
+    os.chdir(base_dir)
+else:
+    base_dir = os.getcwd()
+instance_dir = []
+if len(instances) == 1:
+    instance_dir.append(base_dir)
+else:
+    for i in instances:
+        i_dir = os.path.join(base_dir, str(i))
+        try:
+            os.makedirs(i_dir)
+        except OSError as exception:
+            if exception.errno != errno.EEXIST:
+                raise
+        finally:
+            instance_dir.append(i_dir)
 
 if cmd_opts.hil:
     # (unlikely)
@@ -1134,10 +1209,12 @@ if cmd_opts.hil:
                      "jsb_sim/runsim.py"),
         "--speedup=" + str(cmd_opts.speedup)
     ]
-    if location is not None:
-        jsbsim_opts.extend(["--home", location])
+    for i in instances:
+        c = []
+        if spawns is not None:
+            c = ["--home", spawns[i]]
+        run_in_terminal_window("JSBSim", jsbsim_opts + c)
 
-    run_in_terminal_window("JSBSim", jsbsim_opts)
 else:
     if not cmd_opts.no_rebuild:  # i.e. we should rebuild
         do_build(vehicle_dir, cmd_opts, frame_infos)
@@ -1160,7 +1237,7 @@ else:
     start_vehicle(vehicle_binary,
                   cmd_opts,
                   frame_infos,
-                  loc=location)
+                  spawns=spawns)
 
 if cmd_opts.delay_start:
     progress("Sleeping for %f seconds" % (cmd_opts.delay_start,))
