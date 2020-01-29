@@ -44,6 +44,9 @@ public:
     // return a bitmask of escs that are "present" which means they are responding to requests.  Bitmask matches RC outputs
     uint16_t get_present_mask() const { return _esc_present_bitmask; }
 
+    // return total usage time in seconds
+    uint32_t get_usage_seconds(uint8_t esc_id) const;
+
 private:
 
     // loop to send output to ESCs in background thread
