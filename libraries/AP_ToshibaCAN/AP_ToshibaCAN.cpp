@@ -248,8 +248,9 @@ void AP_ToshibaCAN::loop()
                     continue;
                 }
 
-                // increment count to request temperature
+                // increment count to request temperature and usage
                 _telemetry_temp_req_counter++;
+                _telemetry_usage_req_counter++;
             }
 
             send_stage++;
@@ -275,8 +276,27 @@ void AP_ToshibaCAN::loop()
             send_stage++;
         }
 
-        // check for replies from ESCs
+        // check if we should request usage from ESCs
         if (send_stage == 7) {
+            if (_telemetry_usage_req_counter > 100) {
+                _telemetry_usage_req_counter = 0;
+
+                // prepare command to request data2 (temperature) from all ESCs
+                motor_request_data_cmd_t request_data_cmd = get_motor_request_data_cmd(3);
+                uavcan::CanFrame request_data_frame;
+                request_data_frame = {(uint8_t)COMMAND_REQUEST_DATA, request_data_cmd.data, sizeof(request_data_cmd.data)};
+
+                // send request data command
+                timeout = uavcan::MonotonicTime::fromUSec(AP_HAL::micros64() + timeout_us);
+                if (!write_frame(request_data_frame, timeout)) {
+                    continue;
+                }
+            }
+            send_stage++;
+        }
+
+        // check for replies from ESCs
+        if (send_stage == 8) {
             uavcan::CanFrame recv_frame;
             while (read_frame(recv_frame, timeout)) {
                 // decode rpm and voltage data
@@ -325,6 +345,23 @@ void AP_ToshibaCAN::loop()
                         WITH_SEMAPHORE(_telem_sem);
                         _telemetry[esc_id].esc_temp = temp_max < 100 ? 0 : temp_max / 5 - 20;
                         _telemetry[esc_id].motor_temp = motor_temp < 100 ? 0 : motor_temp / 5 - 20;
+                        _esc_present_bitmask_recent |= ((uint32_t)1 << esc_id);
+                    }
+                }
+
+                // decode cumulative usage data
+                if ((recv_frame.id >= MOTOR_DATA3) && (recv_frame.id <= MOTOR_DATA3 + 12)) {
+                    // motor data3 data format is 8 bytes (64 bits)
+                    //    3 bytes: usage in seconds
+                    //    2 bytes: number of times rotors started and stopped
+                    //    3 bytes: reserved
+                    const uint32_t usage_sec = ((uint32_t)recv_frame.data[0] << 16) | ((uint32_t)recv_frame.data[1] << 8) | (uint32_t)recv_frame.data[2];
+
+                    // store response in telemetry array
+                    uint8_t esc_id = recv_frame.id - MOTOR_DATA3;
+                    if (esc_id < TOSHIBACAN_MAX_NUM_ESCS) {
+                        WITH_SEMAPHORE(_telem_sem);
+                        _telemetry[esc_id].usage_sec = usage_sec;
                         _esc_present_bitmask_recent |= ((uint32_t)1 << esc_id);
                     }
                 }
