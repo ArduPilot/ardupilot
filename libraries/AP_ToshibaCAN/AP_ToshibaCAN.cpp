@@ -238,19 +238,7 @@ void AP_ToshibaCAN::loop()
                 }
 
                 // prepare command to request data1 (rpm and voltage) from all ESCs
-                motor_request_data_cmd_t request_data_cmd = {};
-                request_data_cmd.motor1 = 1;
-                request_data_cmd.motor2 = 1;
-                request_data_cmd.motor3 = 1;
-                request_data_cmd.motor4 = 1;
-                request_data_cmd.motor5 = 1;
-                request_data_cmd.motor6 = 1;
-                request_data_cmd.motor7 = 1;
-                request_data_cmd.motor8 = 1;
-                request_data_cmd.motor9 = 1;
-                request_data_cmd.motor10 = 1;
-                request_data_cmd.motor11 = 1;
-                request_data_cmd.motor12 = 1;
+                motor_request_data_cmd_t request_data_cmd = get_motor_request_data_cmd(1);
                 uavcan::CanFrame request_data_frame;
                 request_data_frame = {(uint8_t)COMMAND_REQUEST_DATA, request_data_cmd.data, sizeof(request_data_cmd.data)};
 
@@ -273,19 +261,7 @@ void AP_ToshibaCAN::loop()
                 _telemetry_temp_req_counter = 0;
 
                 // prepare command to request data2 (temperature) from all ESCs
-                motor_request_data_cmd_t request_data_cmd = {};
-                request_data_cmd.motor1 = 2;
-                request_data_cmd.motor2 = 2;
-                request_data_cmd.motor3 = 2;
-                request_data_cmd.motor4 = 2;
-                request_data_cmd.motor5 = 2;
-                request_data_cmd.motor6 = 2;
-                request_data_cmd.motor7 = 2;
-                request_data_cmd.motor8 = 2;
-                request_data_cmd.motor9 = 2;
-                request_data_cmd.motor10 = 2;
-                request_data_cmd.motor11 = 2;
-                request_data_cmd.motor12 = 2;
+                motor_request_data_cmd_t request_data_cmd = get_motor_request_data_cmd(2);
                 uavcan::CanFrame request_data_frame;
                 request_data_frame = {(uint8_t)COMMAND_REQUEST_DATA, request_data_cmd.data, sizeof(request_data_cmd.data)};
 
@@ -343,7 +319,7 @@ void AP_ToshibaCAN::loop()
                     const uint16_t motor_temp = (((uint16_t)recv_frame.data[3] & (uint16_t)0x03) << 8) | ((uint16_t)recv_frame.data[4]);
                     const uint16_t temp_max = MAX(u_temp, MAX(v_temp, w_temp));
 
-                    // store repose in telemetry array
+                    // store response in telemetry array
                     uint8_t esc_id = recv_frame.id - MOTOR_DATA2;
                     if (esc_id < TOSHIBACAN_MAX_NUM_ESCS) {
                         WITH_SEMAPHORE(_telem_sem);
@@ -537,6 +513,25 @@ void AP_ToshibaCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
             }
         }
     }
+}
+
+// helper function to create motor_request_data_cmd_t
+AP_ToshibaCAN::motor_request_data_cmd_t AP_ToshibaCAN::get_motor_request_data_cmd(uint8_t request_id) const
+{
+    motor_request_data_cmd_t req_data_cmd = {};
+    req_data_cmd.motor1 = request_id;
+    req_data_cmd.motor2 = request_id;
+    req_data_cmd.motor3 = request_id;
+    req_data_cmd.motor4 = request_id;
+    req_data_cmd.motor5 = request_id;
+    req_data_cmd.motor6 = request_id;
+    req_data_cmd.motor7 = request_id;
+    req_data_cmd.motor8 = request_id;
+    req_data_cmd.motor9 = request_id;
+    req_data_cmd.motor10 = request_id;
+    req_data_cmd.motor11 = request_id;
+    req_data_cmd.motor12 = request_id;
+    return req_data_cmd;
 }
 
 #endif // HAL_WITH_UAVCAN
