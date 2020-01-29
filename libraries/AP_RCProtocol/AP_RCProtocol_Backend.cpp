@@ -46,6 +46,14 @@ uint16_t AP_RCProtocol_Backend::read(uint8_t chan)
     return _pwm_values[chan];
 }
 
+void AP_RCProtocol_Backend::read(uint16_t *pwm, uint8_t n)
+{
+    if (n >= MAX_RCIN_CHANNELS) {
+        n = MAX_RCIN_CHANNELS;
+    }
+    memcpy(pwm, _pwm_values, n*sizeof(pwm[0]));
+}
+
 /*
   provide input from a backend
  */

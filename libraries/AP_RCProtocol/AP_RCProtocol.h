@@ -64,6 +64,7 @@ public:
     }
     uint8_t num_channels();
     uint16_t read(uint8_t chan);
+    void read(uint16_t *pwm, uint8_t n);
     bool new_input();
     void start_bind(void);
 
