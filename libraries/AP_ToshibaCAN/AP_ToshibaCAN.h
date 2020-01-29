@@ -143,6 +143,9 @@ private:
         uint8_t data[6];
     };
 
+    // helper function to create motor_request_data_cmd_t
+    motor_request_data_cmd_t get_motor_request_data_cmd(uint8_t request_id) const;
+
     // structure for replies from ESC of data1 (rpm and voltage)
     union motor_reply_data1_t {
         struct PACKED {
