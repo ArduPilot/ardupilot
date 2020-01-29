@@ -471,6 +471,17 @@ int16_t AP_MotorsMulticopter::get_pwm_output_max() const
     return _throttle_radio_max;
 }
 
+// parameter checks for MOT_PWM_MIN/MAX
+bool AP_MotorsMulticopter::check_mot_pwm_params() 
+{
+    if ((_pwm_min == 0 && _pwm_max !=0) || (_pwm_min != 0 && _pwm_max == 0) ||
+     (_pwm_min < 0 || _pwm_min < 0) || (_pwm_min > _pwm_max))
+    {
+        return true;
+    }
+    return false;
+}
+
 // set_throttle_range - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)
 // also sets throttle channel minimum and maximum pwm
 void AP_MotorsMulticopter::set_throttle_range(int16_t radio_min, int16_t radio_max)
