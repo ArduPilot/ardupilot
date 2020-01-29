@@ -1239,6 +1239,41 @@ else:
                   frame_infos,
                   spawns=spawns)
 
+
+if cmd_opts.delay_start:
+    progress("Sleeping for %f seconds" % (cmd_opts.delay_start,))
+    time.sleep(float(cmd_opts.delay_start))
+
+tmp = None
+if cmd_opts.frame in ['scrimmage-plane', 'scrimmage-copter']:
+    # import only here so as to avoid jinja dependency in whole script
+    from jinja2 import Environment, FileSystemLoader
+    from tempfile import mkstemp
+    entities = []
+    config = {}
+    config['plane'] = cmd_opts.vehicle == 'ArduPlane'
+    config['terrain'] = 'mcmillan'
+    if location is not None:
+        config['lat'] = location[0]
+        config['lon'] = location[1]
+        config['alt'] = location[2]
+    config['entities'] = []
+    for k in offsets:
+        (x, y, z, heading) = offsets[k]
+        config['entities'].append({'x': x, 'y': y, 'z': z, 'heading': heading,
+            'to_ardupilot_port': 9003 + k * 10,
+            'from_ardupilot_port': 9002 + k * 10,
+            'to_ardupilot_ip': '127.0.0.1'})
+    env = Environment(loader=FileSystemLoader(os.path.join(autotest_dir, 'template')))
+    mission = env.get_template('scrimmage.xml').render(**config)
+    tmp = mkstemp()
+    atexit.register(os.remove, tmp[1])
+
+    with os.fdopen(tmp[0], 'w') as fd:
+        fd.write(mission)
+    run_in_terminal_window('SCRIMMAGE', ['scrimmage', tmp[1]])
+
+
 if cmd_opts.delay_start:
     progress("Sleeping for %f seconds" % (cmd_opts.delay_start,))
     time.sleep(float(cmd_opts.delay_start))
