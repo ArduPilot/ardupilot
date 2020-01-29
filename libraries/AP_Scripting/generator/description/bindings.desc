@@ -179,3 +179,7 @@ singleton AP_Baro alias baro
 singleton AP_Baro method get_pressure float
 singleton AP_Baro method get_temperature float
 singleton AP_Baro method get_external_temperature float
+
+include AP_ESC_Telem/AP_ESC_Telem.h
+singleton AP_ESC_Telem alias esc_telem
+singleton AP_ESC_Telem method get_usage_seconds boolean uint8_t 0 NUM_SERVO_CHANNELS uint32_t'Null
