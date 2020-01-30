@@ -210,7 +210,7 @@ void SRV_Channels::enable_aux_servos()
 /// enable output channels using a channel mask
 void SRV_Channels::enable_by_mask(uint16_t mask)
 {
-    for (uint8_t i = 0; i < 16; i++) {
+    for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
         if (mask & (1U<<i)) {
             hal.rcout->enable_ch(i);
         }
