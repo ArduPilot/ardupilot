@@ -48,6 +48,7 @@ const AP_Param::GroupInfo AP_WheelEncoder::var_info[] = {
     // @DisplayName: Wheel's X position offset
     // @Description: X position of the center of the wheel in body frame. Positive X is forward of the origin.
     // @Units: m
+    // @Range: -5 5
     // @Increment: 0.01
     // @User: Standard
 
@@ -55,6 +56,7 @@ const AP_Param::GroupInfo AP_WheelEncoder::var_info[] = {
     // @DisplayName: Wheel's Y position offset
     // @Description: Y position of the center of the wheel in body frame. Positive Y is to the right of the origin.
     // @Units: m
+    // @Range: -5 5
     // @Increment: 0.01
     // @User: Standard
 
@@ -62,6 +64,7 @@ const AP_Param::GroupInfo AP_WheelEncoder::var_info[] = {
     // @DisplayName: Wheel's Z position offset
     // @Description: Z position of the center of the wheel in body frame. Positive Z is down from the origin.
     // @Units: m
+    // @Range: -5 5
     // @Increment: 0.01
     // @User: Standard
     AP_GROUPINFO("_POS",     3, AP_WheelEncoder, _pos_offset[0], 0.0f),
@@ -107,6 +110,7 @@ const AP_Param::GroupInfo AP_WheelEncoder::var_info[] = {
     // @DisplayName: Wheel2's X position offset
     // @Description: X position of the center of the second wheel in body frame. Positive X is forward of the origin.
     // @Units: m
+    // @Range: -5 5
     // @Increment: 0.01
     // @User: Standard
 
@@ -114,6 +118,7 @@ const AP_Param::GroupInfo AP_WheelEncoder::var_info[] = {
     // @DisplayName: Wheel2's Y position offset
     // @Description: Y position of the center of the second wheel in body frame. Positive Y is to the right of the origin.
     // @Units: m
+    // @Range: -5 5
     // @Increment: 0.01
     // @User: Standard
 
@@ -121,6 +126,7 @@ const AP_Param::GroupInfo AP_WheelEncoder::var_info[] = {
     // @DisplayName: Wheel2's Z position offset
     // @Description: Z position of the center of the second wheel in body frame. Positive Z is down from the origin.
     // @Units: m
+    // @Range: -5 5
     // @Increment: 0.01
     // @User: Standard
     AP_GROUPINFO("2_POS",    9, AP_WheelEncoder, _pos_offset[1], 0.0f),
