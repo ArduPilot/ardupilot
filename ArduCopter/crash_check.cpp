@@ -2,7 +2,9 @@
 
 // Code to detect a crash main ArduCopter code
 #define CRASH_CHECK_TRIGGER_SEC         2       // 2 seconds inverted indicates a crash
-#define CRASH_CHECK_ANGLE_DEVIATION_DEG 30.0f   // 30 degrees beyond angle max is signal we are inverted
+#define CRASH_CHECK_ANGLE_DEVIATION_DEG 30.0f   // 30 degrees beyond target angle is signal we are out of control
+#define CRASH_CHECK_ANGLE_MIN_DEG       15.0f   // vehicle must be leaning at least 15deg to trigger crash check
+#define CRASH_CHECK_SPEED_MAX           10.0f   // vehicle must be moving at less than 10m/s to trigger crash check
 #define CRASH_CHECK_ACCEL_MAX           3.0f    // vehicle must be accelerating less than 3m/s/s to be considered crashed
 
 // Code to detect a thrust loss main ArduCopter code
@@ -50,9 +52,23 @@ void Copter::crash_check()
         return;
     }
 
+    // check for lean angle over 15 degrees
+    const float lean_angle_deg = degrees(acosf(ahrs.cos_roll()*ahrs.cos_pitch()));
+    if (lean_angle_deg <= CRASH_CHECK_ANGLE_MIN_DEG) {
+        crash_counter = 0;
+        return;
+    }
+
     // check for angle error over 30 degrees
     const float angle_error = attitude_control->get_att_error_angle_deg();
     if (angle_error <= CRASH_CHECK_ANGLE_DEVIATION_DEG) {
+        crash_counter = 0;
+        return;
+    }
+
+    // check for speed under 10m/s (if available)
+    Vector3f vel_ned;
+    if (ahrs.get_velocity_NED(vel_ned) && (vel_ned.length() >= CRASH_CHECK_SPEED_MAX)) {
         crash_counter = 0;
         return;
     }
