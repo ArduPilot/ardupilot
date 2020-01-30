@@ -486,8 +486,19 @@ int16_t AP_MotorsMulticopter::get_pwm_output_max() const
 // parameter checks for MOT_PWM_MIN/MAX, returns true if parameters are valid
 bool AP_MotorsMulticopter::check_mot_pwm_params() const
 {
-    if ((_pwm_min == 0 && _pwm_max != 0) || (_pwm_min != 0 && _pwm_max == 0) ||
-        (_pwm_min < 0 || _pwm_max < 0) || (_pwm_min > _pwm_max)) {
+    // both must be zero or both non-zero:
+    if (_pwm_min == 0 && _pwm_max != 0) {
+        return false;
+    }
+    if (_pwm_min != 0 && _pwm_max == 0) {
+        return false;
+    }
+    // sanity says that minimum should be less than maximum:
+    if (_pwm_min != 0 && _pwm_min >= _pwm_max) {
+        return false;
+    }
+    // negative values are out-of-range:
+    if (_pwm_min < 0 || _pwm_max < 0) {
         return false;
     }
     return true;
