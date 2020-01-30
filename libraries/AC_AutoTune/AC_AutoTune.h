@@ -156,7 +156,6 @@ private:
         GAIN_INTRA_TEST = 2,
         GAIN_TUNED      = 3,
     };
-    enum GainType current_gain_type;
     void load_gains(enum GainType gain_type);
 
     TuneMode mode                : 2;    // see TuneMode for what modes are allowed
