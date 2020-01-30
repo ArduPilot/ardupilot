@@ -31,6 +31,18 @@ git bisect bad
 git bisect good HEAD~1024
 time git bisect run /tmp/bisect-helper.py --autotest --autotest-vehicle=Plane --autotest-test=NeedEKFToArm --autotest-branch=wip/bisection-using-named-test
 
+Work out who overflowed Omnbusf4pro:
+cp -a Tools Tools2
+GOOD=c4ce6fa3851f93df34393c376fee5b37e0a270d2
+BAD=f00bf77af75f828334f735580d6b19698b639a74
+BFS="overflowed by"
+git bisect reset
+git bisect start
+git bisect good $GOOD &&
+  git bisect bad $BAD &&
+  git bisect run Tools2/autotest/bisect-helper.py --build \
+    --waf-configure-arg="--board OmniBusF4Pro" \
+     --build-failure-string="$BFS"
 '''
 
 import optparse
