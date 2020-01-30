@@ -3382,6 +3382,24 @@ class AutoTestCopter(AutoTest):
                 self.set_rc(12, 1500)
                 self.set_rc(13, 1500)
 
+                try:
+                    self.progress("Issue https://discuss.ardupilot.org/t/gimbal-limits-with-storm32-backend-mavlink-not-applied-correctly/51438")
+                    self.context_push()
+                    self.set_parameter("RC12_MIN", 1000)
+                    self.set_parameter("RC12_MAX", 2000)
+                    self.set_parameter("MNT_ANGMIN_TIL", -9000)
+                    self.set_parameter("MNT_ANGMAX_TIL", 1000)
+                    self.set_rc(12, 1000)
+                    self.test_mount_pitch(-90.00, 0.01)
+                    self.set_rc(12, 2000)
+                    self.test_mount_pitch(10.00, 0.01)
+                    self.set_rc(12, 1500)
+                    self.test_mount_pitch(-40.00, 0.01)
+                finally:
+                    self.context_pop()
+
+                self.set_rc(12, 1500)
+
                 self.progress("Testing RC rate control")
                 self.set_parameter('MNT_JSTICK_SPD', 10)
                 self.test_mount_pitch(0, 1)
