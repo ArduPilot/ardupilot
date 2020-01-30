@@ -111,7 +111,7 @@ for vehicle in vehicles:
             if field[0] in known_group_fields:
                 setattr(lib, field[0], field[1])
             else:
-                error("group: unknown parameter metadata field '%s'" % field[0])
+                error("### group: unknown parameter metadata field '%s'" % field[0])
         if not any(lib.name == parsed_l.name for parsed_l in libraries):
             libraries.append(lib)
 
@@ -128,10 +128,10 @@ for vehicle in vehicles:
                 value = re.sub('@PREFIX@', "", field[1])
                 setattr(p, field[0], value)
             else:
-                error("param: unknown parameter metadata field '%s'" % field[0])
+                error("### param: unknown parameter metadata field '%s'" % field[0])
         for req_field in required_param_fields:
             if req_field not in field_list:
-                error("missing parameter metadata field '%s' in %s" % (req_field, field_text))
+                error("### missing parameter metadata field '%s' in %s" % (req_field, field_text))
 
         vehicle.params.append(p)
     current_file = None
@@ -156,7 +156,7 @@ def process_library(vehicle, library, pathprefix=None):
             libraryfname = os.path.join(pathprefix, path)
         elif path.find('/') == -1:
             if len(vehicles) != 1:
-                print("Unable to handle multiple vehicles with .pde library")
+                print("### Unable to handle multiple vehicles with .pde library")
                 continue
             libraryfname = os.path.join(vehicles[0].path, path)
         else:
@@ -166,7 +166,7 @@ def process_library(vehicle, library, pathprefix=None):
             p_text = f.read()
             f.close()
         else:
-            error("Path %s not found for library %s" % (path, library.name))
+            error("### Path %s not found for library %s" % (path, library.name))
             continue
 
         param_matches = prog_param.findall(p_text)
@@ -186,7 +186,7 @@ def process_library(vehicle, library, pathprefix=None):
                     if field[0] == "Values":
                         non_vehicle_specific_values_seen = True
                 else:
-                    error("param: unknown parameter metadata field %s" % field[0])
+                    error("### param: unknown parameter metadata field %s" % field[0])
             debug("matching %s" % field_text)
             fields = prog_param_tagged_fields.findall(field_text)
             this_vehicle_values_seen = False
@@ -197,7 +197,7 @@ def process_library(vehicle, library, pathprefix=None):
                 only_for_vehicles = [x.rstrip().lstrip() for x in only_for_vehicles]
                 delta = set(only_for_vehicles) - set(truename_map.values())
                 if len(delta):
-                    error("Unknown vehicles (%s)" % delta)
+                    error("### Unknown vehicles (%s)" % delta)
                 debug("field[0]=%s vehicle=%s truename=%s field[1]=%s only_for_vehicles=%s\n" %
                       (field[0], vehicle.name, vehicle.truename, field[1], str(only_for_vehicles)))
                 value = re.sub('@PREFIX@', library.name, field[2])
@@ -212,7 +212,7 @@ def process_library(vehicle, library, pathprefix=None):
                 if field[0] in known_param_fields:
                     setattr(p, field[0], value)
                 else:
-                    error("tagged param<: unknown parameter metadata field '%s'" % field[0])
+                    error("### tagged param<: unknown parameter metadata field '%s'" % field[0])
             if ((non_vehicle_specific_values_seen or not other_vehicle_values_seen) or this_vehicle_values_seen):
                 if this_vehicle_values_seen and field[0] == 'Values':
                     setattr(p, field[0], this_vehicle_value)
@@ -234,7 +234,7 @@ def process_library(vehicle, library, pathprefix=None):
                 if field[0] in known_group_fields:
                     setattr(lib, field[0], field[1])
                 else:
-                    error("unknown parameter metadata field '%s'" % field[0])
+                    error("### unknown parameter metadata field '%s'" % field[0])
             if not any(lib.name == parsed_l.name for parsed_l in libraries):
                 lib.name = library.name + lib.name
                 debug("Group name: %s" % lib.name)
@@ -249,7 +249,7 @@ for library in libraries:
     if hasattr(library, 'Path'):
         process_library(vehicle, library)
     else:
-        error("Skipped: no Path found")
+        error("### Skipped: no Path found")
 
     debug("Processed %u documented parameters" % len(library.params))
 
@@ -279,20 +279,20 @@ def validate(param):
     if (hasattr(param, "Range")):
         rangeValues = param.__dict__["Range"].split(" ")
         if (len(rangeValues) != 2):
-            error("Invalid Range values for %s" % (param.name))
+            error("### Invalid Range values for %s" % (param.name))
             return
         min_value = rangeValues[0]
         max_value = rangeValues[1]
         if not is_number(min_value):
-            error("Min value not number: %s %s" % (param.name, min_value))
+            error("### Min value not number: %s %s" % (param.name, min_value))
             return
         if not is_number(max_value):
-            error("Max value not number: %s %s" % (param.name, max_value))
+            error("### Max value not number: %s %s" % (param.name, max_value))
             return
     # Validate units
     if (hasattr(param, "Units")):
         if (param.__dict__["Units"] != "") and (param.__dict__["Units"] not in known_units):
-            error("unknown units field '%s'" % param.__dict__["Units"])
+            error("### unknown units field '%s'" % param.__dict__["Units"])
 
 
 for vehicle in vehicles:
@@ -358,6 +358,6 @@ if args.emit_params:
                 raise
 
             if args.verbose:
-                print("Unable to emit EDN, install edn_format and pytz if edn is desired")
+                print("### Unable to emit EDN, install edn_format and pytz if edn is desired")
 
 sys.exit(error_count)

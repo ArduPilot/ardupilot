@@ -18,7 +18,7 @@ generate_parameters() {
     POST_TITLE="$4"
 
     # generate Parameters.html, Parameters.rst etc etc:
-    ./Tools/autotest/param_metadata/param_parse.py --vehicle $VEHICLE
+    ./Tools/autotest/param_metadata/param_parse.py -v --vehicle $VEHICLE 1>param.out 2>&1
 
     # stash some of the results away:
     VEHICLE_PARAMS_DIR="$PARAMS_DIR/$VEHICLE"
