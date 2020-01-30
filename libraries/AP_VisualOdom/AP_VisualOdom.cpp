@@ -35,18 +35,24 @@ const AP_Param::GroupInfo AP_VisualOdom::var_info[] = {
     // @DisplayName: Visual odometry camera X position offset
     // @Description: X position of the camera in body frame. Positive X is forward of the origin.
     // @Units: m
+    // @Range: -5 5
+    // @Increment: 0.01
     // @User: Advanced
 
     // @Param: _POS_Y
     // @DisplayName: Visual odometry camera Y position offset
     // @Description: Y position of the camera in body frame. Positive Y is to the right of the origin.
     // @Units: m
+    // @Range: -5 5
+    // @Increment: 0.01
     // @User: Advanced
 
     // @Param: _POS_Z
     // @DisplayName: Visual odometry camera Z position offset
     // @Description: Z position of the camera in body frame. Positive Z is down from the origin.
     // @Units: m
+    // @Range: -5 5
+    // @Increment: 0.01
     // @User: Advanced
     AP_GROUPINFO("_POS", 1, AP_VisualOdom, _pos_offset, 0.0f),
 
