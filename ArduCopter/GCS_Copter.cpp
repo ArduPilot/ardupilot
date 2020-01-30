@@ -76,7 +76,7 @@ void GCS_Copter::update_vehicle_sensor_status_flags(void)
     control_sensors_present |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
     control_sensors_present |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;
 
-    switch (copter.control_mode) {
+    switch (copter.flightmode->mode_number()) {
     case Mode::Number::AUTO:
     case Mode::Number::AVOID_ADSB:
     case Mode::Number::GUIDED:
