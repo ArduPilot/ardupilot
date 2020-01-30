@@ -167,7 +167,7 @@ void Copter::failsafe_ekf_event()
     }
 
     // sometimes LAND *does* require GPS so ensure we are in non-GPS land
-    if (control_mode == Mode::Number::LAND && landing_with_GPS()) {
+    if (flightmode->mode_number() == Mode::Number::LAND && landing_with_GPS()) {
         mode_land.do_not_use_GPS();
         return;
     }
