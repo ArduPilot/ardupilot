@@ -101,18 +101,24 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @DisplayName:  X position offset
     // @Description: X position of the first rangefinder in body frame. Positive X is forward of the origin. Use the zero range datum point if supplied.
     // @Units: m
+    // @Range: -5 5
+    // @Increment: 0.01
     // @User: Advanced
 
     // @Param: POS_Y
     // @DisplayName: Y position offset
     // @Description: Y position of the first rangefinder in body frame. Positive Y is to the right of the origin. Use the zero range datum point if supplied.
     // @Units: m
+    // @Range: -5 5
+    // @Increment: 0.01
     // @User: Advanced
 
     // @Param: POS_Z
     // @DisplayName: Z position offset
     // @Description: Z position of the first rangefinder in body frame. Positive Z is down from the origin. Use the zero range datum point if supplied.
     // @Units: m
+    // @Range: -5 5
+    // @Increment: 0.01
     // @User: Advanced
     AP_GROUPINFO("POS", 49, AP_RangeFinder_Params, pos_offset, 0.0f),
 
