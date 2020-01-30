@@ -84,8 +84,8 @@ public:
     int16_t             get_pwm_output_min() const;
     int16_t             get_pwm_output_max() const;
     
-    // parameter check for MOT_PWM_MIN/MAX
-    bool check_mot_pwm_params();
+    // parameter check for MOT_PWM_MIN/MAX, returns true if parameters are valid
+    bool check_mot_pwm_params() const;
 
     // set thrust compensation callback
     FUNCTOR_TYPEDEF(thrust_compensation_fn_t, void, float *, uint8_t);
