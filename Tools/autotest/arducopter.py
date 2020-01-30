@@ -3359,11 +3359,22 @@ class AutoTestCopter(AutoTest):
                 self.set_parameter('MNT_RC_IN_TILT', 12)
                 self.set_parameter('MNT_RC_IN_PAN', 13)
                 self.progress("Testing RC angular control")
+                # default RC min=1100 max=1900
                 self.set_rc(11, 1500)
                 self.set_rc(12, 1500)
                 self.set_rc(13, 1500)
                 self.test_mount_pitch(0, 1)
-                self.set_rc(12, 1400)
+                self.progress("Testing RC input down 1/4 of its range in the output, should be down 1/4 range in output")
+                rc12_in = 1400.0
+                rc12_min = 1100.0 # default
+                rc12_max = 1900.0 # default
+                angmin_tilt = -45.0 # default
+                angmax_tilt = 45.0 # default
+                expected_pitch = ((rc12_in-rc12_min)/(rc12_max-rc12_min) * (angmax_tilt-angmin_tilt)) + angmin_tilt
+                self.progress("expected mount pitch: %f" % expected_pitch)
+                if expected_pitch != -11.25:
+                    raise NotAchievedException("Calculation wrong - defaults changed?!")
+                self.set_rc(12, rc12_in)
                 self.test_mount_pitch(-11.25, 0.01)
                 self.set_rc(12, 1800)
                 self.test_mount_pitch(33.75, 0.01)
