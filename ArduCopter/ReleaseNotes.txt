@@ -1,5 +1,19 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.0.2-rc1 31-Jan-2020
+Changes from 4.0.1
+1) Bug Fixes:
+    a) AutoTune fix to restore original gains when AutoTune completes
+    b) IO CPU timing fix which reduces ESC sync issues
+    c) PX4Flow driver probes all I2C ports on Hex Cubes
+    d) RangeFinders using PWM interface (like Garmin LidarLite) use RNGFNDx_OFFSET param
+    e) RC override fix when RC_OVERRIDE_TIME=-1 (allows disabling timeout when using joystick) 
+    f) TradHeli attitude control parameter description fixes (does not affect flight)
+    g) cygwin compiler fix (affects developers only)
+2) Minor enhancements:
+    a) GCS failsafe warning lights and tones
+    b) Circle mode pitch control direction swapped
+------------------------------------------------------------------
 Copter 4.0.1 25-Jan-2020 / 4.0.1-rc3 19-Jan-2020
 Changes from 4.0.1-rc2
 1) Bug Fixes:
