@@ -389,7 +389,7 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
     case Type::BenewakeTFminiPlus:
         FOREACH_I2C(i) {
             if (_add_backend(AP_RangeFinder_Benewake_TFMiniPlus::detect(state[instance], params[instance],
-                                                                        hal.i2c_mgr->get_device(i, params[instance].address)))) {
+                                                                        hal.i2c_mgr->get_device(i, params[instance].address==-1?0x10:params[instance].address)))) {
                 break;
             }
         }
