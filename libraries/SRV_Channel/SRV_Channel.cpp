@@ -32,7 +32,7 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
     // @DisplayName: Minimum PWM
     // @Description: minimum PWM pulse width in microseconds. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
     // @Units: PWM
-    // @Range: 500 2200
+    // @Range: 900 2200
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("MIN",  1, SRV_Channel, servo_min, 1100),
@@ -41,7 +41,7 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
     // @DisplayName: Maximum PWM
     // @Description: maximum PWM pulse width in microseconds. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
     // @Units: PWM
-    // @Range: 800 2200
+    // @Range: 900 2200
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("MAX",  2, SRV_Channel, servo_max, 1900),
@@ -50,7 +50,7 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
     // @DisplayName: Trim PWM
     // @Description: Trim PWM pulse width in microseconds. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
     // @Units: PWM
-    // @Range: 800 2200
+    // @Range: 900 2200
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("TRIM",  3, SRV_Channel, servo_trim, 1500),
