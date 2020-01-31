@@ -73,13 +73,12 @@ bool RCInput::new_input()
     if (!_init) {
         return false;
     }
-    if (!rcin_mutex.take_nonblocking()) {
-        return false;
+    bool valid;
+    {
+        WITH_SEMAPHORE(rcin_mutex);
+        valid = _rcin_timestamp_last_signal != _last_read;
+        _last_read = _rcin_timestamp_last_signal;
     }
-    bool valid = _rcin_timestamp_last_signal != _last_read;
-
-    _last_read = _rcin_timestamp_last_signal;
-    rcin_mutex.give();
 
 #if HAL_RCINPUT_WITH_AP_RADIO
     if (!_radio_init) {
