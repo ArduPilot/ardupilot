@@ -1136,15 +1136,15 @@ bool AP_BLHeli::protocol_handler(uint8_t b, AP_HAL::UARTDriver *_uart)
 */
 void AP_BLHeli::run_connection_test(uint8_t chan)
 {
+    run_test.set_and_notify(0);
     debug_uart = hal.console;
     uint8_t saved_chan = blheli.chan;
     if (chan >= num_motors) {
-        debug("bad channel %u", chan);
+        gcs().send_text(MAV_SEVERITY_INFO, "ESC: bad channel %u", chan);
         return;
     }
     blheli.chan = chan;
-    debug("Running test on channel %u", blheli.chan);
-    run_test.set_and_notify(0);
+    gcs().send_text(MAV_SEVERITY_INFO, "ESC: Running test on channel %u",  blheli.chan);
     bool passed = false;
     for (uint8_t tries=0; tries<5; tries++) {
         EXPECT_DELAY_MS(3000);
@@ -1172,11 +1172,11 @@ void AP_BLHeli::run_connection_test(uint8_t chan)
         }
     }
     hal.rcout->serial_end();
-    SRV_Channels::set_disabled_channel_mask(0);            
+    SRV_Channels::set_disabled_channel_mask(0);
     motors_disabled = false;
     serial_start_ms = 0;
     blheli.chan = saved_chan;
-    debug("Test %s", passed?"PASSED":"FAILED");
+    gcs().send_text(MAV_SEVERITY_INFO, "ESC: Test %s", passed?"PASSED":"FAILED");
     debug_uart = nullptr;
 }
 
