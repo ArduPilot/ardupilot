@@ -52,7 +52,22 @@ class VehicleInfo(object):
                 "default_params_filename": ["default_params/copter.parm",
                                             "default_params/copter-hexa.parm" ],
             },
+            "hexa-cwx": {
+                "make_target": "sitl",
+                "waf_target": "bin/arducopter",
+                "default_params_filename": "default_params/copter.parm",
+            },
             "hexa-dji": {
+                "make_target": "sitl",
+                "waf_target": "bin/arducopter",
+                "default_params_filename": "default_params/copter.parm",
+            },
+             "octa-cwx": {
+                "make_target": "sitl",
+                "waf_target": "bin/arducopter",
+                "default_params_filename": "default_params/copter.parm",
+            },
+            "octa-quad-cwx": {
                 "make_target": "sitl",
                 "waf_target": "bin/arducopter",
                 "default_params_filename": "default_params/copter.parm",
