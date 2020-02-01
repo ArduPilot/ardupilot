@@ -133,7 +133,7 @@ uint8_t RCInput::read(uint16_t* periods, uint8_t len)
         memcpy(periods, _rc_values, len*sizeof(periods[0]));
     }
 #if HAL_RCINPUT_WITH_AP_RADIO
-    if (radio && channel == 0) {
+    if (radio) {
         // hook to allow for update of radio on main thread, for mavlink sends
         radio->update();
     }
