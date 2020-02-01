@@ -135,7 +135,7 @@ void Rover::radio_failsafe_check(uint16_t pwm)
     if (AP_HAL::millis() - failsafe.last_valid_rc_ms > 500) {
         failed = true;
     }
-    failsafe_trigger(FAILSAFE_EVENT_THROTTLE, failed);
+    failsafe_trigger(FAILSAFE_EVENT_THROTTLE, "Radio", failed);
 }
 
 bool Rover::trim_radio()
