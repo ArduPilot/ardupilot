@@ -94,6 +94,10 @@ public:
         return _singleton;
     }
 
+    bool get_adsb_health(void) {
+         return _adsb_healthy;
+     }
+
 private:
     static AP_ADSB *_singleton;
 
@@ -140,6 +144,7 @@ private:
 
     Location  _my_loc;
 
+    bool _adsb_healthy = false;
 
     // ADSB-IN state. Maintains list of external vehicles
     struct {
