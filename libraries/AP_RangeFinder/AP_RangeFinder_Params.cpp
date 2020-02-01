@@ -63,14 +63,12 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("STOP_PIN", 8, AP_RangeFinder_Params, stop_pin, -1),
 
-    // 9 was SETTLE
-
     // @Param: RMETRIC
     // @DisplayName: Ratiometric
     // @Description: This parameter sets whether an analog rangefinder is ratiometric. Most analog rangefinders are ratiometric, meaning that their output voltage is influenced by the supply voltage. Some analog rangefinders (such as the SF/02) have their own internal voltage regulators so they are not ratiometric.
     // @Values: 0:No,1:Yes
     // @User: Standard
-    AP_GROUPINFO("RMETRIC", 10, AP_RangeFinder_Params, ratiometric, 1),
+    AP_GROUPINFO("RMETRIC", 9, AP_RangeFinder_Params, ratiometric, 1),
 
     // @Param: PWRRNG
     // @DisplayName: Powersave range
@@ -78,7 +76,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @Units: m
     // @Range: 0 32767
     // @User: Standard
-    AP_GROUPINFO("PWRRNG", 11, AP_RangeFinder_Params, powersave_range, 0),
+    AP_GROUPINFO("PWRRNG", 10, AP_RangeFinder_Params, powersave_range, 0),
 
     // @Param: GNDCLEAR
     // @DisplayName: Distance (in cm) from the range finder to the ground
@@ -87,7 +85,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @Range: 5 127
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("GNDCLEAR", 12, AP_RangeFinder_Params, ground_clearance_cm, RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT),
+    AP_GROUPINFO("GNDCLEAR", 11, AP_RangeFinder_Params, ground_clearance_cm, RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT),
 
     // @Param: ADDR
     // @DisplayName: Bus address of sensor
@@ -95,7 +93,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @Range: 0 127
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("ADDR", 23, AP_RangeFinder_Params, address, 0),
+    AP_GROUPINFO("ADDR", 12, AP_RangeFinder_Params, address, 0),
 
     // @Param: POS_X
     // @DisplayName:  X position offset
@@ -120,14 +118,14 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @Range: -5 5
     // @Increment: 0.01
     // @User: Advanced
-    AP_GROUPINFO("POS", 49, AP_RangeFinder_Params, pos_offset, 0.0f),
+    AP_GROUPINFO("POS", 15, AP_RangeFinder_Params, pos_offset, 0.0f),
 
     // @Param: ORIENT
     // @DisplayName: Rangefinder orientation
     // @Description: Orientation of rangefinder
     // @Values: 0:Forward, 1:Forward-Right, 2:Right, 3:Back-Right, 4:Back, 5:Back-Left, 6:Left, 7:Forward-Left, 24:Up, 25:Down
     // @User: Advanced
-    AP_GROUPINFO("ORIENT", 53, AP_RangeFinder_Params, orientation, ROTATION_PITCH_270),
+    AP_GROUPINFO("ORIENT", 16, AP_RangeFinder_Params, orientation, ROTATION_PITCH_270),
 
     AP_GROUPEND
 };
