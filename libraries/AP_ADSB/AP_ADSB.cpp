@@ -808,6 +808,31 @@ void AP_ADSB::handle_transceiver_report(const mavlink_channel_t chan, const mavl
     out_state.chan_last_ms = AP_HAL::millis();
     out_state.chan = chan;
     out_state.status = (UAVIONIX_ADSB_RF_HEALTH)packet.rfHealth;
+
+    gcs().send_text(MAV_SEVERITY_INFO, "ADSB: Health Status %d", out_state.status);
+
+    // record the health status for checksS
+    switch(out_state.status) {
+        case UAVIONIX_ADSB_RF_HEALTH_OK:
+            _adsb_healthy = true;
+            gcs().send_text(MAV_SEVERITY_INFO, "ADSB: Health OK");
+            break;
+        case UAVIONIX_ADSB_RF_HEALTH_INITIALIZING:
+            gcs().send_text(MAV_SEVERITY_INFO, "ADSB: Health Initializing");
+            _adsb_healthy = false;
+            break;
+        case UAVIONIX_ADSB_RF_HEALTH_FAIL_TX:
+            gcs().send_text(MAV_SEVERITY_INFO, "ADSB: Health TX Fail");
+            _adsb_healthy = false;
+            break;
+        case UAVIONIX_ADSB_RF_HEALTH_FAIL_RX:
+            gcs().send_text(MAV_SEVERITY_INFO, "ADSB: Health RX Fail");
+            _adsb_healthy = false;
+            break;
+        default:
+            gcs().send_text(MAV_SEVERITY_INFO, "ADSB: Health Unknown");
+            _adsb_healthy = false;
+    }
 }
 
 /*
