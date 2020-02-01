@@ -1,9 +1,13 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 4.0.2-rc1 31-Jan-2020
-Changes from 4.0.1
+Copter 4.0.2-rc3 01-Feb-2020
+Changes from 4.0.2-rc2
 1) Bug Fixes:
     a) AutoTune fix to restore original gains when AutoTune completes
+------------------------------------------------------------------
+Copter 4.0.2-rc2 31-Jan-2020
+Changes from 4.0.1
+1) Bug Fixes:
     b) IO CPU timing fix which reduces ESC sync issues
     c) PX4Flow driver probes all I2C ports on Hex Cubes
     d) RangeFinders using PWM interface (like Garmin LidarLite) use RNGFNDx_OFFSET param
