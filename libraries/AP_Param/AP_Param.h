@@ -72,6 +72,13 @@
 // use.
 #define AP_PARAM_FLAG_INTERNAL_USE_ONLY (1<<5)
 
+// if something seeks to set this parameter from outside ArduPilot
+// then write the value to permanent storage.  So a GCS restoring
+// parameters can ensure that things like INS_ACC_ID is actually
+// stored in permanent storage (we try to load() it to see if we've
+// calibrated or not)
+#define AP_PARAM_FLAG_EXTERNAL_WRITETHROUGH (1<<6)
+
 // keep all flags before the FRAME tags
 
 // vehicle and frame type flags, used to hide parameters when not
