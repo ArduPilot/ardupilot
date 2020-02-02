@@ -370,6 +370,9 @@
 #ifndef MODE_ZIGZAG_ENABLED
 # define MODE_ZIGZAG_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
+#if MODE_ZIGZAG_ENABLED == ENABLED && HAL_SPRAYER_ENABLED
+# define ZIGZAG_AUTO_PUMP_ENABLED DISABLED
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 

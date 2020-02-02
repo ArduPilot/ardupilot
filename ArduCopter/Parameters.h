@@ -619,6 +619,11 @@ public:
     AC_Autorotation arot;
 #endif
 
+#if MODE_ZIGZAG_ENABLED == ENABLED && SPRAYER_ENABLED == ENABLED
+    // auto pump enable/disable
+    AP_Int8 zigzag_auto_pump_enabled;
+#endif
+
 };
 
 extern const AP_Param::Info        var_info[];
