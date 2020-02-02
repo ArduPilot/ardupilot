@@ -286,6 +286,9 @@ void GCS_MAVLINK::handle_param_set(const mavlink_message_t &msg)
 
     // set the value
     vp->set_float(packet.param_value, var_type);
+    if (parameter_flags & AP_PARAM_FLAG_EXTERNAL_WRITETHROUGH) {
+        vp->save(true);
+    }
 
     /*
       we force the save if the value is not equal to the old
