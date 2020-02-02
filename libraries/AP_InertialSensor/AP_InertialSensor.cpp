@@ -421,7 +421,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Description: Accelerometer sensor ID, taking into account its type, bus and instance
     // @ReadOnly: True
     // @User: Advanced
-    AP_GROUPINFO("ACC_ID", 33, AP_InertialSensor, _accel_id[0], 0),
+    AP_GROUPINFO_FLAGS("ACC_ID", 33, AP_InertialSensor, _accel_id[0], 0, AP_PARAM_FLAG_EXTERNAL_WRITETHROUGH),
 
     // @Param: ACC2_ID
     // @DisplayName: Accelerometer2 ID
