@@ -256,6 +256,13 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
         return false;
     }
 
+#if MODE_ZIGZAG_ENABLED == ENABLED && SPRAYER_ENABLED == ENABLED
+    // The pump will stop if the flight mode is changed from ZigZag to other
+    if (control_mode == Mode::Number::ZIGZAG && g2.zigzag_auto_pump_enabled) {
+        copter.sprayer.run(false);
+    }
+#endif
+
     // perform any cleanup required by previous flight mode
     exit_mode(flightmode, new_flightmode);
 
