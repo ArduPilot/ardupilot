@@ -380,8 +380,6 @@
         #ifndef MODE_AUTOROTATE_ENABLED
         # define MODE_AUTOROTATE_ENABLED !HAL_MINIMIZE_FEATURES
         #endif
-    #else
-        # define MODE_AUTOROTATE_ENABLED DISABLED
     #endif
 #else
     # define MODE_AUTOROTATE_ENABLED DISABLED
