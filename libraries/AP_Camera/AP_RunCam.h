@@ -36,7 +36,10 @@
 #include <AP_Arming/AP_Arming.h>
 #include <AP_OSD/AP_OSD.h>
 
-#define RUNCAM_MAX_PACKET_SIZE         64
+#define RUNCAM_MAX_PACKET_SIZE               64
+#define RUNCAM_DEFAULT_BUTTON_PRESS_DELAY   300
+// 5-key OSD auto-repeats if pressed for too long
+#define RUNCAM_5KEY_BUTTON_PRESS_DELAY      100
 
 
 /// @class	AP_RunCam
@@ -57,7 +60,8 @@ public:
 
     enum class DeviceType {
         Disabled = 0,
-        Split = 1,
+        SplitMicro = 1, // video support only
+        Split = 2 // camera and video support
     };
 
     // operation of camera button simulation
@@ -75,13 +79,14 @@ public:
         STICK_YAW_RIGHT = (1 << 0),
         STICK_ROLL_RIGHT = (1 << 1),
         THREE_POS_SWITCH = (1 << 2),
-        TWO_POS_SWITCH = (1 << 3)
+        TWO_POS_SWITCH = (1 << 3),
+        VIDEO_RECORDING_AT_BOOT = (1 << 4)
     };
 
     // initialize the RunCam driver
     void init();
     // camera button simulation
-    bool simulate_camera_button(const ControlOperation operation);
+    bool simulate_camera_button(const ControlOperation operation, const uint32_t transition_timeout = RUNCAM_DEFAULT_BUTTON_PRESS_DELAY);
     // start the video
     void start_recording();
     // stop the video
@@ -102,6 +107,9 @@ public:
 private:
     // definitions prefixed with RCDEVICE taken from https://support.runcam.com/hc/en-us/articles/360014537794-RunCam-Device-Protocol
     // possible supported features
+    // RunCam Split 3S micro reports 0x77 (POWER, WIFI, MODE, SETTING, DPORT, START)
+    // RunCam Split 2S reports 0x57 (POWER, WIFI, MODE, SETTING, START)
+    // RunCam Racer 3 reports 0x08 (OSD)
     enum class Feature {
         RCDEVICE_PROTOCOL_FEATURE_SIMULATE_POWER_BUTTON = (1 << 0),
         RCDEVICE_PROTOCOL_FEATURE_SIMULATE_WIFI_BUTTON = (1 << 1), // WiFi/Mode button
@@ -188,11 +196,22 @@ private:
         NO_OPTION
     };
 
+    enum class VideoOption {
+        NOT_RECORDING = 0,
+        RECORDING = 1
+    };
+
+    enum class ButtonState {
+        NONE,
+        PRESSED,
+        RELEASED
+    };
+
     static const uint8_t  RUNCAM_NUM_SUB_MENUS =          5;
     static const uint8_t  RUNCAM_NUM_EXPECTED_RESPONSES = 4;
     static const uint8_t  RUNCAM_MAX_MENUS =              1;
     static const uint8_t  RUNCAM_MAX_MENU_LENGTH =        6;
-    static const uint8_t  RUNCAM_MAX_DEVICE_TYPES =       1;
+    static const uint8_t  RUNCAM_MAX_DEVICE_TYPES =       2;
 
     // supported features, usually probed from the device
     AP_Int16 _features;
@@ -208,7 +227,7 @@ private:
     AP_Int8 _cam_control_option;
 
     // video on/off
-    bool _video_recording = true;
+    VideoOption _video_recording = VideoOption::NOT_RECORDING;
     // detected protocol version
     ProtocolVersion _protocol_version = ProtocolVersion::UNKNOWN;
     // uart for the device
@@ -221,14 +240,22 @@ private:
     uint32_t _transition_start_ms;
     // timeout of the current button press or boot sequence
     uint32_t _transition_timeout_ms;
+    // record last state transition to avoid spurious transitions
+    Event _last_rc_event;
+    State _last_state = State::INITIALIZING;
+    OSDOption _last_osd_option = OSDOption::NONE;
+    int8_t _last_in_menu;
+    VideoOption _last_video_recording = VideoOption::NOT_RECORDING;
     // OSD state machine: button has been pressed
-    bool _button_pressed;
+    ButtonState _button_pressed = ButtonState::NONE;
     // OSD state machine: waiting for a response
     bool _waiting_device_response;
     // OSD option from RC switches
     OSDOption _osd_option;
     // OSD state mechine: in the menu, value indicates depth
-    uint8_t _in_menu;
+    int8_t _in_menu;
+    // the starting value of _in_menu
+    int8_t _menu_enter_level;
     // OSD state machine: current selection in the top menu
     int8_t _top_menu_pos;
     // OSD state machine: current selection in the sub menu
@@ -295,23 +322,12 @@ private:
 
     // return the length of the top menu
     uint8_t get_top_menu_length() const {
-        return _menus[_cam_type]._top_menu_length;
+        return _menus[_cam_type - 1]._top_menu_length;
     }
 
     // return the length of a particular sub-menu
     uint8_t get_sub_menu_length(uint8_t submenu) const {
-        return _menus[_cam_type]._sub_menu_lengths[submenu];
-    }
-
-    // start the counter for a button press
-    void set_button_press_timeout() {
-        _transition_timeout_ms = _button_delay_ms;
-        _button_pressed = true;
-    }
-    // start the counter for a mode change
-    void set_mode_change_timeout() {
-        _transition_timeout_ms = _mode_delay_ms;
-        _button_pressed = true;
+        return _menus[_cam_type - 1]._sub_menu_lengths[submenu];
     }
 
     // disable the OSD display
@@ -354,8 +370,6 @@ private:
 
     // run the 2-key OSD simulation process
     void handle_2_key_simulation_process(Event ev);
-    // enter the 2 key OSD menu
-    void enter_2_key_osd_menu();
     // eexit the 2 key OSD menu
     void exit_2_key_osd_menu();
 
@@ -373,7 +387,7 @@ private:
     // 5 key osd cable simulation
     SimulationOperation map_key_to_protocol_operation(const Event ev) const;
     // send an event
-    void send_5_key_OSD_cable_simulation_event(const Event key);
+    void send_5_key_OSD_cable_simulation_event(const Event key, const uint32_t transition_timeout = RUNCAM_5KEY_BUTTON_PRESS_DELAY);
     // enter the menu
     void open_5_key_OSD_cable_connection(parse_func_t parseFunc);
     // exit the menu
@@ -395,7 +409,9 @@ private:
     // wait for the RunCam device to be fully ready
     bool camera_ready() const;
     // whether or not the requested feature is supported
-    bool has_feature(const Feature feature) { return _features.get() & uint16_t(feature); }
+    bool has_feature(const Feature feature) const { return _features.get() & uint16_t(feature); }
+    // whether or not we can arm
+    bool is_arming_prevented() const { return _in_menu > _menu_enter_level; }
     // error handler for OSD simulation
     void simulation_OSD_cable_failed(const Request& request);
     // process pending request, retrying as necessary
