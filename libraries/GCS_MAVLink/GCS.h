@@ -321,6 +321,9 @@ protected:
     AP_Param *                  _queued_parameter;      ///< next parameter to
                                                         // be sent in queue
     mavlink_channel_t           chan;
+    uint32_t lost_msg_cnt;
+    uint32_t total_msg_cnt;
+    uint8_t last_gcs_msg_seq;
     uint8_t packet_overhead(void) const { return packet_overhead_chan(chan); }
 
     // saveable rate of each stream
