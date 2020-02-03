@@ -248,9 +248,6 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
         compass.motor_compensation_type(AP_COMPASS_MOT_COMP_DISABLED);
     }
 
-    // display new motor offsets and save
-    report_compass();
-
     // turn off notify leds
     AP_Notify::flags.esc_calibration = false;
 

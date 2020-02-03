@@ -71,6 +71,11 @@ public:
     // get the name of the RC protocol
     const char *get_rc_protocol(void);
 
+    // get receiver RSSI
+    int16_t get_RSSI(void) const {
+        return rc_input.rssi;
+    }
+    
     /*
       get servo rail voltage
      */
@@ -216,6 +221,8 @@ private:
     uint32_t total_errors;
     uint32_t num_delayed;
     uint32_t last_iocmu_timestamp_ms;
+    uint32_t read_status_errors;
+    uint32_t read_status_ok;
 
     // firmware upload
     const char *fw_name = "io_firmware.bin";

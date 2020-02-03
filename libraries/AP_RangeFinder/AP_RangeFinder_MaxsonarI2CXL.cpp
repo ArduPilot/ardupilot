@@ -75,9 +75,7 @@ AP_RangeFinder_Backend *AP_RangeFinder_MaxsonarI2CXL::detect(RangeFinder::RangeF
  */
 bool AP_RangeFinder_MaxsonarI2CXL::_init(void)
 {
-    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return false;
-    }
+    _dev->get_semaphore()->take_blocking();
 
     if (!start_reading()) {
         _dev->get_semaphore()->give();

@@ -12,7 +12,6 @@ class ADCSource;
 class RCInput;
 class Util;
 class Semaphore;
-class Semaphore_Recursive;
 class GPIO;
 class DigitalSource;
 class HALSITLCAN;

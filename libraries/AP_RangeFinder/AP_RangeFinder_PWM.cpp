@@ -172,6 +172,8 @@ void AP_RangeFinder_PWM::update(void)
         }
         return;
     }
+    // add offset
+    state.distance_cm += params.offset;
 
     // update range_valid state based on distance measured
     state.last_reading_ms = AP_HAL::millis();

@@ -122,7 +122,9 @@ public:
         k_param_scan_speed_yaw,
         k_param_scan_speed_pitch,
         k_param_initial_mode,
-        k_param_disarm_pwm
+        k_param_disarm_pwm,
+
+        k_param_vehicle = 257, // vehicle common block of parameters
     };
 
     AP_Int16 format_version;

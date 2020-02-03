@@ -21,9 +21,7 @@ bool TSYS01::init(uint8_t bus)
         return false;
     }
 
-    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        AP_HAL::panic("PANIC: TSYS01: failed to take serial semaphore for init");
-    }
+    _dev->get_semaphore()->take_blocking();
 
     _dev->set_retries(10);
 

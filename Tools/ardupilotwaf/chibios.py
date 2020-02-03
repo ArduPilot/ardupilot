@@ -155,7 +155,8 @@ class generate_apj(Task.Task):
             "version": "0.1",
             "image_size": len(img),
             "git_identity": self.generator.bld.git_head_hash(short=True),
-            "board_revision": 0
+            "board_revision": 0,
+            "USBID": self.env.USBID
         }
         if self.env.build_dates:
             # we omit build_time when we don't have build_dates so that apj
@@ -430,7 +431,7 @@ def build(bld):
     # directly or via another libc call
     wraplist = ['sscanf', 'fprintf', 'snprintf', 'vsnprintf','vasprintf','asprintf','vprintf','scanf',
                 'fiprintf','printf',
-                'fopen', 'fread', 'fflush', 'fwrite', 'fread', 'fputs', 'fgets',
+                'fopen', 'fflush', 'fwrite', 'fread', 'fputs', 'fgets',
                 'clearerr', 'fseek', 'ferror', 'fclose', 'tmpfile', 'getc', 'ungetc', 'feof',
                 'ftell', 'freopen', 'remove', 'vfprintf', 'fscanf' ]
     for w in wraplist:

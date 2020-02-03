@@ -25,6 +25,8 @@ public:
         BattMonitor_TYPE_Sum                        = 10,
         BattMonitor_TYPE_FuelFlow                   = 11,
         BattMonitor_TYPE_FuelLevel_PWM              = 12,
+        BattMonitor_TYPE_SUI3                       = 13,
+        BattMonitor_TYPE_SUI6                       = 14,
     };
 
     // low voltage sources (used for BATT_LOW_TYPE parameter)
@@ -55,5 +57,5 @@ public:
     AP_Int8  _failsafe_critical_action; /// action to preform on a critical battery failsafe
     AP_Int32 _arming_minimum_capacity;  /// capacity level required to arm
     AP_Float _arming_minimum_voltage;   /// voltage level required to arm
-
+    AP_Int8  _i2c_bus;                  /// I2C bus number
 };

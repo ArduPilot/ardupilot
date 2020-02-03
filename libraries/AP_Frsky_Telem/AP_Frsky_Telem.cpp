@@ -37,9 +37,51 @@
 
 extern const AP_HAL::HAL& hal;
 
-AP_Frsky_Telem::AP_Frsky_Telem(void) :
-  _statustext_queue(FRSKY_TELEM_PAYLOAD_STATUS_CAPACITY)
+AP_Frsky_Telem *AP_Frsky_Telem::singleton;
+
+AP_Frsky_Telem::AP_Frsky_Telem(bool _external_data) :
+    use_external_data(_external_data)
 {
+    singleton = this;
+}
+
+AP_Frsky_Telem::~AP_Frsky_Telem(void)
+{
+    singleton = nullptr;
+}
+
+/*
+  setup ready for passthrough telem
+ */
+void AP_Frsky_Telem::setup_passthrough(void)
+{
+#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+    // make frsky_telemetry available to GCS_MAVLINK (used to queue statustext messages from GCS_MAVLINK)
+    // add firmware and frame info to message queue
+    const char* _frame_string = gcs().frame_string();
+    if (_frame_string == nullptr) {
+        queue_message(MAV_SEVERITY_INFO, AP::fwversion().fw_string);
+    } else {
+        char firmware_buf[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+        snprintf(firmware_buf, sizeof(firmware_buf), "%s %s", AP::fwversion().fw_string, _frame_string);
+        queue_message(MAV_SEVERITY_INFO, firmware_buf);
+    }
+#endif
+
+    // initialize packet weights for the WFQ scheduler
+    // priority[i] = 1/_passthrough.packet_weight[i]
+    // rate[i] = LinkRate * ( priority[i] / (sum(priority[1-n])) )
+    _passthrough.packet_weight[0] = 35;    // 0x5000 status text (dynamic)
+    _passthrough.packet_weight[1] = 50;    // 0x5006 Attitude and range (dynamic)
+    _passthrough.packet_weight[2] = 550;   // 0x800 GPS lat (600 with 1 sensor)
+    _passthrough.packet_weight[3] = 550;   // 0x800 GPS lon (600 with 1 sensor)
+    _passthrough.packet_weight[4] = 400;   // 0x5005 Vel and Yaw
+    _passthrough.packet_weight[5] = 700;   // 0x5001 AP status
+    _passthrough.packet_weight[6] = 700;   // 0x5002 GPS Status
+    _passthrough.packet_weight[7] = 400;   // 0x5004 Home
+    _passthrough.packet_weight[8] = 1300;  // 0x5008 Battery 2 status
+    _passthrough.packet_weight[9] = 1300;  // 0x5003 Battery 1 status
+    _passthrough.packet_weight[10] = 1700; // 0x5007 parameters
 }
 
 /*
@@ -56,33 +98,9 @@ bool AP_Frsky_Telem::init()
         _protocol = AP_SerialManager::SerialProtocol_FrSky_SPort; // FrSky SPort protocol (X-receivers)
     } else if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_SPort_Passthrough, 0))) {
         _protocol = AP_SerialManager::SerialProtocol_FrSky_SPort_Passthrough; // FrSky SPort and SPort Passthrough (OpenTX) protocols (X-receivers)
-        // make frsky_telemetry available to GCS_MAVLINK (used to queue statustext messages from GCS_MAVLINK)
-        // add firmware and frame info to message queue
-        const char* _frame_string = gcs().frame_string();
-        if (_frame_string == nullptr) {
-            queue_message(MAV_SEVERITY_INFO, AP::fwversion().fw_string);
-        } else {
-            char firmware_buf[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
-            snprintf(firmware_buf, sizeof(firmware_buf), "%s %s", AP::fwversion().fw_string, _frame_string);
-            queue_message(MAV_SEVERITY_INFO, firmware_buf);
-        }
-
-        // initialize packet weights for the WFQ scheduler
-        // weight[i] = 1/_passthrough.packet_period[i]
-        // rate[i] = LinkRate * ( weight[i] / (sum(weight[1-n])) )
-        _passthrough.packet_weight[0] = 35;   // 0x5000 status text (dynamic)
-        _passthrough.packet_weight[1] = 50;   // 0x5006 Attitude and range (dynamic)
-        _passthrough.packet_weight[2] = 550;   // 0x800 GPS lat (600 with 1 sensor)
-        _passthrough.packet_weight[3] = 550;   // 0x800 GPS lon (600 with 1 sensor)
-        _passthrough.packet_weight[4] = 400;   // 0x5005 Vel and Yaw
-        _passthrough.packet_weight[5] = 700;   // 0x5001 AP status
-        _passthrough.packet_weight[6] = 700;   // 0x5002 GPS Status
-        _passthrough.packet_weight[7] = 400;   // 0x5004 Home
-        _passthrough.packet_weight[8] = 1300;  // 0x5008 Battery 2 status
-        _passthrough.packet_weight[9] = 1300;  // 0x5003 Battery 1 status
-        _passthrough.packet_weight[10] = 1700; // 0x5007 parameters
+        setup_passthrough();
     }
-    
+
     if (_port != nullptr) {
         if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Frsky_Telem::loop, void),
                                           "FrSky",
@@ -118,8 +136,10 @@ void AP_Frsky_Telem::update_avg_packet_rate()
  * WFQ scheduler
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
-void AP_Frsky_Telem::passthrough_wfq_adaptive_scheduler(uint8_t prev_byte)
+void AP_Frsky_Telem::passthrough_wfq_adaptive_scheduler()
 {
+    update_avg_packet_rate();
+
     uint32_t now = AP_HAL::millis();
     uint8_t max_delay_idx = TIME_SLOT_MAX;
     
@@ -133,7 +153,12 @@ void AP_Frsky_Telem::passthrough_wfq_adaptive_scheduler(uint8_t prev_byte)
     check_ekf_status();
 
     // dynamic priorities
-    if (!_statustext_queue.empty()) {
+    bool queue_empty;
+    {
+        WITH_SEMAPHORE(_statustext.sem);
+        queue_empty = !_statustext.available && _statustext.queue.empty();
+    }
+    if (!queue_empty) {
         _passthrough.packet_weight[0] = 45;     // messages
         _passthrough.packet_weight[1] = 80;     // attitude
     } else {
@@ -151,7 +176,7 @@ void AP_Frsky_Telem::passthrough_wfq_adaptive_scheduler(uint8_t prev_byte)
         if (delay >= max_delay && ((now - _passthrough.packet_timer[i]) >= _sport_config.packet_min_period[i])) {
             switch (i) {
                 case 0:
-                    packet_ready = !_statustext_queue.empty();
+                    packet_ready = !queue_empty;
                     break;
                 case 5:
                     packet_ready = gcs().vehicle_initialised();
@@ -245,8 +270,7 @@ void AP_Frsky_Telem::send_SPort_Passthrough(void)
     }
     if (prev_byte == START_STOP_SPORT) {
         if (_passthrough.new_byte == SENSOR_ID_28) { // byte 0x7E is the header of each poll request
-            update_avg_packet_rate();
-            passthrough_wfq_adaptive_scheduler(prev_byte);
+            passthrough_wfq_adaptive_scheduler();
         }
     }
 }
@@ -499,6 +523,13 @@ void AP_Frsky_Telem::send_byte(uint8_t byte)
  */
 void  AP_Frsky_Telem::send_uint32(uint8_t frame, uint16_t id, uint32_t data)
 {
+    if (use_external_data) {
+        external_data.frame = frame;
+        external_data.appid = id;
+        external_data.data = data;
+        external_data.pending = true;
+        return;
+    }
     send_byte(frame); // frame type
     uint8_t *bytes = (uint8_t*)&id;
     send_byte(bytes[0]); // LSB
@@ -530,16 +561,20 @@ void  AP_Frsky_Telem::send_uint16(uint16_t id, uint16_t data)
  */
 bool AP_Frsky_Telem::get_next_msg_chunk(void)
 {
-    if (_statustext_queue.empty()) {
-        return false;
+    if (!_statustext.available) {
+        WITH_SEMAPHORE(_statustext.sem);
+        if (!_statustext.queue.pop(_statustext.next)) {
+            return false;
+        }
+        _statustext.available = true;
     }
 
     if (_msg_chunk.repeats == 0) { // if it's the first time get_next_msg_chunk is called for a given chunk
         uint8_t character = 0;
         _msg_chunk.chunk = 0; // clear the 4 bytes of the chunk buffer
 
-        for (int i = 3; i > -1 && _msg_chunk.char_index < sizeof(_statustext_queue[0]->text); i--) {
-            character = _statustext_queue[0]->text[_msg_chunk.char_index++];
+        for (int i = 3; i > -1 && _msg_chunk.char_index < sizeof(_statustext.next.text); i--) {
+            character = _statustext.next.text[_msg_chunk.char_index++];
 
             if (!character) {
                 break;
@@ -548,12 +583,12 @@ bool AP_Frsky_Telem::get_next_msg_chunk(void)
             _msg_chunk.chunk |= character << i * 8;
         }
 
-        if (!character || (_msg_chunk.char_index == sizeof(_statustext_queue[0]->text))) { // we've reached the end of the message (string terminated by '\0' or last character of the string has been processed)
+        if (!character || (_msg_chunk.char_index == sizeof(_statustext.next.text))) { // we've reached the end of the message (string terminated by '\0' or last character of the string has been processed)
             _msg_chunk.char_index = 0; // reset index to get ready to process the next message
             // add severity which is sent as the MSB of the last three bytes of the last chunk (bits 24, 16, and 8) since a character is on 7 bits
-            _msg_chunk.chunk |= (_statustext_queue[0]->severity & 0x4)<<21;
-            _msg_chunk.chunk |= (_statustext_queue[0]->severity & 0x2)<<14;
-            _msg_chunk.chunk |= (_statustext_queue[0]->severity & 0x1)<<7;
+            _msg_chunk.chunk |= (_statustext.next.severity & 0x4)<<21;
+            _msg_chunk.chunk |= (_statustext.next.severity & 0x2)<<14;
+            _msg_chunk.chunk |= (_statustext.next.severity & 0x1)<<7;
         }
     }
 
@@ -573,8 +608,9 @@ bool AP_Frsky_Telem::get_next_msg_chunk(void)
     
     if (_msg_chunk.repeats++ > extra_chunks ) {
         _msg_chunk.repeats = 0;
-        if (_msg_chunk.char_index == 0) { // if we're ready for the next message
-            _statustext_queue.remove(0);
+        if (_msg_chunk.char_index == 0) {
+            // we're ready for the next message
+            _statustext.available = false;
         }
     }
     return true;
@@ -594,7 +630,8 @@ void AP_Frsky_Telem::queue_message(MAV_SEVERITY severity, const char *text)
     // The force push will ensure comm links do not block other comm links forever if they fail.
     // If we push to a full buffer then we overwrite the oldest entry, effectively removing the
     // block but not until the buffer fills up.
-    _statustext_queue.push_force(statustext);
+    WITH_SEMAPHORE(_statustext.sem);
+    _statustext.queue.push_force(statustext);
 }
 
 /*
@@ -1063,3 +1100,45 @@ uint32_t AP_Frsky_Telem::sensor_status_flags() const
 
     return ~health & enabled & present;
 }
+
+/*
+  fetch Sport data for an external transport, such as FPort
+ */
+bool AP_Frsky_Telem::_get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &data)
+{
+    passthrough_wfq_adaptive_scheduler();
+    if (!external_data.pending) {
+        return false;
+    }
+    frame = external_data.frame;
+    appid = external_data.appid;
+    data = external_data.data;
+    external_data.pending = false;
+    return true;
+}
+
+/*
+  fetch Sport data for an external transport, such as FPort
+ */
+bool AP_Frsky_Telem::get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &data)
+{
+    if (!singleton && !hal.util->get_soft_armed()) {
+        // if telem data is requested when we are disarmed and don't
+        // yet have a AP_Frsky_Telem object then try to allocate one
+        new AP_Frsky_Telem(true);
+        // initialize the passthrough scheduler
+        if (singleton) {
+            singleton->setup_passthrough();
+        }
+    }
+    if (!singleton) {
+        return false;
+    }
+    return singleton->_get_telem_data(frame, appid, data);
+}
+
+namespace AP {
+    AP_Frsky_Telem *frsky_telem() {
+        return AP_Frsky_Telem::get_singleton();
+    }
+};

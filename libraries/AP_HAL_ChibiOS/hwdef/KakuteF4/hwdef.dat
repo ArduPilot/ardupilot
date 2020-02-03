@@ -150,7 +150,7 @@ BARO BMP280 I2C:0:0x76
 define HAL_LOGGING_DATAFLASH
 
 # setup for OSD
-define OSD_ENABLED ENABLED
+define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 

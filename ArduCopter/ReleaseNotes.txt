@@ -1,5 +1,124 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.0.2-rc3 01-Feb-2020
+Changes from 4.0.2-rc2
+1) Bug Fixes:
+    a) AutoTune fix to restore original gains when AutoTune completes
+------------------------------------------------------------------
+Copter 4.0.2-rc2 31-Jan-2020
+Changes from 4.0.1
+1) Bug Fixes:
+    b) IO CPU timing fix which reduces ESC sync issues
+    c) PX4Flow driver probes all I2C ports on Hex Cubes
+    d) RangeFinders using PWM interface (like Garmin LidarLite) use RNGFNDx_OFFSET param
+    e) RC override fix when RC_OVERRIDE_TIME=-1 (allows disabling timeout when using joystick) 
+    f) TradHeli attitude control parameter description fixes (does not affect flight)
+    g) cygwin compiler fix (affects developers only)
+2) Minor enhancements:
+    a) GCS failsafe warning lights and tones
+    b) Circle mode pitch control direction swapped
+------------------------------------------------------------------
+Copter 4.0.1 25-Jan-2020 / 4.0.1-rc3 19-Jan-2020
+Changes from 4.0.1-rc2
+1) Bug Fixes:
+    a) Semaphore fixes for Logging, Filesystem and UAVCAN Dyanmic Node Allocation
+    b) RangeFinder parameter fix (4th rangefinder was using 1st rangefinder's params)
+    c) TradHeli STB_COL_x parameter description fixed
+2) Minor Enhancements:
+    a) Autorotate flight mode renamed to Heli_Autorotate
+    b) Solo default parameters updated
+    c) "Prepared log system" initialisation message removed
+------------------------------------------------------------------
+Copter 4.0.1-rc2 10-Jan-2020
+Changes from 4.0.1-rc1
+1) FrSky telemetry status text handling fix (Critical Fix)
+------------------------------------------------------------------
+Copter 4.0.1-rc1 10-Jan-2020
+Changes from 4.0.0
+1) Circle mode allows pilot control of radius and rotation speed
+2) CAN servo feedback logged
+3) Magnetic declination tables updated
+4) Serial0 protocol forced to MAVLink (avoids accidental disabling of USB port)
+5) Bug Fixes:
+   a) TradHeli RSC RC passthrough fixed
+   b) CubeOrange and Durandal I2C timing fixed (was running slow)
+   c) Compass calibration auto orientation skips "pitch 7" which could cause cal to fail
+   d) Durandal's fourth I2C port fixed
+   e) Linux boards with CAN support fixed
+   f) Neopixel added to SERVOx_FUNCTION param description
+   g) NMEA Output fixed (was sending an extra CR)
+   h) Optflow messages sent even if EKF has no height estimate
+   i) SkyViper build fixed
+   j) Spektrum/DSM 22ms RC input fixed
+   k) "UC Node Down" message removed (was unnecessarily scary)
+------------------------------------------------------------------
+Copter 4.0.0 29-Dec-2019 / 4.0.0-rc6 28-Dec-2019
+Changes from 4.0.0-rc5
+1) Compiler updated to gcc 6.3.1 (2nd attempt)
+------------------------------------------------------------------
+Copter 4.0.0-rc5 23-Dec-2019
+Changes from 4.0.0-rc4
+1) RM3100 compass enabled on all boards
+2) GCS failsafe disabled by default (see FS_GCS_ENABLE parameter)
+3) Bug Fixes
+   a) Bootloader fix for H7 boards (could brick CubeOrange, CUAV V5 Nano, etc)
+   b) OmnibusF4pro GPS fix
+   c) MatekF405-Wing missing serial ports restored
+   d) MatekF765-Wing RTSCTS parameter defaults set correctly
+   e) CUAV V5 Nano battery monitor param defaults improved
+------------------------------------------------------------------
+Copter 4.0.0-rc4 20-Dec-2019
+Changes from 4.0.0-rc3
+1) Compiler updated to gcc 6.3.1
+2) Solo default parameters updated
+3) Bug Fix to RCMAP channel number sanity check
+------------------------------------------------------------------
+Copter 4.0.0-rc3 16-Dec-2019
+Changes from 4.0.0-rc2 
+1) Flight mode and control improvements:
+   a) Auto mode Takeoff getting stuck fixed (very rare)
+   b) AutoTune protection against ESC sync loss at beginning of a twitch
+   c) SystemID mode parameters hidden by default (set SID_AXIS to non-zero to see all)
+   d) Takeoff from slanted surfaces improved by reducing I-term build-up in attitude controllers 
+2) Lua Script related enhancements:
+   a) MAV FTP support to ease uploading and downloading Lua scripts
+   b) NeoPixel/WS2812 LED control from Lua scripts
+   c) Pre-arm check that Lua scripting feature has enough memory
+3) TradHeli enhancements:
+   a) Autonomous autorotation (compile time option, not available in stable firmware)
+   b) CCW Direct Drive Fixed Pitch tail support (see H_TAIL_TYPE parameter)
+   c) Parameter description improvements
+   d) STAB_COL_1/2/3 param range changed to 0 to 100 (was 0 to 1000)
+4) Lightware SF40c driver for latest sensors with "streaming" protocol
+5) Board/Frame specfic fixes:
+   a) Hex CubeOrange IMU heater control gain tuning improvement
+   b) Holybro Durandal IMUs ordering fix so EKx_IMU_MASK bits are intuitive
+   c) Holybro Pixhawk4 B/E LED fix (was flickering)
+   d) MatekF765 PWM outputs 5 and 6 now functional
+   e) MatekF765, MatekF405 time wrap CRITICAL fix for vehicles flying more than 72min
+   f) MatekF765 LED fixes
+   g) mRobotics ControlZeroF7 I2C bus numbering fix
+   h) Solo default params updated for 4.0.0
+   i) Bootloaders for boards using STM32H7 CPUs
+   j) Bootloader protection against line noise that could cause the board to get stuck during bootup
+   k) LED timing fix for FMUv5 boards with LEDs on one of first four auxiliary PWM outputs
+6) Minor Enhancements and Bug Fixes
+   a) I2C storm High level protection
+   b) Internal errors (like I2C storms) reported to GCS by setting Heartbeat status to Critical
+   c) Dataflash Logging CTUN.TAlt and SAlt scaling fixed
+   d) DO_DIGICAM_CONTROL messages are sent using Mavlink1/2 as specified by SERIALx_PROTOCOL
+   e) DO_SET_SPEED sanity check fixed to protect against negative speeds
+   f) FrSky telemetry scheduling improvement (fixes issue in which GPS data would not be sent)
+   g) GPS auto configuration fix for non-Ublox-F9 (F9 config was interfering with other Ublox GPSs)
+   h) Landing gear DEPLOY message fix (could be displayed multiple times or when gear not configured)
+   i) Pre-arm check of position estimate when arming in Loiter even if arming is "forced"
+   j) Pre-arm check that Terrain database has enough memory
+   k) RangeFinder parameter conversion fix (some parameters were not upgraded from 3.6.x to 4.0.0)
+   l) RangeFinder TYPE parameter descriptions clarified for LidarLite and Benewake Lidars
+   m) Serial parameters hidden if they do not exist on the particular board
+   n) UAVCAN GPS fix for GPSs that don't provide "Aux" message (like the Here2)
+   o) NMEA Output bug fix (output was stopping after 90 seconds)
+------------------------------------------------------------------
 Copter 4.0.0-rc2 04-Nov-2019
 Changes from 4.0.0-rc1
 1) Failsafe changes:
@@ -83,7 +202,7 @@ Changes from 3.6.11
     b) Independent WatchDog gets improved logging
     c) EKF failsafe triggers slightly more quickly  
 ------------------------------------------------------------------
-Copter 3.6.12-rc1 06-Dec-2019
+Copter 3.6.12 13-Dec-2019 / 3.6.12-rc1 06-Dec-2019
 Changes from 3.6.11
 1) More ChibiOS fixes for I2C storm 
 2) COMPASS_SCALE param to allow manual correction of compass scaling

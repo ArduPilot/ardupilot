@@ -321,7 +321,7 @@ void peripheral_power_enable(void)
 #endif
 }
 
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3)
 /*
   read mode of a pin. This allows a pin config to be read, changed and
   then written back
@@ -342,7 +342,18 @@ iomode_t palReadLineMode(ioline_t line)
     }
     return ret;
 }
-#endif
+
+/*
+  set pin as pullup, pulldown or floating
+ */
+void palLineSetPushPull(ioline_t line, enum PalPushPull pp)
+{
+    ioportid_t port = PAL_PORT(line);
+    uint8_t pad = PAL_PAD(line);
+    port->PUPDR = (port->PUPDR & ~(3<<(pad*2))) | (pp<<(pad*2));
+}
+
+#endif // F7, H7, F4
 
 void stm32_cacheBufferInvalidate(const void *p, size_t size)
 {

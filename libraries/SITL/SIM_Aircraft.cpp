@@ -29,6 +29,7 @@
 #include <mmsystem.h>
 #endif
 
+#include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Declination/AP_Declination.h>
@@ -55,6 +56,7 @@ Aircraft::Aircraft(const char *frame_str) :
     rate_hz(1200.0f),
     autotest_dir(nullptr),
     frame(frame_str),
+    num_motors(1),
 #if defined(__CYGWIN__) || defined(__CYGWIN64__)
     min_sleep_time(20000)
 #else
@@ -72,6 +74,12 @@ Aircraft::Aircraft(const char *frame_str) :
     // allow for orientation settings, such as with tailsitters
     enum ap_var_type ptype;
     ahrs_orientation = (AP_Int8 *)AP_Param::find("AHRS_ORIENTATION", &ptype);
+
+    enum Rotation imu_rotation = ahrs_orientation?(enum Rotation)ahrs_orientation->get():ROTATION_NONE;
+    ahrs_rotation_inv.from_rotation(imu_rotation);
+    ahrs_rotation_inv.transpose();
+    last_imu_rotation = imu_rotation;
+
     terrain = reinterpret_cast<AP_Terrain *>(AP_Param::find_object("TERRAIN_"));
 }
 
@@ -341,8 +349,8 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     fdm.airspeed = airspeed_pitot;
     fdm.battery_voltage = battery_voltage;
     fdm.battery_current = battery_current;
-    fdm.rpm1 = rpm1;
-    fdm.rpm2 = rpm2;
+    fdm.num_motors = num_motors;
+    memcpy(fdm.rpm, rpm, num_motors * sizeof(float));
     fdm.rcin_chan_count = rcin_chan_count;
     fdm.range = range;
     memcpy(fdm.rcin, rcin, rcin_chan_count * sizeof(float));
@@ -370,11 +378,14 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     if (ahrs_orientation != nullptr) {
         enum Rotation imu_rotation = (enum Rotation)ahrs_orientation->get();
 
+        if (imu_rotation != last_imu_rotation) {
+            ahrs_rotation_inv.from_rotation(imu_rotation);
+            ahrs_rotation_inv.transpose();
+            last_imu_rotation = imu_rotation;
+        }
         if (imu_rotation != ROTATION_NONE) {
             Matrix3f m = dcm;
-            Matrix3f rot;
-            rot.from_rotation(imu_rotation);
-            m = m * rot.transposed();
+            m = m * ahrs_rotation_inv;
 
             m.to_euler(&r, &p, &y);
             fdm.rollDeg  = degrees(r);
@@ -491,7 +502,7 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
     // constrain height to the ground
     if (on_ground()) {
         if (!was_on_ground && AP_HAL::millis() - last_ground_contact_ms > 1000) {
-            printf("Hit ground at %f m/s\n", velocity_ef.z);
+            gcs().send_text(MAV_SEVERITY_INFO, "Hit ground at %f m/s", velocity_ef.z);
             last_ground_contact_ms = AP_HAL::millis();
         }
         position.z = -(ground_level + frame_height - home.alt * 0.01f + ground_height_difference());

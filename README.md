@@ -6,33 +6,33 @@
 
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/5331/badge.svg)](https://scan.coverity.com/projects/ardupilot-ardupilot)
 
-[![Autotest Status](http://autotest.ardupilot.org/autotest-badge.svg)](http://autotest.ardupilot.org/)
+[![Autotest Status](https://autotest.ardupilot.org/autotest-badge.svg)](https://autotest.ardupilot.org/)
 
 ## The ArduPilot project is made up of: ##
 
-- ArduCopter (or APM:Copter) : [code](https://github.com/ArduPilot/ardupilot/tree/master/ArduCopter), [wiki](http://ardupilot.org/copter/index.html)
+- ArduCopter (or APM:Copter) : [code](https://github.com/ArduPilot/ardupilot/tree/master/ArduCopter), [wiki](https://ardupilot.org/copter/index.html)
 
-- ArduPlane (or APM:Plane) : [code](https://github.com/ArduPilot/ardupilot/tree/master/ArduPlane), [wiki](http://ardupilot.org/plane/index.html)
+- ArduPlane (or APM:Plane) : [code](https://github.com/ArduPilot/ardupilot/tree/master/ArduPlane), [wiki](https://ardupilot.org/plane/index.html)
 
-- ArduRover (or APMrover2) : [code](https://github.com/ArduPilot/ardupilot/tree/master/APMrover2), [wiki](http://ardupilot.org/rover/index.html)
+- ArduRover (or APMrover2) : [code](https://github.com/ArduPilot/ardupilot/tree/master/APMrover2), [wiki](https://ardupilot.org/rover/index.html)
 
 - ArduSub (or APM:Sub) : [code](https://github.com/ArduPilot/ardupilot/tree/master/ArduSub), [wiki](http://ardusub.com/)
 
-- Antenna Tracker : [code](https://github.com/ArduPilot/ardupilot/tree/master/AntennaTracker), [wiki](http://ardupilot.org/antennatracker/index.html)
+- Antenna Tracker : [code](https://github.com/ArduPilot/ardupilot/tree/master/AntennaTracker), [wiki](https://ardupilot.org/antennatracker/index.html)
 
 ## User Support & Discussion Forums ##
 
-- Support Forum: <http://discuss.ardupilot.org/>
+- Support Forum: <https://discuss.ardupilot.org/>
 
-- Community Site: <http://ardupilot.org>
+- Community Site: <https://ardupilot.org>
 
 ## Developer Information ##
 
 - Github repository: <https://github.com/ArduPilot/ardupilot>
 
-- Main developer wiki: <http://dev.ardupilot.org>
+- Main developer wiki: <https://dev.ardupilot.org>
 
-- Developer discussion: <http://discuss.ardupilot.org>
+- Developer discussion: <https://discuss.ardupilot.org>
 
 - Developer chat: <https://gitter.im/ArduPilot/ardupilot>
 
@@ -41,28 +41,28 @@
 - [Flight code contributors](https://github.com/ArduPilot/ardupilot/graphs/contributors)
 - [Wiki contributors](https://github.com/ArduPilot/ardupilot_wiki/graphs/contributors)
 - [Most active support forum users](https://discuss.ardupilot.org/u?order=post_count&period=quarterly)
-- [Partners who contribute financially](http://ardupilot.org/about/Partners)
+- [Partners who contribute financially](https://ardupilot.org/about/Partners)
 
 ## How To Get Involved ##
 
-- The ArduPilot project is open source and we encourage participation and code contributions: [guidelines for contributors to the ardupilot codebase](http://ardupilot.org/dev/docs/contributing.html)
+- The ArduPilot project is open source and we encourage participation and code contributions: [guidelines for contributors to the ardupilot codebase](https://ardupilot.org/dev/docs/contributing.html)
 
-- We have an active group of Beta Testers especially for ArduCopter to help us find bugs: [release procedures](http://dev.ardupilot.org/wiki/release-procedures)
+- We have an active group of Beta Testers especially for ArduCopter to help us find bugs: [release procedures](https://dev.ardupilot.org/wiki/release-procedures)
 
 - Desired Enhancements and Bugs can be posted to the [issues list](https://github.com/ArduPilot/ardupilot/issues).
 
-- Help other users with log analysis in the [support forums](http://discuss.ardupilot.org/)
+- Help other users with log analysis in the [support forums](https://discuss.ardupilot.org/)
 
 - Improve the wiki and chat with other [wiki editors on Gitter](https://gitter.im/ArduPilot/ardupilot_wiki)
 
-- Contact the developers on one of the [communication channels](http://ardupilot.org/copter/docs/common-contact-us.html)
+- Contact the developers on one of the [communication channels](https://ardupilot.org/copter/docs/common-contact-us.html)
 
 ## License ##
 
 The ArduPilot project is licensed under the GNU General Public
 License, version 3.
 
-- [Overview of license](http://dev.ardupilot.com/wiki/license-gplv3)
+- [Overview of license](https://dev.ardupilot.com/wiki/license-gplv3)
 
 - [Full Text](https://github.com/ArduPilot/ardupilot/blob/master/COPYING.txt)
 

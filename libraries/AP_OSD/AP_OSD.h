@@ -16,9 +16,14 @@
 
 #pragma once
 
+#include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_BLHeli/AP_BLHeli.h>
+
+#ifndef OSD_ENABLED
+#define OSD_ENABLED 0
+#endif
 
 class AP_OSD_Backend;
 
@@ -196,6 +201,12 @@ public:
     AP_OSD(const AP_OSD &other) = delete;
     AP_OSD &operator=(const AP_OSD&) = delete;
 
+    // get singleton instance
+    static AP_OSD *get_singleton()
+    {
+        return _singleton;
+    }
+
     // init - perform required initialisation
     void init();
 
@@ -258,7 +269,14 @@ public:
     };
 
     void set_nav_info(NavInfo &nav_info);
-
+    // disable the display
+    void disable() {
+        _disable = true;
+    }
+    // enable the display
+    void enable() {
+        _disable = false;
+    }
 
 private:
     void osd_thread();
@@ -278,6 +296,7 @@ private:
     int8_t pre_fs_screen;
     bool was_armed;
     bool was_failsafe;
+    bool _disable;
 
     uint32_t last_update_ms;
     float last_distance_m;
@@ -286,4 +305,11 @@ private:
     float max_speed_mps;
     float max_current_a;
     float avg_current_a;
+
+    static AP_OSD *_singleton;
+};
+
+namespace AP
+{
+AP_OSD *osd();
 };

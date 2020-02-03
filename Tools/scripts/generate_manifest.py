@@ -20,6 +20,7 @@ brand_map = {
     'PH4-mini' : ('Pixhawk 4 Mini', 'Holybro'),
     'KakuteF4' : ('KakuteF4', 'Holybro'),
     'KakuteF7' : ('KakuteF7', 'Holybro'),
+    'KakuteF7Mini' : ('KakuteF7Mini', 'Holybro'),
     'CubeBlack' : ('CubeBlack', 'Hex/ProfiCNC'),
     'CubeYellow' : ('CubeYellow', 'Hex/ProfiCNC'),
     'CubeOrange' : ('CubeOrange', 'Hex/ProfiCNC'),
@@ -186,7 +187,10 @@ class ManifestGenerator():
             'VRCore-v10': ['0x27AC/0x1910'],
             'VRUBrain-v51': ['0x27AC/0x1351']
         }
-        if platform in USBID_MAP:
+        if 'USBID' in apj_json:
+            # newer APJ files have USBID in the json data
+            firmware['USBID'] = [apj_json['USBID']]
+        elif platform in USBID_MAP:
             firmware['USBID'] = USBID_MAP[platform]
         else:
             # all others use a single USB VID/PID
@@ -326,7 +330,7 @@ class ManifestGenerator():
 
                 filepath = os.path.join(some_dir, filename)
                 firmware_format = self.firmware_format_for_filepath(filepath)
-                if firmware_format not in [ "ELF", "abin", "apj", "hex", "px4" ]:
+                if firmware_format not in [ "ELF", "abin", "apj", "hex", "px4", "bin" ]:
                     print("Unknown firmware format (%s)" % firmware_format)
 
                 firmware = Firmware()

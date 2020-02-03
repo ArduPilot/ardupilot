@@ -18,10 +18,6 @@
 #define AP_FEATURE_RTSCTS 0
 #endif
 
-#ifndef AP_FEATURE_RTSCTS
-#define AP_FEATURE_RTSCTS 0
-#endif
-
 #ifndef AP_FEATURE_SBUS_OUT
 #define AP_FEATURE_SBUS_OUT 0
 #endif
@@ -108,7 +104,7 @@ public:
     // developer debugging by setting BRD_IO_ENABLE=100 to avoid the
     // crc check of IO firmware on startup
     static uint8_t io_enabled(void) {
-#if AP_FEATURE_BOARD_DETECT
+#if HAL_WITH_IO_MCU
         return _singleton?uint8_t(_singleton->state.io_enable.get()):0;
 #else
         return 0;
@@ -120,6 +116,11 @@ public:
         return _singleton?_singleton->pwm_count.get():8;
     }
 
+    // get alternative config selection
+    uint8_t get_alt_config(void) {
+        return uint8_t(_alt_config.get());
+    }
+    
     enum board_safety_button_option {
         BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF= (1 << 0),
         BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON=  (1 << 1),
@@ -255,6 +256,8 @@ private:
     AP_Int16 _boot_delay_ms;
 
     AP_Int32 _options;
+
+    AP_Int8  _alt_config;
 };
 
 namespace AP {

@@ -49,6 +49,8 @@
 // fwd-declare callback classes
 class ButtonCb;
 class TrafficReportCb;
+class ActuatorStatusCb;
+class ESCStatusCb;
 
 /*
     Frontend Backend-Registry Binder: Whenever a message of said DataType_ from new node is received,
@@ -176,7 +178,7 @@ private:
     uavcan::Node<0> *_node;
 
     uint8_t _driver_index;
-    char _thread_name[9];
+    char _thread_name[13];
     bool _initialized;
     ///// SRV output /////
     struct {
@@ -226,6 +228,8 @@ private:
     // safety button handling
     static void handle_button(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ButtonCb &cb);
     static void handle_traffic_report(AP_UAVCAN* ap_uavcan, uint8_t node_id, const TrafficReportCb &cb);
+    static void handle_actuator_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ActuatorStatusCb &cb);
+    static void handle_ESC_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ESCStatusCb &cb);
 };
 
 #endif /* AP_UAVCAN_H_ */

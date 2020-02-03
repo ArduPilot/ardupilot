@@ -48,7 +48,6 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Vehicle/AP_Vehicle.h>
 
 class AP_Scheduler
 {
@@ -172,8 +171,14 @@ private:
     // progmem list of tasks to run
     const struct Task *_tasks;
 
-    // number of tasks in _tasks list
+    // progmem list of common tasks to run
+    const struct Task *_common_tasks;
+
+    // total number of tasks in _tasks and _common_tasks list
     uint8_t _num_tasks;
+
+    // number of tasks in _tasks list
+    uint8_t _num_unshared_tasks;
 
     // number of 'ticks' that have passed (number of times that
     // tick() has been called

@@ -492,7 +492,7 @@ void Plane::set_servos_flaps(void)
     int8_t manual_flap_percent = 0;
 
     // work out any manual flap input
-    RC_Channel *flapin = RC_Channels::rc_channel(g.flapin_channel-1);
+    RC_Channel *flapin = rc().find_channel_for_option(RC_Channel::AUX_FUNC::FLAP);
     if (flapin != nullptr && !failsafe.rc_failsafe && failsafe.throttle_counter == 0) {
         manual_flap_percent = flapin->percent_input();
     }
@@ -510,17 +510,12 @@ void Plane::set_servos_flaps(void)
             auto_flap_percent = g.flap_1_percent;
         } //else flaps stay at default zero deflection
 
-        if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND && landing.get_flap_percent() != 0) {
-            auto_flap_percent = landing.get_flap_percent();
-        }
-
         /*
           special flap levels for takeoff and landing. This works
           better than speed based flaps as it leads to less
           possibility of oscillation
          */
-        if (control_mode == &mode_auto) {
-            switch (flight_stage) {
+        switch (flight_stage) {
             case AP_Vehicle::FixedWing::FLIGHT_TAKEOFF:
             case AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND:
                 if (g.takeoff_flap_percent != 0) {
@@ -533,9 +528,13 @@ void Plane::set_servos_flaps(void)
                     auto_flap_percent = g.takeoff_flap_percent;
                 }
                 break;
+            case AP_Vehicle::FixedWing::FLIGHT_LAND:
+                if (landing.get_flap_percent() != 0) {
+                  auto_flap_percent = landing.get_flap_percent();
+                }
+                break;
             default:
                 break;
-            }
         }
     }
 

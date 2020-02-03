@@ -247,7 +247,7 @@ float GCS_MAVLINK_Plane::vfr_hud_airspeed() const
 
     // airspeed estimates are OK:
     float aspeed;
-    if (AP::ahrs().airspeed_estimate(&aspeed)) {
+    if (AP::ahrs().airspeed_estimate(aspeed)) {
         return aspeed;
     }
 
@@ -257,7 +257,7 @@ float GCS_MAVLINK_Plane::vfr_hud_airspeed() const
 
 int16_t GCS_MAVLINK_Plane::vfr_hud_throttle() const
 {
-    return abs(plane.throttle_percentage());
+    return plane.throttle_percentage();
 }
 
 float GCS_MAVLINK_Plane::vfr_hud_climbrate() const
@@ -1151,10 +1151,6 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
         break;
     }
 
-    case MAVLINK_MSG_ID_DISTANCE_SENSOR:
-        plane.rangefinder.handle_msg(msg);
-        break;
-
     case MAVLINK_MSG_ID_TERRAIN_DATA:
     case MAVLINK_MSG_ID_TERRAIN_CHECK:
 #if AP_TERRAIN_AVAILABLE
@@ -1352,32 +1348,6 @@ void GCS_MAVLINK_Plane::handle_rc_channels_override(const mavlink_message_t &msg
  *  MAVLink to process packets while waiting for the initialisation to
  *  complete
  */
-void Plane::mavlink_delay_cb()
-{
-    static uint32_t last_1hz, last_50hz, last_5s;
-
-    logger.EnableWrites(false);
-
-    uint32_t tnow = millis();
-    if (tnow - last_1hz > 1000) {
-        last_1hz = tnow;
-        gcs().send_message(MSG_HEARTBEAT);
-        gcs().send_message(MSG_SYS_STATUS);
-    }
-    if (tnow - last_50hz > 20) {
-        last_50hz = tnow;
-        gcs().update_receive();
-        gcs().update_send();
-        notify.update();
-    }
-    if (tnow - last_5s > 5000) {
-        last_5s = tnow;
-        gcs().send_text(MAV_SEVERITY_INFO, "Initialising APM");
-    }
-
-    logger.EnableWrites(true);
-}
-
 void GCS_MAVLINK_Plane::handle_mission_set_current(AP_Mission &mission, const mavlink_message_t &msg)
 {
     plane.auto_state.next_wp_crosstrack = false;

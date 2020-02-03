@@ -45,8 +45,8 @@ struct sitl_fdm {
     double airspeed; // m/s
     double battery_voltage; // Volts
     double battery_current; // Amps
-    double rpm1;            // main prop RPM
-    double rpm2;            // secondary RPM
+    uint8_t num_motors;
+    float rpm[12];         // RPM of all motors
     uint8_t rcin_chan_count;
     float  rcin[8];         // RC input 0..1
     double range;           // rangefinder value
@@ -71,6 +71,7 @@ public:
         mag_ofs.set(Vector3f(5, 13, -18));
         AP_Param::setup_object_defaults(this, var_info);
         AP_Param::setup_object_defaults(this, var_info2);
+        AP_Param::setup_object_defaults(this, var_info3);
         if (_singleton != nullptr) {
             AP_HAL::panic("Too many SITL instances");
         }
@@ -108,14 +109,15 @@ public:
     // loop update rate in Hz
     uint16_t update_rate_hz;
 
-    // true when motors are active
-    bool motors_on;
+    // throttle when motors are active
+    float throttle;
 
     // height above ground
     float height_agl;
     
     static const struct AP_Param::GroupInfo var_info[];
     static const struct AP_Param::GroupInfo var_info2[];
+    static const struct AP_Param::GroupInfo var_info3[];
 
     // noise levels for simulated sensors
     AP_Float baro_noise;  // in metres
@@ -159,12 +161,10 @@ public:
     AP_Int8  gps_disable; // disable simulated GPS
     AP_Int8  gps2_enable; // enable 2nd simulated GPS
     AP_Int8  gps_delay;   // delay in samples
-    AP_Int8  gps_type;    // see enum GPSType
-    AP_Int8  gps2_type;   // see enum GPSType
+    AP_Int8  gps_type[2]; // see enum GPSType
     AP_Float gps_byteloss;// byte loss as a percent
     AP_Int8  gps_numsats; // number of visible satellites
-    AP_Vector3f gps_glitch;  // glitch offsets in lat, lon and altitude
-    AP_Vector3f gps2_glitch; // glitch offsets in lat, lon and altitude for 2nd GPS
+    AP_Vector3f gps_glitch[2];  // glitch offsets in lat, lon and altitude
     AP_Int8  gps_hertz;   // GPS update rate in Hz
     AP_Float batt_voltage; // battery voltage base
     AP_Float accel_fail;  // accelerometer failure value
@@ -229,7 +229,7 @@ public:
 
     // Body frame sensor position offsets
     AP_Vector3f imu_pos_offset;     // XYZ position of the IMU accelerometer relative to the body frame origin (m)
-    AP_Vector3f gps_pos_offset;     // XYZ position of the GPS antenna phase centre relative to the body frame origin (m)
+    AP_Vector3f gps_pos_offset[2];  // XYZ position of the GPS antenna phase centre relative to the body frame origin (m)
     AP_Vector3f rngfnd_pos_offset;  // XYZ position of the range finder zero range datum relative to the body frame origin (m)
     AP_Vector3f optflow_pos_offset; // XYZ position of the optical flow sensor focal point relative to the body frame origin (m)
 
@@ -247,6 +247,11 @@ public:
 
     // vibration frequencies in Hz on each axis
     AP_Vector3f vibe_freq;
+
+    // max frequency to use as baseline for adding motor noise for the gyros and accels
+    AP_Float vibe_motor;
+    // minimum throttle for addition of ins noise
+    AP_Float ins_noise_throttle_min;
 
     // gyro and accel fail masks
     AP_Int8 gyro_fail_mask;

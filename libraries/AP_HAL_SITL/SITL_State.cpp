@@ -295,6 +295,26 @@ int SITL_State::sim_fd(const char *name, const char *arg)
         }
         nmea = new SITL::RF_NMEA();
         return nmea->fd();
+
+    } else if (streq(name, "frsky-d")) {
+        if (frsky_d != nullptr) {
+            AP_HAL::panic("Only one frsky_d at a time");
+        }
+        frsky_d = new SITL::Frsky_D();
+        return frsky_d->fd();
+    // } else if (streq(name, "frsky-SPort")) {
+    //     if (frsky_sport != nullptr) {
+    //         AP_HAL::panic("Only one frsky_sport at a time");
+    //     }
+    //     frsky_sport = new SITL::Frsky_SPort();
+    //     return frsky_sport->fd();
+
+    // } else if (streq(name, "frsky-SPortPassthrough")) {
+    //     if (frsky_sport_passthrough != nullptr) {
+    //         AP_HAL::panic("Only one frsky_sport passthrough at a time");
+    //     }
+    //     frsky_sport = new SITL::Frsky_SPortPassthrough();
+    //     return frsky_sportpassthrough->fd();
     }
 
     AP_HAL::panic("unknown simulated device: %s", name);
@@ -366,6 +386,11 @@ int SITL_State::sim_fd_write(const char *name)
             AP_HAL::panic("No nmea created");
         }
         return nmea->write_fd();
+    } else if (streq(name, "frsky-d")) {
+        if (frsky_d == nullptr) {
+            AP_HAL::panic("No frsky-d created");
+        }
+        return frsky_d->write_fd();
     }
     AP_HAL::panic("unknown simulated device: %s", name);
 }
@@ -540,6 +565,16 @@ void SITL_State::_fdm_input_local(void)
         nmea->update(sitl_model->get_range());
     }
 
+    if (frsky_d != nullptr) {
+        frsky_d->update();
+    }
+    // if (frsky_sport != nullptr) {
+    //     frsky_sport->update();
+    // }
+    // if (frsky_sportpassthrough != nullptr) {
+    //     frsky_sportpassthrough->update();
+    // }
+
     if (_sitl) {
         _sitl->efi_ms.update();
     }
@@ -640,7 +675,7 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
 
     float engine_mul = _sitl?_sitl->engine_mul.get():1;
     uint8_t engine_fail = _sitl?_sitl->engine_fail.get():0;
-    bool motors_on = false;
+    float throttle = 0.0f;
     
     if (engine_fail >= ARRAY_SIZE(input.servos)) {
         engine_fail = 0;
@@ -651,28 +686,30 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
     } else {
         input.servos[engine_fail] = static_cast<uint16_t>(((input.servos[engine_fail] - 1500) * engine_mul) + 1500);
     }
-    
+
     if (_vehicle == ArduPlane) {
-        motors_on = ((input.servos[2] - 1000) / 1000.0f) > 0;
+        throttle = constrain_float((input.servos[2] - 1000) / 1000.0f, 0.0f, 1.0f);
     } else if (_vehicle == APMrover2) {
         input.servos[2] = static_cast<uint16_t>(constrain_int16(input.servos[2], 1000, 2000));
         input.servos[0] = static_cast<uint16_t>(constrain_int16(input.servos[0], 1000, 2000));
-        motors_on = !is_zero(((input.servos[2] - 1500) / 500.0f));
+        throttle = fabsf((input.servos[2] - 1500) / 500.0f);
     } else {
-        motors_on = false;
         // run checks on each motor
-        for (i=0; i<4; i++) {
-            // check motors do not exceed their limits
-            if (input.servos[i] > 2000) input.servos[i] = 2000;
-            if (input.servos[i] < 1000) input.servos[i] = 1000;
+        uint8_t running_motors = 0;
+        for (i=0; i<SITL_NUM_CHANNELS; i++) {
+            float motor_throttle = constrain_float((input.servos[i] - 1000) / 1000.0f, 0.0f, 1.0f);
             // update motor_on flag
-            if ((input.servos[i]-1000)/1000.0f > 0) {
-                motors_on = true;
+            if (!is_zero(motor_throttle)) {
+                throttle += motor_throttle;
+                running_motors++;
             }
+        }
+        if (running_motors > 0) {
+            throttle /= running_motors;
         }
     }
     if (_sitl) {
-        _sitl->motors_on = motors_on;
+        _sitl->throttle = throttle;
     }
 
     float voltage = 0;
@@ -694,17 +731,11 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
                 }
             } else {
                 // simulate simple battery setup
-                float throttle;
-                if (_vehicle == APMrover2) {
-                    throttle = motors_on ? (input.servos[2] - 1500) / 500.0f : 0;
-                } else {
-                    throttle = motors_on ? (input.servos[2] - 1000) / 1000.0f : 0;
-                }
                 // lose 0.7V at full throttle
-                voltage = _sitl->batt_voltage - 0.7f*fabsf(throttle);
+                voltage = _sitl->batt_voltage - 0.7f * throttle;
 
                 // assume 50A at full throttle
-                _current = 50.0f * fabsf(throttle);
+                _current = 50.0f * throttle;
             }
         } else {
             // FDM provides voltage and current

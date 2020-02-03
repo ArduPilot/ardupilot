@@ -49,9 +49,15 @@ public:
         return _singleton;
     }
 
+    // allow threads to lock against RTC update
+    HAL_Semaphore &get_semaphore(void) {
+        return rsem;
+    }
+    
 private:
 
     static AP_RTC *_singleton;
+    HAL_Semaphore rsem;
 
     source_type rtc_source_type = SOURCE_NONE;
     int64_t rtc_shift;

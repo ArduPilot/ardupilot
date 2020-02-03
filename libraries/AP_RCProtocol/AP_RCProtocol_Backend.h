@@ -28,6 +28,7 @@ public:
     virtual void process_pulse(uint32_t width_s0, uint32_t width_s1) {}
     virtual void process_byte(uint8_t byte, uint32_t baudrate) {}
     uint16_t read(uint8_t chan);
+    void read(uint16_t *pwm, uint8_t n);
     bool new_input();
     uint8_t num_channels();
 
@@ -50,9 +51,25 @@ public:
     uint32_t get_rc_input_count(void) const {
         return rc_input_count;
     }
+
+    // get RSSI
+    int16_t get_RSSI(void) const {
+        return rssi;
+    }
+
+    // get UART for RCIN, if available. This will return false if we
+    // aren't getting the active RC input protocol via the uart
+    AP_HAL::UARTDriver *get_UART(void) const {
+        return frontend._detected_with_bytes?frontend.added.uart:nullptr;
+    }
+
+    // return true if we have a uart available for protocol handling.
+    bool have_UART(void) const {
+        return frontend.added.uart != nullptr;
+    }
     
 protected:
-    void add_input(uint8_t num_channels, uint16_t *values, bool in_failsafe);
+    void add_input(uint8_t num_channels, uint16_t *values, bool in_failsafe, int16_t rssi=-1);
 
 private:
     AP_RCProtocol &frontend;
@@ -62,4 +79,5 @@ private:
 
     uint16_t _pwm_values[MAX_RCIN_CHANNELS];
     uint8_t  _num_channels;
+    int16_t rssi = -1;
 };

@@ -27,7 +27,7 @@ The Pixhawk4 flight controller is sold by [Holybro](http://www.holybro.com/produ
  - SERIAL1 -> UART2 (Telem1)
  - SERIAL2 -> UART3 (Telem2)
  - SERIAL3 -> UART1 (GPS)
- - SERIAL4 -> UART4 (GPS2)
+ - SERIAL4 -> UART4 (GPS2, marked UART/I2CB)
  - SERIAL5 -> UART6 (spare)
  - SERIAL6 -> UART7 (spare, debug)
 

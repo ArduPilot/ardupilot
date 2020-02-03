@@ -546,13 +546,17 @@ const AP_Param::Info Sub::var_info[] = {
     GOBJECT(rcmap, "RCMAP_",        RCMapper),
 #endif
 
+#if HAL_NAVEKF2_AVAILABLE
     // @Group: EK2_
     // @Path: ../libraries/AP_NavEKF2/AP_NavEKF2.cpp
-    GOBJECTN(EKF2, NavEKF2, "EK2_", NavEKF2),
+    GOBJECTN(ahrs.EKF2, NavEKF2, "EK2_", NavEKF2),
+#endif
 
+#if HAL_NAVEKF3_AVAILABLE
     // @Group: EK3_
     // @Path: ../libraries/AP_NavEKF3/AP_NavEKF3.cpp
-    GOBJECTN(EKF3, NavEKF3, "EK3_", NavEKF3),
+    GOBJECTN(ahrs.EKF3, NavEKF3, "EK3_", NavEKF3),
+#endif
 
     // @Group: MIS_
     // @Path: ../libraries/AP_Mission/AP_Mission.cpp
@@ -586,18 +590,13 @@ const AP_Param::Info Sub::var_info[] = {
     // @Path: ../libraries/AP_Notify/AP_Notify.cpp
     GOBJECT(notify, "NTF_",  AP_Notify),
 
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-    // @Param: TERRAIN_FOLLOW
-    // @DisplayName: Terrain Following use control
-    // @Description: This enables terrain following for RTL and SURFACE flight modes. To use this option TERRAIN_ENABLE must be 1 and the GCS must  support sending terrain data to the aircraft.  In RTL the RTL_ALT will be considered a height above the terrain.  In LAND mode the vehicle will slow to LAND_SPEED 10m above terrain (instead of 10m above home).  This parameter does not affect AUTO and Guided which use a per-command flag to determine if the height is above-home, absolute or above-terrain.
-    // @Values: 0:Do Not Use in RTL and SURFACE,1:Use in RTL and SURFACE
-    // @User: Standard
-    GSCALAR(terrain_follow, "TERRAIN_FOLLOW", 0),
-#endif
-
     // @Group:
     // @Path: Parameters.cpp
     GOBJECT(g2, "",  ParametersG2),
+
+    // @Group:
+    // @Path: ../libraries/AP_Vehicle/AP_Vehicle.cpp
+    { AP_PARAM_GROUP, "", Parameters::k_param_vehicle, (const void *)&sub, {group_info : AP_Vehicle::var_info} },
 
     AP_VAREND
 };
@@ -717,15 +716,5 @@ void Sub::convert_old_parameters()
         AP_Param::convert_old_parameters(&filt_conversion_info[i], 1.0f);
     }
 
-    const uint8_t old_rc_keys[14] = { Parameters::k_param_rc_1_old,  Parameters::k_param_rc_2_old,
-                                      Parameters::k_param_rc_3_old,  Parameters::k_param_rc_4_old,
-                                      Parameters::k_param_rc_5_old,  Parameters::k_param_rc_6_old,
-                                      Parameters::k_param_rc_7_old,  Parameters::k_param_rc_8_old,
-                                      Parameters::k_param_rc_9_old,  Parameters::k_param_rc_10_old,
-                                      Parameters::k_param_rc_11_old, Parameters::k_param_rc_12_old,
-                                      Parameters::k_param_rc_13_old, Parameters::k_param_rc_14_old
-                                    };
-    const uint16_t old_aux_chan_mask = 0x3FF0;
-    // note that we don't pass in rcmap as we don't want output channel functions changed based on rcmap
-    SRV_Channels::upgrade_parameters(old_rc_keys, old_aux_chan_mask, nullptr);
+    SRV_Channels::upgrade_parameters();
 }

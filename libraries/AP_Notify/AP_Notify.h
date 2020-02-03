@@ -87,6 +87,7 @@ public:
         bool esc_calibration;     // true if calibrating escs
         bool failsafe_radio;      // true if radio failsafe
         bool failsafe_battery;    // true if battery failsafe
+        bool failsafe_gcs;        // true if GCS failsafe
         bool parachute_release;   // true if parachute is being released
         bool ekf_bad;             // true if ekf is reporting problems
         bool autopilot_mode;      // true if vehicle is in an autopilot flight mode (only used by OreoLEDs)
@@ -137,6 +138,9 @@ public:
 
     // handle a LED_CONTROL message
     static void handle_led_control(const mavlink_message_t &msg);
+
+    // handle RGB from Scripting
+    static void handle_rgb(uint8_t r, uint8_t g, uint8_t b, uint8_t rate_hz = 0);
 
     // handle a PLAY_TUNE message
     static void handle_play_tune(const mavlink_message_t &msg);

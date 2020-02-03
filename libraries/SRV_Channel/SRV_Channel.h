@@ -151,6 +151,7 @@ public:
         k_pitch_out             = 125,
         k_thrust_out            = 126,
         k_yaw_out               = 127,
+        k_wingsail_elevator     = 128,
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 
@@ -236,7 +237,7 @@ private:
     AP_Int16 servo_trim;
     // reversal, following convention that 1 means reversed, 0 means normal
     AP_Int8 reversed;
-    AP_Int8 function;
+    AP_Int16 function;
 
     // a pending output value as PWM
     uint16_t output_pwm;
@@ -445,9 +446,8 @@ public:
         return i<NUM_SERVO_CHANNELS?&channels[i]:nullptr;
     }
 
-    // upgrade RC* parameters into SERVO* parameters
-    static bool upgrade_parameters(const uint8_t old_keys[14], uint16_t aux_channel_mask, RCMapper *rcmap);
-    static void upgrade_motors_servo(uint8_t ap_motors_key, uint8_t ap_motors_idx, uint8_t new_channel);
+    // SERVO* parameters
+    static void upgrade_parameters(void);
 
     // given a zero-based motor channel, return the k_motor function for that channel
     static SRV_Channel::Aux_servo_function_t get_motor_function(uint8_t channel) {

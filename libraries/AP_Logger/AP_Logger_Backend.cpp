@@ -278,6 +278,13 @@ bool AP_Logger_Backend::Write(const uint8_t msg_type, va_list arg_list, bool is_
             offset += sizeof(uint64_t);
             break;
         }
+        case 'a': {
+            int16_t *tmp = va_arg(arg_list, int16_t*);
+            const uint8_t bytes = 32*2;
+            memcpy(&buffer[offset], tmp, bytes);
+            offset += bytes;
+            break;
+        }
         }
         if (charlen != 0) {
             char *tmp = va_arg(arg_list, char*);

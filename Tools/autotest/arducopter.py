@@ -7,6 +7,7 @@ import math
 import os
 import shutil
 import time
+import numpy
 
 from pymavlink import mavutil
 from pymavlink import mavextra
@@ -1847,6 +1848,74 @@ class AutoTestCopter(AutoTest):
 
         self.do_RTL()
 
+    def fly_motor_vibration(self):
+        """Test flight with motor vibration"""
+        self.context_push()
+
+        ex = None
+        try:
+            self.set_rc_default()
+            self.set_parameter("INS_LOG_BAT_MASK", 3)
+            self.set_parameter("INS_LOG_BAT_OPT", 0)
+            self.set_parameter("LOG_BITMASK", 958)
+            self.set_parameter("LOG_DISARMED", 0)
+            self.set_parameter("SIM_VIB_MOT_MAX", 350)
+            # these are real values taken from a 180mm Quad
+            self.set_parameter("SIM_GYR_RND", 20)
+            self.set_parameter("SIM_ACC_RND", 5)
+            self.set_parameter("SIM_ACC2_RND", 5)
+            self.set_parameter("SIM_INS_THR_MIN", 0.1)
+            self.reboot_sitl()
+
+            self.takeoff(15, mode="ALT_HOLD")
+
+            hover_time = 15
+            tstart = self.get_sim_time()
+            self.progress("Hovering for %u seconds" % hover_time)
+            while self.get_sim_time_cached() < tstart + hover_time:
+                attitude = self.mav.recv_match(type='ATTITUDE', blocking=True)
+            tend = self.get_sim_time()
+
+            self.do_RTL()
+            psd = self.mavfft_fttd(1, 0, tstart * 1.0e6, tend * 1.0e6)
+            # ignore the first 20Hz and look for a peak at -15dB or more
+            ignore_bins = 20
+            freq = psd["F"][numpy.argmax(psd["X"][ignore_bins:]) + ignore_bins]
+            if numpy.amax(psd["X"][ignore_bins:]) < -15 or freq < 200 or freq > 300:
+                raise NotAchievedException("Did not detect a motor peak, found %f at %f dB" % (freq, numpy.amax(psd["X"][ignore_bins:])))
+            else:
+                self.progress("Detected motor peak at %fHz" % freq)
+
+            # now add a notch and check that post-filter the peak is squashed below 40dB
+            self.set_parameter("INS_LOG_BAT_OPT", 2)
+            self.set_parameter("INS_NOTCH_ENABLE", 1)
+            self.set_parameter("INS_NOTCH_FREQ", freq)
+            self.set_parameter("INS_NOTCH_ATT", 50)
+            self.set_parameter("INS_NOTCH_BW", freq/2)
+            self.reboot_sitl()
+
+            self.takeoff(15, mode="ALT_HOLD")
+
+            tstart = self.get_sim_time()
+            self.progress("Hovering for %u seconds" % hover_time)
+            while self.get_sim_time_cached() < tstart + hover_time:
+                attitude = self.mav.recv_match(type='ATTITUDE', blocking=True)
+            tend = self.get_sim_time()
+            self.do_RTL()
+            psd = self.mavfft_fttd(1, 0, tstart * 1.0e6, tend * 1.0e6)
+            freq = psd["F"][numpy.argmax(psd["X"][ignore_bins:]) + ignore_bins]
+            if numpy.amax(psd["X"][ignore_bins:]) < -30:
+                self.progress("Did not detect a motor peak, found %f at %f dB" % (freq, numpy.amax(psd["X"][ignore_bins:])))
+            else:
+                raise NotAchievedException("Detected motor peak at %f Hz" % (freq))
+        except Exception as e:
+            ex = e
+
+        self.context_pop()
+
+        if ex is not None:
+            raise ex
+
     def fly_vision_position(self):
         """Disable GPS navigation, enable Vicon input."""
         # scribble down a location we can set origin to:
@@ -2170,6 +2239,7 @@ class AutoTestCopter(AutoTest):
         self.change_mode('AUTO')
         self.set_rc(3, 1600)
         self.mavproxy.expect('BANG')
+        self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
         self.progress("Test triggering with mavlink message")
@@ -2183,6 +2253,7 @@ class AutoTestCopter(AutoTest):
                      0,
                      0)
         self.mavproxy.expect('BANG')
+        self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
         self.progress("Testing three-position switch")
@@ -2193,6 +2264,7 @@ class AutoTestCopter(AutoTest):
         self.set_rc(9, 2000)
         self.mavproxy.expect('BANG')
         self.set_rc(9, 1000)
+        self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
         self.context_push()
@@ -2203,6 +2275,7 @@ class AutoTestCopter(AutoTest):
         self.set_parameter("SIM_ENGINE_FAIL", 1)
         self.mavproxy.expect('BANG')
         self.set_rc(9, 1000)
+        self.disarm_vehicle(force=True)
         self.reboot_sitl()
         self.context_pop()
 
@@ -2222,6 +2295,7 @@ class AutoTestCopter(AutoTest):
                 self.reboot_sitl()
                 raise NotAchievedException("Parachute deployed when disabled")
         self.set_rc(9, 1000)
+        self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
     def fly_precision_sitl(self):
@@ -3285,17 +3359,46 @@ class AutoTestCopter(AutoTest):
                 self.set_parameter('MNT_RC_IN_TILT', 12)
                 self.set_parameter('MNT_RC_IN_PAN', 13)
                 self.progress("Testing RC angular control")
+                # default RC min=1100 max=1900
                 self.set_rc(11, 1500)
                 self.set_rc(12, 1500)
                 self.set_rc(13, 1500)
                 self.test_mount_pitch(0, 1)
-                self.set_rc(12, 1400)
+                self.progress("Testing RC input down 1/4 of its range in the output, should be down 1/4 range in output")
+                rc12_in = 1400.0
+                rc12_min = 1100.0 # default
+                rc12_max = 1900.0 # default
+                angmin_tilt = -45.0 # default
+                angmax_tilt = 45.0 # default
+                expected_pitch = ((rc12_in-rc12_min)/(rc12_max-rc12_min) * (angmax_tilt-angmin_tilt)) + angmin_tilt
+                self.progress("expected mount pitch: %f" % expected_pitch)
+                if expected_pitch != -11.25:
+                    raise NotAchievedException("Calculation wrong - defaults changed?!")
+                self.set_rc(12, rc12_in)
                 self.test_mount_pitch(-11.25, 0.01)
                 self.set_rc(12, 1800)
                 self.test_mount_pitch(33.75, 0.01)
                 self.set_rc(11, 1500)
                 self.set_rc(12, 1500)
                 self.set_rc(13, 1500)
+
+                try:
+                    self.progress("Issue https://discuss.ardupilot.org/t/gimbal-limits-with-storm32-backend-mavlink-not-applied-correctly/51438")
+                    self.context_push()
+                    self.set_parameter("RC12_MIN", 1000)
+                    self.set_parameter("RC12_MAX", 2000)
+                    self.set_parameter("MNT_ANGMIN_TIL", -9000)
+                    self.set_parameter("MNT_ANGMAX_TIL", 1000)
+                    self.set_rc(12, 1000)
+                    self.test_mount_pitch(-90.00, 0.01)
+                    self.set_rc(12, 2000)
+                    self.test_mount_pitch(10.00, 0.01)
+                    self.set_rc(12, 1500)
+                    self.test_mount_pitch(-40.00, 0.01)
+                finally:
+                    self.context_pop()
+
+                self.set_rc(12, 1500)
 
                 self.progress("Testing RC rate control")
                 self.set_parameter('MNT_JSTICK_SPD', 10)
@@ -3377,8 +3480,8 @@ class AutoTestCopter(AutoTest):
                              0,
                              0,
                              0,
-                             roi_lat*1e7,
-                             roi_lon*1e7,
+                             int(roi_lat*1e7),
+                             int(roi_lon*1e7),
                              roi_alt,
                              frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
             )
@@ -3390,8 +3493,8 @@ class AutoTestCopter(AutoTest):
                              0,
                              0,
                              0,
-                             roi_lat*1e7,
-                             roi_lon*1e7,
+                             int(roi_lat*1e7),
+                             int(roi_lon*1e7),
                              roi_alt,
                              frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
             )
@@ -3430,8 +3533,8 @@ class AutoTestCopter(AutoTest):
                          )
             self.mav.mav.global_position_int_send(
                 0, # time boot ms
-                roi_lat * 1e7,
-                roi_lon * 1e7,
+                int(roi_lat * 1e7),
+                int(roi_lon * 1e7),
                 0 *1000, # mm alt amsl
                 0 *1000, # relalt mm UP!
                 0, # vx
@@ -3443,8 +3546,8 @@ class AutoTestCopter(AutoTest):
 
             self.mav.mav.global_position_int_send(
                 0, # time boot ms
-                roi_lat * 1e7,
-                roi_lon * 1e7,
+                int(roi_lat * 1e7),
+                int(roi_lon * 1e7),
                 670 *1000, # mm alt amsl
                 100 *1000, # mm UP!
                 0, # vx
@@ -3563,7 +3666,15 @@ class AutoTestCopter(AutoTest):
 
         self.do_RTL()
 
-    def test_onboard_compass_calibration(self, timeout=240):
+    def test_onboard_compass_calibration(self, timeout=300):
+        params = [
+            ("SIM_MAG_DIA_X", "COMPASS_DIA_X", 1.0),
+            ("SIM_MAG_DIA_Y", "COMPASS_DIA_Y", 1.1),
+            ("SIM_MAG_DIA_Z", "COMPASS_DIA_Z", 1.2),
+            ("SIM_MAG_ODI_X", "COMPASS_ODI_X", 0.004),
+            ("SIM_MAG_ODI_Y", "COMPASS_ODI_Y", 0.005),
+            ("SIM_MAG_ODI_Z", "COMPASS_ODI_Z", 0.006),
+        ]
         twist_x = 2.1
         twist_y = 2.2
         twist_z = 2.3
@@ -3572,6 +3683,11 @@ class AutoTestCopter(AutoTest):
         try:
             self.set_parameter("SIM_GND_BEHAV", 0)
             self.set_parameter("AHRS_EKF_TYPE", 10)
+            for param in params:
+                (_in, _out, value) = param
+                self.set_parameter(_in, value)
+                # ensure new parameters get reversed at end of test:
+                self.set_parameter(_out, self.get_parameter(_out))
             self.reboot_sitl()
 
             report = self.mav.messages.get("MAG_CAL_REPORT", None)
@@ -3581,7 +3697,7 @@ class AutoTestCopter(AutoTest):
             self.run_cmd(mavutil.mavlink.MAV_CMD_DO_START_MAG_CAL,
                          1, # bitmask of compasses to calibrate
                          0,
-                         0,
+                         1, # save without user input
                          0,
                          0,
                          0,
@@ -3596,6 +3712,14 @@ class AutoTestCopter(AutoTest):
                 report = self.mav.messages.get("MAG_CAL_REPORT", None)
                 if report is not None:
                     print("Report: %s" % str(report))
+                    # give time for things to save or whatever:
+                    self.wait_heartbeat()
+                    self.wait_heartbeat()
+                    for param in params:
+                        (_in, _out, value) = param
+                        got_value = self.get_parameter(_out)
+                        if abs(got_value - value) > value*0.15:
+                            raise NotAchievedException("%s/%s not within 15%%; got %f want=%f" % (_in, _out, got_value, value))
                     break
                 if now - last_twist_time > 5:
                     last_twist_time = now
@@ -3608,9 +3732,9 @@ class AutoTestCopter(AutoTest):
                         twist_y /= -2
                     if abs(twist_z) > 10:
                         twist_z /= -2
-                    self.set_parameter("SIM_TWIST_X", twist_x)
-                    self.set_parameter("SIM_TWIST_Y", twist_y)
-                    self.set_parameter("SIM_TWIST_Z", twist_z)
+                    self.set_parameter("SIM_TWIST_X", twist_x/10.0)
+                    self.set_parameter("SIM_TWIST_Y", twist_y/10.0)
+                    self.set_parameter("SIM_TWIST_Z", twist_z/10.0)
                     try:
                         self.set_parameter("SIM_TWIST_TIME", 100)
                     except ValueError as e:
@@ -4153,7 +4277,7 @@ class AutoTestCopter(AutoTest):
 
     def fly_rangefinder_drivers(self):
         self.set_parameter("RTL_ALT", 500)
-        self.set_parameter("TERRAIN_FOLLOW", 1)
+        self.set_parameter("RTL_ALT_TYPE", 1)
         drivers = [
             ("lightwareserial",8),
             ("ulanding_v0", 11),
@@ -4184,6 +4308,28 @@ class AutoTestCopter(AutoTest):
                     self.set_parameter("RNGFND%u_TYPE" % (offs+1), rngfnd_param_value)
             self.customise_SITL_commandline(command_line_args)
             self.fly_rangefinder_drivers_fly([x[0] for x in do_drivers])
+
+    def test_parameter_validation(self):
+        self.progress("invalid; min must be less than max:")
+        self.set_parameter("MOT_PWM_MIN", 100)
+        self.set_parameter("MOT_PWM_MAX", 50)
+        self.drain_mav()
+        self.assert_prearm_failure("Check MOT_PWM_MIN/MAX")
+        self.progress("invalid; min must be less than max (equal case):")
+        self.set_parameter("MOT_PWM_MIN", 100)
+        self.set_parameter("MOT_PWM_MAX", 100)
+        self.drain_mav()
+        self.assert_prearm_failure("Check MOT_PWM_MIN/MAX")
+        self.progress("invalid; both must be non-zero or both zero (min=0)")
+        self.set_parameter("MOT_PWM_MIN", 0)
+        self.set_parameter("MOT_PWM_MAX", 100)
+        self.drain_mav()
+        self.assert_prearm_failure("Check MOT_PWM_MIN/MAX")
+        self.progress("invalid; both must be non-zero or both zero (max=0)")
+        self.set_parameter("MOT_PWM_MIN", 100)
+        self.set_parameter("MOT_PWM_MAX", 0)
+        self.drain_mav()
+        self.assert_prearm_failure("Check MOT_PWM_MIN/MAX")
 
     def tests(self):
         '''return list of all tests'''
@@ -4356,6 +4502,10 @@ class AutoTestCopter(AutoTest):
              "Test Camera/Antenna Mount",
              self.test_mount),
 
+            ("Button",
+             "Test Buttons",
+             self.test_button),
+
             ("RangeFinder",
              "Test RangeFinder Basic Functionality",
              self.test_rangefinder),
@@ -4403,12 +4553,19 @@ class AutoTestCopter(AutoTest):
              "Test rangefinder drivers",
              self.fly_rangefinder_drivers),
 
+            ("MotorVibration",
+             "Fly motor vibration test",
+             self.fly_motor_vibration),
+
+            ("ParameterValidation",
+             "Test parameters are checked for validity",
+             self.test_parameter_validation),
+
             ("LogDownLoad",
              "Log download",
              lambda: self.log_download(
                  self.buildlogs_path("ArduCopter-log.bin"),
                  upload_logs=len(self.fail_list) > 0))
-
         ])
         return ret
 
@@ -4572,6 +4729,35 @@ class AutoTestHeli(AutoTestCopter):
         self.progress("Lowering rotor speed")
         self.set_rc(8, 1000)
 
+    def fly_autorotation(self, timeout=600):
+        """ensure basic spline functionality works"""
+        self.set_parameter("AROT_ENABLE", 1)
+        start_alt = 100 # metres
+        self.set_parameter("PILOT_TKOFF_ALT", start_alt * 100)
+        self.mavproxy.send('mode POSHOLD\n')
+        self.wait_mode('POSHOLD')
+        self.set_rc(3, 1000)
+        self.set_rc(8, 1000)
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(8, 2000)
+        self.progress("wait for rotor runup to complete")
+        self.wait_servo_channel_value(8, 1900, timeout=10)
+        self.delay_sim_time(20)
+        self.set_rc(3, 2000)
+        self.wait_altitude(start_alt - 1,
+                           (start_alt + 5),
+                           relative=True,
+                           timeout=timeout)
+        self.progress("Triggering autorotate by raising interlock")
+        self.set_rc(8, 1000)
+        self.mavproxy.expect("SS Glide Phase")
+        self.mavproxy.expect("Hit ground at ([0-9.]+) m/s")
+        speed = float(self.mavproxy.match.group(1))
+        if speed > 30:
+            raise NotAchievedException("Hit too hard")
+        self.mav.motors_disarmed_wait()
+
     def set_rc_default(self):
         super(AutoTestHeli, self).set_rc_default()
         self.progress("Lowering rotor speed")
@@ -4590,6 +4776,10 @@ class AutoTestHeli(AutoTestCopter):
             ("SplineWaypoint",
              "Fly Spline Waypoints",
              self.fly_spline_waypoint),
+
+            ("AutoRotation",
+             "Fly AutoRotation",
+             self.fly_autorotation),
 
             ("LogDownLoad",
              "Log download",

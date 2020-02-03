@@ -23,6 +23,10 @@ public:
     // play a MML tune
     virtual void play_tune(const char *tune) {}
 
+    // RGB control
+    // give RGB and flash rate, used with scripting
+    virtual void rgb_control(uint8_t r, uint8_t g, uint8_t b, uint8_t rate_hz) {}
+
     // this pointer is used to read the parameters relative to devices
     const AP_Notify *pNotify;
 };

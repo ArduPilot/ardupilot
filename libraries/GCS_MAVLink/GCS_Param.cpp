@@ -268,7 +268,7 @@ void GCS_MAVLINK::handle_param_set(const mavlink_message_t &msg)
     // find existing param so we can get the old value
     uint16_t parameter_flags = 0;
     vp = AP_Param::find(key, &var_type, &parameter_flags);
-    if (vp == nullptr) {
+    if (vp == nullptr || isnan(packet.param_value) || isinf(packet.param_value)) {
         return;
     }
 

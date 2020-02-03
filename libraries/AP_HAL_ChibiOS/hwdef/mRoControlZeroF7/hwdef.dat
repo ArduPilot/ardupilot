@@ -41,8 +41,6 @@ STM32_ST_USE_TIMER 5
 define HAL_STORAGE_SIZE 16384
 
 # USB setup
-USB_VENDOR 0x0483 # ST
-USB_PRODUCT 0x5740
 USB_STRING_MANUFACTURER "mRo"
 
 # RC Input set for Interrupt not DMA
@@ -247,9 +245,6 @@ define HAL_WITH_RAMTRON 1
 
 # Enable FAT filesystem support (needs a microSD defined via SDMMC).
 define HAL_OS_FATFS_IO 1
-
-# Enable RTSCTS support. You should define this if you have any UARTs with RTS/CTS pins.
-define AP_FEATURE_RTSCTS 1
 
 # Now setup the default battery pins driver analog pins and default
 # scaling for the power brick.

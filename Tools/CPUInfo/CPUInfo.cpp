@@ -27,7 +27,7 @@ static uint32_t sysclk = 0;
 
 static EKF_Maths ekf;
 
-
+HAL_Semaphore sem;
 
 void setup() {
     ekf.init();
@@ -158,6 +158,8 @@ static void show_timings(void)
     TIMEIT("memcpy128", memcpy((void*)mbuf1, (const void *)mbuf2, sizeof(mbuf1)); v_out_8 += mbuf1[0], 200);
     TIMEIT("memset128", memset((void*)mbuf1, 1, sizeof(mbuf1)); v_out_8 += mbuf1[0], 200);
     TIMEIT("delay(1)", hal.scheduler->delay(1), 5);
+
+    TIMEIT("SEM", { WITH_SEMAPHORE(sem); v_out_32 += v_32;}, 100);
 }
 
 void loop()

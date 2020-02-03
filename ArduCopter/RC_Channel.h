@@ -1,6 +1,7 @@
 #pragma once
 
 #include <RC_Channel/RC_Channel.h>
+#include <AP_Motors/AP_Motors.h>
 #include "mode.h"
 
 class RC_Channel_Copter : public RC_Channel
@@ -15,6 +16,7 @@ protected:
 
 private:
 
+    void do_aux_function_armdisarm(const aux_switch_pos_t ch_flag) override;
     void do_aux_function_change_mode(const Mode::Number mode,
                                      const aux_switch_pos_t ch_flag);
 
@@ -31,7 +33,7 @@ public:
 
     RC_Channel_Copter obj_channels[NUM_RC_CHANNELS];
     RC_Channel_Copter *channel(const uint8_t chan) override {
-        if (chan > NUM_RC_CHANNELS) {
+        if (chan >= NUM_RC_CHANNELS) {
             return nullptr;
         }
         return &obj_channels[chan];

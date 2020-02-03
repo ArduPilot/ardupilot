@@ -85,7 +85,10 @@ private:
         return (GCS_MAVLINK_Dummy *)_chan[ofs];
     };
 
-    void send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text) override { hal.console->printf("TOGCS: %s\n", text); }
+    void send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, uint8_t dest_bitmask) override {
+        hal.console->printf("TOGCS: ");
+        hal.console->vprintf(fmt, arg_list);
+    }
 
     MAV_TYPE frame_type() const override { return MAV_TYPE_FIXED_WING; }
     uint32_t custom_mode() const override { return 3; } // magic number

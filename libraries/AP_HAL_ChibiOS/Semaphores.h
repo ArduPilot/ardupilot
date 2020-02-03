@@ -34,18 +34,6 @@ public:
     void assert_owner(void);
 protected:
     // to avoid polluting the global namespace with the 'ch' variable,
-    // we declare the lock as a uint64_t, and cast inside the cpp file
-    uint64_t _lock[2];
-};
-
-// a recursive semaphore, allowing for a thread to take it more than
-// once. It must be released the same number of times it is taken
-class ChibiOS::Semaphore_Recursive : public ChibiOS::Semaphore {
-public:
-    Semaphore_Recursive();
-    bool give() override;
-    bool take(uint32_t timeout_ms) override;
-    bool take_nonblocking() override;
-private:
-    uint32_t count;
+    // we declare the lock as a uint32_t array, and cast inside the cpp file
+    uint32_t _lock[5];
 };

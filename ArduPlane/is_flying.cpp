@@ -24,7 +24,7 @@ void Plane::update_is_flying_5Hz(void)
 
     // airspeed at least 75% of stall speed?
     const float airspeed_threshold = MAX(aparm.airspeed_min,2)*0.75f;
-    bool airspeed_movement = ahrs.airspeed_estimate(&aspeed) && (aspeed >= airspeed_threshold);
+    bool airspeed_movement = ahrs.airspeed_estimate(aspeed) && (aspeed >= airspeed_threshold);
 
     if (gps.status() < AP_GPS::GPS_OK_FIX_2D && arming.is_armed() && !airspeed_movement && isFlyingProbability > 0.3) {
         // when flying with no GPS, use the last airspeed estimate to
@@ -168,7 +168,7 @@ void Plane::update_is_flying_5Hz(void)
     Log_Write_Status();
 
     // tell AHRS flying state
-    ahrs.set_likely_flying(new_is_flying);
+    set_likely_flying(new_is_flying);
 }
 
 /*

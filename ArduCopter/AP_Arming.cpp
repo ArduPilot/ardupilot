@@ -60,7 +60,8 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
         & parameter_checks(display_failure)
         & motor_checks(display_failure)
         & pilot_throttle_checks(display_failure)
-        & oa_checks(display_failure) &
+        & oa_checks(display_failure)
+        & gcs_failsafe_check(display_failure) &
         AP_Arming::pre_arm_checks(display_failure);
 }
 
@@ -195,6 +196,14 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
             check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Heli motors checks failed");
             return false;
         }
+
+        char fail_msg[50];
+        // check input mangager parameters
+        if (!copter.input_manager.parameter_check(fail_msg, ARRAY_SIZE(fail_msg))) {
+            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "%s", fail_msg);
+            return false;
+        }
+
         // Inverted flight feature disabled for Heli Single and Dual frames
         if (copter.g2.frame_class.get() != AP_Motors::MOTOR_FRAME_HELI_QUAD &&
             rc().find_channel_for_option(RC_Channel::aux_func_t::INVERTED) != nullptr) {
@@ -214,11 +223,52 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
             check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Invalid MultiCopter FRAME_CLASS");
             return false;
         }
+
+        // checks MOT_PWM_MIN/MAX for acceptable values
+        if (!copter.motors->check_mot_pwm_params()) {
+            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Check MOT_PWM_MIN/MAX");
+            return false;
+        }
         #endif // HELI_FRAME
 
-        // check for missing terrain data
-        if (!pre_arm_terrain_check(display_failure)) {
-            return false;
+        // checks when using range finder for RTL
+        if (copter.mode_rtl.get_alt_type() == ModeRTL::RTLAltType::RTL_ALTTYPE_TERRAIN) {
+            // get terrain source from wpnav
+            switch (copter.wp_nav->get_terrain_source()) {
+            case AC_WPNav::TerrainSource::TERRAIN_UNAVAILABLE:
+                check_failed(ARMING_CHECK_PARAMETERS, display_failure, "RTL_ALT_TYPE=1 but no terrain data");
+                return false;
+                break;
+            case AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER:
+                if (!copter.rangefinder_state.enabled || !copter.rangefinder.has_orientation(ROTATION_PITCH_270)) {
+                    check_failed(ARMING_CHECK_PARAMETERS, display_failure, "RTL_ALT_TYPE=1 but no rangefinder");
+                    return false;
+                }
+                // check if RTL_ALT is higher than rangefinder's max range
+                if (copter.g.rtl_altitude > copter.rangefinder.max_distance_cm_orient(ROTATION_PITCH_270)) {
+                    check_failed(ARMING_CHECK_PARAMETERS, display_failure, "RTL_ALT_TYPE=1 but RTL_ALT>RNGFND_MAX_CM");
+                    return false;
+                }
+                break;
+            case AC_WPNav::TerrainSource::TERRAIN_FROM_TERRAINDATABASE:
+#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
+                if (!copter.terrain.enabled()) {
+                    check_failed(ARMING_CHECK_PARAMETERS, display_failure, "RTL_ALT_TYPE=1 but terrain disabled");
+                    return false;
+                }
+                // check terrain data is loaded
+                uint16_t terr_pending, terr_loaded;
+                copter.terrain.get_statistics(terr_pending, terr_loaded);
+                if (terr_pending != 0) {
+                    check_failed(ARMING_CHECK_PARAMETERS, display_failure, "RTL_ALT_TYPE=1, waiting for terrain data");
+                    return false;
+                }
+#else
+                check_failed(ARMING_CHECK_PARAMETERS, display_failure, "RTL_ALT_TYPE=1 but terrain disabled");
+                return false;
+#endif
+                break;
+            }
         }
 
         // check adsb avoidance failsafe
@@ -417,36 +467,6 @@ bool AP_Arming_Copter::pre_arm_ekf_attitude_check()
     return filt_status.flags.attitude;
 }
 
-// check we have required terrain data
-bool AP_Arming_Copter::pre_arm_terrain_check(bool display_failure)
-{
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-    // succeed if not using terrain data
-    if (!copter.terrain_use()) {
-        return true;
-    }
-
-    // check if terrain following is enabled, using a range finder but RTL_ALT is higher than rangefinder's max range
-    // To-Do: modify RTL return path to fly at or above the RTL_ALT and remove this check
-
-    if (copter.rangefinder_state.enabled && (copter.g.rtl_altitude > copter.rangefinder.max_distance_cm_orient(ROTATION_PITCH_270))) {
-        check_failed(ARMING_CHECK_PARAMETERS, display_failure, "RTL_ALT above rangefinder max range");
-        return false;
-    }
-
-    // show terrain statistics
-    uint16_t terr_pending, terr_loaded;
-    copter.terrain.get_statistics(terr_pending, terr_loaded);
-    bool have_all_data = (terr_pending <= 0);
-    if (!have_all_data) {
-        check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Waiting for Terrain data");
-    }
-    return have_all_data;
-#else
-    return true;
-#endif
-}
-
 // check nothing is too close to vehicle
 bool AP_Arming_Copter::proximity_checks(bool display_failure) const
 {
@@ -550,6 +570,15 @@ bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
     return true;
 }
 
+// Check GCS failsafe
+bool AP_Arming_Copter::gcs_failsafe_check(bool display_failure)
+{
+    if (copter.failsafe.gcs) {
+        check_failed(display_failure, "GCS failsafe on");
+        return false;
+    }
+    return true;
+}
 
 // arm_checks - perform final checks before arming
 //  always called just before arming.  Return true if ok to arm
@@ -771,8 +800,6 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
     // finally actually arm the motors
     copter.motors->armed(true);
 
-    AP::logger().Write_Event(LogEvent::ARMED);
-
     // log flight mode in case it was changed while vehicle was disarmed
     AP::logger().Write_Mode((uint8_t)copter.control_mode, copter.control_mode_reason);
 
@@ -839,8 +866,6 @@ bool AP_Arming_Copter::disarm()
     // we are not in the air
     copter.set_land_complete(true);
     copter.set_land_complete_maybe(true);
-
-    AP::logger().Write_Event(LogEvent::DISARMED);
 
     // send disarm command to motors
     copter.motors->armed(false);

@@ -4,7 +4,7 @@
    Authors:    Doug Weibel, Jose Julio, Jordi Munoz, Jason Short, Randy Mackay, Pat Hickey, John Arne Birkeland, Olivier Adler, Amilcar Lucas, Gregory Fletcher, Paul Riseborough, Brandon Jones, Jon Challinger, Tom Pittenger
    Thanks to:  Chris Anderson, Michael Oborne, Paul Mather, Bill Premerlani, James Cohen, JB from rotorFX, Automatik, Fefenin, Peter Meister, Remzibi, Yury Smirnov, Sandro Benigno, Max Levine, Roberto Navoni, Lorenz Meier, Yury MonZon
 
-   Please contribute your ideas! See http://dev.ardupilot.org for details
+   Please contribute your ideas! See https://dev.ardupilot.org for details
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -93,7 +93,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_InertialSensor, &plane.ins, periodic, 50, 50),
     SCHED_TASK(avoidance_adsb_update,  10,    100),
     SCHED_TASK_CLASS(RC_Channels,       (RC_Channels*)&plane.g2.rc_channels, read_aux_all,           10,    200),
-    SCHED_TASK_CLASS(AP_Button, &plane.g2.button, update, 5, 100),
+    SCHED_TASK_CLASS(AP_Button, &plane.button, update, 5, 100),
 #if STATS_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Stats, &plane.g2.stats, update, 1, 100),
 #endif
@@ -112,20 +112,16 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(update_dynamic_notch,   50,    200),
 };
 
-constexpr int8_t Plane::_failsafe_priorities[7];
-
-void Plane::setup() 
+void Plane::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
+                                uint8_t &task_count,
+                                uint32_t &log_bit)
 {
-    // load the default values of variables listed in var_info[]
-    AP_Param::setup_sketch_defaults();
-
-    rssi.init();
-
-    init_ardupilot();
-
-    // initialise the main loop scheduler
-    scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks), MASK_LOG_PM);
+    tasks = &scheduler_tasks[0];
+    task_count = ARRAY_SIZE(scheduler_tasks);
+    log_bit = MASK_LOG_PM;
 }
+
+constexpr int8_t Plane::_failsafe_priorities[7];
 
 void Plane::loop()
 {

@@ -49,7 +49,7 @@ public:
 
     virtual void PrepForArming() { }
 
-    virtual uint16_t start_new_log(void) = 0;
+    virtual void start_new_log() { };
 
     /* stop logging - close output files etc etc.
      *

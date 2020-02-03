@@ -60,7 +60,9 @@ void Rover::update_wheel_encoder()
     const uint32_t now_ms = AP_HAL::millis();
 
     // calculate angular change (in radians)
+#if HAL_NAVEKF3_AVAILABLE
     const float delta_angle = curr_angle_rad - wheel_encoder_last_angle_rad[wheel_encoder_last_index_sent];
+#endif
     wheel_encoder_last_angle_rad[wheel_encoder_last_index_sent] = curr_angle_rad;
 
     // calculate delta time using time between sensor readings or time since last send to ekf (whichever is shorter)
@@ -72,6 +74,7 @@ void Rover::update_wheel_encoder()
     } else {
         wheel_encoder_last_reading_ms[wheel_encoder_last_index_sent] = sensor_reading_ms;
     }
+#if HAL_NAVEKF3_AVAILABLE
     const float delta_time = sensor_diff_ms * 0.001f;
 
     /* delAng is the measured change in angular position from the previous measurement where a positive rotation is produced by forward motion of the vehicle (rad)
@@ -79,11 +82,12 @@ void Rover::update_wheel_encoder()
      * timeStamp_ms is the time when the rotation was last measured (msec)
      * posOffset is the XYZ body frame position of the wheel hub (m)
      */
-    EKF3.writeWheelOdom(delta_angle,
+    ahrs.EKF3.writeWheelOdom(delta_angle,
                         delta_time,
                         wheel_encoder_last_reading_ms[wheel_encoder_last_index_sent],
                         g2.wheel_encoder.get_pos_offset(wheel_encoder_last_index_sent),
                         g2.wheel_encoder.get_wheel_radius(wheel_encoder_last_index_sent));
+#endif
 }
 
 // Accel calibration

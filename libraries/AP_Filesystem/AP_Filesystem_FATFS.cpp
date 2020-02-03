@@ -3,6 +3,7 @@
  */
 #include "AP_Filesystem.h"
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
 #include <stdio.h>
 
 #if HAVE_FILESYSTEM_SUPPORT && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
@@ -23,10 +24,14 @@ static bool remount_needed;
 #define FATFS_W (S_IWUSR | S_IWGRP | S_IWOTH)	/*< FatFs Write perms */
 #define FATFS_X (S_IXUSR | S_IXGRP | S_IXOTH)	/*< FatFs Execute perms */
 
+// don't write more than 4k at a time to prevent needing too much
+// DMAable memory
+#define MAX_IO_SIZE 4096
+
 // use a semaphore to ensure that only one filesystem operation is
 // happening at a time. A recursive semaphore is used to cope with the
 // mkdir() inside sdcard_retry()
-static HAL_Semaphore_Recursive sem;
+static HAL_Semaphore sem;
 
 typedef struct {
     FIL *fh;
@@ -36,7 +41,7 @@ typedef struct {
 #define MAX_FILES 16
 static FAT_FILE *file_table[MAX_FILES];
 
-static bool isatty(int fileno)
+static int isatty_(int fileno)
 {
     if (fileno >= 0 && fileno <= 2) {
         return true;
@@ -54,7 +59,7 @@ static int new_file_descriptor(const char *pathname)
     FIL *fh;
 
     for (i=0; i<MAX_FILES; ++i) {
-        if (isatty(i)) {
+        if (isatty_(i)) {
             continue;
         }
         if ( file_table[i] == NULL) {
@@ -109,7 +114,7 @@ static int free_file_descriptor(int fileno)
     FAT_FILE *stream;
     FIL *fh;
 
-    if (isatty( fileno )) {
+    if (isatty_( fileno )) {
         errno = EBADF;
         return -1;
     }
@@ -139,7 +144,7 @@ static FIL *fileno_to_fatfs(int fileno)
     FAT_FILE *stream;
     FIL *fh;
 
-    if (isatty( fileno )) {
+    if (isatty_( fileno )) {
         errno = EBADF;
         return nullptr;
     }
@@ -379,7 +384,6 @@ int AP_Filesystem::close(int fileno)
 
 ssize_t AP_Filesystem::read(int fd, void *buf, size_t count)
 {
-    UINT size;
     UINT bytes = count;
     int res;
     FIL *fh;
@@ -401,17 +405,31 @@ ssize_t AP_Filesystem::read(int fd, void *buf, size_t count)
         return -1;
     }
 
-    res = f_read(fh, (void *) buf, bytes, &size);
-    if (res != FR_OK) {
-        errno = fatfs_to_errno((FRESULT)res);
-        return -1;
-    }
-    return (ssize_t)size;
+    UINT total = 0;
+    do {
+        UINT size = 0;
+        UINT n = MIN(bytes, MAX_IO_SIZE);
+        res = f_read(fh, (void *)buf, n, &size);
+        if (res != FR_OK) {
+            errno = fatfs_to_errno((FRESULT)res);
+            return -1;
+        }
+        if (size > n || size == 0) {
+            errno = EIO;
+            return -1;
+        }
+        total += size;
+        buf = (void *)(((uint8_t *)buf)+size);
+        bytes -= size;
+        if (size < n) {
+            break;
+        }
+    } while (bytes > 0);
+    return (ssize_t)total;
 }
 
 ssize_t AP_Filesystem::write(int fd, const void *buf, size_t count)
 {
-    UINT size;
     UINT bytes = count;
     FRESULT res;
     FIL *fh;
@@ -428,19 +446,34 @@ ssize_t AP_Filesystem::write(int fd, const void *buf, size_t count)
         return -1;
     }
 
-    res = f_write(fh, buf, bytes, &size);
-    if (res == FR_DISK_ERR && RETRY_ALLOWED()) {
-        // one retry on disk error
-        hal.scheduler->delay(100);
-        if (remount_file_system()) {
-            res = f_write(fh, buf, bytes, &size);
+    UINT total = 0;
+    do {
+        UINT n = MIN(bytes, MAX_IO_SIZE);
+        UINT size = 0;
+        res = f_write(fh, buf, n, &size);
+        if (res == FR_DISK_ERR && RETRY_ALLOWED()) {
+            // one retry on disk error
+            hal.scheduler->delay(100);
+            if (remount_file_system()) {
+                res = f_write(fh, buf, n, &size);
+            }
         }
-    }
-    if (res != FR_OK) {
-        errno = fatfs_to_errno(res);
-        return -1;
-    }
-    return (ssize_t)size;
+        if (size > n || size == 0) {
+            errno = EIO;
+            return -1;
+        }
+        if (res != FR_OK || size > n) {
+            errno = fatfs_to_errno(res);
+            return -1;
+        }
+        total += size;
+        buf = (void *)(((uint8_t *)buf)+size);
+        bytes -= size;
+        if (size < n) {
+            break;
+        }
+    } while (bytes > 0);
+    return (ssize_t)total;
 }
 
 int AP_Filesystem::fsync(int fileno)
@@ -486,7 +519,7 @@ off_t AP_Filesystem::lseek(int fileno, off_t position, int whence)
         errno = EMFILE;
         return -1;
     }
-    if (isatty(fileno)) {
+    if (isatty_(fileno)) {
         return -1;
     }
 
@@ -814,6 +847,8 @@ bool AP_Filesystem::set_mtime(const char *filename, const time_t mtime_sec)
 
     fno.fdate = fdate;
     fno.ftime = ftime;
+
+    WITH_SEMAPHORE(sem);
 
     return f_utime(filename, (FILINFO *)&fno) == FR_OK;
 }

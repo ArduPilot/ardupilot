@@ -32,6 +32,14 @@
   #define SCRIPTING_STACK_MAX_SIZE (64 * 1024)
 #endif // !defined(SCRIPTING_STACK_MAX_SIZE)
 
+#if !defined(SCRIPTING_HEAP_SIZE)
+  #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+    #define SCRIPTING_HEAP_SIZE (64 * 1024)
+  #else
+    #define SCRIPTING_HEAP_SIZE (43 * 1024)
+  #endif
+#endif // !defined(SCRIPTING_HEAP_SIZE)
+
 static_assert(SCRIPTING_STACK_SIZE >= SCRIPTING_STACK_MIN_SIZE, "Scripting requires a larger minimum stack size");
 static_assert(SCRIPTING_STACK_SIZE <= SCRIPTING_STACK_MAX_SIZE, "Scripting requires a smaller stack size");
 
@@ -61,7 +69,7 @@ const AP_Param::GroupInfo AP_Scripting::var_info[] = {
     // @Increment: 1024
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("HEAP_SIZE", 3, AP_Scripting, _script_heap_size, 42*1024),
+    AP_GROUPINFO("HEAP_SIZE", 3, AP_Scripting, _script_heap_size, SCRIPTING_HEAP_SIZE),
 
     AP_GROUPINFO("DEBUG_LVL", 4, AP_Scripting, _debug_level, 1),
 

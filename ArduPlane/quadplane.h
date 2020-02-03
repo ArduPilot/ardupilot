@@ -124,9 +124,9 @@ public:
     // check if we have completed transition to vtol
     bool tailsitter_transition_vtol_complete(void) const;
 
-    // account for surface speed scaling in hover
+    // account for control surface speed scaling in VTOL modes
     void tailsitter_speed_scaling(void);
-    
+
     // user initiated takeoff for guided mode
     bool do_user_takeoff(float takeoff_altitude);
 
@@ -149,6 +149,7 @@ public:
         int16_t  target_climb_rate;
         int16_t  climb_rate;
         float    throttle_mix;
+        float    speed_scaler;
     };
 
     MAV_TYPE get_mav_type(void) const;
@@ -442,20 +443,25 @@ private:
         bool motors_active:1;
     } tilt;
 
+    // bit 0 enables plane mode and bit 1 enables body-frame roll mode
     enum tailsitter_input {
-        TAILSITTER_INPUT_MULTICOPTER = 0,
-        TAILSITTER_INPUT_PLANE       = 1,
-        TAILSITTER_INPUT_BF_ROLL_M   = 2,
-        TAILSITTER_INPUT_BF_ROLL_P   = 3,
+        TAILSITTER_INPUT_PLANE   = (1U<<0),
+        TAILSITTER_INPUT_BF_ROLL = (1U<<1)
     };
 
     enum tailsitter_mask {
-        TAILSITTER_MASK_AILERON  = 1,
-        TAILSITTER_MASK_ELEVATOR = 2,
-        TAILSITTER_MASK_THROTTLE = 4,
-        TAILSITTER_MASK_RUDDER   = 8,
+        TAILSITTER_MASK_AILERON  = (1U<<0),
+        TAILSITTER_MASK_ELEVATOR = (1U<<1),
+        TAILSITTER_MASK_THROTTLE = (1U<<2),
+        TAILSITTER_MASK_RUDDER   = (1U<<3),
     };
-    
+
+    enum tailsitter_gscl_mask {
+        TAILSITTER_GSCL_BOOST   = (1U<<0),
+        TAILSITTER_GSCL_ATT_THR = (1U<<1),
+        TAILSITTER_GSCL_INTERP  = (1U<<2),
+    };
+
     // tailsitter control variables
     struct {
         AP_Int8 transition_angle;
@@ -466,9 +472,16 @@ private:
         AP_Float vectored_hover_gain;
         AP_Float vectored_hover_power;
         AP_Float throttle_scale_max;
+        AP_Float gain_scaling_min;
         AP_Float max_roll_angle;
         AP_Int16 motor_mask;
+        AP_Float scaling_speed_min;
+        AP_Float scaling_speed_max;
+        AP_Int16 gain_scaling_mask;
     } tailsitter;
+
+    // tailsitter speed scaler
+    float last_spd_scaler = 1.0f;
 
     // the attitude view of the VTOL attitude controller
     AP_AHRS_View *ahrs_view;
@@ -554,6 +567,11 @@ private:
       are we in the final landing phase of a VTOL landing?
      */
     bool in_vtol_land_final(void) const;
+
+    /*
+      are we in any of the phases of a VTOL landing?
+     */
+    bool in_vtol_land_sequence(void) const;
     
 public:
     void motor_test_output();

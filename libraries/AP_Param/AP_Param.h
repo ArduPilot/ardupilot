@@ -39,7 +39,11 @@
   maximum size of embedded parameter file
  */
 #ifndef AP_PARAM_MAX_EMBEDDED_PARAM
-#define AP_PARAM_MAX_EMBEDDED_PARAM 8192
+#if HAL_MINIMIZE_FEATURES
+# define AP_PARAM_MAX_EMBEDDED_PARAM 1024
+#else
+# define AP_PARAM_MAX_EMBEDDED_PARAM 8192
+#endif
 #endif
 
 /*
@@ -389,6 +393,13 @@ public:
     // convert old vehicle parameters to new object parameters
     static void         convert_old_parameters(const struct ConversionInfo *conversion_table, uint8_t table_size, uint8_t flags=0);
 
+    /*
+      convert width of a parameter, allowing update to wider scalar
+      values without changing the parameter indexes. This will return
+      true if the parameter was converted from an old parameter value
+    */
+    bool convert_parameter_width(ap_var_type old_ptype);
+    
     // convert a single parameter with scaling
     enum {
         CONVERT_FLAG_REVERSE=1, // handle _REV -> _REVERSED conversion
@@ -444,6 +455,7 @@ public:
 
     // set frame type flags. Used to unhide frame specific parameters
     static void set_frame_type_flags(uint16_t flags_to_set) {
+        _parameter_count = 0;
         _frame_type_flags |= flags_to_set;
     }
 

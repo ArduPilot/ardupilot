@@ -413,6 +413,10 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Path: ../libraries/AP_Stats/AP_Stats.cpp
     GOBJECT(stats, "STAT",  AP_Stats),
 
+    // @Group:
+    // @Path: ../libraries/AP_Vehicle/AP_Vehicle.cpp
+    { AP_PARAM_GROUP, "", Parameters::k_param_vehicle, (const void *)&tracker, {group_info : AP_Vehicle::var_info} },
+
     AP_VAREND
 };
 

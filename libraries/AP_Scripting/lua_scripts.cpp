@@ -184,8 +184,8 @@ void lua_scripts::run_next_script(lua_State *L) {
             gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: %s exceeded time limit (%d)", script->name,  (int)vm_steps);
             remove_script(L, script);
         } else {
-            gcs().send_text(MAV_SEVERITY_INFO, "Lua: %s", lua_tostring(L, -1));
             hal.console->printf("Lua: Error: %s\n", lua_tostring(L, -1));
+            gcs().send_text(MAV_SEVERITY_INFO, "Lua: %s", lua_tostring(L, -1));
             remove_script(L, script);
         }
         lua_pop(L, 1);

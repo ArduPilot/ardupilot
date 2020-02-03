@@ -106,15 +106,6 @@ void AP_Arming_Rover::update_soft_armed()
 }
 
 /*
-  update AHRS soft arm state and log as needed
- */
-void AP_Arming_Rover::change_arm_state(void)
-{
-    Log_Write_Arm_Disarm();
-    update_soft_armed();
-}
-
-/*
   arm motors
  */
 bool AP_Arming_Rover::arm(AP_Arming::Method method, const bool do_arming_checks)
@@ -133,7 +124,7 @@ bool AP_Arming_Rover::arm(AP_Arming::Method method, const bool do_arming_checks)
     // save home heading for use in sail vehicles
     rover.g2.windvane.record_home_heading();
 
-    change_arm_state();
+    update_soft_armed();
 
     gcs().send_text(MAV_SEVERITY_INFO, "Throttle armed");
 
@@ -153,8 +144,7 @@ bool AP_Arming_Rover::disarm(void)
         rover.mode_auto.mission.reset();
     }
 
-    // only log if disarming was successful
-    change_arm_state();
+    update_soft_armed();
 
     gcs().send_text(MAV_SEVERITY_INFO, "Throttle disarmed");
 

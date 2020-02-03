@@ -64,11 +64,11 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
     if (strcmp(path, "GPS1") == 0) {
         /* gps */
         _connected = true;
-        _fd = _sitlState->gps_pipe();
+        _fd = _sitlState->gps_pipe(0);
     } else if (strcmp(path, "GPS2") == 0) {
         /* 2nd gps */
         _connected = true;
-        _fd = _sitlState->gps2_pipe();
+        _fd = _sitlState->gps_pipe(1);
     } else {
         /* parse type:args:flags string for path. 
            For example:
@@ -209,7 +209,7 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
         if (nwritten == -1 && errno != EAGAIN && _uart_path) {
             if (_fd_write != -1) {
                 close(_fd_write);
-                _fd_write = 1;
+                _fd_write = -1;
             }
             close(_fd);
             _fd = -1;
@@ -302,7 +302,7 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
         }
 
         fprintf(stderr, "Serial port %u on TCP port %u\n", _portNumber,
-                _sitlState->base_port() + _portNumber);
+                (unsigned)ntohs(sockaddr.sin_port));
         fflush(stdout);
     }
 
@@ -318,7 +318,7 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
         setsockopt(_fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
         fcntl(_fd, F_SETFD, FD_CLOEXEC);
         _connected = true;
-        fprintf(stdout, "Connection on serial port %u\n", _portNumber);
+        fprintf(stdout, "Connection on serial port %u\n", (unsigned)ntohs(sockaddr.sin_port));
     }
 }
 

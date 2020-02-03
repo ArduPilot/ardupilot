@@ -83,10 +83,11 @@ bool AP_Compass_LSM9DS1::init()
 {
     AP_HAL::Semaphore *bus_sem = _dev->get_semaphore();
 
-    if (!bus_sem || !bus_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (!bus_sem) {
         hal.console->printf("LSM9DS1: Unable to get bus semaphore\n");
         return false;
     }
+    bus_sem->take_blocking();
 
     if (!_check_id()) {
         hal.console->printf("LSM9DS1: Could not check id\n");

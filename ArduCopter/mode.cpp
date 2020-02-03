@@ -202,9 +202,8 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 #if FRAME_CONFIG == HELI_FRAME
     // do not allow helis to enter a non-manual throttle mode if the
     // rotor runup is not complete
-    if (!ignore_checks && 
-    !new_flightmode->has_manual_throttle() && 
-    (motors->get_spool_state() == AP_Motors::SpoolState::SPOOLING_UP || motors->get_spool_state() == AP_Motors::SpoolState::SPOOLING_DOWN)) {
+    if (!ignore_checks && !new_flightmode->has_manual_throttle() &&
+        (motors->get_spool_state() == AP_Motors::SpoolState::SPOOLING_UP || motors->get_spool_state() == AP_Motors::SpoolState::SPOOLING_DOWN)) {
         #if MODE_AUTOROTATE_ENABLED == ENABLED
             //if the mode being exited is the autorotation mode allow mode change despite rotor not being at
             //full speed.  This will reduce altitude loss on bail-outs back to non-manual throttle modes
@@ -219,12 +218,6 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
             return false;
         }
     }
-
-    #if MODE_AUTOROTATE_ENABLED == ENABLED
-        // If changing to autorotate flight mode from a non-manual throttle mode, store the previous flight mode
-        // to exit back to it when interlock is re-engaged
-        prev_control_mode = control_mode;
-    #endif
 #endif
 
 #if FRAME_CONFIG != HELI_FRAME
@@ -265,6 +258,9 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 
     // perform any cleanup required by previous flight mode
     exit_mode(flightmode, new_flightmode);
+
+    // store previous flight mode (only used by tradeheli's autorotation)
+    prev_control_mode = control_mode;
 
     // update flight mode
     flightmode = new_flightmode;
@@ -519,17 +515,6 @@ int32_t Mode::get_alt_above_ground_cm(void)
 
 void Mode::land_run_vertical_control(bool pause_descent)
 {
-#if PRECISION_LANDING == ENABLED
-    const bool navigating = pos_control->is_active_xy();
-    bool doing_precision_landing = !copter.ap.land_repo_active && copter.precland.target_acquired() && navigating;
-#else
-    bool doing_precision_landing = false;
-#endif
-
-    // compute desired velocity
-    const float precland_acceptable_error = 15.0f;
-    const float precland_min_descent_speed = 10.0f;
-
     float cmb_rate = 0;
     if (!pause_descent) {
         float max_land_descent_velocity;
@@ -548,11 +533,20 @@ void Mode::land_run_vertical_control(bool pause_descent)
         // Constrain the demanded vertical velocity so that it is between the configured maximum descent speed and the configured minimum descent speed.
         cmb_rate = constrain_float(cmb_rate, max_land_descent_velocity, -abs(g.land_speed));
 
+#if PRECISION_LANDING == ENABLED
+        const bool navigating = pos_control->is_active_xy();
+        bool doing_precision_landing = !copter.ap.land_repo_active && copter.precland.target_acquired() && navigating;
+
         if (doing_precision_landing && copter.rangefinder_alt_ok() && copter.rangefinder_state.alt_cm > 35.0f && copter.rangefinder_state.alt_cm < 200.0f) {
+            // compute desired velocity
+            const float precland_acceptable_error = 15.0f;
+            const float precland_min_descent_speed = 10.0f;
+
             float max_descent_speed = abs(g.land_speed)*0.5f;
             float land_slowdown = MAX(0.0f, pos_control->get_horizontal_error()*(max_descent_speed/precland_acceptable_error));
             cmb_rate = MIN(-precland_min_descent_speed, -max_descent_speed+land_slowdown);
         }
+#endif
     }
 
     // update altitude target and call position controller

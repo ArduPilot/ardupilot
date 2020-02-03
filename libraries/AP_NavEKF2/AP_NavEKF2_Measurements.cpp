@@ -5,6 +5,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_RangeFinder/AP_RangeFinder_Backend.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
@@ -28,11 +29,16 @@ void NavEKF2_core::readRangeFinder(void)
 
     // get theoretical correct range when the vehicle is on the ground
     // don't allow range to go below 5cm because this can cause problems with optical flow processing
-    rngOnGnd = MAX(frontend->_rng.ground_clearance_cm_orient(ROTATION_PITCH_270) * 0.01f, 0.05f);
+    const RangeFinder *_rng = AP::rangefinder();
+    if (_rng == nullptr) {
+        return;
+    }
+
+    rngOnGnd = MAX(_rng->ground_clearance_cm_orient(ROTATION_PITCH_270) * 0.01f, 0.05f);
 
     // read range finder at 20Hz
     // TODO better way of knowing if it has new data
-    if ((imuSampleTime_ms - lastRngMeasTime_ms) > 50) {
+    if (_rng && (imuSampleTime_ms - lastRngMeasTime_ms) > 50) {
 
         // reset the timer used to control the measurement rate
         lastRngMeasTime_ms =  imuSampleTime_ms;
@@ -41,7 +47,7 @@ void NavEKF2_core::readRangeFinder(void)
         // use data from two range finders if available
 
         for (uint8_t sensorIndex = 0; sensorIndex <= 1; sensorIndex++) {
-            AP_RangeFinder_Backend *sensor = frontend->_rng.get_backend(sensorIndex);
+            AP_RangeFinder_Backend *sensor = _rng->get_backend(sensorIndex);
             if (sensor == nullptr) {
                 continue;
             }

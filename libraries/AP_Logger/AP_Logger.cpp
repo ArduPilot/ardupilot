@@ -111,7 +111,6 @@ AP_Logger::AP_Logger(const AP_Int32 &log_bitmask)
 
 void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
 {
-    gcs().send_text(MAV_SEVERITY_INFO, "Preparing log system");
     if (hal.util->was_watchdog_armed()) {
         gcs().send_text(MAV_SEVERITY_INFO, "Forcing logging for watchdog reset");
         _params.log_disarmed.set(1);
@@ -144,8 +143,8 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
     }
 #endif // HAVE_FILESYSTEM_SUPPORT
 
-#if LOGGER_MAVLINK_SUPPORT
-    if (_params.backend_types & uint8_t(Backend_Type::MAVLINK)) {
+#ifdef HAL_LOGGING_DATAFLASH
+    if (_params.backend_types & uint8_t(Backend_Type::BLOCK)) {
         if (_next_backend == LOGGER_MAX_BACKENDS) {
             AP_HAL::panic("Too many backends");
             return;
@@ -153,11 +152,10 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
         LoggerMessageWriter_DFLogStart *message_writer =
             new LoggerMessageWriter_DFLogStart();
         if (message_writer != nullptr)  {
-            backends[_next_backend] = new AP_Logger_MAVLink(*this,
-                                                            message_writer);
+            backends[_next_backend] = new AP_Logger_DataFlash(*this, message_writer);
         }
         if (backends[_next_backend] == nullptr) {
-            hal.console->printf("Unable to open AP_Logger_MAVLink");
+            hal.console->printf("Unable to open AP_Logger_DataFlash");
         } else {
             _next_backend++;
         }
@@ -182,9 +180,9 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
         }
     }
 #endif
-
-#ifdef HAL_LOGGING_DATAFLASH
-    if (_params.backend_types & uint8_t(Backend_Type::BLOCK)) {
+    // the "main" logging type needs to come before mavlink so that index 0 is correct
+#if LOGGER_MAVLINK_SUPPORT
+    if (_params.backend_types & uint8_t(Backend_Type::MAVLINK)) {
         if (_next_backend == LOGGER_MAX_BACKENDS) {
             AP_HAL::panic("Too many backends");
             return;
@@ -192,16 +190,17 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
         LoggerMessageWriter_DFLogStart *message_writer =
             new LoggerMessageWriter_DFLogStart();
         if (message_writer != nullptr)  {
-            backends[_next_backend] = new AP_Logger_DataFlash(*this, message_writer);
+            backends[_next_backend] = new AP_Logger_MAVLink(*this,
+                                                            message_writer);
         }
         if (backends[_next_backend] == nullptr) {
-            hal.console->printf("Unable to open AP_Logger_DataFlash");
+            hal.console->printf("Unable to open AP_Logger_MAVLink");
         } else {
             _next_backend++;
         }
     }
 #endif
-    
+
     for (uint8_t i=0; i<_next_backend; i++) {
         backends[i]->Init();
     }
@@ -209,8 +208,6 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
     Prep();
 
     EnableWrites(true);
-
-    gcs().send_text(MAV_SEVERITY_INFO, "Prepared log system");
 }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -855,6 +852,8 @@ void AP_Logger::assert_same_fmt_for_name(const AP_Logger::log_write_fmt *f,
 
 AP_Logger::log_write_fmt *AP_Logger::msg_fmt_for_name(const char *name, const char *labels, const char *units, const char *mults, const char *fmt)
 {
+    WITH_SEMAPHORE(log_write_fmts_sem);
+
     struct log_write_fmt *f;
     for (f = log_write_fmts; f; f=f->next) {
         if (f->name == name) { // ptr comparison

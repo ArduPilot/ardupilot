@@ -26,7 +26,8 @@ public:
         Protocol_Type_None = 0,
         Protocol_Type_UAVCAN = 1,
         Protocol_Type_KDECAN = 2,
-        Protocol_Type_ToshibaCAN = 3
+        Protocol_Type_ToshibaCAN = 3,
+        Protocol_Type_PiccoloCAN = 4,
     };
 
     void init(void);
@@ -126,9 +127,10 @@ private:
         AP_Int8 _protocol_type;
         Protocol_Type _protocol_type_cache;
         AP_HAL::CANProtocol* _driver;
-        AP_HAL::CANProtocol* _uavcan;
-        AP_HAL::CANProtocol* _kdecan;
-        AP_HAL::CANProtocol* _tcan;
+        AP_HAL::CANProtocol* _uavcan;   // UAVCAN
+        AP_HAL::CANProtocol* _kdecan;   // KDECAN
+        AP_HAL::CANProtocol* _tcan;     // ToshibaCAN
+        AP_HAL::CANProtocol* _pcan;     // PiccoloCAN
     };
 
 #if AP_UAVCAN_SLCAN_ENABLED

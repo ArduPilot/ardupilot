@@ -34,9 +34,13 @@
 #define CH_STORAGE_LINE_SIZE (1<<CH_STORAGE_LINE_SHIFT)
 #define CH_STORAGE_NUM_LINES (CH_STORAGE_SIZE/CH_STORAGE_LINE_SIZE)
 
+static_assert(CH_STORAGE_SIZE % CH_STORAGE_LINE_SIZE == 0,
+              "Storage is not multiple of line size");
+
 class ChibiOS::Storage : public AP_HAL::Storage {
 public:
     void init() override {}
+    bool erase() override;
     void read_block(void *dst, uint16_t src, size_t n) override;
     void write_block(uint16_t dst, const void* src, size_t n) override;
 

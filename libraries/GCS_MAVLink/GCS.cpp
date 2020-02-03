@@ -37,9 +37,14 @@ const MAV_MISSION_TYPE GCS_MAVLINK::supported_mission_types[] = {
  */
 void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list)
 {
-    char text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
-    hal.util->vsnprintf(text, sizeof(text), fmt, arg_list);
-    send_statustext(severity, GCS_MAVLINK::active_channel_mask() | GCS_MAVLINK::streaming_channel_mask(), text);
+    uint8_t mask = GCS_MAVLINK::active_channel_mask() | GCS_MAVLINK::streaming_channel_mask();
+    if (!update_send_has_been_called) {
+        // we have not yet initialised the streaming-channel-mask,
+        // which is done as part of the update() call.  So just send
+        // it to all channels:
+        mask = (1<<_num_gcs)-1;
+    }
+    send_textv(severity, fmt, arg_list, mask);
 }
 
 void GCS::send_text(MAV_SEVERITY severity, const char *fmt, ...)

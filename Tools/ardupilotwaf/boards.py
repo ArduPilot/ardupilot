@@ -94,6 +94,11 @@ class Board:
             cfg.srcnode.find_dir('libraries/AP_Common/missing').abspath()
         ])
 
+    def cc_version_gte(self, cfg, want_major, want_minor):
+        (major, minor, patchlevel) = cfg.env.CC_VERSION
+        return (int(major) > want_major or
+                (int(major) == want_major and int(minor) >= want_minor))
+
     def configure_env(self, cfg, env):
         # Use a dictionary instead of the convetional list for definitions to
         # make easy to override them. Convert back to list before consumption.
@@ -140,11 +145,16 @@ class Board:
                 '-Wno-inconsistent-missing-override',
                 '-Wno-mismatched-tags',
                 '-Wno-gnu-variable-sized-type-not-at-end',
+                '-Werror=implicit-fallthrough',
             ]
         else:
             env.CFLAGS += [
                 '-Wno-format-contains-nul',
             ]
+            if self.cc_version_gte(cfg, 7, 4):
+                env.CXXFLAGS += [
+                    '-Werror=implicit-fallthrough',
+                ]
 
         if cfg.env.DEBUG:
             env.CFLAGS += [
@@ -193,6 +203,7 @@ class Board:
             '-Werror=type-limits',
             '-Werror=unused-result',
             '-Werror=shadow',
+            '-Werror=unused-value',
             '-Werror=unused-variable',
             '-Werror=delete-non-virtual-dtor',
             '-Wfatal-errors',
@@ -226,16 +237,20 @@ class Board:
                 '-Wno-gnu-designator',
                 '-Wno-mismatched-tags',
                 '-Wno-gnu-variable-sized-type-not-at-end',
+                '-Werror=implicit-fallthrough',
             ]
         else:
             env.CXXFLAGS += [
                 '-Wno-format-contains-nul',
                 '-Werror=unused-but-set-variable'
             ]
-            (major, minor, patchlevel) = cfg.env.CC_VERSION
-            if int(major) > 5 or (int(major) == 5 and int(minor) > 1):
+            if self.cc_version_gte(cfg, 5, 2):
                 env.CXXFLAGS += [
                     '-Werror=suggest-override',
+                ]
+            if self.cc_version_gte(cfg, 7, 4):
+                env.CXXFLAGS += [
+                    '-Werror=implicit-fallthrough',
                 ]
 
         if cfg.env.DEBUG:
@@ -605,6 +620,16 @@ class linux(Board):
             waflib.Options.commands.append('rsync')
             # Avoid infinite recursion
             bld.options.upload = False
+
+class navigator(linux):
+    toolchain = 'arm-linux-gnueabihf'
+
+    def configure_env(self, cfg, env):
+        super(navigator, self).configure_env(cfg, env)
+
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE='HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR',
+        )
 
 class erleboard(linux):
     toolchain = 'arm-linux-gnueabihf'

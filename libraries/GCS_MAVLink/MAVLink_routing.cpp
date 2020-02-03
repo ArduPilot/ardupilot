@@ -214,7 +214,7 @@ void MAVLink_routing::send_to_components(const char *pkt, const mavlink_msg_entr
         }
 #if ROUTING_DEBUG
         ::printf("send msg %u on chan %u sysid=%u compid=%u\n",
-                 msg.msgid,
+                 entry->msgid,
                  (unsigned)routes[i].channel,
                  (unsigned)routes[i].sysid,
                  (unsigned)routes[i].compid);

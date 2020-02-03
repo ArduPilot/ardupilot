@@ -95,8 +95,14 @@ AP_Scheduler *AP_Scheduler::get_singleton()
 // initialise the scheduler
 void AP_Scheduler::init(const AP_Scheduler::Task *tasks, uint8_t num_tasks, uint32_t log_performance_bit)
 {
+    AP_Vehicle* vehicle = AP::vehicle();
+    if (vehicle != nullptr) {
+        vehicle->get_common_scheduler_tasks(_common_tasks, _num_tasks);
+    }
+    _num_tasks += num_tasks;
     _tasks = tasks;
-    _num_tasks = num_tasks;
+    _num_unshared_tasks = num_tasks;
+
     _last_run = new uint16_t[_num_tasks];
     memset(_last_run, 0, sizeof(_last_run[0]) * _num_tasks);
     _tick_counter = 0;
@@ -138,15 +144,20 @@ void AP_Scheduler::run(uint32_t time_available)
     if (_debug > 1 && _perf_counters == nullptr) {
         _perf_counters = new AP_HAL::Util::perf_counter_t[_num_tasks];
         if (_perf_counters != nullptr) {
-            for (uint8_t i=0; i<_num_tasks; i++) {
+            for (uint8_t i=0; i<_num_unshared_tasks; i++) {
                 _perf_counters[i] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, _tasks[i].name);
+            }
+            for (uint8_t i=_num_unshared_tasks; i<_num_tasks; i++) {
+                _perf_counters[i] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, _common_tasks[i].name);
             }
         }
     }
     
     for (uint8_t i=0; i<_num_tasks; i++) {
+        const AP_Scheduler::Task& task = (i < _num_unshared_tasks) ? _tasks[i] : _common_tasks[i - _num_unshared_tasks];
+
         uint32_t dt = _tick_counter - _last_run[i];
-        uint32_t interval_ticks = _loop_rate_hz / _tasks[i].rate_hz;
+        uint32_t interval_ticks = _loop_rate_hz / task.rate_hz;
         if (interval_ticks < 1) {
             interval_ticks = 1;
         }
@@ -155,13 +166,13 @@ void AP_Scheduler::run(uint32_t time_available)
             continue;
         }
         // this task is due to run. Do we have enough time to run it?
-        _task_time_allowed = _tasks[i].max_time_micros;
+        _task_time_allowed = task.max_time_micros;
 
         if (dt >= interval_ticks*2) {
             // we've slipped a whole run of this task!
             debug(2, "Scheduler slip task[%u-%s] (%u/%u/%u)\n",
                   (unsigned)i,
-                  _tasks[i].name,
+                  task.name,
                   (unsigned)dt,
                   (unsigned)interval_ticks,
                   (unsigned)_task_time_allowed);
@@ -188,7 +199,7 @@ void AP_Scheduler::run(uint32_t time_available)
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         fill_nanf_stack();
 #endif
-        _tasks[i].function();
+        task.function();
         if (_debug > 1 && _perf_counters && _perf_counters[i]) {
             hal.util->perf_end(_perf_counters[i]);
         }
@@ -206,7 +217,7 @@ void AP_Scheduler::run(uint32_t time_available)
             // the event overran!
             debug(3, "Scheduler overrun task[%u-%s] (%u/%u)\n",
                   (unsigned)i,
-                  _tasks[i].name,
+                  task.name,
                   (unsigned)time_taken,
                   (unsigned)_task_time_allowed);
         }

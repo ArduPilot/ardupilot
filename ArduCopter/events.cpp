@@ -214,16 +214,11 @@ void Copter::failsafe_gcs_off_event(void)
 }
 
 // executes terrain failsafe if data is missing for longer than a few seconds
-//  missing_data should be set to true if the vehicle failed to navigate because of missing data, false if navigation is proceeding successfully
 void Copter::failsafe_terrain_check()
 {
-    // trigger with 5 seconds of failures while in AUTO mode
-    bool valid_mode = (control_mode == Mode::Number::AUTO ||
-                       control_mode == Mode::Number::GUIDED ||
-                       control_mode == Mode::Number::GUIDED_NOGPS ||
-                       control_mode == Mode::Number::RTL);
+    // trigger within <n> milliseconds of failures while in various modes
     bool timeout = (failsafe.terrain_last_failure_ms - failsafe.terrain_first_failure_ms) > FS_TERRAIN_TIMEOUT_MS;
-    bool trigger_event = valid_mode && timeout;
+    bool trigger_event = timeout && flightmode->requires_terrain_failsafe();
 
     // check for clearing of event
     if (trigger_event != failsafe.terrain) {

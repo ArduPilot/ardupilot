@@ -51,3 +51,4 @@ Sub::Sub()
 }
 
 Sub sub;
+AP_Vehicle& vehicle = sub;

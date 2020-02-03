@@ -114,12 +114,12 @@ public:
         buffer->clear();
     }
 
-    // return number of objects available to be read
+    // return number of objects available to be read from the front of the queue
     uint32_t available(void) const {
         return buffer->available() / sizeof(T);
     }
 
-    // return number of objects that could be written
+    // return number of objects that could be written to the back of the queue
     uint32_t space(void) const {
         return buffer->space() / sizeof(T);
     }
@@ -129,7 +129,7 @@ public:
         return buffer->empty();
     }
 
-    // push one object
+    // push one object onto the back of the queue
     bool push(const T &object) {
         if (buffer->space() < sizeof(T)) {
             return false;
@@ -137,7 +137,7 @@ public:
         return buffer->write((uint8_t*)&object, sizeof(T)) == sizeof(T);
     }
 
-    // push N objects
+    // push N objects onto the back of the queue
     bool push(const T *object, uint32_t n) {
         if (buffer->space() < n*sizeof(T)) {
             return false;
@@ -146,14 +146,14 @@ public:
     }
     
     /*
-      throw away an object
+      throw away an object from the front of the queue
      */
     bool pop(void) {
         return buffer->advance(sizeof(T));
     }
 
     /*
-      pop earliest object off the queue
+      pop earliest object off the front of the queue
      */
     bool pop(T &object) {
         if (buffer->available() < sizeof(T)) {
@@ -186,7 +186,7 @@ public:
     }
     
     /*
-      peek copies an object out without advancing the read pointer
+      peek copies an object out from the front of the queue without advancing the read pointer
      */
     bool peek(T &object) {
         return buffer->peekbytes((uint8_t*)&object, sizeof(T)) == sizeof(T);

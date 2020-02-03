@@ -49,7 +49,7 @@ public:
     // calculate rotational and linear accelerations
     void calculate_forces(const Aircraft &aircraft,
                           const struct sitl_input &input,
-                          Vector3f &rot_accel, Vector3f &body_accel);
+                          Vector3f &rot_accel, Vector3f &body_accel, float* rpm);
     
     float terminal_velocity;
     float terminal_rotation_rate;

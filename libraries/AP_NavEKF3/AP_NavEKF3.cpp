@@ -607,11 +607,10 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     AP_GROUPEND
 };
 
-NavEKF3::NavEKF3(const AP_AHRS *ahrs, const RangeFinder &rng) :
-    _ahrs(ahrs),
-    _rng(rng)
+NavEKF3::NavEKF3()
 {
     AP_Param::setup_object_defaults(this, var_info);
+   _ahrs = &AP::ahrs();
 }
 
 /*
@@ -1441,7 +1440,7 @@ void  NavEKF3::getFilterGpsStatus(int8_t instance, nav_gps_status &status) const
 }
 
 // send an EKF_STATUS_REPORT message to GCS
-void NavEKF3::send_status_report(mavlink_channel_t chan)
+void NavEKF3::send_status_report(mavlink_channel_t chan) const
 {
     if (core) {
         core[primary].send_status_report(chan);

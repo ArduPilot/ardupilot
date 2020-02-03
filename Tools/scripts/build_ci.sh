@@ -73,7 +73,7 @@ function run_autotest() {
     if [ "x$CI_BUILD_DEBUG" != "x" ]; then
         w="$w --debug"
     fi
-    Tools/autotest/autotest.py --waf-configure-args="$w" "$BVEHICLE" "$RVEHICLE"
+    Tools/autotest/autotest.py --show-test-timings --waf-configure-args="$w" "$BVEHICLE" "$RVEHICLE"
     ccache -s && ccache -z
 }
 
@@ -127,11 +127,11 @@ for t in $CI_BUILD_TARGET; do
         $waf clean
         $waf AP_Periph
         echo "Building f303 bootloader"
-        $waf configure --board f303-GPS --bootloader
+        $waf configure --board f303-Universal --bootloader
         $waf clean
         $waf bootloader
         echo "Building f303 peripheral fw"
-        $waf configure --board f303-GPS
+        $waf configure --board f303-Universal
         $waf clean
         $waf AP_Periph
         continue

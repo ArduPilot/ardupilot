@@ -190,8 +190,8 @@ void Scrimmage::recv_fdm(const struct sitl_input &input)
 
     battery_voltage = 0;
     battery_current = 0;
-    rpm1 = 0;
-    rpm2 = 0;
+    rpm[0] = 0;
+    rpm[1] = 0;
 
     airspeed = pkt.airspeed;
     airspeed_pitot = pkt.airspeed;

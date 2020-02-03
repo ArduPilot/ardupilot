@@ -69,6 +69,9 @@ public:
     virtual bool landing_gear_should_be_deployed() const { return false; }
     virtual bool is_landing() const { return false; }
 
+    // mode requires terrain to be present to be functional
+    virtual bool requires_terrain_failsafe() const { return false; }
+
     // functions for reporting to GCS
     virtual bool get_wp(Location &loc) { return false; };
     virtual int32_t wp_bearing() const { return 0; }
@@ -363,6 +366,8 @@ public:
 
     bool is_taking_off() const override;
 
+    bool requires_terrain_failsafe() const override { return true; }
+
     // return true if this flight mode supports user takeoff
     //  must_nagivate is true if mode must also control horizontal position
     virtual bool has_user_takeoff(bool must_navigate) const override { return false; }
@@ -604,6 +609,7 @@ private:
 
     // Circle
     bool pilot_yaw_override = false; // true if pilot is overriding yaw
+    bool speed_changing = false;     // true when the roll stick is being held to facilitate stopping at 0 rate
 };
 
 
@@ -775,6 +781,8 @@ public:
     bool is_autopilot() const override { return true; }
     bool has_user_takeoff(bool must_navigate) const override { return true; }
     bool in_guided_mode() const override { return true; }
+
+    bool requires_terrain_failsafe() const override { return true; }
 
     void set_angle(const Quaternion &q, float climb_rate_cms, bool use_yaw_rate, float yaw_rate_rads);
     bool set_destination(const Vector3f& destination, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
@@ -1016,9 +1024,20 @@ public:
     bool allows_arming(bool from_gcs) const override { return false; };
     bool is_autopilot() const override { return true; }
 
+    bool requires_terrain_failsafe() const override { return true; }
+
     // for reporting to GCS
     bool get_wp(Location &loc) override;
 
+    // RTL states
+    enum RTLState {
+        RTL_Starting,
+        RTL_InitialClimb,
+        RTL_ReturnHome,
+        RTL_LoiterAtHome,
+        RTL_FinalDescent,
+        RTL_Land
+    };
     RTLState state() { return _state; }
 
     // this should probably not be exposed
@@ -1028,6 +1047,13 @@ public:
     bool landing_gear_should_be_deployed() const override;
 
     void restart_without_terrain();
+
+    // enum for RTL_ALT_TYPE parameter
+    enum class RTLAltType {
+        RTL_ALTTYPE_RELATIVE = 0,
+        RTL_ALTTYPE_TERRAIN = 1
+    };
+    ModeRTL::RTLAltType get_alt_type() const;
 
 protected:
 
@@ -1066,8 +1092,14 @@ private:
         Location return_target;
         Location descent_target;
         bool land;
-        bool terrain_used;
     } rtl_path;
+
+    // return target alt type
+    enum class ReturnTargetAltType {
+        RETURN_TARGET_ALTTYPE_RELATIVE = 0,
+        RETURN_TARGET_ALTTYPE_RANGEFINDER = 1,
+        RETURN_TARGET_ALTTYPE_TERRAINDATABASE = 2
+    };
 
     // Loiter timer - Records how long we have been in loiter
     uint32_t _loiter_start_time;

@@ -22,6 +22,13 @@
 
 #define AP_PARACHUTE_CRITICAL_SINK_DEFAULT      0    // default critical sink speed in m/s to trigger emergency parachute
 
+#ifndef HAL_PARACHUTE_ENABLED
+// default to parachute enabled to match previous configs
+#define HAL_PARACHUTE_ENABLED 1
+#endif
+
+#if HAL_PARACHUTE_ENABLED
+
 /// @class	AP_Parachute
 /// @brief	Class managing the release of a parachute
 class AP_Parachute {
@@ -109,3 +116,5 @@ private:
 namespace AP {
     AP_Parachute *parachute();
 };
+
+#endif // HAL_PARACHUTE_ENABLED

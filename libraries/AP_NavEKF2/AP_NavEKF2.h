@@ -28,7 +28,6 @@
 #include <AP_NavEKF/AP_Nav_Common.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Compass/AP_Compass.h>
-#include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_Logger/LogStructure.h>
 
 class NavEKF2_core;
@@ -38,7 +37,7 @@ class NavEKF2 {
     friend class NavEKF2_core;
 
 public:
-    NavEKF2(const AP_AHRS *ahrs, const RangeFinder &rng);
+    NavEKF2();
 
     /* Do not allow copies */
     NavEKF2(const NavEKF2 &other) = delete;
@@ -290,7 +289,7 @@ public:
     void  getFilterStatus(int8_t instance, nav_filter_status &status) const;
 
     // send an EKF_STATUS_REPORT message to GCS
-    void send_status_report(mavlink_channel_t chan);
+    void send_status_report(mavlink_channel_t chan) const;
 
     // provides the height limit to be observed by the control loops
     // returns false if no height limiting is required
@@ -361,7 +360,6 @@ private:
     NavEKF2_core *core = nullptr;
     bool core_malloc_failed;
     const AP_AHRS *_ahrs;
-    const RangeFinder &_rng;
 
     uint32_t _frameTimeUsec;        // time per IMU frame
     uint8_t  _framesPerPrediction;  // expected number of IMU frames per prediction
@@ -530,11 +528,11 @@ private:
     void updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_primary);
 
     // logging functions shared by cores:
-    void Log_Write_EKF1(uint8_t core, LogMessages msg_id, uint64_t time_us) const;
-    void Log_Write_NKF2(uint8_t core, LogMessages msg_id, uint64_t time_us) const;
-    void Log_Write_NKF3(uint8_t core, LogMessages msg_id, uint64_t time_us) const;
-    void Log_Write_NKF4(uint8_t core, LogMessages msg_id, uint64_t time_us) const;
+    void Log_Write_NKF1(uint8_t core, uint64_t time_us) const;
+    void Log_Write_NKF2(uint8_t core, uint64_t time_us) const;
+    void Log_Write_NKF3(uint8_t core, uint64_t time_us) const;
+    void Log_Write_NKF4(uint8_t core, uint64_t time_us) const;
     void Log_Write_NKF5(uint64_t time_us) const;
-    void Log_Write_Quaternion(uint8_t core, LogMessages msg_id, uint64_t time_us) const;
+    void Log_Write_Quaternion(uint8_t core, uint64_t time_us) const;
     void Log_Write_Beacon(uint64_t time_us) const;
 };

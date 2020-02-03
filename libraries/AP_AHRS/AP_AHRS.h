@@ -96,38 +96,6 @@ public:
         return _flags.fly_forward;
     }
 
-    /*
-      set the "likely flying" flag. This is not guaranteed to be
-      accurate, but is the vehicle codes best guess as to the whether
-      the vehicle is currently flying
-     */
-    void set_likely_flying(bool b) {
-        if (b && !_flags.likely_flying) {
-            _last_flying_ms = AP_HAL::millis();
-        }
-        _flags.likely_flying = b;
-    }
-
-    /*
-      get the likely flying status. Returns true if the vehicle code
-      thinks we are flying at the moment. Not guaranteed to be
-      accurate
-     */
-    bool get_likely_flying(void) const {
-        return _flags.likely_flying;
-    }
-
-    /*
-      return time in milliseconds since likely_flying was set
-      true. Returns zero if likely_flying is currently false
-    */
-    uint32_t get_time_flying_ms(void) const {
-        if (!_flags.likely_flying) {
-            return 0;
-        }
-        return AP_HAL::millis() - _last_flying_ms;
-    }
-
     AHRS_VehicleClass get_vehicle_class(void) const {
         return _vehicle_class;
     }
@@ -283,15 +251,15 @@ public:
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
-    virtual bool airspeed_estimate(float *airspeed_ret) const WARN_IF_UNUSED;
+    virtual bool airspeed_estimate(float &airspeed_ret) const WARN_IF_UNUSED;
 
     // return a true airspeed estimate (navigation airspeed) if
     // available. return true if we have an estimate
-    bool airspeed_estimate_true(float *airspeed_ret) const WARN_IF_UNUSED {
+    bool airspeed_estimate_true(float &airspeed_ret) const WARN_IF_UNUSED {
         if (!airspeed_estimate(airspeed_ret)) {
             return false;
         }
-        *airspeed_ret *= get_EAS2TAS();
+        airspeed_ret *= get_EAS2TAS();
         return true;
     }
 
@@ -497,13 +465,13 @@ public:
 
     // return the amount of yaw angle change due to the last yaw angle reset in radians
     // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
-    virtual uint32_t getLastYawResetAngle(float &yawAng) const {
+    virtual uint32_t getLastYawResetAngle(float &yawAng) {
         return 0;
     };
 
     // return the amount of NE position change in metres due to the last reset
     // returns the time of the last reset or 0 if no reset has ever occurred
-    virtual uint32_t getLastPosNorthEastReset(Vector2f &pos) const WARN_IF_UNUSED {
+    virtual uint32_t getLastPosNorthEastReset(Vector2f &pos) WARN_IF_UNUSED {
         return 0;
     };
 
@@ -515,7 +483,7 @@ public:
 
     // return the amount of vertical position change due to the last reset in meters
     // returns the time of the last reset or 0 if no reset has ever occurred
-    virtual uint32_t getLastPosDownReset(float &posDelta) const WARN_IF_UNUSED {
+    virtual uint32_t getLastPosDownReset(float &posDelta) WARN_IF_UNUSED {
         return 0;
     };
 
@@ -591,7 +559,7 @@ protected:
     void update_nmea_out();
 
     // multi-thread access support
-    HAL_Semaphore_Recursive _rsem;
+    HAL_Semaphore _rsem;
 
     AHRS_VehicleClass _vehicle_class;
 
@@ -620,11 +588,7 @@ protected:
         uint8_t fly_forward             : 1;    // 1 if we can assume the aircraft will be flying forward on its X axis
         uint8_t correct_centrifugal     : 1;    // 1 if we should correct for centrifugal forces (allows arducopter to turn this off when motors are disarmed)
         uint8_t wind_estimation         : 1;    // 1 if we should do wind estimation
-        uint8_t likely_flying           : 1;    // 1 if vehicle is probably flying
     } _flags;
-
-    // time when likely_flying last went true
-    uint32_t _last_flying_ms;
 
     // calculate sin/cos of roll/pitch/yaw from rotation
     void calc_trig(const Matrix3f &rot,

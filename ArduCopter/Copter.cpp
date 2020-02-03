@@ -69,7 +69,7 @@
  *  ..and many more.
  *
  *  Code commit statistics can be found here: https://github.com/ArduPilot/ardupilot/graphs/contributors
- *  Wiki: http://copter.ardupilot.org/
+ *  Wiki: https://copter.ardupilot.org/
  *
  */
 
@@ -199,7 +199,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(userhook_SuperSlowLoop, 1,   75),
 #endif
 #if BUTTON_ENABLED == ENABLED
-    SCHED_TASK_CLASS(AP_Button,            &copter.g2.button,           update,           5, 100),
+    SCHED_TASK_CLASS(AP_Button,            &copter.button,           update,           5, 100),
 #endif
 #if STATS_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Stats,             &copter.g2.stats,            update,           1, 100),
@@ -209,21 +209,16 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #endif
 };
 
-constexpr int8_t Copter::_failsafe_priorities[7];
-
-void Copter::setup()
+void Copter::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
+                                 uint8_t &task_count,
+                                 uint32_t &log_bit)
 {
-    // Load the default values of variables listed in var_info[]s
-    AP_Param::setup_sketch_defaults();
-
-    // setup storage layout for copter
-    StorageManager::set_layout_copter();
-
-    init_ardupilot();
-
-    // initialise the main loop scheduler
-    scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks), MASK_LOG_PM);
+    tasks = &scheduler_tasks[0];
+    task_count = ARRAY_SIZE(scheduler_tasks);
+    log_bit = MASK_LOG_PM;
 }
+
+constexpr int8_t Copter::_failsafe_priorities[7];
 
 void Copter::loop()
 {
@@ -623,5 +618,6 @@ Copter::Copter(void)
 }
 
 Copter copter;
+AP_Vehicle& vehicle = copter;
 
 AP_HAL_MAIN_CALLBACKS(&copter);

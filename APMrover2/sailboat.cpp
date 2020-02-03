@@ -10,14 +10,12 @@ To Do List
  - consider drag vs lift sailing differences, ie upwind sail is like wing, dead down wind sail is like parachute
  - max speed paramiter and controller, for mapping you may not want to go too fast
  - mavlink sailing messages
- - motor sailing, some boats may also have motor, we need to decide at what point we would be better of just motoring in low wind, or for a tight loiter, or to hit waypoint exactly, or if stuck head to wind, or to reverse...
  - smart decision making, ie tack on windshifts, what to do if stuck head to wind
  - some sailing codes track waves to try and 'surf' and to allow tacking on a flat bit, not sure if there is much gain to be had here
  - add some sort of pitch monitoring to prevent nose diving in heavy weather
  - pitch PID for hydrofoils
  - more advanced sail control, ie twist
  - independent sheeting for main and jib
- - wing type sails with 'elevator' control
  - tack on depth sounder info to stop sailing into shallow water on indirect sailing routes
  - add option to do proper tacks, ie tacking on flat spot in the waves, or only try once at a certain speed, or some better method than just changing the desired heading suddenly
 */
@@ -172,23 +170,26 @@ void Sailboat::init_rc_in()
 
 // decode pilot mainsail input and return in steer_out and throttle_out arguments
 // mainsail_out is in the range 0 to 100, defaults to 100 (fully relaxed) if no input configured
-void Sailboat::get_pilot_desired_mainsail(float &mainsail_out)
+void Sailboat::get_pilot_desired_mainsail(float &mainsail_out, float &wingsail_out)
 {
     // no RC input means mainsail is moved to trim
     if ((rover.failsafe.bits & FAILSAFE_EVENT_THROTTLE) || (channel_mainsail == nullptr)) {
         mainsail_out = 100.0f;
+        wingsail_out = 0.0f;
         return;
     }
     mainsail_out = constrain_float(channel_mainsail->get_control_in(), 0.0f, 100.0f);
+    wingsail_out = constrain_float(channel_mainsail->get_control_in(), -100.0f, 100.0f);
 }
 
 // calculate throttle and mainsail angle required to attain desired speed (in m/s)
 // returns true if successful, false if sailboats not enabled
-void Sailboat::get_throttle_and_mainsail_out(float desired_speed, float &throttle_out, float &mainsail_out)
+void Sailboat::get_throttle_and_mainsail_out(float desired_speed, float &throttle_out, float &mainsail_out, float &wingsail_out)
 {
     if (!sail_enabled()) {
         throttle_out = 0.0f;
         mainsail_out = 0.0f;
+        wingsail_out = 0.0f;
         return;
     }
 
@@ -207,11 +208,23 @@ void Sailboat::get_throttle_and_mainsail_out(float desired_speed, float &throttl
         throttle_out = 0.0f;
     }
 
+    // if we are motoring relax sails
+    if (motor_state == UseMotor::USE_MOTOR_ALWAYS) {
+        mainsail_out = 100.0f;
+        wingsail_out = 0.0f;
+        return;
+    }
+
+    // use PID controller to sheet out
+    float pid_offset = rover.g2.attitude_control.get_sail_out_from_heel(radians(sail_heel_angle_max), rover.G_Dt) * 100.0f;
+    pid_offset = constrain_float(pid_offset, 0.0f, 100.0f);
+
     //
     // mainsail control
     //
-    // if we are motoring or attempting to reverse relax the sail
-    if (motor_state == UseMotor::USE_MOTOR_ALWAYS || !is_positive(desired_speed)) {
+
+    // main sails cannot be used to reverse
+    if (!is_positive(desired_speed)) {
         mainsail_out = 100.0f;
     } else {
         // + is wind over starboard side, - is wind over port side, but as the sails are sheeted the same on each side it makes no difference so take abs
@@ -227,11 +240,26 @@ void Sailboat::get_throttle_and_mainsail_out(float desired_speed, float &throttl
         // linear interpolate mainsail value (0 to 100) from wind angle mainsail_angle
         float mainsail_base = linear_interpolate(0.0f, 100.0f, mainsail_angle,sail_angle_min,sail_angle_max);
 
-        // use PID controller to sheet out
-        const float pid_offset = rover.g2.attitude_control.get_sail_out_from_heel(radians(sail_heel_angle_max), rover.G_Dt) * 100.0f;
-
         mainsail_out = constrain_float((mainsail_base + pid_offset), 0.0f ,100.0f);
     }
+
+    //
+    // wingsail control
+    //
+
+    // wing sails auto trim, we only need to reduce power if we are tipping over
+    wingsail_out = 100.0f - pid_offset;
+
+    // wing sails must be trimmed for the correct tack
+    if (rover.g2.windvane.get_current_tack() == AP_WindVane::Sailboat_Tack::TACK_PORT) {
+        wingsail_out *= -1.0f;
+    }
+
+    // wing sails can be used to go backwards, probably not recommended though
+    if (!is_positive(desired_speed)) {
+        wingsail_out *= -1.0f;
+    }
+
 }
 
 // Velocity Made Good, this is the speed we are traveling towards the desired destination
@@ -333,7 +361,7 @@ float Sailboat::calc_heading(float desired_heading_cd)
     }
     bool should_tack = false;
 
-    // find witch tack we are on
+    // find which tack we are on
     const AP_WindVane::Sailboat_Tack current_tack = rover.g2.windvane.get_current_tack();
 
     // convert desired heading to radians

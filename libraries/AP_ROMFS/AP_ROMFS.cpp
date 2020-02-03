@@ -47,7 +47,7 @@ const uint8_t *AP_ROMFS::find_file(const char *name, uint32_t &size)
 */
 const uint8_t *AP_ROMFS::find_decompress(const char *name, uint32_t &size)
 {
-    uint32_t compressed_size;
+    uint32_t compressed_size = 0;
     const uint8_t *compressed_data = find_file(name, compressed_size);
     if (!compressed_data) {
         return nullptr;

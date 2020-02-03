@@ -33,11 +33,14 @@
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_Scripting/AP_Scripting.h>
+#include <AP_Camera/AP_RunCam.h>
 
 #if HAL_WITH_UAVCAN
   #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
   #include <AP_Common/AP_Common.h>
   #include <AP_Vehicle/AP_Vehicle.h>
+
+  #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
 
   // To be replaced with macro saying if KDECAN library is included
   #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
@@ -108,10 +111,10 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Param: CHECK
     // @DisplayName: Arm Checks to Perform (bitmask)
     // @Description: Checks prior to arming motor. This is a bitmask of checks that will be performed before allowing arming. The default is no checks, allowing arming at any time. You can select whatever checks you prefer by adding together the values of each check type to set this parameter. For example, to only allow arming when you have GPS lock and no RC failsafe you would set ARMING_CHECK to 72. For most users it is recommended that you set this to 1 to enable all checks.
-    // @Values: 0:None,1:All,2:Barometer,4:Compass,8:GPS Lock,16:INS(INertial Sensors - accels & gyros),32:Parameters(unused),64:RC Channels,128:Board voltage,256:Battery Level,1024:LoggingAvailable,2048:Hardware safety switch,4096:GPS configuration,8192:System,16384:Mission,32768:RangeFinder
-    // @Values{Plane}: 0:None,1:All,2:Barometer,4:Compass,8:GPS Lock,16:INS(INertial Sensors - accels & gyros),32:Parameters(unused),64:RC Channels,128:Board voltage,256:Battery Level,512:Airspeed,1024:LoggingAvailable,2048:Hardware safety switch,4096:GPS configuration,8192:System,16384:Mission,32768:RangeFinder
-    // @Bitmask: 0:All,1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder
-    // @Bitmask{Plane}: 0:All,1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,9:Airspeed,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder
+    // @Values: 0:None,1:All,2:Barometer,4:Compass,8:GPS Lock,16:INS(INertial Sensors - accels & gyros),32:Parameters(unused),64:RC Channels,128:Board voltage,256:Battery Level,1024:LoggingAvailable,2048:Hardware safety switch,4096:GPS configuration,8192:System,16384:Mission,32768:RangeFinder,65536:Camera
+    // @Values{Plane}: 0:None,1:All,2:Barometer,4:Compass,8:GPS Lock,16:INS(INertial Sensors - accels & gyros),32:Parameters(unused),64:RC Channels,128:Board voltage,256:Battery Level,512:Airspeed,1024:LoggingAvailable,2048:Hardware safety switch,4096:GPS configuration,8192:System,16384:Mission,32768:RangeFinder,65536:Camera
+    // @Bitmask: 0:All,1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera
+    // @Bitmask{Plane}: 0:All,1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,9:Airspeed,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera
     // @User: Standard
     AP_GROUPINFO("CHECK",        8,     AP_Arming,  checks_to_perform,       ARMING_CHECK_ALL),
 
@@ -766,6 +769,26 @@ bool AP_Arming::can_checks(bool report)
                     break;
 #endif
                 }
+                case AP_BoardConfig_CAN::Protocol_Type_PiccoloCAN: {
+#if HAL_PICCOLO_CAN_ENABLE
+                    AP_PiccoloCAN *ap_pcan = AP_PiccoloCAN::get_pcan(i);
+
+                    if (ap_pcan != nullptr && !ap_pcan->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
+                        if (fail_msg == nullptr) {
+                            check_failed(ARMING_CHECK_SYSTEM, report, "PiccoloCAN failed");
+                        } else {
+                            check_failed(ARMING_CHECK_SYSTEM, report, "%s", fail_msg);
+                        }
+
+                        return false;
+                    }
+
+                    break;
+#else
+                    check_failed(ARMING_CHECK_SYSTEM, report, "PiccoloCAN not enabled");
+                    return false;
+#endif
+                }
                 case AP_BoardConfig_CAN::Protocol_Type_UAVCAN:
                 {
                     snprintf(fail_msg, ARRAY_SIZE(fail_msg), "UAVCAN failed");
@@ -807,6 +830,26 @@ bool AP_Arming::fence_checks(bool display_failure)
     return false;
 }
 
+bool AP_Arming::camera_checks(bool display_failure)
+{
+    if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_CAMERA)) {
+#if HAL_RUNCAM_ENABLED
+        AP_RunCam *runcam = AP::runcam();
+        if (runcam == nullptr) {
+            return true;
+        }
+
+        // check camera is ready
+        char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+        if (!runcam->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
+            check_failed(ARMING_CHECK_CAMERA, display_failure, "%s", fail_msg);
+            return false;
+        }
+#endif
+    }
+    return true;
+}
+
 bool AP_Arming::pre_arm_checks(bool report)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_ArduCopter)
@@ -831,7 +874,8 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  board_voltage_checks(report)
         &  system_checks(report)
         &  can_checks(report)
-        &  proximity_checks(report);
+        &  proximity_checks(report)
+        &  camera_checks(report);
 }
 
 bool AP_Arming::arm_checks(AP_Arming::Method method)
@@ -875,8 +919,7 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
     if ((!do_arming_checks && mandatory_checks(true)) || (pre_arm_checks(true) && arm_checks(method))) {
         armed = true;
 
-        //TODO: Log motor arming
-        //Can't do this from this class until there is a unified logging library
+        Log_Write_Arm(!do_arming_checks, method); // note Log_Write_Armed takes forced not do_arming_checks
 
     } else {
         AP::logger().arming_failure();
@@ -894,6 +937,8 @@ bool AP_Arming::disarm()
     }
     armed = false;
 
+    Log_Write_Disarm(); // should be able to pass through method and/or force here?
+
 #if HAL_HAVE_SAFETY_SWITCH
     AP_BoardConfig *board_cfg = AP_BoardConfig::get_singleton();
     if ((board_cfg != nullptr) &&
@@ -901,9 +946,6 @@ bool AP_Arming::disarm()
         hal.rcout->force_safety_on();
     }
 #endif // HAL_HAVE_SAFETY_SWITCH
-
-    //TODO: Log motor disarming to the logger
-    //Can't do this from this class until there is a unified logging library.
 
     return true;
 }
@@ -959,15 +1001,32 @@ bool AP_Arming::rc_checks_copter_sub(const bool display_failure, const RC_Channe
     return ret;
 }
 
-void AP_Arming::Log_Write_Arm_Disarm()
+void AP_Arming::Log_Write_Arm(const bool forced, const AP_Arming::Method method)
 {
-    struct log_Arm_Disarm pkt = {
+    const struct log_Arm_Disarm pkt {
         LOG_PACKET_HEADER_INIT(LOG_ARM_DISARM_MSG),
         time_us                 : AP_HAL::micros64(),
         arm_state               : is_armed(),
-        arm_checks              : get_enabled_checks()
+        arm_checks              : get_enabled_checks(),
+        forced                  : forced,
+        method                  : (uint8_t)method,
     };
     AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
+    AP::logger().Write_Event(LogEvent::ARMED);
+}
+
+void AP_Arming::Log_Write_Disarm()
+{
+    const struct log_Arm_Disarm pkt {
+        LOG_PACKET_HEADER_INIT(LOG_ARM_DISARM_MSG),
+        time_us                 : AP_HAL::micros64(),
+        arm_state               : is_armed(),
+        arm_checks              : 0,
+        forced                  : 0,
+        method                  : 0
+    };
+    AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
+    AP::logger().Write_Event(LogEvent::DISARMED);
 }
 
 AP_Arming *AP_Arming::_singleton = nullptr;

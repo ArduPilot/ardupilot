@@ -31,12 +31,6 @@ void Copter::init_rc_in()
     channel_yaw->set_angle(ROLL_PITCH_YAW_INPUT_MAX);
     channel_throttle->set_range(1000);
 
-    // set auxiliary servo ranges
-    rc().channel(CH_5)->set_range(1000);
-    rc().channel(CH_6)->set_range(1000);
-    rc().channel(CH_7)->set_range(1000);
-    rc().channel(CH_8)->set_range(1000);
-
     // set default dead zones
     default_dead_zones();
 

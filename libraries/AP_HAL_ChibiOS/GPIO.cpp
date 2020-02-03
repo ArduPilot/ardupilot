@@ -67,7 +67,46 @@ void GPIO::init()
             g->enabled = g->pwm_num > pwm_count;
         }
     }
+#ifdef HAL_PIN_ALT_CONFIG
+    setup_alt_config();
+#endif
 }
+
+#ifdef HAL_PIN_ALT_CONFIG
+/*
+  alternative config table, selected using BRD_ALT_CONFIG
+ */
+static const struct alt_config {
+    uint8_t alternate;
+    uint16_t mode;
+    ioline_t line;
+} alternate_config[] HAL_PIN_ALT_CONFIG;
+
+/*
+  change pin configuration based on ALT() lines in hwdef.dat
+ */
+void GPIO::setup_alt_config(void)
+{
+    AP_BoardConfig *bc = AP::boardConfig();
+    if (!bc) {
+        return;
+    }
+    const uint8_t alt = bc->get_alt_config();
+    if (alt == 0) {
+        // use defaults
+        return;
+    }
+    for (uint8_t i=0; i<ARRAY_SIZE(alternate_config); i++) {
+        if (alt == alternate_config[i].alternate) {
+            const iomode_t mode = alternate_config[i].mode & ~PAL_STM32_HIGH;
+            const uint8_t odr = (alternate_config[i].mode & PAL_STM32_HIGH)?1:0;
+            palSetLineMode(alternate_config[i].line, mode);
+            palWriteLine(alternate_config[i].line, odr);
+        }
+    }
+}
+#endif // HAL_PIN_ALT_CONFIG
+
 
 void GPIO::pinMode(uint8_t pin, uint8_t output)
 {

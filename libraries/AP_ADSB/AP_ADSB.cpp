@@ -938,6 +938,8 @@ void AP_ADSB::write_log(const adsb_vehicle_t &vehicle)
             if (!is_special_vehicle(vehicle.info.ICAO_address)) {
                 return;
             }
+            break;
+
         case logging::ALL:
             break;
 

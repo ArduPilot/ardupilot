@@ -36,6 +36,8 @@
 #include <AP_KDECAN/AP_KDECAN.h>
 #include <AP_ToshibaCAN/AP_ToshibaCAN.h>
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_PiccoloCAN/AP_PiccoloCAN.h>
+
 extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
@@ -174,6 +176,15 @@ void AP_BoardConfig_CAN::init()
                     AP_BoardConfig::config_error("ToshibaCAN init failed");
                     continue;
                 }
+#if HAL_PICCOLO_CAN_ENABLE
+            } else if (prot_type == Protocol_Type_PiccoloCAN) {
+                _drivers[i]._driver = _drivers[i]._pcan = new AP_PiccoloCAN;
+
+                if (_drivers[i]._driver == nullptr) {
+                    AP_BoardConfig::config_error("PiccoloCAN init failed");
+                    continue;
+                }
+#endif
             } else {
                 continue;
             }

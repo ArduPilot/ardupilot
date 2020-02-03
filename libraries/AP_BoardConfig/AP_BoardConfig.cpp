@@ -21,7 +21,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_RTC/AP_RTC.h>
-#include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
 
 #if HAL_WITH_UAVCAN
@@ -170,8 +170,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_GROUPINFO("TYPE", 9, AP_BoardConfig, state.board_type, BOARD_TYPE_DEFAULT),
 #endif
 
-#if AP_FEATURE_BOARD_DETECT
-#if HAL_PX4_HAVE_PX4IO || HAL_WITH_IO_MCU
+#if HAL_WITH_IO_MCU
     // @Param: IO_ENABLE
     // @DisplayName: Enable IO co-processor
     // @Description: This allows for the IO co-processor on FMUv1 and FMUv2 to be disabled
@@ -179,7 +178,6 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("IO_ENABLE", 10, AP_BoardConfig, state.io_enable, 1),
-#endif
 #endif
 
 #if HAL_RCINPUT_WITH_AP_RADIO
@@ -279,6 +277,15 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @User: Advanced
     AP_SUBGROUPINFO(heater.pi_controller, "IMUHEAT_",  21, AP_BoardConfig, AC_PI),
 #endif
+
+    // @Param: ALT_CONFIG
+    // @DisplayName: Alternative HW config
+    // @Description: Select an alternative hardware configuration. A value of zero selects the default configuration for this board. Other values are board specific. Please see the documentation for your board for details on any alternative configuration values that may be available.
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("ALT_CONFIG", 22, AP_BoardConfig, _alt_config, 0),
     
     AP_GROUPEND
 };
@@ -315,6 +322,12 @@ void AP_BoardConfig::init()
         printf("SDCard failed to start\n");
     }
 #endif
+
+    // run any the vehicle initialization routines
+    AP_Vehicle *vehicle = AP::vehicle();
+    if (vehicle) {
+        vehicle->init_vehicle();
+    }
 }
 
 // set default value for BRD_SAFETY_MASK

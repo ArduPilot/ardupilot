@@ -211,30 +211,6 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("THR_MIX_MAN", 6, AC_AttitudeControl_Multi, _thr_mix_man, AC_ATTITUDE_CONTROL_MAN_DEFAULT),
 
-    // @Param: RAT_RLL_FILT
-    // @DisplayName: Roll axis rate controller input frequency in Hz
-    // @Description: Roll axis rate controller input frequency in Hz
-    // @Range: 1 100
-    // @Increment: 1
-    // @Units: Hz
-    // @User: Standard
-
-    // @Param: RAT_PIT_FILT
-    // @DisplayName: Pitch axis rate controller input frequency in Hz
-    // @Description: Pitch axis rate controller input frequency in Hz
-    // @Range: 1 100
-    // @Increment: 1
-    // @Units: Hz
-    // @User: Standard
-
-    // @Param: RAT_YAW_FILT
-    // @DisplayName: Yaw axis rate controller input frequency in Hz
-    // @Description: Yaw axis rate controller input frequency in Hz
-    // @Range: 1 10
-    // @Increment: 1
-    // @Units: Hz
-    // @User: Standard
-
     AP_GROUPEND
 };
 
@@ -260,7 +236,7 @@ void AC_AttitudeControl_Multi::update_althold_lean_angle_max(float throttle_in)
         return;
     }
 
-    float althold_lean_angle_max = acosf(constrain_float(_throttle_in / (AC_ATTITUDE_CONTROL_ANGLE_LIMIT_THROTTLE_MAX * thr_max), 0.0f, 1.0f));
+    float althold_lean_angle_max = acosf(constrain_float(throttle_in / (AC_ATTITUDE_CONTROL_ANGLE_LIMIT_THROTTLE_MAX * thr_max), 0.0f, 1.0f));
     _althold_lean_angle_max = _althold_lean_angle_max + (_dt / (_dt + _angle_limit_tc)) * (althold_lean_angle_max - _althold_lean_angle_max);
 }
 

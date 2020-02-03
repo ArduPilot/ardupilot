@@ -151,6 +151,6 @@ define STM32_PWM_USE_ADVANCED TRUE
 
 define BOARD_PWM_COUNT_DEFAULT 6
 
-define OSD_ENABLED ENABLED
+define OSD_ENABLED 1
 #font for the osd
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin

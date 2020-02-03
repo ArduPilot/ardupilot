@@ -566,6 +566,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "mRoControlZeroF7",
                 "F35Lightning",
                 "speedybeef4",
+                "SuccexF4",
                 "DrotekP3Pro",
                 "VRBrain-v51",
                 "VRBrain-v52",
@@ -576,6 +577,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "Durandal",
                 "CubeOrange",
                 "CubeYellow",
+                "R9Pilot",
                 # SITL targets
                 "SITL_x86_64_linux_gnu",
                 "SITL_arm_linux_gnueabihf",
@@ -587,6 +589,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "f103-ADSB",
                 "f103-RangeFinder",
                 "f303-GPS",
+                "f303-Universal",
                 "CUAV_GPS",
                 "ZubaxGNSS",
                 ]

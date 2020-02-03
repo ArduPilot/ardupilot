@@ -65,7 +65,6 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const aux_
     switch(ch_option) {
     // the following functions do not need to be initialised:
     case AUX_FUNC::ALTHOLD:
-    case AUX_FUNC::ARMDISARM:
     case AUX_FUNC::AUTO:
     case AUX_FUNC::AUTOTUNE:
     case AUX_FUNC::BRAKE:
@@ -140,6 +139,16 @@ void RC_Channel_Copter::do_aux_function_change_mode(const Mode::Number mode,
         if (copter.control_mode == mode) {
             rc().reset_mode_switch();
         }
+    }
+}
+
+void RC_Channel_Copter::do_aux_function_armdisarm(const aux_switch_pos_t ch_flag)
+{
+    RC_Channel::do_aux_function_armdisarm(ch_flag);
+    if (copter.arming.is_armed()) {
+        // remember that we are using an arming switch, for use by
+        // set_throttle_zero_flag
+        copter.ap.armed_with_switch = true;
     }
 }
 
@@ -348,9 +357,15 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
             break;
 
         case AUX_FUNC::MOTOR_INTERLOCK:
-            // Turn on when above LOW, because channel will also be used for speed
-            // control signal in tradheli
+#if FRAME_CONFIG == HELI_FRAME
+            // The interlock logic for ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH is handled 
+            // in heli_update_rotor_speed_targets.  Otherwise turn on when above low.
+            if (copter.motors->get_rsc_mode() != ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH) {
+                copter.ap.motor_interlock_switch = (ch_flag == HIGH || ch_flag == MIDDLE);
+            }
+#else
             copter.ap.motor_interlock_switch = (ch_flag == HIGH || ch_flag == MIDDLE);
+#endif
             break;
 
         case AUX_FUNC::BRAKE:
@@ -379,23 +394,6 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
                     break;
             }
 #endif
-            break;
-
-        case AUX_FUNC::ARMDISARM:
-            // arm or disarm the vehicle
-            switch (ch_flag) {
-            case HIGH:
-                copter.arming.arm(AP_Arming::Method::AUXSWITCH);
-                // remember that we are using an arming switch, for use by set_throttle_zero_flag
-                copter.ap.armed_with_switch = true;
-                break;
-            case MIDDLE:
-                // nothing
-                break;
-            case LOW:
-                copter.arming.disarm();
-                break;
-            }
             break;
 
         case AUX_FUNC::SMART_RTL:

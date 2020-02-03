@@ -9,7 +9,7 @@ const AP_Param::GroupInfo AC_Circle::var_info[] = {
     // @DisplayName: Circle Radius
     // @Description: Defines the radius of the circle the vehicle will fly when in Circle flight mode
     // @Units: cm
-    // @Range: 0 10000
+    // @Range: 0 200000
     // @Increment: 100
     // @User: Standard
     AP_GROUPINFO("RADIUS",  0,  AC_Circle, _radius, AC_CIRCLE_RADIUS_DEFAULT),
@@ -22,6 +22,13 @@ const AP_Param::GroupInfo AC_Circle::var_info[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("RATE",    1, AC_Circle, _rate,    AC_CIRCLE_RATE_DEFAULT),
+
+    // @Param: CONTROL
+    // @DisplayName: Circle control
+    // @Description: Enable or disable using the pitch/roll stick control circle mode's radius and rate
+    // @Values: 0:Disable,1:Enable
+    // @User: Standard
+    AP_GROUPINFO("CONTROL", 2, AC_Circle, _control, 1),
 
     AP_GROUPEND
 };
@@ -106,6 +113,13 @@ void AC_Circle::set_rate(float deg_per_sec)
     }
 }
 
+/// set_circle_rate - set circle rate in degrees per second
+void AC_Circle::set_radius(float radius_cm)
+{
+    _radius = constrain_float(radius_cm, 0, AC_CIRCLE_RADIUS_MAX);
+    calc_velocities(false);
+}
+
 /// update - update circle controller
 void AC_Circle::update()
 {
@@ -167,7 +181,7 @@ void AC_Circle::update()
 //  closest point on the circle will be placed in result
 //  result's altitude (i.e. z) will be set to the circle_center's altitude
 //  if vehicle is at the center of the circle, the edge directly behind vehicle will be returned
-void AC_Circle::get_closest_point_on_circle(Vector3f &result)
+void AC_Circle::get_closest_point_on_circle(Vector3f &result) const
 {
     // return center if radius is zero
     if (_radius <= 0) {

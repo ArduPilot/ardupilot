@@ -236,7 +236,7 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
         if hasattr(lib, "DMA_Map"):
             dma_map = lib.DMA_Map
         else:
-            return
+            return []
     except ImportError:
         print("Unable to find module for MCU %s" % mcu_type)
         sys.exit(1)
@@ -386,6 +386,7 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
             continue
         f.write('#define STM32_SPI_%s_DMA_STREAMS STM32_SPI_%s_TX_%s_STREAM, STM32_SPI_%s_RX_%s_STREAM\n' % (
             key, key, dma_name(key), key, dma_name(key)))
+    return unassigned
 
 
 if __name__ == '__main__':

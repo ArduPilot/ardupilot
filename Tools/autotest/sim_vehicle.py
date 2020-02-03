@@ -648,7 +648,7 @@ def start_mavproxy(opts, stuff):
             cmd.extend(["--master", "mcast:"])
         else:
             cmd.extend(["--master", mavlink_port])
-        if stuff["sitl-port"]:
+        if stuff["sitl-port"] and not opts.no_rcin:
             cmd.extend(["--sitl", simout_port])
 
     if not opts.no_extra_ports:
@@ -985,6 +985,9 @@ group.add_option("", "--moddebug",
                  default=0,
                  type=int,
                  help="mavproxy module debug")
+group.add_option("", "--no-rcin",
+                 action='store_true',
+                 help="disable mavproxy rcin")
 parser.add_option_group(group)
 
 cmd_opts, cmd_args = parser.parse_args()

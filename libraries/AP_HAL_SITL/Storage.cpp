@@ -72,7 +72,10 @@ void Storage::_storage_open(void)
 */
 void Storage::_mark_dirty(uint16_t loc, uint16_t length)
 {
-    uint16_t end = loc + length;
+    if (length == 0) {
+        return;
+    }
+    uint16_t end = loc + length - 1;
     for (uint16_t line=loc>>STORAGE_LINE_SHIFT;
          line <= end>>STORAGE_LINE_SHIFT;
          line++) {

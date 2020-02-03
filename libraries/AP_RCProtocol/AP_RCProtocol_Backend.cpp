@@ -46,10 +46,18 @@ uint16_t AP_RCProtocol_Backend::read(uint8_t chan)
     return _pwm_values[chan];
 }
 
+void AP_RCProtocol_Backend::read(uint16_t *pwm, uint8_t n)
+{
+    if (n >= MAX_RCIN_CHANNELS) {
+        n = MAX_RCIN_CHANNELS;
+    }
+    memcpy(pwm, _pwm_values, n*sizeof(pwm[0]));
+}
+
 /*
   provide input from a backend
  */
-void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool in_failsafe)
+void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool in_failsafe, int16_t _rssi)
 {
     num_values = MIN(num_values, MAX_RCIN_CHANNELS);
     memcpy(_pwm_values, values, num_values*sizeof(uint16_t));
@@ -63,4 +71,5 @@ void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool
     if (!in_failsafe) {
         rc_input_count++;
     }
+    rssi = _rssi;
 }

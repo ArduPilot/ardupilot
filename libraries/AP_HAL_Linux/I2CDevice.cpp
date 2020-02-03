@@ -105,7 +105,7 @@ I2CBus::~I2CBus()
 
 void I2CBus::start_cb()
 {
-    sem.take(HAL_SEMAPHORE_BLOCK_FOREVER);
+    sem.take_blocking();
 }
 
 void I2CBus::end_cb()

@@ -433,6 +433,7 @@ struct PACKED log_POWR {
 struct PACKED log_EKF1 {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t core;
     int16_t roll;
     int16_t pitch;
     uint16_t yaw;
@@ -452,6 +453,7 @@ struct PACKED log_EKF1 {
 struct PACKED log_EKF2 {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t core;
     int8_t Ratio;
     int8_t AZ1bias;
     int8_t AZ2bias;
@@ -468,6 +470,7 @@ struct PACKED log_EKF2 {
 struct PACKED log_NKF2 {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t core;
     int8_t AZbias;
     int16_t scaleX;
     int16_t scaleY;
@@ -486,6 +489,7 @@ struct PACKED log_NKF2 {
 struct PACKED log_NKF2a {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t core;
     int16_t accBiasX;
     int16_t accBiasY;
     int16_t accBiasZ;
@@ -503,6 +507,7 @@ struct PACKED log_NKF2a {
 struct PACKED log_EKF3 {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t core;
     int16_t innovVN;
     int16_t innovVE;
     int16_t innovVD;
@@ -518,6 +523,7 @@ struct PACKED log_EKF3 {
 struct PACKED log_NKF3 {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t core;
     int16_t innovVN;
     int16_t innovVE;
     int16_t innovVD;
@@ -534,6 +540,7 @@ struct PACKED log_NKF3 {
 struct PACKED log_EKF4 {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t core;
     int16_t sqrtvarV;
     int16_t sqrtvarP;
     int16_t sqrtvarH;
@@ -552,6 +559,7 @@ struct PACKED log_EKF4 {
 struct PACKED log_NKF4 {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t core;
     int16_t sqrtvarV;
     int16_t sqrtvarP;
     int16_t sqrtvarH;
@@ -601,6 +609,7 @@ struct PACKED log_NKF5 {
 struct PACKED log_Quaternion {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t core;
     float q1;
     float q2;
     float q3;
@@ -758,6 +767,7 @@ struct PACKED log_PID {
 struct PACKED log_Current {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t  instance;
     float    voltage;
     float    voltage_resting;
     float    current_amps;
@@ -792,6 +802,7 @@ struct PACKED log_ADSB {
 struct PACKED log_Current_Cells {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t  instance;
     float    voltage;
     uint16_t cell_voltages[10];
 };
@@ -940,6 +951,28 @@ struct PACKED log_Esc {
     int16_t esc_temp;
     uint16_t current_tot;
     int16_t motor_temp;
+};
+
+struct PACKED log_CSRV {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;     
+    uint8_t id;
+    float position;
+    float force;
+    float speed;
+    uint8_t power_pct;
+};
+
+struct PACKED log_CESC {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;     
+    uint8_t id;
+    uint32_t error_count;
+    float voltage;
+    float current;
+    float temperature;
+    int32_t rpm;
+    uint8_t power_pct;
 };
 
 struct PACKED log_AIRSPEED {
@@ -1203,6 +1236,8 @@ struct PACKED log_Arm_Disarm {
     uint64_t time_us;
     uint8_t  arm_state;
     uint16_t arm_checks;
+    uint8_t forced;
+    uint8_t method;
 };
 
 // FMT messages define all message formats other than FMT
@@ -1271,20 +1306,10 @@ struct PACKED log_Arm_Disarm {
 #define PID_UNITS  "s-------"
 #define PID_MULTS  "F-------"
 
-#define QUAT_LABELS "TimeUS,Q1,Q2,Q3,Q4"
-#define QUAT_FMT    "Qffff"
-#define QUAT_UNITS  "s????"
-#define QUAT_MULTS  "F????"
-
-#define CURR_LABELS "TimeUS,Volt,VoltR,Curr,CurrTot,EnrgTot,Temp,Res"
-#define CURR_FMT    "Qfffffcf"
-#define CURR_UNITS  "svvA?JOw"
-#define CURR_MULTS  "F000?/?0"
-
-#define CURR_CELL_LABELS "TimeUS,Volt,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10"
-#define CURR_CELL_FMT    "QfHHHHHHHHHH"
-#define CURR_CELL_UNITS  "svvvvvvvvvvv"
-#define CURR_CELL_MULTS  "F00000000000"
+#define QUAT_LABELS "TimeUS,C,Q1,Q2,Q3,Q4"
+#define QUAT_FMT    "QBffff"
+#define QUAT_UNITS  "s#????"
+#define QUAT_MULTS  "F-????"
 
 #define ARSP_LABELS "TimeUS,Airspeed,DiffPress,Temp,RawPress,Offset,U,Health,Hfp,Pri"
 #define ARSP_FMT "QffcffBBfB"
@@ -1341,42 +1366,10 @@ struct PACKED log_Arm_Disarm {
       "TRIG", "QIHLLeeeccC","TimeUS,GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,GPSAlt,Roll,Pitch,Yaw", "s--DUmmmddd", "F--GGBBBBBB" }, \
     { LOG_ARSP_MSG, sizeof(log_AIRSPEED), "ARSP",  ARSP_FMT, ARSP_LABELS, ARSP_UNITS, ARSP_MULTS }, \
     { LOG_ASP2_MSG, sizeof(log_AIRSPEED), "ASP2",  ARSP_FMT, ARSP_LABELS, ARSP_UNITS, ARSP_MULTS }, \
-    { LOG_CURRENT_MSG, sizeof(log_Current), \
-      "BAT", CURR_FMT,CURR_LABELS,CURR_UNITS,CURR_MULTS },  \
-    { LOG_CURRENT2_MSG, sizeof(log_Current), \
-      "BAT2", CURR_FMT,CURR_LABELS,CURR_UNITS,CURR_MULTS }, \
-    { LOG_CURRENT3_MSG, sizeof(log_Current), \
-      "BAT3", CURR_FMT,CURR_LABELS,CURR_UNITS,CURR_MULTS }, \
-    { LOG_CURRENT4_MSG, sizeof(log_Current), \
-      "BAT4", CURR_FMT,CURR_LABELS,CURR_UNITS,CURR_MULTS }, \
-    { LOG_CURRENT5_MSG, sizeof(log_Current), \
-      "BAT5", CURR_FMT,CURR_LABELS,CURR_UNITS,CURR_MULTS }, \
-    { LOG_CURRENT6_MSG, sizeof(log_Current), \
-      "BAT6", CURR_FMT,CURR_LABELS,CURR_UNITS,CURR_MULTS }, \
-    { LOG_CURRENT7_MSG, sizeof(log_Current), \
-      "BAT7", CURR_FMT,CURR_LABELS,CURR_UNITS,CURR_MULTS }, \
-    { LOG_CURRENT8_MSG, sizeof(log_Current), \
-      "BAT8", CURR_FMT,CURR_LABELS,CURR_UNITS,CURR_MULTS }, \
-    { LOG_CURRENT9_MSG, sizeof(log_Current), \
-      "BAT9", CURR_FMT,CURR_LABELS,CURR_UNITS,CURR_MULTS }, \
+    { LOG_CURRENT_MSG, sizeof(log_Current),                     \
+      "BAT", "QBfffffcf", "TimeUS,Instance,Volt,VoltR,Curr,CurrTot,EnrgTot,Temp,Res", "s#vvA?JOw", "F-000?/?0" },  \
     { LOG_CURRENT_CELLS_MSG, sizeof(log_Current_Cells), \
-      "BCL", CURR_CELL_FMT, CURR_CELL_LABELS, CURR_CELL_UNITS, CURR_CELL_MULTS }, \
-    { LOG_CURRENT_CELLS2_MSG, sizeof(log_Current_Cells), \
-      "BCL2", CURR_CELL_FMT, CURR_CELL_LABELS, CURR_CELL_UNITS, CURR_CELL_MULTS }, \
-    { LOG_CURRENT_CELLS3_MSG, sizeof(log_Current_Cells), \
-      "BCL3", CURR_CELL_FMT, CURR_CELL_LABELS, CURR_CELL_UNITS, CURR_CELL_MULTS }, \
-    { LOG_CURRENT_CELLS4_MSG, sizeof(log_Current_Cells), \
-      "BCL4", CURR_CELL_FMT, CURR_CELL_LABELS, CURR_CELL_UNITS, CURR_CELL_MULTS }, \
-    { LOG_CURRENT_CELLS5_MSG, sizeof(log_Current_Cells), \
-      "BCL5", CURR_CELL_FMT, CURR_CELL_LABELS, CURR_CELL_UNITS, CURR_CELL_MULTS }, \
-    { LOG_CURRENT_CELLS6_MSG, sizeof(log_Current_Cells), \
-      "BCL6", CURR_CELL_FMT, CURR_CELL_LABELS, CURR_CELL_UNITS, CURR_CELL_MULTS }, \
-    { LOG_CURRENT_CELLS7_MSG, sizeof(log_Current_Cells), \
-      "BCL7", CURR_CELL_FMT, CURR_CELL_LABELS, CURR_CELL_UNITS, CURR_CELL_MULTS }, \
-    { LOG_CURRENT_CELLS8_MSG, sizeof(log_Current_Cells), \
-      "BCL8", CURR_CELL_FMT, CURR_CELL_LABELS, CURR_CELL_UNITS, CURR_CELL_MULTS }, \
-    { LOG_CURRENT_CELLS9_MSG, sizeof(log_Current_Cells), \
-      "BCL9", CURR_CELL_FMT, CURR_CELL_LABELS, CURR_CELL_UNITS, CURR_CELL_MULTS }, \
+      "BCL", "QBfHHHHHHHHHH", "TimeUS,Instance,Volt,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10", "s#vvvvvvvvvvv", "F-00000000000" }, \
 	{ LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
       "ATT", "QccccCCCC", "TimeUS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw", "sddddhhdh", "FBBBBBBBB" }, \
     { LOG_COMPASS_MSG, sizeof(log_Compass), \
@@ -1398,10 +1391,7 @@ struct PACKED log_Arm_Disarm {
     { LOG_OA_BENDYRULER_MSG, sizeof(log_OABendyRuler), \
       "OABR","QBHHfLLLL","TimeUS,Active,DesYaw,Yaw,Mar,DLat,DLng,OALat,OALng", "sbddmDUDU", "F----GGGG" }, \
     { LOG_OA_DIJKSTRA_MSG, sizeof(log_OADijkstra), \
-      "OADJ","QBBBBLLLL","TimeUS,State,Err,CurrPoint,TotPoints,DLat,DLng,OALat,OALng", "sbbbbDUDU", "F----GGGG" }
-
-// messages for more advanced boards
-#define LOG_EXTRA_STRUCTURES \
+      "OADJ","QBBBBLLLL","TimeUS,State,Err,CurrPoint,TotPoints,DLat,DLng,OALat,OALng", "sbbbbDUDU", "F----GGGG" }, \
     { LOG_IMU2_MSG, sizeof(log_IMU), \
       "IMU2",  IMU_FMT,     IMU_LABELS, IMU_UNITS, IMU_MULTS }, \
     { LOG_IMU3_MSG, sizeof(log_IMU), \
@@ -1413,67 +1403,31 @@ struct PACKED log_Arm_Disarm {
     { LOG_SIMSTATE_MSG, sizeof(log_AHRS), \
       "SIM","QccCfLLffff","TimeUS,Roll,Pitch,Yaw,Alt,Lat,Lng,Q1,Q2,Q3,Q4", "sddhmDU????", "FBBB0GG????" }, \
     { LOG_NKF1_MSG, sizeof(log_EKF1), \
-      "NKF1","QccCfffffffccce","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ,OH", "sddhnnnnmmmkkkm", "FBBB0000000BBBB" }, \
+      "NKF1","QBccCfffffffccce","TimeUS,C,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ,OH", "s#ddhnnnnmmmkkkm", "F-BBB0000000BBBB" }, \
     { LOG_NKF2_MSG, sizeof(log_NKF2), \
-      "NKF2","QbccccchhhhhhB","TimeUS,AZbias,GSX,GSY,GSZ,VWN,VWE,MN,ME,MD,MX,MY,MZ,MI", "s----nnGGGGGG-", "F----BBCCCCCC-" }, \
+      "NKF2","QBbccccchhhhhhB","TimeUS,C,AZbias,GSX,GSY,GSZ,VWN,VWE,MN,ME,MD,MX,MY,MZ,MI", "s#----nnGGGGGG-", "F-----BBCCCCCC-" }, \
     { LOG_NKF3_MSG, sizeof(log_NKF3), \
-      "NKF3","Qcccccchhhcc","TimeUS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT", "snnnmmmGGG??", "FBBBBBBCCCBB" }, \
+      "NKF3","QBcccccchhhcc","TimeUS,C,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT", "s#nnnmmmGGG??", "F-BBBBBBCCCBB" }, \
     { LOG_NKF4_MSG, sizeof(log_NKF4), \
-      "NKF4","QcccccfbbHBHHb","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s------??-----", "F------??-----" }, \
+      "NKF4","QBcccccfbbHBHHb","TimeUS,C,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s#------??-----", "F-------??-----" }, \
     { LOG_NKF5_MSG, sizeof(log_NKF5), \
       "NKF5","QBhhhcccCCfff","TimeUS,NI,FIX,FIY,AFI,HAGL,offset,RI,rng,Herr,eAng,eVel,ePos", "s----m???mrnm", "F----BBBBB000" }, \
-    { LOG_NKF6_MSG, sizeof(log_EKF1), \
-      "NKF6","QccCfffffffccce","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ,OH", "sddhnnn-mmmkkkm", "FBBB000-000BBBB" }, \
-    { LOG_NKF7_MSG, sizeof(log_NKF2), \
-      "NKF7","QbccccchhhhhhB","TimeUS,AZbias,GSX,GSY,GSZ,VWN,VWE,MN,ME,MD,MX,MY,MZ,MI", "s----nnGGGGGG-", "F----BBCCCCCC-" }, \
-    { LOG_NKF8_MSG, sizeof(log_NKF3), \
-      "NKF8","Qcccccchhhcc","TimeUS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT", "snnnmmmGGGd?", "FBBBBBBCCCBB" }, \
-    { LOG_NKF9_MSG, sizeof(log_NKF4), \
-      "NKF9","QcccccfbbHBHHb","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s-----???-----", "F-----???-----" }, \
     { LOG_NKF10_MSG, sizeof(log_RngBcnDebug), \
       "NKF0","QBccCCcccccccc","TimeUS,ID,rng,innov,SIV,TR,BPN,BPE,BPD,OFH,OFL,OFN,OFE,OFD", "s-m---mmmmmmmm", "F-B---BBBBBBBB" }, \
-    { LOG_NKF11_MSG, sizeof(log_EKF1), \
-      "NK11","QccCfffffffccce","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ,OH", "sddhnnn-mmmkkkm", "FBBB000-000BBBB" }, \
-    { LOG_NKF12_MSG, sizeof(log_NKF2), \
-      "NK12","QbccccchhhhhhB","TimeUS,AZbias,GSX,GSY,GSZ,VWN,VWE,MN,ME,MD,MX,MY,MZ,MI", "s----nnGGGGGG-", "F----BBCCCCCC-" }, \
-    { LOG_NKF13_MSG, sizeof(log_NKF3), \
-      "NK13","Qcccccchhhcc","TimeUS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT", "snnnmmmGGGd?", "FBBBBBBCCCBB" }, \
-    { LOG_NKF14_MSG, sizeof(log_NKF4), \
-      "NK14","QcccccfbbHBHHb","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s-----???-----", "F-----???-----" }, \
-    { LOG_NKQ1_MSG, sizeof(log_Quaternion), "NKQ1", QUAT_FMT, QUAT_LABELS, QUAT_UNITS, QUAT_MULTS }, \
-    { LOG_NKQ2_MSG, sizeof(log_Quaternion), "NKQ2", QUAT_FMT, QUAT_LABELS, QUAT_UNITS, QUAT_MULTS }, \
-    { LOG_NKQ3_MSG, sizeof(log_Quaternion), "NKQ3", QUAT_FMT, QUAT_LABELS, QUAT_UNITS, QUAT_MULTS }, \
+    { LOG_NKQ_MSG, sizeof(log_Quaternion), "NKQ", QUAT_FMT, QUAT_LABELS, QUAT_UNITS, QUAT_MULTS }, \
     { LOG_XKF1_MSG, sizeof(log_EKF1), \
-      "XKF1","QccCfffffffccce","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ,OH", "sddhnnnnmmmkkkm", "FBBB0000000BBBB" }, \
+      "XKF1","QBccCfffffffccce","TimeUS,C,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ,OH", "s#ddhnnnnmmmkkkm", "F-BBB0000000BBBB" }, \
     { LOG_XKF2_MSG, sizeof(log_NKF2a), \
-      "XKF2","QccccchhhhhhB","TimeUS,AX,AY,AZ,VWN,VWE,MN,ME,MD,MX,MY,MZ,MI", "s---nnGGGGGG-", "F---BBCCCCCC-" }, \
+      "XKF2","QBccccchhhhhhB","TimeUS,C,AX,AY,AZ,VWN,VWE,MN,ME,MD,MX,MY,MZ,MI", "s#---nnGGGGGG-", "F----BBCCCCCC-" }, \
     { LOG_XKF3_MSG, sizeof(log_NKF3), \
-      "XKF3","Qcccccchhhcc","TimeUS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT", "snnnmmmGGG??", "FBBBBBBCCCBB" }, \
+      "XKF3","QBcccccchhhcc","TimeUS,C,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT", "s#nnnmmmGGG??", "F-BBBBBBCCCBB" }, \
     { LOG_XKF4_MSG, sizeof(log_NKF4), \
-      "XKF4","QcccccfbbHBHHb","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s------??-----", "F------??-----" }, \
+      "XKF4","QBcccccfbbHBHHb","TimeUS,C,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s#------??-----", "F-------??-----" }, \
     { LOG_XKF5_MSG, sizeof(log_NKF5), \
       "XKF5","QBhhhcccCCfff","TimeUS,NI,FIX,FIY,AFI,HAGL,offset,RI,rng,Herr,eAng,eVel,ePos", "s----m???mrnm", "F----BBBBB000" }, \
-    { LOG_XKF6_MSG, sizeof(log_EKF1), \
-      "XKF6","QccCfffffffccce","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ,OH", "sddhnnn-mmmkkkm", "FBBB000-000BBBB" }, \
-    { LOG_XKF7_MSG, sizeof(log_NKF2a), \
-      "XKF7","QccccchhhhhhB","TimeUS,AX,AY,AZ,VWN,VWE,MN,ME,MD,MX,MY,MZ,MI", "s---nnGGGGGG-", "F---BBCCCCCC-" }, \
-    { LOG_XKF8_MSG, sizeof(log_NKF3), \
-      "XKF8","Qcccccchhhcc","TimeUS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT", "snnnmmmGGGd?", "FBBBBBBCCCBB" }, \
-    { LOG_XKF9_MSG, sizeof(log_NKF4), \
-      "XKF9","QcccccfbbHBHHb","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s-----???-----", "F-----???-----" }, \
     { LOG_XKF10_MSG, sizeof(log_RngBcnDebug), \
       "XKF0","QBccCCcccccccc","TimeUS,ID,rng,innov,SIV,TR,BPN,BPE,BPD,OFH,OFL,OFN,OFE,OFD", "s-m---mmmmmmmm", "F-B---BBBBBBBB" }, \
-    { LOG_XKF11_MSG, sizeof(log_EKF1), \
-      "XK11","QccCfffffffccce","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ,OH", "sddhnnn-mmmkkkm", "FBBB000-000BBBB" }, \
-    { LOG_XKF12_MSG, sizeof(log_NKF2a), \
-      "XK12","QccccchhhhhhB","TimeUS,AX,AY,AZ,VWN,VWE,MN,ME,MD,MX,MY,MZ,MI", "s---nnGGGGGG-", "F---BBCCCCCC-" }, \
-    { LOG_XKF13_MSG, sizeof(log_NKF3), \
-      "XK13","Qcccccchhhcc","TimeUS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT", "snnnmmmGGGd?", "FBBBBBBCCCBB" }, \
-    { LOG_XKF14_MSG, sizeof(log_NKF4), \
-      "XK14","QcccccfbbHBHHb","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s-----???-----", "F-----???-----" }, \
-    { LOG_XKQ1_MSG, sizeof(log_Quaternion), "XKQ1", QUAT_FMT, QUAT_LABELS, QUAT_UNITS, QUAT_MULTS }, \
-    { LOG_XKQ2_MSG, sizeof(log_Quaternion), "XKQ2", QUAT_FMT, QUAT_LABELS, QUAT_UNITS, QUAT_MULTS }, \
-    { LOG_XKQ3_MSG, sizeof(log_Quaternion), "XKQ3", QUAT_FMT, QUAT_LABELS, QUAT_UNITS, QUAT_MULTS }, \
+    { LOG_XKQ_MSG, sizeof(log_Quaternion), "XKQ", QUAT_FMT, QUAT_LABELS, QUAT_UNITS, QUAT_MULTS }, \
     { LOG_XKFD_MSG, sizeof(log_ekfBodyOdomDebug), \
       "XKFD","Qffffff","TimeUS,IX,IY,IZ,IVX,IVY,IVZ", "s------", "F------" }, \
     { LOG_XKV1_MSG, sizeof(log_ekfStateVar), \
@@ -1514,6 +1468,10 @@ struct PACKED log_Arm_Disarm {
       "ESC7",  ESC_FMT, ESC_LABELS, ESC_UNITS, ESC_MULTS }, \
     { LOG_ESC8_MSG, sizeof(log_Esc), \
       "ESC8",  ESC_FMT, ESC_LABELS, ESC_UNITS, ESC_MULTS }, \
+    { LOG_CSRV_MSG, sizeof(log_CSRV), \
+      "CSRV","QBfffB","TimeUS,Id,Pos,Force,Speed,Pow", "s#---%", "F-0000" }, \
+    { LOG_CESC_MSG, sizeof(log_CESC), \
+      "CESC","QBIfffiB","TimeUS,Id,ECnt,Voltage,Curr,Temp,RPM,Pow", "s#-vAOq%", "F-000000" }, \
     { LOG_COMPASS2_MSG, sizeof(log_Compass), \
       "MAG2",MAG_FMT,    MAG_LABELS, MAG_UNITS, MAG_MULTS }, \
     { LOG_COMPASS3_MSG, sizeof(log_Compass), \
@@ -1583,7 +1541,13 @@ struct PACKED log_Arm_Disarm {
     { LOG_WHEELENCODER_MSG, sizeof(log_WheelEncoder), \
       "WENC",  "Qfbfb", "TimeUS,Dist0,Qual0,Dist1,Qual1", "sm-m-", "F0-0-" }, \
     { LOG_ADSB_MSG, sizeof(log_ADSB), \
-      "ADSB",  "QIiiiHHhH", "TimeUS,ICAO_address,Lat,Lng,Alt,Heading,Hor_vel,Ver_vel,Squark", "s-DUmhnn-", "F-GGCBCC-" }
+      "ADSB",  "QIiiiHHhH", "TimeUS,ICAO_address,Lat,Lng,Alt,Heading,Hor_vel,Ver_vel,Squark", "s-DUmhnn-", "F-GGCBCC-" }, \
+    { LOG_EVENT_MSG, sizeof(log_Event), \
+      "EV",   "QB",           "TimeUS,Id", "s-", "F-" }, \
+    { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm), \
+      "ARM", "QBHBB", "TimeUS,ArmState,ArmChecks,Forced,Method", "s----", "F----" }, \
+    { LOG_ERROR_MSG, sizeof(log_Error), \
+      "ERR",   "QBB",         "TimeUS,Subsys,ECode", "s--", "F--" }
 
 
 #define LOG_SBP_STRUCTURES \
@@ -1593,16 +1557,10 @@ struct PACKED log_Arm_Disarm {
       "SBRH", "QQQQQQQQ", "TimeUS,msg_flag,1,2,3,4,5,6", "s--b----", "F--0----" }, \
     { LOG_MSG_SBPRAWM, sizeof(log_SbpRAWM), \
       "SBRM", "QQQQQQQQQQQQQQQ", "TimeUS,msg_flag,1,2,3,4,5,6,7,8,9,10,11,12,13", "s??????????????", "F??????????????" }, \
-    { LOG_EVENT_MSG, sizeof(log_Event), \
-      "EV",   "QB",           "TimeUS,Id", "s-", "F-" }, \
     { LOG_MSG_SBPEVENT, sizeof(log_SbpEvent), \
-      "SBRE", "QHIiBB", "TimeUS,GWk,GMS,ns_residual,level,quality", "s?????", "F?????" }, \
-    { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm), \
-      "ARM", "QBH", "TimeUS,ArmState,ArmChecks", "s--", "F--" }, \
-    { LOG_ERROR_MSG, sizeof(log_Error), \
-      "ERR",   "QBB",         "TimeUS,Subsys,ECode", "s--", "F--" }
+      "SBRE", "QHIiBB", "TimeUS,GWk,GMS,ns_residual,level,quality", "s?????", "F?????" }
 
-#define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_EXTRA_STRUCTURES, LOG_SBP_STRUCTURES
+#define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_SBP_STRUCTURES
 
 // message types 0 to 63 reserved for vehicle specific use
 
@@ -1613,41 +1571,18 @@ enum LogMessages : uint8_t {
     LOG_NKF3_MSG,
     LOG_NKF4_MSG,
     LOG_NKF5_MSG,
-    LOG_NKF6_MSG,
-    LOG_NKF7_MSG,
-    LOG_NKF8_MSG,
-    LOG_NKF9_MSG,
     LOG_NKF10_MSG,
-    LOG_NKF11_MSG,
-    LOG_NKF12_MSG,
-    LOG_NKF13_MSG,
-    LOG_NKF14_MSG,
-    LOG_NKQ1_MSG,
-    LOG_NKQ2_MSG,
-    LOG_NKQ3_MSG,
+    LOG_NKQ_MSG,
     LOG_XKF1_MSG,
     LOG_XKF2_MSG,
     LOG_XKF3_MSG,
     LOG_XKF4_MSG,
     LOG_XKF5_MSG,
-    LOG_XKF6_MSG,
-    LOG_XKF7_MSG,
-    LOG_XKF8_MSG,
-    LOG_XKF9_MSG,
     LOG_XKF10_MSG,
-    LOG_XKF11_MSG,
-    LOG_XKF12_MSG,
-    LOG_XKF13_MSG,
-    LOG_XKF14_MSG,
-    LOG_XKQ1_MSG,
-    LOG_XKQ2_MSG,
-    LOG_XKQ3_MSG,
+    LOG_XKQ_MSG,
     LOG_XKFD_MSG,
     LOG_XKV1_MSG,
     LOG_XKV2_MSG,
-
-    LOG_FORMAT_MSG = 128, // this must remain #128
-
     LOG_PARAMETER_MSG,
     LOG_GPS_MSG,
     LOG_GPS2_MSG,
@@ -1681,33 +1616,24 @@ enum LogMessages : uint8_t {
     LOG_ESC6_MSG,
     LOG_ESC7_MSG,
     LOG_ESC8_MSG,
+    LOG_CSRV_MSG,
+    LOG_CESC_MSG,
     LOG_BAR2_MSG,
     LOG_ARSP_MSG,
     LOG_ATTITUDE_MSG,
     LOG_CURRENT_MSG,
-    LOG_CURRENT2_MSG,
-    LOG_CURRENT3_MSG,
-    LOG_CURRENT4_MSG,
-    LOG_CURRENT5_MSG,
-    LOG_CURRENT6_MSG,
-    LOG_CURRENT7_MSG,
-    LOG_CURRENT8_MSG,
-    LOG_CURRENT9_MSG,
     LOG_CURRENT_CELLS_MSG,
-    LOG_CURRENT_CELLS2_MSG,
-    LOG_CURRENT_CELLS3_MSG,
-    LOG_CURRENT_CELLS4_MSG,
-    LOG_CURRENT_CELLS5_MSG,
-    LOG_CURRENT_CELLS6_MSG,
-    LOG_CURRENT_CELLS7_MSG,
-    LOG_CURRENT_CELLS8_MSG,
-    LOG_CURRENT_CELLS9_MSG,
     LOG_COMPASS_MSG,
     LOG_COMPASS2_MSG,
     LOG_COMPASS3_MSG,
     LOG_MODE_MSG,
     LOG_GPS_RAW_MSG,
+
+    // LOG_GPS_RAWH_MSG is used as a check for duplicates. Do not add between this and LOG_FORMAT_MSG
     LOG_GPS_RAWH_MSG,
+
+    LOG_FORMAT_MSG = 128, // this must remain #128
+
     LOG_GPS_RAWS_MSG,
 	LOG_GPS_SBF_EVENT_MSG,
     LOG_ACC1_MSG,
@@ -1778,6 +1704,7 @@ enum LogMessages : uint8_t {
 };
 
 static_assert(_LOG_LAST_MSG_ <= 255, "Too many message formats");
+static_assert(LOG_GPS_RAWH_MSG < 128, "Duplicate message format IDs");
 
 enum LogOriginType {
     ekf_origin = 0,

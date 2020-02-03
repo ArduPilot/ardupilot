@@ -33,14 +33,15 @@ public:
         ARMING_CHECK_SYSTEM      = (1U << 13),
         ARMING_CHECK_MISSION     = (1U << 14),
         ARMING_CHECK_RANGEFINDER = (1U << 15),
+        ARMING_CHECK_CAMERA      = (1U << 16),
     };
 
     enum class Method {
-        RUDDER,
-        MAVLINK,
-        AUXSWITCH,
-        MOTORTEST,
-        SCRIPTING,
+        RUDDER = 0,
+        MAVLINK = 1,
+        AUXSWITCH = 2,
+        MOTORTEST = 3,
+        SCRIPTING = 4,
     };
 
     enum class Required {
@@ -124,6 +125,8 @@ protected:
 
     bool fence_checks(bool report);
 
+    bool camera_checks(bool display_failure);
+
     virtual bool system_checks(bool report);
 
     bool can_checks(bool report);
@@ -144,7 +147,8 @@ protected:
     void check_failed(const enum AP_Arming::ArmingChecks check, bool report, const char *fmt, ...) const FMT_PRINTF(4, 5);
     void check_failed(bool report, const char *fmt, ...) const FMT_PRINTF(3, 4);
 
-    void Log_Write_Arm_Disarm();
+    void Log_Write_Arm(bool forced, AP_Arming::Method method);
+    void Log_Write_Disarm();
 
 private:
 

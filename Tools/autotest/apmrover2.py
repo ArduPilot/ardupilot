@@ -772,8 +772,82 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 if m.chan3_raw == normal_rc_throttle:
                     break
 
+            self.start_subtest("Check override time of zero disables overrides")
+            old = self.get_parameter("RC_OVERRIDE_TIME")
+            ch = 2
+            self.set_rc(ch, 1000)
+            channels = [65535] * 18
+            channels[ch-1] = 1700
+            self.progress("Sending override message")
+
+            self.mav.mav.rc_channels_override_send(
+                1, # target system
+                1, # targe component
+                *channels
+            )
+            self.wait_rc_channel_value(ch, 1700)
+            self.set_parameter("RC_OVERRIDE_TIME", 0)
+            self.wait_rc_channel_value(ch, 1000)
+            self.set_parameter("RC_OVERRIDE_TIME", old)
+            self.wait_rc_channel_value(ch, 1700)
+
+            self.mav.mav.rc_channels_override_send(
+                1, # target system
+                1, # targe component
+                *channels
+            )
+            self.wait_rc_channel_value(ch, 1700)
+            self.set_parameter("RC_OVERRIDE_TIME", 0)
+            self.wait_rc_channel_value(ch, 1000)
+            self.set_parameter("RC_OVERRIDE_TIME", old)
+            self.wait_rc_channel_value(ch, 1700)
+
+            self.start_subtest("Check override time of -1 disables override timeouts")
+            self.progress("Ensuring timeout works")
+            self.wait_rc_channel_value(ch, 1000, timeout=5)
+            self.set_parameter("RC_OVERRIDE_TIME", 10)
+            self.progress("Sending override message")
+            self.mav.mav.rc_channels_override_send(
+                1, # target system
+                1, # targe component
+                *channels
+            )
+            self.wait_rc_channel_value(ch, 1700)
+            tstart = self.get_sim_time()
+            self.wait_rc_channel_value(ch, 1000, timeout=12)
+            delta = self.get_sim_time() - tstart
+            if delta > 12:
+                raise NotAchievedException("Took too long to revert RC channel value (delta=%f)" % delta)
+            if delta < 9:
+                raise NotAchievedException("Didn't take long enough to revert RC channel value (delta=%f)" % delta)
+            self.progress("Disabling RC override timeout")
+            self.set_parameter("RC_OVERRIDE_TIME", -1)
+            self.mav.mav.rc_channels_override_send(
+                1, # target system
+                1, # targe component
+                *channels
+            )
+            self.wait_rc_channel_value(ch, 1700)
+            tstart = self.get_sim_time()
+            while True:
+                # warning: this is get_sim_time() and can slurp messages on you!
+                delta = self.get_sim_time() - tstart
+                if delta > 20:
+                    break
+                m = self.mav.recv_match(type='RC_CHANNELS',
+                                        blocking=True,
+                                        timeout=1)
+                if m is None:
+                    raise NotAchievedException("Did not get RC_CHANNELS")
+                channel_field = "chan%u_raw" % ch
+                m_value = getattr(m, channel_field)
+                if m_value != 1700:
+                    raise NotAchievedException("Value reverted after %f seconds when it should not have (got=%u) (want=%u)" % (delta, m_value, 1700))
+            self.set_parameter("RC_OVERRIDE_TIME", old)
+
         except Exception as e:
-            self.progress("Exception caught")
+            self.progress("Exception caught: %s" %
+                          self.get_exception_stacktrace(e))
             ex = e
 
         self.context_pop()
@@ -980,44 +1054,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         if ex is not None:
             raise ex
-
-    def drain_mav_seconds(self, seconds):
-        tstart = self.get_sim_time_cached()
-        while self.get_sim_time_cached() - tstart < seconds:
-            self.drain_mav();
-            self.delay_sim_time(0.5)
-
-    def test_button(self):
-        self.set_parameter("SIM_PIN_MASK", 0)
-        self.set_parameter("BTN_ENABLE", 1)
-        btn = 2
-        pin = 3
-        self.drain_mav()
-        self.set_parameter("BTN_PIN%u" % btn, pin)
-        m = self.mav.recv_match(type='BUTTON_CHANGE', blocking=True, timeout=1)
-        self.progress("m: %s" % str(m))
-        if m is None:
-            raise NotAchievedException("Did not get BUTTON_CHANGE event")
-        mask = 1<<btn
-        if m.state & mask:
-            raise NotAchievedException("Bit incorrectly set in mask (got=%u dontwant=%u)" % (m.state, mask))
-        # SITL instantly reverts the pin to its old value
-        m2 = self.mav.recv_match(type='BUTTON_CHANGE', blocking=True, timeout=1)
-        self.progress("m2: %s" % str(m2))
-        if m2 is None:
-            raise NotAchievedException("Did not get repeat message")
-        # wait for messages to stop coming:
-        self.drain_mav_seconds(15)
-
-        self.set_parameter("SIM_PIN_MASK", 0)
-        m3 = self.mav.recv_match(type='BUTTON_CHANGE', blocking=True, timeout=1)
-        self.progress("m3: %s" % str(m3))
-        if m3 is None:
-            raise NotAchievedException("Did not get new message")
-        if m.last_change_ms == m3.last_change_ms:
-            raise NotAchievedException("last_change_ms same as first message")
-        if m3.state != 0:
-            raise NotAchievedException("Didn't get expected mask back in message (mask=0 state=%u" % (m3.state))
 
     def test_rally_points(self):
         self.reboot_sitl() # to ensure starting point is as expected
@@ -5058,6 +5094,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             ("MissionFrames",
              "Upload/Download of items in different frames",
              self.test_mission_frames),
+
+            ("AccelCal",
+             "Accelerometer Calibration testing",
+             self.accelcal),
 
             ("DownLoadLogs", "Download logs", lambda:
              self.log_download(

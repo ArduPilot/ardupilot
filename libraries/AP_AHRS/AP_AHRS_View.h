@@ -88,11 +88,11 @@ public:
         return ahrs.wind_estimate();
     }
 
-    bool airspeed_estimate(float *airspeed_ret) const WARN_IF_UNUSED {
+    bool airspeed_estimate(float &airspeed_ret) const WARN_IF_UNUSED {
         return ahrs.airspeed_estimate(airspeed_ret);
     }
 
-    bool airspeed_estimate_true(float *airspeed_ret) const WARN_IF_UNUSED {
+    bool airspeed_estimate_true(float &airspeed_ret) const WARN_IF_UNUSED {
         return ahrs.airspeed_estimate_true(airspeed_ret);
     }
 
@@ -144,11 +144,11 @@ public:
         return ahrs.get_accel_ef_blended();
     }
 
-    uint32_t getLastPosNorthEastReset(Vector2f &pos) const WARN_IF_UNUSED {
+    uint32_t getLastPosNorthEastReset(Vector2f &pos) WARN_IF_UNUSED {
         return ahrs.getLastPosNorthEastReset(pos);
     }
 
-    uint32_t getLastPosDownReset(float &posDelta) const WARN_IF_UNUSED {
+    uint32_t getLastPosDownReset(float &posDelta) WARN_IF_UNUSED {
         return ahrs.getLastPosDownReset(posDelta);
     }
 

@@ -61,6 +61,9 @@ private:
     bool _ext_started;
 
     bool _attach_interrupt(ioline_t line, palcallback_t cb, void *p, uint8_t mode);
+#ifdef HAL_PIN_ALT_CONFIG
+    void setup_alt_config(void);
+#endif
 };
 
 class ChibiOS::DigitalSource : public AP_HAL::DigitalSource {

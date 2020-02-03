@@ -203,9 +203,6 @@ define HAL_GPIO_A_LED_PIN 0
 define HAL_GPIO_B_LED_PIN 1
 define HAL_GPIO_C_LED_PIN 2
 
-# enable RTSCTS
-define AP_FEATURE_RTSCTS 1
-
 # battery setup
 define HAL_BATT_VOLT_PIN 2
 define HAL_BATT_CURR_PIN 3

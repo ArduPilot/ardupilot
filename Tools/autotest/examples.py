@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import os
+import signal
 import subprocess
 import time
 
@@ -15,15 +16,29 @@ def run_example(filepath, valgrind=False, gdb=False):
     cmd.append(filepath)
     print("Running: (%s)" % str(cmd))
     bob = subprocess.Popen(cmd, stdin=None, close_fds=True)
+    retcode = bob.poll()
     time.sleep(10)
-    bob.kill()
-    bob.wait()
-    if bob.returncode is None:
-        raise ValueError("Unable to kill subprocess")
-    print("returncode: %u" % (bob.returncode))
-    if bob.returncode != -9:
-        raise ValueError("Process exitted before I got to kill it (exit code=%u)" % bob.returncode)
-    print("returncode2: %u" % (bob.returncode))
+    print("pre-kill retcode: %s" % str(retcode))
+    if retcode is not None:
+        raise ValueError("Process exited before I could kill it (%s)" % str(retcode))
+    bob.send_signal(signal.SIGTERM)
+    time.sleep(1)
+    retcode = bob.poll()
+    print("retcode: %s" % str(retcode))
+    if retcode is None:
+        # if we get this far then we're not going to get a gcda file
+        # out of this process for coverage analysis; it has to exit
+        # normally, and it hasn't responded to a TERM.
+        bob.kill()
+        retcode2 = bob.wait()
+        print("retcode2: %s" % str(retcode2))
+    elif retcode == -15:
+        print("process exited with -15, indicating it didn't catch the TERM signal and exit properly")
+    elif retcode != 0:
+        # note that process could exit with code 0 and we couldn't tell...
+        raise ValueError("Process exitted with non-zero exitcode %s" % str(retcode))
+
+    print("Ran: (%s)" % str(cmd))
 
 def run_examples(debug=False, valgrind=False, gdb=False):
     dirpath = util.reltopdir(os.path.join('build', 'linux', 'examples'))

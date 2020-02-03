@@ -5,7 +5,7 @@
  *      Author: Andreas Jochum
  *              Pavel Kirienko <pavel.kirienko@zubax.com> - UAVCAN support
  *
- *      Set-up Wiki: http://copter.ardupilot.org/wiki/common-electro-permanent-magnet-gripper/
+ *      Set-up Wiki: https://copter.ardupilot.org/wiki/common-electro-permanent-magnet-gripper/
  *      EPM docs:    https://docs.zubax.com/opengrab_epm_v3
  */
 

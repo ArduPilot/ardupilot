@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export PATH=$HOME/.local/bin:/usr/local/bin:$HOME/prefix/bin:$HOME/APM/px4/gcc-arm-none-eabi-4_9-2015q3/bin:$PATH
+export PATH=$HOME/.local/bin:/usr/local/bin:$HOME/prefix/bin:$HOME/gcc/active/bin:$PATH
 export PYTHONUNBUFFERED=1
 
 cd $HOME/APM || exit 1
@@ -59,7 +59,7 @@ report() {
     cat <<EOF | mail -s 'build failed' drones-discuss@googlegroups.com
 A build of $d failed at `date`
 
-You can view the build logs at http://autotest.ardupilot.org/
+You can view the build logs at https://autotest.ardupilot.org/
 
 A log of the commits since the last attempted build is below
 

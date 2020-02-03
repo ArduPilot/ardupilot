@@ -36,6 +36,11 @@
 #include <SITL/SIM_RF_MaxsonarSerialLV.h>
 #include <SITL/SIM_RF_Wasp.h>
 #include <SITL/SIM_RF_NMEA.h>
+
+#include <SITL/SIM_Frsky_D.h>
+// #include <SITL/SIM_Frsky_SPort.h>
+// #include <SITL/SIM_Frsky_SPortPassthrough.h>
+
 #include <AP_HAL/utility/Socket.h>
 
 class HAL_SITL;
@@ -54,8 +59,7 @@ public:
         ArduSub
     };
 
-    int gps_pipe(void);
-    int gps2_pipe(void);
+    int gps_pipe(uint8_t index);
     ssize_t gps_read(int fd, void *buf, size_t count);
     uint16_t pwm_output[SITL_NUM_CHANNELS];
     uint16_t pwm_input[SITL_RC_INPUT_CHANNELS];
@@ -126,7 +130,7 @@ private:
     };
 
 #define MAX_GPS_DELAY 100
-    gps_data _gps_data[MAX_GPS_DELAY];
+    gps_data _gps_data[2][MAX_GPS_DELAY];
 
     bool _gps_has_basestation_position;
     gps_data _gps_basestation_data;
@@ -261,6 +265,11 @@ private:
     SITL::RF_Wasp *wasp;
     // simulated NMEA rangefinder:
     SITL::RF_NMEA *nmea;
+
+    // simulated Frsky devices
+    SITL::Frsky_D *frsky_d;
+    // SITL::Frsky_SPort *frsky_sport;
+    // SITL::Frsky_SPortPassthrough *frsky_sportpassthrough;
 
     // output socket for flightgear viewing
     SocketAPM fg_socket{true};

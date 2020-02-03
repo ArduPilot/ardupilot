@@ -360,7 +360,7 @@ void AP_BLHeli::msp_process_command(void)
     case MSP_FEATURE_CONFIG: {
         debug("MSP_FEATURE_CONFIG");
         uint8_t buf[4];
-        putU32(buf, 0); // from MSPFeatures enum
+        putU32(buf, (channel_reversible_mask.get() != 0) ? FEATURE_3D : 0); // from MSPFeatures enum
         msp_send_reply(msp.cmdMSP, buf, sizeof(buf));
         break;
     }
@@ -409,6 +409,7 @@ void AP_BLHeli::msp_process_command(void)
         for (uint8_t i = 0; i < num_motors; i++) {
             uint16_t v = hal.rcout->read(motor_map[i]);
             putU16(&buf[2*i], v);
+            debug("MOTOR %u val: %u",i,v);
         }
         msp_send_reply(msp.cmdMSP, buf, sizeof(buf));
         break;

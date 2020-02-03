@@ -206,7 +206,7 @@ private:
     AP_Float    _warn_distance_z;
 
     // multi-thread support for avoidance
-    HAL_Semaphore_Recursive _rsem;
+    HAL_Semaphore _rsem;
 
     static AP_Avoidance *_singleton;
 };

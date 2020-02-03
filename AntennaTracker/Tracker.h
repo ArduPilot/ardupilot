@@ -1,7 +1,7 @@
 /*
    Lead developers: Matthew Ridley and Andrew Tridgell
 
-   Please contribute your ideas! See http://dev.ardupilot.org for details
+   Please contribute your ideas! See https://dev.ardupilot.org for details
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -42,7 +42,6 @@
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Stats/AP_Stats.h>                      // statistics library
 #include <AP_BattMonitor/AP_BattMonitor.h> // Battery monitor library
-#include <AP_Common/AP_FWVersion.h>
 
 // Configuration
 #include "config.h"
@@ -74,10 +73,7 @@ public:
 
     Tracker(void);
 
-    static const AP_FWVersion fwver;
-
     // HAL::Callbacks implementation.
-    void setup() override;
     void loop() override;
 
 private:
@@ -174,7 +170,10 @@ private:
     // true if the compass's initial location has been set
     bool compass_init_location;
 
-    // AntennaTracker.cpp
+    // Tracker.cpp
+    void get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
+                             uint8_t &task_count,
+                             uint32_t &log_bit) override;
     void one_second_loop();
     void ten_hz_logging_loop();
     void stats_update();
@@ -190,7 +189,7 @@ private:
     void log_init(void);
 
     // Parameters.cpp
-    void load_parameters(void);
+    void load_parameters(void) override;
 
     // radio.cpp
     void read_radio();
@@ -215,7 +214,7 @@ private:
     void update_yaw_cr_servo(float yaw);
 
     // system.cpp
-    void init_tracker();
+    void init_ardupilot() override;
     bool get_home_eeprom(struct Location &loc);
     bool set_home_eeprom(const Location &temp) WARN_IF_UNUSED;
     bool set_home(const Location &temp) WARN_IF_UNUSED;
@@ -224,6 +223,7 @@ private:
     void prepare_servos();
     void set_mode(Mode &newmode, ModeReason reason);
     bool set_mode(uint8_t new_mode, ModeReason reason) override;
+    uint8_t get_mode() const override { return (uint8_t)mode->number(); }
     bool should_log(uint32_t mask);
     bool start_command_callback(const AP_Mission::Mission_Command& cmd) { return false; }
     void exit_mission_callback() { return; }
@@ -244,8 +244,6 @@ private:
             FUNCTOR_BIND_MEMBER(&Tracker::start_command_callback, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Tracker::verify_command_callback, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Tracker::exit_mission_callback, void)};
-public:
-    void mavlink_delay_cb();
 };
 
 extern Tracker tracker;

@@ -40,7 +40,7 @@ void loop();
 static AP_RCProtocol *rcprot;
 
 // change this to the device being tested.
-const char *devname = "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A10596TP-if00-port0";
+const char *devicename = "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A10596TP-if00-port0";
 const uint32_t baudrate = 115200;
 
 static int fd;
@@ -52,9 +52,9 @@ void setup()
     hal.console->printf("ArduPilot RC protocol decoder\n");
     hal.scheduler->delay(100);
 
-    fd = open(devname, O_RDONLY|O_CLOEXEC);
+    fd = open(devicename, O_RDONLY|O_CLOEXEC);
     if (fd == -1) {
-        perror(devname);
+        perror(devicename);
         exit(1);
     }
 

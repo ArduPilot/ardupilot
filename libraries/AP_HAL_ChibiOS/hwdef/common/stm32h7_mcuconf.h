@@ -178,7 +178,7 @@
 #define STM32_ADCSEL                        STM32_ADCSEL_PLL3_R_CK
 #define STM32_LPTIM345SEL                   STM32_LPTIM345SEL_PCLK4
 #define STM32_LPTIM2SEL                     STM32_LPTIM2SEL_PCLK4
-#define STM32_I2C4SEL                       STM32_I2C4SEL_PCLK4
+#define STM32_I2C4SEL                       STM32_I2C4SEL_PLL3_R_CK
 #define STM32_LPUART1SEL                    STM32_LPUART1SEL_PCLK4
 #define STM32_SDMMCSEL                      STM32_SDMMCSEL_PLL1_Q_CK
 

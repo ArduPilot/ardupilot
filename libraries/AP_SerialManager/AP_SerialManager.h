@@ -1,5 +1,5 @@
 /*
-   Please contribute your ideas! See http://dev.ardupilot.org for details
+   Please contribute your ideas! See https://dev.ardupilot.org for details
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -134,6 +134,9 @@ public:
         SerialProtocol_RCIN = 23,
         SerialProtocol_EFI_MS = 24,                   // MegaSquirt EFI serial protocol
         SerialProtocol_LTM_Telem = 25,
+        SerialProtocol_RunCam = 26,
+        SerialProtocol_Hott = 27,
+        SerialProtocol_Scripting = 28,
     };
 
     // get singleton instance
@@ -211,7 +214,7 @@ private:
     bool protocol_match(enum SerialProtocol protocol1, enum SerialProtocol protocol2) const;
 
     // setup any special options
-    void set_options(uint8_t i);
+    void set_options(uint16_t i);
 };
 
 namespace AP {

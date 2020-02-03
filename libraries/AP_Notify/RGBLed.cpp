@@ -118,6 +118,7 @@ uint32_t RGBLed::get_colour_sequence(void) const
     // gps failsafe pattern : flashing yellow and blue
     // ekf_bad pattern : flashing yellow and red
     if (AP_Notify::flags.failsafe_radio ||
+        AP_Notify::flags.failsafe_gcs ||
         AP_Notify::flags.failsafe_battery ||
         AP_Notify::flags.ekf_bad ||
         AP_Notify::flags.gps_glitching ||
@@ -280,4 +281,16 @@ void RGBLed::update_override(void)
     } else {
         _set_rgb(0, 0, 0);
     }
+}
+
+/*
+  RGB control
+  give RGB and flash rate, used with scripting
+*/
+void RGBLed::rgb_control(uint8_t r, uint8_t g, uint8_t b, uint8_t rate_hz)
+{
+    _led_override.rate_hz = rate_hz;
+    _led_override.r = r;
+    _led_override.g = g;
+    _led_override.b = b;
 }

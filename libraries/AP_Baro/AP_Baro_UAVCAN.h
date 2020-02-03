@@ -26,12 +26,14 @@ public:
 
 private:
 
+    static void _update_and_wrap_accumulator(float *accum, float val, uint8_t *count, const uint8_t max_count);
+
     uint8_t _instance;
 
     bool new_pressure;
     float _pressure;
     float _temperature;
-
+    uint8_t  _pressure_count;
     HAL_Semaphore _sem_baro;
 
     AP_UAVCAN* _ap_uavcan;

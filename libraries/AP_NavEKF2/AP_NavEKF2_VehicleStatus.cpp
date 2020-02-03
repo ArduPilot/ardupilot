@@ -388,7 +388,8 @@ void NavEKF2_core::detectFlight()
 
             // If more than 5 seconds since likely_flying was set
             // true, then set inFlight true
-            if (_ahrs->get_time_flying_ms() > 5000) {
+            const AP_Vehicle *vehicle = AP::vehicle();
+            if (vehicle->get_time_flying_ms() > 5000) {
                 inFlight = true;
             }
         }

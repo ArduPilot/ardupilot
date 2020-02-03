@@ -92,7 +92,7 @@ class AutoTestSub(AutoTest):
                 self.progress('Altitude hold done: %f' % (previous_altitude))
                 return
             if abs(m.alt - previous_altitude) > delta:
-                raise NotAchievedException("Altitude not maintained: want %.2f (~%.2f) got=%.2f" % (m, delta, m.alt))
+                raise NotAchievedException("Altitude not maintained: want %.2f (+/- %.2f) got=%.2f" % (previous_altitude, delta, m.alt))
 
     def test_alt_hold(self):
         """Test ALT_HOLD mode
@@ -107,11 +107,17 @@ class AutoTestSub(AutoTest):
         self.wait_altitude(alt_min=-6, alt_max=-5)
         self.set_rc(Joystick.Throttle, 1500)
 
+        # let the vehicle settle (momentum / stopping point shenanigans....)
+        self.delay_sim_time(1)
+
         self.watch_altitude_maintained()
 
         self.set_rc(Joystick.Throttle, 1000)
         self.wait_altitude(alt_min=-20, alt_max=-19)
         self.set_rc(Joystick.Throttle, 1500)
+
+        # let the vehicle settle (momentum / stopping point shenanigans....)
+        self.delay_sim_time(1)
 
         self.watch_altitude_maintained()
 
@@ -119,11 +125,17 @@ class AutoTestSub(AutoTest):
         self.wait_altitude(alt_min=-14, alt_max=-13)
         self.set_rc(Joystick.Throttle, 1500)
 
+        # let the vehicle settle (momentum / stopping point shenanigans....)
+        self.delay_sim_time(1)
+
         self.watch_altitude_maintained()
 
         self.set_rc(Joystick.Throttle, 1900)
         self.wait_altitude(alt_min=-5, alt_max=-4)
         self.set_rc(Joystick.Throttle, 1500)
+
+        # let the vehicle settle (momentum / stopping point shenanigans....)
+        self.delay_sim_time(1)
 
         self.watch_altitude_maintained()
 
