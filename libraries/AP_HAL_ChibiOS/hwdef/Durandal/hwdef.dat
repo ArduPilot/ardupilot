@@ -284,6 +284,8 @@ IMU BMI088 SPI:bmi055_a SPI:bmi055_g ROTATION_ROLL_180_YAW_90
 # These are here for compatibility with pre-release boards
 IMU BMI055 SPI:bmi055_a SPI:bmi055_g ROTATION_ROLL_180_YAW_90
 
+define HAL_DEFAULT_INS_FAST_SAMPLE 7
+
 # microSD support (disabled for now)
 PC8 SDMMC1_D0 SDMMC1
 PC9 SDMMC1_D1 SDMMC1
