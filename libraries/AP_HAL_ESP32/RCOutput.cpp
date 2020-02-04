@@ -12,7 +12,10 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
+ * Code by Charles "Silvanosky" Villard and David "Buzz" Bussenschutt
+ *
  */
+
 #include "RCOutput.h"
 
 #include <AP_Common/AP_Common.h>
@@ -23,76 +26,84 @@ using namespace ESP32;
 
 gpio_num_t outputs_pins[] = HAL_ESP32_RCOUT;
 
+#define MAX_CHANNELS ARRAY_SIZE(outputs_pins)
+
+struct RCOutput::pwm_out RCOutput::pwm_group_list[MAX_CHANNELS];
+
 void RCOutput::init()
 {
-    _max_channels = MIN((size_t)LEDC_CHANNEL_MAX, ARRAY_SIZE(outputs_pins));
-    for (int i=0; i < LEDC_CHANNEL_MAX; i++) {
-        _channel_timers[i] = LEDC_TIMER_MAX;
-    }
-    int timer = get_timer(50);
-    for (int i=0; i<_max_channels; i++) {
-        ledc_channel_config_t config = {
-            .gpio_num = outputs_pins[i],
-            .speed_mode = LEDC_HIGH_SPEED_MODE,
-            .channel = (ledc_channel_t)i,
-            .intr_type = LEDC_INTR_DISABLE,
-            .timer_sel = (ledc_timer_t)timer,
-            .duty = 0,
-            .hpoint = 0
-        };
-        ledc_channel_config(&config);
-        _channel_timers[i] = (ledc_timer_t)timer;
-    }
-    _initialized = true;
+	_max_channels = MAX_CHANNELS;
+
+	printf("RCOutput::init()\n");
+	static const mcpwm_io_signals_t signals[] = {
+		MCPWM0A,
+		MCPWM0B,
+		MCPWM1A,
+		MCPWM1B,
+		MCPWM2A,
+		MCPWM2B
+	};
+	static const mcpwm_timer_t timers[] = {
+		MCPWM_TIMER_0,
+		MCPWM_TIMER_1,
+		MCPWM_TIMER_2
+
+	};
+	static const mcpwm_unit_t units[] = {
+		MCPWM_UNIT_0,
+		MCPWM_UNIT_1
+	};
+	static const mcpwm_operator_t operators[] = {
+		MCPWM_OPR_A,
+		MCPWM_OPR_B
+	};
+
+	for (uint8_t i = 0; i < MAX_CHANNELS; ++i)
+	{
+		auto unit = units[i/6];
+		auto signal = signals[i % 6];
+		auto timer = timers[i/2];
+
+		//Save struct infos
+		pwm_out &out = pwm_group_list[i];
+		out.gpio_num = outputs_pins[i];
+		out.unit_num = unit;
+		out.timer_num = timer;
+		out.io_signal = signal;
+		out.op = operators[i%2];
+		out.chan = i;
+
+		//Setup gpio
+		mcpwm_gpio_init(unit, signal, outputs_pins[i]);
+		//Setup MCPWM module
+		mcpwm_config_t pwm_config;
+		pwm_config.frequency = 50;    //frequency = 50Hz, i.e. for every servo motor time period should be 20ms
+		pwm_config.cmpr_a = 0;    //duty cycle of PWMxA = 0
+		pwm_config.cmpr_b = 0;    //duty cycle of PWMxb = 0
+		pwm_config.counter_mode = MCPWM_UP_COUNTER;
+		pwm_config.duty_mode = MCPWM_DUTY_MODE_0;
+		mcpwm_init(unit, timer, &pwm_config);
+		mcpwm_start(unit, timer);
+	}
+
+	_initialized = true;
 }
 
-uint16_t RCOutput::get_timer(uint16_t freq)
-{
-    for (uint16_t ch = 0; ch < LEDC_CHANNEL_MAX; ch++) {
-        if (_channel_timers[ch] != LEDC_TIMER_MAX
-            && ledc_get_freq(LEDC_HIGH_SPEED_MODE, _channel_timers[ch]) == freq) {
-            return _channel_timers[ch];
-        }
-    }
-    uint16_t timer = find_free_timer();
-    ledc_timer_config_t config = {
-        LEDC_HIGH_SPEED_MODE,
-        (ledc_timer_bit_t)duty_resolution,
-        (ledc_timer_t)timer,
-        freq
-    };
-    ledc_timer_config(&config);
-    return timer;
-}
 
-uint16_t RCOutput::find_free_timer()
-{
-    for (uint16_t tm = 0; tm < LEDC_TIMER_MAX; ++tm) {
-        bool used = false;
-        for (uint16_t ch = 0; ch < LEDC_CHANNEL_MAX; ch++) {
-            if (_channel_timers[ch] == tm) {
-                used = true;
-            }
-        }
-        if (!used) {
-            return tm;
-        }
-    }
-    return LEDC_TIMER_MAX;
-}
 
 void RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
 {
-    if (!_initialized) {
-        return;
-    }
-    for (uint8_t i = 0; i < _max_channels; i++) {
-        if (chmask & 1 << i) {
-            int timer = get_timer(freq_hz);
-            ledc_bind_channel_timer(LEDC_HIGH_SPEED_MODE, i, timer);
-            _channel_timers[i] = (ledc_timer_t)timer;
-        }
-    }
+	if (!_initialized)
+	{
+		return;
+	}
+
+	for (uint8_t i = 0; i < MAX_CHANNELS; i++) {
+		if (chmask & 1 << i) {
+			pwm_out &out = pwm_group_list[i];
+			mcpwm_set_frequency(out.unit_num, out.timer_num, freq_hz);
+		}
+	}
 }
 
 void RCOutput::set_default_rate(uint16_t freq_hz)
@@ -100,48 +111,61 @@ void RCOutput::set_default_rate(uint16_t freq_hz)
     if (!_initialized) {
         return;
     }
-    ledc_set_freq(LEDC_HIGH_SPEED_MODE, LEDC_TIMER_0, freq_hz);
+	set_freq(0xFFFFFFFF, freq_hz);
 }
 
-uint16_t RCOutput::get_freq(uint8_t ch)
+uint16_t RCOutput::get_freq(uint8_t chan)
 {
-    if (!_initialized) {
-        return 50;
-    }
-    return ledc_get_freq(LEDC_HIGH_SPEED_MODE, _channel_timers[ch]);
+	if (!_initialized || chan >= MAX_CHANNELS) {
+		return 50;
+	}
+
+	pwm_out &out = pwm_group_list[chan];
+	return mcpwm_get_frequency(out.unit_num, out.timer_num);
 }
 
-void RCOutput::enable_ch(uint8_t ch)
+void RCOutput::enable_ch(uint8_t chan)
 {
+	if (chan >= MAX_CHANNELS)
+		return;
+
+	pwm_out &out = pwm_group_list[chan];
+	mcpwm_start(out.unit_num, out.timer_num);
 }
 
-void RCOutput::disable_ch(uint8_t ch)
+void RCOutput::disable_ch(uint8_t chan)
 {
-    write(ch, 0);
+	if (chan >= MAX_CHANNELS)
+		return;
+
+	write(chan, 0);
+	pwm_out &out = pwm_group_list[chan];
+	mcpwm_stop(out.unit_num, out.timer_num);
 }
 
-void RCOutput::write(uint8_t ch, uint16_t period_us)
+void RCOutput::write(uint8_t chan, uint16_t period_us)
 {
-    if (ch >= _max_channels) {
-        return;
-    }
-    if (_corked) {
-        _pending[ch] = period_us;
-        _pending_mask |= (1U<<ch);
-    } else {
-        write_int(ch, period_us);
-    }
+	if (chan >= MAX_CHANNELS)
+		return;
+
+	if(_corked) {
+		_pending[chan] = period_us;
+		_pending_mask |= (1U<<chan);
+	} else {
+		write_int(chan, period_us);
+	}
+
 }
 
-uint16_t RCOutput::read(uint8_t ch)
+uint16_t RCOutput::read(uint8_t chan)
 {
-    if (ch >= _max_channels || !_initialized) {
-        return 1000;
-    }
-    uint32_t freq = ledc_get_freq(LEDC_HIGH_SPEED_MODE, _channel_timers[ch]);
-    uint32_t duty = ledc_get_duty(LEDC_HIGH_SPEED_MODE, (ledc_channel_t)ch);
-    return (uint64_t(duty) * 1000000U)/(freq * (1U<< duty_resolution));
+	if (chan >= MAX_CHANNELS || !_initialized)
+		return 0;
 
+	pwm_out &out = pwm_group_list[chan];
+	double freq = mcpwm_get_frequency(out.unit_num, out.timer_num);
+	double dprc = mcpwm_get_duty(out.unit_num, out.timer_num, out.op);
+	return (1000000.0 * (dprc / 100.)) / freq;
 }
 
 void RCOutput::read(uint16_t *period_us, uint8_t len)
@@ -151,33 +175,34 @@ void RCOutput::read(uint16_t *period_us, uint8_t len)
     }
 }
 
-void RCOutput::cork(void)
+void RCOutput::cork()
 {
-    _corked = true;
+	_corked = true;
 }
 
-void RCOutput::push(void)
+void RCOutput::push()
 {
-    if (!_corked) {
-        return;
-    }
-    for (uint8_t i=0; i<_max_channels; i++) {
-        if ((1U<<i) & _pending_mask) {
-            write_int(i, _pending[i]);
-        }
-    }
-    _pending_mask = 0;
-    _corked = false;
+	if (!_corked)
+	{
+		return;
+	}
+
+	for (uint8_t i = 0; i < MAX_CHANNELS; i++)
+	{
+		if ((1U<<i) & _pending_mask)
+		{
+			write_int(i, _pending[i]);
+		}
+	}
+
+	_corked = false;
 }
 
-void RCOutput::write_int(uint8_t ch, uint16_t period_us)
+void RCOutput::write_int(uint8_t chan, uint16_t period_us)
 {
-    if (!_initialized) {
-        return;
-    }
-    uint32_t freq = ledc_get_freq(LEDC_HIGH_SPEED_MODE, _channel_timers[ch]);
-
-    uint32_t duty = (uint64_t(period_us) * freq * (1U<< duty_resolution))/1000000U;
-    ledc_set_duty(LEDC_HIGH_SPEED_MODE, (ledc_channel_t)ch, duty);
-    ledc_update_duty(LEDC_HIGH_SPEED_MODE, (ledc_channel_t)ch);
+	if (chan >= MAX_CHANNELS)
+		return;
+	pwm_out &out = pwm_group_list[chan];
+	mcpwm_set_duty_in_us(out.unit_num, out.timer_num, out.op, period_us);
 }
+
