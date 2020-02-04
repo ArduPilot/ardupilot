@@ -59,3 +59,8 @@ void Copter::userhook_auxSwitch3(uint8_t ch_flag)
     // put your aux switch #3 handler here (CHx_OPT = 49)
 }
 #endif
+
+bool Copter::userhook_script(uint8_t i, float f)
+{
+    return false;
+}

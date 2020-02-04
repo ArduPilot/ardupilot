@@ -889,6 +889,7 @@ private:
     void userhook_auxSwitch1(uint8_t ch_flag);
     void userhook_auxSwitch2(uint8_t ch_flag);
     void userhook_auxSwitch3(uint8_t ch_flag);
+    bool userhook_script(uint8_t i, float f) override;
 
 #if OSD_ENABLED == ENABLED
     void publish_osd_info();

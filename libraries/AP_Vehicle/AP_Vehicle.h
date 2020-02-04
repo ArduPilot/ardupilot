@@ -159,6 +159,8 @@ public:
         }
         return AP_HAL::millis() - _last_flying_ms;
     }
+    
+    virtual bool userhook_script(uint8_t i, float f) { return false; }
 
 protected:
 
