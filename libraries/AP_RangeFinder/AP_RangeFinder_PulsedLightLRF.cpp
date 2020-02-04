@@ -12,6 +12,9 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#ifndef RANGEFINDER_PULSELIGHTRF_DISABLED
+
 #include "AP_RangeFinder_PulsedLightLRF.h"
 
 #include <utility>
@@ -223,3 +226,4 @@ failed:
     return false;
 }
 
+#endif

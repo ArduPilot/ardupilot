@@ -1,6 +1,9 @@
 #pragma once
 
 #include "AP_RangeFinder.h"
+
+#ifndef RANGEFINDER_LEDDARONE_DISABLED
+
 #include "AP_RangeFinder_Backend_Serial.h"
 
 // defines
@@ -83,3 +86,5 @@ private:
         0x09    // CRC Hi
     };
 };
+
+#endif

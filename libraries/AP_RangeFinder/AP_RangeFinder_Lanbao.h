@@ -1,6 +1,9 @@
 #pragma once
 
 #include "AP_RangeFinder.h"
+
+#ifndef RANGEFINDER_LANBAO_DISABLED
+
 #include "AP_RangeFinder_Backend_Serial.h"
 
 class AP_RangeFinder_Lanbao : public AP_RangeFinder_Backend_Serial
@@ -28,3 +31,5 @@ private:
     uint8_t buf[6];
     uint8_t buf_len = 0;
 };
+
+#endif

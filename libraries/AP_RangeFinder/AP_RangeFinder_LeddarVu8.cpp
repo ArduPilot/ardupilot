@@ -13,6 +13,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef RANGEFINDER_LEDDARVU8_DISABLED
+
 #include "AP_RangeFinder_LeddarVu8.h"
 
 #include <AP_HAL/AP_HAL.h>
@@ -202,3 +204,5 @@ bool AP_RangeFinder_LeddarVu8::parse_byte(uint8_t b, bool &valid_reading, uint16
     valid_reading = false;
     return false;
 }
+
+#endif

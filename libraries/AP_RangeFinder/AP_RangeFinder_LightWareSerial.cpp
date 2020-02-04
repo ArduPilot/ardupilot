@@ -13,6 +13,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef RANGEFINDER_LIGHTWARESERIAL_DISABLED
+
 #include "AP_RangeFinder_LightWareSerial.h"
 
 #include <AP_HAL/AP_HAL.h>
@@ -85,3 +87,5 @@ bool AP_RangeFinder_LightWareSerial::get_reading(uint16_t &reading_cm)
     // no readings so return false
     return false;
 }
+
+#endif

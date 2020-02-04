@@ -1,6 +1,9 @@
 #pragma once
 
 #include "AP_RangeFinder.h"
+
+#ifndef RANGEFINDER_LIGHTWARESERIAL_DISABLED
+
 #include "AP_RangeFinder_Backend_Serial.h"
 
 class AP_RangeFinder_LightWareSerial : public AP_RangeFinder_Backend_Serial
@@ -24,3 +27,5 @@ private:
     uint8_t linebuf_len = 0;
     uint32_t last_init_ms;
 };
+
+#endif

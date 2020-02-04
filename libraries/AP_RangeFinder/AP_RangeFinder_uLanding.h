@@ -1,6 +1,9 @@
 #pragma once
 
 #include "AP_RangeFinder.h"
+
+#ifndef RANGEFINDER_ULANDING_DISABLED
+
 #include "AP_RangeFinder_Backend_Serial.h"
 
 class AP_RangeFinder_uLanding : public AP_RangeFinder_Backend_Serial
@@ -37,3 +40,5 @@ private:
     uint8_t  _header;
     uint8_t  _version;
 };
+
+#endif

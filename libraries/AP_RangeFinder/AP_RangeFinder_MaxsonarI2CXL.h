@@ -1,6 +1,9 @@
 #pragma once
 
 #include "AP_RangeFinder.h"
+
+#ifndef RANGEFINDER_MAXSONARI2CXL_DISABLED
+
 #include "AP_RangeFinder_Backend.h"
 #include <AP_HAL/I2CDevice.h>
 
@@ -41,3 +44,5 @@ private:
     bool get_reading(uint16_t &reading_cm);
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
 };
+
+#endif

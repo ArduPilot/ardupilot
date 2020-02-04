@@ -15,6 +15,9 @@
 #pragma once
 
 #include "AP_RangeFinder.h"
+
+#ifndef RANGEFINDER_PWM_DISABLED
+
 #include "AP_RangeFinder_Backend.h"
 
 class AP_RangeFinder_PWM : public AP_RangeFinder_Backend
@@ -65,3 +68,5 @@ private:
     bool was_out_of_range = -1; // this odd initialisation ensures we transition to new state
 
 };
+
+#endif

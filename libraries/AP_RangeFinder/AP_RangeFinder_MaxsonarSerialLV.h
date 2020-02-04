@@ -1,6 +1,9 @@
 #pragma once
 
 #include "AP_RangeFinder.h"
+
+#ifndef RANGEFINDER_MAXSONARSERIALLV_DISABLED
+
 #include "AP_RangeFinder_Backend_Serial.h"
 
 class AP_RangeFinder_MaxsonarSerialLV : public AP_RangeFinder_Backend_Serial
@@ -25,3 +28,5 @@ private:
     char linebuf[10];
     uint8_t linebuf_len = 0;
 };
+
+#endif

@@ -13,6 +13,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef RANGEFINDER_PWM_DISABLED
+
 #include "AP_RangeFinder_PWM.h"
 
 #include <AP_HAL/AP_HAL.h>
@@ -185,3 +187,5 @@ void AP_RangeFinder_PWM::update(void)
 bool AP_RangeFinder_PWM::out_of_range(void) const {
     return params.powersave_range > 0 && estimated_terrain_height > params.powersave_range;
 }
+
+#endif

@@ -1,6 +1,9 @@
 #pragma once
 
 #include "AP_RangeFinder.h"
+
+#ifndef  RANGEFINDER_WASP_DISABLED
+
 #include "AP_RangeFinder_Backend_Serial.h"
 
 // WASP 200 LRF
@@ -60,3 +63,5 @@ private:
     AP_Int16 thr;
     AP_Int8  baud;
 };
+
+#endif

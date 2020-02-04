@@ -1,6 +1,9 @@
 #pragma once
 
 #include "AP_RangeFinder.h"
+
+#ifndef RANGEFINDER_TERARANGERI2C_DISABLED
+
 #include "AP_RangeFinder_Backend.h"
 #include <AP_HAL/I2CDevice.h>
 
@@ -40,3 +43,5 @@ private:
         uint32_t count;
     } accum;
 };
+
+#endif

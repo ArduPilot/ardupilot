@@ -1,6 +1,9 @@
 #pragma once
 
 #include "AP_RangeFinder.h"
+
+#ifndef RANGEFINDER_BBB_PRU_DISABLED
+
 #include "AP_RangeFinder_Backend.h"
 
 
@@ -38,3 +41,5 @@ protected:
 private:
 
 };
+
+#endif

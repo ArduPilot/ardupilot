@@ -21,6 +21,9 @@
  *
  *       Sensor should be connected to the I2C port
  */
+
+#ifndef RANGEFINDER_MAXSONARI2CXL_DISABLED
+
 #include "AP_RangeFinder_MaxsonarI2CXL.h"
 
 #include <utility>
@@ -156,3 +159,5 @@ void AP_RangeFinder_MaxsonarI2CXL::update(void)
         set_status(RangeFinder::Status::NoData);
     }
 }
+
+#endif

@@ -1,6 +1,9 @@
 #pragma once
 
 #include "AP_RangeFinder.h"
+
+#ifndef RANGEFINDER_VL53L0X_VL53L1X_DISABLED
+
 #include "AP_RangeFinder_Backend.h"
 #include <AP_HAL/I2CDevice.h>
 
@@ -1293,3 +1296,5 @@ private:
     uint32_t calcMacroPeriod(uint8_t vcsel_period);
     bool setupManualCalibration(void);
 };
+
+#endif

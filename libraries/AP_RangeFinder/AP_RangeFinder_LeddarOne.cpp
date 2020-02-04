@@ -13,6 +13,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef RANGEFINDER_LEDDARONE_DISABLED
+
 #include "AP_RangeFinder_LeddarOne.h"
 
 #include <AP_HAL/AP_HAL.h>
@@ -191,3 +193,5 @@ LeddarOne_Status AP_RangeFinder_LeddarOne::parse_response(uint8_t &number_detect
 
     return LEDDARONE_STATE_OK;
 }
+
+#endif

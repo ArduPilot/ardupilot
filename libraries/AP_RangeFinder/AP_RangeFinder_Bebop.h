@@ -15,6 +15,9 @@
 #pragma once
 
 #include "AP_RangeFinder.h"
+
+#ifndef RANGEFINDER_BEBOP_DISABLED
+
 #include "AP_RangeFinder_Backend.h"
 #include <AP_HAL_Linux/Thread.h>
 
@@ -143,3 +146,4 @@ private:
     int16_t _last_min_distance_cm = 32;
 };
 
+#endif

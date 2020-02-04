@@ -13,6 +13,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef  RANGEFINDER_WASP_DISABLED
+
 #include "AP_RangeFinder_Wasp.h"
 
 #include <AP_HAL/AP_HAL.h>
@@ -248,3 +250,4 @@ void AP_RangeFinder_Wasp::parse_response(void) {
     }
 }
 
+#endif

@@ -12,6 +12,9 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#ifndef RANGEFINDER_BEBOP_DISABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <utility>
 
@@ -474,4 +477,6 @@ int AP_RangeFinder_Bebop::_update_mode(float altitude)
     }
     return _mode;
 }
+#endif
+
 #endif

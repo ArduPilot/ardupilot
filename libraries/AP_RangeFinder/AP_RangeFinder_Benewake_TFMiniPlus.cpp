@@ -14,6 +14,9 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#ifndef RANGEFINDER_BENEWAKE_TFMINIPLUS_DISABLED
+
 #include "AP_RangeFinder_Benewake_TFMiniPlus.h"
 
 #include <utility>
@@ -209,3 +212,5 @@ void AP_RangeFinder_Benewake_TFMiniPlus::timer()
         accum.count++;
     }
 }
+
+#endif

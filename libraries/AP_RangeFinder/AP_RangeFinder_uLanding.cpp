@@ -13,6 +13,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef RANGEFINDER_ULANDING_DISABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include "AP_RangeFinder_uLanding.h"
 #include <ctype.h>
@@ -173,3 +175,5 @@ bool AP_RangeFinder_uLanding::get_reading(uint16_t &reading_cm)
 
     return true;
 }
+
+#endif

@@ -1,6 +1,9 @@
 #pragma once
 
 #include "AP_RangeFinder.h"
+
+#ifndef RANGEFINDER_PULSELIGHTRF_DISABLED
+
 #include "AP_RangeFinder_Backend.h"
 #include <AP_HAL/I2CDevice.h>
 
@@ -57,3 +60,5 @@ private:
     
     enum { PHASE_MEASURE, PHASE_COLLECT } phase;
 };
+
+#endif

@@ -13,6 +13,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#if !(defined(RANGEFINDER_BENEWAKE_TFMINI_DISABLED) && defined(RANGEFINDER_BENEWAKE_TF02_DISABLED) && defined(RANGEFINDER_BENEWAKE_TF03_DISABLED))
+
 #include "AP_RangeFinder_Benewake.h"
 
 #include <AP_HAL/AP_HAL.h>
@@ -132,3 +134,5 @@ bool AP_RangeFinder_Benewake::get_reading(uint16_t &reading_cm)
     // no readings so return false
     return false;
 }
+
+#endif

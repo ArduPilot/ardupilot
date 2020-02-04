@@ -1,6 +1,9 @@
 #pragma once
 
 #include "AP_RangeFinder.h"
+
+#ifndef RANGEFINDER_BLPING_DISABLED
+
 #include "AP_RangeFinder_Backend_Serial.h"
 
 class AP_RangeFinder_BLPing : public AP_RangeFinder_Backend_Serial
@@ -64,3 +67,5 @@ private:
         uint16_t crc_expected;  // latest message's expected crc
     } msg;
 };
+
+#endif

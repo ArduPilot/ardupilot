@@ -18,6 +18,9 @@
   Many thanks to Pololu, https://github.com/pololu/vl53l0x-arduino and
   the ST example code
  */
+
+#ifndef RANGEFINDER_VL53L0X_VL53L1X_DISABLED
+
 #include "AP_RangeFinder_VL53L0X.h"
 
 #include <utility>
@@ -785,3 +788,5 @@ void AP_RangeFinder_VL53L0X::timer(void)
         counter++;
     }
 }
+
+#endif

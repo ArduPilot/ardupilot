@@ -13,6 +13,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef RANGEFINDER_BLPING_DISABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 #include "AP_RangeFinder_BLPing.h"
@@ -259,3 +261,5 @@ bool AP_RangeFinder_BLPing::parse_byte(uint8_t b)
 
     return got_distance;
 }
+
+#endif

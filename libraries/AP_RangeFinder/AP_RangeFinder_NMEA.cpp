@@ -13,6 +13,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef RANGEFINDER_NMEA_DISABLED
+
 #include "AP_RangeFinder_NMEA.h"
 
 #include <AP_HAL/AP_HAL.h>
@@ -145,3 +147,5 @@ bool AP_RangeFinder_NMEA::decode_latest_term()
 
     return false;
 }
+
+#endif

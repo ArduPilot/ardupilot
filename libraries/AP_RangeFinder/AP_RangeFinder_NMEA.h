@@ -16,6 +16,9 @@
 #pragma once
 
 #include "AP_RangeFinder.h"
+
+#ifndef RANGEFINDER_NMEA_DISABLED
+
 #include "AP_RangeFinder_Backend_Serial.h"
 
 class AP_RangeFinder_NMEA : public AP_RangeFinder_Backend_Serial
@@ -63,3 +66,5 @@ private:
     bool _term_is_checksum;                 // current term is the checksum
     sentence_types _sentence_type;          // the sentence type currently being processed
 };
+
+#endif

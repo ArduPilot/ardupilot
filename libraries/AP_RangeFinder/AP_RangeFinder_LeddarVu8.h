@@ -1,6 +1,9 @@
 #pragma once
 
 #include "AP_RangeFinder.h"
+
+#ifndef RANGEFINDER_LEDDARVU8_DISABLED
+
 #include "AP_RangeFinder_Backend_Serial.h"
 
 #define LEDDARVU8_PAYLOAD_LENGTH (8*2)
@@ -90,3 +93,5 @@ private:
     uint32_t last_distance_ms;                      // system time of last successful distance sensor read
     uint32_t last_distance_request_ms;              // system time of last request to sensor to send distances
 };
+
+#endif

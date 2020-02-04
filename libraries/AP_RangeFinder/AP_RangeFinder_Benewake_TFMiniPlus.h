@@ -17,6 +17,9 @@
 #pragma once
 
 #include "AP_RangeFinder.h"
+
+#ifndef RANGEFINDER_BENEWAKE_TFMINIPLUS_DISABLED
+
 #include "AP_RangeFinder_Backend.h"
 
 #include <AP_HAL/utility/sparse-endian.h>
@@ -60,3 +63,5 @@ private:
         uint32_t count;
     } accum;
 };
+
+#endif

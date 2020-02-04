@@ -16,6 +16,8 @@
    by Mirko Denecke <mirkix@gmail.com>
  */
 
+#ifndef RANGEFINDER_BBB_PRU_DISABLED
+
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
 
@@ -115,3 +117,5 @@ void AP_RangeFinder_BBB_PRU::update(void)
     state.last_reading_ms = AP_HAL::millis();
 }
 #endif // CONFIG_HAL_BOARD_SUBTYPE
+
+#endif

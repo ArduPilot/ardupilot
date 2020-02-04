@@ -12,6 +12,9 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#ifndef RANGEFINDER_LIGHTWAREI2C_DISABLED
+
 #include "AP_RangeFinder_LightWareI2C.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/sparse-endian.h>
@@ -487,3 +490,5 @@ bool AP_RangeFinder_LightWareI2C::sf20_wait_on_reply(uint8_t *rx_two_byte)
     }
     return false;
 }
+
+#endif

@@ -1,6 +1,9 @@
 #pragma once
 
 #include "AP_RangeFinder.h"
+
+#if !(defined(RANGEFINDER_BENEWAKE_TFMINI_DISABLED) && defined(RANGEFINDER_BENEWAKE_TF02_DISABLED) && defined(RANGEFINDER_BENEWAKE_TF03_DISABLED)) 
+
 #include "AP_RangeFinder_Backend_Serial.h"
 
 class AP_RangeFinder_Benewake : public AP_RangeFinder_Backend_Serial
@@ -28,3 +31,5 @@ private:
     uint8_t linebuf[10];
     uint8_t linebuf_len;
 };
+
+#endif

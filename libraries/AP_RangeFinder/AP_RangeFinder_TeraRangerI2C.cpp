@@ -15,6 +15,9 @@
 /*
   driver for TeraRanger I2C rangefinders
  */
+
+#ifndef RANGEFINDER_TERARANGERI2C_DISABLED
+
 #include "AP_RangeFinder_TeraRangerI2C.h"
 
 #include <utility>
@@ -191,3 +194,5 @@ void AP_RangeFinder_TeraRangerI2C::update(void)
         set_status(RangeFinder::Status::NoData);
     }
 }
+
+#endif

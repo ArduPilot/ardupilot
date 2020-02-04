@@ -1,6 +1,9 @@
 #pragma once
 
 #include "AP_RangeFinder.h"
+
+#ifndef RANGEFINDER_LIGHTWAREI2C_DISABLED
+
 #include "AP_RangeFinder_Backend.h"
 #include <AP_HAL/I2CDevice.h>
 
@@ -58,3 +61,5 @@ private:
     void data_log(uint16_t *val);
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
 };
+
+#endif

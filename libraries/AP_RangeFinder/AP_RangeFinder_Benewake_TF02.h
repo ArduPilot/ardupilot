@@ -1,5 +1,7 @@
 #pragma once
 
+#ifndef RANGEFINDER_BENEWAKE_TF02_DISABLED
+
 #include "AP_RangeFinder_Benewake.h"
 
 class AP_RangeFinder_Benewake_TF02 : public AP_RangeFinder_Benewake
@@ -11,3 +13,5 @@ protected:
     float model_dist_max_cm() const override { return 2200; }
     bool has_signal_byte() const override { return true; }
 };
+
+#endif

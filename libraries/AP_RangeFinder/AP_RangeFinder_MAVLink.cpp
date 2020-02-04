@@ -13,6 +13,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef RANGEFINDER_MAVLINK_DISABLED
+
 #include "AP_RangeFinder_MAVLink.h"
 #include <AP_HAL/AP_HAL.h>
 
@@ -74,3 +76,5 @@ void AP_RangeFinder_MAVLink::update(void)
         update_status();
     }
 }
+
+#endif

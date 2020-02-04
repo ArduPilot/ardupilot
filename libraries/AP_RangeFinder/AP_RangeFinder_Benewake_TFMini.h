@@ -1,5 +1,7 @@
 #pragma once
 
+#ifndef RANGEFINDER_BENEWAKE_TFMINI_DISABLED
+
 #include "AP_RangeFinder_Benewake.h"
 
 class AP_RangeFinder_Benewake_TFMini : public AP_RangeFinder_Benewake
@@ -10,3 +12,5 @@ public:
 protected:
     float model_dist_max_cm() const override { return 1200; }
 };
+
+#endif
