@@ -1,3 +1,47 @@
+Release 4.0.4beta1, 2nd February 2020
+-------------------------------------
+
+This release includes a significant number of changes from 4.0.3. Key
+changes are:
+
+ - re-sync the 4.0 release with Copter-4.0, bringing them in line so
+   as to maximise cross-vehicle testing
+
+ - fixed a timing issue in IOMCU that could lead to loss of RC input
+   frames and increased latency of output to ESCs on the IOMCU
+
+ - fixed a bug in restoring gains in QAUTOTUNE that could cause the
+   aircraft to be unstable on leaving QAUTOTUNE mode
+
+The Copter-4.0 re-sync brings in quite a few structural changes. The
+main user visible changes are:
+
+ - UAVCAN DNA server no longer needs a microSD card to operate
+
+ - added logging of UAVCAN servos and ESC feedback messages
+
+ - reduced QTUN logging rate to 25Hz
+
+ - reduced memory usage in EKF with multiple lanes
+
+ - Minor OSD improvements
+
+ - added a lot more scripting bindings
+
+ - fixed UAVCAN GPS status when not connected
+
+ - added EK3_MAG_EF_LIM limit for earth frame mag errors
+
+ - added MAVLink FTP support
+
+ - added support for WS2812 LEDs
+
+Due to the significant number of changes with the re-sync I would
+particularly appreciate as much flight testing as we can get on this
+release.
+
+Happy flying!
+
 Release 4.0.3, 21st January 2020
 --------------------------------
 
