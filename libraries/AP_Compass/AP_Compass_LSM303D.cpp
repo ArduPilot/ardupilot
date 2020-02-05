@@ -290,7 +290,6 @@ bool AP_Compass_LSM303D::_hardware_init()
     // Test WHOAMI
     uint8_t whoami = _register_read(ADDR_WHO_AM_I);
     if (whoami != WHO_I_AM) {
-        hal.console->printf("LSM303D: unexpected WHOAMI 0x%x\n", (unsigned)whoami);
         goto fail_whoami;
     }
 
