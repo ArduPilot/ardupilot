@@ -540,11 +540,8 @@ bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_
         uint32_t clock_hz = group.pwm_drv->clock;
         target_frequency = bitrate * bit_width;
         uint32_t prescaler = clock_hz / target_frequency;
-        while ((clock_hz / prescaler) * prescaler != clock_hz && prescaler <= 0x8000) {
-            prescaler++;
-        }
         freq = clock_hz / prescaler;
-        // hal.console->printf("CLOCK=%u FREQ=%u PRE=%u BR=%u\n", clock_hz, freq/bit_width, prescaler, bitrate);
+        // hal.console->printf("CLOCK=%u BW=%u FREQ=%u PRE=%u BR=%u\n", clock_hz, bit_width, freq/bit_width, prescaler, bitrate);
         if (prescaler > 0x8000) {
             group.dma_handle->unlock();
             return false;
