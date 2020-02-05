@@ -4714,10 +4714,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         ex = None
         example_script = "simple_loop.lua"
         messages = []
-        def my_message_hook(mav, m):
-            if m.get_type() != 'STATUSTEXT':
+        def my_message_hook(mav, message):
+            if message.get_type() != 'STATUSTEXT':
                 return
-            messages.append(m)
+            messages.append(message)
         self.install_message_hook(my_message_hook)
         try:
             self.set_parameter("SCR_ENABLE", 1)
@@ -4748,10 +4748,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         ex = None
         example_script = "scripting_test.lua"
         messages = []
-        def my_message_hook(mav, m):
-            if m.get_type() != 'STATUSTEXT':
+        def my_message_hook(mav, message):
+            if message.get_type() != 'STATUSTEXT':
                 return
-            messages.append(m)
+            messages.append(message)
         self.install_message_hook(my_message_hook)
         try:
             self.set_parameter("SCR_ENABLE", 1)
@@ -4783,10 +4783,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         ex = None
         example_script = "hello_world.lua"
         messages = []
-        def my_message_hook(mav, m):
-            if m.get_type() != 'STATUSTEXT':
+        def my_message_hook(mav, message):
+            if message.get_type() != 'STATUSTEXT':
                 return
-            messages.append(m)
+            messages.append(message)
         self.install_message_hook(my_message_hook)
         try:
             self.set_parameter("SCR_ENABLE", 1)
