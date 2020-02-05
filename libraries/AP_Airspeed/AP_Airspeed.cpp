@@ -80,6 +80,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @User: Standard
     AP_GROUPINFO_FLAGS("_TYPE", 0, AP_Airspeed, param[0].type, ARSPD_DEFAULT_TYPE, AP_PARAM_FLAG_ENABLE),
 
+#ifndef HAL_BUILD_AP_PERIPH
     // @Param: _USE
     // @DisplayName: Airspeed use
     // @Description: Enables airspeed use for automatic throttle modes and replaces control from THR_TRIM. Continues to display and log airspeed if set to 0. Uses airspeed for control if set to 1. Only uses airspeed when throttle = 0 if set to 2 (useful for gliders with airspeed sensors behind propellers).
@@ -106,6 +107,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Description: The pin number that the airspeed sensor is connected to for analog sensors. Set to 15 on the Pixhawk for the analog airspeed port. 
     // @User: Advanced
     AP_GROUPINFO("_PIN",  4, AP_Airspeed, param[0].pin, ARSPD_DEFAULT_PIN),
+#endif // HAL_BUILD_AP_PERIPH
 
 #if AP_AIRSPEED_AUTOCAL_ENABLE
     // @Param: _AUTOCAL
@@ -121,12 +123,14 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_TUBE_ORDER",  6, AP_Airspeed, param[0].tube_order, 2),
 
+#ifndef HAL_BUILD_AP_PERIPH
     // @Param: _SKIP_CAL
     // @DisplayName: Skip airspeed calibration on startup
     // @Description: This parameter allows you to skip airspeed offset calibration on startup, instead using the offset from the last calibration. This may be desirable if the offset variance between flights for your sensor is low and you want to avoid having to cover the pitot tube on each boot.
     // @Values: 0:Disable,1:Enable
     // @User: Advanced
     AP_GROUPINFO("_SKIP_CAL",  7, AP_Airspeed, param[0].skip_cal, 0),
+#endif // HAL_BUILD_AP_PERIPH
 
     // @Param: _PSI_RANGE
     // @DisplayName: The PSI range of the device
@@ -134,12 +138,14 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_PSI_RANGE",  8, AP_Airspeed, param[0].psi_range, PSI_RANGE_DEFAULT),
 
+#ifndef HAL_BUILD_AP_PERIPH
     // @Param: _BUS
     // @DisplayName: Airspeed I2C bus
     // @Description: Bus number of the I2C bus where the airspeed sensor is connected
     // @Values: 0:Bus0(internal),1:Bus1(external),2:Bus2(auxillary)
     // @User: Advanced
     AP_GROUPINFO("_BUS",  9, AP_Airspeed, param[0].bus, HAL_AIRSPEED_BUS_DEFAULT),
+#endif // HAL_BUILD_AP_PERIPH
 
 #if AIRSPEED_MAX_SENSORS > 1
     // @Param: _PRIMARY
@@ -150,12 +156,14 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     AP_GROUPINFO("_PRIMARY", 10, AP_Airspeed, primary_sensor, 0),
 #endif
 
+#ifndef HAL_BUILD_AP_PERIPH
     // @Param: _OPTIONS
     // @DisplayName: Airspeed options bitmask
     // @Description: Bitmask of options to use with airspeed.
     // @Bitmask: 0:Disable on sensor failure,1:Re-enable on sensor recovery
     // @User: Advanced
     AP_GROUPINFO("_OPTIONS", 21, AP_Airspeed, _options, 0),
+#endif
 
 #if AIRSPEED_MAX_SENSORS > 1
     // @Param: 2_TYPE
