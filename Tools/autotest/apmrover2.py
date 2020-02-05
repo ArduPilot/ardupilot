@@ -1128,11 +1128,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         check_atts = ['mission_type', 'command', 'x', 'y', 'z', 'seq', 'param1']
         return self.check_mission_items_same(check_atts, want, got, skip_first_item=True)
 
-    def check_mission_item_upload_download(self, items, type, mission_type):
+    def check_mission_item_upload_download(self, items, itype, mission_type):
         self.progress("check %s _upload/download: upload %u items" %
-                      (type, len(items),))
+                      (itype, len(items),))
         self.upload_using_mission_protocol(mission_type, items)
-        self.progress("check %s upload/download: download items" % type)
+        self.progress("check %s upload/download: download items" % itype)
         downloaded_items = self.download_using_mission_protocol(mission_type)
         self.progress("Downloaded items: (%s)" % str(downloaded_items))
         if len(items) != len(downloaded_items):
