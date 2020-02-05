@@ -185,7 +185,7 @@ class Telem(object):
                     pass
             self.port = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.port.connect(self.destination_address)
-            self.port.setblocking(0)
+            self.port.setblocking(False)
             self.port.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
             self.connected = True
             self.progress("Connected")
