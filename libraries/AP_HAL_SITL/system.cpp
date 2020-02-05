@@ -84,7 +84,7 @@ void dump_stack_trace()
     char output_filepath[30];
     snprintf(output_filepath,
              ARRAY_SIZE(output_filepath),
-             "segv_%s.%d.out",
+             "dumpstack_%s.%d.out",
              p+1,
              (int)getpid());
 	snprintf(cmd,
