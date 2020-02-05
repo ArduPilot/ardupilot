@@ -2791,8 +2791,8 @@ class AutoTest(ABC):
         for desc in self.test_timings.keys():
             if len(desc) > longest:
                 longest = len(desc)
-        for desc, test_time in sorted(self.test_timings.iteritems(),
-                                 key=self.show_test_timings_key_sorter):
+        for desc, test_time in sorted(self.test_timings.items(),
+                                      key=self.show_test_timings_key_sorter):
             fmt = "%" + str(longest) + "s: %.2fs"
             self.progress(fmt % (desc, test_time))
 
