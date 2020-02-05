@@ -339,6 +339,7 @@ void Copter::Log_Write_SysID_Setup(uint8_t systemID_axis, float waveform_magnitu
 #endif
 }
 
+#if FRAME_CONFIG == HELI_FRAME
 struct PACKED log_Heli {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -348,7 +349,6 @@ struct PACKED log_Heli {
     float    control_output;
 };
 
-#if FRAME_CONFIG == HELI_FRAME
 // Write an helicopter packet
 void Copter::Log_Write_Heli()
 {
