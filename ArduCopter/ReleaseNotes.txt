@@ -1,5 +1,16 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.0.2-rc4 05-Feb-2020
+Changes from 4.0.2-rc3
+1) Bug Fixes:
+    a) Spektrum receivers decoding fix for Pixracer
+    b) Current Alt frame always relative to home (RTL could return at wrong alt)
+    c) Circle mode pitch control direction fixed
+    d) EKF only uses world magnetic tables if COMPASS_SCALE is set
+    e) Logging reliability improvements especially for FRAM logs
+    f) RangeFinders using PWM interface use RNGFNDx_OFFSET param (attempt2)
+    g) SpeedyBeeF5 probes all I2C ports for external baro
+------------------------------------------------------------------
 Copter 4.0.2-rc3 01-Feb-2020
 Changes from 4.0.2-rc2
 1) Bug Fixes:
