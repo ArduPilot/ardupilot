@@ -1530,22 +1530,22 @@ class AutoTest(ABC):
         }
 
     def set_rc_from_map(self, _map, timeout=2000):
-        copy = _map.copy()
+        map_copy = _map.copy()
         tstart = self.get_sim_time()
-        while len(copy.keys()):
+        while len(map_copy.keys()):
             if self.get_sim_time_cached() - tstart > timeout:
                 raise SetRCTimeout("Failed to set RC channels")
-            for chan in copy:
-                value = copy[chan]
+            for chan in map_copy:
+                value = map_copy[chan]
                 self.send_set_rc(chan, value)
             m = self.mav.recv_match(type='RC_CHANNELS', blocking=True)
             self.progress("m: %s" % m)
             new = dict()
-            for chan in copy:
+            for chan in map_copy:
                 chan_pwm = getattr(m, "chan" + str(chan) + "_raw")
-                if chan_pwm != copy[chan]:
-                    new[chan] = copy[chan]
-            copy = new
+                if chan_pwm != map_copy[chan]:
+                    new[chan] = map_copy[chan]
+            map_copy = new
 
     def set_rc_default(self):
         """Setup all simulated RC control to 1500."""
