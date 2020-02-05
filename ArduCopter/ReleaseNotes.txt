@@ -10,6 +10,7 @@ Changes from 4.0.2-rc3
     e) Logging reliability improvements especially for FRAM logs
     f) RangeFinders using PWM interface use RNGFNDx_OFFSET param (attempt2)
     g) SpeedyBeeF5 probes all I2C ports for external baro
+2) Rangefinder fallback support (both must have same _ORIENT) 
 ------------------------------------------------------------------
 Copter 4.0.2-rc3 01-Feb-2020
 Changes from 4.0.2-rc2
