@@ -15,6 +15,7 @@ Start-Process -wait -FilePath $PSScriptRoot\setup-x86_64.exe -ArgumentList "--ro
 
 Write-Output "Downloading extra Python packages (4/5)"
 Start-Process -wait -FilePath "C:\cygwin64\bin\bash" -ArgumentList "--login -i -c 'pip2 install empy'"
+Start-Process -wait -FilePath "C:\cygwin64\bin\bash" -ArgumentList "--login -i -c 'ln -s /usr/bin/python2.7 /usr/bin/python'"
 
 Write-Output "Installing MAVProxy (5/5)"
 & $PSScriptRoot\MAVProxySetup-latest.exe /SILENT | Out-Null
