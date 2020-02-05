@@ -3504,7 +3504,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
     def drive_somewhere_stop_at_boundary(self,
                                          loc,
                                          expected_stopping_point,
-                                         expected_distance_epsilon=1,
+                                         expected_distance_epsilon=1.0,
                                          target_system=1,
                                          target_component=1,
                                          timeout=120):
