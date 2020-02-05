@@ -18,6 +18,8 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
+#include <GCS_MAVLink/GCS.h>
+#include <AP_Filesystem/AP_Filesystem.h>
 
 class AP_Scripting
 {
@@ -37,7 +39,19 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+    MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet);
+
+    struct terminal_s {
+        int output_fd;
+        off_t input_offset;
+        bool session;
+    } terminal;
+
 private:
+
+    bool repl_start(void);
+    void repl_stop(void);
+
     void load_script(const char *filename); // load a script from a file
 
     void thread(void); // main script execution thread
