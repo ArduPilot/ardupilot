@@ -185,7 +185,7 @@ class Telem(object):
                     pass
             self.port = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.port.connect(self.destination_address)
-            self.port.setblocking(0)
+            self.port.setblocking(False)
             self.port.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
             self.connected = True
             self.progress("Connected")
@@ -495,8 +495,7 @@ class FRSkySPort(FRSky):
         self.id_descriptions = {
             0x5000: "status text (dynamic)",
             0x5006: "Attitude and range (dynamic)",
-            0x800: "GPS lat (600 with 1 sensor)",
-            0x800: "GPS lon (600 with 1 sensor)",
+            0x800: "GPS lat or lon (600 with 1 sensor)",
             0x5005: "Vel and Yaw",
             0x5001: "AP status",
             0x5002: "GPS Status",
@@ -513,7 +512,7 @@ class FRSkySPort(FRSky):
             0x21: "BARO_ALT_AP",
             0x30: "VARIO",
             0x39: "VFAS",
-            0x800: "GPS",
+            # 0x800: "GPS", ## comments as duplicated dictrionary key
         }
 
         self.sensors_to_poll = [
@@ -1530,22 +1529,22 @@ class AutoTest(ABC):
         }
 
     def set_rc_from_map(self, _map, timeout=2000):
-        copy = _map.copy()
+        map_copy = _map.copy()
         tstart = self.get_sim_time()
-        while len(copy.keys()):
+        while len(map_copy.keys()):
             if self.get_sim_time_cached() - tstart > timeout:
                 raise SetRCTimeout("Failed to set RC channels")
-            for chan in copy:
-                value = copy[chan]
+            for chan in map_copy:
+                value = map_copy[chan]
                 self.send_set_rc(chan, value)
             m = self.mav.recv_match(type='RC_CHANNELS', blocking=True)
             self.progress("m: %s" % m)
             new = dict()
-            for chan in copy:
+            for chan in map_copy:
                 chan_pwm = getattr(m, "chan" + str(chan) + "_raw")
-                if chan_pwm != copy[chan]:
-                    new[chan] = copy[chan]
-            copy = new
+                if chan_pwm != map_copy[chan]:
+                    new[chan] = map_copy[chan]
+            map_copy = new
 
     def set_rc_default(self):
         """Setup all simulated RC control to 1500."""
@@ -2097,13 +2096,13 @@ class AutoTest(ABC):
             mavutil.location(loc1_lat*1e-7, loc1_lon*1e-7),
             mavutil.location(loc2_lat*1e-7, loc2_lon*1e-7))
 
-        dlat = loc2_lat - loc1_lat
-        dlong = loc2_lon - loc1_lon
-
-        dlat /= 10000000.0
-        dlong /= 10000000.0
-
-        return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
+        # dlat = loc2_lat - loc1_lat
+        # dlong = loc2_lon - loc1_lon
+        #
+        # dlat /= 10000000.0
+        # dlong /= 10000000.0
+        #
+        # return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
 
     @staticmethod
     def get_bearing(loc1, loc2):
@@ -2791,8 +2790,8 @@ class AutoTest(ABC):
         for desc in self.test_timings.keys():
             if len(desc) > longest:
                 longest = len(desc)
-        for desc, test_time in sorted(self.test_timings.iteritems(),
-                                 key=self.show_test_timings_key_sorter):
+        for desc, test_time in sorted(self.test_timings.items(),
+                                      key=self.show_test_timings_key_sorter):
             fmt = "%" + str(longest) + "s: %.2fs"
             self.progress(fmt % (desc, test_time))
 
@@ -4605,16 +4604,16 @@ switch value'''
         # This, at least makes sure we're getting some of each
         # message.  These are ordered according to the wfq scheduler
         wants = {
-            0x5000: lambda x : True,
-            0x5006: lambda x : True,
-            0x800: lambda x : True,
+            0x5000: lambda xx : True,
+            0x5006: lambda xx : True,
+            0x800: lambda xx : True,
             0x5005: self.tfp_validate_vel_and_yaw,
-            0x5001: lambda x : True,
-            0x5002: lambda x : True,
-            0x5004: lambda x : True,
+            0x5001: lambda xx : True,
+            0x5002: lambda xx : True,
+            0x5004: lambda xx : True,
             #            0x5008: lambda x : True, # no second battery, so this doesn't arrive
             0x5003: self.tfp_validate_battery1,
-            0x5007: lambda x : True,
+            0x5007: lambda xx : True,
         }
         tstart = self.get_sim_time_cached()
         while len(wants):
