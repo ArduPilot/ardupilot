@@ -51,6 +51,7 @@ class AP_Logger;
 class AP_InertialSensor : AP_AccelCal_Client
 {
     friend class AP_InertialSensor_Backend;
+    friend class AP_InertialSensor_Invensense;
 
 public:
     AP_InertialSensor();
@@ -452,6 +453,10 @@ private:
 #endif
     bool _new_accel_data[INS_MAX_INSTANCES];
     bool _new_gyro_data[INS_MAX_INSTANCES];
+
+    AP_Int16 _icm_options;
+    AP_Float _icm_accel_lpf_hz;
+    AP_Float _icm_gyro_lpf_hz;
 
     // optional notch filter on gyro
     NotchFilterParams _notch_filter;

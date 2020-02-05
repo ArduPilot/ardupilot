@@ -493,6 +493,15 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Path: ../Filter/HarmonicNotchFilter.cpp
     AP_SUBGROUPINFO(_harmonic_notch_filter, "HNTCH_",  41, AP_InertialSensor, HarmonicNotchFilterParams),
 
+    // options for ICM IMUs
+    AP_GROUPINFO("ICM_OPTIONS", 42, AP_InertialSensor, _icm_options, 0),
+
+    // optional LPF on accels
+    AP_GROUPINFO("ACCEL_LPF", 43, AP_InertialSensor, _icm_accel_lpf_hz, 188),
+
+    // optional LPF on gyros
+    AP_GROUPINFO("GYRO_LPF", 44, AP_InertialSensor, _icm_gyro_lpf_hz, 188),
+
     /*
       NOTE: parameter indexes have gaps above. When adding new
       parameters check for conflicts carefully

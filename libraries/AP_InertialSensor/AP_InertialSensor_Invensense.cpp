@@ -75,6 +75,8 @@ AP_InertialSensor_Invensense::AP_InertialSensor_Invensense(AP_InertialSensor &im
     , _rotation(rotation)
     , _dev(std::move(dev))
 {
+    _accum.accel_filter.set_cutoff_frequency(4000, _imu._icm_accel_lpf_hz);
+    _accum.gyro_filter.set_cutoff_frequency(8000, _imu._icm_gyro_lpf_hz);
 }
 
 AP_InertialSensor_Invensense::~AP_InertialSensor_Invensense()
@@ -713,15 +715,27 @@ void AP_InertialSensor_Invensense::_set_filter_register(void)
     }
     
     if (_fast_sampling) {
-        // this gives us 8kHz sampling on gyros and 4kHz on accels
-        config |= BITS_DLPF_CFG_256HZ_NOLPF2;
+        // this gives us 8kHz sampling on gyros
+        // allow the user to set all the possible filters via bottom 3 bits of options
+        if (_imu._icm_options.get() != 0) {
+            config |= (_imu._icm_options.get() & 0x7);
+        } else {
+            config |= BITS_DLPF_CFG_256HZ_NOLPF2;
+        }
     } else {
         // limit to 1kHz if not on SPI
         config |= BITS_DLPF_CFG_188HZ;
     }
 
+    // write gyro configuration
     config |= MPUREG_CONFIG_FIFO_MODE_STOP;
     _register_write(MPUREG_CONFIG, config, true);
+
+    // middle 4 bits of options is the low power configuration
+    if (_fast_sampling && _imu._icm_options.get() != 0) {
+        config = ((_imu._icm_options.get() >> 3) | 0xF) << 4;
+        _register_write(0x1E, config, true);
+    }
 
     if (_mpu_type != Invensense_MPU6000) {
         if (_fast_sampling) {
