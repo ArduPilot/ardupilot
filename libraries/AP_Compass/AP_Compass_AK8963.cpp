@@ -123,7 +123,6 @@ bool AP_Compass_AK8963::init()
     AP_HAL::Semaphore *bus_sem = _bus->get_semaphore();
 
     if (!bus_sem) {
-        hal.console->printf("AK8963: Unable to get bus semaphore\n");
         return false;
     }
     _bus->get_semaphore()->take_blocking();

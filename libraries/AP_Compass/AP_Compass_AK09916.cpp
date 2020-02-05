@@ -201,7 +201,6 @@ bool AP_Compass_AK09916::init()
     }
 
     if (!_reset()) {
-        hal.console->printf("AK09916: Reset Failed\n");
         goto fail;
     }
 
