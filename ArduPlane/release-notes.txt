@@ -20,6 +20,22 @@ main user visible changes are:
 
  - added logging of UAVCAN servos and ESC feedback messages
 
+ - reduced QTUN logging rate to 25Hz
+
+ - reduced memory usage in EKF with multiple lanes
+
+ - Minor OSD improvements
+
+ - added a lot more scripting bindings
+
+ - fixed UAVCAN GPS status when not connected
+
+ - added EK3_MAG_EF_LIM limit for earth frame mag errors
+
+ - added MAVLink FTP support
+
+ - added support for WS2812 LEDs
+
 Due to the significant number of changes with the re-sync I would
 particularly appreciate as much flight testing as we can get on this
 release.
