@@ -4604,16 +4604,16 @@ switch value'''
         # This, at least makes sure we're getting some of each
         # message.  These are ordered according to the wfq scheduler
         wants = {
-            0x5000: lambda x : True,
-            0x5006: lambda x : True,
-            0x800: lambda x : True,
+            0x5000: lambda xx : True,
+            0x5006: lambda xx : True,
+            0x800: lambda xx : True,
             0x5005: self.tfp_validate_vel_and_yaw,
-            0x5001: lambda x : True,
-            0x5002: lambda x : True,
-            0x5004: lambda x : True,
+            0x5001: lambda xx : True,
+            0x5002: lambda xx : True,
+            0x5004: lambda xx : True,
             #            0x5008: lambda x : True, # no second battery, so this doesn't arrive
             0x5003: self.tfp_validate_battery1,
-            0x5007: lambda x : True,
+            0x5007: lambda xx : True,
         }
         tstart = self.get_sim_time_cached()
         while len(wants):
