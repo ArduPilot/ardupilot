@@ -104,8 +104,57 @@ void AP_Scripting::init(void) {
     }
 }
 
+MAV_RESULT AP_Scripting::handle_command_int_packet(const mavlink_command_int_t &packet) {
+    switch ((SCRIPTING_CMD)packet.param1) {
+        case SCRIPTING_CMD_REPL_START:
+            return repl_start() ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
+        case SCRIPTING_CMD_REPL_STOP:
+            repl_stop();
+            return MAV_RESULT_ACCEPTED;
+        case SCRIPTING_CMD_ENUM_END: // cope with MAVLink generator appending to our enum
+            break;
+    }
+
+    return MAV_RESULT_UNSUPPORTED;
+}
+
+bool AP_Scripting::repl_start(void) {
+    if (terminal.session) { // it's already running, this is fine
+        return true;
+    }
+
+    // nuke the old folder and all contents
+    struct stat st;
+    if ((AP::FS().stat(REPL_DIRECTORY, &st) == -1) &&
+        (AP::FS().unlink(REPL_DIRECTORY)  == -1) &&
+        (errno != EEXIST)) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Unable to delete old REPL %s", strerror(errno));
+    }
+
+    // create a new folder
+    AP::FS().mkdir(REPL_DIRECTORY);
+    // delete old files in case we couldn't
+    AP::FS().unlink(REPL_DIRECTORY "/in");
+    AP::FS().unlink(REPL_DIRECTORY "/out");
+
+    // make the output pointer
+    terminal.output_fd = AP::FS().open(REPL_OUT, O_WRONLY|O_CREAT|O_TRUNC);
+    if (terminal.output_fd == -1) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Unable to make new REPL");
+        return false;
+    }
+
+    terminal.session = true;
+    return true;
+}
+
+void AP_Scripting::repl_stop(void) {
+    terminal.session = false;
+    // can't do any more cleanup here, closing the open FD's is the REPL's responsibility
+}
+
 void AP_Scripting::thread(void) {
-    lua_scripts *lua = new lua_scripts(_script_vm_exec_count, _script_heap_size, _debug_level);
+    lua_scripts *lua = new lua_scripts(_script_vm_exec_count, _script_heap_size, _debug_level, terminal);
     if (lua == nullptr || !lua->heap_allocated()) {
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Unable to allocate scripting memory");
         _init_failed = true;
