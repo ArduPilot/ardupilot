@@ -4323,9 +4323,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             target_component=target_component)
         return
         # twosquares is currently disabled because of the requirement to have an inclusion fence (which it doesn't have ATM)
-        self.test_poly_fence_object_avoidance_guided_two_squares(
-            target_system=target_system,
-            target_component=target_component)
+        # self.test_poly_fence_object_avoidance_guided_two_squares(
+        #     target_system=target_system,
+        #     target_component=target_component)
 
     def test_poly_fence_object_avoidance_auto(self, target_system=1, target_component=1):
         self.load_fence("rover-path-planning-fence.txt")
