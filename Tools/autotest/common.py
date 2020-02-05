@@ -2097,13 +2097,13 @@ class AutoTest(ABC):
             mavutil.location(loc1_lat*1e-7, loc1_lon*1e-7),
             mavutil.location(loc2_lat*1e-7, loc2_lon*1e-7))
 
-        dlat = loc2_lat - loc1_lat
-        dlong = loc2_lon - loc1_lon
-
-        dlat /= 10000000.0
-        dlong /= 10000000.0
-
-        return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
+        # dlat = loc2_lat - loc1_lat
+        # dlong = loc2_lon - loc1_lon
+        #
+        # dlat /= 10000000.0
+        # dlong /= 10000000.0
+        #
+        # return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
 
     @staticmethod
     def get_bearing(loc1, loc2):
