@@ -16,11 +16,9 @@ void Rover::fence_check()
 
     // if there is a new breach take action
     if (new_breaches) {
-    	gcs().send_text(MAV_SEVERITY_NOTICE,"Geofence triggered");
-
         // if the user wants some kind of response and motors are armed
         if (g2.fence.get_action() != Failsafe_Action_None) {
-            // if we are within 100m of the fence, HOLD
+            // if within 100m of the fence, it will take the action specified by the FENCE_ACTION parameter
             if (g2.fence.get_breach_distance(new_breaches) <= AC_FENCE_GIVE_UP_DISTANCE) {
             	switch (g2.fence.get_action()) {
             	case Failsafe_Action_None:
