@@ -495,8 +495,7 @@ class FRSkySPort(FRSky):
         self.id_descriptions = {
             0x5000: "status text (dynamic)",
             0x5006: "Attitude and range (dynamic)",
-            0x800: "GPS lat (600 with 1 sensor)",
-            0x800: "GPS lon (600 with 1 sensor)",
+            0x800: "GPS lat or lon (600 with 1 sensor)",
             0x5005: "Vel and Yaw",
             0x5001: "AP status",
             0x5002: "GPS Status",
@@ -513,7 +512,7 @@ class FRSkySPort(FRSky):
             0x21: "BARO_ALT_AP",
             0x30: "VARIO",
             0x39: "VFAS",
-            0x800: "GPS",
+            # 0x800: "GPS", ## comments as duplicated dictrionary key
         }
 
         self.sensors_to_poll = [
