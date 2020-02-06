@@ -374,7 +374,13 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     }
 
     if (!model_str) {
-        printf("You must specify a vehicle model\n");
+        printf("You must specify a vehicle model.  Options are:\n");
+        for (uint8_t i=0; i < ARRAY_SIZE(model_constructors); i++) {
+            printf("  %s\n", model_constructors[i].name);
+        }
+        // spit this out again as the original message probably just
+        // scrolled off the screen:
+        printf("You must specify a vehicle model.\n");
         exit(1);
     }
 
