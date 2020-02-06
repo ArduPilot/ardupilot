@@ -582,6 +582,9 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_i
     switch(packet.command) {
     case MAV_CMD_DO_FOLLOW:
 #if MODE_FOLLOW_ENABLED == ENABLED
+        if (isnan(packet.param1) || isinf(packet.param1)) {
+            return MAV_RESULT_FAILED;
+        }
         // param1: sysid of target to follow
         if ((packet.param1 > 0) && (packet.param1 <= 255)) {
             copter.g2.follow.set_target_sysid((uint8_t)packet.param1);
@@ -601,6 +604,9 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_mount(const mavlink_command_long_t
     switch (packet.command) {
 #if MOUNT == ENABLED
     case MAV_CMD_DO_MOUNT_CONTROL:
+        if (isnan(packet.param3) || isinf(packet.param3)) {
+            return MAV_RESULT_FAILED;
+        }
         if(!copter.camera_mount.has_pan_control()) {
             copter.flightmode->auto_yaw.set_fixed_yaw(
                 (float)packet.param3 * 0.01f,
@@ -631,6 +637,11 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         // param6 : longitude   (not supported)
         // param7 : altitude [metres]
 
+        if (isnan(packet.param3) || isinf(packet.param3) ||
+            isnan(packet.param7) || isinf(packet.param7)) {
+            return MAV_RESULT_FAILED;
+        }
+
         float takeoff_alt = packet.param7 * 100;      // Convert m to cm
 
         if (!copter.flightmode->do_user_takeoff(takeoff_alt, is_zero(packet.param3))) {
@@ -660,7 +671,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
 #if MODE_FOLLOW_ENABLED == ENABLED
     case MAV_CMD_DO_FOLLOW:
         // param1: sysid of target to follow
-        if ((packet.param1 > 0) && (packet.param1 <= 255)) {
+        if (!isnan(packet.param1) && !isinf(packet.param1) && (packet.param1 > 0) && (packet.param1 <= 255)) {
             copter.g2.follow.set_target_sysid((uint8_t)packet.param1);
             return MAV_RESULT_ACCEPTED;
         }
@@ -672,6 +683,12 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         // param2 : speed during change [deg per second]
         // param3 : direction (-1:ccw, +1:cw)
         // param4 : relative offset (1) or absolute angle (0)
+        if (isnan(packet.param1) || isinf(packet.param1) ||
+            isnan(packet.param2) || isinf(packet.param2) ||
+            isnan(packet.param3) || isinf(packet.param3) ||
+            isnan(packet.param4) || isinf(packet.param4)) {
+            return MAV_RESULT_FAILED;
+        }
         if ((packet.param1 >= 0.0f)   &&
             (packet.param1 <= 360.0f) &&
             (is_zero(packet.param4) || is_equal(packet.param4,1.0f))) {
@@ -689,6 +706,10 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         // param2 : new speed in m/s
         // param3 : unused
         // param4 : unused
+        if (isnan(packet.param1) || !isinf(packet.param1) ||
+            isnan(packet.param2) || !isinf(packet.param2)) {
+            return MAV_RESULT_FAILED;
+        }
         if (packet.param2 > 0.0f) {
             if (packet.param1 > 2.9f) { // 3 = speed down
                 copter.wp_nav->set_speed_down(packet.param2 * 100.0f);
@@ -716,6 +737,9 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
 
 #if PARACHUTE == ENABLED
     case MAV_CMD_DO_PARACHUTE:
+        if (isnan(packet.param1) || isinf(packet.param1)) {
+            return MAV_RESULT_FAILED;
+        }
         // configure or release parachute
         switch ((uint16_t)packet.param1) {
         case PARACHUTE_DISABLE:
@@ -741,6 +765,13 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         // param4 : timeout (in seconds)
         // param5 : num_motors (in sequence)
         // param6 : compass learning (0: disabled, 1: enabled)
+        if (isnan(packet.param1) || isinf(packet.param1) ||
+            isnan(packet.param2) || isinf(packet.param2) ||
+            isnan(packet.param3) || isinf(packet.param3) ||
+            isnan(packet.param4) || isinf(packet.param4) ||
+            isnan(packet.param5) || isinf(packet.param5)) {
+            return MAV_RESULT_FAILED;
+        }
         return copter.mavlink_motor_test_start(*this,
                                                (uint8_t)packet.param1,
                                                (uint8_t)packet.param2,
@@ -753,6 +784,11 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         // param1 : winch number (ignored)
         // param2 : action (0=relax, 1=relative length control, 2=rate control). See WINCH_ACTIONS enum.
         if (!copter.g2.winch.enabled()) {
+            return MAV_RESULT_FAILED;
+        }
+        if (isnan(packet.param2) || isinf(packet.param2) ||
+            isnan(packet.param3) || isinf(packet.param3) ||
+            isnan(packet.param4) || isinf(packet.param4)) {
             return MAV_RESULT_FAILED;
         }
         switch ((uint8_t)packet.param2) {
@@ -782,6 +818,9 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
             // Param 1: Select which gear, not used in ArduPilot
             // Param 2: 0 = Deploy, 1 = Retract
             // For safety, anything other than 1 will deploy
+            if (isnan(packet.param2) || isinf(packet.param2)) {
+                return MAV_RESULT_FAILED;
+            }
             switch ((uint8_t)packet.param2) {
                 case 1:
                     copter.landinggear.set_position(AP_LandingGear::LandingGear_Retract);
@@ -818,6 +857,9 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         } else if (copter.ap.land_complete) {
             // if armed and landed, takeoff
             if (copter.set_mode(Mode::Number::LOITER, ModeReason::GCS_COMMAND)) {
+                if (isnan(packet.param1) || isinf(packet.param1)) {
+                    return MAV_RESULT_FAILED;
+                }
                 copter.flightmode->do_user_takeoff(packet.param1*100, true);
             }
         } else {
@@ -840,6 +882,9 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
             } else {
                 // assume that shots modes are all done in guided.
                 // NOTE: this may need to change if we add a non-guided shot mode
+                if (isnan(packet.param1) || isinf(packet.param1)) {
+                    return MAV_RESULT_FAILED;
+                }
                 bool shot_mode = (!is_zero(packet.param1) && (copter.control_mode == Mode::Number::GUIDED || copter.control_mode == Mode::Number::GUIDED_NOGPS));
 
                 if (!shot_mode) {
