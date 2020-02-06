@@ -116,7 +116,12 @@ public:
     void use_synthetic_airspeed(void) {
         _use_synthetic_airspeed_once = true;
     }
-    
+
+    // reset on next loop
+    void reset(void) override {
+        _need_reset = true;
+    }
+
     // this supports the TECS_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -319,6 +324,9 @@ private:
     float _distance_beyond_land_wp;
 
     float _land_pitch_min = -90;
+
+    // need to reset on next loop
+    bool _need_reset;
 
     // internal variables to be logged
     struct {
