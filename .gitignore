@@ -123,3 +123,4 @@ segv_*out
 /ArduPlane/scripts/
 /ArduSub/scripts/
 persistent.dat
+dumpstack_*out
