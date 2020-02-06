@@ -24,12 +24,7 @@ if [ -z "$CI_BUILD_TARGET" ]; then
     CI_BUILD_TARGET="sitl linux fmuv3"
 fi
 
-declare -A waf_supported_boards
-
 waf=modules/waf/waf-light
-
-# get list of boards supported by the waf build
-for board in $($waf list_boards | head -n1); do waf_supported_boards[$board]=1; done
 
 echo "Targets: $CI_BUILD_TARGET"
 echo "Compiler: $c_compiler"
@@ -187,7 +182,7 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
-    if [[ -n ${waf_supported_boards[$t]} && -z ${CI_CRON_JOB+1} ]]; then
+    if [[ -z ${CI_CRON_JOB+1} ]]; then
         echo "Starting waf build for board ${t}..."
         $waf configure --board "$t" \
                 --enable-benchmarks \
