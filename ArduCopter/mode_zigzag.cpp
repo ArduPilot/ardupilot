@@ -11,8 +11,20 @@
 // initialise zigzag controller
 bool ModeZigZag::init(bool ignore_checks)
 {
-    // initialize's loiter position and velocity on xy-axes from current pos and velocity
-    loiter_nav->clear_pilot_desired_acceleration();
+    if (!copter.failsafe.radio) {
+        // apply simple mode transform to pilot inputs
+        update_simple_mode();
+
+        // convert pilot input to lean angles
+        float target_roll, target_pitch;
+        get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max());
+
+        // process pilot's roll and pitch input
+        loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch, G_Dt);
+    } else {
+        // clear out pilot desired acceleration in case radio failsafe event occurs and we do not switch to RTL for some reason
+        loiter_nav->clear_pilot_desired_acceleration();
+    }
     loiter_nav->init_target();
 
     // initialise position_z and desired velocity_z
@@ -37,16 +49,13 @@ void ModeZigZag::run()
     pos_control->set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
     pos_control->set_max_accel_z(g.pilot_accel_z);
 
-    // if not auto armed or motors not enabled set throttle to zero and exit immediately
-    if (is_disarmed_or_landed() || !motors->get_interlock() ) {
-        zero_throttle_and_relax_ac(copter.is_tradheli() && motors->get_interlock());
-        return;
-    }
-
     // auto control
     if (stage == AUTO) {
-        // if vehicle has reached destination switch to manual control
-        if (reached_destination()) {
+        if (is_disarmed_or_landed() || !motors->get_interlock()) {
+            // vehicle should be under manual control when disarmed or landed
+            return_to_manual_control(false);
+        } else if (reached_destination()) {
+            // if vehicle has reached destination switch to manual control
             AP_Notify::events.waypoint_complete = 1;
             return_to_manual_control(true);
         } else {
@@ -169,6 +178,7 @@ void ModeZigZag::manual_control()
 {
     float target_yaw_rate = 0.0f;
     float target_climb_rate = 0.0f;
+    float takeoff_climb_rate = 0.0f;
 
     // process pilot inputs unless we are in radio failsafe
     if (!copter.failsafe.radio) {
@@ -194,26 +204,82 @@ void ModeZigZag::manual_control()
         loiter_nav->clear_pilot_desired_acceleration();
     }
 
-    // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+    // relax loiter target if we might be landed
+    if (copter.ap.land_complete_maybe) {
+        loiter_nav->soften_for_landing();
+    }
 
-    // run loiter controller
-    loiter_nav->update();
+    // Loiter State Machine Determination
+    AltHoldModeState althold_state = get_alt_hold_state(target_climb_rate);
 
-    // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(loiter_nav->get_roll(), loiter_nav->get_pitch(), target_yaw_rate);
+    // althold state machine
+    switch (althold_state) {
 
-    // adjust climb rate using rangefinder
-    target_climb_rate = copter.surface_tracking.adjust_climb_rate(target_climb_rate);
+    case AltHold_MotorStopped:
+        attitude_control->reset_rate_controller_I_terms();
+        attitude_control->set_yaw_target_to_current_heading();
+        pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
+        loiter_nav->init_target();
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(loiter_nav->get_roll(), loiter_nav->get_pitch(), target_yaw_rate);
+        pos_control->update_z_controller();
+        break;
 
-    // get avoidance adjusted climb rate
-    target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
+    case AltHold_Takeoff:
+        // initiate take-off
+        if (!takeoff.running()) {
+            takeoff.start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
+        }
 
-    // update altitude target and call position controller
-    pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
+        // get takeoff adjusted pilot and takeoff climb rates
+        takeoff.get_climb_rates(target_climb_rate, takeoff_climb_rate);
 
-    // adjusts target up or down using a climb rate
-    pos_control->update_z_controller();
+        // get avoidance adjusted climb rate
+        target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
+
+        // run loiter controller
+        loiter_nav->update();
+
+        // call attitude controller
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(loiter_nav->get_roll(), loiter_nav->get_pitch(), target_yaw_rate);
+
+        // update altitude target and call position controller
+        pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
+        pos_control->add_takeoff_climb_rate(takeoff_climb_rate, G_Dt);
+        pos_control->update_z_controller();
+        break;
+
+    case AltHold_Landed_Ground_Idle:
+        attitude_control->set_yaw_target_to_current_heading();
+        FALLTHROUGH;
+
+    case AltHold_Landed_Pre_Takeoff:
+        attitude_control->reset_rate_controller_I_terms();
+        loiter_nav->init_target();
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
+        pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
+        pos_control->update_z_controller();
+        break;
+
+    case AltHold_Flying:
+        // set motors to full range
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+
+        // run loiter controller
+        loiter_nav->update();
+
+        // call attitude controller
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(loiter_nav->get_roll(), loiter_nav->get_pitch(), target_yaw_rate);
+
+        // adjust climb rate using rangefinder
+        target_climb_rate = copter.surface_tracking.adjust_climb_rate(target_climb_rate);
+
+        // get avoidance adjusted climb rate
+        target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
+
+        pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
+        pos_control->update_z_controller();
+        break;
+    }
 }
 
 // return true if vehicle is within a small area around the destination
