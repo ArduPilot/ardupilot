@@ -716,6 +716,8 @@ class AutoTest(ABC):
         self.run_tests_called = False
         self._show_test_timings = _show_test_timings
         self.test_timings = dict()
+        self.total_waiting_to_arm_time = 0
+        self.waiting_to_arm_count = 0
 
     @staticmethod
     def progress(text):
@@ -2588,9 +2590,14 @@ class AutoTest(ABC):
     def wait_ready_to_arm(self, timeout=None, require_absolute=True):
         # wait for EKF checks to pass
         self.progress("Waiting for ready to arm")
+        start = self.get_sim_time()
         self.wait_ekf_happy(timeout=timeout, require_absolute=require_absolute)
         if require_absolute:
             self.wait_gps_sys_status_not_present_or_enabled_and_healthy()
+        armable_time = (self.get_sim_time()-start)
+        self.progress("Took %u seconds to become armable" % armable_time)
+        self.total_waiting_to_arm_time += armable_time
+        self.waiting_to_arm_count += 1
 
     def wait_heartbeat(self, drain_mav=True, *args, **x):
         '''as opposed to mav.wait_heartbeat, raises an exception on timeout'''
@@ -4711,6 +4718,14 @@ switch value'''
 
     def post_tests_announcements(self):
         if self._show_test_timings:
+            if self.waiting_to_arm_count == 0:
+                avg = None
+            else:
+                avg = self.total_waiting_to_arm_time/self.waiting_to_arm_count
+            self.progress("Spent %f seconds waiting to arm. count=%u avg=%f" %
+                          (self.total_waiting_to_arm_time,
+                          self.waiting_to_arm_count,
+                          avg))
             self.show_test_timings()
         if self.forced_post_test_sitl_reboots != 0:
             print("Had to force-reset SITL %u times" %
