@@ -331,9 +331,13 @@ is bob we will attempt to checkout bob-AVR'''
         self.progress("Building %s %s binaries (cwd=%s)" %
                       (vehicle, tag, os.getcwd()))
 
-        for board in boards:
+        board_count = len(boards)
+        count = 0
+        for board in sorted(boards, key=str.lower):
             now = datetime.datetime.now()
-            self.progress("Building board: %s at %s" % (board, str(now)))
+            count += 1
+            self.progress("[%u/%u] Building board: %s at %s" %
+                          (count, board_count, board, str(now)))
             for frame in frames:
                 if frame is not None:
                     self.progress("Considering frame %s for board %s" %
