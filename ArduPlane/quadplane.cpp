@@ -2672,6 +2672,13 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
     set_alt_target_current();
 
     plane.complete_auto_takeoff();
+
+    if (plane.control_mode == &plane.mode_auto) {
+        // we reset TECS so that the target height filter is not
+        // constrained by the climb and sink rates from the initial
+        // takeoff height.
+        plane.SpdHgt_Controller->reset();
+    }
     
     return true;
 }
