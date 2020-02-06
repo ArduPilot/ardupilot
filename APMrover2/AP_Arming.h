@@ -30,5 +30,6 @@ protected:
     // the following check functions do not call into AP_Arming
     bool oa_check(bool report);
     bool parameter_checks(bool report);
+    bool mode_checks(bool report);
 
 };
