@@ -577,6 +577,9 @@ void NavEKF2_core::send_status_report(mavlink_channel_t chan) const
     if (filterStatus.flags.pred_horiz_pos_abs) {
         flags |= EKF_PRED_POS_HORIZ_ABS;
     }
+    if (!filterStatus.flags.initalized) {
+        flags |= EKF_UNINITIALIZED;
+    }
 
     // get variances
     float velVar, posVar, hgtVar, tasVar;
