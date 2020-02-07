@@ -34,15 +34,11 @@ void AP_BattMonitor_SMBus_NeoDesign::timer()
 
     if (_cell_count > 0) {
         for(uint8_t i = 0; i < _cell_count; ++i) {
-            if(read_block_bare(BATTMONITOR_ND_CELL_START + i, buff, 2) == 2) {
-                uint16_t cell = (buff[1] << 8 | buff[0]);
-                _state.cell_voltages.cells[i] = cell;
+            if(read_word(BATTMONITOR_ND_CELL_START + i, data)) {
+                _state.cell_voltages.cells[i] = data;
                 _has_cell_voltages = true;
             }
         }
-
-        _state.last_time_micros = tnow;
-        _state.healthy = true;
     }
 
     // read voltage (V)
@@ -55,7 +51,7 @@ void AP_BattMonitor_SMBus_NeoDesign::timer()
     // timeout after 5 seconds
     if ((tnow - _state.last_time_micros) > AP_BATTMONITOR_SMBUS_TIMEOUT_MICROS) {
         _state.healthy = false;
-        // do not attempt to ready any more data from battery
+        // do not attempt to read any more data from battery
         return;
     }
 
@@ -63,7 +59,7 @@ void AP_BattMonitor_SMBus_NeoDesign::timer()
     if (read_block_bare(BATTMONITOR_SMBUS_CURRENT, buff, 2) == 2) {
         uint16_t amps = (0xffff) - (buff[1] << 8 | buff[0]);
         _state.current_amps = (float)(amps) / 1000.0f;
-        _state.last_time_micros = tnow;
+        _state.last_time_micros = tnow;        
     }
 
     read_full_charge_capacity();
