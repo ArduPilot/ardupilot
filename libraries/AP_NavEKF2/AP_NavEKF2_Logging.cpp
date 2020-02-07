@@ -143,7 +143,7 @@ void NavEKF2::Log_Write_NKF4(uint8_t _core, uint64_t time_us) const
         offsetEast : (int8_t)(offset.y),
         faults : (uint16_t)(faultStatus),
         timeouts : (uint8_t)(timeoutStatus),
-        solution : (uint16_t)(solutionStatus.value),
+        solution : (uint32_t)(solutionStatus.value),
         gps : (uint16_t)(gpsStatus.value),
         primary : (int8_t)primaryIndex
     };
