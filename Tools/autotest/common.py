@@ -910,7 +910,7 @@ class AutoTest(ABC):
                 continue
             util.pexpect_drain(p)
 
-    def drain_mav_unparsed(self):
+    def drain_mav_unparsed(self, quiet=False):
         count = 0
         tstart = time.time()
         while True:
@@ -918,6 +918,8 @@ class AutoTest(ABC):
             if len(this) == 0:
                 break
             count += len(this)
+        if quiet:
+            return
         tdelta = time.time() - tstart
         if tdelta == 0:
             rate = "instantly"
