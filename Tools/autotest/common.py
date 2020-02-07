@@ -2116,7 +2116,7 @@ class AutoTest(ABC):
 
     def wait_altitude(self, alt_min, alt_max, timeout=30, relative=False):
         """Wait for a given altitude range."""
-        previous_alt = 0
+        previous_alt = None
 
         tstart = self.get_sim_time()
         self.progress("Waiting for altitude between %.02f and %.02f" %
@@ -2131,11 +2131,14 @@ class AutoTest(ABC):
             else:
                 alt = m.alt/1000.0 # mm -> m
 
-            climb_rate = alt - previous_alt
+            if previous_alt is None:
+                climb_rate = "-"
+            else:
+                climb_rate = "%.02f" % (alt - previous_alt)
             previous_alt = alt
             ok = alt >= alt_min and alt <= alt_max
             if ok or self.get_sim_time_cached() - last_wait_alt_msg > 1:
-                self.progress("Wait Altitude: Cur:%.02f min:%.02f max:%.02f climb_rate: %.02f"
+                self.progress("Wait Altitude: Cur:%.02f min:%.02f max:%.02f climb_rate: %s"
                               % (alt, alt_min, alt_max, climb_rate))
                 last_wait_alt_msg = self.get_sim_time_cached()
             if ok:
