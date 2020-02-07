@@ -1713,6 +1713,10 @@ class AutoTestPlane(AutoTest):
              "Test FrSkyD serial output",
              self.test_frsky_d),
 
+            ("LTM",
+             "Test LTM serial output",
+             self.test_ltm),
+
             ("AdvancedFailsafe",
              "Test Advanced Failsafe",
              self.test_advanced_failsafe),
