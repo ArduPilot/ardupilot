@@ -36,11 +36,12 @@ union nav_filter_status {
         bool using_gps          : 1; // 13 - true if we are using GPS position
         bool gps_glitching      : 1; // 14 - true if GPS glitching is affecting navigation accuracy
         bool gps_quality_good   : 1; // 15 - true if we can use GPS for navigation
+        bool initalized         : 1; // 16 - true if the EKF has ever been healthy
     } flags;
-    uint16_t value;
+    uint32_t value;
 };
 
-static_assert(sizeof(uint16_t) == sizeof(nav_filter_status), "nav_filter_status must be uint16_t");
+static_assert(sizeof(uint32_t) == sizeof(nav_filter_status), "nav_filter_status must be uint32_t");
 
 union nav_gps_status {
     struct {
