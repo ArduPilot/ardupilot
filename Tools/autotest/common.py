@@ -166,32 +166,13 @@ class MAVProxyLogFile(object):
         else:
             sys.stdout.flush()
 
-class FRSky(object):
+class Telem(object):
     def __init__(self, destination_address):
         self.destination_address = destination_address
 
         self.buffer = bytes()
         self.connected = False
         self.port = None
-
-        self.dataid_GPS_ALT_BP          = 0x01
-        self.dataid_TEMP1               = 0x02
-        self.dataid_FUEL                = 0x04
-        self.dataid_TEMP2               = 0x05
-        self.dataid_GPS_ALT_AP          = 0x09
-        self.dataid_BARO_ALT_BP         = 0x10
-        self.dataid_GPS_SPEED_BP        = 0x11
-        self.dataid_GPS_LONG_BP         = 0x12
-        self.dataid_GPS_LAT_BP          = 0x13
-        self.dataid_GPS_COURS_BP        = 0x14
-        self.dataid_GPS_SPEED_AP        = 0x19
-        self.dataid_GPS_LONG_AP         = 0x1A
-        self.dataid_GPS_LAT_AP          = 0x1B
-        self.dataid_BARO_ALT_AP         = 0x21
-        self.dataid_GPS_LONG_EW         = 0x22
-        self.dataid_GPS_LAT_NS          = 0x23
-        self.dataid_CURRENT             = 0x28
-        self.dataid_VFAS                = 0x39
 
     def connect(self):
         try:
@@ -234,6 +215,29 @@ class FRSky(object):
             if not self.connect():
                 return
         self.update_read()
+
+class FRSky(Telem):
+    def __init__(self, destination_address):
+        super(FRSky, self).__init__(destination_address)
+
+        self.dataid_GPS_ALT_BP          = 0x01
+        self.dataid_TEMP1               = 0x02
+        self.dataid_FUEL                = 0x04
+        self.dataid_TEMP2               = 0x05
+        self.dataid_GPS_ALT_AP          = 0x09
+        self.dataid_BARO_ALT_BP         = 0x10
+        self.dataid_GPS_SPEED_BP        = 0x11
+        self.dataid_GPS_LONG_BP         = 0x12
+        self.dataid_GPS_LAT_BP          = 0x13
+        self.dataid_GPS_COURS_BP        = 0x14
+        self.dataid_GPS_SPEED_AP        = 0x19
+        self.dataid_GPS_LONG_AP         = 0x1A
+        self.dataid_GPS_LAT_AP          = 0x1B
+        self.dataid_BARO_ALT_AP         = 0x21
+        self.dataid_GPS_LONG_EW         = 0x22
+        self.dataid_GPS_LAT_NS          = 0x23
+        self.dataid_CURRENT             = 0x28
+        self.dataid_VFAS                = 0x39
 
 class FRSkyD(FRSky):
     def __init__(self, destination_address):
