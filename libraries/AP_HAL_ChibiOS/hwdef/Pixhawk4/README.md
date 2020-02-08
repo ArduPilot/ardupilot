@@ -10,7 +10,7 @@ The Pixhawk4 flight controller is sold by [Holybro](http://www.holybro.com/produ
  - builtin I2C IST8310 magnetometer
  - microSD card slot
  - 6 UARTs plus USB
- - 14 PWM outputs
+ - 16 PWM outputs
  - Four I2C and two CAN ports
  - External Buzzer
  - external safety Switch
@@ -165,7 +165,7 @@ The 8 main PWM outputs are in 3 groups:
  - PWM 3 and 4 in group2
  - PWM 5, 6, 7 and 8 in group3
 
-The 8 auxillary PWM outputs are in 2 groups:
+The 8 auxillary PWM outputs are in 3 groups:
 
  - PWM 1, 2, 3 and 4 in group1
  - PWM 5 and 6 in group2
