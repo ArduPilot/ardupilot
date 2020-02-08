@@ -68,7 +68,7 @@ public:
     void       set_control_in(int16_t val) { control_in = val;}
 
     void       clear_override();
-    void       set_override(const uint16_t v, const uint32_t timestamp_us);
+    void       set_override(const uint16_t v, const uint32_t timestamp_ms);
     bool       has_override() const;
 
     int16_t    stick_mixing(const int16_t servo_in);
