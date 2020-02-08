@@ -156,7 +156,18 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
       of data. Assumes 10 bits per byte, which is normal for most
       protocols
      */
-    min_rx_buffer = MAX(min_rx_buffer, b/(40*10));
+    bool rx_size_by_baudrate = true;
+#if HAL_WITH_IO_MCU
+    if (this == &uart_io) {
+        // iomcu doesn't need extra space, just speed
+        rx_size_by_baudrate = false;
+        min_tx_buffer = 0;
+        min_rx_buffer = 0;
+    }
+#endif
+    if (rx_size_by_baudrate) {
+        min_rx_buffer = MAX(min_rx_buffer, b/(40*10));
+    }
 
     if (sdef.is_usb) {
         // give more buffer space for log download on USB
@@ -404,7 +415,7 @@ void UARTDriver::dma_tx_deallocate(Shared_DMA *ctx)
 }
 
 /*
-  DMA transmit complettion interrupt handler
+  DMA transmit completion interrupt handler
  */
 void UARTDriver::tx_complete(void* self, uint32_t flags)
 {
@@ -434,12 +445,12 @@ void UARTDriver::rx_irq_cb(void* self)
     if (!uart_drv->rx_dma_enabled) {
         return;
     }
-    dmaStreamDisable(uart_drv->rxdma);
 #if defined(STM32F7) || defined(STM32H7)
     //disable dma, triggering DMA transfer complete interrupt
     uart_drv->rxdma->stream->CR &= ~STM32_DMA_CR_EN;
 #elif defined(STM32F3)
     //disable dma, triggering DMA transfer complete interrupt
+    dmaStreamDisable(uart_drv->rxdma);
     uart_drv->rxdma->channel->CCR &= ~STM32_DMA_CR_EN;
 #else
     volatile uint16_t sr = ((SerialDriver*)(uart_drv->sdef.serial))->usart->SR;
@@ -605,12 +616,13 @@ int16_t UARTDriver::read_locked(uint32_t key)
     return byte;
 }
 
-/* Empty implementations of Print virtual methods */
+/* write one byte to the port */
 size_t UARTDriver::write(uint8_t c)
 {
-    if (lock_write_key != 0 || !_write_mutex.take_nonblocking()) {
+    if (lock_write_key != 0) {
         return 0;
     }
+    _write_mutex.take_blocking();
 
     if (!_initialised) {
         _write_mutex.give();
@@ -622,7 +634,10 @@ size_t UARTDriver::write(uint8_t c)
             _write_mutex.give();
             return 0;
         }
+        // release the semaphore while sleeping
+        _write_mutex.give();
         hal.scheduler->delay(1);
+        _write_mutex.take_blocking();
     }
     size_t ret = _writebuf.write(&c, 1);
     if (unbuffered_writes) {
@@ -632,25 +647,17 @@ size_t UARTDriver::write(uint8_t c)
     return ret;
 }
 
+/* write a block of bytes to the port */
 size_t UARTDriver::write(const uint8_t *buffer, size_t size)
 {
     if (!_initialised || lock_write_key != 0) {
 		return 0;
 	}
 
-    if (_blocking_writes && unbuffered_writes) {
-        _write_mutex.take_blocking();
-    } else {
-        if (!_write_mutex.take_nonblocking()) {
-            return 0;
-        }
-    }
-
     if (_blocking_writes && !unbuffered_writes) {
         /*
           use the per-byte delay loop in write() above for blocking writes
          */
-        _write_mutex.give();
         size_t ret = 0;
         while (size--) {
             if (write(*buffer++) != 1) break;
@@ -659,11 +666,12 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
         return ret;
     }
 
+    WITH_SEMAPHORE(_write_mutex);
+
     size_t ret = _writebuf.write(buffer, size);
     if (unbuffered_writes) {
         write_pending_bytes();
     }
-    _write_mutex.give();
     return ret;
 }
 
@@ -694,14 +702,8 @@ size_t UARTDriver::write_locked(const uint8_t *buffer, size_t size, uint32_t key
     if (lock_write_key != 0 && key != lock_write_key) {
         return 0;
     }
-    if (!_write_mutex.take_nonblocking()) {
-        return 0;
-    }
-    size_t ret = _writebuf.write(buffer, size);
-
-    _write_mutex.give();
-
-    return ret;
+    WITH_SEMAPHORE(_write_mutex);
+    return _writebuf.write(buffer, size);
 }
 
 /*
@@ -771,6 +773,7 @@ void UARTDriver::handle_tx_timeout(void *arg)
  */
 void UARTDriver::write_pending_bytes_DMA(uint32_t n)
 {
+    WITH_SEMAPHORE(_write_mutex);
     check_dma_tx_completion();
 
     if (!tx_bounce_buf_ready) {
@@ -823,6 +826,8 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
  */
 void UARTDriver::write_pending_bytes_NODMA(uint32_t n)
 {
+    WITH_SEMAPHORE(_write_mutex);
+
     ByteBuffer::IoVec vec[2];
     uint16_t nwritten = 0;
 
@@ -937,11 +942,13 @@ void UARTDriver::half_duplex_setup_tx(void)
 #ifdef HAVE_USB_SERIAL
     if (!hd_tx_active) {
         chEvtGetAndClearFlags(&hd_listener);
-        SerialDriver *sd = (SerialDriver*)(sdef.serial);
         hd_tx_active = true;
-        sdStop(sd);
-        sercfg.cr3 &= ~USART_CR3_HDSEL;
-        sdStart(sd, &sercfg);
+        if (_last_options & (OPTION_RXINV | OPTION_TXINV)) {
+            SerialDriver *sd = (SerialDriver*)(sdef.serial);
+            sdStop(sd);
+            sercfg.cr3 &= ~USART_CR3_HDSEL;
+            sdStart(sd, &sercfg);
+        }
     }
 #endif
 }
@@ -962,10 +969,12 @@ void UARTDriver::_timer_tick(void)
           half-duplex transmit has finished. We now re-enable the
           HDSEL bit for receive
          */
-        SerialDriver *sd = (SerialDriver*)(sdef.serial);
-        sdStop(sd);
-        sercfg.cr3 |= USART_CR3_HDSEL;
-        sdStart(sd, &sercfg);
+        if (_last_options & (OPTION_RXINV | OPTION_TXINV)) {
+            SerialDriver *sd = (SerialDriver*)(sdef.serial);
+            sdStop(sd);
+            sercfg.cr3 |= USART_CR3_HDSEL;
+            sdStart(sd, &sercfg);
+        }
         hd_tx_active = false;
     }
 #endif
@@ -1065,9 +1074,8 @@ void UARTDriver::_timer_tick(void)
         // provided by the write() call, but if the write is larger
         // than the DMA buffer size then there can be extra bytes to
         // send here, and they must be sent with the write lock held
-        _write_mutex.take(HAL_SEMAPHORE_BLOCK_FOREVER);
+        WITH_SEMAPHORE(_write_mutex);
         write_pending_bytes();
-        _write_mutex.give();
     } else {
         write_pending_bytes();
     }
@@ -1159,16 +1167,8 @@ void UARTDriver::update_rts_line(void)
  */
 bool UARTDriver::set_unbuffered_writes(bool on)
 {
-#ifdef HAL_UART_NODMA
-    return false;
-#else
-    if (on && !tx_dma_enabled) {
-        // we can't implement low latemcy writes safely without TX DMA
-        return false;
-    }
     unbuffered_writes = on;
     return true;
-#endif
 }
 
 /*

@@ -312,7 +312,7 @@ void RCOutput::write(uint8_t chan, uint16_t period_us)
     // handle IO MCU channels
     if (AP_BoardConfig::io_enabled()) {
         uint16_t io_period_us = period_us;
-        if (iomcu_oneshot125 && ((1U<<chan) & io_fast_channel_mask)) {
+        if ((iomcu_mode == MODE_PWM_ONESHOT125) && ((1U<<chan) & io_fast_channel_mask)) {
             // the iomcu only has one oneshot setting, so we need to scale by a factor
             // of 8 here for oneshot125
             io_period_us /= 8;
@@ -714,18 +714,83 @@ void RCOutput::set_output_mode(uint16_t mask, enum output_mode mode)
          mode == MODE_PWM_ONESHOT125) &&
         (mask & ((1U<<chan_offset)-1)) &&
         AP_BoardConfig::io_enabled()) {
-        iomcu_oneshot125 = (mode == MODE_PWM_ONESHOT125);
+        iomcu_mode = mode;
         // also setup IO to use a 1Hz frequency, so we only get output
         // when we trigger
         iomcu.set_freq(io_fast_channel_mask, 1);
-        return iomcu.set_oneshot_mode();
+        iomcu.set_oneshot_mode();
+        return;
     }
     if (mode == MODE_PWM_BRUSHED &&
         (mask & ((1U<<chan_offset)-1)) &&
         AP_BoardConfig::io_enabled()) {
-        return iomcu.set_brushed_mode();
+        iomcu_mode = mode;
+        iomcu.set_brushed_mode();
+        return;
     }
 #endif
+}
+
+/*
+ * get output mode banner to inform user of how outputs are configured
+ */
+bool RCOutput::get_output_mode_banner(char banner_msg[], uint8_t banner_msg_len) const
+{
+    // create array of each channel's mode
+    output_mode ch_mode[chan_offset + NUM_GROUPS * ARRAY_SIZE(pwm_group::chan)] = {};
+    bool have_nonzero_modes = false;
+
+#if HAL_WITH_IO_MCU
+    // fill in ch_mode array for IOMCU channels
+    if (AP_BoardConfig::io_enabled()) {
+        for (uint8_t i = 0; i < chan_offset; i++ ) {
+            ch_mode[i] = iomcu_mode;
+        }
+        have_nonzero_modes = (chan_offset > 0) && (iomcu_mode != MODE_PWM_NONE);
+    }
+#endif
+
+    // fill in ch_mode array for FMU channels
+    for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
+        const pwm_group &group = pwm_group_list[i];
+        if (group.current_mode != MODE_PWM_NONE) {
+            for (uint8_t j = 0; j < ARRAY_SIZE(group.chan); j++) {
+                if (group.chan[j] != CHAN_DISABLED) {
+                    const uint8_t chan_num = group.chan[j] + chan_offset;
+                    if (chan_num < ARRAY_SIZE(ch_mode)) {
+                        ch_mode[chan_num] = group.current_mode;
+                        have_nonzero_modes = true;
+                    }
+                }
+            }
+        }
+    }
+
+    // handle simple case
+    if (!have_nonzero_modes) {
+        hal.util->snprintf(banner_msg, banner_msg_len, "RCOut: None");
+        return true;
+    }
+
+    // write banner to banner_msg
+    hal.util->snprintf(banner_msg, banner_msg_len, "RCOut:");
+    uint8_t curr_mode_lowest_ch = 0;
+    for (uint8_t k = 1; k < ARRAY_SIZE(ch_mode); k++) {
+        if (ch_mode[k-1] != ch_mode[k]) {
+            if (ch_mode[k-1] != MODE_PWM_NONE) {
+                append_to_banner(banner_msg, banner_msg_len, ch_mode[k-1], curr_mode_lowest_ch + 1, k);
+            }
+            curr_mode_lowest_ch = k;
+        }
+    }
+
+    // add final few channel's mode to banner (won't have been done by above loop)
+    const uint8_t final_index = ARRAY_SIZE(ch_mode)-1;
+    if (ch_mode[final_index] != MODE_PWM_NONE) {
+        append_to_banner(banner_msg, banner_msg_len, ch_mode[final_index], curr_mode_lowest_ch + 1, final_index + 1);
+    }
+
+    return true;
 }
 
 /*

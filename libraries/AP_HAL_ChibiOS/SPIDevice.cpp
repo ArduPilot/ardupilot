@@ -185,7 +185,10 @@ bool SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
         }
     }
 #else
-    bus.bouncebuffer_setup(send, len, recv, len);
+    if (!bus.bouncebuffer_setup(send, len, recv, len)) {
+        set_chip_select(old_cs_forced);
+        return false;
+    }
     osalSysLock();
     hal.util->persistent_data.spi_count++;
     if (send == nullptr) {
@@ -217,7 +220,7 @@ bool SPIDevice::clock_pulse(uint32_t n)
 {
     if (!cs_forced) {
         //special mode to init sdcard without cs asserted
-        bus.semaphore.take(HAL_SEMAPHORE_BLOCK_FOREVER);
+        bus.semaphore.take_blocking();
         acquire_bus(true, true);
         spiIgnore(spi_devices[device_desc.bus].driver, n);
         acquire_bus(false, true);

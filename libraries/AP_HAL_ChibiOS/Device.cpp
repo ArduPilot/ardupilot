@@ -58,10 +58,8 @@ void DeviceBus::bus_thread(void *arg)
                     callback->next_usec += callback->period_usec;
                 }
                 // call it with semaphore held
-                if (binfo->semaphore.take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-                    callback->cb();
-                    binfo->semaphore.give();
-                }
+                WITH_SEMAPHORE(binfo->semaphore);
+                callback->cb();
             }
         }
 
@@ -164,15 +162,23 @@ bool DeviceBus::adjust_timer(AP_HAL::Device::PeriodicHandle h, uint32_t period_u
 /*
   setup to use DMA-safe bouncebuffers for device transfers
  */
-void DeviceBus::bouncebuffer_setup(const uint8_t *&buf_tx, uint16_t tx_len,
+bool DeviceBus::bouncebuffer_setup(const uint8_t *&buf_tx, uint16_t tx_len,
                                    uint8_t *&buf_rx, uint16_t rx_len)
 {
     if (buf_rx) {
-        bouncebuffer_setup_read(bounce_buffer_rx, &buf_rx, rx_len);
+        if (!bouncebuffer_setup_read(bounce_buffer_rx, &buf_rx, rx_len)) {
+            return false;
+        }
     }
     if (buf_tx) {
-        bouncebuffer_setup_write(bounce_buffer_tx, &buf_tx, tx_len);
+        if (!bouncebuffer_setup_write(bounce_buffer_tx, &buf_tx, tx_len)) {
+            if (buf_rx) {
+                bouncebuffer_abort(bounce_buffer_rx);
+            }
+            return false;
+        }
     }
+    return true;
 }
 
 /*

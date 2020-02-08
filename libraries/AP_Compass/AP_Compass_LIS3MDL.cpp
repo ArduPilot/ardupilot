@@ -75,9 +75,7 @@ AP_Compass_LIS3MDL::AP_Compass_LIS3MDL(AP_HAL::OwnPtr<AP_HAL::Device> _dev,
 
 bool AP_Compass_LIS3MDL::init()
 {
-    if (!dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return false;
-    }
+    dev->get_semaphore()->take_blocking();
 
     if (dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
         dev->set_read_flag(0xC0);

@@ -86,7 +86,7 @@ private:
     AP_Float _margin_max;           // object avoidance will ignore objects more than this many meters from vehicle
 
     // internal variables used by front end
-    HAL_Semaphore_Recursive _rsem;  // semaphore for multi-thread use of avoidance_request and avoidance_result
+    HAL_Semaphore _rsem;            // semaphore for multi-thread use of avoidance_request and avoidance_result
     bool _thread_created;           // true once background thread has been created
     AP_OABendyRuler *_oabendyruler; // Bendy Ruler algorithm
     AP_OADijkstra *_oadijkstra;     // Dijkstra's algorithm

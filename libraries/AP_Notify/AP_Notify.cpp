@@ -53,7 +53,7 @@ AP_Notify *AP_Notify::_singleton;
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
   #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
 
-// Linux boards    
+// Linux boards
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
   #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
     #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS |\
@@ -164,7 +164,14 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @Range: 0 100
     // @Units: %
     AP_GROUPINFO("BUZZ_VOLUME", 8, AP_Notify, _buzzer_volume, 100),
-    
+
+    // @Param: NEO_LEN
+    // @DisplayName: NeoPixel String Length
+    // @Description: The number of NeoPixel LEDs to use for notifications
+    // @Range: 1 32
+    // @User: Advanced
+    AP_GROUPINFO("NEO_LEN", 9, AP_Notify, _neo_len, 1),
+
     AP_GROUPEND
 };
 
@@ -221,6 +228,8 @@ void AP_Notify::add_backends(void)
                 ADD_BACKEND(new RCOutputRGBLed(HAL_RCOUT_RGBLED_RED, HAL_RCOUT_RGBLED_GREEN, HAL_RCOUT_RGBLED_BLUE));
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
                 ADD_BACKEND(new DiscoLED());
+  #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR
+                ADD_BACKEND(new DiscreteRGBLed(HAL_RGBLED_RED, HAL_RGBLED_GREEN, HAL_RGBLED_BLUE, HAL_RGBLED_NORMAL_POLARITY));
   #endif
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 

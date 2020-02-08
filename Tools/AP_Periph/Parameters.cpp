@@ -6,6 +6,10 @@ extern const AP_HAL::HAL &hal;
 #define AP_PERIPH_LED_BRIGHT_DEFAULT 100
 #endif
 
+#ifndef HAL_PERIPH_ADSB_BAUD_DEFAULT
+#define HAL_PERIPH_ADSB_BAUD_DEFAULT 57600
+#endif
+
 /*
  *  AP_Periph parameter definitions
  *
@@ -83,7 +87,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_ADSB
-    GSCALAR(adsb_baudrate, "ADSB_BAUDRATE", 57600),
+    GSCALAR(adsb_baudrate, "ADSB_BAUDRATE", HAL_PERIPH_ADSB_BAUD_DEFAULT),
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT

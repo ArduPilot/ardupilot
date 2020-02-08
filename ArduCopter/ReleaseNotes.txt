@@ -1,5 +1,46 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.0.2-rc4 05-Feb-2020
+Changes from 4.0.2-rc3
+1) Bug Fixes:
+    a) Spektrum receivers decoding fix for Pixracer
+    b) Current Alt frame always relative to home (RTL could return at wrong alt)
+    c) Circle mode pitch control direction fixed
+    d) EKF only uses world magnetic tables if COMPASS_SCALE is set
+    e) Logging reliability improvements especially for FRAM logs
+    f) RangeFinders using PWM interface use RNGFNDx_OFFSET param (attempt2)
+    g) SpeedyBeeF5 probes all I2C ports for external baro
+2) Rangefinder fallback support (both must have same _ORIENT) 
+------------------------------------------------------------------
+Copter 4.0.2-rc3 01-Feb-2020
+Changes from 4.0.2-rc2
+1) Bug Fixes:
+    a) AutoTune fix to restore original gains when AutoTune completes
+------------------------------------------------------------------
+Copter 4.0.2-rc2 31-Jan-2020
+Changes from 4.0.1
+1) Bug Fixes:
+    b) IO CPU timing fix which reduces ESC sync issues
+    c) PX4Flow driver probes all I2C ports on Hex Cubes
+    d) RangeFinders using PWM interface (like Garmin LidarLite) use RNGFNDx_OFFSET param
+    e) RC override fix when RC_OVERRIDE_TIME=-1 (allows disabling timeout when using joystick) 
+    f) TradHeli attitude control parameter description fixes (does not affect flight)
+    g) cygwin compiler fix (affects developers only)
+2) Minor enhancements:
+    a) GCS failsafe warning lights and tones
+    b) Circle mode pitch control direction swapped
+------------------------------------------------------------------
+Copter 4.0.1 25-Jan-2020 / 4.0.1-rc3 19-Jan-2020
+Changes from 4.0.1-rc2
+1) Bug Fixes:
+    a) Semaphore fixes for Logging, Filesystem and UAVCAN Dyanmic Node Allocation
+    b) RangeFinder parameter fix (4th rangefinder was using 1st rangefinder's params)
+    c) TradHeli STB_COL_x parameter description fixed
+2) Minor Enhancements:
+    a) Autorotate flight mode renamed to Heli_Autorotate
+    b) Solo default parameters updated
+    c) "Prepared log system" initialisation message removed
+------------------------------------------------------------------
 Copter 4.0.1-rc2 10-Jan-2020
 Changes from 4.0.1-rc1
 1) FrSky telemetry status text handling fix (Critical Fix)

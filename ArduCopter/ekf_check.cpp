@@ -198,11 +198,12 @@ void Copter::check_ekf_reset()
         AP::logger().Write_Event(LogEvent::EKF_YAW_RESET);
     }
 
-#if AP_AHRS_NAVEKF_AVAILABLE
+#if AP_AHRS_NAVEKF_AVAILABLE && HAL_NAVEKF2_AVAILABLE
+
     // check for change in primary EKF (log only, AC_WPNav handles position target adjustment)
-    if ((EKF2.getPrimaryCoreIndex() != ekf_primary_core) && (EKF2.getPrimaryCoreIndex() != -1)) {
+    if ((ahrs.EKF2.getPrimaryCoreIndex() != ekf_primary_core) && (ahrs.EKF2.getPrimaryCoreIndex() != -1)) {
         attitude_control->inertial_frame_reset();
-        ekf_primary_core = EKF2.getPrimaryCoreIndex();
+        ekf_primary_core = ahrs.EKF2.getPrimaryCoreIndex();
         AP::logger().Write_Error(LogErrorSubsystem::EKF_PRIMARY, LogErrorCode(ekf_primary_core));
         gcs().send_text(MAV_SEVERITY_WARNING, "EKF primary changed:%d", (unsigned)ekf_primary_core);
     }

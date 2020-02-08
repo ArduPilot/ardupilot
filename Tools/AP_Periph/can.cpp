@@ -50,6 +50,7 @@
 #include <AP_HAL/I2CDevice.h>
 #include "../AP_Bootloader/app_comms.h"
 #include <AP_HAL/utility/RingBuffer.h>
+#include <AP_Common/AP_FWVersion.h>
 
 #include "i2c.h"
 #include <utility>
@@ -590,6 +591,9 @@ static void can_safety_LED_update(void)
 
 
 #ifdef HAL_GPIO_PIN_SAFE_BUTTON
+#ifndef HAL_SAFE_BUTTON_ON
+#define HAL_SAFE_BUTTON_ON 1
+#endif
 /*
   update safety button
  */
@@ -599,7 +603,7 @@ static void can_safety_button_update(void)
     static uint8_t counter;
     uint32_t now = AP_HAL::millis();
     // send at 10Hz when pressed
-    if (!palReadLine(HAL_GPIO_PIN_SAFE_BUTTON)) {
+    if (palReadLine(HAL_GPIO_PIN_SAFE_BUTTON) != HAL_SAFE_BUTTON_ON) {
         counter = 0;
         return;
     }
@@ -1136,6 +1140,9 @@ void AP_Periph_FW::can_update()
 void AP_Periph_FW::can_mag_update(void)
 {
 #ifdef HAL_PERIPH_ENABLE_MAG
+    if (!compass.enabled()) {
+        return;
+    }
     compass.read();
 #if CAN_PROBE_CONTINUOUS
     if (compass.get_count() == 0) {
@@ -1181,6 +1188,9 @@ void AP_Periph_FW::can_mag_update(void)
 void AP_Periph_FW::can_gps_update(void)
 {
 #ifdef HAL_PERIPH_ENABLE_GPS
+    if (gps.get_type(0) == AP_GPS::GPS_Type::GPS_TYPE_NONE) {
+        return;
+    }
     gps.update();
     if (last_gps_update_ms == gps.last_message_time_ms()) {
         return;
@@ -1447,6 +1457,9 @@ void AP_Periph_FW::can_baro_update(void)
 void AP_Periph_FW::can_airspeed_update(void)
 {
 #ifdef HAL_PERIPH_ENABLE_AIRSPEED
+    if (!airspeed.enabled()) {
+        return;
+    }
 #if CAN_PROBE_CONTINUOUS
     if (!airspeed.healthy()) {
         uint32_t now = AP_HAL::millis();
@@ -1508,6 +1521,9 @@ void AP_Periph_FW::can_airspeed_update(void)
 void AP_Periph_FW::can_rangefinder_update(void)
 {
 #ifdef HAL_PERIPH_ENABLE_RANGEFINDER
+    if (rangefinder.get_type(0) == RangeFinder::Type::NONE) {
+        return;
+    }
     if (rangefinder.num_sensors() == 0) {
         uint32_t now = AP_HAL::millis();
         static uint32_t last_probe_ms;

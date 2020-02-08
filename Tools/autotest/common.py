@@ -166,32 +166,13 @@ class MAVProxyLogFile(object):
         else:
             sys.stdout.flush()
 
-class FRSky(object):
+class Telem(object):
     def __init__(self, destination_address):
         self.destination_address = destination_address
 
         self.buffer = bytes()
         self.connected = False
         self.port = None
-
-        self.dataid_GPS_ALT_BP          = 0x01
-        self.dataid_TEMP1               = 0x02
-        self.dataid_FUEL                = 0x04
-        self.dataid_TEMP2               = 0x05
-        self.dataid_GPS_ALT_AP          = 0x09
-        self.dataid_BARO_ALT_BP         = 0x10
-        self.dataid_GPS_SPEED_BP        = 0x11
-        self.dataid_GPS_LONG_BP         = 0x12
-        self.dataid_GPS_LAT_BP          = 0x13
-        self.dataid_GPS_COURS_BP        = 0x14
-        self.dataid_GPS_SPEED_AP        = 0x19
-        self.dataid_GPS_LONG_AP         = 0x1A
-        self.dataid_GPS_LAT_AP          = 0x1B
-        self.dataid_BARO_ALT_AP         = 0x21
-        self.dataid_GPS_LONG_EW         = 0x22
-        self.dataid_GPS_LAT_NS          = 0x23
-        self.dataid_CURRENT             = 0x28
-        self.dataid_VFAS                = 0x39
 
     def connect(self):
         try:
@@ -234,6 +215,175 @@ class FRSky(object):
             if not self.connect():
                 return
         self.update_read()
+
+class LTM(Telem):
+    def __init__(self, destination_address):
+        super(LTM, self).__init__(destination_address)
+
+        self.HEADER1 = 0x24
+        self.HEADER2 = 0x54
+
+        self.FRAME_G = 0x47
+        self.FRAME_A = 0x41
+        self.FRAME_S = 0x53
+
+        self.frame_lengths = {
+            self.FRAME_G: 18,
+            self.FRAME_A: 10,
+            self.FRAME_S: 11,
+        }
+        self.frame_lengths = {
+            self.FRAME_G: 18,
+            self.FRAME_A: 10,
+            self.FRAME_S: 11,
+        }
+
+        self.data_by_id = {}
+        self.frames = {}
+
+    def g(self):
+        return self.frames.get(self.FRAME_G, None)
+    def a(self):
+        return self.frames.get(self.FRAME_A, None)
+    def s(self):
+        return self.frames.get(self.FRAME_S, None)
+
+    def progress(self, message):
+        print("LTM: %s" % message)
+
+    def handle_data(self, dataid, value):
+        self.progress("%u=%u" % (dataid, value))
+        self.data_by_id[dataid] = value
+
+    def consume_frame(self):
+        frame_type = ord(self.buffer[2])
+        frame_length = self.frame_lengths[frame_type]
+        # check frame CRC
+        crc = 0
+        count = 0
+        for c in self.buffer[3:frame_length-1]:
+            old = crc
+            crc ^= ord(c)
+            count += 1
+        if crc != ord(self.buffer[frame_length-1]):
+            raise NotAchievedException("Invalid checksum on frame type %s" % str(chr(frame_type)))
+#        self.progress("Received valid %s frame" % str(chr(frame_type)))
+
+        class Frame(object):
+            def __init__(self, buffer):
+                self.buffer = buffer
+            def intn(self, offset, count):
+                ret = 0
+                for i in range(offset, offset+count):
+                    print("byte: %02x" % ord(self.buffer[i]))
+                    ret = ret | (ord(self.buffer[i]) << ((i-offset)*8))
+                return ret
+            def int32(self, offset):
+                t = struct.unpack("<i", self.buffer[offset:offset+4])
+                return t[0]
+#                return self.intn(offset, 4)
+            def int16(self, offset):
+                t = struct.unpack("<h", self.buffer[offset:offset+2])
+                return t[0]
+#                return self.intn(offset, 2)
+
+        class FrameG(Frame):
+            def __init__(self, buffer):
+                super(FrameG, self,).__init__(buffer)
+            def lat(self):
+                return self.int32(3)
+            def lon(self):
+                return self.int32(7)
+            def gndspeed(self):
+                return ord(self.buffer[11])
+            def alt(self):
+                return self.int32(12)
+            def sats(self):
+                s = ord(self.buffer[16])
+                return (s>>2)
+            def fix_type(self):
+                s = ord(self.buffer[16])
+                return s & 0b11
+
+        class FrameA(Frame):
+            def __init__(self, buffer):
+                super(FrameA, self,).__init__(buffer)
+            def pitch(self):
+                return self.int16(3)
+            def roll(self):
+                return self.int16(5)
+            def hdg(self):
+                return self.int16(7)
+        class FrameS(Frame):
+            def __init__(self, buffer):
+                super(FrameS, self,).__init__(buffer)
+
+        if frame_type == self.FRAME_G:
+            frame = FrameG(self.buffer[0:frame_length-1])
+        elif frame_type == self.FRAME_A:
+            frame = FrameA(self.buffer[0:frame_length-1])
+        elif frame_type == self.FRAME_S:
+            frame = FrameS(self.buffer[0:frame_length-1])
+        else:
+            raise NotAchievedException("Bad frame?!?!?!")
+        self.buffer = self.buffer[frame_length:]
+        self.frames[frame_type] = frame
+
+    def update_read(self):
+        self.buffer += self.do_read()
+        while len(self.buffer):
+            if len(self.buffer) == 0:
+                break
+            if sys.version_info.major >= 3:
+                b = self.buffer[0]
+            else:
+                b = ord(self.buffer[0])
+            if ord(self.buffer[0]) != self.HEADER1:
+                self.bad_chars += 1
+                self.buffer = self.buffer[1:]
+                continue
+            if ord(self.buffer[1]) != self.HEADER2:
+                self.bad_chars += 1
+                self.buffer = self.buffer[1:]
+                continue
+            if ord(self.buffer[2]) not in [self.FRAME_G, self.FRAME_A, self.FRAME_S]:
+                self.bad_chars += 1
+                self.buffer = self.buffer[1:]
+                continue
+            frame_len = self.frame_lengths[ord(self.buffer[2])]
+            if len(self.buffer) < frame_len:
+                continue
+            self.consume_frame()
+
+    def get_data(self, dataid):
+        try:
+            return self.data_by_id[dataid]
+        except KeyError as e:
+            pass
+        return None
+
+class FRSky(Telem):
+    def __init__(self, destination_address):
+        super(FRSky, self).__init__(destination_address)
+
+        self.dataid_GPS_ALT_BP          = 0x01
+        self.dataid_TEMP1               = 0x02
+        self.dataid_FUEL                = 0x04
+        self.dataid_TEMP2               = 0x05
+        self.dataid_GPS_ALT_AP          = 0x09
+        self.dataid_BARO_ALT_BP         = 0x10
+        self.dataid_GPS_SPEED_BP        = 0x11
+        self.dataid_GPS_LONG_BP         = 0x12
+        self.dataid_GPS_LAT_BP          = 0x13
+        self.dataid_GPS_COURS_BP        = 0x14
+        self.dataid_GPS_SPEED_AP        = 0x19
+        self.dataid_GPS_LONG_AP         = 0x1A
+        self.dataid_GPS_LAT_AP          = 0x1B
+        self.dataid_BARO_ALT_AP         = 0x21
+        self.dataid_GPS_LONG_EW         = 0x22
+        self.dataid_GPS_LAT_NS          = 0x23
+        self.dataid_CURRENT             = 0x28
+        self.dataid_VFAS                = 0x39
 
 class FRSkyD(FRSky):
     def __init__(self, destination_address):
@@ -566,6 +716,8 @@ class AutoTest(ABC):
         self.run_tests_called = False
         self._show_test_timings = _show_test_timings
         self.test_timings = dict()
+        self.total_waiting_to_arm_time = 0
+        self.waiting_to_arm_count = 0
 
     @staticmethod
     def progress(text):
@@ -906,7 +1058,7 @@ class AutoTest(ABC):
                 continue
             util.pexpect_drain(p)
 
-    def drain_mav_unparsed(self):
+    def drain_mav_unparsed(self, quiet=False):
         count = 0
         tstart = time.time()
         while True:
@@ -914,6 +1066,8 @@ class AutoTest(ABC):
             if len(this) == 0:
                 break
             count += len(this)
+        if quiet:
+            return
         tdelta = time.time() - tstart
         if tdelta == 0:
             rate = "instantly"
@@ -1458,6 +1612,18 @@ class AutoTest(ABC):
         self.set_parameter("RNGFND1_MAX_CM", 4000)
         self.set_parameter("RNGFND1_SCALING", 12.12)
         self.set_parameter("RNGFND1_PIN", 0)
+
+    def send_debug_trap(self, timeout=6000):
+        self.progress("Sending trap to autopilot")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DEBUG_TRAP,
+                     32451, # magic number to trap
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     timeout=timeout)
 
     def arm_vehicle(self, timeout=20):
         """Arm vehicle with mavlink arm message."""
@@ -2099,12 +2265,13 @@ class AutoTest(ABC):
         """Wait some second in SITL time."""
         tstart = self.get_sim_time()
         tnow = tstart
+        self.progress("Delaying %f seconds" % (seconds_to_wait,))
         while tstart + seconds_to_wait > tnow:
             tnow = self.get_sim_time()
 
     def wait_altitude(self, alt_min, alt_max, timeout=30, relative=False):
         """Wait for a given altitude range."""
-        previous_alt = 0
+        previous_alt = None
 
         tstart = self.get_sim_time()
         self.progress("Waiting for altitude between %.02f and %.02f" %
@@ -2119,13 +2286,17 @@ class AutoTest(ABC):
             else:
                 alt = m.alt/1000.0 # mm -> m
 
-            climb_rate = alt - previous_alt
+            if previous_alt is None:
+                climb_rate = "-"
+            else:
+                climb_rate = "%.02f" % (alt - previous_alt)
             previous_alt = alt
-            if self.get_sim_time_cached() - last_wait_alt_msg > 1:
-                self.progress("Wait Altitude: Cur:%.02f min_alt:%.02f climb_rate: %.02f"
-                              % (alt, alt_min, climb_rate))
+            ok = alt >= alt_min and alt <= alt_max
+            if ok or self.get_sim_time_cached() - last_wait_alt_msg > 1:
+                self.progress("Wait Altitude: Cur:%.02f min:%.02f max:%.02f climb_rate: %s"
+                              % (alt, alt_min, alt_max, climb_rate))
                 last_wait_alt_msg = self.get_sim_time_cached()
-            if alt >= alt_min and alt <= alt_max:
+            if ok:
                 self.progress("Altitude OK")
                 return True
         raise WaitAltitudeTimout("Failed to attain altitude range")
@@ -2420,9 +2591,14 @@ class AutoTest(ABC):
     def wait_ready_to_arm(self, timeout=None, require_absolute=True):
         # wait for EKF checks to pass
         self.progress("Waiting for ready to arm")
+        start = self.get_sim_time()
         self.wait_ekf_happy(timeout=timeout, require_absolute=require_absolute)
         if require_absolute:
             self.wait_gps_sys_status_not_present_or_enabled_and_healthy()
+        armable_time = (self.get_sim_time()-start)
+        self.progress("Took %u seconds to become armable" % armable_time)
+        self.total_waiting_to_arm_time += armable_time
+        self.waiting_to_arm_count += 1
 
     def wait_heartbeat(self, drain_mav=True, *args, **x):
         '''as opposed to mav.wait_heartbeat, raises an exception on timeout'''
@@ -3058,8 +3234,8 @@ class AutoTest(ABC):
                     self.mavproxy.send('dataflash_logger status\n')
                     # seen on autotest: Active Rate(3s):97.790kB/s Block:164 Missing:0 Fixed:0 Abandoned:0
                     self.mavproxy.expect("Active Rate\([0-9]s\):([0-9]+[.][0-9]+)")
-                    rate = self.mavproxy.match.group(1)
-                    self.progress("Rate: %f" % float(rate))
+                    rate = float(self.mavproxy.match.group(1))
+                    self.progress("Rate: %f" % rate)
                     if rate < 50:
                         raise NotAchievedException("Exceptionally low transfer rate")
             self.disarm_vehicle()
@@ -3914,7 +4090,8 @@ switch value'''
                 raise AutoTestTimeoutException("Failed to download parameters")
             m = self.mav.recv_match(type='PARAM_VALUE', blocking=True, timeout=1)
             if m is None:
-                raise AutoTestTimeoutException("tardy PARAM_VALUE")
+                raise AutoTestTimeoutException("tardy PARAM_VALUE (have %s/%s)" % (
+                    str(count), str(expected_count)))
             if m.param_index == 65535:
                 self.progress("volunteered parameter: %s" % str(m))
                 continue
@@ -3937,7 +4114,7 @@ switch value'''
 
     def test_parameters_download(self):
         self.start_subtest("parameter download")
-        target_system = 1
+        target_system = self.sysid_thismav()
         target_component = 1
         (parameters, seq_id) = self.download_parameters(target_system, target_component)
         self.reboot_sitl()
@@ -4053,7 +4230,19 @@ switch value'''
             self.assert_capability(mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_FLIGHT_TERMINATION)
             self.set_parameter("AFS_TERM_ACTION", 42)
             self.load_sample_mission()
-            self.change_mode("AUTO") # must go to auto for AFS to latch on
+            messages = []
+            def my_message_hook(mav, m):
+                if m.get_type() != 'STATUSTEXT':
+                    return
+                messages.append(m)
+            self.install_message_hook(my_message_hook)
+            try:
+                self.change_mode("AUTO") # must go to auto for AFS to latch on
+            finally:
+                self.remove_message_hook(my_message_hook)
+
+            if "AFS State: AFS_AUTO" not in [x.text for x in messages]:
+                self.wait_statustext("AFS State: AFS_AUTO")
             self.change_mode("MANUAL")
             self.start_subtest("RC Failure")
             self.set_parameter("AFS_RC_FAIL_TIME", 1)
@@ -4251,6 +4440,52 @@ switch value'''
             "--uartF=tcp:6735" # serial5 spews to localhost:6735
         ])
         frsky = FRSkyPassThrough(("127.0.0.1", 6735))
+
+        # waiting until we are ready to arm should ensure our wanted
+        # statustext doesn't get blatted out of the ArduPilot queue by
+        # random messages.
+        self.wait_ready_to_arm()
+
+        # test we get statustext strings.  This relies on ArduPilot
+        # emitting statustext strings when we fetch parameters.
+        self.mavproxy.send("param fetch\n")
+        tstart = self.get_sim_time_cached()
+        old_data = None
+        text = ""
+        while True:
+            now = self.get_sim_time()
+            if now - tstart > 60: # it can take a *long* time to get these messages down!
+                raise NotAchievedException("Did not get statustext in time")
+            frsky.update()
+            data = frsky.get_data(0x5000) # no timestamping on this data, so we can't catch legitimate repeats.
+            if data is None:
+                continue
+            # frsky sends each quartet three times; skip the suplicates.
+            if old_data is not None and old_data == data:
+                continue
+            old_data = data
+            self.progress("Got (0x%x)" % data)
+            severity = 0
+            last = False
+            for i in 3, 2, 1, 0:
+                x = (data >> i*8) & 0xff
+                text += chr(x & 0x7f)
+                self.progress("  x=0x%02x" % x)
+                if x & 0x80:
+                    severity += 1 << i
+                self.progress("Text sev=%u: %s" % (severity, str(text)))
+                if (x & 0x7f) == 0x00:
+                    last = True
+            if last:
+                m = re.match("Ardu(Plane|Copter|Rover|Tracker|Sub) V[345]", text)
+                if m is not None:
+                    want_sev = mavutil.mavlink.MAV_SEVERITY_INFO
+                    if severity != want_sev:
+                        raise NotAchievedException("Incorrect severity; want=%u got=%u" % (want_sev, severity))
+                    self.progress("Got statustext (%s)" % m.group(0))
+                    break
+                text = ""
+
         self.wait_ready_to_arm()
         self.drain_mav_unparsed()
         # anything with a lambda in here needs a proper test written.
@@ -4352,6 +4587,115 @@ switch value'''
             if alt == gpi_abs_alt:
                 break
 
+    def test_ltm_g(self, ltm):
+        g = ltm.g()
+        if g is None:
+            return
+        m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+        print("m: %s" % str(m))
+
+        print("g.lat=%s m.lat=%s" % (str(g.lat()), str(m.lat)))
+        if abs(m.lat - g.lat()) > 10:
+            return False
+
+        print("g.lon:%s m.lon:%s" % (str(g.lon()), str(m.lon)))
+        if abs(m.lon - g.lon()) > 10:
+            return False
+
+        print("gndspeed: %s" % str(g.gndspeed()))
+        if g.gndspeed() != 0:
+            # FIXME if we start the vehicle moving.... check against VFR_HUD?
+            return False
+
+        print("g.alt=%s m.alt=%s" % (str(g.alt()/100.0), str(m.relative_alt/1000.0)))
+        if abs(m.relative_alt/1000.0 - g.alt()/100.0) > 1:
+            return False
+
+        print("sats: %s" % str(g.sats()))
+        m = self.mav.recv_match(type='GPS_RAW_INT', blocking=True)
+        if m.satellites_visible != g.sats():
+            return False
+
+        constrained_fix_type = m.fix_type
+        if constrained_fix_type > 3:
+            constrained_fix_type = 3
+        print("fix_type: %s" % g.fix_type())
+        if constrained_fix_type != g.fix_type():
+            return False
+
+        return True
+
+    def test_ltm_a(self, ltm):
+        a = ltm.a()
+        if a is None:
+            return
+        m = self.mav.recv_match(type='ATTITUDE', blocking=True)
+
+        pitch = a.pitch()
+        print("pitch: %s" % str(pitch))
+        if abs(math.degrees(m.pitch) - pitch) > 1:
+            return False
+
+        roll = a.roll()
+        print("roll: %s" % str(roll))
+        if abs(math.degrees(m.roll) - roll) > 1:
+            return False
+
+        hdg = a.hdg()
+        myaw = math.degrees(m.yaw)
+        myaw += 360
+        myaw %= 360
+        print("a.hdg=%s m.hdg=%s" % (str(hdg), str(myaw)))
+        if abs(myaw - hdg) > 1:
+            return False
+
+        return True
+
+    def test_ltm_s(self, ltm):
+        s = ltm.s()
+        if s is None:
+            return
+        # FIXME.  Actually check the field values are correct :-)
+        return True
+
+    def test_ltm(self):
+        self.set_parameter("SERIAL5_PROTOCOL", 25) # serial5 is LTM output
+        self.customise_SITL_commandline([
+            "--uartF=tcp:6735" # serial5 spews to localhost:6735
+        ])
+        ltm = LTM(("127.0.0.1", 6735))
+        self.wait_ready_to_arm()
+        self.drain_mav_unparsed()
+        m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=1)
+        if m is None:
+            raise NotAchievedException("Did not receive GLOBAL_POSITION_INT")
+        gpi_abs_alt = int(m.alt / 1000) # mm -> m
+
+        wants = {
+            "g": self.test_ltm_g,
+            "a": self.test_ltm_a,
+            "s": self.test_ltm_s,
+        }
+
+        tstart = self.get_sim_time_cached()
+        while True:
+            self.progress("Still wanting (%s)" %
+                          ",".join([ ("%s" % x) for x in wants.keys()]))
+            if len(wants) == 0:
+                break
+            now = self.get_sim_time_cached()
+            if now - tstart > 10:
+                raise AutoTestTimeoutException("Failed to get ltm data")
+
+            ltm.update()
+
+            wants_copy = copy.copy(wants)
+            for want in wants_copy:
+                self.progress("Checking %s" % str(want))
+                if wants[want](ltm):
+                    self.progress("  Fulfilled")
+                    del wants[want]
+
     def tests(self):
         return [
             ("PIDTuning",
@@ -4375,6 +4719,14 @@ switch value'''
 
     def post_tests_announcements(self):
         if self._show_test_timings:
+            if self.waiting_to_arm_count == 0:
+                avg = None
+            else:
+                avg = self.total_waiting_to_arm_time/self.waiting_to_arm_count
+            self.progress("Spent %f seconds waiting to arm. count=%u avg=%f" %
+                          (self.total_waiting_to_arm_time,
+                          self.waiting_to_arm_count,
+                          avg))
             self.show_test_timings()
         if self.forced_post_test_sitl_reboots != 0:
             print("Had to force-reset SITL %u times" %
@@ -4445,9 +4797,9 @@ switch value'''
 
         fft_len = len(messages[0].data["X"])
         sum_fft = {
-                "X": numpy.zeros(fft_len/2+1),
-                "Y": numpy.zeros(fft_len/2+1),
-                "Z": numpy.zeros(fft_len/2+1),
+                "X": numpy.zeros(int(fft_len/2+1)),
+                "Y": numpy.zeros(int(fft_len/2+1)),
+                "Z": numpy.zeros(int(fft_len/2+1)),
             }
         sample_rate = 0
         counts = 0

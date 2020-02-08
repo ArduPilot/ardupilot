@@ -6,7 +6,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Rangefinder type
     // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLite-I2C,5:PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TeraRangerI2C,15:LidarLiteV3-I2C,16:VL53L0X,17:NMEA,18:WASP-LRF,19:BenewakeTF02,20:BenewakeTFmini/Plus-Serial,21:LidarLightV3HP,22:PWM,23:BlueRoboticsPing,24:UAVCAN,25:BenewakeTFmini/Plus-I2C,26:LanbaoPSK-CM8JL65-CC5,27:BenewakeTF03,28:VL53L1X-ShortRange
+    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLite-I2C,5:PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TeraRangerI2C,15:LidarLiteV3-I2C,16:VL53L0X or VL53L1X,17:NMEA,18:WASP-LRF,19:BenewakeTF02,20:BenewakeTFmini/Plus-Serial,21:LidarLightV3HP,22:PWM,23:BlueRoboticsPing,24:UAVCAN,25:BenewakeTFmini/Plus-I2C,26:LanbaoPSK-CM8JL65-CC5,27:BenewakeTF03,28:VL53L1X-ShortRange,29:LeddarVu8-Serial
     // @User: Standard
     AP_GROUPINFO("TYPE",    1, AP_RangeFinder_Params, type, 0),
 
@@ -27,7 +27,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
 
     // @Param: OFFSET
     // @DisplayName: rangefinder offset
-    // @Description: Offset in volts for zero distance for analog rangefinders. Offset added to distance in centimeters for PWM and I2C Lidars
+    // @Description: Offset in volts for zero distance for analog rangefinders. Offset added to distance in centimeters for PWM lidars
     // @Units: V
     // @Increment: 0.001
     // @User: Standard
@@ -99,20 +99,26 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
 
     // @Param: POS_X
     // @DisplayName:  X position offset
-    // @Description: X position of the first rangefinder in body frame. Positive X is forward of the origin. Use the zero range datum point if supplied.
+    // @Description: X position of the rangefinder in body frame. Positive X is forward of the origin. Use the zero range datum point if supplied.
     // @Units: m
+    // @Range: -5 5
+    // @Increment: 0.01
     // @User: Advanced
 
     // @Param: POS_Y
     // @DisplayName: Y position offset
-    // @Description: Y position of the first rangefinder in body frame. Positive Y is to the right of the origin. Use the zero range datum point if supplied.
+    // @Description: Y position of the rangefinder in body frame. Positive Y is to the right of the origin. Use the zero range datum point if supplied.
     // @Units: m
+    // @Range: -5 5
+    // @Increment: 0.01
     // @User: Advanced
 
     // @Param: POS_Z
     // @DisplayName: Z position offset
-    // @Description: Z position of the first rangefinder in body frame. Positive Z is down from the origin. Use the zero range datum point if supplied.
+    // @Description: Z position of the rangefinder in body frame. Positive Z is down from the origin. Use the zero range datum point if supplied.
     // @Units: m
+    // @Range: -5 5
+    // @Increment: 0.01
     // @User: Advanced
     AP_GROUPINFO("POS", 49, AP_RangeFinder_Params, pos_offset, 0.0f),
 

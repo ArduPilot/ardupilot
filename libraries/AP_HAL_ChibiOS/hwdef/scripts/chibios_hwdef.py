@@ -63,8 +63,14 @@ allpins = []
 # list of configs by type
 bytype = {}
 
+# list of alt configs by type
+alttype = {}
+
 # list of configs by label
 bylabel = {}
+
+# list of alt configs by label
+altlabel = {}
 
 # list of SPI devices
 spidev = []
@@ -167,7 +173,7 @@ def get_alt_function(mcu, pin, function):
 
 def have_type_prefix(ptype):
     '''return True if we have a peripheral starting with the given peripheral type'''
-    for t in bytype.keys():
+    for t in list(bytype.keys()) + list(alttype.keys()):
         if t.startswith(ptype):
             return True
     return False
@@ -699,17 +705,26 @@ def write_mcu_config(f):
     lib = get_mcu_lib(mcu_type)
     build_info = lib.build
 
-    if mcu_series.startswith("STM32F1"):
+    if get_mcu_config('CPU_FLAGS') and get_mcu_config('CORTEX'):
+        # CPU flags specified in mcu file
+        cortex = get_mcu_config('CORTEX')
+        env_vars['CPU_FLAGS'] = get_mcu_config('CPU_FLAGS').split()
+        build_info['MCU'] = cortex
+        print("MCU Flags: %s %s" % (cortex, env_vars['CPU_FLAGS']))
+    elif mcu_series.startswith("STM32F1"):
         cortex = "cortex-m3"
         env_vars['CPU_FLAGS'] = ["-mcpu=%s" % cortex]
         build_info['MCU'] = cortex
     else:
+        # default to F4
         cortex = "cortex-m4"
         env_vars['CPU_FLAGS'] = ["-mcpu=%s" % cortex, "-mfpu=fpv4-sp-d16", "-mfloat-abi=hard"]
         build_info['MCU'] = cortex
-        if not args.bootloader:
-            env_vars['CPU_FLAGS'].append('-u_printf_float')
-            build_info['ENV_UDEFS'] = "-DCHPRINTF_USE_FLOAT=1"
+
+    if not mcu_series.startswith("STM32F1") and not args.bootloader:
+        env_vars['CPU_FLAGS'].append('-u_printf_float')
+        build_info['ENV_UDEFS'] = "-DCHPRINTF_USE_FLOAT=1"
+
     # setup build variables
     for v in build_info.keys():
         build_flags.append('%s=%s' % (v, build_info[v]))
@@ -872,7 +887,7 @@ def write_SPI_table(f):
 def write_SPI_config(f):
     '''write SPI config defines'''
     global spi_list
-    for t in bytype.keys():
+    for t in list(bytype.keys()) + list(alttype.keys()):
         if t.startswith('SPI'):
             spi_list.append(t)
     spi_list = sorted(spi_list)
@@ -999,9 +1014,10 @@ def write_BARO_config(f):
                     dev[i] = 'std::move(%s)' % dev[i]
         n = len(devlist)+1
         devlist.append('HAL_BARO_PROBE%u' % n)
+        args = ['*this'] + dev[1:]
         f.write(
-            '#define HAL_BARO_PROBE%u %s ADD_BACKEND(AP_Baro_%s::%s(*this,%s))\n'
-            % (n, wrapper, driver, probe, ','.join(dev[1:])))
+            '#define HAL_BARO_PROBE%u %s ADD_BACKEND(AP_Baro_%s::%s(%s))\n'
+            % (n, wrapper, driver, probe, ','.join(args)))
     if len(devlist) > 0:
         f.write('#define HAL_BARO_PROBE_LIST %s\n\n' % ';'.join(devlist))
 
@@ -1514,7 +1530,7 @@ def setup_apj_IDs():
 def write_peripheral_enable(f):
     '''write peripheral enable lines'''
     f.write('// peripherals enabled\n')
-    for type in sorted(bytype.keys()):
+    for type in sorted(list(bytype.keys()) + list(alttype.keys())):
         if type.startswith('USART') or type.startswith('UART'):
             dstr = 'STM32_SERIAL_USE_%-6s' % type
             f.write('#ifndef %s\n' % dstr)
@@ -1532,11 +1548,14 @@ def get_dma_exclude(periph_list):
     '''return list of DMA devices to exclude from DMA'''
     dma_exclude = []
     for periph in periph_list:
-        if periph not in bylabel:
-            continue
-        p = bylabel[periph]
-        if p.has_extra('NODMA'):
-            dma_exclude.append(periph)
+        if periph in bylabel:
+            p = bylabel[periph]
+            if p.has_extra('NODMA'):
+                dma_exclude.append(periph)
+        if periph in altlabel:
+            p = altlabel[periph]
+            if p.has_extra('NODMA'):
+                dma_exclude.append(periph)
     return dma_exclude
 
 
@@ -1709,7 +1728,11 @@ def build_peripheral_list():
     peripherals = []
     done = set()
     prefixes = ['SPI', 'USART', 'UART', 'I2C']
-    for p in allpins:
+    periph_pins = allpins[:]
+    for alt in altmap.keys():
+        for p in altmap[alt].keys():
+            periph_pins.append(altmap[alt][p])
+    for p in periph_pins:
         type = p.type
         if type in done:
             continue
@@ -1723,9 +1746,9 @@ def build_peripheral_list():
                         bylabel[ptx] = p
                     if prx not in bylabel:
                         bylabel[prx] = p
-                if prx in bylabel:
+                if prx in bylabel or prx in altlabel:
                     peripherals.append(prx)
-                if ptx in bylabel:
+                if ptx in bylabel or ptx in altlabel:
                     peripherals.append(ptx)
 
         if type.startswith('ADC'):
@@ -1811,6 +1834,11 @@ def process_line(line):
             if p.portpin in altmap[alt]:
                 error("Pin %s ALT(%u) redefined" % (p.portpin, alt))
             altmap[alt][p.portpin] = p
+            # we need to add alt pins into bytype[] so they are enabled in chibios config
+            if type not in alttype:
+                alttype[type] = []
+            alttype[type].append(p)
+            altlabel[label] = p
             return
 
         if a[0] in config:

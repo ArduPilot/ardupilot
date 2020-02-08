@@ -21,7 +21,6 @@ def build(bld):
             'AC_WPNav',
             'AC_AttitudeControl',
             'AP_Motors',
-            'AP_Stats',
             'AP_Landing',
             'AP_Beacon',
             'PID',

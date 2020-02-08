@@ -126,10 +126,6 @@ public:
 
     Rover(void);
 
-    // HAL::Callbacks implementation.
-    void setup(void) override;
-    void loop(void) override;
-
 private:
 
     // must be the first AP_Param variable declared to ensure its
@@ -140,9 +136,6 @@ private:
     // all settable parameters
     Parameters g;
     ParametersG2 g2;
-
-    // main loop scheduler
-    AP_Scheduler scheduler;
 
     // mapping between input channels
     RCMapper rcmap;
@@ -237,11 +230,6 @@ private:
 
     // true if the compass's initial location has been set
     bool compass_init_location;
-
-    // IMU variables
-    // The main loop execution time.  Seconds
-    // This is the time between calls to the DCM algorithm and is the Integration time for the gyros.
-    float G_Dt;
 
     // flyforward timer
     uint32_t flyforward_start_ms;
@@ -362,7 +350,7 @@ private:
     Mode *mode_from_mode_num(enum Mode::Number num);
 
     // Parameters.cpp
-    void load_parameters(void);
+    void load_parameters(void) override;
 
     // radio.cpp
     void set_control_channels(void);
@@ -384,8 +372,13 @@ private:
     // Steering.cpp
     void set_servos(void);
 
+    // Rover.cpp
+    void get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
+                             uint8_t &task_count,
+                             uint32_t &log_bit) override;
+
     // system.cpp
-    void init_ardupilot();
+    void init_ardupilot() override;
     void startup_ground(void);
     void update_ahrs_flyforward();
     bool set_mode(Mode &new_mode, ModeReason reason);
@@ -429,7 +422,6 @@ private:
 
 
 public:
-    void mavlink_delay_cb();
     void failsafe_check();
     // Motor test
     void motor_test_output();

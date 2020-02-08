@@ -135,9 +135,7 @@ bool AP_Compass_MAG3110::_hardware_init()
 {
 
     AP_HAL::Semaphore *bus_sem = _dev->get_semaphore();
-    if (!bus_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        AP_HAL::panic("MAG3110: Unable to get semaphore");
-    }
+    bus_sem->take_blocking();
 
     // initially run the bus at low speed
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);

@@ -47,7 +47,7 @@ void ModeCircle::run()
         const float radius_current = copter.circle_nav->get_radius();           // circle controller's radius target, which begins as the circle_radius parameter
         const float pitch_stick = channel_pitch->norm_input_dz();               // pitch stick normalized -1 to 1
         const float nav_speed = copter.wp_nav->get_default_speed_xy();          // copter WP_NAV parameter speed
-        const float radius_pilot_change = (pitch_stick * nav_speed) * G_Dt;     // rate of change
+        const float radius_pilot_change = (pitch_stick * nav_speed) * G_Dt;     // rate of change (pitch stick up reduces the radius, as in moving forward)
         const float radius_new = MAX(radius_current + radius_pilot_change,0);   // new radius target
 
         if (!is_equal(radius_current, radius_new)) {

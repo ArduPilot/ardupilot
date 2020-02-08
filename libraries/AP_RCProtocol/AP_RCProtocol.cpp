@@ -26,6 +26,8 @@
 #include "AP_RCProtocol_FPort.h"
 #include <AP_Math/AP_Math.h>
 
+extern const AP_HAL::HAL& hal;
+
 void AP_RCProtocol::init()
 {
     backend[AP_RCProtocol::PPM] = new AP_RCProtocol_PPMSum(*this);
@@ -150,6 +152,9 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
                 memset(_good_frames, 0, sizeof(_good_frames));
                 _last_input_ms = now;
                 _detected_with_bytes = true;
+
+                // stop decoding pulses to save CPU
+                hal.rcin->pulse_input_enable(false);
                 break;
             }
         }
@@ -255,6 +260,13 @@ uint16_t AP_RCProtocol::read(uint8_t chan)
         return backend[_detected_protocol]->read(chan);
     }
     return 0;
+}
+
+void AP_RCProtocol::read(uint16_t *pwm, uint8_t n)
+{
+    if (_detected_protocol != AP_RCProtocol::NONE) {
+        backend[_detected_protocol]->read(pwm, n);
+    }
 }
 
 int16_t AP_RCProtocol::get_RSSI(void) const

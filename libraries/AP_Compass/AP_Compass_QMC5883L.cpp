@@ -85,9 +85,7 @@ AP_Compass_QMC5883L::AP_Compass_QMC5883L(AP_HAL::OwnPtr<AP_HAL::Device> dev,
 
 bool AP_Compass_QMC5883L::init()
 {
-    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return false;
-    }
+    _dev->get_semaphore()->take_blocking();
 
     _dev->set_retries(10);
 

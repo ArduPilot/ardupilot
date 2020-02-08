@@ -60,7 +60,8 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
         & parameter_checks(display_failure)
         & motor_checks(display_failure)
         & pilot_throttle_checks(display_failure)
-        & oa_checks(display_failure) &
+        & oa_checks(display_failure)
+        & gcs_failsafe_check(display_failure) &
         AP_Arming::pre_arm_checks(display_failure);
 }
 
@@ -220,6 +221,12 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
             copter.g2.frame_class.get() == AP_Motors::MOTOR_FRAME_HELI_DUAL ||
             copter.g2.frame_class.get() == AP_Motors::MOTOR_FRAME_HELI) {
             check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Invalid MultiCopter FRAME_CLASS");
+            return false;
+        }
+
+        // checks MOT_PWM_MIN/MAX for acceptable values
+        if (!copter.motors->check_mot_pwm_params()) {
+            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Check MOT_PWM_MIN/MAX");
             return false;
         }
         #endif // HELI_FRAME
@@ -563,6 +570,15 @@ bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
     return true;
 }
 
+// Check GCS failsafe
+bool AP_Arming_Copter::gcs_failsafe_check(bool display_failure)
+{
+    if (copter.failsafe.gcs) {
+        check_failed(display_failure, "GCS failsafe on");
+        return false;
+    }
+    return true;
+}
 
 // arm_checks - perform final checks before arming
 //  always called just before arming.  Return true if ok to arm

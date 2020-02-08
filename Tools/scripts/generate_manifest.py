@@ -189,7 +189,7 @@ class ManifestGenerator():
         }
         if 'USBID' in apj_json:
             # newer APJ files have USBID in the json data
-            firmware['USBID'] = apj_json['USBID']
+            firmware['USBID'] = [apj_json['USBID']]
         elif platform in USBID_MAP:
             firmware['USBID'] = USBID_MAP[platform]
         else:

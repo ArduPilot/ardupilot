@@ -55,32 +55,13 @@ const AP_Scheduler::Task Tracker::scheduler_tasks[] = {
     SCHED_TASK(accel_cal_update,       10,    100)
 };
 
-/**
-  setup the sketch - called once on startup
- */
-void Tracker::setup() 
+void Tracker::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
+                                uint8_t &task_count,
+                                uint32_t &log_bit)
 {
-    // load the default values of variables listed in var_info[]
-    AP_Param::setup_sketch_defaults();
-
-    init_tracker();
-
-    // initialise the main loop scheduler
-    scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks), (uint32_t)-1);
-}
-
-/**
-   loop() is called continuously 
- */
-void Tracker::loop()
-{
-    // wait for an INS sample
-    ins.wait_for_sample();
-
-    // tell the scheduler one tick has passed
-    scheduler.tick();
-
-    scheduler.run(19900UL);
+    tasks = &scheduler_tasks[0];
+    task_count = ARRAY_SIZE(scheduler_tasks);
+    log_bit = (uint32_t)-1;
 }
 
 void Tracker::one_second_loop()

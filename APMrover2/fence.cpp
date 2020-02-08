@@ -17,11 +17,32 @@ void Rover::fence_check()
     // if there is a new breach take action
     if (new_breaches) {
         // if the user wants some kind of response and motors are armed
-        if (g2.fence.get_action() != AC_FENCE_ACTION_REPORT_ONLY) {
-            // if we are within 100m of the fence, RTL
+        if (g2.fence.get_action() != Failsafe_Action_None) {
+            // if within 100m of the fence, it will take the action specified by the FENCE_ACTION parameter
             if (g2.fence.get_breach_distance(new_breaches) <= AC_FENCE_GIVE_UP_DISTANCE) {
-                if (!set_mode(mode_rtl, ModeReason::FENCE_BREACHED)) {
+                switch (g2.fence.get_action()) {
+                case Failsafe_Action_None:
+                    break;
+                case Failsafe_Action_RTL:
+                    if (!set_mode(mode_rtl, ModeReason::FENCE_BREACHED)) {
+                        set_mode(mode_hold, ModeReason::FENCE_BREACHED);
+                    }
+                    break;
+                case Failsafe_Action_Hold:
                     set_mode(mode_hold, ModeReason::FENCE_BREACHED);
+                    break;
+                case Failsafe_Action_SmartRTL:
+                    if (!set_mode(mode_smartrtl, ModeReason::FENCE_BREACHED)) {
+                        if (!set_mode(mode_rtl, ModeReason::FENCE_BREACHED)) {
+                            set_mode(mode_hold, ModeReason::FENCE_BREACHED);
+                        }
+                    }
+                    break;
+                case Failsafe_Action_SmartRTL_Hold:
+                    if (!set_mode(mode_smartrtl, ModeReason::FENCE_BREACHED)) {
+                        set_mode(mode_hold, ModeReason::FENCE_BREACHED);
+                    }
+                    break;
                 }
             } else {
                 // if more than 100m outside the fence just force to HOLD

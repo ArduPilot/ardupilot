@@ -159,7 +159,7 @@ private:
 #endif
     ByteBuffer _readbuf{0};
     ByteBuffer _writebuf{0};
-    Semaphore _write_mutex;
+    HAL_Semaphore _write_mutex;
 #ifndef HAL_UART_NODMA
     const stm32_dma_stream_t* rxdma;
     const stm32_dma_stream_t* txdma;

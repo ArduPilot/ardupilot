@@ -74,6 +74,11 @@ public:
         return _singleton;
     }
 
+    // allow threads to lock against GPS update
+    HAL_Semaphore &get_semaphore(void) {
+        return rsem;
+    }
+    
     // GPS driver types
     enum GPS_Type {
         GPS_TYPE_NONE  = 0,
@@ -462,6 +467,11 @@ public:
     // handle possibly fragmented RTCM injection data
     void handle_gps_rtcm_fragment(uint8_t flags, const uint8_t *data, uint8_t len);
 
+    // get configured type by instance
+    GPS_Type get_type(uint8_t instance) const {
+        return instance>=GPS_MAX_RECEIVERS? GPS_Type::GPS_TYPE_NONE : GPS_Type(_type[instance].get());
+    }
+
 protected:
 
     // configuration parameters
@@ -488,6 +498,7 @@ protected:
 
 private:
     static AP_GPS *_singleton;
+    HAL_Semaphore rsem;
 
     // returns the desired gps update rate in milliseconds
     // this does not provide any guarantee that the GPS is updating at the requested

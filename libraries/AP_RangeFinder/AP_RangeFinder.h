@@ -78,6 +78,7 @@ public:
         Lanbao = 26,
         BenewakeTF03 = 27,
         VL53L1X_Short = 28,
+        LeddarVu8_Serial = 29,
     };
 
     enum class Function {
@@ -137,6 +138,11 @@ public:
     AP_RangeFinder_Backend *find_instance(enum Rotation orientation) const;
 
     AP_RangeFinder_Backend *get_backend(uint8_t id) const;
+
+    // get rangefinder type for an ID
+    Type get_type(uint8_t id) const {
+        return id >= RANGEFINDER_MAX_INSTANCES? Type::NONE : Type(params[id].type.get());
+    }
 
     // methods to return a distance on a particular orientation from
     // any sensor which can current supply it

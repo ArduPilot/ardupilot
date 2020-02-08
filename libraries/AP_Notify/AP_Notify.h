@@ -51,7 +51,7 @@ public:
     static AP_Notify *get_singleton(void) {
         return _singleton;
     }
-    
+
     // Oreo LED Themes
     enum Oreo_LED_Theme {
         OreoLED_Disabled        = 0,    // Disabled the OLED driver entirely
@@ -87,6 +87,7 @@ public:
         bool esc_calibration;     // true if calibrating escs
         bool failsafe_radio;      // true if radio failsafe
         bool failsafe_battery;    // true if battery failsafe
+        bool failsafe_gcs;        // true if GCS failsafe
         bool parachute_release;   // true if parachute is being released
         bool ekf_bad;             // true if ekf is reporting problems
         bool autopilot_mode;      // true if vehicle is in an autopilot flight mode (only used by OreoLEDs)
@@ -162,6 +163,7 @@ public:
     uint8_t get_buzz_pin() const  { return _buzzer_pin; }
     uint8_t get_buzz_level() const  { return _buzzer_level; }
     uint8_t get_buzz_volume() const  { return _buzzer_volume; }
+    uint8_t get_neo_len() const {return _neo_len; }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     HAL_Semaphore sf_window_mutex;
@@ -186,6 +188,7 @@ private:
     AP_Int32 _led_type;
     AP_Int8 _buzzer_level;
     AP_Int8 _buzzer_volume;
+    AP_Int8 _neo_len;   //adding to define length of ntf neopixel string
 
     char _send_text[NOTIFY_TEXT_BUFFER_SIZE];
     uint32_t _send_text_updated_millis; // last time text changed

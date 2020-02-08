@@ -72,9 +72,7 @@ AP_RangeFinder_Backend *AP_RangeFinder_TeraRangerI2C::detect(RangeFinder::RangeF
  */
 bool AP_RangeFinder_TeraRangerI2C::init(void)
 {
-    if (!dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return false;
-    }
+    dev->get_semaphore()->take_blocking();
 
     dev->set_retries(10);
 
@@ -145,8 +143,7 @@ bool AP_RangeFinder_TeraRangerI2C::process_raw_measure(uint16_t raw_distance, ui
       return false;
   } else if (raw_distance == 0x0000) {
       // Too close
-      output_distance_cm =  params.min_distance_cm;
-      return true;
+      return false;
   } else if (raw_distance == 0x0001) {
       // Unable to measure
       return false;

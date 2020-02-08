@@ -94,16 +94,19 @@ void AP_Periph_FW::init()
     }
 
 #ifdef HAL_PERIPH_ENABLE_GPS
-    gps.init(serial_manager);
+    if (gps.get_type(0) != AP_GPS::GPS_Type::GPS_TYPE_NONE) {
+        gps.init(serial_manager);
+    }
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_MAG
-    compass.init();
+    if (compass.enabled()) {
+        compass.init();
+    }
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_BARO
     baro.init();
-    baro.calibrate(false);
 #endif
 
 #ifdef HAL_PERIPH_NEOPIXEL_COUNT
@@ -116,14 +119,18 @@ void AP_Periph_FW::init()
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_AIRSPEED
-    airspeed.init();
+    if (airspeed.enabled()) {
+        airspeed.init();
+    }
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_RANGEFINDER
-    const uint8_t sernum = 3; // uartB
-    hal.uartB->begin(g.rangefinder_baud);
-    serial_manager.set_protocol_and_baud(sernum, AP_SerialManager::SerialProtocol_Rangefinder, g.rangefinder_baud);
-    rangefinder.init(ROTATION_NONE);
+    if (rangefinder.get_type(0) != RangeFinder::Type::NONE) {
+        const uint8_t sernum = 3; // uartB
+        hal.uartB->begin(g.rangefinder_baud);
+        serial_manager.set_protocol_and_baud(sernum, AP_SerialManager::SerialProtocol_Rangefinder, g.rangefinder_baud);
+        rangefinder.init(ROTATION_NONE);
+    }
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT

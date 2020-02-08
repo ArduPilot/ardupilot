@@ -42,6 +42,7 @@
 #include "AP_Baro_FBM320.h"
 #include "AP_Baro_DPS280.h"
 #include "AP_Baro_BMP388.h"
+#include "AP_Baro_Dummy.h"
 #if HAL_WITH_UAVCAN
 #include "AP_Baro_UAVCAN.h"
 #endif
@@ -62,6 +63,10 @@
 
 #ifndef HAL_BARO_PROBE_EXT_DEFAULT
  #define HAL_BARO_PROBE_EXT_DEFAULT 0
+#endif
+
+#ifdef HAL_BUILD_AP_PERIPH
+#define HAL_BARO_ALLOW_INIT_NO_BARO
 #endif
 
 extern const AP_HAL::HAL& hal;
@@ -605,6 +610,14 @@ void AP_Baro::init(void)
 
     if (_num_drivers == 0 || _num_sensors == 0 || drivers[0] == nullptr) {
         AP_BoardConfig::config_error("Baro: unable to initialise driver");
+    }
+#endif
+#ifdef HAL_BUILD_AP_PERIPH
+    // AP_Periph always is set calibrated. We only want the pressure,
+    // so ground calibration is unnecessary
+    for (uint8_t i=0; i<_num_sensors; i++) {
+        sensors[i].calibrated = true;
+        sensors[i].alt_ok = true;
     }
 #endif
 }

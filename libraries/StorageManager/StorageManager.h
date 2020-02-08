@@ -59,9 +59,6 @@ public:
     // erase whole of storage
     static void erase(void);
 
-    // setup for copter layout of storage
-    static void set_layout_copter(void) { layout = layout_copter; }
-
 private:
     struct StorageArea {
         StorageType type;
@@ -70,9 +67,7 @@ private:
     };
 
     // available layouts
-    static const StorageArea layout_copter[STORAGE_NUM_AREAS];
-    static const StorageArea layout_default[STORAGE_NUM_AREAS];
-    static const StorageArea *layout;
+    static const StorageArea layout[STORAGE_NUM_AREAS];
 };
 
 /*

@@ -9,10 +9,25 @@ if [ $EUID == 0 ]; then
 fi
 
 OPT="/opt"
+RELEASE_CODENAME=$(lsb_release -c -s)
+if [ ${RELEASE_CODENAME} == 'xenial' ]; then
+    SITLFML_VERSION="2.3v5"
+    SITLCFML_VERSION="2.3"
+elif [ ${RELEASE_CODENAME} == 'disco' ]; then
+    SITLFML_VERSION="2.5"
+    SITLCFML_VERSION="2.5"
+elif [ ${RELEASE_CODENAME} == 'eoan' ]; then
+    SITLFML_VERSION="2.5"
+    SITLCFML_VERSION="2.5"
+else
+    SITLFML_VERSION="2.4"
+    SITLCFML_VERSION="2.4"
+fi
+
 BASE_PKGS="build-essential ccache g++ gawk git make wget"
 PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect"
-# add some Python packages required for commonly-used MAVProxy modules:
-PYTHON_PKGS="$PYTHON_PKGS pygame"
+# add some Python packages required for commonly-used MAVProxy modules and hex file generation:
+PYTHON_PKGS="$PYTHON_PKGS pygame intelhex"
 PX4_PKGS="python-argparse openocd flex bison libncurses5-dev \
           autoconf texinfo libftdi-dev zlib1g-dev \
           zip genromfs python-empy cmake cmake-data"
@@ -20,7 +35,7 @@ ARM_LINUX_PKGS="g++-arm-linux-gnueabihf pkg-config-arm-linux-gnueabihf"
 # python-wxgtk packages are added to SITL_PKGS below
 SITL_PKGS="libtool libxml2-dev libxslt1-dev python-dev python-pip python-setuptools python-matplotlib python-serial python-scipy python-opencv python-numpy python-pyparsing xterm lcov gcovr"
 # add some packages required for commonly-used MAVProxy modules:
-SITL_PKGS="$SITL_PKGS libcsfml-dev libcsfml-audio2.4 libcsfml-dev libcsfml-graphics2.4 libcsfml-network2.4 libcsfml-system2.4 libcsfml-window2.4 libsfml-audio2.4 libsfml-dev libsfml-graphics2.4 libsfml-network2.4 libsfml-system2.4 libsfml-window2.4 python-yaml python3-yaml"
+SITL_PKGS="$SITL_PKGS libcsfml-dev libcsfml-audio${SITLCFML_VERSION} libcsfml-dev libcsfml-graphics${SITLCFML_VERSION} libcsfml-network${SITLCFML_VERSION} libcsfml-system${SITLCFML_VERSION} libcsfml-window${SITLCFML_VERSION} libsfml-audio${SITLFML_VERSION} libsfml-dev libsfml-graphics${SITLFML_VERSION} libsfml-network${SITLFML_VERSION} libsfml-system${SITLFML_VERSION} libsfml-window${SITLFML_VERSION} python-yaml python3-yaml"
 
 ASSUME_YES=false
 QUIET=false
@@ -108,6 +123,7 @@ fi
 
 $APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS $ARM_LINUX_PKGS
 pip2 -q install --user -U $PYTHON_PKGS
+
 
 if [ ! -d $OPT/$ARM_ROOT ]; then
     (

@@ -49,4 +49,8 @@ public:
 
     /* execute receiver bind */
     virtual bool rc_bind(int dsmMode) { return false; }
+
+    /* enable or disable pulse input for RC input. This is used to
+       reduce load when we are decoding R/C via a UART */
+    virtual void pulse_input_enable(bool enable) { }
 };

@@ -907,7 +907,6 @@ void AC_AutoTune::backup_gains_and_initialise()
     // no axes are complete
     axes_completed = 0;
 
-    current_gain_type = GAIN_ORIGINAL;
     positive_direction = false;
     step = WAITING_FOR_LEVEL;
     step_start_time_ms = AP_HAL::millis();
@@ -1104,9 +1103,6 @@ void AC_AutoTune::load_twitch_gains()
  */
 void AC_AutoTune::load_gains(enum GainType gain_type)
 {
-    if (current_gain_type == gain_type) {
-        return;
-    }
     switch (gain_type) {
     case GAIN_ORIGINAL:
         load_orig_gains();
@@ -1210,7 +1206,7 @@ void AC_AutoTune::save_tuning_gains()
         orig_yaw_rff = attitude_control->get_rate_yaw_pid().ff();
         orig_yaw_rLPF = attitude_control->get_rate_yaw_pid().filt_E_hz();
         orig_yaw_sp = attitude_control->get_angle_yaw_p().kP();
-        orig_yaw_accel = attitude_control->get_accel_pitch_max();
+        orig_yaw_accel = attitude_control->get_accel_yaw_max();
     }
 
     // update GCS and log save gains event

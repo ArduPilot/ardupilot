@@ -419,6 +419,7 @@ private:
         const char *units;
         const char *mults;
     } *log_write_fmts;
+    HAL_Semaphore log_write_fmts_sem;
 
     // return (possibly allocating) a log_write_fmt for a name
     struct log_write_fmt *msg_fmt_for_name(const char *name, const char *labels, const char *units, const char *mults, const char *fmt);
@@ -509,7 +510,7 @@ private:
     uint32_t _log_data_page;
 
     GCS_MAVLINK *_log_sending_link;
-    HAL_Semaphore_Recursive _log_send_sem;
+    HAL_Semaphore _log_send_sem;
 
     // last time arming failed, for backends
     uint32_t _last_arming_failure_ms;

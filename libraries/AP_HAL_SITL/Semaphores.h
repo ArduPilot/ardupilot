@@ -16,11 +16,3 @@ public:
 protected:
     pthread_mutex_t _lock;
 };
-
-
-class HALSITL::Semaphore_Recursive : public HALSITL::Semaphore {
-public:
-    Semaphore_Recursive();
-};
-
-

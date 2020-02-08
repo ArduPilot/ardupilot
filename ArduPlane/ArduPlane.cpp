@@ -112,26 +112,16 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(update_dynamic_notch,   50,    200),
 };
 
+void Plane::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
+                                uint8_t &task_count,
+                                uint32_t &log_bit)
+{
+    tasks = &scheduler_tasks[0];
+    task_count = ARRAY_SIZE(scheduler_tasks);
+    log_bit = MASK_LOG_PM;
+}
+
 constexpr int8_t Plane::_failsafe_priorities[7];
-
-void Plane::setup() 
-{
-    // load the default values of variables listed in var_info[]
-    AP_Param::setup_sketch_defaults();
-
-    rssi.init();
-
-    init_ardupilot();
-
-    // initialise the main loop scheduler
-    scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks), MASK_LOG_PM);
-}
-
-void Plane::loop()
-{
-    scheduler.loop();
-    G_Dt = scheduler.get_loop_period_s();
-}
 
 // update AHRS system
 void Plane::ahrs_update()

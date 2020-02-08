@@ -106,9 +106,7 @@ AP_Baro_Backend *AP_Baro_LPS2XH::probe_InvensenseIMU(AP_Baro &baro,
 */
 bool AP_Baro_LPS2XH::_imu_i2c_init(uint8_t imu_address)
 {
-    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return false;
-    }
+    _dev->get_semaphore()->take_blocking();
 
     // as the baro device is already locked we need to re-use it,
     // changing its address to match the IMU address
@@ -138,9 +136,10 @@ bool AP_Baro_LPS2XH::_imu_i2c_init(uint8_t imu_address)
 
 bool AP_Baro_LPS2XH::_init()
 {
-    if (!_dev || !_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (!_dev) {
         return false;
     }
+    _dev->get_semaphore()->take_blocking();
 
     _has_sample = false;
 

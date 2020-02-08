@@ -176,6 +176,18 @@
     #define HAL_OPTFLOW_PX4FLOW_I2C_BUS 2
     #define HAL_RANGEFINDER_LIGHTWARE_I2C_BUS 2
     #define HAL_WITH_UAVCAN 1
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR
+    #define HAL_INS_PROBE_LIST PROBE_IMU_SPI(LSM9DS1, "lsm9ds1_ag", ROTATION_PITCH_180)
+    #define HAL_MAG_PROBE_LIST PROBE_MAG_SPI(LSM9DS1, "lsm9ds1_m",  ROTATION_NONE)
+    #define HAL_BARO_PROBE_LIST PROBE_BARO_SPI(BMP280, "bmp280")
+    #define HAL_BATT_CURR_PIN    0
+    #define HAL_BATT_CURR_SCALE  1
+    #define HAL_BATT_VOLT_PIN    1
+    #define HAL_BATT_VOLT_SCALE  1
+    #define HAL_RGBLED_RED   24
+    #define HAL_RGBLED_GREEN 25
+    #define HAL_RGBLED_BLUE  26
+    #define HAL_RGBLED_NORMAL_POLARITY false
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE
     #define HAL_GPIO_A_LED_PIN 66
     #define HAL_GPIO_B_LED_PIN 67
@@ -335,4 +347,4 @@
 
 #include <AP_HAL_Linux/Semaphores.h>
 #define HAL_Semaphore Linux::Semaphore
-#define HAL_Semaphore_Recursive Linux::Semaphore_Recursive
+

@@ -131,7 +131,10 @@ void Storage::_save_backup(void)
 */
 void Storage::_mark_dirty(uint16_t loc, uint16_t length)
 {
-    uint16_t end = loc + length;
+    if (length == 0) {
+        return;
+    }
+    uint16_t end = loc + length - 1;
     for (uint16_t line=loc>>CH_STORAGE_LINE_SHIFT;
          line <= end>>CH_STORAGE_LINE_SHIFT;
          line++) {
