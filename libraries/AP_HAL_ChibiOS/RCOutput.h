@@ -48,7 +48,7 @@ public:
         max_pwm = _esc_pwm_max;
         return true;
     }
-    void set_output_mode(uint16_t mask, enum output_mode mode) override;
+    void set_output_mode(uint16_t mask, const enum output_mode mode) override;
     bool get_output_mode_banner(char banner_msg[], uint8_t banner_msg_len) const override;
 
     float scale_esc_to_unity(uint16_t pwm) override {

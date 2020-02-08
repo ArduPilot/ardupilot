@@ -648,7 +648,7 @@ void RCOutput::set_group_mode(pwm_group &group)
 
         // configure timer driver for DMAR at requested rate
         if (!setup_group_DMA(group, rate, bit_period, true, dshot_buffer_length, false)) {
-            group.current_mode = MODE_PWM_NONE;
+            group.current_mode = MODE_PWM_NORMAL;
             break;
         }
 
@@ -690,22 +690,23 @@ void RCOutput::set_group_mode(pwm_group &group)
 /*
   setup output mode
  */
-void RCOutput::set_output_mode(uint16_t mask, enum output_mode mode)
+void RCOutput::set_output_mode(uint16_t mask, const enum output_mode mode)
 {
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         pwm_group &group = pwm_group_list[i];
+        enum output_mode thismode = mode;
         if (((group.ch_mask << chan_offset) & mask) == 0) {
             // this group is not affected
             continue;
         }
-        if (mode_requires_dma(mode) && !group.have_up_dma) {
-            mode = MODE_PWM_NONE;
+        if (mode_requires_dma(thismode) && !group.have_up_dma) {
+            thismode = MODE_PWM_NORMAL;
         }
         if (mode > MODE_PWM_NORMAL) {
             fast_channel_mask |= group.ch_mask;
         }
-        if (group.current_mode != mode) {
-            group.current_mode = mode;
+        if (group.current_mode != thismode) {
+            group.current_mode = thismode;
             set_group_mode(group);
         }
     }
