@@ -157,7 +157,7 @@ outputs support all PWM output formats, but not DShot.
 
 The remaining 8 outputs (labelled AUX1 to AUX8) are the "auxillary"
 outputs. These are directly attached to the STM32F765 and support all
-PWM protocols. The first 6 of the auxillary PWM outputs support DShot.
+PWM protocols. The first 4 of the auxillary PWM outputs support DShot.
 
 The 8 main PWM outputs are in 3 groups:
 
