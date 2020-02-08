@@ -91,7 +91,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
 
     // @Param: ADDR
     // @DisplayName: Bus address of sensor
-    // @Description: This sets the bus address of the sensor, where applicable. Used for the I2C and UAVCAN sensors to allow for multiple sensors on different addresses. A value of 0 disables the sensor.
+    // @Description: This sets the bus address of the sensor, where applicable. Used for the I2C and UAVCAN sensors to allow for multiple sensors on different addresses.
     // @Range: 0 127
     // @Increment: 1
     // @User: Standard
