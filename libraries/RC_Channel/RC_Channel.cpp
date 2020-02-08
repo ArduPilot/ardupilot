@@ -335,13 +335,13 @@ bool RC_Channel::in_trim_dz() const
     return is_bounded_int32(radio_in, radio_trim - dead_zone, radio_trim + dead_zone);
 }
 
-void RC_Channel::set_override(const uint16_t v, const uint32_t timestamp_us)
+void RC_Channel::set_override(const uint16_t v, const uint32_t timestamp_ms)
 {
     if (!rc().gcs_overrides_enabled()) {
         return;
     }
 
-    last_override_time = timestamp_us != 0 ? timestamp_us : AP_HAL::millis();
+    last_override_time = timestamp_ms != 0 ? timestamp_ms : AP_HAL::millis();
     override_value = v;
     rc().new_override_received();
 }
