@@ -75,6 +75,15 @@ public:
     // handle a GIMBAL_REPORT message
     virtual void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg) {}
 
+    // handle a gopro heartbeat message
+    virtual void handle_gopro_heartbeat(mavlink_channel_t chan, const mavlink_message_t &msg) {}
+
+    // handle a gopro shutter toggle request
+    virtual void gopro_shutter_toggle() {}
+
+    // handle gopro mode change request
+    virtual void gopro_capture_mode_toggle() {}
+
     // handle a PARAM_VALUE message
     virtual void handle_param_value(const mavlink_message_t &msg) {}
 
