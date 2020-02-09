@@ -177,6 +177,7 @@ public:
         TAKEOFF   =           77, // takeoff
         KILL_IMU1 =          100, // disable first IMU (for IMU failure testing)
         KILL_IMU2 =          101, // disable second IMU (for IMU failure testing)
+        CAM_MODE_TOGGLE =    102, // Momentary switch to cycle camera modes
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
         // also, if you add an option >255, you will need to fix duplicate_options_exist
 
