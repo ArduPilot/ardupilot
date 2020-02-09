@@ -510,10 +510,10 @@ class FRSkySPort(FRSky):
             0x04: "Fuel",
             0x05: "Temp2",
             0x10: "Baro Alt BP",
-            0x13: "GPS_LAT_BP",
-            0x1B: "GPS_LAT_AP",
             0x21: "BARO_ALT_AP",
+            0x30: "VARIO",
             0x39: "VFAS",
+            0x800: "GPS",
         }
 
         self.sensors_to_poll = [
@@ -4532,14 +4532,14 @@ switch value'''
         # This, at least makes sure we're getting some of each
         # message.
         wants = {
-            0x02: lambda x : True,
-            0x04: lambda x : True,
-            0x05: lambda x : True,
-            0x10: lambda x : True,
-            0x13: lambda x : True,
-            0x1B: lambda x : True,
-            0x21: lambda x : True,
-            0x39: lambda x : True,
+            0x02:  lambda x : True,
+            0x04:  lambda x : True,
+            0x05:  lambda x : True,
+            0x10:  lambda x : True,
+            0x21:  lambda x : True,
+            0x30:  lambda x : True,
+            0x39:  lambda x : True,
+            0x800: lambda x : True,
         }
         tstart = self.get_sim_time_cached()
         last_wanting_print = 0
