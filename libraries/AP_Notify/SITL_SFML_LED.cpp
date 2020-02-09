@@ -39,7 +39,8 @@ SITL_SFML_LED::SITL_SFML_LED():
 void SITL_SFML_LED::update_serial_LEDs()
 {
     static sf::RenderWindow *w;
-    static sf::RectangleShape *leds[16][32];
+    const uint8_t MAX_LEDS = 64;
+    static sf::RectangleShape *leds[16][MAX_LEDS];
 
     SITL::SITL *sitl = AP::sitl();
     if (sitl == nullptr || sitl->led.send_counter == 0) {
@@ -51,7 +52,7 @@ void SITL_SFML_LED::update_serial_LEDs()
         for (uint8_t i=0; i<16; i++) {
             max_leds = MAX(max_leds, sitl->led.num_leds[i]);
         }
-        w = new sf::RenderWindow(sf::VideoMode(32*(serialLED_size+1), 16*(serialLED_size+1)), "SerialLED");
+        w = new sf::RenderWindow(sf::VideoMode(MAX_LEDS*(serialLED_size+1), 16*(serialLED_size+1)), "SerialLED");
         if (!w) {
             return;
         }
