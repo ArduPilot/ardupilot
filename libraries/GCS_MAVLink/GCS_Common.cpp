@@ -3221,6 +3221,7 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
 
     case MAVLINK_MSG_ID_MOUNT_CONFIGURE: // deprecated. Use MAV_CMD_DO_MOUNT_CONFIGURE
     case MAVLINK_MSG_ID_MOUNT_CONTROL: // deprecated. Use MAV_CMD_DO_MOUNT_CONTROL
+    case MAVLINK_MSG_ID_GOPRO_HEARTBEAT: // heartbeat from a GoPro in Solo gimbal
         handle_mount_message(msg);
         break;
 
