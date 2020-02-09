@@ -745,9 +745,9 @@ static int AP_SerialLED_set_RGB(lua_State *L) {
     const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
     luaL_argcheck(L, ((raw_data_2 >= MAX(1, 0)) && (raw_data_2 <= MIN(16, UINT8_MAX))), 2, "argument out of range");
     const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
-    const uint32_t raw_data_3 = coerce_to_uint32_t(L, 3);
-    luaL_argcheck(L, ((raw_data_3 >= MAX(0U, 0U)) && (raw_data_3 <= MIN(UINT32_MAX, UINT32_MAX))), 3, "argument out of range");
-    const uint32_t data_3 = static_cast<uint32_t>(raw_data_3);
+    const lua_Integer raw_data_3 = luaL_checkinteger(L, 3);
+    luaL_argcheck(L, ((raw_data_3 >= MAX(-1, INT8_MIN)) && (raw_data_3 <= MIN(INT8_MAX, INT8_MAX))), 3, "argument out of range");
+    const int8_t data_3 = static_cast<int8_t>(raw_data_3);
     const lua_Integer raw_data_4 = luaL_checkinteger(L, 4);
     luaL_argcheck(L, ((raw_data_4 >= MAX(0, 0)) && (raw_data_4 <= MIN(UINT8_MAX, UINT8_MAX))), 4, "argument out of range");
     const uint8_t data_4 = static_cast<uint8_t>(raw_data_4);
@@ -778,7 +778,7 @@ static int AP_SerialLED_set_num_LEDs(lua_State *L) {
     luaL_argcheck(L, ((raw_data_2 >= MAX(1, 0)) && (raw_data_2 <= MIN(16, UINT8_MAX))), 2, "argument out of range");
     const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
     const lua_Integer raw_data_3 = luaL_checkinteger(L, 3);
-    luaL_argcheck(L, ((raw_data_3 >= MAX(0, 0)) && (raw_data_3 <= MIN(32, UINT8_MAX))), 3, "argument out of range");
+    luaL_argcheck(L, ((raw_data_3 >= MAX(0, 0)) && (raw_data_3 <= MIN(AP_SERIALLED_MAX_LEDS, UINT8_MAX))), 3, "argument out of range");
     const uint8_t data_3 = static_cast<uint8_t>(raw_data_3);
     const bool data = ud->set_num_LEDs(
             data_2,
