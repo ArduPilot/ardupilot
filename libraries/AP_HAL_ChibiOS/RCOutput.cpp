@@ -1694,37 +1694,46 @@ bool RCOutput::set_neopixel_num_LEDs(const uint16_t chan, uint8_t num_leds)
 
 /*
   setup neopixel (WS2812B) output data for a given output channel
-  and mask of LEDs on the channel
+  and a LED number. LED -1 is all LEDs
 */
-void RCOutput::set_neopixel_rgb_data(const uint16_t chan, uint32_t ledmask, uint8_t red, uint8_t green, uint8_t blue)
+void RCOutput::_set_neopixel_rgb_data(pwm_group *grp, uint8_t idx, uint8_t led, uint8_t red, uint8_t green, uint8_t blue)
+{
+    const uint8_t pad_start_bits = 1;
+    const uint8_t neopixel_bit_length = 24;
+    const uint8_t stride = 4;
+    uint32_t *buf = grp->dma_buffer + (led * neopixel_bit_length + pad_start_bits) * stride + idx;
+    uint32_t bits = (green<<16) | (red<<8) | blue;
+    const uint32_t BIT_0 = 7 * grp->bit_width_mul;
+    const uint32_t BIT_1 = 14 * grp->bit_width_mul;
+    for (uint16_t b=0; b < 24; b++) {
+        buf[b * stride] = (bits & 0x800000) ? BIT_1 : BIT_0;
+        bits <<= 1;
+    }
+}
+
+/*
+  setup neopixel (WS2812B) output data for a given output channel
+  and a LED number. LED -1 is all LEDs
+*/
+void RCOutput::set_neopixel_rgb_data(const uint16_t chan, int8_t led, uint8_t red, uint8_t green, uint8_t blue)
 {
     uint8_t i;
     pwm_group *grp = find_chan(chan, i);
     if (!grp) {
         return;
     }
-
-    // mask out for enabled LEDs
-    ledmask &= (1U<<grp->neopixel_nleds)-1;
-
-    uint8_t led = 0;
-    while (ledmask) {
-        if (ledmask & 1) {
-            const uint8_t pad_start_bits = 1;
-            const uint8_t neopixel_bit_length = 24;
-            const uint8_t stride = 4;
-            uint32_t *buf = grp->dma_buffer + (led * neopixel_bit_length + pad_start_bits) * stride + i;
-            uint32_t bits = (green<<16) | (red<<8) | blue;
-            const uint32_t BIT_0 = 7 * grp->bit_width_mul;
-            const uint32_t BIT_1 = 14 * grp->bit_width_mul;
-            for (uint16_t b=0; b < 24; b++) {
-                buf[b * stride] = (bits & 0x800000) ? BIT_1 : BIT_0;
-                bits <<= 1;
-            }
+    if (led == -1) {
+        for (uint8_t n=0; n<grp->neopixel_nleds; n++) {
+            set_neopixel_rgb_data(chan, n, red, green, blue);
         }
-        ledmask >>= 1;
-        led++;
+        return;
     }
+
+    if (led < -1 || led >= grp->neopixel_nleds) {
+        return;
+    }
+
+    _set_neopixel_rgb_data(grp, i, uint8_t(led), red, green, blue);
 }
 
 /*
