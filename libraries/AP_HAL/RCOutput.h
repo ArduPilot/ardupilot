@@ -206,10 +206,10 @@ public:
 
     /*
       setup neopixel (WS2812B) output data for a given output channel
-      and mask of which LEDs in the chain
+      and led number. A led number of -1 means all LEDs. LED 0 is the first LED
      */
-    virtual void set_neopixel_rgb_data(const uint16_t chan, uint32_t ledmask, uint8_t red, uint8_t green, uint8_t blue) {}
-
+    virtual void set_neopixel_rgb_data(const uint16_t chan, int8_t led, uint8_t red, uint8_t green, uint8_t blue) {}
+    
     /*
       trigger send of neopixel data
      */
