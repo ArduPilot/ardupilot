@@ -4,6 +4,18 @@ from __future__ import print_function
 import subprocess
 import os.path as p
 import sys
+import argcomplete, argparse
+sys.path.append('./Tools/completion')
+from completion_items import pos , board_list
+
+try:
+	parser = argparse.ArgumentParser()
+	parser.add_argument('positional', choices = pos() )
+	parser.add_argument("--board",choices = board_list() )
+	parser.add_argument('-j',"--jobs",'-v','--verbose','--debug','--bootloader','--default-parameters','--enable-sfml','--enable-sfml-audio','--sitl-osd','--sitl-rgbled','--build-dates','--sitl-flash-storage','--upload')
+	argcomplete.autocomplete(parser)
+except:
+	print("Error in shell completion")
 
 d = p.dirname(p.realpath(__file__))
 waf_light = p.join(d, 'modules', 'waf', 'waf-light')
