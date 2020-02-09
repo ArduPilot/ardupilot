@@ -10,6 +10,7 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_GPS/AP_GPS.h>
+#include "AP_Camera_SoloGimbal.h"
 
 // ------------------------------
 #define CAM_DEBUG DISABLED
@@ -18,7 +19,7 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @Param: TRIGG_TYPE
     // @DisplayName: Camera shutter (trigger) type
     // @Description: how to trigger the camera to take a picture
-    // @Values: 0:Servo,1:Relay
+    // @Values: 0:Servo,1:Relay, 2:GoPro in Solo Gimbal
     // @User: Standard
     AP_GROUPINFO("TRIGG_TYPE",  0, AP_Camera, _trigger_type, AP_CAMERA_TRIGGER_DEFAULT_TRIGGER_TYPE),
 
@@ -140,7 +141,6 @@ AP_Camera::relay_pic()
 }
 
 /// single entry point to take pictures
-///  set send_mavlink_msg to true to send DO_DIGICAM_CONTROL message to all components
 void AP_Camera::trigger_pic()
 {
     setup_feedback_callback();
@@ -152,6 +152,9 @@ void AP_Camera::trigger_pic()
         break;
     case AP_CAMERA_TRIGGER_TYPE_RELAY:
         relay_pic();                    // basic relay activation
+        break;
+    case AP_CAMERA_TRIGGER_TYPE_GOPRO:  // gopro in Solo Gimbal
+        AP_Camera_SoloGimbal::gopro_shutter_toggle();
         break;
     }
 
@@ -193,6 +196,35 @@ AP_Camera::trigger_pic_cleanup()
             SRV_Channels::set_output_pwm(SRV_Channel::k_cam_iso, _servo_off_pwm);
             break;
         }
+    }
+}
+
+void AP_Camera::handle_message(mavlink_channel_t chan, const mavlink_message_t &msg)
+{
+    switch (msg.msgid) {
+    case MAVLINK_MSG_ID_DIGICAM_CONTROL:
+        control_msg(msg);
+        break;
+    case MAVLINK_MSG_ID_GOPRO_HEARTBEAT:
+        // heartbeat from the Solo gimbal with a GoPro
+        if (_trigger_type == AP_CAMERA_TRIGGER_TYPE_GOPRO) {
+            AP_Camera_SoloGimbal::handle_gopro_heartbeat(chan, msg);
+            break;
+        }
+        break;
+    }
+}
+
+/// momentary switch to cycle camera modes
+void AP_Camera::cam_mode_toggle()
+{
+    switch (_trigger_type) {
+    case AP_CAMERA_TRIGGER_TYPE_GOPRO:
+        AP_Camera_SoloGimbal::gopro_capture_mode_toggle();
+        break;
+    default:
+        // no other cameras use this yet
+        break;
     }
 }
 
