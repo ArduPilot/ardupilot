@@ -10,6 +10,7 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_GPS/AP_GPS.h>
+#include <AP_Mount/AP_Mount.h>
 
 // ------------------------------
 #define CAM_DEBUG DISABLED
@@ -18,7 +19,7 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @Param: TRIGG_TYPE
     // @DisplayName: Camera shutter (trigger) type
     // @Description: how to trigger the camera to take a picture
-    // @Values: 0:Servo,1:Relay
+    // @Values: 0:Servo,1:Relay, 2:GoPro Mavlink
     // @User: Standard
     AP_GROUPINFO("TRIGG_TYPE",  0, AP_Camera, _trigger_type, AP_CAMERA_TRIGGER_DEFAULT_TRIGGER_TYPE),
 
@@ -139,6 +140,21 @@ AP_Camera::relay_pic()
     _trigger_counter = constrain_int16(_trigger_duration*5,0,255);
 }
 
+/// GoPro Mavlink Shutter for Solo Gimbal
+/// primarily to trigger the cam on missions, by GCS, or when installed on a vehicle other than a Solo.
+/// Solo's companion computer handles all out of the box Solo app and controller camera functions
+void
+AP_Camera::gopro_pic()
+{
+    gcs().send_text(MAV_SEVERITY_INFO, "Triggering GoPro shutter toggle");
+    AP_Mount *mount = AP::mount();
+    if (mount == nullptr) {
+        return;
+    }
+    mount->gopro_shutter_toggle();
+
+}
+
 /// single entry point to take pictures
 ///  set send_mavlink_msg to true to send DO_DIGICAM_CONTROL message to all components
 void AP_Camera::trigger_pic()
@@ -152,6 +168,9 @@ void AP_Camera::trigger_pic()
         break;
     case AP_CAMERA_TRIGGER_TYPE_RELAY:
         relay_pic();                    // basic relay activation
+        break;
+    case AP_CAMERA_TRIGGER_TYPE_GOPRO:
+        gopro_pic();                    // Use mavlink GoPro control
         break;
     }
 

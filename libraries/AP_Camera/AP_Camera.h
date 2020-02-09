@@ -7,6 +7,7 @@
 
 #define AP_CAMERA_TRIGGER_TYPE_SERVO                0
 #define AP_CAMERA_TRIGGER_TYPE_RELAY                1
+#define AP_CAMERA_TRIGGER_TYPE_GOPRO                2
 
 #define AP_CAMERA_TRIGGER_DEFAULT_TRIGGER_TYPE  AP_CAMERA_TRIGGER_TYPE_SERVO    // default is to use servo to trigger camera
 
@@ -49,6 +50,9 @@ public:
     // handle camera control
     void            control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id);
 
+    // toggle the GoPro shutter on a Solo Gimbal
+    void            gopro_shutter (float startStop);
+
     // set camera trigger distance in a mission
     void            set_trigger_distance(uint32_t distance_m)
     {
@@ -80,7 +84,7 @@ private:
 
     static AP_Camera *_singleton;
 
-    AP_Int8         _trigger_type;      // 0:Servo,1:Relay
+    AP_Int8         _trigger_type;      // 0:Servo,1:Relay, 2:GoPro Mavlink
     AP_Int8         _trigger_duration;  // duration in 10ths of a second that the camera shutter is held open
     AP_Int8         _relay_on;          // relay value to trigger camera
     AP_Int16        _servo_on_pwm;      // PWM value to move servo to when shutter is activated
@@ -93,6 +97,7 @@ private:
 
     void            servo_pic();        // Servo operated camera
     void            relay_pic();        // basic relay activation
+    void            gopro_pic();
     void            feedback_pin_timer();
     void            feedback_pin_isr(uint8_t, bool, uint32_t);
     void            setup_feedback_callback(void);
