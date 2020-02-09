@@ -30,17 +30,17 @@ AP_SerialLED::AP_SerialLED()
 // set number of LEDs per pin
 bool AP_SerialLED::set_num_LEDs(uint8_t chan, uint8_t num_leds)
 {
-    if (chan >= 1 && chan <= 16 && num_leds <= 32) {
+    if (chan >= 1 && chan <= 16 && num_leds <= 64) {
         return hal.rcout->set_neopixel_num_LEDs(chan-1, num_leds);
     }
     return false;
 }
 
-// set RGB value on mask of LEDs. chan is PWM output, 1..16
-void AP_SerialLED::set_RGB(uint8_t chan, uint32_t ledmask, uint8_t red, uint8_t green, uint8_t blue)
+// set RGB value on LED number. LED number -1 is all LEDs. First LED is 0. chan is PWM output, 1..16
+void AP_SerialLED::set_RGB(uint8_t chan, int8_t led, uint8_t red, uint8_t green, uint8_t blue)
 {
     if (chan >= 1 && chan <= 16) {
-        hal.rcout->set_neopixel_rgb_data(chan-1, ledmask, red, green, blue);
+        hal.rcout->set_neopixel_rgb_data(chan-1, led, red, green, blue);
     }
 }
 
