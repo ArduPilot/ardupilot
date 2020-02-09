@@ -124,7 +124,7 @@ static void update_rainbow()
     uint32_t now = AP_HAL::millis();
     if (now-start_ms > 1500) {
         rainbow_done = true;
-        hal.rcout->set_neopixel_rgb_data(HAL_PERIPH_NEOPIXEL_CHAN, 0xFF, 0, 0, 0);
+        hal.rcout->set_neopixel_rgb_data(HAL_PERIPH_NEOPIXEL_CHAN, -1, 0, 0, 0);
         hal.rcout->neopixel_send();
         return;
     }
@@ -153,7 +153,7 @@ static void update_rainbow()
     float brightness = 0.3;
     for (uint8_t n=0; n<8; n++) {
         uint8_t i = (step + n) % nsteps;
-        hal.rcout->set_neopixel_rgb_data(HAL_PERIPH_NEOPIXEL_CHAN, 1U<<n,
+        hal.rcout->set_neopixel_rgb_data(HAL_PERIPH_NEOPIXEL_CHAN, n,
                                          rgb_rainbow[i].red*brightness,
                                          rgb_rainbow[i].green*brightness,
                                          rgb_rainbow[i].blue*brightness);
