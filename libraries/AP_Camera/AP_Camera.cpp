@@ -10,7 +10,7 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_GPS/AP_GPS.h>
-#include <AP_Mount/AP_Mount.h>
+#include "AP_Camera_SoloGimbal.h"
 
 // ------------------------------
 #define CAM_DEBUG DISABLED
@@ -146,13 +146,7 @@ AP_Camera::relay_pic()
 void
 AP_Camera::gopro_pic()
 {
-    gcs().send_text(MAV_SEVERITY_INFO, "Triggering GoPro shutter toggle");
-    AP_Mount *mount = AP::mount();
-    if (mount == nullptr) {
-        return;
-    }
-    mount->gopro_shutter_toggle();
-
+    AP_Camera_SoloGimbal::gopro_shutter_toggle();
 }
 
 /// single entry point to take pictures
@@ -212,6 +206,28 @@ AP_Camera::trigger_pic_cleanup()
             SRV_Channels::set_output_pwm(SRV_Channel::k_cam_iso, _servo_off_pwm);
             break;
         }
+    }
+}
+
+void AP_Camera::handle_message(mavlink_channel_t chan, const mavlink_message_t &msg)
+{
+    switch (msg.msgid) {
+    case MAVLINK_MSG_ID_DIGICAM_CONTROL:
+        control_msg(msg);
+        break;
+    case MAVLINK_MSG_ID_GOPRO_HEARTBEAT:
+        if (_trigger_type == AP_CAMERA_TRIGGER_TYPE_GOPRO) {
+            AP_Camera_SoloGimbal::handle_gopro_heartbeat(chan, msg);
+            break;
+        }
+        break;
+    }
+}
+
+void AP_Camera::gopro_capture_mode_toggle()
+{
+    if (_trigger_type == AP_CAMERA_TRIGGER_TYPE_GOPRO) {
+        AP_Camera_SoloGimbal::gopro_capture_mode_toggle();
     }
 }
 
