@@ -30,7 +30,7 @@ void AP_WindVane_Analog::update_direction()
     _current_analog_voltage = _dir_analog_source->voltage_average_ratiometric();
 
     const float voltage_ratio = linear_interpolate(0.0f, 1.0f, _current_analog_voltage, _frontend._dir_analog_volt_min, _frontend._dir_analog_volt_max);
-    const float direction = (voltage_ratio * radians(360 - _frontend._dir_analog_deadzone)) + radians(_frontend._dir_analog_bearing_offset);
+    const float direction = (voltage_ratio * radians(360 - _frontend._dir_analog_deadzone)) + radians(_frontend.get_dir_analog_bearing_offset());
 
     direction_update_frontend(wrap_PI(direction + AP::ahrs().yaw));
 }

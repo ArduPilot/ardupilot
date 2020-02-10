@@ -41,7 +41,7 @@ void AP_WindVane_NMEA::init(const AP_SerialManager& serial_manager)
 void AP_WindVane_NMEA::update_direction()
 {
     // Only call update from here if it has not been called already by update speed
-    if (_frontend._speed_sensor_type.get() != _frontend.Speed_type::WINDSPEED_NMEA) {
+    if (_frontend.get_speed_sensor_type() != _frontend.Speed_type::WINDSPEED_NMEA) {
         update();
     }
 }
@@ -63,10 +63,10 @@ void AP_WindVane_NMEA::update()
         char c = uart->read();
         if (decode(c)) {
             // user may not have NMEA selected for both speed and direction
-            if (_frontend._direction_type.get() == _frontend.WindVaneType::WINDVANE_NMEA) {
-                direction_update_frontend(wrap_PI(radians(_wind_dir_deg + _frontend._dir_analog_bearing_offset.get()) + AP::ahrs().yaw));
+            if (_frontend.get_direction_type() == _frontend.WindVaneType::WINDVANE_NMEA) {
+                direction_update_frontend(wrap_PI(radians(_wind_dir_deg + _frontend.get_dir_analog_bearing_offset()) + AP::ahrs().yaw));
             }
-            if (_frontend._speed_sensor_type.get() == _frontend.Speed_type::WINDSPEED_NMEA) {
+            if (_frontend.get_speed_sensor_type() == _frontend.Speed_type::WINDSPEED_NMEA) {
                 speed_update_frontend(_speed_ms);
             }
         }

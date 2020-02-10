@@ -25,7 +25,7 @@ void AP_WindVane_Home::update_direction()
 {
     float direction_apparent_ef = _frontend._home_heading;
 
-    if (_frontend._direction_type == _frontend.WINDVANE_PWM_PIN && _frontend._rc_in_no != 0) {
+    if (_frontend.get_direction_type() == _frontend.WINDVANE_PWM_PIN && _frontend._rc_in_no != 0) {
         RC_Channel *chan = rc().channel(_frontend._rc_in_no-1);
         if (chan != nullptr) {
             direction_apparent_ef = wrap_PI(direction_apparent_ef + chan->norm_input() * radians(45));

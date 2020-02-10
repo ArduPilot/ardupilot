@@ -72,10 +72,32 @@ public:
     // Return true wind speed
     float get_true_wind_speed() const { return _speed_true; }
 
+    int8_t get_speed_sensor_type() const { return _speed_sensor_type; }
+    int8_t get_direction_type() const { return _direction_type; }
+    float  get_dir_analog_bearing_offset() const { return _dir_analog_bearing_offset; };
+
     // enum defining current tack
     enum Sailboat_Tack {
         TACK_PORT,
         TACK_STARBOARD
+    };
+
+    enum Speed_type {
+        WINDSPEED_NONE               = 0,
+        WINDSPEED_AIRSPEED           = 1,
+        WINDVANE_WIND_SENSOR_REV_P   = 2,
+        WINDSPEED_RPM                = 3,
+        WINDSPEED_NMEA               = 4,
+        WINDSPEED_SITL               = 10
+    };
+
+    enum WindVaneType {
+        WINDVANE_NONE           = 0,
+        WINDVANE_HOME_HEADING   = 1,
+        WINDVANE_PWM_PIN        = 2,
+        WINDVANE_ANALOG_PIN     = 3,
+        WINDVANE_NMEA           = 4,
+        WINDVANE_SITL           = 10
     };
 
     // return the current tack
@@ -138,24 +160,6 @@ private:
 
     // heading in radians recorded when vehicle was armed
     float _home_heading;
-
-    enum WindVaneType {
-        WINDVANE_NONE           = 0,
-        WINDVANE_HOME_HEADING   = 1,
-        WINDVANE_PWM_PIN        = 2,
-        WINDVANE_ANALOG_PIN     = 3,
-        WINDVANE_NMEA           = 4,
-        WINDVANE_SITL           = 10
-    };
-
-    enum Speed_type {
-        WINDSPEED_NONE               = 0,
-        WINDSPEED_AIRSPEED           = 1,
-        WINDVANE_WIND_SENSOR_REV_P   = 2,
-        WINDSPEED_RPM                = 3,
-        WINDSPEED_NMEA               = 4,
-        WINDSPEED_SITL               = 10
-    };
 
     static AP_WindVane *_singleton;
 };
