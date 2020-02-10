@@ -691,40 +691,6 @@ void AP_Mount::handle_gimbal_report(mavlink_channel_t chan, const mavlink_messag
     }
 }
 
-// pass a GoPro Heartbeat message to the backend
-// this is only used by the Solo's mavlink GoPro gimbal
-void AP_Mount::handle_gopro_heartbeat(mavlink_channel_t chan, const mavlink_message_t &msg)
-{
-    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
-        if (_backends[instance] != nullptr) {
-            _backends[instance]->handle_gopro_heartbeat(chan, msg);
-        }
-    }
-}
-
-// request toggling the GoPro's shutter
-// this is only used by the Solo's mavlink GoPro gimbal
-void AP_Mount::gopro_shutter_toggle()
-{
-    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
-        if (_backends[instance] != nullptr) {
-            _backends[instance]->gopro_shutter_toggle();
-        }
-    }
-}
-
-// request to toggle the capture mode of the GoPro
-// this is only used by the Solo's mavlink GoPro gimbal
-void AP_Mount::gopro_capture_mode_toggle()
-{
-    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
-        if (_backends[instance] != nullptr) {
-            _backends[instance]->gopro_capture_mode_toggle();
-        }
-    }
-}
-
-
 void AP_Mount::handle_message(mavlink_channel_t chan, const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
@@ -739,9 +705,6 @@ void AP_Mount::handle_message(mavlink_channel_t chan, const mavlink_message_t &m
         break;
     case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
         handle_global_position_int(msg);
-        break;
-    case MAVLINK_MSG_ID_GOPRO_HEARTBEAT:
-        handle_gopro_heartbeat(chan, msg);
         break;
     default:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL

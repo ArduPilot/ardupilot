@@ -15,15 +15,6 @@
 #include "AP_Mount_Backend.h"
 #include "SoloGimbal.h"
 
-#define STATUS_NO_GOPRO             0
-#define STATUS_INCOMPATIBLE_GOPRO   1
-#define STATUS_GOPRO_CONNECTED      2
-#define STATUS_GOPRO_ERROR          3
-#define CAPTURE_MODE_VIDEO          0
-#define CAPTURE_MODE_PHOTO          1
-#define CAPTURE_MODE_BURST          2 //Burst only for Hero 3+
-#define CAPTURE_MODE_TIMELAPSE      3
-#define CAPTURE_MODE_MULTISHOT      4 //Multishot only for Hero4 
 
 class AP_Mount_SoloGimbal : public AP_Mount_Backend
 {
@@ -49,11 +40,8 @@ public:
 
     // handle a GIMBAL_REPORT message
     void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg) override;
-    void handle_gopro_heartbeat(mavlink_channel_t chan, const mavlink_message_t &msg) override;
     void handle_gimbal_torque_report(mavlink_channel_t chan, const mavlink_message_t &msg);
     void handle_param_value(const mavlink_message_t &msg) override;
-    void gopro_shutter_toggle(void) override;
-    void gopro_capture_mode_toggle() override;
 
     // send a GIMBAL_REPORT message to the GCS
     void send_gimbal_report(mavlink_channel_t chan) override;
@@ -63,12 +51,6 @@ public:
 private:
     // internal variables
     bool _initialised;              // true once the driver has been initialised
-    uint8_t gopro_capture_mode;
-    uint8_t gopro_status;
-    bool gopro_is_recording;
-    const uint8_t gopro_shutter_start[4] = { 1, 0, 0, 0};
-    const uint8_t gopro_shutter_stop[4] = { 0, 0, 0, 0};
-    mavlink_channel_t heartbeat_channel;
 
     // Write a gimbal measurament and estimation data packet
     void Log_Write_Gimbal(SoloGimbal &gimbal);
