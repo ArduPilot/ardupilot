@@ -115,6 +115,7 @@ public:
         k_param_auto_kickstart,
         k_param_turn_circle,  // unused
         k_param_turn_max_g,
+        k_param_heartbeat_timeout,
 
         //
         // 160: Radio settings
@@ -238,6 +239,7 @@ public:
     AP_Float    auto_kickstart;
     AP_Float    turn_max_g;
     AP_Int16    gcs_pid_mask;
+    AP_Int8     heartbeat_timeout;
 
     // Throttle
     //

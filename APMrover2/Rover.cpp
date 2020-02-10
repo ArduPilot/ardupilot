@@ -204,8 +204,8 @@ void Rover::gcs_failsafe_check(void)
         return;
     }
 
-    // check for updates from GCS within 2 seconds
-    failsafe_trigger(FAILSAFE_EVENT_GCS, "GCS", failsafe.last_heartbeat_ms != 0 && (millis() - failsafe.last_heartbeat_ms) > 2000);
+    // check for updates from GCS within 2(default) seconds.
+    failsafe_trigger(FAILSAFE_EVENT_GCS, "GCS", failsafe.last_heartbeat_ms != 0 && (millis() - failsafe.last_heartbeat_ms) > (g.k_param_heartbeat_timeout * 1000));
 }
 
 /*
