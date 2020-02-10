@@ -19,6 +19,11 @@
 
 namespace SITL {
 
+enum class LedLayout {
+    ROWS=0,
+    LUMINOUSBEE=1,
+};
+    
 struct vector3f_array {
     uint16_t length;
     Vector3f *data;
@@ -348,6 +353,8 @@ public:
     } led;
 
     EFI_MegaSquirt efi_ms;
+
+    AP_Int8 led_layout;
 };
 
 } // namespace SITL
