@@ -41,7 +41,6 @@ extern const AP_HAL::HAL& hal;
 #include <AP_Avoidance/AP_Avoidance.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AC_Fence/AC_Fence.h>
-#include <AP_Mount/AP_Mount.h>
 
 #define SWITCH_DEBOUNCE_TIME_MS  200
 
@@ -907,8 +906,8 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_po
 
     case AUX_FUNC::GOPRO_MODE_TOGGLE: {
         // Momentary toggle for changing GoPro capture modes
-        AP_Mount *mount = AP_Mount::get_singleton();
-        if (mount == nullptr) {
+        AP_Camera *camera = AP_Camera::get_singleton();
+        if (camera == nullptr) {
             break;
         }
         switch (ch_flag) {
@@ -919,7 +918,7 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_po
             // nothing
             break;
         case HIGH:
-            mount->gopro_capture_mode_toggle();
+            camera->gopro_capture_mode_toggle();
             break;
         }
         break;
