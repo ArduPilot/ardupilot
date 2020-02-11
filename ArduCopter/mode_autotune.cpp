@@ -23,11 +23,8 @@ bool AutoTune::init()
  */
 bool AutoTune::start()
 {
-    // only allow flip from Stabilize, AltHold,  PosHold or Loiter modes
-    if (copter.flightmode != &copter.mode_stabilize &&
-        copter.flightmode != &copter.mode_althold &&
-        copter.flightmode != &copter.mode_loiter &&
-        copter.flightmode != &copter.mode_poshold) {
+    // only allow AutoTune from some flight modes, for example Stabilize, AltHold,  PosHold or Loiter modes
+    if (!copter.flightmode->allows_autotune()) {
         return false;
     }
 
