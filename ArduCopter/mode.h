@@ -62,6 +62,7 @@ public:
     virtual bool logs_attitude() const { return false; }
     virtual bool allows_save_trim() const { return false; }
     virtual bool allows_autotune() const { return false; }
+    virtual bool allows_flip() const { return false; }
 
     // return a string for this flightmode
     virtual const char *name() const = 0;
@@ -278,6 +279,7 @@ public:
     // whether an air-mode aux switch has been toggled
     void air_mode_aux_changed();
     bool allows_save_trim() const override { return true; }
+    bool allows_flip() const override { return true; }
 
 protected:
 
@@ -328,6 +330,7 @@ public:
         return !must_navigate;
     }
     bool allows_autotune() const override { return true; }
+    bool allows_flip() const override { return true; }
 
 protected:
 
@@ -723,6 +726,7 @@ public:
     bool has_user_takeoff(bool must_navigate) const override {
         return !must_navigate;
     }
+    bool allows_flip() const override { return true; }
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -1244,6 +1248,7 @@ public:
     bool is_autopilot() const override { return false; }
     bool allows_save_trim() const override { return true; }
     bool allows_autotune() const override { return true; }
+    bool allows_flip() const override { return true; }
 
 protected:
 
