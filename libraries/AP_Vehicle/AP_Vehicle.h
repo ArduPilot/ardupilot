@@ -37,6 +37,7 @@
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 #include <AP_Camera/AP_RunCam.h>
 #include <AP_Hott_Telem/AP_Hott_Telem.h>
+#include <AP_ESC_Telem/AP_ESC_Telem.h>
 
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
 
@@ -216,6 +217,8 @@ protected:
 #if HAL_HOTT_TELEM_ENABLED
     AP_Hott_Telem hott_telem;
 #endif
+
+    AP_ESC_Telem esc_telem;
 
     static const struct AP_Param::GroupInfo var_info[];
     static const struct AP_Scheduler::Task scheduler_tasks[];
