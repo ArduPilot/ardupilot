@@ -238,3 +238,6 @@ private:
     void thread_init();
     static void uart_thread(void *);
 };
+
+// access to usb init for stdio.cpp
+void usb_initialise(void);
