@@ -414,7 +414,10 @@ ssize_t AP_Filesystem::read(int fd, void *buf, size_t count)
             errno = fatfs_to_errno((FRESULT)res);
             return -1;
         }
-        if (size > n || size == 0) {
+        if (size == 0) {
+            break;
+        }
+        if (size > n) {
             errno = EIO;
             return -1;
         }
