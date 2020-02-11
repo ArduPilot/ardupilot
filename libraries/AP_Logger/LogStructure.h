@@ -570,7 +570,7 @@ struct PACKED log_NKF4 {
     int8_t  offsetEast;
     uint16_t faults;
     uint8_t timeouts;
-    uint16_t solution;
+    uint32_t solution;
     uint16_t gps;
     int8_t primary;
 };
@@ -1409,7 +1409,7 @@ struct PACKED log_Arm_Disarm {
     { LOG_NKF3_MSG, sizeof(log_NKF3), \
       "NKF3","QBcccccchhhcc","TimeUS,C,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT", "s#nnnmmmGGG??", "F-BBBBBBCCCBB" }, \
     { LOG_NKF4_MSG, sizeof(log_NKF4), \
-      "NKF4","QBcccccfbbHBHHb","TimeUS,C,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s#------??-----", "F-------??-----" }, \
+      "NKF4","QBcccccfbbHBIHb","TimeUS,C,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s#------??-----", "F-------??-----" }, \
     { LOG_NKF5_MSG, sizeof(log_NKF5), \
       "NKF5","QBhhhcccCCfff","TimeUS,NI,FIX,FIY,AFI,HAGL,offset,RI,rng,Herr,eAng,eVel,ePos", "s----m???mrnm", "F----BBBBB000" }, \
     { LOG_NKF10_MSG, sizeof(log_RngBcnDebug), \
@@ -1422,7 +1422,7 @@ struct PACKED log_Arm_Disarm {
     { LOG_XKF3_MSG, sizeof(log_NKF3), \
       "XKF3","QBcccccchhhcc","TimeUS,C,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT", "s#nnnmmmGGG??", "F-BBBBBBCCCBB" }, \
     { LOG_XKF4_MSG, sizeof(log_NKF4), \
-      "XKF4","QBcccccfbbHBHHb","TimeUS,C,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s#------??-----", "F-------??-----" }, \
+      "XKF4","QBcccccfbbHBIHb","TimeUS,C,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s#------??-----", "F-------??-----" }, \
     { LOG_XKF5_MSG, sizeof(log_NKF5), \
       "XKF5","QBhhhcccCCfff","TimeUS,NI,FIX,FIY,AFI,HAGL,offset,RI,rng,Herr,eAng,eVel,ePos", "s----m???mrnm", "F----BBBBB000" }, \
     { LOG_XKF10_MSG, sizeof(log_RngBcnDebug), \
