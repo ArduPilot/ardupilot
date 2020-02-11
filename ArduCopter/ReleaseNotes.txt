@@ -1,6 +1,10 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 4.0.2-rc4 05-Feb-2020
+Copter 4.0.2 11-Feb-2020
+Changes from 4.0.2-rc4
+1) MAVFTP stack size increased to 3k (fixes reboot when using MAVFTP)
+------------------------------------------------------------------
+Copter 4.0.2 11-Feb-2020 / 4.0.2-rc4 05-Feb-2020
 Changes from 4.0.2-rc3
 1) Bug Fixes:
     a) Spektrum receivers decoding fix for Pixracer
