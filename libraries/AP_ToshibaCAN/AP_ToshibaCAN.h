@@ -83,8 +83,8 @@ private:
         uint16_t current_ca;        // current in centi-amps
         uint16_t esc_temp;          // esc temperature in degrees
         uint16_t motor_temp;        // motor temperature in degrees
-        uint32_t usage_sec;         // motor's total usage in seconds
         uint16_t count;             // total number of packets sent
+        uint32_t usage_sec;         // motor's total usage in seconds
         uint32_t last_update_ms;    // system time telemetry was last update (used to calc total current)
         float current_tot_mah;      // total current in mAh
         bool new_data;              // true if new telemetry data has been filled in but not logged yet
