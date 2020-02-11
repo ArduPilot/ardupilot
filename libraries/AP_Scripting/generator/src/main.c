@@ -7,20 +7,21 @@
 #include <unistd.h>
 #include <getopt.h>
 
-char keyword_alias[]     = "alias";
-char keyword_ap_object[] = "ap_object";
-char keyword_comment[]   = "--";
-char keyword_depends[]   = "depends";
-char keyword_enum[]      = "enum";
-char keyword_field[]     = "field";
-char keyword_include[]   = "include";
-char keyword_method[]    = "method";
-char keyword_operator[]  = "operator";
-char keyword_read[]      = "read";
-char keyword_semaphore[] = "semaphore";
-char keyword_singleton[] = "singleton";
-char keyword_userdata[]  = "userdata";
-char keyword_write[]     = "write";
+char keyword_alias[]               = "alias";
+char keyword_ap_object[]           = "ap_object";
+char keyword_comment[]             = "--";
+char keyword_depends[]             = "depends";
+char keyword_enum[]                = "enum";
+char keyword_field[]               = "field";
+char keyword_include[]             = "include";
+char keyword_method[]              = "method";
+char keyword_operator[]            = "operator";
+char keyword_read[]                = "read";
+char keyword_scheduler_semaphore[] = "scheduler-semaphore";
+char keyword_semaphore[]           = "semaphore";
+char keyword_singleton[]           = "singleton";
+char keyword_userdata[]            = "userdata";
+char keyword_write[]               = "write";
 
 // attributes (should include the leading ' )
 char keyword_attr_enum[]    = "'enum";
@@ -298,7 +299,8 @@ struct userdata_field {
 };
 
 enum userdata_flags {
-  UD_FLAG_SEMAPHORE = (1U << 0),
+  UD_FLAG_SEMAPHORE         = (1U << 0),
+  UD_FLAG_SCHEDULER_SEMAPHORE = (1U << 1),
 };
 
 struct userdata_enum {
@@ -788,6 +790,8 @@ void handle_singleton(void) {
 
   } else if (strcmp(type, keyword_semaphore) == 0) {
     node->flags |= UD_FLAG_SEMAPHORE;
+  } else if (strcmp(type, keyword_scheduler_semaphore) == 0) {
+    node->flags |= UD_FLAG_SCHEDULER_SEMAPHORE;
   } else if (strcmp(type, keyword_method) == 0) {
     handle_method(node->name, &(node->methods));
   } else if (strcmp(type, keyword_enum) == 0) {
@@ -845,10 +849,17 @@ void handle_ap_object(void) {
 
   } else if (strcmp(type, keyword_semaphore) == 0) {
     node->flags |= UD_FLAG_SEMAPHORE;
+  } else if (strcmp(type, keyword_scheduler_semaphore) == 0) {
+    node->flags |= UD_FLAG_SCHEDULER_SEMAPHORE;
   } else if (strcmp(type, keyword_method) == 0) {
     handle_method(node->name, &(node->methods));
   } else {
     error(ERROR_SINGLETON, "AP_Objects only support aliases, methods or semaphore keyowrds (got %s)", type);
+  }
+
+  // check that we didn't just add 2 singleton flags
+  if ((node->flags & UD_FLAG_SEMAPHORE) && (node->flags & UD_FLAG_SCHEDULER_SEMAPHORE)) {
+    error(ERROR_SINGLETON, "Taking both a library semaphore and scheduler semaphore is prohibited");
   }
 
   // ensure no more tokens on the line
@@ -1345,6 +1356,10 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
     fprintf(source, "    ud->get_semaphore().take_blocking();\n");
   }
 
+  if (data->flags & UD_FLAG_SCHEDULER_SEMAPHORE) {
+    fprintf(source, "    AP::scheduler().get_semaphore().take_blocking();\n");
+  }
+
   switch (method->return_type.type) {
     case TYPE_BOOLEAN:
       fprintf(source, "    const bool data = ud->%s(", method->name);
@@ -1431,6 +1446,10 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
 
   if (data->flags & UD_FLAG_SEMAPHORE) {
     fprintf(source, "    ud->get_semaphore().give();\n");
+  }
+
+  if (data->flags & UD_FLAG_SCHEDULER_SEMAPHORE) {
+    fprintf(source, "    AP::scheduler().get_semaphore().give();\n");
   }
 
   int return_count = 1; // number of arguments to return
