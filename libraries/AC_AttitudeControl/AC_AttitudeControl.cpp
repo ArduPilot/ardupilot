@@ -629,7 +629,6 @@ void AC_AttitudeControl::attitude_controller_run_quat()
         _feedforward_scalar = (1.0f - (_thrust_error_angle - AC_ATTITUDE_THRUST_ERROR_ANGLE) / AC_ATTITUDE_THRUST_ERROR_ANGLE);
         _rate_target_ang_vel.x += desired_ang_vel_quat.q2 * _feedforward_scalar;
         _rate_target_ang_vel.y += desired_ang_vel_quat.q3 * _feedforward_scalar;
-        _rate_target_ang_vel.z += desired_ang_vel_quat.q4;
         _rate_target_ang_vel.z = _ahrs.get_gyro().z * (1.0 - _feedforward_scalar) + _rate_target_ang_vel.z * _feedforward_scalar;
     } else {
         _rate_target_ang_vel.x += desired_ang_vel_quat.q2;
