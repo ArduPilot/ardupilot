@@ -279,8 +279,8 @@ void HAL_ChibiOS::run(int argc, char * const argv[], Callbacks* callbacks) const
      *   RTOS is active.
      */
 
-#ifdef HAL_USB_PRODUCT_ID
-  setup_usb_strings();
+#if HAL_USE_SERIAL_USB == TRUE
+    usb_initialise();
 #endif
 
 #ifdef HAL_STDOUT_SERIAL
