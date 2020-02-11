@@ -735,8 +735,10 @@ static int AP_Vehicle_get_time_flying_ms(lua_State *L) {
     }
 
     binding_argcheck(L, 1);
+    AP::scheduler().get_semaphore().take_blocking();
     const uint32_t data = ud->get_time_flying_ms();
 
+    AP::scheduler().get_semaphore().give();
         new_uint32_t(L);
         *static_cast<uint32_t *>(luaL_checkudata(L, -1, "uint32_t")) = data;
     return 1;
@@ -749,8 +751,10 @@ static int AP_Vehicle_get_likely_flying(lua_State *L) {
     }
 
     binding_argcheck(L, 1);
+    AP::scheduler().get_semaphore().take_blocking();
     const bool data = ud->get_likely_flying();
 
+    AP::scheduler().get_semaphore().give();
     lua_pushboolean(L, data);
     return 1;
 }
@@ -762,8 +766,10 @@ static int AP_Vehicle_get_mode(lua_State *L) {
     }
 
     binding_argcheck(L, 1);
+    AP::scheduler().get_semaphore().take_blocking();
     const uint8_t data = ud->get_mode();
 
+    AP::scheduler().get_semaphore().give();
     lua_pushinteger(L, data);
     return 1;
 }
@@ -778,10 +784,12 @@ static int AP_Vehicle_set_mode(lua_State *L) {
     const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
     luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(UINT8_MAX, UINT8_MAX))), 2, "argument out of range");
     const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
+    AP::scheduler().get_semaphore().take_blocking();
     const bool data = ud->set_mode(
             data_2,
             ModeReason::SCRIPTING);
 
+    AP::scheduler().get_semaphore().give();
     lua_pushboolean(L, data);
     return 1;
 }
