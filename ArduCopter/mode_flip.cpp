@@ -35,11 +35,8 @@
 // flip_init - initialise flip controller
 bool ModeFlip::init(bool ignore_checks)
 {
-    // only allow flip from ACRO, Stabilize, AltHold or Drift flight modes
-    if (copter.flightmode != &copter.mode_acro &&
-        copter.flightmode != &copter.mode_stabilize &&
-        copter.flightmode != &copter.mode_althold &&
-        copter.flightmode != &copter.mode_flowhold) {
+    // only allow flip from some flight modes, for example ACRO, Stabilize, AltHold or FlowHold flight modes
+    if (!copter.flightmode->allows_flip()) {
         return false;
     }
 
