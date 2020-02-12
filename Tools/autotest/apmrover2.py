@@ -464,19 +464,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.progress("RTL Mission OK (%fm)" % home_distance)
 
 
-    def wait_distance_home_gt(self, distance, timeout=60):
-        home_distance = None
-        tstart = self.get_sim_time()
-        while self.get_sim_time_cached() - tstart < timeout:
-            # m = self.mav.recv_match(type='VFR_HUD', blocking=True)
-            distance_home = self.distance_to_home(use_cached_home=True)
-            self.progress("distance_home=%f want=%f" % (distance_home, distance))
-            if distance_home > distance:
-                return
-            self.drain_mav()
-        raise NotAchievedException("Failed to get %fm from home (now=%f)" %
-                                   (distance, home_distance))
-
     def drive_fence_ac_avoidance(self):
         self.context_push()
         ex = None
@@ -493,7 +480,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.set_rc(10, 1000)
             self.change_mode("ACRO")
             self.set_rc(3, 1550)
-            self.wait_distance_home_gt(25)
+            self.wait_distance_to_home(25, 100000, timeout=60)
             self.change_mode("RTL")
             self.mavproxy.expect("APM: Reached destination")
             # now enable avoidance and make sure we can't:
@@ -3401,16 +3388,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         # MANUAL> usage: wp <changealt|clear|draw|editor|list|load|loop|move|movemulti|noflyadd|param|remove|save|savecsv|savelocal|set|sethome|show|slope|split|status|undo|update>
 
-    def wait_distance_to_home(self, distance, accuracy=5, timeout=30):
-        tstart = self.get_sim_time()
-        while True:
-            if self.get_sim_time_cached() - tstart > timeout:
-                raise AutoTestTimeoutException("Failed to get home")
-            self.mav.recv_match(type='VFR_HUD', blocking=True)
-            self.progress("Dist from home: %.02f" % self.distance_to_home(use_cached_home=True))
-            if abs(distance-self.distance_to_home(use_cached_home=True)) <= accuracy:
-                break
-
     def wait_location_sending_target(self, loc, target_system=1, target_component=1, timeout=60, max_delta=2):
         tstart = self.get_sim_time()
         last_sent = 0
@@ -3522,7 +3499,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                         raise NotAchievedException("Breach of unexpected type")
             if self.mode_is("RTL", cached=True) and seen_fence_breach:
                 break
-        self.wait_distance_to_home(5, accuracy=2)
+        self.wait_distance_to_home(3, 7, timeout=30)
 
     def drive_somewhere_stop_at_boundary(self,
                                          loc,
@@ -4315,7 +4292,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_distance_to_location(loc, 0, 5)
 
         self.progress("Ensure we get home")
-        self.wait_distance_to_home(5, accuracy=2)
+        self.wait_distance_to_home(3, 7, timeout=30)
 
         self.disarm_vehicle()
 
@@ -4369,7 +4346,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             target_loc = mavutil.location(40.073799, -105.229156)
             self.wait_location(target_loc, timeout=300)
             # mission has RTL as last item
-            self.wait_distance_to_home(5, accuracy=2, timeout=300)
+            self.wait_distance_to_home(3, 7, timeout=300)
             self.disarm_vehicle()
         except Exception as e:
             self.progress("Caught exception: %s" %
@@ -4554,7 +4531,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def do_RTL(self, timeout=60):
         self.change_mode("RTL")
-        self.wait_distance_to_home(5, accuracy=2, timeout=timeout)
+        self.wait_distance_to_home(3, 7, timeout=timeout)
 
     def test_poly_fence_avoidance(self, target_system=1, target_component=1):
         self.change_mode("LOITER")
@@ -4675,7 +4652,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             # target_loc is copied from the mission file
             self.wait_location(target_loc, timeout=300)
             # mission has RTL as last item
-            self.wait_distance_to_home(5, accuracy=2, timeout=300)
+            self.wait_distance_to_home(3, 7, timeout=300)
             self.disarm_vehicle()
         except Exception as e:
             self.progress("Caught exception: %s" %
