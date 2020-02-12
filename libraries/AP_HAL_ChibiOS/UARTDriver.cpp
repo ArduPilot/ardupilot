@@ -256,21 +256,7 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
          */
         if (!_device_initialised) {
             if ((SerialUSBDriver*)sdef.serial == &SDU1) {
-                sduObjectInit(&SDU1);
-                sduStart(&SDU1, &serusbcfg1);
-#if HAL_HAVE_DUAL_USB_CDC
-                sduObjectInit(&SDU2);
-                sduStart(&SDU2, &serusbcfg2);
-#endif
-                /*
-                * Activates the USB driver and then the USB bus pull-up on D+.
-                * Note, a delay is inserted in order to not have to disconnect the cable
-                * after a reset.
-                */
-                usbDisconnectBus(serusbcfg1.usbp);
-                hal.scheduler->delay_microseconds(1500);
-                usbStart(serusbcfg1.usbp, &usbcfg);
-                usbConnectBus(serusbcfg1.usbp);
+                usb_initialise();
             }
             _device_initialised = true;
         }
@@ -1458,7 +1444,6 @@ void usb_initialise(void)
         return;
     }
     initialised = true;
-    setup_usb_strings();
     sduObjectInit(&SDU1);
     sduStart(&SDU1, &serusbcfg1);
 #if HAL_HAVE_DUAL_USB_CDC
