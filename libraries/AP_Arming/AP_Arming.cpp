@@ -147,7 +147,7 @@ bool AP_Arming::is_armed()
     return (Required)require.get() == Required::NO || armed;
 }
 
-uint16_t AP_Arming::get_enabled_checks()
+uint32_t AP_Arming::get_enabled_checks() const
 {
     return checks_to_perform;
 }
