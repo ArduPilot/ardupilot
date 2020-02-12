@@ -1710,6 +1710,59 @@ static int AP_BattMonitor_num_instances(lua_State *L) {
     return 1;
 }
 
+static int AP_Arming_set_aux_auth_failed(lua_State *L) {
+    AP_Arming * ud = AP_Arming::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "arming not supported on this firmware");
+    }
+
+    binding_argcheck(L, 3);
+    const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(UINT8_MAX, UINT8_MAX))), 2, "argument out of range");
+    const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
+    const char * data_3 = luaL_checkstring(L, 3);
+    ud->set_aux_auth_failed(
+            data_2,
+            data_3);
+
+    return 0;
+}
+
+static int AP_Arming_set_aux_auth_passed(lua_State *L) {
+    AP_Arming * ud = AP_Arming::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "arming not supported on this firmware");
+    }
+
+    binding_argcheck(L, 2);
+    const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(UINT8_MAX, UINT8_MAX))), 2, "argument out of range");
+    const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
+    ud->set_aux_auth_passed(
+            data_2);
+
+    return 0;
+}
+
+static int AP_Arming_get_aux_auth_id(lua_State *L) {
+    AP_Arming * ud = AP_Arming::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "arming not supported on this firmware");
+    }
+
+    binding_argcheck(L, 1);
+    uint8_t data_5002 = {};
+    const bool data = ud->get_aux_auth_id(
+            data_5002);
+
+    if (data) {
+        lua_pushinteger(L, data_5002);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
+}
+
 static int AP_Arming_arm(lua_State *L) {
     AP_Arming * ud = AP_Arming::get_singleton();
     if (ud == nullptr) {
@@ -2121,6 +2174,9 @@ const luaL_Reg AP_BattMonitor_meta[] = {
 };
 
 const luaL_Reg AP_Arming_meta[] = {
+    {"set_aux_auth_failed", AP_Arming_set_aux_auth_failed},
+    {"set_aux_auth_passed", AP_Arming_set_aux_auth_passed},
+    {"get_aux_auth_id", AP_Arming_get_aux_auth_id},
     {"arm", AP_Arming_arm},
     {"is_armed", AP_Arming_is_armed},
     {"disarm", AP_Arming_disarm},
