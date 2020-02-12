@@ -39,8 +39,7 @@ _waf() {
 
 (( $+functions[_waf_boards] )) ||
 _waf_boards() {
-  # get option between board and debug, remove everything before "are", remove everything after "--debug", remove final dot, remove all comma
-  local boards; boards=( $(./waf --help | sed -n '/--board=/,/--debug/p' | sed -e 's/.*are //g' -e 's/\(--debug.*\)//g' -e 's/[.]//g' -e 's/[,]//g') )
+  local boards; boards=( $(./waf list_boards | sed -e '$d'))
   _describe -t boards 'board' boards "$@" && ret=0
 }
 
