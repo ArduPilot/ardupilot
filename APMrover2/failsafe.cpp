@@ -8,8 +8,7 @@
 #include <stdio.h>
 
 /*
-  our failsafe strategy is to detect main loop lockup and switch to
-  passing inputs straight from the RC inputs to RC outputs.
+  our failsafe strategy is to detect main loop lockup and disarm.
  */
 
 /*
