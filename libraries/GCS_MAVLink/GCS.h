@@ -870,6 +870,7 @@ public:
         return 200;
     }
 
+    void init();
     void setup_console();
     void setup_uarts();
 
@@ -907,6 +908,8 @@ public:
     uint8_t get_channel_from_port_number(uint8_t port_num);
 
 protected:
+
+    virtual uint8_t sysid_this_mav() const = 0;
 
     virtual GCS_MAVLINK *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
                                                  AP_HAL::UARTDriver &uart) = 0;
