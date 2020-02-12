@@ -84,7 +84,7 @@ public:
     bool is_armed();
 
     // get bitmask of enabled checks
-    uint16_t get_enabled_checks();
+    uint32_t get_enabled_checks() const;
 
     // pre_arm_checks() is virtual so it can be modified in a vehicle specific subclass
     virtual bool pre_arm_checks(bool report);
