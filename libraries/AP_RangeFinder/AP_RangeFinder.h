@@ -53,7 +53,7 @@ public:
         ANALOG = 1,
         MBI2C  = 2,
         PLI2C  = 3,
-        PX4    = 4,
+//        PX4    = 4, // no longer used, but may be in some user's parameters
         PX4_PWM= 5,
         BBB_PRU= 6,
         LWI2C  = 7,
