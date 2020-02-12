@@ -165,6 +165,7 @@ protected:
 
     virtual void init_ardupilot() = 0;
     virtual void load_parameters() = 0;
+    virtual void set_control_channels() {}
 
     // board specific config
     AP_BoardConfig BoardConfig;
@@ -222,8 +223,6 @@ protected:
 
     static const struct AP_Param::GroupInfo var_info[];
     static const struct AP_Scheduler::Task scheduler_tasks[];
-
-    void register_scheduler_delay_callback();
 
 private:
 
