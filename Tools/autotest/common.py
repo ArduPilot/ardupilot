@@ -4130,6 +4130,17 @@ switch value'''
                 pass
         return fred
 
+    def wait_distance_to_home(self, distance_min, distance_max, timeout=10, use_cached_home=True):
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time() - tstart > timeout:
+                raise NotAchievedException("Did not achieve distance from home")
+            distance = self.distance_to_home(use_cached_home)
+            self.progress("Distance from home: now=%f %f<want<%f" %
+                          (distance, distance_min, distance_max))
+            if distance >= distance_min and distance <= distance_max:
+                return
+
     def download_parameters(self, target_system, target_component):
         # try a simple fetch-all:
         self.mav.mav.param_request_list_send(target_system, target_component)
