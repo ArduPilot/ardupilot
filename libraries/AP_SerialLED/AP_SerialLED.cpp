@@ -30,7 +30,7 @@ AP_SerialLED::AP_SerialLED()
 // set number of LEDs per pin
 bool AP_SerialLED::set_num_LEDs(uint8_t chan, uint8_t num_leds)
 {
-    if (chan >= 1 && chan <= 16 && num_leds <= 64) {
+    if (chan >= 1 && chan <= 16 && num_leds <= AP_SERIALLED_MAX_LEDS) {
         return hal.rcout->set_neopixel_num_LEDs(chan-1, num_leds);
     }
     return false;

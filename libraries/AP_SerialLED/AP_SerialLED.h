@@ -19,6 +19,10 @@
 
 #include <AP_HAL/AP_HAL.h>
 
+// limit number of LEDs, mostly to keep DMA memory consumption within
+// reasonable bounds
+#define AP_SERIALLED_MAX_LEDS 64
+
 class AP_SerialLED {
 public:
     AP_SerialLED();
