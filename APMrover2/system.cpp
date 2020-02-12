@@ -19,16 +19,6 @@ void Rover::init_ardupilot()
     g2.stats.init();
 #endif
 
-    mavlink_system.sysid = g.sysid_this_mav;
-
-    // initialise serial ports
-    serial_manager.init();
-
-    // setup first port early to allow BoardConfig to report errors
-    gcs().setup_console();
-
-    register_scheduler_delay_callback();
-
     BoardConfig.init();
 #if HAL_WITH_UAVCAN
     BoardConfig_CAN.init();
