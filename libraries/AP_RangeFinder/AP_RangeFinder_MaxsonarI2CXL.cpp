@@ -30,11 +30,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-/*
-   The constructor also initializes the rangefinder. Note that this
-   constructor is not called until detect() returns true, so we
-   already know that we should setup the rangefinder
-*/
 AP_RangeFinder_MaxsonarI2CXL::AP_RangeFinder_MaxsonarI2CXL(RangeFinder::RangeFinder_State &_state,
                                                            AP_RangeFinder_Params &_params,
                                                            AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
