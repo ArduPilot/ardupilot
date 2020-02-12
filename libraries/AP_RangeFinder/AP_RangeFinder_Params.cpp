@@ -129,6 +129,14 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ORIENT", 53, AP_RangeFinder_Params, orientation, ROTATION_PITCH_270),
 
+    // @Param: MULUNIT
+    // @DisplayName: Multiplexer unit number
+    // @Description: Multiplexer unit number
+    // @Range: -1 7
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("MULUNIT", 17, AP_RangeFinder_Params, multiplexer_unit, -1),
+
     AP_GROUPEND
 };
 

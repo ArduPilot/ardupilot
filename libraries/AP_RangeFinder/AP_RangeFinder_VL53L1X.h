@@ -11,7 +11,7 @@ public:
     enum class DistanceMode { Short, Medium, Long, Unknown };
 
     // static detection function
-    static AP_RangeFinder_Backend *detect(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params, AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev, DistanceMode mode);
+    static AP_RangeFinder_Backend *detect(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params, AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev, AP_HAL::OwnPtr<AP_HAL::I2CDevice> _multiUnit, DistanceMode mode);
 
     // update state
     void update(void) override;
@@ -1242,7 +1242,7 @@ private:
     };
 
     // constructor
-    AP_RangeFinder_VL53L1X(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
+    AP_RangeFinder_VL53L1X(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev, AP_HAL::OwnPtr<AP_HAL::I2CDevice> multiUnit);
 
     bool init(DistanceMode mode);
     void timer();
@@ -1253,6 +1253,7 @@ private:
     // get a reading
     bool get_reading(uint16_t &reading_cm);
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev;
+    AP_HAL::OwnPtr<AP_HAL::I2CDevice> multiUnit;
 
     // value used in measurement timing budget calculations
     // assumes PresetMode is LOWPOWER_AUTONOMOUS

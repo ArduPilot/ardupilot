@@ -380,6 +380,7 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
                 }
                 if (_add_backend(AP_RangeFinder_VL53L1X::detect(state[instance], params[instance],
                                                                 hal.i2c_mgr->get_device(i, params[instance].address),
+                                                                hal.i2c_mgr->get_device(i, params[instance].multiplexer_unit!=-1?0x70:-1),
                                                                 _type == Type::VL53L1X_Short ?  AP_RangeFinder_VL53L1X::DistanceMode::Short :
                                                                                                 AP_RangeFinder_VL53L1X::DistanceMode::Long))) {
                     break;

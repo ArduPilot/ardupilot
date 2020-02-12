@@ -42,6 +42,7 @@ public:
     MAV_DISTANCE_SENSOR get_mav_distance_sensor_type() const;
     RangeFinder::Status status() const;
     RangeFinder::Type type() const { return (RangeFinder::Type)params.type.get(); }
+    int8_t get_multiUnit() const { return params.multiplexer_unit; }
 
     // true if sensor is returning data
     bool has_data() const;

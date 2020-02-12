@@ -33,27 +33,37 @@ extern const AP_HAL::HAL& hal;
    constructor is not called until detect() returns true, so we
    already know that we should setup the rangefinder
 */
-AP_RangeFinder_VL53L1X::AP_RangeFinder_VL53L1X(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params, AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev)
+AP_RangeFinder_VL53L1X::AP_RangeFinder_VL53L1X(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params, AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev, AP_HAL::OwnPtr<AP_HAL::I2CDevice> _multiUnit)
     : AP_RangeFinder_Backend(_state, _params)
-    , dev(std::move(_dev)) {}
+    , dev(std::move(_dev))
+    , multiUnit(std::move(_multiUnit)) {}
 
 /*
    detect if a VL53L1X rangefinder is connected. We'll detect by
    trying to take a reading on I2C. If we get a result the sensor is
    there.
 */
-AP_RangeFinder_Backend *AP_RangeFinder_VL53L1X::detect(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev, DistanceMode mode)
+AP_RangeFinder_Backend *AP_RangeFinder_VL53L1X::detect(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,  AP_HAL::OwnPtr<AP_HAL::I2CDevice> multiUnit, DistanceMode mode)
 {
     if (!dev) {
         return nullptr;
     }
 
     AP_RangeFinder_VL53L1X *sensor
-        = new AP_RangeFinder_VL53L1X(_state, _params, std::move(dev));
+        = new AP_RangeFinder_VL53L1X(_state, _params, std::move(dev), std::move(multiUnit));
 
     if (!sensor) {
         delete sensor;
         return nullptr;
+    }
+
+    if (_params.multiplexer_unit != -1) {
+        sensor->multiUnit->get_semaphore()->take_blocking();
+
+        uint8_t unit = 1 << _params.multiplexer_unit;
+        sensor->multiUnit->transfer(&unit, 1, nullptr, 0);
+
+        sensor->multiUnit->get_semaphore()->give();
     }
 
     sensor->dev->get_semaphore()->take_blocking();
@@ -552,6 +562,12 @@ bool AP_RangeFinder_VL53L1X::write_register32(uint16_t reg, uint32_t value)
 void AP_RangeFinder_VL53L1X::timer(void)
 {
     uint16_t range_mm;
+
+    if (get_multiUnit() != -1) {
+        uint8_t unit = 1 << get_multiUnit();
+        multiUnit->transfer(&unit, 1, nullptr, 0);
+    }
+
     if ((get_reading(range_mm)) && (range_mm <= 4000)) {
         WITH_SEMAPHORE(_sem);
         sum_mm += range_mm;
