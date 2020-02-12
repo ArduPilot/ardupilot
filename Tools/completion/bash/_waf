@@ -53,8 +53,7 @@ _waf()
 
     case $prev in 
       --board)
-        # get options between board and debug, remove everything before "are", remove everything after "--debug", remove final dot, remove all comma
-        opts=$(./waf --help | sed -n '/--board=/,/--debug/p' | sed -e 's/.*are //g' -e 's/\(--debug.*\)//g' -e 's/[.]//g' -e 's/[,]//g')
+        opts=$(./waf list_boards | sed -e '$d')
         COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
         return 0
         ;;
