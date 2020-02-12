@@ -34,6 +34,7 @@ public:
         ARMING_CHECK_MISSION     = (1U << 14),
         ARMING_CHECK_RANGEFINDER = (1U << 15),
         ARMING_CHECK_CAMERA      = (1U << 16),
+        ARMING_CHECK_AUX_AUTH    = (1U << 17),
     };
 
     enum class Method {
@@ -106,6 +107,11 @@ public:
 
     RudderArming get_rudder_arming_type() const { return (RudderArming)_rudder_arming.get(); }
 
+    // auxiliary authorisation methods
+    bool get_aux_auth_id(uint8_t& auth_id);
+    void set_aux_auth_passed(uint8_t auth_id);
+    void set_aux_auth_failed(uint8_t auth_id, const char* fail_msg);
+
     static const struct AP_Param::GroupInfo        var_info[];
 
 protected:
@@ -152,6 +158,8 @@ protected:
 
     bool camera_checks(bool display_failure);
 
+    bool aux_auth_checks(bool display_failure);
+
     virtual bool system_checks(bool report);
 
     bool can_checks(bool report);
@@ -191,6 +199,20 @@ private:
         MIS_ITEM_CHECK_RALLY         = (1 << 5),
         MIS_ITEM_CHECK_MAX
     };
+
+    // auxiliary authorisation
+    static const uint8_t aux_auth_count_max = 3;    // maximum number of auxiliary authorisers
+    static const uint8_t aux_auth_str_len = 42;     // maximum length of failure message (50-8 for "PreArm: ")
+    enum class AuxAuthStates : uint8_t {
+        NO_RESPONSE = 0,
+        AUTH_FAILED,
+        AUTH_PASSED
+    } aux_auth_state[aux_auth_count_max] = {};  // state of each auxiliary authorisation
+    uint8_t aux_auth_count;     // number of auxiliary authorisers
+    uint8_t aux_auth_fail_msg_source;   // authorisation id who set aux_auth_fail_msg
+    char* aux_auth_fail_msg;    // buffer for holding failure messages
+    bool aux_auth_error;        // true if too many auxiliary authorisers
+    HAL_Semaphore aux_auth_sem; // semaphore for accessing the aux_auth_state and aux_auth_fail_msg
 };
 
 namespace AP {
