@@ -36,15 +36,6 @@ void Sub::init_ardupilot()
     celsius.init(1);
 #endif
 
-    // identify ourselves correctly with the ground station
-    mavlink_system.sysid = g.sysid_this_mav;
-    
-    // initialise serial port
-    serial_manager.init();
-
-    // setup first port early to allow BoardConfig to report errors
-    gcs().setup_console();
-
     // init cargo gripper
 #if GRIPPER_ENABLED == ENABLED
     g2.gripper.init();
@@ -61,8 +52,6 @@ void Sub::init_ardupilot()
     battery.init();
 
     barometer.init();
-
-    register_scheduler_delay_callback();
 
     // setup telem slots with serial ports
     gcs().setup_uarts();
