@@ -58,6 +58,25 @@ void AP_Vehicle::setup()
     // actual loop rate
     G_Dt = scheduler.get_loop_period_s();
 
+    // this is here for Plane; its failsafe_check method requires the
+    // RC channels to be set as early as possible for maximum
+    // survivability.
+    set_control_channels();
+
+    // initialise serial manager as early as sensible to get
+    // diagnostic output during boot process.  We have to initialise
+    // the GCS singleton first as it sets the global mavlink system ID
+    // which may get used very early on.
+    gcs().init();
+
+    // initialise serial ports
+    serial_manager.init();
+    gcs().setup_console();
+
+    // Register scheduler_delay_cb, which will run anytime you have
+    // more than 5ms remaining in your call to hal.scheduler->delay
+    hal.scheduler->register_delay_callback(scheduler_delay_callback, 5);
+
     // init_ardupilot is where the vehicle does most of its initialisation.
     init_ardupilot();
     // gyro FFT needs to be initialized really late
@@ -132,13 +151,6 @@ void AP_Vehicle::scheduler_delay_callback()
     }
 
     logger.EnableWrites(true);
-}
-
-void AP_Vehicle::register_scheduler_delay_callback()
-{
-    // Register scheduler_delay_cb, which will run anytime you have
-    // more than 5ms remaining in your call to hal.scheduler->delay
-    hal.scheduler->register_delay_callback(scheduler_delay_callback, 5);
 }
 
 AP_Vehicle *AP_Vehicle::_singleton = nullptr;
