@@ -28,11 +28,6 @@ extern const AP_HAL::HAL& hal;
 #define TR_WHOAMI  0x01
 #define TR_WHOAMI_VALUE 0xA1
 
-/*
-   The constructor also initializes the rangefinder. Note that this
-   constructor is not called until detect() returns true, so we
-   already know that we should setup the rangefinder
-*/
 AP_RangeFinder_TeraRangerI2C::AP_RangeFinder_TeraRangerI2C(RangeFinder::RangeFinder_State &_state,
                                                            AP_RangeFinder_Params &_params,
                                                            AP_HAL::OwnPtr<AP_HAL::I2CDevice> i2c_dev)
