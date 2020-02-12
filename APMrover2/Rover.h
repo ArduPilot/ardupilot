@@ -350,7 +350,7 @@ private:
     void load_parameters(void) override;
 
     // radio.cpp
-    void set_control_channels(void);
+    void set_control_channels(void) override;
     void init_rc_in();
     void rudder_arm_disarm_check();
     void read_radio();

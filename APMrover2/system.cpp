@@ -86,7 +86,6 @@ void Rover::init_ardupilot()
 
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
-    set_control_channels();  // setup radio channels and outputs ranges
     init_rc_in();            // sets up rc channels deadzone
     g2.motors.init();        // init motors including setting servo out channels ranges
     SRV_Channels::enable_aux_servos();
