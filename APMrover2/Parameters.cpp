@@ -524,7 +524,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_GROUPINFO("LOIT_TYPE", 25, ParametersG2, loit_type, 0),
 
 #if HAL_SPRAYER_ENABLED
-    // @Group: SPRAYER_
+    // @Group: SPRAY_
     // @Path: ../libraries/AC_Sprayer/AC_Sprayer.cpp
     AP_SUBGROUPINFO(sprayer, "SPRAY_", 26, ParametersG2, AC_Sprayer),
 #endif
