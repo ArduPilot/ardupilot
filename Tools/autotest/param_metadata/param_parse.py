@@ -54,6 +54,12 @@ vehicle_paths.sort(reverse=True)
 vehicles = []
 libraries = []
 
+# AP_Vehicle also has parameters rooted at "", but isn't referenced
+# from the vehicle in any way:
+ap_vehicle_lib = Library("") # the "" is tacked onto the front of param name
+setattr(ap_vehicle_lib, "Path", os.path.join('..', 'libraries', 'AP_Vehicle', 'AP_Vehicle.cpp'))
+libraries.append(ap_vehicle_lib)
+
 error_count = 0
 current_param = None
 current_file = None
@@ -166,7 +172,7 @@ def process_library(vehicle, library, pathprefix=None):
             p_text = f.read()
             f.close()
         else:
-            error("Path %s not found for library %s" % (path, library.name))
+            error("Path %s not found for library %s (fname=%s)" % (path, library.name, libraryfname))
             continue
 
         param_matches = prog_param.findall(p_text)
