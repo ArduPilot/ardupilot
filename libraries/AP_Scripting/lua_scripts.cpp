@@ -17,7 +17,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 #include "AP_Scripting.h"
-#include <AP_ROMFS/AP_ROMFS.h>
 
 #include "lua_generated_bindings.h"
 
@@ -94,12 +93,24 @@ lua_scripts::script_info *lua_scripts::load_script(lua_State *L, char *filename)
 
 
     // find and create a sandbox for the new chunk
-    lua_getglobal(L, "get_sandbox_env");
-    if (lua_pcall(L, 0, LUA_MULTRET, 0)) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Scripting: Could not create sandbox: %s", lua_tostring(L, -1));
-        hal.console->printf("Lua: Scripting: Could not create sandbox: %s", lua_tostring(L, -1));
-        return nullptr;
-    }
+    lua_newtable(L);
+    luaopen_base_sandbox(L);
+    lua_pushstring(L, "math");
+    luaopen_math(L);
+    lua_settable(L, -3);
+    lua_pushstring(L, "table");
+    luaopen_table(L);
+    lua_settable(L, -3);
+    lua_pushstring(L, "string");
+    luaopen_string(L);
+    lua_settable(L, -3);
+    lua_pushstring(L, "io");
+    luaopen_io(L);
+    lua_settable(L, -3);
+    lua_pushstring(L, "utf8");
+    luaopen_utf8(L);
+    lua_settable(L, -3);
+    load_lua_bindings(L);
     load_generated_sandbox(L);
     lua_setupvalue(L, -2, 1);
 
@@ -334,22 +345,9 @@ void lua_scripts::run(void) {
         return;
     }
     lua_atpanic(L, atpanic);
-    luaL_openlibs(L);
-    load_lua_bindings(L);
-
-    // load the sandbox creation function
-    uint32_t sandbox_size;
-    const char *sandbox_data = (const char *)AP_ROMFS::find_decompress("sandbox.lua", sandbox_size);
-    if (sandbox_data == nullptr) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Scripting: Could not find sandbox");
-        return;
-    }
-
-    if (luaL_dostring(L, sandbox_data)) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Scripting: Loading sandbox: %s", lua_tostring(L, -1));
-        return;
-    }
-    AP_ROMFS::free((const uint8_t *)sandbox_data);
+//    luaL_openlibs(L);
+//    load_lua_bindings(L);
+    load_generated_bindings(L);
 
     // Scan the filesystem in an appropriate manner and autostart scripts
     load_all_scripts_in_dir(L, SCRIPTING_DIRECTORY);
