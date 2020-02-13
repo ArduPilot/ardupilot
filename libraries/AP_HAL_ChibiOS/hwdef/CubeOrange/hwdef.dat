@@ -96,7 +96,7 @@ PB14 SPI2_MISO SPI2
 PB15 SPI2_MOSI SPI2
 
 # This input pin is used to detect that power is valid on USB.
-PC0 VBUS_VALID INPUT
+PC0 VBUS_nVALID INPUT PULLUP
 
 # This defines the CS pin for the magnetometer and first IMU. Note
 # that CS pins are software controlled, and are not tied to a particular
@@ -203,10 +203,10 @@ PE12 FMU_LED_AMBER OUTPUT HIGH OPENDRAIN GPIO(0)
 # Power flag pins: these tell the MCU the status of the various power
 # supplies that are available. The pin names need to exactly match the
 # names used in AnalogIn.cpp. 
-PB5 VDD_BRICK_VALID INPUT PULLUP
-PB7 VDD_SERVO_VALID INPUT PULLUP
-PE10 VDD_5V_HIPOWER_OC INPUT PULLUP
-PE15 VDD_5V_PERIPH_OC INPUT PULLUP
+PB5 VDD_BRICK_nVALID INPUT PULLUP
+PB7 VDD_BRICK2_nVALID INPUT PULLUP
+PE10 VDD_5V_HIPOWER_nOC INPUT PULLUP
+PE15 VDD_5V_PERIPH_nOC INPUT PULLUP
 
 SPIDEV ms5611         SPI1 DEVID3  BARO_CS      MODE3 20*MHZ 20*MHZ
 SPIDEV ms5611_ext     SPI4 DEVID2  BARO_EXT_CS  MODE3 20*MHZ 20*MHZ
