@@ -72,6 +72,9 @@ public:
     // returns true if vehicle can be armed or disarmed from the transmitter in this mode
     virtual bool allows_arming_from_transmitter() { return !is_autopilot_mode(); }
 
+    // returns false if vehicle cannot be armed in this mode
+    virtual bool allows_arming() const { return true; }
+
     bool allows_stick_mixing() const { return is_autopilot_mode(); }
 
     //
@@ -510,6 +513,9 @@ public:
     // attributes of the mode
     bool is_autopilot_mode() const override { return true; }
 
+    // do not allow arming from this mode
+    bool allows_arming() const override { return false; }
+
     // return desired location
     bool get_desired_location(Location& destination) const override WARN_IF_UNUSED;
 
@@ -541,6 +547,9 @@ public:
 
     // attributes of the mode
     bool is_autopilot_mode() const override { return true; }
+
+    // do not allow arming from this mode
+    bool allows_arming() const override { return false; }
 
     // return desired location
     bool get_desired_location(Location& destination) const override WARN_IF_UNUSED;
