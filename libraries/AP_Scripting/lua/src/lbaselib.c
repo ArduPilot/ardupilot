@@ -452,33 +452,33 @@ static int luaB_tostring (lua_State *L) {
 
 static const luaL_Reg base_funcs[] = {
   {"assert", luaB_assert},
-  {"collectgarbage", luaB_collectgarbage},
-  {"dofile", luaB_dofile},
+//  {"collectgarbage", luaB_collectgarbage},
+//  {"dofile", luaB_dofile},
   {"error", luaB_error},
-  {"getmetatable", luaB_getmetatable},
+//  {"getmetatable", luaB_getmetatable},
   {"ipairs", luaB_ipairs},
-  {"loadfile", luaB_loadfile},
-  {"load", luaB_load},
+//  {"loadfile", luaB_loadfile},
+//  {"load", luaB_load},
 #if defined(LUA_COMPAT_LOADSTRING)
   {"loadstring", luaB_load},
 #endif
   {"next", luaB_next},
   {"pairs", luaB_pairs},
   {"pcall", luaB_pcall},
-  {"print", luaB_print},
-  {"rawequal", luaB_rawequal},
-  {"rawlen", luaB_rawlen},
-  {"rawget", luaB_rawget},
-  {"rawset", luaB_rawset},
-  {"select", luaB_select},
-  {"setmetatable", luaB_setmetatable},
+//  {"print", luaB_print},
+//  {"rawequal", luaB_rawequal},
+//  {"rawlen", luaB_rawlen},
+//  {"rawget", luaB_rawget},
+//  {"rawset", luaB_rawset},
+//  {"select", luaB_select},
+//  {"setmetatable", luaB_setmetatable},
   {"tonumber", luaB_tonumber},
   {"tostring", luaB_tostring},
   {"type", luaB_type},
-  {"xpcall", luaB_xpcall},
+//  {"xpcall", luaB_xpcall},
   /* placeholders */
-  {"_G", NULL},
-  {"_VERSION", NULL},
+//  {"_G", NULL},
+//  {"_VERSION", NULL},
   {NULL, NULL}
 };
 
@@ -493,6 +493,11 @@ LUAMOD_API int luaopen_base (lua_State *L) {
   /* set global _VERSION */
   lua_pushliteral(L, LUA_VERSION);
   lua_setfield(L, -2, "_VERSION");
+  return 1;
+}
+
+LUAMOD_API int luaopen_base_sandbox(lua_State *L) {
+  luaL_setfuncs(L, base_funcs, 0);
   return 1;
 }
 

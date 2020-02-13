@@ -1542,7 +1542,7 @@ static int str_unpack (lua_State *L) {
 static const luaL_Reg strlib[] = {
   {"byte", str_byte},
   {"char", str_char},
-  {"dump", str_dump},
+//  {"dump", str_dump},
   {"find", str_find},
   {"format", str_format},
   {"gmatch", gmatch},
