@@ -2833,7 +2833,8 @@ class AutoTest(ABC):
 
         self.wait_heartbeat()
         if self.armed() and not self.is_tracker():
-            ex = ArmedAtEndOfTestException("Still armed at end of test")
+            if ex is None:
+                ex = ArmedAtEndOfTestException("Still armed at end of test")
             self.progress("Armed at end of test; force-rebooting SITL")
             self.disarm_vehicle(force=True)
             self.forced_post_test_sitl_reboots += 1
