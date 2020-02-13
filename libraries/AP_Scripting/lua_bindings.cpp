@@ -52,6 +52,12 @@ static int lua_millis(lua_State *L) {
     return 1;
 }
 
+static const luaL_Reg global_functions[] =
+{
+    {"millis", lua_millis},
+    {NULL, NULL}
+};
+
 static const luaL_Reg servo_functions[] =
 {
     {"set_output_pwm", lua_servo_set_output_pwm},
@@ -59,12 +65,10 @@ static const luaL_Reg servo_functions[] =
 };
 
 void load_lua_bindings(lua_State *L) {
+    lua_pushstring(L, "servo");
     luaL_newlib(L, servo_functions);
-    lua_setglobal(L, "servo");
+    lua_settable(L, -3);
 
-    load_generated_bindings(L);
-
-    lua_pushcfunction(L, lua_millis);
-    lua_setglobal(L, "millis");
+    luaL_setfuncs(L, global_functions, 0);
 }
 
