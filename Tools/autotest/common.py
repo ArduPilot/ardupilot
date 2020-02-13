@@ -4141,7 +4141,8 @@ switch value'''
         while True:
             now = self.get_sim_time_cached()
             if now - tstart > 10:
-                raise AutoTestTimeoutException("Failed to download parameters")
+                raise AutoTestTimeoutException("Failed to download parameters  (have %s/%s)" %
+                                               (str(count), str(expected_count)))
             m = self.mav.recv_match(type='PARAM_VALUE', blocking=True, timeout=1)
             if m is None:
                 raise AutoTestTimeoutException("tardy PARAM_VALUE (have %s/%s)" % (
