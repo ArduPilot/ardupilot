@@ -114,10 +114,34 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @Range: 0.000 0.400
     // @User: Standard
 
-    // @Param: _ACCZ_FILT
-    // @DisplayName: Acceleration (vertical) controller filter
-    // @Description: Filter applied to acceleration to reduce noise.  Lower values reduce noise but add delay.
-    // @Range: 1.000 100.000
+    // @Param: _ACCZ_FF
+    // @DisplayName: Acceleration (vertical) controller feed forward
+    // @Description: Acceleration (vertical) controller feed forward
+    // @Range: 0 0.5
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: _ACCZ_FLTT
+    // @DisplayName: Acceleration (vertical) controller target frequency in Hz
+    // @Description: Acceleration (vertical) controller target frequency in Hz
+    // @Range: 1 50
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: _ACCZ_FLTE
+    // @DisplayName: Acceleration (vertical) controller error frequency in Hz
+    // @Description: Acceleration (vertical) controller error frequency in Hz
+    // @Range: 1 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: _ACCZ_FLTD
+    // @DisplayName: Acceleration (vertical) controller derivative frequency in Hz
+    // @Description: Acceleration (vertical) controller derivative frequency in Hz
+    // @Range: 1 100
+    // @Increment: 1
     // @Units: Hz
     // @User: Standard
     AP_SUBGROUPINFO(_pid_accel_z, "_ACCZ_", 4, AC_PosControl, AC_PID),
