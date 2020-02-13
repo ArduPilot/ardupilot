@@ -384,6 +384,7 @@ def run_step(step):
         "disable_breakpoints": opts.disable_breakpoints,
         "frame": opts.frame,
         "_show_test_timings": opts.show_test_timings,
+        "validate_parameters": opts.validate_parameters,
     }
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
@@ -682,6 +683,10 @@ if __name__ == "__main__":
                       action="store_true",
                       default=False,
                       help="show how long each test took to run")
+    parser.add_option("--validate-parameters",
+                      action="store_true",
+                      default=False,
+                      help="validate vehicle parameter files")
 
     group_build = optparse.OptionGroup(parser, "Build options")
     group_build.add_option("--no-configure",

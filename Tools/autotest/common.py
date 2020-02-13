@@ -687,7 +687,8 @@ class AutoTest(ABC):
                  disable_breakpoints=False,
                  viewerip=None,
                  use_map=False,
-                 _show_test_timings=False):
+                 _show_test_timings=False,
+                 validate_parameters=False):
 
         self.binary = binary
         self.valgrind = valgrind
@@ -718,6 +719,7 @@ class AutoTest(ABC):
         self.test_timings = dict()
         self.total_waiting_to_arm_time = 0
         self.waiting_to_arm_count = 0
+        self.validate_parameters = validate_parameters
 
     @staticmethod
     def progress(text):
@@ -949,6 +951,53 @@ class AutoTest(ABC):
             raise NotAchievedException("Did not get SYSTEM_TIME")
         self.drain_mav()
 
+    def htree_from_xml(self, xml_filepath):
+        '''swiped from mavproxy_param.py'''
+        xml = open(xml_filepath,'rb').read()
+        from lxml import objectify
+        objectify.enable_recursive_str()
+        tree = objectify.fromstring(xml)
+        htree = {}
+        for p in tree.vehicles.parameters.param:
+            n = p.get('name').split(':')[1]
+            htree[n] = p
+        for lib in tree.libraries.parameters:
+            for p in lib.param:
+                n = p.get('name')
+                htree[n] = p
+        return htree
+
+    def do_validate_parameters(self):
+        xml_filepath = os.path.join(self.rootdir(), "apm.pdef.xml")
+        param_parse_filepath = os.path.join(self.rootdir(), 'Tools', 'autotest', 'param_metadata', 'param_parse.py')
+        try:
+            os.unlink(xml_filepath)
+        except OSError:
+            pass
+        vehicle = self.log_name()
+        if vehicle == "HeliCopter":
+            vehicle = "ArduCopter"
+        if util.run_cmd([param_parse_filepath, '--vehicle', vehicle],
+                        directory=util.reltopdir('.')) != 0:
+            print("Failed param_parse.py (%s)" % vehicle)
+            return False
+        htree = self.htree_from_xml(xml_filepath)
+
+        target_system = self.sysid_thismav()
+        target_component = 1
+
+        (parameters, seq_id) = self.download_parameters(target_system, target_component)
+        fail = False
+        for param in parameters.keys():
+            if param.startswith("SIM_"):
+                # too many of these to worry about
+                continue
+            if param not in htree:
+                print("%s not in XML" % param)
+                fail = True
+        if fail:
+            raise NotAchievedException("Downloaded parameters missing in XML")
+
     def initialise_after_reboot_sitl(self):
 
         # after reboot stream-rates may be zero.  Prompt MAVProxy to
@@ -957,6 +1006,11 @@ class AutoTest(ABC):
         self.set_streamrate(self.sitl_streamrate()+1)
         self.set_streamrate(self.sitl_streamrate())
         self.progress("Reboot complete")
+
+        if self.validate_parameters:
+            self.start_subtest("Validating parameters")
+            self.do_validate_parameters()
+            self.end_subtest("Validating parameters")
 
     def customise_SITL_commandline(self, customisations):
         '''customisations could be "--uartF=sim:nmea" '''
