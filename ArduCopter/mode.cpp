@@ -547,6 +547,11 @@ void Mode::land_run_vertical_control(bool pause_descent)
             cmb_rate = MIN(-precland_min_descent_speed, -max_descent_speed+land_slowdown);
         }
 #endif
+        // If throttle operation has been performed, give priority to throttle operation
+        float throttle_cmb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
+        if (throttle_cmb_rate < cmb_rate || throttle_cmb_rate > 0.55f) {
+            cmb_rate = constrain_float(throttle_cmb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
+        }
     }
 
     // update altitude target and call position controller
