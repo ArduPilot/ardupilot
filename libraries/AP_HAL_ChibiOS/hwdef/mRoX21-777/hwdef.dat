@@ -228,7 +228,7 @@ PB14 SPI2_MISO SPI2
 PB15 SPI2_MOSI SPI2
 
 # this input pin is used to detect that power is valid on USB
-PC0 VBUS_VALID INPUT PULLDOWN
+PC0 VBUS_nVALID INPUT PULLUP
 
 # this defines the CS pin for the magnetometer and first IMU. Note
 # that CS pins are software controlled, and are not tied to a particular
