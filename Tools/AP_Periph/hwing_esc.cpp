@@ -105,8 +105,8 @@ bool HWESC_Telem::parse_packet(void)
     decoded.throttle = be16toh(pkt.throttle);
     decoded.rpm = be16toh(pkt.rpm);
     decoded.voltage = be16toh(pkt.voltage) * 0.1;
-    decoded.load = be16toh(pkt.load);
-    decoded.current = be16toh(pkt.current);
+    decoded.load = int16_t(be16toh(pkt.load));
+    decoded.current = int16_t(be16toh(pkt.current)) * 0.01;
     decoded.temperature = be16toh(pkt.temperature);
     decoded.unknown = be16toh(pkt.unknown);
 
