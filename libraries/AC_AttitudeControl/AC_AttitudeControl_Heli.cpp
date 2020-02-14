@@ -35,7 +35,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Increment: 0.01
     // @User: Standard
 
-    // @Param: RAT_RLL_ILMI
+    // @Param: RAT_RLL_ILMN
     // @DisplayName: Roll axis rate controller I-term leak minimum
     // @Description: Point below which I-term will not leak down
     // @Range: 0 1
@@ -101,7 +101,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Increment: 0.01
     // @User: Standard
 
-    // @Param: RAT_PIT_ILMI
+    // @Param: RAT_PIT_ILMN
     // @DisplayName: Pitch axis rate controller I-term leak minimum
     // @Description: Point below which I-term will not leak down
     // @Range: 0 1
@@ -167,7 +167,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Increment: 0.01
     // @User: Standard
 
-    // @Param: RAT_YAW_ILMI
+    // @Param: RAT_YAW_ILMN
     // @DisplayName: Yaw axis rate controller I-term leak minimum
     // @Description: Point below which I-term will not leak down
     // @Range: 0 1
