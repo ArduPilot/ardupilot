@@ -123,10 +123,10 @@ void GCS_MAVLINK_Copter::send_position_target_local_ned()
     Vector3f target_vel;
     uint16_t type_mask;
 
-    if (guided_mode == Guided_WP) {
+    if (guided_mode == GuidedMode::WP) {
         type_mask = 0x0FF8; // ignore everything except position
         target_pos = copter.wp_nav->get_wp_destination() * 0.01f; // convert to metres
-    } else if (guided_mode == Guided_Velocity) {
+    } else if (guided_mode == GuidedMode::Velocity) {
         type_mask = 0x0FC7; // ignore everything except velocity
         target_vel = copter.flightmode->get_desired_velocity() * 0.01f; // convert to m/s
     } else {

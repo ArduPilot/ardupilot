@@ -83,27 +83,27 @@ enum tuning_func {
 #define WP_YAW_BEHAVIOR_LOOK_AHEAD                    3   // auto pilot will look ahead during missions and rtl (primarily meant for traditional helicopters)
 
 // Auto modes
-enum AutoMode {
-    Auto_TakeOff,
-    Auto_WP,
-    Auto_Land,
-    Auto_RTL,
-    Auto_CircleMoveToEdge,
-    Auto_Circle,
-    Auto_Spline,
-    Auto_NavGuided,
-    Auto_Loiter,
-    Auto_LoiterToAlt,
-    Auto_NavPayloadPlace,
+enum class AutoMode {
+    TakeOff,
+    WP,
+    Land,
+    RTL,
+    CircleMoveToEdge,
+    Circle,
+    Spline,
+    NavGuided,
+    Loiter,
+    LoiterToAlt,
+    NavPayloadPlace,
 };
 
 // Guided modes
-enum GuidedMode {
-    Guided_TakeOff,
-    Guided_WP,
-    Guided_Velocity,
-    Guided_PosVel,
-    Guided_Angle,
+enum class GuidedMode : uint8_t {
+    TakeOff,
+    WP,
+    Velocity,
+    PosVel,
+    Angle,
 };
 
 // Safe RTL states

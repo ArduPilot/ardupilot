@@ -343,7 +343,7 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return false; };
     bool is_autopilot() const override { return true; }
-    bool in_guided_mode() const override { return mode() == Auto_NavGuided; }
+    bool in_guided_mode() const override { return mode() == AutoMode::NavGuided; }
 
     // Auto
     AutoMode mode() const { return _mode; }
@@ -418,7 +418,7 @@ private:
     void payload_place_run_descend();
     void payload_place_run_release();
 
-    AutoMode _mode = Auto_TakeOff;   // controls which auto controller is run
+    AutoMode _mode = AutoMode::TakeOff;   // controls which auto controller is run
 
     Location terrain_adjusted_location(const AP_Mission::Mission_Command& cmd) const;
 
@@ -827,7 +827,7 @@ private:
     void set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle);
 
     // controls which controller is run (pos or vel):
-    GuidedMode guided_mode = Guided_TakeOff;
+    GuidedMode guided_mode = GuidedMode::TakeOff;
 
 };
 

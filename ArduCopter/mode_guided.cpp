@@ -49,7 +49,7 @@ bool ModeGuided::init(bool ignore_checks)
 // do_user_takeoff_start - initialises waypoint controller to implement take-off
 bool ModeGuided::do_user_takeoff_start(float final_alt_above_home)
 {
-    guided_mode = Guided_TakeOff;
+    guided_mode = GuidedMode::TakeOff;
 
     // initialise wpnav destination
     Location target_loc = copter.current_loc;
@@ -78,7 +78,7 @@ bool ModeGuided::do_user_takeoff_start(float final_alt_above_home)
 void ModeGuided::pos_control_start()
 {
     // set to position control mode
-    guided_mode = Guided_WP;
+    guided_mode = GuidedMode::WP;
 
     // initialise waypoint and spline controller
     wp_nav->wp_and_spline_init();
@@ -98,7 +98,7 @@ void ModeGuided::pos_control_start()
 void ModeGuided::vel_control_start()
 {
     // set guided_mode to velocity controller
-    guided_mode = Guided_Velocity;
+    guided_mode = GuidedMode::Velocity;
 
     // initialise horizontal speed, acceleration
     pos_control->set_max_speed_xy(wp_nav->get_default_speed_xy());
@@ -116,7 +116,7 @@ void ModeGuided::vel_control_start()
 void ModeGuided::posvel_control_start()
 {
     // set guided_mode to velocity controller
-    guided_mode = Guided_PosVel;
+    guided_mode = GuidedMode::PosVel;
 
     pos_control->init_xy_controller();
 
@@ -141,14 +141,14 @@ void ModeGuided::posvel_control_start()
 
 bool ModeGuided::is_taking_off() const
 {
-    return guided_mode == Guided_TakeOff;
+    return guided_mode == GuidedMode::TakeOff;
 }
 
 // initialise guided mode's angle controller
 void ModeGuided::angle_control_start()
 {
     // set guided_mode to velocity controller
-    guided_mode = Guided_Angle;
+    guided_mode = GuidedMode::Angle;
 
     // set vertical speed and acceleration
     pos_control->set_max_speed_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up());
@@ -179,7 +179,7 @@ void ModeGuided::angle_control_start()
 bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
 {
     // ensure we are in position control mode
-    if (guided_mode != Guided_WP) {
+    if (guided_mode != GuidedMode::WP) {
         pos_control_start();
     }
 
@@ -200,13 +200,13 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
     wp_nav->set_wp_destination(destination, false);
 
     // log target
-    copter.Log_Write_GuidedTarget(guided_mode, destination, Vector3f());
+    copter.Log_Write_GuidedTarget(static_cast<uint8_t>(guided_mode), destination, Vector3f());
     return true;
 }
 
 bool ModeGuided::get_wp(Location& destination)
 {
-    if (guided_mode != Guided_WP) {
+    if (guided_mode != GuidedMode::WP) {
         return false;
     }
     return wp_nav->get_oa_wp_destination(destination);
@@ -218,7 +218,7 @@ bool ModeGuided::get_wp(Location& destination)
 bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
 {
     // ensure we are in position control mode
-    if (guided_mode != Guided_WP) {
+    if (guided_mode != GuidedMode::WP) {
         pos_control_start();
     }
 
@@ -243,7 +243,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
     set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
 
     // log target
-    copter.Log_Write_GuidedTarget(guided_mode, Vector3f(dest_loc.lat, dest_loc.lng, dest_loc.alt),Vector3f());
+    copter.Log_Write_GuidedTarget(static_cast<uint8_t>(guided_mode), Vector3f(dest_loc.lat, dest_loc.lng, dest_loc.alt),Vector3f());
     return true;
 }
 
@@ -251,7 +251,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
 void ModeGuided::set_velocity(const Vector3f& velocity, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw, bool log_request)
 {
     // check we are in velocity control mode
-    if (guided_mode != Guided_Velocity) {
+    if (guided_mode != GuidedMode::Velocity) {
         vel_control_start();
     }
 
@@ -264,7 +264,7 @@ void ModeGuided::set_velocity(const Vector3f& velocity, bool use_yaw, float yaw_
 
     // log target
     if (log_request) {
-        copter.Log_Write_GuidedTarget(guided_mode, Vector3f(), velocity);
+        copter.Log_Write_GuidedTarget(static_cast<uint8_t>(guided_mode), Vector3f(), velocity);
     }
 }
 
@@ -272,7 +272,7 @@ void ModeGuided::set_velocity(const Vector3f& velocity, bool use_yaw, float yaw_
 bool ModeGuided::set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
 {
     // check we are in velocity control mode
-    if (guided_mode != Guided_PosVel) {
+    if (guided_mode != GuidedMode::PosVel) {
         posvel_control_start();
     }
 
@@ -296,7 +296,7 @@ bool ModeGuided::set_destination_posvel(const Vector3f& destination, const Vecto
     copter.pos_control->set_pos_target(guided_pos_target_cm);
 
     // log target
-    copter.Log_Write_GuidedTarget(guided_mode, destination, velocity);
+    copter.Log_Write_GuidedTarget(static_cast<uint8_t>(guided_mode), destination, velocity);
     return true;
 }
 
@@ -304,7 +304,7 @@ bool ModeGuided::set_destination_posvel(const Vector3f& destination, const Vecto
 void ModeGuided::set_angle(const Quaternion &q, float climb_rate_cms, bool use_yaw_rate, float yaw_rate_rads)
 {
     // check we are in velocity control mode
-    if (guided_mode != Guided_Angle) {
+    if (guided_mode != GuidedMode::Angle) {
         angle_control_start();
     }
 
@@ -325,7 +325,7 @@ void ModeGuided::set_angle(const Quaternion &q, float climb_rate_cms, bool use_y
     }
 
     // log target
-    copter.Log_Write_GuidedTarget(guided_mode,
+    copter.Log_Write_GuidedTarget(static_cast<uint8_t>(guided_mode),
                            Vector3f(guided_angle_state.roll_cd, guided_angle_state.pitch_cd, guided_angle_state.yaw_cd),
                            Vector3f(0.0f, 0.0f, guided_angle_state.climb_rate_cms));
 }
@@ -337,27 +337,27 @@ void ModeGuided::run()
     // call the correct auto controller
     switch (guided_mode) {
 
-    case Guided_TakeOff:
+    case GuidedMode::TakeOff:
         // run takeoff controller
         takeoff_run();
         break;
 
-    case Guided_WP:
+    case GuidedMode::WP:
         // run position controller
         pos_control_run();
         break;
 
-    case Guided_Velocity:
+    case GuidedMode::Velocity:
         // run velocity controller
         vel_control_run();
         break;
 
-    case Guided_PosVel:
+    case GuidedMode::PosVel:
         // run position-velocity controller
         posvel_control_run();
         break;
 
-    case Guided_Angle:
+    case GuidedMode::Angle:
         // run angle controller
         angle_control_run();
         break;
@@ -714,10 +714,10 @@ bool ModeGuided::limit_check()
 uint32_t ModeGuided::wp_distance() const
 {
     switch(mode()) {
-    case Guided_WP:
+    case GuidedMode::WP:
         return wp_nav->get_wp_distance_to_destination();
         break;
-    case Guided_PosVel:
+    case GuidedMode::PosVel:
         return pos_control->get_distance_to_target();
         break;
     default:
@@ -728,10 +728,10 @@ uint32_t ModeGuided::wp_distance() const
 int32_t ModeGuided::wp_bearing() const
 {
     switch(mode()) {
-    case Guided_WP:
+    case GuidedMode::WP:
         return wp_nav->get_wp_bearing_to_destination();
         break;
-    case Guided_PosVel:
+    case GuidedMode::PosVel:
         return pos_control->get_bearing_to_target();
         break;
     default:
@@ -741,7 +741,7 @@ int32_t ModeGuided::wp_bearing() const
 
 float ModeGuided::crosstrack_error() const
 {
-    if (mode() == Guided_WP) {
+    if (mode() == GuidedMode::WP) {
         return wp_nav->crosstrack_error();
     } else {
         return 0;
