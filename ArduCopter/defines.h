@@ -107,12 +107,12 @@ enum GuidedMode {
 };
 
 // Safe RTL states
-enum SmartRTLState {
-    SmartRTL_WaitForPathCleanup,
-    SmartRTL_PathFollow,
-    SmartRTL_PreLandPosition,
-    SmartRTL_Descend,
-    SmartRTL_Land
+enum  class SmartRTLState {
+    WaitForPathCleanup,
+    PathFollow,
+    PreLandPosition,
+    Descend,
+    Land
 };
 
 enum PayloadPlaceStateType {

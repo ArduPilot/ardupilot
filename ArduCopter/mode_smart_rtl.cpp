@@ -25,7 +25,7 @@ bool ModeSmartRTL::init(bool ignore_checks)
         auto_yaw.set_mode_to_default(true);
 
         // wait for cleanup of return path
-        smart_rtl_state = SmartRTL_WaitForPathCleanup;
+        smart_rtl_state = SmartRTLState::WaitForPathCleanup;
         return true;
     }
 
@@ -41,19 +41,19 @@ void ModeSmartRTL::exit()
 void ModeSmartRTL::run()
 {
     switch (smart_rtl_state) {
-        case SmartRTL_WaitForPathCleanup:
+        case SmartRTLState::WaitForPathCleanup:
             wait_cleanup_run();
             break;
-        case SmartRTL_PathFollow:
+        case SmartRTLState::PathFollow:
             path_follow_run();
             break;
-        case SmartRTL_PreLandPosition:
+        case SmartRTLState::PreLandPosition:
             pre_land_position_run();
             break;
-        case SmartRTL_Descend:
+        case SmartRTLState::Descend:
             descent_run(); // Re-using the descend method from normal rtl mode.
             break;
-        case SmartRTL_Land:
+        case SmartRTLState::Land:
             land_run(true); // Re-using the land method from normal rtl mode.
             break;
     }
@@ -69,7 +69,7 @@ void ModeSmartRTL::wait_cleanup_run()
 
     // check if return path is computed and if yes, begin journey home
     if (g2.smart_rtl.request_thorough_cleanup()) {
-        smart_rtl_state = SmartRTL_PathFollow;
+        smart_rtl_state = SmartRTLState::PathFollow;
     }
 }
 
@@ -92,7 +92,7 @@ void ModeSmartRTL::path_follow_run()
             if (g2.smart_rtl.get_num_points() == 0) {
                 // this is the very last point, add 2m to the target alt and move to pre-land state
                 next_point.z -= 2.0f;
-                smart_rtl_state = SmartRTL_PreLandPosition;
+                smart_rtl_state = SmartRTLState::PreLandPosition;
                 fast_waypoint = false;
             }
             // send target to waypoint controller
@@ -100,7 +100,7 @@ void ModeSmartRTL::path_follow_run()
             wp_nav->set_fast_waypoint(fast_waypoint);
         } else {
             // this can only happen if we fail to get the semaphore which should never happen but just in case, land
-            smart_rtl_state = SmartRTL_PreLandPosition;
+            smart_rtl_state = SmartRTLState::PreLandPosition;
         }
     }
 
@@ -126,11 +126,11 @@ void ModeSmartRTL::pre_land_position_run()
         // choose descend and hold, or land based on user parameter rtl_alt_final
         if (g.rtl_alt_final <= 0 || copter.failsafe.radio) {
             land_start();
-            smart_rtl_state = SmartRTL_Land;
+            smart_rtl_state = SmartRTLState::Land;
         } else {
             set_descent_target_alt(copter.g.rtl_alt_final);
             descent_start();
-            smart_rtl_state = SmartRTL_Descend;
+            smart_rtl_state = SmartRTLState::Descend;
         }
     }
 
@@ -153,12 +153,12 @@ bool ModeSmartRTL::get_wp(Location& destination)
 {
     // provide target in states which use wp_nav
     switch (smart_rtl_state) {
-    case SmartRTL_WaitForPathCleanup:
-    case SmartRTL_PathFollow:
-    case SmartRTL_PreLandPosition:
-    case SmartRTL_Descend:
+    case SmartRTLState::WaitForPathCleanup:
+    case SmartRTLState::PathFollow:
+    case SmartRTLState::PreLandPosition:
+    case SmartRTLState::Descend:
         return wp_nav->get_wp_destination(destination);
-    case SmartRTL_Land:
+    case SmartRTLState::Land:
         return false;
     }
 
