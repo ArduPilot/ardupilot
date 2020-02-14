@@ -1,6 +1,7 @@
 // auto generated bindings, don't manually edit.  See README.md for details.
 #include "lua_generated_bindings.h"
 #include "lua_boxed_numerics.h"
+#include <AP_Param/AP_Param.h>
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_SerialManager/AP_SerialManager.h>
@@ -530,6 +531,65 @@ const luaL_Reg Location_meta[] = {
     {"get_distance", Location_get_distance},
     {NULL, NULL}
 };
+
+static int AP_Param_set_and_save(lua_State *L) {
+    AP_Param * ud = AP_Param::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "param not supported on this firmware");
+    }
+
+    binding_argcheck(L, 3);
+    const char * data_2 = luaL_checkstring(L, 2);
+    const float raw_data_3 = luaL_checknumber(L, 3);
+    luaL_argcheck(L, ((raw_data_3 >= MAX(-FLT_MAX, -INFINITY)) && (raw_data_3 <= MIN(FLT_MAX, INFINITY))), 3, "argument out of range");
+    const float data_3 = raw_data_3;
+    const bool data = ud->set_and_save(
+            data_2,
+            data_3);
+
+    lua_pushboolean(L, data);
+    return 1;
+}
+
+static int AP_Param_set(lua_State *L) {
+    AP_Param * ud = AP_Param::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "param not supported on this firmware");
+    }
+
+    binding_argcheck(L, 3);
+    const char * data_2 = luaL_checkstring(L, 2);
+    const float raw_data_3 = luaL_checknumber(L, 3);
+    luaL_argcheck(L, ((raw_data_3 >= MAX(-FLT_MAX, -INFINITY)) && (raw_data_3 <= MIN(FLT_MAX, INFINITY))), 3, "argument out of range");
+    const float data_3 = raw_data_3;
+    const bool data = ud->set(
+            data_2,
+            data_3);
+
+    lua_pushboolean(L, data);
+    return 1;
+}
+
+static int AP_Param_get(lua_State *L) {
+    AP_Param * ud = AP_Param::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "param not supported on this firmware");
+    }
+
+    binding_argcheck(L, 2);
+    const char * data_2 = luaL_checkstring(L, 2);
+    float data_5003 = {};
+    const bool data = ud->get(
+            data_2,
+            data_5003);
+
+    if (data) {
+        lua_pushnumber(L, data_5003);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
+}
 
 static int AP_ESC_Telem_get_usage_seconds(lua_State *L) {
     AP_ESC_Telem * ud = AP_ESC_Telem::get_singleton();
@@ -1936,6 +1996,13 @@ static int AP_AHRS_get_roll(lua_State *L) {
     return 1;
 }
 
+const luaL_Reg AP_Param_meta[] = {
+    {"set_and_save", AP_Param_set_and_save},
+    {"set", AP_Param_set},
+    {"get", AP_Param_get},
+    {NULL, NULL}
+};
+
 const luaL_Reg AP_ESC_Telem_meta[] = {
     {"get_usage_seconds", AP_ESC_Telem_get_usage_seconds},
     {NULL, NULL}
@@ -2193,6 +2260,7 @@ const struct userdata_meta userdata_fun[] = {
 };
 
 const struct userdata_meta singleton_fun[] = {
+    {"param", AP_Param_meta, NULL},
     {"esc_telem", AP_ESC_Telem_meta, NULL},
     {"baro", AP_Baro_meta, NULL},
     {"serial", AP_SerialManager_meta, NULL},
@@ -2264,6 +2332,7 @@ void load_generated_bindings(lua_State *L) {
 }
 
 const char *singletons[] = {
+    "param",
     "esc_telem",
     "baro",
     "serial",
