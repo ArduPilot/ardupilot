@@ -239,7 +239,7 @@ void AP_Baro::calibrate(bool save)
         do {
             update();
             if (AP_HAL::millis() - tstart > 500) {
-                AP_BoardConfig::config_error("Baro: unable to calibrate");
+                AP_BoardConfig::config_error("Baro: unable to calibrate 2nd");
             }
         } while (!healthy());
         for (uint8_t i=0; i<_num_sensors; i++) {
@@ -273,7 +273,7 @@ void AP_Baro::calibrate(bool save)
     if (num_calibrated) {
         return;
     }
-    AP_BoardConfig::config_error("AP_Baro: all sensors uncalibrated");
+    AP_BoardConfig::config_error("Baro: all sensors uncalibrated");
 }
 
 /*
