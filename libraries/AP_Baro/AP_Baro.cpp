@@ -307,7 +307,7 @@ void AP_Baro::calibrate(bool save)
     if (num_calibrated) {
         return;
     }
-    AP_BoardConfig::config_error("AP_Baro: all sensors uncalibrated");
+    AP_BoardConfig::config_error("Baro: all sensors uncalibrated");
 }
 
 /*
