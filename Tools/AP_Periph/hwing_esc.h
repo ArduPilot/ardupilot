@@ -44,8 +44,8 @@ private:
         uint16_t throttle;
         uint16_t rpm;
         uint16_t voltage;
-        uint16_t load;
-        uint16_t current;
+        int16_t current;
+        int16_t load;
         uint16_t temperature;
         uint16_t unknown;
         uint16_t crc;
