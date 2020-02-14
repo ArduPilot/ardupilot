@@ -1,5 +1,6 @@
 #pragma once
 // auto generated bindings, don't manually edit.  See README.md for details.
+#include <AP_Param/AP_Param.h>
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_SerialManager/AP_SerialManager.h>
