@@ -232,9 +232,8 @@ void AP_Baro::calibrate(bool save)
     // now average over 5 values for the ground pressure settings
     float sum_pressure[BARO_MAX_INSTANCES] = {0};
     uint8_t count[BARO_MAX_INSTANCES] = {0};
-    const uint8_t num_samples = 5;
 
-    for (uint8_t c = 0; c < num_samples; c++) {
+    for (uint8_t c = 0; c < 5; c++) {
         uint32_t tstart = AP_HAL::millis();
         do {
             update();
