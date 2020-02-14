@@ -161,9 +161,6 @@ private:
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
 
-    // true if the compass's initial location has been set
-    bool compass_init_location;
-
     // Tracker.cpp
     void get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
                              uint8_t &task_count,
