@@ -20,8 +20,14 @@ bool Sub::althold_init()
     pos_control.set_target_to_stopping_point_z();
     holding_depth = true;
 
-    last_roll = ahrs.roll_sensor;
-    last_pitch = ahrs.pitch_sensor;
+    if (prev_control_mode == STABILIZE) {
+        last_roll = ahrs.roll_sensor;
+        last_pitch = ahrs.pitch_sensor;
+    } else {
+        last_roll = 0;
+        last_pitch = 0;
+    }
+
     last_yaw = ahrs.yaw_sensor;
     last_input_ms = AP_HAL::millis();
 
@@ -92,8 +98,8 @@ void Sub::althold_run()
         attitude_control.set_throttle_out(0.5 ,true, g.throttle_filt);
         attitude_control.relax_attitude_controllers();
         pos_control.relax_alt_hold_controllers();
-        last_roll = ahrs.roll_sensor;
-        last_pitch = ahrs.pitch_sensor;
+        last_roll = 0;
+        last_pitch = 0;
         last_yaw = ahrs.yaw_sensor;
         holding_depth = false;
         return;
