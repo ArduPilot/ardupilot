@@ -38,6 +38,7 @@
 #include <uavcan/equipment/indication/LightsCommand.h>
 #include <uavcan/equipment/range_sensor/Measurement.h>
 #include <uavcan/equipment/hardpoint/Command.h>
+#include <uavcan/equipment/esc/Status.h>
 #include <ardupilot/indication/SafetyState.h>
 #include <ardupilot/indication/Button.h>
 #include <ardupilot/equipment/trafficmonitor/TrafficReport.h>
@@ -1104,6 +1105,38 @@ void AP_Periph_FW::pwm_hardpoint_update()
 }
 #endif // HAL_PERIPH_ENABLE_PWM_HARDPOINT
 
+#ifdef HAL_PERIPH_ENABLE_HWESC
+void AP_Periph_FW::hwesc_telem_update()
+{
+    if (!hwesc_telem.update()) {
+        return;
+    }
+    const HWESC_Telem::HWESC &t = hwesc_telem.get_telem();
+
+    uavcan_equipment_esc_Status pkt {};
+    pkt.esc_index = g.esc_number;
+    pkt.voltage = t.voltage;
+    pkt.current = t.current;
+    pkt.temperature = t.temperature;
+    pkt.rpm = t.rpm;
+    pkt.power_rating_pct = (t.load & 0x7F);
+
+    fix_float16(pkt.voltage);
+    fix_float16(pkt.current);
+    fix_float16(pkt.temperature);
+
+    uint8_t buffer[UAVCAN_EQUIPMENT_ESC_STATUS_MAX_SIZE];
+    uint16_t total_size = uavcan_equipment_esc_Status_encode(&pkt, buffer);
+    canardBroadcast(&canard,
+                    UAVCAN_EQUIPMENT_ESC_STATUS_SIGNATURE,
+                    UAVCAN_EQUIPMENT_ESC_STATUS_ID,
+                    &transfer_id,
+                    CANARD_TRANSFER_PRIORITY_LOW,
+                    &buffer[0],
+                    total_size);
+}
+#endif // HAL_PERIPH_ENABLE_HWESC
+
 
 void AP_Periph_FW::can_update()
 {
@@ -1130,6 +1163,10 @@ void AP_Periph_FW::can_update()
 #ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
     pwm_hardpoint_update();
 #endif
+#ifdef HAL_PERIPH_ENABLE_HWESC
+    hwesc_telem_update();
+#endif
+
     processTx();
     processRx();
 }
