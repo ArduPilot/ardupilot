@@ -136,6 +136,10 @@ void AP_Periph_FW::init()
 #ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
     pwm_hardpoint_init();
 #endif
+
+#ifdef HAL_PERIPH_ENABLE_HWESC
+    hwesc_telem.init(hal.uartB);
+#endif
     
     start_ms = AP_HAL::millis();
 }
