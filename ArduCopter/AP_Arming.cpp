@@ -173,7 +173,7 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
         // acro balance parameter check
 #if MODE_ACRO_ENABLED == ENABLED || MODE_SPORT_ENABLED == ENABLED
         if ((copter.g.acro_balance_roll > copter.attitude_control->get_angle_roll_p().kP()) || (copter.g.acro_balance_pitch > copter.attitude_control->get_angle_pitch_p().kP())) {
-            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "ACRO_BAL_ROLL/PITCH");
+            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Check ACRO_BAL_ROLL/PITCH");
             return false;
         }
 #endif
@@ -300,7 +300,7 @@ bool AP_Arming_Copter::motor_checks(bool display_failure)
 {
     // check motors initialised  correctly
     if (!copter.motors->initialised_ok()) {
-        check_failed(display_failure, "check firmware or FRAME_CLASS");
+        check_failed(display_failure, "Check firmware or FRAME_CLASS");
         return false;
     }
 
