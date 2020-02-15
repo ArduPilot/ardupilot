@@ -16,14 +16,15 @@
  */
 void Plane::failsafe_check(void)
 {
-    static uint16_t last_mainLoop_count;
+    static uint16_t last_ticks;
     static uint32_t last_timestamp;
     static bool in_failsafe;
     uint32_t tnow = micros();
 
-    if (perf.mainLoop_count != last_mainLoop_count) {
+    const uint16_t ticks = scheduler.ticks();
+    if (ticks != last_ticks) {
         // the main loop is running, all is OK
-        last_mainLoop_count = perf.mainLoop_count;
+        last_ticks = ticks;
         last_timestamp = tnow;
         in_failsafe = false;
         return;
@@ -38,25 +39,33 @@ void Plane::failsafe_check(void)
     }
 
     if (in_failsafe && tnow - last_timestamp > 20000) {
+
+        // ensure we have the latest RC inputs
+        rc().read_input();
+
         last_timestamp = tnow;
 
+        rc().read_input();
+
+#if ADVANCED_FAILSAFE == ENABLED
         if (in_calibration) {
             // tell the failsafe system that we are calibrating
             // sensors, so don't trigger failsafe
             afs.heartbeat();
         }
+#endif
 
-        if (hal.rcin->num_channels() < 5) {
+        if (RC_Channels::get_valid_channel_count() < 5) {
             // we don't have any RC input to pass through
             return;
         }
 
         // pass RC inputs to outputs every 20ms
-        hal.rcin->clear_overrides();
+        RC_Channels::clear_overrides();
 
         int16_t roll = channel_roll->get_control_in_zero_dz();
         int16_t pitch = channel_pitch->get_control_in_zero_dz();
-        int16_t throttle = channel_throttle->get_control_in_zero_dz();
+        int16_t throttle = get_throttle_input(true);
         int16_t rudder = channel_rudder->get_control_in_zero_dz();
 
         if (!hal.util->get_soft_armed()) {
@@ -74,22 +83,24 @@ void Plane::failsafe_check(void)
         // this is to allow the failsafe module to deliberately crash 
         // the plane. Only used in extreme circumstances to meet the
         // OBC rules
+#if ADVANCED_FAILSAFE == ENABLED
         if (afs.should_crash_vehicle()) {
             afs.terminate_vehicle();
-            return;
+            if (!afs.terminating_vehicle_via_landing()) {
+                return;
+            }
         }
+#endif
 
         // setup secondary output channels that do have
         // corresponding input channels
         SRV_Channels::copy_radio_in_out(SRV_Channel::k_manual, true);
-        SRV_Channels::copy_radio_in_out(SRV_Channel::k_aileron_with_input, true);
-        SRV_Channels::copy_radio_in_out(SRV_Channel::k_elevator_with_input, true);
         SRV_Channels::set_output_scaled(SRV_Channel::k_flap, 0);
         SRV_Channels::set_output_scaled(SRV_Channel::k_flap_auto, 0);
 
-        servos_output();
-        
         // setup flaperons
         flaperon_update(0);
+
+        servos_output();
     }
 }

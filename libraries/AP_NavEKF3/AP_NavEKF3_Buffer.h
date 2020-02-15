@@ -19,7 +19,7 @@ public:
         {
             return false;
         }
-        memset(buffer,0,size*sizeof(element_t));
+        memset((void *)buffer,0,size*sizeof(element_t));
         _size = size;
         _head = 0;
         _tail = 0;
@@ -103,7 +103,7 @@ public:
         _head = 0;
         _tail = 0;
         _new_data = false;
-        memset(buffer,0,_size*sizeof(element_t));
+        memset((void *)buffer,0,_size*sizeof(element_t));
     }
 
 private:
@@ -130,7 +130,7 @@ public:
         {
             return false;
         }
-        memset(buffer,0,size*sizeof(element_t));
+        memset((void *)buffer,0,size*sizeof(element_t));
         _size = size;
         _youngest = 0;
         _oldest = 0;
@@ -147,8 +147,16 @@ public:
         buffer[_youngest].element = element;
         // set oldest data index
         _oldest = (_youngest+1)%_size;
+        if (_oldest == 0) {
+            _filled = true;
+        }
     }
 
+    // return true if the buffer has been filled at least once
+    inline bool is_filled(void) const {
+        return _filled;
+    }
+    
     // retrieve the oldest data from the ring buffer tail
     inline element_type pop_oldest_element() {
         element_type ret = buffer[_oldest].element;
@@ -166,7 +174,7 @@ public:
     inline void reset() {
         _youngest = 0;
         _oldest = 0;
-        memset(buffer,0,_size*sizeof(element_t));
+        memset((void *)buffer,0,_size*sizeof(element_t));
     }
 
     // retrieves data from the ring buffer at a specified index
@@ -185,4 +193,5 @@ public:
     }
 private:
     uint8_t _size,_oldest,_youngest;
+    bool _filled;
 };

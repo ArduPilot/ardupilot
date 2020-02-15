@@ -29,14 +29,14 @@ namespace SITL {
  */
 class QuadPlane : public Plane {
 public:
-    QuadPlane(const char *home_str, const char *frame_str);
+    QuadPlane(const char *frame_str);
 
     /* update model by one time step */
     void update(const struct sitl_input &input) override;
 
     /* static object creator */
-    static Aircraft *create(const char *home_str, const char *frame_str) {
-        return new QuadPlane(home_str, frame_str);
+    static Aircraft *create(const char *frame_str) {
+        return new QuadPlane(frame_str);
     }
 private:
     Frame *frame;

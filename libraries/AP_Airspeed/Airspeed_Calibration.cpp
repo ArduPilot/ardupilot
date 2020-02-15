@@ -8,6 +8,8 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
+#include <GCS_MAVLink/GCS.h>
+#include <AP_Baro/AP_Baro.h>
 
 #include "AP_Airspeed.h"
 
@@ -110,9 +112,10 @@ float Airspeed_Calibration::update(float airspeed, const Vector3f &vg, int16_t m
 /*
   called once a second to do calibration update
  */
-void AP_Airspeed::update_calibration(const Vector3f &vground, int16_t max_airspeed_allowed_during_cal)
+void AP_Airspeed::update_calibration(uint8_t i, const Vector3f &vground, int16_t max_airspeed_allowed_during_cal)
 {
-    if (!_autocal) {
+#if AP_AIRSPEED_AUTOCAL_ENABLE
+    if (!param[i].autocal) {
         // auto-calibration not enabled
         return;
     }
@@ -120,15 +123,15 @@ void AP_Airspeed::update_calibration(const Vector3f &vground, int16_t max_airspe
     // set state.z based on current ratio, this allows the operator to
     // override the current ratio in flight with autocal, which is
     // very useful both for testing and to force a reasonable value.
-    float ratio = constrain_float(_ratio, 1.0f, 4.0f);
+    float ratio = constrain_float(param[i].ratio, 1.0f, 4.0f);
 
-    _calibration.state.z = 1.0f / sqrtf(ratio);
+    state[i].calibration.state.z = 1.0f / sqrtf(ratio);
 
     // calculate true airspeed, assuming a airspeed ratio of 1.0
-    float dpress = get_differential_pressure();
-    float true_airspeed = sqrtf(dpress) * _EAS2TAS;
+    float dpress = MAX(get_differential_pressure(), 0);
+    float true_airspeed = sqrtf(dpress) * AP::baro().get_EAS2TAS();
 
-    float zratio = _calibration.update(true_airspeed, vground, max_airspeed_allowed_during_cal);
+    float zratio = state[i].calibration.update(true_airspeed, vground, max_airspeed_allowed_during_cal);
 
     if (isnan(zratio) || isinf(zratio)) {
         return;
@@ -136,33 +139,50 @@ void AP_Airspeed::update_calibration(const Vector3f &vground, int16_t max_airspe
 
     // this constrains the resulting ratio to between 1.0 and 4.0
     zratio = constrain_float(zratio, 0.5f, 1.0f);
-    _ratio.set(1/sq(zratio));
-    if (_counter > 60) {
-        if (_last_saved_ratio > 1.05f*_ratio ||
-            _last_saved_ratio < 0.95f*_ratio) {
-            _ratio.save();
-            _last_saved_ratio = _ratio;
-            _counter = 0;
+    param[i].ratio.set(1/sq(zratio));
+    if (state[i].counter > 60) {
+        if (state[i].last_saved_ratio > 1.05f*param[i].ratio ||
+            state[i].last_saved_ratio < 0.95f*param[i].ratio) {
+            param[i].ratio.save();
+            state[i].last_saved_ratio = param[i].ratio;
+            state[i].counter = 0;
         }
     } else {
-        _counter++;
+        state[i].counter++;
     }
+#endif // AP_AIRSPEED_AUTOCAL_ENABLE
 }
 
-// log airspeed calibration data to MAVLink
-void AP_Airspeed::log_mavlink_send(mavlink_channel_t chan, const Vector3f &vground)
+/*
+  called once a second to do calibration update
+ */
+void AP_Airspeed::update_calibration(const Vector3f &vground, int16_t max_airspeed_allowed_during_cal)
 {
-    mavlink_msg_airspeed_autocal_send(chan,
-                                      vground.x,
-                                      vground.y,
-                                      vground.z,
-                                      get_differential_pressure(),
-                                      _EAS2TAS,
-                                      _ratio.get(),
-                                      _calibration.state.x,
-                                      _calibration.state.y,
-                                      _calibration.state.z,
-                                      _calibration.P.a.x,
-                                      _calibration.P.b.y,
-                                      _calibration.P.c.z);
+    for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+        update_calibration(i, vground, max_airspeed_allowed_during_cal);
+    }
+    send_airspeed_calibration(vground);
+}
+
+
+void AP_Airspeed::send_airspeed_calibration(const Vector3f &vground)
+{
+#if AP_AIRSPEED_AUTOCAL_ENABLE
+    const mavlink_airspeed_autocal_t packet{
+        vx: vground.x,
+        vy: vground.y,
+        vz: vground.z,
+        diff_pressure: get_differential_pressure(primary),
+        EAS2TAS: AP::baro().get_EAS2TAS(),
+        ratio: param[primary].ratio.get(),
+        state_x: state[primary].calibration.state.x,
+        state_y: state[primary].calibration.state.y,
+        state_z: state[primary].calibration.state.z,
+        Pax: state[primary].calibration.P.a.x,
+        Pby: state[primary].calibration.P.b.y,
+        Pcz: state[primary].calibration.P.c.z
+    };
+    gcs().send_to_active_channels(MAVLINK_MSG_ID_AIRSPEED_AUTOCAL,
+                                  (const char *)&packet);
+#endif // AP_AIRSPEED_AUTOCAL_ENABLE
 }

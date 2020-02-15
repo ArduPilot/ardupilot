@@ -2,9 +2,19 @@
     RC input pass trough to RC output
     Max RC channels 14
     Max update rate 10 Hz
+    Attention: If your board has safety switch,
+    don't forget to push it to enable the PWM output.
 */
 
 #include <AP_HAL/AP_HAL.h>
+
+// we need a boardconfig created so that the io processor's enable
+// parameter is available
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_IOMCU/AP_IOMCU.h>
+AP_BoardConfig BoardConfig;
+#endif
 
 void setup();
 void loop();
@@ -20,6 +30,9 @@ void setup(void)
 {
     hal.console->printf("Starting RCInputToRCOutput test\n");
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    BoardConfig.init();
+#endif
     for (uint8_t i = 0; i < MAX_CHANNELS; i++) {
         hal.rcout->enable_ch(i);
     }

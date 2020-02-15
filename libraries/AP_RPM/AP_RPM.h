@@ -22,20 +22,25 @@
 // Maximum number of RPM measurement instances available on this platform
 #define RPM_MAX_INSTANCES 2
 
-class AP_RPM_Backend; 
- 
+class AP_RPM_Backend;
+
 class AP_RPM
 {
-public:
     friend class AP_RPM_Backend;
 
-    AP_RPM(void);
+public:
+    AP_RPM();
+
+    /* Do not allow copies */
+    AP_RPM(const AP_RPM &other) = delete;
+    AP_RPM &operator=(const AP_RPM&) = delete;
 
     // RPM driver types
     enum RPM_Type {
         RPM_TYPE_NONE    = 0,
-        RPM_TYPE_PX4_PWM = 1,
-        RPM_TYPE_PIN     = 2
+        RPM_TYPE_PWM     = 1,
+        RPM_TYPE_PIN     = 2,
+        RPM_TYPE_EFI     = 3
     };
 
     // The RPM_State structure is filled in by the backend driver
@@ -55,7 +60,7 @@ public:
     AP_Float _quality_min[RPM_MAX_INSTANCES];
 
     static const struct AP_Param::GroupInfo var_info[];
-    
+
     // Return the number of rpm sensor instances
     uint8_t num_sensors(void) const {
         return num_instances;
@@ -88,11 +93,18 @@ public:
 
     bool enabled(uint8_t instance) const;
 
+    static AP_RPM *get_singleton() { return _singleton; }
+
 private:
+    static AP_RPM *_singleton;
+
     RPM_State state[RPM_MAX_INSTANCES];
     AP_RPM_Backend *drivers[RPM_MAX_INSTANCES];
     uint8_t num_instances:2;
 
     void detect_instance(uint8_t instance);
-    void update_instance(uint8_t instance);  
+};
+
+namespace AP {
+    AP_RPM *rpm();
 };

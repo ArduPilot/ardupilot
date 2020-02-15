@@ -1,29 +1,39 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
-#include "RangeFinder.h"
-#include "RangeFinder_Backend.h"
+#include "AP_RangeFinder.h"
+#include "AP_RangeFinder_Backend_Serial.h"
 
-class AP_RangeFinder_uLanding : public AP_RangeFinder_Backend
+class AP_RangeFinder_uLanding : public AP_RangeFinder_Backend_Serial
 {
 
 public:
-    // constructor
-	AP_RangeFinder_uLanding(RangeFinder &ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state,
-                                   AP_SerialManager &serial_manager);
 
-    // static detection function
-    static bool detect(RangeFinder &ranger, uint8_t instance, AP_SerialManager &serial_manager);
+    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
 
-    // update state
-    void update(void);
+protected:
+
+    MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
+        return MAV_DISTANCE_SENSOR_RADAR;
+    }
+
+    // baudrate used during object construction:
+    uint32_t initial_baudrate(uint8_t serial_instance) const override {
+        return 115200;
+    }
+
+    uint16_t rx_bufsize() const override { return 128; }
+    uint16_t tx_bufsize() const override { return 128; }
 
 private:
-    // get a reading
-    bool get_reading(uint16_t &reading_cm);
+    // detect uLanding Firmware Version
+    bool detect_version(void);
 
-    AP_HAL::UARTDriver *uart = nullptr;
-    uint32_t last_reading_ms = 0;
-    uint8_t linebuf[10];
-    uint8_t linebuf_len = 0;
+    // get a reading
+    bool get_reading(uint16_t &reading_cm) override;
+
+    uint8_t  _linebuf[6];
+    uint8_t  _linebuf_len;
+    bool     _version_known;
+    uint8_t  _header;
+    uint8_t  _version;
 };

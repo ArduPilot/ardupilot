@@ -32,6 +32,5 @@ private:
 
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
     uint8_t _displaybuffer[SSD1306_COLUMNS * SSD1306_ROWS_PER_PAGE];
-    AP_HAL::Semaphore *_displaybuffer_sem;
     bool _need_hw_update;
 };

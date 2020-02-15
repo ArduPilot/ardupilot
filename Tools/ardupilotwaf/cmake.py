@@ -200,10 +200,6 @@ class cmake_build_task(Task.Task):
     def keyword(self):
         return 'CMake Build'
 
-# allow tasks to depend on possible headers or other resources if the user
-# declares outputs for the cmake build
-cmake_build_task = Task.update_outputs(cmake_build_task)
-
 cmake_build_task.original_post_run = cmake_build_task.post_run
 def _cmake_build_task_post_run(self):
     self.output_patterns = Utils.to_list(self.output_patterns)

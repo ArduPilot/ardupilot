@@ -25,12 +25,11 @@
 #include <utility>
 
 #include "AP_Airspeed_Backend.h"
-#include <AP_HAL/I2CDevice.h>
 
 class AP_Airspeed_MS4525 : public AP_Airspeed_Backend
 {
 public:
-    AP_Airspeed_MS4525(AP_Airspeed &frontend);
+    AP_Airspeed_MS4525(AP_Airspeed &frontend, uint8_t _instance);
     ~AP_Airspeed_MS4525(void) {}
     
     // probe and initialise the sensor

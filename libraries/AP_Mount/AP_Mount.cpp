@@ -7,6 +7,7 @@
 #include "AP_Mount_Alexmos.h"
 #include "AP_Mount_SToRM32.h"
 #include "AP_Mount_SToRM32_serial.h"
+#include <AP_Math/location.h>
 
 const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _DEFLT_MODE
@@ -19,7 +20,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _RETRACT_X
     // @DisplayName: Mount roll angle when in retracted position
     // @Description: Mount roll angle when in retracted position
-    // @Units: Degrees
+    // @Units: deg
     // @Range: -180.00 179.99
     // @Increment: 1
     // @User: Standard
@@ -27,7 +28,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _RETRACT_Y
     // @DisplayName: Mount tilt/pitch angle when in retracted position
     // @Description: Mount tilt/pitch angle when in retracted position
-    // @Units: Degrees
+    // @Units: deg
     // @Range: -180.00 179.99
     // @Increment: 1
     // @User: Standard
@@ -35,7 +36,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _RETRACT_Z
     // @DisplayName: Mount yaw/pan angle when in retracted position
     // @Description: Mount yaw/pan angle when in retracted position
-    // @Units: Degrees
+    // @Units: deg
     // @Range: -180.00 179.99
     // @Increment: 1
     // @User: Standard
@@ -44,7 +45,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _NEUTRAL_X
     // @DisplayName: Mount roll angle when in neutral position
     // @Description: Mount roll angle when in neutral position
-    // @Units: Degrees
+    // @Units: deg
     // @Range: -180.00 179.99
     // @Increment: 1
     // @User: Standard
@@ -52,7 +53,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _NEUTRAL_Y
     // @DisplayName: Mount tilt/pitch angle when in neutral position
     // @Description: Mount tilt/pitch angle when in neutral position
-    // @Units: Degrees
+    // @Units: deg
     // @Range: -180.00 179.99
     // @Increment: 1
     // @User: Standard
@@ -60,7 +61,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _NEUTRAL_Z
     // @DisplayName: Mount pan/yaw angle when in neutral position
     // @Description: Mount pan/yaw angle when in neutral position
-    // @Units: Degrees
+    // @Units: deg
     // @Range: -180.00 179.99
     // @Increment: 1
     // @User: Standard
@@ -99,7 +100,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _ANGMIN_ROL
     // @DisplayName: Minimum roll angle
     // @Description: Minimum physical roll angular position of mount.
-    // @Units: Centi-Degrees
+    // @Units: cdeg
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
@@ -108,7 +109,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _ANGMAX_ROL
     // @DisplayName: Maximum roll angle
     // @Description: Maximum physical roll angular position of the mount
-    // @Units: Centi-Degrees
+    // @Units: cdeg
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
@@ -124,7 +125,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _ANGMIN_TIL
     // @DisplayName: Minimum tilt angle
     // @Description: Minimum physical tilt (pitch) angular position of mount.
-    // @Units: Centi-Degrees
+    // @Units: cdeg
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
@@ -133,7 +134,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _ANGMAX_TIL
     // @DisplayName: Maximum tilt angle
     // @Description: Maximum physical tilt (pitch) angular position of the mount
-    // @Units: Centi-Degrees
+    // @Units: cdeg
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
@@ -149,7 +150,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _ANGMIN_PAN
     // @DisplayName: Minimum pan angle
     // @Description: Minimum physical pan (yaw) angular position of mount.
-    // @Units: Centi-Degrees
+    // @Units: cdeg
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
@@ -158,7 +159,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _ANGMAX_PAN
     // @DisplayName: Maximum pan angle
     // @Description: Maximum physical pan (yaw) angular position of the mount
-    // @Units: Centi-Degrees
+    // @Units: cdeg
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
@@ -175,7 +176,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _LEAD_RLL
     // @DisplayName: Roll stabilization lead time
     // @Description: Causes the servo angle output to lead the current angle of the vehicle by some amount of time based on current angular rate, compensating for servo delay. Increase until the servo is responsive but doesn't overshoot. Does nothing with pan stabilization enabled.
-    // @Units: Seconds
+    // @Units: s
     // @Range: 0.0 0.2
     // @Increment: .005
     // @User: Standard
@@ -184,7 +185,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _LEAD_PTCH
     // @DisplayName: Pitch stabilization lead time
     // @Description: Causes the servo angle output to lead the current angle of the vehicle by some amount of time based on current angular rate. Increase until the servo is responsive but doesn't overshoot. Does nothing with pan stabilization enabled.
-    // @Units: Seconds
+    // @Units: s
     // @Range: 0.0 0.2
     // @Increment: .005
     // @User: Standard
@@ -219,7 +220,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_RETRACT_X
     // @DisplayName: Mount2 roll angle when in retracted position
     // @Description: Mount2 roll angle when in retracted position
-    // @Units: Degrees
+    // @Units: deg
     // @Range: -180.00 179.99
     // @Increment: 1
     // @User: Standard
@@ -227,7 +228,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_RETRACT_Y
     // @DisplayName: Mount2 tilt/pitch angle when in retracted position
     // @Description: Mount2 tilt/pitch angle when in retracted position
-    // @Units: Degrees
+    // @Units: deg
     // @Range: -180.00 179.99
     // @Increment: 1
     // @User: Standard
@@ -235,7 +236,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_RETRACT_Z
     // @DisplayName: Mount2 yaw/pan angle when in retracted position
     // @Description: Mount2 yaw/pan angle when in retracted position
-    // @Units: Degrees
+    // @Units: deg
     // @Range: -180.00 179.99
     // @Increment: 1
     // @User: Standard
@@ -244,7 +245,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_NEUTRAL_X
     // @DisplayName: Mount2 roll angle when in neutral position
     // @Description: Mount2 roll angle when in neutral position
-    // @Units: Degrees
+    // @Units: deg
     // @Range: -180.00 179.99
     // @Increment: 1
     // @User: Standard
@@ -252,7 +253,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_NEUTRAL_Y
     // @DisplayName: Mount2 tilt/pitch angle when in neutral position
     // @Description: Mount2 tilt/pitch angle when in neutral position
-    // @Units: Degrees
+    // @Units: deg
     // @Range: -180.00 179.99
     // @Increment: 1
     // @User: Standard
@@ -260,7 +261,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_NEUTRAL_Z
     // @DisplayName: Mount2 pan/yaw angle when in neutral position
     // @Description: Mount2 pan/yaw angle when in neutral position
-    // @Units: Degrees
+    // @Units: deg
     // @Range: -180.00 179.99
     // @Increment: 1
     // @User: Standard
@@ -299,7 +300,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_ANGMIN_ROL
     // @DisplayName: Mount2's minimum roll angle
     // @Description: Mount2's minimum physical roll angular position
-    // @Units: Centi-Degrees
+    // @Units: cdeg
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
@@ -308,7 +309,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_ANGMAX_ROL
     // @DisplayName: Mount2's maximum roll angle
     // @Description: Mount2's maximum physical roll angular position
-    // @Units: Centi-Degrees
+    // @Units: cdeg
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
@@ -324,7 +325,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_ANGMIN_TIL
     // @DisplayName: Mount2's minimum tilt angle
     // @Description: Mount2's minimum physical tilt (pitch) angular position
-    // @Units: Centi-Degrees
+    // @Units: cdeg
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
@@ -333,7 +334,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_ANGMAX_TIL
     // @DisplayName: Mount2's maximum tilt angle
     // @Description: Mount2's maximum physical tilt (pitch) angular position
-    // @Units: Centi-Degrees
+    // @Units: cdeg
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
@@ -349,7 +350,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_ANGMIN_PAN
     // @DisplayName: Mount2's minimum pan angle
     // @Description: Mount2's minimum physical pan (yaw) angular position
-    // @Units: Centi-Degrees
+    // @Units: cdeg
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
@@ -358,7 +359,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_ANGMAX_PAN
     // @DisplayName: Mount2's maximum pan angle
     // @Description: MOunt2's maximum physical pan (yaw) angular position
-    // @Units: Centi-Degrees
+    // @Units: cdeg
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
@@ -367,7 +368,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_LEAD_RLL
     // @DisplayName: Mount2's Roll stabilization lead time
     // @Description: Causes the servo angle output to lead the current angle of the vehicle by some amount of time based on current angular rate, compensating for servo delay. Increase until the servo is responsive but doesn't overshoot. Does nothing with pan stabilization enabled.
-    // @Units: Seconds
+    // @Units: s
     // @Range: 0.0 0.2
     // @Increment: .005
     // @User: Standard
@@ -376,7 +377,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_LEAD_PTCH
     // @DisplayName: Mount2's Pitch stabilization lead time
     // @Description: Causes the servo angle output to lead the current angle of the vehicle by some amount of time based on current angular rate. Increase until the servo is responsive but doesn't overshoot. Does nothing with pan stabilization enabled.
-    // @Units: Seconds
+    // @Units: s
     // @Range: 0.0 0.2
     // @Increment: .005
     // @User: Standard
@@ -393,29 +394,26 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     AP_GROUPEND
 };
 
-AP_Mount::AP_Mount(const AP_AHRS_TYPE &ahrs, const struct Location &current_loc) :
-    _ahrs(ahrs),
-    _current_loc(current_loc),
-    _num_instances(0),
-    _primary(0)
+AP_Mount::AP_Mount()
 {
-	AP_Param::setup_object_defaults(this, var_info);
-
-    // initialise backend pointers and mode
-    for (uint8_t i=0; i<AP_MOUNT_MAX_INSTANCES; i++) {
-        _backends[i] = nullptr;
+    if (_singleton != nullptr) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        AP_HAL::panic("Mount must be singleton");
+#endif
+        return;
     }
+    _singleton = this;
+
+	AP_Param::setup_object_defaults(this, var_info);
 }
 
 // init - detect and initialise all mounts
-void AP_Mount::init(DataFlash_Class *dataflash, const AP_SerialManager& serial_manager)
+void AP_Mount::init()
 {
     // check init has not been called before
     if (_num_instances != 0) {
         return;
     }
-
-    _dataflash = dataflash;
 
     // default mount to servo mount if rc output channels to control roll, tilt or pan have been defined
     if (!state[0]._type.configured()) {
@@ -468,7 +466,7 @@ void AP_Mount::init(DataFlash_Class *dataflash, const AP_SerialManager& serial_m
 
         // init new instance
         if (_backends[instance] != nullptr) {
-            _backends[instance]->init(serial_manager);
+            _backends[instance]->init();
             if (!primary_set) {
                 _primary = instance;
                 primary_set = true;
@@ -561,48 +559,116 @@ void AP_Mount::set_angle_targets(uint8_t instance, float roll, float tilt, float
     _backends[instance]->set_angle_targets(roll, tilt, pan);
 }
 
-/// Change the configuration of the mount
-/// triggered by a MavLink packet.
-void AP_Mount::configure_msg(uint8_t instance, mavlink_message_t* msg)
+MAV_RESULT AP_Mount::handle_command_do_mount_configure(const mavlink_command_long_t &packet)
 {
-    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
-        return;
+    if (_primary >= AP_MOUNT_MAX_INSTANCES || _backends[_primary] == nullptr) {
+        return MAV_RESULT_FAILED;
+    }
+    _backends[_primary]->set_mode((MAV_MOUNT_MODE)packet.param1);
+    state[0]._stab_roll = packet.param2;
+    state[0]._stab_tilt = packet.param3;
+    state[0]._stab_pan = packet.param4;
+
+    return MAV_RESULT_ACCEPTED;
+}
+
+
+MAV_RESULT AP_Mount::handle_command_do_mount_control(const mavlink_command_long_t &packet)
+{
+    if (_primary >= AP_MOUNT_MAX_INSTANCES || _backends[_primary] == nullptr) {
+        return MAV_RESULT_FAILED;
     }
 
     // send message to backend
-    _backends[instance]->configure_msg(msg);
+    _backends[_primary]->control(packet.param1, packet.param2, packet.param3, (MAV_MOUNT_MODE) packet.param7);
+
+    return MAV_RESULT_ACCEPTED;
+}
+
+MAV_RESULT AP_Mount::handle_command_long(const mavlink_command_long_t &packet)
+{
+    switch (packet.command) {
+    case MAV_CMD_DO_MOUNT_CONFIGURE:
+        return handle_command_do_mount_configure(packet);
+    case MAV_CMD_DO_MOUNT_CONTROL:
+        return handle_command_do_mount_control(packet);
+    default:
+        return MAV_RESULT_UNSUPPORTED;
+    }
+}
+
+/// Change the configuration of the mount
+void AP_Mount::handle_global_position_int(const mavlink_message_t &msg)
+{
+    mavlink_global_position_int_t packet;
+    mavlink_msg_global_position_int_decode(&msg, &packet);
+
+    if (!check_latlng(packet.lat, packet.lon)) {
+        return;
+    }
+
+    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
+        if (_backends[instance] == nullptr) {
+            continue;
+        }
+        struct mount_state &_state = state[instance];
+        if (_state._target_sysid != msg.sysid) {
+            continue;
+        }
+        _state._target_sysid_location.lat = packet.lat;
+        _state._target_sysid_location.lng = packet.lon;
+        // global_position_int.alt is *UP*, so is location.
+        _state._target_sysid_location.set_alt_cm(packet.alt*0.1,
+                                                 Location::AltFrame::ABSOLUTE);
+        _state._target_sysid_location_set = true;
+    }
+}
+
+/// Change the configuration of the mount
+void AP_Mount::handle_mount_configure(const mavlink_message_t &msg)
+{
+    if (_primary >= AP_MOUNT_MAX_INSTANCES || _backends[_primary] == nullptr) {
+        return;
+    }
+
+    mavlink_mount_configure_t packet;
+    mavlink_msg_mount_configure_decode(&msg, &packet);
+
+    // send message to backend
+    _backends[_primary]->handle_mount_configure(packet);
 }
 
 /// Control the mount (depends on the previously set mount configuration)
-/// triggered by a MavLink packet.
-void AP_Mount::control_msg(uint8_t instance, mavlink_message_t *msg)
+void AP_Mount::handle_mount_control(const mavlink_message_t &msg)
 {
-    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
+    if (_primary >= AP_MOUNT_MAX_INSTANCES || _backends[_primary] == nullptr) {
         return;
     }
 
-    // send message to backend
-    _backends[instance]->control_msg(msg);
-}
-
-void AP_Mount::control(uint8_t instance, int32_t pitch_or_lat, int32_t roll_or_lon, int32_t yaw_or_alt, enum MAV_MOUNT_MODE mount_mode)
-{
-    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
-        return;
-    }
+    mavlink_mount_control_t packet;
+    mavlink_msg_mount_control_decode(&msg, &packet);
 
     // send message to backend
-    _backends[instance]->control(pitch_or_lat, roll_or_lon, yaw_or_alt, mount_mode);
+    _backends[_primary]->handle_mount_control(packet);
 }
 
 /// Return mount status information
-void AP_Mount::status_msg(mavlink_channel_t chan)
+void AP_Mount::send_mount_status(mavlink_channel_t chan)
 {
-    // call status_msg for  each instance
+    // call send_mount_status for  each instance
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         if (_backends[instance] != nullptr) {
-            _backends[instance]->status_msg(chan);
+            _backends[instance]->send_mount_status(chan);
         }
+    }
+}
+
+// point at system ID sysid
+void AP_Mount::set_target_sysid(uint8_t instance, uint8_t sysid)
+{
+    // call instance's set_roi_cmd
+    if (instance < AP_MOUNT_MAX_INSTANCES && _backends[instance] != nullptr) {
+        _backends[instance]->set_target_sysid(sysid);
     }
 }
 
@@ -616,7 +682,7 @@ void AP_Mount::set_roi_target(uint8_t instance, const struct Location &target_lo
 }
 
 // pass a GIMBAL_REPORT message to the backend
-void AP_Mount::handle_gimbal_report(mavlink_channel_t chan, mavlink_message_t *msg)
+void AP_Mount::handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg)
 {
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         if (_backends[instance] != nullptr) {
@@ -625,8 +691,31 @@ void AP_Mount::handle_gimbal_report(mavlink_channel_t chan, mavlink_message_t *m
     }
 }
 
+void AP_Mount::handle_message(mavlink_channel_t chan, const mavlink_message_t &msg)
+{
+    switch (msg.msgid) {
+    case MAVLINK_MSG_ID_GIMBAL_REPORT:
+        handle_gimbal_report(chan, msg);
+        break;
+    case MAVLINK_MSG_ID_MOUNT_CONFIGURE:
+        handle_mount_configure(msg);
+        break;
+    case MAVLINK_MSG_ID_MOUNT_CONTROL:
+        handle_mount_control(msg);
+        break;
+    case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
+        handle_global_position_int(msg);
+        break;
+    default:
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        AP_HAL::panic("Unhandled mount case");
+#endif
+        break;
+    }
+}
+
 // handle PARAM_VALUE
-void AP_Mount::handle_param_value(mavlink_message_t *msg)
+void AP_Mount::handle_param_value(const mavlink_message_t &msg)
 {
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         if (_backends[instance] != nullptr) {
@@ -644,3 +733,16 @@ void AP_Mount::send_gimbal_report(mavlink_channel_t chan)
         }
     }    
 }
+
+
+// singleton instance
+AP_Mount *AP_Mount::_singleton;
+
+namespace AP {
+
+AP_Mount *mount()
+{
+    return AP_Mount::get_singleton();
+}
+
+};

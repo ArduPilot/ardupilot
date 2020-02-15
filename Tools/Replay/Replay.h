@@ -21,21 +21,18 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AccelCal/AP_AccelCal.h>
-#include <AP_ADC/AP_ADC.h>
 #include <AP_Declination/AP_Declination.h>
 #include <Filter/Filter.h>
-#include <AP_Buffer/AP_Buffer.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_Notify/AP_Notify.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
-#include <AP_InertialNav/AP_InertialNav.h>
 #include <AP_NavEKF2/AP_NavEKF2.h>
 #include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_Mission/AP_Mission.h>
@@ -52,24 +49,37 @@
 #include <unistd.h>
 #include <AP_HAL/utility/getopt_cpp.h>
 
-class ReplayVehicle {
+class ReplayVehicle : public AP_Vehicle {
 public:
-    void setup();
-    void load_parameters(void);
+    friend class Replay;
+
+    ReplayVehicle() { unused = -1; }
+    // HAL::Callbacks implementation.
+    void load_parameters(void) override;
+    void get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
+                             uint8_t &task_count,
+                             uint32_t &log_bit) override { };
+
+    virtual bool set_mode(const uint8_t new_mode, const ModeReason reason) override { return true; }
+    virtual uint8_t get_mode() const override { return 0; }
 
     AP_InertialSensor ins;
     AP_Baro barometer;
     AP_GPS gps;
     Compass compass;
     AP_SerialManager serial_manager;
-    RangeFinder rng {serial_manager, ROTATION_PITCH_270};
-    NavEKF2 EKF2{&ahrs, barometer, rng};
-    NavEKF3 EKF3{&ahrs, barometer, rng};
-    AP_AHRS_NavEKF ahrs {ins, barometer, gps, rng, EKF2, EKF3};
-    AP_InertialNav_NavEKF inertial_nav{ahrs};
+    RangeFinder rng;
+    AP_AHRS_NavEKF ahrs;
     AP_Vehicle::FixedWing aparm;
     AP_Airspeed airspeed;
-    DataFlash_Class dataflash{"Replay v0.1"};
+    AP_Int32 unused; // logging is magic for Replay; this is unused
+    struct LogStructure log_structure[256] = {
+    };
+    AP_Logger logger{unused};
+
+protected:
+
+    void init_ardupilot() override;
 
 private:
     Parameters g;
@@ -91,7 +101,8 @@ public:
     void setup() override;
     void loop() override;
 
-    void flush_dataflash(void);
+    void flush_logger(void);
+    void show_packet_counts();
 
     bool check_solution = false;
     const char *log_filename = NULL;
@@ -118,14 +129,21 @@ private:
     SITL::SITL sitl;
 #endif
 
-    LogReader logreader{_vehicle.ahrs, _vehicle.ins, _vehicle.barometer, _vehicle.compass, _vehicle.gps, _vehicle.airspeed, _vehicle.dataflash, nottypes};
+    LogReader logreader{_vehicle.ahrs,
+            _vehicle.ins,
+            _vehicle.compass,
+            _vehicle.gps,
+            _vehicle.airspeed,
+            _vehicle.logger,
+            _vehicle.log_structure,
+            0,
+            nottypes};
 
     FILE *ekf1f;
     FILE *ekf2f;
     FILE *ekf3f;
     FILE *ekf4f;
 
-    bool done_parameters;
     bool done_baro_init;
     bool done_home_init;
     int32_t arm_time_ms = -1;
@@ -140,6 +158,7 @@ private:
     bool logmatch = false;
     uint32_t output_counter = 0;
     uint64_t last_timestamp = 0;
+    bool packet_counts = false;
 
     struct {
         float max_roll_error;
@@ -160,6 +179,7 @@ private:
 
     void set_ins_update_rate(uint16_t update_rate);
     void inhibit_gyro_cal();
+    void force_log_disarmed();
 
     void usage(void);
     void set_user_parameters(void);
@@ -177,10 +197,8 @@ private:
     void flush_and_exit();
 
     FILE *xfopen(const char *f, const char *mode);
-};
 
-enum {
-    LOG_CHEK_MSG=100
+    bool seen_non_fmt;
 };
 
 /*

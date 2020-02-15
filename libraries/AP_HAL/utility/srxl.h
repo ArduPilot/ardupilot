@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <stdint.h>
+
 /*
  * Decoder for SRXL protocol
  *

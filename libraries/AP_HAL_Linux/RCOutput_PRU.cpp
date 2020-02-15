@@ -23,7 +23,7 @@ static const uint8_t chan_pru_map[]= {10,8,11,9,7,6,5,4,3,2,1,0};               
 
 static void catch_sigbus(int sig)
 {
-    AP_HAL::panic("RCOutput.cpp:SIGBUS error gernerated\n");
+    AP_HAL::panic("RCOutput.cpp:SIGBUS error generated\n");
 }
 void RCOutput_PRU::init()
 {
@@ -99,6 +99,9 @@ void RCOutput_PRU::cork(void)
 
 void RCOutput_PRU::push(void)
 {
+    if (!corked) {
+        return;
+    }
     corked = false;
     for (uint8_t i=0; i<ARRAY_SIZE(pending); i++) {
         if (pending_mask & (1U << i)) {

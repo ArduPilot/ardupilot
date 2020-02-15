@@ -19,17 +19,10 @@
 
 #include <utility>
 
-#include <AP_HAL_Linux/GPIO.h>
-
 extern const AP_HAL::HAL &hal;
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-#define LSM9DS0_DRY_X_PIN RPI_GPIO_17
-#define LSM9DS0_DRY_G_PIN RPI_GPIO_6
-#else
 #define LSM9DS0_DRY_X_PIN -1
 #define LSM9DS0_DRY_G_PIN -1
-#endif
 
 #define LSM9DS0_G_WHOAMI    0xD4 // L3GD20
 #define LSM9DS0_G_WHOAMI_H  0xD7 // L3GD20H
@@ -379,8 +372,8 @@ extern const AP_HAL::HAL &hal;
 #define ACT_DUR                                       0x3F
 
 AP_InertialSensor_LSM9DS0::AP_InertialSensor_LSM9DS0(AP_InertialSensor &imu,
-                                                     AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_gyro,
-                                                     AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel,
+                                                     AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro,
+                                                     AP_HAL::OwnPtr<AP_HAL::Device> dev_accel,
                                                      int drdy_pin_num_a,
                                                      int drdy_pin_num_g,
                                                      enum Rotation rotation_a,
@@ -398,8 +391,8 @@ AP_InertialSensor_LSM9DS0::AP_InertialSensor_LSM9DS0(AP_InertialSensor &imu,
 }
 
 AP_InertialSensor_Backend *AP_InertialSensor_LSM9DS0::probe(AP_InertialSensor &_imu,
-                                                            AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_gyro,
-                                                            AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel,
+                                                            AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro,
+                                                            AP_HAL::OwnPtr<AP_HAL::Device> dev_accel,
                                                             enum Rotation rotation_a,
                                                             enum Rotation rotation_g,
                                                             enum Rotation rotation_gH)
@@ -456,9 +449,7 @@ bool AP_InertialSensor_LSM9DS0::_init_sensor()
 
 bool AP_InertialSensor_LSM9DS0::_hardware_init()
 {
-    if (!_spi_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return false;
-    }
+    _spi_sem->take_blocking();
 
     uint8_t tries, whoami;
 
@@ -468,13 +459,11 @@ bool AP_InertialSensor_LSM9DS0::_hardware_init()
     
     whoami_g = _register_read_g(WHO_AM_I_G);
     if (whoami_g != LSM9DS0_G_WHOAMI && whoami_g != LSM9DS0_G_WHOAMI_H) {
-        hal.console->printf("LSM9DS0: unexpected gyro WHOAMI 0x%x\n", (unsigned)whoami_g);
         goto fail_whoami;
     }
 
     whoami = _register_read_xm(WHO_AM_I_XM);
     if (whoami != LSM9DS0_XM_WHOAMI) {
-        hal.console->printf("LSM9DS0: unexpected acc/mag  WHOAMI 0x%x\n", (unsigned)whoami);
         goto fail_whoami;
     }
 
@@ -523,7 +512,7 @@ fail_whoami:
 void AP_InertialSensor_LSM9DS0::start(void)
 {
     _gyro_instance = _imu.register_gyro(760, _dev_gyro->get_bus_id_devtype(DEVTYPE_GYR_L3GD20));
-    _accel_instance = _imu.register_accel(800, _dev_accel->get_bus_id_devtype(DEVTYPE_ACC_LSM303D));
+    _accel_instance = _imu.register_accel(1000, _dev_accel->get_bus_id_devtype(DEVTYPE_ACC_LSM303D));
 
     if (whoami_g == LSM9DS0_G_WHOAMI_H) {
         set_gyro_orientation(_gyro_instance, _rotation_gH);
@@ -683,7 +672,7 @@ void AP_InertialSensor_LSM9DS0::_set_accel_scale(accel_scale scale)
     _accel_scale = (((float) scale + 1.0f) * 2.0f) / 32768.0f;
     if (scale == A_SCALE_16G) {
         /* the datasheet shows an exception for +-16G */
-        _accel_scale = 0.000732;
+        _accel_scale = 0.000732f;
     }
     /* convert to G/LSB to (m/s/s)/LSB */
     _accel_scale *= GRAVITY_MSS;
@@ -744,7 +733,7 @@ void AP_InertialSensor_LSM9DS0::_read_data_transaction_a()
     accel_data *= _accel_scale;
 
     _rotate_and_correct_accel(_accel_instance, accel_data);
-    _notify_new_accel_raw_sample(_accel_instance, accel_data);
+    _notify_new_accel_raw_sample(_accel_instance, accel_data, AP_HAL::micros64());
 }
 
 /*
@@ -765,7 +754,7 @@ void AP_InertialSensor_LSM9DS0::_read_data_transaction_g()
     gyro_data *= _gyro_scale;
 
     _rotate_and_correct_gyro(_gyro_instance, gyro_data);
-    _notify_new_gyro_raw_sample(_gyro_instance, gyro_data);
+    _notify_new_gyro_raw_sample(_gyro_instance, gyro_data, AP_HAL::micros64());
 }
 
 bool AP_InertialSensor_LSM9DS0::update()

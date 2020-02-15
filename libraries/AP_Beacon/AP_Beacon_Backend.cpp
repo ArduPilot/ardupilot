@@ -26,7 +26,9 @@ AP_Beacon_Backend::AP_Beacon_Backend(AP_Beacon &frontend) :
 {
 }
 
-// set vehicle position, pos should be in the beacon's local frame
+// set vehicle position:
+// pos should be in the beacon's local frame in meters
+// accuracy_estimate is also in meters
 void AP_Beacon_Backend::set_vehicle_position(const Vector3f& pos, float accuracy_estimate)
 {
     _frontend.veh_pos_update_ms = AP_HAL::millis();
@@ -53,7 +55,7 @@ void AP_Beacon_Backend::set_beacon_distance(uint8_t beacon_instance, float dista
 }
 
 // configure beacon's position in meters from origin
-// pos should be in the beacon's local frame
+// pos should be in the beacon's local frame (meters)
 void AP_Beacon_Backend::set_beacon_position(uint8_t beacon_instance, const Vector3f& pos)
 {
     // sanity check instance
@@ -70,7 +72,7 @@ void AP_Beacon_Backend::set_beacon_position(uint8_t beacon_instance, const Vecto
     _frontend.beacon_state[beacon_instance].position = correct_for_orient_yaw(pos);
 }
 
-// rotate vector to correct for beacon system yaw orientation
+// rotate vector (meters) to correct for beacon system yaw orientation
 Vector3f AP_Beacon_Backend::correct_for_orient_yaw(const Vector3f &vector)
 {
     // exit immediately if no correction

@@ -1,0 +1,121 @@
+#compdef sim_vehicle.py
+#autoload
+
+local temp_word
+local cur cword prev
+local -a vehicles
+
+_sim_vehicle() {
+  typeset -A opt_args
+  local context state state_descr line curcontext="$curcontext"
+    cur=${words[CURRENT]}
+    prev=${words[CURRENT-1]}
+  _arguments -C -A -s -S \
+    '(- 1 *)'{-h,--help}'[show help options and exit]' \
+    '(-j --jobs)'{-j,--jobs}'[number of processors to use during build]:int:' \
+    '(-N --no-rebuild)'{-N,--no-rebuild}'[do not rebuild before starting ardupilot]' \
+    '(-D --debug)'{-D,--debug}'[build with debugging]' \
+    '(-c --clean)'{-c,--clean}'[do a make clean before building]' \
+    '(-I --instance=)'{-I,--instance=}'[instance of simulator]:int:' \
+    '(-V --valgrind)'{-V,--valgrind}'[enable valgrind for memory access checking (slow!)]' \
+    '--callgrind[enable valgrind for performance analysis (slow!!)]' \
+    '(-T --tracker)'{-T,--tracker}'[start an antenna tracker instance]' \
+    '(-A --sitl-instance-args)'{-A,--sitl-instance-args}'[pass arguments to SITL instance]:SITL_INSTANCE_ARGS:' \
+    '(-G --gdb)'{-G,--gdb}'[use gdb for debugging ardupilot]' \
+    '(-g --gdb-stopped)'{-g,--gdb-stopped}'[use gdb for debugging ardupilot (no auto-start)]' \
+    '--lldb[use lldb for debugging ardupilot]' \
+    '--lldb-stopped[use ldb for debugging ardupilot (no auto-start)]' \
+    '(-d --delay-start=)'{-d,--delay-start=}'[delay start of mavproxy by this number of seconds]:int:' \
+    '(-B --breakpoint=)'{-B,--breakpoint=}'[add a breakpoint at given location in debugger]:LOCATION:' \
+    '(-M --mavlink-gimbal)'{-M,--mavlink-gimbal}'[enable MAVLink gimbal]' \
+    '(-L --location=)'{-L,--location=}'[use start location from Tools/autotest/locations.txt]:LOCATION:' \
+    '(-l --custom-location=)'{-l,--custom-location=}'[set custom start location (lat,lon,alt,heading)]:LOCATION:' \
+    '(-S --speedup=)'{-S,--speedup=}'[set simulation speedup (1 for wall clock time)]:SPEEDUP:' \
+    '(-t --tracker-location=)'{-t,--tracker-location=}'[set antenna tracker start location]:TRACKER_LOCATION:' \
+    '(-w --wipe-eeprom)'{-w,--wipe-eeprom}'[wipe EEPROM and reload parameters]' \
+    '(-m --mavproxy-args=)'{-m,--mavproxy-args=}'[additional arguments to pass to mavproxy.py]:MAVPROXY_ARGS:' \
+    '--strace[strace the ArduPilot binary]' \
+    '--model=[Override simulation model to use]:MODEL:' \
+    '--use-dir=[Store SITL state and output in named directory]:DIR:' \
+    '--no-mavproxy[Do notlaunch MAVProxy]' \
+    '--fresh-params[Generate and use local parameter help XML]' \
+    '--mcast[Use multicasting at default 239.255.145.50:14550]' \
+    '--osd[Enable SITL OSD]' \
+    '--tonealarm[Enable SITL ToneAlarm]' \
+    '--rgbled[Enable SITL RGBLed]' \
+    '--add-param-file=[Add a parameters file to use]:ADD_PARAM_FILE:' \
+    '--no-extra-ports[Disable setup of UDP 14550 and 14551 output]' \
+    '(-Z --swarm=)'{-Z,--swarm=}'[Specify path of swarminit.txt for shifting spawn
+                        location]:SWARM:' \
+    '--flash-storage[enable use of flash storage emulation]' \
+    '--out=[create an additional mavlink output]:OUT:' \
+    '--map[load map module on startup]' \
+    '--console[load console module on startup]' \
+    '--aircraft=[store state and logs in named directory]:AIRCRAFT:' \
+    '--moddebug=[mavproxy module debug]:int:' \
+    '(-v --vehicle)'{-v,--vehicle}'[vehicle type]:vehicle:_sim_vehicle_vehicles' \
+    '(-f --frame)'{-f,--frame}'[set vehicle frame type]:frame:_copter_frames' \
+  && ret=0
+  
+
+}
+
+_get_vehicle_type() {
+  # get the calling program, remove anything after the space == all commands arguments
+  local caller; caller=$(echo ${words[@]} | sed 's/ .*//g');
+  # get options between "vehicle type " and closing ")", remove line return, remove spaces, anything before the opening (, remove the "|" and closing ")"
+  vehicles=( $($caller --help | sed -n '/vehicle type (/,/)/p' | tr '\n' ' ' | sed -e 's/ //g' -e 's/.*(//g' -e 's/[|)]/ /g') )
+}
+
+(( $+functions[_sim_vehicle_vehicles] )) ||
+_sim_vehicle_vehicles() {
+  _get_vehicle_type
+  _describe -t vehicles 'vehicle' vehicles "$@" && ret=0
+}
+
+(( $+functions[_copter_frames] )) ||
+_copter_frames() {
+search_vehicle=true
+local_current=$CURRENT
+vehicle=''
+_get_vehicle_type
+# search the vehicle type used with -v on previous arguements
+# Todo: handle failure
+while ( $search_vehicle || $local_current -eq 0 )
+do
+    for w in $vehicles
+    do
+      if [ "$w" = "$words[$local_current]" ] 
+      then
+          vehicle=$words[$local_current]
+          search_vehicle=false
+          break
+      fi
+    done;
+    local_current=$(( $local_current - 1 ))
+done
+
+# get the calling program, remove anything after the space == all commands arguments
+local caller; caller=$(echo ${words[@]} | sed 's/ .*//g');
+
+# to get the vehicle list :
+# Get everything between "frame type" and "-C", remove first and last line, get line starting with caracters and ": " sequence, remove spaces and :
+local supported_vehicle_list=($($caller --help | sed -n '/frame type/,/-C/p' | sed -e '1d' -e '$d' | sed  -n 's/\(.*: \).*/\1/p' | sed -e 's/ //g' -e 's/://g'))
+
+local frames;
+local count=1;
+for v in $supported_vehicle_list
+do
+  if [ "$v" = "$vehicle" ]
+  then
+      # Get everything between "frame type" and "-C", remove first and last line and change starting space by " :", change newlines to space, remove spaces then change vehicle type enclose by ":" by newline and change "|" by space, remove first line, get line "count" that match supported_vehicle_list[count]
+      frames=($($caller --help | sed -n '/frame type/,/-C/p' | sed -e '1d' -e '$d' -e 's/^\s*A/ :A/g' | tr '\n' ' ' | sed -e 's/ //g' -e 's/:\w*:/\n/g' -e 's/[|]/ /g' | sed '1d' | sed "${count}q;d"))
+      break
+  fi
+  count=$(( $count + 1 ))
+done
+
+  _describe -t frames 'frame' frames "$@" && ret=0
+}
+
+_sim_vehicle "$@"

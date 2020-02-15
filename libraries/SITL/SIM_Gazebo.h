@@ -28,18 +28,18 @@ namespace SITL {
  */
 class Gazebo : public Aircraft {
 public:
-    Gazebo(const char *home_str, const char *frame_str);
+    Gazebo(const char *frame_str);
 
     /* update model by one time step */
-    void update(const struct sitl_input &input);
+    void update(const struct sitl_input &input) override;
 
     /* static object creator */
-    static Aircraft *create(const char *home_str, const char *frame_str) {
-        return new Gazebo(home_str, frame_str);
+    static Aircraft *create(const char *frame_str) {
+        return new Gazebo(frame_str);
     }
 
     /*  Create and set in/out socket for Gazebo simulator */
-    void set_interface_ports(const char* address, const int port_in, const int port_out);
+    void set_interface_ports(const char* address, const int port_in, const int port_out) override;
 
 private:
     /*

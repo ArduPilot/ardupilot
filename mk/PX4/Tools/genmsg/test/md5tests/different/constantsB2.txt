@@ -1,2 +1,0 @@
-# protect against aliasing
-string s=uint32 a

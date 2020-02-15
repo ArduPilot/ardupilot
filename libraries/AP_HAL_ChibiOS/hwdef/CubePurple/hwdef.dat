@@ -1,0 +1,35 @@
+# hw definition file for processing by chibios_hwdef.py
+# for The CUBE Black and the Cube Purple hardware
+# this is based on fmuv3, but with vendor specific USB IDs
+
+include ../fmuv3/hwdef.dat
+
+# USB setup
+USB_VENDOR 0x2DAE # ONLY FOR USE BY HEX! NOBODY ELSE
+USB_PRODUCT 0x1015
+USB_STRING_MANUFACTURER "Hex/ProfiCNC"
+USB_STRING_PRODUCT "CubePurple"
+USB_STRING_SERIAL  "%SERIAL%"
+
+# remap PB0/1 as ADC's
+undef PB0
+undef PB1
+PB0 PB0_ADC ADC1 SCALE(1)
+PB1 PB1_ADC ADC1 SCALE(1)
+
+# one non-isolated IMU
+IMU Invensense SPI:mpu9250 ROTATION_YAW_270
+
+# alterative newer IMU
+IMU Invensensev2 SPI:icm20948 ROTATION_YAW_270
+
+define HAL_DEFAULT_INS_FAST_SAMPLE 1
+
+# one baros
+BARO MS56XX SPI:ms5611
+
+# compass as part of the ICM20948
+COMPASS AK09916:probe_ICM20948 0 ROTATION_ROLL_180_YAW_90
+
+# also probe for external compasses
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES

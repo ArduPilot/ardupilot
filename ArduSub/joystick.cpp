@@ -23,6 +23,12 @@ uint16_t buttons_prev;
 const uint8_t SERVO_CHAN_1 = 9; // Pixhawk Aux1
 const uint8_t SERVO_CHAN_2 = 10; // Pixhawk Aux2
 const uint8_t SERVO_CHAN_3 = 11; // Pixhawk Aux3
+<<<<<<< HEAD
+=======
+
+uint8_t roll_pitch_flag = false; // Flag to adjust roll/pitch instead of forward/lateral
+bool controls_reset_since_input_hold = true;
+>>>>>>> 14ad9a58bde667b94cfc1aae2e896cebef07ffdf
 }
 
 void Sub::init_joystick()
@@ -32,7 +38,11 @@ void Sub::init_joystick()
     lights1 = RC_Channels::rc_channel(8)->get_radio_min();
     lights2 = RC_Channels::rc_channel(9)->get_radio_min();
 
+<<<<<<< HEAD
     set_mode(MANUAL, MODE_REASON_TX_COMMAND); // Initialize flight mode
+=======
+    set_mode(MANUAL, ModeReason::RC_COMMAND); // Initialize flight mode
+>>>>>>> 14ad9a58bde667b94cfc1aae2e896cebef07ffdf
 
     if (g.numGainSettings < 1) {
         g.numGainSettings.set_and_save(1);
@@ -51,14 +61,18 @@ void Sub::init_joystick()
 void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t z, int16_t r, uint16_t buttons)
 {
 
+<<<<<<< HEAD
     int16_t channels[11];
 
+=======
+>>>>>>> 14ad9a58bde667b94cfc1aae2e896cebef07ffdf
     float rpyScale = 0.4*gain; // Scale -1000-1000 to -400-400 with gain
     float throttleScale = 0.8*gain*g.throttle_gain; // Scale 0-1000 to 0-800 times gain
     int16_t rpyCenter = 1500;
     int16_t throttleBase = 1500-500*throttleScale;
 
     bool shift = false;
+<<<<<<< HEAD
 
     // Neutralize camera tilt and pan speed setpoint
     cam_tilt = 1500;
@@ -97,81 +111,158 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
     channels[2] = constrain_int16((z+zTrim)*throttleScale+throttleBase,1100,1900); // throttle
     channels[3] = constrain_int16(r*rpyScale+rpyCenter,1100,1900);                 // yaw
 
+=======
+
+    // Neutralize camera tilt and pan speed setpoint
+    cam_tilt = 1500;
+    cam_pan = 1500;
+
+    // Detect if any shift button is pressed
+    for (uint8_t i = 0 ; i < 16 ; i++) {
+        if ((buttons & (1 << i)) && get_button(i)->function() == JSButton::button_function_t::k_shift) {
+            shift = true;
+        }
+    }
+
+    // Act if button is pressed
+    // Only act upon pressing button and ignore holding. This provides compatibility with Taranis as joystick.
+    for (uint8_t i = 0 ; i < 16 ; i++) {
+        if ((buttons & (1 << i))) {
+            handle_jsbutton_press(i,shift,(buttons_prev & (1 << i)));
+            // buttonDebounce = tnow_ms;
+        } else if (buttons_prev & (1 << i)) {
+            handle_jsbutton_release(i, shift);
+        }
+    }
+
+    buttons_prev = buttons;
+
+    // attitude mode:
+    if (roll_pitch_flag == 1) {
+    // adjust roll/pitch trim with joystick input instead of forward/lateral
+        pitchTrim = -x * rpyScale;
+        rollTrim  =  y * rpyScale;
+    }
+
+    uint32_t tnow = AP_HAL::millis();
+
+    int16_t zTot;
+    int16_t yTot;
+    int16_t xTot;
+
+    if (!controls_reset_since_input_hold) {
+        zTot = zTrim + 500; // 500 is neutral for throttle
+        yTot = yTrim;
+        xTot = xTrim;
+        // if all 3 axes return to neutral, than we're ready to accept input again
+        controls_reset_since_input_hold = (abs(z - 500) < 50) && (abs(y) < 50) && (abs(x) < 50);
+    } else {
+        zTot = z + zTrim;
+        yTot = y + yTrim;
+        xTot = x + xTrim;
+    }
+
+    RC_Channels::set_override(0, constrain_int16(pitchTrim + rpyCenter,1100,1900), tnow); // pitch
+    RC_Channels::set_override(1, constrain_int16(rollTrim  + rpyCenter,1100,1900), tnow); // roll
+
+    RC_Channels::set_override(2, constrain_int16((zTot)*throttleScale+throttleBase,1100,1900), tnow); // throttle
+    RC_Channels::set_override(3, constrain_int16(r*rpyScale+rpyCenter,1100,1900), tnow);                 // yaw
+
+>>>>>>> 14ad9a58bde667b94cfc1aae2e896cebef07ffdf
     // maneuver mode:
     if (roll_pitch_flag == 0) {
         // adjust forward and lateral with joystick input instead of roll and pitch
-        channels[4] = constrain_int16((x+xTrim)*rpyScale+rpyCenter,1100,1900); // forward for ROV
-        channels[5] = constrain_int16((y+yTrim)*rpyScale+rpyCenter,1100,1900); // lateral for ROV
+        RC_Channels::set_override(4, constrain_int16((xTot)*rpyScale+rpyCenter,1100,1900), tnow); // forward for ROV
+        RC_Channels::set_override(5, constrain_int16((yTot)*rpyScale+rpyCenter,1100,1900), tnow); // lateral for ROV
     } else {
         // neutralize forward and lateral input while we are adjusting roll and pitch
-        channels[4] = constrain_int16(xTrim*rpyScale+rpyCenter,1100,1900); // forward for ROV
-        channels[5] = constrain_int16(yTrim*rpyScale+rpyCenter,1100,1900); // lateral for ROV
+        RC_Channels::set_override(4, constrain_int16(xTrim*rpyScale+rpyCenter,1100,1900), tnow); // forward for ROV
+        RC_Channels::set_override(5, constrain_int16(yTrim*rpyScale+rpyCenter,1100,1900), tnow); // lateral for ROV
     }
 
+<<<<<<< HEAD
     channels[6] = cam_pan;       // camera pan
     channels[7] = cam_tilt;      // camera tilt
     channels[8] = lights1;       // lights 1
     channels[9] = lights2;       // lights 2
     channels[10] = video_switch; // video switch
+=======
+    RC_Channels::set_override(6, cam_pan, tnow);       // camera pan
+    RC_Channels::set_override(7, cam_tilt, tnow);      // camera tilt
+    RC_Channels::set_override(8, lights1, tnow);       // lights 1
+    RC_Channels::set_override(9, lights2, tnow);       // lights 2
+    RC_Channels::set_override(10, video_switch, tnow); // video switch
+>>>>>>> 14ad9a58bde667b94cfc1aae2e896cebef07ffdf
 
     // Store old x, y, z values for use in input hold logic
     x_last = x;
     y_last = y;
     z_last = z;
+<<<<<<< HEAD
 
     hal.rcin->set_overrides(channels, 11);
+=======
+>>>>>>> 14ad9a58bde667b94cfc1aae2e896cebef07ffdf
 }
 
-void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
+void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
 {
     // Act based on the function assigned to this button
-    switch (get_button(button)->function(shift)) {
+    switch (get_button(_button)->function(shift)) {
     case JSButton::button_function_t::k_arm_toggle:
         if (motors.armed()) {
-            init_disarm_motors();
+            arming.disarm();
         } else {
-            init_arm_motors(true);
+            arming.arm(AP_Arming::Method::MAVLINK);
         }
         break;
     case JSButton::button_function_t::k_arm:
-        init_arm_motors(true);
+        arming.arm(AP_Arming::Method::MAVLINK);
         break;
     case JSButton::button_function_t::k_disarm:
-        init_disarm_motors();
+        arming.disarm();
         break;
 
     case JSButton::button_function_t::k_mode_manual:
-        set_mode(MANUAL, MODE_REASON_TX_COMMAND);
+        set_mode(MANUAL, ModeReason::RC_COMMAND);
         break;
     case JSButton::button_function_t::k_mode_stabilize:
-        set_mode(STABILIZE, MODE_REASON_TX_COMMAND);
+        set_mode(STABILIZE, ModeReason::RC_COMMAND);
         break;
     case JSButton::button_function_t::k_mode_depth_hold:
-        set_mode(ALT_HOLD, MODE_REASON_TX_COMMAND);
+        set_mode(ALT_HOLD, ModeReason::RC_COMMAND);
         break;
     case JSButton::button_function_t::k_mode_myflightmode:
         set_mode(myflightmode, MODE_REASON_TX_COMMAND);
         break;
     case JSButton::button_function_t::k_mode_auto:
-        set_mode(AUTO, MODE_REASON_TX_COMMAND);
+        set_mode(AUTO, ModeReason::RC_COMMAND);
         break;
     case JSButton::button_function_t::k_mode_guided:
-        set_mode(GUIDED, MODE_REASON_TX_COMMAND);
+        set_mode(GUIDED, ModeReason::RC_COMMAND);
         break;
     case JSButton::button_function_t::k_mode_circle:
-        set_mode(CIRCLE, MODE_REASON_TX_COMMAND);
+        set_mode(CIRCLE, ModeReason::RC_COMMAND);
         break;
     case JSButton::button_function_t::k_mode_acro:
-        set_mode(ACRO, MODE_REASON_TX_COMMAND);
+        set_mode(ACRO, ModeReason::RC_COMMAND);
         break;
     case JSButton::button_function_t::k_mode_poshold:
-        set_mode(POSHOLD, MODE_REASON_TX_COMMAND);
+        set_mode(POSHOLD, ModeReason::RC_COMMAND);
         break;
 
     case JSButton::button_function_t::k_mount_center:
+<<<<<<< HEAD
         camera_mount.set_angle_targets(0, 0, 0);
         // for some reason the call to set_angle_targets changes the mode to mavlink targeting!
         camera_mount.set_mode(MAV_MOUNT_MODE_RC_TARGETING);
+=======
+#if MOUNT == ENABLED
+        camera_mount.set_angle_targets(0, 0, 0);
+        // for some reason the call to set_angle_targets changes the mode to mavlink targeting!
+        camera_mount.set_mode(MAV_MOUNT_MODE_RC_TARGETING);
+#endif
+>>>>>>> 14ad9a58bde667b94cfc1aae2e896cebef07ffdf
         break;
     case JSButton::button_function_t::k_mount_tilt_up:
         cam_tilt = 1900;
@@ -187,10 +278,10 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
             video_toggle = !video_toggle;
             if (video_toggle) {
                 video_switch = 1900;
-                gcs_send_text(MAV_SEVERITY_INFO,"Video Toggle: Source 2");
+                gcs().send_text(MAV_SEVERITY_INFO,"Video Toggle: Source 2");
             } else {
                 video_switch = 1100;
-                gcs_send_text(MAV_SEVERITY_INFO,"Video Toggle: Source 1");
+                gcs().send_text(MAV_SEVERITY_INFO,"Video Toggle: Source 1");
             }
         }
         break;
@@ -279,7 +370,7 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
             } else {
                 gain = 1.0f;
             }
-            gcs_send_text_fmt(MAV_SEVERITY_INFO,"#Gain: %2.0f%%",(double)gain*100);
+            gcs().send_text(MAV_SEVERITY_INFO,"#Gain: %2.0f%%",(double)gain*100);
         }
         break;
     case JSButton::button_function_t::k_gain_inc:
@@ -295,7 +386,7 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
                 gain = constrain_float(gain + (g.maxGain-g.minGain)/(g.numGainSettings-1), g.minGain, g.maxGain);
             }
 
-            gcs_send_text_fmt(MAV_SEVERITY_INFO,"#Gain is %2.0f%%",(double)gain*100);
+            gcs().send_text(MAV_SEVERITY_INFO,"#Gain is %2.0f%%",(double)gain*100);
         }
         break;
     case JSButton::button_function_t::k_gain_dec:
@@ -311,7 +402,7 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
                 gain = constrain_float(gain - (g.maxGain-g.minGain)/(g.numGainSettings-1), g.minGain, g.maxGain);
             }
 
-            gcs_send_text_fmt(MAV_SEVERITY_INFO,"#Gain is %2.0f%%",(double)gain*100);
+            gcs().send_text(MAV_SEVERITY_INFO,"#Gain is %2.0f%%",(double)gain*100);
         }
         break;
     case JSButton::button_function_t::k_trim_roll_inc:
@@ -337,10 +428,18 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
             bool input_hold_engaged_last = input_hold_engaged;
             input_hold_engaged = zTrim || xTrim || yTrim;
             if (input_hold_engaged) {
+<<<<<<< HEAD
                 gcs_send_text(MAV_SEVERITY_INFO,"#Input Hold Set");
             } else if (input_hold_engaged_last) {
                 gcs_send_text(MAV_SEVERITY_INFO,"#Input Hold Disabled");
             }
+=======
+                gcs().send_text(MAV_SEVERITY_INFO,"#Input Hold Set");
+            } else if (input_hold_engaged_last) {
+                gcs().send_text(MAV_SEVERITY_INFO,"#Input Hold Disabled");
+            }
+            controls_reset_since_input_hold = !input_hold_engaged;
+>>>>>>> 14ad9a58bde667b94cfc1aae2e896cebef07ffdf
         }
         break;
     case JSButton::button_function_t::k_relay_1_on:
@@ -569,10 +668,17 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
     }
 }
 
+<<<<<<< HEAD
 void Sub::handle_jsbutton_release(uint8_t button, bool shift) {
 
     // Act based on the function assigned to this button
     switch (get_button(button)->function(shift)) {
+=======
+void Sub::handle_jsbutton_release(uint8_t _button, bool shift) {
+
+    // Act based on the function assigned to this button
+    switch (get_button(_button)->function(shift)) {
+>>>>>>> 14ad9a58bde667b94cfc1aae2e896cebef07ffdf
     case JSButton::button_function_t::k_relay_1_momentary:
         relay.off(0);
         break;
@@ -681,18 +787,17 @@ void Sub::default_js_buttons()
 
 void Sub::set_neutral_controls()
 {
-    int16_t channels[11];
+    uint32_t tnow = AP_HAL::millis();
 
     for (uint8_t i = 0; i < 6; i++) {
-        channels[i] = 1500;
+        RC_Channels::set_override(i, 1500, tnow);
     }
 
-    for (uint8_t i = 6; i < 11; i++) {
-        channels[i] = 0xffff;
-    }
-
+<<<<<<< HEAD
     hal.rcin->set_overrides(channels, 10);
 
+=======
+>>>>>>> 14ad9a58bde667b94cfc1aae2e896cebef07ffdf
     // Clear pitch/roll trim settings
     pitchTrim = 0;
     rollTrim  = 0;

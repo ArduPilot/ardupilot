@@ -8,7 +8,7 @@
 float Plane::get_speed_scaler(void)
 {
     float aspeed, speed_scaler;
-    if (ahrs.airspeed_estimate(&aspeed)) {
+    if (ahrs.airspeed_estimate(aspeed)) {
         if (aspeed > auto_state.highest_airspeed) {
             auto_state.highest_airspeed = aspeed;
         }
@@ -17,16 +17,34 @@ float Plane::get_speed_scaler(void)
         } else {
             speed_scaler = 2.0;
         }
-        speed_scaler = constrain_float(speed_scaler, 0.5f, 2.0f);
-    } else {
-        if (SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) > 0) {
-            speed_scaler = 0.5f + ((float)THROTTLE_CRUISE / SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) / 2.0f);                 // First order taylor expansion of square root
-            // Should maybe be to the 2/7 power, but we aren't going to implement that...
-        }else{
-            speed_scaler = 1.67f;
+        // ensure we have scaling over the full configured airspeed
+        float scale_min = MIN(0.5, (0.5 * aparm.airspeed_min) / g.scaling_speed);
+        float scale_max = MAX(2.0, (1.5 * aparm.airspeed_max) / g.scaling_speed);
+        speed_scaler = constrain_float(speed_scaler, scale_min, scale_max);
+
+        if (quadplane.in_vtol_mode() && hal.util->get_soft_armed()) {
+            // when in VTOL modes limit surface movement at low speed to prevent instability
+            float threshold = aparm.airspeed_min * 0.5;
+            if (aspeed < threshold) {
+                float new_scaler = linear_interpolate(0, g.scaling_speed / threshold, aspeed, 0, threshold);
+                speed_scaler = MIN(speed_scaler, new_scaler);
+
+                // we also decay the integrator to prevent an integrator from before
+                // we were at low speed persistint at high speed
+                rollController.decay_I();
+                pitchController.decay_I();
+                yawController.decay_I();
+            }
         }
+    } else if (hal.util->get_soft_armed()) {
+        // scale assumed surface movement using throttle output
+        float throttle_out = MAX(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle), 1);
+        speed_scaler = sqrtf(THROTTLE_CRUISE / throttle_out);
         // This case is constrained tighter as we don't have real speed info
         speed_scaler = constrain_float(speed_scaler, 0.6f, 1.67f);
+    } else {
+        // no speed estimate and not armed, use a unit scaling
+        speed_scaler = 1;
     }
     return speed_scaler;
 }
@@ -49,7 +67,7 @@ bool Plane::stick_mixing_enabled(void)
         }
     }
 
-    if (failsafe.ch3_failsafe && g.short_fs_action == 2) {
+    if (failsafe.rc_failsafe && g.fs_action_short == FS_ACTION_SHORT_FBWA) {
         // don't do stick mixing in FBWA glide mode
         return false;
     }
@@ -77,7 +95,7 @@ void Plane::stabilize_roll(float speed_scaler)
     }
 
     bool disable_integrator = false;
-    if (control_mode == STABILIZE && channel_roll->get_control_in() != 0) {
+    if (control_mode == &mode_stabilize && channel_roll->get_control_in() != 0) {
         disable_integrator = true;
     }
     SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, rollController.get_servo_out(nav_roll_cd - ahrs.roll_sensor, 
@@ -101,7 +119,7 @@ void Plane::stabilize_pitch(float speed_scaler)
     }
     int32_t demanded_pitch = nav_pitch_cd + g.pitch_trim_cd + SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * g.kff_throttle_to_pitch;
     bool disable_integrator = false;
-    if (control_mode == STABILIZE && channel_pitch->get_control_in() != 0) {
+    if (control_mode == &mode_stabilize && channel_pitch->get_control_in() != 0) {
         disable_integrator = true;
     }
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitchController.get_servo_out(demanded_pitch - ahrs.pitch_sensor, 
@@ -110,48 +128,32 @@ void Plane::stabilize_pitch(float speed_scaler)
 }
 
 /*
-  perform stick mixing on one channel
-  This type of stick mixing reduces the influence of the auto
-  controller as it increases the influence of the users stick input,
-  allowing the user full deflection if needed
- */
-void Plane::stick_mix_channel(RC_Channel *channel, int16_t &servo_out)
-{
-    float ch_inf;
-        
-    ch_inf = (float)channel->get_radio_in() - (float)channel->get_radio_trim();
-    ch_inf = fabsf(ch_inf);
-    ch_inf = MIN(ch_inf, 400.0f);
-    ch_inf = ((400.0f - ch_inf) / 400.0f);
-    servo_out *= ch_inf;
-    servo_out += channel->get_control_in();
-}
-
-/*
   this gives the user control of the aircraft in stabilization modes
  */
 void Plane::stabilize_stick_mixing_direct()
 {
     if (!stick_mixing_enabled() ||
-        control_mode == ACRO ||
-        control_mode == FLY_BY_WIRE_A ||
-        control_mode == AUTOTUNE ||
-        control_mode == FLY_BY_WIRE_B ||
-        control_mode == CRUISE ||
-        control_mode == QSTABILIZE ||
-        control_mode == QHOVER ||
-        control_mode == QLOITER ||
-        control_mode == QLAND ||
-        control_mode == QRTL ||
-        control_mode == TRAINING) {
+        control_mode == &mode_acro ||
+        control_mode == &mode_fbwa ||
+        control_mode == &mode_autotune ||
+        control_mode == &mode_fbwb ||
+        control_mode == &mode_cruise ||
+        control_mode == &mode_qstabilize ||
+        control_mode == &mode_qhover ||
+        control_mode == &mode_qloiter ||
+        control_mode == &mode_qland ||
+        control_mode == &mode_qrtl ||
+        control_mode == &mode_qacro ||
+        control_mode == &mode_training ||
+        control_mode == &mode_qautotune) {
         return;
     }
     int16_t aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
-    stick_mix_channel(channel_roll, aileron);
+    aileron = channel_roll->stick_mixing(aileron);
     SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, aileron);
 
     int16_t elevator = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
-    stick_mix_channel(channel_pitch, elevator);
+    elevator = channel_pitch->stick_mixing(elevator);
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, elevator);
 }
 
@@ -162,18 +164,20 @@ void Plane::stabilize_stick_mixing_direct()
 void Plane::stabilize_stick_mixing_fbw()
 {
     if (!stick_mixing_enabled() ||
-        control_mode == ACRO ||
-        control_mode == FLY_BY_WIRE_A ||
-        control_mode == AUTOTUNE ||
-        control_mode == FLY_BY_WIRE_B ||
-        control_mode == CRUISE ||
-        control_mode == QSTABILIZE ||
-        control_mode == QHOVER ||
-        control_mode == QLOITER ||
-        control_mode == QLAND ||
-        control_mode == QRTL ||
-        control_mode == TRAINING ||
-        (control_mode == AUTO && g.auto_fbw_steer == 42)) {
+        control_mode == &mode_acro ||
+        control_mode == &mode_fbwa ||
+        control_mode == &mode_autotune ||
+        control_mode == &mode_fbwb ||
+        control_mode == &mode_cruise ||
+        control_mode == &mode_qstabilize ||
+        control_mode == &mode_qhover ||
+        control_mode == &mode_qloiter ||
+        control_mode == &mode_qland ||
+        control_mode == &mode_qrtl ||
+        control_mode == &mode_qacro ||
+        control_mode == &mode_training ||
+        control_mode == &mode_qautotune ||
+        (control_mode == &mode_auto && g.auto_fbw_steer == 42)) {
         return;
     }
     // do FBW style stick mixing. We don't treat it linearly
@@ -350,7 +354,7 @@ void Plane::stabilize_acro(float speed_scaler)
     /*
       manual rudder for now
      */
-    steering_control.steering = steering_control.rudder = rudder_input;
+    steering_control.steering = steering_control.rudder = rudder_input();
 }
 
 /*
@@ -358,29 +362,57 @@ void Plane::stabilize_acro(float speed_scaler)
  */
 void Plane::stabilize()
 {
-    if (control_mode == MANUAL) {
-        // nothing to do
+    if (control_mode == &mode_manual) {
+        // reset steering controls
+        steer_state.locked_course = false;
+        steer_state.locked_course_err = 0;
         return;
     }
     float speed_scaler = get_speed_scaler();
 
-    if (control_mode == TRAINING) {
+    if (quadplane.in_tailsitter_vtol_transition()) {
+        /*
+          during transition to vtol in a tailsitter try to raise the
+          nose rapidly while keeping the wings level
+         */
+        nav_pitch_cd = constrain_float((quadplane.tailsitter.transition_angle+5)*100, 5500, 8500),
+        nav_roll_cd = 0;
+    }
+
+    uint32_t now = AP_HAL::millis();
+    if (now - last_stabilize_ms > 2000) {
+        // if we haven't run the rate controllers for 2 seconds then
+        // reset the integrators
+        rollController.reset_I();
+        pitchController.reset_I();
+        yawController.reset_I();
+
+        // and reset steering controls
+        steer_state.locked_course = false;
+        steer_state.locked_course_err = 0;
+    }
+    last_stabilize_ms = now;
+
+    if (control_mode == &mode_training) {
         stabilize_training(speed_scaler);
-    } else if (control_mode == ACRO) {
+    } else if (control_mode == &mode_acro) {
         stabilize_acro(speed_scaler);
-    } else if (control_mode == QSTABILIZE ||
-               control_mode == QHOVER ||
-               control_mode == QLOITER ||
-               control_mode == QLAND ||
-               control_mode == QRTL) {
+    } else if ((control_mode == &mode_qstabilize ||
+                control_mode == &mode_qhover ||
+                control_mode == &mode_qloiter ||
+                control_mode == &mode_qland ||
+                control_mode == &mode_qrtl ||
+                control_mode == &mode_qacro ||
+                control_mode == &mode_qautotune) &&
+               !quadplane.in_tailsitter_vtol_transition()) {
         quadplane.control_run();
     } else {
-        if (g.stick_mixing == STICK_MIXING_FBW && control_mode != STABILIZE) {
+        if (g.stick_mixing == STICK_MIXING_FBW && control_mode != &mode_stabilize) {
             stabilize_stick_mixing_fbw();
         }
         stabilize_roll(speed_scaler);
         stabilize_pitch(speed_scaler);
-        if (g.stick_mixing == STICK_MIXING_DIRECT || control_mode == STABILIZE) {
+        if (g.stick_mixing == STICK_MIXING_DIRECT || control_mode == &mode_stabilize) {
             stabilize_stick_mixing_direct();
         }
         stabilize_yaw(speed_scaler);
@@ -389,7 +421,7 @@ void Plane::stabilize()
     /*
       see if we should zero the attitude controller integrators. 
      */
-    if (channel_throttle->get_control_in() == 0 &&
+    if (get_throttle_input() == 0 &&
         fabsf(relative_altitude) < 5.0f && 
         fabsf(barometer.get_climb_rate()) < 0.5f &&
         gps.ground_speed() < 3) {
@@ -421,7 +453,7 @@ void Plane::calc_throttle()
     int32_t commanded_throttle = SpdHgt_Controller->get_throttle_demand();
 
     // Received an external msg that guides throttle in the last 3 seconds?
-    if ((control_mode == GUIDED || control_mode == AVOID_ADSB) &&
+    if ((control_mode == &mode_guided || control_mode == &mode_avoidADSB) &&
             plane.guided_state.last_forced_throttle_ms > 0 &&
             millis() - plane.guided_state.last_forced_throttle_ms < 3000) {
         commanded_throttle = plane.guided_state.forced_throttle;
@@ -440,23 +472,25 @@ void Plane::calc_throttle()
 void Plane::calc_nav_yaw_coordinated(float speed_scaler)
 {
     bool disable_integrator = false;
-    if (control_mode == STABILIZE && rudder_input != 0) {
-        disable_integrator = true;
-    }
+    int16_t rudder_in = rudder_input();
 
     int16_t commanded_rudder;
 
     // Received an external msg that guides yaw in the last 3 seconds?
-    if ((control_mode == GUIDED || control_mode == AVOID_ADSB) &&
+    if ((control_mode == &mode_guided || control_mode == &mode_avoidADSB) &&
             plane.guided_state.last_forced_rpy_ms.z > 0 &&
             millis() - plane.guided_state.last_forced_rpy_ms.z < 3000) {
         commanded_rudder = plane.guided_state.forced_rpy_cd.z;
     } else {
+        if (control_mode == &mode_stabilize && rudder_in != 0) {
+            disable_integrator = true;
+        }
+
         commanded_rudder = yawController.get_servo_out(speed_scaler, disable_integrator);
 
         // add in rudder mixing from roll
         commanded_rudder += SRV_Channels::get_output_scaled(SRV_Channel::k_aileron) * g.kff_rudder_mix;
-        commanded_rudder += rudder_input;
+        commanded_rudder += rudder_in;
     }
 
     steering_control.rudder = constrain_int16(commanded_rudder, -4500, 4500);
@@ -472,7 +506,7 @@ void Plane::calc_nav_yaw_course(void)
     int32_t bearing_error_cd = nav_controller->bearing_error_cd();
     steering_control.steering = steerController.get_steering_out_angle_error(bearing_error_cd);
     if (stick_mixing_enabled()) {
-        stick_mix_channel(channel_rudder, steering_control.steering);
+        steering_control.steering = channel_rudder->stick_mixing(steering_control.steering);
     }
     steering_control.steering = constrain_int16(steering_control.steering, -4500, 4500);
 }
@@ -483,17 +517,17 @@ void Plane::calc_nav_yaw_course(void)
 void Plane::calc_nav_yaw_ground(void)
 {
     if (gps.ground_speed() < 1 && 
-        channel_throttle->get_control_in() == 0 &&
+        get_throttle_input() == 0 &&
         flight_stage != AP_Vehicle::FixedWing::FLIGHT_TAKEOFF &&
         flight_stage != AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
         // manual rudder control while still
         steer_state.locked_course = false;
         steer_state.locked_course_err = 0;
-        steering_control.steering = rudder_input;
+        steering_control.steering = rudder_input();
         return;
     }
 
-    float steer_rate = (rudder_input/4500.0f) * g.ground_steer_dps;
+    float steer_rate = (rudder_input()/4500.0f) * g.ground_steer_dps;
     if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF ||
         flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
         steer_rate = 0;
@@ -531,7 +565,7 @@ void Plane::calc_nav_pitch()
     int32_t commanded_pitch = SpdHgt_Controller->get_pitch_demand();
 
     // Received an external msg that guides roll in the last 3 seconds?
-    if ((control_mode == GUIDED || control_mode == AVOID_ADSB) &&
+    if ((control_mode == &mode_guided || control_mode == &mode_avoidADSB) &&
             plane.guided_state.last_forced_rpy_ms.y > 0 &&
             millis() - plane.guided_state.last_forced_rpy_ms.y < 3000) {
         commanded_pitch = plane.guided_state.forced_rpy_cd.y;
@@ -549,7 +583,7 @@ void Plane::calc_nav_roll()
     int32_t commanded_roll = nav_controller->nav_roll_cd();
 
     // Received an external msg that guides roll in the last 3 seconds?
-    if ((control_mode == GUIDED || control_mode == AVOID_ADSB) &&
+    if ((control_mode == &mode_guided || control_mode == &mode_avoidADSB) &&
             plane.guided_state.last_forced_rpy_ms.x > 0 &&
             millis() - plane.guided_state.last_forced_rpy_ms.x < 3000) {
         commanded_roll = plane.guided_state.forced_rpy_cd.x;
@@ -557,80 +591,6 @@ void Plane::calc_nav_roll()
 
     nav_roll_cd = constrain_int32(commanded_roll, -roll_limit_cd, roll_limit_cd);
     update_load_factor();
-}
-
-
-bool Plane::allow_reverse_thrust(void)
-{
-    // check if we should allow reverse thrust
-    bool allow = false;
-
-    if (g.use_reverse_thrust == USE_REVERSE_THRUST_NEVER) {
-        return false;
-    }
-
-    switch (control_mode) {
-    case AUTO:
-        {
-        uint16_t nav_cmd = mission.get_current_nav_cmd().id;
-
-        // never allow reverse thrust during takeoff
-        if (nav_cmd == MAV_CMD_NAV_TAKEOFF) {
-            return false;
-        }
-
-        // always allow regardless of mission item
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_AUTO_ALWAYS);
-
-        // landing
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_AUTO_LAND_APPROACH) &&
-                (nav_cmd == MAV_CMD_NAV_LAND);
-
-        // LOITER_TO_ALT
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_AUTO_LOITER_TO_ALT) &&
-                (nav_cmd == MAV_CMD_NAV_LOITER_TO_ALT);
-
-        // any Loiter (including LOITER_TO_ALT)
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_AUTO_LOITER_ALL) &&
-                    (nav_cmd == MAV_CMD_NAV_LOITER_TIME ||
-                     nav_cmd == MAV_CMD_NAV_LOITER_TO_ALT ||
-                     nav_cmd == MAV_CMD_NAV_LOITER_TURNS ||
-                     nav_cmd == MAV_CMD_NAV_LOITER_UNLIM);
-
-        // waypoints
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_AUTO_WAYPOINT) &&
-                    (nav_cmd == MAV_CMD_NAV_WAYPOINT ||
-                     nav_cmd == MAV_CMD_NAV_SPLINE_WAYPOINT);
-        }
-        break;
-
-    case LOITER:
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_LOITER);
-        break;
-    case RTL:
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_RTL);
-        break;
-    case CIRCLE:
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_CIRCLE);
-        break;
-    case CRUISE:
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_CRUISE);
-        break;
-    case FLY_BY_WIRE_B:
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_FBWB);
-        break;
-    case AVOID_ADSB:
-    case GUIDED:
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_GUIDED);
-        break;
-    default:
-        // all other control_modes are auto_throttle_mode=false.
-        // If we are not controlling throttle, don't limit it.
-        allow = true;
-        break;
-    }
-
-    return allow;
 }
 
 /*
@@ -663,6 +623,14 @@ void Plane::update_load_factor(void)
     }
     aerodynamic_load_factor = 1.0f / safe_sqrt(cosf(radians(demanded_roll)));
 
+    if (quadplane.in_transition() &&
+        (quadplane.options & QuadPlane::OPTION_LEVEL_TRANSITION)) {
+        // the user wants transitions to be kept level to within LEVEL_ROLL_LIMIT
+        roll_limit_cd = MIN(roll_limit_cd, g.level_roll_limit*100);
+        nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
+        return;
+    }
+    
     if (!aparm.stall_prevention) {
         // stall prevention is disabled
         return;
@@ -677,12 +645,12 @@ void Plane::update_load_factor(void)
     }
        
 
-    float max_load_factor = smoothed_airspeed / aparm.airspeed_min;
+    float max_load_factor = smoothed_airspeed / MAX(aparm.airspeed_min, 1);
     if (max_load_factor <= 1) {
         // our airspeed is below the minimum airspeed. Limit roll to
         // 25 degrees
         nav_roll_cd = constrain_int32(nav_roll_cd, -2500, 2500);
-        roll_limit_cd = constrain_int32(roll_limit_cd, -2500, 2500);
+        roll_limit_cd = MIN(roll_limit_cd, 2500);
     } else if (max_load_factor < aerodynamic_load_factor) {
         // the demanded nav_roll would take us past the aerodymamic
         // load limit. Limit our roll to a bank angle that will keep
@@ -695,6 +663,6 @@ void Plane::update_load_factor(void)
             roll_limit = 2500;
         }
         nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit, roll_limit);
-        roll_limit_cd = constrain_int32(roll_limit_cd, -roll_limit, roll_limit);
+        roll_limit_cd = MIN(roll_limit_cd, roll_limit);
     }    
 }

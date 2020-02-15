@@ -1,32 +1,34 @@
 #pragma once
 
-#include "RangeFinder.h"
-#include "RangeFinder_Backend.h"
+#include "AP_RangeFinder.h"
+#include "AP_RangeFinder_Backend.h"
 #include <AP_HAL/I2CDevice.h>
 
 #define AP_RANGE_FINDER_MAXSONARI2CXL_DEFAULT_ADDR   0x70
-
-#define AP_RANGEFINDER_MAXSONARI2CXL                4
-#define AP_RANGE_FINDER_MAXSONARI2CXL_SCALER        1.0
-#define AP_RANGE_FINDER_MAXSONARI2CXL_MIN_DISTANCE  20
-#define AP_RANGE_FINDER_MAXSONARI2CXL_MAX_DISTANCE  765
-
 #define AP_RANGE_FINDER_MAXSONARI2CXL_COMMAND_TAKE_RANGE_READING 0x51
 
 class AP_RangeFinder_MaxsonarI2CXL : public AP_RangeFinder_Backend
 {
 public:
     // static detection function
-    static AP_RangeFinder_Backend *detect(RangeFinder &ranger, uint8_t instance,
-                                          RangeFinder::RangeFinder_State &_state);
+    static AP_RangeFinder_Backend *detect(RangeFinder::RangeFinder_State &_state,
+                                          AP_RangeFinder_Params &_params,
+                                          AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
 
     // update state
-    void update(void);
+    void update(void) override;
+
+protected:
+
+    MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
+        return MAV_DISTANCE_SENSOR_ULTRASOUND;
+    }
 
 private:
     // constructor
-    AP_RangeFinder_MaxsonarI2CXL(RangeFinder &ranger, uint8_t instance,
-                                 RangeFinder::RangeFinder_State &_state);
+    AP_RangeFinder_MaxsonarI2CXL(RangeFinder::RangeFinder_State &_state,
+    								AP_RangeFinder_Params &_params,
+                                 AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
 
     bool _init(void);
     void _timer(void);

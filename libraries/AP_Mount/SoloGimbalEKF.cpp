@@ -1,18 +1,18 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
-
 // uncomment this to force the optimisation of this code, note that
 // this makes debugging harder
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #pragma GCC optimize("O0")
 #else
-#pragma GCC optimize("O3")
+#pragma GCC optimize("O2")
 #endif
 
 #include "SoloGimbalEKF.h"
 #include <AP_Param/AP_Param.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_NavEKF/AP_Nav_Common.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 #include <stdio.h>
 
@@ -28,8 +28,7 @@ const AP_Param::GroupInfo SoloGimbalEKF::var_info[] = {
 #define GYRO_BIAS_LIMIT 0.349066f // maximum allowed gyro bias (rad/sec)
 
 // constructor
-SoloGimbalEKF::SoloGimbalEKF(const AP_AHRS_NavEKF &ahrs) :
-    _ahrs(ahrs),
+SoloGimbalEKF::SoloGimbalEKF() :
     states(),
     state(*reinterpret_cast<struct state_elements *>(&states))
 {
@@ -42,9 +41,9 @@ SoloGimbalEKF::SoloGimbalEKF(const AP_AHRS_NavEKF &ahrs) :
 void SoloGimbalEKF::reset()
 {
     memset(&states,0,sizeof(states));
-    memset(&gSense,0,sizeof(gSense));
+    memset((void *)&gSense,0,sizeof(gSense));
     memset(&Cov,0,sizeof(Cov));
-    TiltCorrection = 0;
+    TiltCorrectionSquared = 0;
     StartTime_ms = 0;
     FiltInit = false;
     lastMagUpdate = 0;
@@ -70,11 +69,13 @@ void SoloGimbalEKF::RunEKF(float delta_time, const Vector3f &delta_angles, const
         FiltInit = false;
         newDataMag = false;
         YawAligned = false;
-        memset(&state, 0, sizeof(state));
+        memset((void *)&state, 0, sizeof(state));
         state.quat[0] = 1.0f;
 
         bool main_ekf_healthy = false;
         nav_filter_status main_ekf_status;
+
+        const AP_AHRS_NavEKF &_ahrs = AP::ahrs_navekf();
 
         if (_ahrs.get_filter_status(main_ekf_status)) {
             if (main_ekf_status.flags.attitude) {
@@ -136,7 +137,7 @@ void SoloGimbalEKF::RunEKF(float delta_time, const Vector3f &delta_angles, const
     
     // Align the heading once there has been enough time for the filter to settle and the tilt corrections have dropped below a threshold
     // Force it to align if too much time has lapsed
-    if (((((imuSampleTime_ms - StartTime_ms) > 8000 && TiltCorrection < 1e-4f) || (imuSampleTime_ms - StartTime_ms) > 30000)) && !YawAligned) {
+    if (((((imuSampleTime_ms - StartTime_ms) > 8000 && TiltCorrectionSquared < sq(1e-4f)) || (imuSampleTime_ms - StartTime_ms) > 30000)) && !YawAligned) {
         //calculate the initial heading using magnetometer, estimated tilt and declination
         alignHeading();
         YawAligned = true;
@@ -595,6 +596,8 @@ void SoloGimbalEKF::predictCovariance()
 // Fuse the SoloGimbalEKF velocity estimates - this enables alevel reference to be maintained during constant turns
 void SoloGimbalEKF::fuseVelocity()
 {
+    const AP_AHRS_NavEKF &_ahrs = AP::ahrs_navekf();
+
     if (!_ahrs.have_inertial_nav()) {
         return;
     }
@@ -658,12 +661,14 @@ void SoloGimbalEKF::fuseVelocity()
     }
 
     // calculate tilt component of angle correction
-    TiltCorrection = sqrtf(sq(angErrVec.x) + sq(angErrVec.y));
+    TiltCorrectionSquared = sq(angErrVec.x) + sq(angErrVec.y);
 }
 
 // check for new magnetometer data and update store measurements if available
 void SoloGimbalEKF::readMagData()
 {
+    const AP_AHRS_NavEKF &_ahrs = AP::ahrs_navekf();
+
     if (_ahrs.get_compass() &&
         _ahrs.get_compass()->use_for_yaw() &&
         _ahrs.get_compass()->last_update_usec() != lastMagUpdate) {
@@ -861,6 +866,8 @@ float SoloGimbalEKF::calcMagHeadingInnov()
     Tms[1][2] = sinPhi;
     Tms[2][2] = cosTheta*cosPhi;
 
+    const AP_AHRS_NavEKF &_ahrs = AP::ahrs_navekf();
+
     // get earth magnetic field estimate from main ekf if available to take advantage of main ekf magnetic field learning
     Vector3f earth_magfield = Vector3f(0,0,0);
     _ahrs.get_mag_field_NED(earth_magfield);
@@ -923,19 +930,6 @@ void SoloGimbalEKF::fixCovariance()
     }
 }
 
-// return data for debugging EKF
-void SoloGimbalEKF::getDebug(float &tilt, Vector3f &velocity, Vector3f &euler, Vector3f &gyroBias) const
-{
-    tilt = TiltCorrection;
-    velocity = state.velocity;
-    state.quat.to_euler(euler.x, euler.y, euler.z);
-    if (dtIMU < 1.0e-6f) {
-        gyroBias.zero();
-    } else {
-        gyroBias = state.delAngBias / dtIMU;
-    }
-}
-
 // get gyro bias data
 void SoloGimbalEKF::getGyroBias(Vector3f &gyroBias) const
 {
@@ -968,4 +962,3 @@ bool SoloGimbalEKF::getStatus() const
     return  YawAligned && (run_time > 15000);
 }
 
-#endif // HAL_CPU_CLASS

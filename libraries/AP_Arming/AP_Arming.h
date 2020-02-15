@@ -1,49 +1,61 @@
 #pragma once
 
-#include <AP_AHRS/AP_AHRS.h>
-#include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
+#include <RC_Channel/RC_Channel.h>
 
 class AP_Arming {
 public:
+
+    AP_Arming();
+
+    /* Do not allow copies */
+    AP_Arming(const AP_Arming &other) = delete;
+    AP_Arming &operator=(const AP_Arming&) = delete;
+
+    static AP_Arming *get_singleton();
+
     enum ArmingChecks {
-        ARMING_CHECK_NONE       = 0x0000,
-        ARMING_CHECK_ALL        = 0x0001,
-        ARMING_CHECK_BARO       = 0x0002,
-        ARMING_CHECK_COMPASS    = 0x0004,
-        ARMING_CHECK_GPS        = 0x0008,
-        ARMING_CHECK_INS        = 0x0010,
-        ARMING_CHECK_PARAMETERS = 0x0020,
-        ARMING_CHECK_RC         = 0x0040,
-        ARMING_CHECK_VOLTAGE    = 0x0080,
-        ARMING_CHECK_BATTERY    = 0x0100,
-        ARMING_CHECK_AIRSPEED   = 0x0200,
-        ARMING_CHECK_LOGGING    = 0x0400,
-        ARMING_CHECK_SWITCH     = 0x0800,
-        ARMING_CHECK_GPS_CONFIG = 0x1000,
+        ARMING_CHECK_ALL         = (1U << 0),
+        ARMING_CHECK_BARO        = (1U << 1),
+        ARMING_CHECK_COMPASS     = (1U << 2),
+        ARMING_CHECK_GPS         = (1U << 3),
+        ARMING_CHECK_INS         = (1U << 4),
+        ARMING_CHECK_PARAMETERS  = (1U << 5),
+        ARMING_CHECK_RC          = (1U << 6),
+        ARMING_CHECK_VOLTAGE     = (1U << 7),
+        ARMING_CHECK_BATTERY     = (1U << 8),
+        ARMING_CHECK_AIRSPEED    = (1U << 9),
+        ARMING_CHECK_LOGGING     = (1U << 10),
+        ARMING_CHECK_SWITCH      = (1U << 11),
+        ARMING_CHECK_GPS_CONFIG  = (1U << 12),
+        ARMING_CHECK_SYSTEM      = (1U << 13),
+        ARMING_CHECK_MISSION     = (1U << 14),
+        ARMING_CHECK_RANGEFINDER = (1U << 15),
+        ARMING_CHECK_CAMERA      = (1U << 16),
     };
 
-    enum ArmingMethod {
-        NONE = 0,
-        RUDDER,
-        MAVLINK
+    enum class Method {
+        RUDDER = 0,
+        MAVLINK = 1,
+        AUXSWITCH = 2,
+        MOTORTEST = 3,
+        SCRIPTING = 4,
     };
 
-    enum ArmingRequired {
+    enum class Required {
         NO           = 0,
         YES_MIN_PWM  = 1,
         YES_ZERO_PWM = 2
     };
 
-    AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
-              const AP_BattMonitor &battery);
+    void init(void);
 
     // these functions should not be used by Copter which holds the armed state in the motors library
-    ArmingRequired arming_required();
-    virtual bool arm(uint8_t method);
-    bool disarm();
+    Required arming_required();
+    virtual bool arm(AP_Arming::Method method, bool do_arming_checks=true);
+    virtual bool disarm();
     bool is_armed();
 
     // get bitmask of enabled checks
@@ -55,34 +67,37 @@ public:
     // some arming checks have side-effects, or require some form of state
     // change to have occurred, and thus should not be done as pre-arm
     // checks.  Those go here:
-    bool arm_checks(uint8_t method);
+    virtual bool arm_checks(AP_Arming::Method method);
 
     // get expected magnetic field strength
     uint16_t compass_magfield_expected() const;
 
+    // rudder arming support
+    enum class RudderArming {
+        IS_DISABLED  = 0, // DISABLED leaks in from vehicle defines.h
+        ARMONLY   = 1,
+        ARMDISARM = 2
+    };
+
+    RudderArming get_rudder_arming_type() const { return (RudderArming)_rudder_arming.get(); }
+
     static const struct AP_Param::GroupInfo        var_info[];
 
 protected:
+
     // Parameters
     AP_Int8                 require;
-    AP_Int16                checks_to_perform;      // bitmask for which checks are required
+    AP_Int32                checks_to_perform;      // bitmask for which checks are required
     AP_Float                accel_error_threshold;
-    AP_Float                _min_voltage[AP_BATT_MONITOR_MAX_INSTANCES];
-
-    // references
-    const AP_AHRS           &ahrs;
-    const AP_Baro           &barometer;
-    Compass                 &_compass;
-    const AP_BattMonitor    &_battery;
+    AP_Int8                 _rudder_arming;
+    AP_Int32                 _required_mission_items;
 
     // internal members
-    bool                    armed:1;
-    bool                    logging_available:1;
-    uint8_t                 arming_method;          // how the vehicle was armed
+    bool                    armed;
     uint32_t                last_accel_pass_ms[INS_MAX_INSTANCES];
     uint32_t                last_gyro_pass_ms[INS_MAX_INSTANCES];
 
-    bool barometer_checks(bool report);
+    virtual bool barometer_checks(bool report);
 
     bool airspeed_checks(bool report);
 
@@ -98,10 +113,61 @@ protected:
 
     bool hardware_safety_check(bool report);
 
-    bool board_voltage_checks(bool report);
+    virtual bool board_voltage_checks(bool report);
+
+    virtual bool rc_calibration_checks(bool report);
 
     bool manual_transmitter_checks(bool report);
 
-    virtual enum HomeState home_status() const = 0;
+    bool mission_checks(bool report);
 
+    bool rangefinder_checks(bool report);
+
+    bool fence_checks(bool report);
+
+    bool camera_checks(bool display_failure);
+
+    virtual bool system_checks(bool report);
+
+    bool can_checks(bool report);
+
+    virtual bool proximity_checks(bool report) const;
+
+    bool servo_checks(bool report) const;
+    bool rc_checks_copter_sub(bool display_failure, const RC_Channel *channels[4]) const;
+
+    // mandatory checks that cannot be bypassed.  This function will only be called if ARMING_CHECK is zero or arming forced
+    virtual bool mandatory_checks(bool report) { return true; }
+
+    // returns true if a particular check is enabled
+    bool check_enabled(const enum AP_Arming::ArmingChecks check) const;
+    // returns a mavlink severity which should be used if a specific check fails
+    MAV_SEVERITY check_severity(const enum AP_Arming::ArmingChecks check) const;
+    // handle the case where a check fails
+    void check_failed(const enum AP_Arming::ArmingChecks check, bool report, const char *fmt, ...) const FMT_PRINTF(4, 5);
+    void check_failed(bool report, const char *fmt, ...) const FMT_PRINTF(3, 4);
+
+    void Log_Write_Arm(bool forced, AP_Arming::Method method);
+    void Log_Write_Disarm();
+
+private:
+
+    static AP_Arming *_singleton;
+
+    bool ins_accels_consistent(const AP_InertialSensor &ins);
+    bool ins_gyros_consistent(const AP_InertialSensor &ins);
+
+    enum MIS_ITEM_CHECK {
+        MIS_ITEM_CHECK_LAND          = (1 << 0),
+        MIS_ITEM_CHECK_VTOL_LAND     = (1 << 1),
+        MIS_ITEM_CHECK_DO_LAND_START = (1 << 2),
+        MIS_ITEM_CHECK_TAKEOFF       = (1 << 3),
+        MIS_ITEM_CHECK_VTOL_TAKEOFF  = (1 << 4),
+        MIS_ITEM_CHECK_RALLY         = (1 << 5),
+        MIS_ITEM_CHECK_MAX
+    };
+};
+
+namespace AP {
+    AP_Arming &arming();
 };

@@ -22,7 +22,7 @@
 using namespace SITL;
 
 // calculate rotational accel and thrust for a motor
-void Motor::calculate_forces(const Aircraft::sitl_input &input,
+void Motor::calculate_forces(const struct sitl_input &input,
                              const float thrust_scale,
                              uint8_t motor_offset,
                              Vector3f &rot_accel,
@@ -107,4 +107,21 @@ uint16_t Motor::update_servo(uint16_t demand, uint64_t time_usec, float &last_va
     float max_change = 1000 * (dt / servo_rate) * 60.0f / 90.0f;
     last_value = constrain_float(demand, last_value-max_change, last_value+max_change);
     return uint16_t(last_value+0.5);
+}
+
+
+// calculate current and voltage
+void Motor::current_and_voltage(const struct sitl_input &input, float &voltage, float &current,
+                                uint8_t motor_offset)
+{
+    // get motor speed from 0 to 1
+    float motor_speed = constrain_float((input.servos[motor_offset+servo]-1100)/900.0, 0, 1);
+
+    // assume 10A per motor at full speed
+    current = 10 * motor_speed;
+
+    // assume 3S, and full throttle drops voltage by 0.7V
+    if (AP::sitl()) {
+        voltage = AP::sitl()->batt_voltage - motor_speed * 0.7;
+    }
 }

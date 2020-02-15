@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+
+_sim_vehicle() {
+  local cur prev opts
+  COMPREPLY=()
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  prev="${COMP_WORDS[COMP_CWORD - 1]}"
+
+  # TODO: generate for waf help
+  opts="--help -h"
+  opts+=" -j --jobs"
+  opts+=" -N --no-rebuild"
+  opts+=" -D --debug"
+  opts+=" -c --clean"
+  opts+=" -I --instance"
+  opts+=" -V --valgrind"
+  opts+=" --callgrind"
+  opts+=" -T --tracker"
+  opts+=" -A --sitl-instance-args"
+  opts+=" -G --gdb"
+  opts+=" -g --gdb-stopped"
+  opts+=" --lldb"
+  opts+=" --lldb-stopped"
+  opts+=" -d --delay-start"
+  opts+=" -B --breakpoint"
+  opts+=" -M --mavlink-gimbal"
+  opts+=" -L --location"
+  opts+=" -l --custom-location"
+  opts+=" -S --speedup"
+  opts+=" -t --tracker-location"
+  opts+=" -w --wipe-eeprom"
+  opts+=" -m --mavproxy-args"
+  opts+=" --strace"
+  opts+=" --model"
+  opts+=" --use-dir"
+  opts+=" --no-mavproxy"
+  opts+=" --fresh-params"
+  opts+=" --mcast"
+  opts+=" --osd"
+  opts+=" --tonealarm"
+  opts+=" --rgbled"
+  opts+=" --add-param-file"
+  opts+=" --no-extra-ports"
+  opts+=" -Z --swarm"
+  opts+=" --flash-storage"
+  opts+=" --out"
+  opts+=" --map"
+  opts+=" --console"
+  opts+=" --aircraft"
+  opts+=" --moddebug"
+  opts+=" -v --vehicle"
+  opts+=" -f --frame"
+
+  # Prevent word reuse TODO: add -vvv case
+  lim=$((COMP_CWORD - 1))
+  for i in $(seq 0 $lim); do
+    if [[ $opts == *"${COMP_WORDS[i]}"* ]]; then
+      opts=${opts/" ${COMP_WORDS[i]}"/}
+      opts=${opts/" --${COMP_WORDS[i]}"/}
+    fi
+  done
+
+  case $prev in
+  -v | --vehicle)
+    # get the calling program, remove anything after the space == all commands arguments
+    local caller; caller=$(echo $@ | sed 's/ .*//g');
+    # get options between "vehicle type " and closing ")", remove line return, remove spaces, anything before the opening (, remove the "|" and closing ")"
+    opts=$($caller --help | sed -n '/vehicle type (/,/)/p' | tr '\n' ' ' | sed -e 's/ //g' -e 's/.*(//g' -e 's/[|)]/ /g')
+    COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+    return 0
+    ;;
+  -f | --frame)
+    # get the calling program, remove anything after the space == all commands arguments
+    local caller; caller=$(echo $@ | sed 's/ .*//g');
+    # Get everything between "frame type" and "-C", remove first and last line, get line starting with caracters and ": " sequence, remove spaces and :
+    local supported_vehicle_list=$($caller --help | sed -n '/frame type/,/-C/p' | sed -e '1d' -e '$d' | sed  -n 's/\(.*: \).*/\1/p' | sed -e 's/ //g' -e 's/://g')
+    local frames;
+    local count=1;
+    for v in $supported_vehicle_list
+    do
+      if [[ ${COMP_WORDS[@]} == *"$v"* ]]
+      then
+          # Get everything between "frame type" and "-C", remove first and last line and change starting space by " :", change newlines to space, remove spaces then change vehicle type enclose by ":" by newline and change "|" by space, remove first line, get line "count" that match supported_vehicle_list[count]
+          frames=$($caller --help | sed -n '/frame type/,/-C/p' | sed -e '1d' -e '$d' -e 's/^\s*A/ :A/g' | tr '\n' ' ' | sed -e 's/ //g' -e 's/:\w*:/\n/g' -e 's/[|]/ /g' | sed '1d' | sed "${count}q;d")
+          break
+      fi
+      count=$(( $count + 1 ))
+    done
+    COMPREPLY=($(compgen -W "${frames}" -- ${cur}))
+    return 0
+    
+    ;;
+  esac
+
+  COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+}
+
+complete -F _sim_vehicle sim_vehicle.py
+

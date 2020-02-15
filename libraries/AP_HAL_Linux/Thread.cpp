@@ -17,6 +17,7 @@
 #include "Thread.h"
 
 #include <alloca.h>
+#include <limits.h>
 #include <sys/types.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -39,6 +40,10 @@ void *Thread::_run_trampoline(void *arg)
     Thread *thread = static_cast<Thread *>(arg);
     thread->_poison_stack();
     thread->_run();
+
+    if (thread->_auto_free) {
+        delete thread;
+    }
 
     return nullptr;
 }
@@ -172,7 +177,7 @@ bool Thread::start(const char *name, int policy, int prio)
     if (geteuid() == 0) {
         if ((r = pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED)) != 0 ||
             (r = pthread_attr_setschedpolicy(&attr, policy)) != 0 ||
-            (r = pthread_attr_setschedparam(&attr, &param) != 0)) {
+            (r = pthread_attr_setschedparam(&attr, &param)) != 0) {
             AP_HAL::panic("Failed to set attributes for thread '%s': %s",
                           name, strerror(r));
         }
@@ -239,7 +244,7 @@ bool Thread::set_stack_size(size_t stack_size)
         return false;
     }
 
-    _stack_size = stack_size;
+    _stack_size = MAX(stack_size, (size_t) PTHREAD_STACK_MIN);
 
     return true;
 }

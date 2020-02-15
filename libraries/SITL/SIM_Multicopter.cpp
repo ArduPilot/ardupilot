@@ -23,13 +23,11 @@
 
 using namespace SITL;
 
-MultiCopter::MultiCopter(const char *home_str, const char *frame_str) :
-    Aircraft(home_str, frame_str),
+MultiCopter::MultiCopter(const char *frame_str) :
+    Aircraft(frame_str),
     frame(nullptr)
 {
     mass = 1.5f;
-
-    gripper.set_aircraft(this);
 
     frame = Frame::find_frame(frame_str);
     if (frame == nullptr) {
@@ -44,13 +42,17 @@ MultiCopter::MultiCopter(const char *home_str, const char *frame_str) :
         frame->init(gross_mass(), 0.51, 15, 4*radians(360));
     }
     frame_height = 0.1;
+    num_motors = frame->num_motors;
     ground_behavior = GROUND_BEHAVIOR_NO_MOVEMENT;
 }
 
 // calculate rotational and linear accelerations
 void MultiCopter::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel)
 {
-    frame->calculate_forces(*this, input, rot_accel, body_accel);
+    frame->calculate_forces(*this, input, rot_accel, body_accel, rpm);
+
+    add_shove_forces(rot_accel, body_accel);
+    add_twist_forces(rot_accel);
 }
     
 /*
@@ -65,23 +67,17 @@ void MultiCopter::update(const struct sitl_input &input)
 
     calculate_forces(input, rot_accel, accel_body);
 
+    // estimate voltage and current
+    frame->current_and_voltage(input, battery_voltage, battery_current);
+
     update_dynamics(rot_accel);
+    update_external_payload(input);
 
     // update lat/lon/altitude
     update_position();
+    time_advance();
 
     // update magnetic field
     update_mag_field_bf();
-
-    // update sprayer
-    sprayer.update(input);
-
-    // update gripper
-    gripper.update(input);
-    gripper_epm.update(input);
 }
 
-float MultiCopter::gross_mass() const
-{
-    return Aircraft::gross_mass() + sprayer.payload_mass() + gripper.payload_mass();
-}

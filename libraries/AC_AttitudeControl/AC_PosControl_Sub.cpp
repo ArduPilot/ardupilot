@@ -1,10 +1,8 @@
 #include "AC_PosControl_Sub.h"
 
-AC_PosControl_Sub::AC_PosControl_Sub(const AP_AHRS_View& ahrs, const AP_InertialNav& inav,
-                                     const AP_Motors& motors, AC_AttitudeControl& attitude_control,
-                                     AC_P& p_pos_z, AC_P& p_vel_z, AC_PID& pid_accel_z,
-                                     AC_P& p_pos_xy, AC_PI_2D& pi_vel_xy) :
-    AC_PosControl(ahrs, inav, motors, attitude_control, p_pos_z, p_vel_z, pid_accel_z, p_pos_xy, pi_vel_xy),
+AC_PosControl_Sub::AC_PosControl_Sub(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
+                                     const AP_Motors& motors, AC_AttitudeControl& attitude_control) :
+    AC_PosControl(ahrs, inav, motors, attitude_control),
     _alt_max(0.0f),
     _alt_min(0.0f)
 {}
@@ -99,7 +97,15 @@ void AC_PosControl_Sub::relax_alt_hold_controllers()
     _flags.use_desvel_ff_z = false;
     _vel_target.z = _inav.get_velocity_z();
     _vel_last.z = _inav.get_velocity_z();
+<<<<<<< HEAD
     _accel_last_z_cms = 0.0f;
     _accel_target.z = -(_ahrs.get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f;
     _flags.reset_accel_to_throttle = true;
+=======
+    _accel_desired.z = 0.0f;
+    _accel_last_z_cms = 0.0f;
+    _flags.reset_rate_to_accel_z = true;
+    _accel_target.z = -(_ahrs.get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f;
+    _pid_accel_z.reset_filter();
+>>>>>>> 14ad9a58bde667b94cfc1aae2e896cebef07ffdf
 }

@@ -13,25 +13,18 @@ static const uint8_t TSYS01_CMD_READ_PROM   = 0xA0;
 static const uint8_t TSYS01_CMD_CONVERT     = 0x40;
 static const uint8_t TSYS01_CMD_READ_ADC    = 0x00;
 
-TSYS01::TSYS01() :
-    _dev(nullptr),
-    _temperature(0),
-    _healthy(false)
+bool TSYS01::init(uint8_t bus)
 {
-    memset(&_k, 0, sizeof(_k));
-}
-
-bool TSYS01::init()
-{
-    _dev = std::move(hal.i2c_mgr->get_device(1, TSYS01_ADDR));
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    return false;
+#endif
+    _dev = std::move(hal.i2c_mgr->get_device(bus, TSYS01_ADDR));
     if (!_dev) {
         printf("TSYS01 device is null!");
         return false;
     }
 
-    if (!_dev->get_semaphore()->take(0)) {
-        AP_HAL::panic("PANIC: TSYS01: failed to take serial semaphore for init");
-    }
+    _dev->get_semaphore()->take_blocking();
 
     _dev->set_retries(10);
 
@@ -58,7 +51,7 @@ bool TSYS01::init()
 
     /* Request 20Hz update */
     // Max conversion time is 9.04 ms
-    _dev->register_periodic_callback(50 * USEC_PER_MSEC,
+    _dev->register_periodic_callback(50 * AP_USEC_PER_MSEC,
                                      FUNCTOR_BIND_MEMBER(&TSYS01::_timer, void));
     return true;
 }

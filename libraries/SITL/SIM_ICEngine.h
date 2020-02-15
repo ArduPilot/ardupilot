@@ -39,7 +39,7 @@ public:
     {}
 
     // update motor state
-    float update(const struct Aircraft::sitl_input &input);
+    float update(const struct sitl_input &input);
 
 private:
     float last_output;

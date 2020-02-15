@@ -1,5 +1,4 @@
 #include "Sub.h"
-#include "version.h"
 
 /*****************************************************************************
 *   The init_ardupilot function processes everything we need for an in - air restart
@@ -8,11 +7,6 @@
 *
 *****************************************************************************/
 
-static void mavlink_delay_cb_static()
-{
-    sub.mavlink_delay_cb();
-}
-
 static void failsafe_check_static()
 {
     sub.mainloop_failsafe_check();
@@ -20,75 +14,84 @@ static void failsafe_check_static()
 
 void Sub::init_ardupilot()
 {
-    // initialise serial port
-    serial_manager.init_console();
-
-    hal.console->printf("\n\nInit " FIRMWARE_STRING
-                      "\n\nFree RAM: %u\n",
-                      (unsigned)hal.util->available_memory());
-
-    // load parameters from EEPROM
-    load_parameters();
-
     BoardConfig.init();
+#if HAL_WITH_UAVCAN
+    BoardConfig_CAN.init();
+#endif
 
+<<<<<<< HEAD
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+=======
+#if AP_FEATURE_BOARD_DETECT
+>>>>>>> 14ad9a58bde667b94cfc1aae2e896cebef07ffdf
     // Detection won't work until after BoardConfig.init()
     switch (AP_BoardConfig::get_board_type()) {
     case AP_BoardConfig::PX4_BOARD_PIXHAWK2:
         AP_Param::set_by_name("GND_EXT_BUS", 0);
+<<<<<<< HEAD
         break;
     default:
         AP_Param::set_by_name("GND_EXT_BUS", 1);
+=======
+        celsius.init(0);
+        break;
+    default:
+        AP_Param::set_by_name("GND_EXT_BUS", 1);
+        celsius.init(1);
+>>>>>>> 14ad9a58bde667b94cfc1aae2e896cebef07ffdf
         break;
     }
 #else
     AP_Param::set_default_by_name("GND_EXT_BUS", 1);
+<<<<<<< HEAD
 #endif
 
+=======
+    celsius.init(1);
+#endif
+
+    // identify ourselves correctly with the ground station
+    mavlink_system.sysid = g.sysid_this_mav;
+    
+>>>>>>> 14ad9a58bde667b94cfc1aae2e896cebef07ffdf
     // initialise serial port
     serial_manager.init();
+
+    // setup first port early to allow BoardConfig to report errors
+    gcs().setup_console();
 
     // init cargo gripper
 #if GRIPPER_ENABLED == ENABLED
     g2.gripper.init();
 #endif
 
+#if AC_FENCE == ENABLED
+    fence.init();
+#endif
+
     // initialise notify system
-    notify.init(true);
+    notify.init();
 
     // initialise battery monitor
     battery.init();
 
     barometer.init();
 
-    celsius.init();
-
-    // Register the mavlink service callback. This will run
-    // anytime there are more than 5ms remaining in a call to
-    // hal.scheduler->delay.
-    hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
+    register_scheduler_delay_callback();
 
     // setup telem slots with serial ports
-    for (uint8_t i = 0; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
-        gcs_chan[i].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
-    }
-
-    // identify ourselves correctly with the ground station
-    mavlink_system.sysid = g.sysid_this_mav;
+    gcs().setup_uarts();
 
 #if LOGGING_ENABLED == ENABLED
     log_init();
 #endif
 
-    gcs().set_dataflash(&DataFlash);
+    // initialise rc channels including setting mode
+    rc().init();
 
     init_rc_in();               // sets up rc channels from radio
     init_rc_out();              // sets up motors and output to escs
     init_joystick();            // joystick initialization
-
-    // initialise which outputs Servo and Relay events can use
-    ServoRelayEvents.set_channel_mask(~motors.get_motor_mask());
 
     relay.init();
 
@@ -99,11 +102,11 @@ void Sub::init_ardupilot()
     hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
 
     // Do GPS init
-    gps.init(&DataFlash, serial_manager);
+    gps.set_log_gps_bit(MASK_LOG_GPS);
+    gps.init(serial_manager);
 
-    if (g.compass_enabled) {
-        init_compass();
-    }
+    AP::compass().set_log_bit(MASK_LOG_COMPASS);
+    AP::compass().init();
 
 #if OPTFLOW == ENABLED
     // make optflow available to AHRS
@@ -111,14 +114,9 @@ void Sub::init_ardupilot()
 #endif
 
     // init Location class
-    Location_Class::set_ahrs(&ahrs);
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-    Location_Class::set_terrain(&terrain);
+    Location::set_terrain(&terrain);
     wp_nav.set_terrain(&terrain);
-#endif
-
-#if AVOIDANCE_ENABLED == ENABLED
-    wp_nav.set_avoidance(&avoid);
 #endif
 
     pos_control.set_dt(MAIN_LOOP_SECONDS);
@@ -130,7 +128,11 @@ void Sub::init_ardupilot()
 
 #if MOUNT == ENABLED
     // initialise camera mount
-    camera_mount.init(&DataFlash, serial_manager);
+    camera_mount.init();
+    // This step ncessary so the servo is properly initialized
+    camera_mount.set_angle_targets(0, 0, 0);
+    // for some reason the call to set_angle_targets changes the mode to mavlink targeting!
+    camera_mount.set_mode(MAV_MOUNT_MODE_RC_TARGETING);
 #endif
 
 #ifdef USERHOOK_INIT
@@ -138,7 +140,12 @@ void Sub::init_ardupilot()
 #endif
 
     // Init baro and determine if we have external (depth) pressure sensor
+<<<<<<< HEAD
     init_barometer(false);
+=======
+    barometer.set_log_baro_bit(MASK_LOG_IMU);
+    barometer.calibrate(false);
+>>>>>>> 14ad9a58bde667b94cfc1aae2e896cebef07ffdf
     barometer.update();
 
     for (uint8_t i = 0; i < barometer.num_instances(); i++) {
@@ -155,11 +162,19 @@ void Sub::init_ardupilot()
         // We only have onboard baro
         // No external underwater depth sensor detected
         barometer.set_primary_baro(0);
-        EKF2.set_baro_alt_noise(10.0f); // Readings won't correspond with rest of INS
-        EKF3.set_baro_alt_noise(10.0f);
+#if HAL_NAVEKF2_AVAILABLE
+        ahrs.EKF2.set_baro_alt_noise(10.0f); // Readings won't correspond with rest of INS
+#endif
+#if HAL_NAVEKF3_AVAILABLE
+        ahrs.EKF3.set_baro_alt_noise(10.0f);
+#endif
     } else {
-        EKF2.set_baro_alt_noise(0.1f);
-        EKF3.set_baro_alt_noise(0.1f);
+#if HAL_NAVEKF2_AVAILABLE
+        ahrs.EKF2.set_baro_alt_noise(0.1f);
+#endif
+#if HAL_NAVEKF3_AVAILABLE
+        ahrs.EKF3.set_baro_alt_noise(0.1f);
+#endif
     }
 
     leak_detector.init();
@@ -179,7 +194,16 @@ void Sub::init_ardupilot()
     // initialise mission library
     mission.init();
 
+    // initialise AP_Logger library
+#if LOGGING_ENABLED == ENABLED
+    logger.setVehicle_Startup_Writer(FUNCTOR_BIND(&sub, &Sub::Log_Write_Vehicle_Startup_Messages, void));
+#endif
+
     startup_INS_ground();
+
+#ifdef ENABLE_SCRIPTING
+    g2.scripting.init();
+#endif // ENABLE_SCRIPTING
 
     // we don't want writes to the serial port to cause us to pause
     // mid-flight, so set the serial ports non-blocking once we are
@@ -189,20 +213,19 @@ void Sub::init_ardupilot()
     // enable CPU failsafe
     mainloop_failsafe_enable();
 
-    ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
-    ins.set_dataflash(&DataFlash);
+    ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
-    // init vehicle capabilties
-    init_capabilities();
-
-    if (DataFlash.log_while_disarmed()) {
-        start_logging(); // create a new log if necessary
-    }
-
+    // disable safety if requested
+    BoardConfig.init_safety();    
+    
     hal.console->print("\nInit complete");
 
     // flag that initialisation has completed
     ap.initialised = true;
+
+#if AP_PARAM_KEY_DUMP
+    AP_Param::show_all(hal.console, true);
+#endif
 }
 
 
@@ -222,21 +245,7 @@ void Sub::startup_INS_ground()
     ahrs.reset();
 }
 
-// calibrate gyros - returns true if succesfully calibrated
-bool Sub::calibrate_gyros()
-{
-    // gyro offset calibration
-    sub.ins.init_gyro();
-
-    // reset ahrs gyro bias
-    if (sub.ins.gyro_calibrated_ok_all()) {
-        sub.ahrs.reset_gyro_drift();
-        return true;
-    }
-
-    return false;
-}
-
+// calibrate gyros - returns true if successfully calibrated
 // position_ok - returns true if the horizontal absolute position is ok and home position is set
 bool Sub::position_ok()
 {
@@ -263,10 +272,10 @@ bool Sub::ekf_position_ok()
     // if disarmed we accept a predicted horizontal position
     if (!motors.armed()) {
         return ((filt_status.flags.horiz_pos_abs || filt_status.flags.pred_horiz_pos_abs));
-    } else {
-        // once armed we require a good absolute position and EKF must not be in const_pos_mode
-        return (filt_status.flags.horiz_pos_abs && !filt_status.flags.const_pos_mode);
     }
+
+    // once armed we require a good absolute position and EKF must not be in const_pos_mode
+    return (filt_status.flags.horiz_pos_abs && !filt_status.flags.const_pos_mode);
 }
 
 // optflow_position_ok - returns true if optical flow based position estimate is ok
@@ -286,9 +295,8 @@ bool Sub::optflow_position_ok()
     // if disarmed we accept a predicted horizontal relative position
     if (!motors.armed()) {
         return (filt_status.flags.pred_horiz_pos_rel);
-    } else {
-        return (filt_status.flags.horiz_pos_rel && !filt_status.flags.const_pos_mode);
     }
+    return (filt_status.flags.horiz_pos_rel && !filt_status.flags.const_pos_mode);
 #endif
 }
 
@@ -298,12 +306,20 @@ bool Sub::optflow_position_ok()
 bool Sub::should_log(uint32_t mask)
 {
 #if LOGGING_ENABLED == ENABLED
-    if (!(mask & g.log_bitmask) || in_mavlink_delay) {
-        return false;
-    }
-    bool ret = DataFlash.logging_started() && (motors.armed() || DataFlash.log_while_disarmed());
-    return ret;
+    ap.logging_started = logger.logging_started();
+    return logger.should_log(mask);
 #else
     return false;
 #endif
 }
+
+#include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
+#include <AP_Avoidance/AP_Avoidance.h>
+#include <AP_ADSB/AP_ADSB.h>
+
+// dummy method to avoid linking AFS
+bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reason) { return false; }
+AP_AdvancedFailsafe *AP::advancedfailsafe() { return nullptr; }
+
+// dummy method to avoid linking AP_Avoidance
+AP_Avoidance *AP::ap_avoidance() { return nullptr; }

@@ -32,19 +32,6 @@ extern const AP_HAL::HAL& hal;
  # define Debug(fmt, args ...)
 #endif
 
-AP_GPS_ERB::AP_GPS_ERB(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
-    AP_GPS_Backend(_gps, _state, _port),
-    _step(0),
-    _msg_id(0),
-    _payload_length(0),
-    _payload_counter(0),
-    _fix_count(0),
-    _new_position(0),
-    _new_speed(0),
-    next_fix(AP_GPS::NO_FIX)
-{
-}
-
 // Process bytes available from the stream
 //
 // The stream is assumed to contain only messages we recognise.  If it
@@ -79,7 +66,7 @@ AP_GPS_ERB::read(void)
             }
             _step = 0;
             Debug("reset %u", __LINE__);
-            /* no break */
+            FALLTHROUGH;
         case 0:
             if(PREAMBLE1 == data)
                 _step++;
@@ -185,6 +172,8 @@ AP_GPS_ERB::_parse_gps(void)
         }
         state.num_sats = _buffer.stat.satellites;
         if (next_fix >= AP_GPS::GPS_OK_FIX_3D) {
+            // use the uart receive time to make packet timestamps more accurate
+            set_uart_timestamp(_payload_length + sizeof(erb_header) + 2);
             state.last_gps_time_ms = AP_HAL::millis();
             state.time_week_ms    = _buffer.stat.time;
             state.time_week       = _buffer.stat.week;
@@ -209,6 +198,23 @@ AP_GPS_ERB::_parse_gps(void)
         state.speed_accuracy = _buffer.vel.speed_accuracy * 0.01f;
         _new_speed = true;
         break;
+    case MSG_RTK:
+        Debug("Message RTK");
+        state.rtk_baseline_coords_type = RTK_BASELINE_COORDINATE_SYSTEM_NED;
+        state.rtk_num_sats      = _buffer.rtk.base_num_sats;
+        if (_buffer.rtk.age_cs == 0xFFFF) {
+            state.rtk_age_ms    = 0xFFFFFFFF;
+        } else {
+            state.rtk_age_ms    = _buffer.rtk.age_cs * 10;
+        }
+        state.rtk_baseline_x_mm = _buffer.rtk.baseline_N_mm;
+        state.rtk_baseline_y_mm = _buffer.rtk.baseline_E_mm;
+        state.rtk_baseline_z_mm = _buffer.rtk.baseline_D_mm;
+        state.rtk_accuracy      = _buffer.rtk.ar_ratio;
+
+        state.rtk_week_number   = _buffer.rtk.base_week_number;
+        state.rtk_time_week_ms  = _buffer.rtk.base_time_week_ms;
+        break;
     default:
         Debug("Unexpected message 0x%02x", (unsigned)_msg_id);
         return false;
@@ -221,17 +227,6 @@ AP_GPS_ERB::_parse_gps(void)
         return true;
     }
     return false;
-}
-
-void
-AP_GPS_ERB::inject_data(const uint8_t *data, uint16_t len)
-{
-
-    if (port->txspace() > len) {
-        port->write(data, len);
-    } else {
-        Debug("ERB: Not enough TXSPACE");
-    }
 }
 
 /*
@@ -249,7 +244,7 @@ reset:
                 break;
             }
             state.step = 0;
-            /* no break */
+            FALLTHROUGH;
         case 0:
             if (PREAMBLE1 == data)
                 state.step++;

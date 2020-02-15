@@ -183,7 +183,7 @@ dsm_guess_format(bool reset, const uint8_t dsm_frame[16])
 	}
 
 	/* call ourselves to reset our state ... we have to try again */
-	debug("DSM: format detect fail, 10: 0x%08x %d 11: 0x%08x %d", cs10, votes10, cs11, votes11);
+	debug("DSM: format detect fail, 10: 0x%08x %u 11: 0x%08x %u", cs10, votes10, cs11, votes11);
 	dsm_guess_format(true, dsm_frame);
 }
 
@@ -281,6 +281,7 @@ dsm_decode(uint64_t frame_time, const uint8_t dsm_frame[16], uint16_t *values, u
 
 		case 2:
 			channel = 1;
+            break;
 
 		default:
 			break;

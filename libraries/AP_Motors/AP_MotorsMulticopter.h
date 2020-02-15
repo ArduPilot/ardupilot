@@ -8,9 +8,6 @@
 #define AP_MOTORS_DENSITY_COMP 1
 #endif
 
-#define AP_MOTORS_DEFAULT_MID_THROTTLE  500
-
-#define AP_MOTORS_SPIN_WHEN_ARMED       70      // spin motors at this PWM value when armed
 #define AP_MOTORS_YAW_HEADROOM_DEFAULT  200
 #define AP_MOTORS_THST_EXPO_DEFAULT     0.65f   // set to 0 for linear and 1 for second order approximation
 #define AP_MOTORS_THST_HOVER_DEFAULT    0.35f   // the estimated hover throttle, 0 ~ 1
@@ -25,6 +22,8 @@
 #define AP_MOTORS_BAT_CURR_MAX_DEFAULT  0.0f    // current limiting max default
 #define AP_MOTORS_BAT_CURR_TC_DEFAULT   5.0f    // Time constant used to limit the maximum current
 #define AP_MOTORS_BATT_VOLT_FILT_HZ     0.5f    // battery voltage filtered at 0.5hz
+#define AP_MOTORS_SLEW_TIME_DEFAULT     0.0f    // slew rate limit for thrust output
+#define AP_MOTORS_SAFE_TIME_DEFAULT     1.0f    // Time for the esc when transitioning between zero pwm to minimum
 
 // spool definition
 #define AP_MOTORS_SPOOL_UP_TIME_DEFAULT 0.5f    // time (in seconds) for throttle to increase from zero to min throttle, and min throttle to full throttle.
@@ -37,10 +36,10 @@ public:
     AP_MotorsMulticopter(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT);
 
     // output - sends commands to the motors
-    virtual void        output();
+    virtual void        output() override;
 
     // output_min - sends minimum values out to the motors
-    void                output_min();
+    void                output_min() override;
 
     // set_yaw_headroom - set yaw headroom (yaw is given at least this amount of pwm)
     void                set_yaw_headroom(int16_t pwm) { _yaw_headroom = pwm; }
@@ -51,16 +50,7 @@ public:
 
     // update estimated throttle required to hover
     void                update_throttle_hover(float dt);
-    virtual float       get_throttle_hover() const { return _throttle_hover; }
-
-    // spool up states
-    enum spool_up_down_mode {
-        SHUT_DOWN = 0,                      // all motors stop
-        SPIN_WHEN_ARMED = 1,                // all motors at spin when armed
-        SPOOL_UP = 2,                       // increasing maximum throttle while stabilizing
-        THROTTLE_UNLIMITED = 3,             // throttle is no longer constrained by start up procedure
-        SPOOL_DOWN = 4,                     // decreasing maximum throttle while stabilizing
-    };
+    virtual float       get_throttle_hover() const override { return _throttle_hover; }
 
     // passes throttle directly to all motors for ESC calibration.
     //   throttle_input is in the range of 0 ~ 1 where 0 will send get_pwm_output_min() and 1 will send get_pwm_output_max()
@@ -72,9 +62,6 @@ public:
     // get_batt_voltage_filt - get battery voltage ratio - for logging purposes only
     float               get_batt_voltage_filt() const { return _batt_voltage_filt.get(); }
 
-    // get_batt_resistance - get battery resistance approximation - for logging purposes only
-    float               get_batt_resistance() const { return _batt_resistance; }
-
     // get throttle limit imposed by battery current limiting.  This is a number from 0 ~ 1 where 0 means hover throttle, 1 means full throttle (i.e. not limited)
     float               get_throttle_limit() const { return _throttle_limit; }
 
@@ -82,17 +69,24 @@ public:
     float               get_throttle_thrust_max() const { return _throttle_thrust_max; }
 
     // return true if spool up is complete
-    bool spool_up_complete() const { return _spool_mode == THROTTLE_UNLIMITED; }
+    bool spool_up_complete() const { return _spool_state == SpoolState::THROTTLE_UNLIMITED; }
 
     // output a thrust to all motors that match a given motor
     // mask. This is used to control tiltrotor motors in forward
     // flight. Thrust is in the range 0 to 1
-    void                output_motor_mask(float thrust, uint8_t mask);
+    virtual void        output_motor_mask(float thrust, uint8_t mask, float rudder_dt);
+
+    // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
+    //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
+    virtual uint16_t    get_motor_mask() override;
 
     // get minimum or maximum pwm value that can be output to motors
     int16_t             get_pwm_output_min() const;
     int16_t             get_pwm_output_max() const;
     
+    // parameter check for MOT_PWM_MIN/MAX, returns true if parameters are valid
+    bool check_mot_pwm_params() const;
+
     // set thrust compensation callback
     FUNCTOR_TYPEDEF(thrust_compensation_fn_t, void, float *, uint8_t);
     void                set_thrust_compensation_callback(thrust_compensation_fn_t callback) {
@@ -111,7 +105,7 @@ protected:
     virtual void        output_to_motors() = 0;
 
     // update the throttle input filter
-    virtual void        update_throttle_filter();
+    virtual void        update_throttle_filter() override;
 
     // return current_limit as a number from 0 ~ 1 in the range throttle_min to throttle_max
     virtual float       get_current_limit_max_throttle();
@@ -122,23 +116,32 @@ protected:
     // update_lift_max_from_batt_voltage - used for voltage compensation
     void                update_lift_max_from_batt_voltage();
 
-    // update_battery_resistance - calculate battery resistance when throttle is above hover_out
-    void                update_battery_resistance();
-
     // return gain scheduling gain based on voltage and air density
     float               get_compensation_gain() const;
 
-    // convert thrust (0~1) range back to pwm range
-    int16_t             calc_thrust_to_pwm(float thrust_in) const;
+    // convert actuator output (0~1) range to pwm range
+    int16_t             output_to_pwm(float _actuator_output);
 
-    // calculate spin up to pwm range
-    int16_t             calc_spin_up_to_pwm() const;
+    // converts desired thrust to linearized actuator output in a range of 0~1
+    float               thrust_to_actuator(float thrust_in);
+
+    // adds slew rate limiting to actuator output if MOT_SLEW_TIME > 0 and not shutdown
+    void                set_actuator_with_slew(float& actuator_output, float input);
+
+    // gradually increase actuator output to ground idle
+    float               actuator_spin_up_to_ground_idle() const;
 
     // apply any thrust compensation for the frame
     virtual void        thrust_compensation(void) {}
 
+    // output booster throttle, if any
+    virtual void        output_boost_throttle(void);
+
+    // output roll/pitch/yaw/thrust
+    virtual void        output_rpyt(void);
+
     // save parameters as part of disarming
-    void save_params_on_disarm();
+    void                save_params_on_disarm() override;
 
     // enum values for HOVER_LEARN parameter
     enum HoverLearn {
@@ -150,13 +153,17 @@ protected:
     // parameters
     AP_Int16            _yaw_headroom;          // yaw control is given at least this pwm range
     AP_Float            _thrust_curve_expo;     // curve used to linearize pwm to thrust conversion.  set to 0 for linear and 1 for second order approximation
-    AP_Float            _spin_min;      // throttle out ratio which produces the minimum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
-    AP_Float            _spin_max;      // throttle out ratio which produces the maximum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
-    AP_Float            _spin_arm;      // throttle out ratio which produces the armed spin rate.  (i.e. 0 ~ 1 ) of the full throttle range
+    AP_Float            _slew_up_time;          // throttle increase slew limitting
+    AP_Float            _slew_dn_time;          // throttle decrease slew limitting
+    AP_Float            _safe_time;             // Time for the esc when transitioning between zero pwm to minimum
+    AP_Float            _spin_min;              // throttle out ratio which produces the minimum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
+    AP_Float            _spin_max;              // throttle out ratio which produces the maximum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
+    AP_Float            _spin_arm;              // throttle out ratio which produces the armed spin rate.  (i.e. 0 ~ 1 ) of the full throttle range
     AP_Float            _batt_voltage_max;      // maximum voltage used to scale lift
     AP_Float            _batt_voltage_min;      // minimum voltage used to scale lift
     AP_Float            _batt_current_max;      // current over which maximum throttle is limited
     AP_Float            _batt_current_time_constant;    // Time constant used to limit the maximum current
+    AP_Int8             _batt_idx;              // battery index used for compensation
     AP_Int16            _pwm_min;               // minimum PWM value that will ever be output to the motors (if 0, vehicle's throttle input channel's min pwm used)
     AP_Int16            _pwm_max;               // maximum PWM value that will ever be output to the motors (if 0, vehicle's throttle input channel's max pwm used)
     AP_Float            _throttle_hover;        // estimated throttle required to hover throttle in the range 0 ~ 1
@@ -168,27 +175,29 @@ protected:
 
     // time to spool motors to min throttle
     AP_Float            _spool_up_time;
-    
+
+    // scaling for booster motor throttle
+    AP_Float            _boost_scale;
+
     // motor output variables
     bool                motor_enabled[AP_MOTORS_MAX_NUM_MOTORS];    // true if motor is enabled
     int16_t             _throttle_radio_min;        // minimum PWM from RC input's throttle channel (i.e. minimum PWM input from receiver, RC3_MIN)
     int16_t             _throttle_radio_max;        // maximum PWM from RC input's throttle channel (i.e. maximum PWM input from receiver, RC3_MAX)
+    // spool variables
 
     // spool variables
-    spool_up_down_mode  _spool_mode;         // motor's current spool mode
     float               _spin_up_ratio;      // throttle percentage (0 ~ 1) between zero and throttle_min
 
     // battery voltage, current and air pressure compensation variables
-    float               _batt_voltage_resting;  // battery voltage reading at minimum throttle
     LowPassFilterFloat  _batt_voltage_filt;     // filtered battery voltage expressed as a percentage (0 ~ 1.0) of batt_voltage_max
-    float               _batt_current_resting;  // battery's current when motors at minimum
-    float               _batt_resistance;       // battery's resistance calculated by comparing resting voltage vs in flight voltage
-    int16_t             _batt_timer;            // timer used in battery resistance calcs
     float               _lift_max;              // maximum lift ratio from battery voltage
     float               _throttle_limit;        // ratio of throttle limit between hover and maximum
     float               _throttle_thrust_max;   // the maximum allowed throttle thrust 0.0 to 1.0 in the range throttle_min to throttle_max
-    uint16_t            _disarm_safety_timer;
+    float               _disarm_safe_timer;     // Timer for the esc when transitioning between zero pwm to minimum
 
     // vehicle supplied callback for thrust compensation. Used for tiltrotors and tiltwings
     thrust_compensation_fn_t _thrust_compensation_callback;
+
+    // array of motor output values
+    float _actuator[AP_MOTORS_MAX_NUM_MOTORS];
 };

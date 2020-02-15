@@ -1,5 +1,5 @@
 /*
-   Please contribute your ideas! See http://dev.ardupilot.org for details
+   Please contribute your ideas! See https://dev.ardupilot.org for details
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_FlashStorage/AP_FlashStorage.h>
+#include <AP_Math/AP_Math.h>
 #include <stdio.h>
 
 #define FLASHSTORAGE_DEBUG 0
@@ -119,7 +120,7 @@ bool AP_FlashStorage::init(void)
     // erase any sectors marked full
     for (uint8_t i=0; i<2; i++) {
         if (states[i] == SECTOR_STATE_FULL) {
-            if (!erase_sector(i)) {
+            if (!erase_sector(i, true)) {
                 return false;
             }
         }
@@ -147,7 +148,7 @@ bool AP_FlashStorage::switch_full_sector(void)
         return false;
     }
 
-    if (!erase_sector(current_sector ^ 1)) {
+    if (!erase_sector(current_sector ^ 1, true)) {
         return false;
     }
 
@@ -186,9 +187,11 @@ bool AP_FlashStorage::write(uint16_t offset, uint16_t length)
         uint16_t block_ofs = header.block_num*block_size;
         uint16_t block_nbytes = (header.num_blocks_minus_one+1)*block_size;
         
+#if AP_FLASHSTORAGE_MULTI_WRITE
         if (!flash_write(current_sector, write_offset, (uint8_t*)&header, sizeof(header))) {
             return false;
         }
+#endif
         if (!flash_write(current_sector, write_offset+sizeof(header), &mem_buffer[block_ofs], block_nbytes)) {
             return false;
         }
@@ -232,15 +235,29 @@ bool AP_FlashStorage::load_sector(uint8_t sector)
             write_offset = ofs;
             return true;
 
-        case BLOCK_STATE_VALID:
         case BLOCK_STATE_WRITING: {
-            uint16_t block_ofs = header.block_num*block_size;
+            /*
+              we were interrupted while writing a block. We can't
+              re-use the data in this block as it may have some bits
+              that are not set to 1, so by flash rules can't be set to
+              an arbitrary value. So we skip over this block, leaving
+              a gap. The gap size is limited to (7+1)*8=64 bytes. That
+              gap won't be recovered until we next do an erase of this
+              sector
+             */
             uint16_t block_nbytes = (header.num_blocks_minus_one+1)*block_size;
+            ofs += block_nbytes + sizeof(header);
+            break;
+        }
+            
+        case BLOCK_STATE_VALID: {
+            uint16_t block_nbytes = (header.num_blocks_minus_one+1)*block_size;
+            uint16_t block_ofs = header.block_num*block_size;
             if (block_ofs + block_nbytes > storage_size) {
+                // the data is invalid (out of range)
                 return false;
             }
-            if (state == BLOCK_STATE_VALID &&
-                !flash_read(sector, ofs+sizeof(header), &mem_buffer[block_ofs], block_nbytes)) {
+            if (!flash_read(sector, ofs+sizeof(header), &mem_buffer[block_ofs], block_nbytes)) {
                 return false;
             }
             //debug("read at %u for %u\n", block_ofs, block_nbytes);
@@ -259,12 +276,14 @@ bool AP_FlashStorage::load_sector(uint8_t sector)
 /*
   erase one sector
  */
-bool AP_FlashStorage::erase_sector(uint8_t sector)
+bool AP_FlashStorage::erase_sector(uint8_t sector, bool mark_available)
 {
     if (!flash_erase(sector)) {
         return false;
     }
-
+    if (!mark_available) {
+        return true;
+    }
     struct sector_header header;
     header.signature = signature;
     header.state = SECTOR_STATE_AVAILABLE;
@@ -277,13 +296,14 @@ bool AP_FlashStorage::erase_sector(uint8_t sector)
 bool AP_FlashStorage::erase_all(void)
 {
     write_error = false;
-    
-    // start with empty memory buffer
-    memset(mem_buffer, 0, storage_size);
+
     current_sector = 0;
     write_offset = sizeof(struct sector_header);
     
-    if (!erase_sector(0) || !erase_sector(1)) {
+    if (!erase_sector(0, current_sector!=0)) {
+        return false;
+    }
+    if (!erase_sector(1, current_sector!=1)) {
         return false;
     }
     
@@ -297,13 +317,16 @@ bool AP_FlashStorage::erase_all(void)
 /*
   write all of mem_buffer to current sector
  */
-bool AP_FlashStorage::write_all(void)
+bool AP_FlashStorage::write_all()
 {
     debug("write_all to sector %u at %u with reserved_space=%u\n",
            current_sector, write_offset, reserved_space);
     for (uint16_t ofs=0; ofs<storage_size; ofs += max_write) {
-        if (!all_zero(ofs, max_write)) {
-            if (!write(ofs, max_write)) {
+        // local variable needed to overcome problem with MIN() macro and -O0
+        const uint8_t max_write_local = max_write;
+        uint8_t n = MIN(max_write_local, storage_size-ofs);
+        if (!all_zero(ofs, n)) {
+            if (!write(ofs, n)) {
                 return false;
             }
         }
@@ -351,16 +374,18 @@ bool AP_FlashStorage::switch_sectors(void)
         return false;
     }
 
-    // mark it in-use
-    header.state = SECTOR_STATE_IN_USE;
-    if (!flash_write(new_sector, 0, (const uint8_t *)&header, sizeof(header))) {
+    // mark current sector as full. This needs to be done before we
+    // mark the new sector as in-use so that a power failure between
+    // the two steps doesn't leave us with an erase on the
+    // reboot. Thanks to night-ghost for spotting this.
+    header.state = SECTOR_STATE_FULL;
+    if (!flash_write(current_sector, 0, (const uint8_t *)&header, sizeof(header))) {
         return false;
     }
 
-
-    // mark current sector as full
-    header.state = SECTOR_STATE_FULL;
-    if (!flash_write(current_sector, 0, (const uint8_t *)&header, sizeof(header))) {
+    // mark new sector as in-use
+    header.state = SECTOR_STATE_IN_USE;
+    if (!flash_write(new_sector, 0, (const uint8_t *)&header, sizeof(header))) {
         return false;
     }
 
@@ -373,4 +398,18 @@ bool AP_FlashStorage::switch_sectors(void)
     
     write_offset = sizeof(header);
     return true;    
+}
+
+/*
+  re-initialise, using current mem_buffer
+ */
+bool AP_FlashStorage::re_initialise(void)
+{
+    if (!flash_erase_ok()) {
+        return false;
+    }
+    if (!erase_all()) {
+        return false;        
+    }
+    return write_all();
 }

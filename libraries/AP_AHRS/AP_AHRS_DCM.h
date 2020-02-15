@@ -21,34 +21,14 @@
  *
  */
 
-class AP_AHRS_DCM : public AP_AHRS
-{
+class AP_AHRS_DCM : public AP_AHRS {
 public:
-    // Constructors
-    AP_AHRS_DCM(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps) :
-        AP_AHRS(ins, baro, gps),
-        _omega_I_sum_time(0.0f),
-        _renorm_val_sum(0.0f),
-        _renorm_val_count(0),
-        _error_rp(1.0f),
-        _error_yaw(1.0f),
-        _gps_last_update(0),
-        _ra_deltat(0.0f),
-        _ra_sum_start(0),
-        _last_declination(0.0f),
-        _mag_earth(1,0),
-        _have_gps_lock(false),
-        _last_lat(0),
-        _last_lng(0),
-        _position_offset_north(0.0f),
-        _position_offset_east(0.0f),
-        _have_position(false),
-        _last_wind_time(0),
-        _last_airspeed(0.0f),
-        _last_consistent_heading(0),
-        _imu1_weight(0.5f),
-        _last_failure_ms(0),
-        _last_startup_ms(0)
+    AP_AHRS_DCM()
+        : AP_AHRS()
+        , _error_rp(1.0f)
+        , _error_yaw(1.0f)
+        , _mag_earth(1, 0)
+        , _imu1_weight(0.5f)
     {
         _dcm_matrix.identity();
 
@@ -57,6 +37,11 @@ public:
         _ki = 0.0087f;
         _ki_yaw = 0.01f;
     }
+
+    /* Do not allow copies */
+    AP_AHRS_DCM(const AP_AHRS_DCM &other) = delete;
+    AP_AHRS_DCM &operator=(const AP_AHRS_DCM&) = delete;
+
 
     // return the smoothed gyro vector corrected for drift
     const Vector3f &get_gyro() const override {
@@ -67,6 +52,9 @@ public:
     const Matrix3f &get_rotation_body_to_ned() const override {
         return _body_dcm_matrix;
     }
+
+    // get rotation matrix specifically from DCM backend (used for compass calibrator)
+    const Matrix3f &get_DCM_rotation_body_to_ned(void) const override { return _body_dcm_matrix; }
 
     // return the current drift correction integrator value
     const Vector3f &get_gyro_drift() const override {
@@ -96,7 +84,7 @@ public:
     }
 
     // return a wind estimation vector, in m/s
-    Vector3f wind_estimate() override {
+    Vector3f wind_estimate() const override {
         return _wind;
     }
 
@@ -104,18 +92,17 @@ public:
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
-    bool airspeed_estimate(float *airspeed_ret) const override;
+    bool airspeed_estimate(float &airspeed_ret) const override;
 
     bool            use_compass() override;
 
-    void set_home(const Location &loc) override;
+    bool set_home(const Location &loc) override WARN_IF_UNUSED;
     void estimate_wind(void);
 
     // is the AHRS subsystem healthy?
     bool healthy() const override;
 
-    // time that the AHRS has been up
-    uint32_t uptime_ms() const override;
+    bool get_velocity_NED(Vector3f &vec) const override;
 
 private:
     float _ki;
@@ -132,6 +119,8 @@ private:
     void            euler_angles(void);
     bool            have_gps(void) const;
     bool            use_fast_gains(void) const;
+    void            load_watchdog_home();
+    void            backup_attitude(void);
 
     // primary representation of attitude of board used for all inertial calculations
     Matrix3f _dcm_matrix;

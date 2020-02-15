@@ -4,7 +4,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include <stdlib.h>
 #include <cmath>
 
@@ -38,6 +38,10 @@ public:
     /// @returns		The updated control output.
     ///
     float        get_pid(float error, float scaler = 1.0);
+
+    /// Reset the whole PID state
+    //
+    void        reset();
 
     /// Reset the PID integrator
     ///
@@ -94,7 +98,7 @@ public:
 
     static const struct AP_Param::GroupInfo        var_info[];
 
-    const DataFlash_Class::PID_Info& get_pid_info(void) const { return _pid_info; }
+    const AP_Logger::PID_Info& get_pid_info(void) const { return _pid_info; }
 
 private:
     AP_Float        _kp;
@@ -109,7 +113,7 @@ private:
 
     float           _get_pid(float error, uint16_t dt, float scaler);
 
-    DataFlash_Class::PID_Info _pid_info {};
+    AP_Logger::PID_Info _pid_info {};
 
     /// Low pass filter cut frequency for derivative calculation.
     ///

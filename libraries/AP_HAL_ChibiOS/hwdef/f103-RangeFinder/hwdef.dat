@@ -1,0 +1,16 @@
+include ../f103-periph/hwdef.dat
+
+define CAN_APP_NODE_NAME "org.ardupilot.ap_periph_rangefinder"
+
+define HAL_CAN_DEFAULT_NODE_ID 115
+
+define HAL_AIRSPEED_BUS_DEFAULT 0
+define AIRSPEED_MAX_SENSORS 1
+
+define HAL_PERIPH_ENABLE_RANGEFINDER
+define RANGEFINDER_MAX_INSTANCES 1
+
+define HAL_SERIAL3_PROTOCOL SerialProtocol_Rangefinder
+
+# we're too low on flash with old compler for bootloader
+define HAL_NO_ROMFS_SUPPORT

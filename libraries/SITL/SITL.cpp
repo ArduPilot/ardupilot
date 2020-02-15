@@ -21,12 +21,17 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+
 #include <GCS_MAVLink/GCS_MAVLink.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
 namespace SITL {
+
+SITL *SITL::_singleton = nullptr;
 
 // table of user settable parameters
 const AP_Param::GroupInfo SITL::var_info[] = {
@@ -42,12 +47,12 @@ const AP_Param::GroupInfo SITL::var_info[] = {
     AP_GROUPINFO("WIND_SPD",   9, SITL,  wind_speed,  0),
     AP_GROUPINFO("WIND_DIR",  10, SITL,  wind_direction,  180),
     AP_GROUPINFO("WIND_TURB", 11, SITL,  wind_turbulance,  0),
-    AP_GROUPINFO("GPS_TYPE",  12, SITL,  gps_type,  SITL::GPS_TYPE_UBLOX),
+    AP_GROUPINFO("GPS_TYPE",  12, SITL,  gps_type[0],  SITL::GPS_TYPE_UBLOX),
     AP_GROUPINFO("GPS_BYTELOSS",  13, SITL,  gps_byteloss,  0),
     AP_GROUPINFO("GPS_NUMSATS",   14, SITL,  gps_numsats,   10),
     AP_GROUPINFO("MAG_ERROR",     15, SITL,  mag_error,  0),
     AP_GROUPINFO("SERVO_SPEED",   16, SITL,  servo_speed,  0.14),
-    AP_GROUPINFO("GPS_GLITCH",    17, SITL,  gps_glitch,  0),
+    AP_GROUPINFO("GPS_GLITCH",    17, SITL,  gps_glitch[0],  0),
     AP_GROUPINFO("GPS_HZ",        18, SITL,  gps_hertz,  5),
     AP_GROUPINFO("BATT_VOLTAGE",  19, SITL,  batt_voltage,  12.6f),
     AP_GROUPINFO("ARSPD_RND",     20, SITL,  arspd_noise,  0.5f),
@@ -84,16 +89,137 @@ const AP_Param::GroupInfo SITL::var_info[] = {
     AP_GROUPINFO("ADSB_TX",       51, SITL,  adsb_tx, 0),
     AP_GROUPINFO("SPEEDUP",       52, SITL,  speedup, -1),
     AP_GROUPINFO("IMU_POS",       53, SITL,  imu_pos_offset, 0),
-    AP_GROUPINFO("GPS_POS",       54, SITL,  gps_pos_offset, 0),
+    AP_GROUPINFO("GPS_POS",       54, SITL,  gps_pos_offset[0], 0),
     AP_GROUPINFO("SONAR_POS",     55, SITL,  rngfnd_pos_offset, 0),
     AP_GROUPINFO("FLOW_POS",      56, SITL,  optflow_pos_offset, 0),
     AP_GROUPINFO("ACC2_BIAS",     57, SITL,  accel2_bias, 0),
     AP_GROUPINFO("GPS_NOISE",     58, SITL,  gps_noise, 0),
-    AP_GROUPINFO("GP2_GLITCH",    59, SITL,  gps2_glitch,  0),
+    AP_GROUPINFO("GP2_GLITCH",    59, SITL,  gps_glitch[1],  0),
     AP_GROUPINFO("ENGINE_FAIL",   60, SITL,  engine_fail,  0),
+    AP_GROUPINFO("GPS2_TYPE",     61, SITL,  gps_type[1],  SITL::GPS_TYPE_UBLOX),
+    AP_SUBGROUPEXTENSION("",      62, SITL,  var_info3),
+    AP_SUBGROUPEXTENSION("",      63, SITL,  var_info2),
     AP_GROUPEND
 };
 
+// second table of user settable parameters for SITL. 
+const AP_Param::GroupInfo SITL::var_info2[] = {
+    AP_GROUPINFO("TEMP_START",   1, SITL,  temp_start,  25),
+    AP_GROUPINFO("TEMP_FLIGHT",  2, SITL,  temp_flight, 35),
+    AP_GROUPINFO("TEMP_TCONST",  3, SITL,  temp_tconst, 30),
+    AP_GROUPINFO("TEMP_BFACTOR", 4, SITL,  temp_baro_factor, 0),
+    AP_GROUPINFO("GPS_LOCKTIME", 5, SITL,  gps_lock_time, 0),
+    AP_GROUPINFO("ARSPD_FAIL_P", 6, SITL,  arspd_fail_pressure, 0),
+    AP_GROUPINFO("ARSPD_PITOT",  7, SITL,  arspd_fail_pitot_pressure, 0),
+    AP_GROUPINFO("GPS_ALT_OFS",  8, SITL,  gps_alt_offset, 0),
+    AP_GROUPINFO("ARSPD_SIGN",   9, SITL,  arspd_signflip, 0),
+    AP_GROUPINFO("WIND_DIR_Z",  10, SITL,  wind_dir_z,     0),
+    AP_GROUPINFO("ARSPD2_FAIL", 11, SITL,  arspd2_fail, 0),
+    AP_GROUPINFO("ARSPD2_FAILP",12, SITL,  arspd2_fail_pressure, 0),
+    AP_GROUPINFO("ARSPD2_PITOT",13, SITL,  arspd2_fail_pitot_pressure, 0),
+    AP_GROUPINFO("VICON_HSTLEN",14, SITL,  vicon_observation_history_length, 0),
+    AP_GROUPINFO("WIND_T"      ,15, SITL,  wind_type, SITL::WIND_TYPE_SQRT),
+    AP_GROUPINFO("WIND_T_ALT"  ,16, SITL,  wind_type_alt, 60),
+    AP_GROUPINFO("WIND_T_COEF", 17, SITL,  wind_type_coef, 0.01f),
+    AP_GROUPINFO("MAG_DIA",     18, SITL,  mag_diag, 0),
+    AP_GROUPINFO("MAG_ODI",     19, SITL,  mag_offdiag, 0),
+    AP_GROUPINFO("MAG_ORIENT",  20, SITL,  mag_orient, 0),
+    AP_GROUPINFO("RC_CHANCOUNT",21, SITL,  rc_chancount, 16),
+    // @Group: SPR_
+    // @Path: ./SIM_Sprayer.cpp
+    AP_SUBGROUPINFO(sprayer_sim, "SPR_", 22, SITL, Sprayer),
+    // @Group: GRPS_
+    // @Path: ./SIM_Gripper_Servo.cpp
+    AP_SUBGROUPINFO(gripper_sim, "GRPS_", 23, SITL, Gripper_Servo),
+    // @Group: GRPE_
+    // @Path: ./SIM_Gripper_EPM.cpp
+    AP_SUBGROUPINFO(gripper_epm_sim, "GRPE_", 24, SITL, Gripper_EPM),
+
+    // weight on wheels pin
+    AP_GROUPINFO("WOW_PIN",     25, SITL,  wow_pin, -1),
+
+    // vibration frequencies on each axis
+    AP_GROUPINFO("VIB_FREQ",   26, SITL,  vibe_freq, 0),
+
+    // @Path: ./SIM_Parachute.cpp
+    AP_SUBGROUPINFO(parachute_sim, "PARA_", 27, SITL, Parachute),
+
+    // enable bandwidth limitting on telemetry ports:
+    AP_GROUPINFO("BAUDLIMIT_EN",   28, SITL,  telem_baudlimit_enable, 0),
+
+    // @Group: PLD_
+    // @Path: ./SIM_Precland.cpp
+    AP_SUBGROUPINFO(precland_sim, "PLD_", 29, SITL, SIM_Precland),
+
+    // apply a force to the vehicle over a period of time:
+    AP_GROUPINFO("SHOVE_X",     30, SITL,  shove.x, 0),
+    AP_GROUPINFO("SHOVE_Y",     31, SITL,  shove.y, 0),
+    AP_GROUPINFO("SHOVE_Z",     32, SITL,  shove.z, 0),
+    AP_GROUPINFO("SHOVE_TIME",  33, SITL,  shove.t, 0),
+    
+    // optical flow sensor measurement noise in rad/sec
+    AP_GROUPINFO("FLOW_RND",   34, SITL,  flow_noise,  0.05f),
+
+    // accel and gyro fail masks
+    AP_GROUPINFO("GYR_FAIL_MSK",   35, SITL,  gyro_fail_mask,  0),
+    AP_GROUPINFO("ACC_FAIL_MSK",   36, SITL,  accel_fail_mask,  0),
+
+    AP_GROUPINFO("TWIST_X",     37, SITL,  twist.x, 0),
+    AP_GROUPINFO("TWIST_Y",     38, SITL,  twist.y, 0),
+    AP_GROUPINFO("TWIST_Z",     39, SITL,  twist.z, 0),
+    AP_GROUPINFO("TWIST_TIME",  40, SITL,  twist.t, 0),
+
+    AP_GROUPINFO("GND_BEHAV",   41, SITL,  gnd_behav, -1),
+    AP_GROUPINFO("BARO_COUNT",  42, SITL,  baro_count,  1),
+
+    AP_GROUPINFO("GPS_HDG",     43, SITL,  gps_hdg_enabled, 0),
+
+    // sailboat wave and tide simulation parameters
+    AP_GROUPINFO("WAVE_ENABLE", 44, SITL,  wave.enable, 0.0f),
+    AP_GROUPINFO("WAVE_LENGTH", 45, SITL,  wave.length, 10.0f),
+    AP_GROUPINFO("WAVE_AMP",    46, SITL,  wave.amp, 0.5f),
+    AP_GROUPINFO("WAVE_DIR",    47, SITL,  wave.direction, 0.0f),
+    AP_GROUPINFO("WAVE_SPEED",  48, SITL,  wave.speed, 0.5f),
+    AP_GROUPINFO("TIDE_DIR",    49, SITL,  tide.direction, 0.0f),
+    AP_GROUPINFO("TIDE_SPEED",  50, SITL,  tide.speed, 0.0f),
+
+    // the following coordinates are for CMAC, in Canberra
+    AP_GROUPINFO("OPOS_LAT",    51, SITL,  opos.lat, -35.363261f),
+    AP_GROUPINFO("OPOS_LNG",    52, SITL,  opos.lng, 149.165230f),
+    AP_GROUPINFO("OPOS_ALT",    53, SITL,  opos.alt, 584.0f),
+    AP_GROUPINFO("OPOS_HDG",    54, SITL,  opos.hdg, 353.0f),
+
+    // extra delay per main loop
+    AP_GROUPINFO("LOOP_DELAY",  55, SITL,  loop_delay, 0),
+
+    // @Path: ./SIM_Buzzer.cpp
+    AP_SUBGROUPINFO(buzzer_sim, "BZ_", 56, SITL, Buzzer),
+
+    // @Path: ./SIM_ToneAlarm.cpp
+    AP_SUBGROUPINFO(tonealarm_sim, "TA_", 57, SITL, ToneAlarm),
+
+    AP_GROUPINFO("EFI_TYPE",    58, SITL,  efi_type,  SITL::EFI_TYPE_NONE),
+
+    AP_GROUPINFO("SAFETY_STATE",    59, SITL,  _safety_switch_state, 0),
+
+    AP_GROUPINFO("MAG_SCALING",    60, SITL,  mag_scaling, 1),
+
+    // max motor vibration frequency
+    AP_GROUPINFO("VIB_MOT_MAX", 61, SITL,  vibe_motor, 0.0f),
+    // minimum throttle for simulated ins noise
+    AP_GROUPINFO("INS_THR_MIN", 62, SITL,  ins_noise_throttle_min, 0.1f),
+
+    AP_GROUPEND
+
+};
+
+// third table of user settable parameters for SITL. 
+const AP_Param::GroupInfo SITL::var_info3[] = {
+    AP_GROUPINFO("ODOM_ENABLE",   1, SITL,  odom_enable, 0),
+    AP_GROUPINFO("GPS2_POS",      2, SITL,  gps_pos_offset[1], 0),
+    AP_GROUPEND
+};
+    
 
 /* report SITL state via MAVLink */
 void SITL::simstate_send(mavlink_channel_t chan)
@@ -120,8 +246,8 @@ void SITL::simstate_send(mavlink_channel_t chan)
                               state.longitude*1.0e7);
 }
 
-/* report SITL state to DataFlash */
-void SITL::Log_Write_SIMSTATE(DataFlash_Class *DataFlash)
+/* report SITL state to AP_Logger */
+void SITL::Log_Write_SIMSTATE()
 {
     float yaw;
 
@@ -145,7 +271,7 @@ void SITL::Log_Write_SIMSTATE(DataFlash_Class *DataFlash)
         q3      : state.quaternion.q3,
         q4      : state.quaternion.q4,
     };
-    DataFlash->WriteBlock(&pkt, sizeof(pkt));
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
 
 /*
@@ -195,3 +321,15 @@ Vector3f SITL::convert_earth_frame(const Matrix3f &dcm, const Vector3f &gyro)
 }
 
 } // namespace SITL
+
+
+namespace AP {
+
+SITL::SITL *sitl()
+{
+    return SITL::SITL::get_singleton();
+}
+
+};
+
+#endif // CONFIG_HAL_BOARD

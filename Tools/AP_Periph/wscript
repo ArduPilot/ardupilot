@@ -1,0 +1,60 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+import fnmatch
+
+def build(bld):
+    targets = ['f103-*', 'f303-*', 'CUAV_GPS', 'ZubaxGNSS*']
+    valid_target = False
+    for t in targets:
+        if fnmatch.fnmatch(bld.env.BOARD, t):
+            valid_target = True
+    if not valid_target:
+        return
+
+    bld.ap_stlib(
+        name= 'AP_Periph_libs',
+        ap_vehicle='AP_Periph',
+        ap_libraries= [
+        'AP_Common',
+        'AP_HAL',
+        'AP_HAL_Empty',
+        'AP_Math',
+        'AP_BoardConfig',
+        'AP_Param',
+        'StorageManager',
+        'AP_FlashStorage',
+        'AP_GPS',
+        'AP_SerialManager',
+        'AP_RTC',
+        'AP_Compass',
+        'AP_Baro',
+        'Filter',
+        'AP_InternalError',
+        'GCS_MAVLink',
+        'AP_Airspeed',
+        'AP_RangeFinder',
+        'AP_ROMFS',
+        ],
+        exclude_src=[
+            'libraries/AP_HAL_ChibiOS/Storage.cpp'
+        ]
+    )
+
+    # build external libcanard library
+    bld.stlib(source='../../modules/libcanard/canard.c',
+              target='libcanard')
+
+    bld.ap_program(
+        program_name='AP_Periph',
+        use=['AP_Periph_libs', 'libcanard'],
+        program_groups=['bin','AP_Periph'],
+        includes=[bld.env.SRCROOT + '/modules/libcanard',
+                  bld.env.BUILDROOT + '/modules/libcanard/dsdlc_generated']
+    )
+
+    bld(
+        # build libcanard headers
+        rule="python3 ${SRCROOT}/modules/libcanard/dsdl_compiler/libcanard_dsdlc --header_only --outdir ${BUILDROOT}/modules/libcanard/dsdlc_generated ${SRCROOT}/modules/uavcan/dsdl/uavcan ${SRCROOT}/libraries/AP_UAVCAN/dsdl/ardupilot ${SRCROOT}/libraries/AP_UAVCAN/dsdl/com",
+        group='dynamic_sources',
+    )

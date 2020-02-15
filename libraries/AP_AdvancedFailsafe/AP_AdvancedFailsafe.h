@@ -23,9 +23,6 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Mission/AP_Mission.h>
-#include <AP_Baro/AP_Baro.h>
-#include <AP_GPS/AP_GPS.h>
-#include <AP_RCMapper/AP_RCMapper.h>
 #include <inttypes.h>
 
 
@@ -45,22 +42,37 @@ public:
         STATE_GPS_LOSS        = 3
     };
 
+    enum terminate_action {
+        TERMINATE_ACTION_TERMINATE = 42,
+        TERMINATE_ACTION_LAND      = 43
+    };
+
+    /* Do not allow copies */
+    AP_AdvancedFailsafe(const AP_AdvancedFailsafe &other) = delete;
+    AP_AdvancedFailsafe &operator=(const AP_AdvancedFailsafe&) = delete;
+
     // Constructor
-    AP_AdvancedFailsafe(AP_Mission &_mission, AP_Baro &_baro, const AP_GPS &_gps, const RCMapper &_rcmap) :
-        mission(_mission),
-        baro(_baro),
-        gps(_gps),
-        rcmap(_rcmap),
-        _gps_loss_count(0),
-        _comms_loss_count(0)
+    AP_AdvancedFailsafe(AP_Mission &_mission) :
+        mission(_mission)
         {
             AP_Param::setup_object_defaults(this, var_info);
-            
+            if (_singleton != nullptr) {
+                AP_HAL::panic("AP_Logger must be singleton");
+            }
+
+            _singleton = this;
             _state = STATE_PREFLIGHT;
             _terminate.set(0);
-            
+
             _saved_wp = 0;
         }
+
+    // get singleton instance
+    static AP_AdvancedFailsafe *get_singleton(void) {
+        return _singleton;
+    }
+
+    bool enabled() { return _enable; }
 
     // check that everything is OK
     void check(uint32_t last_heartbeat_ms, bool geofence_breached, uint32_t last_valid_rc_ms);
@@ -71,13 +83,20 @@ public:
 
     // return true if we are terminating (deliberately crashing the vehicle)
     bool should_crash_vehicle(void);
-    
-    // for holding parameters
-    static const struct AP_Param::GroupInfo var_info[];
+
+    // enables or disables a GCS based termination, returns true if AFS is in the desired termination state
+    bool gcs_terminate(bool should_terminate, const char *reason);
 
     // called to set all outputs to termination state
     virtual void terminate_vehicle(void) = 0;
-        
+
+    // for holding parameters
+    static const struct AP_Param::GroupInfo var_info[];
+
+    bool terminating_vehicle_via_landing() const {
+        return _terminate_action == TERMINATE_ACTION_LAND;
+    };
+
 protected:
     // setup failsafe values for if FMU firmware stops running
     virtual void setup_IO_failsafe(void) = 0;
@@ -88,9 +107,6 @@ protected:
     enum state _state;
 
     AP_Mission &mission;
-    AP_Baro &baro;
-    const AP_GPS &gps;
-    const RCMapper &rcmap;
 
     AP_Int8 _enable;
     // digital output pins for communicating with the failsafe board
@@ -114,6 +130,7 @@ protected:
     AP_Int8  _enable_RC_fs;
     AP_Int8  _rc_term_manual_only;
     AP_Int8  _enable_dual_loss;
+    AP_Int16  _max_range_km;
 
     bool _heartbeat_pin_value;
 
@@ -135,5 +152,19 @@ protected:
     // have the failsafe values been setup?
     bool _failsafe_setup:1;
 
+    Location _first_location;
+    bool _have_first_location;
+    uint32_t _term_range_notice_ms;
+
     bool check_altlimit(void);
+
+private:
+    static AP_AdvancedFailsafe *_singleton;
+
+    // update maximum range check
+    void max_range_update();
+};
+
+namespace AP {
+    AP_AdvancedFailsafe *advancedfailsafe();
 };

@@ -38,13 +38,20 @@
 class AP_Baro_KellerLD : public AP_Baro_Backend
 {
 public:
+<<<<<<< HEAD
     void update();
+=======
+    void update() override;
+>>>>>>> 14ad9a58bde667b94cfc1aae2e896cebef07ffdf
 
     static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
 
 private:
     AP_Baro_KellerLD(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
+<<<<<<< HEAD
     virtual ~AP_Baro_KellerLD(void) {};
+=======
+>>>>>>> 14ad9a58bde667b94cfc1aae2e896cebef07ffdf
 
     bool _init();
 

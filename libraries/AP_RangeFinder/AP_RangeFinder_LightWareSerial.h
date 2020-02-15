@@ -1,28 +1,26 @@
 #pragma once
 
-#include "RangeFinder.h"
-#include "RangeFinder_Backend.h"
+#include "AP_RangeFinder.h"
+#include "AP_RangeFinder_Backend_Serial.h"
 
-class AP_RangeFinder_LightWareSerial : public AP_RangeFinder_Backend
+class AP_RangeFinder_LightWareSerial : public AP_RangeFinder_Backend_Serial
 {
 
 public:
-    // constructor
-    AP_RangeFinder_LightWareSerial(RangeFinder &ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state,
-                                   AP_SerialManager &serial_manager);
 
-    // static detection function
-    static bool detect(RangeFinder &ranger, uint8_t instance, AP_SerialManager &serial_manager);
+    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
 
-    // update state
-    void update(void);
+protected:
+
+    MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
+        return MAV_DISTANCE_SENSOR_LASER;
+    }
 
 private:
     // get a reading
-    bool get_reading(uint16_t &reading_cm);
+    bool get_reading(uint16_t &reading_cm) override;
 
-    AP_HAL::UARTDriver *uart = nullptr;
-    uint32_t last_reading_ms = 0;
     char linebuf[10];
     uint8_t linebuf_len = 0;
+    uint32_t last_init_ms;
 };

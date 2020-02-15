@@ -16,7 +16,7 @@ void Copter::update_land_and_crash_detectors()
     // update 1hz filtered acceleration
     Vector3f accel_ef = ahrs.get_accel_ef_blended();
     accel_ef.z += GRAVITY_MSS;
-    land_accel_ef_filter.apply(accel_ef, MAIN_LOOP_SECONDS);
+    land_accel_ef_filter.apply(accel_ef, scheduler.get_loop_period_s());
 
     update_land_detector();
 
@@ -26,6 +26,7 @@ void Copter::update_land_and_crash_detectors()
 #endif
 
     crash_check();
+    thrust_loss_check();
 }
 
 // update_land_detector - checks if we have landed and updates the ap.land_complete flag
@@ -46,13 +47,16 @@ void Copter::update_land_detector()
     } else if (ap.land_complete) {
 #if FRAME_CONFIG == HELI_FRAME
         // if rotor speed and collective pitch are high then clear landing flag
-        if (motors->get_throttle() > get_non_takeoff_throttle() && !motors->limit.throttle_lower && motors->rotor_runup_complete()) {
+        if (motors->get_throttle() > get_non_takeoff_throttle() && !motors->limit.throttle_lower && motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
 #else
         // if throttle output is high then clear landing flag
         if (motors->get_throttle() > get_non_takeoff_throttle()) {
 #endif
             set_land_complete(false);
         }
+    } else if (standby_active) {
+        // land detector will not run in standby mode
+        land_detector_count = 0;
     } else {
 
 #if FRAME_CONFIG == HELI_FRAME
@@ -63,7 +67,7 @@ void Copter::update_land_detector()
         bool motor_at_lower_limit = motors->limit.throttle_lower && attitude_control->is_throttle_mix_min();
 #endif
 
-        // check that the airframe is not accelerating (not falling or breaking after fast forward flight)
+        // check that the airframe is not accelerating (not falling or braking after fast forward flight)
         bool accel_stationary = (land_accel_ef_filter.get().length() <= LAND_DETECTOR_ACCEL_MAX);
 
         // check that vertical speed is within 1m/s of zero
@@ -98,20 +102,25 @@ void Copter::set_land_complete(bool b)
     land_detector_count = 0;
 
     if(b){
-        Log_Write_Event(DATA_LAND_COMPLETE);
+        AP::logger().Write_Event(LogEvent::LAND_COMPLETE);
     } else {
-        Log_Write_Event(DATA_NOT_LANDED);
+        AP::logger().Write_Event(LogEvent::NOT_LANDED);
     }
     ap.land_complete = b;
 
+#if STATS_ENABLED == ENABLED
     g2.stats.set_flying(!b);
+#endif
 
+    // tell AHRS flying state
+    set_likely_flying(!b);
+    
     // trigger disarm-on-land if configured
     bool disarm_on_land_configured = (g.throttle_behavior & THR_BEHAVE_DISARM_ON_LAND_DETECT) != 0;
-    bool mode_disarms_on_land = mode_allows_arming(control_mode,false) && !mode_has_manual_throttle(control_mode);
+    const bool mode_disarms_on_land = flightmode->allows_arming(false) && !flightmode->has_manual_throttle();
 
     if (ap.land_complete && motors->armed() && disarm_on_land_configured && mode_disarms_on_land) {
-        init_disarm_motors();
+        arming.disarm();
     }
 }
 
@@ -123,7 +132,7 @@ void Copter::set_land_complete_maybe(bool b)
         return;
 
     if (b) {
-        Log_Write_Event(DATA_LAND_COMPLETE_MAYBE);
+        AP::logger().Write_Event(LogEvent::LAND_COMPLETE_MAYBE);
     }
     ap.land_complete_maybe = b;
 }
@@ -140,7 +149,7 @@ void Copter::update_throttle_thr_mix()
         return;
     }
 
-    if (mode_has_manual_throttle(control_mode)) {
+    if (flightmode->has_manual_throttle()) {
         // manual throttle
         if(channel_throttle->get_control_in() <= 0) {
             attitude_control->set_throttle_mix_min();
@@ -167,7 +176,7 @@ void Copter::update_throttle_thr_mix()
         bool descent_not_demanded = pos_control->get_desired_velocity().z >= 0.0f;
 
         if ( large_angle_request || large_angle_error || accel_moving || descent_not_demanded) {
-            attitude_control->set_throttle_mix_max();
+            attitude_control->set_throttle_mix_max(pos_control->get_vel_z_control_ratio());
         } else {
             attitude_control->set_throttle_mix_min();
         }

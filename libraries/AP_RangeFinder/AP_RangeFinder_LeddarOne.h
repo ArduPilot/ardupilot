@@ -1,7 +1,7 @@
 #pragma once
 
-#include "RangeFinder.h"
-#include "RangeFinder_Backend.h"
+#include "AP_RangeFinder.h"
+#include "AP_RangeFinder_Backend_Serial.h"
 
 // defines
 #define LEDDARONE_DEFAULT_ADDRESS 0x01
@@ -37,23 +37,22 @@ enum LeddarOne_ModbusStatus {
     LEDDARONE_MODBUS_STATE_AVAILABLE
 };
 
-class AP_RangeFinder_LeddarOne : public AP_RangeFinder_Backend
+class AP_RangeFinder_LeddarOne : public AP_RangeFinder_Backend_Serial
 {
 
 public:
-    // constructor
-    AP_RangeFinder_LeddarOne(RangeFinder &ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state,
-                                   AP_SerialManager &serial_manager);
 
-    // static detection function
-    static bool detect(RangeFinder &ranger, uint8_t instance, AP_SerialManager &serial_manager);
+    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
 
-    // update state
-    void update(void);
+protected:
+
+    MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
+        return MAV_DISTANCE_SENSOR_LASER;
+    }
 
 private:
     // get a reading
-    bool get_reading(uint16_t &reading_cm);
+    bool get_reading(uint16_t &reading_cm) override;
 
     // CRC16
     bool CRC16(uint8_t *aBuffer, uint8_t aLength, bool aCheck);
@@ -61,8 +60,6 @@ private:
     // parse a response message from ModBus
     LeddarOne_Status parse_response(uint8_t &number_detections);
 
-    AP_HAL::UARTDriver *uart = nullptr;
-    uint32_t last_reading_ms;
     uint32_t last_sending_request_ms;
     uint32_t last_available_ms;
 

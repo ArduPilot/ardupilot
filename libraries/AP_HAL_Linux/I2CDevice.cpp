@@ -105,7 +105,7 @@ I2CBus::~I2CBus()
 
 void I2CBus::start_cb()
 {
-    sem.take(HAL_SEMAPHORE_BLOCK_FOREVER);
+    sem.take_blocking();
 }
 
 void I2CBus::end_cb()
@@ -344,7 +344,10 @@ I2CDeviceManager::get_device(std::vector<const char *> devpaths, uint8_t address
 }
 
 AP_HAL::OwnPtr<AP_HAL::I2CDevice>
-I2CDeviceManager::get_device(uint8_t bus, uint8_t address)
+I2CDeviceManager::get_device(uint8_t bus, uint8_t address,
+                             uint32_t bus_clock,
+                             bool use_smbus,
+                             uint32_t timeout_ms)
 {
     for (uint8_t i = 0, n = _buses.size(); i < n; i++) {
         if (_buses[i]->bus == bus) {
@@ -414,4 +417,28 @@ void I2CDeviceManager::teardown()
     }
 }
 
+/*
+  get mask of bus numbers for all configured I2C buses
+*/
+uint32_t I2CDeviceManager::get_bus_mask(void) const
+{
+    return HAL_LINUX_I2C_BUS_MASK;
+}
+
+/*
+  get mask of bus numbers for all configured internal I2C buses
+*/
+uint32_t I2CDeviceManager::get_bus_mask_internal(void) const
+{
+    return HAL_LINUX_I2C_INTERNAL_BUS_MASK;
+}
+
+/*
+  get mask of bus numbers for all configured external I2C buses
+*/
+uint32_t I2CDeviceManager::get_bus_mask_external(void) const
+{
+    return HAL_LINUX_I2C_EXTERNAL_BUS_MASK;
+}
+    
 }

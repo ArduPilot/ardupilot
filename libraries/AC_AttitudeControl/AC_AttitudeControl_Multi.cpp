@@ -10,14 +10,14 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Param: RAT_RLL_P
     // @DisplayName: Roll axis rate controller P gain
     // @Description: Roll axis rate controller P gain.  Converts the difference between desired roll rate and actual roll rate into a motor speed output
-    // @Range: 0.08 0.30
+    // @Range: 0.01 0.5
     // @Increment: 0.005
     // @User: Standard
 
     // @Param: RAT_RLL_I
     // @DisplayName: Roll axis rate controller I gain
     // @Description: Roll axis rate controller I gain.  Corrects long-term difference in desired roll rate vs actual roll rate
-    // @Range: 0.01 0.5
+    // @Range: 0.01 2.0
     // @Increment: 0.01
     // @User: Standard
 
@@ -26,13 +26,13 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Description: Roll axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
     // @Range: 0 1
     // @Increment: 0.01
-    // @Units: Percent
+    // @Units: %
     // @User: Standard
 
     // @Param: RAT_RLL_D
     // @DisplayName: Roll axis rate controller D gain
     // @Description: Roll axis rate controller D gain.  Compensates for short-term change in desired roll rate vs actual roll rate
-    // @Range: 0.0 0.02
+    // @Range: 0.0 0.05
     // @Increment: 0.001
     // @User: Standard
 
@@ -43,9 +43,25 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Increment: 0.001
     // @User: Standard
 
-    // @Param: RAT_RLL_FILT
-    // @DisplayName: Roll axis rate controller input frequency in Hz
-    // @Description: Roll axis rate controller input frequency in Hz
+    // @Param: RAT_RLL_FLTT
+    // @DisplayName: Roll axis rate controller target frequency in Hz
+    // @Description: Roll axis rate controller target frequency in Hz
+    // @Range: 1 50
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: RAT_RLL_FLTE
+    // @DisplayName: Roll axis rate controller error frequency in Hz
+    // @Description: Roll axis rate controller error frequency in Hz
+    // @Range: 1 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: RAT_RLL_FLTD
+    // @DisplayName: Roll axis rate controller derivative frequency in Hz
+    // @Description: Roll axis rate controller derivative frequency in Hz
     // @Range: 1 100
     // @Increment: 1
     // @Units: Hz
@@ -55,14 +71,14 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Param: RAT_PIT_P
     // @DisplayName: Pitch axis rate controller P gain
     // @Description: Pitch axis rate controller P gain.  Converts the difference between desired pitch rate and actual pitch rate into a motor speed output
-    // @Range: 0.08 0.30
+    // @Range: 0.01 0.50
     // @Increment: 0.005
     // @User: Standard
 
     // @Param: RAT_PIT_I
     // @DisplayName: Pitch axis rate controller I gain
     // @Description: Pitch axis rate controller I gain.  Corrects long-term difference in desired pitch rate vs actual pitch rate
-    // @Range: 0.01 0.5
+    // @Range: 0.01 2.0
     // @Increment: 0.01
     // @User: Standard
 
@@ -71,13 +87,13 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Description: Pitch axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
     // @Range: 0 1
     // @Increment: 0.01
-    // @Units: Percent
+    // @Units: %
     // @User: Standard
 
     // @Param: RAT_PIT_D
     // @DisplayName: Pitch axis rate controller D gain
     // @Description: Pitch axis rate controller D gain.  Compensates for short-term change in desired pitch rate vs actual pitch rate
-    // @Range: 0.0 0.02
+    // @Range: 0.0 0.05
     // @Increment: 0.001
     // @User: Standard
 
@@ -88,9 +104,25 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Increment: 0.001
     // @User: Standard
 
-    // @Param: RAT_PIT_FILT
-    // @DisplayName: Pitch axis rate controller input frequency in Hz
-    // @Description: Pitch axis rate controller input frequency in Hz
+    // @Param: RAT_PIT_FLTT
+    // @DisplayName: Pitch axis rate controller target frequency in Hz
+    // @Description: Pitch axis rate controller target frequency in Hz
+    // @Range: 1 50
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: RAT_PIT_FLTE
+    // @DisplayName: Pitch axis rate controller error frequency in Hz
+    // @Description: Pitch axis rate controller error frequency in Hz
+    // @Range: 1 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: RAT_PIT_FLTD
+    // @DisplayName: Pitch axis rate controller derivative frequency in Hz
+    // @Description: Pitch axis rate controller derivative frequency in Hz
     // @Range: 1 100
     // @Increment: 1
     // @Units: Hz
@@ -100,14 +132,14 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Param: RAT_YAW_P
     // @DisplayName: Yaw axis rate controller P gain
     // @Description: Yaw axis rate controller P gain.  Converts the difference between desired yaw rate and actual yaw rate into a motor speed output
-    // @Range: 0.10 0.50
+    // @Range: 0.10 2.50
     // @Increment: 0.005
     // @User: Standard
 
     // @Param: RAT_YAW_I
     // @DisplayName: Yaw axis rate controller I gain
     // @Description: Yaw axis rate controller I gain.  Corrects long-term difference in desired yaw rate vs actual yaw rate
-    // @Range: 0.010 0.05
+    // @Range: 0.010 1.0
     // @Increment: 0.01
     // @User: Standard
 
@@ -116,7 +148,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Description: Yaw axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
     // @Range: 0 1
     // @Increment: 0.01
-    // @Units: Percent
+    // @Units: %
     // @User: Standard
 
     // @Param: RAT_YAW_D
@@ -133,10 +165,26 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Increment: 0.001
     // @User: Standard
 
-    // @Param: RAT_YAW_FILT
-    // @DisplayName: Yaw axis rate controller input frequency in Hz
-    // @Description: Yaw axis rate controller input frequency in Hz
-    // @Range: 1 100
+    // @Param: RAT_YAW_FLTT
+    // @DisplayName: Yaw axis rate controller target frequency in Hz
+    // @Description: Yaw axis rate controller target frequency in Hz
+    // @Range: 1 5
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: RAT_YAW_FLTE
+    // @DisplayName: Yaw axis rate controller error frequency in Hz
+    // @Description: Yaw axis rate controller error frequency in Hz
+    // @Range: 1 10
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: RAT_YAW_FLTD
+    // @DisplayName: Yaw axis rate controller derivative frequency in Hz
+    // @Description: Yaw axis rate controller derivative frequency in Hz
+    // @Range: 1 20
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
@@ -159,7 +207,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Param: THR_MIX_MAN
     // @DisplayName: Throttle Mix Manual
     // @Description: Throttle vs attitude control prioritisation used during manual flight (higher values mean we prioritise attitude control over throttle)
-    // @Range: 0.5 0.9
+    // @Range: 0.1 0.9
     // @User: Advanced
     AP_GROUPINFO("THR_MIX_MAN", 6, AC_AttitudeControl_Multi, _thr_mix_man, AC_ATTITUDE_CONTROL_MAN_DEFAULT),
 
@@ -169,9 +217,9 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
 AC_AttitudeControl_Multi::AC_AttitudeControl_Multi(AP_AHRS_View &ahrs, const AP_Vehicle::MultiCopter &aparm, AP_MotorsMulticopter& motors, float dt) :
     AC_AttitudeControl(ahrs, aparm, motors, dt),
     _motors_multi(motors),
-    _pid_rate_roll(AC_ATC_MULTI_RATE_RP_P, AC_ATC_MULTI_RATE_RP_I, AC_ATC_MULTI_RATE_RP_D, AC_ATC_MULTI_RATE_RP_IMAX, AC_ATC_MULTI_RATE_RP_FILT_HZ, dt),
-    _pid_rate_pitch(AC_ATC_MULTI_RATE_RP_P, AC_ATC_MULTI_RATE_RP_I, AC_ATC_MULTI_RATE_RP_D, AC_ATC_MULTI_RATE_RP_IMAX, AC_ATC_MULTI_RATE_RP_FILT_HZ, dt),
-    _pid_rate_yaw(AC_ATC_MULTI_RATE_YAW_P, AC_ATC_MULTI_RATE_YAW_I, AC_ATC_MULTI_RATE_YAW_D, AC_ATC_MULTI_RATE_YAW_IMAX, AC_ATC_MULTI_RATE_YAW_FILT_HZ, dt)
+    _pid_rate_roll(AC_ATC_MULTI_RATE_RP_P, AC_ATC_MULTI_RATE_RP_I, AC_ATC_MULTI_RATE_RP_D, 0.0f, AC_ATC_MULTI_RATE_RP_IMAX, AC_ATC_MULTI_RATE_RP_FILT_HZ, 0.0f, AC_ATC_MULTI_RATE_RP_FILT_HZ, dt),
+    _pid_rate_pitch(AC_ATC_MULTI_RATE_RP_P, AC_ATC_MULTI_RATE_RP_I, AC_ATC_MULTI_RATE_RP_D, 0.0f, AC_ATC_MULTI_RATE_RP_IMAX, AC_ATC_MULTI_RATE_RP_FILT_HZ, 0.0f, AC_ATC_MULTI_RATE_RP_FILT_HZ, dt),
+    _pid_rate_yaw(AC_ATC_MULTI_RATE_YAW_P, AC_ATC_MULTI_RATE_YAW_I, AC_ATC_MULTI_RATE_YAW_D, 0.0f, AC_ATC_MULTI_RATE_YAW_IMAX, AC_ATC_MULTI_RATE_RP_FILT_HZ, AC_ATC_MULTI_RATE_YAW_FILT_HZ, 0.0f, dt)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -188,8 +236,8 @@ void AC_AttitudeControl_Multi::update_althold_lean_angle_max(float throttle_in)
         return;
     }
 
-    float althold_lean_angle_max = acos(constrain_float(_throttle_in/(AC_ATTITUDE_CONTROL_ANGLE_LIMIT_THROTTLE_MAX * thr_max), 0.0f, 1.0f));
-    _althold_lean_angle_max = _althold_lean_angle_max + (_dt/(_dt+_angle_limit_tc))*(althold_lean_angle_max-_althold_lean_angle_max);
+    float althold_lean_angle_max = acosf(constrain_float(throttle_in / (AC_ATTITUDE_CONTROL_ANGLE_LIMIT_THROTTLE_MAX * thr_max), 0.0f, 1.0f));
+    _althold_lean_angle_max = _althold_lean_angle_max + (_dt / (_dt + _angle_limit_tc)) * (althold_lean_angle_max - _althold_lean_angle_max);
 }
 
 void AC_AttitudeControl_Multi::set_throttle_out(float throttle_in, bool apply_angle_boost, float filter_cutoff)
@@ -200,12 +248,18 @@ void AC_AttitudeControl_Multi::set_throttle_out(float throttle_in, bool apply_an
     if (apply_angle_boost) {
         // Apply angle boost
         throttle_in = get_throttle_boosted(throttle_in);
-    }else{
+    } else {
         // Clear angle_boost for logging purposes
         _angle_boost = 0.0f;
     }
     _motors.set_throttle(throttle_in);
     _motors.set_throttle_avg_max(get_throttle_avg_max(MAX(throttle_in, _throttle_in)));
+}
+
+void AC_AttitudeControl_Multi::set_throttle_mix_max(float ratio)
+{
+    ratio = constrain_float(ratio, 0.0f, 1.0f);
+    _throttle_rpy_mix_desired = (1.0f - ratio) * _thr_mix_min + ratio * _thr_mix_max;
 }
 
 // returns a throttle including compensation for roll/pitch angle
@@ -220,11 +274,11 @@ float AC_AttitudeControl_Multi::get_throttle_boosted(float throttle_in)
     // inverted_factor reduces from 1 to 0 for tilt angles between 60 and 90 degrees
 
     float cos_tilt = _ahrs.cos_pitch() * _ahrs.cos_roll();
-    float inverted_factor = constrain_float(2.0f*cos_tilt, 0.0f, 1.0f);
-    float boost_factor = 1.0f/constrain_float(cos_tilt, 0.5f, 1.0f);
+    float inverted_factor = constrain_float(2.0f * cos_tilt, 0.0f, 1.0f);
+    float boost_factor = 1.0f / constrain_float(cos_tilt, 0.5f, 1.0f);
 
-    float throttle_out = throttle_in*inverted_factor*boost_factor;
-    _angle_boost = constrain_float(throttle_out - throttle_in,-1.0f,1.0f);
+    float throttle_out = throttle_in * inverted_factor * boost_factor;
+    _angle_boost = constrain_float(throttle_out - throttle_in, -1.0f, 1.0f);
     return throttle_out;
 }
 
@@ -233,7 +287,7 @@ float AC_AttitudeControl_Multi::get_throttle_boosted(float throttle_in)
 float AC_AttitudeControl_Multi::get_throttle_avg_max(float throttle_in)
 {
     throttle_in = constrain_float(throttle_in, 0.0f, 1.0f);
-    return MAX(throttle_in, throttle_in*MAX(0.0f,1.0f-_throttle_rpy_mix)+_motors.get_throttle_hover()*_throttle_rpy_mix);
+    return MAX(throttle_in, throttle_in * MAX(0.0f, 1.0f - _throttle_rpy_mix) + _motors.get_throttle_hover() * _throttle_rpy_mix);
 }
 
 // update_throttle_rpy_mix - slew set_throttle_rpy_mix to requested value
@@ -242,10 +296,10 @@ void AC_AttitudeControl_Multi::update_throttle_rpy_mix()
     // slew _throttle_rpy_mix to _throttle_rpy_mix_desired
     if (_throttle_rpy_mix < _throttle_rpy_mix_desired) {
         // increase quickly (i.e. from 0.1 to 0.9 in 0.4 seconds)
-        _throttle_rpy_mix += MIN(2.0f*_dt, _throttle_rpy_mix_desired-_throttle_rpy_mix);
+        _throttle_rpy_mix += MIN(2.0f * _dt, _throttle_rpy_mix_desired - _throttle_rpy_mix);
     } else if (_throttle_rpy_mix > _throttle_rpy_mix_desired) {
         // reduce more slowly (from 0.9 to 0.1 in 1.6 seconds)
-        _throttle_rpy_mix -= MIN(0.5f*_dt, _throttle_rpy_mix-_throttle_rpy_mix_desired);
+        _throttle_rpy_mix -= MIN(0.5f * _dt, _throttle_rpy_mix - _throttle_rpy_mix_desired);
     }
     _throttle_rpy_mix = constrain_float(_throttle_rpy_mix, 0.1f, AC_ATTITUDE_CONTROL_MAX);
 }
@@ -255,10 +309,21 @@ void AC_AttitudeControl_Multi::rate_controller_run()
     // move throttle vs attitude mixing towards desired (called from here because this is conveniently called on every iteration)
     update_throttle_rpy_mix();
 
+    _rate_target_ang_vel += _rate_sysid_ang_vel;
+
     Vector3f gyro_latest = _ahrs.get_gyro_latest();
-    _motors.set_roll(rate_target_to_motor_roll(gyro_latest.x, _rate_target_ang_vel.x));
-    _motors.set_pitch(rate_target_to_motor_pitch(gyro_latest.y, _rate_target_ang_vel.y));
-    _motors.set_yaw(rate_target_to_motor_yaw(gyro_latest.z, _rate_target_ang_vel.z));
+
+    _motors.set_roll(get_rate_roll_pid().update_all(_rate_target_ang_vel.x, gyro_latest.x, _motors.limit.roll) + _actuator_sysid.x);
+    _motors.set_roll_ff(get_rate_roll_pid().get_ff());
+
+    _motors.set_pitch(get_rate_pitch_pid().update_all(_rate_target_ang_vel.y, gyro_latest.y, _motors.limit.pitch) + _actuator_sysid.y);
+    _motors.set_pitch_ff(get_rate_pitch_pid().get_ff());
+
+    _motors.set_yaw(get_rate_yaw_pid().update_all(_rate_target_ang_vel.z, gyro_latest.z, _motors.limit.yaw) + _actuator_sysid.z);
+    _motors.set_yaw_ff(get_rate_yaw_pid().get_ff()*_feedforward_scalar);
+
+    _rate_sysid_ang_vel.zero();
+    _actuator_sysid.zero();
 
     control_monitor_update();
 }

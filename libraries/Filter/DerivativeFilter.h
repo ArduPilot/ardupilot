@@ -39,7 +39,7 @@ public:
     float slope(void);
 
     // reset - clear the filter
-    virtual void        reset();
+    virtual void        reset() override;
 
 private:
     bool            _new_data;

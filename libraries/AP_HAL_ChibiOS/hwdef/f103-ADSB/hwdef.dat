@@ -1,0 +1,17 @@
+include ../f103-periph/hwdef.dat
+
+#STDOUT_SERIAL SD1
+#STDOUT_BAUDRATE 115200
+
+define CAN_APP_NODE_NAME "org.ardupilot.ap_periph_adsb"
+
+define HAL_CAN_DEFAULT_NODE_ID 116
+
+define HAL_AIRSPEED_BUS_DEFAULT 0
+define AIRSPEED_MAX_SENSORS 1
+
+# ADSB enable
+define ADSB_PORT hal.uartB
+define HAL_PERIPH_ENABLE_ADSB
+define HAL_PERIPH_ENABLE_AIRSPEED
+# define HAL_PERIPH_ENABLE_MAG

@@ -15,8 +15,11 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_RCMapper/AP_RCMapper.h>
 #include <AP_Common/Bitmask.h>
+#include <AP_Volz_Protocol/AP_Volz_Protocol.h>
+#include <AP_RobotisServo/AP_RobotisServo.h>
+#include <AP_SBusOut/AP_SBusOut.h>
+#include <AP_BLHeli/AP_BLHeli.h>
 
 #define NUM_SERVO_CHANNELS 16
 
@@ -30,6 +33,7 @@ class SRV_Channels;
 class SRV_Channel {
 public:
     friend class SRV_Channels;
+
     // constructor
     SRV_Channel(void);
 
@@ -48,21 +52,21 @@ public:
         k_mount_roll            = 8,            ///< mount roll
         k_mount_open            = 9,            ///< mount open (deploy) / close (retract)
         k_cam_trigger           = 10,           ///< camera trigger
-        k_egg_drop              = 11,           ///< egg drop
+        k_egg_drop              = 11,           ///< egg drop, deprecated
         k_mount2_pan            = 12,           ///< mount2 yaw (pan)
         k_mount2_tilt           = 13,           ///< mount2 pitch (tilt)
         k_mount2_roll           = 14,           ///< mount2 roll
         k_mount2_open           = 15,           ///< mount2 open (deploy) / close (retract)
-        k_dspoiler1             = 16,           ///< differential spoiler 1 (left wing)
-        k_dspoiler2             = 17,           ///< differential spoiler 2 (right wing)
-        k_aileron_with_input    = 18,            ///< aileron, with rc input
+        k_dspoilerLeft1         = 16,           ///< differential spoiler 1 (left wing)
+        k_dspoilerRight1        = 17,           ///< differential spoiler 1 (right wing)
+        k_aileron_with_input    = 18,            ///< aileron, with rc input, deprecated
         k_elevator              = 19,            ///< elevator
-        k_elevator_with_input   = 20,            ///< elevator, with rc input
+        k_elevator_with_input   = 20,            ///< elevator, with rc input, deprecated
         k_rudder                = 21,            ///< secondary rudder channel
         k_sprayer_pump          = 22,            ///< crop sprayer pump channel
         k_sprayer_spinner       = 23,            ///< crop sprayer spinner channel
-        k_flaperon1             = 24,            ///< flaperon, left wing
-        k_flaperon2             = 25,            ///< flaperon, right wing
+        k_flaperon_left         = 24,            ///< flaperon, left wing
+        k_flaperon_right        = 25,            ///< flaperon, right wing
         k_steering              = 26,            ///< ground steering, used to separate from rudder
         k_parachute_release     = 27,            ///< parachute release
         k_gripper               = 28,            ///< gripper
@@ -96,7 +100,7 @@ public:
         k_rcin15                = 65,
         k_rcin16                = 66,
         k_ignition              = 67,
-        k_choke                 = 68,
+        k_choke                 = 68,           /// not used
         k_starter               = 69,
         k_throttle              = 70,
         k_tracker_yaw           = 71,            ///< antennatracker yaw
@@ -105,15 +109,57 @@ public:
         k_throttleRight         = 74,
         k_tiltMotorLeft         = 75,            ///< vectored thrust, left tilt
         k_tiltMotorRight        = 76,            ///< vectored thrust, right tilt
+        k_elevon_left           = 77,
+        k_elevon_right          = 78,
+        k_vtail_left            = 79,
+        k_vtail_right           = 80,
+        k_boost_throttle        = 81,            ///< vertical booster throttle
+        k_motor9                = 82,
+        k_motor10               = 83,
+        k_motor11               = 84,
+        k_motor12               = 85,
+        k_dspoilerLeft2         = 86,           ///< differential spoiler 2 (left wing)
+        k_dspoilerRight2        = 87,           ///< differential spoiler 2 (right wing)
+        k_winch                 = 88,
+        k_mainsail_sheet        = 89,           ///< Main Sail control via sheet
+        k_cam_iso               = 90,
+        k_cam_aperture          = 91,
+        k_cam_focus             = 92,
+        k_cam_shutter_speed     = 93,
+        k_scripting1            = 94,           ///< Scripting related outputs
+        k_scripting2            = 95,
+        k_scripting3            = 96,
+        k_scripting4            = 97,
+        k_scripting5            = 98,
+        k_scripting6            = 99,
+        k_scripting7            = 100,
+        k_scripting8            = 101,
+        k_scripting9            = 102,
+        k_scripting10           = 103,
+        k_scripting11           = 104,
+        k_scripting12           = 105,
+        k_scripting13           = 106,
+        k_scripting14           = 107,
+        k_scripting15           = 108,
+        k_scripting16           = 109,
+        k_LED_neopixel1         = 120,
+        k_LED_neopixel2         = 121,
+        k_LED_neopixel3         = 122,
+        k_LED_neopixel4         = 123,
+        k_roll_out              = 124,
+        k_pitch_out             = 125,
+        k_thrust_out            = 126,
+        k_yaw_out               = 127,
+        k_wingsail_elevator     = 128,
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 
     // used to get min/max/trim limit value based on reverse
-    enum LimitValue {
-        SRV_CHANNEL_LIMIT_TRIM,
-        SRV_CHANNEL_LIMIT_MIN,
-        SRV_CHANNEL_LIMIT_MAX,
-        SRV_CHANNEL_LIMIT_ZERO_PWM
+    enum class Limit {
+        TRIM,
+        MIN,
+        MAX,
+        ZERO_PWM
     };
 
     // set the output value as a pwm value
@@ -152,13 +198,45 @@ public:
         return servo_trim;
     }
 
+    // return true if function is for a multicopter motor
+    static bool is_motor(SRV_Channel::Aux_servo_function_t function);
+
+    // return true if function is for anything that should be stopped in a e-stop situation, ie is dangerous
+    static bool should_e_stop(SRV_Channel::Aux_servo_function_t function);
+
+    // return the function of a channel
+    SRV_Channel::Aux_servo_function_t get_function(void) const {
+        return (SRV_Channel::Aux_servo_function_t)function.get();
+    }
+
+    // set and save function for channel. Used in upgrade of parameters in plane
+    void function_set_and_save(SRV_Channel::Aux_servo_function_t f) {
+        function.set_and_save(int8_t(f));
+    }
+
+    // set and save function for reversed. Used in upgrade of parameters in plane
+    void reversed_set_and_save_ifchanged(bool r) {
+        reversed.set_and_save_ifchanged(r?1:0);
+    }
+    
+    // return true if the SERVOn_FUNCTION has been configured in
+    // either storage or a defaults file. This is used for upgrade of
+    // parameters in plane
+    bool function_configured(void) const {
+        return function.configured();
+    }
+
+    // specify that small rc input changes should be ignored during passthrough
+    // used by DO_SET_SERVO commands
+    void ignore_small_rcin_changes() { ign_small_rcin_changes = true; }
+
 private:
     AP_Int16 servo_min;
     AP_Int16 servo_max;
     AP_Int16 servo_trim;
     // reversal, following convention that 1 means reversed, 0 means normal
     AP_Int8 reversed;
-    AP_Int8 function;
+    AP_Int16 function;
 
     // a pending output value as PWM
     uint16_t output_pwm;
@@ -168,7 +246,7 @@ private:
 
     // set_range() or set_angle() has been called
     bool type_setup:1;
-    
+
     // the hal channel number
     uint8_t ch_num;
 
@@ -191,17 +269,24 @@ private:
     void aux_servo_function_setup(void);
 
     // return PWM for a given limit value
-    uint16_t get_limit_pwm(LimitValue limit) const;
+    uint16_t get_limit_pwm(Limit limit) const;
 
     // get normalised output from -1 to 1
     float get_output_norm(void);
-    
+
     // a bitmask type wide enough for NUM_SERVO_CHANNELS
     typedef uint16_t servo_mask_t;
 
     // mask of channels where we have a output_pwm value. Cleared when a
     // scaled value is written. 
     static servo_mask_t have_pwm_mask;
+
+    // previous radio_in during pass-thru
+    int16_t previous_radio_in;
+
+    // specify that small rcinput changes should be ignored during passthrough
+    // used by DO_SET_SERVO commands
+    bool ign_small_rcin_changes;
 };
 
 /*
@@ -210,7 +295,7 @@ private:
 class SRV_Channels {
 public:
     friend class SRV_Channel;
-    
+
     // constructor
     SRV_Channels(void);
 
@@ -224,6 +309,9 @@ public:
 
     // set output value for a function channel as a pwm value on the first matching channel
     static void set_output_pwm_first(SRV_Channel::Aux_servo_function_t function, uint16_t value);
+
+    // set output value for a specific function channel as a pwm value
+    static void set_output_pwm_chan(uint8_t chan, uint16_t value);
 
     // set output value for a function channel as a scaled value. This
     // calls calc_pwm() to also set the pwm value
@@ -239,6 +327,9 @@ public:
     // return zero on error.
     static float get_output_norm(SRV_Channel::Aux_servo_function_t function);
 
+    // get output channel mask for a function
+    static uint16_t get_output_channel_mask(SRV_Channel::Aux_servo_function_t function);
+    
     // limit slew rate to given limit in percent per second
     static void limit_slew_rate(SRV_Channel::Aux_servo_function_t function, float slew_rate, float dt);
 
@@ -254,25 +345,20 @@ public:
     // adjust trim of a channel by a small increment
     void adjust_trim(SRV_Channel::Aux_servo_function_t function, float v);
 
+    // set MIN/MAX parameters for a function
+    static void set_output_min_max(SRV_Channel::Aux_servo_function_t function, uint16_t min_pwm, uint16_t max_pwm);
+    
     // save trims
     void save_trim(void);
 
-    // setup for a reversible k_throttle (from -100 to 100)
-    void set_reversible_throttle(void) {
-        flags.k_throttle_reversible = true;
-    }
-
-    // set all outputs to the TRIM value
-    static void output_trim_all(void);
-
     // setup IO failsafe for all channels to trim
-    static void setup_failsafe_trim_all(void);
+    static void setup_failsafe_trim_all_non_motors(void);
 
     // set output for all channels matching the given function type, allow radio_trim to center servo
     static void set_output_pwm_trimmed(SRV_Channel::Aux_servo_function_t function, int16_t value);
 
-    // set and save the trim for a function channel to radio_in on matching input channel
-    static void set_trim_to_radio_in_for(SRV_Channel::Aux_servo_function_t function);
+    // set and save the trim for a function channel to the output value
+    static void set_trim_to_servo_out_for(SRV_Channel::Aux_servo_function_t function);
 
     // set the trim for a function channel to min of the channel
     static void set_trim_to_min_for(SRV_Channel::Aux_servo_function_t function);
@@ -289,20 +375,23 @@ public:
     // set output to trim value
     static void set_output_to_trim(SRV_Channel::Aux_servo_function_t function);
 
-    // copy radio_in to radio_out
+    // copy radio_in to servo out
     static void copy_radio_in_out(SRV_Channel::Aux_servo_function_t function, bool do_input_output=false);
 
+    // copy radio_in to servo_out by channel mask
+    static void copy_radio_in_out_mask(uint16_t mask);
+    
     // setup failsafe for an auxiliary channel function, by pwm
     static void set_failsafe_pwm(SRV_Channel::Aux_servo_function_t function, uint16_t pwm);
 
     // setup failsafe for an auxiliary channel function
-    static void set_failsafe_limit(SRV_Channel::Aux_servo_function_t function, SRV_Channel::LimitValue limit);
+    static void set_failsafe_limit(SRV_Channel::Aux_servo_function_t function, SRV_Channel::Limit limit);
 
     // setup safety for an auxiliary channel function (used when disarmed)
-    static void set_safety_limit(SRV_Channel::Aux_servo_function_t function, SRV_Channel::LimitValue limit);
+    static void set_safety_limit(SRV_Channel::Aux_servo_function_t function, SRV_Channel::Limit limit);
 
-    // set servo to a LimitValue
-    static void set_output_limit(SRV_Channel::Aux_servo_function_t function, SRV_Channel::LimitValue limit);
+    // set servo to a Limit
+    static void set_output_limit(SRV_Channel::Aux_servo_function_t function, SRV_Channel::Limit limit);
 
     // return true if a function is assigned to a channel
     static bool function_assigned(SRV_Channel::Aux_servo_function_t function);
@@ -313,6 +402,9 @@ public:
 
     // assign and enable auxiliary channels
     static void enable_aux_servos(void);
+
+    // enable channels by mask
+    static void enable_by_mask(uint16_t mask);
 
     // return the current function for a channel
     static SRV_Channel::Aux_servo_function_t channel_function(uint8_t channel);
@@ -337,7 +429,7 @@ public:
 
     // set output refresh frequency on a servo function
     static void set_rc_frequency(SRV_Channel::Aux_servo_function_t function, uint16_t frequency);
-    
+
     // control pass-thru of channels
     void disable_passthrough(bool disable) {
         disabled_passthrough = disable;
@@ -345,7 +437,7 @@ public:
 
     // constrain to output min/max for function
     static void constrain_pwm(SRV_Channel::Aux_servo_function_t function);
-    
+
     // calculate PWM for all channels
     static void calc_pwm(void);
 
@@ -353,37 +445,86 @@ public:
         return i<NUM_SERVO_CHANNELS?&channels[i]:nullptr;
     }
 
-    // upgrade RC* parameters into SERVO* parameters
-    static bool upgrade_parameters(const uint8_t old_keys[14], uint16_t aux_channel_mask, RCMapper *rcmap);
-    static void upgrade_motors_servo(uint8_t ap_motors_key, uint8_t ap_motors_idx, uint8_t new_channel);
-    
-    static uint32_t get_can_servo_bm(void) {
-        if(p_can_servo_bm != nullptr)
-            return *p_can_servo_bm;
-        else
-            return 0;
+    // SERVO* parameters
+    static void upgrade_parameters(void);
+
+    // given a zero-based motor channel, return the k_motor function for that channel
+    static SRV_Channel::Aux_servo_function_t get_motor_function(uint8_t channel) {
+        if (channel < 8) {
+            return SRV_Channel::Aux_servo_function_t(SRV_Channel::k_motor1+channel);
+        }
+        return SRV_Channel::Aux_servo_function_t((SRV_Channel::k_motor9+(channel-8)));
     }
-    static uint32_t get_can_esc_bm(void) {
-        if(p_can_esc_bm != nullptr)
-            return *p_can_esc_bm;
-        else
-            return 0;
+    
+    static void cork();
+
+    static void push();
+
+    // disable output to a set of channels given by a mask. This is used by the AP_BLHeli code
+    static void set_disabled_channel_mask(uint16_t mask) { disabled_mask = mask; }
+
+    // add to mask of outputs which can do reverse thrust using digital controls
+    static void set_reversible_mask(uint16_t mask) {
+        reversible_mask |= mask;
+    }
+
+    // add to mask of outputs which use digital (non-PWM) output, such as DShot
+    static void set_digital_mask(uint16_t mask) {
+        digital_mask |= mask;
+    }
+
+    // Set E - stop
+    static void set_emergency_stop(bool state) {
+        emergency_stop = state;
+    }
+
+    // get E - stop
+    static bool get_emergency_stop() { return emergency_stop;}
+
+    // singleton for Lua
+    static SRV_Channels *get_singleton(void) {
+        return _singleton;
     }
 
 private:
-    struct {
-        bool k_throttle_reversible:1;
-    } flags;
 
     static bool disabled_passthrough;
 
     SRV_Channel::servo_mask_t trimmed_mask;
 
-    static Bitmask function_mask;
+    static Bitmask<SRV_Channel::k_nr_aux_servo_functions> function_mask;
     static bool initialised;
-    
+
     // this static arrangement is to avoid having static objects in AP_Param tables
     static SRV_Channel *channels;
+    static SRV_Channels *_singleton;
+
+    // support for Volz protocol
+    AP_Volz_Protocol volz;
+    static AP_Volz_Protocol *volz_ptr;
+
+    // support for SBUS protocol
+    AP_SBusOut sbus;
+    static AP_SBusOut *sbus_ptr;
+
+    // support for Robotis servo protocol
+    AP_RobotisServo robotis;
+    static AP_RobotisServo *robotis_ptr;
+    
+#if HAL_SUPPORT_RCOUT_SERIAL
+    // support for BLHeli protocol
+    AP_BLHeli blheli;
+    static AP_BLHeli *blheli_ptr;
+#endif
+    static uint16_t disabled_mask;
+
+    // mask of outputs which use a digital output protocol, not
+    // PWM (eg. DShot)
+    static uint16_t digital_mask;
+    
+    // mask of outputs which are digitally reversible (eg. DShot-3D)
+    static uint16_t reversible_mask;
+
     SRV_Channel obj_channels[NUM_SERVO_CHANNELS];
 
     static struct srv_function {
@@ -395,14 +536,12 @@ private:
     } functions[SRV_Channel::k_nr_aux_servo_functions];
 
     AP_Int8 auto_trim;
+    AP_Int16 default_rate;
 
     // return true if passthrough is disabled
     static bool passthrough_disabled(void) {
         return disabled_passthrough;
     }
 
-    AP_Int32 can_servo_bm;
-    AP_Int32 can_esc_bm;
-    static AP_Int32 *p_can_servo_bm;
-    static AP_Int32 *p_can_esc_bm;
+    static bool emergency_stop;
 };

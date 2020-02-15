@@ -1,40 +1,93 @@
 #include "Rover.h"
 
-void Rover::init_barometer(bool full_calibration)
+#include <AP_RangeFinder/AP_RangeFinder_Backend.h>
+#include <AP_VisualOdom/AP_VisualOdom.h>
+
+// check for new compass data - 10Hz
+void Rover::update_compass(void)
 {
-    gcs_send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
-    if (full_calibration) {
-        barometer.calibrate();
+    if (AP::compass().enabled() && compass.read()) {
+        ahrs.set_compass(&compass);
+    }
+}
+
+// Save compass offsets
+void Rover::compass_save() {
+    if (AP::compass().enabled() &&
+        compass.get_learn_type() >= Compass::LEARN_INTERNAL &&
+        !arming.is_armed()) {
+        compass.save_offsets();
+    }
+}
+
+// update wheel encoders
+void Rover::update_wheel_encoder()
+{
+    // exit immediately if not enabled
+    if (g2.wheel_encoder.num_sensors() == 0) {
+        return;
+    }
+
+    // update encoders
+    g2.wheel_encoder.update();
+
+    // save cumulative distances at current time (in meters) for reporting to GCS
+    for (uint8_t i = 0; i < g2.wheel_encoder.num_sensors(); i++) {
+        wheel_encoder_last_distance_m[i] = g2.wheel_encoder.get_distance(i);
+    }
+
+    // send wheel encoder delta angle and delta time to EKF
+    // this should not be done at more than 50hz
+    // initialise on first iteration
+    if (!wheel_encoder_initialised) {
+        wheel_encoder_initialised = true;
+        for (uint8_t i = 0; i < g2.wheel_encoder.num_sensors(); i++) {
+            wheel_encoder_last_angle_rad[i] = g2.wheel_encoder.get_delta_angle(i);
+            wheel_encoder_last_reading_ms[i] = g2.wheel_encoder.get_last_reading_ms(i);
+        }
+        return;
+    }
+
+    // on each iteration send data from alternative wheel encoders
+    wheel_encoder_last_index_sent++;
+    if (wheel_encoder_last_index_sent >= g2.wheel_encoder.num_sensors()) {
+        wheel_encoder_last_index_sent = 0;
+    }
+
+    // get current time, total delta angle (since startup) and update time from sensor
+    const float curr_angle_rad = g2.wheel_encoder.get_delta_angle(wheel_encoder_last_index_sent);
+    const uint32_t sensor_reading_ms = g2.wheel_encoder.get_last_reading_ms(wheel_encoder_last_index_sent);
+    const uint32_t now_ms = AP_HAL::millis();
+
+    // calculate angular change (in radians)
+#if HAL_NAVEKF3_AVAILABLE
+    const float delta_angle = curr_angle_rad - wheel_encoder_last_angle_rad[wheel_encoder_last_index_sent];
+#endif
+    wheel_encoder_last_angle_rad[wheel_encoder_last_index_sent] = curr_angle_rad;
+
+    // calculate delta time using time between sensor readings or time since last send to ekf (whichever is shorter)
+    uint32_t sensor_diff_ms = sensor_reading_ms - wheel_encoder_last_reading_ms[wheel_encoder_last_index_sent];
+    if (sensor_diff_ms == 0 || sensor_diff_ms > 100) {
+        // if no sensor update or time difference between sensor readings is too long use time since last send to ekf
+        sensor_diff_ms = now_ms - wheel_encoder_last_reading_ms[wheel_encoder_last_index_sent];
+        wheel_encoder_last_reading_ms[wheel_encoder_last_index_sent] = now_ms;
     } else {
-        barometer.update_calibration();
+        wheel_encoder_last_reading_ms[wheel_encoder_last_index_sent] = sensor_reading_ms;
     }
-    gcs_send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
-}
+#if HAL_NAVEKF3_AVAILABLE
+    const float delta_time = sensor_diff_ms * 0.001f;
 
-void Rover::init_sonar(void)
-{
-    sonar.init();
-}
-
-// read_battery - reads battery voltage and current and invokes failsafe
-// should be called at 10hz
-void Rover::read_battery(void)
-{
-    battery.read();
-}
-
-// read the receiver RSSI as an 8 bit number for MAVLink
-// RC_CHANNELS_SCALED message
-void Rover::read_receiver_rssi(void)
-{
-    receiver_rssi = rssi.read_receiver_rssi_uint8();
-}
-
-// Calibrate compass
-void Rover::compass_cal_update() {
-    if (!hal.util->get_soft_armed()) {
-        compass.compass_cal_update();
-    }
+    /* delAng is the measured change in angular position from the previous measurement where a positive rotation is produced by forward motion of the vehicle (rad)
+     * delTime is the time interval for the measurement of delAng (sec)
+     * timeStamp_ms is the time when the rotation was last measured (msec)
+     * posOffset is the XYZ body frame position of the wheel hub (m)
+     */
+    ahrs.EKF3.writeWheelOdom(delta_angle,
+                        delta_time,
+                        wheel_encoder_last_reading_ms[wheel_encoder_last_index_sent],
+                        g2.wheel_encoder.get_pos_offset(wheel_encoder_last_index_sent),
+                        g2.wheel_encoder.get_wheel_radius(wheel_encoder_last_index_sent));
+#endif
 }
 
 // Accel calibration
@@ -51,185 +104,30 @@ void Rover::accel_cal_update() {
     }
 }
 
-// read the sonars
-void Rover::read_sonars(void)
+// read the rangefinders
+void Rover::read_rangefinders(void)
 {
-    sonar.update();
-
-    if (sonar.status(0) == RangeFinder::RangeFinder_NotConnected) {
-        // this makes it possible to disable sonar at runtime
-        return;
-    }
-
-    if (sonar.has_data(1)) {
-        // we have two sonars
-        obstacle.sonar1_distance_cm = sonar.distance_cm(0);
-        obstacle.sonar2_distance_cm = sonar.distance_cm(1);
-        if (obstacle.sonar1_distance_cm < (uint16_t)g.sonar_trigger_cm &&
-            obstacle.sonar1_distance_cm < (uint16_t)obstacle.sonar2_distance_cm)  {
-            // we have an object on the left
-            if (obstacle.detected_count < 127) {
-                obstacle.detected_count++;
-            }
-            if (obstacle.detected_count == g.sonar_debounce) {
-                gcs_send_text_fmt(MAV_SEVERITY_INFO, "Sonar1 obstacle %u cm",
-                                  (unsigned)obstacle.sonar1_distance_cm);
-            }
-            obstacle.detected_time_ms = AP_HAL::millis();
-            obstacle.turn_angle = g.sonar_turn_angle;
-        } else if (obstacle.sonar2_distance_cm < (uint16_t)g.sonar_trigger_cm) {
-            // we have an object on the right
-            if (obstacle.detected_count < 127) {
-                obstacle.detected_count++;
-            }
-            if (obstacle.detected_count == g.sonar_debounce) {
-                gcs_send_text_fmt(MAV_SEVERITY_INFO, "Sonar2 obstacle %u cm",
-                                  (unsigned)obstacle.sonar2_distance_cm);
-            }
-            obstacle.detected_time_ms = AP_HAL::millis();
-            obstacle.turn_angle = -g.sonar_turn_angle;
-        }
-    } else {
-        // we have a single sonar
-        obstacle.sonar1_distance_cm = sonar.distance_cm(0);
-        obstacle.sonar2_distance_cm = 0;
-        if (obstacle.sonar1_distance_cm < (uint16_t)g.sonar_trigger_cm)  {
-            // obstacle detected in front
-            if (obstacle.detected_count < 127) {
-                obstacle.detected_count++;
-            }
-            if (obstacle.detected_count == g.sonar_debounce) {
-                gcs_send_text_fmt(MAV_SEVERITY_INFO, "Sonar obstacle %u cm",
-                                  (unsigned)obstacle.sonar1_distance_cm);
-            }
-            obstacle.detected_time_ms = AP_HAL::millis();
-            obstacle.turn_angle = g.sonar_turn_angle;
-        }
-    }
-
-    Log_Write_Sonar();
-
-    // no object detected - reset after the turn time
-    if (obstacle.detected_count >= g.sonar_debounce &&
-        AP_HAL::millis() > obstacle.detected_time_ms + g.sonar_turn_time*1000) {
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Obstacle passed");
-        obstacle.detected_count = 0;
-        obstacle.turn_angle = 0;
-    }
+    rangefinder.update();
+    Log_Write_Depth();
 }
 
 /*
-  update AP_Button
+  ask airspeed sensor for a new value, duplicated from plane
  */
-void Rover::button_update(void)
+void Rover::read_airspeed(void)
 {
-    button.update();
+    g2.airspeed.update(should_log(MASK_LOG_IMU));
 }
 
-// update error mask of sensors and subsystems. The mask
-// uses the MAV_SYS_STATUS_* values from mavlink. If a bit is set
-// then it indicates that the sensor or subsystem is present but
-// not functioning correctly.
-void Rover::update_sensor_status_flags(void)
+/*
+  update RPM sensors
+ */
+void Rover::rpm_update(void)
 {
-    // default sensors present
-    control_sensors_present = MAVLINK_SENSOR_PRESENT_DEFAULT;
-
-    // first what sensors/controllers we have
-    if (g.compass_enabled) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_3D_MAG;  // compass present
-    }
-    if (gps.status() > AP_GPS::NO_GPS) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_GPS;
-    }
-
-    if (rover.DataFlash.logging_present()) {  // primary logging only (usually File)
-        control_sensors_present |= MAV_SYS_STATUS_LOGGING;
-    }
-
-
-    // all present sensors enabled by default except rate control, attitude stabilization, yaw, altitude, position control and motor output which we will set individually
-    control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL &
-                                                         ~MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION &
-                                                         ~MAV_SYS_STATUS_SENSOR_YAW_POSITION &
-                                                         ~MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL &
-                                                         ~MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS &
-                                                         ~MAV_SYS_STATUS_LOGGING);
-
-    switch (control_mode) {
-    case MANUAL:
-    case HOLD:
-        break;
-
-    case LEARNING:
-    case STEERING:
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL;    // 3D angular rate control
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION;  // attitude stabilisation
-        break;
-
-    case AUTO:
-    case RTL:
-    case GUIDED:
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL;    // 3D angular rate control
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION;  // attitude stabilisation
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_YAW_POSITION;            // yaw position
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;     // X/Y position control
-        break;
-
-    case INITIALISING:
-        break;
-    }
-
-    if (rover.DataFlash.logging_enabled()) {
-        control_sensors_enabled |= MAV_SYS_STATUS_LOGGING;
-    }
-
-    // set motors outputs as enabled if safety switch is not disarmed (i.e. either NONE or ARMED)
-    if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS;
-    }
-
-    // default to all healthy except compass and gps which we set individually
-    control_sensors_health = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_3D_MAG & ~MAV_SYS_STATUS_SENSOR_GPS);
-    if (g.compass_enabled && compass.healthy(0) && ahrs.use_compass()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_MAG;
-    }
-    if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_GPS;
-    }
-    if (!ins.get_gyro_health_all() || !ins.gyro_calibrated_ok_all()) {
-        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_3D_GYRO;
-    }
-    if (!ins.get_accel_health_all()) {
-        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_3D_ACCEL;
-    }
-
-    if (ahrs.initialised() && !ahrs.healthy()) {
-        // AHRS subsystem is unhealthy
-        control_sensors_health &= ~MAV_SYS_STATUS_AHRS;
-    }
-
-    if (sonar.num_sensors() > 0) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
-        if (g.sonar_trigger_cm > 0) {
-            control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
-        }
-        if (sonar.has_data(0)) {
-            control_sensors_health |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
+    rpm_sensor.update();
+    if (rpm_sensor.enabled(0) || rpm_sensor.enabled(1)) {
+        if (should_log(MASK_LOG_RC)) {
+            logger.Write_RPM(rpm_sensor);
         }
     }
-
-    if (rover.DataFlash.logging_failed()) {
-        control_sensors_health &= ~MAV_SYS_STATUS_LOGGING;
-    }
-
-    if (AP_Notify::flags.initialising) {
-        // while initialising the gyros and accels are not enabled
-        control_sensors_enabled &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
-        control_sensors_health &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
-    }
-#if FRSKY_TELEM_ENABLED == ENABLED
-    // give mask of error flags to Frsky_Telemetry
-    frsky_telemetry.update_sensor_status_flags(~control_sensors_health & control_sensors_enabled & control_sensors_present);
-#endif
 }

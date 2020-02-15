@@ -2,39 +2,42 @@
 
 #include <GCS_MAVLink/GCS.h>
 #include "GCS_Mavlink.h"
-#include "config.h" // for CLI_ENABLED
 
 class GCS_Plane : public GCS
 {
-    friend class Plane; // for temporary access to num_gcs and links
+    friend class Plane;  // for access to _chan in parameter declarations
 
 public:
 
-    FUNCTOR_TYPEDEF(run_cli_fn, void, AP_HAL::UARTDriver*);
-
-    // return the number of valid GCS objects
-    uint8_t num_gcs() const { return _num_gcs; };
-
     // return GCS link at offset ofs
-    GCS_MAVLINK_Plane &chan(const uint8_t ofs) { return _chan[ofs]; };
+    GCS_MAVLINK_Plane *chan(const uint8_t ofs) override {
+        if (ofs > _num_gcs) {
+            AP::internalerror().error(AP_InternalError::error_t::gcs_offset);
+            return nullptr;
+        }
+        return (GCS_MAVLINK_Plane *)_chan[ofs];
+    }
+    const GCS_MAVLINK_Plane *chan(const uint8_t ofs) const override {
+        if (ofs > _num_gcs) {
+            AP::internalerror().error(AP_InternalError::error_t::gcs_offset);
+            return nullptr;
+        }
+        return (GCS_MAVLINK_Plane *)_chan[ofs];
+    }
 
-    void reset_cli_timeout();
-    void send_message(enum ap_message id);
-    void send_mission_item_reached_message(uint16_t mission_index);
-    void data_stream_send();
-    void update();
-    void send_airspeed_calibration(const Vector3f &vg);
+protected:
 
-    void set_run_cli_func(run_cli_fn run_cli) { _run_cli = run_cli; }
-    void setup_uarts(AP_SerialManager &serial_manager);
-#if CLI_ENABLED == ENABLED
-    void handle_interactive_setup();
-#endif
+    void update_vehicle_sensor_status_flags(void) override;
+    uint32_t custom_mode() const override;
+    MAV_TYPE frame_type() const override;
 
-private:
+    GCS_MAVLINK_Plane *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
+                                               AP_HAL::UARTDriver &uart) override {
+        return new GCS_MAVLINK_Plane(params, uart);
+    }
 
-    uint8_t _num_gcs = MAVLINK_COMM_NUM_BUFFERS;
-    GCS_MAVLINK_Plane _chan[MAVLINK_COMM_NUM_BUFFERS];
-    run_cli_fn _run_cli;
-
+    AP_GPS::GPS_Status min_status_for_gps_healthy() const override {
+        // NO_FIX simply excludes NO_GPS
+        return AP_GPS::GPS_OK_FIX_3D;
+    }
 };

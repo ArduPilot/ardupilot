@@ -128,6 +128,19 @@ def ap_common_checks(cfg):
 
     cfg.check(header_name='byteswap.h', mandatory=False)
 
+    cfg.check(
+        compiler='cxx',
+        fragment='''
+        #include <string.h>
+        int main() {
+        const char *s = "abc";
+          return memrchr((const void *)s, 0, 3) != NULL;
+        }''',
+        define_name="HAVE_MEMRCHR",
+        msg="Checking for HAVE_MEMRCHR",
+        mandatory=False,
+    )
+
 @conf
 def check_librt(cfg, env):
     if cfg.env.DEST_OS == 'darwin':
@@ -157,54 +170,64 @@ def check_librt(cfg, env):
     return ret
 
 @conf
+def check_feenableexcept(cfg):
+
+    cfg.check(
+        compiler='cxx',
+        fragment='''
+        #include <fenv.h>
+
+        int main() {
+            return feenableexcept(FE_OVERFLOW | FE_DIVBYZERO);
+        }''',
+        msg="Checking for feenableexcept",
+        define_name="HAVE_FEENABLEEXCEPT",
+        mandatory=False,
+    )
+
+@conf
 def check_package(cfg, env, libname):
     '''use pkg-config to look for an installed library that has a LIBNAME.pc file'''
     capsname = libname.upper()
 
-    # we don't want check_cfg() changing the global environment during
-    # this test, in case it fails in the 2nd link step
     cfg.env.stash()
 
-    cfg.check_cfg(package=libname, mandatory=False, global_define=True,
-                  args=['--libs', '--cflags'], uselib_store=capsname)
+    if not cfg.check_cfg(package=libname, mandatory=False, global_define=True,
+                         args=['--libs', '--cflags'], uselib_store=capsname):
+        # Don't even try to link if check_cfg fails
+        cfg.env.revert()
+        return False
 
-    # we need to also check that we can link against the lib. We may
-    # have a pc file for the package, but its the wrong
-    # architecture. This can happen as PKG_CONFIG_PATH is not
-    # architecture specific
-    cfg.env.LIB += cfg.env['LIB_%s' % capsname]
-    cfg.env.INCLUDES += cfg.env['INCLUDES_%s' % capsname]
-    cfg.env.CFLAGS += cfg.env['CFLAGS_%s' % capsname]
-    cfg.env.LIBPATH += cfg.env['LIBPATH_%s' % capsname]
+    if not cfg.check(compiler='cxx',
+            fragment='''int main() { return 0; }''',
+            msg='Checking link with %s' % libname,
+            mandatory=False,
+            use=capsname):
+        cfg.env.revert()
+        return False
 
-    ret = cfg.check(
-        compiler='cxx',
-        fragment='''int main() { return 0; }''',
-        msg='Testing link with %s' % libname,
-        mandatory=False,
-        lib='dl'
-    )
+    cfg.env.commit()
 
-    if ret:
-        env.LIB += cfg.env['LIB_%s' % capsname]
-        env.INCLUDES += cfg.env['INCLUDES_%s' % capsname]
-        env.CFLAGS += cfg.env['CFLAGS_%s' % capsname]
-        env.LIBPATH += cfg.env['LIBPATH_%s' % capsname]
+    # Add to global environment:
+    # we always want to use the library for all targets
+    env.LIB += cfg.env['LIB_%s' % capsname]
+    env.INCLUDES += cfg.env['INCLUDES_%s' % capsname]
+    env.CFLAGS += cfg.env['CFLAGS_%s' % capsname]
+    env.LIBPATH += cfg.env['LIBPATH_%s' % capsname]
 
-    cfg.env.revert()
+    return True
 
 @conf
 def check_lttng(cfg, env):
+    if not cfg.options.enable_lttng:
+        cfg.msg("Checking for 'lttng-ust':", 'disabled', color='YELLOW')
+        return False
     if cfg.env.STATIC_LINKING:
         # lttng-ust depends on libdl which means it can't be used in a static build
         cfg.msg("Checking for 'lttng-ust':", 'disabled for static build', color='YELLOW')
         return False
-    if cfg.options.disable_lttng:
-        cfg.msg("Checking for 'lttng-ust':", 'disabled', color='YELLOW')
-        return False
 
-    check_package(cfg, env, 'lttng-ust')
-    return True
+    return check_package(cfg, env, 'lttng-ust')
 
 @conf
 def check_libiio(cfg, env):
@@ -216,8 +239,7 @@ def check_libiio(cfg, env):
         cfg.msg("Checking for 'libiio':", 'disabled', color='YELLOW')
         return False
 
-    check_package(cfg, env, 'libiio')
-    return True
+    return check_package(cfg, env, 'libiio')
 
 @conf
 def check_libdl(cfg, env):
@@ -229,3 +251,51 @@ def check_libdl(cfg, env):
     if ret:
         env.LIB += cfg.env['LIB_DL']
     return ret
+
+@conf
+def check_SFML(cfg, env):
+    if not cfg.options.enable_sfml:
+        cfg.msg("Checking for SFML graphics:", 'disabled', color='YELLOW')
+        return False
+    libs = ['sfml-graphics', 'sfml-window','sfml-system']
+    for lib in libs:
+        if not cfg.check(compiler='cxx', lib=lib, mandatory=False,
+                         global_define=True):
+            cfg.fatal("Missing SFML libraries - please install libsfml-dev")
+            return False
+
+    # see if we need Graphics.hpp or Graphics.h
+    if not cfg.check(compiler='cxx',
+                     fragment='''#include <SFML/Graphics.hpp>\nint main() {}''', define_name="HAVE_SFML_GRAPHICS_HPP",
+                     msg="Checking for Graphics.hpp", mandatory=False):
+        if not cfg.check(compiler='cxx', fragment='''#include <SFML/Graphics.h>\nint main() {}''', define_name="HAVE_SFML_GRAPHICS_H",
+                         msg="Checking for Graphics.h", mandatory=False):
+            cfg.fatal("Missing SFML headers SFML/Graphics.hpp or SFML/Graphics.h")
+            return False
+    env.LIB += libs
+    return True
+
+
+@conf
+def check_SFML_Audio(cfg, env):
+    if not cfg.options.enable_sfml_audio:
+        cfg.msg("Checking for SFML audio:", 'disabled', color='YELLOW')
+        return False
+    libs = ['sfml-audio']
+    for lib in libs:
+        if not cfg.check(compiler='cxx', lib=lib, mandatory=False,
+                         global_define=True):
+            cfg.fatal("Missing SFML libraries - please install libsfml-dev")
+            return False
+
+    # see if we need Audio.hpp or Audio.h
+    if not cfg.check(compiler='cxx',
+                     fragment='''#include <SFML/Audio.hpp>\nint main() {}''', define_name="HAVE_SFML_AUDIO_HPP",
+                     msg="Checking for Audio.hpp", mandatory=False):
+        if not cfg.check(compiler='cxx', fragment='''#include <SFML/Audio.h>\nint main() {}''', define_name="HAVE_SFML_AUDIO_H",
+                         msg="Checking for Audio.h", mandatory=False):
+            cfg.fatal("Missing SFML headers SFML/Audio.hpp or SFML/Audio.h")
+            return False
+    env.LIB += libs
+    return True
+

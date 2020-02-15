@@ -1,0 +1,32 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+def build(bld):
+    if not bld.env.BOOTLOADER:
+        return
+
+    # build external libcanard library
+    bld.stlib(source='../../modules/libcanard/canard.c',
+              target='libcanard')
+
+    bld.ap_program(
+        use=['ap','libcanard','AP_Bootloader_libs'],
+        program_groups='bootloader',
+        includes=[bld.env.SRCROOT + '/modules/libcanard',
+                  bld.env.BUILDROOT + '/modules/libcanard/dsdlc_generated']
+        )
+
+    bld.ap_stlib(
+        name= 'AP_Bootloader_libs',
+        ap_vehicle='AP_Bootloader',
+        ap_libraries= [
+        'AP_Math'
+        ])
+    
+    bld(
+        # build libcanard headers
+        source=bld.path.ant_glob("modules/uavcan/dsdl/**/*.uavcan libraries/AP_UAVCAN/dsdl/**/*.uavcan"),
+        rule="python3 ${SRCROOT}/modules/libcanard/dsdl_compiler/libcanard_dsdlc --header_only --outdir ${BUILDROOT}/modules/libcanard/dsdlc_generated ${SRCROOT}/modules/uavcan/dsdl/uavcan ${SRCROOT}/libraries/AP_UAVCAN/dsdl/ardupilot ${SRCROOT}/libraries/AP_UAVCAN/dsdl/com",
+        group='dynamic_sources',
+    )
+        

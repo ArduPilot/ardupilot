@@ -19,7 +19,7 @@
 
 #include "AP_GPS.h"
 #include "AP_GPS_NOVA.h"
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -40,9 +40,7 @@ do {                                            \
 
 AP_GPS_NOVA::AP_GPS_NOVA(AP_GPS &_gps, AP_GPS::GPS_State &_state,
                        AP_HAL::UARTDriver *_port) :
-    AP_GPS_Backend(_gps, _state, _port),
-    _new_position(0),
-    _new_speed(0)
+    AP_GPS_Backend(_gps, _state, _port)
 {
     nova_msg.nova_state = nova_msg_parser::PREAMBLE1;
 
@@ -187,6 +185,8 @@ AP_GPS_NOVA::process_message(void)
     uint16_t messageid = nova_msg.header.nova_headeru.messageid;
 
     Debug("NOVA process_message messid=%u\n",messageid);
+
+    check_new_itow(nova_msg.header.nova_headeru.tow, nova_msg.header.nova_headeru.messagelength + nova_msg.header.nova_headeru.headerlength);
     
     if (messageid == 42) // bestpos
     {
@@ -206,6 +206,8 @@ AP_GPS_NOVA::process_message(void)
         state.vertical_accuracy = (float) bestposu.hgtsdev;
         state.have_horizontal_accuracy = true;
         state.have_vertical_accuracy = true;
+        state.rtk_age_ms = bestposu.diffage * 1000;
+        state.rtk_num_sats = bestposu.svsused;
 
         if (bestposu.solstat == 0) // have a solution
         {

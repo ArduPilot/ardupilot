@@ -1,25 +1,16 @@
 language: cpp
 sudo: false
 
+dist: xenial
 addons:
-  coverity_scan:
-    project:
-      name: "diydrones/ardupilot"
-      description: "Build submitted via Travis CI"
-    notification_email: andrew-scan@tridgell.net
-    build_command_prepend: "make clean"
-    build_command:   "make"
-    branch_pattern: coverity_scan
-    
   apt:
     sources:
       - ubuntu-toolchain-r-test
-      - george-edison55-precise-backports
-#      - llvm-toolchain-precise-3.7
+      - sourceline: 'deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-7 main'
+        key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
     packages:
       - build-essential
       - gawk
-      - ccache
       - genromfs
       - libc6-i386
       - libxml2-dev
@@ -27,28 +18,24 @@ addons:
       - python-pip
       - python-dev
       - zlib1g-dev
-      - gcc-4.9
-      - g++-4.9
+      - gdb
       - cmake
       - cmake-data
-#      - clang-3.7
-#      - llvm-3.7
+      - clang-7
+      - llvm-7
 
 cache:
-  ccache: true
+  ccache: false
   directories:
     - $HOME/opt
 
 before_install:
+  - echo 0 | sudo dd of=/proc/sys/kernel/yama/ptrace_scope
   - Tools/scripts/configure-ci.sh
   - if [ "$TRAVIS_EVENT_TYPE" = "cron" ]; then export CI_CRON_JOB=1 ; fi
 
 script:
-  - python Tools/autotest/param_metadata/param_parse.py
   - Tools/scripts/build_ci.sh
-
-before_cache:
-  - ccache -z
 
 notifications:
   webhooks:
@@ -60,27 +47,29 @@ notifications:
 
 compiler:
   - gcc
-#  - clang
 
 env:
   global:
     # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
     #   via the "travis encrypt" command using the project repo's public key
     - secure: "FjIwqZQV2FhNPWYITX5LZXTE38yYqBaQdbm3QmbEg/30wnPTm1ZOLIU7o/aSvX615ImR8kHoryvFPDQDWc6wWfqTEs3Ytq2kIvcIJS2Y5l/0PFfpWJoH5gRd6hDThnoi+1oVMLvj1+bhn4yFlCCQ2vT/jxoGfiQqqgvHtv4fLzI="
-  matrix:
-    - CI_BUILD_TARGET="sitl minlure raspilot"
-    - CI_BUILD_TARGET="linux navio2 bebop"
+    - AUTOTEST_UPLOAD=true  # Upload logs of failed tests to ArduPilot server; requires authentication
 
 matrix:
   fast_finish: true
   include:
-    - compiler: "gcc"
-      env: CI_BUILD_TARGET="px4-v1"
-    - compiler: "gcc"
-      env: CI_BUILD_TARGET="px4-v2"
-    - compiler: "gcc"
-      env: CI_BUILD_TARGET="px4-v3"
-    - compiler: "gcc"
-      env: CI_BUILD_TARGET="px4-v4"
-    - compiler: "gcc"
-      env: CI_BUILD_TARGET="sitltest"
+    - if: type != cron
+      compiler: "gcc"
+      env: CI_BUILD_TARGET="revo-bootloader periph-build CubeOrange-bootloader iofirmware stm32f7 stm32h7 fmuv2-plane"
+    - if: type != cron
+      compiler: "gcc"
+      env: CI_BUILD_TARGET="sitltest-copter"
+    - if: type != cron
+      compiler: "gcc"
+      env: CI_BUILD_TARGET="sitltest-quadplane sitltest-plane"
+    - if: type != cron
+      compiler: "clang-7"
+      env: CI_BUILD_TARGET="sitltest-rover sitltest-sub sitltest-balancebot"
+    - if: type != cron
+      compiler: "clang-7"
+      env: CI_BUILD_TARGET="unit-tests sitl"

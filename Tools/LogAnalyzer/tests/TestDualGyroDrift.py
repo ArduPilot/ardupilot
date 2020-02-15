@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from LogAnalyzer import Test,TestResult
 import DataflashLog
 
@@ -26,7 +28,7 @@ class TestDualGyroDrift(Test):
 		# imu2X = logdata.channels["IMU2"]["GyrX"].listData
 
 		# # NOTE: weird thing about Holger's log is that the counts of IMU+IMU2 are different
-		# print "length 1: %.2f, length 2: %.2f" % (len(imuX),len(imu2X))
+		# print("length 1: %.2f, length 2: %.2f" % (len(imuX),len(imu2X)))
 		# #assert(len(imuX) == len(imu2X))
 
 		# # divide the curve into segments and get the average of each segment
@@ -68,15 +70,15 @@ class TestDualGyroDrift(Test):
 
 		# #pylab.plot(range(0,(nSamples*sliceLength1),sliceLength1), imu1ZAverages, 'b')
 
-		# print "Gyro averages1X: " + `imu1XAverages`
-		# print "Gyro averages1Y: " + `imu1YAverages`
-		# print "Gyro averages1Z: " + `imu1ZAverages` + "\n"
-		# print "Gyro averages2X: " + `imu2XAverages`
-		# print "Gyro averages2Y: " + `imu2YAverages`
-		# print "Gyro averages2Z: " + `imu2ZAverages` + "\n"
-		# print "Gyro averages diff X: " + `imuXDiffAverages`
-		# print "Gyro averages diff Y: " + `imuYDiffAverages`
-		# print "Gyro averages diff Z: " + `imuZDiffAverages`
+		# print("Gyro averages1X: " + repr(imu1XAverages))
+		# print("Gyro averages1Y: " + repr(imu1YAverages))
+		# print("Gyro averages1Z: " + repr(imu1ZAverages) + "\n")
+		# print("Gyro averages2X: " + repr(imu2XAverages))
+		# print("Gyro averages2Y: " + repr(imu2YAverages))
+		# print("Gyro averages2Z: " + repr(imu2ZAverages) + "\n")
+		# print("Gyro averages diff X: " + repr(imuXDiffAverages))
+		# print("Gyro averages diff Y: " + repr(imuYDiffAverages))
+		# print("Gyro averages diff Z: " + repr(imuZDiffAverages))
 
 		# # lowpass filter using numpy
 		# # cutoff = 100
@@ -90,10 +92,10 @@ class TestDualGyroDrift(Test):
 		# # TMP: DISPLAY BEFORE+AFTER plots
 		# pylab.show()
 
-		# # print "imuX  average before lowpass filter: %.8f" % logdata.channels["IMU"]["GyrX"].avg()
-		# # print "imuX  average after  lowpass filter: %.8f" % numpy.mean(imuXFiltered)
-		# # print "imu2X average before lowpass filter: %.8f" % logdata.channels["IMU2"]["GyrX"].avg()
-		# # print "imu2X average after  lowpass filter: %.8f" % numpy.mean(imu2XFiltered)
+		# # print("imuX  average before lowpass filter: %.8f" % logdata.channels["IMU"]["GyrX"].avg())
+		# # print("imuX  average after  lowpass filter: %.8f" % numpy.mean(imuXFiltered))
+		# # print("imu2X average before lowpass filter: %.8f" % logdata.channels["IMU2"]["GyrX"].avg())
+		# # print("imu2X average after  lowpass filter: %.8f" % numpy.mean(imu2XFiltered))
 
 		# avg1X = logdata.channels["IMU"]["GyrX"].avg()
 		# avg1Y = logdata.channels["IMU"]["GyrY"].avg()

@@ -64,9 +64,7 @@ void AnalogIn_ADS1115::init()
 {
     _adc->init();
 
-    hal.scheduler->suspend_timer_procs();
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AnalogIn_ADS1115::_update, void));
-    hal.scheduler->resume_timer_procs();
 }
 
 void AnalogIn_ADS1115::_update()

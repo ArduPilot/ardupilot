@@ -9,7 +9,7 @@ const AP_Param::GroupInfo AC_Circle::var_info[] = {
     // @DisplayName: Circle Radius
     // @Description: Defines the radius of the circle the vehicle will fly when in Circle flight mode
     // @Units: cm
-    // @Range: 0 10000
+    // @Range: 0 200000
     // @Increment: 100
     // @User: Standard
     AP_GROUPINFO("RADIUS",  0,  AC_Circle, _radius, AC_CIRCLE_RADIUS_DEFAULT),
@@ -22,6 +22,13 @@ const AP_Param::GroupInfo AC_Circle::var_info[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("RATE",    1, AC_Circle, _rate,    AC_CIRCLE_RATE_DEFAULT),
+
+    // @Param: CONTROL
+    // @DisplayName: Circle control
+    // @Description: Enable or disable using the pitch/roll stick control circle mode's radius and rate
+    // @Values: 0:Disable,1:Enable
+    // @User: Standard
+    AP_GROUPINFO("CONTROL", 2, AC_Circle, _control, 1),
 
     AP_GROUPEND
 };
@@ -54,6 +61,8 @@ void AC_Circle::init(const Vector3f& center)
     _center = center;
 
     // initialise position controller (sets target roll angle, pitch angle and I terms based on vehicle current lean angles)
+    _pos_control.set_desired_accel_xy(0.0f,0.0f);
+    _pos_control.set_desired_velocity_xy(0.0f,0.0f);
     _pos_control.init_xy_controller();
 
     // set initial position target to reasonable stopping point
@@ -72,6 +81,8 @@ void AC_Circle::init(const Vector3f& center)
 void AC_Circle::init()
 {
     // initialise position controller (sets target roll angle, pitch angle and I terms based on vehicle current lean angles)
+    _pos_control.set_desired_accel_xy(0.0f,0.0f);
+    _pos_control.set_desired_velocity_xy(0.0f,0.0f);
     _pos_control.init_xy_controller();
 
     // set initial position target to reasonable stopping point
@@ -102,66 +113,67 @@ void AC_Circle::set_rate(float deg_per_sec)
     }
 }
 
+/// set_circle_rate - set circle rate in degrees per second
+void AC_Circle::set_radius(float radius_cm)
+{
+    _radius = constrain_float(radius_cm, 0, AC_CIRCLE_RADIUS_MAX);
+    calc_velocities(false);
+}
+
 /// update - update circle controller
 void AC_Circle::update()
 {
     // calculate dt
     float dt = _pos_control.time_since_last_xy_update();
-
-    // update circle position at poscontrol update rate
-    if (dt >= _pos_control.get_dt_xy()) {
-
-        // double check dt is reasonable
-        if (dt >= 0.2f) {
-            dt = 0.0f;
-        }
-
-        // ramp angular velocity to maximum
-        if (_angular_vel < _angular_vel_max) {
-            _angular_vel += fabsf(_angular_accel) * dt;
-            _angular_vel = MIN(_angular_vel, _angular_vel_max);
-        }
-        if (_angular_vel > _angular_vel_max) {
-            _angular_vel -= fabsf(_angular_accel) * dt;
-            _angular_vel = MAX(_angular_vel, _angular_vel_max);
-        }
-
-        // update the target angle and total angle traveled
-        float angle_change = _angular_vel * dt;
-        _angle += angle_change;
-        _angle = wrap_PI(_angle);
-        _angle_total += angle_change;
-
-        // if the circle_radius is zero we are doing panorama so no need to update loiter target
-        if (!is_zero(_radius)) {
-            // calculate target position
-            Vector3f target;
-            target.x = _center.x + _radius * cosf(-_angle);
-            target.y = _center.y - _radius * sinf(-_angle);
-            target.z = _pos_control.get_alt_target();
-
-            // update position controller target
-            _pos_control.set_xy_target(target.x, target.y);
-
-            // heading is 180 deg from vehicles target position around circle
-            _yaw = wrap_PI(_angle-M_PI) * AC_CIRCLE_DEGX100;
-        }else{
-            // set target position to center
-            Vector3f target;
-            target.x = _center.x;
-            target.y = _center.y;
-            target.z = _pos_control.get_alt_target();
-
-            // update position controller target
-            _pos_control.set_xy_target(target.x, target.y);
-
-            // heading is same as _angle but converted to centi-degrees
-            _yaw = _angle * AC_CIRCLE_DEGX100;
-        }
-
-        // update position controller
-        _pos_control.update_xy_controller(AC_PosControl::XY_MODE_POS_ONLY, 1.0f, false);
+    if (dt >= 0.2f) {
+        dt = 0.0f;
     }
+
+    // ramp angular velocity to maximum
+    if (_angular_vel < _angular_vel_max) {
+        _angular_vel += fabsf(_angular_accel) * dt;
+        _angular_vel = MIN(_angular_vel, _angular_vel_max);
+    }
+    if (_angular_vel > _angular_vel_max) {
+        _angular_vel -= fabsf(_angular_accel) * dt;
+        _angular_vel = MAX(_angular_vel, _angular_vel_max);
+    }
+
+    // update the target angle and total angle traveled
+    float angle_change = _angular_vel * dt;
+    _angle += angle_change;
+    _angle = wrap_PI(_angle);
+    _angle_total += angle_change;
+
+    // if the circle_radius is zero we are doing panorama so no need to update loiter target
+    if (!is_zero(_radius)) {
+        // calculate target position
+        Vector3f target;
+        target.x = _center.x + _radius * cosf(-_angle);
+        target.y = _center.y - _radius * sinf(-_angle);
+        target.z = _pos_control.get_alt_target();
+
+        // update position controller target
+        _pos_control.set_xy_target(target.x, target.y);
+
+        // heading is from vehicle to center of circle
+        _yaw = get_bearing_cd(_inav.get_position(), _center);
+    } else {
+        // set target position to center
+        Vector3f target;
+        target.x = _center.x;
+        target.y = _center.y;
+        target.z = _pos_control.get_alt_target();
+
+        // update position controller target
+        _pos_control.set_xy_target(target.x, target.y);
+
+        // heading is same as _angle but converted to centi-degrees
+        _yaw = _angle * DEGX100;
+    }
+
+    // update position controller
+    _pos_control.update_xy_controller();
 }
 
 // get_closest_point_on_circle - returns closest point on the circle
@@ -169,7 +181,7 @@ void AC_Circle::update()
 //  closest point on the circle will be placed in result
 //  result's altitude (i.e. z) will be set to the circle_center's altitude
 //  if vehicle is at the center of the circle, the edge directly behind vehicle will be returned
-void AC_Circle::get_closest_point_on_circle(Vector3f &result)
+void AC_Circle::get_closest_point_on_circle(Vector3f &result) const
 {
     // return center if radius is zero
     if (_radius <= 0) {
@@ -178,12 +190,13 @@ void AC_Circle::get_closest_point_on_circle(Vector3f &result)
     }
 
     // get current position
-    const Vector3f &curr_pos = _inav.get_position();
+    Vector3f stopping_point;
+    _pos_control.get_stopping_point_xy(stopping_point);
 
-    // calc vector from current location to circle center
+    // calc vector from stopping point to circle center
     Vector2f vec;   // vector from circle center to current location
-    vec.x = (curr_pos.x - _center.x);
-    vec.y = (curr_pos.y - _center.y);
+    vec.x = (stopping_point.x - _center.x);
+    vec.y = (stopping_point.y - _center.y);
     float dist = norm(vec.x, vec.y);
 
     // if current location is exactly at the center of the circle return edge directly behind vehicle
@@ -211,14 +224,14 @@ void AC_Circle::calc_velocities(bool init_velocity)
         _angular_accel = MAX(fabsf(_angular_vel_max),ToRad(AC_CIRCLE_ANGULAR_ACCEL_MIN));  // reach maximum yaw velocity in 1 second
     }else{
         // calculate max velocity based on waypoint speed ensuring we do not use more than half our max acceleration for accelerating towards the center of the circle
-        float velocity_max = MIN(_pos_control.get_speed_xy(), safe_sqrt(0.5f*_pos_control.get_accel_xy()*_radius));
+        float velocity_max = MIN(_pos_control.get_max_speed_xy(), safe_sqrt(0.5f*_pos_control.get_max_accel_xy()*_radius));
 
         // angular_velocity in radians per second
         _angular_vel_max = velocity_max/_radius;
         _angular_vel_max = constrain_float(ToRad(_rate),-_angular_vel_max,_angular_vel_max);
 
         // angular_velocity in radians per second
-        _angular_accel = MAX(_pos_control.get_accel_xy()/_radius, ToRad(AC_CIRCLE_ANGULAR_ACCEL_MIN));
+        _angular_accel = MAX(_pos_control.get_max_accel_xy()/_radius, ToRad(AC_CIRCLE_ANGULAR_ACCEL_MIN));
     }
 
     // initialise angular velocity

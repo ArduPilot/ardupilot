@@ -1,7 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
-
 #include "AP_NavEKF3.h"
 #include "AP_NavEKF3_core.h"
 #include <AP_AHRS/AP_AHRS.h>
@@ -23,8 +21,8 @@ void NavEKF3_core::SelectRngBcnFusion()
     // Determine if we need to fuse range beacon data on this time step
     if (rngBcnDataToFuse) {
         if (PV_AidingMode == AID_ABSOLUTE) {
-            if (!filterStatus.flags.using_gps) {
-                if (!bcnOriginEstInit && rngBcnAlignmentCompleted) {
+            if (!filterStatus.flags.using_gps && rngBcnAlignmentCompleted) {
+                if (!bcnOriginEstInit) {
                     bcnOriginEstInit = true;
                     bcnPosOffsetNED.x = receiverPos.x - stateStruct.position.x;
                     bcnPosOffsetNED.y = receiverPos.y - stateStruct.position.y;
@@ -102,7 +100,7 @@ void NavEKF3_core::FuseRngBcn()
         H_BCN[7] = -t4*t9;
         H_BCN[8] = -t3*t9;
         // If we are not using the beacons as a height reference, we pretend that the beacons
-        // are a the same height as the flight vehicle when calculating the observation derivatives
+        // are at the same height as the flight vehicle when calculating the observation derivatives
         // and Kalman gains
         // TODO  - less hacky way of achieving this, preferably using an alternative derivation
         if (activeHgtSource != HGT_SOURCE_BCN) {
@@ -147,12 +145,25 @@ void NavEKF3_core::FuseRngBcn()
         Kfusion[5] = -t26*(P[5][7]*t4*t9+P[5][8]*t3*t9+P[5][9]*t2*t9);
         Kfusion[7] = -t26*(t22+P[7][8]*t3*t9+P[7][9]*t2*t9);
         Kfusion[8] = -t26*(t16+P[8][7]*t4*t9+P[8][9]*t2*t9);
-        Kfusion[10] = -t26*(P[10][7]*t4*t9+P[10][8]*t3*t9+P[10][9]*t2*t9);
-        Kfusion[11] = -t26*(P[11][7]*t4*t9+P[11][8]*t3*t9+P[11][9]*t2*t9);
-        Kfusion[12] = -t26*(P[12][7]*t4*t9+P[12][8]*t3*t9+P[12][9]*t2*t9);
-        Kfusion[13] = -t26*(P[13][7]*t4*t9+P[13][8]*t3*t9+P[13][9]*t2*t9);
-        Kfusion[14] = -t26*(P[14][7]*t4*t9+P[14][8]*t3*t9+P[14][9]*t2*t9);
-        Kfusion[15] = -t26*(P[15][7]*t4*t9+P[15][8]*t3*t9+P[15][9]*t2*t9);
+
+        if (!inhibitDelAngBiasStates) {
+            Kfusion[10] = -t26*(P[10][7]*t4*t9+P[10][8]*t3*t9+P[10][9]*t2*t9);
+            Kfusion[11] = -t26*(P[11][7]*t4*t9+P[11][8]*t3*t9+P[11][9]*t2*t9);
+            Kfusion[12] = -t26*(P[12][7]*t4*t9+P[12][8]*t3*t9+P[12][9]*t2*t9);
+        } else {
+            // zero indexes 10 to 12 = 3*4 bytes
+            memset(&Kfusion[10], 0, 12);
+        }
+
+        if (!inhibitDelVelBiasStates) {
+            Kfusion[13] = -t26*(P[13][7]*t4*t9+P[13][8]*t3*t9+P[13][9]*t2*t9);
+            Kfusion[14] = -t26*(P[14][7]*t4*t9+P[14][8]*t3*t9+P[14][9]*t2*t9);
+            Kfusion[15] = -t26*(P[15][7]*t4*t9+P[15][8]*t3*t9+P[15][9]*t2*t9);
+        } else {
+            // zero indexes 13 to 15 = 3*4 bytes
+            memset(&Kfusion[13], 0, 12);
+        }
+
         // only allow the range observations to modify the vertical states if we are using it as a height reference
         if (activeHgtSource == HGT_SOURCE_BCN) {
             Kfusion[6] = -t26*(P[6][7]*t4*t9+P[6][8]*t3*t9+P[6][9]*t2*t9);
@@ -173,8 +184,14 @@ void NavEKF3_core::FuseRngBcn()
             // zero indexes 16 to 21 = 6*4 bytes
             memset(&Kfusion[16], 0, 24);
         }
-        Kfusion[22] = -t26*(P[22][7]*t4*t9+P[22][8]*t3*t9+P[22][9]*t2*t9);
-        Kfusion[23] = -t26*(P[23][7]*t4*t9+P[23][8]*t3*t9+P[23][9]*t2*t9);
+
+        if (!inhibitWindStates) {
+            Kfusion[22] = -t26*(P[22][7]*t4*t9+P[22][8]*t3*t9+P[22][9]*t2*t9);
+            Kfusion[23] = -t26*(P[23][7]*t4*t9+P[23][8]*t3*t9+P[23][9]*t2*t9);
+        } else {
+            // zero indexes 22 to 23 = 2*4 bytes
+            memset(&Kfusion[22], 0, 8);
+        }
 
         // Calculate innovation using the selected offset value
         Vector3f delta = stateStruct.position - rngBcnDataDelayed.beacon_posNED;
@@ -230,7 +247,7 @@ void NavEKF3_core::FuseRngBcn()
                     }
                 }
 
-                // force the covariance matrix to be symmetrical and limit the variances to prevent ill-condiioning.
+                // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
                 ForceSymmetry();
                 ConstrainVariances();
 
@@ -259,8 +276,8 @@ void NavEKF3_core::FuseRngBcn()
 }
 
 /*
-Use range beaon measurements to calculate a static position using a 3-state EKF algorithm.
-Algorihtm based on the following:
+Use range beacon measurements to calculate a static position using a 3-state EKF algorithm.
+Algorithm based on the following:
 https://github.com/priseborough/InertialNav/blob/master/derivations/range_beacon.m
 */
 void NavEKF3_core::FuseRngBcnStatic()
@@ -270,7 +287,7 @@ void NavEKF3_core::FuseRngBcnStatic()
 
     /*
     The first thing to do is to check if we have started the alignment and if not, initialise the
-    states and covariance to a first guess. To do this iterate through the avilable beacons and then
+    states and covariance to a first guess. To do this iterate through the available beacons and then
     initialise the initial position to the mean beacon position. The initial position uncertainty
     is set to the mean range measurement.
     */
@@ -318,7 +335,7 @@ void NavEKF3_core::FuseRngBcnStatic()
                 // We are using a different height reference for the main EKF so need to estimate a vertical
                 // position offset to be applied to the beacon system that minimises the range innovations
                 // The position estimate should be stable after 100 iterations so we use a simple dual
-                // hypothesis 1-state EKF to estiate the offset
+                // hypothesis 1-state EKF to estimate the offset
                 Vector3f refPosNED;
                 refPosNED.x = receiverPos.x;
                 refPosNED.y = receiverPos.y;
@@ -512,7 +529,7 @@ void NavEKF3_core::CalcRangeBeaconPosDownOffset(float obsVar, Vector3f &vehicleP
     float obsDeriv; // derivative of observation relative to state
 
     const float stateNoiseVar = 0.1f; // State process noise variance
-    const float filtAlpha = 0.01f; // LPF constant
+    const float filtAlpha = 0.1f; // LPF constant
     const float innovGateWidth = 5.0f; // width of innovation consistency check gate in std
 
     // estimate upper value for offset
@@ -533,9 +550,6 @@ void NavEKF3_core::CalcRangeBeaconPosDownOffset(float obsVar, Vector3f &vehicleP
         // Calculate innovation
         innov = sqrtf(t8) - rngBcnDataDelayed.rng;
 
-        // calculate a filtered innovation magnitude to be used to select between the high or low offset
-        OffsetMaxInnovFilt = (1.0f - filtAlpha) * bcnPosOffsetMaxVar + filtAlpha * fabsf(innov);
-
         // covariance prediction
         bcnPosOffsetMaxVar += stateNoiseVar;
 
@@ -543,13 +557,18 @@ void NavEKF3_core::CalcRangeBeaconPosDownOffset(float obsVar, Vector3f &vehicleP
         innovVar = obsDeriv * bcnPosOffsetMaxVar * obsDeriv + obsVar;
         innovVar = MAX(innovVar, obsVar);
 
+        // calculate the Kalman gain
+        gain = (bcnPosOffsetMaxVar * obsDeriv) / innovVar;
+
+        // calculate a filtered state change magnitude to be used to select between the high or low offset
+        float stateChange = innov * gain;
+        maxOffsetStateChangeFilt = (1.0f - filtAlpha) * maxOffsetStateChangeFilt + fminf(fabsf(filtAlpha * stateChange) , 1.0f);
+
         // Reject range innovation spikes using a 5-sigma threshold unless aligning
         if ((sq(innov) < sq(innovGateWidth) * innovVar) || aligning) {
-            // calculate the Kalman gain
-            gain = (bcnPosOffsetMaxVar * obsDeriv) / innovVar;
 
             // state update
-            bcnPosDownOffsetMax -= innov * gain;
+            bcnPosDownOffsetMax -= stateChange;
 
             // covariance update
             bcnPosOffsetMaxVar -= gain * obsDeriv * bcnPosOffsetMaxVar;
@@ -570,9 +589,6 @@ void NavEKF3_core::CalcRangeBeaconPosDownOffset(float obsVar, Vector3f &vehicleP
         // Calculate innovation
         innov = sqrtf(t8) - rngBcnDataDelayed.rng;
 
-        // calculate a filtered innovation magnitude to be used to select between the high or low offset
-        OffsetMinInnovFilt = (1.0f - filtAlpha) * OffsetMinInnovFilt + filtAlpha * fabsf(innov);
-
         // covariance prediction
         bcnPosOffsetMinVar += stateNoiseVar;
 
@@ -580,13 +596,18 @@ void NavEKF3_core::CalcRangeBeaconPosDownOffset(float obsVar, Vector3f &vehicleP
         innovVar = obsDeriv * bcnPosOffsetMinVar * obsDeriv + obsVar;
         innovVar = MAX(innovVar, obsVar);
 
+        // calculate the Kalman gain
+        gain = (bcnPosOffsetMinVar * obsDeriv) / innovVar;
+
+        // calculate a filtered state change magnitude to be used to select between the high or low offset
+        float stateChange = innov * gain;
+        minOffsetStateChangeFilt = (1.0f - filtAlpha) * minOffsetStateChangeFilt + fminf(fabsf(filtAlpha * stateChange) , 1.0f);
+
         // Reject range innovation spikes using a 5-sigma threshold unless aligning
         if ((sq(innov) < sq(innovGateWidth) * innovVar) || aligning) {
-            // calculate the Kalman gain
-            gain = (bcnPosOffsetMinVar * obsDeriv) / innovVar;
 
             // state update
-            bcnPosDownOffsetMin -= innov * gain;
+            bcnPosDownOffsetMin -= stateChange;
 
             // covariance update
             bcnPosOffsetMinVar -= gain * obsDeriv * bcnPosOffsetMinVar;
@@ -601,16 +622,20 @@ void NavEKF3_core::CalcRangeBeaconPosDownOffset(float obsVar, Vector3f &vehicleP
     bcnPosDownOffsetMax = MAX(bcnPosDownOffsetMax, vehiclePosNED.z - bcnMidPosD + 0.5f);
     bcnPosDownOffsetMin  = MIN(bcnPosDownOffsetMin,  vehiclePosNED.z - bcnMidPosD - 0.5f);
 
-    // calculate the innovation for the main filter using the offset with the smallest innovation history
+    // calculate the innovation for the main filter using the offset that is most stable
     // apply hysteresis to prevent rapid switching
-    if (!usingMinHypothesis && OffsetMinInnovFilt < 0.8f * OffsetMaxInnovFilt) {
-        bcnPosOffsetNED.z = bcnPosDownOffsetMin;
+    if (!usingMinHypothesis && (minOffsetStateChangeFilt < (0.8f * maxOffsetStateChangeFilt))) {
         usingMinHypothesis = true;
-    } else if (usingMinHypothesis && OffsetMaxInnovFilt < 0.8f * OffsetMinInnovFilt) {
-        bcnPosOffsetNED.z = bcnPosDownOffsetMax;
+    } else if (usingMinHypothesis && (maxOffsetStateChangeFilt < (0.8f * minOffsetStateChangeFilt))) {
         usingMinHypothesis = false;
     }
+    if (usingMinHypothesis) {
+        bcnPosOffsetNED.z = bcnPosDownOffsetMin;
+    } else {
+        bcnPosOffsetNED.z = bcnPosDownOffsetMax;
+    }
 
+    // apply the vertical offset to the beacon positions
+    rngBcnDataDelayed.beacon_posNED.z += bcnPosOffsetNED.z;
 }
 
-#endif // HAL_CPU_CLASS

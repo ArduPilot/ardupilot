@@ -45,6 +45,7 @@ void RCOutput::disable_ch(uint8_t ch)
 
 void RCOutput::write(uint8_t ch, uint16_t period_us)
 {
+    _sitlState->output_ready = true;
     if (ch < SITL_NUM_CHANNELS && (_enable_mask & (1U<<ch))) {
         if (_corked) {
             _pending[ch] = period_us;
@@ -69,14 +70,77 @@ void RCOutput::read(uint16_t* period_us, uint8_t len)
 
 void RCOutput::cork(void)
 {
-    memcpy(_pending, _sitlState->pwm_output, SITL_NUM_CHANNELS * sizeof(uint16_t));
-    _corked = true;
+    if (!_corked) {
+        memcpy(_pending, _sitlState->pwm_output, SITL_NUM_CHANNELS * sizeof(uint16_t));
+        _corked = true;
+    }
 }
 
 void RCOutput::push(void)
 {
-    memcpy(_sitlState->pwm_output, _pending, SITL_NUM_CHANNELS * sizeof(uint16_t));
-    _corked = false;
+    if (_corked) {
+        memcpy(_sitlState->pwm_output, _pending, SITL_NUM_CHANNELS * sizeof(uint16_t));
+        _corked = false;
+    }
+}
+
+/*
+  Serial LED emulation
+*/
+bool RCOutput::set_neopixel_num_LEDs(const uint16_t chan, uint8_t num_leds)
+{
+    if (chan > 15 || num_leds > 32) {
+        return false;
+    }
+    SITL::SITL *sitl = AP::sitl();
+    if (sitl) {
+        sitl->led.num_leds[chan] = num_leds;
+        return true;
+    }
+    return false;
+}
+
+void RCOutput::set_neopixel_rgb_data(const uint16_t chan, uint32_t ledmask, uint8_t red, uint8_t green, uint8_t blue)
+{
+    if (chan > 15) {
+        return;
+    }
+    SITL::SITL *sitl = AP::sitl();
+    if (sitl) {
+        for (uint8_t i=0; i<32; i++) {
+            if ((1U<<i) & ledmask) {
+                sitl->led.rgb[chan][i].rgb[0] = red;
+                sitl->led.rgb[chan][i].rgb[1] = green;
+                sitl->led.rgb[chan][i].rgb[2] = blue;
+            }
+        }
+    }
+}
+
+void RCOutput::neopixel_send(void)
+{
+    SITL::SITL *sitl = AP::sitl();
+    if (sitl) {
+        sitl->led.send_counter++;
+    }
 }
 
 #endif
+
+void RCOutput::force_safety_off(void)
+{
+    SITL::SITL *sitl = AP::sitl();
+    if (sitl == nullptr) {
+        return;
+    }
+    sitl->force_safety_off();
+}
+
+bool RCOutput::force_safety_on(void)
+{
+    SITL::SITL *sitl = AP::sitl();
+    if (sitl == nullptr) {
+        return false;
+    }
+    return sitl->force_safety_on();
+}

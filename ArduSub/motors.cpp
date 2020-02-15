@@ -3,129 +3,120 @@
 // enable_motor_output() - enable and output lowest possible value to motors
 void Sub::enable_motor_output()
 {
-    // enable motors
-    motors.enable();
     motors.output_min();
 }
 
-// init_arm_motors - performs arming process including initialisation of barometer and gyros
-//  returns false if arming failed because of pre-arm checks, arming checks or a gyro calibration failure
-bool Sub::init_arm_motors(bool arming_from_gcs)
+// motors_output - send output to motors library which will adjust and send to ESCs and servos
+void Sub::motors_output()
 {
-    start_logging();
-    static bool in_arm_motors = false;
+    // Motor detection mode controls the thrusters directly
+    if (control_mode == MOTOR_DETECT){
+        return;
+    }
+    // check if we are performing the motor test
+    if (ap.motor_test) {
+        verify_motor_test();
+    } else {
+        motors.set_interlock(true);
+        motors.output();
+    }
+}
 
-    // exit immediately if already in this function
-    if (in_arm_motors) {
+// Initialize new style motor test
+// Perform checks to see if it is ok to begin the motor test
+// Returns true if motor test has begun
+bool Sub::init_motor_test()
+{
+    uint32_t tnow = AP_HAL::millis();
+
+    // Ten second cooldown period required with no do_set_motor requests required
+    // after failure.
+    if (tnow < last_do_motor_test_fail_ms + 10000 && last_do_motor_test_fail_ms > 0) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "10 second cooldown required after motor test");
         return false;
     }
 
-    in_arm_motors = true;
-
-    if (!arming.pre_arm_checks(true)) {
-        AP_Notify::events.arming_failed = true;
-        in_arm_motors = false;
+    // check if safety switch has been pushed
+    if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL,"Disarm hardware safety switch before testing motors.");
         return false;
     }
 
-    // let dataflash know that we're armed (it may open logs e.g.)
-    DataFlash_Class::instance()->set_vehicle_armed(true);
-
-    // disable cpu failsafe because initialising everything takes a while
-    mainloop_failsafe_disable();
-
-    // notify that arming will occur (we do this early to give plenty of warning)
-    AP_Notify::flags.armed = true;
-    // call update_notify a few times to ensure the message gets out
-    for (uint8_t i=0; i<=10; i++) {
-        update_notify();
+    // Make sure we are on the ground
+    if (!motors.armed()) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Arm motors before testing motors.");
+        return false;
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    gcs_send_text(MAV_SEVERITY_INFO, "Arming motors");
-#endif
+    enable_motor_output(); // set all motor outputs to zero
+    ap.motor_test = true;
 
-    initial_armed_bearing = ahrs.yaw_sensor;
-
-    if (ap.home_state == HOME_UNSET) {
-        // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
-
-        // Always use absolute altitude for ROV
-        // ahrs.resetHeightDatum();
-        // Log_Write_Event(DATA_EKF_ALT_RESET);
-    } else if (ap.home_state == HOME_SET_NOT_LOCKED) {
-        // Reset home position if it has already been set before (but not locked)
-        set_home_to_current_location();
-    }
-	
-    // enable gps velocity based centrefugal force compensation
-    ahrs.set_correct_centrifugal(true);
-    hal.util->set_soft_armed(true);
-
-    // enable output to motors
-    enable_motor_output();
-
-    // finally actually arm the motors
-    motors.armed(true);
-
-    // log arming to dataflash
-    Log_Write_Event(DATA_ARMED);
-
-    // log flight mode in case it was changed while vehicle was disarmed
-    DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
-
-    // reenable failsafe
-    mainloop_failsafe_enable();
-
-    // perf monitor ignores delay due to arming
-    perf_ignore_this_loop();
-
-    // flag exiting this function
-    in_arm_motors = false;
-
-    // return success
     return true;
 }
 
-// init_disarm_motors - disarm motors
-void Sub::init_disarm_motors()
+// Verify new style motor test
+// The motor test will fail if the interval between received
+// MAV_CMD_DO_SET_MOTOR requests exceeds a timeout period
+// Returns true if it is ok to proceed with new style motor test
+bool Sub::verify_motor_test()
 {
-    // return immediately if we are already disarmed
-    if (!motors.armed()) {
-        return;
+    bool pass = true;
+
+    // Require at least 2 Hz incoming do_set_motor requests
+    if (AP_HAL::millis() > last_do_motor_test_ms + 500) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Motor test timed out!");
+        pass = false;
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    gcs_send_text(MAV_SEVERITY_INFO, "Disarming motors");
-#endif
+    if (!pass) {
+        ap.motor_test = false;
+        motors.armed(false); // disarm motors
+        last_do_motor_test_fail_ms = AP_HAL::millis();
+        return false;
+    }
 
-    // save compass offsets learned by the EKF if enabled
-    if (ahrs.use_compass() && compass.get_learn_type() == Compass::LEARN_EKF) {
-        for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
-            Vector3f magOffsets;
-            if (ahrs.getMagOffsets(i, magOffsets)) {
-                compass.set_and_save_offsets(i, magOffsets);
+    return true;
+}
+
+bool Sub::handle_do_motor_test(mavlink_command_long_t command) {
+    last_do_motor_test_ms = AP_HAL::millis();
+
+    // If we are not already testing motors, initialize test
+    static uint32_t tLastInitializationFailed = 0;
+    if(!ap.motor_test) {
+        // Do not allow initializations attempt under 2 seconds
+        // If one fails, we need to give the user time to fix the issue
+        // instead of spamming error messages
+        if (AP_HAL::millis() > (tLastInitializationFailed + 2000)) {
+            if (!init_motor_test()) {
+                gcs().send_text(MAV_SEVERITY_WARNING, "motor test initialization failed!");
+                tLastInitializationFailed = AP_HAL::millis();
+                return false; // init fail
             }
+        } else {
+            return false;
         }
     }
 
-    // log disarm to the dataflash
-    Log_Write_Event(DATA_DISARMED);
+    float motor_number = command.param1;
+    float throttle_type = command.param2;
+    float throttle = command.param3;
+    // float timeout_s = command.param4; // not used
+    // float motor_count = command.param5; // not used
+    float test_type = command.param6;
 
-    // send disarm command to motors
-    motors.armed(false);
-
-    // reset the mission
-    mission.reset();
-
-    DataFlash_Class::instance()->set_vehicle_armed(false);
-
-    if (DataFlash.log_while_disarmed()) {
-        start_logging(); // create a new log if necessary
-    } else {
-        DataFlash.EnableWrites(false); // suspend logging
+    if (!is_equal(test_type, (float)MOTOR_TEST_ORDER_BOARD)) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "bad test type %0.2f", (double)test_type);
+        return false; // test type not supported here
     }
 
+    if (is_equal(throttle_type, (float)MOTOR_TEST_THROTTLE_PILOT)) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "bad throttle type %0.2f", (double)throttle_type);
+
+        return false; // throttle type not supported here
+    }
+
+<<<<<<< HEAD
     // disable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(false);
     hal.util->set_soft_armed(false);
@@ -246,6 +237,21 @@ bool Sub::handle_do_motor_test(mavlink_command_long_t command) {
     return false;
 }
 
+=======
+    if (is_equal(throttle_type, (float)MOTOR_TEST_THROTTLE_PWM)) {
+        return motors.output_test_num(motor_number, throttle); // true if motor output is set
+    }
+
+    if (is_equal(throttle_type, (float)MOTOR_TEST_THROTTLE_PERCENT)) {
+        throttle = constrain_float(throttle, 0.0f, 100.0f);
+        throttle = channel_throttle->get_radio_min() + throttle / 100.0f * (channel_throttle->get_radio_max() - channel_throttle->get_radio_min());
+        return motors.output_test_num(motor_number, throttle); // true if motor output is set
+    }
+
+    return false;
+}
+
+>>>>>>> 14ad9a58bde667b94cfc1aae2e896cebef07ffdf
 
 // translate wpnav roll/pitch outputs to lateral/forward
 void Sub::translate_wpnav_rp(float &lateral_out, float &forward_out)

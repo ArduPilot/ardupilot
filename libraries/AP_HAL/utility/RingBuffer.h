@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <stdint.h>
+#include <AP_HAL/AP_HAL.h>
 
 /*
  * Circular buffer of bytes.
@@ -93,39 +94,49 @@ private:
 
 /*
   ring buffer class for objects of fixed size
+  !!! Note ObjectBuffer_TS is a duplicate of this update, in both places !!!
  */
 template <class T>
 class ObjectBuffer {
 public:
     ObjectBuffer(uint32_t _size) {
-        buffer = new ByteBuffer((_size * sizeof(T))+1);
+        // we set size to 1 more than requested as the byte buffer
+        // gives one less byte than requested. We round up to a full
+        // multiple of the object size so that we always get aligned
+        // elements, which makes the readptr() method possible
+        buffer = new ByteBuffer(((_size+1) * sizeof(T)));
     }
     ~ObjectBuffer(void) {
         delete buffer;
     }
 
     // Discards the buffer content, emptying it.
+    // !!! Note ObjectBuffer_TS is a duplicate of this update, in both places !!!
     void clear(void)
     {
         buffer->clear();
     }
 
-    // return number of objects available to be read
+    // return number of objects available to be read from the front of the queue
+    // !!! Note ObjectBuffer_TS is a duplicate of this update, in both places !!!
     uint32_t available(void) const {
         return buffer->available() / sizeof(T);
     }
 
-    // return number of objects that could be written
+    // return number of objects that could be written to the back of the queue
+    // !!! Note ObjectBuffer_TS is a duplicate of this update, in both places !!!
     uint32_t space(void) const {
         return buffer->space() / sizeof(T);
     }
 
     // true is available() == 0
+    // !!! Note ObjectBuffer_TS is a duplicate of this update, in both places !!!
     bool empty(void) const {
         return buffer->empty();
     }
 
-    // push one object
+    // push one object onto the back of the queue
+    // !!! Note ObjectBuffer_TS is a duplicate of this update, in both places !!!
     bool push(const T &object) {
         if (buffer->space() < sizeof(T)) {
             return false;
@@ -133,16 +144,27 @@ public:
         return buffer->write((uint8_t*)&object, sizeof(T)) == sizeof(T);
     }
 
+    // push N objects onto the back of the queue
+    // !!! Note ObjectBuffer_TS is a duplicate of this update, in both places !!!
+    bool push(const T *object, uint32_t n) {
+        if (buffer->space() < n*sizeof(T)) {
+            return false;
+        }
+        return buffer->write((uint8_t*)object, n*sizeof(T)) == n*sizeof(T);
+    }
+    
     /*
-      throw away an object
+      throw away an object from the front of the queue
      */
+    // !!! Note ObjectBuffer_TS is a duplicate of this update, in both places !!!
     bool pop(void) {
         return buffer->advance(sizeof(T));
     }
 
     /*
-      pop earliest object off the queue
+      pop earliest object off the front of the queue
      */
+    // !!! Note ObjectBuffer_TS is a duplicate of this update, in both places !!!
     bool pop(T &object) {
         if (buffer->available() < sizeof(T)) {
             return false;
@@ -155,6 +177,7 @@ public:
      * push_force() is semantically equivalent to:
      *   if (!push(t)) { pop(); push(t); }
      */
+    // !!! Note ObjectBuffer_TS is a duplicate of this update, in both places !!!
     bool push_force(const T &object) {
         if (buffer->space() < sizeof(T)) {
             buffer->advance(sizeof(T));
@@ -163,14 +186,49 @@ public:
     }
 
     /*
-      peek copies an object out without advancing the read pointer
+     * push_force() N objects
      */
+    // !!! Note ObjectBuffer_TS is a duplicate of this update, in both places !!!
+    bool push_force(const T *object, uint32_t n) {
+        uint32_t _space = buffer->space();
+        if (_space < sizeof(T)*n) {
+            buffer->advance(sizeof(T)*(n-_space));
+        }
+        return push(object, n);
+    }
+    
+    /*
+      peek copies an object out from the front of the queue without advancing the read pointer
+     */
+    // !!! Note ObjectBuffer_TS is a duplicate of this update, in both places !!!
     bool peek(T &object) {
         return buffer->peekbytes((uint8_t*)&object, sizeof(T)) == sizeof(T);
     }
 
+    /*
+      return a pointer to first contiguous array of available
+      objects. Return nullptr if none available
+     */
+    // !!! Note ObjectBuffer_TS is a duplicate of this, update in both places !!!
+    const T *readptr(uint32_t &n) {
+        uint32_t avail_bytes = 0;
+        const T *ret = (const T *)buffer->readptr(avail_bytes);
+        if (!ret || avail_bytes < sizeof(T)) {
+            return nullptr;
+        }
+        n = avail_bytes / sizeof(T);
+        return ret;
+    }
+
+    // advance the read pointer (discarding objects)
+    // !!! Note ObjectBuffer_TS is a duplicate of this, update in both places !!!
+    bool advance(uint32_t n) {
+        return buffer->advance(n * sizeof(T));
+    }
+    
     /* update the object at the front of the queue (the one that would
        be fetched by pop()) */
+    // !!! Note ObjectBuffer_TS is a duplicate of this, update in both places !!!
     bool update(const T &object) {
         return buffer->update((uint8_t*)&object, sizeof(T));
     }
@@ -179,7 +237,164 @@ private:
     ByteBuffer *buffer = nullptr;
 };
 
+/*
+  Thread safe ring buffer class for objects of fixed size
+  !!! Note this is a duplicate of ObjectBuffer with semaphore, update in both places !!!
+ */
+template <class T>
+class ObjectBuffer_TS {
+public:
+    ObjectBuffer_TS(uint32_t _size) {
+        // we set size to 1 more than requested as the byte buffer
+        // gives one less byte than requested. We round up to a full
+        // multiple of the object size so that we always get aligned
+        // elements, which makes the readptr() method possible
+        buffer = new ByteBuffer(((_size+1) * sizeof(T)));
+    }
+    ~ObjectBuffer_TS(void) {
+        delete buffer;
+    }
 
+    // Discards the buffer content, emptying it.
+    // !!! Note this is a duplicate of ObjectBuffer with semaphore, update in both places !!!
+    void clear(void)
+    {
+        WITH_SEMAPHORE(sem);
+        buffer->clear();
+    }
+
+    // return number of objects available to be read from the front of the queue
+    // !!! Note this is a duplicate of ObjectBuffer with semaphore, update in both places !!!
+    uint32_t available(void) {
+        WITH_SEMAPHORE(sem);
+        return buffer->available() / sizeof(T);
+    }
+
+    // return number of objects that could be written to the back of the queue
+    // !!! Note this is a duplicate of ObjectBuffer with semaphore, update in both places !!!
+    uint32_t space(void) {
+        WITH_SEMAPHORE(sem);
+        return buffer->space() / sizeof(T);
+    }
+
+    // true is available() == 0
+    // !!! Note this is a duplicate of ObjectBuffer with semaphore, update in both places !!!
+    bool empty(void) {
+        WITH_SEMAPHORE(sem);
+        return buffer->empty();
+    }
+
+    // push one object onto the back of the queue
+    // !!! Note this is a duplicate of ObjectBuffer with semaphore, update in both places !!!
+    bool push(const T &object) {
+        WITH_SEMAPHORE(sem);
+        if (buffer->space() < sizeof(T)) {
+            return false;
+        }
+        return buffer->write((uint8_t*)&object, sizeof(T)) == sizeof(T);
+    }
+
+    // push N objects onto the back of the queue
+    // !!! Note this is a duplicate of ObjectBuffer with semaphore, update in both places !!!
+    bool push(const T *object, uint32_t n) {
+        WITH_SEMAPHORE(sem);
+        if (buffer->space() < n*sizeof(T)) {
+            return false;
+        }
+        return buffer->write((uint8_t*)object, n*sizeof(T)) == n*sizeof(T);
+    }
+
+    /*
+      throw away an object from the front of the queue
+     */
+    // !!! Note this is a duplicate of ObjectBuffer with semaphore, update in both places !!!
+    bool pop(void) {
+        WITH_SEMAPHORE(sem);
+        return buffer->advance(sizeof(T));
+    }
+
+    /*
+      pop earliest object off the front of the queue
+     */
+    // !!! Note this is a duplicate of ObjectBuffer with semaphore, update in both places !!!
+    bool pop(T &object) {
+        WITH_SEMAPHORE(sem);
+        if (buffer->available() < sizeof(T)) {
+            return false;
+        }
+        return buffer->read((uint8_t*)&object, sizeof(T)) == sizeof(T);
+    }
+
+    /*
+     * push_force() is semantically equivalent to:
+     *   if (!push(t)) { pop(); push(t); }
+     */
+    // !!! Note this is a duplicate of ObjectBuffer with semaphore, update in both places !!!
+    bool push_force(const T &object) {
+        WITH_SEMAPHORE(sem);
+        if (buffer->space() < sizeof(T)) {
+            buffer->advance(sizeof(T));
+        }
+        return push(object);
+    }
+
+    /*
+     * push_force() N objects
+     */
+    // !!! Note this is a duplicate of ObjectBuffer with semaphore, update in both places !!!
+    bool push_force(const T *object, uint32_t n) {
+        WITH_SEMAPHORE(sem);
+        uint32_t _space = buffer->space();
+        if (_space < sizeof(T)*n) {
+            buffer->advance(sizeof(T)*(n-_space));
+        }
+        return push(object, n);
+    }
+
+    /*
+      peek copies an object out from the front of the queue without advancing the read pointer
+     */
+    // !!! Note this is a duplicate of ObjectBuffer with semaphore, update in both places !!!
+    bool peek(T &object) {
+        WITH_SEMAPHORE(sem);
+        return buffer->peekbytes((uint8_t*)&object, sizeof(T)) == sizeof(T);
+    }
+
+    /*
+      return a pointer to first contiguous array of available
+      objects. Return nullptr if none available
+     */
+    // !!! Note this is a duplicate of ObjectBuffer with semaphore, update in both places !!!
+    const T *readptr(uint32_t &n) {
+        WITH_SEMAPHORE(sem);
+        uint32_t avail_bytes = 0;
+        const T *ret = (const T *)buffer->readptr(avail_bytes);
+        if (!ret || avail_bytes < sizeof(T)) {
+            return nullptr;
+        }
+        n = avail_bytes / sizeof(T);
+        return ret;
+    }
+
+    // advance the read pointer (discarding objects)
+    // !!! Note this is a duplicate of ObjectBuffer with semaphore, update in both places !!!
+    bool advance(uint32_t n) {
+        WITH_SEMAPHORE(sem);
+        return buffer->advance(n * sizeof(T));
+    }
+
+    /* update the object at the front of the queue (the one that would
+       be fetched by pop()) */
+    // !!! Note this is a duplicate of ObjectBuffer with semaphore, update in both places !!!
+    bool update(const T &object) {
+        WITH_SEMAPHORE(sem);
+        return buffer->update((uint8_t*)&object, sizeof(T));
+    }
+
+private:
+    ByteBuffer *buffer = nullptr;
+    HAL_Semaphore sem;
+};
 
 /*
   ring buffer class for objects of fixed size with pointer
@@ -189,28 +404,33 @@ private:
 template <class T>
 class ObjectArray {
 public:
-    ObjectArray(uint16_t _size) {
-        size = _size;
-        head = count = 0;
-        buffer = new T[size];
+    ObjectArray(uint16_t size_) {
+        _size = size_;
+        _head = _count = 0;
+        _buffer = new T[_size];
     }
     ~ObjectArray(void) {
-        delete[] buffer;
+        delete[] _buffer;
+    }
+
+    // return total number of objects
+    uint16_t size(void) const {
+        return _size;
     }
 
     // return number of objects available to be read
     uint16_t available(void) const {
-        return count;
+        return _count;
     }
 
     // return number of objects that could be written
     uint16_t space(void) const {
-        return size - count;
+        return _size - _count;
     }
 
     // true is available() == 0
     bool empty(void) const {
-        return count == 0;
+        return _count == 0;
     }
 
     // push one object
@@ -218,8 +438,8 @@ public:
         if (space() == 0) {
             return false;
         }
-        buffer[(head+count)%size] = object;
-        count++;
+        _buffer[(_head+_count)%_size] = object;
+        _count++;
         return true;
     }
 
@@ -230,15 +450,15 @@ public:
         if (empty()) {
             return false;
         }
-        head = (head+1) % size;
-        count--;
+        _head = (_head+1) % _size;
+        _count--;
         return true;
     }
 
     // Discards the buffer content, emptying it.
     void clear(void)
     {
-        head = count = 0;
+        _head = _count = 0;
     }
 
     /*
@@ -248,7 +468,7 @@ public:
         if (empty()) {
             return false;
         }
-        object = buffer[head];
+        object = _buffer[_head];
         return pop();
     }
 
@@ -268,12 +488,12 @@ public:
       remove the Nth element from the array. First element is zero
      */
     bool remove(uint16_t n) {
-        if (n >= count) {
+        if (n >= _count) {
             return false;
         }
-        if (n == count-1) {
+        if (n == _count-1) {
             // remove last element
-            count--;
+            _count--;
             return true;
         }
         if (n == 0) {
@@ -281,25 +501,25 @@ public:
             return pop();
         }
         // take advantage of the [] operator for simple shift of the array elements
-        for (uint16_t i=n; i<count-1; i++) {
+        for (uint16_t i=n; i<_count-1; i++) {
             *(*this)[i] = *(*this)[i+1];
         }
-        count--;
+        _count--;
         return true;
     }
 
     // allow array indexing, based on current head. Returns a pointer
     // to the object or nullptr
     T * operator[](uint16_t i) {
-        if (i >= count) {
+        if (i >= _count) {
             return nullptr;
         }
-        return &buffer[(head+i)%size];
+        return &_buffer[(_head+i)%_size];
     }
 
 private:
-    T *buffer;
-    uint16_t size;  // total buffer size
-    uint16_t count; // number in buffer now
-    uint16_t head;  // first element
+    T *_buffer;
+    uint16_t _size;  // total buffer size
+    uint16_t _count; // number in buffer now
+    uint16_t _head;  // first element
 };

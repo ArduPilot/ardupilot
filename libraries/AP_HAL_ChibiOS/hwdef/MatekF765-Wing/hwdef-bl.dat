@@ -1,0 +1,52 @@
+# hw definition file for processing by chibios_pins.py
+# for Matek F765-Wing bootloader
+
+# MCU class and specific type
+MCU STM32F7xx STM32F767xx
+
+# board ID for firmware load
+APJ_BOARD_ID 143
+
+# crystal frequency, setup to use external oscillator
+OSCILLATOR_HZ 8000000
+
+define STM32_LSECLK   32768U
+define STM32_LSEDRV   (3U << 3U)
+
+define STM32_PLLSRC     STM32_PLLSRC_HSE
+define STM32_PLLM_VALUE 8
+define STM32_PLLN_VALUE 432
+define STM32_PLLP_VALUE 2
+define STM32_PLLQ_VALUE 9
+
+FLASH_SIZE_KB 2048
+
+# bootloader starts at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 96
+
+# board voltage
+STM32_VDD 330U
+
+# order of UARTs (and USB). Allow bootloading on USB and telem1
+UART_ORDER OTG1 UART7
+
+# UART7 (telem1)
+PE7 UART7_RX UART7
+PE8 UART7_TX UART7
+
+# PA10 IO-debug-console
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+PD10 LED_BOOTLOADER OUTPUT LOW
+define HAL_LED_ON 0
+
+define HAL_USE_EMPTY_STORAGE 1
+define HAL_STORAGE_SIZE 16384
+

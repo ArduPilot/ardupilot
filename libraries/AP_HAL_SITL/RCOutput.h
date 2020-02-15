@@ -15,9 +15,25 @@ public:
     void write(uint8_t ch, uint16_t period_us) override;
     uint16_t read(uint8_t ch) override;
     void read(uint16_t* period_us, uint8_t len) override;
-    void cork(void);
-    void push(void);
+    void cork(void) override;
+    void push(void) override;
 
+    /*
+      force the safety switch on, disabling PWM output from the IO board
+     */
+    bool force_safety_on(void) override;
+    /*
+      force the safety switch off, enabling PWM output from the IO board
+     */
+    void force_safety_off(void) override;
+
+    /*
+      Serial LED emulation
+     */
+    bool set_neopixel_num_LEDs(const uint16_t chan, uint8_t num_leds) override;
+    void set_neopixel_rgb_data(const uint16_t chan, uint32_t ledmask, uint8_t red, uint8_t green, uint8_t blue) override;
+    void neopixel_send(void) override;
+    
 private:
     SITL_State *_sitlState;
     uint16_t _freq_hz;

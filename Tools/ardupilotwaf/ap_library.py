@@ -140,6 +140,7 @@ class ap_library_check_headers(Task.Task):
     dispatched_headers = set()
     whitelist = (
         'libraries/AP_Vehicle/AP_Vehicle_Type.h',
+        'libraries/AP_Camera/AP_RunCam.h',
     )
     whitelist = tuple(os.path.join(*p.split('/')) for p in whitelist)
 
@@ -167,6 +168,7 @@ class ap_library_check_headers(Task.Task):
     def scan(self):
         r = []
         self.headers = []
+
         srcnode_path = self.generator.bld.srcnode.abspath()
 
         # force dependency scan, if necessary
@@ -196,6 +198,9 @@ class ap_library_check_headers(Task.Task):
 @after_method('process_source')
 def ap_library_register_for_check(self):
     if not hasattr(self, 'compiled_tasks'):
+        return
+
+    if not self.env.ENABLE_HEADER_CHECKS:
         return
 
     for t in self.compiled_tasks:

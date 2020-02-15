@@ -3,7 +3,8 @@
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI || \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET
 
 #include "GPIO.h"
 #include <stdio.h>
@@ -76,12 +77,6 @@ void GPIO_BBB::pinMode(uint8_t pin, uint8_t output)
     }
 }
 
-int8_t GPIO_BBB::analogPinToDigitalPin(uint8_t pin)
-{
-    return -1;
-}
-
-
 uint8_t GPIO_BBB::read(uint8_t pin) {
 
     uint8_t bank = pin/32;
@@ -117,12 +112,6 @@ AP_HAL::DigitalSource* GPIO_BBB::channel(uint16_t n) {
     return new DigitalSource(n);
 }
 
-/* Interrupt interface: */
-bool GPIO_BBB::attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p, uint8_t mode)
-{
-    return true;
-}
-
 bool GPIO_BBB::usb_connected(void)
 {
     return false;
@@ -131,4 +120,5 @@ bool GPIO_BBB::usb_connected(void)
 #endif // CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF ||
        // CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD ||
        // CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI ||
-       // CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE
+       // CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE ||
+       // CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET

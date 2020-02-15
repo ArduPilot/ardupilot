@@ -27,19 +27,66 @@
 #include <sys/types.h>
 
 #include <AP_HAL/AP_HAL.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
+#include "pthread.h"
 
 extern const AP_HAL::HAL& hal;
 
-namespace SITL {
+using namespace SITL;
 
 // the asprintf() calls are not worth checking for SITL
 #pragma GCC diagnostic ignored "-Wunused-result"
 
-FlightAxis::FlightAxis(const char *home_str, const char *frame_str) :
-    Aircraft(home_str, frame_str)
+static const struct {
+    const char *name;
+    float value;
+    bool save;
+} sim_defaults[] = {
+    { "AHRS_EKF_TYPE", 10 },
+    { "INS_GYR_CAL", 0 },
+    { "RC1_MIN", 1000, true },
+    { "RC1_MAX", 2000, true },
+    { "RC2_MIN", 1000, true },
+    { "RC2_MAX", 2000, true },
+    { "RC3_MIN", 1000, true },
+    { "RC3_MAX", 2000, true },
+    { "RC4_MIN", 1000, true },
+    { "RC4_MAX", 2000, true },
+    { "RC2_REVERSED", 1 }, // interlink has reversed rc2
+    { "SERVO1_MIN", 1000 },
+    { "SERVO1_MAX", 2000 },
+    { "SERVO2_MIN", 1000 },
+    { "SERVO2_MAX", 2000 },
+    { "SERVO3_MIN", 1000 },
+    { "SERVO3_MAX", 2000 },
+    { "SERVO4_MIN", 1000 },
+    { "SERVO4_MAX", 2000 },
+    { "SERVO5_MIN", 1000 },
+    { "SERVO5_MAX", 2000 },
+    { "SERVO6_MIN", 1000 },
+    { "SERVO6_MAX", 2000 },
+    { "SERVO6_MIN", 1000 },
+    { "SERVO6_MAX", 2000 },
+    { "INS_ACC2OFFS_X",    0.001 },
+    { "INS_ACC2OFFS_Y",    0.001 },
+    { "INS_ACC2OFFS_Z",    0.001 },
+    { "INS_ACC2SCAL_X",    1.001 },
+    { "INS_ACC2SCAL_Y",    1.001 },
+    { "INS_ACC2SCAL_Z",    1.001 },
+    { "INS_ACCOFFS_X",     0.001 },
+    { "INS_ACCOFFS_Y",     0.001 },
+    { "INS_ACCOFFS_Z",     0.001 },
+    { "INS_ACCSCAL_X",     1.001 },
+    { "INS_ACCSCAL_Y",     1.001 },
+    { "INS_ACCSCAL_Z",     1.001 },
+};
+
+
+FlightAxis::FlightAxis(const char *frame_str) :
+    Aircraft(frame_str)
 {
     use_time_sync = false;
+    num_motors = 2;
     rate_hz = 250 / target_speedup;
     heli_demix = strstr(frame_str, "helidemix") != nullptr;
     rev4_servos = strstr(frame_str, "rev4") != nullptr;
@@ -47,30 +94,54 @@ FlightAxis::FlightAxis(const char *home_str, const char *frame_str) :
     if (colon) {
         controller_ip = colon+1;
     }
-    // FlightAxis sensor data is not good enough for EKF. Use fake EKF by default
-    AP_Param::set_default_by_name("AHRS_EKF_TYPE", 10);
-    AP_Param::set_default_by_name("INS_GYR_CAL", 0);
-
-    if (strstr(frame_str, "pitch270")) {
-        // rotate tailsitter airframes for fixed wing view
-        rotation = ROTATION_PITCH_270;
-    }
-    if (strstr(frame_str, "pitch90")) {
-        // rotate tailsitter airframes for fixed wing view
-        rotation = ROTATION_PITCH_90;
+    for (uint8_t i=0; i<ARRAY_SIZE(sim_defaults); i++) {
+        AP_Param::set_default_by_name(sim_defaults[i].name, sim_defaults[i].value);
+        if (sim_defaults[i].save) {
+            enum ap_var_type ptype;
+            AP_Param *p = AP_Param::find(sim_defaults[i].name, &ptype);
+            if (!p->configured()) {
+                p->save();
+            }
+        }
     }
 
-    switch (rotation) {
-    case ROTATION_NONE:
-        break;
-    case ROTATION_PITCH_90:
-        att_rotation.from_euler(0, radians(90), 0);
-        break;
-    case ROTATION_PITCH_270:
-        att_rotation.from_euler(0, radians(270), 0);
-        break;
-    default:
-        AP_HAL::panic("Unsupported flightaxis rotation %u\n", (unsigned)rotation);
+    int ret = pthread_create(&thread, NULL, update_thread, this);
+    if (ret != 0) {
+        AP_HAL::panic("SIM_FlightAxis: failed to create thread");
+    }
+}
+    
+/*
+  update thread trampoline
+ */
+void *FlightAxis::update_thread(void *arg)
+{
+    FlightAxis *flightaxis = (FlightAxis *)arg;
+
+#if defined(__CYGWIN__) || defined(__CYGWIN64__)
+    //Cygwin doesn't support pthread_setname_np
+#elif defined(__APPLE__) && defined(__MACH__)
+    pthread_setname_np("ardupilot-flightaxis");
+#else
+    pthread_setname_np(pthread_self(), "ardupilot-flightaxis");
+#endif
+    
+    flightaxis->update_loop();
+    return nullptr;
+}
+
+/*
+  main update loop
+ */
+void FlightAxis::update_loop(void)
+{
+    while (true) {
+        struct sitl_input new_input;
+        {
+            WITH_SEMAPHORE(mutex);
+            new_input = last_input;
+        }
+        exchange_data(new_input);
     }
 }
 
@@ -211,8 +282,9 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
         controller_started = true;
     }
 
-    float scaled_servos[8];
-    for (uint8_t i=0; i<8; i++) {
+    // maximum number of servos to send is 12 with new FlightAxis
+    float scaled_servos[12];
+    for (uint8_t i=0; i<ARRAY_SIZE(scaled_servos); i++) {
         scaled_servos[i] = (input.servos[i] - 1000) / 1000.0f;
     }
 
@@ -242,8 +314,12 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
 <soap:Body>
 <ExchangeData>
 <pControlInputs>
-<m-selectedChannels>255</m-selectedChannels>
+<m-selectedChannels>4095</m-selectedChannels>
 <m-channelValues-0to1>
+<item>%.4f</item>
+<item>%.4f</item>
+<item>%.4f</item>
+<item>%.4f</item>
 <item>%.4f</item>
 <item>%.4f</item>
 <item>%.4f</item>
@@ -264,10 +340,24 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
                                scaled_servos[4],
                                scaled_servos[5],
                                scaled_servos[6],
-                               scaled_servos[7]);
+                               scaled_servos[7],
+                               scaled_servos[8],
+                               scaled_servos[9],
+                               scaled_servos[10],
+                               scaled_servos[11]);
 
     if (reply) {
+        WITH_SEMAPHORE(mutex);
+        double lastt_s = state.m_currentPhysicsTime_SEC;
         parse_reply(reply);
+        double dt = state.m_currentPhysicsTime_SEC - lastt_s;
+        if (dt > 0 && dt < 0.1) {
+            if (average_frame_time_s < 1.0e-6) {
+                average_frame_time_s = dt;
+            }
+            average_frame_time_s = average_frame_time_s * 0.98 + dt * 0.02;
+        }
+        socket_frame_counter++;
         free(reply);
     }
 }
@@ -278,8 +368,10 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
  */
 void FlightAxis::update(const struct sitl_input &input)
 {
-    exchange_data(input);
-
+    WITH_SEMAPHORE(mutex);
+    
+    last_input = input;
+    
     double dt_seconds = state.m_currentPhysicsTime_SEC - last_time_s;
     if (dt_seconds < 0) {
         // cope with restarting RealFlight while connected
@@ -288,18 +380,35 @@ void FlightAxis::update(const struct sitl_input &input)
         position_offset.zero();
         return;
     }
-    if (dt_seconds < 0.0001f) {
-        // we probably got a repeated frame
-        time_now_us += 1;
+    if (dt_seconds < 0.00001f) {
+        float delta_time = 0.001;
+        // don't go past the next expected frame
+        if (delta_time + extrapolated_s > average_frame_time_s) {
+            delta_time = average_frame_time_s - extrapolated_s;
+        }
+        if (delta_time <= 0) {
+            usleep(1000);
+            return;
+        }
+        time_now_us += delta_time * 1.0e6;
+        extrapolate_sensors(delta_time);
+        update_position();
+        update_mag_field_bf();
+        usleep(delta_time*1.0e6);
+        extrapolated_s += delta_time;
+        report_FPS();
         return;
     }
+
+    extrapolated_s = 0;
+    
     if (initial_time_s <= 0) {
         dt_seconds = 0.001f;
         initial_time_s = state.m_currentPhysicsTime_SEC - dt_seconds;
     }
 
     /*
-      the queternion convention in realflight seems to have Z negative
+      the quaternion convention in realflight seems to have Z negative
      */
     Quaternion quat(state.m_orientationQuaternion_W,
                     state.m_orientationQuaternion_Y,
@@ -322,16 +431,8 @@ void FlightAxis::update(const struct sitl_input &input)
                state.m_accelerationBodyAY_MPS2,
                state.m_accelerationBodyAZ_MPS2);
 
-    if (rotation != ROTATION_NONE) {
-        dcm.transpose();
-        dcm = att_rotation * dcm;
-        dcm.transpose();
-        gyro.rotate(rotation);
-        accel_body.rotate(rotation);
-    }
-
     // accel on the ground is nasty in realflight, and prevents helicopter disarm
-    if (state.m_isTouchingGround) {
+    if (!is_zero(state.m_isTouchingGround)) {
         Vector3f accel_ef = (velocity_ef - last_velocity_ef) / dt_seconds;
         accel_ef.z -= GRAVITY_MSS;
         accel_body = dcm.transposed() * accel_ef;
@@ -344,18 +445,40 @@ void FlightAxis::update(const struct sitl_input &input)
     accel_body.z = constrain_float(accel_body.z, -a_limit, a_limit);
 
     // offset based on first position to account for offset in RF world
-    if (position_offset.is_zero() || state.m_resetButtonHasBeenPressed) {
+    if (position_offset.is_zero() || !is_zero(state.m_resetButtonHasBeenPressed)) {
         position_offset = position;
     }
     position -= position_offset;
 
     airspeed = state.m_airspeed_MPS;
-    airspeed_pitot = state.m_airspeed_MPS;
+
+    /* for pitot airspeed we need the airspeed along the X axis. We
+       can't get that from m_airspeed_MPS, so instead we calculate it
+       from wind vector and ground speed
+     */
+    Vector3f m_wind_ef(-state.m_windY_MPS,-state.m_windX_MPS,-state.m_windZ_MPS);
+    Vector3f airspeed_3d_ef = m_wind_ef + velocity_ef;
+    Vector3f airspeed3d = dcm.mul_transpose(airspeed_3d_ef);
+
+    if (last_imu_rotation != ROTATION_NONE) {
+        airspeed3d = airspeed3d * ahrs_rotation_inv;
+    }
+    airspeed_pitot = MAX(airspeed3d.x,0);
+
+#if 0
+    printf("WIND: %.1f %.1f %.1f AS3D %.1f %.1f %.1f\n",
+           state.m_windX_MPS,
+           state.m_windY_MPS,
+           state.m_windZ_MPS,
+           airspeed3d.x,
+           airspeed3d.y,
+           airspeed3d.z);
+#endif
 
     battery_voltage = state.m_batteryVoltage_VOLTS;
     battery_current = state.m_batteryCurrentDraw_AMPS;
-    rpm1 = state.m_heliMainRotorRPM;
-    rpm2 = state.m_propRPM;
+    rpm[0] = state.m_heliMainRotorRPM;
+    rpm[1] = state.m_propRPM;
 
     /*
       the interlink interface supports 8 input channels
@@ -366,16 +489,16 @@ void FlightAxis::update(const struct sitl_input &input)
     }
 
     update_position();
-    time_now_us = (state.m_currentPhysicsTime_SEC - initial_time_s)*1.0e6;
-
-    if (frame_counter++ % 1000 == 0) {
-        if (last_frame_count_s != 0) {
-            printf("%.2f FPS\n",
-                   1000 / (state.m_currentPhysicsTime_SEC - last_frame_count_s));
-        } else {
-            printf("Initial position %f %f %f\n", position.x, position.y, position.z);
+    time_advance();
+    uint64_t new_time_us = (state.m_currentPhysicsTime_SEC - initial_time_s)*1.0e6;
+    if (new_time_us < time_now_us) {
+        uint64_t dt_us = time_now_us - new_time_us;
+        if (dt_us > 500000) {
+            // time going backwards
+            time_now_us = new_time_us;
         }
-        last_frame_count_s = state.m_currentPhysicsTime_SEC;
+    } else {
+        time_now_us = new_time_us;
     }
 
     last_time_s = state.m_currentPhysicsTime_SEC;
@@ -384,6 +507,25 @@ void FlightAxis::update(const struct sitl_input &input)
 
     // update magnetic field
     update_mag_field_bf();
+
+    report_FPS();
 }
 
-} // namespace SITL
+/*
+  report frame rates
+ */
+void FlightAxis::report_FPS(void)
+{
+    if (frame_counter++ % 1000 == 0) {
+        if (!is_zero(last_frame_count_s)) {
+            uint64_t frames = socket_frame_counter - last_socket_frame_counter;
+            last_socket_frame_counter = socket_frame_counter;
+            double dt = state.m_currentPhysicsTime_SEC - last_frame_count_s;
+            printf("%.2f/%.2f FPS avg=%.2f\n",
+                   frames / dt, 1000 / dt, 1.0/average_frame_time_s);
+        } else {
+            printf("Initial position %f %f %f\n", position.x, position.y, position.z);
+        }
+        last_frame_count_s = state.m_currentPhysicsTime_SEC;
+    }
+}

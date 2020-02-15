@@ -27,14 +27,14 @@ class AP_GPS_GSOF : public AP_GPS_Backend
 public:
     AP_GPS_GSOF(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
 
-    AP_GPS::GPS_Status highest_supported_status(void) {
+    AP_GPS::GPS_Status highest_supported_status(void) override {
         return AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
     }
 
     // Methods
-    bool read();
+    bool read() override;
 
-    void inject_data(const uint8_t *data, uint16_t len) override;
+    const char *name() const override { return "GSOF"; }
 
 private:
 
@@ -81,6 +81,4 @@ private:
     uint32_t gsofmsg_time = 0;
     uint8_t gsofmsgreq_index = 0;
     uint8_t gsofmsgreq[5] = {1,2,8,9,12};
-
-    uint32_t last_injected_data_ms = 0;
 };

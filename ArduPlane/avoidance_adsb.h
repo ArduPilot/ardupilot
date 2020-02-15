@@ -7,14 +7,15 @@
 // AP_Avoidance, this class allows Plane to override base
 // functionality - for example, not doing anything while landed.
 class AP_Avoidance_Plane : public AP_Avoidance {
-
 public:
 
-    AP_Avoidance_Plane(AP_AHRS &ahrs, class AP_ADSB &adsb) :
-        AP_Avoidance(ahrs, adsb) { }
+    using AP_Avoidance::AP_Avoidance;
+
+    /* Do not allow copies */
+    AP_Avoidance_Plane(const AP_Avoidance_Plane &other) = delete;
+    AP_Avoidance_Plane &operator=(const AP_Avoidance_Plane&) = delete;
 
 protected:
-
     // override avoidance handler
     MAV_COLLISION_ACTION handle_avoidance(const AP_Avoidance::Obstacle *obstacle, MAV_COLLISION_ACTION requested_action) override;
 
@@ -31,5 +32,5 @@ protected:
     bool handle_avoidance_horizontal(const AP_Avoidance::Obstacle *obstacle, bool allow_mode_change);
 
     // control mode before avoidance began
-    FlightMode prev_control_mode = RTL;
+    enum Mode::Number prev_control_mode_number = Mode::Number::RTL;
 };

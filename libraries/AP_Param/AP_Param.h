@@ -25,38 +25,60 @@
 #include <cmath>
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/utility/RingBuffer.h>
 #include <StorageManager/StorageManager.h>
 
 #include "float.h"
 
 #define AP_MAX_NAME_SIZE 16
 
+// optionally enable debug code for dumping keys
+#define AP_PARAM_KEY_DUMP 0
+
+/*
+  maximum size of embedded parameter file
+ */
+#ifndef AP_PARAM_MAX_EMBEDDED_PARAM
+#if HAL_MINIMIZE_FEATURES
+# define AP_PARAM_MAX_EMBEDDED_PARAM 1024
+#else
+# define AP_PARAM_MAX_EMBEDDED_PARAM 8192
+#endif
+#endif
+
 /*
   flags for variables in var_info and group tables
  */
 
 // a nested offset is for subgroups that are not subclasses
-#define AP_PARAM_FLAG_NESTED_OFFSET 1
+#define AP_PARAM_FLAG_NESTED_OFFSET (1<<0)
 
 // a pointer variable is for dynamically allocated objects
-#define AP_PARAM_FLAG_POINTER       2
+#define AP_PARAM_FLAG_POINTER       (1<<1)
 
 // an enable variable allows a whole subtree of variables to be made
 // invisible
-#define AP_PARAM_FLAG_ENABLE        4
+#define AP_PARAM_FLAG_ENABLE        (1<<2)
 
 // don't shift index 0 to index 63. Use this when you know there will be
 // no conflict with the parent
-#define AP_PARAM_NO_SHIFT           8
+#define AP_PARAM_NO_SHIFT           (1<<3)
 
 // the var_info is a pointer, allowing for dynamic definition of the var_info tree
-#define AP_PARAM_FLAG_INFO_POINTER  16
+#define AP_PARAM_FLAG_INFO_POINTER  (1<<4)
+
+// this parameter is visible to GCS via mavlink but should never be
+// set by anything other than the ArduPilot code responsible for its
+// use.
+#define AP_PARAM_FLAG_INTERNAL_USE_ONLY (1<<5)
+
+// keep all flags before the FRAME tags
 
 // vehicle and frame type flags, used to hide parameters when not
 // relevent to a vehicle type. Use AP_Param::set_frame_type_flags() to
 // enable parameters flagged in this way. frame type flags are stored
 // in flags field, shifted by AP_PARAM_FRAME_TYPE_SHIFT.
-#define AP_PARAM_FRAME_TYPE_SHIFT   5
+#define AP_PARAM_FRAME_TYPE_SHIFT   6
 
 // supported frame types for parameters
 #define AP_PARAM_FRAME_COPTER       (1<<0)
@@ -92,6 +114,9 @@
 // declare a subgroup entry in a group var_info. This is for having another arbitrary object as a member of the parameter list of
 // an object
 #define AP_SUBGROUPINFO(element, name, idx, thisclazz, elclazz) { AP_PARAM_GROUP, idx, name, AP_VAROFFSET(thisclazz, element), { group_info : elclazz::var_info }, AP_PARAM_FLAG_NESTED_OFFSET }
+
+// declare a second parameter table for the same object
+#define AP_SUBGROUPEXTENSION(name, idx, clazz, vinfo) { AP_PARAM_GROUP, idx, name, 0, { group_info : clazz::vinfo }, AP_PARAM_FLAG_NESTED_OFFSET }
 
 // declare a pointer subgroup entry in a group var_info
 #define AP_SUBGROUPPTR(element, name, idx, thisclazz, elclazz) { AP_PARAM_GROUP, idx, name, AP_VAROFFSET(thisclazz, element), { group_info : elclazz::var_info }, AP_PARAM_FLAG_POINTER }
@@ -154,6 +179,12 @@ public:
         const char *new_name;
     };
 
+    // param default table element
+    struct defaults_table_struct {
+        const char *name;   // parameter name
+        float value;        // parameter value
+    };
+
     // called once at startup to setup the _var_info[] table. This
     // will also check the EEPROM header and re-initialise it if the
     // wrong version is found
@@ -178,14 +209,14 @@ public:
         uint32_t group_element : 18;
     } ParamToken;
 
-    
+
     // nesting structure for recursive call states
     struct GroupNesting {
         static const uint8_t numlevels = 2;
         uint8_t level;
         const struct GroupInfo *group_ret[numlevels];
     };
-    
+
     // return true if AP_Param has been initialised via setup()
     static bool initialised(void);
 
@@ -196,7 +227,7 @@ public:
     // level gets the next 6 bits, and the 3rd level gets the last 6
     // bits. This limits groups to having at most 64 elements.
     static uint32_t group_id(const struct GroupInfo *grpinfo, uint32_t base, uint8_t i, uint8_t shift);
-    
+
     /// Copy the variable's name, prefixed by any containing group name, to a
     /// buffer.
     ///
@@ -213,7 +244,7 @@ public:
                         const struct GroupInfo *ginfo,
                         const struct GroupNesting &group_nesting,
                         uint8_t idx, char *buffer, size_t bufferSize, bool force_scalar=false) const;
-    
+
     /// Copy the variable's name, prefixed by any containing group name, to a
     /// buffer.
     ///
@@ -225,10 +256,11 @@ public:
     /// If the variable has no name, it cannot be found by this interface.
     ///
     /// @param  name            The full name of the variable to be found.
+    /// @param  flags           If non-null will be filled with parameter flags
     /// @return                 A pointer to the variable, or nullptr if
     ///                         it does not exist.
     ///
-    static AP_Param * find(const char *name, enum ap_var_type *ptype);
+    static AP_Param * find(const char *name, enum ap_var_type *ptype, uint16_t *flags = nullptr);
 
     /// set a default value by name
     ///
@@ -236,7 +268,17 @@ public:
     /// @param  value           The default value
     /// @return                 true if the variable is found
     static bool set_default_by_name(const char *name, float value);
+<<<<<<< HEAD
     
+=======
+
+    /// set parameter defaults from a defaults_table_struct
+    ///
+    /// @param table            pointer to array of defaults_table_struct structures
+    /// @param count            number of elements in table array
+    static void set_defaults_from_table(const struct defaults_table_struct *table, uint8_t count);
+
+>>>>>>> 14ad9a58bde667b94cfc1aae2e896cebef07ffdf
     /// set a value by name
     ///
     /// @param  name            The full name of the variable to be found.
@@ -260,7 +302,6 @@ public:
     ///
     static AP_Param * find_by_index(uint16_t idx, enum ap_var_type *ptype, ParamToken *token);
 
-    
     /// Find a variable by pointer
     ///
     ///
@@ -269,7 +310,7 @@ public:
     static bool find_key_by_pointer_group(const void *ptr, uint16_t vindex, const struct GroupInfo *group_info,
                                           ptrdiff_t offset, uint16_t &key);
     static bool find_key_by_pointer(const void *ptr, uint16_t &key);
-    
+
     /// Find a object in the top level var_info table
     ///
     /// If the variable has no name, it cannot be found by this interface.
@@ -281,14 +322,24 @@ public:
     /// Notify GCS of current parameter value
     ///
     void notify() const;
-    
-    /// Save the current value of the variable to EEPROM.
+
+    /// Save the current value of the variable to storage, synchronous API
     ///
     /// @param  force_save     If true then force save even if default
     ///
     /// @return                True if the variable was saved successfully.
     ///
-    bool save(bool force_save=false);
+    void save_sync(bool force_save=false);
+
+    /// flush all pending parameter saves
+    /// used on reboot
+    static void flush(void);
+
+    /// Save the current value of the variable to storage, async interface
+    ///
+    /// @param  force_save     If true then force save even if default
+    ///
+    void save(bool force_save=false);
 
     /// Load the variable from EEPROM.
     ///
@@ -304,14 +355,20 @@ public:
     ///
     /// @return                False if any variable failed to load
     ///
-    static bool load_all(bool check_defaults_file=true);
+    static bool load_all();
+
+    // returns storage space used:
+    static uint16_t storage_used() { return sentinal_offset; }
+
+    // returns storage space :
+    static uint16_t storage_size() { return _storage.size(); }
 
     /// reoad the hal.util defaults file. Called after pointer parameters have been allocated
     ///
-    static void reload_defaults_file(bool panic_on_error=true);
-    
+    static void reload_defaults_file(bool last_pass);
+
     static void load_object_from_eeprom(const void *object_pointer, const struct GroupInfo *group_info);
-    
+
     // set a AP_Param variable to a specified value
     static void         set_value(enum ap_var_type type, void *ptr, float def_value);
 
@@ -336,10 +393,17 @@ public:
 
     // find an old parameter and return it.
     static bool find_old_parameter(const struct ConversionInfo *info, AP_Param *value);
-    
+
     // convert old vehicle parameters to new object parameters
     static void         convert_old_parameters(const struct ConversionInfo *conversion_table, uint8_t table_size, uint8_t flags=0);
 
+    /*
+      convert width of a parameter, allowing update to wider scalar
+      values without changing the parameter indexes. This will return
+      true if the parameter was converted from an old parameter value
+    */
+    bool convert_parameter_width(ap_var_type old_ptype);
+    
     // convert a single parameter with scaling
     enum {
         CONVERT_FLAG_REVERSE=1, // handle _REV -> _REVERSED conversion
@@ -350,25 +414,10 @@ public:
     // move old class variables for a class that was sub-classed to one that isn't
     static void         convert_parent_class(uint8_t param_key, void *object_pointer,
                                              const struct AP_Param::GroupInfo *group_info);
-    
+
     /// Erase all variables in EEPROM.
     ///
     static void         erase_all(void);
-
-    /// print the value of all variables
-    static void         show_all(AP_HAL::BetterStream *port, bool showKeyValues=false);
-
-    /// print the value of one variable
-    static void         show(const AP_Param *param, 
-                             const char *name,
-                             enum ap_var_type ptype, 
-                             AP_HAL::BetterStream *port);
-
-    /// print the value of one variable
-    static void         show(const AP_Param *param, 
-                             const ParamToken &token,
-                             enum ap_var_type ptype, 
-                             AP_HAL::BetterStream *port);
 
     /// Returns the first variable
     ///
@@ -392,14 +441,17 @@ public:
     static bool             check_var_info(void);
 
     // return true if the parameter is configured in the defaults file
-    bool configured_in_defaults_file(void) const;
+    bool configured_in_defaults_file(bool &read_only) const;
 
     // return true if the parameter is configured in EEPROM/FRAM
     bool configured_in_storage(void) const;
 
     // return true if the parameter is configured
-    bool configured(void) const { return configured_in_defaults_file() || configured_in_storage(); }
+    bool configured(void) const;
 
+    // return true if the parameter is read-only
+    bool is_read_only(void) const;
+    
     // count of parameters in tree
     static uint16_t count_parameters(void);
 
@@ -407,12 +459,30 @@ public:
 
     // set frame type flags. Used to unhide frame specific parameters
     static void set_frame_type_flags(uint16_t flags_to_set) {
+        _parameter_count = 0;
         _frame_type_flags |= flags_to_set;
     }
 
     // check if a given frame type should be included
     static bool check_frame_type(uint16_t flags);
-    
+
+#if AP_PARAM_KEY_DUMP
+    /// print the value of all variables
+    static void         show_all(AP_HAL::BetterStream *port, bool showKeyValues=false);
+
+    /// print the value of one variable
+    static void         show(const AP_Param *param, 
+                             const char *name,
+                             enum ap_var_type ptype, 
+                             AP_HAL::BetterStream *port);
+
+    /// print the value of one variable
+    static void         show(const AP_Param *param, 
+                             const ParamToken &token,
+                             enum ap_var_type ptype, 
+                             AP_HAL::BetterStream *port);
+#endif // AP_PARAM_KEY_DUMP
+
 private:
     /// EEPROM header
     ///
@@ -424,6 +494,8 @@ private:
         uint8_t revision;
         uint8_t spare;
     };
+
+    static uint16_t sentinal_offset;
 
 /* This header is prepended to a variable stored in EEPROM.
  *  The meaning is as follows:
@@ -455,6 +527,21 @@ private:
 
     static uint16_t             _frame_type_flags;
 
+    /*
+      structure for built-in defaults file that can be modified using apj_tool.py
+     */
+#if AP_PARAM_MAX_EMBEDDED_PARAM > 0
+    struct PACKED param_defaults_struct {
+        char magic_str[8];
+        uint8_t param_magic[8];
+        uint16_t max_length;
+        volatile uint16_t length;
+        volatile char data[AP_PARAM_MAX_EMBEDDED_PARAM];
+    };
+    static const param_defaults_struct param_defaults_data;
+#endif
+
+
     static bool                 check_group_info(const struct GroupInfo *group_info, uint16_t *total_size, 
                                                  uint8_t max_bits, uint8_t prefix_length);
     static bool                 duplicate_key(uint16_t vindex, uint16_t key);
@@ -467,7 +554,7 @@ private:
 
     /// get group_info pointer based on flags
     static const struct GroupInfo *get_group_info(const struct Info &ginfo);
-        
+
     const struct Info *         find_var_info_group(
                                     const struct GroupInfo *    group_info,
                                     uint16_t                    vindex,
@@ -533,19 +620,26 @@ private:
     // find a default value given a pointer to a default value in flash
     static float get_default_value(const AP_Param *object_ptr, const float *def_value_ptr);
 
+    static bool parse_param_line(char *line, char **vname, float &value, bool &read_only);
+
 #if HAL_OS_POSIX_IO == 1
     /*
       load a parameter defaults file. This happens as part of load_all()
      */
-    static bool parse_param_line(char *line, char **vname, float &value);
-    static bool count_defaults_in_file(const char *filename, uint16_t &num_defaults, bool panic_on_error);
-    static bool read_param_defaults_file(const char *filename);
-    static bool load_defaults_file(const char *filename, bool panic_on_error);
+    static bool count_defaults_in_file(const char *filename, uint16_t &num_defaults);
+    static bool read_param_defaults_file(const char *filename, bool last_pass);
+    static bool load_defaults_file(const char *filename, bool last_pass);
 #endif
-    
+
+    /*
+      load defaults from embedded parameters
+     */
+    static bool count_embedded_param_defaults(uint16_t &count);
+    static void load_embedded_param_defaults(bool last_pass);
+
     // send a parameter to all GCS instances
     void send_parameter(const char *name, enum ap_var_type param_header_type, uint8_t idx) const;
-    
+
     static StorageAccess        _storage;
     static uint16_t             _num_vars;
     static uint16_t             _parameter_count;
@@ -557,9 +651,11 @@ private:
     struct param_override {
         const AP_Param *object_ptr;
         float value;
+        bool read_only; // param is marked @READONLY
     };
     static struct param_override *param_overrides;
     static uint16_t num_param_overrides;
+    static uint16_t num_read_only;
 
     // values filled into the EEPROM header
     static const uint8_t        k_EEPROM_magic0      = 0x50;
@@ -567,6 +663,18 @@ private:
     static const uint8_t        k_EEPROM_revision    = 6; ///< current format revision
 
     static bool _hide_disabled_groups;
+
+    // support for background saving of parameters. We pack it to reduce memory for the
+    // queue
+    struct PACKED param_save {
+        AP_Param *param;
+        bool force_save;
+    };
+    static ObjectBuffer_TS<struct param_save> save_queue;
+    static bool registered_save_handler;
+
+    // background function for saving parameters
+    void save_io_handler(void);
 };
 
 /// Template class for scalar variables.
@@ -619,10 +727,10 @@ public:
 
     /// Combined set and save
     ///
-    bool set_and_save(const T &v) {
+    void set_and_save(const T &v) {
         bool force = fabsf((float)(_value - v)) < FLT_EPSILON;
         set(v);
-        return save(force);
+        save(force);
     }
 
     /// Combined set and save, but only does the save if the value if
@@ -630,12 +738,12 @@ public:
     /// scan(). This should only be used where we have not set() the
     /// value separately, as otherwise the value in EEPROM won't be
     /// updated correctly.
-    bool set_and_save_ifchanged(const T &v) {
+    void set_and_save_ifchanged(const T &v) {
         if (v == _value) {
-            return true;
+            return;
         }
         set(v);
-        return save(true);
+        save(true);
     }
 
     /// Conversion to T returns a reference to the value.
@@ -724,10 +832,10 @@ public:
 
     /// Combined set and save
     ///
-    bool set_and_save(const T &v) {
+    void set_and_save(const T &v) {
         bool force = (_value != v);
         set(v);
-        return save(force);
+        save(force);
     }
 
     /// Conversion to T returns a reference to the value.
@@ -803,7 +911,6 @@ public:
 protected:
     T _value[N];
 };
-
 
 
 /// Convenience macro for defining instances of the AP_ParamT template.

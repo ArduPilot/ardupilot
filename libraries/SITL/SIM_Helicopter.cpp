@@ -22,8 +22,8 @@
 
 namespace SITL {
 
-Helicopter::Helicopter(const char *home_str, const char *frame_str) :
-    Aircraft(home_str, frame_str)
+Helicopter::Helicopter(const char *frame_str) :
+    Aircraft(frame_str)
 {
     mass = 2.13f;
 
@@ -152,7 +152,7 @@ void Helicopter::update(const struct sitl_input &input)
     Vector3f air_resistance = -velocity_air_ef * (GRAVITY_MSS/terminal_velocity);
 
     // simulate rotor speed
-    rpm1 = thrust * 1300;
+    rpm[0] = thrust * 1300;
 
     // scale thrust to newtons
     thrust *= thrust_scale;
@@ -164,6 +164,7 @@ void Helicopter::update(const struct sitl_input &input)
     
     // update lat/lon/altitude
     update_position();
+    time_advance();
 
     // update magnetic field
     update_mag_field_bf();

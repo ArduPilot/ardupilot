@@ -1,0 +1,116 @@
+# Program generated flight.
+
+aircraftId	 = ls8
+terrainId	 = D:/Silent Wings/data/Scenery/Norway
+
+pilot_name = Unknown Pilot
+
+speed		 = 27.77777778
+altitude	 = 800
+altitudeRef	 = QFE
+yaw		 = 145
+latitude	 = 60.88056966
+longitude	 = 11.66959703
+
+date = 01072005
+time = 140000
+
+competition_mode    = true
+regatta_start       = false
+start_gate_altitude = 1000
+start_gate_altitude_ref = AGL
+start_gate_open_time = -1
+
+airport {
+   name	 = Starmoen
+   lat	 = 60.8791
+   lon	 = 11.6737
+   elev	 = 0
+   runway	 = 15
+}
+
+multiplayer = false
+mp_port     = 1209
+
+flight {
+   aircraft_id = ls8
+   type        = AI
+   mode        = FOLLOW
+   pilot_name  = AI Pilot 1
+   glider_type = LS-8
+   comp_id     = AA
+   registration = LN-GAA
+   start_time  = 0
+   utc_offset  = -1742410382
+   reg_color = [ 0 0 0 ]
+   comp_color = [ 0 0 0 ]
+}
+
+flight {
+   aircraft_id = ls8
+   type        = AI
+   mode        = FOLLOW
+   pilot_name  = AI Pilot 2
+   glider_type = LS-8
+   comp_id     = AB
+   registration = LN-GAB
+   start_time  = 0
+   utc_offset  = -1519176082
+   reg_color = [ 0 0 0 ]
+   comp_color = [ 0 0 0 ]
+}
+
+flight {
+   aircraft_id = ls8
+   type        = AI
+   mode        = FOLLOW
+   pilot_name  = AI Pilot 3
+   glider_type = LS-8
+   comp_id     = AC
+   registration = LN-GAC
+   start_time  = 0
+   utc_offset  = 972621140
+   reg_color = [ 0 0 0 ]
+   comp_color = [ 0 0 0 ]
+}
+
+weather {
+   simple {
+      wind_str = 60
+      wind_dir = 360
+   }
+   max_num_thermals = 2012
+   max_num_sink     = 503
+   thermal_strength = 4
+   thermal_radius   = 227
+   thermal_ceiling  = 2500
+   cumulus_prob     = 0.4
+   cumulus_base     = 2000
+   visibility       = 50000
+   turbulence_strength = 0.85
+   wind_layer {
+      altitude  = 0
+      direction = 360
+      strength  = 3
+   }
+
+   wind_layer {
+      altitude  = 150
+      direction = 360
+      strength  = 6
+   }
+
+   wind_layer {
+      altitude  = 300
+      direction = 360
+      strength  = 7.8
+   }
+
+   wind_layer {
+      altitude  = 1500
+      direction = 45
+      strength  = 9
+   }
+
+}
+

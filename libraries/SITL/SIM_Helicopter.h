@@ -27,14 +27,14 @@ namespace SITL {
  */
 class Helicopter : public Aircraft {
 public:
-    Helicopter(const char *home_str, const char *frame_str);
+    Helicopter(const char *frame_str);
 
     /* update model by one time step */
-    void update(const struct sitl_input &input);
+    void update(const struct sitl_input &input) override;
 
     /* static object creator */
-    static Aircraft *create(const char *home_str, const char *frame_str) {
-        return new Helicopter(home_str, frame_str);
+    static Aircraft *create(const char *frame_str) {
+        return new Helicopter(frame_str);
     }
 
 private:

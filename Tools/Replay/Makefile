@@ -2,8 +2,8 @@
 
 all:
 	@cd ../../ && modules/waf/waf-light configure --board linux --debug
-	@cd ../../ && modules/waf/waf-light tools
-	@cp ../../build/linux-debug/tools/Replay Replay.elf
+	@cd ../../ && modules/waf/waf-light --target tools/Replay
+	@cp ../../build/linux/tools/Replay Replay.elf
 	@echo Built Replay.elf
 
 clean:

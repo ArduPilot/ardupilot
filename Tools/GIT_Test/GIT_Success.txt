@@ -1,4 +1,4 @@
-﻿This file is for new developers to try their first git commit on!
+This file is for new developers to try their first git commit on!
 
 Follow the instructions in the APM wiki to get your name added to the
 list below
@@ -14,7 +14,7 @@ Robert Lefebvre, unconfuzzled his clone.
 Olivier check test
 Phil Rowse was here :)
 Nils Hogberg (Vizual54) testing
-Linus Penzlien 
+Linus Penzlien
 Hazy
 Benoit GRUSON
 Dario Lindo Andres
@@ -42,7 +42,7 @@ Yuta Yoshinuma
 Yasuyuki Suzuki
 Koji Hosaka
 Mitsuhiro Komiya
-Eduardo Cáceres (eduherminio)
+Eduardo Caceres (eduherminio)
 steven test
 Fnoop hello :)
 Yuichiro Shibata
@@ -69,7 +69,7 @@ Isamu Ishiguro
 Naoya Sato
 Brian Ankeny
 Opemipo Ogunkola saying Hi from Nigeria!
-Nishchay Agrawal 
+Nishchay Agrawal
 Akash Nair
 Borys Tymchenko (spsancti)
 Mahtab Sandhu(ma8sa)
@@ -80,3 +80,54 @@ Adhita Selvaraj
 Guilherme Sousa
 Thomas Hehn (tomsal)
 Anastasia Solari (solarblue)
+Quan Nguyen
+Kotaro Iochi
+Masaru Kitamura
+Hiroyuki Yano
+Nobuyuki Arai
+Ikumi Motoshige
+Hiroshi Iwamoto
+Cafoo
+Kieth Mine (cubicrootk)
+ahmed elshweikh
+Marc Francis Say
+Clarisse Crespo
+Reginald Steven Rivera
+Dimitri Vasilkov
+Daisuke "hine" IMAI
+Tomoshi Wagata(wagatan
+Seiichi Takayama
+Yuya Fujiwara @ 17:17 May-19
+Yuuji Awata
+Harutsugu Sato
+ShingoKANEKO
+Tom Pittenger
+Pedro Villegas
+Christian Llanes (llanesc)
+Ameer Hussain
+sal-mo
+Koji Ohse(Homework)
+Giacomo Ornati
+Shusaku Yamaura
+Takuya Ohgi
+Eiichi Matsushita(anzukintoki)
+Ryosuke Takatsuka
+toshikazu kojima
+Kenji Izutsu
+John Wilbraham
+Hideaki Matsuo(Homework)
+Ansh Kumar Sharma
+Arjun Chauhan
+Jimmy Jacobson was successful in following the directions!
+Daksh Bhatia
+Biswajit Ghosh
+Kyle "Shelley" McILroy
+Sajjad Rahnama (Iran, Rasht 1398/06/07)
+kenhuyang
+Bhavya
+Nick Restivo - Hello from Georgia Tech! (10/8/2019)
+Randy Mackay from Xiamen
+Andrew Michelmore in an attempt to fly
+prajesh_pixelburn
+Gautham P Krishnan
+Vishal Raj from india(beginner)

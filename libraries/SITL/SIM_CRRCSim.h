@@ -29,14 +29,14 @@ namespace SITL {
  */
 class CRRCSim : public Aircraft {
 public:
-    CRRCSim(const char *home_str, const char *frame_str);
+    CRRCSim(const char *frame_str);
 
     /* update model by one time step */
-    void update(const struct sitl_input &input);
+    void update(const struct sitl_input &input) override;
 
     /* static object creator */
-    static Aircraft *create(const char *home_str, const char *frame_str) {
-        return new CRRCSim(home_str, frame_str);
+    static Aircraft *create(const char *frame_str) {
+        return new CRRCSim(frame_str);
     }
 
 private:

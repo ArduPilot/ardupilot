@@ -1,0 +1,60 @@
+# hw definition file for processing by chibios_hwdef.py
+# for VRUBRAINv51 hardware
+
+
+# MCU class and specific type
+MCU STM32F4xx STM32F407xx
+
+# board ID for firmware load
+APJ_BOARD_ID 1351
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+STM32_PLLM_VALUE 8
+
+# flash size
+FLASH_SIZE_KB 1024
+
+# board voltage
+STM32_VDD 330U
+
+# USB setup
+USB_VENDOR 0x27AC
+USB_PRODUCT 0x1351
+USB_STRING_MANUFACTURER "Laser Navigation"
+USB_STRING_SERIAL  "%SERIAL%"
+
+# don't allow bootloader to use more than 16k
+FLASH_USE_MAX_KB 16
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 64
+
+# ChibiOS system timer
+STM32_ST_USE_TIMER 5
+
+
+# order of UARTs (and USB)
+UART_ORDER OTG1
+
+PA9 VBUS INPUT
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+PD14 LED_BOOTLOADER OUTPUT
+PC5  LED_ACTIVITY OUTPUT
+
+define HAL_LED_ON 0
+
+define HAL_CHIBIOS_ARCH_UBRAINV51 1
+
+define HAL_STORAGE_SIZE 15360
+define HAL_USE_EMPTY_STORAGE 1
+

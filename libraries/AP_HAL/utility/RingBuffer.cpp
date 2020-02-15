@@ -5,7 +5,7 @@
 
 ByteBuffer::ByteBuffer(uint32_t _size)
 {
-    buf = (uint8_t*)malloc(_size);
+    buf = (uint8_t*)calloc(1, _size);
     size = buf ? _size : 0;
 }
 
@@ -22,7 +22,7 @@ bool ByteBuffer::set_size(uint32_t _size)
     head = tail = 0;
     if (_size != size) {
         free(buf);
-        buf = (uint8_t*)malloc(_size);
+        buf = (uint8_t*)calloc(1, _size);
         if (!buf) {
             size = 0;
             return false;
@@ -134,6 +134,13 @@ uint8_t ByteBuffer::peekiovec(ByteBuffer::IoVec iovec[2], uint32_t len)
     }
 
     auto b = readptr(n);
+    if (n == 0) {
+        iovec[0].data = buf;
+        iovec[0].len = len;
+        iovec[1].data = nullptr;
+        iovec[1].len = 0;
+        return 1;
+    }
     if (n > len) {
         n = len;
     }

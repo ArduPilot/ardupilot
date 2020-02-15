@@ -15,10 +15,7 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_AHRS/AP_AHRS.h>
-#include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Notify/AP_Notify.h>
-#include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_HAL/utility/RingBuffer.h>
 
@@ -45,6 +42,7 @@ for FrSky D protocol (D-receivers)
 #define DATA_ID_GPS_LONG_EW         0x22
 #define DATA_ID_GPS_LAT_NS          0x23
 #define DATA_ID_CURRENT             0x28
+#define DATA_ID_VARIO               0x30
 #define DATA_ID_VFAS                0x39
 
 #define START_STOP_D                0x5E
@@ -66,17 +64,20 @@ for FrSky SPort and SPort Passthrough (OpenTX) protocols (X-receivers)
 
 #define START_STOP_SPORT            0x7E
 #define BYTESTUFF_SPORT             0x7D
-
+#define SPORT_DATA_FRAME            0x10
 /* 
 for FrSky SPort Passthrough
 */
 // data bits preparation
+// for parameter data
+#define PARAM_ID_OFFSET             24
+#define PARAM_VALUE_LIMIT           0xFFFFFF
 // for gps status data
 #define GPS_SATS_LIMIT              0xF
 #define GPS_STATUS_LIMIT            0x3
 #define GPS_STATUS_OFFSET           4
 #define GPS_HDOP_OFFSET             6
-#define GPS_VDOP_OFFSET             14
+#define GPS_ADVSTATUS_OFFSET        14
 #define GPS_ALTMSL_OFFSET           22
 // for battery data
 #define BATT_VOLTAGE_LIMIT          0x1FF
@@ -85,13 +86,15 @@ for FrSky SPort Passthrough
 #define BATT_TOTALMAH_OFFSET        17
 // for autopilot status data
 #define AP_CONTROL_MODE_LIMIT       0x1F
-#define AP_SSIMPLE_FLAGS            0x6
-#define AP_SSIMPLE_OFFSET           4
-#define AP_LANDCOMPLETE_FLAG        0x80
-#define AP_INITIALIZED_FLAG         0x2000
+#define AP_SIMPLE_OFFSET            5
+#define AP_SSIMPLE_OFFSET           6
+#define AP_FLYING_OFFSET            7
 #define AP_ARMED_OFFSET             8
 #define AP_BATT_FS_OFFSET           9
 #define AP_EKF_FS_OFFSET            10
+#define AP_IMU_TEMP_MIN             19.0f
+#define AP_IMU_TEMP_MAX             82.0f
+#define AP_IMU_TEMP_OFFSET          26
 // for home position related data
 #define HOME_ALT_OFFSET             12
 #define HOME_BEARING_LIMIT          0x7F
@@ -105,67 +108,57 @@ for FrSky SPort Passthrough
 #define ATTIANDRNG_PITCH_LIMIT      0x3FF
 #define ATTIANDRNG_PITCH_OFFSET     11
 #define ATTIANDRNG_RNGFND_OFFSET    21
+// for fair scheduler
+#define TIME_SLOT_MAX               11
 
-
-
-class AP_Frsky_Telem
-{
+class AP_Frsky_Telem {
 public:
-    //constructor
-    AP_Frsky_Telem(AP_AHRS &ahrs, const AP_BattMonitor &battery, const RangeFinder &rng);
+    AP_Frsky_Telem(bool external_data=false);
+
+    ~AP_Frsky_Telem();
+
+    /* Do not allow copies */
+    AP_Frsky_Telem(const AP_Frsky_Telem &other) = delete;
+    AP_Frsky_Telem &operator=(const AP_Frsky_Telem&) = delete;
 
     // init - perform required initialisation
-    void init(const AP_SerialManager &serial_manager, const char *firmware_str, const uint8_t mav_type, const AP_Float *fs_batt_voltage = nullptr, const AP_Float *fs_batt_mah = nullptr, const uint32_t *ap_valuep = nullptr);
+    bool init();
 
     // add statustext message to FrSky lib message queue
     void queue_message(MAV_SEVERITY severity, const char *text);
 
-    // update flight control mode. The control mode is vehicle type specific
-    void update_control_mode(uint8_t mode) { _ap.control_mode = mode; }
-
-    // update whether we're flying (used for Plane)
-    // set land_complete flag to 0 if is_flying
-    // set land_complete flag to 1 if not flying
-    void set_is_flying(bool is_flying) { (is_flying) ? (_ap.value &= ~AP_LANDCOMPLETE_FLAG) : (_ap.value |= AP_LANDCOMPLETE_FLAG); }
- 
     // update error mask of sensors and subsystems. The mask uses the
     // MAV_SYS_STATUS_* values from mavlink. If a bit is set then it
     // indicates that the sensor or subsystem is present but not
     // functioning correctly
-    void update_sensor_status_flags(uint32_t error_mask) { _ap.sensor_status_flags = error_mask; }
+    uint32_t sensor_status_flags() const;
 
-    static ObjectArray<mavlink_statustext_t> _statustext_queue;
-    
+    static AP_Frsky_Telem *get_singleton(void) {
+        return singleton;
+    }
+
+    // get next telemetry data for external consumers of SPort data
+    static bool get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &data);
+
 private:
-    AP_AHRS &_ahrs;
-    const AP_BattMonitor &_battery;
-    const RangeFinder &_rng;
     AP_HAL::UARTDriver *_port;                  // UART used to send data to FrSky receiver
     AP_SerialManager::SerialProtocol _protocol; // protocol used - detected using SerialManager's SERIAL#_PROTOCOL parameter
-    bool _initialised_uart;
     uint16_t _crc;
-
-    struct
-    {
-        uint8_t mav_type; // frame type (see MAV_TYPE in Mavlink definition file common.h)
-        const AP_Float *fs_batt_voltage; // failsafe battery voltage in volts
-        const AP_Float *fs_batt_mah; // failsafe reserve capacity in mAh
-    } _params;
-    
-    struct
-    {
-        uint8_t control_mode;
-        uint32_t value;
-        const uint32_t *valuep;
-        uint32_t sensor_status_flags;
-    } _ap;
 
     uint32_t check_sensor_status_timer;
     uint32_t check_ekf_status_timer;
     uint8_t _paramID;
+
+    struct {
+        HAL_Semaphore sem;
+        ObjectBuffer<mavlink_statustext_t> queue{FRSKY_TELEM_PAYLOAD_STATUS_CAPACITY};
+        mavlink_statustext_t next;
+        bool available;
+    } _statustext;
     
     struct
     {
+        int32_t vario_vspd;
         char lat_ns, lon_ew;
         uint16_t latdddmm;
         uint16_t latmmmm;
@@ -177,22 +170,39 @@ private:
         uint16_t alt_nav_cm;
         int16_t speed_in_meter;
         uint16_t speed_in_centimeter;
-    } _gps;
+        uint16_t yaw;
+    } _SPort_data;
+
+    struct PACKED
+    {
+        bool send_latitude; // sizeof(bool) = 4 ?
+        uint32_t gps_lng_sample;
+        uint32_t last_poll_timer;
+        uint32_t avg_packet_counter;
+        uint32_t packet_timer[TIME_SLOT_MAX];
+        uint32_t packet_weight[TIME_SLOT_MAX];
+        uint8_t avg_packet_rate;
+        uint8_t new_byte;
+    } _passthrough;
+    
 
     struct
     {
-        uint8_t new_byte;
-        bool send_attiandrng;
-        bool send_latitude;
-        uint32_t params_timer;
-        uint32_t ap_status_timer;
-        uint32_t batt_timer;
-        uint32_t gps_status_timer;
-        uint32_t home_timer;
-        uint32_t velandyaw_timer;
-        uint32_t gps_latlng_timer;
-    } _passthrough;
-    
+        const uint32_t packet_min_period[TIME_SLOT_MAX] = {
+            28,     //0x5000 text,      25Hz
+            38,     //0x5006 attitude   20Hz
+            280,    //0x800  GPS        3Hz
+            280,    //0x800  GPS        3Hz
+            250,    //0x5005 vel&yaw    4Hz
+            500,    //0x5001 AP status  2Hz
+            500,    //0x5002 GPS status 2Hz
+            500,    //0x5004 home       2Hz
+            500,    //0x5008 batt 2     2Hz
+            500,    //0x5003 batt 1     2Hz
+            1000   //0x5007 parameters 1Hz
+        };
+    } _sport_config;
+
     struct
     {
         bool sport_status;
@@ -200,6 +210,7 @@ private:
         uint8_t gps_call;
         uint8_t vario_call;
         uint8_t various_call;
+        uint8_t next_sensor_id;
     } _SPort;
     
     struct
@@ -215,6 +226,10 @@ private:
         uint8_t char_index; // index of which character to get in the message
     } _msg_chunk;
     
+    float get_vspeed_ms(void);
+    // passthrough WFQ scheduler
+    void update_avg_packet_rate();
+    void passthrough_wfq_adaptive_scheduler();
     // main transmission function when protocol is FrSky SPort Passthrough (OpenTX)
     void send_SPort_Passthrough(void);
     // main transmission function when protocol is FrSky SPort
@@ -222,14 +237,13 @@ private:
     // main transmission function when protocol is FrSky D
     void send_D(void);
     // tick - main call to send updates to transmitter (called by scheduler at 1kHz)
-    void tick(void);
-
+    void loop(void);
     // methods related to the nuts-and-bolts of sending data
     void calc_crc(uint8_t byte);
     void send_crc(void);
     void send_byte(uint8_t value);
-    void send_uint32(uint16_t id, uint32_t data);
     void send_uint16(uint16_t id, uint16_t data);
+    void send_uint32(uint8_t frame, uint16_t id, uint32_t data);
 
     // methods to convert flight controller data to FrSky SPort Passthrough (OpenTX) format
     bool get_next_msg_chunk(void);
@@ -238,7 +252,7 @@ private:
     uint32_t calc_param(void);
     uint32_t calc_gps_latlng(bool *send_latitude);
     uint32_t calc_gps_status(void);
-    uint32_t calc_batt(void);
+    uint32_t calc_batt(uint8_t instance);
     uint32_t calc_ap_status(void);
     uint32_t calc_home(void);
     uint32_t calc_velandyaw(void);
@@ -249,4 +263,26 @@ private:
     void calc_nav_alt(void);
     float format_gps(float dec);
     void calc_gps_position(void);
+
+    // setup ready for passthrough operation
+    void setup_passthrough(void);
+
+    // get next telemetry data for external consumers of SPort data (internal function)
+    bool _get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &data);
+    
+    static AP_Frsky_Telem *singleton;
+
+    // use_external_data is set when this library will
+    // be providing data to another transport, such as FPort
+    bool use_external_data;
+    struct {
+        uint8_t frame;
+        uint16_t appid;
+        uint32_t data;
+        bool pending;
+    } external_data;
+};
+
+namespace AP {
+    AP_Frsky_Telem *frsky_telem();
 };

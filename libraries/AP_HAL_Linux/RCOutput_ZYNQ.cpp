@@ -31,7 +31,7 @@ using namespace Linux;
 
 static void catch_sigbus(int sig)
 {
-    AP_HAL::panic("RCOutput.cpp:SIGBUS error gernerated\n");
+    AP_HAL::panic("RCOutput.cpp:SIGBUS error generated\n");
 }
 void RCOutput_ZYNQ::init()
 {
@@ -119,6 +119,9 @@ void RCOutput_ZYNQ::cork(void)
 
 void RCOutput_ZYNQ::push(void)
 {
+    if (!corked) {
+        return;
+    }
     corked = false;
     for (uint8_t i=0; i<MAX_ZYNQ_PWMS; i++) {
         if (pending_mask & (1U << i)) {

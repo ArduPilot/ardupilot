@@ -1,36 +1,44 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
-
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
 
 #include "AP_NavEKF3.h"
 #include "AP_NavEKF3_core.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_GPS/AP_GPS.h>
 
 extern const AP_HAL::HAL& hal;
 
 
 /* Monitor GPS data to see if quality is good enough to initialise the EKF
-   Monitor magnetometer innovations to to see if the heading is good enough to use GPS
+   Monitor magnetometer innovations to see if the heading is good enough to use GPS
    Return true if all criteria pass for 10 seconds
 
    We also record the failure reason so that prearm_failure_reason()
    can give a good report to the user on why arming is failing
 */
-bool NavEKF3_core::calcGpsGoodToAlign(void)
+void NavEKF3_core::calcGpsGoodToAlign(void)
 {
     if (inFlight && assume_zero_sideslip() && !use_compass()) {
         // this is a special case where a plane has launched without magnetometer
         // is now in the air and needs to align yaw to the GPS and start navigating as soon as possible
-        return true;
+        gpsGoodToAlign = true;
+        return;
     }
 
     // User defined multiplier to be applied to check thresholds
     float checkScaler = 0.01f*(float)frontend->_gpsCheckScaler;
 
+    if (gpsGoodToAlign) {
+        /*
+          if we have already passed GPS alignment checks then raise
+          the check threshold so that we have some hysterisis and
+          don't continuously change from able to arm to not able to
+          arm
+         */
+        checkScaler *= 1.3f;
+    }
+    
     // If we have good magnetometer consistency and bad innovations for longer than 5 seconds then we reset heading and field states
     // This enables us to handle large changes to the external magnetic field environment that occur before arming
     if ((magTestRatio.x <= 1.0f && magTestRatio.y <= 1.0f && yawTestRatio <= 1.0f) || !consistentMagData) {
@@ -45,17 +53,19 @@ bool NavEKF3_core::calcGpsGoodToAlign(void)
 
     // Check for significant change in GPS position if disarmed which indicates bad GPS
     // This check can only be used when the vehicle is stationary
-    const struct Location &gpsloc = _ahrs->get_gps().location(); // Current location
+    const AP_GPS &gps = AP::gps();
+
+    const struct Location &gpsloc = gps.location(); // Current location
     const float posFiltTimeConst = 10.0f; // time constant used to decay position drift
-    // calculate time lapsesd since last update and limit to prevent numerical errors
+    // calculate time lapsed since last update and limit to prevent numerical errors
     float deltaTime = constrain_float(float(imuDataDelayed.time_ms - lastPreAlignGpsCheckTime_ms)*0.001f,0.01f,posFiltTimeConst);
     lastPreAlignGpsCheckTime_ms = imuDataDelayed.time_ms;
     // Sum distance moved
-    gpsDriftNE += location_diff(gpsloc_prev, gpsloc).length();
+    gpsDriftNE += gpsloc_prev.get_distance(gpsloc);
     gpsloc_prev = gpsloc;
     // Decay distance moved exponentially to zero
     gpsDriftNE *= (1.0f - deltaTime/posFiltTimeConst);
-    // Clamp the fiter state to prevent excessive persistence of large transients
+    // Clamp the filter state to prevent excessive persistence of large transients
     gpsDriftNE = MIN(gpsDriftNE,10.0f);
     // Fail if more than 3 metres drift after filtering whilst on-ground
     // This corresponds to a maximum acceptable average drift rate of 0.3 m/s or single glitch event of 3m
@@ -73,20 +83,20 @@ bool NavEKF3_core::calcGpsGoodToAlign(void)
 
     // Check that the vertical GPS vertical velocity is reasonable after noise filtering
     bool gpsVertVelFail;
-    if (_ahrs->get_gps().have_vertical_velocity() && onGround) {
+    if (gps.have_vertical_velocity() && onGround) {
         // check that the average vertical GPS velocity is close to zero
         gpsVertVelFilt = 0.1f * gpsDataNew.vel.z + 0.9f * gpsVertVelFilt;
         gpsVertVelFilt = constrain_float(gpsVertVelFilt,-10.0f,10.0f);
         gpsVertVelFail = (fabsf(gpsVertVelFilt) > 0.3f*checkScaler) && (frontend->_gpsCheck & MASK_GPS_VERT_SPD);
-    } else if ((frontend->_fusionModeGPS == 0) && !_ahrs->get_gps().have_vertical_velocity()) {
+    } else if ((frontend->_fusionModeGPS == 0) && !gps.have_vertical_velocity()) {
         // If the EKF settings require vertical GPS velocity and the receiver is not outputting it, then fail
         gpsVertVelFail = true;
         // if we have a 3D fix with no vertical velocity and
         // EK3_GPS_TYPE=0 then change it to 1. It means the GPS is not
         // capable of giving a vertical velocity
-        if (_ahrs->get_gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
+        if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
             frontend->_fusionModeGPS.set(1);
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "EK3: Changed EK3_GPS_TYPE to 1");
+            gcs().send_text(MAV_SEVERITY_WARNING, "EK3: Changed EK3_GPS_TYPE to 1");
         }
     } else {
         gpsVertVelFail = false;
@@ -126,7 +136,7 @@ bool NavEKF3_core::calcGpsGoodToAlign(void)
     // fail if horiziontal position accuracy not sufficient
     float hAcc = 0.0f;
     bool hAccFail;
-    if (_ahrs->get_gps().horizontal_accuracy(hAcc)) {
+    if (gps.horizontal_accuracy(hAcc)) {
         hAccFail = (hAcc > 5.0f*checkScaler)  && (frontend->_gpsCheck & MASK_GPS_POS_ERR);
     } else {
         hAccFail =  false;
@@ -146,7 +156,7 @@ bool NavEKF3_core::calcGpsGoodToAlign(void)
     // Check for vertical GPS accuracy
     float vAcc = 0.0f;
     bool vAccFail = false;
-    if (_ahrs->get_gps().vertical_accuracy(vAcc)) {
+    if (gps.vertical_accuracy(vAcc)) {
         vAccFail = (vAcc > 7.5f * checkScaler)  && (frontend->_gpsCheck & MASK_GPS_POS_ERR);
     }
     // Report check result as a text string and bitmask
@@ -166,31 +176,31 @@ bool NavEKF3_core::calcGpsGoodToAlign(void)
     if (gpsSpdAccFail) {
         hal.util->snprintf(prearm_fail_string,
                            sizeof(prearm_fail_string),
-                           "GPS speed error %.1f (needs %.1f)", (double)gpsSpdAccuracy, (double)(1.0f*checkScaler));
+                           "GPS speed error %.1f (needs < %.1f)", (double)gpsSpdAccuracy, (double)(1.0f*checkScaler));
         gpsCheckStatus.bad_sAcc = true;
     } else {
         gpsCheckStatus.bad_sAcc = false;
     }
 
     // fail if satellite geometry is poor
-    bool hdopFail = (_ahrs->get_gps().get_hdop() > 250)  && (frontend->_gpsCheck & MASK_GPS_HDOP);
+    bool hdopFail = (gps.get_hdop() > 250)  && (frontend->_gpsCheck & MASK_GPS_HDOP);
 
     // Report check result as a text string and bitmask
     if (hdopFail) {
         hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string),
-                           "GPS HDOP %.1f (needs 2.5)", (double)(0.01f * _ahrs->get_gps().get_hdop()));
+                           "GPS HDOP %.1f (needs 2.5)", (double)(0.01f * gps.get_hdop()));
         gpsCheckStatus.bad_hdop = true;
     } else {
         gpsCheckStatus.bad_hdop = false;
     }
 
     // fail if not enough sats
-    bool numSatsFail = (_ahrs->get_gps().num_sats() < 6) && (frontend->_gpsCheck & MASK_GPS_NSATS);
+    bool numSatsFail = (gps.num_sats() < 6) && (frontend->_gpsCheck & MASK_GPS_NSATS);
 
     // Report check result as a text string and bitmask
     if (numSatsFail) {
         hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string),
-                           "GPS numsats %u (needs 6)", _ahrs->get_gps().num_sats());
+                           "GPS numsats %u (needs 6)", gps.num_sats());
         gpsCheckStatus.bad_sats = true;
     } else {
         gpsCheckStatus.bad_sats = false;
@@ -223,16 +233,20 @@ bool NavEKF3_core::calcGpsGoodToAlign(void)
         lastGpsVelFail_ms = imuSampleTime_ms;
     }
 
-    // record time of fail
+    // record time of pass or fail
     if (gpsSpdAccFail || numSatsFail || hdopFail || hAccFail || vAccFail || yawFail || gpsDriftFail || gpsVertVelFail || gpsHorizVelFail) {
         lastGpsVelFail_ms = imuSampleTime_ms;
+    } else {
+        lastGpsVelPass_ms = imuSampleTime_ms;
     }
 
-    // continuous period without fail required to return a healthy status
-    if (imuSampleTime_ms - lastGpsVelFail_ms > 10000) {
-        return true;
+    // continuous period of 10s without fail required to set healthy
+    // continuous period of 5s without pass required to set unhealthy
+    if (!gpsGoodToAlign && imuSampleTime_ms - lastGpsVelFail_ms > 10000) {
+        gpsGoodToAlign = true;
+    } else if (gpsGoodToAlign && imuSampleTime_ms - lastGpsVelPass_ms > 5000) {
+        gpsGoodToAlign = false;
     }
-    return false;
 }
 
 // update inflight calculaton that determines if GPS data is good enough for reliable navigation
@@ -252,7 +266,7 @@ void NavEKF3_core::calcGpsGoodForFlight(void)
 
     // get the receivers reported speed accuracy
     float gpsSpdAccRaw;
-    if (!_ahrs->get_gps().speed_accuracy(gpsSpdAccRaw)) {
+    if (!AP::gps().speed_accuracy(gpsSpdAccRaw)) {
         gpsSpdAccRaw = 0.0f;
     }
 
@@ -314,7 +328,7 @@ void NavEKF3_core::detectFlight()
         // trigger at 8 m/s airspeed
         if (_ahrs->airspeed_sensor_enabled()) {
             const AP_Airspeed *airspeed = _ahrs->get_airspeed();
-            if (airspeed->get_airspeed() * airspeed->get_EAS2TAS() > 10.0f) {
+            if (airspeed->get_airspeed() * AP::ahrs().get_EAS2TAS() > 10.0f) {
                 highAirSpd = true;
             }
         }
@@ -358,14 +372,23 @@ void NavEKF3_core::detectFlight()
             onGround = true;
         }
 
-        // If height has increased since exiting on-ground, then we definitely are flying
-        if (!onGround && ((stateStruct.position.z - posDownAtTakeoff) < -1.5f)) {
-            inFlight = true;
-        }
+        if (!onGround) {
+            // If height has increased since exiting on-ground, then we definitely are flying
+            if ((stateStruct.position.z - posDownAtTakeoff) < -1.5f) {
+                inFlight = true;
+            }
 
-        // If rangefinder has increased since exiting on-ground, then we definitely are flying
-        if (!onGround && ((rangeDataNew.rng - rngAtStartOfFlight) > 0.5f)) {
-            inFlight = true;
+            // If rangefinder has increased since exiting on-ground, then we definitely are flying
+            if ((rangeDataNew.rng - rngAtStartOfFlight) > 0.5f) {
+                inFlight = true;
+            }
+
+            // If more than 5 seconds since likely_flying was set
+            // true, then set inFlight true
+            const AP_Vehicle *vehicle = AP::vehicle();
+            if (vehicle->get_time_flying_ms() > 5000) {
+                inFlight = true;
+            }
         }
 
     }
@@ -443,11 +466,11 @@ void NavEKF3_core::detectOptFlowTakeoff(void)
 {
     if (!onGround && !takeOffDetected && (imuSampleTime_ms - timeAtArming_ms) > 1000) {
         // we are no longer confidently on the ground so check the range finder and gyro for signs of takeoff
-        const AP_InertialSensor &ins = _ahrs->get_ins();
+        const AP_InertialSensor &ins = AP::ins();
         Vector3f angRateVec;
         Vector3f gyroBias;
         getGyroBias(gyroBias);
-        bool dual_ins = ins.get_gyro_health(0) && ins.get_gyro_health(1);
+        bool dual_ins = ins.use_gyro(0) && ins.use_gyro(1);
         if (dual_ins) {
             angRateVec = (ins.get_gyro(0) + ins.get_gyro(1)) * 0.5f - gyroBias;
         } else {
@@ -461,4 +484,3 @@ void NavEKF3_core::detectOptFlowTakeoff(void)
     }
 }
 
-#endif // HAL_CPU_CLASS

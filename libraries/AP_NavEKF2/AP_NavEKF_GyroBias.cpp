@@ -1,6 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
 
 #include "AP_NavEKF2.h"
 #include "AP_NavEKF2_core.h"
@@ -33,5 +32,3 @@ float NavEKF2_core::InitialGyroBiasUncertainty(void) const
     return 2.5f;
 }
 
-
-#endif // HAL_CPU_CLASS

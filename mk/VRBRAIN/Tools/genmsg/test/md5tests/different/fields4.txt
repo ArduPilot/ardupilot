@@ -1,3 +1,0 @@
-int32 a1
-int32 b
-int32 c

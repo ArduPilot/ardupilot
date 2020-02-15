@@ -4,8 +4,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/I2CDevice.h>
 
-#include "AP_ADC.h"
-
 struct adc_report_s
 {
     uint8_t id;
@@ -31,7 +29,6 @@ private:
 
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
 
-    uint32_t            _last_update_timestamp;
     uint16_t            _gain;
     int                 _channel_to_read;
     adc_report_s        *_samples;

@@ -17,11 +17,13 @@
 #include "Display.h"
 #include "Display_SH1106_I2C.h"
 #include "Display_SSD1306_I2C.h"
+#include "Display_SITL.h"
 
 #include "AP_Notify.h"
 
 #include <stdio.h>
 #include <AP_GPS/AP_GPS.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
 
 #include <utility>
 
@@ -314,8 +316,11 @@ static const uint8_t _font[] = {
 #endif
 };
 
-// probe first 3 busses:
-static const uint8_t I2C_BUS_PROBE_MASK = 0x7;
+#ifdef AP_NOTIFY_DISPLAY_USE_EMOJI
+static_assert(ARRAY_SIZE(_font) == 1280, "_font is correct size");
+#else
+static_assert(ARRAY_SIZE(_font) == 475, "_font is correct size");
+#endif
 
 bool Display::init(void)
 {
@@ -324,14 +329,8 @@ bool Display::init(void)
         return true;
     }
 
-    _mstartpos = 0; // ticker shift position
-    _movedelay = 4; // ticker delay before shifting after new message displayed
-
     // initialise driver
-    for(uint8_t i=0; i<8 && _driver == nullptr; i++) {
-        if (! (I2C_BUS_PROBE_MASK & (1<<i))) {
-            continue;
-        }
+    FOREACH_I2C(i) {
         switch (pNotify->_display_type) {
         case DISPLAY_SSD1306: {
             _driver = Display_SSD1306_I2C::probe(std::move(hal.i2c_mgr->get_device(i, NOTIFY_DISPLAY_I2C_ADDR)));
@@ -341,17 +340,26 @@ bool Display::init(void)
             _driver = Display_SH1106_I2C::probe(std::move(hal.i2c_mgr->get_device(i, NOTIFY_DISPLAY_I2C_ADDR)));
             break;
         }
+        case DISPLAY_SITL: {
+#ifdef WITH_SITL_OSD
+            _driver = Display_SITL::probe(); // never fails
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            ::fprintf(stderr, "SITL Display ineffective without --osd\n");
+#endif
+            break;
+        }
         case DISPLAY_OFF:
         default:
+            break;
+        }
+        if (_driver != nullptr) {
             break;
         }
     }
 
     if (_driver == nullptr) {
-        _healthy = false;
         return false;
     }
-    _healthy = true;
 
     // update all on display
     update_all();
@@ -362,11 +370,6 @@ bool Display::init(void)
 
 void Display::update()
 {
-    // return immediately if not enabled
-    if (!_healthy) {
-        return;
-    }
-
     // max update frequency 2Hz
     static uint8_t timer = 0;
     if (timer++ < 25) {
@@ -414,12 +417,14 @@ void Display::draw_text(uint16_t x, uint16_t y, const char* c)
 #ifndef AP_NOTIFY_DISPLAY_USE_EMOJI
         if (*c >= ' ' && *c <= '~') {
             draw_char(x, y, *c - ' ');
-            x += 7;
+        } else {
+            // convert oob characters to spaces
+            draw_char(x, y, 0);
         }
 #else
         draw_char(x, y, *c);
-        x += 7;
 #endif
+        x += 7;
         c++;
     }
 }
@@ -496,7 +501,7 @@ void Display::update_gps(uint8_t r)
             fixname = gpsfixname[0];
             break;
     }
-    snprintf(msg, DISPLAY_MESSAGE_SIZE, "GPS:%-5s Sats:%2u", fixname, AP_Notify::flags.gps_num_sats) ;
+    snprintf(msg, DISPLAY_MESSAGE_SIZE, "GPS:%-5s Sats:%2u", fixname, (unsigned)AP_Notify::flags.gps_num_sats) ;
     draw_text(COLUMN(0), ROW(r), msg);
 }
 
@@ -519,7 +524,7 @@ void Display::update_ekf(uint8_t r)
 void Display::update_battery(uint8_t r)
 {
     char msg [DISPLAY_MESSAGE_SIZE];
-    snprintf(msg, DISPLAY_MESSAGE_SIZE, "BAT1: %4.2fV", (double)AP_Notify::flags.battery_voltage) ;
+    snprintf(msg, DISPLAY_MESSAGE_SIZE, "BAT1: %4.2fV", (double)AP::battery().voltage()) ;
     draw_text(COLUMN(0), ROW(r), msg);
  }
 
@@ -536,15 +541,15 @@ void Display::update_text_empty(uint8_t r)
 {
     char msg [DISPLAY_MESSAGE_SIZE] = {};
     memset(msg, ' ', sizeof(msg)-1);
-    _movedelay = 4;
+    _movedelay = 0;
     _mstartpos = 0;
     draw_text(COLUMN(0), ROW(r), msg);
 }
 
 void Display::update_text(uint8_t r)
 {
-    char msg [DISPLAY_MESSAGE_SIZE] = {0};
-    char txt [NOTIFY_TEXT_BUFFER_SIZE] = {0};
+    char msg [DISPLAY_MESSAGE_SIZE] = {};
+    char txt [NOTIFY_TEXT_BUFFER_SIZE] = {};
 
     const bool text_is_valid = AP_HAL::millis() - pNotify->_send_text_updated_millis < _send_text_valid_millis;
     if (!text_is_valid) {
@@ -552,24 +557,26 @@ void Display::update_text(uint8_t r)
         return;
     }
 
-    snprintf(txt, NOTIFY_TEXT_BUFFER_SIZE, "%s", pNotify->get_text());
-    _mstartpos++;
-    for (uint8_t i = 0; i < (sizeof(msg) - 1); i++) {
-        if (txt[i + _mstartpos - 1] != 0) {
-            msg[i] = txt[i + _mstartpos - 1];
-        } else {
-            msg[i] = ' ';
-            _movedelay = 4;
-            _mstartpos = 0;
-        }
-    }
-
-    if (_mstartpos > sizeof(txt) - sizeof(msg)) {
-        _mstartpos = 0;
-    }
     if (_movedelay > 0) {
         _movedelay--;
-        _mstartpos = 0;
+        return;
     }
+
+    snprintf(txt, sizeof(txt), "%s", pNotify->get_text());
+
+    memset(msg, ' ', sizeof(msg)-1); // leave null termination
+    const uint8_t len = strlen(&txt[_mstartpos]);
+    const uint8_t to_copy = (len < sizeof(msg)-1) ? len : (sizeof(msg)-1);
+    memcpy(msg, &txt[_mstartpos], to_copy);
+
+    if (len <= sizeof(msg)-1) {
+        // end-of-message reached; pause scrolling a while
+        _movedelay = 4;
+        // reset startpos so we start scrolling from the start again:
+        _mstartpos = 0;
+    } else {
+        _mstartpos++;
+    }
+
     draw_text(COLUMN(0), ROW(0), msg);
  }

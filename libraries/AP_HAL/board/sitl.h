@@ -2,6 +2,7 @@
 
 #define HAL_BOARD_NAME "SITL"
 #define HAL_CPU_CLASS HAL_CPU_CLASS_1000
+#define HAL_MEM_CLASS HAL_MEM_CLASS_1000
 #define HAL_OS_POSIX_IO 1
 #define HAL_OS_SOCKETS 1
 #define HAL_STORAGE_SIZE            16384
@@ -15,8 +16,18 @@
 #define HAL_GPIO_A_LED_PIN        61
 #define HAL_GPIO_B_LED_PIN        48
 #define HAL_GPIO_C_LED_PIN        117
-#define HAL_GPIO_LED_ON           LOW
-#define HAL_GPIO_LED_OFF          HIGH
+#define HAL_GPIO_LED_ON           0
+#define HAL_GPIO_LED_OFF          1
 
 #define HAL_HAVE_BOARD_VOLTAGE 1
-#define HAL_HAVE_SAFETY_SWITCH 1
+#define HAL_HAVE_SERVO_VOLTAGE 1
+#define HAL_HAVE_SAFETY_SWITCH 0
+
+// allow for static semaphores
+#include <AP_HAL_SITL/Semaphores.h>
+#define HAL_Semaphore HALSITL::Semaphore
+
+#ifndef HAL_BOARD_STORAGE_DIRECTORY
+#define HAL_BOARD_STORAGE_DIRECTORY "."
+#endif
+

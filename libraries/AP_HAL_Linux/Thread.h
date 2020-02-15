@@ -45,6 +45,8 @@ public:
 
     bool set_stack_size(size_t stack_size);
 
+    void set_auto_free(bool auto_free) { _auto_free = auto_free; }
+
     virtual bool stop() { return false; }
 
     bool join();
@@ -64,6 +66,7 @@ protected:
     task_t _task;
     bool _started = false;
     bool _should_exit = false;
+    bool _auto_free = false;
     pthread_t _ctx = 0;
 
     struct stack_debug {

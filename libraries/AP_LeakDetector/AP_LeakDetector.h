@@ -16,6 +16,10 @@ class AP_LeakDetector {
 public:
     AP_LeakDetector();
 
+    /* Do not allow copies */
+    AP_LeakDetector(const AP_LeakDetector &other) = delete;
+    AP_LeakDetector &operator=(const AP_LeakDetector&) = delete;
+
     enum LeakDetector_Type {
         LEAKDETECTOR_TYPE_NONE = 0,
         LEAKDETECTOR_TYPE_DIGITAL = 1,

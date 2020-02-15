@@ -18,9 +18,11 @@
 //  Code by Michael Oborne
 //
 
+#define ALLOW_DOUBLE_MATH_FUNCTIONS
+
 #include "AP_GPS.h"
 #include "AP_GPS_GSOF.h"
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -342,13 +344,3 @@ AP_GPS_GSOF::process_message(void)
     return false;
 }
 
-void
-AP_GPS_GSOF::inject_data(const uint8_t *data, uint16_t len)
-{
-    if (port->txspace() > len) {
-        last_injected_data_ms = AP_HAL::millis();
-        port->write(data, len);
-    } else {
-        Debug("GSOF: Not enough TXSPACE");
-    }
-}

@@ -1,2 +1,0 @@
-include ../mk/apm.mk
-

@@ -19,12 +19,13 @@ void Sub::manual_run()
 {
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed()) {
-        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
+        motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
+        attitude_control.set_throttle_out(0,true,g.throttle_filt);
+        attitude_control.relax_attitude_controllers();
         return;
     }
 
-    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     motors.set_roll(channel_roll->norm_input());
     motors.set_pitch(channel_pitch->norm_input());
@@ -32,7 +33,10 @@ void Sub::manual_run()
     motors.set_throttle(channel_throttle->norm_input());
     motors.set_forward(channel_forward->norm_input());
     motors.set_lateral(channel_lateral->norm_input());
+<<<<<<< HEAD
 
     float dt =  ((float)(micros() - last_control_mode_update_us)) / 1e6;
     motors.limit_demand_slew_rate(g.manual_slew_rate, dt);
+=======
+>>>>>>> 14ad9a58bde667b94cfc1aae2e896cebef07ffdf
 }

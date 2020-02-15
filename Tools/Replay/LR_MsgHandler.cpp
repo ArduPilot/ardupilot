@@ -2,12 +2,14 @@
 #include "LogReader.h"
 #include "Replay.h"
 
+#include <cinttypes>
+
 extern const AP_HAL::HAL& hal;
 
 LR_MsgHandler::LR_MsgHandler(struct log_Format &_f,
-                             DataFlash_Class &_dataflash,
+                             AP_Logger &_logger,
                              uint64_t &_last_timestamp_usec) :
-    dataflash(_dataflash), last_timestamp_usec(_last_timestamp_usec),
+    logger(_logger), last_timestamp_usec(_last_timestamp_usec),
     MsgHandler(_f) {
 }
 
@@ -105,7 +107,7 @@ void LR_MsgHandler_BARO::process_message(uint8_t *msg)
     if (!field_value(msg, "SMS", last_update_ms)) {
         last_update_ms = 0;
     }
-    baro.setHIL(0,
+    AP::baro().setHIL(0,
 		require_field_float(msg, "Press"),
 		require_field_int16_t(msg, "Temp") * 0.01f,
 		require_field_float(msg, "Alt"),
@@ -114,17 +116,14 @@ void LR_MsgHandler_BARO::process_message(uint8_t *msg)
 }
 
 
-#define DATA_ARMED                          10
-#define DATA_DISARMED                       11
-
 void LR_MsgHandler_Event::process_message(uint8_t *msg)
 {
     uint8_t id = require_field_uint8_t(msg, "Id");
-    if (id == DATA_ARMED) {
+    if ((LogEvent)id == LogEvent::ARMED) {
         hal.util->set_soft_armed(true);
         printf("Armed at %lu\n", 
                (unsigned long)AP_HAL::millis());
-    } else if (id == DATA_DISARMED) {
+    } else if ((LogEvent)id == LogEvent::DISARMED) {
         hal.util->set_soft_armed(false);
         printf("Disarmed at %lu\n", 
                (unsigned long)AP_HAL::millis());
@@ -379,43 +378,20 @@ void LR_MsgHandler_NTUN_Copter::process_message(uint8_t *msg)
 }
 
 
-bool LR_MsgHandler::set_parameter(const char *name, float value)
+bool LR_MsgHandler_PARM::set_parameter(const char *name, const float value)
 {
     const char *ignore_parms[] = { "GPS_TYPE", "AHRS_EKF_TYPE", "EK2_ENABLE", "EK3_ENABLE"
                                    "COMPASS_ORIENT", "COMPASS_ORIENT2",
-                                   "COMPASS_ORIENT3", "LOG_FILE_BUFSIZE"};
+                                   "COMPASS_ORIENT3", "LOG_FILE_BUFSIZE",
+                                   "LOG_DISARMED"};
     for (uint8_t i=0; i < ARRAY_SIZE(ignore_parms); i++) {
         if (strncmp(name, ignore_parms[i], AP_MAX_NAME_SIZE) == 0) {
             ::printf("Ignoring set of %s to %f\n", name, value);
             return true;
         }
     }
-    enum ap_var_type var_type;
-    AP_Param *vp = AP_Param::find(name, &var_type);
-    if (vp == NULL) {
-        return false;
-    }
-    float old_value = 0;
-    if (var_type == AP_PARAM_FLOAT) {
-        old_value = ((AP_Float *)vp)->cast_to_float();
-        ((AP_Float *)vp)->set(value);
-    } else if (var_type == AP_PARAM_INT32) {
-        old_value = ((AP_Int32 *)vp)->cast_to_float();
-        ((AP_Int32 *)vp)->set(value);
-    } else if (var_type == AP_PARAM_INT16) {
-        old_value = ((AP_Int16 *)vp)->cast_to_float();
-        ((AP_Int16 *)vp)->set(value);
-    } else if (var_type == AP_PARAM_INT8) {
-        old_value = ((AP_Int8 *)vp)->cast_to_float();
-        ((AP_Int8 *)vp)->set(value);
-    } else {
-        // we don't support mavlink set on this parameter
-        return false;
-    }
-    if (fabsf(old_value - value) > 1.0e-12) {
-        ::printf("Changed %s to %.8f from %.8f\n", name, value, old_value);
-    }
-    return true;
+
+    return _set_parameter_callback(name, value);
 }
 
 void LR_MsgHandler_PARM::process_message(uint8_t *msg)
@@ -429,8 +405,8 @@ void LR_MsgHandler_PARM::process_message(uint8_t *msg)
     } else {
         // older logs can have a lot of FMT and PARM messages up the
         // front which don't have timestamps.  Since in Replay we run
-        // DataFlash's IO only when stop_clock is called, we can
-        // overflow DataFlash's ringbuffer.  This should force us to
+        // AP_Logger's IO only when stop_clock is called, we can
+        // overflow AP_Logger's ringbuffer.  This should force us to
         // do IO:
         hal.scheduler->stop_clock(last_timestamp_usec);
     }
@@ -450,7 +426,7 @@ void LR_MsgHandler_PM::process_message(uint8_t *msg)
     uint32_t new_logdrop;
     if (field_value(msg, "LogDrop", new_logdrop) &&
         new_logdrop != 0) {
-        printf("PM.LogDrop: %u dropped at timestamp %lu\n", new_logdrop, last_timestamp_usec);
+        printf("PM.LogDrop: %u dropped at timestamp %" PRIu64 "\n", new_logdrop, last_timestamp_usec);
     }
 }
 

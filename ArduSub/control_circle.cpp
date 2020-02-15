@@ -14,11 +14,10 @@ bool Sub::circle_init()
     circle_pilot_yaw_override = false;
 
     // initialize speeds and accelerations
-    pos_control.set_speed_xy(wp_nav.get_speed_xy());
-    pos_control.set_accel_xy(wp_nav.get_wp_acceleration());
-    pos_control.set_jerk_xy_to_default();
-    pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
-    pos_control.set_accel_z(g.pilot_accel_z);
+    pos_control.set_max_speed_xy(wp_nav.get_default_speed_xy());
+    pos_control.set_max_accel_xy(wp_nav.get_wp_acceleration());
+    pos_control.set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
+    pos_control.set_max_accel_z(g.pilot_accel_z);
 
     // initialise circle controller including setting the circle center based on vehicle speed
     circle_nav.init();
@@ -34,18 +33,18 @@ void Sub::circle_run()
     float target_climb_rate = 0;
 
     // update parameters, to allow changing at runtime
-    pos_control.set_speed_xy(wp_nav.get_speed_xy());
-    pos_control.set_accel_xy(wp_nav.get_wp_acceleration());
-    pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
-    pos_control.set_accel_z(g.pilot_accel_z);
+    pos_control.set_max_speed_xy(wp_nav.get_default_speed_xy());
+    pos_control.set_max_accel_xy(wp_nav.get_wp_acceleration());
+    pos_control.set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
+    pos_control.set_max_accel_z(g.pilot_accel_z);
 
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed()) {
         // To-Do: add some initialisation of position controllers
-        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
-        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-
+        attitude_control.set_throttle_out(0,true,g.throttle_filt);
+        attitude_control.relax_attitude_controllers();
         pos_control.set_alt_target_to_current_alt();
         return;
     }
@@ -61,7 +60,7 @@ void Sub::circle_run()
     target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
 
     // set motors to full range
-    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // run circle controller
     circle_nav.update();
@@ -78,16 +77,11 @@ void Sub::circle_run()
 
     // call attitude controller
     if (circle_pilot_yaw_override) {
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_yaw_rate, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_yaw_rate);
     } else {
-        attitude_control.input_euler_angle_roll_pitch_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), circle_nav.get_yaw(), true, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), circle_nav.get_yaw(), true);
     }
 
-    // adjust climb rate using rangefinder
-    if (rangefinder_alt_ok()) {
-        // if rangefinder is ok, use surface tracking
-        target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control.get_alt_target(), G_Dt);
-    }
     // update altitude target and call position controller
     pos_control.set_alt_target_from_climb_rate(target_climb_rate, G_Dt, false);
     pos_control.update_z_controller();

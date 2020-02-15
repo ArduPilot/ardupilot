@@ -2,8 +2,9 @@
 # encoding: utf-8
 
 from __future__ import print_function
-from waflib import Build, Logs, Options, Utils
+from waflib import Build, ConfigSet, Configure, Context, Errors, Logs, Options, Utils
 from waflib.Configure import conf
+from waflib.Scripting import run_command
 from waflib.TaskGen import before_method, feature
 import os.path, os
 from collections import OrderedDict
@@ -24,7 +25,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_Baro',
     'AP_BattMonitor',
     'AP_BoardConfig',
-    'AP_Buffer',
+    'AP_Camera',
     'AP_Common',
     'AP_Compass',
     'AP_Declination',
@@ -34,6 +35,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_InertialSensor',
     'AP_Math',
     'AP_Mission',
+    'AP_NavEKF',
     'AP_NavEKF2',
     'AP_NavEKF3',
     'AP_Notify',
@@ -45,7 +47,8 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_SerialManager',
     'AP_Terrain',
     'AP_Vehicle',
-    'DataFlash',
+    'AP_InternalError',
+    'AP_Logger',
     'Filter',
     'GCS_MAVLink',
     'RC_Channel',
@@ -60,6 +63,39 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_ICEngine',
     'AP_Frsky_Telem',
     'AP_FlashStorage',
+    'AP_Relay',
+    'AP_ServoRelayEvents',
+    'AP_Volz_Protocol',
+    'AP_SBusOut',
+    'AP_IOMCU',
+    'AP_Parachute',
+    'AP_PiccoloCAN',
+    'AP_PiccoloCAN/piccolo_protocol',
+    'AP_RAMTRON',
+    'AP_RCProtocol',
+    'AP_Radio',
+    'AP_TempCalibration',
+    'AP_VisualOdom',
+    'AP_BLHeli',
+    'AP_ROMFS',
+    'AP_Proximity',
+    'AP_Gripper',
+    'AP_RTC',
+    'AC_Sprayer',
+    'AC_Fence',
+    'AC_Avoidance',
+    'AP_LandingGear',
+    'AP_RobotisServo',
+    'AP_ToshibaCAN',
+    'AP_NMEA_Output',
+    'AP_Filesystem',
+    'AP_ADSB',
+    'AC_PID',
+    'AP_SerialLED',
+    'AP_EFI',
+    'AP_Hott_Telem',
+    'AP_ESC_Telem',
+    'AP_Stats',
 ]
 
 def get_legacy_defines(sketch_name):
@@ -71,11 +107,94 @@ def get_legacy_defines(sketch_name):
 
 IGNORED_AP_LIBRARIES = [
     'doc',
-    'GCS_Console',
+    'AP_Scripting', # this gets explicitly included when it is needed and should otherwise never be globbed in
 ]
+
+
+def ap_autoconfigure(execute_method):
+    """
+    Decorator that enables context commands to run *configure* as needed.
+    """
+    def execute(self):
+        """
+        Wraps :py:func:`waflib.Context.Context.execute` on the context class
+        """
+        if not Configure.autoconfig:
+            return execute_method(self)
+
+        # Disable autoconfig so waf's version doesn't run (and don't end up on loop of bad configure)
+        Configure.autoconfig = False
+
+        if self.variant == '':
+            raise Errors.WafError('The project is badly configured: run "waf configure" again!')
+
+        env = ConfigSet.ConfigSet()
+        do_config = False
+
+        try:
+            p = os.path.join(Context.out_dir, Build.CACHE_DIR, self.variant + Build.CACHE_SUFFIX)
+            env.load(p)
+        except EnvironmentError:
+            raise Errors.WafError('The project is not configured for board {0}: run "waf configure --board {0} [...]" first!'.format(self.variant))
+
+        lock_env = ConfigSet.ConfigSet()
+
+        try:
+            lock_env.load(os.path.join(Context.top_dir, Options.lockfile))
+        except EnvironmentError:
+            Logs.warn('Configuring the project')
+            do_config = True
+        else:
+            if lock_env.run_dir != Context.run_dir:
+                do_config = True
+            else:
+                h = 0
+
+                for f in env.CONFIGURE_FILES:
+                    try:
+                        h = Utils.h_list((h, Utils.readf(f, 'rb')))
+                    except EnvironmentError:
+                        do_config = True
+                        break
+                else:
+                    do_config = h != env.CONFIGURE_HASH
+
+        if do_config:
+            cmd = lock_env.config_cmd or 'configure'
+            tmp = Options.options.__dict__
+
+            if env.OPTIONS and sorted(env.OPTIONS.keys()) == sorted(tmp.keys()):
+                Options.options.__dict__ = env.OPTIONS
+            else:
+                raise Errors.WafError('The project configure options have changed: run "waf configure" again!')
+
+            try:
+                run_command(cmd)
+            finally:
+                Options.options.__dict__ = tmp
+
+            run_command(self.cmd)
+        else:
+            return execute_method(self)
+
+    return execute
+
+def ap_configure_post_recurse():
+    post_recurse_orig = Configure.ConfigurationContext.post_recurse
+
+    def post_recurse(self, node):
+        post_recurse_orig(self, node)
+
+        self.all_envs[self.variant].CONFIGURE_FILES = self.files
+        self.all_envs[self.variant].CONFIGURE_HASH = self.hash
+
+    return post_recurse
 
 @conf
 def ap_get_all_libraries(bld):
+    if bld.env.BOOTLOADER:
+        # we don't need the full set of libraries for the bootloader build
+        return ['AP_HAL']
     libraries = []
     for lib_node in bld.srcnode.ant_glob('libraries/*', dir=True, src=False):
         name = lib_node.name
@@ -91,7 +210,15 @@ def ap_get_all_libraries(bld):
 
 @conf
 def ap_common_vehicle_libraries(bld):
-    return COMMON_VEHICLE_DEPENDENT_LIBRARIES
+    libraries = COMMON_VEHICLE_DEPENDENT_LIBRARIES
+
+    if bld.env.DEST_BINFMT == 'pe':
+        libraries += [
+            'AC_Fence',
+            'AC_AttitudeControl',
+        ]
+
+    return libraries
 
 _grouped_programs = {}
 
@@ -140,6 +267,9 @@ def ap_program(bld,
         program_dir=program_dir,
         **kw
     )
+    if 'use' in kw and bld.env.STATIC_LINKING:
+        # ensure we link against vehicle library
+        tg.env.STLIB += [kw['use']]
 
     for group in program_groups:
         _grouped_programs.setdefault(group, []).append(tg)
@@ -224,9 +354,21 @@ def ap_version_append_str(ctx, k, v):
     ctx.env['AP_VERSION_ITEMS'] += [(k, '"{}"'.format(os.environ.get(k, v)))]
 
 @conf
+def ap_version_append_int(ctx, k, v):
+    ctx.env['AP_VERSION_ITEMS'] += [(k,v)]
+
+@conf
 def write_version_header(ctx, tgt):
     with open(tgt, 'w') as f:
-        print('#pragma once\n', file=f)
+        print(
+'''// auto-generated header, do not edit
+
+#pragma once
+
+#ifndef FORCE_VERSION_H_INCLUDE
+#error ap_version.h should never be included directly. You probably want to include AP_Common/AP_FWVersion.h
+#endif
+''', file=f)
 
         for k, v in ctx.env['AP_VERSION_ITEMS']:
             print('#define {} {}'.format(k, v), file=f)
@@ -352,6 +494,7 @@ def _select_programs_from_group(bld):
 def options(opt):
     opt.ap_groups = {
         'configure': opt.add_option_group('Ardupilot configure options'),
+        'linux': opt.add_option_group('Linux boards configure options'),
         'build': opt.add_option_group('Ardupilot build options'),
         'check': opt.add_option_group('Ardupilot check options'),
         'clean': opt.add_option_group('Ardupilot clean options'),
@@ -362,18 +505,23 @@ def options(opt):
     g.add_option('--program-group',
         action='append',
         default=[],
-        help='''
-Select all programs that go in <PROGRAM_GROUP>/ for the build. Example: `waf
---program-group examples` builds all examples. The special group "all" selects
-all programs.
+        help='''Select all programs that go in <PROGRAM_GROUP>/ for the build.
+Example: `waf --program-group examples` builds all examples. The
+special group "all" selects all programs.
 ''')
 
     g.add_option('--upload',
         action='store_true',
-        help='''
-Upload applicable targets to a connected device. Not all platforms may support
-this. Example: `waf copter --upload` means "build arducopter and upload it to
-my board".
+        help='''Upload applicable targets to a connected device. Not all
+platforms may support this. Example: `waf copter --upload` means "build
+arducopter and upload it to my board".
+''')
+
+    g.add_option('--upload-port',
+        action='store',
+        dest='upload_port',
+        default=None,
+        help='''Specify the port to be used with the --upload option. For example a port of /dev/ttyS10 indicates that serial port 10 shuld be used.
 ''')
 
     g = opt.ap_groups['check']
@@ -386,12 +534,12 @@ my board".
 
     g.add_option('--clean-all-sigs',
         action='store_true',
-        help='''
-Clean signatures for all tasks. By default, tasks that scan for implicit
-dependencies (like the compilation tasks) keep the dependency information
-across clean commands, so that that information is changed only when really
-necessary. Also, some tasks that don't really produce files persist their
-signature. This option avoids that behavior when cleaning the build.
+        help='''Clean signatures for all tasks. By default, tasks that scan for
+implicit dependencies (like the compilation tasks) keep the dependency
+information across clean commands, so that that information is changed
+only when really necessary. Also, some tasks that don't really produce
+files persist their signature. This option avoids that behavior when
+cleaning the build.
 ''')
 
 def build(bld):

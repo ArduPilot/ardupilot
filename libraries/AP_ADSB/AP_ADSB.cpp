@@ -27,11 +27,20 @@
 #include <limits.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Logger/AP_Logger.h>
+#include <AP_GPS/AP_GPS.h>
+#include <AP_Baro/AP_Baro.h>
+#include <AP_AHRS/AP_AHRS.h>
+
 
 #define VEHICLE_TIMEOUT_MS              5000   // if no updates in this time, drop it from the list
 #define ADSB_VEHICLE_LIST_SIZE_DEFAULT  25
 #define ADSB_VEHICLE_LIST_SIZE_MAX      100
 #define ADSB_CHAN_TIMEOUT_MS            15000
+#define ADSB_SQUAWK_OCTAL_DEFAULT       1200
+
+#define ADSB_BITBASK_RF_CAPABILITIES_UAT_IN         (1 << 0)
+#define ADSB_BITBASK_RF_CAPABILITIES_1090ES_IN      (1 << 1)
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     #define ADSB_LIST_RADIUS_DEFAULT        10000 // in meters
@@ -40,6 +49,8 @@
 #endif
 
 extern const AP_HAL::HAL& hal;
+
+AP_ADSB *AP_ADSB::_singleton;
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_ADSB::var_info[] = {
@@ -62,14 +73,15 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
 
     // @Param: LIST_RADIUS
     // @DisplayName: ADSB vehicle list radius filter
-    // @Description: ADSB vehicle list radius filter. Vehicles detected outside this radius will be completely ignored. They will not show up in the SRx_ADSB stream to the GCS and will not be considered in any avoidance calculations.
-    // @Range: 1 100000
+    // @Description: ADSB vehicle list radius filter. Vehicles detected outside this radius will be completely ignored. They will not show up in the SRx_ADSB stream to the GCS and will not be considered in any avoidance calculations. A value of 0 will disable this filter.
+    // @Range: 0 100000
     // @User: Advanced
+    // @Units: m
     AP_GROUPINFO("LIST_RADIUS",   3, AP_ADSB, in_state.list_radius, ADSB_LIST_RADIUS_DEFAULT),
 
     // @Param: ICAO_ID
-    // @DisplayName: ICAO_ID vehicle identifaction number
-    // @Description: ICAO_ID unique vehicle identifaction number of this aircraft. This is a integer limited to 24bits. If set to 0 then one will be randomly generated. If set to -1 then static information is not sent, transceiver is assumed pre-programmed.
+    // @DisplayName: ICAO_ID vehicle identification number
+    // @Description: ICAO_ID unique vehicle identification number of this aircraft. This is a integer limited to 24bits. If set to 0 then one will be randomly generated. If set to -1 then static information is not sent, transceiver is assumed pre-programmed.
     // @Range: -1 16777215
     // @User: Advanced
     AP_GROUPINFO("ICAO_ID",   4, AP_ADSB, out_state.cfg.ICAO_id_param, 0),
@@ -104,15 +116,60 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
 
     // @Param: RF_SELECT
     // @DisplayName: Transceiver RF selection
-    // @Description: Transceiver RF selection for Rx enable and/or Tx enable.
+    // @Description: Transceiver RF selection for Rx enable and/or Tx enable. This only effects devices that can Tx and Rx. Rx-only devices override this to always be Rx-only.
     // @Values: 0:Disabled,1:Rx-Only,2:Tx-Only,3:Rx and Tx Enabled
     // @User: Advanced
     AP_GROUPINFO("RF_SELECT",   9, AP_ADSB, out_state.cfg.rfSelect, UAVIONIX_ADSB_OUT_RF_SELECT_RX_ENABLED),
 
+    // @Param: SQUAWK
+    // @DisplayName: Squawk code
+    // @Description: VFR squawk (Mode 3/A) code is a pre-programmed default code when the pilot is flying VFR and not in contact with ATC. In the USA, the VFR squawk code is octal 1200 (hex 0x280, decimal 640) and in most parts of Europe the VFR squawk code is octal 7000. If an invalid octal number is set then it will be reset to 1200.
+    // @Range: 0 7777
+    // @Units: octal
+    // @User: Advanced
+    AP_GROUPINFO("SQUAWK",  10, AP_ADSB, out_state.cfg.squawk_octal_param, ADSB_SQUAWK_OCTAL_DEFAULT),
 
+    // @Param: RF_CAPABLE
+    // @DisplayName: RF capabilities
+    // @Description: Describes your hardware RF In/Out capabilities.
+    // @Values: 0:Unknown,1:Rx UAT only,3:Rx UAT and 1090ES,7:Rx&Tx UAT and 1090ES
+    // @Bitmask: 0:UAT_in,1:1090ES_in,2:UAT_out,3:1090ES_out
+    // @User: Advanced
+    AP_GROUPINFO("RF_CAPABLE",  11, AP_ADSB, out_state.cfg.rf_capable, 0),
+
+    // @Param: LIST_ALT
+    // @DisplayName: ADSB vehicle list altitude filter
+    // @Description: ADSB vehicle list altitude filter. Vehicles detected above this altitude will be completely ignored. They will not show up in the SRx_ADSB stream to the GCS and will not be considered in any avoidance calculations. A value of 0 will disable this filter.
+    // @Range: 0 32767
+    // @User: Advanced
+    // @Units: m
+    AP_GROUPINFO("LIST_ALT",   12, AP_ADSB, in_state.list_altitude, 0),
+
+    // @Param: ICAO_SPECL
+    // @DisplayName: ICAO_ID of special vehicle
+    // @Description: ICAO_ID of special vehicle that ignores ADSB_LIST_RADIUS and ADSB_LIST_ALT. The vehicle is always tracked. Use 0 to disable.
+    // @User: Advanced
+    AP_GROUPINFO("ICAO_SPECL",  13, AP_ADSB, _special_ICAO_target, 0),
+
+    // @Param: LOG
+    // @DisplayName: ADS-B logging
+    // @Description: 0: no logging, 1: log only special ID, 2:log all
+    // @Values: 0:no logging,1:log only special ID,2:log all
+    // @User: Advanced
+    AP_GROUPINFO("LOG",  14, AP_ADSB, _log, 1),
 
     AP_GROUPEND
 };
+
+// constructor
+AP_ADSB::AP_ADSB()
+{
+    AP_Param::setup_object_defaults(this, var_info);
+    if (_singleton != nullptr) {
+        AP_HAL::panic("AP_ADSB must be singleton");
+    }
+    _singleton = this;
+}
 
 /*
  * Initialize variables and allocate memory for array
@@ -155,13 +212,30 @@ void AP_ADSB::deinit(void)
     }
 }
 
+bool AP_ADSB::is_valid_callsign(uint16_t octal)
+{
+    // treat "octal" as decimal and test if any decimal digit is > 7
+    if (octal > 7777) {
+        return false;
+    }
+
+    while (octal != 0) {
+        if (octal % 10 > 7) {
+            return false;
+        }
+        octal /= 10;
+    }
+
+    return true;
+}
+
 /*
  * periodic update to handle vehicle timeouts and trigger collision detection
  */
 void AP_ADSB::update(void)
 {
     // update _my_loc
-    if (!_ahrs.get_position(_my_loc)) {
+    if (!AP::ahrs().get_position(_my_loc)) {
         _my_loc.zero();
     }
 
@@ -179,7 +253,7 @@ void AP_ADSB::update(void)
         return;
     }
 
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
 
     // check current list for vehicles that time out
     uint16_t index = 0;
@@ -205,6 +279,15 @@ void AP_ADSB::update(void)
     }
 
 
+    if (out_state.cfg.squawk_octal_param != out_state.cfg.squawk_octal) {
+        // param changed, check that it's a valid octal
+        if (!is_valid_callsign(out_state.cfg.squawk_octal_param)) {
+            // invalid, reset it to default
+            out_state.cfg.squawk_octal_param = ADSB_SQUAWK_OCTAL_DEFAULT;
+        }
+        out_state.cfg.squawk_octal = (uint16_t)out_state.cfg.squawk_octal_param;
+    }
+
     // ensure it's positive 24bit but allow -1
     if (out_state.cfg.ICAO_id_param <= -1 || out_state.cfg.ICAO_id_param > 0x00FFFFFF) {
         // icao param of -1 means static information is not sent, transceiver is assumed pre-programmed.
@@ -222,19 +305,19 @@ void AP_ADSB::update(void)
         }
         out_state.cfg.ICAO_id_param_prev = out_state.cfg.ICAO_id_param;
         set_callsign("PING", true);
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "ADSB: Using ICAO_id %d and Callsign %s", out_state.cfg.ICAO_id, out_state.cfg.callsign);
+        gcs().send_text(MAV_SEVERITY_INFO, "ADSB: Using ICAO_id %d and Callsign %s", (int)out_state.cfg.ICAO_id, out_state.cfg.callsign);
         out_state.last_config_ms = 0; // send now
     }
 
 
-    // send static configuration data to transceiver, every 10s
+    // send static configuration data to transceiver, every 5s
     if (out_state.chan_last_ms > 0 && now - out_state.chan_last_ms > ADSB_CHAN_TIMEOUT_MS) {
         // haven't gotten a heartbeat health status packet in a while, assume hardware failure
         // TODO: reset out_state.chan
         out_state.chan = -1;
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_ERROR, "ADSB: Transceiver heartbeat timed out");
+        gcs().send_text(MAV_SEVERITY_ERROR, "ADSB: Transceiver heartbeat timed out");
     } else if (out_state.chan < MAVLINK_COMM_NUM_BUFFERS) {
-        mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0 + out_state.chan);
+        const mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0 + out_state.chan);
         if (now - out_state.last_config_ms >= 5000 && HAVE_PAYLOAD_SPACE(chan, UAVIONIX_ADSB_OUT_CFG)) {
             out_state.last_config_ms = now;
             send_configure(chan);
@@ -258,7 +341,10 @@ void AP_ADSB::determine_furthest_aircraft(void)
     uint16_t max_distance_index = 0;
 
     for (uint16_t index = 0; index < in_state.vehicle_count; index++) {
-        float distance = _my_loc.get_distance(get_location(in_state.vehicle_list[index]));
+        if (is_special_vehicle(in_state.vehicle_list[index].info.ICAO_address)) {
+            continue;
+        }
+        const float distance = _my_loc.get_distance(get_location(in_state.vehicle_list[index]));
         if (max_distance < distance || index == 0) {
             max_distance = distance;
             max_distance_index = index;
@@ -272,13 +358,13 @@ void AP_ADSB::determine_furthest_aircraft(void)
 /*
  * Convert/Extract a Location from a vehicle
  */
-Location_Class AP_ADSB::get_location(const adsb_vehicle_t &vehicle) const
+Location AP_ADSB::get_location(const adsb_vehicle_t &vehicle) const
 {
-    Location_Class loc = Location_Class(
+    const Location loc = Location(
         vehicle.info.lat,
         vehicle.info.lon,
         vehicle.info.altitude * 0.1f,
-        Location_Class::ALT_FRAME_ABSOLUTE);
+        Location::AltFrame::ABSOLUTE);
 
     return loc;
 }
@@ -289,19 +375,22 @@ Location_Class AP_ADSB::get_location(const adsb_vehicle_t &vehicle) const
  */
 void AP_ADSB::delete_vehicle(const uint16_t index)
 {
-    if (index < in_state.vehicle_count) {
-        // if the vehicle is the furthest, invalidate it. It has been bumped
-        if (index == furthest_vehicle_index && furthest_vehicle_distance > 0) {
-            furthest_vehicle_distance = 0;
-            furthest_vehicle_index = 0;
-        }
-        if (index != (in_state.vehicle_count-1)) {
-            in_state.vehicle_list[index] = in_state.vehicle_list[in_state.vehicle_count-1];
-        }
-        // TODO: is memset needed? When we decrement the index we essentially forget about it
-        memset(&in_state.vehicle_list[in_state.vehicle_count-1], 0, sizeof(adsb_vehicle_t));
-        in_state.vehicle_count--;
+    if (index >= in_state.vehicle_count) {
+        // index out of range
+        return;
     }
+
+    // if the vehicle is the furthest, invalidate it. It has been bumped
+    if (index == furthest_vehicle_index && furthest_vehicle_distance > 0) {
+        furthest_vehicle_distance = 0;
+        furthest_vehicle_index = 0;
+    }
+    if (index != (in_state.vehicle_count-1)) {
+        in_state.vehicle_list[index] = in_state.vehicle_list[in_state.vehicle_count-1];
+    }
+    // TODO: is memset needed? When we decrement the index we essentially forget about it
+    memset(&in_state.vehicle_list[in_state.vehicle_count-1], 0, sizeof(adsb_vehicle_t));
+    in_state.vehicle_count--;
 }
 
 /*
@@ -324,7 +413,7 @@ bool AP_ADSB::find_index(const adsb_vehicle_t &vehicle, uint16_t *index) const
  * Update the vehicle list. If the vehicle is already in the
  * list then it will update it, otherwise it will be added.
  */
-void AP_ADSB::handle_vehicle(const mavlink_message_t* packet)
+void AP_ADSB::handle_adsb_vehicle(const adsb_vehicle_t &vehicle)
 {
     if (in_state.vehicle_list == nullptr) {
         // We are only null when disabled. Updating is inhibited.
@@ -332,23 +421,21 @@ void AP_ADSB::handle_vehicle(const mavlink_message_t* packet)
     }
 
     uint16_t index = in_state.list_size + 1; // initialize with invalid index
-    adsb_vehicle_t vehicle {};
-    mavlink_msg_adsb_vehicle_decode(packet, &vehicle.info);
-    Location_Class vehicle_loc = Location_Class(AP_ADSB::get_location(vehicle));
-    bool my_loc_is_zero = _my_loc.is_zero();
-    float my_loc_distance_to_vehicle = _my_loc.get_distance(vehicle_loc);
-    bool out_of_range = in_state.list_radius > 0 && !my_loc_is_zero && my_loc_distance_to_vehicle > in_state.list_radius;
-    bool is_tracked_in_list = find_index(vehicle, &index);
-    uint32_t now = AP_HAL::millis();
-
-    // note the last time the receiver got a packet from the aircraft
-    vehicle.last_update_ms = now - (vehicle.info.tslc * 1000);
+    const Location vehicle_loc = AP_ADSB::get_location(vehicle);
+    const bool my_loc_is_zero = _my_loc.is_zero();
+    const float my_loc_distance_to_vehicle = _my_loc.get_distance(vehicle_loc);
+    const bool is_special = is_special_vehicle(vehicle.info.ICAO_address);
+    const bool out_of_range = in_state.list_radius > 0 && !my_loc_is_zero && my_loc_distance_to_vehicle > in_state.list_radius && !is_special;
+    const bool out_of_range_alt = in_state.list_altitude > 0 && !my_loc_is_zero && abs(vehicle_loc.alt - _my_loc.alt) > in_state.list_altitude*100 && !is_special;
+    const bool is_tracked_in_list = find_index(vehicle, &index);
+    const uint32_t now = AP_HAL::millis();
 
     const uint16_t required_flags_position = ADSB_FLAGS_VALID_COORDS | ADSB_FLAGS_VALID_ALTITUDE;
     const bool detected_ourself = (out_state.cfg.ICAO_id != 0) && ((uint32_t)out_state.cfg.ICAO_id == vehicle.info.ICAO_address);
 
     if (vehicle_loc.is_zero() ||
             out_of_range ||
+            out_of_range_alt ||
             detected_ourself ||
             (vehicle.info.ICAO_address > 0x00FFFFFF) || // ICAO address is 24bits, so ignore higher values.
             !(vehicle.info.flags & required_flags_position) ||
@@ -409,13 +496,30 @@ void AP_ADSB::handle_vehicle(const mavlink_message_t* packet)
 }
 
 /*
+ * Update the vehicle list. If the vehicle is already in the
+ * list then it will update it, otherwise it will be added.
+ */
+void AP_ADSB::handle_vehicle(const mavlink_message_t &packet)
+{
+    adsb_vehicle_t vehicle {};
+    const uint32_t now = AP_HAL::millis();
+    mavlink_msg_adsb_vehicle_decode(&packet, &vehicle.info);
+    vehicle.last_update_ms = now - (vehicle.info.tslc * 1000);
+    handle_adsb_vehicle(vehicle);
+}
+
+/*
  * Copy a vehicle's data into the list
  */
 void AP_ADSB::set_vehicle(const uint16_t index, const adsb_vehicle_t &vehicle)
 {
-    if (index < in_state.list_size) {
-        in_state.vehicle_list[index] = vehicle;
+    if (index >= in_state.list_size) {
+        // out of range
+        return;
     }
+    in_state.vehicle_list[index] = vehicle;
+
+    write_log(vehicle);
 }
 
 void AP_ADSB::send_adsb_vehicle(const mavlink_channel_t chan)
@@ -462,19 +566,19 @@ void AP_ADSB::send_adsb_vehicle(const mavlink_channel_t chan)
 
 void AP_ADSB::send_dynamic_out(const mavlink_channel_t chan)
 {
-    AP_GPS gps = _ahrs.get_gps();
-    Vector3f gps_velocity = gps.velocity();
+    const AP_GPS &gps = AP::gps();
+    const Vector3f &gps_velocity = gps.velocity();
 
-    int32_t latitude = _my_loc.lat;
-    int32_t longitude = _my_loc.lng;
-    int32_t altGNSS = _my_loc.alt * 10; // convert cm to mm
-    int16_t velVert = gps_velocity.z * 1E2; // convert m/s to cm/s
-    int16_t nsVog = gps_velocity.x * 1E2; // convert m/s to cm/s
-    int16_t ewVog = gps_velocity.y * 1E2; // convert m/s to cm/s
-    uint8_t fixType = gps.status(); // this lines up perfectly with our enum
-    uint8_t emStatus = 0; // TODO: implement this ENUM. no emergency = 0
-    uint8_t numSats = gps.num_sats();
-    uint16_t squawk = 1200; // Mode A code (typically 1200 [0x04B0] for VFR)
+    const int32_t latitude = _my_loc.lat;
+    const int32_t longitude = _my_loc.lng;
+    const int32_t altGNSS = _my_loc.alt * 10; // convert cm to mm
+    const int16_t velVert = gps_velocity.z * 1E2; // convert m/s to cm/s
+    const int16_t nsVog = gps_velocity.x * 1E2; // convert m/s to cm/s
+    const int16_t ewVog = gps_velocity.y * 1E2; // convert m/s to cm/s
+    const uint8_t fixType = gps.status(); // this lines up perfectly with our enum
+    const uint8_t emStatus = 0; // TODO: implement this ENUM. no emergency = 0
+    const uint8_t numSats = gps.num_sats();
+    const uint16_t squawk = out_state.cfg.squawk_octal;
 
     uint32_t accHoriz = UINT_MAX;
     float accHoriz_f;
@@ -506,11 +610,11 @@ void AP_ADSB::send_dynamic_out(const mavlink_channel_t chan)
     const uint64_t gps_time = gps.time_epoch_usec();
     const uint32_t utcTime = gps_time / 1000000ULL;
 
-    AP_Baro baro = _ahrs.get_baro();
+    const AP_Baro &baro = AP::baro();
     int32_t altPres = INT_MAX;
     if (baro.healthy()) {
-        // Altitude difference between 101325 (Pascals) and current pressure. Result in millimeters
-        altPres = baro.get_altitude_difference(101325, baro.get_pressure()) * 1E3; // convert m to mm;
+        // Altitude difference between sea level pressure and current pressure. Result in millimeters
+        altPres = baro.get_altitude_difference(SSL_AIR_PRESSURE, baro.get_pressure()) * 1E3; // convert m to mm;
     }
 
 
@@ -535,12 +639,150 @@ void AP_ADSB::send_dynamic_out(const mavlink_channel_t chan)
             squawk);
 }
 
+
+/*
+ * To expand functionality in their HW, uAvionix has extended a few of the unused MAVLink bits to pack in more new features
+ * This function will override the MSB byte of the 24bit ICAO address. To ensure an invalid >24bit ICAO is never broadcasted,
+ * this function is used to create the encoded verison without ever writing to the actual ICAO number. It's created on-demand
+ */
+uint32_t AP_ADSB::get_encoded_icao(void)
+{
+    // utilize the upper unused 8bits of the icao with special flags.
+    // This encoding is required for uAvionix devices that break the MAVLink spec.
+
+    // ensure the user assignable icao is 24 bits
+    uint32_t encoded_icao = (uint32_t)out_state.cfg.ICAO_id & 0x00FFFFFF;
+
+    encoded_icao &= ~0x20000000;    // useGnssAltitude should always be FALSE
+    encoded_icao |=  0x10000000;    // csidLogic       should always be TRUE
+
+    //SIL/SDA are special fields that should be set to 0 with only expert user adjustment
+    encoded_icao &= ~0x03000000;    // SDA should always be FALSE
+    encoded_icao &= ~0x0C000000;    // SIL should always be FALSE
+
+    return encoded_icao;
+}
+
+/*
+ * To expand functionality in their HW, uAvionix has extended a few of the unused MAVLink bits to pack in more new features
+ * This function will override the usually-null ending char of the callsign. It always encodes the last byte [8], even if
+ * the callsign string is less than 9 chars and there are other zero-padded nulls.
+ */
+uint8_t AP_ADSB::get_encoded_callsign_null_char()
+{
+//  Encoding of the 8bit null char
+//  (LSB) - knots
+//  bit.1 - knots
+//  bit.2 - knots
+//  bit.3 - (unused)
+//  bit.4 - flag - ADSB_BITBASK_RF_CAPABILITIES_1090ES_IN
+//  bit.5 - flag - ADSB_BITBASK_RF_CAPABILITIES_UAT_IN
+//  bit.6 - flag - 0 = callsign is treated as callsign, 1 = callsign is treated as flightPlanID/Squawk
+//  (MSB) - (unused)
+
+    uint8_t encoded_null = 0;
+
+    if (out_state.cfg.maxAircraftSpeed_knots <= 0) {
+        // not set or unknown. no bits set
+    } else if (out_state.cfg.maxAircraftSpeed_knots <= 75) {
+        encoded_null |= 0x01;
+    } else if (out_state.cfg.maxAircraftSpeed_knots <= 150) {
+        encoded_null |= 0x02;
+    } else if (out_state.cfg.maxAircraftSpeed_knots <= 300) {
+        encoded_null |= 0x03;
+    } else if (out_state.cfg.maxAircraftSpeed_knots <= 600) {
+        encoded_null |= 0x04;
+    } else if (out_state.cfg.maxAircraftSpeed_knots <= 1200) {
+        encoded_null |= 0x05;
+    } else {
+        encoded_null |= 0x06;
+    }
+
+
+    if (out_state.cfg.rf_capable & ADSB_BITBASK_RF_CAPABILITIES_1090ES_IN) {
+        encoded_null |= 0x10;
+    }
+    if (out_state.cfg.rf_capable & ADSB_BITBASK_RF_CAPABILITIES_UAT_IN) {
+        encoded_null |= 0x20;
+    }
+
+
+    /*
+    If the user has an 8 digit flightPlanID assigned from a filed flight plan, this should be assigned to FlightPlanID, (assigned by remote app)
+    else if the user has an assigned squawk code from ATC this should be converted from 4 digit octal to 4 character alpha string and assigned to FlightPlanID,
+    else if a tail number is known it should be set to the tail number of the aircraft, (assigned by remote app)
+    else it should be left blank (all 0's)
+     */
+
+    // using the above logic, we must always assign the squawk. once we get configured
+    // externally then get_encoded_callsign_null_char() stops getting called
+    snprintf(out_state.cfg.callsign, 5, "%04d", unsigned(out_state.cfg.squawk_octal) & 0x1FFF);
+    memset(&out_state.cfg.callsign[4], 0, 5); // clear remaining 5 chars
+    encoded_null |= 0x40;
+
+    return encoded_null;
+}
+
+/*
+ * handle incoming packet UAVIONIX_ADSB_OUT_CFG.
+ * This allows a GCS to send cfg info through the autopilot to the ADSB hardware.
+ * This is done indirectly by reading and storing the packet and then another mechanism sends it out periodically
+ */
+void AP_ADSB::handle_out_cfg(const mavlink_message_t &msg)
+{
+    mavlink_uavionix_adsb_out_cfg_t packet {};
+    mavlink_msg_uavionix_adsb_out_cfg_decode(&msg, &packet);
+
+    out_state.cfg.was_set_externally = true;
+
+    out_state.cfg.ICAO_id = packet.ICAO;
+    out_state.cfg.ICAO_id_param = out_state.cfg.ICAO_id_param_prev = packet.ICAO & 0x00FFFFFFFF;
+
+    // May contain a non-null value at the end so accept it as-is with memcpy instead of strcpy
+    memcpy(out_state.cfg.callsign, packet.callsign, sizeof(out_state.cfg.callsign));
+
+    out_state.cfg.emitterType = packet.emitterType;
+    out_state.cfg.lengthWidth = packet.aircraftSize;
+    out_state.cfg.gpsLatOffset = packet.gpsOffsetLat;
+    out_state.cfg.gpsLonOffset = packet.gpsOffsetLon;
+    out_state.cfg.rfSelect = packet.rfSelect;
+    out_state.cfg.stall_speed_cm = packet.stallSpeed;
+
+    // guard against string with non-null end char
+    const char c = out_state.cfg.callsign[MAVLINK_MSG_UAVIONIX_ADSB_OUT_CFG_FIELD_CALLSIGN_LEN-1];
+    out_state.cfg.callsign[MAVLINK_MSG_UAVIONIX_ADSB_OUT_CFG_FIELD_CALLSIGN_LEN-1] = 0;
+    gcs().send_text(MAV_SEVERITY_INFO, "ADSB: Using ICAO_id %d and Callsign %s", (int)out_state.cfg.ICAO_id, out_state.cfg.callsign);
+    out_state.cfg.callsign[MAVLINK_MSG_UAVIONIX_ADSB_OUT_CFG_FIELD_CALLSIGN_LEN-1] = c;
+
+    // send now
+    out_state.last_config_ms = 0;
+}
+
+/*
+ * populate and send MAVLINK_MSG_UAVIONIX_ADSB_OUT_CFG
+ */
 void AP_ADSB::send_configure(const mavlink_channel_t chan)
 {
+    // MAVLink spec says the 9 byte callsign field is 8 byte string with 9th byte as null.
+    // Here we temporarily set some flags in that null char to signify the callsign
+    // may be a flightplanID instead
+    int8_t callsign[sizeof(out_state.cfg.callsign)];
+    uint32_t icao;
+
+    memcpy(callsign, out_state.cfg.callsign, sizeof(out_state.cfg.callsign));
+
+    if (out_state.cfg.was_set_externally) {
+        // take values as-is
+        icao = out_state.cfg.ICAO_id;
+    } else {
+        callsign[MAVLINK_MSG_UAVIONIX_ADSB_OUT_CFG_FIELD_CALLSIGN_LEN-1] = (int8_t)get_encoded_callsign_null_char();
+        icao = get_encoded_icao();
+    }
+
     mavlink_msg_uavionix_adsb_out_cfg_send(
             chan,
-            (uint32_t)out_state.cfg.ICAO_id,
-            out_state.cfg.callsign,
+            icao,
+            (const char*)callsign,
             (uint8_t)out_state.cfg.emitterType,
             (uint8_t)out_state.cfg.lengthWidth,
             (uint8_t)out_state.cfg.gpsLatOffset,
@@ -554,13 +796,13 @@ void AP_ADSB::send_configure(const mavlink_channel_t chan)
  * we determine which channel is on so we don't have to send out_state to all channels
  */
 
-void AP_ADSB::handle_transceiver_report(const mavlink_channel_t chan, const mavlink_message_t* msg)
+void AP_ADSB::handle_transceiver_report(const mavlink_channel_t chan, const mavlink_message_t &msg)
 {
     mavlink_uavionix_adsb_transceiver_health_report_t packet {};
-    mavlink_msg_uavionix_adsb_transceiver_health_report_decode(msg, &packet);
+    mavlink_msg_uavionix_adsb_transceiver_health_report_decode(&msg, &packet);
 
     if (out_state.chan != chan) {
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_DEBUG, "ADSB: Found transceiver on channel %d", chan);
+        gcs().send_text(MAV_SEVERITY_DEBUG, "ADSB: Found transceiver on channel %d", chan);
     }
 
     out_state.chan_last_ms = AP_HAL::millis();
@@ -574,15 +816,15 @@ void AP_ADSB::handle_transceiver_report(const mavlink_channel_t chan, const mavl
 
  Note gps.time is the number of seconds since UTC midnight
 */
-uint32_t AP_ADSB::genICAO(const Location_Class &loc)
+uint32_t AP_ADSB::genICAO(const Location &loc)
 {
     // gps_time is not seconds since UTC midnight, but it is an equivalent random number
     // TODO: use UTC time instead of GPS time
-    AP_GPS gps = _ahrs.get_gps();
+    const AP_GPS &gps = AP::gps();
     const uint64_t gps_time = gps.time_epoch_usec();
 
     uint32_t timeSum = 0;
-    uint32_t M3 = 4096 * (loc.lat & 0x00000FFF) + (loc.lng & 0x00000FFF);
+    const uint32_t M3 = 4096 * (loc.lat & 0x00000FFF) + (loc.lng & 0x00000FFF);
 
     for (uint8_t i=0; i<24; i++) {
         timeSum += (((gps_time & 0x00FFFFFF)>> i) & 0x00000001);
@@ -632,24 +874,24 @@ void AP_ADSB::set_callsign(const char* str, const bool append_icao)
     } // for i
 
     if (append_icao) {
-        snprintf(&out_state.cfg.callsign[4], 5, "%04X", out_state.cfg.ICAO_id % 0x10000);
+        snprintf(&out_state.cfg.callsign[4], 5, "%04X", unsigned(out_state.cfg.ICAO_id % 0x10000));
     }
 }
 
 
-void AP_ADSB::push_sample(adsb_vehicle_t &vehicle)
+void AP_ADSB::push_sample(const adsb_vehicle_t &vehicle)
 {
-    samples.push_back(vehicle);
+    samples.push(vehicle);
 }
 
 bool AP_ADSB::next_sample(adsb_vehicle_t &vehicle)
 {
-    return samples.pop_front(vehicle);
+    return samples.pop(vehicle);
 }
 
-void AP_ADSB::handle_message(const mavlink_channel_t chan, const mavlink_message_t* msg)
+void AP_ADSB::handle_message(const mavlink_channel_t chan, const mavlink_message_t &msg)
 {
-    switch (msg->msgid) {
+    switch (msg.msgid) {
     case MAVLINK_MSG_ID_ADSB_VEHICLE:
         handle_vehicle(msg);
         break;
@@ -658,10 +900,71 @@ void AP_ADSB::handle_message(const mavlink_channel_t chan, const mavlink_message
         break;
 
     case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CFG:
+        handle_out_cfg(msg);
+        break;
+
     case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_DYNAMIC:
-        // unhandled, these are outbound packets only
+        // unhandled, this is an outbound packet only
     default:
         break;
     }
 
 }
+
+// If that ICAO is found in the database then return true with a fully populated vehicle
+bool AP_ADSB::get_vehicle_by_ICAO(const uint32_t icao, adsb_vehicle_t &vehicle) const
+{
+    adsb_vehicle_t temp_vehicle;
+    temp_vehicle.info.ICAO_address = icao;
+
+    uint16_t i;
+    if (find_index(temp_vehicle, &i)) {
+        // vehicle is tracked in list.
+        // we must memcpy it because the database may reorganize itself and we don't
+        // want the reference to magically start pointing at a different vehicle
+        memcpy(&vehicle, &in_state.vehicle_list[i], sizeof(adsb_vehicle_t));
+        return true;
+    }
+    return false;
+}
+
+/*
+ * Write vehicle to log
+ */
+void AP_ADSB::write_log(const adsb_vehicle_t &vehicle)
+{
+    switch (_log) {
+        case logging::SPECIAL_ONLY:
+            if (!is_special_vehicle(vehicle.info.ICAO_address)) {
+                return;
+            }
+            break;
+
+        case logging::ALL:
+            break;
+
+        case logging::NONE:
+        default:
+            return;
+    }
+
+    struct log_ADSB pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_ADSB_MSG),
+        time_us       : AP_HAL::micros64(),
+        ICAO_address  : vehicle.info.ICAO_address,
+        lat           : vehicle.info.lat,
+        lng           : vehicle.info.lon,
+        alt           : vehicle.info.altitude,
+        heading       : vehicle.info.heading,
+        hor_velocity  : vehicle.info.hor_velocity,
+        ver_velocity  : vehicle.info.ver_velocity,
+        squawk        : vehicle.info.squawk,
+    };
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
+}
+
+AP_ADSB *AP::ADSB()
+{
+    return AP_ADSB::get_singleton();
+}
+

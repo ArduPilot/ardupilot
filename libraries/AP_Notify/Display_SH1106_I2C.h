@@ -32,7 +32,6 @@ private:
 
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
     uint8_t _displaybuffer[SH1106_COLUMNS * SH1106_ROWS_PER_PAGE];
-    AP_HAL::Semaphore *_displaybuffer_sem;
     bool _need_hw_update;
 
 };

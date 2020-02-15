@@ -26,10 +26,10 @@ class AP_BoardLED: public NotifyDevice
 {
 public:
     // initialise the LED driver
-    bool init(void);
+    bool init(void) override;
 
     // should be called at 50Hz
-    void update(void);
+    void update(void) override;
 
 private:
     // counter incremented at 50Hz

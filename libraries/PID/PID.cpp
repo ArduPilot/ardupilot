@@ -105,7 +105,7 @@ float PID::get_pid(float error, float scaler)
         output                          += _integrator;
     }
 
-    _pid_info.desired = output;
+    _pid_info.target = output;
     return output;
 }
 
@@ -117,6 +117,11 @@ PID::reset_I()
 	// derivative value is not valid
     _last_derivative = NAN;
     _pid_info.I = 0;
+}
+
+void PID::reset() {
+    memset(&_pid_info, 0, sizeof(_pid_info));
+    reset_I();
 }
 
 void

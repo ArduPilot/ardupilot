@@ -16,15 +16,15 @@
 /*
   control of internal combustion engines (starter, ignition and choke)
  */
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_RPM/AP_RPM.h>
-#include <AP_AHRS/AP_AHRS.h>
 
 class AP_ICEngine {
 public:
     // constructor
-    AP_ICEngine(const AP_RPM &_rpm, const AP_AHRS &_ahrs);
+    AP_ICEngine(const AP_RPM &_rpm);
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -47,10 +47,16 @@ public:
 
     // handle DO_ENGINE_CONTROL messages via MAVLink or mission
     bool engine_control(float start_control, float cold_start, float height_delay);
-    
+
+    // update min throttle for idle governor
+    void update_idle_governor(int8_t &min_throttle);
+
+    static AP_ICEngine *get_singleton() { return _singleton; }
+
 private:
+    static AP_ICEngine *_singleton;
+
     const AP_RPM &rpm;
-    const AP_AHRS &ahrs;
 
     enum ICE_State state;
 
@@ -77,7 +83,7 @@ private:
     
     // RPM above which engine is considered to be running
     AP_Int32 rpm_threshold;
-    
+
     // time when we started the starter
     uint32_t starter_start_time_ms;
 
@@ -87,6 +93,18 @@ private:
     // throttle percentage for engine start
     AP_Int8 start_percent;
 
+    // throttle percentage for engine idle
+    AP_Int8 idle_percent;
+
+    // Idle Controller RPM setpoint
+    AP_Int16 idle_rpm;
+
+    // Idle Controller RPM deadband
+    AP_Int16 idle_db;
+
+    // Idle Controller Slew Rate
+    AP_Float idle_slew;
+    
     // height when we enter ICE_START_HEIGHT_DELAY
     float initial_height;
 
@@ -95,5 +113,17 @@ private:
 
     // we are waiting for valid height data
     bool height_pending:1;
+
+    // idle governor
+    float idle_governor_integrator;
+
+    enum class Options : uint16_t {
+        DISABLE_IGNITION_RC_FAILSAFE=(1U<<0),
+    };
+    AP_Int16 options;
 };
 
+
+namespace AP {
+    AP_ICEngine *ice();
+};

@@ -16,7 +16,7 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma GCC optimize("O3")
+#pragma GCC optimize("O2")
 
 #include "AP_Math.h"
 
@@ -231,6 +231,30 @@ void Vector3<T>::rotate(enum Rotation rotation)
         z = -0.932324f * tmpx +  0.361625f * tmpy +  0.000000f * tmpz;
         return;
     }
+    case ROTATION_PITCH_315: {
+        tmp = HALF_SQRT_2*(float)(x - z);
+        z   = HALF_SQRT_2*(float)(x + z);
+        x = tmp;
+        return;
+    }
+    case ROTATION_ROLL_90_PITCH_315: {
+        tmp = z; z = y; y = -tmp;
+        tmp = HALF_SQRT_2*(float)(x - z);
+        z   = HALF_SQRT_2*(float)(x + z);
+        x = tmp;
+        return;
+    }
+    case ROTATION_PITCH_7: {
+        const float sin_pitch = 0.12186934340514748f; // sinf(pitch);
+        const float cos_pitch = 0.992546151641322f; // cosf(pitch);
+        float tmpx = x;
+        float tmpz = z;
+        x =  cos_pitch * tmpx + sin_pitch * tmpz;
+        z = -sin_pitch * tmpx + cos_pitch * tmpz;
+        return;
+    }
+    case ROTATION_CUSTOM: // no-op; caller should perform custom rotations via matrix multiplication
+        return;
     }
 }
 
@@ -360,11 +384,11 @@ bool Vector3<T>::operator !=(const Vector3<T> &v) const
 template <typename T>
 float Vector3<T>::angle(const Vector3<T> &v2) const
 {
-    float len = this->length() * v2.length();
+    const float len = this->length() * v2.length();
     if (len <= 0) {
         return 0.0f;
     }
-    float cosv = ((*this)*v2) / len;
+    const float cosv = ((*this)*v2) / len;
     if (fabsf(cosv) >= 1) {
         return 0.0f;
     }
@@ -390,6 +414,32 @@ Matrix3<T> Vector3<T>::mul_rowcol(const Vector3<T> &v2) const
                       v1.z * v2.x, v1.z * v2.y, v1.z * v2.z);
 }
 
+// distance from the tip of this vector to a line segment specified by two vectors
+template <typename T>
+float Vector3<T>::distance_to_segment(const Vector3<T> &seg_start, const Vector3<T> &seg_end) const
+{
+    // triangle side lengths
+    const float a = (*this-seg_start).length();
+    const float b = (seg_start-seg_end).length();
+    const float c = (seg_end-*this).length();
+
+    // protect against divide by zero later
+    if (::is_zero(b)) {
+        return 0.0f;
+    }
+
+    // semiperimeter of triangle
+    const float s = (a+b+c) * 0.5f;
+
+    float area_squared = s*(s-a)*(s-b)*(s-c);
+    // area must be constrained above 0 because a triangle could have 3 points could be on a line and float rounding could push this under 0
+    if (area_squared < 0.0f) {
+        area_squared = 0.0f;
+    }
+    const float area = safe_sqrt(area_squared);
+    return 2.0f*area/b;
+}
+
 // define for float
 template void Vector3<float>::rotate(enum Rotation);
 template void Vector3<float>::rotate_inverse(enum Rotation);
@@ -412,6 +462,7 @@ template bool Vector3<float>::operator !=(const Vector3<float> &v) const;
 template bool Vector3<float>::is_nan(void) const;
 template bool Vector3<float>::is_inf(void) const;
 template float Vector3<float>::angle(const Vector3<float> &v) const;
+template float Vector3<float>::distance_to_segment(const Vector3<float> &seg_start, const Vector3<float> &seg_end) const;
 
 // define needed ops for Vector3l
 template Vector3<int32_t> &Vector3<int32_t>::operator +=(const Vector3<int32_t> &v);

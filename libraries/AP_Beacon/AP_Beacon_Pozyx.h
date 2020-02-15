@@ -17,10 +17,10 @@ public:
     AP_Beacon_Pozyx(AP_Beacon &frontend, AP_SerialManager &serial_manager);
 
     // return true if sensor is basically healthy (we are receiving data)
-    bool healthy();
+    bool healthy() override;
 
     // update
-    void update();
+    void update() override;
 
 private:
 

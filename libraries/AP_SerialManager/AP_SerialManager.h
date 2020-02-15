@@ -1,5 +1,5 @@
 /*
-   Please contribute your ideas! See http://dev.ardupilot.org for details
+   Please contribute your ideas! See https://dev.ardupilot.org for details
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,12 +21,22 @@
  */
 #pragma once
 
-#include <AP_Math/AP_Math.h>
-#include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Param/AP_Param.h>
 
-#define SERIALMANAGER_NUM_PORTS 6
+#ifdef HAL_UART_NUM_SERIAL_PORTS
+#if HAL_UART_NUM_SERIAL_PORTS >= 4
+#define SERIALMANAGER_NUM_PORTS HAL_UART_NUM_SERIAL_PORTS
+#else
+// we need a minimum of 4 to allow for a GPS due to the odd ordering
+// of hal.uartB as SERIAL3
+#define SERIALMANAGER_NUM_PORTS 4
+#endif
+#else
+// assume max 8 ports
+#define SERIALMANAGER_NUM_PORTS 8
+#endif
 
  // console default baud rates and buffer sizes
 #ifdef HAL_SERIAL0_BAUD_DEFAULT
@@ -41,6 +51,10 @@
 #define AP_SERIALMANAGER_MAVLINK_BAUD           57600
 #define AP_SERIALMANAGER_MAVLINK_BUFSIZE_RX     128
 #define AP_SERIALMANAGER_MAVLINK_BUFSIZE_TX     256
+
+// LTM buffer sizes
+#define AP_SERIALMANAGER_LTM_BUFSIZE_RX         0
+#define AP_SERIALMANAGER_LTM_BUFSIZE_TX         32
 
 // FrSky default baud rates, use default buffer sizes
 #define AP_SERIALMANAGER_FRSKY_D_BAUD           9600
@@ -63,16 +77,34 @@
 #define AP_SERIALMANAGER_SToRM32_BUFSIZE_RX     128
 #define AP_SERIALMANAGER_SToRM32_BUFSIZE_TX     128
 
-// Aerotenne uLanding Altimeter
-// Note that size of UART FIFO is 128 for Altera-OcPoc board
-#define AP_SERIALMANAGER_ULANDING_BAUD           115200
-#define AP_SERIALMANAGER_ULANDING_BUFSIZE_RX     128
-#define AP_SERIALMANAGER_ULANDING_BUFSIZE_TX     128
+#define AP_SERIALMANAGER_VOLZ_BAUD           115
+#define AP_SERIALMANAGER_VOLZ_BUFSIZE_RX     128
+#define AP_SERIALMANAGER_VOLZ_BUFSIZE_TX     128
 
+#define AP_SERIALMANAGER_ROBOTIS_BUFSIZE_RX  128
+#define AP_SERIALMANAGER_ROBOTIS_BUFSIZE_TX  128
+
+// MegaSquirt EFI protocol
+#define AP_SERIALMANAGER_EFI_MS_BAUD           115
+#define AP_SERIALMANAGER_EFI_MS_BUFSIZE_RX     512
+#define AP_SERIALMANAGER_EFI_MS_BUFSIZE_TX     16
+
+// SBUS servo outputs
+#define AP_SERIALMANAGER_SBUS1_BAUD           100000
+#define AP_SERIALMANAGER_SBUS1_BUFSIZE_RX     16
+#define AP_SERIALMANAGER_SBUS1_BUFSIZE_TX     32
+
+#define AP_SERIALMANAGER_SLCAN_BAUD             115200
+#define AP_SERIALMANAGER_SLCAN_BUFSIZE_RX       128
+#define AP_SERIALMANAGER_SLCAN_BUFSIZE_TX       128
 
 class AP_SerialManager {
-
 public:
+    AP_SerialManager();
+
+    /* Do not allow copies */
+    AP_SerialManager(const AP_SerialManager &other) = delete;
+    AP_SerialManager &operator=(const AP_SerialManager&) = delete;
 
     enum SerialProtocol {
         SerialProtocol_None = -1,
@@ -85,16 +117,33 @@ public:
         SerialProtocol_GPS2 = 6,                     // do not use - use GPS and provide instance of 1
         SerialProtocol_AlexMos = 7,
         SerialProtocol_SToRM32 = 8,
-        SerialProtocol_Lidar = 9,
+        SerialProtocol_Rangefinder = 9,
         SerialProtocol_FrSky_SPort_Passthrough = 10, // FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
-        SerialProtocol_Lidar360 = 11,                // Lightware SF40C or TeraRanger Tower
-        SerialProtocol_Aerotenna_uLanding      = 12, // Ulanding support
-        SerialProtocol_Beacon = 13
+        SerialProtocol_Lidar360 = 11,                // Lightware SF40C, TeraRanger Tower or RPLidarA2
+        SerialProtocol_Aerotenna_uLanding      = 12, // Ulanding support - deprecated, users should use Rangefinder
+        SerialProtocol_Beacon = 13,
+        SerialProtocol_Volz = 14,                    // Volz servo protocol
+        SerialProtocol_Sbus1 = 15,
+        SerialProtocol_ESCTelemetry = 16,
+        SerialProtocol_Devo_Telem = 17,
+        SerialProtocol_OpticalFlow = 18,
+        SerialProtocol_Robotis = 19,
+        SerialProtocol_NMEAOutput = 20,
+        SerialProtocol_WindVane = 21,
+        SerialProtocol_SLCAN = 22,
+        SerialProtocol_RCIN = 23,
+        SerialProtocol_EFI_MS = 24,                   // MegaSquirt EFI serial protocol
+        SerialProtocol_LTM_Telem = 25,
+        SerialProtocol_RunCam = 26,
+        SerialProtocol_Hott = 27,
+        SerialProtocol_Scripting = 28,
     };
 
-    // Constructor
-    AP_SerialManager();
-
+    // get singleton instance
+    static AP_SerialManager *get_singleton(void) {
+        return _singleton;
+    }
+    
     // init_console - initialise console at default baud rate
     void init_console();
 
@@ -123,23 +172,51 @@ public:
     // set_blocking_writes_all - sets block_writes on or off for all serial channels
     void set_blocking_writes_all(bool blocking);
 
-    // set_console_baud - sets the console's baud rate to the rate specified by the protocol
-    void set_console_baud(enum SerialProtocol protocol, uint8_t instance) const;
+    // get the passthru ports if enabled
+    bool get_passthru(AP_HAL::UARTDriver *&port1, AP_HAL::UARTDriver *&port2, uint8_t &timeout_s) const;
+
+    // disable passthru by settings SERIAL_PASS2 to -1
+    void disable_passthru(void);
+
+    // get Serial Port
+    AP_HAL::UARTDriver *get_serial_by_id(uint8_t id);
+
+    // accessors for AP_Periph to set baudrate and type
+    void set_protocol_and_baud(uint8_t sernum, enum SerialProtocol protocol, uint32_t baudrate);
+
+    static uint32_t map_baudrate(int32_t rate);
 
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-
+    static AP_SerialManager *_singleton;
+    
     // array of uart info
-    struct {
+    struct UARTState {
         AP_Int8 protocol;
         AP_Int32 baud;
         AP_HAL::UARTDriver* uart;
+        AP_Int16 options;
     } state[SERIALMANAGER_NUM_PORTS];
 
-    uint32_t map_baudrate(int32_t rate) const;
+    // pass-through serial support
+    AP_Int8 passthru_port1;
+    AP_Int8 passthru_port2;
+    AP_Int8 passthru_timeout;
+
+    // search through managed serial connections looking for the
+    // instance-nth UART which is running protocol protocol
+    const UARTState *find_protocol_instance(enum SerialProtocol protocol,
+                                      uint8_t instance) const;
 
     // protocol_match - returns true if the protocols match
     bool protocol_match(enum SerialProtocol protocol1, enum SerialProtocol protocol2) const;
+
+    // setup any special options
+    void set_options(uint16_t i);
+};
+
+namespace AP {
+    AP_SerialManager &serialmanager();
 };

@@ -1,0 +1,123 @@
+# hw definition file for processing by chibios_pins.py
+# for crazyflie2.0 hardware (see bitcraze.io)
+
+# MCU class and specific type
+MCU STM32F4xx STM32F405xx
+
+# board ID for firmware load
+APJ_BOARD_ID 12
+
+define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_CRAZYFLIE2
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+STM32_PLLM_VALUE 8
+
+define STM32_ST_USE_TIMER 5
+
+FLASH_SIZE_KB 1024
+
+# board voltage
+STM32_VDD 330U
+
+# use USB for stdout
+#STDOUT_SERIAL SD3
+#STDOUT_BAUDRATE 57600
+
+# usart2
+PA2 USART2_TX USART2 # E_TX2
+PA3 USART2_RX USART2 # E_RX2
+
+# external SPI on SPI1
+PA5 SPI1_SCK SPI1  # E_SCK
+PA6 SPI1_MISO SPI1 # E_MISO
+PA7 SPI1_MOSI SPI1 # E_MOSI
+
+# I2C3 is for IMU
+PA8 I2C3_SCL I2C3
+PC9 I2C3_SDA I2C3
+
+# USB port
+PA10 USB_ID INPUT
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# stlink/jtag
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+PA1  TIM2_CH2 TIM2 PWM(1) # front-right
+PB11 TIM2_CH4 TIM2 PWM(4) # rear-right
+PA15 TIM2_CH1 TIM2 PWM(2) # rear-left
+PB9  TIM4_CH4 TIM4 PWM(3) # front-left
+
+PC13 MPU_INT INPUT
+PC14 MPU_FSYNC OUTPUT LOW
+
+# LEDs
+PD2 LED_BLUE OUTPUT HIGH
+PC0 LED_RED_L OUTPUT HIGH
+PC1 LED_GREEN_L OUTPUT HIGH
+PC2 LED_GREEN_R OUTPUT HIGH
+PC3 LED_RED_R OUTPUT HIGH
+
+# misc pins, unused
+#PH0 OSC_IN
+#PH1 OSC_OUT
+#PB2 BOOT1
+# PB3 STM_SWO
+
+# CS pins for external SPI devices
+PC12 E_CS0 CS
+PB4 E_CS1 CS
+PB5 E_CS2 CS
+PB8 E_CS3 CS
+
+# external I2C on I2C1
+PB6 I2C1_SCL I2C1 # E_SCL
+PB7 I2C1_SDA I2C1 # E_SCL
+
+# radio setup 
+PA4 NRF_FLOW_CTRL INPUT # goes low when we can write to uart
+#PB13 NRF_SWCLK
+#PB15 NRF_SWIO
+PC6 USART6_TX USART6 # NRF_RT
+PC7 USART6_RX USART6 # NRF_RX
+
+# USART3 for telemetry
+PC10 USART3_TX USART3 # E_TX1
+PC11 USART3_RX USART3 # E_RX1
+
+# setup I2C order
+I2C_ORDER I2C3 I2C1
+
+# we need I2C clock at 400kHz for IMU
+define HAL_I2C_MAX_CLOCK 400000
+
+# order of UARTs (and USB)
+UART_ORDER OTG1 USART2 USART3 USART6
+
+define HAL_STORAGE_SIZE 15360
+define STORAGE_FLASH_PAGE 1
+
+# reserve 32k for bootloader and 32k for flash storage
+FLASH_RESERVE_START_KB 64
+
+# one IMU
+IMU Invensense I2C:0:0x69 ROTATION_YAW_180
+
+# one baro, attached via I2C on IMU
+BARO LPS2XH:probe_InvensenseIMU I2C:0:0x5D 0x69
+
+# no built-in compass, but probe the i2c bus for all possible
+# external compass types
+define ALLOW_ARM_NO_COMPASS
+define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define HAL_I2C_INTERNAL_MASK 0
+define HAL_COMPASS_AUTO_ROT_DEFAULT 2
+
+define MAG_BOARD_ORIENTATION ROTATION_YAW_180
+
+# no ADC pins
+define HAL_USE_ADC FALSE

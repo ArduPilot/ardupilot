@@ -4,7 +4,9 @@
 from __future__ import print_function
 
 import os.path
+import os
 import sys
+import subprocess
 sys.path.insert(0, 'Tools/ardupilotwaf/')
 
 import ardupilotwaf
@@ -23,27 +25,37 @@ from waflib import Build, ConfigSet, Configure, Context, Utils
 # this makes recompilation at least when defines change. which might
 # be sufficient.
 
-def _set_build_context_variant(variant):
+# Default installation prefix for Linux boards
+default_prefix = '/usr/'
+
+# Override Build execute and Configure post_recurse methods for autoconfigure purposes
+Build.BuildContext.execute = ardupilotwaf.ap_autoconfigure(Build.BuildContext.execute)
+Configure.ConfigurationContext.post_recurse = ardupilotwaf.ap_configure_post_recurse()
+
+
+def _set_build_context_variant(board):
     for c in Context.classes:
         if not issubclass(c, Build.BuildContext):
             continue
-        c.variant = variant
+        c.variant = board
 
 def init(ctx):
     env = ConfigSet.ConfigSet()
     try:
         p = os.path.join(Context.out_dir, Build.CACHE_DIR, Build.CACHE_SUFFIX)
         env.load(p)
-    except:
+    except EnvironmentError:
         return
 
     Configure.autoconfig = 'clobber' if env.AUTOCONFIG else False
 
-    if 'VARIANT' not in env:
+    board = ctx.options.board or env.BOARD
+
+    if not board:
         return
 
     # define the variant build commands according to the board
-    _set_build_context_variant(env.VARIANT)
+    _set_build_context_variant(board)
 
 def options(opt):
     opt.load('compiler_cxx compiler_c waf_unit_test python')
@@ -53,33 +65,97 @@ def options(opt):
     g = opt.ap_groups['configure']
 
     boards_names = boards.get_boards_names()
+    removed_names = boards.get_removed_boards()
     g.add_option('--board',
         action='store',
-        choices=boards_names,
-        default='sitl',
-        help='Target board to build, choices are %s.' % boards_names)
+        default=None,
+        help='Target board to build, choices are %s.' % ', '.join(boards_names))
 
     g.add_option('--debug',
         action='store_true',
         default=False,
         help='Configure as debug variant.')
 
+    g.add_option('--toolchain',
+        action='store',
+        default=None,
+        help='Override default toolchain used for the board. Use "native" for using the host toolchain.')
+
+    g.add_option('--disable-gccdeps',
+        action='store_true',
+        default=False,
+        help='Disable the use of GCC dependencies output method and use waf default method.')
+
+    g.add_option('--enable-asserts',
+        action='store_true',
+        default=False,
+        help='enable OS level asserts.')
+
+    g.add_option('--bootloader',
+        action='store_true',
+        default=False,
+        help='Configure for building a bootloader.')
+
     g.add_option('--no-autoconfig',
         dest='autoconfig',
         action='store_false',
         default=True,
-        help='''
-Disable autoconfiguration feature. By default, the build system triggers a
-reconfiguration whenever it thinks it's necessary - this option disables that.
+        help='''Disable autoconfiguration feature. By default, the build system
+triggers a reconfiguration whenever it thinks it's necessary - this
+option disables that.
 ''')
 
     g.add_option('--no-submodule-update',
         dest='submodule_update',
         action='store_false',
         default=True,
-        help='''
-Don't update git submodules. Useful for building with submodules at specific
-revisions.
+        help='''Don't update git submodules. Useful for building with
+submodules at specific revisions.
+''')
+
+    g.add_option('--enable-header-checks', action='store_true',
+        default=False,
+        help="Enable checking of headers")
+
+    g.add_option('--default-parameters',
+        default=None,
+        help='set default parameters to embed in the firmware')
+
+    g.add_option('--enable-math-check-indexes',
+                 action='store_true',
+                 default=False,
+                 help="Enable checking of math indexes")
+
+    g.add_option('--disable-scripting', action='store_true',
+                 default=False,
+                 help="Disable onboard scripting engine")
+
+    g.add_option('--scripting-checks', action='store_true',
+                 default=True,
+                 help="Enable runtime scripting sanity checks")
+
+    g = opt.ap_groups['linux']
+
+    linux_options = ('--prefix', '--destdir', '--bindir', '--libdir')
+    for k in linux_options:
+        option = opt.parser.get_option(k)
+        if option:
+            opt.parser.remove_option(k)
+            g.add_option(option)
+
+    g.add_option('--apstatedir',
+        action='store',
+        default='',
+        help='''Where to save data like parameters, log and terrain.
+This is the --localstatedir + ArduPilots subdirectory [default:
+board-dependent, usually /var/lib/ardupilot]''')
+
+    g.add_option('--rsync-dest',
+        dest='rsync_dest',
+        action='store',
+        default='',
+        help='''Destination for the rsync Waf command. It can be passed during
+configuration in order to save typing.
 ''')
 
     g.add_option('--enable-benchmarks',
@@ -87,9 +163,9 @@ revisions.
         default=False,
         help='Enable benchmarks.')
 
-    g.add_option('--disable-lttng', action='store_true',
+    g.add_option('--enable-lttng', action='store_true',
         default=False,
-        help="Don't use lttng even if supported by board and dependencies available")
+        help="Enable lttng integration")
 
     g.add_option('--disable-libiio', action='store_true',
         default=False,
@@ -99,6 +175,31 @@ revisions.
         default=False,
         help="Disable compilation and test execution")
 
+    g.add_option('--enable-sfml', action='store_true',
+                 default=False,
+                 help="Enable SFML graphics library")
+
+    g.add_option('--enable-sfml-audio', action='store_true',
+                 default=False,
+                 help="Enable SFML audio library")
+
+    g.add_option('--sitl-osd', action='store_true',
+                 default=False,
+                 help="Enable SITL OSD")
+
+    g.add_option('--sitl-rgbled', action='store_true',
+                 default=False,
+                 help="Enable SITL RGBLed")
+
+    g.add_option('--build-dates', action='store_true',
+                 default=False,
+                 help="Include build date in binaries.  Appears in AUTOPILOT_VERSION.os_sw_version")
+
+    g.add_option('--sitl-flash-storage',
+        action='store_true',
+        default=False,
+        help='Configure for building SITL with flash storage emulation.')
+    
     g.add_option('--static',
         action='store_true',
         default=False,
@@ -107,11 +208,12 @@ revisions.
 def _collect_autoconfig_files(cfg):
     for m in sys.modules.values():
         paths = []
-        if hasattr(m, '__file__'):
+        if hasattr(m, '__file__') and m.__file__ is not None:
             paths.append(m.__file__)
         elif hasattr(m, '__path__'):
             for p in m.__path__:
-                paths.append(p)
+                if p is not None:
+                    paths.append(p)
 
         for p in paths:
             if p in cfg.files or not os.path.isfile(p):
@@ -122,19 +224,30 @@ def _collect_autoconfig_files(cfg):
                 cfg.files.append(p)
 
 def configure(cfg):
+	# we need to enable debug mode when building for gconv, and force it to sitl
+    if cfg.options.board is None:
+        cfg.options.board = 'sitl'
+
+    boards_names = boards.get_boards_names()
+    if not cfg.options.board in boards_names:
+        for b in boards_names:
+            if b.upper() == cfg.options.board.upper():
+                cfg.options.board = b
+                break
+        
     cfg.env.BOARD = cfg.options.board
     cfg.env.DEBUG = cfg.options.debug
     cfg.env.AUTOCONFIG = cfg.options.autoconfig
 
-    cfg.env.VARIANT = cfg.env.BOARD
-    if cfg.env.DEBUG:
-        cfg.env.VARIANT += '-debug'
-
-    _set_build_context_variant(cfg.env.VARIANT)
-    cfg.setenv(cfg.env.VARIANT)
+    _set_build_context_variant(cfg.env.BOARD)
+    cfg.setenv(cfg.env.BOARD)
 
     cfg.env.BOARD = cfg.options.board
     cfg.env.DEBUG = cfg.options.debug
+    cfg.env.ENABLE_ASSERTS = cfg.options.enable_asserts
+    cfg.env.BOOTLOADER = cfg.options.bootloader
+
+    cfg.env.OPTIONS = cfg.options.__dict__
 
     # Allow to differentiate our build from the make build
     cfg.define('WAF_BUILD', 1)
@@ -185,11 +298,34 @@ def configure(cfg):
     else:
         cfg.end_msg('disabled', color='YELLOW')
 
+    cfg.start_msg('Scripting')
+    if cfg.options.disable_scripting:
+        cfg.end_msg('disabled', color='YELLOW')
+    else:
+        cfg.end_msg('enabled')
+
+    cfg.start_msg('Scripting runtime checks')
+    if cfg.options.scripting_checks:
+        cfg.end_msg('enabled')
+    else:
+        cfg.end_msg('disabled', color='YELLOW')
+
     cfg.env.append_value('GIT_SUBMODULES', 'mavlink')
 
     cfg.env.prepend_value('INCLUDES', [
         cfg.srcnode.abspath() + '/libraries/',
     ])
+
+    cfg.find_program('rsync', mandatory=False)
+    if cfg.options.rsync_dest:
+        cfg.msg('Setting rsync destination to', cfg.options.rsync_dest)
+        cfg.env.RSYNC_DEST = cfg.options.rsync_dest
+
+    if cfg.options.enable_header_checks:
+        cfg.msg('Enabling header checks', cfg.options.enable_header_checks)
+        cfg.env.ENABLE_HEADER_CHECKS = True
+    else:
+        cfg.env.ENABLE_HEADER_CHECKS = False
 
     # TODO: Investigate if code could be changed to not depend on the
     # source absolute path.
@@ -220,6 +356,17 @@ def collect_dirs_to_recurse(bld, globs, **kw):
 def list_boards(ctx):
     print(*boards.get_boards_names())
 
+def board(ctx):
+    env = ConfigSet.ConfigSet()
+    try:
+        p = os.path.join(Context.out_dir, Build.CACHE_DIR, Build.CACHE_SUFFIX)
+        env.load(p)
+    except:
+        print('No board currently configured')
+        return
+
+    print('Board configured to: {}'.format(env.BOARD))
+
 def _build_cmd_tweaks(bld):
     if bld.cmd == 'check-all':
         bld.options.all_tests = True
@@ -231,23 +378,24 @@ def _build_cmd_tweaks(bld):
         bld.options.clear_failed_tests = True
 
 def _build_dynamic_sources(bld):
-    bld(
-        features='mavgen',
-        source='modules/mavlink/message_definitions/v1.0/ardupilotmega.xml',
-        output_dir='libraries/GCS_MAVLink/include/mavlink/v2.0/',
-        name='mavlink',
-        # this below is not ideal, mavgen tool should set this, but that's not
-        # currently possible
-        export_includes=[
+    if not bld.env.BOOTLOADER:
+        bld(
+            features='mavgen',
+            source='modules/mavlink/message_definitions/v1.0/ardupilotmega.xml',
+            output_dir='libraries/GCS_MAVLink/include/mavlink/v2.0/',
+            name='mavlink',
+            # this below is not ideal, mavgen tool should set this, but that's not
+            # currently possible
+            export_includes=[
             bld.bldnode.make_node('libraries').abspath(),
             bld.bldnode.make_node('libraries/GCS_MAVLink').abspath(),
-        ],
-    )
+            ],
+            )
 
-    if bld.get_board().with_uavcan:
+    if bld.get_board().with_uavcan or bld.env.HAL_WITH_UAVCAN==True:
         bld(
             features='uavcangen',
-            source=bld.srcnode.ant_glob('modules/uavcan/dsdl/uavcan/**/*.uavcan'),
+            source=bld.srcnode.ant_glob('modules/uavcan/dsdl/* libraries/AP_UAVCAN/dsdl/*', dir=True, src=False),
             output_dir='modules/uavcan/libuavcan/include/dsdlc_generated',
             name='uavcan',
             export_includes=[
@@ -318,6 +466,13 @@ def _build_recursion(bld):
         common_dirs_patterns,
         excl=common_dirs_excl,
     )
+    if bld.env.IOMCU_FW is not None:
+        if bld.env.IOMCU_FW:
+            dirs_to_recurse.append('libraries/AP_IOMCU/iofirmware')
+
+    if bld.env.PERIPH_FW is not None:
+        if bld.env.PERIPH_FW:
+            dirs_to_recurse.append('Tools/AP_Periph')
 
     for p in hal_dirs_patterns:
         dirs_to_recurse += collect_dirs_to_recurse(
@@ -342,6 +497,12 @@ def _build_post_funs(bld):
     if bld.env.SUBMODULE_UPDATE:
         bld.git_submodule_post_fun()
 
+def _load_pre_build(bld):
+    '''allow for a pre_build() function in build modules'''
+    brd = bld.get_board()
+    if getattr(brd, 'pre_build', None):
+        brd.pre_build(bld)    
+
 def build(bld):
     config_hash = Utils.h_file(bld.bldnode.make_node('ap_config.h').abspath())
     bld.env.CCDEPS = config_hash
@@ -355,7 +516,9 @@ def build(bld):
         use=['mavlink'],
         cxxflags=['-include', 'ap_config.h'],
     )
-    
+
+    _load_pre_build(bld)
+
     if bld.get_board().with_uavcan:
         bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['uavcan']
 
@@ -386,7 +549,7 @@ ardupilotwaf.build_command('check-all',
     doc='shortcut for `waf check --alltests`',
 )
 
-for name in ('antennatracker', 'copter', 'plane', 'rover', 'sub'):
+for name in ('antennatracker', 'copter', 'heli', 'plane', 'rover', 'sub', 'bootloader','iofirmware','AP_Periph'):
     ardupilotwaf.build_command(name,
         program_group_list=name,
         doc='builds %s programs' % name,
@@ -397,3 +560,47 @@ for program_group in ('all', 'bin', 'tools', 'examples', 'tests', 'benchmarks'):
         program_group_list=program_group,
         doc='builds all programs of %s group' % program_group,
     )
+
+class LocalInstallContext(Build.InstallContext):
+    """runs install using BLD/install as destdir, where BLD is the build variant directory"""
+    cmd = 'localinstall'
+
+    def __init__(self, **kw):
+        super(LocalInstallContext, self).__init__(**kw)
+        self.local_destdir = os.path.join(self.variant_dir, 'install')
+
+    def execute(self):
+        old_destdir = self.options.destdir
+        self.options.destdir = self.local_destdir
+        r = super(LocalInstallContext, self).execute()
+        self.options.destdir = old_destdir
+        return r
+
+class RsyncContext(LocalInstallContext):
+    """runs localinstall and then rsyncs BLD/install with the target system"""
+    cmd = 'rsync'
+
+    def __init__(self, **kw):
+        super(RsyncContext, self).__init__(**kw)
+        self.add_pre_fun(RsyncContext.create_rsync_taskgen)
+
+    def create_rsync_taskgen(self):
+        if 'RSYNC' not in self.env:
+            self.fatal('rsync program seems not to be installed, can\'t continue')
+
+        self.add_group()
+
+        tg = self(
+            name='rsync',
+            rule='${RSYNC} -a ${RSYNC_SRC}/ ${RSYNC_DEST}',
+            always=True,
+        )
+
+        tg.env.RSYNC_SRC = self.local_destdir
+        if self.options.rsync_dest:
+            self.env.RSYNC_DEST = self.options.rsync_dest
+
+        if 'RSYNC_DEST' not in tg.env:
+            self.fatal('Destination for rsync not defined. Either pass --rsync-dest here or during configuration.')
+
+        tg.post()

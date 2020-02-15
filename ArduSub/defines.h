@@ -30,15 +30,16 @@ enum autopilot_yaw_mode {
 };
 
 // Auto Pilot Modes enumeration
-enum control_mode_t {
+enum control_mode_t : uint8_t {
     STABILIZE =     0,  // manual angle with manual depth/throttle
     ACRO =          1,  // manual body-frame angular rate with manual depth/throttle
     ALT_HOLD =      2,  // manual angle with automatic depth/throttle
-    AUTO =          3,  // not implemented in sub // fully automatic waypoint control using mission commands
-    GUIDED =        4,  // not implemented in sub // fully automatic fly to coordinate or fly at velocity/direction using GCS immediate commands
-    CIRCLE =        7,  // not implemented in sub // automatic circular flight with automatic throttle
+    AUTO =          3,  // fully automatic waypoint control using mission commands
+    GUIDED =        4,  // fully automatic fly to coordinate or fly at velocity/direction using GCS immediate commands
+    CIRCLE =        7,  // automatic circular flight with automatic throttle
     SURFACE =       9,  // automatically return to surface, pilot maintains horizontal control
     POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
+<<<<<<< HEAD
     myflightmode=  21, 
     MANUAL =       19   // Pass-through input with no stabilization
 };
@@ -59,19 +60,16 @@ enum mode_reason_t {
     MODE_REASON_SURFACE_COMPLETE,
     MODE_REASON_LEAK_FAILSAFE,
     MODE_REASON_BAD_DEPTH
+=======
+    MANUAL =       19,  // Pass-through input with no stabilization
+    MOTOR_DETECT = 20   // Automatically detect motors orientation
+>>>>>>> 14ad9a58bde667b94cfc1aae2e896cebef07ffdf
 };
 
 // Acro Trainer types
 #define ACRO_TRAINER_DISABLED   0
 #define ACRO_TRAINER_LEVELING   1
 #define ACRO_TRAINER_LIMITED    2
-
-// RC Feel roll/pitch definitions
-#define RC_FEEL_RP_VERY_SOFT        0
-#define RC_FEEL_RP_SOFT             25
-#define RC_FEEL_RP_MEDIUM           50
-#define RC_FEEL_RP_CRISP            75
-#define RC_FEEL_RP_VERY_CRISP       100
 
 // Yaw behaviours during missions - possible values for WP_YAW_BEHAVIOR parameter
 #define WP_YAW_BEHAVIOR_NONE                          0   // auto pilot will never control yaw during missions or rtl (except for DO_CONDITIONAL_YAW command received)
@@ -109,23 +107,16 @@ enum RTLState {
 };
 
 //  Logging parameters
-#define TYPE_AIRSTART_MSG               0x00
-#define TYPE_GROUNDSTART_MSG            0x01
-#define LOG_CONTROL_TUNING_MSG          0x04
-#define LOG_NAV_TUNING_MSG              0x05
-#define LOG_PERFORMANCE_MSG             0x06
-#define LOG_OPTFLOW_MSG                 0x0C
-#define LOG_EVENT_MSG                   0x0D
-#define LOG_ERROR_MSG                   0x13
-#define LOG_DATA_INT16_MSG              0x14
-#define LOG_DATA_UINT16_MSG             0x15
-#define LOG_DATA_INT32_MSG              0x16
-#define LOG_DATA_UINT32_MSG             0x17
-#define LOG_DATA_FLOAT_MSG              0x18
-#define LOG_MOTBATT_MSG                 0x1E
-#define LOG_PARAMTUNE_MSG               0x1F
-#define LOG_GUIDEDTARGET_MSG            0x22
-#define LOG_PROXIMITY_MSG               0x24
+enum LoggingParameters {
+    LOG_CONTROL_TUNING_MSG,
+    LOG_DATA_INT16_MSG,
+    LOG_DATA_UINT16_MSG,
+    LOG_DATA_INT32_MSG,
+    LOG_DATA_UINT32_MSG,
+    LOG_DATA_FLOAT_MSG,
+    LOG_MOTBATT_MSG,
+    LOG_GUIDEDTARGET_MSG
+};
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
 #define MASK_LOG_ATTITUDE_MED           (1<<1)
@@ -147,104 +138,12 @@ enum RTLState {
 #define MASK_LOG_IMU_RAW                (1UL<<19)
 #define MASK_LOG_ANY                    0xFFFF
 
-// DATA - event logging
-#define DATA_AP_STATE                       7
-#define DATA_SYSTEM_TIME_SET                8
-#define DATA_ARMED                          10
-#define DATA_DISARMED                       11
-#define DATA_LOST_GPS                       19
-#define DATA_SET_HOME                       25
-#define DATA_SAVE_TRIM                      38
-#define DATA_SAVEWP_ADD_WP                  39
-#define DATA_FENCE_ENABLE                   41
-#define DATA_FENCE_DISABLE                  42
-#define DATA_ACRO_TRAINER_DISABLED          43
-#define DATA_ACRO_TRAINER_LEVELING          44
-#define DATA_ACRO_TRAINER_LIMITED           45
-#define DATA_GRIPPER_GRAB                   46
-#define DATA_GRIPPER_RELEASE                47
-#define DATA_EKF_ALT_RESET                  60
-#define DATA_SURFACE_CANCELLED_BY_PILOT     61
-#define DATA_EKF_YAW_RESET                  62
-#define DATA_SURFACED                       63
-#define DATA_NOT_SURFACED                   64
-#define DATA_BOTTOMED                       65
-#define DATA_NOT_BOTTOMED                   66
-
-// Centi-degrees to radians
-#define DEGX100 5729.57795f
-
-// Error message sub systems and error codes
-#define ERROR_SUBSYSTEM_MAIN                1
-#define ERROR_SUBSYSTEM_INPUT               2
-#define ERROR_SUBSYSTEM_COMPASS             3
-#define ERROR_SUBSYSTEM_OPTFLOW             4
-#define ERROR_SUBSYSTEM_FAILSAFE_RADIO      5
-#define ERROR_SUBSYSTEM_FAILSAFE_BATT       6
-#define ERROR_SUBSYSTEM_FAILSAFE_GPS        7   // not used
-#define ERROR_SUBSYSTEM_FAILSAFE_GCS        8
-#define ERROR_SUBSYSTEM_FAILSAFE_FENCE      9
-#define ERROR_SUBSYSTEM_FLIGHT_MODE         10
-#define ERROR_SUBSYSTEM_GPS                 11  // not used
-#define ERROR_SUBSYSTEM_CRASH_CHECK         12
-#define ERROR_SUBSYSTEM_EKFCHECK            16
-#define ERROR_SUBSYSTEM_FAILSAFE_EKFINAV    17
-#define ERROR_SUBSYSTEM_BARO                18
-#define ERROR_SUBSYSTEM_CPU                 19
-#define ERROR_SUBSYSTEM_TERRAIN             21
-#define ERROR_SUBSYSTEM_NAVIGATION          22
-#define ERROR_SUBSYSTEM_FAILSAFE_TERRAIN    23
-#define ERROR_SUBSYSTEM_FAILSAFE_LEAK       24
-#define ERROR_SUBSYSTEM_FAILSAFE_SENSORS    25
-
-// general error codes
-#define ERROR_CODE_ERROR_RESOLVED           0
-#define ERROR_CODE_FAILED_TO_INITIALISE     1
-#define ERROR_CODE_UNHEALTHY                4
-// subsystem specific error codes -- radio
-#define ERROR_CODE_RADIO_LATE_FRAME         2
-// subsystem specific error codes -- failsafe_thr, batt, gps
-#define ERROR_CODE_FAILSAFE_RESOLVED        0
-#define ERROR_CODE_FAILSAFE_OCCURRED        1
-// subsystem specific error codes -- compass
-#define ERROR_CODE_COMPASS_FAILED_TO_READ   2
-// subsystem specific error codes -- main
-#define ERROR_CODE_MAIN_INS_DELAY           1
-// subsystem specific error codes -- crash checker
-#define ERROR_CODE_CRASH_CHECK_CRASH        1
-#define ERROR_CODE_CRASH_CHECK_LOSS_OF_CONTROL 2
-// subsystem specific error codes -- terrain
-#define ERROR_CODE_MISSING_TERRAIN_DATA     2
-// subsystem specific error codes -- navigation
-#define ERROR_CODE_FAILED_TO_SET_DESTINATION    2
-#define ERROR_CODE_RESTARTED_RTL            3
-#define ERROR_CODE_FAILED_CIRCLE_INIT       4
-#define ERROR_CODE_DEST_OUTSIDE_FENCE       5
-
-// EKF check definitions
-#define ERROR_CODE_EKFCHECK_BAD_VARIANCE       2
-#define ERROR_CODE_EKFCHECK_VARIANCE_CLEARED   0
-
-// Baro specific error codes
-#define ERROR_CODE_BAD_DEPTH              0
-
-//////////////////////////////////////////////////////////////////////////////
-// Battery monitoring
-//
-#ifndef FS_BATT_VOLTAGE_DEFAULT
-# define FS_BATT_VOLTAGE_DEFAULT       0       // default battery voltage below which failsafe will be triggered
-#endif
-
-#ifndef FS_BATT_MAH_DEFAULT
-# define FS_BATT_MAH_DEFAULT             0         // default battery capacity (in mah) below which failsafe will be triggered
-#endif
-
 // GCS failsafe
 #ifndef FS_GCS
 # define FS_GCS                        DISABLED
 #endif
 #ifndef FS_GCS_TIMEOUT_MS
-# define FS_GCS_TIMEOUT_MS             2500    // gcs failsafe triggers after 5 seconds with no GCS heartbeat
+# define FS_GCS_TIMEOUT_MS             2500    // gcs failsafe triggers after this number of milliseconds with no GCS heartbeat
 #endif
 
 // missing terrain data failsafe
@@ -268,12 +167,6 @@ enum RTLState {
 # define FS_EKF_THRESHOLD_DEFAULT      0.8f    // EKF failsafe's default compass and velocity variance threshold above which the EKF failsafe will be triggered
 #endif
 
-// Battery failsafe definitions (FS_BATT_ENABLE parameter)
-#define FS_BATT_DISABLED                    0       // battery failsafe disabled
-#define FS_BATT_WARN_ONLY                   1       // only warn gcs on battery failsafe
-#define FS_BATT_DISARM                      2       // disarm on battery failsafe
-#define FS_BATT_SURFACE                     3       // switch to SURFACE mode on battery failsafe
-
 // GCS failsafe definitions (FS_GCS_ENABLE parameter)
 #define FS_GCS_DISABLED     0 // Disabled
 #define FS_GCS_WARN_ONLY    1 // Only send warning to gcs (only useful with multiple gcs links)
@@ -283,7 +176,7 @@ enum RTLState {
 
 // Leak failsafe definitions (FS_LEAK_ENABLE parameter)
 #define FS_LEAK_DISABLED    0 // Disabled
-#define FS_LEAK_WARN_ONLY   1 // Only send waring to gcs
+#define FS_LEAK_WARN_ONLY   1 // Only send warning to gcs
 #define FS_LEAK_SURFACE     2 // Switch to surface mode
 
 // Internal pressure failsafe threshold (FS_PRESS_MAX parameter)

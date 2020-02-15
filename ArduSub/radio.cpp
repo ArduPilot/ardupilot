@@ -28,9 +28,10 @@ void Sub::init_rc_in()
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     // initialize rc input to 1500 on control channels (rather than 0)
     for (int i = 0; i < 6; i++) {
-        hal.rcin->set_override(i, 1500);
+        RC_Channels::set_override(i, 1500);
     }
 
+<<<<<<< HEAD
     hal.rcin->set_override(6, 1500); // camera pan channel
     hal.rcin->set_override(7, 1500); // camera tilt channel
 
@@ -43,6 +44,20 @@ void Sub::init_rc_in()
     hal.rcin->set_override(9, min); // lights 2 channel
 
     hal.rcin->set_override(10, 1100); // video switch
+=======
+    RC_Channels::set_override(6, 1500); // camera pan channel
+    RC_Channels::set_override(7, 1500); // camera tilt channel
+
+    RC_Channel* chan = RC_Channels::rc_channel(8);
+    uint16_t min = chan->get_radio_min();
+    RC_Channels::set_override(8, min); // lights 1 channel
+
+    chan = RC_Channels::rc_channel(9);
+    min = chan->get_radio_min();
+    RC_Channels::set_override(9, min); // lights 2 channel
+
+    RC_Channels::set_override(10, 1100); // video switch
+>>>>>>> 14ad9a58bde667b94cfc1aae2e896cebef07ffdf
 #endif
 }
 
@@ -51,11 +66,11 @@ void Sub::init_rc_out()
 {
     motors.set_update_rate(g.rc_speed);
     motors.set_loop_rate(scheduler.get_loop_rate_hz());
-    motors.init((AP_Motors::motor_frame_class)g.frame_configuration.get(), (AP_Motors::motor_frame_type)0);
+    motors.init((AP_Motors::motor_frame_class)g.frame_configuration.get(), AP_Motors::motor_frame_type::MOTOR_FRAME_TYPE_PLUS);
     motors.set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
 
     // enable output to motors
-    if (arming.rc_check()) {
+    if (arming.rc_calibration_checks(true)) {
         enable_motor_output();
     }
 

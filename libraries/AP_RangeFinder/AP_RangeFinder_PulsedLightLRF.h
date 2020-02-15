@@ -1,7 +1,7 @@
 #pragma once
 
-#include "RangeFinder.h"
-#include "RangeFinder_Backend.h"
+#include "AP_RangeFinder.h"
+#include "AP_RangeFinder_Backend.h"
 #include <AP_HAL/I2CDevice.h>
 
 /* Connection diagram
@@ -19,19 +19,26 @@ class AP_RangeFinder_PulsedLightLRF : public AP_RangeFinder_Backend
 
 public:
     // static detection function
-    static AP_RangeFinder_Backend *detect(uint8_t bus, RangeFinder &ranger, uint8_t instance,
+    static AP_RangeFinder_Backend *detect(uint8_t bus,
                                           RangeFinder::RangeFinder_State &_state,
-                                          RangeFinder::RangeFinder_Type rftype);
+                                          AP_RangeFinder_Params &_params,
+                                          RangeFinder::Type rftype);
 
     // update state
     void update(void) override {}
 
+protected:
+
+    virtual MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
+        return MAV_DISTANCE_SENSOR_LASER;
+    }
 
 private:
     // constructor
-    AP_RangeFinder_PulsedLightLRF(uint8_t bus, RangeFinder &ranger, uint8_t instance,
+    AP_RangeFinder_PulsedLightLRF(uint8_t bus,
                                   RangeFinder::RangeFinder_State &_state,
-                                  RangeFinder::RangeFinder_Type rftype);
+								  AP_RangeFinder_Params &_params,
+                                  RangeFinder::Type rftype);
 
     // start a reading
     bool init(void);
@@ -44,8 +51,9 @@ private:
     uint8_t hw_version;
     uint8_t check_reg_counter;
     bool v2_hardware;
+    bool v3hp_hardware;
     uint16_t last_distance_cm;
-    RangeFinder::RangeFinder_Type rftype;
+    RangeFinder::Type rftype;
     
     enum { PHASE_MEASURE, PHASE_COLLECT } phase;
 };
