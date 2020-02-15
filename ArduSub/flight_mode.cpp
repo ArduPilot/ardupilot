@@ -29,6 +29,10 @@ bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
         success = althold_init();
         break;
 
+    case myflightmode:
+        success = myflightmode_init();
+        break;
+
     case AUTO:
         success = auto_init();
         break;
@@ -108,6 +112,10 @@ void Sub::update_flight_mode()
 
     case ALT_HOLD:
         althold_run();
+        break;
+
+    case myflightmode:
+        myflightmode_run();
         break;
 
     case AUTO:

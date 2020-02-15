@@ -553,6 +553,8 @@ private:
     void get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16_t yaw_in, float &roll_out, float &pitch_out, float &yaw_out);
     bool althold_init(void);
     void althold_run();
+    bool myflightmode_init(void);
+    void myflightmode_run();
     bool auto_init(void);
     void auto_run();
     void auto_wp_start(const Vector3f& destination);

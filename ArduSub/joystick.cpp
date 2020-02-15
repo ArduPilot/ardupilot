@@ -149,6 +149,9 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
     case JSButton::button_function_t::k_mode_depth_hold:
         set_mode(ALT_HOLD, MODE_REASON_TX_COMMAND);
         break;
+    case JSButton::button_function_t::k_mode_myflightmode:
+        set_mode(myflightmode, MODE_REASON_TX_COMMAND);
+        break;
     case JSButton::button_function_t::k_mode_auto:
         set_mode(AUTO, MODE_REASON_TX_COMMAND);
         break;

@@ -39,6 +39,7 @@ enum control_mode_t {
     CIRCLE =        7,  // not implemented in sub // automatic circular flight with automatic throttle
     SURFACE =       9,  // automatically return to surface, pilot maintains horizontal control
     POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
+    myflightmode=  21, 
     MANUAL =       19   // Pass-through input with no stabilization
 };
 
