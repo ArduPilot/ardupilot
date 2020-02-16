@@ -176,7 +176,7 @@ void ModeGuided::angle_control_start()
 // guided_set_destination - sets guided mode's target destination
 // Returns true if the fence is enabled and guided waypoint is within the fence
 // else return false if the waypoint is outside the fence
-bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
+bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw, bool terrain_alt)
 {
     // ensure we are in position control mode
     if (guided_mode != Guided_WP) {
@@ -197,7 +197,7 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
     set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
 
     // no need to check return status because terrain data is not used
-    wp_nav->set_wp_destination(destination, false);
+    wp_nav->set_wp_destination(destination, terrain_alt);
 
     // log target
     copter.Log_Write_GuidedTarget(guided_mode, destination, Vector3f());

@@ -1085,6 +1085,7 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
          */
 
         Vector3f pos_neu_cm;  // position (North, East, Up coordinates) in centimeters
+        bool terrain_alt = false;
 
         if(!pos_ignore) {
             // sanity check location
@@ -1102,6 +1103,7 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
                 int32_t(packet.alt*100),
                 frame,
             };
+            terrain_alt = (loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN);
             if (!loc.get_vector_from_origin_NEU(pos_neu_cm)) {
                 break;
             }
@@ -1124,7 +1126,7 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
         } else if (pos_ignore && !vel_ignore && acc_ignore) {
             copter.mode_guided.set_velocity(Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f), !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
         } else if (!pos_ignore && vel_ignore && acc_ignore) {
-            copter.mode_guided.set_destination(pos_neu_cm, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
+            copter.mode_guided.set_destination(pos_neu_cm, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative, terrain_alt);
         }
 
         break;
