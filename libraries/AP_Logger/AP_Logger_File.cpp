@@ -75,6 +75,10 @@ void AP_Logger_File::Init()
     if (ret == -1 && errno != EEXIST) {
         printf("Failed to create log directory %s : %s\n", _log_directory, strerror(errno));
     }
+    
+    if (ret != 0) {
+        return;
+    }
 
     // determine and limit file backend buffersize
     uint32_t bufsize = _front._params.file_bufsize;
