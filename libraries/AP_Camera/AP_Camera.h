@@ -5,12 +5,6 @@
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS.h>
 
-#define AP_CAMERA_TRIGGER_TYPE_SERVO                0
-#define AP_CAMERA_TRIGGER_TYPE_RELAY                1
-#define AP_CAMERA_TRIGGER_TYPE_GOPRO                2   // GoPro in Solo gimbal
-
-#define AP_CAMERA_TRIGGER_DEFAULT_TRIGGER_TYPE  AP_CAMERA_TRIGGER_TYPE_SERVO    // default is to use servo to trigger camera
-
 #define AP_CAMERA_TRIGGER_DEFAULT_DURATION  10      // default duration servo or relay is held open in 10ths of a second (i.e. 10 = 1 second)
 
 #define AP_CAMERA_SERVO_ON_PWM              1300    // default PWM value to move servo to when shutter is activated
@@ -80,6 +74,14 @@ public:
         CAMERA_TYPE_STD,
         CAMERA_TYPE_BMMCC
     };
+
+    enum class CamTrigType {
+        servo   = 0,
+        relay   = 1,
+        gopro   = 2,
+    };
+
+    AP_Camera::CamTrigType get_trigger_type(void);
 
 private:
 
