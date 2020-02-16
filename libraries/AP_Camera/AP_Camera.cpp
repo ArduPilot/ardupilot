@@ -21,7 +21,7 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @Description: how to trigger the camera to take a picture
     // @Values: 0:Servo,1:Relay, 2:GoPro in Solo Gimbal
     // @User: Standard
-    AP_GROUPINFO("TRIGG_TYPE",  0, AP_Camera, _trigger_type, AP_CAMERA_TRIGGER_DEFAULT_TRIGGER_TYPE),
+    AP_GROUPINFO("TRIGG_TYPE",  0, AP_Camera, _trigger_type, 0),
 
     // @Param: DURATION
     // @DisplayName: Duration that shutter is held open
@@ -146,14 +146,14 @@ void AP_Camera::trigger_pic()
     setup_feedback_callback();
 
     _image_index++;
-    switch (_trigger_type) {
-    case AP_CAMERA_TRIGGER_TYPE_SERVO:
-        servo_pic();                    // Servo operated camera
+    switch (get_trigger_type()) {
+    case CamTrigType::servo:
+        servo_pic();            // Servo operated camera
         break;
-    case AP_CAMERA_TRIGGER_TYPE_RELAY:
-        relay_pic();                    // basic relay activation
+    case CamTrigType::relay:
+        relay_pic();            // basic relay activation
         break;
-    case AP_CAMERA_TRIGGER_TYPE_GOPRO:  // gopro in Solo Gimbal
+    case CamTrigType::gopro:  // gopro in Solo Gimbal
         AP_Camera_SoloGimbal::gopro_shutter_toggle();
         break;
     }
@@ -169,11 +169,11 @@ AP_Camera::trigger_pic_cleanup()
     if (_trigger_counter) {
         _trigger_counter--;
     } else {
-        switch (_trigger_type) {
-        case AP_CAMERA_TRIGGER_TYPE_SERVO:
+        switch (get_trigger_type()) {
+        case CamTrigType::servo:
             SRV_Channels::set_output_pwm(SRV_Channel::k_cam_trigger, _servo_off_pwm);
             break;
-        case AP_CAMERA_TRIGGER_TYPE_RELAY: {
+        case CamTrigType::relay: {
             AP_Relay *_apm_relay = AP::relay();
             if (_apm_relay == nullptr) {
                 break;
@@ -185,6 +185,9 @@ AP_Camera::trigger_pic_cleanup()
             }
             break;
         }
+        case CamTrigType::gopro:
+            // nothing to do
+            break;
         }
     }
 
@@ -207,7 +210,7 @@ void AP_Camera::handle_message(mavlink_channel_t chan, const mavlink_message_t &
         break;
     case MAVLINK_MSG_ID_GOPRO_HEARTBEAT:
         // heartbeat from the Solo gimbal with a GoPro
-        if (_trigger_type == AP_CAMERA_TRIGGER_TYPE_GOPRO) {
+        if (get_trigger_type() == CamTrigType::gopro) {
             AP_Camera_SoloGimbal::handle_gopro_heartbeat(chan, msg);
             break;
         }
@@ -218,8 +221,8 @@ void AP_Camera::handle_message(mavlink_channel_t chan, const mavlink_message_t &
 /// momentary switch to cycle camera modes
 void AP_Camera::cam_mode_toggle()
 {
-    switch (_trigger_type) {
-    case AP_CAMERA_TRIGGER_TYPE_GOPRO:
+    switch (get_trigger_type()) {
+    case CamTrigType::gopro:
         AP_Camera_SoloGimbal::gopro_capture_mode_toggle();
         break;
     default:
@@ -484,6 +487,20 @@ void AP_Camera::update_trigger()
             }
         }
     }
+}
+
+AP_Camera::CamTrigType AP_Camera::get_trigger_type(void)
+{
+    uint8_t type = _trigger_type.get();
+
+    switch ((CamTrigType)type) {
+        case CamTrigType::servo:
+        case CamTrigType::relay:
+        case CamTrigType::gopro:
+            return (CamTrigType)type;
+        default:
+            return CamTrigType::servo;
+    }   
 }
 
 // singleton instance
