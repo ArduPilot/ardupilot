@@ -4160,26 +4160,46 @@ switch value'''
             if distance >= distance_min and distance <= distance_max:
                 return
 
+    # download parameters tries to cope with its download being
+    # interrupted or broken by simply retrying the download a few
+    # times.
     def download_parameters(self, target_system, target_component):
         # try a simple fetch-all:
-        self.mav.mav.param_request_list_send(target_system, target_component)
         tstart = self.get_sim_time_cached()
+        last_parameter_received = 0
+        attempt_count = 0
+        start_done = False
+        # make flake8 happy:
         count = 0
-        expected_count = None
+        expected_count = 0
         seen_ids = {}
-        id_seq = {}
+        self.progress("Downloading parameters")
         while True:
             now = self.get_sim_time_cached()
-            if now - tstart > 10:
-                raise AutoTestTimeoutException("Failed to download parameters  (have %s/%s)" %
-                                               (str(count), str(expected_count)))
-            m = self.mav.recv_match(type='PARAM_VALUE', blocking=True, timeout=1)
+            if not start_done or now - last_parameter_received > 10:
+                start_done = True
+                if attempt_count > 3:
+                    raise AutoTestTimeoutException("Failed to download parameters  (have %s/%s) (seen_ids-count=%u)" %
+                                                   (str(count), str(expected_count), len(seen_ids.keys())))
+                elif attempt_count != 0:
+                    self.progress("Download failed; retrying")
+                self.drain_mav()
+                self.mav.mav.param_request_list_send(target_system, target_component)
+                attempt_count += 1
+                count = 0
+                expected_count = None
+                seen_ids = {}
+                id_seq = {}
+            m = self.mav.recv_match(type='PARAM_VALUE', blocking=True, timeout=10)
             if m is None:
                 raise AutoTestTimeoutException("tardy PARAM_VALUE (have %s/%s)" % (
                     str(count), str(expected_count)))
             if m.param_index == 65535:
                 self.progress("volunteered parameter: %s" % str(m))
                 continue
+            if False:
+                self.progress("  received (%4u/%4u %s=%f" %
+                              (m.param_index, m.param_count, m.param_id, m.param_value))
             if m.param_index >= m.param_count:
                 raise ValueError("parameter index (%u) gte parameter count (%u)" %
                                  (m.param_index, m.param_count))
@@ -4191,10 +4211,12 @@ switch value'''
             if m.param_id not in seen_ids:
                 count += 1
                 seen_ids[m.param_id] = m.param_value
+                last_parameter_received = now
                 if count == expected_count:
                     break
 
-        self.progress("Downloaded %u parameters OK" % count)
+        self.progress("Downloaded %u parameters OK (attempt=%u)" %
+                      (count, attempt_count))
         return (seen_ids, id_seq)
 
     def test_parameters_download(self):
