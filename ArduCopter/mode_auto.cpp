@@ -189,21 +189,6 @@ void ModeAuto::takeoff_start(const Location& dest_loc)
 }
 
 // auto_wp_start - initialises waypoint controller to implement flying to a particular destination
-void ModeAuto::wp_start(const Vector3f& destination, bool terrain_alt)
-{
-    _mode = Auto_WP;
-
-    // initialise wpnav (no need to check return status because terrain data is not used)
-    wp_nav->set_wp_destination(destination, terrain_alt);
-
-    // initialise yaw
-    // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
-    if (auto_yaw.mode() != AUTO_YAW_ROI) {
-        auto_yaw.set_mode_to_default(false);
-    }
-}
-
-// auto_wp_start - initialises waypoint controller to implement flying to a particular destination
 void ModeAuto::wp_start(const Location& dest_loc)
 {
     _mode = Auto_WP;
