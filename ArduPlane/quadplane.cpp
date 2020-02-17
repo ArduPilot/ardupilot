@@ -513,6 +513,9 @@ static const struct AP_Param::defaults_table_struct defaults_table_tailsitter[] 
     { "Q_A_RAT_PIT_FF",    0.2 },
     { "Q_A_RAT_YAW_FF",    0.2 },
     { "Q_A_RAT_YAW_I",     0.18 },
+    { "Q_A_RAT_YAW_FLTE",  0.0 },
+    { "Q_A_RAT_YAW_FLTD",  0.0 },
+    { "Q_A_RAT_YAW_FLTT",  0.0 },
     { "Q_A_ANGLE_BOOST",   0 },
     { "LIM_PITCH_MAX",    3000 },
     { "LIM_PITCH_MIN",    -3000 },
@@ -774,7 +777,8 @@ void QuadPlane::setup_defaults(void)
 
     enum AP_Motors::motor_frame_class motor_class;
     motor_class = (enum AP_Motors::motor_frame_class)frame_class.get();
-    if (motor_class == AP_Motors::MOTOR_FRAME_TAILSITTER) {
+    if (motor_class == AP_Motors::MOTOR_FRAME_TAILSITTER ||
+        tailsitter.motor_mask != 0) {
         AP_Param::set_defaults_from_table(defaults_table_tailsitter, ARRAY_SIZE(defaults_table_tailsitter));
     }
     
