@@ -126,12 +126,12 @@ void Plane::stabilize_pitch(float speed_scaler)
     if (control_mode == &mode_auto && nav_cmd_id == MAV_CMD_NAV_TAKEOFF && auto_state.highest_airspeed < g.takeoff_rotate_speed) {
         // No feedforward if we are still in takeoff.
         kff = 0.0f;
-    } else if (plane.airspeed_error < -4.0f) {
+    } else if (plane.airspeed_error > 4.0f) {
         // Don't apply any pitch-up if we're slow.
         kff = 0.0f;
     } else {
         // Apply proportionately, with full effect at target airspeed minus 2.
-        kff = constrain_float(plane.airspeed_error + 4.0f / 2.0f, 0.0f, 1.0f) * g.kff_throttle_to_pitch;
+        kff = constrain_float((4.0f - plane.airspeed_error) / 2.0f, 0.0f, 1.0f) * g.kff_throttle_to_pitch;
     }
 
 
