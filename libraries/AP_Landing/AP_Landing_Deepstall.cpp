@@ -114,7 +114,7 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     // @DisplayName: Deepstall yaw rate limit
     // @Description: The yaw rate limit while navigating in deepstall
     // @Range: 0 90
-    // @Units degrees per second
+    // @Units: deg/s
     // @User: Advanced
     AP_GROUPINFO("YAW_LIM", 12, AP_Landing_Deepstall, yaw_rate_limit, 10),
 
@@ -122,19 +122,36 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     // @DisplayName: Deepstall L1 time constant
     // @Description: Time constant for deepstall L1 control
     // @Range: 0 1
-    // @Units seconds
+    // @Units: s
     // @User: Advanced
     AP_GROUPINFO("L1_TCON", 13, AP_Landing_Deepstall, time_constant, 0.4),
 
-    // @Group: DS_
-    // @Path: ../PID/PID.cpp
+    // @Param: P
+    // @DisplayName: P gain
+    // @Description: P gain
+    // @User: Standard
+
+    // @Param: I
+    // @DisplayName: I gain
+    // @Description: I gain
+    // @User: Standard
+
+    // @Param: D
+    // @DisplayName: D gain
+    // @Description: D gain
+    // @User: Standard
+
+    // @Param: IMAX
+    // @DisplayName: IMax
+    // @Description: Maximum integrator value
+    // @User: Standard
     AP_SUBGROUPINFO(ds_PID, "", 14, AP_Landing_Deepstall, PID),
 
     // @Param: ABORTALT
     // @DisplayName: Deepstall minimum abort altitude
     // @Description: The minimum altitude which the aircraft must be above to abort a deepstall landing
     // @Range: 0 50
-    // @Units meters
+    // @Units: m
     // @User: Advanced
     AP_GROUPINFO("ABORTALT", 15, AP_Landing_Deepstall, min_abort_alt, 0.0f),
 
