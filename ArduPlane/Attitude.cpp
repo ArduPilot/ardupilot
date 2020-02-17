@@ -143,6 +143,13 @@ void Plane::stabilize_pitch(float speed_scaler)
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitchController.get_servo_out(demanded_pitch - ahrs.pitch_sensor, 
                                                                                            speed_scaler, 
                                                                                            disable_integrator));
+
+    AP::logger().Write("TPFF", "TimeUS,AspdE,kff,nav_pitch,pitch_dem", "Qffcc",
+                                           AP_HAL::micros64(),
+                                           (double)plane.airspeed_error,
+                                           (double)kff,
+                                           (int16_t)nav_pitch_cd,
+                                           (int16_t)demanded_pitch);
 }
 
 /*
