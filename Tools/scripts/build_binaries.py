@@ -595,6 +595,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "f103-RangeFinder",
                 "f303-GPS",
                 "f303-Universal",
+                "f303-M10025",
                 "CUAV_GPS",
                 "ZubaxGNSS",
                 ]
