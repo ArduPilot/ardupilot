@@ -3162,10 +3162,14 @@ class AutoTest(ABC):
         # original home should be close to SITL home...
         start_loc = self.sitl_start_location()
         self.progress("SITL start loc: %s" % str(start_loc))
-        if abs(orig_home.latitude * 1.0e-7 - start_loc.lat) > 0.0000001:
-            raise ValueError("homes differ in lat")
-        if abs(orig_home.longitude * 1.0e-7 - start_loc.lng) > 0.0000001:
-            raise ValueError("homes differ in lon")
+        delta = abs(orig_home.latitude * 1.0e-7 - start_loc.lat)
+        if delta > 0.0000001:
+            raise ValueError("homes differ in lat got=%f vs want=%f delta=%f" %
+                             (orig_home.latitude * 1.0e-7, start_loc.lat, delta))
+        delta = abs(orig_home.longitude * 1.0e-7 - start_loc.lng)
+        if delta > 0.0000001:
+            raise ValueError("homes differ in lon  got=%f vs want=%f delta=%f" %
+                             (orig_home.longitude * 1.0e-7, start_loc.lng, delta))
         if self.is_rover():
             self.progress("### Rover skipping altitude check unti position fixes in")
         else:
