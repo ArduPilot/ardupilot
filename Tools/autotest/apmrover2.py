@@ -31,7 +31,7 @@ SITL_START_LOCATION = mavutil.location(40.071374969556928,
 class AutoTestRover(AutoTest):
     @staticmethod
     def get_not_armable_mode_list():
-        return []
+        return ["RTL", "SMART_RTL"]
 
     @staticmethod
     def get_not_disarmed_settable_modes_list():
@@ -43,7 +43,7 @@ class AutoTestRover(AutoTest):
 
     @staticmethod
     def get_position_armable_modes_list():
-        return ["GUIDED", "LOITER", "STEERING", "AUTO", "RTL", "SMART_RTL"]
+        return ["GUIDED", "LOITER", "STEERING", "AUTO"]
 
     @staticmethod
     def get_normal_armable_modes_list():
