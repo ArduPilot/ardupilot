@@ -210,7 +210,7 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     AP_GROUPINFO("INS_THR_MIN", 62, SITL,  ins_noise_throttle_min, 0.1f),
 
     // Scenario for thermalling simulation, for soaring
-    AP_GROUPINFO("THML_SCENARI",62, SITL,  thermal_scenario, 0),
+    AP_GROUPINFO("THML_SCENARI",63, SITL,  thermal_scenario, 0),
 
     AP_GROUPEND
 
