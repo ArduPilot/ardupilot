@@ -484,6 +484,15 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @User: Standard
     AP_GROUPINFO("TAILSIT_GSCMIN", 18, QuadPlane, tailsitter.gain_scaling_min, 0.4),
 
+    // @Param: ASSIST_DELAY
+    // @DisplayName: Quadplane assistance delay
+    // @Description: This is delay between the assistance thresholds being met and the assistance starting.
+    // @Units: s
+    // @Range: 0 2
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("ASSIST_DELAY", 19, QuadPlane, assist_delay, 0.5),
+    
     AP_GROUPEND
 };
 
@@ -1474,8 +1483,8 @@ bool QuadPlane::assistance_needed(float aspeed, bool have_airspeed)
             if (alt_error_start_ms == 0) {
                 alt_error_start_ms = now;
             }
-            if (now - alt_error_start_ms > 500) {
-                // we've been below assistant alt for 0.5s
+            if (now - alt_error_start_ms > assist_delay*1000) {
+                // we've been below assistant alt for Q_ASSIST_DELAY seconds
                 if (!in_alt_assist) {
                     in_alt_assist = true;
                     gcs().send_text(MAV_SEVERITY_INFO, "Alt assist %.1fm", height_above_ground);
@@ -1520,7 +1529,7 @@ bool QuadPlane::assistance_needed(float aspeed, bool have_airspeed)
     if (angle_error_start_ms == 0) {
         angle_error_start_ms = now;
     }
-    bool ret = (now - angle_error_start_ms) >= 1000U;
+    bool ret = (now - angle_error_start_ms) >= assist_delay*1000;
     if (ret && !in_angle_assist) {
         in_angle_assist = true;
         gcs().send_text(MAV_SEVERITY_INFO, "Angle assist r=%d p=%d",
