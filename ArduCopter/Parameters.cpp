@@ -36,12 +36,12 @@
 #endif
 
 const AP_Param::Info Copter::var_info[] = {
-    // @Param: SYSID_SW_MREV
+    // @Param: FORMAT_VERSION
     // @DisplayName: Eeprom format version number
     // @Description: This value is incremented when changes are made to the eeprom format
     // @User: Advanced
     // @ReadOnly: True
-    GSCALAR(format_version, "SYSID_SW_MREV",   0),
+    GSCALAR(format_version, "FORMAT_VERSION",   0),
 
     // @Param: SYSID_THISMAV
     // @DisplayName: MAVLink system ID of this vehicle
