@@ -906,7 +906,8 @@ void RCOutput::timer_tick(void)
         for (uint8_t j = 0; j < NUM_GROUPS; j++) {
             pwm_group &group = pwm_group_list[j];
             if (group.current_mode == MODE_NEOPIXEL) {
-                neopixel_send(group);
+                // if a group does not sucssed,  try again on the next tick
+                neopixel_pending |= !neopixel_send(group);
             }
         }
         chMtxUnlock(&trigger_mutex);
@@ -1082,13 +1083,14 @@ void RCOutput::dshot_send(pwm_group &group, bool blocking)
 
 /*
   send a set of Neopixel packets for a channel group
+  return true if send was successful
  */
-void RCOutput::neopixel_send(pwm_group &group)
+bool RCOutput::neopixel_send(pwm_group &group)
 {
 #ifndef DISABLE_DSHOT
     if (irq.waiter || !group.dma_handle->lock_nonblock()) {
         // doing serial output, don't send Neopixel pulses
-        return;
+        return false;
     }
 
     // start sending the pulses out
@@ -1096,6 +1098,7 @@ void RCOutput::neopixel_send(pwm_group &group)
 
     group.last_dmar_send_us = AP_HAL::micros64();
 #endif //#ifndef DISABLE_DSHOT
+    return true;
 }
 
 
