@@ -252,6 +252,24 @@ static int Location_relative_alt(lua_State *L) {
     }
 }
 
+static int Location_alt(lua_State *L) {
+    Location *ud = check_Location(L, 1);
+    switch(lua_gettop(L)) {
+        case 1:
+            lua_pushinteger(L, ud->alt);
+            return 1;
+        case 2: {
+            const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
+            luaL_argcheck(L, ((raw_data_2 >= MAX((-LOCATION_ALT_MAX_M*100+1), INT32_MIN)) && (raw_data_2 <= MIN((LOCATION_ALT_MAX_M*100-1), INT32_MAX))), 2, "alt out of range");
+            const int32_t data_2 = raw_data_2;
+            ud->alt = data_2;
+            return 0;
+         }
+        default:
+            return luaL_argerror(L, lua_gettop(L), "too many arguments");
+    }
+}
+
 static int Location_lng(lua_State *L) {
     Location *ud = check_Location(L, 1);
     switch(lua_gettop(L)) {
@@ -522,6 +540,7 @@ const luaL_Reg Location_meta[] = {
     {"origin_alt", Location_origin_alt},
     {"terrain_alt", Location_terrain_alt},
     {"relative_alt", Location_relative_alt},
+    {"alt", Location_alt},
     {"lng", Location_lng},
     {"lat", Location_lat},
     {"get_distance_NE", Location_get_distance_NE},
@@ -894,6 +913,23 @@ static int AP_SerialLED_set_num_LEDs(lua_State *L) {
             data_2,
             data_3);
 
+    lua_pushboolean(L, data);
+    return 1;
+}
+
+static int AP_Vehicle_set_target_location(lua_State *L) {
+    AP_Vehicle * ud = AP_Vehicle::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "vehicle not supported on this firmware");
+    }
+
+    binding_argcheck(L, 2);
+    Location & data_2 = *check_Location(L, 2);
+    AP::scheduler().get_semaphore().take_blocking();
+    const bool data = ud->set_target_location(
+            data_2);
+
+    AP::scheduler().get_semaphore().give();
     lua_pushboolean(L, data);
     return 1;
 }
@@ -2212,6 +2248,7 @@ const luaL_Reg AP_SerialLED_meta[] = {
 };
 
 const luaL_Reg AP_Vehicle_meta[] = {
+    {"set_target_location", AP_Vehicle_set_target_location},
     {"get_time_flying_ms", AP_Vehicle_get_time_flying_ms},
     {"get_likely_flying", AP_Vehicle_get_likely_flying},
     {"get_mode", AP_Vehicle_get_mode},
