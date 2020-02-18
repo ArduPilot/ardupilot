@@ -53,10 +53,9 @@ void RC_Channel_Plane::do_aux_function_change_mode(const Mode::Number number,
     }
 }
 
-void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
-                                         const RC_Channel::aux_switch_pos_t ch_flag)
+void RC_Channel_Plane::init_aux()
 {
-    switch(ch_option) {
+    switch ((aux_func_t)option.get()) {
     // the following functions do not need to be initialised:
     case AUX_FUNC::AUTO:
     case AUX_FUNC::CIRCLE:
@@ -71,7 +70,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
 
     case AUX_FUNC::REVERSE_THROTTLE:
         plane.have_reverse_throttle_rc_option = true;
-        // setup input throttle as a range. This is needed as init_aux_function is called
+        // setup input throttle as a range. This is needed as init_aux is called
         // after set_control_channels()
         if (plane.channel_throttle) {
             plane.channel_throttle->set_range(100);
@@ -82,7 +81,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
 
     default:
         // handle in parent class
-        RC_Channel::init_aux_function(ch_option, ch_flag);
+        RC_Channel::init_aux();
         break;
 }
 }

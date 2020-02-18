@@ -9,8 +9,7 @@ public:
 
 protected:
 
-    void init_aux_function(aux_func_t ch_option,
-                           aux_switch_pos_t ch_flag) override;
+    void init_aux() override;
     void do_aux_function(aux_func_t ch_option, aux_switch_pos_t) override;
 
 private:
