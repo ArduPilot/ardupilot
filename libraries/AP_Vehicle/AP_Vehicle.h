@@ -127,10 +127,6 @@ public:
     };
 
     void get_common_scheduler_tasks(const AP_Scheduler::Task*& tasks, uint8_t& num_tasks);
-
-    // initialize the vehicle. Called from AP_BoardConfig
-    void init_vehicle();
-
     virtual void get_scheduler_tasks(const AP_Scheduler::Task *&tasks, uint8_t &task_count, uint32_t &log_bit) = 0;
 
     /*
@@ -232,7 +228,6 @@ protected:
 private:
 
     static AP_Vehicle *_singleton;
-    bool init_done;
 
     static void scheduler_delay_callback();
 
