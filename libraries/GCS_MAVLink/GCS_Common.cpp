@@ -2152,18 +2152,15 @@ void GCS_MAVLINK::send_autopilot_version() const
                         (uint32_t)(version.fw_type) << (8 * 0);
 
     if (version.fw_hash_str) {
-        strncpy(flight_custom_version, version.fw_hash_str, sizeof(flight_custom_version) - 1);
-        flight_custom_version[sizeof(flight_custom_version) - 1] = '\0';
+        strncpy(flight_custom_version, version.fw_hash_str, ARRAY_SIZE(flight_custom_version));
     }
 
     if (version.middleware_hash_str) {
-        strncpy(middleware_custom_version, version.middleware_hash_str, sizeof(middleware_custom_version) - 1);
-        middleware_custom_version[sizeof(middleware_custom_version) - 1] = '\0';
+        strncpy(middleware_custom_version, version.middleware_hash_str, ARRAY_SIZE(middleware_custom_version));
     }
 
     if (version.os_hash_str) {
-        strncpy(os_custom_version, version.os_hash_str, sizeof(os_custom_version) - 1);
-        os_custom_version[sizeof(os_custom_version) - 1] = '\0';
+        strncpy(os_custom_version, version.os_hash_str, ARRAY_SIZE(os_custom_version));
     }
 
     mavlink_msg_autopilot_version_send(
