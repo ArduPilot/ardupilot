@@ -27,11 +27,10 @@ void RC_Channel_Rover::mode_switch_changed(modeswitch_pos_t new_pos)
     }
 }
 
-// init_aux_switch_function - initialize aux functions
-void RC_Channel_Rover::init_aux_function(const aux_func_t ch_option, const aux_switch_pos_t ch_flag)
+// init_aux - initialize aux functions
+void RC_Channel_Rover::init_aux()
 {
-    // init channel options
-    switch (ch_option) {
+    switch ((aux_func_t)option.get()) {
     // the following functions do not need initialising:
     case AUX_FUNC::ACRO:
     case AUX_FUNC::AUTO:
@@ -51,10 +50,10 @@ void RC_Channel_Rover::init_aux_function(const aux_func_t ch_option, const aux_s
     case AUX_FUNC::STEERING:
         break;
     case AUX_FUNC::SAILBOAT_MOTOR_3POS:
-        do_aux_function_sailboat_motor_3pos(ch_flag);
+        do_aux_function_sailboat_motor_3pos(aux_switch_pos_t::LOW);
         break;
     default:
-        RC_Channel::init_aux_function(ch_option, ch_flag);
+        RC_Channel::init_aux();
         break;
     }
 }
