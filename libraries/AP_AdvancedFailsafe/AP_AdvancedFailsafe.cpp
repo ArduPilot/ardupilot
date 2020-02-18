@@ -58,7 +58,7 @@ const AP_Param::GroupInfo AP_AdvancedFailsafe::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("WP_COMMS",    2, AP_AdvancedFailsafe, _wp_comms_hold, 0),
 
-    // @Param: GPS_LOSS
+    // @Param: WP_GPS_LOSS
     // @DisplayName: GPS Loss Waypoint
     // @Description: Waypoint number to navigate to on GPS lock loss
     // @User: Advanced
