@@ -509,9 +509,7 @@ void Mode::make_safe_spool_down()
 int32_t Mode::get_alt_above_ground_cm(void)
 {
     int32_t alt_above_ground;
-    if (copter.rangefinder_alt_ok()) {
-        alt_above_ground = copter.rangefinder_state.alt_cm_filt.get();
-    } else {
+    if (!copter.get_rangefinder_height_interpolated_cm(alt_above_ground)) {
         bool navigating = pos_control->is_active_xy();
         if (!navigating || !copter.current_loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, alt_above_ground)) {
             alt_above_ground = copter.current_loc.alt;
