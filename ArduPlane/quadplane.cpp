@@ -1449,7 +1449,7 @@ float QuadPlane::desired_auto_yaw_rate_cds(void) const
  */
 bool QuadPlane::assistance_needed(float aspeed, bool have_airspeed)
 {
-    if (assist_speed <= 0) {
+    if (assist_speed <= 0 || is_contol_surface_tailsitter()) {
         // assistance disabled
         in_angle_assist = false;
         angle_error_start_ms = 0;
@@ -1530,6 +1530,14 @@ bool QuadPlane::assistance_needed(float aspeed, bool have_airspeed)
     return ret;
 }
 
+// return true if it is safe to provide assistance
+bool QuadPlane::assistance_safe()
+{
+    return hal.util->get_soft_armed() && ( (plane.auto_throttle_mode && !plane.throttle_suppressed)
+                                                                      || plane.get_throttle_input()>0 
+                                                                      || plane.is_flying() );
+}
+
 /*
   update for transition from quadplane to fixed wing mode
  */
@@ -1574,12 +1582,8 @@ void QuadPlane::update_transition(void)
     /*
       see if we should provide some assistance
      */
-    const bool q_assist_safe = hal.util->get_soft_armed() && ((plane.auto_throttle_mode && !plane.throttle_suppressed) ||
-                                                               plane.get_throttle_input()>0 ||
-                                                               plane.is_flying());
-    if (q_assist_safe &&
-        (q_assist_state == Q_ASSIST_STATE_ENUM::Q_ASSIST_FORCE ||
-        (q_assist_state == Q_ASSIST_STATE_ENUM::Q_ASSIST_ENABLED && assistance_needed(aspeed, have_airspeed) && !is_contol_surface_tailsitter()))) {
+    if (assistance_safe() && (q_assist_state == Q_ASSIST_STATE_ENUM::Q_ASSIST_FORCE ||
+        (q_assist_state == Q_ASSIST_STATE_ENUM::Q_ASSIST_ENABLED && assistance_needed(aspeed, have_airspeed)))) {
         // the quad should provide some assistance to the plane
         assisted_flight = true;
         if (!is_tailsitter()) {
@@ -1802,7 +1806,7 @@ void QuadPlane::update(void)
         const uint32_t now = AP_HAL::millis();
 
         assisted_flight = false;
-        
+
         // output to motors
         motors_output();
 
@@ -1817,6 +1821,13 @@ void QuadPlane::update(void)
             transition_start_ms = now;
         } else if (is_tailsitter() &&
                    transition_state == TRANSITION_ANGLE_WAIT_VTOL) {
+            float aspeed;
+            bool have_airspeed = ahrs.airspeed_estimate(aspeed);
+            // provide asistance in forward flight portion of tailsitter transision
+            if (assistance_safe() && (q_assist_state == Q_ASSIST_STATE_ENUM::Q_ASSIST_FORCE ||
+                (q_assist_state == Q_ASSIST_STATE_ENUM::Q_ASSIST_ENABLED && assistance_needed(aspeed, have_airspeed)))) {
+                assisted_flight = true;
+            }
             if (tailsitter_transition_vtol_complete()) {
                 /*
                   we have completed transition to VTOL as a tailsitter,
@@ -1982,7 +1993,7 @@ void QuadPlane::motors_output(bool run_rate_controller)
         return;
     }
 
-    if (in_tailsitter_vtol_transition()) {
+    if (in_tailsitter_vtol_transition() && !assisted_flight) {
         /*
           don't run the motor outputs while in tailsitter->vtol
           transition. That is taken care of by the fixed wing
