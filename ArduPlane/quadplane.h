@@ -191,6 +191,9 @@ private:
     // check for quadplane assistance needed
     bool assistance_needed(float aspeed, bool have_airspeed);
 
+    // check if it is safe to provide assistance
+    bool assistance_safe();
+
     // update transition handling
     void update_transition(void);
 
