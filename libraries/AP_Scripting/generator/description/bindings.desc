@@ -4,6 +4,7 @@ include AP_Common/Location.h
 
 userdata Location field lat int32_t read write -900000000 900000000
 userdata Location field lng int32_t read write -1800000000 1800000000
+userdata Location field alt int32_t read write -INT32_MAX INT32_MAX
 userdata Location field relative_alt boolean read write
 userdata Location field terrain_alt boolean read write
 userdata Location field origin_alt boolean read write
