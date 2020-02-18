@@ -71,6 +71,10 @@ const AP_Param::GroupInfo AP_Scripting::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("HEAP_SIZE", 3, AP_Scripting, _script_heap_size, SCRIPTING_HEAP_SIZE),
 
+    // @Param: DEBUG_LVL
+    // @DisplayName: Enable Scripting Debug
+    // @Description: Enable scripting debug.
+    // @User: Advanced
     AP_GROUPINFO("DEBUG_LVL", 4, AP_Scripting, _debug_level, 1),
 
     AP_GROUPEND
