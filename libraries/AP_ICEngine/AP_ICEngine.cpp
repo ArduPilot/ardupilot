@@ -117,7 +117,7 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("IDLE_RPM", 12, AP_ICEngine, idle_rpm, -1),
 
-    // @Param: ICE_IDLE_DB
+    // @Param: IDLE_DB
     // @DisplayName: Deadband for Idle Governor
     // @Description: This configures the deadband that is tolerated before adjusting the idle setpoint
     AP_GROUPINFO("IDLE_DB", 13, AP_ICEngine, idle_db, 50),
