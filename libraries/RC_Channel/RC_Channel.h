@@ -195,6 +195,7 @@ public:
         MIDDLE,    // indicates auxiliary switch is in the middle position (pwm >1200, <1800)
         HIGH       // indicates auxiliary switch is in the high position (pwm >1800)
     };
+    bool aux_switch_pos_initialised;
 
     bool read_3pos_switch(aux_switch_pos_t &ret) const WARN_IF_UNUSED;
 
@@ -223,11 +224,16 @@ protected:
         // no action by default (e.g. Tracker, Sub, who do their own thing)
     };
 
+    // returns true if we should act on the very first level we see on
+    // a switch.  If it returns false then we need to see a transition
+    // from the first value we see for the function to trigger.
+    bool should_react_to_first_rc_input();
 
 private:
 
     // pwm is stored here
     int16_t     radio_in;
+    bool        using_override; // true if radio_in was last set from an override
 
     // value generated from PWM normalised to configured scale
     int16_t    control_in;

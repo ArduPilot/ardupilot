@@ -138,8 +138,10 @@ RC_Channel::update(void)
 {
     if (has_override() && !rc().ignore_overrides()) {
         radio_in = override_value;
+        using_override = true;
     } else if (!rc().ignore_receiver()) {
         radio_in = hal.rcin->read(ch_in);
+        using_override = false;
     } else {
         return false;
     }
@@ -491,6 +493,17 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const aux_switch_
     }
 }
 
+// if this function returns true then the first time we see a valid RC
+// value for that channel we will act on that value.
+bool RC_Channel::should_react_to_first_rc_input()
+{
+    switch ((aux_func_t)option.get()) {
+    default:
+        return false;
+    }
+    return false;
+}
+
 /*
   read an aux channel. Return true if a switch has changed
  */
@@ -509,6 +522,14 @@ bool RC_Channel::read_aux()
 
     if (!debounce_completed(new_position)) {
         return false;
+    }
+
+    // add assertion here that new_position isn't UNITITALISED
+    if (!aux_switch_pos_initialised && !using_override) {
+        aux_switch_pos_initialised = true;
+        if (!should_react_to_first_rc_input()) {
+            return false;
+        }
     }
 
     // debounced; undertake the action:
