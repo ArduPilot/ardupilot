@@ -152,6 +152,7 @@ singleton AP_Vehicle method set_mode boolean uint8_t 0 UINT8_MAX ModeReason::SCR
 singleton AP_Vehicle method get_mode uint8_t
 singleton AP_Vehicle method get_likely_flying boolean
 singleton AP_Vehicle method get_time_flying_ms uint32_t
+singleton AP_Vehicle method set_target_location boolean Location
 
 include AP_SerialLED/AP_SerialLED.h
 singleton AP_SerialLED alias serialLED
