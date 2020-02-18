@@ -248,7 +248,7 @@ protected:
     /* add noise based on throttle level (from 0..1) */
     void add_noise(float throttle);
 
-    /* return wall clock time in microseconds since 1970 */
+    /* return a monotonic wall clock time in microseconds */
     uint64_t get_wall_time_us(void) const;
 
     // update attitude and relative position
