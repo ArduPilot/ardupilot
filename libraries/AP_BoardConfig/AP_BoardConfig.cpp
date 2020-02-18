@@ -322,12 +322,6 @@ void AP_BoardConfig::init()
         printf("SDCard failed to start\n");
     }
 #endif
-
-    // run any the vehicle initialization routines
-    AP_Vehicle *vehicle = AP::vehicle();
-    if (vehicle) {
-        vehicle->init_vehicle();
-    }
 }
 
 // set default value for BRD_SAFETY_MASK
