@@ -687,8 +687,7 @@ class AutoTest(ABC):
                  disable_breakpoints=False,
                  viewerip=None,
                  use_map=False,
-                 _show_test_timings=False,
-                 validate_parameters=False):
+                 _show_test_timings=False):
 
         self.binary = binary
         self.valgrind = valgrind
@@ -719,7 +718,6 @@ class AutoTest(ABC):
         self.test_timings = dict()
         self.total_waiting_to_arm_time = 0
         self.waiting_to_arm_count = 0
-        self.validate_parameters = validate_parameters
 
     @staticmethod
     def progress(text):
@@ -967,7 +965,7 @@ class AutoTest(ABC):
                 htree[n] = p
         return htree
 
-    def do_validate_parameters(self):
+    def test_parameter_documentation_get_all_parameters(self):
         xml_filepath = os.path.join(self.rootdir(), "apm.pdef.xml")
         param_parse_filepath = os.path.join(self.rootdir(), 'Tools', 'autotest', 'param_metadata', 'param_parse.py')
         try:
@@ -977,7 +975,11 @@ class AutoTest(ABC):
         vehicle = self.log_name()
         if vehicle == "HeliCopter":
             vehicle = "ArduCopter"
-        if util.run_cmd([param_parse_filepath, '--vehicle', vehicle],
+        if vehicle == "QuadPlane":
+            vehicle = "ArduPlane"
+        cmd = [param_parse_filepath, '--vehicle', vehicle]
+#        cmd.append("--verbose")
+        if util.run_cmd(cmd,
                         directory=util.reltopdir('.')) != 0:
             print("Failed param_parse.py (%s)" % vehicle)
             return False
@@ -985,6 +987,10 @@ class AutoTest(ABC):
 
         target_system = self.sysid_thismav()
         target_component = 1
+
+        self.customise_SITL_commandline([
+            "--unhide-groups"
+        ])
 
         (parameters, seq_id) = self.download_parameters(target_system, target_component)
         fail = False
@@ -998,6 +1004,19 @@ class AutoTest(ABC):
         if fail:
             raise NotAchievedException("Downloaded parameters missing in XML")
 
+        # FIXME: this should be doable if we filter out e.g BRD_* and CAN_*?
+#        self.progress("Checking no extra parameters present in XML")
+#        fail = False
+#        for param in htree:
+#            if param.startswith("SIM_"):
+#                # too many of these to worry about
+#                continue
+#            if param not in parameters:
+#                print("%s not in downloaded parameters but in XML" % param)
+#                fail = True
+#        if fail:
+#            raise NotAchievedException("Extra parameters in XML")
+
     def initialise_after_reboot_sitl(self):
 
         # after reboot stream-rates may be zero.  Prompt MAVProxy to
@@ -1006,11 +1025,6 @@ class AutoTest(ABC):
         self.set_streamrate(self.sitl_streamrate()+1)
         self.set_streamrate(self.sitl_streamrate())
         self.progress("Reboot complete")
-
-        if self.validate_parameters:
-            self.start_subtest("Validating parameters")
-            self.do_validate_parameters()
-            self.end_subtest("Validating parameters")
 
     def customise_SITL_commandline(self, customisations):
         '''customisations could be "--uartF=sim:nmea" '''
@@ -4241,8 +4255,14 @@ switch value'''
         if self.get_parameter("MIS_OPTIONS") != 1:
             raise NotAchievedException("Failed to set MIS_OPTIONS")
 
+    def test_parameter_documentation(self):
+        '''ensure parameter documentation is valid'''
+        self.start_subsubtest("Check all parameters are documented")
+        self.test_parameter_documentation_get_all_parameters()
+
     def test_parameters(self):
         '''general small tests for parameter system'''
+        self.test_parameter_documentation();
         self.test_parameters_mis_total()
         self.test_parameters_download()
 
