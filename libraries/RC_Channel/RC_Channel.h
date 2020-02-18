@@ -96,7 +96,7 @@ public:
     AP_Int16    option; // e.g. activate EPM gripper / enable fence
 
     // auxillary switch support:
-    void init_aux();
+    virtual void init_aux();
     bool read_aux();
 
     // Aux Switch enumeration
@@ -201,7 +201,6 @@ public:
 
 protected:
 
-    virtual void init_aux_function(aux_func_t ch_option, aux_switch_pos_t);
     virtual void do_aux_function(aux_func_t ch_option, aux_switch_pos_t);
 
     virtual void do_aux_function_armdisarm(const aux_switch_pos_t ch_flag);

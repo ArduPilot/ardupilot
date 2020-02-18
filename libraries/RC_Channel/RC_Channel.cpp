@@ -448,8 +448,12 @@ bool RC_Channel::debounce_completed(int8_t position)
 //
 
 // init_aux_switch_function - initialize aux functions
-void RC_Channel::init_aux_function(const aux_func_t ch_option, const aux_switch_pos_t ch_flag)
+void RC_Channel::init_aux()
 {
+    const aux_func_t ch_option = (aux_func_t)option.get();
+
+    aux_switch_pos_t assumed_switch_position = aux_switch_pos_t::LOW;
+
     // init channel options
     switch(ch_option) {
     // the following functions do not need to be initialised:
@@ -466,7 +470,7 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const aux_switch_
     case AUX_FUNC::RELAY4:
     case AUX_FUNC::RELAY5:
     case AUX_FUNC::RELAY6:
-        break;
+        return;
     case AUX_FUNC::AVOID_ADSB:
     case AUX_FUNC::AVOID_PROXIMITY:
     case AUX_FUNC::FENCE:
@@ -480,7 +484,7 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const aux_switch_
     case AUX_FUNC::RUNCAM_CONTROL:
     case AUX_FUNC::RUNCAM_OSD_CONTROL:
     case AUX_FUNC::SPRAYER:
-        do_aux_function(ch_option, ch_flag);
+        do_aux_function(ch_option, assumed_switch_position);
         break;
     default:
         gcs().send_text(MAV_SEVERITY_WARNING, "Failed to init: RC%u_OPTION: %u\n",
@@ -949,15 +953,6 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_po
         gcs().send_text(MAV_SEVERITY_INFO, "Invalid channel option (%u)", (unsigned int)ch_option);
         break;
     }
-}
-
-void RC_Channel::init_aux()
-{
-    aux_switch_pos_t position;
-    if (!read_3pos_switch(position)) {
-        position = aux_switch_pos_t::LOW;
-    }
-    init_aux_function((aux_func_t)option.get(), position);
 }
 
 // read_3pos_switch
