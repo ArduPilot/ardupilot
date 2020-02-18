@@ -64,6 +64,12 @@ void AP_Vehicle::setup()
 #if HAL_GYROFFT_ENABLED
     gyro_fft.init(AP::scheduler().get_loop_period_us());
 #endif
+#if HAL_RUNCAM_ENABLED
+    runcam.init();
+#endif
+#if HAL_HOTT_TELEM_ENABLED
+    hott_telem.init();
+#endif
 }
 
 void AP_Vehicle::loop()
@@ -92,22 +98,6 @@ void AP_Vehicle::get_common_scheduler_tasks(const AP_Scheduler::Task*& tasks, ui
     tasks = scheduler_tasks;
     num_tasks = ARRAY_SIZE(scheduler_tasks);
 }
-
-// initialize the vehicle
-void AP_Vehicle::init_vehicle()
-{
-    if (init_done) {
-        return;
-    }
-    init_done = true;
-#if HAL_RUNCAM_ENABLED
-    runcam.init();
-#endif
-#if HAL_HOTT_TELEM_ENABLED
-    hott_telem.init();
-#endif
-}
-
 
 /*
  *  a delay() callback that processes MAVLink packets. We set this as the
