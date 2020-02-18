@@ -384,7 +384,6 @@ def run_step(step):
         "disable_breakpoints": opts.disable_breakpoints,
         "frame": opts.frame,
         "_show_test_timings": opts.show_test_timings,
-        "validate_parameters": opts.validate_parameters,
     }
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
