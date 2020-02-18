@@ -139,6 +139,17 @@ Rover::Rover(void) :
 {
 }
 
+// set target location (for use by scripting)
+bool Rover::set_target_location(const Location& target_loc)
+{
+    // exit if vehicle is not in Guided mode or Auto-Guided mode
+    if (!control_mode->in_guided_mode()) {
+        return false;
+    }
+
+    return control_mode->set_desired_location(target_loc);
+}
+
 #if STATS_ENABLED == ENABLED
 /*
   update AP_Stats
