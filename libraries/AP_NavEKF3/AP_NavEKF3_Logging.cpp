@@ -328,6 +328,8 @@ void NavEKF3::Log_Write()
     // log state variances every 0.49s
     Log_Write_State_Variances(time_us);
 
+    Log_Write_GSF(time_us);
+
     // log EKF timing statistics every 5s
     static uint32_t lastTimingLogTime_ms = 0;
     if (AP_HAL::millis() - lastTimingLogTime_ms > 5000) {
@@ -340,3 +342,27 @@ void NavEKF3::Log_Write()
     }
 }
 
+void NavEKF3::Log_Write_GSF(uint64_t time_us) const
+{
+    // write range beacon fusion debug packet if the range value is non-zero
+    float yaw_composite;
+    float yaw_composite_variance;
+    float yaw[N_MODELS_EKFGSF];
+    float ivn[N_MODELS_EKFGSF];
+    float ive[N_MODELS_EKFGSF];
+    float wgt[N_MODELS_EKFGSF];
+    getDataEKFGSF(-1, &yaw_composite, &yaw_composite_variance, yaw, ivn, ive, wgt);
+    AP::logger().Write("GSF0", "TimeUS,YC,YCV,Y0,Y1,Y2,Y3,Y4,Y5,Y6,Y7", "Qffffffffff",
+        time_us,
+        (double)yaw_composite,(double)yaw_composite_variance,
+        (double)yaw[0],(double)yaw[1],(double)yaw[2],(double)yaw[3],(double)yaw[4],(double)yaw[5],(double)yaw[6],(double)yaw[7]);
+    AP::logger().Write("GSF1", "TimeUS,W0,W1,W2,W3,W4,W5,W6,W7", "Qffffffff",
+        time_us,
+        (double)wgt[0],(double)wgt[1],(double)wgt[2],(double)wgt[3],(double)wgt[4],(double)wgt[5],(double)wgt[6],(double)wgt[7]);
+    AP::logger().Write("GSF2", "TimeUS,IVN0,IVN1,IVN2,IVN3,IVN4,IVN5,IVN6,IVN7", "Qffffffff",
+        time_us,
+        (double)ivn[0],(double)ivn[1],(double)ivn[2],(double)ivn[3],(double)ivn[4],(double)ivn[5],(double)ivn[6],(double)ivn[7]);
+    AP::logger().Write("GSF3", "TimeUS,IVE0,IVE1,IVE2,IVE3,IVE4,IVE5,IVE6,IVE7", "Qffffffff",
+        time_us,
+        (double)ive[0],(double)ive[1],(double)ive[2],(double)ive[3],(double)ive[4],(double)ive[5],(double)ive[6],(double)ive[7]);
+}

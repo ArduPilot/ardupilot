@@ -384,6 +384,9 @@ public:
     // write EKF information to on-board logs
     void Log_Write();
 
+    // log debug data for yaw estimator
+	void getDataEKFGSF(int8_t instance, float *yaw_composite, float *yaw_composite_variance, float yaw[N_MODELS_EKFGSF], float innov_VN[N_MODELS_EKFGSF], float innov_VE[N_MODELS_EKFGSF], float weight[N_MODELS_EKFGSF]) const;
+
 private:
     uint8_t num_cores; // number of allocated cores
     uint8_t primary;   // current primary core
@@ -484,6 +487,16 @@ private:
     const uint8_t sensorIntervalMin_ms = 50;       // The minimum allowed time between measurements from any non-IMU sensor (msec)
     const uint8_t flowIntervalMin_ms = 20;         // The minimum allowed time between measurements from optical flow sensors (msec)
 
+	// Parameters used by EKF-GSF yaw estimator
+	const float EKFGSF_gyroNoise{1.0e-1f}; 	// yaw rate noise used for covariance prediction (rad/sec)
+	const float EKFGSF_accelNoise{2.0f};	// horizontal accel noise used for covariance prediction (m/sec**2)
+	const float EKFGSF_tiltGain{0.4f};		// gain from tilt error to gyro correction for complementary filter (1/sec)
+	const float EKFGSF_gyroBiasGain{0.04f};	// gain applied to integral of gyro correction for complementary filter (1/sec)
+	const float EKFGSF_weightMin{0.0f};		// minimum value of an individual model weighting
+	const float EKFGSF_tasDefault{15.0f};	// default airspeed value assumed during fixed wing flight if no airspeed measurement available (m/s)
+	const uint16_t EKFGSF_resetDelay{1000};	// Number of mSec of bad innovations on main filter in post takeoff phase before yaw is reset to EKF-GSF value
+    const uint8_t EKFGSF_n_reset_max{2};    // Maximum number of resets allowed
+
     struct {
         bool enabled:1;
         bool log_compass:1;
@@ -553,4 +566,6 @@ private:
     void Log_Write_Beacon(uint64_t time_us) const;
     void Log_Write_BodyOdom(uint64_t time_us) const;
     void Log_Write_State_Variances(uint64_t time_us) const;
+    void Log_Write_GSF(uint64_t time_us) const;
+
 };

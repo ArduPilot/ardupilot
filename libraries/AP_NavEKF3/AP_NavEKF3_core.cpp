@@ -625,6 +625,9 @@ void NavEKF3_core::UpdateFilter(bool predict)
 
         // Update the filter status
         updateFilterStatus();
+
+        // Generate an alternative yaw estimate used for inflight recovery from bad compass data
+        EKFGSF_run();
     }
 
     // Wind output forward from the fusion to output time horizon
