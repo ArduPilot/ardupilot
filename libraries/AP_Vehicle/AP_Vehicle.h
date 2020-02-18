@@ -161,6 +161,9 @@ public:
         return AP_HAL::millis() - _last_flying_ms;
     }
 
+    // set target location (for use by scripting)
+    virtual bool set_target_location(const Location& target_loc) { return false; }
+
 protected:
 
     virtual void init_ardupilot() = 0;
