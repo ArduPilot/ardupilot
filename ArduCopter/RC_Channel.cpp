@@ -59,8 +59,10 @@ bool RC_Channels_Copter::has_valid_input() const
 
 
 // init_aux_switch_function - initialize aux functions
-void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const aux_switch_pos_t ch_flag)
+void RC_Channel_Copter::init_aux()
 {
+    const aux_func_t ch_option = (aux_func_t)option.get();
+
     // init channel options
     switch(ch_option) {
     // the following functions do not need to be initialised:
@@ -107,10 +109,12 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const aux_
     case AUX_FUNC::SUPERSIMPLE_MODE:
     case AUX_FUNC::SURFACE_TRACKING:
     case AUX_FUNC::WINCH_ENABLE:
-        do_aux_function(ch_option, ch_flag);
+        // all of these functions assume the switch is in the LOW
+        // position for initialisation the function
+        do_aux_function(ch_option, aux_switch_pos_t::LOW);
         break;
     default:
-        RC_Channel::init_aux_function(ch_option, ch_flag);
+        RC_Channel::init_aux();
         break;
     }
 }
