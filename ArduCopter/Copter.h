@@ -636,6 +636,7 @@ private:
                              uint8_t &task_count,
                              uint32_t &log_bit) override;
     void fast_loop() override;
+    bool set_target_location(const Location& target_loc) override;
     void rc_loop();
     void throttle_loop();
     void update_batt_compass(void);
