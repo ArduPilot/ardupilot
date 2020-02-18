@@ -337,8 +337,9 @@ private:
 
     /*
       NeoPixel handling. Max of 32 LEDs uses max 12k of memory per group
+      return true if send was successful
     */
-    void neopixel_send(pwm_group &group);
+    bool neopixel_send(pwm_group &group);
     bool neopixel_pending;
 
     void dma_allocate(Shared_DMA *ctx);
