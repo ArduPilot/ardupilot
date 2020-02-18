@@ -52,6 +52,8 @@
 #include "GCS_Mavlink.h"
 #include "GCS_Tracker.h"
 
+#include "AP_Arming.h"
+
 #ifdef ENABLE_SCRIPTING
 #include <AP_Scripting/AP_Scripting.h>
 #endif
@@ -229,6 +231,9 @@ private:
     void tracking_update_pressure(const mavlink_scaled_pressure_t &msg);
     void tracking_manual_control(const mavlink_manual_control_t &msg);
     void update_armed_disarmed();
+
+    // Arming/Disarming management class
+    AP_Arming_Tracker arming;
 
     // Mission library
     AP_Mission mission{
