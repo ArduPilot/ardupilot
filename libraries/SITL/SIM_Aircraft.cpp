@@ -404,9 +404,9 @@ uint64_t Aircraft::get_wall_time_us() const
     tPrev = now;
     return last_ret_us;
 #else
-    struct timeval tp;
-    gettimeofday(&tp, nullptr);
-    return static_cast<uint64_t>(tp.tv_sec * 1.0e6 + tp.tv_usec);
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return static_cast<uint64_t>(ts.tv_sec * 1.0e6 + ts.tv_nsec / 1.0e3);
 #endif
 }
 
