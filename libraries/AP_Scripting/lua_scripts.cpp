@@ -368,8 +368,6 @@ void lua_scripts::run(void) {
         return;
     }
     lua_atpanic(L, atpanic);
-//    luaL_openlibs(L);
-//    load_lua_bindings(L);
     load_generated_bindings(L);
 
     // Scan the filesystem in an appropriate manner and autostart scripts
@@ -430,8 +428,10 @@ void lua_scripts::run(void) {
             lua_gc(L, LUA_GCCOLLECT, 0);
 
         } else {
-            gcs().send_text(MAV_SEVERITY_DEBUG, "Lua: No scripts to run");
-            hal.scheduler->delay(10000);
+            if (_debug_level > 0) {
+                gcs().send_text(MAV_SEVERITY_DEBUG, "Lua: No scripts to run");
+            }
+            hal.scheduler->delay(1000);
         }
 
     }
