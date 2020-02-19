@@ -517,8 +517,8 @@ void NavEKF3_core::EKFGSF_run()
 				EKFGSF_mdl[mdl_idx].X[1] = gpsDataDelayed.vel[1];
 				EKFGSF_mdl[mdl_idx].P[0][0] = sq(fmaxf(gpsSpdAccuracy, frontend->_gpsHorizVelNoise));
 				EKFGSF_mdl[mdl_idx].P[1][1] = EKFGSF_mdl[mdl_idx].P[0][0];
-				EKFGSF_alignQuatYaw();
 			}
+			EKFGSF_alignQuatYaw();
 			EKFGSF_vel_fuse_started = true;
 		} else {
 			float total_w = 0.0f;
@@ -537,28 +537,6 @@ void NavEKF3_core::EKFGSF_run()
 				float total_w_inv = 1.0f / total_w;
 				for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
 					EKFGSF_mdl[mdl_idx].W  = newWeight[mdl_idx] * total_w_inv;
-				}
-			}
-
-			// enforce a minimum weighting value
-			float correction_sum = 0.0f; // amount the sum of weights has been increased by application of the limit
-			bool change_mask[N_MODELS_EKFGSF] = {}; // true when the weighting for that model has been increased
-			float unmodified_weights_sum = 0.0f; // sum of unmodified weights
-			for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
-				if (EKFGSF_mdl[mdl_idx].W < frontend->EKFGSF_weightMin) {
-					correction_sum += frontend->EKFGSF_weightMin - EKFGSF_mdl[mdl_idx].W;
-					EKFGSF_mdl[mdl_idx].W = frontend->EKFGSF_weightMin;
-					change_mask[mdl_idx] = true;
-				} else {
-					unmodified_weights_sum += EKFGSF_mdl[mdl_idx].W;
-				}
-			}
-
-			// rescale the unmodified weights to make the total sum unity
-			const float scale_factor = (unmodified_weights_sum - correction_sum - frontend->EKFGSF_weightMin) / (unmodified_weights_sum - frontend->EKFGSF_weightMin);
-			for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
-				if (!change_mask[mdl_idx]) {
-					EKFGSF_mdl[mdl_idx].W = frontend->EKFGSF_weightMin + scale_factor * (EKFGSF_mdl[mdl_idx].W - frontend->EKFGSF_weightMin);
 				}
 			}
 		}
