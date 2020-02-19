@@ -719,6 +719,10 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
         ResetVelocity();
         ResetPosition();
 
+		// reset test ratios that are reported to prevent a race condition with the external state machine requesting the reset
+		velTestRatio = 0.0f;
+		posTestRatio = 0.0f;
+
         return true;
 
     }
