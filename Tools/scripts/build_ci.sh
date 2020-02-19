@@ -95,6 +95,10 @@ for t in $CI_BUILD_TARGET; do
         run_autotest "Rover" "build.APMrover2" "drive.APMrover2"
         continue
     fi
+    if [ "$t" == "sitltest-tracker" ]; then
+        run_autotest "Tracker" "build.AntennaTracker" "test.AntennaTracker"
+        continue
+    fi
     if [ "$t" == "sitltest-balancebot" ]; then
         run_autotest "BalanceBot" "build.APMrover2" "drive.BalanceBot"
         continue
