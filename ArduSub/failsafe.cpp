@@ -58,7 +58,7 @@ void Sub::mainloop_failsafe_check()
         // disarm motors every second
         failsafe_last_timestamp = tnow;
         if (motors.armed()) {
-            motors.armed(false);
+            arming.disarm();
             motors.output();
         }
     }
