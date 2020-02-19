@@ -1829,7 +1829,9 @@ void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, u
         }
 
         // try and send immediately if possible
-        service_statustext();
+        if (hal.scheduler->in_main_thread()) {
+            service_statustext();
+        }
     } while (false);
 
     // given we don't really know what these methods get up to, we
