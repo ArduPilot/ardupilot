@@ -57,10 +57,11 @@ void NavEKF3_core::EKFGSF_predictQuat(const uint8_t mdl_idx)
 
 			// use measured airspeed to calculate centripetal acceleration if available
 			float centripetal_accel;
-			if (imuDataDelayed.time_ms - tasDataDelayed.time_ms < 1000) {
+			if (useAirspeed() && imuDataDelayed.time_ms < (tasDataDelayed.time_ms + 1000)) {
 				centripetal_accel = tasDataDelayed.tas * turn_rate;
 			} else {
-				centripetal_accel = 0.0f;
+				// use default airspeed value scaled for density altitude
+				centripetal_accel = frontend->EKFGSF_easDefault * AP::ahrs().get_EAS2TAS() * turn_rate;
 			}
 
 			// project Y body axis onto horizontal and multiply by centripetal acceleration to give estimated
@@ -490,7 +491,7 @@ void NavEKF3_core::EKFGSF_run()
 
 	// calculate common values used by the AHRS prediction models
 	EKFGSF_ahrs_accel_norm = EKFGSF_ahrs_accel.length();
-	EKFGSF_ahrs_turn_comp_enabled = assume_zero_sideslip() && frontend->EKFGSF_tasDefault > FLT_EPSILON;
+	EKFGSF_ahrs_turn_comp_enabled = assume_zero_sideslip() && frontend->EKFGSF_easDefault > FLT_EPSILON;
 	if (EKFGSF_ahrs_accel_norm > GRAVITY_MSS) {
 		if (EKFGSF_ahrs_turn_comp_enabled && EKFGSF_ahrs_accel_norm <= 2.0f * GRAVITY_MSS) {
 			EKFGSF_accel_gain = frontend->EKFGSF_tiltGain * sq(1.0f - (EKFGSF_ahrs_accel_norm - GRAVITY_MSS)/GRAVITY_MSS);
