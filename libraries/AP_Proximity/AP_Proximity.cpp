@@ -18,6 +18,7 @@
 #include "AP_Proximity_RPLidarA2.h"
 #include "AP_Proximity_TeraRangerTower.h"
 #include "AP_Proximity_TeraRangerTowerEvo.h"
+#include "AP_Proximity_TeraRangerTowerEvoGazeboSITL.h"
 #include "AP_Proximity_RangeFinder.h"
 #include "AP_Proximity_MAV.h"
 #include "AP_Proximity_LightWareSF40C.h"
@@ -34,7 +35,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Proximity type
     // @Description: What type of proximity sensor is connected
-    // @Values: 0:None,7:LightwareSF40c,1:LightWareSF40C-legacy,2:MAVLink,3:TeraRangerTower,4:RangeFinder,5:RPLidarA2,6:TeraRangerTowerEvo,10:SITL,11:MorseSITL,12:AirSimSITL
+    // @Values: 0:None,7:LightwareSF40c,1:LightWareSF40C-legacy,2:MAVLink,3:TeraRangerTower,4:RangeFinder,5:RPLidarA2,6:TeraRangerTowerEvo,10:SITL,11:MorseSITL,12:AirSimSITL,13:GazeboSITL
     // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO("_TYPE",   1, AP_Proximity, _type[0], 0),
@@ -154,7 +155,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Param: 2_TYPE
     // @DisplayName: Second Proximity type
     // @Description: What type of proximity sensor is connected
-    // @Values: 0:None,7:LightwareSF40c,1:LightWareSF40C-legacy,2:MAVLink,3:TeraRangerTower,4:RangeFinder,5:RPLidarA2,6:TeraRangerTowerEvo,10:SITL,11:MorseSITL,12:AirSimSITL
+    // @Values: 0:None,7:LightwareSF40c,1:LightWareSF40C-legacy,2:MAVLink,3:TeraRangerTower,4:RangeFinder,5:RPLidarA2,6:TeraRangerTowerEvo,10:SITL,11:MorseSITL,12:AirSimSITL,13:GazeboSITL
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("2_TYPE", 16, AP_Proximity, _type[1], 0),
@@ -341,6 +342,11 @@ void AP_Proximity::detect_instance(uint8_t instance)
     case Type::AirSimSITL:
         state[instance].instance = instance;
         drivers[instance] = new AP_Proximity_AirSimSITL(*this, state[instance]);
+        return;
+
+    case Type::GazeboSITL:
+        state[instance].instance = instance;
+        drivers[instance] = new AP_Proximity_TeraRangerTowerEvoGazeboSITL(*this, state[instance]);
         return;
 #endif
     }
