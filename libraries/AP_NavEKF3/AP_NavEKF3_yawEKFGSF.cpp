@@ -29,88 +29,82 @@
 
 void NavEKF3_core::EKFGSF_predictQuat(const uint8_t mdl_idx)
 {
-	// generate attitude solution using simple complementary filter for the selected model
+	// Generate attitude solution using simple complementary filter for the selected model
 
-	// Accelerometer correction
-	// Project 'k' unit vector of earth frame to body frame
-	// Vector3f k = quaterion.conjugate_inversed(Vector3f(0.0f, 0.0f, 1.0f));
-	// Optimized version with dropped zeros
+	// Calculate 'k' unit vector of earth frame rotated into body frame
 	const Vector3f k(
 		2.0f * (EKFGSF_ahrs[mdl_idx].quat[1] * EKFGSF_ahrs[mdl_idx].quat[3] - EKFGSF_ahrs[mdl_idx].quat[0] * EKFGSF_ahrs[mdl_idx].quat[2]),
 		2.0f * (EKFGSF_ahrs[mdl_idx].quat[2] * EKFGSF_ahrs[mdl_idx].quat[3] + EKFGSF_ahrs[mdl_idx].quat[0] * EKFGSF_ahrs[mdl_idx].quat[1]),
 		(EKFGSF_ahrs[mdl_idx].quat[0] * EKFGSF_ahrs[mdl_idx].quat[0] - EKFGSF_ahrs[mdl_idx].quat[1] * EKFGSF_ahrs[mdl_idx].quat[1] - EKFGSF_ahrs[mdl_idx].quat[2] * EKFGSF_ahrs[mdl_idx].quat[2] + EKFGSF_ahrs[mdl_idx].quat[3] * EKFGSF_ahrs[mdl_idx].quat[3])
 	);
 
-    // angular rate vector in rad/sec averaged across last sample period
+    // Calculate angular rate vector in rad/sec averaged across last sample interval
     Vector3f ang_rate_delayed_raw = imuDataDelayed.delAng / imuDataDelayed.delAngDT;
 
 	// Perform angular rate correction using accel data and reduce correction as accel magnitude moves away from 1 g (reduces drift when vehicle picked up and moved).
 	// During fixed wing flight, compensate for centripetal acceleration assuming coordinated turns and X axis forward
-	Vector3f correction = {};
+	Vector3f tilt_error_gyro_correction = {}; // (rad/sec)
 	Vector3f accel = EKFGSF_ahrs_accel;
 	if (EKFGSF_ahrs_accel_norm > 0.5f * GRAVITY_MSS && (EKFGSF_ahrs_accel_norm < 1.5f * GRAVITY_MSS || EKFGSF_ahrs_turn_comp_enabled)) {
 		if (EKFGSF_ahrs_turn_comp_enabled) {
-			// turn rate is component of gyro rate about vertical (down) axis
+			// Turn rate is component of gyro rate about vertical (down) axis
 			const float turn_rate = EKFGSF_ahrs[mdl_idx].R[2][0] * ang_rate_delayed_raw[0]
 					  + EKFGSF_ahrs[mdl_idx].R[2][1] * ang_rate_delayed_raw[1]
 					  + EKFGSF_ahrs[mdl_idx].R[2][2] * ang_rate_delayed_raw[2];
 
-			// use measured airspeed to calculate centripetal acceleration if available
+			// Use measured airspeed to calculate centripetal acceleration if available
 			float centripetal_accel;
 			if (useAirspeed() && imuDataDelayed.time_ms < (tasDataDelayed.time_ms + 1000)) {
 				centripetal_accel = tasDataDelayed.tas * turn_rate;
 			} else {
-				// use default airspeed value scaled for density altitude
+				// Use default airspeed value scaled for density altitude
 				centripetal_accel = frontend->EKFGSF_easDefault * AP::ahrs().get_EAS2TAS() * turn_rate;
 			}
 
-			// project Y body axis onto horizontal and multiply by centripetal acceleration to give estimated
+			// Project Y body axis onto horizontal and multiply by centripetal acceleration to give estimated
 			// centripetal acceleration vector in earth frame due to coordinated turn
 			Vector3f centripetal_accel_vec_ef = {EKFGSF_ahrs[mdl_idx].R[0][1], EKFGSF_ahrs[mdl_idx].R[1][1], 0.0f};
 			if (EKFGSF_ahrs[mdl_idx].R[2][2] > 0.0f) {
-				// vehicle is upright
+				// Vehicle is upright
 				centripetal_accel_vec_ef *= centripetal_accel;
 			} else {
-				// vehicle is inverted
+				// Vehicle is inverted
 				centripetal_accel_vec_ef *= - centripetal_accel;
 			}
 
-			// rotate into body frame
+			// Rotate into body frame
 			Vector3f centripetal_accel_vec_bf = EKFGSF_ahrs[mdl_idx].R.transposed() * centripetal_accel_vec_ef;
 
-			// correct measured accel for centripetal acceleration
+			// Correct measured accel for centripetal acceleration
 			accel -= centripetal_accel_vec_bf;
 		}
 
-		correction = (k % accel) * EKFGSF_accel_gain / EKFGSF_ahrs_accel_norm;
+		tilt_error_gyro_correction = (k % accel) * (EKFGSF_accel_gain / EKFGSF_ahrs_accel_norm);
 
 	}
 
 	// Gyro bias estimation
-	const float gyro_bias_limit = 0.05f;
+	const float gyro_bias_limit = radians(5.0f);
 	const float spinRate = ang_rate_delayed_raw.length();
 	if (spinRate < 0.175f) {
-		EKFGSF_ahrs[mdl_idx].gyro_bias -= correction * (frontend->EKFGSF_gyroBiasGain * imuDataDelayed.delAngDT);
+		EKFGSF_ahrs[mdl_idx].gyro_bias -= tilt_error_gyro_correction * (frontend->EKFGSF_gyroBiasGain * imuDataDelayed.delAngDT);
 
 		for (int i = 0; i < 3; i++) {
 			EKFGSF_ahrs[mdl_idx].gyro_bias[i] = constrain_float(EKFGSF_ahrs[mdl_idx].gyro_bias[i], -gyro_bias_limit, gyro_bias_limit);
 		}
 	}
 
-	const Vector3f rates = ang_rate_delayed_raw - EKFGSF_ahrs[mdl_idx].gyro_bias;
+	// Calculate the corrected body frame rotation vector for the last sample interval
+	const Vector3f delta_angle = imuDataDelayed.delAng + (tilt_error_gyro_correction - EKFGSF_ahrs[mdl_idx].gyro_bias) * imuDataDelayed.delAngDT;
 
-	// Feed forward gyro
-	correction += rates;
-
-	// Apply correction to state
+	// Rotate quaternion from previous to current time index
     Quaternion deltaQuat;
-    deltaQuat.from_axis_angle(correction * imuDataDelayed.delAngDT);
-	EKFGSF_ahrs[mdl_idx].quat *= deltaQuat;
+    EKFGSF_ahrs[mdl_idx].quat.rotate(delta_angle);
 
 	// Normalize quaternion
 	EKFGSF_ahrs[mdl_idx].quat.normalize();
 
-	// uodate body to earth frame rotation matrix
+	// Uodate body to earth frame rotation matrix
     EKFGSF_ahrs[mdl_idx].quat.rotation_matrix(EKFGSF_ahrs[mdl_idx].R);
 
 }
