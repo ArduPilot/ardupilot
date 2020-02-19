@@ -70,7 +70,7 @@ bool Sub::verify_motor_test()
 
     if (!pass) {
         ap.motor_test = false;
-        motors.armed(false); // disarm motors
+        arming.disarm(); // disarm motors
         last_do_motor_test_fail_ms = AP_HAL::millis();
         return false;
     }
