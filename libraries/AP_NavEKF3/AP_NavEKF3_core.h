@@ -1317,7 +1317,7 @@ private:
     // Declarations for yaw estimator using a bank of 3-state EKF's whose output is combined using a Gaussian Sum Filter
 	void EKFGSF_run();
 
-    // This section contains declarations used by the bank of AHRS complementary filters that use IMU data augmented by true
+    // Declarations used by the bank of AHRS complementary filters that use IMU data augmented by true
     // airspeed data when in fixed wing mode to estimate the quaternions that are used to rotate IMU data into a
     // Front, Right, Yaw frame of reference.
     struct EKFGSF_ahrs_struct{
@@ -1346,22 +1346,17 @@ private:
     // Initialises the yaw angle for all AHRS using a uniform distribution of yaw angles between -180 and +180 deg
 	void EKFGSF_alignQuatYaw();
 
-    // This section contains declarations that are used by the bank of EKF's that estimate yaw angle starting from a different yaw
-    // hypothesis for each filter. The aoutputs from these filters are then combined using a Gaussian Sum Filter
-	struct EKFGSF_struct{
+    // The Following declarations are used by bank of EKF's that estimate yaw angle starting from a different yaw hypothesis for each filter.
+
+	struct EKFGSF_EKF_struct{
 		float X[3];     // Vel North (m/s),  Vel East (m/s), yaw (rad)
 		float P[3][3];  // covariance matrix
-		float W = 0.0f; // weighting calculated by the Gaussian Sum Filter when combining EKF outputs
 		float S[2][2];  // N,E velocity innovation variance (m/s)^2
 		float innov[2]; // Velocity N,E innovation (m/s)
 		bool use_312;   // true if a 312 Tait-Bryan rotation sequence should be used when converting between the AHRS quaternion and EKF yaw state
 	};
-	EKFGSF_struct EKFGSF_mdl[N_MODELS_EKFGSF];
-	float X_GSF[3] {};                      // composite state vector from GSF - North velocity (m/s), South Velocity (m/s), Yaw (rad)
-	bool EKFGSF_vel_fuse_started = false;   // true when the bank of EKF's has started fusing GPS velocity data
-    float EKFGSF_yaw_var;                   // variance of composite yaw estimate from GSF (rad^2)
-	uint64_t EKFGSF_yaw_reset_time_ms{0};	// timestamp of last emergency yaw reset (uSec)
-    uint8_t EKFGSF_yaw_reset_count{0};      // number of emergency yaw resets performed
+	EKFGSF_EKF_struct EKFGSF_mdl[N_MODELS_EKFGSF];
+    bool EKFGSF_vel_fuse_started = false;   // true when the bank of EKF's has started fusing GPS velocity data
 
     // Initialises the EKF's and GSF states, but not the AHRS complementary filters
 	void EKFGSF_initialise();
@@ -1375,7 +1370,22 @@ private:
     // Forces symmetry on the covariance matrix for the selected EKF
 	void EKFGSF_forceSymmetry(const uint8_t mdl_idx);
 
+    // The following declarations are used  by the Gaussian Sum Filter that combines the state estimates from the bank of 
+    // EKF's to form a single state estimate.
+
+    struct EKFGSF_GSF_struct{
+        float state[3];                 // Vel North (m/s),  Vel East (m/s), yaw (rad)
+        float weights[N_MODELS_EKFGSF]; // Weighting applied to each EKF model. Sum of weights is unity.
+        float yaw_variance;             // Yaw state variance (rad^2)
+    };
+    EKFGSF_GSF_struct EKFGSF_GSF;
+
     // Returns the probability for a selected model assuming a Gaussian error distribution
     // Used by the Guassian Sum Filter to calculate the weightings when combining the outputs from the bank of EKF's
 	float EKFGSF_gaussianDensity(const uint8_t mdl_idx) const;
+
+    // The following declarations are used to control when the main navigation filter resets it's yaw to the estimate provided by the GSF
+
+	uint64_t EKFGSF_yaw_reset_time_ms{0};	// timestamp of last emergency yaw reset (uSec)
+    uint8_t EKFGSF_yaw_reset_count{0};      // number of emergency yaw resets performed
 };

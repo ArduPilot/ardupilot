@@ -433,9 +433,8 @@ void NavEKF3_core::EKFGSF_correct(const uint8_t mdl_idx)
 
 void NavEKF3_core::EKFGSF_initialise()
 {
-	memset(&X_GSF, 0, sizeof(X_GSF));
+	memset(&EKFGSF_GSF, 0, sizeof(EKFGSF_GSF));
 	EKFGSF_vel_fuse_started = false;
-    EKFGSF_yaw_var = 0.0f;
 	EKFGSF_yaw_reset_time_ms = 0;
     EKFGSF_yaw_reset_count = 0;
 	memset(&EKFGSF_mdl, 0, sizeof(EKFGSF_mdl));
@@ -445,31 +444,31 @@ void NavEKF3_core::EKFGSF_initialise()
 		EKFGSF_mdl[mdl_idx].X[2] = -M_PI + (0.5f * yaw_increment) + ((float)mdl_idx * yaw_increment);
 
 		// All filter models start with the same weight
-		EKFGSF_mdl[mdl_idx].W = 1.0f / (float)N_MODELS_EKFGSF;
+		EKFGSF_GSF.weights[mdl_idx] = 1.0f / (float)N_MODELS_EKFGSF;
 
-		// Assume velocity within 0.5 m/s of zero at alignment
 		if (frontend->_fusionModeGPS <= 1) {
+			// Take state and variance estimates direct from GPS
 			EKFGSF_mdl[mdl_idx].X[0] = gpsDataDelayed.vel[0];
 			EKFGSF_mdl[mdl_idx].X[1] = gpsDataDelayed.vel[1];
 			EKFGSF_mdl[mdl_idx].P[0][0] = sq(fmaxf(gpsSpdAccuracy, frontend->_gpsHorizVelNoise));
 			EKFGSF_mdl[mdl_idx].P[1][1] = EKFGSF_mdl[mdl_idx].P[0][0];
 		} else {
+			// No velocity data so assume initial alignment conditions
 			EKFGSF_mdl[mdl_idx].P[0][0] = sq(0.5f);
 			EKFGSF_mdl[mdl_idx].P[1][1] = sq(0.5f);
 		}
 
-		// use half yaw interval for yaw uncertainty
-        EKFGSF_yaw_var = sq(0.5f * yaw_increment);
-		EKFGSF_mdl[mdl_idx].P[2][2] = EKFGSF_yaw_var;
+		// Use half yaw interval for yaw uncertainty as that is the maximum that the best model can be away from truth
+        EKFGSF_GSF.yaw_variance = sq(0.5f * yaw_increment);
+		EKFGSF_mdl[mdl_idx].P[2][2] = EKFGSF_GSF.yaw_variance;
 	}
 }
 
 void NavEKF3_core::EKFGSF_run()
 {
-	// Iniitialise states first time
+	// Iniitialise states and only when acceleration is close to 1g to rpevent vehicle movement casuing a large initial tilt error
 	EKFGSF_ahrs_accel = imuDataDelayed.delVel / fmaxf(imuDataDelayed.delVelDT, dtEkfAvg / 4);
 	if (!EKFGSF_ahrs_tilt_aligned) {
-		// check for excessive acceleration.
 		const float accel_norm_sq = EKFGSF_ahrs_accel.length_squared();
 		const float upper_accel_limit = GRAVITY_MSS * 1.1f;
 		const float lower_accel_limit = GRAVITY_MSS * 0.9f;
@@ -483,7 +482,7 @@ void NavEKF3_core::EKFGSF_run()
 		return;
 	}
 
-	// calculate common values used by the AHRS prediction models
+	// Calculate common varaibles used by the AHRS prediction models
 	EKFGSF_ahrs_accel_norm = EKFGSF_ahrs_accel.length();
 	EKFGSF_ahrs_turn_comp_enabled = assume_zero_sideslip() && frontend->EKFGSF_easDefault > FLT_EPSILON;
 	if (EKFGSF_ahrs_accel_norm > GRAVITY_MSS) {
@@ -496,8 +495,7 @@ void NavEKF3_core::EKFGSF_run()
 		EKFGSF_accel_gain = frontend->EKFGSF_tiltGain * sq(1.0f + 2.0f * (EKFGSF_ahrs_accel_norm - GRAVITY_MSS)/GRAVITY_MSS);
 	}
 
-	// AHRS prediction cycle for each model
-	// This always runs
+	// Always run the AHRS prediction cycle for each model
 	for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
 		EKFGSF_predict(mdl_idx);
 	}
@@ -505,8 +503,9 @@ void NavEKF3_core::EKFGSF_run()
 	// The 3-state EKF models only run when flying to avoid corrupted estimates due to operator handling and GPS interference
 	if (filterStatus.flags.horiz_pos_abs && gpsDataToFuse && inFlight) {
 		if (!EKFGSF_vel_fuse_started) {
+			// Perform in-flight alignment
 			for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
-				// use the first measurement to set the velocities and corresponding covariances
+				// Use the firstGPS  measurement to set the velocities and corresponding variances
 				EKFGSF_mdl[mdl_idx].X[0] = gpsDataDelayed.vel[0];
 				EKFGSF_mdl[mdl_idx].X[1] = gpsDataDelayed.vel[1];
 				EKFGSF_mdl[mdl_idx].P[0][0] = sq(fmaxf(gpsSpdAccuracy, frontend->_gpsHorizVelNoise));
@@ -518,24 +517,25 @@ void NavEKF3_core::EKFGSF_run()
 			float total_w = 0.0f;
 			float newWeight[N_MODELS_EKFGSF];
 			for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
-				// subsequent measurements are fused as direct state observations
+				// Update states and covariances using GPS NE velocity measurements fused as direct state observations
 				EKFGSF_correct(mdl_idx);
 
-				// calculate weighting for each model assuming a normal distribution
-				newWeight[mdl_idx]= fmaxf(EKFGSF_gaussianDensity(mdl_idx) * EKFGSF_mdl[mdl_idx].W, 0.0f);
+				// Calculate weighting for each model assuming a normal distribution
+				newWeight[mdl_idx]= fmaxf(EKFGSF_gaussianDensity(mdl_idx) * EKFGSF_GSF.weights[mdl_idx], 0.0f);
 				total_w += newWeight[mdl_idx];
 			}
 
-			// normalise the weighting function
+			// Normalise the sume of weights to unity
 			if (EKFGSF_vel_fuse_started && total_w > 0.0f) {
 				float total_w_inv = 1.0f / total_w;
 				for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
-					EKFGSF_mdl[mdl_idx].W  = newWeight[mdl_idx] * total_w_inv;
+					EKFGSF_GSF.weights[mdl_idx]  = newWeight[mdl_idx] * total_w_inv;
 				}
 			}
 		}
 	} else if (EKFGSF_vel_fuse_started && !inFlight) {
-		// reset EKF states and wait to fly again
+		// We have landed so reset EKF-GSF states and wait to fly again
+		// Do not reset the AHRS quaternions as the AHRS continues to run when on ground
 		EKFGSF_initialise();
 		EKFGSF_vel_fuse_started = false;
 	}
@@ -543,16 +543,16 @@ void NavEKF3_core::EKFGSF_run()
 	// Calculate a composite state vector as a weighted average of the states for each model.
 	// To avoid issues with angle wrapping, the yaw state is converted to a vector with legnth
 	// equal to the weighting value before it is summed.
-	memset(&X_GSF, 0, sizeof(X_GSF));
+	memset(&EKFGSF_GSF.state, 0, sizeof(EKFGSF_GSF.state));
 	Vector2f yaw_vector = {};
 	for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
 		for (uint8_t state_index = 0; state_index < 2; state_index++) {
-			X_GSF[state_index] += EKFGSF_mdl[mdl_idx].X[state_index] * EKFGSF_mdl[mdl_idx].W;
+			EKFGSF_GSF.state[state_index] += EKFGSF_mdl[mdl_idx].X[state_index] * EKFGSF_GSF.weights[mdl_idx];
 		}
-		yaw_vector[0] += EKFGSF_mdl[mdl_idx].W * cosf(EKFGSF_mdl[mdl_idx].X[2]);
-		yaw_vector[1] += EKFGSF_mdl[mdl_idx].W * sinf(EKFGSF_mdl[mdl_idx].X[2]);
+		yaw_vector[0] += EKFGSF_GSF.weights[mdl_idx] * cosf(EKFGSF_mdl[mdl_idx].X[2]);
+		yaw_vector[1] += EKFGSF_GSF.weights[mdl_idx] * sinf(EKFGSF_mdl[mdl_idx].X[2]);
 	}
-	X_GSF[2] = atan2f(yaw_vector[1],yaw_vector[0]);
+	EKFGSF_GSF.state[2] = atan2f(yaw_vector[1],yaw_vector[0]);
 
 	/*
 	// calculate a composite covariance matrix from a weighted average of the covariance for each model
@@ -565,15 +565,15 @@ void NavEKF3_core::EKFGSF_run()
 		}
 		for (uint8_t row = 0; row < 3; row++) {
 			for (uint8_t col = 0; col < 3; col++) {
-				P_GSF[row][col] +=  EKFGSF_mdl[mdl_idx].W * (EKFGSF_mdl[mdl_idx].P[row][col] + Xdelta[row] * Xdelta[col]);
+				P_GSF[row][col] +=  EKFGSF_GSF.weights[mdl_idx] * (EKFGSF_mdl[mdl_idx].P[row][col] + Xdelta[row] * Xdelta[col]);
 			}
 		}
 	}
 	*/
-    EKFGSF_yaw_var = 0.0f;
+    EKFGSF_GSF.yaw_variance = 0.0f;
 	for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
-		float yawDelta = wrap_PI(EKFGSF_mdl[mdl_idx].X[2] - X_GSF[2]);
-		EKFGSF_yaw_var +=  EKFGSF_mdl[mdl_idx].W * (EKFGSF_mdl[mdl_idx].P[2][2] + sq(yawDelta));
+		float yawDelta = wrap_PI(EKFGSF_mdl[mdl_idx].X[2] - EKFGSF_GSF.state[2]);
+		EKFGSF_GSF.yaw_variance +=  EKFGSF_GSF.weights[mdl_idx] * (EKFGSF_mdl[mdl_idx].P[2][2] + sq(yawDelta));
 	}
 
 }
@@ -614,13 +614,13 @@ float NavEKF3_core::EKFGSF_gaussianDensity(const uint8_t mdl_idx) const
 
 void NavEKF3_core::getDataEKFGSF(float *yaw_composite, float *yaw_composite_variance, float yaw[N_MODELS_EKFGSF], float innov_VN[N_MODELS_EKFGSF], float innov_VE[N_MODELS_EKFGSF], float weight[N_MODELS_EKFGSF])
 {
-	memcpy(yaw_composite, &X_GSF[2], sizeof(X_GSF[2]));
-	memcpy(yaw_composite_variance, &EKFGSF_yaw_var, sizeof(EKFGSF_yaw_var));
+	memcpy(yaw_composite, &EKFGSF_GSF.state[2], sizeof(EKFGSF_GSF.state[2]));
+	memcpy(yaw_composite_variance, &EKFGSF_GSF.yaw_variance, sizeof(EKFGSF_GSF.yaw_variance));
 	for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx++) {
 		yaw[mdl_idx] = EKFGSF_mdl[mdl_idx].X[2];
 		innov_VN[mdl_idx] = EKFGSF_mdl[mdl_idx].innov[0];
 		innov_VE[mdl_idx] = EKFGSF_mdl[mdl_idx].innov[1];
-		weight[mdl_idx] = EKFGSF_mdl[mdl_idx].W;
+		weight[mdl_idx] = EKFGSF_GSF.weights[mdl_idx];
 	}
 }
 
@@ -639,7 +639,7 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
 {
     if (EKFGSF_yaw_reset_count < frontend->EKFGSF_n_reset_max &&
         EKFGSF_vel_fuse_started &&
-        EKFGSF_yaw_var < sq(radians(15.0f)) &&
+        EKFGSF_GSF.yaw_variance < sq(radians(15.0f)) &&
         (imuSampleTime_ms - EKFGSF_yaw_reset_time_ms) > 5000) {
 
         // save a copy of the quaternion state for later use in calculating the amount of reset change
@@ -662,10 +662,10 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
             prevTnb.to_euler(&roll, &pitch, &yaw);
 
             // record change in yaw
-            deltaYaw = wrap_PI(X_GSF[2] - yaw);
+            deltaYaw = wrap_PI(EKFGSF_GSF.state[2] - yaw);
 
             // Calculate the body to earth frame rotation matrix
-            prevTnb.from_euler(roll, pitch, X_GSF[2]);
+            prevTnb.from_euler(roll, pitch, EKFGSF_GSF.state[2]);
 
         } else {
             // Calculate the 312 Tait-Bryan rotation sequence that rotates from earth to body frame
@@ -674,10 +674,10 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
             Vector3f euler312 = prevTnb.to_euler312();
 
             // record change in yaw
-            deltaYaw = wrap_PI(X_GSF[2] - euler312[2]);
+            deltaYaw = wrap_PI(EKFGSF_GSF.state[2] - euler312[2]);
 
             // Calculate the body to earth frame rotation matrix
-            prevTnb.from_euler312(euler312[0], euler312[1], X_GSF[2]);
+            prevTnb.from_euler312(euler312[0], euler312[1], EKFGSF_GSF.state[2]);
 
         }
 
@@ -693,7 +693,7 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
         StoreQuatRotate(quat_delta);
 
         // update the yaw angle variance using the variance of the EKF-GSF estimate
-        angleErrVarVec.z = EKFGSF_yaw_var;
+        angleErrVarVec.z = EKFGSF_GSF.yaw_variance;
 
         // reset the quaternion covariances using the rotation vector variances
         initialiseQuatCovariances(angleErrVarVec);
