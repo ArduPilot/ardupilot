@@ -49,11 +49,11 @@ void panic(const char *errormsg, ...)
 void dump_stack_trace()
 {
     // find dumpstack command:
-    const char *dumpstack = "dumpstack"; // if we can't find it trust in PATH
+    const char *dumpstack = "dumpstack.sh"; // if we can't find it trust in PATH
     struct stat statbuf;
     const char *paths[] {
-        "Tools/scripts/dumpstack",
-        "APM/Tools/scripts/dumpstack", // for autotest server
+        "Tools/scripts/dumpstack.sh",
+        "APM/Tools/scripts/dumpstack.sh", // for autotest server
     };
     for (uint8_t i=0; i<ARRAY_SIZE(paths); i++) {
         if (::stat(paths[i], &statbuf) != -1) {
