@@ -118,7 +118,7 @@ void Aircraft::set_precland(SIM_Precland *_precland) {
 */
 float Aircraft::hagl() const
 {
-    return (-position.z) + home.alt * 0.01f - ground_level - frame_height - ground_height_difference();
+    return (float)((double)(-position.z) + (double)home.alt * 0.01f - (double)ground_level - (double)frame_height - (double)ground_height_difference());
 }
 /*
    return true if we are on the ground
@@ -494,7 +494,7 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
             printf("Hit ground at %f m/s\n", velocity_ef.z);
             last_ground_contact_ms = AP_HAL::millis();
         }
-        position.z = -(ground_level + frame_height - home.alt * 0.01f + ground_height_difference());
+        position.z = -(float)((double)ground_level + (double)frame_height - (double)(home.alt * 0.01f) + (double)ground_height_difference());
 
         switch (ground_behavior) {
         case GROUND_BEHAVIOR_NONE:
