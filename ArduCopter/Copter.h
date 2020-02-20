@@ -764,9 +764,6 @@ private:
     // fence.cpp
     void fence_check();
 
-    //Planck stateinfo
-    void send_planck_stateinfo(void);
-
     // heli.cpp
     void heli_init();
     void check_dynamic_flight(void);

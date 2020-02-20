@@ -9,8 +9,6 @@ public:
 
     using GCS_MAVLINK::GCS_MAVLINK;
 
-    bool send_planck_stateinfo();
-
 protected:
 
     uint32_t telem_delay() const override;
