@@ -43,9 +43,13 @@ void NavEKF3_core::EKFGSF_predictQuat(const uint8_t mdl_idx)
 
 	// Perform angular rate correction using accel data and reduce correction as accel magnitude moves away from 1 g (reduces drift when vehicle picked up and moved).
 	// During fixed wing flight, compensate for centripetal acceleration assuming coordinated turns and X axis forward
+
 	Vector3f tilt_error_gyro_correction = {}; // (rad/sec)
-	Vector3f accel = EKFGSF_ahrs_accel;
-	if (EKFGSF_ahrs_accel_norm > 0.5f * GRAVITY_MSS && (EKFGSF_ahrs_accel_norm < 1.5f * GRAVITY_MSS || EKFGSF_ahrs_turn_comp_enabled)) {
+
+	if (EKFGSF_accel_gain > 0.0f) {
+
+		Vector3f accel = EKFGSF_ahrs_accel;
+
 		if (EKFGSF_ahrs_turn_comp_enabled) {
 			// Turn rate is component of gyro rate about vertical (down) axis
 			const float turn_rate = EKFGSF_ahrs[mdl_idx].R[2][0] * ang_rate_delayed_raw[0]
@@ -482,17 +486,32 @@ void NavEKF3_core::EKFGSF_run()
 		return;
 	}
 
-	// Calculate common varaibles used by the AHRS prediction models
+	// Calculate common variables used by the AHRS prediction models
 	EKFGSF_ahrs_accel_norm = EKFGSF_ahrs_accel.length();
 	EKFGSF_ahrs_turn_comp_enabled = assume_zero_sideslip() && frontend->EKFGSF_easDefault > FLT_EPSILON;
-	if (EKFGSF_ahrs_accel_norm > GRAVITY_MSS) {
-		if (EKFGSF_ahrs_turn_comp_enabled && EKFGSF_ahrs_accel_norm <= 2.0f * GRAVITY_MSS) {
-			EKFGSF_accel_gain = frontend->EKFGSF_tiltGain * sq(1.0f - (EKFGSF_ahrs_accel_norm - GRAVITY_MSS)/GRAVITY_MSS);
-		} else if (EKFGSF_ahrs_accel_norm <= 1.5f * GRAVITY_MSS) {
-			EKFGSF_accel_gain = frontend->EKFGSF_tiltGain * sq(1.0f - 2.0f * (EKFGSF_ahrs_accel_norm - GRAVITY_MSS)/GRAVITY_MSS);
+
+	// Calculate AHRS acceleration fusion gain using a quadratic weighting function that is unity at 1g
+	// and zero at the min and max g limits. This reduces the effect of large g transients on the attitude
+	// esitmates.
+	float EKFGSF_ahrs_ng = EKFGSF_ahrs_accel_norm / GRAVITY_MSS;
+	if (EKFGSF_ahrs_ng > 1.0f) {
+		if (EKFGSF_ahrs_turn_comp_enabled && EKFGSF_ahrs_ng <= 2.0f) {
+			// When flying in fixed wing mode we need to allow for more positive g due to coordinated turns
+			// Gain varies from unity at 1g to zero at 2g
+			EKFGSF_accel_gain = frontend->EKFGSF_tiltGain * sq(2.0f - EKFGSF_ahrs_ng);
+		} else if (EKFGSF_accel_gain <= 1.5f) {
+			// Gain varies from unity at 1g to zero at 1.5g
+			EKFGSF_accel_gain = frontend->EKFGSF_tiltGain * sq(3.0f - 2.0f * EKFGSF_ahrs_ng);
+		} else {
+			// Gain is zero above max g
+			EKFGSF_accel_gain = 0.0f;
 		}
-	} else if (EKFGSF_ahrs_accel_norm > 0.5f * GRAVITY_MSS) {
-		EKFGSF_accel_gain = frontend->EKFGSF_tiltGain * sq(1.0f + 2.0f * (EKFGSF_ahrs_accel_norm - GRAVITY_MSS)/GRAVITY_MSS);
+	} else if (EKFGSF_accel_gain > 0.5f) {
+		// Gain varies from zero at 0.5g to unity at 1g
+		EKFGSF_accel_gain = frontend->EKFGSF_tiltGain * sq(2.0f * EKFGSF_ahrs_ng - 1.0f);
+	} else {
+		// Gain is zero below min g
+		EKFGSF_accel_gain = 0.0f;
 	}
 
 	// Always run the AHRS prediction cycle for each model
