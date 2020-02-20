@@ -2569,8 +2569,14 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
         return MAV_RESULT_FAILED;
     }
 
-    if (!(is_equal(packet.param1, 1.0f) || is_equal(packet.param1, 3.0f))) {
-        // param1 must be 1 or 3 - 1 being reboot, 3 being reboot-to-bootloader
+    if (!(is_equal(packet.param1, 1.0f) ||
+          is_equal(packet.param1, 3.0f) ||
+          is_equal(packet.param1, 4.0f)
+            )) {
+        // param1 must be:
+        // 1 - reboot
+        // 3 - reboot-to-bootloader
+        // 4 - reboot-to-DFU
         return MAV_RESULT_UNSUPPORTED;
     }
 
@@ -2593,7 +2599,14 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
     AP_Param::flush();
 
     hal.scheduler->delay(200);
-    
+
+    if (is_equal(packet.param1, 4.0f)) {
+        hal.scheduler->reboot_to_dfu();
+        // FIXME: error handling?
+        gcs().send_text(MAV_SEVERITY_ERROR, "Reboot-to-DFU failed");
+        return MAV_RESULT_FAILED; // we've already sent a result...
+    }
+
     // when packet.param1 == 3 we reboot to hold in bootloader
     const bool hold_in_bootloader = is_equal(packet.param1, 3.0f);
     hal.scheduler->reboot(hold_in_bootloader);
