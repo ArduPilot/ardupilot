@@ -5,15 +5,17 @@
  */
 
 #include "AP_RAMTRON.h"
+#include <AP_Math/AP_Math.h>
 
 extern const AP_HAL::HAL &hal;
 
 // register numbers
-#define RAMTRON_RDID      0x9f
-#define RAMTRON_READ      0x03
-#define RAMTRON_RDSR      0x05
-#define RAMTRON_WREN      0x06
-#define RAMTRON_WRITE     0x02
+static const uint8_t RAMTRON_RDID  = 0x9f;
+static const uint8_t RAMTRON_READ  = 0x03;
+static const uint8_t RAMTRON_WRSR  = 0x01;
+static const uint8_t RAMTRON_RDSR  = 0x05;
+static const uint8_t RAMTRON_WREN  = 0x06;
+static const uint8_t RAMTRON_WRITE = 0x02;
 
 /*
   list of supported devices. Thanks to NuttX ramtron driver
@@ -41,6 +43,7 @@ bool AP_RAMTRON::init(void)
 {
     dev = hal.spi->get_device("ramtron");
     if (!dev) {
+        hal.console->printf("No RAMTRON SPI device defined!\n");
         return false;
     }
     WITH_SEMAPHORE(dev->get_semaphore());
@@ -72,99 +75,106 @@ bool AP_RAMTRON::init(void)
             if (ramtron_ids[i].id1 == cypress->id1 &&
                 ramtron_ids[i].id2 == cypress->id2) {
                 id = i;
-                hal.console->printf("Found Cypress RAMTRON idx=%u\n", id);
-                return true;
+                break;
             }
         } else if (ramtron_ids[i].rdid_type == FUJITSU_RDID) {
             fujitsu_rdid const * const fujitsu = (fujitsu_rdid const * const)rdid;
             if (ramtron_ids[i].id1 == fujitsu->id1 &&
                 ramtron_ids[i].id2 == fujitsu->id2) {
                 id = i;
-                hal.console->printf("Found Fujitsu RAMTRON idx=%u\n", id);
-                return true;
+                break;
             }
         }
     }
-    hal.console->printf("Unknown RAMTRON device = [%02x %02x %02x %02x %02x %02x %02x %02x %02x]\n",
-                        rdid[0], rdid[1], rdid[2], rdid[3], rdid[4], rdid[5], rdid[6], rdid[7], rdid[8]);
-    return false;
+
+    if (id == UINT8_MAX) {
+        hal.console->printf("Unknown RAMTRON device = [%02x %02x %02x %02x %02x %02x %02x %02x %02x]\n",
+                            rdid[0], rdid[1], rdid[2], rdid[3], rdid[4], rdid[5], rdid[6], rdid[7], rdid[8]);
+        return false;
+    }
+
+
+    char const * const manufacturer = (ramtron_ids[id].rdid_type == FUJITSU_RDID) ? "Fujitsu" : "Cypress";
+    hal.console->printf("Found %s RAMTRON idx=%u\n", manufacturer, id);
+    return true;
 }
 
-/*
-  send a command and offset
- */
-void AP_RAMTRON::send_offset(uint8_t cmd, uint32_t offset)
-{
-    if (ramtron_ids[id].addrlen == 3) {
-        uint8_t b[4] = { cmd, uint8_t((offset>>16)&0xFF), uint8_t((offset>>8)&0xFF), uint8_t(offset&0xFF) };
-        dev->transfer(b, sizeof(b), nullptr, 0);
-    } else /* len 2 */ {
-        uint8_t b[3] = { cmd, uint8_t((offset>>8)&0xFF), uint8_t(offset&0xFF) };
-        dev->transfer(b, sizeof(b), nullptr, 0);
+bool AP_RAMTRON::_populate_addr(uint8_t cmdBuffer[], uint32_t const kCmdBufferSz, uint32_t addr) {
+    if (kCmdBufferSz == 4) {
+        cmdBuffer[1] = uint8_t((addr >> 16) & 0xFF);
+        cmdBuffer[2] = uint8_t((addr >>  8) & 0xFF);
+        cmdBuffer[3] = uint8_t((addr >>  0) & 0xFF);
+    } else if (kCmdBufferSz == 3) {
+        cmdBuffer[1] = uint8_t((addr >>  8) & 0xFF);
+        cmdBuffer[2] = uint8_t((addr >>  0) & 0xFF);
+    } else {
+        return false;
     }
+    return true;
 }
 
 // read from device
-bool AP_RAMTRON::read(uint32_t offset, uint8_t *buf, uint32_t size)
+uint32_t AP_RAMTRON::read(uint32_t offset, uint8_t *buf, uint32_t size)
 {
     // Don't allow reads outside of the FRAM memory.
     // NOTE: The FRAM devices will wrap back to address 0x0000 if they read past
     // the end of their internal memory, so while we'll get data back, it won't
     // be what we expect.
-    if ((get_size() < size) ||
+    if ((size > get_size()) ||
         (offset > (get_size() - size))) {
-        hal.console->printf("RAMTRON invalid read: %lu@%lu%u\n", size, offset);
-        return false;
+        return 0;
     }
-    const uint8_t maxread = 128;
-    while (size > maxread) {
-        if (!read(offset, buf, maxread)) {
-            return false;
+
+    const uint32_t kMaxReadSz = 128;
+    uint32_t numRead = 0;
+
+    while (size > 0) {
+        uint32_t const kCmdBufferSz = ramtron_ids[id].addrlen + 1;
+        uint8_t cmdBuffer[kCmdBufferSz] = { RAMTRON_READ, };
+        if (!_populate_addr(cmdBuffer, kCmdBufferSz, offset)) {
+            break;
+        } else {
+            WITH_SEMAPHORE(dev->get_semaphore());
+
+            uint32_t const kReadSz = MIN(size, kMaxReadSz);
+            bool ok = dev->set_chip_select(true);
+            ok = ok && dev->transfer(cmdBuffer, kCmdBufferSz, buf, kReadSz);
+            ok &= dev->set_chip_select(false);
+
+            numRead += kReadSz;
+            offset += kReadSz;
+            buf += kReadSz;
+            size -= kReadSz;
         }
-        offset += maxread;
-        buf += maxread;
-        size -= maxread;
     }
 
-    WITH_SEMAPHORE(dev->get_semaphore());
-
-    dev->set_chip_select(true);
-
-    send_offset(RAMTRON_READ, offset);
-
-    // get data
-    dev->transfer(nullptr, 0, buf, size);
-
-    dev->set_chip_select(false);
-
-    return true;
+    return numRead;
 }
 
 // write to device
-bool AP_RAMTRON::write(uint32_t offset, const uint8_t *buf, uint32_t size)
+uint32_t AP_RAMTRON::write(uint32_t offset, const uint8_t *buf, uint32_t size)
 {
     // Don't allow writes outside of the FRAM memory.
     // NOTE: The FRAM devices will wrap back to address 0x0000 if they write past
     // the end of their internal memory, so we could accidentally overwrite the
     // wrong memory location.
-    if ((get_size() < size) ||
+    if ((size > get_size()) ||
         (offset > (get_size() - size))) {
-        hal.console->printf("RAMTRON invalid write: %lu@%lu%u\n", size, offset);
-        return false;
+        return 0;
     }
+
+    uint32_t const kCmdBufferSz = ramtron_ids[id].addrlen + 1;
+    uint8_t cmdBuffer[kCmdBufferSz] = { RAMTRON_WRITE, };
+    if (!_populate_addr(cmdBuffer, kCmdBufferSz, offset)) {
+        return 0;
+    }
+
     WITH_SEMAPHORE(dev->get_semaphore());
 
-    dev->set_chip_select(true);
+    bool ok = dev->set_chip_select(true);
+    ok = ok && dev->transfer(cmdBuffer, kCmdBufferSz, nullptr, 0);
+    ok = ok && dev->transfer(buf, size, nullptr, 0);
+    ok &= dev->set_chip_select(false);
 
-    // write enable
-    uint8_t r = RAMTRON_WREN;
-    dev->transfer(&r, 1, nullptr, 0);
-
-    send_offset(RAMTRON_WRITE, offset);
-
-    dev->transfer(buf, size, nullptr, 0);
-
-    dev->set_chip_select(false);
-
-    return true;
+    return ok ? size : 0;
 }

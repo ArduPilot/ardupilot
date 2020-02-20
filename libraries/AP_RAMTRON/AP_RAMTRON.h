@@ -15,10 +15,10 @@ public:
     uint32_t get_size(void) const { return (id == UINT8_MAX) ? 0 : ramtron_ids[id].size_kbyte * 1024UL; }
 
     // read from device
-    bool read(uint32_t offset, uint8_t *buf, uint32_t size);
+    uint32_t read(uint32_t offset, uint8_t *buf, uint32_t size);
 
     // write to device
-    bool write(uint32_t offset, const uint8_t *buf, uint32_t size);
+    uint32_t write(uint32_t offset, const uint8_t *buf, uint32_t size);
 
 private:
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev;
@@ -38,6 +38,5 @@ private:
     static const struct ramtron_id ramtron_ids[];
     uint8_t id = UINT8_MAX;
 
-    // send offset of transfer
-    void send_offset(uint8_t cmd, uint32_t offset);
+    bool _populate_addr(uint8_t cmdBuffer[], uint32_t const kCmdBufferSz, uint32_t addr);
 };
