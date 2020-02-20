@@ -38,7 +38,7 @@ DeviceBus::DeviceBus(uint8_t _thread_priority) :
 /*
   per-bus callback thread
 */
-void DeviceBus::bus_thread(void *arg)
+void IRAM_ATTR DeviceBus::bus_thread(void *arg)
 {
     struct DeviceBus *binfo = (struct DeviceBus *)arg;
 
@@ -78,8 +78,8 @@ void DeviceBus::bus_thread(void *arg)
         uint32_t delay = 50000;
         if (next_needed >= now && next_needed - now < delay) {
             delay = next_needed - now;
-	}
-	// don't delay for less than 100usec, so one thread doesn't
+		}
+		// don't delay for less than 100usec, so one thread doesn't
         // completely dominate the CPU
         if (delay < 100) {
             delay = 100;
