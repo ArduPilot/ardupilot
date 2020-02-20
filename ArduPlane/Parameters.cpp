@@ -1326,11 +1326,16 @@ void Plane::load_parameters(void)
         hal.console->printf("Bad parameter table\n");
         AP_HAL::panic("Bad parameter table");
     }
-    if (!g.format_version.load() ||
-        g.format_version != Parameters::k_format_version) {
+    uint8_t loadErr = !g.format_version.load();
+    bool isNewFirmware = g.format_version != Parameters::k_format_version;
+    if (loadErr || isNewFirmware) {
 
         // erase all parameters
-        hal.console->printf("Firmware change: erasing EEPROM...\n");
+        if (loadErr) {
+            hal.console->printf("Couldn't load params: erasing params...\n");
+        } else {
+            hal.console->printf("Firmware change: erasing params...\n");
+        }
         StorageManager::erase();
         AP_Param::erase_all();
 
