@@ -326,7 +326,7 @@ bool AP_Param::setup(void)
         hdr.revision != k_EEPROM_revision) {
         // header doesn't match. We can't recover any variables. Wipe
         // the header and setup the sentinal directly after the header
-        Debug("bad header in setup - erasing");
+        Debug("bad header (%u %u %u) in setup - erasing", hdr.magic[0], hdr.magic[1], hdr.revision);
         erase_all();
     }
 
