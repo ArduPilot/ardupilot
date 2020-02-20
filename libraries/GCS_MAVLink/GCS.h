@@ -135,6 +135,7 @@ public:
         STREAM_EXTRA3,
         STREAM_PARAMS,
         STREAM_ADSB,
+        STREAM_PLANCK,
         NUM_STREAMS
     };
 

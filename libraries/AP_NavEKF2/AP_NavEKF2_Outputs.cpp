@@ -226,6 +226,12 @@ void NavEKF2_core::getAccelNED(Vector3f &accelNED) const {
     accelNED.z -= GRAVITY_MSS;
 }
 
+// This returns the specific forces in the NED frame at Current Time
+void NavEKF2_core::getAccelNEDCurrent(Vector3f &accelNEDCurrent) const {
+    accelNEDCurrent = velDotNEDCurrentFilt;
+    accelNEDCurrent.z -= GRAVITY_MSS;
+}
+
 // return the Z-accel bias estimate in m/s^2
 void NavEKF2_core::getAccelZBias(float &zbias) const {
     if (dtEkfAvg > 0) {

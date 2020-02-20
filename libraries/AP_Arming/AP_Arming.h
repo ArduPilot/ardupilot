@@ -33,6 +33,7 @@ public:
         ARMING_CHECK_SYSTEM      = (1U << 13),
         ARMING_CHECK_MISSION     = (1U << 14),
         ARMING_CHECK_RANGEFINDER = (1U << 15),
+        ARMING_CHECK_PLANCK_GPS  = (1U << 16),
     };
 
     enum class Method {
