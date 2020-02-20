@@ -2202,24 +2202,24 @@ void GCS_MAVLINK::send_planck_stateinfo() const
     }
 
     Location current_loc;
-    ahrs.get_position(current_loc); // return value ignored; we send stale data
+    int32_t alt_above_home_cm = 0;
+    int32_t alt_above_sea_level_cm = 0;
+    int32_t alt_above_terrain_cm = 0;
+    ahrs.get_position(current_loc);
 
-    int32_t alt_above_home_cm;
-    if(!current_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, alt_above_home_cm))
-    {
-        alt_above_home_cm = 0;
-    }
-
-    int32_t alt_above_sea_level_cm;
-    if(!current_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, alt_above_sea_level_cm))
-    {
-        alt_above_sea_level_cm = alt_above_home_cm;
-    }
-
-    int32_t alt_above_terrain_cm;
-    if(!current_loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, alt_above_terrain_cm))
-    {
-        alt_above_terrain_cm = alt_above_home_cm;
+    if(current_loc.initialised()) {
+        if(!current_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, alt_above_home_cm))
+        {
+            alt_above_home_cm = 0;
+        }
+        if(!current_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, alt_above_sea_level_cm))
+        {
+            alt_above_sea_level_cm = alt_above_home_cm;
+        }
+        if(!current_loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, alt_above_terrain_cm))
+        {
+            alt_above_terrain_cm = alt_above_home_cm;
+        }
     }
 
     mavlink_msg_planck_stateinfo_send(
