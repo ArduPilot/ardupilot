@@ -170,19 +170,19 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
             ret = &mode_autorotate;
             break;
 #endif
-        case PLANCKTRACK:
+        case Mode::Number::PLANCKTRACK:
             ret = &mode_plancktracking;
             break;
 
-        case PLANCKRTB:
+        case Mode::Number::PLANCKRTB:
             ret = &mode_planckrtb;
             break;
 
-        case PLANCKLAND:
+        case Mode::Number::PLANCKLAND:
             ret = &mode_planckland;
             break;
 
-        case PLANCKWINGMAN:
+        case Mode::Number::PLANCKWINGMAN:
             ret = &mode_planckwingman;
             break;
 

@@ -1,6 +1,6 @@
 #include "Copter.h"
 
-bool Copter::ModePlanckRTB::init(bool ignore_checks){
+bool ModePlanckRTB::init(bool ignore_checks){
 
     //If we are already landed this makes no sense
     if(copter.ap.land_complete)
@@ -21,7 +21,7 @@ bool Copter::ModePlanckRTB::init(bool ignore_checks){
     return false;
 }
 
-void Copter::ModePlanckRTB::run(){
+void ModePlanckRTB::run(){
     if(!_is_landing)
     {
         //This checks if planck is ready to land and requests a landing

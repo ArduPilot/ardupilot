@@ -1,17 +1,17 @@
 #include "Copter.h"
 
-bool Copter::ModePlanckTracking::init(bool ignore_checks){
+bool ModePlanckTracking::init(bool ignore_checks){
     //If the copter is currently in-flight, entry into this mode indicates
     //that the user would like to return to the tag tracking, so run RTB
     if(!copter.ap.land_complete)
     {
         //Return home rate is either WPNAV_SPEED or RTL_SPEED, if specified
-        float rate_xy_cms = g.rtl_speed_cms != 0 ? g.rtl_speed_cms : copter.wp_nav->get_speed_xy();
+        float rate_xy_cms = g.rtl_speed_cms != 0 ? g.rtl_speed_cms : copter.wp_nav->get_default_speed_xy();
 
         copter.planck_interface.request_rtb(
           (float)copter.g.rtl_altitude/100.,
-          copter.pos_control->get_speed_up()/100.,
-          copter.pos_control->get_speed_down()/100.,
+          copter.pos_control->get_max_speed_up()/100.,
+          copter.pos_control->get_max_speed_down()/100.,
           rate_xy_cms/100.);
     }
 
@@ -22,15 +22,15 @@ bool Copter::ModePlanckTracking::init(bool ignore_checks){
     //GPS-denied operation.  Subsequent commands will be accel/attitude based.
     if(!copter.position_ok() && copter.planck_interface.get_tag_tracking_state()) {
       //Set the angle to zero and a zero z rate; this prevents an initial drop
-      Copter::ModeGuided::set_angle(Quaternion(),0,true,0);
+      ModeGuided::set_angle(Quaternion(),0,true,0);
       return copter.mode_guided_nogps.init(ignore_checks);
     }
 
     //Otherwise, use GUIDED
-    return Copter::ModeGuided::init(ignore_checks);
+    return ModeGuided::init(ignore_checks);
 }
 
-void Copter::ModePlanckTracking::run() {
+void ModePlanckTracking::run() {
 
     //If there is new command data, send it to Guided
     if(copter.planck_interface.new_command_available()) {
@@ -76,7 +76,7 @@ void Copter::ModePlanckTracking::run() {
               float yaw_rate_rads = ToRad(yaw_cd / 100.);
 
               //Update the GUIDED mode controller
-              Copter::ModeGuided::set_angle(q,vz_cms,is_yaw_rate,yaw_rate_rads);
+              ModeGuided::set_angle(q,vz_cms,is_yaw_rate,yaw_rate_rads);
               break;
           }
 
@@ -111,7 +111,7 @@ void Copter::ModePlanckTracking::run() {
               float yaw_rate_rads = ToRad(att_cd.z / 100.);
 
               //Update the GUIDED mode controller
-              Copter::ModeGuided::set_angle(q,vz_cms,is_yaw_rate,yaw_rate_rads);
+              ModeGuided::set_angle(q,vz_cms,is_yaw_rate,yaw_rate_rads);
               break;
           }
 
@@ -125,7 +125,7 @@ void Copter::ModePlanckTracking::run() {
                   vel_cmd.x = vel_cmd.y = vel_cmd.z = 0;
               }
 
-              Copter::ModeGuided::set_velocity(vel_cmd);
+              ModeGuided::set_velocity(vel_cmd);
               break;
           }
 
@@ -133,7 +133,7 @@ void Copter::ModePlanckTracking::run() {
           {
               Location loc_cmd;
               copter.planck_interface.get_position_cmd(loc_cmd);
-              Copter::ModeGuided::set_destination(loc_cmd);
+              ModeGuided::set_destination(loc_cmd);
               break;
           }
 
@@ -150,24 +150,28 @@ void Copter::ModePlanckTracking::run() {
               if(!good_cmd)
               {
                   vel_cmd.x = vel_cmd.y = vel_cmd.z = 0;
-                  Copter::ModeGuided::set_velocity(vel_cmd);
+                  ModeGuided::set_velocity(vel_cmd);
               }
               else
               {
                   //GUIDED posvel doesn't account for terrain altitude; get the
                   //terrain-alt shifted home-relative altitude if this is a
                   //terrain-relative command
-                  Vector3f pos_cmd = copter.pv_location_to_vector(loc_cmd);
-                  if(loc_cmd.flags.terrain_alt) {
-                      Location_Class loc_class(loc_cmd);
+                  Vector3f pos_cmd;
+                  if(!loc_cmd.get_vector_from_origin_NEU(pos_cmd)){
+                      //Should never happen
+                      break;
+                  }
+                  if(loc_cmd.terrain_alt) {
+                      Location loc(loc_cmd);
                       int32_t new_alt_cm = pos_cmd.z;
-                      if(!loc_class.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_HOME, new_alt_cm)) {
-                          copter.Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_SET_DESTINATION);
+                      if(!loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, new_alt_cm)) {
+                          AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_TO_SET_DESTINATION);
                       } else {
                           pos_cmd.z = new_alt_cm;
                       }
                   }
-                  Copter::ModeGuided::set_destination_posvel(pos_cmd,vel_cmd);
+                  ModeGuided::set_destination_posvel(pos_cmd,vel_cmd);
               }
               break;
           }
@@ -178,10 +182,10 @@ void Copter::ModePlanckTracking::run() {
     }
 
     //Run the guided mode controller
-    Copter::ModeGuided::run(true); //use high-jerk
+    ModeGuided::run(true); //use high-jerk
 }
 
-bool Copter::ModePlanckTracking::do_user_takeoff_start(float final_alt_above_home)
+bool ModePlanckTracking::do_user_takeoff_start(float final_alt_above_home)
 {
     // Check if planck is ready
     if(!copter.planck_interface.ready_for_takeoff())
@@ -200,7 +204,7 @@ bool Copter::ModePlanckTracking::do_user_takeoff_start(float final_alt_above_hom
 }
 
 //Allow arming if planck is ready for takeooff and this is a GCS command
-bool Copter::ModePlanckTracking::allows_arming(bool from_gcs) const
+bool ModePlanckTracking::allows_arming(bool from_gcs) const
 {
     if(!from_gcs) return false;
     if(!copter.planck_interface.ready_for_takeoff())

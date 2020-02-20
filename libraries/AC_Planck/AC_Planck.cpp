@@ -43,13 +43,13 @@ void AC_Planck::handle_planck_mavlink_msg(const mavlink_channel_t &chan, const m
          switch(pc.frame) {
             case MAV_FRAME_GLOBAL_RELATIVE_ALT:
             case MAV_FRAME_GLOBAL_RELATIVE_ALT_INT:
-              _cmd.pos.flags.relative_alt = true;
-              _cmd.pos.flags.terrain_alt = false;
+              _cmd.pos.relative_alt = true;
+              _cmd.pos.terrain_alt = false;
               break;
             case MAV_FRAME_GLOBAL_TERRAIN_ALT:
             case MAV_FRAME_GLOBAL_TERRAIN_ALT_INT:
-              _cmd.pos.flags.relative_alt = true;
-              _cmd.pos.flags.terrain_alt = true;
+              _cmd.pos.relative_alt = true;
+              _cmd.pos.terrain_alt = true;
               break;
             case MAV_FRAME_GLOBAL:
             case MAV_FRAME_GLOBAL_INT:
@@ -57,8 +57,8 @@ void AC_Planck::handle_planck_mavlink_msg(const mavlink_channel_t &chan, const m
               // Copter does not support navigation to absolute altitudes. This convert the WGS84 altitude
               // to a home-relative altitude before passing it to the navigation controller
               _cmd.pos.alt -= ahrs.get_home().alt;
-              _cmd.pos.flags.relative_alt = true;
-              _cmd.pos.flags.terrain_alt = false;
+              _cmd.pos.relative_alt = true;
+              _cmd.pos.terrain_alt = false;
               break;
         }
 
@@ -130,7 +130,7 @@ void AC_Planck::send_stateinfo(const mavlink_channel_t &chan,
   bool failsafe,
   AP_AHRS_NavEKF &ahrs,
   AP_InertialNav &inertial_nav,
-  Location_Class &current_loc,
+  Location &current_loc,
   AP_GPS &gps)
 {
 
@@ -154,15 +154,20 @@ void AC_Planck::send_stateinfo(const mavlink_channel_t &chan,
 
     const Vector3f &vel = inertial_nav.get_velocity()/100;
 
-    int32_t alt_above_sea_level_cm;
-    current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABSOLUTE, alt_above_sea_level_cm);
-
     int32_t alt_above_home_cm;
-    current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_HOME, alt_above_home_cm);
+    if(!current_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, alt_above_home_cm)) {
+        alt_above_home_cm = 0;
+    }
 
-    int32_t alt_above_terrain_cm = alt_above_home_cm;
-    //This could fail, but if it does `alt_above_terrain_cm` will be untouched
-    current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, alt_above_terrain_cm);
+    int32_t alt_above_sea_level_cm;
+    if(!current_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, alt_above_sea_level_cm)){
+        alt_above_sea_level_cm = alt_above_home_cm;
+    }
+
+    int32_t alt_above_terrain_cm;
+    if(!current_loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, alt_above_terrain_cm)){
+        alt_above_terrain_cm = alt_above_home_cm;
+    }
 
     mavlink_msg_planck_stateinfo_send(
       chan,

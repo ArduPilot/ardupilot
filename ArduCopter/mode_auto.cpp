@@ -37,8 +37,8 @@ bool ModeAuto::init(bool ignore_checks)
         // If the mission starts with a planck takeoff command, make sure
         // that planck is ready for takeoff
         if(mission.starts_with_planck_takeoff_cmd()) {
-          if(!planck_interface.ready_for_takeoff()) {
-            if(!planck_interface.get_tag_tracking_state())
+          if(!copter.planck_interface.ready_for_takeoff()) {
+            if(!copter.planck_interface.get_tag_tracking_state())
               gcs().send_text(MAV_SEVERITY_CRITICAL, "Auto: Planck not tracking tag");
             else
               gcs().send_text(MAV_SEVERITY_CRITICAL, "Auto: Planck not ready for takeoff");
@@ -620,7 +620,7 @@ void ModeAuto::exit_mission()
         if (!(mode() == Auto_PlanckWingman || mode() == Auto_PlanckTakeoff)) {
             // try to enter loiter but if that fails land
             if (!loiter_start()) {
-                set_mode(LAND, MODE_REASON_MISSION_END);
+                set_mode(Mode::Number::LAND, ModeReason::MISSION_END);
             }
         }
     } else {

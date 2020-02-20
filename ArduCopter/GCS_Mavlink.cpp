@@ -7,7 +7,7 @@ void Copter::send_planck_stateinfo(void)
 {
     for(int i=0; i<gcs().num_gcs(); ++i)
     {
-      gcs().chan(i).send_planck_stateinfo();
+      gcs().chan(i)->send_planck_stateinfo();
     }
 }
 

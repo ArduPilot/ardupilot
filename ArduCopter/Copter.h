@@ -237,6 +237,10 @@ public:
     friend class ModeThrow;
     friend class ModeZigZag;
     friend class ModeAutorotate;
+    friend class ModePlanckTracking;
+    friend class ModePlanckRTB;
+    friend class ModePlanckLand;
+    friend class ModePlanckWingman;
 
     Copter(void);
 
@@ -746,7 +750,7 @@ private:
     void set_mode_RTL_or_land_with_pause(ModeReason reason);
     void set_mode_SmartRTL_or_RTL(ModeReason reason);
     void set_mode_SmartRTL_or_land_with_pause(ModeReason reason);
-    void set_mode_planck_RTB_or_planck_land(mode_reason_t reason);
+    void set_mode_planck_RTB_or_planck_land(ModeReason reason);
     bool should_disarm_on_failsafe();
     void do_failsafe_action(Failsafe_Action action, ModeReason reason);
 
