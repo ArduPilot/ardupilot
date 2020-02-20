@@ -67,6 +67,7 @@
 #include <AP_TempCalibration/AP_TempCalibration.h>
 #include <AC_AutoTune/AC_AutoTune.h>
 #include <AP_Common/AP_FWVersion.h>
+#include <AC_Planck/AC_Planck.h>
 
 // Configuration
 #include "defines.h"
@@ -607,6 +608,8 @@ private:
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
 
+    AC_Planck planck_interface;
+
     // enum for ESC CALIBRATION
     enum ESCCalibrationModes : uint8_t {
         ESCCAL_NONE = 0,
@@ -622,7 +625,8 @@ private:
         Failsafe_Action_RTL            = 2,
         Failsafe_Action_SmartRTL       = 3,
         Failsafe_Action_SmartRTL_Land  = 4,
-        Failsafe_Action_Terminate      = 5
+        Failsafe_Action_Terminate      = 5,
+        Failsafe_Action_Planck_Track_Land     = 6
     };
 
     enum class FailsafeOption {
@@ -639,6 +643,7 @@ private:
                                                       Failsafe_Action_RTL,
                                                       Failsafe_Action_SmartRTL_Land,
                                                       Failsafe_Action_SmartRTL,
+                                                      Failsafe_Action_Planck_Track_Land,
                                                       Failsafe_Action_None,
                                                       -1 // the priority list must end with a sentinel of -1
                                                      };
@@ -741,6 +746,7 @@ private:
     void set_mode_RTL_or_land_with_pause(ModeReason reason);
     void set_mode_SmartRTL_or_RTL(ModeReason reason);
     void set_mode_SmartRTL_or_land_with_pause(ModeReason reason);
+    void set_mode_planck_RTB_or_planck_land(mode_reason_t reason);
     bool should_disarm_on_failsafe();
     void do_failsafe_action(Failsafe_Action action, ModeReason reason);
 
@@ -753,6 +759,9 @@ private:
 
     // fence.cpp
     void fence_check();
+
+    //Planck stateinfo
+    void send_planck_stateinfo(void);
 
     // heli.cpp
     void heli_init();
@@ -996,6 +1005,11 @@ private:
 #if MODE_AUTOROTATE_ENABLED == ENABLED
     ModeAutorotate mode_autorotate;
 #endif
+
+    ModePlanckTracking mode_plancktracking;
+    ModePlanckRTB mode_planckrtb;
+    ModePlanckLand mode_planckland;
+    ModePlanckWingman mode_planckwingman;
 
     // mode.cpp
     Mode *mode_from_mode_num(const Mode::Number mode);

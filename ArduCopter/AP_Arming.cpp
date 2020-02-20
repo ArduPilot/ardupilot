@@ -52,6 +52,14 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
         return mandatory_checks(display_failure);
     }
 
+    //Check planck
+    if(checks_to_perform == ARMING_CHECK_ALL || (checks_to_perform & ARMING_CHECK_PLANCK_GPS)) {
+        if(!copter.planck_interface.get_commbox_state()) {
+            check_failed(ARMING_CHECK_PLANCK_GPS, display_failure, "Planck Commbox GPS unhealthy");
+            return false;
+        }
+    }
+
     return fence_checks(display_failure)
         & parameter_checks(display_failure)
         & motor_checks(display_failure)
