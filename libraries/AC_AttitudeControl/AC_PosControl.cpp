@@ -206,6 +206,15 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_ANGLE_MAX", 7, AC_PosControl, _lean_angle_max, 0.0f),
 
+    // @Param: _HIGH_JERK_RATIO
+    // @DisplayName: High jerk ratio
+    // @Description: Defines the time (delta_T) it takes to reach the requested acceleration as ratio = (1/delta_T), higher to allow more agressive changes in z position target
+    // @Units: 1/s
+    // @Range: 1 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("_HIGH_JERK",  8, AC_PosControl, _poscontrol_high_jerkratio, POSCONTROL_HIGH_JERK_RATIO),
+
     AP_GROUPEND
 };
 
@@ -346,7 +355,7 @@ void AC_PosControl::set_alt_target_from_climb_rate(float climb_rate_cms, float d
 ///     actual position target will be moved no faster than the speed_down and speed_up
 ///     target will also be stopped if the motors hit their limits or leash length is exceeded
 ///     set force_descend to true during landing to allow target to move low enough to slow the motors
-void AC_PosControl::set_alt_target_from_climb_rate_ff(float climb_rate_cms, float dt, bool force_descend)
+void AC_PosControl::set_alt_target_from_climb_rate_ff(float climb_rate_cms, float dt, bool force_descend, bool high_jerk_z)
 {
     // calculated increased maximum acceleration if over speed
     float accel_z_cms = _accel_z_cms;
@@ -358,8 +367,11 @@ void AC_PosControl::set_alt_target_from_climb_rate_ff(float climb_rate_cms, floa
     }
     accel_z_cms = constrain_float(accel_z_cms, 0.0f, 750.0f);
 
-    // jerk_z is calculated to reach full acceleration in 1000ms.
+    // jerk_z is calculated to reach full acceleration in (1/jerk_ratio) ms.
     float jerk_z = accel_z_cms * POSCONTROL_JERK_RATIO;
+    if(high_jerk_z){
+        jerk_z = accel_z_cms * _poscontrol_high_jerkratio;
+    }
 
     float accel_z_max = MIN(accel_z_cms, safe_sqrt(2.0f * fabsf(_vel_desired.z - climb_rate_cms) * jerk_z));
 

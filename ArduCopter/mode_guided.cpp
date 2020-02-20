@@ -332,7 +332,7 @@ void ModeGuided::set_angle(const Quaternion &q, float climb_rate_cms, bool use_y
 
 // guided_run - runs the guided controller
 // should be called at 100hz or more
-void ModeGuided::run()
+void ModeGuided::run(bool high_jerk_z)
 {
     // call the correct auto controller
     switch (guided_mode) {
@@ -359,7 +359,7 @@ void ModeGuided::run()
 
     case Guided_Angle:
         // run angle controller
-        angle_control_run();
+        angle_control_run(high_jerk_z);
         break;
     }
  }
@@ -572,7 +572,7 @@ void ModeGuided::posvel_control_run()
 
 // guided_angle_control_run - runs the guided angle controller
 // called from guided_run
-void ModeGuided::angle_control_run()
+void ModeGuided::angle_control_run(bool high_jerk_z)
 {
     // constrain desired lean angles
     float roll_in = guided_angle_state.roll_cd;
@@ -633,7 +633,7 @@ void ModeGuided::angle_control_run()
     }
 
     // call position controller
-    pos_control->set_alt_target_from_climb_rate_ff(climb_rate_cms, G_Dt, false);
+    pos_control->set_alt_target_from_climb_rate_ff(climb_rate_cms, G_Dt, false, high_jerk_z);
     pos_control->update_z_controller();
 }
 
