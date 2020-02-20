@@ -233,6 +233,12 @@ void NavEKF3_core::getAccelNED(Vector3f &accelNED) const {
     accelNED.z -= GRAVITY_MSS;
 }
 
+// This returns the specific forces in the NED frame at Current Time
+void NavEKF3_core::getAccelNEDCurrent(Vector3f &accelNEDCurrent) const {
+    accelNEDCurrent = velDotNEDCurrentFilt;
+    accelNEDCurrent.z -= GRAVITY_MSS;
+}
+
 // Write the last estimated NE position of the body frame origin relative to the reference point (m).
 // Return true if the estimate is valid
 bool NavEKF3_core::getPosNE(Vector2f &posNE) const
