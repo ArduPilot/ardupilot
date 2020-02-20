@@ -2158,6 +2158,97 @@ void GCS_MAVLINK::send_local_position() const
         velocity.z);
 }
 
+void GCS_MAVLINK::send_planck_stateinfo() const
+{
+    uint8_t status = 0x00;
+    if(AP::arming().is_armed())
+      status |= 0x01;
+
+    if(landed_state() != MAV_LANDED_STATE_ON_GROUND)
+      status |= 0x02;
+
+    if(vehicle_system_status() == MAV_STATE_CRITICAL)
+      status |= 0x04;
+
+    const AP_AHRS &ahrs = AP::ahrs();
+
+    Vector3f accel;
+    const NavEKF2 &ekf2 = AP::ahrs_navekf().get_NavEKF2_const();
+    const NavEKF3 &ekf3 = AP::ahrs_navekf().get_NavEKF3_const();
+
+    if(ekf3.activeCores() > 0)
+    {
+      ekf3.getAccelNEDCurrent(accel);
+    }
+    else if(ekf2.activeCores() > 0)
+    {
+      ekf2.getAccelNEDCurrent(accel);
+    }
+    else
+    {
+        accel.zero();
+    }
+
+    Vector3f gyro = ahrs.get_gyro_latest();
+
+    Vector3f vel;
+    if(ahrs.get_velocity_NED(vel))
+    {
+        vel /= 100;
+    }
+    else
+    {
+        vel.zero();
+    }
+
+    Location current_loc;
+    ahrs.get_position(current_loc); // return value ignored; we send stale data
+
+    int32_t alt_above_home_cm;
+    if(!current_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, alt_above_home_cm))
+    {
+        alt_above_home_cm = 0;
+    }
+
+    int32_t alt_above_sea_level_cm;
+    if(!current_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, alt_above_sea_level_cm))
+    {
+        alt_above_sea_level_cm = alt_above_home_cm;
+    }
+
+    int32_t alt_above_terrain_cm;
+    if(!current_loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, alt_above_terrain_cm))
+    {
+        alt_above_terrain_cm = alt_above_home_cm;
+    }
+
+    mavlink_msg_planck_stateinfo_send(
+      chan,
+      PLANCK_SYS_ID,
+      PLANCK_CTRL_COMP_ID,
+      AP_HAL::micros64(),
+      AP::gps().time_epoch_usec(),
+      base_mode(),
+      status,
+      ahrs.roll,
+      ahrs.pitch,
+      ahrs.yaw,
+      gyro.x,
+      gyro.y,
+      gyro.z,
+      accel.x,
+      accel.y,
+      accel.z,
+      current_loc.lat,                // in 1E7 degrees
+      current_loc.lng,                // in 1E7 degrees
+      alt_above_sea_level_cm * 10UL,  // millimeters above sea level
+      alt_above_home_cm * 10UL,       // millimeters above ground
+      alt_above_terrain_cm * 10UL,    // millimeters above terrain
+      vel.x,                          // X speed m/s (+ve North)
+      vel.y,                          // Y speed m/s (+ve East)
+      vel.z);                         // Z speed m/s (+ve up)
+}
+
 /*
   send VIBRATION message
  */
@@ -4475,6 +4566,12 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
             }
         }
 #endif
+        break;
+    }
+
+    case MSG_PLANCK_STATEINFO: {
+        CHECK_PAYLOAD_SIZE(PLANCK_STATEINFO);
+        send_planck_stateinfo();
         break;
     }
 
