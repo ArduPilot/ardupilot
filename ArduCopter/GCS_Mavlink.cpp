@@ -399,7 +399,7 @@ const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     // @Range: 0 50
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PLANCK_STATE",   10, GCS_MAVLINK, streamRates[10],  0),
+    AP_GROUPINFO("PLANCK_STATE",   10, GCS_MAVLINK_Parameters, streamRates[10],  0),
 AP_GROUPEND
 };
 
@@ -877,18 +877,17 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         return MAV_RESULT_ACCEPTED;
     }
 
-    case MAV_CMD_NAV_PLANCK_WINGMAN:
-        if (copter.set_mode(PLANCKWINGMAN, MODE_REASON_GCS_COMMAND)) {
-            result = MAV_RESULT_ACCEPTED;
-
+    case MAV_CMD_NAV_PLANCK_WINGMAN: {
+        if (copter.set_mode(Mode::Number::PLANCKWINGMAN, ModeReason::GCS_COMMAND)) {
             //Offset parameters are: param1: N, param2: E, param3: Up
             float north = packet.param1;
             float east = packet.param2;
             float up = packet.param3 + (copter.inertial_nav.get_position().z / 100.);
             copter.planck_interface.request_move_target(Vector3f(north,east,up));
+            return MAV_RESULT_ACCEPTED;
         }
-
-        break;
+        return MAV_RESULT_FAILED;
+    }
 
     default:
         return GCS_MAVLINK::handle_command_long_packet(packet);
@@ -922,8 +921,7 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
     //Handle any messages coming from planck's software
     case MAVLINK_MSG_ID_PLANCK_STATUS:
     case MAVLINK_MSG_ID_PLANCK_CMD_MSG:
-        copter.planck_interface.handle_planck_mavlink_msg(chan, msg,
-            copter.ahrs);
+        copter.planck_interface.handle_planck_mavlink_msg(chan, &msg, copter.ahrs);
         break;
 
     case MAVLINK_MSG_ID_HEARTBEAT:      // MAV ID: 0
