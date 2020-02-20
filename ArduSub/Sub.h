@@ -308,6 +308,9 @@ private:
     // Flag indicating if we are currently using input hold
     bool input_hold_engaged;
 
+    // Flag indicating if we are currently controlling Pitch and Roll instead of forward/lateral
+    bool roll_pitch_flag = false;
+
     // 3D Location vectors
     // Current location of the Sub (altitude is relative to home)
     Location current_loc;
