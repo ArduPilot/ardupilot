@@ -21,21 +21,21 @@ static const uint8_t RAMTRON_WRITE = 0x02;
   list of supported devices. Thanks to NuttX ramtron driver
  */
 const AP_RAMTRON::ramtron_id AP_RAMTRON::ramtron_ids[] = {
-    { 0x21, 0x00,  16, 2, CYPRESS_RDID, }, // FM25V01
-    { 0x21, 0x08,  16, 2, CYPRESS_RDID, }, // FM25V01A
-    { 0x22, 0x00,  32, 2, CYPRESS_RDID, }, // FM25V02
-    { 0x22, 0x08,  32, 2, CYPRESS_RDID, }, // FM25V02A
-    { 0x22, 0x01,  32, 2, CYPRESS_RDID, }, // FM25VN02
-    { 0x23, 0x00,  64, 2, CYPRESS_RDID, }, // FM25V05
-    { 0x23, 0x01,  64, 2, CYPRESS_RDID, }, // FM25VN05
-    { 0x24, 0x00, 128, 3, CYPRESS_RDID, }, // FM25V10
-    { 0x24, 0x01, 128, 3, CYPRESS_RDID, }, // FM25VN10
-    { 0x25, 0x08, 256, 3, CYPRESS_RDID, }, // FM25V20A
-    { 0x26, 0x08, 512, 3, CYPRESS_RDID, }, // CY15B104Q
+    { 0x21, 0x00,  16, 2, RDID_type::Cypress, }, // FM25V01
+    { 0x21, 0x08,  16, 2, RDID_type::Cypress, }, // FM25V01A
+    { 0x22, 0x00,  32, 2, RDID_type::Cypress, }, // FM25V02
+    { 0x22, 0x08,  32, 2, RDID_type::Cypress, }, // FM25V02A
+    { 0x22, 0x01,  32, 2, RDID_type::Cypress, }, // FM25VN02
+    { 0x23, 0x00,  64, 2, RDID_type::Cypress, }, // FM25V05
+    { 0x23, 0x01,  64, 2, RDID_type::Cypress, }, // FM25VN05
+    { 0x24, 0x00, 128, 3, RDID_type::Cypress, }, // FM25V10
+    { 0x24, 0x01, 128, 3, RDID_type::Cypress, }, // FM25VN10
+    { 0x25, 0x08, 256, 3, RDID_type::Cypress, }, // FM25V20A
+    { 0x26, 0x08, 512, 3, RDID_type::Cypress, }, // CY15B104Q
 
-    { 0x27, 0x03, 128, 3, FUJITSU_RDID, }, // MB85RS1MT
-    { 0x05, 0x09,  32, 2, FUJITSU_RDID, }, // MB85RS256B
-    { 0x24, 0x03,  16, 2, FUJITSU_RDID, }, // MB85RS128TY
+    { 0x27, 0x03, 128, 3, RDID_type::Fujitsu, }, // MB85RS1MT
+    { 0x05, 0x09,  32, 2, RDID_type::Fujitsu, }, // MB85RS256B
+    { 0x24, 0x03,  16, 2, RDID_type::Fujitsu, }, // MB85RS128TY
 };
 
 // initialise the driver
@@ -70,14 +70,14 @@ bool AP_RAMTRON::init(void)
     }
 
     for (uint8_t i = 0; i < ARRAY_SIZE(ramtron_ids); i++) {
-        if (ramtron_ids[i].rdid_type == CYPRESS_RDID) {
+        if (ramtron_ids[i].rdid_type == RDID_type::Cypress) {
             cypress_rdid const * const cypress = (cypress_rdid const * const)rdid;
             if (ramtron_ids[i].id1 == cypress->id1 &&
                 ramtron_ids[i].id2 == cypress->id2) {
                 id = i;
                 break;
             }
-        } else if (ramtron_ids[i].rdid_type == FUJITSU_RDID) {
+        } else if (ramtron_ids[i].rdid_type == RDID_type::Fujitsu) {
             fujitsu_rdid const * const fujitsu = (fujitsu_rdid const * const)rdid;
             if (ramtron_ids[i].id1 == fujitsu->id1 &&
                 ramtron_ids[i].id2 == fujitsu->id2) {
@@ -99,7 +99,7 @@ bool AP_RAMTRON::init(void)
         return false;
     }
 
-    char const * const manufacturer = (ramtron_ids[id].rdid_type == FUJITSU_RDID) ? "Fujitsu" : "Cypress";
+    char const * const manufacturer = (ramtron_ids[id].rdid_type == RDID_type::Fujitsu) ? "Fujitsu" : "Cypress";
     hal.console->printf("Found %s RAMTRON idx=%u sr=0x%02x\n", manufacturer, id, status_register);
 
     uint8_t const kWriteEnableLatch   = (1 << 1);

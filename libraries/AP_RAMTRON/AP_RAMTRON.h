@@ -23,9 +23,9 @@ public:
 private:
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev;
 
-    enum rdid_type {
-        CYPRESS_RDID,
-        FUJITSU_RDID,
+    enum class RDID_type :uint8_t {
+        Cypress,
+        Fujitsu,
     };
 
     struct ramtron_id {
@@ -33,7 +33,7 @@ private:
         uint8_t id2;
         uint16_t size_kbyte;
         uint8_t addrlen;
-        enum rdid_type rdid_type;
+        RDID_type rdid_type;
     };
     static const struct ramtron_id ramtron_ids[];
     uint8_t id = UINT8_MAX;
