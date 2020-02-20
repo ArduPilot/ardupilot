@@ -240,6 +240,25 @@ void Scheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_u
     _failsafe = failsafe;
 }
 
+void Scheduler::reboot_to_dfu()
+{
+    // from https://community.st.com/s/question/0D50X00009XkhAzSAJ/calling-stm32429ieval-bootloader
+
+    // Reboot_Loader PROC
+    // EXPORT Reboot_Loader
+    __asm__ __volatile__("LDR R0, =0x40023844"); // RCC_APB2ENR
+    __asm__ __volatile__("LDR R1, =0x00004000"); // ENABLE SYSCFG CLOCK
+    __asm__ __volatile__("STR R1, [R0, #0]");
+    __asm__ __volatile__("LDR R0, =0x40013800"); // SYSCFG_MEMRMP
+    __asm__ __volatile__("LDR R1, =0x00000001"); // MAP ROM AT ZERO
+    __asm__ __volatile__("STR R1, [R0, #0]");
+    __asm__ __volatile__("LDR R0, =0x1FFF0000"); // ROM BASE
+    __asm__ __volatile__("LDR SP,[R0, #0]"); // SP @ +0
+    __asm__ __volatile__("LDR R0,[R0, #4]"); // PC @ +4
+    __asm__ __volatile__("BX R0");
+//    __asm__ __volatile__("ENDP"); // sourcer32@gmail.com
+}
+
 void Scheduler::reboot(bool hold_in_bootloader)
 {
     // disarm motors to ensure they are off during a bootloader upload

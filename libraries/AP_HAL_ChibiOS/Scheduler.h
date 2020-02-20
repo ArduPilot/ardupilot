@@ -89,6 +89,7 @@ public:
     void     register_io_process(AP_HAL::MemberProc) override;
     void     register_timer_failsafe(AP_HAL::Proc, uint32_t period_us) override;
     void     reboot(bool hold_in_bootloader) override;
+    void     reboot_to_dfu() override;
 
     bool     in_main_thread() const override { return get_main_thread() == chThdGetSelfX(); }
 
