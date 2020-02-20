@@ -113,11 +113,8 @@ FLASH_SIZE_KB 2048
 # If creating a board for a RTF vehicle you may wish to customise these.
 
 # USB setup
-USB_VENDOR 0x0483 # ST
-USB_PRODUCT 0x5740
 USB_STRING_MANUFACTURER "ArduPilot"
 USB_STRING_PRODUCT "%BOARD%"
-USB_STRING_SERIAL  "%SERIAL%"
 
 # Now define the order that I2C buses are presented in the hal.i2c API
 # in ArduPilot. For historical reasons inherited from HAL_PX4 the
