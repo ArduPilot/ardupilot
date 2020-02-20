@@ -1482,13 +1482,39 @@ void GCS_MAVLINK::log_mavlink_stats()
         return;
     }
 
+    enum class Flags {
+        USING_SIGNING = (1<<0),
+        ACTIVE = (1<<1),
+        STREAMING = (1<<2),
+        PRIVATE = (1<<3),
+        LOCKED = (1<<4),
+    };
+
+    uint8_t flags = 0;
+    if (signing_enabled()) {
+        flags |= (uint8_t)Flags::USING_SIGNING;
+    }
+    if (is_streaming()) {
+        flags |= (uint8_t)Flags::STREAMING;
+    }
+    if (is_active()) {
+        flags |= (uint8_t)Flags::ACTIVE;
+    }
+    if (is_private()) {
+        flags |= (uint8_t)Flags::PRIVATE;
+    }
+    if (locked()) {
+        flags |= (uint8_t)Flags::LOCKED;
+    }
+
     const struct log_MAV pkt = {
     LOG_PACKET_HEADER_INIT(LOG_MAV_MSG),
     time_us                : AP_HAL::micros64(),
     chan                   : (uint8_t)chan,
     packet_tx_count        : send_packet_count,
     packet_rx_success_count: status->packet_rx_success_count,
-    packet_rx_drop_count   : status->packet_rx_drop_count
+    packet_rx_drop_count   : status->packet_rx_drop_count,
+    flags                  : flags,
     };
 
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
