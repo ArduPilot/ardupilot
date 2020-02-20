@@ -208,6 +208,7 @@ void NavEKF3_core::InitialiseVariables()
     dtEkfAvg = EKF_TARGET_DT;
     dt = 0;
     velDotNEDfilt.zero();
+    velDotNEDCurrentFilt.zero();
     lastKnownPositionNE.zero();
     prevTnb.zero();
     memset(&P[0][0], 0, sizeof(P));
@@ -686,6 +687,22 @@ void NavEKF3_core::UpdateStrapdownEquationsNED()
     // variance estimation)
     accNavMag = velDotNEDfilt.length();
     accNavMagHoriz = norm(velDotNEDfilt.x , velDotNEDfilt.y);
+
+    // calculate the rate of change of velocity (used as corrected raw acel)
+    delNavDownSampled +=  delVelNav;
+    delVelDTDownSampled += imuDataNew.delVelDT;
+
+    if (delVelDTDownSampled > 0.010f){
+        //Compute average accel on last 12ms
+        velDotNEDCurrent = delNavDownSampled/delVelDTDownSampled;
+
+        // apply a first order lowpass filter: dt = 0.012s fc = 25Hz alpha = dt / (dt + 1/(2*pi*fc)), alpha = 0.6534
+        velDotNEDCurrentFilt = velDotNEDCurrent * 0.6534f + velDotNEDCurrentFilt * 0.3466f;
+
+        //Reset buffer
+        delNavDownSampled.zero();
+        delVelDTDownSampled = 0.0f;
+    }
 
     // if we are not aiding, then limit the horizontal magnitude of acceleration
     // to prevent large manoeuvre transients disturbing the attitude

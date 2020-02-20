@@ -95,6 +95,9 @@ public:
     // This returns the specific forces in the NED frame
     void getAccelNED(Vector3f &accelNED) const;
 
+    // This returns the specific forces in the NED frame at Current Time
+    void getAccelNEDCurrent(Vector3f &accelNEDCurrent) const;
+
     // return body axis gyro bias estimates in rad/sec for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
     void getGyroBias(int8_t instance, Vector3f &gyroBias) const;
