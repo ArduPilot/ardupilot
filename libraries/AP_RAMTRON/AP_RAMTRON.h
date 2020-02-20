@@ -38,5 +38,5 @@ private:
     static const struct ramtron_id ramtron_ids[];
     uint8_t id = UINT8_MAX;
 
-    bool _populate_addr(uint8_t cmdBuffer[], uint32_t const kCmdBufferSz, uint32_t addr);
+    bool _fill_cmd_buffer(uint8_t cmdBuffer[], uint32_t const kCmdBufferSz, uint8_t const cmd, uint32_t addr);
 };

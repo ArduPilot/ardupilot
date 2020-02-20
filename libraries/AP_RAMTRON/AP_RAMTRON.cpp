@@ -128,7 +128,8 @@ bool AP_RAMTRON::init(void)
     return true;
 }
 
-bool AP_RAMTRON::_populate_addr(uint8_t cmdBuffer[], uint32_t const kCmdBufferSz, uint32_t addr) {
+bool AP_RAMTRON::_fill_cmd_buffer(uint8_t cmdBuffer[], uint32_t const kCmdBufferSz, uint8_t const cmd, uint32_t addr)
+{
     if (kCmdBufferSz == 4) {
         cmdBuffer[1] = uint8_t((addr >> 16) & 0xFF);
         cmdBuffer[2] = uint8_t((addr >>  8) & 0xFF);
@@ -139,6 +140,7 @@ bool AP_RAMTRON::_populate_addr(uint8_t cmdBuffer[], uint32_t const kCmdBufferSz
     } else {
         return false;
     }
+    cmdBuffer[0] = cmd;
     return true;
 }
 
@@ -159,8 +161,8 @@ uint32_t AP_RAMTRON::read(uint32_t offset, uint8_t * const buf, uint32_t size)
 
     while (size > 0) {
         uint32_t const kCmdBufferSz = ramtron_ids[id].addrlen + 1;
-        uint8_t cmdBuffer[kCmdBufferSz] = { RAMTRON_READ, };
-        if (!_populate_addr(cmdBuffer, kCmdBufferSz, (offset + numRead))) {
+        uint8_t cmdBuffer[kCmdBufferSz];
+        if (!_fill_cmd_buffer(cmdBuffer, kCmdBufferSz, RAMTRON_READ, (offset + numRead))) {
             break;
         } else {
             WITH_SEMAPHORE(dev->get_semaphore());
@@ -191,8 +193,8 @@ uint32_t AP_RAMTRON::write(uint32_t offset, uint8_t const * const buf, uint32_t 
     }
 
     uint32_t const kCmdBufferSz = ramtron_ids[id].addrlen + 1;
-    uint8_t cmdBuffer[kCmdBufferSz] = { RAMTRON_WRITE, };
-    if (!_populate_addr(cmdBuffer, kCmdBufferSz, offset)) {
+    uint8_t cmdBuffer[kCmdBufferSz];
+    if (!_fill_cmd_buffer(cmdBuffer, kCmdBufferSz, RAMTRON_WRITE, offset)) {
         return 0;
     }
 
