@@ -29,17 +29,6 @@ public:
   //Handle incoming messages
   void handle_planck_mavlink_msg(const mavlink_channel_t &chan, const mavlink_message_t *mav_msg, AP_AHRS &ahrs);
 
-  //Send the planck stateinfo message
-  void send_stateinfo(const mavlink_channel_t &chan,
-    uint8_t control_mode,
-    bool armed,
-    bool in_flight,
-    bool failsafe,
-    AP_AHRS_NavEKF &ahrs,
-    AP_InertialNav &inertial_nav,
-    Location &current_loc,
-    AP_GPS &gps);
-
   //Requesters to be sent to planck
   void request_takeoff(const float alt);
   void request_alt_change(const float alt);
