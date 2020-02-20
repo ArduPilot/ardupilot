@@ -313,9 +313,10 @@ private:
     void do_guided_limits(const AP_Mission::Mission_Command& cmd);
 
     enum Mis_Done_Behave {
-        MIS_DONE_BEHAVE_HOLD      = 0,
-        MIS_DONE_BEHAVE_LOITER    = 1,
-        MIS_DONE_BEHAVE_ACRO      = 2
+        MIS_DONE_BEHAVE_HOLD        = 0,
+        MIS_DONE_BEHAVE_LOITER      = 1,
+        MIS_DONE_BEHAVE_ACRO        = 2,
+        MIS_DONE_BEHAVE_MANUAL      = 3
     };
 
     bool auto_triggered;        // true when auto has been triggered to start
