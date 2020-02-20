@@ -44,7 +44,7 @@ public:
 
     static const int SPI_PRIORITY = 21;
     static const int MAIN_PRIO = 20;
-    static const int I2C_PRIORITY = 19;
+    static const int I2C_PRIORITY = 25;
     static const int TIMER_PRIO = 15;
     static const int RCIN_PRIO = 10;
     static const int WIFI_PRIO = 7;
