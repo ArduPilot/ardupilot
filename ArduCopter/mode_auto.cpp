@@ -1152,7 +1152,7 @@ void ModeAuto::payload_place_run_descend()
 void ModeAuto::planck_takeoff_run()
 {
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
+    if (!motors->armed() || !copter.ap.auto_armed || !motors->get_interlock()) {
         // initialise wpnav targets
         wp_nav->shift_wp_origin_to_current_pos();
         // clear i term when we're taking off
@@ -1920,7 +1920,7 @@ bool ModeAuto::verify_planck_takeoff()
     {
       AP_Mission::Mission_Command tmp_cmd;
       //returns false if there is no next nav waypoint
-      if(copter.mission.get_next_nav_cmd(copter.mission.get_current_nav_index()+1, tmp_cmd))
+      if(mission.get_next_nav_cmd(mission.get_current_nav_index()+1, tmp_cmd))
       {
           if(!(tmp_cmd.id == MAV_CMD_NAV_PLANCK_RTB ||
                tmp_cmd.id == MAV_CMD_NAV_PLANCK_WINGMAN ||
@@ -1936,7 +1936,7 @@ bool ModeAuto::verify_planck_takeoff()
 
 bool ModeAuto::verify_planck_rtb()
 {
-    return ap.land_complete;
+    return copter.ap.land_complete;
     //Planck will automatically stop commanding when the copter disarms
 }
 
@@ -1947,7 +1947,7 @@ bool ModeAuto::verify_planck_wingman()
     {
       AP_Mission::Mission_Command tmp_cmd;
       //returns false if there is no next nav waypoint
-      if(copter.mission.get_next_nav_cmd(copter.mission.get_current_nav_index()+1, tmp_cmd))
+      if(mission.get_next_nav_cmd(mission.get_current_nav_index()+1, tmp_cmd))
       {
           if(!(tmp_cmd.id == MAV_CMD_NAV_PLANCK_RTB ||
                tmp_cmd.id == MAV_CMD_NAV_PLANCK_WINGMAN ||
