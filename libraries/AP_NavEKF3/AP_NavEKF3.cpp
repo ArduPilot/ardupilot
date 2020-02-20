@@ -958,6 +958,14 @@ void NavEKF3::getAccelNED(Vector3f &accelNED) const
     }
 }
 
+// This returns the specific forces in the NED frame at Current Time
+void NavEKF3::getAccelNEDCurrent(Vector3f &accelNEDCurrent) const
+{
+    if (core) {
+        core[primary].getAccelNEDCurrent(accelNEDCurrent);
+    }
+}
+
 // return body axis gyro bias estimates in rad/sec
 void NavEKF3::getGyroBias(int8_t instance, Vector3f &gyroBias) const
 {
