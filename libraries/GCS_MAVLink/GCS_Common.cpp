@@ -1795,7 +1795,9 @@ void GCS::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const cha
     _statustext_queue.push_force(statustext);
 
     // try and send immediately if possible
-    service_statustext();
+    if (hal.scheduler->in_main_thread()) {
+        service_statustext();
+    }
 }
 
 /*
