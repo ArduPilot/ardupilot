@@ -290,10 +290,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
         break;
     }
 
-    //Don't handle PLANCK_STATEINFO here, as its handled by a separate process
-    case MSG_PLANCK_STATEINFO:
-      break;
-
     default:
         return GCS_MAVLINK::try_send_message(id);
     }
