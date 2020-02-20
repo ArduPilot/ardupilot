@@ -1,6 +1,6 @@
 #include "Copter.h"
 
-bool Copter::ModePlanckWingman::init(bool ignore_checks){
+bool ModePlanckWingman::init(bool ignore_checks){
 
     //Make sure we don't immediately send a different command
     _next_req_send_t_ms = millis() + _send_rate_ms;
@@ -20,7 +20,7 @@ bool Copter::ModePlanckWingman::init(bool ignore_checks){
     return false;
 }
 
-void Copter::ModePlanckWingman::run() {
+void ModePlanckWingman::run() {
 
   //Update the command if the user is providing input and we're not in AUTO
   if( !copter.failsafe.radio && copter.flightmode != &copter.mode_auto) {
@@ -29,8 +29,8 @@ void Copter::ModePlanckWingman::run() {
     if(millis() > _next_req_send_t_ms) {
 
       //Get position/yaw offsets from user as necessary
-      float x_rate = -channel_pitch->norm_input_dz() * copter.wp_nav->get_speed_xy()/100.;
-      float y_rate = channel_roll->norm_input_dz() * copter.wp_nav->get_speed_xy()/100.;
+      float x_rate = -channel_pitch->norm_input_dz() * copter.wp_nav->get_default_speed_xy()/100.;
+      float y_rate = channel_roll->norm_input_dz() * copter.wp_nav->get_default_speed_xy()/100.;
 
       //Turn x/y rates into N/E rates
       float N_rate = (x_rate*copter.ahrs.cos_yaw() - y_rate*copter.ahrs.sin_yaw());

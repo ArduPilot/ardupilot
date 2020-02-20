@@ -37,7 +37,7 @@ public:
     bool failsafe,
     AP_AHRS_NavEKF &ahrs,
     AP_InertialNav &inertial_nav,
-    Location_Class &current_loc,
+    Location &current_loc,
     AP_GPS &gps);
 
   //Requesters to be sent to planck
