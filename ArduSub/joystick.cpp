@@ -561,6 +561,12 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
     case JSButton::button_function_t::k_roll_pitch_toggle:
         if (!held) {
             roll_pitch_flag = !roll_pitch_flag;
+            if (roll_pitch_flag) {
+                gcs().send_text(MAV_SEVERITY_INFO, "#Attitude Control");
+            }
+            else {
+                gcs().send_text(MAV_SEVERITY_INFO, "#Movement Control");
+            }
         }
         break;
 
