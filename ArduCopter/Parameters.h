@@ -552,6 +552,9 @@ public:
     // control over servo output ranges
     SRV_Channels servo_channels;
 
+    //Planck parameters
+    AC_Planck planck_interface;
+
 #if MODE_SMARTRTL_ENABLED == ENABLED
     // Safe RTL library
     AP_SmartRTL smart_rtl;

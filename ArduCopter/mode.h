@@ -36,6 +36,10 @@ public:
         ZIGZAG    =    24,  // ZIGZAG mode is able to fly in a zigzag manner with predefined point A and point B
         SYSTEMID  =    25,  // System ID mode produces automated system identification signals in the controllers
         AUTOROTATE =   26,  // Autonomous autorotation
+        PLANCKTRACK  = 27,  //Planck-specific tracking mode, used in takeoff and tracking
+        PLANCKRTB    = 28,  //Planck-specific RTB mode
+        PLANCKLAND  =  29,  //Planck-specific land mode
+        PLANCKWINGMAN = 30, //Planck-specific wingman mode
     };
 
     // constructor
