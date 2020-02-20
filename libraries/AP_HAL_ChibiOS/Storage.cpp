@@ -60,7 +60,7 @@ void Storage::_storage_open(void)
 #if HAL_WITH_RAMTRON
     using_fram = fram.init();
     if (using_fram) {
-        if (!fram.read(0, _buffer, CH_STORAGE_SIZE)) {
+        if (fram.read(0, _buffer, CH_STORAGE_SIZE) != CH_STORAGE_SIZE) {
             return;
         }
         _save_backup();
@@ -144,7 +144,7 @@ void Storage::_mark_dirty(uint16_t loc, uint16_t length)
 
 void Storage::read_block(void *dst, uint16_t loc, size_t n)
 {
-    if (loc >= sizeof(_buffer)-(n-1)) {
+    if ((n > sizeof(_buffer)) || (loc > (sizeof(_buffer) - n))) {
         return;
     }
     _storage_open();
@@ -153,7 +153,7 @@ void Storage::read_block(void *dst, uint16_t loc, size_t n)
 
 void Storage::write_block(uint16_t loc, const void *src, size_t n)
 {
-    if (loc >= sizeof(_buffer)-(n-1)) {
+    if ((n > sizeof(_buffer)) || (loc > (sizeof(_buffer) - n))) {
         return;
     }
     if (memcmp(src, &_buffer[loc], n) != 0) {
@@ -188,7 +188,7 @@ void Storage::_timer_tick(void)
 
 #if HAL_WITH_RAMTRON
     if (using_fram) {
-        if (fram.write(CH_STORAGE_LINE_SIZE*i, &_buffer[CH_STORAGE_LINE_SIZE*i], CH_STORAGE_LINE_SIZE)) {
+        if (fram.write(CH_STORAGE_LINE_SIZE*i, &_buffer[CH_STORAGE_LINE_SIZE*i], CH_STORAGE_LINE_SIZE) == CH_STORAGE_LINE_SIZE) {
             _dirty_mask.clear(i);
         }
         return;
