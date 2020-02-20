@@ -48,7 +48,13 @@ public:
     bool healthy(void) override;
 
 private:
-    volatile bool _initialised;
+    enum class StorageBackend: uint8_t {
+        None,
+        FRAM,
+        Flash,
+        SDCard,
+    };
+    StorageBackend _initialisedType = StorageBackend::None;
     void _storage_create(void);
     void _storage_open(void);
     void _save_backup(void);
@@ -79,10 +85,8 @@ private:
 
 #if HAL_WITH_RAMTRON
     AP_RAMTRON fram;
-    bool using_fram;
 #endif
 #ifdef USE_POSIX
-    bool using_filesystem;
     int log_fd;
 #endif
 };
