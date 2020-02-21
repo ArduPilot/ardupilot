@@ -44,6 +44,7 @@
 #endif
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_Filesystem/AP_Filesystem.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -85,6 +86,7 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
              mcast:239.255.145.50:14550
              uart:/dev/ttyUSB0:57600
              sim:ParticleSensor_SDS021:
+             file:/tmp/my-device-capture.BIN
          */
         char *saveptr = nullptr;
         char *s = strdup(path);
@@ -153,6 +155,16 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
         } else if (strcmp(devtype,"none") == 0) {
             // skipping port
             ::printf("Skipping port %s\n", args1);
+        } else if (strcmp(devtype, "file") == 0) {
+            if (_connected) {
+                AP::FS().close(_fd);
+            }
+            ::printf("FILE connection %s\n", args1);
+            _fd = AP::FS().open(args1, O_RDONLY);
+            if (_fd == -1) {
+                AP_HAL::panic("Failed to open (%s): %m", args1);
+            }
+            _connected = true;
         } else {
             AP_HAL::panic("Invalid device path: %s", path);
         }
