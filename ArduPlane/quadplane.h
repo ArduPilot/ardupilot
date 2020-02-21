@@ -53,7 +53,7 @@ public:
     void takeoff_controller(void);
     void waypoint_controller(void);
 
-    void update_throttle_thr_mix(void);
+    void update_throttle_mix(void);
     
     // update transition handling
     void update(void);
