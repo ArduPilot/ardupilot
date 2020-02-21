@@ -137,14 +137,14 @@ void Copter::set_land_complete_maybe(bool b)
     ap.land_complete_maybe = b;
 }
 
-// update_throttle_thr_mix - sets motors throttle_low_comp value depending upon vehicle state
+// sets motors throttle_low_comp value depending upon vehicle state
 //  low values favour pilot/autopilot throttle over attitude control, high values favour attitude control over throttle
 //  has no effect when throttle is above hover throttle
-void Copter::update_throttle_thr_mix()
+void Copter::update_throttle_mix()
 {
 #if FRAME_CONFIG != HELI_FRAME
     // if disarmed or landed prioritise throttle
-    if(!motors->armed() || ap.land_complete) {
+    if (!motors->armed() || ap.land_complete) {
         attitude_control->set_throttle_mix_min();
         return;
     }
@@ -175,7 +175,7 @@ void Copter::update_throttle_thr_mix()
         // check for requested decent
         bool descent_not_demanded = pos_control->get_desired_velocity().z >= 0.0f;
 
-        if ( large_angle_request || large_angle_error || accel_moving || descent_not_demanded) {
+        if (large_angle_request || large_angle_error || accel_moving || descent_not_demanded) {
             attitude_control->set_throttle_mix_max(pos_control->get_vel_z_control_ratio());
         } else {
             attitude_control->set_throttle_mix_min();
