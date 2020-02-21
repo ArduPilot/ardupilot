@@ -78,6 +78,10 @@ for t in $CI_BUILD_TARGET; do
         run_autotest "Copter" "build.ArduCopter" "fly.ArduCopter"
         continue
     fi
+    if [ "$t" == "sitltest-copter-extra" ]; then
+        run_autotest "Copter" "build.ArduCopter" "fly.ArduCopterExtra"
+        continue
+    fi
     if [ "$t" == "sitltest-plane" ]; then
         run_autotest "Plane" "build.ArduPlane" "fly.ArduPlane"
         continue
