@@ -1525,6 +1525,7 @@ void AP_Periph_FW::can_rangefinder_update(void)
     if (rangefinder.get_type(0) == RangeFinder::Type::NONE) {
         return;
     }
+#if CAN_PROBE_CONTINUOUS
     if (rangefinder.num_sensors() == 0) {
         uint32_t now = AP_HAL::millis();
         static uint32_t last_probe_ms;
@@ -1533,6 +1534,7 @@ void AP_Periph_FW::can_rangefinder_update(void)
             rangefinder.init(ROTATION_NONE);
         }
     }
+#endif
     uint32_t now = AP_HAL::millis();
     static uint32_t last_update_ms;
     if (now - last_update_ms < 20) {
