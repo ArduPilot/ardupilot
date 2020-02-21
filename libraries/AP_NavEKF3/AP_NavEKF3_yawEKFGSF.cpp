@@ -62,7 +62,7 @@ void NavEKF3_core::EKFGSF_predictQuat(const uint8_t mdl_idx)
 				centripetal_accel = tasDataDelayed.tas * turn_rate;
 			} else {
 				// Use default airspeed value scaled for density altitude
-				centripetal_accel = frontend->EKFGSF_easDefault * AP::ahrs().get_EAS2TAS() * turn_rate;
+				centripetal_accel = frontend->_EKFGSF_easDefault * AP::ahrs().get_EAS2TAS() * turn_rate;
 			}
 
 			// Project Y body axis onto horizontal and multiply by centripetal acceleration to give estimated
@@ -146,7 +146,7 @@ void NavEKF3_core::EKFGSF_alignQuatTilt()
     }
 
 	// Convert to quaternion
-	for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx++) {
+	for (uint8_t mdl_idx = 0; mdl_idx < frontend->_EKFGSF_nmodels; mdl_idx++) {
 		EKFGSF_ahrs[mdl_idx].quat.from_rotation_matrix(R);
 		EKFGSF_ahrs[mdl_idx].quat.normalize();
 		EKFGSF_ahrs[mdl_idx].quat_initialised = true;
@@ -156,7 +156,7 @@ void NavEKF3_core::EKFGSF_alignQuatTilt()
 void NavEKF3_core::EKFGSF_alignQuatYaw()
 {
 	// Align yaw angle for each model
-	for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx++) {
+	for (uint8_t mdl_idx = 0; mdl_idx < frontend->_EKFGSF_nmodels; mdl_idx++) {
 		if (fabsf(EKFGSF_ahrs[mdl_idx].R[2][0]) < fabsf(EKFGSF_ahrs[mdl_idx].R[2][1])) {
 			// get the roll, pitch, yaw estimates from the rotation matrix using a  321 Tait-Bryan rotation sequence
             float roll,pitch,yaw;
@@ -442,13 +442,13 @@ void NavEKF3_core::EKFGSF_initialise()
 	EKFGSF_yaw_reset_time_ms = 0;
     EKFGSF_yaw_reset_count = 0;
 	memset(&EKFGSF_mdl, 0, sizeof(EKFGSF_mdl));
-	const float yaw_increment = M_2PI / (float)N_MODELS_EKFGSF;
-	for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx++) {
+	const float yaw_increment = M_2PI / (float)frontend->_EKFGSF_nmodels;
+	for (uint8_t mdl_idx = 0; mdl_idx < frontend->_EKFGSF_nmodels; mdl_idx++) {
 		// evenly space initial yaw estimates in the region between +-Pi
 		EKFGSF_mdl[mdl_idx].X[2] = -M_PI + (0.5f * yaw_increment) + ((float)mdl_idx * yaw_increment);
 
 		// All filter models start with the same weight
-		EKFGSF_GSF.weights[mdl_idx] = 1.0f / (float)N_MODELS_EKFGSF;
+		EKFGSF_GSF.weights[mdl_idx] = 1.0f / (float)frontend->_EKFGSF_nmodels;
 
 		if (frontend->_fusionModeGPS <= 1) {
 			// Take state and variance estimates direct from GPS
@@ -488,7 +488,7 @@ void NavEKF3_core::EKFGSF_run()
 
 	// Calculate common variables used by the AHRS prediction models
 	EKFGSF_ahrs_accel_norm = EKFGSF_ahrs_accel.length();
-	EKFGSF_ahrs_turn_comp_enabled = assume_zero_sideslip() && frontend->EKFGSF_easDefault > FLT_EPSILON;
+	EKFGSF_ahrs_turn_comp_enabled = assume_zero_sideslip() && frontend->_EKFGSF_easDefault > FLT_EPSILON;
 
 	// Calculate AHRS acceleration fusion gain using a quadratic weighting function that is unity at 1g
 	// and zero at the min and max g limits. This reduces the effect of large g transients on the attitude
@@ -515,7 +515,7 @@ void NavEKF3_core::EKFGSF_run()
 	}
 
 	// Always run the AHRS prediction cycle for each model
-	for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
+	for (uint8_t mdl_idx = 0; mdl_idx < frontend->_EKFGSF_nmodels; mdl_idx ++) {
 		EKFGSF_predict(mdl_idx);
 	}
 
@@ -523,7 +523,7 @@ void NavEKF3_core::EKFGSF_run()
 	if (filterStatus.flags.horiz_pos_abs && gpsDataToFuse && inFlight) {
 		if (!EKFGSF_vel_fuse_started) {
 			// Perform in-flight alignment
-			for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
+			for (uint8_t mdl_idx = 0; mdl_idx < frontend->_EKFGSF_nmodels; mdl_idx ++) {
 				// Use the firstGPS  measurement to set the velocities and corresponding variances
 				EKFGSF_mdl[mdl_idx].X[0] = gpsDataDelayed.vel[0];
 				EKFGSF_mdl[mdl_idx].X[1] = gpsDataDelayed.vel[1];
@@ -534,8 +534,8 @@ void NavEKF3_core::EKFGSF_run()
 			EKFGSF_vel_fuse_started = true;
 		} else {
 			float total_w = 0.0f;
-			float newWeight[N_MODELS_EKFGSF];
-			for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
+			float newWeight[(uint8_t)frontend->_EKFGSF_nmodels];
+			for (uint8_t mdl_idx = 0; mdl_idx < frontend->_EKFGSF_nmodels; mdl_idx ++) {
 				// Update states and covariances using GPS NE velocity measurements fused as direct state observations
 				EKFGSF_correct(mdl_idx);
 
@@ -547,7 +547,7 @@ void NavEKF3_core::EKFGSF_run()
 			// Normalise the sume of weights to unity
 			if (EKFGSF_vel_fuse_started && total_w > 0.0f) {
 				float total_w_inv = 1.0f / total_w;
-				for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
+				for (uint8_t mdl_idx = 0; mdl_idx < frontend->_EKFGSF_nmodels; mdl_idx ++) {
 					EKFGSF_GSF.weights[mdl_idx]  = newWeight[mdl_idx] * total_w_inv;
 				}
 			}
@@ -564,7 +564,7 @@ void NavEKF3_core::EKFGSF_run()
 	// equal to the weighting value before it is summed.
 	memset(&EKFGSF_GSF.state, 0, sizeof(EKFGSF_GSF.state));
 	Vector2f yaw_vector = {};
-	for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
+	for (uint8_t mdl_idx = 0; mdl_idx < frontend->_EKFGSF_nmodels; mdl_idx ++) {
 		for (uint8_t state_index = 0; state_index < 2; state_index++) {
 			EKFGSF_GSF.state[state_index] += EKFGSF_mdl[mdl_idx].X[state_index] * EKFGSF_GSF.weights[mdl_idx];
 		}
@@ -590,7 +590,7 @@ void NavEKF3_core::EKFGSF_run()
 	}
 	*/
     EKFGSF_GSF.yaw_variance = 0.0f;
-	for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
+	for (uint8_t mdl_idx = 0; mdl_idx < frontend->_EKFGSF_nmodels; mdl_idx ++) {
 		float yawDelta = wrap_PI(EKFGSF_mdl[mdl_idx].X[2] - EKFGSF_GSF.state[2]);
 		EKFGSF_GSF.yaw_variance +=  EKFGSF_GSF.weights[mdl_idx] * (EKFGSF_mdl[mdl_idx].P[2][2] + sq(yawDelta));
 	}

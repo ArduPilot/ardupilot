@@ -451,6 +451,9 @@ private:
     AP_Int8  _flowUse;              // Controls if the optical flow data is fused into the main navigation estimator and/or the terrain estimator.
     AP_Float _hrt_filt_freq;        // frequency of output observer height rate complementary filter in Hz
     AP_Int16 _mag_ef_limit;         // limit on difference between WMM tables and learned earth field.
+    AP_Float _EKFGSF_easDefault;    // default equivalent airspeed value assumed during fixed wing flight if no airspeed measurement available (m/s)
+    AP_Int8 _EKFGSF_nmodels;        // number of AHRS and EKF models used by EKF-GSF yaw estimator. Must be no less than 3 and no more than 8.
+
 
 // Possible values for _flowUse
 #define FLOW_USE_NONE    0
@@ -492,7 +495,6 @@ private:
 	const float EKFGSF_accelNoise{2.0f};	// horizontal accel noise used for covariance prediction (m/sec**2)
 	const float EKFGSF_tiltGain{0.4f};		// gain from tilt error to gyro correction for complementary filter (1/sec)
 	const float EKFGSF_gyroBiasGain{0.04f};	// gain applied to integral of gyro correction for complementary filter (1/sec)
-	const float EKFGSF_easDefault{15.0f};	// default equivalent airspeed value assumed during fixed wing flight if no airspeed measurement available (m/s)
 	const uint16_t EKFGSF_resetDelay{1000};	// Number of mSec of bad innovations on main filter in post takeoff phase before yaw is reset to EKF-GSF value
     const uint8_t EKFGSF_n_reset_max{2};    // Maximum number of resets allowed
 

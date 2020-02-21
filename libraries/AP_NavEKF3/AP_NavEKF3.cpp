@@ -604,6 +604,23 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Units: mGauss
     AP_GROUPINFO("MAG_EF_LIM", 56, NavEKF3, _mag_ef_limit, 50),
 
+    // @Param: EAS_DEFAULT
+    // @DisplayName: Default airspeed assumption
+    // @Description: Default value of equivalent airspeed assumed if an airspeed value is required but not available. Set to cruise speed.
+    // @Range: 10.0 100.0
+    // @Increment: 0.5
+    // @User: Advanced
+    // @Units: m/s
+    AP_GROUPINFO("EAS_DEFAULT", 57, NavEKF3, _EKFGSF_easDefault, 15.0f),
+
+    // @Param: N_MODELS
+    // @DisplayName: Number of yaw estimator models
+    // @Description: Sets the number of filters used by the EKF-GSF yaw estimator. Smaller numbers save processing. Larger numbers are more tolerant of sensor noise. The CPU load reduction when reducing from the maximum value of 8 to the minimum value of 3 is 2% per EKF core measured on a STM32-F4 processor.
+    // @Range: 3 8
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("N_MODELS", 58, NavEKF3, _EKFGSF_nmodels, 5),
+
     AP_GROUPEND
 };
 
