@@ -251,6 +251,7 @@ def should_run_step(step):
 
 __bin_names = {
     "ArduCopter": "arducopter",
+    "ArduCopterExtra": "arducopter",
     "ArduPlane": "arduplane",
     "APMrover2": "ardurover",
     "AntennaTracker": "antennatracker",
@@ -302,6 +303,7 @@ def find_specific_test_to_run(step):
 
 tester_class_map = {
     "fly.ArduCopter": arducopter.AutoTestCopter,
+    "fly.ArduCopterExtra": arducopter.AutoTestCopterExtra,
     "fly.ArduPlane": arduplane.AutoTestPlane,
     "fly.QuadPlane": quadplane.AutoTestQuadPlane,
     "drive.APMrover2": apmrover2.AutoTestRover,
@@ -769,6 +771,7 @@ if __name__ == "__main__":
         'build.ArduCopter',
         'defaults.ArduCopter',
         'fly.ArduCopter',
+        'fly.ArduCopterExtra',
 
         'build.Helicopter',
         'fly.CopterAVC',
