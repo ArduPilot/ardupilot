@@ -4811,21 +4811,9 @@ class AutoTestCopter(AutoTest):
              "Test onboard compass calibration",
              self.test_onboard_compass_calibration),
 
-            ("DynamicNotches",
-             "Fly Dynamic Notches",
-             self.fly_dynamic_notches),
-
-            ("GyroFFT",
-             "Fly Gyro FFT",
-             self.fly_gyro_fft),
-
             ("RangeFinderDrivers",
              "Test rangefinder drivers",
              self.fly_rangefinder_drivers),
-
-            ("MotorVibration",
-             "Fly motor vibration test",
-             self.fly_motor_vibration),
 
             ("ParameterValidation",
              "Test parameters are checked for validity",
@@ -5054,6 +5042,34 @@ class AutoTestHeli(AutoTestCopter):
             ("AutoRotation",
              "Fly AutoRotation",
              self.fly_autorotation),
+
+            ("LogDownLoad",
+             "Log download",
+             lambda: self.log_download(
+                 self.buildlogs_path("ArduCopter-log.bin"),
+                 upload_logs=len(self.fail_list) > 0))
+        ])
+        return ret
+
+class AutoTestCopterExtra(AutoTestCopter):
+
+    def log_name(self):
+        return "ArduCopter"
+
+    def tests(self):
+        '''return list of all tests'''
+        ret = ([
+            ("MotorVibration",
+             "Fly motor vibration test",
+             self.fly_motor_vibration),
+
+            ("DynamicNotches",
+             "Fly Dynamic Notches",
+             self.fly_dynamic_notches),
+
+            ("GyroFFT",
+             "Fly Gyro FFT",
+             self.fly_gyro_fft),
 
             ("LogDownLoad",
              "Log download",
