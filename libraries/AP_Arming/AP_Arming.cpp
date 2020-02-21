@@ -943,14 +943,14 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
 }
 
 //returns true if disarming occurred successfully
-bool AP_Arming::disarm() 
+bool AP_Arming::disarm(const AP_Arming::Method method)
 {
     if (!armed) { // already disarmed
         return false;
     }
     armed = false;
 
-    Log_Write_Disarm(); // should be able to pass through method and/or force here?
+    Log_Write_Disarm(method); // should be able to pass through force here?
 
 #if HAL_HAVE_SAFETY_SWITCH
     AP_BoardConfig *board_cfg = AP_BoardConfig::get_singleton();
@@ -1035,7 +1035,7 @@ void AP_Arming::Log_Write_Arm(const bool forced, const AP_Arming::Method method)
     AP::logger().Write_Event(LogEvent::ARMED);
 }
 
-void AP_Arming::Log_Write_Disarm()
+void AP_Arming::Log_Write_Disarm(const AP_Arming::Method method)
 {
     const struct log_Arm_Disarm pkt {
         LOG_PACKET_HEADER_INIT(LOG_ARM_DISARM_MSG),
@@ -1043,7 +1043,7 @@ void AP_Arming::Log_Write_Disarm()
         arm_state               : is_armed(),
         arm_checks              : 0,
         forced                  : 0,
-        method                  : 0
+        method                  : (uint8_t)method
     };
     AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
     AP::logger().Write_Event(LogEvent::DISARMED);
