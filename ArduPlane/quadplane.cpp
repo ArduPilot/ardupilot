@@ -2729,7 +2729,7 @@ void QuadPlane::check_land_complete(void)
         return;
     }
     if (land_detector(4000)) {
-        plane.arming.disarm();
+        plane.arming.disarm(AP_Arming::Method::LANDED);
         poscontrol.state = QPOS_LAND_COMPLETE;
         gcs().send_text(MAV_SEVERITY_INFO,"Land complete");
         // reload target airspeed which could have been modified by the mission
