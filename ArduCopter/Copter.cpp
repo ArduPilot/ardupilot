@@ -297,7 +297,7 @@ void Copter::rc_loop()
 void Copter::throttle_loop()
 {
     // update throttle_low_comp value (controls priority of throttle vs attitude control)
-    update_throttle_thr_mix();
+    update_throttle_mix();
 
     // check auto_armed status
     update_auto_armed();
