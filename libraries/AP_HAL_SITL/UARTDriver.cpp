@@ -41,6 +41,8 @@
 #include "SITL_State.h"
 #include <AP_HAL/utility/packetise.h>
 
+#include <AP_Filesystem/AP_Filesystem.h>
+
 extern const AP_HAL::HAL& hal;
 
 using namespace HALSITL;
@@ -125,6 +127,15 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
             if (!_connected) {
                 ::printf("UDP multicast connection %s:%u\n", ip, port);
                 _udp_start_multicast(ip, port);
+            }
+        } else if (strcmp(devtype, "file") == 0) {
+            if (!_connected) {
+                ::printf("FILE connection %s\n", args1);
+                _fd = AP::FS().open(args1, O_RDONLY);
+                if (_fd == -1) {
+                    AP_HAL::panic("Failed to open (%s): %m", args1);
+                }
+                _connected = true;
             }
         } else {
             AP_HAL::panic("Invalid device path: %s", path);
