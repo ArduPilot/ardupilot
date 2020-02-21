@@ -410,7 +410,7 @@ void ToyMode::update()
         const uint8_t disarm_limit = copter.flightmode->has_manual_throttle()?TOY_LAND_MANUAL_DISARM_COUNT:TOY_LAND_DISARM_COUNT;
         if (throttle_low_counter >= disarm_limit) {
             gcs().send_text(MAV_SEVERITY_INFO, "Tmode: throttle disarm");
-            copter.arming.disarm();
+            copter.arming.disarm(AP_Arming::Method::TLANDTHROTTLE);
         }
     } else {
         throttle_low_counter = 0;
@@ -569,7 +569,7 @@ void ToyMode::update()
     case ACTION_DISARM:
         if (copter.motors->armed()) {
             gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: Force disarm");
-            copter.arming.disarm();
+            copter.arming.disarm(AP_Arming::Method::TLANDFORCE);
         }
         break;
 

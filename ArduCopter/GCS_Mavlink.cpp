@@ -836,7 +836,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         if (copter.motors->armed()) {
             if (copter.ap.land_complete) {
                 // if landed, disarm motors
-                copter.arming.disarm();
+                copter.arming.disarm(AP_Arming::Method::SOLOPAUSEWHENLANDED);
             } else {
                 // assume that shots modes are all done in guided.
                 // NOTE: this may need to change if we add a non-guided shot mode
@@ -1255,7 +1255,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_flight_termination(const mavlink_command_l
     if (GCS_MAVLINK::handle_flight_termination(packet) != MAV_RESULT_ACCEPTED) {
 #endif
         if (packet.param1 > 0.5f) {
-            copter.arming.disarm();
+            copter.arming.disarm(AP_Arming::Method::TERMINATION);
             result = MAV_RESULT_ACCEPTED;
         }
 #if ADVANCED_FAILSAFE == ENABLED

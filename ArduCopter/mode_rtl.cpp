@@ -386,7 +386,7 @@ void ModeRTL::land_run(bool disarm_on_land)
 
     // disarm when the landing detector says we've landed
     if (disarm_on_land && copter.ap.land_complete && motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE) {
-        copter.arming.disarm();
+        copter.arming.disarm(AP_Arming::Method::LANDED);
     }
 
     // if not armed set throttle to zero and exit immediately

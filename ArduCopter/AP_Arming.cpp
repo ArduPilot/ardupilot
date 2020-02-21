@@ -827,14 +827,14 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
 }
 
 // arming.disarm - disarm motors
-bool AP_Arming_Copter::disarm()
+bool AP_Arming_Copter::disarm(const AP_Arming::Method method)
 {
     // return immediately if we are already disarmed
     if (!copter.motors->armed()) {
         return true;
     }
 
-    if (!AP_Arming::disarm()) {
+    if (!AP_Arming::disarm(method)) {
         return false;
     }
 
