@@ -168,9 +168,7 @@ void Copter::update_throttle_mix()
         bool large_angle_error = (angle_error > LAND_CHECK_ANGLE_ERROR_DEG);
 
         // check for large acceleration - falling or high turbulence
-        Vector3f accel_ef = ahrs.get_accel_ef_blended();
-        accel_ef.z += GRAVITY_MSS;
-        bool accel_moving = (accel_ef.length() > LAND_CHECK_ACCEL_MOVING);
+        const bool accel_moving = (land_accel_ef_filter.get().length() > LAND_CHECK_ACCEL_MOVING);
 
         // check for requested decent
         bool descent_not_demanded = pos_control->get_desired_velocity().z >= 0.0f;
