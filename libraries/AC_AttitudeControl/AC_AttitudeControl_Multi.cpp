@@ -46,7 +46,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Param: RAT_RLL_FLTT
     // @DisplayName: Roll axis rate controller target frequency in Hz
     // @Description: Roll axis rate controller target frequency in Hz
-    // @Range: 1 50
+    // @Range: 5 100
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
@@ -54,7 +54,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Param: RAT_RLL_FLTE
     // @DisplayName: Roll axis rate controller error frequency in Hz
     // @Description: Roll axis rate controller error frequency in Hz
-    // @Range: 1 100
+    // @Range: 0 100
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
@@ -62,7 +62,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Param: RAT_RLL_FLTD
     // @DisplayName: Roll axis rate controller derivative frequency in Hz
     // @Description: Roll axis rate controller derivative frequency in Hz
-    // @Range: 1 100
+    // @Range: 5 100
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
@@ -107,7 +107,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Param: RAT_PIT_FLTT
     // @DisplayName: Pitch axis rate controller target frequency in Hz
     // @Description: Pitch axis rate controller target frequency in Hz
-    // @Range: 1 50
+    // @Range: 5 100
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
@@ -115,7 +115,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Param: RAT_PIT_FLTE
     // @DisplayName: Pitch axis rate controller error frequency in Hz
     // @Description: Pitch axis rate controller error frequency in Hz
-    // @Range: 1 100
+    // @Range: 0 100
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
@@ -123,7 +123,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Param: RAT_PIT_FLTD
     // @DisplayName: Pitch axis rate controller derivative frequency in Hz
     // @Description: Pitch axis rate controller derivative frequency in Hz
-    // @Range: 1 100
+    // @Range: 5 100
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
@@ -168,7 +168,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Param: RAT_YAW_FLTT
     // @DisplayName: Yaw axis rate controller target frequency in Hz
     // @Description: Yaw axis rate controller target frequency in Hz
-    // @Range: 1 5
+    // @Range: 1 50
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
@@ -176,7 +176,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Param: RAT_YAW_FLTE
     // @DisplayName: Yaw axis rate controller error frequency in Hz
     // @Description: Yaw axis rate controller error frequency in Hz
-    // @Range: 1 10
+    // @Range: 0 20
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
@@ -184,7 +184,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Param: RAT_YAW_FLTD
     // @DisplayName: Yaw axis rate controller derivative frequency in Hz
     // @Description: Yaw axis rate controller derivative frequency in Hz
-    // @Range: 1 20
+    // @Range: 5 50
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
