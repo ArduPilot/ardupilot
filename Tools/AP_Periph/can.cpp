@@ -955,6 +955,7 @@ static void can_wait_node_id(void)
             processTx();
             processRx();
             canardCleanupStaleTransfers(&canard, AP_HAL::micros64());
+            stm32_watchdog_pat();
         }
 
         if (canardGetLocalNodeID(&canard) != CANARD_BROADCAST_NODE_ID)
