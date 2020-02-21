@@ -3106,7 +3106,7 @@ float QuadPlane::stopping_distance(void)
 #define LAND_CHECK_LARGE_ANGLE_CD   1500.0f     // maximum angle target to be considered landing
 #define LAND_CHECK_ACCEL_MOVING     3.0f        // maximum acceleration after subtracting gravity
 
-void QuadPlane::update_throttle_thr_mix(void)
+void QuadPlane::update_throttle_mix(void)
 {
     // transition will directly manage the mix
     if (in_transition()) {
@@ -3114,7 +3114,7 @@ void QuadPlane::update_throttle_thr_mix(void)
     }
 
     // if disarmed or landed prioritise throttle
-    if(!motors->armed()) {
+    if (!motors->armed()) {
         attitude_control->set_throttle_mix_min();
         return;
     }
@@ -3145,7 +3145,7 @@ void QuadPlane::update_throttle_thr_mix(void)
         // check for requested decent
         bool descent_not_demanded = pos_control->get_desired_velocity().z >= 0.0f;
 
-        if ( large_angle_request || large_angle_error || accel_moving || descent_not_demanded) {
+        if (large_angle_request || large_angle_error || accel_moving || descent_not_demanded) {
             attitude_control->set_throttle_mix_max(1.0);
         } else {
             attitude_control->set_throttle_mix_min();
