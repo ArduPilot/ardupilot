@@ -1743,7 +1743,7 @@ static int AP_Arming_disarm(lua_State *L) {
     }
 
     binding_argcheck(L, 1);
-    const bool data = ud->disarm();
+    const bool data = ud->disarm(            AP_Arming::Method::SCRIPTING);
 
     lua_pushboolean(L, data);
     return 1;
