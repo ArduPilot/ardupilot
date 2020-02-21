@@ -34,7 +34,7 @@ MAV_COLLISION_ACTION AP_Avoidance_Copter::handle_avoidance(const AP_Avoidance::O
 
     // if landed and we will take some kind of action, just disarm
     if ((actual_action > MAV_COLLISION_ACTION_REPORT) && copter.should_disarm_on_failsafe()) {
-        copter.arming.disarm();
+        copter.arming.disarm(AP_Arming::Method::ADSBCOLLISIONACTION);
         actual_action = MAV_COLLISION_ACTION_NONE;
     } else {
 
