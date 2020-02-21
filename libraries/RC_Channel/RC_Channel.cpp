@@ -528,7 +528,7 @@ void RC_Channel::do_aux_function_armdisarm(const aux_switch_pos_t ch_flag)
         // nothing
         break;
     case LOW:
-        AP::arming().disarm();
+        AP::arming().disarm(AP_Arming::Method::AUXSWITCH);
         break;
     }
 }
