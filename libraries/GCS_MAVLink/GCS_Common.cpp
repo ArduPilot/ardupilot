@@ -3849,7 +3849,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
                 !is_equal(packet.param2, magic_force_disarm_value)) {
                 return MAV_RESULT_FAILED;
             }
-            if (AP::arming().disarm()) {
+            if (AP::arming().disarm(AP_Arming::Method::MAVLINK)) {
                 return MAV_RESULT_ACCEPTED;
             }
             return MAV_RESULT_FAILED;
