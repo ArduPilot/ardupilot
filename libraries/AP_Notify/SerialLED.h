@@ -15,12 +15,35 @@
 #pragma once
 
 #include "RGBLed.h"
-#include "SerialLED.h"
 #include <AP_Common/AP_Common.h>
+#include <AP_SerialLED/AP_SerialLED.h>
 
-class NeoPixel: public SerialLED {
+class SerialLED: public RGBLed {
 public:
-    NeoPixel();
+    SerialLED(uint8_t led_off, uint8_t led_bright, uint8_t led_medium, uint8_t led_dim);
 
-    uint16_t init_ports() override;
+    struct {
+        uint8_t b;
+        uint8_t r;
+        uint8_t g;
+    } RGB;
+
+    virtual uint16_t init_ports() { return 0; };
+
+protected:
+
+    bool hw_init(void) override;
+
+    bool hw_set_rgb(uint8_t r, uint8_t g, uint8_t b) override;
+
+private:
+    uint16_t enable_mask;
+
+    // perdiodic tick to re-init
+    uint32_t    _last_init_ms;
+
+    // periodic callback
+    void timer();
+
+    HAL_Semaphore _sem;
 };
