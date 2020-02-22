@@ -1387,6 +1387,11 @@ public:
     // Inherit constructor
     using Mode::Mode;
 
+    enum class Destination : uint8_t {
+        A,  // Destination A
+        B,  // Destination B
+    };
+
     bool init(bool ignore_checks) override;
     void exit();
     void run() override;
@@ -1396,8 +1401,8 @@ public:
     bool allows_arming(bool from_gcs) const override { return true; }
     bool is_autopilot() const override { return true; }
 
-    // save current position as A (dest_num = 0) or B (dest_num = 1).  If both A and B have been saved move to the one specified
-    void save_or_move_to_destination(uint8_t dest_num);
+    // save current position as A or B.  If both A and B have been saved move to the one specified
+    void save_or_move_to_destination(Destination ab_dest);
 
     // return manual control to the pilot
     void return_to_manual_control(bool maintain_target);
@@ -1412,7 +1417,7 @@ private:
     void auto_control();
     void manual_control();
     bool reached_destination();
-    bool calculate_next_dest(uint8_t position_num, bool use_wpnav_alt, Vector3f& next_dest, bool& terrain_alt) const;
+    bool calculate_next_dest(Destination ab_dest, bool use_wpnav_alt, Vector3f& next_dest, bool& terrain_alt) const;
 
     Vector2f dest_A;    // in NEU frame in cm relative to ekf origin
     Vector2f dest_B;    // in NEU frame in cm relative to ekf origin
