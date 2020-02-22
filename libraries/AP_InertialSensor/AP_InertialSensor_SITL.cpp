@@ -65,12 +65,13 @@ void AP_InertialSensor_SITL::generate_accel()
         float noise_variation = 0.05f;
         // this smears the individual motor peaks somewhat emulating physical motors
         float freq_variation = 0.12f;
-
+        // add in sensor noise
         xAccel += accel_noise * rand_float();
         yAccel += accel_noise * rand_float();
         zAccel += accel_noise * rand_float();
 
         bool motors_on = sitl->throttle > sitl->ins_noise_throttle_min;
+
         // on a real 180mm copter gyro noise varies between 0.8-4 m/s/s for throttle 0.2-0.8
         // giving a accel noise variation of 5.33 m/s/s over the full throttle range
         if (motors_on) {
@@ -80,6 +81,14 @@ void AP_InertialSensor_SITL::generate_accel()
 
         // VIB_FREQ is a static vibration applied to each axis
         const Vector3f &vibe_freq = sitl->vibe_freq;
+
+        if (vibe_freq.is_zero() && is_zero(sitl->vibe_motor)) {
+            // no rpm noise, so add in background noise if any
+            xAccel += accel_noise * rand_float();
+            yAccel += accel_noise * rand_float();
+            zAccel += accel_noise * rand_float();
+        }
+
         if (!vibe_freq.is_zero() && motors_on) {
             xAccel += sinf(accel_time * 2 * M_PI * vibe_freq.x) * calculate_noise(accel_noise, noise_variation);
             yAccel += sinf(accel_time * 2 * M_PI * vibe_freq.y) * calculate_noise(accel_noise, noise_variation);
@@ -164,7 +173,7 @@ void AP_InertialSensor_SITL::generate_gyro()
         float noise_variation = 0.05f;
         // this smears the individual motor peaks somewhat emulating physical motors
         float freq_variation = 0.12f;
-
+        // add in sensor noise
         p += gyro_noise * rand_float();
         q += gyro_noise * rand_float();
         r += gyro_noise * rand_float();
@@ -179,6 +188,14 @@ void AP_InertialSensor_SITL::generate_gyro()
 
         // VIB_FREQ is a static vibration applied to each axis
         const Vector3f &vibe_freq = sitl->vibe_freq;
+
+        if (vibe_freq.is_zero() && is_zero(sitl->vibe_motor)) {
+            // no rpm noise, so add in background noise if any
+            p += gyro_noise * rand_float();
+            q += gyro_noise * rand_float();
+            r += gyro_noise * rand_float();
+        }
+
         if (!vibe_freq.is_zero() && motors_on) {
             p += sinf(gyro_time * 2 * M_PI * vibe_freq.x) * calculate_noise(gyro_noise, noise_variation);
             q += sinf(gyro_time * 2 * M_PI * vibe_freq.y) * calculate_noise(gyro_noise, noise_variation);
