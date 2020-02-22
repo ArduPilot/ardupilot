@@ -18,9 +18,10 @@
 #include "SerialLED.h"
 #include <AP_Common/AP_Common.h>
 
-class NeoPixel: public SerialLED {
+class ProfiLED: public SerialLED {
 public:
-    NeoPixel();
+    ProfiLED();
 
     uint16_t init_ports() override;
+
 };
