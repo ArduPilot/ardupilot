@@ -147,6 +147,15 @@ public:
         k_LED_neopixel2         = 121,
         k_LED_neopixel3         = 122,
         k_LED_neopixel4         = 123,
+        k_roll_out              = 124,
+        k_pitch_out             = 125,
+        k_thrust_out            = 126,
+        k_yaw_out               = 127,
+        k_wingsail_elevator     = 128,
+        k_ProfiLED_1            = 129,
+        k_ProfiLED_2            = 130,
+        k_ProfiLED_3            = 131,
+        k_ProfiLED_Clock        = 132,
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 
