@@ -420,12 +420,17 @@ def build(bld):
         target=bld.bldnode.find_or_declare('modules/ChibiOS/libch.a')
     )
     ch_task.name = "ChibiOS_lib"
-    if bld.env.CORTEX == 'cortex-m4':
-        bld.env.LIB += ['ch', 'arm_cortexM4lf_math']
-    elif bld.env.CORTEX == 'cortex-m7':
-        bld.env.LIB += ['ch', 'arm_cortexM7lfdp_math']
-    else:
-        bld.env.LIB += ['ch']
+    DSP_LIBS = {
+        'cortex-m4' : 'libarm_cortexM4lf_math.a',
+        'cortex-m7' : 'libarm_cortexM7lfdp_math.a',
+    }
+    if bld.env.CORTEX in DSP_LIBS:
+        libname = DSP_LIBS[bld.env.CORTEX]
+        # we need to copy the library on cygwin as it doesn't handle linking outside build tree
+        shutil.copyfile(os.path.join(bld.env.SRCROOT,'libraries/AP_GyroFFT/CMSIS_5/lib',libname),
+                        os.path.join(bld.env.BUILDROOT,'modules/ChibiOS/libDSP.a'))
+        bld.env.LIB += ['DSP']
+    bld.env.LIB += ['ch']
     bld.env.LIBPATH += ['modules/ChibiOS/']
     # list of functions that will be wrapped to move them out of libc into our
     # own code note that we also include functions that we deliberately don't
