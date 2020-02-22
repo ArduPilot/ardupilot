@@ -24,6 +24,7 @@ from MAVProxy.modules.lib import mp_util
 from pymavlink import mavwp, mavutil, DFReader
 from pymavlink import mavextra
 from pymavlink import mavparm
+from pymavlink.rotmat import Vector3
 
 from pysim import util, vehicleinfo
 from io import StringIO
@@ -4058,20 +4059,31 @@ class AutoTest(ABC):
     def wait_and_maintain(self, value_name, target, current_value_getter, validator=None, accuracy=2.0, timeout=30, **kwargs):
         tstart = self.get_sim_time()
         achieving_duration_start = None
-        sum_of_achieved_values = 0.0
-        last_value = 0.0
+        if type(target) is Vector3:
+            sum_of_achieved_values = Vector3()
+            last_value = Vector3()
+        else:
+            sum_of_achieved_values = 0.0
+            last_value = 0.0
         count_of_achieved_values = 0
         called_function = kwargs.get("called_function", None)
         minimum_duration = kwargs.get("minimum_duration", 0)
-        self.progress("Waiting for %s=%.02f with accuracy %.02f" % (value_name, target, accuracy))
+        if type(target) is Vector3:
+            self.progress("Waiting for %s=(%s) with accuracy %.02f" % (value_name, str(target), accuracy))
+        else:
+            self.progress("Waiting for %s=%.02f with accuracy %.02f" % (value_name, target, accuracy))
         last_print_time = 0
         while self.get_sim_time_cached() < tstart + timeout:  # if we failed to received message with the getter the sim time isn't updated
             last_value = current_value_getter()
             if called_function is not None:
                 called_function(last_value, target)
             if self.get_sim_time_cached() - last_print_time > 1:
-                self.progress("%s=%0.2f (want %f +- %f)" %
-                              (value_name, last_value, target, accuracy))
+                if type(target) is Vector3:
+                    self.progress("%s=(%s) (want (%s) +- %f)" %
+                                  (value_name, str(last_value), str(target), accuracy))
+                else:
+                    self.progress("%s=%0.2f (want %f +- %f)" %
+                                 (value_name, last_value, target, accuracy))
                 last_print_time = self.get_sim_time_cached()
             if validator is not None:
                 is_value_valid = validator(last_value, target)
@@ -4083,13 +4095,19 @@ class AutoTest(ABC):
                 if achieving_duration_start is None:
                     achieving_duration_start = self.get_sim_time_cached()
                 if self.get_sim_time_cached() - achieving_duration_start >= minimum_duration:
-                    self.progress("Attained %s=%f" % (value_name, sum_of_achieved_values / count_of_achieved_values))
+                    if type(target) is Vector3:
+                        self.progress("Attained %s=%s" % (value_name, str(sum_of_achieved_values * (1.0 / count_of_achieved_values))))
+                    else:
+                        self.progress("Attained %s=%f" % (value_name, sum_of_achieved_values / count_of_achieved_values))
                     return True
             else:
                 achieving_duration_start = None
-                sum_of_achieved_values = 0.0
+                if type(target) is Vector3:
+                    sum_of_achieved_values.zero()
+                else:
+                    sum_of_achieved_values = 0.0
                 count_of_achieved_values = 0
-        raise AutoTestTimeoutException("Failed to attain %s want %s, reach %f" % (value_name, str(target), (sum_of_achieved_values / count_of_achieved_values) if count_of_achieved_values != 0 else last_value))
+        raise AutoTestTimeoutException("Failed to attain %s want %s, reach %s" % (value_name, str(target), str(sum_of_achieved_values * (1.0 / count_of_achieved_values)) if count_of_achieved_values != 0 else str(last_value)))
 
     def wait_heading(self, heading, accuracy=5, timeout=30, **kwargs):
         """Wait for a given heading."""
