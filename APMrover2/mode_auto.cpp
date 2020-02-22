@@ -438,6 +438,7 @@ void ModeAuto::exit_mission()
 {
     // play a tone
     AP_Notify::events.mission_complete = 1;
+
     // send message
     gcs().send_text(MAV_SEVERITY_NOTICE, "Mission Complete");
 
