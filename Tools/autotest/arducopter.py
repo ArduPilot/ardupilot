@@ -3661,7 +3661,7 @@ class AutoTestCopter(AutoTest):
 
         self.do_RTL()
 
-    def hover_and_check_matched_frequency(self, dblevel=-15, minhz=200, maxhz=300, peakhz=None):
+    def hover_and_check_matched_frequency(self, dblevel=-15, minhz=200, maxhz=300, peakhz=None, freqMatch=0.05):
         # find a motor peak
         self.takeoff(10, mode="ALT_HOLD")
 
@@ -3702,7 +3702,7 @@ class AutoTestCopter(AutoTest):
         self.progress("Detected motor peak at %fHz processing %d messages" % (pkAvg, nmessages))
 
         # peak within 5%
-        if abs(pkAvg - freq) / freq > 0.1:
+        if abs(pkAvg - freq) / freq > freqMatch:
             raise NotAchievedException("FFT did not detect a motor peak at %f, found %f, wanted %f" % (dblevel, pkAvg, freq))
 
         return freq
@@ -3767,7 +3767,7 @@ class AutoTestCopter(AutoTest):
             self.set_parameter("SIM_VIB_MOT_MULT", 0.25) # halve the motor noise so that the higher harmonic dominates
             self.reboot_sitl()
 
-            self.hover_and_check_matched_frequency(-15, 100, 250)
+            self.hover_and_check_matched_frequency(-15, 100, 250, None, 0.15)
             self.set_parameter("SIM_VIB_FREQ_X", 0)
             self.set_parameter("SIM_VIB_FREQ_Y", 0)
             self.set_parameter("SIM_VIB_FREQ_Z", 0)
