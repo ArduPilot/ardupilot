@@ -34,6 +34,7 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_Scripting/AP_Scripting.h>
 #include <AP_Camera/AP_RunCam.h>
+#include <AP_GyroFFT/AP_GyroFFT.h>
 
 #if HAL_WITH_UAVCAN
   #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
@@ -363,6 +364,15 @@ bool AP_Arming::ins_checks(bool report)
             check_failed(ARMING_CHECK_INS, report, "%s", failure_msg);
             return false;
         }
+
+#if HAL_GYROFFT_ENABLED
+        // Check that the noise analyser works
+        AP_GyroFFT *fft = AP::fft();
+        if (fft != nullptr && !fft->calibration_check()) {
+            check_failed(ARMING_CHECK_INS, report, "FFT self-test failed");
+            return false;
+        };
+#endif
     }
 
     return true;
@@ -933,14 +943,14 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
 }
 
 //returns true if disarming occurred successfully
-bool AP_Arming::disarm() 
+bool AP_Arming::disarm(const AP_Arming::Method method)
 {
     if (!armed) { // already disarmed
         return false;
     }
     armed = false;
 
-    Log_Write_Disarm(); // should be able to pass through method and/or force here?
+    Log_Write_Disarm(method); // should be able to pass through force here?
 
 #if HAL_HAVE_SAFETY_SWITCH
     AP_BoardConfig *board_cfg = AP_BoardConfig::get_singleton();
@@ -949,6 +959,13 @@ bool AP_Arming::disarm()
         hal.rcout->force_safety_on();
     }
 #endif // HAL_HAVE_SAFETY_SWITCH
+
+#if HAL_GYROFFT_ENABLED
+    AP_GyroFFT *fft = AP::fft();
+    if (fft != nullptr) {
+        fft->save_params_on_disarm();
+    }
+#endif
 
     return true;
 }
@@ -1018,7 +1035,7 @@ void AP_Arming::Log_Write_Arm(const bool forced, const AP_Arming::Method method)
     AP::logger().Write_Event(LogEvent::ARMED);
 }
 
-void AP_Arming::Log_Write_Disarm()
+void AP_Arming::Log_Write_Disarm(const AP_Arming::Method method)
 {
     const struct log_Arm_Disarm pkt {
         LOG_PACKET_HEADER_INIT(LOG_ARM_DISARM_MSG),
@@ -1026,7 +1043,7 @@ void AP_Arming::Log_Write_Disarm()
         arm_state               : is_armed(),
         arm_checks              : 0,
         forced                  : 0,
-        method                  : 0
+        method                  : (uint8_t)method
     };
     AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
     AP::logger().Write_Event(LogEvent::DISARMED);

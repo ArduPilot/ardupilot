@@ -490,6 +490,7 @@ class chibios(Board):
             '--specs=nano.specs',
             '-specs=nosys.specs',
             '-DCHIBIOS_BOARD_NAME="%s"' % self.name,
+            '-D__USE_CMSIS',
         ]
         env.CXXFLAGS += env.CFLAGS + [
             '-fno-rtti',
@@ -549,6 +550,10 @@ class chibios(Board):
 
         env.GIT_SUBMODULES += [
             'ChibiOS',
+        ]
+
+        env.INCLUDES += [
+            cfg.srcnode.find_dir('libraries/AP_GyroFFT/CMSIS_5/include').abspath()
         ]
 
         try:

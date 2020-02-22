@@ -67,7 +67,7 @@ void Copter::crash_check()
         // send message to gcs
         gcs().send_text(MAV_SEVERITY_EMERGENCY,"Crash: Disarming");
         // disarm motors
-        copter.arming.disarm();
+        copter.arming.disarm(AP_Arming::Method::CRASH);
     }
 }
 
@@ -234,7 +234,7 @@ void Copter::parachute_check()
 void Copter::parachute_release()
 {
     // disarm motors
-    arming.disarm();
+    arming.disarm(AP_Arming::Method::PARACHUTE_RELEASE);
 
     // release parachute
     parachute.release();

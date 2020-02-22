@@ -159,7 +159,7 @@ void Rover::motor_test_stop()
     }
 
     // disarm motors
-    AP::arming().disarm();
+    AP::arming().disarm(AP_Arming::Method::MOTORTEST);
 
     // reset timeout
     motor_test_start_ms = 0;

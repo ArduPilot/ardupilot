@@ -185,6 +185,18 @@
 #define HAL_MINIMIZE_FEATURES       0
 #endif
 
+#ifndef BOARD_FLASH_SIZE
+#define BOARD_FLASH_SIZE 2048
+#endif
+
+#ifndef HAL_WITH_DSP
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX || defined(HAL_BOOTLOADER_BUILD) || defined(HAL_BUILD_AP_PERIPH) || BOARD_FLASH_SIZE <= 1024
+#define HAL_WITH_DSP 0
+#else
+#define HAL_WITH_DSP !HAL_MINIMIZE_FEATURES
+#endif
+#endif
+
 #ifndef HAL_OS_FATFS_IO
 #define HAL_OS_FATFS_IO 0
 #endif

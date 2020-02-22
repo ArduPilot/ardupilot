@@ -559,7 +559,7 @@ bool Plane::verify_takeoff()
             uint32_t now = AP_HAL::millis();
             if (now - takeoff_state.start_time_ms > (uint32_t)(1000U * g2.takeoff_timeout)) {
                 gcs().send_text(MAV_SEVERITY_INFO, "Takeoff timeout at %.1f m/s", ground_speed);
-                plane.arming.disarm();
+                plane.arming.disarm(AP_Arming::Method::TAKEOFFTIMEOUT);
                 mission.reset();
             }
         }

@@ -213,8 +213,12 @@ void Plane::update_logging1(void)
  */
 void Plane::update_logging2(void)
 {
-    if (should_log(MASK_LOG_CTUN))
+    if (should_log(MASK_LOG_CTUN)) {
         Log_Write_Control_Tuning();
+#if HAL_GYROFFT_ENABLED
+        gyro_fft.write_log_messages();
+#endif
+    }
     
     if (should_log(MASK_LOG_NTUN))
         Log_Write_Nav_Tuning();
@@ -649,7 +653,7 @@ void Plane::disarm_if_autoland_complete()
         arming.is_armed()) {
         /* we have auto disarm enabled. See if enough time has passed */
         if (millis() - auto_state.last_flying_ms >= landing.get_disarm_delay()*1000UL) {
-            if (arming.disarm()) {
+            if (arming.disarm(AP_Arming::Method::AUTOLANDED)) {
                 gcs().send_text(MAV_SEVERITY_INFO,"Auto disarmed");
             }
         }

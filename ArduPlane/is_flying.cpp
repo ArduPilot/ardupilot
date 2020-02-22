@@ -305,7 +305,7 @@ void Plane::crash_detection_update(void)
         }
         else {
             if (aparm.crash_detection_enable & CRASH_DETECT_ACTION_BITMASK_DISARM) {
-                arming.disarm();
+                arming.disarm(AP_Arming::Method::CRASH);
             }
             if (crashed_near_land_waypoint) {
                 gcs().send_text(MAV_SEVERITY_CRITICAL, "Hard landing detected");

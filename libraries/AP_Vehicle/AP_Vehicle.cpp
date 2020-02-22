@@ -14,6 +14,11 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(runcam, "CAM_RC_", 1, AP_Vehicle, AP_RunCam),
 #endif
 
+#if HAL_GYROFFT_ENABLED
+    // @Group: FFT_
+    // @Path: ../AP_GyroFFT/AP_GyroFFT.cpp
+    AP_SUBGROUPINFO(gyro_fft, "FFT_",  2, AP_Vehicle, AP_GyroFFT),
+#endif
     AP_GROUPEND
 };
 
@@ -55,6 +60,10 @@ void AP_Vehicle::setup()
 
     // init_ardupilot is where the vehicle does most of its initialisation.
     init_ardupilot();
+    // gyro FFT needs to be initialized really late
+#if HAL_GYROFFT_ENABLED
+    gyro_fft.init(AP::scheduler().get_loop_period_us());
+#endif
 }
 
 void AP_Vehicle::loop()
@@ -70,7 +79,11 @@ void AP_Vehicle::loop()
  */
 const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #if HAL_RUNCAM_ENABLED
-    SCHED_TASK_CLASS(AP_RunCam,    &vehicle.runcam,              update,          50,  50),
+    SCHED_TASK_CLASS(AP_RunCam,    &vehicle.runcam,         update,                   50, 50),
+#endif
+#if HAL_GYROFFT_ENABLED
+    SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       sample_gyros,      LOOP_RATE, 50),
+    SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update_parameters,         1, 50),
 #endif
 };
 

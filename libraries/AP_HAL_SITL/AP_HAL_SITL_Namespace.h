@@ -14,6 +14,7 @@ class Util;
 class Semaphore;
 class GPIO;
 class DigitalSource;
+class DSP;
 class HALSITLCAN;
 class HALSITLCANDriver;
 }  // namespace HALSITL

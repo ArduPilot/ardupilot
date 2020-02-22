@@ -19,6 +19,8 @@
 #include <AP_Param/AP_Param.h>
 #include "NotchFilter.h"
 
+#define HNF_MAX_HARMONICS 8
+
 /*
   a filter that manages a set of notch filters targetted at a fundamental center frequency
   and multiples of that fundamental frequency
@@ -62,6 +64,7 @@ enum class HarmonicNotchDynamicMode {
     UpdateThrottle  = 1,
     UpdateRPM       = 2,
     UpdateBLHeli    = 3,
+    UpdateGyroFFT   = 4,
 };
 
 /*
