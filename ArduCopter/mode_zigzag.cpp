@@ -81,14 +81,9 @@ void ModeZigZag::run()
     }
 }
 
-// save current position as A (dest_num = 0) or B (dest_num = 1).  If both A and B have been saved move to the one specified
-void ModeZigZag::save_or_move_to_destination(uint8_t dest_num)
+// save current position as A or B.  If both A and B have been saved move to the one specified
+void ModeZigZag::save_or_move_to_destination(Destination ab_dest)
 {
-    // sanity check
-    if (dest_num > 1) {
-        return;
-    }
-
     // get current position as an offset from EKF origin
     const Vector3f curr_pos = inertial_nav.get_position();
 
@@ -96,7 +91,7 @@ void ModeZigZag::save_or_move_to_destination(uint8_t dest_num)
     switch (stage) {
 
         case STORING_POINTS:
-            if (dest_num == 0) {
+            if (ab_dest == Destination::A) {
                 // store point A
                 dest_A.x = curr_pos.x;
                 dest_A.y = curr_pos.y;
@@ -120,7 +115,7 @@ void ModeZigZag::save_or_move_to_destination(uint8_t dest_num)
             // A and B have been defined, move vehicle to destination A or B
             Vector3f next_dest;
             bool terr_alt;
-            if (calculate_next_dest(dest_num, stage == AUTO, next_dest, terr_alt)) {
+            if (calculate_next_dest(ab_dest, stage == AUTO, next_dest, terr_alt)) {
                 wp_nav->wp_and_spline_init();
                 if (wp_nav->set_wp_destination(next_dest, terr_alt)) {
                     stage = AUTO;
@@ -131,7 +126,7 @@ void ModeZigZag::save_or_move_to_destination(uint8_t dest_num)
                     }
 #endif
                     reach_wp_time_ms = 0;
-                    if (dest_num == 0) {
+                    if (ab_dest == Destination::A) {
                         gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: moving to A");
                     } else {
                         gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: moving to B");
@@ -329,15 +324,10 @@ bool ModeZigZag::reached_destination()
 // calculate next destination according to vector A-B and current position
 // use_wpnav_alt should be true if waypoint controller's altitude target should be used, false for position control or current altitude target
 // terrain_alt is returned as true if the next_dest should be considered a terrain alt
-bool ModeZigZag::calculate_next_dest(uint8_t dest_num, bool use_wpnav_alt, Vector3f& next_dest, bool& terrain_alt) const
+bool ModeZigZag::calculate_next_dest(Destination ab_dest, bool use_wpnav_alt, Vector3f& next_dest, bool& terrain_alt) const
 {
-    // sanity check dest_num
-    if (dest_num > 1) {
-        return false;
-    }
-
-    // define start_pos as either A or B depending upon dest_num
-    Vector2f start_pos = dest_num == 0 ? dest_A : dest_B;
+    // define start_pos as either destination A or B
+    Vector2f start_pos = (ab_dest == Destination::A) ? dest_A : dest_B;
 
     // calculate vector from A to B
     Vector2f AB_diff = dest_B - dest_A;
