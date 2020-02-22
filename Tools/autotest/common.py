@@ -688,6 +688,9 @@ class AutoTest(ABC):
                  use_map=False,
                  _show_test_timings=False):
 
+        if binary is None:
+            raise ValueError("Should always have a binary")
+
         self.binary = binary
         self.valgrind = valgrind
         self.gdb = gdb

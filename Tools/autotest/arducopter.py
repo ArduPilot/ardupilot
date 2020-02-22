@@ -4597,7 +4597,7 @@ class AutoTestCopter(AutoTest):
         self.drain_mav()
         self.assert_prearm_failure("Check MOT_PWM_MIN/MAX")
 
-    def tests(self):
+    def tests1(self):
         '''return list of all tests'''
         ret = super(AutoTestCopter, self).tests()
         ret.extend([
@@ -4831,6 +4831,35 @@ class AutoTestCopter(AutoTest):
         ])
         return ret
 
+    def tests2(self):
+        '''return list of all tests'''
+        ret = ([
+            ("MotorVibration",
+             "Fly motor vibration test",
+             self.fly_motor_vibration),
+
+            ("DynamicNotches",
+             "Fly Dynamic Notches",
+             self.fly_dynamic_notches),
+
+            ("GyroFFT",
+             "Fly Gyro FFT",
+             self.fly_gyro_fft),
+
+            ("LogDownLoad",
+             "Log download",
+             lambda: self.log_download(
+                 self.buildlogs_path("ArduCopter-log.bin"),
+                 upload_logs=len(self.fail_list) > 0))
+        ])
+        return ret
+
+    def tests(self):
+        ret = []
+        ret.extend(self.tests1())
+        ret.extend(self.tests2())
+        return ret
+
     def disabled_tests(self):
         return {
             "Parachute": "See https://github.com/ArduPilot/ardupilot/issues/4702",
@@ -5051,30 +5080,14 @@ class AutoTestHeli(AutoTestCopter):
         ])
         return ret
 
-class AutoTestCopterExtra(AutoTestCopter):
 
-    def log_name(self):
-        return "ArduCopter"
+class AutoTestCopterTests1(AutoTestCopter):
 
     def tests(self):
-        '''return list of all tests'''
-        ret = ([
-            ("MotorVibration",
-             "Fly motor vibration test",
-             self.fly_motor_vibration),
+        return self.tests1()
 
-            ("DynamicNotches",
-             "Fly Dynamic Notches",
-             self.fly_dynamic_notches),
 
-            ("GyroFFT",
-             "Fly Gyro FFT",
-             self.fly_gyro_fft),
+class AutoTestCopterTests2(AutoTestCopter):
 
-            ("LogDownLoad",
-             "Log download",
-             lambda: self.log_download(
-                 self.buildlogs_path("ArduCopter-log.bin"),
-                 upload_logs=len(self.fail_list) > 0))
-        ])
-        return ret
+    def tests(self):
+        return self.tests2()

@@ -74,12 +74,12 @@ function run_autotest() {
 
 for t in $CI_BUILD_TARGET; do
     # special case for SITL testing in CI
-    if [ "$t" == "sitltest-copter" ]; then
-        run_autotest "Copter" "build.ArduCopter" "fly.ArduCopter"
+    if [ "$t" == "sitltest-copter-tests1" ]; then
+        run_autotest "Copter" "build.ArduCopter" "fly.ArduCopter.Tests2"
         continue
     fi
-    if [ "$t" == "sitltest-copter-extra" ]; then
-        run_autotest "Copter" "build.ArduCopter" "fly.ArduCopterExtra"
+    if [ "$t" == "sitltest-copter-tests2" ]; then
+        run_autotest "Copter" "build.ArduCopter" "fly.ArduCopter.Tests1"
         continue
     fi
     if [ "$t" == "sitltest-plane" ]; then
