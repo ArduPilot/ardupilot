@@ -320,13 +320,19 @@ bool ModeZigZag::reached_destination()
 // terrain_alt is returned as true if the next_dest should be considered a terrain alt
 bool ModeZigZag::calculate_next_dest(uint8_t dest_num, bool use_wpnav_alt, Vector3f& next_dest, bool& terrain_alt) const
 {
+    // define start_pos as either A or B depending upon dest_num
+    Vector2f start_pos = Vector2f(0.0f, 0.0f);
     // sanity check dest_num
-    if (dest_num > 1) {
+    switch (dest_num) {
+    case 0:
+        start_pos = dest_A;
+        break;
+    case 1:
+        start_pos = dest_B;
+        break;
+    default:
         return false;
     }
-
-    // define start_pos as either A or B depending upon dest_num
-    Vector2f start_pos = dest_num == 0 ? dest_A : dest_B;
 
     // calculate vector from A to B
     Vector2f AB_diff = dest_B - dest_A;
