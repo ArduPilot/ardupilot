@@ -482,13 +482,13 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
             if (copter.flightmode == &copter.mode_zigzag) {
                 switch (ch_flag) {
                     case LOW:
-                        copter.mode_zigzag.save_or_move_to_destination(0);
+                        copter.mode_zigzag.save_or_move_to_destination(ModeZigZag::position::A);
                         break;
                     case MIDDLE:
                         copter.mode_zigzag.return_to_manual_control(false);
                         break;
                     case HIGH:
-                        copter.mode_zigzag.save_or_move_to_destination(1);
+                        copter.mode_zigzag.save_or_move_to_destination(ModeZigZag::position::B);
                         break;
                 }
             }
