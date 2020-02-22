@@ -305,6 +305,18 @@ RC_Channel::norm_input_dz() const
     return constrain_float(ret, -1.0f, 1.0f);
 }
 
+// return a normalised input for a channel, in range -1 to 1,
+// ignores trim and deadzone
+float RC_Channel::norm_input_ignore_trim() const
+{
+    // sanity check min and max to avoid divide by zero
+    if (radio_max <= radio_min) {
+        return 0.0f;
+    }
+    const float ret = (reversed ? -2.0f : 2.0f) * (((float)(radio_in - radio_min) / (float)(radio_max - radio_min)) - 0.5f);
+    return constrain_float(ret, -1.0f, 1.0f);
+}
+
 /*
   get percentage input from 0 to 100. This ignores the trim value.
  */
