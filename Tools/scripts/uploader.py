@@ -229,7 +229,8 @@ class uploader(object):
         # open the port, keep the default timeout short so we can poll quickly
         self.port = serial.Serial(portname, baudrate_bootloader, timeout=1.0)
         self.baudrate_bootloader = baudrate_bootloader
-        self.write_timeout = self.port.write_timeout
+        if hasattr(self.port, 'write_timeout'):
+            self.write_timeout = self.port.write_timeout
         if baudrate_bootloader_flash is not None:
             self.baudrate_bootloader_flash = baudrate_bootloader_flash
         else:
@@ -320,11 +321,13 @@ class uploader(object):
         # self.__send(uploader.NOP * (uploader.PROG_MULTI_MAX + 2))
         self.port.flushInput()
         # on WSL disconnected bluetooth ports will block trying to write
-        self.port.write_timeout = 0.1
+        if hasattr(self.port, 'write_timeout'):
+            self.port.write_timeout = 0.1
         self.__send(uploader.GET_SYNC +
                     uploader.EOC)
         # make subsequent writes blocking
-        self.port.write_timeout = self.write_timeout
+        if hasattr(self.port, 'write_timeout'):
+            self.port.write_timeout = self.write_timeout
         self.__getSync()
 
     def __trySync(self):
@@ -878,10 +881,23 @@ WARNING: You should uninstall ModemManager as it conflicts with any non-modem se
 """)
 
 def find_bootloader(up, port):
-    while (True):
-        up.open()
+    up.open()
 
-        # port is open, try talking to it
+    # port is open, try talking to it
+    try:
+        # identify the bootloader
+        up.identify()
+        print("Found board %x,%x bootloader rev %x on %s" % (up.board_type, up.board_rev, up.bl_rev, port))
+        return True
+
+    except Exception as e:
+        pass
+
+    if up.send_reboot():
+        # wait for the reboot, without we might run into Serial I/O Error 5
+        time.sleep(0.25)
+
+        # reboot sent try talking to it again
         try:
             # identify the bootloader
             up.identify()
@@ -891,19 +907,13 @@ def find_bootloader(up, port):
         except Exception as e:
             pass
 
-        reboot_sent = up.send_reboot()
+    # always close the port
+    up.close()
 
-        # wait for the reboot, without we might run into Serial I/O Error 5
-        time.sleep(0.25)
+    # wait for the close, without we might run into Serial I/O Error 6
+    time.sleep(0.3)
 
-        # always close the port
-        up.close()
-
-        # wait for the close, without we might run into Serial I/O Error 6
-        time.sleep(0.3)
-
-        if not reboot_sent:
-            return False
+    return False
 
 
 def main():
