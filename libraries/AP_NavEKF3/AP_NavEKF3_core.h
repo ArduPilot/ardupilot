@@ -1321,10 +1321,9 @@ private:
     // airspeed data when in fixed wing mode to estimate the quaternions that are used to rotate IMU data into a
     // Front, Right, Yaw frame of reference.
     struct EKFGSF_ahrs_struct{
-		Quaternion quat;		// quaternion describing rotation from body to earth frame and calculated using only IMU data.
 		Matrix3f R;				// matrix that rotates a vector from body to earth frame
 		Vector3f gyro_bias;		// gyro bias learned and used by the quaternion calculation
-		bool quat_initialised{false};	// true when calibrator quaternion has been aligned
+		bool aligned{false};	// true when AHRS has been aligned
 		float accel_FR[2] {};	// front-right acceleration vector in a horizontal plane (m/s/s)
 		float vel_NE[2] {};		// NE velocity vector from last GPS measurement (m/s)
 		bool fuse_gps = false;	// true when GPS should be fused on that frame
@@ -1338,13 +1337,16 @@ private:
 	bool EKFGSF_ahrs_turn_comp_enabled;	// true when compensation for centripetal acceleration in coordinated turns using true airspeed is being used.
 
     // Runs quaternion prediction for the selected AHRS using IMU (and optionally true airspeed) data
-	void EKFGSF_predictQuat(const uint8_t mdl_idx);
+	void EKFGSF_predictAHRS(const uint8_t mdl_idx);
+
+    // Applies a body frame delta angle to a body to earth frame rotation matrix using a small angle approximation
+    Matrix3f EKFGSF_updateRotMat(const Matrix3f &R, const Vector3f &g);
 
     // Initialises the tilt (roll and pitch) for all AHRS using IMU acceleration data
-	void EKFGSF_alignQuatTilt();
+	void EKFGSF_alignTilt();
 
     // Initialises the yaw angle for all AHRS using a uniform distribution of yaw angles between -180 and +180 deg
-	void EKFGSF_alignQuatYaw();
+	void EKFGSF_alignYaw();
 
     // The Following declarations are used by bank of EKF's that estimate yaw angle starting from a different yaw hypothesis for each filter.
 

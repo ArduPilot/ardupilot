@@ -27,16 +27,12 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
 
-void NavEKF3_core::EKFGSF_predictQuat(const uint8_t mdl_idx)
+void NavEKF3_core::EKFGSF_predictAHRS(const uint8_t mdl_idx)
 {
 	// Generate attitude solution using simple complementary filter for the selected model
 
 	// Calculate 'k' unit vector of earth frame rotated into body frame
-	const Vector3f k(
-		2.0f * (EKFGSF_ahrs[mdl_idx].quat[1] * EKFGSF_ahrs[mdl_idx].quat[3] - EKFGSF_ahrs[mdl_idx].quat[0] * EKFGSF_ahrs[mdl_idx].quat[2]),
-		2.0f * (EKFGSF_ahrs[mdl_idx].quat[2] * EKFGSF_ahrs[mdl_idx].quat[3] + EKFGSF_ahrs[mdl_idx].quat[0] * EKFGSF_ahrs[mdl_idx].quat[1]),
-		(EKFGSF_ahrs[mdl_idx].quat[0] * EKFGSF_ahrs[mdl_idx].quat[0] - EKFGSF_ahrs[mdl_idx].quat[1] * EKFGSF_ahrs[mdl_idx].quat[1] - EKFGSF_ahrs[mdl_idx].quat[2] * EKFGSF_ahrs[mdl_idx].quat[2] + EKFGSF_ahrs[mdl_idx].quat[3] * EKFGSF_ahrs[mdl_idx].quat[3])
-	);
+	const Vector3f k(EKFGSF_ahrs[mdl_idx].R[2][0] , EKFGSF_ahrs[mdl_idx].R[2][1] , EKFGSF_ahrs[mdl_idx].R[2][2]);
 
     // Calculate angular rate vector in rad/sec averaged across last sample interval
     Vector3f ang_rate_delayed_raw = imuDataDelayed.delAng / imuDataDelayed.delAngDT;
@@ -98,22 +94,13 @@ void NavEKF3_core::EKFGSF_predictQuat(const uint8_t mdl_idx)
 		}
 	}
 
-	// Calculate the corrected body frame rotation vector for the last sample interval
+	// Calculate the corrected body frame rotation vector for the last sample interval and apply to the rotation matrix
 	const Vector3f delta_angle = imuDataDelayed.delAng + (tilt_error_gyro_correction - EKFGSF_ahrs[mdl_idx].gyro_bias) * imuDataDelayed.delAngDT;
-
-	// Rotate quaternion from previous to current time index
-    Quaternion deltaQuat;
-    EKFGSF_ahrs[mdl_idx].quat.rotate(delta_angle);
-
-	// Normalize quaternion
-	EKFGSF_ahrs[mdl_idx].quat.normalize();
-
-	// Uodate body to earth frame rotation matrix
-    EKFGSF_ahrs[mdl_idx].quat.rotation_matrix(EKFGSF_ahrs[mdl_idx].R);
+    EKFGSF_ahrs[mdl_idx].R = EKFGSF_updateRotMat(EKFGSF_ahrs[mdl_idx].R, delta_angle);
 
 }
 
-void NavEKF3_core::EKFGSF_alignQuatTilt()
+void NavEKF3_core::EKFGSF_alignTilt()
 {
 	// Rotation matrix is constructed directly from acceleration measurement and will be the same for
 	// all models so only need to calculate it once. Assumptions are:
@@ -145,15 +132,13 @@ void NavEKF3_core::EKFGSF_alignQuatTilt()
         R[2][col] = down_in_bf[col];
     }
 
-	// Convert to quaternion
+	// record alignment
 	for (uint8_t mdl_idx = 0; mdl_idx < frontend->_EKFGSF_nmodels; mdl_idx++) {
-		EKFGSF_ahrs[mdl_idx].quat.from_rotation_matrix(R);
-		EKFGSF_ahrs[mdl_idx].quat.normalize();
-		EKFGSF_ahrs[mdl_idx].quat_initialised = true;
+		EKFGSF_ahrs[mdl_idx].aligned = true;
 	}
 }
 
-void NavEKF3_core::EKFGSF_alignQuatYaw()
+void NavEKF3_core::EKFGSF_alignYaw()
 {
 	// Align yaw angle for each model
 	for (uint8_t mdl_idx = 0; mdl_idx < frontend->_EKFGSF_nmodels; mdl_idx++) {
@@ -177,11 +162,6 @@ void NavEKF3_core::EKFGSF_alignQuatYaw()
             EKFGSF_ahrs[mdl_idx].R.from_euler312(euler312[0], euler312[1], euler312[2]);
 
 		}
-
-        // update the quaternion
-        EKFGSF_ahrs[mdl_idx].quat.from_rotation_matrix(EKFGSF_ahrs[mdl_idx].R);
-		EKFGSF_ahrs[mdl_idx].quat_initialised = true;
-
 	}
 }
 
@@ -189,7 +169,7 @@ void NavEKF3_core::EKFGSF_alignQuatYaw()
 void NavEKF3_core::EKFGSF_predict(const uint8_t mdl_idx)
 {
 	// generate an attitude reference using IMU data
-	EKFGSF_predictQuat(mdl_idx);
+	EKFGSF_predictAHRS(mdl_idx);
 
 	// we don't start running the EKF part of the algorithm until there are regular velocity observations
 	if (!EKFGSF_vel_fuse_started) {
@@ -400,11 +380,10 @@ void NavEKF3_core::EKFGSF_correct(const uint8_t mdl_idx)
 		}
 	}
 
-	// Apply yaw correction to AHRS quaternion sing the same rotation sequence as was used by the prediction step
+	// Apply yaw correction to AHRS sing the same rotation sequence as was used by the prediction step
 	// TODO - This is an  expensive process due to the number of trig operations so a method of doing it more efficiently,
 	// eg storing rotation matrix from the state prediction that doesn't include the yaw rotation should be investigated.
-	// This matrix could then be multiplied with the yaw rotation to obtain the updated R matrix from which the updated
-	// quaternion is calculated
+	// This matrix could then be multiplied with the yaw rotation to obtain the updated R matrix
 	if (EKFGSF_mdl[mdl_idx].use_312) {
 		// Calculate the 312 Tait-Bryan rotation sequence that rotates from earth to body frame
 		// We use a 312 sequence as an alternate when there is more pitch tilt than roll tilt
@@ -429,10 +408,6 @@ void NavEKF3_core::EKFGSF_correct(const uint8_t mdl_idx)
        EKFGSF_ahrs[mdl_idx].R.from_euler(roll, pitch, yaw);
 
 	}
-
-    // update the quaternion used by the AHRS prediction algorithm
-    EKFGSF_ahrs[mdl_idx].quat.from_rotation_matrix(EKFGSF_ahrs[mdl_idx].R);
-
 }
 
 void NavEKF3_core::EKFGSF_initialise()
@@ -480,7 +455,7 @@ void NavEKF3_core::EKFGSF_run()
 			  accel_norm_sq < upper_accel_limit * upper_accel_limit));
 		if (ok_to_align) {
 			EKFGSF_initialise();
-			EKFGSF_alignQuatTilt();
+			EKFGSF_alignTilt();
 			EKFGSF_ahrs_tilt_aligned = true;
 		}
 		return;
@@ -530,7 +505,7 @@ void NavEKF3_core::EKFGSF_run()
 				EKFGSF_mdl[mdl_idx].P[0][0] = sq(fmaxf(gpsSpdAccuracy, frontend->_gpsHorizVelNoise));
 				EKFGSF_mdl[mdl_idx].P[1][1] = EKFGSF_mdl[mdl_idx].P[0][0];
 			}
-			EKFGSF_alignQuatYaw();
+			EKFGSF_alignYaw();
 			EKFGSF_vel_fuse_started = true;
 		} else {
 			float total_w = 0.0f;
@@ -554,7 +529,7 @@ void NavEKF3_core::EKFGSF_run()
 		}
 	} else if (EKFGSF_vel_fuse_started && !inFlight) {
 		// We have landed so reset EKF-GSF states and wait to fly again
-		// Do not reset the AHRS quaternions as the AHRS continues to run when on ground
+		// Do not reset the AHRS as it continues to run when on ground
 		EKFGSF_initialise();
 		EKFGSF_vel_fuse_started = false;
 	}
@@ -653,7 +628,7 @@ void NavEKF3_core::EKFGSF_forceSymmetry(const uint8_t mdl_idx)
 	EKFGSF_mdl[mdl_idx].P[1][2] = EKFGSF_mdl[mdl_idx].P[2][1] = P12;
 }
 
-// Reset quaternion states using yaw from EKF-GSF
+// Reset states using yaw from EKF-GSF and velocity and position from GPS
 bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
 {
     if (EKFGSF_yaw_reset_count < frontend->EKFGSF_n_reset_max &&
@@ -742,4 +717,34 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
     
     return false;
 
+}
+
+// Apply a body frame delta angle to the body to earth frame rotation matrix using a small angle approximation
+Matrix3f NavEKF3_core::EKFGSF_updateRotMat(const Matrix3f &R, const Vector3f &g)
+{
+	Matrix3f ret = R;
+	ret[0][0] += R[0][1] * g[2] - R[0][2] * g[1];
+	ret[0][1] += R[0][2] * g[0] - R[0][0] * g[2];
+	ret[0][2] += R[0][0] * g[1] - R[0][1] * g[0];
+	ret[1][0] += R[1][1] * g[2] - R[1][2] * g[1];
+	ret[1][1] += R[1][2] * g[0] - R[1][0] * g[2];
+	ret[1][2] += R[1][0] * g[1] - R[1][1] * g[0],
+    ret[2][0] += R[2][1] * g[2] - R[2][2] * g[1];
+	ret[2][1] += R[2][2] * g[0] - R[2][0] * g[2];
+	ret[2][2] += R[2][0] * g[1] - R[2][1] * g[0];
+
+	// Renormalise rows
+	float rowLengthSq;
+	for (uint8_t r = 0; r < 3; r++) {
+		rowLengthSq = ret[r][0] * ret[r][0] + ret[r][1] * ret[r][1] + ret[r][2] * ret[r][2];
+		if (rowLengthSq > FLT_EPSILON) {
+			// Use linear approximation for inverse sqrt taking advantage of the row length being close to 1.0
+			const float rowLengthInv = 1.5f - 0.5f * rowLengthSq;
+			ret[r][0] *= rowLengthInv;
+			ret[r][1] *= rowLengthInv;
+			ret[r][2] *= rowLengthInv;
+		}
+    }
+
+	return ret;
 }
