@@ -467,6 +467,7 @@ void Plane::update_navigation()
             // we've reached the RTL point, see if we have a landing sequence
             if (mission.jump_to_landing_sequence()) {
                 // switch from RTL -> AUTO
+                mission.set_force_resume(true);
                 set_mode(mode_auto, ModeReason::UNKNOWN);
             }
 
@@ -479,6 +480,7 @@ void Plane::update_navigation()
             // Go directly to the landing sequence
             if (mission.jump_to_landing_sequence()) {
                 // switch from RTL -> AUTO
+                mission.set_force_resume(true);
                 set_mode(mode_auto, ModeReason::UNKNOWN);
             }
 
