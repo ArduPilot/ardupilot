@@ -25,7 +25,14 @@
 
 extern const AP_HAL::HAL& hal;
 
+#ifndef FFT_DEFAULT_WINDOW_SIZE
+// the H7 can cope with a longer length and these boards generally have BMI088 which needs a longer length
+#if defined(STM32H7)
+#define FFT_DEFAULT_WINDOW_SIZE     64
+#else
 #define FFT_DEFAULT_WINDOW_SIZE     32
+#endif
+#endif
 #define FFT_DEFAULT_WINDOW_OVERLAP  0.5f
 #define FFT_THR_REF_DEFAULT         0.35f   // the estimated throttle reference, 0 ~ 1
 #define FFT_SNR_DEFAULT            25.0f // a higher SNR is safer and this works quite well on a Pixracer
@@ -444,6 +451,12 @@ bool AP_GyroFFT::calibration_check()
         return false;
     }
 
+    // check for sane frequency resolution - for 1k backends with length 32 this will be 32Hz
+    if (_state->_bin_resolution > 50.0f) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "FFT: resolution is %.1fHz, increase length", _state->_bin_resolution);
+        return true; // a low resolution is not fatal
+    }
+
     // larger windows make the the self-test run too long, triggering the watchdog
     if (AP_Logger::get_singleton()->log_while_disarmed()
         || _window_size > FFT_DEFAULT_WINDOW_SIZE * 2) {
@@ -683,7 +696,7 @@ void AP_GyroFFT::update_ref_energy(uint16_t max_bin)
 float AP_GyroFFT::self_test_bin_frequencies()
 {
     if (_state->_window_size * sizeof(float) > hal.util->available_memory() / 2) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "AP_GyroFFT: unable to run self-test, required %u bytes", (unsigned int)(_state->_window_size * sizeof(float)));
+        gcs().send_text(MAV_SEVERITY_WARNING, "FFT: unable to run self-test, required %u bytes", (unsigned int)(_state->_window_size * sizeof(float)));
         return 0.0f;
     }
 
