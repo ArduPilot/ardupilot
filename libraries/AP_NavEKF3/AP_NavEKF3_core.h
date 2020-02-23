@@ -1355,7 +1355,6 @@ private:
 		float P[3][3];  // covariance matrix
 		float S[2][2];  // N,E velocity innovation variance (m/s)^2
 		float innov[2]; // Velocity N,E innovation (m/s)
-		bool use_312;   // true if a 312 Tait-Bryan rotation sequence should be used when converting between the AHRS quaternion and EKF yaw state
 	};
 	EKFGSF_EKF_struct EKFGSF_mdl[N_MODELS_EKFGSF];
     bool EKFGSF_vel_fuse_started = false;   // true when the bank of EKF's has started fusing GPS velocity data

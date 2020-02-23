@@ -180,11 +180,9 @@ void NavEKF3_core::EKFGSF_predict(const uint8_t mdl_idx)
 	if (fabsf(EKFGSF_ahrs[mdl_idx].R[2][0]) < fabsf(EKFGSF_ahrs[mdl_idx].R[2][1])) {
 		// use 321 Tait-Bryan rotation to define yaw state
 		EKFGSF_mdl[mdl_idx].X[2] = atan2f(EKFGSF_ahrs[mdl_idx].R[1][0], EKFGSF_ahrs[mdl_idx].R[0][0]);
-		EKFGSF_mdl[mdl_idx].use_312 = false;
 	} else {
 		// use 312 Tait-Bryan rotation to define yaw state
 		EKFGSF_mdl[mdl_idx].X[2] = atan2f(-EKFGSF_ahrs[mdl_idx].R[0][1], EKFGSF_ahrs[mdl_idx].R[1][1]); // first rotation (yaw)
-		EKFGSF_mdl[mdl_idx].use_312 = true;
 	}
 
 	// calculate delta velocity in a horizontal front-right frame
@@ -373,41 +371,28 @@ void NavEKF3_core::EKFGSF_correct(const uint8_t mdl_idx)
 	// force symmetry
 	EKFGSF_forceSymmetry(mdl_idx);
 
+	// Apply state corrections and capture change in yaw angle
+	const float yaw_prev = EKFGSF_mdl[mdl_idx].X[2];
 	for (uint8_t obs_index = 0; obs_index < 2; obs_index++) {
 		// apply the state corrections including the compression scale factor
 		for (unsigned row = 0; row < 3; row++) {
 			EKFGSF_mdl[mdl_idx].X[row] -= K[row][obs_index] * EKFGSF_mdl[mdl_idx].innov[obs_index] * innov_comp_scale_factor;
 		}
 	}
+	const float yaw_delta = EKFGSF_mdl[mdl_idx].X[2] - yaw_prev;
 
-	// Apply yaw correction to AHRS sing the same rotation sequence as was used by the prediction step
-	// TODO - This is an  expensive process due to the number of trig operations so a method of doing it more efficiently,
-	// eg storing rotation matrix from the state prediction that doesn't include the yaw rotation should be investigated.
-	// This matrix could then be multiplied with the yaw rotation to obtain the updated R matrix
-	if (EKFGSF_mdl[mdl_idx].use_312) {
-		// Calculate the 312 Tait-Bryan rotation sequence that rotates from earth to body frame
-		// We use a 312 sequence as an alternate when there is more pitch tilt than roll tilt
-		// to avoid gimbal lock
-		Vector3f euler312 =EKFGSF_ahrs[mdl_idx].R.to_euler312();
-		euler312[2] = EKFGSF_mdl[mdl_idx].X[2]; // first rotation is about Z and is taken from 3-state EKF
+	// apply the change in yaw angle to the AHRS taking advantage of sparseness in the yaw rotation matrix
+	const float cos_yaw = cosf(yaw_delta);
+	const float sin_yaw = sinf(yaw_delta);
+	float  R_prev[2][3];
+	memcpy(&R_prev, &EKFGSF_ahrs[mdl_idx].R, sizeof(R_prev)); // copy first two rows from 3x3
+	EKFGSF_ahrs[mdl_idx].R[0][0] = R_prev[0][0] * cos_yaw - R_prev[1][0] * sin_yaw;
+	EKFGSF_ahrs[mdl_idx].R[0][1] = R_prev[0][1] * cos_yaw - R_prev[1][1] * sin_yaw;
+	EKFGSF_ahrs[mdl_idx].R[0][2] = R_prev[0][2] * cos_yaw - R_prev[1][2] * sin_yaw;
+	EKFGSF_ahrs[mdl_idx].R[1][0] = R_prev[0][0] * sin_yaw + R_prev[1][0] * cos_yaw;
+	EKFGSF_ahrs[mdl_idx].R[1][1] = R_prev[0][1] * sin_yaw + R_prev[1][1] * cos_yaw;
+	EKFGSF_ahrs[mdl_idx].R[1][2] = R_prev[0][2] * sin_yaw + R_prev[1][2] * cos_yaw;
 
-		// Calculate the body to earth frame rotation matrix
-       EKFGSF_ahrs[mdl_idx].R.from_euler312(euler312[0], euler312[1], euler312[2]);
-
-
-	} else {
-		// using a 321 Tait-Bryan rotation to define yaw state
-		// take roll pitch yaw from AHRS prediction
-        float roll,pitch,yaw;
-        EKFGSF_ahrs[mdl_idx].R.to_euler(&roll, &pitch, &yaw);
-
-		// replace the yaw angle using the EKF state estimate
-		yaw = EKFGSF_mdl[mdl_idx].X[2];
-
-		// Calculate the body to earth frame rotation matrix
-       EKFGSF_ahrs[mdl_idx].R.from_euler(roll, pitch, yaw);
-
-	}
 }
 
 void NavEKF3_core::EKFGSF_initialise()
