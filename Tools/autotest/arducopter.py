@@ -467,7 +467,16 @@ class AutoTestCopter(AutoTest):
 
     # Tests all actions and logic behind the radio failsafe
     def fly_throttle_failsafe(self, side=60, timeout=360):
-        # Trigger and RC failure with the failsafe disabled. Verify no action taken.
+        self.start_subtest("If you haven't taken off yet RC failure should be instant disarm")
+        self.change_mode("STABILIZE")
+        self.set_parameter("DISARM_DELAY", 0)
+        self.arm_vehicle()
+        self.set_parameter("SIM_RC_FAIL", 1)
+        self.disarm_wait(timeout=1)
+        self.set_parameter("SIM_RC_FAIL", 0)
+        self.set_parameter("DISARM_DELAY", 10)
+
+        # Trigger an RC failure with the failsafe disabled. Verify no action taken.
         self.start_subtest("Radio failsafe disabled test: FS_THR_ENABLE=0 should take no failsafe action")
         self.set_parameter('FS_THR_ENABLE', 0)
         self.set_parameter('FS_OPTIONS', 0)
