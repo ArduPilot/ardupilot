@@ -131,6 +131,7 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
         bool reached_pre_flare_alt = pre_flare_alt > 0 && (height <= pre_flare_alt);
         bool reached_pre_flare_sec = pre_flare_sec > 0 && (height <= sink_rate * pre_flare_sec);
         if (reached_pre_flare_alt || reached_pre_flare_sec) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Preflare alt %.1fm %.1fs", height, height/sink_rate);
             type_slope_stage = SLOPE_STAGE_PREFLARE;
         }
     }
