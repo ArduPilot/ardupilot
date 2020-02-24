@@ -60,9 +60,9 @@ void Storage::_storage_open(void)
         }
     }
 
-    #if defined(HAL_RAMTRON_NO_FALLBACK) && HAL_RAMTRON_NO_FALLBACK
-        AP_HAL::panic("Unable to init RAMTRON storage");
-    #endif
+#if defined(HAL_RAMTRON_ALLOW_FALLBACK) && !HAL_RAMTRON_ALLOW_FALLBACK
+    AP_HAL::panic("Unable to init RAMTRON storage");
+#endif
 
 #endif // HAL_WITH_RAMTRON
 
