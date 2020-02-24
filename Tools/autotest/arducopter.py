@@ -4855,6 +4855,10 @@ class AutoTestCopter(AutoTest):
              "Fly Gyro FFT",
              self.fly_gyro_fft),
 
+            ("FixedYawCalibration",
+             "Test Fixed Yaw Calibration",
+             self.test_fixed_yaw_calibration),
+
             ("LogDownLoad",
              "Log download",
              lambda: self.log_download(
