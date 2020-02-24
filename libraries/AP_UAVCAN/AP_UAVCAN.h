@@ -170,7 +170,9 @@ private:
     uavcan::PoolAllocator<UAVCAN_NODE_POOL_SIZE, UAVCAN_NODE_POOL_BLOCK_SIZE, AP_UAVCAN::RaiiSynchronizer> _node_allocator;
 
     // UAVCAN parameters
-    AP_Int8 _uavcan_node;
+    AP_Int8 _uavcan_node; // if stored in a AP_Int8, the range is -127-127
+    AP_Int8 _dna_min_id;  //  1-126 is fine in this.
+    AP_Int8 _dna_max_id;  //  1-126 is fine in this.
     AP_Int32 _servo_bm;
     AP_Int32 _esc_bm;
     AP_Int16 _servo_rate_hz;

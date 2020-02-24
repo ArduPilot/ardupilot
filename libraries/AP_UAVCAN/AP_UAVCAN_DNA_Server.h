@@ -49,6 +49,10 @@ class AP_UAVCAN_DNA_Server
     uint8_t current_driver_index;
     uint32_t last_activity_ms;
 
+    // this servers min and max ids, 
+    uint8_t _this_dna_min_id = 1;
+    uint8_t _this_dna_max_id = 125;
+
     //Methods to handle and report Node IDs seen on the bus
     void addToSeenNodeMask(uint8_t node_id);
     bool isNodeSeen(uint8_t node_id);
@@ -90,6 +94,9 @@ public:
     // Do not allow copies
     AP_UAVCAN_DNA_Server(const AP_UAVCAN_DNA_Server &other) = delete;
     AP_UAVCAN_DNA_Server &operator=(const AP_UAVCAN_DNA_Server&) = delete;
+
+    // defines range of nodes assignable by DNA server before we start it.
+    bool set_min_max(uint8_t min, uint8_t max);
 
     //Initialises publisher and Server Record for specified uavcan driver
     bool init(AP_UAVCAN *ap_uavcan);

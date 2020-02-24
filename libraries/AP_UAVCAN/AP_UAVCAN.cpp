@@ -59,6 +59,7 @@
 extern const AP_HAL::HAL& hal;
 
 #define debug_uavcan(level_debug, fmt, args...) do { if ((level_debug) <= AP::can().get_debug_level_driver(_driver_index)) { printf(fmt, ##args); }} while (0)
+//#define debug_uavcan(level_debug, fmt, args...) do { gcs().send_text(MAV_SEVERITY_WARNING, fmt, ##args); } while (0)
 
 // Translation of all messages from UAVCAN structures into AP structures is done
 // in AP_UAVCAN and not in corresponding drivers.
@@ -95,6 +96,21 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
     // @Units: Hz
     // @User: Advanced
     AP_GROUPINFO("SRV_RT", 4, AP_UAVCAN, _servo_rate_hz, 50),
+
+
+    // these two are file to leave at their defaults unless u have multiple DNA devices on the same networtk, or you have multiple pixhawk/canbus combos and don't want client node/s to conflict.
+    // @Param: DYNAMIC NODE ALLOCATOR MIN
+    // @DisplayName: UAVCAN Dynamic Node Allocator MINIMUM NodeID
+    // @Description: UAVCAN Dynamic Node Allocator MINIMUM NodeID
+    // @Range: 1 254
+    // @User: Advanced
+    AP_GROUPINFO("AL_MIN", 5, AP_UAVCAN, _dna_min_id, 1),
+    // @Param: DYNAMIC NODE ALLOCATOR MAX
+    // @DisplayName: UAVCAN Dynamic Node Allocator MAXIMUM NodeID
+    // @Description: UAVCAN Dynamic Node Allocator MAXIMUM NodeID
+    // @Range: 1 254
+    // @User: Advanced
+    AP_GROUPINFO("AL_MAX", 6, AP_UAVCAN, _dna_max_id, 125), // aka MAX_NODE_ID
 
     AP_GROUPEND
 };
@@ -234,6 +250,7 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     }
 
     //Start Servers
+    AP::uavcan_dna_server().set_min_max(_dna_min_id,_dna_max_id); 
     if (!AP::uavcan_dna_server().init(this)) {
         debug_uavcan(1, "UAVCAN: Failed to start DNA Server\n\r");
         return;

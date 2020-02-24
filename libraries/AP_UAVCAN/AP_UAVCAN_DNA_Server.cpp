@@ -35,6 +35,7 @@ extern const AP_HAL::HAL& hal;
 #define MAX_NODE_ID    125
 
 #define debug_uavcan(fmt, args...) do { hal.console->printf(fmt, ##args); } while (0)
+#define debug_uavcan_mav(fmt, args...) do { gcs().send_text(MAV_SEVERITY_WARNING, fmt, ##args); } while (0) 
 
 //Callback Object Definitions
 UC_REGISTRY_BINDER(AllocationCb, uavcan::protocol::dynamic_node_id::Allocation);
@@ -213,6 +214,13 @@ uint8_t AP_UAVCAN_DNA_Server::getNodeIDForUniqueID(const uint8_t unique_id[], ui
             break;
         }
     }
+
+   // extra check, if the min and/or max have been changed since the original allocation, reset the storage and start over..
+    if ( (node_id != 255 ) && ((node_id < _this_dna_min_id) || (node_id > _this_dna_max_id)) ) {
+        freeNodeID(node_id);
+        node_id = 255;
+    }
+
     return node_id;
 }
 
@@ -232,6 +240,10 @@ bool AP_UAVCAN_DNA_Server::addNodeIDForUniqueID(uint8_t node_id, const uint8_t u
         return false;
     }
 
+    // this alerts the user, only the *first* time a CAN node is seen that's new, over mavlink.
+    char debugDNA[20];
+    snprintf(debugDNA, sizeof(debugDNA), "CAN-DNA added:%d",(int) node_id);
+    debug_uavcan_mav(debugDNA);
     setOccupationMask(node_id);
     return true;
 }
@@ -246,6 +258,15 @@ bool AP_UAVCAN_DNA_Server::isValidNodeDataAvailable(uint8_t node_id)
         return true;
     }
     return false;
+}
+
+// by default DNA server registers between 1-126, as 0 means dynamic, and 255 means error.
+bool AP_UAVCAN_DNA_Server::set_min_max(uint8_t min, uint8_t max)
+{
+    // just pass this data as-is from the param/s in the other object to the DNA server.
+    _this_dna_min_id = min; 
+    _this_dna_max_id = max;
+    return true;
 }
 
 /* Initialises Publishers for respective UAVCAN Instance
@@ -375,16 +396,23 @@ based on pseudo code provided in
 uavcan/protocol/dynamic_node_id/1.Allocation.uavcan */
 uint8_t AP_UAVCAN_DNA_Server::findFreeNodeID(uint8_t preferred)
 {
-    // Search up
-    uint8_t candidate = (preferred > 0) ? preferred : 125;
-    while (candidate <= 125) {
+    // force them into scope if they are bad...
+    if ( _this_dna_max_id > 125 ) { _this_dna_max_id = 125; }
+    if ( _this_dna_min_id < 1 ) { _this_dna_min_id = 1; }
+
+    uint8_t middle = (_this_dna_max_id-_this_dna_min_id)/2 + _this_dna_min_id;
+
+    // Search up from 1/2 way from candidate to the top...
+    uint8_t candidate = ((preferred >= _this_dna_min_id) && (preferred <= _this_dna_max_id ) ) ? preferred : middle;
+
+    while (candidate <= _this_dna_max_id) {
         if (!isNodeIDOccupied(candidate)) {
             return candidate;
         }
         candidate++;
     }
-    //Search down
-    candidate = (preferred > 0) ? preferred : 125;
+    //Search down, reset candidate first.
+    candidate = ((preferred >= _this_dna_min_id) && (preferred <= _this_dna_max_id ) ) ? preferred : middle;
     while (candidate > 0) {
         if (!isNodeIDOccupied(candidate)) {
             return candidate;
