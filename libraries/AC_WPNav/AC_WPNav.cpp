@@ -137,6 +137,7 @@ void AC_WPNav::wp_and_spline_init()
 
     // initialize the desired wp speed if not already done
     _wp_desired_speed_xy_cms = _wp_speed_cms;
+    _iswpspd_done_recalc = false;
 
     // initialise position controller speed and acceleration
     _pos_control.set_max_speed_xy(_wp_speed_cms);
@@ -156,6 +157,7 @@ void AC_WPNav::set_speed_xy(float speed_cms)
     // range check target speed
     if (speed_cms >= WPNAV_WP_SPEED_MIN) {
         _wp_desired_speed_xy_cms = speed_cms;
+        _iswpspd_done_recalc = false;
     }
 }
 
@@ -1064,6 +1066,10 @@ float AC_WPNav::get_slow_down_speed(float dist_from_dest_cm, float accel_cmss)
 /// wp_speed_update - calculates how to handle speed change requests
 void AC_WPNav::wp_speed_update(float dt)
 {
+	// directly return if speed update done
+	if (_iswpspd_done_recalc){
+		return;
+	}
     // return if speed has not changed
     float curr_max_speed_xy_cms = _pos_control.get_max_speed_xy();
     if (is_equal(_wp_desired_speed_xy_cms, curr_max_speed_xy_cms)) {
@@ -1075,12 +1081,14 @@ void AC_WPNav::wp_speed_update(float dt)
         curr_max_speed_xy_cms += _wp_accel_cmss * dt;
         if (curr_max_speed_xy_cms > _wp_desired_speed_xy_cms) {
             curr_max_speed_xy_cms = _wp_desired_speed_xy_cms;
+            _iswpspd_done_recalc = true;
         }
     } else if (_wp_desired_speed_xy_cms < curr_max_speed_xy_cms) {
         // slow down is requested so reduce speed within limit set by WPNAV_ACCEL
         curr_max_speed_xy_cms -= _wp_accel_cmss * dt;
         if (curr_max_speed_xy_cms < _wp_desired_speed_xy_cms) {
             curr_max_speed_xy_cms = _wp_desired_speed_xy_cms;
+            _iswpspd_done_recalc = true;
         }
     }
 
