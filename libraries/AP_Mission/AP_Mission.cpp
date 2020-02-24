@@ -68,7 +68,7 @@ void AP_Mission::start()
     _flags.state = MISSION_RUNNING;
 
     reset(); // reset mission to the first command, resets jump tracking
-    
+
     // advance to the first command
     if (!advance_current_nav_cmd()) {
         // on failure set mission complete
@@ -110,6 +110,24 @@ void AP_Mission::resume()
         // flying to a command that has been excluded from the current mission
         start();
         return;
+    }
+
+    // rewind the mission wp if the repeat distance has been set via MAV_CMD_DO_SET_RESUME_REPEAT_DIST
+    if (_repeat_dist > 0 && _wp_index_history[LAST_WP_PASSED] != AP_MISSION_CMD_INDEX_NONE) {
+        // if not already in a resume state calculate the position to rewind to
+        Mission_Command tmp_cmd;
+        if (!_flags.resuming_mission && calc_rewind_pos(tmp_cmd)) { 
+            _resume_cmd = tmp_cmd;
+        }
+
+        // resume mission to rewound position
+        if (_resume_cmd.index != AP_MISSION_CMD_INDEX_NONE && start_command(_resume_cmd)) {
+            _nav_cmd = _resume_cmd;
+            _flags.nav_cmd_loaded = true;
+            // set flag to prevent history being re-written
+            _flags.resuming_mission = true;
+            return;
+        }
     }
 
     // restart active navigation command. We run these on resume()
@@ -184,6 +202,7 @@ void AP_Mission::reset()
     _prev_nav_cmd_wp_index = AP_MISSION_CMD_INDEX_NONE;
     _prev_nav_cmd_id       = AP_MISSION_CMD_ID_NONE;
     init_jump_tracking();
+    reset_wp_history();
 }
 
 /// clear - clears out mission
@@ -225,6 +244,8 @@ void AP_Mission::update()
     if (_flags.state != MISSION_RUNNING || _cmd_total == 0) {
         return;
     }
+
+    update_exit_position();
 
     // save persistent waypoint_num for watchdog restore
     hal.util->persistent_data.waypoint_num = _nav_cmd.index;
@@ -276,6 +297,7 @@ bool AP_Mission::verify_command(const Mission_Command& cmd)
     case MAV_CMD_DO_DIGICAM_CONTROL:
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
     case MAV_CMD_DO_PARACHUTE:
+    case MAV_CMD_DO_SET_RESUME_REPEAT_DIST:
         return true;
     default:
         return _cmd_verify_fn(cmd);
@@ -305,6 +327,8 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
         return start_command_camera(cmd);
     case MAV_CMD_DO_PARACHUTE:
         return start_command_parachute(cmd);
+    case MAV_CMD_DO_SET_RESUME_REPEAT_DIST:
+        return command_do_set_repeat_dist(cmd);
     default:
         return _cmd_start_fn(cmd);
     }
@@ -396,12 +420,17 @@ int32_t AP_Mission::get_next_ground_course_cd(int32_t default_angle)
 }
 
 // set_current_cmd - jumps to command specified by index
-bool AP_Mission::set_current_cmd(uint16_t index)
+bool AP_Mission::set_current_cmd(uint16_t index, bool rewind)
 {
     // read command to check for DO_LAND_START
     Mission_Command cmd;
     if (!read_cmd_from_storage(index, cmd) || (cmd.id != MAV_CMD_DO_LAND_START)) {
         _flags.in_landing_sequence = false;
+    }
+
+    // mission command has been set and not as rewind command, don't track history.
+    if (!rewind) {
+        reset_wp_history();
     }
 
     // sanity check index and that we have a mission
@@ -985,6 +1014,10 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.winch.release_rate = packet.param4; // release rate in meters/second
         break;
 
+    case MAV_CMD_DO_SET_RESUME_REPEAT_DIST:
+        cmd.p1 = packet.param1; // Resume repeat distance (m)
+        break;
+
     default:
         // unrecognised command
         return MAV_MISSION_UNSUPPORTED;
@@ -1420,6 +1453,10 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param4 = cmd.content.winch.release_rate;     // release rate in meters/second
         break;
 
+    case MAV_CMD_DO_SET_RESUME_REPEAT_DIST:
+        packet.param1 = cmd.p1; // Resume repeat distance (m)
+        break;
+
     default:
         // unrecognised command
         return false;
@@ -1534,6 +1571,22 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
             if (start_command(_nav_cmd)) {
                 _flags.nav_cmd_loaded = true;
             }
+            // save a loaded wp index in history array for when _repeat_dist is set via MAV_CMD_DO_SET_RESUME_REPEAT_DIST
+            // and prevent history being re-written until vehicle returns to interupted position
+            if(_repeat_dist > 0 && !_flags.resuming_mission && _nav_cmd.index != AP_MISSION_CMD_INDEX_NONE && !(_nav_cmd.content.location.lat == 0 && _nav_cmd.content.location.lng == 0)) {
+                // update mission history. last index position is always the most recent wp loaded.
+                for (uint8_t i=0; i<AP_MISSION_MAX_WP_HISTORY-1; i++) {
+                    _wp_index_history[i] = _wp_index_history[i+1];
+                }
+                _wp_index_history[AP_MISSION_MAX_WP_HISTORY-1] = _nav_cmd.index;
+            }
+            // check if the vehicle is resuming and has returned to where it was interupted
+            if (_flags.resuming_mission && _nav_cmd.index == _wp_index_history[AP_MISSION_MAX_WP_HISTORY-1]) {
+                // vehicle has resumed previous position
+                gcs().send_text(MAV_SEVERITY_INFO, "Mission: Returned to interupted WP");
+                _flags.resuming_mission = false;
+            }
+
         }else{
             // set current do command and start it (if not already set)
             if (!_flags.do_cmd_loaded) {
@@ -1645,7 +1698,7 @@ bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool i
                 int16_t jump_times_run = get_jump_times_run(temp_cmd);
                 if (jump_times_run < temp_cmd.content.jump.num_times) {
                     // update the record of the number of times run
-                    if (increment_jump_num_times_if_found) {
+                    if (increment_jump_num_times_if_found && !_flags.resuming_mission) {
                         increment_jump_times_run(temp_cmd, send_gcs_msg);
                     }
                     // continue searching from jump target
@@ -2064,6 +2117,8 @@ const char *AP_Mission::Mission_Command::type() const {
         return "SetROI";
     case MAV_CMD_DO_SET_REVERSE:
         return "SetReverse";
+    case MAV_CMD_DO_SET_RESUME_REPEAT_DIST:
+        return "SetRepeatDist";
     case MAV_CMD_DO_GUIDED_LIMITS:
         return "GuidedLimits";
     case MAV_CMD_NAV_TAKEOFF:
@@ -2123,6 +2178,114 @@ bool AP_Mission::contains_item(MAV_CMD command) const
         }
     }
     return false;
+}
+
+// reset the mission history to prevent recalling previous mission histories after a mission restart.
+void AP_Mission::reset_wp_history(void)
+{
+    for (uint8_t i = 0; i<AP_MISSION_MAX_WP_HISTORY; i++) {
+        _wp_index_history[i] = AP_MISSION_CMD_INDEX_NONE;
+    }
+    _resume_cmd.index = AP_MISSION_CMD_INDEX_NONE;
+    _flags.resuming_mission = false;
+    _repeat_dist = 0;
+}
+
+// store the latest reported position incase of mission exit and rewind resume
+void AP_Mission::update_exit_position(void)
+{
+    if (!AP::ahrs().get_position(_exit_position)) {
+        _exit_position.lat = 0;
+        _exit_position.lng = 0;
+    }
+}
+
+// calculate the location of the _resume_cmd wp and set as current
+bool AP_Mission::calc_rewind_pos(Mission_Command& rewind_cmd)
+{
+    // check for a recent history
+    if (_wp_index_history[LAST_WP_PASSED] == AP_MISSION_CMD_INDEX_NONE) {
+        // no saved history so can't rewind
+        return false;
+    }
+
+    // check that we have a valid exit position
+    if (_exit_position.lat == 0 && _exit_position.lng == 0) {
+        return false;
+    }
+
+    Mission_Command temp_cmd;
+    float rewind_distance = _repeat_dist; //(m)
+    uint16_t resume_index;
+    Location prev_loc = _exit_position;
+
+    for (int8_t i = (LAST_WP_PASSED); i>=0; i--) {
+
+        // to get this far there has to be at least one 'passed wp' stored in history.  This is to check incase 
+        // of history array no being completely filled with valid waypoints upon resume.
+        if (_wp_index_history[i] == AP_MISSION_CMD_INDEX_NONE) {
+            // no more stored history
+            resume_index = i+1;
+            break;
+        }
+
+        if (!read_cmd_from_storage(_wp_index_history[i], temp_cmd)) {
+            // if read from storage failed then don't use rewind
+            return false;
+        }
+
+        // calculate distance
+        float disttemp = prev_loc.get_distance(temp_cmd.content.location); //(m)
+        rewind_distance -= disttemp;
+        resume_index = i;
+
+        if (rewind_distance <= 0.0f) {
+            // history rewound enough distance to meet _repeat_dist requirement
+            rewind_cmd = temp_cmd;
+            break;
+        }
+
+        // store wp location as previous
+        prev_loc = temp_cmd.content.location;
+    }
+
+    if (rewind_distance > 0.0f) {
+        // then the history array was rewound all of the way without finding a wp distance > _repeat_dist distance.
+        // the last read temp_cmd will be the furthest cmd back in the history array so resume to that.
+        rewind_cmd = temp_cmd;
+        return true;
+    }
+
+    // if we have got this far the desired rewind distance lies between two waypoints stored in history array.
+    // calculate the location for the mission to resume
+
+    // the last wp read from storage is the wp that is before the resume wp in the mission order
+    Location passed_wp_loc = temp_cmd.content.location;
+
+    // fetch next destination wp
+    if (!read_cmd_from_storage(_wp_index_history[resume_index+1], temp_cmd)) {
+        // if read from storage failed then don't use rewind
+        return false;
+    }
+
+    // determine the length of the mission leg that the resume wp lies in
+    float leg_length = passed_wp_loc.get_distance(temp_cmd.content.location); //(m)
+
+    // calculate the percentage along the leg that resume wp will be positioned
+    float leg_percent = fabsf(rewind_distance)/leg_length;
+
+    // calculate difference vector of mission leg
+    Vector3f dist_vec = passed_wp_loc.get_distance_NED(temp_cmd.content.location);
+
+    // calculate the resume wp position
+    rewind_cmd.content.location.offset(dist_vec.x * leg_percent, dist_vec.y * leg_percent);
+    rewind_cmd.content.location.alt -= dist_vec.z * leg_percent * 100; //(cm)
+
+    // The rewind_cmd.index has the index of the 'last passed wp' from the history array.  This ensures that the mission order
+    // continues as planned without further intervention.  The resume wp is not written to memory so will not perminantely change the mission.
+
+    // if we got this far then mission rewind position was successfully calculated
+    return true;
 }
 
 // singleton instance
