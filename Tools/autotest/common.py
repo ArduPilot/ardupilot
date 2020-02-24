@@ -2031,6 +2031,21 @@ class AutoTest(ABC):
                                                              m.result))
                 break
 
+    def verify_parameter_values(self, parameter_stuff):
+        bad = ""
+        for param in parameter_stuff:
+            fetched_value = self.get_parameter(param)
+            wanted_value = parameter_stuff[param]
+            max_delta = 0.0
+            if type(wanted_value) == tuple:
+                max_delta = wanted_value[1]
+                wanted_value = wanted_value[0]
+            if abs(fetched_value - wanted_value) > max_delta:
+                bad += "%s=%f (want=%f)    " % (param, fetched_value, wanted_value)
+        if len(bad):
+            raise NotAchievedException("Bad parameter values: %s" %
+                                       (bad,))
+
     #################################################
     # UTILITIES
     #################################################
@@ -3281,6 +3296,107 @@ class AutoTest(ABC):
             # tracker starts armed...
             self.disarm_vehicle(force=True)
         self.reboot_sitl()
+
+    def test_fixed_yaw_calibration(self):
+        self.context_push()
+        ex = None
+        try:
+            wanted = {
+                "COMPASS_OFS_X": (100, 3.0),
+                "COMPASS_OFS_Y": (200, 3.0),
+                "COMPASS_OFS_Z": (300, 3.0),
+                "COMPASS_DIA_X": 1,
+                "COMPASS_DIA_Y": 1,
+                "COMPASS_DIA_Z": 1,
+                "COMPASS_ODI_X": 0,
+                "COMPASS_ODI_Y": 0,
+                "COMPASS_ODI_Z": 0,
+
+                "COMPASS_OFS2_X": (100, 3.0),
+                "COMPASS_OFS2_Y": (200, 3.0),
+                "COMPASS_OFS2_Z": (300, 3.0),
+                "COMPASS_DIA2_X": 1,
+                "COMPASS_DIA2_Y": 1,
+                "COMPASS_DIA2_Z": 1,
+                "COMPASS_ODI2_X": 0,
+                "COMPASS_ODI2_Y": 0,
+                "COMPASS_ODI2_Z": 0,
+
+                "COMPASS_OFS3_X": (100, 3.0),
+                "COMPASS_OFS3_Y": (200, 3.0),
+                "COMPASS_OFS3_Z": (300, 3.0),
+                "COMPASS_DIA3_X": 1,
+                "COMPASS_DIA3_Y": 1,
+                "COMPASS_DIA3_Z": 1,
+                "COMPASS_ODI2_X": 0,
+                "COMPASS_ODI2_Y": 0,
+                "COMPASS_ODI2_Z": 0,
+            }
+            self.set_parameter("SIM_MAG_OFS_X", 100)
+            self.set_parameter("SIM_MAG_OFS_Y", 200)
+            self.set_parameter("SIM_MAG_OFS_Z", 300)
+
+            # set to some sensible-ish initial values.  If your initial
+            # offsets are way, way off you can get some very odd effects.
+            for param in wanted:
+                value = 0.0
+                if "DIA" in param:
+                    value = 1.001
+                elif "ODI" in param:
+                    value = 0.001
+                self.set_parameter(param, value)
+            # zero the parameters:
+            self.progress("zeroing parameters")
+            self.drain_mav()  # these two lines are odd....
+            self.get_sim_time()
+            self.run_cmd(mavutil.mavlink.MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS,
+                         2, # param1 (compass0)
+                         0, # param2
+                         0, # param3
+                         0, # param4
+                         0, # param5
+                         0, # param6
+                         0 # param7
+            )
+            self.progress("zeroed parameters")
+            # ensure these are all zero; note that we don't set the DIA or
+            # ODI in SET_SENSOR_OFFSETS...
+            for axis in "X", "Y", "Z":
+                name = "COMPASS_OFS_%s" % axis
+                value = self.get_parameter(name)
+                if value != 0.0:
+                    raise NotAchievedException("Failed to zero %s; got %f" %
+                                               (name, value))
+            self.change_mode('LOITER')
+            self.wait_ready_to_arm() # so we definitely have position
+            ss = self.mav.recv_match(type='SIMSTATE', blocking=True, timeout=1)
+            if ss is None:
+                raise NotAchievedException("Did not get SIMSTATE")
+            self.progress("Got SIMSTATE (%s)" % str(ss))
+
+            self.run_cmd(mavutil.mavlink.MAV_CMD_FIXED_MAG_CAL_YAW,
+                         math.degrees(ss.yaw), # param1
+                         0, # param2
+                         0, # param3
+                         0, # param4
+
+                         0, # param5
+                         0, # param6
+                         0 # param7
+                         )
+            self.verify_parameter_values(wanted)
+
+            self.progress("Rebooting and making sure we could arm with these values")
+            self.reboot_sitl()
+            self.wait_ready_to_arm(timeout=60)
+
+        except Exception as e:
+            ex = e
+
+        self.context_pop()
+
+        if ex is not None:
+            raise ex
 
     def test_dataflash_over_mavlink(self):
         self.context_push()
