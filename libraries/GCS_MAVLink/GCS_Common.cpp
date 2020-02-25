@@ -1389,6 +1389,15 @@ void GCS_MAVLINK::update_send()
     }
 #endif
 
+#ifdef AP_SCRIPTING_ENABLED
+    {
+        AP_Scripting *scripting = AP_Scripting::get_singleton();
+        if (scripting != nullptr) {
+            scripting->send_message(chan);
+        }
+    }
+#endif // AP_SCRIPTING_ENABLED
+
     if (!deferred_messages_initialised) {
         initialise_message_intervals_from_streamrates();
 #if HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED
@@ -1697,6 +1706,14 @@ void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
         handle_mount_message(msg);
 #endif
     }
+#if AP_SCRIPTING_ENABLED
+    {
+        AP_Scripting *scripting = AP_Scripting::get_singleton();
+        if (scripting != nullptr) {
+            scripting->handle_message(msg, chan);
+        }
+    }
+#endif // AP_SCRIPTING_ENABLED
     if (!accept_packet(status, msg)) {
         // e.g. enforce-sysid says we shouldn't look at this packet
         return;
