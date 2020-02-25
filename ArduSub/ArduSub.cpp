@@ -36,7 +36,6 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     SCHED_TASK(three_hz_loop,          3,     75),
     SCHED_TASK(update_turn_counter,   10,     50),
     SCHED_TASK_CLASS(AP_Baro,             &sub.barometer,    accumulate,          50,  90),
-    SCHED_TASK_CLASS(AP_Notify,           &sub.notify,       update,              50,  90),
     SCHED_TASK(one_hz_loop,            1,    100),
     SCHED_TASK_CLASS(GCS,                 (GCS*)&sub._gcs,   update_receive,     400, 180),
     SCHED_TASK_CLASS(GCS,                 (GCS*)&sub._gcs,   update_send,        400, 550),
