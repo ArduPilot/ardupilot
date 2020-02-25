@@ -130,10 +130,6 @@ void Rover::init_ardupilot()
 
     // flag that initialisation has completed
     initialised = true;
-
-#if AP_PARAM_KEY_DUMP
-    AP_Param::show_all(hal.console, true);
-#endif
 }
 
 //*********************************************************************************
