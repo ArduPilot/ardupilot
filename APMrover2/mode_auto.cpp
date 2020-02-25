@@ -6,7 +6,7 @@
 bool ModeAuto::_enter()
 {
     // fail to enter auto if no mission commands
-    if (mission.num_commands() <= 1) {
+    if (mission.num_commands() <= 1 && hal.util->get_soft_armed()) {
         gcs().send_text(MAV_SEVERITY_NOTICE, "No Mission. Can't set AUTO.");
         return false;
     }
