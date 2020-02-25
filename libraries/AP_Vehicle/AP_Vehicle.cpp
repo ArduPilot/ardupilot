@@ -79,6 +79,7 @@ void AP_Vehicle::setup()
 
     // init_ardupilot is where the vehicle does most of its initialisation.
     init_ardupilot();
+
     // gyro FFT needs to be initialized really late
 #if HAL_GYROFFT_ENABLED
     gyro_fft.init(AP::scheduler().get_loop_period_us());
@@ -88,6 +89,10 @@ void AP_Vehicle::setup()
 #endif
 #if HAL_HOTT_TELEM_ENABLED
     hott_telem.init();
+#endif
+
+#if AP_PARAM_KEY_DUMP
+    AP_Param::show_all(hal.console, true);
 #endif
 }
 
