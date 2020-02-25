@@ -668,22 +668,6 @@ void NavEKF2_core::UpdateStrapdownEquationsNED()
     Vector3f delVelNav;  // delta velocity vector in earth axes
     delVelNav  = prevTnb.mul_transpose(delVelCorrected);
     delVelNav.z += GRAVITY_MSS*imuDataDelayed.delVelDT;
-    
-    // calculate the rate of change of velocity (used as corrected raw acel)
-    delNavDownSampled +=  delVelNav;
-    delVelDTDownSampled += imuDataNew.delVelDT;
-
-    if (delVelDTDownSampled > 0.010f){
-        //Compute average accel on last 12ms
-        velDotNEDCurrent = delNavDownSampled/delVelDTDownSampled;
-
-        // apply a first order lowpass filter: dt = 0.012s fc = 25Hz alpha = dt / (dt + 1/(2*pi*fc)), alpha = 0.6534
-        velDotNEDCurrentFilt = velDotNEDCurrent * 0.6534f + velDotNEDCurrentFilt * 0.3466f;
-
-        //Reset buffer
-        delNavDownSampled.zero();
-        delVelDTDownSampled = 0.0f;
-    }
 
     // calculate the body to nav cosine matrix
     stateStruct.quat.inverse().rotation_matrix(prevTnb);
@@ -763,6 +747,22 @@ void NavEKF2_core::calcOutputStates()
     // transform body delta velocities to delta velocities in the nav frame
     Vector3f delVelNav  = Tbn_temp*delVelNewCorrected;
     delVelNav.z += GRAVITY_MSS*imuDataNew.delVelDT;
+
+    // calculate the rate of change of velocity (used as corrected raw acel)
+    delNavDownSampled +=  delVelNav;
+    delVelDTDownSampled += imuDataNew.delVelDT;
+
+    if (delVelDTDownSampled > 0.010f){
+        //Compute average accel on last 12ms
+        velDotNEDCurrent = delNavDownSampled/delVelDTDownSampled;
+
+        // apply a first order lowpass filter: dt = 0.012s fc = 25Hz alpha = dt / (dt + 1/(2*pi*fc)), alpha = 0.6534
+        velDotNEDCurrentFilt = velDotNEDCurrent * 0.6534f + velDotNEDCurrentFilt * 0.3466f;
+
+        //Reset buffer
+        delNavDownSampled.zero();
+        delVelDTDownSampled = 0.0f;
+    }
 
     // save velocity for use in trapezoidal integration for position calcuation
     Vector3f lastVelocity = outputDataNew.velocity;
