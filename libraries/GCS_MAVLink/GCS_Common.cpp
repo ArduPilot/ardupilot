@@ -1882,8 +1882,18 @@ void GCS::update_send()
     if (_missionitemprotocol_fence != nullptr) {
         _missionitemprotocol_fence->update();
     }
-    for (uint8_t i=0; i<num_gcs(); i++) {
+    // round-robin the GCS_MAVLINK backend that gets to go first so
+    // one backend doesn't monopolise all of the time allowed for sending
+    // messages
+    for (uint8_t i=first_backend_to_send; i<num_gcs(); i++) {
         chan(i)->update_send();
+    }
+    for (uint8_t i=0; i<first_backend_to_send; i++) {
+        chan(i)->update_send();
+    }
+    first_backend_to_send++;
+    if (first_backend_to_send >= num_gcs()) {
+        first_backend_to_send = 0;
     }
     WITH_SEMAPHORE(_statustext_sem);
     service_statustext();

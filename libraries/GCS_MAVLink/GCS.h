@@ -932,6 +932,12 @@ private:
 
     // timer called to implement pass-thru
     void passthru_timer();
+
+    // this contains the index of the GCS_MAVLINK backend we will
+    // first call update_send on.  It is incremented each time
+    // GCS::update_send is called so we don't starve later links of
+    // time in which they are permitted to send messages.
+    uint8_t first_backend_to_send;
 };
 
 GCS &gcs();
