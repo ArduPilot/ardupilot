@@ -194,5 +194,11 @@ bool AP_Arming_Rover::mode_checks(bool report)
         check_failed(report, "Mode not armable");
         return false;
     }
+
+    //check if mission commands exists before arming in mode auto
+    if (rover.control_mode == &rover.mode_auto && rover.mode_auto.mission.num_commands() <= 1) {
+        check_failed(report, "Mode AUTO not armable without mission");
+        return false;
+    }
     return true;
 }
