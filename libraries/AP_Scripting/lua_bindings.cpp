@@ -11,6 +11,8 @@
 #include <AP_Scripting/AP_Scripting.h>
 #include <string.h>
 
+extern const AP_HAL::HAL& hal;
+
 extern "C" {
 #include "lua/src/lmem.h"
 }
@@ -33,6 +35,108 @@ int lua_micros(lua_State *L) {
 
     new_uint32_t(L);
     *check_uint32_t(L, -1) = AP_HAL::micros();
+
+    return 1;
+}
+static int lua_mavlink_receive(lua_State *L) {
+    check_arguments(L, 0, "receive");
+
+    struct AP_Scripting::mavlink_msg msg;
+    ObjectBuffer<struct AP_Scripting::mavlink_msg> *input = AP::scripting()->mavlink_data.input;
+
+    if (input == nullptr) {
+        luaL_error(L, "Never subscribed to a message");
+    }
+
+    if (input->pop(msg)) {
+        luaL_Buffer b;
+        luaL_buffinit(L, &b);
+        luaL_addlstring(&b, (char *)&msg.msg, sizeof(msg.msg));
+        luaL_pushresult(&b);
+        lua_pushinteger(L, msg.chan);
+        return 2;
+    } else {
+        // no MAVLink to handle, just return no results
+        return 0;
+    }
+}
+
+static int lua_mavlink_register_msgid(lua_State *L) {
+    check_arguments(L, 1, "register_msgid");
+    luaL_checkstack(L, 1, "Out of stack");
+    
+    const int msgid = luaL_checkinteger(L, -1);
+    luaL_argcheck(L, ((msgid >= 0) && (msgid < (1 << 24))), 1, "msgid out of range");
+
+    struct AP_Scripting::mavlink &data = AP::scripting()->mavlink_data;
+
+    if (data.input == nullptr) {
+        { // WITH_SEMAPHORE cannot be used in the same scope as a luaL_error (or any thing else that jumps away)
+            WITH_SEMAPHORE(data.sem);
+            data.input = new ObjectBuffer<struct AP_Scripting::mavlink_msg>(AP_Scripting::mavlink_input_queue_size);
+        }
+        if (data.input == nullptr) {
+            return luaL_error(L, "Unable to allocate MAVLink buffer");
+        }
+    }
+
+    // check that we aren't currently watching this ID
+    for (int id : data.accept_msg_ids) {
+        if (id == msgid) {
+            lua_pushboolean(L, false);
+            return 1;
+        }
+    }
+
+    int i = 0;
+    for (i = 0; i < (int)ARRAY_SIZE(data.accept_msg_ids); i++) {
+        if (data.accept_msg_ids[i] == -1) {
+            break;
+        }
+    }
+
+    if (i >= (int)ARRAY_SIZE(data.accept_msg_ids)) {
+        return luaL_error(L, "Out of MAVLink ID's to monitor");
+    }
+
+    {
+        WITH_SEMAPHORE(data.sem);
+        data.accept_msg_ids[i] = msgid;
+    }
+
+    lua_pushboolean(L, true);
+    return 1;
+}
+
+static int lua_mavlink_send(lua_State *L) {
+    check_arguments(L, 3, "send");
+    
+    const mavlink_channel_t chan = (mavlink_channel_t)luaL_checkinteger(L, 1);
+    luaL_argcheck(L, (chan < MAVLINK_COMM_NUM_BUFFERS), 1, "channel out of range");
+
+    const int msgid = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((msgid >= 0) && (msgid < (1 << 24))), 2, "msgid out of range");
+
+    const char *packet = luaL_checkstring(L, 3);
+
+    struct AP_Scripting::mavlink &mavlink_data = AP::scripting()->mavlink_data;
+
+    if (mavlink_data.output == nullptr) {
+        mavlink_data.output = new ObjectBuffer<struct AP_Scripting::mavlink_output>(AP_Scripting::mavlink_output_queue_size);
+        if (mavlink_data.output == nullptr) {
+            return luaL_error(L, "Unable to allocate MAVLink output queue");
+        }
+    }
+
+    AP_Scripting::mavlink_output data {};
+    memcpy(data.data, packet, MIN(sizeof(data.data), lua_rawlen(L, 3)));
+    data.chan = chan;
+    data.msgid = msgid;
+    if (mavlink_data.output->push(data)) {
+        lua_pushboolean(L, true);
+    } else {
+        lua_pushboolean(L, false);
+    }
 
     return 1;
 }
@@ -406,6 +510,25 @@ int lua_get_i2c_device(lua_State *L) {
     scripting->num_i2c_devices++;
 
     return 1;
+}
+static const luaL_Reg mavlink_functions[] =
+{
+    {"receive", lua_mavlink_receive},
+    {"register_msgid", lua_mavlink_register_msgid},
+    {"send", lua_mavlink_send},
+    {NULL, NULL}
+};
+
+void load_lua_bindings(lua_State *L) {
+    lua_pushstring(L, "logger");
+    luaL_newlib(L, AP_Logger_functions);
+    lua_settable(L, -3);
+
+    lua_pushstring(L, "mavlink");
+    luaL_newlib(L, mavlink_functions);
+    lua_settable(L, -3);
+
+    luaL_setfuncs(L, global_functions, 0);
 }
 
 int AP_HAL__I2CDevice_read_registers(lua_State *L) {
