@@ -229,14 +229,13 @@ protected:
 
 private:
 
-    static AP_Vehicle *_singleton;
-
+    // delay() callback that processing MAVLink packets
     static void scheduler_delay_callback();
 
-    // true if vehicle is probably flying
-    bool likely_flying;
-    // time when likely_flying last went true
-    uint32_t _last_flying_ms;
+    bool likely_flying;         // true if vehicle is probably flying
+    uint32_t _last_flying_ms;   // time when likely_flying last went true
+
+    static AP_Vehicle *_singleton;
 };
 
 namespace AP {
