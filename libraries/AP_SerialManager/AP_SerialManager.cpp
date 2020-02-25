@@ -346,13 +346,13 @@ void AP_SerialManager::init()
     state[4].uart = hal.uartE;  // serial4, uartE, normally 2nd GPS
 #endif
 #if SERIALMANAGER_NUM_PORTS > 5
-    state[5].uart = hal.uartF;  // serial5
+    state[5].uart = hal.uartF;  // serial5, uartF, User Configurable
 #endif
 #if SERIALMANAGER_NUM_PORTS > 6
-    state[6].uart = hal.uartG;  // serial6
+    state[6].uart = hal.uartG;  // serial6, uartG, User Configurable
 #endif
 #if SERIALMANAGER_NUM_PORTS > 7
-    state[7].uart = hal.uartH;  // serial7
+    state[7].uart = hal.uartH;  // serial7, uartH, User Configurable
 #endif
 
 #ifdef HAL_OTG1_CONFIG
