@@ -84,7 +84,6 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(fence_check,            10,    200),
     SCHED_TASK(ekf_check,              10,    100),
     SCHED_TASK_CLASS(ModeSmartRTL,        &rover.mode_smartrtl,    save_position,   3,  200),
-    SCHED_TASK_CLASS(AP_Notify,           &rover.notify,           update,         50,  300),
     SCHED_TASK(one_second_loop,         1,   1500),
 #if HAL_SPRAYER_ENABLED
     SCHED_TASK_CLASS(AC_Sprayer,          &rover.g2.sprayer,           update,      3,  90),
