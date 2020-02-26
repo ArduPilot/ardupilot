@@ -42,9 +42,11 @@ bool AP_Airspeed_Synthetic::init()
 // read the airspeed sensor
 bool AP_Airspeed_Synthetic::get_differential_pressure(float &pressure)
 {
+    const AP_GPS &gps = AP::gps();
     AP_AHRS &ahrs = AP::ahrs();
     Vector3f gnd_speed;
-    if (!ahrs.get_velocity_NED(gnd_speed)) {
+    if (!ahrs.get_velocity_NED(gnd_speed) ||
+        gps.status() < AP_GPS::GPS_OK_FIX_3D) {
         return false;
     }
     float wind_direction_from=0, wind_speed_mps=0;
