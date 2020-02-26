@@ -317,6 +317,47 @@ void AC_WPNav::shift_wp_origin_to_current_pos()
     _pos_control.freeze_ff_z();
 }
 
+/// shifts the origin and destination horizontally to the current position
+///     used to reset the track when taking off without horizontal position control
+///     relies on set_wp_destination or set_wp_origin_and_destination having been called first
+void AC_WPNav::shift_wp_origin_and_destination_to_current_pos_xy()
+{
+    // get current and target locations
+    const Vector3f& curr_pos = _inav.get_position();
+
+    // shift origin and destination horizontally
+    _origin.x = curr_pos.x;
+    _origin.y = curr_pos.y;
+    _destination.x = curr_pos.x;
+    _destination.y = curr_pos.y;
+
+    // move pos controller target horizontally
+    _pos_control.set_xy_target(curr_pos.x, curr_pos.y);
+}
+
+/// shifts the origin and destination horizontally to the achievable stopping point
+///     used to reset the track when horizontal navigation is enabled after having been disabled (see Copter's wp_navalt_min)
+///     relies on set_wp_destination or set_wp_origin_and_destination having been called first
+void AC_WPNav::shift_wp_origin_and_destination_to_stopping_point_xy()
+{
+    // relax position control in xy axis
+    // removing velocity error also impacts stopping point calculation
+    _pos_control.relax_velocity_controller_xy();
+
+    // get current and target locations
+    Vector3f stopping_point;
+    get_wp_stopping_point_xy(stopping_point);
+
+    // shift origin and destination horizontally
+    _origin.x = stopping_point.x;
+    _origin.y = stopping_point.y;
+    _destination.x = stopping_point.x;
+    _destination.y = stopping_point.y;
+
+    // move pos controller target horizontally
+    _pos_control.set_xy_target(stopping_point.x, stopping_point.y);
+}
+
 /// get_wp_stopping_point_xy - returns vector to stopping point based on a horizontal position and velocity
 void AC_WPNav::get_wp_stopping_point_xy(Vector3f& stopping_point) const
 {
