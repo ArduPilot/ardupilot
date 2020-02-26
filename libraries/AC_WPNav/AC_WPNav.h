@@ -135,6 +135,16 @@ public:
     ///     relies on set_wp_destination or set_wp_origin_and_destination having been called first
     void shift_wp_origin_to_current_pos();
 
+    /// shifts the origin and destination horizontally to the current position
+    ///     used to reset the track when taking off without horizontal position control
+    ///     relies on set_wp_destination or set_wp_origin_and_destination having been called first
+    void shift_wp_origin_and_destination_to_current_pos_xy();
+
+    /// shifts the origin and destination horizontally to the achievable stopping point
+    ///     used to reset the track when horizontal navigation is enabled after having been disabled (see Copter's wp_navalt_min)
+    ///     relies on set_wp_destination or set_wp_origin_and_destination having been called first
+    void shift_wp_origin_and_destination_to_stopping_point_xy();
+
     /// get_wp_stopping_point_xy - calculates stopping point based on current position, velocity, waypoint acceleration
     ///		results placed in stopping_position vector
     void get_wp_stopping_point_xy(Vector3f& stopping_point) const;
