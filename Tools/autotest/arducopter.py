@@ -400,7 +400,7 @@ class AutoTestCopter(AutoTest):
         self.wait_disarmed()
 
     # enter RTL mode and wait for the vehicle to disarm
-    def do_RTL(self, timeout=250):
+    def do_RTL(self, distance_min=None, distance_max=10, timeout=250):
         """Return, land."""
         self.change_mode("RTL")
         self.set_rc(3, 1500)
@@ -410,7 +410,7 @@ class AutoTestCopter(AutoTest):
             alt = m.relative_alt / 1000.0 # mm -> m
             home_distance = self.distance_to_home(use_cached_home=True)
             home = ""
-            if alt <= 1 and home_distance < 10:
+            if alt <= 1 and home_distance < distance_max:
                 home = "HOME"
             self.progress("Alt: %.02f  HomeDist: %.02f %s" %
                           (alt, home_distance, home))
