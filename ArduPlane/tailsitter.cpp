@@ -96,7 +96,11 @@ void QuadPlane::tailsitter_output(void)
             }
         }
         // set AP_MotorsMatrix throttles for forward flight
+        if (SRV_Channels::function_assigned(SRV_Channel::k_boost_throttle)) {
+            SRV_Channels::set_output_scaled(SRV_Channel::k_boost_throttle, throttle*10);
+        }
         motors->output_motor_mask(throttle * 0.01f, mask, plane.rudder_dt);
+
         return;
     }
 
