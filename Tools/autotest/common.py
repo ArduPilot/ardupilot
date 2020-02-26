@@ -3581,6 +3581,18 @@ class AutoTest(ABC):
 
         self.wait_and_maintain(value_name="Distance", target=distance_min, current_value_getter=lambda: get_distance(), validator=lambda value2, target2: validator(value2, target2), accuracy=(distance_max - distance_min), timeout=timeout, **kwargs)
 
+    def wait_distance_to_home(self, distance_min, distance_max, timeout=10, use_cached_home=True, **kwargs):
+        """Wait for flight of home."""
+        assert distance_min <= distance_max, "Distance min should be less than distance max."
+
+        def get_distance():
+            return self.distance_to_home(use_cached_home)
+
+        def validator(value2, target2=None):
+            return distance_min <= value2 <= distance_max
+
+        self.wait_and_maintain(value_name="Distance to home", target=distance_min, current_value_getter=lambda: get_distance(), validator=lambda value2, target2: validator(value2, target2), accuracy=(distance_max - distance_min), timeout=timeout, **kwargs)
+
     def wait_servo_channel_value(self, channel, value, timeout=2, comparator=operator.eq):
         """wait for channel value comparison (default condition is equality)"""
         channel_field = "servo%u_raw" % channel
@@ -6020,17 +6032,6 @@ switch value'''
             except:
                 pass
         return fred
-
-    def wait_distance_to_home(self, distance_min, distance_max, timeout=10, use_cached_home=True):
-        tstart = self.get_sim_time()
-        while True:
-            if self.get_sim_time() - tstart > timeout:
-                raise NotAchievedException("Did not achieve distance from home")
-            distance = self.distance_to_home(use_cached_home)
-            self.progress("Distance from home: now=%f %f<want<%f" %
-                          (distance, distance_min, distance_max))
-            if distance >= distance_min and distance <= distance_max:
-                return
 
     # download parameters tries to cope with its download being
     # interrupted or broken by simply retrying the download a few

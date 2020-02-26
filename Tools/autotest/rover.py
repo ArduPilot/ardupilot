@@ -4668,9 +4668,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.set_parameter("AVOID_ENABLE", 0)
         self.do_RTL()
 
-    def do_RTL(self, timeout=60):
+    def do_RTL(self, distance_min=3, distance_max=7, timeout=60):
         self.change_mode("RTL")
-        self.wait_distance_to_home(3, 7, timeout=timeout)
+        self.wait_distance_to_home(distance_min, distance_max, timeout=timeout)
 
     def test_poly_fence_avoidance(self, target_system=1, target_component=1):
         self.change_mode("LOITER")
