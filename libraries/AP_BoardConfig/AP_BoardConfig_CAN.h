@@ -7,7 +7,7 @@
 #include <AP_Param/AP_Param.h>
 
 #ifndef AP_CAN_DEBUG
-  #define AP_CAN_DEBUG 0
+  #define AP_CAN_DEBUG 1
 #endif
 
 class AP_BoardConfig_CAN {

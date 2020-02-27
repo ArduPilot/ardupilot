@@ -151,8 +151,11 @@ void AP_BoardConfig_CAN::init()
             if (prot_type == Protocol_Type_UAVCAN) {
                 _drivers[i]._driver = _drivers[i]._uavcan =  new AP_UAVCAN;
 
+                printf("trying to start UAVCAN...\n\r", i + 1);
+
                 if (_drivers[i]._driver == nullptr) {
                     AP_HAL::panic("Failed to allocate uavcan %d\n\r", i + 1);
+                    printf("Failed to allocate uavcan %d\n\r", i + 1);
                     continue;
                 }
 
@@ -197,6 +200,9 @@ void AP_BoardConfig_CAN::init()
 #else
             _drivers[i]._driver->init(i, true);
 #endif
+
+            printf("... finished initing uavcan\n\r", i + 1);
+
         }
     }
 }

@@ -804,8 +804,13 @@ bool AP_Arming::can_checks(bool report)
                 }
                 case AP_BoardConfig_CAN::Protocol_Type_UAVCAN:
                 {
-                    snprintf(fail_msg, ARRAY_SIZE(fail_msg), "UAVCAN failed");
-                    if (!AP::uavcan_dna_server().prearm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
+                    snprintf(fail_msg, ARRAY_SIZE(fail_msg), "UAVCAN0 failed");
+                    if (!AP::uavcan_dna_server0().prearm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
+                        check_failed(ARMING_CHECK_SYSTEM, report, "%s", fail_msg);
+                        return false;
+                    }
+                    snprintf(fail_msg, ARRAY_SIZE(fail_msg), "UAVCAN1 failed");
+                    if (!AP::uavcan_dna_server1().prearm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
                         check_failed(ARMING_CHECK_SYSTEM, report, "%s", fail_msg);
                         return false;
                     }

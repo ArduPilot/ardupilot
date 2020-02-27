@@ -58,8 +58,8 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define debug_uavcan(level_debug, fmt, args...) do { if ((level_debug) <= AP::can().get_debug_level_driver(_driver_index)) { printf(fmt, ##args); }} while (0)
-//#define debug_uavcan(level_debug, fmt, args...) do { gcs().send_text(MAV_SEVERITY_WARNING, fmt, ##args); } while (0)
+//#define debug_uavcan(level_debug, fmt, args...) do { if ((level_debug) <= AP::can().get_debug_level_driver(_driver_index)) { printf(fmt, ##args); }} while (0)
+#define debug_uavcan(level_debug, fmt, args...) do { gcs().send_text(MAV_SEVERITY_WARNING, fmt, ##args); } while (0)
 
 // Translation of all messages from UAVCAN structures into AP structures is done
 // in AP_UAVCAN and not in corresponding drivers.
@@ -249,12 +249,27 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
         return;
     }
 
-    //Start Servers
-    AP::uavcan_dna_server().set_min_max(_dna_min_id,_dna_max_id); 
-    if (!AP::uavcan_dna_server().init(this)) {
-        debug_uavcan(1, "UAVCAN: Failed to start DNA Server\n\r");
-        return;
+    //Start Server/s
+
+    if (driver_index == 0) {
+    AP::uavcan_dna_server0().set_min_max(_dna_min_id,_dna_max_id); 
+        if (!AP::uavcan_dna_server0().init(this)) {
+            debug_uavcan(1, "UAVCAN0: Failed to start DNA Server\n\r");
+            //return;
+        } else {
+            debug_uavcan(1, "UAVCAN0: OK starting DNA Server\n\r");
+        }
     }
+    if (driver_index == 1) {
+    AP::uavcan_dna_server1().set_min_max(_dna_min_id,_dna_max_id); 
+        if (!AP::uavcan_dna_server1().init(this)) {
+            debug_uavcan(1, "UAVCAN1: Failed to start DNA Server\n\r");
+            //return;
+        } else {
+            debug_uavcan(1, "UAVCAN1: OK starting DNA Server\n\r");
+        }
+    }
+
 
     // Roundup all subscribers from supported drivers
     AP_UAVCAN_DNA_Server::subscribe_msgs(this);
@@ -382,7 +397,8 @@ void AP_UAVCAN::loop(void)
         buzzer_send();
         rtcm_stream_send();
         safety_state_send();
-        AP::uavcan_dna_server().verify_nodes(this);
+        AP::uavcan_dna_server0().verify_nodes(this);
+        AP::uavcan_dna_server1().verify_nodes(this);
     }
 }
 

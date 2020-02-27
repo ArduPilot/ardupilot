@@ -41,7 +41,10 @@ extern const AP_HAL::HAL& hal;
 UC_REGISTRY_BINDER(AllocationCb, uavcan::protocol::dynamic_node_id::Allocation);
 UC_REGISTRY_BINDER(NodeStatusCb, uavcan::protocol::NodeStatus);
 
-static void trampoline_handleNodeInfo(const uavcan::ServiceCallResult<uavcan::protocol::GetNodeInfo>& resp);
+static void trampoline_handleNodeInfo(const uavcan::ServiceCallResult<uavcan::protocol::GetNodeInfo>& resp,uint8_t _driver_index);
+static void trampoline_handleNodeInfo0(const uavcan::ServiceCallResult<uavcan::protocol::GetNodeInfo>& resp);
+static void trampoline_handleNodeInfo1(const uavcan::ServiceCallResult<uavcan::protocol::GetNodeInfo>& resp);
+
 static void trampoline_handleAllocation(AP_UAVCAN* ap_uavcan, uint8_t node_id, const AllocationCb &cb);
 static void trampoline_handleNodeStatus(AP_UAVCAN* ap_uavcan, uint8_t node_id, const NodeStatusCb &cb);
 
@@ -109,25 +112,46 @@ bool AP_UAVCAN_DNA_Server::readNodeData(NodeData &data, uint8_t node_id)
     if (node_id > MAX_NODE_ID) {
         return false;
     }
+    //char debugDNA[40];
     if (!storage.read_block(&data, (node_id * sizeof(struct NodeData)) + NODEDATA_MAGIC_LEN, sizeof(struct NodeData))) {
         //This will fall through to Prearm Check
         server_state = STORAGE_FAILURE;
+
+       // snprintf(debugDNA, sizeof(debugDNA), "CAN-DNA (%d) readNodeData-failed:%d",(int) driver_index,(int) node_id);
+       // debug_uavcan_mav(debugDNA);
+        
         return false;
     }
+
+       // snprintf(debugDNA, sizeof(debugDNA), "CAN-DNA (%d) readNodeData-success:%d",(int) driver_index,(int) node_id);
+       // debug_uavcan_mav(debugDNA);
+    
+
     return true;
 }
 
 //Write Node Data to Storage Region
-bool AP_UAVCAN_DNA_Server::writeNodeData(const NodeData &data, uint8_t node_id)
+bool AP_UAVCAN_DNA_Server::writeNodeData(const NodeData &data, uint8_t node_id, bool verbose)
 {
     if (node_id > MAX_NODE_ID) {
         return false;
     }
+
+    char debugDNA[45];
     if (!storage.write_block((node_id * sizeof(struct NodeData)) + NODEDATA_MAGIC_LEN,
                              &data, sizeof(struct NodeData))) {
         server_state = STORAGE_FAILURE;
+
+        if (verbose){
+        snprintf(debugDNA, sizeof(debugDNA), "CAN-DNA (%d) writeNodeData-failed:%d",(int) driver_index,(int) node_id);
+        debug_uavcan_mav(debugDNA);
+        }
         return false;
     }
+        if (verbose){
+        snprintf(debugDNA, sizeof(debugDNA), "CAN-DNA (%d) writeNodeData-success:%d",(int) driver_index,(int) node_id);
+        debug_uavcan_mav(debugDNA);
+        }
     return true;
 }
 
@@ -154,7 +178,12 @@ bool AP_UAVCAN_DNA_Server::freeNodeID(uint8_t node_id)
 
     //Eliminate from Server Record
     memset(&node_data, 0, sizeof(node_data));
-    writeNodeData(node_data, node_id);
+    writeNodeData(node_data, node_id,true);
+
+    char debugDNA[30];
+    snprintf(debugDNA, sizeof(debugDNA), "CAN-DNA (%d) freeNodeID:%d",(int) driver_index,(int) node_id);
+    debug_uavcan_mav(debugDNA);
+
 
     //Clear Occupation Mask
     occupation_mask.clear(node_id);
@@ -196,7 +225,8 @@ bool AP_UAVCAN_DNA_Server::isNodeIDVerified(uint8_t node_id) const
 /* Go through Server Records, and fetch node id that matches the provided
 Unique IDs hash.
 Returns 255 if no Node ID was detected */
-uint8_t AP_UAVCAN_DNA_Server::getNodeIDForUniqueID(const uint8_t unique_id[], uint8_t size)
+// self should be set true when looking up the pixhawk's own id, as this is allowed to be outside the min/max 'range'
+uint8_t AP_UAVCAN_DNA_Server::getNodeIDForUniqueID(const uint8_t unique_id[], uint8_t size, bool self)
 {
     uint8_t node_id = 255;
     NodeData node_data, cmp_node_data;
@@ -215,10 +245,27 @@ uint8_t AP_UAVCAN_DNA_Server::getNodeIDForUniqueID(const uint8_t unique_id[], ui
         }
     }
 
+    char debugDNA[45];
+    if (node_id != 255 ){
+    snprintf(debugDNA, sizeof(debugDNA), "CAN-DNA (%d) getNodeIDForUniqueID?-YES:%d",(int) driver_index,(int) node_id);
+    debug_uavcan_mav(debugDNA);
+    } 
+    if (node_id == 255 ){
+    snprintf(debugDNA, sizeof(debugDNA), "CAN-DNA (%d) getNodeIDForUniqueID?-NO:%d",(int) driver_index,(int) node_id);
+    debug_uavcan_mav(debugDNA);
+    }
+
    // extra check, if the min and/or max have been changed since the original allocation, reset the storage and start over..
-    if ( (node_id != 255 ) && ((node_id < _this_dna_min_id) || (node_id > _this_dna_max_id)) ) {
+   // but don't do this is the pixhawk's id is outside the min/max range
+    if ( (!self) && (node_id != 255 ) && ((node_id < _this_dna_min_id) || (node_id > _this_dna_max_id)) ) {
         freeNodeID(node_id);
+        // this alerts the user, only the *first* time a CAN node is seen that's new, over mavlink.
+
+        snprintf(debugDNA, sizeof(debugDNA), "CAN-DNA (%d) freed/range:%d not in:%d-%d",(int) driver_index,(int) node_id,(int) _this_dna_min_id,(int) _this_dna_max_id);
+        debug_uavcan_mav(debugDNA);
+
         node_id = 255;
+
     }
 
     return node_id;
@@ -234,29 +281,43 @@ bool AP_UAVCAN_DNA_Server::addNodeIDForUniqueID(uint8_t node_id, const uint8_t u
     node_data.crc = crc_crc8(node_data.hwid_hash, sizeof(node_data.hwid_hash));
 
     //Write Data to the records
-    if (!writeNodeData(node_data, node_id)) {
+    if (!writeNodeData(node_data, node_id,true)) {
         server_state = FAILED_TO_ADD_NODE;
         fault_node_id = node_id;
+
         return false;
     }
 
     // this alerts the user, only the *first* time a CAN node is seen that's new, over mavlink.
-    char debugDNA[20];
-    snprintf(debugDNA, sizeof(debugDNA), "CAN-DNA added:%d",(int) node_id);
+    char debugDNA[45];
+    snprintf(debugDNA, sizeof(debugDNA), "CAN-DNA (%d) added:%d",(int) driver_index,(int) node_id);
     debug_uavcan_mav(debugDNA);
     setOccupationMask(node_id);
     return true;
 }
 
 //Checks if a valid Server Record is present for specified Node ID
-bool AP_UAVCAN_DNA_Server::isValidNodeDataAvailable(uint8_t node_id)
+bool AP_UAVCAN_DNA_Server::isValidNodeDataAvailable(uint8_t node_id,bool verbose)
 {
     NodeData node_data;
     readNodeData(node_data, node_id);
+    char debugDNA[45];
+
     uint8_t crc = crc_crc8(node_data.hwid_hash, sizeof(node_data.hwid_hash));
     if (crc == node_data.crc && node_data.crc != 0) {
+
+        if (!verbose){
+            snprintf(debugDNA, sizeof(debugDNA), "CAN-DNA (%d) isValidNodeDataAvailable-YES:%d",(int) driver_index,(int) node_id);
+            debug_uavcan_mav(debugDNA);
+        }
         return true;
     }
+
+    if (verbose){
+        snprintf(debugDNA, sizeof(debugDNA), "CAN-DNA (%d) isValidNodeDataAvailable-NO:%d",(int) driver_index,(int) node_id);
+        debug_uavcan_mav(debugDNA);
+    }
+
     return false;
 }
 
@@ -279,14 +340,22 @@ bool AP_UAVCAN_DNA_Server::init(AP_UAVCAN *ap_uavcan)
         return false;
     }
 
+    // for debug u might like to slow startup to see msgs easier
+    //hal.scheduler->delay(5000);
+
     WITH_SEMAPHORE(sem);
 
     //Read the details from ap_uavcan
     uavcan::Node<0>* _node = ap_uavcan->get_node();
     uint8_t node_id = _node->getNodeID().get();
-    uint8_t driver_index = ap_uavcan->get_driver_index();
+    driver_index = ap_uavcan->get_driver_index();
     uint8_t own_unique_id[16] = {0};
     uint8_t own_unique_id_len = 16;
+
+    char debugDNA[35];
+    snprintf(debugDNA, sizeof(debugDNA), "CAN-DNA (%d) server init",(int) driver_index);
+    debug_uavcan_mav(debugDNA);
+
 
     //copy unique id from node to uint8_t array
     uavcan::copy(_node->getHardwareVersion().unique_id.begin(),
@@ -318,15 +387,22 @@ bool AP_UAVCAN_DNA_Server::init(AP_UAVCAN *ap_uavcan)
         return false;
     }
 
-    getNodeInfo_client[driver_index]->setCallback(trampoline_handleNodeInfo);
+    if (driver_index ==0){
+        getNodeInfo_client[driver_index]->setCallback(trampoline_handleNodeInfo0);
+    }
+    if (driver_index ==1){
+        getNodeInfo_client[driver_index]->setCallback(trampoline_handleNodeInfo1);
+    }
 
     /* Go through our records and look for valid NodeData, to initialise
     occupation mask */
     for (uint8_t i = 0; i <= MAX_NODE_ID; i++) {
-        if (isValidNodeDataAvailable(i)) {
+        if (isValidNodeDataAvailable(i,false)) {
             occupation_mask.set(i);
         }
     }
+
+    //if ( (stored_own_node_id != 255 ) && ((node_id < _this_dna_min_id) || (node_id > _this_dna_max_id)) ) { ... }
 
     // Check if the magic is present
     uint16_t magic;
@@ -336,7 +412,7 @@ bool AP_UAVCAN_DNA_Server::init(AP_UAVCAN *ap_uavcan)
         reset();
     }
     // Making sure that the server is started with the same node ID
-    const uint8_t stored_own_node_id = getNodeIDForUniqueID(own_unique_id, own_unique_id_len);
+    const uint8_t stored_own_node_id = getNodeIDForUniqueID(own_unique_id, own_unique_id_len,true);
     static bool reset_done;
     if (stored_own_node_id != 255) {
         if (stored_own_node_id != node_id) {
@@ -382,9 +458,14 @@ void AP_UAVCAN_DNA_Server::reset()
     memset(&node_data, 0, sizeof(node_data));
     occupation_mask.clearall();
 
+    char debugDNA[30];
+    snprintf(debugDNA, sizeof(debugDNA), "CAN-DNA (%d) reset()/clear-all",(int) driver_index);
+    debug_uavcan_mav(debugDNA);
+
+
     //Just write empty Node Data to the Records
     for (uint8_t i = 0; i <= MAX_NODE_ID; i++) {
-        writeNodeData(node_data, i);
+        writeNodeData(node_data, i,false);
     }
     //Ensure we mark magic at the end
     uint16_t magic = NODEDATA_MAGIC;
@@ -405,8 +486,12 @@ uint8_t AP_UAVCAN_DNA_Server::findFreeNodeID(uint8_t preferred)
     // Search up from 1/2 way from candidate to the top...
     uint8_t candidate = ((preferred >= _this_dna_min_id) && (preferred <= _this_dna_max_id ) ) ? preferred : middle;
 
+
     while (candidate <= _this_dna_max_id) {
         if (!isNodeIDOccupied(candidate)) {
+                char debugDNA[35];
+                snprintf(debugDNA, sizeof(debugDNA), "CAN-DNA (%d) find free nodeid+:%d",(int) driver_index,(int) candidate);
+                debug_uavcan_mav(debugDNA);
             return candidate;
         }
         candidate++;
@@ -415,6 +500,9 @@ uint8_t AP_UAVCAN_DNA_Server::findFreeNodeID(uint8_t preferred)
     candidate = ((preferred >= _this_dna_min_id) && (preferred <= _this_dna_max_id ) ) ? preferred : middle;
     while (candidate > 0) {
         if (!isNodeIDOccupied(candidate)) {
+                char debugDNA[35];
+                snprintf(debugDNA, sizeof(debugDNA), "CAN-DNA (%d) find free nodeid-:%d",(int) driver_index,(int) candidate);
+                debug_uavcan_mav(debugDNA);
             return candidate;
         }
         candidate--;
@@ -501,15 +589,36 @@ void AP_UAVCAN_DNA_Server::handleNodeStatus(uint8_t node_id, const NodeStatusCb 
         return;
     }
     WITH_SEMAPHORE(sem);
+    //uint8_t driver_index = ap_uavcan->get_driver_index();
     if (!isNodeIDVerified(node_id)) {
         //immediately begin verification of the node_id
-        for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
-            if (getNodeInfo_client[i] != nullptr) {
+        //for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
+            if (getNodeInfo_client[driver_index] != nullptr) {
                 uavcan::protocol::GetNodeInfo::Request request;
-                getNodeInfo_client[i]->call(node_id, request);
+                getNodeInfo_client[driver_index]->call(node_id, request);
+                    // this alerts the user of th existance of can live node's, regularly at about every 3 secs.
+                    char debugDNA[35];
+                    snprintf(debugDNA, sizeof(debugDNA), "CAN-DNA (%d) nodeid:%d",(int) driver_index,(int) node_id);
+                    debug_uavcan_mav(debugDNA);
             }
-        }
+        //}
+    } else {
+        // just to report driver_id to user.
+        //for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
+            if (getNodeInfo_client[driver_index] != nullptr) {
+                    // this alerts the user of th existance of can live node's, regularly at about every 3 secs.
+                    char debugDNA[35];
+                    snprintf(debugDNA, sizeof(debugDNA), "CAN-DNA (%d) nodeid:%d",(int) driver_index,(int) node_id);
+                    debug_uavcan_mav(debugDNA);
+            }
+        //}
     }
+
+    // this alerts the user of th existance of can live node's, regularly at about every 3 secs.
+    char debugDNA[35];
+    snprintf(debugDNA, sizeof(debugDNA), "CAN-DNA (%d) nodeid:%d",(int) driver_index,(int) node_id);
+    debug_uavcan_mav(debugDNA);
+
     //Add node to seen list if not seen before
     addToSeenNodeMask(node_id);
 }
@@ -521,7 +630,12 @@ void trampoline_handleNodeStatus(AP_UAVCAN* ap_uavcan, uint8_t node_id, const No
         return;
     }
 
-    AP::uavcan_dna_server().handleNodeStatus(node_id, cb);
+    if (ap_uavcan->get_driver_index() == 0 ){
+        AP::uavcan_dna_server0().handleNodeStatus(node_id, cb);
+    }
+    if (ap_uavcan->get_driver_index() == 1 ){
+        AP::uavcan_dna_server1().handleNodeStatus(node_id, cb);
+    }
 }
 
 
@@ -538,7 +652,7 @@ void AP_UAVCAN_DNA_Server::handleNodeInfo(uint8_t node_id, uint8_t unique_id[], 
     WITH_SEMAPHORE(sem);
     if (isNodeIDOccupied(node_id)) {
         //if node_id already registered, just verify if Unique ID matches as well
-        if (node_id == getNodeIDForUniqueID(unique_id, 16)) {
+        if (node_id == getNodeIDForUniqueID(unique_id, 16,false)) {
             if (node_id == curr_verifying_node) {
                 nodeInfo_resp_rcvd = true;
             }
@@ -553,7 +667,7 @@ void AP_UAVCAN_DNA_Server::handleNodeInfo(uint8_t node_id, uint8_t unique_id[], 
     } else {
         /* Node Id was not allocated by us, or during this boot, let's register this in our records
         Check if we allocated this Node before */
-        uint8_t prev_node_id = getNodeIDForUniqueID(unique_id, 16);
+        uint8_t prev_node_id = getNodeIDForUniqueID(unique_id, 16,false);
         if (prev_node_id != 255) {
             //yes we did, remove this registration
             freeNodeID(prev_node_id);
@@ -568,8 +682,14 @@ void AP_UAVCAN_DNA_Server::handleNodeInfo(uint8_t node_id, uint8_t unique_id[], 
     }
 }
 
+void trampoline_handleNodeInfo0(const uavcan::ServiceCallResult<uavcan::protocol::GetNodeInfo>& resp){
+trampoline_handleNodeInfo(resp,0);
+}
+void trampoline_handleNodeInfo1(const uavcan::ServiceCallResult<uavcan::protocol::GetNodeInfo>& resp){
+trampoline_handleNodeInfo(resp,1);
+}
 //Trampoline call for handleNodeInfo member call
-void trampoline_handleNodeInfo(const uavcan::ServiceCallResult<uavcan::protocol::GetNodeInfo>& resp)
+void trampoline_handleNodeInfo(const uavcan::ServiceCallResult<uavcan::protocol::GetNodeInfo>& resp,uint8_t _driver_index)
 {
     uint8_t node_id, unique_id[16] = {0};
     char name[15] = {0};
@@ -581,14 +701,22 @@ void trampoline_handleNodeInfo(const uavcan::ServiceCallResult<uavcan::protocol:
                  resp.getResponse().hardware_version.unique_id.end(),
                  unique_id);
     strncpy(name, resp.getResponse().name.c_str(), sizeof(name)-1);
-    AP::uavcan_dna_server().handleNodeInfo(node_id, unique_id, name);
+
+
+    if (_driver_index == 0 ){
+    AP::uavcan_dna_server0().handleNodeInfo(node_id, unique_id, name);
+    }
+    if (_driver_index == 1 ){
+    AP::uavcan_dna_server1().handleNodeInfo(node_id, unique_id, name);
+    }
+
 }
 
 /* Handle the allocation message from the devices supporting
 dynamic node allocation. */
-void AP_UAVCAN_DNA_Server::handleAllocation(uint8_t driver_index, uint8_t node_id, const AllocationCb &cb)
+void AP_UAVCAN_DNA_Server::handleAllocation(uint8_t _driver_index, uint8_t node_id, const AllocationCb &cb)
 {
-    if (allocation_pub[driver_index] == nullptr) {
+    if (allocation_pub[_driver_index] == nullptr) {
         //init has not been called for this driver.
         return;
     }
@@ -598,12 +726,12 @@ void AP_UAVCAN_DNA_Server::handleAllocation(uint8_t driver_index, uint8_t node_i
         return;
     }
     uint32_t now = AP_HAL::millis();
-    if (driver_index == current_driver_index) {
+    if (_driver_index == current_driver_index) {
         last_activity_ms = now;
     } else if ((now - last_activity_ms) > 500) {
         /* prepare for requests on another driver if we didn't had any activity on
         current driver for more than 500ms */
-        current_driver_index = driver_index;
+        current_driver_index = _driver_index;
         last_activity_ms = now;
         rcvd_unique_id_offset = 0;
         memset(rcvd_unique_id, 0, sizeof(rcvd_unique_id));
@@ -639,7 +767,7 @@ void AP_UAVCAN_DNA_Server::handleAllocation(uint8_t driver_index, uint8_t node_i
 
     if (rcvd_unique_id_offset == 16) {
         //We have received the full Unique ID, time to do allocation
-        uint8_t resp_node_id = getNodeIDForUniqueID((const uint8_t*)rcvd_unique_id, 16);
+        uint8_t resp_node_id = getNodeIDForUniqueID((const uint8_t*)rcvd_unique_id, 16,false);
         if (resp_node_id == 255) {
             resp_node_id = findFreeNodeID(cb.msg->node_id);
             if (resp_node_id != 255) {
@@ -668,7 +796,13 @@ void trampoline_handleAllocation(AP_UAVCAN* ap_uavcan, uint8_t node_id, const Al
     if (ap_uavcan == nullptr) {
         return;
     }
-    AP::uavcan_dna_server().handleAllocation(ap_uavcan->get_driver_index(), node_id, cb);
+
+    if (ap_uavcan->get_driver_index() == 0 ){
+    AP::uavcan_dna_server0().handleAllocation(ap_uavcan->get_driver_index(), node_id, cb);
+    }
+    if (ap_uavcan->get_driver_index() == 1 ){
+    AP::uavcan_dna_server1().handleAllocation(ap_uavcan->get_driver_index(), node_id, cb);
+    }
 }
 
 //report the server state, along with failure message if any
@@ -698,7 +832,12 @@ bool AP_UAVCAN_DNA_Server::prearm_check(char* fail_msg, uint8_t fail_msg_len) co
 
 namespace AP
 {
-AP_UAVCAN_DNA_Server& uavcan_dna_server()
+AP_UAVCAN_DNA_Server& uavcan_dna_server0()
+{
+    static AP_UAVCAN_DNA_Server _server(StorageAccess(StorageManager::StorageCANDNA));
+    return _server;
+}
+AP_UAVCAN_DNA_Server& uavcan_dna_server1()
 {
     static AP_UAVCAN_DNA_Server _server(StorageAccess(StorageManager::StorageCANDNA));
     return _server;

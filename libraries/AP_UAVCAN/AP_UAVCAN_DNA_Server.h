@@ -47,6 +47,9 @@ class AP_UAVCAN_DNA_Server
     uint8_t rcvd_unique_id[16];
     uint8_t rcvd_unique_id_offset;
     uint8_t current_driver_index;
+
+    uint8_t driver_index;
+
     uint32_t last_activity_ms;
 
     // this servers min and max ids, 
@@ -64,7 +67,7 @@ class AP_UAVCAN_DNA_Server
     bool readNodeData(NodeData &data, uint8_t node_id);
 
     //Writes the Server Record from storage for specified node id
-    bool writeNodeData(const NodeData &data, uint8_t node_id);
+    bool writeNodeData(const NodeData &data, uint8_t node_id, bool verbose);
 
     //Methods to set, clear and report NodeIDs allocated/registered so far
     bool setOccupationMask(uint8_t node_id);
@@ -75,7 +78,7 @@ class AP_UAVCAN_DNA_Server
     void setVerificationMask(uint8_t node_id);
 
     //Go through List to find node id for specified unique id
-    uint8_t getNodeIDForUniqueID(const uint8_t unique_id[], uint8_t size);
+    uint8_t getNodeIDForUniqueID(const uint8_t unique_id[], uint8_t size, bool self);
 
     //Add Node ID info to the record and setup necessary mask fields
     bool addNodeIDForUniqueID(uint8_t node_id, const uint8_t unique_id[], uint8_t size);
@@ -84,7 +87,7 @@ class AP_UAVCAN_DNA_Server
     uint8_t findFreeNodeID(uint8_t preferred);
 
     //Look in the storage and check if there's a valid Server Record there
-    bool isValidNodeDataAvailable(uint8_t node_id);
+    bool isValidNodeDataAvailable(uint8_t node_id,bool verbose);
 
     HAL_Semaphore sem;
 
@@ -128,6 +131,8 @@ public:
 
 namespace AP
 {
-AP_UAVCAN_DNA_Server& uavcan_dna_server();
+AP_UAVCAN_DNA_Server& uavcan_dna_server0();
+AP_UAVCAN_DNA_Server& uavcan_dna_server1();
+
 }
 #endif
