@@ -10,7 +10,7 @@ SITL_PKGS="python2-pip python-pip wxpython opencv python2-numpy python2-scipy"
 PX4_PKGS="lib32-glibc zip zlib ncurses cmake"
 
 PYTHON2_PKGS="future lxml pymavlink MAVProxy argparse matplotlib pyparsing"
-PYTHON3_PKGS="pyserial empy"
+PYTHON3_PKGS="pyserial empy psutil"
 
 # GNU Tools for ARM Embedded Processors
 # (see https://launchpad.net/gcc-arm-embedded/)

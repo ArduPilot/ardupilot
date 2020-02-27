@@ -25,7 +25,7 @@ else
 fi
 
 BASE_PKGS="build-essential ccache g++ gawk git make wget"
-PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect"
+PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect psutil"
 # add some Python packages required for commonly-used MAVProxy modules and hex file generation:
 PYTHON_PKGS="$PYTHON_PKGS pygame intelhex"
 PX4_PKGS="python-argparse openocd flex bison libncurses5-dev \
