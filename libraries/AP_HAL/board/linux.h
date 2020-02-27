@@ -40,8 +40,8 @@
     #define HAL_GPIO_A_LED_PIN        61
     #define HAL_GPIO_B_LED_PIN        48
     #define HAL_GPIO_C_LED_PIN        117
-    #define HAL_GPIO_LED_ON           LOW
-    #define HAL_GPIO_LED_OFF          HIGH
+    #define HAL_GPIO_LED_ON           0
+    #define HAL_GPIO_LED_OFF          1
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
     #define HAL_BOARD_LOG_DIRECTORY "/data/ftp/internal_000/ardupilot/logs"
     #define HAL_BOARD_TERRAIN_DIRECTORY "/data/ftp/internal_000/ardupilot/terrain"
@@ -121,8 +121,8 @@
     #define HAL_GPIO_A_LED_PIN 0
     #define HAL_GPIO_B_LED_PIN 1
     #define HAL_GPIO_C_LED_PIN 2
-    #define HAL_GPIO_LED_ON HIGH
-    #define HAL_GPIO_LED_OFF LOW
+    #define HAL_GPIO_LED_ON 1
+    #define HAL_GPIO_LED_OFF 0
     #define HAL_INS_PROBE_LIST PROBE_IMU_SPI(Invensense, "mpu9250", ROTATION_NONE)
     #define HAL_BARO_PROBE_LIST PROBE_BARO_I2C(MS56XX, 1, 0x77)
     #define HAL_MAG_PROBE_LIST PROBE_MAG_IMU(AK8963, mpu9250, 0, ROTATION_NONE)
@@ -143,8 +143,8 @@
     #define HAL_GPIO_A_LED_PIN        24
     #define HAL_GPIO_B_LED_PIN        25
     #define HAL_GPIO_C_LED_PIN        16
-    #define HAL_GPIO_LED_ON           LOW
-    #define HAL_GPIO_LED_OFF          HIGH
+    #define HAL_GPIO_LED_ON           0
+    #define HAL_GPIO_LED_OFF          1
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ZYNQ
     // Stub the sensors out for now, at least we can build and run
     #define HAL_INS_DEFAULT HAL_INS_HIL
@@ -162,8 +162,8 @@
     #define HAL_GPIO_A_LED_PIN 69
     #define HAL_GPIO_B_LED_PIN 68
     #define HAL_GPIO_C_LED_PIN 45
-    #define HAL_GPIO_LED_ON LOW
-    #define HAL_GPIO_LED_OFF HIGH
+    #define HAL_GPIO_LED_ON 0
+    #define HAL_GPIO_LED_OFF 1
     #define HAL_BUZZER_PIN 11
     #define HAL_INS_PROBE1 PROBE_IMU_SPI(Invensense, "mpu9250", ROTATION_NONE)
     #define HAL_INS_PROBE2 PROBE_IMU_SPI(Invensense, "mpu9250ext", ROTATION_NONE)
@@ -191,8 +191,8 @@
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE
     #define HAL_GPIO_A_LED_PIN 66
     #define HAL_GPIO_B_LED_PIN 67
-    #define HAL_GPIO_LED_ON    HIGH
-    #define HAL_GPIO_LED_OFF   LOW
+    #define HAL_GPIO_LED_ON    1
+    #define HAL_GPIO_LED_OFF   0
     #define HAL_INS_PROBE_LIST PROBE_IMU_I2C(Invensense, 2, 0x68, ROTATION_NONE)
     #define HAL_BARO_PROBE_LIST PROBE_BARO_I2C(BMP280, 2, 0x76)
     #define HAL_MAG_PROBE_LIST PROBE_MAG_IMU_I2C(AK8963, mpu9250, 2, 0x0c, ROTATION_NONE)
@@ -204,8 +204,8 @@
     #define HAL_GPIO_A_LED_PIN 59
     #define HAL_GPIO_B_LED_PIN 58
     #define HAL_GPIO_C_LED_PIN 57
-    #define HAL_GPIO_LED_ON    HIGH
-    #define HAL_GPIO_LED_OFF   LOW
+    #define HAL_GPIO_LED_ON    1
+    #define HAL_GPIO_LED_OFF   0
     #define HAL_BUZZER_PIN 28
     #define HAL_INS_PROBE_LIST PROBE_IMU_SPI(Invensense, "mpu9250", ROTATION_NONE)
     #define HAL_BARO_PROBE_LIST PROBE_BARO_SPI(BMP280, "bmp280")
@@ -224,8 +224,8 @@
     #define HAL_GPIO_A_LED_PIN        17
     #define HAL_GPIO_B_LED_PIN        18
     #define HAL_GPIO_C_LED_PIN        22
-    #define HAL_GPIO_LED_ON           LOW
-    #define HAL_GPIO_LED_OFF          HIGH
+    #define HAL_GPIO_LED_ON           0
+    #define HAL_GPIO_LED_OFF          1
     #define HAL_RCOUT_RGBLED_RED      13
     #define HAL_RCOUT_RGBLED_GREEN    14
     #define HAL_RCOUT_RGBLED_BLUE     15
@@ -237,8 +237,8 @@
     #define HAL_GPIO_A_LED_PIN        24
     #define HAL_GPIO_B_LED_PIN        25
     #define HAL_GPIO_C_LED_PIN        16
-    #define HAL_GPIO_LED_ON           LOW
-    #define HAL_GPIO_LED_OFF          HIGH
+    #define HAL_GPIO_LED_ON           0
+    #define HAL_GPIO_LED_OFF          1
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_AERO
     #define HAL_INS_PROBE_LIST PROBE_IMU_SPI(BMI160, "bmi160")
     #define HAL_BARO_PROBE_LIST PROBE_BARO_I2C(MS56XX, 2, 0x76)
@@ -255,8 +255,8 @@
     #define HAL_GPIO_A_LED_PIN        24
     #define HAL_GPIO_B_LED_PIN        25
     #define HAL_GPIO_C_LED_PIN        16
-    #define HAL_GPIO_LED_ON           LOW
-    #define HAL_GPIO_LED_OFF          HIGH
+    #define HAL_GPIO_LED_ON           0
+    #define HAL_GPIO_LED_OFF          1
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
     #define HAL_BOARD_LOG_DIRECTORY "/edge/ardupilot/logs"
     #define HAL_BOARD_TERRAIN_DIRECTORY "/edge/ardupilot/terrain"
