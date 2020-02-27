@@ -20,7 +20,8 @@ NavEKF3_core::NavEKF3_core(NavEKF3 *_frontend) :
     _perf_TerrainOffset(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_TerrainOffset")),
     _perf_FuseOptFlow(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_FuseOptFlow")),
     _perf_FuseBodyOdom(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_FuseBodyOdom")),
-    frontend(_frontend)
+    frontend(_frontend),
+    yawEstimator()
 {
     _perf_test[0] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_Test0");
     _perf_test[1] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_Test1");
@@ -389,6 +390,11 @@ void NavEKF3_core::InitialiseVariables()
     hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string), "EKF3 still initialising");
 
     InitialiseVariablesMag();
+
+    // emergency reset of yaw to EKFGSF estimate
+    EKFGSF_yaw_reset_time_ms = 0;
+    EKFGSF_yaw_reset_count = 0;
+    EKFGSF_run_filterbank = false;
 }
 
 
@@ -627,7 +633,22 @@ void NavEKF3_core::UpdateFilter(bool predict)
         updateFilterStatus();
 
         // Generate an alternative yaw estimate used for inflight recovery from bad compass data
-        EKFGSF_run();
+        float trueAirspeed;
+        if (frontend->_EKFGSF_easDefault > FLT_EPSILON && assume_zero_sideslip()) {
+            if (imuDataDelayed.time_ms < (tasDataDelayed.time_ms + 5000)) {
+                trueAirspeed = tasDataDelayed.tas;
+            } else {
+                trueAirspeed = frontend->_EKFGSF_easDefault * AP::ahrs().get_EAS2TAS();
+            }
+        } else {
+            trueAirspeed = 0.0f;
+        }
+        yawEstimator.update(imuDataDelayed.delAng, imuDataDelayed.delVel, imuDataDelayed.delAngDT, imuDataDelayed.delVelDT, EKFGSF_run_filterbank, trueAirspeed);
+        if (gpsDataToFuse) {
+            Vector2f gpsVelNE = Vector2f(gpsDataDelayed.vel.x, gpsDataDelayed.vel.y);
+            float gpsVelAcc = fmaxf(gpsSpdAccuracy, frontend->_gpsHorizVelNoise);
+            yawEstimator.pushVelData(gpsVelNE, gpsVelAcc);
+        }
     }
 
     // Wind output forward from the fusion to output time horizon

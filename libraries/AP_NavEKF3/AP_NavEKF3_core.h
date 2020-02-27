@@ -30,6 +30,7 @@
 #include <AP_NavEKF/AP_NavEKF_core_common.h>
 #include <AP_NavEKF3/AP_NavEKF3_Buffer.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
+#include "AP_NavEKF/EKFGSF_yaw.h"
 
 // GPS pre-flight check bit locations
 #define MASK_GPS_NSATS      (1<<0)
@@ -375,6 +376,8 @@ public:
     bool EKFGSF_resetMainFilterYaw();
 
 private:
+    EKFGSF_yaw yawEstimator;
+
     // Reference to the global EKF frontend for parameters
     NavEKF3 *frontend;
     uint8_t imu_index; // preferred IMU index
@@ -1314,79 +1317,8 @@ private:
     // vehicle specific initial gyro bias uncertainty
     float InitialGyroBiasUncertainty(void) const;
 
-    // Declarations for yaw estimator using a bank of 3-state EKF's whose output is combined using a Gaussian Sum Filter
-	void EKFGSF_run();
-
-    // Declarations used by the bank of AHRS complementary filters that use IMU data augmented by true
-    // airspeed data when in fixed wing mode to estimate the quaternions that are used to rotate IMU data into a
-    // Front, Right, Yaw frame of reference.
-    struct EKFGSF_ahrs_struct{
-		Matrix3f R;				// matrix that rotates a vector from body to earth frame
-		Vector3f gyro_bias;		// gyro bias learned and used by the quaternion calculation
-		bool aligned{false};	// true when AHRS has been aligned
-		float accel_FR[2] {};	// front-right acceleration vector in a horizontal plane (m/s/s)
-		float vel_NE[2] {};		// NE velocity vector from last GPS measurement (m/s)
-		bool fuse_gps = false;	// true when GPS should be fused on that frame
-		float accel_dt = 0;		// time step used when generating _simple_accel_FR data (sec)
-	};
-	EKFGSF_ahrs_struct EKFGSF_ahrs[N_MODELS_EKFGSF];
-	bool EKFGSF_ahrs_tilt_aligned = false;// true the initial tilt alignment has been calculated
-	float EKFGSF_accel_gain;	    // gain from accel vector tilt error to rate gyro correction used by AHRS calculation
-	Vector3f EKFGSF_ahrs_accel;	    // measured body frame specific force vector used by AHRS calculation (m/s/s)
-	float EKFGSF_ahrs_accel_norm;	// length of body frame specific force vector used by AHRS calculation (m/s/s)
-	bool EKFGSF_ahrs_turn_comp_enabled;	// true when compensation for centripetal acceleration in coordinated turns using true airspeed is being used.
-
-    // Runs quaternion prediction for the selected AHRS using IMU (and optionally true airspeed) data
-	void EKFGSF_predictAHRS(const uint8_t mdl_idx);
-
-    // Applies a body frame delta angle to a body to earth frame rotation matrix using a small angle approximation
-    Matrix3f EKFGSF_updateRotMat(const Matrix3f &R, const Vector3f &g);
-
-    // Initialises the tilt (roll and pitch) for all AHRS using IMU acceleration data
-	void EKFGSF_alignTilt();
-
-    // Initialises the yaw angle for all AHRS using a uniform distribution of yaw angles between -180 and +180 deg
-	void EKFGSF_alignYaw();
-
-    // The Following declarations are used by bank of EKF's that estimate yaw angle starting from a different yaw hypothesis for each filter.
-
-	struct EKFGSF_EKF_struct{
-		float X[3];     // Vel North (m/s),  Vel East (m/s), yaw (rad)
-		float P[3][3];  // covariance matrix
-		float S[2][2];  // N,E velocity innovation variance (m/s)^2
-		float innov[2]; // Velocity N,E innovation (m/s)
-	};
-	EKFGSF_EKF_struct EKFGSF_mdl[N_MODELS_EKFGSF];
-    bool EKFGSF_vel_fuse_started = false;   // true when the bank of EKF's has started fusing GPS velocity data
-
-    // Initialises the EKF's and GSF states, but not the AHRS complementary filters
-	void EKFGSF_initialise();
-
-    // Runs the state and covariance prediction for the selected EKF
-	void EKFGSF_predict(const uint8_t mdl_idx);
-
-    // Runs the state ad covariance update for the selected EKF using the GPS NE velocity measurement
-	void EKFGSF_correct(const uint8_t mdl_idx);
-
-    // Forces symmetry on the covariance matrix for the selected EKF
-	void EKFGSF_forceSymmetry(const uint8_t mdl_idx);
-
-    // The following declarations are used  by the Gaussian Sum Filter that combines the state estimates from the bank of 
-    // EKF's to form a single state estimate.
-
-    struct EKFGSF_GSF_struct{
-        float state[3];                 // Vel North (m/s),  Vel East (m/s), yaw (rad)
-        float weights[N_MODELS_EKFGSF]; // Weighting applied to each EKF model. Sum of weights is unity.
-        float yaw_variance;             // Yaw state variance (rad^2)
-    };
-    EKFGSF_GSF_struct EKFGSF_GSF;
-
-    // Returns the probability for a selected model assuming a Gaussian error distribution
-    // Used by the Guassian Sum Filter to calculate the weightings when combining the outputs from the bank of EKF's
-	float EKFGSF_gaussianDensity(const uint8_t mdl_idx) const;
-
     // The following declarations are used to control when the main navigation filter resets it's yaw to the estimate provided by the GSF
-
 	uint64_t EKFGSF_yaw_reset_time_ms{0};	// timestamp of last emergency yaw reset (uSec)
     uint8_t EKFGSF_yaw_reset_count{0};      // number of emergency yaw resets performed
+    bool EKFGSF_run_filterbank{false};      // true when the filter bank is active
 };

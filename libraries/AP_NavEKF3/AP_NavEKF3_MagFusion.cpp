@@ -1294,3 +1294,94 @@ void NavEKF3_core::recordMagReset()
     yawInnovAtLastMagReset = innovYaw;
 }
 
+// Reset states using yaw from EKF-GSF and velocity and position from GPS
+bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
+{
+    float yawEKFGSF, yawVarianceEKFGSF;
+    if (EKFGSF_yaw_reset_count < frontend->EKFGSF_n_reset_max &&
+        yawEstimator.getYawData(&yawEKFGSF, &yawVarianceEKFGSF) &&
+        yawVarianceEKFGSF < sq(radians(15.0f)) &&
+        (imuSampleTime_ms - EKFGSF_yaw_reset_time_ms) > 5000) {
+
+        // save a copy of the quaternion state for later use in calculating the amount of reset change
+        Quaternion quat_before_reset = stateStruct.quat;
+
+        // calculate the variance for the rotation estimate expressed as a rotation vector
+        // this will be used later to reset the quaternion state covariances
+        Vector3f angleErrVarVec = calcRotVecVariances();
+
+        // update transformation matrix from body to world frame using the current estimate
+        stateStruct.quat.inverse().rotation_matrix(prevTnb);
+
+        // calculate the initial quaternion
+        // determine if a 321 or 312 Euler sequence is best
+        float deltaYaw;
+        if (fabsf(prevTnb[2][0]) < fabsf(prevTnb[2][1])) {
+            // using a 321 Tait-Bryan rotation to define yaw state
+            // take roll pitch yaw from AHRS prediction
+            float roll,pitch,yaw;
+            prevTnb.to_euler(&roll, &pitch, &yaw);
+
+            // record change in yaw
+            deltaYaw = wrap_PI(yawEKFGSF - yaw);
+
+            // Calculate the body to earth frame rotation matrix
+            prevTnb.from_euler(roll, pitch, yawEKFGSF);
+
+        } else {
+            // Calculate the 312 Tait-Bryan rotation sequence that rotates from earth to body frame
+            // We use a 312 sequence as an alternate when there is more pitch tilt than roll tilt
+            // to avoid gimbal lock
+            Vector3f euler312 = prevTnb.to_euler312();
+
+            // record change in yaw
+            deltaYaw = wrap_PI(yawEKFGSF - euler312[2]);
+
+            // Calculate the body to earth frame rotation matrix
+            prevTnb.from_euler312(euler312[0], euler312[1], yawEKFGSF);
+
+        }
+
+        // quaternion states for the main EKF with yaw reset applied
+        Quaternion quat_after_reset;
+        quat_after_reset.from_rotation_matrix(prevTnb);
+
+        // update quaternion states
+        stateStruct.quat = quat_after_reset;
+
+        // calculate the change in the quaternion state and apply it to the output history buffer
+        Quaternion quat_delta = stateStruct.quat / quat_before_reset;
+        StoreQuatRotate(quat_delta);
+
+        // update the yaw angle variance using the variance of the EKF-GSF estimate
+        angleErrVarVec.z = yawVarianceEKFGSF;
+
+        // reset the quaternion covariances using the rotation vector variances
+        initialiseQuatCovariances(angleErrVarVec);
+
+        // record the yaw reset event
+        yawResetAngle += deltaYaw;
+        lastYawReset_ms = imuSampleTime_ms;
+        EKFGSF_yaw_reset_time_ms = imuSampleTime_ms;
+        EKFGSF_yaw_reset_count++;
+
+        gcs().send_text(MAV_SEVERITY_WARNING, "EKF3 IMU%u emergency yaw reset - mag sensor stopped",(unsigned)imu_index);
+
+        // Fail the magnetomer so it doesn't get used and pull the yaw away from the correct value
+        allMagSensorsFailed = true;
+
+        // reset velocity and position states to GPS - if yaw is fixed then the filter should start to operate correctly
+        ResetVelocity();
+        ResetPosition();
+
+		// reset test ratios that are reported to prevent a race condition with the external state machine requesting the reset
+		velTestRatio = 0.0f;
+		posTestRatio = 0.0f;
+
+        return true;
+
+    }
+    
+    return false;
+
+}
