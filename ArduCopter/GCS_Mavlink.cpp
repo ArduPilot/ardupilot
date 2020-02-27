@@ -994,10 +994,10 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
         bool yaw_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE;
         bool yaw_rate_ignore = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE;
 
-        /*
-         * for future use:
-         * bool force           = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_FORCE;
-         */
+        // exit immediately if acceleration provided
+        if (!acc_ignore) {
+            break;
+        }
 
         // prepare position
         Vector3f pos_vector;
@@ -1051,11 +1051,11 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
         }
 
         // send request
-        if (!pos_ignore && !vel_ignore && acc_ignore) {
+        if (!pos_ignore && !vel_ignore) {
             copter.mode_guided.set_destination_posvel(pos_vector, vel_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
-        } else if (pos_ignore && !vel_ignore && acc_ignore) {
+        } else if (pos_ignore && !vel_ignore) {
             copter.mode_guided.set_velocity(vel_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
-        } else if (!pos_ignore && vel_ignore && acc_ignore) {
+        } else if (!pos_ignore && vel_ignore) {
             copter.mode_guided.set_destination(pos_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
         }
 
@@ -1079,10 +1079,10 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
         bool yaw_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE;
         bool yaw_rate_ignore = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE;
 
-        /*
-         * for future use:
-         * bool force           = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_FORCE;
-         */
+        // exit immediately if acceleration provided
+        if (!acc_ignore) {
+            break;
+        }
 
         // extract location from message
         Location loc;
@@ -1112,7 +1112,7 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
         }
 
         // send targets to the appropriate guided mode controller
-        if (!pos_ignore && !vel_ignore && acc_ignore) {
+        if (!pos_ignore && !vel_ignore) {
             // convert Location to vector from ekf origin for posvel controller
             if (loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) {
                 // posvel controller does not support alt-above-terrain
@@ -1123,9 +1123,9 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
                 break;
             }
             copter.mode_guided.set_destination_posvel(pos_neu_cm, Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f), !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
-        } else if (pos_ignore && !vel_ignore && acc_ignore) {
+        } else if (pos_ignore && !vel_ignore) {
             copter.mode_guided.set_velocity(Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f), !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
-        } else if (!pos_ignore && vel_ignore && acc_ignore) {
+        } else if (!pos_ignore && vel_ignore) {
             copter.mode_guided.set_destination(loc, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
         }
 
