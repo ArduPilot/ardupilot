@@ -96,7 +96,6 @@ void EKFGSF_yaw::update(const Vector3f delAng,
 	}
 
 	// Always run the AHRS prediction cycle for each model
-#define N_MODELS_EKFGSF 8
 	for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
 		predict(mdl_idx);
 	}

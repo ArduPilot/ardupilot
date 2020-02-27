@@ -2,11 +2,9 @@
 
 #pragma GCC optimize("O2")
 
+#include <AP_NavEKF/AP_Nav_Common.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/vectorN.h>
-
-#define GYRO_BIAS_LIMIT 0.5f
-#define N_MODELS_EKFGSF 8
 
 class EKFGSF_yaw
 {
