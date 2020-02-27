@@ -289,11 +289,6 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
 // roll and pitch value are in centi-degrees
 void AC_Avoid::adjust_roll_pitch(float &roll, float &pitch, float veh_angle_max)
 {
-    // exit immediately if proximity based avoidance is disabled
-    if ((_enabled & AC_AVOID_USE_PROXIMITY_SENSOR) == 0 || !_proximity_enabled) {
-        return;
-    }
-
     // exit immediately if angle max is zero
     if (_angle_max <= 0.0f || veh_angle_max <= 0.0f) {
         return;
@@ -303,9 +298,20 @@ void AC_Avoid::adjust_roll_pitch(float &roll, float &pitch, float veh_angle_max)
     float roll_negative = 0.0f;    // minimum negative roll value
     float pitch_positive = 0.0f;   // maximum positive pitch value
     float pitch_negative = 0.0f;   // minimum negative pitch value
+    bool adjusted = false;
+    
+    if ((_enabled & AC_AVOID_USE_PROXIMITY_SENSOR) && _proximity_enabled) {
+        // get maximum positive and negative roll and pitch percentages from proximity sensor
+        adjusted |= get_proximity_roll_pitch_pct(roll_positive, roll_negative, pitch_positive, pitch_negative);
+    }
 
-    // get maximum positive and negative roll and pitch percentages from proximity sensor
-    get_proximity_roll_pitch_pct(roll_positive, roll_negative, pitch_positive, pitch_negative);
+    if (_enabled & AC_AVOID_STOP_AT_FENCE) {
+        adjusted |= get_fence_roll_pitch_pct(roll_positive, roll_negative, pitch_positive, pitch_negative);
+    }
+
+    if (!adjusted) {
+        return;
+    }
 
     // add maximum positive and negative percentages together for roll and pitch, convert to centi-degrees
     Vector2f rp_out((roll_positive + roll_negative) * 4500.0f, (pitch_positive + pitch_negative) * 4500.0f);
@@ -1055,27 +1061,113 @@ float AC_Avoid::distance_to_lean_pct(float dist_m)
     return 1.0f - (dist_m / _dist_max);
 }
 
+bool AC_Avoid::get_fence_roll_pitch_pct(float &roll_positive, float &roll_negative, float &pitch_positive, float &pitch_negative)
+{    
+    const AC_Fence *fence = AP::fence();
+    if (fence == nullptr) {
+        return false;
+    }
+
+    // exit if any fence has already been breached
+    if (fence->get_breaches()) {
+        return false;
+    }
+
+    uint8_t enabled_fences = fence->get_enabled_fences();
+    bool adjusted = false;
+    const AP_AHRS &_ahrs = AP::ahrs();
+    if (enabled_fences & AC_FENCE_TYPE_CIRCLE) {
+        const float fence_radius = fence->get_radius();
+        Vector2f pos;
+        if (_ahrs.get_relative_position_NE_home(pos)) {
+            float dist_squared = pos.length_squared();
+            if (dist_squared > ((fence_radius - _dist_max) * (fence_radius - _dist_max))) {
+                const float lean_pct = distance_to_lean_pct(sqrtf(dist_squared));
+                const float angle_rad = pos.angle() - _ahrs.yaw;
+                const float roll_pct = -sinf(angle_rad) * lean_pct;
+                const float pitch_pct = cosf(angle_rad) * lean_pct;
+                // update roll, pitch maximums
+                if (roll_pct > 0.0f) {
+                    roll_positive = MAX(roll_positive, roll_pct);
+                } else if (roll_pct < 0.0f) {
+                    roll_negative = MIN(roll_negative, roll_pct);
+                }
+                if (pitch_pct > 0.0f) {
+                    pitch_positive = MAX(pitch_positive, pitch_pct);
+                } else if (pitch_pct < 0.0f) {
+                    pitch_negative = MIN(pitch_negative, pitch_pct);
+                }
+                adjusted = true;
+            }
+        }
+    }
+    if (!adjusted && (enabled_fences & AC_FENCE_TYPE_POLYGON)) {
+        float dist_max_squared = _dist_max * _dist_max;
+        Vector2f pos;
+        if (_ahrs.get_relative_position_NE_origin(pos)) {
+            const uint8_t num_inclusion_polygons = fence->polyfence().get_inclusion_polygon_count();
+            for (uint8_t i = 0; i < num_inclusion_polygons; i++) {
+                uint16_t num_points;
+                const Vector2f* boundary = fence->polyfence().get_inclusion_polygon(i, num_points);
+                if (boundary == nullptr || num_points < 3) {
+                    continue;
+                }
+                for (uint16_t k=0; k < num_points; k++) {
+                    uint16_t j = k+1;
+                    if (j >= num_points) {
+                        j = 0;
+                    }
+                    Vector2f start = boundary[j] * 0.01f; //to meters
+                    Vector2f end = boundary[k] * 0.01f;
+                    Vector2f pos_cp = Vector2f::closest_point(pos, start, end) - pos;
+                    float dist_squared = pos_cp.length_squared();
+                    if (dist_squared < dist_max_squared) {
+                        const float lean_pct = distance_to_lean_pct(sqrtf(dist_squared));
+                        const float angle_rad = pos_cp.angle() - _ahrs.yaw;
+                        const float roll_pct = -sinf(angle_rad) * lean_pct;
+                        const float pitch_pct = cosf(angle_rad) * lean_pct;
+                        // update roll, pitch maximums
+                        if (roll_pct > 0.0f) {
+                            roll_positive = MAX(roll_positive, roll_pct);
+                        } else if (roll_pct < 0.0f) {
+                            roll_negative = MIN(roll_negative, roll_pct);
+                        }
+                        if (pitch_pct > 0.0f) {
+                            pitch_positive = MAX(pitch_positive, pitch_pct);
+                        } else if (pitch_pct < 0.0f) {
+                            pitch_negative = MIN(pitch_negative, pitch_pct);
+                        }
+                        adjusted = true;
+                    }
+                }
+            }
+        }
+    }
+    return adjusted;
+}
+
 // returns the maximum positive and negative roll and pitch percentages (in -1 ~ +1 range) based on the proximity sensor
-void AC_Avoid::get_proximity_roll_pitch_pct(float &roll_positive, float &roll_negative, float &pitch_positive, float &pitch_negative)
+bool AC_Avoid::get_proximity_roll_pitch_pct(float &roll_positive, float &roll_negative, float &pitch_positive, float &pitch_negative)
 {
     AP_Proximity *proximity = AP::proximity();
     if (proximity == nullptr) {
-        return;
+        return false;
     }
     AP_Proximity &_proximity = *proximity;
 
     // exit immediately if proximity sensor is not present
     if (_proximity.get_status() != AP_Proximity::Status::Good) {
-        return;
+        return false;
     }
 
     const uint8_t obj_count = _proximity.get_object_count();
 
     // if no objects return
     if (obj_count == 0) {
-        return;
+        return false;
     }
 
+    bool adjusted = false;
     // calculate maximum roll, pitch values from objects
     for (uint8_t i=0; i<obj_count; i++) {
         float ang_deg, dist_m;
@@ -1098,9 +1190,11 @@ void AC_Avoid::get_proximity_roll_pitch_pct(float &roll_positive, float &roll_ne
                 } else if (pitch_pct < 0.0f) {
                     pitch_negative = MIN(pitch_negative, pitch_pct);
                 }
+                adjusted = true;
             }
         }
     }
+    return adjusted;
 }
 
 // singleton instance
