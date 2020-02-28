@@ -25,6 +25,7 @@ extern const AP_HAL::HAL& hal;
 #define AR_WPNAV_OVERSHOOT_DEFAULT      2.0f
 #define AR_WPNAV_PIVOT_ANGLE_DEFAULT    60
 #define AR_WPNAV_PIVOT_RATE_DEFAULT     90
+#define AR_WPNAV_PIVOT_EXIT_DEFAULT     10
 
 const AP_Param::GroupInfo AR_WPNav::var_info[] = {
 
@@ -57,7 +58,7 @@ const AP_Param::GroupInfo AR_WPNav::var_info[] = {
 
     // @Param: PIVOT_ANGLE
     // @DisplayName: Waypoint Pivot Angle
-    // @Description: Pivot when the difference bewteen the vehicle's heading and it's target heading is more than this many degrees.  Set to zero to disable pivot turns
+    // @Description: Pivot when the difference between the vehicle's heading and it's target heading is more than this many degrees.  Set to zero to disable pivot turns
     // @Units: deg
     // @Range: 0 360
     // @Increment: 1
@@ -81,6 +82,15 @@ const AP_Param::GroupInfo AR_WPNav::var_info[] = {
     // @Increment: 0.1
     // @User: Standard
     AP_GROUPINFO("SPEED_MIN", 6, AR_WPNav, _speed_min, 0),
+    
+    // @Param: PIVOT_EXIT
+    // @DisplayName: Waypoint Pivot Exit Angle
+    // @Description: Exit the pivot after the difference between the vehicle's heading and it's target heading is less than this many degrees. This parameter must be less than PIVOT_ANGLE.
+    // @Units: deg
+    // @Range: 0 360
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("PIVOT_EXIT", 7, AR_WPNav, _pivot_exit_angle, AR_WPNAV_PIVOT_EXIT_DEFAULT),
 
     AP_GROUPEND
 };
@@ -277,7 +287,7 @@ bool AR_WPNav::use_pivot_steering_at_next_WP(float yaw_error_cd) const
 bool AR_WPNav::use_pivot_steering(float yaw_error_cd)
 {
     // check cases where we clearly cannot use pivot steering
-    if (!_pivot_possible || (_pivot_angle <= 0)) {
+    if (!_pivot_possible || (_pivot_angle <= 0) || (_pivot_angle <= _pivot_exit_angle)) {
         _pivot_active = false;
         return false;
     }
@@ -291,8 +301,8 @@ bool AR_WPNav::use_pivot_steering(float yaw_error_cd)
         return true;
     }
 
-    // if within 10 degrees of the target heading, exit pivot steering
-    if (yaw_error < 10.0f) {
+    // if error is within _pivot_exit_angle of the target heading, exit pivot steering
+    if (yaw_error < _pivot_exit_angle) {
         _pivot_active = false;
         return false;
     }

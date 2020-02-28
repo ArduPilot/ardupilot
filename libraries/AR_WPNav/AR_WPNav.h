@@ -119,6 +119,7 @@ private:
     AP_Float _overshoot;            // maximum horizontal overshoot in meters
     AP_Int16 _pivot_angle;          // angle error that leads to pivot turn
     AP_Int16 _pivot_rate;           // desired turn rate during pivot turns in deg/sec
+    AP_Int16 _pivot_exit_angle;     // angle error that exits the pivot turn
 
     // references
     AR_AttitudeControl& _atc;       // rover attitude control library
