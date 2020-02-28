@@ -233,6 +233,9 @@ public:
     /// freeze_ff_z - used to stop the feed forward being calculated during a known discontinuity
     void freeze_ff_z() { _flags.freeze_ff_z = true; }
 
+    // relax velocity controller by clearing velocity error and setting velocity target to current velocity
+    void relax_velocity_controller_xy();
+
     // is_active_xy - returns true if the xy position controller has been run very recently
     bool is_active_xy() const;
 
