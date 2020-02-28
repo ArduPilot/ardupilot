@@ -589,13 +589,13 @@ private:
         ESCCAL_DISABLED = 9,
     };
 
-    enum Failsafe_Action {
-        Failsafe_Action_None           = 0,
-        Failsafe_Action_Land           = 1,
-        Failsafe_Action_RTL            = 2,
-        Failsafe_Action_SmartRTL       = 3,
-        Failsafe_Action_SmartRTL_Land  = 4,
-        Failsafe_Action_Terminate      = 5
+    enum class Failsafe_Action : int8_t {
+        None           = 0,
+        Land           = 1,
+        RTL            = 2,
+        SmartRTL       = 3,
+        SmartRTL_Land  = 4,
+        Terminate      = 5
     };
 
     enum class FailsafeOption {
@@ -607,17 +607,17 @@ private:
     };
 
     static constexpr int8_t _failsafe_priorities[] = {
-                                                      Failsafe_Action_Terminate,
-                                                      Failsafe_Action_Land,
-                                                      Failsafe_Action_RTL,
-                                                      Failsafe_Action_SmartRTL_Land,
-                                                      Failsafe_Action_SmartRTL,
-                                                      Failsafe_Action_None,
+                                                      static_cast<int8_t>(Failsafe_Action::Terminate),
+                                                      static_cast<int8_t>(Failsafe_Action::Land),
+                                                      static_cast<int8_t>(Failsafe_Action::RTL),
+                                                      static_cast<int8_t>(Failsafe_Action::SmartRTL_Land),
+                                                      static_cast<int8_t>(Failsafe_Action::SmartRTL),
+                                                      static_cast<int8_t>(Failsafe_Action::None),
                                                       -1 // the priority list must end with a sentinel of -1
                                                      };
 
     #define FAILSAFE_LAND_PRIORITY 1
-    static_assert(_failsafe_priorities[FAILSAFE_LAND_PRIORITY] == Failsafe_Action_Land,
+    static_assert(_failsafe_priorities[FAILSAFE_LAND_PRIORITY] == static_cast<int8_t>(Failsafe_Action::Land),
                   "FAILSAFE_LAND_PRIORITY must match the entry in _failsafe_priorities");
     static_assert(_failsafe_priorities[ARRAY_SIZE(_failsafe_priorities) - 1] == -1,
                   "_failsafe_priorities is missing the sentinel");
