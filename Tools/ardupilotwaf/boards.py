@@ -425,6 +425,11 @@ class sitl(Board):
             env.CXXFLAGS += [
                 '-fno-slp-vectorize' # compiler bug when trying to use SLP
             ]
+class arm_sitl (sitl):
+    toolchain = 'arm-linux-gnueabihf'
+    
+    def configure_env(self, cfg, env):
+            super(arm_sitl, self).configure_env(cfg, env)
 
 class chibios(Board):
     abstract = True
