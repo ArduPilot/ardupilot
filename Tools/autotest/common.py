@@ -893,6 +893,20 @@ class AutoTest(ABC):
                                        0)
         self.detect_and_handle_reboot(old_bootcount, required_bootcount=required_bootcount)
 
+    def send_cmd_enter_cpu_lockup(self):
+        """Poke ArduPilot to stop the main loop from running"""
+        self.mav.mav.command_long_send(self.sysid_thismav(),
+                                       1,
+                                       mavutil.mavlink.MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN,
+                                       1,  # confirmation
+                                       42, # lockup autopilot
+                                       24, # no, really, we mean it
+                                       71, # seriously, we're not kidding
+                                       93, # we know exactly what we're
+                                       0,
+                                       0,
+                                       0)
+
     def reboot_sitl(self, required_bootcount=None):
         """Reboot SITL instance and wait for it to reconnect."""
         self.progress("Rebooting SITL")
@@ -1163,9 +1177,11 @@ class AutoTest(ABC):
     #################################################
     # SIM UTILITIES
     #################################################
-    def get_sim_time(self):
+    def get_sim_time(self, timeout=60):
         """Get SITL time in seconds."""
-        m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True)
+        m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True, timeout=timeout)
+        if m is None:
+            raise AutoTestTimeoutException("Did not get SYSTEM_TIME message")
         return m.time_boot_ms * 1.0e-3
 
     def get_sim_time_cached(self):
@@ -1737,20 +1753,83 @@ class AutoTest(ABC):
     def wait_disarmed_default_wait_time(self):
         return 30
 
-    def wait_disarmed(self, timeout=None):
+    def wait_disarmed(self, timeout=None, tstart=None):
         if timeout is None:
             timeout = self.wait_disarmed_default_wait_time()
         self.progress("Waiting for DISARM")
-        tstart = self.get_sim_time()
+        if tstart is None:
+            tstart = self.get_sim_time()
         while True:
             delta = self.get_sim_time_cached() - tstart
             if delta > timeout:
                 raise AutoTestTimeoutException("Failed to DISARM")
             self.wait_heartbeat()
+            self.progress("Got heartbeat")
             if not self.mav.motors_armed():
                 self.progress("DISARMED after %.2f seconds (allowed=%.2f)" %
                               (delta, timeout))
                 return True
+
+    def CPUFailsafe(self):
+        '''Most vehicles just disarm on failsafe'''
+        # customising the SITL commandline ensures the process will
+        # get stopped/started at the end of the test
+        self.customise_SITL_commandline([])
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.progress("Sending enter-cpu-lockup")
+        # when we're in CPU lockup we don't get SYSTEM_TIME messages,
+        # so get_sim_time breaks:
+        tstart = self.get_sim_time()
+        self.send_cmd_enter_cpu_lockup()
+        self.wait_disarmed(timeout=5, tstart=tstart)
+
+
+    def cpufailsafe_wait_servo_channel_value(self, channel, value, timeout=30):
+        '''we get restricted messages while doing cpufailsafe, this working then'''
+        start = time.time()
+        while True:
+            if time.time() - start > timeout:
+                raise NotAchievedException("Did not achieve value")
+            m = self.mav.recv_match(type='SERVO_OUTPUT_RAW', blocking=True, timeout=1)
+
+            if m is None:
+                raise NotAchievedException("Did not get SERVO_OUTPUT_RAW")
+            channel_field = "servo%u_raw" % channel
+            m_value = getattr(m, channel_field, None)
+            self.progress("Servo%u=%u want=%u" % (channel, m_value, value))
+            if m_value == value:
+                break
+
+    def plane_CPUFailsafe(self):
+        '''In lockup Plane should copy RC inputs to RC outputs'''
+        # customising the SITL commandline ensures the process will
+        # get stopped/started at the end of the test
+        self.customise_SITL_commandline([])
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.progress("Sending enter-cpu-lockup")
+        # when we're in CPU lockup we don't get SYSTEM_TIME messages,
+        # so get_sim_time breaks:
+        self.send_cmd_enter_cpu_lockup()
+        start_time = time.time() # not sim time!
+        while True:
+            want = "Initialising ArduPilot"
+            if time.time() - start_time > 30:
+                raise NotAchievedException("Did not get %s" % want)
+            # we still need to parse the incoming messages:
+            m = self.mav.recv_match(type='STATUSTEXT', blocking=True, timeout=0.1)
+            x = self.mav.messages.get("STATUSTEXT", None)
+            if x is not None and want in x.text:
+                break
+        # Different scaling for RC input and servo output means the
+        # servo output value isn't the rc input value:
+        self.progress("Setting RC to 1200")
+        self.send_set_rc(2, 1200)
+        self.progress("Waiting for servo of 1260")
+        self.cpufailsafe_wait_servo_channel_value(2, 1260)
+        self.send_set_rc(2, 1700)
+        self.cpufailsafe_wait_servo_channel_value(2, 1660)
 
     def mavproxy_arm_vehicle(self):
         """Arm vehicle with mavlink arm message send from MAVProxy."""
@@ -4953,6 +5032,10 @@ switch value'''
             ("ConfigErrorLoop",
              "Test Config Error Loop",
              self.test_config_error_loop),
+
+            ("CPUFailsafe",
+             "Ensure we do something appropriate when the main loop stops",
+             self.CPUFailsafe),
 
             ("Parameters",
              "Test Parameter Set/Get",
