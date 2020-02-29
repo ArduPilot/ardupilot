@@ -31,7 +31,7 @@
 
 using namespace ChibiOS;
 
-static const AP_HAL::HAL &hal = AP_HAL::get_HAL();
+extern const AP_HAL::HAL& hal;
 
 DeviceBus::DeviceBus(uint8_t _thread_priority) :
         thread_priority(_thread_priority)
