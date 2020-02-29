@@ -144,6 +144,7 @@ class AutoTestTracker(AutoTest):
         return {
             "ArmFeatures": "See https://github.com/ArduPilot/ardupilot/issues/10652",
             "Parameters": "reboot does not work",
+            "CPUFailsafe": " tracker doesn't have a CPU failsafe",
         }
 
     def tests(self):
