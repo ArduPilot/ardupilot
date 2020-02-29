@@ -49,8 +49,6 @@ private:
 	const float EKFGSF_accelNoise{2.0f};	// horizontal accel noise used for covariance prediction (m/sec**2)
 	const float EKFGSF_tiltGain{0.4f};		// gain from tilt error to gyro correction for complementary filter (1/sec)
 	const float EKFGSF_gyroBiasGain{0.04f};	// gain applied to integral of gyro correction for complementary filter (1/sec)
-	const uint16_t EKFGSF_resetDelay{1000};	// Number of mSec of bad innovations on main filter in post takeoff phase before yaw is reset to EKF-GSF value
-    const uint8_t EKFGSF_n_reset_max{2};    // Maximum number of resets allowed
 
     // Declarations used by the bank of AHRS complementary filters that use IMU data augmented by true
     // airspeed data when in fixed wing mode to estimate the quaternions that are used to rotate IMU data into a
