@@ -404,7 +404,12 @@ class AutoTestQuadPlane(AutoTest):
         return {
             "QAutoTune": "See https://github.com/ArduPilot/ardupilot/issues/10411",
             "FRSkyPassThrough": "Currently failing",
+            "CPUFailsafe": "servo channel values not scaled like ArduPlane",
         }
+
+    def CPUFailsafe(self):
+        '''In lockup Plane should copy RC inputs to RC outputs'''
+        self.plane_CPUFailsafe()
 
     def tests(self):
         '''return list of all tests'''

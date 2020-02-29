@@ -4,6 +4,7 @@
 from __future__ import print_function
 import math
 import os
+import time
 
 from pymavlink import quaternion
 from pymavlink import mavutil
@@ -1631,6 +1632,10 @@ class AutoTestPlane(AutoTest):
         self.set_rc(2, 1500)
         self.wait_altitude(initial_alt-1, initial_alt+1)
         self.fly_home_land_and_disarm()
+
+    def CPUFailsafe(self):
+        '''In lockup Plane should copy RC inputs to RC outputs'''
+        self.plane_CPUFailsafe()
 
     def tests(self):
         '''return list of all tests'''
