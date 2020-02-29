@@ -62,6 +62,7 @@ public:
         MOTOR_FRAME_TYPE_NYT_PLUS = 16, // plus frame, no differential torque for yaw
         MOTOR_FRAME_TYPE_NYT_X = 17, // X frame, no differential torque for yaw
         MOTOR_FRAME_TYPE_BF_X_REV = 18, // X frame, betaflight ordering, reversed motors
+        MOTOR_FRAME_TYPE_CUSTOM, // custom frame type defined by script custom_frame_type.lua
     };
 
     // Constructor
@@ -160,6 +161,18 @@ public:
 
     // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
     virtual void        set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type) = 0;
+
+    // get frame class and type: overridden by children which support custom frame type
+    virtual uint8_t     get_frame_class() {
+        return motor_frame_class::MOTOR_FRAME_UNDEFINED;
+    }
+    
+    virtual uint8_t     get_frame_type() {
+        return motor_frame_type::MOTOR_FRAME_TYPE_PLUS;
+    }
+
+    // method for AP_Scripting to indicate successful frame setup
+    void                set_initialised_ok() { _flags.initialised_ok = true; }
 
     // output - sends commands to the motors
     virtual void        output() = 0;

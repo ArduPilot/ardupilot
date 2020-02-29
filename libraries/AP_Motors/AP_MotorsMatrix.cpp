@@ -65,6 +65,15 @@ void AP_MotorsMatrix::set_frame_class_and_type(motor_frame_class frame_class, mo
     set_update_rate(_speed_hz);
 }
 
+// to support custom frame type defined in a script
+uint8_t AP_MotorsMatrix::get_frame_class() {
+    return _last_frame_class;
+}
+
+uint8_t AP_MotorsMatrix::get_frame_type() {
+    return _last_frame_type;
+}
+
 void AP_MotorsMatrix::output_to_motors()
 {
     int8_t i;
@@ -935,4 +944,15 @@ void AP_MotorsMatrix::thrust_compensation(void)
     if (_thrust_compensation_callback) {
         _thrust_compensation_callback(_thrust_rpyt_out, AP_MOTORS_MAX_NUM_MOTORS);
     }
+}
+
+// singleton instance
+AP_MotorsMatrix *AP_MotorsMatrix::_singleton;
+
+namespace AP {
+
+AP_MotorsMatrix &motorsMatrix()
+{
+    return *AP_MotorsMatrix::get_singleton();
+}
 }
