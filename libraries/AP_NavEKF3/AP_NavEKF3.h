@@ -452,8 +452,6 @@ private:
     AP_Float _hrt_filt_freq;        // frequency of output observer height rate complementary filter in Hz
     AP_Int16 _mag_ef_limit;         // limit on difference between WMM tables and learned earth field.
     AP_Float _EKFGSF_easDefault;    // default equivalent airspeed value assumed during fixed wing flight if no airspeed measurement available (m/s)
-    AP_Int8 _EKFGSF_nmodels;        // number of AHRS and EKF models used by EKF-GSF yaw estimator. Must be no less than 3 and no more than 8.
-
 
 // Possible values for _flowUse
 #define FLOW_USE_NONE    0
@@ -490,11 +488,7 @@ private:
     const uint8_t sensorIntervalMin_ms = 50;       // The minimum allowed time between measurements from any non-IMU sensor (msec)
     const uint8_t flowIntervalMin_ms = 20;         // The minimum allowed time between measurements from optical flow sensors (msec)
 
-	// Parameters used by EKF-GSF yaw estimator
-	const float EKFGSF_gyroNoise{1.0e-1f}; 	// yaw rate noise used for covariance prediction (rad/sec)
-	const float EKFGSF_accelNoise{2.0f};	// horizontal accel noise used for covariance prediction (m/sec**2)
-	const float EKFGSF_tiltGain{0.4f};		// gain from tilt error to gyro correction for complementary filter (1/sec)
-	const float EKFGSF_gyroBiasGain{0.04f};	// gain applied to integral of gyro correction for complementary filter (1/sec)
+	// Parameters used to control reset to EKF-GSF yaw estimator
 	const uint16_t EKFGSF_resetDelay{1000};	// Number of mSec of bad innovations on main filter in post takeoff phase before yaw is reset to EKF-GSF value
     const uint8_t EKFGSF_n_reset_max{2};    // Maximum number of resets allowed
 
