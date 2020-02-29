@@ -385,7 +385,8 @@ public:
     void Log_Write();
 
     // log debug data for yaw estimator
-	void getDataEKFGSF(int8_t instance, float *yaw_composite, float *yaw_composite_variance, float yaw[N_MODELS_EKFGSF], float innov_VN[N_MODELS_EKFGSF], float innov_VE[N_MODELS_EKFGSF], float weight[N_MODELS_EKFGSF]) const;
+    // return false if data not available
+	bool getDataEKFGSF(int8_t instance, float *yaw_composite, float *yaw_composite_variance, float yaw[N_MODELS_EKFGSF], float innov_VN[N_MODELS_EKFGSF], float innov_VE[N_MODELS_EKFGSF], float weight[N_MODELS_EKFGSF]) const;
 
 private:
     uint8_t num_cores; // number of allocated cores
@@ -451,7 +452,11 @@ private:
     AP_Int8  _flowUse;              // Controls if the optical flow data is fused into the main navigation estimator and/or the terrain estimator.
     AP_Float _hrt_filt_freq;        // frequency of output observer height rate complementary filter in Hz
     AP_Int16 _mag_ef_limit;         // limit on difference between WMM tables and learned earth field.
-    AP_Float _EKFGSF_easDefault;    // default equivalent airspeed value assumed during fixed wing flight if no airspeed measurement available (m/s)
+    AP_Float _easDefault;           // default equivalent airspeed value assumed during fixed wing flight if no airspeed measurement available (m/s)
+    AP_Int8 _gsfRunMask;            // mask controlling which EKF3 instances run a separate EKF-GSF yaw estimator
+    AP_Int8 _gsfUseMask;            // mask controlling which EKF3 instances will use EKF-GSF yaw estimator data to assit with yaw resets
+    AP_Int16 _gsfResetDelay;        // number of mSec from loss of navigation to requesting a reset using EKF-GSF yaw estimator data
+    AP_Int8 _gsfResetMaxCount;      // maximum number of times the EKF3 is allowed to reset it's yaw to the EKF-GSF estimate
 
 // Possible values for _flowUse
 #define FLOW_USE_NONE    0
@@ -487,10 +492,6 @@ private:
     const uint16_t fusionTimeStep_ms = 10;         // The minimum time interval between covariance predictions and measurement fusions in msec
     const uint8_t sensorIntervalMin_ms = 50;       // The minimum allowed time between measurements from any non-IMU sensor (msec)
     const uint8_t flowIntervalMin_ms = 20;         // The minimum allowed time between measurements from optical flow sensors (msec)
-
-	// Parameters used to control reset to EKF-GSF yaw estimator
-	const uint16_t EKFGSF_resetDelay{1000};	// Number of mSec of bad innovations on main filter in post takeoff phase before yaw is reset to EKF-GSF value
-    const uint8_t EKFGSF_n_reset_max{2};    // Maximum number of resets allowed
 
     struct {
         bool enabled:1;

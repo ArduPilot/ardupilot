@@ -369,7 +369,8 @@ public:
     void getTimingStatistics(struct ekf_timing &timing);
 
     // get solution data for the EKF-GSF emergency yaw estimator
-	void getDataEKFGSF(float *yaw_composite, float *yaw_composite_variance, float yaw[N_MODELS_EKFGSF], float innov_VN[N_MODELS_EKFGSF], float innov_VE[N_MODELS_EKFGSF], float weight[N_MODELS_EKFGSF]);
+    // return false if data not available
+	bool getDataEKFGSF(float *yaw_composite, float *yaw_composite_variance, float yaw[N_MODELS_EKFGSF], float innov_VN[N_MODELS_EKFGSF], float innov_VE[N_MODELS_EKFGSF], float weight[N_MODELS_EKFGSF]);
 
     // attempt to reset the yaw to the EKF-GSF value
     // returns false if unsuccessful

@@ -351,14 +351,15 @@ void NavEKF3::Log_Write_GSF(uint64_t time_us) const
     float ivn[N_MODELS_EKFGSF];
     float ive[N_MODELS_EKFGSF];
     float wgt[N_MODELS_EKFGSF];
-    getDataEKFGSF(-1, &yaw_composite, &yaw_composite_variance, yaw, ivn, ive, wgt);
-    AP::logger().Write("GSF0", "TimeUS,YC,YCV,Y0,Y1,Y2,Y3,Y4,W0,W1,W2,W3,W4", "Qffffffffffff",
-        time_us,
-        (double)yaw_composite,(double)yaw_composite_variance,
-        (double)yaw[0],(double)yaw[1],(double)yaw[2],(double)yaw[3],(double)yaw[4],
-        (double)wgt[0],(double)wgt[1],(double)wgt[2],(double)wgt[3],(double)wgt[4]);
-    AP::logger().Write("GSF1", "TimeUS,IVN0,IVN1,IVN2,IVN3,IVN4,IVE0,IVE1,IVE2,IVE3,IVE4", "Qffffffffff",
-        time_us,
-        (double)ivn[0],(double)ivn[1],(double)ivn[2],(double)ivn[3],(double)ivn[4],
-        (double)ive[0],(double)ive[1],(double)ive[2],(double)ive[3],(double)ive[4]);
+    if (getDataEKFGSF(-1, &yaw_composite, &yaw_composite_variance, yaw, ivn, ive, wgt)) {
+        AP::logger().Write("GSF0", "TimeUS,YC,YCV,Y0,Y1,Y2,Y3,Y4,W0,W1,W2,W3,W4", "Qffffffffffff",
+            time_us,
+            (double)yaw_composite,(double)yaw_composite_variance,
+            (double)yaw[0],(double)yaw[1],(double)yaw[2],(double)yaw[3],(double)yaw[4],
+            (double)wgt[0],(double)wgt[1],(double)wgt[2],(double)wgt[3],(double)wgt[4]);
+        AP::logger().Write("GSF1", "TimeUS,IVN0,IVN1,IVN2,IVN3,IVN4,IVE0,IVE1,IVE2,IVE3,IVE4", "Qffffffffff",
+            time_us,
+            (double)ivn[0],(double)ivn[1],(double)ivn[2],(double)ivn[3],(double)ivn[4],
+            (double)ive[0],(double)ive[1],(double)ive[2],(double)ive[3],(double)ive[4]);
+    }
 }

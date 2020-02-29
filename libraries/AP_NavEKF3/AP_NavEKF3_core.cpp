@@ -633,21 +633,23 @@ void NavEKF3_core::UpdateFilter(bool predict)
         updateFilterStatus();
 
         // Generate an alternative yaw estimate used for inflight recovery from bad compass data
-        float trueAirspeed;
-        if (frontend->_EKFGSF_easDefault > FLT_EPSILON && assume_zero_sideslip()) {
-            if (imuDataDelayed.time_ms < (tasDataDelayed.time_ms + 5000)) {
-                trueAirspeed = tasDataDelayed.tas;
+        if (frontend->_gsfRunMask & (1U<<core_index)) {
+            float trueAirspeed;
+            if (frontend->_easDefault > FLT_EPSILON && assume_zero_sideslip()) {
+                if (imuDataDelayed.time_ms < (tasDataDelayed.time_ms + 5000)) {
+                    trueAirspeed = tasDataDelayed.tas;
+                } else {
+                    trueAirspeed = frontend->_easDefault * AP::ahrs().get_EAS2TAS();
+                }
             } else {
-                trueAirspeed = frontend->_EKFGSF_easDefault * AP::ahrs().get_EAS2TAS();
+                trueAirspeed = 0.0f;
             }
-        } else {
-            trueAirspeed = 0.0f;
-        }
-        yawEstimator.update(imuDataDelayed.delAng, imuDataDelayed.delVel, imuDataDelayed.delAngDT, imuDataDelayed.delVelDT, EKFGSF_run_filterbank, trueAirspeed);
-        if (gpsDataToFuse) {
-            Vector2f gpsVelNE = Vector2f(gpsDataDelayed.vel.x, gpsDataDelayed.vel.y);
-            float gpsVelAcc = fmaxf(gpsSpdAccuracy, frontend->_gpsHorizVelNoise);
-            yawEstimator.pushVelData(gpsVelNE, gpsVelAcc);
+            yawEstimator.update(imuDataDelayed.delAng, imuDataDelayed.delVel, imuDataDelayed.delAngDT, imuDataDelayed.delVelDT, EKFGSF_run_filterbank, trueAirspeed);
+            if (gpsDataToFuse) {
+                Vector2f gpsVelNE = Vector2f(gpsDataDelayed.vel.x, gpsDataDelayed.vel.y);
+                float gpsVelAcc = fmaxf(gpsSpdAccuracy, frontend->_gpsHorizVelNoise);
+                yawEstimator.pushVelData(gpsVelNE, gpsVelAcc);
+            }
         }
     }
 

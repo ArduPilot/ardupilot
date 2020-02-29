@@ -280,8 +280,8 @@ void NavEKF3_core::setAidingMode()
                 }
                 posAidLossCritical = (imuSampleTime_ms - lastRngBcnPassTime_ms > maxLossTime_ms) &&
                         (imuSampleTime_ms - lastPosPassTime_ms > maxLossTime_ms);
-                posAidLossPending = (imuSampleTime_ms - lastRngBcnPassTime_ms > frontend->EKFGSF_resetDelay) &&
-                        (imuSampleTime_ms - lastPosPassTime_ms > frontend->EKFGSF_resetDelay);
+                posAidLossPending = (imuSampleTime_ms > lastRngBcnPassTime_ms + frontend->_gsfResetDelay) &&
+                        (imuSampleTime_ms > lastPosPassTime_ms + frontend->_gsfResetDelay);
             }
 
             if (attAidLossCritical) {
