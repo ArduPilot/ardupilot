@@ -41,6 +41,12 @@ public:
     // parameter_check - returns true if input manager specific parameters are sensible, used for pre-arm check
     bool parameter_check(char* fail_msg, uint8_t fail_msg_len) const;
 
+    // set_collective_curve
+    void set_collective_curve();
+
+    // calculate_desired_collective
+    float calculate_desired_collective(int16_t control);
+
     static const struct AP_Param::GroupInfo        var_info[];
 
 private:
@@ -51,6 +57,9 @@ private:
     //  factor used to smoothly ramp collective from Acro value to Stab-Col value
     float _stab_col_ramp = 0;
 
+    float           _colcrv_poly[4][4];           // spline polynomials for collective curve interpolation
+
+    AP_Int16        _colcrv[5];               // collective pitch setting in Stabilize mode
     AP_Int16        _heli_stab_col_min;             // minimum collective pitch setting at zero throttle input in Stabilize mode
     AP_Int16        _heli_stab_col_low;             // collective pitch setting at mid-low throttle input in Stabilize mode
     AP_Int16        _heli_stab_col_mid;            // collective pitch setting at mid throttle input in Stabilize mode
