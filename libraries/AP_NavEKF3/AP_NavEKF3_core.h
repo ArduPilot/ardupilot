@@ -377,7 +377,7 @@ public:
     bool EKFGSF_resetMainFilterYaw();
 
 private:
-    EKFGSF_yaw yawEstimator;
+    EKFGSF_yaw *yawEstimator = nullptr;
 
     // Reference to the global EKF frontend for parameters
     NavEKF3 *frontend;

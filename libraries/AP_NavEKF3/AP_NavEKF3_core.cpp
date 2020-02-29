@@ -153,6 +153,22 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
                     (unsigned)obs_buffer_length,
                     (unsigned)flow_buffer_length,
                     (double)dtEkfAvg);
+
+    if ((yawEstimator == nullptr) && (frontend->_gsfRunMask & (1U<<core_index))) {
+        // check if there is enough memory to create the EKF-GSF object
+        if (hal.util->available_memory() < sizeof(EKFGSF_yaw) + 1024) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "EKF3 IMU%u GSF: not enough memory",(unsigned)imu_index);
+            return false;
+        }
+
+        // try to instantiate
+        yawEstimator = new EKFGSF_yaw();
+        if (yawEstimator == nullptr) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "EKF3 IMU%uGSF: allocation failed",(unsigned)imu_index);
+            return false;
+        }
+    }
+
     return true;
 }
     
@@ -633,7 +649,7 @@ void NavEKF3_core::UpdateFilter(bool predict)
         updateFilterStatus();
 
         // Generate an alternative yaw estimate used for inflight recovery from bad compass data
-        if (frontend->_gsfRunMask & (1U<<core_index)) {
+        if (yawEstimator != nullptr) {
             float trueAirspeed;
             if (frontend->_easDefault > FLT_EPSILON && assume_zero_sideslip()) {
                 if (imuDataDelayed.time_ms < (tasDataDelayed.time_ms + 5000)) {
@@ -644,11 +660,11 @@ void NavEKF3_core::UpdateFilter(bool predict)
             } else {
                 trueAirspeed = 0.0f;
             }
-            yawEstimator.update(imuDataDelayed.delAng, imuDataDelayed.delVel, imuDataDelayed.delAngDT, imuDataDelayed.delVelDT, EKFGSF_run_filterbank, trueAirspeed);
+            yawEstimator->update(imuDataDelayed.delAng, imuDataDelayed.delVel, imuDataDelayed.delAngDT, imuDataDelayed.delVelDT, EKFGSF_run_filterbank, trueAirspeed);
             if (gpsDataToFuse) {
                 Vector2f gpsVelNE = Vector2f(gpsDataDelayed.vel.x, gpsDataDelayed.vel.y);
                 float gpsVelAcc = fmaxf(gpsSpdAccuracy, frontend->_gpsHorizVelNoise);
-                yawEstimator.pushVelData(gpsVelNE, gpsVelAcc);
+                yawEstimator->pushVelData(gpsVelNE, gpsVelAcc);
             }
         }
     }
