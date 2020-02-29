@@ -30,7 +30,7 @@ const AP_Param::GroupInfo AC_InputManager_Heli::var_info[] = {
 
     // @Param: STB_COL_2
     // @DisplayName: Stabilize Collective Mid-Low
-    // @Description: Helicopter's collective pitch setting at mid-low (40%) collective stick input in Stabilize mode. Set this as a percent of collective range given by H_COL_MAX minus H_COL_MIN.
+    // @Description: Helicopter's collective pitch setting at mid-low (25%) collective stick input in Stabilize mode. Set this as a percent of collective range given by H_COL_MAX minus H_COL_MIN.
     // @Range: 0 100
     // @Units: %
     // @Increment: 1
@@ -38,22 +38,31 @@ const AP_Param::GroupInfo AC_InputManager_Heli::var_info[] = {
     AP_GROUPINFO("STB_COL_2",    7, AC_InputManager_Heli, _heli_stab_col_low, AC_ATTITUDE_HELI_STAB_COLLECTIVE_LOW_DEFAULT),
 
     // @Param: STB_COL_3
-    // @DisplayName: Stabilize Collective Mid-High
-    // @Description: Helicopter's collective pitch setting at mid-high (60%) collective stick input in Stabilize mode. Set this as a percent of collective range given by H_COL_MAX minus H_COL_MIN.
+    // @DisplayName: Stabilize Collective Mid
+    // @Description: Helicopter's collective pitch setting at mid (50%) collective stick input in Stabilize mode. Set this as a percent of collective range given by H_COL_MAX minus H_COL_MIN.
     // @Range: 0 100
     // @Units: %
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("STB_COL_3",    8, AC_InputManager_Heli, _heli_stab_col_high, AC_ATTITUDE_HELI_STAB_COLLECTIVE_HIGH_DEFAULT),
+    AP_GROUPINFO("STB_COL_3",    8, AC_InputManager_Heli, _heli_stab_col_mid, AC_ATTITUDE_HELI_STAB_COLLECTIVE_MID_DEFAULT),
 
     // @Param: STB_COL_4
+    // @DisplayName: Stabilize Collective Mid-High
+    // @Description: Helicopter's collective pitch setting at mid-high (75%) collective stick input in Stabilize mode. Set this as a percent of collective range given by H_COL_MAX minus H_COL_MIN.
+    // @Range: 0 100
+    // @Units: %
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("STB_COL_4",    9, AC_InputManager_Heli, _heli_stab_col_high, AC_ATTITUDE_HELI_STAB_COLLECTIVE_HIGH_DEFAULT),
+
+    // @Param: STB_COL_5
     // @DisplayName: Stabilize Collective High
     // @Description: Helicopter's maximum collective pitch setting at full collective stick input in Stabilize mode. Set this as a percent of collective range given by H_COL_MAX minus H_COL_MIN.
     // @Range: 0 100
     // @Units: %
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("STB_COL_4",    9, AC_InputManager_Heli, _heli_stab_col_max, AC_ATTITUDE_HELI_STAB_COLLECTIVE_MAX_DEFAULT),
+    AP_GROUPINFO("STB_COL_5",    10, AC_InputManager_Heli, _heli_stab_col_max, AC_ATTITUDE_HELI_STAB_COLLECTIVE_MAX_DEFAULT),
 
     AP_GROUPEND
 };
@@ -65,23 +74,28 @@ float AC_InputManager_Heli::get_pilot_desired_collective(int16_t control_in)
     float stab_col_out, acro_col_out;
 
     // calculate stabilize collective value which scales pilot input to reduced collective range
-    // code implements a 3-segment curve with knee points at 40% and 60% throttle input
-    if (control_in < 400){  // control_in ranges from 0 to 1000
+    // code implements a 4-segment curve with knee points at 25%, 50% and 75% throttle input
+    if (control_in < 250){  // control_in ranges from 0 to 1000
         slope_low = _heli_stab_col_min / 100.0f;
         slope_high = _heli_stab_col_low / 100.0f;
-        slope_range = 0.4f;
+        slope_range = 0.25f;
         slope_run = control_in / 1000.0f;
-    } else if(control_in <600){  // control_in ranges from 0 to 1000
+    } else if(control_in < 500){  // control_in ranges from 0 to 1000
         slope_low = _heli_stab_col_low / 100.0f;
+        slope_high = _heli_stab_col_mid / 100.0f;
+        slope_range = 0.25f;
+        slope_run = (control_in - 250) / 1000.0f;
+    } else if(control_in < 750){  // control_in ranges from 0 to 1000{
+        slope_low = _heli_stab_col_mid / 100.0f;
         slope_high = _heli_stab_col_high / 100.0f;
-        slope_range = 0.2f;
-        slope_run = (control_in - 400) / 1000.0f;  // control_in ranges from 0 to 1000
+        slope_range = 0.25f;
+        slope_run = (control_in - 500) / 1000.0f;  // control_in ranges from 0 to 1000
     } else {
         slope_low = _heli_stab_col_high / 100.0f;
         slope_high = _heli_stab_col_max / 100.0f;
-        slope_range = 0.4f;
-        slope_run = (control_in - 600) / 1000.0f;  // control_in ranges from 0 to 1000
-    }    
+        slope_range = 0.25f;
+        slope_run = (control_in - 750) / 1000.0f;  // control_in ranges from 0 to 1000
+    } 
 
     scalar = (slope_high - slope_low)/slope_range;
     stab_col_out = slope_low + slope_run * scalar;
@@ -132,8 +146,9 @@ bool AC_InputManager_Heli::parameter_check(char* fail_msg, uint8_t fail_msg_len)
     } stab_checks[] = {
         {"IM_STB_COL_1", _heli_stab_col_min },
         {"IM_STB_COL_2", _heli_stab_col_low },
-        {"IM_STB_COL_3", _heli_stab_col_high },
-        {"IM_STB_COL_4", _heli_stab_col_max },
+        {"IM_STB_COL_3", _heli_stab_col_mid },
+        {"IM_STB_COL_4", _heli_stab_col_high },
+        {"IM_STB_COL_5", _heli_stab_col_max },
     };
 
     // check values are within valid range

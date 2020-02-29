@@ -9,6 +9,7 @@
 
 # define AC_ATTITUDE_HELI_STAB_COLLECTIVE_MIN_DEFAULT     0
 # define AC_ATTITUDE_HELI_STAB_COLLECTIVE_LOW_DEFAULT     40
+# define AC_ATTITUDE_HELI_STAB_COLLECTIVE_MID_DEFAULT     50
 # define AC_ATTITUDE_HELI_STAB_COLLECTIVE_HIGH_DEFAULT    60
 # define AC_ATTITUDE_HELI_STAB_COLLECTIVE_MAX_DEFAULT     100
 
@@ -52,6 +53,7 @@ private:
 
     AP_Int16        _heli_stab_col_min;             // minimum collective pitch setting at zero throttle input in Stabilize mode
     AP_Int16        _heli_stab_col_low;             // collective pitch setting at mid-low throttle input in Stabilize mode
+    AP_Int16        _heli_stab_col_mid;            // collective pitch setting at mid throttle input in Stabilize mode
     AP_Int16        _heli_stab_col_high;            // collective pitch setting at mid-high throttle input in Stabilize mode
     AP_Int16        _heli_stab_col_max;             // maximum collective pitch setting at full throttle input in Stabilize mode
     AP_Float        _acro_col_expo;                 // used to soften collective pitch inputs near center point in Acro mode
