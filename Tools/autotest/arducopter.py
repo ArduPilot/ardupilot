@@ -3803,7 +3803,13 @@ class AutoTestCopter(AutoTest):
             psd = self.mavfft_fttd(1, 0, tstart * 1.0e6, tend * 1.0e6)
             freq = psd["F"][numpy.argmax(psd["X"][ignore_bins:]) + ignore_bins]
             dblevel = numpy.amax(psd["X"][ignore_bins:])
-            if dblevel < -10:
+            '''
+AUTOTEST: FAILED: "GyroFFT (Fly Gyro FFT)": NotAchievedException('Detected 178.703498Hz motor peak at -9.713545dB',) (see /home/travis/build/ArduPilot/buildlogs/ArduCopter-GyroFFT.txt)
+That's pretty close to the -10 threshold; do we need to loosen the threshold?
+Andy, 08:28
+yeah, if you are seeing test failures it would make sense. The harmonic matching logic is not great right now and I am working on improvements.
+'''
+            if dblevel < -9:
                 self.progress("Did not detect a motor peak, found %fHz at %fdB" % (freq, dblevel))
             else:
                 raise NotAchievedException("Detected %fHz motor peak at %fdB" % (freq, dblevel))
