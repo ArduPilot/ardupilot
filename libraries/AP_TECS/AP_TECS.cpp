@@ -251,15 +251,15 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
 
     // @Param: PTCH_FF_V0
     // @DisplayName: Baseline airspeed for pitch feed-forward.
-    // @Description: This parameter sets the airspeed at which no feed-forward is applied between demanded airspeed and pitch. It should correspond to the airspeed at which the plane glides at zero pitch.
-    // @Range 5.0 50.0
+    // @Description: This parameter sets the airspeed at which no feed-forward is applied between demanded airspeed and pitch. It should correspond to the airspeed in metres per second at which the plane glides at neutral pitch including STAB_PITCH_DOWN.
+    // @Range: 5.0 50.0
     // @User: Advanced
     AP_GROUPINFO("PTCH_FF_V0", 29, AP_TECS, _pitch_ff_v0, 12.0),
 
     // @Param: PTCH_FF_K
     // @DisplayName: Gain for pitch feed-forward.
-    // @Description: This parameter sets the gain between demanded airspeed and pitch. It should generally be negative.
-    // @Range -5.0 0.0
+    // @Description: This parameter sets the gain between demanded airspeed and pitch. It has units of radians per metre per second and should generally be negative. A good starting value is -0.04 for gliders and -0.08 for draggy airframes. The default (0.0) disables this feed-forward.
+    // @Range: -5.0 0.0
     // @User: Advanced
     AP_GROUPINFO("PTCH_FF_K", 30, AP_TECS, _pitch_ff_k, 0.0),
     
