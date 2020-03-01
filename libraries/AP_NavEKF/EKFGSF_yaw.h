@@ -24,10 +24,11 @@ public:
                      float velAcc);   // 1-sigma accuracy of velocity measurement (m/s)
 
     // get solution data for logging
-	void getLogData(float *yaw_composite, float *yaw_composite_variance, float yaw[N_MODELS_EKFGSF], float innov_VN[N_MODELS_EKFGSF], float innov_VE[N_MODELS_EKFGSF], float weight[N_MODELS_EKFGSF]);
+    // return false if yaw estimation is inactive
+	bool getLogData(float *yaw_composite, float *yaw_composite_variance, float yaw[N_MODELS_EKFGSF], float innov_VN[N_MODELS_EKFGSF], float innov_VE[N_MODELS_EKFGSF], float weight[N_MODELS_EKFGSF]);
 
     // get yaw estimated and corresponding variance
-    // return falss of no yaw estimate available
+    // return false if yaw estimation is inactive
     bool getYawData(float *yaw, float *yawVariance);
 
 private:
@@ -99,7 +100,7 @@ private:
     bool vel_data_updated;  // true when velocity data has been updated
     bool run_ekf_gsf;       // true when operating condition is suitable for to run the GSF and EKF models and fuse velocity data
     Vector2f vel_NE;        // NE velocity observations (m/s)
-    float vel_accuracy;     // 1-sigmaaccuracy of velocity observations (m/s)
+    float vel_accuracy;     // 1-sigma accuracy of velocity observations (m/s)
 
     // Initialises the EKF's and GSF states, but not the AHRS complementary filters
 	void initialise();
