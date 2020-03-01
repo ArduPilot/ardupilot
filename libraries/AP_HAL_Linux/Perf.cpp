@@ -33,7 +33,7 @@
 
 using namespace Linux;
 
-static const AP_HAL::HAL &hal = AP_HAL::get_HAL();
+extern const AP_HAL::HAL& hal;
 
 Perf *Perf::_singleton;
 

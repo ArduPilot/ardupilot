@@ -36,7 +36,7 @@
 
 using namespace Linux;
 
-static const AP_HAL::HAL &hal = AP_HAL::get_HAL();
+extern const AP_HAL::HAL& hal;
 
 GPIO_RPI::GPIO_RPI()
 {
