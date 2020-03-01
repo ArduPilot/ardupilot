@@ -2162,7 +2162,7 @@ class AutoTest(ABC):
 
     def get_autopilot_capabilities(self):
         # Cannot use run_cmd otherwise the respond is lost during the wait for ACK
-        self.mav.mav.command_long_send(1,
+        self.mav.mav.command_long_send(self.sysid_thismav(),
                                        1,
                                        mavutil.mavlink.MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES,
                                        0,  # confirmation
@@ -4946,6 +4946,10 @@ switch value'''
             ("Parameters",
              "Test Parameter Set/Get",
              self.test_parameters),
+
+            ("GetCapabilities",
+             "Get Capabilities",
+             self.test_get_autopilot_capabilities),
         ]
 
     def post_tests_announcements(self):
