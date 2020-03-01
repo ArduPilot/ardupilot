@@ -39,9 +39,9 @@
 
 #define DEBUG 0
 
-namespace Linux {
+extern const AP_HAL::HAL& hal;
 
-static const AP_HAL::HAL &hal = AP_HAL::get_HAL();
+namespace Linux {
 
 #define MHZ (1000U*1000U)
 #define KHZ (1000U)

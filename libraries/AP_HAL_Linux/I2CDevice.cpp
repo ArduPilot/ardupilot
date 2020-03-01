@@ -56,9 +56,9 @@
 #define I2C_RDRW_IOCTL_MAX_MSGS 42
 #endif
 
-namespace Linux {
+extern const AP_HAL::HAL& hal;
 
-static const AP_HAL::HAL &hal = AP_HAL::get_HAL();
+namespace Linux {
 
 /*
  * TODO: move to Util or other upper class to be used by others
