@@ -343,7 +343,6 @@ void NavEKF3::Log_Write()
 
 void NavEKF3::Log_Write_GSF(uint8_t _core, uint64_t time_us) const
 {
-    // write range beacon fusion debug packet if the range value is non-zero
     float yaw_composite;
     float yaw_composite_variance;
     float yaw[N_MODELS_EKFGSF];
