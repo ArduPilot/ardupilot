@@ -409,14 +409,14 @@ void HAL_Linux::setup_signal_handlers() const
     sigaction(SIGINT, &sa, NULL);
 }
 
-static HAL_Linux halInstance;
+HAL_Linux hal_linux;
 
 void HAL_Linux::exit_signal_handler(int signum)
 {
-    halInstance._should_exit = true;
+    hal_linux._should_exit = true;
 }
 
 const AP_HAL::HAL &AP_HAL::get_HAL()
 {
-    return halInstance;
+    return hal_linux;
 }
