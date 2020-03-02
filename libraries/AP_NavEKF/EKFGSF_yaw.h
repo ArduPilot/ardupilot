@@ -13,8 +13,8 @@ public:
     EKFGSF_yaw();
 
     // Update Filter States - this should be called whenever new IMU data is available
-    void update(const Vector3f delAng,// IMU delta angle rotation vector meassured in body frame (rad)
-                const Vector3f delVel,// IMU delta velocity vector meassured in body frame (m/s)
+    void update(const Vector3f &delAng,// IMU delta angle rotation vector meassured in body frame (rad)
+                const Vector3f &delVel,// IMU delta velocity vector meassured in body frame (m/s)
                 const float delAngDT, // time interval that delAng was integrated over (sec)
                 const float delVelDT, // time interval that delVel was integrated over (sec)
                 bool runEKF,          // set to true when flying or movement suitable for yaw estimation
