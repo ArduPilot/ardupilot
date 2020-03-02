@@ -1310,9 +1310,18 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
 
         Quaternion quat_before_reset = stateStruct.quat;
 
+        // check if we should use a 321 or 312 Rotation sequence
+        stateStruct.quat.inverse().rotation_matrix(prevTnb);
         Vector3f eulerAngles;
-        stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
-        stateStruct.quat.from_euler(eulerAngles.x, eulerAngles.y, yawEKFGSF);
+        if (fabsf(prevTnb[2][0]) < fabsf(prevTnb[2][1])) {
+            // rolled more than pitched so use 321 rotation order
+            stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
+            stateStruct.quat.from_euler(eulerAngles.x, eulerAngles.y, yawEKFGSF);
+        } else {
+            // pitched more than rolled so use 312 rotation order
+            eulerAngles = stateStruct.quat.to_vector312();
+            stateStruct.quat.from_vector312(eulerAngles.x, eulerAngles.y, yawEKFGSF);
+        }
 
         float deltaYaw = wrap_PI(yawEKFGSF - eulerAngles.z);
 
