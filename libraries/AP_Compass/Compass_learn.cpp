@@ -79,6 +79,10 @@ void CompassLearn::update(void)
         hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&CompassLearn::io_timer, void));
     }
 
+    if (!AP_Notify::flags.compass_cal_running) {
+        start_time = AP_HAL::millis();
+    }
+
     AP_Notify::flags.compass_cal_running = true;
 
     if (sample_available) {
@@ -115,6 +119,12 @@ void CompassLearn::update(void)
                                                num_samples);
     }
 
+    if (AP_HAL::millis() - start_time > 600U*1000U) {
+        compass.set_learn_type(Compass::LEARN_NONE, false);
+        gcs().send_text(MAV_SEVERITY_WARNING, "CompassLearn: Timeout");
+        return;
+    }
+
     if (!converged) {
         WITH_SEMAPHORE(sem);
 
@@ -144,7 +154,7 @@ void CompassLearn::update(void)
             }
             compass.set_learn_type(Compass::LEARN_NONE, true);
             // setup so use can trigger it again
-            converged = false;
+            converged = true;
             sample_available = false;
             num_samples = 0;
             have_earth_field = false;

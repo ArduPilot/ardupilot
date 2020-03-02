@@ -24,6 +24,7 @@ private:
     float errors[num_sectors];
     uint32_t num_samples;
 
+    uint32_t start_time;
     // earth field
     Vector3f mag_ef;
 
