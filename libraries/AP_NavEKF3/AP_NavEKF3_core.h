@@ -858,6 +858,10 @@ private:
     // correct GPS data for antenna position
     void CorrectGPSForAntennaOffset(gps_elements &gps_data);
 
+    // reset the quaternion states using the supplied yaw angle, maintaining the previous roll and pitch
+    // reset the quaternion state covariances using the supplied yaw variance
+    void resetQuatStateYawOnly(float yaw, float yawVariance);
+
     // Variables
     bool statesInitialised;         // boolean true when filter states have been initialised
     bool velHealth;                 // boolean true if velocity measurements have passed innovation consistency check

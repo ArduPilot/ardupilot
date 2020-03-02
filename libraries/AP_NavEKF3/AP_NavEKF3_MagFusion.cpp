@@ -170,12 +170,8 @@ void NavEKF3_core::realignYawGPS()
         // correct yaw angle using GPS ground course if compass yaw bad
         if (badMagYaw) {
 
-            // calculate the variance for the rotation estimate expressed as a rotation vector
-            // this will be used later to reset the quaternion state covariances
-            Vector3f angleErrVarVec = calcRotVecVariances();
-
-            // calculate new filter quaternion states from Euler angles
-            stateStruct.quat.from_euler(eulerAngles.x, eulerAngles.y, gpsYaw);
+            // keep roll and pitch and reset yaw
+            resetQuatStateYawOnly(gpsYaw, sq(radians(45.0f)));
 
             // reset the velocity and position states as they will be inaccurate due to bad yaw
             velResetSource = GPS;
@@ -183,24 +179,8 @@ void NavEKF3_core::realignYawGPS()
             posResetSource = GPS;
             ResetPosition();
 
-            // set the yaw angle variance to a larger value to reflect the uncertainty in yaw
-            angleErrVarVec.z = sq(radians(45.0f));
-
-            // reset the quaternion covariances using the rotation vector variances
-            zeroRows(P,0,3);
-            zeroCols(P,0,3);
-            initialiseQuatCovariances(angleErrVarVec);
-
             // send yaw alignment information to console
             gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u yaw aligned to GPS velocity",(unsigned)imu_index);
-
-
-            // record the yaw reset event
-            recordYawReset();
-
-            // clear all pending yaw reset requests
-            gpsYawResetRequest = false;
-            magYawResetRequest = false;
 
             if (use_compass()) {
                 // request a mag field reset which may enable us to use the magnetometer if the previous fault was due to bad initialisation
@@ -1308,37 +1288,10 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
         yawVarianceEKFGSF < sq(radians(15.0f)) &&
         (imuSampleTime_ms - EKFGSF_yaw_reset_time_ms) > 5000) {
 
-        Quaternion quat_before_reset = stateStruct.quat;
+        // keep roll and pitch and reset yaw
+        resetQuatStateYawOnly(yawEKFGSF, yawVarianceEKFGSF);
 
-        // check if we should use a 321 or 312 Rotation sequence
-        stateStruct.quat.inverse().rotation_matrix(prevTnb);
-        Vector3f eulerAngles;
-        if (fabsf(prevTnb[2][0]) < fabsf(prevTnb[2][1])) {
-            // rolled more than pitched so use 321 rotation order
-            stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
-            stateStruct.quat.from_euler(eulerAngles.x, eulerAngles.y, yawEKFGSF);
-        } else {
-            // pitched more than rolled so use 312 rotation order
-            eulerAngles = stateStruct.quat.to_vector312();
-            stateStruct.quat.from_vector312(eulerAngles.x, eulerAngles.y, yawEKFGSF);
-        }
-
-        float deltaYaw = wrap_PI(yawEKFGSF - eulerAngles.z);
-
-        // calculate the change in the quaternion state and apply it to the output history buffer
-        Quaternion quat_delta = stateStruct.quat / quat_before_reset;
-        StoreQuatRotate(quat_delta);
-
-        // update the yaw angle variance using the variance of the EKF-GSF estimate
-        Vector3f angleErrVarVec;
-        angleErrVarVec.z = yawVarianceEKFGSF;
-
-        // reset the quaternion covariances using the rotation vector variances
-        initialiseQuatCovariances(angleErrVarVec);
-
-        // record the yaw reset event
-        yawResetAngle += deltaYaw;
-        lastYawReset_ms = imuSampleTime_ms;
+        // record the emergency reset event
         EKFGSF_yaw_reset_time_ms = imuSampleTime_ms;
         EKFGSF_yaw_reset_count++;
 
@@ -1360,5 +1313,46 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
     }
     
     return false;
+
+}
+
+void NavEKF3_core::resetQuatStateYawOnly(float yaw, float yawVariance)
+{
+    Quaternion quatBeforeReset = stateStruct.quat;
+    Vector3f angleErrVarVec = calcRotVecVariances();
+
+    // check if we should use a 321 or 312 Rotation sequence
+    stateStruct.quat.inverse().rotation_matrix(prevTnb);
+    Vector3f eulerAngles;
+    if (fabsf(prevTnb[2][0]) < fabsf(prevTnb[2][1])) {
+        // rolled more than pitched so use 321 rotation order
+        stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
+        stateStruct.quat.from_euler(eulerAngles.x, eulerAngles.y, yaw);
+    } else {
+        // pitched more than rolled so use 312 rotation order
+        eulerAngles = stateStruct.quat.to_vector312();
+        stateStruct.quat.from_vector312(eulerAngles.x, eulerAngles.y, yaw);
+    }
+
+    float deltaYaw = wrap_PI(yaw - eulerAngles.z);
+
+    // calculate the change in the quaternion state and apply it to the output history buffer
+    Quaternion quat_delta = stateStruct.quat / quatBeforeReset;
+    StoreQuatRotate(quat_delta);
+
+    // update the quaternion state covariances
+    angleErrVarVec.z = yawVariance;
+    initialiseQuatCovariances(angleErrVarVec);
+
+    // record the yaw reset event
+    yawResetAngle += deltaYaw;
+    lastYawReset_ms = imuSampleTime_ms;
+
+    // record the yaw reset event
+    recordYawReset();
+
+    // clear all pending yaw reset requests
+    gpsYawResetRequest = false;
+    magYawResetRequest = false;
 
 }
