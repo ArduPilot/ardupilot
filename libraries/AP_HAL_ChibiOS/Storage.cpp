@@ -52,7 +52,7 @@ void Storage::_storage_open(void)
 
 #if HAL_WITH_RAMTRON
     if (fram.init()) {
-        if (fram.read(0, _buffer, CH_STORAGE_SIZE) == CH_STORAGE_SIZE) {
+        if (fram.read(0, _buffer, CH_STORAGE_SIZE)) {
             _save_backup();
             _initialisedType = StorageBackend::FRAM;
             ::printf("Initialised Storage type=%d\n", _initialisedType);
@@ -197,7 +197,7 @@ void Storage::_timer_tick(void)
 
 #if HAL_WITH_RAMTRON
     if (_initialisedType == StorageBackend::FRAM) {
-        if (fram.write(CH_STORAGE_LINE_SIZE*i, &_buffer[CH_STORAGE_LINE_SIZE*i], CH_STORAGE_LINE_SIZE) == CH_STORAGE_LINE_SIZE) {
+        if (fram.write(CH_STORAGE_LINE_SIZE*i, &_buffer[CH_STORAGE_LINE_SIZE*i], CH_STORAGE_LINE_SIZE)) {
             _dirty_mask.clear(i);
         }
         return;
