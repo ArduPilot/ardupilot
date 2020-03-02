@@ -126,7 +126,7 @@ void EKFGSF_yaw::update(const Vector3f delAng,
 			}
 
 			// Normalise the sume of weights to unity
-			if (vel_fuse_running && total_w > 0.0f) {
+			if (vel_fuse_running && is_positive(total_w)) {
 				float total_w_inv = 1.0f / total_w;
 				for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
 					GSF.weights[mdl_idx]  = newWeight[mdl_idx] * total_w_inv;
