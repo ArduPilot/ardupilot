@@ -619,7 +619,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Bitmask: 0:FirstEKF,1:SecondEKF,2:ThirdEKF,3:FourthEKF,4:FifthEKF,5:SixthEKF
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("GSF_RUN", 58, NavEKF3, _gsfRunMask, 3),
+    AP_GROUPINFO("GSF_RUN", 58, NavEKF3, _gsfRunMask, 1),
 
     // @Param: GSF_USE
     // @DisplayName: Bitmask of which EKF-GSF yaw estimators are used
@@ -627,7 +627,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Bitmask: 0:FirstEKF,1:SecondEKF,2:ThirdEKF,3:FourthEKF,4:FifthEKF,5:SixthEKF
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("GSF_USE", 59, NavEKF3, _gsfUseMask, 3),
+    AP_GROUPINFO("GSF_USE", 59, NavEKF3, _gsfUseMask, 1),
 
     // @Param: GSF_DELAY
     // @DisplayName: Delay from loss of navigation to yaw reset
