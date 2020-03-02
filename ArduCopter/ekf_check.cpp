@@ -229,7 +229,7 @@ void Copter::check_vibration()
     }
     const bool innov_velD_posD_positive = is_positive(vel_innovation.z) && is_positive(pos_innovation.z);
 
-    // check if EKF's NKF4.SH and NK4.SV > 1.0
+    // check if vertical velocity variance is at least 1 (NK4.SV >= 1.0)
     float position_variance, vel_variance, height_variance, tas_variance;
     Vector3f mag_variance;
     Vector2f offset;
