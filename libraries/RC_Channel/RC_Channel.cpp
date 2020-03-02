@@ -42,6 +42,7 @@ extern const AP_HAL::HAL& hal;
 #include <AP_GPS/AP_GPS.h>
 #include <AC_Fence/AC_Fence.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 #define SWITCH_DEBOUNCE_TIME_MS  200
 
@@ -464,6 +465,8 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const aux_switch_
     case AUX_FUNC::RELAY5:
     case AUX_FUNC::RELAY6:
     case AUX_FUNC::VISODOM_CALIBRATE:
+    case AUX_FUNC::EKF_LANE_SWITCH:
+    case AUX_FUNC::EKF_YAW_RESET:
         break;
     case AUX_FUNC::AVOID_ADSB:
     case AUX_FUNC::AVOID_PROXIMITY:
@@ -934,6 +937,16 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_po
         }
         break;
     }
+
+    case AUX_FUNC::EKF_LANE_SWITCH:
+        // used to test emergency lane switch
+        AP::ahrs().check_lane_switch();
+        break;
+
+    case AUX_FUNC::EKF_YAW_RESET:
+        // used to test emergency yaw reset
+        AP::ahrs().request_yaw_reset();
+        break;
 
     default:
         gcs().send_text(MAV_SEVERITY_INFO, "Invalid channel option (%u)", (unsigned int)ch_option);
