@@ -26,15 +26,7 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
 
-EKFGSF_yaw::EKFGSF_yaw()
-{
-	// this flag must be false when we start
-	ahrs_tilt_aligned = false;
-
-	// these objects are initialised in initialise() before being used internally, but can be reported for logging before then 
-	memset(&GSF, 0, sizeof(GSF));
-	memset(&EKF, 0, sizeof(EKF));
-};
+EKFGSF_yaw::EKFGSF_yaw(){};
 
 void EKFGSF_yaw::update(const Vector3f delAng,
                         const Vector3f delVel,
