@@ -650,9 +650,8 @@ Matrix3f EKFGSF_yaw::updateRotMat(const Matrix3f &R, const Vector3f &g)
 		if (is_positive(rowLengthSq)) {
 			// Use linear approximation for inverse sqrt taking advantage of the row length being close to 1.0
 			const float rowLengthInv = 1.5f - 0.5f * rowLengthSq;
-			ret[r][0] *= rowLengthInv;
-			ret[r][1] *= rowLengthInv;
-			ret[r][2] *= rowLengthInv;
+			Vector3f &row = ret[r];
+			row *= rowLengthInv;
 		}
     }
 
