@@ -1349,7 +1349,7 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
 
         // quaternion states for the main EKF with yaw reset applied
         Quaternion quat_after_reset;
-        quat_after_reset.from_rotation_matrix(prevTnb);
+        quat_after_reset.from_rotation_matrix(prevTnb.transposed());
 
         // update quaternion states
         stateStruct.quat = quat_after_reset;
