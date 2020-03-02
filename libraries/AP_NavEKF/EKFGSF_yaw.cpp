@@ -68,7 +68,7 @@ void EKFGSF_yaw::update(const Vector3f &delAng,
 	// esitmates.
 	float EKFGSF_ahrs_ng = ahrs_accel_norm / GRAVITY_MSS;
 	if (EKFGSF_ahrs_ng > 1.0f) {
-		if (true_airspeed > FLT_EPSILON) {
+		if (is_positive(true_airspeed)) {
 			// When flying in fixed wing mode we need to allow for more positive g due to coordinated turns
 			// Gain varies from unity at 1g to zero at 2g
 			accel_gain = EKFGSF_tiltGain * sq(2.0f - EKFGSF_ahrs_ng);
@@ -198,7 +198,7 @@ void EKFGSF_yaw::predictAHRS(const uint8_t mdl_idx)
 
 		Vector3f accel = ahrs_accel;
 
-		if (true_airspeed > FLT_EPSILON) {
+		if (is_positive(true_airspeed)) {
 			// Turn rate is component of gyro rate about vertical (down) axis
 			const float turn_rate = AHRS[mdl_idx].R[2][0] * ang_rate_delayed_raw[0]
 					  + AHRS[mdl_idx].R[2][1] * ang_rate_delayed_raw[1]
@@ -647,7 +647,7 @@ Matrix3f EKFGSF_yaw::updateRotMat(const Matrix3f &R, const Vector3f &g)
 	float rowLengthSq;
 	for (uint8_t r = 0; r < 3; r++) {
 		rowLengthSq = ret[r][0] * ret[r][0] + ret[r][1] * ret[r][1] + ret[r][2] * ret[r][2];
-		if (rowLengthSq > FLT_EPSILON) {
+		if (is_positive(rowLengthSq)) {
 			// Use linear approximation for inverse sqrt taking advantage of the row length being close to 1.0
 			const float rowLengthInv = 1.5f - 0.5f * rowLengthSq;
 			ret[r][0] *= rowLengthInv;
