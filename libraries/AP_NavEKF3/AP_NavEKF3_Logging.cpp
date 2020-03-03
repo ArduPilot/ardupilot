@@ -356,7 +356,7 @@ void NavEKF3::Log_Write_GSF(uint8_t _core, uint64_t time_us) const
             time_us     : time_us,
             core        : _core,
             yaw         : (float)yaw_composite,
-            yawVariance : (float)yaw_composite_variance,
+            yawSigma    : (float)sqrtf(MAX(yaw_composite_variance, 0.0f)),
             yaw_0       : (float)yaw[0],
             yaw_1       : (float)yaw[1],
             yaw_2       : (float)yaw[2],
