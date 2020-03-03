@@ -328,15 +328,6 @@ void AP_TECS::update_50hz(void)
             _height_filter.height += integ3_input*DT;
         }
     }
-
-    // Update and average speed rate of change
-    // Get DCM
-    const Matrix3f &rotMat = _ahrs.get_rotation_body_to_ned();
-    // Calculate speed rate of change
-    float temp = rotMat.c.x * GRAVITY_MSS + AP::ins().get_accel().x;
-    // take 5 point moving average
-    _vel_dot = _vdot_filter.apply(temp);
-
 }
 
 void AP_TECS::_update_speed(float load_factor)
@@ -369,7 +360,6 @@ void AP_TECS::_update_speed(float load_factor)
     // Reset states of time since last update is too large
     if (DT > 1.0f) {
         _TAS_state = (_EAS * EAS2TAS);
-        _integDTAS_state = 0.0f;
         DT            = 0.1f; // when first starting TECS, use a
         // small time constant
     }
