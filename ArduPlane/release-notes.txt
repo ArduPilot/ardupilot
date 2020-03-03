@@ -1,5 +1,5 @@
-Release 4.0.5beta1, 23rd February 2020
---------------------------------------
+Release 4.0.5, 4th March 2020
+-----------------------------
 
 This release includes a one important bug fix and some minor
 enhancements. The changes are:
