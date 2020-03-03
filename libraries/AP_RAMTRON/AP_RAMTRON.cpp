@@ -168,11 +168,8 @@ bool AP_RAMTRON::read(uint32_t offset, uint8_t * const buf, uint32_t size)
             WITH_SEMAPHORE(dev->get_semaphore());
 
             uint32_t const kReadSz = MIN(size, kMaxReadSz);
-            bool ok = true;
-            ok = ok && dev->set_chip_select(true);
-            ok = ok && dev->transfer(cmdBuffer, kCmdBufferSz, &buf[numRead], kReadSz);
-            // always want to de-assert chip select.
-            ok &= dev->set_chip_select(false);
+            // we can let transfer() handle the setting of the chip select, unlike in _write()
+            bool ok = dev->transfer(cmdBuffer, kCmdBufferSz, &buf[numRead], kReadSz);
 
             if (!ok) {
                 return false;
@@ -206,8 +203,14 @@ bool AP_RAMTRON::write(uint32_t offset, uint8_t const * const buf, uint32_t size
 
     WITH_SEMAPHORE(dev->get_semaphore());
 
-    bool ok = true;
-    ok = ok && dev->set_chip_select(true);
+    // We need to explicitly set the chip select here, rather than letting the
+    // transfer() function handle it. This is because the write is performed in
+    // two parts:
+    //     1. configure the address to write to; and
+    //     2. transfer the data.
+    // If the chip select line is de-asserted between 1. and 2., the FRAM chip
+    // resets the write address, and hence will not write the new data properly.
+    bool ok =  dev->set_chip_select(true);
     ok = ok && dev->transfer(cmdBuffer, kCmdBufferSz, nullptr, 0);
     ok = ok && dev->transfer(buf, size, nullptr, 0);
     // always want to de-assert chip select.
