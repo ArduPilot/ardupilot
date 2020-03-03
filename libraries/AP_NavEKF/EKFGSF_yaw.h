@@ -6,6 +6,8 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/vectorN.h>
 
+#define IMU_DT_MIN_SEC 0.001f // Minimum delta time between IMU samples (sec)
+
 class EKFGSF_yaw
 {
 public:
@@ -15,8 +17,8 @@ public:
     // Update Filter States - this should be called whenever new IMU data is available
     void update(const Vector3f &delAng,// IMU delta angle rotation vector meassured in body frame (rad)
                 const Vector3f &delVel,// IMU delta velocity vector meassured in body frame (m/s)
-                const float delAngDT, // time interval that delAng was integrated over (sec)
-                const float delVelDT, // time interval that delVel was integrated over (sec)
+                const float delAngDT, // time interval that delAng was integrated over (sec) - must be no less than IMU_DT_MIN_SEC
+                const float delVelDT, // time interval that delVel was integrated over (sec) - must be no less than IMU_DT_MIN_SEC
                 bool runEKF,          // set to true when flying or movement suitable for yaw estimation
                 float TAS);           // true airspeed used for centripetal accel compensation - set to 0 when not required.
 

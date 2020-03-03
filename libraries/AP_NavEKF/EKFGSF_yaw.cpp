@@ -45,7 +45,7 @@ void EKFGSF_yaw::update(const Vector3f &delAng,
 	true_airspeed = TAS;
 
 	// Iniitialise states and only when acceleration is close to 1g to rpevent vehicle movement casuing a large initial tilt error
-	ahrs_accel = delta_velocity / fmaxf(velocity_dt, 0.001f);
+	ahrs_accel = delta_velocity / MAX(velocity_dt, IMU_DT_MIN_SEC);
 	if (!ahrs_tilt_aligned) {
 		const float accel_norm_sq = ahrs_accel.length_squared();
 		const float upper_accel_limit = GRAVITY_MSS * 1.1f;
