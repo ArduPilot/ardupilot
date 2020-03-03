@@ -38,6 +38,9 @@ public:
     // toggle the relay status
     void        toggle(uint8_t instance);
 
+    // get the current status of relay, false if off or disabled
+    bool        get(uint8_t instance);
+
     static AP_Relay *get_singleton(void) {return singleton; }
 
     static const struct AP_Param::GroupInfo        var_info[];
@@ -47,6 +50,7 @@ private:
 
     AP_Int8 _pin[AP_RELAY_NUM_RELAYS];
     AP_Int8 _default;
+    bool status[AP_RELAY_NUM_RELAYS];
 
     void set(uint8_t instance, bool value);
 };

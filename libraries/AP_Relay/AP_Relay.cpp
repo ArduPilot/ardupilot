@@ -133,8 +133,14 @@ void AP_Relay::set(const uint8_t instance, const bool value)
     if (_pin[instance] == -1) {
         return;
     }
+    status[instance] = value;
     hal.gpio->pinMode(_pin[instance], HAL_GPIO_OUTPUT);
     hal.gpio->write(_pin[instance], value);
+}
+
+bool AP_Relay::get(const uint8_t instance)
+{
+    return enabled(instance) && status[instance];
 }
 
 void AP_Relay::toggle(uint8_t instance)
