@@ -674,17 +674,6 @@ void AP_TECS::_update_throttle_with_airspeed(void)
 
         float THRminf_clipped_to_zero = constrain_float(_THRminf, 0, _THRmaxf);
 
-        // Rate limit PD + FF throttle
-        // Calculate the throttle increment from the specified slew time
-        if (aparm.throttle_slewrate != 0) {
-            float thrRateIncr = _DT * (_THRmaxf - THRminf_clipped_to_zero) * aparm.throttle_slewrate * 0.01f;
-
-            _throttle_dem = constrain_float(_throttle_dem,
-                                            _last_throttle_dem - thrRateIncr,
-                                            _last_throttle_dem + thrRateIncr);
-            _last_throttle_dem = _throttle_dem;
-        }
-
         // Calculate integrator state upper and lower limits
         // Set to a value that will allow 0.1 (10%) throttle saturation to allow for noise on the demand
         // Additionally constrain the integrator state amplitude so that the integrator comes off limits faster.
@@ -706,6 +695,17 @@ void AP_TECS::_update_throttle_with_airspeed(void)
         else
         {
             _integTHR_state = constrain_float(_integTHR_state, integ_min, integ_max);
+        }
+
+        // Rate limit PD + FF throttle
+        // Calculate the throttle increment from the specified slew time
+        if (aparm.throttle_slewrate != 0) {
+            float thrRateIncr = _DT * (_THRmaxf - THRminf_clipped_to_zero) * aparm.throttle_slewrate * 0.01f;
+
+            _throttle_dem = constrain_float(_throttle_dem,
+                                            _last_throttle_dem - thrRateIncr,
+                                            _last_throttle_dem + thrRateIncr);
+            _last_throttle_dem = _throttle_dem;
         }
 
         // Sum the components.
