@@ -979,7 +979,9 @@ struct PACKED log_CESC {
 struct PACKED log_AIRSPEED {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    float   raw_airspeed;
     float   airspeed;
+    float   eas;
     float   diffpressure;
     int16_t temperature;
     float   rawpressure;
@@ -1312,10 +1314,10 @@ struct PACKED log_Arm_Disarm {
 #define QUAT_UNITS  "s#????"
 #define QUAT_MULTS  "F-????"
 
-#define ARSP_LABELS "TimeUS,Airspeed,DiffPress,Temp,RawPress,Offset,U,Health,Hfp,Pri"
-#define ARSP_FMT "QffcffBBfB"
-#define ARSP_UNITS "snPOPP----"
-#define ARSP_MULTS "F00B00----"
+#define ARSP_LABELS "TimeUS,RawArsp,Arsp,EAS,DiffP,Temp,RawP,Offset,U,Health,Hfp,Pri"
+#define ARSP_FMT "QffffcffBBfB"
+#define ARSP_UNITS "snnnPOPP----"
+#define ARSP_MULTS "F0000B00----"
 
 // messages for all boards
 #define LOG_BASE_STRUCTURES \
