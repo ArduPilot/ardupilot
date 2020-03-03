@@ -490,12 +490,10 @@ void AP_Airspeed::update_EAS(void)
     if (DT > 1.0f) {
         _EAS_state = _EAS;
         _integETAS_state = 0.0f;
-        DT            = 0.1f; // when first starting TECS, use a
-        // small time constant
+        DT = 0.1f; // when first starting, use a small time constant
     }
 
-    // Implement a second order complementary filter to obtain a
-    // smoothed airspeed estimate
+    // Implement a second order complementary filter to obtain a smoothed airspeed estimate
     // airspeed estimate is held in _EAS_state
     // TODO: this is the default value of TECS parameter SPD_OMEGA; move the parameter here?
     constexpr float _spdCompFiltOmega = 2.0f;
@@ -537,10 +535,10 @@ void AP_Airspeed::update(bool log)
 
     check_sensor_failures();
 
+#ifndef HAL_BUILD_AP_PERIPH
     // update TECS speed
     update_EAS();
 
-#ifndef HAL_BUILD_AP_PERIPH
     if (log) {
         Log_Airspeed();
     }
@@ -561,7 +559,9 @@ void AP_Airspeed::Log_Airspeed()
         struct log_AIRSPEED pkt = {
             LOG_PACKET_HEADER_INIT(i==0?LOG_ARSP_MSG:LOG_ASP2_MSG),
             time_us       : now,
-            airspeed      : get_raw_airspeed(i),
+            raw_airspeed  : get_raw_airspeed(i),
+            airspeed      : get_airspeed(i),
+            eas           : get_EAS(),
             diffpressure  : get_differential_pressure(i),
             temperature   : (int16_t)(temperature * 100.0f),
             rawpressure   : get_corrected_pressure(i),
@@ -573,11 +573,6 @@ void AP_Airspeed::Log_Airspeed()
         };
         AP::logger().WriteBlock(&pkt, sizeof(pkt));
     }
-    // TODO: add get_EAS to log_AIRSPEED and remove this Write call
-    //  --also-- Why aren't we logging get_airspeed() here???
-    AP::logger().Write("EAS", "TimeUS,EAS,integ", "Qff", now,
-                       get_EAS(),
-                       _integETAS_state);
 }
 
 void AP_Airspeed::setHIL(float airspeed, float diff_pressure, float temperature)
