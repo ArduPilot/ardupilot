@@ -720,12 +720,15 @@ def start_mavproxy(opts, stuff):
     if len(extra_cmd):
         cmd.extend(['--cmd', extra_cmd])
 
+    # add Tools/mavproxy_modules to PYTHONPATH in autotest so we can
+    # find random MAVProxy helper modules like sitl_calibration
     local_mp_modules_dir = os.path.abspath(
         os.path.join(__file__, '..', '..', 'mavproxy_modules'))
     env = dict(os.environ)
-    env['PYTHONPATH'] = (local_mp_modules_dir +
-                         os.pathsep +
-                         env.get('PYTHONPATH', ''))
+    old = env.get('PYTHONPATH', None)
+    env['PYTHONPATH'] = local_mp_modules_dir
+    if old is not None:
+        env['PYTHONPATH'] += os.path.sep + old
 
     run_cmd_blocking("Run MavProxy", cmd, env=env)
     progress("MAVProxy exited")
