@@ -16,6 +16,7 @@ public:
     uint32_t get_size(void) const { return (id == UINT8_MAX) ? 0 : ramtron_ids[id].size_kbyte * 1024UL; }
 
     // read from device
+    // this will retry RAMTRON_RETRIES times until two successive reads return the same data
     bool read(uint32_t offset, uint8_t * const buf, uint32_t size);
 
     // write to device
@@ -41,5 +42,7 @@ private:
 
     // perform a single device initialisation
     bool _init(void);
+    // perform a single device read
+    bool _read(uint32_t offset, uint8_t * const buf, uint32_t size);
     bool _fill_cmd_buffer(uint8_t cmdBuffer[], uint32_t const kCmdBufferSz, uint8_t const cmd, uint32_t addr);
 };

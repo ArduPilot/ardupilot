@@ -6,6 +6,7 @@
 
 #include "AP_RAMTRON.h"
 #include <AP_Math/AP_Math.h>
+#include <AP_Math/crc.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -167,7 +168,7 @@ bool AP_RAMTRON::_fill_cmd_buffer(uint8_t cmdBuffer[], uint32_t const kCmdBuffer
 }
 
 // read from device
-bool AP_RAMTRON::read(uint32_t offset, uint8_t * const buf, uint32_t size)
+bool AP_RAMTRON::_read(uint32_t offset, uint8_t * const buf, uint32_t size)
 {
     // Don't allow reads outside of the FRAM memory.
     // NOTE: The FRAM devices will wrap back to address 0x0000 if they read past
@@ -203,6 +204,35 @@ bool AP_RAMTRON::read(uint32_t offset, uint8_t * const buf, uint32_t size)
     }
 
     return true;
+}
+
+
+bool AP_RAMTRON::read(uint32_t offset, uint8_t * const buf, uint32_t size)
+{
+    for (uint8_t r = 0; r < RAMTRON_RETRIES; r++) {
+        if (r != 0) {
+            hal.scheduler->delay(RAMTRON_DELAY_MS);
+        }
+
+        bool ok = _read(offset, buf, size);
+        if (!ok) {
+            continue;
+        }
+        uint32_t crc1 = crc_crc32(0, buf, size);
+
+        ok = _read(offset, buf, size);
+        if (!ok) {
+            continue;
+        }
+        uint32_t crc2 = crc_crc32(0, buf, size);
+
+        if (crc1 == crc2) {
+            // all good
+            return true;
+        }
+    }
+
+    return false;
 }
 
 // write to device
