@@ -28,6 +28,7 @@
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/Location.h>
+#include <Filter/AverageFilter.h>
 
 class AP_NMEA_Output;
 class OpticalFlow;
