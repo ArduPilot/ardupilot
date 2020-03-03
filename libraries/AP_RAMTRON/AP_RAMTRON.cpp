@@ -145,7 +145,7 @@ bool AP_RAMTRON::_fill_cmd_buffer(uint8_t cmdBuffer[], uint32_t const kCmdBuffer
 }
 
 // read from device
-uint32_t AP_RAMTRON::read(uint32_t offset, uint8_t * const buf, uint32_t size)
+bool AP_RAMTRON::read(uint32_t offset, uint8_t * const buf, uint32_t size)
 {
     // Don't allow reads outside of the FRAM memory.
     // NOTE: The FRAM devices will wrap back to address 0x0000 if they read past
@@ -153,7 +153,7 @@ uint32_t AP_RAMTRON::read(uint32_t offset, uint8_t * const buf, uint32_t size)
     // be what we expect.
     if ((size > get_size()) ||
         (offset > (get_size() - size))) {
-        return 0;
+        return false;
     }
 
     uint32_t const kMaxReadSz = 128;
@@ -163,25 +163,31 @@ uint32_t AP_RAMTRON::read(uint32_t offset, uint8_t * const buf, uint32_t size)
         uint32_t const kCmdBufferSz = ramtron_ids[id].addrlen + 1;
         uint8_t cmdBuffer[kCmdBufferSz];
         if (!_fill_cmd_buffer(cmdBuffer, kCmdBufferSz, RAMTRON_READ, (offset + numRead))) {
-            break;
+            return false;
         } else {
             WITH_SEMAPHORE(dev->get_semaphore());
 
             uint32_t const kReadSz = MIN(size, kMaxReadSz);
-            bool ok = dev->set_chip_select(true);
+            bool ok = true;
+            ok = ok && dev->set_chip_select(true);
             ok = ok && dev->transfer(cmdBuffer, kCmdBufferSz, &buf[numRead], kReadSz);
+            // always want to de-assert chip select.
             ok &= dev->set_chip_select(false);
 
-            numRead += kReadSz;
-            size -= kReadSz;
+            if (!ok) {
+                return false;
+            } else {
+                numRead += kReadSz;
+                size -= kReadSz;
+            }
         }
     }
 
-    return numRead;
+    return true;
 }
 
 // write to device
-uint32_t AP_RAMTRON::write(uint32_t offset, uint8_t const * const buf, uint32_t size)
+bool AP_RAMTRON::write(uint32_t offset, uint8_t const * const buf, uint32_t size)
 {
     // Don't allow writes outside of the FRAM memory.
     // NOTE: The FRAM devices will wrap back to address 0x0000 if they write past
@@ -189,21 +195,23 @@ uint32_t AP_RAMTRON::write(uint32_t offset, uint8_t const * const buf, uint32_t 
     // wrong memory location.
     if ((size > get_size()) ||
         (offset > (get_size() - size))) {
-        return 0;
+        return false;
     }
 
     uint32_t const kCmdBufferSz = ramtron_ids[id].addrlen + 1;
     uint8_t cmdBuffer[kCmdBufferSz];
     if (!_fill_cmd_buffer(cmdBuffer, kCmdBufferSz, RAMTRON_WRITE, offset)) {
-        return 0;
+        return false;
     }
 
     WITH_SEMAPHORE(dev->get_semaphore());
 
-    bool ok = dev->set_chip_select(true);
+    bool ok = true;
+    ok = ok && dev->set_chip_select(true);
     ok = ok && dev->transfer(cmdBuffer, kCmdBufferSz, nullptr, 0);
     ok = ok && dev->transfer(buf, size, nullptr, 0);
+    // always want to de-assert chip select.
     ok &= dev->set_chip_select(false);
 
-    return ok ? size : 0;
+    return ok;
 }
