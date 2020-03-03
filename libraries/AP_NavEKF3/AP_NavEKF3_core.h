@@ -706,8 +706,8 @@ private:
     // align the yaw angle for the quaternion states using the external yaw sensor
     void alignYawAngle();
 
-    // and return attitude quaternion
-    Quaternion calcQuatAndFieldStates(float roll, float pitch);
+    // update quaternion, mag field states and associated variances using magnetomer and declination data
+    void calcQuatAndFieldStates();
 
     // zero stored variables
     void InitialiseVariables();
@@ -859,8 +859,12 @@ private:
     void CorrectGPSForAntennaOffset(gps_elements &gps_data);
 
     // reset the quaternion states using the supplied yaw angle, maintaining the previous roll and pitch
+    // also reset the body to nav frame rotation matrix
     // reset the quaternion state covariances using the supplied yaw variance
-    void resetQuatStateYawOnly(float yaw, float yawVariance);
+    // yaw          : new yaw angle (rad)
+    // yaw_variance : variance of new yaw angle (rad^2)
+    // isDeltaYaw   : true when the yaw should be added to the existing yaw angle
+    void resetQuatStateYawOnly(float yaw, float yawVariance, bool isDeltaYaw);
 
     // Variables
     bool statesInitialised;         // boolean true when filter states have been initialised

@@ -83,66 +83,82 @@ void NavEKF3_core::controlMagYawReset()
             finalResetRequest; // the final reset when we have achieved enough height to be in stable magnetic field environment
 
     // Perform a reset of magnetic field states and reset yaw to corrected magnetic heading
-    if (magYawResetRequest || magStateResetRequest) {
+    if (magYawResetRequest) {
+        // update rotation matrix from body to NED frame
+        stateStruct.quat.inverse().rotation_matrix(prevTnb);
 
-        // get the euler angles from the current state estimate
-        Vector3f eulerAngles;
-        stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
+        // read the magnetometer data
+        readMagData();
 
-        // Use the Euler angles and magnetometer measurement to update the magnetic field states
-        // and get an updated quaternion
-        Quaternion newQuat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
+        // rotate the magnetic field into NED axes
+        Vector3f initMagNED = prevTnb * magDataDelayed.mag;
 
-        // if a yaw reset has been requested, apply the updated quaternion to the current state
-        if (magYawResetRequest) {
-            // previous value used to calculate a reset delta
-            Quaternion prevQuat = stateStruct.quat;
+        // calculate heading of mag field rel to body heading
+        float magHeading = atan2f(initMagNED.y, initMagNED.x);
 
-            // calculate the variance for the rotation estimate expressed as a rotation vector
-            // this will be used later to reset the quaternion state covariances
-            Vector3f angleErrVarVec = calcRotVecVariances();
+        // get the magnetic declination
+        float magDecAng = MagDeclination();
 
-            // update the quaternion states using the new yaw angle
-            stateStruct.quat = newQuat;
+        // calculate yaw angle delta
+        float yaw_delta = magDecAng - magHeading;
 
-            // update the yaw angle variance using the variance of the measurement
-            angleErrVarVec.z = sq(MAX(frontend->_yawNoise, 1.0e-2f));
+        // update quaternion states and covariances
+        resetQuatStateYawOnly(yaw_delta, sq(MAX(frontend->_yawNoise, 1.0e-2f)), true);
 
-            // reset the quaternion covariances using the rotation vector variances
-            initialiseQuatCovariances(angleErrVarVec);
-
-            // calculate the change in the quaternion state and apply it to the output history buffer
-            prevQuat = stateStruct.quat/prevQuat;
-            StoreQuatRotate(prevQuat);
-
-            // send initial alignment status to console
-            if (!yawAlignComplete) {
-                gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u initial yaw alignment complete",(unsigned)imu_index);
-            }
-
-            // send in-flight yaw alignment status to console
-            if (finalResetRequest) {
-                gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u in-flight yaw alignment complete",(unsigned)imu_index);
-            } else if (interimResetRequest) {
-                gcs().send_text(MAV_SEVERITY_WARNING, "EKF3 IMU%u ground mag anomaly, yaw re-aligned",(unsigned)imu_index);
-            }
-
-            // prevent reset of variances in ConstrainVariances()
-            inhibitMagStates = false;
-
-            // update the yaw reset completed status
-            recordYawReset();
-
-            // clear the yaw reset request flag
-            magYawResetRequest = false;
-
-            // clear the complete flags if an interim reset has been performed to allow subsequent
-            // and final reset to occur
-            if (interimResetRequest) {
-                finalInflightYawInit = false;
-                finalInflightMagInit = false;
-            }
+        // send initial alignment status to console
+        if (!yawAlignComplete) {
+            gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u initial yaw alignment complete",(unsigned)imu_index);
         }
+
+        // send in-flight yaw alignment status to console
+        if (finalResetRequest) {
+            gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u in-flight yaw alignment complete",(unsigned)imu_index);
+        } else if (interimResetRequest) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "EKF3 IMU%u ground mag anomaly, yaw re-aligned",(unsigned)imu_index);
+        }
+
+        // clear the complete flags if an interim reset has been performed to allow subsequent
+        // and final reset to occur
+        if (interimResetRequest) {
+            finalInflightYawInit = false;
+            finalInflightMagInit = false;
+        }
+    }
+
+    if (magStateResetRequest) {
+
+        // Rotate Mag measurements into NED to set initial NED magnetic field states
+        // Don't do this if the earth field has already been learned
+        if (!magFieldLearned) {
+            if (have_table_earth_field && frontend->_mag_ef_limit > 0) {
+                stateStruct.earth_magfield = table_earth_field_ga;
+            } else {
+                stateStruct.earth_magfield = prevTnb.transposed() * magDataDelayed.mag;
+            }
+
+            // set the NE earth magnetic field states using the published declination
+            // and set the corresponding variances and covariances
+            alignMagStateDeclination();
+
+            // set the remaining variances and covariances
+            zeroRows(P,18,21);
+            zeroCols(P,18,21);
+            P[18][18] = sq(frontend->_magNoise);
+            P[19][19] = P[18][18];
+            P[20][20] = P[18][18];
+            P[21][21] = P[18][18];
+
+        }
+
+        // record the fact we have initialised the magnetic field states
+        recordMagReset();
+
+        // prevent reset of variances in ConstrainVariances()
+        inhibitMagStates = false;
+
+        // clear mag state reset request
+        magStateResetRequest = false;
+
     }
 }
 
@@ -169,9 +185,13 @@ void NavEKF3_core::realignYawGPS()
 
         // correct yaw angle using GPS ground course if compass yaw bad
         if (badMagYaw) {
+            // attempt to use EKF-GSF estimate if available as it is more robust to GPS glitches
+            if (EKFGSF_resetMainFilterYaw()) {
+                return;
+            }
 
             // keep roll and pitch and reset yaw
-            resetQuatStateYawOnly(gpsYaw, sq(radians(45.0f)));
+            resetQuatStateYawOnly(gpsYaw, sq(radians(45.0f)), false);
 
             // reset the velocity and position states as they will be inaccurate due to bad yaw
             velResetSource = GPS;
@@ -218,14 +238,12 @@ void NavEKF3_core::alignYawAngle()
     // send yaw alignment information to console
     gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u yaw aligned",(unsigned)imu_index);
 
-
     // record the yaw reset event
     recordYawReset();
 
     // clear any pending yaw reset requests
     gpsYawResetRequest = false;
     magYawResetRequest = false;
-
 
 }
 
@@ -1289,7 +1307,7 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
         (imuSampleTime_ms - EKFGSF_yaw_reset_time_ms) > 5000) {
 
         // keep roll and pitch and reset yaw
-        resetQuatStateYawOnly(yawEKFGSF, yawVarianceEKFGSF);
+        resetQuatStateYawOnly(yawEKFGSF, yawVarianceEKFGSF, false);
 
         // record the emergency reset event
         EKFGSF_yaw_reset_time_ms = imuSampleTime_ms;
@@ -1311,36 +1329,46 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
         return true;
 
     }
-    
+
     return false;
 
 }
 
-void NavEKF3_core::resetQuatStateYawOnly(float yaw, float yawVariance)
+void NavEKF3_core::resetQuatStateYawOnly(float yaw, float yawVariance, bool isDeltaYaw)
 {
     Quaternion quatBeforeReset = stateStruct.quat;
     Vector3f angleErrVarVec = calcRotVecVariances();
 
-    // check if we should use a 321 or 312 Rotation sequence
+    // check if we should use a 321 or 312 Rotation sequence and update the quaternion
+    // states using the preferred yaw definition
     stateStruct.quat.inverse().rotation_matrix(prevTnb);
     Vector3f eulerAngles;
     if (fabsf(prevTnb[2][0]) < fabsf(prevTnb[2][1])) {
         // rolled more than pitched so use 321 rotation order
         stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
+        if (isDeltaYaw) {
+            yaw = wrap_PI(yaw + eulerAngles.z);
+        }
         stateStruct.quat.from_euler(eulerAngles.x, eulerAngles.y, yaw);
     } else {
         // pitched more than rolled so use 312 rotation order
         eulerAngles = stateStruct.quat.to_vector312();
+        if (isDeltaYaw) {
+            yaw = wrap_PI(yaw + eulerAngles.z);
+        }
         stateStruct.quat.from_vector312(eulerAngles.x, eulerAngles.y, yaw);
     }
 
+    // Update the rotation matrix
+    stateStruct.quat.inverse().rotation_matrix(prevTnb);
+    
     float deltaYaw = wrap_PI(yaw - eulerAngles.z);
 
     // calculate the change in the quaternion state and apply it to the output history buffer
     Quaternion quat_delta = stateStruct.quat / quatBeforeReset;
     StoreQuatRotate(quat_delta);
 
-    // update the quaternion state covariances
+    // update the yaw angle variance using the variance of the EKF-GSF estimate
     angleErrVarVec.z = yawVariance;
     initialiseQuatCovariances(angleErrVarVec);
 
@@ -1354,5 +1382,5 @@ void NavEKF3_core::resetQuatStateYawOnly(float yaw, float yawVariance)
     // clear all pending yaw reset requests
     gpsYawResetRequest = false;
     magYawResetRequest = false;
-
+    
 }
