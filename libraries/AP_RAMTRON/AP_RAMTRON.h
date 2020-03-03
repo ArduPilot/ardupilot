@@ -9,6 +9,7 @@
 class AP_RAMTRON {
 public:
     // initialise the driver
+    // this will retry RAMTRON_RETRIES times until successful
     bool init(void);
 
     // get size in bytes
@@ -38,5 +39,7 @@ private:
     static const struct ramtron_id ramtron_ids[];
     uint8_t id = UINT8_MAX;
 
+    // perform a single device initialisation
+    bool _init(void);
     bool _fill_cmd_buffer(uint8_t cmdBuffer[], uint32_t const kCmdBufferSz, uint8_t const cmd, uint32_t addr);
 };

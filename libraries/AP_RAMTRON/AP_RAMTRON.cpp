@@ -17,6 +17,9 @@ static const uint8_t RAMTRON_RDSR  = 0x05;
 static const uint8_t RAMTRON_WREN  = 0x06;
 static const uint8_t RAMTRON_WRITE = 0x02;
 
+static const uint8_t RAMTRON_RETRIES = 10;
+static const uint8_t RAMTRON_DELAY_MS = 10;
+
 /*
   list of supported devices. Thanks to NuttX ramtron driver
  */
@@ -39,11 +42,9 @@ const AP_RAMTRON::ramtron_id AP_RAMTRON::ramtron_ids[] = {
 };
 
 // initialise the driver
-bool AP_RAMTRON::init(void)
+bool AP_RAMTRON::_init(void)
 {
-    dev = hal.spi->get_device("ramtron");
     if (!dev) {
-        hal.console->printf("No RAMTRON SPI device defined!\n");
         return false;
     }
     WITH_SEMAPHORE(dev->get_semaphore());
@@ -126,6 +127,27 @@ bool AP_RAMTRON::init(void)
     }
 
     return true;
+}
+
+bool AP_RAMTRON::init()
+{
+    dev = hal.spi->get_device("ramtron");
+    if (!dev) {
+        hal.console->printf("No RAMTRON SPI device defined!\n");
+        return false;
+    }
+
+    for (uint8_t r = 0; r < RAMTRON_RETRIES; r++) {
+        if (r != 0) {
+            hal.scheduler->delay(RAMTRON_DELAY_MS);
+        }
+
+        if (_init()) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 bool AP_RAMTRON::_fill_cmd_buffer(uint8_t cmdBuffer[], uint32_t const kCmdBufferSz, uint8_t const cmd, uint32_t addr)
