@@ -389,6 +389,9 @@ private:
         float vpos_start_m;
     } landing_detect;
 
+    // throttle mix acceleration filter
+    LowPassFilterVector3f throttle_mix_accel_ef_filter = LowPassFilterVector3f(1.0f);
+
     // time we last set the loiter target
     uint32_t last_loiter_ms;
 

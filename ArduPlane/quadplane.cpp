@@ -3182,6 +3182,11 @@ float QuadPlane::stopping_distance(void)
 
 void QuadPlane::update_throttle_mix(void)
 {
+    // update filtered acceleration
+    Vector3f accel_ef = ahrs.get_accel_ef_blended();
+    accel_ef.z += GRAVITY_MSS;
+    throttle_mix_accel_ef_filter.apply(accel_ef, plane.scheduler.get_loop_period_s());
+
     // transition will directly manage the mix
     if (in_transition()) {
       return;
@@ -3212,9 +3217,7 @@ void QuadPlane::update_throttle_mix(void)
         bool large_angle_error = (angle_error > LAND_CHECK_ANGLE_ERROR_DEG);
 
         // check for large acceleration - falling or high turbulence
-        Vector3f accel_ef = plane.ahrs.get_accel_ef_blended();
-        accel_ef.z += GRAVITY_MSS;
-        bool accel_moving = (accel_ef.length() > LAND_CHECK_ACCEL_MOVING);
+        bool accel_moving = (throttle_mix_accel_ef_filter.get().length() > LAND_CHECK_ACCEL_MOVING);
 
         // check for requested decent
         bool descent_not_demanded = pos_control->get_desired_velocity().z >= 0.0f;
