@@ -876,14 +876,12 @@ bool AC_Avoid::get_fence_roll_pitch_pct(float &roll_positive, float &roll_negati
         return false;
     }
     const float fence_radius = fence->get_radius();
-    const float margin = fence->get_margin();
-
     bool adjusted = false;
     const AP_AHRS &_ahrs = AP::ahrs();
     Vector2f pos; 
     if (_ahrs.get_relative_position_NE_home(pos)) {
         float dist = fence_radius - pos.length();
-        if (dist < margin) {
+        if (dist < _dist_max) {
             const float lean_pct = distance_to_lean_pct(dist);
             const float angle_rad = pos.angle() - _ahrs.yaw;
             const float roll_pct = -sinf(angle_rad) * lean_pct;
