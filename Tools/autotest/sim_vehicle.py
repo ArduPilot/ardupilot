@@ -728,7 +728,7 @@ def start_mavproxy(opts, stuff):
     old = env.get('PYTHONPATH', None)
     env['PYTHONPATH'] = local_mp_modules_dir
     if old is not None:
-        env['PYTHONPATH'] += os.path.sep + old
+        env['PYTHONPATH'] += os.path.pathsep + old
 
     run_cmd_blocking("Run MavProxy", cmd, env=env)
     progress("MAVProxy exited")
