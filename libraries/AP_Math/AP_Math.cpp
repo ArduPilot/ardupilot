@@ -103,7 +103,7 @@ float linear_interpolate(float low_output, float high_output,
  * alpha range: [0,1] min to max expo
  * input range: [-1,1]
  */
-float expo_curve(float alpha, float x)
+constexpr float expo_curve(float alpha, float x)
 {
     return (1.0f - alpha) * x + alpha * x * x * x;
 }
