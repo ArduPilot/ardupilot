@@ -108,12 +108,22 @@ void EKFGSF_yaw::update(const Vector3f &delAng,
 		} else {
 			float total_w = 0.0f;
 			float newWeight[(uint8_t)N_MODELS_EKFGSF];
+			bool state_update_failed = false;
 			for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
 				// Update states and covariances using GPS NE velocity measurements fused as direct state observations
-				correct(mdl_idx);
+				if (!correct(mdl_idx)) {
+					state_update_failed = true;
+				}
+			}
 
-				// Calculate weighting for each model assuming a normal distribution
-				newWeight[mdl_idx]= fmaxf(gaussianDensity(mdl_idx) * GSF.weights[mdl_idx], 0.0f);
+			for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
+				if (state_update_failed) {
+					// Keep previous weighting
+					newWeight[mdl_idx] = GSF.weights[mdl_idx];
+				} else {
+					// Calculate weighting for each model assuming a normal distribution
+					newWeight[mdl_idx]= fmaxf(gaussianDensity(mdl_idx) * GSF.weights[mdl_idx], 0.0f);
+				}
 				total_w += newWeight[mdl_idx];
 			}
 
@@ -122,6 +132,12 @@ void EKFGSF_yaw::update(const Vector3f &delAng,
 				float total_w_inv = 1.0f / total_w;
 				for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
 					GSF.weights[mdl_idx]  = newWeight[mdl_idx] * total_w_inv;
+				}
+			} else {
+				// set weights to default value
+				const float default_weight = 1.0f / (float)N_MODELS_EKFGSF;
+				for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
+					GSF.weights[mdl_idx]  = default_weight;
 				}
 			}
 		}
@@ -391,7 +407,8 @@ void EKFGSF_yaw::predict(const uint8_t mdl_idx)
 }
 
 // Update EKF states and covariance for specified model index using velocity measurement
-void EKFGSF_yaw::correct(const uint8_t mdl_idx)
+// Returns false if the sttae and covariance correction failed
+bool EKFGSF_yaw::correct(const uint8_t mdl_idx)
 {
 	// set observation variance from accuracy estimate supplied by GPS and apply a sanity check minimum
 	const float velObsVar = sq(fmaxf(vel_accuracy, 0.5f));
@@ -437,7 +454,7 @@ void EKFGSF_yaw::correct(const uint8_t mdl_idx)
 		}
 	} else {
 		// skip this fusion step because calculation is badly conditioned
-		return;
+		return false;
 	}
 
 	// calculate Kalman gain K  and covariance matrix P
@@ -454,7 +471,7 @@ void EKFGSF_yaw::correct(const uint8_t mdl_idx)
 		t7 = 1.0f/t6;
 	} else {
 		// skip this fusion step
-		return;
+		return false;
 	}
 	const float t8 = P11+velObsVar;
 	const float t10 = P00+velObsVar;
@@ -539,6 +556,7 @@ void EKFGSF_yaw::correct(const uint8_t mdl_idx)
 	AHRS[mdl_idx].R[1][1] = R_prev[0][1] * sin_yaw + R_prev[1][1] * cos_yaw;
 	AHRS[mdl_idx].R[1][2] = R_prev[0][2] * sin_yaw + R_prev[1][2] * cos_yaw;
 
+	return true;
 }
 
 void EKFGSF_yaw::initialise()

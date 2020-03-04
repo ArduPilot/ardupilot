@@ -110,8 +110,9 @@ private:
     // Runs the state and covariance prediction for the selected EKF
 	void predict(const uint8_t mdl_idx);
 
-    // Runs the state ad covariance update for the selected EKF using the GPS NE velocity measurement
-	void correct(const uint8_t mdl_idx);
+    // Runs the state and covariance update for the selected EKF using the GPS NE velocity measurement
+    // Returns false if the sttae and covariance correction failed
+	bool correct(const uint8_t mdl_idx);
 
     // Forces symmetry on the covariance matrix for the selected EKF
 	void forceSymmetry(const uint8_t mdl_idx);
