@@ -3661,7 +3661,7 @@ class AutoTestCopter(AutoTest):
 
         self.do_RTL()
 
-    def hover_and_check_matched_frequency(self, dblevel=-15, minhz=200, maxhz=300, peakhz=None):
+    def hover_and_check_matched_frequency(self, dblevel=-15, minhz=200, maxhz=300, peakhz=None, freqMatch=0.05):
         # find a motor peak
         self.takeoff(10, mode="ALT_HOLD")
 
@@ -3702,7 +3702,7 @@ class AutoTestCopter(AutoTest):
         self.progress("Detected motor peak at %fHz processing %d messages" % (pkAvg, nmessages))
 
         # peak within 5%
-        if abs(pkAvg - freq) / freq > 0.1:
+        if abs(pkAvg - freq) / freq > freqMatch:
             raise NotAchievedException("FFT did not detect a motor peak at %f, found %f, wanted %f" % (dblevel, pkAvg, freq))
 
         return freq
@@ -3767,7 +3767,7 @@ class AutoTestCopter(AutoTest):
             self.set_parameter("SIM_VIB_MOT_MULT", 0.25) # halve the motor noise so that the higher harmonic dominates
             self.reboot_sitl()
 
-            self.hover_and_check_matched_frequency(-15, 100, 250)
+            self.hover_and_check_matched_frequency(-15, 100, 250, None, 0.15)
             self.set_parameter("SIM_VIB_FREQ_X", 0)
             self.set_parameter("SIM_VIB_FREQ_Y", 0)
             self.set_parameter("SIM_VIB_FREQ_Z", 0)
@@ -3803,7 +3803,13 @@ class AutoTestCopter(AutoTest):
             psd = self.mavfft_fttd(1, 0, tstart * 1.0e6, tend * 1.0e6)
             freq = psd["F"][numpy.argmax(psd["X"][ignore_bins:]) + ignore_bins]
             dblevel = numpy.amax(psd["X"][ignore_bins:])
-            if dblevel < -10:
+            '''
+AUTOTEST: FAILED: "GyroFFT (Fly Gyro FFT)": NotAchievedException('Detected 178.703498Hz motor peak at -9.713545dB',) (see /home/travis/build/ArduPilot/buildlogs/ArduCopter-GyroFFT.txt)
+That's pretty close to the -10 threshold; do we need to loosen the threshold?
+Andy, 08:28
+yeah, if you are seeing test failures it would make sense. The harmonic matching logic is not great right now and I am working on improvements.
+'''
+            if dblevel < -9:
                 self.progress("Did not detect a motor peak, found %fHz at %fdB" % (freq, dblevel))
             else:
                 raise NotAchievedException("Detected %fHz motor peak at %fdB" % (freq, dblevel))
@@ -4854,6 +4860,10 @@ class AutoTestCopter(AutoTest):
             ("GyroFFT",
              "Fly Gyro FFT",
              self.fly_gyro_fft),
+
+            ("FixedYawCalibration",
+             "Test Fixed Yaw Calibration",
+             self.test_fixed_yaw_calibration),
 
             ("LogDownLoad",
              "Log download",

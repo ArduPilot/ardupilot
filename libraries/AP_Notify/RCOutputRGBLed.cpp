@@ -20,7 +20,7 @@
 #include <AP_Math/AP_Math.h>
 #include <SRV_Channel/SRV_Channel.h>
 
-static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+extern const AP_HAL::HAL& hal;
 
 #define LED_OFF 0
 #define LED_FULL_BRIGHT 255

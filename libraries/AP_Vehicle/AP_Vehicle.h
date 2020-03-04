@@ -127,10 +127,6 @@ public:
     };
 
     void get_common_scheduler_tasks(const AP_Scheduler::Task*& tasks, uint8_t& num_tasks);
-
-    // initialize the vehicle. Called from AP_BoardConfig
-    void init_vehicle();
-
     virtual void get_scheduler_tasks(const AP_Scheduler::Task *&tasks, uint8_t &task_count, uint32_t &log_bit) = 0;
 
     /*
@@ -165,10 +161,14 @@ public:
         return AP_HAL::millis() - _last_flying_ms;
     }
 
+    // set target location (for use by scripting)
+    virtual bool set_target_location(const Location& target_loc) { return false; }
+
 protected:
 
     virtual void init_ardupilot() = 0;
     virtual void load_parameters() = 0;
+    virtual void set_control_channels() {}
 
     // board specific config
     AP_BoardConfig BoardConfig;
@@ -227,19 +227,15 @@ protected:
     static const struct AP_Param::GroupInfo var_info[];
     static const struct AP_Scheduler::Task scheduler_tasks[];
 
-    void register_scheduler_delay_callback();
-
 private:
 
-    static AP_Vehicle *_singleton;
-    bool init_done;
-
+    // delay() callback that processing MAVLink packets
     static void scheduler_delay_callback();
 
-    // true if vehicle is probably flying
-    bool likely_flying;
-    // time when likely_flying last went true
-    uint32_t _last_flying_ms;
+    bool likely_flying;         // true if vehicle is probably flying
+    uint32_t _last_flying_ms;   // time when likely_flying last went true
+
+    static AP_Vehicle *_singleton;
 };
 
 namespace AP {

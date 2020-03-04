@@ -21,7 +21,7 @@ CompassLearn::CompassLearn(Compass &_compass) :
 {
     gcs().send_text(MAV_SEVERITY_INFO, "CompassLearn: Initialised");
     for (Compass::Priority i(0); i<compass.get_count(); i++) {
-        if (compass._use_for_yaw[i]) {
+        if (compass._use_for_yaw[Compass::Priority(i)]) {
             // reset scale factors, we can't learn scale factors in
             // flight
             compass.set_and_save_scale_factor(uint8_t(i), 0.0);
@@ -124,7 +124,7 @@ void CompassLearn::update(void)
         // set non-primary offsets to match primary
         Vector3f field_primary = compass.get_field(0);
         for (uint8_t i=1; i<compass.get_count(); i++) {
-            if (!compass.use_for_yaw(i)) {
+            if (!compass._use_for_yaw[Compass::Priority(i)]) {
                 continue;
             }
             Vector3f field2 = compass.get_field(i);
@@ -137,10 +137,9 @@ void CompassLearn::update(void)
             // set the offsets and enable compass for EKF use. Let the
             // EKF learn the remaining compass offset error
             for (uint8_t i=0; i<compass.get_count(); i++) {
-                if (compass.use_for_yaw(i)) {
+                if (compass._use_for_yaw[Compass::Priority(i)]) {
                     compass.save_offsets(i);
                     compass.set_and_save_scale_factor(i, 0.0);
-                    compass.set_use_for_yaw(i, true);
                 }
             }
             compass.set_learn_type(Compass::LEARN_NONE, true);

@@ -202,7 +202,7 @@ float DSP::calculate_quinns_second_estimator(const FFTWindowState* fft, const fl
     const float am = (complex_fft[k_m1] * complex_fft[k] + complex_fft[k_m1 + 1] * complex_fft[k + 1]) / divider;
 
     // sanity check
-    if (is_zero(ap) || is_zero(am)) {
+    if (fabsf(1.0f - ap) < 0.01f || fabsf(1.0f - am) < 0.01f) {
         return 0.0f;
     }
 

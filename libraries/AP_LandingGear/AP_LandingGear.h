@@ -85,6 +85,10 @@ public:
     
     bool check_before_land(void);
 
+    // retract after takeoff or deploy for landing depending on the OPTIONS parameter
+    void retract_after_takeoff();
+    void deploy_for_landing();
+
 private:
     // Parameters
     AP_Int8     _startup_behaviour;     // start-up behaviour (see LandingGearStartupBehaviour)
@@ -95,6 +99,13 @@ private:
     AP_Int8     _pin_weight_on_wheels_polarity;
     AP_Int16    _deploy_alt;
     AP_Int16    _retract_alt;
+    AP_Int16    _options;
+
+    // bitmask of options
+    enum class Option : uint16_t {
+        RETRACT_AFTER_TAKEOFF = (1U<<0),
+        DEPLOY_DURING_LANDING = (1U<<1)
+    };
 
     // internal variables
     bool        _deployed;              // true if the landing gear has been deployed, initialized false

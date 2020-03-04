@@ -19,16 +19,6 @@ void Rover::init_ardupilot()
     g2.stats.init();
 #endif
 
-    mavlink_system.sysid = g.sysid_this_mav;
-
-    // initialise serial ports
-    serial_manager.init();
-
-    // setup first port early to allow BoardConfig to report errors
-    gcs().setup_console();
-
-    register_scheduler_delay_callback();
-
     BoardConfig.init();
 #if HAL_WITH_UAVCAN
     BoardConfig_CAN.init();
@@ -96,7 +86,6 @@ void Rover::init_ardupilot()
 
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
-    set_control_channels();  // setup radio channels and outputs ranges
     init_rc_in();            // sets up rc channels deadzone
     g2.motors.init();        // init motors including setting servo out channels ranges
     SRV_Channels::enable_aux_servos();

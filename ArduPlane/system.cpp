@@ -31,16 +31,6 @@ void Plane::init_ardupilot()
 
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
-    set_control_channels();
-
-    mavlink_system.sysid = g.sysid_this_mav;
-
-    // initialise serial ports
-    serial_manager.init();
-    gcs().setup_console();
-
-    register_scheduler_delay_callback();
-
     // setup any board specific drivers
     BoardConfig.init();
 #if HAL_WITH_UAVCAN
