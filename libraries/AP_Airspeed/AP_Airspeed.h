@@ -61,19 +61,28 @@ public:
 
     // return the current airspeed in m/s
     float get_airspeed(uint8_t i) const {
-        return state[i].airspeed;
+        if (i < AIRSPEED_MAX_SENSORS) {
+            return state[i].airspeed;
+        }
+        return 0;
     }
     float get_airspeed(void) const { return get_airspeed(primary); }
 
     // return the unfiltered airspeed in m/s
     float get_raw_airspeed(uint8_t i) const {
-        return state[i].raw_airspeed;
+        if (i < AIRSPEED_MAX_SENSORS) {
+            return state[i].raw_airspeed;
+        }
+        return 0;
     }
     float get_raw_airspeed(void) const { return get_raw_airspeed(primary); }
 
     // return the current airspeed ratio (dimensionless)
     float get_airspeed_ratio(uint8_t i) const {
-        return param[i].ratio;
+        if (i < AIRSPEED_MAX_SENSORS) {
+            return param[i].ratio;
+        }
+        return 0;
     }
     float get_airspeed_ratio(void) const { return get_airspeed_ratio(primary); }
 
@@ -83,7 +92,9 @@ public:
 
     // set the airspeed ratio (dimensionless)
     void set_airspeed_ratio(uint8_t i, float ratio) {
-        param[i].ratio.set(ratio);
+        if (i < AIRSPEED_MAX_SENSORS) {
+           param[i].ratio.set(ratio);
+        }
     }
     void set_airspeed_ratio(float ratio) { set_airspeed_ratio(primary, ratio); }
 
