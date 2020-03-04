@@ -116,28 +116,19 @@ void EKFGSF_yaw::update(const Vector3f &delAng,
 				}
 			}
 
-			for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
-				if (state_update_failed) {
-					// Keep previous weighting
-					newWeight[mdl_idx] = GSF.weights[mdl_idx];
-				} else {
-					// Calculate weighting for each model assuming a normal distribution
+			if (!state_update_failed) {
+				// Calculate weighting for each model assuming a normal error distribution
+				for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
 					newWeight[mdl_idx]= fmaxf(gaussianDensity(mdl_idx) * GSF.weights[mdl_idx], 0.0f);
+					total_w += newWeight[mdl_idx];
 				}
-				total_w += newWeight[mdl_idx];
-			}
 
-			// Normalise the sum of weights to unity
-			if (vel_fuse_running && is_positive(total_w)) {
-				float total_w_inv = 1.0f / total_w;
-				for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
-					GSF.weights[mdl_idx]  = newWeight[mdl_idx] * total_w_inv;
-				}
-			} else {
-				// set weights to default value
-				const float default_weight = 1.0f / (float)N_MODELS_EKFGSF;
-				for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
-					GSF.weights[mdl_idx]  = default_weight;
+				// Normalise the sum of weights to unity
+				if (vel_fuse_running && is_positive(total_w)) {
+					float total_w_inv = 1.0f / total_w;
+					for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
+						GSF.weights[mdl_idx]  = newWeight[mdl_idx] * total_w_inv;
+					}
 				}
 			}
 		}
@@ -593,12 +584,7 @@ float EKFGSF_yaw::gaussianDensity(const uint8_t mdl_idx) const
 	const float t2 = EKF[mdl_idx].S[0][0] * EKF[mdl_idx].S[1][1];
 	const float t5 = EKF[mdl_idx].S[0][1] * EKF[mdl_idx].S[1][0];
 	const float t3 = t2 - t5; // determinant
-	float t4; // determinant inverse
-	if (fabsf(t3) > 1e-6f) {
-		t4 = 1.0f/t3;
-	} else {
-		t4 = 1.0f/t2;
-	}
+	const float t4 = 1.0f / MAX(t3, 1e-12f); // determinant inverse
 
 	// inv(S)
 	float invMat[2][2];
