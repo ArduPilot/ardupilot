@@ -1521,6 +1521,16 @@ bool ModeAuto::verify_land()
         case State::Descending:
             // rely on THROTTLE_LAND mode to correctly update landing status
             retval = copter.ap.land_complete && (motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE);
+            if (retval && !mission.continue_after_land() && copter.motors->armed()) {
+                /*
+                  we want to stop mission processing on land
+                  completion. Disarm now, then return false. This
+                  leaves mission state machine in the current NAV_LAND
+                  mission item. After disarming the mission will reset
+                */
+                copter.arming.disarm(AP_Arming::Method::LANDED);
+                retval = false;
+            }
             break;
 
         default:
