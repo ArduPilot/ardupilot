@@ -465,12 +465,16 @@ class uploader(object):
         ret = self.__recv(length)
         self.__getSync()
         return ret
-    
-    # send the reboot command
-    def __reboot(self):
+
+    def reboot(self):
+        '''send the reboot command'''
         self.__send(uploader.REBOOT +
                     uploader.EOC)
         self.port.flush()
+
+    def __reboot(self):
+        '''send reboot command, check for write failures'''
+        self.reboot()
 
         # v3+ can report failure if the first word flash fails
         if self.bl_rev >= 3:
@@ -864,6 +868,7 @@ def main():
     parser.add_argument('--source-component', type=int, action="store", help="Source component to send reboot mavlink packets from", default=0)
     parser.add_argument('--download', action='store_true', default=False, help='download firmware from board')
     parser.add_argument('--identify', action="store_true", help="Do not flash firmware; simply dump information about board")
+    parser.add_argument('--boot', action="store_true", help="use with --identify to boot the board after identification.")
     parser.add_argument('firmware', nargs="?", action="store", default=None, help="Firmware file to be uploaded")
     args = parser.parse_args()
 
@@ -918,6 +923,8 @@ def main():
                     # ok, we have a bootloader, try flashing it
                     if args.identify:
                         up.dump_board_info()
+                        if args.boot:
+                            up.reboot()
                     elif args.download:
                         up.download(args.firmware)
                     else:
