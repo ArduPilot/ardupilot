@@ -791,10 +791,6 @@ bool GCS_MAVLINK::should_send_message_in_delay_callback(const ap_message id) con
     // No ID we return true for may take more than a few hundred
     // microseconds to return!
 
-    if (id == MSG_HEARTBEAT || id == MSG_NEXT_PARAM) {
-        return true;
-    }
-
     if (in_hil_mode()) {
         // in HIL we need to keep sending servo values to ensure
         // the simulator doesn't pause, otherwise our sensor
@@ -803,6 +799,15 @@ bool GCS_MAVLINK::should_send_message_in_delay_callback(const ap_message id) con
             id == MSG_SERVO_OUTPUT_RAW) {
             return true;
         }
+    }
+
+    switch (id) {
+    case MSG_HEARTBEAT:
+    case MSG_NEXT_PARAM:
+    case MSG_AUTOPILOT_VERSION:
+        return true;
+    default:
+        return false;
     }
 
     return false;
