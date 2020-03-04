@@ -211,8 +211,6 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
 // roll and pitch value are in centi-degrees
 void AC_Avoid::adjust_roll_pitch(float &roll, float &pitch, float veh_angle_max)
 {
-    bool adjusted = false;
-
     // exit immediately if angle max is zero
     if (_angle_max <= 0.0f || veh_angle_max <= 0.0f) {
         return;
@@ -222,7 +220,8 @@ void AC_Avoid::adjust_roll_pitch(float &roll, float &pitch, float veh_angle_max)
     float roll_negative = 0.0f;    // minimum negative roll value
     float pitch_positive = 0.0f;   // maximum positive pitch value
     float pitch_negative = 0.0f;   // minimum negative pitch value
-
+    bool adjusted = false;
+    
     if ((_enabled & AC_AVOID_USE_PROXIMITY_SENSOR) && _proximity_enabled) {
         // get maximum positive and negative roll and pitch percentages from proximity sensor
         adjusted |= get_proximity_roll_pitch_pct(roll_positive, roll_negative, pitch_positive, pitch_negative);
@@ -232,7 +231,9 @@ void AC_Avoid::adjust_roll_pitch(float &roll, float &pitch, float veh_angle_max)
         adjusted |= get_fence_roll_pitch_pct(roll_positive, roll_negative, pitch_positive, pitch_negative);
     }
 
-    if (!adjusted) return;
+    if (!adjusted) {
+        return;
+    }
 
     // add maximum positive and negative percentages together for roll and pitch, convert to centi-degrees
     Vector2f rp_out((roll_positive + roll_negative) * 4500.0f, (pitch_positive + pitch_negative) * 4500.0f);
@@ -860,7 +861,7 @@ float AC_Avoid::distance_to_lean_pct(float dist_m)
 
 bool AC_Avoid::get_fence_roll_pitch_pct(float &roll_positive, float &roll_negative, float &pitch_positive, float &pitch_negative)
 {    
-    AC_Fence *fence = AP::fence();
+    const AC_Fence *fence = AP::fence();
     if (fence == nullptr) {
         return false;
     }
