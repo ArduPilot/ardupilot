@@ -2781,19 +2781,26 @@ bool QuadPlane::land_detector(uint32_t timeout_ms)
 /*
   check if a landing is complete
  */
-void QuadPlane::check_land_complete(void)
+bool QuadPlane::check_land_complete(void)
 {
     if (poscontrol.state != QPOS_LAND_FINAL) {
         // only apply to final landing phase
-        return;
+        return false;
     }
     if (land_detector(4000)) {
-        plane.arming.disarm(AP_Arming::Method::LANDED);
         poscontrol.state = QPOS_LAND_COMPLETE;
         gcs().send_text(MAV_SEVERITY_INFO,"Land complete");
         // reload target airspeed which could have been modified by the mission
         plane.aparm.airspeed_cruise_cm.load();
+        if (plane.control_mode != &plane.mode_auto ||
+            !plane.mission.continue_after_land()) {
+            // disarm on land unless we have MIS_OPTIONS setup to
+            // continue after land in AUTO
+            plane.arming.disarm(AP_Arming::Method::LANDED);
+        }
+        return true;
     }
+    return false;
 }
 
 
@@ -2858,7 +2865,10 @@ bool QuadPlane::verify_vtol_land(void)
         gcs().send_text(MAV_SEVERITY_INFO,"Land final started");
     }
 
-    check_land_complete();
+    if (check_land_complete() && plane.mission.continue_after_land()) {
+        gcs().send_text(MAV_SEVERITY_INFO,"Mission continue");
+        return true;
+    }
     return false;
 }
 

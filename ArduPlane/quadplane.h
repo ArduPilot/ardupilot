@@ -235,7 +235,7 @@ private:
     void init_loiter(void);
     void init_qland(void);
     void control_loiter(void);
-    void check_land_complete(void);
+    bool check_land_complete(void);
     bool land_detector(uint32_t timeout_ms);
     bool check_land_final(void);
 
