@@ -803,12 +803,15 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
     
     case MAV_CMD_NAV_PLANCK_TAKEOFF:
         cmd_complete = verify_planck_takeoff();
+        break;
 
     case MAV_CMD_NAV_PLANCK_RTB:
         cmd_complete = verify_planck_rtb();
+        break;
 
     case MAV_CMD_NAV_PLANCK_WINGMAN:
         cmd_complete = verify_planck_wingman();
+        break;
 
     default:
         // error message
