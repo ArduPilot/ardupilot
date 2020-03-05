@@ -49,10 +49,10 @@ extern const AP_HAL::HAL& hal;
 // important as frequency resolution. Referred to as [Heinz] throughout the code.
 
 // initialize the FFT state machine
-AP_HAL::DSP::FFTWindowState* DSP::fft_init(uint16_t window_size, uint16_t sample_rate)
+AP_HAL::DSP::FFTWindowState* DSP::fft_init(uint16_t window_size, uint16_t sample_rate, uint8_t harmonics)
 {
-    DSP::FFTWindowStateARM* fft = new DSP::FFTWindowStateARM(window_size, sample_rate);
-    if (fft->_hanning_window == nullptr || fft->_rfft_data == nullptr || fft->_freq_bins == nullptr) {
+    DSP::FFTWindowStateARM* fft = new DSP::FFTWindowStateARM(window_size, sample_rate, harmonics);
+    if (fft == nullptr || fft->_hanning_window == nullptr || fft->_rfft_data == nullptr || fft->_freq_bins == nullptr || fft->_derivative_freq_bins == nullptr) {
         delete fft;
         return nullptr;
     }
@@ -60,28 +60,28 @@ AP_HAL::DSP::FFTWindowState* DSP::fft_init(uint16_t window_size, uint16_t sample
 }
 
 // start an FFT analysis
-void DSP::fft_start(AP_HAL::DSP::FFTWindowState* state, const float* samples, uint16_t buffer_index, uint16_t buffer_size)
+void DSP::fft_start(FFTWindowState* state, FloatBuffer& samples, uint16_t advance)
 {
-    step_hanning((FFTWindowStateARM*)state, samples, buffer_index, buffer_size);
+    step_hanning((FFTWindowStateARM*)state, samples, advance);
 }
 
 // perform remaining steps of an FFT analysis
-uint16_t DSP::fft_analyse(AP_HAL::DSP::FFTWindowState* state, uint16_t start_bin, uint16_t end_bin, uint8_t harmonics, float noise_att_cutoff)
+uint16_t DSP::fft_analyse(AP_HAL::DSP::FFTWindowState* state, uint16_t start_bin, uint16_t end_bin, float noise_att_cutoff)
 {
     FFTWindowStateARM* fft = (FFTWindowStateARM*)state;
     step_arm_cfft_f32(fft);
     step_bitreversal(fft);
     step_stage_rfft_f32(fft);
-    step_arm_cmplx_mag_f32(fft, start_bin, end_bin, harmonics, noise_att_cutoff);
+    step_arm_cmplx_mag_f32(fft, start_bin, end_bin, noise_att_cutoff);
     return step_calc_frequencies_f32(fft, start_bin, end_bin);
 }
 
 // create an instance of the FFT state machine
-DSP::FFTWindowStateARM::FFTWindowStateARM(uint16_t window_size, uint16_t sample_rate)
-    : AP_HAL::DSP::FFTWindowState::FFTWindowState(window_size, sample_rate)
+DSP::FFTWindowStateARM::FFTWindowStateARM(uint16_t window_size, uint16_t sample_rate, uint8_t harmonics)
+    : AP_HAL::DSP::FFTWindowState::FFTWindowState(window_size, sample_rate, harmonics)
 {
-    if (_freq_bins == nullptr || _hanning_window == nullptr || _rfft_data == nullptr) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Failed to allocate %u bytes for window %u for DSP",
+    if (_freq_bins == nullptr || _hanning_window == nullptr || _rfft_data == nullptr || _derivative_freq_bins == nullptr) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Failed to allocate %u bytes for window %u for DSP",
             unsigned(sizeof(float) * (window_size * 3 + 2)), unsigned(window_size));
         return;
     }
@@ -115,9 +115,7 @@ DSP::FFTWindowStateARM::FFTWindowStateARM(uint16_t window_size, uint16_t sample_
     }
 }
 
-DSP::FFTWindowStateARM::~FFTWindowStateARM()
-{
-}
+DSP::FFTWindowStateARM::~FFTWindowStateARM() {}
 
 extern "C" {
     void stage_rfft_f32(arm_rfft_fast_instance_f32 *S, float32_t *p, float32_t *pOut);
@@ -128,17 +126,15 @@ extern "C" {
 }
 
 // step 1: filter the incoming samples through a Hanning window
-void DSP::step_hanning(FFTWindowStateARM* fft, const float* samples, uint16_t buffer_index, uint16_t buffer_size)
+void DSP::step_hanning(FFTWindowStateARM* fft, FloatBuffer& samples, uint16_t advance)
 {
     TIMER_START(_hanning_timer);
     // 5us
     // apply hanning window to gyro samples and store result in _freq_bins
     // hanning starts and ends with 0, could be skipped for minor speed improvement
-    const uint16_t ring_buf_idx = MIN(buffer_size - buffer_index, fft->_window_size);
-    arm_mult_f32(&samples[buffer_index], &fft->_hanning_window[0], &fft->_freq_bins[0], ring_buf_idx);
-    if (buffer_index > 0) {
-        arm_mult_f32(&samples[0], &fft->_hanning_window[ring_buf_idx], &fft->_freq_bins[ring_buf_idx], fft->_window_size - ring_buf_idx);
-    }
+    samples.peek(&fft->_freq_bins[0], fft->_window_size); // the caller ensures we get a full buffer of samples
+    samples.advance(advance);
+    arm_mult_f32(&fft->_freq_bins[0], &fft->_hanning_window[0], &fft->_freq_bins[0], fft->_window_size);
 
     TIMER_END(_hanning_timer);
 }
@@ -212,7 +208,7 @@ void DSP::step_stage_rfft_f32(FFTWindowStateARM* fft)
 }
 
 // step 5: find the magnitudes of the complex data
-void DSP::step_arm_cmplx_mag_f32(FFTWindowStateARM* fft, uint16_t start_bin, uint16_t end_bin, uint8_t harmonics, float noise_att_cutoff)
+void DSP::step_arm_cmplx_mag_f32(FFTWindowStateARM* fft, uint16_t start_bin, uint16_t end_bin, float noise_att_cutoff)
 {
     TIMER_START(_arm_cmplx_mag_f32_timer);
     // 8us (BF)
@@ -231,7 +227,7 @@ void DSP::step_arm_cmplx_mag_f32(FFTWindowStateARM* fft, uint16_t start_bin, uin
     fft->_rfft_data[fft->_window_size] = fft->_rfft_data[1]; // Nyquist for the interpolator
     fft->_rfft_data[fft->_window_size + 1] = 0;
 
-    step_cmplx_mag(fft, start_bin, end_bin, harmonics, noise_att_cutoff);
+    step_cmplx_mag(fft, start_bin, end_bin, noise_att_cutoff);
 
     TIMER_END(_arm_cmplx_mag_f32_timer);
 }
@@ -250,12 +246,12 @@ uint16_t DSP::step_calc_frequencies_f32(FFTWindowStateARM* fft, uint16_t start_b
     _output_count++;
     // outputs at approx 1hz
     if (_output_count % 400 == 0) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "FFT(us): t1:%lu,t2:%lu,t3:%lu,t4:%lu,t5:%lu,t6:%lu",
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "FFT(us): t1:%lu,t2:%lu,t3:%lu,t4:%lu,t5:%lu,t6:%lu",
                         _hanning_timer._timer_avg, _arm_cfft_f32_timer._timer_avg, _bitreversal_timer._timer_avg, _stage_rfft_f32_timer._timer_avg, _arm_cmplx_mag_f32_timer._timer_avg, _step_calc_frequencies._timer_avg);
     }
 #endif
 
-    return fft->_max_energy_bin;
+    return fft->_peak_data[CENTER]._bin;
 }
 
 static const float PI_N = M_PI / 32.0f;
