@@ -44,10 +44,15 @@ void EKFGSF_yaw::update(const Vector3f &delAng,
 	run_ekf_gsf = runEKF;
 	true_airspeed = TAS;
 
+	// Calculate a low pass filtered acceleration vector that will be used to keep the AHRS tilt aligned
+	// The time constant of the filter is a fixed ratio relative to the time constant of the AHRS tilt correction loop
+	const float filter_coef = fminf(EKFGSF_accelFiltRatio * delVelDT * EKFGSF_tiltGain, 1.0f);
+	const Vector3f accel = delVel / fmaxf(delVelDT, 0.001f);
+	ahrs_accel = ahrs_accel * (1.0f - filter_coef) + accel * filter_coef;
+
 	// Iniitialise states and only when acceleration is close to 1g to rpevent vehicle movement casuing a large initial tilt error
-	ahrs_accel = delta_velocity / MAX(velocity_dt, IMU_DT_MIN_SEC);
 	if (!ahrs_tilt_aligned) {
-		const float accel_norm_sq = ahrs_accel.length_squared();
+		const float accel_norm_sq = accel.length_squared();
 		const float upper_accel_limit = GRAVITY_MSS * 1.1f;
 		const float lower_accel_limit = GRAVITY_MSS * 0.9f;
 		const bool ok_to_align = ((accel_norm_sq > lower_accel_limit * lower_accel_limit &&
@@ -56,6 +61,7 @@ void EKFGSF_yaw::update(const Vector3f &delAng,
 			initialise();
 			alignTilt();
 			ahrs_tilt_aligned = true;
+			ahrs_accel = accel;
 		}
 		return;
 	}
