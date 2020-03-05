@@ -431,40 +431,6 @@ struct PACKED log_POWR {
     uint8_t safety_and_arm;
 };
 
-struct PACKED log_GSF0 {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t core;
-    float yaw;
-    float yawVariance;
-    float yaw_0;
-    float yaw_1;
-    float yaw_2;
-    float yaw_3;
-    float yaw_4;
-    float wgt_0;
-    float wgt_1;
-    float wgt_2;
-    float wgt_3;
-    float wgt_4;
-};
-
-struct PACKED log_GSF1 {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t core;
-    float ivn_0;
-    float ivn_1;
-    float ivn_2;
-    float ivn_3;
-    float ivn_4;
-    float ive_0;
-    float ive_1;
-    float ive_2;
-    float ive_3;
-    float ive_4;
- };
-
 struct PACKED log_EKF1 {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -1582,11 +1548,8 @@ struct PACKED log_Arm_Disarm {
     { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm), \
       "ARM", "QBIBB", "TimeUS,ArmState,ArmChecks,Forced,Method", "s----", "F----" }, \
     { LOG_ERROR_MSG, sizeof(log_Error), \
-      "ERR",   "QBB",         "TimeUS,Subsys,ECode", "s--", "F--" }, \
-    { LOG_GSF0_MSG, sizeof(log_GSF0), \
-      "GSF0","QBffffffffffff","TimeUS,C,YC,YCV,Y0,Y1,Y2,Y3,Y4,W0,W1,W2,W3,W4", "s#------------", "F-------------", }, \
-    { LOG_GSF1_MSG, sizeof(log_GSF1), \
-      "GSF1","QBffffffffff","TimeUS,C,IVN0,IVN1,IVN2,IVN3,IVN4,IVE0,IVE1,IVE2,IVE3,IVE4", "s#----------", "F-----------" }
+      "ERR",   "QBB",         "TimeUS,Subsys,ECode", "s--", "F--" }
+
 
 #define LOG_SBP_STRUCTURES \
     { LOG_MSG_SBPHEALTH, sizeof(log_SbpHealth), \
@@ -1737,8 +1700,6 @@ enum LogMessages : uint8_t {
     LOG_ARM_DISARM_MSG,
     LOG_OA_BENDYRULER_MSG,
     LOG_OA_DIJKSTRA_MSG,
-    LOG_GSF0_MSG,
-    LOG_GSF1_MSG,
 
     _LOG_LAST_MSG_
 };
