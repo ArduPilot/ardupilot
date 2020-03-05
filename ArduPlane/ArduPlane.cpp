@@ -262,7 +262,7 @@ void Plane::one_second_loop()
     adsb.set_stall_speed_cm(aparm.airspeed_min);
     adsb.set_max_speed(aparm.airspeed_max);
 
-    ahrs.writeDefaultAirSpeed(0.01f * (float)((aparm.airspeed_min + aparm.airspeed_max)/2));
+    ahrs.writeDefaultAirSpeed((float)((aparm.airspeed_min + aparm.airspeed_max)/2));
 
     // sync MAVLink system ID
     mavlink_system.sysid = g.sysid_this_mav;
