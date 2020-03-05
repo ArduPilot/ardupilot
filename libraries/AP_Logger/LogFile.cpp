@@ -855,11 +855,16 @@ void AP_Logger::Write_Origin(uint8_t origin_type, const Location &loc)
 
 void AP_Logger::Write_RPM(const AP_RPM &rpm_sensor)
 {
+    float rpm1 = -1, rpm2 = -1;
+
+    rpm_sensor.get_rpm(0, rpm1);
+    rpm_sensor.get_rpm(1, rpm2);
+
     const struct log_RPM pkt{
         LOG_PACKET_HEADER_INIT(LOG_RPM_MSG),
         time_us     : AP_HAL::micros64(),
-        rpm1        : rpm_sensor.get_rpm(0),
-        rpm2        : rpm_sensor.get_rpm(1)
+        rpm1        : rpm1,
+        rpm2        : rpm2
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
