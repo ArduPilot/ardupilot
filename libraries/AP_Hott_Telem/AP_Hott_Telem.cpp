@@ -147,8 +147,9 @@ void AP_Hott_Telem::send_EAM(void)
     msg.climbrate3s = 120 + vel.z * -3;
 
     const AP_RPM *rpm = AP::rpm();
-    if (rpm && rpm->enabled(0)) {
-        msg.rpm = rpm->get_rpm(0) / 10;
+    float rpm_value;
+    if (rpm && rpm->get_rpm(0, rpm_value)) {
+        msg.rpm = rpm_value * 0.1;
     }
 
     AP_Stats *stats = AP::stats();
