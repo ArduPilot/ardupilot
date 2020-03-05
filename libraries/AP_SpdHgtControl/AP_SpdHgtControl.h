@@ -42,9 +42,6 @@ public:
 	// should return -9000 to +9000
 	virtual int32_t get_pitch_demand(void)=0;
 	
-	// Rate of change of velocity along X body axis in m/s^2
-    virtual float get_VXdot(void)=0;
-	
 	// return current target airspeed
 	virtual float get_target_airspeed(void) const = 0;
 
