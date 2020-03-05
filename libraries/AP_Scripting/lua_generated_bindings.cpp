@@ -1,6 +1,7 @@
 // auto generated bindings, don't manually edit.  See README.md for details.
 #include "lua_generated_bindings.h"
 #include "lua_boxed_numerics.h"
+#include <AP_RPM/AP_RPM.h>
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
@@ -551,6 +552,29 @@ const luaL_Reg Location_meta[] = {
     {"get_distance", Location_get_distance},
     {NULL, NULL}
 };
+
+static int AP_RPM_get_rpm(lua_State *L) {
+    AP_RPM * ud = AP_RPM::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "RPM not supported on this firmware");
+    }
+
+    binding_argcheck(L, 2);
+    const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(RPM_MAX_INSTANCES, UINT8_MAX))), 2, "argument out of range");
+    const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
+    float data_5003 = {};
+    const bool data = ud->get_rpm(
+            data_2,
+            data_5003);
+
+    if (data) {
+        lua_pushnumber(L, data_5003);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
+}
 
 static int AP_Mission_num_commands(lua_State *L) {
     AP_Mission * ud = AP_Mission::get_singleton();
@@ -2220,6 +2244,11 @@ static int AP_AHRS_get_roll(lua_State *L) {
     return 1;
 }
 
+const luaL_Reg AP_RPM_meta[] = {
+    {"get_rpm", AP_RPM_get_rpm},
+    {NULL, NULL}
+};
+
 const luaL_Reg AP_Mission_meta[] = {
     {"num_commands", AP_Mission_num_commands},
     {"get_current_do_cmd_id", AP_Mission_get_current_do_cmd_id},
@@ -2506,6 +2535,7 @@ const struct userdata_meta userdata_fun[] = {
 };
 
 const struct userdata_meta singleton_fun[] = {
+    {"RPM", AP_RPM_meta, NULL},
     {"mission", AP_Mission_meta, AP_Mission_enums},
     {"param", AP_Param_meta, NULL},
     {"esc_telem", AP_ESC_Telem_meta, NULL},
@@ -2579,6 +2609,7 @@ void load_generated_bindings(lua_State *L) {
 }
 
 const char *singletons[] = {
+    "RPM",
     "mission",
     "param",
     "esc_telem",
