@@ -2,7 +2,9 @@
 
 #include <atomic>
 #include <stdint.h>
-#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/AP_HAL_Boards.h>
+#include <AP_HAL/AP_HAL_Macros.h>
+#include <AP_HAL/Semaphores.h>
 
 /*
  * Circular buffer of bytes.
@@ -99,7 +101,7 @@ private:
 template <class T>
 class ObjectBuffer {
 public:
-    ObjectBuffer(uint32_t _size) {
+    ObjectBuffer(uint32_t _size = 0) {
         // we set size to 1 more than requested as the byte buffer
         // gives one less byte than requested. We round up to a full
         // multiple of the object size so that we always get aligned
@@ -109,6 +111,15 @@ public:
     ~ObjectBuffer(void) {
         delete buffer;
     }
+
+    // return size of ringbuffer
+    uint32_t get_size(void) const { return buffer->get_size() / sizeof(T); }
+
+    // set size of ringbuffer, caller responsible for locking
+    bool set_size(uint32_t size) { return buffer->set_size(((size+1) * sizeof(T))); }
+
+    // read len objects without advancing the read pointer
+    uint32_t peek(T *data, uint32_t len) { return buffer->peekbytes((uint8_t*)data, len * sizeof(T)) / sizeof(T); }
 
     // Discards the buffer content, emptying it.
     // !!! Note ObjectBuffer_TS is a duplicate of this update, in both places !!!
@@ -244,7 +255,7 @@ private:
 template <class T>
 class ObjectBuffer_TS {
 public:
-    ObjectBuffer_TS(uint32_t _size) {
+    ObjectBuffer_TS(uint32_t _size = 0) {
         // we set size to 1 more than requested as the byte buffer
         // gives one less byte than requested. We round up to a full
         // multiple of the object size so that we always get aligned
@@ -254,6 +265,25 @@ public:
     ~ObjectBuffer_TS(void) {
         delete buffer;
     }
+
+    // return size of ringbuffer
+    uint32_t get_size(void) const {
+        WITH_SEMAPHORE(sem);
+        return buffer->get_size() / sizeof(T);
+    }
+
+    // set size of ringbuffer, caller responsible for locking
+    bool set_size(uint32_t size) {
+        WITH_SEMAPHORE(sem);
+        return buffer->set_size(((size+1) * sizeof(T)));
+    }
+
+    // read len objects without advancing the read pointer
+    uint32_t peek(T *data, uint32_t len) {
+        WITH_SEMAPHORE(sem);
+        return buffer->peekbytes((uint8_t*)data, len * sizeof(T)) / sizeof(T);
+    }
+
 
     // Discards the buffer content, emptying it.
     // !!! Note this is a duplicate of ObjectBuffer with semaphore, update in both places !!!
@@ -523,3 +553,7 @@ private:
     uint16_t _count; // number in buffer now
     uint16_t _head;  // first element
 };
+
+typedef ObjectBuffer<float> FloatBuffer;
+typedef ObjectBuffer_TS<float> FloatBuffer_TS;
+typedef ObjectArray<float> FloatArray;
