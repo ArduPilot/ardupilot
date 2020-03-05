@@ -39,6 +39,8 @@ protected:
 
     uint64_t capabilities() const override;
 
+    uint8_t get_battery_remaining_percentage() override { return -1; };
+
 private:
 
     void handleMessage(const mavlink_message_t &msg) override;
