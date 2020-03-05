@@ -75,12 +75,7 @@ public:
     /*
       return RPM for a sensor. Return -1 if not healthy
      */
-    float get_rpm(uint8_t instance) const {
-        if (!healthy(instance)) {
-            return -1;
-        }
-        return state[instance].rate_rpm;
-    }
+    bool get_rpm(uint8_t instance, float &rpm_value) const;
 
     /*
       return signal quality for a sensor.
