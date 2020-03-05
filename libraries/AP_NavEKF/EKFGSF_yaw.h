@@ -65,10 +65,10 @@ private:
 		Matrix3f R;				// matrix that rotates a vector from body to earth frame
 		Vector3f gyro_bias;		// gyro bias learned and used by the quaternion calculation
 		bool aligned{false};	// true when AHRS has been aligned
-		float accel_FR[2] {};	// front-right acceleration vector in a horizontal plane (m/s/s)
-		float vel_NE[2] {};		// NE velocity vector from last GPS measurement (m/s)
-		bool fuse_gps = false;	// true when GPS should be fused on that frame
-		float accel_dt = 0;		// time step used when generating _simple_accel_FR data (sec)
+		float accel_FR[2];	    // front-right acceleration vector in a horizontal plane (m/s/s)
+		float vel_NE[2];		// NE velocity vector from last GPS measurement (m/s)
+		bool fuse_gps;	        // true when GPS should be fused on that frame
+		float accel_dt;		    // time step used when generating _simple_accel_FR data (sec)
 	};
 	ahrs_struct AHRS[N_MODELS_EKFGSF];
 	bool ahrs_tilt_aligned;         // true the initial tilt alignment has been calculated
