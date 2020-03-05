@@ -50,7 +50,7 @@ void EKFGSF_yaw::update(const Vector3f &delAng,
     const Vector3f accel = delVel / fmaxf(delVelDT, 0.001f);
     ahrs_accel = ahrs_accel * (1.0f - filter_coef) + accel * filter_coef;
 
-    // Iniitialise states and only when acceleration is close to 1g to rpevent vehicle movement casuing a large initial tilt error
+    // Iniitialise states and only when acceleration is close to 1g to prevent vehicle movement casuing a large initial tilt error
     if (!ahrs_tilt_aligned) {
         const float accel_norm_sq = accel.length_squared();
         const float upper_accel_limit = GRAVITY_MSS * 1.1f;
@@ -145,39 +145,35 @@ void EKFGSF_yaw::update(const Vector3f &delAng,
         vel_fuse_running = false;
     }
 
-    // Calculate a composite state vector as a weighted average of the states for each model.
+    // Calculate a composite yaw as a weighted average of the states for each model.
     // To avoid issues with angle wrapping, the yaw state is converted to a vector with legnth
     // equal to the weighting value before it is summed.
-    memset(&GSF.state, 0, sizeof(GSF.state));
     Vector2f yaw_vector = {};
     for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
-        for (uint8_t state_index = 0; state_index < 2; state_index++) {
-            GSF.state[state_index] += EKF[mdl_idx].X[state_index] * GSF.weights[mdl_idx];
-        }
         yaw_vector[0] += GSF.weights[mdl_idx] * cosf(EKF[mdl_idx].X[2]);
         yaw_vector[1] += GSF.weights[mdl_idx] * sinf(EKF[mdl_idx].X[2]);
     }
-    GSF.state[2] = atan2f(yaw_vector[1],yaw_vector[0]);
+    GSF.yaw = atan2f(yaw_vector[1],yaw_vector[0]);
 
+    // Example for future reference showing how a full GSF covariance matrix could be calculated if required
     /*
-    // calculate a composite covariance matrix from a weighted average of the covariance for each model
-    // models with larger innovations are weighted less
-    memset(&P_GSF, 0, sizeof(P_GSF));
+    memset(&GSF.P, 0, sizeof(GSF.P));
     for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
-    	float Xdelta[3];
-    	for (uint8_t row = 0; row < 3; row++) {
-    		Xdelta[row] = EKFGSF_mdl[mdl_idx].X[row] - X_GSF[row];
-    	}
-    	for (uint8_t row = 0; row < 3; row++) {
-    		for (uint8_t col = 0; col < 3; col++) {
-    			P_GSF[row][col] +=  EKFGSF_GSF.weights[mdl_idx] * (EKFGSF_mdl[mdl_idx].P[row][col] + Xdelta[row] * Xdelta[col]);
-    		}
-    	}
-    }
+		float delta[3];
+		for (uint8_t row = 0; row < 3; row++) {
+			delta[row] = EKF[mdl_idx].X[row] - GSF.X[row];
+		}
+		for (uint8_t row = 0; row < 3; row++) {
+			for (uint8_t col = 0; col < 3; col++) {
+				GSF.P[row][col] +=  GSF.weights[mdl_idx] * (EKF[mdl_idx].P[row][col] + delta[row] * delta[col]);
+			}
+		}
+	}
     */
+
     GSF.yaw_variance = 0.0f;
     for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
-        float yawDelta = wrap_PI(EKF[mdl_idx].X[2] - GSF.state[2]);
+        float yawDelta = wrap_PI(EKF[mdl_idx].X[2] - GSF.yaw);
         GSF.yaw_variance +=  GSF.weights[mdl_idx] * (EKF[mdl_idx].P[2][2] + sq(yawDelta));
     }
 
@@ -616,8 +612,8 @@ float EKFGSF_yaw::gaussianDensity(const uint8_t mdl_idx) const
 bool EKFGSF_yaw::getLogData(float *yaw_composite, float *yaw_composite_variance, float yaw[N_MODELS_EKFGSF], float innov_VN[N_MODELS_EKFGSF], float innov_VE[N_MODELS_EKFGSF], float weight[N_MODELS_EKFGSF])
 {
     if (vel_fuse_running) {
-        memcpy(yaw_composite, &GSF.state[2], sizeof(GSF.state[2]));
-        memcpy(yaw_composite_variance, &GSF.yaw_variance, sizeof(GSF.yaw_variance));
+        *yaw_composite = GSF.yaw;
+        *yaw_composite_variance = GSF.yaw_variance;
         for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx++) {
             yaw[mdl_idx] = EKF[mdl_idx].X[2];
             innov_VN[mdl_idx] = EKF[mdl_idx].innov[0];
@@ -648,8 +644,8 @@ Matrix3f EKFGSF_yaw::updateRotMat(const Matrix3f &R, const Vector3f &g)
     ret[0][2] += R[0][0] * g[1] - R[0][1] * g[0];
     ret[1][0] += R[1][1] * g[2] - R[1][2] * g[1];
     ret[1][1] += R[1][2] * g[0] - R[1][0] * g[2];
-    ret[1][2] += R[1][0] * g[1] - R[1][1] * g[0],
-                 ret[2][0] += R[2][1] * g[2] - R[2][2] * g[1];
+    ret[1][2] += R[1][0] * g[1] - R[1][1] * g[0];
+	ret[2][0] += R[2][1] * g[2] - R[2][2] * g[1];
     ret[2][1] += R[2][2] * g[0] - R[2][0] * g[2];
     ret[2][2] += R[2][0] * g[1] - R[2][1] * g[0];
 
@@ -673,7 +669,7 @@ bool EKFGSF_yaw::getYawData(float *yaw, float *yawVariance)
     if (!vel_fuse_running) {
         return false;
     }
-    *yaw = GSF.state[2];
+    *yaw = GSF.yaw;
     *yawVariance = GSF.yaw_variance;
     return true;
 }

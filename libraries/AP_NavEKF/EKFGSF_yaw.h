@@ -122,9 +122,9 @@ private:
     // EKF's to form a single state estimate.
 
     struct GSF_struct {
-        float state[3];                 // Vel North (m/s),  Vel East (m/s), yaw (rad)
-        float weights[N_MODELS_EKFGSF]; // Weighting applied to each EKF model. Sum of weights is unity.
+        float yaw;                      // yaw (rad)
         float yaw_variance;             // Yaw state variance (rad^2)
+        float weights[N_MODELS_EKFGSF]; // Weighting applied to each EKF model. Sum of weights is unity.
     };
     GSF_struct GSF;
 
