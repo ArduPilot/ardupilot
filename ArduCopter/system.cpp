@@ -265,9 +265,10 @@ void Copter::update_dynamic_notch()
 
 #if RPM_ENABLED == ENABLED
         case HarmonicNotchDynamicMode::UpdateRPM: // rpm sensor based tracking
-            if (rpm_sensor.healthy(0)) {
+            float rpm;
+            if (rpm_sensor.get_rpm(0, rpm)) {
                 // set the harmonic notch filter frequency from the main rotor rpm
-                ins.update_harmonic_notch_freq_hz(MAX(ref_freq, rpm_sensor.get_rpm(0) * ref / 60.0f));
+                ins.update_harmonic_notch_freq_hz(MAX(ref_freq, rpm * ref / 60.0f));
             } else {
                 ins.update_harmonic_notch_freq_hz(ref_freq);
             }
