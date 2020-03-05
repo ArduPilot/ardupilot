@@ -226,6 +226,15 @@ const AP_Param::Info Rover::var_info[] = {
     // @User: Standard
     GSCALAR(turn_max_g,             "TURN_MAX_G",      0.6f),
 
+    // @Param: HEARTBEAT_TMOUT
+    // @DisplayName: Heartbeat timeout time
+    // @Description: MAVLink HEARTBEAT reception timeout time
+    // @Units: s
+    // @Range: 1 10
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(heartbeat_timeout,      "HEARTBEAT_TMOUT",    2),
+
     // variables not in the g class which contain EEPROM saved variables
 
     // @Group: COMPASS_
