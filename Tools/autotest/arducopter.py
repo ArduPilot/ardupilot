@@ -3707,6 +3707,66 @@ class AutoTestCopter(AutoTest):
 
         return freq
 
+    def fly_gyro_fft_harmonic(self):
+        """Use dynamic harmonic notch to control motor noise."""
+        # basic gyro sample rate test
+        self.progress("Flying with gyro FFT - Gyro sample rate")
+        self.context_push()
+
+        ex = None
+        try:
+            self.set_rc_default()
+            # magic tridge EKF type that dramatically speeds up the test
+            self.set_parameter("AHRS_EKF_TYPE", 10)
+            self.set_parameter("EK2_ENABLE", 0)
+            self.set_parameter("INS_LOG_BAT_MASK", 3)
+            self.set_parameter("INS_LOG_BAT_OPT", 0)
+            self.set_parameter("INS_GYRO_FILTER", 100)
+            self.set_parameter("INS_FAST_SAMPLE", 0)
+            self.set_parameter("LOG_BITMASK", 958)
+            self.set_parameter("LOG_DISARMED", 0)
+            self.set_parameter("SIM_DRIFT_SPEED", 0)
+            self.set_parameter("SIM_DRIFT_TIME", 0)
+            # enable a noisy motor peak
+            self.set_parameter("SIM_GYR_RND", 20)
+            # enabling FFT will also enable the arming check, self-testing the functionality
+            self.set_parameter("FFT_ENABLE", 1)
+            self.set_parameter("FFT_MINHZ", 50)
+            self.set_parameter("FFT_MAXHZ", 450)
+            self.set_parameter("FFT_SNR_REF", 10)
+
+            # Step 2: inject actual motor noise and use the standard length FFT to track it
+            self.set_parameter("SIM_VIB_MOT_MAX", 250) # gives a motor peak at about 175Hz
+            self.set_parameter("FFT_WINDOW_SIZE", 32)
+            self.set_parameter("FFT_WINDOW_OLAP", 0.5)
+
+            self.reboot_sitl()
+            freq = self.hover_and_check_matched_frequency(-15, 100, 250)
+
+            # Step 2a: add a second harmonic and check the first is still tracked
+            self.set_parameter("SIM_VIB_FREQ_X", freq * 2)
+            self.set_parameter("SIM_VIB_FREQ_Y", freq * 2)
+            self.set_parameter("SIM_VIB_FREQ_Z", freq * 2)
+            self.set_parameter("SIM_VIB_MOT_MULT", 0.25) # halve the motor noise so that the higher harmonic dominates
+            self.reboot_sitl()
+
+            self.hover_and_check_matched_frequency(-15, 100, 250, None, 0.15)
+            self.set_parameter("SIM_VIB_FREQ_X", 0)
+            self.set_parameter("SIM_VIB_FREQ_Y", 0)
+            self.set_parameter("SIM_VIB_FREQ_Z", 0)
+            self.set_parameter("SIM_VIB_MOT_MULT", 1.)
+            # prevent update parameters from messing with the settings when we pop the context
+            self.set_parameter("FFT_ENABLE", 0)
+            self.reboot_sitl()
+
+        except Exception as e:
+            ex = e
+
+        self.context_pop()
+
+        if ex is not None:
+            raise ex
+
     def fly_gyro_fft(self):
         """Use dynamic harmonic notch to control motor noise."""
         # basic gyro sample rate test
@@ -3760,17 +3820,6 @@ class AutoTestCopter(AutoTest):
             self.reboot_sitl()
             freq = self.hover_and_check_matched_frequency(-15, 100, 250)
 
-            # Step 2a: add a second harmonic and check the first is still tracked
-            self.set_parameter("SIM_VIB_FREQ_X", freq * 2)
-            self.set_parameter("SIM_VIB_FREQ_Y", freq * 2)
-            self.set_parameter("SIM_VIB_FREQ_Z", freq * 2)
-            self.set_parameter("SIM_VIB_MOT_MULT", 0.25) # halve the motor noise so that the higher harmonic dominates
-            self.reboot_sitl()
-
-            self.hover_and_check_matched_frequency(-15, 100, 250, None, 0.15)
-            self.set_parameter("SIM_VIB_FREQ_X", 0)
-            self.set_parameter("SIM_VIB_FREQ_Y", 0)
-            self.set_parameter("SIM_VIB_FREQ_Z", 0)
             self.set_parameter("SIM_VIB_MOT_MULT", 1.)
 
             # Step 3: add a FFT dynamic notch and check that the peak is squashed
@@ -4864,6 +4913,10 @@ yeah, if you are seeing test failures it would make sense. The harmonic matching
             ("FixedYawCalibration",
              "Test Fixed Yaw Calibration",
              self.test_fixed_yaw_calibration),
+
+            ("GyroFFTHarmonic",
+             "Fly Gyro FFT Harmonic",
+             self.fly_gyro_fft_harmonic),
 
             ("LogDownLoad",
              "Log download",
