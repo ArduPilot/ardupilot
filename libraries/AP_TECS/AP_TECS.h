@@ -67,11 +67,6 @@ public:
         return int32_t(_pitch_dem * 5729.5781f);
     }
 
-    // Rate of change of velocity along X body axis in m/s^2
-    float get_VXdot(void) override {
-        return AP::ahrs().get_VXdot();
-    }
-
     // return current target airspeed
     float get_target_airspeed(void) const override {
         return _TAS_dem / _ahrs.get_EAS2TAS();
