@@ -143,6 +143,8 @@ FLASH_RESERVE_START_KB 64
 # enable RAMTROM parameter storage
 #define HAL_WITH_RAMTRON 1
 
+define AP_PARAM_MAX_EMBEDDED_PARAM 1024
+
 # enable FAT filesystem
 define HAL_OS_FATFS_IO 1
 
