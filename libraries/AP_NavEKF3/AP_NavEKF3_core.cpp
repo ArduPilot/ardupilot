@@ -650,11 +650,11 @@ void NavEKF3_core::UpdateFilter(bool predict)
         // Generate an alternative yaw estimate used for inflight recovery from bad compass data
         if (yawEstimator != nullptr) {
             float trueAirspeed;
-            if (is_positive(frontend->_easDefault) && assume_zero_sideslip()) {
+            if (is_positive(defaultAirSpeed) && assume_zero_sideslip()) {
                 if (imuDataDelayed.time_ms < (tasDataDelayed.time_ms + 5000)) {
                     trueAirspeed = tasDataDelayed.tas;
                 } else {
-                    trueAirspeed = frontend->_easDefault * AP::ahrs().get_EAS2TAS();
+                    trueAirspeed = defaultAirSpeed * AP::ahrs().get_EAS2TAS();
                 }
             } else {
                 trueAirspeed = 0.0f;

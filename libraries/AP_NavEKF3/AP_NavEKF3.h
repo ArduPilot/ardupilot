@@ -384,6 +384,9 @@ public:
     // write EKF information to on-board logs
     void Log_Write();
 
+    // Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
+    void writeDefaultAirSpeed(float airspeed);
+
     // log debug data for yaw estimator
     // return false if data not available
 	bool getDataEKFGSF(int8_t instance, float *yaw_composite, float *yaw_composite_variance, float yaw[N_MODELS_EKFGSF], float innov_VN[N_MODELS_EKFGSF], float innov_VE[N_MODELS_EKFGSF], float weight[N_MODELS_EKFGSF]) const;
@@ -452,7 +455,6 @@ private:
     AP_Int8  _flowUse;              // Controls if the optical flow data is fused into the main navigation estimator and/or the terrain estimator.
     AP_Float _hrt_filt_freq;        // frequency of output observer height rate complementary filter in Hz
     AP_Int16 _mag_ef_limit;         // limit on difference between WMM tables and learned earth field.
-    AP_Float _easDefault;           // default equivalent airspeed value assumed during fixed wing flight if no airspeed measurement available (m/s)
     AP_Int8 _gsfRunMask;            // mask controlling which EKF3 instances run a separate EKF-GSF yaw estimator
     AP_Int8 _gsfUseMask;            // mask controlling which EKF3 instances will use EKF-GSF yaw estimator data to assit with yaw resets
     AP_Int16 _gsfResetDelay;        // number of mSec from loss of navigation to requesting a reset using EKF-GSF yaw estimator data
