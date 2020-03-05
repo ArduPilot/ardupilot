@@ -188,6 +188,18 @@ bool AP_RPM::enabled(uint8_t instance) const
     return true;
 }
 
+/*
+  get RPM value, return true on success
+ */
+bool AP_RPM::get_rpm(uint8_t instance, float &rpm_value) const
+{
+    if (!healthy(instance)) {
+        return false;
+    }
+    rpm_value = state[instance].rate_rpm;
+    return true;
+}
+
 // singleton instance
 AP_RPM *AP_RPM::_singleton;
 
