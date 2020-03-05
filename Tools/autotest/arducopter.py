@@ -4915,7 +4915,7 @@ yeah, if you are seeing test failures it would make sense. The harmonic matching
              self.test_fixed_yaw_calibration),
 
             ("GyroFFTHarmonic",
-             "Fly Gyro FFT Harmonic",
+             "Fly Gyro FFT Harmonic Matching",
              self.fly_gyro_fft_harmonic),
 
             ("LogDownLoad",
@@ -4937,6 +4937,7 @@ yeah, if you are seeing test failures it would make sense. The harmonic matching
             "Parachute": "See https://github.com/ArduPilot/ardupilot/issues/4702",
             "HorizontalAvoidFence": "See https://github.com/ArduPilot/ardupilot/issues/11525",
             "BeaconPosition": "See https://github.com/ArduPilot/ardupilot/issues/11689",
+            "GyroFFTHarmonic": "See https://github.com/ArduPilot/ardupilot/issues/13736",
         }
 
 class AutoTestHeli(AutoTestCopter):
