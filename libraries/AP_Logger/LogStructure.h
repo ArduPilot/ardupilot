@@ -434,35 +434,35 @@ struct PACKED log_POWR {
 struct PACKED log_GSF0 {
     LOG_PACKET_HEADER;
     uint64_t time_us;
-    uint8_t core;   // core index
-    float yaw;      // Gaussian Sum Filter yaw estimate (rad)
-    float yawSigma; // Gaussian Sum Filter 1-sigma yaw uncertainty (rad)
-    float yaw_0;    // EKF yaw estimate - instance 0 (rad)
-    float yaw_1;    // EKF yaw estimate - instance 1 (rad)
-    float yaw_2;    // EKF yaw estimate - instance 2 (rad)
-    float yaw_3;    // EKF yaw estimate - instance 3 (rad)
-    float yaw_4;    // EKF yaw estimate - instance 4 (rad)
-    float wgt_0;    // EKF weighting - instance 0
-    float wgt_1;    // EKF weighting - instance 0
-    float wgt_2;    // EKF weighting - instance 0
-    float wgt_3;    // EKF weighting - instance 0
-    float wgt_4;    // EKF weighting - instance 0
+    uint8_t core;
+    float yaw;
+    float yawVariance;
+    float yaw_0;
+    float yaw_1;
+    float yaw_2;
+    float yaw_3;
+    float yaw_4;
+    float wgt_0;
+    float wgt_1;
+    float wgt_2;
+    float wgt_3;
+    float wgt_4;
 };
 
 struct PACKED log_GSF1 {
     LOG_PACKET_HEADER;
     uint64_t time_us;
-    uint8_t core;   // core index
-    float ivn_0;    // EKF North velocity innovation - instance 0 (m/s)
-    float ivn_1;    // EKF North velocity innovation - instance 1 (m/s)
-    float ivn_2;    // EKF North velocity innovation - instance 2 (m/s)
-    float ivn_3;    // EKF North velocity innovation - instance 3 (m/s)
-    float ivn_4;    // EKF North velocity innovation - instance 4 (m/s)
-    float ive_0;    // EKF East velocity innovation - instance 0 (m/s)
-    float ive_1;    // EKF East velocity innovation - instance 1 (m/s)
-    float ive_2;    // EKF East velocity innovation - instance 2 (m/s)
-    float ive_3;    // EKF East velocity innovation - instance 3 (m/s)
-    float ive_4;    // EKF East velocity innovation - instance 4 (m/s)
+    uint8_t core;
+    float ivn_0;
+    float ivn_1;
+    float ivn_2;
+    float ivn_3;
+    float ivn_4;
+    float ive_0;
+    float ive_1;
+    float ive_2;
+    float ive_3;
+    float ive_4;
  };
 
 struct PACKED log_EKF1 {
@@ -1584,9 +1584,9 @@ struct PACKED log_Arm_Disarm {
     { LOG_ERROR_MSG, sizeof(log_Error), \
       "ERR",   "QBB",         "TimeUS,Subsys,ECode", "s--", "F--" }, \
     { LOG_GSF0_MSG, sizeof(log_GSF0), \
-      "GSF0","QBffffffffffff","TimeUS,C,YC,YCS,Y0,Y1,Y2,Y3,Y4,W0,W1,W2,W3,W4", "s#rrrrrrr-----", "F-000000000000", }, \
+      "GSF0","QBffffffffffff","TimeUS,C,YC,YCV,Y0,Y1,Y2,Y3,Y4,W0,W1,W2,W3,W4", "s#------------", "F-------------", }, \
     { LOG_GSF1_MSG, sizeof(log_GSF1), \
-      "GSF1","QBffffffffff","TimeUS,C,IVN0,IVN1,IVN2,IVN3,IVN4,IVE0,IVE1,IVE2,IVE3,IVE4", "s#nnnnnnnnnn", "F-0000000000" }
+      "GSF1","QBffffffffff","TimeUS,C,IVN0,IVN1,IVN2,IVN3,IVN4,IVE0,IVE1,IVE2,IVE3,IVE4", "s#----------", "F-----------" }
 
 #define LOG_SBP_STRUCTURES \
     { LOG_MSG_SBPHEALTH, sizeof(log_SbpHealth), \
