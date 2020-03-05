@@ -4277,7 +4277,7 @@ void GCS_MAVLINK::send_sys_status()
     int8_t battery_remaining;
 
     if (battery.healthy() && battery.current_amps(battery_current)) {
-        battery_remaining = battery.capacity_remaining_pct();
+        battery_remaining = get_battery_remaining_percentage();
         battery_current = constrain_float(battery_current * 100,-INT16_MAX,INT16_MAX);
     } else {
         battery_current = -1;
@@ -5061,6 +5061,11 @@ void GCS_MAVLINK::manual_override(RC_Channel *c, int16_t value_in, const uint16_
         override_value = radio_min + (radio_max - radio_min) * (value_in + offset) / scaler;
     }
     c->set_override(override_value, tnow);
+}
+
+int8_t GCS_MAVLINK::get_battery_remaining_percentage() const {
+    const AP_BattMonitor &battery = AP::battery();
+    return battery.capacity_remaining_pct();
 }
 
 GCS &gcs()
