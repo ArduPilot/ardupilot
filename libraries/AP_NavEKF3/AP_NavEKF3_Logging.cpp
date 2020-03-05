@@ -351,43 +351,42 @@ void NavEKF3::Log_Write_GSF(uint8_t _core, uint64_t time_us) const
     float wgt[N_MODELS_EKFGSF];
 
     if (getDataEKFGSF(_core, &yaw_composite, &yaw_composite_variance, yaw, ivn, ive, wgt)) {
-        const struct log_GSF0 pkt1{
-            LOG_PACKET_HEADER_INIT(LOG_GSF0_MSG),
-            time_us     : time_us,
-            core        : _core,
-            yaw         : (float)yaw_composite,
-            yawSigma    : (float)sqrtf(MAX(yaw_composite_variance, 0.0f)),
-            yaw_0       : (float)yaw[0],
-            yaw_1       : (float)yaw[1],
-            yaw_2       : (float)yaw[2],
-            yaw_3       : (float)yaw[3],
-            yaw_4       : (float)yaw[4],
-            wgt_0       : (float)wgt[0],
-            wgt_1       : (float)wgt[1],
-            wgt_2       : (float)wgt[2],
-            wgt_3       : (float)wgt[3],
-            wgt_4       : (float)wgt[4]
-        };
+        AP::logger().Write("GSF0",
+                        "TimeUS,C,YC,YCS,Y0,Y1,Y2,Y3,Y4,W0,W1,W2,W3,W4",
+                        "s#rrrrrrr-----",
+                        "F-000000000000",
+                        "QBffffffffffff",
+                        time_us,
+                        _core,
+                        yaw_composite,
+                        sqrtf(MAX(yaw_composite_variance, 0.0f)),
+                        yaw[0],
+                        yaw[1],
+                        yaw[2],
+                        yaw[3],
+                        yaw[4],
+                        wgt[0],
+                        wgt[1],
+                        wgt[2],
+                        wgt[3],
+                        wgt[4]);
 
-        AP::logger().WriteBlock(&pkt1, sizeof(pkt1));
-
-        const struct log_GSF1 pkt2{
-            LOG_PACKET_HEADER_INIT(LOG_GSF1_MSG),
-            time_us     : time_us,
-            core        : _core,
-            ivn_0       : (float)ivn[0],
-            ivn_1       : (float)ivn[1],
-            ivn_2       : (float)ivn[2],
-            ivn_3       : (float)ivn[3],
-            ivn_4       : (float)ivn[4],
-            ive_0       : (float)ive[0],
-            ive_1       : (float)ive[1],
-            ive_2       : (float)ive[2],
-            ive_3       : (float)ive[3],
-            ive_4       : (float)ive[4]
-        };
-
-        AP::logger().WriteBlock(&pkt2, sizeof(pkt2));
-
+        AP::logger().Write("GSF1",
+                        "TimeUS,C,IVN0,IVN1,IVN2,IVN3,IVN4,IVE0,IVE1,IVE2,IVE3,IVE4",
+                        "s#nnnnnnnnnn",
+                        "F-0000000000",
+                        "QBffffffffff",
+                        time_us,
+                        _core,
+                        ivn[0],
+                        ivn[1],
+                        ivn[2],
+                        ivn[3],
+                        ivn[4],
+                        ive[0],
+                        ive[1],
+                        ive[2],
+                        ive[3],
+                        ive[4]);
     }
 }
