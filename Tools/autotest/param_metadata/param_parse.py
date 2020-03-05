@@ -14,6 +14,7 @@ from wikiemit import WikiEmit
 from xmlemit import XmlEmit
 from mdemit import MDEmit
 from jsonemit import JSONEmit
+from xmlemit_mp import XmlEmitMP
 
 parser = ArgumentParser(description="Parse ArduPilot parameters.")
 parser.add_argument("-v", "--verbose", dest='verbose', action='store_true', default=False, help="show debugging output")
@@ -27,7 +28,7 @@ parser.add_argument("--format",
                     dest='output_format',
                     action='store',
                     default='all',
-                    choices=['all', 'html', 'rst', 'wiki', 'xml', 'json', 'edn', 'md'],
+                    choices=['all', 'html', 'rst', 'wiki', 'xml', 'json', 'edn', 'md', 'xml_mp'],
                     help="what output format to use")
 args = parser.parse_args()
 
@@ -397,6 +398,8 @@ if args.emit_params:
         do_emit(RSTEmit())
     if args.output_format == 'all' or args.output_format == 'md':
         do_emit(MDEmit())
+    if args.output_format == 'all' or args.output_format == 'xml_mp':
+        do_emit(XmlEmitMP())
     if args.output_format == 'all' or args.output_format == 'edn':
         try:
             from ednemit import EDNEmit
