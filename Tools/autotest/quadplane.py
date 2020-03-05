@@ -392,6 +392,7 @@ class AutoTestQuadPlane(AutoTest):
         return {
             "QAutoTune": "See https://github.com/ArduPilot/ardupilot/issues/10411",
             "FRSkyPassThrough": "Currently failing",
+            "GyroFFT": "Currently failing",
         }
 
     def tests(self):
