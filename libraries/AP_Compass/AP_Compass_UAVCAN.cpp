@@ -25,6 +25,10 @@
 #include <uavcan/equipment/ahrs/MagneticFieldStrength.hpp>
 #include <uavcan/equipment/ahrs/MagneticFieldStrength2.hpp>
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <SITL/SITL.h>
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 #define debug_mag_uavcan(level_debug, can_driver, fmt, args...) do { if ((level_debug) <= AP::can().get_debug_level_driver(can_driver)) { printf(fmt, ##args); }} while (0)
@@ -107,6 +111,13 @@ bool AP_Compass_UAVCAN::init()
     set_dev_id(_instance, devid);
     set_external(_instance, true);
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // save so the compass always comes up configured in SITL
+    save_dev_id(_instance);
+    if (AP::compass().get_offsets(_instance).is_zero()) {
+        AP::compass().set_offsets(_instance, AP::sitl()->mag_ofs);
+    }
+#endif
     debug_mag_uavcan(2, _ap_uavcan->get_driver_index(),  "AP_Compass_UAVCAN loaded\n\r");
     return true;
 }
@@ -116,7 +127,7 @@ AP_Compass_UAVCAN* AP_Compass_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, u
     if (ap_uavcan == nullptr) {
         return nullptr;
     }
-    for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
+    for (uint8_t i=0; i<MAX_CONNECTED_MAGS; i++) {
         if (_detected_modules[i].driver &&
             _detected_modules[i].ap_uavcan == ap_uavcan &&
             _detected_modules[i].node_id == node_id &&
@@ -127,7 +138,7 @@ AP_Compass_UAVCAN* AP_Compass_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, u
 
     bool already_detected = false;
     // Check if there's an empty spot for possible registeration
-    for (uint8_t i = 0; i < COMPASS_MAX_BACKEND; i++) {
+    for (uint8_t i = 0; i < MAX_CONNECTED_MAGS; i++) {
         if (_detected_modules[i].ap_uavcan == ap_uavcan && 
             _detected_modules[i].node_id == node_id &&
             _detected_modules[i].sensor_id == sensor_id) {
@@ -137,7 +148,7 @@ AP_Compass_UAVCAN* AP_Compass_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, u
         }
     }
     if (!already_detected) {
-        for (uint8_t i = 0; i < COMPASS_MAX_BACKEND; i++) {
+        for (uint8_t i = 0; i < MAX_CONNECTED_MAGS; i++) {
             if (nullptr == _detected_modules[i].ap_uavcan) {
                 _detected_modules[i].ap_uavcan = ap_uavcan;
                 _detected_modules[i].node_id = node_id;
@@ -152,7 +163,7 @@ AP_Compass_UAVCAN* AP_Compass_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, u
     // we do this, so that we have repeatable compass
     // registration, especially in cases of extraneous
     // CAN compass is connected.
-    for (uint8_t i = 1; i < COMPASS_MAX_BACKEND; i++) {
+    for (uint8_t i = 1; i < MAX_CONNECTED_MAGS; i++) {
         for (uint8_t j = i; j > 0; j--) {
             if (_detected_modules[j].node_id > _detected_modules[j-1].node_id) {
                 tempslot = _detected_modules[j];

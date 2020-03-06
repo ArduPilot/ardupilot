@@ -8,7 +8,7 @@
 #include <AP_Math/vectorN.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Declination/AP_Declination.h>
-
+#include <uavcan/uavcan.hpp>
 #define MAX_SITL_COMPASSES 3
 
 class AP_Compass_SITL : public AP_Compass_Backend {
@@ -18,8 +18,11 @@ public:
     void read(void) override;
 
 private:
-    uint8_t _compass_instance[MAX_SITL_COMPASSES];
-    uint8_t _num_compass;
+    int8_t _compass_nonuc_instance[MAX_SITL_COMPASSES];
+    uavcan::Node<0>* _compass_ucnode[MAX_CONNECTED_MAGS];
+    uint8_t _compass_ucnode_sensor_id[MAX_CONNECTED_MAGS];
+
+    uint8_t _num_nonuc_compass;
     SITL::SITL *_sitl;
 
     // delay buffer variables

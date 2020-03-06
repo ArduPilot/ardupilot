@@ -1,8 +1,12 @@
 #include "AP_Compass_SITL.h"
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL_SITL/AP_HAL_SITL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+
+#include <uavcan/equipment/ahrs/MagneticFieldStrength2.hpp>
+
 extern const AP_HAL::HAL& hal;
 
 AP_Compass_SITL::AP_Compass_SITL()
@@ -16,27 +20,33 @@ AP_Compass_SITL::AP_Compass_SITL()
                 continue;
             }
             uint8_t instance;
+            AP_HAL::Device::DeviceStructure dev_id_s = AP_HAL::Device::get_dev_id_struct(dev_id);
+            if (dev_id_s.bus_type == AP_HAL::Device::BUS_TYPE_UAVCAN) {
+                _compass_ucnode[i] = static_cast<const HAL_SITL*>(&hal)->_sitl_state->initNode(dev_id_s.bus, dev_id_s.address);
+                _compass_ucnode_sensor_id[i] = dev_id_s.devtype - 1;
+                continue;
+            }
             if (!register_compass(dev_id, instance)) {
                 continue;
-            } else if (_num_compass<MAX_SITL_COMPASSES) {
-                _compass_instance[_num_compass] = instance;
-                set_dev_id(_compass_instance[_num_compass], dev_id);
+            } else if (_num_nonuc_compass<MAX_SITL_COMPASSES) {
+                _compass_nonuc_instance[_num_nonuc_compass] = instance;
+                set_dev_id(_compass_nonuc_instance[_num_nonuc_compass], dev_id);
 
                 // save so the compass always comes up configured in SITL
-                save_dev_id(_compass_instance[_num_compass]);
-                _num_compass++;
+                save_dev_id(_compass_nonuc_instance[_num_nonuc_compass]);
+                _num_nonuc_compass++;
             }
         }
 
         // Scroll through the registered compasses, and set the offsets
-        for (uint8_t i=0; i<_num_compass; i++) {
+        for (uint8_t i=0; i<_num_nonuc_compass; i++) {
             if (_compass.get_offsets(i).is_zero()) {
                 _compass.set_offsets(i, _sitl->mag_ofs);
             }
         }
-        
+
         // make first compass external
-        set_external(_compass_instance[0], true);
+        set_external(_compass_nonuc_instance[0], true);
 
         hal.scheduler->register_timer_process(FUNCTOR_BIND(this, &AP_Compass_SITL::_timer, void));
     }
@@ -121,7 +131,7 @@ void AP_Compass_SITL::_timer()
     new_mag_data = _eliptical_corr * new_mag_data;
     new_mag_data -= _sitl->mag_ofs.get();
 
-    for (uint8_t i=0; i<_num_compass; i++) {
+    for (uint8_t i=0; i<_num_nonuc_compass; i++) {
         Vector3f f = new_mag_data;
         if (i == 0) {
             // rotate the first compass, allowing for testing of external compass rotation
@@ -136,15 +146,27 @@ void AP_Compass_SITL::_timer()
             // scale the first compass to simulate sensor scale factor errors
             f *= _sitl->mag_scaling;
         }
-        
-        accumulate_sample(f, _compass_instance[i], 10);
+        accumulate_sample(f, _compass_nonuc_instance[i], 10);
     }
+
+    for (uint8_t i = 0; i < MAX_CONNECTED_MAGS; i++) {
+        if (_compass_ucnode[i] != nullptr) {
+            uavcan::Publisher<uavcan::equipment::ahrs::MagneticFieldStrength2> mfs2_pub(*_compass_ucnode[i]);
+            uavcan::equipment::ahrs::MagneticFieldStrength2 mfs2;
+            mfs2.sensor_id = _compass_ucnode_sensor_id[i];
+            mfs2.magnetic_field_ga[0] = (double)new_mag_data.x/1000.0;
+            mfs2.magnetic_field_ga[1] = (double)new_mag_data.y/1000.0;
+            mfs2.magnetic_field_ga[2] = (double)new_mag_data.z/1000.0;
+            (void)mfs2_pub.broadcast(mfs2);
+        }
+    }
+
 }
 
 void AP_Compass_SITL::read()
 {
-    for (uint8_t i=0; i<_num_compass; i++) {
-        drain_accumulated_samples(_compass_instance[i], nullptr);
+    for (uint8_t i=0; i<_num_nonuc_compass; i++) {
+        drain_accumulated_samples(_compass_nonuc_instance[i], nullptr);
     }
 }
 #endif

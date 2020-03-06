@@ -1211,7 +1211,7 @@ void Compass::_detect_backends(void)
 
 #if HAL_WITH_UAVCAN
     if (_driver_enabled(DRIVER_UAVCAN)) {
-        for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
+        for (uint8_t i=0; i<MAX_CONNECTED_MAGS; i++) {
             AP_Compass_Backend* _uavcan_backend = AP_Compass_UAVCAN::probe(i);
             if (_uavcan_backend) {
                 _add_backend(_uavcan_backend);
@@ -1243,7 +1243,7 @@ Compass::_detect_runtime(void)
     }
     last_try = AP_HAL::millis();
     if (_driver_enabled(DRIVER_UAVCAN)) {
-        for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
+        for (uint8_t i=0; i<MAX_CONNECTED_MAGS; i++) {
             AP_Compass_Backend* _uavcan_backend = AP_Compass_UAVCAN::probe(i);
             if (_uavcan_backend) {
                 _add_backend(_uavcan_backend);
