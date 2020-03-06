@@ -221,7 +221,7 @@ const AP_Param::GroupInfo SITL::var_info3[] = {
     AP_GROUPINFO("GPS_POS2",      2, SITL,  gps_pos_offset[1], 0),
     AP_GROUPINFO("MAG1_DEVID",    3, SITL,  mag_devid[0], 97539),
     AP_GROUPINFO("MAG2_DEVID",    4, SITL,  mag_devid[1], 131874),
-    AP_GROUPINFO("MAG3_DEVID",    5, SITL,  mag_devid[2], 263178),
+    AP_GROUPINFO("MAG3_DEVID",    5, SITL,  mag_devid[2], 95243),
     AP_GROUPINFO("MAG4_DEVID",    6, SITL,  mag_devid[3], 97283),    
     AP_GROUPINFO("MAG5_DEVID",    7, SITL,  mag_devid[4], 97795),
     AP_GROUPINFO("MAG6_DEVID",    8, SITL,  mag_devid[5], 98051),
