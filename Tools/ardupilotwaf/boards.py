@@ -378,6 +378,9 @@ Please use a replacement build as follows:
 # be worthy to keep board definitions in files of their own.
 
 class sitl(Board):
+    def __init__(self):
+        self.with_uavcan = True
+
     def configure_env(self, cfg, env):
         super(sitl, self).configure_env(cfg, env)
 
@@ -457,6 +460,9 @@ class sitl(Board):
 
         if Utils.unversioned_sys_platform() == 'cygwin':
             env.CXXFLAGS += ['-DCYGWIN_BUILD']
+
+        if self.with_uavcan:
+            cfg.define('UAVCAN_EXCEPTIONS', 0)
 
         if 'clang++' in cfg.env.COMPILER_CXX:
             print("Disabling SLP for clang++")
