@@ -87,6 +87,7 @@ void ModeSmartRTL::update()
                 }
                 if (_loitering) {
                     rover.mode_loiter.update();
+                }
                 // removing stop_vehicle function may be it is not required
                // } else {
                //     stop_vehicle();
