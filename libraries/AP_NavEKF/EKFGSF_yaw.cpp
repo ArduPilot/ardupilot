@@ -289,6 +289,7 @@ void EKFGSF_yaw::alignTilt()
 
     // record alignment
     for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx++) {
+        AHRS[mdl_idx].R = R;
         AHRS[mdl_idx].aligned = true;
     }
 }
