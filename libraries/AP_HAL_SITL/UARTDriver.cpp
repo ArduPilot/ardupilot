@@ -69,7 +69,15 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
         /* 2nd gps */
         _connected = true;
         _fd = _sitlState->gps_pipe(1);
-    } else {
+    } else if (strcmp(path, "CAN1") == 0) {
+        _connected = true;
+        _fd = _sitlState->can_sitl2ap_pipe(0);
+        _fd_write = _sitlState->can_ap2sitl_pipe(0);
+    } else if (strcmp(path, "CAN2") == 0) {
+        _connected = true;
+        _fd = _sitlState->can_sitl2ap_pipe(1);
+        _fd_write = _sitlState->can_ap2sitl_pipe(1);
+     }  else {
         /* parse type:args:flags string for path. 
            For example:
              tcp:5760:wait    // tcp listen on port 5760

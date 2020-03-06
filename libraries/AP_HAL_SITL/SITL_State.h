@@ -14,7 +14,7 @@
 #include <netinet/in.h>
 #include <netinet/udp.h>
 #include <arpa/inet.h>
-
+#include <list>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Compass/AP_Compass.h>
@@ -43,6 +43,8 @@
 // #include <SITL/SIM_Frsky_SPortPassthrough.h>
 
 #include <AP_HAL/utility/Socket.h>
+#include <AP_UAVCAN/AP_UAVCAN_SLCAN.h>
+#include <uavcan/uavcan.hpp>
 
 class HAL_SITL;
 
@@ -50,8 +52,83 @@ class HALSITL::SITL_State {
     friend class HALSITL::Scheduler;
     friend class HALSITL::Util;
     friend class HALSITL::GPIO;
+
 public:
+    class SystemClock: public uavcan::ISystemClock, uavcan::Noncopyable {
+    public:
+        SystemClock() = default;
+
+        void adjustUtc(uavcan::UtcDuration adjustment) override {
+            utc_adjustment_usec = adjustment.toUSec();
+        }
+
+        uavcan::MonotonicTime getMonotonic() const override {
+            return uavcan::MonotonicTime::fromUSec(AP_HAL::micros64());
+        }
+
+        uavcan::UtcTime getUtc() const override {
+            return uavcan::UtcTime::fromUSec(AP_HAL::micros64() + utc_adjustment_usec);
+        }
+
+        static SystemClock& instance() {
+            static SystemClock inst;
+            return inst;
+        }
+
+    private:
+        int64_t utc_adjustment_usec;
+    };
+    
+    class CANDriver: public uavcan::ICanDriver {
+        friend HALSITL::SITL_State;
+        bool initialized_;
+        SLCAN::CAN driver_;
+        uint8_t _ifaces_num = 1;
+
+        virtual int16_t select(uavcan::CanSelectMasks& inout_masks,
+                            const uavcan::CanFrame* (&pending_tx)[uavcan::MaxCanIfaces], uavcan::MonotonicTime blocking_deadline) override;
+
+        uavcan::CanSelectMasks makeSelectMasks(const uavcan::CanFrame* (&pending_tx)[uavcan::MaxCanIfaces]);
+        pthread_t _irq_handler_ctx;
+        pthread_mutex_t _irq_handler_mtx;
+        pthread_cond_t _irq_handler_cond;
+
+        HALSITL::SITL_State* _sitlState;
+    public:
+        CANDriver(HALSITL::SITL_State* sitlState)
+            :  _sitlState(sitlState), initialized_(false), driver_(SLCAN_DRIVER_INDEX, SLCAN_RX_QUEUE_SIZE)
+        { }
+        void uavcan_loop(void);
+
+
+        bool begin(uint32_t bitrate, uint8_t can_number);
+        bool is_initialized();
+        void initialized(bool val);
+
+        virtual SLCAN::CAN* getIface(uint8_t iface_index) override
+        {
+            return &driver_;
+        }
+
+        virtual uint8_t getNumIfaces() const override
+        {
+            return _ifaces_num;
+        }
+        static int self_read_fd[2];
+        static int client_write_fd[2];
+        static int self_write_fd[2];
+        static int client_read_fd[2];
+        uint8_t _can_number;
+        uavcan::Node<0> *_node;
+    };
+    void can_reader_trampoline(void);
+
+    class RaiiSynchronizer {};
+
+    std::list<uavcan::PoolAllocator<UAVCAN_NODE_POOL_SIZE, UAVCAN_NODE_POOL_BLOCK_SIZE, SITL_State::RaiiSynchronizer>*> _node_allocator;
+
     void init(int argc, char * const argv[]);
+    uavcan::Node<0>* initNode(uint8_t driver_index, uint8_t node_id);
 
     enum vehicle_type {
         ArduCopter,
@@ -61,6 +138,8 @@ public:
     };
 
     int gps_pipe(uint8_t index);
+    int can_ap2sitl_pipe(uint8_t index);
+    int can_sitl2ap_pipe(uint8_t index);
     ssize_t gps_read(int fd, void *buf, size_t count);
     uint16_t pwm_output[SITL_NUM_CHANNELS];
     uint16_t pwm_input[SITL_RC_INPUT_CHANNELS];
@@ -97,8 +176,8 @@ public:
         "tcp:2",
         "tcp:3",
         "GPS2",
-        "tcp:5",
-        "tcp:6",
+        "CAN1",
+        "CAN2",
     };
 
     /* parse a home location string */
@@ -138,6 +217,7 @@ private:
     void _gps_write(const uint8_t *p, uint16_t size, uint8_t instance);
     void _gps_send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size, uint8_t instance);
     void _update_gps_ubx(const struct gps_data *d, uint8_t instance);
+    void _update_gps_uavcan(const struct gps_data *d, uint8_t instance);
     void _update_gps_mtk(const struct gps_data *d, uint8_t instance);
     void _update_gps_mtk16(const struct gps_data *d, uint8_t instance);
     void _update_gps_mtk19(const struct gps_data *d, uint8_t instance);
@@ -280,6 +360,10 @@ private:
     const char *defaults_path = HAL_PARAM_DEFAULTS_PATH;
 
     const char *_home_str;
+
+    std::list<CANDriver*> _can_mgr;
+    std::list<uavcan::Node<0>*> _node;
+    uint32_t _num_nodes;
 };
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL

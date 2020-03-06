@@ -48,10 +48,12 @@ public:
     uint32_t available() override;
     uint32_t txspace() override;
     int16_t read() override;
+    int16_t read_locked(uint32_t key) override { return read(); }
 
     /* Implementations of Print virtual methods */
     size_t write(uint8_t c) override;
     size_t write(const uint8_t *buffer, size_t size) override;
+    size_t write_locked(const uint8_t *buffer, size_t size, uint32_t key) override { return write(buffer, size); }
 
     // file descriptor, exposed so SITL_State::loop_hook() can use it
     int _fd;
