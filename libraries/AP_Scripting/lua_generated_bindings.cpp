@@ -966,6 +966,28 @@ static int AP_SerialLED_set_num_neopixel(lua_State *L) {
     return 1;
 }
 
+static int AP_Vehicle_get_target_location(lua_State *L) {
+    AP_Vehicle * ud = AP_Vehicle::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "vehicle not supported on this firmware");
+    }
+
+    binding_argcheck(L, 1);
+    Location data_5002 = {};
+    AP::scheduler().get_semaphore().take_blocking();
+    const bool data = ud->get_target_location(
+            data_5002);
+
+    AP::scheduler().get_semaphore().give();
+    if (data) {
+        new_Location(L);
+        *check_Location(L, -1) = data_5002;
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
+}
+
 static int AP_Vehicle_set_target_location(lua_State *L) {
     AP_Vehicle * ud = AP_Vehicle::get_singleton();
     if (ud == nullptr) {
@@ -1997,6 +2019,22 @@ static int AP_Arming_disarm(lua_State *L) {
     return 1;
 }
 
+static int AP_AHRS_get_vibration(lua_State *L) {
+    AP_AHRS * ud = AP_AHRS::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "ahrs not supported on this firmware");
+    }
+
+    binding_argcheck(L, 1);
+    ud->get_semaphore().take_blocking();
+    const Vector3f &data = ud->get_vibration();
+
+    ud->get_semaphore().give();
+    new_Vector3f(L);
+    *check_Vector3f(L, -1) = data;
+    return 1;
+}
+
 static int AP_AHRS_airspeed_estimate(lua_State *L) {
     AP_AHRS * ud = AP_AHRS::get_singleton();
     if (ud == nullptr) {
@@ -2303,6 +2341,7 @@ const luaL_Reg AP_SerialLED_meta[] = {
 };
 
 const luaL_Reg AP_Vehicle_meta[] = {
+    {"get_target_location", AP_Vehicle_get_target_location},
     {"set_target_location", AP_Vehicle_set_target_location},
     {"get_time_flying_ms", AP_Vehicle_get_time_flying_ms},
     {"get_likely_flying", AP_Vehicle_get_likely_flying},
@@ -2397,6 +2436,7 @@ const luaL_Reg AP_Arming_meta[] = {
 };
 
 const luaL_Reg AP_AHRS_meta[] = {
+    {"get_vibration", AP_AHRS_get_vibration},
     {"airspeed_estimate", AP_AHRS_airspeed_estimate},
     {"prearm_healthy", AP_AHRS_prearm_healthy},
     {"home_is_set", AP_AHRS_home_is_set},
