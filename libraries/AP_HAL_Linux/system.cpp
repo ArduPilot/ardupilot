@@ -30,8 +30,12 @@ void panic(const char *errormsg, ...)
     va_end(ap);
     UNUSED_RESULT(write(1, "\n", 1));
 
-    hal.rcin->teardown();
-    hal.scheduler->delay_microseconds(10000);
+    if (hal.rcin != nullptr) {
+        hal.rcin->teardown();
+    }
+    if (hal.scheduler != nullptr) {
+        hal.scheduler->delay_microseconds(10000);
+    }
     exit(1);
 }
 
