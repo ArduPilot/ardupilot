@@ -166,6 +166,9 @@ public:
     // set target location (for use by scripting)
     virtual bool set_target_location(const Location& target_loc) { return false; }
 
+    // get target location (for use by scripting)
+    virtual bool get_target_location(Location& target_loc) { return false; }
+    
 protected:
 
     virtual void init_ardupilot() = 0;
