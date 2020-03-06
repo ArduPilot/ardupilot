@@ -250,19 +250,6 @@ public:
         return d.devid;
     }
 
-    /**
-     * return bus ID with a new devtype
-     */
-    uint32_t get_bus_id_devtype(uint8_t devtype) {
-        return change_bus_id(get_bus_id(), devtype);
-    }
-
-    /* set number of retries on transfers */
-    virtual void set_retries(uint8_t retries) {};
-
-protected:
-    uint8_t _read_flag = 0;
-
     /*
       broken out device elements. The bitfields are used to keep
       the overall value small enough to fit in a float accurately,
@@ -275,6 +262,27 @@ protected:
         uint8_t address;   // address on the bus (eg. I2C address)
         uint8_t devtype;   // device class specific device type
     };
+
+    /**
+     * return devid struct from dev_id in integer form
+     */
+    static struct DeviceStructure get_dev_id_struct(uint32_t dev_id) {
+        DeviceId bus_id;
+        bus_id.devid = dev_id;
+        return  bus_id.devid_s;
+    }
+    /**
+     * return bus ID with a new devtype
+     */
+    uint32_t get_bus_id_devtype(uint8_t devtype) {
+        return change_bus_id(get_bus_id(), devtype);
+    }
+
+    /* set number of retries on transfers */
+    virtual void set_retries(uint8_t retries) {};
+
+protected:
+    uint8_t _read_flag = 0;
 
     union DeviceId {
         struct DeviceStructure devid_s;
