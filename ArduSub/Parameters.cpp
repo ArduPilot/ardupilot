@@ -662,17 +662,22 @@ void Sub::load_parameters()
     ahrs.set_correct_centrifugal(false);
     hal.util->set_soft_armed(false);
 
-    if (!g.format_version.load() ||
-            g.format_version != Parameters::k_format_version) {
+    uint8_t loadErr = !g.format_version.load();
+    bool isNewFirmware = g.format_version != Parameters::k_format_version;
+    if (loadErr || isNewFirmware) {
 
         // erase all parameters
-        hal.console->printf("Firmware change: erasing EEPROM...\n");
+        if (loadErr) {
+            hal.console->printf("Couldn't load params: erasing params...\n");
+        } else {
+            hal.console->printf("Firmware change: erasing params...\n");
+        }
         StorageManager::erase();
         AP_Param::erase_all();
 
         // save the current format version
         g.format_version.set_and_save(Parameters::k_format_version);
-        hal.console->println("done.");
+        hal.console->printf("done.\n");
     }
 
     uint32_t before = AP_HAL::micros();
