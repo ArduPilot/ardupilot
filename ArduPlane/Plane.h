@@ -1040,6 +1040,8 @@ private:
 
 public:
     void failsafe_check(void);
+    bool set_target_location(const Location& target_loc) override;
+    bool get_target_location(Location& target_loc) override;
 };
 
 extern Plane plane;
