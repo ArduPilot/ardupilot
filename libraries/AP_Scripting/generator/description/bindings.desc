@@ -35,6 +35,7 @@ singleton AP_AHRS method get_relative_position_NED_home boolean Vector3f'Null
 singleton AP_AHRS method home_is_set boolean
 singleton AP_AHRS method prearm_healthy boolean
 singleton AP_AHRS method airspeed_estimate boolean float'Null
+singleton AP_AHRS method get_vibration Vector3f
 
 include AP_Arming/AP_Arming.h
 
@@ -154,6 +155,7 @@ singleton AP_Vehicle method get_mode uint8_t
 singleton AP_Vehicle method get_likely_flying boolean
 singleton AP_Vehicle method get_time_flying_ms uint32_t
 singleton AP_Vehicle method set_target_location boolean Location
+singleton AP_Vehicle method get_target_location boolean Location'Null
 
 include AP_SerialLED/AP_SerialLED.h
 singleton AP_SerialLED alias serialLED
