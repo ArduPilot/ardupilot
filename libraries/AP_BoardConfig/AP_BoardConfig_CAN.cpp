@@ -118,13 +118,15 @@ void AP_BoardConfig_CAN::init()
                     const_cast <AP_HAL::HAL&> (hal).can_mgr[drv_num - 1] = new Linux::CANManager;
                 #elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
                     const_cast <AP_HAL::HAL&> (hal).can_mgr[drv_num - 1] = new ChibiOS::CANManager;
+                #else
+                    const_cast <AP_HAL::HAL&> (hal).can_mgr[drv_num - 1] = new SLCAN::CANManager(0);
                 #endif
             }
 
             // For this now existing driver (manager), start the physical interface
             if (hal.can_mgr[drv_num - 1] != nullptr) {
                 initret = initret && hal.can_mgr[drv_num - 1]->begin(_interfaces[i]._bitrate, i);
-#if AP_UAVCAN_SLCAN_ENABLED
+#if AP_UAVCAN_SLCAN_ENABLED && (CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS)
                     if (_slcan._can_port == (i+1) && hal.can_mgr[drv_num - 1] != nullptr ) {
                         ChibiOS_CAN::CanDriver* drv = (ChibiOS_CAN::CanDriver*)hal.can_mgr[drv_num - 1]->get_driver();
                         ChibiOS_CAN::CanIface::slcan_router().init(drv->getIface(i), drv->getUpdateEvent());
