@@ -23,6 +23,7 @@ FENCE = 'ArduPlane-Missions/Dalby-OBC2016-fence.txt'
 WIND = "0,180,0.2"  # speed,direction,variance
 SITL_START_LOCATION = mavutil.location(-27.274439, 151.290064, 343, 8.7)
 
+
 class AutoTestQuadPlane(AutoTest):
 
     @staticmethod
@@ -247,7 +248,7 @@ class AutoTestQuadPlane(AutoTest):
         tstart = self.get_sim_time()
         self.progress("Hovering for %u seconds" % hover_time)
         while self.get_sim_time_cached() < tstart + hover_time:
-            attitude = self.mav.recv_match(type='ATTITUDE', blocking=True)
+            self.mav.recv_match(type='ATTITUDE', blocking=True)
         vfr_hud = self.mav.recv_match(type='VFR_HUD', blocking=True)
         tend = self.get_sim_time()
 
@@ -348,7 +349,7 @@ class AutoTestQuadPlane(AutoTest):
             self.progress("Hovering for %u seconds" % hover_time)
             tstart = self.get_sim_time()
             while self.get_sim_time_cached() < tstart + hover_time:
-                attitude = self.mav.recv_match(type='ATTITUDE', blocking=True)
+                self.mav.recv_match(type='ATTITUDE', blocking=True)
             tend = self.get_sim_time()
 
             self.do_RTL()
