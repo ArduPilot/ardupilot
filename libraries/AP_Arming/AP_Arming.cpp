@@ -779,8 +779,8 @@ bool AP_Arming::can_checks(bool report)
                         check_failed(ARMING_CHECK_SYSTEM, report, "%s", fail_msg);
                         return false;
                     }
-                    break;
 #endif
+                    break;
                 }
                 case AP_BoardConfig_CAN::Protocol_Type_PiccoloCAN: {
 #if HAL_PICCOLO_CAN_ENABLE
@@ -796,11 +796,11 @@ bool AP_Arming::can_checks(bool report)
                         return false;
                     }
 
-                    break;
 #else
                     check_failed(ARMING_CHECK_SYSTEM, report, "PiccoloCAN not enabled");
                     return false;
 #endif
+                    break;
                 }
                 case AP_BoardConfig_CAN::Protocol_Type_UAVCAN:
                 {
@@ -809,6 +809,7 @@ bool AP_Arming::can_checks(bool report)
                         check_failed(ARMING_CHECK_SYSTEM, report, "%s", fail_msg);
                         return false;
                     }
+                    break;
                 }
                 case AP_BoardConfig_CAN::Protocol_Type_None:
                 default:
