@@ -17,6 +17,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 #include "AP_Scripting.h"
+#include <AP_ROMFS/AP_ROMFS.h>
 
 #include "lua_generated_bindings.h"
 
@@ -167,6 +168,28 @@ void lua_scripts::load_all_scripts_in_dir(lua_State *L, const char *dirname) {
 
     }
     AP::FS().closedir(d);
+}
+
+void lua_scripts::load_all_scripts_in_romfs(lua_State *L, const char *dirname) {
+    if (dirname == nullptr) {
+        return;
+    }
+
+    // load anything that ends in .lua
+    uint16_t ofs = 0;
+    const char *name;
+    for (name = AP_ROMFS::dir_list(dirname, ofs); name; name = AP_ROMFS::dir_list(dirname, ofs)) {
+        uint8_t length = strlen(name);
+        if (length < 5) {
+            // not long enough
+            continue;
+        }
+        if (strncmp(&name[length-4], ".lua", 4)) {
+            // doesn't end in .lua
+            continue;
+        }
+        ::printf("ROMFS lua: '%s'\n", name);
+    }
 }
 
 void lua_scripts::reset_loop_overtime(lua_State *L) {
@@ -370,7 +393,8 @@ void lua_scripts::run(void) {
     lua_atpanic(L, atpanic);
     load_generated_bindings(L);
 
-    // Scan the filesystem in an appropriate manner and autostart scripts
+    // Scan ROMFS and filesystem in an appropriate manner and autostart scripts
+    load_all_scripts_in_romfs(L, "scripts");
     load_all_scripts_in_dir(L, SCRIPTING_DIRECTORY);
 
     succeeded_initial_load = true;
