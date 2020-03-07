@@ -190,7 +190,7 @@ protected:
 
     // main loop scheduler
     AP_Scheduler scheduler{FUNCTOR_BIND_MEMBER(&AP_Vehicle::fast_loop, void)};
-    virtual void fast_loop() { }
+    virtual void fast_loop();
 
     // IMU variables
     // Integration time; time last loop took to run
