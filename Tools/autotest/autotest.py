@@ -100,23 +100,15 @@ def build_all():
 def build_binaries():
     """Run the build_binaries.py script."""
     print("Running build_binaries.py")
-    # copy the script as it changes git branch, which can change the
-    # script while running
-    orig = util.reltopdir('Tools/scripts/build_binaries.py')
-    copy = util.reltopdir('./build_binaries.py')
-    shutil.copy2(orig, copy)
 
-    # also copy generate_manifest library:
-    orig_gm = util.reltopdir('Tools/scripts/generate_manifest.py')
-    copy_gm = util.reltopdir('./generate_manifest.py')
-    shutil.copy2(orig_gm, copy_gm)
-
-    # and gen_stable.py
-    orig_gs = util.reltopdir('Tools/scripts/gen_stable.py')
-    copy_gs = util.reltopdir('./gen_stable.py')
-    shutil.copy2(orig_gs, copy_gs)
+    # copy the script (and various libraries used by the script) as it
+    # changes git branch, which can change the script while running
+    for thing in "build_binaries.py", "generate_manifest.py", "gen_stable.py", "build_binaries_history.py":
+        orig = util.reltopdir('Tools/scripts/%s' % thing)
+        copy = util.reltopdir('./%s' % thing)
+        shutil.copy2(orig, copy)
     
-    if util.run_cmd(copy, directory=util.reltopdir('.')) != 0:
+    if util.run_cmd("./build_binaries.py", directory=util.reltopdir('.')) != 0:
         print("Failed build_binaries.py")
         return False
     return True

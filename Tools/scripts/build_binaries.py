@@ -20,12 +20,15 @@ import gzip
 
 # local imports
 import generate_manifest, gen_stable
-
+import build_binaries_history
 
 class build_binaries(object):
     def __init__(self, tags):
         self.tags = tags
         self.dirty = False
+        binaries_history_filepath = os.path.join(self.buildlogs_dirpath(),
+                                                 "build_binaries_history.sqlite")
+        self.history = build_binaries_history.BuildBinariesHistory(binaries_history_filepath)
 
     def progress(self, string):
         '''pretty-print progress'''
@@ -377,6 +380,8 @@ is bob we will attempt to checkout bob-AVR'''
 
                 self.remove_tmpdir()
 
+                githash = self.run_git(["rev-parse", "HEAD"]).rstrip()
+
                 t0 = time.time()
 
                 self.progress("Configuring for %s in %s" %
@@ -400,11 +405,16 @@ is bob we will attempt to checkout bob-AVR'''
                            (vehicle, board, framesuffix, tag))
                     self.progress(msg)
                     self.error_strings.append(msg)
+                    # record some history about this build
+                    t1 = time.time()
+                    time_taken_to_build = t1-t0
+                    self.history.record_build(githash, tag, vehicle, board, frame, None, t0, time_taken_to_build)
                     continue
 
                 t1 = time.time()
+                time_taken_to_build = t1-t0
                 self.progress("Building %s %s %s %s took %u seconds" %
-                              (vehicle, tag, board, frame, t1-t0))
+                              (vehicle, tag, board, frame, time_taken_to_build))
 
                 bare_path = os.path.join(self.buildroot,
                                          board,
@@ -419,8 +429,10 @@ is bob we will attempt to checkout bob-AVR'''
                     filepath = "".join([bare_path, extension])
                     if os.path.exists(filepath):
                         files_to_copy.append(filepath)
+                if not os.path.exists(bare_path):
+                    raise Exception("No elf file?!")
                 # only copy the elf if we don't have other files to copy
-                if os.path.exists(bare_path) and len(files_to_copy) == 0:
+                if len(files_to_copy) == 0:
                     files_to_copy.append(bare_path)
 
                 for path in files_to_copy:
@@ -431,6 +443,9 @@ is bob we will attempt to checkout bob-AVR'''
                 # why is touching this important? -pb20170816
                 self.touch_filepath(os.path.join(self.binaries,
                                                  vehicle_binaries_subdir, tag))
+
+                # record some history about this build
+                self.history.record_build(githash, tag, vehicle, board, frame, bare_path, t0, time_taken_to_build)
 
         if not self.checkout(vehicle, tag, "PX4", None):
             self.checkout(vehicle, "latest")
@@ -766,12 +781,14 @@ is bob we will attempt to checkout bob-AVR'''
                                       "binaries.build")
 
         for tag in self.tags:
+            t0 = time.time()
             self.build_arducopter(tag)
             self.build_arduplane(tag)
             self.build_rover(tag)
             self.build_antennatracker(tag)
             self.build_ardusub(tag)
             self.build_AP_Periph(tag)
+            self.history.record_run(githash, tag, t0, time.time()-t0)
 
         if os.path.exists(self.tmpdir):
             shutil.rmtree(self.tmpdir)
