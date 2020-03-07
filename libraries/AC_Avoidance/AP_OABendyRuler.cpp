@@ -236,11 +236,7 @@ bool AP_OABendyRuler::calc_margin_from_inclusion_and_exclusion_polygons(const Lo
     for (uint8_t i = 0; i < num_inclusion_polygons; i++) {
         uint16_t num_points;
         const Vector2f* boundary = fence->polyfence().get_inclusion_polygon(i, num_points);
-        if (num_points < 3) {
-            // ignore exclusion polygons with less than 3 points
-            continue;
-        }
-
+     
         // if outside the fence margin is the closest distance but with negative sign
         const float sign = Polygon_outside(start_NE, boundary, num_points) ? -1.0f : 1.0f;
 
@@ -256,11 +252,7 @@ bool AP_OABendyRuler::calc_margin_from_inclusion_and_exclusion_polygons(const Lo
     for (uint8_t i = 0; i < num_exclusion_polygons; i++) {
         uint16_t num_points;
         const Vector2f* boundary = fence->polyfence().get_exclusion_polygon(i, num_points);
-        if (num_points < 3) {
-            // ignore exclusion polygons with less than 3 points
-            continue;
-        }
-
+   
         // if start is inside the polygon the margin's sign is reversed
         const float sign = Polygon_outside(start_NE, boundary, num_points) ? 1.0f : -1.0f;
 
