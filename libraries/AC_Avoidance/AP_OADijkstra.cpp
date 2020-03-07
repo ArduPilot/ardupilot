@@ -265,10 +265,6 @@ bool AP_OADijkstra::create_inclusion_polygon_with_margin(float margin_cm, AP_OAD
     for (uint8_t i = 0; i < num_inclusion_polygons; i++) {
         uint16_t num_points;
         const Vector2f* boundary = fence->polyfence().get_inclusion_polygon(i, num_points);
-        if (num_points < 3) {
-            // ignore exclusion polygons with less than 3 points
-            continue;
-        }
 
         // expand array if required
         if (!_inclusion_polygon_pts.expand_to_hold(_inclusion_polygon_numpoints + num_points)) {
@@ -356,11 +352,7 @@ bool AP_OADijkstra::create_exclusion_polygon_with_margin(float margin_cm, AP_OAD
     for (uint8_t i = 0; i < num_exclusion_polygons; i++) {
         uint16_t num_points;
         const Vector2f* boundary = fence->polyfence().get_exclusion_polygon(i, num_points);
-        if (num_points < 3) {
-            // ignore exclusion polygons with less than 3 points
-            continue;
-        }
-
+   
         // expand array if required
         if (!_exclusion_polygon_pts.expand_to_hold(_exclusion_polygon_numpoints + num_points)) {
             err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_OUT_OF_MEMORY;
@@ -533,7 +525,7 @@ bool AP_OADijkstra::intersects_fence(const Vector2f &seg_start, const Vector2f &
     uint16_t num_points = 0;
     for (uint8_t i = 0; i < fence->polyfence().get_inclusion_polygon_count(); i++) {
         const Vector2f* boundary = fence->polyfence().get_inclusion_polygon(i, num_points);
-        if ((boundary != nullptr) && (num_points >= 3)) {
+        if (boundary != nullptr) {
             Vector2f intersection;
             if (Polygon_intersects(boundary, num_points, seg_start, seg_end, intersection)) {
                 return true;
@@ -544,7 +536,7 @@ bool AP_OADijkstra::intersects_fence(const Vector2f &seg_start, const Vector2f &
     // determine if segment crosses any of the exclusion polygons
     for (uint8_t i = 0; i < fence->polyfence().get_exclusion_polygon_count(); i++) {
         const Vector2f* boundary = fence->polyfence().get_exclusion_polygon(i, num_points);
-        if ((boundary != nullptr) && (num_points >= 3)) {
+        if (boundary != nullptr) {
             Vector2f intersection;
             if (Polygon_intersects(boundary, num_points, seg_start, seg_end, intersection)) {
                 return true;
