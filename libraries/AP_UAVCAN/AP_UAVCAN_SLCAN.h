@@ -13,7 +13,9 @@
 #define SLCAN_RX_QUEUE_SIZE 64
 #define SLCAN_DRIVER_INDEX 2
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 class SLCANRouter;
+#endif
 
 namespace SLCAN {
 /**
@@ -45,7 +47,9 @@ struct CanRxItem {
 };
 class CAN: public AP_HAL::CANHal {
     friend class CANManager;
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     friend class ::SLCANRouter;
+#endif
     struct TxItem {
         uavcan::MonotonicTime deadline;
         uavcan::CanFrame frame;
@@ -107,9 +111,6 @@ class CAN: public AP_HAL::CANHal {
     bool handle_FrameRTRExt(const char* cmd);
     bool handle_FrameDataStd(const char* cmd);
     bool handle_FrameDataExt(const char* cmd);
-    void reader();
-
-    inline void addByte(const uint8_t byte);
 
     bool initialized_;
     bool _port_initialised;
@@ -124,6 +125,8 @@ class CAN: public AP_HAL::CANHal {
 
     const uint32_t _serial_lock_key = 0x53494442;
     bool _close = true;
+    int _read_fd = -1;
+    int _write_fd = -1;
 public:
 
     CAN(uint8_t self_index, uint8_t rx_queue_capacity):
@@ -140,6 +143,7 @@ public:
     };
 
     int init(const uint32_t bitrate, const OperatingMode mode, AP_HAL::UARTDriver* port);
+    int init(const uint32_t bitrate, const OperatingMode mode, int __read_fd, int __write_fd);
 
     bool begin(uint32_t bitrate) override
     {
@@ -152,6 +156,10 @@ public:
         }
         return initialized_;
     }
+    void reader();
+    int read_fd(const uint8_t *buf, uint16_t size);
+    int write_fd(const uint8_t *buf, uint16_t size);
+    void addByte(const uint8_t byte);
 
     void end() override
     {
@@ -186,19 +194,30 @@ public:
 
 class CANManager: public AP_HAL::CANManager, public uavcan::ICanDriver {
     bool initialized_;
-    CAN driver_;
-    uint8_t _ifaces_num = 1;
+    CAN* driver_[2];
+    uint8_t _ifaces_num = 2;
 
     virtual int16_t select(uavcan::CanSelectMasks& inout_masks,
                            const uavcan::CanFrame* (&pending_tx)[uavcan::MaxCanIfaces], uavcan::MonotonicTime blocking_deadline) override;
 
     uavcan::CanSelectMasks makeSelectMasks(const uavcan::CanFrame* (&pending_tx)[uavcan::MaxCanIfaces]);
-    thread_t *_irq_handler_ctx = nullptr;
+    #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+        thread_t *_irq_handler_ctx = nullptr;
+    #else
+        pthread_t _irq_handler_ctx;
+        pthread_mutex_t _irq_handler_mtx;
+        pthread_cond_t _irq_handler_cond;
+    #endif
 public:
-    CANManager()
-        :  AP_HAL::CANManager(this), initialized_(false), driver_(SLCAN_DRIVER_INDEX, SLCAN_RX_QUEUE_SIZE)
-    { }
-
+    CANManager(uint8_t offset = SLCAN_DRIVER_INDEX)
+        :  AP_HAL::CANManager(this), initialized_(false)
+    { 
+        driver_[0] = new CAN(offset+0, SLCAN_RX_QUEUE_SIZE);
+        driver_[1] = new CAN(offset+1, SLCAN_RX_QUEUE_SIZE);
+        if (!driver_[0] || !driver_[1]) {
+            AP_HAL::panic("Failed to initialise CANManager");
+        }
+    }
     /**
      * Whether at least one iface had at least one successful IO since previous call of this method.
      * This is designed for use with iface activity LEDs.
@@ -222,7 +241,7 @@ public:
 
     virtual CAN* getIface(uint8_t iface_index) override
     {
-        return &driver_;
+        return driver_[iface_index];
     }
 
     virtual uint8_t getNumIfaces() const override
@@ -234,7 +253,10 @@ public:
 };
 
 }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include <AP_HAL_ChibiOS/CANSerialRouter.h>
+#endif
 
 #endif // AP_UAVCAN_SLCAN_ENABLED
 

@@ -304,8 +304,12 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
      */
     _node->setModeOperational();
 
+    //We don't emulate uavcan devices in SITL 
+    //that require such a thing
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     // Spin node for device discovery
     _node->spin(uavcan::MonotonicDuration::fromMSec(5000));
+#endif
 
     snprintf(_thread_name, sizeof(_thread_name), "uavcan_%u", driver_index);
 

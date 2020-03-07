@@ -672,7 +672,8 @@ namespace AP
 {
 AP_UAVCAN_DNA_Server& uavcan_dna_server()
 {
-    static AP_UAVCAN_DNA_Server _server(StorageAccess(StorageManager::StorageCANDNA));
+    static StorageAccess _storage(StorageManager::StorageCANDNA);
+    static AP_UAVCAN_DNA_Server _server(_storage);
     return _server;
 }
 }

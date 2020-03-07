@@ -24,7 +24,10 @@
 #include "AP_UAVCAN_SLCAN.h"
 #include <AP_SerialManager/AP_SerialManager.h>
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include <AP_HAL_ChibiOS/CANSerialRouter.h>
+#endif
+#include <AP_Filesystem/AP_Filesystem.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -75,7 +78,9 @@ bool SLCAN::CAN::push_Frame(uavcan::CanFrame &frame)
     frm.frame = frame;
     frm.flags = 0;
     frm.utc_usec = AP_HAL::micros64();
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     ChibiOS_CAN::CanIface::slcan_router().route_frame_to_can(frm.frame, frm.utc_usec);
+#endif
     return rx_queue_.push(frm);
 }
 
@@ -200,8 +205,12 @@ static inline const char* getASCIIStatusCode(bool status)
 
 bool SLCAN::CANManager::begin(uint32_t bitrate, uint8_t can_number)
 {
-    if (driver_.init(bitrate, SLCAN::CAN::NormalMode, nullptr) < 0) {
+    AP_HAL::UARTDriver *ser_port = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_SLCAN, can_number);
+    if (driver_[can_number]->init(bitrate, SLCAN::CAN::NormalMode, ser_port) < 0) {
         return false;
+    }
+    if (initialized_) {
+        return true;
     }
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&SLCAN::CANManager::reader_trampoline, void), "SLCAN", 4096, AP_HAL::Scheduler::PRIORITY_CAN, -1)) {
         return false;
@@ -226,6 +235,17 @@ int SLCAN::CAN::init(const uint32_t bitrate, const OperatingMode mode, AP_HAL::U
         return -1;
     }
     _port = port;
+    initialized_ = true;
+    return 0;
+}
+
+int SLCAN::CAN::init(const uint32_t bitrate, const OperatingMode mode, int __read_fd, int __write_fd)
+{
+    if (__read_fd == -1 || __write_fd == -1) {
+        return -1;
+    }
+    _read_fd = __read_fd;
+    _write_fd = __write_fd;
     initialized_ = true;
     return 0;
 }
@@ -319,13 +339,20 @@ int16_t SLCAN::CAN::reportFrame(const uavcan::CanFrame& frame, bool loopback, ui
     *p++ = '\r';
     const auto frame_size = unsigned(p - &buffer[0]);
 
-    if (_port->txspace() < _pending_frame_size) {
-        _pending_frame_size = frame_size;
-        return 0;
-    }
-    //Write to Serial
-    if (!_port->write_locked(&buffer[0], frame_size, _serial_lock_key)) {
-        return 0;
+    if (_port != nullptr ) {
+        if (_port->txspace() < _pending_frame_size) {
+            _pending_frame_size = frame_size;
+            return 0;
+        }
+        //Write to Serial
+        if (!_port->write_locked(&buffer[0], frame_size, _serial_lock_key)) {
+            return 0;
+        }
+    } else if (_write_fd != -1) {
+        int ret = write_fd(&buffer[0], frame_size);
+        if (ret <= 0) {
+            return 0;
+        }
     }
     return 1;
 }
@@ -375,19 +402,42 @@ const char* SLCAN::CAN::processCommand(char* cmd)
         return getASCIIStatusCode(true);    // Returning success for compatibility reasons
     }
     case 'F': {             // Get status flags
-        _port->printf("F%02X\r", unsigned(0));    // Returning success for compatibility reasons
+        if (_port != nullptr) {
+            _port->printf("F%02X\r", unsigned(0));    // Returning success for compatibility reasons
+        } else if (_write_fd != -1) {
+            char* data;
+            if (asprintf(&data, "F%02X\r", unsigned(0)) > 0) {
+                write_fd((const uint8_t*)data, sizeof(data));
+                free(data);
+            }
+        }
         return nullptr;
     }
     case 'V': {             // HW/SW version
-        _port->printf("V%x%x%x%x\r", AP_UAVCAN_HW_VERS_MAJOR, AP_UAVCAN_HW_VERS_MINOR, AP_UAVCAN_SW_VERS_MAJOR, AP_UAVCAN_SW_VERS_MINOR);
+        if (_port != nullptr) {
+            _port->printf("V%x%x%x%x\r", AP_UAVCAN_HW_VERS_MAJOR, AP_UAVCAN_HW_VERS_MINOR, AP_UAVCAN_SW_VERS_MAJOR, AP_UAVCAN_SW_VERS_MINOR);
+        } else if (_write_fd != -1) {
+            char* data;
+            if (asprintf(&data, "V%x%x%x%x\r", AP_UAVCAN_HW_VERS_MAJOR, AP_UAVCAN_HW_VERS_MINOR, AP_UAVCAN_SW_VERS_MAJOR, AP_UAVCAN_SW_VERS_MINOR) > 0) {
+                write_fd((const uint8_t*)data, sizeof(data));
+                free(data);
+            }
+        }
         return nullptr;
     }
     case 'N': {             // Serial number
         uavcan::protocol::HardwareVersion hw_version; // Standard type uavcan.protocol.HardwareVersion
         const uint8_t uid_buf_len = hw_version.unique_id.capacity();
         uint8_t uid_len = uid_buf_len;
-        uint8_t unique_id[uid_buf_len];
-        char buf[uid_buf_len * 2 + 1] = {'\0'};
+        uint8_t *unique_id = new uint8_t[uid_buf_len];
+        if (unique_id == nullptr) {
+            break;
+        } 
+        char *buf = new char[uid_buf_len * 2 + 1];
+        if (buf == nullptr) {
+            break;
+        } 
+        memset(buf, 0, uid_buf_len * 2 + 1);
         char* pos = &buf[0];
         if (hal.util->get_system_id_unformatted(unique_id, uid_len)) {
             for (uint8_t i = 0; i < uid_buf_len; i++) {
@@ -396,7 +446,17 @@ const char* SLCAN::CAN::processCommand(char* cmd)
             }
         }
         *pos++ = '\0';
-        _port->printf("N%s\r", &buf[0]);
+        if (_port != nullptr) {
+            _port->printf("N%s\r", &buf[0]);
+        } else if (_write_fd != -1) {
+            char* data;
+            if (asprintf(&data, "N%s\r", &buf[0]) > 0) {
+                write_fd((const uint8_t*)data, sizeof(data));
+                free(data);
+            }
+        }
+        free(unique_id);
+        free(buf);
         return nullptr;
     }
     default: {
@@ -410,7 +470,7 @@ const char* SLCAN::CAN::processCommand(char* cmd)
 /**
  * Please keep in mind that this function is strongly optimized for speed.
  */
-inline void SLCAN::CAN::addByte(const uint8_t byte)
+void SLCAN::CAN::addByte(const uint8_t byte)
 {
     if ((byte >= 32 && byte <= 126)) {                // Normal printable ASCII character
         if (pos_ < SLCAN_BUFFER_SIZE) {
@@ -429,8 +489,13 @@ inline void SLCAN::CAN::addByte(const uint8_t byte)
 
         // Sending the response if provided
         if (response != nullptr) {
-            _port->write_locked(reinterpret_cast<const uint8_t*>(response),
+            if (_port != nullptr) {
+                _port->write_locked(reinterpret_cast<const uint8_t*>(response),
                                 strlen(response), _serial_lock_key);
+            } else if (_write_fd != -1) {
+                write_fd(reinterpret_cast<const uint8_t*>(response),
+                                strlen(response));
+            }
         }
     }
     else if (byte == 8 || byte == 127) {            // DEL or BS (backspace)
@@ -449,21 +514,45 @@ void SLCAN::CAN::reset()
 }
 
 
+
+int SLCAN::CAN::read_fd(const uint8_t *buf, uint16_t count)
+{
+#ifdef FIONREAD
+    // use FIONREAD to get exact value if possible
+    int num_ready;
+    while (ioctl(_read_fd, FIONREAD, &num_ready) == 0 && num_ready > 3000) {
+        // the pipe is filling up - drain it
+        uint8_t tmp[128];
+        if (read(_read_fd, tmp, sizeof(tmp)) != sizeof(tmp)) {
+            break;
+        }
+    }
+#endif
+    return AP::FS().read(_read_fd, (void*)buf, count);
+}
+
+int SLCAN::CAN::write_fd(const uint8_t *buf, uint16_t size)
+{
+    return (int)AP::FS().write(_write_fd, (const void*)buf, size);
+}
+
 void SLCAN::CAN::reader()
 {
-    if (_port == nullptr) {
-        return;
-    }
-    if (!_port_initialised) {
-        //_port->begin(bitrate_);
-        _port_initialised = true;
-    }
-    _port->lock_port(_serial_lock_key, _serial_lock_key);
-    if (!_port->wait_timeout(1,1)) {
+    if (_port != nullptr) {
+        _port->lock_port(_serial_lock_key, _serial_lock_key);
         int16_t data = _port->read_locked(_serial_lock_key);
         while (data > 0) {
             addByte(data);
             data = _port->read_locked(_serial_lock_key);
+        }
+    } else if (_read_fd != -1) {
+        uint8_t data = 0;
+        while (true) {
+            int ret = read_fd(&data, 1);
+            if (ret == -1) {
+                break;
+            }
+            addByte(data);
         }
     }
 }
@@ -495,9 +584,10 @@ bool SLCAN::CAN::pending_frame_sent()
 {
     if (_pending_frame_size == 0) {
         return false;
-    }
-    else if (_port->txspace() >= _pending_frame_size) {
+    } else if (_port != nullptr && _port->txspace() >= _pending_frame_size) {
         _pending_frame_size = 0;
+        return true;
+    } else if (_write_fd != -1) {
         return true;
     }
     return false;
@@ -511,7 +601,9 @@ bool SLCAN::CAN::isRxBufferEmpty()
 bool SLCAN::CAN::canAcceptNewTxFrame() const
 {
     constexpr unsigned SLCANMaxFrameSize = 40;
-    if (_port->txspace() >= SLCANMaxFrameSize) {
+    if (_port != nullptr && _port->txspace() >= SLCANMaxFrameSize) {
+        return true;
+    } else if (_write_fd != -1) {
         return true;
     }
     return false;
@@ -522,16 +614,16 @@ uavcan::CanSelectMasks SLCAN::CANManager::makeSelectMasks(const uavcan::CanFrame
     uavcan::CanSelectMasks msk;
 
     for (uint8_t i = 0; i < _ifaces_num; i++) {
-        if (!driver_.is_initialized()) {
+        if (!driver_[i]->is_initialized()) {
             continue;
         }
 
-        if (!driver_.isRxBufferEmpty()) {
+        if (!driver_[i]->isRxBufferEmpty()) {
             msk.read |= 1 << i;
         }
 
         if (pending_tx[i] != nullptr) {
-            if (driver_.canAcceptNewTxFrame()) {
+            if (driver_[i]->canAcceptNewTxFrame()) {
                 msk.write |= 1 << i;
             }
         }
@@ -550,9 +642,33 @@ int16_t SLCAN::CANManager::select(uavcan::CanSelectMasks& inout_masks,
     if ((inout_masks.read & in_masks.read) != 0 || (inout_masks.write & in_masks.write) != 0) {
         return 1;
     }
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     _irq_handler_ctx = chThdGetSelfX();
+#else
+    _irq_handler_ctx = pthread_self();
+#endif
     if (blocking_deadline.toUSec()) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
         chEvtWaitAnyTimeout(ALL_EVENTS, chTimeUS2I((blocking_deadline - time).toUSec())); // Block until timeout expires or any iface updates
+#else
+        struct timespec req;
+#ifdef __APPLE__
+        req.tv_sec =  (time_t)((blocking_deadline - time).toUSec()/1000000);
+        req.tv_nsec = ((blocking_deadline - time).toUSec() % 1000000) * 1000;
+        pthread_cond_timedwait_relative_np(&_irq_handler_cond, &_irq_handler_mtx, &req);
+#else
+        pthread_condattr_t attr;
+        pthread_condattr_init( &attr);
+        pthread_condattr_setclock( &attr, CLOCK_MONOTONIC);
+        pthread_cond_init( &_irq_handler_cond, &attr);
+        clock_gettime(CLOCK_MONOTONIC, &req);
+        pthread_mutex_lock(&_irq_handler_mtx);
+        req.tv_sec +=  (time_t)((blocking_deadline - time).toUSec()/1000000);
+        req.tv_nsec += ((blocking_deadline - time).toUSec() % 1000000) * 1000;
+        pthread_cond_timedwait(&_irq_handler_cond, &_irq_handler_mtx, &req);
+#endif
+        pthread_mutex_unlock(&_irq_handler_mtx);
+#endif
     }
     inout_masks = makeSelectMasks(pending_tx); // Return what we got even if none of the requested events are set
     return 1; // Return value doesn't matter as long as it is non-negative
@@ -561,10 +677,20 @@ int16_t SLCAN::CANManager::select(uavcan::CanSelectMasks& inout_masks,
 void SLCAN::CANManager::reader_trampoline(void)
 {
     while (true) {
-        driver_.reader();
-        if ((driver_.pending_frame_sent() || !driver_.isRxBufferEmpty()) && _irq_handler_ctx) {
+        driver_[0]->reader();
+        driver_[1]->reader();
+        if ((driver_[0]->pending_frame_sent() || !driver_[0]->isRxBufferEmpty() ||
+             driver_[1]->pending_frame_sent() || !driver_[1]->isRxBufferEmpty()) && 
+             _irq_handler_ctx) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
             chEvtSignalI(_irq_handler_ctx, EVENT_MASK(0));
+#else
+            pthread_mutex_lock(&_irq_handler_mtx);
+            pthread_cond_signal(&_irq_handler_cond);
+            pthread_mutex_unlock(&_irq_handler_mtx);
+#endif
         }
+        hal.scheduler->delay_microseconds(100);
     }
 }
 
