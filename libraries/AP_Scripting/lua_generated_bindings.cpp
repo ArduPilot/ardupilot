@@ -984,6 +984,23 @@ static int AP_SerialLED_set_num_neopixel(lua_State *L) {
     return 1;
 }
 
+static int AP_Vehicle_set_target_velocity_NED(lua_State *L) {
+    AP_Vehicle * ud = AP_Vehicle::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "vehicle not supported on this firmware");
+    }
+
+    binding_argcheck(L, 2);
+    Vector3f & data_2 = *check_Vector3f(L, 2);
+    AP::scheduler().get_semaphore().take_blocking();
+    const bool data = ud->set_target_velocity_NED(
+            data_2);
+
+    AP::scheduler().get_semaphore().give();
+    lua_pushboolean(L, data);
+    return 1;
+}
+
 static int AP_Vehicle_get_target_location(lua_State *L) {
     AP_Vehicle * ud = AP_Vehicle::get_singleton();
     if (ud == nullptr) {
@@ -1016,6 +1033,25 @@ static int AP_Vehicle_set_target_location(lua_State *L) {
     Location & data_2 = *check_Location(L, 2);
     AP::scheduler().get_semaphore().take_blocking();
     const bool data = ud->set_target_location(
+            data_2);
+
+    AP::scheduler().get_semaphore().give();
+    lua_pushboolean(L, data);
+    return 1;
+}
+
+static int AP_Vehicle_start_takeoff(lua_State *L) {
+    AP_Vehicle * ud = AP_Vehicle::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "vehicle not supported on this firmware");
+    }
+
+    binding_argcheck(L, 2);
+    const float raw_data_2 = luaL_checknumber(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX((-LOCATION_ALT_MAX_M*100+1), -INFINITY)) && (raw_data_2 <= MIN((LOCATION_ALT_MAX_M*100-1), INFINITY))), 2, "argument out of range");
+    const float data_2 = raw_data_2;
+    AP::scheduler().get_semaphore().take_blocking();
+    const bool data = ud->start_takeoff(
             data_2);
 
     AP::scheduler().get_semaphore().give();
@@ -2364,8 +2400,10 @@ const luaL_Reg AP_SerialLED_meta[] = {
 };
 
 const luaL_Reg AP_Vehicle_meta[] = {
+    {"set_target_velocity_NED", AP_Vehicle_set_target_velocity_NED},
     {"get_target_location", AP_Vehicle_get_target_location},
     {"set_target_location", AP_Vehicle_set_target_location},
+    {"start_takeoff", AP_Vehicle_start_takeoff},
     {"get_time_flying_ms", AP_Vehicle_get_time_flying_ms},
     {"get_likely_flying", AP_Vehicle_get_likely_flying},
     {"get_mode", AP_Vehicle_get_mode},
