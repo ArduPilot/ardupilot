@@ -114,6 +114,16 @@ void AP_Vehicle::loop()
 }
 
 /*
+ fast loop callback for all vehicles. This will get called at the end of any vehicle-specific fast loop.
+ */
+void AP_Vehicle::fast_loop()
+{
+#if HAL_GYROFFT_ENABLED
+    gyro_fft.sample_gyros();
+#endif
+}
+
+/*
   common scheduler table for fast CPUs - all common vehicle tasks
   should be listed here, along with how often they should be called (in hz)
   and the maximum time they are expected to take (in microseconds)
@@ -123,7 +133,7 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_RunCam,    &vehicle.runcam,         update,                   50, 50),
 #endif
 #if HAL_GYROFFT_ENABLED
-    SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       sample_gyros,      LOOP_RATE, 50),
+    SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update,                  400, 50),
     SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update_parameters,         1, 50),
 #endif
     SCHED_TASK(send_watchdog_reset_statustext,         0.1,     20),
