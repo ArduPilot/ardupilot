@@ -58,6 +58,8 @@ static const uint32_t TOSHIBA_CAN_ESC_UPDATE_MS = 100;
 AP_ToshibaCAN::AP_ToshibaCAN()
 {
     debug_can(2, "ToshibaCAN: constructed\n\r");
+    (void)COMMAND_STOP;
+    (void)MOTOR_DATA5;
 }
 
 AP_ToshibaCAN *AP_ToshibaCAN::get_tcan(uint8_t driver_index)
