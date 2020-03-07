@@ -50,9 +50,9 @@ void Copter::ekf_check()
             // increase counter
             ekf_check_state.fail_count++;
 #if EKF_CHECK_ITERATIONS_MAX > 2
-            if (ekf_check_state.fail_count == EKF_CHECK_ITERATIONS_MAX-1) {
-                // we are just about to declare a EKF failsafe, ask the EKF if we can change lanes
-                // to resolve the issue
+            if (ekf_check_state.fail_count == EKF_CHECK_ITERATIONS_MAX/2) {
+                // we are just about to declare a EKF failsafe, ask the EKF if we can reset
+                // the yaw or change lanes to resolve the issue
                 ahrs.check_lane_switch();
             }
 #endif
