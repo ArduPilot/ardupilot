@@ -267,8 +267,13 @@ class AutoTestQuadPlane(AutoTest):
         mlog = self.dfreader_for_current_onboard_log()
         pkAvg = freq
 
-        for m in mlog.recv_match(type='FTN1', blocking=True,
-                                condition="FTN1.TimeUS>%u and FTN1.TimeUS<%u" % (tstart * 1.0e6, tend * 1.0e6)):
+        while True:
+            m = mlog.recv_match(
+                type='FTN1',
+                blocking=True,
+                condition="FTN1.TimeUS>%u and FTN1.TimeUS<%u" % (tstart * 1.0e6, tend * 1.0e6))
+            if m is None:
+                break
             pkAvg = pkAvg + (0.1 * (m.PkAvg - pkAvg))
         # peak within 5%
         if abs(pkAvg - freq) / freq > 0.05:
@@ -371,9 +376,13 @@ class AutoTestQuadPlane(AutoTest):
             self.reboot_sitl()
 
         except Exception as e:
+            self.progress("Exception caught: %s" % (
+                self.get_exception_stacktrace(e)))
             ex = e
 
         self.context_pop()
+
+        self.reboot_sitl()
 
         if ex is not None:
             raise ex
