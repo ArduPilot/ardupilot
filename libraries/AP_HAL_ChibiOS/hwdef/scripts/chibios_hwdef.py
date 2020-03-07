@@ -1815,6 +1815,19 @@ def romfs_wildcard(pattern):
         if fnmatch.fnmatch(f, pattern):
             romfs[f] = os.path.join(pattern_dir, f)
 
+def romfs_add_dir(subdirs):
+    '''add a filesystem directory to ROMFS'''
+    for dirname in subdirs:
+        romfs_dir = os.path.join(os.path.dirname(args.hwdef), dirname)
+        if not args.bootloader and os.path.exists(romfs_dir):
+            for root, d, files in os.walk(romfs_dir):
+                for f in files:
+                    if fnmatch.fnmatch(f, '*~'):
+                        # skip editor backup files
+                        continue
+                    fullpath = os.path.join(root, f)
+                    relpath = os.path.normpath(os.path.join(dirname, os.path.relpath(root, romfs_dir), f))
+                    romfs[relpath] = fullpath
 
 def process_line(line):
     '''process one line of pin definition file'''
@@ -1965,6 +1978,8 @@ write_hwdef_header(os.path.join(outdir, "hwdef.h"))
 
 # write out ldscript.ld
 write_ldscript(os.path.join(outdir, "ldscript.ld"))
+
+romfs_add_dir(['scripts'])
 
 write_ROMFS(outdir)
 
