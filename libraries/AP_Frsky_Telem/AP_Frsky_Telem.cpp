@@ -294,17 +294,13 @@ void AP_Frsky_Telem::send_SPort(void)
 
     if (numc == 0) {
         // no serial data to process do bg tasks
-        switch (_SPort.next_sensor_id) {
-            case SENSOR_ID_VARIO:
-                calc_nav_alt(); // nav altitude is not recalculated until all of it has been sent
-                break;
-            case SENSOR_ID_FAS:
-                break;
-            case SENSOR_ID_GPS:
-                calc_gps_position(); // gps data is not recalculated until all of it has been sent
-                break;
-            case SENSOR_ID_SP2UR:
-                break;
+        if (_SPort.vario_refresh) {
+            calc_nav_alt(); // nav altitude is not recalculated until all of it has been sent
+            _SPort.vario_refresh = false;
+        }
+        if (_SPort.gps_refresh) {
+            calc_gps_position(); // gps data is not recalculated until all of it has been sent
+            _SPort.gps_refresh = false;
         }
         return;
     }
@@ -328,8 +324,7 @@ void AP_Frsky_Telem::send_SPort(void)
                             break;
                         case 2:
                             send_uint32(SPORT_DATA_FRAME, DATA_ID_VARIO, _SPort_data.vario_vspd); // send vspeed m/s
-                            // update vfas data in next idle serial port loop
-                            _SPort.next_sensor_id = SENSOR_ID_FAS;
+                            _SPort.vario_refresh = true;
                             break;
                     }
                     if (++_SPort.vario_call > 2) {
@@ -353,8 +348,6 @@ void AP_Frsky_Telem::send_SPort(void)
                                 send_uint32(SPORT_DATA_FRAME, DATA_ID_CURRENT, (uint16_t)roundf(current * 10.0f)); // send current consumption
                                 break;
                             }                        
-                            // update gps data in next idle serial port loop
-                            _SPort.next_sensor_id = SENSOR_ID_GPS;
                             break;
                     }
                     if (++_SPort.fas_call > 2) {
@@ -383,8 +376,7 @@ void AP_Frsky_Telem::send_SPort(void)
                             break;
                         case 6:
                             send_uint32(SPORT_DATA_FRAME, DATA_ID_GPS_COURS_BP, _SPort_data.yaw); // send heading in degree based on AHRS and not GPS
-                            // update SPUR data in next idle serial port loop
-                            _SPort.next_sensor_id = SENSOR_ID_SP2UR;
+                            _SPort.gps_refresh = true;
                             break;
                     }
                     if (++_SPort.gps_call > 6) {
@@ -398,8 +390,6 @@ void AP_Frsky_Telem::send_SPort(void)
                             break;
                         case 1:
                             send_uint32(SPORT_DATA_FRAME, DATA_ID_TEMP1, gcs().custom_mode()); // send flight mode
-                            // update vario data in next idle serial port loop
-                            _SPort.next_sensor_id = SENSOR_ID_VARIO;
                             break;
                     }
                     if (++_SPort.various_call > 1) {

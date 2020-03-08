@@ -206,11 +206,12 @@ private:
     struct
     {
         bool sport_status;
+        bool gps_refresh;
+        bool vario_refresh;
         uint8_t fas_call;
         uint8_t gps_call;
         uint8_t vario_call;
         uint8_t various_call;
-        uint8_t next_sensor_id;
     } _SPort;
     
     struct
