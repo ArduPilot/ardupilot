@@ -4689,7 +4689,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         return os.path.join(self.rootdir(), "libraries", "AP_Scripting", "examples", scriptname)
 
     def installed_script_path(self, scriptname):
-        return os.path.join(self.rootdir(), "scripts", scriptname)
+        return os.path.join("scripts", scriptname)
 
     def install_example_script(self, scriptname):
         source = self.script_source_path(scriptname)
