@@ -132,7 +132,7 @@ void lua_scripts::load_all_scripts_in_dir(lua_State *L, const char *dirname) {
 
     DIR *d = AP::FS().opendir(dirname);
     if (d == nullptr) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Lua: Could not find a scripts directory");
+        gcs().send_text(MAV_SEVERITY_INFO, "Lua: open directory (%s) failed", dirname);
         return;
     }
 
