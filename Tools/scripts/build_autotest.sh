@@ -89,16 +89,16 @@ popd
 
 rsync -a APM/Tools/autotest/web-firmware/ buildlogs/binaries/
 
-echo "Updating pymavlink"
-pushd APM/modules/mavlink/pymavlink
-git show
-python setup.py build install --user
-popd
-
 echo "Updating MAVProxy"
 pushd MAVProxy
 git fetch origin
 git reset --hard origin/master
+git show
+python setup.py build install --user
+popd
+
+echo "Updating pymavlink"
+pushd APM/modules/mavlink/pymavlink
 git show
 python setup.py build install --user
 popd
