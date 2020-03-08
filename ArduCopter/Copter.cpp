@@ -266,6 +266,8 @@ void Copter::fast_loop()
     if (should_log(MASK_LOG_ANY)) {
         Log_Sensor_Health();
     }
+
+    AP_Vehicle::fast_loop();
 }
 
 // start takeoff to given altitude (for use by scripting)
