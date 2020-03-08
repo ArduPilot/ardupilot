@@ -21,11 +21,15 @@ AP_Compass_SITL::AP_Compass_SITL()
             }
             uint8_t instance;
             AP_HAL::Device::DeviceStructure dev_id_s = AP_HAL::Device::get_dev_id_struct(dev_id);
+
+            // If the bus type is UAVCAN we don't register here, just tell HAL_SITL to kickstart the node
             if (dev_id_s.bus_type == AP_HAL::Device::BUS_TYPE_UAVCAN) {
                 _compass_ucnode[i] = static_cast<const HAL_SITL*>(&hal)->_sitl_state->initNode(dev_id_s.bus, dev_id_s.address);
                 _compass_ucnode_sensor_id[i] = dev_id_s.devtype - 1;
                 continue;
             }
+
+            //Rest of the Non-UAVCAN SITL Compass types fall through to registration here 
             if (!register_compass(dev_id, instance)) {
                 continue;
             } else if (_num_nonuc_compass<MAX_SITL_COMPASSES) {
@@ -149,15 +153,19 @@ void AP_Compass_SITL::_timer()
         accumulate_sample(f, _compass_nonuc_instance[i], 10);
     }
 
+    // Broadcast Mag data through the UAVCAN Node
     for (uint8_t i = 0; i < MAX_CONNECTED_MAGS; i++) {
         if (_compass_ucnode[i] != nullptr) {
-            uavcan::Publisher<uavcan::equipment::ahrs::MagneticFieldStrength2> mfs2_pub(*_compass_ucnode[i]);
+            uavcan::Publisher<uavcan::equipment::ahrs::MagneticFieldStrength2> mfs2_pub(*(_compass_ucnode[i]->get_node()));
             uavcan::equipment::ahrs::MagneticFieldStrength2 mfs2;
             mfs2.sensor_id = _compass_ucnode_sensor_id[i];
             mfs2.magnetic_field_ga[0] = (double)new_mag_data.x/1000.0;
             mfs2.magnetic_field_ga[1] = (double)new_mag_data.y/1000.0;
             mfs2.magnetic_field_ga[2] = (double)new_mag_data.z/1000.0;
-            (void)mfs2_pub.broadcast(mfs2);
+            {
+                WITH_SEMAPHORE(_compass_ucnode[i]->get_sem());
+                (void)mfs2_pub.broadcast(mfs2);
+            }
         }
     }
 
