@@ -260,6 +260,14 @@ bool AP_OADijkstra::check_inclusion_polygon_updated() const
 bool AP_OADijkstra::create_inclusion_polygon_with_margin(float margin_cm, AP_OADijkstra_Error &err_id)
 {
     const AC_Fence *fence = AC_Fence::get_singleton();
+
+    // skip unnecessary retry to build inclusion polygon if previous fence points have not changed 
+    if (_inclusion_polygon_update_ms == fence->polyfence().get_inclusion_polygon_update_ms()) {
+        return false;
+    }
+
+    _inclusion_polygon_update_ms = fence->polyfence().get_inclusion_polygon_update_ms();
+
     if (fence == nullptr) {
         err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_FENCE_DISABLED;
         return false;
@@ -328,10 +336,6 @@ bool AP_OADijkstra::create_inclusion_polygon_with_margin(float margin_cm, AP_OAD
         // update total number of points
         _inclusion_polygon_numpoints += num_points;
     }
-
-    // record fence update time so we don't process these inclusion polygons again
-    _inclusion_polygon_update_ms = fence->polyfence().get_inclusion_polygon_update_ms();
-
     return true;
 }
 
@@ -351,6 +355,14 @@ bool AP_OADijkstra::check_exclusion_polygon_updated() const
 bool AP_OADijkstra::create_exclusion_polygon_with_margin(float margin_cm, AP_OADijkstra_Error &err_id)
 {
     const AC_Fence *fence = AC_Fence::get_singleton();
+
+    // skip unnecessary retry to build exclusion polygon if previous fence points have not changed 
+    if (_exclusion_polygon_update_ms == fence->polyfence().get_exclusion_polygon_update_ms()) {
+        return false;
+    }
+
+    _exclusion_polygon_update_ms = fence->polyfence().get_exclusion_polygon_update_ms();
+
     if (fence == nullptr) {
         err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_FENCE_DISABLED;
         return false;
@@ -419,10 +431,6 @@ bool AP_OADijkstra::create_exclusion_polygon_with_margin(float margin_cm, AP_OAD
         // update total number of points
         _exclusion_polygon_numpoints += num_points;
     }
-
-    // record fence update time so we don't process these exclusion polygons again
-    _exclusion_polygon_update_ms = fence->polyfence().get_exclusion_polygon_update_ms();
-
     return true;
 }
 
