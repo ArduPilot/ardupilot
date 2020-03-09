@@ -103,12 +103,12 @@ bool HWESC_Telem::parse_packet(void)
     decoded.counter = be32toh(pkt.counter);
     decoded.throttle_req = be16toh(pkt.throttle_req);
     decoded.throttle = be16toh(pkt.throttle);
-    decoded.rpm = be16toh(pkt.rpm);
+    decoded.rpm = be16toh(pkt.rpm) * 5.0 / 7.0; // scale from eRPM to RPM
     decoded.voltage = be16toh(pkt.voltage) * 0.1;
-    decoded.load = int16_t(be16toh(pkt.load));
+    decoded.phase_current = int16_t(be16toh(pkt.phase_current)) * 0.01;
     decoded.current = int16_t(be16toh(pkt.current)) * 0.01;
     decoded.temperature = be16toh(pkt.temperature);
-    decoded.unknown = be16toh(pkt.unknown);
+    decoded.status = be16toh(pkt.status);
 
     return true;
 }

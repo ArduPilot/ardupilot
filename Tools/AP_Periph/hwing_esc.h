@@ -21,12 +21,12 @@ public:
         uint32_t counter;
         uint16_t throttle_req;
         uint16_t throttle;
-        uint16_t rpm;
+        float rpm;
         float voltage;
-        uint16_t load;
+        float phase_current;
         float current;
         uint16_t temperature;
-        uint16_t unknown;
+        uint16_t status;
     };
 
     const HWESC &get_telem(void) {
@@ -45,9 +45,9 @@ private:
         uint16_t rpm;
         uint16_t voltage;
         int16_t current;
-        int16_t load;
+        int16_t phase_current;
         uint16_t temperature;
-        uint16_t unknown;
+        uint16_t status;
         uint16_t crc;
     } pkt;
 
