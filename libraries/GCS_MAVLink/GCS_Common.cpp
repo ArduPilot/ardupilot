@@ -3568,16 +3568,18 @@ MAV_RESULT GCS_MAVLINK::handle_command_preflight_can(const mavlink_command_long_
                     can_exists = true;
                     result = ap_kdecan->run_enumeration(start_stop) && result;
                 }
-                break;
 #else
                 UNUSED_RESULT(start_stop); // prevent unused variable error
 #endif
+                break;
             }
             case AP_BoardConfig_CAN::Protocol_Type_PiccoloCAN:
                 // TODO - Run PiccoloCAN pre-flight checks here
                 break;
             case AP_BoardConfig_CAN::Protocol_Type_UAVCAN:
+                break;
             case AP_BoardConfig_CAN::Protocol_Type_None:
+                break;
             default:
                 break;
         }
