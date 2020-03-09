@@ -100,3 +100,6 @@ RAM_RESERVE_START 256
 define HAL_CAN_DEFAULT_NODE_ID 0
 
 define CAN_APP_NODE_NAME "org.ardupilot.ap_periph_gps"
+
+# Add CS pins to ensure they are high in bootloader
+PB0 MAG_CS CS
