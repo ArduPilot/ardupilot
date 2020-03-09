@@ -14,6 +14,7 @@
  */
 
 #include <AP_Param/AP_Param.h>
+#include <AP_HAL_Linux/Scheduler.h>
 #include <GCS_MAVLink/GCS_Dummy.h>
 #include "Parameters.h"
 #include "VehicleType.h"
@@ -38,7 +39,7 @@
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-ReplayVehicle replayvehicle;
+static ReplayVehicle replayvehicle;
 
 struct globals globals;
 
@@ -93,13 +94,37 @@ void ReplayVehicle::load_parameters(void)
     if (!AP_Param::check_var_info()) {
         AP_HAL::panic("Bad parameter table");
     }
-    AP_Param::set_default_by_name("EK2_ENABLE", 1);
-    AP_Param::set_default_by_name("EK2_IMU_MASK", 1);
-    AP_Param::set_default_by_name("EK3_ENABLE", 1);
-    AP_Param::set_default_by_name("EK3_IMU_MASK", 1);
-    AP_Param::set_default_by_name("LOG_REPLAY", 1);
-    AP_Param::set_default_by_name("AHRS_EKF_TYPE", 2);
-    AP_Param::set_default_by_name("LOG_FILE_BUFSIZE", 60);
+    // Load all auto-loaded EEPROM variables - also registers thread
+    // which saves parameters, which Compass now does in its init() routine
+    AP_Param::load_all();
+
+    // this compass has always been at war with the new compass priority code
+    const uint32_t compass_dev_id = AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_SITL, 0, 0, AP_Compass_Backend::DevTypes::DEVTYPE_SITL);
+    // logreader.set_parameter("DEV_ID", compass_dev_id);
+    // logreader.set_parameter("PRIO1_ID", compass_dev_id);
+    AP_Param::set_default_by_name("DEV_ID", compass_dev_id);
+    AP_Param::set_default_by_name("PRIO1_ID", compass_dev_id);
+
+    const struct param_default {
+        const char *name;
+        float value;
+    } param_defaults[] {
+        { "EK2_ENABLE", 1 },
+        { "EK2_IMU_MASK", 1 },
+        { "EK3_ENABLE", 1 },
+        { "EK3_IMU_MASK", 1 },
+        { "LOG_REPLAY", 1 },
+        { "AHRS_EKF_TYPE", 2 },
+        { "LOG_FILE_BUFSIZE", 60 },
+        { "COMPASS_DEV_ID", (float)compass_dev_id },
+        { "COMPASS_PRIO1_ID", (float)compass_dev_id },
+    };
+    for (auto some_default : param_defaults) {
+        if (!AP_Param::set_default_by_name(some_default.name, some_default.value)) {
+            ::fprintf(stderr, "set default failed\n");
+            abort();
+        }
+    }
 }
 
 void ReplayVehicle::init_ardupilot(void)
@@ -131,6 +156,7 @@ void ReplayVehicle::init_ardupilot(void)
 }
 
 Replay replay(replayvehicle);
+AP_Vehicle& vehicle = replayvehicle;
 
 void Replay::usage(void)
 {
@@ -330,7 +356,7 @@ class IMUCounter : public AP_LoggerFileReader {
 public:
     IMUCounter() {}
     bool handle_log_format_msg(const struct log_Format &f) override;
-    bool handle_msg(const struct log_Format &f, uint8_t *msg) override;
+    bool handle_msg(const struct log_Format &f, uint8_t *msg, uint8_t &core) override;
 
     uint64_t last_clock_timestamp = 0;
     float last_parm_value = 0;
@@ -354,7 +380,7 @@ bool IMUCounter::handle_log_format_msg(const struct log_Format &f) {
     return true;
 };
 
-bool IMUCounter::handle_msg(const struct log_Format &f, uint8_t *msg) {
+bool IMUCounter::handle_msg(const struct log_Format &f, uint8_t *msg, uint8_t &core) {
     if (strncmp(f.name,"PARM",4) == 0) {
         // gather parameter values to check for SCHED_LOOP_RATE
         parm_handler->field_value(msg, "Name", last_parm_name, sizeof(last_parm_name));
@@ -395,7 +421,8 @@ bool Replay::find_log_info(struct log_information &info)
     const uint16_t samples_required = 1000;
     while (samplecount < samples_required) {
         char type[5];
-        if (!reader.update(type)) {
+        uint8_t core; // unused
+        if (!reader.update(type, core)) {
             break;
         }
 
@@ -513,6 +540,9 @@ void Replay::setup()
 
     set_signal_handlers();
 
+    // never use the system clock:
+    hal.scheduler->stop_clock(1);
+
     hal.console->printf("Processing log %s\n", filename);
 
     // remember filename for reporting
@@ -535,6 +565,7 @@ void Replay::setup()
     inhibit_gyro_cal();
     force_log_disarmed();
 
+    // FIXME: base this on key parameters rather than the loop rate
     if (log_info.update_rate == 400) {
         // assume copter for 400Hz
         _vehicle.ahrs.set_vehicle_class(AHRS_VEHICLE_COPTER);
@@ -624,7 +655,7 @@ void Replay::write_ekf_logs(void)
     }
 }
 
-void Replay::read_sensors(const char *type)
+void Replay::read_sensors(const char *type, uint8_t core)
 {
     if (streq(type, "PARM")) {
         set_user_parameters();
@@ -669,7 +700,7 @@ void Replay::read_sensors(const char *type)
         if (log_info.have_imt2 ||
             log_info.have_imt) {
             _vehicle.ahrs.force_ekf_start();
-            ::fprintf(stderr, "EKF force-started at %u\n", AP_HAL::micros());
+            ::fprintf(stderr, "EKF force-started at %" PRIu64 "\n", AP_HAL::micros64());
             ekf_force_started = true;
         }
     }
@@ -709,8 +740,12 @@ void Replay::read_sensors(const char *type)
             log_check_solution();
         }
     }
-    
-    if (logmatch && (streq(type, "NKF1") || streq(type, "XKF1"))) {
+
+    // 255 here is a special marker for "no core present in log".
+    // This may give us a hope of backwards-compatability.
+    if (logmatch &&
+        (streq(type, "NKF1") || streq(type, "XKF1")) &&
+        (core == 0 || core == 255)) {
         write_ekf_logs();
     }
 }
@@ -788,6 +823,10 @@ void Replay::flush_and_exit()
         show_packet_counts();
     }
 
+    // If we don't tear down the threads then they continue to access
+    // global state during object destruction.
+    ((Linux::Scheduler*)hal.scheduler)->teardown();
+
     exit(0);
 }
 
@@ -811,6 +850,7 @@ void Replay::show_packet_counts()
 void Replay::loop()
 {
     char type[5];
+    uint8_t core;
 
     if (arm_time_ms >= 0 && AP_HAL::millis() > (uint32_t)arm_time_ms) {
         if (!hal.util->get_soft_armed()) {
@@ -819,19 +859,26 @@ void Replay::loop()
         }
     }
 
-    if (!logreader.update(type)) {
+    if (!logreader.update(type, core)) {
         ::printf("End of log at %.1f seconds\n", AP_HAL::millis()*0.001f);
         flush_and_exit();
     }
 
+    const uint64_t now64 = AP_HAL::micros64();
     if (last_timestamp != 0) {
-        uint64_t gap = AP_HAL::micros64() - last_timestamp;
-        if (gap > 40000) {
-            ::printf("Gap in log at timestamp=%" PRIu64 " of length %" PRIu64 "us\n",
-                     last_timestamp, gap);
+        if (now64 < last_timestamp) {
+            ::printf("time going backwards?! now=%" PRIu64 " last_timestamp=%" PRIu64 "us\n",
+                     now64, last_timestamp);
+            exit(1);
+        } else {
+            const uint64_t gap = now64 - last_timestamp;
+            if (gap > 40000) {
+                ::printf("Gap in log at timestamp=%" PRIu64 " of length %" PRIu64 "us\n",
+                         last_timestamp, gap);
+            }
         }
     }
-    last_timestamp = AP_HAL::micros64();
+    last_timestamp = now64;
 
     if (streq(type, "FMT")) {
         if (!seen_non_fmt) {
@@ -841,7 +888,7 @@ void Replay::loop()
         seen_non_fmt = true;
     }
 
-    read_sensors(type);
+    read_sensors(type, core);
 }
 
 
