@@ -1119,7 +1119,7 @@ void AP_Periph_FW::hwesc_telem_update()
     pkt.current = t.current;
     pkt.temperature = t.temperature;
     pkt.rpm = t.rpm;
-    pkt.power_rating_pct = (t.load & 0x7F);
+    pkt.power_rating_pct = t.phase_current;
 
     fix_float16(pkt.voltage);
     fix_float16(pkt.current);
