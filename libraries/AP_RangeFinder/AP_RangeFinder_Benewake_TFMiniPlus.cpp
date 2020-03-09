@@ -124,7 +124,7 @@ bool AP_RangeFinder_Benewake_TFMiniPlus::init()
 
     hal.scheduler->delay(100);
 
-    _dev->register_periodic_callback(10000,
+    _dev->register_periodic_callback(30000,
                                      FUNCTOR_BIND_MEMBER(&AP_RangeFinder_Benewake_TFMiniPlus::timer, void));
 
     return true;
