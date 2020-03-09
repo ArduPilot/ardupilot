@@ -12,7 +12,7 @@ local copter_guided_mode_num = 4
 local copter_land_mode_num = 9
 local sent_target = false
 
--- the main update function that is used to decide when we should do a failsafe
+-- the main update function that performs a simplified version of RTL
 function update()
   if not arming:is_armed() then -- reset state when disarmed
     sent_target = false
