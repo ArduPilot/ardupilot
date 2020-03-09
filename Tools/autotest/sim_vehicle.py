@@ -21,6 +21,7 @@ import tempfile
 import textwrap
 import time
 import shlex
+import binascii
 
 from pymavlink import mavextra
 from pysim import vehicleinfo
@@ -30,6 +31,8 @@ windowID = []
 
 autotest_dir = os.path.dirname(os.path.realpath(__file__))
 root_dir = os.path.realpath(os.path.join(autotest_dir, '../..'))
+
+os.environ["SIM_VEHICLE_SESSION"] = binascii.hexlify(os.urandom(8)).decode()
 
 class CompatError(Exception):
     """A custom exception class to hold state if we encounter the parse
@@ -198,11 +201,12 @@ def kill_tasks_psutil(victims):
     use this routine"""
     import psutil
     for proc in psutil.process_iter():
-        pdict = proc.as_dict(attrs=['name', 'status'])
+        pdict = proc.as_dict(attrs=['environ', 'status'])
         if pdict['status'] == psutil.STATUS_ZOMBIE:
             continue
-        if pdict['name'] in victims:
-            proc.kill()
+        if pdict['environ'] is not None:
+            if pdict['environ'].get('SIM_VEHICLE_SESSION') == os.environ['SIM_VEHICLE_SESSION']:
+                proc.kill()
 
 
 def kill_tasks_pkill(victims):
