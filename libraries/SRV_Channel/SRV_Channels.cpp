@@ -271,8 +271,8 @@ void SRV_Channels::push()
                     continue;
                 }
                 ap_kdecan->update();
-                break;
 #endif
+                break;
             }
             case AP_BoardConfig_CAN::Protocol_Type_ToshibaCAN: {
                 AP_ToshibaCAN *ap_tcan = AP_ToshibaCAN::get_tcan(i);
