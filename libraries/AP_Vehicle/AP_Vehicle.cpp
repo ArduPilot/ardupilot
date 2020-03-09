@@ -42,7 +42,7 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
 };
 
 // reference to the vehicle. using AP::vehicle() here does not work on clang
-#if APM_BUILD_TYPE(APM_BUILD_Replay) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+#if APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
 AP_Vehicle& vehicle = *AP_Vehicle::get_singleton();
 #else
 extern AP_Vehicle& vehicle;
