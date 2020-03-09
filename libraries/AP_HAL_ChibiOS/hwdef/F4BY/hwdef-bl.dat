@@ -43,3 +43,8 @@ define HAL_STORAGE_SIZE 16384
 
 # location of application code
 FLASH_BOOTLOADER_LOAD_KB 16
+
+# Add CS pins to ensure they are high in bootloader
+PA4 MPU_CS CS
+PB12 FRAM_CS CS SPEED_VERYLOW
+PE15 FLASH_CS CS

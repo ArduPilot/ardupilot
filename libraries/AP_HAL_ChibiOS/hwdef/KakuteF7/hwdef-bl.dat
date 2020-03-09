@@ -46,3 +46,8 @@ define HAL_LED_ON 0
 define HAL_USE_EMPTY_STORAGE 1
 define HAL_STORAGE_SIZE 16384
 
+
+# Add CS pins to ensure they are high in bootloader
+PA4 SDCARD_CS CS
+PB12 MAX7456_CS CS
+PE4 ICM20689_CS CS
