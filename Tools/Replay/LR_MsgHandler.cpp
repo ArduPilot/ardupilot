@@ -2,6 +2,8 @@
 #include "LogReader.h"
 #include "Replay.h"
 
+#include <AP_HAL_Linux/Scheduler.h>
+
 #include <cinttypes>
 
 extern const AP_HAL::HAL& hal;
@@ -78,6 +80,31 @@ void LR_MsgHandler_ARSP::process_message(uint8_t *msg)
 void LR_MsgHandler_NKF1::process_message(uint8_t *msg)
 {
     wait_timestamp_from_msg(msg);
+}
+
+void LR_MsgHandler_NKF1::process_message(uint8_t *msg, uint8_t &core)
+{
+    wait_timestamp_from_msg(msg);
+    if (!field_value(msg, "C", core)) {
+        // 255 here is a special marker for "no core present in log".
+        // This may give us a hope of backwards-compatability.
+        core = 255;
+    }
+}
+
+void LR_MsgHandler_XKF1::process_message(uint8_t *msg)
+{
+    wait_timestamp_from_msg(msg);
+}
+
+void LR_MsgHandler_XKF1::process_message(uint8_t *msg, uint8_t &core)
+{
+    wait_timestamp_from_msg(msg);
+    if (!field_value(msg, "C", core)) {
+        // 255 here is a special marker for "no core present in log".
+        // This may give us a hope of backwards-compatability.
+        core = 255;
+    }
 }
 
 
@@ -180,6 +207,10 @@ void LR_MsgHandler_GPS_Base::update_from_msg_gps(uint8_t gps_offset, uint8_t *ms
     if (status == AP_GPS::GPS_OK_FIX_3D && ground_alt_cm == 0) {
         ground_alt_cm = require_field_int32_t(msg, "Alt");
     }
+
+    // we don't call GPS update_instance which would ordinarily write
+    // these...
+    AP::logger().Write_GPS(gps_offset);
 }
 
 
@@ -408,7 +439,7 @@ void LR_MsgHandler_PARM::process_message(uint8_t *msg)
         // AP_Logger's IO only when stop_clock is called, we can
         // overflow AP_Logger's ringbuffer.  This should force us to
         // do IO:
-        hal.scheduler->stop_clock(last_timestamp_usec);
+        hal.scheduler->stop_clock(((Linux::Scheduler*)hal.scheduler)->stopped_clock_usec());
     }
 
     require_field(msg, "Name", parameter_name, parameter_name_len);

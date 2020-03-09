@@ -12,6 +12,12 @@ public:
                   AP_Logger &_logger,
                   uint64_t &last_timestamp_usec);
     virtual void process_message(uint8_t *msg) = 0;
+    virtual void process_message(uint8_t *msg, uint8_t &core) {
+        // base implementation just ignores the core parameter;
+        // subclasses can override to fill the core in if they feel
+        // like it.
+        process_message(msg);
+    }
 
     // state for CHEK message
     struct CheckState {
@@ -80,8 +86,19 @@ public:
 	LR_MsgHandler(_f, _logger, _last_timestamp_usec) { };
 
     void process_message(uint8_t *msg) override;
+    void process_message(uint8_t *msg, uint8_t &core) override;
 };
 
+class LR_MsgHandler_XKF1 : public LR_MsgHandler
+{
+public:
+    LR_MsgHandler_XKF1(log_Format &_f, AP_Logger &_logger,
+		    uint64_t &_last_timestamp_usec) :
+	LR_MsgHandler(_f, _logger, _last_timestamp_usec) { };
+
+    void process_message(uint8_t *msg) override;
+    void process_message(uint8_t *msg, uint8_t &core) override;
+};
 
 class LR_MsgHandler_ATT : public LR_MsgHandler
 {
