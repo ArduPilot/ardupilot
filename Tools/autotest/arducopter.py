@@ -1713,12 +1713,6 @@ class AutoTestCopter(AutoTest):
         self.change_mode("AUTO")
         self.set_rc(3, 1500)
 
-        # fly the mission
-        self.wait_waypoint(0, num_wp-1, timeout=500)
-
-        # set throttle to minimum
-        self.zero_throttle()
-
         # wait for disarm
         self.mav.motors_disarmed_wait()
         self.progress("MOTORS DISARMED OK")
