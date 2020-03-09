@@ -38,3 +38,7 @@ PA12 OTG_FS_DP OTG1
 define HAL_USE_EMPTY_STORAGE 1
 define HAL_STORAGE_SIZE 15360
 
+
+# Add CS pins to ensure they are high in bootloader
+PA4 MPU6000_CS CS
+PB3 FLASH_CS CS
