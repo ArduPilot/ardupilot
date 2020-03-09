@@ -529,6 +529,8 @@ def build(bld):
         for name in bld.env.GIT_SUBMODULES:
             bld.git_submodule(name)
 
+    bld.recurse('libraries/AP_Scripting/generator')    
+
     bld.add_group('dynamic_sources')
     _build_dynamic_sources(bld)
 

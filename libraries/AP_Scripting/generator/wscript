@@ -1,0 +1,23 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+def build(bld):
+
+	bld(         
+		rule = 'gcc -Wall -Werror -Wextra -g -std=c99 -c ${SRC} -o ${TGT}', 
+		source = './src/main.c',
+		target =  'main.c.o',
+	)
+	
+	bld(
+		rule = 'gcc ${SRC} -o ${TGT}',
+		source = 'main.c.o',
+		target = 'gen-bindings' ,
+	)
+
+	bld(
+		rule = './${SRC} -o ../lua_generated_bindings -i description/bindings.desc',
+		source = 'gen-bindings',
+		cwd = './',
+	)
+	
