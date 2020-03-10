@@ -49,10 +49,17 @@ void Copter::ekf_check()
         if (!ekf_check_state.bad_variance) {
             // increase counter
             ekf_check_state.fail_count++;
+#if EKF_CHECK_ITERATIONS_MAX > 3
+            if (ekf_check_state.fail_count == MIN((EKF_CHECK_ITERATIONS_MAX-2), 5)) {
+                // we are just about to declare a EKF failsafe, ask the EKF if we can reset
+                // yaw to resolve the issue
+                ahrs.request_yaw_reset();
+            }
+#endif
 #if EKF_CHECK_ITERATIONS_MAX > 2
             if (ekf_check_state.fail_count == EKF_CHECK_ITERATIONS_MAX-1) {
-                // we are just about to declare a EKF failsafe, ask the EKF if we can change lanes
-                // to resolve the issue
+                // we are just about to declare a EKF failsafe, ask the EKF if we can
+                // change lanes to resolve the issue
                 ahrs.check_lane_switch();
             }
 #endif
@@ -112,6 +119,7 @@ bool Copter::ekf_over_threshold()
     if (mag_max >= g.fs_ekf_thresh) {
         over_thresh_count++;
     }
+
     bool optflow_healthy = false;
 #if OPTFLOW == ENABLED
     optflow_healthy = optflow.healthy();
@@ -121,11 +129,8 @@ bool Copter::ekf_over_threshold()
     } else if (vel_variance >= g.fs_ekf_thresh) {
         over_thresh_count++;
     }
-    if (position_variance >= g.fs_ekf_thresh) {
-        over_thresh_count++;
-    }
 
-    if (over_thresh_count >= 2) {
+    if (position_variance >= g.fs_ekf_thresh && over_thresh_count >= 1) {
         return true;
     }
 
