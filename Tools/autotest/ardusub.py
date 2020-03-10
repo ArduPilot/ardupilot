@@ -51,6 +51,9 @@ class AutoTestSub(AutoTest):
     def test_filepath(self):
          return os.path.realpath(__file__)
 
+    def set_current_test_name(self, name):
+        self.current_test_name_directory = "ArduSub_Tests/" + name + "/"
+
     def default_mode(self):
         return 'MANUAL'
 
@@ -68,9 +71,6 @@ class AutoTestSub(AutoTest):
 
     def is_sub(self):
         return True
-
-    def arming_test_mission(self):
-        return os.path.join(testdir, "ArduSub-Missions", "test_arming.txt")
 
     def watch_altitude_maintained(self, delta=0.5, timeout=5.0):
         """Watch and wait for the actual altitude to be maintained
