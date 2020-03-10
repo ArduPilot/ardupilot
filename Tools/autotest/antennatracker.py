@@ -36,6 +36,9 @@ class AutoTestTracker(AutoTest):
     def default_frame(self):
         return "tracker"
 
+    def set_current_test_name(self, name):
+        self.current_test_name_directory = "AntennaTracker_Tests/" + name + "/"
+
     def apply_defaultfile_parameters(self):
         # tracker doesn't have a default parameters file
         pass
