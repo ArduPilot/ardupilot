@@ -55,6 +55,9 @@ class AutoTestPlane(AutoTest):
     def defaults_filepath(self):
         return os.path.join(testdir, 'default_params/plane-jsbsim.parm')
 
+    def set_current_test_name(self, name):
+        self.current_test_name_directory = "ArduPlane_Tests/" + name + "/"
+
     def default_frame(self):
         return "plane-elevrev"
 
@@ -74,9 +77,6 @@ class AutoTestPlane(AutoTest):
 
     def set_autodisarm_delay(self, delay):
         self.set_parameter("LAND_DISARMDELAY", delay)
-
-    def arming_test_mission(self):
-        return os.path.join(testdir, "ArduPlane-Missions", "test_arming.txt")
 
     def takeoff(self, alt=150, alt_max=None, relative=True):
         """Takeoff to altitude."""
@@ -682,7 +682,7 @@ class AutoTestPlane(AutoTest):
         self.fly_home_land_and_disarm()
 
     def fly_home_land_and_disarm(self, timeout=120):
-        filename = os.path.join(testdir, "flaps.txt")
+        filename = "flaps.txt"
         self.progress("Using %s to fly home" % filename)
         num_wp = self.load_mission(filename)
         self.change_mode("AUTO")
@@ -694,7 +694,7 @@ class AutoTestPlane(AutoTest):
 
     def fly_flaps(self):
         """Test flaps functionality."""
-        filename = os.path.join(testdir, "flaps.txt")
+        filename = "flaps.txt"
         self.context_push()
         ex = None
         try:
@@ -1302,8 +1302,7 @@ class AutoTestPlane(AutoTest):
         self.run_subtest("CIRCLE test", self.fly_CIRCLE)
 
         self.run_subtest("Mission test",
-                         lambda: self.fly_mission(
-                             os.path.join(testdir, "ap1.txt")))
+                         lambda: self.fly_mission("ap1.txt"))
 
     def airspeed_autocal(self):
         self.progress("Ensure no AIRSPEED_AUTOCAL on ground")
@@ -1313,7 +1312,7 @@ class AutoTestPlane(AutoTest):
                                 timeout=5)
         if m is not None:
             raise NotAchievedException("Got autocal on ground")
-        mission_filepath = os.path.join(testdir, "flaps.txt")
+        mission_filepath = "flaps.txt"
         num_wp = self.load_mission(mission_filepath)
         self.wait_ready_to_arm()
         self.arm_vehicle()
