@@ -59,6 +59,9 @@ class AutoTestCopter(AutoTest):
     def test_filepath(self):
          return os.path.realpath(__file__)
 
+    def set_current_test_name(self, name):
+        self.current_test_name_directory = "ArduCopter_Tests/" + name + "/"
+
     def sitl_start_location(self):
         return SITL_START_LOCATION
 
