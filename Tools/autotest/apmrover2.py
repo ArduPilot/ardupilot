@@ -55,6 +55,9 @@ class AutoTestRover(AutoTest):
     def test_filepath(self):
          return os.path.realpath(__file__)
 
+    def set_current_test_name(self, name):
+        self.current_test_name_directory = "ArduRover_Tests/" + name + "/"
+
     def sitl_start_location(self):
         return SITL_START_LOCATION
 
@@ -66,9 +69,6 @@ class AutoTestRover(AutoTest):
 
     def get_stick_arming_channel(self):
         return int(self.get_parameter("RCMAP_ROLL"))
-
-    def arming_test_mission(self):
-        return os.path.join(testdir, "ArduRover-Missions", "test_arming.txt")
 
     ##########################################################
     #   TESTS DRIVE
@@ -135,7 +135,7 @@ class AutoTestRover(AutoTest):
 
             self.progress("Checking number of saved waypoints")
             num_wp = self.save_mission_to_file(
-                os.path.join(testdir, "rover-ch7_mission.txt"))
+                os.path.join(testdir, "ch7_mission.txt"))
             expected = 7 # home + 6 toggled in
             if num_wp != expected:
                 raise NotAchievedException("Did not get %u waypoints; got %u" %
@@ -422,8 +422,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
-        mission_filepath = os.path.join("ArduRover-Missions", "rtl.txt")
-        self.load_mission(mission_filepath)
+        self.load_mission("rtl.txt")
         self.change_mode("AUTO")
         self.mavproxy.expect('Mission: 3 RTL')
 
