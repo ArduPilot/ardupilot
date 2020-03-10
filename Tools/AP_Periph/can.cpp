@@ -476,9 +476,8 @@ static void handle_safety_state(CanardInstance* ins, CanardRxTransfer* transfer)
 static void set_rgb_led(uint8_t red, uint8_t green, uint8_t blue)
 {
 #ifdef HAL_PERIPH_NEOPIXEL_COUNT
-    hal.rcout->set_neopixel_rgb_data(HAL_PERIPH_NEOPIXEL_CHAN, (1U<<HAL_PERIPH_NEOPIXEL_COUNT)-1,
-                                     red, green, blue);
-    hal.rcout->neopixel_send();
+    hal.rcout->set_serial_led_rgb_data(HAL_PERIPH_NEOPIXEL_CHAN, -1, red, green, blue);
+    hal.rcout->serial_led_send(HAL_PERIPH_NEOPIXEL_CHAN);
 #endif // HAL_PERIPH_NEOPIXEL_COUNT
 #ifdef HAL_PERIPH_ENABLE_NCP5623_LED
     {

@@ -93,7 +93,7 @@ void AP_Periph_FW::init()
 
 #ifdef HAL_PERIPH_NEOPIXEL_COUNT
     hal.rcout->init();
-    hal.rcout->set_neopixel_num_LEDs(HAL_PERIPH_NEOPIXEL_CHAN, HAL_PERIPH_NEOPIXEL_COUNT);
+    hal.rcout->set_serial_led_num_LEDs(HAL_PERIPH_NEOPIXEL_CHAN, AP_HAL::RCOutput::MODE_NEOPIXEL);
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_ADSB
@@ -124,8 +124,8 @@ static void update_rainbow()
     uint32_t now = AP_HAL::millis();
     if (now-start_ms > 1500) {
         rainbow_done = true;
-        hal.rcout->set_neopixel_rgb_data(HAL_PERIPH_NEOPIXEL_CHAN, 0xFF, 0, 0, 0);
-        hal.rcout->neopixel_send();
+        hal.rcout->set_serial_led_rgb_data(HAL_PERIPH_NEOPIXEL_CHAN, -1, 0, 0, 0);
+        hal.rcout->serial_led_send(HAL_PERIPH_NEOPIXEL_CHAN);
         return;
     }
     static uint32_t last_update_ms;
@@ -153,13 +153,13 @@ static void update_rainbow()
     float brightness = 0.3;
     for (uint8_t n=0; n<8; n++) {
         uint8_t i = (step + n) % nsteps;
-        hal.rcout->set_neopixel_rgb_data(HAL_PERIPH_NEOPIXEL_CHAN, 1U<<n,
+        hal.rcout->set_serial_led_rgb_data(HAL_PERIPH_NEOPIXEL_CHAN, n,
                                          rgb_rainbow[i].red*brightness,
                                          rgb_rainbow[i].green*brightness,
                                          rgb_rainbow[i].blue*brightness);
     }
     step++;
-    hal.rcout->neopixel_send();
+    hal.rcout->serial_led_send(HAL_PERIPH_NEOPIXEL_CHAN);
 }
 #endif
 
@@ -187,7 +187,7 @@ void AP_Periph_FW::update()
         show_stack_usage();
 #endif
 #ifdef HAL_PERIPH_NEOPIXEL_COUNT
-        hal.rcout->set_neopixel_num_LEDs(HAL_PERIPH_NEOPIXEL_CHAN, HAL_PERIPH_NEOPIXEL_COUNT);
+        hal.rcout->set_serial_led_num_LEDs(HAL_PERIPH_NEOPIXEL_CHAN, HAL_PERIPH_NEOPIXEL_COUNT, AP_HAL::RCOutput::MODE_NEOPIXEL);
 #endif
     }
     can_update();
