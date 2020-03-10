@@ -122,6 +122,14 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("LAND_FINAL_ALT", 27, QuadPlane, land_final_alt, 6),
 
+    // @Param: MAX_DESCEND_TRIG_VEL
+    // @DisplayName: Maximum landing transition velocity
+    // @Description: Maximum velocity that will allow a descent to start
+    // @Units: cm/s
+    // @Range: 0 30000
+    // @User: Advanced
+    AP_GROUPINFO("TRAN_TRG_VEL", 28, QuadPlane, max_descend_trig_vel, 100),
+
     // 28 was used by THR_MID
 
     // @Param: TRAN_PIT_MAX
@@ -2267,46 +2275,46 @@ void QuadPlane::vtol_position_controller(void)
         const Vector2f diff_wp = plane.current_loc.get_distance_NE(loc);
         const float distance = diff_wp.length();
         Vector2f groundspeed = ahrs.groundspeed_vector();
-        float speed_towards_target = distance>1?(diff_wp.normalized() * groundspeed):0;
-        if (poscontrol.speed_scale <= 0) {
-            // initialise scaling so we start off targeting our
-            // current linear speed towards the target. If this is
-            // less than the wpnav speed then the wpnav speed is used
-            // land_speed_scale is then used to linearly change
-            // velocity as we approach the waypoint, aiming for zero
-            // speed at the waypoint
-            // setup land_speed_scale so at current distance we
-            // maintain speed towards target, and slow down as we
-            // approach
+        float speed_towards_target = distance>1?(diff_wp.normalized()*groundspeed):0;
+        // Initialise position control to target zero velocity
+        // above the waypoint.
+        if (poscontrol.stopping_distance <= 0) {
+            // Calculate stopping distance based on the current groundspeed
+            // and the transition deceleration target
+            poscontrol.stopping_distance = groundspeed.length_squared()/(2*transition_decel);
+            poscontrol.pre_decel_gndspd = groundspeed.length();
+            
+            float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
+            if (!plane.have_reverse_thrust()) {
+                vel_forward.integrator = constrain_int16(throttle, 0, 100);
+            } else {
+               vel_forward.integrator = constrain_int16(throttle, -100, 100);  
+            }
 
-            // max_speed will control how fast we will fly. It will always decrease
-            poscontrol.max_speed = MAX(speed_towards_target, wp_nav->get_default_speed_xy() * 0.01);
-            poscontrol.speed_scale = poscontrol.max_speed / MAX(distance, 1);
+            vel_forward.last_ms = AP_HAL::millis();
         }
 
         // run fixed wing navigation
         plane.nav_controller->update_waypoint(plane.prev_WP_loc, loc);
 
-        /*
-          calculate target velocity, not dropping it below 2m/s
-         */
-        const float final_speed = 2.0f;
-        Vector2f target_speed_xy = diff_wp * poscontrol.speed_scale;
+        Vector2f target_speed_xy = diff_wp.normalized() * poscontrol.pre_decel_gndspd;
         float target_speed = target_speed_xy.length();
+
+        // if vehicle is within deceleration profile, update target speed
+        if (poscontrol.stopping_distance > distance) {
+            target_speed = safe_sqrt(2*transition_decel*distance);
+            target_speed_xy = diff_wp.normalized() * target_speed;
+            if (!poscontrol.stated_decel_profile) {
+                vel_forward.integrator = 0;
+                poscontrol.stated_decel_profile = true;
+            }
+        }
+
         if (distance < 1) {
             // prevent numerical error before switching to POSITION2
             target_speed_xy = {0.1, 0.1};
         }
-        if (target_speed < final_speed) {
-            // until we enter the loiter we always aim for at least 2m/s
-            target_speed_xy = target_speed_xy.normalized() * final_speed;
-            poscontrol.max_speed = final_speed;
-        } else if (target_speed > poscontrol.max_speed) {
-            // we never speed up during landing approaches
-            target_speed_xy = target_speed_xy.normalized() * poscontrol.max_speed;
-        } else {
-            poscontrol.max_speed = target_speed;
-        }
+
         pos_control->set_desired_velocity_xy(target_speed_xy.x*100,
                                              target_speed_xy.y*100);
 
@@ -2351,8 +2359,9 @@ void QuadPlane::vtol_position_controller(void)
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                              plane.nav_pitch_cd,
                                                                              desired_auto_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
-        if (plane.auto_state.wp_proportion >= 1 ||
-            plane.auto_state.wp_distance < 5) {
+        if ((plane.auto_state.wp_proportion >= 1 ||
+            plane.auto_state.wp_distance < 5) &&
+            plane.ahrs.groundspeed_vector().length() < max_descend_trig_vel*0.01) {
             poscontrol.state = QPOS_POSITION2;
             loiter_nav->clear_pilot_desired_acceleration();
             loiter_nav->init_target();
@@ -2606,7 +2615,7 @@ void QuadPlane::init_qrtl(void)
     plane.prev_WP_loc = plane.current_loc;
     poscontrol.slow_descent = (plane.current_loc.alt > plane.next_WP_loc.alt);
     poscontrol.state = QPOS_POSITION1;
-    poscontrol.speed_scale = 0;
+    poscontrol.stopping_distance = 0;
     pos_control->set_desired_accel_xy(0.0f, 0.0f);
     pos_control->init_xy_controller();
 }
@@ -2694,7 +2703,8 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
     // initially aim for current altitude
     plane.next_WP_loc.alt = plane.current_loc.alt;
     poscontrol.state = QPOS_POSITION1;
-    poscontrol.speed_scale = 0;
+    poscontrol.stopping_distance = 0;
+    poscontrol.stated_decel_profile =false;
     pos_control->set_desired_accel_xy(0.0f, 0.0f);
     pos_control->init_xy_controller();
 
@@ -3092,7 +3102,7 @@ float QuadPlane::get_weathervane_yaw_rate_cds(void)
 void QuadPlane::guided_start(void)
 {
     poscontrol.state = QPOS_POSITION1;
-    poscontrol.speed_scale = 0;
+    poscontrol.stopping_distance = 0;
     guided_takeoff = false;
     setup_target_position();
     poscontrol.slow_descent = (plane.current_loc.alt > plane.next_WP_loc.alt);
