@@ -4754,12 +4754,11 @@ class AutoTestCopter(AutoTest):
             ("benewake_tf03", 27),
         ]
         while len(drivers):
-            do_drivers = drivers[0:3]
-            drivers = drivers[3:]
+            do_drivers = drivers[0:2]
+            drivers = drivers[2:]
             command_line_args = []
             for (offs, cmdline_argument, serial_num) in [(0, '--uartE', 4),
-                                                         (1, '--uartF', 5),
-                                                         (2, '--uartG', 6)]:
+                                                         (1, '--uartF', 5)]:
                 if len(do_drivers) > offs:
                     (sim_name, rngfnd_param_value) = do_drivers[offs]
                     command_line_args.append("%s=sim:%s" %
