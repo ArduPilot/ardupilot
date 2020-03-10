@@ -226,6 +226,11 @@ class ManifestGenerator():
             (brand_name, manufacturer) = brand_map[platform]
             firmware['brand_name'] = brand_name
             firmware['manufacturer'] = manufacturer
+        # copy over some extra information if available
+        extra_tags = [ 'image_size' ]
+        for tag in extra_tags:
+            if tag in apj_json:
+                firmware[tag] = apj_json[tag]
 
     def add_USB_IDs(self, firmware):
         '''add USB IDs to a firmware'''
