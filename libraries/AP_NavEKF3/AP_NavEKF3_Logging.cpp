@@ -317,6 +317,7 @@ void NavEKF3::Log_Write()
         Log_Write_XKF3(i, time_us);
         Log_Write_XKF4(i, time_us);
         Log_Write_Quaternion(i, time_us);
+        Log_Write_GSF(i, time_us);
     }
 
     // write range beacon fusion debug packet if the range value is non-zero
@@ -340,3 +341,52 @@ void NavEKF3::Log_Write()
     }
 }
 
+void NavEKF3::Log_Write_GSF(uint8_t _core, uint64_t time_us) const
+{
+    float yaw_composite;
+    float yaw_composite_variance;
+    float yaw[N_MODELS_EKFGSF];
+    float ivn[N_MODELS_EKFGSF];
+    float ive[N_MODELS_EKFGSF];
+    float wgt[N_MODELS_EKFGSF];
+
+    if (getDataEKFGSF(_core, &yaw_composite, &yaw_composite_variance, yaw, ivn, ive, wgt)) {
+        AP::logger().Write("GSF0",
+                        "TimeUS,C,YC,YCS,Y0,Y1,Y2,Y3,Y4,W0,W1,W2,W3,W4",
+                        "s#rrrrrrr-----",
+                        "F-000000000000",
+                        "QBffffffffffff",
+                        time_us,
+                        _core,
+                        yaw_composite,
+                        sqrtf(MAX(yaw_composite_variance, 0.0f)),
+                        yaw[0],
+                        yaw[1],
+                        yaw[2],
+                        yaw[3],
+                        yaw[4],
+                        wgt[0],
+                        wgt[1],
+                        wgt[2],
+                        wgt[3],
+                        wgt[4]);
+
+        AP::logger().Write("GSF1",
+                        "TimeUS,C,IVN0,IVN1,IVN2,IVN3,IVN4,IVE0,IVE1,IVE2,IVE3,IVE4",
+                        "s#nnnnnnnnnn",
+                        "F-0000000000",
+                        "QBffffffffff",
+                        time_us,
+                        _core,
+                        ivn[0],
+                        ivn[1],
+                        ivn[2],
+                        ivn[3],
+                        ivn[4],
+                        ive[0],
+                        ive[1],
+                        ive[2],
+                        ive[3],
+                        ive[4]);
+    }
+}
