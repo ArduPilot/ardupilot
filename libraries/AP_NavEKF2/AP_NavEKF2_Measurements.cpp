@@ -9,6 +9,7 @@
 #include <AP_RangeFinder/AP_RangeFinder_Backend.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
+#include <AP_Compass/AP_Compass.h>
 
 #include <stdio.h>
 
@@ -199,15 +200,18 @@ void NavEKF2_core::readMagData()
         allMagSensorsFailed = true;
         return;        
     }
+
+    const Compass &compass = AP::compass();
+
     // If we are a vehicle with a sideslip constraint to aid yaw estimation and we have timed out on our last avialable
     // magnetometer, then declare the magnetometers as failed for this flight
-    uint8_t maxCount = _ahrs->get_compass()->get_count();
+    const uint8_t maxCount = compass.get_count();
     if (allMagSensorsFailed || (magTimeout && assume_zero_sideslip() && magSelectIndex >= maxCount-1 && inFlight)) {
         allMagSensorsFailed = true;
         return;
     }
 
-    if (_ahrs->get_compass()->learn_offsets_enabled()) {
+    if (compass.learn_offsets_enabled()) {
         // while learning offsets keep all mag states reset
         InitialiseVariablesMag();
         wasLearningCompass_ms = imuSampleTime_ms;
@@ -222,7 +226,7 @@ void NavEKF2_core::readMagData()
     
     // do not accept new compass data faster than 14Hz (nominal rate is 10Hz) to prevent high processor loading
     // because magnetometer fusion is an expensive step and we could overflow the FIFO buffer
-    if (use_compass() && _ahrs->get_compass()->last_update_usec() - lastMagUpdate_us > 70000) {
+    if (use_compass() && compass.last_update_usec() - lastMagUpdate_us > 70000) {
         frontend->logging.log_compass = true;
 
         // If the magnetometer has timed out (been rejected too long) we find another magnetometer to use if available
@@ -238,7 +242,7 @@ void NavEKF2_core::readMagData()
                     tempIndex -= maxCount;
                 }
                 // if the magnetometer is allowed to be used for yaw and has a different index, we start using it
-                if (_ahrs->get_compass()->use_for_yaw(tempIndex) && tempIndex != magSelectIndex) {
+                if (compass.use_for_yaw(tempIndex) && tempIndex != magSelectIndex) {
                     magSelectIndex = tempIndex;
                     gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u switching to compass %u",(unsigned)imu_index,magSelectIndex);
                     // reset the timeout flag and timer
@@ -260,7 +264,7 @@ void NavEKF2_core::readMagData()
         }
 
         // detect changes to magnetometer offset parameters and reset states
-        Vector3f nowMagOffsets = _ahrs->get_compass()->get_offsets(magSelectIndex);
+        Vector3f nowMagOffsets = compass.get_offsets(magSelectIndex);
         bool changeDetected = lastMagOffsetsValid && (nowMagOffsets != lastMagOffsets);
         if (changeDetected) {
             // zero the learned magnetometer bias states
@@ -272,7 +276,7 @@ void NavEKF2_core::readMagData()
         lastMagOffsetsValid = true;
 
         // store time of last measurement update
-        lastMagUpdate_us = _ahrs->get_compass()->last_update_usec(magSelectIndex);
+        lastMagUpdate_us = compass.last_update_usec(magSelectIndex);
 
         // estimate of time magnetometer measurement was taken, allowing for delays
         magDataNew.time_ms = imuSampleTime_ms - frontend->magDelay_ms;
@@ -281,10 +285,10 @@ void NavEKF2_core::readMagData()
         magDataNew.time_ms -= localFilterTimeStep_ms/2;
 
         // read compass data and scale to improve numerical conditioning
-        magDataNew.mag = _ahrs->get_compass()->get_field(magSelectIndex) * 0.001f;
+        magDataNew.mag = compass.get_field(magSelectIndex) * 0.001f;
 
         // check for consistent data between magnetometers
-        consistentMagData = _ahrs->get_compass()->consistent();
+        consistentMagData = compass.consistent();
 
         // save magnetometer measurement to buffer to be fused later
         storedMag.push(magDataNew);
