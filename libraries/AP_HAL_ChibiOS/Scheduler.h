@@ -106,6 +106,12 @@ public:
     void     expect_delay_ms(uint32_t ms) override;
 
     /*
+      return true if we are in a period of expected delay. This can be
+      used to suppress error messages
+     */
+    bool in_expected_delay(void) const override;
+    
+    /*
       disable interrupts and return a context that can be used to
       restore the interrupt state. This can be used to protect
       critical regions
