@@ -137,6 +137,8 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
         }
         if (backends[_next_backend] == nullptr) {
             hal.console->printf("Unable to open AP_Logger_File");
+            // note that message_writer is leaked here; costs several
+            // hundred bytes to fix for marginal utility
         } else {
             _next_backend++;
         }
@@ -156,6 +158,8 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
         }
         if (backends[_next_backend] == nullptr) {
             hal.console->printf("Unable to open AP_Logger_DataFlash");
+            // note that message_writer is leaked here; costs several
+            // hundred bytes to fix for marginal utility
         } else {
             _next_backend++;
         }
@@ -175,6 +179,8 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
         }
         if (backends[_next_backend] == nullptr) {
             hal.console->printf("Unable to open AP_Logger_SITL");
+            // note that message_writer is leaked here; costs several
+            // hundred bytes to fix for marginal utility
         } else {
             _next_backend++;
         }
@@ -195,6 +201,8 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
         }
         if (backends[_next_backend] == nullptr) {
             hal.console->printf("Unable to open AP_Logger_MAVLink");
+            // note that message_writer is leaked here; costs several
+            // hundred bytes to fix for marginal utility
         } else {
             _next_backend++;
         }
