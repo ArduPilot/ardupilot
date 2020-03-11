@@ -398,7 +398,7 @@ class sitl(Board):
                 cfg.fatal("Failed to find SFML libraries")
 
         if cfg.options.sitl_osd:
-            env.CXXFLAGS += ['-DWITH_SITL_OSD','-DOSD_ENABLED=ENABLED','-DHAL_HAVE_AP_ROMFS_EMBEDDED_H']
+            env.CXXFLAGS += ['-DWITH_SITL_OSD','-DOSD_ENABLED=1','-DHAL_HAVE_AP_ROMFS_EMBEDDED_H']
             import fnmatch
             for f in os.listdir('libraries/AP_OSD/fonts'):
                 if fnmatch.fnmatch(f, "font*bin"):
