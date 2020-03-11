@@ -287,6 +287,9 @@ public:
     // see if EKF lane switching is possible to avoid EKF failsafe
     void check_lane_switch(void) override;
 
+    // request EKF yaw reset to try and avoid the need for an EKF lane switch or failsafe
+    void request_yaw_reset(void) override;
+
     void Log_Write();
 
     // check whether external navigation is providing yaw.  Allows compass pre-arm checks to be bypassed
