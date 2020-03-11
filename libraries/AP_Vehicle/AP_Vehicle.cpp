@@ -173,6 +173,11 @@ void AP_Vehicle::get_common_scheduler_tasks(const AP_Scheduler::Task*& tasks, ui
  */
 void AP_Vehicle::scheduler_delay_callback()
 {
+#if APM_BUILD_TYPE(APM_BUILD_Replay)
+    // compass.init() delays, so we end up here.
+    return;
+#endif
+
     static uint32_t last_1hz, last_50hz, last_5s;
 
     AP_Logger &logger = AP::logger();
