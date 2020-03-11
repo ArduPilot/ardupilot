@@ -33,6 +33,11 @@
 #endif
 
 class AP_Filesystem {
+private:
+    struct DirHandle {
+        uint8_t fs_index;
+        void *dir;
+    };
 
 public:
     AP_Filesystem() {}
@@ -47,9 +52,10 @@ public:
     int stat(const char *pathname, struct stat *stbuf);
     int unlink(const char *pathname);
     int mkdir(const char *pathname);
-    DIR *opendir(const char *pathname);
-    struct dirent *readdir(DIR *dirp);
-    int closedir(DIR *dirp);
+
+    DirHandle *opendir(const char *pathname);
+    struct dirent *readdir(DirHandle *dirp);
+    int closedir(DirHandle *dirp);
 
     // return free disk space in bytes, -1 on error
     int64_t disk_free(const char *path);
@@ -59,6 +65,23 @@ public:
 
     // set modification time on a file
     bool set_mtime(const char *filename, const time_t mtime_sec);
+
+private:
+    struct Backend {
+        const char *prefix;
+        AP_Filesystem_Backend &fs;
+    };
+    static const struct Backend backends[];
+
+    /*
+      find backend by path
+     */
+    const Backend &backend_by_path(const char *&path) const;
+
+    /*
+      find backend by open fd
+     */
+    const Backend &backend_by_fd(int &fd) const;
 };
 
 namespace AP {
