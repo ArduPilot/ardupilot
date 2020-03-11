@@ -36,7 +36,13 @@ public:
       A value of zero cancels the previous expected delay
      */
     virtual void     expect_delay_ms(uint32_t ms) { }
-    
+
+    /*
+      return true if we are in a period of expected delay. This can be
+      used to suppress error messages
+     */
+    virtual bool     in_expected_delay(void) const { return false; }
+
     /*
       end the priority boost from delay_microseconds_boost()
      */
