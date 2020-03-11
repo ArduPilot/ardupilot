@@ -442,12 +442,6 @@ define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 # available (in bytes).
 define HAL_STORAGE_SIZE 16384
 
-# Now define fallback storage location is flash if no FRAM
-# fitted. This needs to be carefully chosen to align with your
-# bootloader. The flash storage system needs two sectors, and the
-# sectors must be at least 20% larger than HAL_STORAGE_SIZE.
-define STORAGE_FLASH_PAGE 22
-
 # allow to have have a dedicated safety switch pin
 define HAL_HAVE_SAFETY_SWITCH 1
 

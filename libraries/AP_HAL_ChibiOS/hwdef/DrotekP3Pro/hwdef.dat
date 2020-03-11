@@ -231,9 +231,6 @@ define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 define HAL_STORAGE_SIZE 16384
 define HAL_WITH_RAMTRON 1
 
-# fallback to flash is no FRAM fitted
-define STORAGE_FLASH_PAGE 22
-
 # enable FAT filesystem support (needs a microSD defined via SDIO)
 define HAL_OS_FATFS_IO 1
 
