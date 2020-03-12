@@ -126,14 +126,14 @@ class AutoTestQuadPlane(AutoTest):
         self.wait_mode('AUTO')
         self.wait_waypoint(1, 19, max_dist=60, timeout=1200)
 
-        self.mav.motors_disarmed_wait()
+        self.wait_disarmed(timeout=120) # give quadplane a long time to land
         # wait for blood sample here
         self.mavproxy.send('wp set 20\n')
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.wait_waypoint(20, 34, max_dist=60, timeout=1200)
 
-        self.mav.motors_disarmed_wait()
+        self.wait_disarmed(timeout=120) # give quadplane a long time to land
         self.progress("Mission OK")
 
     def fly_qautotune(self):
@@ -170,7 +170,7 @@ class AutoTestQuadPlane(AutoTest):
             except AutoTestTimeoutException as e:
                 continue
             break
-        self.mav.motors_disarmed_wait()
+        self.wait_disarmed()
 
     def takeoff(self, height, mode):
         self.change_mode(mode)
@@ -186,7 +186,7 @@ class AutoTestQuadPlane(AutoTest):
     def do_RTL(self):
         self.change_mode("QRTL")
         self.wait_altitude(-5, 1, relative=True, timeout=60)
-        self.mav.motors_disarmed_wait()
+        self.wait_disarmed()
 
     def fly_home_land_and_disarm(self):
         self.set_parameter("LAND_TYPE", 0)
@@ -195,7 +195,7 @@ class AutoTestQuadPlane(AutoTest):
         self.load_mission(filename)
         self.change_mode("AUTO")
         self.mavproxy.send('wp set 7\n')
-        self.mav.motors_disarmed_wait()
+        self.wait_disarmed()
 
     def wait_level_flight(self, accuracy=5, timeout=30):
         """Wait for level flight."""
@@ -372,7 +372,7 @@ class AutoTestQuadPlane(AutoTest):
             self.mavproxy.send('mode AUTO\n')
             self.wait_mode('AUTO')
             self.wait_waypoint(1, 7, max_dist=60, timeout=1200)
-            self.mav.motors_disarmed_wait()
+            self.wait_disarmed(timeout=120) # give quadplane a long time to land
 
             # prevent update parameters from messing with the settings when we pop the context
             self.set_parameter("FFT_ENABLE", 0)

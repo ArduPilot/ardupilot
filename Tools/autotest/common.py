@@ -1723,7 +1723,6 @@ class AutoTest(ABC):
         p2 = 0
         if force:
             p2 = 21196 # magic force disarm value
-        tstart = self.get_sim_time()
         self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
                      0,  # DISARM
                      p2,
@@ -1733,12 +1732,25 @@ class AutoTest(ABC):
                      0,
                      0,
                      timeout=timeout)
-        while self.get_sim_time_cached() - tstart < timeout:
+        return self.wait_disarmed()
+
+    def wait_disarmed_default_wait_time(self):
+        return 30
+
+    def wait_disarmed(self, timeout=None):
+        if timeout is None:
+            timeout = self.wait_disarmed_default_wait_time()
+        self.progress("Waiting for DISARM")
+        tstart = self.get_sim_time()
+        while True:
+            delta = self.get_sim_time_cached() - tstart
+            if delta > timeout:
+                raise AutoTestTimeoutException("Failed to DISARM")
             self.wait_heartbeat()
             if not self.mav.motors_armed():
-                self.progress("Motors DISARMED")
+                self.progress("DISARMED after %.2f seconds (allowed=%.2f)" %
+                              (delta, timeout))
                 return True
-        raise AutoTestTimeoutException("Failed to DISARM with mavlink")
 
     def mavproxy_arm_vehicle(self):
         """Arm vehicle with mavlink arm message send from MAVProxy."""
@@ -1752,8 +1764,7 @@ class AutoTest(ABC):
         """Disarm vehicle with mavlink disarm message send from MAVProxy."""
         self.progress("Disarm motors with MavProxy")
         self.mavproxy.send('disarm\n')
-        self.mav.motors_disarmed_wait()
-        self.progress("DISARMED")
+        self.wait_disarmed()
         return True
 
     def arm_motors_with_rc_input(self, timeout=20):
