@@ -25,6 +25,10 @@
 
 int AP_Filesystem_ROMFS::open(const char *fname, int flags)
 {
+    if ((flags & O_ACCMODE) != O_RDONLY) {
+        errno = EROFS;
+        return -1;
+    }
     uint8_t idx;
     for (idx=0; idx<max_open_file; idx++) {
         if (file[idx].data == nullptr) {
