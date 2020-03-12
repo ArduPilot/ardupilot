@@ -18,6 +18,9 @@
  */
 
 #include "AP_OSD.h"
+
+#if OSD_ENABLED
+
 #include "AP_OSD_MAX7456.h"
 #ifdef WITH_SITL_OSD
 #include "AP_OSD_SITL.h"
@@ -400,3 +403,5 @@ void AP_OSD::set_nav_info(NavInfo &navinfo)
 AP_OSD *AP::osd() {
     return AP_OSD::get_singleton();
 }
+
+#endif // OSD_ENABLED
