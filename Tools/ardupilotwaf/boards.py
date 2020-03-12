@@ -397,12 +397,21 @@ class sitl(Board):
             if not cfg.check_SFML(env):
                 cfg.fatal("Failed to find SFML libraries")
 
+        import fnmatch
         if cfg.options.sitl_osd:
-            env.CXXFLAGS += ['-DWITH_SITL_OSD','-DOSD_ENABLED=1','-DHAL_HAVE_AP_ROMFS_EMBEDDED_H']
-            import fnmatch
+            env.CXXFLAGS += ['-DWITH_SITL_OSD','-DOSD_ENABLED=1']
             for f in os.listdir('libraries/AP_OSD/fonts'):
                 if fnmatch.fnmatch(f, "font*bin"):
                     env.ROMFS_FILES += [(f,'libraries/AP_OSD/fonts/'+f)]
+
+        # embed any scripts from ROMFS/scripts
+        if os.path.exists('ROMFS/scripts'):
+            for f in os.listdir('ROMFS/scripts'):
+                if fnmatch.fnmatch(f, "*.lua"):
+                    env.ROMFS_FILES += [('scripts/'+f,'ROMFS/scripts/'+f)]
+
+        if len(env.ROMFS_FILES) > 0:
+            env.CXXFLAGS += ['-DHAL_HAVE_AP_ROMFS_EMBEDDED_H']
 
         if cfg.options.sitl_rgbled:
             env.CXXFLAGS += ['-DWITH_SITL_RGBLED']
