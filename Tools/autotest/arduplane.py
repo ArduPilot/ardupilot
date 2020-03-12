@@ -591,9 +591,9 @@ class AutoTestPlane(AutoTest):
         self.disarm_wait(timeout=120)
 
         self.progress("Flying home")
-        self.takeoff(10)
+        self.takeoff(100)
         self.set_parameter("LAND_TYPE", 0)
-        self.fly_home_land_and_disarm()
+        self.fly_home_land_and_disarm(timeout=240)
 
     def fly_do_change_speed(self):
         # the following lines ensure we revert these parameter values
@@ -678,13 +678,16 @@ class AutoTestPlane(AutoTest):
                 break
         self.fly_home_land_and_disarm()
 
-    def fly_home_land_and_disarm(self):
+    def fly_home_land_and_disarm(self, timeout=120):
         filename = os.path.join(testdir, "flaps.txt")
         self.progress("Using %s to fly home" % filename)
-        self.load_mission(filename)
+        num_wp = self.load_mission(filename)
         self.change_mode("AUTO")
         self.mavproxy.send('wp set 7\n')
-        self.mav.motors_disarmed_wait()
+        self.drain_mav()
+        # TODO: reflect on file to find this magic waypoint number?
+#        self.wait_waypoint(7, num_wp-1, timeout=500) # we tend to miss the final waypoint by a fair bit, and this is probably too noisy anyway?
+        self.wait_disarmed(timeout=timeout)
 
     def fly_flaps(self):
         """Test flaps functionality."""
@@ -1308,7 +1311,7 @@ class AutoTestPlane(AutoTest):
         if m is not None:
             raise NotAchievedException("Got autocal on ground")
         mission_filepath = os.path.join(testdir, "flaps.txt")
-        self.load_mission(mission_filepath)
+        num_wp = self.load_mission(mission_filepath)
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.change_mode("AUTO")
@@ -1316,7 +1319,8 @@ class AutoTestPlane(AutoTest):
         m = self.mav.recv_match(type='AIRSPEED_AUTOCAL',
                                 blocking=True,
                                 timeout=5)
-        self.mav.motors_disarmed_wait()
+        self.wait_waypoint(7, num_wp-1, timeout=500)
+        self.wait_disarmed(timeout=120)
 
     def sample_enable_parameter(self):
         return "Q_ENABLE"

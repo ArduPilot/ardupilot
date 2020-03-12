@@ -4312,7 +4312,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.progress("Waiting for magic throttle value")
         self.wait_servo_channel_value(3, magic_throttle_value)
         self.wait_servo_channel_value(3, self.get_parameter("RC3_TRIM", 5), timeout=10)
-        self.mav.motors_disarmed_wait()
+        self.wait_disarmed()
 
     def test_poly_fence_object_avoidance_guided(self, target_system=1, target_component=1):
         if not self.mavproxy_can_do_mision_item_protocols():
