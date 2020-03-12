@@ -372,6 +372,7 @@ void lua_scripts::run(void) {
 
     // Scan the filesystem in an appropriate manner and autostart scripts
     load_all_scripts_in_dir(L, SCRIPTING_DIRECTORY);
+    load_all_scripts_in_dir(L, ":ROMFS/scripts");
 
     succeeded_initial_load = true;
 
