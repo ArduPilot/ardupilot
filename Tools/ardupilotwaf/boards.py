@@ -585,12 +585,12 @@ class chibios(Board):
 
     def pre_build(self, bld):
         '''pre-build hook that gets called before dynamic sources'''
-        super(chibios, self).pre_build(bld)
         from waflib.Context import load_tool
         module = load_tool('chibios', [], with_sys_path=True)
         fun = getattr(module, 'pre_build', None)
         if fun:
             fun(bld)
+        super(chibios, self).pre_build(bld)
 
 class linux(Board):
     def configure_env(self, cfg, env):
