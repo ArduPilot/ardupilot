@@ -3,6 +3,7 @@
 #include <pthread.h>
 
 #include "AP_HAL_Linux.h"
+
 #include "Semaphores.h"
 #include "Thread.h"
 

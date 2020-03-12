@@ -313,13 +313,25 @@ void Scheduler::reboot(bool hold_in_bootloader)
     exit(1);
 }
 
+#if APM_BUILD_TYPE(APM_BUILD_Replay)
 void Scheduler::stop_clock(uint64_t time_usec)
 {
-    if (time_usec >= _stopped_clock_usec) {
-        _stopped_clock_usec = time_usec;
-        _run_io();
+    if (time_usec < _stopped_clock_usec) {
+        ::fprintf(stderr, "Warning: setting time backwards from (%" PRIu64 ") to (%" PRIu64 ")\n", _stopped_clock_usec, time_usec);
+        return;
     }
+
+    _stopped_clock_usec = time_usec;
+    _run_io();
 }
+#else
+void Scheduler::stop_clock(uint64_t time_usec)
+{
+    // stop_clock() is not called outside of Replay, but we can't
+    // guard it in the header because of the vehicle-dependent-library
+    // checks in waf.
+}
+#endif
 
 bool Scheduler::SchedulerThread::_run()
 {
