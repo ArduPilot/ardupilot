@@ -1,6 +1,7 @@
 // auto generated bindings, don't manually edit.  See README.md for details.
 #include "lua_generated_bindings.h"
 #include "lua_boxed_numerics.h"
+#include <AP_Button/AP_Button.h>
 #include <AP_RPM/AP_RPM.h>
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Param/AP_Param.h>
@@ -552,6 +553,23 @@ const luaL_Reg Location_meta[] = {
     {"get_distance", Location_get_distance},
     {NULL, NULL}
 };
+
+static int AP_Button_get_button_state(lua_State *L) {
+    AP_Button * ud = AP_Button::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "button not supported on this firmware");
+    }
+
+    binding_argcheck(L, 2);
+    const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(1, 0)) && (raw_data_2 <= MIN(AP_BUTTON_NUM_PINS, UINT8_MAX))), 2, "argument out of range");
+    const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
+    const bool data = ud->get_button_state(
+            data_2);
+
+    lua_pushboolean(L, data);
+    return 1;
+}
 
 static int AP_RPM_get_rpm(lua_State *L) {
     AP_RPM * ud = AP_RPM::get_singleton();
@@ -2282,6 +2300,11 @@ static int AP_AHRS_get_roll(lua_State *L) {
     return 1;
 }
 
+const luaL_Reg AP_Button_meta[] = {
+    {"get_button_state", AP_Button_get_button_state},
+    {NULL, NULL}
+};
+
 const luaL_Reg AP_RPM_meta[] = {
     {"get_rpm", AP_RPM_get_rpm},
     {NULL, NULL}
@@ -2575,6 +2598,7 @@ const struct userdata_meta userdata_fun[] = {
 };
 
 const struct userdata_meta singleton_fun[] = {
+    {"button", AP_Button_meta, NULL},
     {"RPM", AP_RPM_meta, NULL},
     {"mission", AP_Mission_meta, AP_Mission_enums},
     {"param", AP_Param_meta, NULL},
@@ -2649,6 +2673,7 @@ void load_generated_bindings(lua_State *L) {
 }
 
 const char *singletons[] = {
+    "button",
     "RPM",
     "mission",
     "param",
