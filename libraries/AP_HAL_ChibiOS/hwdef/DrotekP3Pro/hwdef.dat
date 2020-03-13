@@ -1,8 +1,6 @@
 # hw definition file for processing by chibios_hwdef.py
 # for FMUv4pro hardware (Pixhawk 3 Pro)
 
-define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_FMUV4PRO
-
 define BOARD_TYPE_DEFAULT 14
 
 # MCU class and specific type
