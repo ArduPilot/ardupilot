@@ -3759,8 +3759,11 @@ class AutoTestCopter(AutoTest):
         psd = self.mavfft_fttd(1, 0, tstart * 1.0e6, tend * 1.0e6)
 
         # batch sampler defaults give 1024 fft and sample rate of 1kz so roughly 1hz/bin
-        freq = psd["F"][numpy.argmax(psd["X"][minhz:maxhz]) + minhz] * (1000. / 1024.)
-        peakdb = numpy.amax(psd["X"][minhz:maxhz])
+        scale = 1000. / 1024.
+        sminhz = int(minhz * scale)
+        smaxhz = int(maxhz * scale)
+        freq = psd["F"][numpy.argmax(psd["X"][sminhz:smaxhz]) + sminhz]
+        peakdb = numpy.amax(psd["X"][sminhz:smaxhz])
         if peakdb < dblevel or (peakhz is not None and abs(freq - peakhz) / peakhz > 0.05):
             raise NotAchievedException("Did not detect a motor peak, found %fHz at %fdB" % (freq, peakdb))
         else:
@@ -3776,13 +3779,15 @@ class AutoTestCopter(AutoTest):
 
         m = mlog.recv_match(type='FTN1', blocking=False,
                         condition="FTN1.TimeUS>%u and FTN1.TimeUS<%u" % (tstart * 1.0e6, tend * 1.0e6))
-
+        freqs = []
         while m is not None:
             nmessages = nmessages + 1
-            pkAvg = pkAvg + (0.1 * (m.PkAvg - pkAvg))
+            freqs.append(m.PkAvg)
             m = mlog.recv_match(type='FTN1', blocking=False,
                             condition="FTN1.TimeUS>%u and FTN1.TimeUS<%u" % (tstart * 1.0e6, tend * 1.0e6))
 
+        # peak within resolution of FFT length
+        pkAvg = numpy.median(numpy.asarray(freqs))
         self.progress("Detected motor peak at %fHz processing %d messages" % (pkAvg, nmessages))
 
         # peak within 5%
@@ -3812,6 +3817,7 @@ class AutoTestCopter(AutoTest):
             self.set_parameter("LOG_DISARMED", 0)
             self.set_parameter("SIM_DRIFT_SPEED", 0)
             self.set_parameter("SIM_DRIFT_TIME", 0)
+            self.set_parameter("FFT_THR_REF", self.get_parameter("MOT_THST_HOVER"))
             # enable a noisy motor peak
             self.set_parameter("SIM_GYR_RND", 20)
             # enabling FFT will also enable the arming check, self-testing the functionality
@@ -3833,12 +3839,11 @@ class AutoTestCopter(AutoTest):
             self.set_parameter("SIM_VIB_FREQ_X", freq * 2)
             self.set_parameter("SIM_VIB_FREQ_Y", freq * 2)
             self.set_parameter("SIM_VIB_FREQ_Z", freq * 2)
-            # this is artificially high to cope with the fact that our simulation is imperfect
-            self.set_parameter("FFT_HMNC_REF", 20.0)
             self.set_parameter("SIM_VIB_MOT_MULT", 0.25) # halve the motor noise so that the higher harmonic dominates
             self.reboot_sitl()
 
             self.hover_and_check_matched_frequency(-15, 100, 250, 64, None)
+
             self.set_parameter("SIM_VIB_FREQ_X", 0)
             self.set_parameter("SIM_VIB_FREQ_Y", 0)
             self.set_parameter("SIM_VIB_FREQ_Z", 0)
@@ -3898,6 +3903,17 @@ class AutoTestCopter(AutoTest):
 
             # find a motor peak
             self.hover_and_check_matched_frequency(-15, 100, 350, 128, 250)
+
+            # Step 1b: run the same test with an FFT length of 256 which is needed to flush out a
+            # whole host of bugs related to uint8_t. This also tests very accurately the frequency resolution
+            self.set_parameter("FFT_WINDOW_SIZE", 256)
+            self.start_subtest("Inject noise at 250Hz and check the FFT can find the noise")
+
+            self.reboot_sitl()
+
+            # find a motor peak
+            self.hover_and_check_matched_frequency(-15, 100, 350, 256, 250)
+            self.set_parameter("FFT_WINDOW_SIZE", 128)
 
             # Step 2: inject actual motor noise and use the standard length FFT to track it
             self.start_subtest("Hover and check that the FFT can find the motor noise")
@@ -5071,7 +5087,6 @@ class AutoTestCopter(AutoTest):
             "Parachute": "See https://github.com/ArduPilot/ardupilot/issues/4702",
             "HorizontalAvoidFence": "See https://github.com/ArduPilot/ardupilot/issues/11525",
             "BeaconPosition": "See https://github.com/ArduPilot/ardupilot/issues/11689",
-            "GyroFFTHarmonic": "See https://github.com/ArduPilot/ardupilot/issues/13736",
         }
 
 class AutoTestHeli(AutoTestCopter):
