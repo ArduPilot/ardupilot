@@ -795,8 +795,10 @@ void AP_GPS::update(void)
 
 #if defined(GPS_BLENDED_INSTANCE)
     // copy the primary instance to the blended instance in case it is enabled later
-    state[GPS_BLENDED_INSTANCE] = state[primary_instance];
-    _blended_antenna_offset = _antenna_offset[primary_instance];
+    if (primary_instance != GPS_BLENDED_INSTANCE) {
+        state[GPS_BLENDED_INSTANCE] = state[primary_instance];
+        _blended_antenna_offset = _antenna_offset[primary_instance];
+    }
 #endif
     
 #ifndef HAL_BUILD_AP_PERIPH
@@ -1652,14 +1654,6 @@ void AP_GPS::calc_blended_state(void)
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
         _NE_pos_offset_m[i] = state[i].location.get_distance_NE(state[GPS_BLENDED_INSTANCE].location) * alpha[i] + _NE_pos_offset_m[i] * (1.0f - alpha[i]);
         _hgt_offset_cm[i] = (float)(state[GPS_BLENDED_INSTANCE].location.alt - state[i].location.alt) *  alpha[i] + _hgt_offset_cm[i] * (1.0f - alpha[i]);
-    }
-
-    // Calculate a corrected location for each GPS
-    Location corrected_location[GPS_MAX_RECEIVERS];
-    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
-        corrected_location[i] = state[i].location;
-        corrected_location[i].offset(_NE_pos_offset_m[i].x, _NE_pos_offset_m[i].y);
-        corrected_location[i].alt += (int)(_hgt_offset_cm[i]);
     }
 
     // If the GPS week is the same then use a blended time_week_ms
