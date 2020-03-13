@@ -39,6 +39,8 @@ bool HALSITL::Util::get_system_id_unformatted(uint8_t buf[], uint8_t &len)
         if (ret <= 0) {
             continue;
         }
+        //Ensure that we have null character at the end
+        //before we do string manipulation
         if (ret == len) {
             cbuf[len-1] = '\0';
         } else {

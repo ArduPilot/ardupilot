@@ -53,10 +53,15 @@
 #define HAL_HAVE_BOARD_VOLTAGE 1
 #define HAL_HAVE_SERVO_VOLTAGE 1
 #define HAL_HAVE_SAFETY_SWITCH 0
-
+#define HAL_WITH_UAVCAN 1
+#define HAL_CAN_DRIVER_DEFAULT 1
 // allow for static semaphores
 #include <AP_HAL_SITL/Semaphores.h>
 #define HAL_Semaphore HALSITL::Semaphore
+#define HAL_SERIAL6_PROTOCOL SerialProtocol_SLCAN
+#define HAL_SERIAL6_BAUD 921600
+#define HAL_SERIAL7_PROTOCOL SerialProtocol_SLCAN
+#define HAL_SERIAL7_BAUD 921600
 
 #ifndef HAL_BOARD_STORAGE_DIRECTORY
 #define HAL_BOARD_STORAGE_DIRECTORY "."

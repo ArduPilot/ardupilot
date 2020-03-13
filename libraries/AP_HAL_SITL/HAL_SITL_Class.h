@@ -8,15 +8,17 @@
 #include "AP_HAL_SITL_Namespace.h"
 #include "SITL_State.h"
 
+class AP_Compass_SITL;
+
 class HAL_SITL : public AP_HAL::HAL {
 public:
+    friend AP_Compass_SITL;
     HAL_SITL();
     void run(int argc, char * const argv[], Callbacks* callbacks) const override;
     static void actually_reboot();
-    HALSITL::SITL_State *_sitl_state;
 
 private:
-
+    HALSITL::SITL_State *_sitl_state;
     void setup_signal_handlers() const;
     static void exit_signal_handler(int);
 };
