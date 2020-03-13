@@ -148,6 +148,10 @@ public:
     /// current_amps - returns the instantaneous current draw in amperes
     bool current_amps(float &current, const uint8_t instance = AP_BATT_PRIMARY_INSTANCE) const WARN_IF_UNUSED;
 
+    /// power watt
+    float power_watts() const;
+    bool power_watts(float &power, const uint8_t instance = AP_BATT_PRIMARY_INSTANCE) const;
+
     /// consumed_mah - returns total current drawn since start-up in milliampere.hours
     bool consumed_mah(float &mah, const uint8_t instance = AP_BATT_PRIMARY_INSTANCE) const WARN_IF_UNUSED;
 

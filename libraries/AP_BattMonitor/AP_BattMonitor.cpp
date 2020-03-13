@@ -449,6 +449,29 @@ void AP_BattMonitor::check_failsafes(void)
     }
 }
 
+// returns the total power draw for all batteries
+float AP_BattMonitor::power_watts() const
+{
+    float total = 0;
+    for (uint8_t instance = 0; instance < _num_instances; instance++) {
+        float instance_power;
+        if (power_watts(instance_power, instance)) {
+            total += instance_power;
+        }
+    }
+    return total;
+}
+
+bool AP_BattMonitor::power_watts(float &power, uint8_t instance) const
+{
+    if ((instance < _num_instances) && (drivers[instance] != nullptr) && drivers[instance]->has_current()) {
+        power = state[instance].current_amps * state[instance].voltage;
+        return true;
+    }
+
+    return false;
+}
+
 // return true if any battery is pushing too much power
 bool AP_BattMonitor::overpower_detected() const
 {
@@ -463,8 +486,8 @@ bool AP_BattMonitor::overpower_detected(uint8_t instance) const
 {
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     if (instance < _num_instances && _params[instance]._watt_max > 0) {
-        float power = state[instance].current_amps * state[instance].voltage;
-        return state[instance].healthy && (power > _params[instance]._watt_max);
+        float instance_power;
+        return (state[instance].healthy && power_watts(instance_power, instance) && (instance_power > _params[instance]._watt_max));
     }
     return false;
 #else
