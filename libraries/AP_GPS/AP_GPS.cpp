@@ -793,14 +793,6 @@ void AP_GPS::update(void)
 
     update_primary();
 
-#if defined(GPS_BLENDED_INSTANCE)
-    // copy the primary instance to the blended instance in case it is enabled later
-    if (primary_instance != GPS_BLENDED_INSTANCE) {
-        state[GPS_BLENDED_INSTANCE] = state[primary_instance];
-        _blended_antenna_offset = _antenna_offset[primary_instance];
-    }
-#endif
-    
 #ifndef HAL_BUILD_AP_PERIPH
     // update notify with gps status. We always base this on the primary_instance
     AP_Notify::flags.gps_status = state[primary_instance].status;
@@ -1627,34 +1619,6 @@ void AP_GPS::calc_blended_state(void)
     // Calculate ground speed and course from blended velocity vector
     state[GPS_BLENDED_INSTANCE].ground_speed = norm(state[GPS_BLENDED_INSTANCE].velocity.x, state[GPS_BLENDED_INSTANCE].velocity.y);
     state[GPS_BLENDED_INSTANCE].ground_course = wrap_360(degrees(atan2f(state[GPS_BLENDED_INSTANCE].velocity.y, state[GPS_BLENDED_INSTANCE].velocity.x)));
-
-    /*
-     * The blended location in _output_state.location is not stable enough to be used by the autopilot
-     * as it will move around as the relative accuracy changes. To mitigate this effect a low-pass filtered
-     * offset from each GPS location to the blended location is calculated and the filtered offset is applied
-     * to each receiver.
-    */
-
-    // Calculate filter coefficients to be applied to the offsets for each GPS position and height offset
-    // A weighting of 1 will make the offset adjust the slowest, a weighting of 0 will make it adjust with zero filtering
-    float alpha[GPS_MAX_RECEIVERS] = {};
-    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
-        if (state[i].last_gps_time_ms - _last_time_updated[i] > 0) {
-            float min_alpha = constrain_float(_omega_lpf * 0.001f * (float)(state[i].last_gps_time_ms - _last_time_updated[i]), 0.0f, 1.0f);
-            if (_blend_weights[i] > min_alpha) {
-                alpha[i] = min_alpha / _blend_weights[i];
-            } else {
-                alpha[i] = 1.0f;
-            }
-            _last_time_updated[i] = state[i].last_gps_time_ms;
-        }
-    }
-
-    // Calculate the offset from each GPS solution to the blended solution
-    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
-        _NE_pos_offset_m[i] = state[i].location.get_distance_NE(state[GPS_BLENDED_INSTANCE].location) * alpha[i] + _NE_pos_offset_m[i] * (1.0f - alpha[i]);
-        _hgt_offset_cm[i] = (float)(state[GPS_BLENDED_INSTANCE].location.alt - state[i].location.alt) *  alpha[i] + _hgt_offset_cm[i] * (1.0f - alpha[i]);
-    }
 
     // If the GPS week is the same then use a blended time_week_ms
     // If week is different, then use time stamp from GPS with largest weighting
