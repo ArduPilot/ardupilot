@@ -49,7 +49,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @DisplayName: Circular Fence Radius
     // @Description: Circle fence radius which when breached will cause an RTL
     // @Units: m
-    // @Range: 30 10000
+    // @Range: 0 10000
     // @User: Standard
     AP_GROUPINFO("RADIUS",      4,  AC_Fence,   _circle_radius, AC_FENCE_CIRCLE_RADIUS_DEFAULT),
 
