@@ -1338,22 +1338,17 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
 
 
 MAV_RESULT GCS_MAVLINK_Copter::handle_flight_termination(const mavlink_command_long_t &packet) {
-    MAV_RESULT result = MAV_RESULT_FAILED;
-
 #if ADVANCED_FAILSAFE == ENABLED
-    if (GCS_MAVLINK::handle_flight_termination(packet) != MAV_RESULT_ACCEPTED) {
-#endif
-        if (packet.param1 > 0.5f) {
-            copter.arming.disarm(AP_Arming::Method::TERMINATION);
-            result = MAV_RESULT_ACCEPTED;
-        }
-#if ADVANCED_FAILSAFE == ENABLED
-    } else {
-        result = MAV_RESULT_ACCEPTED;
+    if (GCS_MAVLINK::handle_flight_termination(packet) == MAV_RESULT_ACCEPTED) {
+        return MAV_RESULT_ACCEPTED;
     }
 #endif
+    if (packet.param1 > 0.5f) {
+        copter.arming.disarm(AP_Arming::Method::TERMINATION);
+        return MAV_RESULT_ACCEPTED;
+    }
 
-    return result;
+    return MAV_RESULT_FAILED;
 }
 
 float GCS_MAVLINK_Copter::vfr_hud_alt() const
