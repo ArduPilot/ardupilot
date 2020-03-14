@@ -121,6 +121,8 @@ include AP_RangeFinder/AP_RangeFinder.h
 
 singleton RangeFinder alias rangefinder
 singleton RangeFinder method num_sensors uint8_t
+singleton RangeFinder method has_orientation boolean Rotation'enum ROTATION_NONE ROTATION_PITCH_7
+singleton RangeFinder method distance_cm_orient uint16_t Rotation'enum ROTATION_NONE ROTATION_PITCH_7
 
 include AP_Terrain/AP_Terrain.h
 
