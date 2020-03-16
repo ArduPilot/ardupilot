@@ -275,6 +275,13 @@
 # define MODE_ACRO_ENABLED ENABLED
 #endif
 
+/////////////////////////////////////////////////////////////////////////////
+// Payloadrelease - release payload as flight mode
+#ifndef MODE_PAYLOADRELEASE_ENABLED
+#define MODE_PAYLOADRELEASE_ENABLED ENABLED
+#endif
+
+
 //////////////////////////////////////////////////////////////////////////////
 // Auto mode - allows vehicle to trace waypoints and perform automated actions
 #ifndef MODE_AUTO_ENABLED

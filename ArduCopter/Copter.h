@@ -890,6 +890,8 @@ private:
 #endif
 
     Mode *flightmode;
+
+
 #if MODE_ACRO_ENABLED == ENABLED
 #if FRAME_CONFIG == HELI_FRAME
     ModeAcro_Heli mode_acro;
@@ -936,6 +938,7 @@ private:
 #if FRAME_CONFIG == HELI_FRAME
     ModeStabilize_Heli mode_stabilize;
 #else
+    ModePayloadRelease mode_payloadrelease;
     ModeStabilize mode_stabilize;
 #endif
 #if MODE_SPORT_ENABLED == ENABLED
