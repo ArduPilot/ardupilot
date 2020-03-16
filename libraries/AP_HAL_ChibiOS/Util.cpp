@@ -86,6 +86,26 @@ void *Util::allocate_heap_memory(size_t size)
     return heap;
 }
 
+/*
+  realloc implementation thanks to wolfssl, used by AP_Scripting
+ */
+void *Util::std_realloc(void *addr, size_t size)
+{
+    if (size == 0) {
+       free(addr);
+       return nullptr;
+    }
+    if (addr == nullptr) {
+        return malloc(size);
+    }
+    void *new_mem = malloc(size);
+    if (new_mem != nullptr) {
+        memcpy(new_mem, addr, chHeapGetSize(addr) > size ? size : chHeapGetSize(addr));
+        free(addr);
+    }
+    return new_mem;
+}
+
 void *Util::heap_realloc(void *heap, void *ptr, size_t new_size)
 {
     if (heap == nullptr) {
