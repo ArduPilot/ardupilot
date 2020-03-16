@@ -52,7 +52,6 @@ class Board:
 
             env.DEFINES.update(
                 ENABLE_SCRIPTING = 1,
-                ENABLE_HEAP = 1,
                 LUA_32BITS = 1,
                 )
 
@@ -158,6 +157,10 @@ class Board:
         if cfg.options.bootloader:
             # don't let bootloaders try and pull scripting in
             cfg.options.disable_scripting = True
+        else:
+            env.DEFINES.update(
+                ENABLE_HEAP = 1,
+            )
 
         if cfg.options.enable_math_check_indexes:
             env.CXXFLAGS += ['-DMATH_CHECK_INDEXES']
