@@ -38,7 +38,7 @@ bool AP_ExpandingArrayGeneric::expand(uint16_t num_chunks)
             // fail if reallocating would leave less than 100 bytes of memory free
             return false;
         }
-        chunk_ptr_t *chunk_ptrs_new = (chunk_ptr_t*)realloc(chunk_ptrs, chunk_ptr_size * sizeof(chunk_ptr_t));
+        chunk_ptr_t *chunk_ptrs_new = (chunk_ptr_t*)hal.util->std_realloc((void*)chunk_ptrs, chunk_ptr_size * sizeof(chunk_ptr_t));
         if (chunk_ptrs_new == nullptr) {
             return false;
         }
