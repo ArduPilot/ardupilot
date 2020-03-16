@@ -1518,7 +1518,7 @@ void AP_Periph_FW::can_airspeed_update(void)
         // don't send any data
         return;
     }
-    const float press = airspeed.get_differential_pressure();
+    const float press = airspeed.get_corrected_pressure();
     float temp;
     if (!airspeed.get_temperature(temp)) {
         temp = nanf("");
