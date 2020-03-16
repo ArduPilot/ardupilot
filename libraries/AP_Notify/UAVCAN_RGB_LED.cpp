@@ -62,4 +62,22 @@ bool UAVCAN_RGB_LED::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
     }
     return success;
 }
+
+
+bool UAVCAN_RGB_LED::hw_set_rgb(uint8_t red_1, uint8_t green_1, uint8_t blue_1, uint8_t red_2, uint8_t green_2, uint8_t blue_2)
+{
+    bool success = false;
+    uint8_t can_num_drivers = AP::can().get_num_drivers();
+
+    for (uint8_t i = 0; i < can_num_drivers; i++) {
+        AP_UAVCAN *uavcan = AP_UAVCAN::get_uavcan(i);
+        if (uavcan != nullptr) {
+            success = uavcan->led_write(_led_index, red_1, green_1, blue_1) || success;
+        }
+    }
+    return success;
+}
+
+
+
 #endif

@@ -32,6 +32,8 @@ public:
     // set_rgb - set color as a combination of red, green and blue levels from 0 ~ 15
     virtual void set_rgb(uint8_t red, uint8_t green, uint8_t blue);
 
+    virtual void set_rgb(uint8_t red_1, uint8_t green_1, uint8_t blue_1, uint8_t red_2, uint8_t green_2, uint8_t blue_2);
+
     // update - updates led according to timed_updated.  Should be
     // called at 50Hz
     virtual void update() override;
@@ -42,16 +44,30 @@ public:
 protected:
     // methods implemented in hardware specific classes
     virtual bool hw_init(void) = 0;
+
     virtual bool hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue) = 0;
+    virtual bool hw_set_rgb(uint8_t red_1, uint8_t green_1, uint8_t blue_1, uint8_t red_2, uint8_t green_2, uint8_t blue_2) = 0;
 
     // set_rgb - set color as a combination of red, green and blue levels from 0 ~ 15
     virtual void _set_rgb(uint8_t red, uint8_t green, uint8_t blue);
+
+    virtual void _set_rgb(uint8_t red_1, uint8_t green_1, uint8_t blue_1,uint8_t red_2, uint8_t green_2, uint8_t blue_2);
 
     void update_override();
     
     // meta-data common to all hw devices
     uint8_t _red_des, _green_des, _blue_des;     // color requested by timed update
     uint8_t _red_curr, _green_curr, _blue_curr;  // current colours displayed by the led
+
+    uint8_t _red_des_1, _green_des_1, _blue_des_1;     // color requested by timed update
+    uint8_t _red_curr_1, _green_curr_1, _blue_curr_1;  // current colours displayed by the led
+
+    uint8_t _red_des_2, _green_des_2, _blue_des_2;     // color requested by timed update
+    uint8_t _red_curr_2, _green_curr_2, _blue_curr_2;  // current colours displayed by the led
+
+
+
+
     uint8_t _led_off;
     uint8_t _led_bright;
     uint8_t _led_medium;

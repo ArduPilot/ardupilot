@@ -52,6 +52,47 @@ void RGBLed::_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
     }
 }
 
+
+
+void RGBLed::_set_rgb(uint8_t red_1, uint8_t green_1, uint8_t blue_1, uint8_t red_2, uint8_t green_2, uint8_t blue_2)
+{
+
+    if (red_1 != _red_curr_1 ||
+        green_1 != _green_curr_1 ||
+        blue_1 != _blue_curr_1 ||
+
+		red_2 != _red_curr_2 ||
+		green_2 != _green_curr_2 ||
+		blue_2 != _blue_curr_2) {
+// call the hardware update routine
+			if (hw_set_rgb(red_1, green_1, blue_1, red_2, green_2, blue_2)) {
+
+				_red_curr_1 = red_1;
+				_green_curr_1 = green_1;
+				_blue_curr_1 = blue_1;
+
+				_red_curr_2 = red_2;
+				_green_curr_2 = green_2;
+				_blue_curr_2 = blue_2;
+					}
+		}
+}
+
+
+
+
+void RGBLed::set_rgb(uint8_t red_1, uint8_t green_1, uint8_t blue_1, uint8_t red_2, uint8_t green_2, uint8_t blue_2 )
+{
+    if (pNotify->_rgb_led_override) {
+        // don't set if in override mode
+        return;
+    }
+    _set_rgb(red_1, green_1, blue_1, red_2, green_2, blue_2);
+}
+
+
+
+
 RGBLed::rgb_source_t RGBLed::rgb_source() const
 {
     return rgb_source_t(pNotify->_rgb_led_override.get());
@@ -220,11 +261,14 @@ void RGBLed::update()
 
     const uint8_t colour = (current_colour_sequence >> (step*3)) & 7;
 
-    _red_des = (colour & RED) ? brightness : 0;
-    _green_des = (colour & GREEN) ? brightness : 0;
-    _blue_des = (colour & BLUE) ? brightness : 0;
+    _red_des_1 = (colour & RED) ? brightness : 0;
+    _green_des_1 = (colour & GREEN) ? brightness : 0;
+    _blue_des_1 = (colour & BLUE) ? brightness : 0;
+    _red_des_2 = (colour & RED) ? brightness : 0;
+    _green_des_2 = (colour & GREEN) ? brightness : 0;
+    _blue_des_2 = (colour & BLUE) ? brightness : 0;
 
-    set_rgb(_red_des, _green_des, _blue_des);
+    set_rgb(_red_des_1, _green_des_1, _blue_des_1,_red_des_2, _green_des_2, _blue_des_2);
 }
 
 /*

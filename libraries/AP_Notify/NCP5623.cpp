@@ -109,6 +109,19 @@ bool NCP5623::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
     return true;
 }
 
+
+bool NCP5623::hw_set_rgb(uint8_t red_1, uint8_t green_1, uint8_t blue_1,uint8_t red_2, uint8_t green_2, uint8_t blue_2 )
+{
+    rgb[0] = red_1;
+    rgb[1] = green_1;
+    rgb[2] = blue_1;
+    rgb[3] = red_2;
+    rgb[4] = green_2;
+    rgb[5] = blue_2;
+    _need_update = true;
+    return true;
+}
+
 void NCP5623::_timer(void)
 {
     if (!_need_update) {

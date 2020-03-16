@@ -4,6 +4,11 @@
 // variables
 #ifdef USERHOOK_VARIABLES
 
+
+uint8_t killswitch_counter;
+
+
+
 #if WII_CAMERA == 1
 WiiCamera           ircam;
 int                 WiiRange=0;

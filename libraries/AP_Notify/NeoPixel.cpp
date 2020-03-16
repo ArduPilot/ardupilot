@@ -95,3 +95,19 @@ bool NeoPixel::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
     hal.rcout->neopixel_send();
     return true;
 }
+
+bool NeoPixel::hw_set_rgb(uint8_t red_1, uint8_t green_1, uint8_t blue_1, uint8_t red_2, uint8_t green_2, uint8_t blue_2)
+{
+    if (enable_mask == 0) {
+        // nothing is enabled, no pins set as LED output
+        return true;
+    }
+
+    for (uint16_t chan=0; chan<16; chan++) {
+        if ((1U<<chan) & enable_mask) {
+            hal.rcout->set_neopixel_rgb_data(chan, (1U<<HAL_NEOPIXEL_COUNT)-1, red_1, green_1, blue_1);
+        }
+    }
+    hal.rcout->neopixel_send();
+    return true;
+}

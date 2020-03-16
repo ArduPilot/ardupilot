@@ -5,6 +5,11 @@ void Copter::userhook_init()
 {
     // put your initialisation code here
     // this will be called once at start-up
+
+
+	killswitch_counter = 0;
+
+
 }
 #endif
 
@@ -26,6 +31,57 @@ void Copter::userhook_50Hz()
 void Copter::userhook_MediumLoop()
 {
     // put your 10Hz code here
+
+
+
+	if(!motors->armed()){
+		return;
+	}
+
+	if(RC_Channels::rc_channel(CH_8)->get_radio_in() < 1500){
+		killswitch_counter = 0;
+		return;
+	}
+
+	float cos_lean_angle = (ahrs.cos_pitch()*ahrs.cos_roll());
+
+	bool killswitch_activate = {
+			ap.throttle_zero or
+			ap.land_complete or
+			cos_lean_angle <= 85.0f or
+			control_mode == Mode::Number::LAND or
+			fabsf(attitude_control->get_att_error_angle_deg()) >= 35.0f
+
+	};
+
+
+
+	 if(killswitch_activate) {
+
+			 if(killswitch_counter >= 3){
+
+				 copter.arming.disarm();
+				 killswitch_counter = 0;
+				 gcs().send_text(MAV_SEVERITY_CRITICAL,"KillSwitch: Disarm");
+				// Log_Write_Event(DATA_KILLSWITCH_DISARM);
+				 return;
+
+			 }else if(killswitch_counter >= 2){
+					 killswitch_counter++;
+
+			 }else{
+
+				 killswitch_counter++;
+			 }
+
+	 }else{
+
+		 killswitch_counter = 0;
+
+	 }
+
+
+
 }
 #endif
 

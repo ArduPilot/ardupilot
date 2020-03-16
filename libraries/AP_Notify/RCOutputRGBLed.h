@@ -13,6 +13,8 @@ public:
 protected:
     bool hw_init() override;
     virtual bool hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue) override;
+    bool hw_set_rgb(uint8_t r_1, uint8_t g_1, uint8_t b_1,uint8_t r_2, uint8_t g_2, uint8_t b_2 ) override;
+
     virtual uint16_t get_duty_cycle_for_color(const uint8_t color, const uint16_t usec_period) const;
 
 private:

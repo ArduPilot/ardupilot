@@ -26,15 +26,15 @@
 #define AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX          1.0f    // body-frame rate controller maximum output (for roll-pitch axis)
 #define AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX         1.0f    // body-frame rate controller maximum output (for yaw axis)
 
-#define AC_ATTITUDE_THRUST_ERROR_ANGLE                  radians(30.0f) // Thrust angle error above which yaw corrections are limited
+#define AC_ATTITUDE_THRUST_ERROR_ANGLE                  radians(20.0f) // Thrust angle error above which yaw corrections are limited
 
 #define AC_ATTITUDE_400HZ_DT                            0.0025f // delta time in seconds for 400hz update rate
 
 #define AC_ATTITUDE_CONTROL_RATE_BF_FF_DEFAULT          1       // body-frame rate feedforward enabled by default
 
 #define AC_ATTITUDE_CONTROL_ANGLE_LIMIT_TC_DEFAULT      1.0f    // Time constant used to limit lean angle so that vehicle does not lose altitude
-#define AC_ATTITUDE_CONTROL_ANGLE_LIMIT_THROTTLE_MAX    0.8f    // Max throttle used to limit lean angle so that vehicle does not lose altitude
-#define AC_ATTITUDE_CONTROL_ANGLE_LIMIT_MIN             10.0f   // Min lean angle so that vehicle can maintain limited control
+#define AC_ATTITUDE_CONTROL_ANGLE_LIMIT_THROTTLE_MAX    0.95f    // Max throttle used to limit lean angle so that vehicle does not lose altitude
+#define AC_ATTITUDE_CONTROL_ANGLE_LIMIT_MIN             15.0f   // Min lean angle so that vehicle can maintain limited control
 
 #define AC_ATTITUDE_CONTROL_MIN_DEFAULT                 0.1f    // minimum throttle mix default
 #define AC_ATTITUDE_CONTROL_MAN_DEFAULT                 0.1f    // manual throttle mix default

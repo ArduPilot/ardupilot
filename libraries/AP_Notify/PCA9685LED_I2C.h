@@ -27,11 +27,24 @@ protected:
     bool hw_init(void) override;
     bool hw_set_rgb(uint8_t r, uint8_t g, uint8_t b) override;
 
+    bool hw_set_rgb(uint8_t r_1, uint8_t g_1, uint8_t b_1, uint8_t r_2, uint8_t g_2, uint8_t b_2) override;
+
 private:
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
     void _timer(void);
     struct {
         uint8_t r, g, b;
+        uint8_t r_1, g_1, b_1;
+        uint8_t r_2, g_2, b_2;
     } rgb;
+
+/*
+    struct {
+        uint8_t r_1, g_1, b_1;
+        uint8_t r_2, g_2, b_2;
+    } rgb;
+    */
+
+
     bool _need_update;
 };

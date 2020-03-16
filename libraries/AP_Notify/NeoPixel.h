@@ -32,6 +32,7 @@ public:
 protected:
     bool hw_init(void) override;
     bool hw_set_rgb(uint8_t r, uint8_t g, uint8_t b) override;
+    bool hw_set_rgb(uint8_t r_1, uint8_t g_1, uint8_t b_1,uint8_t r_2, uint8_t g_2, uint8_t b_2 ) override;
 
 private:
     uint16_t enable_mask;

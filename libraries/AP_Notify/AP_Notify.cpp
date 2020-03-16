@@ -46,8 +46,12 @@ AP_Notify *AP_Notify::_singleton;
 #define TOSHIBA_LED_I2C_BUS_EXTERNAL    1
 
 // all I2C_LEDS
+
 #define I2C_LEDS (Notify_LED_ToshibaLED_I2C_Internal | Notify_LED_ToshibaLED_I2C_External | \
-                  Notify_LED_NCP5623_I2C_Internal | Notify_LED_NCP5623_I2C_External)
+                  Notify_LED_NCP5623_I2C_Internal | Notify_LED_NCP5623_I2C_External | Notify_LED_PCA9685LED_I2C_External)
+
+
+//#define I2C_LEDS (Notify_LED_PCA9685LED_I2C_External)
 
 #ifndef BUILD_DEFAULT_LED_TYPE
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
@@ -246,7 +250,7 @@ void AP_Notify::add_backends(void)
             case Notify_LED_ToshibaLED_I2C_External:
                 ADD_BACKEND(new ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_EXTERNAL));
                 break;
-#if !HAL_MINIMIZE_FEATURES
+//#if !HAL_MINIMIZE_FEATURES
             case Notify_LED_NCP5623_I2C_External:
                 FOREACH_I2C_EXTERNAL(b) {
                     ADD_BACKEND(new NCP5623(b));
@@ -255,7 +259,7 @@ void AP_Notify::add_backends(void)
             case Notify_LED_NCP5623_I2C_Internal:
                 ADD_BACKEND(new NCP5623(TOSHIBA_LED_I2C_BUS_INTERNAL));
                 break;
-#endif
+//#endif
             case Notify_LED_PCA9685LED_I2C_External:
                 ADD_BACKEND(new PCA9685LED_I2C());
                 break;
