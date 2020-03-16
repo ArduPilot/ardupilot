@@ -929,6 +929,23 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Range: 0 15
     AP_SUBGROUPINFO(hgt_abvterr, "TER_HGT", 56, AP_OSD_Screen, AP_OSD_Setting),
 #endif
+
+    // @Param: ENERGY_EN
+    // @DisplayName: ENERGY_EN
+    // @Description: Displays main consumed energy
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: ENERGY_X
+    // @DisplayName: ENERGY_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: ENERGY_Y
+    // @DisplayName: ENERGY_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(energy, "ENERGY", 57, AP_OSD_Screen, AP_OSD_Setting),
+
     AP_GROUPEND
 };
 
@@ -953,6 +970,7 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_AMP   0x9A
 #define SYM_WATT  0xAE
 #define SYM_MAH   0x07
+#define SYM_WH    0xAB
 #define SYM_MS    0x9F
 #define SYM_FS    0x99
 #define SYM_KMH   0xA1
@@ -1203,6 +1221,17 @@ void AP_OSD_Screen::draw_power(uint8_t x, uint8_t y)
     } else {
         backend->write(x, y, false, "---%c", SYM_WATT);
     }
+}
+
+void AP_OSD_Screen::draw_energy(uint8_t x, uint8_t y)
+{
+    AP_BattMonitor &battery = AP::battery();
+    float energy_wh;
+    if (!battery.consumed_wh(energy_wh)) {
+        energy_wh = 0;
+    }
+    const char* const fmt = (energy_wh < 9.9995 ? "%1.3f%c" : (energy_wh < 99.995 ? "%2.2f%c" : "%3.1f%c"));
+    backend->write(x, y, false, fmt, energy_wh, SYM_WH);
 }
 
 void AP_OSD_Screen::draw_fltmode(uint8_t x, uint8_t y)
@@ -1925,6 +1954,7 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(rssi);
     DRAW_SETTING(current);
     DRAW_SETTING(power);
+    DRAW_SETTING(energy);
     DRAW_SETTING(batused);
     DRAW_SETTING(bat2used);
     DRAW_SETTING(sats);

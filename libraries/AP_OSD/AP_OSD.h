@@ -186,6 +186,7 @@ private:
     AP_OSD_Setting pluscode{false, 0, 0};
 #endif
     AP_OSD_Setting power{true, 1, 1};
+    AP_OSD_Setting energy{false, 0, 0};
 
     // MSP OSD only
     AP_OSD_Setting sidebars{false, 0, 0};
@@ -202,6 +203,7 @@ private:
     void draw_current(uint8_t x, uint8_t y);
     void draw_current(uint8_t instance, uint8_t x, uint8_t y);
     void draw_power(uint8_t x, uint8_t y);
+    void draw_energy(uint8_t x, uint8_t y);
     void draw_batused(uint8_t x, uint8_t y);
     void draw_batused(uint8_t instance, uint8_t x, uint8_t y);
     void draw_sats(uint8_t x, uint8_t y);
