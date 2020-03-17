@@ -77,6 +77,7 @@ const AP_Param::GroupInfo SITL::var_info[] = {
     AP_GROUPINFO("FLOW_POS",      56, SITL,  optflow_pos_offset, 0),
     AP_GROUPINFO("ACC2_BIAS",     57, SITL,  accel2_bias, 0),
     AP_GROUPINFO("ENGINE_FAIL",   58, SITL,  engine_fail,  0),
+    AP_SUBGROUPINFO(shipsim, "SHIP_", 59, SITL, ShipSim),
     AP_SUBGROUPEXTENSION("",      60, SITL,  var_mag),
     AP_SUBGROUPEXTENSION("",      61, SITL,  var_gps),
     AP_SUBGROUPEXTENSION("",      62, SITL,  var_info3),

@@ -18,6 +18,7 @@
 #include "SIM_ToneAlarm.h"
 #include "SIM_EFI_MegaSquirt.h"
 #include "SIM_RichenPower.h"
+#include "SIM_Ship.h"
 
 namespace SITL {
 
@@ -349,6 +350,9 @@ public:
     static Vector3f convert_earth_frame(const Matrix3f &dcm, const Vector3f &gyro);
 
     Sprayer sprayer_sim;
+
+    // simulated ship takeoffs
+    ShipSim shipsim;
 
     Gripper_Servo gripper_sim;
     Gripper_EPM gripper_epm_sim;
