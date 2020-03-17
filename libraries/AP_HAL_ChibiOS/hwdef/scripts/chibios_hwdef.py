@@ -847,12 +847,12 @@ def write_USB_config(f):
     (USB_VID, USB_PID) = get_USB_IDs()
     f.write('#define HAL_USB_VENDOR_ID 0x%04x\n' % int(USB_VID))
     f.write('#define HAL_USB_PRODUCT_ID 0x%04x\n' % int(USB_PID))
-    f.write('#define HAL_USB_STRING_MANUFACTURER "%s"\n' % get_config("USB_STRING_MANUFACTURER", default="ArduPilot"))
+    f.write('#define HAL_USB_STRING_MANUFACTURER %s\n' % get_config("USB_STRING_MANUFACTURER", default="\"ArduPilot\""))
     default_product = "%BOARD%"
     if args.bootloader:
         default_product += "-BL"
-    f.write('#define HAL_USB_STRING_PRODUCT "%s"\n' % get_config("USB_STRING_PRODUCT", default=default_product))
-    f.write('#define HAL_USB_STRING_SERIAL "%s"\n' % get_config("USB_STRING_SERIAL", default="%SERIAL%"))
+    f.write('#define HAL_USB_STRING_PRODUCT %s\n' % get_config("USB_STRING_PRODUCT", default="\"%s\""%default_product))
+    f.write('#define HAL_USB_STRING_SERIAL %s\n' % get_config("USB_STRING_SERIAL", default="\"%SERIAL%\""))
 
     f.write('\n\n')
 
@@ -1032,6 +1032,28 @@ def write_BARO_config(f):
     if len(devlist) > 0:
         f.write('#define HAL_BARO_PROBE_LIST %s\n\n' % ';'.join(devlist))
 
+def write_board_validate_macro(f):
+    '''write board validation macro'''
+    global config
+    validate_string = ''
+    validate_dict = {}
+    if 'BOARD_VALIDATE' in config:
+        for check in config['BOARD_VALIDATE']:
+            check_name = check
+            check_string = check
+            while True:
+                def substitute_alias(m):
+                    return '(' + get_config(m.group(1), spaces=True) + ')'
+                output = re.sub(r'\$(\w+|\{([^}]*)\})', substitute_alias, check_string)
+                if (output == check_string):
+                    break
+                check_string = output
+            validate_dict[check_name] = check_string
+        # Finally create check conditional
+        for check_name in validate_dict:
+            validate_string += "!" + validate_dict[check_name] + "?" + "\"" + check_name + "\"" + ":"
+        validate_string += "nullptr"
+        f.write('#define HAL_VALIDATE_BOARD (%s)\n\n' % validate_string) 
 
 def get_gpio_bylabel(label):
     '''get GPIO(n) setting on a pin label, or -1'''
@@ -1624,6 +1646,7 @@ def write_hwdef_header(outfilename):
     write_IMU_config(f)
     write_MAG_config(f)
     write_BARO_config(f)
+    write_board_validate_macro(f)
 
     write_peripheral_enable(f)
 
@@ -1843,7 +1866,7 @@ def process_line(line):
     global allpins, imu_list, compass_list, baro_list
     global mcu_type, mcu_series
     all_lines.append(line)
-    a = shlex.split(line)
+    a = shlex.split(line, posix=False)
     # keep all config lines for later use
     alllines.append(line)
 
