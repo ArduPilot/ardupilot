@@ -2131,7 +2131,7 @@ class AutoTest(ABC):
                 max_delta = wanted_value[1]
                 wanted_value = wanted_value[0]
             if abs(fetched_value - wanted_value) > max_delta:
-                bad += "%s=%f (want=%f)    " % (param, fetched_value, wanted_value)
+                bad += "%s=%f (want=%f +/-%f)    " % (param, fetched_value, wanted_value, max_delta)
         if len(bad):
             raise NotAchievedException("Bad parameter values: %s" %
                                        (bad,))
