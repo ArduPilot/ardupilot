@@ -587,6 +587,21 @@ void GCS_MAVLINK::handle_mount_message(const mavlink_message_t &msg)
 }
 
 /*
+  pass mavlink messages to any library that supports tunneling
+ */
+
+void GCS_MAVLINK::handle_passthrough(const mavlink_message_t &msg)
+{
+    mavlink_passthrough_t packet;
+    mavlink_msg_passthrough_decode(&msg, &packet);
+
+    AP_Mount *mount = AP::mount();
+    if (mount != nullptr) {
+        mount->handle_passthrough(chan, packet);
+    }
+}
+
+/*
   pass parameter value messages through to mount library
  */
 void GCS_MAVLINK::handle_param_value(const mavlink_message_t &msg)
@@ -3247,6 +3262,10 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
 
     case MAVLINK_MSG_ID_OBSTACLE_DISTANCE:
         handle_obstacle_distance(msg);
+        break;
+
+    case MAVLINK_MSG_ID_PASSTHROUGH:
+        handle_passthrough(msg);
         break;
 
     }
