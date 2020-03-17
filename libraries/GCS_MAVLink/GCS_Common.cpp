@@ -2192,11 +2192,7 @@ void GCS_MAVLINK::send_planck_stateinfo() const
     Vector3f gyro = ahrs.get_gyro_latest();
 
     Vector3f vel;
-    if(ahrs.get_velocity_NED(vel))
-    {
-        vel /= 100;
-    }
-    else
+    if(!ahrs.get_velocity_NED(vel))
     {
         vel.zero();
     }
