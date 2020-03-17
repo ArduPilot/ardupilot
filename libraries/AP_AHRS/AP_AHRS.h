@@ -319,6 +319,11 @@ public:
         return false;
     }
 
+    // return the current acc estimate in meters/second^2, North/East/Down
+    // order. Must only be called if have_inertial_nav() is true
+    virtual bool get_accel_NED_Current(Vector3f &vec) const WARN_IF_UNUSED {
+        return false;
+    }
     // returns the expected NED magnetic field
     virtual bool get_expected_mag_field_NED(Vector3f &ret) const WARN_IF_UNUSED {
         return false;

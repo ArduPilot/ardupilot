@@ -2173,18 +2173,8 @@ void GCS_MAVLINK::send_planck_stateinfo() const
     const AP_AHRS &ahrs = AP::ahrs();
 
     Vector3f accel;
-    const NavEKF2 &ekf2 = AP::ahrs_navekf().get_NavEKF2_const();
-    const NavEKF3 &ekf3 = AP::ahrs_navekf().get_NavEKF3_const();
 
-    if(ekf3.activeCores() > 0)
-    {
-      ekf3.getAccelNEDCurrent(accel);
-    }
-    else if(ekf2.activeCores() > 0)
-    {
-      ekf2.getAccelNEDCurrent(accel);
-    }
-    else
+    if(!ahrs.get_accel_NED_Current(accel))
     {
         accel.zero();
     }
