@@ -152,7 +152,6 @@ bool AP_BoardConfig::spi_check_register(const char *devname, uint8_t regnum, uin
     return v == value;
 }
 
-#if defined(HAL_CHIBIOS_ARCH_CUBEBLACK)
 static bool check_ms5611(const char* devname) {
     auto dev = hal.spi->get_device(devname);
     if (!dev) {
@@ -211,7 +210,6 @@ static bool check_ms5611(const char* devname) {
 
     return true;
 }
-#endif
 
 #define MPUREG_WHOAMI 0x75
 #define MPU_WHOAMI_MPU60X0  0x68
@@ -225,6 +223,7 @@ static bool check_ms5611(const char* devname) {
 
 #define INV2REG_WHOAMI 0x00
 #define INV2_WHOAMI_ICM20948 0xEA
+#define INV2_WHOAMI_ICM20649 0xE1
 
 /*
   validation of the board type
@@ -262,39 +261,19 @@ void AP_BoardConfig::validate_board_type(void)
 #endif
 }
 
-
-void AP_BoardConfig::check_cubeblack(void)
-{
-#if defined(HAL_CHIBIOS_ARCH_CUBEBLACK)
-    if (state.board_type != PX4_BOARD_PIXHAWK2) {
-        state.board_type.set(PX4_BOARD_PIXHAWK2);
-    }
-
-    bool success = true;
-    if (!spi_check_register("mpu9250", MPUREG_WHOAMI, MPU_WHOAMI_MPU9250)) { success = false; }
-    if (!spi_check_register("mpu9250_ext", MPUREG_WHOAMI, MPU_WHOAMI_MPU9250) &&
-        !spi_check_register("icm20602_ext", MPUREG_WHOAMI, MPU_WHOAMI_ICM20602)) { success = false; }
-    if (!(spi_check_register("lsm9ds0_ext_g", LSMREG_WHOAMI, LSM_WHOAMI_L3GD20) && 
-          spi_check_register("lsm9ds0_ext_am", LSMREG_WHOAMI, LSM_WHOAMI_LSM303D)) &&
-        !spi_check_register("icm20948_ext", INV2REG_WHOAMI, INV2_WHOAMI_ICM20948)) { success = false; }
-    if (!check_ms5611("ms5611")) { success = false; }
-    if (!check_ms5611("ms5611_ext")) { success = false; }
-
-    if (!success) {
-        config_error("Failed to init CubeBlack - sensor mismatch");
-    }
-#endif
-}
-
-
 /*
   auto-detect board type
  */
 void AP_BoardConfig::board_autodetect(void)
 {
-#if defined(HAL_CHIBIOS_ARCH_CUBEBLACK)
-    check_cubeblack();
-    return;
+#if defined(HAL_VALIDATE_BOARD)
+    const char* errored_check = HAL_VALIDATE_BOARD;
+    if (errored_check == nullptr) {
+        return;
+    } else {
+        config_error("Board Validation %s Failed", errored_check);
+        return;
+    }
 #endif
 
     if (state.board_type != PX4_BOARD_AUTO) {
