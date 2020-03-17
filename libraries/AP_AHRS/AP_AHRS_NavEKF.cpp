@@ -673,6 +673,25 @@ bool AP_AHRS_NavEKF::get_velocity_NED(Vector3f &vec) const
     }
 }
 
+// return the current acc estimate in meters/second^2, North/East/Down
+// order. Must only be called if have_inertial_nav() is true
+bool AP_AHRS_NavEKF::get_accel_NED_Current(Vector3f &vec) const
+{
+    switch (active_EKF_type()) {
+    case EKF_TYPE_NONE:
+        return false;
+
+    case EKF_TYPE2:
+    default:
+        EKF2.getAccelNEDCurrent(vec);
+        return true;
+
+    case EKF_TYPE3:
+        EKF3.getAccelNEDCurrent(vec);
+        return true;
+    }
+}
+
 // returns the expected NED magnetic field
 bool AP_AHRS_NavEKF::get_mag_field_NED(Vector3f &vec) const
 {

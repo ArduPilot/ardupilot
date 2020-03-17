@@ -136,6 +136,8 @@ public:
 
     bool get_velocity_NED(Vector3f &vec) const override;
 
+    bool get_accel_NED_Current(Vector3f &vec) const override;
+
     // return the relative position NED to either home or origin
     // return true if the estimate is valid
     bool get_relative_position_NED_home(Vector3f &vec) const override;
