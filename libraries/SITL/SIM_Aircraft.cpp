@@ -532,6 +532,11 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
         }
         position.z = -(ground_level + frame_height - home.alt * 0.01f + ground_height_difference());
 
+        // get speed of ground movement (for ship takeoff/landing)
+        float yaw_rate = 0;
+        const Vector2f ship_movement = sitl->shipsim.get_ground_speed_adjustment(location, yaw_rate);
+        const Vector3f gnd_movement(ship_movement.x, ship_movement.y, 0);
+
         switch (ground_behavior) {
         case GROUND_BEHAVIOR_NONE:
             break;
@@ -539,10 +544,11 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
             // zero roll/pitch, but keep yaw
             float r, p, y;
             dcm.to_euler(&r, &p, &y);
+            y = y + yaw_rate * delta_time;
             dcm.from_euler(0.0f, 0.0f, y);
-            // no X or Y movement
-            velocity_ef.x = 0.0f;
-            velocity_ef.y = 0.0f;
+            // X, Y movement tracks ground movement
+            velocity_ef.x = gnd_movement.x;
+            velocity_ef.y = gnd_movement.y;
             if (velocity_ef.z > 0.0f) {
                 velocity_ef.z = 0.0f;
             }
@@ -561,6 +567,7 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
             } else {
                 p = MAX(p, 0);
             }
+            y = y + yaw_rate * delta_time;
             dcm.from_euler(0.0f, p, y);
             // only fwd movement
             Vector3f v_bf = dcm.transposed() * velocity_ef;
@@ -568,11 +575,25 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
             if (v_bf.x < 0.0f) {
                 v_bf.x = 0.0f;
             }
+
+            Vector3f gnd_movement_bf = dcm.transposed() * gnd_movement;
+
+            // lateral speed equals ground movement
+            v_bf.y = gnd_movement_bf.y;
+
+            if (!gnd_movement_bf.is_zero()) {
+                // fwd speed slowly approaches ground movement to simulate wheel friction
+                const float tconst = 20; // seconds
+                const float alpha = delta_time/(delta_time+tconst/M_2PI);
+                v_bf.x += (gnd_movement.x - v_bf.x) * alpha;
+            }
+
             velocity_ef = dcm * v_bf;
             if (velocity_ef.z > 0.0f) {
                 velocity_ef.z = 0.0f;
             }
             gyro.zero();
+            gyro.z = yaw_rate;
             use_smoothing = true;
             break;
         }
@@ -580,11 +601,15 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
             // point straight up
             float r, p, y;
             dcm.to_euler(&r, &p, &y);
+            y = y + yaw_rate * delta_time;
             dcm.from_euler(0.0f, radians(90), y);
             // no movement
             if (accel_earth.z > -1.1*GRAVITY_MSS) {
                 velocity_ef.zero();
             }
+            // X, Y movement tracks ground movement
+            velocity_ef.x = gnd_movement.x;
+            velocity_ef.y = gnd_movement.y;
             gyro.zero();
             use_smoothing = true;
             break;
@@ -816,6 +841,8 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
     if (richenpower) {
         richenpower->update(input);
     }
+
+    sitl->shipsim.update();
 }
 
 void Aircraft::add_shove_forces(Vector3f &rot_accel, Vector3f &body_accel)
