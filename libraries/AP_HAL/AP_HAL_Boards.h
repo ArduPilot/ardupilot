@@ -232,3 +232,7 @@
 #else
 #define AP_UAVCAN_SLCAN_ENABLED 0
 #endif
+
+#ifndef USE_LIBC_REALLOC
+#define USE_LIBC_REALLOC 1
+#endif
