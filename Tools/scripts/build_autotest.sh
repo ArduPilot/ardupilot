@@ -1,23 +1,11 @@
 #!/bin/bash
 
+set -x
+
 export PATH=$HOME/.local/bin:/usr/local/bin:$HOME/prefix/bin:$HOME/gcc/active/bin:$PATH
 export PYTHONUNBUFFERED=1
 
 cd $HOME/APM || exit 1
-
-test -n "$FORCEBUILD" || {
-(cd APM && git fetch > /dev/null 2>&1)
-
-newtags=$(cd APM && git fetch --tags | wc -l)
-oldhash=$(cd APM && git rev-parse origin/master)
-newhash=$(cd APM && git rev-parse HEAD)
-
-if [ "$oldhash" = "$newhash" -a "$newtags" = "0" ]; then
-    echo "$(date) no change $oldhash $newhash" >> build.log
-    exit 0
-fi
-echo "$(date) Build triggered $oldhash $newhash $newtags" >> build.log
-}
 
 ############################
 # grab a lock file. Not atomic, but close :)
@@ -40,9 +28,28 @@ lock_file() {
 
 
 lock_file build.lck || {
+    echo "$(date) Build locked" >> build.log
     exit 1
 }
 
+if [ -e "$HOME/APM/FORCEBUILD" ]; then
+   unlink "$HOME/APM/FORCEBUILD"
+   FORCEBUILD=1
+fi
+
+test -n "$FORCEBUILD" || {
+(cd APM && git fetch > /dev/null 2>&1)
+
+newtags=$(cd APM && git fetch --tags | wc -l)
+oldhash=$(cd APM && git rev-parse origin/master)
+newhash=$(cd APM && git rev-parse HEAD)
+
+if [ "$oldhash" = "$newhash" -a "$newtags" = "0" ]; then
+    echo "$(date) no change $oldhash $newhash" >> build.log
+    exit 0
+fi
+echo "$(date) Build triggered $oldhash $newhash $newtags" >> build.log
+}
 
 #ulimit -m 500000
 #ulimit -s 500000
@@ -52,27 +59,6 @@ lock_file build.lck || {
 (
 date
 
-report() {
-    d="$1"
-    old="$2"
-    new="$3"
-    cat <<EOF | mail -s 'build failed' ardupilot.devel@google.com
-A build of $d failed at `date`
-
-You can view the build logs at https://autotest.ardupilot.org/
-
-A log of the commits since the last attempted build is below
-
-`git log $old $new`
-EOF
-}
-
-report_pull_failure() {
-    d="$1"
-    git show origin/master | mail -s 'APM pull failed' ardupilot.devel@google.com
-    exit 1
-}
-
 oldhash=$(cd APM && git rev-parse HEAD)
 
 echo "Updating APM"
@@ -81,13 +67,11 @@ git checkout -f master
 git fetch origin
 git submodule update --recursive --force
 git reset --hard origin/master
-git pull || report_pull_failure
+git pull
 git clean -f -f -x -d -d
 git tag autotest-$(date '+%Y-%m-%d-%H%M%S') -m "test tag `date`"
 cp ../config.mk .
 popd
-
-rsync -a APM/Tools/autotest/web-firmware/ buildlogs/binaries/
 
 echo "Updating MAVProxy"
 pushd MAVProxy
@@ -106,12 +90,6 @@ popd
 githash=$(cd APM && git rev-parse HEAD)
 hdate=$(date +"%Y-%m-%d-%H:%m")
 
-(cd APM && Tools/scripts/build_parameters.sh)
-
-(cd APM && Tools/scripts/build_log_message_documentation.sh)
-
-(cd APM && Tools/scripts/build_docs.sh)
-
 killall -9 JSBSim || /bin/true
 
 # raise core limit
@@ -123,12 +101,70 @@ export BUILD_BINARIES_PATH=$HOME/build/tmp
 # exit on panic so we don't waste time waiting around
 export SITL_PANIC_EXIT=1
 
-timelimit 32000 APM/Tools/autotest/autotest.py --autotest-server --timeout=30000 > buildlogs/autotest-output.txt 2>&1
+ARDUPILOT_ROOT="$PWD/APM"
+AUTOTEST="$ARDUPILOT_ROOT/Tools/autotest/autotest.py"
+AUTOTEST_LOCKFILE="$PWD/autotest.lck"
 
-mkdir -p "buildlogs/history/$hdate"
+# we run the timelimit shell command to kill autotest if it behaves badly:
+TIMELIMIT_TIME_LIMIT=32000
+# we pass this into autotest.py to get it to time limit itself
+AUTOTEST_TIME_LIMIT=30000
 
-(cd buildlogs && cp -f *.txt *.flashlog *.tlog *.km[lz] *.gpx *.html *.png *.bin *.BIN *.elf "history/$hdate/")
-echo $githash > "buildlogs/history/$hdate/githash.txt"
+pushd APM
+  ./Tools/scripts/build_parameters.sh
+  ./Tools/scripts/build_log_message_documentation.sh
+  ./Tools/scripts/build_docs.sh
+popd
+
+if [ "x$BUILDLOGS" = "x" ]; then
+    BUILDLOGS="buildlogs"
+fi
+
+mkdir -p $BUILDLOGS
+
+# update index.html from the repository:
+rsync -a APM/Tools/autotest/web-firmware/ buildlogs/binaries/
+
+pushd $BUILDLOGS
+
+  export BUILD_BINARIES_BUILDLOGS_DIR="$PWD"
+  export BUILD_BINARIES_HISTORY="$PWD/build_binaries_history.sqlite"
+
+  HISTORY_DIR="history/$hdate"
+  mkdir -p "$HISTORY_DIR"
+
+  # create a link so people can see what we're currently doing:
+  ln -sfn "$HISTORY_DIR" currently-building
+
+  pushd "$HISTORY_DIR"
+
+    echo $githash > "githash.txt"
+
+    # autotest.py honours BUILDLOGS
+    export BUILDLOGS="$PWD"
+    TIMELIMIT=""
+    if [ -n "$(which timelimit)" ]; then
+        TIMELIMIT="timelimit $TIMELIMIT_TIME_LIMIT"
+    fi
+    $TIMELIMIT "$AUTOTEST" --timeout=30000 > "autotest-output.txt" 2>&1
+  popd
+
+  # autotest is done, so update the link to the most-recent build
+  ln -sfn "$HISTORY_DIR" latest
+
+  # if Parameters is a link, update the link.  If it is a directory
+  # then copy the contents down:
+  for dir in "Parameters" "LogMessages"; do
+      if [ ! -a "$dir" -o -d "$dir" ]; then
+          rsync -aP "$dir/" "$HISTORY_DIR"/"$dir"
+      else
+          echo "What manner of evil is ($dir)?"
+      fi
+  done
+
+  # remove the "currently-building" link as we're not currently building
+  rm -f currently-building
+popd
 
 ) >> build.log 2>&1
 

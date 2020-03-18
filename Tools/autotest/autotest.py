@@ -76,7 +76,8 @@ def get_default_params(atype, binary):
                            speedup=10,
                            unhide_parameters=True)
     mavproxy = util.start_MAVProxy_SITL(atype,
-                                        master=mavproxy_master)
+                                        master=mavproxy_master,
+                                        state_basedir=buildlogs_dirpath())
     print("Dumping defaults")
     idx = mavproxy.expect([r'Saved [0-9]+ parameters to (\S+)'])
     if idx == 0:
@@ -85,7 +86,8 @@ def get_default_params(atype, binary):
         util.pexpect_close(sitl)
         sitl = util.start_SITL(binary, model=frame, home=home, speedup=10)
         mavproxy = util.start_MAVProxy_SITL(atype,
-                                            master=mavproxy_master)
+                                            master=mavproxy_master,
+                                            state_basedir=buildlogs_dirpath())
         mavproxy.expect(r'Saved [0-9]+ parameters to (\S+)')
     parmfile = mavproxy.match.group(1)
     dest = buildlogs_path('%s-defaults.parm' % atype)
@@ -1085,6 +1087,11 @@ if __name__ == "__main__":
             new_skipsteps.append(skipstep)
     skipsteps = new_skipsteps
 
+    # create our own process group as the alarm handler kills
+    # everything in it.  If we don't do this then we end up killing
+    # build_autotest.sh, our calling process on the test server
+    os.setsid()
+
     # ensure we catch timeouts
     signal.signal(signal.SIGALRM, alarm_handler)
     if opts.timeout is not None:
@@ -1113,11 +1120,12 @@ if __name__ == "__main__":
 
     util.mkdir_p(buildlogs_dirpath())
 
-    lckfile = buildlogs_path('autotest.lck')
+    lckfile = os.getenv("AUTOTEST_LOCKFILE", buildlogs_path('autotest.lck'))
     print("lckfile=%s" % repr(lckfile))
     lck = util.lock_file(lckfile)
 
     if lck is None:
+        # we shouldn't get here as build_all.sh should have it locked out
         print("autotest is locked - exiting.  lckfile=(%s)" % (lckfile,))
         sys.exit(0)
 

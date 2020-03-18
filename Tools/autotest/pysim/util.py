@@ -470,7 +470,8 @@ def start_MAVProxy_SITL(atype,
                         master='tcp:127.0.0.1:5762',
                         options=[],
                         pexpect_timeout=60,
-                        logfile=sys.stdout):
+                        logfile=sys.stdout,
+                        state_basedir=None):
     """Launch mavproxy connected to a SITL instance."""
     local_mp_modules_dir = os.path.abspath(
         os.path.join(__file__, '..', '..', '..', 'mavproxy_modules'))
@@ -492,6 +493,8 @@ def start_MAVProxy_SITL(atype,
     cmd.extend(['--aircraft', aircraft])
     cmd.extend(options)
     cmd.extend(['--default-modules', 'misc,terrain,wp,rally,fence,param,arm,mode,rc,cmdlong,output'])
+    if state_basedir is not None:
+        cmd.extend(['--state-basedir', state_basedir])
 
     print("PYTHONPATH: %s" % str(env['PYTHONPATH']))
     print("Running: %s" % cmd_as_shell(cmd))

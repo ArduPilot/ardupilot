@@ -5934,7 +5934,8 @@ Also, ignores heartbeats not from our target system'''
             self.vehicleinfo_key(),
             logfile=self.mavproxy_logfile,
             options=self.mavproxy_options(),
-            pexpect_timeout=pexpect_timeout)
+            pexpect_timeout=pexpect_timeout,
+            state_basedir=self.buildlogs_dirpath())
         mavproxy.expect(r'Telemetry log: (\S+)\r\n')
         self.logfile = mavproxy.match.group(1)
         self.progress("LOGFILE %s" % self.logfile)
