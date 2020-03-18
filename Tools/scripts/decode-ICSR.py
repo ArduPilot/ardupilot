@@ -113,6 +113,13 @@ M4_BITS = [
     ("31", "NMIPENDSET", decoder_m4_nmipendset),
 ]
 
+longest_name_length = 0
+for bit in M4_BITS:
+    (bits, name, decoder) = bit
+    length = len(name)
+    if length > longest_name_length:
+        longest_name_length = length
+
 complete_mask = 0
 
 for bit in M4_BITS:
@@ -129,7 +136,8 @@ for bit in M4_BITS:
         mask |= (1 << i)
         complete_mask |= mask
     value = (ICSR & mask) >> start_bit
-    sys.stdout.write("%s: %u" % (name, value)),
+    _format = "%%%us: %%3u " % (longest_name_length,)
+    sys.stdout.write(_format % (name, value)),
     if decoder is not None:
         decoder(value)
     print("")
