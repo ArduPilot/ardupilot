@@ -2589,14 +2589,27 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
 {
     if (is_equal(packet.param1, 42.0f) &&
         is_equal(packet.param2, 24.0f) &&
-        is_equal(packet.param3, 71.0f) &&
-        is_equal(packet.param4, 93.0f)) {
-        // this is a magic sequence to force the main loop to
-        // lockup. This is for testing the stm32 watchdog
-        // functionality
-        while (true) {
-            send_text(MAV_SEVERITY_WARNING,"entering lockup");
-            hal.scheduler->delay(250);
+        is_equal(packet.param3, 71.0f)) {
+        if (is_equal(packet.param4, 93.0f)) {
+            // this is a magic sequence to force the main loop to
+            // lockup. This is for testing the stm32 watchdog
+            // functionality
+            while (true) {
+                send_text(MAV_SEVERITY_WARNING,"entering lockup");
+                hal.scheduler->delay(250);
+            }
+        }
+        if (is_equal(packet.param4, 94.0f)) {
+            // the following text is unlikely to make it out...
+            send_text(MAV_SEVERITY_WARNING,"deferencing a bad thing");
+
+            void *foo = (void*)0xE000ED38;
+
+            typedef void (*fptr)();
+            fptr gptr = (fptr) (void *) foo;
+            gptr();
+
+            return MAV_RESULT_FAILED;
         }
     }
 
