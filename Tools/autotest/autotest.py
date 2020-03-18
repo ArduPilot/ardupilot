@@ -1160,6 +1160,11 @@ if __name__ == "__main__":
             new_skipsteps.append(skipstep)
     skipsteps = new_skipsteps
 
+    # create our own process group as the alarm handler kills
+    # everything in it.  If we don't do this then we end up killing
+    # build_autotest.sh, our calling process on the test server
+    os.setsid()
+
     # ensure we catch timeouts
     signal.signal(signal.SIGALRM, alarm_handler)
     if opts.timeout is not None:
@@ -1188,11 +1193,12 @@ if __name__ == "__main__":
 
     util.mkdir_p(buildlogs_dirpath())
 
-    lckfile = buildlogs_path('autotest.lck')
+    lckfile = os.getenv("AUTOTEST_LOCKFILE", buildlogs_path('autotest.lck'))
     print("lckfile=%s" % repr(lckfile))
     lck = util.lock_file(lckfile)
 
     if lck is None:
+        # we shouldn't get here as autotest should be run once in a directory...
         print("autotest is locked - exiting.  lckfile=(%s)" % (lckfile,))
         sys.exit(0)
 
