@@ -58,6 +58,7 @@ public:
         k_param_gcs3,
         k_param_sysid_this_mav,
         k_param_sysid_my_gcs,
+        k_param_gcs4,
 
         // Hardware/Software configuration
         k_param_BoardConfig = 20, // Board configuration (Pixhawk/Linux/etc)
