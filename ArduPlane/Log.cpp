@@ -254,6 +254,23 @@ const struct LogStructure Plane::log_structure[] = {
       "STRT", "QBH",         "TimeUS,SType,CTot", "s--", "F--" },
     { LOG_CTUN_MSG, sizeof(log_Control_Tuning),     
       "CTUN", "Qcccchhhf",    "TimeUS,NavRoll,Roll,NavPitch,Pitch,ThrOut,RdrOut,ThrDem,Aspd", "sdddd---n", "FBBBB---0" },
+
+// @LoggerMessage: NTUN
+// @Description: Navigation Tuning information - e.g. vehicle destination
+// @URL: http://ardupilot.org/rover/docs/navigation.html
+// @Field: TimeUS: Microseconds since system startup
+// @Field: Dist: distance to the current navigation waypoint
+// @Field: TBrg: bearing to the current navigation waypoint
+// @Field: NavBrg: the vehicle's desired heading
+// @Field: AltErr: difference between current vehicle height and target height
+// @Field: XT: the vehicle's current distance from the current travel segment
+// @Field: XTi: integration of the vehicle's crosstrack error
+// @Field: AspdE: difference between vehicle's airspeed and desired airspeed
+// @Field: AspdE: difference between vehicle's airspeed and desired airspeed
+// @Field: TLat: target latitude
+// @Field: TLng: target longitude
+// @Field: TAlt: target altitude
+// @Field: TAspd: target airspeed
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),         
       "NTUN", "QfcccfffLLii",  "TimeUS,Dist,TBrg,NavBrg,AltErr,XT,XTi,AspdE,TLat,TLng,TAlt,TAspd", "smddmmmnDUmn", "F0BBB0B0GGBB" },
     { LOG_SONAR_MSG, sizeof(log_Sonar),             
