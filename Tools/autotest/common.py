@@ -1033,6 +1033,39 @@ class AutoTest(ABC):
 #        if fail:
 #            raise NotAchievedException("Extra parameters in XML")
 
+    def test_onboard_logging_generation(self):
+        '''just generates, as we can't do a lot of testing'''
+        xml_filepath = os.path.join(self.rootdir(), "LogMessages.xml")
+        parse_filepath = os.path.join(self.rootdir(), 'Tools', 'autotest', 'logger_metadata', 'parse.py')
+        try:
+            os.unlink(xml_filepath)
+        except OSError:
+            pass
+        vehicle = self.log_name()
+        vehicle_map = {
+            "ArduCopter": "Copter",
+            "HeliCopter": "Copter",
+            "ArduPlane": "Plane",
+            "QuadPlane": "Plane",
+            "APMrover2": "Rover",
+            "AntennaTracker": "Tracker",
+            "ArduSub": "Sub",
+        }
+        vehicle = vehicle_map[vehicle]
+
+        cmd = [parse_filepath, '--vehicle', vehicle]
+#        cmd.append("--verbose")
+        if util.run_cmd(cmd,
+                        directory=util.reltopdir('.')) != 0:
+            print("Failed parse.py (%s)" % vehicle)
+            return False
+        length = os.path.getsize(xml_filepath)
+        min_length = 1024
+        if length < min_length:
+            raise NotAchievedException("short xml file (%u < %u)" %
+                                       (length, min_length))
+        self.progress("xml file length is %u" % length)
+
     def initialise_after_reboot_sitl(self):
 
         # after reboot stream-rates may be zero.  Prompt MAVProxy to
@@ -5040,6 +5073,10 @@ switch value'''
             ("Parameters",
              "Test Parameter Set/Get",
              self.test_parameters),
+
+            ("LoggerDocumentation",
+             "Test Onboard Logging Generation",
+             self.test_onboard_logging_generation),
 
             ("GetCapabilities",
              "Get Capabilities",
