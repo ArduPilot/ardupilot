@@ -246,12 +246,24 @@ void Rover::Log_Write_Vehicle_Startup_Messages()
 // type and unit information can be found in
 // libraries/AP_Logger/Logstructure.h; search for "log_Units" for
 // units and "Format characters" for field type information
+
 const LogStructure Rover::log_structure[] = {
     LOG_COMMON_STRUCTURES,
     { LOG_STARTUP_MSG, sizeof(log_Startup),
       "STRT", "QBH",        "TimeUS,SType,CTot", "s--", "F--" },
     { LOG_THR_MSG, sizeof(log_Throttle),
       "THR", "Qhffff", "TimeUS,ThrIn,ThrOut,DesSpeed,Speed,AccY", "s--nno", "F--000" },
+
+// @LoggerMessage: NTUN
+// @Description: Navigation Tuning information - e.g. vehicle destination
+// @URL: http://ardupilot.org/rover/docs/navigation.html
+// @Field: TimeUS: Microseconds since system startup
+// @Field: WpDist: distance to the current navigation waypoint
+// @Field: Wpbrg: bearing to the current navigation waypoint
+// @Field: DesYaw: the vehicle's desired heading
+// @Field: Yaw: the vehicle's current heading
+// @Field: XTrack: the vehicle's current distance from the current travel segment
+
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),
       "NTUN", "QfffHf", "TimeUS,WpDist,WpBrg,DesYaw,Yaw,XTrack", "smhhdm", "F000B0" },
     { LOG_STEERING_MSG, sizeof(log_Steering),
