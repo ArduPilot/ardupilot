@@ -108,6 +108,8 @@ hdate=$(date +"%Y-%m-%d-%H:%m")
 
 (cd APM && Tools/scripts/build_parameters.sh)
 
+(cd APM && Tools/scripts/build_log_message_documentation.sh)
+
 (cd APM && Tools/scripts/build_docs.sh)
 
 killall -9 JSBSim || /bin/true
