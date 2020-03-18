@@ -1327,6 +1327,25 @@ struct PACKED log_Arm_Disarm {
 // @Field: format: character string defining the C-storage-type of the fields in this message
 // @Field: labels: the labels of the message being defined
 
+// @LoggerMessage: GPS
+// @Description: Information received from GNSS systems attached to the autopilot
+// @Field: TimeUS: microseconds since system startup
+// @Field: Status: GPS Fix type; 2D fix, 3D fix etc.
+// @Field: GMS: milliseconds since start of GPS Week
+// @Field: GWk: weeks since 5 Jan 1980
+// @Field: NSats: number of satellites visible
+// @Field: HDop: horizontal precision
+// @Field: Lat: latitude
+// @Field: Lng: longitude
+// @Field: Alt: altitude
+// @Field: Spd: speed
+// @Field: GCrs: ground course
+// @Field: VZ: vertical velocity
+// @Field: Yaw: vehicle yaw
+// @Field: U: boolean value indicating whether this GPS is in use
+
+
+
 // messages for all boards
 #define LOG_BASE_STRUCTURES \
     { LOG_FORMAT_MSG, sizeof(log_Format), \
