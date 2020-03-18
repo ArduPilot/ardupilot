@@ -805,8 +805,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             delta = self.get_sim_time() - tstart
             if delta > 12:
                 raise NotAchievedException("Took too long to revert RC channel value (delta=%f)" % delta)
-            if delta < 9:
-                raise NotAchievedException("Didn't take long enough to revert RC channel value (delta=%f)" % delta)
+            min_delta = 9
+            if delta < min_delta:
+                raise NotAchievedException("Didn't take long enough to revert RC channel value (delta=%f want>=%f)" %
+                                           (delta, min_delta))
             self.progress("Disabling RC override timeout")
             self.set_parameter("RC_OVERRIDE_TIME", -1)
             self.mav.mav.rc_channels_override_send(
