@@ -81,6 +81,7 @@ public:
         k_param_cli_enabled_old,    // unused
         k_param_gcs3,
         k_param_gcs_pid_mask,
+        k_param_gcs4,
 
         //
         // 130: Sensor parameters
