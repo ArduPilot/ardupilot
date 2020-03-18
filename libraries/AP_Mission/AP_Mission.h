@@ -145,6 +145,15 @@ public:
         uint8_t action;         // action (0 = release, 1 = grab)
     };
 
+    //added
+    struct PACKED Payload_Throw {
+        float latitude;
+        float longitude;
+        float altitude;
+        bool action;    //action(0 = hold, 1 = throw)
+    };
+    //add finished
+
     // high altitude balloon altitude wait
     struct PACKED Altitude_Wait {
         float altitude; // meters
@@ -196,6 +205,11 @@ public:
     };
 
     union Content {
+        //added
+        //payload throw structure
+        Payload_Throw payload_throw;
+        //add finished
+
         // jump structure
         Jump_Command jump;
 
