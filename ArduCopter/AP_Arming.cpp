@@ -682,7 +682,7 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
             // in manual modes throttle must be at zero
             #if FRAME_CONFIG != HELI_FRAME
             if ((copter.flightmode->has_manual_throttle() || control_mode == Mode::Number::DRIFT) && copter.channel_throttle->get_control_in() > 0) {
-                check_failed(ARMING_CHECK_RC, true, "%s too high", rc_item);
+                check_failed(ARMING_CHECK_RC, true, "manual %s too high", rc_item);
                 return false;
             }
             #endif
