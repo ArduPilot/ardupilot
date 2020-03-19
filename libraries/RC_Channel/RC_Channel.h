@@ -356,6 +356,10 @@ public:
         return _options & uint32_t(Option::IGNORE_RECEIVER);
     }
 
+    bool log_raw_data() const {
+        return _options & uint32_t(Option::LOG_DATA);
+    }
+    
     float override_timeout_ms() const {
         return _override_timeout.get() * 1e3f;
     }
@@ -374,6 +378,7 @@ protected:
         IGNORE_OVERRIDES = (1 << 1), // MAVLink overrides
         IGNORE_FAILSAFE  = (1 << 2), // ignore RC failsafe bits
         FPORT_PAD        = (1 << 3), // pad fport telem output
+        LOG_DATA         = (1 << 4), // log rc input bytes
     };
 
     void new_override_received() {
