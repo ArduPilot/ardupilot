@@ -1325,6 +1325,8 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
         break;
     case MAVLINK_MSG_ID_FOLLOW_TARGET:
     {
+        gcs().send_text(MAV_SEVERITY_INFO, "Updating follow target");
+
         mavlink_follow_target_t follow_target;
         mavlink_msg_follow_target_decode(&msg, &follow_target);
 
