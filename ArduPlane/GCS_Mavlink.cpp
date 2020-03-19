@@ -1323,6 +1323,16 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_UAVIONIX_ADSB_TRANSCEIVER_HEALTH_REPORT:
         plane.adsb.handle_message(chan, msg);
         break;
+    case MAVLINK_MSG_ID_FOLLOW_TARGET:
+    {
+        mavlink_follow_target_t follow_target;
+        mavlink_msg_follow_target_decode(&msg, &follow_target);
+
+        plane.follow_target.lat = follow_target.lat;
+        plane.follow_target.lng = follow_target.lon;
+
+        break;
+    }
 
     default:
         handle_common_message(msg);
