@@ -24,6 +24,7 @@
 #include "AP_RCProtocol_SRXL.h"
 #include "AP_RCProtocol_ST24.h"
 #include "AP_RCProtocol_FPort.h"
+#include "AP_RCProtocol_Debug.h"
 #include <AP_Math/AP_Math.h>
 
 extern const AP_HAL::HAL& hal;
@@ -39,11 +40,12 @@ void AP_RCProtocol::init()
     backend[AP_RCProtocol::SRXL] = new AP_RCProtocol_SRXL(*this);
     backend[AP_RCProtocol::ST24] = new AP_RCProtocol_ST24(*this);
     backend[AP_RCProtocol::FPORT] = new AP_RCProtocol_FPort(*this, true);
+    backend[AP_RCProtocol::NONE] = new AP_RCProtocol_Debug(*this);
 }
 
 AP_RCProtocol::~AP_RCProtocol()
 {
-    for (uint8_t i = 0; i < AP_RCProtocol::NONE; i++) {
+    for (uint8_t i = 0; i <= AP_RCProtocol::NONE; i++) {
         if (backend[i] != nullptr) {
             delete backend[i];
             backend[i] = nullptr;
@@ -158,6 +160,10 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
                 break;
             }
         }
+    }
+
+    if (_detected_protocol == AP_RCProtocol::NONE) {
+        backend[NONE]->process_byte(byte, baudrate);
     }
     return false;
 }

@@ -87,7 +87,7 @@ private:
     enum rcprotocol_t _detected_protocol = NONE;
     uint16_t _disabled_for_pulses;
     bool _detected_with_bytes;
-    AP_RCProtocol_Backend *backend[NONE];
+    AP_RCProtocol_Backend *backend[NONE + 1];
     bool _new_input = false;
     uint32_t _last_input_ms;
     bool _valid_serial_prot = false;
