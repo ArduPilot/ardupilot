@@ -1317,6 +1317,40 @@ struct PACKED log_Arm_Disarm {
 #define ARSP_UNITS "snPOPP----"
 #define ARSP_MULTS "F00B00----"
 
+// @LoggerMessage: ATT
+// @Description: Canonical vehicle attitude
+// @Field: TimeUS: microseconds since system startup
+// @Field: DesRoll: vehicle desired roll
+// @Field: Roll: achieved vehicle roll
+// @Field: DesPitch: vehicle desired pitch
+// @Field: Pitch: achieved vehicle pitch
+// @Field: DesYaw: vehicle desired yaw
+// @Field: Yaw: achieved vehicle yaw
+// @Field: ErrRP: lowest estimated gyro drift error
+// @Field: ErrYaw: difference between measured yaw and DCM yaw estimate
+
+// @LoggerMessage: BARO
+// @Description: Gathered Barometer data
+// @Field: TimeUS: microseconds since system startup
+// @Field: Alt: calculated altitude
+// @Field: Press: measured atmospheric pressure
+// @Field: Temp: measured atmospheric temperature
+// @Field: CRt: derived climb rate from primary barometer
+// @Field: SMS: time last sample was taken
+// @Field: Offset: raw adjustment of barometer altitude, zeroed on calibration, possibly set by GCS
+// @Field: GndTemp: temperature on ground, specified by parameter or measured while on ground
+// @Field: Health: true if barometer is considered healthy
+
+// @LoggerMessage: BAT
+// @Description: Gathered battery data
+// @Field: TimeUS: microseconds since system startup
+// @Field: Volt: measured voltage
+// @Field: VoltR: estimated resting voltage
+// @Field: Curr: measured current
+// @Field: CurrTot: current * time
+// @Field: EnrgTot: energy this battery has produced
+// @Field: Temp: measured temperature
+// @Field: Res: estimated temperature resistance
 
 // @LoggerMessage: FMT
 // @Description: Message defining the format of messages in this file
@@ -1344,7 +1378,99 @@ struct PACKED log_Arm_Disarm {
 // @Field: Yaw: vehicle yaw
 // @Field: U: boolean value indicating whether this GPS is in use
 
+// @LoggerMessage: MAG,MAG2,MAG3
+// @Description: Information received from compasses
+// @Field: TimeUS: microseconds since system startup
+// @Field: MagX: magnetic field strength in body frame
+// @Field: MagY: magnetic field strength in body frame
+// @Field: MagZ: magnetic field strength in body frame
+// @Field: OfsX: magnetic field offset in body frame
+// @Field: OfsY: magnetic field offset in body frame
+// @Field: OfsZ: magnetic field offset in body frame
+// @Field: Health: true if the compass is considered healthy
+// @Field: S: time measurement was taken
 
+// @LoggerMessage: MODE
+// @Description: vehicle control mode information
+// @Field: TimeUS: microseconds since system startup
+// @Field: Mode: vehicle-specific mode number
+// @Field: ModeNum: alias for Mode
+// @Field: Rsn: reason for entering this mode; enumeration value
+
+// @LoggerMessage: PIDR,PIDP,PIDY,PIDA,PIDS
+// @Description: Proportional/Intergral/Derivative gain values
+// @Field: TimeUS: microseconds since system startup
+// @Field: Tar: desired value
+// @Field: Act: achieved value
+// @Field: Err: error between target and achieved
+// @Field: P: proportial part of PID
+// @Field: I: integral part of PID
+// @Field: D: integral part of PID
+// @Field: FF: controller feed-forward portion of response
+
+// @LoggerMessage: RATE
+// @Description: Desired and achieved vehicle attitude rates
+// @Field: TimeUS: microseconds since system startup
+// @Field: RDes: vehicle desired roll rate
+// @Field: R: achieved vehicle roll rate
+// @Field: ROut: normalised output for Roll
+// @Field: PDes: vehicle desired pitch rate
+// @Field: P: vehicle pitch rate
+// @Field: POut: normalised output for Pitch
+// @Field: YDes: vehicle desired yaw rate
+// @Field: Y: achieved vehicle yaw rate
+// @Field: YOut: normalised output for Yaw
+// @Field: YDes: vehicle desired yaw rate
+// @Field: Y: achieved vehicle yaw rate
+// @Field: ADes: desired vehicle vertical acceleration
+// @Field: A: achieived vehicle vertical acceleration
+// @Field: AOut: percentage of vertical thrust output current being used
+
+// @LoggerMessage: RCIN
+// @Description: RC input channels to vehicle
+// @Field: TimeUS: microseconds since system startup
+// @Field: C1: channel 1 input
+// @Field: C2: channel 2 input
+// @Field: C3: channel 3 input
+// @Field: C4: channel 4 input
+// @Field: C5: channel 5 input
+// @Field: C6: channel 6 input
+// @Field: C7: channel 7 input
+// @Field: C8: channel 8 input
+// @Field: C9: channel 9 input
+// @Field: C10: channel 10 input
+// @Field: C11: channel 11 input
+// @Field: C12: channel 12 input
+// @Field: C13: channel 13 input
+// @Field: C14: channel 14 input
+
+// @LoggerMessage: RCOU
+// @Description: Servo channel output values
+// @Field: TimeUS: microseconds since system startup
+// @Field: C1: channel 1 output
+// @Field: C2: channel 2 output
+// @Field: C3: channel 3 output
+// @Field: C4: channel 4 output
+// @Field: C5: channel 5 output
+// @Field: C6: channel 6 output
+// @Field: C7: channel 7 output
+// @Field: C8: channel 8 output
+// @Field: C9: channel 9 output
+// @Field: C10: channel 10 output
+// @Field: C11: channel 11 output
+// @Field: C12: channel 12 output
+// @Field: C13: channel 13 output
+// @Field: C14: channel 14 output
+
+// @LoggerMessage: VIBE
+// @Description: Processed (acceleration) vibration information
+// @Field: TimeUS: microseconds since system startup
+// @Field: VibeX: Primary accelerometer filtered vibration, x-axis
+// @Field: VibeY: Primary accelerometer filtered vibration, y-axis
+// @Field: VibeZ: Primarz accelerometer filtered vibration, z-axis
+// @Field: Clip0: Number of clipping events on 1st accelerometer
+// @Field: Clip1: Number of clipping events on 2nd accelerometer
+// @Field: Clip2: Number of clipping events on 3rd accelerometer
 
 // messages for all boards
 #define LOG_BASE_STRUCTURES \
