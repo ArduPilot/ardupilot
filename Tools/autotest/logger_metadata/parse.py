@@ -3,6 +3,7 @@
 from __future__ import print_function
 
 import argparse
+import copy
 import os
 import re
 import sys
@@ -14,7 +15,7 @@ import emit_xml
 topdir = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../')
 topdir = os.path.realpath(topdir)
 
-re_loggermessage = re.compile(r"@LoggerMessage\s*:\s*(\w+)", re.MULTILINE)
+re_loggermessage = re.compile(r"@LoggerMessage\s*:\s*([\w,]+)", re.MULTILINE)
 re_commentline = re.compile(r"\s*//")
 re_description = re.compile(r"\s*//\s*@Description\s*:\s*(.*)")
 re_url = re.compile(r"\s*//\s*@URL\s*:\s*(.*)")
@@ -53,6 +54,7 @@ class LoggerDocco(object):
             self.url = None
             self.description = None
             self.fields = {}
+            self.fields_order = []
             self.vehicles = None
 
         def set_description(self, desc):
@@ -61,14 +63,17 @@ class LoggerDocco(object):
         def set_url(self, url):
             self.url = url
 
-        def set_field_description(self, field, description):
+        def ensure_field(self, field):
             if field not in self.fields:
                 self.fields[field] = {}
+                self.fields_order.append(field)
+
+        def set_field_description(self, field, description):
+            self.ensure_field(field)
             self.fields[field]["description"] = description
 
         def set_field_bits(self, field, bits):
-            if field not in self.fields:
-                self.fields = {}
+            self.ensure_field(field)
             self.fields[field]["bits"] = bits
 
         def set_vehicles(self, vehicles):
@@ -104,6 +109,8 @@ class LoggerDocco(object):
                 if m is None:
                     continue
                 name = m.group(1)
+                if "," in name:
+                    name = name.split(",")
                 state = state_inside
                 docco = LoggerDocco.Docco(name)
             elif state == state_inside:
@@ -140,8 +147,18 @@ class LoggerDocco(object):
             self.parse_file(_file)
 
     def emit_output(self):
+        # expand things like PIDR,PIDQ,PIDA into multiple doccos
+        new_doccos = []
+        for docco in self.doccos:
+            if type(docco.name) == list:
+                for name in docco.name:
+                    tmpdocco = copy.copy(docco)
+                    tmpdocco.name = name
+                    new_doccos.append(tmpdocco)
+            else:
+                new_doccos.append(docco)
         for emitter in self.emitters:
-            emitter.emit(self.doccos)
+            emitter.emit(new_doccos)
 
     def run(self):
         self.files = []

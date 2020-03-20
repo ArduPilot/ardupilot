@@ -39,7 +39,7 @@ This is a list of log messages which may be present in logs produced and stored 
             print("~" * len(line), file=self.fh)
 
             rows = []
-            for f in docco.fields:
+            for f in docco.fields_order:
                 if "description" in docco.fields[f]:
                     fdesc = docco.fields[f]["description"]
                 else:
