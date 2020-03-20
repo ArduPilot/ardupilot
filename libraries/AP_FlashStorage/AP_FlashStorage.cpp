@@ -74,24 +74,20 @@ bool AP_FlashStorage::init(void)
 
     // work out the first sector to read from using sector states
     enum SectorState states[2] {(enum SectorState)header[0].state, (enum SectorState)header[1].state};
-    uint8_t first_sector;
+    uint8_t first_sector = 0;
 
     if (states[0] == states[1]) {
         if (states[0] != SECTOR_STATE_AVAILABLE) {
             return erase_all();
         }
-        first_sector = 0;
     } else if (states[0] == SECTOR_STATE_FULL) {
-        first_sector = 0;
+        // first sector is 0
     } else if (states[1] == SECTOR_STATE_FULL) {
         first_sector = 1;
     } else if (states[0] == SECTOR_STATE_IN_USE) {
-        first_sector = 0;
+        // first sector is 0
     } else if (states[1] == SECTOR_STATE_IN_USE) {
         first_sector = 1;
-    } else {
-        // doesn't matter which is first
-        first_sector = 0;
     }
 
     // load data from any current sectors
