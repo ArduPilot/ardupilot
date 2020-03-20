@@ -1690,6 +1690,19 @@ void AC_AutoTune::get_poshold_attitude(float &roll_cd_out, float &pitch_cd_out, 
     yaw_cd_out = target_yaw_cd;
 }
 
+// @LoggerMessage: ATUN
+// @Description: Copter/QuadPlane AutoTune
+// @Vehicles: Copter, Plane
+// @Field: TimeUS: microseconds since system startup
+// @Field: TuneStep: step in autotune process
+// @Field: Targ: target angle or rate, depending on tuning step
+// @Field: Min: measured minimum target angle or rate
+// @Field: Max: measured maximum target angle or rate
+// @Field: RP: new rate gain P term
+// @Field: RD: new rate gain D term
+// @Field: SP: new angle P term
+// @Field: ddt: maximum measured twitching acceleration
+
 // Write an Autotune data packet
 void AC_AutoTune::Log_Write_AutoTune(uint8_t _axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt)
 {
