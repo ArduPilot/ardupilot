@@ -1066,6 +1066,15 @@ class AutoTest(ABC):
                                        (length, min_length))
         self.progress("xml file length is %u" % length)
 
+        from lxml import objectify
+        xml = open(xml_filepath,'rb').read()
+        objectify.enable_recursive_str()
+        tree = objectify.fromstring(xml)
+        for thing in tree.logformat:
+            print("Got (%s)" % str(thing.get("name")))
+#        for entry in tree.children:
+#            print("Got entry (%s)" % str(entry))
+
     def initialise_after_reboot_sitl(self):
 
         # after reboot stream-rates may be zero.  Prompt MAVProxy to

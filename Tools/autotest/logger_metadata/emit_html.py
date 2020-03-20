@@ -41,7 +41,7 @@ DO NOT EDIT
             print('        <table>', file=self.fh)
             print("        <tr><th>FieldName</th><th>Description</th><tr>",
                   file=self.fh)
-            for f in docco.fields:
+            for f in docco.fields_order:
                 if "description" in docco.fields[f]:
                     fdesc = docco.fields[f]["description"]
                 else:

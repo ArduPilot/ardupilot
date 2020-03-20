@@ -27,7 +27,7 @@ class XMLEmitter(emitter.Emitter):
                 print('        <description>%s</description>' %
                       docco.description, file=self.fh)
             print('        <fields>', file=self.fh)
-            for f in docco.fields:
+            for f in docco.fields_order:
                 print('            <field name="%s">' % f, file=self.fh)
                 if "description" in docco.fields[f]:
                     print('                <description>%s</description>' %
