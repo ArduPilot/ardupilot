@@ -241,6 +241,22 @@ void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
 
+// @LoggerMessage: CTUN
+// @Description: Control Tuning information
+// @Field: TimeUS: microseconds since system startup
+// @Field: ThI: throttle input
+// @Field: ABst: angle boost
+// @Field: ThO: throttle output
+// @Field: ThH: calculated hover throttle
+// @Field: DAlt: desired altitude
+// @Field: Alt: achieved altitude
+// @Field: BAlt: barometric altitude
+// @Field: DSAlt: desired rangefinder altitude
+// @Field: SAlt: achived rangefinder altitude
+// @Field: TAlt: terrain altitude
+// @Field: DCRt: desired climb rate
+// @Field: CRt: climb rate
+
 // type and unit information can be found in
 // libraries/AP_Logger/Logstructure.h; search for "log_Units" for
 // units and "Format characters" for field type information
