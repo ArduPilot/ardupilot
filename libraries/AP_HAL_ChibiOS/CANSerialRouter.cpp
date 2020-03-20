@@ -116,13 +116,15 @@ void SLCANRouter::slcan2can_router_trampoline(void)
             _port->flush();
         }
         chSysUnlock();
-        _slcan_if.reader();
-        if (_can_tx_queue.available() && _can_if) {
+        _slcan_if.reader(false);
+        while (_can_tx_queue.available() && _can_if) {
             _can_tx_queue.peek(it);
             if (_can_if->send(it.frame, uavcan::MonotonicTime::fromUSec(AP_HAL::micros64() + 1000), 0)) {
                 _can_tx_queue.pop();
             }
+            hal.scheduler->delay_microseconds(100);
         }
+        hal.scheduler->delay_microseconds(100);
     }
 }
 
@@ -137,12 +139,14 @@ void SLCANRouter::can2slcan_router_trampoline(void)
         }
         chSysUnlock();
         _update_event->wait(uavcan::MonotonicDuration::fromUSec(1000));
-        if (_slcan_tx_queue.available()) {
+        while (_slcan_tx_queue.available()) {
             _slcan_tx_queue.peek(it);
             if (_slcan_if.send(it.frame, uavcan::MonotonicTime::fromUSec(AP_HAL::micros64() + 1000), 0)) {
                 _slcan_tx_queue.pop();
             }
+            hal.scheduler->delay_microseconds(100);
         }
+        hal.scheduler->delay_microseconds(100);
     }
 }
 
