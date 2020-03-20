@@ -134,7 +134,8 @@ void AP_ToshibaCAN::loop()
         }
 
         // prepare commands and frames
-        if (send_stage == 0) {
+        switch (send_stage) {
+        case 0: {
             motor_lock_cmd_t unlock_cmd = {};
             motor_rotation_cmd_t mot_rot_cmd1;
             motor_rotation_cmd_t mot_rot_cmd2;
@@ -186,45 +187,40 @@ void AP_ToshibaCAN::loop()
             // advance to next stage
             send_stage++;
         }
-
         // send unlock command
-        if (send_stage == 1) {
+        case 1: {
             timeout = uavcan::MonotonicTime::fromUSec(AP_HAL::micros64() + timeout_us);
             if (!write_frame(unlock_frame, timeout)) {
                 continue;
             }
             send_stage++;
         }
-
         // send output to motor bank3
-        if (send_stage == 2) {
+        case 2: {
             timeout = uavcan::MonotonicTime::fromUSec(AP_HAL::micros64() + timeout_us);
             if (!write_frame(mot_rot_frame3, timeout)) {
                 continue;
             }
             send_stage++;
         }
-
         // send output to motor bank2
-        if (send_stage == 3) {
+        case 3: {
             timeout = uavcan::MonotonicTime::fromUSec(AP_HAL::micros64() + timeout_us);
             if (!write_frame(mot_rot_frame2, timeout)) {
                 continue;
             }
             send_stage++;
         }
-
         // send output to motor bank1
-        if (send_stage == 4) {
+        case 4: {
             timeout = uavcan::MonotonicTime::fromUSec(AP_HAL::micros64() + timeout_us);
             if (!write_frame(mot_rot_frame1, timeout)) {
                 continue;
             }
             send_stage++;
         }
-
         // check if we should request update from ESCs
-        if (send_stage == 5) {
+        case 5: {
             uint32_t now_ms = AP_HAL::millis();
             uint32_t diff_ms = now_ms - _telemetry_req_ms;
 
@@ -255,9 +251,8 @@ void AP_ToshibaCAN::loop()
 
             send_stage++;
         }
-
         // check if we should request temperature from ESCs
-        if (send_stage == 6) {
+        case 6: {
             if (_telemetry_temp_req_counter > 10) {
                 _telemetry_temp_req_counter = 0;
 
@@ -275,9 +270,8 @@ void AP_ToshibaCAN::loop()
 
             send_stage++;
         }
-
         // check if we should request usage from ESCs
-        if (send_stage == 7) {
+        case 7: {
             if (_telemetry_usage_req_counter > 100) {
                 _telemetry_usage_req_counter = 0;
 
@@ -294,9 +288,8 @@ void AP_ToshibaCAN::loop()
             }
             send_stage++;
         }
-
         // check for replies from ESCs
-        if (send_stage == 8) {
+        case 8: {
             uavcan::CanFrame recv_frame;
             while (read_frame(recv_frame, timeout)) {
                 // decode rpm and voltage data
@@ -369,6 +362,11 @@ void AP_ToshibaCAN::loop()
 
             // update bitmask of escs that replied
             update_esc_present_bitmask();
+
+            break;
+        }
+        default:
+            break;
         }
 
         // success!
