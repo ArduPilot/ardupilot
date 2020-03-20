@@ -19,7 +19,7 @@ bool GCS_Copter::simple_input_active() const
 
 bool GCS_Copter::supersimple_input_active() const
 {
-    return copter.ap.simple_mode == 2;
+    return copter.ap.simple_mode >= 2;
 }
 
 void GCS_Copter::update_vehicle_sensor_status_flags(void)

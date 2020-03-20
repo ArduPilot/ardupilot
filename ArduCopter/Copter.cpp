@@ -573,7 +573,7 @@ void Copter::update_simple_mode(void)
 void Copter::update_super_simple_bearing(bool force_update)
 {
     if (!force_update) {
-        if (ap.simple_mode != 2) {
+        if (ap.simple_mode < 2) {
             return;
         }
         if (home_distance() < SUPER_SIMPLE_RADIUS) {
