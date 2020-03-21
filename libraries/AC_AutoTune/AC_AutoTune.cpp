@@ -1694,6 +1694,7 @@ void AC_AutoTune::get_poshold_attitude(float &roll_cd_out, float &pitch_cd_out, 
 // @Description: Copter/QuadPlane AutoTune
 // @Vehicles: Copter, Plane
 // @Field: TimeUS: microseconds since system startup
+// @Field: Axis: which axis is currently being tuned
 // @Field: TuneStep: step in autotune process
 // @Field: Targ: target angle or rate, depending on tuning step
 // @Field: Min: measured minimum target angle or rate
