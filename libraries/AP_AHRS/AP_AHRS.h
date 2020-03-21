@@ -633,18 +633,18 @@ private:
     AP_Int8 _gps_minsats;
 
     enum class EKFType {
-        NONE = 0
+        NONE = 0,
 #if HAL_NAVEKF3_AVAILABLE
-        ,THREE = 3
+        THREE = 3,
 #endif
 #if HAL_NAVEKF2_AVAILABLE
-        ,TWO = 2
+        TWO = 2,
 #endif
 #if AP_AHRS_SIM_ENABLED
-        ,SIM = 10
+        SIM = 10,
 #endif
 #if HAL_EXTERNAL_AHRS_ENABLED
-        ,EXTERNAL = 11
+        EXTERNAL = 11,
 #endif
     };
     EKFType active_EKF_type(void) const;
