@@ -259,7 +259,7 @@ const LogStructure Rover::log_structure[] = {
 // @URL: http://ardupilot.org/rover/docs/navigation.html
 // @Field: TimeUS: Microseconds since system startup
 // @Field: WpDist: distance to the current navigation waypoint
-// @Field: Wpbrg: bearing to the current navigation waypoint
+// @Field: WpBrg: bearing to the current navigation waypoint
 // @Field: DesYaw: the vehicle's desired heading
 // @Field: Yaw: the vehicle's current heading
 // @Field: XTrack: the vehicle's current distance from the current travel segment
