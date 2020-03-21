@@ -1398,14 +1398,14 @@ struct PACKED log_Arm_Disarm {
 // @Field: Rsn: reason for entering this mode; enumeration value
 
 // @LoggerMessage: PIDR,PIDP,PIDY,PIDA,PIDS
-// @Description: Proportional/Intergral/Derivative gain values
+// @Description: Proportional/Integral/Derivative gain values
 // @Field: TimeUS: microseconds since system startup
 // @Field: Tar: desired value
 // @Field: Act: achieved value
 // @Field: Err: error between target and achieved
-// @Field: P: proportial part of PID
+// @Field: P: proportional part of PID
 // @Field: I: integral part of PID
-// @Field: D: integral part of PID
+// @Field: D: derivative part of PID
 // @Field: FF: controller feed-forward portion of response
 
 // @LoggerMessage: RATE
@@ -1413,17 +1413,17 @@ struct PACKED log_Arm_Disarm {
 // @Field: TimeUS: microseconds since system startup
 // @Field: RDes: vehicle desired roll rate
 // @Field: R: achieved vehicle roll rate
-// @Field: ROut: normalised output for Roll
+// @Field: ROut: normalized output for Roll
 // @Field: PDes: vehicle desired pitch rate
 // @Field: P: vehicle pitch rate
-// @Field: POut: normalised output for Pitch
+// @Field: POut: normalized output for Pitch
 // @Field: YDes: vehicle desired yaw rate
 // @Field: Y: achieved vehicle yaw rate
-// @Field: YOut: normalised output for Yaw
+// @Field: YOut: normalized output for Yaw
 // @Field: YDes: vehicle desired yaw rate
 // @Field: Y: achieved vehicle yaw rate
 // @Field: ADes: desired vehicle vertical acceleration
-// @Field: A: achieived vehicle vertical acceleration
+// @Field: A: achieved vehicle vertical acceleration
 // @Field: AOut: percentage of vertical thrust output current being used
 
 // @LoggerMessage: RCIN
@@ -1467,7 +1467,7 @@ struct PACKED log_Arm_Disarm {
 // @Field: TimeUS: microseconds since system startup
 // @Field: VibeX: Primary accelerometer filtered vibration, x-axis
 // @Field: VibeY: Primary accelerometer filtered vibration, y-axis
-// @Field: VibeZ: Primarz accelerometer filtered vibration, z-axis
+// @Field: VibeZ: Primary accelerometer filtered vibration, z-axis
 // @Field: Clip0: Number of clipping events on 1st accelerometer
 // @Field: Clip1: Number of clipping events on 2nd accelerometer
 // @Field: Clip2: Number of clipping events on 3rd accelerometer
