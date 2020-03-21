@@ -33,6 +33,9 @@ static AP_Filesystem_Posix fs_local;
 static AP_Filesystem_ROMFS fs_romfs;
 #endif
 
+#include "AP_Filesystem_Param.h"
+static AP_Filesystem_Param fs_param;
+
 /*
   mapping from filesystem prefix to backend
  */
@@ -41,6 +44,7 @@ const AP_Filesystem::Backend AP_Filesystem::backends[] = {
 #ifdef HAL_HAVE_AP_ROMFS_EMBEDDED_H
     { "@ROMFS/", fs_romfs },
 #endif
+    { "@PARAM/", fs_param },
 };
 
 #define MAX_FD_PER_BACKEND 256U
