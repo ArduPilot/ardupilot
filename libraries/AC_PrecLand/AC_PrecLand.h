@@ -46,8 +46,7 @@ public:
     };
 
     // perform any required initialisation of landing controllers
-    // update_rate_hz should be the rate at which the update method will be called in hz
-    void init(uint16_t update_rate_hz);
+    void init(void);
 
     // returns true if precision landing is healthy
     bool healthy() const { return _backend_state.healthy; }
