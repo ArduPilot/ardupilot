@@ -1344,6 +1344,7 @@ struct PACKED log_Arm_Disarm {
 // @LoggerMessage: BAT
 // @Description: Gathered battery data
 // @Field: TimeUS: microseconds since system startup
+// @Field: Instance: battery instance number
 // @Field: Volt: measured voltage
 // @Field: VoltR: estimated resting voltage
 // @Field: Curr: measured current
@@ -1355,11 +1356,11 @@ struct PACKED log_Arm_Disarm {
 // @LoggerMessage: FMT
 // @Description: Message defining the format of messages in this file
 // @URL: https://ardupilot.org/dev/docs/code-overview-adding-a-new-log-message.html
-// @Field: type: unique-to-this-log identifier for message being defined
-// @Field: length: the number of bytes taken up by this message (including all headers)
-// @Field: name: name of the message being defined
-// @Field: format: character string defining the C-storage-type of the fields in this message
-// @Field: labels: the labels of the message being defined
+// @Field: Type: unique-to-this-log identifier for message being defined
+// @Field: Length: the number of bytes taken up by this message (including all headers)
+// @Field: Name: name of the message being defined
+// @Field: Format: character string defining the C-storage-type of the fields in this message
+// @Field: Columns: the labels of the message being defined
 
 // @LoggerMessage: GPS
 // @Description: Information received from GNSS systems attached to the autopilot
@@ -1387,6 +1388,9 @@ struct PACKED log_Arm_Disarm {
 // @Field: OfsX: magnetic field offset in body frame
 // @Field: OfsY: magnetic field offset in body frame
 // @Field: OfsZ: magnetic field offset in body frame
+// @Field: MOfsX: motor interference magnetic field offset in body frame
+// @Field: MOfsY: motor interference magnetic field offset in body frame
+// @Field: MOfsZ: motor interference magnetic field offset in body frame
 // @Field: Health: true if the compass is considered healthy
 // @Field: S: time measurement was taken
 
