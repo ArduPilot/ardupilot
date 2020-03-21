@@ -1,0 +1,3 @@
+class EnumEmitter(object):
+    pass
+

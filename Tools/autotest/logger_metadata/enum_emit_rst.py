@@ -2,70 +2,48 @@
 
 from __future__ import print_function
 
-import emitter
+import enum_emitter
 
-class RSTEmitter(emitter.Emitter):
-    def preface(self):
-        return """.. Dynamically generated list of Logger Messages
-.. This page was generated using Tools/autotest/logger_metdata/parse.py
+class RSTEnumEmitter(enum_emitter.EnumEmitter):
+    def preface(self, vehicle):
+        return """.. Dynamically generated list of Enumerations
+.. This page was generated using Tools/autotest/logger_metdata/enum_emit.py
 
 .. DO NOT EDIT
 
-.. _logmessages:
+.. _enumerations:
 
-Onboard Message Log Messages
-============================
+%s enumerations
+======================
 
-This is a list of log messages which may be present in logs produced and stored onboard ArduPilot vehicles.
+Some enumerations from the ArduPilot codebase
 
-"""
+""" % vehicle
     def postface(self):
         return ""
 
-    def start(self):
-        self.fh = open("LogMessages.rst", mode='w')
-        print(self.preface(), file=self.fh)
+    def start(self, vehicle):
+        self.fh = open("Enumerations.rst", mode='w')
+        print(self.preface(vehicle), file=self.fh)
 
-    def emit(self, doccos, enumerations):
-        self.start()
-        for docco in doccos:
-            print('.. _%s:' % docco.name, file=self.fh)
+    def emit(self, vehicle, enumerations):
+        self.start(vehicle)
+        for enumeration in enumerations:
+            print('.. _%s:' % enumeration.name, file=self.fh)
             print("", file=self.fh)
-            desc = docco.description
-            if desc is None:
-                desc = ""
-            line = '%s: %s' % (docco.name, desc)
+            line = '%s' % (enumeration.name)
             print(line, file=self.fh)
             print("~" * len(line), file=self.fh)
 
             rows = []
-            for f in docco.fields_order:
-                if "description" in docco.fields[f]:
-                    fdesc = docco.fields[f]["description"]
-                else:
-                    fdesc = ""
-                fieldnamething = None
-                if "bitmaskenum" in docco.fields[f]:
-                    fieldnamething = "bitmaskenum"
-                    table_label = "Bitmask bits"
-                elif "valueenum" in docco.fields[f]:
-                    fieldnamething = "valueenum"
-                    table_label = "Values"
-                if fieldnamething is not None:
-                    enum_name = docco.fields[f][fieldnamething]
-                    if enum_name not in enumerations:
-                        raise Exception("Unknown enum (%s) (have %s)" %
-                                        (enum_name, "\n".join(sorted(enumerations.keys()))))
-                    enumeration = enumerations[enum_name]
-                    bitmaskrows = []
-                    for enumentry in enumeration.entries:
-#                        print("enumentry: %s" % str(enumentry))
-                        comment = enumentry.comment
-                        if comment is None:
-                            comment = ""
-                        bitmaskrows.append([enumentry.name, str(enumentry.value), comment])
-                    fdesc += "\n%s:\n%s" % (table_label, self.tablify(bitmaskrows))
-                rows.append([f, fdesc])
+            for f in enumeration.entries:
+                value = f.value
+                if value is None:
+                    value = ""
+                comment = f.comment
+                if comment is None:
+                    comment = ""
+                rows.append([str(f.name), str(value), str(comment)])
 
             print(self.tablify(rows), file=self.fh)
 
