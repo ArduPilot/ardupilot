@@ -454,6 +454,9 @@ public:
     /// as needed
     static AP_Param *       next_scalar(ParamToken *token, enum ap_var_type *ptype);
 
+    /// get the size of a type in bytes
+    static uint8_t				type_size(enum ap_var_type type);
+
     /// cast a variable to a float given its type
     float                   cast_to_float(enum ap_var_type type) const;
 
@@ -628,7 +631,6 @@ private:
     static bool                 scan(
                                     const struct Param_header *phdr,
                                     uint16_t *pofs);
-    static uint8_t				type_size(enum ap_var_type type);
     static void                 eeprom_write_check(
                                     const void *ptr,
                                     uint16_t ofs,
