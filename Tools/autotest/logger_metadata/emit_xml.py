@@ -18,7 +18,7 @@ class XMLEmitter(emitter.Emitter):
         print(self.preface(), file=self.fh)
         self.loggermessagefile = etree.Element('loggermessagefile')
 
-    def emit(self, doccos):
+    def emit(self, doccos, enumerations):
         self.start()
         for docco in doccos:
             xml_logformat = etree.SubElement(self.loggermessagefile, 'logformat', name=docco.name)
