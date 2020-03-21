@@ -458,6 +458,7 @@ const struct LogStructure Copter::log_structure[] = {
 // @Description: Control Tuning information
 // @Field: TimeUS: microseconds since system startup
 // @Field: ThI: throttle input
+// @Field: ABst: angle boost
 // @Field: ThO: throttle output
 // @Field: ThH: calculated hover throttle
 // @Field: DAlt: desired altitude
