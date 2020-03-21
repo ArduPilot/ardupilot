@@ -124,7 +124,6 @@ AC_PrecLand::AC_PrecLand()
 }
 
 // perform any required initialisation of landing controllers
-// update_rate_hz should be the rate at which the update method will be called in hz
 void AC_PrecLand::init()
 {
     // exit immediately if init has already been run
