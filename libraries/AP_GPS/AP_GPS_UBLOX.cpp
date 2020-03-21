@@ -979,16 +979,21 @@ AP_GPS_UBLOX::_parse_gps(void)
                         gnssCount++;
                     }
                 }
-
                 for(int i = 0; i < _buffer.gnss.numConfigBlocks; i++) {
-                    // Reserve an equal portion of channels for all enabled systems
+                    // Reserve an equal portion of channels for all enabled systems that supports it
                     if(gps._gnss_mode[state.instance] & (1 << _buffer.gnss.configBlock[i].gnssId)) {
-                        if(GNSS_SBAS !=_buffer.gnss.configBlock[i].gnssId) {
+                        if(GNSS_SBAS !=_buffer.gnss.configBlock[i].gnssId && (_hardware_generation > UBLOX_M8 || GNSS_GALILEO !=_buffer.gnss.configBlock[i].gnssId)) {
                             _buffer.gnss.configBlock[i].resTrkCh = (_buffer.gnss.numTrkChHw - 3) / (gnssCount * 2);
                             _buffer.gnss.configBlock[i].maxTrkCh = _buffer.gnss.numTrkChHw;
                         } else {
-                            _buffer.gnss.configBlock[i].resTrkCh = 1;
-                            _buffer.gnss.configBlock[i].maxTrkCh = 3;
+                            if(GNSS_SBAS ==_buffer.gnss.configBlock[i].gnssId) {
+                                _buffer.gnss.configBlock[i].resTrkCh = 1;
+                                _buffer.gnss.configBlock[i].maxTrkCh = 3;
+                            }
+                            if(GNSS_GALILEO ==_buffer.gnss.configBlock[i].gnssId) {
+                                _buffer.gnss.configBlock[i].resTrkCh = (_buffer.gnss.numTrkChHw - 3) / (gnssCount * 2);
+                                _buffer.gnss.configBlock[i].maxTrkCh = 8; //Per the M8 receiver description UBX-13003221 - R16, 4.1.1.3 it is not recommended to set the number of galileo channels higher then eigh
+                            }
                         }
                         _buffer.gnss.configBlock[i].flags = _buffer.gnss.configBlock[i].flags | 0x00000001;
                     } else {
