@@ -228,7 +228,7 @@ public:
     enum class AuxSwitchPos : uint8_t {
         LOW,       // indicates auxiliary switch is in the low position (pwm <1200)
         MIDDLE,    // indicates auxiliary switch is in the middle position (pwm >1200, <1800)
-        HIGH       // indicates auxiliary switch is in the high position (pwm >1800)
+        HIGH,      // indicates auxiliary switch is in the high position (pwm >1800)
     };
 
     bool read_3pos_switch(AuxSwitchPos &ret) const WARN_IF_UNUSED;
