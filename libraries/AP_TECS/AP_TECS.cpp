@@ -1136,6 +1136,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     // @Vehicles: Plane
     // @Description: Information about the Total Energy Control System
     // @URL: http://ardupilot.org/plane/docs/tecs-total-energy-control-system-for-speed-height-tuning-guide.html
+    // @Field: TimeUS: microseconds since system startup
     // @Field: h: height estimate (UP) currently in use by TECS
     // @Field: dh: current climb rate ("delta-height")
     // @Field: hdem: height TECS is currently trying to achieve
@@ -1176,6 +1177,9 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     // @Vehicles: Plane
     // @Description: Additional Information about the Total Energy Control System
     // @URL: http://ardupilot.org/plane/docs/tecs-total-energy-control-system-for-speed-height-tuning-guide.html
+    // @Field: TimeUS: microseconds since system startup
+    // @Field: pmax: maximum allowed pitch from parameter
+    // @Field: pmin: minimum allowed pitch from parameter
     // @Field: KErr: difference between estimated kinetic energy and desired kinetic energy
     // @Field: PErr: difference between estimated potential energy and desired potential energy
     // @Field: EDelta: current error in speed/balance weighting
