@@ -313,14 +313,14 @@ const struct LogStructure Plane::log_structure[] = {
       "AOA", "Qff", "TimeUS,AOA,SSA", "sdd", "F00" },
 
 // @LoggerMessage: PIQR,PIQP,PIQY,PIQA
-// @Description: Proportional/Intergral/Derivative gain values
+// @Description: Proportional/Integral/Derivative gain values
 // @Field: TimeUS: microseconds since system startup
 // @Field: Tar: desired value
 // @Field: Act: achieved value
 // @Field: Err: error between target and achieved
 // @Field: P: proportial part of PID
 // @Field: I: integral part of PID
-// @Field: D: integral part of PID
+// @Field: D: derivative part of PID
 // @Field: FF: controller feed-forward portion of response
     { LOG_PIQR_MSG, sizeof(log_PID), \
       "PIQR", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },  \
