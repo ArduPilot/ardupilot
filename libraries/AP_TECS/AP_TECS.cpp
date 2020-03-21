@@ -1148,7 +1148,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     // @Field: th: throttle output
     // @Field: ph: pitch output
     // @Field: dspdem: demanded acceleration output ("delta-speed demand")
-    // @Field: w: current TECS prioritisation of height vs speed (0==100% height,2==100% speed, 1==50%height+50%speed
+    // @Field: w: current TECS prioritization of height vs speed (0==100% height,2==100% speed, 1==50%height+50%speed
     // @Field: f: flags
     // @FieldBits: f: Underspeed,UnachievableDescent,AutoLanding,ReachedTakeoffSpd
     AP::logger().Write(
