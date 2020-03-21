@@ -233,7 +233,7 @@ void AP_Tuning::check_input(uint8_t flightmode)
  */
 void AP_Tuning::Log_Write_Parameter_Tuning(float value)
 {
-    AP::logger().Write("PTUN", "TimeUS,Set,Parm,Value,CenterValue", "QBBff",
+    AP::logger().Write("PRTN", "TimeUS,Set,Parm,Value,CenterValue", "QBBff",
                                            AP_HAL::micros64(),
                                            parmset,
                                            current_parm,
