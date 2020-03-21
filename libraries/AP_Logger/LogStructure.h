@@ -1387,6 +1387,27 @@ struct PACKED log_Arm_Disarm {
 // @Field: Smn: Minimum number of blocks on the sent list
 // @Field: Smx: Maximum number of blocks on the sent list
 
+// @LoggerMessage: DSF
+// @Description: Onboard logging statistics
+// @Field: TimeUS: Time since system startup
+// @Field: Dp: Number of times we rejected a write to the backend
+// @Field: Blk: Current block number
+// @Field: Bytes: Current write offset
+// @Field: FMn: Minimum free space in write buffer in last time period
+// @Field: FMx: Maximum free space in write buffer in last time period
+// @Field: FAv: Average free space in write buffer in last time period
+
+// @LoggerMessage: ERR
+// @Description: Specifically coded error messages
+// @Field: TimeUS: Time since system startup
+// @Field: Subsys: Subsystem in which the error occured
+// @Field: ECode: Subsystem-specific error code
+
+// @LoggerMessage: EV
+// @Description: Specifically coded event messages
+// @Field: TimeUS: Time since system startup
+// @Field: Id: Event identifier
+
 // @LoggerMessage: FMT
 // @Description: Message defining the format of messages in this file
 // @URL: https://ardupilot.org/dev/docs/code-overview-adding-a-new-log-message.html
@@ -1440,6 +1461,42 @@ struct PACKED log_Arm_Disarm {
 // @Field: GyrY: measured rotation rate about Y axis
 // @Field: GyrZ: measured rotation rate about Z axis
 
+// @LoggerMessage: IMT,IMT2,IMT3
+// @Description: Inertial Measurement Unit timing data
+// @Field: TimeUS: Time since system startup
+// @Field: DelT: Delta time
+// @Field: DelvT: Delta velocity accumulation time
+// @Field: DelaT: Delta angle accumulation time
+// @Field: DelAX: Accumulated delta angle X
+// @Field: DelAY: Accumulated delta angle Y
+// @Field: DelAZ: Accumulated delta angle Z
+// @Field: DelVX: Accumulated delta velocity X
+// @Field: DelVY: Accumulated delta velocity Y
+// @Field: DelVZ: Accumulated delta velocity Z
+
+// @LoggerMessage: IMU,IMU2,IMU3
+// @Description: Inertial Measurement Unit data
+// @Field: TimeUS: Time since system startup
+// @Field: GyrX: measured rotation rate about X axis
+// @Field: GyrY: measured rotation rate about Y axis
+// @Field: GyrZ: measured rotation rate about Z axis
+// @Field: AccX: acceleration along X axis
+// @Field: AccY: acceleration along Y axis
+// @Field: AccZ: acceleration along Z axis
+// @Field: EG: gyroscope error count
+// @Field: EA: accelerometer error count
+// @Field: T: IMU temperature
+// @Field: GH: gyroscope health
+// @Field: AH: accelerometer health
+// @Field: GHz: gyroscope measurement rate
+// @Field: AHz: accelerometer measurement rate
+
+// @LoggerMessage: LGR
+// @Description: Landing gear information
+// @Field: TimeUS: Time since system startup
+// @Field: LandingGear: Current landing gear state
+// @Field: WeightOnWheels: True if there is weight on wheels
+
 // @LoggerMessage: MAG,MAG2,MAG3
 // @Description: Information received from compasses
 // @Field: TimeUS: microseconds since system startup
@@ -1491,6 +1548,19 @@ struct PACKED log_Arm_Disarm {
 // @Field: ModeNum: alias for Mode
 // @Field: Rsn: reason for entering this mode; enumeration value
 
+// @LoggerMessage: MON
+// @Description: Main loop stuck data
+// @Field: TimeUS: microseconds since system startup
+// @Field: LDelay: Time main loop has been stuck for
+// @Field: Task: Current scheduler task number
+// @Field: IErr: Internal error mask; which internal errors have been detected
+// @Field: IErrCnt: Internal error count; how many internal errors have been detected
+// @Field: MavMsg: Id of the last mavlink message processed
+// @Field: MavCmd: Id of the last mavlink command processed
+// @Field: SemLine: Line number of semaphore most recently taken
+// @Field: SPICnt: Number of SPI transactions processed
+// @Field: I2CCnt: Number of i2c transactions processed
+
 // @LoggerMessage: MSG
 // @Description: Textual messages
 // @Field: TimeUS: microseconds since system startup
@@ -1501,6 +1571,14 @@ struct PACKED log_Arm_Disarm {
 // @Field: TimeUS: microseconds since system startup
 // @Field: Id: character referenced by FMTU
 // @Field: Mult: numeric multiplier
+
+// @LoggerMessage: ORGN
+// @Description: Vehicle navigation origin or other notable position
+// @Field: TimeUS: Time since system startup
+// @Field: Type: Position type
+// @Field: Lat: Position latitude
+// @Field: Lng: Position longitude
+// @Field: Alt: Position altitude
 
 // @LoggerMessage: PARM
 // @Description: parameter value
@@ -1533,6 +1611,15 @@ struct PACKED log_Arm_Disarm {
 // @Field: I2CC: Number of i2c transactions processed
 // @Field: I2CI: Number of i2c interrupts serviced
 // @Field: ExUS: number of microseconds being added to each loop to address scheduler overruns
+
+// @LoggerMessage: POS
+// @Description: Canonical vehicle position
+// @Field: TimeUS: Time since system startup
+// @Field: Lat: Canonical vehicle latitude
+// @Field: Lng: Canonical vehicle longitude
+// @Field: Alt: Canonical vehicle altitude
+// @Field: RelHomeAlt: Canonical vehicle altitude relative to home
+// @Field: RelOriginAlt: Canonical vehicle altitude relative to navigation origin
 
 // @LoggerMessage: RAD
 // @Description: Telemetry radio statistics
@@ -1627,6 +1714,20 @@ struct PACKED log_Arm_Disarm {
 // @Field: TimeUS: Time since system startup
 // @Field: RXRSSI: RSSI
 
+// @LoggerMessage: SIM
+// @Description: SITL simulator state
+// @Field: TimeUS: Time since system startup
+// @Field: Roll: Simulated roll
+// @Field: Pitch: Simulated pitch
+// @Field: Yaw: Simulated yaw
+// @Field: Alt: Simulated altitude
+// @Field: Lat: Simulated latitude
+// @Field: Lng: Simulated longitude
+// @Field: Q1: Attitude quaternion component 1
+// @Field: Q2: Attitude quaternion component 2
+// @Field: Q3: Attitude quaternion component 3
+// @Field: Q4: Attitude quaternion component 4
+
 // @LoggerMessage: SRTL
 // @Description: SmartRTL statistics
 // @Field: TimeUS: microseconds since system startup
@@ -1637,6 +1738,12 @@ struct PACKED log_Arm_Disarm {
 // @Field: N: point associated with most recent action (North component)
 // @Field: E: point associated with most recent action (East component)
 // @Field: D: point associated with most recent action (Down component)
+
+// @LoggerMessage: TSYN
+// @Description: Time synchronisation response information
+// @Field: TimeUS: Time since system startup
+// @Field: SysID: system ID this data is for
+// @Field: RTT: round trip time for this system
 
 // @LoggerMessage: UBX1
 // @Description: uBlox-specific GPS information (part 1)
