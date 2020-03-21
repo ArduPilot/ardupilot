@@ -464,7 +464,7 @@ const struct LogStructure Copter::log_structure[] = {
 // @Field: Alt: achieved altitude
 // @Field: BAlt: barometric altitude
 // @Field: DSAlt: desired rangefinder altitude
-// @Field: SAlt: achived rangefinder altitude
+// @Field: SAlt: achieved rangefinder altitude
 // @Field: TAlt: terrain altitude
 // @Field: DCRt: desired climb rate
 // @Field: CRt: climb rate
