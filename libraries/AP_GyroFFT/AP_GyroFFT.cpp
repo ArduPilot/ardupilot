@@ -518,18 +518,6 @@ float AP_GyroFFT::get_weighted_noise_center_freq_hz()
     }
 }
 
-static const char* LOG_FTN1_NAME = "FTN1";
-static const char* LOG_FTN1_LABELS = "TimeUS,PkAvg,PkX,PkY,PkZ,BwAvg,BwX,BwY,BwZ,DnF";
-static const char* LOG_FTN1_UNITS = "szzzzzzzzz";
-static const char* LOG_FTN1_SCALE = "F---------";
-static const char* LOG_FTN1_FORMAT = "Qfffffffff";
-
-static const char* LOG_FTN2_NAME = "FTN2";
-static const char* LOG_FTN2_LABELS = "TimeUS,FtX,FtY,FtZ,EnX,EnY,EnZ,SnX,SnY,SnZ,Bin";
-static const char* LOG_FTN2_UNITS = "s%%%-------";
-static const char* LOG_FTN2_SCALE = "F----------";
-static const char* LOG_FTN2_FORMAT = "QfffffffffB";
-
 // log gyro fft messages
 void AP_GyroFFT::write_log_messages()
 {
@@ -537,7 +525,12 @@ void AP_GyroFFT::write_log_messages()
         return;
     }
 
-    AP::logger().Write(LOG_FTN1_NAME, LOG_FTN1_LABELS, LOG_FTN1_UNITS, LOG_FTN1_SCALE, LOG_FTN1_FORMAT,
+    AP::logger().Write(
+        "FTN1",
+        "TimeUS,PkAvg,PkX,PkY,PkZ,BwAvg,BwX,BwY,BwZ,DnF",
+        "szzzzzzzzz",
+        "F---------",
+        "Qfffffffff",
         AP_HAL::micros64(),
         get_weighted_noise_center_freq_hz(),
         get_noise_center_freq_hz().x,
@@ -549,7 +542,12 @@ void AP_GyroFFT::write_log_messages()
         get_noise_center_bandwidth_hz().z,
         _ins->get_gyro_dynamic_notch_center_freq_hz());
 
-    AP::logger().Write(LOG_FTN2_NAME, LOG_FTN2_LABELS, LOG_FTN2_UNITS, LOG_FTN2_SCALE, LOG_FTN2_FORMAT,
+    AP::logger().Write(
+        "FTN2",
+        "TimeUS,FtX,FtY,FtZ,EnX,EnY,EnZ,SnX,SnY,SnZ,Bin",
+        "s%%%-------",
+        "F----------",
+        "QfffffffffB",
         AP_HAL::micros64(),
         get_raw_noise_harmonic_fit().x,
         get_raw_noise_harmonic_fit().y,
