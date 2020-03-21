@@ -322,16 +322,16 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: I: integral part of PID
 // @Field: D: derivative part of PID
 // @Field: FF: controller feed-forward portion of response
-    { LOG_PIQR_MSG, sizeof(log_PID), \
-      "PIQR", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },  \
-    { LOG_PIQP_MSG, sizeof(log_PID), \
-      "PIQP", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }, \
-    { LOG_PIQY_MSG, sizeof(log_PID), \
-      "PIQY", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }, \
-    { LOG_PIQA_MSG, sizeof(log_PID), \
-      "PIQA", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }, \
-    { LOG_AETR_MSG, sizeof(log_AETR), \
-      "AETR", "Qhhhhh",  "TimeUS,Ail,Elev,Thr,Rudd,Flap", "s-----", "F-----" },  \
+    { LOG_PIQR_MSG, sizeof(log_PID),
+      "PIQR", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
+    { LOG_PIQP_MSG, sizeof(log_PID),
+      "PIQP", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
+    { LOG_PIQY_MSG, sizeof(log_PID),
+      "PIQY", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
+    { LOG_PIQA_MSG, sizeof(log_PID),
+      "PIQA", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
+    { LOG_AETR_MSG, sizeof(log_AETR),
+      "AETR", "Qhhhhh",  "TimeUS,Ail,Elev,Thr,Rudd,Flap", "s-----", "F-----" },
 };
 
 void Plane::Log_Write_Vehicle_Startup_Messages()
