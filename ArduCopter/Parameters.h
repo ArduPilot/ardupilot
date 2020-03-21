@@ -375,6 +375,8 @@ public:
 
         k_param_vehicle = 257, // vehicle common block of parameters
 
+        k_param_land_delay_time,
+
         // the k_param_* space is 9-bits in size
         // 511: reserved
     };
@@ -464,6 +466,8 @@ public:
     AP_Float                acro_balance_pitch;
     AP_Int8                 acro_trainer;
     AP_Float                acro_rp_expo;
+
+    AP_Int16                land_delay_time;
 
     // Note: keep initializers here in the same order as they are declared
     // above.

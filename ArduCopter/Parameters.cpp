@@ -723,6 +723,15 @@ const AP_Param::Info Copter::var_info[] = {
     // @Path: ../libraries/AP_Vehicle/AP_Vehicle.cpp
     { AP_PARAM_GROUP, "", Parameters::k_param_vehicle, (const void *)&copter, {group_info : AP_Vehicle::var_info} },
 
+    // @Param: LAND_DELAY_TIME
+    // @DisplayName: Waiting time to land
+    // @Description: Waiting time to land
+    // @Range: 0 30000
+    // @Increment: 1
+    // @Units: ms
+    // @User: Standard
+    GSCALAR(land_delay_time, "LAND_DELAY_TIME", LAND_WITH_DELAY_MS),
+
     AP_VAREND
 };
 

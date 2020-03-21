@@ -74,7 +74,7 @@ void ModeLand::gps_run()
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
         // pause before beginning land descent
-        if(land_pause && millis()-land_start_time >= LAND_WITH_DELAY_MS) {
+        if(land_pause && millis()-land_start_time >= static_cast<uint32_t>(copter.g.land_delay_time)) {
             land_pause = false;
         }
 
@@ -127,7 +127,7 @@ void ModeLand::nogps_run()
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
         // pause before beginning land descent
-        if(land_pause && millis()-land_start_time >= LAND_WITH_DELAY_MS) {
+        if(land_pause && millis()-land_start_time >= static_cast<uint32_t>(copter.g.land_delay_time)) {
             land_pause = false;
         }
 
