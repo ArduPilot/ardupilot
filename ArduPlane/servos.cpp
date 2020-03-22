@@ -872,7 +872,7 @@ void Plane::servos_auto_trim(void)
     g2.servo_channels.adjust_trim(SRV_Channel::k_vtail_right, pitch_I);
 
     g2.servo_channels.adjust_trim(SRV_Channel::k_flaperon_left,  roll_I);
-    g2.servo_channels.adjust_trim(SRV_Channel::k_flaperon_right, -roll_I);
+    g2.servo_channels.adjust_trim(SRV_Channel::k_flaperon_right, roll_I);
 
     // cope with various dspoiler options
     const int8_t bitmask = g2.crow_flap_options.get();
