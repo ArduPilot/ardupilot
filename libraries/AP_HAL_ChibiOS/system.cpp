@@ -19,6 +19,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/system.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <GCS_MAVLink/GCS.h>
 #include "hwdef/common/watchdog.h"
 #include "hwdef/common/stm32_util.h"
 
@@ -202,6 +203,9 @@ void panic(const char *errormsg, ...)
     va_start(ap, errormsg);
     vprintf(errormsg, ap);
     va_end(ap);
+
+    gcs().send_text(MAV_SEVERITY_ALERT, errormsg, ap);
+    hal.scheduler->delay(1000);  // Wait for the time when the message will be sent
 
     hal.scheduler->delay_microseconds(10000);
     while (1) {
