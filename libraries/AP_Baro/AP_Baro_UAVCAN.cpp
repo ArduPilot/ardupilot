@@ -42,7 +42,6 @@ void AP_Baro_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
     const int pressure_listener_res = pressure_listener->start(PressureCb(ap_uavcan, &handle_pressure));
     if (pressure_listener_res < 0) {
         AP_HAL::panic("UAVCAN Baro subscriber start problem\n\r");
-        return;
     }
 
     uavcan::Subscriber<uavcan::equipment::air_data::StaticTemperature, TemperatureCb> *temperature_listener;
@@ -51,7 +50,6 @@ void AP_Baro_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
     const int temperature_listener_res = temperature_listener->start(TemperatureCb(ap_uavcan, &handle_temperature));
     if (temperature_listener_res < 0) {
         AP_HAL::panic("UAVCAN Baro subscriber start problem\n\r");
-        return;
     }
 }
 
