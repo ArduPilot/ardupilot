@@ -4,7 +4,7 @@
 def build(bld):
 
 	bld(         
-		rule = 'gcc -Wall -Werror -Wextra -g -std=c99 -c ${SRC} -o ${TGT}', 
+		rule = 'gcc -Wall -Wextra -g -std=c99 -c ${SRC} -o ${TGT}', 
 		source = './src/main.c',
 		target =  'main.c.o',
 	)
