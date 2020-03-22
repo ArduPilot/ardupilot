@@ -8,16 +8,19 @@ def build(bld):
 		source = './src/main.c',
 		target =  'main.c.o',
 	)
+    bld.add_group()
 	
 	bld(
 		rule = 'gcc ${SRC} -o ${TGT}',
 		source = 'main.c.o',
 		target = 'gen-bindings' ,
 	)
+    bld.add_group()
 
 	bld(
 		rule = './${SRC} -o ../lua_generated_bindings -i description/bindings.desc',
 		source = 'gen-bindings',
 		cwd = './',
 	)
+    bld.add_group()
 	
