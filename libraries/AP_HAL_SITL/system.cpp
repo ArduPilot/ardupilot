@@ -7,7 +7,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/system.h>
-
+#include <GCS_MAVLink/GCS.h>
 #include "Scheduler.h"
 
 extern const AP_HAL::HAL& hal;
@@ -34,6 +34,9 @@ void panic(const char *errormsg, ...)
     vprintf(errormsg, ap);
     va_end(ap);
     printf("\n");
+    
+    gcs().send_text(MAV_SEVERITY_ALERT, errormsg, ap);
+    hal.scheduler->delay(1000);  // Wait for the time when the message will be sent
 
     dump_stack_trace();
 
