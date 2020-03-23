@@ -1563,59 +1563,65 @@ bool AP_AHRS_NavEKF::attitudes_consistent(char *failure_msg, const uint8_t failu
     bool check_yaw = _compass && _compass->use_for_yaw();
 
 #if HAL_NAVEKF2_AVAILABLE
-    // check primary vs ekf2
-    for (uint8_t i = 0; i < EKF2.activeCores(); i++) {
-        Quaternion ekf2_quat;
-        Vector3f angle_diff;
-        EKF2.getQuaternionBodyToNED(i, ekf2_quat);
-        primary_quat.angular_difference(ekf2_quat).to_axis_angle(angle_diff);
-        float diff = safe_sqrt(sq(angle_diff.x)+sq(angle_diff.y));
-        if (diff > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
-            hal.util->snprintf(failure_msg, failure_msg_len, "EKF2 Roll/Pitch inconsistent by %d deg", (int)degrees(diff));
-            return false;
-        }
-        diff = fabsf(angle_diff.z);
-        if (check_yaw && (diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
-            hal.util->snprintf(failure_msg, failure_msg_len, "EKF2 Yaw inconsistent by %d deg", (int)degrees(diff));
-            return false;
+    if (ekf_type() == EKFType::TWO) {
+        // check primary vs ekf2
+        for (uint8_t i = 0; i < EKF2.activeCores(); i++) {
+            Quaternion ekf2_quat;
+            Vector3f angle_diff;
+            EKF2.getQuaternionBodyToNED(i, ekf2_quat);
+            primary_quat.angular_difference(ekf2_quat).to_axis_angle(angle_diff);
+            float diff = safe_sqrt(sq(angle_diff.x)+sq(angle_diff.y));
+            if (diff > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
+                hal.util->snprintf(failure_msg, failure_msg_len, "EKF2 Roll/Pitch inconsistent by %d deg", (int)degrees(diff));
+                return false;
+            }
+            diff = fabsf(angle_diff.z);
+            if (check_yaw && (diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
+                hal.util->snprintf(failure_msg, failure_msg_len, "EKF2 Yaw inconsistent by %d deg", (int)degrees(diff));
+                return false;
+            }
         }
     }
 #endif
 
 #if HAL_NAVEKF3_AVAILABLE
-    // check primary vs ekf3
-    for (uint8_t i = 0; i < EKF3.activeCores(); i++) {
-        Quaternion ekf3_quat;
-        Vector3f angle_diff;
-        EKF3.getQuaternionBodyToNED(i, ekf3_quat);
-        primary_quat.angular_difference(ekf3_quat).to_axis_angle(angle_diff);
-        float diff = safe_sqrt(sq(angle_diff.x)+sq(angle_diff.y));
-        if (diff > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
-            hal.util->snprintf(failure_msg, failure_msg_len, "EKF3 Roll/Pitch inconsistent by %d deg", (int)degrees(diff));
-            return false;
-        }
-        diff = fabsf(angle_diff.z);
-        if (check_yaw && (diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
-            hal.util->snprintf(failure_msg, failure_msg_len, "EKF3 Yaw inconsistent by %d deg", (int)degrees(diff));
-            return false;
+    if (ekf_type() == EKFType::THREE) {
+        // check primary vs ekf3
+        for (uint8_t i = 0; i < EKF3.activeCores(); i++) {
+            Quaternion ekf3_quat;
+            Vector3f angle_diff;
+            EKF3.getQuaternionBodyToNED(i, ekf3_quat);
+            primary_quat.angular_difference(ekf3_quat).to_axis_angle(angle_diff);
+            float diff = safe_sqrt(sq(angle_diff.x)+sq(angle_diff.y));
+            if (diff > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
+                hal.util->snprintf(failure_msg, failure_msg_len, "EKF3 Roll/Pitch inconsistent by %d deg", (int)degrees(diff));
+                return false;
+            }
+            diff = fabsf(angle_diff.z);
+            if (check_yaw && (diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
+                hal.util->snprintf(failure_msg, failure_msg_len, "EKF3 Yaw inconsistent by %d deg", (int)degrees(diff));
+                return false;
+            }
         }
     }
 #endif
 
-    // check primary vs dcm
-    Quaternion dcm_quat;
-    Vector3f angle_diff;
-    dcm_quat.from_rotation_matrix(get_DCM_rotation_body_to_ned());
-    primary_quat.angular_difference(dcm_quat).to_axis_angle(angle_diff);
-    float diff = safe_sqrt(sq(angle_diff.x)+sq(angle_diff.y));
-    if (diff > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "DCM Roll/Pitch inconsistent by %d deg", (int)degrees(diff));
-        return false;
-    }
-    diff = fabsf(angle_diff.z);
-    if (check_yaw && (diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "DCM Yaw inconsistent by %d deg", (int)degrees(diff));
-        return false;
+    if (_view == nullptr || ekf_type() == EKFType::NONE) {
+        // check primary vs dcm
+        Quaternion dcm_quat;
+        Vector3f angle_diff;
+        dcm_quat.from_rotation_matrix(get_DCM_rotation_body_to_ned());
+        primary_quat.angular_difference(dcm_quat).to_axis_angle(angle_diff);
+        float diff = safe_sqrt(sq(angle_diff.x)+sq(angle_diff.y));
+        if (diff > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "DCM Roll/Pitch inconsistent by %d deg", (int)degrees(diff));
+            return false;
+        }
+        diff = fabsf(angle_diff.z);
+        if (check_yaw && (diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "DCM Yaw inconsistent by %d deg", (int)degrees(diff));
+            return false;
+        }
     }
 
     return true;
