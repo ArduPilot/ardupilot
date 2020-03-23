@@ -70,11 +70,11 @@ public:
     
 protected:
     void add_input(uint8_t num_channels, uint16_t *values, bool in_failsafe, int16_t rssi=-1);
+    AP_RCProtocol &frontend;
 
     void log_data(AP_RCProtocol::rcprotocol_t prot, uint32_t timestamp, const uint8_t *data, uint8_t len) const;
 
 private:
-    AP_RCProtocol &frontend;
     uint32_t rc_input_count;
     uint32_t last_rc_input_count;
     uint32_t rc_frame_count;
