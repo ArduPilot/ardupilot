@@ -22,6 +22,7 @@
 #include "AP_RCProtocol_SBUS.h"
 #include "AP_RCProtocol_SUMD.h"
 #include "AP_RCProtocol_SRXL.h"
+#include "AP_RCProtocol_SRXL2.h"
 #include "AP_RCProtocol_ST24.h"
 #include "AP_RCProtocol_FPort.h"
 #include <AP_Math/AP_Math.h>
@@ -37,6 +38,7 @@ void AP_RCProtocol::init()
     backend[AP_RCProtocol::DSM] = new AP_RCProtocol_DSM(*this);
     backend[AP_RCProtocol::SUMD] = new AP_RCProtocol_SUMD(*this);
     backend[AP_RCProtocol::SRXL] = new AP_RCProtocol_SRXL(*this);
+    backend[AP_RCProtocol::SRXL2] = new AP_RCProtocol_SRXL2(*this);
     backend[AP_RCProtocol::ST24] = new AP_RCProtocol_ST24(*this);
     backend[AP_RCProtocol::FPORT] = new AP_RCProtocol_FPort(*this, true);
 }
@@ -308,6 +310,8 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
         return "SUMD";
     case SRXL:
         return "SRXL";
+    case SRXL2:
+        return "SRXL2";
     case ST24:
         return "ST24";
     case FPORT:

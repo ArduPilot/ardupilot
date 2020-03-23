@@ -26,6 +26,7 @@ void loop();
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include <AP_RCProtocol/AP_RCProtocol.h>
+#include <RC_Channel/RC_Channel.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -38,6 +39,29 @@ void loop();
 #include <errno.h>
 
 static AP_RCProtocol *rcprot;
+
+class RC_Channel_RC : public RC_Channel
+{
+};
+
+class RC_Channels_RC : public RC_Channels
+{
+public:
+    RC_Channel *channel(uint8_t chan) override {
+        return &obj_channels[chan];
+    }
+
+    RC_Channel_RC obj_channels[NUM_RC_CHANNELS];
+private:
+    int8_t flight_mode_channel_number() const override { return -1; };
+};
+
+#define RC_CHANNELS_SUBCLASS RC_Channels_RC
+#define RC_CHANNEL_SUBCLASS RC_Channel_RC
+
+#include <RC_Channel/RC_Channels_VarInfo.h>
+
+RC_Channels_RC _rc;
 
 // change this to the device being tested.
 const char *devicename = "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A10596TP-if00-port0";
