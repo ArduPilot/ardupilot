@@ -137,6 +137,7 @@ public:
     // set cam trigger distance command structure
     struct PACKED Cam_Trigg_Distance {
         float meters;           // distance
+        uint8_t trigger;        // triggers one image capture immediately 
     };
 
     // gripper command structure
