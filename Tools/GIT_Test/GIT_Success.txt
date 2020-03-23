@@ -32,6 +32,7 @@ Yasuhide Horiuchi
 Tatsuya Yamaguchi
 Kenji Koseki
 Shinya Oda
+Sohan Anisetty
 Kouichi Nakajima
 Yuki Yoshioka
 Takanobu Minoshima
