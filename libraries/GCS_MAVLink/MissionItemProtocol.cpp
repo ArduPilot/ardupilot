@@ -349,7 +349,7 @@ void MissionItemProtocol::update()
         return;
     }
     // resend request if we haven't gotten one:
-    const uint32_t wp_recv_timeout_ms = 1000U + (link->get_stream_slowdown_ms()*20);
+    const uint32_t wp_recv_timeout_ms = 1000U + link->get_stream_slowdown_ms();
     if (tnow - timelast_request_ms > wp_recv_timeout_ms) {
         timelast_request_ms = tnow;
         link->send_message(next_item_ap_message_id());
