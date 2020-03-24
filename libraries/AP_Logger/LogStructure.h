@@ -369,6 +369,7 @@ struct PACKED log_MAV {
     uint16_t packet_rx_success_count;
     uint16_t packet_rx_drop_count;
     uint8_t flags;
+    uint16_t stream_slowdown_ms;
 };
 
 struct PACKED log_RSSI {
@@ -1742,7 +1743,7 @@ struct PACKED log_Arm_Disarm {
     { LOG_RALLY_MSG, sizeof(log_Rally), \
       "RALY", "QBBLLh", "TimeUS,Tot,Seq,Lat,Lng,Alt", "s--DUm", "F--GGB" },  \
     { LOG_MAV_MSG, sizeof(log_MAV),   \
-      "MAV", "QBHHHB",   "TimeUS,chan,txp,rxp,rxdp,flags", "s#----", "F-000-" },   \
+      "MAV", "QBHHHBH",   "TimeUS,chan,txp,rxp,rxdp,flags,ss", "s#----s", "F-000-C" },   \
     { LOG_VISUALODOM_MSG, sizeof(log_VisualOdom), \
       "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf", "ssrrrmmm-", "FF000000-" }, \
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow), \
