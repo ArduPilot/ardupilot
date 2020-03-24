@@ -313,7 +313,7 @@ const struct LogStructure Plane::log_structure[] = {
       "AOA", "Qff", "TimeUS,AOA,SSA", "sdd", "F00" },
 
 // @LoggerMessage: PIQR,PIQP,PIQY,PIQA
-// @Description: Proportional/Integral/Derivative gain values
+// @Description: QuadPlane Proportional/Integral/Derivative gain values for Roll/Pitch/Yaw/Z
 // @Field: TimeUS: microseconds since system startup
 // @Field: Tar: desired value
 // @Field: Act: achieved value
