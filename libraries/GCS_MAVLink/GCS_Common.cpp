@@ -1520,6 +1520,7 @@ void GCS_MAVLINK::log_mavlink_stats()
     packet_rx_success_count: status->packet_rx_success_count,
     packet_rx_drop_count   : status->packet_rx_drop_count,
     flags                  : flags,
+    stream_slowdown_ms     : stream_slowdown_ms
     };
 
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
