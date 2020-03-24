@@ -1402,7 +1402,7 @@ struct PACKED log_Arm_Disarm {
 // @Field: Rsn: reason for entering this mode; enumeration value
 
 // @LoggerMessage: PIDR,PIDP,PIDY,PIDA,PIDS
-// @Description: Proportional/Integral/Derivative gain values
+// @Description: Proportional/Integral/Derivative gain values for Roll/Pitch/Yaw/Z/Steering
 // @Field: TimeUS: microseconds since system startup
 // @Field: Tar: desired value
 // @Field: Act: achieved value
