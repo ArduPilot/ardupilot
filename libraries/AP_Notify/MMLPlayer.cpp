@@ -21,7 +21,7 @@ void MMLPlayer::update()
     }
 }
 
-void MMLPlayer::play(const char* string)
+void MMLPlayer::prepare_to_play_string(const char* string)
 {
     stop();
 
@@ -36,6 +36,12 @@ void MMLPlayer::play(const char* string)
     _repeat = false;
 
     _playing = true;
+    _note_duration_us = 0;
+}
+
+void MMLPlayer::play(const char* string)
+{
+    prepare_to_play_string(string);
     next_action();
 }
 
@@ -133,7 +139,11 @@ void MMLPlayer::next_action()
         char c = next_char();
         if (c == '\0') {
             if (_repeat) {
-                play(_string);
+                // don't "play" here, as we may have been called from
+                // there, and it turns out infinite recursion on
+                // invalid strings is suboptimal.  The next call to
+                // update() will push things out as appropriate.
+                prepare_to_play_string(_string);
             } else {
                 stop();
             }
