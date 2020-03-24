@@ -208,7 +208,7 @@ void AP_Hott_Telem::send_GPS(void)
         uint16_t climbrate;           //#24 m/s 0.01m/s resolution. Value of 30000 = 0.00 m/s
         uint8_t climbrate3s;          //#26 climbrate in m/3s resolution, value of 120 = 0 m/3s
         uint8_t gps_satelites;        //#27 sat count
-        uint8_t gps_fix_char;         //#28 GPS fix character. display, 'D' = DGPS, '2' = 2D, '3' = 3D, '-' = no fix
+        uint8_t free_char3;           //#28 ???
         uint8_t home_direction;       //#29 direction from starting point to Model position (2 degree steps)
         int16_t vel_north;            //#30 velocity north mm/s
         uint8_t speed_acc;            //#32 speed accuracy cm/s
@@ -218,7 +218,9 @@ void AP_Hott_Telem::send_GPS(void)
         uint8_t gps_time_hs;          //#36 UTC time 0.01s units
         int16_t vel_east;             //#37 velocity north mm/s
         uint8_t horiz_acc;            //#39 horizontal accuracy
-        char free_char[3];            //#40 displayed to right of home
+        uint8_t free_char1;           //#40 displayed to right of home
+        uint8_t free_char2;           //#41
+        uint8_t gps_fix_char;         //#42 GPS fix character. display, 'D' = DGPS, '2' = 2D, '3' = 3D, '-' = no fix
         uint8_t version = 1;          //#43 0: GPS Graupner #33600, 1: ArduPilot
         uint8_t stop_byte = 0x7d;     //#44
     } msg {};
