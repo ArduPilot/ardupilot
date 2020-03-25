@@ -270,9 +270,9 @@ void AP_Avoidance::get_adsb_samples()
                    MAV_COLLISION_SRC_ADSB,
                    src_id,
                    loc,
-                   vehicle.info.heading/100.0f,
-                   vehicle.info.hor_velocity/100.0f,
-                   -vehicle.info.ver_velocity/1000.0f); // convert mm-up to m-down
+                   vehicle.info.heading * 0.01f,
+                   vehicle.info.hor_velocity * 0.01f,
+                   -vehicle.info.ver_velocity * 0.001f); // convert mm-up to m-down
     }
 }
 
@@ -322,11 +322,11 @@ float closest_approach_z(const Location &my_loc,
     }
 
     debug("   time_horizon: (%d)", time_horizon);
-    debug("   delta pos: (%f) metres", delta_pos_d/100.0f);
+    debug("   delta pos: (%f) metres", delta_pos_d * 0.01f);
     debug("   delta vel: (%f) m/s", delta_vel_d);
-    debug("   closest: (%f) metres", ret/100.0f);
+    debug("   closest: (%f) metres", ret * 0.01f);
 
-    return ret/100.0f;
+    return ret * 0.01f;
 }
 
 void AP_Avoidance::update_threat_level(const Location &my_loc,
@@ -384,10 +384,7 @@ void AP_Avoidance::update_threat_level(const Location &my_loc,
 }
 
 MAV_COLLISION_THREAT_LEVEL AP_Avoidance::current_threat_level() const {
-    if (_obstacles == nullptr) {
-        return MAV_COLLISION_THREAT_LEVEL_NONE;
-    }
-    if (_current_most_serious_threat == -1) {
+    if (_obstacles == nullptr || _current_most_serious_threat == -1) {
         return MAV_COLLISION_THREAT_LEVEL_NONE;
     }
     return _obstacles[_current_most_serious_threat].threat_level;
@@ -418,8 +415,7 @@ void AP_Avoidance::handle_threat_gcs_notify(AP_Avoidance::Obstacle *threat)
         // only send cleared messages for a few seconds:
         if (_gcs_cleared_messages_first_sent == 0) {
             _gcs_cleared_messages_first_sent = now;
-        }
-        if (now - _gcs_cleared_messages_first_sent > _gcs_cleared_messages_duration * 1000) {
+        } else if (now - _gcs_cleared_messages_first_sent > _gcs_cleared_messages_duration * 1000) {
             return;
         }
     } else {
@@ -594,11 +590,11 @@ void AP_Avoidance::handle_msg(const mavlink_message_t &msg)
     Location loc;
     loc.lat = packet.lat;
     loc.lng = packet.lon;
-    loc.alt = packet.alt / 10; // mm -> cm
+    loc.alt = packet.alt * 0.1f; // mm -> cm
     loc.relative_alt = false;
-    Vector3f vel = Vector3f(packet.vx/100.0f, // cm to m
-                            packet.vy/100.0f,
-                            packet.vz/100.0f);
+    Vector3f vel = Vector3f(packet.vx * 0.01f, // cm to m
+                            packet.vy * 0.01f,
+                            packet.vz * 0.01f);
     add_obstacle(AP_HAL::millis(),
                  MAV_COLLISION_SRC_MAVLINK_GPS_GLOBAL_INT,
                  msg.sysid,
@@ -651,7 +647,7 @@ bool AP_Avoidance::get_vector_perpendicular(const AP_Avoidance::Obstacle *obstac
 Vector3f AP_Avoidance::perpendicular_xyz(const Location &p1, const Vector3f &v1, const Location &p2)
 {
     const Vector2f delta_p_2d = p1.get_distance_NE(p2);
-    Vector3f delta_p_xyz = Vector3f(delta_p_2d[0],delta_p_2d[1],(p2.alt-p1.alt)/100.0f); //check this line
+    Vector3f delta_p_xyz = Vector3f(delta_p_2d[0],delta_p_2d[1],(p2.alt-p1.alt) * 0.01f); //check this line
     Vector3f v1_xyz = Vector3f(v1[0], v1[1], -v1[2]);
     Vector3f ret = Vector3f::perpendicular(delta_p_xyz, v1_xyz);
     return ret;
