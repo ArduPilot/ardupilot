@@ -114,6 +114,7 @@ void GCS_MAVLINK::send_ftp_replies(void) {
                     0, reply.sysid, reply.compid,
                     payload);
                 ftp.replies->pop(reply);
+                ftp.last_send_ms = AP_HAL::millis();
         } else {
             return;
         }
