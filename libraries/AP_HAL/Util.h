@@ -75,6 +75,8 @@ public:
         uint32_t fault_lr;
     };
     struct PersistentData persistent_data;
+    // last_persistent_data is only filled in if we've suffered a watchdog reset
+    struct PersistentData last_persistent_data;
 
     /*
       return state of safety switch, if applicable
