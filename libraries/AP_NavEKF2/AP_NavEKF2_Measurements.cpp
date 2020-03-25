@@ -619,6 +619,10 @@ void NavEKF2_core::readGpsData()
             hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string), "Waiting for 3D fix");
         }
     }
+
+    // get data that has now fallen behind the fusion time horizon
+    gpsDataToFuse = storedGPS.recall(gpsDataDelayed,imuDataDelayed.time_ms);
+
 }
 
 // read the delta angle and corresponding time interval from the IMU
@@ -1013,3 +1017,8 @@ void NavEKF2_core::learnInactiveBiases(void)
     }
 }
 
+// Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
+void NavEKF2_core::writeDefaultAirSpeed(float airspeed)
+{
+    defaultAirSpeed = airspeed;
+}

@@ -33,6 +33,7 @@
 #include <AP_NavEKF/AP_NavEKF_core_common.h>
 #include <AP_NavEKF2/AP_NavEKF2_Buffer.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
+#include "AP_NavEKF/EKFGSF_yaw.h"
 
 // GPS pre-flight check bit locations
 #define MASK_GPS_NSATS      (1<<0)
@@ -56,6 +57,12 @@
 
 // mag fusion final reset altitude
 #define EKF2_MAG_FINAL_RESET_ALT 2.5f
+
+// maximum number of yaw resets due to detected magnetic anomaly allowed per flight
+#define MAG_ANOMALY_RESET_MAX 2
+
+// number of seconds a request to reset the yaw to the GSF estimate is active before it times out
+#define YAW_RESET_TO_GSF_TIMEOUT_MS 5000
 
 class AP_AHRS;
 
@@ -329,7 +336,19 @@ public:
     // return true when external nav data is also being used as a yaw observation
     bool isExtNavUsedForYaw(void);
 
+    // get solution data for the EKF-GSF emergency yaw estimator
+    // return false if data not available
+    bool getDataEKFGSF(float *yaw_composite, float *yaw_composite_variance, float yaw[N_MODELS_EKFGSF], float innov_VN[N_MODELS_EKFGSF], float innov_VE[N_MODELS_EKFGSF], float weight[N_MODELS_EKFGSF]);
+
+    // Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
+    void writeDefaultAirSpeed(float airspeed);
+
+    // request a reset the yaw to the EKF-GSF value
+    void EKFGSF_requestYawReset();
+
 private:
+    EKFGSF_yaw *yawEstimator;
+
     // Reference to the global EKF frontend for parameters
     NavEKF2 *frontend;
     uint8_t imu_index; // preferred IMU index
@@ -781,6 +800,22 @@ private:
 
     // correct external navigation earth-frame position using sensor body-frame offset
     void CorrectExtNavForSensorOffset(Vector3f &ext_position) const;
+    
+    // Run an independent yaw estimator algorithm that uses IMU, GPs horizontal velocity
+    // and optionally true airspeed data.
+    void runYawEstimator(void);
+
+    // reset the quaternion states using the supplied yaw angle, maintaining the previous roll and pitch
+    // also reset the body to nav frame rotation matrix
+    // reset the quaternion state covariances using the supplied yaw variance
+    // yaw          : new yaw angle (rad)
+    // yaw_variance : variance of new yaw angle (rad^2)
+    // isDeltaYaw   : true when the yaw should be added to the existing yaw angle
+    void resetQuatStateYawOnly(float yaw, float yawVariance, bool isDeltaYaw);
+
+    // attempt to reset the yaw to the EKF-GSF value
+    // returns false if unsuccessful
+    bool EKFGSF_resetMainFilterYaw();
 
     // Length of FIFO buffers used for non-IMU sensor data.
     // Must be larger than the time period defined by IMU_BUFFER_LENGTH
@@ -864,6 +899,7 @@ private:
     float hgtTestRatio;             // sum of squares of baro height innovation divided by fail threshold
     Vector3f magTestRatio;          // sum of squares of magnetometer innovations divided by fail threshold
     float tasTestRatio;             // sum of squares of true airspeed innovation divided by fail threshold
+    float defaultAirSpeed;          // default equivalent airspeed in m/s to be used if the measurement is unavailable. Do not use if not positive.
     bool inhibitWindStates;         // true when wind states and covariances are to remain constant
     bool inhibitMagStates;          // true when magnetic field states and covariances are to remain constant
     bool gpsNotAvailable;           // bool true when valid GPS data is not available
@@ -1114,6 +1150,7 @@ private:
     float posDownAtLastMagReset;    // vertical position last time the mag states were reset (m)
     float yawInnovAtLastMagReset;   // magnetic yaw innovation last time the yaw and mag field states were reset (rad)
     Quaternion quatAtLastMagReset;  // quaternion states last time the mag states were reset
+    uint8_t magYawAnomallyCount;    // Number of times the yaw has been reset due to a magnetic anomaly during initial ascent
 
     // external navigation fusion
     obs_ring_buffer_t<ext_nav_elements> storedExtNav; // external navigation data buffer
@@ -1212,4 +1249,10 @@ private:
 
     // vehicle specific initial gyro bias uncertainty
     float InitialGyroBiasUncertainty(void) const;
+
+    // The following declarations are used to control when the main navigation filter resets it's yaw to the estimate provided by the GSF
+	uint64_t EKFGSF_yaw_reset_ms;	        // timestamp of last emergency yaw reset (uSec)
+	uint64_t EKFGSF_yaw_reset_request_ms;   // timestamp of last emergency yaw reset request (uSec)
+    uint8_t EKFGSF_yaw_reset_count;         // number of emergency yaw resets performed
+    bool EKFGSF_run_filterbank;             // true when the filter bank is active
 };

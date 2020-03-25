@@ -315,9 +315,6 @@ void NavEKF2_core::SelectVelPosFusion()
     // Check for data at the fusion time horizon
     extNavDataToFuse = storedExtNav.recall(extNavDataDelayed, imuDataDelayed.time_ms);
 
-    // read GPS data from the sensor and check for new data in the buffer
-    readGpsData();
-    gpsDataToFuse = storedGPS.recall(gpsDataDelayed,imuDataDelayed.time_ms);
     // Determine if we need to fuse position and velocity data on this time step
     if (gpsDataToFuse && PV_AidingMode == AID_ABSOLUTE) {
         // set fusion request flags
