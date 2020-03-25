@@ -1,31 +1,3 @@
-#!/usr/bin/env python
-'''
-these tables are generated from the STM32 datasheets for the
-STM32F40x
-'''
-
-from utils_dict import *
-
-# additional build information for ChibiOS
-build = {
-    "CHIBIOS_STARTUP_MK"  : "os/common/startup/ARMCMx/compilers/GCC/mk/startup_stm32f4xx.mk",
-    "CHIBIOS_PLATFORM_MK" : "os/hal/ports/STM32/STM32F4xx/platform.mk"
-    }
-
-# MCU parameters
-mcu = {
-    # location of MCU serial number
-    'UDID_START' : 0x1FFF7A10,
-
-    # ram map, as list of (address, size-kb, flags)
-    # flags of 1 means DMA-capable
-    # flags of 2 means faster memory for CPU intensive work
-    'RAM_MAP' : [
-        (0x20000000, 128, 1), # main memory, DMA safe
-        (0x10000000,  64, 2), # CCM memory, faster, but not DMA safe
-    ]
-}
-
 DMA_Map = {
 	# format is (DMA_TABLE, StreamNum, Channel)
 	# extracted from tabula-STM32F4x7-dma.csv
@@ -48,6 +20,8 @@ DMA_Map = {
 	"I2S2_EXT_TX"	:	[(1,4,2)],
 	"I2S3_EXT_RX"	:	[(1,2,2),(1,0,3)],
 	"I2S3_EXT_TX"	:	[(1,5,2)],
+	"SAI1_A"  	:	[(2,1,0),(2,3,0)],
+	"SAI1_B"  	:	[(2,5,0),(2,4,1)],
 	"SDIO"    	:	[(2,3,4),(2,6,4)],
 	"SPI1_RX" 	:	[(2,0,3),(2,2,3)],
 	"SPI1_TX" 	:	[(2,3,3),(2,5,3)],
@@ -55,6 +29,12 @@ DMA_Map = {
 	"SPI2_TX" 	:	[(1,4,0)],
 	"SPI3_RX" 	:	[(1,0,0),(1,2,0)],
 	"SPI3_TX" 	:	[(1,5,0),(1,7,0)],
+	"SPI4_RX" 	:	[(2,0,4),(2,3,5)],
+	"SPI4_TX" 	:	[(2,1,4),(2,4,5)],
+	"SPI5_RX" 	:	[(2,3,2),(2,5,7)],
+	"SPI5_TX" 	:	[(2,4,2),(2,6,7)],
+	"SPI6_RX" 	:	[(2,6,1)],
+	"SPI6_TX" 	:	[(2,5,1)],
 	"TIM1_CH1"	:	[(2,6,0),(2,1,6),(2,3,6)],
 	"TIM1_CH2"	:	[(2,6,0),(2,2,6)],
 	"TIM1_CH3"	:	[(2,6,0),(2,6,6)],
@@ -96,6 +76,10 @@ DMA_Map = {
 	"UART4_TX"	:	[(1,4,4)],
 	"UART5_RX"	:	[(1,0,4)],
 	"UART5_TX"	:	[(1,7,4)],
+	"UART7_RX"	:	[(1,3,5)],
+	"UART7_TX"	:	[(1,1,5)],
+	"UART8_RX"	:	[(1,6,5)],
+	"UART8_TX"	:	[(1,0,5)],
 	"USART1_RX"	:	[(2,2,4),(2,5,4)],
 	"USART1_TX"	:	[(2,7,4)],
 	"USART2_RX"	:	[(1,5,4)],
@@ -105,5 +89,3 @@ DMA_Map = {
 	"USART6_RX"	:	[(2,1,5),(2,2,5)],
 	"USART6_TX"	:	[(2,6,5),(2,7,5)],
 }
-
-
