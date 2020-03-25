@@ -111,6 +111,21 @@ bool NavEKF2_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
         return false;
     }
 
+    if ((yawEstimator == nullptr) && (frontend->_gsfRunMask & (1U<<core_index))) {
+        // check if there is enough memory to create the EKF-GSF object
+        if (hal.util->available_memory() < sizeof(EKFGSF_yaw) + 1024) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "EKF2 IMU%u GSF: not enough memory",(unsigned)imu_index);
+            return false;
+        }
+
+        // try to instantiate
+        yawEstimator = new EKFGSF_yaw();
+        if (yawEstimator == nullptr) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "EKF2 IMU%uGSF: allocation failed",(unsigned)imu_index);
+            return false;
+        }
+    }
+    
     return true;
 }
     
@@ -340,6 +355,12 @@ void NavEKF2_core::InitialiseVariables()
     hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string), "EKF2 still initialising");
 
     InitialiseVariablesMag();
+
+    // emergency reset of yaw to EKFGSF estimate
+    EKFGSF_yaw_reset_ms = 0;
+    EKFGSF_yaw_reset_request_ms = 0;
+    EKFGSF_yaw_reset_count = 0;
+    EKFGSF_run_filterbank = false;
 }
 
 
@@ -566,6 +587,14 @@ void NavEKF2_core::UpdateFilter(bool predict)
 
         // Predict the covariance growth
         CovariancePrediction();
+
+        // Read GPS data from the sensor
+        // This is required by multiple processes so needs to be done before other fusion steps
+        readGpsData();
+
+        // Generate an alternative yaw estimate used for inflight recovery from bad compass data
+        // requires horizontal GPS velocity
+        runYawEstimator();
 
         // Update states using  magnetometer data
         SelectMagFusion();
