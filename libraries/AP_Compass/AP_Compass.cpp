@@ -885,15 +885,19 @@ bool Compass::_have_i2c_driver(uint8_t bus, uint8_t address) const
     return false;
 }
 
+#if COMPASS_MAX_UNREG_DEV > 0
+#define CHECK_UNREG_LIMIT_RETURN  if (_unreg_compass_count == COMPASS_MAX_UNREG_DEV) return
+#else
+#define CHECK_UNREG_LIMIT_RETURN
+#endif
+
 /*
   macro to add a backend with check for too many backends or compass
   instances. We don't try to start more than the maximum allowed
  */
 #define ADD_BACKEND(driver_type, backend)   \
     do { if (_driver_enabled(driver_type)) { _add_backend(backend); } \
-       if (_unreg_compass_count == COMPASS_MAX_UNREG_DEV) { \
-          return; \
-        } \
+        CHECK_UNREG_LIMIT_RETURN; \
     } while (0)
 
 #define GET_I2C_DEVICE(bus, address) _have_i2c_driver(bus, address)?nullptr:hal.i2c_mgr->get_device(bus, address)
@@ -1056,9 +1060,7 @@ void Compass::_detect_backends(void)
 #ifdef HAL_PROBE_EXTERNAL_I2C_COMPASSES
     // allow boards to ask for external probing of all i2c compass types in hwdef.dat
     _probe_external_i2c_compasses();
-    if (_unreg_compass_count == COMPASS_MAX_UNREG_DEV) {
-        return;
-    }
+    CHECK_UNREG_LIMIT_RETURN;
 #endif
 
 #if defined(HAL_MAG_PROBE_LIST)
@@ -1080,9 +1082,7 @@ void Compass::_detect_backends(void)
     case AP_BoardConfig::PX4_BOARD_PIXHAWK_PRO:
     case AP_BoardConfig::PX4_BOARD_AEROFC:
         _probe_external_i2c_compasses();
-        if (_unreg_compass_count == COMPASS_MAX_UNREG_DEV) {
-            return;
-        }
+        CHECK_UNREG_LIMIT_RETURN;
         break;
 
     case AP_BoardConfig::PX4_BOARD_PCNC1:
@@ -1193,9 +1193,7 @@ void Compass::_detect_backends(void)
             if (_uavcan_backend) {
                 _add_backend(_uavcan_backend);
             }
-            if (_unreg_compass_count == COMPASS_MAX_UNREG_DEV) {
-                return;
-            }
+            CHECK_UNREG_LIMIT_RETURN;
         }
     }
 #endif
@@ -1227,9 +1225,7 @@ Compass::_detect_runtime(void)
             if (_uavcan_backend) {
                 _add_backend(_uavcan_backend);
             }
-            if (_unreg_compass_count == COMPASS_MAX_UNREG_DEV) {
-                return;
-            }
+            CHECK_UNREG_LIMIT_RETURN;
         }
     }
 #endif
