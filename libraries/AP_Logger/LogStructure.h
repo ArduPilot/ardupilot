@@ -1362,6 +1362,13 @@ struct PACKED log_Arm_Disarm {
 // @Field: Format: character string defining the C-storage-type of the fields in this message
 // @Field: Columns: the labels of the message being defined
 
+// @LoggerMessage: FMTU
+// @Description: Message defining units and multipliers used for fields of other messages
+// @Field: TimeUS: microseconds since system startup
+// @Field: FmtType: numeric reference to associated FMT message
+// @Field: UnitIds: each character refers to a UNIT message.  The unit at an offset corresponds to the field at the same offset in FMT.Format
+// @Field: MultIds: each character refers to a MULT message.  The multiplier at an offset corresponds to the field at the same offset in FMT.Format
+
 // @LoggerMessage: GPS
 // @Description: Information received from GNSS systems attached to the autopilot
 // @Field: TimeUS: microseconds since system startup
@@ -1400,6 +1407,12 @@ struct PACKED log_Arm_Disarm {
 // @Field: Mode: vehicle-specific mode number
 // @Field: ModeNum: alias for Mode
 // @Field: Rsn: reason for entering this mode; enumeration value
+
+// @LoggerMessage: MULT
+// @Description: Message mapping from single character to numeric multiplier
+// @Field: TimeUS: microseconds since system startup
+// @Field: Id: character referenced by FMTU
+// @Field: Mult: numeric multiplier
 
 // @LoggerMessage: PIDR,PIDP,PIDY,PIDA,PIDS
 // @Description: Proportional/Integral/Derivative gain values for Roll/Pitch/Yaw/Z/Steering
@@ -1465,6 +1478,42 @@ struct PACKED log_Arm_Disarm {
 // @Field: C12: channel 12 output
 // @Field: C13: channel 13 output
 // @Field: C14: channel 14 output
+
+// @LoggerMessage: SRTL
+// @Description: SmartRTL statistics
+// @Field: TimeUS: microseconds since system startup
+// @Field: Active: true if SmartRTL could be used right now
+// @Field: NumPts: number of points currently in use
+// @Field: MaxPts: maximum number of points that could be used
+// @Field: Action: most recent internal action taken by SRTL library
+// @Field: N: point associated with most recent action (North component)
+// @Field: E: point associated with most recent action (East component)
+// @Field: D: point associated with most recent action (Down component)
+
+// @LoggerMessage: UBX1
+// @Description: uBlox-specific GPS information (part 1)
+// @Field: TimeUS: microseconds since system startup
+// @Field: Instance: GPS instance number
+// @Field: noisePerMS: noise level as measured by GPS
+// @Field: jamInd: jamming indicator; higher is more likely jammed
+// @Field: aPower: antenna power indicator; 2 is don't know
+// @Field: agcCnt: automatic gain control monitor
+// @Field: config: bitmask for messages which haven't been seen
+
+// @LoggerMessage: UBX2
+// @Description: uBlox-specific GPS information (part 2)
+// @Field: TimeUS: microseconds since system startup
+// @Field: Instance: GPS instance number
+// @Field: ofsI: imbalance of I part of complex signal
+// @Field: magI: magnitude of I part of complex signal
+// @Field: ofsQ: imbalance of Q part of complex signal
+// @Field: magQ: magnitude of Q part of complex signal
+
+// @LoggerMessage: UNIT
+// @Description: Message mapping from single character to SI unit
+// @Field: TimeUS: microseconds since system startup
+// @Field: Id: character referenced by FMTU
+// @Field: Label: Unit - SI where available
 
 // @LoggerMessage: VIBE
 // @Description: Processed (acceleration) vibration information
