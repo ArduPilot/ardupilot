@@ -169,6 +169,7 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
         AP::internalerror().error(AP_InternalError::error_t::watchdog_reset);
         if (watchdog_load((uint32_t *)&utilInstance.persistent_data, (sizeof(utilInstance.persistent_data)+3)/4)) {
             uartA->printf("Loaded watchdog data");
+            utilInstance.last_persistent_data = utilInstance.persistent_data;
         }
     }
 
