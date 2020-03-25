@@ -707,6 +707,7 @@ private:
         int fd = -1;
         FTP_FILE_MODE mode; // work around AP_Filesystem not supporting file modes
         int16_t current_session;
+        uint32_t last_send_ms;
     };
     static struct ftp_state ftp;
 
