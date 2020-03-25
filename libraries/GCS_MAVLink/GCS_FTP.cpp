@@ -148,7 +148,7 @@ void GCS_MAVLINK::ftp_error(struct pending_ftp &response, FTP_ERROR error) {
 void GCS_MAVLINK::ftp_push_replies(pending_ftp &reply)
 {
     while (!ftp.replies->push(reply)) { // we must fit the response, keep shoving it in
-        hal.scheduler->delay(10);
+        hal.scheduler->delay(2);
     }
 }
 
@@ -160,7 +160,7 @@ void GCS_MAVLINK::ftp_worker(void) {
     while (true) {
         while (!ftp.requests->pop(request)) {
             // nothing to handle, delay ourselves a bit then check again. Ideally we'd use conditional waits here
-            hal.scheduler->delay(10);
+            hal.scheduler->delay(2);
         }
 
         // if it's a rerequest and we still have the last response then send it
