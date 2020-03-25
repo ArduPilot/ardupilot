@@ -115,6 +115,7 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       sample_gyros,      LOOP_RATE, 50),
     SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update_parameters,         1, 50),
 #endif
+    SCHED_TASK(send_watchdog_reset_statustext,         0.1,     20),
 };
 
 void AP_Vehicle::get_common_scheduler_tasks(const AP_Scheduler::Task*& tasks, uint8_t& num_tasks)
@@ -156,6 +157,30 @@ void AP_Vehicle::scheduler_delay_callback()
     }
 
     logger.EnableWrites(true);
+}
+
+// if there's been a watchdog reset, notify the world via a statustext:
+void AP_Vehicle::send_watchdog_reset_statustext()
+{
+    if (!hal.util->was_watchdog_reset()) {
+        return;
+    }
+    const AP_HAL::Util::PersistentData &pd = hal.util->last_persistent_data;
+    gcs().send_text(MAV_SEVERITY_CRITICAL,
+                    "WDG: T%d SL%u FL%u FT%u FA%x FTP%u FLR%x FICSR%u MM%u MC%u IE%u IEC%u",
+                    pd.scheduler_task,
+                    pd.semaphore_line,
+                    pd.fault_line,
+                    pd.fault_type,
+                    (unsigned)pd.fault_addr,
+                    pd.fault_thd_prio,
+                    (unsigned)pd.fault_lr,
+                    (unsigned)pd.fault_icsr,
+                    pd.last_mavlink_msgid,
+                    pd.last_mavlink_cmd,
+                    (unsigned)pd.internal_errors,
+                    (unsigned)pd.internal_error_count
+        );
 }
 
 AP_Vehicle *AP_Vehicle::_singleton = nullptr;

@@ -241,6 +241,10 @@ private:
     // delay() callback that processing MAVLink packets
     static void scheduler_delay_callback();
 
+    // if there's been a watchdog reset, notify the world via a
+    // statustext:
+    void send_watchdog_reset_statustext();
+
     bool likely_flying;         // true if vehicle is probably flying
     uint32_t _last_flying_ms;   // time when likely_flying last went true
 
