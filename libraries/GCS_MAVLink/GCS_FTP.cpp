@@ -437,6 +437,7 @@ void GCS_MAVLINK::ftp_worker(void) {
                     }
                 case FTP_OP::BurstReadFile:
                     {
+                        const uint16_t max_read = (request.size == 0?sizeof(reply.data):request.size);
                         // must actually be working on a file
                         if (ftp.fd == -1) {
                             ftp_error(reply, FTP_ERROR::FileNotFound);
@@ -459,7 +460,7 @@ void GCS_MAVLINK::ftp_worker(void) {
                         const uint32_t transfer_size = 100;
                         for (uint32_t i = 0; (i < transfer_size) && more_pending; i++) {
                             // fill the buffer
-                            const ssize_t read_bytes = AP::FS().read(ftp.fd, reply.data, sizeof(reply.data));
+                            const ssize_t read_bytes = AP::FS().read(ftp.fd, reply.data, max_read);
                             if (read_bytes == -1) {
                                 ftp_error(reply, FTP_ERROR::FailErrno);
                                 more_pending = false;
@@ -478,7 +479,7 @@ void GCS_MAVLINK::ftp_worker(void) {
                             }
 
                             reply.opcode = FTP_OP::Ack;
-                            reply.offset = request.offset + i * sizeof(reply.data);
+                            reply.offset = request.offset + i * max_read;
                             reply.burst_complete = (i == (transfer_size - 1));
                             reply.size = (uint8_t)read_bytes;
 
