@@ -227,7 +227,7 @@ def kill_tasks():
             'ArduPlane.elf',
             'ArduCopter.elf',
             'ArduSub.elf',
-            'APMrover2.elf',
+            'Rover.elf',
             'AntennaTracker.elf',
             'JSBSIm.exe',
             'MAVProxy.exe',

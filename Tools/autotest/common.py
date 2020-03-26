@@ -1068,7 +1068,7 @@ class AutoTest(ABC):
         return ret
 
     def vehicle_code_dirpath(self):
-        '''returns path to vehicle-specific code directory e.g. ~/ardupilot/APMrover2'''
+        '''returns path to vehicle-specific code directory e.g. ~/ardupilot/Rover'''
         dirname = self.log_name()
         if dirname == "QuadPlane":
             dirname = "ArduPlane"
@@ -1299,7 +1299,7 @@ class AutoTest(ABC):
             "ArduPlane": "Plane",
             "QuadPlane": "Plane",
             "Soaring": "Plane",
-            "APMrover2": "Rover",
+            "Rover": "Rover",
             "AntennaTracker": "Tracker",
             "ArduSub": "Sub",
         }
