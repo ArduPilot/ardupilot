@@ -147,6 +147,73 @@ void AP_VisualOdom::handle_msg(const mavlink_message_t &msg)
     }
 }
 
+// general purpose method to consume position estimate data and send to EKF
+// distances in meters, roll, pitch and yaw are in radians
+void AP_VisualOdom::handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, float roll, float pitch, float yaw)
+{
+    // exit immediately if not enabled
+    if (!enabled()) {
+        return;
+    }
+
+    // call backend
+    if (_driver != nullptr) {
+        _driver->handle_vision_position_estimate(remote_time_us, time_ms, x, y, z, roll, pitch, yaw);
+    }
+}
+
+// general purpose method to consume position estimate data and send to EKF
+void AP_VisualOdom::handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude)
+{
+    // exit immediately if not enabled
+    if (!enabled()) {
+        return;
+    }
+
+    // call backend
+    if (_driver != nullptr) {
+        _driver->handle_vision_position_estimate(remote_time_us, time_ms, x, y, z, attitude);
+    }
+}
+
+// calibrate camera attitude to align with vehicle's AHRS/EKF attitude
+void AP_VisualOdom::align_sensor_to_vehicle()
+{
+    // exit immediately if not enabled
+    if (!enabled()) {
+        return;
+    }
+
+    // call backend
+    if (_driver != nullptr) {
+        _driver->align_sensor_to_vehicle();
+    }
+}
+
+// returns false if we fail arming checks, in which case the buffer will be populated with a failure message
+bool AP_VisualOdom::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const
+{
+    // exit immediately if not enabled
+    if (!enabled()) {
+        return true;
+    }
+
+    // check healthy
+    if (!healthy()) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "VisualOdom not healthy");
+        return false;
+    }
+
+    // if no backend we must have failed to create because out of memory
+    if (_driver == nullptr) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "VisualOdom out of memory");
+        return false;
+    }
+
+    // call backend specific arming check
+    return _driver->pre_arm_check(failure_msg, failure_msg_len);
+}
+
 // singleton instance
 AP_VisualOdom *AP_VisualOdom::_singleton;
 
