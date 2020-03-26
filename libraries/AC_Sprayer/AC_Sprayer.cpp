@@ -6,6 +6,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -122,6 +123,7 @@ void AC_Sprayer::update()
 
     // exit immediately if the pump function has not been set-up for any servo
     if (!SRV_Channels::function_assigned(SRV_Channel::k_sprayer_pump)) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "SprayerPump is not set for servo function");
         return;
     }
 
