@@ -907,7 +907,8 @@ struct PACKED log_GPS_RAWS {
 
 struct PACKED log_Esc {
     LOG_PACKET_HEADER;
-    uint64_t time_us;     
+    uint64_t time_us;
+    uint8_t instance;
     int32_t rpm;
     uint16_t voltage;
     uint16_t current;
@@ -1217,11 +1218,6 @@ struct PACKED log_Arm_Disarm {
 #define BARO_FMT   "QffcfIffB"
 #define BARO_UNITS "smPOnsmO-"
 #define BARO_MULTS "F00B0C?0-"
-
-#define ESC_LABELS "TimeUS,RPM,Volt,Curr,Temp,CTot,MotTemp"
-#define ESC_FMT   "QeCCcHc"
-#define ESC_UNITS "sqvAO-O"
-#define ESC_MULTS "FBBBB-B"
 
 #define GPA_LABELS "TimeUS,VDop,HAcc,VAcc,SAcc,YAcc,VV,SMS,Delta"
 #define GPA_FMT   "QCCCCfBIH"
@@ -2409,22 +2405,8 @@ struct PACKED log_Arm_Disarm {
       "GRXH", "QdHbBB", "TimeUS,rcvTime,week,leapS,numMeas,recStat", "s-----", "F-----" }, \
     { LOG_GPS_RAWS_MSG, sizeof(log_GPS_RAWS), \
       "GRXS", "QddfBBBHBBBBB", "TimeUS,prMes,cpMes,doMes,gnss,sv,freq,lock,cno,prD,cpD,doD,trk", "s------------", "F------------" }, \
-    { LOG_ESC1_MSG, sizeof(log_Esc), \
-      "ESC1",  ESC_FMT, ESC_LABELS, ESC_UNITS, ESC_MULTS }, \
-    { LOG_ESC2_MSG, sizeof(log_Esc), \
-      "ESC2",  ESC_FMT, ESC_LABELS, ESC_UNITS, ESC_MULTS }, \
-    { LOG_ESC3_MSG, sizeof(log_Esc), \
-      "ESC3",  ESC_FMT, ESC_LABELS, ESC_UNITS, ESC_MULTS }, \
-    { LOG_ESC4_MSG, sizeof(log_Esc), \
-      "ESC4",  ESC_FMT, ESC_LABELS, ESC_UNITS, ESC_MULTS }, \
-    { LOG_ESC5_MSG, sizeof(log_Esc), \
-      "ESC5",  ESC_FMT, ESC_LABELS, ESC_UNITS, ESC_MULTS }, \
-    { LOG_ESC6_MSG, sizeof(log_Esc), \
-      "ESC6",  ESC_FMT, ESC_LABELS, ESC_UNITS, ESC_MULTS }, \
-    { LOG_ESC7_MSG, sizeof(log_Esc), \
-      "ESC7",  ESC_FMT, ESC_LABELS, ESC_UNITS, ESC_MULTS }, \
-    { LOG_ESC8_MSG, sizeof(log_Esc), \
-      "ESC8",  ESC_FMT, ESC_LABELS, ESC_UNITS, ESC_MULTS }, \
+    { LOG_ESC_MSG, sizeof(log_Esc), \
+      "ESC",  "QBeCCcHc", "TimeUS,Instance,RPM,Volt,Curr,Temp,CTot,MotTemp", "s#qvAO-O", "F-BBBB-B" }, \
     { LOG_CSRV_MSG, sizeof(log_CSRV), \
       "CSRV","QBfffB","TimeUS,Id,Pos,Force,Speed,Pow", "s#---%", "F-0000" }, \
     { LOG_CESC_MSG, sizeof(log_CESC), \
@@ -2559,14 +2541,7 @@ enum LogMessages : uint8_t {
     LOG_TERRAIN_MSG,
     LOG_GPS_UBX1_MSG,
     LOG_GPS_UBX2_MSG,
-    LOG_ESC1_MSG,
-    LOG_ESC2_MSG,
-    LOG_ESC3_MSG,
-    LOG_ESC4_MSG,
-    LOG_ESC5_MSG,
-    LOG_ESC6_MSG,
-    LOG_ESC7_MSG,
-    LOG_ESC8_MSG,
+    LOG_ESC_MSG,
     LOG_CSRV_MSG,
     LOG_CESC_MSG,
     LOG_BAR2_MSG,
