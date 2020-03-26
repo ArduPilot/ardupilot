@@ -323,6 +323,9 @@ uint8_t AC_Fence::check()
         return 0;
     }
 
+    // clear any breach from a non-enabled fence
+    clear_breach(~_enabled_fences);
+
     // check if pilot is attempting to recover manually
     if (_manual_recovery_start_ms != 0) {
         // we ignore any fence breaches during the manual recovery period which is about 10 seconds
