@@ -2977,52 +2977,12 @@ void GCS_MAVLINK::handle_common_vision_position_estimate_data(const uint64_t use
 {
     // correct offboard timestamp to be in local ms since boot
     uint32_t timestamp_ms = correct_offboard_timestamp_usec_to_ms(usec, payload_size);
-    
-    // sensor assumed to be at 0,0,0 body-frame; need parameters for this?
-    // or a new message 
-    const Vector3f sensor_offset = {};
-    const Vector3f pos = {
-        x,
-        y,
-        z
-    };
-    Quaternion attitude;
-    attitude.from_euler(roll, pitch, yaw); // from_vector312?
-    const float posErr = 0; // parameter required?
-    const float angErr = 0; // parameter required?
-    const uint32_t reset_timestamp_ms = 0; // no data available
 
-    AP::ahrs().writeExtNavData(sensor_offset,
-                               pos,
-                               attitude,
-                               posErr,
-                               angErr,
-                               timestamp_ms,
-                               reset_timestamp_ms);
-
-    log_vision_position_estimate_data(usec, timestamp_ms, x, y, z, roll, pitch, yaw);
-}
-
-void GCS_MAVLINK::log_vision_position_estimate_data(const uint64_t usec,
-                                                    const uint32_t corrected_msec,
-                                                    const float x,
-                                                    const float y,
-                                                    const float z,
-                                                    const float roll,
-                                                    const float pitch,
-                                                    const float yaw)
-{
-    AP::logger().Write("VISP", "TimeUS,RemTimeUS,CTimeMS,PX,PY,PZ,Roll,Pitch,Yaw",
-                       "sssmmmddh", "FFC000000", "QQIffffff",
-                       (uint64_t)AP_HAL::micros64(),
-                       (uint64_t)usec,
-                       corrected_msec,
-                       (double)x,
-                       (double)y,
-                       (double)z,
-                       (double)(roll * RAD_TO_DEG),
-                       (double)(pitch * RAD_TO_DEG),
-                       (double)(yaw * RAD_TO_DEG));
+    AP_VisualOdom *visual_odom = AP::visualodom();
+    if (visual_odom == nullptr) {
+        return;
+    }
+    visual_odom->handle_vision_position_estimate(usec, timestamp_ms, x, y, z, roll, pitch, yaw);
 }
 
 void GCS_MAVLINK::handle_att_pos_mocap(const mavlink_message_t &msg)
@@ -3030,35 +2990,14 @@ void GCS_MAVLINK::handle_att_pos_mocap(const mavlink_message_t &msg)
     mavlink_att_pos_mocap_t m;
     mavlink_msg_att_pos_mocap_decode(&msg, &m);
 
-    // sensor assumed to be at 0,0,0 body-frame; need parameters for this?
-    const Vector3f sensor_offset = {};
-    const Vector3f pos = {
-        m.x,
-        m.y,
-        m.z
-    };
-    Quaternion attitude = Quaternion(m.q);
-    const float posErr = 0; // parameter required?
-    const float angErr = 0; // parameter required?
     // correct offboard timestamp to be in local ms since boot
     uint32_t timestamp_ms = correct_offboard_timestamp_usec_to_ms(m.time_usec, PAYLOAD_SIZE(chan, ATT_POS_MOCAP));
-    const uint32_t reset_timestamp_ms = 0; // no data available
-
-    AP::ahrs().writeExtNavData(sensor_offset,
-                               pos,
-                               attitude,
-                               posErr,
-                               angErr,
-                               timestamp_ms,
-                               reset_timestamp_ms);
    
-    // calculate euler orientation for logging
-    float roll;
-    float pitch;
-    float yaw;
-    attitude.to_euler(roll, pitch, yaw);
-
-    log_vision_position_estimate_data(m.time_usec, timestamp_ms, m.x, m.y, m.z, roll, pitch, yaw);
+    AP_VisualOdom *visual_odom = AP::visualodom();
+    if (visual_odom == nullptr) {
+        return;
+    }
+    visual_odom->handle_vision_position_estimate(m.time_usec, timestamp_ms, m.x, m.y, m.z, m.q);
 }
 
 void GCS_MAVLINK::handle_command_ack(const mavlink_message_t &msg)
