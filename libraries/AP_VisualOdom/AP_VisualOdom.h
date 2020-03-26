@@ -49,7 +49,6 @@ public:
         float confidence;           // confidence expressed as a value from 0 (no confidence) to 100 (very confident)
         uint32_t last_sensor_update_ms;    // system time (in milliseconds) of last update from sensor
         uint32_t last_processed_sensor_update_ms; // timestamp of last sensor update that was processed
-
     };
 
     // detect and initialise any sensors
