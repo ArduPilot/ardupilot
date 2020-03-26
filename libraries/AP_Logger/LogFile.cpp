@@ -914,6 +914,24 @@ void AP_Logger::Write_VisualOdom(float time_delta, const Vector3f &angle_delta, 
     WriteBlock(&pkt_visualodom, sizeof(log_VisualOdom));
 }
 
+// Write visual position sensor data.  x,y,z are in meters, angles are in degrees
+void AP_Logger::Write_VisualPosition(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, float roll, float pitch, float yaw)
+{
+    const struct log_VisualPosition pkt_visualpos {
+        LOG_PACKET_HEADER_INIT(LOG_VISUALPOS_MSG),
+        time_us         : AP_HAL::micros64(),
+        remote_time_us  : remote_time_us,
+        time_ms         : time_ms,
+        pos_x           : x,
+        pos_y           : y,
+        pos_z           : z,
+        roll            : roll,
+        pitch           : pitch,
+        yaw             : yaw
+    };
+    WriteBlock(&pkt_visualpos, sizeof(log_VisualPosition));
+}
+
 // Write AOA and SSA
 void AP_Logger::Write_AOA_SSA(AP_AHRS &ahrs)
 {
