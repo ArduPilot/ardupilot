@@ -1505,6 +1505,7 @@ public:
     using ModeGuided::Mode;
 
     bool init(bool ignore_checks) override;
+    bool init_without_RTB_request(bool ignore_checks);
     void run() override;
     bool requires_GPS() const override { return false; }
     bool has_manual_throttle() const override { return false; }
