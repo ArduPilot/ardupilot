@@ -3,7 +3,7 @@
 
 set -ex
 
-ARM_ROOT="gcc-arm-none-eabi-4_9-2015q3"
+ARM_ROOT="gcc-arm-none-eabi-6-2017-q2-update"
 ARM_TARBALL="$ARM_ROOT-20150921-linux.tar.bz2"
 
 RPI_ROOT="master"
@@ -38,7 +38,7 @@ ln -s /usr/bin/clang++-3.7 ~/bin/clang++
 ln -s /usr/bin/llvm-ar-3.7 ~/bin/llvm-ar
 
 exportline="export PATH=$HOME/bin"
-exportline="${exportline}:$HOME/opt/gcc-arm-none-eabi-4_9-2015q3/bin"
+exportline="${exportline}:$HOME/opt/gcc-arm-none-eabi-6-2017-q2-update/bin"
 exportline="${exportline}:$HOME/opt/tools-master/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin"
 exportline="${exportline}:\$PATH"
 
