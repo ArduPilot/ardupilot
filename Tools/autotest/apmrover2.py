@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Drive APMrover2 in SITL
+# Drive Rover in SITL
 from __future__ import print_function
 
 import copy
@@ -51,7 +51,7 @@ class AutoTestRover(AutoTest):
         return ["ACRO", "HOLD", "MANUAL"]
 
     def log_name(self):
-        return "APMrover2"
+        return "Rover"
 
     def test_filepath(self):
          return os.path.realpath(__file__)
@@ -5127,7 +5127,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
             ("DownLoadLogs", "Download logs", lambda:
              self.log_download(
-                 self.buildlogs_path("APMrover2-log.bin"),
+                 self.buildlogs_path("Rover-log.bin"),
                  upload_logs=len(self.fail_list) > 0)),
             ])
         return ret

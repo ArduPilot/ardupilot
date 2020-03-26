@@ -248,7 +248,7 @@ class VehicleInfo(object):
             },
         },
     },
-    "APMrover2": {
+    "Rover": {
         "default_frame": "rover",
         "frames": {
             # ROVER

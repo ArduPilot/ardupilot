@@ -248,7 +248,7 @@ specs = [
         "reverse-deps": {
         },
     }, {
-        "config": 'APMrover2/config.h',
+        "config": 'Rover/config.h',
         "autotest_target": "build.Rover",
         "target_binary": "bin/ardurover",
         "reverse-deps": {
