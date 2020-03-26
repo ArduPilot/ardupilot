@@ -740,14 +740,6 @@ private:
                                                      const float pitch,
                                                      const float yaw,
                                                      const uint16_t payload_size);
-    void log_vision_position_estimate_data(const uint64_t usec,
-                                           const uint32_t corrected_msec,
-                                           const float x,
-                                           const float y,
-                                           const float z,
-                                           const float roll,
-                                           const float pitch,
-                                           const float yaw);
 
     void lock_channel(const mavlink_channel_t chan, bool lock);
 
