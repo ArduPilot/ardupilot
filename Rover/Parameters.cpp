@@ -1,7 +1,7 @@
 #include "Rover.h"
 
 /*
-  APMRover2 parameter definitions
+  Rover parameter definitions
 */
 
 #define GSCALAR(v, name, def) { rover.g.v.vtype, name, Parameters::k_param_ ## v, &rover.g.v, {def_value:def} }
