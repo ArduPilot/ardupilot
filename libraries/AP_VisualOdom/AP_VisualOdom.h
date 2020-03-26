@@ -70,6 +70,17 @@ public:
     // consume data from MAVLink messages
     void handle_msg(const mavlink_message_t &msg);
 
+    // general purpose methods to consume position estimate data and send to EKF
+    // distances in meters, roll, pitch and yaw are in radians
+    void handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, float roll, float pitch, float yaw);
+    void handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude);
+
+    // calibrate camera attitude to align with vehicle's AHRS/EKF attitude
+    void align_sensor_to_vehicle();
+
+    // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
+    bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const;
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
