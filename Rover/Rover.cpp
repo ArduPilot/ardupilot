@@ -14,7 +14,7 @@
 */
 
 /*
-   This is the APMrover2 firmware. It was originally derived from
+   This is the ArduRover firmware. It was originally derived from
    ArduPlane by Jean-Louis Naudin (JLN), and then rewritten after the
    AP_HAL merge by Andrew Tridgell
 
