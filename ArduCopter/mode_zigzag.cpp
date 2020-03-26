@@ -41,6 +41,17 @@ bool ModeZigZag::init(bool ignore_checks)
     return true;
 }
 
+// perform cleanup required when leaving zigzag mode
+void ModeZigZag::exit()
+{
+#if SPRAYER_ENABLED == ENABLED
+    // The pump will stop if the flight mode is changed from ZigZag to other
+    if (g2.zigzag_auto_pump_enabled) {
+        copter.sprayer.run(false);
+    }
+#endif
+}
+
 // run the zigzag controller
 // should be called at 100hz or more
 void ModeZigZag::run()
