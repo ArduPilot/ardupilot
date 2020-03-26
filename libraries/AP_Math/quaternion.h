@@ -71,6 +71,12 @@ public:
     // return the rotation matrix equivalent for this quaternion
     void		from_rotation_matrix(const Matrix3f &m);
 
+    // create a quaternion from a given rotation
+    void        from_rotation(enum Rotation rotation);
+
+    // rotate this quaternion by the given rotation
+    void        rotate(enum Rotation rotation);
+
     // convert a vector from earth to body frame
     void        earth_to_body(Vector3f &v) const;
 
@@ -134,6 +140,9 @@ public:
     }
 
     Quaternion inverse(void) const;
+
+    // reverse the rotation of this quaternion
+    void invert();
 
     // allow a quaternion to be used as an array, 0 indexed
     float & operator[](uint8_t i)
