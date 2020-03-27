@@ -38,7 +38,7 @@
 #define CHECK_SCALER_DEFAULT    100
 #define FLOW_USE_DEFAULT        1
 
-#elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
+#elif APM_BUILD_TYPE(APM_BUILD_Rover)
 // rover defaults
 #define VELNE_M_NSE_DEFAULT     0.5f
 #define VELD_M_NSE_DEFAULT      0.7f
