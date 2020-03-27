@@ -54,7 +54,7 @@ public:
 
     enum vehicle_type {
         ArduCopter,
-        APMrover2,
+        Rover,
         ArduPlane,
         ArduSub
     };
