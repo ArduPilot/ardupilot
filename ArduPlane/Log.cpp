@@ -286,10 +286,40 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: TAspd: target airspeed
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),         
       "NTUN", "QfcccfffLLii",  "TimeUS,Dist,TBrg,NavBrg,AltErr,XT,XTi,AspdE,TLat,TLng,TAlt,TAspd", "smddmmmnDUmn", "F0BBB0B0GGBB" },
+
+// @LoggerMessage: SONR
+// @Description: Sonar (downward facing rangefinder) related messages.
+// @Field: TimeUS: Microseconds since system startup
+// @Field: Dist: Distance as detected from the sensor
+// @Field: Volt: Voltage at the sensor pin (only applicable for analog sensor)
+// @Field: Cnt: Number of consecutive valid readings (maxes out at 10)
+// @Field: Corr: Correction made to altitude reading from barometer reading
     { LOG_SONAR_MSG, sizeof(log_Sonar),             
       "SONR", "QffBf",   "TimeUS,Dist,Volt,Cnt,Corr", "smv--", "FB0--" },
+
+// @LoggerMessage: ATRP
+// @Description: Pitch/Roll AutoTune messages for Plane 
+// @Field: TimeUS: Microseconds since system startup
+// @Field: Type: Type of autotune (0 = Roll/ 1 = Pitch)
+// @Field: State: AutoTune state
+// @Field: Servo: Normalised control surface output (between -4500 to 4500)
+// @Field: Demanded: Desired Pitch/Roll rate
+// @Field: Achieved: Achieved Pitch/Roll rate
+// @Field: P: Proportional part of PID
     { LOG_ATRP_MSG, sizeof(AP_AutoTune::log_ATRP),
       "ATRP", "QBBcfff",  "TimeUS,Type,State,Servo,Demanded,Achieved,P", "s---dd-", "F---00-" },
+
+// @LoggerMessage: STAT
+// @Description: Current status of the aircraft
+// @Field: TimeUS: Microseconds since system startup
+// @Field: isFlying: True if aircraft is probably flying
+// @Field: isFlyProb: Probabilty that the aircraft is flying
+// @Field: Armed: Arm status of the aircraft
+// @Field: Safety: State of the safety switch
+// @Field: Crash: True if crash is detected
+// @Field: Still: True when vehicle is not moving in any axis
+// @Field: Stage: Current stage of the flight
+// @Field: Hit: True if impact is detected
     { LOG_STATUS_MSG, sizeof(log_Status),
       "STAT", "QBfBBBBBB",  "TimeUS,isFlying,isFlyProb,Armed,Safety,Crash,Still,Stage,Hit", "s--------", "F--------" },
 
@@ -309,6 +339,12 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: Sscl: speed scalar for surfaces
     { LOG_QTUN_MSG, sizeof(QuadPlane::log_QControl_Tuning),
       "QTUN", "Qffffffeccff", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DCRt,CRt,TMix,Sscl", "s----mmmnn--", "F----00000-0" },
+
+// @LoggerMessage: AOA
+// @Description: Angle of attack and Side Slip Angle values
+// @Field: TimeUS: Microseconds since system startup
+// @Field: AOA: Angle of Attack calculated from airspeed, wind vector,velocity vector 
+// @Field: SSA: Side Slip Angle calculated from airspeed, wind vector,velocity vector
     { LOG_AOA_SSA_MSG, sizeof(log_AOA_SSA),
       "AOA", "Qff", "TimeUS,AOA,SSA", "sdd", "F00" },
 
@@ -330,6 +366,15 @@ const struct LogStructure Plane::log_structure[] = {
       "PIQY", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
     { LOG_PIQA_MSG, sizeof(log_PID),
       "PIQA", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
+
+// @LoggerMessage: AETR
+// @Description: Normalised pre-mixer control surface outputs
+// @Field: TimeUS: Microseconds since system startup
+// @Field: Ail: Pre-mixer value for aileron output (between -4500 to 4500)
+// @Field: Elev: Pre-mixer value for elevator output (between -4500 to 4500)
+// @Field: Thr: Pre-mixer value for throttle output (between -4500 to 4500)
+// @Field: Rudd: Pre-mixer value for rudder output (between -4500 to 4500)
+// @Field: Flap: Pre-mixer value for flaps output (between -4500 to 4500)
     { LOG_AETR_MSG, sizeof(log_AETR),
       "AETR", "Qhhhhh",  "TimeUS,Ail,Elev,Thr,Rudd,Flap", "s-----", "F-----" },
 };
