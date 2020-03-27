@@ -30,7 +30,7 @@ generate_parameters ArduPlane
 
 generate_parameters ArduCopter
 
-generate_parameters APMrover2
+generate_parameters Rover
 
 generate_parameters ArduSub
 
