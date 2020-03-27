@@ -4,7 +4,7 @@
   this header file is expected to be #included by Vehicle subclasses
   of RC_Channels after defining RC_CHANNELS_SUBCLASS and
   RC_CHANNEL_SUBCLASS - for example, Rover defines
-  RC_CHANNELS_SUBCLASS to be RC_Channels_Rover in APMrover2/RC_Channels.cpp, and then includes this header.
+  RC_CHANNELS_SUBCLASS to be RC_Channels_Rover in Rover/RC_Channels.cpp, and then includes this header.
 
   This scheme reduces code duplicate between the Vehicles, and avoids the chance of things getting out of sync.
 */
