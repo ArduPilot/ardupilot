@@ -1494,6 +1494,17 @@ struct PACKED log_Arm_Disarm {
 // @Field: Subsys: Subsystem in which the error occurred
 // @Field: ECode: Subsystem-specific error code
 
+// @LoggerMessage: ESC
+// @Description: Feedback received from ESCs
+// @Field: TimeUS: microseconds since system startup
+// @Field: Instance: ESC instance number
+// @Field: RPM: reported motor rotation rate
+// @Field: Volt: Perceived input voltage for the ESC
+// @Field: Curr: Perceived current through the ESC
+// @Field: Temp: ESC temperature
+// @Field: CTot: current consumed total
+// @Field: MotTemp: measured motor temperature
+
 // @LoggerMessage: EV
 // @Description: Specifically coded event messages
 // @Field: TimeUS: Time since system startup
