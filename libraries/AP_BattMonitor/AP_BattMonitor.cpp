@@ -228,7 +228,7 @@ void AP_BattMonitor::convert_params(void) {
     info.old_key = 36;
 #elif APM_BUILD_TYPE(APM_BUILD_ArduSub)
     info.old_key = 33;
-#elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
+#elif APM_BUILD_TYPE(APM_BUILD_Rover)
     info.old_key = 145;
 #else
     _params[0]._type.save(true);
