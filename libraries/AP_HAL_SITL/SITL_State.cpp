@@ -630,7 +630,7 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
         if (_vehicle == ArduPlane) {
             pwm_output[0] = pwm_output[1] = pwm_output[3] = 1500;
         }
-        if (_vehicle == APMrover2) {
+        if (_vehicle == Rover) {
             pwm_output[0] = pwm_output[1] = pwm_output[2] = pwm_output[3] = 1500;
         }
     }
@@ -695,7 +695,7 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
         engine_fail = 0;
     }
     // apply engine multiplier to motor defined by the SIM_ENGINE_FAIL parameter
-    if (_vehicle != APMrover2) {
+    if (_vehicle != Rover) {
         input.servos[engine_fail] = ((input.servos[engine_fail]-1000) * engine_mul) + 1000;
     } else {
         input.servos[engine_fail] = static_cast<uint16_t>(((input.servos[engine_fail] - 1500) * engine_mul) + 1500);
@@ -722,7 +722,7 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
         } else {
             throttle = hover_throttle;
         }
-    } else if (_vehicle == APMrover2) {
+    } else if (_vehicle == Rover) {
         input.servos[2] = static_cast<uint16_t>(constrain_int16(input.servos[2], 1000, 2000));
         input.servos[0] = static_cast<uint16_t>(constrain_int16(input.servos[0], 1000, 2000));
         throttle = fabsf((input.servos[2] - 1500) / 500.0f);
