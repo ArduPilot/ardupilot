@@ -157,6 +157,9 @@ private:
 
     AP_Int8     _enabled;
 
+    // copy adsb targets into OADB
+    AP_Int8     _use_oadb;
+
     Location  _my_loc;
 
     bool _init_failed;

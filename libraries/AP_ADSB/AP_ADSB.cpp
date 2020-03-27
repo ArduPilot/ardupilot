@@ -27,7 +27,7 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
-
+#include <AC_Avoidance/AP_OADatabase.h>
 
 #define VEHICLE_TIMEOUT_MS              5000   // if no updates in this time, drop it from the list
 #define ADSB_SQUAWK_OCTAL_DEFAULT       1200
@@ -154,6 +154,13 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @Values: 0:no logging,1:log only special ID,2:log all
     // @User: Advanced
     AP_GROUPINFO("LOG",  14, AP_ADSB, _log, 1),
+
+    // @Param: USE_OADB
+    // @DisplayName: Use the Object Avoidance Database
+    // @Description: This feature will load ADSB targets into the Object Avoidance Database for use with other avoidance algorithms. See OA_ params.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("USE_OADB", 15, AP_ADSB, _use_oadb, 0),
 
     AP_GROUPEND
 };
@@ -491,6 +498,14 @@ void AP_ADSB::set_vehicle(const uint16_t index, const adsb_vehicle_t &vehicle)
     in_state.vehicle_list[index] = vehicle;
 
     write_log(vehicle);
+
+    // notify OADB
+    if (_use_oadb && vehicle.info.flags & ADSB_FLAGS_VALID_COORDS) {
+        AP_OADatabase *oaDb = AP::oadatabase();
+        if (oaDb != nullptr) {
+            oaDb->queue_push(get_location(vehicle), vehicle.last_update_ms);
+        }
+    }
 }
 
 void AP_ADSB::send_adsb_vehicle(const mavlink_channel_t chan)
