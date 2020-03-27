@@ -10,8 +10,7 @@ bool ModeLoiter::_enter()
     plane.loiter_angle_reset();
 
 #if SOARING_ENABLED == ENABLED
-    if (plane.g2.soaring_controller.active_state() &&
-       (plane.g2.soaring_controller.suppress_throttle() || plane.aparm.throttle_max==0)) {
+    if (plane.g2.soaring_controller.active_state()) {
         plane.g2.soaring_controller.init_thermalling();
         plane.g2.soaring_controller.get_target(plane.next_WP_loc); // ahead on flight path
     }
