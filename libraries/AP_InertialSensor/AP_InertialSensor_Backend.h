@@ -276,11 +276,6 @@ protected:
     float _last_harmonic_notch_bandwidth_hz;
     float _last_harmonic_notch_attenuation_dB;
 
-    // local window of gyro values to be copied to the frontend for FFT analysis
-    uint16_t _last_circular_buffer_idx;
-    uint16_t _num_gyro_samples;
-    Vector3f _last_gyro_window[INS_MAX_GYRO_WINDOW_SAMPLES]; // The maximum we need to store is gyro-rate / loop-rate
-
     void set_gyro_orientation(uint8_t instance, enum Rotation rotation) {
         _imu._gyro_orientation[instance] = rotation;
     }
