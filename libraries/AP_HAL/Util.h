@@ -182,6 +182,9 @@ public:
     // attempt to trap the processor, presumably to enter an attached debugger
     virtual bool trap() const { return false; }
 
+    // request information on running threads
+    virtual size_t thread_info(char *buf, size_t bufsize) { return 0; }
+
 protected:
     // we start soft_armed false, so that actuators don't send any
     // values until the vehicle code has fully started
