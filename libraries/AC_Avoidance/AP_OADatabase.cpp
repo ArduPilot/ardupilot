@@ -142,6 +142,23 @@ void AP_OADatabase::update()
 }
 
 // push a location into the database
+void AP_OADatabase::queue_push(const Location &loc, uint32_t timestamp_ms)
+{
+    if (!healthy()) {
+        return;
+    }
+
+    Location ekf_origin;
+    if (!AP::ahrs().get_origin(ekf_origin)) {
+        return;
+    }
+
+    const Vector3f pos = loc.get_distance_NED(ekf_origin);
+    const float distance = loc.get_distance(ekf_origin);
+    queue_push(pos, timestamp_ms, distance);
+}
+
+// push a location into the database
 void AP_OADatabase::queue_push(const Vector3f &pos, uint32_t timestamp_ms, float distance)
 {
     if (!healthy()) {

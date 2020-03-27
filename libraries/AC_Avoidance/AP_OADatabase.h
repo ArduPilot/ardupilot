@@ -4,6 +4,7 @@
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Param/AP_Param.h>
+#include <AP_Common/Location.h>
 
 class AP_OADatabase {
 public:
@@ -36,6 +37,9 @@ public:
 
     // push an object into the database.  Pos is the offset in meters from the EKF origin, angle is in degrees, distance in meters
     void queue_push(const Vector3f &pos, uint32_t timestamp_ms, float distance);
+
+    // push an object into the database in world frame
+    void queue_push(const Location &loc, uint32_t timestamp_ms);
 
     // returns true if database is healthy
     bool healthy() const { return (_queue.items != nullptr) && (_database.items != nullptr); }
