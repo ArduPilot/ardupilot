@@ -36,6 +36,9 @@ static AP_Filesystem_ROMFS fs_romfs;
 #include "AP_Filesystem_Param.h"
 static AP_Filesystem_Param fs_param;
 
+#include "AP_Filesystem_Sys.h"
+static AP_Filesystem_Sys fs_sys;
+
 /*
   mapping from filesystem prefix to backend
  */
@@ -45,6 +48,7 @@ const AP_Filesystem::Backend AP_Filesystem::backends[] = {
     { "@ROMFS/", fs_romfs },
 #endif
     { "@PARAM/", fs_param },
+    { "@SYS/", fs_sys },
 };
 
 #define MAX_FD_PER_BACKEND 256U
