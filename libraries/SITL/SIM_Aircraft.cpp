@@ -296,7 +296,7 @@ double Aircraft::rand_normal(double mean, double stddev)
             y = 2.0 * rand()/RAND_MAX - 1;
             r = x*x + y*y;
         } while (is_zero(r) || r > 1.0);
-        const double d = sqrt(-2.0 * log(r)/r);
+        const double d = safe_sqrt(-2.0 * log(r)/r);
         const double n1 = x * d;
         n2 = y * d;
         const double result = n1 * stddev + mean;
