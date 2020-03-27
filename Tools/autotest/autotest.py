@@ -160,6 +160,24 @@ def run_unit_tests():
             success = False
     return success
 
+def run_clang_scan_build():
+    if util.run_cmd("scan-build python waf configure",
+                    directory=util.reltopdir('.')) != 0:
+        print("Failed scan-build-configure")
+        return False
+
+    if util.run_cmd("scan-build python waf clean",
+                    directory=util.reltopdir('.')) != 0:
+        print("Failed scan-build-clean")
+        return False
+
+    if util.run_cmd("scan-build python waf build",
+                    directory=util.reltopdir('.')) != 0:
+        print("Failed scan-build-build")
+        return False
+
+    return True
+
 def param_parse_filepath():
     return util.reltopdir('Tools/autotest/param_metadata/param_parse.py')
 
@@ -418,6 +436,9 @@ def run_step(step):
 
     if step == 'run.unit_tests':
         return run_unit_tests()
+
+    if step == 'clang-scan-build':
+        return run_clang_scan_build()
 
     raise RuntimeError("Unknown step %s" % step)
 
@@ -823,6 +844,7 @@ if __name__ == "__main__":
     moresteps = [
         'test.CopterTests1',
         'test.CopterTests2',
+        'clang-scan-build',
     ]
 
     # canonicalise the step names.  This allows
