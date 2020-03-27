@@ -427,16 +427,9 @@ void NavEKF3_core::SelectMagFusion()
                 (frontend->_mag_ef_limit > 0 && have_table_earth_field)) {
                 FuseDeclination(0.34f);
             }
-            // fuse the three magnetometer componenents sequentially
+            // fuse the three magnetometer componenents using sequential fusion for each axis
             hal.util->perf_begin(_perf_test[0]);
-            for (mag_state.obsIndex = 0; mag_state.obsIndex <= 2; mag_state.obsIndex++) {
-                FuseMagnetometer();
-                // don't continue fusion if unhealthy
-                if (!magHealth) {
-                    hal.util->perf_end(_perf_test[0]);
-                    break;
-                }
-            }
+            FuseMagnetometer();
             hal.util->perf_end(_perf_test[0]);
             // zero the test ratio output from the inactive simple magnetometer yaw fusion
             yawTestRatio = 0.0f;
@@ -481,7 +474,6 @@ void NavEKF3_core::FuseMagnetometer()
     ftype &magXbias = mag_state.magXbias;
     ftype &magYbias = mag_state.magYbias;
     ftype &magZbias = mag_state.magZbias;
-    uint8_t &obsIndex = mag_state.obsIndex;
     Matrix3f &DCM = mag_state.DCM;
     Vector3f &MagPred = mag_state.MagPred;
     ftype &R_MAG = mag_state.R_MAG;
@@ -595,7 +587,7 @@ void NavEKF3_core::FuseMagnetometer()
         return;
     }
 
-    for (obsIndex = 0; obsIndex <= 2; obsIndex++) {
+    for (uint8_t obsIndex = 0; obsIndex <= 2; obsIndex++) {
 
         if (obsIndex == 0) {
 
