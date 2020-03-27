@@ -183,7 +183,10 @@ public:
 
     // see if EKF lane switching is possible to avoid EKF failsafe
     virtual void check_lane_switch(void) {}
-    
+
+    // check whether external navigation is providing yaw.  Allows compass pre-arm checks to be bypassed
+    virtual bool is_ext_nav_used_for_yaw(void) const { return false; }
+
     // Euler angles (radians)
     float roll;
     float pitch;
