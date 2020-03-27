@@ -21,7 +21,7 @@ cd /cygdrive/c/work
     /usr/bin/python waf -j4 copter plane rover heli sub
 
     # map to the names that MissionPlanner expects
-    cp /cygdrive/c/work/build/sitl/bin/ardurover.exe /cygdrive/c/work/sitl/APMrover2.elf
+    cp /cygdrive/c/work/build/sitl/bin/ardurover.exe /cygdrive/c/work/sitl/Rover.elf
     cp /cygdrive/c/work/build/sitl/bin/arduplane.exe /cygdrive/c/work/sitl/ArduPlane.elf
     cp /cygdrive/c/work/build/sitl/bin/arducopter.exe /cygdrive/c/work/sitl/ArduCopter.elf
     cp /cygdrive/c/work/build/sitl/bin/arducopter-heli.exe /cygdrive/c/work/sitl/ArduHeli.elf
