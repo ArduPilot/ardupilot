@@ -354,7 +354,7 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: Tar: desired value
 // @Field: Act: achieved value
 // @Field: Err: error between target and achieved
-// @Field: P: proportial part of PID
+// @Field: P: proportional part of PID
 // @Field: I: integral part of PID
 // @Field: D: derivative part of PID
 // @Field: FF: controller feed-forward portion of response
