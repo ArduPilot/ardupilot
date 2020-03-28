@@ -374,7 +374,9 @@ void lua_scripts::run(void) {
     load_all_scripts_in_dir(L, SCRIPTING_DIRECTORY);
     load_all_scripts_in_dir(L, "@ROMFS/scripts");
 
+#ifndef __clang_analyzer__
     succeeded_initial_load = true;
+#endif // __clang_analyzer__
 
     while (AP_Scripting::get_singleton()->enabled()) {
         // handle terminal data if we have any
