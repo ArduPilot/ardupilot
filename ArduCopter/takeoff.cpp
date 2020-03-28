@@ -121,9 +121,9 @@ void Mode::_TakeOff::get_climb_rates(float& pilot_climb_rate,
     takeoff_climb_rate = speed;
 
     // if pilot's commands descent
-    if (pilot_climb_rate < 0.0f) {
+    if (is_negative(pilot_climb_rate)) {
         // if overall climb rate is still positive, move to take-off climb rate
-        if (takeoff_climb_rate + pilot_climb_rate > 0.0f) {
+        if (is_positive(takeoff_climb_rate + pilot_climb_rate)) {
             takeoff_climb_rate = takeoff_climb_rate + pilot_climb_rate;
             pilot_climb_rate = 0.0f;
         } else {

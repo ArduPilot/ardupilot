@@ -55,7 +55,7 @@ void AutoTune::run()
         float target_climb_rate = get_pilot_desired_climb_rate_cms();
 
         // set motors to spin-when-armed if throttle below deadzone, otherwise full range (but motors will only spin at min throttle)
-        if (target_climb_rate < 0.0f) {
+        if (is_negative(target_climb_rate)) {
             copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         } else {
             copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
