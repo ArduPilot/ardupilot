@@ -356,7 +356,7 @@ float AP_Baro::get_EAS2TAS(void)
 float AP_Baro::get_air_density_ratio(void)
 {
     const float eas2tas = get_EAS2TAS();
-    if (eas2tas > 0.0f) {
+    if (is_positive(eas2tas)) {
         return 1.0f/(sq(eas2tas));
     } else {
         return 1.0f;
