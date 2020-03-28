@@ -2519,7 +2519,7 @@ static int AP_HAL__UARTDriver_set_flow_control(lua_State *L) {
     binding_argcheck(L, 2);
     AP_HAL::UARTDriver * ud = *check_AP_HAL__UARTDriver(L, 1);
     if (ud == NULL) {
-        luaL_error(L, "Internal error, null pointer");
+        return luaL_error(L, "Internal error, null pointer");
     }
     const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
     luaL_argcheck(L, ((raw_data_2 >= static_cast<int32_t>(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE)) && (raw_data_2 <= static_cast<int32_t>(AP_HAL::UARTDriver::FLOW_CONTROL_AUTO))), 2, "argument out of range");
@@ -2534,7 +2534,7 @@ static int AP_HAL__UARTDriver_available(lua_State *L) {
     binding_argcheck(L, 1);
     AP_HAL::UARTDriver * ud = *check_AP_HAL__UARTDriver(L, 1);
     if (ud == NULL) {
-        luaL_error(L, "Internal error, null pointer");
+        return luaL_error(L, "Internal error, null pointer");
     }
     const uint32_t data = ud->available();
 
@@ -2547,7 +2547,7 @@ static int AP_HAL__UARTDriver_write(lua_State *L) {
     binding_argcheck(L, 2);
     AP_HAL::UARTDriver * ud = *check_AP_HAL__UARTDriver(L, 1);
     if (ud == NULL) {
-        luaL_error(L, "Internal error, null pointer");
+        return luaL_error(L, "Internal error, null pointer");
     }
     const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
     luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(UINT8_MAX, UINT8_MAX))), 2, "argument out of range");
@@ -2564,7 +2564,7 @@ static int AP_HAL__UARTDriver_read(lua_State *L) {
     binding_argcheck(L, 1);
     AP_HAL::UARTDriver * ud = *check_AP_HAL__UARTDriver(L, 1);
     if (ud == NULL) {
-        luaL_error(L, "Internal error, null pointer");
+        return luaL_error(L, "Internal error, null pointer");
     }
     const int16_t data = ud->read();
 
@@ -2576,7 +2576,7 @@ static int AP_HAL__UARTDriver_begin(lua_State *L) {
     binding_argcheck(L, 2);
     AP_HAL::UARTDriver * ud = *check_AP_HAL__UARTDriver(L, 1);
     if (ud == NULL) {
-        luaL_error(L, "Internal error, null pointer");
+        return luaL_error(L, "Internal error, null pointer");
     }
     const uint32_t raw_data_2 = coerce_to_uint32_t(L, 2);
     luaL_argcheck(L, ((raw_data_2 >= MAX(1U, 0U)) && (raw_data_2 <= MIN(UINT32_MAX, UINT32_MAX))), 2, "argument out of range");
