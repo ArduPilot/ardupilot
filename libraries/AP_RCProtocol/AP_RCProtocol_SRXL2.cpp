@@ -134,7 +134,7 @@ void AP_RCProtocol_SRXL2::_process_byte(uint32_t timestamp_us, uint8_t byte)
 
 void AP_RCProtocol_SRXL2::update(void)
 {
-#if 0 // it's not clear this is actually required
+    // it's not clear this is actually required, perhaps on power loss?
     if (frontend.protocol_detected() == AP_RCProtocol::SRXL2) {
         uint32_t now = AP_HAL::millis();
         // there have been no updates since we were last called
@@ -144,7 +144,6 @@ void AP_RCProtocol_SRXL2::update(void)
             _last_run_ms = now;
         }
     }
-#endif
 }
 
 void AP_RCProtocol_SRXL2::capture_scaled_input(const uint16_t *values, bool in_failsafe, int16_t new_rssi)
@@ -251,6 +250,8 @@ void AP_RCProtocol_SRXL2::_change_baud_rate(uint32_t baudrate)
 #endif
 }
 
+// SRXL2 library callbacks below
+
 // User-provided routine to change the baud rate settings on the given UART:
 // uart - the same uint8_t value as the uart parameter passed to srxlInit()
 // baudRate - the actual baud rate (currently either 115200 or 400000)
@@ -298,12 +299,10 @@ void srxlReceivedChannelData(SrxlChannelData* pChannelData, bool isFailsafe)
 // Return true if you want this bind information set automatically for all other receivers on all SRXL buses.
 bool srxlOnBind(SrxlFullID device, SrxlBindData info)
 {
-    // TODO: Add custom handling of bound data report here if needed
     return true;
 }
 
 // User-provided callback routine to handle reception of a VTX control packet.
 void srxlOnVtx(SrxlVtxData* pVtxData)
 {
-    //userProvidedHandleVtxData(pVtxData);
 }
