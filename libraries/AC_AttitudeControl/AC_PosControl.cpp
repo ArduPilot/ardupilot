@@ -591,7 +591,7 @@ void AC_PosControl::run_z_controller()
     }
 
     // feed forward desired acceleration calculation
-    if (_dt > 0.0f) {
+    if (is_positive(_dt)) {
         if (!_flags.freeze_ff_z) {
             _accel_desired.z = (_vel_target.z - _vel_last.z) / _dt;
         } else {
@@ -1266,7 +1266,7 @@ bool AC_PosControl::limit_vector_length(float& vector_x, float& vector_y, float 
 /// Proportional controller with piecewise sqrt sections to constrain second derivative
 Vector3f AC_PosControl::sqrt_controller(const Vector3f& error, float p, float second_ord_lim)
 {
-    if (second_ord_lim < 0.0f || is_zero(second_ord_lim) || is_zero(p)) {
+    if (is_negative(second_ord_lim) || is_zero(second_ord_lim) || is_zero(p)) {
         return Vector3f(error.x * p, error.y * p, error.z);
     }
 
