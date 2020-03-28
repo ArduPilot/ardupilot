@@ -97,6 +97,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_ESC_Telem',
     'AP_Stats',
     'AP_GyroFFT',
+    'AP_RCTelemetry',
 ]
 
 def get_legacy_defines(sketch_name):
