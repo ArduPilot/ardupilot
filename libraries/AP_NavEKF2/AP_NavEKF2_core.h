@@ -880,7 +880,6 @@ private:
     ftype innovVtas;                // innovation output from fusion of airspeed measurements
     ftype varInnovVtas;             // innovation variance output from fusion of airspeed measurements
     bool magFusePerformed;          // boolean set to true when magnetometer fusion has been performed in that time step
-    bool magFuseRequired;           // boolean set to true when magnetometer fusion will be performed in the next time step
     uint32_t prevTasStep_ms;        // time stamp of last TAS fusion step
     uint32_t prevBetaStep_ms;       // time stamp of last synthetic sideslip fusion step
     uint32_t lastMagUpdate_us;      // last time compass was updated in usec
@@ -1222,7 +1221,6 @@ private:
         ftype magXbias;
         ftype magYbias;
         ftype magZbias;
-        uint8_t obsIndex;
         Matrix3f DCM;
         Vector3f MagPred;
         ftype R_MAG;
