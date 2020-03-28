@@ -373,7 +373,9 @@ void lua_scripts::run(void) {
     // Scan the filesystem in an appropriate manner and autostart scripts
     load_all_scripts_in_dir(L, SCRIPTING_DIRECTORY);
 
+#ifndef __clang_analyzer__
     succeeded_initial_load = true;
+#endif // __clang_analyzer__
 
     while (AP_Scripting::get_singleton()->enabled()) {
         // handle terminal data if we have any
