@@ -139,7 +139,7 @@ bool AC_Fence::pre_arm_check_circle(const char* &fail_msg) const
 // additional checks for the alt fence:
 bool AC_Fence::pre_arm_check_alt(const char* &fail_msg) const
 {
-    if (_alt_max < 0.0f) {
+    if (is_negative(_alt_max)) {
         fail_msg = "Invalid FENCE_ALT_MAX value";
         return false;
     }
