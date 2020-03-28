@@ -211,7 +211,7 @@ void NavEKF3::Log_Write_Beacon(uint64_t time_us) const
     float bcnPosOffsetLow;
     Vector3f posNED;
      if (getRangeBeaconDebug(-1, ID, rng, innov, innovVar, testRatio, beaconPosNED, bcnPosOffsetHigh, bcnPosOffsetLow, posNED)) {
-        if (rng > 0.0f) {
+        if (is_positive(rng)) {
             const struct log_RngBcnDebug pkt10{
                 LOG_PACKET_HEADER_INIT(LOG_XKF10_MSG),
                 time_us : time_us,

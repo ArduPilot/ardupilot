@@ -471,7 +471,7 @@ void NavEKF3_core::FuseRngBcnStatic()
 
             // prevent negative variances
             for (uint8_t i= 0; i<=2; i++) {
-                if (receiverPosCov[i][i] < 0.0f) {
+                if (is_negative(receiverPosCov[i][i])) {
                     receiverPosCov[i][i] = 0.0f;
                     KHP[i][i] = 0.0f;
                 } else if (KHP[i][i] > receiverPosCov[i][i]) {
