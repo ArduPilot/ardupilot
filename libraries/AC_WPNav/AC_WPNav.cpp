@@ -297,7 +297,7 @@ bool AC_WPNav::set_wp_origin_and_destination(const Vector3f& origin, const Vecto
 void AC_WPNav::shift_wp_origin_to_current_pos()
 {
     // return immediately if vehicle is not at the origin
-    if (_track_desired > 0.0f) {
+    if (is_positive(_track_desired)) {
         return;
     }
 
@@ -473,7 +473,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
         if (_track_desired > track_desired_max) {
         	_track_desired = track_desired_max;
         	_limited_speed_xy_cms -= 2.0f * _track_accel * dt;
-        	if (_limited_speed_xy_cms < 0.0f) {
+        	if (is_negative(_limited_speed_xy_cms)) {
         	    _limited_speed_xy_cms = 0.0f;
         	}
     	}
@@ -928,7 +928,7 @@ bool AC_WPNav::advance_spline_target_along_track(float dt)
 
         // calculate how far along the track we could move the intermediate target before reaching the end of the leash
         float track_leash_slack = MIN(_track_leash_length*(leash_z-track_error_z)/leash_z, _track_leash_length*(leash_xy-_track_error_xy)/leash_xy);
-        if (track_leash_slack < 0.0f) {
+        if (is_negative(track_leash_slack)) {
             track_leash_slack = 0.0f;
         }
 
