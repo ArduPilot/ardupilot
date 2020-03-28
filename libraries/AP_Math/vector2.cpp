@@ -210,7 +210,7 @@ bool Vector2<T>::circle_segment_intersection(const Vector2<T>& seg_start, const 
     }
 
     // check for invalid delta (i.e. discriminant)
-    if (delta < 0.0f) {
+    if (is_negative(delta)) {
         return false;
     }
 

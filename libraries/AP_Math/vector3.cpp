@@ -433,7 +433,7 @@ float Vector3<T>::distance_to_segment(const Vector3<T> &seg_start, const Vector3
 
     float area_squared = s*(s-a)*(s-b)*(s-c);
     // area must be constrained above 0 because a triangle could have 3 points could be on a line and float rounding could push this under 0
-    if (area_squared < 0.0f) {
+    if (is_negative(area_squared)) {
         area_squared = 0.0f;
     }
     const float area = safe_sqrt(area_squared);
