@@ -138,7 +138,7 @@ void AP_OADatabase::queue_push(const Vector2f &pos, uint32_t timestamp_ms, float
     }
 
     // ignore objects that are far away
-    if ((_dist_max > 0.0f) && (distance > _dist_max)) {
+    if (is_positive(_dist_max) && (distance > _dist_max)) {
         return;
     }
 
