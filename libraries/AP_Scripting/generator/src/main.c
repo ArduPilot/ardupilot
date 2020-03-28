@@ -1330,7 +1330,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
       // extract the userdata, it was a pointer, so we need to grab it
       fprintf(source, "    %s * ud = *check_%s(L, 1);\n", data->name, data->sanatized_name);
       fprintf(source, "    if (ud == NULL) {\n");
-      fprintf(source, "        luaL_error(L, \"Internal error, null pointer\");\n");
+      fprintf(source, "        return luaL_error(L, \"Internal error, null pointer\");\n");
       fprintf(source, "    }\n");
       break;
   }
