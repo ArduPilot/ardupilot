@@ -56,14 +56,7 @@ private:
     
     uint8_t _init_blob_index = 0;
     uint32_t _init_blob_time = 0;
-    const char* _initialisation_blob[6] = {
-        "\r\n\r\nunlogall\r\n", // cleanup enviroment
-        "log bestposb ontime 0.2 0 nohold\r\n", // get bestpos
-        "log bestvelb ontime 0.2 0 nohold\r\n", // get bestvel
-        "log psrdopb onchanged\r\n", // tersus
-        "log psrdopb ontime 0.2\r\n", // comnav
-        "log psrdopb\r\n" // poll message, as dop only changes when a sat is dropped/added to the visible list
-    };
+    static const char* const _initialisation_blob[6];
    
     uint32_t crc_error_counter = 0;
     uint32_t last_injected_data_ms = 0;
