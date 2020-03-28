@@ -576,7 +576,7 @@ void SoloGimbalEKF::predictCovariance()
 
     // copy predicted variances whilst constraining to be non-negative
     for (uint8_t index=0; index<=8; index++) {
-        if (nextCov[index][index] < 0.0f) {
+        if (is_negative(nextCov[index][index])) {
             Cov[index][index] = 0.0f;
         } else {
             Cov[index][index] = nextCov[index][index];
@@ -924,7 +924,7 @@ void SoloGimbalEKF::fixCovariance()
 
     // constrain diagonals to be non-negative
     for (uint8_t index=1; index<=8; index++) {
-        if (Cov[index][index] < 0.0f) {
+        if (is_negative(Cov[index][index])) {
             Cov[index][index] = 0.0f;
         }
     }
