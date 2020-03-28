@@ -48,7 +48,7 @@ void NotchFilter<T>::init(float sample_freq_hz, float center_freq_hz, float band
 template <class T>
 void NotchFilter<T>::init_with_A_and_Q(float sample_freq_hz, float center_freq_hz, float A, float Q)
 {
-    if ((center_freq_hz > 0.0) && (center_freq_hz < 0.5 * sample_freq_hz) && (Q > 0.0)) {
+    if (is_positive(center_freq_hz) && (center_freq_hz < 0.5 * sample_freq_hz) && is_positive(Q)) {
         float omega = 2.0 * M_PI * center_freq_hz / sample_freq_hz;
         float alpha = sinf(omega) / (2 * Q);
         b0 =  1.0 + alpha*sq(A);
