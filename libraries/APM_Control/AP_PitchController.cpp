@@ -264,7 +264,7 @@ float AP_PitchController::_get_coordination_rate_offset(float &aspeed, bool &inv
         inverted = false;
 	} else {
 		inverted = true;
-		if (bank_angle > 0.0f) {
+		if (is_positive(bank_angle)) {
 			bank_angle = constrain_float(bank_angle,radians(100),radians(180));
 		} else {
 			bank_angle = constrain_float(bank_angle,-radians(180),-radians(100));
