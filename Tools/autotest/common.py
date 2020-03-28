@@ -1036,6 +1036,8 @@ class AutoTest(ABC):
     def find_format_defines(self, filepath):
         ret = {}
         for line in open(filepath,'rb').readlines():
+            if type(line) == bytes:
+                line = line.decode("utf-8")
             m = re.match('#define (\w+_(?:LABELS|FMT|UNITS|MULTS))\s+(".*")', line)
             if m is None:
                 continue
@@ -1069,6 +1071,8 @@ class AutoTest(ABC):
         message_infos = []
         for line in open(filepath,'rb').readlines():
 #            print("line: %s" % line)
+            if type(line) == bytes:
+                line = line.decode("utf-8")
             line = re.sub("//.*", "", line) # trim comments
             if re.match("\s*$", line):
                 # blank line
@@ -1121,6 +1125,8 @@ class AutoTest(ABC):
         linestate_within = 90
         linestate = linestate_none
         for line in open(filepath,'rb').readlines():
+            if type(line) == bytes:
+                line = line.decode("utf-8")
             line = re.sub("//.*", "", line) # trim comments
             if re.match("\s*$", line):
                 # blank line
@@ -1202,6 +1208,8 @@ class AutoTest(ABC):
                     filepath = os.path.join(root, f)
                     count = 0
                     for line in open(filepath,'rb').readlines():
+                        if type(line) == bytes:
+                            line = line.decode("utf-8")
                         if state == state_outside:
                             if re.match("\s*AP::logger\(\)[.]Write\(", line):
                                 state = state_inside
