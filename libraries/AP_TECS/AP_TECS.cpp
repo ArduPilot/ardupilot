@@ -728,11 +728,11 @@ void AP_TECS::_update_throttle_without_airspeed(int16_t throttle_nudge)
         nomThr = (aparm.throttle_cruise + throttle_nudge)* 0.01f;
     }
 
-    if (_pitch_dem > 0.0f && _PITCHmaxf > 0.0f)
+    if (is_positive(_pitch_dem) &&  is_positive(_PITCHmaxf))
     {
         _throttle_dem = nomThr + (_THRmaxf - nomThr) * _pitch_dem / _PITCHmaxf;
     }
-    else if (_pitch_dem < 0.0f && _PITCHminf < 0.0f)
+    else if (is_negative(_pitch_dem) && is_negative(_PITCHminf))
     {
         _throttle_dem = nomThr + (_THRminf - nomThr) * _pitch_dem / _PITCHminf;
     }
@@ -766,7 +766,7 @@ void AP_TECS::_detect_bad_descent(void)
     // 2) Specific total energy error > 0
     // This mode will produce an undulating speed and height response as it cuts in and out but will prevent the aircraft from descending into the ground if an unachievable speed demand is set
     float STEdot = _SPEdot + _SKEdot;
-    if ((!_flags.underspeed && (_STE_error > 200.0f) && (STEdot < 0.0f) && (_throttle_dem >= _THRmaxf * 0.9f)) || (_flags.badDescent && !_flags.underspeed && (_STE_error > 0.0f)))
+    if ((!_flags.underspeed && (_STE_error > 200.0f) && is_negative(STEdot) && (_throttle_dem >= _THRmaxf * 0.9f)) || (_flags.badDescent && !_flags.underspeed && is_positive(_STE_error)))
     {
         _flags.badDescent = true;
     }
