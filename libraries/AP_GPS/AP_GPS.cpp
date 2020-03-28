@@ -1376,7 +1376,7 @@ bool AP_GPS::calc_blend_weights(void)
     if (_blend_mask & BLEND_MASK_USE_SPD_ACC) {
         for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
             if (state[i].status >= GPS_OK_FIX_3D) {
-                if (state[i].have_speed_accuracy && state[i].speed_accuracy > 0.0f) {
+                if (state[i].have_speed_accuracy && is_positive(state[i].speed_accuracy)) {
                     speed_accuracy_sum_sq += state[i].speed_accuracy * state[i].speed_accuracy;
                 } else {
                     // not all receivers support this metric so set it to zero and don't use it
@@ -1392,7 +1392,7 @@ bool AP_GPS::calc_blend_weights(void)
     if (_blend_mask & BLEND_MASK_USE_HPOS_ACC) {
         for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
             if (state[i].status >= GPS_OK_FIX_2D) {
-                if (state[i].have_horizontal_accuracy && state[i].horizontal_accuracy > 0.0f) {
+                if (state[i].have_horizontal_accuracy && is_positive(state[i].horizontal_accuracy)) {
                     horizontal_accuracy_sum_sq += state[i].horizontal_accuracy * state[i].horizontal_accuracy;
                 } else {
                     // not all receivers support this metric so set it to zero and don't use it
@@ -1408,7 +1408,7 @@ bool AP_GPS::calc_blend_weights(void)
     if (_blend_mask & BLEND_MASK_USE_VPOS_ACC) {
         for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
             if (state[i].status >= GPS_OK_FIX_3D) {
-                if (state[i].have_vertical_accuracy && state[i].vertical_accuracy > 0.0f) {
+                if (state[i].have_vertical_accuracy && is_positive(state[i].vertical_accuracy)) {
                     vertical_accuracy_sum_sq += state[i].vertical_accuracy * state[i].vertical_accuracy;
                 } else {
                     // not all receivers support this metric so set it to zero and don't use it
@@ -1419,7 +1419,7 @@ bool AP_GPS::calc_blend_weights(void)
         }
     }
     // Check if we can do blending using reported accuracy
-    bool can_do_blending = (horizontal_accuracy_sum_sq > 0.0f || vertical_accuracy_sum_sq > 0.0f || speed_accuracy_sum_sq > 0.0f);
+    bool can_do_blending = (is_positive(horizontal_accuracy_sum_sq) || is_positive(vertical_accuracy_sum_sq) || is_positive(speed_accuracy_sum_sq));
 
     // if we can't do blending using reported accuracy, return false and hard switch logic will be used instead
     if (!can_do_blending) {
@@ -1430,7 +1430,7 @@ bool AP_GPS::calc_blend_weights(void)
 
     // calculate a weighting using the reported horizontal position
     float hpos_blend_weights[GPS_MAX_RECEIVERS] = {};
-    if (horizontal_accuracy_sum_sq > 0.0f && (_blend_mask & BLEND_MASK_USE_HPOS_ACC)) {
+    if (is_positive(horizontal_accuracy_sum_sq) && (_blend_mask & BLEND_MASK_USE_HPOS_ACC)) {
         // calculate the weights using the inverse of the variances
         float sum_of_hpos_weights = 0.0f;
         for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
@@ -1440,7 +1440,7 @@ bool AP_GPS::calc_blend_weights(void)
             }
         }
         // normalise the weights
-        if (sum_of_hpos_weights > 0.0f) {
+        if (is_positive(sum_of_hpos_weights)) {
             for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
                 hpos_blend_weights[i] = hpos_blend_weights[i] / sum_of_hpos_weights;
             }
@@ -1450,7 +1450,7 @@ bool AP_GPS::calc_blend_weights(void)
 
     // calculate a weighting using the reported vertical position accuracy
     float vpos_blend_weights[GPS_MAX_RECEIVERS] = {};
-    if (vertical_accuracy_sum_sq > 0.0f && (_blend_mask & BLEND_MASK_USE_VPOS_ACC)) {
+    if (is_positive(vertical_accuracy_sum_sq) && (_blend_mask & BLEND_MASK_USE_VPOS_ACC)) {
         // calculate the weights using the inverse of the variances
         float sum_of_vpos_weights = 0.0f;
         for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
@@ -1460,7 +1460,7 @@ bool AP_GPS::calc_blend_weights(void)
             }
         }
         // normalise the weights
-        if (sum_of_vpos_weights > 0.0f) {
+        if (is_positive(sum_of_vpos_weights)) {
             for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
                 vpos_blend_weights[i] = vpos_blend_weights[i] / sum_of_vpos_weights;
             }
@@ -1470,7 +1470,7 @@ bool AP_GPS::calc_blend_weights(void)
 
     // calculate a weighting using the reported speed accuracy
     float spd_blend_weights[GPS_MAX_RECEIVERS] = {};
-    if (speed_accuracy_sum_sq > 0.0f && (_blend_mask & BLEND_MASK_USE_SPD_ACC)) {
+    if (is_positive(speed_accuracy_sum_sq) && (_blend_mask & BLEND_MASK_USE_SPD_ACC)) {
         // calculate the weights using the inverse of the variances
         float sum_of_spd_weights = 0.0f;
         for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
@@ -1480,7 +1480,7 @@ bool AP_GPS::calc_blend_weights(void)
             }
         }
         // normalise the weights
-        if (sum_of_spd_weights > 0.0f) {
+        if (is_positive(sum_of_spd_weights)) {
             for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
                 spd_blend_weights[i] = spd_blend_weights[i] / sum_of_spd_weights;
             }
@@ -1539,12 +1539,12 @@ void AP_GPS::calc_blended_state(void)
 
         // report the best valid accuracies and DOP metrics
 
-        if (state[i].have_horizontal_accuracy && state[i].horizontal_accuracy > 0.0f && state[i].horizontal_accuracy < state[GPS_BLENDED_INSTANCE].horizontal_accuracy) {
+        if (state[i].have_horizontal_accuracy && is_positive(state[i].horizontal_accuracy) && state[i].horizontal_accuracy < state[GPS_BLENDED_INSTANCE].horizontal_accuracy) {
             state[GPS_BLENDED_INSTANCE].have_horizontal_accuracy = true;
             state[GPS_BLENDED_INSTANCE].horizontal_accuracy = state[i].horizontal_accuracy;
         }
 
-        if (state[i].have_vertical_accuracy && state[i].vertical_accuracy > 0.0f && state[i].vertical_accuracy < state[GPS_BLENDED_INSTANCE].vertical_accuracy) {
+        if (state[i].have_vertical_accuracy && is_positive(state[i].vertical_accuracy) && state[i].vertical_accuracy < state[GPS_BLENDED_INSTANCE].vertical_accuracy) {
             state[GPS_BLENDED_INSTANCE].have_vertical_accuracy = true;
             state[GPS_BLENDED_INSTANCE].vertical_accuracy = state[i].vertical_accuracy;
         }
@@ -1553,7 +1553,7 @@ void AP_GPS::calc_blended_state(void)
             state[GPS_BLENDED_INSTANCE].have_vertical_velocity = true;
         }
 
-        if (state[i].have_speed_accuracy && state[i].speed_accuracy > 0.0f && state[i].speed_accuracy < state[GPS_BLENDED_INSTANCE].speed_accuracy) {
+        if (state[i].have_speed_accuracy && is_positive(state[i].speed_accuracy) && state[i].speed_accuracy < state[GPS_BLENDED_INSTANCE].speed_accuracy) {
             state[GPS_BLENDED_INSTANCE].have_speed_accuracy = true;
             state[GPS_BLENDED_INSTANCE].speed_accuracy = state[i].speed_accuracy;
         }
@@ -1606,7 +1606,7 @@ void AP_GPS::calc_blended_state(void)
     float blended_alt_offset_cm = 0.0f;
     blended_NE_offset_m.zero();
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
-        if (_blend_weights[i] > 0.0f && i != best_index) {
+        if (is_positive(_blend_weights[i]) && i != best_index) {
             blended_NE_offset_m += state[GPS_BLENDED_INSTANCE].location.get_distance_NE(state[i].location) * _blend_weights[i];
             blended_alt_offset_cm += (float)(state[i].location.alt - state[GPS_BLENDED_INSTANCE].location.alt) * _blend_weights[i];
         }
@@ -1645,7 +1645,7 @@ void AP_GPS::calc_blended_state(void)
         // calculate a blended value for the number of ms lapsed in the week
         double temp_time_0 = 0.0;
         for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
-            if (_blend_weights[i] > 0.0f) {
+            if (is_positive(_blend_weights[i])) {
                 temp_time_0 += (double)state[i].time_week_ms * (double)_blend_weights[i];
             }
         }
@@ -1656,7 +1656,7 @@ void AP_GPS::calc_blended_state(void)
     double temp_time_1 = 0.0;
     double temp_time_2 = 0.0;
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
-        if (_blend_weights[i] > 0.0f) {
+        if (is_positive(_blend_weights[i])) {
             temp_time_1 += (double)timing[i].last_fix_time_ms * (double) _blend_weights[i];
             temp_time_2 += (double)timing[i].last_message_time_ms * (double)_blend_weights[i];
             float gps_lag_sec = 0;
