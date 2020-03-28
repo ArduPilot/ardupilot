@@ -391,11 +391,11 @@ bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, 
         const struct inertial_data_frame_s *inertial_data_delayed = (*_inertial_history)[0];
 
         Vector3f target_vec_unit_ned = inertial_data_delayed->Tbn * target_vec_unit_body;
-        bool target_vec_valid = target_vec_unit_ned.z > 0.0f;
-        bool alt_valid = (rangefinder_alt_valid && rangefinder_alt_m > 0.0f) || (_backend->distance_to_target() > 0.0f);
+        bool target_vec_valid = is_positive(target_vec_unit_ned.z);
+        bool alt_valid = (rangefinder_alt_valid && is_positive(rangefinder_alt_m)) || is_positive(_backend->distance_to_target());
         if (target_vec_valid && alt_valid) {
             float dist, alt;
-            if (_backend->distance_to_target() > 0.0f) {
+            if (is_positive(_backend->distance_to_target())) {
                 dist = _backend->distance_to_target();
                 alt = dist * target_vec_unit_ned.z;
             } else {
