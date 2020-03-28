@@ -256,16 +256,24 @@ class LTM(Telem):
         self.data_by_id[dataid] = value
 
     def consume_frame(self):
-        frame_type = ord(self.buffer[2])
+        b2 = self.buffer[2]
+        if sys.version_info.major < 3:
+            b2 = ord(b2)
+        frame_type = b2
         frame_length = self.frame_lengths[frame_type]
         # check frame CRC
         crc = 0
         count = 0
         for c in self.buffer[3:frame_length-1]:
+            if sys.version_info.major < 3:
+                c = ord(c)
             old = crc
-            crc ^= ord(c)
+            crc ^= c
             count += 1
-        if crc != ord(self.buffer[frame_length-1]):
+        buffer_crc = self.buffer[frame_length-1]
+        if sys.version_info.major < 3:
+            buffer_crc = ord(buffer_crc)
+        if crc != buffer_crc:
             raise NotAchievedException("Invalid checksum on frame type %s" % str(chr(frame_type)))
 #        self.progress("Received valid %s frame" % str(chr(frame_type)))
 
@@ -295,14 +303,21 @@ class LTM(Telem):
             def lon(self):
                 return self.int32(7)
             def gndspeed(self):
-                return ord(self.buffer[11])
+                ret = self.buffer[11]
+                if sys.version_info.major < 3:
+                    ret = ord(ret)
+                return ret
             def alt(self):
                 return self.int32(12)
             def sats(self):
-                s = ord(self.buffer[16])
+                s = self.buffer[16]
+                if sys.version_info.major < 3:
+                    s = ord(s)
                 return (s>>2)
             def fix_type(self):
-                s = ord(self.buffer[16])
+                s = self.buffer[16]
+                if sys.version_info.major < 3:
+                    s = ord(s)
                 return s & 0b11
 
         class FrameA(Frame):
@@ -334,23 +349,28 @@ class LTM(Telem):
         while len(self.buffer):
             if len(self.buffer) == 0:
                 break
-            if sys.version_info.major >= 3:
-                b = self.buffer[0]
-            else:
-                b = ord(self.buffer[0])
-            if ord(self.buffer[0]) != self.HEADER1:
+            b0 = self.buffer[0]
+            if sys.version_info.major < 3:
+                b0 = ord(b0)
+            if b0 != self.HEADER1:
                 self.bad_chars += 1
                 self.buffer = self.buffer[1:]
                 continue
-            if ord(self.buffer[1]) != self.HEADER2:
+            b1 = self.buffer[1]
+            if sys.version_info.major < 3:
+                b1 = ord(b1)
+            if b1 != self.HEADER2:
                 self.bad_chars += 1
                 self.buffer = self.buffer[1:]
                 continue
-            if ord(self.buffer[2]) not in [self.FRAME_G, self.FRAME_A, self.FRAME_S]:
+            b2 = self.buffer[2]
+            if sys.version_info.major < 3:
+                b2 = ord(b2)
+            if b2 not in [self.FRAME_G, self.FRAME_A, self.FRAME_S]:
                 self.bad_chars += 1
                 self.buffer = self.buffer[1:]
                 continue
-            frame_len = self.frame_lengths[ord(self.buffer[2])]
+            frame_len = self.frame_lengths[b2]
             if len(self.buffer) < frame_len:
                 continue
             self.consume_frame()
