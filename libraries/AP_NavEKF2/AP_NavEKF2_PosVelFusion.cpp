@@ -486,7 +486,7 @@ void NavEKF2_core::FuseVelPosNED()
             R_OBS[4] = R_OBS[0];
             for (uint8_t i=0; i<=2; i++) R_OBS_DATA_CHECKS[i] = R_OBS[i];
         } else {
-            if (gpsSpdAccuracy > 0.0f) {
+            if (is_positive(gpsSpdAccuracy)) {
                 // use GPS receivers reported speed accuracy if available and floor at value set by GPS velocity noise parameter
                 R_OBS[0] = sq(constrain_float(gpsSpdAccuracy, frontend->_gpsHorizVelNoise, 50.0f));
                 R_OBS[2] = sq(constrain_float(gpsSpdAccuracy, frontend->_gpsVertVelNoise, 50.0f));
@@ -497,7 +497,7 @@ void NavEKF2_core::FuseVelPosNED()
             }
             R_OBS[1] = R_OBS[0];
             // Use GPS reported position accuracy if available and floor at value set by GPS position noise parameter
-            if (gpsPosAccuracy > 0.0f) {
+            if (is_positive(gpsPosAccuracy)) {
                 R_OBS[3] = sq(constrain_float(gpsPosAccuracy, frontend->_gpsHorizPosNoise, 100.0f));
             } else if (extNavUsedForPos) {
                 R_OBS[3] = sq(constrain_float(extNavDataDelayed.posErr, 0.01f, 10.0f));
@@ -521,7 +521,7 @@ void NavEKF2_core::FuseVelPosNED()
             float hgtErr  = stateStruct.position.z - velPosObs[5];
             float velDErr = stateStruct.velocity.z - velPosObs[2];
             // check if they are the same sign and both more than 3-sigma out of bounds
-            if ((hgtErr*velDErr > 0.0f) && (sq(hgtErr) > 9.0f * (P[8][8] + R_OBS_DATA_CHECKS[5])) && (sq(velDErr) > 9.0f * (P[5][5] + R_OBS_DATA_CHECKS[2]))) {
+            if (is_positive(hgtErr * velDErr) && (sq(hgtErr) > 9.0f * (P[8][8] + R_OBS_DATA_CHECKS[5])) && (sq(velDErr) > 9.0f * (P[5][5] + R_OBS_DATA_CHECKS[2]))) {
                 badIMUdata = true;
             } else {
                 badIMUdata = false;
@@ -957,7 +957,7 @@ void NavEKF2_core::selectHeightForFusion()
         velPosObs[5] = -hgtMea;
         fuseHgtData = true;
         // set the observation noise using receiver reported accuracy or the horizontal noise scaled for typical VDOP/HDOP ratio
-        if (gpsHgtAccuracy > 0.0f) {
+        if (is_positive(gpsHgtAccuracy)) {
             posDownObsNoise = sq(constrain_float(gpsHgtAccuracy, 1.5f * frontend->_gpsHorizPosNoise, 100.0f));
         } else {
             posDownObsNoise = sq(constrain_float(1.5f * frontend->_gpsHorizPosNoise, 0.1f, 10.0f));
