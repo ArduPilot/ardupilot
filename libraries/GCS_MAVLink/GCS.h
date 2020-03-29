@@ -27,6 +27,8 @@
 
 #define GCS_DEBUG_SEND_MESSAGE_TIMINGS 0
 
+#ifndef HAL_NO_GCS
+
 // macros used to determine if a message will fit in the space available.
 
 void gcs_out_of_space_to_send_count(mavlink_channel_t chan);
@@ -38,6 +40,8 @@ void gcs_out_of_space_to_send_count(mavlink_channel_t chan);
 // PAYLOAD_SIZE returns the amount of space required to send the
 // mavlink message with id id on channel chan.  Mavlink2 has higher
 // overheads than mavlink1, for example.
+
+// check if a message will fit in the payload space available
 #define PAYLOAD_SIZE(chan, id) (unsigned(GCS_MAVLINK::packet_overhead_chan(chan)+MAVLINK_MSG_ID_ ## id ## _LEN))
 
 // HAVE_PAYLOAD_SPACE evaluates to an expression that can be used
@@ -1012,3 +1016,13 @@ private:
 };
 
 GCS &gcs();
+
+// send text when we do have a GCS
+#define GCS_SEND_TEXT(severity, format, args...) gcs().send_text(severity, format, ##args)
+
+#else // HAL_NO_GCS
+// empty send text when we have no GCS
+#define GCS_SEND_TEXT(severity, format, args...)
+
+#endif // HAL_NO_GCS
+
