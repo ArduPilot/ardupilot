@@ -151,7 +151,7 @@ void HarmonicNotchFilter<T>::allocate_filters(uint8_t harmonics, bool double_not
     if (_num_filters > 0) {
         _filters = new NotchFilter<T>[_num_filters];
         if (_filters == nullptr) {
-            gcs().send_text(MAV_SEVERITY_WARNING, "Failed to allocate %u bytes for HarmonicNotchFilter", (unsigned int)(_num_filters * sizeof(NotchFilter<T>)));
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Failed to allocate %u bytes for HarmonicNotchFilter", (unsigned int)(_num_filters * sizeof(NotchFilter<T>)));
             _num_filters = 0;
         }
 
