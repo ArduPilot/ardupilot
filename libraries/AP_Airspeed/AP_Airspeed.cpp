@@ -64,12 +64,6 @@ extern const AP_HAL::HAL &hal;
 #define PSI_RANGE_DEFAULT 1.0f
 #endif
 
-#ifdef HAL_NO_GCS
-#define GCS_SEND_TEXT(severity, format, args...)
-#else
-#define GCS_SEND_TEXT(severity, format, args...) gcs().send_text(severity, format, ##args)
-#endif
-
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 
@@ -475,7 +469,7 @@ void AP_Airspeed::update(bool log)
         read(i);
     }
 
-#if 1
+#ifndef HAL_NO_GCS
     // debugging until we get MAVLink support for 2nd airspeed sensor
     if (enabled(1)) {
         gcs().send_named_float("AS2", get_airspeed(1));
