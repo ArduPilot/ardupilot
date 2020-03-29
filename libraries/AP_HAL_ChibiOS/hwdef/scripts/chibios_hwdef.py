@@ -773,9 +773,15 @@ def write_mcu_config(f):
 #define CH_CFG_USE_MEMCORE FALSE
 #define HAL_USE_I2C FALSE
 #define HAL_USE_PWM FALSE
+#define CH_DBG_ENABLE_STACK_CHECK FALSE
 ''')
     if env_vars.get('ROMFS_UNCOMPRESSED', False):
         f.write('#define HAL_ROMFS_UNCOMPRESSED\n')
+
+    if 'AP_PERIPH' in env_vars:
+        f.write('''
+#define CH_DBG_ENABLE_STACK_CHECK FALSE
+''')
 
 
 def write_ldscript(fname):
