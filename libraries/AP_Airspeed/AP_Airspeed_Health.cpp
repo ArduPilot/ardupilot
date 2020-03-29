@@ -64,7 +64,7 @@ void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
     if (param[i].use > 0 && (AP_Airspeed::OptionsMask::ON_FAILURE_AHRS_WIND_MAX_DO_DISABLE & _options)) {
         // and is probably not healthy
         if (state[i].failures.health_probability < DISABLE_PROB_THRESH_CRIT) {
-            gcs().send_text(MAV_SEVERITY_ERROR, "Airspeed sensor %d failure. Disabling", i+1);
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Airspeed sensor %d failure. Disabling", i+1);
             state[i].failures.param_use_backup = param[i].use;
             param[i].use.set_and_notify(0);
             state[i].healthy = false;
@@ -72,7 +72,7 @@ void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
         // and is probably getting close to not healthy
         } else if ((state[i].failures.health_probability < DISABLE_PROB_THRESH_WARN) && !state[i].failures.has_warned) {
             state[i].failures.has_warned = true;
-            gcs().send_text(MAV_SEVERITY_WARNING, "Airspeed sensor %d warning", i+1);
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Airspeed sensor %d warning", i+1);
 
         } else if (state[i].failures.health_probability > RE_ENABLE_PROB_THRESH_OK) {
             state[i].failures.has_warned = false;
@@ -84,7 +84,7 @@ void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
         state[i].failures.param_use_backup > 0 &&
         state[i].failures.health_probability > RE_ENABLE_PROB_THRESH_OK) {
 
-        gcs().send_text(MAV_SEVERITY_NOTICE, "Airspeed sensor %d now OK. Re-enabled", i+1);
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Airspeed sensor %d now OK. Re-enabled", i+1);
         param[i].use.set_and_notify(state[i].failures.param_use_backup); // resume
         state[i].failures.param_use_backup = -1; // set to invalid so we don't use it
         state[i].failures.has_warned = false;
