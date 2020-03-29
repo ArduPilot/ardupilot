@@ -739,6 +739,7 @@ void AP_GPS::update_instance(uint8_t instance)
         data_should_be_logged = true;
     }
 
+#if GPS_MAX_RECEIVERS > 1
     if (drivers[instance] && _type[instance] == GPS_TYPE_UBLOX_RTK_BASE) {
         // see if a moving baseline base has some RTCMv3 data
         // which we need to pass along to the rover
@@ -755,6 +756,7 @@ void AP_GPS::update_instance(uint8_t instance)
             }
         }
     }
+#endif
 
 #ifndef HAL_BUILD_AP_PERIPH
     if (data_should_be_logged &&
