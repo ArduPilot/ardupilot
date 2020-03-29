@@ -56,7 +56,7 @@ void NavEKF3::Log_Write_XKF2(uint8_t _core, uint64_t time_us) const
     getWind(_core,wind);
     getMagNED(_core,magNED);
     getMagXYZ(_core,magXYZ);
-    const struct log_NKF2a pkt2{
+    const struct log_XKF2 pkt2{
         LOG_PACKET_HEADER_INIT(LOG_XKF2_MSG),
         time_us : time_us,
         core    : _core,
