@@ -8,6 +8,8 @@
 #include "AP_Mount_SToRM32.h"
 #include "AP_Mount_SToRM32_serial.h"
 #include <AP_Math/location.h>
+#include <GCS_MAVLink/GCS.h>
+
 
 const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _DEFLT_MODE
@@ -544,6 +546,8 @@ void AP_Mount::set_mode(uint8_t instance, enum MAV_MOUNT_MODE mode)
         return;
     }
 
+    gcs().send_text(MAV_SEVERITY_INFO,"Set instance/mode to %u %u", instance, mode);
+
     // call backend's set_mode
     _backends[instance]->set_mode(mode);
 }
@@ -647,6 +651,8 @@ void AP_Mount::handle_mount_control(const mavlink_message_t &msg)
 
     mavlink_mount_control_t packet;
     mavlink_msg_mount_control_decode(&msg, &packet);
+
+    gcs().send_text(MAV_SEVERITY_INFO,"Received mount control message");
 
     // send message to backend
     _backends[_primary]->handle_mount_control(packet);
