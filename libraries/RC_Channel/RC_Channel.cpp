@@ -41,6 +41,7 @@ extern const AP_HAL::HAL& hal;
 #include <AP_Avoidance/AP_Avoidance.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AC_Fence/AC_Fence.h>
+#include <AP_VisualOdom/AP_VisualOdom.h>
 
 #define SWITCH_DEBOUNCE_TIME_MS  200
 
@@ -462,6 +463,7 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const aux_switch_
     case AUX_FUNC::RELAY4:
     case AUX_FUNC::RELAY5:
     case AUX_FUNC::RELAY6:
+    case AUX_FUNC::VISODOM_CALIBRATE:
         break;
     case AUX_FUNC::AVOID_ADSB:
     case AUX_FUNC::AVOID_PROXIMITY:
@@ -882,6 +884,17 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_po
             break;
         }
         }
+        break;
+
+    case AUX_FUNC::VISODOM_CALIBRATE:
+#if HAL_VISUALODOM_ENABLED
+        if (ch_flag == HIGH) {
+            AP_VisualOdom *visual_odom = AP::visualodom();
+            if (visual_odom != nullptr) {
+                visual_odom->align_sensor_to_vehicle();
+            }
+        }
+#endif
         break;
 
 #if !HAL_MINIMIZE_FEATURES
