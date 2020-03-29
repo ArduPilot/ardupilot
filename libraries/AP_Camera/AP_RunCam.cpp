@@ -549,6 +549,7 @@ void AP_RunCam::handle_2_key_simulation_process(Event ev)
         // in a sub-menu and save-and-exit was selected
         if (_in_menu > 1 && get_top_menu_length() > 0 && _sub_menu_pos == (get_sub_menu_length(_top_menu_pos) - 1)) {
             simulate_camera_button(ControlOperation::RCDEVICE_PROTOCOL_SIMULATE_WIFI_BTN, _button_delay_ms);
+            _sub_menu_pos = 0;
             _in_menu--;
         // in the top-menu and save-and-exit was selected
         } else if (_in_menu == 1 && get_top_menu_length() > 0 && _top_menu_pos == (get_top_menu_length() - 1)) {
@@ -580,6 +581,7 @@ void AP_RunCam::handle_2_key_simulation_process(Event ev)
         // the only exception is if someone hits save and exit on the root menu - then we are lost.
         if (_in_menu > 0) {
             _in_menu--;
+            _sub_menu_pos = 0;
             simulate_camera_button(ControlOperation::RCDEVICE_PROTOCOL_CHANGE_MODE, _mode_delay_ms);     // move up/out a menu
         }
         // no longer in the menu so trigger the OSD re-enablement
