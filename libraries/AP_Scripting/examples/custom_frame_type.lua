@@ -1,15 +1,17 @@
--- example of AP_MotorsMatrix motor setup
--- performs all functions of AP_MotorsMatrix::setup_motors except the initial removal of all motors
--- That is done by setup_motors() which exits unsuccessfully when frame_type CUSTOM is selected
+-- example of AP_MotorsMatrix motor setup for a quadX copter tailsitter with 2 counter-rotating boost motors
+-- This script does nothing unless frame_type is MOTOR_FRAME_TYPE_CUSTOM (19) and
+-- frame_class is MOTOR_FRAME_QUAD
+-- performs all functions of AP_MotorsMatrix::setup_motors
 -- For frame_class QUAD, this script adds the normal 4 motors for a quad X configuration plus 2 boost motors.
 -- It then calls normalise_rpy_factors() and set_initialised_ok() which indicates successful completion.
+-- It also sets Q_TAILSIT_MOTMX to 0x30 to enable motors 5 and 6 in FW modes.
 
 function update()
   local frame_class = motors:get_frame_class()
   local frame_type = motors:get_frame_type()
   if frame_type == motors.MOTOR_FRAME_TYPE_CUSTOM then
     if frame_class == motors.MOTOR_FRAME_QUAD then
-        gcs.send_text(0, 0, "frame_class: MOTOR_FRAME_QUAD, frame type: MOTOR_FRAME_TYPE_CUSTOM")
+        gcs:send_text(6, "configuring for quadX copter tailsitter with boost motors")
 
         -- remove all motors and set default SERVOn_FUNCTION parameter values 
         for i = 0, 11 do
@@ -36,6 +38,7 @@ function update()
         -- dual counter-rotating boost motors: located either on CG or displaced symmetrically
         motorsMatrix:add_motor_raw(4, 0, 0, 1, 5)
         motorsMatrix:add_motor_raw(5, 0, 0, -1, 6)
+
         -- set Q_TAILSIT_MOTMX to 0x30 to enable motors 5 and 6 in FW modes
         param:set_and_save('Q_TAILSIT_MOTMX', 0x30)
 
@@ -43,7 +46,7 @@ function update()
         motorsMatrix:normalise_rpy_factors()
         motors:set_initialised_ok();
       else
-        gcs.send_text(0, 0, "CUSTOM frame type not supported for frame_class: " .. tostring(frame_class))
+        gcs:send_text(6, "CUSTOM frame type not supported for frame_class: " .. tostring(frame_class))
       end
   end
 end
