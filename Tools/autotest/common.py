@@ -2770,12 +2770,11 @@ class AutoTest(ABC):
 
         def get_altitude(alt_relative=False, timeout2=30):
             msg = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=timeout2)
-            if msg:
-                if alt_relative:
-                    return msg.relative_alt / 1000.0  # mm -> m
-                else:
-                    return msg.alt / 1000.0  # mm -> m
-            raise MsgRcvTimeoutException("Failed to get Global Position")
+            if msg is None:
+                raise MsgRcvTimeoutException("Failed to get Global Position")
+            if alt_relative:
+                return msg.relative_alt / 1000.0  # mm -> m
+            return msg.alt / 1000.0  # mm -> m
 
         def validator(value2, target2=None):
             if altitude_min <= value2 <= altitude_max:
@@ -2791,9 +2790,9 @@ class AutoTest(ABC):
 
         def get_groundspeed(timeout2):
             msg = self.mav.recv_match(type='VFR_HUD', blocking=True, timeout=timeout2)
-            if msg:
-                return msg.groundspeed
-            raise MsgRcvTimeoutException("Failed to get Groundspeed")
+            if msg is None:
+                raise MsgRcvTimeoutException("Failed to get Groundspeed")
+            return msg.groundspeed
 
         def validator(value2, target2=None):
             if speed_min <= value2 <= speed_max:
@@ -2807,12 +2806,12 @@ class AutoTest(ABC):
         """Wait for a given roll in degrees."""
         def get_roll(timeout2):
             msg = self.mav.recv_match(type='ATTITUDE', blocking=True, timeout=timeout2)
-            if msg:
-                p = math.degrees(msg.pitch)
-                r = math.degrees(msg.roll)
-                self.progress("Roll %d Pitch %d" % (r, p))
-                return r
-            raise MsgRcvTimeoutException("Failed to get Roll")
+            if msg is None:
+                raise MsgRcvTimeoutException("Failed to get Roll")
+            p = math.degrees(msg.pitch)
+            r = math.degrees(msg.roll)
+            self.progress("Roll %d Pitch %d" % (r, p))
+            return r
 
         def validator(value2, target2):
             return math.fabs((value2 - target2 + 180) % 360 - 180) <= accuracy
@@ -2823,12 +2822,12 @@ class AutoTest(ABC):
         """Wait for a given pitch in degrees."""
         def get_pitch(timeout2):
             msg = self.mav.recv_match(type='ATTITUDE', blocking=True, timeout=timeout2)
-            if msg:
-                p = math.degrees(msg.pitch)
-                r = math.degrees(msg.roll)
-                self.progress("Pitch %d Roll %d" % (p, r))
-                return p
-            raise MsgRcvTimeoutException("Failed to get Pitch")
+            if msg is None:
+                raise MsgRcvTimeoutException("Failed to get Pitch")
+            p = math.degrees(msg.pitch)
+            r = math.degrees(msg.roll)
+            self.progress("Pitch %d Roll %d" % (p, r))
+            return p
 
         def validator(value2, target2):
             return math.fabs((value2 - target2 + 180) % 360 - 180) <= accuracy
@@ -2875,9 +2874,9 @@ class AutoTest(ABC):
         """Wait for a given heading."""
         def get_heading_wrapped(timeout2):
             msg = self.mav.recv_match(type='VFR_HUD', blocking=True, timeout=timeout2)
-            if msg:
-                return msg.heading
-            raise MsgRcvTimeoutException("Failed to get heading")
+            if msg is None:
+                raise MsgRcvTimeoutException("Failed to get heading")
+            return msg.heading
 
         def validator(value2, target2):
             return math.fabs((value2 - target2 + 180) % 360 - 180) <= accuracy
