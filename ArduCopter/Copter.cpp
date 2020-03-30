@@ -112,9 +112,6 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if BEACON_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Beacon,            &copter.g2.beacon,           update,         400,  50),
 #endif
-#if VISUAL_ODOMETRY_ENABLED == ENABLED
-    SCHED_TASK_CLASS(AP_VisualOdom,       &copter.g2.visual_odom,        update,         400,  50),
-#endif
     SCHED_TASK(update_altitude,       10,    100),
     SCHED_TASK(run_nav_updates,       50,    100),
     SCHED_TASK(update_throttle_hover,100,     90),
