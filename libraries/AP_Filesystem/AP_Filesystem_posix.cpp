@@ -60,12 +60,12 @@ int AP_Filesystem_Posix::close(int fd)
     return ::close(fd);
 }
 
-ssize_t AP_Filesystem_Posix::read(int fd, void *buf, size_t count)
+int32_t AP_Filesystem_Posix::read(int fd, void *buf, uint32_t count)
 {
     return ::read(fd, buf, count);
 }
 
-ssize_t AP_Filesystem_Posix::write(int fd, const void *buf, size_t count)
+int32_t AP_Filesystem_Posix::write(int fd, const void *buf, uint32_t count)
 {
     return ::write(fd, buf, count);
 }
