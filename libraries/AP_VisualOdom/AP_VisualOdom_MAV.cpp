@@ -13,9 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_HAL/AP_HAL.h>
 #include "AP_VisualOdom_MAV.h"
-#include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -32,7 +33,27 @@ void AP_VisualOdom_MAV::handle_msg(const mavlink_message_t &msg)
     mavlink_vision_position_delta_t packet;
     mavlink_msg_vision_position_delta_decode(&msg, &packet);
 
-    const Vector3f angle_delta(packet.angle_delta[0], packet.angle_delta[1], packet.angle_delta[2]);
-    const Vector3f position_delta(packet.position_delta[0], packet.position_delta[1], packet.position_delta[2]);
-    set_deltas(angle_delta, position_delta, packet.time_delta_usec, packet.confidence);
+    // apply rotation to angle and position delta
+    const enum Rotation rot = _frontend.get_orientation();
+    Vector3f angle_delta = Vector3f(packet.angle_delta[0], packet.angle_delta[1], packet.angle_delta[2]);
+    angle_delta.rotate(rot);
+    Vector3f position_delta = Vector3f(packet.position_delta[0], packet.position_delta[1], packet.position_delta[2]);
+    position_delta.rotate(rot);
+
+    const uint32_t now_ms = AP_HAL::millis();
+    _last_update_ms = now_ms;
+
+    // send to EKF
+    AP::ahrs_navekf().writeBodyFrameOdom(packet.confidence,
+                                         angle_delta,
+                                         position_delta,
+                                         packet.time_delta_usec,
+                                         now_ms,
+                                         _frontend.get_pos_offset());
+
+    // log sensor data
+    AP::logger().Write_VisualOdom(packet.time_delta_usec / 1000000.0f,
+                                  angle_delta,
+                                  position_delta,
+                                  packet.confidence);
 }
