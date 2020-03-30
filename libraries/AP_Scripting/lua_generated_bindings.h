@@ -1,5 +1,7 @@
 #pragma once
 // auto generated bindings, don't manually edit.  See README.md for details.
+#include <AP_Button/AP_Button.h>
+#include <AP_RPM/AP_RPM.h>
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_ESC_Telem/AP_ESC_Telem.h>

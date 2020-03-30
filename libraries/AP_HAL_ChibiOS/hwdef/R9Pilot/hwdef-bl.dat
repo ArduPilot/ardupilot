@@ -5,7 +5,7 @@
 MCU STM32F7xx STM32F767xx
 
 # board ID for firmware load
-APJ_BOARD_ID 1004
+APJ_BOARD_ID 1008
 
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
@@ -46,3 +46,10 @@ define HAL_LED_ON 0
 define HAL_USE_EMPTY_STORAGE 1
 define HAL_STORAGE_SIZE 16384
 
+
+# Add CS pins to ensure they are high in bootloader
+PA4 BARO_CS CS
+PA1 BARO_CS2 CS
+PB12 EXT_CS CS
+PA15 IMU_CS CS
+PE4 SDCARD_CS CS

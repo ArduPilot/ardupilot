@@ -929,12 +929,10 @@ void UARTDriver::half_duplex_setup_tx(void)
     if (!hd_tx_active) {
         chEvtGetAndClearFlags(&hd_listener);
         hd_tx_active = true;
-        if (_last_options & (OPTION_RXINV | OPTION_TXINV)) {
-            SerialDriver *sd = (SerialDriver*)(sdef.serial);
-            sdStop(sd);
-            sercfg.cr3 &= ~USART_CR3_HDSEL;
-            sdStart(sd, &sercfg);
-        }
+        SerialDriver *sd = (SerialDriver*)(sdef.serial);
+        sdStop(sd);
+        sercfg.cr3 &= ~USART_CR3_HDSEL;
+        sdStart(sd, &sercfg);
     }
 #endif
 }
@@ -955,12 +953,10 @@ void UARTDriver::_timer_tick(void)
           half-duplex transmit has finished. We now re-enable the
           HDSEL bit for receive
          */
-        if (_last_options & (OPTION_RXINV | OPTION_TXINV)) {
-            SerialDriver *sd = (SerialDriver*)(sdef.serial);
-            sdStop(sd);
-            sercfg.cr3 |= USART_CR3_HDSEL;
-            sdStart(sd, &sercfg);
-        }
+        SerialDriver *sd = (SerialDriver*)(sdef.serial);
+        sdStop(sd);
+        sercfg.cr3 |= USART_CR3_HDSEL;
+        sdStart(sd, &sercfg);
         hd_tx_active = false;
     }
 #endif

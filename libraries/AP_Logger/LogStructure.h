@@ -1317,6 +1317,214 @@ struct PACKED log_Arm_Disarm {
 #define ARSP_UNITS "snPOPP----"
 #define ARSP_MULTS "F00B00----"
 
+// @LoggerMessage: ATT
+// @Description: Canonical vehicle attitude
+// @Field: TimeUS: microseconds since system startup
+// @Field: DesRoll: vehicle desired roll
+// @Field: Roll: achieved vehicle roll
+// @Field: DesPitch: vehicle desired pitch
+// @Field: Pitch: achieved vehicle pitch
+// @Field: DesYaw: vehicle desired yaw
+// @Field: Yaw: achieved vehicle yaw
+// @Field: ErrRP: lowest estimated gyro drift error
+// @Field: ErrYaw: difference between measured yaw and DCM yaw estimate
+
+// @LoggerMessage: BARO
+// @Description: Gathered Barometer data
+// @Field: TimeUS: microseconds since system startup
+// @Field: Alt: calculated altitude
+// @Field: Press: measured atmospheric pressure
+// @Field: Temp: measured atmospheric temperature
+// @Field: CRt: derived climb rate from primary barometer
+// @Field: SMS: time last sample was taken
+// @Field: Offset: raw adjustment of barometer altitude, zeroed on calibration, possibly set by GCS
+// @Field: GndTemp: temperature on ground, specified by parameter or measured while on ground
+// @Field: Health: true if barometer is considered healthy
+
+// @LoggerMessage: BAT
+// @Description: Gathered battery data
+// @Field: TimeUS: microseconds since system startup
+// @Field: Instance: battery instance number
+// @Field: Volt: measured voltage
+// @Field: VoltR: estimated resting voltage
+// @Field: Curr: measured current
+// @Field: CurrTot: current * time
+// @Field: EnrgTot: energy this battery has produced
+// @Field: Temp: measured temperature
+// @Field: Res: estimated temperature resistance
+
+// @LoggerMessage: FMT
+// @Description: Message defining the format of messages in this file
+// @URL: https://ardupilot.org/dev/docs/code-overview-adding-a-new-log-message.html
+// @Field: Type: unique-to-this-log identifier for message being defined
+// @Field: Length: the number of bytes taken up by this message (including all headers)
+// @Field: Name: name of the message being defined
+// @Field: Format: character string defining the C-storage-type of the fields in this message
+// @Field: Columns: the labels of the message being defined
+
+// @LoggerMessage: FMTU
+// @Description: Message defining units and multipliers used for fields of other messages
+// @Field: TimeUS: microseconds since system startup
+// @Field: FmtType: numeric reference to associated FMT message
+// @Field: UnitIds: each character refers to a UNIT message.  The unit at an offset corresponds to the field at the same offset in FMT.Format
+// @Field: MultIds: each character refers to a MULT message.  The multiplier at an offset corresponds to the field at the same offset in FMT.Format
+
+// @LoggerMessage: GPS
+// @Description: Information received from GNSS systems attached to the autopilot
+// @Field: TimeUS: microseconds since system startup
+// @Field: Status: GPS Fix type; 2D fix, 3D fix etc.
+// @Field: GMS: milliseconds since start of GPS Week
+// @Field: GWk: weeks since 5 Jan 1980
+// @Field: NSats: number of satellites visible
+// @Field: HDop: horizontal precision
+// @Field: Lat: latitude
+// @Field: Lng: longitude
+// @Field: Alt: altitude
+// @Field: Spd: speed
+// @Field: GCrs: ground course
+// @Field: VZ: vertical velocity
+// @Field: Yaw: vehicle yaw
+// @Field: U: boolean value indicating whether this GPS is in use
+
+// @LoggerMessage: MAG,MAG2,MAG3
+// @Description: Information received from compasses
+// @Field: TimeUS: microseconds since system startup
+// @Field: MagX: magnetic field strength in body frame
+// @Field: MagY: magnetic field strength in body frame
+// @Field: MagZ: magnetic field strength in body frame
+// @Field: OfsX: magnetic field offset in body frame
+// @Field: OfsY: magnetic field offset in body frame
+// @Field: OfsZ: magnetic field offset in body frame
+// @Field: MOfsX: motor interference magnetic field offset in body frame
+// @Field: MOfsY: motor interference magnetic field offset in body frame
+// @Field: MOfsZ: motor interference magnetic field offset in body frame
+// @Field: Health: true if the compass is considered healthy
+// @Field: S: time measurement was taken
+
+// @LoggerMessage: MODE
+// @Description: vehicle control mode information
+// @Field: TimeUS: microseconds since system startup
+// @Field: Mode: vehicle-specific mode number
+// @Field: ModeNum: alias for Mode
+// @Field: Rsn: reason for entering this mode; enumeration value
+
+// @LoggerMessage: MULT
+// @Description: Message mapping from single character to numeric multiplier
+// @Field: TimeUS: microseconds since system startup
+// @Field: Id: character referenced by FMTU
+// @Field: Mult: numeric multiplier
+
+// @LoggerMessage: PIDR,PIDP,PIDY,PIDA,PIDS
+// @Description: Proportional/Integral/Derivative gain values for Roll/Pitch/Yaw/Z/Steering
+// @Field: TimeUS: microseconds since system startup
+// @Field: Tar: desired value
+// @Field: Act: achieved value
+// @Field: Err: error between target and achieved
+// @Field: P: proportional part of PID
+// @Field: I: integral part of PID
+// @Field: D: derivative part of PID
+// @Field: FF: controller feed-forward portion of response
+
+// @LoggerMessage: RATE
+// @Description: Desired and achieved vehicle attitude rates
+// @Field: TimeUS: microseconds since system startup
+// @Field: RDes: vehicle desired roll rate
+// @Field: R: achieved vehicle roll rate
+// @Field: ROut: normalized output for Roll
+// @Field: PDes: vehicle desired pitch rate
+// @Field: P: vehicle pitch rate
+// @Field: POut: normalized output for Pitch
+// @Field: YDes: vehicle desired yaw rate
+// @Field: Y: achieved vehicle yaw rate
+// @Field: YOut: normalized output for Yaw
+// @Field: YDes: vehicle desired yaw rate
+// @Field: Y: achieved vehicle yaw rate
+// @Field: ADes: desired vehicle vertical acceleration
+// @Field: A: achieved vehicle vertical acceleration
+// @Field: AOut: percentage of vertical thrust output current being used
+
+// @LoggerMessage: RCIN
+// @Description: RC input channels to vehicle
+// @Field: TimeUS: microseconds since system startup
+// @Field: C1: channel 1 input
+// @Field: C2: channel 2 input
+// @Field: C3: channel 3 input
+// @Field: C4: channel 4 input
+// @Field: C5: channel 5 input
+// @Field: C6: channel 6 input
+// @Field: C7: channel 7 input
+// @Field: C8: channel 8 input
+// @Field: C9: channel 9 input
+// @Field: C10: channel 10 input
+// @Field: C11: channel 11 input
+// @Field: C12: channel 12 input
+// @Field: C13: channel 13 input
+// @Field: C14: channel 14 input
+
+// @LoggerMessage: RCOU
+// @Description: Servo channel output values
+// @Field: TimeUS: microseconds since system startup
+// @Field: C1: channel 1 output
+// @Field: C2: channel 2 output
+// @Field: C3: channel 3 output
+// @Field: C4: channel 4 output
+// @Field: C5: channel 5 output
+// @Field: C6: channel 6 output
+// @Field: C7: channel 7 output
+// @Field: C8: channel 8 output
+// @Field: C9: channel 9 output
+// @Field: C10: channel 10 output
+// @Field: C11: channel 11 output
+// @Field: C12: channel 12 output
+// @Field: C13: channel 13 output
+// @Field: C14: channel 14 output
+
+// @LoggerMessage: SRTL
+// @Description: SmartRTL statistics
+// @Field: TimeUS: microseconds since system startup
+// @Field: Active: true if SmartRTL could be used right now
+// @Field: NumPts: number of points currently in use
+// @Field: MaxPts: maximum number of points that could be used
+// @Field: Action: most recent internal action taken by SRTL library
+// @Field: N: point associated with most recent action (North component)
+// @Field: E: point associated with most recent action (East component)
+// @Field: D: point associated with most recent action (Down component)
+
+// @LoggerMessage: UBX1
+// @Description: uBlox-specific GPS information (part 1)
+// @Field: TimeUS: microseconds since system startup
+// @Field: Instance: GPS instance number
+// @Field: noisePerMS: noise level as measured by GPS
+// @Field: jamInd: jamming indicator; higher is more likely jammed
+// @Field: aPower: antenna power indicator; 2 is don't know
+// @Field: agcCnt: automatic gain control monitor
+// @Field: config: bitmask for messages which haven't been seen
+
+// @LoggerMessage: UBX2
+// @Description: uBlox-specific GPS information (part 2)
+// @Field: TimeUS: microseconds since system startup
+// @Field: Instance: GPS instance number
+// @Field: ofsI: imbalance of I part of complex signal
+// @Field: magI: magnitude of I part of complex signal
+// @Field: ofsQ: imbalance of Q part of complex signal
+// @Field: magQ: magnitude of Q part of complex signal
+
+// @LoggerMessage: UNIT
+// @Description: Message mapping from single character to SI unit
+// @Field: TimeUS: microseconds since system startup
+// @Field: Id: character referenced by FMTU
+// @Field: Label: Unit - SI where available
+
+// @LoggerMessage: VIBE
+// @Description: Processed (acceleration) vibration information
+// @Field: TimeUS: microseconds since system startup
+// @Field: VibeX: Primary accelerometer filtered vibration, x-axis
+// @Field: VibeY: Primary accelerometer filtered vibration, y-axis
+// @Field: VibeZ: Primary accelerometer filtered vibration, z-axis
+// @Field: Clip0: Number of clipping events on 1st accelerometer
+// @Field: Clip1: Number of clipping events on 2nd accelerometer
+// @Field: Clip2: Number of clipping events on 3rd accelerometer
+
 // messages for all boards
 #define LOG_BASE_STRUCTURES \
     { LOG_FORMAT_MSG, sizeof(log_Format), \

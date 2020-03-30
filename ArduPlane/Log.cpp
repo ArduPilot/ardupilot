@@ -252,8 +252,38 @@ const struct LogStructure Plane::log_structure[] = {
     LOG_COMMON_STRUCTURES,
     { LOG_STARTUP_MSG, sizeof(log_Startup),         
       "STRT", "QBH",         "TimeUS,SType,CTot", "s--", "F--" },
+
+// @LoggerMessage: CTUN
+// @Description: Control Tuning information
+// @Field: TimeUS: microseconds since system startup
+// @Field: NavRoll: desired roll
+// @Field: Roll: achieved roll
+// @Field: NavPitch: desired pitch
+// @Field: Pitch: achieved pitch
+// @Field: ThrOut: scaled output throttle
+// @Field: RdrOut: scaled output rudder
+// @Field: ThrDem: demanded speed-height-controller throttle
+// @Field: Aspd: airspeed estimate
+
     { LOG_CTUN_MSG, sizeof(log_Control_Tuning),     
       "CTUN", "Qcccchhhf",    "TimeUS,NavRoll,Roll,NavPitch,Pitch,ThrOut,RdrOut,ThrDem,Aspd", "sdddd---n", "FBBBB---0" },
+
+// @LoggerMessage: NTUN
+// @Description: Navigation Tuning information - e.g. vehicle destination
+// @URL: http://ardupilot.org/rover/docs/navigation.html
+// @Field: TimeUS: Microseconds since system startup
+// @Field: Dist: distance to the current navigation waypoint
+// @Field: TBrg: bearing to the current navigation waypoint
+// @Field: NavBrg: the vehicle's desired heading
+// @Field: AltErr: difference between current vehicle height and target height
+// @Field: XT: the vehicle's current distance from the current travel segment
+// @Field: XTi: integration of the vehicle's crosstrack error
+// @Field: AspdE: difference between vehicle's airspeed and desired airspeed
+// @Field: AspdE: difference between vehicle's airspeed and desired airspeed
+// @Field: TLat: target latitude
+// @Field: TLng: target longitude
+// @Field: TAlt: target altitude
+// @Field: TAspd: target airspeed
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),         
       "NTUN", "QfcccfffLLii",  "TimeUS,Dist,TBrg,NavBrg,AltErr,XT,XTi,AspdE,TLat,TLng,TAlt,TAspd", "smddmmmnDUmn", "F0BBB0B0GGBB" },
     { LOG_SONAR_MSG, sizeof(log_Sonar),             
@@ -262,20 +292,46 @@ const struct LogStructure Plane::log_structure[] = {
       "ATRP", "QBBcfff",  "TimeUS,Type,State,Servo,Demanded,Achieved,P", "s---dd-", "F---00-" },
     { LOG_STATUS_MSG, sizeof(log_Status),
       "STAT", "QBfBBBBBB",  "TimeUS,isFlying,isFlyProb,Armed,Safety,Crash,Still,Stage,Hit", "s--------", "F--------" },
+
+// @LoggerMessage: QTUN
+// @Description: QuadPlane vertical tuning message
+// @Field: TimeUS: microseconds since system startup
+// @Field: ThI: throttle input
+// @Field: ABst: angle boost
+// @Field: ThO: throttle output
+// @Field: ThH: calculated hover throttle
+// @Field: DAlt: desired altitude
+// @Field: Alt: achieved altitude
+// @Field: BAlt: barometric altitude
+// @Field: DCRt: desired climb rate
+// @Field: CRt: climb rate
+// @Field: TMix: transition throttle mix value
+// @Field: Sscl: speed scalar for surfaces
     { LOG_QTUN_MSG, sizeof(QuadPlane::log_QControl_Tuning),
       "QTUN", "Qffffffeccff", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DCRt,CRt,TMix,Sscl", "s----mmmnn--", "F----00000-0" },
     { LOG_AOA_SSA_MSG, sizeof(log_AOA_SSA),
       "AOA", "Qff", "TimeUS,AOA,SSA", "sdd", "F00" },
-    { LOG_PIQR_MSG, sizeof(log_PID), \
-      "PIQR", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },  \
-    { LOG_PIQP_MSG, sizeof(log_PID), \
-      "PIQP", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }, \
-    { LOG_PIQY_MSG, sizeof(log_PID), \
-      "PIQY", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }, \
-    { LOG_PIQA_MSG, sizeof(log_PID), \
-      "PIQA", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }, \
-    { LOG_AETR_MSG, sizeof(log_AETR), \
-      "AETR", "Qhhhhh",  "TimeUS,Ail,Elev,Thr,Rudd,Flap", "s-----", "F-----" },  \
+
+// @LoggerMessage: PIQR,PIQP,PIQY,PIQA
+// @Description: QuadPlane Proportional/Integral/Derivative gain values for Roll/Pitch/Yaw/Z
+// @Field: TimeUS: microseconds since system startup
+// @Field: Tar: desired value
+// @Field: Act: achieved value
+// @Field: Err: error between target and achieved
+// @Field: P: proportial part of PID
+// @Field: I: integral part of PID
+// @Field: D: derivative part of PID
+// @Field: FF: controller feed-forward portion of response
+    { LOG_PIQR_MSG, sizeof(log_PID),
+      "PIQR", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
+    { LOG_PIQP_MSG, sizeof(log_PID),
+      "PIQP", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
+    { LOG_PIQY_MSG, sizeof(log_PID),
+      "PIQY", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
+    { LOG_PIQA_MSG, sizeof(log_PID),
+      "PIQA", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
+    { LOG_AETR_MSG, sizeof(log_AETR),
+      "AETR", "Qhhhhh",  "TimeUS,Ail,Elev,Thr,Rudd,Flap", "s-----", "F-----" },
 };
 
 void Plane::Log_Write_Vehicle_Startup_Messages()

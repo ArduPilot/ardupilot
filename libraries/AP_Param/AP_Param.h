@@ -39,7 +39,7 @@
   maximum size of embedded parameter file
  */
 #ifndef AP_PARAM_MAX_EMBEDDED_PARAM
-#if HAL_MINIMIZE_FEATURES
+#if BOARD_FLASH_SIZE <= 1024
 # define AP_PARAM_MAX_EMBEDDED_PARAM 1024
 #else
 # define AP_PARAM_MAX_EMBEDDED_PARAM 8192
@@ -518,6 +518,7 @@ private:
         uint8_t revision;
         uint8_t spare;
     };
+    static_assert(sizeof(struct EEPROM_header) == 4, "Bad EEPROM_header size!");
 
     static uint16_t sentinal_offset;
 
@@ -540,6 +541,7 @@ private:
         uint32_t key_high : 1;
         uint32_t group_element : 18;
     };
+    static_assert(sizeof(struct Param_header) == 4, "Bad Param_header size!");
 
     // number of bits in each level of nesting of groups
     static const uint8_t        _group_level_shift = 6;

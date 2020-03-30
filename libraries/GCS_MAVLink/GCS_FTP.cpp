@@ -114,6 +114,7 @@ void GCS_MAVLINK::send_ftp_replies(void) {
                     0, reply.sysid, reply.compid,
                     payload);
                 ftp.replies->pop(reply);
+                ftp.last_send_ms = AP_HAL::millis();
         } else {
             return;
         }
@@ -147,7 +148,7 @@ void GCS_MAVLINK::ftp_error(struct pending_ftp &response, FTP_ERROR error) {
 void GCS_MAVLINK::ftp_push_replies(pending_ftp &reply)
 {
     while (!ftp.replies->push(reply)) { // we must fit the response, keep shoving it in
-        hal.scheduler->delay(10);
+        hal.scheduler->delay(2);
     }
 }
 
@@ -159,7 +160,7 @@ void GCS_MAVLINK::ftp_worker(void) {
     while (true) {
         while (!ftp.requests->pop(request)) {
             // nothing to handle, delay ourselves a bit then check again. Ideally we'd use conditional waits here
-            hal.scheduler->delay(10);
+            hal.scheduler->delay(2);
         }
 
         // if it's a rerequest and we still have the last response then send it
@@ -436,6 +437,7 @@ void GCS_MAVLINK::ftp_worker(void) {
                     }
                 case FTP_OP::BurstReadFile:
                     {
+                        const uint16_t max_read = (request.size == 0?sizeof(reply.data):request.size);
                         // must actually be working on a file
                         if (ftp.fd == -1) {
                             ftp_error(reply, FTP_ERROR::FileNotFound);
@@ -458,7 +460,7 @@ void GCS_MAVLINK::ftp_worker(void) {
                         const uint32_t transfer_size = 100;
                         for (uint32_t i = 0; (i < transfer_size) && more_pending; i++) {
                             // fill the buffer
-                            const ssize_t read_bytes = AP::FS().read(ftp.fd, reply.data, sizeof(reply.data));
+                            const ssize_t read_bytes = AP::FS().read(ftp.fd, reply.data, max_read);
                             if (read_bytes == -1) {
                                 ftp_error(reply, FTP_ERROR::FailErrno);
                                 more_pending = false;
@@ -477,7 +479,7 @@ void GCS_MAVLINK::ftp_worker(void) {
                             }
 
                             reply.opcode = FTP_OP::Ack;
-                            reply.offset = request.offset + i * sizeof(reply.data);
+                            reply.offset = request.offset + i * max_read;
                             reply.burst_complete = (i == (transfer_size - 1));
                             reply.size = (uint8_t)read_bytes;
 
@@ -545,10 +547,9 @@ void GCS_MAVLINK::ftp_list_dir(struct pending_ftp &request, struct pending_ftp &
     request.data[sizeof(request.data) - 1] = 0; // ensure the path is null terminated
 
     // open the dir
-    DIR *dir = AP::FS().opendir((char *)request.data);
+    auto *dir = AP::FS().opendir((char *)request.data);
     if (dir == nullptr) {
         ftp_error(response, FTP_ERROR::FailErrno);
-        AP::FS().closedir(dir);
         return;
     }
 

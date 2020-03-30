@@ -171,8 +171,9 @@ protected:
     // waypoint navigation but the user can control the yaw.
     void auto_takeoff_run();
     void auto_takeoff_set_start_alt(void);
-    void auto_takeoff_attitude_run(float target_yaw_rate);
-    // altitude below which we do no navigation in auto takeoff
+
+    // altitude above-ekf-origin below which auto takeoff does not control horizontal position
+    static bool auto_takeoff_no_nav_active;
     static float auto_takeoff_no_nav_alt_cm;
 
 public:
@@ -795,7 +796,7 @@ public:
 
     bool is_taking_off() const override;
 
-    bool do_user_takeoff_start(float final_alt_above_home) override;
+    bool do_user_takeoff_start(float takeoff_alt_cm) override;
 
     GuidedMode mode() const { return guided_mode; }
 
@@ -1387,6 +1388,7 @@ public:
     using Mode::Mode;
 
     bool init(bool ignore_checks) override;
+    void exit();
     void run() override;
 
     bool requires_GPS() const override { return true; }

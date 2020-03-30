@@ -805,8 +805,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             delta = self.get_sim_time() - tstart
             if delta > 12:
                 raise NotAchievedException("Took too long to revert RC channel value (delta=%f)" % delta)
-            if delta < 9:
-                raise NotAchievedException("Didn't take long enough to revert RC channel value (delta=%f)" % delta)
+            min_delta = 9
+            if delta < min_delta:
+                raise NotAchievedException("Didn't take long enough to revert RC channel value (delta=%f want>=%f)" %
+                                           (delta, min_delta))
             self.progress("Disabling RC override timeout")
             self.set_parameter("RC_OVERRIDE_TIME", -1)
             self.mav.mav.rc_channels_override_send(
@@ -4312,7 +4314,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.progress("Waiting for magic throttle value")
         self.wait_servo_channel_value(3, magic_throttle_value)
         self.wait_servo_channel_value(3, self.get_parameter("RC3_TRIM", 5), timeout=10)
-        self.mav.motors_disarmed_wait()
+        self.wait_disarmed()
 
     def test_poly_fence_object_avoidance_guided(self, target_system=1, target_component=1):
         if not self.mavproxy_can_do_mision_item_protocols():
@@ -4685,20 +4687,30 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             target_component=target_component,
         )
 
-    def script_source_path(self, scriptname):
+    def script_example_source_path(self, scriptname):
         return os.path.join(self.rootdir(), "libraries", "AP_Scripting", "examples", scriptname)
+
+    def script_test_source_path(self, scriptname):
+        return os.path.join(self.rootdir(), "libraries", "AP_Scripting", "tests", scriptname)
 
     def installed_script_path(self, scriptname):
         return os.path.join("scripts", scriptname)
 
-    def install_example_script(self, scriptname):
-        source = self.script_source_path(scriptname)
+    def install_script(self, source, scriptname):
         dest = self.installed_script_path(scriptname)
         destdir = os.path.dirname(dest)
         if not os.path.exists(destdir):
             os.mkdir(destdir)
         self.progress("Copying (%s) to (%s)" % (source, dest))
         shutil.copy(source, dest)
+
+    def install_example_script(self, scriptname):
+        source = self.script_example_source_path(scriptname)
+        self.install_script(source, scriptname)
+
+    def install_test_script(self, scriptname):
+        source = self.script_test_source_path(scriptname)
+        self.install_script(source, scriptname)
 
     def remove_example_script(self, scriptname):
         dest = self.installed_script_path(scriptname)
@@ -4746,7 +4758,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
     def test_scripting_internal_test(self):
         self.start_subtest("Scripting internal test")
         ex = None
-        example_script = "scripting_test.lua"
+        test_scripts = ["scripting_test.lua","math.lua","strings.lua"]
+        success_text = ["Internal tests passed","Math tests passed","String tests passed"]
+
         messages = []
         def my_message_hook(mav, message):
             if message.get_type() != 'STATUSTEXT':
@@ -4755,13 +4769,17 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.install_message_hook(my_message_hook)
         try:
             self.set_parameter("SCR_ENABLE", 1)
-            self.set_parameter("SCR_HEAP_SIZE", 65536) # this is more heap then we need, but this script will keep getting bigger
-            self.install_example_script(example_script)
-            self.reboot_sitl()
-            self.delay_sim_time(10)
+            self.set_parameter("SCR_HEAP_SIZE", 1024000)
+            self.set_parameter("SCR_VM_I_COUNT", 1000000)
+
+            for script in test_scripts:
+                self.install_test_script(script)
+                self.reboot_sitl()
+                self.delay_sim_time(10)
+                self.remove_example_script(script)
+
         except Exception as e:
             ex = e
-        self.remove_example_script(example_script)
         self.reboot_sitl()
 
         self.remove_message_hook(my_message_hook)
@@ -4770,10 +4788,13 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise ex
 
         # check all messages to see if we got our message
-        success = False
-        for m in messages:
-            if "Internal tests passed" in m.text:
-                success = True
+        success = True
+        for text in success_text:
+            script_success = False
+            for m in messages:
+                if text in m.text:
+                    script_success = True
+            success = script_success and success
         self.progress("Success")
         if not success :
             raise NotAchievedException("Scripting internal test failed")
@@ -4811,6 +4832,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
     def test_scripting(self):
         self.test_scripting_hello_world()
         self.test_scripting_simple_loop()
+        self.test_scripting_internal_test()
 
     def test_mission_frame(self, frame, target_system=1, target_component=1):
         self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_MISSION,

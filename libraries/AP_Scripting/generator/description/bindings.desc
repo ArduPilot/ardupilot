@@ -35,6 +35,7 @@ singleton AP_AHRS method get_relative_position_NED_home boolean Vector3f'Null
 singleton AP_AHRS method home_is_set boolean
 singleton AP_AHRS method prearm_healthy boolean
 singleton AP_AHRS method airspeed_estimate boolean float'Null
+singleton AP_AHRS method get_vibration Vector3f
 
 include AP_Arming/AP_Arming.h
 
@@ -153,7 +154,10 @@ singleton AP_Vehicle method set_mode boolean uint8_t 0 UINT8_MAX ModeReason::SCR
 singleton AP_Vehicle method get_mode uint8_t
 singleton AP_Vehicle method get_likely_flying boolean
 singleton AP_Vehicle method get_time_flying_ms uint32_t
+singleton AP_Vehicle method start_takeoff boolean float (-LOCATION_ALT_MAX_M*100+1) (LOCATION_ALT_MAX_M*100-1)
 singleton AP_Vehicle method set_target_location boolean Location
+singleton AP_Vehicle method get_target_location boolean Location'Null
+singleton AP_Vehicle method set_target_velocity_NED boolean Vector3f
 
 include AP_SerialLED/AP_SerialLED.h
 singleton AP_SerialLED alias serialLED
@@ -208,3 +212,11 @@ singleton AP_Mission method get_prev_nav_cmd_id uint16_t
 singleton AP_Mission method get_current_nav_id uint16_t
 singleton AP_Mission method get_current_do_cmd_id uint16_t
 singleton AP_Mission method num_commands uint16_t
+
+include AP_RPM/AP_RPM.h
+singleton AP_RPM alias RPM
+singleton AP_RPM method get_rpm boolean uint8_t 0 RPM_MAX_INSTANCES float'Null
+
+include AP_Button/AP_Button.h
+singleton AP_Button alias button
+singleton AP_Button method get_button_state boolean uint8_t 1 AP_BUTTON_NUM_PINS

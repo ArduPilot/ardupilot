@@ -72,6 +72,7 @@ public:
         uint8_t fault_thd_prio;
         uint32_t fault_addr;
         uint32_t fault_icsr;
+        uint32_t fault_lr;
     };
     struct PersistentData persistent_data;
 
@@ -158,7 +159,13 @@ public:
     // heap functions, note that a heap once alloc'd cannot be dealloc'd
     virtual void *allocate_heap_memory(size_t size) = 0;
     virtual void *heap_realloc(void *heap, void *ptr, size_t new_size) = 0;
+#if USE_LIBC_REALLOC
+    virtual void *std_realloc(void *ptr, size_t new_size) { return realloc(ptr, new_size); }
+#else
+    virtual void *std_realloc(void *ptr, size_t new_size) = 0;
+#endif // USE_LIBC_REALLOC
 #endif // ENABLE_HEAP
+
 
     /**
        how much free memory do we have in bytes. If unknown return 4096

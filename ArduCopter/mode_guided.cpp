@@ -47,13 +47,13 @@ bool ModeGuided::init(bool ignore_checks)
 
 
 // do_user_takeoff_start - initialises waypoint controller to implement take-off
-bool ModeGuided::do_user_takeoff_start(float final_alt_above_home)
+bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
 {
     guided_mode = Guided_TakeOff;
 
     // initialise wpnav destination
     Location target_loc = copter.current_loc;
-    target_loc.set_alt_cm(final_alt_above_home, Location::AltFrame::ABOVE_HOME);
+    target_loc.set_alt_cm(takeoff_alt_cm, Location::AltFrame::ABOVE_HOME);
 
     if (!wp_nav->set_wp_destination(target_loc)) {
         // failure to set destination can only be because of missing terrain data

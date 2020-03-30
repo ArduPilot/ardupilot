@@ -1,6 +1,8 @@
 // auto generated bindings, don't manually edit.  See README.md for details.
 #include "lua_generated_bindings.h"
 #include "lua_boxed_numerics.h"
+#include <AP_Button/AP_Button.h>
+#include <AP_RPM/AP_RPM.h>
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
@@ -552,6 +554,46 @@ const luaL_Reg Location_meta[] = {
     {NULL, NULL}
 };
 
+static int AP_Button_get_button_state(lua_State *L) {
+    AP_Button * ud = AP_Button::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "button not supported on this firmware");
+    }
+
+    binding_argcheck(L, 2);
+    const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(1, 0)) && (raw_data_2 <= MIN(AP_BUTTON_NUM_PINS, UINT8_MAX))), 2, "argument out of range");
+    const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
+    const bool data = ud->get_button_state(
+            data_2);
+
+    lua_pushboolean(L, data);
+    return 1;
+}
+
+static int AP_RPM_get_rpm(lua_State *L) {
+    AP_RPM * ud = AP_RPM::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "RPM not supported on this firmware");
+    }
+
+    binding_argcheck(L, 2);
+    const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(RPM_MAX_INSTANCES, UINT8_MAX))), 2, "argument out of range");
+    const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
+    float data_5003 = {};
+    const bool data = ud->get_rpm(
+            data_2,
+            data_5003);
+
+    if (data) {
+        lua_pushnumber(L, data_5003);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
+}
+
 static int AP_Mission_num_commands(lua_State *L) {
     AP_Mission * ud = AP_Mission::get_singleton();
     if (ud == nullptr) {
@@ -942,6 +984,45 @@ static int AP_SerialLED_set_num_neopixel(lua_State *L) {
     return 1;
 }
 
+static int AP_Vehicle_set_target_velocity_NED(lua_State *L) {
+    AP_Vehicle * ud = AP_Vehicle::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "vehicle not supported on this firmware");
+    }
+
+    binding_argcheck(L, 2);
+    Vector3f & data_2 = *check_Vector3f(L, 2);
+    AP::scheduler().get_semaphore().take_blocking();
+    const bool data = ud->set_target_velocity_NED(
+            data_2);
+
+    AP::scheduler().get_semaphore().give();
+    lua_pushboolean(L, data);
+    return 1;
+}
+
+static int AP_Vehicle_get_target_location(lua_State *L) {
+    AP_Vehicle * ud = AP_Vehicle::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "vehicle not supported on this firmware");
+    }
+
+    binding_argcheck(L, 1);
+    Location data_5002 = {};
+    AP::scheduler().get_semaphore().take_blocking();
+    const bool data = ud->get_target_location(
+            data_5002);
+
+    AP::scheduler().get_semaphore().give();
+    if (data) {
+        new_Location(L);
+        *check_Location(L, -1) = data_5002;
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
+}
+
 static int AP_Vehicle_set_target_location(lua_State *L) {
     AP_Vehicle * ud = AP_Vehicle::get_singleton();
     if (ud == nullptr) {
@@ -952,6 +1033,25 @@ static int AP_Vehicle_set_target_location(lua_State *L) {
     Location & data_2 = *check_Location(L, 2);
     AP::scheduler().get_semaphore().take_blocking();
     const bool data = ud->set_target_location(
+            data_2);
+
+    AP::scheduler().get_semaphore().give();
+    lua_pushboolean(L, data);
+    return 1;
+}
+
+static int AP_Vehicle_start_takeoff(lua_State *L) {
+    AP_Vehicle * ud = AP_Vehicle::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "vehicle not supported on this firmware");
+    }
+
+    binding_argcheck(L, 2);
+    const float raw_data_2 = luaL_checknumber(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX((-LOCATION_ALT_MAX_M*100+1), -INFINITY)) && (raw_data_2 <= MIN((LOCATION_ALT_MAX_M*100-1), INFINITY))), 2, "argument out of range");
+    const float data_2 = raw_data_2;
+    AP::scheduler().get_semaphore().take_blocking();
+    const bool data = ud->start_takeoff(
             data_2);
 
     AP::scheduler().get_semaphore().give();
@@ -1973,6 +2073,22 @@ static int AP_Arming_disarm(lua_State *L) {
     return 1;
 }
 
+static int AP_AHRS_get_vibration(lua_State *L) {
+    AP_AHRS * ud = AP_AHRS::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "ahrs not supported on this firmware");
+    }
+
+    binding_argcheck(L, 1);
+    ud->get_semaphore().take_blocking();
+    const Vector3f &data = ud->get_vibration();
+
+    ud->get_semaphore().give();
+    new_Vector3f(L);
+    *check_Vector3f(L, -1) = data;
+    return 1;
+}
+
 static int AP_AHRS_airspeed_estimate(lua_State *L) {
     AP_AHRS * ud = AP_AHRS::get_singleton();
     if (ud == nullptr) {
@@ -2220,6 +2336,16 @@ static int AP_AHRS_get_roll(lua_State *L) {
     return 1;
 }
 
+const luaL_Reg AP_Button_meta[] = {
+    {"get_button_state", AP_Button_get_button_state},
+    {NULL, NULL}
+};
+
+const luaL_Reg AP_RPM_meta[] = {
+    {"get_rpm", AP_RPM_get_rpm},
+    {NULL, NULL}
+};
+
 const luaL_Reg AP_Mission_meta[] = {
     {"num_commands", AP_Mission_num_commands},
     {"get_current_do_cmd_id", AP_Mission_get_current_do_cmd_id},
@@ -2274,7 +2400,10 @@ const luaL_Reg AP_SerialLED_meta[] = {
 };
 
 const luaL_Reg AP_Vehicle_meta[] = {
+    {"set_target_velocity_NED", AP_Vehicle_set_target_velocity_NED},
+    {"get_target_location", AP_Vehicle_get_target_location},
     {"set_target_location", AP_Vehicle_set_target_location},
+    {"start_takeoff", AP_Vehicle_start_takeoff},
     {"get_time_flying_ms", AP_Vehicle_get_time_flying_ms},
     {"get_likely_flying", AP_Vehicle_get_likely_flying},
     {"get_mode", AP_Vehicle_get_mode},
@@ -2368,6 +2497,7 @@ const luaL_Reg AP_Arming_meta[] = {
 };
 
 const luaL_Reg AP_AHRS_meta[] = {
+    {"get_vibration", AP_AHRS_get_vibration},
     {"airspeed_estimate", AP_AHRS_airspeed_estimate},
     {"prearm_healthy", AP_AHRS_prearm_healthy},
     {"home_is_set", AP_AHRS_home_is_set},
@@ -2389,7 +2519,7 @@ static int AP_HAL__UARTDriver_set_flow_control(lua_State *L) {
     binding_argcheck(L, 2);
     AP_HAL::UARTDriver * ud = *check_AP_HAL__UARTDriver(L, 1);
     if (ud == NULL) {
-        luaL_error(L, "Internal error, null pointer");
+        return luaL_error(L, "Internal error, null pointer");
     }
     const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
     luaL_argcheck(L, ((raw_data_2 >= static_cast<int32_t>(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE)) && (raw_data_2 <= static_cast<int32_t>(AP_HAL::UARTDriver::FLOW_CONTROL_AUTO))), 2, "argument out of range");
@@ -2404,7 +2534,7 @@ static int AP_HAL__UARTDriver_available(lua_State *L) {
     binding_argcheck(L, 1);
     AP_HAL::UARTDriver * ud = *check_AP_HAL__UARTDriver(L, 1);
     if (ud == NULL) {
-        luaL_error(L, "Internal error, null pointer");
+        return luaL_error(L, "Internal error, null pointer");
     }
     const uint32_t data = ud->available();
 
@@ -2417,7 +2547,7 @@ static int AP_HAL__UARTDriver_write(lua_State *L) {
     binding_argcheck(L, 2);
     AP_HAL::UARTDriver * ud = *check_AP_HAL__UARTDriver(L, 1);
     if (ud == NULL) {
-        luaL_error(L, "Internal error, null pointer");
+        return luaL_error(L, "Internal error, null pointer");
     }
     const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
     luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(UINT8_MAX, UINT8_MAX))), 2, "argument out of range");
@@ -2434,7 +2564,7 @@ static int AP_HAL__UARTDriver_read(lua_State *L) {
     binding_argcheck(L, 1);
     AP_HAL::UARTDriver * ud = *check_AP_HAL__UARTDriver(L, 1);
     if (ud == NULL) {
-        luaL_error(L, "Internal error, null pointer");
+        return luaL_error(L, "Internal error, null pointer");
     }
     const int16_t data = ud->read();
 
@@ -2446,7 +2576,7 @@ static int AP_HAL__UARTDriver_begin(lua_State *L) {
     binding_argcheck(L, 2);
     AP_HAL::UARTDriver * ud = *check_AP_HAL__UARTDriver(L, 1);
     if (ud == NULL) {
-        luaL_error(L, "Internal error, null pointer");
+        return luaL_error(L, "Internal error, null pointer");
     }
     const uint32_t raw_data_2 = coerce_to_uint32_t(L, 2);
     luaL_argcheck(L, ((raw_data_2 >= MAX(1U, 0U)) && (raw_data_2 <= MIN(UINT32_MAX, UINT32_MAX))), 2, "argument out of range");
@@ -2506,6 +2636,8 @@ const struct userdata_meta userdata_fun[] = {
 };
 
 const struct userdata_meta singleton_fun[] = {
+    {"button", AP_Button_meta, NULL},
+    {"RPM", AP_RPM_meta, NULL},
     {"mission", AP_Mission_meta, AP_Mission_enums},
     {"param", AP_Param_meta, NULL},
     {"esc_telem", AP_ESC_Telem_meta, NULL},
@@ -2579,6 +2711,8 @@ void load_generated_bindings(lua_State *L) {
 }
 
 const char *singletons[] = {
+    "button",
+    "RPM",
     "mission",
     "param",
     "esc_telem",

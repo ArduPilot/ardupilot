@@ -154,6 +154,9 @@ public:
     float get_leash_down_z() const { return _leash_down_z; }
     float get_leash_up_z() const { return _leash_up_z; }
 
+    /// freeze_ff_z - used to stop the feed forward being calculated during a known discontinuity
+    void freeze_ff_z() { _flags.freeze_ff_z = true; }
+
     ///
     /// xy position controller
     ///
@@ -230,8 +233,8 @@ public:
     // overrides the velocity process variable for one timestep
     void override_vehicle_velocity_xy(const Vector2f& vel_xy) { _vehicle_horiz_vel = vel_xy; _flags.vehicle_horiz_vel_override = true; }
 
-    /// freeze_ff_z - used to stop the feed forward being calculated during a known discontinuity
-    void freeze_ff_z() { _flags.freeze_ff_z = true; }
+    // relax velocity controller by clearing velocity error and setting velocity target to current velocity
+    void relax_velocity_controller_xy();
 
     // is_active_xy - returns true if the xy position controller has been run very recently
     bool is_active_xy() const;
@@ -244,7 +247,6 @@ public:
     void set_target_to_stopping_point_xy();
 
     /// get_stopping_point_xy - calculates stopping point based on current position, velocity, vehicle acceleration
-    ///     distance_max allows limiting distance to stopping point
     ///     results placed in stopping_position vector
     ///     set_accel_xy() should be called before this method to set vehicle acceleration
     ///     set_leash_length() should have been called before this method

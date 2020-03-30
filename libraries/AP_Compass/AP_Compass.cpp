@@ -48,10 +48,6 @@ extern const AP_HAL::HAL& hal;
 #define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 #endif
 
-#ifndef HAL_COMPASS_MAX_SENSORS
-#define HAL_COMPASS_MAX_SENSORS 3
-#endif
-
 const AP_Param::GroupInfo Compass::var_info[] = {
     // index 0 was used for the old orientation matrix
 
@@ -161,7 +157,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("EXTERNAL", 9, Compass, _state._priv_instance[0].external, 0),
 
-#if HAL_COMPASS_MAX_SENSORS > 1
+#if COMPASS_MAX_INSTANCES > 1
     // @Param: OFS2_X
     // @DisplayName: Compass2 offsets in milligauss on the X axis
     // @Description: Offset to be added to compass2's x-axis values to compensate for metal in the frame
@@ -216,9 +212,9 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("MOT2",    11, Compass, _state._priv_instance[1].motor_compensation, 0),
 
-#endif // HAL_COMPASS_MAX_SENSORS
+#endif // COMPASS_MAX_INSTANCES
 
-#if HAL_COMPASS_MAX_SENSORS > 2
+#if COMPASS_MAX_INSTANCES > 2
     // @Param: OFS3_X
     // @DisplayName: Compass3 offsets in milligauss on the X axis
     // @Description: Offset to be added to compass3's x-axis values to compensate for metal in the frame
@@ -272,7 +268,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("MOT3",    14, Compass, _state._priv_instance[2].motor_compensation, 0),
-#endif // HAL_COMPASS_MAX_SENSORS
+#endif // COMPASS_MAX_INSTANCES
 
     // @Param: DEV_ID
     // @DisplayName: Compass device id
@@ -281,25 +277,25 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DEV_ID",  15, Compass, _state._priv_instance[0].dev_id, 0),
 
-#if HAL_COMPASS_MAX_SENSORS > 1
+#if COMPASS_MAX_INSTANCES > 1
     // @Param: DEV_ID2
     // @DisplayName: Compass2 device id
     // @Description: Second compass's device id.  Automatically detected, do not set manually
     // @ReadOnly: True
     // @User: Advanced
     AP_GROUPINFO("DEV_ID2", 16, Compass, _state._priv_instance[1].dev_id, 0),
-#endif // HAL_COMPASS_MAX_SENSORS
+#endif // COMPASS_MAX_INSTANCES
 
-#if HAL_COMPASS_MAX_SENSORS > 2
+#if COMPASS_MAX_INSTANCES > 2
     // @Param: DEV_ID3
     // @DisplayName: Compass3 device id
     // @Description: Third compass's device id.  Automatically detected, do not set manually
     // @ReadOnly: True
     // @User: Advanced
     AP_GROUPINFO("DEV_ID3", 17, Compass, _state._priv_instance[2].dev_id, 0),
-#endif // HAL_COMPASS_MAX_SENSORS
+#endif // COMPASS_MAX_INSTANCES
 
-#if HAL_COMPASS_MAX_SENSORS > 1
+#if COMPASS_MAX_INSTANCES > 1
     // @Param: USE2
     // @DisplayName: Compass2 used for yaw
     // @Description: Enable or disable the secondary compass for determining heading.
@@ -320,9 +316,9 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Values: 0:Internal,1:External,2:ForcedExternal
     // @User: Advanced
     AP_GROUPINFO("EXTERN2",20, Compass, _state._priv_instance[1].external, 0),
-#endif // HAL_COMPASS_MAX_SENSORS
+#endif // COMPASS_MAX_INSTANCES
 
-#if HAL_COMPASS_MAX_SENSORS > 2
+#if COMPASS_MAX_INSTANCES > 2
     // @Param: USE3
     // @DisplayName: Compass3 used for yaw
     // @Description: Enable or disable the tertiary compass for determining heading.
@@ -343,7 +339,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Values: 0:Internal,1:External,2:ForcedExternal
     // @User: Advanced
     AP_GROUPINFO("EXTERN3",23, Compass, _state._priv_instance[2].external, 0),
-#endif // HAL_COMPASS_MAX_SENSORS
+#endif // COMPASS_MAX_INSTANCES
 
     // @Param: DIA_X
     // @DisplayName: Compass soft-iron diagonal X component
@@ -381,7 +377,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ODI",    25, Compass, _state._priv_instance[0].offdiagonals, 0),
 
-#if HAL_COMPASS_MAX_SENSORS > 1
+#if COMPASS_MAX_INSTANCES > 1
     // @Param: DIA2_X
     // @DisplayName: Compass2 soft-iron diagonal X component
     // @Description: DIA_X in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
@@ -417,9 +413,9 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Description: ODI_Z in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
     AP_GROUPINFO("ODI2",    27, Compass, _state._priv_instance[1].offdiagonals, 0),
-#endif // HAL_COMPASS_MAX_SENSORS
+#endif // COMPASS_MAX_INSTANCES
 
-#if HAL_COMPASS_MAX_SENSORS > 2
+#if COMPASS_MAX_INSTANCES > 2
     // @Param: DIA3_X
     // @DisplayName: Compass3 soft-iron diagonal X component
     // @Description: DIA_X in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
@@ -455,7 +451,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Description: ODI_Z in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
     AP_GROUPINFO("ODI3",    29, Compass, _state._priv_instance[2].offdiagonals, 0),
-#endif // HAL_COMPASS_MAX_SENSORS
+#endif // COMPASS_MAX_INSTANCES
 
     // @Param: CAL_FIT
     // @DisplayName: Compass calibration fitness
@@ -507,21 +503,21 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("PRIO1_ID",  36, Compass, _priority_did_stored_list._priv_instance[0], 0),
 
-#if HAL_COMPASS_MAX_SENSORS > 1
+#if COMPASS_MAX_INSTANCES > 1
     // @Param: PRIO2_ID
     // @DisplayName: Compass device id with 2nd order priority
     // @Description: Compass device id with 2nd order priority, set automatically if 0. Reboot required after change.
     // @User: Advanced
     AP_GROUPINFO("PRIO2_ID", 37, Compass, _priority_did_stored_list._priv_instance[1], 0),
-#endif // HAL_COMPASS_MAX_SENSORS
+#endif // COMPASS_MAX_INSTANCES
 
-#if HAL_COMPASS_MAX_SENSORS > 2
+#if COMPASS_MAX_INSTANCES > 2
     // @Param: PRIO3_ID
     // @DisplayName: Compass device id with 3rd order priority
     // @Description: Compass device id with 3rd order priority, set automatically if 0. Reboot required after change.
     // @User: Advanced
     AP_GROUPINFO("PRIO3_ID", 38, Compass, _priority_did_stored_list._priv_instance[2], 0),
-#endif // HAL_COMPASS_MAX_SENSORS
+#endif // COMPASS_MAX_INSTANCES
 
     // @Param: ENABLE
     // @DisplayName: Enable Compass
@@ -537,7 +533,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: 0 1.3
     AP_GROUPINFO("SCALE", 40, Compass, _state._priv_instance[0].scale_factor, 0),
 
-#if HAL_COMPASS_MAX_SENSORS > 1
+#if COMPASS_MAX_INSTANCES > 1
     // @Param: SCALE2
     // @DisplayName: Compass2 scale factor
     // @Description: Scaling factor for 2nd compass to compensate for sensor scaling errors. If this is 0 then no scaling is done
@@ -546,7 +542,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     AP_GROUPINFO("SCALE2", 41, Compass, _state._priv_instance[1].scale_factor, 0),
 #endif
 
-#if HAL_COMPASS_MAX_SENSORS > 2
+#if COMPASS_MAX_INSTANCES > 2
     // @Param: SCALE3
     // @DisplayName: Compass3 scale factor
     // @Description: Scaling factor for 3rd compass to compensate for sensor scaling errors. If this is 0 then no scaling is done
@@ -889,15 +885,19 @@ bool Compass::_have_i2c_driver(uint8_t bus, uint8_t address) const
     return false;
 }
 
+#if COMPASS_MAX_UNREG_DEV > 0
+#define CHECK_UNREG_LIMIT_RETURN  if (_unreg_compass_count == COMPASS_MAX_UNREG_DEV) return
+#else
+#define CHECK_UNREG_LIMIT_RETURN
+#endif
+
 /*
   macro to add a backend with check for too many backends or compass
   instances. We don't try to start more than the maximum allowed
  */
 #define ADD_BACKEND(driver_type, backend)   \
     do { if (_driver_enabled(driver_type)) { _add_backend(backend); } \
-       if (_unreg_compass_count == COMPASS_MAX_UNREG_DEV) { \
-          return; \
-        } \
+        CHECK_UNREG_LIMIT_RETURN; \
     } while (0)
 
 #define GET_I2C_DEVICE(bus, address) _have_i2c_driver(bus, address)?nullptr:hal.i2c_mgr->get_device(bus, address)
@@ -1060,9 +1060,7 @@ void Compass::_detect_backends(void)
 #ifdef HAL_PROBE_EXTERNAL_I2C_COMPASSES
     // allow boards to ask for external probing of all i2c compass types in hwdef.dat
     _probe_external_i2c_compasses();
-    if (_unreg_compass_count == COMPASS_MAX_UNREG_DEV) {
-        return;
-    }
+    CHECK_UNREG_LIMIT_RETURN;
 #endif
 
 #if defined(HAL_MAG_PROBE_LIST)
@@ -1084,9 +1082,7 @@ void Compass::_detect_backends(void)
     case AP_BoardConfig::PX4_BOARD_PIXHAWK_PRO:
     case AP_BoardConfig::PX4_BOARD_AEROFC:
         _probe_external_i2c_compasses();
-        if (_unreg_compass_count == COMPASS_MAX_UNREG_DEV) {
-            return;
-        }
+        CHECK_UNREG_LIMIT_RETURN;
         break;
 
     case AP_BoardConfig::PX4_BOARD_PCNC1:
@@ -1197,9 +1193,7 @@ void Compass::_detect_backends(void)
             if (_uavcan_backend) {
                 _add_backend(_uavcan_backend);
             }
-            if (_unreg_compass_count == COMPASS_MAX_UNREG_DEV) {
-                return;
-            }
+            CHECK_UNREG_LIMIT_RETURN;
         }
     }
 #endif
@@ -1231,9 +1225,7 @@ Compass::_detect_runtime(void)
             if (_uavcan_backend) {
                 _add_backend(_uavcan_backend);
             }
-            if (_unreg_compass_count == COMPASS_MAX_UNREG_DEV) {
-                return;
-            }
+            CHECK_UNREG_LIMIT_RETURN;
         }
     }
 #endif

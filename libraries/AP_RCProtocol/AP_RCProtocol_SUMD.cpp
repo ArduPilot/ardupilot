@@ -248,6 +248,8 @@ void AP_RCProtocol_SUMD::_process_byte(uint32_t timestamp_us, uint8_t byte)
             }
         }
 
+        log_data(AP_RCProtocol::SUMD, timestamp_us, _rxpacket.sumd_data, _rxlen);
+
         if (_crcOK) {
 #ifdef SUMD_DEBUG
             hal.console->printf(" CRC - OK \n") ;

@@ -785,6 +785,16 @@ int32_t AC_PosControl::get_bearing_to_target() const
     return get_bearing_cd(_inav.get_position(), _pos_target);
 }
 
+// relax velocity controller by clearing velocity error and setting velocity target to current velocity
+void AC_PosControl::relax_velocity_controller_xy()
+{
+    const Vector3f& curr_vel = _inav.get_velocity();
+    _vel_target.x = curr_vel.x;
+    _vel_target.y = curr_vel.y;
+    _vel_error.x = 0.0f;
+    _vel_error.y = 0.0f;
+}
+
 // is_active_xy - returns true if the xy position controller has been run very recently
 bool AC_PosControl::is_active_xy() const
 {

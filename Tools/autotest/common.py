@@ -256,16 +256,24 @@ class LTM(Telem):
         self.data_by_id[dataid] = value
 
     def consume_frame(self):
-        frame_type = ord(self.buffer[2])
+        b2 = self.buffer[2]
+        if sys.version_info.major < 3:
+            b2 = ord(b2)
+        frame_type = b2
         frame_length = self.frame_lengths[frame_type]
         # check frame CRC
         crc = 0
         count = 0
         for c in self.buffer[3:frame_length-1]:
+            if sys.version_info.major < 3:
+                c = ord(c)
             old = crc
-            crc ^= ord(c)
+            crc ^= c
             count += 1
-        if crc != ord(self.buffer[frame_length-1]):
+        buffer_crc = self.buffer[frame_length-1]
+        if sys.version_info.major < 3:
+            buffer_crc = ord(buffer_crc)
+        if crc != buffer_crc:
             raise NotAchievedException("Invalid checksum on frame type %s" % str(chr(frame_type)))
 #        self.progress("Received valid %s frame" % str(chr(frame_type)))
 
@@ -295,14 +303,21 @@ class LTM(Telem):
             def lon(self):
                 return self.int32(7)
             def gndspeed(self):
-                return ord(self.buffer[11])
+                ret = self.buffer[11]
+                if sys.version_info.major < 3:
+                    ret = ord(ret)
+                return ret
             def alt(self):
                 return self.int32(12)
             def sats(self):
-                s = ord(self.buffer[16])
+                s = self.buffer[16]
+                if sys.version_info.major < 3:
+                    s = ord(s)
                 return (s>>2)
             def fix_type(self):
-                s = ord(self.buffer[16])
+                s = self.buffer[16]
+                if sys.version_info.major < 3:
+                    s = ord(s)
                 return s & 0b11
 
         class FrameA(Frame):
@@ -334,23 +349,28 @@ class LTM(Telem):
         while len(self.buffer):
             if len(self.buffer) == 0:
                 break
-            if sys.version_info.major >= 3:
-                b = self.buffer[0]
-            else:
-                b = ord(self.buffer[0])
-            if ord(self.buffer[0]) != self.HEADER1:
+            b0 = self.buffer[0]
+            if sys.version_info.major < 3:
+                b0 = ord(b0)
+            if b0 != self.HEADER1:
                 self.bad_chars += 1
                 self.buffer = self.buffer[1:]
                 continue
-            if ord(self.buffer[1]) != self.HEADER2:
+            b1 = self.buffer[1]
+            if sys.version_info.major < 3:
+                b1 = ord(b1)
+            if b1 != self.HEADER2:
                 self.bad_chars += 1
                 self.buffer = self.buffer[1:]
                 continue
-            if ord(self.buffer[2]) not in [self.FRAME_G, self.FRAME_A, self.FRAME_S]:
+            b2 = self.buffer[2]
+            if sys.version_info.major < 3:
+                b2 = ord(b2)
+            if b2 not in [self.FRAME_G, self.FRAME_A, self.FRAME_S]:
                 self.bad_chars += 1
                 self.buffer = self.buffer[1:]
                 continue
-            frame_len = self.frame_lengths[ord(self.buffer[2])]
+            frame_len = self.frame_lengths[b2]
             if len(self.buffer) < frame_len:
                 continue
             self.consume_frame()
@@ -893,6 +913,20 @@ class AutoTest(ABC):
                                        0)
         self.detect_and_handle_reboot(old_bootcount, required_bootcount=required_bootcount)
 
+    def send_cmd_enter_cpu_lockup(self):
+        """Poke ArduPilot to stop the main loop from running"""
+        self.mav.mav.command_long_send(self.sysid_thismav(),
+                                       1,
+                                       mavutil.mavlink.MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN,
+                                       1,  # confirmation
+                                       42, # lockup autopilot
+                                       24, # no, really, we mean it
+                                       71, # seriously, we're not kidding
+                                       93, # we know exactly what we're
+                                       0,
+                                       0,
+                                       0)
+
     def reboot_sitl(self, required_bootcount=None):
         """Reboot SITL instance and wait for it to reconnect."""
         self.progress("Rebooting SITL")
@@ -1018,6 +1052,306 @@ class AutoTest(ABC):
 #                fail = True
 #        if fail:
 #            raise NotAchievedException("Extra parameters in XML")
+
+    def find_format_defines(self, filepath):
+        ret = {}
+        for line in open(filepath,'rb').readlines():
+            if type(line) == bytes:
+                line = line.decode("utf-8")
+            m = re.match('#define (\w+_(?:LABELS|FMT|UNITS|MULTS))\s+(".*")', line)
+            if m is None:
+                continue
+            (a, b) = (m.group(1), m.group(2))
+            if a in ret:
+                raise NotAchievedException("Duplicate define for (%s)" % a)
+            ret[a] = b
+        return ret
+
+    def vehicle_code_dirpath(self):
+        '''returns path to vehicle-specific code directory e.g. ~/ardupilot/APMrover2'''
+        dirname = self.log_name()
+        if dirname == "QuadPlane":
+            dirname = "ArduPlane"
+        elif dirname == "HeliCopter":
+            dirname = "ArduCopter"
+        return os.path.join(self.rootdir(), dirname)
+
+    def all_log_format_ids(self):
+        ids = {}
+        filepath = os.path.join(self.rootdir(), 'libraries', 'AP_Logger', 'LogStructure.h')
+        state_outside = 0
+        state_inside = 1
+        state = state_outside
+
+        defines = self.find_format_defines(filepath)
+
+        linestate_none = 45
+        linestate_within = 46
+        linestate = linestate_none
+        message_infos = []
+        for line in open(filepath,'rb').readlines():
+#            print("line: %s" % line)
+            if type(line) == bytes:
+                line = line.decode("utf-8")
+            line = re.sub("//.*", "", line) # trim comments
+            if re.match("\s*$", line):
+                # blank line
+                continue
+            if state == state_outside:
+                if "#define LOG_BASE_STRUCTURES" in line:
+#                    self.progress("Moving inside")
+                    state = state_inside
+                continue
+            if state == state_inside:
+                if "#define LOG_COMMON_STRUCTURES" in line:
+#                    self.progress("Moving outside")
+                    state = state_outside
+                    break
+                if linestate == linestate_none:
+                    if "#define LOG_SBP_STRUCTURES" in line:
+                        continue
+                    m = re.match("\s*{(.*)},\s*", line)
+                    if m is not None:
+                        # complete line
+#                        print("Complete line: %s" % str(line))
+                        message_infos.append(m.group(1))
+                        continue
+                    m = re.match("\s*{(.*)[\\\]", line)
+                    if m is None:
+                        raise NotAchievedException("Bad line %s" % line)
+                    partial_line = m.group(1)
+                    linestate = linestate_within
+                    continue
+                if linestate == linestate_within:
+                    m = re.match("(.*)}", line)
+                    if m is None:
+                        raise NotAchievedException("Bad closing line (%s)" % line)
+                    message_infos.append(partial_line + m.group(1))
+                    linestate = linestate_none
+                    continue
+                raise NotAchievedException("Bad line (%s)")
+
+        if linestate != linestate_none:
+            raise NotAchievedException("Must be linestate-none at end of file")
+        if state == state_inside:
+            raise NotAchievedException("Must be outside at end of file")
+
+        # now look in the vehicle-specific logfile:
+        filepath = os.path.join(self.vehicle_code_dirpath(), "Log.cpp")
+        state_outside = 67
+        state_inside = 68
+        state = state_outside
+        linestate_none = 89
+        linestate_within = 90
+        linestate = linestate_none
+        for line in open(filepath,'rb').readlines():
+            if type(line) == bytes:
+                line = line.decode("utf-8")
+            line = re.sub("//.*", "", line) # trim comments
+            if re.match("\s*$", line):
+                # blank line
+                continue
+            if state == state_outside:
+                if ("const LogStructure" in line or
+                    "const struct LogStructure" in line):
+                    state = state_inside;
+                continue
+            if state == state_inside:
+                if re.match("};", line):
+                    state = state_outside;
+                    break;
+                if linestate == linestate_none:
+                    if "#if FRAME_CONFIG == HELI_FRAME" in line:
+                        continue
+                    if "#if PRECISION_LANDING == ENABLED" in line:
+                        continue
+                    if "#end" in line:
+                        continue
+                    if "LOG_COMMON_STRUCTURES" in line:
+                        continue
+                    m = re.match("\s*{(.*)},\s*", line)
+                    if m is not None:
+                        # complete line
+#                        print("Complete line: %s" % str(line))
+                        message_infos.append(m.group(1))
+                        continue
+                    m = re.match("\s*{(.*)", line)
+                    if m is None:
+                        raise NotAchievedException("Bad line %s" % line)
+                    partial_line = m.group(1)
+                    linestate = linestate_within
+                    continue
+                if linestate == linestate_within:
+                    m = re.match("(.*)}", line)
+                    if m is None:
+                        raise NotAchievedException("Bad closing line (%s)" % line)
+                    message_infos.append(partial_line + m.group(1))
+                    linestate = linestate_none
+                    continue
+                raise NotAchievedException("Bad line (%s)")
+
+        if state == state_inside:
+            raise NotAchievedException("Should not be in state_inside at end")
+
+
+        for message_info in message_infos:
+            for define in defines:
+                message_info = re.sub(define, defines[define], message_info)
+            m = re.match('\s*LOG_\w+\s*,\s*sizeof\([^)]+\)\s*,\s*"(\w+)"\s*,\s*"(\w+)"\s*,\s*"([\w,]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*$', message_info)
+            if m is None:
+                raise NotAchievedException("Failed to match (%s)" % message_info)
+            (name, fmt, labels, units, multipliers) = (m.group(1), m.group(2), m.group(3), m.group(4), m.group(5))
+            if name in ids:
+                raise NotAchievedException("Already seen a (%s) message" % name)
+            ids[name] = {
+                "name": name,
+                "format": fmt,
+                "labels": labels,
+                "units": units,
+                "multipliers": multipliers,
+            }
+
+        # now look for Log_Write(...) messages:
+        base_directories = [
+            os.path.join(self.rootdir(), 'libraries'),
+            self.vehicle_code_dirpath(),
+        ]
+        log_write_statements = []
+        for base_directory in base_directories:
+            for root, dirs, files in os.walk(base_directory):
+                state_outside = 37
+                state_inside = 38
+                state = state_outside
+                for f in files:
+                    if not re.search("[.]cpp$", f):
+                        continue
+                    filepath = os.path.join(root, f)
+                    count = 0
+                    for line in open(filepath,'rb').readlines():
+                        if type(line) == bytes:
+                            line = line.decode("utf-8")
+                        if state == state_outside:
+                            if re.match("\s*AP::logger\(\)[.]Write\(", line):
+                                state = state_inside
+                                log_write_statement = line
+                            continue
+                        if state == state_inside:
+                            log_write_statement += line
+                            if re.match(".*\);", line):
+                                log_write_statements.append(log_write_statement)
+                                state = state_outside
+                        count += 1
+                    if state != state_outside:
+                        raise NotAchievedException("Expected to be outside at end of file")
+#                    print("%s has %u lines" % (f, count))
+        # change all whitespace to single space
+        log_write_statements = [re.sub("\s+", " ", x) for x in log_write_statements]
+#        print("Got log-write-statements: %s" % str(log_write_statements))
+        results = []
+        for log_write_statement in log_write_statements:
+            for define in defines:
+                log_write_statement = re.sub(define, defines[define], log_write_statement)
+            my_re = ' AP::logger\(\)[.]Write\(\s*"(\w+)"\s*,\s*"([\w,]+)".*\);'
+            m = re.match(my_re, log_write_statement)
+            if m is None:
+                if "TimeUS,C,Cnt,IMUMin,IMUMax,EKFMin" in log_write_statement:
+                    # special-case for logging ekf timing:
+                    for name in ["NKT", "XKT"]:
+                        x = re.sub(" name,", '"'+name+'",', log_write_statement)
+                        m = re.match(my_re, x)
+                        if m is None:
+                            raise NotAchievedException("Did not match (%s)", x)
+                        results.append((m.group(1), m.group(2)))
+                    continue
+                raise NotAchievedException("Did not match (%s)" % (log_write_statement))
+            else:
+                results.append((m.group(1), m.group(2)))
+
+        for result in results:
+            (name, labels) = result
+            if name in ids:
+                raise Exception("Already have id for (%s)" % name)
+#            self.progress("Adding Log_Write result (%s)" % name)
+            ids[name] = {
+                "name": name,
+                "labels": labels,
+            }
+
+        if len(ids) == 0:
+            raise NotAchievedException("Did not get any ids")
+
+        return ids
+
+    def test_onboard_logging_generation(self):
+        '''just generates, as we can't do a lot of testing'''
+        xml_filepath = os.path.join(self.rootdir(), "LogMessages.xml")
+        parse_filepath = os.path.join(self.rootdir(), 'Tools', 'autotest', 'logger_metadata', 'parse.py')
+        try:
+            os.unlink(xml_filepath)
+        except OSError:
+            pass
+        vehicle = self.log_name()
+        vehicle_map = {
+            "ArduCopter": "Copter",
+            "HeliCopter": "Copter",
+            "ArduPlane": "Plane",
+            "QuadPlane": "Plane",
+            "APMrover2": "Rover",
+            "AntennaTracker": "Tracker",
+            "ArduSub": "Sub",
+        }
+        vehicle = vehicle_map[vehicle]
+
+        cmd = [parse_filepath, '--vehicle', vehicle]
+#        cmd.append("--verbose")
+        if util.run_cmd(cmd,
+                        directory=util.reltopdir('.')) != 0:
+            print("Failed parse.py (%s)" % vehicle)
+            return False
+        length = os.path.getsize(xml_filepath)
+        min_length = 1024
+        if length < min_length:
+            raise NotAchievedException("short xml file (%u < %u)" %
+                                       (length, min_length))
+        self.progress("xml file length is %u" % length)
+
+        from lxml import objectify
+        xml = open(xml_filepath,'rb').read()
+        objectify.enable_recursive_str()
+        tree = objectify.fromstring(xml)
+
+        docco_ids = {}
+        for thing in tree.logformat:
+            name = str(thing.get("name"))
+            docco_ids[name] = {
+                "name": name,
+                "labels": [],
+            }
+            for field in thing.fields.field:
+#                print("field: (%s)" % str(field))
+                fieldname = field.get("name")
+#                print("Got (%s.%s)" % (name,str(fieldname)))
+                docco_ids[name]["labels"].append(fieldname)
+
+        code_ids = self.all_log_format_ids()
+        print("Code ids: (%s)" % str(code_ids.keys()))
+        print("Docco ids: (%s)" % str(docco_ids.keys()))
+
+        for name in sorted(code_ids.keys()):
+            if name not in docco_ids:
+                self.progress("Undocumented message: %s" % name)
+                continue
+            for label in code_ids[name]["labels"].split(","):
+                if label not in docco_ids[name]["labels"]:
+                    raise NotAchievedException("%s.%s not in documented fields" %
+                                               (name, label))
+        for name in sorted(docco_ids):
+            if name not in code_ids:
+                raise NotAchievedException("Documented message (%s) not in code" % name)
+            for label in docco_ids[name]["labels"]:
+                if label not in code_ids[name]["labels"].split(","):
+                    raise NotAchievedException("documented field %s.%s not found in code" %
+                                               (name, label))
 
     def initialise_after_reboot_sitl(self):
 
@@ -1163,9 +1497,11 @@ class AutoTest(ABC):
     #################################################
     # SIM UTILITIES
     #################################################
-    def get_sim_time(self):
+    def get_sim_time(self, timeout=60):
         """Get SITL time in seconds."""
-        m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True)
+        m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True, timeout=timeout)
+        if m is None:
+            raise AutoTestTimeoutException("Did not get SYSTEM_TIME message")
         return m.time_boot_ms * 1.0e-3
 
     def get_sim_time_cached(self):
@@ -1723,7 +2059,6 @@ class AutoTest(ABC):
         p2 = 0
         if force:
             p2 = 21196 # magic force disarm value
-        tstart = self.get_sim_time()
         self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
                      0,  # DISARM
                      p2,
@@ -1733,12 +2068,88 @@ class AutoTest(ABC):
                      0,
                      0,
                      timeout=timeout)
-        while self.get_sim_time_cached() - tstart < timeout:
+        return self.wait_disarmed()
+
+    def wait_disarmed_default_wait_time(self):
+        return 30
+
+    def wait_disarmed(self, timeout=None, tstart=None):
+        if timeout is None:
+            timeout = self.wait_disarmed_default_wait_time()
+        self.progress("Waiting for DISARM")
+        if tstart is None:
+            tstart = self.get_sim_time()
+        while True:
+            delta = self.get_sim_time_cached() - tstart
+            if delta > timeout:
+                raise AutoTestTimeoutException("Failed to DISARM")
             self.wait_heartbeat()
+            self.progress("Got heartbeat")
             if not self.mav.motors_armed():
-                self.progress("Motors DISARMED")
+                self.progress("DISARMED after %.2f seconds (allowed=%.2f)" %
+                              (delta, timeout))
                 return True
-        raise AutoTestTimeoutException("Failed to DISARM with mavlink")
+
+    def CPUFailsafe(self):
+        '''Most vehicles just disarm on failsafe'''
+        # customising the SITL commandline ensures the process will
+        # get stopped/started at the end of the test
+        self.customise_SITL_commandline([])
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.progress("Sending enter-cpu-lockup")
+        # when we're in CPU lockup we don't get SYSTEM_TIME messages,
+        # so get_sim_time breaks:
+        tstart = self.get_sim_time()
+        self.send_cmd_enter_cpu_lockup()
+        self.wait_disarmed(timeout=5, tstart=tstart)
+
+
+    def cpufailsafe_wait_servo_channel_value(self, channel, value, timeout=30):
+        '''we get restricted messages while doing cpufailsafe, this working then'''
+        start = time.time()
+        while True:
+            if time.time() - start > timeout:
+                raise NotAchievedException("Did not achieve value")
+            m = self.mav.recv_match(type='SERVO_OUTPUT_RAW', blocking=True, timeout=1)
+
+            if m is None:
+                raise NotAchievedException("Did not get SERVO_OUTPUT_RAW")
+            channel_field = "servo%u_raw" % channel
+            m_value = getattr(m, channel_field, None)
+            self.progress("Servo%u=%u want=%u" % (channel, m_value, value))
+            if m_value == value:
+                break
+
+    def plane_CPUFailsafe(self):
+        '''In lockup Plane should copy RC inputs to RC outputs'''
+        # customising the SITL commandline ensures the process will
+        # get stopped/started at the end of the test
+        self.customise_SITL_commandline([])
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.progress("Sending enter-cpu-lockup")
+        # when we're in CPU lockup we don't get SYSTEM_TIME messages,
+        # so get_sim_time breaks:
+        self.send_cmd_enter_cpu_lockup()
+        start_time = time.time() # not sim time!
+        while True:
+            want = "Initialising ArduPilot"
+            if time.time() - start_time > 30:
+                raise NotAchievedException("Did not get %s" % want)
+            # we still need to parse the incoming messages:
+            m = self.mav.recv_match(type='STATUSTEXT', blocking=True, timeout=0.1)
+            x = self.mav.messages.get("STATUSTEXT", None)
+            if x is not None and want in x.text:
+                break
+        # Different scaling for RC input and servo output means the
+        # servo output value isn't the rc input value:
+        self.progress("Setting RC to 1200")
+        self.send_set_rc(2, 1200)
+        self.progress("Waiting for servo of 1260")
+        self.cpufailsafe_wait_servo_channel_value(2, 1260)
+        self.send_set_rc(2, 1700)
+        self.cpufailsafe_wait_servo_channel_value(2, 1660)
 
     def mavproxy_arm_vehicle(self):
         """Arm vehicle with mavlink arm message send from MAVProxy."""
@@ -1752,8 +2163,7 @@ class AutoTest(ABC):
         """Disarm vehicle with mavlink disarm message send from MAVProxy."""
         self.progress("Disarm motors with MavProxy")
         self.mavproxy.send('disarm\n')
-        self.mav.motors_disarmed_wait()
-        self.progress("DISARMED")
+        self.wait_disarmed()
         return True
 
     def arm_motors_with_rc_input(self, timeout=20):
@@ -2041,7 +2451,7 @@ class AutoTest(ABC):
                 max_delta = wanted_value[1]
                 wanted_value = wanted_value[0]
             if abs(fetched_value - wanted_value) > max_delta:
-                bad += "%s=%f (want=%f)    " % (param, fetched_value, wanted_value)
+                bad += "%s=%f (want=%f +/-%f)    " % (param, fetched_value, wanted_value, max_delta)
         if len(bad):
             raise NotAchievedException("Bad parameter values: %s" %
                                        (bad,))
@@ -2354,137 +2764,149 @@ class AutoTest(ABC):
         while tstart + seconds_to_wait > tnow:
             tnow = self.get_sim_time()
 
-    def wait_altitude(self, alt_min, alt_max, timeout=30, relative=False):
+    def wait_altitude(self, altitude_min, altitude_max, relative=False, timeout=30, **kwargs):
         """Wait for a given altitude range."""
-        previous_alt = None
+        assert altitude_min <= altitude_max, "Minimum altitude should be less than maximum altitude."
 
-        tstart = self.get_sim_time()
-        self.progress("Waiting for altitude between %.02f and %.02f" %
-                      (alt_min, alt_max))
-        last_wait_alt_msg = 0
-        while self.get_sim_time_cached() < tstart + timeout:
-            m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
-            if m is None:
-                continue
-            if relative:
-                alt = m.relative_alt/1000.0 # mm -> m
-            else:
-                alt = m.alt/1000.0 # mm -> m
+        def get_altitude(alt_relative=False, timeout2=30):
+            msg = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=timeout2)
+            if msg:
+                if alt_relative:
+                    return msg.relative_alt / 1000.0  # mm -> m
+                else:
+                    return msg.alt / 1000.0  # mm -> m
+            raise MsgRcvTimeoutException("Failed to get Global Position")
 
-            if previous_alt is None:
-                climb_rate = "-"
-            else:
-                climb_rate = "%.02f" % (alt - previous_alt)
-            previous_alt = alt
-            ok = alt >= alt_min and alt <= alt_max
-            if ok or self.get_sim_time_cached() - last_wait_alt_msg > 1:
-                self.progress("Wait Altitude: Cur:%.02f min:%.02f max:%.02f climb_rate: %s"
-                              % (alt, alt_min, alt_max, climb_rate))
-                last_wait_alt_msg = self.get_sim_time_cached()
-            if ok:
-                self.progress("Altitude OK")
+        def validator(value2, target2=None):
+            if altitude_min <= value2 <= altitude_max:
                 return True
-        raise WaitAltitudeTimout("Failed to attain altitude range")
+            else:
+                return False
 
-    def wait_groundspeed(self, gs_min, gs_max, timeout=30):
+        self.wait_and_maintain(value_name="Altitude", target=altitude_min, current_value_getter=lambda: get_altitude(relative, timeout), accuracy=(altitude_max - altitude_min), validator=lambda value2, target2: validator(value2, target2), timeout=timeout, **kwargs)
+
+    def wait_groundspeed(self, speed_min, speed_max, timeout=30, **kwargs):
         """Wait for a given ground speed range."""
-        self.progress("Waiting for groundspeed between %.1f and %.1f" %
-                      (gs_min, gs_max))
-        last_print = 0
-        tstart = self.get_sim_time()
-        while self.get_sim_time_cached() < tstart + timeout:
-            m = self.mav.recv_match(type='VFR_HUD', blocking=True)
-            if self.get_sim_time_cached() - last_print > 1:
-                self.progress("Wait groundspeed %.3f, target:%.3f" %
-                              (m.groundspeed, gs_min))
-                last_print = self.get_sim_time_cached()
-            if m.groundspeed >= gs_min and m.groundspeed <= gs_max:
-                return True
-        raise WaitGroundSpeedTimeout("Failed to attain groundspeed range")
+        assert speed_min <= speed_max, "Minimum speed should be less than maximum speed."
 
-    def wait_roll(self, roll, accuracy, timeout=30):
+        def get_groundspeed(timeout2):
+            msg = self.mav.recv_match(type='VFR_HUD', blocking=True, timeout=timeout2)
+            if msg:
+                return msg.groundspeed
+            raise MsgRcvTimeoutException("Failed to get Groundspeed")
+
+        def validator(value2, target2=None):
+            if speed_min <= value2 <= speed_max:
+                return True
+            else:
+                return False
+
+        self.wait_and_maintain(value_name="Groundspeed", target=speed_min, current_value_getter=lambda: get_groundspeed(timeout), accuracy=(speed_max - speed_min), validator=lambda value2, target2: validator(value2, target2), timeout=timeout, **kwargs)
+
+    def wait_roll(self, roll, accuracy, timeout=30, **kwargs):
         """Wait for a given roll in degrees."""
-        tstart = self.get_sim_time()
-        self.progress("Waiting for roll of %d at %s" % (roll, time.ctime()))
-        while self.get_sim_time_cached() < tstart + timeout:
-            m = self.mav.recv_match(type='ATTITUDE', blocking=True)
-            p = math.degrees(m.pitch)
-            r = math.degrees(m.roll)
-            self.progress("Roll %d Pitch %d" % (r, p))
-            if math.fabs(r - roll) <= accuracy:
-                self.progress("Attained roll %d" % roll)
-                return True
-        raise WaitRollTimeout("Failed to attain roll %d" % roll)
+        def get_roll(timeout2):
+            msg = self.mav.recv_match(type='ATTITUDE', blocking=True, timeout=timeout2)
+            if msg:
+                p = math.degrees(msg.pitch)
+                r = math.degrees(msg.roll)
+                self.progress("Roll %d Pitch %d" % (r, p))
+                return r
+            raise MsgRcvTimeoutException("Failed to get Roll")
 
-    def wait_pitch(self, pitch, accuracy, timeout=30):
+        def validator(value2, target2):
+            return math.fabs((value2 - target2 + 180) % 360 - 180) <= accuracy
+
+        self.wait_and_maintain(value_name="Roll", target=roll, current_value_getter=lambda: get_roll(timeout), validator=lambda value2, target2: validator(value2, target2), accuracy=accuracy, timeout=timeout, **kwargs)
+
+    def wait_pitch(self, pitch, accuracy, timeout=30, **kwargs):
         """Wait for a given pitch in degrees."""
-        tstart = self.get_sim_time()
-        self.progress("Waiting for pitch of %.02f at %s" % (pitch, time.ctime()))
-        while self.get_sim_time_cached() < tstart + timeout:
-            m = self.mav.recv_match(type='ATTITUDE', blocking=True)
-            p = math.degrees(m.pitch)
-            r = math.degrees(m.roll)
-            self.progress("Pitch %d Roll %d" % (p, r))
-            if math.fabs(p - pitch) <= accuracy:
-                self.progress("Attained pitch %d" % pitch)
-                return True
-        raise WaitPitchTimeout("Failed to attain pitch %d" % pitch)
+        def get_pitch(timeout2):
+            msg = self.mav.recv_match(type='ATTITUDE', blocking=True, timeout=timeout2)
+            if msg:
+                p = math.degrees(msg.pitch)
+                r = math.degrees(msg.roll)
+                self.progress("Pitch %d Roll %d" % (p, r))
+                return p
+            raise MsgRcvTimeoutException("Failed to get Pitch")
 
-    def wait_heading(self, heading, accuracy=5, timeout=30):
-        """Wait for a given heading."""
+        def validator(value2, target2):
+            return math.fabs((value2 - target2 + 180) % 360 - 180) <= accuracy
+
+        self.wait_and_maintain(value_name="Pitch", target=pitch, current_value_getter=lambda: get_pitch(timeout), validator=lambda value2, target2: validator(value2, target2), accuracy=accuracy, timeout=timeout, **kwargs)
+
+    def wait_and_maintain(self, value_name, target, current_value_getter, validator=None, accuracy=2.0, timeout=30, **kwargs):
         tstart = self.get_sim_time()
-        self.progress("Waiting for heading %.02f with accuracy %.02f" %
-                      (heading, accuracy))
+        achieving_duration_start = None
+        sum_of_achieved_values = 0.0
+        last_value = 0.0
+        count_of_achieved_values = 0
+        called_function = kwargs.get("called_function", None)
+        minimum_duration = kwargs.get("minimum_duration", 0)
+        self.progress("Waiting for %s %.02f with accuracy %.02f" % (value_name, target, accuracy))
         last_print_time = 0
-        while True:
-            now = self.get_sim_time_cached()
-            if now - tstart >= timeout:
-                break
-            m = self.mav.recv_match(type='VFR_HUD', blocking=True)
-            if now - last_print_time > 1:
-                self.progress("Heading %d (want %f +- %f)" %
-                              (m.heading, heading, accuracy))
-                last_print_time = now
-            if math.fabs(m.heading - heading) <= accuracy:
-                self.progress("Attained heading %d" % heading)
-                return True
-        raise WaitHeadingTimeout("Failed to attain heading %d" % heading)
+        while self.get_sim_time_cached() < tstart + timeout:  # if we failed to received message with the getter the sim time isn't updated
+            last_value = current_value_getter()
+            if called_function is not None:
+                called_function(last_value, target)
+            if self.get_sim_time_cached() - last_print_time > 1:
+                self.progress("%s=%0.2f (want %f +- %f)" %
+                              (value_name, last_value, target, accuracy))
+                last_print_time = self.get_sim_time_cached()
+            if validator is not None:
+                is_value_valid = validator(last_value, target)
+            else:
+                is_value_valid = math.fabs(last_value - target) <= accuracy
+            if is_value_valid:
+                sum_of_achieved_values += last_value
+                count_of_achieved_values += 1.0
+                if achieving_duration_start is None:
+                    achieving_duration_start = self.get_sim_time_cached()
+                if self.get_sim_time_cached() - achieving_duration_start >= minimum_duration:
+                    self.progress("Attained %s=%f" % (value_name, sum_of_achieved_values / count_of_achieved_values))
+                    return True
+            else:
+                achieving_duration_start = None
+                sum_of_achieved_values = 0.0
+                count_of_achieved_values = 0
+        raise AutoTestTimeoutException("Failed to attain %s %f, reach %f" % (value_name, target, (sum_of_achieved_values / count_of_achieved_values) if count_of_achieved_values != 0 else last_value))
 
-    def wait_distance(self, distance, accuracy=5, timeout=30):
+    def wait_heading(self, heading, accuracy=5, timeout=30, **kwargs):
+        """Wait for a given heading."""
+        def get_heading_wrapped(timeout2):
+            msg = self.mav.recv_match(type='VFR_HUD', blocking=True, timeout=timeout2)
+            if msg:
+                return msg.heading
+            raise MsgRcvTimeoutException("Failed to get heading")
+
+        def validator(value2, target2):
+            return math.fabs((value2 - target2 + 180) % 360 - 180) <= accuracy
+
+        self.wait_and_maintain(value_name="Heading", target=heading, current_value_getter=lambda: get_heading_wrapped(timeout), validator=lambda value2, target2: validator(value2, target2), accuracy=accuracy, timeout=timeout, **kwargs)
+
+    def wait_distance(self, distance, accuracy=2, timeout=30, **kwargs):
         """Wait for flight of a given distance."""
-        tstart = self.get_sim_time()
         start = self.mav.location()
-        last_distance_message = 0
-        while self.get_sim_time_cached() < tstart + timeout:
-            pos = self.mav.location()
-            delta = self.get_distance(start, pos)
-            if self.get_sim_time_cached() - last_distance_message >= 1:
-                self.progress("Distance=%.2f meters want=%.2f" %
-                              (delta, distance))
-                last_distance_message = self.get_sim_time_cached()
-            if math.fabs(delta - distance) <= accuracy:
-                self.progress("Attained distance %.02f meters OK" % delta)
-                return True
-            if delta > (distance + accuracy):
-                raise WaitDistanceTimeout("Failed distance - overshoot delta=%f dist=%f"
-                                          % (delta, distance))
-        raise WaitDistanceTimeout("Failed to attain distance %u" % distance)
 
-    def wait_distance_to_location(self, location, distance_min, distance_max, timeout=30):
-        last_distance_message = 0
-        tstart = self.get_sim_time()
-        while self.get_sim_time_cached() < tstart + timeout:
-            pos = self.mav.location()
-            delta = self.get_distance(location, pos)
-            if self.get_sim_time_cached() - last_distance_message >= 1:
-                self.progress("Distance=%.2f meters want <%.2f and >%.2f" %
-                              (delta, distance_min, distance_max))
-                last_distance_message = self.get_sim_time_cached()
-            if (delta >= distance_min and delta <= distance_max):
-                self.progress("Attained distance %.02f meters OK" % delta)
-                return True
-        raise WaitDistanceTimeout("Failed to attain distance <%.2f and >%.2f" %
-                                  (distance_min, distance_max))
+        def get_distance():
+            return self.get_distance(start, self.mav.location())
+
+        def validator(value2, target2):
+            return (value2 - target2) >= accuracy
+
+        self.wait_and_maintain(value_name="Distance", target=distance, current_value_getter=lambda: get_distance(), validator=lambda value2, target2: validator(value2, target2), accuracy=accuracy, timeout=timeout, **kwargs)
+
+    def wait_distance_to_location(self, location, distance_min, distance_max, timeout=30, **kwargs):
+        """Wait for flight of a given distance."""
+        assert distance_min <= distance_max, "Distance min should be less than distance max."
+
+        def get_distance():
+            return self.get_distance(location, self.mav.location())
+
+        def validator(value2, target2=None):
+            return distance_min <= value2 <= distance_max
+
+        self.wait_and_maintain(value_name="Distance", target=distance_min, current_value_getter=lambda: get_distance(), validator=lambda value2, target2: validator(value2, target2), accuracy=(distance_max - distance_min), timeout=timeout, **kwargs)
 
     def wait_servo_channel_value(self, channel, value, timeout=2, comparator=operator.eq):
         """wait for channel value comparison (default condition is equality)"""
@@ -2533,36 +2955,28 @@ class AutoTest(ABC):
 
     def wait_location(self,
                       loc,
-                      accuracy=5,
+                      accuracy=5.0,
                       timeout=30,
                       target_altitude=None,
-                      height_accuracy=-1):
+                      height_accuracy=-1,
+                      **kwargs):
         """Wait for arrival at a location."""
-        tstart = self.get_sim_time()
-        if target_altitude is None:
-            target_altitude = loc.alt
-        self.progress("Waiting for location"
-                      "%.4f,%.4f at altitude %.1f height_accuracy=%.1f" %
-                      (loc.lat, loc.lng, target_altitude, height_accuracy))
-        last_distance_message = 0
-        closest = 10000000
-        last = 0
-        while self.get_sim_time() < tstart + timeout:
-            pos = self.mav.location()
-            delta = self.get_distance(loc, pos)
-            if self.get_sim_time_cached() - last_distance_message >= 1:
-                self.progress("Distance %.2f meters alt %.1f" % (delta, pos.alt))
-                last_distance_message = self.get_sim_time_cached()
-            if closest > delta:
-                closest = delta
-            last = delta
-            if delta <= accuracy:
-                height_delta = math.fabs(pos.alt - target_altitude)
-                if height_accuracy != -1 and height_delta > height_accuracy:
-                    continue
-                self.progress("Reached location (%.2f meters)" % delta)
+        def get_distance_to_loc():
+            return self.get_distance(self.mav.location(), loc)
+
+        def validator(value2, empty=None):
+            if value2 <= accuracy:
+                if target_altitude is not None:
+                    height_delta = math.fabs(self.mav.location().alt - target_altitude)
+                    if height_accuracy != -1 and height_delta > height_accuracy:
+                        return False
                 return True
-        raise WaitLocationTimeout("Failed to attain location (want=<%f) (closest=%f) (last=%f)" % (accuracy, closest, last))
+            else:
+                return False
+        debug_text = "Distance to Location (%.4f, %.4f) " % (loc.lat, loc.lng)
+        if target_altitude is not None:
+            debug_text += "at altitude %.1f height_accuracy=%.1f" % (target_altitude, height_accuracy)
+        self.wait_and_maintain(value_name=debug_text, target=0, current_value_getter=lambda: get_distance_to_loc(), accuracy=accuracy, validator=lambda value2, target2: validator(value2, None), timeout=timeout, **kwargs)
 
     def wait_current_waypoint(self, wpnum, timeout=60):
         tstart = self.get_sim_time()
@@ -4943,9 +5357,17 @@ switch value'''
              "Test Config Error Loop",
              self.test_config_error_loop),
 
+            ("CPUFailsafe",
+             "Ensure we do something appropriate when the main loop stops",
+             self.CPUFailsafe),
+
             ("Parameters",
              "Test Parameter Set/Get",
              self.test_parameters),
+
+            ("LoggerDocumentation",
+             "Test Onboard Logging Generation",
+             self.test_onboard_logging_generation),
 
             ("GetCapabilities",
              "Get Capabilities",

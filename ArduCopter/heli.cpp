@@ -167,7 +167,9 @@ void Copter::heli_update_rotor_speed_targets()
             // set rpm from rotor speed sensor
             if (motors->get_interlock()) {
 #if RPM_ENABLED == ENABLED
-                motors->set_rpm(rpm_sensor.get_rpm(0));
+                float rpm = -1;
+                rpm_sensor.get_rpm(0, rpm);
+                motors->set_rpm(rpm);
 #endif
                 motors->set_desired_rotor_speed(motors->get_rsc_setpoint());
             }else{

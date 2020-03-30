@@ -4,6 +4,7 @@
 from __future__ import print_function
 import math
 import os
+import time
 
 from pymavlink import quaternion
 from pymavlink import mavutil
@@ -591,9 +592,9 @@ class AutoTestPlane(AutoTest):
         self.disarm_wait(timeout=120)
 
         self.progress("Flying home")
-        self.takeoff(10)
+        self.takeoff(100)
         self.set_parameter("LAND_TYPE", 0)
-        self.fly_home_land_and_disarm()
+        self.fly_home_land_and_disarm(timeout=240)
 
     def fly_do_change_speed(self):
         # the following lines ensure we revert these parameter values
@@ -678,13 +679,16 @@ class AutoTestPlane(AutoTest):
                 break
         self.fly_home_land_and_disarm()
 
-    def fly_home_land_and_disarm(self):
+    def fly_home_land_and_disarm(self, timeout=120):
         filename = os.path.join(testdir, "flaps.txt")
         self.progress("Using %s to fly home" % filename)
-        self.load_mission(filename)
+        num_wp = self.load_mission(filename)
         self.change_mode("AUTO")
         self.mavproxy.send('wp set 7\n')
-        self.mav.motors_disarmed_wait()
+        self.drain_mav()
+        # TODO: reflect on file to find this magic waypoint number?
+#        self.wait_waypoint(7, num_wp-1, timeout=500) # we tend to miss the final waypoint by a fair bit, and this is probably too noisy anyway?
+        self.wait_disarmed(timeout=timeout)
 
     def fly_flaps(self):
         """Test flaps functionality."""
@@ -1308,7 +1312,7 @@ class AutoTestPlane(AutoTest):
         if m is not None:
             raise NotAchievedException("Got autocal on ground")
         mission_filepath = os.path.join(testdir, "flaps.txt")
-        self.load_mission(mission_filepath)
+        num_wp = self.load_mission(mission_filepath)
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.change_mode("AUTO")
@@ -1316,7 +1320,8 @@ class AutoTestPlane(AutoTest):
         m = self.mav.recv_match(type='AIRSPEED_AUTOCAL',
                                 blocking=True,
                                 timeout=5)
-        self.mav.motors_disarmed_wait()
+        self.wait_waypoint(7, num_wp-1, timeout=500)
+        self.wait_disarmed(timeout=120)
 
     def sample_enable_parameter(self):
         return "Q_ENABLE"
@@ -1566,8 +1571,8 @@ class AutoTestPlane(AutoTest):
             raise NotAchievedException("Did not get accepted response")
         self.wait_location(loc, accuracy=100) # based on loiter radius
         self.delay_sim_time(20)
-        self.wait_altitude(alt_min=desired_relative_alt-3,
-                           alt_max=desired_relative_alt+3,
+        self.wait_altitude(altitude_min=desired_relative_alt-3,
+                           altitude_max=desired_relative_alt+3,
                            relative=True)
 
         self.fly_home_land_and_disarm()
@@ -1627,6 +1632,10 @@ class AutoTestPlane(AutoTest):
         self.set_rc(2, 1500)
         self.wait_altitude(initial_alt-1, initial_alt+1)
         self.fly_home_land_and_disarm()
+
+    def CPUFailsafe(self):
+        '''In lockup Plane should copy RC inputs to RC outputs'''
+        self.plane_CPUFailsafe()
 
     def tests(self):
         '''return list of all tests'''

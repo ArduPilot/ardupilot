@@ -97,6 +97,8 @@ imu_list = []
 compass_list = []
 baro_list = []
 
+all_lines = []
+
 mcu_type = None
 dual_USB_enabled = False
 
@@ -1586,6 +1588,13 @@ def write_alt_config(f):
             f.write("    { %u, %s, PAL_LINE(GPIO%s,%uU)}, /* %s */ \\\n" % (alt, p.pal_modeline(), p.port, p.pin, str(p)))
     f.write('}\n\n')
 
+def write_all_lines(hwdat):
+    f = open(hwdat, 'w')
+    f.write('\n'.join(all_lines))
+    f.close()
+    flash_size = get_config('FLASH_SIZE_KB', type=int)
+    if flash_size > 1024:
+        romfs["hwdef.dat"] = hwdat
 
 def write_hwdef_header(outfilename):
     '''write hwdef header file'''
@@ -1815,11 +1824,25 @@ def romfs_wildcard(pattern):
         if fnmatch.fnmatch(f, pattern):
             romfs[f] = os.path.join(pattern_dir, f)
 
+def romfs_add_dir(subdirs):
+    '''add a filesystem directory to ROMFS'''
+    for dirname in subdirs:
+        romfs_dir = os.path.join(os.path.dirname(args.hwdef), dirname)
+        if not args.bootloader and os.path.exists(romfs_dir):
+            for root, d, files in os.walk(romfs_dir):
+                for f in files:
+                    if fnmatch.fnmatch(f, '*~'):
+                        # skip editor backup files
+                        continue
+                    fullpath = os.path.join(root, f)
+                    relpath = os.path.normpath(os.path.join(dirname, os.path.relpath(root, romfs_dir), f))
+                    romfs[relpath] = fullpath
 
 def process_line(line):
     '''process one line of pin definition file'''
     global allpins, imu_list, compass_list, baro_list
     global mcu_type, mcu_series
+    all_lines.append(line)
     a = shlex.split(line)
     # keep all config lines for later use
     alllines.append(line)
@@ -1960,11 +1983,16 @@ print("Setup for MCU %s" % mcu_type)
 # build a list for peripherals for DMA resolver
 periph_list = build_peripheral_list()
 
+# write out hw.dat for ROMFS
+write_all_lines(os.path.join(outdir, "hw.dat"))
+
 # write out hwdef.h
 write_hwdef_header(os.path.join(outdir, "hwdef.h"))
 
 # write out ldscript.ld
 write_ldscript(os.path.join(outdir, "ldscript.ld"))
+
+romfs_add_dir(['scripts'])
 
 write_ROMFS(outdir)
 
