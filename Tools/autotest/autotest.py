@@ -550,11 +550,7 @@ def write_fullresults():
 def check_logs(step):
     """Check for log files from a step."""
     print("check step: ", step)
-    if step.startswith('fly.'):
-        vehicle = step[4:]
-    elif step.startswith('drive.'):
-        vehicle = step[6:]
-    elif step.startswith('dive.'):
+    if step.startswith('test.'):
         vehicle = step[5:]
     else:
         return
@@ -598,7 +594,6 @@ def run_tests(steps):
                 results.add(step, '<span class="passed-text">PASSED</span>',
                             time.time() - t1)
                 print(">>>> PASSED STEP: %s at %s" % (step, time.asctime()))
-                check_logs(step)
             else:
                 print(">>>> FAILED STEP: %s at %s" % (step, time.asctime()))
                 passed = False
@@ -609,6 +604,7 @@ def run_tests(steps):
                     failed_testinstances[step].append(testinstance)
                 results.add(step, '<span class="failed-text">FAILED</span>',
                             time.time() - t1)
+                check_logs(step)
         except Exception as msg:
             passed = False
             failed.append(step)
