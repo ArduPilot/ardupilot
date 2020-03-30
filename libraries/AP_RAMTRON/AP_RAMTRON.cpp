@@ -71,14 +71,14 @@ bool AP_RAMTRON::init(void)
 
     for (uint8_t i = 0; i < ARRAY_SIZE(ramtron_ids); i++) {
         if (ramtron_ids[i].rdid_type == RDID_type::Cypress) {
-            cypress_rdid const * const cypress = (cypress_rdid const * const)rdid;
+            const cypress_rdid *cypress = (const cypress_rdid *)rdid;
             if (ramtron_ids[i].id1 == cypress->id1 &&
                 ramtron_ids[i].id2 == cypress->id2) {
                 id = i;
                 break;
             }
         } else if (ramtron_ids[i].rdid_type == RDID_type::Fujitsu) {
-            fujitsu_rdid const * const fujitsu = (fujitsu_rdid const * const)rdid;
+            const fujitsu_rdid *fujitsu = (const fujitsu_rdid *)rdid;
             if (ramtron_ids[i].id1 == fujitsu->id1 &&
                 ramtron_ids[i].id2 == fujitsu->id2) {
                 id = i;
