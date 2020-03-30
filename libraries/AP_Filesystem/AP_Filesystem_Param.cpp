@@ -22,16 +22,14 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 
-#if HAVE_FILESYSTEM_SUPPORT
-
 #define PACKED_NAME "param.pck"
 
 extern const AP_HAL::HAL& hal;
+extern int errno;
 
 int AP_Filesystem_Param::open(const char *fname, int flags)
 {
     if ((flags & O_ACCMODE) != O_RDONLY) {
-        errno = EROFS;
         return -1;
     }
     uint8_t idx;
@@ -159,7 +157,7 @@ bool AP_Filesystem_Param::token_seek(const struct rfile &r, struct cursor &c)
     return r.file_ofs == c.token_ofs;
 }
 
-ssize_t AP_Filesystem_Param::read(int fd, void *buf, size_t count)
+int32_t AP_Filesystem_Param::read(int fd, void *buf, uint32_t count)
 {
     if (fd < 0 || fd >= max_open_file || !file[fd].open) {
         errno = EBADF;
@@ -238,18 +236,7 @@ ssize_t AP_Filesystem_Param::read(int fd, void *buf, size_t count)
     return total;
 }
 
-ssize_t AP_Filesystem_Param::write(int fd, const void *buf, size_t count)
-{
-    errno = EROFS;
-    return -1;
-}
-
-int AP_Filesystem_Param::fsync(int fd)
-{
-    return 0;
-}
-
-off_t AP_Filesystem_Param::lseek(int fd, off_t offset, int seek_from)
+int32_t AP_Filesystem_Param::lseek(int fd, int32_t offset, int seek_from)
 {
     if (fd < 0 || fd >= max_open_file || !file[fd].open) {
         errno = EBADF;
@@ -281,55 +268,3 @@ int AP_Filesystem_Param::stat(const char *name, struct stat *stbuf)
     stbuf->st_size = 65535;
     return 0;
 }
-
-int AP_Filesystem_Param::unlink(const char *pathname)
-{
-    errno = EROFS;
-    return -1;
-}
-
-int AP_Filesystem_Param::mkdir(const char *pathname)
-{
-    errno = EROFS;
-    return -1;
-}
-
-void *AP_Filesystem_Param::opendir(const char *pathname)
-{
-    errno = EINVAL;
-    return nullptr;
-}
-
-struct dirent *AP_Filesystem_Param::readdir(void *dirp)
-{
-    errno = EBADF;
-    return nullptr;
-}
-
-int AP_Filesystem_Param::closedir(void *dirp)
-{
-    errno = EBADF;
-    return -1;
-}
-
-// return free disk space in bytes
-int64_t AP_Filesystem_Param::disk_free(const char *path)
-{
-    return 0;
-}
-
-// return total disk space in bytes
-int64_t AP_Filesystem_Param::disk_space(const char *path)
-{
-    return 0;
-}
-
-/*
-  set mtime on a file
- */
-bool AP_Filesystem_Param::set_mtime(const char *filename, const time_t mtime_sec)
-{
-    return false;
-}
-
-#endif

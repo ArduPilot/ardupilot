@@ -382,7 +382,7 @@ int AP_Filesystem_FATFS::close(int fileno)
     return 0;
 }
 
-ssize_t AP_Filesystem_FATFS::read(int fd, void *buf, size_t count)
+int32_t AP_Filesystem_FATFS::read(int fd, void *buf, uint32_t count)
 {
     UINT bytes = count;
     int res;
@@ -431,7 +431,7 @@ ssize_t AP_Filesystem_FATFS::read(int fd, void *buf, size_t count)
     return (ssize_t)total;
 }
 
-ssize_t AP_Filesystem_FATFS::write(int fd, const void *buf, size_t count)
+int32_t AP_Filesystem_FATFS::write(int fd, const void *buf, uint32_t count)
 {
     UINT bytes = count;
     FRESULT res;
@@ -843,7 +843,7 @@ static void unix_time_to_fat(time_t epoch, uint16_t &date, uint16_t &time)
 /*
   set mtime on a file
  */
-bool AP_Filesystem_FATFS::set_mtime(const char *filename, const time_t mtime_sec)
+bool AP_Filesystem_FATFS::set_mtime(const char *filename, const uint32_t mtime_sec)
 {
     FILINFO fno;
     uint16_t fdate, ftime;

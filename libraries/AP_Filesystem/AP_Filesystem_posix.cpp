@@ -75,7 +75,7 @@ int AP_Filesystem_Posix::fsync(int fd)
     return ::fsync(fd);
 }
 
-off_t AP_Filesystem_Posix::lseek(int fd, off_t offset, int seek_from)
+int32_t AP_Filesystem_Posix::lseek(int fd, int32_t offset, int seek_from)
 {
     return ::lseek(fd, offset, seek_from);
 }
@@ -146,7 +146,7 @@ int64_t AP_Filesystem_Posix::disk_space(const char *path)
 /*
   set mtime on a file
  */
-bool AP_Filesystem_Posix::set_mtime(const char *filename, const time_t mtime_sec)
+bool AP_Filesystem_Posix::set_mtime(const char *filename, const uint32_t mtime_sec)
 {
     filename = map_filename(filename);
     struct utimbuf times {};

@@ -21,8 +21,6 @@
 #include "AP_Filesystem_Sys.h"
 #include <AP_Math/AP_Math.h>
 
-#if HAVE_FILESYSTEM_SUPPORT
-
 extern const AP_HAL::HAL& hal;
 
 int AP_Filesystem_Sys::open(const char *fname, int flags)
@@ -77,7 +75,7 @@ int AP_Filesystem_Sys::close(int fd)
     return 0;
 }
 
-ssize_t AP_Filesystem_Sys::read(int fd, void *buf, size_t count)
+int32_t AP_Filesystem_Sys::read(int fd, void *buf, uint32_t count)
 {
     if (fd < 0 || fd >= max_open_file || !file[fd].open) {
         errno = EBADF;
@@ -90,18 +88,7 @@ ssize_t AP_Filesystem_Sys::read(int fd, void *buf, size_t count)
     return count;
 }
 
-ssize_t AP_Filesystem_Sys::write(int fd, const void *buf, size_t count)
-{
-    errno = EROFS;
-    return -1;
-}
-
-int AP_Filesystem_Sys::fsync(int fd)
-{
-    return 0;
-}
-
-off_t AP_Filesystem_Sys::lseek(int fd, off_t offset, int seek_from)
+int32_t AP_Filesystem_Sys::lseek(int fd, int32_t offset, int seek_from)
 {
     if (fd < 0 || fd >= max_open_file || !file[fd].open) {
         errno = EBADF;
@@ -110,7 +97,7 @@ off_t AP_Filesystem_Sys::lseek(int fd, off_t offset, int seek_from)
     struct rfile &r = file[fd];
     switch (seek_from) {
     case SEEK_SET:
-        r.file_ofs = MIN(offset, r.data->length);
+        r.file_ofs = MIN(offset, int32_t(r.data->length));
         break;
     case SEEK_CUR:
         r.file_ofs = MIN(r.data->length, offset+r.file_ofs);
@@ -129,55 +116,3 @@ int AP_Filesystem_Sys::stat(const char *name, struct stat *stbuf)
     stbuf->st_size = 1024*1024;
     return 0;
 }
-
-int AP_Filesystem_Sys::unlink(const char *pathname)
-{
-    errno = EROFS;
-    return -1;
-}
-
-int AP_Filesystem_Sys::mkdir(const char *pathname)
-{
-    errno = EROFS;
-    return -1;
-}
-
-void *AP_Filesystem_Sys::opendir(const char *pathname)
-{
-    errno = EINVAL;
-    return nullptr;
-}
-
-struct dirent *AP_Filesystem_Sys::readdir(void *dirp)
-{
-    errno = EBADF;
-    return nullptr;
-}
-
-int AP_Filesystem_Sys::closedir(void *dirp)
-{
-    errno = EBADF;
-    return -1;
-}
-
-// return free disk space in bytes
-int64_t AP_Filesystem_Sys::disk_free(const char *path)
-{
-    return 0;
-}
-
-// return total disk space in bytes
-int64_t AP_Filesystem_Sys::disk_space(const char *path)
-{
-    return 0;
-}
-
-/*
-  set mtime on a file
- */
-bool AP_Filesystem_Sys::set_mtime(const char *filename, const time_t mtime_sec)
-{
-    return false;
-}
-
-#endif

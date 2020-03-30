@@ -17,8 +17,6 @@
 
 #include "AP_Filesystem_backend.h"
 
-#if HAVE_FILESYSTEM_SUPPORT
-
 #include <AP_Param/AP_Param.h>
 
 class AP_Filesystem_Param : public AP_Filesystem_Backend
@@ -27,25 +25,9 @@ public:
     // functions that closely match the equivalent posix calls
     int open(const char *fname, int flags) override;
     int close(int fd) override;
-    ssize_t read(int fd, void *buf, size_t count) override;
-    ssize_t write(int fd, const void *buf, size_t count) override;
-    int fsync(int fd) override;
-    off_t lseek(int fd, off_t offset, int whence) override;
+    int32_t read(int fd, void *buf, uint32_t count) override;
+    int32_t lseek(int fd, int32_t offset, int whence) override;
     int stat(const char *pathname, struct stat *stbuf) override;
-    int unlink(const char *pathname) override;
-    int mkdir(const char *pathname) override;
-    void *opendir(const char *pathname) override;
-    struct dirent *readdir(void *dirp) override;
-    int closedir(void *dirp) override;
-
-    // return free disk space in bytes, -1 on error
-    int64_t disk_free(const char *path) override;
-
-    // return total disk space in bytes, -1 on error
-    int64_t disk_space(const char *path) override;
-
-    // set modification time on a file
-    bool set_mtime(const char *filename, const time_t mtime_sec) override;
 
 private:
     // we maintain two cursors per open file to minimise seeking
@@ -76,5 +58,3 @@ private:
     uint8_t pack_param(const AP_Param *ap, const char *pname, const char *last_name,
                        enum ap_var_type ptype, uint8_t *buf, uint8_t buflen);
 };
-
-#endif // HAVE_FILESYSTEM_SUPPORT
