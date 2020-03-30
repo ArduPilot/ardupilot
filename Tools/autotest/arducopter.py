@@ -1933,6 +1933,7 @@ class AutoTestCopter(AutoTest):
         try:
             self.set_parameter("GPS_TYPE", 0)
             self.set_parameter("EK2_GPS_TYPE", 3)
+            self.set_parameter("VISO_TYPE", 1)
             self.set_parameter("SERIAL5_PROTOCOL", 1)
             self.reboot_sitl()
             # without a GPS or some sort of external prompting, AP
