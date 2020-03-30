@@ -420,13 +420,6 @@ define HAL_BATT_CURR_SCALE 17.0
 # this defines the default maximum clock on I2C devices.
 define HAL_I2C_MAX_CLOCK 100000
 
-# uncomment the lines below to enable strict API
-# checking in ChibiOS
-# define CH_DBG_ENABLE_ASSERTS TRUE
-# define CH_DBG_ENABLE_CHECKS TRUE
-# define CH_DBG_SYSTEM_STATE_CHECK TRUE
-# define CH_DBG_ENABLE_STACK_CHECK TRUE
-
 # we can't share IO UART (USART6)
 DMA_NOSHARE USART6_TX USART6_RX ADC1
 DMA_PRIORITY USART6*

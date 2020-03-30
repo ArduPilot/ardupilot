@@ -156,13 +156,6 @@ define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 # 8 PWM available by default
 define BOARD_PWM_COUNT_DEFAULT 8
 
-# uncomment the lines below to enable strict API
-# checking in ChibiOS
-#define CH_DBG_ENABLE_ASSERTS TRUE
-#define CH_DBG_ENABLE_CHECKS TRUE
-#define CH_DBG_SYSTEM_STATE_CHECK TRUE
-#define CH_DBG_ENABLE_STACK_CHECK TRUE
-
 # setup for OSD
 define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1

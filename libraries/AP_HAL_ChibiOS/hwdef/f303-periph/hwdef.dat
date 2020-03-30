@@ -131,8 +131,6 @@ env APP_DESCRIPTOR MissionPlanner
 # reserve 256 bytes for comms between app and bootloader
 RAM_RESERVE_START 256
 
-# define CH_DBG_ENABLE_STACK_CHECK TRUE
-
 # keep ROMFS uncompressed as we don't have enough RAM
 # to uncompress the bootloader at runtime
 env ROMFS_UNCOMPRESSED True
