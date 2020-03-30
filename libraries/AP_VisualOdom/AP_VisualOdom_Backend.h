@@ -25,6 +25,9 @@ public:
     // constructor. This incorporates initialisation as well.
 	AP_VisualOdom_Backend(AP_VisualOdom &frontend);
 
+	// return true if sensor is basically healthy (we are receiving data)
+	bool healthy() const;
+
     // consume VISION_POSITION_DELTA MAVLink message
 	virtual void handle_msg(const mavlink_message_t &msg) {};
 
@@ -41,9 +44,6 @@ public:
 
 protected:
 
-    // set deltas (used by backend to update state)
-    void set_deltas(const Vector3f &angle_delta, const Vector3f& position_delta, uint64_t time_delta_usec, float confidence);
-
     // apply rotation and correction to position
     void rotate_and_correct_position(Vector3f &position) const;
 
@@ -53,9 +53,8 @@ protected:
     // use sensor provided position and attitude to calculate rotation to align sensor with AHRS/EKF attitude
     bool align_sensor_to_vehicle(const Vector3f &position, const Quaternion &attitude);
 
-private:
-
     AP_VisualOdom &_frontend;                   // reference to frontend
+
     float _yaw_trim;                            // yaw angle trim (in radians) to align camera's yaw to ahrs/EKF's
     Quaternion _yaw_rotation;                   // earth-frame yaw rotation to align heading of sensor with vehicle.  use when _yaw_trim is non-zero
     Quaternion _att_rotation;                   // body-frame rotation corresponding to ORIENT parameter.  use when get_orientation != NONE
@@ -67,4 +66,5 @@ private:
     bool _have_attitude;                        // true if we have received an attitude from the camera (used for arming checks)
     bool _error_orientation;                    // true if the orientation is not supported
     Quaternion _attitude_last;                  // last attitude received from camera (used for arming checks)
+    uint32_t _last_update_ms;                   // system time of last update from sensor (used by health checks)
 };

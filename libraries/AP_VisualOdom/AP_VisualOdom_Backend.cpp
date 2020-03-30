@@ -28,20 +28,11 @@ AP_VisualOdom_Backend::AP_VisualOdom_Backend(AP_VisualOdom &frontend) :
 {
 }
 
-// set deltas (used by backend to update state)
-void AP_VisualOdom_Backend::set_deltas(const Vector3f &angle_delta, const Vector3f& position_delta, uint64_t time_delta_usec, float confidence)
+// return true if sensor is basically healthy (we are receiving data)
+bool AP_VisualOdom_Backend::healthy() const
 {
-    // rotate and store angle_delta
-    _frontend._state.angle_delta = angle_delta;
-    _frontend._state.angle_delta.rotate((enum Rotation)_frontend._orientation.get());
-
-    // rotate and store position_delta
-    _frontend._state.position_delta = position_delta;
-    _frontend._state.position_delta.rotate((enum Rotation)_frontend._orientation.get());
-
-    _frontend._state.time_delta_usec = time_delta_usec;
-    _frontend._state.confidence = confidence;
-    _frontend._state.last_sensor_update_ms = AP_HAL::millis();
+    // healthy if we have received sensor messages within the past 300ms
+    return ((AP_HAL::millis() - _last_update_ms) < AP_VISUALODOM_TIMEOUT_MS);
 }
 
 // general purpose method to send position estimate data to EKF
@@ -88,6 +79,9 @@ void AP_VisualOdom_Backend::handle_vision_position_estimate(uint64_t remote_time
     // store corrected attitude for use in pre-arm checks
     _attitude_last = att;
     _have_attitude = true;
+
+    // record time for health monitoring
+    _last_update_ms = AP_HAL::millis();
 }
 
 // apply rotation and correction to position

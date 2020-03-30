@@ -27,6 +27,7 @@ class AP_VisualOdom
 {
 public:
     friend class AP_VisualOdom_Backend;
+    friend class AP_VisualOdom_MAV;
 
     AP_VisualOdom();
 
@@ -41,22 +42,8 @@ public:
         AP_VisualOdom_Type_MAV    = 1
     };
 
-    // The VisualOdomState structure is filled in by the backend driver
-    struct VisualOdomState {
-        Vector3f angle_delta;       // attitude delta (in radians) of most recent update
-        Vector3f position_delta;    // position delta (in meters) of most recent update
-        uint64_t time_delta_usec;   // time delta (in usec) between previous and most recent update
-        float confidence;           // confidence expressed as a value from 0 (no confidence) to 100 (very confident)
-        uint32_t last_sensor_update_ms;    // system time (in milliseconds) of last update from sensor
-        uint32_t last_processed_sensor_update_ms; // timestamp of last sensor update that was processed
-    };
-
     // detect and initialise any sensors
     void init();
-
-    // should be called really, really often.  The faster you call
-    // this the lower the latency of the data fed to the estimator.
-    void update();
 
     // return true if sensor is enabled
     bool enabled() const;
@@ -87,12 +74,8 @@ private:
 
     static AP_VisualOdom *_singleton;
 
-    // state accessors
-    const Vector3f &get_angle_delta() const { return _state.angle_delta; }
-    const Vector3f &get_position_delta() const { return _state.position_delta; }
-    uint64_t get_time_delta_usec() const { return _state.time_delta_usec; }
-    float get_confidence() const { return _state.confidence; }
-    uint32_t get_last_update_ms() const { return _state.last_sensor_update_ms; }
+    // get user defined orientation
+    enum Rotation get_orientation() const { return (enum Rotation)_orientation.get(); }
 
     // parameters
     AP_Int8 _type;
@@ -101,9 +84,6 @@ private:
 
     // reference to backends
     AP_VisualOdom_Backend *_driver;
-
-    // state of backend
-    VisualOdomState _state;
 };
 
 namespace AP {
