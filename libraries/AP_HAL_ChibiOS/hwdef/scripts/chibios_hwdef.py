@@ -1640,8 +1640,7 @@ def write_all_lines(hwdat):
     f = open(hwdat, 'w')
     f.write('\n'.join(all_lines))
     f.close()
-    flash_size = get_config('FLASH_SIZE_KB', type=int)
-    if flash_size > 1024:
+    if not 'AP_PERIPH' in env_vars:
         romfs["hwdef.dat"] = hwdat
 
 def write_hwdef_header(outfilename):
