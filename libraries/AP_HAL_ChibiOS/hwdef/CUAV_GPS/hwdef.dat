@@ -133,8 +133,6 @@ define HAL_CAN_DEFAULT_NODE_ID 0
 
 define CAN_APP_NODE_NAME "org.ardupilot.cuav_gps"
 
-define CH_DBG_ENABLE_STACK_CHECK TRUE
-
 define HAL_NO_GCS
 define HAL_NO_LOGGING
 define HAL_NO_MONITOR_THREAD
