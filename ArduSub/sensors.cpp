@@ -94,6 +94,14 @@ void Sub::init_optflow()
 }
 #endif      // OPTFLOW == ENABLED
 
+// init visual odometry sensor
+void Sub::init_visual_odom()
+{
+#if VISUAL_ODOMETRY_ENABLED == ENABLED
+    visual_odom.init();
+#endif
+}
+
 void Sub::accel_cal_update()
 {
     if (hal.util->get_soft_armed()) {

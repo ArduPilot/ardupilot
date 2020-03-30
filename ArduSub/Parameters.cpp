@@ -536,6 +536,12 @@ const AP_Param::Info Sub::var_info[] = {
     GOBJECT(rally,      "RALLY_",   AP_Rally),
 #endif
 
+#if VISUAL_ODOMETRY_ENABLED == ENABLED
+    // @Group: VISO
+    // @Path: ../libraries/AP_VisualOdom/AP_VisualOdom.cpp
+    GOBJECT(visual_odom, "VISO_", AP_VisualOdom),
+#endif
+
     // @Group: MOT_
     // @Path: ../libraries/AP_Motors/AP_Motors6DOF.cpp,../libraries/AP_Motors/AP_MotorsMulticopter.cpp
     GOBJECT(motors, "MOT_",         AP_Motors6DOF),

@@ -7,6 +7,9 @@
 #ifdef ENABLE_SCRIPTING
 #include <AP_Scripting/AP_Scripting.h>
 #endif
+#if VISUAL_ODOMETRY_ENABLED == ENABLED
+ # include <AP_VisualOdom/AP_VisualOdom.h>
+#endif
 
 // Global parameter class.
 //
@@ -101,7 +104,7 @@ public:
         k_param_relay, // Relay
         k_param_camera, // Camera
         k_param_camera_mount, // Camera gimbal
-
+        k_param_visual_odom,
 
         // RC_Channel settings (deprecated)
         k_param_rc_1_old = 75,
@@ -334,6 +337,11 @@ public:
 #ifdef ENABLE_SCRIPTING
     AP_Scripting scripting;
 #endif // ENABLE_SCRIPTING
+
+#if VISUAL_ODOMETRY_ENABLED == ENABLED
+    // Visual Odometry camera
+    AP_VisualOdom visual_odom;
+#endif
 
 };
 

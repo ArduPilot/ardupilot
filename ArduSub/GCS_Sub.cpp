@@ -36,7 +36,13 @@ void GCS_Sub::update_vehicle_sensor_status_flags()
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
     }
 #endif
-
+#if VISUAL_ODOMETRY_ENABLED == ENABLED
+    const AP_VisualOdom *visual_odom = AP::visualodom();
+    if (visual_odom && visual_odom->enabled()) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
+    }
+#endif
     control_sensors_present |=
         MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL |
         MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;
@@ -64,6 +70,12 @@ void GCS_Sub::update_vehicle_sensor_status_flags()
 #if OPTFLOW == ENABLED
     if (optflow && optflow->healthy()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
+    }
+#endif
+
+#if VISUAL_ODOMETRY_ENABLED == ENABLED
+    if (visual_odom && visual_odom->enabled() && visual_odom->healthy()) {
+        control_sensors_health |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
     }
 #endif
 

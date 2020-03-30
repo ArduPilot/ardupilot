@@ -10,7 +10,7 @@
 bool Sub::poshold_init()
 {
     // fail to initialise PosHold mode if no GPS lock
-    if (!position_ok()) {
+    if (!position_ok() && (!visual_odom.enabled() || !visual_odom.healthy())) {
         return false;
     }
 
