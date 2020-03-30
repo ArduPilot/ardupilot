@@ -35,6 +35,7 @@
 #include <AP_Scripting/AP_Scripting.h>
 #include <AP_Camera/AP_RunCam.h>
 #include <AP_GyroFFT/AP_GyroFFT.h>
+#include <AP_RCMapper/AP_RCMapper.h>
 
 #if HAL_WITH_UAVCAN
   #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
@@ -529,6 +530,53 @@ bool AP_Arming::hardware_safety_check(bool report)
     return true;
 }
 
+bool AP_Arming::rc_arm_checks(AP_Arming::Method method)
+{
+    // don't check the trims if we are in a failsafe
+    if (!rc().has_valid_input()) {
+        return true;
+    }
+
+    // only check if we've recieved some form of input within the last second
+    // this is a protection against a vehicle having never enabled an input
+    uint32_t last_input_ms = rc().last_input_ms();
+    if ((last_input_ms == 0) || ((AP_HAL::millis() - last_input_ms) > 1000)) {
+        return true;
+    }
+
+    bool check_passed = true;
+    const RCMapper * rcmap = AP::rcmap();
+    if (rcmap != nullptr) {
+        if (!rc().arming_skip_checks_rpy()) {
+            const char *names[3] = {"Roll", "Pitch", "Yaw"};
+            const uint8_t channels[3] = {rcmap->roll(), rcmap->pitch(), rcmap->yaw()};
+            for (uint8_t i = 0; i < ARRAY_SIZE(channels); i++) {
+                const RC_Channel *c = rc().channel(channels[i] - 1);
+                if (c == nullptr) {
+                    continue;
+                }
+                if (!c->in_trim_dz()) {
+                    if ((method != Method::RUDDER) || (c != rc().get_arming_channel())) { // ignore the yaw input channel if rudder arming
+                        check_failed(ARMING_CHECK_RC, true, "%s (RC%d) is not neutral", names[i], channels[i]);
+                        check_passed = false;
+                    }
+                }
+            }
+        }
+
+        if (rc().arming_check_throttle()) {
+            const RC_Channel *c = rc().channel(rcmap->throttle() - 1);
+            if (c != nullptr) {
+                if (c->get_control_in() != 0) {
+                    check_failed(ARMING_CHECK_RC, true, "Throttle (RC%d) is not neutral", rcmap->throttle());
+                    check_passed = false;
+                }
+            }
+        }
+    }
+    return check_passed;
+}
+
 bool AP_Arming::rc_calibration_checks(bool report)
 {
     bool check_passed = true;
@@ -1010,6 +1058,13 @@ bool AP_Arming::pre_arm_checks(bool report)
 
 bool AP_Arming::arm_checks(AP_Arming::Method method)
 {
+    if ((checks_to_perform & ARMING_CHECK_ALL) ||
+        (checks_to_perform & ARMING_CHECK_RC)) {
+        if (!rc_arm_checks(method)) {
+            return false;
+        }
+    }
+
     // ensure the GPS drivers are ready on any final changes
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_GPS_CONFIG)) {
