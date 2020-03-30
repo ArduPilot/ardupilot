@@ -15,14 +15,18 @@
 
 #include "AP_Filesystem.h"
 
-#if HAVE_FILESYSTEM_SUPPORT
-
 static AP_Filesystem fs;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if HAVE_FILESYSTEM_SUPPORT
 #include "AP_Filesystem_FATFS.h"
 static AP_Filesystem_FATFS fs_local;
-#endif
+#else
+static AP_Filesystem_Backend fs_local;
+int errno;
+#endif // HAVE_FILESYSTEM_SUPPORT
+#endif // HAL_BOARD_CHIBIOS
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "AP_Filesystem_posix.h"
 static AP_Filesystem_Posix fs_local;
@@ -109,13 +113,13 @@ int AP_Filesystem::close(int fd)
     return backend.fs.close(fd);
 }
 
-ssize_t AP_Filesystem::read(int fd, void *buf, size_t count)
+int32_t AP_Filesystem::read(int fd, void *buf, uint32_t count)
 {
     const Backend &backend = backend_by_fd(fd);
     return backend.fs.read(fd, buf, count);
 }
 
-ssize_t AP_Filesystem::write(int fd, const void *buf, size_t count)
+int32_t AP_Filesystem::write(int fd, const void *buf, uint32_t count)
 {
     const Backend &backend = backend_by_fd(fd);
     return backend.fs.write(fd, buf, count);
@@ -127,7 +131,7 @@ int AP_Filesystem::fsync(int fd)
     return backend.fs.fsync(fd);
 }
 
-off_t AP_Filesystem::lseek(int fd, off_t offset, int seek_from)
+int32_t AP_Filesystem::lseek(int fd, int32_t offset, int seek_from)
 {
     const Backend &backend = backend_by_fd(fd);
     return backend.fs.lseek(fd, offset, seek_from);
@@ -205,7 +209,7 @@ int64_t AP_Filesystem::disk_space(const char *path)
 /*
   set mtime on a file
  */
-bool AP_Filesystem::set_mtime(const char *filename, const time_t mtime_sec)
+bool AP_Filesystem::set_mtime(const char *filename, const uint32_t mtime_sec)
 {
     const Backend &backend = backend_by_path(filename);
     return backend.fs.set_mtime(filename, mtime_sec);
@@ -218,4 +222,4 @@ AP_Filesystem &FS()
     return fs;
 }
 }
-#endif
+
