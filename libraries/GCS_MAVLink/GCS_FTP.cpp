@@ -20,8 +20,6 @@
 
 #include <AP_Filesystem/AP_Filesystem.h>
 
-#if HAVE_FILESYSTEM_SUPPORT
-
 extern const AP_HAL::HAL& hal;
 
 struct GCS_MAVLINK::ftp_state GCS_MAVLINK::ftp;
@@ -606,5 +604,3 @@ void GCS_MAVLINK::ftp_list_dir(struct pending_ftp &request, struct pending_ftp &
 
     AP::FS().closedir(dir);
 }
-
-#endif // HAVE_FILESYSTEM_SUPPORT
