@@ -2795,7 +2795,8 @@ class AutoTest(ABC):
             return msg.groundspeed
 
         def validator(value2, target2=None):
-            if speed_min <= value2 <= speed_max:
+            epsilon = 0.01  # 1 cm/s
+            if abs(speed_min - value2) <= epsilon or abs(value2 - speed_max) <= epsilon:
                 return True
             else:
                 return False
