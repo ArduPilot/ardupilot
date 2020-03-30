@@ -823,12 +823,10 @@ uint16_t GCS_MAVLINK::get_reschedule_interval_ms(const deferred_message_bucket_t
         // we are sending requests for waypoints, penalize streams:
         interval_ms *= 4;
     }
-#if HAVE_FILESYSTEM_SUPPORT
     if (ftp.replies && AP_HAL::millis() - ftp.last_send_ms < 500) {
         // we are sending ftp replies
         interval_ms *= 4;
     }
-#endif
 
     if (interval_ms > 60000) {
         return 60000;
@@ -1004,9 +1002,7 @@ void GCS_MAVLINK::update_send()
         AP::logger().handle_log_send();
     }
 
-#if HAVE_FILESYSTEM_SUPPORT
     send_ftp_replies();
-#endif // HAVE_FILESYSTEM_SUPPORT
 
     if (!deferred_messages_initialised) {
         initialise_message_intervals_from_streamrates();
@@ -3122,9 +3118,7 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         break;
 
     case MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL:
-#if HAVE_FILESYSTEM_SUPPORT
         handle_file_transfer_protocol(msg);
-#endif // HAVE_FILESYSTEM_SUPPORT
         break;
 
     case MAVLINK_MSG_ID_DIGICAM_CONTROL:
@@ -4900,9 +4894,7 @@ uint64_t GCS_MAVLINK::capabilities() const
         ret |= MAV_PROTOCOL_CAPABILITY_MISSION_FENCE;
     }
 
-#if HAVE_FILESYSTEM_SUPPORT
     ret |= MAV_PROTOCOL_CAPABILITY_FTP;
-#endif // HAVE_FILESYSTEM_SUPPORT
 
     return ret;
 }
