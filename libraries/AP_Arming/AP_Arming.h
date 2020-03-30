@@ -150,6 +150,8 @@ protected:
 
     virtual bool rc_calibration_checks(bool report);
 
+    bool rc_arm_checks(AP_Arming::Method method);
+
     bool manual_transmitter_checks(bool report);
 
     bool mission_checks(bool report);
