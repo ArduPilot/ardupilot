@@ -39,6 +39,7 @@ from common import Test
 
 tester = None
 
+# version 3
 
 def buildlogs_dirpath():
     """Return BUILDLOGS directory path."""
