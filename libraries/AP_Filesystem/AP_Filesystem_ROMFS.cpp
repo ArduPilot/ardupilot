@@ -21,7 +21,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_ROMFS/AP_ROMFS.h>
 
-#if defined(HAL_HAVE_AP_ROMFS_EMBEDDED_H) && HAVE_FILESYSTEM_SUPPORT
+#if defined(HAL_HAVE_AP_ROMFS_EMBEDDED_H)
 
 int AP_Filesystem_ROMFS::open(const char *fname, int flags)
 {
@@ -63,7 +63,7 @@ int AP_Filesystem_ROMFS::close(int fd)
     return 0;
 }
 
-ssize_t AP_Filesystem_ROMFS::read(int fd, void *buf, size_t count)
+int32_t AP_Filesystem_ROMFS::read(int fd, void *buf, uint32_t count)
 {
     if (fd < 0 || fd >= max_open_file || file[fd].data == nullptr) {
         errno = EBADF;
@@ -78,7 +78,7 @@ ssize_t AP_Filesystem_ROMFS::read(int fd, void *buf, size_t count)
     return count;
 }
 
-ssize_t AP_Filesystem_ROMFS::write(int fd, const void *buf, size_t count)
+int32_t AP_Filesystem_ROMFS::write(int fd, const void *buf, uint32_t count)
 {
     errno = EROFS;
     return -1;
@@ -89,7 +89,7 @@ int AP_Filesystem_ROMFS::fsync(int fd)
     return 0;
 }
 
-off_t AP_Filesystem_ROMFS::lseek(int fd, off_t offset, int seek_from)
+int32_t AP_Filesystem_ROMFS::lseek(int fd, int32_t offset, int seek_from)
 {
     if (fd < 0 || fd >= max_open_file || file[fd].data == nullptr) {
         errno = EBADF;
@@ -203,7 +203,7 @@ int64_t AP_Filesystem_ROMFS::disk_space(const char *path)
 /*
   set mtime on a file
  */
-bool AP_Filesystem_ROMFS::set_mtime(const char *filename, const time_t mtime_sec)
+bool AP_Filesystem_ROMFS::set_mtime(const char *filename, const uint32_t mtime_sec)
 {
     return false;
 }
