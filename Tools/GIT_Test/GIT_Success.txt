@@ -140,3 +140,4 @@ Ahmed Majuid
 Tejprakash Sharma
 Bhaskar Dutt
 Marek Lukasiewicz
+Peter Palfi is hoping he'll be accepted into gsoc2020
