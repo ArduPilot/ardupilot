@@ -1787,7 +1787,12 @@ void GCS_MAVLINK::send_sensor_offsets()
     }
     counter = 0;
 
-    const Vector3f &mag_offsets = compass.get_offsets(0);
+    Vector3f mag_offsets;
+    float declination = 0.0f;
+    if (compass.initialised()) {
+        mag_offsets = compass.get_offsets(0);
+        declination = compass.get_declination();
+    }
     const Vector3f &accel_offsets = ins.get_accel_offsets(0);
     const Vector3f &gyro_offsets = ins.get_gyro_offsets(0);
 
@@ -1797,7 +1802,7 @@ void GCS_MAVLINK::send_sensor_offsets()
                                     mag_offsets.x,
                                     mag_offsets.y,
                                     mag_offsets.z,
-                                    compass.get_declination(),
+                                    declination,
                                     barometer.get_pressure(),
                                     barometer.get_temperature()*100,
                                     gyro_offsets.x,
