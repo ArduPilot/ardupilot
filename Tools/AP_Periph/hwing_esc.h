@@ -25,8 +25,10 @@ public:
         float voltage;
         float phase_current;
         float current;
-        uint16_t temperature;
+        uint8_t mos_temperature;
+        uint8_t cap_temperature;
         uint16_t status;
+        uint32_t error_count;
     };
 
     const HWESC &get_telem(void) {
@@ -46,17 +48,20 @@ private:
         uint16_t voltage;
         int16_t current;
         int16_t phase_current;
-        uint16_t temperature;
+        uint8_t mos_temperature;
+        uint8_t cap_temperature;
         uint16_t status;
         uint16_t crc;
     } pkt;
 
     uint8_t len;
     uint32_t last_read_ms;
+    uint32_t error_count;
 
     struct HWESC decoded;
 
     bool parse_packet(void);
+    uint8_t temperature_decode(uint8_t temp_raw) const;
 };
 
 #endif // HAL_PERIPH_ENABLE_HWESC

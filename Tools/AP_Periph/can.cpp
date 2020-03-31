@@ -1117,9 +1117,10 @@ void AP_Periph_FW::hwesc_telem_update()
     pkt.esc_index = g.esc_number;
     pkt.voltage = t.voltage;
     pkt.current = t.current;
-    pkt.temperature = t.temperature;
+    pkt.temperature = MAX(t.mos_temperature, t.cap_temperature);
     pkt.rpm = t.rpm;
     pkt.power_rating_pct = t.phase_current;
+    pkt.error_count = t.error_count;
 
     fix_float16(pkt.voltage);
     fix_float16(pkt.current);
