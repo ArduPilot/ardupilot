@@ -9,6 +9,6 @@ public:
     // constructor
     AP_VisualOdom_MAV(AP_VisualOdom &frontend);
 
-    // consume VISION_POSITION_DELTA MAVLink message
-    void handle_msg(const mavlink_message_t &msg) override;
+    // consume vision_position_delta mavlink messages
+    void handle_vision_position_delta_msg(const mavlink_message_t &msg) override;
 };

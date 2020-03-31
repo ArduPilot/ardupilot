@@ -28,8 +28,8 @@ public:
 	// return true if sensor is basically healthy (we are receiving data)
 	bool healthy() const;
 
-    // consume VISION_POSITION_DELTA MAVLink message
-	virtual void handle_msg(const mavlink_message_t &msg) {};
+	// consume vision_position_delta mavlink messages
+	virtual void handle_vision_position_delta_msg(const mavlink_message_t &msg) {};
 
 	// general purpose methods to consume position estimate data and send to EKF
 	// distances in meters, roll, pitch and yaw are in radians

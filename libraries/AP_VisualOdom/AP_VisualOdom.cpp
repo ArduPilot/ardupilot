@@ -106,8 +106,8 @@ bool AP_VisualOdom::healthy() const
     return _driver->healthy();
 }
 
-// consume VISION_POSITION_DELTA MAVLink message
-void AP_VisualOdom::handle_msg(const mavlink_message_t &msg)
+// consume vision_position_delta mavlink messages
+void AP_VisualOdom::handle_vision_position_delta_msg(const mavlink_message_t &msg)
 {
     // exit immediately if not enabled
     if (!enabled()) {
@@ -116,7 +116,7 @@ void AP_VisualOdom::handle_msg(const mavlink_message_t &msg)
 
     // call backend
     if (_driver != nullptr) {
-        _driver->handle_msg(msg);
+        _driver->handle_vision_position_delta_msg(msg);
     }
 }
 
