@@ -1581,6 +1581,168 @@ class AutoTestPlane(AutoTest):
 
         self.fly_home_land_and_disarm()
 
+    def CompassDisabled(self):
+        self.context_push()
+        ex = None
+        try:
+            self.reboot_sitl()
+            self.start_subtest("Ensure disabling the compass at runtime doesn't cause mag stuff to stop")
+            self.set_parameter("COMPASS_ENABLE", 0)
+            self.drain_mav()
+
+            # check sensor offset reporting
+            m = self.mav.recv_match(type='SENSOR_OFFSETS', blocking=True, timeout=5)
+            if m is None:
+                raise NotAchievedException("Did not get sensor offsets message")
+            if m.mag_declination == 0.0:
+                raise NotAchievedException("Unexpected zero mag_declination")
+            if m.mag_ofs_x == 0.0:
+                raise NotAchievedException("Unexpected zero mag_ofs_x")
+            if m.mag_ofs_y == 0.0:
+                raise NotAchievedException("Unexpected zero mag_ofs_y")
+            if m.mag_ofs_z == 0.0:
+                raise NotAchievedException("Unexpected zero mag_ofs_z")
+
+            # check mag field reporting
+            m = self.mav.recv_match(type='RAW_IMU', blocking=True, timeout=1)
+            if m is None:
+                raise NotAchievedException("Did not receive RAW_IMU message")
+            if m.xmag == 0.0:
+                raise NotAchievedException("Unexpected zero xmag")
+            if m.ymag == 0.0:
+                raise NotAchievedException("Unexpected zero ymag")
+            if m.zmag == 0.0:
+                raise NotAchievedException("Unexpected zero zmag")
+
+            # check compass health in sys-status; should still be healthy
+            m = self.mav.recv_match(type='SYS_STATUS', blocking=True, timeout=1)
+            if m is None:
+                raise NotAchievedException("Did not receive SYS_STATUS message")
+            if (not (m.onboard_control_sensors_present & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_3D_MAG)):
+                raise NotAchievedException("mag not present")
+            if (not (m.onboard_control_sensors_enabled & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_3D_MAG)):
+                raise NotAchievedException("mag not enabled")
+            if (not (m.onboard_control_sensors_health & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_3D_MAG)):
+                raise NotAchievedException("mag not healthy")
+
+            # we set the parameter up the top there, now reboot so it takes effect:
+            self.reboot_sitl()
+            self.delay_sim_time(5)
+
+            # some compass cal routines require position, try not to
+            # get false results.  Interestingly, the EKF stays in
+            # constant-position-mode until you start to move (and it
+            # gets yaw-from-gps).  We'll just wait until 
+            m = self.mav.recv_match(type='GPS_GLOBAL_ORIGIN', blocking=True, timeout=20)
+            if m is None:
+                raise NotAchievedException("Did not get global origin")
+            self.arm_vehicle()
+            self.progress("Idle along the runway a bit to get a yaw-from-gps")
+            self.set_rc(3, 1200)
+            self.wait_ekf_happy(timeout=120)
+            self.set_rc(3, 1000)
+            self.disarm_vehicle() # so we don't get our calibration
+                                  # attempts bounced because we are
+                                  # armed...
+
+            # check sensor offset reporting
+            m = self.mav.recv_match(type='SENSOR_OFFSETS', blocking=True, timeout=5)
+            if m is None:
+                raise NotAchievedException("Did not get sensor offsets message")
+            if m.mag_declination != 0.0:
+                raise NotAchievedException("Unexpected non-zero mag_declination")
+            if m.mag_ofs_x != 0.0:
+                raise NotAchievedException("Unexpected non-zero mag_ofs_x")
+            if m.mag_ofs_y != 0.0:
+                raise NotAchievedException("Unexpected non-zero mag_ofs_y")
+            if m.mag_ofs_z != 0.0:
+                raise NotAchievedException("Unexpected non-zero mag_ofs_z")
+
+            # check mag field reporting
+            m = self.mav.recv_match(type='RAW_IMU', blocking=True, timeout=1)
+            if m is None:
+                raise NotAchievedException("Did not receive RAW_IMU message")
+            if m.xmag != 0.0:
+                raise NotAchievedException("Unexpected non-zero xmag")
+            if m.ymag != 0.0:
+                raise NotAchievedException("Unexpected non-zero ymag")
+            if m.zmag != 0.0:
+                raise NotAchievedException("Unexpected non-zero zmag")
+
+            # check compass health in sys-status; should not be
+            # present, healthy of enabled
+            m = self.mav.recv_match(type='SYS_STATUS', blocking=True, timeout=1)
+            if m is None:
+                raise NotAchievedException("Did not receive SYS_STATUS message")
+            if (m.onboard_control_sensors_present & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_3D_MAG):
+                raise NotAchievedException("mag present")
+            if (m.onboard_control_sensors_enabled & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_3D_MAG):
+                raise NotAchievedException("mag enabled")
+            if (m.onboard_control_sensors_health & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_3D_MAG):
+                raise NotAchievedException("mag healthy")
+
+            self.start_subtest("Checking inability to start mag cal")
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_START_MAG_CAL,
+                         1, # bitmask of compasses to calibrate
+                         0,
+                         1, # save without user input
+                         0,
+                         0,
+                         0,
+                         0,
+                         want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+                         timeout=1)
+
+            self.start_subtest("Checking inability to start fixed-yaw mag cal")
+            self.run_cmd(mavutil.mavlink.MAV_CMD_FIXED_MAG_CAL_YAW,
+                         math.degrees(0), # param1
+                         0, # param2
+                         0, # param3
+                         0, # param4
+
+                         0, # param5
+                         0, # param6
+                         0, # param7
+                         want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+                         timeout=1)
+
+            self.start_subtest("Checking inability to do fixed-mag-cal")
+            self.run_cmd(mavutil.mavlink.MAV_CMD_FIXED_MAG_CAL,
+                         33.0, # declination
+                         21, # inclination
+                         121, # intensity
+                         3, # yawdegrees
+
+                         0, # param5
+                         0, # param6
+                         0, # param7
+                         want_result=mavutil.mavlink.MAV_RESULT_UNSUPPORTED,
+                         timeout=1)
+
+            self.start_subtest("Checking inability to do fixed-mag-cal")
+            self.run_cmd(mavutil.mavlink.MAV_CMD_FIXED_MAG_CAL_FIELD,
+                         33.0, # declination
+                         21, # inclination
+                         121, # intensity
+                         3, # yawdegrees
+
+                         0, # param5
+                         0, # param6
+                         0, # param7
+                         want_result=mavutil.mavlink.MAV_RESULT_UNSUPPORTED,
+                         timeout=1)
+        except Exception as e:
+            self.progress("Exception caught:")
+            self.progress(self.get_exception_stacktrace(e))
+            ex = e
+
+        self.context_pop()
+
+        self.reboot_sitl()
+
+        if ex is not None:
+            raise ex
+
     def LOITER(self):
         self.takeoff(alt=200)
         self.set_rc(3, 1500)
@@ -1877,6 +2039,10 @@ class AutoTestPlane(AutoTest):
             ("Terrain",
              "Test terrain following in mission",
              self.fly_terrain_mission),
+
+            ("CompassDisabled",
+             "Various compass-disabled checks",
+             self.CompassDisabled),
 
             ("LogUpload",
              "Log upload",
