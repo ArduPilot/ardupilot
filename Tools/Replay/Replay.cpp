@@ -111,7 +111,6 @@ void ReplayVehicle::init_ardupilot(void)
     // places in the EKF, for example)
     logger.Init(log_structure, 0);
 
-    ahrs.set_compass(&compass);
     ahrs.set_fly_forward(true);
     ahrs.set_wind_estimation(true);
     ahrs.set_correct_centrifugal(true);
@@ -652,7 +651,7 @@ void Replay::read_sensors(const char *type)
             _vehicle.ahrs.estimate_wind();
         }
     } else if (streq(type,"MAG")) {
-        _vehicle.compass.read();
+        UNUSED_RESULT(_vehicle.compass.read());
     } else if (streq(type,"ARSP")) {
         _vehicle.ahrs.set_airspeed(&_vehicle.airspeed);
     } else if (streq(type,"BARO")) {
