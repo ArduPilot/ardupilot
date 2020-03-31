@@ -41,7 +41,11 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
     }
 
     // check compass health
-    compass.read();
+    if (!compass.read()) {
+        gcs_chan.send_text(MAV_SEVERITY_CRITICAL, "Check compass");
+        ap.compass_mot = false;
+        return MAV_RESULT_TEMPORARILY_REJECTED;
+    }
     for (uint8_t i=0; i<compass.get_count(); i++) {
         if (!compass.healthy(i)) {
             gcs_chan.send_text(MAV_SEVERITY_CRITICAL, "Check compass");
@@ -110,7 +114,7 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
     }
 
     // get initial compass readings
-    compass.read();
+    bool compass_read_success = compass.read();
 
     // store initial x,y,z compass values
     // initialise interference percentage
@@ -150,8 +154,9 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
         motors->set_throttle_passthrough_for_esc_calibration(channel_throttle->get_control_in() / 1000.0f);
         SRV_Channels::push();
 
-        // read some compass values
-        compass.read();
+        // read some compass values; all reads must be successful but
+        // we continue to read the compass even if some have failed.
+        compass_read_success = compass.read() && compass_read_success;
 
         // read current
         battery.read();
@@ -234,7 +239,7 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
     hal.util->set_soft_armed(false);
 
     // set and save motor compensation
-    if (updated) {
+    if (updated && compass_read_success) {
         compass.motor_compensation_type(comp_type);
         for (uint8_t i=0; i<compass.get_count(); i++) {
             compass.set_motor_compensation(i, motor_compensation[i]);

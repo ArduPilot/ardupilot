@@ -177,8 +177,10 @@ MAV_RESULT Copter::mavlink_motor_test_start(const GCS_MAVLINK &gcs_chan, uint8_t
     motor_test_throttle_value = throttle_value;
 
     if (motor_test_throttle_type == MOTOR_TEST_COMPASS_CAL) {
-        compass.per_motor_calibration_start();
-    }            
+        if (!compass.per_motor_calibration_start()) {
+            return MAV_RESULT_FAILED;
+        }
+    }
 
     // return success
     return MAV_RESULT_ACCEPTED;
