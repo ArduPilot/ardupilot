@@ -181,35 +181,6 @@ void Plane::Log_Write_Status()
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
 
-struct PACKED log_Sonar {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    float distance;
-    float voltage;
-    uint8_t count;
-    float correction;
-};
-
-// Write a sonar packet.  Note that RFND log messages are written by
-// RangeFinder itself as part of update().
-void Plane::Log_Write_Sonar()
-{
-    uint16_t distance = 0;
-    if (rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::Status::Good) {
-        distance = rangefinder.distance_cm_orient(ROTATION_PITCH_270);
-    }
-
-    struct log_Sonar pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_SONAR_MSG),
-        time_us     : AP_HAL::micros64(),
-        distance    : (float)distance*0.01f,
-        voltage     : rangefinder.voltage_mv_orient(ROTATION_PITCH_270)*0.001f,
-        count       : rangefinder_state.in_range_count,
-        correction  : rangefinder_state.correction
-    };
-    logger.WriteBlock(&pkt, sizeof(pkt));
-}
-
 struct PACKED log_AETR {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -286,16 +257,6 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: TAspd: target airspeed
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),         
       "NTUN", "QfcccfffLLii",  "TimeUS,Dist,TBrg,NavBrg,AltErr,XT,XTi,AspdE,TLat,TLng,TAlt,TAspd", "smddmmmnDUmn", "F0BBB0B0GGBB" },
-
-// @LoggerMessage: SONR
-// @Description: Sonar (downward facing rangefinder) related messages.
-// @Field: TimeUS: Microseconds since system startup
-// @Field: Dist: Distance as detected from the sensor
-// @Field: Volt: Voltage at the sensor pin (only applicable for analog sensor)
-// @Field: Cnt: Number of consecutive valid readings (maxes out at 10)
-// @Field: Corr: Correction made to altitude reading from barometer reading
-    { LOG_SONAR_MSG, sizeof(log_Sonar),             
-      "SONR", "QffBf",   "TimeUS,Dist,Volt,Cnt,Corr", "smv--", "FB0--" },
 
 // @LoggerMessage: ATRP
 // @Description: Pitch/Roll AutoTune messages for Plane 
@@ -405,7 +366,6 @@ void Plane::Log_Write_Startup(uint8_t type) {}
 void Plane::Log_Write_Control_Tuning() {}
 void Plane::Log_Write_Nav_Tuning() {}
 void Plane::Log_Write_Status() {}
-void Plane::Log_Write_Sonar() {}
 
 void Plane::Log_Write_RC(void) {}
 void Plane::Log_Write_Vehicle_Startup_Messages() {}
