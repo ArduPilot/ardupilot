@@ -27,6 +27,7 @@ const AP_RAMTRON::ramtron_id AP_RAMTRON::ramtron_ids[] = {
     { 0x21, 0x08,  16, 2, RDID_type::Cypress }, // FM25V01A
     { 0x22, 0x00,  32, 2, RDID_type::Cypress }, // FM25V02
     { 0x22, 0x08,  32, 2, RDID_type::Cypress }, // FM25V02A
+    { 0x22, 0x48,  32, 2, RDID_type::Cypress }, // FM25V02A - Extended Temperature Version
     { 0x22, 0x01,  32, 2, RDID_type::Cypress }, // FM25VN02
     { 0x23, 0x00,  64, 2, RDID_type::Cypress }, // FM25V05
     { 0x23, 0x01,  64, 2, RDID_type::Cypress }, // FM25VN05
