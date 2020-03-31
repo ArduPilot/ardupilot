@@ -163,11 +163,9 @@ void Sub::update_batt_compass()
     // read battery before compass because it may be used for motor interference compensation
     battery.read();
 
-    if (AP::compass().enabled()) {
-        // update compass with throttle value - used for compassmot
-        compass.set_throttle(motors.get_throttle());
-        compass.read();
-    }
+    // update compass with throttle value - used for compassmot
+    compass.set_throttle(motors.get_throttle());
+    UNUSED_RESULT(compass.read());
 }
 
 // ten_hz_logging_loop
