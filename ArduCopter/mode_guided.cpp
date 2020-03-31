@@ -82,6 +82,7 @@ bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
 
     // get initial alt for WP_NAVALT_MIN
     auto_takeoff_set_start_alt();
+    pos_control->init_velmatch_velocity();
 
     return true;
 }

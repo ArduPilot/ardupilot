@@ -112,6 +112,7 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const AuxS
     case AUX_FUNC::SUPERSIMPLE_MODE:
     case AUX_FUNC::SURFACE_TRACKING:
     case AUX_FUNC::WINCH_ENABLE:
+    case AUX_FUNC::VELOCITY_MATCH:
         do_aux_function(ch_option, ch_flag);
         break;
     case AUX_FUNC::AIRMODE:
@@ -602,6 +603,20 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
 #if MODE_ACRO_ENABLED == ENABLED && FRAME_CONFIG != HELI_FRAME
             copter.mode_acro.air_mode_aux_changed();
 #endif
+        break;
+
+        case AUX_FUNC::VELOCITY_MATCH:
+            switch (ch_flag) {
+            case AuxSwitchPos::HIGH:
+                copter.pos_control->set_velmatch_state_off();
+                break;
+            case AuxSwitchPos::MIDDLE:
+                copter.pos_control->set_velmatch_state_hold();
+                break;
+            case AuxSwitchPos::LOW:
+                copter.pos_control->set_velmatch_state_set();
+                break;
+            }
             break;
             
     default:
