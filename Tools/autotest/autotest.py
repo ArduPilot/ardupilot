@@ -301,7 +301,7 @@ tester_class_map = {
     "test.QuadPlane": quadplane.AutoTestQuadPlane,
     "test.Rover": apmrover2.AutoTestRover,
     "test.BalanceBot": balancebot.AutoTestBalanceBot,
-    "test.Helicopter,": arducopter.AutoTestHeli,
+    "test.Helicopter": arducopter.AutoTestHeli,
     "test.Sub": ardusub.AutoTestSub,
     "test.Tracker": antennatracker.AutoTestTracker,
 }
