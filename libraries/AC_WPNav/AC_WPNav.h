@@ -131,20 +131,20 @@ public:
     ///     returns false on failure (likely caused by missing terrain data)
     virtual bool set_wp_origin_and_destination(const Vector3f& origin, const Vector3f& destination, bool terrain_alt = false);
 
-    /// shift_wp_origin_to_current_pos - shifts the origin and destination so the origin starts at the current position
+    /// shifts the origin and destination horizontally by the specified vector
+    ///     used to move the track when taking off without horizontal position control
+    ///     relies on set_wp_destination or set_wp_origin_and_destination having been called first
+    void shift_wp_origin_and_destination_xy(Vector3f pos_diff);
+
+    /// shift_takeoff_origin_to_current_pos - shifts the origin and destination so the origin starts at the current position
     ///     used to reset the position just before takeoff
     ///     relies on set_wp_destination or set_wp_origin_and_destination having been called first
-    void shift_wp_origin_to_current_pos();
-
-    /// shifts the origin and destination horizontally to the current position
-    ///     used to reset the track when taking off without horizontal position control
-    ///     relies on set_wp_destination or set_wp_origin_and_destination having been called first
-    void shift_wp_origin_and_destination_to_current_pos_xy();
+    void shift_takeoff_origin_to_current_pos(float height);
 
     /// shifts the origin and destination horizontally to the achievable stopping point
     ///     used to reset the track when horizontal navigation is enabled after having been disabled (see Copter's wp_navalt_min)
     ///     relies on set_wp_destination or set_wp_origin_and_destination having been called first
-    void shift_wp_origin_and_destination_to_stopping_point_xy();
+    void shift_takeoff_origin_and_destination_to_stopping_point_xy();
 
     /// get_wp_stopping_point_xy - calculates stopping point based on current position, velocity, waypoint acceleration
     ///		results placed in stopping_position vector
@@ -233,6 +233,7 @@ public:
     /// get desired roll, pitch which should be fed into stabilize controllers
     float get_roll() const { return _pos_control.get_roll(); }
     float get_pitch() const { return _pos_control.get_pitch(); }
+    float get_track_complete() const { return _track_desired/_track_length; }
 
     /// advance_wp_target_along_track - move target location along track from origin to destination
     bool advance_wp_target_along_track(float dt);

@@ -47,8 +47,11 @@ public:
     /// get maximum lean angle when using loiter
     float get_angle_max_cd() const;
 
+    void use_velmatch() { _use_velmatch = true; }
+
     /// run the loiter controller
-    void update();
+    void update() {_inav.get_velocity();}
+    void update(Vector3f target);
 
     /// get desired roll, pitch which should be fed into stabilize controllers
     float get_roll() const { return _pos_control.get_roll(); }
@@ -86,4 +89,5 @@ protected:
     Vector2f    _predicted_euler_rate;
     float       _brake_timer;
     float       _brake_accel;
+    bool        _use_velmatch;
 };
