@@ -2933,7 +2933,7 @@ void GCS_MAVLINK::handle_vision_position_delta(const mavlink_message_t &msg)
     if (visual_odom == nullptr) {
         return;
     }
-    visual_odom->handle_msg(msg);
+    visual_odom->handle_vision_position_delta_msg(msg);
 }
 
 void GCS_MAVLINK::handle_vision_position_estimate(const mavlink_message_t &msg)
