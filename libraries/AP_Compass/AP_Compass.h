@@ -153,8 +153,8 @@ public:
 
 #if COMPASS_MOT_ENABLED
     // per-motor calibration access
-    void per_motor_calibration_start(void) {
-        _per_motor.calibration_start();
+    bool per_motor_calibration_start(void) WARN_IF_UNUSED {
+        return _per_motor.calibration_start();
     }
     void per_motor_calibration_update(void) {
         _per_motor.calibration_update();

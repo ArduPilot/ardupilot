@@ -24,7 +24,7 @@ public:
         voltage = 0.9f * voltage + 0.1f * _voltage;
     }
 
-    void calibration_start(void);
+    bool calibration_start(void) WARN_IF_UNUSED;
     void calibration_update(void);
     void calibration_end(void);
     void compensate(Vector3f &offset);

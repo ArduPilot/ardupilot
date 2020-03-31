@@ -132,7 +132,7 @@ float Compass_PerMotor::scaled_output(uint8_t motor)
 }
 
 // per-motor calibration update
-void Compass_PerMotor::calibration_start(void)
+bool Compass_PerMotor::calibration_start(void)
 {
     for (uint8_t i=0; i<4; i++) {
         field_sum[i].zero();
@@ -145,12 +145,15 @@ void Compass_PerMotor::calibration_start(void)
     // samples. The offsets may have just changed from an offset
     // calibration
     for (uint8_t i=0; i<4; i++) {
-        compass.read();
+        if (!compass.read()) {
+            return false;
+        }
         hal.scheduler->delay(50);
     }
     
     base_field = compass.get_field(0);
     running = true;
+    return true;
 }
 
 // per-motor calibration update
