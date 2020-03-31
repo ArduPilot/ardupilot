@@ -1308,6 +1308,10 @@ float QuadPlane::get_pilot_input_yaw_rate_cds(void) const
         return 0;
     }
 
+    if (plane.g.stick_mixing == STICK_MIXING_DISABLED) {
+        return 0;
+    }
+
     // add in rudder input
     float max_rate = yaw_rate_max;
     if (is_tailsitter() &&
