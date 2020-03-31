@@ -306,6 +306,22 @@ public:
     // enable or disable high vibration compensation
     void set_vibe_comp(bool on_off) { _vibe_comp_enabled = on_off; }
 
+    // VelMatch state setters and getters
+    void set_velmatch_state_off() {set_velmatch_state(OFF);}
+    void set_velmatch_state_hold() {set_velmatch_state(HOLD);}
+    void set_velmatch_state_set() {set_velmatch_state(SET);}
+    void set_velmatch_state_zero() {set_velmatch_state(ZERO);}
+    void set_velmatch_velocity(const Vector3f vel_velmatch) { _vel_velmatch = vel_velmatch; }
+    bool velmatch_state_on() {return _velmatchState != OFF;}
+    const Vector3f& get_vel_velmatch() {return _vel_velmatch; }
+    void write_velmatch_log();
+
+    // initialise velmatch velocity
+    void init_velmatch_velocity();
+
+    // update velmatch velocity
+    void update_velmatch_velocity(float dt, Vector3f target);
+
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
@@ -422,6 +438,20 @@ protected:
     LowPassFilterFloat _vel_error_filter;   // low-pass-filter on z-axis velocity error
 
     LowPassFilterVector2f _accel_target_filter; // acceleration target filter
+
+    // velocity velmatch variables
+    Vector3f    _vel_velmatch;          // velocity velmatch in cm/s used as zero reference for velocity based controllers
+    Vector3f    _vel_velmatch_target;   // velocity velmatch in cm/s used as zero reference for velocity based controllers
+    // VelMatch state
+    enum VelMatchState {
+        OFF  = 0,                       // Velocity Match is zero and disabled
+        HOLD = 1,                       // Velocity Match is enabled
+        SET  = 2,                       // Velocity Match is enabled and learning current velocity
+        ZERO = 3,                       // Velocity Match is enabled but set to zero
+    };
+    VelMatchState _velmatchState : 2;
+
+    bool set_velmatch_state(enum VelMatchState velmatchState);
 
     // ekf reset handling
     uint32_t    _ekf_xy_reset_ms;      // system time of last recorded ekf xy position reset

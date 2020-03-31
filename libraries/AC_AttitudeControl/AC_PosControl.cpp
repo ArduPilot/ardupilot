@@ -932,6 +932,8 @@ void AC_PosControl::write_log()
                        double(accel_target.y * 0.01f),
                        double(accel_x * 0.01f),
                        double(accel_y * 0.01f));
+
+    write_velmatch_log();
 }
 
 /// init_vel_controller_xyz - initialise the velocity controller - should be called once before the caller attempts to use the controller
@@ -1295,4 +1297,106 @@ bool AC_PosControl::pre_arm_checks(const char *param_prefix,
     }
 
     return true;
+}
+
+/// Initialises the velmatch velocity based on its state.
+void AC_PosControl::init_velmatch_velocity()
+{
+    switch (_velmatchState) {
+    case OFF:
+        // set velmatch velocity to zero
+        _vel_velmatch.zero();
+        break;
+
+    case HOLD:
+        FALLTHROUGH;
+    case SET:
+        FALLTHROUGH;
+    case ZERO:
+        // Set velmatch velocity to current velocity and change to HOLD
+        _vel_velmatch = _inav.get_velocity();
+        set_velmatch_state_hold();
+        break;
+    }
+}
+
+/// Initialises the velmatch velocity based on its state.
+bool AC_PosControl::set_velmatch_state(enum VelMatchState velmatchState)
+{
+    if (_velmatchState == velmatchState) {
+        return true;
+    }
+    switch (velmatchState) {
+    case OFF:
+        gcs().send_text(MAV_SEVERITY_INFO, "VelMatch: Off");
+        _velmatchState = velmatchState;
+        break;
+
+    case HOLD:
+        gcs().send_text(MAV_SEVERITY_INFO, "VelMatch: Hold");
+        _velmatchState = velmatchState;
+        break;
+
+    case SET:
+        gcs().send_text(MAV_SEVERITY_INFO, "VelMatch: Set");
+        _velmatchState = velmatchState;
+        break;
+
+    case ZERO:
+        gcs().send_text(MAV_SEVERITY_INFO, "VelMatch: Zero");
+        _velmatchState = velmatchState;
+        break;
+
+    }
+    return true;
+}
+
+/// Proportional controller with piecewise sqrt sections to constrain second derivative
+void AC_PosControl::update_velmatch_velocity(float dt, Vector3f target)
+{
+    switch (_velmatchState) {
+    case OFF:
+        // Slew velmatch velocity to zero
+        target.zero();
+        break;
+
+    case HOLD:
+        // Keep current velmatch velocity
+        target = _vel_velmatch;
+        break;
+
+    case SET:
+        // Slew velmatch velocity to current velocity
+//        target = _inav.get_velocity();
+        break;
+
+    case ZERO:
+        // Set velmatch velocity to zero
+        target.zero();
+        break;
+    }
+
+    Vector3f delta = target - _vel_velmatch;
+    float delta_length = delta.length();
+    if (is_positive(delta_length)) {
+        _vel_velmatch += delta.normalized() * MIN(delta_length, dt * _accel_cms / 3.0f);
+    } else {
+        _vel_velmatch = target;
+    }
+}
+
+// write log to dataflash
+void AC_PosControl::write_velmatch_log()
+{
+    if (velmatch_state_on()) {
+        AP::logger().Write("VMAT",
+                           "TimeUS,State,VX,VY",
+                           "s-nn",
+                           "F-00",
+                           "QBff",
+                           AP_HAL::micros64(),
+                           uint8_t(_velmatchState),
+                           double(_vel_velmatch.x * 0.01f),
+                           double(_vel_velmatch.y * 0.01f));
+    }
 }
