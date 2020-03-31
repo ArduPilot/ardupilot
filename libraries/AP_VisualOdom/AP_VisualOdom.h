@@ -55,8 +55,8 @@ public:
     // return a 3D vector defining the position offset of the camera in meters relative to the body frame origin
     const Vector3f &get_pos_offset(void) const { return _pos_offset; }
 
-    // consume data from MAVLink messages
-    void handle_msg(const mavlink_message_t &msg);
+    // consume vision_position_delta mavlink messages
+    void handle_vision_position_delta_msg(const mavlink_message_t &msg);
 
     // general purpose methods to consume position estimate data and send to EKF
     // distances in meters, roll, pitch and yaw are in radians
