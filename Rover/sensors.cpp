@@ -5,9 +5,7 @@
 // check for new compass data - 10Hz
 void Rover::update_compass(void)
 {
-    if (AP::compass().enabled() && compass.read()) {
-        ahrs.set_compass(&compass);
-    }
+    UNUSED_RESULT(compass.read());
 }
 
 // Save compass offsets
