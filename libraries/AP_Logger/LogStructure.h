@@ -1402,6 +1402,16 @@ struct PACKED log_Arm_Disarm {
 // @Field: Health: true if the compass is considered healthy
 // @Field: S: time measurement was taken
 
+// @LoggerMessage: MAV
+// @Description: GCS MAVLink link statistics
+// @Field: TimeUS: microseconds since system startup
+// @Field: chan: mavlink channel number
+// @Field: txp: transmitted packet count
+// @Field: rxp: received packet count
+// @Field: rxdp: perceived number of packets we never received
+// @Field: flags: compact representation of some stage of the channel
+// @Field: ss: stream slowdown is the number of ms being added to each message to fit within bandwidth
+
 // @LoggerMessage: MODE
 // @Description: vehicle control mode information
 // @Field: TimeUS: microseconds since system startup
@@ -1414,6 +1424,12 @@ struct PACKED log_Arm_Disarm {
 // @Field: TimeUS: microseconds since system startup
 // @Field: Id: character referenced by FMTU
 // @Field: Mult: numeric multiplier
+
+// @LoggerMessage: PARM
+// @Description: parameter value
+// @Field: TimeUS: microseconds since system startup
+// @Field: Name: parameter name
+// @Field: Value: parameter vlaue
 
 // @LoggerMessage: PIDR,PIDP,PIDY,PIDA,PIDS
 // @Description: Proportional/Integral/Derivative gain values for Roll/Pitch/Yaw/Z/Steering
