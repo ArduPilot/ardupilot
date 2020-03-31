@@ -49,7 +49,8 @@ enum failsafe_action_long {
 enum StickMixing {
     STICK_MIXING_DISABLED = 0,
     STICK_MIXING_FBW      = 1,
-    STICK_MIXING_DIRECT   = 2
+    STICK_MIXING_DIRECT   = 2,
+    STICK_MIXING_VTOL_YAW = 3,
 };
 
 enum ChannelMixing {
