@@ -74,6 +74,8 @@ bool RC_Channels::read_input(void)
 
     has_new_overrides = false;
 
+    last_update_ms = AP_HAL::millis();
+
     bool success = false;
     for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
         success |= channel(i)->update();
