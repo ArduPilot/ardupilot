@@ -228,10 +228,10 @@ public:
     // since last call
     virtual float get_error_yaw(void) const = 0;
 
-    // return a DCM rotation matrix representing our current attitude
+    // return a DCM rotation matrix representing our current attitude in NED frame
     virtual const Matrix3f &get_rotation_body_to_ned(void) const = 0;
 
-    // return a Quaternion representing our current attitude
+    // return a Quaternion representing our current attitude in NED frame
     void get_quat_body_to_ned(Quaternion &quat) const {
         quat.from_rotation_matrix(get_rotation_body_to_ned());
     }
@@ -392,8 +392,6 @@ public:
         return _sin_yaw;
     }
 
-    // for holding parameters
-    static const struct AP_Param::GroupInfo var_info[];
 
     // return secondary attitude solution if available, as eulers in radians
     virtual bool get_secondary_attitude(Vector3f &eulers) const WARN_IF_UNUSED {
@@ -560,6 +558,9 @@ public:
     HAL_Semaphore &get_semaphore(void) {
         return _rsem;
     }
+
+    // for holding parameters
+    static const struct AP_Param::GroupInfo var_info[];
 
 protected:
     void update_nmea_out();
