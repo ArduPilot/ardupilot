@@ -76,7 +76,7 @@ def error(str_to_print):
     global error_count
     error_count += 1
     if current_file is not None:
-        print("In %s" % current_file)
+        print("Error in %s" % current_file)
     if current_param is not None:
         print("At param %s" % current_param)
     print(str_to_print)
