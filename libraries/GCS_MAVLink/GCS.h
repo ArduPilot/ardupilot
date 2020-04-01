@@ -952,6 +952,7 @@ public:
 protected:
 
     virtual uint8_t sysid_this_mav() const = 0;
+    virtual uint8_t compid_this_mav() const = 0;
 
     virtual GCS_MAVLINK *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
                                                  AP_HAL::UARTDriver &uart) = 0;

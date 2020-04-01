@@ -36,6 +36,7 @@ const MAV_MISSION_TYPE GCS_MAVLINK::supported_mission_types[] = {
 void GCS::init()
 {
     mavlink_system.sysid = sysid_this_mav();
+    mavlink_system.compid = compid_this_mav();
 }
 
 /*
