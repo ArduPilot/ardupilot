@@ -105,7 +105,7 @@ public:
     void show_packet_counts();
 
     bool check_solution = false;
-    const char *log_filename = NULL;
+    const char *log_filename = nullptr;
     bool generate_fpe = true;
 
     /*
@@ -153,7 +153,7 @@ private:
     float tolerance_euler = 3;
     float tolerance_pos = 2;
     float tolerance_vel = 2;
-    const char **nottypes = NULL;
+    const char **nottypes = nullptr;
     uint16_t downsample = 0;
     bool logmatch = false;
     uint32_t output_counter = 0;
