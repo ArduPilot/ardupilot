@@ -42,15 +42,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-AP_Beacon_Nooploop::AP_Beacon_Nooploop(AP_Beacon &frontend, AP_SerialManager &serial_manager) :
-    AP_Beacon_Backend(frontend)
-{
-    _uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Beacon, 0);
-    if (_uart != nullptr) {
-        _uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Beacon, 0));
-    }
-}
-
 // return true if sensor is basically healthy (we are receiving data)
 bool AP_Beacon_Nooploop::healthy()
 {
