@@ -473,6 +473,13 @@ bool AP_AHRS_DCM::use_compass(void)
     return true;
 }
 
+// return the quaternion defining the rotation from NED to XYZ (body) axes
+bool AP_AHRS_DCM::get_quaternion(Quaternion &quat) const
+{
+    quat.from_rotation_matrix(_dcm_matrix);
+    return true;
+}
+
 // yaw drift correction using the compass or GPS
 // this function prodoces the _omega_yaw_P vector, and also
 // contributes to the _omega_I.z long term yaw drift estimate

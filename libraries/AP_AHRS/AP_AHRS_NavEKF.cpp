@@ -545,6 +545,36 @@ bool AP_AHRS_NavEKF::use_compass(void)
     return AP_AHRS_DCM::use_compass();
 }
 
+// return the quaternion defining the rotation from NED to XYZ (body) axes
+bool AP_AHRS_NavEKF::get_quaternion(Quaternion &quat) const
+{
+    switch (active_EKF_type()) {
+    case EKFType::NONE:
+        return AP_AHRS_DCM::get_quaternion(quat);
+#if HAL_NAVEKF2_AVAILABLE
+    case EKFType::TWO:
+        EKF2.getQuaternion(-1, quat);
+        return _ekf2_started;
+#endif
+#if HAL_NAVEKF3_AVAILABLE
+    case EKFType::THREE:
+        EKF3.getQuaternion(-1, quat);
+        return _ekf3_started;
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    case EKFType::SITL:
+        if (_sitl) {
+            const struct SITL::sitl_fdm &fdm = _sitl->state;
+            quat = fdm.quaternion;
+            return true;
+        } else {
+            return false;
+        }
+#endif
+    }
+    // since there is no default case above, this is unreachable
+    return false;
+}
 
 // return secondary attitude solution if available, as eulers in radians
 bool AP_AHRS_NavEKF::get_secondary_attitude(Vector3f &eulers) const
