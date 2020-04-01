@@ -50,6 +50,13 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Advanced
     GSCALAR(sysid_this_mav, "SYSID_THISMAV",   MAV_SYSTEM_ID),
 
+    // @Param: COMPID_THISMAV
+    // @DisplayName: MAVLink Component ID of this vehicle
+    // @Description: Allows setting an individual MAVLink Component id for this vehicle to distinguish it
+    // @Range: 1 255
+    // @User: Advanced
+    GSCALAR(compid_this_mav, "COMPID_THISMAV",   MAV_COMPONENT_ID),
+
     // @Param: SYSID_MYGCS
     // @DisplayName: My ground station number
     // @Description: Allows restricting radio overrides to only come from my ground station
