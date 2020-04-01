@@ -8,7 +8,8 @@ class AP_Beacon_Nooploop : public AP_Beacon_Backend
 {
 
 public:
-    AP_Beacon_Nooploop(AP_Beacon &frontend, AP_SerialManager &serial_manager);
+    // constructor
+    using AP_Beacon_Backend::AP_Beacon_Backend;
 
     // return true if sensor is basically healthy (we are receiving data)
     bool healthy() override;
