@@ -134,7 +134,7 @@ bool AP_RangeFinder_NMEA::decode_latest_term()
     if (_sentence_type == SONAR_DBT) {
         // parse DBT messages
         if (_term_number == 3) {
-            _distance_m = strtof(_term, NULL);
+            _distance_m = strtof(_term, nullptr);
         }
     } else if (_sentence_type == SONAR_DPT) {
         // parse DPT messages
