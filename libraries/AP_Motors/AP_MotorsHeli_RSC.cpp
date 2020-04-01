@@ -170,6 +170,17 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("GOV_RANGE", 17, AP_MotorsHeli_RSC, _governor_range, AP_MOTORS_HELI_RSC_GOVERNOR_RANGE_DEFAULT),
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // @Param: AROT_PCT
+    // @DisplayName: Autorotation Throttle Percentage for External Governor
+    // @Description: The throttle percentage sent to external governors, signaling to enable fast spool-up, when bailing out of an autorotation.  Set 0 to disable. If also using a tail rotor of type DDVP with external governor then this value must lie within the autorotation window of both governors.
+    // @Range: 0 40
+    // @Units: %
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("AROT_PCT", 18, AP_MotorsHeli_RSC, _ext_gov_arot_pct, 0),
+#endif
+
     AP_GROUPEND
 };
 
@@ -226,8 +237,13 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
             // set rotor ramp to decrease speed to zero
             update_rotor_ramp(0.0f, dt);
 
-            // set rotor control speed to idle speed parameter, this happens instantly and ignore ramping
-            _control_output = get_idle_output();
+            if (_in_autorotaion) {
+                // if in autorotation and using an external governor, set the output to tell the governor to use bailout ramp
+                _control_output = constrain_float( _rsc_arot_bailout_pct/100.0f , 0.0f, 0.4f);
+            } else {
+                // set rotor control speed to idle speed parameter, this happens instantly and ignores ramping
+                _control_output = get_idle_output();
+            }
             break;
 
         case ROTOR_CONTROL_ACTIVE:
