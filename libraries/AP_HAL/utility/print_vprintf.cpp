@@ -502,7 +502,7 @@ ultoa:
                 if (flags & FL_ALT) {
                     s->write('0');
                     if (flags & FL_ALTHEX) {
-                        s->write(flags & FL_ALTUPP ? 'X' : 'x');
+                        s->write((flags & FL_ALTUPP) ? 'X' : 'x');
                     }
                 } else if (flags & (FL_NEGATIVE | FL_PLUS | FL_SPACE)) {
                     unsigned char z = ' ';
