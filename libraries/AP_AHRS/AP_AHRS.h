@@ -392,6 +392,8 @@ public:
         return _sin_yaw;
     }
 
+    // return the quaternion defining the rotation from NED to XYZ (body) axes
+    virtual bool get_quaternion(Quaternion &quat) const WARN_IF_UNUSED = 0;
 
     // return secondary attitude solution if available, as eulers in radians
     virtual bool get_secondary_attitude(Vector3f &eulers) const WARN_IF_UNUSED {
