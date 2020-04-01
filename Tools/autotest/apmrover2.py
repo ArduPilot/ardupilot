@@ -4527,7 +4527,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             expected_stopping_point,
             target_system=target_system,
             target_component=target_component,
-            expected_distance_epsilon=2.5)
+            expected_distance_epsilon=3)
         self.set_parameter("AVOID_ENABLE", 0)
         self.do_RTL()
 
