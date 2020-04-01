@@ -350,8 +350,11 @@ uint8_t Compass::_get_cal_mask()
  */
 MAV_RESULT Compass::handle_mag_cal_command(const mavlink_command_long_t &packet)
 {
-    MAV_RESULT result = MAV_RESULT_FAILED;
+    if (!_initialised) {
+        return MAV_RESULT_FAILED;
+    }
 
+    MAV_RESULT result = MAV_RESULT_FAILED;
     switch (packet.command) {
     case MAV_CMD_DO_START_MAG_CAL: {
         result = MAV_RESULT_ACCEPTED;
@@ -473,6 +476,10 @@ bool Compass::get_uncorrected_field(uint8_t instance, Vector3f &field)
 MAV_RESULT Compass::mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
                                       float lat_deg, float lon_deg)
 {
+    if (!_initialised) {
+        return MAV_RESULT_FAILED;
+    }
+
     _reset_compass_id();
     if (is_zero(lat_deg) && is_zero(lon_deg)) {
         Location loc;
