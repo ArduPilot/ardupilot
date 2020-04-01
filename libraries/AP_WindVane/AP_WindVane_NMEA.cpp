@@ -153,7 +153,7 @@ bool AP_WindVane_NMEA::decode_latest_term()
 
     switch (_term_number) {
         case 1:
-            _wind_dir_deg = strtof(_term, NULL);
+            _wind_dir_deg = strtof(_term, nullptr);
             // check for sensible value
             if (is_negative(_wind_dir_deg) || _wind_dir_deg > 360.0f) {
                 _sentence_valid = false;
@@ -169,7 +169,7 @@ bool AP_WindVane_NMEA::decode_latest_term()
             break;
 
         case 3:
-            _speed_ms = strtof(_term, NULL);
+            _speed_ms = strtof(_term, nullptr);
             break;
 
         case 4:
