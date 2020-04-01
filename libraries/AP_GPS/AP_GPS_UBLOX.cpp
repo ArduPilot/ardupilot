@@ -1333,6 +1333,10 @@ AP_GPS_UBLOX::_parse_gps(void)
             const float rel_dist = _buffer.relposned.relPosLength * 1.0e-2;
             const float strict_length_error_allowed = 0.2; // allow for up to 20% error
             const float min_separation = 0.05;
+            /*
+              RELPOSNED messages gives the NED distance from base to
+              rover. It comes from the rover
+             */
             MB_Debug("RELPOSNED[%u]: od:%.2f rd:%.2f flags:0x%04x t=%u",
                      state.instance+1,
                      offset_dist, rel_dist,
@@ -1344,7 +1348,7 @@ AP_GPS_UBLOX::_parse_gps(void)
                 offset_dist > min_separation &&
                 fabsf(offset_dist - rel_dist) / MIN(offset_dist, rel_dist) < strict_length_error_allowed) {
                 float rotation_offset_rad;
-                const Vector3f diff = offset0 - offset1;
+                const Vector3f diff = offset1 - offset0;
                 rotation_offset_rad = Vector2f(diff.x, diff.y).angle();
                 if (state.instance != 0) {
                     rotation_offset_rad += M_PI;
