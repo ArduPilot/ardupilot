@@ -963,14 +963,24 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(arot, "AROT_", 37, ParametersG2, AC_Autorotation),
 #endif
 
-#if MODE_ZIGZAG_ENABLED == ENABLED && SPRAYER_ENABLED == ENABLED
+#if MODE_ZIGZAG_ENABLED == ENABLED
+#if SPRAYER_ENABLED == ENABLED
     // @Param: ZIGZAG_AUTO_PUMP
     // @DisplayName: Auto pump in ZigZag
     // @Description: Enable the auto pump in ZigZag mode. SERVOx_FUNCTION = 22 (SprayerPump) and SPRAY_ENABLE = 1 also must be set. This makes the pump on while moving to destination A or B. The pump will stop if the vehicle reaches destination or the flight mode is changed from ZigZag to other.
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     AP_GROUPINFO("ZIGZAG_AUTO_PUMP", 38, ParametersG2, zigzag_auto_pump_enabled, ZIGZAG_AUTO_PUMP_ENABLED),
-#endif
+#endif // SPRAYER_ENABLED == ENABLED
+
+    // @Param: ZIGZ_WP_DELAY
+    // @DisplayName: The delay for zigzag waypoint
+    // @Description: Waiting time after reached the destination
+    // @Units: s
+    // @Range: 1 127
+    // @User: Advanced
+    AP_GROUPINFO("ZIGZ_WP_DELAY", 39, ParametersG2, zigzag_wp_delay, ZIGZAG_WP_DELAY),
+#endif // MODE_ZIGZAG_ENABLED == ENABLED
 
 
     AP_GROUPEND
