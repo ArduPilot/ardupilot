@@ -1330,7 +1330,7 @@ struct PACKED log_Arm_Disarm {
 // @Field: ErrRP: lowest estimated gyro drift error
 // @Field: ErrYaw: difference between measured yaw and DCM yaw estimate
 
-// @LoggerMessage: BARO
+// @LoggerMessage: BARO,BAR2,BAR3
 // @Description: Gathered Barometer data
 // @Field: TimeUS: microseconds since system startup
 // @Field: Alt: calculated altitude
@@ -1419,6 +1419,11 @@ struct PACKED log_Arm_Disarm {
 // @Field: ModeNum: alias for Mode
 // @Field: Rsn: reason for entering this mode; enumeration value
 
+// @LoggerMessage: MSG
+// @Description: Textual messages
+// @Field: TimeUS: microseconds since system startup
+// @Field: Message: message text
+
 // @LoggerMessage: MULT
 // @Description: Message mapping from single character to numeric multiplier
 // @Field: TimeUS: microseconds since system startup
@@ -1441,6 +1446,26 @@ struct PACKED log_Arm_Disarm {
 // @Field: I: integral part of PID
 // @Field: D: derivative part of PID
 // @Field: FF: controller feed-forward portion of response
+
+// @LoggerMessage: RAD
+// @Description: Telemetry radio statistics
+// @Field: TimeUS: Time since system startup
+// @Field: RSSI: RSSI
+// @Field: RemRSSI: RSSI reported from remote radio
+// @Field: TxBuf: number of bytes in radio ready to be sent
+// @Field: Noise: local noise floor
+// @Field: RemNoise: local noise floor reported from remote radio
+// @Field: RxErrors: damaged packet count
+// @Field: Fixed: fixed damaged packet count
+
+// @LoggerMessage: RALY
+// @Description: Rally point information
+// @Field: TimeUS: Time since system startup
+// @Field: Tot: total number of rally points onboard
+// @Field: Seq: this rally point's sequence number
+// @Field: Lat: latitude of rally point
+// @Field: Lng: longitude of rally point
+// @Field: Alt: altitude of rally point
 
 // @LoggerMessage: RATE
 // @Description: Desired and achieved vehicle attitude rates
@@ -1495,6 +1520,25 @@ struct PACKED log_Arm_Disarm {
 // @Field: C12: channel 12 output
 // @Field: C13: channel 13 output
 // @Field: C14: channel 14 output
+
+// @LoggerMessage: RFND
+// @Description: Rangefinder sensor information
+// @Field: TimeUS: Time since system startup
+// @Field: Instance: rangefinder instance number this data is from
+// @Field: Dist: Reported distance from sensor
+// @Field: Stat: Sensor state
+// @Field: Orient: Sensor orientation
+
+// @LoggerMessage: RPM
+// @Description: Data from RPM sensors
+// @Field: TimeUS: Time since system startup
+// @Field: rpm1: First sensor's data
+// @Field: rpm2: Second sensor's data
+
+// @LoggerMessage: RSSI
+// @Description: Received Signal Strength Indicator for RC receiver
+// @Field: TimeUS: Time since system startup
+// @Field: RXRSSI: RSSI
 
 // @LoggerMessage: SRTL
 // @Description: SmartRTL statistics
