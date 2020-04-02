@@ -240,6 +240,11 @@ public:
 #if !HAL_MINIMIZE_FEATURES
     const char *string_for_aux_function(AUX_FUNC function) const;
 #endif
+    // pwm value above which we condider that Radio min value is invalid
+    static const uint16_t RC_CALIB_MIN_LIMIT_PWM = 1300;
+    // pwm value under which we condider that Radio max value is invalid
+    static const uint16_t RC_CALIB_MAX_LIMIT_PWM = 1700;
+
 
     // pwm value above which the option will be invoked:
     static const uint16_t AUX_PWM_TRIGGER_HIGH = 1800;
