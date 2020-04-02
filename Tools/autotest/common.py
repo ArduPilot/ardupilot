@@ -2383,6 +2383,22 @@ class AutoTest(ABC):
             target_sysid = self.sysid_thismav()
         if target_compid is None:
             target_compid = 1
+        try:
+            command_name = mavutil.mavlink.enums["MAV_CMD"][command].name
+        except KeyError as e:
+            command_name = "UNKNOWN=%u" % command
+        self.progress("Sending COMMAND_LONG to (%u,%u) (%s) (p1=%f p2=%f p3=%f p4=%f p5=%f p6=%f  p7=%f)" %
+                      (
+                          target_sysid,
+                          target_compid,
+                          command_name,
+                          p1,
+                          p2,
+                          p3,
+                          p4,
+                          p5,
+                          p6,
+                          p7))
         self.mav.mav.command_long_send(target_sysid,
                                        target_compid,
                                        command,
