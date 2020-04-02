@@ -57,6 +57,10 @@ bool RC_Channels_Copter::has_valid_input() const
     return true;
 }
 
+RC_Channel * RC_Channels_Copter::get_arming_channel(void) const
+{
+    return copter.channel_yaw;
+}
 
 // init_aux_switch_function - initialize aux functions
 void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const aux_switch_pos_t ch_flag)
