@@ -313,12 +313,12 @@ bool ModeZigZag::reached_destination()
         return false;
     }
 
-    // wait at least one second
+    // wait at time which is set in zigzag_wp_delay
     uint32_t now = AP_HAL::millis();
     if (reach_wp_time_ms == 0) {
         reach_wp_time_ms = now;
     }
-    return ((now - reach_wp_time_ms) > 1000);
+    return ((now - reach_wp_time_ms) > (uint16_t)constrain_int16(g2.zigzag_wp_delay, 1, 127) * 1000);
 }
 
 // calculate next destination according to vector A-B and current position
