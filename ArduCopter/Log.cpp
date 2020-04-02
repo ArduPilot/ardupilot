@@ -480,6 +480,30 @@ const struct LogStructure Copter::log_structure[] = {
 // @Field: DCRt: desired climb rate
 // @Field: CRt: climb rate
 
+// @LoggerMessage: D16
+// @Description: Generic 16-bit-signed-integer storage
+// @Field: TimeUS: Time since system startup
+// @Field: Id: Data type identifier
+// @Field: Value: Value
+
+// @LoggerMessage: D32
+// @Description: Generic 32-bit-signed-integer storage
+// @Field: TimeUS: Time since system startup
+// @Field: Id: Data type identifier
+// @Field: Value: Value
+
+// @LoggerMessage: DFLT
+// @Description: Generic float storage
+// @Field: TimeUS: Time since system startup
+// @Field: Id: Data type identifier
+// @Field: Value: Value
+
+// @LoggerMessage: DU32
+// @Description: Generic 32-bit-unsigned-integer storage
+// @Field: TimeUS: Time since system startup
+// @Field: Id: Data type identifier
+// @Field: Value: Value
+
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
       "CTUN", "Qffffffefffhh", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt", "s----mmmmmmnn", "F----00B000BB" },
     
