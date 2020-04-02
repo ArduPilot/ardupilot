@@ -271,6 +271,44 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
             int32_t prRes;
         } sv[SV_COUNT];
     } svinfo {};
+    enum RELPOSNED {
+        gnssFixOK          = 1U << 0,
+        diffSoln           = 1U << 1,
+        relPosValid        = 1U << 2,
+        carrSolnFloat      = 1U << 3,
+
+        carrSolnFixed      = 1U << 4,
+        isMoving           = 1U << 5,
+        refPosMiss         = 1U << 6,
+        refObsMiss         = 1U << 7,
+
+        relPosHeadingValid = 1U << 8,
+        relPosNormalized   = 1U << 9
+    };
+    struct PACKED ubx_nav_relposned {
+        uint8_t version;
+        uint8_t reserved1;
+        uint16_t refStationId;
+        uint32_t iTOW;
+        int32_t relPosN;
+        int32_t relPosE;
+        int32_t relPosD;
+        int32_t relPosLength;
+        int32_t relPosHeading;
+        uint8_t reserved2[4];
+        int8_t relPosHPN;
+        int8_t relPosHPE;
+        int8_t relPosHPD;
+        int8_t relPosHPLength;
+        uint32_t accN;
+        uint32_t accE;
+        uint32_t accD;
+        uint32_t accLength;
+        uint32_t accHeading;
+        uint8_t reserved3[4];
+        uint32_t flags;
+    } relposned {};
+
     const uint8_t MSG_POSLLH = 0x2;
     const uint8_t MSG_STATUS = 0x3;
     const uint8_t MSG_DOP = 0x4;
@@ -278,6 +316,7 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
     const uint8_t MSG_SOL = 0x6;
     const uint8_t MSG_PVT = 0x7;
     const uint8_t MSG_SVINFO = 0x30;
+    const uint8_t MSG_RELPOSNED = 0x3c;
 
     static uint32_t _next_nav_sv_info_time = 0;
 
@@ -363,12 +402,32 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
     pvt.headVeh = 0;
     memset(pvt.reserved2, '\0', ARRAY_SIZE(pvt.reserved2));
 
+    if (_sitl->gps_hdg_enabled[instance]) {
+        const Vector3f ant1_pos = _sitl->gps_pos_offset[instance^1].get();
+        const Vector3f ant2_pos = _sitl->gps_pos_offset[instance].get();
+        Vector3f rel_antenna_pos = ant2_pos - ant1_pos;
+        Matrix3f rot;
+        rot.from_euler(0, 0, radians(d->yaw));
+        rel_antenna_pos = rot * rel_antenna_pos;
+        relposned.version = 1;
+        relposned.iTOW = time_week_ms;
+        relposned.relPosN = rel_antenna_pos.x * 100;
+        relposned.relPosE = rel_antenna_pos.y * 100;
+        relposned.relPosD = rel_antenna_pos.z * 100;
+        relposned.relPosLength = rel_antenna_pos.length() * 100;
+        relposned.relPosHeading = degrees(Vector2f(rel_antenna_pos.x, rel_antenna_pos.y).angle()) * 1.0e5;
+        relposned.flags = gnssFixOK | diffSoln | carrSolnFixed | isMoving | relPosValid | relPosHeadingValid;
+    }
+
     _gps_send_ubx(MSG_POSLLH, (uint8_t*)&pos, sizeof(pos), instance);
     _gps_send_ubx(MSG_STATUS, (uint8_t*)&status, sizeof(status), instance);
     _gps_send_ubx(MSG_VELNED, (uint8_t*)&velned, sizeof(velned), instance);
     _gps_send_ubx(MSG_SOL,    (uint8_t*)&sol, sizeof(sol), instance);
     _gps_send_ubx(MSG_DOP,    (uint8_t*)&dop, sizeof(dop), instance);
     _gps_send_ubx(MSG_PVT,    (uint8_t*)&pvt, sizeof(pvt), instance);
+    if (_sitl->gps_hdg_enabled[instance]) {
+        _gps_send_ubx(MSG_RELPOSNED,    (uint8_t*)&relposned, sizeof(relposned), instance);
+    }
 
     if (time_week_ms > _next_nav_sv_info_time) {
         svinfo.itow = time_week_ms;
@@ -678,7 +737,7 @@ void SITL_State::_update_gps_nmea(const struct gps_data *d, uint8_t instance)
                      heading,
                      dstring);
 
-    if (_sitl->gps_hdg_enabled) {
+    if (_sitl->gps_hdg_enabled[instance]) {
         _gps_nmea_printf(instance, "$GPHDT,%.2f,T", d->yaw);
     }
 }
