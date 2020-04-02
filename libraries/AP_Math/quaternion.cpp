@@ -142,8 +142,9 @@ void Quaternion::from_euler(float roll, float pitch, float yaw)
     q4 = cr2*cp2*sy2 - sr2*sp2*cy2;
 }
 
-// create a quaternion from Euler angles
-void Quaternion::from_vector312(float roll ,float pitch, float yaw)
+// create a quaternion from Euler angles applied in yaw, roll, pitch order
+// instead of the normal yaw, pitch, roll order
+void Quaternion::from_vector312(float roll, float pitch, float yaw)
 {
     Matrix3f m;
     m.from_euler312(roll, pitch, yaw);
@@ -151,6 +152,7 @@ void Quaternion::from_vector312(float roll ,float pitch, float yaw)
     from_rotation_matrix(m);
 }
 
+// create a quaternion from its axis-angle representation
 void Quaternion::from_axis_angle(Vector3f v)
 {
     const float theta = v.length();
@@ -163,6 +165,8 @@ void Quaternion::from_axis_angle(Vector3f v)
     from_axis_angle(v,theta);
 }
 
+// create a quaternion from its axis-angle representation
+// the axis vector must be length 1, theta is in radians
 void Quaternion::from_axis_angle(const Vector3f &axis, float theta)
 {
     // axis must be a unit vector as there is no check for length
@@ -179,6 +183,7 @@ void Quaternion::from_axis_angle(const Vector3f &axis, float theta)
     q4 = axis.z * st2;
 }
 
+// rotate by the provided axis angle
 void Quaternion::rotate(const Vector3f &v)
 {
     Quaternion r;
@@ -186,6 +191,8 @@ void Quaternion::rotate(const Vector3f &v)
     (*this) *= r;
 }
 
+// convert this quaternion to a rotation vector where the direction of the vector represents
+// the axis of rotation and the length of the vector represents the angle of rotation
 void Quaternion::to_axis_angle(Vector3f &v)
 {
     const float l = sqrtf(sq(q2)+sq(q3)+sq(q4));
@@ -196,6 +203,8 @@ void Quaternion::to_axis_angle(Vector3f &v)
     }
 }
 
+// create a quaternion from its axis-angle representation
+// only use with small angles.  I.e. length of v should less than 0.17 radians (i.e. 10 degrees)
 void Quaternion::from_axis_angle_fast(Vector3f v)
 {
     const float theta = v.length();
@@ -208,6 +217,8 @@ void Quaternion::from_axis_angle_fast(Vector3f v)
     from_axis_angle_fast(v,theta);
 }
 
+// create a quaternion from its axis-angle representation
+// theta should less than 0.17 radians (i.e. 10 degrees)
 void Quaternion::from_axis_angle_fast(const Vector3f &axis, float theta)
 {
     const float t2 = theta/2.0f;
@@ -220,6 +231,8 @@ void Quaternion::from_axis_angle_fast(const Vector3f &axis, float theta)
     q4 = axis.z * st2;
 }
 
+// rotate by the provided axis angle
+// only use with small angles.  I.e. length of v should less than 0.17 radians (i.e. 10 degrees)
 void Quaternion::rotate_fast(const Vector3f &v)
 {
     const float theta = v.length();
