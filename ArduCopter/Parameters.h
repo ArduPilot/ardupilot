@@ -611,9 +611,12 @@ public:
     AC_Autorotation arot;
 #endif
 
-#if MODE_ZIGZAG_ENABLED == ENABLED && SPRAYER_ENABLED == ENABLED
+#if MODE_ZIGZAG_ENABLED == ENABLED
+#if SPRAYER_ENABLED == ENABLED
     // auto pump enable/disable
     AP_Int8 zigzag_auto_pump_enabled;
+#endif
+    AP_Int8 zigzag_wp_delay;
 #endif
 
 };
