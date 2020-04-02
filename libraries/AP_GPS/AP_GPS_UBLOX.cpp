@@ -1315,8 +1315,8 @@ AP_GPS_UBLOX::_parse_gps(void)
         break;
     case MSG_RELPOSNED:
         {
-            const Vector3f &offset0 = gps._antenna_offset[0].get();
-            const Vector3f &offset1 = gps._antenna_offset[1].get();
+            const Vector3f &offset0 = gps._antenna_offset[state.instance^1].get();
+            const Vector3f &offset1 = gps._antenna_offset[state.instance].get();
             // note that we require the yaw to come from a fixed solution, not a float solution
             // yaw from a float solution would only be acceptable with a very large separation between
             // GPS modules
@@ -1350,10 +1350,7 @@ AP_GPS_UBLOX::_parse_gps(void)
                 float rotation_offset_rad;
                 const Vector3f diff = offset1 - offset0;
                 rotation_offset_rad = Vector2f(diff.x, diff.y).angle();
-                if (state.instance != 0) {
-                    rotation_offset_rad += M_PI;
-                }
-                state.gps_yaw = wrap_360(_buffer.relposned.relPosHeading * 1e-5 + degrees(rotation_offset_rad));
+                state.gps_yaw = wrap_360(_buffer.relposned.relPosHeading * 1e-5 - degrees(rotation_offset_rad));
                 state.have_gps_yaw = true;
                 state.gps_yaw_accuracy = _buffer.relposned.accHeading * 1e-5;
                 state.have_gps_yaw_accuracy = true;
@@ -1890,6 +1887,12 @@ void AP_GPS_UBLOX::clear_RTCMV3(void)
 // ublox specific healthy checks
 bool AP_GPS_UBLOX::is_healthy(void) const
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (gps._auto_config == AP_GPS::GPS_AUTO_CONFIG_DISABLE) {
+        // allow for fake ublox moving baseline
+        return true;
+    }
+#endif
     if ((role == AP_GPS::GPS_ROLE_MB_BASE ||
         role == AP_GPS::GPS_ROLE_MB_ROVER) &&
         !supports_F9_config()) {
