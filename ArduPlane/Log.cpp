@@ -297,7 +297,7 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: DCRt: desired climb rate
 // @Field: CRt: climb rate
 // @Field: TMix: transition throttle mix value
-// @Field: Sscl: speed scalar for surfaces
+// @Field: Sscl: speed scalar for tailsitter control surfaces
     { LOG_QTUN_MSG, sizeof(QuadPlane::log_QControl_Tuning),
       "QTUN", "Qffffffeccff", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DCRt,CRt,TMix,Sscl", "s----mmmnn--", "F----00000-0" },
 
