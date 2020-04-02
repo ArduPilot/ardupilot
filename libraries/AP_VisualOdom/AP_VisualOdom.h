@@ -26,8 +26,6 @@ class AP_VisualOdom_Backend;
 class AP_VisualOdom
 {
 public:
-    friend class AP_VisualOdom_Backend;
-    friend class AP_VisualOdom_MAV;
 
     AP_VisualOdom();
 
@@ -51,6 +49,9 @@ public:
     // return true if sensor is basically healthy (we are receiving data)
     bool healthy() const;
 
+    // get user defined orientation
+    enum Rotation get_orientation() const { return (enum Rotation)_orientation.get(); }
+
     // return a 3D vector defining the position offset of the camera in meters relative to the body frame origin
     const Vector3f &get_pos_offset(void) const { return _pos_offset; }
 
@@ -73,9 +74,6 @@ public:
 private:
 
     static AP_VisualOdom *_singleton;
-
-    // get user defined orientation
-    enum Rotation get_orientation() const { return (enum Rotation)_orientation.get(); }
 
     // parameters
     AP_Int8 _type;
