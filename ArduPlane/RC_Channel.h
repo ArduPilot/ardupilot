@@ -33,6 +33,8 @@ public:
 
     bool has_valid_input() const override;
 
+    RC_Channel *get_arming_channel(void) const override;
+
 protected:
 
     // note that these callbacks are not presently used on Plane:
