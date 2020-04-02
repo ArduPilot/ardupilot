@@ -114,9 +114,11 @@ void Copter::handle_battery_failsafe(const char *type_str, const int8_t action)
 // failsafe_gcs_check - check for ground station failsafe
 void Copter::failsafe_gcs_check()
 {
+    bool planck_ok = planck_interface.get_commbox_state();
+
     // Bypass GCS failsafe checks if disabled or GCS never connected
     if (g.failsafe_gcs == FS_GCS_DISABLED || failsafe.last_heartbeat_ms == 0) {
-        if(planck_interface.get_commbox_state() || g.failsafe_gcs == FS_GCS_DISABLED) {
+        if(planck_ok || g.failsafe_gcs == FS_GCS_DISABLED) {
             return;
         }
     }
@@ -124,20 +126,21 @@ void Copter::failsafe_gcs_check()
     // calc time since last gcs update
     // note: this only looks at the heartbeat from the device id set by g.sysid_my_gcs
     const uint32_t last_gcs_update_ms = millis() - failsafe.last_heartbeat_ms;
+    bool gcs_fs_trigger = (last_gcs_update_ms > FS_GCS_TIMEOUT_MS) || !planck_ok;
 
     // Determine which event to trigger
-    if (last_gcs_update_ms < FS_GCS_TIMEOUT_MS && failsafe.gcs && planck_interface.get_commbox_state()) {
+    if (!gcs_fs_trigger && failsafe.gcs) {
         // Recovery from a GCS failsafe
         set_failsafe_gcs(false);
         failsafe_gcs_off_event();
 
-    } else if (last_gcs_update_ms < FS_GCS_TIMEOUT_MS && !failsafe.gcs) {
+    } else if (!gcs_fs_trigger && !failsafe.gcs) {
         // No problem, do nothing
 
-    } else if (last_gcs_update_ms > FS_GCS_TIMEOUT_MS && failsafe.gcs) {
+    } else if (gcs_fs_trigger && failsafe.gcs) {
         // Already in failsafe, do nothing
 
-    } else if (last_gcs_update_ms > FS_GCS_TIMEOUT_MS && !failsafe.gcs) {
+    } else if (gcs_fs_trigger && !failsafe.gcs) {
         // New GCS failsafe event, trigger events
         set_failsafe_gcs(true);
         failsafe_gcs_on_event();
