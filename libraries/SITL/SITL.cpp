@@ -89,7 +89,7 @@ const AP_Param::GroupInfo SITL::var_info[] = {
     AP_GROUPINFO("ADSB_TX",       51, SITL,  adsb_tx, 0),
     AP_GROUPINFO("SPEEDUP",       52, SITL,  speedup, -1),
     AP_GROUPINFO("IMU_POS",       53, SITL,  imu_pos_offset, 0),
-    AP_GROUPINFO("GPS_POS",       54, SITL,  gps_pos_offset[0], 0),
+    AP_GROUPINFO("GPS_POS1",      54, SITL,  gps_pos_offset[0], 0),
     AP_GROUPINFO("SONAR_POS",     55, SITL,  rngfnd_pos_offset, 0),
     AP_GROUPINFO("FLOW_POS",      56, SITL,  optflow_pos_offset, 0),
     AP_GROUPINFO("ACC2_BIAS",     57, SITL,  accel2_bias, 0),
@@ -172,7 +172,7 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     AP_GROUPINFO("GND_BEHAV",   41, SITL,  gnd_behav, -1),
     AP_GROUPINFO("BARO_COUNT",  42, SITL,  baro_count,  1),
 
-    AP_GROUPINFO("GPS_HDG",     43, SITL,  gps_hdg_enabled, 0),
+    AP_GROUPINFO("GPS_HDG",     43, SITL,  gps_hdg_enabled[0], 0),
 
     // sailboat wave and tide simulation parameters
     AP_GROUPINFO("WAVE_ENABLE", 44, SITL,  wave.enable, 0.0f),
@@ -218,7 +218,7 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
 // third table of user settable parameters for SITL. 
 const AP_Param::GroupInfo SITL::var_info3[] = {
     AP_GROUPINFO("ODOM_ENABLE",   1, SITL,  odom_enable, 0),
-    AP_GROUPINFO("GPS2_POS",      2, SITL,  gps_pos_offset[1], 0),
+    AP_GROUPINFO("GPS_POS2",      2, SITL,  gps_pos_offset[1], 0),
     AP_GROUPINFO("MAG1_DEVID",    3, SITL,  mag_devid[0], 97539),
     AP_GROUPINFO("MAG2_DEVID",    4, SITL,  mag_devid[1], 131874),
     AP_GROUPINFO("MAG3_DEVID",    5, SITL,  mag_devid[2], 263178),
@@ -233,6 +233,8 @@ const AP_Param::GroupInfo SITL::var_info3[] = {
     // Scenario for thermalling simulation, for soaring
     AP_GROUPINFO("THML_SCENARI",12, SITL,  thermal_scenario, 0),
     
+    AP_GROUPINFO("GPS2_HDG",      13, SITL,  gps_hdg_enabled[1], 0),
+
     AP_GROUPEND
 
 };
