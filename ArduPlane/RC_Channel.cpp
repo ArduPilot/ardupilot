@@ -27,6 +27,11 @@ bool RC_Channels_Plane::has_valid_input() const
     return true;
 }
 
+RC_Channel * RC_Channels_Plane::get_arming_channel(void) const
+{
+    return plane.channel_rudder;
+}
+
 void RC_Channel_Plane::do_aux_function_change_mode(const Mode::Number number,
                                                    const aux_switch_pos_t ch_flag)
 {
