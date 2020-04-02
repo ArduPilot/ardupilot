@@ -68,6 +68,11 @@ bool RC_Channels_Rover::has_valid_input() const
     return true;
 }
 
+RC_Channel * RC_Channels_Rover::get_arming_channel(void) const
+{
+    return rover.channel_steer;
+}
+
 void RC_Channel_Rover::do_aux_function_change_mode(Mode &mode,
         const aux_switch_pos_t ch_flag)
 {

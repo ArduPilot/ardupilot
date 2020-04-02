@@ -34,6 +34,8 @@ public:
 
     bool has_valid_input() const override;
 
+    RC_Channel *get_arming_channel(void) const override;
+
     RC_Channel_Rover obj_channels[NUM_RC_CHANNELS];
 
     RC_Channel_Rover *channel(const uint8_t chan) override {
