@@ -980,6 +980,21 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Range: 1 127
     // @User: Advanced
     AP_GROUPINFO("ZIGZ_WP_DELAY", 39, ParametersG2, zigzag_wp_delay, ZIGZAG_WP_DELAY),
+
+    // @Param: ZIGZ_SIDE_DIST
+    // @DisplayName: Sideways distance in ZigZag auto
+    // @Description: The distance to move sideways in ZigZag mode
+    // @Units: m
+    // @Range: 0.1 100
+    // @User: Advanced
+    AP_GROUPINFO("ZIGZ_SIDE_DIST", 40, ParametersG2, zigzag_side_dist, 4),
+
+    // @Param: ZIGZ_DIRECTION
+    // @DisplayName: Sideways direction in ZigZag auto
+    // @Description: The direction to move sideways in ZigZag mode
+    // @Values: 0: forward, 1:right, 2: backward, 3: left
+    // @User: Advanced
+    AP_GROUPINFO("ZIGZ_DIRECTION", 41, ParametersG2, zigzag_direction, 0),
 #endif // MODE_ZIGZAG_ENABLED == ENABLED
 
 
