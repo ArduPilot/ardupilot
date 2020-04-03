@@ -965,12 +965,12 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
 #if MODE_ZIGZAG_ENABLED == ENABLED
 #if SPRAYER_ENABLED == ENABLED
-    // @Param: ZIGZAG_AUTO_PUMP
-    // @DisplayName: Auto pump in ZigZag
-    // @Description: Enable the auto pump in ZigZag mode. SERVOx_FUNCTION = 22 (SprayerPump) and SPRAY_ENABLE = 1 also must be set. This makes the pump on while moving to destination A or B. The pump will stop if the vehicle reaches destination or the flight mode is changed from ZigZag to other.
+    // @Param: ZIGZ_SPRAYER
+    // @DisplayName: Auto sprayer in ZigZag
+    // @Description: Enable the auto sprayer in ZigZag mode. SPRAY_ENABLE = 1 and SERVOx_FUNCTION = 22(SprayerPump) / 23(SprayerSpinner) also must be set. This makes the sprayer on while moving to destination A or B. The sprayer will stop if the vehicle reaches destination or the flight mode is changed from ZigZag to other.
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    AP_GROUPINFO("ZIGZAG_AUTO_PUMP", 38, ParametersG2, zigzag_auto_pump_enabled, ZIGZAG_AUTO_PUMP_ENABLED),
+    AP_GROUPINFO("ZIGZ_SPRAYER", 38, ParametersG2, zigzag_spray_enabled, ZIGZAG_SPRAY_ENABLED),
 #endif // SPRAYER_ENABLED == ENABLED
 
     // @Param: ZIGZ_WP_DELAY

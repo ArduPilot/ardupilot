@@ -44,12 +44,8 @@ bool ModeZigZag::init(bool ignore_checks)
 // perform cleanup required when leaving zigzag mode
 void ModeZigZag::exit()
 {
-#if SPRAYER_ENABLED == ENABLED
-    // The pump will stop if the flight mode is changed from ZigZag to other
-    if (g2.zigzag_auto_pump_enabled) {
-        copter.sprayer.run(false);
-    }
-#endif
+    // The sprayer will stop if the flight mode is changed from ZigZag to other
+    spray(false);
 }
 
 // run the zigzag controller
@@ -107,6 +103,10 @@ void ModeZigZag::save_or_move_to_destination(Destination ab_dest)
             // if both A and B have been stored advance state
             if (!dest_A.is_zero() && !dest_B.is_zero() && is_positive((dest_B - dest_A).length_squared())) {
                 stage = MANUAL_REGAIN;
+                spray(false);
+            } else {
+                // if only A or B have been stored, spray on
+                spray(true);
             }
             break;
 
@@ -119,12 +119,8 @@ void ModeZigZag::save_or_move_to_destination(Destination ab_dest)
                 wp_nav->wp_and_spline_init();
                 if (wp_nav->set_wp_destination(next_dest, terr_alt)) {
                     stage = AUTO;
-#if SPRAYER_ENABLED == ENABLED
                     // spray on while moving to A or B
-                    if (g2.zigzag_auto_pump_enabled) {
-                        copter.sprayer.run(true);
-                    }
-#endif
+                    spray(true);
                     reach_wp_time_ms = 0;
                     if (ab_dest == Destination::A) {
                         gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: moving to A");
@@ -142,12 +138,7 @@ void ModeZigZag::return_to_manual_control(bool maintain_target)
 {
     if (stage == AUTO) {
         stage = MANUAL_REGAIN;
-#if SPRAYER_ENABLED == ENABLED
-        // spray off
-        if (g2.zigzag_auto_pump_enabled) {
-            copter.sprayer.run(false);
-        }
-#endif
+        spray(false);
         loiter_nav->clear_pilot_desired_acceleration();
         if (maintain_target) {
             const Vector3f& wp_dest = wp_nav->get_wp_destination();
@@ -375,6 +366,16 @@ bool ModeZigZag::calculate_next_dest(Destination ab_dest, bool use_wpnav_alt, Ve
     }
 
     return true;
+}
+
+// spray on / off
+void ModeZigZag::spray(bool b)
+{
+#if SPRAYER_ENABLED == ENABLED
+    if (g2.zigzag_spray_enabled) {
+        copter.sprayer.run(b);
+    }
+#endif
 }
 
 #endif // MODE_ZIGZAG_ENABLED == ENABLED
