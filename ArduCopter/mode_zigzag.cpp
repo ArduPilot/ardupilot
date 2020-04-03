@@ -39,6 +39,8 @@ bool ModeZigZag::init(bool ignore_checks)
     dest_B.zero();
     auto_stage = AutoState::MANUAL;
 
+    line_count = 0;
+
     return true;
 }
 
@@ -57,8 +59,9 @@ void ModeZigZag::run()
     pos_control->set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
     pos_control->set_max_accel_z(g.pilot_accel_z);
 
-    // set the direction to move sideways
+    // set the direction and the total number of lines
     zigzag_direction = (Direction)constrain_int16(g2.zigzag_direction, 0, 3);
+    line_num = constrain_int16(g2.zigzag_line_num, -1, 32767);
 
     // auto control
     if (stage == AUTO) {
@@ -69,12 +72,18 @@ void ModeZigZag::run()
             // if vehicle has reached destination switch to manual control or moving to A or B
             AP_Notify::events.waypoint_complete = 1;
             if (is_auto) {
-                if (auto_stage == AutoState::SIDEWAYS) {
-                    save_or_move_to_destination((ab_dest_stored == Destination::A) ? Destination::B : Destination::A);
+                if (line_num == -1 || line_count < line_num) {
+                    if (auto_stage == AutoState::SIDEWAYS) {
+                        save_or_move_to_destination((ab_dest_stored == Destination::A) ? Destination::B : Destination::A);
+                    } else {
+                        // spray off
+                        spray(false);
+                        move_to_side();
+                    }
                 } else {
-                    // spray off
-                    spray(false);
-                    move_to_side();
+                    is_auto = false;
+                    line_count = 0;
+                    return_to_manual_control(true);
                 }
             } else {
                 return_to_manual_control(true);
@@ -138,7 +147,12 @@ void ModeZigZag::save_or_move_to_destination(Destination ab_dest)
                     // spray on while moving to A or B
                     spray(true);
                     reach_wp_time_ms = 0;
-                    gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: moving to %s", (ab_dest == Destination::A) ? "A" : "B");
+                    if (is_auto == false || line_num == -1) {
+                        gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: moving to %s", (ab_dest == Destination::A) ? "A" : "B");
+                    } else {
+                        line_count++;
+                        gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: moving to %s (line %d/%d)", (ab_dest == Destination::A) ? "A" : "B", line_count, line_num);
+                    }
                 }
             }
             break;
@@ -180,6 +194,7 @@ void ModeZigZag::return_to_manual_control(bool maintain_target)
             loiter_nav->init_target();
         }
         auto_stage = AutoState::MANUAL;
+        is_auto = false;
         gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: manual control");
     }
 }

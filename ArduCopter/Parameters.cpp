@@ -995,6 +995,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Values: 0: forward, 1:right, 2: backward, 3: left
     // @User: Advanced
     AP_GROUPINFO("ZIGZ_DIRECTION", 41, ParametersG2, zigzag_direction, 0),
+
+    // @Param: ZIGZ_LINE_NUM
+    // @DisplayName: Total number of lines
+    // @Description: Total number of lines for ZigZag auto if 1 or more. -1: Infinity, 0: Just moving to sideways
+    // @Range: -1 32767
+    // @User: Advanced
+    AP_GROUPINFO("ZIGZ_LINE_NUM", 42, ParametersG2, zigzag_line_num, 0),
 #endif // MODE_ZIGZAG_ENABLED == ENABLED
 
 
