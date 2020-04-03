@@ -1333,11 +1333,19 @@ AP_GPS_UBLOX::_parse_gps(void)
                                           static_cast<uint32_t>(RELPOSNED::refObsMiss) |
                                           static_cast<uint32_t>(RELPOSNED::carrSolnFloat);
 
-            const float offset_dist = (offset0 - offset1).length();
-            const float rel_dist = _buffer.relposned.relPosLength * 1.0e-2;
+            const Vector3f antenna_offset = offset0 - offset1;
+            const Vector3f antenna_tilt = AP::ahrs().get_rotation_body_to_ned() * antenna_offset;
+            const float offset_dist = antenna_offset.length();
+            const float rel_dist = _buffer.relposned.relPosLength * 0.01;
+            const float alt_error = _buffer.relposned.relPosD*0.01 + antenna_tilt.z;
+            const float dist_error = offset_dist - rel_dist;
             const float strict_length_error_allowed = 0.2; // allow for up to 20% error
             const float min_separation = 0.05;
             _check_new_itow(_buffer.relposned.iTOW);
+            if (_buffer.relposned.iTOW != _last_relposned_itow+200) {
+                // useful for looking at packet loss on links
+                MB_Debug("RELPOSNED ITOW %u %u\n", unsigned(_buffer.relposned.iTOW), unsigned(_last_relposned_itow));
+            }
             _last_relposned_itow = _buffer.relposned.iTOW;
             _last_relposned_ms = AP_HAL::millis();
 
@@ -1345,16 +1353,19 @@ AP_GPS_UBLOX::_parse_gps(void)
               RELPOSNED messages gives the NED distance from base to
               rover. It comes from the rover
              */
-            MB_Debug("RELPOSNED[%u]: od:%.2f rd:%.2f flags:0x%04x t=%u",
+            MB_Debug("RELPOSNED[%u]: od:%.2f rd:%.2f ae:%.2f flags:0x%04x t=%u",
                      state.instance+1,
-                     offset_dist, rel_dist,
+                     offset_dist, rel_dist, alt_error,
                      unsigned(_buffer.relposned.flags),
                      unsigned(_buffer.relposned.iTOW));
+
+            const float min_dist = MIN(offset_dist, rel_dist);
             if (((_buffer.relposned.flags & valid_mask) == valid_mask) &&
                 ((_buffer.relposned.flags & invalid_mask) == 0) &&
                 rel_dist > min_separation &&
                 offset_dist > min_separation &&
-                fabsf(offset_dist - rel_dist) / MIN(offset_dist, rel_dist) < strict_length_error_allowed) {
+                fabsf(dist_error) < strict_length_error_allowed * min_dist &&
+                fabsf(alt_error) < strict_length_error_allowed * min_dist) {
                 float rotation_offset_rad;
                 const Vector3f diff = offset1 - offset0;
                 rotation_offset_rad = Vector2f(diff.x, diff.y).angle();
