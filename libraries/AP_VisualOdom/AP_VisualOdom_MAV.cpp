@@ -57,3 +57,27 @@ void AP_VisualOdom_MAV::handle_vision_position_delta_msg(const mavlink_message_t
                                   position_delta,
                                   packet.confidence);
 }
+
+// consume vision position estimate data and send to EKF. distances in meters
+void AP_VisualOdom_MAV::handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude)
+{
+    Vector3f pos{x, y, z};
+
+    // send attitude and position to EKF
+    const float posErr = 0; // parameter required?
+    const float angErr = 0; // parameter required?
+    const uint32_t reset_timestamp_ms = 0; // no data available
+    AP::ahrs().writeExtNavData(_frontend.get_pos_offset(), pos, attitude, posErr, angErr, time_ms, reset_timestamp_ms);
+
+    // calculate euler orientation for logging
+    float roll;
+    float pitch;
+    float yaw;
+    attitude.to_euler(roll, pitch, yaw);
+
+    // log sensor data
+    AP::logger().Write_VisualPosition(remote_time_us, time_ms, x, y, z, degrees(roll), degrees(pitch), degrees(yaw));
+
+    // record time for health monitoring
+    _last_update_ms = AP_HAL::millis();
+}
