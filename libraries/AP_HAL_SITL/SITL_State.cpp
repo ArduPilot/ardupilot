@@ -212,6 +212,20 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
             usleep(1000);
         }
     }
+    // check the outbound TCP queue size.  If it is too long then
+    // MAVProxy/pymavlink take too long to process packets and it ends
+    // up seeing traffic well into our past and hits time-out
+    // conditions.
+    if (sitl_model->get_speedup() > 1) {
+        while (true) {
+            const int queue_length = ((HALSITL::UARTDriver*)hal.uartA)->get_system_outqueue_length();
+            // ::fprintf(stderr, "queue_length=%d\n", (signed)queue_length);
+            if (queue_length < 1024) {
+                break;
+            }
+            usleep(1000);
+        }
+    }
 }
 
 #define streq(a, b) (!strcmp(a, b))
