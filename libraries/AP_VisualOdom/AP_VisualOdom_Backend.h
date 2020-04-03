@@ -29,17 +29,16 @@ public:
 	bool healthy() const;
 
 	// consume vision_position_delta mavlink messages
-	virtual void handle_vision_position_delta_msg(const mavlink_message_t &msg) {};
+	virtual void handle_vision_position_delta_msg(const mavlink_message_t &msg) = 0;
 
-	// general purpose methods to consume position estimate data and send to EKF
-	// distances in meters, roll, pitch and yaw are in radians
-    void handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude);
+    // consume vision position estimate data and send to EKF. distances in meters
+    virtual void handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude) = 0;
 
-    // calibrate camera attitude to align with vehicle's AHRS/EKF attitude
-    void align_sensor_to_vehicle() { _align_camera = true; }
+    // handle request to align camera's attitude with vehicle's AHRS/EKF attitude
+    virtual void align_sensor_to_vehicle() {}
 
-    // arming check
-    bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const;
+    // arming check - by default no checks performed
+    virtual bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const { return true; }
 
 protected:
 
@@ -52,18 +51,6 @@ protected:
     // use sensor provided position and attitude to calculate rotation to align sensor with AHRS/EKF attitude
     bool align_sensor_to_vehicle(const Vector3f &position, const Quaternion &attitude);
 
-    AP_VisualOdom &_frontend;                   // reference to frontend
-
-    float _yaw_trim;                            // yaw angle trim (in radians) to align camera's yaw to ahrs/EKF's
-    Quaternion _yaw_rotation;                   // earth-frame yaw rotation to align heading of sensor with vehicle.  use when _yaw_trim is non-zero
-    Quaternion _att_rotation;                   // body-frame rotation corresponding to ORIENT parameter.  use when get_orientation != NONE
-    Matrix3f _pos_rotation;                     // rotation to align position from sensor to earth frame.  use when _use_pos_rotation is true
-    Vector3f _pos_correction;                   // position correction that should be added to position reported from sensor
-    bool _use_att_rotation;                     // true if _att_rotation should be applied to sensor's attitude data
-    bool _use_pos_rotation;                     // true if _pos_rotation should be applied to sensor's position data
-    bool _align_camera = true;                  // true if camera should be aligned to AHRS/EKF
-    bool _have_attitude;                        // true if we have received an attitude from the camera (used for arming checks)
-    bool _error_orientation;                    // true if the orientation is not supported
-    Quaternion _attitude_last;                  // last attitude received from camera (used for arming checks)
-    uint32_t _last_update_ms;                   // system time of last update from sensor (used by health checks)
+    AP_VisualOdom &_frontend;   // reference to frontend
+    uint32_t _last_update_ms;   // system time of last update from sensor (used by health checks)
 };
