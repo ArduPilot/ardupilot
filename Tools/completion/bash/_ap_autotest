@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+
+_ap_autotest() {
+  local cur prev opts
+  COMPREPLY=()
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  prev="${COMP_WORDS[COMP_CWORD - 1]}"
+
+  case "$cur" in
+  -*)
+    # TODO: generate for waf help
+    opts="--help -h"
+    opts+=" -j"
+    opts+=" --skip"
+    opts+=" --list"
+    opts+=" --list-subtests"
+    opts+=" --viewerip"
+    opts+=" --map"
+    opts+=" --experimental"
+    opts+=" --timeout"
+    opts+=" --frame"
+    opts+=" --show-test-timings"
+    opts+=" --validate-parameters"
+    opts+=" --no-configure"
+    opts+=" --waf-configure-args"
+    opts+=" --no-clean"
+    opts+=" --debug"
+    opts+=" --speedup"
+    opts+=" --valgrind"
+    opts+=" --gdb"
+    opts+=" --gdbserver"
+    opts+=" --lldb"
+    opts+=" -B --breakpoint"
+    opts+=" --disable-breakpoints"
+    ;;
+  *)
+    # get the calling program, remove anything after the space == all commands arguments
+    local caller
+    caller=$(echo $@ | sed 's/ .*//g')
+    opts=$($caller --list)
+    ;;
+    # TODO: add completion for subtests and skip list
+  esac
+  # Prevent word reuse
+  lim=$((COMP_CWORD - 1))
+  for i in $(seq 0 $lim); do
+    if [[ $opts == *"${COMP_WORDS[i]}"* ]]; then
+      opts=${opts//${COMP_WORDS[i]}/}
+      opts=${opts//--${COMP_WORDS[i]}/}
+    fi
+  done
+  COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+}
+
+complete -F _ap_autotest autotest.py
