@@ -33,6 +33,8 @@ public:
         return true;
     }
 
+    ssize_t get_system_outqueue_length() const;
+
     void set_blocking_writes(bool blocking) override
     {
         _nonblocking_writes = !blocking;
