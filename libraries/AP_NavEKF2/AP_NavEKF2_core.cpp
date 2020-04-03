@@ -329,6 +329,7 @@ void NavEKF2_core::InitialiseVariables()
     memset(&visionSpeedDelayed, 0, sizeof(visionSpeedDelayed));
     visionSpeedToFuse = false;
     visionSpeedMeasTime_ms = 0;
+    useVisVertVel = false;
 
     // zero data buffers
     storedIMU.reset();

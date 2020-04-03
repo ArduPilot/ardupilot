@@ -49,7 +49,9 @@ void NavEKF2_core::ResetVelocity(void)
         } else if (imuSampleTime_ms - visionSpeedMeasTime_ms < 250) {
             stateStruct.velocity.x = visionSpeedNew.vel.x;
             stateStruct.velocity.y = visionSpeedNew.vel.y;
+            stateStruct.velocity.z = visionSpeedNew.vel.z;
             P[4][4] = P[3][3] = sq(frontend->_gpsHorizVelNoise);
+            P[5][5] = sq(frontend->_gpsVertVelNoise);
             velTimeout = false;
             lastVelPassTime_ms = imuSampleTime_ms;
         } else {
@@ -195,6 +197,8 @@ void NavEKF2_core::ResetHeight(void)
     // Check that GPS vertical velocity data is available and can be used
     if (inFlight && !gpsNotAvailable && frontend->_fusionModeGPS == 0 && !frontend->inhibitGpsVertVelUse) {
         stateStruct.velocity.z =  gpsDataNew.vel.z;
+    } else if (inFlight && useVisVertVel) {
+        stateStruct.velocity.z = visionSpeedNew.vel.z;
     } else if (onGround) {
         stateStruct.velocity.z = 0.0f;
     }
@@ -592,7 +596,7 @@ void NavEKF2_core::FuseVelPosNED()
             // test velocity measurements
             uint8_t imax = 2;
             // Don't fuse vertical velocity observations if inhibited by the user or if we are using synthetic data
-            if ((!visionSpeedToFuse) && (frontend->_fusionModeGPS > 0 || PV_AidingMode != AID_ABSOLUTE || frontend->inhibitGpsVertVelUse)) {
+            if (!useVisVertVel && (frontend->_fusionModeGPS > 0 || PV_AidingMode != AID_ABSOLUTE || frontend->inhibitGpsVertVelUse)) {
                 imax = 1;
             }
             float innovVelSumSq = 0; // sum of squares of velocity innovations
@@ -676,7 +680,7 @@ void NavEKF2_core::FuseVelPosNED()
         if (fuseVelData && velHealth) {
             fuseData[0] = true;
             fuseData[1] = true;
-            if (useGpsVertVel) {
+            if (useGpsVertVel || useVisVertVel) {
                 fuseData[2] = true;
             }
             tiltErrVec.zero();
@@ -1002,7 +1006,7 @@ void NavEKF2_core::selectHeightForFusion()
 
     // If we haven't fused height data for a while, then declare the height data as being timed out
     // set timeout period based on whether we have vertical GPS velocity available to constrain drift
-    hgtRetryTime_ms = (useGpsVertVel && !velTimeout) ? frontend->hgtRetryTimeMode0_ms : frontend->hgtRetryTimeMode12_ms;
+    hgtRetryTime_ms = ((useGpsVertVel || useVisVertVel) && !velTimeout) ? frontend->hgtRetryTimeMode0_ms : frontend->hgtRetryTimeMode12_ms;
     if (imuSampleTime_ms - lastHgtPassTime_ms > hgtRetryTime_ms) {
         hgtTimeout = true;
     } else {
