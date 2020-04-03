@@ -641,7 +641,18 @@ if __name__ == "__main__":
 
     os.putenv('TMPDIR', util.reltopdir('tmp'))
 
-    parser = optparse.OptionParser("autotest")
+    class MyOptionParser(optparse.OptionParser):
+        def format_epilog(self, formatter):
+            return self.epilog
+
+    parser = MyOptionParser(
+        "autotest", epilog=""
+        "e.g. autotest.py build.Rover test.Rover # test Rover\n"
+        "e.g. autotest.py build.Rover test.Rover build.Plane test.Plane # test Rover and Plane\n"
+        "e.g. autotest.py --debug --valgrind build.Rover test.Rover # test Rover under Valgrind\n"
+        "e.g. autotest.py --debug --gdb build.Tracker test.Tracker # run Tracker under gdb\n"
+        "e.g. autotest.py --debug --gdb build.Sub test.Sub.DiveManual # do specific Sub test\n"
+    )
     parser.add_option("--skip",
                       type='string',
                       default='',
