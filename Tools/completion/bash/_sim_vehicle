@@ -55,8 +55,8 @@ _sim_vehicle() {
   lim=$((COMP_CWORD - 1))
   for i in $(seq 0 $lim); do
     if [[ $opts == *"${COMP_WORDS[i]}"* ]]; then
-      opts=${opts/" ${COMP_WORDS[i]}"/}
-      opts=${opts/" --${COMP_WORDS[i]}"/}
+      opts=${opts//${COMP_WORDS[i]}/}
+      opts=${opts//--${COMP_WORDS[i]}/}
     fi
   done
 
