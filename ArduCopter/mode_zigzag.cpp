@@ -37,6 +37,7 @@ bool ModeZigZag::init(bool ignore_checks)
     stage = STORING_POINTS;
     dest_A.zero();
     dest_B.zero();
+    auto_stage = AutoState::MANUAL;
 
     return true;
 }
@@ -56,15 +57,28 @@ void ModeZigZag::run()
     pos_control->set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
     pos_control->set_max_accel_z(g.pilot_accel_z);
 
+    // set the direction to move sideways
+    zigzag_direction = (Direction)constrain_int16(g2.zigzag_direction, 0, 3);
+
     // auto control
     if (stage == AUTO) {
         if (is_disarmed_or_landed() || !motors->get_interlock()) {
             // vehicle should be under manual control when disarmed or landed
             return_to_manual_control(false);
         } else if (reached_destination()) {
-            // if vehicle has reached destination switch to manual control
+            // if vehicle has reached destination switch to manual control or moving to A or B
             AP_Notify::events.waypoint_complete = 1;
-            return_to_manual_control(true);
+            if (is_auto) {
+                if (auto_stage == AutoState::SIDEWAYS) {
+                    save_or_move_to_destination((ab_dest_stored == Destination::A) ? Destination::B : Destination::A);
+                } else {
+                    // spray off
+                    spray(false);
+                    move_to_side();
+                }
+            } else {
+                return_to_manual_control(true);
+            }
         } else {
             auto_control();
         }
@@ -101,10 +115,10 @@ void ModeZigZag::save_or_move_to_destination(Destination ab_dest)
                 AP::logger().Write_Event(LogEvent::ZIGZAG_STORE_B);
             }
             // if both A and B have been stored advance state
-            if (!dest_A.is_zero() && !dest_B.is_zero() && is_positive((dest_B - dest_A).length_squared())) {
+            if (!dest_A.is_zero() && !dest_B.is_zero() && !is_zero((dest_B - dest_A).length_squared())) {
                 stage = MANUAL_REGAIN;
                 spray(false);
-            } else {
+            } else if (!dest_A.is_zero() || !dest_B.is_zero()) {
                 // if only A or B have been stored, spray on
                 spray(true);
             }
@@ -119,17 +133,33 @@ void ModeZigZag::save_or_move_to_destination(Destination ab_dest)
                 wp_nav->wp_and_spline_init();
                 if (wp_nav->set_wp_destination(next_dest, terr_alt)) {
                     stage = AUTO;
+                    auto_stage = AutoState::AB_MOVING;
+                    ab_dest_stored = ab_dest;
                     // spray on while moving to A or B
                     spray(true);
                     reach_wp_time_ms = 0;
-                    if (ab_dest == Destination::A) {
-                        gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: moving to A");
-                    } else {
-                        gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: moving to B");
-                    }
+                    gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: moving to %s", (ab_dest == Destination::A) ? "A" : "B");
                 }
             }
             break;
+    }
+}
+
+void ModeZigZag::move_to_side()
+{
+    if (!dest_A.is_zero() && !dest_B.is_zero() && !is_zero((dest_B - dest_A).length_squared())) {
+        Vector3f next_dest;
+        bool terr_alt;
+        if (calculate_side_dest(next_dest, terr_alt)) {
+            wp_nav->wp_and_spline_init();
+            if (wp_nav->set_wp_destination(next_dest, terr_alt)) {
+                stage = AUTO;
+                auto_stage = AutoState::SIDEWAYS;
+                reach_wp_time_ms = 0;
+                char const *dir[] = {"forward", "right", "backward", "left"};
+                gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: moving to %s", dir[(uint8_t)zigzag_direction]);
+            }
+        }
     }
 }
 
@@ -149,6 +179,7 @@ void ModeZigZag::return_to_manual_control(bool maintain_target)
         } else {
             loiter_nav->init_target();
         }
+        auto_stage = AutoState::MANUAL;
         gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: manual control");
     }
 }
@@ -324,7 +355,7 @@ bool ModeZigZag::calculate_next_dest(Destination ab_dest, bool use_wpnav_alt, Ve
     Vector2f AB_diff = dest_B - dest_A;
 
     // check distance between A and B
-    if (!is_positive(AB_diff.length_squared())) {
+    if (is_zero(AB_diff.length_squared())) {
         return false;
     }
 
@@ -366,6 +397,65 @@ bool ModeZigZag::calculate_next_dest(Destination ab_dest, bool use_wpnav_alt, Ve
     }
 
     return true;
+}
+
+// calculate side destination according to vertical vector A-B and current position
+// terrain_alt is returned as true if the next_dest should be considered a terrain alt
+bool ModeZigZag::calculate_side_dest(Vector3f& next_dest, bool& terrain_alt) const
+{
+    // calculate vector from A to B
+    Vector2f AB_diff = dest_B - dest_A;
+
+    // calculate a vertical right or left vector for AB from the current yaw direction
+    Vector2f AB_side;
+    if (zigzag_direction == Direction::RIGHT || zigzag_direction == Direction::LEFT) {
+        float yaw_ab_sign = (-ahrs.sin_yaw() * AB_diff[1]) + (ahrs.cos_yaw() * -AB_diff[0]);
+        if (is_positive(yaw_ab_sign * (zigzag_direction == Direction::RIGHT ? 1 : -1))) {
+            AB_side = Vector2f(AB_diff[1], -AB_diff[0]);
+        } else {
+            AB_side = Vector2f(-AB_diff[1], AB_diff[0]);
+        }
+    } else {
+        float yaw_ab_sign = (ahrs.cos_yaw() * AB_diff[1]) + (ahrs.sin_yaw() * -AB_diff[0]);
+        if (is_positive(yaw_ab_sign * (zigzag_direction == Direction::FORWARD ? 1 : -1))) {
+            AB_side = Vector2f(AB_diff[1], -AB_diff[0]);
+        } else {
+            AB_side = Vector2f(-AB_diff[1], AB_diff[0]);
+        }
+    }
+
+    // check distance the vertical vector between A and B
+    if (is_zero(AB_side.length_squared())) {
+        return false;
+    }
+
+    // adjust AB_side length to zigzag_side_dist
+    float scalar = constrain_float(g2.zigzag_side_dist, 0.1f, 100.0f) * 100 / safe_sqrt(AB_side.length_squared());
+
+    // get distance from vehicle to start_pos
+    const Vector3f curr_pos = inertial_nav.get_position();
+    const Vector2f curr_pos2d = Vector2f(curr_pos.x, curr_pos.y);
+    next_dest.x = curr_pos2d.x + (AB_side.x * scalar);
+    next_dest.y = curr_pos2d.y + (AB_side.y * scalar);
+
+    // if we have a downward facing range finder then use terrain altitude targets
+    terrain_alt = copter.rangefinder_alt_ok() && wp_nav->rangefinder_used_and_healthy();
+    if (terrain_alt) {
+        if (!copter.surface_tracking.get_target_alt_cm(next_dest.z)) {
+            next_dest.z = copter.rangefinder_state.alt_cm_filt.get();
+        }
+    } else {
+        next_dest.z = pos_control->is_active_z() ? pos_control->get_alt_target() : curr_pos.z;
+    }
+
+    return true;
+}
+
+// run zigzag auto feature which is automate both AB and sideways
+void ModeZigZag::run_auto()
+{
+    is_auto = true;
+    move_to_side();
 }
 
 // spray on / off
