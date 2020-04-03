@@ -16,6 +16,7 @@
 #include "AP_VisualOdom.h"
 #include "AP_VisualOdom_Backend.h"
 #include "AP_VisualOdom_MAV.h"
+#include "AP_VisualOdom_IntelT265.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Logger/AP_Logger.h>
 
@@ -27,7 +28,7 @@ const AP_Param::GroupInfo AP_VisualOdom::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Visual odometry camera connection type
     // @Description: Visual odometry camera connection type
-    // @Values: 0:None,1:MAV
+    // @Values: 0:None,1:MAV,2:IntelT265
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("_TYPE", 0, AP_VisualOdom, _type, 0, AP_PARAM_FLAG_ENABLE),
@@ -82,8 +83,16 @@ AP_VisualOdom::AP_VisualOdom()
 void AP_VisualOdom::init()
 {
     // create backend
-    if (_type == AP_VisualOdom_Type_MAV) {
+    switch (_type) {
+    case AP_VisualOdom_Type_None:
+        // do nothing
+        break;
+    case AP_VisualOdom_Type_MAV:
         _driver = new AP_VisualOdom_MAV(*this);
+        break;
+    case AP_VisualOdom_Type_IntelT265:
+        _driver = new AP_VisualOdom_IntelT265(*this);
+        break;
     }
 }
 
