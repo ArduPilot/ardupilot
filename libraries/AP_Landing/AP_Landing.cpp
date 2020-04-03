@@ -176,6 +176,9 @@ void AP_Landing::do_land(const AP_Mission::Mission_Command& cmd, const float rel
 
     flags.commanded_go_around = false;
 
+    // Retract mount
+    AP_Mount::get_singleton()->set_mode(MAV_MOUNT_MODE_RETRACT);
+
     switch (type) {
     case TYPE_STANDARD_GLIDE_SLOPE:
         type_slope_do_land(cmd, relative_altitude);

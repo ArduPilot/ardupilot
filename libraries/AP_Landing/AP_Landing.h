@@ -22,6 +22,7 @@
 #include <AP_Navigation/AP_Navigation.h>
 #include "AP_Landing_Deepstall.h"
 #include <AP_Common/Location.h>
+#include <AP_Mount/AP_Mount.h>
 
 /// @class  AP_Landing
 /// @brief  Class managing ArduPlane landing methods
