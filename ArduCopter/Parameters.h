@@ -617,6 +617,8 @@ public:
     AP_Int8 zigzag_spray_enabled;
 #endif
     AP_Int8 zigzag_wp_delay;
+    AP_Float zigzag_side_dist;
+    AP_Int8 zigzag_direction;
 #endif
 
 };

@@ -1392,9 +1392,17 @@ public:
         B,  // Destination B
     };
 
+    enum class Direction : uint8_t {
+        FORWARD,        // moving forward from the yaw direction
+        RIGHT,          // moving right from the yaw direction
+        BACKWARD,       // moving backward from the yaw direction
+        LEFT,           // moving left from the yaw direction
+    } zigzag_direction;
+
     bool init(bool ignore_checks) override;
     void exit();
     void run() override;
+    void run_auto();
 
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
@@ -1419,17 +1427,27 @@ private:
     bool reached_destination();
     bool calculate_next_dest(Destination ab_dest, bool use_wpnav_alt, Vector3f& next_dest, bool& terrain_alt) const;
     void spray(bool b);
+    bool calculate_side_dest(Vector3f& next_dest, bool& terrain_alt) const;
+    void move_to_side();
 
     Vector2f dest_A;    // in NEU frame in cm relative to ekf origin
     Vector2f dest_B;    // in NEU frame in cm relative to ekf origin
 
-    enum zigzag_state {
+    enum ZigZagState {
         STORING_POINTS, // storing points A and B, pilot has manual control
         AUTO,           // after A and B defined, pilot toggle the switch from one side to the other, vehicle flies autonomously
         MANUAL_REGAIN   // pilot toggle the switch to middle position, has manual control
     } stage;
 
+    enum AutoState {
+        MANUAL,         // after initializing, before switching to ZigZag Auto
+        AB_MOVING,      // moving from A to B or from B to A
+        SIDEWAYS,       // moving to sideways
+    } auto_stage;
+
     uint32_t reach_wp_time_ms = 0;  // time since vehicle reached destination (or zero if not yet reached)
+    Destination ab_dest_stored;     // store the current destination
+    bool is_auto;                   // enable zigzag auto feature which is automate both AB and sideways
 };
 
 #if MODE_AUTOROTATE_ENABLED == ENABLED

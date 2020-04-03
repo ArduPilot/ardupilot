@@ -94,6 +94,7 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const aux_
     case AUX_FUNC::USER_FUNC3:
     case AUX_FUNC::WINCH_CONTROL:
     case AUX_FUNC::ZIGZAG:
+    case AUX_FUNC::ZIGZAG_Auto:
     case AUX_FUNC::ZIGZAG_SaveWP:
         break;
     case AUX_FUNC::ACRO_TRAINER:
@@ -559,6 +560,20 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
                 copter.surface_tracking.set_surface(Copter::SurfaceTracking::Surface::CEILING);
                 break;
             }
+            break;
+
+        case AUX_FUNC::ZIGZAG_Auto:
+#if MODE_ZIGZAG_ENABLED == ENABLED
+            if (copter.flightmode == &copter.mode_zigzag) {
+                switch (ch_flag) {
+                case HIGH:
+                    copter.mode_zigzag.run_auto();
+                    break;
+                default:
+                    break;
+                }
+            }
+#endif
             break;
             
     default:
