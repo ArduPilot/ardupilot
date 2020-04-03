@@ -1333,6 +1333,10 @@ AP_GPS_UBLOX::_parse_gps(void)
             const float rel_dist = _buffer.relposned.relPosLength * 1.0e-2;
             const float strict_length_error_allowed = 0.2; // allow for up to 20% error
             const float min_separation = 0.05;
+            _check_new_itow(_buffer.relposned.iTOW);
+            _last_relposned_itow = _buffer.relposned.iTOW;
+            _last_relposned_ms = AP_HAL::millis();
+
             /*
               RELPOSNED messages gives the NED distance from base to
               rover. It comes from the rover
@@ -1366,6 +1370,7 @@ AP_GPS_UBLOX::_parse_gps(void)
         havePvtMsg = true;
         // position
         _check_new_itow(_buffer.pvt.itow);
+        _last_pvt_itow = _buffer.pvt.itow;
         _last_pos_time        = _buffer.pvt.itow;
         state.location.lng    = _buffer.pvt.lon;
         state.location.lat    = _buffer.pvt.lat;
@@ -1512,6 +1517,20 @@ AP_GPS_UBLOX::_parse_gps(void)
             _configure_message_rate(CLASS_NAV, _msg_id, 0);
         }
         return false;
+    }
+
+    if (role == AP_GPS::GPS_ROLE_MB_ROVER) {
+        // when we are a rover we want to ensure we have both the new
+        // PVT and the new RELPOSNED message so that we give a
+        // consistent view
+        if (state.have_gps_yaw && AP_HAL::millis() - _last_relposned_ms > 400) {
+            // we have stopped receiving RELPOSNED messages, disable yaw reporting
+            state.have_gps_yaw = false;
+        }
+        if (state.have_gps_yaw && _last_relposned_itow != _last_pvt_itow) {
+            // wait until ITOW matches
+            return false;
+        }
     }
 
     // we only return true when we get new position and speed data

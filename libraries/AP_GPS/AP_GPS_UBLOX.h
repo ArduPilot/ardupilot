@@ -681,6 +681,9 @@ private:
     struct ubx_mon_ver _version;
     uint32_t        _unconfigured_messages;
     uint8_t         _hardware_generation;
+    uint32_t        _last_pvt_itow;
+    uint32_t        _last_relposned_itow;
+    uint32_t        _last_relposned_ms;
 
     // the role set from GPS_TYPE
     AP_GPS::GPS_Role role;
