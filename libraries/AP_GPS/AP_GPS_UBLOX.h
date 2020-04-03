@@ -656,6 +656,11 @@ private:
         STEP_LAST
     };
 
+    // GPS_DRV_OPTIONS bits
+    enum class DRV_OPTIONS {
+        MB_USE_UART2 = 1U<<0,
+    };
+
     // Packet checksum accumulators
     uint8_t         _ck_a;
     uint8_t         _ck_b;
@@ -734,6 +739,10 @@ private:
         return (uint8_t)(ubx_msg + (state.instance * UBX_MSG_TYPES));
     }
 
+    // see if we should use uart2 for moving baseline config
+    bool mb_use_uart2(void) const {
+        return (driver_options() & unsigned(DRV_OPTIONS::MB_USE_UART2))?true:false;
+    }
 
     // structure for list of config key/value pairs for
     // specific configurations
@@ -757,11 +766,13 @@ private:
     bool supports_F9_config(void) const;
 
     // config for moving baseline base
-    static const config_list config_MB_Base[];
+    static const config_list config_MB_Base_uart1[];
+    static const config_list config_MB_Base_uart2[];
 
     // config for moving baseline rover
-    static const config_list config_MB_Rover[];
-    
+    static const config_list config_MB_Rover_uart1[];
+    static const config_list config_MB_Rover_uart2[];
+
     // status of active configuration for a role
     struct {
         const config_list *list;
