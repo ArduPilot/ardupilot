@@ -2930,10 +2930,16 @@ void GCS_MAVLINK::handle_data_packet(const mavlink_message_t &msg)
 void GCS_MAVLINK::handle_vision_speed_estimate(const mavlink_message_t &msg)
 {
     mavlink_vision_speed_estimate_t m;
-    mavlink_msg_vision_speed_estimate_decode(msg, &m);
+    mavlink_msg_vision_speed_estimate_decode(&msg, &m);
     const Vector3f vel = {m.x, m.y, m.z};
     uint32_t timestamp_ms = correct_offboard_timestamp_usec_to_ms(m.usec, PAYLOAD_SIZE(chan, VISION_SPEED_ESTIMATE));
     AP::ahrs().writeVisionSpeed(vel, timestamp_ms);
+    AP::logger().Write("VISS", "TimeUS,RemTimeUS,CTimeMS,VX,VY,VZ",
+                       "sssnnn", "FFC000", "QQIfff",
+                       (uint64_t)AP_HAL::micros64(),
+                       (uint64_t)m.usec,
+                       timestamp_ms,
+                       m.x,m.y,m.z);
 }
 
 void GCS_MAVLINK::handle_vision_position_delta(const mavlink_message_t &msg)
