@@ -619,6 +619,7 @@ public:
     AP_Int8 zigzag_wp_delay;
     AP_Float zigzag_side_dist;
     AP_Int8 zigzag_direction;
+    AP_Int16 zigzag_line_num;
 #endif
 
 };
