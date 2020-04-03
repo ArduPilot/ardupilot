@@ -131,7 +131,10 @@ void AP_VisualOdom::handle_vision_position_estimate(uint64_t remote_time_us, uin
 
     // call backend
     if (_driver != nullptr) {
-        _driver->handle_vision_position_estimate(remote_time_us, time_ms, x, y, z, roll, pitch, yaw);
+        // convert attitude to quaternion and call backend
+        Quaternion attitude;
+        attitude.from_euler(roll, pitch, yaw);
+        _driver->handle_vision_position_estimate(remote_time_us, time_ms, x, y, z, attitude);
     }
 }
 

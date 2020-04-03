@@ -36,15 +36,6 @@ bool AP_VisualOdom_Backend::healthy() const
 }
 
 // general purpose method to send position estimate data to EKF
-// distances in meters, roll, pitch and yaw are in radians
-void AP_VisualOdom_Backend::handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, float roll, float pitch, float yaw)
-{
-    Quaternion attitude;
-    attitude.from_euler(roll, pitch, yaw);
-    handle_vision_position_estimate(remote_time_us, time_ms, x, y, z, attitude);
-}
-
-// general purpose method to send position estimate data to EKF
 void AP_VisualOdom_Backend::handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude)
 {
     Vector3f pos = {x, y, z};
