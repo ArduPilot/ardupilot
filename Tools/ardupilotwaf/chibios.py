@@ -74,7 +74,7 @@ class set_default_parameters(Task.Task):
     def keyword(self):
         return "apj_tool"
     def run(self):
-        rel_default_parameters = self.env.get_flat('DEFAULT_PARAMETERS')
+        rel_default_parameters = self.env.get_flat('DEFAULT_PARAMETERS').replace("'", "")
         abs_default_parameters = os.path.join(self.env.SRCROOT, rel_default_parameters)
         apj_tool = self.env.APJ_TOOL
         sys.path.append(os.path.dirname(apj_tool))
