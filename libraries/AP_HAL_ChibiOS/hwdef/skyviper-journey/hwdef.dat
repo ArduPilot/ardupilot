@@ -134,3 +134,6 @@ env DEFINES CONFIG_HAL_BOARD_SUBTYPE='HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412'
 
 # the web UI uses an abin file for firmware uploads
 env BUILD_ABIN True
+
+# need more space for default parameters
+define AP_PARAM_MAX_EMBEDDED_PARAM 8192
