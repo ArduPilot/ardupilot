@@ -614,7 +614,7 @@ public:
 #if MODE_ZIGZAG_ENABLED == ENABLED
 #if SPRAYER_ENABLED == ENABLED
     // auto pump enable/disable
-    AP_Int8 zigzag_auto_pump_enabled;
+    AP_Int8 zigzag_spray_enabled;
 #endif
     AP_Int8 zigzag_wp_delay;
 #endif
