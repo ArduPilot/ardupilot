@@ -634,6 +634,16 @@ def run_tests(steps):
 
     return passed
 
+def list_subtests(*args, **kwargs):
+    for vehicle in sorted(['Sub', 'Copter', 'Plane', 'Tracker', 'Rover']):
+        tester_class = tester_class_map["test.%s" % vehicle]
+        tester = tester_class("/bin/true", None)
+        subtests = tester.tests()
+        print("%s:" % vehicle)
+        for subtest in sorted(subtests, key=lambda x : x[0]):
+            (name, description, function) = subtest
+            print("    %s: %s" % (name, description))
+        print("")
 
 if __name__ == "__main__":
     ''' main program '''
@@ -661,6 +671,10 @@ if __name__ == "__main__":
                       action='store_true',
                       default=False,
                       help='list the available steps')
+    parser.add_option("--list-subtests",
+                      action='store_true',
+                      default=False,
+                      help='list available subtests e.g. test.Copter')
     parser.add_option("--viewerip",
                       default=None,
                       help='IP address to send MAVLink and fg packets to')
@@ -837,6 +851,10 @@ if __name__ == "__main__":
     if opts.list:
         for step in steps:
             print(step)
+        sys.exit(0)
+
+    if opts.list_subtests:
+        list_subtests()
         sys.exit(0)
 
     util.mkdir_p(buildlogs_dirpath())
