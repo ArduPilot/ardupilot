@@ -1318,6 +1318,22 @@ struct PACKED log_Arm_Disarm {
 #define ARSP_UNITS "snPOPP----"
 #define ARSP_MULTS "F00B00----"
 
+// @LoggerMessage: ACC1,ACC2,ACC3
+// @Description: IMU accelerometer data
+// @Field: TimeUS: Time since system startup
+// @Field: SampleUS: time since system startup this sample was taken
+// @Field: AccX: acceleration along X axis
+// @Field: AccY: acceleration along Y axis
+// @Field: AccZ: acceleration along Z axis
+
+// @LoggerMessage: ARM
+// @Description: Arming status changes
+// @Field: TimeUS: Time since system startup
+// @Field: ArmState: true if vehicle is now armed
+// @Field: ArmChecks: arming bitmask at time of arming
+// @Field: Forced: true if arm/disarm was forced
+// @Field: Method: method used for arming
+
 // @LoggerMessage: ATT
 // @Description: Canonical vehicle attitude
 // @Field: TimeUS: microseconds since system startup
@@ -1354,6 +1370,23 @@ struct PACKED log_Arm_Disarm {
 // @Field: Temp: measured temperature
 // @Field: Res: estimated temperature resistance
 
+// @LoggerMessage: DMS
+// @Description: DataFlash-Over-MAVLink statistics
+// @Field: TimeMS: Time since system startup
+// @Field: N: Current block number
+// @Field: Dp: Number of times we rejected a write to the backend
+// @Field: RT: Number of blocks sent from the retry queue
+// @Field: RS: Number of resends of unacknowledged data made
+// @Field: Fa: Average number of blocks on the free list
+// @Field: Fmn: Minimum number of blocks on the free list
+// @Field: Fmx: Maximum number of blocks on the free list
+// @Field: Pa: Average number of blocks on the pending list
+// @Field: Pmn: Minimum number of blocks on the pending list
+// @Field: Pmx: Maximum number of blocks on the pending list
+// @Field: Sa: Average number of blocks on the sent list
+// @Field: Smn: Minimum number of blocks on the sent list
+// @Field: Smx: Maximum number of blocks on the sent list
+
 // @LoggerMessage: FMT
 // @Description: Message defining the format of messages in this file
 // @URL: https://ardupilot.org/dev/docs/code-overview-adding-a-new-log-message.html
@@ -1370,7 +1403,19 @@ struct PACKED log_Arm_Disarm {
 // @Field: UnitIds: each character refers to a UNIT message.  The unit at an offset corresponds to the field at the same offset in FMT.Format
 // @Field: MultIds: each character refers to a MULT message.  The multiplier at an offset corresponds to the field at the same offset in FMT.Format
 
-// @LoggerMessage: GPS
+// @LoggerMessage: GPA,GPA2
+// @Description: GPS accuracy information
+// @Field: TimeUS: microseconds since system startup
+// @Field: VDop: vertical degree of procession
+// @Field: HAcc: horizontal position accuracy
+// @Field: VAcc: vertical position accuracy
+// @Field: SAcc: speed accuracy
+// @Field: YAcc: yaw accuracy
+// @Field: VV: true if vertical velocity is available
+// @Field: SMS: time since system startup this sample was taken
+// @Field: Delta: system time delta between the last two reported positions
+
+// @LoggerMessage: GPS,GPS2
 // @Description: Information received from GNSS systems attached to the autopilot
 // @Field: TimeUS: microseconds since system startup
 // @Field: Status: GPS Fix type; 2D fix, 3D fix etc.
@@ -1386,6 +1431,14 @@ struct PACKED log_Arm_Disarm {
 // @Field: VZ: vertical velocity
 // @Field: Yaw: vehicle yaw
 // @Field: U: boolean value indicating whether this GPS is in use
+
+// @LoggerMessage: GYR1,GYR2,GYR3
+// @Description: IMU gyroscope data
+// @Field: TimeUS: Time since system startup
+// @Field: SampleUS: time since system startup this sample was taken
+// @Field: GyrX: measured rotation rate about X axis
+// @Field: GyrY: measured rotation rate about Y axis
+// @Field: GyrZ: measured rotation rate about Z axis
 
 // @LoggerMessage: MAG,MAG2,MAG3
 // @Description: Information received from compasses
@@ -1411,6 +1464,25 @@ struct PACKED log_Arm_Disarm {
 // @Field: rxdp: perceived number of packets we never received
 // @Field: flags: compact representation of some stage of the channel
 // @Field: ss: stream slowdown is the number of ms being added to each message to fit within bandwidth
+
+// @LoggerMessage: MAVC
+// @Description: MAVLink command we have just executed
+// @Field: TimeUS: microseconds since system startup
+// @Field: TS: target system for command
+// @Field: TC: target component for command
+// @Field: Fr: command frame
+// @Field: Cmd: mavlink command enum value
+// @Field: Cur: current flag from mavlink packet
+// @Field: AC: autocontinue flag from mavlink packet
+// @Field: P1: first parameter from mavlink packet
+// @Field: P2: second parameter from mavlink packet
+// @Field: P3: third parameter from mavlink packet
+// @Field: P4: fourth parameter from mavlink packet
+// @Field: X: X coordinate from mavlink packet
+// @Field: Y: Y coordinate from mavlink packet
+// @Field: Z: Z coordinate from mavlink packet
+// @Field: Res: command result being returned from autopilot
+// @Field: WL: true if this command arrived via a COMMAND_LONG rather than COMMAND_INT
 
 // @LoggerMessage: MODE
 // @Description: vehicle control mode information
@@ -1446,6 +1518,21 @@ struct PACKED log_Arm_Disarm {
 // @Field: I: integral part of PID
 // @Field: D: derivative part of PID
 // @Field: FF: controller feed-forward portion of response
+
+// @LoggerMessage: PM
+// @Description: autopilot system performance and general data dumping ground
+// @Field: TimeUS: microseconds since system startup
+// @Field: NLon: Number of long loops detected
+// @Field: NLoop: Number of measurement loops for this message
+// @Field: MaxT: Maximum loop time
+// @Field: Mem: Free memory available
+// @Field: Load: System processor load
+// @Field: IntE: Internal error mask; which internal errors have been detected
+// @Field: IntEC: Internal error count; how many internal errors have been detected
+// @Field: SPIC: Number of SPI transactions processed
+// @Field: I2CC: Number of i2c transactions processed
+// @Field: I2CI: Number of i2c interrupts serviced
+// @Field: ExUS: number of microseconds being added to each loop to address scheduler overruns
 
 // @LoggerMessage: RAD
 // @Description: Telemetry radio statistics
