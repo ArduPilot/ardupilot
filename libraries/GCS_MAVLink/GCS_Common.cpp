@@ -1488,7 +1488,7 @@ void GCS_MAVLINK::log_mavlink_stats()
     }
 
     enum class Flags {
-        USING_SIGNING = (1<<0),
+        USING_SIGNING = (1),
         ACTIVE = (1<<1),
         STREAMING = (1<<2),
         PRIVATE = (1<<3),
