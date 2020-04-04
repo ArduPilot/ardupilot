@@ -1642,10 +1642,17 @@ bool AP_AHRS_NavEKF::attitudes_consistent(char *failure_msg, const uint8_t failu
         hal.util->snprintf(failure_msg, failure_msg_len, "DCM Roll/Pitch inconsistent by %d deg", (int)degrees(diff));
         return false;
     }
-    diff = fabsf(angle_diff.z);
-    if (check_yaw && (diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "DCM Yaw inconsistent by %d deg", (int)degrees(diff));
-        return false;
+
+    // we only check yaw against DCM if we are not using external yaw
+    // for EKF3. DCM can't use external yaw, so we don't expect it's
+    // yaw to align with EKF3 when EKF3 is using an external yaw
+    // source
+    if (ekf_type() != EKFType::THREE || !EKF3.using_external_yaw()) {
+        diff = fabsf(angle_diff.z);
+        if (check_yaw && (diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "DCM Yaw inconsistent by %d deg", (int)degrees(diff));
+            return false;
+        }
     }
 
     return true;
