@@ -145,15 +145,13 @@ void Copter::set_throttle_and_failsafe(uint16_t throttle_pwm)
 
         // check for 3 low throttle values
         // Note: we do not pass through the low throttle until 3 low throttle values are received
-        failsafe.radio_counter++;
-        if( failsafe.radio_counter >= FS_COUNTER ) {
+        if (++failsafe.radio_counter >= FS_COUNTER ) {
             failsafe.radio_counter = FS_COUNTER;  // check to ensure we don't overflow the counter
             set_failsafe_radio(true);
         }
-    }else{
+    } else {
         // we have a good throttle so reduce failsafe counter
-        failsafe.radio_counter--;
-        if( failsafe.radio_counter <= 0 ) {
+        if (--failsafe.radio_counter <= 0) {
             failsafe.radio_counter = 0;   // check to ensure we don't underflow the counter
 
             // disengage failsafe after three (nearly) consecutive valid throttle values
