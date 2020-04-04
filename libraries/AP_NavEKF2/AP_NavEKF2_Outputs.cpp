@@ -485,7 +485,7 @@ return the filter fault status as a bitmasked integer
 */
 void  NavEKF2_core::getFilterFaults(uint16_t &faults) const
 {
-    faults = (stateStruct.quat.is_nan()<<0 |
+    faults = (stateStruct.quat.is_nan() |
               stateStruct.velocity.is_nan()<<1 |
               faultStatus.bad_xmag<<2 |
               faultStatus.bad_ymag<<3 |
@@ -508,7 +508,7 @@ return filter timeout status as a bitmasked integer
 */
 void  NavEKF2_core::getFilterTimeouts(uint8_t &timeouts) const
 {
-    timeouts = (posTimeout<<0 |
+    timeouts = (posTimeout |
                 velTimeout<<1 |
                 hgtTimeout<<2 |
                 magTimeout<<3 |
