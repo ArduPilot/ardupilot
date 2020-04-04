@@ -520,6 +520,12 @@ private:
 
         // delta time between the last pair of GPS updates in system milliseconds
         uint16_t delta_time_ms;
+
+        // count of delayed frames
+        uint8_t delayed_count;
+
+        // the average time delta
+        float average_delta_ms;
     };
     // Note allowance for an additional instance to contain blended data
     GPS_timing timing[GPS_MAX_INSTANCES];
