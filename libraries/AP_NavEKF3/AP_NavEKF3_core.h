@@ -384,6 +384,9 @@ public:
         EXTERNAL_YAW_FALLBACK = 6,
     };
 
+    // are we using an external yaw source? This is needed by AHRS attitudes_consistent check
+    bool using_external_yaw(void) const;
+    
 private:
     // Reference to the global EKF frontend for parameters
     NavEKF3 *frontend;
