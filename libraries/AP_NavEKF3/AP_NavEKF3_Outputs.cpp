@@ -598,10 +598,10 @@ void NavEKF3_core::send_status_report(mavlink_channel_t chan)
     } else {
         temp = 0.0f;
     }
+    const float mag_max = fmaxf(fmaxf(magVar.x,magVar.y),magVar.z);
 
     // send message
-    mavlink_msg_ekf_status_report_send(chan, flags, velVar, posVar, hgtVar, magVar.length(), temp, tasVar);
-
+    mavlink_msg_ekf_status_report_send(chan, flags, velVar, posVar, hgtVar, mag_max, temp, tasVar);
 }
 
 // report the reason for why the backend is refusing to initialise
