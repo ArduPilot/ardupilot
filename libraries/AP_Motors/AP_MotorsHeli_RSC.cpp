@@ -322,16 +322,21 @@ void AP_MotorsHeli_RSC::update_rotor_ramp(float rotor_ramp_input, float dt)
 // update_rotor_runup - function to slew rotor runup scalar, outputs float scalar to _rotor_runup_ouptut
 void AP_MotorsHeli_RSC::update_rotor_runup(float dt)
 {
+    int8_t runup_time = _runup_time;
     // sanity check runup time
-    if (_runup_time < _ramp_time) {
-        _runup_time = _ramp_time;
-    }
-    if (_runup_time <= 0 ) {
-        _runup_time = 1;
+    runup_time = MAX(_ramp_time+1,runup_time);
+
+    // adjust rotor runup when bailing out
+    if (_use_bailout_ramp) {
+        // maintain same delta as set in parameters
+        runup_time = _runup_time-_ramp_time+1;
     }
 
+    // protect against divide by zero
+    runup_time = MAX(1,runup_time);
+
     // ramp speed estimate towards control out
-    float runup_increment = dt / _runup_time;
+    float runup_increment = dt / runup_time;
     if (_rotor_runup_output < _rotor_ramp_output) {
         _rotor_runup_output += runup_increment;
         if (_rotor_runup_output > _rotor_ramp_output) {
