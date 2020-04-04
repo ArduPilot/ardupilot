@@ -32,9 +32,11 @@ SOFTWARE.
 // User included headers/declarations to access interface functions required below
 //#include <AP_HAL/AP_HAL.h>
 
-//void userProvidedFillSrxlTelemetry(SrxlTelemetryData* pTelemetry);
-//void userProvidedReceivedChannelData(SrxlChannelData* pChannelData);
-//void userProvidedHandleVtxData(SrxlVtxData* pVtxData);
+extern "C++" {
+#include <AP_Math/crc.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Common/AP_Common.h>
+}
 
 //### USER CONFIGURATION ###
 
@@ -72,10 +74,9 @@ SOFTWARE.
 //    SRXL_CRC_OPTIMIZE_STM_HW  -- Uses STM32 register-level hardware acceleration (only available on STM32F30x devices for now)
 //    SRXL_CRC_OPTIMIZE_STM_HAL -- Uses STM32Cube HAL driver for hardware acceleration (only available on STM32F3/F7) -- see srxlCrc16() for details on HAL config
 
-#define SRXL_CRC_EXTERNAL(packet, length, crc) crc16_ccitt(packet, length, crc)
+#define SRXL_CRC_CALCULATE(packet, length, crc) crc16_ccitt(packet, length, crc)
 
-extern uint16_t crc16_ccitt(const uint8_t *buf, uint32_t len, uint16_t crc);
-#define SRXL_CRC_OPTIMIZE_MODE      SRXL_CRC_EXTERNAL
+#define SRXL_CRC_OPTIMIZE_MODE      SRXL_CRC_OPTIMIZE_EXTERNAL
 
 // If using STM32 hardware CRC acceleration above, set this flag to the target family. Choices are:
 //    SRXL_STM_TARGET_F3
@@ -94,13 +95,13 @@ extern uint16_t crc16_ccitt(const uint8_t *buf, uint32_t len, uint16_t crc);
 // User-provided routine to change the baud rate settings on the given UART:
 // uart - the same uint8_t value as the uart parameter passed to srxlInit()
 // baudRate - the actual baud rate (currently either 115200 or 400000)
-void srxlChangeBaudRate(void* uart, uint32_t baudRate);
+void srxlChangeBaudRate(uint8_t uart, uint32_t baudRate);
 
 // User-provided routine to actually transmit a packet on the given UART:
 // uart - the same uint8_t value as the uart parameter passed to srxlInit()
 // pBuffer - a pointer to an array of uint8_t values to send over the UART
 // length - the number of bytes contained in pBuffer that should be sent
-void srxlSendOnUart(void* uart, uint8_t* pBuffer, uint8_t length);
+void srxlSendOnUart(uint8_t uart, uint8_t* pBuffer, uint8_t length);
 
 // User-provided callback routine to fill in the telemetry data to send to the master when requested:
 // pTelemetryData - a pointer to the 16-byte SrxlTelemetryData transmit buffer to populate
