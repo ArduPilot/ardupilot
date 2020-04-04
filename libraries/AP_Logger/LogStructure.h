@@ -1007,7 +1007,7 @@ struct PACKED log_GYRO {
 
 struct PACKED log_MAV_Stats {
     LOG_PACKET_HEADER;
-    uint32_t timestamp;
+    uint64_t timestamp;
     uint32_t seqno;
     uint32_t dropped;
     uint32_t retries;
@@ -1649,7 +1649,7 @@ struct PACKED log_Arm_Disarm {
     { LOG_RFND_MSG, sizeof(log_RFND), \
       "RFND", "QBCBB", "TimeUS,Instance,Dist,Stat,Orient", "s#m--", "F-B--" }, \
     { LOG_MAV_STATS, sizeof(log_MAV_Stats), \
-      "DMS", "IIIIIBBBBBBBBB",         "TimeMS,N,Dp,RT,RS,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx", "s-------------", "C-------------" }, \
+      "DMS", "QIIIIBBBBBBBBB",         "TimeUS,N,Dp,RT,RS,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx", "s-------------", "F-------------" }, \
     { LOG_BEACON_MSG, sizeof(log_Beacon), \
       "BCN", "QBBfffffff",  "TimeUS,Health,Cnt,D0,D1,D2,D3,PosX,PosY,PosZ", "s--mmmmmmm", "F--BBBBBBB" }, \
     { LOG_PROXIMITY_MSG, sizeof(log_Proximity), \

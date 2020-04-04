@@ -325,7 +325,7 @@ void AP_Logger_MAVLink::Write_logger_MAV(AP_Logger_MAVLink &logger_mav)
     }
     const struct log_MAV_Stats pkt{
         LOG_PACKET_HEADER_INIT(LOG_MAV_STATS),
-        timestamp         : AP_HAL::millis(),
+        timestamp         : AP_HAL::micros64(),
         seqno             : logger_mav._next_seq_num-1,
         dropped           : logger_mav._dropped,
         retries           : logger_mav._blocks_retry.sent_count,
