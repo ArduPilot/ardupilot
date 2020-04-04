@@ -203,6 +203,18 @@ void ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles, bool stick_input)
     bf_angles.x = constrain_float(bf_angles.x, -copter.aparm.angle_max, copter.aparm.angle_max);
     bf_angles.y = constrain_float(bf_angles.y, -copter.aparm.angle_max, copter.aparm.angle_max);
 
+// @LoggerMessage: FHLD
+// @Description: FlowHold mode messages
+// @URL: https://ardupilot.org/copter/docs/flowhold-mode.html
+// @Field: TimeUS: Time since system startup
+// @Field: SFx: Filtered flow rate, X-Axis
+// @Field: SFy: Filtered flow rate, Y-Axis
+// @Field: Ax: Target lean angle, X-Axis
+// @Field: Ay: Target lean angle, Y-Axis
+// @Field: Qual: Flow sensor quality. If this value falls below FHLD_QUAL_MIN parameter, FlowHold will act just like AltHold.
+// @Field: Ix: Integral part of PI controller, X-Axis
+// @Field: Iy: Integral part of PI controller, Y-Axis
+
     if (log_counter++ % 20 == 0) {
         AP::logger().Write("FHLD", "TimeUS,SFx,SFy,Ax,Ay,Qual,Ix,Iy", "Qfffffff",
                                                AP_HAL::micros64(),
@@ -471,6 +483,20 @@ void ModeFlowHold::update_height_estimate(void)
 
     // new height estimate for logging
     height_estimate = ins_height + height_offset;
+
+// @LoggerMessage: FHXY
+// @Description: Height estimation using optical flow sensor 
+// @Field: TimeUS: Time since system startup
+// @Field: DFx: Delta flow rate, X-Axis
+// @Field: DFy: Delta flow rate, Y-Axis
+// @Field: DVx: Integrated delta velocity rate, X-Axis
+// @Field: DVy: Integrated delta velocity rate, Y-Axis
+// @Field: Hest: Estimated Height
+// @Field: DH: Delta Height
+// @Field: Hofs: Height offset
+// @Field: InsH: Height estimate from inertial navigation library
+// @Field: LastInsH: Last used INS height in optical flow sensor height estimation calculations 
+// @Field: DTms: Time between optical flow sensor updates. This should be less than 500ms for performing the height estimation calculations
 
     AP::logger().Write("FHXY", "TimeUS,DFx,DFy,DVx,DVy,Hest,DH,Hofs,InsH,LastInsH,DTms", "QfffffffffI",
                                            AP_HAL::micros64(),
