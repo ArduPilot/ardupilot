@@ -197,6 +197,21 @@ void ModeThrow::run()
         const bool attitude_ok = (stage > Throw_Uprighting) || throw_attitude_good();
         const bool height_ok = (stage > Throw_HgtStabilise) || throw_height_good();
         const bool pos_ok = (stage > Throw_PosHold) || throw_position_good();
+        
+// @LoggerMessage: THRO
+// @Description: Throw Mode messages
+// @URL: https://ardupilot.org/copter/docs/throw-mode.html
+// @Field: TimeUS: Time since system startup
+// @Field: Stage: Current stage of the Throw Mode
+// @Field: Vel: Magnitude of the velocity vector
+// @Field: VelZ: Vertical Velocity
+// @Field: Acc: Magnitude of the vector of the current acceleration
+// @Field: AccEfZ: Vertical earth frame accelerometer value
+// @Field: Throw: True if a throw has been detected since entering this mode
+// @Field: AttOk: True if the vehicle is upright 
+// @Field: HgtOk: True if the vehicle is within 50cm of the demanded height
+// @Field: PosOk: True if the vehicle is within 50cm of the demanded horizontal position
+        
         AP::logger().Write(
             "THRO",
             "TimeUS,Stage,Vel,VelZ,Acc,AccEfZ,Throw,AttOk,HgtOk,PosOk",
