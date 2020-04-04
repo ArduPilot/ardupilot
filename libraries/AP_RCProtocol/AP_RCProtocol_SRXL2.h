@@ -26,7 +26,6 @@
 class AP_RCProtocol_SRXL2 : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_SRXL2(AP_RCProtocol &_frontend);
-    void process_pulse(uint32_t width_s0, uint32_t width_s1) override;
     void process_byte(uint8_t byte, uint32_t baudrate) override;
     void start_bind(void) override;
     void update(void) override;
@@ -53,7 +52,6 @@ private:
 
     uint8_t _buffer[SRXL2_FRAMELEN_MAX];       /* buffer for raw srxl frame data in correct order --> buffer[0]=byte0  buffer[1]=byte1  */
     uint8_t _buflen;                          /* length in number of bytes of received srxl dataframe in buffer  */
-    uint32_t _last_data_us;                   /* timespan since last received data in us   */
     uint32_t _last_run_ms;                    // last time the state machine was run
     uint16_t _channels[SRXL2_MAX_CHANNELS] = {0};    /* buffer for extracted RC channel data as pulsewidth in microseconds */
 
@@ -67,6 +65,4 @@ private:
     uint8_t _decode_state_next = STATE_IDLE;      /* State of frame decoding that will be applied when the next byte from dataframe drops in  */
     bool _in_failsafe = false;
     int16_t _new_rssi = -1;
-
-    SoftSerial ss{115200, SoftSerial::SERIAL_CONFIG_8N1};
 };

@@ -17,14 +17,14 @@
   Code by Andy Piper
  */
 
-#include "spm_srxl.h"
-
 #include "AP_RCProtocol.h"
 #include "AP_RCProtocol_SRXL.h"
 #include "AP_RCProtocol_SRXL2.h"
 #include <AP_Math/AP_Math.h>
-#include <AP_Spektrum_Telem/AP_Spektrum_Telem.h>
+#include <AP_RCTelemetry/AP_Spektrum_Telem.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+
+#include "spm_srxl.h"
 
 extern const AP_HAL::HAL& hal;
 //#define SRXL2_DEBUG
@@ -51,18 +51,10 @@ AP_RCProtocol_SRXL2::AP_RCProtocol_SRXL2(AP_RCProtocol &_frontend) : AP_RCProtoc
     }
 
     // Init the SRXL bus: The bus index must always be < SRXL_NUM_OF_BUSES -- in this case, it can only be 0
-    if (!srxlInitBus(0, this, SRXL_SUPPORTED_BAUD_RATES)) {
+    if (!srxlInitBus(0, 0, SRXL_SUPPORTED_BAUD_RATES)) {
         AP_HAL::panic("Failed to initialize SRXL2 bus");
     }
 
-}
-
-void AP_RCProtocol_SRXL2::process_pulse(uint32_t width_s0, uint32_t width_s1)
-{
-    uint8_t b;
-    if (ss.process_pulse(width_s0, width_s1, b)) {
-        _process_byte(ss.get_byte_timestamp_us(), b);
-    }
 }
 
 void AP_RCProtocol_SRXL2::_process_byte(uint32_t timestamp_us, uint8_t byte)
@@ -70,15 +62,15 @@ void AP_RCProtocol_SRXL2::_process_byte(uint32_t timestamp_us, uint8_t byte)
     if (_decode_state == STATE_IDLE) {
         switch (byte) {
         case SPEKTRUM_SRXL_ID:
-            _frame_len_full = 0U;
             _decode_state = STATE_NEW;
             break;
         default:
-            _frame_len_full = 0U;
             _decode_state = STATE_IDLE;
-            _buflen = 0;
             return;
         }
+        _frame_len_full = 0U;
+        _buflen = 0;
+        _decode_state_next = STATE_IDLE;
     }
 
     switch (_decode_state) {
@@ -100,6 +92,12 @@ void AP_RCProtocol_SRXL2::_process_byte(uint32_t timestamp_us, uint8_t byte)
         // parse the length
         if (_buflen == SRXL2_HEADER_LEN) {
             _frame_len_full = _buffer[2];
+            // check for garbage frame
+            if (_frame_len_full > SRXL2_FRAMELEN_MAX) {
+                _decode_state = STATE_IDLE;
+                _buflen = 0;
+                _frame_len_full = 0;
+            }
             return;
         }
 
@@ -113,12 +111,15 @@ void AP_RCProtocol_SRXL2::_process_byte(uint32_t timestamp_us, uint8_t byte)
 
         if (_buflen == _frame_len_full) {
             log_data(AP_RCProtocol::SRXL2, timestamp_us, _buffer, _buflen);
+
             // Try to parse SRXL packet -- this internally calls srxlRun() after packet is parsed and resets timeout
             if (srxlParsePacket(0, _buffer, _frame_len_full)) {
                 add_input(MAX_CHANNELS, _channels, _in_failsafe, _new_rssi);
             }
             _last_run_ms = AP_HAL::millis();
+
             _decode_state_next = STATE_IDLE;
+            _buflen = 0;
         } else {
             _decode_state_next = STATE_COLLECT;
         }
@@ -129,17 +130,19 @@ void AP_RCProtocol_SRXL2::_process_byte(uint32_t timestamp_us, uint8_t byte)
     }
 
     _decode_state = _decode_state_next;
-    _last_data_us = timestamp_us;
 }
 
 void AP_RCProtocol_SRXL2::update(void)
 {
-    // it's not clear this is actually required, perhaps on power loss?
-    if (frontend.protocol_detected() == AP_RCProtocol::SRXL2) {
+    // on a SPM4650 with telemetry the frame rate is 91Hz equating to around 10ms per frame
+    // however only half of them can return telemetry, so the maximum telemetry rate is 46Hz
+    // also update() is run immediately after check_added_uart() and so in general the delay is < 5ms
+    // to be safe we will only run if the timeout exceeds 50ms
+    if (_last_run_ms > 0) {
         uint32_t now = AP_HAL::millis();
         // there have been no updates since we were last called
         const uint32_t delay = now - _last_run_ms;
-        if (delay > 5) {
+        if (delay > 50) {
             srxlRun(0, delay);
             _last_run_ms = now;
         }
@@ -209,15 +212,15 @@ void AP_RCProtocol_SRXL2::send_on_uart(uint8_t* pBuffer, uint8_t length)
 // send data to the uart
 void AP_RCProtocol_SRXL2::_send_on_uart(uint8_t* pBuffer, uint8_t length)
 {
-    // writing at startup locks-up the flight controller
-    if (have_UART() && AP_HAL::millis() > 3000) {
-        // check that we haven't been too slow in responding to the new
-        // UART data. If we respond too late then we will corrupt the next
-        // incoming control frame
+    if (have_UART()) {
+        // check that we haven't been too slow in responding to the new UART data. If we respond too late then we will
+        // corrupt the next incoming control frame. incoming packets at max 800bits @91Hz @115k baud gives total budget of 11ms 
+        // per packet of which we need 7ms to receive a packet. outgoing packets are 220 bits which require 2ms to send
+        // leaving at most 2ms of delay that can be tolerated
         uint64_t tend = get_UART()->receive_time_constraint_us(1);
         uint64_t now = AP_HAL::micros64();
         uint64_t tdelay = now - tend;
-        if (tdelay > 2500) {
+        if (tdelay > 2000) {
             // we've been too slow in responding
             return;
         }
@@ -243,11 +246,11 @@ void AP_RCProtocol_SRXL2::change_baud_rate(uint32_t baudrate)
 // change the uart baud rate
 void AP_RCProtocol_SRXL2::_change_baud_rate(uint32_t baudrate)
 {
-#if 0
     if (have_UART()) {
         get_UART()->begin(baudrate);
+        get_UART()->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+        get_UART()->set_unbuffered_writes(true);
     }
-#endif
 }
 
 // SRXL2 library callbacks below
@@ -255,7 +258,7 @@ void AP_RCProtocol_SRXL2::_change_baud_rate(uint32_t baudrate)
 // User-provided routine to change the baud rate settings on the given UART:
 // uart - the same uint8_t value as the uart parameter passed to srxlInit()
 // baudRate - the actual baud rate (currently either 115200 or 400000)
-void srxlChangeBaudRate(void* this_ptr, uint32_t baudRate)
+void srxlChangeBaudRate(uint8_t uart, uint32_t baudRate)
 {
     AP_RCProtocol_SRXL2::change_baud_rate(baudRate);
 
@@ -265,7 +268,7 @@ void srxlChangeBaudRate(void* this_ptr, uint32_t baudRate)
 // uart - the same uint8_t value as the uart parameter passed to srxlInit()
 // pBuffer - a pointer to an array of uint8_t values to send over the UART
 // length - the number of bytes contained in pBuffer that should be sent
-void srxlSendOnUart(void* this_ptr, uint8_t* pBuffer, uint8_t length)
+void srxlSendOnUart(uint8_t uart, uint8_t* pBuffer, uint8_t length)
 {
     AP_RCProtocol_SRXL2::send_on_uart(pBuffer, length);
 }
@@ -276,7 +279,7 @@ void srxlSendOnUart(void* this_ptr, uint8_t* pBuffer, uint8_t length)
 // could be used if you would prefer to just populate that with the next outgoing telemetry packet.
 void srxlFillTelemetry(SrxlTelemetryData* pTelemetryData)
 {
-#if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
+#if HAL_SPEKTRUM_TELEM_ENABLED && !APM_BUILD_TYPE(APM_BUILD_iofirmware)
     AP_Spektrum_Telem::get_telem_data(pTelemetryData->raw);
 #endif
 }

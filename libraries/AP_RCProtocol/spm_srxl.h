@@ -77,6 +77,7 @@ static const uint8_t SRXL_DEFAULT_ID_OF_TYPE[16] =
 };
 
 // Set SRXL_CRC_OPTIMIZE_MODE in spm_srxl_config.h to one of the following values
+#define SRXL_CRC_OPTIMIZE_EXTERNAL  (0)  // Uses an external function defined by SRXL_CRC_EXTERNAL_FN for CRC
 #define SRXL_CRC_OPTIMIZE_SPEED     (1)  // Uses table lookup for CRC computation (requires 512 const bytes for CRC table)
 #define SRXL_CRC_OPTIMIZE_SIZE      (2)  // Uses bitwise operations
 #define SRXL_CRC_OPTIMIZE_STM_HW    (3)  // Uses STM32 register-level hardware acceleration (only available on STM32F30x devices for now)
@@ -200,9 +201,8 @@ typedef enum
 
 // Enable byte packing for all structs defined here!
 #ifdef PACKED
-#error "preprocessor definition PACKED is already defined -- this could be bad"
-#endif
-#ifdef __GNUC__
+#define SRXL_EXTERNAL_PACKED
+#elif defined(__GNUC__)
 #define PACKED __attribute__((packed))
 #else
 #pragma pack(push, 1)
@@ -372,9 +372,11 @@ typedef union
 } PACKED SrxlFullID;
 
 // Restore packing back to default
+#ifndef SRXL_EXTERNAL_PACKED
 #undef PACKED
 #ifndef __GNUC__
 #pragma pack(pop)
+#endif
 #endif
 
 // Global vars
@@ -384,6 +386,10 @@ extern SrxlVtxData srxlVtxData;
 
 // Include config here, after all typedefs that might be needed within it
 #include "spm_srxl_config.h"
+
+#ifndef FALLTHROUGH
+#define FALLTHROUGH
+#endif
 
 #if !defined(SRXL_NUM_OF_BUSES)
 #error "SRXL_NUM_OF_BUSES must be defined in spm_srxl_config.h!"
@@ -492,7 +498,7 @@ typedef struct SrxlBus
     uint8_t         baudRate;           // Current baud rate: 0 = 115200, 1 = 400000
     uint8_t         frameErrCount;      // Number of consecutive missed frames
     SrxlTxFlags     txFlags;            // Pending outgoing packet types
-    void*           uart;               // Index number of UART tied to this SRXL bus
+    uint8_t         uart;               // Index number of UART tied to this SRXL bus
     SrxlRcvrEntry*  pMasterRcvr;        // Receiver entry for the bus master, if one exists
     bool            master;             // True if this device is the bus master on this bus
     bool            initialized;        // True when this SRXL bus is initialized
@@ -510,7 +516,7 @@ typedef struct SrxlDevice
 
 // Function prototypes
 bool srxlInitDevice(uint8_t deviceID, uint8_t priority, uint8_t info, uint32_t uid);
-bool srxlInitBus(uint8_t busIndex, void* uart, uint8_t baudSupported);
+bool srxlInitBus(uint8_t busIndex, uint8_t uart, uint8_t baudSupported);
 bool srxlIsBusMaster(uint8_t busIndex);
 uint16_t srxlGetTimeoutCount_ms(uint8_t busIndex);
 uint8_t srxlGetDeviceID(uint8_t busIndex);
@@ -528,6 +534,12 @@ bool srxlUpdateCommStats(bool isFade);
 
 #ifdef __cplusplus
 } // extern "C"
+#endif
+
+#ifdef SRXL_INCLUDE_MASTER_CODE
+// NOTE: Most user applications should not be an SRXL2 bus master, so master-specific code is not open.
+// If your application requires this functionality, please inquire about this from Spektrum RC.
+#include "spm_srxl_master.h"
 #endif
 
 #endif //__SRXL_H__
