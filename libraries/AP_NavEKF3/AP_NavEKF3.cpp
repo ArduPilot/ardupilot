@@ -1237,6 +1237,15 @@ bool NavEKF3::use_compass(void) const
     return core[primary].use_compass();
 }
 
+// are we using an external yaw source? Needed for ahrs attitudes_consistent
+bool NavEKF3::using_external_yaw(void) const
+{
+    if (!core) {
+        return false;
+    }
+    return core[primary].using_external_yaw();
+}
+
 // write the raw optical flow measurements
 // rawFlowQuality is a measured of quality between 0 and 255, with 255 being the best quality
 // rawFlowRates are the optical flow rates in rad/sec about the X and Y sensor axes.

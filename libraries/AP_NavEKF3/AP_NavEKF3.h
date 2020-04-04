@@ -384,6 +384,9 @@ public:
     // write EKF information to on-board logs
     void Log_Write();
 
+    // are we using an external yaw source? This is needed by AHRS attitudes_consistent check
+    bool using_external_yaw(void) const;
+    
 private:
     uint8_t num_cores; // number of allocated cores
     uint8_t primary;   // current primary core
