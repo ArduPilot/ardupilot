@@ -456,6 +456,16 @@ bool NavEKF3_core::use_compass(void) const
     return effective_magCal() != MagCal::EXTERNAL_YAW && _ahrs->get_compass() && _ahrs->get_compass()->use_for_yaw(magSelectIndex) && !allMagSensorsFailed;
 }
 
+// are we using an external yaw source? Needed for ahrs attitudes_consistent
+bool NavEKF3_core::using_external_yaw(void) const
+{
+    MagCal mag_cal = effective_magCal();
+    if (mag_cal != MagCal::EXTERNAL_YAW && mag_cal != MagCal::EXTERNAL_YAW_FALLBACK) {
+        return false;
+    }
+    return AP_HAL::millis() - last_gps_yaw_fusion_ms < 5000;
+}
+
 /*
   should we assume zero sideslip?
  */
