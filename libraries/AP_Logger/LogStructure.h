@@ -1326,6 +1326,20 @@ struct PACKED log_Arm_Disarm {
 // @Field: AccY: acceleration along Y axis
 // @Field: AccZ: acceleration along Z axis
 
+// @LoggerMessage: AHR2
+// @Description: Backup AHRS data
+// @Field: TimeUS: Time since system startup
+// @Field: Roll: Estimated roll
+// @Field: Pitch: Estimated pitch
+// @Field: Yaw: Estimated yaw
+// @Field: Alt: Estimated altitude
+// @Field: Lat: Estimated latitude
+// @Field: Lng: Estimated longitude
+// @Field: Q1: Estimated attitude quaternion component 1
+// @Field: Q2: Estimated attitude quaternion component 2
+// @Field: Q3: Estimated attitude quaternion component 3
+// @Field: Q4: Estimated attitude quaternion component 4
+
 // @LoggerMessage: ARM
 // @Description: Arming status changes
 // @Field: TimeUS: Time since system startup
@@ -1333,6 +1347,19 @@ struct PACKED log_Arm_Disarm {
 // @Field: ArmChecks: arming bitmask at time of arming
 // @Field: Forced: true if arm/disarm was forced
 // @Field: Method: method used for arming
+
+// @LoggerMessage: ARSP,ASP2
+// @Description: Airspeed sensor data
+// @Field: TimeUS: Time since system startup
+// @Field: Airspeed: Current airspeed
+// @Field: DiffPress: Pressure difference between static and dynamic port
+// @Field: Temp: Temperature used for calculation
+// @Field: RawPress: Raw pressure less offset
+// @Field: Offset: Offset from parameter
+// @Field: U: True if sensor is being used
+// @Field: Health: True if sensor is healthy
+// @Field: Hfp: Probablilty sensor has failed
+// @Field: Pri: True if sensor is the primary sensor
 
 // @LoggerMessage: ATT
 // @Description: Canonical vehicle attitude
@@ -1369,6 +1396,44 @@ struct PACKED log_Arm_Disarm {
 // @Field: EnrgTot: energy this battery has produced
 // @Field: Temp: measured temperature
 // @Field: Res: estimated temperature resistance
+
+// @LoggerMessage: CAM,TRIG
+// @Description: Camera shutter information
+// @Field: TimeUS: Time since system startup
+// @Field: GPSTime: milliseconds since start of GPS week
+// @Field: GPSWeek: weeks since 5 Jan 1980
+// @Field: Lat: current latitude
+// @Field: Lng: current longitude
+// @Field: Alt: current altitude
+// @Field: RelAlt: current altitude relative to home
+// @Field: GPSAlt: altitude as reported by GPS
+// @Field: Roll: current vehicle roll
+// @Field: Pitch: current vehicle pitch
+// @Field: Yaw: current vehicle yaw
+
+// @LoggerMessage: CMD
+// @Description: Executed mission command information
+// @Field: TimeUS: Time since system startup
+// @Field: CTot: Total number of mission commands
+// @Field: CNum: This command's offset in mission
+// @Field: CId: Command type
+// @Field: Prm1: Parameter 1
+// @Field: Prm2: Parameter 2
+// @Field: Prm3: Parameter 3
+// @Field: Prm4: Parameter 4
+// @Field: Lat: Command latitude
+// @Field: Lng: Command longitude
+// @Field: Alt: Command altitude
+// @Field: Frame: Frame used for position
+
+// @LoggerMessage: CSRV
+// @Description: Servo feedback data
+// @Field: TimeUS: Time since system startup
+// @Field: Id: Servo number this data relates to
+// @Field: Pos: Current servo position
+// @Field: Force: Force being appiled
+// @Field: Speed: Current servo movement speed
+// @Field: Pow: Amount of rated power being applied
 
 // @LoggerMessage: DMS
 // @Description: DataFlash-Over-MAVLink statistics
@@ -1572,6 +1637,15 @@ struct PACKED log_Arm_Disarm {
 // @Field: Id: character referenced by FMTU
 // @Field: Mult: numeric multiplier
 
+// @LoggerMessage: OF
+// @Description: Optical flow sensor data
+// @Field: TimeUS: Time since system startup
+// @Field: Qual: Estimated sensor data quality
+// @Field: flowX: Sensor flow rate, X-axis
+// @Field: flowY: Sensor flow rate,Y-axis
+// @Field: bodyX: derived velocity, X-axis
+// @Field: bodyY: derived velocity, Y-axis
+
 // @LoggerMessage: ORGN
 // @Description: Vehicle navigation origin or other notable position
 // @Field: TimeUS: Time since system startup
@@ -1620,6 +1694,14 @@ struct PACKED log_Arm_Disarm {
 // @Field: Alt: Canonical vehicle altitude
 // @Field: RelHomeAlt: Canonical vehicle altitude relative to home
 // @Field: RelOriginAlt: Canonical vehicle altitude relative to navigation origin
+
+// @LoggerMessage: POWR
+// @Description: System power information
+// @Field: TimeUS: Time since system startup
+// @Field: Vcc: Flight board voltage
+// @Field: VServo: Servo rail voltage
+// @Field: Flags: System power flags
+// @Field: Safety: Hardware Safety Switch status
 
 // @LoggerMessage: RAD
 // @Description: Telemetry radio statistics
@@ -1738,6 +1820,18 @@ struct PACKED log_Arm_Disarm {
 // @Field: N: point associated with most recent action (North component)
 // @Field: E: point associated with most recent action (East component)
 // @Field: D: point associated with most recent action (Down component)
+
+// @LoggerMessage: TERR
+// @Description: Terrain database infomration
+// @Field: TimeUS: Time since system startup
+// @Field: Status: Terrain database status
+// @Field: Lat: Current vehicle latitude
+// @Field: Lng: Current vehicle longitude
+// @Field: Spacing: terrain Tile spacing
+// @Field: TerrH: current Terrain height
+// @Field: CHeight: Vehicle height above terrain
+// @Field: Pending: Number of tile requests outstanding
+// @Field: Loaded: Number of tiles in memory
 
 // @LoggerMessage: TSYN
 // @Description: Time synchronisation response information
