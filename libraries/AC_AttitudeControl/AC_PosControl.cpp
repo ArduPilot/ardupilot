@@ -899,6 +899,21 @@ void AC_PosControl::write_log()
     float accel_x, accel_y;
     lean_angles_to_accel(accel_x, accel_y);
 
+// @LoggerMessage: PSC
+// @Description: Position Control data
+// @Field: TimeUS: Time since system startup
+// @Field: TPX: Target position relative to origin, X-axis
+// @Field: TPY: Target position relative to origin, Y-axis
+// @Field: PX: Position relative to origin, X-axis
+// @Field: PY: Position relative to origin, Y-axis
+// @Field: TVX: Target velocity, X-axis
+// @Field: TVY: Target velocity, Y-axis
+// @Field: VX: Velocity, X-axis
+// @Field: VY: Velocity, Y-axis
+// @Field: TAX: Target acceleration, X-axis
+// @Field: TAY: Target acceleration, Y-axis
+// @Field: AX: Acceleration, X-axis
+// @Field: AY: Acceleration, Y-axis
     AP::logger().Write("PSC",
                        "TimeUS,TPX,TPY,PX,PY,TVX,TVY,VX,VY,TAX,TAY,AX,AY",
                        "smmmmnnnnoooo",
