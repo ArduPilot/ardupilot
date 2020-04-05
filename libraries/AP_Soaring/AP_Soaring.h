@@ -76,21 +76,21 @@ protected:
 public:
     SoaringController(AP_AHRS &ahrs, AP_SpdHgtControl &spdHgt, const AP_Vehicle::FixedWing &parms);
 
-    typedef enum LoiterStatus {
-        SOARING_DISABLED,
+    enum class LoiterStatus {
+        DISABLED,
         ALT_TOO_HIGH,
         ALT_TOO_LOW,
         THERMAL_WEAK,
         ALT_LOST,
         DRIFT_EXCEEDED,
-        THERMAL_GOOD_TO_KEEP_LOITERING
-    } LoiterStatus;
+        GOOD_TO_KEEP_LOITERING
+    };
 
-    typedef enum ActiveStatus {
-        SOARING_STATUS_DISABLED,
-        SOARING_STATUS_MANUAL_MODE_CHANGE,
-        SOARING_STATUS_AUTO_MODE_CHANGE
-    } ActiveStatus;    
+    enum class ActiveStatus {
+        DISABLED,
+        MANUAL_MODE_CHANGE,
+        AUTO_MODE_CHANGE
+    };
 
     AP_Float max_radius;
 
@@ -104,7 +104,6 @@ public:
     void init_cruising();
     void update_thermalling();
     void update_cruising();
-    ActiveStatus active_state() const;
     void set_throttle_suppressed(bool suppressed);
 
     bool get_throttle_suppressed() const
@@ -121,11 +120,15 @@ public:
 
     bool check_drift(Vector2f prev_wp, Vector2f next_wp);
 
-    ActiveStatus update_active_state();
+    void update_active_state();
 
-    ActiveStatus _last_update_status;
+    bool is_active() const {return _last_update_status>=SoaringController::ActiveStatus::MANUAL_MODE_CHANGE;};
 
 private:
     // slow down messages if they are the same. During loiter we could smap the same message. Only show new messages during loiters
     LoiterStatus _cruise_criteria_msg_last;
+
+    ActiveStatus _last_update_status;
+
+    ActiveStatus active_state() const;
 };

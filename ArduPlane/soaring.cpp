@@ -11,7 +11,9 @@ void Plane::update_soaring() {
     
     // Check if soaring is active. Also sets throttle suppressed
     // status on active state changes.
-    if (!g2.soaring_controller.update_active_state()) {
+    plane.g2.soaring_controller.update_active_state();
+
+    if (!g2.soaring_controller.is_active()) {
         return;
     }
     
@@ -83,7 +85,7 @@ void Plane::update_soaring() {
 
         const SoaringController::LoiterStatus loiterStatus = g2.soaring_controller.check_cruise_criteria(prev_wp/100, next_wp/100);
 
-        if (loiterStatus == SoaringController::LoiterStatus::THERMAL_GOOD_TO_KEEP_LOITERING) {
+        if (loiterStatus == SoaringController::LoiterStatus::GOOD_TO_KEEP_LOITERING) {
             // Reset loiter angle, so that the loiter exit heading criteria
             // only starts expanding when we're ready to exit.
             plane.loiter.sum_cd = 0;
