@@ -1372,7 +1372,7 @@ struct PACKED log_Arm_Disarm {
 
 // @LoggerMessage: DMS
 // @Description: DataFlash-Over-MAVLink statistics
-// @Field: TimeMS: Time since system startup
+// @Field: TimeUS: Time since system startup
 // @Field: N: Current block number
 // @Field: Dp: Number of times we rejected a write to the backend
 // @Field: RT: Number of blocks sent from the retry queue
