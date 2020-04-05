@@ -82,19 +82,17 @@ void ModeAcro::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, 
         roll_in *= ratio;
         pitch_in *= ratio;
     }
+
+    // range check expo
+    g.acro_rp_p = constrain_float(g.acro_rp_p, 0.0f, 1.0f);
     
     // calculate roll, pitch rate requests
-    if (g.acro_rp_expo <= 0) {
+    if (is_zero(g.acro_rp_expo)) {
         rate_bf_request.x = roll_in * g.acro_rp_p;
         rate_bf_request.y = pitch_in * g.acro_rp_p;
     } else {
         // expo variables
         float rp_in, rp_in3, rp_out;
-
-        // range check expo
-        if (g.acro_rp_expo > 1.0f) {
-            g.acro_rp_expo = 1.0f;
-        }
 
         // roll expo
         rp_in = float(roll_in)/ROLL_PITCH_YAW_INPUT_MAX;
