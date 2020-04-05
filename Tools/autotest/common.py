@@ -1351,8 +1351,8 @@ class AutoTest(ABC):
                                                (name, label))
                 seen_labels[label] = True
                 if label not in docco_ids[name]["labels"]:
-                    raise NotAchievedException("%s.%s not in documented fields" %
-                                               (name, label))
+                    raise NotAchievedException("%s.%s not in documented fields (have (%s))" %
+                                               (name, label, ",".join(docco_ids[name]["labels"])))
         for name in sorted(docco_ids):
             if name not in code_ids:
                 raise NotAchievedException("Documented message (%s) not in code" % name)
