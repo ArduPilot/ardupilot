@@ -184,7 +184,7 @@ bool SoaringController::check_thermal_criteria()
 {
     ActiveStatus status = active_state();
 
-    return (status == SOARING_STATUS_AUTO_MODE_CHANGE
+    return (status == ActiveStatus::AUTO_MODE_CHANGE
             && ((AP_HAL::micros64() - _cruise_start_time_us) > ((unsigned)min_cruise_s * 1e6))
             && (_vario.filtered_reading - _vario.get_exp_thermalling_sink()) > thermal_vspeed
             && _vario.alt < alt_max
@@ -196,38 +196,38 @@ SoaringController::LoiterStatus SoaringController::check_cruise_criteria(Vector2
 {
     ActiveStatus status = active_state();
 
-    if (status != SOARING_STATUS_AUTO_MODE_CHANGE) {
-        _cruise_criteria_msg_last = SOARING_DISABLED;
-        return SOARING_DISABLED;
+    if (status != ActiveStatus::AUTO_MODE_CHANGE) {
+        _cruise_criteria_msg_last = LoiterStatus::DISABLED;
+        return LoiterStatus::DISABLED;
     }
 
-    LoiterStatus result = THERMAL_GOOD_TO_KEEP_LOITERING;
+    LoiterStatus result = LoiterStatus::GOOD_TO_KEEP_LOITERING;
     const float alt = _vario.alt;
 
     if (alt > alt_max) {
-        result = ALT_TOO_HIGH;
+        result = LoiterStatus::ALT_TOO_HIGH;
         if (result != _cruise_criteria_msg_last) {
             gcs().send_text(MAV_SEVERITY_ALERT, "Reached upper alt = %dm", (int16_t)alt);
         }
     } else if (alt < alt_min) {
-        result = ALT_TOO_LOW;
+        result = LoiterStatus::ALT_TOO_LOW;
         if (result != _cruise_criteria_msg_last) {
             gcs().send_text(MAV_SEVERITY_ALERT, "Reached lower alt = %dm", (int16_t)alt);
         }
     } else if ((AP_HAL::micros64() - _thermal_start_time_us) > ((unsigned)min_thermal_s * 1e6)) {
         const float mcCreadyAlt = McCready(alt);
         if (_thermalability < mcCreadyAlt) {
-            result = THERMAL_WEAK;
+            result = LoiterStatus::THERMAL_WEAK;
             if (result != _cruise_criteria_msg_last) {
                 gcs().send_text(MAV_SEVERITY_INFO, "Thermal weak: th %3.1fm/s alt %3.1fm Mc %3.1fm/s", (double)_thermalability, (double)alt, (double)mcCreadyAlt);
             }
         } else if (alt < (-_thermal_start_pos.z) || _vario.smoothed_climb_rate < 0.0) {
-            result = ALT_LOST;
+            result = LoiterStatus::ALT_LOST;
             if (result != _cruise_criteria_msg_last) {
                 gcs().send_text(MAV_SEVERITY_INFO, "Not climbing");
             }
         } else if (check_drift(prev_wp, next_wp)) {
-            result = DRIFT_EXCEEDED;
+            result = LoiterStatus::DRIFT_EXCEEDED;
             if (result != _cruise_criteria_msg_last) {
                 gcs().send_text(MAV_SEVERITY_INFO, "Drifted too far");
             }
@@ -288,7 +288,7 @@ void SoaringController::init_thermalling()
 
 void SoaringController::init_cruising()
 {
-    if (active_state()) {
+    if (active_state()>=ActiveStatus::MANUAL_MODE_CHANGE) {
         _cruise_start_time_us = AP_HAL::micros64();
         // Start glide. Will be updated on the next loop.
         set_throttle_suppressed(true);
@@ -359,43 +359,43 @@ float SoaringController::McCready(float alt)
 SoaringController::ActiveStatus SoaringController::active_state() const
 {
     if (!soar_active) {
-        return SOARING_STATUS_DISABLED;
+        return ActiveStatus::DISABLED;
     }
     if (soar_active_ch <= 0) {
         // no activation channel
-        return SOARING_STATUS_AUTO_MODE_CHANGE;
+        return ActiveStatus::AUTO_MODE_CHANGE;
     }
 
     uint16_t radio_in = RC_Channels::get_radio_in(soar_active_ch-1);
 
     // active when above 1400, with auto mode changes when above 1700
     if (radio_in >= 1700) {
-        return SOARING_STATUS_AUTO_MODE_CHANGE;
+        return ActiveStatus::AUTO_MODE_CHANGE;
     } else if (radio_in >= 1400) {
-        return SOARING_STATUS_MANUAL_MODE_CHANGE;
+        return ActiveStatus::MANUAL_MODE_CHANGE;
     }
 
-    return SOARING_STATUS_DISABLED;
+    return ActiveStatus::DISABLED;
 }
 
-SoaringController::ActiveStatus SoaringController::update_active_state()
+void SoaringController::update_active_state()
 {
     ActiveStatus status = active_state();
     bool state_changed = !(status == _last_update_status);
 
     if (state_changed) {
         switch (status) {
-            case SOARING_STATUS_DISABLED:
+            case ActiveStatus::DISABLED:
                 // It's not enabled, but was enabled on the last loop.
                 gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Disabled.");
                 set_throttle_suppressed(false);
                 break;
-            case SOARING_STATUS_MANUAL_MODE_CHANGE:
+            case ActiveStatus::MANUAL_MODE_CHANGE:
                 // It's enabled, but wasn't on the last loop.
                 gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Enabled, manual mode changes.");
                 set_throttle_suppressed(true);
                 break;
-            case SOARING_STATUS_AUTO_MODE_CHANGE:
+            case ActiveStatus::AUTO_MODE_CHANGE:
                 gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Enabled, automatic mode changes.");
                 set_throttle_suppressed(true);
                 break;
@@ -403,8 +403,6 @@ SoaringController::ActiveStatus SoaringController::update_active_state()
     }
 
     _last_update_status = status;
-
-    return status;
 }
 
 
