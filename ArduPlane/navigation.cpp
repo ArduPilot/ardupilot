@@ -320,7 +320,7 @@ void Plane::update_fbwb_speed_height(void)
         }
 
 #if SOARING_ENABLED == ENABLED
-        if (g2.soaring_controller.active_state() && g2.soaring_controller.get_throttle_suppressed()) {
+        if (g2.soaring_controller.is_active() && g2.soaring_controller.get_throttle_suppressed()) {
             // we're in soaring mode with throttle suppressed
             set_target_altitude_current();;
         }
