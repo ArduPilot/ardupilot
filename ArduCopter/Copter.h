@@ -129,9 +129,6 @@
 #if OPTFLOW == ENABLED
  # include <AP_OpticalFlow/AP_OpticalFlow.h>
 #endif
-#if VISUAL_ODOMETRY_ENABLED == ENABLED
- # include <AP_VisualOdom/AP_VisualOdom.h>
-#endif
 #if RANGEFINDER_ENABLED == ENABLED
  # include <AP_RangeFinder/AP_RangeFinder.h>
 #endif
@@ -847,7 +844,6 @@ private:
     void accel_cal_update(void);
     void init_proximity();
     void update_proximity();
-    void init_visual_odom();
     void winch_init();
     void winch_update();
 

@@ -9,9 +9,6 @@
 #if MODE_FOLLOW_ENABLED == ENABLED
  # include <AP_Follow/AP_Follow.h>
 #endif
-#if VISUAL_ODOMETRY_ENABLED == ENABLED
- # include <AP_VisualOdom/AP_VisualOdom.h>
-#endif
 
 // Global parameter class.
 //
@@ -512,11 +509,6 @@ public:
 #if BEACON_ENABLED == ENABLED
     // beacon (non-GPS positioning) library
     AP_Beacon beacon;
-#endif
-
-#if VISUAL_ODOMETRY_ENABLED == ENABLED
-    // Visual Odometry camera
-    AP_VisualOdom visual_odom;
 #endif
 
 #if PROXIMITY_ENABLED == ENABLED

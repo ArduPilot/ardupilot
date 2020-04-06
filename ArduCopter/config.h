@@ -207,12 +207,9 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-//  OPTICAL_FLOW & VISUAL ODOMETRY
+//  OPTICAL_FLOW
 #ifndef OPTFLOW
  # define OPTFLOW       ENABLED
-#endif
-#ifndef VISUAL_ODOMETRY_ENABLED
-# define VISUAL_ODOMETRY_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
