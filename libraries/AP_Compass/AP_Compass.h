@@ -92,9 +92,15 @@ public:
 
     /// Read the compass and update the mag_ variables.
     ///
-    bool read();
+    bool read() WARN_IF_UNUSED;
 
-    bool enabled() const { return _enabled; }
+    // _enabled is a parameter.  _initialised is set if we
+    // successfully initialise Compass at boot
+    bool initialised() const { return _initialised; }
+    // enabled is just an alias for initialised for now - to avoid
+    // code churn.  Note that we do NOT check the _enabled flag here
+    // as we don't want it to have an effect at run-time.
+    bool enabled() const { return initialised(); }
 
     /// Calculate the tilt-compensated heading_ variables.
     ///
@@ -136,7 +142,7 @@ public:
     void save_offsets(void);
 
     // return the number of compass instances
-    uint8_t get_count(void) const { return _compass_count; }
+    uint8_t get_count(void) const { return _initialised ? _compass_count : 0; }
 
     // return the number of enabled sensors
     uint8_t get_num_enabled(void) const;
@@ -348,6 +354,8 @@ public:
 private:
     static Compass *_singleton;
 
+    bool _initialised;
+
     // Use Priority and StateIndex typesafe index types
     // to distinguish between two different type of indexing
     // We use StateIndex for access by Backend
@@ -426,7 +434,11 @@ private:
     AP_Compass_Backend *_backends[COMPASS_MAX_BACKEND];
     uint8_t     _backend_count;
 
-    // whether to enable the compass drivers at all
+    // Parameter to indicate whether to enable the compass drivers at
+    // all.  Do NOT use this - use the initialised() method which checks
+    // the Compass class was initialised rather than whether it was
+    // enabled.  The driver may not be initialised it was disabled
+    // at boot.
     AP_Int8     _enabled;
 
     // number of registered compasses.

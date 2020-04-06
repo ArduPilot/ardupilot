@@ -71,7 +71,9 @@ static void loop()
     // run read() at 10Hz
     if ((AP_HAL::micros() - timer) > 100000L) {
         timer = AP_HAL::micros();
-        compass.read();
+        if (!compass.read()) {
+            hal.console->printf("Compass read failed");
+        }
         const uint32_t read_time = AP_HAL::micros() - timer;
 
         for (uint8_t i = 0; i < compass_count; i++) {

@@ -535,6 +535,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Description: Setting this to Enabled(1) will enable the compass. Setting this to Disabled(0) will disable the compass. Note that this is separate from COMPASS_USE. This will enable the low level senor, and will enable logging of magnetometer data. To use the compass for navigation you must also set COMPASS_USE to 1.
     // @User: Standard
     // @Values: 0:Disabled,1:Enabled
+    // @RebootRequired: True
     AP_GROUPINFO("ENABLE", 39, Compass, _enabled, 1),
 
     // @Param: SCALE
@@ -668,9 +669,14 @@ Compass::Compass(void)
 //
 void Compass::init()
 {
-    if (!AP::compass().enabled()) {
+    if (!_enabled) {
         return;
     }
+
+    // nothing below this point should fail.  Setting _initialised
+    // here allows many of the methods in here to call methods that
+    // check _initialised is true.
+    _initialised = true;
 
 #if COMPASS_MAX_INSTANCES > 1
     // Look if there was a primary compass setup in previous version
@@ -752,7 +758,7 @@ void Compass::init()
     if (_compass_count != 0) {
         // get initial health status
         hal.scheduler->delay(100);
-        read();
+        UNUSED_RESULT(read());
     }
     // set the dev_id to 0 for undetected compasses, to make it easier
     // for users to see how many compasses are detected. We don't do a
@@ -1453,6 +1459,10 @@ Compass::_detect_runtime(void)
 bool
 Compass::read(void)
 {
+    if (!_initialised) {
+        return false;
+    }
+
 #ifndef HAL_BUILD_AP_PERIPH
     if (!_initial_location_set) {
         try_set_initial_location();
@@ -1490,6 +1500,9 @@ Compass::read(void)
 uint8_t
 Compass::get_healthy_mask() const
 {
+    if (!_initialised) {
+        return 0;
+    }
     uint8_t healthy_mask = 0;
     for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
         if (healthy(uint8_t(i))) {
@@ -1626,13 +1639,16 @@ void Compass::try_set_initial_location()
 bool
 Compass::use_for_yaw(void) const
 {
-    return healthy(0) && use_for_yaw(0);
+    return _initialised && healthy(0) && use_for_yaw(0);
 }
 
 /// return true if the specified compass can be used for yaw calculations
 bool
 Compass::use_for_yaw(uint8_t i) const
 {
+    if (!_initialised) {
+        return false;
+    }
     // when we are doing in-flight compass learning the state
     // estimator must not use the compass. The learning code turns off
     // inflight learning when it has converged
