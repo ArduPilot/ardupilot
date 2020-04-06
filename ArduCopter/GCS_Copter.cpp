@@ -52,13 +52,6 @@ void GCS_Copter::update_vehicle_sensor_status_flags(void)
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
     }
 #endif
-#if VISUAL_ODOMETRY_ENABLED == ENABLED
-    const AP_VisualOdom *visual_odom = AP::visualodom();
-    if (visual_odom && visual_odom->enabled()) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
-    }
-#endif
     const Copter::ap_t &ap = copter.ap;
 
     if (ap.rc_receiver_present) {
@@ -123,11 +116,6 @@ void GCS_Copter::update_vehicle_sensor_status_flags(void)
 #endif
 #if PRECISION_LANDING == ENABLED
     if (copter.precland.enabled() && copter.precland.healthy()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
-    }
-#endif
-#if VISUAL_ODOMETRY_ENABLED == ENABLED
-    if (visual_odom && visual_odom->enabled() && visual_odom->healthy()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
     }
 #endif
