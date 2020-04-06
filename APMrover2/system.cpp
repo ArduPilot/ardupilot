@@ -73,9 +73,6 @@ void Rover::init_ardupilot()
     // init beacons used for non-gps position estimation
     g2.beacon.init();
 
-    // init library used for visual position estimation
-    g2.visual_odom.init();
-
     // and baro for EKF
     barometer.set_log_baro_bit(MASK_LOG_IMU);
     barometer.calibrate();
