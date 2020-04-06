@@ -14,6 +14,9 @@
  */
 
 #include "AP_VisualOdom.h"
+
+#if HAL_VISUALODOM_ENABLED
+
 #include "AP_VisualOdom_Backend.h"
 #include "AP_VisualOdom_MAV.h"
 #include "AP_VisualOdom_IntelT265.h"
@@ -210,3 +213,5 @@ AP_VisualOdom *visualodom()
 }
 
 }
+
+#endif

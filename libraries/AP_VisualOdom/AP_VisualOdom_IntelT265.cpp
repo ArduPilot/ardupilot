@@ -14,6 +14,9 @@
  */
 
 #include "AP_VisualOdom_IntelT265.h"
+
+#if HAL_VISUALODOM_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Logger/AP_Logger.h>
@@ -191,3 +194,5 @@ bool AP_VisualOdom_IntelT265::pre_arm_check(char *failure_msg, uint8_t failure_m
 
     return true;
 }
+
+#endif
