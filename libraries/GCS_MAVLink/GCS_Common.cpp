@@ -2929,11 +2929,13 @@ void GCS_MAVLINK::handle_data_packet(const mavlink_message_t &msg)
 
 void GCS_MAVLINK::handle_vision_position_delta(const mavlink_message_t &msg)
 {
+#if HAL_VISUALODOM_ENABLED
     AP_VisualOdom *visual_odom = AP::visualodom();
     if (visual_odom == nullptr) {
         return;
     }
     visual_odom->handle_vision_position_delta_msg(msg);
+#endif
 }
 
 void GCS_MAVLINK::handle_vision_position_estimate(const mavlink_message_t &msg)
@@ -2975,6 +2977,7 @@ void GCS_MAVLINK::handle_common_vision_position_estimate_data(const uint64_t use
                                                               const float yaw,
                                                               const uint16_t payload_size)
 {
+#if HAL_VISUALODOM_ENABLED
     // correct offboard timestamp to be in local ms since boot
     uint32_t timestamp_ms = correct_offboard_timestamp_usec_to_ms(usec, payload_size);
 
@@ -2983,10 +2986,12 @@ void GCS_MAVLINK::handle_common_vision_position_estimate_data(const uint64_t use
         return;
     }
     visual_odom->handle_vision_position_estimate(usec, timestamp_ms, x, y, z, roll, pitch, yaw);
+#endif
 }
 
 void GCS_MAVLINK::handle_att_pos_mocap(const mavlink_message_t &msg)
 {
+#if HAL_VISUALODOM_ENABLED
     mavlink_att_pos_mocap_t m;
     mavlink_msg_att_pos_mocap_decode(&msg, &m);
 
@@ -2998,6 +3003,7 @@ void GCS_MAVLINK::handle_att_pos_mocap(const mavlink_message_t &msg)
         return;
     }
     visual_odom->handle_vision_position_estimate(m.time_usec, timestamp_ms, m.x, m.y, m.z, m.q);
+#endif
 }
 
 void GCS_MAVLINK::handle_command_ack(const mavlink_message_t &msg)
