@@ -1,7 +1,6 @@
 #include "Rover.h"
 
 #include <AP_RangeFinder/AP_RangeFinder_Backend.h>
-#include <AP_VisualOdom/AP_VisualOdom.h>
 
 // check for new compass data - 10Hz
 void Rover::update_compass(void)

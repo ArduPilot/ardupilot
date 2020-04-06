@@ -28,11 +28,6 @@ bool GCS_Rover::supersimple_input_active() const
 void GCS_Rover::update_vehicle_sensor_status_flags(void)
 {
     // first what sensors/controllers we have
-    const AP_VisualOdom *visual_odom = AP::visualodom();
-    if (visual_odom && visual_odom->enabled()) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
-    }
     const AP_Proximity *proximity = AP_Proximity::get_singleton();
     if (proximity && proximity->get_status() > AP_Proximity::Status::NotConnected) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
@@ -58,9 +53,6 @@ void GCS_Rover::update_vehicle_sensor_status_flags(void)
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL; // X/Y position control
     }
 
-    if (visual_odom && visual_odom->enabled() && visual_odom->healthy()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
-    }
     const RangeFinder *rangefinder = RangeFinder::get_singleton();
     if (rangefinder && rangefinder->num_sensors() > 0) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
