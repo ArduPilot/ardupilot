@@ -2,6 +2,8 @@
 
 #include "AP_VisualOdom_Backend.h"
 
+#if HAL_VISUALODOM_ENABLED
+
 class AP_VisualOdom_IntelT265 : public AP_VisualOdom_Backend
 {
 
@@ -43,3 +45,5 @@ protected:
     bool _error_orientation;                    // true if the orientation is not supported
     Quaternion _attitude_last;                  // last attitude received from camera (used for arming checks)
 };
+
+#endif

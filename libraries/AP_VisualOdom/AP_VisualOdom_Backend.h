@@ -14,10 +14,9 @@
  */
 #pragma once
 
-#include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
-#include <AP_Math/AP_Math.h>
 #include "AP_VisualOdom.h"
+
+#if HAL_VISUALODOM_ENABLED
 
 class AP_VisualOdom_Backend
 {
@@ -54,3 +53,6 @@ protected:
     AP_VisualOdom &_frontend;   // reference to frontend
     uint32_t _last_update_ms;   // system time of last update from sensor (used by health checks)
 };
+
+#endif
+

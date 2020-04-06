@@ -14,6 +14,9 @@
  */
 
 #include "AP_VisualOdom_Backend.h"
+
+#if HAL_VISUALODOM_ENABLED
+
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -34,3 +37,5 @@ bool AP_VisualOdom_Backend::healthy() const
     // healthy if we have received sensor messages within the past 300ms
     return ((AP_HAL::millis() - _last_update_ms) < AP_VISUALODOM_TIMEOUT_MS);
 }
+
+#endif
