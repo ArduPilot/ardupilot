@@ -323,6 +323,22 @@ void SoaringController::update_thermalling()
     _position_y_filter.apply(_ekf.X[3], deltaT);
 
     // write log - save the data.
+    // @LoggerMessage: SOAR
+    // @Vehicles: Plane
+    // @Description: Logged data from soaring feature
+    // @URL: https://ardupilot.org/plane/docs/soaring.html
+    // @Field: TimeUS: microseconds since system startup
+    // @Field: nettorate: Estimate of vertical speed of surrounding airmass
+    // @Field: x0: Thermal strength estimate
+    // @Field: x1: Thermal radius estimate
+    // @Field: x2: Thermal position estimate north from home
+    // @Field: x3: Thermal position estimate east from home
+    // @Field: north: Aircraft position north from home
+    // @Field: east: Aircraft position east from home
+    // @Field: alt: Aircraft altitude
+    // @Field: dx_w: Wind speed north
+    // @Field: dy_w: Wind speed east
+    // @Field: th: Estimate of achievable climbrate in thermal
     AP::logger().Write("SOAR", "TimeUS,nettorate,x0,x1,x2,x3,north,east,alt,dx_w,dy_w,th", "Qfffffffffff",
                                            AP_HAL::micros64(),
                                            (double)_vario.reading,
