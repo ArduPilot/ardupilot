@@ -5,7 +5,7 @@ _waf() {
   typeset -A opt_args
   local context state line curcontext="$curcontext"
 
-  _arguments -C -A -s -S \
+  _arguments -C \
     '(- 1 *)--version[show version and exit]' \
     '(- 1 *)'{-h,--help}'[show help options and exit]' \
     '1:first arg:_waf_cmds' \
