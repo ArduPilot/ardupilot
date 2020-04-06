@@ -24,7 +24,7 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @Param: PWM_TYPE
     // @DisplayName: Motor Output PWM type
     // @Description: This selects the output PWM type as regular PWM, OneShot, Brushed motor support using PWM (duty cycle) with separated direction signal, Brushed motor support with separate throttle and direction PWM (duty cyle)
-    // @Values: 0:Normal,1:OneShot,2:OneShot125,3:BrushedWithRelay,4:BrushedBiPolar,5:DShot150,6:DShot300,7:DShot600,8:DShot1200
+    // @Values: 0:Normal,1:OneShot,2:OneShot125,3:BrushedWithRelay,4:BrushedBiPolar,5:DShot150,6:DShot300,7:DShot600,8:DShot1200,9:BrushedWithTwoRelays
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("PWM_TYPE", 1, AP_MotorsUGV, _pwm_type, PWM_TYPE_NORMAL),
@@ -125,7 +125,7 @@ void AP_MotorsUGV::init()
 // setup output in case of main CPU failure
 void AP_MotorsUGV::setup_safety_output()
 {
-    if (_pwm_type == PWM_TYPE_BRUSHED_WITH_RELAY) {
+    if ((_pwm_type == PWM_TYPE_BRUSHED_WITH_RELAY) || (_pwm_type == PWM_TYPE_BRUSHED_WITH_TWO_RELAYS)){
         // set trim to min to set duty cycle range (0 - 100%) to servo range
         SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttle);
         SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttleLeft);
@@ -478,6 +478,7 @@ void AP_MotorsUGV::setup_pwm_type()
         hal.rcout->set_output_mode(motor_mask, AP_HAL::RCOutput::MODE_PWM_ONESHOT125);
         break;
     case PWM_TYPE_BRUSHED_WITH_RELAY:
+    case PWM_TYPE_BRUSHED_WITH_TWO_RELAYS:
     case PWM_TYPE_BRUSHED_BIPOLAR:
         hal.rcout->set_output_mode(motor_mask, AP_HAL::RCOutput::MODE_PWM_BRUSHED);
         hal.rcout->set_freq(motor_mask, uint16_t(_pwm_freq * 1000));
@@ -778,6 +779,63 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
                 // do nothing
                 break;
         }
+        // invert the output to always have positive value calculated by calc_pwm
+        throttle = reverse_multiplier * fabsf(throttle);
+    }
+    else if (_pwm_type == PWM_TYPE_BRUSHED_WITH_TWO_RELAYS) {
+        // find the output channel, if not found return
+        const SRV_Channel *out_chan = SRV_Channels::get_channel_for(function);
+        if (out_chan == nullptr) {
+            return;
+        }
+        const int8_t reverse_multiplier = out_chan->get_reversed() ? -1 : 1;
+        bool relay_high = is_negative(reverse_multiplier * throttle);
+        switch (function) {
+            case SRV_Channel::k_throttle:
+            case SRV_Channel::k_throttleLeft:
+            case SRV_Channel::k_motor1:
+                //Forcing a brake once the pwm controller from L298H is not breaking 
+                if (throttle == 0) {
+                    _relayEvents.do_set_relay(0, 1);
+                    _relayEvents.do_set_relay(1, 1);
+                }
+                else {
+                    _relayEvents.do_set_relay(0, relay_high);
+                    _relayEvents.do_set_relay(1, !relay_high);
+                }
+                break;
+            case SRV_Channel::k_throttleRight:
+            case SRV_Channel::k_motor2:
+                //Forcing a brake once the pwm controller from L298H is not breaking 
+                if (throttle == 0) {
+                    _relayEvents.do_set_relay(2, 1);
+                    _relayEvents.do_set_relay(3, 1);
+                }
+                else {
+                    _relayEvents.do_set_relay(2, relay_high);
+                    _relayEvents.do_set_relay(3, !relay_high);
+                }
+                break;
+            case SRV_Channel::k_motor3:
+                //Wait to see what can be done - Number of pins enable up to 3 motors!
+                //Forcing a brake once the pwm controller from L298H is not breaking 
+                if (throttle == 0) {
+                    _relayEvents.do_set_relay(2, 1);
+                    _relayEvents.do_set_relay(3, 1);
+                }
+                else {
+                    _relayEvents.do_set_relay(2, relay_high);
+                    _relayEvents.do_set_relay(3, !relay_high);
+                }
+                break;
+            case SRV_Channel::k_motor4:
+                //Wait to see what can be done - Number of pins enable up to 3 motors!
+                break;
+            default:
+                // do nothing
+                break;
+        }
+
         // invert the output to always have positive value calculated by calc_pwm
         throttle = reverse_multiplier * fabsf(throttle);
     }
