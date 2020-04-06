@@ -1194,7 +1194,7 @@ void AP_Periph_FW::can_mag_update(void)
     if (!compass.enabled()) {
         return;
     }
-    compass.read();
+    UNUSED_RESULT(compass.read());
 #if CAN_PROBE_CONTINUOUS
     if (compass.get_count() == 0) {
         static uint32_t last_probe_ms;
