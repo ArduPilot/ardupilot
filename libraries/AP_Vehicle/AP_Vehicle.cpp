@@ -19,6 +19,13 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Path: ../AP_GyroFFT/AP_GyroFFT.cpp
     AP_SUBGROUPINFO(gyro_fft, "FFT_",  2, AP_Vehicle, AP_GyroFFT),
 #endif
+
+#if HAL_VISUALODOM_ENABLED
+    // @Group: VISO
+    // @Path: ../AP_VisualOdom/AP_VisualOdom.cpp
+    AP_SUBGROUPINFO(visual_odom, "VISO",  3, AP_Vehicle, AP_VisualOdom),
+#endif
+
     AP_GROUPEND
 };
 
@@ -89,6 +96,10 @@ void AP_Vehicle::setup()
 #endif
 #if HAL_HOTT_TELEM_ENABLED
     hott_telem.init();
+#endif
+#if HAL_VISUALODOM_ENABLED
+    // init library used for visual position estimation
+    visual_odom.init();
 #endif
 
 #if AP_PARAM_KEY_DUMP
