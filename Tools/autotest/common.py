@@ -1370,11 +1370,14 @@ class AutoTest(ABC):
         self.set_streamrate(self.sitl_streamrate())
         self.progress("Reboot complete")
 
-    def customise_SITL_commandline(self, customisations):
+    def customise_SITL_commandline(self, customisations, model=None, defaults_file=None):
         '''customisations could be "--uartF=sim:nmea" '''
         self.contexts[-1].sitl_commandline_customised = True
         self.stop_SITL()
-        self.start_SITL(customisations=customisations, wipe=False)
+        self.start_SITL(model=model,
+                        defaults_file=defaults_file,
+                        customisations=customisations,
+                        wipe=False)
         self.wait_heartbeat(drain_mav=True)
         # MAVProxy only checks the streamrates once every 15 seconds.
         # Encourage it:
@@ -2105,6 +2108,8 @@ class AutoTest(ABC):
         '''Most vehicles just disarm on failsafe'''
         # customising the SITL commandline ensures the process will
         # get stopped/started at the end of the test
+        if self.frame is None:
+            raise ValueError("Frame is none?")
         self.customise_SITL_commandline([])
         self.wait_ready_to_arm()
         self.arm_vehicle()
@@ -3372,18 +3377,22 @@ class AutoTest(ABC):
         start_sitl_args = {
             "breakpoints": self.breakpoints,
             "disable_breakpoints": self.disable_breakpoints,
-            "defaults_file": self.defaults_filepath(),
             "gdb": self.gdb,
             "gdbserver": self.gdbserver,
             "lldb": self.lldb,
             "home": self.sitl_home(),
-            "model": self.frame,
             "speedup": self.speedup,
             "valgrind": self.valgrind,
             "vicon": self.uses_vicon(),
             "wipe": True,
         }
         start_sitl_args.update(**sitl_args)
+        if ("defaults_filepath" not in start_sitl_args or
+            start_sitl_args["defaults_filepath"] is None):
+            start_sitl_args["defaults_file"] = self.defaults_filepath()
+
+        if "model" not in start_sitl_args or start_sitl_args["model"] is None:
+            start_sitl_args["model"] = self.frame
         self.progress("Starting SITL")
         self.sitl = util.start_SITL(self.binary, **start_sitl_args)
 
@@ -3398,6 +3407,9 @@ class AutoTest(ABC):
 
         if self.frame is None:
             self.frame = self.default_frame()
+
+        if self.frame is None:
+            raise ValueError("frame must not be None")
 
         self.progress("Starting simulator")
         self.start_SITL()
