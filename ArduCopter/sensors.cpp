@@ -223,14 +223,6 @@ void Copter::init_proximity(void)
 #endif
 }
 
-// init visual odometry sensor
-void Copter::init_visual_odom()
-{
-#if VISUAL_ODOMETRY_ENABLED == ENABLED
-    g2.visual_odom.init();
-#endif
-}
-
 // winch and wheel encoder initialisation
 void Copter::winch_init()
 {
