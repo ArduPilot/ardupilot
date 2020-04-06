@@ -14,6 +14,15 @@
  */
 #pragma once
 
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+
+#ifndef HAL_VISUALODOM_ENABLED
+#define HAL_VISUALODOM_ENABLED !HAL_MINIMIZE_FEATURES
+#endif
+
+#if HAL_VISUALODOM_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
@@ -88,3 +97,5 @@ private:
 namespace AP {
     AP_VisualOdom *visualodom();
 };
+
+#endif // HAL_VISUALODOM_ENABLED

@@ -14,6 +14,9 @@
  */
 
 #include "AP_VisualOdom_MAV.h"
+
+#if HAL_VISUALODOM_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Logger/AP_Logger.h>
@@ -81,3 +84,5 @@ void AP_VisualOdom_MAV::handle_vision_position_estimate(uint64_t remote_time_us,
     // record time for health monitoring
     _last_update_ms = AP_HAL::millis();
 }
+
+#endif
