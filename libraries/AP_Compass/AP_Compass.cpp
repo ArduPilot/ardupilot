@@ -841,6 +841,7 @@ void Compass::mag_state::copy_from(const Compass::mag_state& state)
 //
 bool Compass::register_compass(int32_t dev_id, uint8_t& instance)
 {
+    check_initialised();
 
 #if COMPASS_MAX_INSTANCES == 1 && !COMPASS_MAX_UNREG_DEV
     // simple single compass setup for AP_Periph
@@ -935,6 +936,7 @@ Compass::StateIndex Compass::_get_state_id(Compass::Priority priority) const
 
 bool Compass::_add_backend(AP_Compass_Backend *backend)
 {
+    check_initialised();
     if (!backend) {
         return false;
     }
@@ -953,6 +955,7 @@ bool Compass::_add_backend(AP_Compass_Backend *backend)
  */
 bool Compass::_driver_enabled(enum DriverType driver_type)
 {
+    check_initialised();
     uint32_t mask = (1U<<uint8_t(driver_type));
     return (mask & uint32_t(_driver_type_mask.get())) == 0;
 }
@@ -1433,6 +1436,7 @@ void Compass::_reset_compass_id()
 void
 Compass::_detect_runtime(void)
 {
+    check_initialised();
 #if HAL_WITH_UAVCAN
     //Don't try to add device while armed
     if (hal.util->get_soft_armed()) {
@@ -1676,12 +1680,14 @@ uint8_t Compass::get_num_enabled(void) const
 void
 Compass::set_use_for_yaw(uint8_t i, bool use)
 {
+    check_initialised();
     _use_for_yaw[Priority(i)].set(use);
 }
 
 void
 Compass::set_declination(float radians, bool save_to_eeprom)
 {
+    check_initialised();
     if (save_to_eeprom) {
         _declination.set_and_save(radians);
     } else {
@@ -1692,6 +1698,7 @@ Compass::set_declination(float radians, bool save_to_eeprom)
 float
 Compass::get_declination() const
 {
+    check_initialised();
     return _declination.get();
 }
 
@@ -1876,6 +1883,8 @@ void Compass::motor_compensation_type(const uint8_t comp_type)
 
 bool Compass::consistent() const
 {
+    check_initialised();
+
     const Vector3f &primary_mag_field = get_field();
     const Vector2f primary_mag_field_xy = Vector2f(primary_mag_field.x,primary_mag_field.y);
 
@@ -1930,6 +1939,8 @@ bool Compass::consistent() const
  */
 bool Compass::have_scale_factor(uint8_t i) const
 {
+    check_initialised();
+
     StateIndex id = _get_state_id(Priority(i));
     if (id >= COMPASS_MAX_INSTANCES ||
         _state[id].scale_factor < COMPASS_MIN_SCALE_FACTOR ||

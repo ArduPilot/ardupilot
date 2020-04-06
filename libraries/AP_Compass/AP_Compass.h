@@ -8,6 +8,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 #include "AP_Compass_Backend.h"
 #include "Compass_PerMotor.h"
@@ -102,6 +103,14 @@ public:
     // as we don't want it to have an effect at run-time.
     bool enabled() const { return initialised(); }
 
+    // many methods in here should not be called unless the
+    // magnetometer has been initialised and is currently enabled
+    void check_initialised() const {
+        if (!_initialised) {
+            AP::internalerror().error(AP_InternalError::error_t::flow_of_control);
+        }
+    }
+
     /// Calculate the tilt-compensated heading_ variables.
     ///
     /// @param dcm_matrix			The current orientation rotation matrix
@@ -109,6 +118,7 @@ public:
     /// @returns heading in radians
     ///
     float calculate_heading(const Matrix3f &dcm_matrix) const {
+        check_initialised();
         return calculate_heading(dcm_matrix, 0);
     }
     float calculate_heading(const Matrix3f &dcm_matrix, uint8_t i) const;
@@ -148,8 +158,14 @@ public:
     uint8_t get_num_enabled(void) const;
     
     /// Return the current field as a Vector3f in milligauss
-    const Vector3f &get_field(uint8_t i) const { return _get_state(Priority(i)).field; }
-    const Vector3f &get_field(void) const { return get_field(0); }
+    const Vector3f &get_field(uint8_t i) const {
+        check_initialised();
+        return _get_state(Priority(i)).field;
+    }
+    const Vector3f &get_field(void) const {
+        check_initialised();
+        return get_field(0);
+    }
 
     /// Return true if we have set a scale factor for a compass
     bool have_scale_factor(uint8_t i) const;
@@ -160,6 +176,7 @@ public:
 #if COMPASS_MOT_ENABLED
     // per-motor calibration access
     bool per_motor_calibration_start(void) WARN_IF_UNUSED {
+        check_initialised();
         return _per_motor.calibration_start();
     }
     void per_motor_calibration_update(void) {
@@ -200,8 +217,14 @@ public:
     ///
     /// @returns                    The current compass offsets in milligauss.
     ///
-    const Vector3f &get_offsets(uint8_t i) const { return _get_state(Priority(i)).offset; }
-    const Vector3f &get_offsets(void) const { return get_offsets(0); }
+    const Vector3f &get_offsets(uint8_t i) const {
+        check_initialised();
+        return _get_state(Priority(i)).offset;
+    }
+    const Vector3f &get_offsets(void) const {
+        check_initialised();
+        return get_offsets(0);
+    }
 
     const Vector3f &get_diagonals(uint8_t i) const { return _get_state(Priority(i)).diagonals; }
     const Vector3f &get_diagonals(void) const { return get_diagonals(0); }
@@ -242,6 +265,7 @@ public:
 
     /// get the motor compensation value.
     uint8_t get_motor_compensation_type() const {
+        check_initialised();
         return _motor_comp_type;
     }
 
@@ -253,8 +277,14 @@ public:
     void set_motor_compensation(uint8_t i, const Vector3f &motor_comp_factor);
 
     /// get motor compensation factors as a vector
-    const Vector3f& get_motor_compensation(uint8_t i) const { return _get_state(Priority(i)).motor_compensation; }
-    const Vector3f& get_motor_compensation(void) const { return get_motor_compensation(0); }
+    const Vector3f& get_motor_compensation(uint8_t i) const {
+        check_initialised();
+        return _get_state(Priority(i)).motor_compensation;
+    }
+    const Vector3f& get_motor_compensation(void) const {
+        check_initialised();
+        return get_motor_compensation(0);
+    }
 
     /// Saves the current motor compensation x/y/z values.
     ///
