@@ -14,6 +14,8 @@ from common import AutoTestTimeoutException
 from common import NotAchievedException
 from common import PreconditionFailedException
 
+import operator
+
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
 SITL_START_LOCATION = mavutil.location(-35.362938, 149.165085, 585, 354)
@@ -1744,5 +1746,123 @@ class AutoTestPlane(AutoTest):
                  self.buildlogs_path("ArduPlane-log.bin"),
                  timeout=450,
                  upload_logs=True))
+        ])
+        return ret
+
+class AutoTestSoaring(AutoTestPlane):
+
+    def log_name(self):
+        return "Soaring"
+
+    def default_frame(self):
+        return "plane-soaring"
+
+    def defaults_filepath(self):
+        return os.path.join(testdir, 'default_params/plane.parm')
+
+    def fly_mission(self):
+
+        self.set_parameter("SOAR_ENABLE", 1)
+        self.repeatedly_apply_parameter_file('default_params/plane-soaring.parm')
+        self.load_mission('ArduPlane-Missions/CMAC-soar.txt')
+
+
+        self.mavproxy.send("wp set 1\n")
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # Enable thermalling RC
+        rc_chan = self.get_parameter('SOAR_ENABLE_CH')
+        self.send_set_rc(rc_chan, 1900)
+
+        # Wait to detect thermal
+        self.progress("Waiting for thermal")
+        self.wait_mode('LOITER',timeout=600)
+
+        # Wait to climb to SOAR_ALT_MAX
+        self.progress("Waiting for climb to max altitude")
+        alt_max = self.get_parameter('SOAR_ALT_MAX')
+        self.wait_altitude(alt_max-10, alt_max, timeout=600, relative=True)
+
+        # Wait for AUTO
+        self.progress("Waiting for AUTO mode")
+        self.wait_mode('AUTO')
+
+        # Disable thermals
+        self.set_parameter("SIM_THML_SCENARI", 0)
+
+
+       # Wait to descent to SOAR_ALT_MIN
+        self.progress("Waiting for glide to min altitude")
+        alt_min = self.get_parameter('SOAR_ALT_MIN')
+        self.wait_altitude(alt_min-10, alt_min, timeout=600, relative=True)
+
+        self.progress("Waiting for throttle up")
+        self.wait_servo_channel_value(3, 1200, timeout=2, comparator=operator.gt)
+
+        self.progress("Waiting for climb to cutoff altitude")
+        alt_ctf = self.get_parameter('SOAR_ALT_CUTOFF')
+        self.wait_altitude(alt_ctf-10, alt_ctf, timeout=600, relative=True)
+
+        # Now set FBWB mode
+        self.change_mode('FBWB')
+        self.delay_sim_time(5)
+
+        # Now disable soaring (should hold altitude)
+        self.set_parameter("SOAR_ENABLE", 0)
+        self.delay_sim_time(10)
+
+        #And reenable. This should force throttle-down
+        self.set_parameter("SOAR_ENABLE", 1)
+        self.delay_sim_time(10)
+
+        # Now wait for descent and check RTL
+        self.wait_altitude(alt_min-10, alt_min, timeout=600, relative=True)
+
+        self.progress("Waiting for RTL")
+        self.wait_mode('RTL')
+
+        alt_rtl = self.get_parameter('ALT_HOLD_RTL')/100
+
+        # Wait for climb to  RTL.
+        self.progress("Waiting for climb to RTL altitude")
+        self.wait_altitude(alt_rtl-5, alt_rtl+5, timeout=60, relative=True)
+
+        # Back to auto
+        self.change_mode('AUTO')
+
+        # Reenable thermals
+        self.set_parameter("SIM_THML_SCENARI", 1)
+
+        # Disable soaring using RC channel.
+        self.send_set_rc(rc_chan, 1100)
+
+        # Wait to get back to waypoint before thermal.
+        self.progress("Waiting to get back to position")
+        self.wait_current_waypoint(3,timeout=1200)
+
+        # Enable soaring with mode changes suppressed)
+        self.send_set_rc(rc_chan, 1500)
+
+        # Make sure this causes throttle down.
+        self.wait_servo_channel_value(3, 1200, timeout=2, comparator=operator.lt)
+
+        self.progress("Waiting for next WP with no loiter")
+        self.wait_waypoint(4,4,timeout=1200,max_dist=120)
+
+        # Disarm
+        self.disarm_vehicle()
+
+        self.progress("Mission OK")
+
+    def tests(self):
+        '''return list of all tests'''
+        ret = AutoTest.tests(self)
+
+        '''return list of all tests'''
+        ret.extend([
+            ("Mission", "Soaring mission",
+             self.fly_mission)
         ])
         return ret
