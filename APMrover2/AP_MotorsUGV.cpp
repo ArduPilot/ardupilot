@@ -795,7 +795,7 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
             case SRV_Channel::k_throttleLeft:
             case SRV_Channel::k_motor1:
                 //Forcing a brake once the pwm controller from L298H is not breaking 
-                if (throttle == 0) {
+                if ((throttle > -0.1f) && (throttle < 0.1f)) {
                     _relayEvents.do_set_relay(0, 1);
                     _relayEvents.do_set_relay(1, 1);
                 }
@@ -807,7 +807,7 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
             case SRV_Channel::k_throttleRight:
             case SRV_Channel::k_motor2:
                 //Forcing a brake once the pwm controller from L298H is not breaking 
-                if (throttle == 0) {
+                if ((throttle > -0.1f) && (throttle < 0.1f)) {
                     _relayEvents.do_set_relay(2, 1);
                     _relayEvents.do_set_relay(3, 1);
                 }
@@ -819,7 +819,7 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
             case SRV_Channel::k_motor3:
                 //Wait to see what can be done - Number of pins enable up to 3 motors!
                 //Forcing a brake once the pwm controller from L298H is not breaking 
-                if (throttle == 0) {
+                if ((throttle > -0.1f) && (throttle < 0.1f)) {
                     _relayEvents.do_set_relay(2, 1);
                     _relayEvents.do_set_relay(3, 1);
                 }
