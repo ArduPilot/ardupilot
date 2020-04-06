@@ -298,9 +298,6 @@ public:
 
     AP_Beacon beacon;
 
-    // Visual Odometry camera
-    AP_VisualOdom visual_odom;
-
     // Motor library
     AP_MotorsUGV motors;
 
