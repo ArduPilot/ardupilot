@@ -1728,6 +1728,11 @@ void AC_AutoTune::Log_Write_AutoTune(uint8_t _axis, uint8_t tune_step, float mea
 // Write an Autotune data packet
 void AC_AutoTune::Log_Write_AutoTuneDetails(float angle_cd, float rate_cds)
 {
+// @LoggerMessage: ATDE
+// @Description: AutoTune data packet
+// @Field: TimeUS: Time since system startup
+// @Field: Angle: current angle
+// @Field: Rate: current angular rate
     AP::logger().Write(
         "ATDE",
         "TimeUS,Angle,Rate",
