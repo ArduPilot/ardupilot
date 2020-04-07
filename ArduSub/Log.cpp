@@ -243,7 +243,7 @@ void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target
 
 // @LoggerMessage: CTUN
 // @Description: Control Tuning information
-// @Field: TimeUS: microseconds since system startup
+// @Field: TimeUS: Time since system startup
 // @Field: ThI: throttle input
 // @Field: ABst: angle boost
 // @Field: ThO: throttle output
@@ -252,7 +252,7 @@ void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target
 // @Field: Alt: achieved altitude
 // @Field: BAlt: barometric altitude
 // @Field: DSAlt: desired rangefinder altitude
-// @Field: SAlt: achived rangefinder altitude
+// @Field: SAlt: achieved rangefinder altitude
 // @Field: TAlt: terrain altitude
 // @Field: DCRt: desired climb rate
 // @Field: CRt: climb rate
