@@ -1344,7 +1344,12 @@ class AutoTest(ABC):
             if name not in docco_ids:
                 self.progress("Undocumented message: %s" % name)
                 continue
+            seen_labels = {}
             for label in code_ids[name]["labels"].split(","):
+                if label in seen_labels:
+                    raise NotAchievedException("%s.%s is duplicate label" %
+                                               (name, label))
+                seen_labels[label] = True
                 if label not in docco_ids[name]["labels"]:
                     raise NotAchievedException("%s.%s not in documented fields" %
                                                (name, label))
