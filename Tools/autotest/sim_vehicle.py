@@ -762,11 +762,15 @@ parser = CompatOptionParser(
     "you are simulating, for example, start in the ArduPlane directory to "
     "simulate ArduPlane")
 
+vehicle_choices = list(vinfo.options.keys())
+# add an alias for people with too much m
+vehicle_choices.append("APMrover2")
+
 parser.add_option("-v", "--vehicle",
                   type='choice',
                   default=None,
                   help="vehicle type (%s)" % vehicle_options_string,
-                  choices=list(vinfo.options.keys()))
+                  choices=vehicle_choices)
 parser.add_option("-f", "--frame", type='string', default=None, help="""set vehicle frame type
 
 %s""" % (generate_frame_help()))
@@ -1057,6 +1061,16 @@ if cmd_opts.vehicle not in vinfo.options:
             cmd_opts.vehicle = bname
             break
         cwd = os.path.dirname(cwd)
+
+# map from some vehicle aliases back to canonical names.  APMrover2
+# was the old name / directory name for Rover.
+vehicle_map = {
+    "APMrover2": "Rover",
+}
+if cmd_opts.vehicle in vehicle_map:
+    progress("%s is now known as %s" %
+             (cmd_opts.vehicle, vehicle_map[cmd_opts.vehicle]))
+    cmd_opts.vehicle = vehicle_map[cmd_opts.vehicle]
 
 # try to validate vehicle
 if cmd_opts.vehicle not in vinfo.options:
