@@ -123,7 +123,7 @@ bool AP_VisualOdom_IntelT265::align_sensor_to_vehicle(const Vector3f &position, 
     Vector3f angle_diff;
     ahrs_quat.angular_difference(att_corrected).to_axis_angle(angle_diff);
     _yaw_trim = angle_diff.z;
-    gcs().send_text(MAV_SEVERITY_CRITICAL, "VisOdom: yaw shifted %d to %d deg",
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "VisualOdom: yaw shifted %d to %d deg",
                     //(int)degrees(_yaw_trim - yaw_trim_orig),
                     (int)degrees(_yaw_trim),
                     (int)degrees(sens_yaw + _yaw_trim));
@@ -157,7 +157,7 @@ bool AP_VisualOdom_IntelT265::pre_arm_check(char *failure_msg, uint8_t failure_m
 {
     // exit immediately if not healthy
     if (!healthy()) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "VisualOdom not healthy");
+        hal.util->snprintf(failure_msg, failure_msg_len, "not healthy");
         return false;
     }
 
@@ -170,7 +170,7 @@ bool AP_VisualOdom_IntelT265::pre_arm_check(char *failure_msg, uint8_t failure_m
     // get ahrs attitude
     Quaternion ahrs_quat;
     if (!AP::ahrs().get_quaternion(ahrs_quat)) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "VisualOdom waiting for AHRS attitude");
+        hal.util->snprintf(failure_msg, failure_msg_len, "waiting for AHRS attitude");
         return false;
     }
 
@@ -181,14 +181,14 @@ bool AP_VisualOdom_IntelT265::pre_arm_check(char *failure_msg, uint8_t failure_m
     // check if roll and pitch is different by > 10deg (using NED so cannot determine whether roll or pitch specifically)
     const float rp_diff_deg = degrees(safe_sqrt(sq(angle_diff.x)+sq(angle_diff.y)));
     if (rp_diff_deg > 10.0f) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "VisualOdom roll/pitch diff %4.1f deg (>10)",(double)rp_diff_deg);
+        hal.util->snprintf(failure_msg, failure_msg_len, "roll/pitch diff %4.1f deg (>10)",(double)rp_diff_deg);
         return false;
     }
 
     // check if yaw is different by > 10deg
     const float yaw_diff_deg = degrees(fabsf(angle_diff.z));
     if (yaw_diff_deg > 10.0f) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "VisualOdom yaw diff %4.1f deg (>10)",(double)yaw_diff_deg);
+        hal.util->snprintf(failure_msg, failure_msg_len, "yaw diff %4.1f deg (>10)",(double)yaw_diff_deg);
         return false;
     }
 
