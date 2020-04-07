@@ -226,7 +226,7 @@ const struct LogStructure Plane::log_structure[] = {
 
 // @LoggerMessage: CTUN
 // @Description: Control Tuning information
-// @Field: TimeUS: microseconds since system startup
+// @Field: TimeUS: Time since system startup
 // @Field: NavRoll: desired roll
 // @Field: Roll: achieved roll
 // @Field: NavPitch: desired pitch
@@ -242,7 +242,7 @@ const struct LogStructure Plane::log_structure[] = {
 // @LoggerMessage: NTUN
 // @Description: Navigation Tuning information - e.g. vehicle destination
 // @URL: http://ardupilot.org/rover/docs/navigation.html
-// @Field: TimeUS: Microseconds since system startup
+// @Field: TimeUS: Time since system startup
 // @Field: Dist: distance to the current navigation waypoint
 // @Field: TBrg: bearing to the current navigation waypoint
 // @Field: NavBrg: the vehicle's desired heading
@@ -260,7 +260,7 @@ const struct LogStructure Plane::log_structure[] = {
 
 // @LoggerMessage: ATRP
 // @Description: Pitch/Roll AutoTune messages for Plane 
-// @Field: TimeUS: Microseconds since system startup
+// @Field: TimeUS: Time since system startup
 // @Field: Type: Type of autotune (0 = Roll/ 1 = Pitch)
 // @Field: State: AutoTune state
 // @Field: Servo: Normalised control surface output (between -4500 to 4500)
@@ -272,7 +272,7 @@ const struct LogStructure Plane::log_structure[] = {
 
 // @LoggerMessage: STAT
 // @Description: Current status of the aircraft
-// @Field: TimeUS: Microseconds since system startup
+// @Field: TimeUS: Time since system startup
 // @Field: isFlying: True if aircraft is probably flying
 // @Field: isFlyProb: Probabilty that the aircraft is flying
 // @Field: Armed: Arm status of the aircraft
@@ -286,7 +286,7 @@ const struct LogStructure Plane::log_structure[] = {
 
 // @LoggerMessage: QTUN
 // @Description: QuadPlane vertical tuning message
-// @Field: TimeUS: microseconds since system startup
+// @Field: TimeUS: Time since system startup
 // @Field: ThI: throttle input
 // @Field: ABst: angle boost
 // @Field: ThO: throttle output
@@ -303,7 +303,7 @@ const struct LogStructure Plane::log_structure[] = {
 
 // @LoggerMessage: AOA
 // @Description: Angle of attack and Side Slip Angle values
-// @Field: TimeUS: Microseconds since system startup
+// @Field: TimeUS: Time since system startup
 // @Field: AOA: Angle of Attack calculated from airspeed, wind vector,velocity vector 
 // @Field: SSA: Side Slip Angle calculated from airspeed, wind vector,velocity vector
     { LOG_AOA_SSA_MSG, sizeof(log_AOA_SSA),
@@ -311,7 +311,7 @@ const struct LogStructure Plane::log_structure[] = {
 
 // @LoggerMessage: PIQR,PIQP,PIQY,PIQA
 // @Description: QuadPlane Proportional/Integral/Derivative gain values for Roll/Pitch/Yaw/Z
-// @Field: TimeUS: microseconds since system startup
+// @Field: TimeUS: Time since system startup
 // @Field: Tar: desired value
 // @Field: Act: achieved value
 // @Field: Err: error between target and achieved
@@ -330,7 +330,7 @@ const struct LogStructure Plane::log_structure[] = {
 
 // @LoggerMessage: AETR
 // @Description: Normalised pre-mixer control surface outputs
-// @Field: TimeUS: Microseconds since system startup
+// @Field: TimeUS: Time since system startup
 // @Field: Ail: Pre-mixer value for aileron output (between -4500 to 4500)
 // @Field: Elev: Pre-mixer value for elevator output (between -4500 to 4500)
 // @Field: Thr: Pre-mixer value for throttle output (between -4500 to 4500)
