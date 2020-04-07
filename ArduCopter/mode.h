@@ -1402,7 +1402,11 @@ public:
     bool init(bool ignore_checks) override;
     void exit();
     void run() override;
+
+    // auto control methods.  copter flies grid pattern
     void run_auto();
+    void suspend_auto();
+    void init_auto();
 
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
@@ -1432,6 +1436,8 @@ private:
 
     Vector2f dest_A;    // in NEU frame in cm relative to ekf origin
     Vector2f dest_B;    // in NEU frame in cm relative to ekf origin
+    Vector3f current_dest; // current target destination (use for resume after suspending)
+    bool current_terr_alt;
 
     enum ZigZagState {
         STORING_POINTS, // storing points A and B, pilot has manual control
@@ -1440,7 +1446,7 @@ private:
     } stage;
 
     enum AutoState {
-        MANUAL,         // after initializing, before switching to ZigZag Auto
+        MANUAL,         // not in ZigZag Auto
         AB_MOVING,      // moving from A to B or from B to A
         SIDEWAYS,       // moving to sideways
     } auto_stage;
@@ -1450,6 +1456,7 @@ private:
     bool is_auto;                   // enable zigzag auto feature which is automate both AB and sideways
     uint16_t line_count = 0;        // current line number
     int16_t line_num = 0;           // target line number
+    bool is_suspended;              // true if zigzag auto is suspended
 };
 
 #if MODE_AUTOROTATE_ENABLED == ENABLED

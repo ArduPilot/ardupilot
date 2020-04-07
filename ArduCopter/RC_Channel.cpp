@@ -485,6 +485,8 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
         case AUX_FUNC::ZIGZAG_SaveWP:
 #if MODE_ZIGZAG_ENABLED == ENABLED
             if (copter.flightmode == &copter.mode_zigzag) {
+                // initialize zigzag auto
+                copter.mode_zigzag.init_auto();
                 switch (ch_flag) {
                     case LOW:
                         copter.mode_zigzag.save_or_move_to_destination(ModeZigZag::Destination::A);
@@ -570,6 +572,7 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
                     copter.mode_zigzag.run_auto();
                     break;
                 default:
+                    copter.mode_zigzag.suspend_auto();
                     break;
                 }
             }
