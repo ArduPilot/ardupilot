@@ -263,6 +263,13 @@ jump_to_app()
     // disable all interrupt sources
     port_disable();
 
+    // Activate the MSP, if the core is currently run with PSP
+    // Compiler might still use stack, so PSP copied to the MSP before jump
+    if( CONTROL_SPSEL_Msk & __get_CONTROL() ) {  // MSP is not active
+        __set_MSP( __get_PSP() ) ;
+        __set_CONTROL( __get_CONTROL( ) & ~CONTROL_SPSEL_Msk ) ;
+    }
+
     /* switch exception handlers to the application */
     *(volatile uint32_t *)SCB_VTOR = APP_START_ADDRESS;
 
