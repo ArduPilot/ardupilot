@@ -335,6 +335,15 @@ void AP_IOMCU::read_status()
     if (now - last_log_ms >= 1000U) {
         last_log_ms = now;
         if (AP_Logger::get_singleton()) {
+// @LoggerMessage: IOMC
+// @Description: IOMCU diagnostic information
+// @Field: TimeUS: Time since system startup
+// @Field: Mem: Free memory
+// @Field: TS: IOMCU uptime
+// @Field: NPkt: Number of packets received by IOMCU
+// @Field: Nerr: Protocol failures on MCU side
+// @Field: Nerr2: Reported number of failures on IOMCU side
+// @Field: NDel: Number of delayed packets received by MCU
             AP::logger().Write("IOMC", "TimeUS,Mem,TS,NPkt,Nerr,Nerr2,NDel", "QHIIIII",
                                AP_HAL::micros64(),
                                reg_status.freemem,
