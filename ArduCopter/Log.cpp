@@ -455,7 +455,7 @@ const struct LogStructure Copter::log_structure[] = {
 // @LoggerMessage: PTUN
 // @Description: Parameter Tuning information
 // @URL: https://ardupilot.org/copter/docs/tuning.html#in-flight-tuning
-// @Field: TimeUS: Microseconds since system startup
+// @Field: TimeUS: Time since system startup
 // @Field: Param: Parameter being tuned
 // @Field: TunVal: Normalized value used inside tuning() function
 // @Field: TunMin: Tuning minimum limit
@@ -466,7 +466,7 @@ const struct LogStructure Copter::log_structure[] = {
 
 // @LoggerMessage: CTUN
 // @Description: Control Tuning information
-// @Field: TimeUS: microseconds since system startup
+// @Field: TimeUS: Time since system startup
 // @Field: ThI: throttle input
 // @Field: ABst: angle boost
 // @Field: ThO: throttle output
@@ -509,7 +509,7 @@ const struct LogStructure Copter::log_structure[] = {
     
 // @LoggerMessage: MOTB
 // @Description: Battery information
-// @Field: TimeUS: Microseconds since system startup
+// @Field: TimeUS: Time since system startup
 // @Field: LiftMax: Maximum motor compensation gain
 // @Field: BatVolt: Ratio betwen detected battery voltage and maximum battery voltage
 // @Field: BatRes: Estimated battery resistance
@@ -530,7 +530,7 @@ const struct LogStructure Copter::log_structure[] = {
     
 // @LoggerMessage: HELI
 // @Description: Helicopter related messages 
-// @Field: TimeUS: Microseconds since system startup
+// @Field: TimeUS: Time since system startup
 // @Field: DRRPM: Desired rotor speed
 // @Field: ERRPM: Estimated rotor speed
 // @Field: Gov: Governor Output
@@ -542,7 +542,7 @@ const struct LogStructure Copter::log_structure[] = {
 
 // @LoggerMessage: PL
 // @Description: Precision Landing messages
-// @Field: TimeUS: Microseconds since system startup
+// @Field: TimeUS: Time since system startup
 // @Field: Heal: True if Precision Landing is healthy
 // @Field: TAcq: True if landing target is detected
 // @Field: pX: Target position relative to vehicle, X-Axis (0 if target not found)
@@ -563,7 +563,7 @@ const struct LogStructure Copter::log_structure[] = {
 
 // @LoggerMessage: SIDD
 // @Description: System ID data
-// @Field: TimeUS: Microseconds since system startup
+// @Field: TimeUS: Time since system startup
 // @Field: Time: Time reference for waveform
 // @Field: Targ: Current waveform sample
 // @Field: F: Instantaneous waveform frequency
@@ -579,7 +579,7 @@ const struct LogStructure Copter::log_structure[] = {
    
 // @LoggerMessage: SIDS
 // @Description: System ID settings
-// @Field: TimeUS: Microseconds since system startup
+// @Field: TimeUS: Time since system startup
 // @Field: Ax: The axis which is being excited
 // @Field: Mag: Magnitude of the chirp waveform
 // @Field: FSt: Frequency at the start of chirp
@@ -594,7 +594,7 @@ const struct LogStructure Copter::log_structure[] = {
     
 // @LoggerMessage: GUID
 // @Description: Guided mode target information
-// @Field: TimeUS: Microseconds since system startup
+// @Field: TimeUS: Time since system startup
 // @Field: Type: Type of guided mode
 // @Field: pX: Target position, X-Axis
 // @Field: pY: Target position, Y-Axis
