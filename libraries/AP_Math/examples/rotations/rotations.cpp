@@ -156,6 +156,25 @@ static void test_euler(enum Rotation rotation, float roll, float pitch, float ya
         print_vector(v2);
         hal.console->printf("\n");
     }
+
+    // quaternion rotation test
+    Quaternion q;
+    q.from_rotation(rotation);
+    float q_roll, q_pitch, q_yaw;
+    q.to_euler(q_roll, q_pitch, q_yaw);
+    q_roll = degrees(wrap_2PI(q_roll));
+    q_pitch = degrees(wrap_2PI(q_pitch));
+    q_yaw = degrees(wrap_2PI(q_yaw));
+    if ((fabsf(q_roll - roll) > accuracy) || (fabsf(q_pitch - pitch) > accuracy) || (fabsf(q_yaw - yaw) > accuracy)) {
+        hal.console->printf("quaternion test %u failed : yaw:%d roll:%d pitch:%d vs yaw:%f roll:%f pitch:%f\n",
+        (unsigned)rotation,
+        (int)yaw,
+        (int)roll,
+        (int)pitch,
+        (double)q_yaw,
+        (double)q_roll,
+        (double)q_pitch);
+    }
 }
 
 static void test_rotate_inverse(void)
