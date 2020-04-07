@@ -9,7 +9,7 @@
 
 // @LoggerMessage: NKT,XKT
 // @Description: EKF timing information
-// @Field: TimeUS: microseconds since system startup
+// @Field: TimeUS: Time since system startup
 // @Field: C: EKF core this message instance applies to
 // @Field: Cnt: count of samples used to create this message
 // @Field: IMUMin: smallest IMU sample interval
