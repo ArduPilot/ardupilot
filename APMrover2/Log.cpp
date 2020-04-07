@@ -257,7 +257,7 @@ const LogStructure Rover::log_structure[] = {
 // @LoggerMessage: NTUN
 // @Description: Navigation Tuning information - e.g. vehicle destination
 // @URL: http://ardupilot.org/rover/docs/navigation.html
-// @Field: TimeUS: Microseconds since system startup
+// @Field: TimeUS: Time since system startup
 // @Field: WpDist: distance to the current navigation waypoint
 // @Field: WpBrg: bearing to the current navigation waypoint
 // @Field: DesYaw: the vehicle's desired heading
