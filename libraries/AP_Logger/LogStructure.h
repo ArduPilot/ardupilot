@@ -1888,6 +1888,18 @@ struct PACKED log_Arm_Disarm {
 // @Field: Clip1: Number of clipping events on 2nd accelerometer
 // @Field: Clip2: Number of clipping events on 3rd accelerometer
 
+// @LoggerMessage: VISO
+// @Description: Visual Odometry
+// @Field: TimeUS: System time
+// @Field: dt: Time period this data covers
+// @Field: AngDX: Angular change for body-frame roll axis
+// @Field: AngDY: Angular change for body-frame pitch axis
+// @Field: AngDZ: Angular change for body-frame z axis
+// @Field: PosDX: Position change for body-frame X axis (Forward-Back)
+// @Field: PosDY: Position change for body-frame Y axis (Right-Left)
+// @Field: PosDZ: Position change for body-frame Z axis (Down-Up)
+// @Field: conf: Confidence
+
 // @LoggerMessage: VISP
 // @Description: Vision Position
 // @Field: TimeUS: System time
