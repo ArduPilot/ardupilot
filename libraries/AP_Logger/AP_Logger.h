@@ -470,6 +470,7 @@ private:
     const char* unit_name(const uint8_t unit_id);
     double multiplier_name(const uint8_t multiplier_id);
     bool seen_ids[256] = { };
+    bool labels_string_is_good(const char *labels) const;
 #endif
 
     // possibly expensive calls to start log system:
