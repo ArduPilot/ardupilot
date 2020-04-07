@@ -76,7 +76,7 @@ AP_VisualOdom::AP_VisualOdom()
     AP_Param::setup_object_defaults(this, var_info);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (_singleton != nullptr) {
-        AP_HAL::panic("VisualOdom must be singleton");
+        AP_HAL::panic("must be singleton");
     }
 #endif
     _singleton = this;
@@ -188,13 +188,13 @@ bool AP_VisualOdom::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) co
 
     // check healthy
     if (!healthy()) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "VisualOdom not healthy");
+        hal.util->snprintf(failure_msg, failure_msg_len, "not healthy");
         return false;
     }
 
     // if no backend we must have failed to create because out of memory
     if (_driver == nullptr) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "VisualOdom out of memory");
+        hal.util->snprintf(failure_msg, failure_msg_len, "out of memory");
         return false;
     }
 
