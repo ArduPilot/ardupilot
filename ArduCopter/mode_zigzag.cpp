@@ -7,6 +7,7 @@
 */
 
 #define ZIGZAG_WP_RADIUS_CM 300
+#define ZIGZAG_LINE_INFINITY -1
 
 // initialise zigzag controller
 bool ModeZigZag::init(bool ignore_checks)
@@ -37,9 +38,9 @@ bool ModeZigZag::init(bool ignore_checks)
     stage = STORING_POINTS;
     dest_A.zero();
     dest_B.zero();
-    auto_stage = AutoState::MANUAL;
 
-    line_count = 0;
+    // initialize zigzag auto
+    init_auto();
 
     return true;
 }
@@ -72,7 +73,7 @@ void ModeZigZag::run()
             // if vehicle has reached destination switch to manual control or moving to A or B
             AP_Notify::events.waypoint_complete = 1;
             if (is_auto) {
-                if (line_num == -1 || line_count < line_num) {
+                if (line_num == ZIGZAG_LINE_INFINITY || line_count < line_num) {
                     if (auto_stage == AutoState::SIDEWAYS) {
                         save_or_move_to_destination((ab_dest_stored == Destination::A) ? Destination::B : Destination::A);
                     } else {
@@ -81,8 +82,7 @@ void ModeZigZag::run()
                         move_to_side();
                     }
                 } else {
-                    is_auto = false;
-                    line_count = 0;
+                    init_auto();
                     return_to_manual_control(true);
                 }
             } else {
@@ -147,7 +147,7 @@ void ModeZigZag::save_or_move_to_destination(Destination ab_dest)
                     // spray on while moving to A or B
                     spray(true);
                     reach_wp_time_ms = 0;
-                    if (is_auto == false || line_num == -1) {
+                    if (is_auto == false || line_num == ZIGZAG_LINE_INFINITY) {
                         gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: moving to %s", (ab_dest == Destination::A) ? "A" : "B");
                     } else {
                         line_count++;
@@ -169,6 +169,8 @@ void ModeZigZag::move_to_side()
             if (wp_nav->set_wp_destination(next_dest, terr_alt)) {
                 stage = AUTO;
                 auto_stage = AutoState::SIDEWAYS;
+                current_dest = next_dest;
+                current_terr_alt = terr_alt;
                 reach_wp_time_ms = 0;
                 char const *dir[] = {"forward", "right", "backward", "left"};
                 gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: moving to %s", dir[(uint8_t)zigzag_direction]);
@@ -193,7 +195,6 @@ void ModeZigZag::return_to_manual_control(bool maintain_target)
         } else {
             loiter_nav->init_target();
         }
-        auto_stage = AutoState::MANUAL;
         is_auto = false;
         gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: manual control");
     }
@@ -469,8 +470,48 @@ bool ModeZigZag::calculate_side_dest(Vector3f& next_dest, bool& terrain_alt) con
 // run zigzag auto feature which is automate both AB and sideways
 void ModeZigZag::run_auto()
 {
+    // make sure both A and B point are registered and not when moving to A or B
+    if (stage != MANUAL_REGAIN) {
+        return;
+    }
+
     is_auto = true;
-    move_to_side();
+    // resume if zigzag auto is suspended
+    if (is_suspended && line_count <= line_num) {
+        // resume the stage when it was suspended
+        if (auto_stage == AutoState::AB_MOVING) {
+            line_count--;
+            save_or_move_to_destination(ab_dest_stored);
+        } else if (auto_stage == AutoState::SIDEWAYS) {
+            wp_nav->wp_and_spline_init();
+            if (wp_nav->set_wp_destination(current_dest, current_terr_alt)) {
+                stage = AUTO;
+                reach_wp_time_ms = 0;
+                char const *dir[] = {"forward", "right", "backward", "left"};
+                gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: moving to %s", dir[(uint8_t)zigzag_direction]);
+            }
+        }
+    } else {
+        move_to_side();
+    }
+}
+
+// suspend zigzag auto
+void ModeZigZag::suspend_auto()
+{
+    if (auto_stage != AutoState::MANUAL) {
+        is_suspended = true;
+        return_to_manual_control(true);
+    }
+}
+
+// initialize zigzag auto
+void ModeZigZag::init_auto()
+{
+    is_auto = false;
+    auto_stage = AutoState::MANUAL;
+    line_count = 0;
+    is_suspended = false;
 }
 
 // spray on / off
