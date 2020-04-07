@@ -114,7 +114,7 @@ void AP_EFI::log_status(void)
                        uint8_t(state.ecu_index));
 
     AP::logger().Write("EFI2",
-                       "TimeUS,Healthy,ES,GE,CSE,TS,FPS,OPS,DS,MS,DS,SPU,IDX",
+                       "TimeUS,Healthy,ES,GE,CSE,TS,FPS,OPS,DS,MS,DebS,SPU,IDX",
                        "s------------",
                        "F------------",
                        "QBBBBBBBBBBBB",
