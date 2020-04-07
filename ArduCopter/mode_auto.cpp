@@ -1037,18 +1037,17 @@ void ModeAuto::payload_place_run_descend()
 Location ModeAuto::terrain_adjusted_location(const AP_Mission::Mission_Command& cmd) const
 {
     // convert to location class
-    Location target_loc(cmd.content.location);
+    Location target_loc = loc_from_cmd(cmd);
 
     // decide if we will use terrain following
-    int32_t curr_terr_alt_cm, target_terr_alt_cm;
-    if (copter.current_loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, curr_terr_alt_cm) &&
-        target_loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, target_terr_alt_cm)) {
-        curr_terr_alt_cm = MAX(curr_terr_alt_cm,200);
-        // if using terrain, set target altitude to current altitude above terrain
-        target_loc.set_alt_cm(curr_terr_alt_cm, Location::AltFrame::ABOVE_TERRAIN);
+    int32_t target_terr_alt_cm;
+    if (target_loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, target_terr_alt_cm)) {
+        target_terr_alt_cm = MAX(target_terr_alt_cm,200);
+        // if using terrain, set target altitude to desired altitude above terrain
+        target_loc.set_alt_cm(target_terr_alt_cm, Location::AltFrame::ABOVE_TERRAIN);
     } else {
-        // set target altitude to current altitude above home
-        target_loc.set_alt_cm(copter.current_loc.alt, Location::AltFrame::ABOVE_HOME);
+        // set target altitude to desired altitude above home
+        target_loc.set_alt_cm(target_loc.alt, Location::AltFrame::ABOVE_HOME);
     }
     return target_loc;
 }
@@ -1138,8 +1137,8 @@ void ModeAuto::do_land(const AP_Mission::Mission_Command& cmd)
 {
     // To-Do: check if we have already landed
 
-    // if location provided we fly to that location at current altitude
-    if (cmd.content.location.lat != 0 || cmd.content.location.lng != 0) {
+    // if location provided we fly to that location
+    if (cmd.content.location.lat != 0 || cmd.content.location.lng != 0 || cmd.content.location.alt != 0) {
         // set state to fly to location
         state = State::FlyToLocation;
 
@@ -1447,8 +1446,8 @@ void ModeAuto::do_winch(const AP_Mission::Mission_Command& cmd)
 // do_payload_place - initiate placing procedure
 void ModeAuto::do_payload_place(const AP_Mission::Mission_Command& cmd)
 {
-    // if location provided we fly to that location at current altitude
-    if (cmd.content.location.lat != 0 || cmd.content.location.lng != 0) {
+    // if location provided we fly to that location
+    if (cmd.content.location.lat != 0 || cmd.content.location.lng != 0 || cmd.content.location.alt != 0) {
         // set state to fly to location
         nav_payload_place.state = PayloadPlaceStateType_FlyToLocation;
 
