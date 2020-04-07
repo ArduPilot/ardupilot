@@ -1643,14 +1643,14 @@ void Compass::try_set_initial_location()
 bool
 Compass::use_for_yaw(void) const
 {
-    return _initialised && healthy(0) && use_for_yaw(0);
+    return _initialised && _enabled && healthy(0) && use_for_yaw(0);
 }
 
 /// return true if the specified compass can be used for yaw calculations
 bool
 Compass::use_for_yaw(uint8_t i) const
 {
-    if (!_initialised) {
+    if (!_initialised || !_enabled) {
         return false;
     }
     // when we are doing in-flight compass learning the state
