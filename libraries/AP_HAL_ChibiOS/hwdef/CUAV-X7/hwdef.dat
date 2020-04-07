@@ -175,7 +175,7 @@ PE14 TIM1_CH4  TIM1  PWM(12) GPIO(61)
 PH6  TIM12_CH1 TIM12 PWM(13) GPIO(62) NODMA
 PH9  TIM12_CH2 TIM12 PWM(14) GPIO(63) NODMA
 
-# allow for 15 PWMs by default
+# allow for 14 PWMs by default
 define BOARD_PWM_COUNT_DEFAULT 14
 
 # PWM output for buzzer
