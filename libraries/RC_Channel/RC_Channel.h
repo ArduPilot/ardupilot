@@ -191,6 +191,9 @@ public:
         // options used for testing
         KILL_IMU1 =          100, // disable first IMU (for IMU failure testing)
         KILL_IMU2 =          101, // disable second IMU (for IMU failure testing)
+        KILL_MAGS =          103, // disable all magnetometers
+        KILL_MAG1 =          104, // disable first magnetometer
+        KILL_MAG2 =          105, // disable second magnetometer
         CAM_MODE_TOGGLE =    102, // Momentary switch to cycle camera modes
         EKF_LANE_SWITCH =    103, // trigger lane switch attempt
         EKF_YAW_RESET =      104, // trigger yaw reset attempt

@@ -1477,6 +1477,9 @@ Compass::read(void)
 
     for (uint8_t i=0; i< _backend_count; i++) {
         // call read on each of the backend. This call updates field[i]
+        if (_disabled_mask & (1<<i)) {
+            continue;
+        }
         _backends[i]->read();
     }
     uint32_t time = AP_HAL::millis();

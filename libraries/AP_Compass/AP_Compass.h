@@ -103,6 +103,11 @@ public:
     // as we don't want it to have an effect at run-time.
     bool enabled() const { return initialised(); }
 
+    // used to disable Compass for Compass failure testing in flight
+    void set_disabled_mask(uint8_t mask) {
+        _disabled_mask = mask;
+    }
+
     // many methods in here should not be called unless the
     // magnetometer has been initialised and is currently enabled
     void check_initialised() const {
@@ -637,6 +642,9 @@ private:
     bool _initial_location_set;
 
     bool _cal_thread_started;
+
+    // used for flight testing with Compass loss
+    bool _disabled_mask;
 };
 
 namespace AP {
