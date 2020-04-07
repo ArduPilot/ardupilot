@@ -1462,6 +1462,23 @@ struct PACKED log_Arm_Disarm {
 // @Field: FMx: Maximum free space in write buffer in last time period
 // @Field: FAv: Average free space in write buffer in last time period
 
+// @LoggerMessage: DSTL
+// @Description: Deepstall Landing data
+// @Field: TimeUS: Time since system startup
+// @Field: Stg: Deepstall landing stage
+// @Field: THdg: Target heading
+// @Field: Lat: Landing point latitude
+// @Field: Lng: Landing point longitude
+// @Field: Alt: Landing point altitude
+// @Field: XT: Crosstrack error
+// @Field: Travel: Expected travel distance vehicle will travel from this point
+// @Field: L1I: L1 controller crosstrack integrator value
+// @Field: Loiter: wind estimate loiter angle flown
+// @Field: Des: Deepstall steering PID desired value
+// @Field: P: Deepstall steering PID Proportional response component
+// @Field: I: Deepstall steering PID Integral response component
+// @Field: D: Deepstall steering PID Derivative response component
+
 // @LoggerMessage: ERR
 // @Description: Specifically coded error messages
 // @Field: TimeUS: Time since system startup
