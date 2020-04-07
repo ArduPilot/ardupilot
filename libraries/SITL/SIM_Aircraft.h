@@ -47,6 +47,7 @@ public:
       set simulation speedup
      */
     void set_speedup(float speedup);
+    float get_speedup() { return target_speedup; }
 
     /*
       set instance number
