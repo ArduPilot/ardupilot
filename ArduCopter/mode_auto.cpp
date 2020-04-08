@@ -243,14 +243,8 @@ void ModeAuto::land_start(const Vector3f& destination)
 //  we assume the caller has performed all required GPS_ok checks
 void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radius_m)
 {
-    // convert location to vector from ekf origin
-    Vector3f circle_center_neu;
-    if (!circle_center.get_vector_from_origin_NEU(circle_center_neu)) {
-        // default to current position and log error
-        circle_center_neu = inertial_nav.get_position();
-        AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_CIRCLE_INIT);
-    }
-    copter.circle_nav->set_center(circle_center_neu);
+    // set circle center
+    copter.circle_nav->set_center(circle_center);
 
     // set circle radius
     if (!is_zero(radius_m)) {
@@ -280,6 +274,7 @@ void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radi
         }
 
         // if we are outside the circle, point at the edge, otherwise hold yaw
+        const Vector3f &circle_center_neu = copter.circle_nav->get_center();
         const Vector3f &curr_pos = inertial_nav.get_position();
         float dist_to_center = norm(circle_center_neu.x - curr_pos.x, circle_center_neu.y - curr_pos.y);
         // initialise yaw
@@ -304,7 +299,7 @@ void ModeAuto::circle_start()
     _mode = Auto_Circle;
 
     // initialise circle controller
-    copter.circle_nav->init(copter.circle_nav->get_center());
+    copter.circle_nav->init(copter.circle_nav->get_center(), copter.circle_nav->center_is_terrain_alt());
 }
 
 // auto_spline_start - initialises waypoint controller to implement flying to a particular destination using the spline controller
@@ -831,7 +826,7 @@ void ModeAuto::rtl_run()
 void ModeAuto::circle_run()
 {
     // call circle controller
-    copter.circle_nav->update();
+    copter.failsafe_terrain_set_status(copter.circle_nav->update());
 
     // call z-axis position controller
     pos_control->update_z_controller();
