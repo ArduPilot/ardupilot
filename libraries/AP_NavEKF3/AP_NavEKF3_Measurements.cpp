@@ -1066,13 +1066,13 @@ void NavEKF3_core::updateMovementCheck(void)
     }
 
     const float gyro_limit = radians(3.0f);
-    const float gyro_diff_limit = 0.1;;
+    const float gyro_diff_limit = 0.1;
     const float accel_limit = 1.0f;
-    const float accel_diff_limit = 1.0f;
+    const float accel_diff_limit = 5.0f;
     const float hysteresis_ratio = 0.7f;
     const float dtEkfAvgInv = 1.0f / dtEkfAvg;
 
-    // get current bias corrected gyro and accelerometer
+    // get latest bias corrected gyro and accelerometer data
     const AP_InertialSensor &ins = AP::ins();
     Vector3f gyro = ins.get_gyro(gyro_index_active) - stateStruct.gyro_bias * dtEkfAvgInv;
     Vector3f accel = ins.get_accel(accel_index_active) - stateStruct.accel_bias * dtEkfAvgInv;
@@ -1096,34 +1096,41 @@ void NavEKF3_core::updateMovementCheck(void)
     accel_prev = accel;
 	accel_diff = 0.99f * accel_diff + 0.01f * temp.length();
 
-    const float gyro_length = gyro.length();
-    const float accel_length_error = accel.length() - GRAVITY_MSS;
+    const float gyro_length_ratio = gyro.length() / gyro_limit;
+    const float accel_length_ratio = (accel.length() - GRAVITY_MSS) / accel_limit;
+    const float gyro_diff_ratio = gyro_diff / gyro_diff_limit;
+    const float accel_diff_ratio = accel_diff / accel_diff_limit;
+    bool logStatusChange = false;
     if (onGroundNotMoving) {
-        if (gyro_length > gyro_limit ||
-            fabsf(accel_length_error) > accel_limit ||
-            gyro_diff > gyro_diff_limit ||
-            accel_diff > accel_diff_limit) {
-                onGroundNotMoving = false;
-            }
-    } else if (gyro.length() < hysteresis_ratio * gyro_limit &&
-               fabsf(accel_length_error) < hysteresis_ratio * accel_limit &&
-               gyro_diff < hysteresis_ratio * gyro_diff_limit &&
-               accel_diff < hysteresis_ratio * accel_diff_limit) {
+        if (gyro_length_ratio > 1.0f ||
+            fabsf(accel_length_ratio) > 1.0f ||
+            gyro_diff_ratio > 1.0f ||
+            accel_diff_ratio > 1.0f)
+        {
+            onGroundNotMoving = false;
+            logStatusChange = true;
+        }
+    } else if (gyro_length_ratio < hysteresis_ratio &&
+            fabsf(accel_length_ratio) < hysteresis_ratio &&
+            gyro_diff_ratio < hysteresis_ratio &&
+            accel_diff_ratio < hysteresis_ratio)
+    {
         onGroundNotMoving = true;
+        logStatusChange = true;
     }
 
-    if (imuSampleTime_ms - lastMoveCheckLogTime_ms > 100) {
+    if (logStatusChange || imuSampleTime_ms - lastMoveCheckLogTime_ms > 200) {
         lastMoveCheckLogTime_ms = imuSampleTime_ms;
         AP::logger().Write("XKFM",
-                        "TimeUS,OGNM,GL,ALE,GD,AD",
+                        "TimeUS,OGNM,GLR,ALR,GDR,ADR",
                         "s-----",
                         "F-----",
                         "QBffff",
                         AP_HAL::micros64(),
                         uint8_t(onGroundNotMoving),
-                        float(gyro_length),
-                        float(accel_length_error),
-                        float(gyro_diff),
-                        float(accel_diff));
+                        float(gyro_length_ratio),
+                        float(accel_length_ratio),
+                        float(gyro_diff_ratio),
+                        float(accel_diff_ratio));
     }
 }
