@@ -51,8 +51,8 @@
 .tags_sorted_by_file
 .vagrant
 Tools/vagrant/*.log
-APMrover2/test.APMrover2/
-APMrover2/way.txt
+Rover/test.Rover/
+Rover/way.txt
 ArduCopter/Debug/
 ArduCopter/arducopter.exe.stackdump
 ArduCopter/fence.txt
@@ -63,7 +63,7 @@ ArduCopter/way.txt
 ArduPlane/test.ArduPlane/
 ArduPlane/test/*
 ArduPlane/way.txt
-Build.APMrover2/*
+Build.Rover/*
 Build.AntennaTracker/*
 Build.ArduCopter/*
 Build.ArduPlane/*
@@ -119,7 +119,7 @@ way.txt
 *.wbproj
 segv_*out
 /scripts/
-/APMrover2/scripts/
+/Rover/scripts/
 /AntennaTracker/scripts/
 /ArduCopter/scripts/
 /ArduPlane/scripts/
