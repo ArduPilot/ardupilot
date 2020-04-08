@@ -198,8 +198,8 @@ void Quaternion::from_rotation(enum Rotation rotation)
         return;
 
     case ROTATION_PITCH_180:
-        q1 = q2 = q3 = 1;
-        q4 = 0;
+        q1 = q2 = q4 = 0;
+        q3 = 1;
         return;
 
     case ROTATION_ROLL_180_YAW_225:
