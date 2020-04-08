@@ -287,7 +287,7 @@ void NavEKF3_core::SelectMagFusion()
                     // A 321 rotation order is best conditioned because the X axis is closer to horizontal than the Y axis
                     yawAngDataDelayed.yawAng = atan2f(prevTnb[0][1], prevTnb[0][0]);
                     yawAngDataDelayed.type = 2;
-                } else if (yawAngDataDelayed.type == 1) {
+                } else {
                     // A 312 rotation order is best conditioned because the Y axis is closer to horizontal than the X axis
                     yawAngDataDelayed.yawAng = atan2f(-prevTnb[0][1], prevTnb[1][1]);
                     yawAngDataDelayed.type = 1;
