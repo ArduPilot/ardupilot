@@ -1,6 +1,7 @@
 #include <AP_HAL/AP_HAL.h>
-#include "AC_Circle.h"
 #include <AP_Math/AP_Math.h>
+#include <AP_Terrain/AP_Terrain.h>
+#include "AC_Circle.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -55,10 +56,12 @@ AC_Circle::AC_Circle(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_Po
 }
 
 /// init - initialise circle controller setting center specifically
+///     set terrain_alt to true if center.z should be interpreted as an alt-above-terrain
 ///     caller should set the position controller's x,y and z speeds and accelerations before calling this
-void AC_Circle::init(const Vector3f& center)
+void AC_Circle::init(const Vector3f& center, bool terrain_alt)
 {
     _center = center;
+    _terrain_alt = terrain_alt;
 
     // initialise position controller (sets target roll angle, pitch angle and I terms based on vehicle current lean angles)
     _pos_control.set_desired_accel_xy(0.0f,0.0f);
@@ -96,12 +99,39 @@ void AC_Circle::init()
     _center.x = stopping_point.x + _radius * _ahrs.cos_yaw();
     _center.y = stopping_point.y + _radius * _ahrs.sin_yaw();
     _center.z = stopping_point.z;
+    _terrain_alt = false;
 
     // calculate velocities
     calc_velocities(true);
 
     // set starting angle from vehicle heading
     init_start_angle(true);
+}
+
+/// set circle center to a Location
+void AC_Circle::set_center(const Location& center)
+{
+    if (center.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) {
+        // convert Location with terrain altitude
+        Vector2f center_xy;
+        int32_t terr_alt_cm;
+        if (center.get_vector_xy_from_origin_NE(center_xy) && center.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, terr_alt_cm)) {
+            set_center(Vector3f(center_xy.x, center_xy.y, terr_alt_cm), true);
+        } else {
+            // failed to convert location so set to current position and log error
+            set_center(_inav.get_position(), false);
+            AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_CIRCLE_INIT);
+        }
+    } else {
+        // convert Location with alt-above-home, alt-above-origin or absolute alt
+        Vector3f circle_center_neu;
+        if (!center.get_vector_from_origin_NEU(circle_center_neu)) {
+            // default to current position and log error
+            circle_center_neu = _inav.get_position();
+            AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_CIRCLE_INIT);
+        }
+        set_center(circle_center_neu, false);
+    }
 }
 
 /// set_circle_rate - set circle rate in degrees per second
@@ -121,7 +151,7 @@ void AC_Circle::set_radius(float radius_cm)
 }
 
 /// update - update circle controller
-void AC_Circle::update()
+bool AC_Circle::update()
 {
     // calculate dt
     float dt = _pos_control.time_since_last_xy_update();
@@ -145,16 +175,22 @@ void AC_Circle::update()
     _angle = wrap_PI(_angle);
     _angle_total += angle_change;
 
+    // calculate terrain adjustments
+    float terr_offset = 0.0f;
+    if (_terrain_alt && !get_terrain_offset(terr_offset)) {
+        return false;
+    }
+
     // if the circle_radius is zero we are doing panorama so no need to update loiter target
     if (!is_zero(_radius)) {
         // calculate target position
         Vector3f target;
         target.x = _center.x + _radius * cosf(-_angle);
         target.y = _center.y - _radius * sinf(-_angle);
-        target.z = _pos_control.get_alt_target();
+        target.z = _center.z + terr_offset;
 
         // update position controller target
-        _pos_control.set_xy_target(target.x, target.y);
+        _pos_control.set_pos_target(target);
 
         // heading is from vehicle to center of circle
         _yaw = get_bearing_cd(_inav.get_position(), _center);
@@ -163,10 +199,10 @@ void AC_Circle::update()
         Vector3f target;
         target.x = _center.x;
         target.y = _center.y;
-        target.z = _pos_control.get_alt_target();
+        target.z = _center.z + terr_offset;
 
         // update position controller target
-        _pos_control.set_xy_target(target.x, target.y);
+        _pos_control.set_pos_target(target);
 
         // heading is same as _angle but converted to centi-degrees
         _yaw = _angle * DEGX100;
@@ -174,6 +210,8 @@ void AC_Circle::update()
 
     // update position controller
     _pos_control.update_xy_controller();
+
+    return true;
 }
 
 // get_closest_point_on_circle - returns closest point on the circle
@@ -268,4 +306,52 @@ void AC_Circle::init_start_angle(bool use_heading)
             _angle = wrap_PI(bearing_rad);
         }
     }
+}
+
+// get expected source of terrain data
+AC_Circle::TerrainSource AC_Circle::get_terrain_source() const
+{
+    // use range finder if connected
+    if (_rangefinder_available && _rangefinder_use) {
+        return AC_Circle::TerrainSource::TERRAIN_FROM_RANGEFINDER;
+    }
+#if AP_TERRAIN_AVAILABLE
+    const AP_Terrain *terrain = AP_Terrain::get_singleton();
+    if ((terrain != nullptr) && terrain->enabled()) {
+        return AC_Circle::TerrainSource::TERRAIN_FROM_TERRAINDATABASE;
+    } else {
+        return AC_Circle::TerrainSource::TERRAIN_UNAVAILABLE;
+    }
+#else
+    return AC_Circle::TerrainSource::TERRAIN_UNAVAILABLE;
+#endif
+}
+
+// get terrain's altitude (in cm above the ekf origin) at the current position (+ve means terrain below vehicle is above ekf origin's altitude)
+bool AC_Circle::get_terrain_offset(float& offset_cm)
+{
+    // calculate offset based on source (rangefinder or terrain database)
+    switch (get_terrain_source()) {
+    case AC_Circle::TerrainSource::TERRAIN_UNAVAILABLE:
+        return false;
+    case AC_Circle::TerrainSource::TERRAIN_FROM_RANGEFINDER:
+        if (_rangefinder_healthy) {
+            offset_cm = _inav.get_altitude() - _rangefinder_alt_cm;
+            return true;
+        }
+        return false;
+    case AC_Circle::TerrainSource::TERRAIN_FROM_TERRAINDATABASE:
+#if AP_TERRAIN_AVAILABLE
+        float terr_alt = 0.0f;
+        AP_Terrain *terrain = AP_Terrain::get_singleton();
+        if (terrain != nullptr && terrain->height_above_terrain(terr_alt, true)) {
+            offset_cm = _inav.get_altitude() - (terr_alt * 100.0f);
+            return true;
+        }
+#endif
+        return false;
+    }
+
+    // we should never get here but just in case
+    return false;
 }
