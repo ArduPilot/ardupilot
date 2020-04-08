@@ -158,22 +158,22 @@ static void test_euler(enum Rotation rotation, float roll, float pitch, float ya
     }
 
     // quaternion rotation test
-    Quaternion q;
+    const float q_accuracy = 1.0e-3f;
+    Quaternion q, qe;
     q.from_rotation(rotation);
-    float q_roll, q_pitch, q_yaw;
+    qe.from_euler(radians(roll), radians(pitch), radians(yaw));
+    float q_roll, q_pitch, q_yaw, qe_roll, qe_pitch, qe_yaw;
     q.to_euler(q_roll, q_pitch, q_yaw);
-    q_roll = degrees(wrap_2PI(q_roll));
-    q_pitch = degrees(wrap_2PI(q_pitch));
-    q_yaw = degrees(wrap_2PI(q_yaw));
-    if ((fabsf(q_roll - roll) > accuracy) || (fabsf(q_pitch - pitch) > accuracy) || (fabsf(q_yaw - yaw) > accuracy)) {
-        hal.console->printf("quaternion test %u failed : yaw:%d roll:%d pitch:%d vs yaw:%f roll:%f pitch:%f\n",
+    qe.to_euler(qe_roll, qe_pitch, qe_yaw);
+    const float roll_diff = fabsf(wrap_PI(q_roll - qe_roll));
+    const float pitch_diff = fabsf(wrap_PI(q_pitch - qe_pitch));
+    const float yaw_diff = fabsf(wrap_PI(q_yaw - qe_yaw));
+    if ((roll_diff > q_accuracy) || (pitch_diff > q_accuracy) || (yaw_diff > q_accuracy)) {
+        hal.console->printf("quaternion test %u failed : yaw:%f/%f roll:%f/%f pitch:%f/%f\n",
         (unsigned)rotation,
-        (int)yaw,
-        (int)roll,
-        (int)pitch,
-        (double)q_yaw,
-        (double)q_roll,
-        (double)q_pitch);
+        (double)q_yaw,(double)qe_yaw,
+        (double)q_roll,(double)qe_roll,
+        (double)q_pitch,(double)qe_pitch);
     }
 }
 
