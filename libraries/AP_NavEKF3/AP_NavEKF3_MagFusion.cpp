@@ -273,11 +273,29 @@ void NavEKF3_core::SelectMagFusion()
                 alignYawAngle();
             } else if (tiltAlignComplete && yawAlignComplete) {
                 fuseEulerYaw(false, true);
-            } else {
-                fuseEulerYaw(true, true);
             }
             have_fused_gps_yaw = true;
             last_gps_yaw_fusion_ms = now;
+        } else if (tiltAlignComplete && !yawAlignComplete && (imuSampleTime_ms > lastSynthYawTime_ms + 140)) {
+            yawAngDataDelayed.yawAngErr = MAX(frontend->_yawNoise, 0.05f);
+            if (onGroundNotMoving) {
+                // fuse last known good yaw angle before we stopped moving to allow yaw bias learning when on ground before flight
+                fuseEulerYaw(false, true);
+            } else {
+                // update the yaw angle using the last estimate which will be used as a static yaw reference when movement stops
+                if (fabsf(prevTnb[0][2]) < fabsf(prevTnb[1][2])) {
+                    // A 321 rotation order is best conditioned because the X axis is closer to horizontal than the Y axis
+                    yawAngDataDelayed.yawAng = atan2f(prevTnb[0][1], prevTnb[0][0]);
+                    yawAngDataDelayed.type = 2;
+                } else if (yawAngDataDelayed.type == 1) {
+                    // A 312 rotation order is best conditioned because the Y axis is closer to horizontal than the X axis
+                    yawAngDataDelayed.yawAng = atan2f(-prevTnb[0][1], prevTnb[1][1]);
+                    yawAngDataDelayed.type = 1;
+                }
+                // prevent uncontrolled yaw variance growth by fusing a zero innovation
+                fuseEulerYaw(true, true);
+            }
+            lastSynthYawTime_ms = imuSampleTime_ms;
         }
         if (magcal == MagCal::EXTERNAL_YAW) {
             // no fallback
@@ -381,7 +399,7 @@ void NavEKF3_core::SelectMagFusion()
     // from becoming badly conditioned. For planes we only do this on-ground because they can align the yaw from GPS when
     // airborne. For other platform types we do this all the time.
     if (!use_compass()) {
-        if ((onGround || !assume_zero_sideslip()) && (imuSampleTime_ms - lastSynthYawTime_ms > 140)) {
+        if ((onGround || !assume_zero_sideslip()) && (imuSampleTime_ms > lastSynthYawTime_ms + 140)) {
             fuseEulerYaw(true, false);
             magTestRatio.zero();
             yawTestRatio = 0.0f;

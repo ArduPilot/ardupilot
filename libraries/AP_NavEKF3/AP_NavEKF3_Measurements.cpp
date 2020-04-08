@@ -393,9 +393,8 @@ void NavEKF3_core::readIMUData()
     // update the inactive bias states
     learnInactiveBiases();
 
-    if (!yawAlignComplete && effective_magCal() == MagCal::EXTERNAL_YAW_FALLBACK && !inFlight) {
-        updateZGyroBias();
-    }
+    // run movement check using IMU data
+    updateMovementCheck();
 
     readDeltaVelocity(accel_index_active, imuDataNew.delVel, imuDataNew.delVelDT);
     accelPosOffset = ins.get_imu_pos_offset(accel_index_active);
@@ -1054,35 +1053,77 @@ float NavEKF3_core::MagDeclination(void) const
 }
 
 /*
-  update earth frame yaw gyro bias. This is only used for
-  MagCal::EXTERNAL_YAW_FALLBACK, when not flying and when we have not
-  yet done a yaw alignment. It prevents a buildup of a large gyro bias
-  for gyro axes that can't be corrected using the accelerometers while
-  waiting for GPS yaw
- */
-void NavEKF3_core::updateZGyroBias(void)
+  Update the on ground and not moving check.
+  Should be called once per IMU update.
+  Only updates when on ground and when operating with an external yaw sensor
+*/
+void NavEKF3_core::updateMovementCheck(void)
 {
-    const float zgyro_learn_limit = radians(3);
-    const AP_InertialSensor &ins = AP::ins();
-    /*
-      get corrected gyro
-     */
-    Vector3f gyro = ins.get_gyro(gyro_index_active) - (stateStruct.gyro_bias / dtEkfAvg);
-    /*
-      we want to push the corrected gyro towards zero, but only in the
-      Z earth axis. Rotate the gyro to earth frame, then zero x,y
-      components then rotate back
-     */
-    Matrix3f rot;
-    stateStruct.quat.rotation_matrix(rot);
-    gyro = rot.transposed() * gyro;
-    gyro.x = 0;
-    gyro.y = 0;
-    gyro = rot * gyro;
-    if (gyro.length_squared() > sq(zgyro_learn_limit)) {
-        // more than 3 degrees/second rotation, don't update. We
-        // assume the vehicle really is moving
+    MagCal magcal = effective_magCal();
+    if (!(magcal == MagCal::EXTERNAL_YAW || magcal == MagCal::EXTERNAL_YAW_FALLBACK) && !onGround) {
+        onGroundNotMoving = false;
         return;
     }
-    stateStruct.gyro_bias += gyro * 1.0e-4 * dtEkfAvg;
+
+    const float gyro_limit = radians(3.0f);
+    const float gyro_diff_limit = 0.1;;
+    const float accel_limit = 1.0f;
+    const float accel_diff_limit = 1.0f;
+    const float hysteresis_ratio = 0.7f;
+    const float dtEkfAvgInv = 1.0f / dtEkfAvg;
+
+    // get current bias corrected gyro and accelerometer
+    const AP_InertialSensor &ins = AP::ins();
+    Vector3f gyro = ins.get_gyro(gyro_index_active) - stateStruct.gyro_bias * dtEkfAvgInv;
+    Vector3f accel = ins.get_accel(accel_index_active) - stateStruct.accel_bias * dtEkfAvgInv;
+
+    if (!prevOnGround) {
+        gyro_prev = gyro;
+        accel_prev = accel;
+        onGroundNotMoving = false;
+        gyro_diff = gyro_diff_limit;
+        accel_diff = accel_diff_limit;
+        return;
+    }
+
+	// calculate a gyro rate of change metric
+	Vector3f temp = (gyro - gyro_prev) * dtEkfAvgInv;
+    gyro_prev = gyro;
+	gyro_diff = 0.99f * gyro_diff + 0.01f * temp.length();
+
+	// calculate a acceleration rate of change metric
+	temp = (accel - accel_prev) * dtEkfAvgInv;
+    accel_prev = accel;
+	accel_diff = 0.99f * accel_diff + 0.01f * temp.length();
+
+    const float gyro_length = gyro.length();
+    const float accel_length_error = accel.length() - GRAVITY_MSS;
+    if (onGroundNotMoving) {
+        if (gyro_length > gyro_limit ||
+            fabsf(accel_length_error) > accel_limit ||
+            gyro_diff > gyro_diff_limit ||
+            accel_diff > accel_diff_limit) {
+                onGroundNotMoving = false;
+            }
+    } else if (gyro.length() < hysteresis_ratio * gyro_limit &&
+               fabsf(accel_length_error) < hysteresis_ratio * accel_limit &&
+               gyro_diff < hysteresis_ratio * gyro_diff_limit &&
+               accel_diff < hysteresis_ratio * accel_diff_limit) {
+        onGroundNotMoving = true;
+    }
+
+    if (imuSampleTime_ms - lastMoveCheckLogTime_ms > 100) {
+        lastMoveCheckLogTime_ms = imuSampleTime_ms;
+        AP::logger().Write("XKFM",
+                        "TimeUS,OGNM,GL,ALE,GD,AD",
+                        "s-----",
+                        "F-----",
+                        "QBffff",
+                        AP_HAL::micros64(),
+                        uint8_t(onGroundNotMoving),
+                        float(gyro_length),
+                        float(accel_length_error),
+                        float(gyro_diff),
+                        float(accel_diff));
+    }
 }
