@@ -1239,6 +1239,14 @@ private:
     float yawInnovAtLastMagReset;   // magnetic yaw innovation last time the yaw and mag field states were reset (rad)
     Quaternion quatAtLastMagReset;  // quaternion states last time the mag states were reset
 
+    // Used by on ground movement check required when operating on ground without a yaw reference
+    float gyro_diff;                    // filtered gyro difference (rad/s)
+    float accel_diff;                   // filtered acceerometer difference (m/s/s)
+    Vector3f gyro_prev;                 // gyro vector from previous time step (rad/s)
+    Vector3f accel_prev;                // accelerometer vector from previous time step (m/s/s)
+    bool onGroundNotMoving;             // true when on the ground and not moving
+    uint32_t lastMoveCheckLogTime_ms;   // last time the movement check data was logged (msec)
+
     // flags indicating severe numerical errors in innovation variance calculation for different fusion operations
     struct {
         bool bad_xmag:1;
@@ -1340,8 +1348,10 @@ private:
     uint8_t gps_yaw_fallback_good_counter;
 
     /*
-      learn Z gyro bias when not flying and when no yaw alignment has
-      been done with EXTERNAL_YAW_FALLBACK
-     */
-    void updateZGyroBias(void);
+    Update the on ground and not moving check.
+    Should be called once per IMU update.
+    Only updates when on ground and when operating with an external yaw sensor
+    */
+    void updateMovementCheck(void);
+
 };
