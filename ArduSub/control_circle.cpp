@@ -63,7 +63,7 @@ void Sub::circle_run()
     motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // run circle controller
-    circle_nav.update();
+    failsafe_terrain_set_status(circle_nav.update());
 
     ///////////////////////
     // update xy outputs //
