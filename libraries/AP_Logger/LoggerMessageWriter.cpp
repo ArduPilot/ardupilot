@@ -1,5 +1,6 @@
 #include "AP_Common/AP_FWVersion.h"
 #include "LoggerMessageWriter.h"
+#include <AP_Scheduler/AP_Scheduler.h>
 
 #define FORCE_VERSION_H_INCLUDE
 #include "ap_version.h"
@@ -35,6 +36,9 @@ void LoggerMessageWriter_DFLogStart::reset()
 
 void LoggerMessageWriter_DFLogStart::process()
 {
+    if (AP::scheduler().time_available_usec() < 200) {
+        return;
+    }
     switch(stage) {
     case Stage::FORMATS:
         // write log formats so the log is self-describing
