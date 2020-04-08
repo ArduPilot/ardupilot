@@ -1762,8 +1762,8 @@ class AutoTestSoaring(AutoTestPlane):
     def fly_mission(self):
 
         self.set_parameter("SOAR_ENABLE", 1)
-        self.repeatedly_apply_parameter_file('default_params/plane-soaring.parm')
-        self.load_mission('ArduPlane-Missions/CMAC-soar.txt')
+        self.repeatedly_apply_parameter_file(os.path.join(testdir, 'default_params/plane.parm'))
+        self.load_mission("CMAC-soar.txt")
 
 
         self.mavproxy.send("wp set 1\n")
