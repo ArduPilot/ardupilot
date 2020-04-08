@@ -104,7 +104,7 @@ void ModeCircle::run()
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // run circle controller
-    copter.circle_nav->update();
+    copter.failsafe_terrain_set_status(copter.circle_nav->update());
 
     // call attitude controller
     if (pilot_yaw_override) {
