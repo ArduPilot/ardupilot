@@ -47,15 +47,16 @@ void AP_VisualOdom_MAV::handle_vision_position_delta_msg(const mavlink_message_t
     _last_update_ms = now_ms;
 
     // send to EKF
+    const float time_delta_sec = packet.time_delta_usec / 1000000.0f;
     AP::ahrs_navekf().writeBodyFrameOdom(packet.confidence,
-                                         angle_delta,
                                          position_delta,
-                                         packet.time_delta_usec,
+                                         angle_delta,
+                                         time_delta_sec,
                                          now_ms,
                                          _frontend.get_pos_offset());
 
     // log sensor data
-    AP::logger().Write_VisualOdom(packet.time_delta_usec / 1000000.0f,
+    AP::logger().Write_VisualOdom(time_delta_sec,
                                   angle_delta,
                                   position_delta,
                                   packet.confidence);
