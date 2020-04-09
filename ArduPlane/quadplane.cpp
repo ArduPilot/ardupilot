@@ -1699,7 +1699,10 @@ void QuadPlane::update_transition(void)
         // in half the transition time
         float transition_rate = tailsitter.transition_angle / float(transition_time_ms/2);
         uint32_t dt = now - transition_start_ms;
-        plane.nav_pitch_cd = constrain_float((-transition_rate * dt)*100, -8500, 0);
+        float pitch_cd;
+        pitch_cd = constrain_float((-transition_rate * dt)*100, -8500, 0);
+        // if already pitched forward at start of transition, wait until curve catches up
+        plane.nav_pitch_cd = (pitch_cd > transition_initial_pitch)? transition_initial_pitch : pitch_cd;
         plane.nav_roll_cd = 0;
         check_attitude_relax();
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
@@ -1788,6 +1791,7 @@ void QuadPlane::update(void)
              */
             transition_state = TRANSITION_ANGLE_WAIT_VTOL;
             transition_start_ms = now;
+	    transition_initial_pitch= constrain_float(ahrs_view->pitch_sensor,-8500,0);
         } else if (is_tailsitter() &&
                    transition_state == TRANSITION_ANGLE_WAIT_VTOL) {
             if (tailsitter_transition_vtol_complete()) {
