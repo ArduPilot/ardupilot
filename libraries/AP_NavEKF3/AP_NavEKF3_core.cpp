@@ -177,7 +177,7 @@ void NavEKF3_core::InitialiseVariables()
     lastPosPassTime_ms = 0;
     lastHgtPassTime_ms = 0;
     lastTasPassTime_ms = 0;
-    lastSynthYawTime_ms = imuSampleTime_ms;
+    lastSynthYawTime_ms = 0;
     lastTimeGpsReceived_ms = 0;
     secondLastGpsTime_ms = 0;
     lastDecayTime_ms = imuSampleTime_ms;
