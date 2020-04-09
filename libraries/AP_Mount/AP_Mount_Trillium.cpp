@@ -1,6 +1,10 @@
 #include "AP_Mount_Trillium.h"
+
+#if AP_MOUNT_TRILLIUM_ENABLED
+
 #include <GCS_MAVLink/GCS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
+#include "Trillium/Communications/OrionPublicPacket.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -379,4 +383,5 @@ void AP_Mount_Trillium::handle_passthrough(const mavlink_channel_t chan, const m
     send_command(cmd, data, size);
 }
 
+#endif // MOUNT_TRILLIUM_ENABLE
 

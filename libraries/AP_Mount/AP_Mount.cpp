@@ -461,10 +461,12 @@ void AP_Mount::init()
             _backends[instance] = new AP_Mount_SToRM32(*this, state[instance], instance);
             _num_instances++;
 
+#if AP_MOUNT_TRILLIUM_ENABLED
         // check for Trillium mounts
         } else if (mount_type == Mount_Type_Trillium) {
             _backends[instance] = new AP_Mount_Trillium(*this, state[instance], instance);
             _num_instances++;
+#endif
 
         // check for SToRM32 mounts using serial protocol
         } else if (mount_type == Mount_Type_SToRM32_serial) {

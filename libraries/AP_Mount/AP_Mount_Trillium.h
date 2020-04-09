@@ -4,6 +4,9 @@
 #pragma once
 
 #include "AP_Mount.h"
+
+#if AP_MOUNT_TRILLIUM_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
@@ -126,3 +129,5 @@ private:
     Vector3f _current_angle_deg; // in degrees
 
 };
+#endif // AP_MOUNT_TRILLIUM_ENABLED
+

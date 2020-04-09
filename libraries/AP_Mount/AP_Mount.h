@@ -24,6 +24,12 @@
 #include <AP_Common/Location.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
+
+#ifndef AP_MOUNT_TRILLIUM_ENABLED
+    #define AP_MOUNT_TRILLIUM_ENABLED !HAL_MINIMIZE_FEATURES
+#endif
+
+
 // maximum number of mounts
 #define AP_MOUNT_MAX_INSTANCES          1
 
