@@ -866,9 +866,7 @@ int8_t AP_GPS_UBLOX::find_active_config_index(ConfigKey key) const
     return -1;
 }
 
-namespace{
-
-    bool handle_ACK()
+    bool AP_GPS_UBLOX::handle_ACK()
     {
         Debug("ACK %u", (unsigned)_msg_id);
 
@@ -921,7 +919,7 @@ namespace{
     }
 
 
-    bool handle_CFG()
+    bool AP_GPS_UBLOX::handle_CFG()
     {
          switch(_msg_id) {
         case  MSG_CFG_NAV_SETTINGS:
@@ -1153,7 +1151,7 @@ namespace{
         }
     }
 
-    bool handle_MON()
+    bool AP_GPS_UBLOX::handle_MON()
     {
         switch(_msg_id) {
         case MSG_MON_HW:
@@ -1191,7 +1189,7 @@ namespace{
         return false;
     }
 
-    void handle_POSLLH()
+    void AP_GPS_UBLOX::handle_POSLLH()
     {
         Debug("MSG_POSLLH next_fix=%u", next_fix);
         if (havePvtMsg) {
@@ -1218,7 +1216,7 @@ namespace{
 #endif
     }
 
-    void handle_STATUS()
+    void AP_GPS_UBLOX::handle_STATUS()
     {
         Debug("MSG_STATUS fix_status=%u fix_type=%u",
               _buffer.status.fix_status,
@@ -1250,7 +1248,7 @@ namespace{
 #endif
     }
 
-    void handle_DOP()
+    void AP_GPS_UBLOX::handle_DOP()
     {
         Debug("MSG_DOP");
         noReceivedHdop = false;
@@ -1263,7 +1261,7 @@ namespace{
 #endif        
     }
 
-    void  handle_SOL()
+    void  AP_GPS_UBLOX::handle_SOL()
     {
        Debug("MSG_SOL fix_status=%u fix_type=%u",
               _buffer.solution.fix_status,
@@ -1308,7 +1306,7 @@ namespace{
 #endif
     }
 
-    void handle_RELPOSNED()
+    void AP_GPS_UBLOX::handle_RELPOSNED()
     {
             const Vector3f &offset0 = gps._antenna_offset[0].get();
             const Vector3f &offset1 = gps._antenna_offset[1].get();
@@ -1354,7 +1352,7 @@ namespace{
             }
     }
 
-    void handle_PVT()
+    void AP_GPS_UBLOX::handle_PVT()
     {
         Debug("MSG_PVT");
 
@@ -1443,7 +1441,7 @@ namespace{
 #endif
     }
 
-    void handle_TIMEGPS()
+    void AP_GPS_UBLOX::handle_TIMEGPS()
     {
         Debug("MSG_TIMEGPS");
         _check_new_itow(_buffer.timegps.itow);
@@ -1452,7 +1450,7 @@ namespace{
         }
     }
 
-    void handle_VELNED()
+    void AP_GPS_UBLOX::handle_VELNED()
     {
         Debug("MSG_VELNED");
         if (havePvtMsg) {
@@ -1477,7 +1475,7 @@ namespace{
         _new_speed = true;        
     }
 
-    void handle_NAV()
+    void AP_GPS_UBLOX::handle_NAV()
     {
         Debug("MSG_NAV_SVINFO\n");
         static const uint8_t HardwareGenerationMask = 0x07;
@@ -1504,7 +1502,7 @@ namespace{
         /* We don't need that anymore */
         _configure_message_rate(CLASS_NAV, MSG_NAV_SVINFO, 0);
     }
-}
+
 
 bool
 AP_GPS_UBLOX::_parse_gps(void)
@@ -1562,7 +1560,7 @@ AP_GPS_UBLOX::_parse_gps(void)
         handle_VELNED();
         break;
     case MSG_NAV_SVINFO:
-        handle_NAV();
+        handler_NAV();
         break;
     default:
         Debug("Unexpected NAV message 0x%02x", (unsigned)_msg_id);
