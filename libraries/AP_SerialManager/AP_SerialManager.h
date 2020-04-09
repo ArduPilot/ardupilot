@@ -84,6 +84,10 @@
 #define AP_SERIALMANAGER_ROBOTIS_BUFSIZE_RX  128
 #define AP_SERIALMANAGER_ROBOTIS_BUFSIZE_TX  128
 
+#define AP_SERIALMANAGER_TRILLIUM_BAUD          115200
+#define AP_SERIALMANAGER_TRILLIUM_BUFSIZE_RX    128
+#define AP_SERIALMANAGER_TRILLIUM_BUFSIZE_TX    128
+
 // MegaSquirt EFI protocol
 #define AP_SERIALMANAGER_EFI_MS_BAUD           115
 #define AP_SERIALMANAGER_EFI_MS_BUFSIZE_RX     512
@@ -137,6 +141,7 @@ public:
         SerialProtocol_RunCam = 26,
         SerialProtocol_Hott = 27,
         SerialProtocol_Scripting = 28,
+        SerialProtocol_Trillium = 30,                // Trillium Gimbal
     };
 
     // get singleton instance
