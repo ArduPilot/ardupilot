@@ -52,7 +52,6 @@
 #define UBLOX_MB_DEBUGGING 0
 
 extern const AP_HAL::HAL& hal;
-
 #ifdef HAL_NO_GCS
 #define GCS_SEND_TEXT(severity, format, args...)
 #else
@@ -867,15 +866,16 @@ int8_t AP_GPS_UBLOX::find_active_config_index(ConfigKey key) const
     return -1;
 }
 
-bool
-AP_GPS_UBLOX::_parse_gps(void)
-{
-    if (_class == CLASS_ACK) {
+namespace{
+
+    bool handle_ACK()
+    {
         Debug("ACK %u", (unsigned)_msg_id);
 
         if(_msg_id == MSG_ACK_ACK) {
             switch(_buffer.ack.clsID) {
-            case CLASS_CFG:
+            case
+             CLASS_CFG:
                 switch(_buffer.ack.msgID) {
                 case MSG_CFG_CFG:
                     _cfg_saved = true;
@@ -920,8 +920,10 @@ AP_GPS_UBLOX::_parse_gps(void)
         return false;
     }
 
-    if (_class == CLASS_CFG) {
-        switch(_msg_id) {
+
+    bool handle_CFG()
+    {
+         switch(_msg_id) {
         case  MSG_CFG_NAV_SETTINGS:
 	    Debug("Got settings %u min_elev %d drLimit %u\n", 
                   (unsigned)_buffer.nav_settings.dynModel,
@@ -1151,7 +1153,8 @@ AP_GPS_UBLOX::_parse_gps(void)
         }
     }
 
-    if (_class == CLASS_MON) {
+    bool handle_MON()
+    {
         switch(_msg_id) {
         case MSG_MON_HW:
             if (_payload_length == 60 || _payload_length == 68) {
@@ -1188,23 +1191,8 @@ AP_GPS_UBLOX::_parse_gps(void)
         return false;
     }
 
-#if UBLOX_RXM_RAW_LOGGING
-    if (_class == CLASS_RXM && _msg_id == MSG_RXM_RAW && gps._raw_data != 0) {
-        log_rxm_raw(_buffer.rxm_raw);
-        return false;
-    } else if (_class == CLASS_RXM && _msg_id == MSG_RXM_RAWX && gps._raw_data != 0) {
-        log_rxm_rawx(_buffer.rxm_rawx);
-        return false;
-    }
-#endif // UBLOX_RXM_RAW_LOGGING
-
-    if (_class != CLASS_NAV) {
-        unexpected_message();
-        return false;
-    }
-
-    switch (_msg_id) {
-    case MSG_POSLLH:
+    void handle_POSLLH()
+    {
         Debug("MSG_POSLLH next_fix=%u", next_fix);
         if (havePvtMsg) {
             _unconfigured_messages |= CONFIG_RATE_POSLLH;
@@ -1228,8 +1216,10 @@ AP_GPS_UBLOX::_parse_gps(void)
         state.vertical_accuracy = 0;
         state.horizontal_accuracy = 0;
 #endif
-        break;
-    case MSG_STATUS:
+    }
+
+    void handle_STATUS()
+    {
         Debug("MSG_STATUS fix_status=%u fix_type=%u",
               _buffer.status.fix_status,
               _buffer.status.fix_type);
@@ -1258,8 +1248,10 @@ AP_GPS_UBLOX::_parse_gps(void)
         state.status = AP_GPS::GPS_OK_FIX_3D;
         next_fix = state.status;
 #endif
-        break;
-    case MSG_DOP:
+    }
+
+    void handle_DOP()
+    {
         Debug("MSG_DOP");
         noReceivedHdop = false;
         _check_new_itow(_buffer.dop.itow);
@@ -1268,10 +1260,12 @@ AP_GPS_UBLOX::_parse_gps(void)
 #if UBLOX_FAKE_3DLOCK
         state.hdop = 130;
         state.hdop = 170;
-#endif
-        break;
-    case MSG_SOL:
-        Debug("MSG_SOL fix_status=%u fix_type=%u",
+#endif        
+    }
+
+    void  handle_SOL()
+    {
+       Debug("MSG_SOL fix_status=%u fix_type=%u",
               _buffer.solution.fix_status,
               _buffer.solution.fix_type);
         _check_new_itow(_buffer.solution.itow);
@@ -1312,9 +1306,10 @@ AP_GPS_UBLOX::_parse_gps(void)
         state.last_gps_time_ms = AP_HAL::millis();
         state.hdop = 130;
 #endif
-        break;
-    case MSG_RELPOSNED:
-        {
+    }
+
+    void handle_RELPOSNED()
+    {
             const Vector3f &offset0 = gps._antenna_offset[0].get();
             const Vector3f &offset1 = gps._antenna_offset[1].get();
             // note that we require the yaw to come from a fixed solution, not a float solution
@@ -1333,10 +1328,6 @@ AP_GPS_UBLOX::_parse_gps(void)
             const float rel_dist = _buffer.relposned.relPosLength * 1.0e-2;
             const float strict_length_error_allowed = 0.2; // allow for up to 20% error
             const float min_separation = 0.05;
-            /*
-              RELPOSNED messages gives the NED distance from base to
-              rover. It comes from the rover
-             */
             MB_Debug("RELPOSNED[%u]: od:%.2f rd:%.2f flags:0x%04x t=%u",
                      state.instance+1,
                      offset_dist, rel_dist,
@@ -1348,7 +1339,7 @@ AP_GPS_UBLOX::_parse_gps(void)
                 offset_dist > min_separation &&
                 fabsf(offset_dist - rel_dist) / MIN(offset_dist, rel_dist) < strict_length_error_allowed) {
                 float rotation_offset_rad;
-                const Vector3f diff = offset1 - offset0;
+                const Vector3f diff = offset0 - offset1;
                 rotation_offset_rad = Vector2f(diff.x, diff.y).angle();
                 if (state.instance != 0) {
                     rotation_offset_rad += M_PI;
@@ -1361,9 +1352,10 @@ AP_GPS_UBLOX::_parse_gps(void)
                 state.have_gps_yaw = false;
                 state.have_gps_yaw_accuracy = false;
             }
-        }
-        break;
-    case MSG_PVT:
+    }
+
+    void handle_PVT()
+    {
         Debug("MSG_PVT");
 
         havePvtMsg = true;
@@ -1449,15 +1441,19 @@ AP_GPS_UBLOX::_parse_gps(void)
         state.speed_accuracy = 0;
         next_fix = state.status;
 #endif
-        break;
-    case MSG_TIMEGPS:
+    }
+
+    void handle_TIMEGPS()
+    {
         Debug("MSG_TIMEGPS");
         _check_new_itow(_buffer.timegps.itow);
         if (_buffer.timegps.valid & UBX_TIMEGPS_VALID_WEEK_MASK) {
             state.time_week = _buffer.timegps.week;
         }
-        break;
-    case MSG_VELNED:
+    }
+
+    void handle_VELNED()
+    {
         Debug("MSG_VELNED");
         if (havePvtMsg) {
             _unconfigured_messages |= CONFIG_RATE_VELNED;
@@ -1478,10 +1474,11 @@ AP_GPS_UBLOX::_parse_gps(void)
 #if UBLOX_FAKE_3DLOCK
         state.speed_accuracy = 0;
 #endif
-        _new_speed = true;
-        break;
-    case MSG_NAV_SVINFO:
-        {
+        _new_speed = true;        
+    }
+
+    void handle_NAV()
+    {
         Debug("MSG_NAV_SVINFO\n");
         static const uint8_t HardwareGenerationMask = 0x07;
         _check_new_itow(_buffer.svinfo_header.itow);
@@ -1506,8 +1503,67 @@ AP_GPS_UBLOX::_parse_gps(void)
         _unconfigured_messages &= ~CONFIG_VERSION;
         /* We don't need that anymore */
         _configure_message_rate(CLASS_NAV, MSG_NAV_SVINFO, 0);
+    }
+}
+
+bool
+AP_GPS_UBLOX::_parse_gps(void)
+{
+    if (_class == CLASS_ACK) {
+        return handle_ACK();
+    }
+
+    if (_class == CLASS_CFG) {
+        return handle_CFG();
+    }
+
+    if (_class == CLASS_MON) {
+        return handle_MON();
+    }
+
+#if UBLOX_RXM_RAW_LOGGING
+    if (_class == CLASS_RXM && _msg_id == MSG_RXM_RAW && gps._raw_data != 0) {
+        log_rxm_raw(_buffer.rxm_raw);
+        return false;
+    } else if (_class == CLASS_RXM && _msg_id == MSG_RXM_RAWX && gps._raw_data != 0) {
+        log_rxm_rawx(_buffer.rxm_rawx);
+        return false;
+    }
+#endif // UBLOX_RXM_RAW_LOGGING
+
+    if (_class != CLASS_NAV) {
+        unexpected_message();
+        return false;
+    }
+
+    switch (_msg_id) {
+    case MSG_POSLLH:
+        handle_POSLLH();
         break;
-        }
+    case MSG_STATUS:
+        handle_STATUS();
+        break;
+    case MSG_DOP:
+        handle_DOP();
+        break;
+    case MSG_SOL:
+        handle_SOL();
+        break;
+    case MSG_RELPOSNED:
+        handle_RELPOSNED();
+        break;
+    case MSG_PVT:
+        handle_PVT();
+        break;
+    case MSG_TIMEGPS:
+        handle_TIMEGPS();
+        break;
+    case MSG_VELNED:
+        handle_VELNED();
+        break;
+    case MSG_NAV_SVINFO:
+        handle_NAV();
+        break;
     default:
         Debug("Unexpected NAV message 0x%02x", (unsigned)_msg_id);
         if (++_disable_counter == 0) {
