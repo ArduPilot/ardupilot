@@ -1560,7 +1560,7 @@ AP_GPS_UBLOX::_parse_gps(void)
         handle_VELNED();
         break;
     case MSG_NAV_SVINFO:
-        handler_NAV();
+        handle_NAV();
         break;
     default:
         Debug("Unexpected NAV message 0x%02x", (unsigned)_msg_id);
