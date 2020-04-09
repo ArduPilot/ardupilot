@@ -478,7 +478,7 @@ class ManifestGenerator():
                   file=sys.stderr)
 
         structure = self.walk_directory(self.basedir)
-        return json.dumps(structure, indent=4)
+        return json.dumps(structure, indent=4, separators=(',', ': '))
 
 
 def usage():
