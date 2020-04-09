@@ -694,7 +694,19 @@ private:
 
     // Buffer parse & GPS state update
     bool        _parse_gps();
-
+    bool handle_ACK();
+    bool handle_CFG();
+    bool handle_MON();
+    void handle_POSLLH();
+    void handle_STATUS();
+    void handle_DOP();
+    void handle_SOL();
+    void handle_RELPOSNED();
+    void handle_PVT();
+    void handle_TIMEGPS();
+    void handle_VELNED();
+    void handle_NAV();
+    
     // used to update fix between status and position packets
     AP_GPS::GPS_Status next_fix;
 
