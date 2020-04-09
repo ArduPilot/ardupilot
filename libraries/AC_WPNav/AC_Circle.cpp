@@ -312,7 +312,7 @@ void AC_Circle::init_start_angle(bool use_heading)
 AC_Circle::TerrainSource AC_Circle::get_terrain_source() const
 {
     // use range finder if connected
-    if (_rangefinder_available && _rangefinder_use) {
+    if (_rangefinder_available) {
         return AC_Circle::TerrainSource::TERRAIN_FROM_RANGEFINDER;
     }
 #if AP_TERRAIN_AVAILABLE

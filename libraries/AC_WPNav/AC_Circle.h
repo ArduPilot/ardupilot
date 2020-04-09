@@ -140,7 +140,6 @@ private:
     // terrain following variables
     bool        _terrain_alt;           // true if _center.z is alt-above-terrain, false if alt-above-ekf-origin
     bool        _rangefinder_available; // true if range finder could be used
-    AP_Int8     _rangefinder_use;       // true if caller has requested rangefinder be used for terrain altitude
     bool        _rangefinder_healthy;   // true if range finder is healthy
     float       _rangefinder_alt_cm;    // latest rangefinder altitude
 };
