@@ -53,7 +53,7 @@ void AP_VisualOdom_IntelT265::handle_vision_position_estimate(uint64_t remote_ti
     att.to_euler(roll, pitch, yaw);
 
     // log sensor data
-    AP::logger().Write_VisualPosition(remote_time_us, time_ms, x, y, z, degrees(roll), degrees(pitch), degrees(yaw));
+    AP::logger().Write_VisualPosition(remote_time_us, time_ms, x, y, z, degrees(roll), degrees(pitch), wrap_360(degrees(yaw)));
 
     // store corrected attitude for use in pre-arm checks
     _attitude_last = att;
@@ -122,11 +122,11 @@ bool AP_VisualOdom_IntelT265::align_sensor_to_vehicle(const Vector3f &position, 
     // trim yaw by difference between ahrs and sensor yaw
     Vector3f angle_diff;
     ahrs_quat.angular_difference(att_corrected).to_axis_angle(angle_diff);
+    const float yaw_trim_orig = _yaw_trim;
     _yaw_trim = angle_diff.z;
     gcs().send_text(MAV_SEVERITY_CRITICAL, "VisualOdom: yaw shifted %d to %d deg",
-                    //(int)degrees(_yaw_trim - yaw_trim_orig),
-                    (int)degrees(_yaw_trim),
-                    (int)degrees(sens_yaw + _yaw_trim));
+                    (int)degrees(_yaw_trim - yaw_trim_orig),
+                    (int)wrap_360(degrees(sens_yaw + _yaw_trim)));
 
     // convert _yaw_trim to _yaw_rotation to speed up processing later
     _yaw_rotation.from_euler(0.0f, 0.0f, _yaw_trim);
