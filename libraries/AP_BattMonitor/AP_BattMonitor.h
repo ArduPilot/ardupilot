@@ -46,6 +46,7 @@ class AP_BattMonitor
     friend class AP_BattMonitor_Sum;
     friend class AP_BattMonitor_FuelFlow;
     friend class AP_BattMonitor_FuelLevel_PWM;
+    friend class AP_BattMonitor_DJIBattery;
 
 public:
 

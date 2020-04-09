@@ -137,6 +137,7 @@ public:
         SerialProtocol_RunCam = 26,
         SerialProtocol_Hott = 27,
         SerialProtocol_Scripting = 28,
+        SerialProtocol_DJIBattery = 29,              // DJIBattery
     };
 
     // get singleton instance
