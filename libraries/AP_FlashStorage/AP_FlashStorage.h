@@ -83,19 +83,19 @@ public:
     bool init(void);
 
     // erase sectors and re-initialise
-    bool erase(void) {
+    bool erase(void) WARN_IF_UNUSED {
         return erase_all();
     }
     
     // re-initialise storage, using current mem_buffer
-    bool re_initialise(void);
+    bool re_initialise(void) WARN_IF_UNUSED;
     
     // switch full sector - should only be called when safe to have CPU
     // offline for considerable periods as an erase will be needed
-    bool switch_full_sector(void);
-    
+    bool switch_full_sector(void) WARN_IF_UNUSED;
+
     // write some data to storage from mem_buffer
-    bool write(uint16_t offset, uint16_t length);
+    bool write(uint16_t offset, uint16_t length) WARN_IF_UNUSED;
 
     // fixed storage size
     static const uint16_t storage_size = block_size * num_blocks;
@@ -162,20 +162,27 @@ private:
     static const uint32_t reserve_size = (storage_size / max_write) * (sizeof(block_header) + max_write) + max_write;
         
     // load data from a sector
-    bool load_sector(uint8_t sector);
+    bool load_sector(uint8_t sector) WARN_IF_UNUSED;
 
     // erase a sector and write header
-    bool erase_sector(uint8_t sector, bool mark_available);
+    bool erase_sector(uint8_t sector, bool mark_available) WARN_IF_UNUSED;
 
     // erase all sectors and reset
-    bool erase_all();
+    bool erase_all() WARN_IF_UNUSED;
 
     // write all of mem_buffer to current sector
-    bool write_all();
+    bool write_all() WARN_IF_UNUSED;
 
     // return true if all bytes are zero
-    bool all_zero(uint16_t ofs, uint16_t size);
+    bool all_zero(uint16_t ofs, uint16_t size) WARN_IF_UNUSED;
 
     // switch to next sector for writing
-    bool switch_sectors(void);
+    bool switch_sectors(void) WARN_IF_UNUSED;
+
+    // _switch_full_sector is protected by switch_full_sector to avoid
+    // an infinite recursion problem; switch_full_sectory calls
+    // write() which can call switch_full_sector.  This has been seen
+    // in practice.
+    bool protected_switch_full_sector(void) WARN_IF_UNUSED;
+    bool in_switch_full_sector;
 };

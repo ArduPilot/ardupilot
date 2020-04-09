@@ -18,6 +18,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_FlashStorage/AP_FlashStorage.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_InternalError/AP_InternalError.h>
 #include <stdio.h>
 
 #define FLASHSTORAGE_DEBUG 0
@@ -139,7 +140,24 @@ bool AP_FlashStorage::init(void)
 bool AP_FlashStorage::switch_full_sector(void)
 {
     debug("running switch_full_sector()\n");
-    
+
+    if (in_switch_full_sector) {
+        AP::internalerror().error(AP_InternalError::error_t::switch_full_sector_recursion);
+        return false;
+    }
+    in_switch_full_sector = true;
+    bool ret = protected_switch_full_sector();
+    in_switch_full_sector = false;
+    return ret;
+}
+
+// protected_switch_full_sector is protected by switch_full_sector to
+// avoid an infinite recursion problem; switch_full_sectory calls
+// write() which can call switch_full_sector.  This has been seen in
+// practice, and while it might be caused by corruption... corruption
+// happens.
+bool AP_FlashStorage::protected_switch_full_sector(void)
+{
     // clear any write error
     write_error = false;
     reserved_space = 0;
@@ -370,7 +388,7 @@ bool AP_FlashStorage::switch_sectors(void)
     }
     if (SECTOR_STATE_AVAILABLE != (enum SectorState)header.state) {
         write_error = true;
-        debug("both sectors full\n");
+        debug("new sector unavailable; state=0x%02x\n", (unsigned)header.state);
         return false;
     }
 
