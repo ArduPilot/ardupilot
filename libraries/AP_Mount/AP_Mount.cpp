@@ -7,6 +7,7 @@
 #include "AP_Mount_Alexmos.h"
 #include "AP_Mount_SToRM32.h"
 #include "AP_Mount_SToRM32_serial.h"
+#include "AP_Mount_Trillium.h"
 #include <AP_Math/location.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -196,7 +197,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Mount Type
     // @Description: Mount Type (None, Servo or MAVLink)
-    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial
+    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial, 7:Trillium
     // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO("_TYPE", 19, AP_Mount, state[0]._type, 0),
@@ -388,7 +389,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_TYPE
     // @DisplayName: Mount2 Type
     // @Description: Mount Type (None, Servo or MAVLink)
-    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial
+    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial, 7:Trillium
     // @User: Standard
     AP_GROUPINFO("2_TYPE",           42, AP_Mount, state[1]._type, 0),
 #endif // AP_MOUNT_MAX_INSTANCES > 1
@@ -458,6 +459,11 @@ void AP_Mount::init()
         // check for SToRM32 mounts using MAVLink protocol
         } else if (mount_type == Mount_Type_SToRM32) {
             _backends[instance] = new AP_Mount_SToRM32(*this, state[instance], instance);
+            _num_instances++;
+
+        // check for Trillium mounts
+        } else if (mount_type == Mount_Type_Trillium) {
+            _backends[instance] = new AP_Mount_Trillium(*this, state[instance], instance);
             _num_instances++;
 
         // check for SToRM32 mounts using serial protocol
@@ -625,6 +631,19 @@ void AP_Mount::handle_global_position_int(const mavlink_message_t &msg)
         _state._target_sysid_location.set_alt_cm(packet.alt*0.1,
                                                  Location::AltFrame::ABSOLUTE);
         _state._target_sysid_location_set = true;
+    }
+}
+
+/// Process mavlink passthough commands for mounts
+void AP_Mount::handle_passthrough(const mavlink_channel_t chan, const mavlink_passthrough_t &packet)
+{
+    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
+        if (_backends[instance] == nullptr) {
+            continue;
+        }
+        if (packet.device == 0 || packet.device-1 == instance) {
+            _backends[instance]->handle_passthrough(chan, packet);
+        }
     }
 }
 
