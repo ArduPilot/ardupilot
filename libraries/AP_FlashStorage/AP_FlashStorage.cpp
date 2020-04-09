@@ -187,7 +187,9 @@ bool AP_FlashStorage::write(uint16_t offset, uint16_t length)
             n = length;
         }
 
-        if (write_offset > flash_sector_size - (sizeof(struct block_header) + max_write + reserved_space)) {
+        const uint32_t space_available = flash_sector_size - write_offset;
+        const uint32_t space_required = sizeof(struct block_header) + max_write + reserved_space;
+        if (space_available < space_required) {
             if (!switch_sectors()) {
                 if (!flash_erase_ok()) {
                     return false;
