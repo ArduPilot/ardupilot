@@ -300,6 +300,10 @@ void ModeAuto::circle_start()
 
     // initialise circle controller
     copter.circle_nav->init(copter.circle_nav->get_center(), copter.circle_nav->center_is_terrain_alt());
+
+    if (auto_yaw.mode() != AUTO_YAW_ROI) {
+        auto_yaw.set_mode(AUTO_YAW_HOLD);
+    }
 }
 
 // auto_spline_start - initialises waypoint controller to implement flying to a particular destination using the spline controller
