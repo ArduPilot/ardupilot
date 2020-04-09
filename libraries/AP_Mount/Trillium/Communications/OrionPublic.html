@@ -1,0 +1,6160 @@
+<p><style>
+    body {
+        text-align:justify;
+        max-width: 25cm;
+        margin-left: auto;
+        margin-right: auto;
+        font-family: Georgia;
+        counter-reset: h1counter h2counter  h3counter toc1counter toc2counter toc3counter;
+     }</p>
+
+<pre><code>table {
+   border: 1px solid #e0e0e0;
+   border-collapse: collapse;
+   margin-bottom: 25px;
+}
+
+th, td {
+    border: 1px solid #e0e0e0;
+    font-family: Courier, monospace;
+    font-size: 90%;
+    padding: 2px;
+}
+
+/*
+ * Alternate colors for the table, including the heading row
+ */
+th {
+background-color: #e0e0e0   
+}
+tr:nth-child(even){background-color: #e0e0e0}
+
+h1, h2, h3, h4, h5 { font-family: Arial; }
+h1 { font-size:120%; margin-bottom: 25px; }
+h2 { font-size:110%; margin-bottom: 15px; }
+h3 { font-size:100%; margin-bottom: 10px;}
+h4, li { font-size:100%; }
+
+caption{ font-family:Arial; font-size:85%;}
+
+code, pre, .codelike {
+    font-family: Courier, monospace;
+    font-size: 100%;
+    color: darkblue;
+}
+
+/*
+ * Counters for the main headings
+ */
+
+h1:before {
+    counter-increment: h1counter;
+    content: counter(h1counter) "\00a0 ";
+}
+h1 {
+    counter-reset: h2counter;
+}
+
+h2:before {
+    counter-increment: h2counter;
+    content: counter(h1counter) "." counter(h2counter) "\00a0 ";
+}
+h2 {
+    counter-reset: h3counter;
+}
+
+h3:before {
+  counter-increment: h3counter;
+  content: counter(h1counter) "." counter(h2counter) "." counter(h3counter) "\00a0 ";
+}
+
+toctitle {font-family: Arial; font-size:120%; font-weight: bold; margin-bottom:25px; display:block;}
+toc1, toc2, toc3 {font-family: Arial; font-size:100%; margin-bottom:2px; display:block;}
+toc1 {text-indent: 0px;}
+toc2 {text-indent: 15px;}
+toc3 {text-indent: 30px;}
+
+toc1:before {
+    content: counter(toc1counter) "\00a0 ";
+    counter-increment: toc1counter;
+}
+toc1 {
+    counter-reset: toc2counter;
+}
+
+toc2:before {
+    content: counter(toc1counter) "." counter(toc2counter) "\00a0 ";
+    counter-increment: toc2counter;
+}
+toc2 {
+    counter-reset: toc3counter;
+}
+
+toc3:before {
+  content: counter(toc1counter) "." counter(toc2counter) "." counter(toc3counter) "\00a0 ";
+  counter-increment: toc3counter;
+}
+
+/* How it looks on a screen, notice the fancy hr blocks and lack of page breaks */
+@media screen {
+  body {
+    background-color: #f0f0f0;
+  }
+  .page-break { display: none; }
+  hr { 
+    height: 25px; 
+    border-style: solid; 
+    border-color: gray; 
+    border-width: 1px 0 0 0; 
+    border-radius: 10px; 
+  } 
+  hr:before { 
+    display: block; 
+    content: ""; 
+    height: 25px; 
+    margin-top: -26px; 
+    border-style: solid; 
+    border-color: gray; 
+    border-width: 0 0 1px 0; 
+    border-radius: 10px; 
+  }
+}
+
+/* How it looks when printed, hr turned off, in favor of page breaks*/
+@media print {
+  hr {display: none;}
+  body {background-color: white;}
+  .page-break{page-break-before: always;}
+}
+</code></pre>
+
+<p>}
+</style></p>
+
+<h1 id="orionpublicprotocol">OrionPublic Protocol</h1>
+
+<p>The <em>OrionPublic</em> protocol is the packet description for the public interface
+of the Orion gimbal from <a href="http://w3.trilliumeng.com/">Trillium Engineering</a>.
+The Orion gimbal communicates to users with packets of data transported over
+asyncrhonous serial, or transported by TCP/IP over ethernet.</p>
+
+<p>Protocol version is 1.3.0.a.</p>
+
+<h2 id="packetformat">Packet format</h2>
+
+<p>The general packet format is given in OrionPublicPacketShim.h and TrilliumPacket.h (in the Orion SDK), and has this form:</p>
+
+<table>
+<caption>Orion public packet general format</caption>
+<col />
+<col />
+<col />
+<thead>
+<tr>
+	<th>Byte</th>
+	<th>Name</th>
+	<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0</td>
+	<td>Sync0</td>
+	<td>0xD0</td>
+</tr>
+<tr>
+	<td>1</td>
+	<td>Sync1</td>
+	<td>0x0D</td>
+</tr>
+<tr>
+	<td>2</td>
+	<td>ID</td>
+	<td>Packet identifier from 0 to 255</td>
+</tr>
+<tr>
+	<td>3</td>
+	<td>Length</td>
+	<td>Number of Data bytes, from 0 to 140</td>
+</tr>
+<tr>
+	<td>4...Length+3</td>
+	<td>Data</td>
+	<td>Data bytes of the packet, in the layout described here</td>
+</tr>
+<tr>
+	<td>Length+4</td>
+	<td>Fletch0</td>
+	<td>Most significant byte of the 16-bit checksum</td>
+</tr>
+<tr>
+	<td>Length+5</td>
+	<td>Fletch1</td>
+	<td>Least significant byte of the 16-bit checksum</td>
+</tr>
+</tbody>
+</table>
+
+<p>The checksum of the packet is a modified 16-bit Fletcher's checksum, using an initial value of 1 and modulo 251 instead of modulo 255. The checksum starts on byte 0 and goes through all data bytes. See TrilliumPacket.c (in the Orion SDK) for details.</p>
+
+<pre><code>static void InitChecksum(UInt8 Byte, UInt16 *pA, UInt16 *pB)
+{
+    // For the first iteration, both checksum bytes should be equal
+    *pA = *pB = (((UInt16)Byte &amp; 0xFF) + 1) % 251;
+
+}// InitChecksum
+
+static void UpdateChecksum(UInt8 Byte, UInt16 *pA, UInt16 *pB)
+{
+    // Fletcher's checksum mod 251 (prime number) instead of 255
+    *pA = (*pA + ((UInt16)Byte &amp; 0xFF)) % 251;
+    *pB = (*pB + *pA) % 251;
+
+}// UpdateChecksum 
+</code></pre>
+
+<div class="page-break"></div>
+
+<hr />
+
+<h1 id="enumerations">Enumerations</h1>
+
+<p>Packets in the protocol refer to these global enumerations.</p>
+
+<h2 id="orionpkttype_tenumeration">OrionPktType_t enumeration</h2>
+
+<p>Identifiers of Orion public packets. The purpose of an Orion packet is determined by its ID field to this list.</p>
+
+<table>
+<caption><a name="OrionPktType_t"></a>OrionPktType_t enumeration</caption>
+<col />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Name</th>
+	<th>Value</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td><code>ORION_PKT_INITIALIZE</code></td>
+	<td align="center">0</td>
+	<td> </td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_CMD"><code>ORION_PKT_CMD</code></a></td>
+	<td align="center">1</td>
+	<td>Basic commands for control of gimbal pan and tilt.</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_UART_CONFIG"><code>ORION_PKT_UART_CONFIG</code></a></td>
+	<td align="center">2</td>
+	<td>Baud rate and protocol configuration for crown serial ports</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_LASER_CMD"><code>ORION_PKT_LASER_CMD</code></a></td>
+	<td align="center">3</td>
+	<td>Command to fire the laser</td>
+</tr>
+<tr>
+	<td><code>ORION_PKT_RESET</code></td>
+	<td align="center">4</td>
+	<td>Send this packet to cause the gimbal to reset</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_LASER_STATES"><code>ORION_PKT_LASER_STATES</code></a></td>
+	<td align="center">6</td>
+	<td>Laser state information</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_STARTUP_CMD"><code>ORION_PKT_STARTUP_CMD</code></a></td>
+	<td align="center">7</td>
+	<td>Command to run on startup at the end of motor initialization</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_LIMITS"><code>ORION_PKT_LIMITS</code></a></td>
+	<td align="center">34</td>
+	<td>Pan and tilt limits for current, acceleration, velocity, and position</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_CLEVIS_VERSION"><code>ORION_PKT_CLEVIS_VERSION</code></a></td>
+	<td align="center">37</td>
+	<td>Software version for the clevis board</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_RESET_SOURCE"><code>ORION_PKT_RESET_SOURCE</code></a></td>
+	<td align="center">38</td>
+	<td>Reset information for a processor</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_BOARD"><code>ORION_PKT_BOARD</code></a></td>
+	<td align="center">39</td>
+	<td>Information for a specific board</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_CROWN_VERSION"><code>ORION_PKT_CROWN_VERSION</code></a></td>
+	<td align="center">40</td>
+	<td>Software version for the crown board</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_PAYLOAD_VERSION"><code>ORION_PKT_PAYLOAD_VERSION</code></a></td>
+	<td align="center">41</td>
+	<td>Software version for the payload board</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_TRACKER_VERSION"><code>ORION_PKT_TRACKER_VERSION</code></a></td>
+	<td align="center">44</td>
+	<td>Software version for the tracker board (if present)</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_DIAGNOSTICS"><code>ORION_PKT_DIAGNOSTICS</code></a></td>
+	<td align="center">65</td>
+	<td>Electrical diagnostic data</td>
+</tr>
+<tr>
+	<td><code>ORION_PKT_FAULTS</code></td>
+	<td align="center">66</td>
+	<td> </td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_PERFORMANCE"><code>ORION_PKT_PERFORMANCE</code></a></td>
+	<td align="center">67</td>
+	<td>Measurements related to stabilization performance</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_SOFTWARE_DIAGNOSTICS"><code>ORION_PKT_SOFTWARE_DIAGNOSTICS</code></a></td>
+	<td align="center">68</td>
+	<td>Diagnostic information related to software performance for a processor</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_VIBRATION"><code>ORION_PKT_VIBRATION</code></a></td>
+	<td align="center">69</td>
+	<td>Platform vibration statistics</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_NETWORK_DIAGNOSTICS"><code>ORION_PKT_NETWORK_DIAGNOSTICS</code></a></td>
+	<td align="center">70</td>
+	<td>Network diagnostics</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_CAMERA_SWITCH"><code>ORION_PKT_CAMERA_SWITCH</code></a></td>
+	<td align="center">96</td>
+	<td>Command the gimbal to swtich cameras</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_CAMERA_STATE"><code>ORION_PKT_CAMERA_STATE</code></a></td>
+	<td align="center">97</td>
+	<td>Command a camera in the gimbal</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_NETWORK_VIDEO"><code>ORION_PKT_NETWORK_VIDEO</code></a></td>
+	<td align="center">98</td>
+	<td>Command the IP settings for video delivery</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_CAMERAS"><code>ORION_PKT_CAMERAS</code></a></td>
+	<td align="center">99</td>
+	<td>Camera settings information</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_FLIR_SETTINGS"><code>ORION_PKT_FLIR_SETTINGS</code></a></td>
+	<td align="center">103</td>
+	<td>FLIR-specific camera settings</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_APTINA_SETTINGS"><code>ORION_PKT_APTINA_SETTINGS</code></a></td>
+	<td align="center">104</td>
+	<td>Aptina-specific camera settings</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_ZAFIRO_SETTINGS"><code>ORION_PKT_ZAFIRO_SETTINGS</code></a></td>
+	<td align="center">105</td>
+	<td>DRS Zafiro-specific camera settings</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_HITACHI_SETTINGS"><code>ORION_PKT_HITACHI_SETTINGS</code></a></td>
+	<td align="center">106</td>
+	<td>Hitachi-specific camera settings</td>
+</tr>
+<tr>
+	<td><code>ORION_PKT_BAE_SETTINGS</code></td>
+	<td align="center">107</td>
+	<td>BAE-specific camera settings</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_SONY_SETTINGS"><code>ORION_PKT_SONY_SETTINGS</code></a></td>
+	<td align="center">108</td>
+	<td>Sony-specific camera settings</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_KTNC_SETTINGS"><code>ORION_PKT_KTNC_SETTINGS</code></a></td>
+	<td align="center">109</td>
+	<td>KTnC-specific camera settings</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_AUTOPILOT_DATA"><code>ORION_PKT_AUTOPILOT_DATA</code></a></td>
+	<td align="center">128</td>
+	<td>Autopilot state data, if available</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_RETRACT_CMD"><code>ORION_PKT_RETRACT_CMD</code></a></td>
+	<td align="center">160</td>
+	<td>Retract or deploy command for a gimbal retraction mechanism</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_RETRACT_STATUS"><code>ORION_PKT_RETRACT_STATUS</code></a></td>
+	<td align="center">161</td>
+	<td>Current gimbal retraction mechanism status</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_DEBUG_STRING"><code>ORION_PKT_DEBUG_STRING</code></a></td>
+	<td align="center">177</td>
+	<td>A human readable text string which is typically used for debugging purposes</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_USER_DATA"><code>ORION_PKT_USER_DATA</code></a></td>
+	<td align="center">178</td>
+	<td>Packet for sending user data to a serial port in the gimbal</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_KLV_USER_DATA"><code>ORION_PKT_KLV_USER_DATA</code></a></td>
+	<td align="center">179</td>
+	<td>KLV user-specified field settings</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_GPS_DATA"><code>ORION_PKT_GPS_DATA</code></a></td>
+	<td align="center">209</td>
+	<td>Raw GPS data input or output</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_EXT_HEADING_DATA"><code>ORION_PKT_EXT_HEADING_DATA</code></a></td>
+	<td align="center">210</td>
+	<td>Externally supplied heading information</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_INS_QUALITY"><code>ORION_PKT_INS_QUALITY</code></a></td>
+	<td align="center">211</td>
+	<td>Quality of the inertial navigation system</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_GEOLOCATE_TELEMETRY"><code>ORION_PKT_GEOLOCATE_TELEMETRY</code></a></td>
+	<td align="center">212</td>
+	<td>Information needed to locate the gimbal and its imagery</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_GEOPOINT_CMD"><code>ORION_PKT_GEOPOINT_CMD</code></a></td>
+	<td align="center">213</td>
+	<td>Command the gimbal to go to Geopoint mode</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_RANGE_DATA"><code>ORION_PKT_RANGE_DATA</code></a></td>
+	<td align="center">214</td>
+	<td>Range information from the gimbal to its target</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_PATH"><code>ORION_PKT_PATH</code></a></td>
+	<td align="center">215</td>
+	<td>Command the gimbal to path track mode</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_INS_OPTIONS"><code>ORION_PKT_INS_OPTIONS</code></a></td>
+	<td align="center">216</td>
+	<td>Configuration options for the Inertial Navigation System</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_STARE_START"><code>ORION_PKT_STARE_START</code></a></td>
+	<td align="center">217</td>
+	<td>Stare portion of step stare started</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_STARE_ACK"><code>ORION_PKT_STARE_ACK</code></a></td>
+	<td align="center">218</td>
+	<td>Stare acknowledged, clear to move</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_NETWORK_SETTINGS"><code>ORION_PKT_NETWORK_SETTINGS</code></a></td>
+	<td align="center">228</td>
+	<td>Change the IP network settings in the gimbal</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_RETRACT_VERSION"><code>ORION_PKT_RETRACT_VERSION</code></a></td>
+	<td align="center">248</td>
+	<td>Software version for the retract board (if present)</td>
+</tr>
+<tr>
+	<td><a href="#ORION_PKT_LENSCTL_VERSION"><code>ORION_PKT_LENSCTL_VERSION</code></a></td>
+	<td align="center">249</td>
+	<td>Software version for the lens control board (if present)</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="gimbalaxis_tenumeration">GimbalAxis_t enumeration</h2>
+
+<p>Enumeration of gimbal pan and tilt axes.</p>
+
+<table>
+<caption><a name="GimbalAxis_t"></a>GimbalAxis_t enumeration</caption>
+<col />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Name</th>
+	<th>Value</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td><code>GIMBAL_AXIS_PAN</code></td>
+	<td align="center">0</td>
+	<td>The pan axis</td>
+</tr>
+<tr>
+	<td><code>GIMBAL_AXIS_TILT</code></td>
+	<td align="center">1</td>
+	<td>The tilt axis</td>
+</tr>
+<tr>
+	<td><code>NUM_GIMBAL_AXES</code></td>
+	<td align="center">2</td>
+	<td>Total number of axes in the gimbal</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="axis_tenumeration">Axis_t enumeration</h2>
+
+<p>3D attitude axis enumeration.</p>
+
+<table>
+<caption><a name="Axis_t"></a>Axis_t enumeration</caption>
+<col />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Name</th>
+	<th>Value</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td><code>AXIS_ROLL</code></td>
+	<td align="center">0</td>
+	<td>Roll axis (rotation about x)</td>
+</tr>
+<tr>
+	<td><code>AXIS_PITCH</code></td>
+	<td align="center">1</td>
+	<td>Pitch axis (rotation about y)</td>
+</tr>
+<tr>
+	<td><code>AXIS_YAW</code></td>
+	<td align="center">2</td>
+	<td>Yaw axis (rotation about z)</td>
+</tr>
+<tr>
+	<td><code>NUM_AXES</code></td>
+	<td align="center">3</td>
+	<td>Number of attitude axes</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="bodyaxis_tenumeration">BodyAxis_t enumeration</h2>
+
+<p>Enumeration for body axis X, Y, Z arrays.</p>
+
+<table>
+<caption><a name="BodyAxis_t"></a>BodyAxis_t enumeration</caption>
+<col />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Name</th>
+	<th>Value</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td><code>AXIS_X</code></td>
+	<td align="center">0</td>
+	<td>X points forward (away from connector)</td>
+</tr>
+<tr>
+	<td><code>AXIS_Y</code></td>
+	<td align="center">1</td>
+	<td>Y points to the right (if X is forward)</td>
+</tr>
+<tr>
+	<td><code>AXIS_Z</code></td>
+	<td align="center">2</td>
+	<td>Z points down</td>
+</tr>
+<tr>
+	<td><code>NUM_XYZ</code></td>
+	<td align="center">3</td>
+	<td>Number of body axes</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="stator_tenumeration">Stator_t enumeration</h2>
+
+<p>Enumeration for motor stator axes.</p>
+
+<table>
+<caption><a name="Stator_t"></a>Stator_t enumeration</caption>
+<col />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Name</th>
+	<th>Value</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td><code>STATOR_U</code></td>
+	<td align="center">0</td>
+	<td>First field of three phase motor</td>
+</tr>
+<tr>
+	<td><code>STATOR_V</code></td>
+	<td align="center">1</td>
+	<td>Second field of three phase motor</td>
+</tr>
+<tr>
+	<td><code>STATOR_W</code></td>
+	<td align="center">2</td>
+	<td>Third field of three phase motor</td>
+</tr>
+<tr>
+	<td><code>NUM_STATORS</code></td>
+	<td align="center">3</td>
+	<td>Number of motor phases</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="orionboardenumeration_tenumeration">OrionBoardEnumeration_t enumeration</h2>
+
+<p>Enumeration identifying different boards in the Orion Gimbal.</p>
+
+<table>
+<caption><a name="OrionBoardEnumeration_t"></a>OrionBoardEnumeration_t enumeration</caption>
+<col />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Name</th>
+	<th>Value</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td><code>BOARD_NONE</code></td>
+	<td align="center">0</td>
+	<td>Unknown board</td>
+</tr>
+<tr>
+	<td><code>BOARD_CLEVIS</code></td>
+	<td align="center">1</td>
+	<td>The clevis board (motor control)</td>
+</tr>
+<tr>
+	<td><code>BOARD_CROWN</code></td>
+	<td align="center">2</td>
+	<td>The crown board (ins and communications)</td>
+</tr>
+<tr>
+	<td><code>BOARD_PAYLOAD</code></td>
+	<td align="center">3</td>
+	<td>The paylaod board (camera)</td>
+</tr>
+<tr>
+	<td><code>BOARD_LENSCTRL</code></td>
+	<td align="center">4</td>
+	<td>The lens control board</td>
+</tr>
+<tr>
+	<td><code>BOARD_MISSCOMP</code></td>
+	<td align="center">5</td>
+	<td>The mission computer</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="orionmode_tenumeration">OrionMode_t enumeration</h2>
+
+<p>The mode of operation of the gimbal.</p>
+
+<table>
+<caption><a name="OrionMode_t"></a>OrionMode_t enumeration</caption>
+<col />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Name</th>
+	<th>Value</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td><code>ORION_MODE_DISABLED</code></td>
+	<td align="center">0</td>
+	<td>disable motor output</td>
+</tr>
+<tr>
+	<td><code>ORION_MODE_FAULT</code></td>
+	<td align="center">1</td>
+	<td>Gimbal has experienced a fault and motors have been disabled</td>
+</tr>
+<tr>
+	<td><code>ORION_MODE_RATE</code></td>
+	<td align="center">16</td>
+	<td>Commands give the line of sight angular rate of the camera</td>
+</tr>
+<tr>
+	<td><code>ORION_MODE_GEO_RATE</code></td>
+	<td align="center">17</td>
+	<td>Inertial rate mode, with bulk motion compensation when valid slant range is available</td>
+</tr>
+<tr>
+	<td><code>ORION_MODE_FFC_AUTO</code></td>
+	<td align="center">32</td>
+	<td>Commands the gimbal to perform a flat field correction, pan and tilt will drive the IR camera to look at the black body</td>
+</tr>
+<tr>
+	<td><code>ORION_MODE_FFC</code></td>
+	<td align="center">32</td>
+	<td>Legacy FFC mode, alias of ORION_MODE_FFC_AUTO</td>
+</tr>
+<tr>
+	<td><code>ORION_MODE_FFC_MANUAL</code></td>
+	<td align="center">33</td>
+	<td>Commands the gimbal to perform a flat field correction, pan and tilt will drive the IR camera to the commanded positions. NOTE: The pan/tilt targets specify the payload position, not the boresight position, so the reported angles may not match the command target</td>
+</tr>
+<tr>
+	<td><code>ORION_MODE_SCENE</code></td>
+	<td align="center">48</td>
+	<td>Commands give the angular rate of the image produced by the camera</td>
+</tr>
+<tr>
+	<td><code>ORION_MODE_TRACK</code></td>
+	<td align="center">49</td>
+	<td>Commands give the angular rate of the track box in the camera image</td>
+</tr>
+<tr>
+	<td><code>ORION_MODE_CALIBRATION</code></td>
+	<td align="center">64</td>
+	<td>Drives the pan and tilt axes to calibrate the stabilizer gyros</td>
+</tr>
+<tr>
+	<td><code>ORION_MODE_POSITION</code></td>
+	<td align="center">80</td>
+	<td>Commands give the position of the pan and tilt axes with respect to the gimbal mount</td>
+</tr>
+<tr>
+	<td><code>ORION_MODE_POSITION_NO_LIMITS</code></td>
+	<td align="center">81</td>
+	<td>Commands give the position of the pan and tilt axes with respect to the gimbal mount. NOTE: This mode ignores the pan/tilt limits and can result in serious damage to the gimbal if used incorrectly</td>
+</tr>
+<tr>
+	<td><code>ORION_MODE_GEOPOINT</code></td>
+	<td align="center">96</td>
+	<td>Gimbal is pointing toward a fixed spatial location</td>
+</tr>
+<tr>
+	<td><code>ORION_MODE_PATH</code></td>
+	<td align="center">112</td>
+	<td>Gimbal is pointing toward a fixed path in space, and may be doing step-stare</td>
+</tr>
+<tr>
+	<td><code>ORION_MODE_DOWN</code></td>
+	<td align="center">113</td>
+	<td>Gimbal is pointing straight down, and may be doing step-stare</td>
+</tr>
+<tr>
+	<td><code>ORION_MODE_UNKNOWN</code></td>
+	<td align="center">255</td>
+	<td>Unknown gimbal mode. This is unused in normal operation and is strictly to maintain compatibility with v1.2</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="orionmaxlasers_tenumeration">OrionMaxLasers_t enumeration</h2>
+
+<p>The maximum number of lasers in an Orion gimbal.</p>
+
+<table>
+<caption><a name="OrionMaxLasers_t"></a>OrionMaxLasers_t enumeration</caption>
+<col />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Name</th>
+	<th>Value</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td><code>MAX_LASERS</code></td>
+	<td align="center">2</td>
+	<td>Maximum number of lasers in an Orion gimbal.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="orionlasertype_tenumeration">OrionLaserType_t enumeration</h2>
+
+<p>Laser type identifiers.</p>
+
+<table>
+<caption><a name="OrionLaserType_t"></a>OrionLaserType_t enumeration</caption>
+<col />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Name</th>
+	<th>Value</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td><code>LASER_TYPE_NONE</code></td>
+	<td align="center">0</td>
+	<td>No laser installed</td>
+</tr>
+<tr>
+	<td><code>LASER_TYPE_POINTER</code></td>
+	<td align="center">1</td>
+	<td>Laser pointer</td>
+</tr>
+<tr>
+	<td><code>LASER_TYPE_10MJ_MARKER</code></td>
+	<td align="center">2</td>
+	<td>Laser marker</td>
+</tr>
+<tr>
+	<td><code>LASER_TYPE_LIGHTWARE</code></td>
+	<td align="center">3</td>
+	<td>LightWare LRF</td>
+</tr>
+<tr>
+	<td><code>LASER_TYPE_JENOPTIK_DLEM</code></td>
+	<td align="center">4</td>
+	<td>Jenoptik DLEM LRF</td>
+</tr>
+<tr>
+	<td><code>LASER_TYPE_VECTRONIX</code></td>
+	<td align="center">5</td>
+	<td>Vectronix LRF</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="rangedatasrc_tenumeration">RangeDataSrc_t enumeration</h2>
+
+<p>Sources of ranging information.</p>
+
+<table>
+<caption><a name="RangeDataSrc_t"></a>RangeDataSrc_t enumeration</caption>
+<col />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Name</th>
+	<th>Value</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td><code>RANGE_SRC_NONE</code></td>
+	<td align="center">0</td>
+	<td>No ranging information</td>
+</tr>
+<tr>
+	<td><code>RANGE_SRC_SKYLINK</code></td>
+	<td align="center">1</td>
+	<td>Range information from skylink terrrain lookup</td>
+</tr>
+<tr>
+	<td><code>RANGE_SRC_LASER</code></td>
+	<td align="center">2</td>
+	<td>Range information from laser rangefinder</td>
+</tr>
+<tr>
+	<td><code>RANGE_SRC_OTHER</code></td>
+	<td align="center">3</td>
+	<td>Other source of range data</td>
+</tr>
+<tr>
+	<td><code>RANGE_SRC_INTERNAL</code></td>
+	<td align="center">4</td>
+	<td>Range information is being estimated internally by the gimbal. Note that estimates are not guaranteed be accurate and should only be used as a fallback option.</td>
+</tr>
+<tr>
+	<td><code>RANGE_SRC_INTERNAL_DTED</code></td>
+	<td align="center">5</td>
+	<td>Range information estimated by the gimbal based on a DTED model</td>
+</tr>
+<tr>
+	<td><code>NUM_RANGE_SRCS</code></td>
+	<td align="center">6</td>
+	<td> </td>
+</tr>
+</tbody>
+</table>
+
+<div class="page-break"></div>
+
+<hr />
+
+<h1 id="packetssentregularlybythegimbal">Packets sent regularly by the gimbal</h1>
+
+<p>These packets are sent by the gimbal automatically, depending on the operational mode of the gimbal.</p>
+
+<h2 id="anameorion_pkt_geolocate_telemetryageolocatetelemetrycorepacket"><a name="ORION_PKT_GEOLOCATE_TELEMETRY"></a>GeolocateTelemetryCore packet</h2>
+
+<p>This packet is transmitted at 10 Hz by the gimbal to communicate the information needed to locate the gimbal and its imagery, to determine the gimbal mode of operation, and to determine how the video output stream is being shifted by the gimbal. This is the primary packet that users should monitor to determine the gimbal status and populate user interfaces.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_GEOLOCATE_TELEMETRY</code> : 212</li>
+<li>minimum data length: 46</li>
+<li>maximum data length: 89</li>
+</ul>
+
+<p>Enumeration INS rotation options</p>
+
+<table>
+<caption><a name="InsRotationOptions"></a>InsRotationOptions enumeration</caption>
+<col />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Name</th>
+	<th>Value</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td><code>insInGimbalNative</code></td>
+	<td align="center">0</td>
+	<td>The INS is running in the gimbal native axis</td>
+</tr>
+<tr>
+	<td><code>insInPlatform</code></td>
+	<td align="center">1</td>
+	<td>The INS is running in the platform axis, see the INS options for specific roataion details</td>
+</tr>
+<tr>
+	<td><code>insInPayloadBall</code></td>
+	<td align="center">2</td>
+	<td>The INS is running in the payload ball.</td>
+</tr>
+</tbody>
+</table>
+
+<table>
+<caption>GeolocateTelemetryCore packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0...3</td>
+	<td>1)systemTime</td>
+	<td align="center">U32</td>
+	<td align="center">1</td>
+	<td>Milliseconds since system bootup.</td>
+</tr>
+<tr>
+	<td>4...7</td>
+	<td>2)gpsITOW</td>
+	<td align="center">U32</td>
+	<td align="center">1</td>
+	<td>GPS time of week in milliseconds.</td>
+</tr>
+<tr>
+	<td>8...9</td>
+	<td>3)gpsWeek</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>GPS week number since Jan 6 1980.</td>
+</tr>
+<tr>
+	<td>10...11</td>
+	<td>4)geoidUndulation</td>
+	<td align="center">I16</td>
+	<td align="center">1</td>
+	<td>Height of the geoid with respect to the WGS84 ellipsoid, in meters.<br>Scaled by 32767/(120) from -120.0 to 120.0.</td>
+</tr>
+<tr>
+	<td>12...15</td>
+	<td>5)posLat</td>
+	<td align="center">I32</td>
+	<td align="center">1</td>
+	<td>Geodetic latitude of the gimbal in radians, positive North.<br>Scaled by 180&times;10000000/&amp;pi from -3.748066027288564 to 3.748066027288564.</td>
+</tr>
+<tr>
+	<td>16...19</td>
+	<td>6)posLon</td>
+	<td align="center">I32</td>
+	<td align="center">1</td>
+	<td>Longitude of the gimbal in radians, positive East.<br>Scaled by 180&times;10000000/&amp;pi from -3.748066027288564 to 3.748066027288564.</td>
+</tr>
+<tr>
+	<td>20...23</td>
+	<td>7)posAlt</td>
+	<td align="center">I32</td>
+	<td align="center">1</td>
+	<td>Altitude of the gimbal in meters above the WGS-84 ellipsoid.<br>Scaled by 10000 from -214748.3647 to 214748.3647.</td>
+</tr>
+<tr>
+	<td>24...29</td>
+	<td>8)velNED</td>
+	<td align="center">I16</td>
+	<td align="center">3</td>
+	<td>Velocity of the gimbal in North, East, Down meters per second.<br>Scaled by 100 from -327.67 to 327.67.</td>
+</tr>
+<tr>
+	<td>30...37</td>
+	<td>9)gimbalQuat</td>
+	<td align="center">I16</td>
+	<td align="center">4</td>
+	<td>Gimbal quaternion describing the rotation from the gimbal mount frame to the North, East, Down navigation frame.<br>Scaled by 32767/(1) from -1.0 to 1.0.</td>
+</tr>
+<tr>
+	<td>38...39</td>
+	<td>10)pan</td>
+	<td align="center">I16</td>
+	<td align="center">1</td>
+	<td>Gimbal pan angle in radians from -pi to pi. This includes the camera alignment offsets.<br>Scaled by 32767/(&amp;pi) from -&pi; to &pi;.</td>
+</tr>
+<tr>
+	<td>40...41</td>
+	<td>11)tilt</td>
+	<td align="center">I16</td>
+	<td align="center">1</td>
+	<td>Gimbal tilt angle in radians from -pi to pi This includes the camera alignment offsets.<br>Scaled by 32767/(&amp;pi) from -&pi; to &pi;.</td>
+</tr>
+<tr>
+	<td>42...43</td>
+	<td>12)hfov</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Horizontal field of view of the camera in radians from 0 to 2pi.<br>Scaled by 65535/(2&times;&amp;pi) from 0.0 to 2&pi;.</td>
+</tr>
+<tr>
+	<td>44...45</td>
+	<td>13)vfov</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Vertical field of view of the camera in radians from 0 to 2pi.<br>Scaled by 65535/(2&times;&amp;pi) from 0.0 to 2&pi;.</td>
+</tr>
+<tr>
+	<td>46...51</td>
+	<td>14)losECEF</td>
+	<td align="center">I16</td>
+	<td align="center">3</td>
+	<td>Vector from the gimbal to the image location in ECEF meters. The image location is only computed if ranging data are provided to the gimbal. Otherwise the image location data are 0,0,0.<br>Scaled by 1 from -32767.0 to 32767.0.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>52...53</td>
+	<td>15)pixelWidth</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Active focal plane width in pixels.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>54...55</td>
+	<td>16)pixelHeight</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Active focal plane height in pixels.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>56</td>
+	<td>17)<a href="#OrionMode_t">mode</a></td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Operational mode of the gimbal.<br>This field is optional. If it is not included then the value is assumed to be ORION_MODE_UNKNOWN.</td>
+</tr>
+<tr>
+	<td>57</td>
+	<td>18)pathProgress</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Distance along the path from 0 (the starting point) to 1 (the ending point). This only applies if the mode is ORION_MODE_PATH.<br>Scaled by 255/(1) from 0.0 to 1.0.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>58</td>
+	<td>19)stareTime</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Seconds remaining in the stare portion of a step stare point, 0 if stare is not in progress. This only applies if the mode is ORION_MODE_PATH.<br>Scaled by 255/(2.55) from 0.0 to 2.55.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>59</td>
+	<td>20)pathFrom</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Index of the path point gimbal is traveling from. This only applies if the mode is ORION_MODE_PATH.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>60</td>
+	<td>21)pathTo</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Index of the path point gimbal is traveling to. This only applies if the mode is ORION_MODE_PATH.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>61...68</td>
+	<td>22)imageShifts</td>
+	<td align="center">I32</td>
+	<td align="center"><a href="#GimbalAxis_t">NUM_GIMBAL_AXES</a></td>
+	<td>X (horizontal) and Y (vertical) instantaneous image shifts in radians.<br>Scaled by 1000000 from -2147.483647 to 2147.483647.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>69...70</td>
+	<td>23)imageShiftDeltaTime</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>The amount of time in seconds over which these shifts apply. If no new shift data has arrived since this packet was last transmitted then this will be 0.<br>Scaled by 1000 from 0.0 to 65.535.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>71</td>
+	<td>24)imageShiftConfidence</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Registration solution confidence, from 0 (no confidence) to 1 (full confidence).<br>Scaled by 255/(1) from 0.0 to 1.0.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>72...75</td>
+	<td>25)outputShifts</td>
+	<td align="center">I16</td>
+	<td align="center"><a href="#GimbalAxis_t">NUM_GIMBAL_AXES</a></td>
+	<td>X (horizontal) and Y (vertical) image shifts in radians, as displayed in the video stream.<br>Scaled by 32767/(&amp;pi) from -&pi; to &pi;.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>76</td>
+	<td>26)<a href="#RangeDataSrc_t">rangeSource</a></td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Range data source used in line of sight calculation.<br>This field is optional. If it is not included then the value is assumed to be RANGE_SRC_SKYLINK.</td>
+</tr>
+<tr>
+	<td>77</td>
+	<td>27)leapSeconds</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Leap seconds to subtract from GPS time to compute UTC time.<br>This field is optional. If it is not included then the value is assumed to be 18.</td>
+</tr>
+<tr>
+	<td>78</td>
+	<td>28)panAlignment</td>
+	<td align="center">I8</td>
+	<td align="center">1</td>
+	<td>Pan camera alignment offsets in radian. The raw pan angle is given as pan + panAlignment.<br>Scaled by 1000 from -0.127 to 0.127.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>79</td>
+	<td>29)tiltAlignment</td>
+	<td align="center">I8</td>
+	<td align="center">1</td>
+	<td>Tilt camera alignment offsets in radian. The raw tilt angle is given as tilt + tiltAlignment.<br>Scaled by 1000 from -0.127 to 0.127.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>80</td>
+	<td>30)<a href="#InsRotationOptions">insRotationOption</a></td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>This flag indicates special INS options. If insSpecialOption is 1 the INS is running in the gimbal crown, but is rotated from the gimbal native axis. If insSpecialOption is 2 the INS is running in the ball of the gimbal.<br>This field is optional. If it is not included then the value is assumed to be insInGimbalNative.</td>
+</tr>
+<tr>
+	<td>81...88</td>
+	<td>31)insQuat</td>
+	<td align="center">I16</td>
+	<td align="center">4</td>
+	<td>The rotation of the INS from its native frame to the North, East, Down navigation frame. If insSpecialOption is 0 then this rotation is the same as the gimbalQuat.<br>Scaled by 32767/(1) from -1.0 to 1.0.<br>Only included if insRotationOption is non-zero.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_performanceaorionperformancepacket"><a name="ORION_PKT_PERFORMANCE"></a>OrionPerformance packet</h2>
+
+<p>Measurements related to stabilization performance. This packet is sent by the gimbal 4 times per second.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_PERFORMANCE</code> : 67</li>
+<li>data length: 20</li>
+</ul>
+
+<table>
+<caption>OrionPerformance packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0...3</td>
+	<td>1)RmsQuad</td>
+	<td align="center">U16</td>
+	<td align="center"><a href="#GimbalAxis_t">NUM_GIMBAL_AXES</a></td>
+	<td>Quad rms errors.<br>Scaled by 1000000 from 0.0 to 0.065535.</td>
+</tr>
+<tr>
+	<td>4...7</td>
+	<td>2)RmsDir</td>
+	<td align="center">U16</td>
+	<td align="center"><a href="#GimbalAxis_t">NUM_GIMBAL_AXES</a></td>
+	<td>Dir rms errors.<br>Scaled by 1000000 from 0.0 to 0.065535.</td>
+</tr>
+<tr>
+	<td>8...11</td>
+	<td>3)RmsVel</td>
+	<td align="center">U16</td>
+	<td align="center"><a href="#GimbalAxis_t">NUM_GIMBAL_AXES</a></td>
+	<td>Vel rms errors.<br>Scaled by 1000 from 0.0 to 65.535.</td>
+</tr>
+<tr>
+	<td>12...15</td>
+	<td>4)RmsPos</td>
+	<td align="center">U16</td>
+	<td align="center"><a href="#GimbalAxis_t">NUM_GIMBAL_AXES</a></td>
+	<td>Pos rms errors.<br>Scaled by 1000000 from 0.0 to 0.065535.</td>
+</tr>
+<tr>
+	<td>16...19</td>
+	<td>5)Iout</td>
+	<td align="center">U16</td>
+	<td align="center"><a href="#GimbalAxis_t">NUM_GIMBAL_AXES</a></td>
+	<td>Output current.<br>Scaled by 1000 from 0.0 to 65.535.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_diagnosticsaoriondiagnosticspacket"><a name="ORION_PKT_DIAGNOSTICS"></a>OrionDiagnostics packet</h2>
+
+<p>Electrical diagnostic data for the Orion gimbal. This packet is sent by the gimbal every 3 seconds.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_DIAGNOSTICS</code> : 65</li>
+<li>data length: 28</li>
+</ul>
+
+<table>
+<caption>OrionDiagnostics packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0...1</td>
+	<td>1)Voltage24</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Voltage of the 24-volt rail.<br>Scaled by 1000 from 0.0 to 65.535.</td>
+</tr>
+<tr>
+	<td>2...3</td>
+	<td>2)Voltage12</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Voltage of the 12-volt rail.<br>Scaled by 1000 from 0.0 to 65.535.</td>
+</tr>
+<tr>
+	<td>4...5</td>
+	<td>3)Voltage3v3</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Voltage of the 3.3-volt rail.<br>Scaled by 1000 from 0.0 to 65.535.</td>
+</tr>
+<tr>
+	<td>6...7</td>
+	<td>4)Current24</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Current in Amps of the 24-volt rail.<br>Scaled by 1000 from 0.0 to 65.535.</td>
+</tr>
+<tr>
+	<td>8...9</td>
+	<td>5)Current12</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Current in Amps of the 12-volt rail.<br>Scaled by 1000 from 0.0 to 65.535.</td>
+</tr>
+<tr>
+	<td>10...11</td>
+	<td>6)Current3v3</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Current in Amps of the 3.3-volt rail.<br>Scaled by 1000 from 0.0 to 65.535.</td>
+</tr>
+<tr>
+	<td>12</td>
+	<td>7)CrownTemp</td>
+	<td align="center">I8</td>
+	<td align="center">1</td>
+	<td>Temperature of the crown board in degrees Celsius.<br>Scaled by 1.0 from -127.0 to 127.0.</td>
+</tr>
+<tr>
+	<td>13</td>
+	<td>8)SlaTemp</td>
+	<td align="center">I8</td>
+	<td align="center">1</td>
+	<td>Temperature of the SLA-1500 board (if applicable) in degrees Celsius.<br>Scaled by 1.0 from -127.0 to 127.0.</td>
+</tr>
+<tr>
+	<td>14</td>
+	<td>9)GyroTemp</td>
+	<td align="center">I8</td>
+	<td align="center">1</td>
+	<td>Stabilization gyro ADC temperature in degrees Celsius.<br>Scaled by 1.0 from -127.0 to 127.0.</td>
+</tr>
+<tr>
+	<td>15</td>
+	<td>10)reserved</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Reserved space for future expansion.<br>Data are given constant value on encode 0.</td>
+</tr>
+<tr>
+	<td>16...17</td>
+	<td>11)Voltage24Var</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Voltage variance of the 24-volt rail.<br>Scaled by 100000 from 0.0 to 0.65535.</td>
+</tr>
+<tr>
+	<td>18...19</td>
+	<td>12)Voltage12Var</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Voltage variance of the 12-volt rail.<br>Scaled by 100000 from 0.0 to 0.65535.</td>
+</tr>
+<tr>
+	<td>20...21</td>
+	<td>13)Voltage3v3Var</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Voltage variance of the 3.3-volt rail.<br>Scaled by 100000 from 0.0 to 0.65535.</td>
+</tr>
+<tr>
+	<td>22...23</td>
+	<td>14)Current24Var</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Current variance in Amps of the 24-volt rail.<br>Scaled by 100000 from 0.0 to 0.65535.</td>
+</tr>
+<tr>
+	<td>24...25</td>
+	<td>15)Current12Var</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Current variance in Amps of the 12-volt rail.<br>Scaled by 100000 from 0.0 to 0.65535.</td>
+</tr>
+<tr>
+	<td>26...27</td>
+	<td>16)Current3v3Var</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Current variance in Amps of the 3.3-volt rail.<br>Scaled by 100000 from 0.0 to 0.65535.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_software_diagnosticsaorionsoftwarediagnosticspacket"><a name="ORION_PKT_SOFTWARE_DIAGNOSTICS"></a>OrionSoftwareDiagnostics packet</h2>
+
+<p>Diagnostic information related to software performance for a specific board in the Orion Gimbal. This packet is sent by the gimbal once per second.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_SOFTWARE_DIAGNOSTICS</code> : 68</li>
+<li>minimum data length: 4</li>
+<li>maximum data length: 134</li>
+</ul>
+
+<table>
+<caption>OrionSoftwareDiagnostics packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0</td>
+	<td>1)<a href="#OrionBoardEnumeration_t">sourceBoard</a></td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Enumeration defining which board in the gimbal generated this message.</td>
+</tr>
+<tr>
+	<td>1</td>
+	<td>2)numCores</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Number of CPU cores that this packet reports for.</td>
+</tr>
+<tr>
+	<td>2...3</td>
+	<td>3)reserved</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Reserved space for future expansion.</td>
+</tr>
+<tr>
+	<td>4...133</td>
+	<td colspan="2">4)CoreLoading</td>
+	<td align="center">numCores, up to 2</td>
+	<td align="center">Per-Core CPU load information</td>
+</tr>
+<tr>
+	<td>4</td>
+	<td>4.1)cpuLoad</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>CPU utilization as a percentage.<br>Scaled by 255/(100) from 0.0 to 100.0.</td>
+</tr>
+<tr>
+	<td>5</td>
+	<td>4.2)heapLoad</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Heap memory utilization as a percentage, 0 if no heap is present.<br>Scaled by 255/(100) from 0.0 to 100.0.</td>
+</tr>
+<tr>
+	<td>6</td>
+	<td>4.3)stackLoad</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>System stack memory utilization as a percentage, 0 if no system stack is present.<br>Scaled by 255/(100) from 0.0 to 100.0.</td>
+</tr>
+<tr>
+	<td>7</td>
+	<td>4.4)reserved</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Reserved space for future expansion.</td>
+</tr>
+<tr>
+	<td>8</td>
+	<td>4.5)numThreads</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Number of threads in the system, must be at least 1.</td>
+</tr>
+<tr>
+	<td>9...68</td>
+	<td colspan="2">4.6)ThreadLoading</td>
+	<td align="center">numThreads, up to 10</td>
+	<td align="center">Per-thread information, in order of priority (highest to lowest)</td>
+</tr>
+<tr>
+	<td>9</td>
+	<td>4.6.1)cpuLoad</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>CPU utilization of this thread as a percentage.<br>Scaled by 255/(100) from 0.0 to 100.0.</td>
+</tr>
+<tr>
+	<td>10</td>
+	<td>4.6.2)heapLoad</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Heap memory utilization of this thread as a percentage, 0 if no heap is present.<br>Scaled by 255/(100) from 0.0 to 100.0.</td>
+</tr>
+<tr>
+	<td>11</td>
+	<td>4.6.3)stackLoad</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Stack memory utilization of this thread as a percentage, 100 if stack overflow occurs.<br>Scaled by 255/(100) from 0.0 to 100.0.</td>
+</tr>
+<tr>
+	<td>12</td>
+	<td>4.6.4)watchdogLeft</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Worst case amount of watchdog time remaining in this reporting period for this thread, 0 if watchdog has timed out.<br>Scaled by 255/(100) from 0.0 to 100.0.</td>
+</tr>
+<tr>
+	<td>13</td>
+	<td>4.6.5)numIterations</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Number of times this thread iterated during the reporting period.<br>Scaled by 0.1 from 0.0 to 2550.0.</td>
+</tr>
+<tr>
+	<td>14</td>
+	<td>4.6.6)worstcase</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Worst case thread run time as a ratio with the average thread run time during the reporting period.<br>Scaled by 255/(25.5) from 0.0 to 25.5.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_vibrationaorionvibrationpacket"><a name="ORION_PKT_VIBRATION"></a>OrionVibration packet</h2>
+
+<p>Platform vibration amplitude and frequency information. This packet is sent by the gimbal once every five seconds.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_VIBRATION</code> : 69</li>
+<li>data length: 140</li>
+</ul>
+
+<table>
+<caption>OrionVibration packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0...5</td>
+	<td>1)MaxAccel</td>
+	<td align="center">I16</td>
+	<td align="center"><a href="#Axis_t">NUM_AXES</a></td>
+	<td>Maximum acceleration values, in m/s/s.<br>Scaled by 32767/(20) from -20.0 to 20.0.</td>
+</tr>
+<tr>
+	<td>6...11</td>
+	<td>2)MaxGyro</td>
+	<td align="center">I16</td>
+	<td align="center"><a href="#Axis_t">NUM_AXES</a></td>
+	<td>Maximum angular rate values, in rad/s.<br>Scaled by 32767/(0.1) from -0.1 to 0.1.</td>
+</tr>
+<tr>
+	<td>12...139</td>
+	<td colspan="2">3)FftData</td>
+	<td align="center">16</td>
+	<td align="center">A series of points containing FFT-derived frequency and magnitude data</td>
+</tr>
+<tr>
+	<td>12...13</td>
+	<td>3.1)Frequency</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Frequency, in Hertz, of the data point defined by this element.<br>Scaled by 65535/(200) from 0.0 to 200.0.</td>
+</tr>
+<tr>
+	<td>14...16</td>
+	<td>3.2)Accel</td>
+	<td align="center">U8</td>
+	<td align="center"><a href="#Axis_t">NUM_AXES</a></td>
+	<td>Acceleration magnitude, expressed as a percentage of MaxAccel.<br>Scaled by 255/(1) from 0.0 to 1.0.</td>
+</tr>
+<tr>
+	<td>17...19</td>
+	<td>3.3)Gyro</td>
+	<td align="center">U8</td>
+	<td align="center"><a href="#Axis_t">NUM_AXES</a></td>
+	<td>Angular rate magnitude, expressed as a percentage of MaxGyro.<br>Scaled by 255/(1) from 0.0 to 1.0.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_network_diagnosticsanetworkdiagnosticspacket"><a name="ORION_PKT_NETWORK_DIAGNOSTICS"></a>NetworkDiagnostics packet</h2>
+
+<p>Ethernet network diagnostic information</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_NETWORK_DIAGNOSTICS</code> : 70</li>
+<li>data length: 36</li>
+</ul>
+
+<table>
+<caption>NetworkDiagnostics packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0...1</td>
+	<td>1)Flags</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Ethernet interface configuration flags.</td>
+</tr>
+<tr>
+	<td>2...5</td>
+	<td>2)RxBytes</td>
+	<td align="center">U32</td>
+	<td align="center">1</td>
+	<td>Ethernet bytes received.</td>
+</tr>
+<tr>
+	<td>6...9</td>
+	<td>3)TxBytes</td>
+	<td align="center">U32</td>
+	<td align="center">1</td>
+	<td>Ethernet bytes transmitted.</td>
+</tr>
+<tr>
+	<td>10...13</td>
+	<td>4)RxPackets</td>
+	<td align="center">U32</td>
+	<td align="center">1</td>
+	<td>Ethernet packets received.</td>
+</tr>
+<tr>
+	<td>14...17</td>
+	<td>5)TxPackets</td>
+	<td align="center">U32</td>
+	<td align="center">1</td>
+	<td>Ethernet packets transmitted.</td>
+</tr>
+<tr>
+	<td>18...19</td>
+	<td>6)RxErrors</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Number of receive errors.</td>
+</tr>
+<tr>
+	<td>20...21</td>
+	<td>7)TxErrors</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Number of transmit errors.</td>
+</tr>
+<tr>
+	<td>22...23</td>
+	<td>8)RxDrops</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Number of receive packets dropped by the Ethernet driver.</td>
+</tr>
+<tr>
+	<td>24...25</td>
+	<td>9)TxDrops</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Number of transmit packets dropped by the Ethernet driver.</td>
+</tr>
+<tr>
+	<td>26...27</td>
+	<td>10)RxFifoErrors</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Number of receive FIFO errors.</td>
+</tr>
+<tr>
+	<td>28...29</td>
+	<td>11)TxFifoErrors</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Number of transmit FIFO errors.</td>
+</tr>
+<tr>
+	<td>30...31</td>
+	<td>12)FrameErrors</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Framing error count.</td>
+</tr>
+<tr>
+	<td>32...33</td>
+	<td>13)Collisions</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Hardware interface collision count.</td>
+</tr>
+<tr>
+	<td>34...35</td>
+	<td>14)CarrierErrors</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Number of carrier loss events.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_retract_statusaorionretractstatuspacket"><a name="ORION_PKT_RETRACT_STATUS"></a>OrionRetractStatus packet</h2>
+
+<p>Current gimbal retraction mechanism status. This is sent by the gimbal regularly only if a retract system is installed.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_RETRACT_STATUS</code> : 161</li>
+<li>data length: 6</li>
+</ul>
+
+<p>The retraction mechanism state</p>
+
+<table>
+<caption><a name="OrionRetractState_t"></a>OrionRetractState_t enumeration</caption>
+<col />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Name</th>
+	<th>Value</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td><code>RETRACT_STATE_DISABLED</code></td>
+	<td align="center">0</td>
+	<td>Retract is disabled</td>
+</tr>
+<tr>
+	<td><code>RETRACT_STATE_RETRACTED</code></td>
+	<td align="center">1</td>
+	<td>Retract is fully retracted</td>
+</tr>
+<tr>
+	<td><code>RETRACT_STATE_RETRACTING</code></td>
+	<td align="center">2</td>
+	<td>Retract is moving to the retracted position</td>
+</tr>
+<tr>
+	<td><code>RETRACT_STATE_DEPLOYING</code></td>
+	<td align="center">3</td>
+	<td>Retract is moving to the deployed position</td>
+</tr>
+<tr>
+	<td><code>RETRACT_STATE_DEPLOYED</code></td>
+	<td align="center">4</td>
+	<td>Retract is fully deployed</td>
+</tr>
+<tr>
+	<td><code>RETRACT_STATE_FAULT</code></td>
+	<td align="center">5</td>
+	<td>Retract is experiencing a fault condition</td>
+</tr>
+</tbody>
+</table>
+
+<table>
+<caption>OrionRetractStatus packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0</td>
+	<td>1)<a href="#OrionRetractCmd_t">Cmd</a></td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>The current command being tracked by the retract mechanism.</td>
+</tr>
+<tr>
+	<td>1</td>
+	<td>2)<a href="#OrionRetractState_t">State</a></td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>The retraction mechanism state.</td>
+</tr>
+<tr>
+	<td>2...3</td>
+	<td>3)Pos</td>
+	<td align="center">I16</td>
+	<td align="center">1</td>
+	<td>Current retract position in radians.<br>Scaled by 1000 from -32.767 to 32.767.</td>
+</tr>
+<tr>
+	<td>4...5</td>
+	<td>4)Flags</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>GPIO status information flags.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_stare_startastarestartpacket"><a name="ORION_PKT_STARE_START"></a>StareStart packet</h2>
+
+<p>This packet is transmitted by the gimbal during step-stare operations to indicate that the gimbal is staring and a step-stare image should be acquired. The position data mark the <em>desired</em> location that the gimbal is trying to stare at. The <em>actual</em> position can be computed by using the gimbal position, quaternion, and pan and tilt angles to project the camera line of sight until to the terrain model. Once the image has been acquired send a ORION_PKT_STARE_ACK packet to tell the gimbal it can move to the next stare point.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_STARE_START</code> : 217</li>
+<li>minimum data length: 20</li>
+<li>maximum data length: 52</li>
+</ul>
+
+<table>
+<caption>StareStart packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0...3</td>
+	<td>1)systemTime</td>
+	<td align="center">U32</td>
+	<td align="center">1</td>
+	<td>Milliseconds since system bootup. This value should be echoed in the ORION_PKT_STARE_ACK respone.</td>
+</tr>
+<tr>
+	<td>4</td>
+	<td>2)maxStareTime</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Seconds remaining before the stare is finished. Send ORION_PKT_STARE_ACK to terminate the stare early.<br>Scaled by 255/(2.55) from 0.0 to 2.55.</td>
+</tr>
+<tr>
+	<td>5:7</td>
+	<td>3)alongTrackStare</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>If set then this is the start of an along track stare, not a cross track track stare.</td>
+</tr>
+<tr>
+	<td>5:6</td>
+	<td>4)prevStareTerminatedByTime</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>If set then the previous stare operation was terminated by timeout rather than an ORION_PKT_STARE_ACK packet.</td>
+</tr>
+<tr>
+	<td>5:5</td>
+	<td>5)stareStartedByTime</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>If set then the stare operation was initiated by timeout rather than by achieving the pan and tilt angles necessary to look at the desired location. In this instance it is possible that the actual stare location is significantly different from the desired stare location.</td>
+</tr>
+<tr>
+	<td>5:4</td>
+	<td>6)gimbalDataValid</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>If set then the gimbal position and attitude data are valid. If not set then only the desired stare position is valid.</td>
+</tr>
+<tr>
+	<td>5:3</td>
+	<td>7)stareReset</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>If set then the stare position had to be reset due to falling behind.</td>
+</tr>
+<tr>
+	<td>6</td>
+	<td>8)prevStareTime</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Seconds of time elapsed between the previous stare start and stare end. If this number approaches stareTime the image-acquisition system is in danger of not keeping up.<br>Scaled by 255/(2.55) from 0.0 to 2.55.</td>
+</tr>
+<tr>
+	<td>7</td>
+	<td>9)stareLoad</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Amount of time spent stepping and staring, as a ratio to the time between stare starts. As the frequency of stare events goes up this number will go towards 1.0, indicating the system has reached maximum utilization.<br>Scaled by 255/(1) from 0.0 to 1.0.</td>
+</tr>
+<tr>
+	<td>8...11</td>
+	<td>10)posLat</td>
+	<td align="center">I32</td>
+	<td align="center">1</td>
+	<td>Geodetic latitude of the desired stare point in radians, positive North.<br>Scaled by 180&times;10000000/&amp;pi from -3.748066027288564 to 3.748066027288564.</td>
+</tr>
+<tr>
+	<td>12...15</td>
+	<td>11)posLon</td>
+	<td align="center">I32</td>
+	<td align="center">1</td>
+	<td>Longitude of the desired stare point in radians, positive East.<br>Scaled by 180&times;10000000/&amp;pi from -3.748066027288564 to 3.748066027288564.</td>
+</tr>
+<tr>
+	<td>16...19</td>
+	<td>12)posAlt</td>
+	<td align="center">I32</td>
+	<td align="center">1</td>
+	<td>Altitude of the desired stare point in meters above the WGS-84 ellipsoid.<br>Scaled by 10000 from -214748.3647 to 214748.3647.</td>
+</tr>
+<tr>
+	<td>20...23</td>
+	<td>13)gimbalPosLat</td>
+	<td align="center">I32</td>
+	<td align="center">1</td>
+	<td>Geodetic latitude of the gimbal in radians, positive North.<br>Scaled by 180&times;10000000/&amp;pi from -3.748066027288564 to 3.748066027288564.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>24...27</td>
+	<td>14)gimbalPosLon</td>
+	<td align="center">I32</td>
+	<td align="center">1</td>
+	<td>Longitude of the gimbal in radians, positive East.<br>Scaled by 180&times;10000000/&amp;pi from -3.748066027288564 to 3.748066027288564.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>28...31</td>
+	<td>15)gimbalPosAlt</td>
+	<td align="center">I32</td>
+	<td align="center">1</td>
+	<td>Altitude of the gimbal in meters above the WGS-84 ellipsoid.<br>Scaled by 10000 from -214748.3647 to 214748.3647.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>32...39</td>
+	<td>16)gimbalQuat</td>
+	<td align="center">I16</td>
+	<td align="center">4</td>
+	<td>Gimbal quaternion describing the rotation from the gimbal mount frame to the North, East, Down navigation frame.<br>Scaled by 32767/(1) from -1.0 to 1.0.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>40...41</td>
+	<td>17)pan</td>
+	<td align="center">I16</td>
+	<td align="center">1</td>
+	<td>Gimbal pan angle in radians from -pi to pi.<br>Scaled by 32767/(&amp;pi) from -&pi; to &pi;.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>42...43</td>
+	<td>18)tilt</td>
+	<td align="center">I16</td>
+	<td align="center">1</td>
+	<td>Gimbal tilt angle in radians from -pi to pi.<br>Scaled by 32767/(&amp;pi) from -&pi; to &pi;.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>44</td>
+	<td>19)<a href="#RangeDataSrc_t">rangeSource</a></td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Target range data source.<br>This field is optional. If it is not included then the value is assumed to be RANGE_SRC_NONE.</td>
+</tr>
+<tr>
+	<td>45...47</td>
+	<td>20)slantRange</td>
+	<td align="center">U24</td>
+	<td align="center">1</td>
+	<td>Slant range to target, if available (see rangeSource).<br>Scaled by 100 from 0.0 to 167772.15.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>48...49</td>
+	<td>21)alongStareAngle</td>
+	<td align="center">I16</td>
+	<td align="center">1</td>
+	<td>Angle in radians of the view of the path with respect to the perpendicular ideal view. Positive angles indicate looking ahead, negative are looking behind.<br>Scaled by 32767/(&amp;pi) from -&pi; to &pi;.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>50...51</td>
+	<td>22)crossStareAngle</td>
+	<td align="center">I16</td>
+	<td align="center">1</td>
+	<td>Cross track angle in radians of the stare location, which will be zero if cross stepping is not being used. Negative if staring left of the path.<br>Scaled by 32767/(&amp;pi) from -&pi; to &pi;.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_reset_sourceaorionresetsourcepacket"><a name="ORION_PKT_RESET_SOURCE"></a>OrionResetSource packet</h2>
+
+<p>Reset information for a processor in the Orion Gimbal. This packet is transmitted by each processor in the gimbal following its bootup</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_RESET_SOURCE</code> : 38</li>
+<li>minimum data length: 8</li>
+<li>maximum data length: 9</li>
+</ul>
+
+<table>
+<caption>OrionResetSource packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0...3</td>
+	<td>1)Vector</td>
+	<td align="center">U32</td>
+	<td align="center">1</td>
+	<td>Interrupt vector for the last reset.</td>
+</tr>
+<tr>
+	<td>4...7</td>
+	<td>2)Address</td>
+	<td align="center">U32</td>
+	<td align="center">1</td>
+	<td>Program counter prior to the reset (not yet used).</td>
+</tr>
+<tr>
+	<td>8</td>
+	<td>3)<a href="#OrionBoardEnumeration_t">sourceBoard</a></td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Enumeration defining which board in the gimbal generated this message.<br>This field is optional. If it is not included then the value is assumed to be BOARD_CLEVIS.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_debug_stringadebugstringpacket"><a name="ORION_PKT_DEBUG_STRING"></a>DebugString packet</h2>
+
+<p>This packet sends a human readable text string which is typically used for debugging purposes.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_DEBUG_STRING</code> : 177</li>
+<li>minimum data length: 5</li>
+<li>maximum data length: 132</li>
+</ul>
+
+<p>Priority level of a debug message</p>
+
+<table>
+<caption><a name="debugPriority"></a>debugPriority enumeration</caption>
+<col />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Name</th>
+	<th>Value</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td><code>debugLevelLog</code></td>
+	<td align="center">0</td>
+	<td>Logging information only, lowest priority</td>
+</tr>
+<tr>
+	<td><code>debugLevelInfo</code></td>
+	<td align="center">1</td>
+	<td>Informational message</td>
+</tr>
+<tr>
+	<td><code>debugLevelWarn</code></td>
+	<td align="center">2</td>
+	<td>Warning message</td>
+</tr>
+<tr>
+	<td><code>debugLevelError</code></td>
+	<td align="center">3</td>
+	<td>Describes a recoverable error</td>
+</tr>
+<tr>
+	<td><code>debugLevelFatal</code></td>
+	<td align="center">4</td>
+	<td>Describes an unrecoverable error, highest priority</td>
+</tr>
+</tbody>
+</table>
+
+<table>
+<caption>DebugString packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0</td>
+	<td>1)<a href="#OrionBoardEnumeration_t">source</a></td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Identifier to determine which board sent the debug packet.</td>
+</tr>
+<tr>
+	<td>1</td>
+	<td>2)<a href="#debugPriority">priority</a></td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>The importance of the debug message.</td>
+</tr>
+<tr>
+	<td>2</td>
+	<td>3)reserved1</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td> </td>
+</tr>
+<tr>
+	<td>3</td>
+	<td>4)reserved2</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td> </td>
+</tr>
+<tr>
+	<td>4...131</td>
+	<td>5)description</td>
+	<td colspan="2" align="center">Zero-terminated string up to 128 bytes</td>
+	<td align="center">human readable description of the debug problem.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_klv_user_dataaklvuserdatapacket"><a name="ORION_PKT_KLV_USER_DATA"></a>KlvUserData packet</h2>
+
+<p>This packet is used to set and query the values of user-configurable KLV tags</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_KLV_USER_DATA</code> : 179</li>
+<li>minimum data length: 3</li>
+<li>maximum data length: 130</li>
+</ul>
+
+<table>
+<caption>KlvUserData packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0</td>
+	<td>1)Key</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>UAS Local Set key.</td>
+</tr>
+<tr>
+	<td>1</td>
+	<td>2)SubKey</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>UAS Local Set sub-key, if applicable (e.g., security metadata).</td>
+</tr>
+<tr>
+	<td>2</td>
+	<td>3)Length</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Data length, in bytes.</td>
+</tr>
+<tr>
+	<td>3...129</td>
+	<td>4)Value</td>
+	<td align="center">U8</td>
+	<td align="center">Length, up to 127</td>
+	<td>Variable-length value string.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_gps_dataagpsdatapacket"><a name="ORION_PKT_GPS_DATA"></a>GpsData packet</h2>
+
+<p>Raw GPS data. This packet is normally sent by the gimbal once per second, unless the gimbal is in INS debug mode, in which case this packet is sent for every GPS report. This packet can also be sent to the gimbal in order to provide GPS information. Sending this packet to the gimbal will override any internal GPS. The ideal rate to send this packet to the gimbal is 4Hz.</p>
+
+<p>Note that the position information of this packet is <em>not</em> the definitive position of the gimbal. That information comes from the INS in the gimbal and is visible in the GeolocateTelemetryCore packet.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_GPS_DATA</code> : 209</li>
+<li>minimum data length: 54</li>
+<li>maximum data length: 69</li>
+</ul>
+
+<p>Enumeration for source of GPS data.</p>
+
+<table>
+<caption><a name="gpsSource_t"></a>gpsSource_t enumeration</caption>
+<col />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Name</th>
+	<th>Value</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td><code>externalSource</code></td>
+	<td align="center">0</td>
+	<td>External GPS, user supplied data</td>
+</tr>
+<tr>
+	<td><code>ubloxSource</code></td>
+	<td align="center">1</td>
+	<td>uBlox internal GPS</td>
+</tr>
+<tr>
+	<td><code>mavlinkSource</code></td>
+	<td align="center">2</td>
+	<td>Mavlink supplied data</td>
+</tr>
+<tr>
+	<td><code>nmeaSource</code></td>
+	<td align="center">3</td>
+	<td>External GPS, supplied by NMEA input</td>
+</tr>
+<tr>
+	<td><code>novatelSource</code></td>
+	<td align="center">4</td>
+	<td>Novatel dual frequency GPS</td>
+</tr>
+<tr>
+	<td><code>autopilotSource</code></td>
+	<td align="center">5</td>
+	<td>Autopilot host GPS data</td>
+</tr>
+<tr>
+	<td><code>piccoloSource</code></td>
+	<td align="center">5</td>
+	<td>Preserved for backward compatibility</td>
+</tr>
+<tr>
+	<td><code>piksiSource</code></td>
+	<td align="center">6</td>
+	<td>Piksi external GPS</td>
+</tr>
+<tr>
+	<td><code>numGpsSources</code></td>
+	<td align="center">7</td>
+	<td>Number of possible GPS sources</td>
+</tr>
+</tbody>
+</table>
+
+<p>Enumeration for types of GPS solutions, derived from uBlox specification.</p>
+
+<table>
+<caption><a name="ubloxFixType_t"></a>ubloxFixType_t enumeration</caption>
+<col />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Name</th>
+	<th>Value</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td><code>noFix</code></td>
+	<td align="center">0</td>
+	<td>No solution</td>
+</tr>
+<tr>
+	<td><code>deadReckoningOnly</code></td>
+	<td align="center">1</td>
+	<td>Dead reckoning only</td>
+</tr>
+<tr>
+	<td><code>twoDFix</code></td>
+	<td align="center">2</td>
+	<td>Two dimensional solution</td>
+</tr>
+<tr>
+	<td><code>threeDFix</code></td>
+	<td align="center">3</td>
+	<td>Three dimensional solution</td>
+</tr>
+<tr>
+	<td><code>gnssDeadReckoning</code></td>
+	<td align="center">4</td>
+	<td>GNSS and dead reckoning combined</td>
+</tr>
+<tr>
+	<td><code>timeOnly</code></td>
+	<td align="center">5</td>
+	<td>Time only, no position or velocity</td>
+</tr>
+</tbody>
+</table>
+
+<table>
+<caption>GpsData packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0:7</td>
+	<td>1)multiAntHeadingValid</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>Set if the GPS has a multi antenna heading solution.</td>
+</tr>
+<tr>
+	<td>0:6...0:4</td>
+	<td>2)reserved</td>
+	<td align="center">B3</td>
+	<td align="center">1</td>
+	<td>Reserved bits in the packet.</td>
+</tr>
+<tr>
+	<td>0:3...0:0</td>
+	<td>3)FixType</td>
+	<td align="center">B4</td>
+	<td align="center">1</td>
+	<td>uBlox fix type.</td>
+</tr>
+<tr>
+	<td>1</td>
+	<td>4)FixState</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>uBlox fix state.</td>
+</tr>
+<tr>
+	<td>2</td>
+	<td>5)TrackedSats</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>The number of satellites used in the GPS solution.</td>
+</tr>
+<tr>
+	<td>3</td>
+	<td>6)PDOP</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Position dilution of precision.<br>Scaled by 10 from 0.0 to 25.5.</td>
+</tr>
+<tr>
+	<td>4...7</td>
+	<td>7)Latitude</td>
+	<td align="center">I32</td>
+	<td align="center">1</td>
+	<td>Geodetic latitude in radians, positive North.<br>Scaled by 180&times;10000000/&amp;pi from -3.748066027288564 to 3.748066027288564.</td>
+</tr>
+<tr>
+	<td>8...11</td>
+	<td>8)Longitude</td>
+	<td align="center">I32</td>
+	<td align="center">1</td>
+	<td>Longitude in radians, positive East.<br>Scaled by 180&times;10000000/&amp;pi from -3.748066027288564 to 3.748066027288564.</td>
+</tr>
+<tr>
+	<td>12...15</td>
+	<td>9)Altitude</td>
+	<td align="center">I32</td>
+	<td align="center">1</td>
+	<td>Altitude in meters above the WGS-84 ellipsoid.<br>Scaled by 10000 from -214748.3647 to 214748.3647.</td>
+</tr>
+<tr>
+	<td>16...27</td>
+	<td>10)VelNED</td>
+	<td align="center">I32</td>
+	<td align="center">3</td>
+	<td>Velocity in North, East, Down meters per second.<br>Scaled by 1000 from -2147483.647 to 2147483.647.</td>
+</tr>
+<tr>
+	<td>28...31</td>
+	<td>11)Hacc</td>
+	<td align="center">I32</td>
+	<td align="center">1</td>
+	<td>Horizontal accuracy in meters.<br>Scaled by 1000 from -2147483.647 to 2147483.647.</td>
+</tr>
+<tr>
+	<td>32...35</td>
+	<td>12)Vacc</td>
+	<td align="center">I32</td>
+	<td align="center">1</td>
+	<td>Vertical accuracy in meters.<br>Scaled by 1000 from -2147483.647 to 2147483.647.</td>
+</tr>
+<tr>
+	<td>36...39</td>
+	<td>13)SpeedAcc</td>
+	<td align="center">I32</td>
+	<td align="center">1</td>
+	<td>Speed accuracy in meters per second.<br>Scaled by 1000 from -2147483.647 to 2147483.647.</td>
+</tr>
+<tr>
+	<td>40...43</td>
+	<td>14)HeadingAcc</td>
+	<td align="center">I32</td>
+	<td align="center">1</td>
+	<td>Course accuracy in radians.<br>Scaled by 5729578 from -374.8065995436313 to 374.8065995436313.</td>
+</tr>
+<tr>
+	<td>44...47</td>
+	<td>15)ITOW</td>
+	<td align="center">U32</td>
+	<td align="center">1</td>
+	<td>GPS time of week in milliseconds.</td>
+</tr>
+<tr>
+	<td>48...49</td>
+	<td>16)Week</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>GPS week number since Jan 6 1980.</td>
+</tr>
+<tr>
+	<td>50...51</td>
+	<td>17)GeoidUndulation</td>
+	<td align="center">I16</td>
+	<td align="center">1</td>
+	<td>Height of the mean seal level geoid with respect to the WGS-84 ellipsoid, in meters.<br>Scaled by 100 from -327.67 to 327.67.</td>
+</tr>
+<tr>
+	<td>52</td>
+	<td>18)<a href="#gpsSource_t">source</a></td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>The source of the GPS data.</td>
+</tr>
+<tr>
+	<td>53:7...53:2</td>
+	<td>19)reserved</td>
+	<td align="center">B6</td>
+	<td align="center">1</td>
+	<td>Reserved bits in the packet.</td>
+</tr>
+<tr>
+	<td>53:1</td>
+	<td>20)detailedAccuracyValid</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>Set if detailed accuracy information (posAccuracy and velAccuracy) are included in this packet.</td>
+</tr>
+<tr>
+	<td>53:0</td>
+	<td>21)verticalVelocityValid</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>0 if vertical velocity data are not valid.</td>
+</tr>
+<tr>
+	<td>54</td>
+	<td>22)leapSeconds</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Leap seconds to subtract from GPS time to compute UTC time.<br>This field is optional. If it is not included then the value is assumed to be 17.</td>
+</tr>
+<tr>
+	<td>55...56</td>
+	<td>23)multiAntHeading</td>
+	<td align="center">I16</td>
+	<td align="center">1</td>
+	<td>The heading in radians from the multi antenna solution from -pi to pi.<br>Scaled by 32767/(&amp;pi) from -&pi; to &pi;.<br>Only included if multiAntHeadingValid is non-zero.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>57...62</td>
+	<td>24)posAccuracy</td>
+	<td align="center">U16</td>
+	<td align="center">3</td>
+	<td>North, East, Down position accuracy estimate in meters.<br>Scaled by 1000 from 0.0 to 65.535.<br>Only included if detailedAccuracyValid is non-zero.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>63...68</td>
+	<td>25)velAccuracy</td>
+	<td align="center">U16</td>
+	<td align="center">3</td>
+	<td>North, East, Down velocity accuracy estimate in meters per second.<br>Scaled by 1000 from 0.0 to 65.535.<br>Only included if detailedAccuracyValid is non-zero.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_ins_qualityainsqualitypacket"><a name="ORION_PKT_INS_QUALITY"></a>InsQuality packet</h2>
+
+<p>This packet is transmitted once per second by the gimbal to communicate the quality of the inertial navigation system (INS) data. The INS is responsible for fusing the crown board IMU and GPS to determine the position, velocity, attitude, and IMU errors. The quality of the INS data directly impacts the quality of the data in the GeolocateTelemetryCore packet. This data are only sent once per second as the quality data changes slowly.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_INS_QUALITY</code> : 211</li>
+<li>minimum data length: 34</li>
+<li>maximum data length: 79</li>
+</ul>
+
+<p>Enumeration for the inertial navigation operational mode</p>
+
+<table>
+<caption><a name="insMode_t"></a>insMode_t enumeration</caption>
+<col />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Name</th>
+	<th>Value</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td><code>insModeInit1</code></td>
+	<td align="center">0</td>
+	<td>Awaiting first IMU measurement</td>
+</tr>
+<tr>
+	<td><code>insModeInit2</code></td>
+	<td align="center">1</td>
+	<td>Awaiting IMU stabilization</td>
+</tr>
+<tr>
+	<td><code>insModeAHRS</code></td>
+	<td align="center">2</td>
+	<td>Running without GPS inputs</td>
+</tr>
+<tr>
+	<td><code>insModeRunHard</code></td>
+	<td align="center">3</td>
+	<td>Running with forced GPS inputs</td>
+</tr>
+<tr>
+	<td><code>insModeRun</code></td>
+	<td align="center">4</td>
+	<td>Normal mode of operation</td>
+</tr>
+<tr>
+	<td><code>insModeRunTight</code></td>
+	<td align="center">5</td>
+	<td>Normal mode of operation with tightly coupled corrections</td>
+</tr>
+</tbody>
+</table>
+
+<p>Enumeration for IMU type</p>
+
+<table>
+<caption><a name="imuType_t"></a>imuType_t enumeration</caption>
+<col />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Name</th>
+	<th>Value</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td><code>imuTypeInternal</code></td>
+	<td align="center">0</td>
+	<td>Internal Trillium IMU</td>
+</tr>
+<tr>
+	<td><code>imuTypeSensonor</code></td>
+	<td align="center">1</td>
+	<td>Sensonor IMU</td>
+</tr>
+<tr>
+	<td><code>imuTypeDmu11</code></td>
+	<td align="center">2</td>
+	<td>DMU-11 IMU</td>
+</tr>
+<tr>
+	<td><code>imuTypeExternal</code></td>
+	<td align="center">3</td>
+	<td>Other external IMU</td>
+</tr>
+<tr>
+	<td><code>imuTypeEpson</code></td>
+	<td align="center">4</td>
+	<td>Epson IMU</td>
+</tr>
+<tr>
+	<td><code>numImuTypes</code></td>
+	<td align="center">5</td>
+	<td>Number of known IMU types</td>
+</tr>
+</tbody>
+</table>
+
+<table>
+<caption>InsQuality packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0...3</td>
+	<td>1)systemTime</td>
+	<td align="center">U32</td>
+	<td align="center">1</td>
+	<td>Milliseconds since system bootup.</td>
+</tr>
+<tr>
+	<td>4</td>
+	<td>2)<a href="#gpsSource_t">gpsSource</a></td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>The source of GPS data.</td>
+</tr>
+<tr>
+	<td>5:7...5:3</td>
+	<td>3)reserved</td>
+	<td align="center">B5</td>
+	<td align="center">1</td>
+	<td>Reserved packet space.</td>
+</tr>
+<tr>
+	<td>5:2...5:0</td>
+	<td>4)<a href="#imuType_t">imuType</a></td>
+	<td align="center">B3</td>
+	<td align="center">1</td>
+	<td>IMU type.</td>
+</tr>
+<tr>
+	<td>6</td>
+	<td>5)<a href="#insMode_t">insMode</a></td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>The operational mode of the INS.</td>
+</tr>
+<tr>
+	<td>7:7</td>
+	<td>6)hasGyroBias</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>1 if the INS is computing and reporting gyro bias states.</td>
+</tr>
+<tr>
+	<td>7:6</td>
+	<td>7)hasGravityBias</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>1 if the INS is computing and reporting a gravity bias state.</td>
+</tr>
+<tr>
+	<td>7:5</td>
+	<td>8)hasAccelBias</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>1 if the INS is computing and reporting accelerometer bias states.</td>
+</tr>
+<tr>
+	<td>7:4</td>
+	<td>9)hasClockBias</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>1 if the INS is computing and reporting clock bias and drift states.</td>
+</tr>
+<tr>
+	<td>7:3</td>
+	<td>10)hasPanTiltBias</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>1 if the INS is computing and reporting pan and tilt bias states.</td>
+</tr>
+<tr>
+	<td>7:2</td>
+	<td>11)posRejected</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>1 if the INS rejected the last position update because the chi-square value was too large.</td>
+</tr>
+<tr>
+	<td>7:1</td>
+	<td>12)velRejected</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>1 if the INS rejected the last velocity update because the chi-square value was too large.</td>
+</tr>
+<tr>
+	<td>7:0</td>
+	<td>13)hdgRejected</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>1 if the INS rejected the last heading update because the chi-square value was too large.</td>
+</tr>
+<tr>
+	<td>8</td>
+	<td>14)gpsPeriod</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Time in seconds between GPS measurements, 0 if no measurement.<br>Scaled by 100 from 0.0 to 2.55.</td>
+</tr>
+<tr>
+	<td>9</td>
+	<td>15)hdgPeriod</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Time in seconds between heading measurements, 0 if no measurement.<br>Scaled by 100 from 0.0 to 2.55.</td>
+</tr>
+<tr>
+	<td>10...11</td>
+	<td>16)posChiSquare</td>
+	<td align="center">F16:9</td>
+	<td align="center">1</td>
+	<td>Chi-square statistic of the last position observation.</td>
+</tr>
+<tr>
+	<td>12...13</td>
+	<td>17)velChiSquare</td>
+	<td align="center">F16:9</td>
+	<td align="center">1</td>
+	<td>Chi-square statistic of the last velocity observation.</td>
+</tr>
+<tr>
+	<td>14...15</td>
+	<td>18)hdgChiSquare</td>
+	<td align="center">F16:9</td>
+	<td align="center">1</td>
+	<td>Chi-square statistic of the last heading observation.</td>
+</tr>
+<tr>
+	<td>16...21</td>
+	<td>19)attConfidence</td>
+	<td align="center">U16</td>
+	<td align="center">3</td>
+	<td>Attitude confidence in radians as a body Roll, Pitch, Yaw vector.<br>Scaled by 10000 from 0.0 to 6.5535.</td>
+</tr>
+<tr>
+	<td>22...27</td>
+	<td>20)velConfidence</td>
+	<td align="center">U16</td>
+	<td align="center">3</td>
+	<td>Velocity confidence in meters per second as a North, East, Down vector.<br>Scaled by 100 from 0.0 to 655.35.</td>
+</tr>
+<tr>
+	<td>28...33</td>
+	<td>21)posConfidence</td>
+	<td align="center">U16</td>
+	<td align="center">3</td>
+	<td>Position confidence in meters as a North, East, Down vector.<br>Scaled by 100 from 0.0 to 655.35.</td>
+</tr>
+<tr>
+	<td>34...39</td>
+	<td>22)gyroConfidence</td>
+	<td align="center">U16</td>
+	<td align="center">3</td>
+	<td>Rate gyro bias confidence in radians per second as a body Roll, Pitch, Yaw vector.<br>Scaled by 100000 from 0.0 to 0.65535.<br>Only included if hasGyroBias is non-zero.</td>
+</tr>
+<tr>
+	<td>40...45</td>
+	<td>23)accelConfidence</td>
+	<td align="center">U16</td>
+	<td align="center">3</td>
+	<td>Accelerometer bias confidence in m/s/s as a body X, Y, Z vector.<br>Scaled by 30000 from 0.0 to 2.1845.<br>Only included if hasAccelBias is non-zero.</td>
+</tr>
+<tr>
+	<td>46...47</td>
+	<td>24)gravityConfidence</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Gravity bias confidence in m/s/s.<br>Scaled by 30000 from 0.0 to 2.1845.<br>Only included if hasGravityBias is non-zero.</td>
+</tr>
+<tr>
+	<td>48...49</td>
+	<td>25)clockBiasConfidence</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Clock bias confidence (for tightly coupled) in meters.<br>Scaled by 10000 from 0.0 to 6.5535.<br>Only included if hasClockBias is non-zero.</td>
+</tr>
+<tr>
+	<td>50...51</td>
+	<td>26)clockDriftConfidence</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Clock drift confience (for tightly coupled) in meters per second.<br>Scaled by 10000 from 0.0 to 6.5535.<br>Only included if hasClockBias is non-zero.</td>
+</tr>
+<tr>
+	<td>52...57</td>
+	<td>27)gyroBias</td>
+	<td align="center">I16</td>
+	<td align="center">3</td>
+	<td>Rate gyro bias estimate in radians per second as a body Roll, Pitch, Yaw vector.<br>Scaled by 100000 from -0.32767 to 0.32767.<br>Only included if hasGyroBias is non-zero.</td>
+</tr>
+<tr>
+	<td>58...63</td>
+	<td>28)accelBias</td>
+	<td align="center">U16</td>
+	<td align="center">3</td>
+	<td>Accelerometer bias estimate in m/s/s as a body X, Y, Z vector.<br>Scaled by 30000 from 0.0 to 2.1845.<br>Only included if hasAccelBias is non-zero.</td>
+</tr>
+<tr>
+	<td>64...65</td>
+	<td>29)gravityBias</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Gravity bias estimate in m/s/s.<br>Scaled by 30000 from 0.0 to 2.1845.<br>Only included if hasGravityBias is non-zero.</td>
+</tr>
+<tr>
+	<td>66...67</td>
+	<td>30)clockBias</td>
+	<td align="center">I16</td>
+	<td align="center">1</td>
+	<td>Clock bias estimate (for tightly coupled) in meters.<br>Scaled by 100 from -327.67 to 327.67.<br>Only included if hasClockBias is non-zero.</td>
+</tr>
+<tr>
+	<td>68...69</td>
+	<td>31)clockDrift</td>
+	<td align="center">I16</td>
+	<td align="center">1</td>
+	<td>Clock drift estimate (for tightly coupled) in meters per second.<br>Scaled by 1000 from -32.767 to 32.767.<br>Only included if hasClockBias is non-zero.</td>
+</tr>
+<tr>
+	<td>70</td>
+	<td>32)numTightSatPosUpdates</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Number of satellites that contributed to tightly coupled position updates.<br>Only included if hasClockBias is non-zero.</td>
+</tr>
+<tr>
+	<td>71</td>
+	<td>33)numTightSatVelUpdates</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Number of satellites that contributed to tightly coupled velocity updates.<br>Only included if hasClockBias is non-zero.</td>
+</tr>
+<tr>
+	<td>72</td>
+	<td>34)numTightPosUpdates</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Number of signals that contributed to tightly coupled position updates.<br>Only included if hasClockBias is non-zero.</td>
+</tr>
+<tr>
+	<td>73</td>
+	<td>35)numTightVelUpdates</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Number of signals that contributed to tightly coupled velocity updates.<br>Only included if hasClockBias is non-zero.</td>
+</tr>
+<tr>
+	<td>74...77</td>
+	<td>36)panTiltBias</td>
+	<td align="center">I16</td>
+	<td align="center"><a href="#GimbalAxis_t">NUM_GIMBAL_AXES</a></td>
+	<td>Pan and tilt boresight biases.<br>Scaled by 32767/(10&times;&amp;pi/180) from -0.1745329251994329 to 0.1745329251994329.<br>Only included if hasPanTiltBias is non-zero.</td>
+</tr>
+<tr>
+	<td>78</td>
+	<td>37)panTiltChiSquare</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Pan and tilt chi-square statistic.<br>Scaled by 255/(10) from 0.0 to 10.0.<br>Only included if hasPanTiltBias is non-zero.</td>
+</tr>
+</tbody>
+</table>
+
+<div class="page-break"></div>
+
+<hr />
+
+<h1 id="packetsforgimbalcontrol">Packets for gimbal control</h1>
+
+<p>These packets are sent by the user to control the gimbal.</p>
+
+<h2 id="anameorion_pkt_cmdaorioncmdpacket"><a name="ORION_PKT_CMD"></a>OrionCmd packet</h2>
+
+<p>Basic commands for control of gimbal pan and tilt. Send this packet to the gimbal to effect basic pan and tilt control. The gimbal will echo the packet as confirmation of receiving it. Note that this packet cannot be used to command the Geopoint or Path modes; those modes need to be commanded through their respective packets. If the gimbal is in Geopoint or Path mode receiving this packet will cancel those modes.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_CMD</code> : 1</li>
+<li>data length: 7</li>
+</ul>
+
+<table>
+<caption>OrionCmd packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0...6</td>
+	<td colspan="2">1)Cmd</td>
+	<td align="center">1</td>
+	<td align="center">Pan/tilt command</td>
+</tr>
+<tr>
+	<td>0...3</td>
+	<td>1.1)Target</td>
+	<td align="center">I16</td>
+	<td align="center"><a href="#GimbalAxis_t">NUM_GIMBAL_AXES</a></td>
+	<td>Pan and tilt commands in radians or radians per second. Interpretation depends on Mode.<br>Scaled by 1000.0 from -32.767 to 32.767.</td>
+</tr>
+<tr>
+	<td>4</td>
+	<td>1.2)<a href="#OrionMode_t">Mode</a></td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Operational mode of the gimbal. Note that not all modes can be directly commanded.</td>
+</tr>
+<tr>
+	<td>5</td>
+	<td>1.3)Stabilized</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Non-zero to enable inertial stabilization. If zero then Target is with respect to the gimbal mount, otherwise Target is with respect to the inertial or image space.</td>
+</tr>
+<tr>
+	<td>6</td>
+	<td>1.4)ImpulseTime</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Amount of time in seconds for changing the gimbal position.<br>Scaled by 10.0 from 0.0 to 25.5.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_startup_cmdaorionstartupcmdpacket"><a name="ORION_PKT_STARTUP_CMD"></a>OrionStartupCmd packet</h2>
+
+<p>Command to run upon motor initialization</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_STARTUP_CMD</code> : 7</li>
+<li>data length: 7</li>
+</ul>
+
+<table>
+<caption>OrionStartupCmd packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0...6</td>
+	<td colspan="2">1)Cmd</td>
+	<td align="center">1</td>
+	<td align="center">Pan/tilt command. Defaults to position mode, pan/tilt of 0</td>
+</tr>
+<tr>
+	<td>0...3</td>
+	<td>1.1)Target</td>
+	<td align="center">I16</td>
+	<td align="center"><a href="#GimbalAxis_t">NUM_GIMBAL_AXES</a></td>
+	<td>Pan and tilt commands in radians or radians per second. Interpretation depends on Mode.<br>Scaled by 1000.0 from -32.767 to 32.767.</td>
+</tr>
+<tr>
+	<td>4</td>
+	<td>1.2)<a href="#OrionMode_t">Mode</a></td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Operational mode of the gimbal. Note that not all modes can be directly commanded.</td>
+</tr>
+<tr>
+	<td>5</td>
+	<td>1.3)Stabilized</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Non-zero to enable inertial stabilization. If zero then Target is with respect to the gimbal mount, otherwise Target is with respect to the inertial or image space.</td>
+</tr>
+<tr>
+	<td>6</td>
+	<td>1.4)ImpulseTime</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Amount of time in seconds for changing the gimbal position.<br>Scaled by 10.0 from 0.0 to 25.5.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_geopoint_cmdageopointcmdpacket"><a name="ORION_PKT_GEOPOINT_CMD"></a>GeopointCmd packet</h2>
+
+<p>Send this packet to command the gimbal to go to Geopoint mode. In geopoint the gimbal looks at a target as given by a latitude, longitude, altitude position. The geopoint command can include a target velocity, which will cause the gimbal to smoothly move its stare point as it propagates the target position. Geopoint mode is canceled by sending a normal OrionCmd packet.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_GEOPOINT_CMD</code> : 213</li>
+<li>minimum data length: 18</li>
+<li>maximum data length: 21</li>
+</ul>
+
+<p>Options controlling how the geopoint is interpreted</p>
+
+<table>
+<caption><a name="geopointOptions"></a>geopointOptions enumeration</caption>
+<col />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Name</th>
+	<th>Value</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td><code>geopointNone</code></td>
+	<td align="center">0</td>
+	<td>No geopoint options set.</td>
+</tr>
+<tr>
+	<td><code>geopointStare</code></td>
+	<td align="center">1</td>
+	<td>If set this geopoint will issue a stare packet when it is pointing at the target location. This option is ignored if joystickRange is non-zero.</td>
+</tr>
+<tr>
+	<td><code>geopointClosure</code></td>
+	<td align="center">2</td>
+	<td>If set this geopoint command will cause the gimbal to enter closure mode, in which it will drive at maximum performance to achieve the desired pointing. This option is ignored if the joystickRange is non-zero.</td>
+</tr>
+<tr>
+	<td><code>geopointStareClosure</code></td>
+	<td align="center">3</td>
+	<td>Logical OR of geopointStare and geopointClosure.</td>
+</tr>
+</tbody>
+</table>
+
+<table>
+<caption>GeopointCmd packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0...3</td>
+	<td>1)targetLat</td>
+	<td align="center">I32</td>
+	<td align="center">1</td>
+	<td>Geodetic latitude of the target in radians, positive North.<br>Scaled by 180&times;10000000/&amp;pi from -3.748066027288564 to 3.748066027288564.</td>
+</tr>
+<tr>
+	<td>4...7</td>
+	<td>2)targetLon</td>
+	<td align="center">I32</td>
+	<td align="center">1</td>
+	<td>Longitude of the target in radians, positive East.<br>Scaled by 180&times;10000000/&amp;pi from -3.748066027288564 to 3.748066027288564.</td>
+</tr>
+<tr>
+	<td>8...11</td>
+	<td>3)targetAlt</td>
+	<td align="center">I32</td>
+	<td align="center">1</td>
+	<td>Altitude of the target in meters above the WGS-84 ellipsoid.<br>Scaled by 10000 from -214748.3647 to 214748.3647.</td>
+</tr>
+<tr>
+	<td>12...17</td>
+	<td>4)targetVelNED</td>
+	<td align="center">I16</td>
+	<td align="center">3</td>
+	<td>Velocity of the target in North, East, Down meters per second.<br>Scaled by 100 from -327.67 to 327.67.</td>
+</tr>
+<tr>
+	<td>18...19</td>
+	<td>5)joystickRange</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Estimated range to target in meters. If non-zero <em>and</em> if geopoint is already running the position information in this packet is ignored and only the velocity and range information is used to propagate the geopoint command position. This is used for cases where a joystick is being used to drive the geopoint. If the gimbal has its own range estimate then a non-zero joystickRange will be replaced with the gimbal's internal range estimate. If you want the gimbal use the joystick mode but you cannot compute the range, use a range less than 10 meters and the gimbal will not do the range adjustment.<br>Scaled by 1 from 0.0 to 65535.0.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>20</td>
+	<td>6)<a href="#geopointOptions">options</a></td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Options for the geopoint packet.<br>This field is optional. If it is not included then the value is assumed to be geopointNone.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_pathaorionpathpacket"><a name="ORION_PKT_PATH"></a>OrionPath packet</h2>
+
+<p>The path packet contains a series of waypoints that define a path in 3D space. Sending this packet enables the path track logic, which will cause the gimbal to look at the nearest point on the path; or look directly downward. Path mode is canceled by sending a normal OrionCmd packet.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_PATH</code> : 215</li>
+<li>minimum data length: 2</li>
+<li>maximum data length: 140</li>
+</ul>
+
+<p>Maximum number of points in a path.</p>
+
+<table>
+<caption><a name="maxPathPoints"></a>maxPathPoints enumeration</caption>
+<col />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Name</th>
+	<th>Value</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td><code>MAX_PATH_POINTS</code></td>
+	<td align="center">15</td>
+	<td>Maximum number of points in a path</td>
+</tr>
+</tbody>
+</table>
+
+<table>
+<caption>OrionPath packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0</td>
+	<td>1)numPoints</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Number of points in the path.</td>
+</tr>
+<tr>
+	<td>1:7</td>
+	<td>2)pointDown</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>If numPoints is zero, and this is set, then the gimbal will point downwards.</td>
+</tr>
+<tr>
+	<td>1:6...1:4</td>
+	<td>3)reserved</td>
+	<td align="center">B3</td>
+	<td align="center">1</td>
+	<td>Reserved for future expansion.</td>
+</tr>
+<tr>
+	<td>1:3...1:0</td>
+	<td>4)numCrossTrackSteps</td>
+	<td align="center">B4</td>
+	<td align="center">1</td>
+	<td>Number of steps for across track stepping. Must be more than 1 to enable cross track stepping.</td>
+</tr>
+<tr>
+	<td>2...136</td>
+	<td colspan="2">5)Point</td>
+	<td align="center">numPoints, up to <a href="#maxPathPoints">MAX_PATH_POINTS</a></td>
+	<td align="center">List of path points</td>
+</tr>
+<tr>
+	<td>2...10</td>
+	<td>5.1)posEcef</td>
+	<td align="center">I24</td>
+	<td align="center">3</td>
+	<td>ECEF position in meters.<br>Scaled by 1 from -8388607.0 to 8388607.0.</td>
+</tr>
+<tr>
+	<td>137...138</td>
+	<td>6)alongTrackStepAngle</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Angle in radians for step-stare functionality along track. Set to zero for no step-stare. If doing downward pointing the gimbal must be receiving ORION_PKT_RANGE_DATA.<br>Scaled by 65535/(&amp;pi) from 0.0 to &pi;.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>139</td>
+	<td>7)crossTrackStepRatio</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Ratio of cross track step angle to along track step angle. Set to zero for no cross track stepping.<br>Scaled by 255/(2.55) from 0.0 to 2.55.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_stare_ackastareackpacket"><a name="ORION_PKT_STARE_ACK"></a>StareAck packet</h2>
+
+<p>This packet tells the gimbal that the step-stare image has been acquired and the gimbal can move to the next step stare point.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_STARE_ACK</code> : 218</li>
+<li>data length: 4</li>
+</ul>
+
+<table>
+<caption>StareAck packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0...3</td>
+	<td>1)echoSystemTime</td>
+	<td align="center">U32</td>
+	<td align="center">1</td>
+	<td>Milliseconds since system bootup received from ORION_PKT_STARE_START. If this value matches the value sent in ORION_PKT_STARE_START then the gimbal will terminate the stare operation early.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_camera_switchaorioncameraswitchpacket"><a name="ORION_PKT_CAMERA_SWITCH"></a>OrionCameraSwitch packet</h2>
+
+<p>Command the gimbal to swtich cameras.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_CAMERA_SWITCH</code> : 96</li>
+<li>data length: 1</li>
+</ul>
+
+<table>
+<caption>OrionCameraSwitch packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0</td>
+	<td>1)Index</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>The index of the camera to switch to, counting from 0.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_camera_stateaorioncamerastatepacket"><a name="ORION_PKT_CAMERA_STATE"></a>OrionCameraState packet</h2>
+
+<p>Command a camera in the gimbal. Note this packet will eventually be deprecated.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_CAMERA_STATE</code> : 97</li>
+<li>minimum data length: 2</li>
+<li>maximum data length: 5</li>
+</ul>
+
+<table>
+<caption>OrionCameraState packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0...1</td>
+	<td>1)Zoom</td>
+	<td align="center">I16</td>
+	<td align="center">1</td>
+	<td>Digital zoom ratio.<br>Scaled by 100 from -327.67 to 327.67.</td>
+</tr>
+<tr>
+	<td>2...3</td>
+	<td>2)Focus</td>
+	<td align="center">I16</td>
+	<td align="center">1</td>
+	<td>Focus command/position.<br>Scaled by 10000 from -3.2767 to 3.2767.<br>This field is optional. If it is not included then the value is assumed to be -1.</td>
+</tr>
+<tr>
+	<td>4</td>
+	<td>3)Index</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>The index of the camera to command.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_flir_settingsaorionflirsettingspacket"><a name="ORION_PKT_FLIR_SETTINGS"></a>OrionFlirSettings packet</h2>
+
+<p>FLIR-specific camera settings.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_FLIR_SETTINGS</code> : 103</li>
+<li>minimum data length: 5</li>
+<li>maximum data length: 7</li>
+</ul>
+
+<p>FLIR NUC type enumeration</p>
+
+<table>
+<caption><a name="FlirNucType_t"></a>FlirNucType_t enumeration</caption>
+<col />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Name</th>
+	<th>Value</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td><code>NUC_TYPE_MANUAL</code></td>
+	<td align="center">0</td>
+	<td>Typical operation mode, manual FFC only</td>
+</tr>
+<tr>
+	<td><code>NUC_TYPE_SSN_NO_MOTION</code></td>
+	<td align="center">1</td>
+	<td>Silent shutterless NUC (SSN), no motion setting</td>
+</tr>
+<tr>
+	<td><code>NUC_TYPE_SSN_LOW</code></td>
+	<td align="center">2</td>
+	<td>Silent shutterless NUC (SSN), low setting</td>
+</tr>
+<tr>
+	<td><code>NUC_TYPE_SSN_MEDIUM</code></td>
+	<td align="center">3</td>
+	<td>Silent shutterless NUC (SSN), medium setting</td>
+</tr>
+<tr>
+	<td><code>NUC_TYPE_SSN_HIGH</code></td>
+	<td align="center">4</td>
+	<td>Silent shutterless NUC (SSN), high setting</td>
+</tr>
+</tbody>
+</table>
+
+<table>
+<caption>OrionFlirSettings packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0</td>
+	<td>1)Index</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Index of the camera that these settings should apply to. Use 0xFF to apply to any connected FLIR camera.</td>
+</tr>
+<tr>
+	<td>1:7</td>
+	<td>2)Reserved</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>Reserved bits in the packet.<br>Data are given constant value on encode 0.</td>
+</tr>
+<tr>
+	<td>1:6...1:4</td>
+	<td>3)Palette</td>
+	<td align="center">B3</td>
+	<td align="center">1</td>
+	<td> </td>
+</tr>
+<tr>
+	<td>1:3...1:1</td>
+	<td>4)<a href="#FlirNucType_t">NucType</a></td>
+	<td align="center">B3</td>
+	<td align="center">1</td>
+	<td>NUC type setting.</td>
+</tr>
+<tr>
+	<td>1:0</td>
+	<td>5)BlackHot</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>Image polarity setting - set to 0 for white hot or 1 for black hot. This field is ignored if Palette is non-zero.</td>
+</tr>
+<tr>
+	<td>2</td>
+	<td>6)MaxAgcGain</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Maximum AGC output gain.</td>
+</tr>
+<tr>
+	<td>3</td>
+	<td>7)AceLevel</td>
+	<td align="center">I8</td>
+	<td align="center">1</td>
+	<td>Active Contrast Enhancement (ACE) level.</td>
+</tr>
+<tr>
+	<td>4</td>
+	<td>8)DdeThreshold</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>DDE spatial threshold.</td>
+</tr>
+<tr>
+	<td>5</td>
+	<td>9)AgcMidpoint</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>AGC output midpoint, from 0 to 255.<br>This field is optional. If it is not included then the value is assumed to be 128.</td>
+</tr>
+<tr>
+	<td>6</td>
+	<td>10)IntegrationTime</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Integration time, in milliseconds.<br>Scaled by 255/29.0 from 1.0 to 30.0.<br>This field is optional. If it is not included then the value is assumed to be 8.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_aptina_settingsaorionaptinasettingspacket"><a name="ORION_PKT_APTINA_SETTINGS"></a>OrionAptinaSettings packet</h2>
+
+<p>Aptina-specific camera settings.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_APTINA_SETTINGS</code> : 104</li>
+<li>minimum data length: 13</li>
+<li>maximum data length: 15</li>
+</ul>
+
+<table>
+<caption>OrionAptinaSettings packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0</td>
+	<td>1)Index</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Index of the camera that these settings should apply to. Use 0xFF to apply to any connected Aptina camera.</td>
+</tr>
+<tr>
+	<td>1...2</td>
+	<td>2)MinExposure</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Minimum exposure time in microseconds.<br>Scaled by 65535/32.95 from 0.05 to 33.0.</td>
+</tr>
+<tr>
+	<td>3...4</td>
+	<td>3)MaxExposure</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Maximum exposure time in milliseconds.<br>Scaled by 65535/32.95 from 0.05 to 33.0.</td>
+</tr>
+<tr>
+	<td>5...6</td>
+	<td>4)MinGain</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Minimum sensor luminance gain.<br>Scaled by 65535/31.0 from 1.0 to 32.0.</td>
+</tr>
+<tr>
+	<td>7...8</td>
+	<td>5)MaxGain</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Maximum sensor luminance gain.<br>Scaled by 65535/31.0 from 1.0 to 32.0.</td>
+</tr>
+<tr>
+	<td>9</td>
+	<td>6)Brightness</td>
+	<td align="center">I8</td>
+	<td align="center">1</td>
+	<td>Brightness adjustment.</td>
+</tr>
+<tr>
+	<td>10</td>
+	<td>7)Contrast</td>
+	<td align="center">I8</td>
+	<td align="center">1</td>
+	<td>Contrast adjustment.<br>Scaled by 127/(1) from -1.0 to 1.0.</td>
+</tr>
+<tr>
+	<td>11</td>
+	<td>8)Saturation</td>
+	<td align="center">I8</td>
+	<td align="center">1</td>
+	<td>Saturation adjustment.<br>Scaled by 127/(1) from -1.0 to 1.0.</td>
+</tr>
+<tr>
+	<td>12</td>
+	<td>9)Sharpness</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Sharpening filter strength.<br>Scaled by 255/(5) from 0.0 to 5.0.</td>
+</tr>
+<tr>
+	<td>13:7</td>
+	<td>10)DebugEnable</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>Set to 1 to enable AGC debugging information.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>14</td>
+	<td>11)Hue</td>
+	<td align="center">I8</td>
+	<td align="center">1</td>
+	<td>Hue adjustment.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_zafiro_settingsaorionzafirosettingspacket"><a name="ORION_PKT_ZAFIRO_SETTINGS"></a>OrionZafiroSettings packet</h2>
+
+<p>Zafiro-specific camera settings.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_ZAFIRO_SETTINGS</code> : 105</li>
+<li>minimum data length: 6</li>
+<li>maximum data length: 7</li>
+</ul>
+
+<table>
+<caption>OrionZafiroSettings packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0</td>
+	<td>1)Index</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Index of the camera that these settings should apply to. Use 0xFF to apply to any connected Zafiro camera.</td>
+</tr>
+<tr>
+	<td>1</td>
+	<td>2)BlackHot</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Image polarity setting - set to 0 for white hot or 1 for black hot.</td>
+</tr>
+<tr>
+	<td>2</td>
+	<td>3)IntegrationTime</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Integration time, in milliseconds.<br>Scaled by 255/29.0 from 1.0 to 30.0.</td>
+</tr>
+<tr>
+	<td>3</td>
+	<td>4)LapEnabled</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Local Area Processing (LAP) enable/disable flag. Set to zero to disable, or non-zero to enable.</td>
+</tr>
+<tr>
+	<td>4</td>
+	<td>5)LapGain</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>LAP Sharpening gain.<br>Scaled by 255/3.5 from 0.5 to 4.0.</td>
+</tr>
+<tr>
+	<td>5</td>
+	<td>6)AgcSaturation</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>AGC histogram saturation.<br>Scaled by 255/(0.1) from 0.0 to 0.1.</td>
+</tr>
+<tr>
+	<td>6</td>
+	<td>7)UseNucTablePresets</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Set to 1 to use NUC table presets, default is 0.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_hitachi_settingsaorionhitachisettingspacket"><a name="ORION_PKT_HITACHI_SETTINGS"></a>OrionHitachiSettings packet</h2>
+
+<p>Hitachi-specific camera settings.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_HITACHI_SETTINGS</code> : 106</li>
+<li>minimum data length: 5</li>
+<li>maximum data length: 6</li>
+</ul>
+
+<table>
+<caption>OrionHitachiSettings packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0</td>
+	<td>1)Index</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Index of the camera that these settings should apply to. Use 0xFF to apply to any connected Hitachi camera.</td>
+</tr>
+<tr>
+	<td>1...2</td>
+	<td>2)IntegrationTime</td>
+	<td align="center">I16</td>
+	<td align="center">1</td>
+	<td>Integration time in microseconds, or negative to disable shutter-priority mode.</td>
+</tr>
+<tr>
+	<td>3...4</td>
+	<td>3)Aperture</td>
+	<td align="center">I16</td>
+	<td align="center">1</td>
+	<td>Aperture f-number, or negative to disable aperture-priority mode.<br>Scaled by 10 from -3276.7 to 3276.7.</td>
+</tr>
+<tr>
+	<td>5</td>
+	<td>4)Sharpness</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Sharpening filter strength.<br>Scaled by 255/(5) from 0.0 to 5.0.<br>This field is optional. If it is not included then the value is assumed to be 1.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_sony_settingsaorionsonysettingspacket"><a name="ORION_PKT_SONY_SETTINGS"></a>OrionSonySettings packet</h2>
+
+<p>Sony-specific camera settings.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_SONY_SETTINGS</code> : 108</li>
+<li>data length: 12</li>
+</ul>
+
+<table>
+<caption>OrionSonySettings packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0</td>
+	<td>1)Index</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Index of the camera that these settings should apply to. Use 0xFF to apply to any connected Sony camera.</td>
+</tr>
+<tr>
+	<td>1...2</td>
+	<td>2)MinExposure</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Minimum exposure time in milliseconds.<br>Scaled by 65535/32.95 from 0.05 to 33.0.</td>
+</tr>
+<tr>
+	<td>3...4</td>
+	<td>3)MaxExposure</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Maximum exposure time in milliseconds.<br>Scaled by 65535/32.95 from 0.05 to 33.0.</td>
+</tr>
+<tr>
+	<td>5</td>
+	<td>4)MinGain</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Minimum sensor luminance gain, in dB.</td>
+</tr>
+<tr>
+	<td>6</td>
+	<td>5)MaxGain</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Maximum sensor luminance gain, in dB.</td>
+</tr>
+<tr>
+	<td>7</td>
+	<td>6)Brightness</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Brightness target, from 0 to 255.</td>
+</tr>
+<tr>
+	<td>8</td>
+	<td>7)Contrast</td>
+	<td align="center">I8</td>
+	<td align="center">1</td>
+	<td>Contrast adjustment.<br>Scaled by 127/(1) from -1.0 to 1.0.</td>
+</tr>
+<tr>
+	<td>9</td>
+	<td>8)Saturation</td>
+	<td align="center">I8</td>
+	<td align="center">1</td>
+	<td>Saturation adjustment.<br>Scaled by 127/(1) from -1.0 to 1.0.</td>
+</tr>
+<tr>
+	<td>10</td>
+	<td>9)Sharpness</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Sharpening filter strength.<br>Scaled by 255/(5) from 0.0 to 5.0.</td>
+</tr>
+<tr>
+	<td>11</td>
+	<td>10)FrameRate</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Camera frame rate, in Hertz.<br>Scaled by 255/(30) from 0.0 to 30.0.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_ktnc_settingsaorionktncsettingspacket"><a name="ORION_PKT_KTNC_SETTINGS"></a>OrionKtncSettings packet</h2>
+
+<p>KTnC-specific camera settings.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_KTNC_SETTINGS</code> : 109</li>
+<li>minimum data length: 5</li>
+<li>maximum data length: 11</li>
+</ul>
+
+<table>
+<caption>OrionKtncSettings packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0</td>
+	<td>1)Index</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Index of the camera that these settings should apply to. Use 0xFF to apply to any connected KTnC camera.</td>
+</tr>
+<tr>
+	<td>1...2</td>
+	<td>2)IntegrationTime</td>
+	<td align="center">I16</td>
+	<td align="center">1</td>
+	<td>Integration time in microseconds, or negative to disable shutter-priority mode.</td>
+</tr>
+<tr>
+	<td>3...4</td>
+	<td>3)Aperture</td>
+	<td align="center">I16</td>
+	<td align="center">1</td>
+	<td>Aperture f-number, or negative to disable aperture-priority mode.<br>Scaled by 10 from -3276.7 to 3276.7.</td>
+</tr>
+<tr>
+	<td>5</td>
+	<td>4)Sharpness</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Sharpening adjustment.<br>Scaled by 255/(16) from 0.0 to 16.0.<br>This field is optional. If it is not included then the value is assumed to be 8.</td>
+</tr>
+<tr>
+	<td>6</td>
+	<td>5)VerticalFlip</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Set to non-zero to vertically flip the video.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>7</td>
+	<td>6)ExposureComp</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Exposure compenstation adjustment.<br>Scaled by 255/(14) from 0.0 to 14.0.<br>This field is optional. If it is not included then the value is assumed to be 7.</td>
+</tr>
+<tr>
+	<td>8</td>
+	<td>7)Contrast</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Contrast adjustment.<br>Scaled by 255/(32) from 0.0 to 32.0.<br>This field is optional. If it is not included then the value is assumed to be 8.</td>
+</tr>
+<tr>
+	<td>9</td>
+	<td>8)Saturation</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Saturation adjustment.<br>Scaled by 255/(32) from 0.0 to 32.0.<br>This field is optional. If it is not included then the value is assumed to be 14.</td>
+</tr>
+<tr>
+	<td>10:7</td>
+	<td>9)NightMode</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>Night mode enable.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>10:6</td>
+	<td>10)ResetToDefaults</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>Reset to defaults.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="orionretractcmd_tenumeration">OrionRetractCmd_t enumeration</h2>
+
+<p>The retraction mechanism commands.</p>
+
+<table>
+<caption><a name="OrionRetractCmd_t"></a>OrionRetractCmd_t enumeration</caption>
+<col />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Name</th>
+	<th>Value</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td><code>RETRACT_CMD_DISABLE</code></td>
+	<td align="center">0</td>
+	<td>Disable the retract motor</td>
+</tr>
+<tr>
+	<td><code>RETRACT_CMD_DEPLOY</code></td>
+	<td align="center">1</td>
+	<td>Move the gimbal to a deployed position</td>
+</tr>
+<tr>
+	<td><code>RETRACT_CMD_RETRACT</code></td>
+	<td align="center">2</td>
+	<td>Move the gimbal to a retracted position</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_retract_cmdaorionretractcommandpacket"><a name="ORION_PKT_RETRACT_CMD"></a>OrionRetractCommand packet</h2>
+
+<p>Retract or deploy command for a gimbal retraction mechanism.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_RETRACT_CMD</code> : 160</li>
+<li>data length: 2</li>
+</ul>
+
+<table>
+<caption>OrionRetractCommand packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0</td>
+	<td>1)<a href="#OrionRetractCmd_t">Cmd</a></td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>The retraction mechanism command.</td>
+</tr>
+<tr>
+	<td>1</td>
+	<td>2)Reserved</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Reserved for future use.<br>Data are given constant value on encode 0.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_user_dataaorionuserdatapacket"><a name="ORION_PKT_USER_DATA"></a>OrionUserData packet</h2>
+
+<p>This packet can be used to transfer user-defined data payloads between communication ports on the gimbal.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_USER_DATA</code> : 178</li>
+<li>minimum data length: 6</li>
+<li>maximum data length: 134</li>
+</ul>
+
+<table>
+<caption>OrionUserData packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0</td>
+	<td>1)<a href="#UserDataPort_t">port</a></td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Destination crown board communication port identifier.</td>
+</tr>
+<tr>
+	<td>1</td>
+	<td>2)size</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>User data array size in bytes.</td>
+</tr>
+<tr>
+	<td>2...5</td>
+	<td>3)id</td>
+	<td align="center">U32</td>
+	<td align="center">1</td>
+	<td>User-defined unique identifier or sequence number for this data block.</td>
+</tr>
+<tr>
+	<td>6...133</td>
+	<td>4)data</td>
+	<td align="center">U8</td>
+	<td align="center">size, up to 128</td>
+	<td>User data byte array.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_laser_cmdaorionlasercommandpacket"><a name="ORION_PKT_LASER_CMD"></a>OrionLaserCommand packet</h2>
+
+<p>Command to fire the laser (if installed).</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_LASER_CMD</code> : 3</li>
+<li>minimum data length: 11</li>
+<li>maximum data length: 29</li>
+</ul>
+
+<table>
+<caption>OrionLaserCommand packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0...1</td>
+	<td>1)Reserved</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Deprecated parameter - set to zero.<br>Data are given constant value on encode 0.</td>
+</tr>
+<tr>
+	<td>2</td>
+	<td>2)Index</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Index of the laser to apply this command to.</td>
+</tr>
+<tr>
+	<td>3...18</td>
+	<td>3)Password</td>
+	<td colspan="2" align="center">Zero-terminated string up to 16 bytes</td>
+	<td align="center">Password, if required by the laser. If a password is required, it must be provided in order to change any aspect of the laser's state (e.g., enable/disable, arm/disarm, fire/deactivate.</td>
+</tr>
+<tr>
+	<td>19</td>
+	<td>4)Enable</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Set to zero to disable the laser, or non-zero to enable it.</td>
+</tr>
+<tr>
+	<td>20</td>
+	<td>5)Arm</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Set to zero to disarm the laser, or non-zero to arm.</td>
+</tr>
+<tr>
+	<td>21</td>
+	<td>6)Fire</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Set to zero to deactivate the laser, or non-zero to activate it.</td>
+</tr>
+<tr>
+	<td>22...23</td>
+	<td>7)OnTime</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Periodic laser pulse on time, in milliseconds, or zero to fire continuously.</td>
+</tr>
+<tr>
+	<td>24...25</td>
+	<td>8)OffTime</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Periodic laser pulse off time, in milliseconds, or zero to fire continuously.</td>
+</tr>
+<tr>
+	<td>26...27</td>
+	<td>9)PrfCode</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Laser PRF code, if applicable.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>28</td>
+	<td>10)SafetyBypass</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Set to a non-zero value to bypass all laser safety checks.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_laser_statesaorionlaserstatespacket"><a name="ORION_PKT_LASER_STATES"></a>OrionLaserStates packet</h2>
+
+<p>Information about the current state of lasers installed in the gimbal.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_LASER_STATES</code> : 6</li>
+<li>minimum data length: 1</li>
+<li>maximum data length: 13</li>
+</ul>
+
+<table>
+<caption>OrionLaserStates packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0</td>
+	<td>1)NumLasers</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Number of installed lasers.</td>
+</tr>
+<tr>
+	<td>1...12</td>
+	<td colspan="2">2)State</td>
+	<td align="center">NumLasers, up to <a href="#OrionMaxLasers_t">MAX_LASERS</a></td>
+	<td align="center"> </td>
+</tr>
+<tr>
+	<td>1</td>
+	<td>2.1)<a href="#OrionLaserType_t">Type</a></td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>The type of this laser.</td>
+</tr>
+<tr>
+	<td>2:7</td>
+	<td>2.2)Enabled</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>Set to 1 if the laser is enabled, otherwise 0.</td>
+</tr>
+<tr>
+	<td>2:6</td>
+	<td>2.3)Armed</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>Set to 1 if the laser is armed, otherwise 0.</td>
+</tr>
+<tr>
+	<td>2:5</td>
+	<td>2.4)Active</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>Set to 1 if the laser is active, otherwise 0.</td>
+</tr>
+<tr>
+	<td>2:4</td>
+	<td>2.5)GroundSpeedLock</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>Set to 1 if the laser is locked due to low ground speed, otherwise 0.</td>
+</tr>
+<tr>
+	<td>2:3</td>
+	<td>2.6)AltitudeLock</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>Set to 1 if the laser is locked due to low GPS altitude, otherwise 0.</td>
+</tr>
+<tr>
+	<td>2:2</td>
+	<td>2.7)PasswordLock</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>Set to 1 if the laser is locked by password, otherwise 0.</td>
+</tr>
+<tr>
+	<td>2:1</td>
+	<td>2.8)ApCommLock</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>Set to 1 if the laser is locked due to lost autopilot comms, otherwise 0.</td>
+</tr>
+<tr>
+	<td>2:0</td>
+	<td>2.9)ApFlyingLock</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>Set to 1 if the laser is locked because the autopilot is not in a 'flying' state, otherwise 0.</td>
+</tr>
+<tr>
+	<td>3:7</td>
+	<td>2.10)BypassEnabled</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>Set to 1 if the current command is bypassing the safety interlocks, otherwise 0.</td>
+</tr>
+<tr>
+	<td>3:6</td>
+	<td>2.11)PitchAngleLock</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>Set to 1 if the laser is locked due to a positive pitch angle, otherwise 0.</td>
+</tr>
+<tr>
+	<td>3:5...4:0</td>
+	<td>2.12)Reserved</td>
+	<td align="center">B14</td>
+	<td align="center">1</td>
+	<td>Reserved for future use.<br>Data are given constant value on encode 0.</td>
+</tr>
+<tr>
+	<td>5...6</td>
+	<td>2.13)WaitTimer</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Time remaining, in milliseconds, before the laser will accept another command.</td>
+</tr>
+</tbody>
+</table>
+
+<div class="page-break"></div>
+
+<hr />
+
+<h1 id="packetsusedforgimbalconfiguration">Packets used for gimbal configuration</h1>
+
+<p>These packets are sent by the user to configure the gimbal. To request a configuration packet send the packet with zero length. Configuration information is stored onboard the gimbal and does not need to be re-sent if the gimbal is restarted.</p>
+
+<h2 id="userdataport_tenumeration">UserDataPort_t enumeration</h2>
+
+<p>Destination port identifiers</p>
+
+<table>
+<caption><a name="UserDataPort_t"></a>UserDataPort_t enumeration</caption>
+<col />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Name</th>
+	<th>Value</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td><code>USER_DATA_PORT_ETHERNET</code></td>
+	<td align="center">0</td>
+	<td>Payload Ethernet connection</td>
+</tr>
+<tr>
+	<td><code>USER_DATA_PORT_PRIMARY</code></td>
+	<td align="center">2</td>
+	<td>Primary front-panel RS-232 serial port</td>
+</tr>
+<tr>
+	<td><code>USER_DATA_PORT_FP2</code></td>
+	<td align="center">3</td>
+	<td>Front panel FP1 RS-232 serial port</td>
+</tr>
+<tr>
+	<td><code>USER_DATA_PORT_FP1</code></td>
+	<td align="center">4</td>
+	<td>Front panel FP2 RS-232 serial port</td>
+</tr>
+<tr>
+	<td><code>USER_DATA_PORT_FP3</code></td>
+	<td align="center">8</td>
+	<td>Front panel FP3 TTL serial port</td>
+</tr>
+<tr>
+	<td><code>USER_DATA_PORT_FP4</code></td>
+	<td align="center">9</td>
+	<td>Front panel FP4 TTL serial port</td>
+</tr>
+<tr>
+	<td><code>USER_DATA_PORT_CURRENT</code></td>
+	<td align="center">255</td>
+	<td>The port referenced is whatever port delivered this packet</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_uart_configaorionuartconfigpacket"><a name="ORION_PKT_UART_CONFIG"></a>OrionUartConfig packet</h2>
+
+<p>This packet is used to change or request the baud rate and protocol of a UART on the crown board. Send this packet with zero bytes to request the configuration of the port that receives the request, or with 1 byte to request the configuration of a specific port. Not all port configuration options are available, the ethernet port must run the PROTOCOL_ORION protocol at either 115200 or 230400 bits per second. In general users should not change the ethernet port setup. In addition the PROTOCOL_UBLOX_GPS is not supported on any user configurable port, it is included in the protocol list only for completeness.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_UART_CONFIG</code> : 2</li>
+<li>minimum data length: 5</li>
+<li>maximum data length: 6</li>
+</ul>
+
+<p>Protocols understood by the Orion UART configuration</p>
+
+<table>
+<caption><a name="OrionProtocols_t"></a>OrionProtocols_t enumeration</caption>
+<col />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Name</th>
+	<th>Value</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td><code>PROTOCOL_NO_CHANGE</code></td>
+	<td align="center">0</td>
+	<td>Do not change the protocol</td>
+</tr>
+<tr>
+	<td><code>PROTOCOL_NONE</code></td>
+	<td align="center">1</td>
+	<td>Disable the port</td>
+</tr>
+<tr>
+	<td><code>PROTOCOL_DEFAULT</code></td>
+	<td align="center">2</td>
+	<td>Use the default protocol. This is port dependent</td>
+</tr>
+<tr>
+	<td><code>PROTOCOL_ORION</code></td>
+	<td align="center">3</td>
+	<td>Orion packet communications protocol</td>
+</tr>
+<tr>
+	<td><code>PROTOCOL_CLEVIS</code></td>
+	<td align="center">4</td>
+	<td>Orion packet communications protocol specific to the clevis</td>
+</tr>
+<tr>
+	<td><code>PROTOCOL_CLEVIS_RAW</code></td>
+	<td align="center">5</td>
+	<td>Clevis raw communications mode</td>
+</tr>
+<tr>
+	<td><code>PROTOCOL_NMEA_GPS</code></td>
+	<td align="center">6</td>
+	<td>GPS input over NMEA</td>
+</tr>
+<tr>
+	<td><code>PROTOCOL_UBLOX_GPS</code></td>
+	<td align="center">7</td>
+	<td>uBox GPS</td>
+</tr>
+<tr>
+	<td><code>PROTOCOL_NOVATEL_GPS</code></td>
+	<td align="center">8</td>
+	<td>Novatel GPS</td>
+</tr>
+<tr>
+	<td><code>PROTOCOL_MAVLINK_GPS</code></td>
+	<td align="center">9</td>
+	<td>Mavlink GPS</td>
+</tr>
+<tr>
+	<td><code>PROTOCOL_UM7_MAG</code></td>
+	<td align="center">10</td>
+	<td>CH Robotics UM7 magnetometer</td>
+</tr>
+<tr>
+	<td><code>PROTOCOL_SIGHTLINE_VIDEO</code></td>
+	<td align="center">11</td>
+	<td>Sightline video processing</td>
+</tr>
+<tr>
+	<td><code>PROTOCOL_SENSONOR_IMU</code></td>
+	<td align="center">12</td>
+	<td>Sensonor IMU</td>
+</tr>
+<tr>
+	<td><code>PROTOCOL_DMU11_IMU</code></td>
+	<td align="center">13</td>
+	<td>Silicon sensing IMU</td>
+</tr>
+<tr>
+	<td><code>PROTOCOL_DISCOVERY</code></td>
+	<td align="center">14</td>
+	<td>Discovery protocol that decides between novatel, UM7, and Sightline</td>
+</tr>
+<tr>
+	<td><code>PROTOCOL_AIRROBOT</code></td>
+	<td align="center">15</td>
+	<td>Air robot protocol</td>
+</tr>
+<tr>
+	<td><code>PROTOCOL_PROPRIETARY1</code></td>
+	<td align="center">16</td>
+	<td>Proprietary protocol</td>
+</tr>
+<tr>
+	<td><code>PROTOCOL_PROPRIETARY2</code></td>
+	<td align="center">17</td>
+	<td>Proprietary protocol</td>
+</tr>
+<tr>
+	<td><code>PROTOCOL_FLIR</code></td>
+	<td align="center">18</td>
+	<td>FLIR pass-through protocol</td>
+</tr>
+<tr>
+	<td><code>PROTOCOL_EPSON_IMU</code></td>
+	<td align="center">19</td>
+	<td>EPSON IMU protocol</td>
+</tr>
+<tr>
+	<td><code>PROTOCOL_PIKSI</code></td>
+	<td align="center">20</td>
+	<td>Swift Piksi GPS</td>
+</tr>
+<tr>
+	<td><code>PROTOCOL_WEPILOT</code></td>
+	<td align="center">21</td>
+	<td>WePilot AP</td>
+</tr>
+<tr>
+	<td><code>NUM_PROTOCOL</code></td>
+	<td align="center">22</td>
+	<td> </td>
+</tr>
+</tbody>
+</table>
+
+<table>
+<caption>OrionUartConfig packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0</td>
+	<td>1)<a href="#UserDataPort_t">port</a></td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>The port whose configuration should be changed or requested, use USER_DATA_PORT_CURRENT to indicate the port which received this packet.</td>
+</tr>
+<tr>
+	<td>1...3</td>
+	<td>2)baud</td>
+	<td align="center">U24</td>
+	<td align="center">1</td>
+	<td>Baud rate bits per second. Use 0 to select the default baud rate for this port and protocol.</td>
+</tr>
+<tr>
+	<td>4</td>
+	<td>3)<a href="#OrionProtocols_t">protocol</a></td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>The protocol to use for this port. If PROTOCOL_NO_CHANGE or PROTOCOL_DEFAULT are used the reply to this packet will contain the actual protocol in use.</td>
+</tr>
+<tr>
+	<td>5</td>
+	<td>4)temporary</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>A value of 0 indicates that the settings should persist across power cycles. Non-zero values will cause the new setting to be lost after power cycle.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_limitsaorionlimitsdatapacket"><a name="ORION_PKT_LIMITS"></a>OrionLimitsData packet</h2>
+
+<p>Gimbal limits of operation. This includes the max and min pan and tilt angles, as well as the angular rate and the maximum current consumption.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_LIMITS</code> : 34</li>
+<li>minimum data length: 32</li>
+<li>maximum data length: 34</li>
+</ul>
+
+<table>
+<caption>OrionLimitsData packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0...3</td>
+	<td>1)MinPos</td>
+	<td align="center">I16</td>
+	<td align="center"><a href="#GimbalAxis_t">NUM_GIMBAL_AXES</a></td>
+	<td>Minimum position in radians.<br>Scaled by 1000.0 from -32.767 to 32.767.</td>
+</tr>
+<tr>
+	<td>4...7</td>
+	<td>2)MaxPos</td>
+	<td align="center">I16</td>
+	<td align="center"><a href="#GimbalAxis_t">NUM_GIMBAL_AXES</a></td>
+	<td>Maximum position in radians.<br>Scaled by 1000.0 from -32.767 to 32.767.</td>
+</tr>
+<tr>
+	<td>8...11</td>
+	<td>3)MaxVel</td>
+	<td align="center">U16</td>
+	<td align="center"><a href="#GimbalAxis_t">NUM_GIMBAL_AXES</a></td>
+	<td>Maximum velocity in radians per second.<br>Scaled by 1000.0 from 0.0 to 65.535.</td>
+</tr>
+<tr>
+	<td>12...15</td>
+	<td>4)MaxAccel</td>
+	<td align="center">U16</td>
+	<td align="center"><a href="#GimbalAxis_t">NUM_GIMBAL_AXES</a></td>
+	<td>Maximum acceleration in radians per second per second.<br>Scaled by 1.0 from 0.0 to 65535.0.</td>
+</tr>
+<tr>
+	<td>16...19</td>
+	<td>5)ContCur</td>
+	<td align="center">U16</td>
+	<td align="center"><a href="#GimbalAxis_t">NUM_GIMBAL_AXES</a></td>
+	<td>Maximum continuous current in Amps.<br>Scaled by 1000.0 from 0.0 to 65.535.</td>
+</tr>
+<tr>
+	<td>20...23</td>
+	<td>6)PeakCur</td>
+	<td align="center">U16</td>
+	<td align="center"><a href="#GimbalAxis_t">NUM_GIMBAL_AXES</a></td>
+	<td>Maximum peak current in Amps.<br>Scaled by 1000.0 from 0.0 to 65.535.</td>
+</tr>
+<tr>
+	<td>24...27</td>
+	<td>7)PeakCurTime</td>
+	<td align="center">U16</td>
+	<td align="center"><a href="#GimbalAxis_t">NUM_GIMBAL_AXES</a></td>
+	<td>Peak current time in seconds.<br>Scaled by 1000.0 from 0.0 to 65.535.</td>
+</tr>
+<tr>
+	<td>28...31</td>
+	<td>8)InitCur</td>
+	<td align="center">U16</td>
+	<td align="center"><a href="#GimbalAxis_t">NUM_GIMBAL_AXES</a></td>
+	<td>Initialization current in Amps.<br>Scaled by 1000.0 from 0.0 to 65.535.</td>
+</tr>
+<tr>
+	<td>32...33</td>
+	<td>9)MaxPower</td>
+	<td align="center">U8</td>
+	<td align="center"><a href="#GimbalAxis_t">NUM_GIMBAL_AXES</a></td>
+	<td>Maximum motor output power, in watts. Set to zero for no limit.<br>Scaled by 1.0 from 0.0 to 255.0.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_ins_optionsainsoptionspacket"><a name="ORION_PKT_INS_OPTIONS"></a>InsOptions packet</h2>
+
+<p>INS options give configuration options for the inertial navigation system (INS) in the gunbal. Changing the INS options will cause the INS to be restarted if the platform rotation changes. When using platform rotation note the order: First yaw about the gimbal's z-axis to create an intermediate axis. Then pitch about the intermediate y-axis to create a second intermediate axis. Finally roll about the second intermediate x-axis to reach the platform orientation. When using an IMU in the payload ball the enablePlatformRotation can still be used, but will only effect heading observations and the GPS lever arm, it will not rotate the IMU data.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_INS_OPTIONS</code> : 216</li>
+<li>minimum data length: 12</li>
+<li>maximum data length: 28</li>
+</ul>
+
+<table>
+<caption>InsOptions packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0:7</td>
+	<td>1)enablePlatformRotation</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>The INS will be run in the platform reference frame if this is set. The platform reference frame is defined by the rotation from the gimbal reference frame to the platform frame. Set this if the gimbal is installed such that the gimbal reference frame is often near pitch of +/- 90 degrees.</td>
+</tr>
+<tr>
+	<td>0:6</td>
+	<td>2)enableCourseIsHeading</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>If set then the INS will use the course of the GPS as a heading input for initialization and heading updates when the heading confidence is poor. This is appropriate for fixed wing aircraft if enablePlatformRotation is set (or if the gimbal native axis is aligned with the aircraft axis).</td>
+</tr>
+<tr>
+	<td>0:5</td>
+	<td>3)disableMagnetometer</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>If set then the INS will ignore any magnetometer measurements.</td>
+</tr>
+<tr>
+	<td>0:4</td>
+	<td>4)disableGPS</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>If set then the INS will ignore any GPS measurements.</td>
+</tr>
+<tr>
+	<td>0:3</td>
+	<td>5)resetINS</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>If set then the INS will be reset, all other fields of this packet are ignored in that case.</td>
+</tr>
+<tr>
+	<td>0:2</td>
+	<td>6)disableGpsClockError</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>Set this to disable clock error estimation for tightly coupled INS.</td>
+</tr>
+<tr>
+	<td>0:1</td>
+	<td>7)enableAccelBias</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>Set this to enable accelerometer bias estimation.</td>
+</tr>
+<tr>
+	<td>0:0</td>
+	<td>8)enableTightlyCoupled</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>Set this to enable the tightly coupled INS.</td>
+</tr>
+<tr>
+	<td>1:7</td>
+	<td>9)usePhaseForVelocity</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>If set the INS will use the carrier phase rate for tightly coupled velocity observations. Otherwise the tightly coupled velocity observations come from doppler shifts.</td>
+</tr>
+<tr>
+	<td>1:6</td>
+	<td>10)disableL1</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>If set the INS will ignore L1 band for tightly coupled observations.</td>
+</tr>
+<tr>
+	<td>1:5</td>
+	<td>11)disableL2</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>If set the INS will ignore the L2 band for tightly coupled observations.</td>
+</tr>
+<tr>
+	<td>1:4</td>
+	<td>12)disableL5</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>If set the INS will ignore the L5 band for tightly coupled observations.</td>
+</tr>
+<tr>
+	<td>1:3...1:0</td>
+	<td>13)elevationMask</td>
+	<td align="center">B4</td>
+	<td align="center">1</td>
+	<td>Elevation mask for tightly coupled satellites.<br>Scaled by 15/(5&times;&amp;pi/180) from 0.0 to 0.08726646259971647.</td>
+</tr>
+<tr>
+	<td>2:7</td>
+	<td>14)enablePayloadIns</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>If set the IMU inputs to the INS are coming from the payload ball, not the gimbal crown. Note that enablePlatformRotation is interpreted differently in that case.</td>
+</tr>
+<tr>
+	<td>2:6</td>
+	<td>15)enableNonLinearHeading</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>If set then the INS will attempt to observe the heading use nonlinear methods. This may be helpful for hovering vehicles that do not have any other heading observation.</td>
+</tr>
+<tr>
+	<td>2:5</td>
+	<td>16)enableSensonorMV</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>If set, and if enablePayloadIns is set, the Sensonor IMU inputs to the INS are coming from the payload ball in the HD80MV orientation.</td>
+</tr>
+<tr>
+	<td>2:4</td>
+	<td>17)enableHD25PayloadINS</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>If set, and if enablePayloadIns is set, the IMU inputs to the INS are coming from the payload ball in the HD25 special orientation.</td>
+</tr>
+<tr>
+	<td>2:3...2:0</td>
+	<td>18)opticalFlowSetting</td>
+	<td align="center">B4</td>
+	<td align="center">1</td>
+	<td>Non-zero to enable optical flow.</td>
+</tr>
+<tr>
+	<td>3:7...3:0</td>
+	<td>19)reserved</td>
+	<td align="center">B8</td>
+	<td align="center">1</td>
+	<td>reserved space for future expansion.</td>
+</tr>
+<tr>
+	<td>4...9</td>
+	<td>20)gimbalToPlatformEuler</td>
+	<td align="center">I16</td>
+	<td align="center"><a href="#Axis_t">NUM_AXES</a></td>
+	<td>Roll, Pitch, Yaw angles in radians from -pi to pi. The angles give the Euler rotation (yaw first, then pitch, then roll) from the platform reference frame into the gimbal reference frame.<br>Scaled by 32767/(&amp;pi) from -&pi; to &pi;.</td>
+</tr>
+<tr>
+	<td>10...11</td>
+	<td>21)initialHeading</td>
+	<td align="center">I16</td>
+	<td align="center">1</td>
+	<td>Initial heading angle in radians for the INS.<br>Scaled by 32767/(&amp;pi) from -&pi; to &pi;.</td>
+</tr>
+<tr>
+	<td>12...17</td>
+	<td>22)gpsLeverArm</td>
+	<td align="center">I16</td>
+	<td align="center">3</td>
+	<td>X, Y, Z meters from first (primary) GPS antenna to IMU in the gimbal reference frame, or the platform reference frame if enablePlatformRotation is on.<br>Scaled by 1000 from -32.767 to 32.767.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>18...19</td>
+	<td>23)headingObservationBiasAngle</td>
+	<td align="center">I16</td>
+	<td align="center">1</td>
+	<td>For external heading observations (including magnetometer) subtract this angle in radians from the heading observation to get the heading in INS or platform frame.<br>Scaled by 32767/(&amp;pi) from -&pi; to &pi;.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>20...25</td>
+	<td>24)secondGPSLeverArm</td>
+	<td align="center">I16</td>
+	<td align="center">3</td>
+	<td>X, Y, Z meters from second GPS antenna to IMU in the gimbal reference frame, or the platform reference frame if enablePlatformRotation is on. This only applies if Novatel Align data are being received.<br>Scaled by 1000 from -32.767 to 32.767.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>26...27</td>
+	<td>25)alignHeadingNoise</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Sensor noise in radians for align heading observation. Use zero for the default sensor noise from the Align hardware.<br>Scaled by 65535/(&amp;pi) from 0.0 to &pi;.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_network_settingsaorionnetworksettingspacket"><a name="ORION_PKT_NETWORK_SETTINGS"></a>OrionNetworkSettings packet</h2>
+
+<p>Change the IP network settings in the gimbal.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_NETWORK_SETTINGS</code> : 228</li>
+<li>minimum data length: 12</li>
+<li>maximum data length: 15</li>
+</ul>
+
+<table>
+<caption>OrionNetworkSettings packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0...3</td>
+	<td>1)Ip</td>
+	<td align="center">U32</td>
+	<td align="center">1</td>
+	<td>IPv4 address.</td>
+</tr>
+<tr>
+	<td>4...7</td>
+	<td>2)Mask</td>
+	<td align="center">U32</td>
+	<td align="center">1</td>
+	<td>IPv4 network mask.</td>
+</tr>
+<tr>
+	<td>8...11</td>
+	<td>3)Gateway</td>
+	<td align="center">U32</td>
+	<td align="center">1</td>
+	<td>IPv4 gateway address.</td>
+</tr>
+<tr>
+	<td>12</td>
+	<td>4)LowDelay</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Set to 1 to use low-delay TCP mode (i.e. disable Nagle's Algorithm).<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>13...14</td>
+	<td>5)Mtu</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Ethernet MTU size, set to zero for hardware default.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_network_settingsaorionnetworkbytesettingspacket"><a name="ORION_PKT_NETWORK_SETTINGS"></a>OrionNetworkByteSettings packet</h2>
+
+<p>Change the IP network settings in the gimbal.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_NETWORK_SETTINGS</code> : 228</li>
+<li>minimum data length: 12</li>
+<li>maximum data length: 15</li>
+</ul>
+
+<table>
+<caption>OrionNetworkByteSettings packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0...3</td>
+	<td>1)Ip</td>
+	<td align="center">U8</td>
+	<td align="center">4</td>
+	<td>IPv4 address.</td>
+</tr>
+<tr>
+	<td>4...7</td>
+	<td>2)Mask</td>
+	<td align="center">U8</td>
+	<td align="center">4</td>
+	<td>IPv4 network mask.</td>
+</tr>
+<tr>
+	<td>8...11</td>
+	<td>3)Gateway</td>
+	<td align="center">U8</td>
+	<td align="center">4</td>
+	<td>IPv4 gateway address.</td>
+</tr>
+<tr>
+	<td>12</td>
+	<td>4)LowDelay</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Set to 1 to use low-delay TCP mode (i.e. disable Nagle's Algorithm).<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>13...14</td>
+	<td>5)Mtu</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Ethernet MTU size, set to zero for hardware default.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_network_videoaorionnetworkvideopacket"><a name="ORION_PKT_NETWORK_VIDEO"></a>OrionNetworkVideo packet</h2>
+
+<p>Change the IP settings for video delivery.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_NETWORK_VIDEO</code> : 98</li>
+<li>minimum data length: 6</li>
+<li>maximum data length: 14</li>
+</ul>
+
+<p>Network video output stream types</p>
+
+<table>
+<caption><a name="StreamType_t"></a>StreamType_t enumeration</caption>
+<col />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Name</th>
+	<th>Value</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td><code>STREAM_TYPE_H264</code></td>
+	<td align="center">0</td>
+	<td>h.264+KLV stream in an MPEG transport stream</td>
+</tr>
+<tr>
+	<td><code>STREAM_TYPE_MJPEG</code></td>
+	<td align="center">1</td>
+	<td>MJPEG multipart video stream</td>
+</tr>
+<tr>
+	<td><code>STREAM_TYPE_RAW</code></td>
+	<td align="center">2</td>
+	<td>Raw multipart video stream</td>
+</tr>
+<tr>
+	<td><code>STREAM_TYPE_YUV</code></td>
+	<td align="center">3</td>
+	<td>YUV (NV12) multipart video stream</td>
+</tr>
+<tr>
+	<td><code>NUM_STREAM_TYPES</code></td>
+	<td align="center">4</td>
+	<td>Number of video stream type IDs</td>
+</tr>
+</tbody>
+</table>
+
+<table>
+<caption>OrionNetworkVideo packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0...3</td>
+	<td>1)DestIp</td>
+	<td align="center">U32</td>
+	<td align="center">1</td>
+	<td>destination IPv4 address.</td>
+</tr>
+<tr>
+	<td>4...5</td>
+	<td>2)Port</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>desitnation port.</td>
+</tr>
+<tr>
+	<td>6...9</td>
+	<td>3)Bitrate</td>
+	<td align="center">U32</td>
+	<td align="center">1</td>
+	<td>Video encoding target bitrate, in bits per second.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>10</td>
+	<td>4)Ttl</td>
+	<td align="center">I8</td>
+	<td align="center">1</td>
+	<td>TTL value for UDP video packets. Values less than or equal to zero will use default values of 64 for unicast and 1 for multicast.<br>This field is optional. If it is not included then the value is assumed to be -1.</td>
+</tr>
+<tr>
+	<td>11</td>
+	<td>5)<a href="#StreamType_t">StreamType</a></td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Output stream format specifier.<br>This field is optional. If it is not included then the value is assumed to be STREAM_TYPE_H264.</td>
+</tr>
+<tr>
+	<td>12</td>
+	<td>6)MjpegQuality</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>MJPEG quality value, from 10 to 95.<br>This field is optional. If it is not included then the value is assumed to be 30.</td>
+</tr>
+<tr>
+	<td>13:7</td>
+	<td>7)SaveSettings</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>Set to 1 to make h.264 settings non-volatile, or 0 to reset to defaults on startup.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>13:6...13:3</td>
+	<td>8)TsPacketCount</td>
+	<td align="center">B4</td>
+	<td align="center">1</td>
+	<td>Number of TS packets per UDP packet, or 0 for no change.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_network_videoaorionnetworkbytevideopacket"><a name="ORION_PKT_NETWORK_VIDEO"></a>OrionNetworkByteVideo packet</h2>
+
+<p>Change the IP settings for video delivery.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_NETWORK_VIDEO</code> : 98</li>
+<li>minimum data length: 6</li>
+<li>maximum data length: 14</li>
+</ul>
+
+<table>
+<caption>OrionNetworkByteVideo packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0...3</td>
+	<td>1)DestIp</td>
+	<td align="center">U8</td>
+	<td align="center">4</td>
+	<td>destination IPv4 address.</td>
+</tr>
+<tr>
+	<td>4...5</td>
+	<td>2)Port</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>desitnation port.</td>
+</tr>
+<tr>
+	<td>6...9</td>
+	<td>3)Bitrate</td>
+	<td align="center">U32</td>
+	<td align="center">1</td>
+	<td>Video encoding target bitrate, in bits per second.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>10</td>
+	<td>4)Ttl</td>
+	<td align="center">I8</td>
+	<td align="center">1</td>
+	<td>TTL value for UDP video packets. Values less than or equal to zero will use default values of 64 for unicast and 1 for multicast.<br>This field is optional. If it is not included then the value is assumed to be -1.</td>
+</tr>
+<tr>
+	<td>11</td>
+	<td>5)<a href="#StreamType_t">StreamType</a></td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Output stream format specifier.<br>This field is optional. If it is not included then the value is assumed to be STREAM_TYPE_H264.</td>
+</tr>
+<tr>
+	<td>12</td>
+	<td>6)MjpegQuality</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>MJPEG quality value, from 10 to 95.<br>This field is optional. If it is not included then the value is assumed to be 30.</td>
+</tr>
+<tr>
+	<td>13:7</td>
+	<td>7)SaveSettings</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>Set to 1 to make h.264 settings non-volatile, or 0 to reset to defaults on startup.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+<tr>
+	<td>13:6...13:3</td>
+	<td>8)TsPacketCount</td>
+	<td align="center">B4</td>
+	<td align="center">1</td>
+	<td>Number of TS packets per UDP packet, or 0 for no change.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_camerasaorioncameraspacket"><a name="ORION_PKT_CAMERAS"></a>OrionCameras packet</h2>
+
+<p>Camera definitions for the Orion gimbal</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_CAMERAS</code> : 99</li>
+<li>minimum data length: 4</li>
+<li>maximum data length: 52</li>
+</ul>
+
+<p>The maximum number of cameras in an Orion Gimbal</p>
+
+<table>
+<caption><a name="OrionNumberOfCameras_t"></a>OrionNumberOfCameras_t enumeration</caption>
+<col />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Name</th>
+	<th>Value</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td><code>NUM_CAMERAS</code></td>
+	<td align="center">2</td>
+	<td> </td>
+</tr>
+</tbody>
+</table>
+
+<p>The type of camera</p>
+
+<table>
+<caption><a name="OrionCameraType_t"></a>OrionCameraType_t enumeration</caption>
+<col />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Name</th>
+	<th>Value</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td><code>CAMERA_TYPE_NONE</code></td>
+	<td align="center">0</td>
+	<td>No camera</td>
+</tr>
+<tr>
+	<td><code>CAMERA_TYPE_VISIBLE</code></td>
+	<td align="center">1</td>
+	<td>Visible light camera</td>
+</tr>
+<tr>
+	<td><code>CAMERA_TYPE_SWIR</code></td>
+	<td align="center">2</td>
+	<td>Short wave infrared camera</td>
+</tr>
+<tr>
+	<td><code>CAMERA_TYPE_MWIR</code></td>
+	<td align="center">3</td>
+	<td>Mid wave infrared camera</td>
+</tr>
+<tr>
+	<td><code>CAMERA_TYPE_LWIR</code></td>
+	<td align="center">4</td>
+	<td>Long wave infrared camera</td>
+</tr>
+</tbody>
+</table>
+
+<p>The camera communications protocol</p>
+
+<table>
+<caption><a name="OrionCameraProtocol_t"></a>OrionCameraProtocol_t enumeration</caption>
+<col />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Name</th>
+	<th>Value</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td><code>CAMERA_PROTO_UNKNOWN</code></td>
+	<td align="center">0</td>
+	<td>Protocol unknown or unsupported</td>
+</tr>
+<tr>
+	<td><code>CAMERA_PROTO_FLIR</code></td>
+	<td align="center">1</td>
+	<td>FLIR camera</td>
+</tr>
+<tr>
+	<td><code>CAMERA_PROTO_APTINA</code></td>
+	<td align="center">2</td>
+	<td>Aptina camera</td>
+</tr>
+<tr>
+	<td><code>CAMERA_PROTO_ZAFIRO</code></td>
+	<td align="center">3</td>
+	<td>Zafiro camera</td>
+</tr>
+<tr>
+	<td><code>CAMERA_PROTO_HITACHI</code></td>
+	<td align="center">4</td>
+	<td>Hitachi camera</td>
+</tr>
+<tr>
+	<td><code>CAMERA_PROTO_BAE</code></td>
+	<td align="center">5</td>
+	<td>BAE camera</td>
+</tr>
+<tr>
+	<td><code>CAMERA_PROTO_SONY</code></td>
+	<td align="center">6</td>
+	<td>Sony camera</td>
+</tr>
+<tr>
+	<td><code>CAMERA_PROTO_KTNC</code></td>
+	<td align="center">7</td>
+	<td>KTnC camera</td>
+</tr>
+<tr>
+	<td><code>NUM_CAMERA_PROTOS</code></td>
+	<td align="center">8</td>
+	<td>Number of available camera protocols</td>
+</tr>
+</tbody>
+</table>
+
+<table>
+<caption>OrionCameras packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0</td>
+	<td>1)NumCameras</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>The number of cameras installed.</td>
+</tr>
+<tr>
+	<td>1...3</td>
+	<td>2)reserved</td>
+	<td align="center">U8</td>
+	<td align="center">3</td>
+	<td>Reserved space for future expansion.</td>
+</tr>
+<tr>
+	<td>4...51</td>
+	<td colspan="2">3)OrionCamSettings</td>
+	<td align="center">NumCameras, up to <a href="#OrionNumberOfCameras_t">NUM_CAMERAS</a></td>
+	<td align="center">Camera settings information</td>
+</tr>
+<tr>
+	<td>4</td>
+	<td>3.1)<a href="#OrionCameraType_t">Type</a></td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>The type of camera.</td>
+</tr>
+<tr>
+	<td>5</td>
+	<td>3.2)<a href="#OrionCameraProtocol_t">Proto</a></td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>The communications protocol of the camera.</td>
+</tr>
+<tr>
+	<td>6...9</td>
+	<td>3.3)MinFocalLength</td>
+	<td align="center">U32</td>
+	<td align="center">1</td>
+	<td>Minimum focal length in millimeters.<br>Scaled by 1000 from 0.0 to 4294967.295.</td>
+</tr>
+<tr>
+	<td>10...13</td>
+	<td>3.4)MaxFocalLength</td>
+	<td align="center">U32</td>
+	<td align="center">1</td>
+	<td>Minimum focal length in millimeters.<br>Scaled by 1000 from 0.0 to 4294967.295.</td>
+</tr>
+<tr>
+	<td>14...15</td>
+	<td>3.5)PixelPitch</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Spacing of pixels in millimeters.<br>Scaled by 1000000 from 0.0 to 0.065535.</td>
+</tr>
+<tr>
+	<td>16...17</td>
+	<td>3.6)ArrayWidth</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Number of horizontal pixels in the focal plane array.</td>
+</tr>
+<tr>
+	<td>18...19</td>
+	<td>3.7)ArrayHeight</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Number of vertical pixels in the focal plane array.</td>
+</tr>
+<tr>
+	<td>20...23</td>
+	<td>3.8)AlignMin</td>
+	<td align="center">I16</td>
+	<td align="center"><a href="#GimbalAxis_t">NUM_GIMBAL_AXES</a></td>
+	<td>boresight alignment offsets in radians.<br>Scaled by 32767/(&amp;pi) from -&pi; to &pi;.</td>
+</tr>
+<tr>
+	<td>24...27</td>
+	<td>3.9)AlignMax</td>
+	<td align="center">I16</td>
+	<td align="center"><a href="#GimbalAxis_t">NUM_GIMBAL_AXES</a></td>
+	<td>boresight alignment offsets in radians.<br>Scaled by 32767/(&amp;pi) from -&pi; to &pi;.</td>
+</tr>
+</tbody>
+</table>
+
+<h1 id="packetsusedtodeterminemanufacturingandsoftwareinformationaboutthegimbal">Packets used to determine manufacturing and software information about the gimbal</h1>
+
+<p>These informational packets are sent by the gimbal in response to user request. To request a specific packet, send that packet to the gimbal with zero length.</p>
+
+<h2 id="anameorion_pkt_clevis_versionaorionclevisversionpacket"><a name="ORION_PKT_CLEVIS_VERSION"></a>OrionClevisVersion packet</h2>
+
+<p>Software version for the clevis board in the Orion gimbal.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_CLEVIS_VERSION</code> : 37</li>
+<li>minimum data length: 32</li>
+<li>maximum data length: 36</li>
+</ul>
+
+<table>
+<caption>OrionClevisVersion packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0...15</td>
+	<td>1)Version</td>
+	<td colspan="2" align="center">Zero terminated string of exactly 16 bytes</td>
+	<td align="center">Version of the clevis board software.</td>
+</tr>
+<tr>
+	<td>16...31</td>
+	<td>2)PartNumber</td>
+	<td colspan="2" align="center">Zero terminated string of exactly 16 bytes</td>
+	<td align="center">Hardware details of the clevis board.</td>
+</tr>
+<tr>
+	<td>32...35</td>
+	<td>3)OnTime</td>
+	<td align="center">U32</td>
+	<td align="center">1</td>
+	<td>Board on time in minutes.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_crown_versionaorioncrownversionpacket"><a name="ORION_PKT_CROWN_VERSION"></a>OrionCrownVersion packet</h2>
+
+<p>Software version for the crown board in the Orion gimbal.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_CROWN_VERSION</code> : 40</li>
+<li>minimum data length: 32</li>
+<li>maximum data length: 36</li>
+</ul>
+
+<table>
+<caption>OrionCrownVersion packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0...15</td>
+	<td>1)Version</td>
+	<td colspan="2" align="center">Zero terminated string of exactly 16 bytes</td>
+	<td align="center">Version of the crown board software.</td>
+</tr>
+<tr>
+	<td>16...31</td>
+	<td>2)PartNumber</td>
+	<td colspan="2" align="center">Zero terminated string of exactly 16 bytes</td>
+	<td align="center">Hardware details of the crown board.</td>
+</tr>
+<tr>
+	<td>32...35</td>
+	<td>3)OnTime</td>
+	<td align="center">U32</td>
+	<td align="center">1</td>
+	<td>Board on time in minutes.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_payload_versionaorionpayloadversionpacket"><a name="ORION_PKT_PAYLOAD_VERSION"></a>OrionPayloadVersion packet</h2>
+
+<p>Software version for the payload board in the Orion gimbal.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_PAYLOAD_VERSION</code> : 41</li>
+<li>minimum data length: 40</li>
+<li>maximum data length: 44</li>
+</ul>
+
+<table>
+<caption>OrionPayloadVersion packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0...23</td>
+	<td>1)Version</td>
+	<td colspan="2" align="center">Zero terminated string of exactly 24 bytes</td>
+	<td align="center">Version of the payload board software.</td>
+</tr>
+<tr>
+	<td>24...39</td>
+	<td>2)PartNumber</td>
+	<td colspan="2" align="center">Zero terminated string of exactly 16 bytes</td>
+	<td align="center">Hardware details of the payload board.</td>
+</tr>
+<tr>
+	<td>40...43</td>
+	<td>3)OnTime</td>
+	<td align="center">U32</td>
+	<td align="center">1</td>
+	<td>Board on time in minutes.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_tracker_versionaoriontrackerversionpacket"><a name="ORION_PKT_TRACKER_VERSION"></a>OrionTrackerVersion packet</h2>
+
+<p>Software version for the tracker board in the Orion Gimbal (if applicable)</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_TRACKER_VERSION</code> : 44</li>
+<li>data length: 32</li>
+</ul>
+
+<table>
+<caption>OrionTrackerVersion packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0...15</td>
+	<td>1)Version</td>
+	<td colspan="2" align="center">Zero terminated string of exactly 16 bytes</td>
+	<td align="center">Version of the tracker board software.</td>
+</tr>
+<tr>
+	<td>16...31</td>
+	<td>2)PartNumber</td>
+	<td colspan="2" align="center">Zero terminated string of exactly 16 bytes</td>
+	<td align="center">Hardware details of the tracker board.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_retract_versionaorionretractversionpacket"><a name="ORION_PKT_RETRACT_VERSION"></a>OrionRetractVersion packet</h2>
+
+<p>Software version for the retract board in the Retract Unit (if applicable)</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_RETRACT_VERSION</code> : 248</li>
+<li>data length: 16</li>
+</ul>
+
+<table>
+<caption>OrionRetractVersion packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0...15</td>
+	<td>1)Version</td>
+	<td colspan="2" align="center">Zero terminated string of exactly 16 bytes</td>
+	<td align="center">Version of the retract board software.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_lensctl_versionaorionlensctlversionpacket"><a name="ORION_PKT_LENSCTL_VERSION"></a>OrionLensCtlVersion packet</h2>
+
+<p>Software version for the retract board in the Retract Unit (if applicable)</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_LENSCTL_VERSION</code> : 249</li>
+<li>data length: 16</li>
+</ul>
+
+<table>
+<caption>OrionLensCtlVersion packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0...15</td>
+	<td>1)Version</td>
+	<td colspan="2" align="center">Zero terminated string of exactly 16 bytes</td>
+	<td align="center">Version of the retract board software.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_boardaorionboardpacket"><a name="ORION_PKT_BOARD"></a>OrionBoard packet</h2>
+
+<p>Information for a specific board in the gimbal.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_BOARD</code> : 39</li>
+<li>data length: 20</li>
+</ul>
+
+<table>
+<caption>OrionBoard packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0...3</td>
+	<td>1)boardSN</td>
+	<td align="center">U32</td>
+	<td align="center">1</td>
+	<td>Serial number of this board.</td>
+</tr>
+<tr>
+	<td>4...7</td>
+	<td>2)assemblySN</td>
+	<td align="center">U32</td>
+	<td align="center">1</td>
+	<td>Serial number of the whole assembly.</td>
+</tr>
+<tr>
+	<td>8...11</td>
+	<td>3)config</td>
+	<td align="center">U32</td>
+	<td align="center">1</td>
+	<td>Configuration bits.</td>
+</tr>
+<tr>
+	<td>12...14</td>
+	<td>4)reserved</td>
+	<td align="center">U8</td>
+	<td align="center">3</td>
+	<td>Reserved space for future things.</td>
+</tr>
+<tr>
+	<td>15</td>
+	<td>5)<a href="#OrionBoardEnumeration_t">boardEnum</a></td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Enumeration defining which board in the gimbal this data applies to.</td>
+</tr>
+<tr>
+	<td>16...17</td>
+	<td colspan="2">6)manufactureDate</td>
+	<td align="center">1</td>
+	<td align="center">Date the board was manufactured</td>
+</tr>
+<tr>
+	<td>16:7...16:1</td>
+	<td>6.1)year</td>
+	<td align="center">B7</td>
+	<td align="center">1</td>
+	<td>Years after 2000.</td>
+</tr>
+<tr>
+	<td>16:0...17:5</td>
+	<td>6.2)month</td>
+	<td align="center">B4</td>
+	<td align="center">1</td>
+	<td>Month of the year, from 1 to 12.</td>
+</tr>
+<tr>
+	<td>17:4...17:0</td>
+	<td>6.3)day</td>
+	<td align="center">B5</td>
+	<td align="center">1</td>
+	<td>Day of the month, from 1 to 31.</td>
+</tr>
+<tr>
+	<td>18...19</td>
+	<td colspan="2">7)calibrationDate</td>
+	<td align="center">1</td>
+	<td align="center">Date the board was calibrated</td>
+</tr>
+<tr>
+	<td>18:7...18:1</td>
+	<td>7.1)year</td>
+	<td align="center">B7</td>
+	<td align="center">1</td>
+	<td>Years after 2000.</td>
+</tr>
+<tr>
+	<td>18:0...19:5</td>
+	<td>7.2)month</td>
+	<td align="center">B4</td>
+	<td align="center">1</td>
+	<td>Month of the year, from 1 to 12.</td>
+</tr>
+<tr>
+	<td>19:4...19:0</td>
+	<td>7.3)day</td>
+	<td align="center">B5</td>
+	<td align="center">1</td>
+	<td>Day of the month, from 1 to 31.</td>
+</tr>
+</tbody>
+</table>
+
+<h1 id="packetsforexternalsensorinputs">Packets for external sensor inputs</h1>
+
+<p>These optional packets can be sent to the gimbal to provide external sensor information.</p>
+
+<h2 id="anameorion_pkt_autopilot_dataaorionautopilotdatapacket"><a name="ORION_PKT_AUTOPILOT_DATA"></a>OrionAutopilotData packet</h2>
+
+<p>Autopilot state data. The gimbal will use this information to limit certain operations, for example some lasers will not fire unless the autopilot is flying with sufficient altitude above ground.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_AUTOPILOT_DATA</code> : 128</li>
+<li>data length: 4</li>
+</ul>
+
+<table>
+<caption>OrionAutopilotData packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0</td>
+	<td>1)IsFlying</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Set to 1 if flying, otherwise 0.</td>
+</tr>
+<tr>
+	<td>1</td>
+	<td>2)CommGood</td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Set to 1 if AP comms are good, otherwise 0.</td>
+</tr>
+<tr>
+	<td>2...3</td>
+	<td>3)Agl</td>
+	<td align="center">I16</td>
+	<td align="center">1</td>
+	<td>Altitude above ground level in meters. Invalid if less than zero.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_ext_heading_dataaorionextheadingdatapacket"><a name="ORION_PKT_EXT_HEADING_DATA"></a>OrionExtHeadingData packet</h2>
+
+<p>Externally supplied heading information. Send this packet to supply a correction to the heading of the inertial navigation system of the gimbal. This packet will be echoed back to the user if INS logging is enabled.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_EXT_HEADING_DATA</code> : 210</li>
+<li>minimum data length: 4</li>
+<li>maximum data length: 8</li>
+</ul>
+
+<table>
+<caption>OrionExtHeadingData packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0...1</td>
+	<td>1)extHeading</td>
+	<td align="center">I16</td>
+	<td align="center">1</td>
+	<td>External true heading observation in radians from -pi to pi.<br>Scaled by 32767/(&amp;pi) from -&pi; to &pi;.</td>
+</tr>
+<tr>
+	<td>2...3</td>
+	<td>2)noise</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Sensor noise of the heading observation in radians. Send 0 to cause the INS to simply shift its heading. Otherwise the extHeading will be fed into the INS kalman filter with this sensor noise.<br>Scaled by 65535/(2&times;&amp;pi) from 0.0 to 2&pi;.</td>
+</tr>
+<tr>
+	<td>4:7</td>
+	<td>3)headingInGimbalAxis</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>Set this if the provided heading is in gimbal native axis rather than the platform axis. This will cause the gimbal to rotate the heading reference as needed to the platform axis used by the INS. This will have no effect if the INS options do not specify a platform rotation.</td>
+</tr>
+<tr>
+	<td>4:6</td>
+	<td>4)headingFromAlign</td>
+	<td align="center">B1</td>
+	<td align="center">1</td>
+	<td>Set this if the provided heading came from an align system.</td>
+</tr>
+<tr>
+	<td>4:5...5:0</td>
+	<td>5)reserved</td>
+	<td align="center">B14</td>
+	<td align="center">1</td>
+	<td>Reserved bits in the packet.</td>
+</tr>
+<tr>
+	<td>6...7</td>
+	<td>6)pitch</td>
+	<td align="center">I16</td>
+	<td align="center">1</td>
+	<td>Pitch angle in radians from -pi to pi of the vector used to compute heading.<br>Scaled by 32767/(&amp;pi) from -&pi; to &pi;.<br>This field is optional. If it is not included then the value is assumed to be 0.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="anameorion_pkt_range_dataaorionrangedatapacket"><a name="ORION_PKT_RANGE_DATA"></a>OrionRangeData packet</h2>
+
+<p>Ranging information from the gimbal to its target. The gimbal will use this information to compute the target location and populate that informtaion in its telemetry output.</p>
+
+<ul>
+<li>packet identifier: <code>ORION_PKT_RANGE_DATA</code> : 214</li>
+<li>data length: 7</li>
+</ul>
+
+<table>
+<caption>OrionRangeData packet bytes</caption>
+<col />
+<col />
+<col align="center" />
+<col align="center" />
+<col />
+<thead>
+<tr>
+	<th>Bytes</th>
+	<th>Name</th>
+	<th><a href="#Enc">Enc</a></th>
+	<th>Repeat</th>
+	<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>0...3</td>
+	<td>1)range</td>
+	<td align="center">U32</td>
+	<td align="center">1</td>
+	<td>Range to target in meters.<br>Scaled by 100 from 0.0 to 42949672.95.</td>
+</tr>
+<tr>
+	<td>4...5</td>
+	<td>2)maxAgeMs</td>
+	<td align="center">U16</td>
+	<td align="center">1</td>
+	<td>Maximum data age before expiration in milliseconds.</td>
+</tr>
+<tr>
+	<td>6</td>
+	<td>3)<a href="#RangeDataSrc_t">source</a></td>
+	<td align="center">U8</td>
+	<td align="center">1</td>
+	<td>Source of range information.</td>
+</tr>
+</tbody>
+</table>
+
+<div class="page-break"></div>
+
+<hr />
+
+<h1 id="aboutthisicd">About this ICD</h1>
+
+<p>This is the interface control document for data <em>on the wire</em>, not data in memory. This document was automatically generated by the <a href="https://github.com/billvaglienti/ProtoGen">ProtoGen software</a>, version 2.12.c. ProtoGen also generates C source code for doing most of the work of encoding data from memory to the wire, and vice versa.</p>
+
+<h2 id="encodings">Encodings</h2>
+
+<p>Data for this protocol are sent in BIG endian format. Any field larger than one byte is sent with the most signficant byte first, and the least significant byte last.</p>
+
+<p>Data can be encoded as unsigned integers, signed integers (two's complement), bitfields, and floating point.</p>
+
+<table>
+<col align="center" />
+<col />
+<col />
+<thead>
+<tr>
+	<th><a name="Enc"></a>Encoding</th>
+	<th>Interpretation</th>
+	<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td align="center">UX</td>
+	<td>Unsigned integer X bits long</td>
+	<td>X must be: 8, 16, 24, 32, 40, 48, 56, or 64</td>
+</tr>
+<tr>
+	<td align="center">IX</td>
+	<td>Signed integer X bits long</td>
+	<td>X must be: 8, 16, 24, 32, 40, 48, 56, or 64</td>
+</tr>
+<tr>
+	<td align="center">BX</td>
+	<td>Unsigned integer bitfield X bits long</td>
+	<td>X must be greater than 0 and less than 32</td>
+</tr>
+<tr>
+	<td align="center">F16:X</td>
+	<td>16 bit float with X significand bits</td>
+	<td>1 sign bit : 15-X exponent bits : X significant bits with implied leading 1</td>
+</tr>
+<tr>
+	<td align="center">F24:X</td>
+	<td>24 bit float with X significand bits</td>
+	<td>1 sign bit : 23-X exponent bits : X significant bits with implied leading 1</td>
+</tr>
+<tr>
+	<td align="center">F32</td>
+	<td>32 bit float (IEEE-754)</td>
+	<td>1 sign bit : 8 exponent bits : 23 significant bits with implied leading 1</td>
+</tr>
+<tr>
+	<td align="center">F64</td>
+	<td>64 bit float (IEEE-754)</td>
+	<td>1 sign bit : 11 exponent bits : 52 significant bits with implied leading 1</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="sizeoffields">Size of fields</h2>
+
+<p>The encoding tables give the bytes for each field as X...Y; where X is the first byte (counting from 0) and Y is the last byte. For example a 4 byte field at the beginning of a packet will give 0...3. If the field is 1 byte long then only the starting byte is given. Bitfields are more complex, they are displayed as Byte:Bit. A 3-bit bitfield at the beginning of a packet will give 0:7...0:5, indicating that the bitfield uses bits 7, 6, and 5 of byte 0. Note that the most signficant bit of a byte is 7, and the least signficant bit is 0. If the bitfield is 1 bit long then only the starting bit is given.</p>
+
+<p>The byte count in the encoding tables are based on the maximum length of the field(s). If a field is variable length then the actual byte location of the data may be different depending on the value of the variable field. If the field is a variable length character string this will be indicated in the encoding column of the table. If the field is a variable length array this will be indicated in the repeat column of the encoding table. If the field depends on the non-zero value of another field this will be indicated in the description column of the table.</p>
