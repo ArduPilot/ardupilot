@@ -918,239 +918,6 @@ int8_t AP_GPS_UBLOX::find_active_config_index(ConfigKey key) const
         return false;
     }
 
-
-    bool AP_GPS_UBLOX::handle_CFG()
-    {
-         switch(_msg_id) {
-        case  MSG_CFG_NAV_SETTINGS:
-	    Debug("Got settings %u min_elev %d drLimit %u\n", 
-                  (unsigned)_buffer.nav_settings.dynModel,
-                  (int)_buffer.nav_settings.minElev,
-                  (unsigned)_buffer.nav_settings.drLimit);
-            _buffer.nav_settings.mask = 0;
-            if (gps._navfilter != AP_GPS::GPS_ENGINE_NONE &&
-                _buffer.nav_settings.dynModel != gps._navfilter) {
-                // we've received the current nav settings, change the engine
-                // settings and send them back
-                Debug("Changing engine setting from %u to %u\n",
-                      (unsigned)_buffer.nav_settings.dynModel, (unsigned)gps._navfilter);
-                _buffer.nav_settings.dynModel = gps._navfilter;
-                _buffer.nav_settings.mask |= 1;
-            }
-            if (gps._min_elevation != -100 &&
-                _buffer.nav_settings.minElev != gps._min_elevation) {
-                Debug("Changing min elevation to %d\n", (int)gps._min_elevation);
-                _buffer.nav_settings.minElev = gps._min_elevation;
-                _buffer.nav_settings.mask |= 2;
-            }
-            if (_buffer.nav_settings.mask != 0) {
-                _send_message(CLASS_CFG, MSG_CFG_NAV_SETTINGS,
-                              &_buffer.nav_settings,
-                              sizeof(_buffer.nav_settings));
-                _unconfigured_messages |= CONFIG_NAV_SETTINGS;
-                _cfg_needs_save = true;
-            } else {
-                _unconfigured_messages &= ~CONFIG_NAV_SETTINGS;
-            }
-            return false;
-
-#if UBLOX_GNSS_SETTINGS
-        case MSG_CFG_GNSS:
-            if (gps._gnss_mode[state.instance] != 0) {
-                struct ubx_cfg_gnss start_gnss = _buffer.gnss;
-                uint8_t gnssCount = 0;
-                Debug("Got GNSS Settings %u %u %u %u:\n",
-                    (unsigned)_buffer.gnss.msgVer,
-                    (unsigned)_buffer.gnss.numTrkChHw,
-                    (unsigned)_buffer.gnss.numTrkChUse,
-                    (unsigned)_buffer.gnss.numConfigBlocks);
-#if UBLOX_DEBUGGING
-                for(int i = 0; i < _buffer.gnss.numConfigBlocks; i++) {
-                    Debug("  %u %u %u 0x%08x\n",
-                    (unsigned)_buffer.gnss.configBlock[i].gnssId,
-                    (unsigned)_buffer.gnss.configBlock[i].resTrkCh,
-                    (unsigned)_buffer.gnss.configBlock[i].maxTrkCh,
-                    (unsigned)_buffer.gnss.configBlock[i].flags);
-                }
-#endif
-
-                for(int i = 0; i < UBLOX_MAX_GNSS_CONFIG_BLOCKS; i++) {
-                    if((gps._gnss_mode[state.instance] & (1 << i)) && i != GNSS_SBAS) {
-                        gnssCount++;
-                    }
-                }
-
-                for(int i = 0; i < _buffer.gnss.numConfigBlocks; i++) {
-                    // Reserve an equal portion of channels for all enabled systems
-                    if(gps._gnss_mode[state.instance] & (1 << _buffer.gnss.configBlock[i].gnssId)) {
-                        if(GNSS_SBAS !=_buffer.gnss.configBlock[i].gnssId) {
-                            _buffer.gnss.configBlock[i].resTrkCh = (_buffer.gnss.numTrkChHw - 3) / (gnssCount * 2);
-                            _buffer.gnss.configBlock[i].maxTrkCh = _buffer.gnss.numTrkChHw;
-                        } else {
-                            _buffer.gnss.configBlock[i].resTrkCh = 1;
-                            _buffer.gnss.configBlock[i].maxTrkCh = 3;
-                        }
-                        _buffer.gnss.configBlock[i].flags = _buffer.gnss.configBlock[i].flags | 0x00000001;
-                    } else {
-                        _buffer.gnss.configBlock[i].resTrkCh = 0;
-                        _buffer.gnss.configBlock[i].maxTrkCh = 0;
-                        _buffer.gnss.configBlock[i].flags = _buffer.gnss.configBlock[i].flags & 0xFFFFFFFE;
-                    }
-                }
-                if (memcmp(&start_gnss, &_buffer.gnss, sizeof(start_gnss))) {
-                    _send_message(CLASS_CFG, MSG_CFG_GNSS, &_buffer.gnss, 4 + (8 * _buffer.gnss.numConfigBlocks));
-                    _unconfigured_messages |= CONFIG_GNSS;
-                    _cfg_needs_save = true;
-                } else {
-                    _unconfigured_messages &= ~CONFIG_GNSS;
-                }
-            } else {
-                _unconfigured_messages &= ~CONFIG_GNSS;
-            }
-            return false;
-#endif
-
-        case MSG_CFG_SBAS:
-            if (gps._sbas_mode != 2) {
-	        Debug("Got SBAS settings %u %u %u 0x%x 0x%x\n", 
-                      (unsigned)_buffer.sbas.mode,
-                      (unsigned)_buffer.sbas.usage,
-                      (unsigned)_buffer.sbas.maxSBAS,
-                      (unsigned)_buffer.sbas.scanmode2,
-                      (unsigned)_buffer.sbas.scanmode1);
-                if (_buffer.sbas.mode != gps._sbas_mode) {
-                    _buffer.sbas.mode = gps._sbas_mode;
-                    _send_message(CLASS_CFG, MSG_CFG_SBAS,
-                                  &_buffer.sbas,
-                                  sizeof(_buffer.sbas));
-                    _unconfigured_messages |= CONFIG_SBAS;
-                    _cfg_needs_save = true;
-                } else {
-                    _unconfigured_messages &= ~CONFIG_SBAS;
-                }
-            } else {
-                    _unconfigured_messages &= ~CONFIG_SBAS;
-            }
-            return false;
-        case MSG_CFG_MSG:
-            if(_payload_length == sizeof(ubx_cfg_msg_rate_6)) {
-                // can't verify the setting without knowing the port
-                // request the port again
-                if(_ublox_port >= UBLOX_MAX_PORTS) {
-                    _request_port();
-                    return false;
-                }
-                _verify_rate(_buffer.msg_rate_6.msg_class, _buffer.msg_rate_6.msg_id,
-                             _buffer.msg_rate_6.rates[_ublox_port]);
-            } else {
-                _verify_rate(_buffer.msg_rate.msg_class, _buffer.msg_rate.msg_id,
-                             _buffer.msg_rate.rate);
-            }
-            return false;
-        case MSG_CFG_PRT:
-           _ublox_port = _buffer.prt.portID;
-           return false;
-        case MSG_CFG_RATE:
-            if(_buffer.nav_rate.measure_rate_ms != gps._rate_ms[state.instance] ||
-               _buffer.nav_rate.nav_rate != 1 ||
-               _buffer.nav_rate.timeref != 0) {
-               _configure_rate();
-                _unconfigured_messages |= CONFIG_RATE_NAV;
-                _cfg_needs_save = true;
-            } else {
-                _unconfigured_messages &= ~CONFIG_RATE_NAV;
-            }
-            return false;
-            
-#if CONFIGURE_PPS_PIN
-        case MSG_CFG_TP5: {
-            // configure the PPS pin for 1Hz, zero delay
-            Debug("Got TP5 ver=%u 0x%04x %u\n", 
-                  (unsigned)_buffer.nav_tp5.version,
-                  (unsigned)_buffer.nav_tp5.flags,
-                  (unsigned)_buffer.nav_tp5.freqPeriod);
-            const uint16_t desired_flags = 0x003f;
-            const uint16_t desired_period_hz = 1;
-            if (_buffer.nav_tp5.flags != desired_flags ||
-                _buffer.nav_tp5.freqPeriod != desired_period_hz) {
-                _buffer.nav_tp5.tpIdx = 0;
-                _buffer.nav_tp5.reserved1[0] = 0;
-                _buffer.nav_tp5.reserved1[1] = 0;
-                _buffer.nav_tp5.antCableDelay = 0;
-                _buffer.nav_tp5.rfGroupDelay = 0;
-                _buffer.nav_tp5.freqPeriod = desired_period_hz;
-                _buffer.nav_tp5.freqPeriodLock = desired_period_hz;
-                _buffer.nav_tp5.pulseLenRatio = 1;
-                _buffer.nav_tp5.pulseLenRatioLock = 2;
-                _buffer.nav_tp5.userConfigDelay = 0;
-                _buffer.nav_tp5.flags = desired_flags;
-                _send_message(CLASS_CFG, MSG_CFG_TP5,
-                              &_buffer.nav_tp5,
-                              sizeof(_buffer.nav_tp5));
-                _unconfigured_messages |= CONFIG_TP5;
-                _cfg_needs_save = true;
-            } else {
-                _unconfigured_messages &= ~CONFIG_TP5;
-            }
-            return false;
-        }
-#endif // CONFIGURE_PPS_PIN
-        case MSG_CFG_VALGET: {
-            uint8_t cfg_len = _payload_length - sizeof(ubx_cfg_valget);
-            const uint8_t *cfg_data = (const uint8_t *)(&_buffer) + sizeof(ubx_cfg_valget);
-            while (cfg_len >= 5) {
-                ConfigKey id;
-                memcpy(&id, cfg_data, sizeof(uint32_t));
-                cfg_len -= 4;
-                cfg_data += 4;
-                switch (id) {
-                    case ConfigKey::TMODE_MODE: {
-                        uint8_t mode = cfg_data[0];
-                        if (mode != 0) {
-                            // ask for mode 0, to disable TIME mode
-                            mode = 0;
-                            _configure_valset(ConfigKey::TMODE_MODE, &mode);
-                            _cfg_needs_save = true;
-                            _unconfigured_messages |= CONFIG_TMODE_MODE;
-                        } else {
-                            _unconfigured_messages &= ~CONFIG_TMODE_MODE;
-                        }
-                        break;
-                    }
-                    default:
-                        break;
-                }
-                // see if it is in active config list
-                int8_t cfg_idx = find_active_config_index(id);
-                if (cfg_idx >= 0) {
-                    const uint8_t key_size = config_key_size(id);
-                    if (cfg_len < key_size ||
-                        memcmp(&active_config.list[cfg_idx].value, cfg_data, key_size) != 0) {
-                        _configure_valset(id, &active_config.list[cfg_idx].value);
-                        _unconfigured_messages |= active_config.unconfig_bit;
-                        active_config.done_mask &= ~(1U << cfg_idx);
-                        _cfg_needs_save = true;
-                    } else {
-                        active_config.done_mask |= (1U << cfg_idx);
-                        if (active_config.done_mask == (1U<<active_config.count)-1) {
-                            // all done!
-                            _unconfigured_messages &= ~active_config.unconfig_bit;
-                        }
-                    }
-                }
-
-                // step over the value
-                uint8_t step_size = config_key_size(id);
-                if (step_size == 0) {
-                    return false;
-                }
-                cfg_len -= step_size;
-                cfg_data += step_size;
-            }
-        }
-        }
-    }
-
     bool AP_GPS_UBLOX::handle_MON()
     {
         switch(_msg_id) {
@@ -1194,7 +961,7 @@ int8_t AP_GPS_UBLOX::find_active_config_index(ConfigKey key) const
         Debug("MSG_POSLLH next_fix=%u", next_fix);
         if (havePvtMsg) {
             _unconfigured_messages |= CONFIG_RATE_POSLLH;
-            return;
+            break;
         }
         _check_new_itow(_buffer.posllh.itow);
         _last_pos_time        = _buffer.posllh.itow;
@@ -1512,7 +1279,234 @@ AP_GPS_UBLOX::_parse_gps(void)
     }
 
     if (_class == CLASS_CFG) {
-        return handle_CFG();
+               switch(_msg_id) {
+        case  MSG_CFG_NAV_SETTINGS:
+	    Debug("Got settings %u min_elev %d drLimit %u\n", 
+                  (unsigned)_buffer.nav_settings.dynModel,
+                  (int)_buffer.nav_settings.minElev,
+                  (unsigned)_buffer.nav_settings.drLimit);
+            _buffer.nav_settings.mask = 0;
+            if (gps._navfilter != AP_GPS::GPS_ENGINE_NONE &&
+                _buffer.nav_settings.dynModel != gps._navfilter) {
+                // we've received the current nav settings, change the engine
+                // settings and send them back
+                Debug("Changing engine setting from %u to %u\n",
+                      (unsigned)_buffer.nav_settings.dynModel, (unsigned)gps._navfilter);
+                _buffer.nav_settings.dynModel = gps._navfilter;
+                _buffer.nav_settings.mask |= 1;
+            }
+            if (gps._min_elevation != -100 &&
+                _buffer.nav_settings.minElev != gps._min_elevation) {
+                Debug("Changing min elevation to %d\n", (int)gps._min_elevation);
+                _buffer.nav_settings.minElev = gps._min_elevation;
+                _buffer.nav_settings.mask |= 2;
+            }
+            if (_buffer.nav_settings.mask != 0) {
+                _send_message(CLASS_CFG, MSG_CFG_NAV_SETTINGS,
+                              &_buffer.nav_settings,
+                              sizeof(_buffer.nav_settings));
+                _unconfigured_messages |= CONFIG_NAV_SETTINGS;
+                _cfg_needs_save = true;
+            } else {
+                _unconfigured_messages &= ~CONFIG_NAV_SETTINGS;
+            }
+            return false;
+
+#if UBLOX_GNSS_SETTINGS
+        case MSG_CFG_GNSS:
+            if (gps._gnss_mode[state.instance] != 0) {
+                struct ubx_cfg_gnss start_gnss = _buffer.gnss;
+                uint8_t gnssCount = 0;
+                Debug("Got GNSS Settings %u %u %u %u:\n",
+                    (unsigned)_buffer.gnss.msgVer,
+                    (unsigned)_buffer.gnss.numTrkChHw,
+                    (unsigned)_buffer.gnss.numTrkChUse,
+                    (unsigned)_buffer.gnss.numConfigBlocks);
+#if UBLOX_DEBUGGING
+                for(int i = 0; i < _buffer.gnss.numConfigBlocks; i++) {
+                    Debug("  %u %u %u 0x%08x\n",
+                    (unsigned)_buffer.gnss.configBlock[i].gnssId,
+                    (unsigned)_buffer.gnss.configBlock[i].resTrkCh,
+                    (unsigned)_buffer.gnss.configBlock[i].maxTrkCh,
+                    (unsigned)_buffer.gnss.configBlock[i].flags);
+                }
+#endif
+
+                for(int i = 0; i < UBLOX_MAX_GNSS_CONFIG_BLOCKS; i++) {
+                    if((gps._gnss_mode[state.instance] & (1 << i)) && i != GNSS_SBAS) {
+                        gnssCount++;
+                    }
+                }
+
+                for(int i = 0; i < _buffer.gnss.numConfigBlocks; i++) {
+                    // Reserve an equal portion of channels for all enabled systems
+                    if(gps._gnss_mode[state.instance] & (1 << _buffer.gnss.configBlock[i].gnssId)) {
+                        if(GNSS_SBAS !=_buffer.gnss.configBlock[i].gnssId) {
+                            _buffer.gnss.configBlock[i].resTrkCh = (_buffer.gnss.numTrkChHw - 3) / (gnssCount * 2);
+                            _buffer.gnss.configBlock[i].maxTrkCh = _buffer.gnss.numTrkChHw;
+                        } else {
+                            _buffer.gnss.configBlock[i].resTrkCh = 1;
+                            _buffer.gnss.configBlock[i].maxTrkCh = 3;
+                        }
+                        _buffer.gnss.configBlock[i].flags = _buffer.gnss.configBlock[i].flags | 0x00000001;
+                    } else {
+                        _buffer.gnss.configBlock[i].resTrkCh = 0;
+                        _buffer.gnss.configBlock[i].maxTrkCh = 0;
+                        _buffer.gnss.configBlock[i].flags = _buffer.gnss.configBlock[i].flags & 0xFFFFFFFE;
+                    }
+                }
+                if (memcmp(&start_gnss, &_buffer.gnss, sizeof(start_gnss))) {
+                    _send_message(CLASS_CFG, MSG_CFG_GNSS, &_buffer.gnss, 4 + (8 * _buffer.gnss.numConfigBlocks));
+                    _unconfigured_messages |= CONFIG_GNSS;
+                    _cfg_needs_save = true;
+                } else {
+                    _unconfigured_messages &= ~CONFIG_GNSS;
+                }
+            } else {
+                _unconfigured_messages &= ~CONFIG_GNSS;
+            }
+            return false;
+#endif
+
+        case MSG_CFG_SBAS:
+            if (gps._sbas_mode != 2) {
+	        Debug("Got SBAS settings %u %u %u 0x%x 0x%x\n", 
+                      (unsigned)_buffer.sbas.mode,
+                      (unsigned)_buffer.sbas.usage,
+                      (unsigned)_buffer.sbas.maxSBAS,
+                      (unsigned)_buffer.sbas.scanmode2,
+                      (unsigned)_buffer.sbas.scanmode1);
+                if (_buffer.sbas.mode != gps._sbas_mode) {
+                    _buffer.sbas.mode = gps._sbas_mode;
+                    _send_message(CLASS_CFG, MSG_CFG_SBAS,
+                                  &_buffer.sbas,
+                                  sizeof(_buffer.sbas));
+                    _unconfigured_messages |= CONFIG_SBAS;
+                    _cfg_needs_save = true;
+                } else {
+                    _unconfigured_messages &= ~CONFIG_SBAS;
+                }
+            } else {
+                    _unconfigured_messages &= ~CONFIG_SBAS;
+            }
+            return false;
+        case MSG_CFG_MSG:
+            if(_payload_length == sizeof(ubx_cfg_msg_rate_6)) {
+                // can't verify the setting without knowing the port
+                // request the port again
+                if(_ublox_port >= UBLOX_MAX_PORTS) {
+                    _request_port();
+                    return false;
+                }
+                _verify_rate(_buffer.msg_rate_6.msg_class, _buffer.msg_rate_6.msg_id,
+                             _buffer.msg_rate_6.rates[_ublox_port]);
+            } else {
+                _verify_rate(_buffer.msg_rate.msg_class, _buffer.msg_rate.msg_id,
+                             _buffer.msg_rate.rate);
+            }
+            return false;
+        case MSG_CFG_PRT:
+           _ublox_port = _buffer.prt.portID;
+           return false;
+        case MSG_CFG_RATE:
+            if(_buffer.nav_rate.measure_rate_ms != gps._rate_ms[state.instance] ||
+               _buffer.nav_rate.nav_rate != 1 ||
+               _buffer.nav_rate.timeref != 0) {
+               _configure_rate();
+                _unconfigured_messages |= CONFIG_RATE_NAV;
+                _cfg_needs_save = true;
+            } else {
+                _unconfigured_messages &= ~CONFIG_RATE_NAV;
+            }
+            return false;
+            
+#if CONFIGURE_PPS_PIN
+        case MSG_CFG_TP5: {
+            // configure the PPS pin for 1Hz, zero delay
+            Debug("Got TP5 ver=%u 0x%04x %u\n", 
+                  (unsigned)_buffer.nav_tp5.version,
+                  (unsigned)_buffer.nav_tp5.flags,
+                  (unsigned)_buffer.nav_tp5.freqPeriod);
+            const uint16_t desired_flags = 0x003f;
+            const uint16_t desired_period_hz = 1;
+            if (_buffer.nav_tp5.flags != desired_flags ||
+                _buffer.nav_tp5.freqPeriod != desired_period_hz) {
+                _buffer.nav_tp5.tpIdx = 0;
+                _buffer.nav_tp5.reserved1[0] = 0;
+                _buffer.nav_tp5.reserved1[1] = 0;
+                _buffer.nav_tp5.antCableDelay = 0;
+                _buffer.nav_tp5.rfGroupDelay = 0;
+                _buffer.nav_tp5.freqPeriod = desired_period_hz;
+                _buffer.nav_tp5.freqPeriodLock = desired_period_hz;
+                _buffer.nav_tp5.pulseLenRatio = 1;
+                _buffer.nav_tp5.pulseLenRatioLock = 2;
+                _buffer.nav_tp5.userConfigDelay = 0;
+                _buffer.nav_tp5.flags = desired_flags;
+                _send_message(CLASS_CFG, MSG_CFG_TP5,
+                              &_buffer.nav_tp5,
+                              sizeof(_buffer.nav_tp5));
+                _unconfigured_messages |= CONFIG_TP5;
+                _cfg_needs_save = true;
+            } else {
+                _unconfigured_messages &= ~CONFIG_TP5;
+            }
+            return false;
+        }
+#endif // CONFIGURE_PPS_PIN
+        case MSG_CFG_VALGET: {
+            uint8_t cfg_len = _payload_length - sizeof(ubx_cfg_valget);
+            const uint8_t *cfg_data = (const uint8_t *)(&_buffer) + sizeof(ubx_cfg_valget);
+            while (cfg_len >= 5) {
+                ConfigKey id;
+                memcpy(&id, cfg_data, sizeof(uint32_t));
+                cfg_len -= 4;
+                cfg_data += 4;
+                switch (id) {
+                    case ConfigKey::TMODE_MODE: {
+                        uint8_t mode = cfg_data[0];
+                        if (mode != 0) {
+                            // ask for mode 0, to disable TIME mode
+                            mode = 0;
+                            _configure_valset(ConfigKey::TMODE_MODE, &mode);
+                            _cfg_needs_save = true;
+                            _unconfigured_messages |= CONFIG_TMODE_MODE;
+                        } else {
+                            _unconfigured_messages &= ~CONFIG_TMODE_MODE;
+                        }
+                        break;
+                    }
+                    default:
+                        break;
+                }
+                // see if it is in active config list
+                int8_t cfg_idx = find_active_config_index(id);
+                if (cfg_idx >= 0) {
+                    const uint8_t key_size = config_key_size(id);
+                    if (cfg_len < key_size ||
+                        memcmp(&active_config.list[cfg_idx].value, cfg_data, key_size) != 0) {
+                        _configure_valset(id, &active_config.list[cfg_idx].value);
+                        _unconfigured_messages |= active_config.unconfig_bit;
+                        active_config.done_mask &= ~(1U << cfg_idx);
+                        _cfg_needs_save = true;
+                    } else {
+                        active_config.done_mask |= (1U << cfg_idx);
+                        if (active_config.done_mask == (1U<<active_config.count)-1) {
+                            // all done!
+                            _unconfigured_messages &= ~active_config.unconfig_bit;
+                        }
+                    }
+                }
+
+                // step over the value
+                uint8_t step_size = config_key_size(id);
+                if (step_size == 0) {
+                    return false;
+                }
+                cfg_len -= step_size;
+                cfg_data += step_size;
+            }
+        }
+        }
     }
 
     if (_class == CLASS_MON) {
