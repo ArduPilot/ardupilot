@@ -695,7 +695,6 @@ private:
     // Buffer parse & GPS state update
     bool        _parse_gps();
     bool handle_ACK();
-    bool handle_CFG();
     bool handle_MON();
     void handle_POSLLH();
     void handle_STATUS();
