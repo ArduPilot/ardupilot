@@ -961,7 +961,7 @@ int8_t AP_GPS_UBLOX::find_active_config_index(ConfigKey key) const
         Debug("MSG_POSLLH next_fix=%u", next_fix);
         if (havePvtMsg) {
             _unconfigured_messages |= CONFIG_RATE_POSLLH;
-            break;
+            return;
         }
         _check_new_itow(_buffer.posllh.itow);
         _last_pos_time        = _buffer.posllh.itow;
