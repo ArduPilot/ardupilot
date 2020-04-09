@@ -1194,7 +1194,7 @@ int8_t AP_GPS_UBLOX::find_active_config_index(ConfigKey key) const
         Debug("MSG_POSLLH next_fix=%u", next_fix);
         if (havePvtMsg) {
             _unconfigured_messages |= CONFIG_RATE_POSLLH;
-            break;
+            return;
         }
         _check_new_itow(_buffer.posllh.itow);
         _last_pos_time        = _buffer.posllh.itow;
@@ -1224,7 +1224,7 @@ int8_t AP_GPS_UBLOX::find_active_config_index(ConfigKey key) const
         _check_new_itow(_buffer.status.itow);
         if (havePvtMsg) {
             _unconfigured_messages |= CONFIG_RATE_STATUS;
-            break;
+            return;
         }
         if (_buffer.status.fix_status & NAV_STATUS_FIX_VALID) {
             if( (_buffer.status.fix_type == AP_GPS_UBLOX::FIX_3D) &&
@@ -1269,7 +1269,7 @@ int8_t AP_GPS_UBLOX::find_active_config_index(ConfigKey key) const
         _check_new_itow(_buffer.solution.itow);
         if (havePvtMsg) {
             state.time_week = _buffer.solution.week;
-            break;
+            return;
         }
         if (_buffer.solution.fix_status & NAV_STATUS_FIX_VALID) {
             if( (_buffer.solution.fix_type == AP_GPS_UBLOX::FIX_3D) &&
@@ -1455,7 +1455,7 @@ int8_t AP_GPS_UBLOX::find_active_config_index(ConfigKey key) const
         Debug("MSG_VELNED");
         if (havePvtMsg) {
             _unconfigured_messages |= CONFIG_RATE_VELNED;
-            break;
+            return ;
         }
         _check_new_itow(_buffer.velned.itow);
         _last_vel_time         = _buffer.velned.itow;
