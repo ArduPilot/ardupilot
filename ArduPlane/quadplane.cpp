@@ -1791,7 +1791,7 @@ void QuadPlane::update(void)
              */
             transition_state = TRANSITION_ANGLE_WAIT_VTOL;
             transition_start_ms = now;
-	    transition_initial_pitch= constrain_float(ahrs_view->pitch_sensor,-8500,0);
+            transition_initial_pitch= constrain_float(ahrs_view->pitch_sensor,-8500,0);
         } else if (is_tailsitter() &&
                    transition_state == TRANSITION_ANGLE_WAIT_VTOL) {
             if (tailsitter_transition_vtol_complete()) {
