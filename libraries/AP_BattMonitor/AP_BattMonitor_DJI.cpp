@@ -47,10 +47,10 @@ void AP_BattMonitor_DJI::read()
             for (uint8_t i=0; i < count; i++) {
                 pktbuf[i] = 0;
             }
-  
-            uint8_t buf[14] {0xAB, 0x0E, 0x04, 0x22, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xA8};
-            port->write(buf, sizeof(buf)); // Requesting Battery info 
-        
+            
+            uint8_t buf[14] {0xAB, 0x0E, 0x04, 0x22, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xA8}; 
+            port->write(buf, sizeof(buf)); // Requesting Battery info
+            count = 0; // This will reset and sync pktbuf after each reset
             last_send_us = now;
         }
     
