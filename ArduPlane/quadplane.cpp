@@ -1817,6 +1817,7 @@ void QuadPlane::update(void)
                 transition_state = TRANSITION_ANGLE_WAIT_FW;
                 transition_start_ms = now;
                 transition_initial_pitch= constrain_float(ahrs_view->pitch_sensor,-8500,0);
+                INTERVAL_PRINT("initial pitch: %f\n", 250, transition_initial_pitch);
             } else {
                 /*
                   setup for airspeed wait for later
