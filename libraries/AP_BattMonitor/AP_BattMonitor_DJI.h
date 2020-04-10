@@ -19,6 +19,8 @@ public:
     /// returns true if battery monitor provides current info
     bool has_current() const override { return true; }
 
+    bool has_cell_voltages() const override { return true; }
+
     void init(void) override {}
 
 private:

@@ -18,7 +18,7 @@
  */
 extern const AP_HAL::HAL& hal;
 
- #define REQUEST_INTERVAL_US      1000000     // Battery info requesting delay
+ #define REQUEST_INTERVAL_US      100000     // Battery info requesting delay
 
 /// Constructor
 AP_BattMonitor_DJI::AP_BattMonitor_DJI(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state, AP_BattMonitor_Params &params) :
@@ -59,7 +59,12 @@ void AP_BattMonitor_DJI::read()
                     
                     _state.consumed_mah = (1 - ((float)pktbuf[17] / 100)) * _params._pack_capacity;
                     _state.voltage = ((pktbuf[8] << 8) | pktbuf[9]) * 1e-3f;
-                
+
+                    _state.cell_voltages.cells[0] = (((pktbuf[20] << 8) | pktbuf[21]) * 1e-3f)*1000;
+                    _state.cell_voltages.cells[1] = (((pktbuf[22] << 8) | pktbuf[23]) * 1e-3f)*1000; 
+                    _state.cell_voltages.cells[2] = (((pktbuf[24] << 8) | pktbuf[25]) * 1e-3f)*1000;
+                    _state.cell_voltages.cells[3] = (((pktbuf[26] << 8) | pktbuf[27]) * 1e-3f)*1000;
+
                     _state.last_time_micros = now;
                     _state.healthy = true;
                 } else {
