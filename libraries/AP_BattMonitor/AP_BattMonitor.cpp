@@ -7,7 +7,7 @@
 #include "AP_BattMonitor_Sum.h"
 #include "AP_BattMonitor_FuelFlow.h"
 #include "AP_BattMonitor_FuelLevel_PWM.h"
-#include "AP_BattMonitor_DJIBattery.h"
+#include "AP_BattMonitor_DJI.h"
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -166,8 +166,8 @@ AP_BattMonitor::init()
                 drivers[instance] = new AP_BattMonitor_FuelLevel_PWM(*this, state[instance], _params[instance]);
                 break;
 #endif // HAL_BATTMON_FUEL_ENABLE
-            case AP_BattMonitor_Params::BattMonitor_TYPE_DJIBattery:
-                drivers[instance] = new AP_BattMonitor_DJIBattery(*this, state[instance], _params[instance]);
+            case AP_BattMonitor_Params::BattMonitor_TYPE_DJI:
+                drivers[instance] = new AP_BattMonitor_DJI(*this, state[instance], _params[instance]);
                 break;
             case AP_BattMonitor_Params::BattMonitor_TYPE_NONE:
             default:
