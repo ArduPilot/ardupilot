@@ -38,4 +38,16 @@ bool AP_VisualOdom_Backend::healthy() const
     return ((AP_HAL::millis() - _last_update_ms) < AP_VISUALODOM_TIMEOUT_MS);
 }
 
+// returns the system time of the last reset if reset_counter has not changed
+// updates the reset timestamp to the current system time if the reset_counter has changed
+uint32_t AP_VisualOdom_Backend::get_reset_timestamp_ms(uint8_t reset_counter)
+{
+    // update reset counter and timestamp if reset_counter has changed
+    if (reset_counter != _last_reset_counter) {
+        _last_reset_counter = reset_counter;
+        _reset_timestamp_ms = AP_HAL::millis();
+    }
+    return _reset_timestamp_ms;
+}
+
 #endif
