@@ -37,6 +37,12 @@
 #define SCHEDULER_DEFAULT_LOOP_RATE  50
 #endif
 
+#if HAL_MINIMIZE_FEATURES
+#define DEBUG_FORMAT_LENGTH "15"
+#else
+#define DEBUG_FORMAT_LENGTH "30"
+#endif
+
 #define debug(level, fmt, args...)   do { if ((level) <= _debug.get()) { hal.console->printf(fmt, ##args); }} while (0)
 
 extern const AP_HAL::HAL& hal;
@@ -174,7 +180,7 @@ void AP_Scheduler::run(uint32_t time_available)
 
         if (dt >= interval_ticks*2) {
             // we've slipped a whole run of this task!
-            debug(2, "Scheduler slip task[%u-%s] (%u/%u/%u)\n",
+            debug(2, "Scheduler slip task[%u-%-" DEBUG_FORMAT_LENGTH "s] (%u/%u/%u)\n",
                   (unsigned)i,
                   task.name,
                   (unsigned)dt,
@@ -219,7 +225,7 @@ void AP_Scheduler::run(uint32_t time_available)
 
         if (time_taken > _task_time_allowed) {
             // the event overran!
-            debug(3, "Scheduler overrun task[%u-%s] (%u/%u)\n",
+            debug(3, "Scheduler overrun task[%u-%-" DEBUG_FORMAT_LENGTH "s] (%u/%u)\n",
                   (unsigned)i,
                   task.name,
                   (unsigned)time_taken,

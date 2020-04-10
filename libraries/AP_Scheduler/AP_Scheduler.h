@@ -25,7 +25,11 @@
 #include <AP_Math/AP_Math.h>
 #include "PerfInfo.h"       // loop perf monitoring
 
-#define AP_SCHEDULER_NAME_INITIALIZER(_name) .name = #_name,
+#if HAL_MINIMIZE_FEATURES
+#define AP_SCHEDULER_NAME_INITIALIZER(_class, _name) .name = #_name,
+#else
+#define AP_SCHEDULER_NAME_INITIALIZER(_class, _name) .name = #_class "::" #_name,
+#endif
 #define LOOP_RATE 0
 
 /*
@@ -33,7 +37,7 @@
  */
 #define SCHED_TASK_CLASS(classname, classptr, func, _rate_hz, _max_time_micros) { \
     .function = FUNCTOR_BIND(classptr, &classname::func, void),\
-    AP_SCHEDULER_NAME_INITIALIZER(func)\
+    AP_SCHEDULER_NAME_INITIALIZER(classname, func)\
     .rate_hz = _rate_hz,\
     .max_time_micros = _max_time_micros\
 }
