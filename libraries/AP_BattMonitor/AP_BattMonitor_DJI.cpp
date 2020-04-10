@@ -18,7 +18,7 @@
  */
 extern const AP_HAL::HAL& hal;
 
- #define DELAY_TIME_US      1000000     // Battery info requesting delay
+ #define REQUEST_INTERVAL_US      1000000     // Battery info requesting delay
 
 /// Constructor
 AP_BattMonitor_DJI::AP_BattMonitor_DJI(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state, AP_BattMonitor_Params &params) :
@@ -42,11 +42,7 @@ void AP_BattMonitor_DJI::read()
 {
     if (port != nullptr){
         uint32_t now = AP_HAL::micros();
-        if (last_send_us != 0 && now - last_send_us > DELAY_TIME_US) {
-           
-            for (uint8_t i=0; i < count; i++) {
-                pktbuf[i] = 0;
-            }
+        if (last_send_us != 0 && now - last_send_us > REQUEST_INTERVAL_US) {
             
             uint8_t buf[14] {0xAB, 0x0E, 0x04, 0x22, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xA8}; 
             port->write(buf, sizeof(buf)); // Requesting Battery info
