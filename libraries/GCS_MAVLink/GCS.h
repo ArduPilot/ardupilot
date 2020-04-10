@@ -740,6 +740,7 @@ private:
                                                      const float roll,
                                                      const float pitch,
                                                      const float yaw,
+                                                     const uint8_t reset_counter,
                                                      const uint16_t payload_size);
 
     void lock_channel(const mavlink_channel_t chan, bool lock);
