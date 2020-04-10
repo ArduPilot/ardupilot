@@ -103,7 +103,7 @@ BOOL MakeTrilliumPacket(TrilliumPkt_t *pPkt, UInt16 Sync, UInt8 ID, UInt16 Lengt
     // If we made it here, this is a "good" packet
     return TRUE;
 
-}// MakeOrionPacket
+}// MakeTrilliumPacket aliased as MakeOrionPacket
 
 static void InitChecksum(UInt8 Byte, UInt16 *pA, UInt16 *pB)
 {

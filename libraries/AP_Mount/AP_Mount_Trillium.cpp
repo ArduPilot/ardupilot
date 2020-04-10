@@ -4,7 +4,6 @@
 
 #include <GCS_MAVLink/GCS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
-#include "Trillium/Communications/OrionPublicPacket.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -49,28 +48,28 @@ void AP_Mount_Trillium::init_hw()
     bool expect_ack = AP_MOUNT_TRILLIUM_REQUIRE_ACKS;
 
     switch (_booting.step++) {
-    case 0:
-        _booting.duration_ms = 200;
-
-        // I'm not sure this acks or not, so lets just not expect an ack for this.
-        // If it's false then we'll move on. If its true and we don't get an ack then this step will always fail
-        expect_ack = false;
-
-        cmd_id = AP_MOUNT_TRILLIUM_ID_ENABLE_MESSAGE_ACK;
-        send_command(cmd_id, AP_MOUNT_TRILLIUM_REQUIRE_ACKS, AP_MOUNT_TRILLIUM_REQUIRE_ACKS);   // 1,1 means gimbal will ACK all packets we send it
-        break;
-
-    case 1:
-        _booting.duration_ms = 5000;
-        cmd_id = AP_MOUNT_TRILLIUM_ID_INITILISE;
-        send_command(cmd_id, 1, 1); // (1,1) means auto-initialize
-        break;
-
-    case 2:
-        _booting.duration_ms = 5000;
-        cmd_id = AP_MOUNT_TRILLIUM_ID_ENABLE_STREAM_MODE;
-        send_command(cmd_id, 2, AP_MOUNT_TRILLIUM_CURRENT_POS_STREAM_RATE_HZ);
-        break;
+//    case 0:
+//        _booting.duration_ms = 200;
+//
+//        // I'm not sure this acks or not, so lets just not expect an ack for this.
+//        // If it's false then we'll move on. If its true and we don't get an ack then this step will always fail
+//        expect_ack = false;
+//
+//        cmd_id = AP_MOUNT_TRILLIUM_ID_ENABLE_MESSAGE_ACK;
+//        send_command(cmd_id, AP_MOUNT_TRILLIUM_REQUIRE_ACKS, AP_MOUNT_TRILLIUM_REQUIRE_ACKS);   // 1,1 means gimbal will ACK all packets we send it
+//        break;
+//
+//    case 1:
+//        _booting.duration_ms = 5000;
+//        cmd_id = AP_MOUNT_TRILLIUM_ID_INITILISE;
+//        send_command(cmd_id, 1, 1); // (1,1) means auto-initialize
+//        break;
+//
+//    case 2:
+//        _booting.duration_ms = 5000;
+//        cmd_id = AP_MOUNT_TRILLIUM_ID_ENABLE_STREAM_MODE;
+//        send_command(cmd_id, 2, AP_MOUNT_TRILLIUM_CURRENT_POS_STREAM_RATE_HZ);
+//        break;
 
     case 3:
     case 4:
@@ -208,59 +207,10 @@ void AP_Mount_Trillium::read_incoming()
     int16_t num_available = _port->available();
 
     while (num_available-- > 0) {        // Process bytes received
-        const uint8_t data = _port->read();
+        const uint8_t rxByte = _port->read();
 
-        switch (_rx_step) {
-        case PACKET_FORMAT::SYNC1_START:
-            if (data == AP_MOUNT_TRILLIUM_SYNC1) {
-                _rx_step = PACKET_FORMAT::SYNC2;
-                _rx_payload_index = 0;
-            }
-            break;
-
-        case PACKET_FORMAT::SYNC2:
-            if (data == AP_MOUNT_TRILLIUM_SYNC2) {
-                _rx_step = PACKET_FORMAT::SIZE;
-            } else {
-                _rx_step = PACKET_FORMAT::SYNC1_START;
-            }
-            break;
-
-        case PACKET_FORMAT::SIZE:
-            _rx_payload_size = data;
-            _rx_step = PACKET_FORMAT::ID;
-            // don't sanity check the size yet. Wait until we get the id so we can notify GCS use useful feedback
-            break;
-
-        case PACKET_FORMAT::ID:
-            _rx_id = data;
-            _rx_sum = data;
-            if (_rx_payload_size == 0) {
-                _rx_step = PACKET_FORMAT::CHECKSUM;
-            } else if (_rx_payload_size < AP_MOUNT_TRILLIUM_SERIAL_LARGEST_RX_PAYLOAD_SIZE) {
-                _rx_step = PACKET_FORMAT::PAYLOAD;
-            } else {
-                _rx_step = PACKET_FORMAT::SYNC1_START;
-                num_available -= _rx_payload_size + 1; // drop the rest of the packet in case we've queued it all
-                // we just found a packet that our buffer is too small for. Notify GCS so we can bump up the hard-coded buffer size?
-                gcs().send_text(MAV_SEVERITY_ERROR, "Trillium buffer too small for id %d", _rx_id);
-            }
-            break;
-
-        case PACKET_FORMAT::PAYLOAD:
-            _rx_payload[_rx_payload_index++] = data;
-            _rx_sum += data;
-            if (_rx_payload_index >= _rx_payload_size) {
-                _rx_step = PACKET_FORMAT::CHECKSUM;
-            }
-            break;
-
-        case PACKET_FORMAT::CHECKSUM:
-            _rx_step = PACKET_FORMAT::SYNC1_START;
-            if (_rx_sum == data) {
-                handle_packet();
-            }
-            break;
+        if (LookForOrionPacketInByte(&_orionPkt, rxByte)) {
+            handle_packet();
         }
     }
 }
@@ -268,10 +218,7 @@ void AP_Mount_Trillium::read_incoming()
 const char *AP_Mount_Trillium::get_model_name(const uint8_t gimbal_model_flags)
 {
     switch (gimbal_model_flags) {
-    case 0x00: return "GD170";
-    case 0x01: return "CM160";
-    case 0x02: return "CM100";
-    case 0x03: return "CM202";
+    case 0x13: return "HD40";
     default:   return "?????";
     }
 }
@@ -279,27 +226,11 @@ const char *AP_Mount_Trillium::get_model_name(const uint8_t gimbal_model_flags)
 
 void AP_Mount_Trillium::handle_packet()
 {
-    const float position_scaler = 0.0109863f; // (360 / 32768) per datasheet
-
-    switch (_rx_id) {
-    case AP_MOUNT_TRILLIUM_ID_CURRENT_POSITION_AND_RATE:
-        _current_angle_deg.x = (float)((int32_t)_rx_payload[0] * 256 + _rx_payload[1]) * position_scaler;   // pan
-        _current_angle_deg.y = (float)((int32_t)_rx_payload[2] * 256 + _rx_payload[3]) * position_scaler;   // tilt
-        break;
-
-    case AP_MOUNT_TRILLIUM_ID_VERSION: {
-        const uint16_t sn = (uint16_t)_rx_payload[0]<<8 | (uint16_t)_rx_payload[1];
-        const char *model = get_model_name(_rx_payload[9]);
-        gcs().send_text(MAV_SEVERITY_DEBUG, "Detected %s serial %d", model, sn);
-        }
-        break;
-
-    case AP_MOUNT_TRILLIUM_ID_ACK:
-        handle_ack();
+    switch (_orionPkt.ID) {
         break;
     }
 
-    if (_booting.rx_expected_cmd_id != 0 && _rx_id == _booting.rx_expected_cmd_id) {
+    if (_booting.rx_expected_cmd_id != 0 && _orionPkt.ID == _booting.rx_expected_cmd_id) {
         // expected packet received! Forget it because we should have handled it in the above switch
         _booting.rx_expected_cmd_id = 0;
 
@@ -310,27 +241,6 @@ void AP_Mount_Trillium::handle_packet()
 
 void AP_Mount_Trillium::handle_ack()
 {
-    const uint8_t ack_id = _rx_payload[0]; // Identifier of packet being acknowledged
-    //const uint8_t ack_data = _rx_payload[1]; // RESERVED
-
-    switch (ack_id) {
-    case AP_MOUNT_TRILLIUM_ID_INITILISE:
-    case AP_MOUNT_TRILLIUM_ID_STOW_MODE:
-    case AP_MOUNT_TRILLIUM_ID_ENABLE_STREAM_MODE:
-    case AP_MOUNT_TRILLIUM_ID_ENABLE_GYRO_STABILISATION:
-    case AP_MOUNT_TRILLIUM_ID_ENABLE_MESSAGE_ACK:
-    default:
-        // TODO: add special handling for when we get an ACK
-        break;
-    } // ack_id
-
-    if (_booting.rx_expected_ack_id != 0 && ack_id == _booting.rx_expected_ack_id) {
-        // expected packet received! Forget it because we should have handled it in the above switch
-        _booting.rx_expected_ack_id = 0;
-
-        // clear the duration so we immediately continue booting after handling the expected packet
-        _booting.duration_ms = 0;
-    }
 }
 
 // send_mount_status - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
@@ -344,7 +254,6 @@ void AP_Mount_Trillium::send_mount_status(mavlink_channel_t chan)
     mavlink_msg_mount_status_send(chan, 0, 0, _current_angle_deg.y, _current_angle_deg.x, _current_angle_deg.z);
 }
 
-
 /*
  send a command to the Trillium Serial API
 */
@@ -353,22 +262,8 @@ void AP_Mount_Trillium::send_command(const uint8_t cmd, const uint8_t* data, con
     if (_port == nullptr || (_port->txspace() < (size + 5U))) {
         return;
     }
-    uint8_t checksum = 0;
 
-    _port->write( AP_MOUNT_TRILLIUM_SYNC1 );
-    _port->write( AP_MOUNT_TRILLIUM_SYNC2 );
-    _port->write( size );  // write body size
-    _port->write( cmd );  // write packet identifier
-
-    // per datasheet section 2.3 on page "2 of 61" which is pdf page 11:
-    // "Sum the identifier byte and all bytes in the data field"
-    checksum += cmd;
-
-    for (uint8_t i = 0;  i != size ; i++) {
-        checksum += data[i];
-        _port->write( data[i] );
-    }
-    _port->write(checksum);
+    _port->write(data, size);
 
     // store time of send
     _last_send = AP_HAL::millis();

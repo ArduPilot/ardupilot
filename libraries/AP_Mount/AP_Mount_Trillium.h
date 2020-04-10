@@ -13,6 +13,8 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include "AP_Mount_Backend.h"
 
+#include "Trillium_protocol/OrionPublicPacketShim.h"
+
 // config
 #define AP_MOUNT_TRILLIUM_SERIAL_MINIMUM_INTERVAL_MS       1000
 #define AP_MOUNT_TRILLIUM_SERIAL_LARGEST_RX_PAYLOAD_SIZE   50
@@ -110,23 +112,13 @@ private:
         bool        done : 1;
     } _booting;
 
-    // rx parsing
-    enum PACKET_FORMAT {
-        SYNC1_START = 0,
-        SYNC2,
-        SIZE,
-        ID,
-        PAYLOAD,
-        CHECKSUM,
-    } _rx_step;
-    uint8_t     _rx_payload[AP_MOUNT_TRILLIUM_SERIAL_LARGEST_RX_PAYLOAD_SIZE+5];
-    uint8_t     _rx_payload_index;
-    uint8_t     _rx_payload_size;
-    uint8_t     _rx_sum;
-    uint8_t     _rx_id;
 
     // keep the last _current_angle values
     Vector3f _current_angle_deg; // in degrees
+
+
+    // Trillium SDK
+    OrionPkt_t _orionPkt;
 
 };
 #endif // AP_MOUNT_TRILLIUM_ENABLED
