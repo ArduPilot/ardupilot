@@ -25,7 +25,6 @@ private:
     AP_HAL::UARTDriver *port;
     
     uint32_t last_send_us;
-    uint32_t delay_time_us;
     uint32_t count;
     uint8_t pktbuf[64];
 };

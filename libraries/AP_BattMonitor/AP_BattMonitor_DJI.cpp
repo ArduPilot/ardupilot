@@ -18,6 +18,8 @@
  */
 extern const AP_HAL::HAL& hal;
 
+ #define DELAY_TIME_US      1000000     // Battery info requesting delay
+
 /// Constructor
 AP_BattMonitor_DJI::AP_BattMonitor_DJI(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state, AP_BattMonitor_Params &params) :
     AP_BattMonitor_Backend(mon, mon_state, params)
@@ -26,7 +28,7 @@ AP_BattMonitor_DJI::AP_BattMonitor_DJI(AP_BattMonitor &mon, AP_BattMonitor::Batt
     
     if ((port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_DJIBattery, 0))) {
         last_send_us = AP_HAL::micros();
-        delay_time_us = 1000000;
+
     } else { 
         gcs().send_text(MAV_SEVERITY_WARNING,"DJIBattery: Port not available or not configured properly");
     }
@@ -41,14 +43,14 @@ void AP_BattMonitor_DJI::read()
 {
     if (port != nullptr){
         uint32_t now = AP_HAL::micros();
-        if (last_send_us != 0 && now - last_send_us > delay_time_us) {
+        if (last_send_us != 0 && now - last_send_us > DELAY_TIME_US) {
            
             for (uint8_t i=0; i < count; i++) {
                 pktbuf[i] = 0;
             }
   
             uint8_t buf[14] {0xAB, 0x0E, 0x04, 0x22, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xA8};
-            port->write(buf, sizeof(buf));
+            port->write(buf, sizeof(buf)); // Requesting Battery info 
         
             last_send_us = now;
         }
@@ -65,8 +67,6 @@ void AP_BattMonitor_DJI::read()
                 
                 if ( pktbuf[count - 1] == crc_crc8( pkt, 36)){
                     
-                    //percentage = pktbuf[17];
-                    //used_capacity = 1 - ((float)pktbuf[17] / 100);  
                     _state.consumed_mah = (1 - ((float)pktbuf[17] / 100)) * _params._pack_capacity;
                     _state.voltage = ((pktbuf[8] << 8) | pktbuf[9]) * 1e-3f;
                 
