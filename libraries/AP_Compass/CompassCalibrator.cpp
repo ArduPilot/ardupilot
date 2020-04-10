@@ -103,6 +103,7 @@ void CompassCalibrator::start(bool retry, float delay, uint16_t offset_max, uint
     _delay_start_sec = delay;
     _start_time_ms = AP_HAL::millis();
     _compass_idx = compass_idx;
+    threadsafe_set_status(Status::INV_STATE);
     set_status(Status::WAITING_TO_START);
 }
 
@@ -135,6 +136,7 @@ float CompassCalibrator::get_completion_percent() const
         case Status::FAILED:
         case Status::BAD_ORIENTATION:
         case Status::BAD_RADIUS:
+        case Status::INV_STATE:
             return 0.0f;
     };
     // will not get here if the compiler is doing its job (no default clause)
@@ -197,19 +199,67 @@ void CompassCalibrator::new_sample(const Vector3f& sample)
 void CompassCalibrator::update(bool &failure)
 {
     failure = false;
+    if (update_thread) {
+        if (hal.scheduler->thread_destroyed(update_thread) && 
+           _calc_finished) {
+            failure = _failure;
+            update_thread = nullptr;
+            _calc_finished = false;
+            gcs().send_text(MAV_SEVERITY_INFO, "CompassCal: Calc thread finished.");
+        }
+    }
+
+    if (_ts_requested_status != Status::INV_STATE) {
+        WITH_SEMAPHORE(status_sem);
+        set_status(_ts_requested_status);
+        _ts_requested_status = Status::INV_STATE;
+    }
 
     // collect the minimum number of samples
     if (!fitting()) {
         return;
     }
+    // Try to run calculations on a low priority thread
+    // if that fails we run it on main thread anyways
+    if (!update_thread) {
+        _ts_requested_status = Status::INV_STATE;
+        if (!_thread_alloc_failed) {
+            update_thread = hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&CompassCalibrator::update_blocking_trampoline, void), \
+                                      "compasscal", 1024, AP_HAL::Scheduler::PRIORITY_IO, 1);
+        }
+        if (!update_thread) {
+            // run it anyways on main thread
+            //also ensure we never try to allocate a thread again
+            _thread_alloc_failed = true;
+            gcs().send_text(MAV_SEVERITY_INFO, "CompassCal: Skipping Calc on thread.");
+            update_blocking();
+            failure = _failure;
+        } else {
+            gcs().send_text(MAV_SEVERITY_INFO, "CompassCal: Running Calc Thread.");
+        }
+    }
+}
 
+void CompassCalibrator::update_blocking_trampoline() {
+    while(update_blocking()) {
+        hal.scheduler->delay(100);
+    }
+    _calc_finished = true;
+}
+
+bool CompassCalibrator::update_blocking() {
+    if ((_status == Status::RUNNING_STEP_ONE) || (_status == Status::RUNNING_STEP_TWO)) {
+        _failure = false;
+    }
     if (_status == Status::RUNNING_STEP_ONE) {
         if (_fit_step >= 10) {
             if (is_equal(_fitness, _initial_fitness) || isnan(_fitness)) {  // if true, means that fitness is diverging instead of converging
-                set_status(Status::FAILED);
-                failure = true;
+                threadsafe_set_status(Status::FAILED);
+                _failure = true;
+                return false;
             } else {
-                set_status(Status::RUNNING_STEP_TWO);
+                threadsafe_set_status(Status::RUNNING_STEP_TWO);
+                return false;
             }
         } else {
             if (_fit_step == 0) {
@@ -221,10 +271,12 @@ void CompassCalibrator::update(bool &failure)
     } else if (_status == Status::RUNNING_STEP_TWO) {
         if (_fit_step >= 35) {
             if (fit_acceptable() && fix_radius() && calculate_orientation()) {
-                set_status(Status::SUCCESS);
+                threadsafe_set_status(Status::SUCCESS);
+                return false;
             } else {
-                set_status(Status::FAILED);
-                failure = true;
+                threadsafe_set_status(Status::FAILED);
+                _failure = true;
+                return false;
             }
         } else if (_fit_step < 15) {
             run_sphere_fit();
@@ -234,6 +286,11 @@ void CompassCalibrator::update(bool &failure)
             _fit_step++;
         }
     }
+    //we have been requested a status change, let's exit
+    if (_ts_requested_status != Status::INV_STATE) {
+        return false;
+    }
+    return true;
 }
 
 /////////////////////////////////////////////////////////////
@@ -323,6 +380,7 @@ bool CompassCalibrator::set_status(CompassCalibrator::Status status)
             if (_status != Status::RUNNING_STEP_ONE) {
                 return false;
             }
+
             thin_samples();
             initialize_fit();
             _status = Status::RUNNING_STEP_TWO;
@@ -877,6 +935,7 @@ bool CompassCalibrator::calculate_orientation(void)
     } else {
         pass = _orientation_confidence > variance_threshold;
     }
+
     if (!pass) {
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Mag(%u) bad orientation: %u/%u %.1f", _compass_idx,
                         besti, besti2, (double)_orientation_confidence);
@@ -890,7 +949,7 @@ bool CompassCalibrator::calculate_orientation(void)
     }
 
     if (!pass) {
-        set_status(Status::BAD_ORIENTATION);
+        threadsafe_set_status(Status::BAD_ORIENTATION);
         return false;
     }
 
@@ -903,7 +962,7 @@ bool CompassCalibrator::calculate_orientation(void)
         // we won't change the orientation, but we set _orientation
         // for reporting purposes
         _orientation = besti;
-        set_status(Status::BAD_ORIENTATION);
+        threadsafe_set_status(Status::BAD_ORIENTATION);
         return false;
     }
 
@@ -960,7 +1019,7 @@ bool CompassCalibrator::fix_radius(void)
                         _compass_idx,
                         _params.radius,
                         expected_radius);
-        set_status(Status::BAD_RADIUS);
+        threadsafe_set_status(Status::BAD_RADIUS);
         return false;
     }
 

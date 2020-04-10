@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_Math/AP_Math.h>
+#include <AP_HAL/AP_HAL.h>
 
 #define COMPASS_CAL_NUM_SPHERE_PARAMS       4
 #define COMPASS_CAL_NUM_ELLIPSOID_PARAMS    9
@@ -42,6 +43,7 @@ public:
         FAILED = 5,
         BAD_ORIENTATION = 6,
         BAD_RADIUS = 7,
+        INV_STATE = 8,
     };
 
     // get status of calibrations progress
@@ -162,8 +164,20 @@ private:
     // fix radius to compensate for sensor scaling errors
     bool fix_radius();
 
+    bool update_blocking();
+    void update_blocking_trampoline();
+    void finish_thread(bool result);
+
+    AP_HAL::ThreadHandle update_thread = nullptr;
+    bool _failure;
+    bool _calc_finished;
+    bool _thread_alloc_failed;
     uint8_t _compass_idx;                   // index of the compass providing data
     Status _status;                         // current state of calibrator
+    void threadsafe_set_status(Status status) { WITH_SEMAPHORE(status_sem); _ts_requested_status = status; }
+    HAL_Semaphore status_sem;
+    Status _ts_requested_status;
+
     uint32_t _last_sample_ms;               // system time of last sample received for timeout
 
     // values provided by caller
