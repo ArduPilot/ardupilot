@@ -28,7 +28,6 @@ AP_BattMonitor_DJI::AP_BattMonitor_DJI(AP_BattMonitor &mon, AP_BattMonitor::Batt
     
     if ((port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_DJIBattery, 0))) {
         last_send_us = AP_HAL::micros();
-
     } else { 
         gcs().send_text(MAV_SEVERITY_WARNING,"DJIBattery: Port not available or not configured properly");
     }
@@ -60,12 +59,7 @@ void AP_BattMonitor_DJI::read()
         for (uint8_t i=0; i<n; i++) {
             pktbuf[count++] = port->read();
             if (count == 37){
-                uint8_t pkt[count -1];
-                for (uint8_t j = 0; j < count; j++) {
-                    pkt[j] = pktbuf[j];
-                }
-                
-                if ( pktbuf[count - 1] == crc_crc8( pkt, 36)){
+                if ( pktbuf[count - 1] == crc_crc8( pktbuf, 36)){
                     
                     _state.consumed_mah = (1 - ((float)pktbuf[17] / 100)) * _params._pack_capacity;
                     _state.voltage = ((pktbuf[8] << 8) | pktbuf[9]) * 1e-3f;
