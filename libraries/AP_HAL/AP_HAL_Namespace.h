@@ -49,6 +49,7 @@ namespace AP_HAL {
      */
     typedef void(*Proc)(void);
     FUNCTOR_TYPEDEF(MemberProc, void);
+    typedef void* ThreadHandle;
 
     /**
      * Global names for all of the existing SPI devices on all platforms.

@@ -116,9 +116,17 @@ public:
     /*
       create a new thread
      */
-    virtual bool thread_create(AP_HAL::MemberProc proc, const char *name,
+    virtual ThreadHandle thread_create(AP_HAL::MemberProc proc, const char *name,
                                uint32_t stack_size, priority_base base, int8_t priority) {
-        return false;
+        return nullptr;
+    }
+    
+    /*
+      destroys a thread
+     */
+    //NOTE: use with CAUTION, can block on some platforms
+    virtual bool thread_destroyed(ThreadHandle) {
+        return true;  
     }
 
 private:
