@@ -31,7 +31,7 @@ public:
 	virtual void handle_vision_position_delta_msg(const mavlink_message_t &msg) = 0;
 
     // consume vision position estimate data and send to EKF. distances in meters
-    virtual void handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude) = 0;
+    virtual void handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude, uint8_t reset_counter) = 0;
 
     // handle request to align camera's attitude with vehicle's AHRS/EKF attitude
     virtual void align_sensor_to_vehicle() {}
@@ -41,9 +41,16 @@ public:
 
 protected:
 
+    // returns the system time of the last reset if reset_counter has not changed
+    // updates the reset timestamp to the current system time if the reset_counter has changed
+    uint32_t get_reset_timestamp_ms(uint8_t reset_counter);
 
     AP_VisualOdom &_frontend;   // reference to frontend
     uint32_t _last_update_ms;   // system time of last update from sensor (used by health checks)
+
+    // reset counter handling
+    uint8_t _last_reset_counter;    // last sensor reset counter received
+    uint32_t _reset_timestamp_ms;   // time reset counter was received
 };
 
 #endif

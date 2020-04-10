@@ -140,7 +140,7 @@ void AP_VisualOdom::handle_vision_position_delta_msg(const mavlink_message_t &ms
 
 // general purpose method to consume position estimate data and send to EKF
 // distances in meters, roll, pitch and yaw are in radians
-void AP_VisualOdom::handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, float roll, float pitch, float yaw)
+void AP_VisualOdom::handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, float roll, float pitch, float yaw, uint8_t reset_counter)
 {
     // exit immediately if not enabled
     if (!enabled()) {
@@ -152,12 +152,12 @@ void AP_VisualOdom::handle_vision_position_estimate(uint64_t remote_time_us, uin
         // convert attitude to quaternion and call backend
         Quaternion attitude;
         attitude.from_euler(roll, pitch, yaw);
-        _driver->handle_vision_position_estimate(remote_time_us, time_ms, x, y, z, attitude);
+        _driver->handle_vision_position_estimate(remote_time_us, time_ms, x, y, z, attitude, reset_counter);
     }
 }
 
 // general purpose method to consume position estimate data and send to EKF
-void AP_VisualOdom::handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude)
+void AP_VisualOdom::handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude, uint8_t reset_counter)
 {
     // exit immediately if not enabled
     if (!enabled()) {
@@ -166,7 +166,7 @@ void AP_VisualOdom::handle_vision_position_estimate(uint64_t remote_time_us, uin
 
     // call backend
     if (_driver != nullptr) {
-        _driver->handle_vision_position_estimate(remote_time_us, time_ms, x, y, z, attitude);
+        _driver->handle_vision_position_estimate(remote_time_us, time_ms, x, y, z, attitude, reset_counter);
     }
 }
 
