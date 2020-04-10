@@ -68,6 +68,12 @@ const AP_Param::GroupInfo AP_VisualOdom::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_ORIENT", 2, AP_VisualOdom, _orientation, ROTATION_NONE),
 
+    // @Param: _SCALE
+    // @DisplayName: Visual odometry scaling factor
+    // @Description: Visual odometry scaling factor applied to position estimates from sensor
+    // @User: Advanced
+    AP_GROUPINFO("_SCALE", 3, AP_VisualOdom, _pos_scale, 1.0f),
+
     AP_GROUPEND
 };
 

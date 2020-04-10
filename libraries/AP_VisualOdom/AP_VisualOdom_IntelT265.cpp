@@ -26,7 +26,8 @@ extern const AP_HAL::HAL& hal;
 // consume vision position estimate data and send to EKF. distances in meters
 void AP_VisualOdom_IntelT265::handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude)
 {
-    Vector3f pos{x, y, z};
+    const float scale_factor = _frontend.get_pos_scale();
+    Vector3f pos{x * scale_factor, y * scale_factor, z * scale_factor};
     Quaternion att = attitude;
 
     // handle user request to align camera
