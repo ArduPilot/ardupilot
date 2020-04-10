@@ -13,6 +13,19 @@ using namespace HALSITL;
 
 extern const AP_HAL::HAL& hal;
 
+/*
+  emulate flash sector sizes
+ */
+#ifndef HAL_FLASH_SECTOR_SIZE
+#if HAL_STORAGE_SIZE <= 16384
+#define HAL_FLASH_SECTOR_SIZE (16*1024)
+#elif HAL_STORAGE_SIZE <= 32768
+#define HAL_FLASH_SECTOR_SIZE (32*1024)
+#else
+#define HAL_FLASH_SECTOR_SIZE (128*1024)
+#endif
+#endif
+
 void Storage::_storage_open(void)
 {
     if (_initialised) {
@@ -183,7 +196,7 @@ static int flash_fd = -1;
 
 static uint32_t sitl_flash_getpageaddr(uint32_t page)
 {
-    return page * HAL_STORAGE_SIZE;
+    return page * HAL_FLASH_SECTOR_SIZE;
 }
 
 static void sitl_flash_open(void)
@@ -195,10 +208,10 @@ static void sitl_flash_open(void)
             if (flash_fd == -1) {
                 AP_HAL::panic("Failed to open flash.dat");
             }
-            if (ftruncate(flash_fd, 2*HAL_STORAGE_SIZE) != 0) {
+            if (ftruncate(flash_fd, 2*HAL_FLASH_SECTOR_SIZE) != 0) {
                 AP_HAL::panic("Failed to create flash.dat");
             }
-            uint8_t fill[HAL_STORAGE_SIZE*2];
+            uint8_t fill[HAL_FLASH_SECTOR_SIZE*2];
             memset(fill, 0xff, sizeof(fill));
             pwrite(flash_fd, fill, sizeof(fill), 0);
         }
@@ -210,7 +223,7 @@ static bool sitl_flash_write(uint32_t addr, const uint8_t *data, uint32_t length
     sitl_flash_open();
     uint8_t old[length];
     if (pread(flash_fd, old, length, addr) != length) {
-        AP_HAL::panic("Failed to read flash.dat");
+        AP_HAL::panic("Failed to read flash.dat at %u len=%u", unsigned(addr), unsigned(length));
     }
     // check that we are only ever clearing bits (real flash storage can only ever clear bits,
     // except for an erase
@@ -230,10 +243,10 @@ static bool sitl_flash_read(uint32_t addr, uint8_t *data, uint32_t length)
 
 static bool sitl_flash_erasepage(uint32_t page)
 {
-    uint8_t fill[HAL_STORAGE_SIZE];
+    uint8_t fill[HAL_FLASH_SECTOR_SIZE];
     memset(fill, 0xff, sizeof(fill));
     sitl_flash_open();
-    bool ret = pwrite(flash_fd, fill, sizeof(fill), page * HAL_STORAGE_SIZE) == sizeof(fill);
+    bool ret = pwrite(flash_fd, fill, sizeof(fill), page * HAL_FLASH_SECTOR_SIZE) == sizeof(fill);
     printf("erase %u -> %u\n", page, ret);
     return ret;
 }
