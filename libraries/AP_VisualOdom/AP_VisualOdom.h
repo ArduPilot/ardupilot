@@ -62,6 +62,9 @@ public:
     // get user defined orientation
     enum Rotation get_orientation() const { return (enum Rotation)_orientation.get(); }
 
+    // get user defined scaling applied to position estimates
+    float get_pos_scale() const { return _pos_scale; }
+
     // return a 3D vector defining the position offset of the camera in meters relative to the body frame origin
     const Vector3f &get_pos_offset(void) const { return _pos_offset; }
 
@@ -86,9 +89,10 @@ private:
     static AP_VisualOdom *_singleton;
 
     // parameters
-    AP_Int8 _type;
+    AP_Int8 _type;              // sensor type
     AP_Vector3f _pos_offset;    // position offset of the camera in the body frame
     AP_Int8 _orientation;       // camera orientation on vehicle frame
+    AP_Float _pos_scale;        // position scale factor applied to sensor values
 
     // reference to backends
     AP_VisualOdom_Backend *_driver;

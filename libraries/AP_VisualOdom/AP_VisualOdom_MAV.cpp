@@ -65,7 +65,8 @@ void AP_VisualOdom_MAV::handle_vision_position_delta_msg(const mavlink_message_t
 // consume vision position estimate data and send to EKF. distances in meters
 void AP_VisualOdom_MAV::handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude)
 {
-    Vector3f pos{x, y, z};
+    const float scale_factor =  _frontend.get_pos_scale();
+    Vector3f pos{x * scale_factor, y * scale_factor, z * scale_factor};
 
     // send attitude and position to EKF
     const float posErr = 0; // parameter required?
