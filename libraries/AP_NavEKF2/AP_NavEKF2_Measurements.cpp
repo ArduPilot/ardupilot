@@ -903,7 +903,7 @@ void NavEKF2_core::writeExtNavData(const Vector3f &sensOffset, const Vector3f &p
         extNavMeasTime_ms = timeStamp_ms;
     }
 
-    if (resetTime_ms > extNavLastPosResetTime_ms) {
+    if (resetTime_ms != extNavLastPosResetTime_ms) {
         extNavDataNew.posReset = true;
         extNavLastPosResetTime_ms = resetTime_ms;
     } else {
