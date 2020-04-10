@@ -291,7 +291,7 @@ void *Scheduler::thread_create_trampoline(void *ctx)
 /*
   create a new thread
 */
-bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_t stack_size, priority_base base, int8_t priority)
+AP_HAL::ThreadHandle Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_t stack_size, priority_base base, int8_t priority)
 {
     WITH_SEMAPHORE(_thread_sem);
 
@@ -304,7 +304,7 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
 
     struct thread_attr *a = new struct thread_attr;
     if (!a) {
-        return false;
+        return nullptr;
     }
     // take a copy of the MemberProc, it is freed after thread exits
     a->f = (AP_HAL::MemberProc *)malloc(sizeof(proc));
@@ -337,7 +337,7 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
     }
     a->next = threads;
     threads = a;
-    return true;
+    return a;
 
 failed:
     if (a->stack) {
@@ -347,7 +347,7 @@ failed:
         free(a->f);
     }
     delete a;
-    return false;
+    return nullptr;
 }
 
 /*
