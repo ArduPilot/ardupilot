@@ -501,12 +501,12 @@ void Scheduler::thread_create_trampoline(void *ctx)
 /*
   create a new thread
 */
-bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_t stack_size, priority_base base, int8_t priority)
+AP_HAL::ThreadHandle Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_t stack_size, priority_base base, int8_t priority)
 {
     // take a copy of the MemberProc, it is freed after thread exits
     AP_HAL::MemberProc *tproc = (AP_HAL::MemberProc *)malloc(sizeof(proc));
     if (!tproc) {
-        return false;
+        return nullptr;
     }
     *tproc = proc;
 
@@ -540,9 +540,21 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
                                                tproc);
     if (thread_ctx == nullptr) {
         free(tproc);
-        return false;
+        return nullptr;
     }
-    return true;
+    return thread_ctx;
+}
+
+//NOTE: use with caution, can block
+bool Scheduler::thread_destroyed(AP_HAL::ThreadHandle ctx) {
+    thread_t *thread_ctx = (thread_t*)ctx;
+    if (chThdTerminatedX(thread_ctx)) {
+        //Ensure we clear the stack allocated to the thread
+        // as well
+        chThdWait(thread_ctx);
+        return true;
+    }
+    return false;
 }
 
 /*

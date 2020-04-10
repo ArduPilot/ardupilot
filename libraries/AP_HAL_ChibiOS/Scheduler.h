@@ -126,7 +126,10 @@ public:
     /*
       create a new thread
      */
-    bool thread_create(AP_HAL::MemberProc, const char *name, uint32_t stack_size, priority_base base, int8_t priority) override;
+    AP_HAL::ThreadHandle thread_create(AP_HAL::MemberProc, const char *name, uint32_t stack_size, priority_base base, int8_t priority) override;
+    
+    bool thread_destroyed(AP_HAL::ThreadHandle) override;
+
 
     // pat the watchdog
     void watchdog_pat(void);
