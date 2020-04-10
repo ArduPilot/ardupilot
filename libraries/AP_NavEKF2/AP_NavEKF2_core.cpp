@@ -393,7 +393,14 @@ bool NavEKF2_core::InitialiseFilterBootstrap(void)
         readMagData();
         readGpsData();
         readBaroData();
-        return storedIMU.is_filled();
+        if (storedIMU.is_filled()) {
+            if (strcmp(prearm_fail_string, "EKF2 still initialising") == 0) {
+                prearm_fail_string[0] = 0;
+	        }
+            return true;
+        } else {
+            return false;
+        }
     }
 
     // set re-used variables to zero
