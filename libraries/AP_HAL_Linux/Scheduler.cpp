@@ -344,11 +344,11 @@ void Scheduler::teardown()
 /*
   create a new thread
 */
-bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_t stack_size, priority_base base, int8_t priority)
+AP_HAL::ThreadHandle Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_t stack_size, priority_base base, int8_t priority)
 {
     Thread *thread = new Thread{(Thread::task_t)proc};
     if (!thread) {
-        return false;
+        return nullptr;
     }
 
     uint8_t thread_priority = APM_LINUX_IO_PRIORITY;
@@ -378,16 +378,19 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
     // Add 256k to HAL-independent requested stack size
     thread->set_stack_size(256 * 1024 + stack_size);
 
-    /*
-     * We should probably store the thread handlers and join() when exiting,
-     * but let's the thread manage itself for now.
-     */
-    thread->set_auto_free(true);
-
     if (!thread->start(name, SCHED_FIFO, thread_priority)) {
         delete thread;
-        return false;
+        return nullptr;
     }
 
-    return true;
+    return thread;
+}
+
+bool Scheduler::thread_destroyed(AP_HAL::ThreadHandle ctx) {
+    Thread* thread = (Thread*)ctx;
+    if (thread->stop()) {
+        delete thread;
+        return true;
+    }
+    return false;
 }

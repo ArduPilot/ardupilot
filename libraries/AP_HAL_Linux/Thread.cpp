@@ -45,6 +45,7 @@ void *Thread::_run_trampoline(void *arg)
         delete thread;
     }
 
+    thread->_finished = true;
     return nullptr;
 }
 
@@ -226,6 +227,13 @@ bool Thread::join()
     return true;
 }
 
+bool Thread::stop() {
+    if (_finished) {
+        join();
+        return true;
+    }
+    return false;
+}
 
 bool PeriodicThread::set_rate(uint32_t rate_hz)
 {

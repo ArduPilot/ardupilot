@@ -47,7 +47,7 @@ public:
 
     void set_auto_free(bool auto_free) { _auto_free = auto_free; }
 
-    virtual bool stop() { return false; }
+    virtual bool stop();
 
     bool join();
 
@@ -62,7 +62,7 @@ protected:
     virtual bool _run();
 
     void _poison_stack();
-
+    bool _finished = false;
     task_t _task;
     bool _started = false;
     bool _should_exit = false;
