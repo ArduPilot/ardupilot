@@ -41,14 +41,6 @@ public:
 
 protected:
 
-    // apply rotation and correction to position
-    void rotate_and_correct_position(Vector3f &position) const;
-
-    // rotate attitude using _yaw_trim
-    void rotate_attitude(Quaternion &attitude) const;
-
-    // use sensor provided position and attitude to calculate rotation to align sensor with AHRS/EKF attitude
-    bool align_sensor_to_vehicle(const Vector3f &position, const Quaternion &attitude);
 
     AP_VisualOdom &_frontend;   // reference to frontend
     uint32_t _last_update_ms;   // system time of last update from sensor (used by health checks)
