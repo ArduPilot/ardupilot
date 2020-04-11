@@ -45,7 +45,7 @@ NavEKF3_core::MagCal NavEKF3_core::effective_magCal(void) const
     MagCal magcal = MagCal(frontend->_magCal.get());
 
     // force use of simple magnetic heading fusion for specified cores
-    if (magcal != MagCal::EXTERNAL_YAW && (frontend->_magMask & core_index)) {
+    if (magcal != MagCal::EXTERNAL_YAW && magcal != MagCal::EXTERNAL_YAW_FALLBACK && magcal != MagCal::GSF_YAW && (frontend->_magMask & core_index)) {
         return MagCal::NEVER;
     }
 
@@ -94,17 +94,16 @@ void NavEKF3_core::setWindMagStateLearningMode()
     }
 
     // Determine if learning of magnetic field states has been requested by the user
-    MagCal magCal = effective_magCal();
     bool magCalRequested =
-        ((magCal == MagCal::WHEN_FLYING) && inFlight) || // when flying
-        ((magCal == MagCal::WHEN_MANOEUVRING) && manoeuvring)  || // when manoeuvring
-        ((magCal == MagCal::AFTER_FIRST_CLIMB) && finalInflightYawInit && finalInflightMagInit) || // when initial in-air yaw and mag field reset is complete
-        ((magCal == MagCal::EXTERNAL_YAW_FALLBACK) && inFlight) ||
-        (magCal == MagCal::ALWAYS); // all the time
+        ((effectiveMagCal == MagCal::WHEN_FLYING) && inFlight) || // when flying
+        ((effectiveMagCal == MagCal::WHEN_MANOEUVRING) && manoeuvring)  || // when manoeuvring
+        ((effectiveMagCal == MagCal::AFTER_FIRST_CLIMB) && finalInflightYawInit && finalInflightMagInit) || // when initial in-air yaw and mag field reset is complete
+        ((effectiveMagCal == MagCal::EXTERNAL_YAW_FALLBACK) && inFlight) ||
+        (effectiveMagCal == MagCal::ALWAYS); // all the time
 
     // Deny mag calibration request if we aren't using the compass, it has been inhibited by the user,
     // we do not have an absolute position reference or are on the ground (unless explicitly requested by the user)
-    bool magCalDenied = !use_compass() || (magCal == MagCal::NEVER) || (onGround && magCal != MagCal::ALWAYS);
+    bool magCalDenied = !use_compass() || (effectiveMagCal == MagCal::NEVER) || (onGround && effectiveMagCal != MagCal::ALWAYS);
 
     // Inhibit the magnetic field calibration if not requested or denied
     bool setMagInhibit = !magCalRequested || magCalDenied;
@@ -460,17 +459,20 @@ bool NavEKF3_core::readyToUseRangeBeacon(void) const
 // return true if we should use the compass
 bool NavEKF3_core::use_compass(void) const
 {
-    return effective_magCal() != MagCal::EXTERNAL_YAW && _ahrs->get_compass() && _ahrs->get_compass()->use_for_yaw(magSelectIndex) && !allMagSensorsFailed;
+    return effectiveMagCal != MagCal::EXTERNAL_YAW &&
+           effectiveMagCal != MagCal::GSF_YAW &&
+           _ahrs->get_compass() &&
+           _ahrs->get_compass()->use_for_yaw(magSelectIndex) &&
+           !allMagSensorsFailed;
 }
 
-// are we using an external yaw source? Needed for ahrs attitudes_consistent
+// are we using a yaw source other than the magnetomer?
 bool NavEKF3_core::using_external_yaw(void) const
 {
-    MagCal mag_cal = effective_magCal();
-    if (mag_cal != MagCal::EXTERNAL_YAW && mag_cal != MagCal::EXTERNAL_YAW_FALLBACK) {
-        return false;
+    if (effectiveMagCal == MagCal::EXTERNAL_YAW || effectiveMagCal == MagCal::EXTERNAL_YAW_FALLBACK || effectiveMagCal == MagCal::GSF_YAW) {
+        return AP_HAL::millis() - last_gps_yaw_fusion_ms < 5000 || AP_HAL::millis() - lastSynthYawTime_ms < 5000;
     }
-    return AP_HAL::millis() - last_gps_yaw_fusion_ms < 5000;
+    return false;
 }
 
 /*
@@ -531,7 +533,7 @@ void NavEKF3_core::checkGyroCalStatus(void)
 {
     // check delta angle bias variances
     const float delAngBiasVarMax = sq(radians(0.15f * dtEkfAvg));
-    if (frontend->_magCal == 6) {
+    if (effective_magCal() == MagCal::GSF_YAW) {
         // rotate the variances into earth frame and evaluate horizontal terms only as yaw component is poorly observable without a compass
         // which can make this check fail
         Vector3f delAngBiasVarVec = Vector3f(P[10][10],P[11][11],P[12][12]);
