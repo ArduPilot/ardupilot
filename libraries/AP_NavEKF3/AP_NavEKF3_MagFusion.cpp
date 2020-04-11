@@ -276,7 +276,7 @@ void NavEKF3_core::SelectMagFusion()
             }
             have_fused_gps_yaw = true;
             last_gps_yaw_fusion_ms = now;
-        } else if (tiltAlignComplete && !yawAlignComplete && (imuSampleTime_ms > lastSynthYawTime_ms + 140)) {
+        } else if (tiltAlignComplete && !yawAlignComplete && (imuSampleTime_ms - lastSynthYawTime_ms > 140)) {
             yawAngDataDelayed.yawAngErr = MAX(frontend->_yawNoise, 0.05f);
             // update the yaw angle using the last estimate which will be used as a static yaw reference when movement stops
             if (fabsf(prevTnb[0][2]) < fabsf(prevTnb[1][2])) {
@@ -403,7 +403,7 @@ void NavEKF3_core::SelectMagFusion()
     // from becoming badly conditioned. For planes we only do this on-ground because they can align the yaw from GPS when
     // airborne. For other platform types we do this all the time.
     if (!use_compass()) {
-        if ((onGround || !assume_zero_sideslip()) && (imuSampleTime_ms > lastSynthYawTime_ms + 140)) {
+        if ((onGround || !assume_zero_sideslip()) && (imuSampleTime_ms - lastSynthYawTime_ms > 140)) {
             fuseEulerYaw(true, false);
             magTestRatio.zero();
             yawTestRatio = 0.0f;
