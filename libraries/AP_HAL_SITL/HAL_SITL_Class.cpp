@@ -188,18 +188,6 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
     callbacks->setup();
     scheduler->system_initialized();
 
-    if (getenv("SITL_WATCHDOG_RESET")) {
-        const AP_HAL::Util::PersistentData &pd = util->persistent_data;
-        AP::logger().WriteCritical("WDOG", "TimeUS,Task,IErr,IErrCnt,MavMsg,MavCmd,SemLine", "QbIIHHH",
-                                   AP_HAL::micros64(),
-                                   pd.scheduler_task,
-                                   pd.internal_errors,
-                                   pd.internal_error_count,
-                                   pd.last_mavlink_msgid,
-                                   pd.last_mavlink_cmd,
-                                   pd.semaphore_line);
-    }
-
     bool using_watchdog = AP_BoardConfig::watchdog_enabled();
     if (using_watchdog) {
         signal(SIGALRM, sig_alrm);
