@@ -244,6 +244,29 @@ public:
         return status(primary_instance);
     }
 
+    // return a single human-presentable character representing the
+    // fix type.  For space-constrained human-readable displays
+    char status_onechar(void) const {
+        switch (status()) {
+        case AP_GPS::NO_GPS:
+            return ' ';
+        case AP_GPS::NO_FIX:
+            return '-';
+        case AP_GPS::GPS_OK_FIX_2D:
+            return '2';
+        case AP_GPS::GPS_OK_FIX_3D:
+            return '3';
+        case AP_GPS::GPS_OK_FIX_3D_DGPS:
+            return '4';
+        case AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT:
+            return '5';
+        case AP_GPS::GPS_OK_FIX_3D_RTK_FIXED:
+            return '6';
+        }
+        // should never reach here; compiler flags guarantees this.
+        return '?';
+    }
+
     // Query the highest status this GPS supports (always reports GPS_OK_FIX_3D for the blended GPS)
     GPS_Status highest_supported_status(uint8_t instance) const;
 
