@@ -1086,15 +1086,15 @@ void NavEKF3_core::updateMovementCheck(void)
         return;
     }
 
-	// calculate a gyro rate of change metric
-	Vector3f temp = (gyro - gyro_prev) * dtEkfAvgInv;
+    // calculate a gyro rate of change metric
+    Vector3f temp = (gyro - gyro_prev) * dtEkfAvgInv;
     gyro_prev = gyro;
-	gyro_diff = 0.99f * gyro_diff + 0.01f * temp.length();
+    gyro_diff = 0.99f * gyro_diff + 0.01f * temp.length();
 
-	// calculate a acceleration rate of change metric
-	temp = (accel - accel_prev) * dtEkfAvgInv;
+    // calculate a acceleration rate of change metric
+    temp = (accel - accel_prev) * dtEkfAvgInv;
     accel_prev = accel;
-	accel_diff = 0.99f * accel_diff + 0.01f * temp.length();
+    accel_diff = 0.99f * accel_diff + 0.01f * temp.length();
 
     const float gyro_length_ratio = gyro.length() / gyro_limit;
     const float accel_length_ratio = (accel.length() - GRAVITY_MSS) / accel_limit;
