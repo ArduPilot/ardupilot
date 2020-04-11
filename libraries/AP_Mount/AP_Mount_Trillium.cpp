@@ -221,15 +221,6 @@ void AP_Mount_Trillium::read_incoming()
     }
 }
 
-const char *AP_Mount_Trillium::get_model_name(const uint8_t gimbal_model_flags)
-{
-    switch (gimbal_model_flags) {
-    case 0x13: return "HD40";
-    default:   return "?????";
-    }
-}
-
-
 void AP_Mount_Trillium::handle_packet(OrionPkt_t &packet)
 {
     const uint8_t len = packet.Length;

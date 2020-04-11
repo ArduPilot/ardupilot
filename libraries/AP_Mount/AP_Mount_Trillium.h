@@ -15,39 +15,20 @@
 
 #include "Trillium_protocol/OrionPublicPacketShim.h"
 
+
+
 // config
 #define AP_MOUNT_TRILLIUM_SERIAL_MINIMUM_INTERVAL_MS       1000
-#define AP_MOUNT_TRILLIUM_SERIAL_LARGEST_RX_PAYLOAD_SIZE   50
-#define AP_MOUNT_TRILLIUM_CURRENT_POS_STREAM_RATE_HZ       2
 #define AP_MOUNT_TRILLIUM_REQUIRE_ACKS                     (uint8_t)0      // 0 = FALSE, 1 = TRUE
 
-// boring protocol stuff
-#define AP_MOUNT_TRILLIUM_SYNC1                            0x24
-#define AP_MOUNT_TRILLIUM_SYNC2                            0x40
-
-
-#define AP_MOUNT_TRILLIUM_STOW_STATE_EXIT_or_NOT_STOWED    0
-#define AP_MOUNT_TRILLIUM_STOW_STATE_ENTER_or_DO_STOW      1
-#define AP_MOUNT_TRILLIUM_STOW_STATE_READ                  255
-
-// Command IDs
+//// Command IDs
 #define AP_MOUNT_TRILLIUM_ID_ENABLE_GYRO_STABILISATION     0
-#define AP_MOUNT_TRILLIUM_ID_ACK                           1
-#define AP_MOUNT_TRILLIUM_ID_ENABLE_MESSAGE_ACK            2
-#define AP_MOUNT_TRILLIUM_ID_ENABLE_STREAM_MODE            5
-#define AP_MOUNT_TRILLIUM_ID_VERSION                       6
-#define AP_MOUNT_TRILLIUM_ID_REQUEST_READ                  9
-#define AP_MOUNT_TRILLIUM_ID_INITILISE                     13
-#define AP_MOUNT_TRILLIUM_ID_CURRENT_POSITION_AND_RATE     19
-#define AP_MOUNT_TRILLIUM_ID_STOW_CFG                      11
-#define AP_MOUNT_TRILLIUM_ID_STOW_MODE                     12
-#define AP_MOUNT_TRILLIUM_ID_SET_PAN_POSITION              20
 #define AP_MOUNT_TRILLIUM_ID_SET_PAN_TILT_POSITION         22
-#define AP_MOUNT_TRILLIUM_ID_SET_PAN_TILT_VELOCITY         23
-#define AP_MOUNT_TRILLIUM_ID_SET_TILT_POSITION             25
-#define AP_MOUNT_TRILLIUM_ID_SET_PAN_VELOCITY              90
-#define AP_MOUNT_TRILLIUM_ID_SET_TILT_VELOCITY             95
-#define AP_MOUNT_TRILLIUM_ID_CURRENT_GIMBAL_MODE           124
+
+
+
+
+
 
 
 class AP_Mount_Trillium : public AP_Mount_Backend
@@ -91,7 +72,6 @@ private:
 
     void handle_packet(OrionPkt_t &packet);
     void handle_ack();
-    const char *get_model_name(const uint8_t gimbal_model_flags);
 
     void init_hw();
 
