@@ -30,6 +30,7 @@ private:
         FORMATS = 0,
         FIRMWARE_STRING,
         GIT_VERSIONS,
+        WATCHDOG_RESET,
         SYSTEM_ID,
         PARAM_SPACE_USED,
         RC_PROTOCOL

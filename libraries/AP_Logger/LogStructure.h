@@ -1136,6 +1136,23 @@ struct PACKED log_Rally {
     int16_t altitude;
 };
 
+struct PACKED log_WDOG {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t scheduler_task;
+    uint32_t internal_errors;
+    uint32_t internal_error_count;
+    uint16_t last_mavlink_msgid;
+    uint16_t last_mavlink_cmd;
+    uint16_t semaphore_line;
+    uint16_t fault_line;
+    uint16_t fault_type;
+    uint32_t fault_addr;
+    uint8_t fault_thd_prio;
+    uint32_t fault_icsr;
+    uint32_t fault_lr;
+};
+
 struct PACKED log_AOA_SSA {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -2144,6 +2161,8 @@ struct PACKED log_Arm_Disarm {
       "EV",   "QB",           "TimeUS,Id", "s-", "F-" }, \
     { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm), \
       "ARM", "QBIBB", "TimeUS,ArmState,ArmChecks,Forced,Method", "s----", "F----" }, \
+    { LOG_WDOG_MSG, sizeof(log_WDOG), \
+      "WDOG", "QbIIHHHHHIBII", "TimeUS,Tsk,IE,IEC,MvMsg,MvCmd,SmLn,FL,FT,FA,FP,ICSR,LR", "s------------", "F------------" }, \
     { LOG_ERROR_MSG, sizeof(log_Error), \
       "ERR",   "QBB",         "TimeUS,Subsys,ECode", "s--", "F--" }
 
@@ -2298,6 +2317,7 @@ enum LogMessages : uint8_t {
     LOG_ARM_DISARM_MSG,
     LOG_OA_BENDYRULER_MSG,
     LOG_OA_DIJKSTRA_MSG,
+    LOG_WDOG_MSG,
 
     _LOG_LAST_MSG_
 };

@@ -446,3 +446,37 @@ void AP_Logger_Backend::Write_Rally()
     writer.set_logger_backend(this);
     writer.process();
 }
+
+bool AP_Logger_Backend::Write_WDOG(
+        uint8_t scheduler_task,
+        uint32_t internal_errors,
+        uint32_t internal_error_count,
+        uint16_t last_mavlink_msgid,
+        uint16_t last_mavlink_cmd,
+        uint16_t semaphore_line,
+        uint16_t fault_line,
+        uint16_t fault_type,
+        uint32_t fault_addr,
+        uint8_t fault_thd_prio,
+        uint32_t fault_icsr,
+        uint32_t fault_lr
+    )
+{
+    const struct log_WDOG pkt_WDOG{
+        LOG_PACKET_HEADER_INIT(LOG_WDOG_MSG),
+        time_us             : AP_HAL::micros64(),
+        scheduler_task      : scheduler_task,
+        internal_errors     : internal_errors,
+        internal_error_count: internal_error_count,
+        last_mavlink_msgid  : last_mavlink_msgid,
+        last_mavlink_cmd    : last_mavlink_cmd,
+        semaphore_line      : semaphore_line,
+        fault_line          : fault_line,
+        fault_type          : fault_type,
+        fault_addr          : fault_addr,
+        fault_thd_prio      : fault_thd_prio,
+        fault_icsr          : fault_icsr,
+        fault_lr            : fault_lr,
+    };
+    return WriteBlock(&pkt_WDOG, sizeof(pkt_WDOG));
+}

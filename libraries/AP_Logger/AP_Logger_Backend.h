@@ -98,6 +98,20 @@ public:
     bool Write_Parameter(const AP_Param *ap,
                              const AP_Param::ParamToken &token,
                              enum ap_var_type type);
+    bool Write_WDOG(
+        uint8_t scheduler_task,
+        uint32_t internal_errors,
+        uint32_t internal_error_count,
+        uint16_t last_mavlink_msgid,
+        uint16_t last_mavlink_cmd,
+        uint16_t semaphore_line,
+        uint16_t fault_line,
+        uint16_t fault_type,
+        uint32_t fault_addr,
+        uint8_t fault_thd_prio,
+        uint32_t fault_icsr,
+        uint32_t fault_lr
+    );
 
     uint32_t num_dropped(void) const {
         return _dropped;
