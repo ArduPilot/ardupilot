@@ -53,7 +53,7 @@ void AP_VisualOdom_IntelT265::handle_vision_position_estimate(uint64_t remote_ti
     att.to_euler(roll, pitch, yaw);
 
     // log sensor data
-    AP::logger().Write_VisualPosition(remote_time_us, time_ms, x, y, z, degrees(roll), degrees(pitch), wrap_360(degrees(yaw)), reset_counter);
+    AP::logger().Write_VisualPosition(remote_time_us, time_ms, pos.x, pos.y, pos.z, degrees(roll), degrees(pitch), wrap_360(degrees(yaw)), reset_counter);
 
     // store corrected attitude for use in pre-arm checks
     _attitude_last = att;
