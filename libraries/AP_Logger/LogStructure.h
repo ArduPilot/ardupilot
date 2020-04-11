@@ -662,6 +662,7 @@ struct PACKED log_VisualPosition {
     float roll;     // degrees
     float pitch;    // degrees
     float yaw;      // degrees
+    uint8_t reset_counter;
 };
 
 struct PACKED log_ekfBodyOdomDebug {
@@ -1911,6 +1912,7 @@ struct PACKED log_Arm_Disarm {
 // @Field: Roll: Roll lean angle
 // @Field: Pitch: Pitch lean angle
 // @Field: Yaw: Yaw angle
+// @Field: ResetCnt: Position reset counter
 
 // messages for all boards
 #define LOG_BASE_STRUCTURES \
@@ -2133,7 +2135,7 @@ struct PACKED log_Arm_Disarm {
     { LOG_VISUALODOM_MSG, sizeof(log_VisualOdom), \
       "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf", "ssrrrmmm-", "FF000000-" }, \
     { LOG_VISUALPOS_MSG, sizeof(log_VisualPosition), \
-      "VISP", "QQIffffff", "TimeUS,RemTimeUS,CTimeMS,PX,PY,PZ,Roll,Pitch,Yaw", "sssmmmddh", "FFC000000" }, \
+      "VISP", "QQIffffffb", "TimeUS,RemTimeUS,CTimeMS,PX,PY,PZ,Roll,Pitch,Yaw,ResetCnt", "sssmmmddh-", "FFC000000-" }, \
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow), \
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEnn", "F-0000" }, \
     { LOG_WHEELENCODER_MSG, sizeof(log_WheelEncoder), \
