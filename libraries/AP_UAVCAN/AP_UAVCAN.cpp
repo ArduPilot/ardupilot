@@ -335,8 +335,6 @@ void AP_UAVCAN::loop(void)
         }
 
         if (_SRV_armed) {
-            bool sent_servos = false;
-
             if (_servo_bm > 0) {
                 // if we have any Servos in bitmask
                 uint32_t now = AP_HAL::micros();
@@ -344,12 +342,11 @@ void AP_UAVCAN::loop(void)
                 if (now - _SRV_last_send_us >= servo_period_us) {
                     _SRV_last_send_us = now;
                     SRV_send_actuator();
-                    sent_servos = true;
                 }
             }
 
             // if we have any ESC's in bitmask
-            if (_esc_bm > 0 && !sent_servos) {
+            if (_esc_bm > 0) {
                 SRV_send_esc();
             }
         }
