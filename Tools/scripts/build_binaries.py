@@ -579,6 +579,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "CUAVv5",
                 "CUAVv5Nano",
                 "CUAV-Nora",
+                "CUAV-X7",
                 "mRoX21",
                 "Pixracer",
                 "F4BY",
