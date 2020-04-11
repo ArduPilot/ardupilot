@@ -298,6 +298,12 @@ def do_build_waf(opts, frame_options):
     if opts.flash_storage:
         cmd_configure.append("--sitl-flash-storage")
 
+    if opts.disable_ekf2:
+        cmd_configure.append("--disable-ekf2")
+
+    if opts.disable_ekf3:
+        cmd_configure.append("--disable-ekf3")
+        
     pieces = [shlex.split(x) for x in opts.waf_configure_args]
     for piece in pieces:
         cmd_configure.extend(piece)
@@ -949,6 +955,12 @@ group_sim.add_option("-Z", "--swarm",
 group_sim.add_option("--flash-storage",
                      action='store_true',
                      help="enable use of flash storage emulation")
+group_sim.add_option("--disable-ekf2",
+                     action='store_true',
+                     help="disable EKF2 in build")
+group_sim.add_option("--disable-ekf3",
+                     action='store_true',
+                     help="disable EKF3 in build")
 parser.add_option_group(group_sim)
 
 
