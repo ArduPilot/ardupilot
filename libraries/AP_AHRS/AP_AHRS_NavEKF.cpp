@@ -46,6 +46,24 @@ AP_AHRS_NavEKF::AP_AHRS_NavEKF(uint8_t flags) :
     _dcm_matrix.identity();
 }
 
+// init sets up INS board orientation
+void AP_AHRS_NavEKF::init()
+{
+#if !HAL_NAVEKF2_AVAILABLE && HAL_NAVEKF3_AVAILABLE
+    if (_ekf_type.get() == 2) {
+        _ekf_type.set(3);
+        EKF3.set_enable(true);
+    }
+#elif !HAL_NAVEKF3_AVAILABLE && HAL_NAVEKF2_AVAILABLE
+    if (_ekf_type.get() == 3) {
+        _ekf_type.set(2);
+        EKF2.set_enable(true);
+    }
+#endif
+    // init parent class
+    AP_AHRS_DCM::init();
+}
+
 // return the smoothed gyro vector corrected for drift
 const Vector3f &AP_AHRS_NavEKF::get_gyro(void) const
 {
@@ -351,6 +369,7 @@ void AP_AHRS_NavEKF::update_SITL(void)
 
     }
 
+#if HAL_NAVEKF3_AVAILABLE
     if (_sitl->odom_enable) {
         // use SITL states to write body frame odometry data at 20Hz
         uint32_t timeStamp_ms = AP_HAL::millis();
@@ -372,6 +391,7 @@ void AP_AHRS_NavEKF::update_SITL(void)
             EKF3.writeBodyFrameOdom(quality, delPos, delAng, delTime, timeStamp_ms, posOffset);
         }
     }
+#endif // HAL_NAVEKF3_AVAILABLE
 }
 #endif // CONFIG_HAL_BOARD
 
@@ -1647,7 +1667,11 @@ bool AP_AHRS_NavEKF::attitudes_consistent(char *failure_msg, const uint8_t failu
     // for EKF3. DCM can't use external yaw, so we don't expect it's
     // yaw to align with EKF3 when EKF3 is using an external yaw
     // source
-    if (ekf_type() != EKFType::THREE || !EKF3.using_external_yaw()) {
+    bool using_external_yaw = false;
+#if HAL_NAVEKF3_AVAILABLE
+    using_external_yaw = ekf_type() == EKFType::THREE && EKF3.using_external_yaw();
+#endif
+    if (!using_external_yaw) {
         diff = fabsf(angle_diff.z);
         if (check_yaw && (diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
             hal.util->snprintf(failure_msg, failure_msg_len, "DCM Yaw inconsistent by %d deg", (int)degrees(diff));
