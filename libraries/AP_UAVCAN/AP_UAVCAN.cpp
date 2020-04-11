@@ -327,7 +327,7 @@ void AP_UAVCAN::loop(void)
             continue;
         }
 
-        const int error = _node->spin(uavcan::MonotonicDuration::fromMSec(1));
+        const int error = _node->spin(uavcan::MonotonicDuration::fromUSec(300));
 
         if (error < 0) {
             hal.scheduler->delay_microseconds(100);
