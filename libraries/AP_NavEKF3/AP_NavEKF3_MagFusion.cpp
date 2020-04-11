@@ -272,9 +272,58 @@ void NavEKF3_core::SelectMagFusion()
     // used for load levelling
     magFusePerformed = false;
 
+    effectiveMagCal = effective_magCal();
+
+    // Handle case where we are not using a yaw sensor of any type and and attempt to reset the yaw in
+    // flight using the output from the GSF yaw estimator.
+    if (effectiveMagCal == MagCal::GSF_YAW || !use_compass()) {
+        if (!yawAlignComplete) {
+            yawAlignComplete = EKFGSF_resetMainFilterYaw();
+        }
+
+        if (imuSampleTime_ms - lastSynthYawTime_ms > 140) {
+            if (fabsf(prevTnb[0][2]) < fabsf(prevTnb[1][2])) {
+                // A 321 rotation order is best conditioned because the X axis is closer to horizontal than the Y axis
+                yawAngDataDelayed.type = 2;
+            } else {
+                // A 312 rotation order is best conditioned because the Y axis is closer to horizontal than the X axis
+                yawAngDataDelayed.type = 1;
+            }
+
+            float yawEKFGSF, yawVarianceEKFGSF;
+            bool canUseEKFGSF = yawEstimator->getYawData(&yawEKFGSF, &yawVarianceEKFGSF) && is_positive(yawVarianceEKFGSF) && yawVarianceEKFGSF < sq(radians(15.0f));
+            if (yawAlignComplete && canUseEKFGSF) {
+                // use the EKF-GSF yaw estimator output as this is more robust that the EKF can achieve without a yaw measurement
+                yawAngDataDelayed.yawAngErr = MAX(sqrtf(yawVarianceEKFGSF), 0.05f);
+                yawAngDataDelayed.yawAng = yawEKFGSF;
+                fuseEulerYaw(false, true);
+            } else {
+                // fuse the last dead-reckoned yaw when static to stop yaw drift and estimate yaw gyro bias estimate
+                yawAngDataDelayed.yawAngErr = MAX(frontend->_yawNoise, 0.05f);
+                if (!onGroundNotMoving) {
+                    if (yawAngDataDelayed.type == 2) {
+                        yawAngDataDelayed.yawAng = atan2f(prevTnb[0][1], prevTnb[0][0]);
+                    } else if (yawAngDataDelayed.type == 1) {
+                        yawAngDataDelayed.yawAng = atan2f(-prevTnb[0][1], prevTnb[1][1]);
+                    }
+                }
+                if (onGroundNotMoving) {
+                    // fuse last known good yaw angle before we stopped moving to allow yaw bias learning when on ground before flight
+                    fuseEulerYaw(false, true);
+                } else {
+                    // prevent uncontrolled yaw variance growth by fusing a zero innovation
+                    fuseEulerYaw(true, true);
+                }
+            }
+            magTestRatio.zero();
+            yawTestRatio = 0.0f;
+            lastSynthYawTime_ms = imuSampleTime_ms;
+        }
+        return;
+    }
+
     // Handle case where we are using an external yaw sensor instead of a magnetomer
-    MagCal magcal = effective_magCal();
-    if (magcal == MagCal::EXTERNAL_YAW || magcal == MagCal::EXTERNAL_YAW_FALLBACK) {
+    if (effectiveMagCal == MagCal::EXTERNAL_YAW || effectiveMagCal == MagCal::EXTERNAL_YAW_FALLBACK) {
         bool have_fused_gps_yaw = false;
         uint32_t now = AP_HAL::millis();
         if (storedYawAng.recall(yawAngDataDelayed,imuDataDelayed.time_ms)) {
@@ -310,7 +359,7 @@ void NavEKF3_core::SelectMagFusion()
             }
             lastSynthYawTime_ms = imuSampleTime_ms;
         }
-        if (magcal == MagCal::EXTERNAL_YAW) {
+        if (effectiveMagCal == MagCal::EXTERNAL_YAW) {
             // no fallback
             return;
         }
@@ -350,35 +399,13 @@ void NavEKF3_core::SelectMagFusion()
         // fall through to magnetometer fusion
     }
 
-    if (magcal != MagCal::EXTERNAL_YAW_FALLBACK) {
+    if (effectiveMagCal != MagCal::EXTERNAL_YAW_FALLBACK) {
         // check for and read new magnetometer measurements. We don't
         // real for EXTERNAL_YAW_FALLBACK as it has already been read
         // above
         readMagData();
     }
-    // Handle case where we are not using a yaw sensor of any type and and attempt to reset the yaw in
-    // flight using the output from the GSF yaw estimator.
-    if (frontend->_magCal == 6 || !use_compass()) {
-        if (yawAlignComplete) {
-            // Fuse a synthetic heading measurement at 7Hz to prevent the filter covariances from
-            // becoming badly conditioned when static for long periods. For planes we only do this on-ground
-            // because they can align the yaw from GPS when airborne. For other platform types we do this
-            // all the time.
-            if ((onGround || !assume_zero_sideslip()) && (imuSampleTime_ms - lastSynthYawTime_ms > 140)) {
-                fuseEulerYaw(true, false);
-                magTestRatio.zero();
-                yawTestRatio = 0.0f;
-                lastSynthYawTime_ms = imuSampleTime_ms;
-            }
-            return;
-        }
-        yawAlignComplete = EKFGSF_resetMainFilterYaw();
-        return;
-    }
-
-    // check for and read new magnetometer measurements
-    readMagData();
-
+    
     // If we are using the compass and the magnetometer has been unhealthy for too long we declare a timeout
     if (magHealth) {
         magTimeout = false;
@@ -427,18 +454,6 @@ void NavEKF3_core::SelectMagFusion()
             hal.util->perf_end(_perf_test[0]);
             // zero the test ratio output from the inactive simple magnetometer yaw fusion
             yawTestRatio = 0.0f;
-        }
-    }
-
-    // If we have no magnetometer, fuse in a synthetic heading measurement at 7Hz to prevent the filter covariances
-    // from becoming badly conditioned. For planes we only do this on-ground because they can align the yaw from GPS when
-    // airborne. For other platform types we do this all the time.
-    if (!use_compass()) {
-        if ((onGround || !assume_zero_sideslip()) && (imuSampleTime_ms - lastSynthYawTime_ms > 140)) {
-            fuseEulerYaw(true, false);
-            magTestRatio.zero();
-            yawTestRatio = 0.0f;
-            lastSynthYawTime_ms = imuSampleTime_ms;
         }
     }
 
@@ -1410,8 +1425,6 @@ void NavEKF3_core::recordMagReset()
     yawInnovAtLastMagReset = innovYaw;
 }
 
-
-
 /*
   learn magnetometer biases from GPS yaw. Return true if the
   resulting mag vector is close enough to the one predicted by GPS
@@ -1477,6 +1490,7 @@ bool NavEKF3_core::learnMagBiasFromGPS(void)
     }
     return ok;
 }
+
 // Reset states using yaw from EKF-GSF and velocity and position from GPS
 bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
 {
@@ -1498,7 +1512,7 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
         EKFGSF_yaw_reset_ms = imuSampleTime_ms;
         EKFGSF_yaw_reset_count++;
 
-        if (frontend->_magCal == 6) {
+        if (effectiveMagCal == MagCal::GSF_YAW) {
             gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u yaw aligned using GPS",(unsigned)imu_index);
         } else {
             gcs().send_text(MAV_SEVERITY_WARNING, "EKF3 IMU%u emergency yaw reset - mag sensor stopped",(unsigned)imu_index);
