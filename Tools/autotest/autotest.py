@@ -252,7 +252,6 @@ __bin_names = {
     "QuadPlane": "arduplane",
     "Sub": "ardusub",
     "BalanceBot": "ardurover",
-    "Soaring": "arduplane",
 }
 
 
@@ -305,7 +304,6 @@ tester_class_map = {
     "test.Helicopter": arducopter.AutoTestHeli,
     "test.Sub": ardusub.AutoTestSub,
     "test.Tracker": antennatracker.AutoTestTracker,
-    "test.Soaring": arduplane.AutoTestSoaring,
 }
 
 def run_specific_test(step, *args, **kwargs):
@@ -778,7 +776,6 @@ if __name__ == "__main__":
         'defaults.Plane',
         'test.Plane',
         'test.QuadPlane',
-        'test.Soaring',
 
         'build.Rover',
         'defaults.Rover',
