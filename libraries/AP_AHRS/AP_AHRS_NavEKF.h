@@ -55,6 +55,9 @@ public:
     // Constructor
     AP_AHRS_NavEKF(uint8_t flags = FLAG_NONE);
 
+    // initialise
+    void init(void) override;
+
     /* Do not allow copies */
     AP_AHRS_NavEKF(const AP_AHRS_NavEKF &other) = delete;
     AP_AHRS_NavEKF &operator=(const AP_AHRS_NavEKF&) = delete;
@@ -296,12 +299,12 @@ public:
 
 private:
     enum class EKFType {
-        NONE = 0,
+        NONE = 0
 #if HAL_NAVEKF3_AVAILABLE
-        THREE = 3,
+        ,THREE = 3
 #endif
 #if HAL_NAVEKF2_AVAILABLE
-        TWO = 2
+        ,TWO = 2
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         ,SITL = 10
