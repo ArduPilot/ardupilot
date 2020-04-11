@@ -1011,7 +1011,7 @@ class AutoTest(ABC):
         vehicle = self.log_name()
         if vehicle == "HeliCopter":
             vehicle = "ArduCopter"
-        if vehicle == "QuadPlane" or vehicle =="Soaring":
+        if vehicle == "QuadPlane":
             vehicle = "ArduPlane"
         cmd = [param_parse_filepath, '--vehicle', vehicle]
 #        cmd.append("--verbose")
@@ -1074,8 +1074,6 @@ class AutoTest(ABC):
             dirname = "ArduPlane"
         elif dirname == "HeliCopter":
             dirname = "ArduCopter"
-        elif dirname == "Soaring":
-            dirname = "ArduPlane"
         return os.path.join(self.rootdir(), dirname)
 
     def all_log_format_ids(self):
@@ -1298,7 +1296,6 @@ class AutoTest(ABC):
             "HeliCopter": "Copter",
             "ArduPlane": "Plane",
             "QuadPlane": "Plane",
-            "Soaring": "Plane",
             "Rover": "Rover",
             "AntennaTracker": "Tracker",
             "ArduSub": "Sub",
