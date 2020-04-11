@@ -46,10 +46,16 @@ void AP_Mount_Trillium::init_hw()
 
     uint8_t cmd_id = 0;
     bool expect_ack = AP_MOUNT_TRILLIUM_REQUIRE_ACKS;
+    OrionPkt_t Pkt;
 
     switch (_booting.step++) {
-//    case 0:
-//        _booting.duration_ms = 200;
+    case 0:
+        _booting.duration_ms = 200;
+        // Build a version request packet (note that it doesn't matter what you send...)
+        MakeOrionPacket(&Pkt, ORION_PKT_CROWN_VERSION, 0);
+        OrionCommSend(&Pkt);
+        break;
+
 //
 //        // I'm not sure this acks or not, so lets just not expect an ack for this.
 //        // If it's false then we'll move on. If its true and we don't get an ack then this step will always fail
@@ -209,8 +215,8 @@ void AP_Mount_Trillium::read_incoming()
     while (num_available-- > 0) {        // Process bytes received
         const uint8_t rxByte = _port->read();
 
-        if (LookForOrionPacketInByte(&_orionPkt, rxByte)) {
-            handle_packet();
+        if (LookForOrionPacketInByte(&_PktIn, rxByte)) {
+            handle_packet(_PktIn);
         }
     }
 }
@@ -224,13 +230,26 @@ const char *AP_Mount_Trillium::get_model_name(const uint8_t gimbal_model_flags)
 }
 
 
-void AP_Mount_Trillium::handle_packet()
+void AP_Mount_Trillium::handle_packet(OrionPkt_t &packet)
 {
-    switch (_orionPkt.ID) {
+    const uint8_t len = packet.Length;
+    uint16_t index = 0;
+
+    switch (packet.ID) {
+    case ORION_PKT_DEBUG_STRING:
+        const char* trilliumName = "Trillium: ";
+
+        DebugString_t msg;
+        decodeDebugStringPacketStructure(&packet, &msg);
+
+        while (index <= len) {
+            gcs().send_text(MAV_SEVERITY_DEBUG, "%s%s", trilliumName, (char*)&msg.description);
+            index += (MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN - sizeof(trilliumName));
+        }
         break;
     }
 
-    if (_booting.rx_expected_cmd_id != 0 && _orionPkt.ID == _booting.rx_expected_cmd_id) {
+    if (_booting.rx_expected_cmd_id != 0 && packet.ID == _booting.rx_expected_cmd_id) {
         // expected packet received! Forget it because we should have handled it in the above switch
         _booting.rx_expected_cmd_id = 0;
 
@@ -278,5 +297,10 @@ void AP_Mount_Trillium::handle_passthrough(const mavlink_channel_t chan, const m
     send_command(cmd, data, size);
 }
 
+size_t AP_Mount_Trillium::OrionCommSend(const OrionPkt_t *pPkt)
+{
+    return _port->write((uint8_t *)pPkt, pPkt->Length + ORION_PKT_OVERHEAD);
+
+}
 #endif // MOUNT_TRILLIUM_ENABLE
 

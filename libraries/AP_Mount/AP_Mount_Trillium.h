@@ -89,7 +89,7 @@ private:
 
     void read_incoming();
 
-    void handle_packet();
+    void handle_packet(OrionPkt_t &packet);
     void handle_ack();
     const char *get_model_name(const uint8_t gimbal_model_flags);
 
@@ -118,7 +118,9 @@ private:
 
 
     // Trillium SDK
-    OrionPkt_t _orionPkt;
+    OrionPkt_t _PktIn;
+    //OrionPkt_t _PktOut;
+    size_t OrionCommSend(const OrionPkt_t *pPkt);
 
 };
 #endif // AP_MOUNT_TRILLIUM_ENABLED
