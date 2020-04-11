@@ -108,24 +108,25 @@ void AP_Mount_Trillium::update()
 
     // flag to trigger sending target angles to gimbal
     bool resend_now = false;
+    OrionPkt_t pPkt;
 
     // update based on mount mode
     switch(get_mode()) {
             // move mount to a "retracted" position.  we do not implement a separate servo based retract mechanism
         case MAV_MOUNT_MODE_RETRACT:
             _angle_ef_target_rad = _state._retract_angles.get() * DEG_TO_RAD;
-            if (_stow_status != AP_MOUNT_TRILLIUM_STOW_STATE_EXIT_or_NOT_STOWED) {
-                _stow_status = AP_MOUNT_TRILLIUM_STOW_STATE_EXIT_or_NOT_STOWED;
-                send_command(AP_MOUNT_TRILLIUM_ID_STOW_MODE, _stow_status, 0);
+            if (_retract_status.State == RETRACT_STATE_DEPLOYED || _retract_status.State == RETRACT_STATE_DEPLOYING) {
+                encodeOrionRetractCommandPacket(&pPkt, RETRACT_CMD_RETRACT);
+                OrionCommSend(&pPkt);
             }
             break;
 
         // move mount to a neutral position, typically pointing forward
         case MAV_MOUNT_MODE_NEUTRAL:
             _angle_ef_target_rad = _state._neutral_angles.get() * DEG_TO_RAD;
-            if (_stow_status != AP_MOUNT_TRILLIUM_STOW_STATE_ENTER_or_DO_STOW) {
-                _stow_status = AP_MOUNT_TRILLIUM_STOW_STATE_ENTER_or_DO_STOW;
-                send_command(AP_MOUNT_TRILLIUM_ID_STOW_MODE, _stow_status, 0);
+            if (_retract_status.State == RETRACT_STATE_RETRACTED || _retract_status.State == RETRACT_STATE_RETRACTING) {
+                encodeOrionRetractCommandPacket(&pPkt, RETRACT_CMD_DEPLOY);
+                OrionCommSend(&pPkt);
             }
             break;
 
@@ -228,15 +229,24 @@ void AP_Mount_Trillium::handle_packet(OrionPkt_t &packet)
 
     switch (packet.ID) {
     case ORION_PKT_DEBUG_STRING:
+        {
         const char* trilliumName = "Trillium: ";
-
         DebugString_t msg;
         decodeDebugStringPacketStructure(&packet, &msg);
 
         while (index <= len) {
-            gcs().send_text(MAV_SEVERITY_DEBUG, "%s%s", trilliumName, (char*)&msg.description);
+            gcs().send_text(MAV_SEVERITY_DEBUG, "%s%s", trilliumName, (char*)&msg.description[index]);
             index += (MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN - sizeof(trilliumName));
+        };
         }
+        break;
+
+    case ORION_PKT_RETRACT_STATUS:
+        decodeOrionRetractStatusPacket(&packet, &_retract_status.Cmd, &_retract_status.State, &_retract_status.Pos, &_retract_status.Flags);
+        break;
+
+    default:
+        // unhandled
         break;
     }
 

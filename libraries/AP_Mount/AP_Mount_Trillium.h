@@ -79,7 +79,6 @@ private:
     bool _stab_pan : 1;
     bool _stab_tilt : 1;
 
-    uint8_t     _stow_status = 255;
     uint32_t    _last_send;
 
     struct {
@@ -100,6 +99,8 @@ private:
     // Trillium SDK
     OrionPkt_t _PktIn;
     //OrionPkt_t _PktOut;
+    OrionRetractStatus_t _retract_status;
+
     size_t OrionCommSend(const OrionPkt_t *pPkt);
 
 };
