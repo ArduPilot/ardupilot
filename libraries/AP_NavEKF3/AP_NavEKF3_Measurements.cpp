@@ -1063,12 +1063,15 @@ float NavEKF3_core::MagDeclination(void) const
 /*
   Update the on ground and not moving check.
   Should be called once per IMU update.
-  Only updates when on ground and when operating with an external yaw sensor
+  Only updates when on ground and when operating without a magnetometer
 */
 void NavEKF3_core::updateMovementCheck(void)
 {
-    MagCal magcal = effective_magCal();
-    if (!(magcal == MagCal::EXTERNAL_YAW || magcal == MagCal::EXTERNAL_YAW_FALLBACK) && !onGround) {
+    if (!onGround &&
+        effectiveMagCal != MagCal::EXTERNAL_YAW &&
+        effectiveMagCal != MagCal::EXTERNAL_YAW_FALLBACK &&
+        effectiveMagCal != MagCal::GSF_YAW)
+    {
         onGroundNotMoving = false;
         return;
     }
