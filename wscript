@@ -199,6 +199,16 @@ configuration in order to save typing.
         action='store_true',
         default=False,
         help='Configure for building SITL with flash storage emulation.')
+
+    g.add_option('--disable-ekf2',
+        action='store_true',
+        default=False,
+        help='Configure without EKF2.')
+
+    g.add_option('--disable-ekf3',
+        action='store_true',
+        default=False,
+        help='Configure without EKF3.')
     
     g.add_option('--static',
         action='store_true',
