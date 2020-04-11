@@ -80,7 +80,7 @@ void AP_VisualOdom_MAV::handle_vision_position_estimate(uint64_t remote_time_us,
     attitude.to_euler(roll, pitch, yaw);
 
     // log sensor data
-    AP::logger().Write_VisualPosition(remote_time_us, time_ms, x, y, z, degrees(roll), degrees(pitch), degrees(yaw), reset_counter);
+    AP::logger().Write_VisualPosition(remote_time_us, time_ms, pos.x, pos.y, pos.z, degrees(roll), degrees(pitch), degrees(yaw), reset_counter);
 
     // record time for health monitoring
     _last_update_ms = AP_HAL::millis();
