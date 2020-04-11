@@ -345,19 +345,12 @@ void AP_UAVCAN::loop(void)
                     _SRV_last_send_us = now;
                     SRV_send_actuator();
                     sent_servos = true;
-                    for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
-                        _SRV_conf[i].servo_pending = false;
-                    }
                 }
             }
 
             // if we have any ESC's in bitmask
             if (_esc_bm > 0 && !sent_servos) {
                 SRV_send_esc();
-            }
-
-            for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
-                _SRV_conf[i].esc_pending = false;
             }
         }
 
@@ -398,6 +391,8 @@ void AP_UAVCAN::SRV_send_actuator(void)
              */
 
             if (_SRV_conf[starting_servo].servo_pending && ((((uint32_t) 1) << starting_servo) & _servo_bm)) {
+                _SRV_conf[starting_servo].servo_pending = false;
+
                 cmd.actuator_id = starting_servo + 1;
 
                 // TODO: other types
@@ -437,6 +432,7 @@ void AP_UAVCAN::SRV_send_esc(void)
         if ((((uint32_t) 1) << i) & _esc_bm) {
             max_esc_num = i + 1;
             if (_SRV_conf[i].esc_pending) {
+                _SRV_conf[i].esc_pending = false;
                 active_esc_num++;
             }
         }
