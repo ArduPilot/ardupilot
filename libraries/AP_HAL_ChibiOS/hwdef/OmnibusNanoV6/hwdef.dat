@@ -140,6 +140,9 @@ define HAL_OSD_TYPE_DEFAULT 1
 #To complementary channels work we define this
 define STM32_PWM_USE_ADVANCED TRUE
 
+#eliminate EKF2 to save flash size
+define HAL_NAVEKF2_AVAILABLE 0
+
 define BOARD_PWM_COUNT_DEFAULT 4
 
 #define CH_DBG_ENABLE_ASSERTS TRUE

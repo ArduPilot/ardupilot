@@ -1,8 +1,6 @@
 # hw definition file for KakuteF4 hardware
 
-# STATUS:
-# This port is mostly complete. Main missing feature are OSD,
-# dataflash
+
 
 # MCU class and specific type
 MCU STM32F4xx STM32F405xx
@@ -153,6 +151,9 @@ define HAL_LOGGING_DATAFLASH
 define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+
+#eliminate EKF2 to save flash size
+define HAL_NAVEKF2_AVAILABLE 0
 
 # 8 PWM available by default
 define BOARD_PWM_COUNT_DEFAULT 8

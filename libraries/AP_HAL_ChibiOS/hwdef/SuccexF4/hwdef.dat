@@ -136,5 +136,8 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 define HAL_PARACHUTE_ENABLED 0
 define HAL_SPRAYER_ENABLED 0
 
+#eliminate EKF2 to save flash size
+define HAL_NAVEKF2_AVAILABLE 0
+
 # reduce max size of embedded params for apj_tool.py
 define AP_PARAM_MAX_EMBEDDED_PARAM 1024
