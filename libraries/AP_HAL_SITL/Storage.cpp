@@ -26,6 +26,14 @@ extern const AP_HAL::HAL& hal;
 #endif
 #endif
 
+#ifndef HAL_FLASH_MIN_WRITE_SIZE
+#define HAL_FLASH_MIN_WRITE_SIZE 1
+#endif
+
+#ifndef HAL_FLASH_ALLOW_UPDATE
+#define HAL_FLASH_ALLOW_UPDATE 1
+#endif
+
 void Storage::_storage_open(void)
 {
     if (_initialised) {
@@ -225,12 +233,36 @@ static bool sitl_flash_write(uint32_t addr, const uint8_t *data, uint32_t length
     if (pread(flash_fd, old, length, addr) != length) {
         AP_HAL::panic("Failed to read flash.dat at %u len=%u", unsigned(addr), unsigned(length));
     }
+#if defined(HAL_FLASH_MIN_WRITE_SIZE) && HAL_FLASH_MIN_WRITE_SIZE == 32
+    if ((length % HAL_FLASH_MIN_WRITE_SIZE) != 0 || (addr % HAL_FLASH_MIN_WRITE_SIZE) != 0) {
+        AP_HAL::panic("Attempt to write flash at %u length %u\n", addr, length);
+    }
+    // emulate H7 requirement that writes be to untouched bytes
+    for (uint32_t i=0; i<length; i+= 32) {
+        if (memcmp(&old[i], &data[i], 32) == 0) {
+            continue;
+        }
+        for (uint32_t j=0; j<32; j++) {
+            if (old[i+j] != 0xFF) {
+                AP_HAL::panic("Attempt to write modified flash at %u length %u\n", addr+i+j, length);
+            }
+        }
+    }
+#endif
     // check that we are only ever clearing bits (real flash storage can only ever clear bits,
     // except for an erase
     for (uint32_t i=0; i<length; i++) {
+#if HAL_FLASH_ALLOW_UPDATE
+        // emulating flash that allows setting any bit from 1 to 0
         if (data[i] & ~old[i]) {
             AP_HAL::panic("Attempt to set flash byte 0x%02x from 0x%02x at %u\n", data[i], old[i], addr+i);
         }
+#else
+        // emulating flash that only allows update if whole byte is 0xFF
+        if (data[i] != old[i] && old[i] != 0xFF) {
+            AP_HAL::panic("Attempt to set flash byte 0x%02x from 0x%02x at %u\n", data[i], old[i], addr+i);
+        }
+#endif
     }
     return pwrite(flash_fd, data, length, addr) == length;
 }
