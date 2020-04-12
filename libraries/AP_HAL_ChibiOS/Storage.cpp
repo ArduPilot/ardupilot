@@ -18,6 +18,8 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 #include "Storage.h"
+#include "HAL_ChibiOS_Class.h"
+#include "Scheduler.h"
 #include "hwdef/common/flash.h"
 #include <AP_Filesystem/AP_Filesystem.h>
 #include "sdcard.h"
@@ -314,10 +316,22 @@ bool Storage::_flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, u
 bool Storage::_flash_erase_sector(uint8_t sector)
 {
 #ifdef STORAGE_FLASH_PAGE
+    // erasing a page can take long enough that USB may not initialise properly if it happens
+    // while the host is connecting. Only do a flash erase if we have been up for more than 4s
     for (uint8_t i=0; i<STORAGE_FLASH_RETRIES; i++) {
+        /*
+          a sector erase stops the whole MCU. We need to setup a long
+          expected delay, and not only when running in the main
+          thread.  We can't use EXPECT_DELAY_MS() as it checks we are
+          in the main thread
+         */
+        ChibiOS::Scheduler *sched = (ChibiOS::Scheduler *)hal.scheduler;
+        sched->_expect_delay_ms(1000);
         if (hal.flash->erasepage(_flash_page+sector)) {
+            sched->_expect_delay_ms(0);
             return true;
         }
+        sched->_expect_delay_ms(0);
         hal.scheduler->delay(1);
     }
     return false;
