@@ -57,7 +57,7 @@ void AP_BattMonitor_DJI::read()
             if (count == 37){
                 if ( pktbuf[count - 1] == crc_crc8( pktbuf, 36)){
                     
-                    _state.consumed_mah = (1 - ((float)pktbuf[17] / 100)) * _params._pack_capacity;
+                    _state.capacity_pct = pktbuf[17];
                     _state.voltage = ((pktbuf[8] << 8) | pktbuf[9]) * 1e-3f;
 
                     _state.cell_voltages.cells[0] = (((pktbuf[20] << 8) | pktbuf[21]) * 1e-3f)*1000;

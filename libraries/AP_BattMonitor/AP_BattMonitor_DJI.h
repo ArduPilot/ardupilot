@@ -13,13 +13,14 @@ public:
     /// Read the battery voltage and percentage.
     void read() override;
 
-    /// returns true if battery monitor provides consumed energy info
-    bool has_consumed_energy() const override { return true; }
-
     /// returns true if battery monitor provides current info
-    bool has_current() const override { return true; }
+    bool has_current() const override { return false; }
 
+    /// returns true if battery monitor provides individual cell voltage
     bool has_cell_voltages() const override { return true; }
+
+    /// returns true if the battery info have capability to show battery % remaining
+    bool has_capacity_remaining_pct() const override { return true; }
 
     void init(void) override {}
 
