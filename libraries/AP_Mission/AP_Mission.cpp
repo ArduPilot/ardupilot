@@ -1009,7 +1009,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.payload_throw.latitude = packet.param1;
         cmd.content.payload_throw.longitude = packet.param2;
         cmd.content.payload_throw.altitude = packet.param3;
-        cmd.content.payload_throw.action = packet.param4;
+        //cmd.content.payload_throw.action = packet.param4;
         break;
     //add finished
 

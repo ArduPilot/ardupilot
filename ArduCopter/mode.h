@@ -371,6 +371,9 @@ public:
     virtual bool has_user_takeoff(bool must_navigate) const override { return false; }
 
     void payload_place_start();
+    //added 
+    void payload_throw_start();
+    //add finished
 
     // for GCS_MAVLink to call:
     bool do_guided(const AP_Mission::Mission_Command& cmd);
@@ -447,11 +450,17 @@ private:
     void do_winch(const AP_Mission::Mission_Command& cmd);
 #endif
     void do_payload_place(const AP_Mission::Mission_Command& cmd);
+    //added
+    void do_payload_throw(const AP_Mission::Mission_Command& cmd);
+    //add finished
     void do_RTL(void);
 
     bool verify_takeoff();
     bool verify_land();
     bool verify_payload_place();
+    //added
+    bool verify_payload_throw();
+    //add finished
     bool verify_loiter_unlimited();
     bool verify_loiter_time(const AP_Mission::Mission_Command& cmd);
     bool verify_loiter_to_alt();

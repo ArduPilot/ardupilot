@@ -373,6 +373,13 @@ void ModeAuto::payload_place_start()
 
 }
 
+//added
+void ModeAuto::payload_throw_start()
+{
+    gcs().send_text(MAV_SEVERITY_INFO, "PAYLOAD THROW START");
+}
+//add finished
+
 // start_command - this function will be called when the ap_mission lib wishes to start a new command
 bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 {
@@ -436,6 +443,11 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         do_payload_place(cmd);
         break;
 
+    //added
+    case MAV_CMD_NAV_PAYLOAD_THROW:
+        do_payload_throw(cmd);
+        break;
+    //added finished
     //
     // conditional commands
     //
@@ -1447,7 +1459,7 @@ void ModeAuto::do_winch(const AP_Mission::Mission_Command& cmd)
 // do_payload_place - initiate placing procedure
 void ModeAuto::do_payload_place(const AP_Mission::Mission_Command& cmd)
 {
-    // if location provided we fly to that location at current altitude
+    // if location   provided we fly to that location at current altitude
     if (cmd.content.location.lat != 0 || cmd.content.location.lng != 0) {
         // set state to fly to location
         nav_payload_place.state = PayloadPlaceStateType_FlyToLocation;
@@ -1463,6 +1475,15 @@ void ModeAuto::do_payload_place(const AP_Mission::Mission_Command& cmd)
     }
     nav_payload_place.descend_max = cmd.p1;
 }
+
+//added 
+void ModeAuto::do_payload_throw(const AP_Mission::Mission_Command& cmd)
+{
+    //do payload throw in this function
+    payload_throw_start();
+    
+}
+//add finished
 
 // do_RTL - start Return-to-Launch
 void ModeAuto::do_RTL(void)
@@ -1685,6 +1706,13 @@ bool ModeAuto::verify_payload_place()
     return true;
 }
 #undef debug
+
+//added
+bool ModeAuto::verify_payload_throw(){
+    //check something and return true
+    return true;
+}
+//add finished
 
 bool ModeAuto::verify_loiter_unlimited()
 {
