@@ -2,9 +2,6 @@
 # tested on the MatekF405-OSD board
 # with thanks to betaflight for pinout
 
-# STATUS:
-# This port is mostly complete. Main missing feature are OSD,
-# dataflash
 
 # MCU class and specific type
 MCU STM32F4xx STM32F405xx
@@ -181,6 +178,9 @@ define HAL_BATTMON_FUEL_ENABLE 0
 # disable parachute and sprayer to save flash
 define HAL_PARACHUTE_ENABLED 0
 define HAL_SPRAYER_ENABLED 0
+
+#eliminate EKF2 to save flash size
+define HAL_NAVEKF2_AVAILABLE 0
 
 # reduce max size of embedded params for apj_tool.py
 define AP_PARAM_MAX_EMBEDDED_PARAM 1024
