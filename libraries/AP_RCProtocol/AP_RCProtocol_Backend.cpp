@@ -87,6 +87,22 @@ void AP_RCProtocol_Backend::log_data(AP_RCProtocol::rcprotocol_t prot, uint32_t 
             len = sizeof(u32);
         }
         memcpy(u32, data, len);
+// @LoggerMessage: RCDA
+// @Description: Raw RC data
+// @Field: TimeUS: Time since system startup
+// @Field: TS: data arrival timestamp
+// @Field: Prot: Protocol currently being decoded
+// @Field: Len: Number of valid bytes in message
+// @Field: U0: first quartet of bytes
+// @Field: U1: second quartet of bytes
+// @Field: U2: third quartet of bytes
+// @Field: U3: fourth quartet of bytes
+// @Field: U4: fifth quartet of bytes
+// @Field: U5: sixth quartet of bytes
+// @Field: U6: seventh quartet of bytes
+// @Field: U7: eight quartet of bytes
+// @Field: U8: ninth quartet of bytes
+// @Field: U9: tenth quartet of bytes
         AP::logger().Write("RCDA", "TimeUS,TS,Prot,Len,U0,U1,U2,U3,U4,U5,U6,U7,U8,U9", "QIBBIIIIIIIIII",
                            AP_HAL::micros64(),
                            timestamp,
