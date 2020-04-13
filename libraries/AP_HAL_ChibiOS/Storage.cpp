@@ -342,7 +342,7 @@ bool Storage::_flash_erase_ok(void)
 bool Storage::healthy(void)
 {
     return ((_initialisedType != StorageBackend::None) &&
-            (AP_HAL::millis() - (_last_empty_ms < 2000)));
+            (AP_HAL::millis() - _last_empty_ms < 2000u));
 }
 
 /*
