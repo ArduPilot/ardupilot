@@ -91,6 +91,11 @@ public:
     void process() override;
     bool fmt_done() { return _fmt_done; }
 
+    // reset some writers so we push stuff out to logs again.  Will
+    // only work if we are in state DONE!
+    bool writeentiremission();
+    bool writeallrallypoints();
+
 private:
 
     enum Stage {
@@ -99,10 +104,8 @@ private:
         MULTIPLIERS,
         FORMAT_UNITS,
         PARMS,
-        SYSINFO,
-        WRITE_ENTIRE_MISSION,
-        WRITE_ALL_RALLY_POINTS,
         VEHICLE_MESSAGES,
+        RUNNING_SUBWRITERS, // must be last thing to run as we can redo bits of these
         DONE,
     };
 
