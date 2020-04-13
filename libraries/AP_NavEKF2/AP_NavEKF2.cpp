@@ -5,6 +5,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_GPS/AP_GPS.h>
+#include <AP_VisualOdom/AP_VisualOdom.h>
 #include <new>
 
 /*
@@ -1627,12 +1628,14 @@ void NavEKF2::getTimingStatistics(int8_t instance, struct ekf_timing &timing) co
  * timeStamp_ms : system time the measurement was taken, not the time it was received (mSec)
  * resetTime_ms : system time of the last position reset request (mSec)
  *
+ * Sensor offsets are pulled directly from the AP_VisualOdom library
+ *
 */
-void NavEKF2::writeExtNavData(const Vector3f &sensOffset, const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint32_t resetTime_ms)
+void NavEKF2::writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint32_t resetTime_ms)
 {
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
-            core[i].writeExtNavData(sensOffset, pos, quat, posErr, angErr, timeStamp_ms, resetTime_ms);
+            core[i].writeExtNavData(pos, quat, posErr, angErr, timeStamp_ms, resetTime_ms);
         }
     }
 }
