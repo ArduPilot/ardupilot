@@ -93,6 +93,13 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
     float yaw;
     attitude.to_euler(roll, pitch, yaw);
 
+    // calculate sensor offset in earth frame and add to position
+    const Vector3f& pos_offset = _sitl->vicon_pos_offset.get();
+    Matrix3f rot;
+    rot.from_euler(radians(_sitl->state.rollDeg), radians(_sitl->state.pitchDeg), radians(_sitl->state.yawDeg));
+    Vector3f pos_offset_ef = rot * pos_offset;
+    const Vector3f pos_corrected = position + pos_offset_ef;
+
 #if USE_VISION_POSITION_ESTIMATE
     // use the more recent VISION_POSITION_ESTIMATE message
     mavlink_msg_vision_position_estimate_pack_chan(
@@ -101,9 +108,9 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
         mavlink_ch,
         &obs_msg,
         now_us + time_offset_us,
-        position.x,
-        position.y,
-        position.z,
+        pos_corrected.x,
+        pos_corrected.y,
+        pos_corrected.z,
         roll,
         pitch,
         yaw,
@@ -115,9 +122,9 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
         mavlink_ch,
         &obs_msg,
         now_us + time_offset_us,
-        position.x,
-        position.y,
-        position.z,
+        pos_corrected.x,
+        pos_corrected.y,
+        pos_corrected.z,
         roll,
         pitch,
         yaw,
