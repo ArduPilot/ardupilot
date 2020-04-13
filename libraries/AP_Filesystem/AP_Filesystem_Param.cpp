@@ -67,6 +67,11 @@ int AP_Filesystem_Param::close(int fd)
 
 /*
   packed format:
+    file header:
+      uint32_t magic = 0x671b4e81
+
+    per-parameter:
+
     uint8_t type:4;         // AP_Param type NONE=0, INT8=1, INT16=2, INT32=3, FLOAT=4
     uint8_t type_len:4;     // number of bytes in type
     uint8_t common_len:4;   // number of name bytes in common with previous entry, 0..15
@@ -106,15 +111,15 @@ uint8_t AP_Filesystem_Param::pack_param(const AP_Param *ap, const char *pname, c
 /*
   seek the token to match file offset
  */
-bool AP_Filesystem_Param::token_seek(const struct rfile &r, struct cursor &c)
+bool AP_Filesystem_Param::token_seek(const uint32_t data_ofs, struct cursor &c)
 {
-    //hal.console->printf("token_seek %u %u\n", unsigned(r.file_ofs), unsigned(c.token_ofs));
+    //hal.console->printf("token_seek %u %u\n", unsigned(data_ofs), unsigned(c.token_ofs));
 
-    if (r.file_ofs == 0) {
+    if (data_ofs == 0) {
         memset(&c, 0, sizeof(c));
         return true;
     }
-    if (c.token_ofs > r.file_ofs) {
+    if (c.token_ofs > data_ofs) {
         memset(&c, 0, sizeof(c));
     }
 
@@ -123,7 +128,7 @@ bool AP_Filesystem_Param::token_seek(const struct rfile &r, struct cursor &c)
     enum ap_var_type ptype;
 
     if (c.trailer_len > 0) {
-        uint8_t n = MIN(c.trailer_len, r.file_ofs - c.token_ofs);
+        uint8_t n = MIN(c.trailer_len, data_ofs - c.token_ofs);
         if (n != c.trailer_len) {
             memmove(&c.trailer[0], &c.trailer[n], c.trailer_len - n);
         }
@@ -131,7 +136,7 @@ bool AP_Filesystem_Param::token_seek(const struct rfile &r, struct cursor &c)
         c.token_ofs += n;
     }
     
-    while (r.file_ofs != c.token_ofs) {
+    while (data_ofs != c.token_ofs) {
         AP_Param *ap;
 
         if (c.token_ofs == 0) {
@@ -143,7 +148,7 @@ bool AP_Filesystem_Param::token_seek(const struct rfile &r, struct cursor &c)
             break;
         }
         ap->copy_name_token(c.token, name, AP_MAX_NAME_SIZE, true);
-        uint32_t available = r.file_ofs - c.token_ofs;
+        uint32_t available = data_ofs - c.token_ofs;
         uint8_t tbuf[max_pack_len];
         uint8_t len = pack_param(ap, name, c.last_name, ptype, tbuf, max_pack_len);
         uint8_t n = MIN(len, available);
@@ -154,7 +159,7 @@ bool AP_Filesystem_Param::token_seek(const struct rfile &r, struct cursor &c)
         strcpy(c.last_name, name);
         c.token_ofs += n;
     }
-    return r.file_ofs == c.token_ofs;
+    return data_ofs == c.token_ofs;
 }
 
 int32_t AP_Filesystem_Param::read(int fd, void *buf, uint32_t count)
@@ -163,34 +168,51 @@ int32_t AP_Filesystem_Param::read(int fd, void *buf, uint32_t count)
         errno = EBADF;
         return -1;
     }
+
     struct rfile &r = file[fd];
+    size_t header_total = 0;
+
+    if (r.file_ofs < 4) {
+        uint8_t n = MIN(4-r.file_ofs, count);
+        const uint8_t *b = (const uint8_t *)&file_magic;
+        memcpy(buf, &b[r.file_ofs], n);
+        count -= n;
+        header_total += n;
+        r.file_ofs += n;
+        buf = (void *)(n + (const uint8_t *)buf);
+        if (count == 0) {
+            return header_total;
+        }
+    }
+
+    uint32_t data_ofs = r.file_ofs - 4;
     uint8_t best_i = 0;
     uint32_t best_ofs = r.cursors[0].token_ofs;
+    size_t total = 0;
 
     // find the first cursor that is positioned after the file offset
     for (uint8_t i=1; i<num_cursors; i++) {
         struct cursor &c = r.cursors[i];
-        if (c.token_ofs >= r.file_ofs && c.token_ofs < best_ofs) {
+        if (c.token_ofs >= data_ofs && c.token_ofs < best_ofs) {
             best_i = i;
             best_ofs = c.token_ofs;
         }
     }
     struct cursor &c = r.cursors[best_i];
 
-    if (r.file_ofs != c.token_ofs) {
-        if (!token_seek(r, c)) {
+    if (data_ofs != c.token_ofs) {
+        if (!token_seek(data_ofs, c)) {
             // must be EOF
-            return 0;
+            return header_total;
         }
     }
     if (count == 0) {
-        return 0;
+        return header_total;
     }
     uint8_t *ubuf = (uint8_t *)buf;
 
     char name[AP_MAX_NAME_SIZE+1];
     name[AP_MAX_NAME_SIZE] = 0;
-    size_t total = 0;
 
     if (c.trailer_len > 0) {
         uint8_t n = MIN(c.trailer_len, count);
@@ -233,7 +255,7 @@ int32_t AP_Filesystem_Param::read(int fd, void *buf, uint32_t count)
         c.token_ofs += n;
     }
     r.file_ofs += total;
-    return total;
+    return total + header_total;
 }
 
 int32_t AP_Filesystem_Param::lseek(int fd, int32_t offset, int seek_from)

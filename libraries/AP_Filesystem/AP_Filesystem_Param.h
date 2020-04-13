@@ -40,6 +40,9 @@ private:
     // maximum size of one packed parameter
     static constexpr uint8_t max_pack_len = AP_MAX_NAME_SIZE + 2 + 4;
 
+    // magic header
+    const uint32_t file_magic = 0x671b4e81;
+
     struct cursor {
         AP_Param::ParamToken token;
         uint32_t token_ofs;
@@ -54,7 +57,7 @@ private:
         struct cursor *cursors;
     } file[max_open_file];
 
-    bool token_seek(const struct rfile &r, struct cursor &c);
+    bool token_seek(const uint32_t data_ofs, struct cursor &c);
     uint8_t pack_param(const AP_Param *ap, const char *pname, const char *last_name,
                        enum ap_var_type ptype, uint8_t *buf, uint8_t buflen);
 };
