@@ -539,7 +539,6 @@ void Plane::Log_Write_Vehicle_Startup_Messages()
     }
 #endif
     logger.Write_Mode(control_mode->mode_number(), control_mode_reason);
-    ahrs.Log_Write_Home_And_Origin();
     gps.Write_AP_Logger_Log_Startup_messages();
 }
 
