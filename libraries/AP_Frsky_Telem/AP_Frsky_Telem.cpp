@@ -839,7 +839,11 @@ uint32_t AP_Frsky_Telem::calc_batt(uint8_t instance)
         current = 0;
     }
     if (!_battery.consumed_mah(consumed_mah, instance)) {
-        consumed_mah = 0;
+        if (_battery.capacity_remaining_pct(instance)){
+            consumed_mah = (1 - ((float)_battery.capacity_remaining_pct(instance) / 100)) * _battery.pack_capacity_mah(instance);
+        } else {
+            consumed_mah = 0;
+        }
     }
     
     // battery voltage in decivolts, can have up to a 12S battery (4.25Vx12S = 51.0V)
