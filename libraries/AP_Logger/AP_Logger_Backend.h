@@ -131,6 +131,8 @@ public:
                              const AP_Param::ParamToken &token,
                              enum ap_var_type type);
 
+    bool Write_Origin(uint8_t origin_type, const Location &loc);
+
     uint32_t num_dropped(void) const {
         return _dropped;
     }

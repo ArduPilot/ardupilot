@@ -72,6 +72,22 @@ private:
     Stage stage = Stage::WRITE_NEW_RALLY_MESSAGE;
 };
 
+class LoggerMessageWriter_WriteHomeAndOrigin : public LoggerMessageWriter {
+public:
+
+    void reset() override;
+    void process() override;
+
+private:
+    enum Stage {
+        WRITE_HOME = 0,
+        WRITE_ORIGIN,
+        DONE
+    };
+
+    Stage stage;
+};
+
 class LoggerMessageWriter_DFLogStart : public LoggerMessageWriter {
 public:
     LoggerMessageWriter_DFLogStart() :
@@ -82,6 +98,7 @@ public:
 #if HAL_RALLY_ENABLED
         , _writeallrallypoints()
 #endif
+        , _writehomeandorigin()
         {
         }
 
@@ -94,6 +111,7 @@ public:
 #if HAL_RALLY_ENABLED
         _writeallrallypoints.set_logger_backend(backend);
 #endif
+        _writehomeandorigin.set_logger_backend(backend);
     }
 
     bool out_of_time_for_writing_messages() const;
@@ -148,4 +166,5 @@ private:
 #if HAL_RALLY_ENABLED
     LoggerMessageWriter_WriteAllRallyPoints _writeallrallypoints;
 #endif
+    LoggerMessageWriter_WriteHomeAndOrigin _writehomeandorigin;
 };

@@ -44,6 +44,7 @@ void LoggerMessageWriter_DFLogStart::reset()
 #if HAL_RALLY_ENABLED
     _writeallrallypoints.reset();
 #endif
+    _writehomeandorigin.reset();
 
     stage = Stage::FORMATS;
     next_format_to_send = 0;
@@ -150,6 +151,12 @@ void LoggerMessageWriter_DFLogStart::process()
             }
         }
 #endif
+        if (!_writehomeandorigin.finished()) {
+            _writehomeandorigin.process();
+            if (!_writehomeandorigin.finished()) {
+                return;
+            }
+        }
         stage = Stage::VEHICLE_MESSAGES;
         FALLTHROUGH;
 
@@ -363,4 +370,43 @@ void LoggerMessageWriter_WriteEntireMission::reset()
     LoggerMessageWriter::reset();
     stage = Stage::WRITE_NEW_MISSION_MESSAGE;
     _mission_number_to_send = 0;
+}
+
+void LoggerMessageWriter_WriteHomeAndOrigin::process() {
+    switch(stage) {
+
+    case Stage::WRITE_HOME:
+        if (AP::ahrs().home_is_set()) {
+            const Location &_home = AP::ahrs().get_home();
+            if (!_logger_backend->Write_Origin(LogOriginType::ahrs_home, _home)) {
+                return; // call me again!
+            }
+        }
+        stage = Stage::WRITE_ORIGIN;
+        FALLTHROUGH;
+
+    case Stage::WRITE_ORIGIN: {
+#if AP_AHRS_NAVEKF_AVAILABLE
+        Location ekf_orig;
+        if (AP::ahrs().get_origin(ekf_orig)) {
+            if (!_logger_backend->Write_Origin(LogOriginType::ekf_origin, ekf_orig)) {
+                return; // call me again!
+            }
+        }
+#endif
+        stage = Stage::DONE;
+        FALLTHROUGH;
+    }
+
+    case Stage::DONE:
+        break;
+    }
+
+    _finished = true;
+}
+
+void LoggerMessageWriter_WriteHomeAndOrigin::reset()
+{
+    LoggerMessageWriter::reset();
+    stage = Stage::WRITE_HOME;
 }

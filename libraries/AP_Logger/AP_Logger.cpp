@@ -882,6 +882,11 @@ void AP_Logger::Safe_Write_Emit_FMT(log_write_fmt *f)
     }
 }
 
+void AP_Logger::Write_Origin(uint8_t origin_type, const Location &loc)
+{
+    FOR_EACH_BACKEND(Write_Origin(origin_type, loc));
+}
+
 uint32_t AP_Logger::num_dropped() const
 {
     if (_next_backend == 0) {
