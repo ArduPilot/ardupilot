@@ -120,10 +120,12 @@ void NavEKF2_core::ResetPosition(void)
             lastRngBcnPassTime_ms = imuSampleTime_ms;
         } else if (imuSampleTime_ms - extNavDataDelayed.time_ms < 250) {
             // use external nav data as the third preference
-            stateStruct.position.x = extNavDataDelayed.pos.x;
-            stateStruct.position.y = extNavDataDelayed.pos.y;
+            ext_nav_elements extNavCorrected = extNavDataDelayed;
+            CorrectExtNavForSensorOffset(extNavCorrected.pos);
+            stateStruct.position.x = extNavCorrected.pos.x;
+            stateStruct.position.y = extNavCorrected.pos.y;
             // set the variances from the external nav filter
-            P[7][7] = P[6][6] = sq(extNavDataDelayed.posErr);
+            P[7][7] = P[6][6] = sq(extNavCorrected.posErr);
         }
     }
     for (uint8_t i=0; i<imu_buffer_length; i++) {
@@ -275,6 +277,25 @@ void NavEKF2_core::CorrectGPSForAntennaOffset(gps_elements &gps_data)
     gps_data.hgt += posOffsetEarth.z;
 }
 
+// correct external navigation earth-frame position using sensor body-frame offset
+void NavEKF2_core::CorrectExtNavForSensorOffset(Vector3f &ext_position)
+{
+#if HAL_VISUALODOM_ENABLED
+    AP_VisualOdom *visual_odom = AP::visualodom();
+    if (visual_odom == nullptr) {
+        return;
+    }
+    const Vector3f &posOffsetBody = visual_odom->get_pos_offset() - accelPosOffset;
+    if (posOffsetBody.is_zero()) {
+        return;
+    }
+    Vector3f posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
+    ext_position.x -= posOffsetEarth.x;
+    ext_position.y -= posOffsetEarth.y;
+    ext_position.z -= posOffsetEarth.z;
+#endif
+}
+
 /********************************************************
 *                   FUSE MEASURED_DATA                  *
 ********************************************************/
@@ -327,6 +348,10 @@ void NavEKF2_core::SelectVelPosFusion()
         fuseVelData = false;
         fuseHgtData = true;
         fusePosData = true;
+
+        // correct for external navigation sensor position
+        CorrectExtNavForSensorOffset(extNavDataDelayed.pos);
+
         velPosObs[3] = extNavDataDelayed.pos.x;
         velPosObs[4] = extNavDataDelayed.pos.y;
         velPosObs[5] = extNavDataDelayed.pos.z;
