@@ -119,10 +119,10 @@ void NavEKF2_core::ResetPosition(void)
             rngBcnTimeout = false;
             lastRngBcnPassTime_ms = imuSampleTime_ms;
         } else if (imuSampleTime_ms - extNavDataDelayed.time_ms < 250) {
-            // use the range beacon data as a second preference
+            // use external nav data as the third preference
             stateStruct.position.x = extNavDataDelayed.pos.x;
             stateStruct.position.y = extNavDataDelayed.pos.y;
-            // set the variances from the beacon alignment filter
+            // set the variances from the external nav filter
             P[7][7] = P[6][6] = sq(extNavDataDelayed.posErr);
         }
     }
