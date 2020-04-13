@@ -231,9 +231,12 @@ const AP_Param::GroupInfo SITL::var_info3[] = {
     AP_GROUPINFO("LED_LAYOUT",    11, SITL, led_layout, 0),
 
     // Scenario for thermalling simulation, for soaring
-    AP_GROUPINFO("THML_SCENARI",12, SITL,  thermal_scenario, 0),
-    
+    AP_GROUPINFO("THML_SCENARI",  12, SITL,  thermal_scenario, 0),
+
     AP_GROUPINFO("GPS2_HDG",      13, SITL,  gps_hdg_enabled[1], 0),
+
+    // vicon sensor position (position offsets in body frame)
+    AP_GROUPINFO("VICON_POS",     14, SITL,  vicon_pos_offset, 0),
 
     AP_GROUPEND
 
