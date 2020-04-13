@@ -558,7 +558,6 @@ void Copter::Log_Write_Vehicle_Startup_Messages()
     copter.motors->get_frame_and_type_string(frame_and_type_string, ARRAY_SIZE(frame_and_type_string));
     logger.Write_MessageF("%s", frame_and_type_string);
     logger.Write_Mode((uint8_t)flightmode->mode_number(), control_mode_reason);
-    ahrs.Log_Write_Home_And_Origin();
     gps.Write_AP_Logger_Log_Startup_messages();
 }
 
