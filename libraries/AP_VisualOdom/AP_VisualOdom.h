@@ -68,6 +68,9 @@ public:
     // return a 3D vector defining the position offset of the camera in meters relative to the body frame origin
     const Vector3f &get_pos_offset(void) const { return _pos_offset; }
 
+    // return the sensor delay in milliseconds (see _DELAY_MS parameter)
+    uint16_t get_delay_ms() const { return MAX(0, _delay_ms); }
+
     // consume vision_position_delta mavlink messages
     void handle_vision_position_delta_msg(const mavlink_message_t &msg);
 
@@ -93,6 +96,7 @@ private:
     AP_Vector3f _pos_offset;    // position offset of the camera in the body frame
     AP_Int8 _orientation;       // camera orientation on vehicle frame
     AP_Float _pos_scale;        // position scale factor applied to sensor values
+    AP_Int16 _delay_ms;         // average delay relative to inertial measurements
 
     // reference to backends
     AP_VisualOdom_Backend *_driver;
