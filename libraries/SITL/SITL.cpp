@@ -238,6 +238,9 @@ const AP_Param::GroupInfo SITL::var_info3[] = {
     // vicon sensor position (position offsets in body frame)
     AP_GROUPINFO("VICON_POS",     14, SITL,  vicon_pos_offset, 0),
 
+    // Buyoancy for submarines
+    AP_GROUPINFO_FRAME("BUOYANCY", 15, SITL, buoyancy, 1, AP_PARAM_FRAME_SUB),
+
     AP_GROUPEND
 
 };
