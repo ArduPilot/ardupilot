@@ -2248,6 +2248,7 @@ bool AP_AHRS_NavEKF::is_ext_nav_used_for_yaw(void) const
     case EKFType::NONE:
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
+        return EKF3.using_external_yaw();
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKFType::SITL:
