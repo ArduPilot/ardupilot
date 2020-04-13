@@ -74,6 +74,14 @@ const AP_Param::GroupInfo AP_VisualOdom::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_SCALE", 3, AP_VisualOdom, _pos_scale, 1.0f),
 
+    // @Param: _DELAY_MS
+    // @DisplayName: Visual odometry sensor delay
+    // @Description: Visual odometry sensor delay relative to inertial measurements
+    // @Units: ms
+    // @Range: 0 250
+    // @User: Advanced
+    AP_GROUPINFO("_DELAY_MS", 4, AP_VisualOdom, _delay_ms, 10),
+
     AP_GROUPEND
 };
 
