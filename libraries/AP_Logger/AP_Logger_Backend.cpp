@@ -440,9 +440,8 @@ bool AP_Logger_Backend::Write_RallyPoint(uint8_t total,
 }
 
 // Write rally points
-void AP_Logger_Backend::Write_Rally()
+bool AP_Logger_Backend::Write_Rally()
 {
-    LoggerMessageWriter_WriteAllRallyPoints writer;
-    writer.set_logger_backend(this);
-    writer.process();
+    // kick off asynchronous write:
+    return _startup_messagewriter->writeallrallypoints();
 }
