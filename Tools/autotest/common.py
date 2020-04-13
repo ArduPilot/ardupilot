@@ -3387,8 +3387,8 @@ class AutoTest(ABC):
             "wipe": True,
         }
         start_sitl_args.update(**sitl_args)
-        if ("defaults_filepath" not in start_sitl_args or
-            start_sitl_args["defaults_filepath"] is None):
+        if ("defaults_file" not in start_sitl_args or
+            start_sitl_args["defaults_file"] is None):
             start_sitl_args["defaults_file"] = self.defaults_filepath()
 
         if "model" not in start_sitl_args or start_sitl_args["model"] is None:
