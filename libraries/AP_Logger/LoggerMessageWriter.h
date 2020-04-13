@@ -27,8 +27,7 @@ public:
 
 private:
     enum class Stage : uint8_t {
-        FORMATS = 0,
-        FIRMWARE_STRING,
+        FIRMWARE_STRING = 0,
         GIT_VERSIONS,
         SYSTEM_ID,
         PARAM_SPACE_USED,
