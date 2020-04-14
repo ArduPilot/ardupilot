@@ -1512,7 +1512,7 @@ void GCS_MAVLINK::log_mavlink_stats()
         flags |= (uint8_t)Flags::LOCKED;
     }
 
-    const struct log_MAV pkt = {
+    const struct log_MAV pkt{
     LOG_PACKET_HEADER_INIT(LOG_MAV_MSG),
     time_us                : AP_HAL::micros64(),
     chan                   : (uint8_t)chan,
@@ -1520,7 +1520,8 @@ void GCS_MAVLINK::log_mavlink_stats()
     packet_rx_success_count: status->packet_rx_success_count,
     packet_rx_drop_count   : status->packet_rx_drop_count,
     flags                  : flags,
-    stream_slowdown_ms     : stream_slowdown_ms
+    stream_slowdown_ms     : stream_slowdown_ms,
+    times_full             : out_of_space_to_send_count,
     };
 
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
