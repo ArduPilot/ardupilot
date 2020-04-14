@@ -5,7 +5,7 @@ from __future__ import print_function
 
 import os
 
-from apmrover2 import AutoTestRover
+from rover import AutoTestRover
 from common import AutoTest
 
 from common import NotAchievedException
