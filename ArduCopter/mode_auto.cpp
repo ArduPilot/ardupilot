@@ -386,6 +386,7 @@ void ModeAuto::payload_place_start()
 
 }
 
+
 // start_command - this function will be called when the ap_mission lib wishes to start a new command
 bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 {
@@ -1475,7 +1476,7 @@ void ModeAuto::do_winch(const AP_Mission::Mission_Command& cmd)
 // do_payload_place - initiate placing procedure
 void ModeAuto::do_payload_place(const AP_Mission::Mission_Command& cmd)
 {
-    // if location provided we fly to that location at current altitude
+    // if location   provided we fly to that location at current altitude
     if (cmd.content.location.lat != 0 || cmd.content.location.lng != 0) {
         // set state to fly to location
         nav_payload_place.state = PayloadPlaceStateType_FlyToLocation;
@@ -1491,6 +1492,7 @@ void ModeAuto::do_payload_place(const AP_Mission::Mission_Command& cmd)
     }
     nav_payload_place.descend_max = cmd.p1;
 }
+
 
 // do_RTL - start Return-to-Launch
 void ModeAuto::do_RTL(void)
@@ -1713,6 +1715,7 @@ bool ModeAuto::verify_payload_place()
     return true;
 }
 #undef debug
+
 
 bool ModeAuto::verify_loiter_unlimited()
 {

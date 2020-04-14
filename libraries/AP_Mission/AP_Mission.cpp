@@ -631,6 +631,9 @@ bool AP_Mission::stored_in_location(uint16_t id)
     case MAV_CMD_NAV_VTOL_TAKEOFF:
     case MAV_CMD_NAV_VTOL_LAND:
     case MAV_CMD_NAV_PAYLOAD_PLACE:
+    //added
+    case MAV_CMD_NAV_PAYLOAD_RELEASE:
+    //add finished
         return true;
     default:
         return false;
@@ -1000,6 +1003,15 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
     case MAV_CMD_NAV_PAYLOAD_PLACE:
         cmd.p1 = packet.param1*100; // copy max-descend parameter (m->cm)
         break;
+    
+    //added
+    case MAV_CMD_NAV_PAYLOAD_RELEASE:
+        cmd.content.payload_throw.latitude = packet.param1;
+        cmd.content.payload_throw.longitude = packet.param2;
+        cmd.content.payload_throw.altitude = packet.param3;
+        //cmd.content.payload_throw.action = packet.param4;
+        break;
+    //add finished
 
     case MAV_CMD_NAV_SET_YAW_SPEED:
         cmd.content.set_yaw_speed.angle_deg = packet.param1;        // target angle in degrees
@@ -1439,6 +1451,15 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
     case MAV_CMD_NAV_PAYLOAD_PLACE:
         packet.param1 = cmd.p1/100.0f; // copy max-descend parameter (m->cm)
         break;
+    
+    //Added
+    case MAV_CMD_NAV_PAYLOAD_RELEASE:
+        packet.param1 = cmd.content.payload_throw.latitude;     //latitude
+        packet.param2 = cmd.content.payload_throw.longitude;    //longitude
+        packet.param3 = cmd.content.payload_throw.altitude;     //altitude
+        packet.param4 = cmd.content.payload_throw.action;       //action (1: release, 0: hold)
+        break;
+    //Add finished
 
     case MAV_CMD_NAV_SET_YAW_SPEED:
         packet.param1 = cmd.content.set_yaw_speed.angle_deg;        // target angle in degrees
@@ -2153,6 +2174,12 @@ const char *AP_Mission::Mission_Command::type() const {
         return "Gripper";
     case MAV_CMD_NAV_PAYLOAD_PLACE:
         return "PayloadPlace";
+
+    //added
+    case MAV_CMD_NAV_PAYLOAD_RELEASE:
+        return "PayloadThrow";
+    //add finished
+    
     case MAV_CMD_DO_PARACHUTE:
         return "Parachute";
     case MAV_CMD_DO_MOUNT_CONTROL:
