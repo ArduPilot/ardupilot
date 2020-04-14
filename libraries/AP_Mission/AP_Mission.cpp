@@ -632,7 +632,7 @@ bool AP_Mission::stored_in_location(uint16_t id)
     case MAV_CMD_NAV_VTOL_LAND:
     case MAV_CMD_NAV_PAYLOAD_PLACE:
     //added
-    case MAV_CMD_NAV_PAYLOAD_THROW:
+    case MAV_CMD_NAV_PAYLOAD_RELEASE:
     //add finished
         return true;
     default:
@@ -1005,7 +1005,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         break;
     
     //added
-    case MAV_CMD_NAV_PAYLOAD_THROW:
+    case MAV_CMD_NAV_PAYLOAD_RELEASE:
         cmd.content.payload_throw.latitude = packet.param1;
         cmd.content.payload_throw.longitude = packet.param2;
         cmd.content.payload_throw.altitude = packet.param3;
@@ -1453,7 +1453,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         break;
     
     //Added
-    case MAV_CMD_NAV_PAYLOAD_THROW:
+    case MAV_CMD_NAV_PAYLOAD_RELEASE:
         packet.param1 = cmd.content.payload_throw.latitude;     //latitude
         packet.param2 = cmd.content.payload_throw.longitude;    //longitude
         packet.param3 = cmd.content.payload_throw.altitude;     //altitude
@@ -2176,7 +2176,7 @@ const char *AP_Mission::Mission_Command::type() const {
         return "PayloadPlace";
 
     //added
-    case MAV_CMD_NAV_PAYLOAD_THROW:
+    case MAV_CMD_NAV_PAYLOAD_RELEASE:
         return "PayloadThrow";
     //add finished
     
