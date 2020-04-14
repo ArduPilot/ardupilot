@@ -27,10 +27,34 @@
 
 #define GCS_DEBUG_SEND_MESSAGE_TIMINGS 0
 
-// check if a message will fit in the payload space available
+// macros used to determine if a message will fit in the space available.
+
+// important note: despite the names, these messages do NOT check to
+// see if the payload will fit in the buffer.  They check to see if
+// the packed message along with any channel overhead will fit.
+
+// PAYLOAD_SIZE returns the amount of space required to send the
+// mavlink message with id id on channel chan.  Mavlink2 has higher
+// overheads than mavlink1, for example.
 #define PAYLOAD_SIZE(chan, id) (unsigned(GCS_MAVLINK::packet_overhead_chan(chan)+MAVLINK_MSG_ID_ ## id ## _LEN))
+
+// HAVE_PAYLOAD_SPACE evaluates to an expression that can be used
+// anywhere in the code to determine if the mavlink message with ID id
+// can currently fit in the output of _chan.
 #define HAVE_PAYLOAD_SPACE(chan, id) (comm_get_txspace(chan) >= PAYLOAD_SIZE(chan, id))
+
+// CHECK_PAYLOAD_SIZE - macro which may only be used within a
+// GCS_MAVLink object's methods.  It inserts code which will
+// immediately return false from the current function if there is no
+// room to fit the mavlink message with id id on the current object's
+// output
 #define CHECK_PAYLOAD_SIZE(id) if (txspace() < unsigned(packet_overhead()+MAVLINK_MSG_ID_ ## id ## _LEN)) return false
+
+// CHECK_PAYLOAD_SIZE2 - macro which inserts code which will
+// immediately return false from the current function if there is no
+// room to fit the mavlink message with id id on the mavlink output
+// channel "chan".  It is expecting there to be a "chan" variable in
+// scope.
 #define CHECK_PAYLOAD_SIZE2(id) if (!HAVE_PAYLOAD_SPACE(chan, id)) return false
 
 // convenience macros for defining which ap_message ids are in which streams:
