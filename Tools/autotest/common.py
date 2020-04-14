@@ -1613,11 +1613,26 @@ class AutoTest(ABC):
         this_dir = os.path.dirname(__file__)
         return os.path.realpath(os.path.join(this_dir, "../.."))
 
-    def assert_mission_files_same(self, file1, file2):
+    def assert_mission_files_same(self, file1, file2, match_comments=False):
         self.progress("Comparing (%s) and (%s)" % (file1, file2, ))
+
         f1 = open(file1)
         f2 = open(file2)
-        for l1, l2 in zip(f1, f2):
+        lines1 = f1.readlines()
+        lines2 = f2.readlines()
+
+        if not match_comments:
+            # strip comments from all lines
+            lines1 = [re.sub(r"\s*#.*", "", x, re.DOTALL) for x in lines1]
+            lines2 = [re.sub(r"\s*#.*", "", x, re.DOTALL) for x in lines2]
+            # FIXME: because DOTALL doesn't seem to work as expected:
+            lines1 = [x.rstrip() for x in lines1]
+            lines2 = [x.rstrip() for x in lines2]
+            # remove now-empty lines:
+            lines1 = filter(lambda x : len(x), lines1)
+            lines2 = filter(lambda x : len(x), lines2)
+
+        for l1, l2 in zip(lines1, lines2):
             l1 = l1.rstrip("\r\n")
             l2 = l2.rstrip("\r\n")
             if l1 == l2:
@@ -1640,11 +1655,12 @@ class AutoTest(ABC):
                              mavutil.mavlink.MAV_CMD_NAV_LOITER_TIME,
                              mavutil.mavlink.MAV_CMD_DO_JUMP,
                              mavutil.mavlink.MAV_CMD_DO_DIGICAM_CONTROL,
+                             mavutil.mavlink.MAV_CMD_DO_SET_SERVO,
                              ]:
                         # ardupilot doesn't remember frame on these commands
-                        if int(i1) == 3:
+                        if int(i1) in [3, 10]: # 3 is relative, 10 is AMSL
                             i1 = 0
-                        if int(i2) == 3:
+                        if int(i2) in [3, 10]:
                             i2 = 0
                 if count == 6: # param 3
                     if t in [mavutil.mavlink.MAV_CMD_NAV_LOITER_TIME]:
