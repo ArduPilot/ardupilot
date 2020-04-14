@@ -111,13 +111,13 @@ void HarmonicNotchFilter<T>::init(float sample_freq_hz, float center_freq_hz, fl
     }
 
     _sample_freq_hz = sample_freq_hz;
-    // Calculate spread required to achieve an equivalent single notch using two notches with Bandwidth/2
-    _notch_spread = bandwidth_hz / (32 * center_freq_hz);
 
     const float nyquist_limit = sample_freq_hz * 0.48f;
     const float bandwidth_limit = bandwidth_hz * 0.52f;
     // adjust the fundamental center frequency to be in the allowable range
     center_freq_hz = constrain_float(center_freq_hz, bandwidth_limit, nyquist_limit);
+    // Calculate spread required to achieve an equivalent single notch using two notches with Bandwidth/2
+    _notch_spread = bandwidth_hz / (32 * center_freq_hz);
 
     if (_double_notch) {
         // position the individual notches so that the attenuation is no worse than a single notch
