@@ -543,6 +543,13 @@ files persist their signature. This option avoids that behavior when
 cleaning the build.
 ''')
 
+    g.add_option('--asan',
+        action='store_true',
+        help='''Build using the macOS clang Address Sanitizer. In order to run with
+Address Sanitizer support llvm-symbolizer is required to be on the PATH.
+This option is only supported on macOS versions of clang.
+''')
+
 def build(bld):
     bld.add_pre_fun(_process_build_command)
     bld.add_pre_fun(_select_programs_from_group)
