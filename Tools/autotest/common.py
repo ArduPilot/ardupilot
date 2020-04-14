@@ -1370,12 +1370,12 @@ class AutoTest(ABC):
         self.set_streamrate(self.sitl_streamrate())
         self.progress("Reboot complete")
 
-    def customise_SITL_commandline(self, customisations, model=None, defaults_file=None):
+    def customise_SITL_commandline(self, customisations, model=None, defaults_filepath=None):
         '''customisations could be "--uartF=sim:nmea" '''
         self.contexts[-1].sitl_commandline_customised = True
         self.stop_SITL()
         self.start_SITL(model=model,
-                        defaults_file=defaults_file,
+                        defaults_filepath=defaults_filepath,
                         customisations=customisations,
                         wipe=False)
         self.wait_heartbeat(drain_mav=True)
@@ -3387,9 +3387,9 @@ class AutoTest(ABC):
             "wipe": True,
         }
         start_sitl_args.update(**sitl_args)
-        if ("defaults_file" not in start_sitl_args or
-            start_sitl_args["defaults_file"] is None):
-            start_sitl_args["defaults_file"] = self.defaults_filepath()
+        if ("defaults_filepath" not in start_sitl_args or
+            start_sitl_args["defaults_filepath"] is None):
+            start_sitl_args["defaults_filepath"] = self.defaults_filepath()
 
         if "model" not in start_sitl_args or start_sitl_args["model"] is None:
             start_sitl_args["model"] = self.frame

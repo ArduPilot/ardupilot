@@ -235,7 +235,7 @@ def start_SITL(binary,
                home=None,
                model=None,
                speedup=1,
-               defaults_file=None,
+               defaults_filepath=None,
                unhide_parameters=False,
                gdbserver=False,
                breakpoints=[],
@@ -318,10 +318,10 @@ def start_SITL(binary,
     cmd.extend(['--model', model])
     if speedup != 1:
         cmd.extend(['--speedup', str(speedup)])
-    if defaults_file is not None:
-        if type(defaults_file) == list:
-            defaults_file = ",".join(defaults_file)
-        cmd.extend(['--defaults', defaults_file])
+    if defaults_filepath is not None:
+        if type(defaults_filepath) == list:
+            defaults_filepath = ",".join(defaults_filepath)
+        cmd.extend(['--defaults', defaults_filepath])
     if unhide_parameters:
         cmd.extend(['--unhide-groups'])
     if vicon:
