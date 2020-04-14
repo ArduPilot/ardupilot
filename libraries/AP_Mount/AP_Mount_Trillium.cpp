@@ -40,7 +40,9 @@ void AP_Mount_Trillium::init_hw()
         return;
     }
 
-    //OrionPkt_t PktOut;
+
+    OrionPkt_t PktOut;
+    (void)PktOut; // touch this so we don't get a unused variable error if all #defined features are disabled
 
     switch (_booting.step++) {
     case 0:
@@ -84,6 +86,7 @@ void AP_Mount_Trillium::init_hw()
 
     default:
         _booting.done = true;
+        _booting.step = 0;
         break;
     }
 }
@@ -267,7 +270,7 @@ void AP_Mount_Trillium::handle_packet(OrionPkt_t &packet)
 {
 
 #if AP_MOUNT_TRILLIUM_DEBUG_RX_ALL_MSGS
-    gcs().send_text(MAV_SEVERITY_DEBUG, "%sRx msg id:", _trilliumGcsHeader, packet.ID);
+    gcs().send_text(MAV_SEVERITY_DEBUG, "%sRx msg id: %u", _trilliumGcsHeader, packet.ID);
 #endif
 
     const uint8_t len = packet.Length;
@@ -332,7 +335,7 @@ void AP_Mount_Trillium::handle_packet(OrionPkt_t &packet)
     case ORION_PKT_AUTOPILOT_DATA:
     case ORION_PKT_STARE_START:
     case ORION_PKT_STARE_ACK:
-
+    case ORION_PKT_RANGE_DATA:
 
 
         // FULL LIST
@@ -391,7 +394,6 @@ void AP_Mount_Trillium::handle_packet(OrionPkt_t &packet)
     case ORION_PKT_EXT_HEADING_DATA:
     case ORION_PKT_INS_QUALITY:
     case ORION_PKT_GEOPOINT_CMD:
-    case ORION_PKT_RANGE_DATA:
     case ORION_PKT_PATH:
     case ORION_PKT_INS_OPTIONS:
     case ORION_PKT_PRIVATE_DB:
@@ -418,7 +420,7 @@ void AP_Mount_Trillium::handle_packet(OrionPkt_t &packet)
     default:
         // unhandled
 #if AP_MOUNT_TRILLIUM_DEBUG_RX_UNHANDLED_MSGS
-        gcs().send_text(MAV_SEVERITY_DEBUG, "%sunhandled msg id:", _trilliumGcsHeader, packet.ID);
+        gcs().send_text(MAV_SEVERITY_DEBUG, "%sunhandled msg id: %u", _trilliumGcsHeader, packet.ID);
 #endif
         break;
     }
@@ -456,7 +458,7 @@ void AP_Mount_Trillium::handle_passthrough(const mavlink_channel_t chan, const m
         return;
     }
 
-    uint32_t sent = _port->write(packet.payload, packet.size);
+    const uint32_t sent = _port->write(packet.payload, packet.size);
 
     if (sent != packet.size) {
 #if AP_MOUNT_TRILLIUM_DEBUG_TX_PASSTHROUGH_DROPS
@@ -474,10 +476,10 @@ void AP_Mount_Trillium::handle_passthrough(const mavlink_channel_t chan, const m
 size_t AP_Mount_Trillium::OrionCommSend(const OrionPkt_t *pPkt)
 {
 #if AP_MOUNT_TRILLIUM_DEBUG_TX_ALL_MSGS
-    gcs().send_text(MAV_SEVERITY_DEBUG, "%stx cmd ID: %u", pPkt.ID);
+    gcs().send_text(MAV_SEVERITY_DEBUG, "%stx cmd ID: %u", _trilliumGcsHeader, pPkt->ID);
 #endif
 
-    return _port->write((uint8_t *)pPkt, pPkt->Length + ORION_PKT_OVERHEAD);
+    const uint32_t len = pPkt->Length + ORION_PKT_OVERHEAD;
 
 }
 #endif // MOUNT_TRILLIUM_ENABLE
