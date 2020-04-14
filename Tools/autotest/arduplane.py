@@ -62,7 +62,7 @@ class AutoTestPlane(AutoTest):
         return "plane-elevrev"
 
     def apply_defaultfile_parameters(self):
-        # plane passes in a defaults_file in place of applying
+        # plane passes in a defaults_filepath in place of applying
         # parameters afterwards.
         pass
 

@@ -59,17 +59,17 @@ class AutoTestQuadPlane(AutoTest):
         self.current_test_name_directory = "ArduPlane_Tests/" + name + "/"
 
     def apply_defaultfile_parameters(self):
-        # plane passes in a defaults_file in place of applying
+        # plane passes in a defaults_filepath in place of applying
         # parameters afterwards.
         pass
 
     def defaults_filepath(self):
         vinfo = vehicleinfo.VehicleInfo()
-        defaults_file = vinfo.options["ArduPlane"]["frames"][self.frame]["default_params_filename"]
-        if isinstance(defaults_file, str):
-            defaults_file = [defaults_file]
+        defaults_filepath = vinfo.options["ArduPlane"]["frames"][self.frame]["default_params_filename"]
+        if isinstance(defaults_filepath, str):
+            defaults_filepath = [defaults_filepath]
         defaults_list = []
-        for d in defaults_file:
+        for d in defaults_filepath:
             defaults_list.append(os.path.join(testdir, d))
         return ','.join(defaults_list)
 
