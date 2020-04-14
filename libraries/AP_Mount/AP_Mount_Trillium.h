@@ -61,7 +61,13 @@ private:
 
     AP_HAL::UARTDriver *_port;
 
-    uint32_t    _last_send;
+    uint32_t    _last_send_ms;
+
+    struct {
+        uint32_t            last_MAVLink_to_gimbal_ms;
+        uint32_t            last_gimbal_to_MAvLink_ms;
+        mavlink_channel_t   chan;
+    } _passthrough;
 
     struct {
         uint32_t    timestamp_ms;

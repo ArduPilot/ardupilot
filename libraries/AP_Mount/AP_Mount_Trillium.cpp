@@ -13,6 +13,8 @@ extern const AP_HAL::HAL& hal;
 #define AP_MOUNT_TRILLIUM_DEBUG_TX_PASSTHROUGH_DROPS        0
 
 #define AP_MOUNT_TRILLIUM_MAVLINK_PASSTHROUGH_DEVICE        13
+#define AP_MOUNT_TRILLIUM_MAVLINK_PASSTHROUGH_ENABLE        ENABLED
+#define AP_MOUNT_TRILLIUM_MAVLINK_RETRACT_USE_PWM           ENABLED
 
 void AP_Mount_Trillium::init()
 {
@@ -112,10 +114,12 @@ void AP_Mount_Trillium::update()
             // move mount to a "retracted" position.  we do not implement a separate servo based retract mechanism
         case MAV_MOUNT_MODE_RETRACT:
             _angle_ef_target_rad = _state._retract_angles.get() * DEG_TO_RAD;
+#if 0
             if (_retract_status.State == RETRACT_STATE_DEPLOYED || _retract_status.State == RETRACT_STATE_DEPLOYING) {
                 encodeOrionRetractCommandPacket(&PktOut, RETRACT_CMD_RETRACT);
                 OrionCommSend(&PktOut);
             }
+#endif
             break;
 
         // move mount to a neutral position, typically pointing forward
@@ -192,12 +196,39 @@ void AP_Mount_Trillium::read_incoming()
 
     int16_t num_available = _port->available();
 
-    while (num_available-- > 0) {        // Process bytes received
+#if AP_MOUNT_TRILLIUM_MAVLINK_PASSTHROUGH_ENABLE
+    if (num_available <= 0) {
+        // this early return saves us from the local variable init work
+        return;
+    }
+
+    uint8_t passthrough_payload[MAVLINK_MSG_PASSTHROUGH_FIELD_PAYLOAD_LEN];
+    uint8_t passthrough_index = 0;
+    const bool passthrough_enabled = _passthrough.last_MAVLink_to_gimbal_ms != 0;
+
+    if (passthrough_enabled) {
+        _passthrough.last_MAVLink_to_gimbal_ms = AP_HAL::millis();
+    }
+#endif // passthrough
+
+    while (num_available-- > 0) {
+        // Process bytes received
         const uint8_t rxByte = _port->read();
 
         if (LookForOrionPacketInByte(&_PktIn, rxByte)) {
             handle_packet(_PktIn);
         }
+
+#if AP_MOUNT_TRILLIUM_MAVLINK_PASSTHROUGH_ENABLE
+        if (passthrough_enabled) {
+            passthrough_payload[passthrough_index++] = rxByte;
+            if (num_available == 0 || passthrough_index >= sizeof(passthrough_payload)) {
+                // end of bytes read or packet is full
+                mavlink_msg_passthrough_send(_passthrough.chan, AP_MOUNT_TRILLIUM_MAVLINK_PASSTHROUGH_DEVICE, passthrough_index, passthrough_payload);
+                passthrough_index = 0;
+            }
+        }
+#endif // passthrough
     }
 }
 
@@ -326,12 +357,16 @@ void AP_Mount_Trillium::handle_passthrough(const mavlink_channel_t chan, const m
     }
 
     // store time of send
-    _last_send = AP_HAL::millis();
+    const uint32_t now_ms = AP_HAL::millis();
+    _last_send_ms = now_ms;
+    _passthrough.last_MAVLink_to_gimbal_ms = now_ms;
+    _passthrough.chan = chan;
 }
 
 size_t AP_Mount_Trillium::OrionCommSend(const OrionPkt_t *pPkt)
 {
 #if AP_MOUNT_TRILLIUM_DEBUG_TX_ALL_MSGS
+    gcs().send_text(MAV_SEVERITY_DEBUG, "%stx cmd ID: %u", pPkt.ID);
 #endif
 
     return _port->write((uint8_t *)pPkt, pPkt->Length + ORION_PKT_OVERHEAD);
