@@ -29,39 +29,6 @@ AP_VisualOdom_MAV::AP_VisualOdom_MAV(AP_VisualOdom &frontend) :
 {
 }
 
-// consume vision_position_delta mavlink messages
-void AP_VisualOdom_MAV::handle_vision_position_delta_msg(const mavlink_message_t &msg)
-{
-    // decode message
-    mavlink_vision_position_delta_t packet;
-    mavlink_msg_vision_position_delta_decode(&msg, &packet);
-
-    // apply rotation to angle and position delta
-    const enum Rotation rot = _frontend.get_orientation();
-    Vector3f angle_delta = Vector3f(packet.angle_delta[0], packet.angle_delta[1], packet.angle_delta[2]);
-    angle_delta.rotate(rot);
-    Vector3f position_delta = Vector3f(packet.position_delta[0], packet.position_delta[1], packet.position_delta[2]);
-    position_delta.rotate(rot);
-
-    const uint32_t now_ms = AP_HAL::millis();
-    _last_update_ms = now_ms;
-
-    // send to EKF
-    const float time_delta_sec = packet.time_delta_usec / 1000000.0f;
-    AP::ahrs_navekf().writeBodyFrameOdom(packet.confidence,
-                                         position_delta,
-                                         angle_delta,
-                                         time_delta_sec,
-                                         now_ms,
-                                         _frontend.get_pos_offset());
-
-    // log sensor data
-    AP::logger().Write_VisualOdom(time_delta_sec,
-                                  angle_delta,
-                                  position_delta,
-                                  packet.confidence);
-}
-
 // consume vision position estimate data and send to EKF. distances in meters
 void AP_VisualOdom_MAV::handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude, uint8_t reset_counter)
 {
