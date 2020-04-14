@@ -1638,6 +1638,10 @@ class AutoTestPlane(AutoTest):
         '''In lockup Plane should copy RC inputs to RC outputs'''
         self.plane_CPUFailsafe()
 
+    def test_large_missions(self):
+        self.load_mission("Kingaroy-vlarge.txt")
+        self.load_mission("Kingaroy-vlarge2.txt")
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -1738,6 +1742,10 @@ class AutoTestPlane(AutoTest):
             ("DeepStall",
              "Test DeepStall Landing",
              self.fly_deepstall),
+
+            ("LargeMissions",
+             "Test Manipulation of Large missions",
+             self.test_large_missions),
 
             ("LogDownLoad",
              "Log download",
