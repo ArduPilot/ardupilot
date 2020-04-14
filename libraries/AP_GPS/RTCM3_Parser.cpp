@@ -18,6 +18,7 @@
 */
 
 #include <string.h>
+#include <AP_Math/AP_Math.h>
 #include "RTCM3_Parser.h"
 
 // reset state
@@ -86,7 +87,7 @@ bool RTCM3_Parser::parse(void)
 {
     const uint8_t *parity = &pkt[pkt_len+3];
     uint32_t crc1 = (parity[0] << 16) | (parity[1] << 8) | parity[2];
-    uint32_t crc2 = crc24(pkt, pkt_len+3);
+    uint32_t crc2 = crc_crc24(pkt, pkt_len+3);
     if (crc1 != crc2) {
         resync();
         return false;
@@ -132,31 +133,6 @@ bool RTCM3_Parser::read(uint8_t byte)
 
     // need more bytes
     return false;
-}
-
-/*
-  calculate 24 bit RTCMv3 crc. We take an approach that saves memory
-  and flash at the cost of higher CPU load. This makes it appropriate
-  for use in the f103 AP_Periph nodes
-  On a F765 this costs us approx 2ms of CPU per second of 5Hz all
-  constellation RTCM data
-*/
-uint32_t RTCM3_Parser::crc24(const uint8_t *bytes, uint16_t len)
-{
-    uint32_t crc = 0;
-    while (len--) {
-        uint8_t b = *bytes++;
-        const uint8_t idx = (crc>>16) ^ b;
-        uint32_t crct = idx<<16;
-        for (uint8_t j=0; j<8; j++) {
-            crct <<= 1;
-            if (crct & 0x1000000) {
-                crct ^= POLYCRC24;
-            }
-        }
-        crc = ((crc<<8)&0xFFFFFF) ^ crct;
-    }
-    return crc;
 }
 
 #ifdef RTCM_MAIN_TEST
