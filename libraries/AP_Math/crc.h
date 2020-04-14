@@ -25,6 +25,7 @@ uint16_t crc_xmodem_update(uint16_t crc, uint8_t data);
 uint16_t crc_xmodem(const uint8_t *data, uint16_t len);
 uint32_t crc_crc32(uint32_t crc, const uint8_t *buf, uint32_t size);
 uint32_t crc32_small(uint32_t crc, const uint8_t *buf, uint32_t size);
+uint32_t crc_crc24(const uint8_t *bytes, uint16_t len);
 
 // Copyright (C) 2010 Swift Navigation Inc.
 // Contact: Fergus Noble <fergus@swift-nav.com>
@@ -36,3 +37,4 @@ uint16_t calc_crc_modbus(uint8_t *buf, uint16_t len);
 #define FNV_1_OFFSET_BASIS_64 14695981039346656037UL
 void hash_fnv_1a(uint32_t len, const uint8_t* buf, uint64_t* hash);
 
+static const uint32_t POLYCRC24 = 0x1864CFB;
