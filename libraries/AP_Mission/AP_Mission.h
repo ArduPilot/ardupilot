@@ -146,7 +146,7 @@ public:
     };
 
     //added
-    struct PACKED Payload_Throw {
+    struct PACKED Payload_Release {
         float latitude;
         float longitude;
         float altitude;
@@ -207,7 +207,7 @@ public:
     union Content {
         //added
         //payload throw structure
-        Payload_Throw payload_throw;
+        Payload_Release payload_release;
         //add finished
 
         // jump structure

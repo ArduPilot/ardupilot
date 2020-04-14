@@ -1006,10 +1006,10 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
     
     //added
     case MAV_CMD_NAV_PAYLOAD_RELEASE:
-        cmd.content.payload_throw.latitude = packet.param1;
-        cmd.content.payload_throw.longitude = packet.param2;
-        cmd.content.payload_throw.altitude = packet.param3;
-        //cmd.content.payload_throw.action = packet.param4;
+        cmd.content.payload_release.latitude = packet.param1;
+        cmd.content.payload_release.longitude = packet.param2;
+        cmd.content.payload_release.altitude = packet.param3;
+        //cmd.content.payload_release.action = packet.param4;
         break;
     //add finished
 
@@ -1454,10 +1454,10 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
     
     //Added
     case MAV_CMD_NAV_PAYLOAD_RELEASE:
-        packet.param1 = cmd.content.payload_throw.latitude;     //latitude
-        packet.param2 = cmd.content.payload_throw.longitude;    //longitude
-        packet.param3 = cmd.content.payload_throw.altitude;     //altitude
-        packet.param4 = cmd.content.payload_throw.action;       //action (1: release, 0: hold)
+        packet.param1 = cmd.content.payload_release.latitude;     //latitude
+        packet.param2 = cmd.content.payload_release.longitude;    //longitude
+        packet.param3 = cmd.content.payload_release.altitude;     //altitude
+        packet.param4 = cmd.content.payload_release.action;       //action (1: release, 0: hold)
         break;
     //Add finished
 

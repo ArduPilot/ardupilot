@@ -99,9 +99,13 @@ void ModeAuto::run()
     case Auto_LoiterToAlt:
         loiter_to_alt_run();
         break;
+    
+    //added
     case Auto_PayloadRelease:
         payload_release_run();
         break;
+    //add finish
+
     case Auto_NavPayloadPlace:
         payload_place_run();
         break;
@@ -140,6 +144,7 @@ void ModeAuto::rtl_start()
     copter.mode_rtl.init(true);
 }
 
+//added
 //payload release - initialises payload release in AUTO flight mode
 void ModeAuto::payload_release_start(const Location& dest_loc)
 {
@@ -148,6 +153,7 @@ void ModeAuto::payload_release_start(const Location& dest_loc)
     //call regular payload release flight mode initialisation and ask it check intial condition
     copter.mode_payloadrelease.init(false);
 }
+//add finish
 
 // auto_takeoff_start - initialises waypoint controller to implement take-off
 void ModeAuto::takeoff_start(const Location& dest_loc)
@@ -374,6 +380,7 @@ bool ModeAuto::is_taking_off() const
     return ((_mode == Auto_TakeOff) && !wp_nav->reached_wp_destination());
 }
 
+
 // auto_payload_place_start - initialises controller to implement a placing
 void ModeAuto::payload_place_start()
 {
@@ -448,9 +455,14 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_NAV_DELAY:                    // 93 Delay the next navigation command
         do_nav_delay(cmd);
         break;
+    
+    //added
+    case MAV_CMD_NAV_PAYLOAD_RELEASE:
+        do_payload_release(cmd);
+        break;
+    //add finish
 
     case MAV_CMD_NAV_PAYLOAD_PLACE:              // 94 place at Waypoint
-        do_payload_release(cmd);
         do_payload_place(cmd);
         break;
 
@@ -653,6 +665,12 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
         cmd_complete = verify_payload_place();
         break;
 
+    //added
+    case MAV_CMD_NAV_PAYLOAD_RELEASE:
+        cmd_complete = verify_payload_release();
+        break;
+    //add finish
+
     case MAV_CMD_NAV_LOITER_UNLIM:
         cmd_complete = verify_loiter_unlimited();
         break;
@@ -845,10 +863,12 @@ void ModeAuto::rtl_run()
     copter.mode_rtl.run(false);
 }
 
+//added
 void ModeAuto::payload_release_run()
 {
     copter.mode_payloadrelease.run();
 }
+//add finish
 
 // auto_circle_run - circle in AUTO flight mode
 //      called by auto_run at 100hz or more
@@ -1088,10 +1108,12 @@ void ModeAuto::do_takeoff(const AP_Mission::Mission_Command& cmd)
     takeoff_start(cmd.content.location);
 }
 
+//added
 void ModeAuto::do_payload_release(const AP_Mission::Mission_Command& cmd)
 {
     payload_release_start(cmd.content.location);
 }
+//add finish
 
 Location ModeAuto::loc_from_cmd(const AP_Mission::Mission_Command& cmd) const
 {
@@ -1563,6 +1585,14 @@ bool ModeAuto::verify_land()
 #else
 #define debug(fmt, args ...)
 #endif
+
+//added
+bool ModeAuto::verify_payload_release()
+{
+    //if verified true
+    return true;
+}
+//add finished
 
 // verify_payload_place - returns true if placing has been completed
 bool ModeAuto::verify_payload_place()

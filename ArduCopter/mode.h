@@ -36,7 +36,10 @@ public:
         ZIGZAG    =    24,  // ZIGZAG mode is able to fly in a zigzag manner with predefined point A and point B
         SYSTEMID  =    25,  // System ID mode produces automated system identification signals in the controllers
         AUTOROTATE =   26,  // Autonomous autorotation
+        
+        //added
         PAYLOADRELEASE = 27,    //payload drop flight mode
+        //add finish
 
     };
 
@@ -406,7 +409,11 @@ private:
     void spline_run();
     void land_run();
     void rtl_run();
+    
+    //added -> this function run payload release -> run() function in payload release flight mode
     void payload_release_run();
+    //add finish
+
     void circle_run();
     void nav_guided_run();
     void loiter_run();
@@ -456,6 +463,11 @@ private:
     void do_payload_release(const AP_Mission::Mission_Command& cmd);
     bool verify_takeoff();
     bool verify_land();
+
+    //added -> This function verifies if payload is released
+    bool verify_payload_release();
+    //add finished
+
     bool verify_payload_place();
     bool verify_loiter_unlimited();
     bool verify_loiter_time(const AP_Mission::Mission_Command& cmd);
@@ -1174,6 +1186,7 @@ private:
 
 };
 
+//added
 class ModePayloadRelease : public Mode {
 
 public:
@@ -1204,8 +1217,7 @@ protected:
 private:
     PayloadReleaseState _state = PayloadRelease_NotStarted;
 };
-
-
+//add finish
 class ModeStabilize : public Mode {
 
 public:
