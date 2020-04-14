@@ -17,7 +17,7 @@ import sys
 import time
 import traceback
 
-import apmrover2
+import rover
 import arducopter
 import arduplane
 import ardusub
@@ -300,7 +300,7 @@ tester_class_map = {
     "test.CopterTests2": arducopter.AutoTestCopterTests2,
     "test.Plane": arduplane.AutoTestPlane,
     "test.QuadPlane": quadplane.AutoTestQuadPlane,
-    "test.Rover": apmrover2.AutoTestRover,
+    "test.Rover": rover.AutoTestRover,
     "test.BalanceBot": balancebot.AutoTestBalanceBot,
     "test.Helicopter": arducopter.AutoTestHeli,
     "test.Sub": ardusub.AutoTestSub,
