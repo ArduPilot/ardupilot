@@ -55,7 +55,6 @@ private:
     void read_incoming();
 
     void handle_packet(OrionPkt_t &packet);
-    void handle_ack();
 
     void init_hw();
 
@@ -70,12 +69,7 @@ private:
     } _passthrough;
 
     struct {
-        uint32_t    timestamp_ms;
-        uint32_t    duration_ms;
         uint16_t    step;
-        uint8_t     rx_expected_cmd_id;
-        uint8_t     rx_expected_ack_id;
-        uint8_t     retries;
         bool        done : 1;
     } _booting;
 
@@ -90,11 +84,13 @@ private:
     //OrionPkt_t _PktOut;
     OrionRetractStatus_t _retract_status;
     OrionNetworkByteSettings_t _network_settings_current;
+    GeolocateTelemetryCore_t _telemetry_core;
+    OrionUartConfig_t _uart_config;
 
     const OrionNetworkByteSettings_t _network_settings_desired = {
         .Ip         = {172,  20, 114,   5},
         .Mask       = {172,  20, 117, 238},
-        .Gateway    = {255, 255, 0, 0},
+        .Gateway    = {255, 255,   0,   0},
         .LowDelay   = 1,
         .Mtu        = 0,
     };
@@ -104,6 +100,7 @@ private:
 
 
     size_t OrionCommSend(const OrionPkt_t *pPkt);
+    void requestOrionMessageByID(uint8_t id);
 
 };
 #endif // AP_MOUNT_TRILLIUM_ENABLED

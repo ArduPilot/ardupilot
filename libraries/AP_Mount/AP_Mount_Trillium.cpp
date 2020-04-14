@@ -4,6 +4,7 @@
 
 #include <GCS_MAVLink/GCS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -13,8 +14,9 @@ extern const AP_HAL::HAL& hal;
 #define AP_MOUNT_TRILLIUM_DEBUG_TX_PASSTHROUGH_DROPS        0
 
 #define AP_MOUNT_TRILLIUM_MAVLINK_PASSTHROUGH_DEVICE        13
-#define AP_MOUNT_TRILLIUM_MAVLINK_PASSTHROUGH_ENABLE        ENABLED
-#define AP_MOUNT_TRILLIUM_MAVLINK_RETRACT_USE_PWM           ENABLED
+#define AP_MOUNT_TRILLIUM_MAVLINK_PASSTHROUGH_ENABLE        1
+
+#define AP_MOUNT_TRILLIUM_SET_ETHERNET_SETTINGS             0
 
 void AP_Mount_Trillium::init()
 {
@@ -34,64 +36,55 @@ void AP_Mount_Trillium::init()
 
 void AP_Mount_Trillium::init_hw()
 {
-    if (_booting.done || _booting.retries >= 3) {
+    if (_booting.done) {
         return;
     }
 
-    const uint32_t now_ms = AP_HAL::millis();
-    if (now_ms - _booting.timestamp_ms < _booting.duration_ms) {
-        return;
-    }
-
-    if (_booting.rx_expected_cmd_id || _booting.rx_expected_ack_id) {
-        // time has expired and this was supposed to be cleared by now. so thats a boot failure - no response.
-        // backup retries, reset booting sequence, restore retries count. If we reach max retries then we stop retrying and stay in done=false state forever
-        const uint8_t retries = _booting.retries;
-        memset(&_booting, 0, sizeof(_booting));
-        _booting.retries = retries;
-    }
-
-    _booting.timestamp_ms = now_ms;
-
-    _booting.duration_ms = 0;
-
-    uint8_t cmd_id = 0;
-    bool expect_ack = AP_MOUNT_TRILLIUM_REQUIRE_ACKS;
-    OrionPkt_t Pkt;
+    //OrionPkt_t PktOut;
 
     switch (_booting.step++) {
     case 0:
-        _booting.duration_ms = 200;
-        // Build a version request packet (note that it doesn't matter what you send...)
-        MakeOrionPacket(&Pkt, ORION_PKT_CROWN_VERSION, 0);
-        OrionCommSend(&Pkt);
         break;
 
     case 1:
-        encodeOrionNetworkByteSettingsPacketStructure(&Pkt, &_network_settings_desired);
-        OrionCommSend(&Pkt);
+#if AP_MOUNT_TRILLIUM_SET_ETHERNET_SETTINGS
+        // set network settings
+        encodeOrionNetworkByteSettingsPacketStructure(&PktOut, &_network_settings_desired);
+        OrionCommSend(&PktOut);
+#endif
         break;
 
     case 2:
+        // Request version indo
+        requestOrionMessageByID(ORION_PKT_CAMERAS);
+        break;
     case 3:
+        requestOrionMessageByID(ORION_PKT_CLEVIS_VERSION);
+        break;
     case 4:
+        requestOrionMessageByID(ORION_PKT_CROWN_VERSION);
+        break;
     case 5:
+        requestOrionMessageByID(ORION_PKT_PAYLOAD_VERSION);
+        break;
     case 6:
+        requestOrionMessageByID(ORION_PKT_TRACKER_VERSION);
+        break;
     case 7:
+        requestOrionMessageByID(ORION_PKT_LENSCTL_VERSION);
+        break;
     case 8:
+        requestOrionMessageByID(ORION_PKT_BOARD);
+        break;
+
     case 9:
     case 10:
         // TODO: add more hw init commands to complete the hw boot-up process without a factory-reseted device ever needing to connect to the company-provided software
-    default:
         break;
 
-    case 11:
+    default:
         _booting.done = true;
         break;
-    }
-
-    if (expect_ack) {
-        _booting.rx_expected_ack_id = cmd_id;
     }
 }
 
@@ -114,18 +107,25 @@ void AP_Mount_Trillium::update()
             // move mount to a "retracted" position.  we do not implement a separate servo based retract mechanism
         case MAV_MOUNT_MODE_RETRACT:
             _angle_ef_target_rad = _state._retract_angles.get() * DEG_TO_RAD;
-#if 0
-            if (_retract_status.State == RETRACT_STATE_DEPLOYED || _retract_status.State == RETRACT_STATE_DEPLOYING) {
+            if (SRV_Channels::function_assigned(SRV_Channel::k_mount_open)) {
+                const bool gimbal_is_pointed_in_stow_orientation = true;
+                if (gimbal_is_pointed_in_stow_orientation) {
+                    SRV_Channels::set_output_to_min(SRV_Channel::k_mount_open);
+                }
+
+            } else if (_retract_status.State == RETRACT_STATE_DEPLOYED || _retract_status.State == RETRACT_STATE_DEPLOYING) {
                 encodeOrionRetractCommandPacket(&PktOut, RETRACT_CMD_RETRACT);
                 OrionCommSend(&PktOut);
             }
-#endif
             break;
 
         // move mount to a neutral position, typically pointing forward
         case MAV_MOUNT_MODE_NEUTRAL:
             _angle_ef_target_rad = _state._neutral_angles.get() * DEG_TO_RAD;
-            if (_retract_status.State == RETRACT_STATE_RETRACTED || _retract_status.State == RETRACT_STATE_RETRACTING) {
+            if (SRV_Channels::function_assigned(SRV_Channel::k_mount_open)) {
+                SRV_Channels::set_output_to_max(SRV_Channel::k_mount_open);
+
+            } else if (_retract_status.State == RETRACT_STATE_RETRACTED || _retract_status.State == RETRACT_STATE_RETRACTING) {
                 encodeOrionRetractCommandPacket(&PktOut, RETRACT_CMD_DEPLOY);
                 OrionCommSend(&PktOut);
             }
@@ -179,6 +179,7 @@ void AP_Mount_Trillium::update()
             // we do not know this mode so do nothing
             break;
     }
+
 
     if (resend_now) {
         send_target_angles(_angle_ef_target_rad, false);
@@ -264,6 +265,11 @@ void AP_Mount_Trillium::send_target_angles(float pitch_deg, float roll_deg, floa
 
 void AP_Mount_Trillium::handle_packet(OrionPkt_t &packet)
 {
+
+#if AP_MOUNT_TRILLIUM_DEBUG_RX_ALL_MSGS
+    gcs().send_text(MAV_SEVERITY_DEBUG, "%sRx msg id:", _trilliumGcsHeader, packet.ID);
+#endif
+
     const uint8_t len = packet.Length;
     uint16_t index = 0;
 
@@ -298,6 +304,117 @@ void AP_Mount_Trillium::handle_packet(OrionPkt_t &packet)
         decodeOrionPerformancePacketStructure(&packet, &_performance);
         break;
 
+    case ORION_PKT_UART_CONFIG:
+        decodeOrionUartConfigPacketStructure(&packet, &_uart_config);
+        break;
+
+    case ORION_PKT_GEOLOCATE_TELEMETRY:
+        // Received at 10Hz
+        decodeGeolocateTelemetryCorePacketStructure(&packet, &_telemetry_core);
+        break;
+
+    case ORION_PKT_CAMERAS:
+        break;
+
+        // TODO: Implement eithe rstoring or debug printing these
+    case ORION_PKT_CLEVIS_VERSION:
+    case ORION_PKT_CROWN_VERSION:
+    case ORION_PKT_PAYLOAD_VERSION:
+    case ORION_PKT_TRACKER_VERSION:
+    case ORION_PKT_LENSCTL_VERSION:
+    case ORION_PKT_BOARD:
+    case ORION_PKT_SOFTWARE_DIAGNOSTICS:
+    case ORION_PKT_VIBRATION:
+    case ORION_PKT_NETWORK_DIAGNOSTICS:
+    case ORION_PKT_INITIALIZE:
+    case ORION_PKT_CMD:
+    case ORION_PKT_STARTUP_CMD:
+    case ORION_PKT_AUTOPILOT_DATA:
+    case ORION_PKT_STARE_START:
+    case ORION_PKT_STARE_ACK:
+
+
+
+        // FULL LIST
+    case ORION_PKT_LASER_CMD:
+    case ORION_PKT_RESET:
+    case ORION_PKT_PRIVATE_05:
+    case ORION_PKT_LASER_STATES:
+    case ORION_PKT_PRIVATE_08:
+    case ORION_PKT_PRIVATE_09:
+    case ORION_PKT_PRIVATE_1F:
+    case ORION_PKT_PRIVATE_20:
+    case ORION_PKT_PRIVATE_21:
+    case ORION_PKT_LIMITS:
+    case ORION_PKT_PRIVATE_23:
+    case ORION_PKT_PRIVATE_24:
+    case ORION_PKT_RESET_SOURCE:
+    case ORION_PKT_PRIVATE_2A:
+    case ORION_PKT_PRIVATE_2B:
+    case ORION_PKT_PRIVATE_2D:
+    case ORION_PKT_PRIVATE_40:
+    case ORION_PKT_FAULTS:
+    case ORION_PKT_PRIVATE_47:
+    case ORION_PKT_PRIVATE_48:
+    case ORION_PKT_PRIVATE_49:
+    case ORION_PKT_CAMERA_SWITCH:
+    case ORION_PKT_CAMERA_STATE:
+    case ORION_PKT_NETWORK_VIDEO:
+    case ORION_PKT_PRIVATE_64:
+    case ORION_PKT_PRIVATE_65:
+    case ORION_PKT_PRIVATE_66:
+    case ORION_PKT_FLIR_SETTINGS:
+    case ORION_PKT_APTINA_SETTINGS:
+    case ORION_PKT_ZAFIRO_SETTINGS:
+    case ORION_PKT_HITACHI_SETTINGS:
+    case ORION_PKT_BAE_SETTINGS:
+    case ORION_PKT_SONY_SETTINGS:
+    case ORION_PKT_KTNC_SETTINGS:
+    case ORION_PKT_PRIVATE_70:
+    case ORION_PKT_PRIVATE_71:
+    case ORION_PKT_PRIVATE_90:
+    case ORION_PKT_PRIVATE_91:
+    case ORION_PKT_PRIVATE_92:
+    case ORION_PKT_RETRACT_CMD:
+    case ORION_PKT_PRIVATE_B0:
+    case ORION_PKT_USER_DATA:
+    case ORION_PKT_KLV_USER_DATA:
+    case ORION_PKT_PRIVATE_B4:
+    case ORION_PKT_PRIVATE_C0:
+    case ORION_PKT_PRIVATE_C1:
+    case ORION_PKT_PRIVATE_C2:
+    case ORION_PKT_PRIVATE_C3:
+    case ORION_PKT_PRIVATE_CE:
+    case ORION_PKT_PRIVATE_CF:
+    case ORION_PKT_PRIVATE_D0:
+    case ORION_PKT_GPS_DATA:
+    case ORION_PKT_EXT_HEADING_DATA:
+    case ORION_PKT_INS_QUALITY:
+    case ORION_PKT_GEOPOINT_CMD:
+    case ORION_PKT_RANGE_DATA:
+    case ORION_PKT_PATH:
+    case ORION_PKT_INS_OPTIONS:
+    case ORION_PKT_PRIVATE_DB:
+    case ORION_PKT_PRIVATE_DE:
+    case ORION_PKT_PRIVATE_DF:
+    case ORION_PKT_PRIVATE_E0:
+    case ORION_PKT_PRIVATE_E1:
+    case ORION_PKT_PRIVATE_E2:
+    case ORION_PKT_PRIVATE_E3:
+    case ORION_PKT_PRIVATE_E5:
+    case ORION_PKT_PRIVATE_E6:
+    case ORION_PKT_PRIVATE_E7:
+    case ORION_PKT_PRIVATE_E8:
+    case ORION_PKT_PRIVATE_E9:
+    case ORION_PKT_PRIVATE_EA:
+    case ORION_PKT_PRIVATE_F0:
+    case ORION_PKT_PRIVATE_F1:
+    case ORION_PKT_PRIVATE_F2:
+    case ORION_PKT_PRIVATE_F3:
+    case ORION_PKT_PRIVATE_F4:
+    case ORION_PKT_PRIVATE_F5:
+    case ORION_PKT_PRIVATE_F6:
+    case ORION_PKT_PRIVATE_F7:
     default:
         // unhandled
 #if AP_MOUNT_TRILLIUM_DEBUG_RX_UNHANDLED_MSGS
@@ -305,22 +422,6 @@ void AP_Mount_Trillium::handle_packet(OrionPkt_t &packet)
 #endif
         break;
     }
-
-#if AP_MOUNT_TRILLIUM_DEBUG_RX_ALL_MSGS
-    gcs().send_text(MAV_SEVERITY_DEBUG, "%sRx msg id:", _trilliumGcsHeader, packet.ID);
-#endif
-
-    if (_booting.rx_expected_cmd_id != 0 && packet.ID == _booting.rx_expected_cmd_id) {
-        // expected packet received! Forget it because we should have handled it in the above switch
-        _booting.rx_expected_cmd_id = 0;
-
-        // clear the duration so we immediately continue booting after handling the expected packet
-        _booting.duration_ms = 0;
-    }
-}
-
-void AP_Mount_Trillium::handle_ack()
-{
 }
 
 // send_mount_status - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
@@ -334,6 +435,13 @@ void AP_Mount_Trillium::send_mount_status(mavlink_channel_t chan)
     mavlink_msg_mount_status_send(chan, 0, 0, _current_angle_deg.y, _current_angle_deg.x, _current_angle_deg.z);
 }
 
+void AP_Mount_Trillium::requestOrionMessageByID(uint8_t id)
+{
+    OrionPkt_t PktOut = {};
+    MakeOrionPacket(&PktOut, id, 0);
+    OrionCommSend(&PktOut);
+
+}
 /*
  pass a raw packet from mavlink to Trillium Serial interface
 */
