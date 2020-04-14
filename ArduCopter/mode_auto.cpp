@@ -69,10 +69,12 @@ void ModeAuto::run()
         break;
 
     case Auto_Land:
+        gcs().send_text(MAV_SEVERITY_INFO, "Abhish_Land flight mode");
         land_run();
         break;
 
     case Auto_RTL:
+        gcs().send_text(MAV_SEVERITY_INFO, "Abhish_RTL Flight mode");
         rtl_run();
         break;
 
@@ -97,7 +99,9 @@ void ModeAuto::run()
     case Auto_LoiterToAlt:
         loiter_to_alt_run();
         break;
-
+    case Auto_PayloadRelease:
+        payload_release_run();
+        break;
     case Auto_NavPayloadPlace:
         payload_place_run();
         break;
@@ -134,6 +138,15 @@ void ModeAuto::rtl_start()
 
     // call regular rtl flight mode initialisation and ask it to ignore checks
     copter.mode_rtl.init(true);
+}
+
+//payload release - initialises payload release in AUTO flight mode
+void ModeAuto::payload_release_start(const Location& dest_loc)
+{
+    _mode = Auto_PayloadRelease;
+
+    //call regular payload release flight mode initialisation and ask it check intial condition
+    copter.mode_payloadrelease.init(false);
 }
 
 // auto_takeoff_start - initialises waypoint controller to implement take-off
@@ -387,6 +400,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
     /// navigation commands
     ///
     case MAV_CMD_NAV_TAKEOFF:                   // 22
+        gcs().send_text(MAV_SEVERITY_INFO, "Abhish_do takeoff command");
         do_takeoff(cmd);
         break;
 
@@ -395,6 +409,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_NAV_LAND:              // 21 LAND to Waypoint
+        gcs().send_text(MAV_SEVERITY_INFO, "Abhish_do_land command");
         do_land(cmd);
         break;
 
@@ -414,11 +429,12 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         do_loiter_to_alt(cmd);
         break;
 
-    case MAV_CMD_NAV_RETURN_TO_LAUNCH:             //20
+    case MAV_CMD_NAV_RETURN_TO_LAUNCH:          //20
+        gcs().send_text(MAV_SEVERITY_INFO, "Abhish_RTL First Command");
         do_RTL();
         break;
 
-    case MAV_CMD_NAV_SPLINE_WAYPOINT:           // 82  Navigate to Waypoint using spline
+    case MAV_CMD_NAV_SPLINE_WAYPOINT:         // 82  Navigate to Waypoint using spline
         do_spline_wp(cmd);
         break;
 
@@ -433,6 +449,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_NAV_PAYLOAD_PLACE:              // 94 place at Waypoint
+        do_payload_release(cmd);
         do_payload_place(cmd);
         break;
 
@@ -823,7 +840,13 @@ void ModeAuto::land_run()
 void ModeAuto::rtl_run()
 {
     // call regular rtl flight mode run function
+    //gcs().send_text(MAV_SEVERITY_INFO, "Called Here -> RTL run function");
     copter.mode_rtl.run(false);
+}
+
+void ModeAuto::payload_release_run()
+{
+    copter.mode_payloadrelease.run();
 }
 
 // auto_circle_run - circle in AUTO flight mode
@@ -1062,6 +1085,11 @@ void ModeAuto::do_takeoff(const AP_Mission::Mission_Command& cmd)
 {
     // Set wp navigation target to safe altitude above current position
     takeoff_start(cmd.content.location);
+}
+
+void ModeAuto::do_payload_release(const AP_Mission::Mission_Command& cmd)
+{
+    payload_release_start(cmd.content.location);
 }
 
 Location ModeAuto::loc_from_cmd(const AP_Mission::Mission_Command& cmd) const

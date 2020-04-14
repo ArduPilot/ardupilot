@@ -350,6 +350,8 @@ public:
     // Auto
     AutoMode mode() const { return _mode; }
 
+    void payload_release_start(const Location& dest_loc);
+
     bool loiter_start();
     void rtl_start();
     void takeoff_start(const Location& dest_loc);
@@ -404,6 +406,7 @@ private:
     void spline_run();
     void land_run();
     void rtl_run();
+    void payload_release_run();
     void circle_run();
     void nav_guided_run();
     void loiter_run();
@@ -450,7 +453,7 @@ private:
 #endif
     void do_payload_place(const AP_Mission::Mission_Command& cmd);
     void do_RTL(void);
-
+    void do_payload_release(const AP_Mission::Mission_Command& cmd);
     bool verify_takeoff();
     bool verify_land();
     bool verify_payload_place();
@@ -1177,7 +1180,7 @@ public:
     // inherit constructor
     using Mode::Mode;
 
-   // bool init(bool ignore_checks) override;
+    bool init(bool ignore_checks) override;
     virtual void run() override;
 
     bool requires_GPS() const override { return false; }
@@ -1185,13 +1188,21 @@ public:
     bool allows_arming(bool from_gcs) const override { return true; };
     bool is_autopilot() const override { return false; }
 
+    // This is for payload release state. 
+    enum PayloadReleaseState{
+        PayloadRelease_NotStarted,
+        PayloadRelease_Start,
+        PayloadRelease_Finish
+    };
+
+    PayloadReleaseState state() {return _state;}
 protected:
 
     const char *name() const override { return "PAYLOADRELEASE"; }
     const char *name4() const override { return "PAYR"; }
 
 private:
-
+    PayloadReleaseState _state = PayloadRelease_NotStarted;
 };
 
 

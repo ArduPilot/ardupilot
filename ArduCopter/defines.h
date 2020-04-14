@@ -95,6 +95,7 @@ enum AutoMode {
     Auto_Loiter,
     Auto_LoiterToAlt,
     Auto_NavPayloadPlace,
+    Auto_PayloadRelease
 };
 
 // Guided modes
