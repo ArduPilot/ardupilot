@@ -18,16 +18,7 @@
 
 
 // config
-#define AP_MOUNT_TRILLIUM_SERIAL_MINIMUM_INTERVAL_MS       1000
 #define AP_MOUNT_TRILLIUM_REQUIRE_ACKS                     (uint8_t)0      // 0 = FALSE, 1 = TRUE
-
-//// Command IDs
-#define AP_MOUNT_TRILLIUM_ID_ENABLE_GYRO_STABILISATION     0
-#define AP_MOUNT_TRILLIUM_ID_SET_PAN_TILT_POSITION         22
-
-
-
-
 
 
 
@@ -58,13 +49,6 @@ public:
 
 private:
 
-    void send_command(const uint8_t cmd, const uint8_t* data, const uint8_t size);
-    void send_command(const uint8_t cmd) { send_command(cmd, nullptr, 0); }
-    void send_command(const uint8_t cmd, const uint8_t data1) { uint8_t data[1] = {data1}; send_command(cmd, data, 1); }
-    void send_command(const uint8_t cmd, const uint8_t data1, const uint8_t data2) { uint8_t data[2] = {data1, data2}; send_command(cmd, data, 2); }
-    void send_command(const uint8_t cmd, const uint8_t data1, const uint8_t data2, const uint8_t data3) { uint8_t data[3] = {data1,data2,data3}; send_command(cmd, data, 3); }
-    void send_command(const uint8_t cmd, const uint8_t data1, const uint8_t data2, const uint8_t data3, const uint8_t data4) { uint8_t data[4] = {data1,data2,data3,data4}; send_command(cmd, data, 4); }
-
     void send_target_angles(float pitch_deg, float roll_deg, float yaw_deg);
     void send_target_angles(Vector3f angle, bool target_in_degrees);
 
@@ -76,8 +60,6 @@ private:
     void init_hw();
 
     AP_HAL::UARTDriver *_port;
-    bool _stab_pan : 1;
-    bool _stab_tilt : 1;
 
     uint32_t    _last_send;
 
@@ -94,12 +76,26 @@ private:
 
     // keep the last _current_angle values
     Vector3f _current_angle_deg; // in degrees
+    const char* _trilliumGcsHeader = "Trillium: ";
 
 
     // Trillium SDK
     OrionPkt_t _PktIn;
     //OrionPkt_t _PktOut;
     OrionRetractStatus_t _retract_status;
+    OrionNetworkByteSettings_t _network_settings_current;
+
+    const OrionNetworkByteSettings_t _network_settings_desired = {
+        .Ip         = {172,  20, 114,   5},
+        .Mask       = {172,  20, 117, 238},
+        .Gateway    = {255, 255, 0, 0},
+        .LowDelay   = 1,
+        .Mtu        = 0,
+    };
+
+    OrionDiagnostics_t _diagnostics;
+    OrionPerformance_t _performance;
+
 
     size_t OrionCommSend(const OrionPkt_t *pPkt);
 

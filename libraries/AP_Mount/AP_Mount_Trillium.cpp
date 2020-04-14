@@ -7,6 +7,13 @@
 
 extern const AP_HAL::HAL& hal;
 
+#define AP_MOUNT_TRILLIUM_DEBUG_RX_ALL_MSGS                 0
+#define AP_MOUNT_TRILLIUM_DEBUG_RX_UNHANDLED_MSGS           0
+#define AP_MOUNT_TRILLIUM_DEBUG_TX_ALL_MSGS                 0
+#define AP_MOUNT_TRILLIUM_DEBUG_TX_PASSTHROUGH_DROPS        0
+
+#define AP_MOUNT_TRILLIUM_MAVLINK_PASSTHROUGH_DEVICE        13
+
 void AP_Mount_Trillium::init()
 {
     // check for Trillium Gimbal protocol
@@ -44,6 +51,8 @@ void AP_Mount_Trillium::init_hw()
 
     _booting.timestamp_ms = now_ms;
 
+    _booting.duration_ms = 0;
+
     uint8_t cmd_id = 0;
     bool expect_ack = AP_MOUNT_TRILLIUM_REQUIRE_ACKS;
     OrionPkt_t Pkt;
@@ -56,27 +65,12 @@ void AP_Mount_Trillium::init_hw()
         OrionCommSend(&Pkt);
         break;
 
-//
-//        // I'm not sure this acks or not, so lets just not expect an ack for this.
-//        // If it's false then we'll move on. If its true and we don't get an ack then this step will always fail
-//        expect_ack = false;
-//
-//        cmd_id = AP_MOUNT_TRILLIUM_ID_ENABLE_MESSAGE_ACK;
-//        send_command(cmd_id, AP_MOUNT_TRILLIUM_REQUIRE_ACKS, AP_MOUNT_TRILLIUM_REQUIRE_ACKS);   // 1,1 means gimbal will ACK all packets we send it
-//        break;
-//
-//    case 1:
-//        _booting.duration_ms = 5000;
-//        cmd_id = AP_MOUNT_TRILLIUM_ID_INITILISE;
-//        send_command(cmd_id, 1, 1); // (1,1) means auto-initialize
-//        break;
-//
-//    case 2:
-//        _booting.duration_ms = 5000;
-//        cmd_id = AP_MOUNT_TRILLIUM_ID_ENABLE_STREAM_MODE;
-//        send_command(cmd_id, 2, AP_MOUNT_TRILLIUM_CURRENT_POS_STREAM_RATE_HZ);
-//        break;
+    case 1:
+        encodeOrionNetworkByteSettingsPacketStructure(&Pkt, &_network_settings_desired);
+        OrionCommSend(&Pkt);
+        break;
 
+    case 2:
     case 3:
     case 4:
     case 5:
@@ -87,6 +81,9 @@ void AP_Mount_Trillium::init_hw()
     case 10:
         // TODO: add more hw init commands to complete the hw boot-up process without a factory-reseted device ever needing to connect to the company-provided software
     default:
+        break;
+
+    case 11:
         _booting.done = true;
         break;
     }
@@ -108,7 +105,7 @@ void AP_Mount_Trillium::update()
 
     // flag to trigger sending target angles to gimbal
     bool resend_now = false;
-    OrionPkt_t pPkt;
+    OrionPkt_t PktOut;
 
     // update based on mount mode
     switch(get_mode()) {
@@ -116,8 +113,8 @@ void AP_Mount_Trillium::update()
         case MAV_MOUNT_MODE_RETRACT:
             _angle_ef_target_rad = _state._retract_angles.get() * DEG_TO_RAD;
             if (_retract_status.State == RETRACT_STATE_DEPLOYED || _retract_status.State == RETRACT_STATE_DEPLOYING) {
-                encodeOrionRetractCommandPacket(&pPkt, RETRACT_CMD_RETRACT);
-                OrionCommSend(&pPkt);
+                encodeOrionRetractCommandPacket(&PktOut, RETRACT_CMD_RETRACT);
+                OrionCommSend(&PktOut);
             }
             break;
 
@@ -125,8 +122,8 @@ void AP_Mount_Trillium::update()
         case MAV_MOUNT_MODE_NEUTRAL:
             _angle_ef_target_rad = _state._neutral_angles.get() * DEG_TO_RAD;
             if (_retract_status.State == RETRACT_STATE_RETRACTED || _retract_status.State == RETRACT_STATE_RETRACTING) {
-                encodeOrionRetractCommandPacket(&pPkt, RETRACT_CMD_DEPLOY);
-                OrionCommSend(&pPkt);
+                encodeOrionRetractCommandPacket(&PktOut, RETRACT_CMD_DEPLOY);
+                OrionCommSend(&PktOut);
             }
             break;
 
@@ -145,13 +142,31 @@ void AP_Mount_Trillium::update()
 
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
-            if (calc_angle_to_roi_target(_angle_ef_target_rad, true, true)) {
+            if (_state._roi_target_set) {
+                double targetLat = deg2rad(_state._roi_target.lat * 1.0e-7f);
+                double targetLon = deg2rad(_state._roi_target.lng * 1.0e-7f);
+                double targetAlt = _state._roi_target.alt * 0.01f;    // cm -> m
+                float targetVelNed[] = { 0.0, 0.0, 0.0 };
+
+                encodeGeopointCmdPacket(&PktOut, targetLat, targetLon, targetAlt, targetVelNed, 0, geopointOptions::geopointNone);
+                OrionCommSend(&PktOut);
+
+            } else if (calc_angle_to_roi_target(_angle_ef_target_rad, true, true)) {
                 resend_now = true;
             }
             break;
 
         case MAV_MOUNT_MODE_SYSID_TARGET:
-            if (calc_angle_to_sysid_target(_angle_ef_target_rad, true, true)) {
+            if (_state._target_sysid_location_set && _state._target_sysid != 0) {
+                double targetLat = deg2rad(_state._target_sysid_location.lat * 1.0e-7f);
+                double targetLon = deg2rad(_state._target_sysid_location.lng * 1.0e-7f);
+                double targetAlt = _state._target_sysid_location.alt * 0.01f;    // cm -> m
+                float targetVelNed[] = { 0.0, 0.0, 0.0 };
+
+                encodeGeopointCmdPacket(&PktOut, targetLat, targetLon, targetAlt, targetVelNed, 0, geopointOptions::geopointNone);
+                OrionCommSend(&PktOut);
+
+            } else if (calc_angle_to_sysid_target(_angle_ef_target_rad, true, true)) {
                 resend_now = true;
             }
             break;
@@ -161,45 +176,9 @@ void AP_Mount_Trillium::update()
             break;
     }
 
-    // resend target angles at least once per second
-    resend_now = resend_now || ((AP_HAL::millis() - _last_send) > AP_MOUNT_TRILLIUM_SERIAL_MINIMUM_INTERVAL_MS);
-
     if (resend_now) {
         send_target_angles(_angle_ef_target_rad, false);
     }
-
-    if (_stab_pan != _state._stab_pan || _stab_tilt != _state._stab_tilt) {
-        _stab_pan = _state._stab_pan;
-        _stab_tilt = _state._stab_tilt;
-        send_command(AP_MOUNT_TRILLIUM_ID_ENABLE_GYRO_STABILISATION, _stab_pan, _stab_tilt);
-    }
-
-}
-void AP_Mount_Trillium::send_target_angles(Vector3f angle, bool target_in_degrees)
-{
-    // convert to degrees if necessary
-    Vector3f target_deg = angle;
-    if (!target_in_degrees) {
-        target_deg *= RAD_TO_DEG;
-    }
-    send_target_angles(target_deg.x, target_deg.y, target_deg.z);
-}
-
-// send_target_angles
-void AP_Mount_Trillium::send_target_angles(float pitch_deg, float roll_deg, float yaw_deg)
-{
-    // datasheet section 3.2.1
-    // encode float degrees to encoded uint16_t derived by U16_VALUE = angle * (32768 / 360)
-    const float degree_to_encoded_U16 = 91.02222;
-
-    const uint16_t pan = pitch_deg * degree_to_encoded_U16;
-    const uint16_t tilt = yaw_deg * degree_to_encoded_U16;
-
-    send_command(AP_MOUNT_TRILLIUM_ID_SET_PAN_TILT_POSITION,
-            pan >> 8,
-            pan,
-            tilt >> 8,
-            tilt);
 }
 
 /*
@@ -222,6 +201,36 @@ void AP_Mount_Trillium::read_incoming()
     }
 }
 
+// send_target_angles in degrees or radians
+void AP_Mount_Trillium::send_target_angles(Vector3f angle, bool target_in_degrees)
+{
+    OrionPkt_t pPkt;
+    OrionCmd_t Cmd = {};
+
+    // Form a command that will tell the gimbal to move at 10 deg/s in pan for one second
+    if (target_in_degrees) {
+        Cmd.Target[GIMBAL_AXIS_PAN]  = deg2radf(angle.x);
+        Cmd.Target[GIMBAL_AXIS_TILT] = deg2radf(angle.y);
+    } else {
+        Cmd.Target[GIMBAL_AXIS_PAN]  = angle.x;
+        Cmd.Target[GIMBAL_AXIS_TILT] = angle.y;
+    }
+
+    Cmd.Mode = ORION_MODE_RATE;
+    Cmd.ImpulseTime = 1.0f;
+    Cmd.Stabilized = FALSE;
+
+    encodeOrionCmdPacket(&pPkt, &Cmd);
+    OrionCommSend(&pPkt);
+}
+
+// send_target_angles in degrees
+void AP_Mount_Trillium::send_target_angles(float pitch_deg, float roll_deg, float yaw_deg)
+{
+    send_target_angles(Vector3f(roll_deg, pitch_deg, yaw_deg), true);
+}
+
+
 void AP_Mount_Trillium::handle_packet(OrionPkt_t &packet)
 {
     const uint8_t len = packet.Length;
@@ -230,13 +239,12 @@ void AP_Mount_Trillium::handle_packet(OrionPkt_t &packet)
     switch (packet.ID) {
     case ORION_PKT_DEBUG_STRING:
         {
-        const char* trilliumName = "Trillium: ";
         DebugString_t msg;
         decodeDebugStringPacketStructure(&packet, &msg);
 
         while (index <= len) {
-            gcs().send_text(MAV_SEVERITY_DEBUG, "%s%s", trilliumName, (char*)&msg.description[index]);
-            index += (MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN - sizeof(trilliumName));
+            gcs().send_text(MAV_SEVERITY_DEBUG, "%s%s", _trilliumGcsHeader, (char*)&msg.description[index]);
+            index += (MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN - sizeof(_trilliumGcsHeader));
         };
         }
         break;
@@ -245,10 +253,31 @@ void AP_Mount_Trillium::handle_packet(OrionPkt_t &packet)
         decodeOrionRetractStatusPacket(&packet, &_retract_status.Cmd, &_retract_status.State, &_retract_status.Pos, &_retract_status.Flags);
         break;
 
+    case ORION_PKT_NETWORK_SETTINGS:
+        decodeOrionNetworkByteSettingsPacketStructure(&packet, &_network_settings_current);
+        break;
+
+    case ORION_PKT_DIAGNOSTICS:
+        // Received once every 3 seconds
+        decodeOrionDiagnosticsPacketStructure(&packet, &_diagnostics);
+        break;
+
+    case ORION_PKT_PERFORMANCE:
+        // Received at 4Hz
+        decodeOrionPerformancePacketStructure(&packet, &_performance);
+        break;
+
     default:
         // unhandled
+#if AP_MOUNT_TRILLIUM_DEBUG_RX_UNHANDLED_MSGS
+        gcs().send_text(MAV_SEVERITY_DEBUG, "%sunhandled msg id:", _trilliumGcsHeader, packet.ID);
+#endif
         break;
     }
+
+#if AP_MOUNT_TRILLIUM_DEBUG_RX_ALL_MSGS
+    gcs().send_text(MAV_SEVERITY_DEBUG, "%sRx msg id:", _trilliumGcsHeader, packet.ID);
+#endif
 
     if (_booting.rx_expected_cmd_id != 0 && packet.ID == _booting.rx_expected_cmd_id) {
         // expected packet received! Forget it because we should have handled it in the above switch
@@ -275,31 +304,36 @@ void AP_Mount_Trillium::send_mount_status(mavlink_channel_t chan)
 }
 
 /*
- send a command to the Trillium Serial API
+ pass a raw packet from mavlink to Trillium Serial interface
 */
-void AP_Mount_Trillium::send_command(const uint8_t cmd, const uint8_t* data, const uint8_t size)
+
+void AP_Mount_Trillium::handle_passthrough(const mavlink_channel_t chan, const mavlink_passthrough_t &packet)
 {
-    if (_port == nullptr || (_port->txspace() < (size + 5U))) {
+    if (packet.device != AP_MOUNT_TRILLIUM_MAVLINK_PASSTHROUGH_DEVICE) {
         return;
     }
 
-    _port->write(data, size);
+    if (_port == nullptr || _port->txspace() < packet.size) {
+        return;
+    }
+
+    uint32_t sent = _port->write(packet.payload, packet.size);
+
+    if (sent != packet.size) {
+#if AP_MOUNT_TRILLIUM_DEBUG_TX_PASSTHROUGH_DROPS
+        gcs().send_text(MAV_SEVERITY_DEBUG, "%spassthrough truncated", _trilliumGcsHeader);
+#endif
+    }
 
     // store time of send
     _last_send = AP_HAL::millis();
 }
 
-void AP_Mount_Trillium::handle_passthrough(const mavlink_channel_t chan, const mavlink_passthrough_t &packet)
-{
-    const uint8_t size = packet.payload[2];
-    const uint8_t cmd = packet.payload[3];
-    const uint8_t* data = &packet.payload[4];
-
-    send_command(cmd, data, size);
-}
-
 size_t AP_Mount_Trillium::OrionCommSend(const OrionPkt_t *pPkt)
 {
+#if AP_MOUNT_TRILLIUM_DEBUG_TX_ALL_MSGS
+#endif
+
     return _port->write((uint8_t *)pPkt, pPkt->Length + ORION_PKT_OVERHEAD);
 
 }
