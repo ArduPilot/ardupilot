@@ -433,6 +433,7 @@ private:
 
     // board orientation from AHRS
     enum Rotation _board_orientation = ROTATION_NONE;
+    // custom rotation matrix
     Matrix3f* _custom_rotation;
 
     // declination in radians
@@ -453,6 +454,11 @@ private:
 
     // automatic compass orientation on calibration
     AP_Int8     _rotate_auto;
+
+    // custom compass rotation
+    AP_Float    _custom_roll;
+    AP_Float    _custom_pitch;
+    AP_Float    _custom_yaw;
     
     // throttle expressed as a percentage from 0 ~ 1.0, used for motor compensation
     float       _thr;
