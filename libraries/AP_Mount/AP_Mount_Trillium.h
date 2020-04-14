@@ -102,6 +102,10 @@ private:
     size_t OrionCommSend(const OrionPkt_t *pPkt);
     void requestOrionMessageByID(uint8_t id);
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    SocketAPM sock{true};
+    bool sock_connected;
+#endif // HAL_BOARD_SITL
 };
 #endif // AP_MOUNT_TRILLIUM_ENABLED
 

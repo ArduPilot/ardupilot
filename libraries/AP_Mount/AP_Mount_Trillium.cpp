@@ -18,6 +18,10 @@ extern const AP_HAL::HAL& hal;
 
 #define AP_MOUNT_TRILLIUM_SET_ETHERNET_SETTINGS             0
 
+#define AP_MOUNT_TRILLIUM_SITL_USE_IP                       0
+#define AP_MOUNT_TRILLIUM_SITL_IP                           "172.20.114.45"
+#define AP_MOUNT_TRILLIUM_SITL_PORT                         8748
+
 void AP_Mount_Trillium::init()
 {
     // check for Trillium Gimbal protocol
@@ -39,6 +43,15 @@ void AP_Mount_Trillium::init_hw()
     if (_booting.done) {
         return;
     }
+
+#if AP_MOUNT_TRILLIUM_SITL_USE_IP && (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+    if (!sock_connected) {
+        sock_connected = sock.connect(AP_MOUNT_TRILLIUM_SITL_IP, AP_MOUNT_TRILLIUM_SITL_PORT);
+        if (!sock_connected) {
+            return;
+        }
+    }
+#endif
 
 
     OrionPkt_t PktOut;
@@ -198,7 +211,16 @@ void AP_Mount_Trillium::read_incoming()
         return;
     }
 
+#if AP_MOUNT_TRILLIUM_SITL_USE_IP && (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+    if (!sock.pollin(0)) {
+        // input buffer is empty
+        return;
+    }
+    // limit our reads so we're not here forever
+    int16_t num_available = 10*1024;
+#else
     int16_t num_available = _port->available();
+#endif
 
 #if AP_MOUNT_TRILLIUM_MAVLINK_PASSTHROUGH_ENABLE
     if (num_available <= 0) {
@@ -217,7 +239,15 @@ void AP_Mount_Trillium::read_incoming()
 
     while (num_available-- > 0) {
         // Process bytes received
+#if AP_MOUNT_TRILLIUM_SITL_USE_IP && (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+        uint8_t buf[1];
+        if (sock.recv(&buf, 1, 0) != 1) {
+            break;
+        }
+        const uint8_t rxByte = buf[0];
+#else
         const uint8_t rxByte = _port->read();
+#endif
 
         if (LookForOrionPacketInByte(&_PktIn, rxByte)) {
             handle_packet(_PktIn);
@@ -481,6 +511,15 @@ size_t AP_Mount_Trillium::OrionCommSend(const OrionPkt_t *pPkt)
 
     const uint32_t len = pPkt->Length + ORION_PKT_OVERHEAD;
 
+#if AP_MOUNT_TRILLIUM_SITL_USE_IP && (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+    if (sock_connected) {
+        return sock.send((uint8_t *)pPkt, len);
+    } else {
+        return 0;
+    }
+#else
+    return _port->write((uint8_t *)pPkt, len);
+#endif
 }
 #endif // MOUNT_TRILLIUM_ENABLE
 
