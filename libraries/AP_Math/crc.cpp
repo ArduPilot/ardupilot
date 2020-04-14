@@ -314,3 +314,23 @@ void hash_fnv_1a(uint32_t len, const uint8_t* buf, uint64_t* hash)
         *hash *= FNV_1_PRIME_64;
     }
 }
+
+// calculate 24 bit crc. We take an approach that saves memory and flash at the cost of higher CPU load.
+uint32_t crc_crc24(const uint8_t *bytes, uint16_t len)
+{
+    static constexpr uint32_t POLYCRC24 = 0x1864CFB;
+    uint32_t crc = 0;
+    while (len--) {
+        uint8_t b = *bytes++;
+        const uint8_t idx = (crc>>16) ^ b;
+        uint32_t crct = idx<<16;
+        for (uint8_t j=0; j<8; j++) {
+            crct <<= 1;
+            if (crct & 0x1000000) {
+                crct ^= POLYCRC24;
+            }
+        }
+        crc = ((crc<<8)&0xFFFFFF) ^ crct;
+    }
+    return crc;
+}
