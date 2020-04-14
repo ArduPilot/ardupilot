@@ -4931,7 +4931,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
     def test_skid_steer(self):
         model = "rover-skid"
         vinfo = vehicleinfo.VehicleInfo()
-        defaults_filepath = vinfo.options["APMrover2"]["frames"][model]["default_params_filename"]
+        defaults_filepath = vinfo.options["Rover"]["frames"][model]["default_params_filename"]
         self.customise_SITL_commandline([],
                                         model=model,
                                         defaults_filepath=defaults_filepath)
