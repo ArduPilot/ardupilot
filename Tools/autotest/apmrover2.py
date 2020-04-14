@@ -4934,7 +4934,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         defaults_filepath = vinfo.options["APMrover2"]["frames"][model]["default_params_filename"]
         self.customise_SITL_commandline([],
                                         model=model,
-                                        defaults_file=defaults_filepath)
+                                        defaults_filepath=defaults_filepath)
         self.change_mode("MANUAL")
         self.wait_ready_to_arm()
         self.arm_vehicle()
