@@ -384,6 +384,12 @@ class sitl(Board):
                 '-O3',
             ]
 
+        if 'clang++' in cfg.env.COMPILER_CXX and cfg.options.asan:
+            env.CXXFLAGS += [
+                '-fsanitize=address',
+                '-fno-omit-frame-pointer',
+            ]
+
         env.LIB += [
             'm',
         ]
@@ -392,6 +398,10 @@ class sitl(Board):
         cfg.check_feenableexcept()
 
         env.LINKFLAGS += ['-pthread',]
+
+        if cfg.env.DEBUG and 'clang++' in cfg.env.COMPILER_CXX and cfg.options.asan:
+             env.LINKFLAGS += ['-fsanitize=address']
+
         env.AP_LIBRARIES += [
             'AP_HAL_SITL',
             'SITL',
