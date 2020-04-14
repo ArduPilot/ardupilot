@@ -3,7 +3,6 @@
 #include <AP_GPS/AP_GPS.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_GPS/AP_GPS.h>
 
 #include "AP_Compass.h"
 
@@ -20,20 +19,16 @@ void Compass::cal_update()
     bool running = false;
 
     for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
-        bool failure;
-        _calibrator[i].update(failure);
-        if (failure) {
+        if (_calibrator[i] == nullptr) {
+            continue;
+        }
+        if (_calibrator[i]->failed()) {
             AP_Notify::events.compass_cal_failed = 1;
         }
 
-        if (_calibrator[i].check_for_timeout()) {
-            AP_Notify::events.compass_cal_failed = 1;
-            cancel_calibration_all();
-        }
-
-        if (_calibrator[i].running()) {
+        if (_calibrator[i]->running()) {
             running = true;
-        } else if (_cal_autosave && !_cal_saved[i] && _calibrator[i].get_status() == CompassCalibrator::Status::SUCCESS) {
+        } else if (_cal_autosave && !_cal_saved[i] && _calibrator[i]->get_state().status == CompassCalibrator::Status::SUCCESS) {
             _accept_calibration(uint8_t(i));
         }
     }
@@ -62,6 +57,15 @@ bool Compass::_start_calibration(uint8_t i, bool retry, float delay)
         gcs().send_text(MAV_SEVERITY_ERROR, "Compass cal requires reboot after priority change");
         return false;
     }
+    
+    if (_calibrator[prio] == nullptr) {
+        _calibrator[prio] = new CompassCalibrator();
+        if (_calibrator[prio] == nullptr) {
+            gcs().send_text(MAV_SEVERITY_ERROR, "Compass cal object not initialised");
+            return false;
+        }
+    }
+
     if (_options.get() & uint16_t(Option::CAL_REQUIRE_GPS)) {
         if (AP::gps().status() < AP_GPS::GPS_OK_FIX_2D) {
             gcs().send_text(MAV_SEVERITY_ERROR, "Compass cal requires GPS lock");
@@ -71,27 +75,47 @@ bool Compass::_start_calibration(uint8_t i, bool retry, float delay)
     if (!is_calibrating()) {
         AP_Notify::events.initiated_compass_cal = 1;
     }
+
+    if (_rotate_auto) {
+        enum Rotation r = _get_state(prio).external?(enum Rotation)_get_state(prio).orientation.get():ROTATION_NONE;
+        if (r != ROTATION_CUSTOM) {
+            _calibrator[prio]->set_orientation(r, _get_state(prio).external, _rotate_auto>=2);
+        }
+    }
+    _cal_saved[prio] = false;
     if (i == 0 && _get_state(prio).external != 0) {
-        _calibrator[prio].set_tolerance(_calibration_threshold);
+        _calibrator[prio]->start(retry, delay, get_offsets_max(), i, _calibration_threshold);
     } else {
         // internal compasses or secondary compasses get twice the
         // threshold. This is because internal compasses tend to be a
         // lot noisier
-        _calibrator[prio].set_tolerance(_calibration_threshold*2);
+        _calibrator[prio]->start(retry, delay, get_offsets_max(), i, _calibration_threshold*2);
     }
-    if (_rotate_auto) {
-        enum Rotation r = _get_state(prio).external?(enum Rotation)_get_state(prio).orientation.get():ROTATION_NONE;
-        if (r != ROTATION_CUSTOM) {
-            _calibrator[prio].set_orientation(r, _get_state(prio).external, _rotate_auto>=2);
+    if (!_cal_thread_started) {
+        _cal_requires_reboot = true;
+        if (!hal.scheduler->thread_create(FUNCTOR_BIND(this, &Compass::_update_calibration_trampoline, void), "compasscal", 2048, AP_HAL::Scheduler::PRIORITY_IO, 0)) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "CompassCalibrator: Cannot start compass thread.");
+            return false;
         }
+        _cal_thread_started = true;
     }
-    _cal_saved[prio] = false;
-    _calibrator[prio].start(retry, delay, get_offsets_max(), i);
 
     // disable compass learning both for calibration and after completion
     _learn.set_and_save(0);
 
     return true;
+}
+
+void Compass::_update_calibration_trampoline() {
+    while(true) {
+        for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
+            if (_calibrator[i] == nullptr) {
+                continue;
+            }
+            _calibrator[i]->update();
+        }
+        hal.scheduler->delay(1);
+    }
 }
 
 bool Compass::_start_calibration_mask(uint8_t mask, bool retry, bool autosave, float delay, bool autoreboot)
@@ -126,12 +150,14 @@ void Compass::_cancel_calibration(uint8_t i)
 {
     AP_Notify::events.initiated_compass_cal = 0;
     Priority prio = Priority(i);
-
-    if (_calibrator[prio].running() || _calibrator[prio].get_status() == CompassCalibrator::Status::WAITING_TO_START) {
+    if (_calibrator[prio] == nullptr) {
+        return;
+    }
+    if (_calibrator[prio]->running() || _calibrator[prio]->get_state().status == CompassCalibrator::Status::WAITING_TO_START) {
         AP_Notify::events.compass_cal_canceled = 1;
     }
     _cal_saved[prio] = false;
-    _calibrator[prio].stop();
+    _calibrator[prio]->stop();
 }
 
 void Compass::_cancel_calibration_mask(uint8_t mask)
@@ -152,18 +178,19 @@ bool Compass::_accept_calibration(uint8_t i)
 {
     Priority prio = Priority(i);
 
-    CompassCalibrator& cal = _calibrator[prio];
-    const CompassCalibrator::Status cal_status = cal.get_status();
+    CompassCalibrator* cal = _calibrator[prio];
+    if (cal == nullptr) {
+        return false;
+    }
+    const CompassCalibrator::Report cal_report = cal->get_report();
 
-    if (_cal_saved[prio] || cal_status == CompassCalibrator::Status::NOT_STARTED) {
+    if (_cal_saved[prio] || cal_report.status == CompassCalibrator::Status::NOT_STARTED) {
         return true;
-    } else if (cal_status == CompassCalibrator::Status::SUCCESS) {
-        _cal_complete_requires_reboot = true;
+    } else if (cal_report.status == CompassCalibrator::Status::SUCCESS) {
         _cal_saved[prio] = true;
 
-        Vector3f ofs, diag, offdiag;
-        float scale_factor;
-        cal.get_calibration(ofs, diag, offdiag, scale_factor);
+        Vector3f ofs(cal_report.ofs), diag(cal_report.diag), offdiag(cal_report.offdiag);
+        float scale_factor = cal_report.scale_factor;
 
         set_and_save_offsets(i, ofs);
         set_and_save_diagonals(i,diag);
@@ -171,7 +198,7 @@ bool Compass::_accept_calibration(uint8_t i)
         set_and_save_scale_factor(i,scale_factor);
 
         if (_get_state(prio).external && _rotate_auto >= 2) {
-            set_and_save_orientation(i, cal.get_orientation());
+            set_and_save_orientation(i, cal_report.orientation);
         }
 
         if (!is_calibrating()) {
@@ -187,11 +214,14 @@ bool Compass::_accept_calibration_mask(uint8_t mask)
 {
     bool success = true;
     for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
+        if (_calibrator[i] == nullptr) {
+            continue;
+        }
         if ((1<<uint8_t(i)) & mask) {
             if (!_accept_calibration(uint8_t(i))) {
                 success = false;
             }
-            _calibrator[i].stop();
+            _calibrator[i]->stop();
         }
     }
 
@@ -210,23 +240,21 @@ bool Compass::send_mag_cal_progress(const GCS_MAVLINK& link)
             // hogging *all* the bandwidth
             return true;
         }
-
+        
         auto& calibrator = _calibrator[compass_id];
-        const CompassCalibrator::Status cal_status = calibrator.get_status();
+        if (calibrator == nullptr) {
+            continue;
+        }
+        const CompassCalibrator::State cal_state = calibrator->get_state();
 
-        if (cal_status == CompassCalibrator::Status::WAITING_TO_START  ||
-            cal_status == CompassCalibrator::Status::RUNNING_STEP_ONE ||
-            cal_status == CompassCalibrator::Status::RUNNING_STEP_TWO) {
-            uint8_t completion_pct = calibrator.get_completion_percent();
-            const CompassCalibrator::completion_mask_t& completion_mask = calibrator.get_completion_mask();
-            const Vector3f direction;
-            uint8_t attempt = _calibrator[compass_id].get_attempt();
-
+        if (cal_state.status == CompassCalibrator::Status::WAITING_TO_START  ||
+            cal_state.status == CompassCalibrator::Status::RUNNING_STEP_ONE ||
+            cal_state.status == CompassCalibrator::Status::RUNNING_STEP_TWO) {
             mavlink_msg_mag_cal_progress_send(
                 link.get_chan(),
                 uint8_t(compass_id), cal_mask,
-                (uint8_t)cal_status, attempt, completion_pct, completion_mask,
-                direction.x, direction.y, direction.z
+                (uint8_t)cal_state.status, cal_state.attempt, cal_state.completion_pct, cal_state.completion_mask,
+                0.0f, 0.0f, 0.0f
             );
         }
     }
@@ -246,39 +274,39 @@ bool Compass::send_mag_cal_report(const GCS_MAVLINK& link)
             // hogging *all* the bandwidth
             return true;
         }
-
-        const CompassCalibrator::Status cal_status = _calibrator[compass_id].get_status();
-        if (cal_status == CompassCalibrator::Status::SUCCESS ||
-            cal_status == CompassCalibrator::Status::FAILED ||
-            cal_status == CompassCalibrator::Status::BAD_ORIENTATION) {
-            float fitness = _calibrator[compass_id].get_fitness();
-            Vector3f ofs, diag, offdiag;
-            float scale_factor;
-            _calibrator[compass_id].get_calibration(ofs, diag, offdiag, scale_factor);
+        if (_calibrator[compass_id] == nullptr) {
+            continue;
+        }
+        const CompassCalibrator::Report cal_report = _calibrator[compass_id]->get_report();
+        if (cal_report.status == CompassCalibrator::Status::SUCCESS ||
+            cal_report.status == CompassCalibrator::Status::FAILED ||
+            cal_report.status == CompassCalibrator::Status::BAD_ORIENTATION) {
             uint8_t autosaved = _cal_saved[compass_id];
-
             mavlink_msg_mag_cal_report_send(
                 link.get_chan(),
                 uint8_t(compass_id), cal_mask,
-                (uint8_t)cal_status, autosaved,
-                fitness,
-                ofs.x, ofs.y, ofs.z,
-                diag.x, diag.y, diag.z,
-                offdiag.x, offdiag.y, offdiag.z,
-                _calibrator[compass_id].get_orientation_confidence(),
-                _calibrator[compass_id].get_original_orientation(),
-                _calibrator[compass_id].get_orientation(),
-                scale_factor
+                (uint8_t)cal_report.status, autosaved,
+                cal_report.fitness,
+                cal_report.ofs.x, cal_report.ofs.y, cal_report.ofs.z,
+                cal_report.diag.x, cal_report.diag.y, cal_report.diag.z,
+                cal_report.offdiag.x, cal_report.offdiag.y, cal_report.offdiag.z,
+                cal_report.orientation_confidence,
+                cal_report.original_orientation,
+                cal_report.orientation,
+                cal_report.scale_factor
             );
         }
     }
     return true;
 }
 
-bool Compass::is_calibrating() const
+bool Compass::is_calibrating()
 {
     for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
-        switch(_calibrator[i].get_status()) {
+        if (_calibrator[i] == nullptr) {
+            continue;
+        }
+        switch(_calibrator[i]->get_state().status) {
             case CompassCalibrator::Status::NOT_STARTED:
             case CompassCalibrator::Status::SUCCESS:
             case CompassCalibrator::Status::FAILED:
@@ -291,11 +319,14 @@ bool Compass::is_calibrating() const
     return false;
 }
 
-uint8_t Compass::_get_cal_mask() const
+uint8_t Compass::_get_cal_mask()
 {
     uint8_t cal_mask = 0;
     for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
-        if (_calibrator[i].get_status() != CompassCalibrator::Status::NOT_STARTED) {
+        if (_calibrator[i] == nullptr) {
+            continue;
+        }
+        if (_calibrator[i]->get_state().status != CompassCalibrator::Status::NOT_STARTED) {
             cal_mask |= 1 << uint8_t(i);
         }
     }
