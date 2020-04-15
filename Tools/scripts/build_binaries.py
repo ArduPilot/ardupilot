@@ -117,7 +117,11 @@ is bob we will attempt to checkout bob-AVR'''
         if ctag == "latest":
             vtag = "master"
         else:
-            vtag = "%s-%s" % (vehicle, ctag)
+            tagvehicle = vehicle
+            if tagvehicle == "Rover":
+                # FIXME: Rover tags in git still named APMrover2 :-(
+                tagvehicle = "APMrover2"
+            vtag = "%s-%s" % (tagvehicle, ctag)
 
         branches = []
         if cframe is not None:
