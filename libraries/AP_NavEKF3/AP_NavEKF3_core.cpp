@@ -140,6 +140,9 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     if(!storedRangeBeacon.init(imu_buffer_length)) {
         return false;
     }
+    if (!storedExtNav.init(obs_buffer_length)) {
+        return false;
+    }
     if(!storedIMU.init(imu_buffer_length)) {
         return false;
     }
@@ -329,6 +332,7 @@ void NavEKF3_core::InitialiseVariables()
     ekfGpsRefHgt = 0.0;
     velOffsetNED.zero();
     posOffsetNED.zero();
+    memset(&velPosObs, 0, sizeof(velPosObs));
     posResetSource = DEFAULT;
     velResetSource = DEFAULT;
 
@@ -390,6 +394,16 @@ void NavEKF3_core::InitialiseVariables()
     memset(&yawAngDataNew, 0, sizeof(yawAngDataNew));
     memset(&yawAngDataDelayed, 0, sizeof(yawAngDataDelayed));
 
+    // external nav data fusion
+    memset(&extNavDataNew, 0, sizeof(extNavDataNew));
+    memset(&extNavDataDelayed, 0, sizeof(extNavDataDelayed));
+    extNavMeasTime_ms = 0;
+    extNavLastPosResetTime_ms = 0;
+    lastExtNavPassTime_ms = 0;
+    extNavDataToFuse = false;
+    extNavUsedForPos = false;
+    extNavTimeout = false;
+
     // zero data buffers
     storedIMU.reset();
     storedGPS.reset();
@@ -400,6 +414,7 @@ void NavEKF3_core::InitialiseVariables()
     storedRangeBeacon.reset();
     storedBodyOdm.reset();
     storedWheelOdm.reset();
+    storedExtNav.reset();
 
     // initialise pre-arm message
     hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string), "EKF3 still initialising");

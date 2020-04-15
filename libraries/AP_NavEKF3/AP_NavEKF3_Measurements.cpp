@@ -936,6 +936,51 @@ void NavEKF3_core::writeDefaultAirSpeed(float airspeed)
     defaultAirSpeed = airspeed;
 }
 
+/********************************************************
+*            External Navigation Measurements           *
+********************************************************/
+
+void NavEKF3_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint32_t resetTime_ms)
+{
+    // limit update rate to maximum allowed by sensor buffers and fusion process
+    // don't try to write to buffer until the filter has been initialised
+    if (((timeStamp_ms - extNavMeasTime_ms) < 70) || !statesInitialised) {
+        return;
+    } else {
+        extNavMeasTime_ms = timeStamp_ms;
+    }
+
+    if (resetTime_ms != extNavLastPosResetTime_ms) {
+        extNavDataNew.posReset = true;
+        extNavLastPosResetTime_ms = resetTime_ms;
+    } else {
+        extNavDataNew.posReset = false;
+    }
+
+    extNavDataNew.pos = pos;
+    if (posErr > 0) {
+        extNavDataNew.posErr = posErr;
+    } else {
+        extNavDataNew.posErr = frontend->_gpsHorizPosNoise;
+    }
+
+    // calculate timestamp
+    const uint32_t extnav_delay_ms = 10;
+    timeStamp_ms = timeStamp_ms - extnav_delay_ms;
+    // Correct for the average intersampling delay due to the filter update rate
+    timeStamp_ms -= localFilterTimeStep_ms/2;
+    // Prevent time delay exceeding age of oldest IMU data in the buffer
+    timeStamp_ms = MAX(timeStamp_ms, imuDataDelayed.time_ms);
+    extNavDataNew.time_ms = timeStamp_ms;
+
+    // extract yaw from the attitude
+    float roll_rad, pitch_rad, yaw_rad;
+    quat.to_euler(roll_rad, pitch_rad, yaw_rad);
+    writeEulerYawAngle(yaw_rad, angErr, timeStamp_ms, 2);
+
+    storedExtNav.push(extNavDataNew);
+}
+
 /*
   update timing statistics structure
  */
