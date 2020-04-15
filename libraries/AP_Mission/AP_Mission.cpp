@@ -18,18 +18,26 @@ const AP_Param::GroupInfo AP_Mission::var_info[] = {
     AP_GROUPINFO_FLAGS("TOTAL",  0, AP_Mission, _cmd_total, 0, AP_PARAM_FLAG_INTERNAL_USE_ONLY),
 
     // @Param: RESTART
-    // @DisplayName: Mission Restart when entering Auto mode
+    // @DisplayName: Mission - Restart Behaviour when entering AUTO mode
     // @Description: Controls mission starting point when entering Auto mode (either restart from beginning of mission or resume from last command run)
-    // @Values: 0:Resume Mission, 1:Restart Mission
+    // @Range: 0 3
+    // @Values: 0:Resume Mission at the WayPoint it has been suspended, 1:Restart Mission, 2:Restart PARALLEL translated Relative Mission, 3:Restart ROTATED  translated Relative Mission
     // @User: Advanced
     AP_GROUPINFO("RESTART",  1, AP_Mission, _restart, AP_MISSION_RESTART_DEFAULT),
 
     // @Param: OPTIONS
-    // @DisplayName: Mission options bitmask
+    // @DisplayName: Mission - options bitmask
     // @Description: Bitmask of what options to use in missions.
-    // @Bitmask: 0:Clear Mission on reboot, 1:Use distance to land calc on battery failsafe
+    // @Bitmask: 0:Clear Mission on reboot, 1:Use distance to land calc on battery failsafe, Bit 2: At restart skip altitude at first Waypoint, Bit 3: At restart use altitude offset (Start-Waypoint to first Waypoint) for all Waypoints
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  2, AP_Mission, _options, AP_MISSION_OPTIONS_DEFAULT),
+
+    // @Param: NO_TRANS
+    // @DisplayName: Mission - Radius to ignore translation
+    // @Description: Radius around HomeLocation therein translation of Relative Mission will be ignored (suggestion: Copter/Rover/Boat 5m, Plane 100m)
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("NO_TRANS",  3, AP_Mission, _no_translation, AP_MISSION_NO_TRANSLATION_DEFAULT),
 
     AP_GROUPEND
 };
@@ -65,6 +73,63 @@ void AP_Mission::init()
 ///     To-Do: should we validate the mission first and return true/false?
 void AP_Mission::start()
 {
+    _skip_first_wp = false;
+
+    switch (_restart) { // fix the behaviour at restart of the Mission
+    case 0:
+        restart_behaviour = Restart_Behaviour::RESUME_AT_LAST_WP;
+        break;
+    case 1:
+        restart_behaviour = Restart_Behaviour::RESTART_AT_BEGINNING;
+        break;
+    case 2:
+        restart_behaviour = Restart_Behaviour::RESTART_PARALLEL_TRANSLATED;
+        break;
+    case 3:
+        restart_behaviour = Restart_Behaviour::RESTART_ROTATED_TRANSLATED;
+        break;
+    default:
+        gcs().send_text(MAV_SEVERITY_NOTICE, "MIS_RESTART out of range: %i", (int)_restart);
+        restart_behaviour = Restart_Behaviour::RESUME_AT_LAST_WP;
+    }
+
+    if (restart_behaviour >= Restart_Behaviour::RESTART_PARALLEL_TRANSLATED) { // memorize the Start-Waypoint (location of switching to AUTO) for Relative Mission
+
+        _translation.calculated = false;
+
+        // determine the distance in [m] between the Homepoint and the location of switching to AUTO, to decide if a translation will happen
+        AP::ahrs().get_position(_start_loc); // .alt absolute [cm] in every case
+        Mission_Command tmp;
+        tmp.content.location = AP::ahrs().get_home();
+        float tmp_distance = tmp.content.location.get_distance(_start_loc); // in [m]
+        _translation.do_translation = (tmp_distance < _no_translation) ? false : true; // no translation if the distance to Homepoint is too small
+        _translation.alt = tmp.content.location.alt; // altitude of Homepoint, necessary for calculation of translation at Restart
+
+        // check if one of the Waypoints has (terrain_alt == 1) -> no translation allowed
+        uint16_t i=0;
+        while (get_next_cmd(i, tmp, true) && (_translation.do_translation) && (tmp.id != MAV_CMD_DO_LAND_START)) { // advance to the next command
+            // check if navigation or "do" command
+            if (is_nav_cmd(tmp)) {
+                // check if Waypoint
+                if (!(tmp.content.location.lat == 0 && tmp.content.location.lng == 0)) {
+                    switch (tmp.id) { // no translation for TAKEOFF or LAND commands
+                        case MAV_CMD_NAV_TAKEOFF:
+                        case MAV_CMD_NAV_LAND:
+                        case MAV_CMD_NAV_VTOL_TAKEOFF:
+                        case MAV_CMD_NAV_VTOL_LAND:
+                            break;
+                        default:
+                            if (tmp.content.location.terrain_alt == 1) {
+                                _translation.do_translation = false;
+                            }
+                    }
+                }
+            }
+            // move on to next command
+            i++;
+        }
+    }
+
     _flags.state = MISSION_RUNNING;
 
     reset(); // reset mission to the first command, resets jump tracking
@@ -151,7 +216,7 @@ void AP_Mission::resume()
 bool AP_Mission::starts_with_takeoff_cmd()
 {
     Mission_Command cmd = {};
-    uint16_t cmd_index = _restart ? AP_MISSION_CMD_INDEX_NONE : _nav_cmd.index;
+    uint16_t cmd_index = (restart_behaviour==Restart_Behaviour::RESUME_AT_LAST_WP) ? AP_MISSION_CMD_INDEX_NONE : _nav_cmd.index;
     if (cmd_index == AP_MISSION_CMD_INDEX_NONE) {
         cmd_index = AP_MISSION_FIRST_REAL_COMMAND;
     }
@@ -178,10 +243,10 @@ bool AP_Mission::starts_with_takeoff_cmd()
     return false;
 }
 
-/// start_or_resume - if MIS_AUTORESTART=0 this will call resume(), otherwise it will call start()
+/// start_or_resume - if MIS_AUTORESTART==0 this will call resume(), otherwise it will call start()
 void AP_Mission::start_or_resume()
 {
-    if (_restart == 1 && !_force_resume) {
+    if (restart_behaviour >= Restart_Behaviour::RESTART_AT_BEGINNING && !_force_resume) {
         start();
     } else {
         resume();
@@ -1562,17 +1627,103 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
             // save previous nav command index
             _prev_nav_cmd_id = _nav_cmd.id;
             _prev_nav_cmd_index = _nav_cmd.index;
-            // save separate previous nav command index if it contains lat,long,alt
+            //  if it contains lat,long ...
             if (!(cmd.content.location.lat == 0 && cmd.content.location.lng == 0)) {
+                // save separate previous nav command index
                 _prev_nav_cmd_wp_index = _nav_cmd.index;
+
+                //  calculate and do translation/rotation for Relative Mission
+                if (_translation.do_translation) { // no translation if we are behind DO_LAND_START
+                    switch (cmd.id) { // no translation for TAKEOFF or LAND commands
+                        case MAV_CMD_NAV_TAKEOFF:
+                        case MAV_CMD_NAV_LAND:
+                        case MAV_CMD_NAV_VTOL_TAKEOFF:
+                        case MAV_CMD_NAV_VTOL_LAND:
+                            break;
+                        default:
+                            // calculate parallel translation: from Base-Waypoint (first Waypoint of Mission) to Start-Waypoint (switch-to-AUTO-position)
+                            if ((!_translation.calculated)&&(restart_behaviour >= Restart_Behaviour::RESTART_PARALLEL_TRANSLATED)) {
+                                if (AP_MISSION_MASK_SKIP_FIRST_WP & _options) {
+                                    _skip_first_wp = true;
+                                }
+                                _translation.calculated = true; // do that just once at very first WayPoint (Start-Waypoint)
+                                _translation.lat = _start_loc.lat - cmd.content.location.lat;
+                                _translation.lng = _start_loc.lng - cmd.content.location.lng;
+
+                                // calculate altitude-translation
+                                if (cmd.content.location.relative_alt == 1) {
+                                    _translation.alt = _start_loc.alt - cmd.content.location.alt - _translation.alt; // subtract Home-Altitude if WP-altitude is relative to
+                                } else {
+                                    _translation.alt = _start_loc.alt - cmd.content.location.alt;
+                                }
+
+                                Mission_Command tmp;
+                                // get direction from Homepoint to Start-Waypoint
+                                tmp.content.location = AP::ahrs().get_home();
+                                _translation.direction = tmp.content.location.get_bearing_to(_start_loc);   // in centidegrees from 0 36000
+
+                                // direction from Homepoint to not translated Base-Waypoint / amount of rotation (relative to Base-Waypoint)
+                                _translation.direction -= tmp.content.location.get_bearing_to(cmd.content.location);
+                                if (_translation.direction < 0) {
+                                    _translation.direction += 36000;
+                                }
+
+                                cmd.content.location = _start_loc;
+                                switch (restart_behaviour) {
+                                case Restart_Behaviour::RESTART_PARALLEL_TRANSLATED:
+                                    gcs().send_text(MAV_SEVERITY_INFO, "Mission: %u %s Restart Parallel Translated", cmd.index, cmd.type());
+                                    break;
+                                case Restart_Behaviour::RESTART_ROTATED_TRANSLATED:
+                                    gcs().send_text(MAV_SEVERITY_INFO, "Mission: %u %s Restart Rotated", cmd.index, cmd.type());
+                                    break;
+                                default:
+                                    gcs().send_text(MAV_SEVERITY_NOTICE, "Mission: %u %s Restart Mode unknown %i", cmd.index, cmd.type(), static_cast<int>(restart_behaviour));
+                                }
+                                gcs().send_text(MAV_SEVERITY_INFO, "Mission: alt-transmission %.2fm",  static_cast<float>(_translation.alt)/100.0);
+                            }
+                            else {
+                                if (restart_behaviour >= Restart_Behaviour::RESTART_PARALLEL_TRANSLATED){ // do at least parallel translation
+                                    cmd.content.location.lat += _translation.lat;
+                                    cmd.content.location.lng += _translation.lng;
+                                    if (AP_MISSION_MASK_USE_ALT_OFFSET & _options) { // do altitude translation
+                                        cmd.content.location.alt += _translation.alt;
+                                    }
+                                }
+
+                                if (restart_behaviour >= Restart_Behaviour::RESTART_ROTATED_TRANSLATED){ // do additional rotation
+                                    Rotation tmp;
+                                    float rel_lat, rel_lng; // position of currently parallel translated WayPoint relative to Start-Waypoint
+                                    float rel_distance;     // imaginary distance lat/lng from Start-Waypoint to current WP in [10^7 Degrees]
+                                    rel_lat = cmd.content.location.lat - _start_loc.lat;
+                                    rel_lng = (cmd.content.location.lng - _start_loc.lng)*cmd.content.location.longitude_scale();;
+                                    tmp.direction = _start_loc.get_bearing_to(cmd.content.location);   // direction from Start_waypoint to current WP in centidegrees
+                                    tmp.direction = _translation.direction + tmp.direction; // total rotation direction in centidegrees
+                                    if (tmp.direction < 0) {
+                                        tmp.direction =+ 36000;
+                                    }
+                                    rel_distance = sqrt((rel_lat*rel_lat)+(rel_lng*rel_lng));
+                                    tmp.lat = (int32_t)(cos((float)tmp.direction/100.0*DEG_TO_RAD)*rel_distance);
+                                    tmp.lng = (int32_t)(sin((float)tmp.direction/100.0*DEG_TO_RAD)*rel_distance)/cmd.content.location.longitude_scale();
+                                    cmd.content.location.lat = _start_loc.lat + tmp.lat;
+                                    cmd.content.location.lng = _start_loc.lng + tmp.lng;
+                                }
+                            }
+                    }
+                }
             }
             // set current navigation command and start it
             _nav_cmd = cmd;
-            if (start_command(_nav_cmd)) {
-                _flags.nav_cmd_loaded = true;
+            if (!_skip_first_wp) // skip first Waypoint of a translated Mission
+            {
+                if (start_command(_nav_cmd)) {
+                    _flags.nav_cmd_loaded = true;
+                }
+            }else{
+                _skip_first_wp = false;
+                gcs().send_text(MAV_SEVERITY_INFO, "Mission: %u %s First-WP skipped", cmd.index, cmd.type());
             }
             // save a loaded wp index in history array for when _repeat_dist is set via MAV_CMD_DO_SET_RESUME_REPEAT_DIST
-            // and prevent history being re-written until vehicle returns to interupted position
+            // and prevent history being re-written until vehicle returns to interrupted position
             if(_repeat_dist > 0 && !_flags.resuming_mission && _nav_cmd.index != AP_MISSION_CMD_INDEX_NONE && !(_nav_cmd.content.location.lat == 0 && _nav_cmd.content.location.lng == 0)) {
                 // update mission history. last index position is always the most recent wp loaded.
                 for (uint8_t i=0; i<AP_MISSION_MAX_WP_HISTORY-1; i++) {
@@ -1590,6 +1741,9 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
         }else{
             // set current do command and start it (if not already set)
             if (!_flags.do_cmd_loaded) {
+                if (cmd.id == MAV_CMD_DO_LAND_START) {
+                    _translation.do_translation = false; // no translation of landing-locations
+                }
                 _do_cmd = cmd;
                 _flags.do_cmd_loaded = true;
                 start_command(_do_cmd);

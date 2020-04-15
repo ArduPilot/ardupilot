@@ -37,8 +37,11 @@
 #define AP_MISSION_RESTART_DEFAULT          0       // resume the mission from the last command run by default
 
 #define AP_MISSION_OPTIONS_DEFAULT          0       // Do not clear the mission when rebooting
+#define AP_MISSION_NO_TRANSLATION_DEFAULT   50      // no translation of the Mission within a radius of 50m around Homepoint (it's a compromise: for Copter/Rover/Boat 5-10m, for Plane 50-100m should be sufficient)
 #define AP_MISSION_MASK_MISSION_CLEAR       (1<<0)  // If set then Clear the mission on boot
 #define AP_MISSION_MASK_DIST_TO_LAND_CALC   (1<<1)  // Allow distance to best landing calculation to be run on failsafe
+#define AP_MISSION_MASK_SKIP_FIRST_WP       (1<<2)  // Skip first Waypoint altitude at Restart of Mission
+#define AP_MISSION_MASK_USE_ALT_OFFSET      (1<<3)  // Use altitude offset at Restart of Mission for all Waypoints
 
 #define AP_MISSION_MAX_WP_HISTORY           7       // The maximum number of previous wp commands that will be stored from the active missions history
 #define LAST_WP_PASSED (AP_MISSION_MAX_WP_HISTORY-2)
@@ -195,6 +198,13 @@ public:
         float release_rate;     // release rate in meters/second
     };
 
+    enum class Restart_Behaviour {
+        RESUME_AT_LAST_WP,
+        RESTART_AT_BEGINNING,
+        RESTART_PARALLEL_TRANSLATED,
+        RESTART_ROTATED_TRANSLATED
+    };
+
     union Content {
         // jump structure
         Jump_Command jump;
@@ -262,6 +272,24 @@ public:
         // location
         Location location{};      // Waypoint location
     };
+
+    // for lat/lng translation of a Relative Mission
+    struct Translation {
+        int32_t lat;            // latitude-displacement of location where AUTO has been switched on, relative to first waypoint [10^7°]
+        int32_t lng;            // longitude-displacement of location where AUTO has been switched on, relative to first waypoint [10^7°]
+        int32_t alt;            // altitude-displacement of location where AUTO has been switched on, relative to first waypoint [cm]
+        int32_t direction;      // direction from HomePoint to the location where AUTO has been switched on  [10^2°] North=0 East=9000
+        bool    do_translation; // for marking if location where AUTO has been switched is far enough from home-location
+        bool    calculated;     // for marking if first waypoint is still proceeded and displacement is calculated
+        };
+
+    // for lat/lng rotation of a Relative Mission
+    struct Rotation {
+        int32_t lat;            // latitude-displacement of location where AUTO has been switched on relative to current translated waypoint [10^7°]
+        int32_t lng;            // longitude-displacement of location where AUTO has been switched on relative to current translated waypoint [10^7°]
+        int32_t direction;      // direction from the location where AUTO has been switched on to the current translated waypoint [10^2°] North=0 East=9000
+        };
+
 
     // command structure
     struct Mission_Command {
@@ -594,9 +622,10 @@ private:
     static MAV_MISSION_RESULT sanity_check_params(const mavlink_mission_item_int_t& packet);
 
     // parameters
-    AP_Int16                _cmd_total;  // total number of commands in the mission
-    AP_Int8                 _restart;   // controls mission starting point when entering Auto mode (either restart from beginning of mission or resume from last command run)
-    AP_Int16                _options;    // bitmask options for missions, currently for mission clearing on reboot but can be expanded as required
+    AP_Int16                _cmd_total;     // total number of commands in the mission
+    AP_Int8                 _restart;       // controls mission starting point when entering Auto mode (either restart from beginning of mission or resume from last command run)
+    AP_Int16                _options;       // bitmask options for missions, currently for mission clearing on reboot but can be expanded as required
+    AP_Float                _no_translation;// Distance from HomeLocation wherein a translation of a Relative Mission will be ignored
 
     // pointer to main program functions
     mission_cmd_fn_t        _cmd_start_fn;  // pointer to function which will be called when a new command is started
@@ -604,6 +633,7 @@ private:
     mission_complete_fn_t   _mission_complete_fn;   // pointer to function which will be called when mission completes
 
     // internal variables
+    AP_Mission::Restart_Behaviour restart_behaviour;    // behaviour at restart of a Mission
     struct Mission_Command  _nav_cmd;   // current "navigation" command.  It's position in the command list is held in _nav_cmd.index
     struct Mission_Command  _do_cmd;    // current "do" command.  It's position in the command list is held in _do_cmd.index
     struct Mission_Command  _resume_cmd;  // virtual wp command that is used to resume mission if the mission needs to be rewound on resume.
@@ -612,6 +642,9 @@ private:
     uint16_t                _prev_nav_cmd_wp_index; // index of the previous "navigation" command that contains a waypoint.  Rarely used which is why we don't store the whole command
     bool                    _force_resume;  // when set true it forces mission to resume irrespective of MIS_RESTART param.
     struct Location         _exit_position;  // the position in the mission that the mission was exited
+    struct Location         _start_loc; // the location where the MODE has been switched to AUTO
+    struct Translation      _translation;   // info concerning the translation of a  Relative Mission
+    bool                    _skip_first_wp;  // when set in Relative Mission it forces to skip the first Waypoint at beginning of Mission
 
     // jump related variables
     struct jump_tracking_struct {
