@@ -817,7 +817,7 @@ void UARTDriver::write_pending_bytes_NODMA(uint32_t n)
     ByteBuffer::IoVec vec[2];
     uint16_t nwritten = 0;
 
-    if (half_duplex) {
+    if (half_duplex && n > 1) {
         half_duplex_setup_tx();
     }
 
