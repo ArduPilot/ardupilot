@@ -1703,7 +1703,7 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
                                     if (tmp.direction < 0) {
                                         tmp.direction =+ 36000;
                                     }
-                                    rel_distance = sqrt((rel_lat*rel_lat)+(rel_lng*rel_lng));
+                                    rel_distance = sqrtf((rel_lat*rel_lat)+(rel_lng*rel_lng));
                                     tmp.lat = (int32_t)(cos((float)tmp.direction/100.0*DEG_TO_RAD)*rel_distance);
                                     tmp.lng = (int32_t)(sin((float)tmp.direction/100.0*DEG_TO_RAD)*rel_distance)/cmd.content.location.longitude_scale();
                                     cmd.content.location.lat = _start_loc.lat + tmp.lat;
