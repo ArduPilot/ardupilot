@@ -1711,7 +1711,8 @@ void QuadPlane::update_transition(void)
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                       plane.nav_pitch_cd,
                                                                       0);
-        attitude_control->set_throttle_out(motors->get_throttle_hover(), true, 0);
+        // set throttle at either hover throttle or current throttle, whichever is higher, through the transition
+        attitude_control->set_throttle_out(MAX(motors->get_throttle_hover(),motors->get_throttle()), true, 0);
         break;
     }
 
