@@ -241,7 +241,7 @@ Complete Parameter List
 
             headings = []
             row = []
-            for field in param.__dict__.keys():
+            for field in sorted(param.__dict__.keys()):
                 if field not in ['name', 'DisplayName', 'Description', 'User'] and field in known_param_fields:
                     headings.append(field)
                     if field in field_table_info and Emit.prog_values_field.match(param.__dict__[field]):
