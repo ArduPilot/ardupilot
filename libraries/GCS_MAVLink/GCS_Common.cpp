@@ -3006,6 +3006,44 @@ void GCS_MAVLINK::handle_att_pos_mocap(const mavlink_message_t &msg)
     }
     // note: att_pos_mocap does not include reset counter
     visual_odom->handle_vision_position_estimate(m.time_usec, timestamp_ms, m.x, m.y, m.z, m.q, 0);
+#else
+    mavlink_att_pos_mocap_t m;
+    mavlink_msg_att_pos_mocap_decode(&msg, &m);
+
+    const Vector3f pos = {
+        m.x,
+        m.y,
+        m.z
+    };
+    Quaternion attitude = Quaternion(m.q);
+    const float posErr = 0; // parameter required?
+    const float angErr = 0; // parameter required?
+    // correct offboard timestamp to be in local ms since boot
+    uint32_t timestamp_ms = correct_offboard_timestamp_usec_to_ms(m.time_usec, PAYLOAD_SIZE(chan, ATT_POS_MOCAP));
+
+    AP::ahrs().writeExtNavData(pos,
+                               attitude,
+                               posErr,
+                               angErr,
+                               timestamp_ms,
+                               0);
+
+    // calculate euler orientation for logging
+    float roll;
+    float pitch;
+    float yaw;
+    attitude.to_euler(roll, pitch, yaw);
+    AP::logger().Write("VISP", "TimeUS,RemTimeUS,CTimeMS,PX,PY,PZ,Roll,Pitch,Yaw",
+                       "sssmmmddh", "FFC000000", "QQIffffff",
+                       (uint64_t)AP_HAL::micros64(),
+                       (uint64_t)m.time_usec,
+                       timestamp_ms,
+                       (double)m.x,
+                       (double)m.y,
+                       (double)m.z,
+                       (double)(roll * RAD_TO_DEG),
+                       (double)(pitch * RAD_TO_DEG),
+                       (double)(yaw * RAD_TO_DEG));
 #endif
 }
 
