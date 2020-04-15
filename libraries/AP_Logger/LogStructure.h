@@ -1721,6 +1721,119 @@ struct PACKED log_Arm_Disarm {
 // @Field: Id: character referenced by FMTU
 // @Field: Mult: numeric multiplier
 
+// @LoggerMessage: NKF0
+// @Description: EKF2 beacon sensor diagnostics
+// @Field: TimeUS: Time since system startup
+// @Field: ID: Beacon sensor ID
+// @Field: rng: Beacon range
+// @Field: innov: Beacon range innovation
+// @Field: SIV: sqrt of beacon range innovation variance
+// @Field: TR: Beacon range innovation consistency test ratio
+// @Field: BPN: Beacon north position
+// @Field: BPE: Beacon east position
+// @Field: BPD: Beacon down position
+// @Field: OFH: High estimate of vertical position offset of beacons rel to EKF origin
+// @Field: OFL: Low estimate of vertical position offset of beacons rel to EKF origin
+// @Field: OFN: always zero
+// @Field: OFE: always zero
+// @Field: OFD: always zero
+
+// @LoggerMessage: NKF1
+// @Description: EKF2 estimator outputs
+// @Field: TimeUS: Time since system startup
+// @Field: C: EKF2 core this data is for
+// @Field: Roll: Estimated roll
+// @Field: Pitch: Estimated pitch
+// @Field: Yaw: Estimated yaw
+// @Field: VN: Estimated velocity (North component)
+// @Field: VE: Estimated velocity (East component)
+// @Field: VD: Estimated velocity (Down component)
+// @Field: dPD: Filtered derivative of vertical position (down)
+// @Field: PN: Estimated distance from origin (North component)
+// @Field: PE: Estimated distance from origin (East component)
+// @Field: PD: Estimated distance from origin (Down component)
+// @Field: GX: Estimated gyro bias, X axis
+// @Field: GY: Estimated gyro bias, Y axis
+// @Field: GZ: Estimated gyro bias, Z axis
+// @Field: OH: Height of origin above WGS-84
+
+// @LoggerMessage: NKF2
+// @Description: EKF2 estimator secondary outputs
+// @Field: TimeUS: Time since system startup
+// @Field: C: EKF2 core this data is for
+// @Field: AZbias: Estimated accelerometer Z bias
+// @Field: GSX: Gyro Scale Factor (X-axis)
+// @Field: GSY: Gyro Scale Factor (Y-axis)
+// @Field: GSZ: Gyro Scale Factor (Z-axis)
+// @Field: VWN: Estimated wind velocity (North component)
+// @Field: VWE: Estimated wind velocity (East component)
+// @Field: MN: Magnetic field strength (North component)
+// @Field: ME: Magnetic field strength (East component)
+// @Field: MD: Magnetic field strength (Down component)
+// @Field: MX: Magnetic field strength (body X-axis)
+// @Field: MY: Magnetic field strength (body Y-axis)
+// @Field: MZ: Magnetic field strength (body Z-axis)
+// @Field: MI: Magnetometer used for data
+
+// @LoggerMessage: NKF3
+// @Description: EKF2 innovations
+// @Field: TimeUS: Time since system startup
+// @Field: C: EKF2 core this data is for
+// @Field: IVN: Innovation in velocity (North component)
+// @Field: IVE: Innovation in velocity (East component)
+// @Field: IVD: Innovation in velocity (Down component)
+// @Field: IPN: Innovation in position (North component)
+// @Field: IPE: Innovation in position (East component)
+// @Field: IPD: Innovation in position (Down component)
+// @Field: IMX: Innovation in magnetic field strength (X-axis component)
+// @Field: IMY: Innovation in magnetic field strength (Y-axis component)
+// @Field: IMZ: Innovation in magnetic field strength (Z-axis component)
+// @Field: IYAW: Innovation in vehicle yaw
+// @Field: IVT: Innovation in true-airspeed
+
+// @LoggerMessage: NKF4
+// @Description: EKF2 variances
+// @Field: TimeUS: Time since system startup
+// @Field: C: EKF2 core this data is for
+// @Field: SV: Square root of the velocity variance
+// @Field: SP: Square root of the position variance
+// @Field: SH: Square root of the height variance
+// @Field: SM: Magnetic field variance
+// @Field: SVT: Square root of the total airspeed variance
+// @Field: errRP: Filtered error in roll/pitch estimate
+// @Field: OFN: Most recent position recent magnitude (North component)
+// @Field: OFE: Most recent position recent magnitude (East component)
+// @Field: FS: Filter fault status
+// @Field: TS: Filter timeout status
+// @Field: SS: Filter solution status
+// @Field: GPS: Filter GPS status
+// @Field: PI: Primary core index
+
+// @LoggerMessage: NKF5
+// @Description: EKF2 Sensor innovations (primary core) and general dumping ground
+// @Field: TimeUS: Time since system startup
+// @Field: NI: Normalised flow variance
+// @Field: FIX: Optical flow LOS rate vector innovations from the main nav filter (X-axis)
+// @Field: FIY: Optical flow LOS rate vector innovations from the main nav filter (Y-axis)
+// @Field: AFI: Optical flow LOS rate innovation from terrain offset estimator
+// @Field: HAGL: Height above ground level
+// @Field: offset: Estimated vertical position of the terrain relative to the nav filter zero datum
+// @Field: RI: Range finder innovations
+// @Field: rng: Measured range
+// @Field: Herr: Filter ground offset state error
+// @Field: eAng: Magnitude of angular error
+// @Field: eVel: Magnitude of velocity error
+// @Field: ePos: Magnitude of position error
+
+// @LoggerMessage: NKQ
+// @Description: EKF2 quaternion defining the rotation from NED to XYZ (autopilot) axes
+// @Field: TimeUS: Time since system startup
+// @Field: C: EKF2 core this data is for
+// @Field: Q1: Quaternion a term
+// @Field: Q2: Quaternion b term
+// @Field: Q3: Quaternion c term
+// @Field: Q4: Quaternion d term
+
 // @LoggerMessage: OABR
 // @Description: Object avoidance (Bendy Ruler) diagnostics
 // @Field: TimeUS: Time since system startup
@@ -2030,6 +2143,160 @@ struct PACKED log_Arm_Disarm {
 // @Field: Qual0: Quality measurement of Dist0
 // @Field: Dist1: Second wheel distance travelled
 // @Field: Qual1: Quality measurement of Dist1
+
+// @LoggerMessage: XKF0
+// @Description: EKF3 beacon sensor diagnostics
+// @Field: TimeUS: Time since system startup
+// @Field: ID: Beacon sensor ID
+// @Field: rng: Beacon range
+// @Field: innov: Beacon range innovation
+// @Field: SIV: sqrt of beacon range innovation variance
+// @Field: TR: Beacon range innovation consistency test ratio
+// @Field: BPN: Beacon north position
+// @Field: BPE: Beacon east position
+// @Field: BPD: Beacon down position
+// @Field: OFH: High estimate of vertical position offset of beacons rel to EKF origin
+// @Field: OFL: Low estimate of vertical position offset of beacons rel to EKF origin
+// @Field: OFN: North position of receiver rel to EKF origin
+// @Field: OFE: East position of receiver rel to EKF origin
+// @Field: OFD: Down position of receiver rel to EKF origin
+
+// @LoggerMessage: XKF1
+// @Description: EKF3 estimator outputs
+// @Field: TimeUS: Time since system startup
+// @Field: C: EKF3 core this data is for
+// @Field: Roll: Estimated roll
+// @Field: Pitch: Estimated pitch
+// @Field: Yaw: Estimated yaw
+// @Field: VN: Estimated velocity (North component)
+// @Field: VE: Estimated velocity (East component)
+// @Field: VD: Estimated velocity (Down component)
+// @Field: dPD: Filtered derivative of vertical position (down)
+// @Field: PN: Estimated distance from origin (North component)
+// @Field: PE: Estimated distance from origin (East component)
+// @Field: PD: Estimated distance from origin (Down component)
+// @Field: GX: Estimated gyro bias, X axis
+// @Field: GY: Estimated gyro bias, Y axis
+// @Field: GZ: Estimated gyro bias, Z axis
+// @Field: OH: Height of origin above WGS-84
+
+// @LoggerMessage: XKF2
+// @Description: EKF3 estimator secondary outputs
+// @Field: TimeUS: Time since system startup
+// @Field: C: EKF3 core this data is for
+// @Field: AX: Estimated accelerometer X bias
+// @Field: AY: Estimated accelerometer Y bias
+// @Field: AZ: Estimated accelerometer Z bias
+// @Field: VWN: Estimated wind velocity (North component)
+// @Field: VWE: Estimated wind velocity (East component)
+// @Field: MN: Magnetic field strength (North component)
+// @Field: ME: Magnetic field strength (East component)
+// @Field: MD: Magnetic field strength (Down component)
+// @Field: MX: Magnetic field strength (body X-axis)
+// @Field: MY: Magnetic field strength (body Y-axis)
+// @Field: MZ: Magnetic field strength (body Z-axis)
+// @Field: MI: Magnetometer used for data
+
+// @LoggerMessage: XKF3
+// @Description: EKF3 innovations
+// @Field: TimeUS: Time since system startup
+// @Field: C: EKF3 core this data is for
+// @Field: IVN: Innovation in velocity (North component)
+// @Field: IVE: Innovation in velocity (East component)
+// @Field: IVD: Innovation in velocity (Down component)
+// @Field: IPN: Innovation in position (North component)
+// @Field: IPE: Innovation in position (East component)
+// @Field: IPD: Innovation in position (Down component)
+// @Field: IMX: Innovation in magnetic field strength (X-axis component)
+// @Field: IMY: Innovation in magnetic field strength (Y-axis component)
+// @Field: IMZ: Innovation in magnetic field strength (Z-axis component)
+// @Field: IYAW: Innovation in vehicle yaw
+// @Field: IVT: Innovation in true-airspeed
+
+// @LoggerMessage: XKF4
+// @Description: EKF3 variances
+// @Field: TimeUS: Time since system startup
+// @Field: C: EKF3 core this data is for
+// @Field: SV: Square root of the velocity variance
+// @Field: SP: Square root of the position variance
+// @Field: SH: Square root of the height variance
+// @Field: SM: Magnetic field variance
+// @Field: SVT: Square root of the total airspeed variance
+// @Field: errRP: Filtered error in roll/pitch estimate
+// @Field: OFN: Most recent position recent magnitude (North component)
+// @Field: OFE: Most recent position recent magnitude (East component)
+// @Field: FS: Filter fault status
+// @Field: TS: Filter timeout status
+// @Field: SS: Filter solution status
+// @Field: GPS: Filter GPS status
+// @Field: PI: Primary core index
+
+// @LoggerMessage: XKF5
+// @Description: EKF3 Sensor innovations (primary core) and general dumping ground
+// @Field: TimeUS: Time since system startup
+// @Field: NI: Normalised flow variance
+// @Field: FIX: Optical flow LOS rate vector innovations from the main nav filter (X-axis)
+// @Field: FIY: Optical flow LOS rate vector innovations from the main nav filter (Y-axis)
+// @Field: AFI: Optical flow LOS rate innovation from terrain offset estimator
+// @Field: HAGL: Height above ground level
+// @Field: offset: Estimated vertical position of the terrain relative to the nav filter zero datum
+// @Field: RI: Range finder innovations
+// @Field: rng: Measured range
+// @Field: Herr: Filter ground offset state error
+// @Field: eAng: Magnitude of angular error
+// @Field: eVel: Magnitude of velocity error
+// @Field: ePos: Magnitude of position error
+
+// @LoggerMessage: XKFD
+// @Description: EKF3 Body Frame Odometry errors
+// @Field: TimeUS: Time since system startup
+// @Field: IX: Innovation in velocity (X-axis)
+// @Field: IY: Innovation in velocity (Y-axis)
+// @Field: IZ: Innovation in velocity (Z-axis)
+// @Field: IVX: Variance in velocity (X-axis)
+// @Field: IVY: Variance in velocity (Y-axis)
+// @Field: IVZ: Variance in velocity (Z-axis)
+
+// @LoggerMessage: XKQ
+// @Description: EKF3 quaternion defining the rotation from NED to XYZ (autopilot) axes
+// @Field: TimeUS: Time since system startup
+// @Field: C: EKF3 core this data is for
+// @Field: Q1: Quaternion a term
+// @Field: Q2: Quaternion b term
+// @Field: Q3: Quaternion c term
+// @Field: Q4: Quaternion d term
+
+// @LoggerMessage: XKV1
+// @Description: EKF3 State variances (primary core)
+// @Field: TimeUS: Time since system startup
+// @Field: V00: Variance for state 0
+// @Field: V01: Variance for state 1
+// @Field: V02: Variance for state 2
+// @Field: V03: Variance for state 3
+// @Field: V04: Variance for state 4
+// @Field: V05: Variance for state 5
+// @Field: V06: Variance for state 6
+// @Field: V07: Variance for state 7
+// @Field: V08: Variance for state 8
+// @Field: V09: Variance for state 9
+// @Field: V10: Variance for state 10
+// @Field: V11: Variance for state 11
+
+// @LoggerMessage: XKV2
+// @Description: more EKF3 State Variances (primary core)
+// @Field: TimeUS: Time since system startup
+// @Field: V12: Variance for state 12
+// @Field: V13: Variance for state 13
+// @Field: V14: Variance for state 14
+// @Field: V15: Variance for state 15
+// @Field: V16: Variance for state 16
+// @Field: V17: Variance for state 17
+// @Field: V18: Variance for state 18
+// @Field: V19: Variance for state 19
+// @Field: V20: Variance for state 20
+// @Field: V21: Variance for state 21
+// @Field: V22: Variance for state 22
+// @Field: V23: Variance for state 23
 
 // messages for all boards
 #define LOG_BASE_STRUCTURES \
