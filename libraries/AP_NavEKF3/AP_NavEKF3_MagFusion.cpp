@@ -920,7 +920,7 @@ void NavEKF3_core::FuseMagnetometer()
  * usePredictedYaw -  Set this to true if no valid yaw measurement will be available for an extended periods.
  *                    This uses an innovation set to zero which prevents uncontrolled quaternion covariance
  *                    growth or if available, a yaw estimate from the Gaussian Sum Filter.
- * UseExternalYawSensor - Set this to true if yaw data from an external yaw sensor is being used instead of the magnetometer.
+ * UseExternalYawSensor - Set this to true if yaw data from an external yaw sensor (GPS or external nav) is being used instead of the magnetometer.
 */
 void NavEKF3_core::fuseEulerYaw(bool usePredictedYaw, bool useExternalYawSensor)
 {
