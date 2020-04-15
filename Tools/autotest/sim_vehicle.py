@@ -145,7 +145,7 @@ def cygwin_pidof(proc_name):
     pipe = subprocess.Popen("ps -ea | grep " + proc_name,
                             shell=True,
                             stdout=subprocess.PIPE)
-    output_lines = pipe.stdout.read().replace("\r", "").split("\n")
+    output_lines = pipe.stdout.read().decode('utf-8').replace("\r", "").split("\n")
     ret = pipe.wait()
     pids = []
     if ret != 0:
@@ -234,6 +234,9 @@ def kill_tasks():
             'runsim.py',
             'AntennaTracker.elf',
             'scrimmage'
+            'ardurover',
+            'arduplane',
+            'arducopter'
         }
         for vehicle in vinfo.options:
             for frame in vinfo.options[vehicle]["frames"]:
