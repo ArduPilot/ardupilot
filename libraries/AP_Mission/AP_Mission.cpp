@@ -28,7 +28,7 @@ const AP_Param::GroupInfo AP_Mission::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Mission - options bitmask
     // @Description: Bitmask of what options to use in missions.
-    // @Bitmask: 0:Clear Mission on reboot, 1:Use distance to land calc on battery failsafe, Bit 2: At restart skip altitude at first Waypoint, Bit 3: At restart use altitude offset (Start-Waypoint to first Waypoint) for all Waypoints
+    // @Bitmask: 0:Clear Mission on reboot, 1:Use distance to land calc on battery failsafe, 2: At restart skip altitude at first Waypoint, 3: At restart use altitude offset (Start-Waypoint to first Waypoint) for all Waypoints
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  2, AP_Mission, _options, AP_MISSION_OPTIONS_DEFAULT),
 
