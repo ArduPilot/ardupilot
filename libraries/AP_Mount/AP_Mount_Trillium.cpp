@@ -300,7 +300,7 @@ void AP_Mount_Trillium::handle_packet(OrionPkt_t &packet)
 {
 
 #if AP_MOUNT_TRILLIUM_DEBUG_RX_ALL_MSGS
-    gcs().send_text(MAV_SEVERITY_DEBUG, "%sRx msg id: %u", _trilliumGcsHeader, packet.ID);
+    gcs().send_text(MAV_SEVERITY_DEBUG, "%sRx 0x%02x,%3u:%s", _trilliumGcsHeader, packet.ID, packet.ID, get_packet_name(packet.ID));
 #endif
 
     const uint8_t len = packet.Length;
@@ -450,7 +450,7 @@ void AP_Mount_Trillium::handle_packet(OrionPkt_t &packet)
     default:
         // unhandled
 #if AP_MOUNT_TRILLIUM_DEBUG_RX_UNHANDLED_MSGS
-        gcs().send_text(MAV_SEVERITY_DEBUG, "%sunhandled msg id: %u", _trilliumGcsHeader, packet.ID);
+        gcs().send_text(MAV_SEVERITY_DEBUG, "%sunhandled 0x%02x,%3u:%s", _trilliumGcsHeader, packet.ID, packet.ID, get_packet_name(packet.ID));
 #endif
         break;
     }
@@ -506,7 +506,7 @@ void AP_Mount_Trillium::handle_passthrough(const mavlink_channel_t chan, const m
 size_t AP_Mount_Trillium::OrionCommSend(const OrionPkt_t *pPkt)
 {
 #if AP_MOUNT_TRILLIUM_DEBUG_TX_ALL_MSGS
-    gcs().send_text(MAV_SEVERITY_DEBUG, "%stx cmd ID: %u", _trilliumGcsHeader, pPkt->ID);
+    gcs().send_text(MAV_SEVERITY_DEBUG, "%sTx 0x%02x,%3u:%s", _trilliumGcsHeader, pPkt->ID, pPkt->ID, get_packet_name(pPkt->ID));
 #endif
 
     const uint32_t len = pPkt->Length + ORION_PKT_OVERHEAD;
@@ -520,6 +520,119 @@ size_t AP_Mount_Trillium::OrionCommSend(const OrionPkt_t *pPkt)
 #else
     return _port->write((uint8_t *)pPkt, len);
 #endif
+}
+
+const char* AP_Mount_Trillium::get_packet_name(uint8_t id)
+{
+    switch (id) {
+    case ORION_PKT_DEBUG_STRING:        return "DEBUG_STRING";
+    case ORION_PKT_RETRACT_STATUS:      return "RETRACT_STATUS";
+    case ORION_PKT_NETWORK_SETTINGS:    return "NETWORK_SETTINGS";
+    case ORION_PKT_DIAGNOSTICS:         return "DIAGNOSTICS";
+    case ORION_PKT_PERFORMANCE:         return "PERFORMANCE";
+    case ORION_PKT_UART_CONFIG:         return "UART_CONFIG";
+    case ORION_PKT_GEOLOCATE_TELEMETRY: return "GEOLOCATE_TELEMETRY";
+    case ORION_PKT_CAMERAS:             return "CAMERAS";
+    case ORION_PKT_CLEVIS_VERSION:      return "CLEVIS_VERSION";
+    case ORION_PKT_CROWN_VERSION:       return "CROWN_VERSION";
+    case ORION_PKT_PAYLOAD_VERSION:     return "PAYLOAD_VERSION";
+    case ORION_PKT_TRACKER_VERSION:     return "TRACKER_VERSION";
+    case ORION_PKT_LENSCTL_VERSION:     return "LENSCTL_VERSION";
+    case ORION_PKT_BOARD:               return "BOARD";
+    case ORION_PKT_SOFTWARE_DIAGNOSTICS:return "SOFTWARE_DIAGNOSTICS";
+    case ORION_PKT_VIBRATION:           return "VIBRATION";
+    case ORION_PKT_NETWORK_DIAGNOSTICS: return "ETWORK_DIAGNOSTICS";
+    case ORION_PKT_INITIALIZE:          return "INITIALIZE";
+    case ORION_PKT_CMD:                 return "CMD";
+    case ORION_PKT_STARTUP_CMD:         return "STARTUP_CMD";
+    case ORION_PKT_AUTOPILOT_DATA:      return "AUTOPILOT_DATA";
+    case ORION_PKT_STARE_START:         return "STARE_START";
+    case ORION_PKT_STARE_ACK:           return "STARE_ACK";
+    case ORION_PKT_RANGE_DATA:          return "RANGE_DATA";
+    case ORION_PKT_LASER_CMD:           return "LASER_CMD";
+    case ORION_PKT_RESET:               return "RESET";
+    case ORION_PKT_LASER_STATES:        return "LASER_STATES";
+    case ORION_PKT_LIMITS:              return "LIMITS";
+    case ORION_PKT_RESET_SOURCE:        return "RESET_SOURCE";
+    case ORION_PKT_FAULTS:              return "FAULTS";
+    case ORION_PKT_CAMERA_SWITCH:       return "CAMERA_SWITCH";
+    case ORION_PKT_CAMERA_STATE:        return "CAMERA_STATE";
+    case ORION_PKT_NETWORK_VIDEO:       return "NETWORK_VIDEO";
+    case ORION_PKT_FLIR_SETTINGS:       return "FLIR_SETTINGS";
+    case ORION_PKT_APTINA_SETTINGS:     return "APTINA_SETTINGS";
+    case ORION_PKT_ZAFIRO_SETTINGS:     return "ZAFIRO_SETTINGS";
+    case ORION_PKT_HITACHI_SETTINGS:    return "HITACHI_SETTINGS";
+    case ORION_PKT_BAE_SETTINGS:        return "BAE_SETTINGS";
+    case ORION_PKT_SONY_SETTINGS:       return "SONY_SETTINGS";
+    case ORION_PKT_KTNC_SETTINGS:       return "KTNC_SETTINGS";
+    case ORION_PKT_RETRACT_CMD:         return "RETRACT_CMD";
+    case ORION_PKT_USER_DATA:           return "USER_DATA";
+    case ORION_PKT_KLV_USER_DATA:       return "KLV_USER_DATA";
+    case ORION_PKT_GPS_DATA:            return "GPS_DATA";
+    case ORION_PKT_EXT_HEADING_DATA:    return "EXT_HEADING_DATA";
+    case ORION_PKT_INS_QUALITY:         return "INS_QUALITY";
+    case ORION_PKT_GEOPOINT_CMD:        return "GEOPOINT_CMD";
+    case ORION_PKT_PATH:                return "PATH";
+    case ORION_PKT_INS_OPTIONS:         return "INS_OPTIONS";
+
+    case ORION_PKT_PRIVATE_05:
+    case ORION_PKT_PRIVATE_08:
+    case ORION_PKT_PRIVATE_09:
+    case ORION_PKT_PRIVATE_1F:
+    case ORION_PKT_PRIVATE_20:
+    case ORION_PKT_PRIVATE_21:
+    case ORION_PKT_PRIVATE_23:
+    case ORION_PKT_PRIVATE_24:
+    case ORION_PKT_PRIVATE_2A:
+    case ORION_PKT_PRIVATE_2B:
+    case ORION_PKT_PRIVATE_2D:
+    case ORION_PKT_PRIVATE_40:
+    case ORION_PKT_PRIVATE_47:
+    case ORION_PKT_PRIVATE_48:
+    case ORION_PKT_PRIVATE_49:
+    case ORION_PKT_PRIVATE_64:
+    case ORION_PKT_PRIVATE_65:
+    case ORION_PKT_PRIVATE_66:
+    case ORION_PKT_PRIVATE_70:
+    case ORION_PKT_PRIVATE_71:
+    case ORION_PKT_PRIVATE_90:
+    case ORION_PKT_PRIVATE_91:
+    case ORION_PKT_PRIVATE_92:
+    case ORION_PKT_PRIVATE_B0:
+    case ORION_PKT_PRIVATE_B4:
+    case ORION_PKT_PRIVATE_C0:
+    case ORION_PKT_PRIVATE_C1:
+    case ORION_PKT_PRIVATE_C2:
+    case ORION_PKT_PRIVATE_C3:
+    case ORION_PKT_PRIVATE_CE:
+    case ORION_PKT_PRIVATE_CF:
+    case ORION_PKT_PRIVATE_D0:
+    case ORION_PKT_PRIVATE_DB:
+    case ORION_PKT_PRIVATE_DE:
+    case ORION_PKT_PRIVATE_DF:
+    case ORION_PKT_PRIVATE_E0:
+    case ORION_PKT_PRIVATE_E1:
+    case ORION_PKT_PRIVATE_E2:
+    case ORION_PKT_PRIVATE_E3:
+    case ORION_PKT_PRIVATE_E5:
+    case ORION_PKT_PRIVATE_E6:
+    case ORION_PKT_PRIVATE_E7:
+    case ORION_PKT_PRIVATE_E8:
+    case ORION_PKT_PRIVATE_E9:
+    case ORION_PKT_PRIVATE_EA:
+    case ORION_PKT_PRIVATE_F0:
+    case ORION_PKT_PRIVATE_F1:
+    case ORION_PKT_PRIVATE_F2:
+    case ORION_PKT_PRIVATE_F3:
+    case ORION_PKT_PRIVATE_F4:
+    case ORION_PKT_PRIVATE_F5:
+    case ORION_PKT_PRIVATE_F6:
+    case ORION_PKT_PRIVATE_F7:
+        return "PRIVATE";
+
+    default:
+        return "Unknown";
+    }
 }
 #endif // MOUNT_TRILLIUM_ENABLE
 
