@@ -149,6 +149,18 @@ void Aircraft::update_position(void)
 #if 0
     // logging of raw sitl data
     Vector3f accel_ef = dcm * accel_body;
+// @LoggerMessage: SITL
+// @Description: Simulation data
+// @Field: TimeUS: Time since system startup
+// @Field: VN: Velocity - North component
+// @Field: VE: Velocity - East component
+// @Field: VD: Velocity - Down component
+// @Field: AN: Acceleration - North component
+// @Field: AE: Acceleration - East component
+// @Field: AD: Acceleration - Down component
+// @Field: PN: Position - North component
+// @Field: PE: Position - East component
+// @Field: PD: Position - Down component
     AP::logger().Write("SITL", "TimeUS,VN,VE,VD,AN,AE,AD,PN,PE,PD", "Qfffffffff",
                                            AP_HAL::micros64(),
                                            velocity_ef.x, velocity_ef.y, velocity_ef.z,
@@ -651,6 +663,21 @@ void Aircraft::smooth_sensors(void)
     dcm.to_euler(&R2, &P2, &Y2);
 
 #if 0
+// @LoggerMessage: SMOO
+// @Description: Smoothed sensor data fed to EKF to avoid inconsistencies
+// @Field: TimeUS: Time since system startup
+// @Field: AEx: Angular Velocity (around x-axis)
+// @Field: AEy: Angular Velocity (around y-axis)
+// @Field: AEz: Angular Velocity (around z-axis)
+// @Field: DPx: Velocity (along x-axis)
+// @Field: DPy: Velocity (along y-axis)
+// @Field: DPz: Velocity (along z-axis)
+// @Field: R: Roll
+// @Field: P: Pitch
+// @Field: Y: Yaw
+// @Field: R2: DCM Roll
+// @Field: P2: DCM Pitch
+// @Field: Y2: DCM Yaw
     AP::logger().Write("SMOO", "TimeUS,AEx,AEy,AEz,DPx,DPy,DPz,R,P,Y,R2,P2,Y2",
                                            "Qffffffffffff",
                                            AP_HAL::micros64(),
