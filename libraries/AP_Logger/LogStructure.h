@@ -1588,9 +1588,9 @@ struct PACKED log_Arm_Disarm {
 // @Field: Lat: latitude
 // @Field: Lng: longitude
 // @Field: Alt: altitude
-// @Field: Spd: speed
+// @Field: Spd: ground speed
 // @Field: GCrs: ground course
-// @Field: VZ: vertical velocity
+// @Field: VZ: vertical speed
 // @Field: Yaw: vehicle yaw
 // @Field: U: boolean value indicating whether this GPS is in use
 
