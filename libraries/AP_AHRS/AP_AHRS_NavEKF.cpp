@@ -1458,6 +1458,9 @@ void AP_AHRS_NavEKF::writeExtNavData(const Vector3f &pos, const Quaternion &quat
 #if HAL_NAVEKF2_AVAILABLE
     EKF2.writeExtNavData(pos, quat, posErr, angErr, timeStamp_ms, resetTime_ms);
 #endif
+#if HAL_NAVEKF3_AVAILABLE
+    EKF3.writeExtNavData(pos, quat, posErr, angErr, timeStamp_ms, resetTime_ms);
+#endif
 }
 
 // Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
