@@ -389,16 +389,16 @@ void SoloGimbal::write_logs()
         return;
     }
 
-    uint32_t tstamp = AP_HAL::millis();
+    const uint64_t tstamp = AP_HAL::micros64();
     Vector3f eulerEst;
 
     Quaternion quatEst;
     _ekf.getQuat(quatEst);
     quatEst.to_euler(eulerEst.x, eulerEst.y, eulerEst.z);
 
-    struct log_Gimbal1 pkt1 = {
+    struct log_Gimbal1 pkt1{
         LOG_PACKET_HEADER_INIT(LOG_GIMBAL1_MSG),
-        time_ms : tstamp,
+        time_us : tstamp,
         delta_time      : _log_dt,
         delta_angles_x  : _log_del_ang.x,
         delta_angles_y  : _log_del_ang.y,
@@ -412,9 +412,9 @@ void SoloGimbal::write_logs()
     };
     logger->WriteBlock(&pkt1, sizeof(pkt1));
 
-    struct log_Gimbal2 pkt2 = {
+    struct log_Gimbal2 pkt2{
         LOG_PACKET_HEADER_INIT(LOG_GIMBAL2_MSG),
-        time_ms : tstamp,
+        time_us : tstamp,
         est_sta : (uint8_t) _ekf.getStatus(),
         est_x   : eulerEst.x,
         est_y   : eulerEst.y,
