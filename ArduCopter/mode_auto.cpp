@@ -65,16 +65,17 @@ void ModeAuto::run()
 
     case Auto_WP:
     case Auto_CircleMoveToEdge:
+        gcs().send_text(MAV_SEVERITY_INFO, "2) wp_run()");
         wp_run();
         break;
 
     case Auto_Land:
-        gcs().send_text(MAV_SEVERITY_INFO, "Abhish_Land flight mode");
+        //gcs().send_text(MAV_SEVERITY_INFO, "Abhish_Land flight mode");
         land_run();
         break;
 
     case Auto_RTL:
-        gcs().send_text(MAV_SEVERITY_INFO, "Abhish_RTL Flight mode");
+        //gcs().send_text(MAV_SEVERITY_INFO, "Abhish_RTL Flight mode");
         rtl_run();
         break;
 
@@ -146,9 +147,23 @@ void ModeAuto::rtl_start()
 
 //added
 //payload release - initialises payload release in AUTO flight mode
-void ModeAuto::payload_release_start(const Location& dest_loc)
+void ModeAuto::payload_release_start(const AP_Mission::Mission_Command& cmd)
 {
     _mode = Auto_PayloadRelease;
+
+    Location target_loc = loc_from_cmd(cmd);
+    Location home = ahrs.get_home();
+    home.alt = target_loc.alt;
+    gcs().send_text(MAV_SEVERITY_INFO, "target lat,lon = %d,%d",home.lat,home.lng);
+    gcs().send_text(MAV_SEVERITY_INFO, "current lat,lon = %d,%d",copter.current_loc.lat,copter.current_loc.lng);
+
+
+    // Set wp navigation target
+    if (!wp_nav->set_wp_destination(home)) {
+        // failure to set destination can only be because of missing terrain data
+        copter.failsafe_terrain_on_event();
+        return;
+    }
 
     //call regular payload release flight mode initialisation and ask it check intial condition
     copter.mode_payloadrelease.init(false);
@@ -408,16 +423,15 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
     /// navigation commands
     ///
     case MAV_CMD_NAV_TAKEOFF:                   // 22
-        gcs().send_text(MAV_SEVERITY_INFO, "Abhish_do takeoff command");
         do_takeoff(cmd);
         break;
 
     case MAV_CMD_NAV_WAYPOINT:                  // 16  Navigate to Waypoint
+        gcs().send_text(MAV_SEVERITY_INFO, "1) do_nav_wp(cmd), wp_start()");
         do_nav_wp(cmd);
         break;
 
     case MAV_CMD_NAV_LAND:              // 21 LAND to Waypoint
-        gcs().send_text(MAV_SEVERITY_INFO, "Abhish_do_land command");
         do_land(cmd);
         break;
 
@@ -438,7 +452,6 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:          //20
-        gcs().send_text(MAV_SEVERITY_INFO, "Abhish_RTL First Command");
         do_RTL();
         break;
 
@@ -781,7 +794,7 @@ void ModeAuto::wp_run()
     // run waypoint controller
     copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
 
-    // call z-axis position controller (wpnav should have already updated it's alt target)
+    //call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control->update_z_controller();
 
     // call attitude controller
@@ -792,6 +805,14 @@ void ModeAuto::wp_run()
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
         attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.yaw(), true);
     }
+
+    // //added //etti matra gare hunxa. 
+    // motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+    // wp_nav->update_wpnav();
+    // //copter.failsafe_terrain_set_status(wp_nav->update_wpnav()); //run way point controller
+    // pos_control->update_z_controller();
+    // attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.yaw(), true);
+    // //add finish
 }
 
 // auto_spline_run - runs the auto spline controller
@@ -1111,7 +1132,7 @@ void ModeAuto::do_takeoff(const AP_Mission::Mission_Command& cmd)
 //added
 void ModeAuto::do_payload_release(const AP_Mission::Mission_Command& cmd)
 {
-    payload_release_start(cmd.content.location);
+    payload_release_start(cmd);
 }
 //add finish
 
@@ -1590,7 +1611,7 @@ bool ModeAuto::verify_land()
 bool ModeAuto::verify_payload_release()
 {
     //if verified true
-    return true;
+    return (wp_nav->reached_wp_destination());
 }
 //add finished
 

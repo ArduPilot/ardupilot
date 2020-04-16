@@ -353,7 +353,7 @@ public:
     // Auto
     AutoMode mode() const { return _mode; }
 
-    void payload_release_start(const Location& dest_loc);
+    void payload_release_start(const AP_Mission::Mission_Command& cmd);
 
     bool loiter_start();
     void rtl_start();
@@ -1171,7 +1171,7 @@ public:
 
     bool requires_GPS() const override { return false; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return true; };
+    bool allows_arming(bool from_gcs) const override { return true; }
     bool is_autopilot() const override { return false; }
     bool has_user_takeoff(bool must_navigate) const override {
         return !must_navigate;
@@ -1194,12 +1194,12 @@ public:
     using Mode::Mode;
 
     bool init(bool ignore_checks) override;
-    virtual void run() override;
+    void run() override;
 
-    bool requires_GPS() const override { return false; }
-    bool has_manual_throttle() const override { return true; }
-    bool allows_arming(bool from_gcs) const override { return true; };
-    bool is_autopilot() const override { return false; }
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return false; }
+    bool is_autopilot() const override { return true; }
 
     // This is for payload release state. 
     enum PayloadReleaseState{

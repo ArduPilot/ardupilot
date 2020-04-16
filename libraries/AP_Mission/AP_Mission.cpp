@@ -249,7 +249,6 @@ void AP_Mission::update()
 
     // save persistent waypoint_num for watchdog restore
     hal.util->persistent_data.waypoint_num = _nav_cmd.index;
-
     // check if we have an active nav command
     if (!_flags.nav_cmd_loaded || _nav_cmd.index == AP_MISSION_CMD_INDEX_NONE) {
         // advance in mission if no active nav command
@@ -1544,11 +1543,13 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
 {
     // exit immediately if we're not running
     if (_flags.state != MISSION_RUNNING) {
+        gcs().send_text(MAV_SEVERITY_INFO,"1");
         return false;
     }
 
     // exit immediately if current nav command has not completed
     if (_flags.nav_cmd_loaded) {
+        gcs().send_text(MAV_SEVERITY_INFO,"2");
         return false;
     }
 
@@ -1575,6 +1576,7 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
         // get next command
         Mission_Command cmd;
         if (!get_next_cmd(cmd_index, cmd, true)) {
+            gcs().send_text(MAV_SEVERITY_INFO,"3");
             return false;
         }
 
@@ -1617,6 +1619,7 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
             } else {
                 // protect against endless loops of do-commands
                 if (max_loops-- == 0) {
+                    gcs().send_text(MAV_SEVERITY_INFO,"4");
                     return false;
                 }
             }
@@ -2177,7 +2180,7 @@ const char *AP_Mission::Mission_Command::type() const {
 
     //added
     case MAV_CMD_NAV_PAYLOAD_RELEASE:
-        return "PayloadThrow";
+        return "PayloadRelease";
     //add finished
     
     case MAV_CMD_DO_PARACHUTE:
