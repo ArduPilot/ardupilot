@@ -614,12 +614,6 @@ mission_failed:
 } // end handle mavlink
 
 
-/*
- *  a delay() callback that processes MAVLink packets. We set this as the
- *  callback in long running library initialisation routines to allow
- *  MAVLink to process packets while waiting for the initialisation to
- *  complete
- */
 // send position tracker is using
 void GCS_MAVLINK_Tracker::send_global_position_int()
 {
