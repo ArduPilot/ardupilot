@@ -276,9 +276,6 @@ void GCS::send_thread(void)
 
 void GCS::start_send_thread(void)
 {
-    // remove the delay call, if registered. We don't want to have two threads doing GCS sends
-    hal.scheduler->register_delay_callback(nullptr, 0);
-
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&GCS::send_thread, void), "GCS_send", 8192, AP_HAL::Scheduler::PRIORITY_IO, 1)) {
         AP_HAL::panic("Failed to start GCS send thread");
     }
