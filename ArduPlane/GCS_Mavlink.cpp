@@ -1344,12 +1344,6 @@ void GCS_MAVLINK_Plane::handle_rc_channels_override(const mavlink_message_t &msg
     GCS_MAVLINK::handle_rc_channels_override(msg);
 }
 
-/*
- *  a delay() callback that processes MAVLink packets. We set this as the
- *  callback in long running library initialisation routines to allow
- *  MAVLink to process packets while waiting for the initialisation to
- *  complete
- */
 void GCS_MAVLINK_Plane::handle_mission_set_current(AP_Mission &mission, const mavlink_message_t &msg)
 {
     plane.auto_state.next_wp_crosstrack = false;
