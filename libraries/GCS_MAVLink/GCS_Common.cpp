@@ -2005,6 +2005,7 @@ void GCS::setup_console()
     if (ARRAY_SIZE(chan_parameters) == 0) {
         return;
     }
+    start_send_thread();
     create_gcs_mavlink_backend(chan_parameters[0], *uart);
 }
 
