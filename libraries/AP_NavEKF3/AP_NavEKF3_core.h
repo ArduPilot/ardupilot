@@ -914,6 +914,9 @@ private:
     // correct GPS data for antenna position
     void CorrectGPSForAntennaOffset(gps_elements &gps_data) const;
 
+    // correct external navigation earth-frame position using sensor body-frame offset
+    void CorrectExtNavForSensorOffset(Vector3f &ext_position);
+
     // Runs the IMU prediction step for an independent GSF yaw estimator algorithm
     // that uses IMU, GPS horizontal velocity and optionally true airspeed data.
     void runYawEstimatorPrediction(void);
