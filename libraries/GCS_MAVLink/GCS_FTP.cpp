@@ -85,6 +85,10 @@ void GCS_MAVLINK::handle_file_transfer_protocol(const mavlink_message_t &msg) {
 }
 
 void GCS_MAVLINK::send_ftp_replies(void) {
+    // FIXME: this is run on the gcs-update-send thread.  It should
+    // already be safe in terms of locking against the ftp thread, but
+    // is there anything in here also manipulated by the main thread?
+
     if (ftp.replies == nullptr) {
         return;
     }

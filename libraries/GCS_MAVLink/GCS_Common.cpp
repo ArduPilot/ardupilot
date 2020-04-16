@@ -843,11 +843,15 @@ uint16_t GCS_MAVLINK::get_reschedule_interval_ms(const deferred_message_bucket_t
         // we are sending parameters, penalize streams:
         interval_ms *= 4;
     }
+    // FIXME: add a comment here apologising for lack of thread
+    // correctness around requesting mission items?
     if (requesting_mission_items()) {
         // we are sending requests for waypoints, penalize streams:
         interval_ms *= 4;
     }
 #if HAVE_FILESYSTEM_SUPPORT
+    // FIXME: add a comment here apologising for lack of thread
+    // correctness around ftp.replies?
     if (ftp.replies && AP_HAL::millis() - ftp.last_send_ms < 500) {
         // we are sending ftp replies
         interval_ms *= 4;
@@ -910,6 +914,9 @@ void GCS_MAVLINK::find_next_bucket_to_send()
 
 ap_message GCS_MAVLINK::next_deferred_bucket_message_to_send()
 {
+    // FIXME: Add locking on deferred_message_bucket[]; setting
+    // streamrate on a message probably fiddles
+    // (e.g. set-message-interval)
     if (sending_bucket_id == no_bucket_to_send) {
         // could happen if all streamrates are zero?
         return no_message_to_send;
@@ -979,6 +986,7 @@ int8_t GCS_MAVLINK::get_deferred_message_index(const ap_message id) const
     return -1;
 }
 
+// deferred_message_to_send_index must be called with deferred_message[] locked!
 int8_t GCS_MAVLINK::deferred_message_to_send_index()
 {
     const uint16_t now16_ms = AP_HAL::millis16();
@@ -1023,6 +1031,10 @@ int8_t GCS_MAVLINK::deferred_message_to_send_index()
 
 void GCS_MAVLINK::update_send()
 {
+    //FIXME: gcs-send-thread will need to negotiate with main thread
+    //over file IO.  opening/closing logfiles etc etc.  Might be time
+    //to move those IO operations to a thread?  Or just allow multiple
+    //open files?
     if (!hal.scheduler->in_delay_callback()) {
         // AP_Logger will not send log data if we are armed.
         AP::logger().handle_log_send();
@@ -1050,6 +1062,7 @@ void GCS_MAVLINK::update_send()
 
         // check if any "specially handled" messages should be sent out
         {
+            // FIXME: lock on deferred_message[] here
             const int8_t next = deferred_message_to_send_index();
             if (next != -1) {
                 if (!do_try_send_message(deferred_message[next].id)) {
@@ -1070,6 +1083,7 @@ void GCS_MAVLINK::update_send()
         }
 
         // check for any messages that the code has explicitly sent
+        // FIXME: check thread safety of bitmask operations
         const int16_t fs = pushed_ap_message_ids.first_set();
         if (fs != -1) {
             ap_message next = (ap_message)fs;
@@ -1078,6 +1092,7 @@ void GCS_MAVLINK::update_send()
             }
             pushed_ap_message_ids.clear(next);
 #if GCS_DEBUG_SEND_MESSAGE_TIMINGS
+            // FIXME: thread safety around try_send_message_stats
             const uint32_t stop = AP_HAL::micros();
             const uint32_t delta = stop - retry_deferred_body_start;
             if (delta > try_send_message_stats.max_retry_deferred_body_us) {
@@ -1170,6 +1185,7 @@ bool GCS_MAVLINK::set_ap_message_interval(enum ap_message id, uint16_t interval_
     // check if it's a specially-handled message:
     const int8_t deferred_offset = get_deferred_message_index(id);
     if (deferred_offset != -1) {
+        // FIXME: lock on deferred_message[] here
         deferred_message[deferred_offset].interval_ms = interval_ms;
         deferred_message[deferred_offset].last_sent_ms = AP_HAL::millis16();
         return true;
@@ -1180,6 +1196,7 @@ bool GCS_MAVLINK::set_ap_message_interval(enum ap_message id, uint16_t interval_
     uint16_t closest_bucket_interval_delta = UINT16_MAX;
     int8_t in_bucket = -1;
     int8_t empty_bucket_id = -1;
+    // FIXME: lock on deferred_message_bucket[] here
     for (uint8_t i=0; i<ARRAY_SIZE(deferred_message_bucket); i++) {
         const deferred_message_bucket_t &bucket = deferred_message_bucket[i];
         if (bucket.interval_ms == 0) {
