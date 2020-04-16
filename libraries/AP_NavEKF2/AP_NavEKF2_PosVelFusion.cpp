@@ -278,7 +278,7 @@ void NavEKF2_core::CorrectGPSForAntennaOffset(gps_elements &gps_data) const
 }
 
 // correct external navigation earth-frame position using sensor body-frame offset
-void NavEKF2_core::CorrectExtNavForSensorOffset(Vector3f &ext_position)
+void NavEKF2_core::CorrectExtNavForSensorOffset(Vector3f &ext_position) const
 {
 #if HAL_VISUALODOM_ENABLED
     AP_VisualOdom *visual_odom = AP::visualodom();
