@@ -813,7 +813,6 @@ private:
         uint32_t no_space_for_message;
         uint16_t statustext_last_sent_ms;
         uint32_t behind;
-        uint32_t out_of_time;
         uint16_t fnbts_maxtime;
         uint32_t max_retry_deferred_body_us;
         uint8_t max_retry_deferred_body_type;
@@ -893,8 +892,6 @@ public:
     void init();
     void setup_console();
     void setup_uarts();
-
-    bool out_of_time() const;
 
     // frsky backend
     AP_Frsky_Telem *frsky;

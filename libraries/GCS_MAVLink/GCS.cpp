@@ -238,25 +238,6 @@ void GCS::update_sensor_status_flags()
     update_vehicle_sensor_status_flags();
 }
 
-bool GCS::out_of_time() const
-{
-    // while we are in the delay callback we are never out of time:
-    if (hal.scheduler->in_delay_callback()) {
-        return false;
-    }
-
-    // we always want to be able to send messages out while in the error loop:
-    if (AP_BoardConfig::in_config_error()) {
-        return false;
-    }
-
-    if (min_loop_time_remaining_for_message_send_us() <= AP::scheduler().time_available_usec()) {
-        return false;
-    }
-
-    return true;
-}
-
 /*
   thread for sending mavlink stream messages
  */
