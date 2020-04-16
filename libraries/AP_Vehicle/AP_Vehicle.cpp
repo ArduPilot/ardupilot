@@ -113,6 +113,11 @@ void AP_Vehicle::loop()
     G_Dt = scheduler.get_loop_period_s();
 }
 
+void AP_Vehicle::looptime_soak_function()
+{
+    gcs().update_send();
+}
+
 /*
   common scheduler table for fast CPUs - all common vehicle tasks
   should be listed here, along with how often they should be called (in hz)

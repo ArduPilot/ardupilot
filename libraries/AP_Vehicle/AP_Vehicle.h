@@ -189,8 +189,15 @@ protected:
 #endif
 
     // main loop scheduler
-    AP_Scheduler scheduler{FUNCTOR_BIND_MEMBER(&AP_Vehicle::fast_loop, void)};
+    AP_Scheduler scheduler{
+        FUNCTOR_BIND_MEMBER(&AP_Vehicle::fast_loop, void),
+        FUNCTOR_BIND_MEMBER(&AP_Vehicle::looptime_soak_function, void)
+    };
     virtual void fast_loop() { }
+
+    // a method to soak up spare time at the end of the scheduler
+    // loop, before we go back to waiting for a sample.
+    void looptime_soak_function();
 
     // IMU variables
     // Integration time; time last loop took to run
