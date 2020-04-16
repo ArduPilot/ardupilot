@@ -120,9 +120,11 @@ void NavEKF3_core::ResetPosition(void)
             rngBcnTimeout = false;
             lastRngBcnPassTime_ms = imuSampleTime_ms;
         } else if ((imuSampleTime_ms - extNavDataDelayed.time_ms < 250 && posResetSource == DEFAULT) || posResetSource == EXTNAV) {
-            // use external nav system data as the third preference
-            stateStruct.position.x = extNavDataDelayed.pos.x;
-            stateStruct.position.y = extNavDataDelayed.pos.y;
+            // use external nav data as the third preference
+            ext_nav_elements extNavCorrected = extNavDataDelayed;
+            CorrectExtNavForSensorOffset(extNavCorrected.pos);
+            stateStruct.position.x = extNavCorrected.pos.x;
+            stateStruct.position.y = extNavCorrected.pos.y;
             // set the variances as received from external nav system data
             P[7][7] = P[8][8] = sq(extNavDataDelayed.posErr);
             // clear the timeout flags and counters
@@ -277,6 +279,25 @@ void NavEKF3_core::CorrectGPSForAntennaOffset(gps_elements &gps_data) const
     gps_data.hgt += posOffsetEarth.z;
 }
 
+// correct external navigation earth-frame position using sensor body-frame offset
+void NavEKF3_core::CorrectExtNavForSensorOffset(Vector3f &ext_position)
+{
+#if HAL_VISUALODOM_ENABLED
+    AP_VisualOdom *visual_odom = AP::visualodom();
+    if (visual_odom == nullptr) {
+        return;
+    }
+    const Vector3f &posOffsetBody = visual_odom->get_pos_offset() - accelPosOffset;
+    if (posOffsetBody.is_zero()) {
+        return;
+    }
+    Vector3f posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
+    ext_position.x -= posOffsetEarth.x;
+    ext_position.y -= posOffsetEarth.y;
+    ext_position.z -= posOffsetEarth.z;
+#endif
+}
+
 /********************************************************
 *                   FUSE MEASURED_DATA                  *
 ********************************************************/
@@ -331,6 +352,10 @@ void NavEKF3_core::SelectVelPosFusion()
         fuseVelData = false;
         fuseHgtData = true;
         fusePosData = true;
+
+        // correct for external navigation sensor position
+        CorrectExtNavForSensorOffset(extNavDataDelayed.pos);
+
         velPosObs[3] = extNavDataDelayed.pos.x;
         velPosObs[4] = extNavDataDelayed.pos.y;
         velPosObs[5] = extNavDataDelayed.pos.z;
