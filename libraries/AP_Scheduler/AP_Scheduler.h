@@ -55,8 +55,10 @@ class AP_Scheduler
 public:
 
     FUNCTOR_TYPEDEF(scheduler_fastloop_fn_t, void);
+    FUNCTOR_TYPEDEF(scheduler_looptime_soak_fn_t, void);
 
-    AP_Scheduler(scheduler_fastloop_fn_t fastloop_fn = nullptr);
+    AP_Scheduler(scheduler_fastloop_fn_t fastloop_fn = nullptr,
+                 scheduler_looptime_soak_fn_t looptime_soak_fn = nullptr);
 
     /* Do not allow copies */
     AP_Scheduler(const AP_Scheduler &other) = delete;
@@ -155,6 +157,9 @@ public:
 private:
     // function that is called before anything in the scheduler table:
     scheduler_fastloop_fn_t _fastloop_fn;
+
+    // function that is called if we have lots of time left in a loop
+    scheduler_looptime_soak_fn_t _looptime_soak_fn;
 
     // used to enable scheduler debugging
     AP_Int8 _debug;

@@ -61,8 +61,9 @@ const AP_Param::GroupInfo AP_Scheduler::var_info[] = {
 };
 
 // constructor
-AP_Scheduler::AP_Scheduler(scheduler_fastloop_fn_t fastloop_fn) :
-    _fastloop_fn(fastloop_fn)
+AP_Scheduler::AP_Scheduler(scheduler_fastloop_fn_t fastloop_fn, scheduler_looptime_soak_fn_t looptime_soak_fn) :
+    _fastloop_fn(fastloop_fn),
+    _looptime_soak_fn(looptime_soak_fn)
 {
     if (_singleton) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -239,6 +240,23 @@ void AP_Scheduler::run(uint32_t time_available)
     if (_spare_ticks == 32) {
         _spare_ticks /= 2;
         _spare_micros /= 2;
+    }
+
+    // soak up any spare loop time with provided function
+    if (_looptime_soak_fn != nullptr) {
+        uint32_t soaked_time_ms = 0;
+        while (time_available > 1000 && soaked_time_ms < 5000) {
+            // get remaining time available for this loop
+            _task_time_started = AP_HAL::micros();
+            _task_time_allowed = time_available; // FIXME: add margin here?
+            _looptime_soak_fn();
+            const uint32_t time_taken = AP_HAL::micros() - _task_time_started;
+            soaked_time_ms += time_taken;
+            if (time_taken < 1000) {
+                hal.scheduler->delay_microseconds(1000-time_taken);
+            }
+            time_available -= 1000;
+        }
     }
 }
 
