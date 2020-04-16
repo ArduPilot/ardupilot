@@ -262,13 +262,7 @@ bool GCS::out_of_time() const
  */
 void GCS::send_thread(void)
 {
-    uint32_t last_heartbeat_ms = 0;
     while (true) {
-        uint32_t now = AP_HAL::millis();
-        if (now - last_heartbeat_ms >= 1000) {
-            last_heartbeat_ms = now;
-            gcs().send_message(MSG_HEARTBEAT);
-        }
         gcs().update_send();
         hal.scheduler->delay(2);
     }
