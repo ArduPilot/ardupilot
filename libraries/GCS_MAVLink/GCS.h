@@ -92,7 +92,6 @@ public:
     virtual ~GCS_MAVLINK() {}
 
     void        update_receive(uint32_t max_time_us=1000);
-    void        update_send();
     bool        init(uint8_t instance);
     void        send_message(enum ap_message id);
     void        send_text(MAV_SEVERITY severity, const char *fmt, ...) const FMT_PRINTF(3, 4);
@@ -497,6 +496,8 @@ protected:
     void manual_override(RC_Channel *c, int16_t value_in, uint16_t offset, float scaler, const uint32_t tnow, bool reversed = false);
 
 private:
+
+    void update_send();
 
     void log_mavlink_stats();
 
