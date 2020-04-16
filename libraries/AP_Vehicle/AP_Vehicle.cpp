@@ -143,7 +143,7 @@ void AP_Vehicle::get_common_scheduler_tasks(const AP_Scheduler::Task*& tasks, ui
  */
 void AP_Vehicle::scheduler_delay_callback()
 {
-    static uint32_t last_1hz, last_50hz, last_5s;
+    static uint32_t last_50hz, last_5s;
 
     AP_Logger &logger = AP::logger();
 
@@ -151,15 +151,8 @@ void AP_Vehicle::scheduler_delay_callback()
     logger.EnableWrites(false);
 
     const uint32_t tnow = AP_HAL::millis();
-    if (tnow - last_1hz > 1000) {
-        last_1hz = tnow;
-        gcs().send_message(MSG_HEARTBEAT);
-        gcs().send_message(MSG_SYS_STATUS);
-    }
     if (tnow - last_50hz > 20) {
         last_50hz = tnow;
-        gcs().update_receive();
-        gcs().update_send();
         _singleton->notify.update();
     }
     if (tnow - last_5s > 5000) {
