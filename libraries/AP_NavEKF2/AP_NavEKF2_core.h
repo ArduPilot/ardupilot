@@ -777,7 +777,7 @@ private:
     void updateTimingStatistics(void);
 
     // correct gps data for antenna position
-    void CorrectGPSForAntennaOffset(gps_elements &gps_data);
+    void CorrectGPSForAntennaOffset(gps_elements &gps_data) const;
 
     // correct external navigation earth-frame position using sensor body-frame offset
     void CorrectExtNavForSensorOffset(Vector3f &ext_position);
