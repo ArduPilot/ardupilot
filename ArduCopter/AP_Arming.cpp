@@ -523,24 +523,23 @@ bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
     fence_requires_gps = (copter.fence.get_enabled_fences() & (AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON)) > 0;
     #endif
 
-    // return true if GPS is not required
-    if (!mode_requires_gps && !fence_requires_gps) {
-        return true;
-    }
-
-    // ensure GPS is ok
-    if (!copter.position_ok()) {
-        const char *reason = ahrs.prearm_failure_reason();
-        if (reason == nullptr) {
-            if (!mode_requires_gps && fence_requires_gps) {
-                // clarify to user why they need GPS in non-GPS flight mode
-                reason = "Fence enabled, need 3D Fix";
-            } else {
-                reason = "Need 3D Fix";
-            }
+    if (mode_requires_gps) {
+        if (!copter.position_ok()) {
+            // There is no need to call prearm_failure_reason again, because prearm_healthy sure be true if we reach here
+            check_failed(display_failure, "Need 3D Fix");
+            return false;
         }
-        check_failed(display_failure, "%s", reason);
-        return false;
+    } else {
+        if (fence_requires_gps) {
+            if (!copter.position_ok()) {
+                // clarify to user why they need GPS in non-GPS flight mode
+                check_failed(display_failure, "Fence enabled, need 3D Fix");
+                return false;
+            }
+        } else {
+            // return true if GPS is not required
+            return true;
+        }
     }
 
     // check for GPS glitch (as reported by EKF)
