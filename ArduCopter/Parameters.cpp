@@ -1503,6 +1503,7 @@ void Copter::convert_tradheli_parameters(void)
         { Parameters::k_param_input_manager, 2, AP_PARAM_INT16,  "IM_STB_COL_2" },
         { Parameters::k_param_input_manager, 3, AP_PARAM_INT16,  "IM_STB_COL_3" },
         { Parameters::k_param_input_manager, 4, AP_PARAM_INT16,  "IM_STB_COL_4" },
+        { Parameters::k_param_input_manager, 5, AP_PARAM_INT16,  "IM_STB_COL_5" },
     };
 
     // convert stabilize collective parameters with scaling

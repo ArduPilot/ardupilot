@@ -26,34 +26,43 @@ const AP_Param::GroupInfo AC_InputManager_Heli::var_info[] = {
     // @Units: %
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("STB_COL_1",    6, AC_InputManager_Heli, _heli_stab_col_min, AC_ATTITUDE_HELI_STAB_COLLECTIVE_MIN_DEFAULT),
+    AP_GROUPINFO("STB_COL_1",    6, AC_InputManager_Heli, _colcrv[0], AC_ATTITUDE_HELI_STAB_COLLECTIVE_MIN_DEFAULT),
 
     // @Param: STB_COL_2
     // @DisplayName: Stabilize Collective Mid-Low
-    // @Description: Helicopter's collective pitch setting at mid-low (40%) collective stick input in Stabilize mode. Set this as a percent of collective range given by H_COL_MAX minus H_COL_MIN.
+    // @Description: Helicopter's collective pitch setting at mid-low (25%) collective stick input in Stabilize mode. Set this as a percent of collective range given by H_COL_MAX minus H_COL_MIN.
     // @Range: 0 100
     // @Units: %
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("STB_COL_2",    7, AC_InputManager_Heli, _heli_stab_col_low, AC_ATTITUDE_HELI_STAB_COLLECTIVE_LOW_DEFAULT),
+    AP_GROUPINFO("STB_COL_2",    7, AC_InputManager_Heli, _colcrv[1], AC_ATTITUDE_HELI_STAB_COLLECTIVE_LOW_DEFAULT),
 
     // @Param: STB_COL_3
-    // @DisplayName: Stabilize Collective Mid-High
-    // @Description: Helicopter's collective pitch setting at mid-high (60%) collective stick input in Stabilize mode. Set this as a percent of collective range given by H_COL_MAX minus H_COL_MIN.
+    // @DisplayName: Stabilize Collective Mid
+    // @Description: Helicopter's collective pitch setting at mid (50%) collective stick input in Stabilize mode. Set this as a percent of collective range given by H_COL_MAX minus H_COL_MIN.
     // @Range: 0 100
     // @Units: %
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("STB_COL_3",    8, AC_InputManager_Heli, _heli_stab_col_high, AC_ATTITUDE_HELI_STAB_COLLECTIVE_HIGH_DEFAULT),
+    AP_GROUPINFO("STB_COL_3",    8, AC_InputManager_Heli, _colcrv[2], AC_ATTITUDE_HELI_STAB_COLLECTIVE_MID_DEFAULT),
 
     // @Param: STB_COL_4
+    // @DisplayName: Stabilize Collective Mid-High
+    // @Description: Helicopter's collective pitch setting at mid-high (75%) collective stick input in Stabilize mode. Set this as a percent of collective range given by H_COL_MAX minus H_COL_MIN.
+    // @Range: 0 100
+    // @Units: %
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("STB_COL_4",    9, AC_InputManager_Heli, _colcrv[3], AC_ATTITUDE_HELI_STAB_COLLECTIVE_HIGH_DEFAULT),
+
+    // @Param: STB_COL_5
     // @DisplayName: Stabilize Collective High
     // @Description: Helicopter's maximum collective pitch setting at full collective stick input in Stabilize mode. Set this as a percent of collective range given by H_COL_MAX minus H_COL_MIN.
     // @Range: 0 100
     // @Units: %
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("STB_COL_4",    9, AC_InputManager_Heli, _heli_stab_col_max, AC_ATTITUDE_HELI_STAB_COLLECTIVE_MAX_DEFAULT),
+    AP_GROUPINFO("STB_COL_5",    10, AC_InputManager_Heli, _colcrv[4], AC_ATTITUDE_HELI_STAB_COLLECTIVE_MAX_DEFAULT),
 
     AP_GROUPEND
 };
@@ -61,32 +70,10 @@ const AP_Param::GroupInfo AC_InputManager_Heli::var_info[] = {
 // get_pilot_desired_collective - rescale's pilot collective pitch input in Stabilize and Acro modes
 float AC_InputManager_Heli::get_pilot_desired_collective(int16_t control_in)
 {
-    float slope_low, slope_high, slope_range, slope_run, scalar;
+    //float slope_low, slope_high, slope_range, slope_run, scalar;
     float stab_col_out, acro_col_out;
 
-    // calculate stabilize collective value which scales pilot input to reduced collective range
-    // code implements a 3-segment curve with knee points at 40% and 60% throttle input
-    if (control_in < 400){  // control_in ranges from 0 to 1000
-        slope_low = _heli_stab_col_min / 100.0f;
-        slope_high = _heli_stab_col_low / 100.0f;
-        slope_range = 0.4f;
-        slope_run = control_in / 1000.0f;
-    } else if(control_in <600){  // control_in ranges from 0 to 1000
-        slope_low = _heli_stab_col_low / 100.0f;
-        slope_high = _heli_stab_col_high / 100.0f;
-        slope_range = 0.2f;
-        slope_run = (control_in - 400) / 1000.0f;  // control_in ranges from 0 to 1000
-    } else {
-        slope_low = _heli_stab_col_high / 100.0f;
-        slope_high = _heli_stab_col_max / 100.0f;
-        slope_range = 0.4f;
-        slope_run = (control_in - 600) / 1000.0f;  // control_in ranges from 0 to 1000
-    }    
-
-    scalar = (slope_high - slope_low)/slope_range;
-    stab_col_out = slope_low + slope_run * scalar;
-    stab_col_out = constrain_float(stab_col_out, 0.0f, 1.0f);
-
+    stab_col_out = calculate_desired_collective(control_in);
     //
     // calculate expo-scaled acro collective
     // range check expo
@@ -130,10 +117,11 @@ bool AC_InputManager_Heli::parameter_check(char* fail_msg, uint8_t fail_msg_len)
         const char *name;
         int16_t value;
     } stab_checks[] = {
-        {"IM_STB_COL_1", _heli_stab_col_min },
-        {"IM_STB_COL_2", _heli_stab_col_low },
-        {"IM_STB_COL_3", _heli_stab_col_high },
-        {"IM_STB_COL_4", _heli_stab_col_max },
+        {"IM_STB_COL_1", _colcrv[0] },
+        {"IM_STB_COL_2", _colcrv[1] },
+        {"IM_STB_COL_3", _colcrv[2] },
+        {"IM_STB_COL_4", _colcrv[3] },
+        {"IM_STB_COL_5", _colcrv[4] },
     };
 
     // check values are within valid range
@@ -154,4 +142,30 @@ bool AC_InputManager_Heli::parameter_check(char* fail_msg, uint8_t fail_msg_len)
     // all other cases parameters are OK
     return true;
 }
+
+void AC_InputManager_Heli::set_collective_curve()
+{
+    float colcrv[5];
+    // Ensure user inputs are within parameter limits
+    // Scale throttle curve parameters
+    for (uint8_t i = 0; i < 5; i++) {
+        colcrv[i] = constrain_float(_colcrv[i] * 0.01f, 0.0f, 1.0f);
+    }
+    // Calculate the spline polynomials for the throttle curve
+    splinterp5(colcrv, _colcrv_poly);
+}
+
+float AC_InputManager_Heli::calculate_desired_collective(int16_t control)
+{
+    float control_in = control / 1000.0f;
+    const float inpt = control_in * 4.0f + 1.0f;
+    uint8_t idx = constrain_int16(int8_t(control_in * 4), 0, 3);
+    const float a = inpt - (idx + 1.0f);
+    const float b = (idx + 1.0f) - inpt + 1.0f;
+    float collective = _colcrv_poly[idx][0] * a + _colcrv_poly[idx][1] * b + _colcrv_poly[idx][2] * (powf(a,3.0f) - a) / 6.0f + _colcrv_poly[idx][3] * (powf(b,3.0f) - b) / 6.0f;
+
+    collective = constrain_float(collective, 0.0f, 1.0f);
+    return collective;
+}
+
 

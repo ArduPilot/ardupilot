@@ -31,6 +31,8 @@ void ModeStabilize_Heli::run()
     // get pilot's desired yaw rate
     target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
 
+    // set collective curve
+    copter.input_manager.set_collective_curve();
     // get pilot's desired throttle
     pilot_throttle_scaled = copter.input_manager.get_pilot_desired_collective(channel_throttle->get_control_in());
 
