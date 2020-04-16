@@ -22,6 +22,7 @@ extern const AP_HAL::HAL& hal;
 #define AP_MOUNT_TRILLIUM_SITL_IP                           "172.20.114.45"
 #define AP_MOUNT_TRILLIUM_SITL_PORT                         8748
 
+
 void AP_Mount_Trillium::init()
 {
     // check for Trillium Gimbal protocol
@@ -117,6 +118,7 @@ void AP_Mount_Trillium::update()
     // flag to trigger sending target angles to gimbal
     bool resend_now = false;
     OrionPkt_t PktOut;
+    const uint32_t now_ms = AP_HAL::millis();
 
     // update based on mount mode
     switch(get_mode()) {
@@ -183,7 +185,12 @@ void AP_Mount_Trillium::update()
                 double targetAlt = _state._target_sysid_location.alt * 0.01f;    // cm -> m
                 float targetVelNed[] = { 0.0, 0.0, 0.0 };
 
-                encodeGeopointCmdPacket(&PktOut, targetLat, targetLon, targetAlt, targetVelNed, 0, geopointOptions::geopointNone);
+                OrionAutopilotData_t packet { };
+                packet.IsFlying = 0;
+                packet.CommGood = 1;
+                packet.Agl = -1; // negative means ignore
+
+                encodeOrionAutopilotDataPacketStructure(&PktOut, packet);
                 OrionCommSend(&PktOut);
 
             } else if (calc_angle_to_sysid_target(_angle_ef_target_rad, true, true)) {
@@ -199,6 +206,14 @@ void AP_Mount_Trillium::update()
 
     if (resend_now) {
         send_target_angles(_angle_ef_target_rad, false);
+    }
+
+    if (now_ms - _last_send_isFlying_ms > 1000) {
+
+        OrionCommSend(&PktOut);
+        if (OrionCommSendAndConfigm(const OrionPkt_t *pPkt)) {
+            _last_send_isFlying_ms = now_ms;
+        }
     }
 }
 
@@ -474,10 +489,10 @@ void AP_Mount_Trillium::requestOrionMessageByID(uint8_t id)
     OrionCommSend(&PktOut);
 
 }
+
 /*
  pass a raw packet from mavlink to Trillium Serial interface
 */
-
 void AP_Mount_Trillium::handle_passthrough(const mavlink_channel_t chan, const mavlink_passthrough_t &packet)
 {
     if (packet.device != AP_MOUNT_TRILLIUM_MAVLINK_PASSTHROUGH_DEVICE) {
@@ -501,6 +516,11 @@ void AP_Mount_Trillium::handle_passthrough(const mavlink_channel_t chan, const m
     _last_send_ms = now_ms;
     _passthrough.last_MAVLink_to_gimbal_ms = now_ms;
     _passthrough.chan = chan;
+}
+
+bool AP_Mount_Trillium::OrionCommSendAndConfigm(const OrionPkt_t *pPkt)
+{
+    return (OrionCommSendAndConfigm == pPkt->Length + ORION_PKT_OVERHEAD);
 }
 
 size_t AP_Mount_Trillium::OrionCommSend(const OrionPkt_t *pPkt)
@@ -541,7 +561,7 @@ const char* AP_Mount_Trillium::get_packet_name(uint8_t id)
     case ORION_PKT_BOARD:               return "BOARD";
     case ORION_PKT_SOFTWARE_DIAGNOSTICS:return "SOFTWARE_DIAGNOSTICS";
     case ORION_PKT_VIBRATION:           return "VIBRATION";
-    case ORION_PKT_NETWORK_DIAGNOSTICS: return "ETWORK_DIAGNOSTICS";
+    case ORION_PKT_NETWORK_DIAGNOSTICS: return "NETWORK_DIAGNOSTICS";
     case ORION_PKT_INITIALIZE:          return "INITIALIZE";
     case ORION_PKT_CMD:                 return "CMD";
     case ORION_PKT_STARTUP_CMD:         return "STARTUP_CMD";

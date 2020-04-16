@@ -47,6 +47,8 @@ public:
 
     void handle_passthrough(const mavlink_channel_t chan, const mavlink_passthrough_t &packet) override;
 
+
+
 private:
 
     void send_target_angles(float pitch_deg, float roll_deg, float yaw_deg);
@@ -61,6 +63,8 @@ private:
     AP_HAL::UARTDriver *_port;
 
     uint32_t    _last_send_ms;
+
+    uint32_t    _last_send_isFlying_ms;
 
     struct {
         uint32_t            last_MAVLink_to_gimbal_ms;
@@ -98,8 +102,8 @@ private:
     OrionDiagnostics_t _diagnostics;
     OrionPerformance_t _performance;
 
-
     size_t OrionCommSend(const OrionPkt_t *pPkt);
+    bool OrionCommSendAndConfigm(const OrionPkt_t *pPkt);
     void requestOrionMessageByID(uint8_t id);
     const char* get_packet_name(uint8_t id);
 
