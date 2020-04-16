@@ -193,6 +193,7 @@ static bool send_cmd16(uint16_t cmd)
     return i2c_dev->transfer(cmd_b, 2, nullptr, 0);
 }
 
+#ifdef HAL_INS_MPU60x0_NAME
 /*
   read baro calibration data
  */
@@ -217,7 +218,6 @@ static bool read_calibration_data(void)
     return true;
 }
 
-#ifdef HAL_INS_MPU60x0_NAME
 // initialise baro on i2c
 static void i2c_init(void)
 {
