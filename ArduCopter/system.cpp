@@ -217,9 +217,6 @@ void Copter::init_ardupilot()
     // disable safety if requested
     BoardConfig.init_safety();
 
-    // start sending MAVLink stream data
-    gcs().start_send_thread();
-
     hal.console->printf("\nReady to FLY ");
 
     // flag that initialisation has completed
