@@ -1459,7 +1459,7 @@ void AP_Param::reload_defaults_file(bool last_pass)
         if (load_defaults_file(default_file, last_pass)) {
             printf("Loaded defaults from %s\n", default_file);
         } else {
-            printf("Failed to load defaults from %s\n", default_file);
+            AP_HAL::panic("Failed to load defaults from %s\n", default_file);
         }
     }
 #endif
