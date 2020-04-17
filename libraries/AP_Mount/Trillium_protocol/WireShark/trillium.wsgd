@@ -31,7 +31,6 @@ MSG_ID_FIELD_NAME     msg_id
 MSG_TITLE             Msg_Title
 
 MSG_HEADER_LENGTH                      4
-#MSG_TRAILER_LENGTH                     2
 
 # Optional parameter.
 # Fields displayed into the 1st line.
@@ -52,10 +51,7 @@ MSG_TOTAL_LENGTH                       Size + 6
 # Must begins by the header.
 # This is a switch case depending on
 #  the MSG_ID_FIELD_NAME field which is inside MSG_HEADER_TYPE.
-#MSG_MAIN_TYPE           T_my_msg_switch(msg_id)
 MSG_MAIN_TYPE           T_msg_main_type
-#MSG_FROM_MAIN_TYPE      T_my_msg_switch(msg_id)
-#MSG_TO_MAIN_TYPE        T_my_msg_switch(msg_id)
 
 
 PROTO_TYPE_DEFINITIONS

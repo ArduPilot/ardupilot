@@ -1,0 +1,18 @@
+
+##################################################
+# Installation instructions:                     #
+##################################################
+http://wsgd.free.fr/installation.html
+
+
+
+
+##################################################
+# Run Instructions:                              #
+##################################################
+Copy your capture file (*.pcapng) to same folder as trillium.fdesc and .wsgd (or vice-versa, decoder files to same folder as your capture folder)
+Double-click your capture file to open (with capture files in same folde)
+
+
+Note, decoder won't load if you open your capture from within Wireshark File-Open menu.
+
