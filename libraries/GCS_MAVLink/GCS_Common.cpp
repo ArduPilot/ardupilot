@@ -654,6 +654,7 @@ void GCS_MAVLINK::handle_radio_status(const mavlink_message_t &msg, bool log_rad
  */
 void GCS_MAVLINK::handle_mission_item(const mavlink_message_t &msg)
 {
+
     // TODO: rename packet to mission_item_int
     mavlink_mission_item_int_t packet;
     if (msg.msgid == MAVLINK_MSG_ID_MISSION_ITEM) {
@@ -670,9 +671,9 @@ void GCS_MAVLINK::handle_mission_item(const mavlink_message_t &msg)
     }
     const uint8_t current = packet.current;
     const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)packet.mission_type;
-
     if (type == MAV_MISSION_TYPE_MISSION && (current == 2 || current == 3)) {
         struct AP_Mission::Mission_Command cmd = {};
+        
         MAV_MISSION_RESULT result = AP_Mission::mavlink_int_to_mission_cmd(packet, cmd);
         if (result != MAV_MISSION_ACCEPTED) {
             //decode failed

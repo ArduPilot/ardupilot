@@ -544,8 +544,9 @@ assert_storage_size<PackedContent, 12> assert_storage_size_PackedContent;
 ///     true is return if successful
 bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) const
 {
-    WITH_SEMAPHORE(_rsem);
 
+
+    WITH_SEMAPHORE(_rsem);
     // special handling for command #0 which is home
     if (index == 0) {
         cmd.index = 0;
@@ -563,7 +564,7 @@ bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) con
     // we can load a command, we don't process it yet
     // read WP position
     const uint16_t pos_in_storage = 4 + (index * AP_MISSION_EEPROM_COMMAND_SIZE);
-
+    
     PackedContent packed_content {};
 
     const uint8_t b1 = _storage.read_byte(pos_in_storage);
@@ -586,6 +587,7 @@ bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) con
             AP_HAL::panic("May not store location for 16-bit commands");
         }
 #endif
+
         // Location is not PACKED; field-wise copy it:
         cmd.content.location.relative_alt = packed_content.location.flags.relative_alt;
         cmd.content.location.loiter_ccw = packed_content.location.flags.loiter_ccw;
@@ -779,7 +781,6 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         // limit to 255 so it does not wrap during the shift or mask operation
         passby = MIN(0xFF,passby);
         acp = MIN(0xFF,acp);
-
         cmd.p1 = (passby << 8) | (acp & 0x00FF);
 #else
         // delay at waypoint in seconds (this is for copters???)
@@ -1005,9 +1006,11 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
     
     //added
     case MAV_CMD_NAV_PAYLOAD_RELEASE:
-        cmd.content.payload_release.latitude = packet.param1;
-        cmd.content.payload_release.longitude = packet.param2;
-        cmd.content.payload_release.altitude = packet.param3;
+        //cmd.content.payload_release.latitude = packet.param1;
+        //cmd.content.payload_release.longitude = packet.param2;
+        //cmd.content.payload_release.altitude = packet.param3;
+        //gcs().send_text(MAV_SEVERITY_INFO, "param1 = %f ,param2 = %f ,param3 = %f",cmd.content.payload_release.latitude,cmd.content.payload_release.longitude,packet.param3);
+
         //cmd.content.payload_release.action = packet.param4;
         break;
     //add finished
@@ -1182,7 +1185,6 @@ MAV_MISSION_RESULT AP_Mission::convert_MISSION_ITEM_INT_to_MISSION_ITEM(const ma
 MAV_MISSION_RESULT AP_Mission::mavlink_cmd_long_to_mission_cmd(const mavlink_command_long_t& packet, AP_Mission::Mission_Command& cmd) 
 {
     mavlink_mission_item_int_t miss_item = {0};
- 
     miss_item.param1 = packet.param1;
     miss_item.param2 = packet.param2;
     miss_item.param3 = packet.param3;
@@ -1218,6 +1220,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         return false;
         
     case MAV_CMD_NAV_WAYPOINT:                          // MAV ID: 16
+
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
         // acceptance radius in meters
 
@@ -1453,10 +1456,11 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
     
     //Added
     case MAV_CMD_NAV_PAYLOAD_RELEASE:
-        packet.param1 = cmd.content.payload_release.latitude;     //latitude
-        packet.param2 = cmd.content.payload_release.longitude;    //longitude
-        packet.param3 = cmd.content.payload_release.altitude;     //altitude
-        packet.param4 = cmd.content.payload_release.action;       //action (1: release, 0: hold)
+        //packet.param1 = cmd.content.payload_release.latitude;     //latitude
+        //packet.param2 = cmd.content.payload_release.longitude;    //longitude
+        //packet.param3 = cmd.content.payload_release.altitude;     //altitude
+        //gcs().send_text(MAV_SEVERITY_INFO, "param1 = %f ,param2 = %f",cmd.content.payload_release.latitude,cmd.content.payload_release.longitude);
+        //packet.param4 = cmd.content.payload_release.action;       //action (1: release, 0: hold)
         break;
     //Add finished
 
@@ -1543,13 +1547,11 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
 {
     // exit immediately if we're not running
     if (_flags.state != MISSION_RUNNING) {
-        gcs().send_text(MAV_SEVERITY_INFO,"1");
         return false;
     }
 
     // exit immediately if current nav command has not completed
     if (_flags.nav_cmd_loaded) {
-        gcs().send_text(MAV_SEVERITY_INFO,"2");
         return false;
     }
 
@@ -1576,7 +1578,6 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
         // get next command
         Mission_Command cmd;
         if (!get_next_cmd(cmd_index, cmd, true)) {
-            gcs().send_text(MAV_SEVERITY_INFO,"3");
             return false;
         }
 
@@ -1619,7 +1620,6 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
             } else {
                 // protect against endless loops of do-commands
                 if (max_loops-- == 0) {
-                    gcs().send_text(MAV_SEVERITY_INFO,"4");
                     return false;
                 }
             }

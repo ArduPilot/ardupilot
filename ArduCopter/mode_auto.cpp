@@ -65,7 +65,6 @@ void ModeAuto::run()
 
     case Auto_WP:
     case Auto_CircleMoveToEdge:
-        gcs().send_text(MAV_SEVERITY_INFO, "2) wp_run()");
         wp_run();
         break;
 
@@ -149,17 +148,19 @@ void ModeAuto::rtl_start()
 //payload release - initialises payload release in AUTO flight mode
 void ModeAuto::payload_release_start(const AP_Mission::Mission_Command& cmd)
 {
+    //ap_ahrs_dcm has wind estimate.
     _mode = Auto_PayloadRelease;
 
-    Location target_loc = loc_from_cmd(cmd);
     Location home = ahrs.get_home();
-    home.alt = target_loc.alt;
-    gcs().send_text(MAV_SEVERITY_INFO, "target lat,lon = %d,%d",home.lat,home.lng);
-    gcs().send_text(MAV_SEVERITY_INFO, "current lat,lon = %d,%d",copter.current_loc.lat,copter.current_loc.lng);
+    Location target_loc = loc_from_cmd(cmd);
+    target_loc.alt = target_loc.alt + home.alt;
+
+    gcs().send_text(MAV_SEVERITY_INFO, "target lat,lon,alt = %d,%d,%d",target_loc.lat,target_loc.lng,target_loc.alt);
+    gcs().send_text(MAV_SEVERITY_INFO, "home lat,lon,alt = %d,%d,%d",home.lat,home.lng,home.alt);
 
 
     // Set wp navigation target
-    if (!wp_nav->set_wp_destination(home)) {
+    if (!wp_nav->set_wp_destination(target_loc)) {
         // failure to set destination can only be because of missing terrain data
         copter.failsafe_terrain_on_event();
         return;
@@ -427,7 +428,6 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_NAV_WAYPOINT:                  // 16  Navigate to Waypoint
-        gcs().send_text(MAV_SEVERITY_INFO, "1) do_nav_wp(cmd), wp_start()");
         do_nav_wp(cmd);
         break;
 

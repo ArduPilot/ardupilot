@@ -27,7 +27,6 @@ MAV_MISSION_RESULT MissionItemProtocol_Waypoints::append_item(const mavlink_miss
 {
     // sanity check for DO_JUMP command
     AP_Mission::Mission_Command cmd {};
-
     const MAV_MISSION_RESULT res = AP_Mission::mavlink_int_to_mission_cmd(mission_item_int, cmd);
     if (res != MAV_MISSION_ACCEPTED) {
         return res;
