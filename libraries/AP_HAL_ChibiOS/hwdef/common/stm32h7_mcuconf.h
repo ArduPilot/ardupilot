@@ -87,6 +87,11 @@
 #define STM32_PLL1_DIVM_VALUE               3
 #define STM32_PLL2_DIVM_VALUE               3
 #define STM32_PLL3_DIVM_VALUE               6
+#elif STM32_HSECLK == 25000000U
+// this gives 400MHz system clock
+#define STM32_PLL1_DIVM_VALUE               2
+#define STM32_PLL2_DIVM_VALUE               2
+#define STM32_PLL3_DIVM_VALUE               5
 #else
 #error "Unsupported HSE clock"
 #endif
@@ -107,7 +112,23 @@
 #define STM32_PLL3_DIVP_VALUE               3
 #define STM32_PLL3_DIVQ_VALUE               6
 #define STM32_PLL3_DIVR_VALUE               9
-#endif // 8MHz clock multiples
+
+#elif STM32_HSECLK == 25000000U
+#define STM32_PLL1_DIVN_VALUE               64
+#define STM32_PLL1_DIVP_VALUE               2
+#define STM32_PLL1_DIVQ_VALUE               8
+#define STM32_PLL1_DIVR_VALUE               2
+
+#define STM32_PLL2_DIVN_VALUE               12
+#define STM32_PLL2_DIVP_VALUE               1
+#define STM32_PLL2_DIVQ_VALUE               2
+#define STM32_PLL2_DIVR_VALUE               2
+
+#define STM32_PLL3_DIVN_VALUE               48
+#define STM32_PLL3_DIVP_VALUE               3
+#define STM32_PLL3_DIVQ_VALUE               5
+#define STM32_PLL3_DIVR_VALUE               8
+#endif // clock selection
 
 #define STM32_PLL1_ENABLED                  TRUE
 #define STM32_PLL1_P_ENABLED                TRUE
