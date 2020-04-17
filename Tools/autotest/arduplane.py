@@ -1646,7 +1646,7 @@ class AutoTestPlane(AutoTest):
 
         self.customise_SITL_commandline([],
                                         model="plane-soaring",
-                                        defaults_filepath="default_params/plane.parm")
+                                        defaults_filepath=os.path.join(testdir, "default_params/plane.parm"))
 
         self.set_parameter("SOAR_ENABLE", 1)
         self.repeatedly_apply_parameter_file(os.path.join(testdir, 'default_params/plane-soaring.parm'))
