@@ -41,7 +41,6 @@ const AP_Scheduler::Task Tracker::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_BattMonitor,    &tracker.battery,   read,           10, 1500),
     SCHED_TASK_CLASS(AP_Baro,          &tracker.barometer,  update,         10,   1500),
     SCHED_TASK_CLASS(GCS,              (GCS*)&tracker._gcs, update_receive, 50, 1700),
-    SCHED_TASK_CLASS(GCS,              (GCS*)&tracker._gcs, update_send,    50, 3000),
     SCHED_TASK_CLASS(AP_Baro,           &tracker.barometer, accumulate,     50,  900),
     SCHED_TASK(ten_hz_logging_loop,    10,    300),
 #if LOGGING_ENABLED == ENABLED

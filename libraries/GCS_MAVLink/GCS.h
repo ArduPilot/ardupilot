@@ -92,7 +92,6 @@ public:
     virtual ~GCS_MAVLINK() {}
 
     void        update_receive(uint32_t max_time_us=1000);
-    void        update_send();
     bool        init(uint8_t instance);
     void        send_message(enum ap_message id);
     void        send_text(MAV_SEVERITY severity, const char *fmt, ...) const FMT_PRINTF(3, 4);
@@ -498,6 +497,8 @@ protected:
 
 private:
 
+    void update_send();
+
     void log_mavlink_stats();
 
     MAV_RESULT _set_mode_common(const MAV_MODE base_mode, const uint32_t custom_mode);
@@ -812,7 +813,6 @@ private:
         uint32_t no_space_for_message;
         uint16_t statustext_last_sent_ms;
         uint32_t behind;
-        uint32_t out_of_time;
         uint16_t fnbts_maxtime;
         uint32_t max_retry_deferred_body_us;
         uint8_t max_retry_deferred_body_type;
@@ -893,8 +893,6 @@ public:
     void setup_console();
     void setup_uarts();
 
-    bool out_of_time() const;
-
     // frsky backend
     AP_Frsky_Telem *frsky;
 
@@ -942,6 +940,8 @@ protected:
     uint8_t _num_gcs;
     GCS_MAVLINK *_chan[MAVLINK_COMM_NUM_BUFFERS];
 
+    void start_send_thread(void);
+    
 private:
 
     static GCS *_singleton;
@@ -1003,6 +1003,9 @@ private:
     // GCS::update_send is called so we don't starve later links of
     // time in which they are permitted to send messages.
     uint8_t first_backend_to_send;
+
+    // thread for sending mavlink streams
+    void send_thread(void);
 };
 
 GCS &gcs();

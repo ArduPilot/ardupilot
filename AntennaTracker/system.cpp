@@ -95,7 +95,7 @@ void Tracker::init_ardupilot()
     }
 
     // disable safety if requested
-    BoardConfig.init_safety();    
+    BoardConfig.init_safety();
 }
 
 /*

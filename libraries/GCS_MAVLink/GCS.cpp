@@ -238,21 +238,22 @@ void GCS::update_sensor_status_flags()
     update_vehicle_sensor_status_flags();
 }
 
-bool GCS::out_of_time() const
+/*
+  thread for sending mavlink stream messages
+ */
+void GCS::send_thread(void)
 {
-    // while we are in the delay callback we are never out of time:
-    if (hal.scheduler->in_delay_callback()) {
-        return false;
+    while (true) {
+        gcs().update_send();
+        hal.scheduler->delay(2);
     }
-
-    // we always want to be able to send messages out while in the error loop:
-    if (AP_BoardConfig::in_config_error()) {
-        return false;
-    }
-
-    if (min_loop_time_remaining_for_message_send_us() <= AP::scheduler().time_available_usec()) {
-        return false;
-    }
-
-    return true;
 }
+
+void GCS::start_send_thread(void)
+{
+    if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&GCS::send_thread, void), "GCS_send", 8192, AP_HAL::Scheduler::PRIORITY_IO, 1)) {
+        AP_HAL::panic("Failed to start GCS send thread");
+    }
+}
+
+#undef FOR_EACH_ACTIVE_CHANNEL
