@@ -1,8 +1,4 @@
 
-# This is an example of what can be done with Generic Dissector.
-# This is not a real example (ie used in real life).
-# I just put here many possible syntax.
-
 # If you want to understand how to build a .fdesc and .wsgd from zero,
 #  please refer to :
 # http://wsgd.free.fr/first_proto.html
@@ -10,8 +6,9 @@
 # http://wsgd.free.fr/fdesc_format.html
 # http://wsgd.free.fr/wsgd_format.html
 
-# NB: the declaration order is important,
-#      i.e. you must declare a type before using it.
+
+# Author: Tom Pittenger at Kraus-Himdani Aerospace
+#  email: tom.pittenger@krausaerospace.com
 
 
 ###############################################################################
