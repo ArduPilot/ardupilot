@@ -103,9 +103,9 @@ private:
     OrionPerformance_t _performance;
 
     size_t OrionCommSend(const OrionPkt_t *pPkt);
-    bool OrionCommSendAndConfigm(const OrionPkt_t *pPkt);
     void requestOrionMessageByID(uint8_t id);
     const char* get_packet_name(uint8_t id);
+    void SendGeopointCmd(const Location targetLoc, const Vector3f targetVelNed_vector, const float joystickRange, const geopointOptions options);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SocketAPM sock{true};

@@ -180,18 +180,7 @@ void AP_Mount_Trillium::update()
 
         case MAV_MOUNT_MODE_SYSID_TARGET:
             if (_state._target_sysid_location_set && _state._target_sysid != 0) {
-                double targetLat = deg2rad(_state._target_sysid_location.lat * 1.0e-7f);
-                double targetLon = deg2rad(_state._target_sysid_location.lng * 1.0e-7f);
-                double targetAlt = _state._target_sysid_location.alt * 0.01f;    // cm -> m
-                float targetVelNed[] = { 0.0, 0.0, 0.0 };
-
-                OrionAutopilotData_t packet { };
-                packet.IsFlying = 0;
-                packet.CommGood = 1;
-                packet.Agl = -1; // negative means ignore
-
-                encodeOrionAutopilotDataPacketStructure(&PktOut, packet);
-                OrionCommSend(&PktOut);
+                SendGeopointCmd(_state._target_sysid_location, Vector3f(), 0, geopointOptions::geopointNone);
 
             } else if (calc_angle_to_sysid_target(_angle_ef_target_rad, true, true)) {
                 resend_now = true;
@@ -209,12 +198,30 @@ void AP_Mount_Trillium::update()
     }
 
     if (now_ms - _last_send_isFlying_ms > 1000) {
+        _last_send_isFlying_ms = now_ms;
 
+        OrionAutopilotData_t packet {};
+        packet.IsFlying = AP_Notify::flags.flying;
+        packet.CommGood = !AP_Notify::flags.failsafe_radio;
+        packet.Agl = -1; // negative means ignore
+
+        encodeOrionAutopilotDataPacketStructure(&PktOut, &packet);
         OrionCommSend(&PktOut);
-        if (OrionCommSendAndConfigm(const OrionPkt_t *pPkt)) {
-            _last_send_isFlying_ms = now_ms;
-        }
     }
+}
+
+void AP_Mount_Trillium::SendGeopointCmd(const Location targetLoc, const Vector3f targetVelNed_vector, const float joystickRange, const geopointOptions options)
+{
+    OrionPkt_t PktOut;
+
+    const double targetLat = deg2rad(_state._target_sysid_location.lat * 1.0e-7f);
+    const double targetLon = deg2rad(_state._target_sysid_location.lng * 1.0e-7f);
+    const double targetAlt = _state._target_sysid_location.alt * 0.01f;    // cm -> m
+    float targetVelNed[] = { targetVelNed_vector.x, targetVelNed_vector.y, targetVelNed_vector.z };
+
+    encodeGeopointCmdPacket(&PktOut, targetLat, targetLon, targetAlt, targetVelNed, joystickRange, options);
+    OrionCommSend(&PktOut);
+
 }
 
 /*
@@ -516,11 +523,6 @@ void AP_Mount_Trillium::handle_passthrough(const mavlink_channel_t chan, const m
     _last_send_ms = now_ms;
     _passthrough.last_MAVLink_to_gimbal_ms = now_ms;
     _passthrough.chan = chan;
-}
-
-bool AP_Mount_Trillium::OrionCommSendAndConfigm(const OrionPkt_t *pPkt)
-{
-    return (OrionCommSendAndConfigm == pPkt->Length + ORION_PKT_OVERHEAD);
 }
 
 size_t AP_Mount_Trillium::OrionCommSend(const OrionPkt_t *pPkt)
