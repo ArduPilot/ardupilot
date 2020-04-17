@@ -43,6 +43,7 @@ PB10 USART3_TX USART3
 PB11 USART3_RX USART3
 
 # UART4 (only RX) #"TX" pin PA0 is used for RSSI_ADC_CHANNEL
+PA0 UART4_TX UART4 ALT(1)
 PA1 UART4_RX UART4 
 
 # transmit only usart2, for telemetry output (eg. Hott telem)
