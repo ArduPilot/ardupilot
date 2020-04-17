@@ -11,6 +11,16 @@
 #  email: tom.pittenger@krausaerospace.com
 
 
+
+###############################################################################
+# Constants
+###############################################################################
+
+const float64  Math::PI = 3.14159265359;
+const float64  Math::deg_to_rad = Math::PI / 180.0;
+const float64  Math::rad_to_deg = 180.0 / Math::PI;
+const float64  Math::latLon_scaler = 10000000.0;
+
 ###############################################################################
 # Message identifier
 ###############################################################################
@@ -122,6 +132,24 @@ enum8 T_my_msg_id
     LENSCTL_VERSION     0xF9
 }
 
+
+###############################################################################
+# Struct for Debug String - this is needed up top so that it can populate Msg_Title in the header
+###############################################################################
+
+struct T_msg_DEBUG_STRING
+{
+    uint8       source;
+    uint8       priority;
+    hide uint8  reserved1;
+    hide uint8  reserved2;
+    
+    if (Size > 4) {
+        string(Size-4) description;
+        #hide var string     Msg_Title = Msg_Title + print (" %s", description);
+    }
+}
+
 ###############################################################################
 # Header
 ###############################################################################
@@ -137,9 +165,20 @@ struct  T_my_msg_header
 
     uint8           Size;
     
-    hide var string     Msg_Title = print ("%s (0x%x)", msg_id, msg_id);
+    
+    
+    hide var string Msg_Title = print ("%s (0x%x)", msg_id, msg_id);
     if (Size == 0) {
-        hide var string     Msg_Title = Msg_Title + print (" FETCH", msg_id);
+        hide var string Msg_Title = Msg_Title + print (" FETCH", msg_id);
+    } else {
+    
+        #special handling here in the header for msg_id DEBUG_STRING so we can get it into Msg_Title
+        if (msg_id == T_my_msg_id::DEBUG_STRING) {
+            T_msg_DEBUG_STRING debug_string;
+            if (Size > 4) {
+                hide var string Msg_Title = Msg_Title + print(" %s", debug_string.description);
+            }
+        }
     }
 }
 
@@ -358,6 +397,26 @@ enum8 T_MaxPathPoints
 }
 
 
+enum8 T_insMode
+{
+    insModeInit1        0
+    insModeInit2        1
+    insModeAHRS         2
+    insModeRunHard      3
+    insModeRun          4
+    insModeRunTight     5
+}
+
+enum3 T_imuType
+{
+    imuTypeInternal     0
+    imuTypeSensonor     1
+    imuTypeDmu11        2
+    imuTypeExternal     3
+    imuTypeEpson        4
+    numImuTypes         5
+}
+
 ###############################################################################
 # Header
 ###############################################################################
@@ -410,28 +469,18 @@ struct T_msg_CAMERAS
     uint8           NumCameras;
     hide uint24     reserved;
     
-    if (NumCameras >= 1 && NumCameras <= 2)
-    {
+    if (NumCameras >= 1 && NumCameras <= 2) {
         T_CamSettings[NumCameras] CamSettings;
     }
 }
 
 struct T_msg_unknown
 {
-    uint8[Size]     payload;
-}
-
-struct T_msg_DEBUG_STRING
-{
-    uint8   source;
-    uint8   priority;
-    uint8   reserved1;
-    uint8   reserved2;
-    
-    if (Size > 4) {
-        string(Size-4) description;
+    if (Size > 0) {
+        uint8[Size]     payload;
     }
 }
+
 struct T_msg_PERFORMANCE
 {
     uint16[T_GimbalAxis::NUM_GIMBAL_AXES] RmsQuad_raw;
@@ -440,13 +489,6 @@ struct T_msg_PERFORMANCE
     uint16[T_GimbalAxis::NUM_GIMBAL_AXES] RmsPos_raw;
     uint16[T_GimbalAxis::NUM_GIMBAL_AXES] Iout_raw;
 }
-
-const float64  Math::PI = 3.14159265359;
-const float64  Math::deg_to_rad = Math::PI / 180.0;
-const float64  Math::rad_to_deg = 180.0 / Math::PI;
-const float64  Math::latLon_scaler = 10000000.0;
-
-
 
 struct T_msg_GEOLOCATE_TELEMETRY
 {
@@ -465,8 +507,8 @@ struct T_msg_GEOLOCATE_TELEMETRY
     int16[3]        velNED_raw;
     int16[4]        gimbalQuat_raw;
     
-    hide int16           pan_raw;
-    hide int16           tilt_raw;
+    hide int16      pan_raw;
+    hide int16      tilt_raw;
     var float32     pan = pan_raw / (32767.0/(Math::PI));
     var float32     tilt = tilt_raw / (32767.0/(Math::PI));
     
@@ -497,21 +539,21 @@ struct T_msg_GEOLOCATE_TELEMETRY
 
 struct T_msg_BOARD
 {
-    uint32  boardSN;
-    uint32  assemblySN;
-    uint32  config;
-    hide uint8[3] reserved;
+    uint32          boardSN;
+    uint32          assemblySN;
+    uint32          config;
+    hide uint8[3]   reserved;
     T_BoardEnumeration boardEnum;
 
-    hide uint7   manufactureDate_Year_raw;
-    var uint16   manufactureDate_Year = 2000 + manufactureDate_Year_raw;
-    uint4   manufactureDate_Month;
-    uint5   manufactureDate_Day;
+    hide uint7      manufactureDate_Year_raw;
+    var uint16      manufactureDate_Year = 2000 + manufactureDate_Year_raw;
+    uint4           manufactureDate_Month;
+    uint5           manufactureDate_Day;
 
-    hide uint7   calibrationDate_Year_raw;
-    var uint16   calibrationDate_Year = 2000 + calibrationDate_Year_raw;
-    uint4   calibrationDate_Month;
-    uint5   calibrationDate_Day;
+    hide uint7      calibrationDate_Year_raw;
+    var uint16      calibrationDate_Year = 2000 + calibrationDate_Year_raw;
+    uint4           calibrationDate_Month;
+    uint5           calibrationDate_Day;
 }
 
 struct T_msg_CLEVIS_VERSION
@@ -549,42 +591,42 @@ struct T_msg_LENSCTL_VERSION
 }
 struct T_msg_GPS_DATA
 {
-    uint1   multiAntHeadingValid;
-    hide uint3   reserved1;
-    T_UBloxFixType   FixType;
-    uint8   FixState;
-    uint8   TrackedSats;
-    uint8   PDOP;
+    uint1           multiAntHeadingValid;
+    hide uint3      reserved1;
+    T_UBloxFixType  FixType;
+    uint8           FixState;
+    uint8           TrackedSats;
+    uint8           PDOP;
 
-    hide int32   Latitude_raw;
-    hide int32   Longitude_raw;
-    hide int32   Altitude_raw;
+    hide int32      Latitude_raw;
+    hide int32      Longitude_raw;
+    hide int32      Altitude_raw;
     var float64     Latitude = Latitude_raw / (Math::latLon_scaler * Math::rad_to_deg);
     var float64     Longitude = Longitude_raw / (Math::latLon_scaler * Math::rad_to_deg);
     var float32     Altitude = Altitude_raw / 10000.0;
 
-    int32[3] VelNED;
+    int32[3]        VelNED;
 
-    int32   Hacc;
+    int32           Hacc;
     
-    int32   Vacc;
+    int32           Vacc;
     
-    int32   SpeedAcc;
+    int32           SpeedAcc;
 
-    int32   HeadingAcc;
+    int32           HeadingAcc;
     
-    uint32  ITOW;
-    uint16  Week;
-    int16   GeoidUndulation;
+    uint32          ITOW;
+    uint16          Week;
+    int16           GeoidUndulation;
     
-    T_GpsSource source;
-    hide uint6   reserved2;
-    uint1   detailedAccuracyValid;
-    uint1   verticalVelocityValid;
-    uint8   leapSeconds;
+    T_GpsSource     source;
+    hide uint6      reserved2;
+    uint1           detailedAccuracyValid;
+    uint1           verticalVelocityValid;
+    uint8           leapSeconds;
     
     if (Size > 55) {
-        int16   multiAntHeading;
+        int16       multiAntHeading;
     }
     
     if (Size > 57) {
@@ -592,7 +634,7 @@ struct T_msg_GPS_DATA
     }
 
     if (Size > 63) {
-        uint16[3] velAccuracy_raw;
+        uint16[3]   velAccuracy_raw;
     }
 }
 
@@ -655,32 +697,32 @@ struct T_msg_NETWORK_DIAGNOSTICS
 
 struct T_msg_ThreadLoading
 {
-    hide uint8 cpuLoad_raw;
-    var float32 cpuLoad = cpuLoad_raw * 100.0/255.0;
+    hide uint8      cpuLoad_raw;
+    var float32     cpuLoad = cpuLoad_raw * 100.0/255.0;
     
-    hide uint8 heapLoad_raw;
-    var float32 heapLoad = heapLoad_raw * 100.0/255.0;
+    hide uint8      heapLoad_raw;
+    var float32     heapLoad = heapLoad_raw * 100.0/255.0;
 
-    hide uint8 stackLoad_raw;
-    var float32 stackLoad = stackLoad_raw * 100.0/255.0;
+    hide uint8      stackLoad_raw;
+    var float32     stackLoad = stackLoad_raw * 100.0/255.0;
     
-    uint8   watchdogLeft;
-    uint8   numIterations;
-    uint8   worstcase;
+    uint8           watchdogLeft;
+    uint8           numIterations;
+    uint8           worstcase;
 }
 struct T_msg_CoreLoading
 {
-    hide uint8 cpuLoad_raw;
-    var float32 cpuLoad = cpuLoad_raw * 100.0/255.0;
+    hide uint8      cpuLoad_raw;
+    var float32     cpuLoad = cpuLoad_raw * 100.0/255.0;
     
-    hide uint8 heapLoad_raw;
-    var float32 heapLoad = heapLoad_raw * 100.0/255.0;
+    hide uint8      heapLoad_raw;
+    var float32     heapLoad = heapLoad_raw * 100.0/255.0;
 
-    hide uint8 stackLoad_raw;
-    var float32 stackLoad = stackLoad_raw * 100.0/255.0;
+    hide uint8      stackLoad_raw;
+    var float32     stackLoad = stackLoad_raw * 100.0/255.0;
     
-    hide uint8 reserved;
-    uint8 numThreads;
+    hide uint8      reserved;
+    uint8           numThreads;
 
     if (numThreads > 0) {
         T_msg_ThreadLoading[numThreads] threadLoading;
@@ -689,9 +731,9 @@ struct T_msg_CoreLoading
 }
 struct T_msg_SOFTWARE_DIAGNOSTICS
 {
-    T_BoardEnumeration   sourceBoard;
-    uint8   numCores;
-    uint16  reserved;
+    T_BoardEnumeration  sourceBoard;
+    uint8               numCores;
+    hide uint16         reserved;
     
     if (numCores > 0) {
         T_msg_CoreLoading[numCores] coreLoading;
@@ -700,8 +742,8 @@ struct T_msg_SOFTWARE_DIAGNOSTICS
 
 struct T_msg_RETRACT_CMD
 {
-    T_RetractCmd Cmd;
-    hide uint8   reserved;
+    T_RetractCmd    Cmd;
+    hide uint8      reserved;
 }
 
 
@@ -719,10 +761,10 @@ struct T_msg_NETWORK_SETTINGS
     uint8[4]    Mask;
     uint8[4]    Gateway;
     if (Size > 12) {
-        uint8       LowDelay;
+        uint8   LowDelay;
     }
     if (Size > 13) {
-        uint16       Mtu;
+        uint16  Mtu;
     }
 }
 
@@ -739,9 +781,9 @@ struct T_msg_EXT_HEADING_DATA
     uint16  noise;
     
     if (Size > 4) {
-        uint1   headingInGimbalAxis;
-        uint1   headingFromAlign;
-        hide uint14  reserved;
+        uint1       headingInGimbalAxis;
+        uint1       headingFromAlign;
+        hide uint14 reserved;
     }
     
     if (Size > 6) {
@@ -751,17 +793,17 @@ struct T_msg_EXT_HEADING_DATA
 
 struct T_msg_RANGE_DATA
 {
-    hide uint32  range_raw;
-    var float32 range = range_raw / 100.0;
+    hide uint32     range_raw;
+    var float32     range = range_raw / 100.0;
     
     uint16  maxAgeMs;
-    T_RangeDataSrc source;
+    T_RangeDataSrc  source;
 }
 
 struct T_msg_CAMERA_STATE
 {
-    hide int16  zoom_raw;
-    var float32 zoom = zoom_raw  / 100.0;
+    hide int16      zoom_raw;
+    var float32     zoom = zoom_raw  / 100.0;
     
     if (Size > 2) {
         hide int16  focus_raw;
@@ -771,9 +813,7 @@ struct T_msg_CAMERA_STATE
     }
     
     if (Size > 4) {
-        uint8  index;
-    } else {
-        var uint8 index = 0;
+        uint8       index;
     }
 }
 
@@ -795,41 +835,41 @@ struct T_msg_USER_DATA
 
 struct T_msg_STARE_START
 {
-    uint32  systemTime;
-    uint8   maxStareTime;
+    uint32      systemTime;
+    uint8       maxStareTime;
 
-    uint1   alongTrackStare;
-    uint1   prevStareTerminatedByTime;
-    uint1   stareStartedByTime;
-    uint1   gimbalDataValid;
-    uint1   stareReset;
-    hide uint3   reserved;
+    uint1       alongTrackStare;
+    uint1       prevStareTerminatedByTime;
+    uint1       stareStartedByTime;
+    uint1       gimbalDataValid;
+    uint1       stareReset;
+    hide uint3  reserved;
 
-    uint8   prevStareTime;
+    uint8       prevStareTime;
 
-    uint8   stareLoad;
+    uint8       stareLoad;
 
-    hide int32      posLat_raw;
-    hide int32      posLon_raw;
-    hide int32      posAlt_raw;
-    var float64     Latitude = posLat_raw / (Math::latLon_scaler * Math::rad_to_deg);
-    var float64     Longitude = posLon_raw / (Math::latLon_scaler * Math::rad_to_deg);
-    var float32     Altitude = posAlt_raw / 10000.0;
+    hide int32  posLat_raw;
+    hide int32  posLon_raw;
+    hide int32  posAlt_raw;
+    var float64 Latitude = posLat_raw / (Math::latLon_scaler * Math::rad_to_deg);
+    var float64 Longitude = posLon_raw / (Math::latLon_scaler * Math::rad_to_deg);
+    var float32 Altitude = posAlt_raw / 10000.0;
 
 
     if (Size > 20) {
-        hide int32      gimbalPosLat_raw;
-        var float64     gimbalLatitude = gimbalPosLat_raw / (Math::latLon_scaler * Math::rad_to_deg);
+        hide int32  gimbalPosLat_raw;
+        var float64 gimbalLatitude = gimbalPosLat_raw / (Math::latLon_scaler * Math::rad_to_deg);
     }
     
     if (Size > 24) {
-        hide int32      gimbalPosLon_raw;
-        var float64     gimbalLongitude = gimbalPosLon_raw / (Math::latLon_scaler * Math::rad_to_deg);
+        hide int32  gimbalPosLon_raw;
+        var float64 gimbalLongitude = gimbalPosLon_raw / (Math::latLon_scaler * Math::rad_to_deg);
     }
 
     if (Size > 28) {
-        hide int32      gimbalPosAlt;
-        var float32     gimbalAltitude = gimbalPosAlt / 10000.0;
+        hide int32  gimbalPosAlt;
+        var float32 gimbalAltitude = gimbalPosAlt / 10000.0;
     }
 
     if (Size > 32) {
@@ -870,7 +910,6 @@ struct T_msg_GEOPOINT_CMD
     var float64     targetLongitude = targetLon_raw / (Math::latLon_scaler * Math::rad_to_deg);
     var float32     targetAltitude = targetAlt_raw / 10000.0;
 
-
     int16[3]    targetVelNED;
 
     if (Size > 18) {    
@@ -888,10 +927,10 @@ struct T_msg_PATH_POINT
 
 struct T_msg_PATH
 {
-    uint8   numPoints;
-    uint1   pointDown;
-    hide uint3   reserved;
-    uint4   numCrossTrackSteps;
+    uint8       numPoints;
+    uint1       pointDown;
+    hide uint3  reserved;
+    uint4       numCrossTrackSteps;
 
     if (numPoints > 0 && Size > 2) {
         T_msg_PATH_POINT[numPoints] Points;
@@ -901,36 +940,15 @@ struct T_msg_PATH
     }
     
     if (Size > 137) {
-       uint16 alongTrackStepAngle;
+       uint16   alongTrackStepAngle;
     }
     if (Size > 139) {
         uint8   crossTrackStepRatio;
     }
 }
 
-enum8 T_insMode
-{
-    insModeInit1        0
-    insModeInit2        1
-    insModeAHRS         2
-    insModeRunHard      3
-    insModeRun          4
-    insModeRunTight     5
-}
-
-enum3 T_imuType
-{
-    imuTypeInternal     0
-    imuTypeSensonor     1
-    imuTypeDmu11        2
-    imuTypeExternal     3
-    imuTypeEpson        4
-    numImuTypes         5
-}
-
 struct T_msg_INS_QUALITY
 {
-
     uint32 systemTime;
 
     T_GpsSource     gpsSource;
@@ -949,9 +967,10 @@ struct T_msg_INS_QUALITY
     uint8           gpsPeriod;
     uint8           hdgPeriod;
 
-    int16           posChiSquare; # NOTE! These are supposed to be float16 butthat's not uspported here
-    int16           velChiSquare; # NOTE! These are supposed to be float16 butthat's not uspported here
-    int16           hdgChiSquare; # NOTE! These are supposed to be float16 butthat's not uspported here
+    int16           posChiSquare; # NOTE! These are supposed to be float16 but that's not uspported here
+    int16           velChiSquare; # NOTE! These are supposed to be float16 but that's not uspported here
+    int16           hdgChiSquare; # NOTE! These are supposed to be float16 but that's not uspported here
+    
     uint16[3]       attConfidence;
     uint16[3]       velConfidence;
     uint16[3]       posConfidence;
@@ -1022,46 +1041,48 @@ struct T_msg_INS_QUALITY
 
 switch  T_my_msg_switch  T_my_msg_id
 {
-case  T_my_msg_id::INS_QUALITY  : T_msg_INS_QUALITY         "";
-case  T_my_msg_id::PATH  : T_msg_PATH         "";
-case  T_my_msg_id::GEOPOINT_CMD  : T_msg_GEOPOINT_CMD         "";
-case  T_my_msg_id::STARE_START  : T_msg_STARE_START         "";
-case  T_my_msg_id::USER_DATA  : T_msg_USER_DATA         "";
-case  T_my_msg_id::CAMERA_SWITCH  : T_msg_CAMERA_SWITCH         "";
-case  T_my_msg_id::CAMERA_STATE  : T_msg_CAMERA_STATE         "";
-case  T_my_msg_id::RANGE_DATA  : T_msg_RANGE_DATA         "";
-case  T_my_msg_id::EXT_HEADING_DATA  : T_msg_EXT_HEADING_DATA         "";
-case  T_my_msg_id::AUTOPILOT_DATA  : T_msg_AUTOPILOT_DATA         "";
-case  T_my_msg_id::UART_CONFIG  : T_msg_UART_CONFIG         "";
-case  T_my_msg_id::SOFTWARE_DIAGNOSTICS  : T_msg_SOFTWARE_DIAGNOSTICS         "";
-case  T_my_msg_id::NETWORK_DIAGNOSTICS  : T_msg_NETWORK_DIAGNOSTICS         "";
-case  T_my_msg_id::RETRACT_CMD  : T_msg_RETRACT_CMD         "";
-case  T_my_msg_id::RETRACT_STATUS  : T_msg_RETRACT_STATUS         "";
-case  T_my_msg_id::VIBRATION  : T_msg_VIBRATION         "";
-case  T_my_msg_id::STARTUP_CMD  : T_msg_STARTUP_CMD         "";
-case  T_my_msg_id::CMD  : T_msg_CMD         "";
-case  T_my_msg_id::GPS_DATA  : T_msg_GPS_DATA         "";
-case  T_my_msg_id::LENSCTL_VERSION  : T_msg_LENSCTL_VERSION         "";
-case  T_my_msg_id::TRACKER_VERSION  : T_msg_TRACKER_VERSION         "";
-case  T_my_msg_id::PAYLOAD_VERSION  : T_msg_PAYLOAD_VERSION         "";
-case  T_my_msg_id::CROWN_VERSION  : T_msg_CROWN_VERSION         "";
-case  T_my_msg_id::CLEVIS_VERSION  : T_msg_CLEVIS_VERSION         "";
-case  T_my_msg_id::BOARD  : T_msg_BOARD         "";
-case  T_my_msg_id::GEOLOCATE_TELEMETRY  : T_msg_GEOLOCATE_TELEMETRY         "";
-case  T_my_msg_id::PERFORMANCE          : T_msg_PERFORMANCE         "";
-case  T_my_msg_id::DEBUG_STRING         : T_msg_DEBUG_STRING         "";
-case  T_my_msg_id::NETWORK_VIDEO        : T_msg_NETWORK_VIDEO         "";
-case  T_my_msg_id::NETWORK_SETTINGS        : T_msg_NETWORK_SETTINGS         "";
-case  T_my_msg_id::CAMERAS              : T_msg_CAMERAS         "";
-default :
-  T_msg_unknown  "";
+    case  T_my_msg_id::INS_QUALITY          : T_msg_INS_QUALITY  "";
+    case  T_my_msg_id::PATH                 : T_msg_PATH "";
+    case  T_my_msg_id::GEOPOINT_CMD         : T_msg_GEOPOINT_CMD "";
+    case  T_my_msg_id::STARE_START          : T_msg_STARE_START "";
+    case  T_my_msg_id::USER_DATA            : T_msg_USER_DATA "";
+    case  T_my_msg_id::CAMERA_SWITCH        : T_msg_CAMERA_SWITCH "";
+    case  T_my_msg_id::CAMERA_STATE         : T_msg_CAMERA_STATE "";
+    case  T_my_msg_id::RANGE_DATA           : T_msg_RANGE_DATA "";
+    case  T_my_msg_id::EXT_HEADING_DATA     : T_msg_EXT_HEADING_DATA "";
+    case  T_my_msg_id::AUTOPILOT_DATA       : T_msg_AUTOPILOT_DATA "";
+    case  T_my_msg_id::UART_CONFIG          : T_msg_UART_CONFIG "";
+    case  T_my_msg_id::SOFTWARE_DIAGNOSTICS : T_msg_SOFTWARE_DIAGNOSTICS "";
+    case  T_my_msg_id::NETWORK_DIAGNOSTICS  : T_msg_NETWORK_DIAGNOSTICS "";
+    case  T_my_msg_id::RETRACT_CMD          : T_msg_RETRACT_CMD "";
+    case  T_my_msg_id::RETRACT_STATUS       : T_msg_RETRACT_STATUS "";
+    case  T_my_msg_id::VIBRATION            : T_msg_VIBRATION "";
+    case  T_my_msg_id::STARTUP_CMD          : T_msg_STARTUP_CMD "";
+    case  T_my_msg_id::CMD                  : T_msg_CMD "";
+    case  T_my_msg_id::GPS_DATA             : T_msg_GPS_DATA "";
+    case  T_my_msg_id::LENSCTL_VERSION      : T_msg_LENSCTL_VERSION "";
+    case  T_my_msg_id::TRACKER_VERSION      : T_msg_TRACKER_VERSION "";
+    case  T_my_msg_id::PAYLOAD_VERSION      : T_msg_PAYLOAD_VERSION "";
+    case  T_my_msg_id::CROWN_VERSION        : T_msg_CROWN_VERSION "";
+    case  T_my_msg_id::CLEVIS_VERSION       : T_msg_CLEVIS_VERSION "";
+    case  T_my_msg_id::BOARD                : T_msg_BOARD "";
+    case  T_my_msg_id::GEOLOCATE_TELEMETRY  : T_msg_GEOLOCATE_TELEMETRY "";
+    case  T_my_msg_id::PERFORMANCE          : T_msg_PERFORMANCE "";
+    #case  T_my_msg_id::DEBUG_STRING         : T_msg_DEBUG_STRING "";
+    case  T_my_msg_id::NETWORK_VIDEO        : T_msg_NETWORK_VIDEO "";
+    case  T_my_msg_id::NETWORK_SETTINGS     : T_msg_NETWORK_SETTINGS "";
+    case  T_my_msg_id::CAMERAS              : T_msg_CAMERAS "";
+    default :
+      T_msg_unknown "";
 }
 
 struct  T_msg_main_type
 {
-  T_msg_header_type    Header;
-  if (Size > 0) {
-    T_my_msg_switch(msg_id)    "" ;
-  }
-  hide uint16          Footer ;
+    T_msg_header_type    Header;
+    
+    if ((Size > 0) && (Header.msg_id != T_my_msg_id::DEBUG_STRING)) {
+        T_my_msg_switch(msg_id) "" ;
+   }
+    
+    hide uint16          Footer ;
 }
