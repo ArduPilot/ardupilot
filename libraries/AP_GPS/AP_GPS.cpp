@@ -781,7 +781,7 @@ void AP_GPS::update_instance(uint8_t instance)
             if (t.average_delta_ms <= 0) {
                 t.average_delta_ms = t.delta_time_ms;
             } else {
-                t.average_delta_ms = 0.98 * t.average_delta_ms + 0.02 * t.delta_time_ms;
+                t.average_delta_ms = 0.98f * t.average_delta_ms + 0.02f * t.delta_time_ms;
             }
         }
     }
@@ -1707,10 +1707,12 @@ bool AP_GPS::is_healthy(uint8_t instance) const
 
     /*
       allow two lost frames before declaring the GPS unhealthy, but
-      require the average frame rate to be close to 5Hz
+      require the average frame rate to be close to 5Hz. We allow for
+      a bit higher average for a rover due to the packet loss that
+      happens with the RTCMv3 data
      */
     const uint8_t delay_threshold = 2;
-    const float delay_avg_max = 245;
+    const float delay_avg_max = _type[instance] == GPS_TYPE_UBLOX_RTK_ROVER?245:215;
     const GPS_timing &t = timing[instance];
     bool delay_ok = (t.delayed_count < delay_threshold) && t.average_delta_ms < delay_avg_max;
 
