@@ -20,14 +20,6 @@
 
 #include <AP_Scripting/lua_generated_bindings.h>
 
-#ifndef SCRIPTING_DIRECTORY
-  #if HAL_OS_FATFS_IO
-    #define SCRIPTING_DIRECTORY "/APM/scripts"
-  #else
-    #define SCRIPTING_DIRECTORY "./scripts"
-  #endif //HAL_OS_FATFS_IO
-#endif // SCRIPTING_DIRECTORY
-
 extern const AP_HAL::HAL& hal;
 
 bool lua_scripts::overtime;
