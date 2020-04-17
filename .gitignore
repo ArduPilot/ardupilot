@@ -123,3 +123,5 @@ segv_*out
 /ArduPlane/scripts/
 /ArduSub/scripts/
 persistent.dat
+*.pcapng
+libraries/AP_Mount/Trillium_protocol/WireShark/wireshark_generic_dissector_traces.txt

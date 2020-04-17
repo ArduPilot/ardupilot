@@ -1,0 +1,1070 @@
+
+# This is an example of what can be done with Generic Dissector.
+# This is not a real example (ie used in real life).
+# I just put here many possible syntax.
+
+# If you want to understand how to build a .fdesc and .wsgd from zero,
+#  please refer to :
+# http://wsgd.free.fr/first_proto.html
+#  and :
+# http://wsgd.free.fr/fdesc_format.html
+# http://wsgd.free.fr/wsgd_format.html
+
+# NB: the declaration order is important,
+#      i.e. you must declare a type before using it.
+
+
+###############################################################################
+# Message identifier
+###############################################################################
+
+enum8 T_my_msg_id
+{
+    INITIALIZE          0x00
+    CMD                 0x01
+    UART_CONFIG         0x02
+    LASER_CMD           0x03
+    RESET               0x04
+    PRIVATE_05          0x05
+    LASER_STATES        0x06
+    STARTUP_CMD         0x07
+    PRIVATE_08          0x08
+    PRIVATE_09          0x09
+    PRIVATE_1F          0x1F
+    PRIVATE_20          0x20
+    PRIVATE_21          0x21
+    LIMITS              0x22
+    PRIVATE_23          0x23
+    PRIVATE_24          0x24
+    CLEVIS_VERSION      0x25
+    RESET_SOURCE        0x26
+    BOARD               0x27
+    CROWN_VERSION       0x28
+    PAYLOAD_VERSION     0x29
+    PRIVATE_2A          0x2A
+    PRIVATE_2B          0x2B
+    TRACKER_VERSION     0x2C
+    PRIVATE_2D          0x2D
+    PRIVATE_40          0x40
+    DIAGNOSTICS         0x41
+    FAULTS              0x42
+    PERFORMANCE         0x43
+    SOFTWARE_DIAGNOSTICS 0x44
+    VIBRATION           0x45
+    NETWORK_DIAGNOSTICS 0x46
+    PRIVATE_47          0x47
+    PRIVATE_48          0x48
+    PRIVATE_49          0x49
+    CAMERA_SWITCH       0x60
+    CAMERA_STATE        0x61
+    NETWORK_VIDEO       0x62
+    CAMERAS             0x63
+    PRIVATE_64          0x64
+    PRIVATE_65          0x65
+    PRIVATE_66          0x66
+    FLIR_SETTINGS       0x67
+    APTINA_SETTINGS     0x68
+    ZAFIRO_SETTINGS     0x69
+    HITACHI_SETTINGS    0x6A
+    BAE_SETTINGS        0x6B
+    SONY_SETTINGS       0x6C
+    KTNC_SETTINGS       0x6D
+    PRIVATE_70          0x70
+    PRIVATE_71          0x71
+    AUTOPILOT_DATA      0x80
+    PRIVATE_90          0x90
+    PRIVATE_91          0x91
+    PRIVATE_92          0x92
+    RETRACT_CMD         0xA0
+    RETRACT_STATUS      0xA1
+    PRIVATE_B0          0xB0
+    DEBUG_STRING        0xB1
+    USER_DATA           0xB2
+    KLV_USER_DATA       0xB3
+    PRIVATE_B4          0xB4
+    PRIVATE_C0          0xC0
+    PRIVATE_C1          0xC1
+    PRIVATE_C2          0xC2
+    PRIVATE_C3          0xC3
+    PRIVATE_CE          0xCE
+    PRIVATE_CF          0xCF
+    PRIVATE_D0          0xD0
+    GPS_DATA            0xD1
+    EXT_HEADING_DATA    0xD2
+    INS_QUALITY         0xD3
+    GEOLOCATE_TELEMETRY 0xD4
+    GEOPOINT_CMD        0xD5
+    RANGE_DATA          0xD6
+    PATH                0xD7
+    INS_OPTIONS         0xD8
+    STARE_START         0xD9
+    STARE_ACK           0xDA
+    PRIVATE_DB          0xDB
+    PRIVATE_DE          0xDE
+    PRIVATE_DF          0xDF
+    PRIVATE_E0          0xE0
+    PRIVATE_E1          0xE1
+    PRIVATE_E2          0xE2
+    PRIVATE_E3          0xE3
+    NETWORK_SETTINGS    0xE4
+    PRIVATE_E5          0xE5
+    PRIVATE_E6          0xE6
+    PRIVATE_E7          0xE7
+    PRIVATE_E8          0xE8
+    PRIVATE_E9          0xE9
+    PRIVATE_EA          0xEA
+    PRIVATE_F0          0xF0
+    PRIVATE_F1          0xF1
+    PRIVATE_F2          0xF2
+    PRIVATE_F3          0xF3
+    PRIVATE_F4          0xF4
+    PRIVATE_F5          0xF5
+    PRIVATE_F6          0xF6
+    PRIVATE_F7          0xF7
+    RETRACT_VERSION     0xF8
+    LENSCTL_VERSION     0xF9
+}
+
+###############################################################################
+# Header
+###############################################################################
+
+struct  T_my_msg_header
+{
+    byte_order      big_endian;
+
+    uint8           sync0 ;
+    uint8           sync1 ;
+  
+    T_my_msg_id     msg_id ;
+
+    uint8           Size;
+    
+    hide var string     Msg_Title = print ("%s (0x%x)", msg_id, msg_id);
+    if (Size == 0) {
+        hide var string     Msg_Title = Msg_Title + print (" FETCH", msg_id);
+    }
+}
+
+struct  T_msg_header_type
+{
+    T_my_msg_header  "";
+}
+
+###############################################################################
+# Helper Enums
+###############################################################################
+
+enum8 T_CameraType
+{
+    CAMERA_TYPE_NONE    0
+    CAMERA_TYPE_VISIBLE 1
+    CAMERA_TYPE_SWIR    2
+    CAMERA_TYPE_MWIR    3
+    CAMERA_TYPE_LWIR    4
+}
+enum8 T_CameraProtocol
+{
+    CAMERA_PROTO_UNKNOWN    0
+    CAMERA_PROTO_FLIR       1
+    CAMERA_PROTO_APTINA     2
+    CAMERA_PROTO_ZAFIRO     3
+    CAMERA_PROTO_HITACHI    4
+    CAMERA_PROTO_BAE        5
+    CAMERA_PROTO_SONY       6
+    CAMERA_PROTO_KTNC       7
+    NUM_CAMERA_PROTOS       8
+}
+
+enum8 T_RetractState
+{
+    RETRACT_STATE_DISABLED      0
+    RETRACT_STATE_RETRACTED     1
+    RETRACT_STATE_RETRACTING    2
+    RETRACT_STATE_DEPLOYING     3
+    RETRACT_STATE_DEPLOYED      4
+    RETRACT_STATE_FAULT         5
+}
+
+enum8 T_RetractCmd
+{
+    RETRACT_CMD_DISABLE     0
+    RETRACT_CMD_DEPLOY      1
+    RETRACT_CMD_RETRACT     2
+}
+
+enum8 T_GimbalAxis
+{
+    GIMBAL_AXIS_PAN     0
+    GIMBAL_AXIS_TILT    1
+    NUM_GIMBAL_AXES     2
+}
+
+enum8 T_Mode
+{
+    MODE_DISABLED           0
+    MODE_FAULT              1
+    MODE_RATE               16
+    MODE_GEO_RATE           17
+    MODE_FFC_AUTO           32
+    #MODE_FFC                32
+    MODE_FFC_MANUAL         33
+    MODE_SCENE              48
+    MODE_TRACK              49
+    MODE_CALIBRATION        64
+    MODE_POSITION           80
+    MODE_POSITION_NO_LIMITS 81
+    MODE_GEOPOINT           96
+    MODE_PATH               112
+    MODE_DOWN               113
+    MODE_UNKNOWN            255
+}
+enum8 T_RangeDataSrc
+{
+    RANGE_SRC_NONE          0
+    RANGE_SRC_SKYLINK       1
+    RANGE_SRC_LASER         2
+    RANGE_SRC_OTHER         3
+    RANGE_SRC_INTERNAL      4
+    RANGE_SRC_INTERNAL_DTED 5
+    NUM_RANGE_SRCS          6
+}
+
+enum8 T_InsRotationOptions
+{
+    insInGimbalNative   0
+    insInPlatform       1
+    insInPayloadBall    2
+}
+
+enum8 T_BoardEnumeration
+{
+    BOARD_NONE      0
+    BOARD_CLEVIS    1
+    BOARD_CROWN     2
+    BOARD_PAYLOAD   3
+    BOARD_LENSCTRL  4
+    BOARD_MISSCOMP  5
+}
+
+enum8 T_GpsSource
+{
+    externalSource      0
+    ubloxSource         1
+    mavlinkSource       2
+    nmeaSource          3
+    novatelSource       4
+    autopilotSource     5
+    #piccoloSource       5
+    piksiSource         6
+    numGpsSources       7
+}
+
+enum4 T_UBloxFixType
+{
+    noFix               0
+    deadReckoningOnly   1
+    twoDFix             2
+    threeDFix           3
+    gnssDeadReckoning   4
+    timeOnly            5
+}
+
+enum8 T_Axis
+{
+    AXIS_ROLL   0
+    AXIS_PITCH  1
+    AXIS_YAW    2
+    NUM_AXES    3
+}
+
+enum8 T_BodyAxis
+{
+    AXIS_X      0
+    AXIS_Y      1
+    AXIS_Z      2
+    NUM_XYZ     3
+}
+
+enum8 T_Stator
+{
+    STATOR_U        0
+    STATOR_V        1
+    STATOR_W        2
+    NUM_STATORS     3
+}
+
+enum8 T_MaxLasers
+{
+    MAX_LASERS  2
+}
+
+enum8 T_LaserType
+{
+    LASER_TYPE_NONE             0
+    LASER_TYPE_POINTER          1
+    LASER_TYPE_10MJ_MARKER      2
+    LASER_TYPE_LIGHTWARE        3
+    LASER_TYPE_JENOPTIK_DLEM    4
+    LASER_TYPE_VECTRONIX        5
+}
+
+enum8 T_DataPort
+{
+    USER_DATA_PORT_ETHERNET     0
+    USER_DATA_PORT_PRIMARY      2
+    USER_DATA_PORT_FP2          3
+    USER_DATA_PORT_FP1          4
+    USER_DATA_PORT_FP3          8
+    USER_DATA_PORT_FP4          9
+    USER_DATA_PORT_CURRENT      255
+}
+
+enum8 T_Protocol
+{
+    PROTOCOL_NO_CHANGE          0
+    PROTOCOL_NONE               1
+    PROTOCOL_DEFAULT            2
+    PROTOCOL_ORION              3
+    PROTOCOL_CLEVIS             4
+    PROTOCOL_CLEVIS_RAW         5
+    PROTOCOL_NMEA_GPS           6
+    PROTOCOL_UBLOX_GPS          7
+    PROTOCOL_NOVATEL_GPS        8
+    PROTOCOL_MAVLINK_GPS        9
+    PROTOCOL_UM7_MAG            10
+    PROTOCOL_SIGHTLINE_VIDEO    11
+    PROTOCOL_SENSONOR_IMU       12
+    PROTOCOL_DMU11_IMU          13
+    PROTOCOL_DISCOVERY          14
+    PROTOCOL_AIRROBOT           15
+    PROTOCOL_PROPRIETARY1       16
+    PROTOCOL_PROPRIETARY2       17
+    PROTOCOL_FLIR               18
+    PROTOCOL_EPSON_IMU          19
+    PROTOCOL_PIKSI              20
+    PROTOCOL_WEPILOT            21
+    NUM_PROTOCOL                22
+}
+
+enum8 T_GeopointOptions
+{
+    geopointNone            0
+    geopointStare           1
+    geopointClosure         2
+    geopointStareClosure    3
+}
+
+enum8 T_MaxPathPoints
+{
+    MAX_PATH_POINTS 15
+}
+
+
+###############################################################################
+# Header
+###############################################################################
+
+enum8 T_StreamType
+{
+    STREAM_TYPE_H264    0
+    STREAM_TYPE_MJPEG   1
+    STREAM_TYPE_RAW     2
+    STREAM_TYPE_YUV     3
+    NUM_STREAM_TYPES    4
+}
+
+struct  T_msg_NETWORK_VIDEO
+{
+    uint32      DestIp;
+    uint16      Port;
+    uint32      Bitrate;
+    int8        ttl;
+    T_StreamType StreamType;
+    uint8       MjpegQuality;
+    uint1       SaveSettings;
+    uint4       TsPacketCount;
+}
+
+struct T_CamSettings
+{
+    T_CameraType        Type;
+    T_CameraProtocol    Proto;
+    
+    hide uint32         MinFocalLength_raw;
+    var float32         MinFocalLength = MinFocalLength_raw / 1000.0;
+    
+    hide uint32         MaxFocalLength_raw;
+    var float32         MaxFocalLength = MaxFocalLength_raw / 1000.0;
+    
+    hide uint16         PixelPitch_raw;
+    var float32         PixelPitch = PixelPitch_raw / 1000000.0;
+
+    uint16              ArrayWidth;
+    uint16              ArrayHeight;
+    
+    int16[2]            AlignMin_raw;
+    int16[2]            AlignMax_raw;
+}
+
+
+struct T_msg_CAMERAS
+{
+    uint8           NumCameras;
+    hide uint24     reserved;
+    
+    if (NumCameras >= 1 && NumCameras <= 2)
+    {
+        T_CamSettings[NumCameras] CamSettings;
+    }
+}
+
+struct T_msg_unknown
+{
+    uint8[Size]     payload;
+}
+
+struct T_msg_DEBUG_STRING
+{
+    uint8   source;
+    uint8   priority;
+    uint8   reserved1;
+    uint8   reserved2;
+    
+    if (Size > 4) {
+        string(Size-4) description;
+    }
+}
+struct T_msg_PERFORMANCE
+{
+    uint16[T_GimbalAxis::NUM_GIMBAL_AXES] RmsQuad_raw;
+    uint16[T_GimbalAxis::NUM_GIMBAL_AXES] RmsDir_raw;
+    uint16[T_GimbalAxis::NUM_GIMBAL_AXES] RmsVel_raw;
+    uint16[T_GimbalAxis::NUM_GIMBAL_AXES] RmsPos_raw;
+    uint16[T_GimbalAxis::NUM_GIMBAL_AXES] Iout_raw;
+}
+
+const float64  Math::PI = 3.14159265359;
+const float64  Math::deg_to_rad = Math::PI / 180.0;
+const float64  Math::rad_to_deg = 180.0 / Math::PI;
+const float64  Math::latLon_scaler = 10000000.0;
+
+
+
+struct T_msg_GEOLOCATE_TELEMETRY
+{
+    uint32          systemTime;
+    uint32          gpsITOW;
+    uint16          gpsWeek;
+    int16           geoidUndulation;
+    
+    hide int32      posLat_raw;
+    hide int32      posLon_raw;
+    hide int32      posAlt_raw;
+    var float64     Latitude = posLat_raw / (Math::latLon_scaler * Math::rad_to_deg);
+    var float64     Longitude = posLon_raw / (Math::latLon_scaler * Math::rad_to_deg);
+    var float32     Altitude = posAlt_raw / 10000.0;
+    
+    int16[3]        velNED_raw;
+    int16[4]        gimbalQuat_raw;
+    
+    hide int16           pan_raw;
+    hide int16           tilt_raw;
+    var float32     pan = pan_raw / (32767.0/(Math::PI));
+    var float32     tilt = tilt_raw / (32767.0/(Math::PI));
+    
+    uint16          hfov_raw;
+    uint16          vfov_raw;
+    var float32     hfov = hfov_raw / (65535.0/(Math::PI));
+    var float32     vfov = vfov_raw / (65535.0/(Math::PI));
+    
+    int16[3]        losECEF;
+    uint16          pixelWidth;
+    uint16          pixelHeight;
+    T_Mode          mode;
+    uint8           pathProgress;
+    uint8           stareTime;
+    uint8           pathFrom;
+    uint8           pathTo;
+    int32[T_GimbalAxis::NUM_GIMBAL_AXES] imageShifts;
+    uint16          imageShiftDeltaTime;
+    uint8           imageShiftConfidence;
+    int16[T_GimbalAxis::NUM_GIMBAL_AXES] outputShifts;
+    T_RangeDataSrc  rangeSource;
+    uint8           leapSeconds;
+    int8            panAlignment;
+    int8            tiltAlignment;
+    T_InsRotationOptions insRotationOption;
+    int16[4]        insQuat;
+}
+
+struct T_msg_BOARD
+{
+    uint32  boardSN;
+    uint32  assemblySN;
+    uint32  config;
+    hide uint8[3] reserved;
+    T_BoardEnumeration boardEnum;
+
+    hide uint7   manufactureDate_Year_raw;
+    var uint16   manufactureDate_Year = 2000 + manufactureDate_Year_raw;
+    uint4   manufactureDate_Month;
+    uint5   manufactureDate_Day;
+
+    hide uint7   calibrationDate_Year_raw;
+    var uint16   calibrationDate_Year = 2000 + calibrationDate_Year_raw;
+    uint4   calibrationDate_Month;
+    uint5   calibrationDate_Day;
+}
+
+struct T_msg_CLEVIS_VERSION
+{
+    string(16)  Verison;
+    string(16)  PartNumber;
+    if (Size > 32) {
+        uint32 OnTime;
+    }
+}
+struct T_msg_CROWN_VERSION
+{
+    string(16)  Verison;
+    string(16)  PartNumber;
+    if (Size > 32) {
+        uint32 OnTime;
+    }
+}
+struct T_msg_PAYLOAD_VERSION
+{
+    string(24)  Verison;
+    string(16)  PartNumber;
+    if (Size > 32) {
+        uint32 OnTime;
+    }
+}
+struct T_msg_TRACKER_VERSION
+{
+    string(16)  Verison;
+    string(16)  PartNumber;
+}
+struct T_msg_LENSCTL_VERSION
+{
+    string(16)  Verison;
+}
+struct T_msg_GPS_DATA
+{
+    uint1   multiAntHeadingValid;
+    hide uint3   reserved1;
+    T_UBloxFixType   FixType;
+    uint8   FixState;
+    uint8   TrackedSats;
+    uint8   PDOP;
+
+    hide int32   Latitude_raw;
+    hide int32   Longitude_raw;
+    hide int32   Altitude_raw;
+    var float64     Latitude = Latitude_raw / (Math::latLon_scaler * Math::rad_to_deg);
+    var float64     Longitude = Longitude_raw / (Math::latLon_scaler * Math::rad_to_deg);
+    var float32     Altitude = Altitude_raw / 10000.0;
+
+    int32[3] VelNED;
+
+    int32   Hacc;
+    
+    int32   Vacc;
+    
+    int32   SpeedAcc;
+
+    int32   HeadingAcc;
+    
+    uint32  ITOW;
+    uint16  Week;
+    int16   GeoidUndulation;
+    
+    T_GpsSource source;
+    hide uint6   reserved2;
+    uint1   detailedAccuracyValid;
+    uint1   verticalVelocityValid;
+    uint8   leapSeconds;
+    
+    if (Size > 55) {
+        int16   multiAntHeading;
+    }
+    
+    if (Size > 57) {
+        uint16[3]   posAccuracy;
+    }
+
+    if (Size > 63) {
+        uint16[3] velAccuracy_raw;
+    }
+}
+
+struct T_msg_STARTUP_CMD
+{
+    int16[T_GimbalAxis::NUM_GIMBAL_AXES] Target;
+    T_Mode  Mode;
+    uint8   Stabalized;
+    uint8   ImpulseTime;
+}
+
+struct T_msg_CMD
+{
+    int16[T_GimbalAxis::NUM_GIMBAL_AXES] Target;
+    T_Mode  Mode;
+    uint8   Stabalized;
+    uint8   ImpulseTime;
+}
+
+struct T_FftData
+{
+    uint16 Frequency;
+    uint8[T_Axis::NUM_AXES] Accel;
+    uint8[T_Axis::NUM_AXES] Gyro;
+}
+
+struct T_msg_VIBRATION
+{
+    int16[T_Axis::NUM_AXES] MaxAccel;
+    int16[T_Axis::NUM_AXES] MaxGyro;
+    T_FftData[16] FftData;
+}
+
+
+struct T_msg_RETRACT_STATUS
+{
+    T_RetractCmd    Cmd;
+    T_RetractState  State;
+    uint16          Pos;
+    uint16          Flags;
+}
+
+struct T_msg_NETWORK_DIAGNOSTICS
+{
+    uint16 Flags;
+    uint32 RxBytes;
+    uint32 TxBytes;
+    uint32 RxPackets;
+    uint32 TxPackets;
+    uint16 RxErrors;
+    uint16 TxErrors;
+    uint16 RxDrops;
+    uint16 TxDrops;
+    uint16 RxFifoErrors;
+    uint16 TxFifoErrors;
+    uint16 FrameErrors;
+    uint16 Collisions;
+    uint16 CarrierErrors;
+}
+
+struct T_msg_ThreadLoading
+{
+    hide uint8 cpuLoad_raw;
+    var float32 cpuLoad = cpuLoad_raw * 100.0/255.0;
+    
+    hide uint8 heapLoad_raw;
+    var float32 heapLoad = heapLoad_raw * 100.0/255.0;
+
+    hide uint8 stackLoad_raw;
+    var float32 stackLoad = stackLoad_raw * 100.0/255.0;
+    
+    uint8   watchdogLeft;
+    uint8   numIterations;
+    uint8   worstcase;
+}
+struct T_msg_CoreLoading
+{
+    hide uint8 cpuLoad_raw;
+    var float32 cpuLoad = cpuLoad_raw * 100.0/255.0;
+    
+    hide uint8 heapLoad_raw;
+    var float32 heapLoad = heapLoad_raw * 100.0/255.0;
+
+    hide uint8 stackLoad_raw;
+    var float32 stackLoad = stackLoad_raw * 100.0/255.0;
+    
+    hide uint8 reserved;
+    uint8 numThreads;
+
+    if (numThreads > 0) {
+        T_msg_ThreadLoading[numThreads] threadLoading;
+    }
+    
+}
+struct T_msg_SOFTWARE_DIAGNOSTICS
+{
+    T_BoardEnumeration   sourceBoard;
+    uint8   numCores;
+    uint16  reserved;
+    
+    if (numCores > 0) {
+        T_msg_CoreLoading[numCores] coreLoading;
+    }
+}
+
+struct T_msg_RETRACT_CMD
+{
+    T_RetractCmd Cmd;
+    hide uint8   reserved;
+}
+
+
+struct T_msg_UART_CONFIG
+{
+    T_DataPort      port;
+    uint23          baud;
+    T_Protocol      protocol;
+    uint8           temporary;
+}
+
+struct T_msg_NETWORK_SETTINGS
+{
+    uint8[4]    Ip;
+    uint8[4]    Mask;
+    uint8[4]    Gateway;
+    if (Size > 12) {
+        uint8       LowDelay;
+    }
+    if (Size > 13) {
+        uint16       Mtu;
+    }
+}
+
+struct T_msg_AUTOPILOT_DATA
+{
+    uint8   IsFlying;
+    uint8   CommsGood;
+    int16   Agl;
+}
+
+struct T_msg_EXT_HEADING_DATA
+{
+    int16   extHeading;
+    uint16  noise;
+    
+    if (Size > 4) {
+        uint1   headingInGimbalAxis;
+        uint1   headingFromAlign;
+        hide uint14  reserved;
+    }
+    
+    if (Size > 6) {
+        int16   pitch;
+    }    
+}
+
+struct T_msg_RANGE_DATA
+{
+    hide uint32  range_raw;
+    var float32 range = range_raw / 100.0;
+    
+    uint16  maxAgeMs;
+    T_RangeDataSrc source;
+}
+
+struct T_msg_CAMERA_STATE
+{
+    hide int16  zoom_raw;
+    var float32 zoom = zoom_raw  / 100.0;
+    
+    if (Size > 2) {
+        hide int16  focus_raw;
+        var float32 focus = focus_raw / 10000.0;
+    } else {
+        var float32 focus = -1.0;
+    }
+    
+    if (Size > 4) {
+        uint8  index;
+    } else {
+        var uint8 index = 0;
+    }
+}
+
+struct T_msg_CAMERA_SWITCH
+{
+    uint8   index;
+}
+
+struct T_msg_USER_DATA
+{
+    T_DataPort  port;
+    uint8       size;
+    uint32      id;
+    
+    if (Size > 6 && size > 0) {
+        uint8[size] data;
+    }
+}
+
+struct T_msg_STARE_START
+{
+    uint32  systemTime;
+    uint8   maxStareTime;
+
+    uint1   alongTrackStare;
+    uint1   prevStareTerminatedByTime;
+    uint1   stareStartedByTime;
+    uint1   gimbalDataValid;
+    uint1   stareReset;
+    hide uint3   reserved;
+
+    uint8   prevStareTime;
+
+    uint8   stareLoad;
+
+    hide int32      posLat_raw;
+    hide int32      posLon_raw;
+    hide int32      posAlt_raw;
+    var float64     Latitude = posLat_raw / (Math::latLon_scaler * Math::rad_to_deg);
+    var float64     Longitude = posLon_raw / (Math::latLon_scaler * Math::rad_to_deg);
+    var float32     Altitude = posAlt_raw / 10000.0;
+
+
+    if (Size > 20) {
+        hide int32      gimbalPosLat_raw;
+        var float64     gimbalLatitude = gimbalPosLat_raw / (Math::latLon_scaler * Math::rad_to_deg);
+    }
+    
+    if (Size > 24) {
+        hide int32      gimbalPosLon_raw;
+        var float64     gimbalLongitude = gimbalPosLon_raw / (Math::latLon_scaler * Math::rad_to_deg);
+    }
+
+    if (Size > 28) {
+        hide int32      gimbalPosAlt;
+        var float32     gimbalAltitude = gimbalPosAlt / 10000.0;
+    }
+
+    if (Size > 32) {
+        int16[4]   gimbalQuat;
+    }
+
+    if (Size > 40) {
+        int16   pan;
+    }
+
+    if (Size > 42) {
+        int16   tilt;
+    }
+
+    if (Size > 44) {
+        T_RangeDataSrc rangeSource;
+    }
+
+    if (Size > 45) {
+        uint24  slantRange;
+    }
+
+    if (Size > 48) {
+        int16   alongStareAngle;
+    }
+
+    if (Size > 50) {
+        int16   crossStareAngle;
+    }
+}
+
+struct T_msg_GEOPOINT_CMD
+{
+    hide int32      targetLat_raw;
+    hide int32      targetLon_raw;
+    hide int32      targetAlt_raw;
+    var float64     targetLatitude = targetLat_raw / (Math::latLon_scaler * Math::rad_to_deg);
+    var float64     targetLongitude = targetLon_raw / (Math::latLon_scaler * Math::rad_to_deg);
+    var float32     targetAltitude = targetAlt_raw / 10000.0;
+
+
+    int16[3]    targetVelNED;
+
+    if (Size > 18) {    
+        uint16  joystickRange;
+    }
+    if (Size > 20) {
+        T_GeopointOptions   options;
+    }
+}
+
+struct T_msg_PATH_POINT
+{
+    int24[3]   posEcef;
+}
+
+struct T_msg_PATH
+{
+    uint8   numPoints;
+    uint1   pointDown;
+    hide uint3   reserved;
+    uint4   numCrossTrackSteps;
+
+    if (numPoints > 0 && Size > 2) {
+        T_msg_PATH_POINT[numPoints] Points;
+    }
+    if (T_MaxPathPoints::MAX_PATH_POINTS - numPoints > 0) {
+        hide T_msg_PATH_POINT[T_MaxPathPoints::MAX_PATH_POINTS - numPoints] PointsUnused;
+    }
+    
+    if (Size > 137) {
+       uint16 alongTrackStepAngle;
+    }
+    if (Size > 139) {
+        uint8   crossTrackStepRatio;
+    }
+}
+
+enum8 T_insMode
+{
+    insModeInit1        0
+    insModeInit2        1
+    insModeAHRS         2
+    insModeRunHard      3
+    insModeRun          4
+    insModeRunTight     5
+}
+
+enum3 T_imuType
+{
+    imuTypeInternal     0
+    imuTypeSensonor     1
+    imuTypeDmu11        2
+    imuTypeExternal     3
+    imuTypeEpson        4
+    numImuTypes         5
+}
+
+struct T_msg_INS_QUALITY
+{
+
+    uint32 systemTime;
+
+    T_GpsSource     gpsSource;
+    hide uint5      reserved;
+    T_imuType       imuType;
+    T_insMode       insMode;
+
+    uint1           hasGyroBias;
+    uint1           hasGravityBias;
+    uint1           hasAccelBias;
+    uint1           hasClockBias;
+    uint1           hasPanTiltBias;
+    uint1           posRejected;
+    uint1           velRejected;
+    uint1           hdgRejected;
+    uint8           gpsPeriod;
+    uint8           hdgPeriod;
+
+    int16           posChiSquare; # NOTE! These are supposed to be float16 butthat's not uspported here
+    int16           velChiSquare; # NOTE! These are supposed to be float16 butthat's not uspported here
+    int16           hdgChiSquare; # NOTE! These are supposed to be float16 butthat's not uspported here
+    uint16[3]       attConfidence;
+    uint16[3]       velConfidence;
+    uint16[3]       posConfidence;
+
+    if (Size > 34) {
+        uint16[3]   gyroConfidence;
+    }
+
+    if (Size > 40) {
+        uint16[3]   accelConfidence;
+    }
+
+    if (Size > 46) {
+        uint16      gravityConfidence;
+    }
+
+    if (Size > 48) {
+        uint16      clockBiasConfidence;
+    }
+    if (Size > 50) {
+        uint16      clockDriftConfidence;
+    }
+
+    if (Size > 52) {
+        int16[3]    gyroBias;
+    }
+
+    if (Size > 58) {
+        uint16[3]   accelBias;
+    }
+
+    if (Size > 64) {
+        uint16      gravityBias;
+    }
+
+    if (Size > 66) {
+        int16       clockBias;
+    }
+
+    if (Size > 68) {
+        int16       clockDrift;
+    }
+
+    if (Size > 70) {
+        uint8       numTightSatPosUpdates;
+    }
+
+    if (Size > 71) {
+        uint8       numTightSatVelUpdates;
+    }
+
+    if (Size > 72) {
+        uint8       numTightPosUpdates;
+    }
+
+    if (Size > 73) {
+        uint8       numTightVelUpdates;
+    }
+
+    if (Size > 74) {
+        int16[T_GimbalAxis::NUM_GIMBAL_AXES] panTiltBias;
+    }
+
+    if (Size > 78) {
+        uint8       panTiltChiSquare;
+    }
+}
+
+switch  T_my_msg_switch  T_my_msg_id
+{
+case  T_my_msg_id::INS_QUALITY  : T_msg_INS_QUALITY         "";
+case  T_my_msg_id::PATH  : T_msg_PATH         "";
+case  T_my_msg_id::GEOPOINT_CMD  : T_msg_GEOPOINT_CMD         "";
+case  T_my_msg_id::STARE_START  : T_msg_STARE_START         "";
+case  T_my_msg_id::USER_DATA  : T_msg_USER_DATA         "";
+case  T_my_msg_id::CAMERA_SWITCH  : T_msg_CAMERA_SWITCH         "";
+case  T_my_msg_id::CAMERA_STATE  : T_msg_CAMERA_STATE         "";
+case  T_my_msg_id::RANGE_DATA  : T_msg_RANGE_DATA         "";
+case  T_my_msg_id::EXT_HEADING_DATA  : T_msg_EXT_HEADING_DATA         "";
+case  T_my_msg_id::AUTOPILOT_DATA  : T_msg_AUTOPILOT_DATA         "";
+case  T_my_msg_id::UART_CONFIG  : T_msg_UART_CONFIG         "";
+case  T_my_msg_id::SOFTWARE_DIAGNOSTICS  : T_msg_SOFTWARE_DIAGNOSTICS         "";
+case  T_my_msg_id::NETWORK_DIAGNOSTICS  : T_msg_NETWORK_DIAGNOSTICS         "";
+case  T_my_msg_id::RETRACT_CMD  : T_msg_RETRACT_CMD         "";
+case  T_my_msg_id::RETRACT_STATUS  : T_msg_RETRACT_STATUS         "";
+case  T_my_msg_id::VIBRATION  : T_msg_VIBRATION         "";
+case  T_my_msg_id::STARTUP_CMD  : T_msg_STARTUP_CMD         "";
+case  T_my_msg_id::CMD  : T_msg_CMD         "";
+case  T_my_msg_id::GPS_DATA  : T_msg_GPS_DATA         "";
+case  T_my_msg_id::LENSCTL_VERSION  : T_msg_LENSCTL_VERSION         "";
+case  T_my_msg_id::TRACKER_VERSION  : T_msg_TRACKER_VERSION         "";
+case  T_my_msg_id::PAYLOAD_VERSION  : T_msg_PAYLOAD_VERSION         "";
+case  T_my_msg_id::CROWN_VERSION  : T_msg_CROWN_VERSION         "";
+case  T_my_msg_id::CLEVIS_VERSION  : T_msg_CLEVIS_VERSION         "";
+case  T_my_msg_id::BOARD  : T_msg_BOARD         "";
+case  T_my_msg_id::GEOLOCATE_TELEMETRY  : T_msg_GEOLOCATE_TELEMETRY         "";
+case  T_my_msg_id::PERFORMANCE          : T_msg_PERFORMANCE         "";
+case  T_my_msg_id::DEBUG_STRING         : T_msg_DEBUG_STRING         "";
+case  T_my_msg_id::NETWORK_VIDEO        : T_msg_NETWORK_VIDEO         "";
+case  T_my_msg_id::NETWORK_SETTINGS        : T_msg_NETWORK_SETTINGS         "";
+case  T_my_msg_id::CAMERAS              : T_msg_CAMERAS         "";
+default :
+  T_msg_unknown  "";
+}
+
+struct  T_msg_main_type
+{
+  T_msg_header_type    Header;
+  if (Size > 0) {
+    T_my_msg_switch(msg_id)    "" ;
+  }
+  hide uint16          Footer ;
+}
