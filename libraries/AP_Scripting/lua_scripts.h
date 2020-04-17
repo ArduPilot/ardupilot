@@ -30,6 +30,14 @@
   #endif //HAL_OS_FATFS_IO
 #endif // REPL_DIRECTORY
 
+#ifndef SCRIPTING_DIRECTORY
+  #if HAL_OS_FATFS_IO
+    #define SCRIPTING_DIRECTORY "/APM/scripts"
+  #else
+    #define SCRIPTING_DIRECTORY "./scripts"
+  #endif //HAL_OS_FATFS_IO
+#endif // SCRIPTING_DIRECTORY
+
 #ifndef REPL_IN
   #define REPL_IN REPL_DIRECTORY "/in"
 #endif // REPL_IN
