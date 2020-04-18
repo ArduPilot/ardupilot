@@ -293,7 +293,7 @@ void NavEKF3_core::SelectMagFusion()
             float yawEKFGSF, yawVarianceEKFGSF;
             bool canUseEKFGSF = yawEstimator->getYawData(&yawEKFGSF, &yawVarianceEKFGSF) && is_positive(yawVarianceEKFGSF) && yawVarianceEKFGSF < sq(radians(15.0f));
             if (yawAlignComplete && canUseEKFGSF) {
-                // use the EKF-GSF yaw estimator output as this is more robust that the EKF can achieve without a yaw measurement
+                // use the EKF-GSF yaw estimator output as this is more robust than the EKF can achieve without a yaw measurement
                 yawAngDataDelayed.yawAngErr = MAX(sqrtf(yawVarianceEKFGSF), 0.05f);
                 yawAngDataDelayed.yawAng = yawEKFGSF;
                 fuseEulerYaw(false, true);
@@ -325,7 +325,6 @@ void NavEKF3_core::SelectMagFusion()
     // Handle case where we are using an external yaw sensor instead of a magnetomer
     if (effectiveMagCal == MagCal::EXTERNAL_YAW || effectiveMagCal == MagCal::EXTERNAL_YAW_FALLBACK) {
         bool have_fused_gps_yaw = false;
-        uint32_t now = AP_HAL::millis();
         if (storedYawAng.recall(yawAngDataDelayed,imuDataDelayed.time_ms)) {
             if (tiltAlignComplete && !yawAlignComplete) {
                 alignYawAngle();
@@ -333,7 +332,7 @@ void NavEKF3_core::SelectMagFusion()
                 fuseEulerYaw(false, true);
             }
             have_fused_gps_yaw = true;
-            last_gps_yaw_fusion_ms = now;
+            last_gps_yaw_fusion_ms = imuSampleTime_ms;
         } else if (tiltAlignComplete && !yawAlignComplete && (imuSampleTime_ms - lastSynthYawTime_ms > 140)) {
             yawAngDataDelayed.yawAngErr = MAX(frontend->_yawNoise, 0.05f);
             // update the yaw angle using the last estimate which will be used as a static yaw reference when movement stops
@@ -379,7 +378,7 @@ void NavEKF3_core::SelectMagFusion()
 
         // we don't have GPS yaw data and are configured for
         // fallback. If we've only just lost GPS yaw
-        if (now - last_gps_yaw_fusion_ms < 10000) {
+        if (imuSampleTime_ms - last_gps_yaw_fusion_ms < 10000) {
             // don't fallback to magnetometer fusion for 10s
             return;
         }
@@ -1525,9 +1524,9 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
         ResetVelocity();
         ResetPosition();
 
-		// reset test ratios that are reported to prevent a race condition with the external state machine requesting the reset
-		velTestRatio = 0.0f;
-		posTestRatio = 0.0f;
+        // reset test ratios that are reported to prevent a race condition with the external state machine requesting the reset
+        velTestRatio = 0.0f;
+        posTestRatio = 0.0f;
 
         return true;
 

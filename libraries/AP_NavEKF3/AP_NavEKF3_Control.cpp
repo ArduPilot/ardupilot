@@ -282,8 +282,8 @@ void NavEKF3_core::setAidingMode()
                 }
                 posAidLossCritical = (imuSampleTime_ms - lastRngBcnPassTime_ms > maxLossTime_ms) &&
                         (imuSampleTime_ms - lastPosPassTime_ms > maxLossTime_ms);
-                posAidLossPending = (imuSampleTime_ms > lastRngBcnPassTime_ms + frontend->_gsfResetDelay) &&
-                        (imuSampleTime_ms > lastPosPassTime_ms + frontend->_gsfResetDelay);
+                posAidLossPending = (imuSampleTime_ms - lastRngBcnPassTime_ms > (uint32_t)frontend->_gsfResetDelay) &&
+                        (imuSampleTime_ms - lastPosPassTime_ms > (uint32_t)frontend->_gsfResetDelay);
             }
 
             if (attAidLossCritical) {
@@ -470,7 +470,7 @@ bool NavEKF3_core::use_compass(void) const
 bool NavEKF3_core::using_external_yaw(void) const
 {
     if (effectiveMagCal == MagCal::EXTERNAL_YAW || effectiveMagCal == MagCal::EXTERNAL_YAW_FALLBACK || effectiveMagCal == MagCal::GSF_YAW) {
-        return AP_HAL::millis() - last_gps_yaw_fusion_ms < 5000 || AP_HAL::millis() - lastSynthYawTime_ms < 5000;
+        return imuSampleTime_ms - last_gps_yaw_fusion_ms < 5000 || imuSampleTime_ms - lastSynthYawTime_ms < 5000;
     }
     return false;
 }
@@ -602,7 +602,7 @@ void NavEKF3_core::runYawEstimator()
     if (yawEstimator != nullptr && frontend->_fusionModeGPS <= 1) {
         float trueAirspeed;
         if (is_positive(defaultAirSpeed) && assume_zero_sideslip()) {
-            if (imuDataDelayed.time_ms < (tasDataDelayed.time_ms + 5000)) {
+            if (imuDataDelayed.time_ms - tasDataDelayed.time_ms < 5000) {
                 trueAirspeed = tasDataDelayed.tas;
             } else {
                 trueAirspeed = defaultAirSpeed * AP::ahrs().get_EAS2TAS();
