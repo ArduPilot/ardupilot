@@ -4932,6 +4932,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         model = "rover-skid"
         vinfo = vehicleinfo.VehicleInfo()
         defaults_filepath = vinfo.options["Rover"]["frames"][model]["default_params_filename"]
+        defaults_filepath = [os.path.join(testdir, x) for x in defaults_filepath]
         self.customise_SITL_commandline([],
                                         model=model,
                                         defaults_filepath=defaults_filepath)
