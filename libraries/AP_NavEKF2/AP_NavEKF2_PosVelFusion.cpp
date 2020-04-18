@@ -146,6 +146,37 @@ void NavEKF2_core::ResetPosition(void)
 
 }
 
+// reset the stateStruct's NE position to the specified position
+//    posResetNE is updated to hold the change in position
+//    storedOutput, outputDataNew and outputDataDelayed are updated with the change in position
+//    lastPosReset_ms is updated with the time of the reset
+void NavEKF2_core::ResetPositionNE(float posN, float posE)
+{
+    // Store the position before the reset so that we can record the reset delta
+    const Vector3f posOrig = stateStruct.position;
+
+    // Set the position states to the new position
+    stateStruct.position.x = posN;
+    stateStruct.position.y = posE;
+
+    // Calculate the position offset due to the reset
+    posResetNE.x = stateStruct.position.x - posOrig.x;
+    posResetNE.y = stateStruct.position.y - posOrig.y;
+
+    // Add the offset to the output observer states
+    for (uint8_t i=0; i<imu_buffer_length; i++) {
+        storedOutput[i].position.x += posResetNE.x;
+        storedOutput[i].position.y += posResetNE.y;
+    }
+    outputDataNew.position.x += posResetNE.x;
+    outputDataNew.position.y += posResetNE.y;
+    outputDataDelayed.position.x += posResetNE.x;
+    outputDataDelayed.position.y += posResetNE.y;
+
+    // store the time of the reset
+    lastPosReset_ms = imuSampleTime_ms;
+}
+
 // reset the vertical position state using the last height measurement
 void NavEKF2_core::ResetHeight(void)
 {
@@ -208,6 +239,33 @@ void NavEKF2_core::ResetHeight(void)
     // set the variances to the measurement variance
     P[5][5] = sq(frontend->_gpsVertVelNoise);
 
+}
+
+// reset the stateStruct's D position
+//    posResetD is updated to hold the change in position
+//    storedOutput, outputDataNew and outputDataDelayed are updated with the change in position
+//    lastPosResetD_ms is updated with the time of the reset
+void NavEKF2_core::ResetPositionD(float posD)
+{
+    // Store the position before the reset so that we can record the reset delta
+    const float posDOrig = stateStruct.position.z;
+
+    // write to the state vector
+    stateStruct.position.z = posD;
+
+    // Calculate the position jump due to the reset
+    posResetD = stateStruct.position.z - posDOrig;
+
+    // Add the offset to the output observer states
+    outputDataNew.position.z += posResetD;
+    vertCompFiltState.pos = outputDataNew.position.z;
+    outputDataDelayed.position.z += posResetD;
+    for (uint8_t i=0; i<imu_buffer_length; i++) {
+        storedOutput[i].position.z += posResetD;
+    }
+
+    // store the time of the reset
+    lastPosResetD_ms = imuSampleTime_ms;
 }
 
 // Zero the EKF height datum
@@ -438,6 +496,14 @@ void NavEKF2_core::SelectVelPosFusion()
 
             // store the time of the reset
             lastPosResetD_ms = imuSampleTime_ms;
+        }
+    }
+
+    // check for external nav position reset
+    if (extNavDataToFuse && (PV_AidingMode == AID_ABSOLUTE) && (frontend->_fusionModeGPS == 3) && extNavDataDelayed.posReset) {
+        ResetPositionNE(extNavDataDelayed.pos.x, extNavDataDelayed.pos.y);
+        if (activeHgtSource == HGT_SOURCE_EXTNAV) {
+            ResetPositionD(-hgtMea);
         }
     }
 
