@@ -1,5 +1,3 @@
-// 2 or 3 structures, select one that is before target point, closest to target
-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -29,6 +27,10 @@ extern int errno;
 
 int AP_Filesystem_Param::open(const char *fname, int flags)
 {
+    if (!check_file_name(fname)) {
+        errno = ENOENT;
+        return -1;
+    }
     if ((flags & O_ACCMODE) != O_RDONLY) {
         return -1;
     }
@@ -50,6 +52,29 @@ int AP_Filesystem_Param::open(const char *fname, int flags)
     }
     r.file_ofs = 0;
     r.open = true;
+    r.start = 0;
+    r.count = 0;
+
+    /*
+      allow for URI style arguments param.pck?start=N&count=C
+     */
+    const char *c = strchr(fname, '?');
+    while (c && *c) {
+        c++;
+        if (strncmp(c, "start=", 6) == 0) {
+            r.start = strtoul(c+6, nullptr, 10);
+            c += 6;
+            c = strchr(c, '&');
+            continue;
+        }
+        if (strncmp(c, "count=", 6) == 0) {
+            r.count = strtoul(c+6, nullptr, 10);
+            c += 6;
+            c = strchr(c, '&');
+            continue;
+        }
+    }
+
     return idx;
 }
 
@@ -68,53 +93,95 @@ int AP_Filesystem_Param::close(int fd)
 /*
   packed format:
     file header:
-      uint32_t magic = 0x671b4e81
+      uint16_t magic = 0x671b
+      uint16_t num_params
+      uint16_t total_params
 
     per-parameter:
 
     uint8_t type:4;         // AP_Param type NONE=0, INT8=1, INT16=2, INT32=3, FLOAT=4
-    uint8_t type_len:4;     // number of bytes in type
+    uint8_t flags:4;        // for future use
     uint8_t common_len:4;   // number of name bytes in common with previous entry, 0..15
     uint8_t name_len:4;     // non-common length of param name -1 (0..15)
     uint8_t name[name_len]; // name
-    uint8_t data[];         // value, may be truncated by record_length
+    uint8_t data[];         // value, length given by variable type
+
+    Any leading zero bytes after the header should be discarded as pad
+    bytes. Pad bytes are used to ensure that a parameter data[] field
+    does not cross a read packet boundary
  */
 
 /*
-  pack a single parameter
+  pack a single parameter. The buffer must be at least of size max_pack_len
  */
-uint8_t AP_Filesystem_Param::pack_param(const AP_Param *ap, const char *pname, const char *last_name,
-                                        enum ap_var_type ptype, uint8_t *buf, uint8_t buflen)
+uint8_t AP_Filesystem_Param::pack_param(const struct rfile &r, struct cursor &c, uint8_t *buf)
 {
+    char name[AP_MAX_NAME_SIZE+1];
+    name[AP_MAX_NAME_SIZE] = 0;
+    enum ap_var_type ptype;
+    AP_Param *ap;
+
+    if (c.token_ofs == 0) {
+        c.idx = 0;
+        ap = AP_Param::first(&c.token, &ptype);
+        uint16_t idx = 0;
+        while (idx < r.start && ap) {
+            ap = AP_Param::next_scalar(&c.token, &ptype);
+            idx++;
+        }
+    } else {
+        c.idx++;
+        ap = AP_Param::next_scalar(&c.token, &ptype);
+    }
+    if (ap == nullptr || (r.count && c.idx >= r.count)) {
+        return 0;
+    }
+    ap->copy_name_token(c.token, name, AP_MAX_NAME_SIZE, true);
+
     uint8_t common_len = 0;
-    while (*pname == *last_name) {
+    const char *last_name = c.last_name;
+    const char *pname = name;
+    while (*pname == *last_name && *pname) {
         common_len++;
         pname++;
         last_name++;
     }
     const uint8_t name_len = strlen(pname);
-    uint8_t type_len = AP_Param::type_size(ptype);
-    const uint8_t *pbuf = (const uint8_t *)ap;
-    while (type_len > 0 && pbuf[type_len-1] == 0) {
-        type_len--;
-    }
+    const uint8_t type_len = AP_Param::type_size(ptype);
     uint8_t packed_len = type_len + name_len + 2;
-    if (packed_len <= buflen && buf) {
-        buf[0] = uint8_t(ptype) | (type_len<<4);
-        buf[1] = common_len | ((name_len-1)<<4);
-        memcpy(&buf[2], pname, name_len);
-        memcpy(&buf[2+name_len], ap, type_len);
+    const uint8_t flags = 0;
+
+    /*
+      see if we need to add padding to ensure that a data field never
+      crosses a block boundary. This ensures that re-reading a block
+      won't get a corrupt value for a parameter
+     */
+    if (type_len > 1) {
+        const uint32_t ofs = c.token_ofs + sizeof(struct header) + packed_len;
+        const uint32_t ofs_mod = ofs % r.read_size;
+        if (ofs_mod > 0 && ofs_mod < type_len) {
+            const uint8_t pad = type_len - ofs_mod;
+            memset(buf, 0, pad);
+            buf += pad;
+            packed_len += pad;
+        }
     }
+
+    buf[0] = uint8_t(ptype) | (flags<<4);
+    buf[1] = common_len | ((name_len-1)<<4);
+    memcpy(&buf[2], pname, name_len);
+    memcpy(&buf[2+name_len], ap, type_len);
+
+    strcpy(c.last_name, name);
+
     return packed_len;
 }
 
 /*
   seek the token to match file offset
  */
-bool AP_Filesystem_Param::token_seek(const uint32_t data_ofs, struct cursor &c)
+bool AP_Filesystem_Param::token_seek(const struct rfile &r, const uint32_t data_ofs, struct cursor &c)
 {
-    //hal.console->printf("token_seek %u %u\n", unsigned(data_ofs), unsigned(c.token_ofs));
-
     if (data_ofs == 0) {
         memset(&c, 0, sizeof(c));
         return true;
@@ -122,10 +189,6 @@ bool AP_Filesystem_Param::token_seek(const uint32_t data_ofs, struct cursor &c)
     if (c.token_ofs > data_ofs) {
         memset(&c, 0, sizeof(c));
     }
-
-    char name[AP_MAX_NAME_SIZE+1];
-    name[AP_MAX_NAME_SIZE] = 0;
-    enum ap_var_type ptype;
 
     if (c.trailer_len > 0) {
         uint8_t n = MIN(c.trailer_len, data_ofs - c.token_ofs);
@@ -137,26 +200,18 @@ bool AP_Filesystem_Param::token_seek(const uint32_t data_ofs, struct cursor &c)
     }
     
     while (data_ofs != c.token_ofs) {
-        AP_Param *ap;
-
-        if (c.token_ofs == 0) {
-            ap = AP_Param::first(&c.token, &ptype);
-        } else {
-            ap = AP_Param::next_scalar(&c.token, &ptype);
-        }
-        if (ap == nullptr) {
-            break;
-        }
-        ap->copy_name_token(c.token, name, AP_MAX_NAME_SIZE, true);
         uint32_t available = data_ofs - c.token_ofs;
         uint8_t tbuf[max_pack_len];
-        uint8_t len = pack_param(ap, name, c.last_name, ptype, tbuf, max_pack_len);
+        uint8_t len = pack_param(r, c, tbuf);
+        if (len == 0) {
+            // no more parameters
+            break;
+        }
         uint8_t n = MIN(len, available);
         if (len > available) {
             c.trailer_len = len - available;
             memcpy(c.trailer, &tbuf[n], c.trailer_len);
         }
-        strcpy(c.last_name, name);
         c.token_ofs += n;
     }
     return data_ofs == c.token_ofs;
@@ -172,9 +227,29 @@ int32_t AP_Filesystem_Param::read(int fd, void *buf, uint32_t count)
     struct rfile &r = file[fd];
     size_t header_total = 0;
 
-    if (r.file_ofs < 4) {
-        uint8_t n = MIN(4-r.file_ofs, count);
-        const uint8_t *b = (const uint8_t *)&file_magic;
+    /*
+      we only allow for a single read size. This ensures that pad
+      bytes placed to avoid a data value crossing a block boundary in
+      the ftp protocol do not change when filling in lost packets
+     */
+    if (r.read_size == 0 && count > 0) {
+        r.read_size = count;
+    }
+    if (r.read_size != 0 && r.read_size != count) {
+        errno = EINVAL;
+        return -1;
+    }
+
+
+    if (r.file_ofs < sizeof(struct header)) {
+        struct header hdr;
+        hdr.total_params = AP_Param::count_parameters();
+        hdr.num_params = hdr.total_params - r.start;
+        if (r.count > 0 && hdr.num_params > r.count) {
+            hdr.num_params = r.count;
+        }
+        uint8_t n = MIN(sizeof(hdr) - r.file_ofs, count);
+        const uint8_t *b = (const uint8_t *)&hdr;
         memcpy(buf, &b[r.file_ofs], n);
         count -= n;
         header_total += n;
@@ -185,7 +260,7 @@ int32_t AP_Filesystem_Param::read(int fd, void *buf, uint32_t count)
         }
     }
 
-    uint32_t data_ofs = r.file_ofs - 4;
+    uint32_t data_ofs = r.file_ofs - sizeof(struct header);
     uint8_t best_i = 0;
     uint32_t best_ofs = r.cursors[0].token_ofs;
     size_t total = 0;
@@ -201,7 +276,7 @@ int32_t AP_Filesystem_Param::read(int fd, void *buf, uint32_t count)
     struct cursor &c = r.cursors[best_i];
 
     if (data_ofs != c.token_ofs) {
-        if (!token_seek(data_ofs, c)) {
+        if (!token_seek(r, data_ofs, c)) {
             // must be EOF
             return header_total;
         }
@@ -210,9 +285,6 @@ int32_t AP_Filesystem_Param::read(int fd, void *buf, uint32_t count)
         return header_total;
     }
     uint8_t *ubuf = (uint8_t *)buf;
-
-    char name[AP_MAX_NAME_SIZE+1];
-    name[AP_MAX_NAME_SIZE] = 0;
 
     if (c.trailer_len > 0) {
         uint8_t n = MIN(c.trailer_len, count);
@@ -228,27 +300,18 @@ int32_t AP_Filesystem_Param::read(int fd, void *buf, uint32_t count)
     }
 
     while (count > 0) {
-        AP_Param *ap;
-        enum ap_var_type ptype;
-
-        if (c.token_ofs == 0) {
-            ap = AP_Param::first(&c.token, &ptype);
-        } else {
-            ap = AP_Param::next_scalar(&c.token, &ptype);
-        }
-        if (ap == nullptr) {
+        uint8_t tbuf[max_pack_len];
+        uint8_t len = pack_param(r, c, tbuf);
+        if (len == 0) {
+            // no more params
             break;
         }
-        ap->copy_name_token(c.token, name, AP_MAX_NAME_SIZE, true);
-        uint8_t tbuf[max_pack_len];
-        uint8_t len = pack_param(ap, name, c.last_name, ptype, tbuf, sizeof(tbuf));
         uint8_t n = MIN(len, count);
         if (len > count) {
             c.trailer_len = len - count;
             memcpy(c.trailer, &tbuf[count], c.trailer_len);
         }
         memcpy(ubuf, tbuf, n);
-        strcpy(c.last_name, name);
         count -= n;
         ubuf += n;
         total += n;
@@ -281,12 +344,25 @@ int32_t AP_Filesystem_Param::lseek(int fd, int32_t offset, int seek_from)
 
 int AP_Filesystem_Param::stat(const char *name, struct stat *stbuf)
 {
-    if (strcmp(name, PACKED_NAME) != 0) {
+    if (!check_file_name(name)) {
         errno = ENOENT;
         return -1;
     }
     memset(stbuf, 0, sizeof(*stbuf));
-    // give fixed size
-    stbuf->st_size = 65535;
+    // give fixed size to avoid needing to scan entire file
+    stbuf->st_size = 1024*1024;
     return 0;
+}
+
+/*
+  check for the right file name
+ */
+bool AP_Filesystem_Param::check_file_name(const char *name)
+{
+    const uint8_t packed_len = strlen(PACKED_NAME);
+    if (strncmp(name, PACKED_NAME, packed_len) == 0 &&
+        (name[packed_len] == 0 || name[packed_len] == '?')) {
+        return true;
+    }
+    return false;
 }
