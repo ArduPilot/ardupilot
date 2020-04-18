@@ -321,7 +321,7 @@ public:
     /*
      * Write position and quaternion data from an external navigation system
      *
-     * pos        : position in the RH navigation frame. Frame is assumed to be NED if frameIsNED is true. (m)
+     * pos        : position in the RH navigation frame. Frame is assumed to be NED (m)
      * quat       : quaternion desribing the rotation from navigation frame to body frame
      * posErr     : 1-sigma spherical position error (m)
      * angErr     : 1-sigma spherical angle error (rad)
@@ -489,8 +489,6 @@ private:
     };
 
     struct ext_nav_elements {
-        bool            frameIsNED; // true if the data is in a NED navigation frame
-        bool            unitsAreSI; // true if the data length units are scaled in metres
         Vector3f        pos;        // XYZ position measured in a RH navigation frame (m)
         Quaternion      quat;       // quaternion describing the rotation from navigation to body frame
         float           posErr;     // spherical poition measurement error 1-std (m)
