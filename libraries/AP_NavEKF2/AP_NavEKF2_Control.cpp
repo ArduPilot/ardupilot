@@ -209,14 +209,17 @@ void NavEKF2_core::setAidingMode()
         bool posUsed = (imuSampleTime_ms - lastPosPassTime_ms <= minTestTime_ms);
         bool gpsVelUsed = (imuSampleTime_ms - lastVelPassTime_ms <= minTestTime_ms);
 
+        // Check if external nav is being used
+        bool extNavUsed = (imuSampleTime_ms - lastExtNavPassTime_ms <= minTestTime_ms);
+
         // Check if attitude drift has been constrained by a measurement source
-        bool attAiding = posUsed || gpsVelUsed || optFlowUsed || airSpdUsed || rngBcnUsed;
+        bool attAiding = posUsed || gpsVelUsed || optFlowUsed || airSpdUsed || rngBcnUsed || extNavUsed;
 
         // check if velocity drift has been constrained by a measurement source
         bool velAiding = gpsVelUsed || airSpdUsed || optFlowUsed;
 
         // check if position drift has been constrained by a measurement source
-        bool posAiding = posUsed || rngBcnUsed;
+        bool posAiding = posUsed || rngBcnUsed || extNavUsed;
 
         // Check if the loss of attitude aiding has become critical
         bool attAidLossCritical = false;
@@ -225,6 +228,7 @@ void NavEKF2_core::setAidingMode()
                    (imuSampleTime_ms - lastTasPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
                    (imuSampleTime_ms - lastRngBcnPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
                    (imuSampleTime_ms - lastPosPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
+                   (imuSampleTime_ms - lastExtNavPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
                    (imuSampleTime_ms - lastVelPassTime_ms > frontend->tiltDriftTimeMax_ms);
         }
 
@@ -239,9 +243,11 @@ void NavEKF2_core::setAidingMode()
                 maxLossTime_ms = frontend->posRetryTimeUseVel_ms;
             }
             posAidLossCritical = (imuSampleTime_ms - lastRngBcnPassTime_ms > maxLossTime_ms) &&
-                   (imuSampleTime_ms - lastPosPassTime_ms > maxLossTime_ms);
+                                 (imuSampleTime_ms - lastExtNavPassTime_ms > maxLossTime_ms) &&
+                                 (imuSampleTime_ms - lastPosPassTime_ms > maxLossTime_ms);
             posAidLossPending = (imuSampleTime_ms - lastRngBcnPassTime_ms > (uint32_t)frontend->_gsfResetDelay) &&
-                    (imuSampleTime_ms - lastPosPassTime_ms > (uint32_t)frontend->_gsfResetDelay);
+                                (imuSampleTime_ms - lastExtNavPassTime_ms > (uint32_t)frontend->_gsfResetDelay) &&
+                                (imuSampleTime_ms - lastPosPassTime_ms > (uint32_t)frontend->_gsfResetDelay);
         }
 
         if (attAidLossCritical) {
@@ -335,6 +341,7 @@ void NavEKF2_core::setAidingMode()
             lastPosPassTime_ms = imuSampleTime_ms;
             lastVelPassTime_ms = imuSampleTime_ms;
             lastRngBcnPassTime_ms = imuSampleTime_ms;
+            lastExtNavPassTime_ms = imuSampleTime_ms;
             }
             break;
         }
