@@ -611,6 +611,9 @@ void Copter::allocate_motors(void)
 #if FRAME_CONFIG == HELI_FRAME
     convert_tradheli_parameters();
 #endif
+
+    // param count could have changed
+    AP_Param::invalidate_count();
 }
 
 bool Copter::is_tradheli() const
