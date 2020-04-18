@@ -396,7 +396,7 @@ private:
     AP_Float _gyroBiasProcessNoise; // gyro bias state process noise : rad/s
     AP_Float _accelBiasProcessNoise;// accel bias state process noise : m/s^2
     AP_Int16 _hgtDelay_ms;          // effective average delay of Height measurements relative to inertial measurements (msec)
-    AP_Int8  _fusionModeGPS;        // 0 = use 3D velocity, 1 = use 2D velocity, 2 = use no velocity
+    AP_Int8  _fusionModeGPS;        // 0 = use 3D velocity, 1 = use 2D velocity, 2 = use no velocity, 3 = do not use GPS
     AP_Int16  _gpsVelInnovGate;     // Percentage number of standard deviations applied to GPS velocity innovation consistency check
     AP_Int16  _gpsPosInnovGate;     // Percentage number of standard deviations applied to GPS position innovation consistency check
     AP_Int16  _hgtInnovGate;        // Percentage number of standard deviations applied to height innovation consistency check
