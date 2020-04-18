@@ -510,6 +510,9 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
     if (drivers[instance] && state[instance].var_info) {
         backend_var_info[instance] = state[instance].var_info;
         AP_Param::load_object_from_eeprom(drivers[instance], backend_var_info[instance]);
+
+        // param count could have changed
+        AP_Param::invalidate_count();
     }
 }
 
