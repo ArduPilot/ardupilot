@@ -115,11 +115,8 @@ AP_GPS_UBLOX::~AP_GPS_UBLOX()
   See ZED-F9P integration manual section 3.1.5.6.1
  */
 const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_MB_Base_uart1[] {
- { ConfigKey::CFG_UART2_ENABLED, 0},
  { ConfigKey::CFG_UART1OUTPROT_RTCM3X, 1},
  { ConfigKey::CFG_UART2OUTPROT_RTCM3X, 0},
- { ConfigKey::CFG_UART2OUTPROT_UBX, 0},
- { ConfigKey::CFG_UART2OUTPROT_NMEA, 0},
  { ConfigKey::MSGOUT_UBX_NAV_RELPOSNED_UART1, 0},
  { ConfigKey::MSGOUT_UBX_NAV_RELPOSNED_UART2, 0},
  { ConfigKey::MSGOUT_RTCM_3X_TYPE4072_0_UART1, RTK_MB_RTCM_RATE},
@@ -142,8 +139,6 @@ const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_MB_Base_uart2[] {
  { ConfigKey::CFG_UART2_ENABLED, 1},
  { ConfigKey::CFG_UART2_BAUDRATE, 460800},
  { ConfigKey::CFG_UART2OUTPROT_RTCM3X, 1},
- { ConfigKey::CFG_UART2OUTPROT_UBX, 0},
- { ConfigKey::CFG_UART2OUTPROT_NMEA, 0},
  { ConfigKey::CFG_UART1OUTPROT_RTCM3X, 0},
  { ConfigKey::CFG_UART1INPROT_RTCM3X, 1},
  { ConfigKey::MSGOUT_UBX_NAV_RELPOSNED_UART2, 0},
@@ -172,10 +167,7 @@ const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_MB_Base_uart2[] {
   data from a GPS previously configured as a base
  */
 const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_MB_Rover_uart1[] {
- { ConfigKey::CFG_UART2_ENABLED, 0},
  { ConfigKey::CFG_UART2OUTPROT_RTCM3X, 0},
- { ConfigKey::CFG_UART2OUTPROT_UBX, 0},
- { ConfigKey::CFG_UART2OUTPROT_NMEA, 0},
  { ConfigKey::CFG_UART1INPROT_RTCM3X, 1},
  { ConfigKey::CFG_UART2INPROT_RTCM3X, 0},
  { ConfigKey::MSGOUT_UBX_NAV_RELPOSNED_UART1, 1},
@@ -200,8 +192,6 @@ const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_MB_Rover_uart2[] {
  { ConfigKey::CFG_UART2_ENABLED, 1},
  { ConfigKey::CFG_UART2_BAUDRATE, 460800},
  { ConfigKey::CFG_UART2OUTPROT_RTCM3X, 0},
- { ConfigKey::CFG_UART2OUTPROT_UBX, 0},
- { ConfigKey::CFG_UART2OUTPROT_NMEA, 0},
  { ConfigKey::CFG_UART2INPROT_RTCM3X, 1},
  { ConfigKey::CFG_UART1INPROT_RTCM3X, 0},
  { ConfigKey::MSGOUT_UBX_NAV_RELPOSNED_UART1, 1},
