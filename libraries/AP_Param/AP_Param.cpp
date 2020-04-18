@@ -1074,7 +1074,7 @@ void AP_Param::save_sync(bool force_save)
 
     if (phdr.type == AP_PARAM_INT8 && ginfo != nullptr && (ginfo->flags & AP_PARAM_FLAG_ENABLE)) {
         // clear cached parameter count
-        _parameter_count = 0;
+        invalidate_count();
     }
     
     char name[AP_MAX_NAME_SIZE+1];
@@ -1476,7 +1476,7 @@ void AP_Param::load_object_from_eeprom(const void *object_pointer, const struct 
     uint16_t key;
 
     // reset cached param counter as we may be loading a dynamic var_info
-    _parameter_count = 0;
+    invalidate_count();
     
     if (!find_key_by_pointer(object_pointer, key)) {
         hal.console->printf("ERROR: Unable to find param pointer\n");
@@ -2338,6 +2338,14 @@ uint16_t AP_Param::count_parameters(void)
         _parameter_count = ret;
     }
     return ret;
+}
+
+/*
+  invalidate parameter count cache
+ */
+void AP_Param::invalidate_count(void)
+{
+    _parameter_count = 0;
 }
 
 /*

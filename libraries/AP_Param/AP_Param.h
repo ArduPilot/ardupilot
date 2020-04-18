@@ -478,6 +478,9 @@ public:
     // count of parameters in tree
     static uint16_t count_parameters(void);
 
+    // invalidate parameter count
+    static void invalidate_count(void);
+
     static void set_hide_disabled_groups(bool value) { _hide_disabled_groups = value; }
 
     // set frame type flags. Used to unhide frame specific parameters
@@ -735,6 +738,14 @@ public:
         _value = v;
     }
 
+    // set a parameter that is an ENABLE param
+    void set_enable(const T &v) {
+        if (v != _value) {
+            invalidate_count();
+        }
+        _value = v;
+    }
+    
     /// Sets if the parameter is unconfigured
     ///
     void set_default(const T &v) {
