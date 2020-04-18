@@ -130,7 +130,7 @@ bool Copter::ekf_over_threshold()
         over_thresh_count++;
     }
 
-    if (position_variance >= g.fs_ekf_thresh && over_thresh_count >= 1) {
+    if ((position_variance >= g.fs_ekf_thresh && over_thresh_count >= 1) || over_thresh_count >= 2) {
         return true;
     }
 
