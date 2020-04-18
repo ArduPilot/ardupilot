@@ -485,7 +485,7 @@ public:
 
     // set frame type flags. Used to unhide frame specific parameters
     static void set_frame_type_flags(uint16_t flags_to_set) {
-        _parameter_count = 0;
+        invalidate_count();
         _frame_type_flags |= flags_to_set;
     }
 
@@ -674,6 +674,9 @@ private:
     static StorageAccess        _storage;
     static uint16_t             _num_vars;
     static uint16_t             _parameter_count;
+    static uint16_t             _count_marker;
+    static uint16_t             _count_marker_done;
+    static HAL_Semaphore        _count_sem;
     static const struct Info *  _var_info;
 
     /*
