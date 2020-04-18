@@ -73,6 +73,9 @@ uint16_t AP_Param::_num_vars;
 
 // cached parameter count
 uint16_t AP_Param::_parameter_count;
+uint16_t AP_Param::_count_marker;
+uint16_t AP_Param::_count_marker_done;
+HAL_Semaphore AP_Param::_count_sem;
 
 // storage and naming information about all types that can be saved
 const AP_Param::Info *AP_Param::_var_info;
@@ -2325,19 +2328,33 @@ void AP_Param::send_parameter(const char *name, enum ap_var_type var_type, uint8
 uint16_t AP_Param::count_parameters(void)
 {
     // if we haven't cached the parameter count yet...
-    uint16_t ret = _parameter_count;
-    if (0 == ret) {
+    WITH_SEMAPHORE(_count_sem);
+    if (_parameter_count != 0 &&
+        _count_marker == _count_marker_done) {
+        return _parameter_count;
+    }
+    /*
+      cope with another thread invalidating the count while we are
+      counting
+     */
+    uint8_t limit = 4;
+    while ((_parameter_count == 0 ||
+            _count_marker != _count_marker_done) &&
+           limit--) {
         AP_Param  *vp;
         AP_Param::ParamToken token;
+        uint16_t count = 0;
+        uint16_t marker = _count_marker;
 
         for (vp = AP_Param::first(&token, nullptr);
              vp != nullptr;
              vp = AP_Param::next_scalar(&token, nullptr)) {
-            ret++;
+            count++;
         }
-        _parameter_count = ret;
+        _parameter_count = count;
+        _count_marker_done = marker;
     }
-    return ret;
+    return _parameter_count;
 }
 
 /*
@@ -2345,7 +2362,10 @@ uint16_t AP_Param::count_parameters(void)
  */
 void AP_Param::invalidate_count(void)
 {
-    _parameter_count = 0;
+    // we don't take the semaphore here as we don't want to block. The
+    // not-equal test is strong enough to ensure we get the right
+    // answer
+    _count_marker++;
 }
 
 /*
