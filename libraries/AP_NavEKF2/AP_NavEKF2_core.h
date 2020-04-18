@@ -46,11 +46,11 @@
 #define MASK_GPS_HORIZ_SPD  (1<<7)
 
 // active height source
-#define HGT_SOURCE_BARO 0
-#define HGT_SOURCE_RNG  1
-#define HGT_SOURCE_GPS  2
-#define HGT_SOURCE_BCN  3
-#define HGT_SOURCE_EV   4
+#define HGT_SOURCE_BARO     0
+#define HGT_SOURCE_RNG      1
+#define HGT_SOURCE_GPS      2
+#define HGT_SOURCE_BCN      3
+#define HGT_SOURCE_EXTNAV   4
 
 // target EKF update time step
 #define EKF_TARGET_DT 0.01f
