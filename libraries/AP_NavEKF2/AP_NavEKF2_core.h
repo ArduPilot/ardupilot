@@ -668,11 +668,17 @@ private:
     // reset the horizontal position states uing the last GPS measurement
     void ResetPosition(void);
 
+    // reset the stateStruct's NE position to the specified position
+    void ResetPositionNE(float posN, float posE);
+
     // reset velocity states using the last GPS measurement
     void ResetVelocity(void);
 
     // reset the vertical position state using the last height measurement
     void ResetHeight(void);
+
+    // reset the stateStruct's D position
+    void ResetPositionD(float posD);
 
     // return true if we should use the airspeed sensor
     bool useAirspeed(void) const;
