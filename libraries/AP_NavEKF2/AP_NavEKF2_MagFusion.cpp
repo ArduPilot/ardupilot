@@ -113,7 +113,7 @@ void NavEKF2_core::controlMagYawReset()
             // the new quaternion uses the old roll/pitch and new yaw angle
             stateStruct.quat.from_euler(eulerAnglesOld.x, eulerAnglesOld.y, eulerAnglesNew.z);
 
-            // calculate the change in the quaternion state and apply it to the ouput history buffer
+            // calculate the change in the quaternion state and apply it to the output history buffer
             prevQuat = stateStruct.quat/prevQuat;
             StoreQuatRotate(prevQuat);
 
