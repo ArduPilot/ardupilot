@@ -842,6 +842,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 // constructor
 AP_OSD_Screen::AP_OSD_Screen()
 {
+    AP_Param::setup_object_defaults(this, var_info);
 }
 
 //Symbols
@@ -875,8 +876,6 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_FTMIN  0xE8
 #define SYM_FTSEC  0x99
 
-
-
 #define SYM_SAT_L 0x1E
 #define SYM_SAT_R 0x1F
 #define SYM_HDOP_L 0xBD
@@ -893,7 +892,6 @@ AP_OSD_Screen::AP_OSD_Screen()
 
 #define SYM_AH_V_START 0xCA
 #define SYM_AH_V_COUNT 6
-
 
 #define SYM_AH_CENTER_LINE_LEFT   0x26
 #define SYM_AH_CENTER_LINE_RIGHT  0x27
@@ -932,13 +930,13 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_AH        0xF3
 #define SYM_CLK       0xBC
 
-void AP_OSD_Screen::set_backend(AP_OSD_Backend *_backend)
+void AP_OSD_AbstractScreen::set_backend(AP_OSD_Backend *_backend)
 {
     backend = _backend;
     osd = _backend->get_osd();
 };
 
-bool AP_OSD_Screen::check_option(uint32_t option)
+bool AP_OSD_AbstractScreen::check_option(uint32_t option)
 {
     return osd?(osd->options & option) != 0 : false;
 }
@@ -946,7 +944,7 @@ bool AP_OSD_Screen::check_option(uint32_t option)
 /*
   get the right units icon given a unit
  */
-char AP_OSD_Screen::u_icon(enum unit_type unit)
+char AP_OSD_AbstractScreen::u_icon(enum unit_type unit)
 {
     static const char icons_metric[UNIT_TYPE_LAST] {
         (char)SYM_ALT_M,    //ALTITUDE
@@ -992,7 +990,7 @@ char AP_OSD_Screen::u_icon(enum unit_type unit)
 /*
   scale a value for the user selected units
  */
-float AP_OSD_Screen::u_scale(enum unit_type unit, float value)
+float AP_OSD_AbstractScreen::u_scale(enum unit_type unit, float value)
 {
     static const float scale_metric[UNIT_TYPE_LAST] = {
         1.0,       //ALTITUDE m
