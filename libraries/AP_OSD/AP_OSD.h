@@ -20,15 +20,35 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_BLHeli/AP_BLHeli.h>
+#include <RC_Channel/RC_Channel.h>
+#include <AP_Param/AP_Param.h>
+#include <GCS_MAVLink/GCS.h>
 
 #ifndef OSD_ENABLED
 #define OSD_ENABLED 0
 #endif
 
+#ifndef HAL_WITH_OSD_BITMAP
+#define HAL_WITH_OSD_BITMAP defined(HAL_WITH_SPI_OSD) || defined(WITH_SITL_OSD)
+#endif
+
+#ifndef OSD_PARAM_ENABLED
+#define OSD_PARAM_ENABLED HAL_WITH_OSD_BITMAP && !HAL_MINIMIZE_FEATURES
+#endif
+
 class AP_OSD_Backend;
 class AP_MSP;
 
-#define AP_OSD_NUM_SCREENS 4
+#define AP_OSD_NUM_DISPLAY_SCREENS 4
+#if OSD_PARAM_ENABLED
+#define AP_OSD_NUM_PARAM_SCREENS 2
+#else
+#define AP_OSD_NUM_PARAM_SCREENS 0
+#endif
+#define AP_OSD_NUM_SCREENS (AP_OSD_NUM_DISPLAY_SCREENS + AP_OSD_NUM_PARAM_SCREENS)
+
+#define PARAM_INDEX(key, idx, group) (uint32_t(uint32_t(key) << 23 | uint32_t(idx) << 18 | uint32_t(group)))
+#define PARAM_TOKEN_INDEX(token) PARAM_INDEX(AP_Param::get_persistent_key(token.key), token.idx, token.group_element)
 
 /*
   class to hold one setting
@@ -48,32 +68,61 @@ public:
 
 class AP_OSD;
 
-/*
-  class to hold one screen of settings
- */
-class AP_OSD_Screen
+class AP_OSD_AbstractScreen
 {
 public:
     // constructor
-    AP_OSD_Screen();
-
-    void draw(void);
+    AP_OSD_AbstractScreen() {}
+#if OSD_PARAM_ENABLED
+    virtual void draw(void) = 0;
+#endif
 
     void set_backend(AP_OSD_Backend *_backend);
-
-    // User settable parameters
-    static const struct AP_Param::GroupInfo var_info[];
 
     AP_Int8 enabled;
     AP_Int16 channel_min;
     AP_Int16 channel_max;
 
-private:
-    friend class AP_MSP;
-    friend class AP_MSP_Telem_Backend;
+protected:
+    bool check_option(uint32_t option);
+
+    enum unit_type {
+        ALTITUDE=0,
+        SPEED=1,
+        VSPEED=2,
+        DISTANCE=3,
+        DISTANCE_LONG=4,
+        TEMPERATURE=5,
+        UNIT_TYPE_LAST=6,
+    };
+
+    char u_icon(enum unit_type unit);
+    float u_scale(enum unit_type unit, float value);
 
     AP_OSD_Backend *backend;
     AP_OSD *osd;
+};
+
+/*
+  class to hold one screen of settings
+ */
+class AP_OSD_Screen : public AP_OSD_AbstractScreen
+{
+public:
+    // constructor
+    AP_OSD_Screen();
+#if OSD_PARAM_ENABLED
+    void draw(void) override;
+#else
+    void draw(void);
+#endif
+
+    // User settable parameters
+    static const struct AP_Param::GroupInfo var_info[];
+
+private:
+    friend class AP_MSP;
+    friend class AP_MSP_Telem_Backend;
 
     static const uint8_t message_visible_width = 26;
     static const uint8_t message_scroll_time_ms = 200;
@@ -138,21 +187,6 @@ private:
     AP_OSD_Setting batt_bar{true, 1, 1};
     AP_OSD_Setting arming{true, 1, 1};
 
-    bool check_option(uint32_t option);
-
-    enum unit_type {
-        ALTITUDE=0,
-        SPEED=1,
-        VSPEED=2,
-        DISTANCE=3,
-        DISTANCE_LONG=4,
-        TEMPERATURE=5,
-        UNIT_TYPE_LAST=6,
-    };
-
-    char u_icon(enum unit_type unit);
-    float u_scale(enum unit_type unit, float value);
-
     void draw_altitude(uint8_t x, uint8_t y);
     void draw_bat_volt(uint8_t x, uint8_t y);
     void draw_rssi(uint8_t x, uint8_t y);
@@ -204,12 +238,142 @@ private:
     void draw_clk(uint8_t x, uint8_t y);
 };
 
+#if OSD_PARAM_ENABLED
+/*
+  class to hold one setting
+ */
+class AP_OSD_ParamSetting : public AP_OSD_Setting
+{
+public:
+    // configured index.
+    AP_Int32 _param_group;
+    AP_Int16 _param_key;
+    AP_Int8  _param_idx;
+    // metadata
+    AP_Float _param_min;
+    AP_Float _param_max;
+    AP_Float _param_incr;
+    AP_Int8 _type;
+
+    // parameter number
+    uint8_t _param_number;
+    AP_Param* _param;
+    ap_var_type _param_type;
+    AP_Param::ParamToken _current_token;
+
+    // structure to contain setting constraints for important settings
+    struct ParamMetadata {
+        float min_value;
+        float max_value;
+        float increment;
+        uint8_t values_max;
+        const char** values;
+    };
+
+    static const ParamMetadata _param_metadata[];
+
+    AP_OSD_ParamSetting(uint8_t param_number, bool enabled, uint8_t x, uint8_t y, int16_t key, int8_t idx, int32_t group,
+        int8_t type = OSD_PARAM_NONE, float min = 0.0f, float max = 1.0f, float incr = 0.001f);
+
+    // initialize the setting from the configured information
+    void update();
+
+    // set the ranges from static metadata
+    bool set_from_metadata();
+    bool set_by_name(const char* name, uint8_t config_type, float pmin=0, float pmax=0, float pincr=0);
+    void guess_ranges(bool force = false);
+    void save_as_new();
+
+    const ParamMetadata* get_custom_metadata() const {
+        return (_type > 0 ? &_param_metadata[_type - 1] : nullptr);
+    }
+
+    // User settable parameters
+    static const struct AP_Param::GroupInfo var_info[];
+
+private:
+};
+
+/*
+  class to hold one screen of settings
+ */
+class AP_OSD_ParamScreen : public AP_OSD_AbstractScreen
+{
+public:
+    AP_OSD_ParamScreen();
+
+    enum class Event {
+        NONE,
+        MENU_ENTER,
+        MENU_UP,
+        MENU_DOWN,
+        MENU_EXIT
+    };
+
+    enum class MenuState {
+        PARAM_SELECT,
+        PARAM_VALUE_MODIFY,
+        PARAM_PARAM_MODIFY
+    };
+
+    static const uint8_t NUM_PARAMS = 9;
+    static const uint8_t SAVE_PARAM = NUM_PARAMS + 1;
+
+    void draw(void) override;
+    void handle_write_msg(const mavlink_osd_param_config_t& packet, const GCS_MAVLINK& link);
+    void handle_read_msg(const mavlink_osd_param_show_config_t& packet, const GCS_MAVLINK& link);
+
+    // Save button co-ordinates
+    AP_Int8 save_x;
+    AP_Int8 save_y;
+
+    // User settable parameters
+    static const struct AP_Param::GroupInfo var_info[];
+
+private:
+    AP_OSD_ParamSetting params[NUM_PARAMS] = {
+        {1, true, 2, 2, 102, 0, 4034 },   // ATC_RAT_PIT_P
+        {2, true, 2, 3, 102, 0, 130  },   // ATC_RAT_PIT_D
+        {3, true, 2, 4, 102, 0, 4033 },   // ATC_RAT_RLL_P
+        {4, true, 2, 5, 102, 0, 129  },   // ATC_RAT_RLL_D
+        {5, true, 2, 6, 102, 0, 4035 },   // ATC_RAT_YAW_P
+        {6, true, 2, 7, 102, 0, 131  },   // ATC_RAT_YAW_D
+        {7, true, 2, 8, 6, 0, 25041, OSD_PARAM_AUX_FUNCTION }, // RC7_OPTION
+        {8, true, 2, 9, 6, 0, 25105, OSD_PARAM_AUX_FUNCTION }, // RC8_OPTION
+        {9, true, 2, 10, 36, 0, 1047, OSD_PARAM_FAILSAFE_ACTION_2 } // BATT_FS_LOW_ACT
+    };
+
+    void update_state_machine();
+    void draw_parameter(uint8_t param_number, uint8_t x, uint8_t y);
+    void modify_parameter(uint8_t number, Event ev);
+    void modify_configured_parameter(uint8_t number, Event ev);
+    void save_parameters();
+
+    Event map_rc_input_to_event() const;
+    RC_Channel::AuxSwitchPos get_channel_pos(uint8_t rcmapchan) const;
+
+    uint8_t _selected_param = 1;
+    uint16_t _requires_save;
+    MenuState _menu_state = MenuState::PARAM_SELECT;
+    Event _last_rc_event = Event::NONE;
+
+    // start time of the current button press
+    uint32_t _transition_start_ms;
+    // timeout of the current button press
+    uint32_t _transition_timeout_ms;
+    // number of consecutive times the current transition has happened
+    uint32_t _transition_count;
+};
+
+#endif
+
 class AP_OSD
 {
 public:
     friend class AP_OSD_Screen;
     friend class AP_MSP;
     friend class AP_MSP_Telem_Backend;
+    friend class AP_OSD_ParamScreen;
     //constructor
     AP_OSD();
 
@@ -257,6 +421,7 @@ public:
     AP_Int8 arm_scr;
     AP_Int8 disarm_scr;
     AP_Int8 failsafe_scr;
+    AP_Int32 button_delay_ms;
 
     enum {
         OPTION_DECIMAL_PACK = 1U<<0,
@@ -276,8 +441,10 @@ public:
 
     AP_Int8 units;
 
-    AP_OSD_Screen screen[AP_OSD_NUM_SCREENS];
-
+    AP_OSD_Screen screen[AP_OSD_NUM_DISPLAY_SCREENS];
+#if OSD_PARAM_ENABLED
+    AP_OSD_ParamScreen param_screen[AP_OSD_NUM_PARAM_SCREENS];
+#endif
     struct NavInfo {
         float wp_distance;
         int32_t wp_bearing;
@@ -294,6 +461,21 @@ public:
     void enable() {
         _disable = false;
     }
+
+    AP_OSD_AbstractScreen& get_screen(uint8_t idx) {
+#if OSD_PARAM_ENABLED
+        if (idx >= AP_OSD_NUM_DISPLAY_SCREENS) {
+            return param_screen[idx - AP_OSD_NUM_DISPLAY_SCREENS];
+        }
+#endif
+        return screen[idx];
+    }
+
+    // Check whether arming is allowed
+    bool pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) const;
+    bool is_readonly_screen() const { return current_screen < AP_OSD_NUM_DISPLAY_SCREENS; }
+    // handle OSD parameter configuration
+    void handle_msg(const mavlink_message_t &msg, const GCS_MAVLINK& link);
 
 private:
     void osd_thread();
