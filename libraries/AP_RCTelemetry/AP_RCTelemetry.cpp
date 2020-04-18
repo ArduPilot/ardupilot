@@ -89,7 +89,7 @@ void AP_RCTelemetry::run_wfq_scheduler(void)
     update_avg_packet_rate();
 
     uint32_t now = AP_HAL::millis();
-    uint8_t max_delay_idx = 0;
+    int8_t max_delay_idx = -1;
     
     float max_delay = 0;
     float delay = 0;
@@ -124,6 +124,10 @@ void AP_RCTelemetry::run_wfq_scheduler(void)
                 max_delay_idx = i;
             }
         }
+    }
+
+    if (max_delay_idx < 0) {  // nothing was ready
+        return;
     }
     now = AP_HAL::millis();
 #ifdef TELEM_DEBUG
