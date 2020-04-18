@@ -365,7 +365,7 @@ public:
     void set_baro_alt_noise(float noise) { _baroAltNoise.set_and_save(noise); };
 
     // allow the enable flag to be set by Replay
-    void set_enable(bool enable) { _enable.set(enable); }
+    void set_enable(bool enable) { _enable.set_enable(enable); }
 
     // are we doing sensor logging inside the EKF?
     bool have_ekf_logging(void) const { return logging.enabled && _logging_mask != 0; }
