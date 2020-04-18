@@ -38,10 +38,14 @@ private:
     static constexpr uint8_t max_open_file = 4;
 
     // maximum size of one packed parameter
-    static constexpr uint8_t max_pack_len = AP_MAX_NAME_SIZE + 2 + 4;
+    static constexpr uint8_t max_pack_len = AP_MAX_NAME_SIZE + 2 + 4 + 3;
 
-    // magic header
-    const uint32_t file_magic = 0x671b4e81;
+    // header at front of the file
+    struct header {
+        uint16_t magic = 0x671b;
+        uint16_t num_params;
+        uint16_t total_params;
+    };
 
     struct cursor {
         AP_Param::ParamToken token;
@@ -49,15 +53,19 @@ private:
         char last_name[AP_MAX_NAME_SIZE+1];
         uint8_t trailer_len;
         uint8_t trailer[max_pack_len];
+        uint16_t idx;
     };
 
     struct rfile {
         bool open;
+        uint16_t read_size;
+        uint16_t start;
+        uint16_t count;
         uint32_t file_ofs;
         struct cursor *cursors;
     } file[max_open_file];
 
-    bool token_seek(const uint32_t data_ofs, struct cursor &c);
-    uint8_t pack_param(const AP_Param *ap, const char *pname, const char *last_name,
-                       enum ap_var_type ptype, uint8_t *buf, uint8_t buflen);
+    bool token_seek(const struct rfile &r, const uint32_t data_ofs, struct cursor &c);
+    uint8_t pack_param(const struct rfile &r, struct cursor &c, uint8_t *buf);
+    bool check_file_name(const char *fname);
 };
