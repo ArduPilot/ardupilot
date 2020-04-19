@@ -19,7 +19,7 @@
 
 #include <AP_Common/AP_FWVersion.h>
 
-const AP_FWVersion AP_FWVersion::fwver{
+const AP_FWVersion AP_FWVersion::fwver __attribute__((section(".app_descriptor"))) {
     .major = FW_MAJOR,
     .minor = FW_MINOR,
     .patch = FW_PATCH,
