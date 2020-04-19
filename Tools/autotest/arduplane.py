@@ -1742,6 +1742,44 @@ class AutoTestPlane(AutoTest):
 
         self.progress("Mission OK")
 
+    def fly_polar_learn(self):
+
+        model="plane-soaring"
+
+        additional_params = os.path.join(testdir, self.current_test_name_directory, 'glide-polar.parm')
+
+        defaults_filepath = ",".join([self.model_defaults_filepath("ArduPlane",model), additional_params])
+
+        self.customise_SITL_commandline([],
+                                        model=model,
+                                        defaults_filepath=defaults_filepath)
+
+        self.load_mission('CMAC-glidepolar.txt')
+
+        self.mavproxy.send("wp set 1\n")
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # Enable thermalling RC
+        rc_chan = self.get_parameter('SOAR_ENABLE_CH')
+        self.send_set_rc(rc_chan, 1500)
+
+        self.wait_waypoint(12,12,timeout=1200,max_dist=120)
+
+
+        # Check that parameters have improved.
+        polarCD0 = self.get_parameter('SOAR_POLAR_CD0')
+        polarB   = self.get_parameter('SOAR_POLAR_B')
+
+        if polarCD0<0.045 or polarB<0.04 or polarCD0>0.055 or polarB>0.05:
+           raise NotAchievedException("Failed to learn glide polar parameters (%3.1f %3.1f)" % (polarCD0, polarB))
+
+        # Disarm
+        self.disarm_vehicle()
+
+        self.progress("Mission OK")
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -1850,6 +1888,10 @@ class AutoTestPlane(AutoTest):
             ("Soaring",
             "Test Soaring feature",
             self.fly_soaring),
+
+            ("GlidePolar",
+            "Test glide polar learning",
+            self.fly_polar_learn),
 
             ("LogDownLoad",
              "Log download",
