@@ -3368,6 +3368,13 @@ void GCS_MAVLINK::send_banner()
                   fwver.os_name, fwver.os_hash_str);
     }
 
+    send_text(MAV_SEVERITY_INFO, "FWInfo %08lx:%08lx %u.%u len=%lu %08lx\n",
+        fwver.app_desc.image_crc1,
+        fwver.app_desc.image_crc2,
+        fwver.app_desc.version_major, fwver.app_desc.version_minor,
+        fwver.app_desc.image_size,
+        fwver.app_desc.git_hash);
+
     // send system ID if we can
     char sysid[40];
     if (hal.util->get_system_id(sysid)) {
@@ -3377,6 +3384,14 @@ void GCS_MAVLINK::send_banner()
     // send RC output mode info if available
     char banner_msg[50];
     if (hal.rcout->get_output_mode_banner(banner_msg, sizeof(banner_msg))) {
+        send_text(MAV_SEVERITY_INFO, "%s", banner_msg);
+    }
+
+    if (hal.util->get_prev_system_info(banner_msg)) {
+        send_text(MAV_SEVERITY_INFO, "%s", banner_msg);
+    }
+
+    if (hal.util->get_bootloader_info(banner_msg)) {
         send_text(MAV_SEVERITY_INFO, "%s", banner_msg);
     }
 }
