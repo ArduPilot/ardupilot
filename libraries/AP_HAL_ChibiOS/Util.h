@@ -65,6 +65,11 @@ public:
     // return true if the reason for the reboot was a watchdog reset
     bool was_watchdog_reset() const override;
 
+
+#if !defined(HAL_BOOTLOADER_BUILD)
+    bool get_prev_system_info(char banner_msg[]) override;
+    bool get_bootloader_info(char banner_msg[]) override;
+#endif
 private:
 #ifdef HAL_PWM_ALARM
     struct ToneAlarmPwmGroup {

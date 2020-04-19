@@ -25,6 +25,7 @@
 #include "hwdef/common/flash.h"
 #include <AP_ROMFS/AP_ROMFS.h>
 #include "sdcard.h"
+#include "bl_comms.h"
 
 #if HAL_WITH_IO_MCU
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -303,3 +304,39 @@ bool Util::was_watchdog_reset() const
 {
     return stm32_was_watchdog_reset();
 }
+
+#if !defined(HAL_BOOTLOADER_BUILD)
+
+bool Util::get_prev_system_info(char banner_msg[]) {
+    const uint8_t sig[8] = HAL_OLD_APP_DESCRIPTOR_SIG;
+    const uint32_t flash_size = ((BOARD_FLASH_SIZE - FLASH_RESERVE_START_KB)*1024);
+    const struct app_descriptor *old_ad = (const app_descriptor*)(FLASH_LOAD_ADDRESS + flash_size - sizeof(app_descriptor));
+    int res = memcmp(old_ad, sig, sizeof(sig));
+    if (res != 0) {
+        // we were probably running older firmware version, just continue
+        return true;
+    }
+    // check length
+    if (old_ad->image_size > (BOARD_FLASH_SIZE * 1024)) {
+        return false;
+    }
+
+    if (old_ad->board_id != APJ_BOARD_ID) {
+        return false;
+    }
+    snprintf(banner_msg, 50, "OLD_FW VehicleID:%d FeatureMask:0x%02x %d.%d@%x", old_ad->app_device_type_id, old_ad->app_feature_mask, old_ad->version_major, old_ad->version_minor ,old_ad->git_hash);
+    return true;
+}
+
+bool Util::get_bootloader_info(char banner_msg[]) {
+    //place a marker in ram for app to read and get info about bootloader
+    struct bootloader_app_comms *comms = (struct bootloader_app_comms *)HAL_RAM0_START;
+    if (comms->magic != BOOTLOADER_APP_COMMS_MAGIC) {
+        return false;
+    }
+    snprintf(banner_msg, 50, "BL Ver 2.0 %x:%x", comms->git_hash,
+    comms->chibios_git_hash);
+    return true;
+}
+
+#endif

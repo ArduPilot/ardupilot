@@ -683,6 +683,8 @@ def write_mcu_config(f):
     f.write('#define FLASH_LOAD_ADDRESS 0x%08x\n' % (0x08000000 + flash_reserve_start*1024))
     if args.bootloader:
         f.write('#define FLASH_BOOTLOADER_LOAD_KB %u\n' % get_config('FLASH_BOOTLOADER_LOAD_KB', type=int))
+    else:
+        f.write('#define FLASH_RESERVE_START_KB %u\n' % flash_reserve_start)
     f.write('\n')
 
     ram_map = get_mcu_config('RAM_MAP', True)
@@ -806,7 +808,7 @@ def write_ldscript(fname):
     ram0_len = ram_map[0][1] * 1024
 
     # possibly reserve some memory for app/bootloader comms
-    ram_reserve_start = get_config('RAM_RESERVE_START', default=0, type=int)
+    ram_reserve_start = get_config('RAM_RESERVE_START', default=256, type=int)
     ram0_start += ram_reserve_start
     ram0_len -= ram_reserve_start
 
