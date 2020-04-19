@@ -1454,21 +1454,15 @@ private:
     // --- Internal variables ---
     float _initial_rpm;             // Head speed recorded at initiation of flight mode (RPM)
     float _target_head_speed;       // The terget head main rotor head speed.  Normalised by main rotor set point
-    float _fwd_speed_target;        // Target forward speed (cm/s)
     float _desired_v_z;             // Desired vertical
     int32_t _pitch_target;          // Target pitch attitude to pass to attitude controller
-    float _collective_aggression;   // The 'aggresiveness' of collective appliction
-    float _z_touch_down_start;      // The height in cm that the touch down phase began
-    float _t_touch_down_initiate;   // The time in ms that the touch down phase began
     float now;                      // Current time in millis
     float _entry_time_start;        // Time remaining until entry phase moves on to glide phase
     float _hs_decay;                // The head accerleration during the entry phase
     float _bail_time;               // Timer for exiting the bail out phase (s)
     float _bail_time_start;         // Time at start of bail out
-    float _des_z;                   // Desired vertical position
     float _target_climb_rate_adjust;// Target vertical acceleration used during bail out phase
     float _target_pitch_adjust;     // Target pitch rate used during bail out phase
-    uint16_t log_counter;           // Used to reduce the data flash logging rate
 
     enum class Autorotation_Phase {
         ENTRY,
