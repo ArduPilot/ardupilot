@@ -71,6 +71,8 @@ protected:
     AP_Float alt_min;
     AP_Float alt_cutoff;
     AP_Float max_drift;
+    AP_Int8 polar_learn;
+
 
 public:
     SoaringController(AP_AHRS &ahrs, AP_SpdHgtControl &spdHgt, const AP_Vehicle::FixedWing &parms);

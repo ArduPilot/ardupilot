@@ -117,3 +117,81 @@ float Variometer::calculate_circling_time_constant()
     // and the response to a step input will reach 64% of final value in three orbits.
     return _aparm.loiter_radius*2*M_PI/_aspd_filt_constrained;
 }
+
+
+void Variometer::reset_polar_learning()
+{
+// Calc filter matrices - so that changes to parameters can be updated by switching in and out of thermal mode
+
+    const float init_q[2] = {0,
+                             0};
+
+    const MatrixN<float,2> q{init_q};
+
+    const float init_p[2] = {powf(0.005,2),
+                             powf(0.005,2)};
+
+    const MatrixN<float,2> p{init_p};
+
+
+    // New state vector filter will be reset. Thermal location is placed in front of a/c
+    const float init_xr[2] = {_polarParams.CD0,
+                              _polarParams.B};
+
+    const VectorN<float,2> xr{init_xr};
+
+    // Also reset covariance matrix p so filter is not affected by previous data
+    _learn_EKF.reset(xr, p, q, powf(0.5,2));
+}
+
+void Variometer::update_polar_learning(bool throttle_suppressed, float dsp_dem)
+{
+    // Check if conditions are suitable for updating the glide polar estimator.
+    // Conditioned on throttle, speed, roll, rate of change of speed target
+
+    if (!throttle_suppressed ||
+            fabs(_ahrs.roll) > LEARN_THRESHOLD_ROLL ||
+            _aspd_filt < _aparm.airspeed_min ||
+            _aspd_filt > _aparm.airspeed_max ||
+            fabs(dsp_dem) > 0.2) {
+        // Conditions not ok.
+        _learn_skipped_time = AP_HAL::millis();
+
+    } else if ((AP_HAL::millis() - _learn_skipped_time) > LEARN_THRESHOLD_TIME) {
+
+        // Condiditions OK
+        if (!_learn_initialised) {
+            reset_polar_learning();
+            _learn_initialised = true;
+        }
+
+        const float u[3] = {_aspd_filt, _ahrs.roll, _polarParams.K};
+        const VectorN<float,3> u_in{u};
+
+        // update the filter
+        float input = -raw_climb_rate;
+        _learn_EKF.update(input, u_in);
+
+        // Save parameters if changed by >0.1%
+        if (fabs((_polarParams.CD0 - _learn_EKF.X[0])/_polarParams.CD0) > 0.001f ||
+            fabs((_polarParams.B   - _learn_EKF.X[1])/_polarParams.B)   > 0.001f) {
+            _polarParams.CD0.set(_learn_EKF.X[0]);
+            _polarParams.CD0.save();
+            AP::logger().Write_Parameter("SOAR_POLAR_CD0",_learn_EKF.X[0]);
+
+            _polarParams.B.set(_learn_EKF.X[1]);
+            _polarParams.B.save();
+            AP::logger().Write_Parameter("SOAR_POLAR_B",_learn_EKF.X[1]);
+        }
+
+        // Log data
+        AP::logger().Write("PLRN", "TimeUS,aspd,roll,K,z,CD0,B", "Qffffff",
+                   AP_HAL::micros64(),
+                   (double)_aspd_filt,
+                   (double)_ahrs.roll,
+                   (double)_polarParams.K,
+                   (double)raw_climb_rate,
+                   (double)_learn_EKF.X[0],
+                   (double)_learn_EKF.X[1]);
+    }
+}
