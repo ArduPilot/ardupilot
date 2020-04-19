@@ -241,7 +241,7 @@ void ModeAutorotate::run()
                 _target_pitch_adjust = _pitch_target/_bail_time;
 
                 // Set acceleration limit
-                pos_control->set_max_accel_z(abs(_target_climb_rate_adjust));
+                pos_control->set_max_accel_z(fabsf(_target_climb_rate_adjust));
 
                 motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
