@@ -47,6 +47,9 @@
 #include "hwdef.h"
 
 #include "bl_protocol.h"
+#define FORCE_VERSION_H_INCLUDE
+#include "app_comms.h"
+#include "ap_version.h"
 #include "support.h"
 #include "can.h"
 #include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
@@ -116,6 +119,9 @@
 #define PROTO_DEVICE_FW_SIZE	4	// size of flashable area
 #define PROTO_DEVICE_VEC_AREA	5	// contents of reserved vectors 7-10
 
+#define APPDESC_FLASH_UNFINISHED 0xFF
+#define APPDESC_FLASH_FINISHED   0x00
+
 // interrupt vector table for STM32
 #define SCB_VTOR 0xE000ED08
 
@@ -136,6 +142,90 @@ volatile unsigned timer[NTIMERS];
 // access on STM32H7
 #define RESERVE_LEAD_WORDS 8
 
+
+#if FLASH_BOOTLOADER_LOAD_KB > BL_V2_FLASH_SIZE
+/*
+  check firmware CRC to see if it matches
+ */
+bool check_firmware(void)
+{
+    const uint8_t sig[8] = HAL_APP_DESCRIPTOR_SIG;
+    const uint8_t *flash = (const uint8_t *)(FLASH_LOAD_ADDRESS + FLASH_BOOTLOADER_LOAD_KB*1024);
+    const uint32_t flash_size = (BOARD_FLASH_SIZE - FLASH_BOOTLOADER_LOAD_KB)*1024;
+    const app_descriptor *ad = (const app_descriptor *)memmem(flash, flash_size-sizeof(app_descriptor), sig, sizeof(sig));
+    if (ad == nullptr) {
+        // we are probably running older firmware version, just continue
+        return true;
+    }
+    // check length
+    if (ad->image_size > flash_size) {
+        return false;
+    }
+
+    if (ad->board_id != APJ_BOARD_ID) {
+        return false;
+    }
+
+    const uint8_t desc_len = offsetof(app_descriptor, version_major) - offsetof(app_descriptor, image_crc1);
+    uint32_t len1 = ((const uint8_t *)&ad->image_crc1) - flash;
+    uint32_t len2 = ad->image_size - (len1 + desc_len);
+    uint32_t crc1 = crc32_small(0, flash, len1);
+    uint32_t crc2 = crc32_small(0, (const uint8_t *)&ad->version_major, len2);
+    if (crc1 != ad->image_crc1 || crc2 != ad->image_crc2) {
+        return false;
+    }
+    return true;
+}
+
+static app_descriptor backup_ad;
+static bool app_desc_from_app_section()
+{
+    const uint8_t sig[8] = HAL_APP_DESCRIPTOR_SIG;
+    const uint8_t *flash = (const uint8_t *)(FLASH_LOAD_ADDRESS + FLASH_BOOTLOADER_LOAD_KB*1024);
+    const uint32_t flash_size = (BOARD_FLASH_SIZE - FLASH_BOOTLOADER_LOAD_KB)*1024;
+    const app_descriptor *ad = (const app_descriptor *)memmem(flash, flash_size-sizeof(app_descriptor), sig, sizeof(sig));
+    if (ad == nullptr) {
+        return false;
+    }
+    memcpy(&backup_ad, ad, sizeof(app_descriptor));
+    backup_ad.sig[7] = 0xFF;
+    return true;
+}
+
+static void get_backup_app_desc()
+{
+    // See if we have a record from previous run
+    const uint8_t sig[8] = HAL_APP_DESCRIPTOR_SIG;
+    const uint8_t *flash = (const uint8_t *)(FLASH_LOAD_ADDRESS);
+    const app_descriptor *ad = (const app_descriptor *) (flash + BOARD_FLASH_SIZE - sizeof(app_descriptor));
+    int res = memcmp(ad, sig, sizeof(sig) - 1);
+    if (res != 0) {
+        memset(&backup_ad, 0xFF, sizeof(app_descriptor));
+        return;
+    }
+    if (ad->reserved2[0] == APPDESC_FLASH_FINISHED) {
+        //This is old appdesc, ignore
+        return;
+    }
+    memcpy(&backup_ad, ad, sizeof(app_descriptor));
+}
+
+static void update_backup_app_desc_state(uint8_t state)
+{
+    backup_ad.sig[7] = 0xFF;
+    if (state != APPDESC_FLASH_FINISHED) {
+        flash_func_write_words(board_info.fw_size - sizeof(app_descriptor), (uint32_t*)&backup_ad, (sizeof(app_descriptor) - 32)/sizeof(uint32_t));
+    } else {
+        get_backup_app_desc();
+        if (backup_ad.reserved2[0] == APPDESC_FLASH_FINISHED) {
+            //We have already written just return
+            return;
+        }
+        memset(backup_ad.reserved2, 0, sizeof(backup_ad.reserved2));
+        flash_func_write_words(board_info.fw_size - sizeof(app_descriptor) + 32, (uint32_t*)&backup_ad.reserved2, 32/sizeof(uint32_t));
+    }
+}
+#endif
 /*
   1ms timer tick callback
  */
@@ -241,6 +331,20 @@ jump_to_app()
     // in bootloader
     stm32_watchdog_init();
     stm32_watchdog_pat();
+#endif
+
+#if FLASH_BOOTLOADER_LOAD_KB > BL_V2_FLASH_SIZE
+    // Seems like we have passed all the checks so far
+    // there probably is a valid firmware loaded lets set the 
+    // app descriptor as APPDESC_FLASH_FINISHED.
+    update_backup_app_desc_state(APPDESC_FLASH_FINISHED);
+
+    //place a marker in ram for app to read and get info about bootloader
+    struct bootloader_app_comms *comms = (struct bootloader_app_comms *)HAL_RAM0_START;
+    memset(comms, 0, sizeof(struct bootloader_app_comms));
+    comms->magic = BOOTLOADER_APP_COMMS_MAGIC;
+    comms->git_hash = GIT_VERSION_HEX;
+    comms->chibios_git_hash = CHIBIOS_GIT_VERSION_HEX;
 #endif
 
     flash_set_keep_unlocked(false);
@@ -595,18 +699,32 @@ bootloader(unsigned timeout)
             // and that's confusing
             led_set(LED_OFF);
 
+#if FLASH_BOOTLOADER_LOAD_KB > BL_V2_FLASH_SIZE
+            // See if we have backup from app_section
+            if (!app_desc_from_app_section()) {
+                memset(&backup_ad, 0xFF, sizeof(app_descriptor));
+                // See if we have backup from older trial
+                get_backup_app_desc();
+            }
+#endif
             // erase all sectors
             for (uint8_t i = 0; flash_func_sector_size(i) != 0; i++) {
                 if (!flash_func_erase_sector(i)) {
                     goto cmd_fail;
                 }
             }
-
+#if FLASH_BOOTLOADER_LOAD_KB > BL_V2_FLASH_SIZE
+            //We erase the App Descriptor that was written in last successful flash
+            //Only valid app desciptor of last application gets through
+            if (backup_ad.reserved2[0] != APPDESC_FLASH_FINISHED) {
+                update_backup_app_desc_state(APPDESC_FLASH_UNFINISHED);
+            }
+#endif
             // enable the LED while verifying the erase
             led_set(LED_ON);
 
             // verify the erase
-            for (address = 0; address < board_info.fw_size; address += 4) {
+            for (address = 0; address < (board_info.fw_size - sizeof(app_descriptor)); address += 4) {
                 if (flash_func_read_word(address) != 0xffffffff) {
                     goto cmd_fail;
                 }
@@ -703,8 +821,9 @@ bootloader(unsigned timeout)
 
             for (unsigned p = 0; p < board_info.fw_size; p += 4) {
                 uint32_t bytes;
-
-                if (p < sizeof(first_words) && first_words[0] != 0xFFFFFFFF) {
+                if (p >= (board_info.fw_size - sizeof(app_descriptor))) {
+                    bytes = 0xFFFFFFFF;
+                } else if (p < sizeof(first_words) && first_words[0] != 0xFFFFFFFF) {
                     bytes = first_words[p/4];
                 } else {
                     bytes = flash_func_read_word(p);

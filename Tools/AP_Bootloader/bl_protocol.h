@@ -1,7 +1,9 @@
 void jump_to_app(void);
 void bootloader(unsigned timeout);
+bool check_firmware(void);
 
 #define BL_WAIT_MAGIC	0x19710317		/* magic number in PWR regs to wait in bootloader */
+#define BL_V2_FLASH_SIZE 32
 
 /*****************************************************************************
  * Chip/board functions.

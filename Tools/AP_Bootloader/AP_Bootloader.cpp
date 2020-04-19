@@ -31,6 +31,7 @@
 #include "support.h"
 #include "bl_protocol.h"
 #include "can.h"
+#include "app_comms.h"
 #include <stdio.h>
 
 extern "C" {
@@ -117,7 +118,11 @@ int main(void)
         timeout = 0;
     }
 #endif
-
+#if FLASH_BOOTLOADER_LOAD_KB > BL_V2_FLASH_SIZE
+    // leave a marker for app to read
+    struct app_bootloader_comms *comms = (struct app_bootloader_comms *)HAL_RAM0_START;
+    comms->magic = BOOTLOADER_APP_COMMS_MAGIC;
+#endif
     if (try_boot) {
         jump_to_app();
     }
