@@ -298,6 +298,7 @@ class Board:
 
     def build(self, bld):
         bld.ap_version_append_str('GIT_VERSION', bld.git_head_hash(short=True))
+        bld.ap_version_append_hex('GIT_VERSION_HEX', bld.git_head_hash(short=True))
         import time
         ltime = time.localtime()
         if bld.env.build_dates:
@@ -581,6 +582,7 @@ class chibios(Board):
     def build(self, bld):
         super(chibios, self).build(bld)
         bld.ap_version_append_str('CHIBIOS_GIT_VERSION', bld.git_submodule_head_hash('ChibiOS', short=True))
+        bld.ap_version_append_hex('CHIBIOS_GIT_VERSION_HEX', bld.git_submodule_head_hash('ChibiOS', short=True))
         bld.load('chibios')
 
     def pre_build(self, bld):
