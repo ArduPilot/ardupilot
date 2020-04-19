@@ -184,6 +184,7 @@ static void spi_init()
 }
 #endif
 
+#ifdef HAL_INS_MPU60x0_NAME
 /*
   send a 16 bit command to the baro
  */
@@ -193,7 +194,6 @@ static bool send_cmd16(uint16_t cmd)
     return i2c_dev->transfer(cmd_b, 2, nullptr, 0);
 }
 
-#ifdef HAL_INS_MPU60x0_NAME
 /*
   read baro calibration data
  */
