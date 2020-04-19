@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
-
+#include <AP_HAL_ChibiOS/bl_comms.h>
 class AP_FWVersion {
 
 public:
@@ -18,7 +18,7 @@ public:
     const char *os_name;
     const char *os_hash_str;
     const uint32_t os_sw_version;
-
+    const app_descriptor app_desc;
     static const AP_FWVersion &get_fwverz() { return fwver; }
 
 private:
