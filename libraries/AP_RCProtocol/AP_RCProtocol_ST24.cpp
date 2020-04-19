@@ -107,7 +107,7 @@ void AP_RCProtocol_ST24::_process_byte(uint8_t byte)
     case ST24_DECODE_STATE_GOT_STX2:
 
         /* ensure no data overflow failure or hack is possible */
-        if ((unsigned)byte <= sizeof(_rxpacket.length) + sizeof(_rxpacket.type) + sizeof(_rxpacket.st24_data)) {
+        if (byte > 8 && (unsigned)byte <= sizeof(_rxpacket.length) + sizeof(_rxpacket.type) + sizeof(_rxpacket.st24_data)) {
             _rxpacket.length = byte;
             _rxlen = 0;
             _decode_state = ST24_DECODE_STATE_GOT_LEN;
