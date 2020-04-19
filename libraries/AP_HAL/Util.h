@@ -182,6 +182,10 @@ public:
     // attempt to trap the processor, presumably to enter an attached debugger
     virtual bool trap() const { return false; }
 
+    virtual bool get_prev_system_info(char banner_msg[]) { return false; }
+
+    virtual bool get_bootloader_info(char banner_msg[]) { return false; }
+
 protected:
     // we start soft_armed false, so that actuators don't send any
     // values until the vehicle code has fully started
