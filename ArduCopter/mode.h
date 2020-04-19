@@ -1456,11 +1456,10 @@ private:
     float _target_head_speed;       // The terget head main rotor head speed.  Normalised by main rotor set point
     float _desired_v_z;             // Desired vertical
     int32_t _pitch_target;          // Target pitch attitude to pass to attitude controller
-    float now;                      // Current time in millis
-    float _entry_time_start;        // Time remaining until entry phase moves on to glide phase
+    uint32_t _entry_time_start_ms;  // Time remaining until entry phase moves on to glide phase
     float _hs_decay;                // The head accerleration during the entry phase
     float _bail_time;               // Timer for exiting the bail out phase (s)
-    float _bail_time_start;         // Time at start of bail out
+    uint32_t _bail_time_start_ms;   // Time at start of bail out
     float _target_climb_rate_adjust;// Target vertical acceleration used during bail out phase
     float _target_pitch_adjust;     // Target pitch rate used during bail out phase
 
