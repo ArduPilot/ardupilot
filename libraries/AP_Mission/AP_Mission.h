@@ -276,8 +276,6 @@ public:
 
     // for lat/lng translation of a Relative Mission
     struct Translation {
-        int32_t lat;            // latitude-displacement of location where AUTO has been switched on, relative to first waypoint [10^7°]
-        int32_t lng;            // longitude-displacement of location where AUTO has been switched on, relative to first waypoint [10^7°]
         int32_t alt;            // altitude-displacement of location where AUTO has been switched on, relative to first waypoint [cm]
         int32_t direction;      // direction from HomePoint to the location where AUTO has been switched on  [10^2°] North=0 East=9000
         bool    do_translation; // for marking if location where AUTO has been switched is far enough from home-location
@@ -339,6 +337,9 @@ public:
         _flags.in_landing_sequence = false;
         _flags.resuming_mission = false;
         _force_resume = false;
+        restart_behaviour = Restart_Behaviour::RESUME_AT_LAST_WP;
+        _skip_first_wp = false;
+        _repeat_dist = 0;
     }
 
     // get singleton instance
@@ -643,7 +644,8 @@ private:
     uint16_t                _prev_nav_cmd_wp_index; // index of the previous "navigation" command that contains a waypoint.  Rarely used which is why we don't store the whole command
     bool                    _force_resume;  // when set true it forces mission to resume irrespective of MIS_RESTART param.
     struct Location         _exit_position;  // the position in the mission that the mission was exited
-    struct Location         _start_loc; // the location where the MODE has been switched to AUTO
+    struct Location         _start_loc;     // location where the MODE has been switched to AUTO
+    struct Location         _base_wp_loc;   // location of very first Waypoint
     struct Translation      _translation;   // info concerning the translation of a  Relative Mission
     bool                    _skip_first_wp;  // when set in Relative Mission it forces to skip the first Waypoint at beginning of Mission
 

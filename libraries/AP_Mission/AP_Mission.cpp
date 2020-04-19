@@ -1643,14 +1643,14 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
                         case MAV_CMD_NAV_VTOL_LAND:
                             break;
                         default:
+                            Mission_Command tmp;
                             // calculate parallel translation: from Base-Waypoint (first Waypoint of Mission) to Start-Waypoint (switch-to-AUTO-position)
                             if ((!_translation.calculated)&&(restart_behaviour >= Restart_Behaviour::RESTART_PARALLEL_TRANSLATED)) {
                                 if (AP_MISSION_MASK_SKIP_FIRST_WP & _options) {
                                     _skip_first_wp = true;
                                 }
-                                _translation.calculated = true; // do that just once at very first WayPoint (Start-Waypoint)
-                                _translation.lat = _start_loc.lat - cmd.content.location.lat;
-                                _translation.lng = _start_loc.lng - cmd.content.location.lng;
+                                _translation.calculated = true;
+                                _base_wp_loc = cmd.content.location; // memorize position of very first WayPoint (Start-Waypoint)
 
                                 // calculate altitude-translation
                                 if (cmd.content.location.relative_alt == 1) {
@@ -1659,7 +1659,6 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
                                     _translation.alt = _start_loc.alt - cmd.content.location.alt;
                                 }
 
-                                Mission_Command tmp;
                                 // get direction from Homepoint to Start-Waypoint
                                 tmp.content.location = AP::ahrs().get_home();
                                 _translation.direction = tmp.content.location.get_bearing_to(_start_loc);   // in centidegrees from 0 36000
@@ -1685,29 +1684,31 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
                             }
                             else {
                                 if (restart_behaviour >= Restart_Behaviour::RESTART_PARALLEL_TRANSLATED){ // do at least parallel translation
-                                    cmd.content.location.lat += _translation.lat;
-                                    cmd.content.location.lng += _translation.lng;
+                                    tmp.content.location = cmd.content.location; // before translation
+                                    cmd.content.location.lat = _start_loc.lat + (cmd.content.location.lat - _base_wp_loc.lat);
+                                    // correction of lng based on lat-translation
+                                    cmd.content.location.lng = _start_loc.lng + (cmd.content.location.lng - _base_wp_loc.lng) / tmp.content.location.longitude_scale() * cmd.content.location.longitude_scale();
                                     if (AP_MISSION_MASK_USE_ALT_OFFSET & _options) { // do altitude translation
                                         cmd.content.location.alt += _translation.alt;
                                     }
                                 }
 
                                 if (restart_behaviour >= Restart_Behaviour::RESTART_ROTATED_TRANSLATED){ // do additional rotation
-                                    Rotation tmp;
+                                    Rotation tmprot;
                                     float rel_lat, rel_lng; // position of currently parallel translated WayPoint relative to Start-Waypoint
                                     float rel_distance;     // imaginary distance lat/lng from Start-Waypoint to current WP in [10^7 Degrees]
                                     rel_lat = cmd.content.location.lat - _start_loc.lat;
                                     rel_lng = (cmd.content.location.lng - _start_loc.lng)*cmd.content.location.longitude_scale();;
-                                    tmp.direction = _start_loc.get_bearing_to(cmd.content.location);   // direction from Start_waypoint to current WP in centidegrees
-                                    tmp.direction = _translation.direction + tmp.direction; // total rotation direction in centidegrees
-                                    if (tmp.direction < 0) {
-                                        tmp.direction =+ 36000;
+                                    tmprot.direction = _start_loc.get_bearing_to(cmd.content.location);   // direction from Start_waypoint to current WP in centidegrees
+                                    tmprot.direction = _translation.direction + tmprot.direction; // total rotation direction in centidegrees
+                                    if (tmprot.direction < 0) {
+                                        tmprot.direction =+ 36000;
                                     }
                                     rel_distance = sqrtf((rel_lat*rel_lat)+(rel_lng*rel_lng));
-                                    tmp.lat = (int32_t)(cosf((float)tmp.direction/100.0*DEG_TO_RAD)*rel_distance);
-                                    tmp.lng = (int32_t)(sinf((float)tmp.direction/100.0*DEG_TO_RAD)*rel_distance)/cmd.content.location.longitude_scale();
-                                    cmd.content.location.lat = _start_loc.lat + tmp.lat;
-                                    cmd.content.location.lng = _start_loc.lng + tmp.lng;
+                                    tmprot.lat = (int32_t)(cosf((float)tmprot.direction/100.0*DEG_TO_RAD)*rel_distance);
+                                    tmprot.lng = (int32_t)(sinf((float)tmprot.direction/100.0*DEG_TO_RAD)*rel_distance)/cmd.content.location.longitude_scale();
+                                    cmd.content.location.lat = _start_loc.lat + tmprot.lat;
+                                    cmd.content.location.lng = _start_loc.lng + tmprot.lng;
                                 }
                             }
                     }
