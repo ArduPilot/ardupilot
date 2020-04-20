@@ -181,13 +181,21 @@ bool AC_Circle::update()
         return false;
     }
 
+    // calculate z-axis target
+    float target_z_cm;
+    if (_terrain_alt) {
+        target_z_cm = _center.z + terr_offset;
+    } else {
+        target_z_cm = _pos_control.get_alt_target();
+    }
+
     // if the circle_radius is zero we are doing panorama so no need to update loiter target
     if (!is_zero(_radius)) {
         // calculate target position
         Vector3f target;
         target.x = _center.x + _radius * cosf(-_angle);
         target.y = _center.y - _radius * sinf(-_angle);
-        target.z = _center.z + terr_offset;
+        target.z = target_z_cm;
 
         // update position controller target
         _pos_control.set_pos_target(target);
@@ -199,7 +207,7 @@ bool AC_Circle::update()
         Vector3f target;
         target.x = _center.x;
         target.y = _center.y;
-        target.z = _center.z + terr_offset;
+        target.z = target_z_cm;
 
         // update position controller target
         _pos_control.set_pos_target(target);
