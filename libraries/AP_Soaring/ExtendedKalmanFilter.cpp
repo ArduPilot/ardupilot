@@ -39,9 +39,7 @@ void ExtendedKalmanFilter::update(float z, const VectorN<float,M> &U)
     // U: [driftX,driftY,Px,Py]
 
     // LINE 28
-    // Estimate new state from old.
-    X[2] += U[0];
-    X[3] += U[1];
+    state_update(U);
 
     // LINE 33
     // Update the covariance matrix
@@ -81,4 +79,11 @@ void ExtendedKalmanFilter::update(float z, const VectorN<float,M> &U)
     P -= tempM;
     
     P.force_symmetry();
+}
+
+void ExtendedKalmanFilter::state_update(const VectorN<float,M> &U)
+{
+    // Estimate new state from old.
+    X[2] += U[0];
+    X[3] += U[1];
 }
