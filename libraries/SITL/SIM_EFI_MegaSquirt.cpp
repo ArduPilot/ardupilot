@@ -37,7 +37,7 @@ static uint32_t CRC32_MS(const uint8_t *buf, uint32_t len)
 void EFI_MegaSquirt::update()
 {
     auto sitl = AP::sitl();
-    if (!sitl || sitl->efi_type == SITL::EFI_TYPE_NONE) {
+    if (!sitl || sitl->efi_type != SITL::EFI_TYPE_MS) {
         return;
     }
     if (!connected) {

@@ -18,6 +18,7 @@
 #if EFI_ENABLED
 
 #include "AP_EFI_Serial_MS.h"
+#include "AP_EFI_EMUECU.h"
 #include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
@@ -27,7 +28,7 @@ const AP_Param::GroupInfo AP_EFI::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: EFI communication type
     // @Description: What method of communication is used for EFI #1
-    // @Values: 0:None,1:Serial-MS
+    // @Values: 0:None,1:Serial-MS,2:EMUEFI
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("_TYPE", 1, AP_EFI, type, 0, AP_PARAM_FLAG_ENABLE),
@@ -67,9 +68,17 @@ void AP_EFI::init(void)
         // Init called twice, perhaps
         return;
     }
+
     // Check for MegaSquirt Serial EFI
-    if (type == EFI_COMMUNICATION_TYPE_SERIAL_MS) {
+    switch (Protocol(type.get())) {
+    case Protocol::SERIAL_MS:
         backend = new AP_EFI_Serial_MS(*this);
+        break;
+    case Protocol::EMUEFI:
+        backend = new AP_EFI_EMUECU(*this);
+        break;
+    case Protocol::NONE:
+        break;
     }
 }
 
@@ -78,7 +87,11 @@ void AP_EFI::update()
 {
     if (backend) {
         backend->update();
-        log_status();
+        uint32_t now = AP_HAL::millis();
+        if (now - last_log_ms >= 100) {
+            last_log_ms = now;
+            log_status();
+        }
     }
 }
 
@@ -215,7 +228,9 @@ void AP_EFI::send_mavlink_status(mavlink_channel_t chan)
         (state.cylinder_status[0].cylinder_head_temperature - 273.0f),
         state.cylinder_status[0].ignition_timing_deg,
         state.cylinder_status[0].injection_time_ms,
-        0, 0, 0);
+        state.cylinder_status[0].exhaust_gas_temperature,
+        state.throttle_position_percent,
+        state.pt_c);
 }
 
 namespace AP {
