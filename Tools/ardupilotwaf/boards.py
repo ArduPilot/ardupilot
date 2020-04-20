@@ -398,7 +398,7 @@ class sitl(Board):
         cfg.check_librt(env)
         cfg.check_feenableexcept()
 
-        env.LINKFLAGS += ['-pthread',]
+        env.LINKFLAGS += ['-pthread','-rdynamic']
 
         if cfg.env.DEBUG and 'clang++' in cfg.env.COMPILER_CXX and cfg.options.asan:
              env.LINKFLAGS += ['-fsanitize=address']
