@@ -6,15 +6,16 @@ Manages the estimation of aircraft total energy, drag and vertical air velocity.
 
 #include <AP_Logger/AP_Logger.h>
 
-Variometer::Variometer(const AP_Vehicle::FixedWing &parms) :
-    _aparm(parms)
+Variometer::Variometer(const AP_Vehicle::FixedWing &parms, PolarParams &polarParams) :
+    _aparm(parms),
+    _polarParams(polarParams)
 {
     _climb_filter = LowPassFilter<float>(1.0/60.0);
 
     _vdot_filter2 = LowPassFilter<float>(1.0f/60.0f);
 }
 
-void Variometer::update(const float polar_K, const float polar_Cd0, const float polar_B)
+void Variometer::update()
 {
     const AP_AHRS &_ahrs = AP::ahrs();
 
@@ -28,7 +29,7 @@ void Variometer::update(const float polar_K, const float polar_Cd0, const float 
     _aspd_filt = _sp_filter.apply(aspd);
 
     // Constrained airspeed.
-    const float minV = sqrtf(polar_K/1.5);
+    const float minV = sqrtf(_polarParams.K/1.5);
     _aspd_filt_constrained = _aspd_filt>minV ? _aspd_filt : minV;
 
 
@@ -63,7 +64,7 @@ void Variometer::update(const float polar_K, const float polar_Cd0, const float 
 
     // Compute still-air sinkrate
     float roll = _ahrs.roll;
-    float sinkrate = calculate_aircraft_sinkrate(roll, polar_K, polar_Cd0, polar_B);
+    float sinkrate = calculate_aircraft_sinkrate(roll);
 
     reading = raw_climb_rate + dsp_cor*_aspd_filt_constrained/GRAVITY_MSS + sinkrate;
     
@@ -74,7 +75,7 @@ void Variometer::update(const float polar_K, const float polar_Cd0, const float 
     _prev_update_time = AP_HAL::micros64();
 
     float expected_roll = atanf(powf(_aspd_filt_constrained,2)/(GRAVITY_MSS*_aparm.loiter_radius));
-    _expected_thermalling_sink = calculate_aircraft_sinkrate(expected_roll, polar_K, polar_Cd0, polar_B);
+    _expected_thermalling_sink = calculate_aircraft_sinkrate(expected_roll);
 
 // @LoggerMessage: VAR
 // @Vehicles: Plane
@@ -107,19 +108,16 @@ void Variometer::update(const float polar_K, const float polar_Cd0, const float 
 }
 
 
-float Variometer::calculate_aircraft_sinkrate(float phi,
-                                             const float polar_K,
-                                             const float polar_CD0,
-                                             const float polar_B) const
+float Variometer::calculate_aircraft_sinkrate(float phi) const
 {
     // Remove aircraft sink rate
     float CL0;  // CL0 = 2*W/(rho*S*V^2)
     float C1;   // C1 = CD0/CL0
     float C2;   // C2 = CDi0/CL0 = B*CL0
-    CL0 = polar_K / (_aspd_filt_constrained * _aspd_filt_constrained);
+    CL0 = _polarParams.K / (_aspd_filt_constrained * _aspd_filt_constrained);
 
-    C1 = polar_CD0 / CL0;  // constant describing expected angle to overcome zero-lift drag
-    C2 = polar_B * CL0;    // constant describing expected angle to overcome lift induced drag at zero bank
+    C1 = _polarParams.CD0 / CL0;  // constant describing expected angle to overcome zero-lift drag
+    C2 = _polarParams.B * CL0;    // constant describing expected angle to overcome lift induced drag at zero bank
 
     float cosphi = (1 - phi * phi / 2); // first two terms of mclaurin series for cos(phi)
     

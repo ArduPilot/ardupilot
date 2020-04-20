@@ -37,7 +37,14 @@ class Variometer {
     LowPassFilter<float> _vdot_filter2;
 
 public:
-    Variometer(const AP_Vehicle::FixedWing &parms);
+    struct PolarParams {
+        AP_Float K;
+        AP_Float CD0;
+        AP_Float B;
+    };
+
+    Variometer(const AP_Vehicle::FixedWing &parms, PolarParams &polarParams);
+
     float alt;
     float reading;
     float filtered_reading;
@@ -46,8 +53,8 @@ public:
     float smoothed_climb_rate;
     float tau;
 
-    void update(const float polar_K, const float polar_CD0, const float polar_B);
-    float calculate_aircraft_sinkrate(float phi, const float polar_K, const float polar_CD0, const float polar_B) const;
+    void update();
+    float calculate_aircraft_sinkrate(float phi) const;
 
     void reset_filter(float value) { _climb_filter.reset(value);}
 
@@ -56,5 +63,8 @@ public:
     float get_exp_thermalling_sink(void) const {return _expected_thermalling_sink;};
 
     float calculate_circling_time_constant();
+
+private:
+    PolarParams &_polarParams;
 };
 
