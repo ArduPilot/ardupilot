@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <execinfo.h>
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/system.h>
@@ -34,6 +35,15 @@ void panic(const char *errormsg, ...)
     vprintf(errormsg, ap);
     va_end(ap);
     printf("\n");
+
+    void *array[10];
+    size_t size;
+
+    // get void*'s for all entries on the stack
+    size = backtrace(array, 10);
+
+    // print out all the frames to stdout
+    backtrace_symbols_fd(array, size, STDOUT_FILENO);
 
     dump_stack_trace();
 
