@@ -62,13 +62,21 @@ int AP_Filesystem_Param::open(const char *fname, int flags)
     while (c && *c) {
         c++;
         if (strncmp(c, "start=", 6) == 0) {
-            r.start = strtoul(c+6, nullptr, 10);
+            uint32_t v = strtoul(c+6, nullptr, 10);
+            if (v >= UINT16_MAX) {
+                goto failed;
+            }
+            r.start = v;
             c += 6;
             c = strchr(c, '&');
             continue;
         }
         if (strncmp(c, "count=", 6) == 0) {
-            r.count = strtoul(c+6, nullptr, 10);
+            uint32_t v = strtoul(c+6, nullptr, 10);
+            if (v >= UINT16_MAX) {
+                goto failed;
+            }
+            r.count = v;
             c += 6;
             c = strchr(c, '&');
             continue;
@@ -76,6 +84,12 @@ int AP_Filesystem_Param::open(const char *fname, int flags)
     }
 
     return idx;
+
+failed:
+    delete [] r.cursors;
+    r.open = false;
+    errno = EINVAL;
+    return -1;
 }
 
 int AP_Filesystem_Param::close(int fd)
@@ -244,6 +258,10 @@ int32_t AP_Filesystem_Param::read(int fd, void *buf, uint32_t count)
     if (r.file_ofs < sizeof(struct header)) {
         struct header hdr;
         hdr.total_params = AP_Param::count_parameters();
+        if (hdr.total_params <= r.start) {
+            errno = EINVAL;
+            return -1;
+        }
         hdr.num_params = hdr.total_params - r.start;
         if (r.count > 0 && hdr.num_params > r.count) {
             hdr.num_params = r.count;
