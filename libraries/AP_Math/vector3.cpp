@@ -19,6 +19,7 @@
 #pragma GCC optimize("O2")
 
 #include "AP_Math.h"
+#include <AP_InternalError/AP_InternalError.h>
 
 // rotate a vector by a standard rotation, attempting
 // to use the minimum number of floating point operations
@@ -28,7 +29,6 @@ void Vector3<T>::rotate(enum Rotation rotation)
     T tmp;
     switch (rotation) {
     case ROTATION_NONE:
-    case ROTATION_MAX:
         return;
     case ROTATION_YAW_45: {
         tmp = HALF_SQRT_2*(float)(x - y);
@@ -251,9 +251,15 @@ void Vector3<T>::rotate(enum Rotation rotation)
         z = -sin_pitch * tmpx + cos_pitch * tmpz;
         return;
     }
-    case ROTATION_CUSTOM: // no-op; caller should perform custom rotations via matrix multiplication
+    case ROTATION_CUSTOM: 
+        // Error: caller must perform custom rotations via matrix multiplication
+        AP::internalerror().error(AP_InternalError::error_t::flow_of_control);
         return;
+    case ROTATION_MAX:
+        break;
     }
+    // rotation invalid
+    AP::internalerror().error(AP_InternalError::error_t::bad_rotation);
 }
 
 template <typename T>
