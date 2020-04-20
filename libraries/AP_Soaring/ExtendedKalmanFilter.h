@@ -14,14 +14,15 @@ public:
     ExtendedKalmanFilter(void) {}
 
     static constexpr const uint8_t N = 4;
+    static constexpr const uint8_t M = 4;
 
     VectorN<float,N> X;
     MatrixN<float,N> P;
     MatrixN<float,N> Q;
     float R;
     void reset(const VectorN<float,N> &x, const MatrixN<float,N> &p, const MatrixN<float,N> q, float r);
-    void update(float z, float Px, float Py, float driftX, float driftY);
+    void update(float z, const VectorN<float,M> &U);
 
 private:
-    float measurementpredandjacobian(VectorN<float,N> &A, float Px, float Py);
+    float measurementpredandjacobian(VectorN<float,N> &A, const VectorN<float,M> &U);
 };
