@@ -27,7 +27,8 @@ class AP_InertialSensor_ADIS1647x : public AP_InertialSensor_Backend {
 public:
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
                                             AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                                            enum Rotation rotation);
+                                            enum Rotation rotation,
+                                            uint8_t drdy_gpio);
 
     /**
      * Configure the sensors and start reading routine.
@@ -38,7 +39,8 @@ public:
 private:
     AP_InertialSensor_ADIS1647x(AP_InertialSensor &imu,
                                 AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                                enum Rotation rotation);
+                                enum Rotation rotation,
+                                uint8_t drdy_gpio);
 
     /*
       initialise driver
@@ -59,6 +61,7 @@ private:
     uint8_t accel_instance;
     uint8_t gyro_instance;
     enum Rotation rotation;
+    uint8_t drdy_pin;
 
     uint16_t last_counter;
     bool done_first_read;
