@@ -106,7 +106,8 @@ public:
         GPS_TYPE_SBP   = 6,
         GPS_TYPE_FILE  = 7,
         GPS_TYPE_NOVA  = 8,
-        GPS_TYPE_SBP2   = 9,
+        GPS_TYPE_SBP2  = 9,
+        GPS_TYPE_MAV   = 14  // Match GPS_TYPE_MAV in AP_GPS
     };
 
     struct sitl_fdm state;
