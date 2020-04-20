@@ -366,12 +366,16 @@ void Quaternion::from_rotation(enum Rotation rotation)
         q3 = 0.06104854f;
         return;
 
-    case ROTATION_MAX:
     case ROTATION_CUSTOM:
-        // no-op; custom rotations not supported
+        // Error; custom rotations not supported
         AP::internalerror().error(AP_InternalError::error_t::flow_of_control);
         return;
+
+    case ROTATION_MAX:
+        break;
     }
+    // rotation invalid
+    AP::internalerror().error(AP_InternalError::error_t::bad_rotation);
 }
 
 // rotate this quaternion by the given rotation
