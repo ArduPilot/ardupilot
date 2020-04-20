@@ -55,6 +55,8 @@ class SoaringController {
     LowPassFilter<float> _position_x_filter;
     LowPassFilter<float> _position_y_filter;
 
+    Variometer::PolarParams _polarParams;
+
 protected:
     AP_Int8 soar_active;
     AP_Int8 soar_active_ch;
@@ -65,9 +67,6 @@ protected:
     AP_Float thermal_distance_ahead;
     AP_Int16 min_thermal_s;
     AP_Int16 min_cruise_s;
-    AP_Float polar_CD0;
-    AP_Float polar_B;
-    AP_Float polar_K;
     AP_Float alt_max;
     AP_Float alt_min;
     AP_Float alt_cutoff;
