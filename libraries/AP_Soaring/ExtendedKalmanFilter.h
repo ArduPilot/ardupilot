@@ -25,4 +25,6 @@ public:
 
 private:
     float measurementpredandjacobian(VectorN<float,N> &A, const VectorN<float,M> &U);
+
+    void state_update(const VectorN<float,M> &U);
 };
