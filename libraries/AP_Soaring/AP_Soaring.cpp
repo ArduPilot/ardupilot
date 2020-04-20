@@ -307,8 +307,11 @@ void SoaringController::update_thermalling()
 
     Vector3f wind_drift = _ahrs.wind_estimate()*deltaT*_vario.smoothed_climb_rate/_ekf.X[0];
 
+    const float u[4] = {wind_drift.x, wind_drift.y, current_position.x, current_position.y};
+    const VectorN<float,4> u_in{u};
+
     // update the filter
-    _ekf.update(_vario.reading, current_position.x, current_position.y, wind_drift.x, wind_drift.y);
+    _ekf.update(_vario.reading, u_in);
 
     
     _thermalability = (_ekf.X[0]*expf(-powf(_aparm.loiter_radius / _ekf.X[1], 2))) - _vario.get_exp_thermalling_sink();
