@@ -59,6 +59,8 @@ class SoaringController {
     // and the actual climb rate at which the  watchdog will trigger exit.
     static constexpr const float _minSinkBuffer = 1.0f;
 
+    Variometer::PolarParams _polarParams;
+
 protected:
     AP_Int8 soar_active;
     AP_Int8 soar_active_ch;
@@ -69,9 +71,6 @@ protected:
     AP_Float thermal_distance_ahead;
     AP_Int16 min_thermal_s;
     AP_Int16 min_cruise_s;
-    AP_Float polar_CD0;
-    AP_Float polar_B;
-    AP_Float polar_K;
     AP_Float alt_max;
     AP_Float alt_min;
     AP_Float alt_cutoff;
@@ -82,6 +81,7 @@ protected:
     AP_Float vspeed_minalt;
     AP_Float vspeed_maxalt;
     AP_Float vspeed_trigger;
+    AP_Int8 polar_learn;
 
 public:
     SoaringController(AP_AHRS &ahrs, AP_SpdHgtControl &spdHgt, const AP_Vehicle::FixedWing &parms);

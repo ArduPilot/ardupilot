@@ -43,6 +43,9 @@ public:
 	
 	// Rate of change of velocity along X body axis in m/s^2
     virtual float get_VXdot(void)=0;
+
+    // Get demanded accekeration
+    virtual float get_target_accel(void) const = 0;
 	
 	// return current target airspeed
 	virtual float get_target_airspeed(void) const = 0;

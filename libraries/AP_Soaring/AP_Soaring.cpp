@@ -77,7 +77,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @Units:
     // @Range: 0 0.5
     // @User: Advanced
-    AP_GROUPINFO("POLAR_CD0", 9, SoaringController, polar_CD0, 0.027),
+    AP_GROUPINFO("POLAR_CD0", 9, SoaringController, _polarParams.CD0, 0.027),
 
     // @Param: POLAR_B
     // @DisplayName: Induced drag coeffient
@@ -85,7 +85,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @Units:
     // @Range: 0 0.5
     // @User: Advanced
-    AP_GROUPINFO("POLAR_B", 10, SoaringController, polar_B, 0.031),
+    AP_GROUPINFO("POLAR_B", 10, SoaringController, _polarParams.B, 0.031),
 
     // @Param: POLAR_K
     // @DisplayName: Cl factor
@@ -93,7 +93,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @Units: m.m/s/s
     // @Range: 0 0.5
     // @User: Advanced
-    AP_GROUPINFO("POLAR_K", 11, SoaringController, polar_K, 25.6),
+    AP_GROUPINFO("POLAR_K", 11, SoaringController, _polarParams.K, 25.6),
 
     // @Param: ALT_MAX
     // @DisplayName: Maximum soaring altitude, relative to the home location
@@ -182,13 +182,20 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("VSPD_TRIG", 23, SoaringController, vspeed_trigger, -1),
 
+    // @Param: POLAR_LEARN
+    // @DisplayName: Enable learning of the glide polar
+    // @Description: When set to 1, learn the Cd0 and B parameters.
+    // @Range: 0 1
+    // @User: Advanced
+    AP_GROUPINFO("POLAR_LEARN", 44, SoaringController, polar_learn, 0),
+
     AP_GROUPEND
 };
 
 SoaringController::SoaringController(AP_AHRS &ahrs, AP_SpdHgtControl &spdHgt, const AP_Vehicle::FixedWing &parms) :
     _ahrs(ahrs),
     _spdHgt(spdHgt),
-    _vario(ahrs,parms),
+    _vario(ahrs,parms,_polarParams),
     _aparm(parms),
     _throttle_suppressed(true)
 {
@@ -366,8 +373,11 @@ void SoaringController::update_thermalling()
 
     Vector3f wind_drift = _ahrs.wind_estimate()*deltaT*_vario.smoothed_climb_rate/_ekf.X[0];
 
+    const float u[4] = {wind_drift.x, wind_drift.y, current_position.x, current_position.y};
+    const VectorN<float,4> u_in{u};
+
     // update the filter
-    _ekf.update(_vario.reading, current_position.x, current_position.y, wind_drift.x, wind_drift.y);
+    _ekf.update(_vario.reading, u_in);
 
     
     _thermalability = (_ekf.X[0]*expf(-powf(_aparm.loiter_radius / _ekf.X[1], 2))) - _vario.get_exp_thermalling_sink();
@@ -405,7 +415,9 @@ void SoaringController::update_cruising()
 
 void SoaringController::update_vario()
 {
-    _vario.update(polar_K, polar_CD0, polar_B);
+    _vario.update();
+
+    _vario.update_polar_learning(polar_learn, _throttle_suppressed, _spdHgt.get_target_accel());
 }
 
 

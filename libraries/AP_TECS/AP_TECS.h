@@ -71,6 +71,10 @@ public:
         return _vel_dot;
     }
 
+    float get_target_accel(void) const override {
+        return _TAS_rate_dem / _ahrs.get_EAS2TAS();
+    }
+
     // return current target airspeed
     float get_target_airspeed(void) const override {
         return _TAS_dem_adj / _ahrs.get_EAS2TAS();

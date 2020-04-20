@@ -1,26 +1,28 @@
-#include "ExtendedKalmanFilter.h"
+#include "EKF_Polar.h"
 #include "AP_Math/matrixN.h"
 
 
-float ExtendedKalmanFilter::measurementpredandjacobian(VectorN<float,N> &A, const VectorN<float,M> &U)
+float EKF_Polar::measurementpredandjacobian(VectorN<float,N> &A, const VectorN<float,M> &U)
 {
-    // This function computes the Jacobian using equations from
-    // analytical derivation of Gaussian updraft distribution
-    // This expression gets used lots
-    float expon = expf(- (powf(X[2]-U[2], 2) + powf(X[3]-U[3], 2)) / powf(X[1], 2));
-    // Expected measurement
-    float w = X[0] * expon;
+    // This function calculates the Jacobian using equations of theoretical sinkrate as
+    // a function of the glide polar parameters.
+    // Vz = CD0 * Vx^3 / K + B*K/Vx, where K = (2*m*g)/(1.225*S)
 
-    // Elements of the Jacobian
-    A[0] = expon;
-    A[1] = 2 * X[0] * ((powf(X[2]-U[2],2) + powf(X[3]-U[3],2)) / powf(X[1],3)) * expon;
-    A[2] = -2 * (X[0] * (X[2]-U[2]) / powf(X[1],2)) * expon;
-    A[3] = -2 * (X[0] * (X[3]-U[3]) / powf(X[1],2)) * expon;
+    float V = U[0];
+    // float roll = U[1];
+    float k = U[2];
+
+    A[0] = powf(V,3) / k;
+    A[1] = k / V;
+
+    // Expected measurement
+    float w = X[0] * A[0] + X[1] * A[1];
+    
     return w;
 }
 
 
-void ExtendedKalmanFilter::reset(const VectorN<float,N> &x, const MatrixN<float,N> &p, const MatrixN<float,N> q, float r)
+void EKF_Polar::reset(const VectorN<float,N> &x, const MatrixN<float,N> &p, const MatrixN<float,N> q, float r)
 {
     P = p;
     X = x;
@@ -29,7 +31,7 @@ void ExtendedKalmanFilter::reset(const VectorN<float,N> &x, const MatrixN<float,
 }
 
 
-void ExtendedKalmanFilter::update(float z, const VectorN<float,M> &U)
+void EKF_Polar::update(float z, const VectorN<float,M> &U)
 {
     MatrixN<float,N> tempM;
     VectorN<float,N> H;
@@ -68,8 +70,12 @@ void ExtendedKalmanFilter::update(float z, const VectorN<float,M> &U)
     // X = x1 + K * (z - z1);
     X += K * (z - z1);
 
-    // Make sure X[1] stays positive.
-    X[1] = X[1]>40.0 ? X[1]: 40.0;
+    // Make sure values stay sensible.
+    X[0] = X[0]>0.01 ? X[0]: 0.01;
+    X[1] = X[1]>0.01 ? X[1]: 0.01;
+    X[0] = X[0]<0.10 ? X[0]: 0.10;
+    X[1] = X[1]<0.10 ? X[1]: 0.10;
+
 
     // Correct the covariance too.
     // LINE 46
@@ -81,9 +87,7 @@ void ExtendedKalmanFilter::update(float z, const VectorN<float,M> &U)
     P.force_symmetry();
 }
 
-void ExtendedKalmanFilter::state_update(const VectorN<float,M> &U)
+void EKF_Polar::state_update(const VectorN<float,M> &U)
 {
     // Estimate new state from old.
-    X[2] += U[0];
-    X[3] += U[1];
 }
