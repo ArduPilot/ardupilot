@@ -68,6 +68,10 @@ public:
     float get_pitch() const { return _pos_control.get_pitch(); }
     float get_yaw() const { return _yaw; }
 
+    /// returns true if update has been run recently
+    /// used by vehicle code to determine if get_yaw() is valid
+    bool is_active() const;
+
     // get_closest_point_on_circle - returns closest point on the circle
     //  circle's center should already have been set
     //  closest point on the circle will be placed in result
@@ -136,6 +140,7 @@ private:
     float       _angular_vel;   // angular velocity in radians/sec
     float       _angular_vel_max;   // maximum velocity in radians/sec
     float       _angular_accel; // angular acceleration in radians/sec/sec
+    uint32_t    _last_update_ms;    // system time of last update
 
     // terrain following variables
     bool        _terrain_alt;           // true if _center.z is alt-above-terrain, false if alt-above-ekf-origin

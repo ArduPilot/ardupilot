@@ -150,6 +150,13 @@ void AC_Circle::set_radius(float radius_cm)
     calc_velocities(false);
 }
 
+/// returns true if update has been run recently
+/// used by vehicle code to determine if get_yaw() is valid
+bool AC_Circle::is_active() const
+{
+    return (AP_HAL::millis() - _last_update_ms < 200);
+}
+
 /// update - update circle controller
 bool AC_Circle::update()
 {
@@ -218,6 +225,9 @@ bool AC_Circle::update()
 
     // update position controller
     _pos_control.update_xy_controller();
+
+    // set update time
+    _last_update_ms = AP_HAL::millis();
 
     return true;
 }
