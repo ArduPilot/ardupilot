@@ -5551,3 +5551,14 @@ switch value'''
         psd["F"] = freqmap
 
         return psd
+
+    def model_defaults_filepath(self, vehicle, model):
+
+        vinfo = vehicleinfo.VehicleInfo()
+        defaults_filepath = vinfo.options[vehicle]["frames"][model]["default_params_filename"]
+        if isinstance(defaults_filepath, str):
+            defaults_filepath = [defaults_filepath]
+        defaults_list = []
+        for d in defaults_filepath:
+            defaults_list.append(os.path.join(testdir, d))
+        return ','.join(defaults_list)
