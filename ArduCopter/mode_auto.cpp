@@ -302,7 +302,7 @@ void ModeAuto::circle_start()
     copter.circle_nav->init(copter.circle_nav->get_center(), copter.circle_nav->center_is_terrain_alt());
 
     if (auto_yaw.mode() != AUTO_YAW_ROI) {
-        auto_yaw.set_mode(AUTO_YAW_HOLD);
+        auto_yaw.set_mode(AUTO_YAW_CIRCLE);
     }
 }
 
@@ -829,6 +829,16 @@ void ModeAuto::rtl_run()
 //      called by auto_run at 100hz or more
 void ModeAuto::circle_run()
 {
+    // process pilot's yaw input
+    float target_yaw_rate = 0;
+    if (!copter.failsafe.radio) {
+        // get pilot's desired yaw rate
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        if (!is_zero(target_yaw_rate)) {
+            auto_yaw.set_mode(AUTO_YAW_HOLD);
+        }
+    }
+
     // call circle controller
     copter.failsafe_terrain_set_status(copter.circle_nav->update());
 
@@ -837,7 +847,7 @@ void ModeAuto::circle_run()
 
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control->input_euler_angle_roll_pitch_yaw(copter.circle_nav->get_roll(), copter.circle_nav->get_pitch(), copter.circle_nav->get_yaw(), true);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(copter.circle_nav->get_roll(), copter.circle_nav->get_pitch(), target_yaw_rate);
     } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
         attitude_control->input_euler_angle_roll_pitch_yaw(copter.circle_nav->get_roll(), copter.circle_nav->get_pitch(), auto_yaw.yaw(), true);
