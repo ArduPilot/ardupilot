@@ -132,19 +132,9 @@ void Sub::init_ardupilot()
         // We only have onboard baro
         // No external underwater depth sensor detected
         barometer.set_primary_baro(0);
-#if HAL_NAVEKF2_AVAILABLE
-        ahrs.EKF2.set_baro_alt_noise(10.0f); // Readings won't correspond with rest of INS
-#endif
-#if HAL_NAVEKF3_AVAILABLE
-        ahrs.EKF3.set_baro_alt_noise(10.0f);
-#endif
+        ahrs.set_alt_measurement_noise(10.0f);  // Readings won't correspond with rest of INS
     } else {
-#if HAL_NAVEKF2_AVAILABLE
-        ahrs.EKF2.set_baro_alt_noise(0.1f);
-#endif
-#if HAL_NAVEKF3_AVAILABLE
-        ahrs.EKF3.set_baro_alt_noise(0.1f);
-#endif
+        ahrs.set_alt_measurement_noise(0.1f);
     }
 
     leak_detector.init();
