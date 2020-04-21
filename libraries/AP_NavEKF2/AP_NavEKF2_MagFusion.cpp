@@ -838,7 +838,7 @@ void NavEKF2_core::fuseEulerYaw()
             extNavDataDelayed.quat.to_euler(euler321.x, euler321.y, euler321.z);
             measured_yaw =  euler321.z;
         } else {
-            if (imuSampleTime_ms > prevBetaStep_ms + 1000 && yawEstimator != nullptr) {
+            if (imuSampleTime_ms - prevBetaStep_ms > 1000 && yawEstimator != nullptr) {
                 float gsfYaw, gsfYawVariance;
                 if (yawEstimator->getYawData(&gsfYaw, &gsfYawVariance) &&
                     is_positive(gsfYawVariance) &&
@@ -897,7 +897,7 @@ void NavEKF2_core::fuseEulerYaw()
             euler312 = extNavDataDelayed.quat.to_vector312();
             measured_yaw =  euler312.z;
         } else {
-            if (imuSampleTime_ms > prevBetaStep_ms + 1000 && yawEstimator != nullptr) {
+            if (imuSampleTime_ms - prevBetaStep_ms > 1000 && yawEstimator != nullptr) {
                 float gsfYaw, gsfYawVariance;
                 if (yawEstimator->getYawData(&gsfYaw, &gsfYawVariance) &&
                     is_positive(gsfYawVariance) &&
@@ -1247,9 +1247,9 @@ bool NavEKF2_core::EKFGSF_resetMainFilterYaw()
         ResetVelocity();
         ResetPosition();
 
-		// reset test ratios that are reported to prevent a race condition with the external state machine requesting the reset
-		velTestRatio = 0.0f;
-		posTestRatio = 0.0f;
+        // reset test ratios that are reported to prevent a race condition with the external state machine requesting the reset
+        velTestRatio = 0.0f;
+        posTestRatio = 0.0f;
 
         return true;
 
