@@ -205,7 +205,7 @@ void Copter::check_ekf_reset()
     }
 
 #if AP_AHRS_NAVEKF_AVAILABLE && (HAL_NAVEKF2_AVAILABLE || HAL_NAVEKF3_AVAILABLE)
-    // check for change in primary EKF (log only, AC_WPNav handles position target adjustment)
+    // check for change in primary EKF, reset attitude target and log.  AC_PosControl handles position target adjustment
     if ((ahrs.get_primary_core_index() != ekf_primary_core) && (ahrs.get_primary_core_index() != -1)) {
         attitude_control->inertial_frame_reset();
         ekf_primary_core = ahrs.get_primary_core_index();
