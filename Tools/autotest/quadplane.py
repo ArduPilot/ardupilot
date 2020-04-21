@@ -64,14 +64,7 @@ class AutoTestQuadPlane(AutoTest):
         pass
 
     def defaults_filepath(self):
-        vinfo = vehicleinfo.VehicleInfo()
-        defaults_filepath = vinfo.options["ArduPlane"]["frames"][self.frame]["default_params_filename"]
-        if isinstance(defaults_filepath, str):
-            defaults_filepath = [defaults_filepath]
-        defaults_list = []
-        for d in defaults_filepath:
-            defaults_list.append(os.path.join(testdir, d))
-        return ','.join(defaults_list)
+        return self.model_defaults_filepath("ArduPlane",self.frame)
 
     def is_plane(self):
         return True
