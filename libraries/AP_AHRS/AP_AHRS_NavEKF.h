@@ -278,6 +278,9 @@ public:
     // is the EKF backend doing its own sensor logging?
     bool have_ekf_logging(void) const override;
 
+    // return the index of the primary core or -1 if no primary core selected
+    int8_t get_primary_core_index() const override;
+
     // get the index of the current primary accelerometer sensor
     uint8_t get_primary_accel_index(void) const override;
 
