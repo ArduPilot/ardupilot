@@ -240,8 +240,8 @@ void NavEKF2_core::setAidingMode()
             }
             posAidLossCritical = (imuSampleTime_ms - lastRngBcnPassTime_ms > maxLossTime_ms) &&
                    (imuSampleTime_ms - lastPosPassTime_ms > maxLossTime_ms);
-            posAidLossPending = (imuSampleTime_ms > lastRngBcnPassTime_ms + frontend->_gsfResetDelay) &&
-                    (imuSampleTime_ms > lastPosPassTime_ms + frontend->_gsfResetDelay);
+            posAidLossPending = (imuSampleTime_ms - lastRngBcnPassTime_ms > frontend->_gsfResetDelay) &&
+                    (imuSampleTime_ms - lastPosPassTime_ms > frontend->_gsfResetDelay);
         }
 
         if (attAidLossCritical) {
@@ -544,7 +544,7 @@ void NavEKF2_core::runYawEstimator()
     if (yawEstimator != nullptr && frontend->_fusionModeGPS <= 1) {
         float trueAirspeed;
         if (is_positive(defaultAirSpeed) && assume_zero_sideslip()) {
-            if (imuDataDelayed.time_ms < (tasDataDelayed.time_ms + 5000)) {
+            if (imuDataDelayed.time_ms - tasDataDelayed.time_ms < 5000) {
                 trueAirspeed = tasDataDelayed.tas;
             } else {
                 trueAirspeed = defaultAirSpeed * AP::ahrs().get_EAS2TAS();
@@ -562,7 +562,7 @@ void NavEKF2_core::runYawEstimator()
         }
 
         // action an external reset request
-        if (EKFGSF_yaw_reset_request_ms > 0 && imuSampleTime_ms < (EKFGSF_yaw_reset_request_ms + YAW_RESET_TO_GSF_TIMEOUT_MS)) {
+        if (EKFGSF_yaw_reset_request_ms > 0 && imuSampleTime_ms - EKFGSF_yaw_reset_request_ms < YAW_RESET_TO_GSF_TIMEOUT_MS) {
             EKFGSF_resetMainFilterYaw();
         }
     }
