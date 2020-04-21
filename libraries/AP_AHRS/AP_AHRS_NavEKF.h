@@ -298,6 +298,9 @@ public:
     // check whether external navigation is providing yaw.  Allows compass pre-arm checks to be bypassed
     bool is_ext_nav_used_for_yaw(void) const override;
 
+    // set and save the ALT_M_NSE parameter value
+    void set_alt_measurement_noise(float noise) override;
+
     // these are only out here so vehicles can reference them for parameters
 #if HAL_NAVEKF2_AVAILABLE
     NavEKF2 EKF2;
