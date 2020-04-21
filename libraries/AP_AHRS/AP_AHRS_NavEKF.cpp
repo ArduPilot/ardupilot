@@ -2151,6 +2151,32 @@ const Vector3f &AP_AHRS_NavEKF::get_accel_ef() const
     return get_accel_ef(get_primary_accel_index());
 }
 
+// return the index of the primary core or -1 if no primary core selected
+int8_t AP_AHRS_NavEKF::get_primary_core_index() const
+{
+    switch (active_EKF_type()) {
+    case EKFType::NONE:
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    case EKFType::SITL:
+#endif
+        // SITL and DCM have only one core
+        return 0;
+
+#if HAL_NAVEKF2_AVAILABLE
+    case EKFType::TWO:
+        return EKF2.getPrimaryCoreIndex();
+#endif
+
+#if HAL_NAVEKF3_AVAILABLE
+    case EKFType::THREE:
+        return EKF3.getPrimaryCoreIndex();
+#endif
+    }
+
+    // we should never get here
+    AP::internalerror().error(AP_InternalError::error_t::flow_of_control);
+    return -1;
+}
 
 // get the index of the current primary accelerometer sensor
 uint8_t AP_AHRS_NavEKF::get_primary_accel_index(void) const
