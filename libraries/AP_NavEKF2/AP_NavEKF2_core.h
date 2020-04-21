@@ -1251,8 +1251,8 @@ private:
     float InitialGyroBiasUncertainty(void) const;
 
     // The following declarations are used to control when the main navigation filter resets it's yaw to the estimate provided by the GSF
-	uint64_t EKFGSF_yaw_reset_ms;	        // timestamp of last emergency yaw reset (uSec)
-	uint64_t EKFGSF_yaw_reset_request_ms;   // timestamp of last emergency yaw reset request (uSec)
+	uint32_t EKFGSF_yaw_reset_ms;	        // timestamp of last emergency yaw reset (uSec)
+	uint32_t EKFGSF_yaw_reset_request_ms;   // timestamp of last emergency yaw reset request (uSec)
     uint8_t EKFGSF_yaw_reset_count;         // number of emergency yaw resets performed
     bool EKFGSF_run_filterbank;             // true when the filter bank is active
 };
