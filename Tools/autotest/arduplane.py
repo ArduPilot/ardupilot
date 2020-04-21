@@ -1644,12 +1644,12 @@ class AutoTestPlane(AutoTest):
 
     def fly_soaring(self):
 
-        self.customise_SITL_commandline([],
-                                        model="plane-soaring",
-                                        defaults_filepath=os.path.join(testdir, "default_params/plane.parm"))
+        model="plane-soaring"
 
-        self.set_parameter("SOAR_ENABLE", 1)
-        self.repeatedly_apply_parameter_file(os.path.join(testdir, 'default_params/plane-soaring.parm'))
+        self.customise_SITL_commandline([],
+                                        model=model,
+                                        defaults_filepath=self.model_defaults_filepath("ArduPlane",model))
+
         self.load_mission('CMAC-soar.txt')
 
 
