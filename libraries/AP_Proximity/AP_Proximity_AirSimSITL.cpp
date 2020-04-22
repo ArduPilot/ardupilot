@@ -41,7 +41,7 @@ void AP_Proximity_AirSimSITL::update(void)
         if (point.is_zero()) {
             continue;
         }
-        const float angle_deg = wrap_360(degrees(atan2f(-point.y, point.x)));
+        const float angle_deg = wrap_360(degrees(atan2f(point.y, point.x)));
         const uint8_t sector = convert_angle_to_sector(angle_deg);
 
         const Vector2f v = Vector2f(point.x, point.y);
