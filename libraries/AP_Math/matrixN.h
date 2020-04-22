@@ -4,6 +4,8 @@
 
 #pragma once
 
+#pragma GCC optimize("O2")
+
 #include "math.h"
 #include <stdint.h>
 #include "vectorN.h"
