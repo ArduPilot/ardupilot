@@ -76,6 +76,21 @@ void Variometer::update(const float polar_K, const float polar_Cd0, const float 
     float expected_roll = atanf(powf(_aspd_filt_constrained,2)/(GRAVITY_MSS*_aparm.loiter_radius));
     _expected_thermalling_sink = calculate_aircraft_sinkrate(expected_roll, polar_K, polar_Cd0, polar_B);
 
+// @LoggerMessage: VAR
+// @Vehicles: Plane
+// @Description: Variometer data
+// @Field: TimeUS: Time since system startup
+// @Field: aspd_raw: always zero
+// @Field: aspd_filt: filtered and constrained airspeed
+// @Field: alt: AHRS altitude
+// @Field: roll: AHRS roll
+// @Field: raw: estimated air vertical speed
+// @Field: filt: low-pass filtered air vertical speed
+// @Field: cl: raw climb rate
+// @Field: fc: filtered climb rate
+// @Field: exs: expected sink rate relative to air in thermalling turn
+// @Field: dsp: average acceleration along X axis
+// @Field: dspb: detected bias in average acceleration along X axis
     AP::logger().Write("VAR", "TimeUS,aspd_raw,aspd_filt,alt,roll,raw,filt,cl,fc,exs,dsp,dspb", "Qfffffffffff",
                        AP_HAL::micros64(),
                        (double)0.0,
