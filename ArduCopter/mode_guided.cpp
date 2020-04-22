@@ -384,18 +384,8 @@ void ModeGuided::takeoff_run()
         copter.landinggear.retract_after_takeoff();
 
         // switch to position control mode but maintain current target
-        Location dest_loc(wp_nav->get_wp_destination());
-        Location::AltFrame frame = wp_nav->origin_and_destination_are_terrain_alt()
-                                                ? Location::AltFrame::ABOVE_TERRAIN
-                                                : Location::AltFrame::ABOVE_HOME;
-        int32_t target_alt_cm;
-        if (dest_loc.get_alt_cm(frame, target_alt_cm)) {
-            dest_loc.set_alt_cm(target_alt_cm, frame);
-            set_destination(dest_loc);
-        } else {
-            const Vector3f& target = wp_nav->get_wp_destination();
-            set_destination(target);
-        }
+        const Vector3f target = wp_nav->get_wp_destination();
+        set_destination(target, false, 0, false, 0, false, wp_nav->origin_and_destination_are_terrain_alt());
     }
 }
 
