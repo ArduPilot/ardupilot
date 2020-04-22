@@ -590,6 +590,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "F4BY",
                 "mRoX21-777",
                 "mRoControlZeroF7",
+                "mRoNexus",
                 "F35Lightning",
                 "speedybeef4",
                 "SuccexF4",
