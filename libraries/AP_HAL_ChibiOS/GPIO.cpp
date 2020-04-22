@@ -363,8 +363,9 @@ bool GPIO::wait_pin(uint8_t pin, INTERRUPT_TRIGGER_TYPE mode, uint32_t timeout_u
     g->thd_wait = nullptr;
     _attach_interruptI(g->pal_line,
                        palcallback_t(nullptr),
-                       g,
+                       nullptr,
                        mode);
     osalSysUnlock();
-    return msg != MSG_TIMEOUT;
+
+    return msg == MSG_OK;
 }
