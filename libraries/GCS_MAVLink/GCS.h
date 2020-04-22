@@ -225,7 +225,6 @@ public:
     virtual void send_nav_controller_output() const = 0;
     virtual void send_pid_tuning() = 0;
     void send_ahrs2();
-    void send_ahrs3();
     void send_system_time();
     void send_rc_channels() const;
     void send_rc_channels_raw() const;
