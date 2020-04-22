@@ -1226,16 +1226,22 @@ class AutoTest(ABC):
                     if not re.search("[.]cpp$", f):
                         continue
                     filepath = os.path.join(root, f)
+                    if "AP_Logger/examples" in filepath:
+                        # this is the sample file which contains examples...
+                        continue
                     count = 0
                     for line in open(filepath,'rb').readlines():
                         if type(line) == bytes:
                             line = line.decode("utf-8")
                         if state == state_outside:
-                            if re.match("\s*AP::logger\(\)[.]Write\(", line):
+                            if (re.match("\s*AP::logger\(\)[.]Write\(", line) or
+                                re.match("\s*logger[.]Write\(", line)):
                                 state = state_inside
+                                line = re.sub("//.*", "", line) # trim comments
                                 log_write_statement = line
                             continue
                         if state == state_inside:
+                            line = re.sub("//.*", "", line) # trim comments
                             log_write_statement += line
                             if re.match(".*\);", line):
                                 log_write_statements.append(log_write_statement)
@@ -1251,8 +1257,13 @@ class AutoTest(ABC):
         for log_write_statement in log_write_statements:
             for define in defines:
                 log_write_statement = re.sub(define, defines[define], log_write_statement)
-            my_re = ' AP::logger\(\)[.]Write\(\s*"(\w+)"\s*,\s*"([\w,]+)".*\);'
+            # fair warning: order is important here because of the
+            # NKT/XKT special case below....
+            my_re = ' logger[.]Write\(\s*"(\w+)"\s*,\s*"([\w,]+)".*\);'
             m = re.match(my_re, log_write_statement)
+            if m is None:
+                my_re = ' AP::logger\(\)[.]Write\(\s*"(\w+)"\s*,\s*"([\w,]+)".*\);'
+                m = re.match(my_re, log_write_statement)
             if m is None:
                 if "TimeUS,C,Cnt,IMUMin,IMUMax,EKFMin" in log_write_statement:
                     # special-case for logging ekf timing:
@@ -1263,7 +1274,7 @@ class AutoTest(ABC):
                             raise NotAchievedException("Did not match (%s)", x)
                         results.append((m.group(1), m.group(2)))
                     continue
-                raise NotAchievedException("Did not match (%s)" % (log_write_statement))
+                raise NotAchievedException("Did not match (%s) with (%s)" % (log_write_statement, str(my_re)))
             else:
                 results.append((m.group(1), m.group(2)))
 
@@ -1334,12 +1345,12 @@ class AutoTest(ABC):
                 docco_ids[name]["labels"].append(fieldname)
 
         code_ids = self.all_log_format_ids()
-        print("Code ids: (%s)" % str(code_ids.keys()))
-        print("Docco ids: (%s)" % str(docco_ids.keys()))
+        print("Code ids: (%s)" % str(sorted(code_ids.keys())))
+        print("Docco ids: (%s)" % str(sorted(docco_ids.keys())))
 
         for name in sorted(code_ids.keys()):
             if name not in docco_ids:
-                self.progress("Undocumented message: %s" % name)
+                self.progress("Undocumented message: %s" % str(name))
                 continue
             seen_labels = {}
             for label in code_ids[name]["labels"].split(","):
