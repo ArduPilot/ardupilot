@@ -32,16 +32,47 @@ public:
     }
 
     // multiply two vectors to give a matrix, in-place
-    void mult(const VectorN<T,N> &A, const VectorN<T,N> &B);
+    void mult(const VectorN<T,N> &A, const VectorN<T,N> &B)
+    {
+        for (uint8_t i = 0; i < N; i++) {
+            for (uint8_t j = 0; j < N; j++) {
+                v[i][j] = A[i] * B[j];
+            }
+        }
+    }
 
     // subtract B from the matrix
-    MatrixN<T,N> &operator -=(const MatrixN<T,N> &B);
+    MatrixN<T,N> &operator -=(const MatrixN<T,N> &B)
+    {
+    for (uint8_t i = 0; i < N; i++) {
+        for (uint8_t j = 0; j < N; j++) {
+            v[i][j] -= B.v[i][j];
+        }
+    }
+    return *this;
+    }
 
     // add B to the matrix
-    MatrixN<T,N> &operator +=(const MatrixN<T,N> &B);
+    MatrixN<T,N> &operator +=(const MatrixN<T,N> &B)
+    {
+        for (uint8_t i = 0; i < N; i++) {
+            for (uint8_t j = 0; j < N; j++) {
+                v[i][j] += B.v[i][j];
+            }
+        }
+        return *this;
+    }
     
     // Matrix symmetry routine
-    void force_symmetry(void);
+    void force_symmetry(void)
+    {
+    for (uint8_t i = 0; i < N; i++) {
+        for (uint8_t j = 0; j < (i - 1); j++) {
+            v[i][j] = (v[i][j] + v[j][i]) / 2;
+            v[j][i] = v[i][j];
+        }
+    }
+}
 
 private:
     T v[N][N];
