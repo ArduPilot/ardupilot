@@ -56,10 +56,17 @@ public:
     /* attach interrupt via ioline_t */
     bool _attach_interrupt(ioline_t line, AP_HAL::Proc p, uint8_t mode);
 
+    /*
+      block waiting for a pin to change. A timeout of 0 means wait
+      forever. Return true on pin change, false on timeout
+     */
+    bool wait_pin(uint8_t pin, INTERRUPT_TRIGGER_TYPE mode, uint32_t timeout_us) override;
+    
 private:
     bool _usb_connected;
     bool _ext_started;
 
+    bool _attach_interruptI(ioline_t line, palcallback_t cb, void *p, uint8_t mode);
     bool _attach_interrupt(ioline_t line, palcallback_t cb, void *p, uint8_t mode);
 #ifdef HAL_PIN_ALT_CONFIG
     void setup_alt_config(void);
