@@ -57,6 +57,13 @@ void Rover::Log_Write_Depth()
     }
     rangefinder_last_reading_ms = reading_ms;
 
+// @LoggerMessage: DPTH
+// @Description: Depth messages on boats with downwards facing range finder
+// @Field: TimeUS: Time since system startup
+// @Field: Lat: Latitude 
+// @Field: Lng: Longitude   
+// @Field: Depth: Depth as detected by the sensor
+
     logger.Write("DPTH", "TimeUS,Lat,Lng,Depth",
                         "sDUm", "FGG0", "QLLf",
                         AP_HAL::micros64(),
@@ -138,6 +145,18 @@ void Rover::Log_Write_Sail()
         wind_speed_true = g2.windvane.get_true_wind_speed();
         wind_speed_apparent = g2.windvane.get_apparent_wind_speed();
     }
+
+// @LoggerMessage: SAIL
+// @Description: Sailboat information
+// @Field: TimeUS: Time since system startup
+// @Field: WndDrTru: True wind direction
+// @Field: WndDrApp: Apparent wind direction, in body-frame
+// @Field: WndSpdTru: True wind speed
+// @Field: WndSpdApp: Apparent wind Speed
+// @Field: MainOut: Normalized mainsail output 
+// @Field: WingOut: Normalized wingsail output
+// @Field: VMG: Velocity made good (speed at which vehicle is making progress directly towards destination)
+
     logger.Write("SAIL", "TimeUS,WndDrTru,WndDrApp,WndSpdTru,WndSpdApp,MainOut,WingOut,VMG",
                         "shhnn%%n", "F0000000", "Qfffffff",
                         AP_HAL::micros64(),
@@ -249,8 +268,25 @@ void Rover::Log_Write_Vehicle_Startup_Messages()
 
 const LogStructure Rover::log_structure[] = {
     LOG_COMMON_STRUCTURES,
+
+// @LoggerMessage: STRT
+// @Description: Startup messages
+// @Field: TimeUS: Time since system startup
+// @Field: SType: Type of startup
+// @Field: CTot: Total number of commands in the mission
+
     { LOG_STARTUP_MSG, sizeof(log_Startup),
       "STRT", "QBH",        "TimeUS,SType,CTot", "s--", "F--" },
+
+// @LoggerMessage: THR
+// @Description: Throttle related messages
+// @Field: TimeUS: Time since system startup
+// @Field: ThrIn: Throttle Input
+// @Field: ThrOut: Throttle Output 
+// @Field: DesSpeed: Desired speed 
+// @Field: Speed: Actual speed
+// @Field: AccY: Vehicle's acceleration in Y-Axis
+
     { LOG_THR_MSG, sizeof(log_Throttle),
       "THR", "Qhffff", "TimeUS,ThrIn,ThrOut,DesSpeed,Speed,AccY", "s--nno", "F--000" },
 
@@ -266,8 +302,31 @@ const LogStructure Rover::log_structure[] = {
 
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),
       "NTUN", "QfffHf", "TimeUS,WpDist,WpBrg,DesYaw,Yaw,XTrack", "smhhdm", "F000B0" },
+    
+// @LoggerMessage: STER
+// @Description: Steering related messages
+// @Field: TimeUS: Time since system startup
+// @Field: SteerIn: Steering input
+// @Field: SteerOut: Normalized steering output 
+// @Field: DesLatAcc: Desired lateral acceleration
+// @Field: LatAcc: Actual lateral acceleration
+// @Field: DesTurnRate: Desired turn rate
+// @Field: TurnRate: Actual turn rate
+    
     { LOG_STEERING_MSG, sizeof(log_Steering),
       "STER", "Qhfffff",   "TimeUS,SteerIn,SteerOut,DesLatAcc,LatAcc,DesTurnRate,TurnRate", "s--ookk", "F--0000" },
+
+// @LoggerMessage: GUID
+// @Description: Guided mode target information
+// @Field: TimeUS: Time since system startup
+// @Field: Type: Type of guided mode
+// @Field: pX: Target position, X-Axis
+// @Field: pY: Target position, Y-Axis
+// @Field: pZ: Target position, Z-Axis
+// @Field: vX: Target velocity, X-Axis
+// @Field: vY: Target velocity, Y-Axis
+// @Field: vZ: Target velocity, Z-Axis
+    
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
       "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ", "s-mmmnnn", "F-000000" },
 };
