@@ -307,7 +307,6 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_SIMSTATE,
     MSG_SYSTEM_TIME,
     MSG_AHRS2,
-    MSG_AHRS3,
     MSG_MAG_CAL_REPORT,
     MSG_MAG_CAL_PROGRESS,
     MSG_EKF_STATUS_REPORT,
