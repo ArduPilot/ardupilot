@@ -15,7 +15,9 @@ AP_Compass_Backend::AP_Compass_Backend()
 void AP_Compass_Backend::rotate_field(Vector3f &mag, uint8_t instance)
 {
     Compass::mag_state &state = _compass._state[Compass::StateIndex(instance)];
-    mag.rotate(MAG_BOARD_ORIENTATION);
+    if (MAG_BOARD_ORIENTATION != ROTATION_NONE) {
+        mag.rotate(MAG_BOARD_ORIENTATION);
+    }
     mag.rotate(state.rotation);
 
     if (!state.external) {
