@@ -55,6 +55,7 @@ public:
         i2c_isr                     = (1U << 19),  // 0x80000  524288
         flow_of_control             = (1U << 20),  //0x100000  1048576 for generic we-should-never-get-here situations
         switch_full_sector_recursion= (1U << 21),  //0x200000  2097152
+        bad_rotation                = (1U << 22),  //0x400000  4194304
     };
 
     void error(const AP_InternalError::error_t error);
