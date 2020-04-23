@@ -118,10 +118,13 @@ void Motor::current_and_voltage(const struct sitl_input &input, float &voltage, 
     float motor_speed = constrain_float((input.servos[motor_offset+servo]-1100)/900.0, 0, 1);
 
     // assume 10A per motor at full speed
-    current = 10 * motor_speed;
+    //current = 10 * motor_speed;
+    // assume 20A per motor at full speed
+    current = 20 * motor_speed;
 
     // assume 3S, and full throttle drops voltage by 0.7V
     if (AP::sitl()) {
-        voltage = AP::sitl()->batt_voltage - motor_speed * 0.7;
+        //voltage = AP::sitl()->batt_voltage - motor_speed * 0.7;
+        voltage = AP::sitl()->batt_voltage - motor_speed * 1.0;
     }
 }
