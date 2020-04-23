@@ -513,7 +513,7 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
             do_aux_function_change_mode(Mode::Number::ALT_HOLD, ch_flag);
             break;
 
-	case AUX_FUNC::FLOWHOLD:
+        case AUX_FUNC::FLOWHOLD:
 #if OPTFLOW == ENABLED
             do_aux_function_change_mode(Mode::Number::FLOWHOLD, ch_flag);
 #endif

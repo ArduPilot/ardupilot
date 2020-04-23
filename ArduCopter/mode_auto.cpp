@@ -1053,7 +1053,7 @@ Location ModeAuto::terrain_adjusted_location(const AP_Mission::Mission_Command& 
 }
 
 /********************************************************************************/
-//	Nav (Must) commands
+// Nav (Must) commands
 /********************************************************************************/
 
 // do_takeoff - initiate takeoff navigation command
@@ -1343,7 +1343,7 @@ void ModeAuto::do_nav_delay(const AP_Mission::Mission_Command& cmd)
 }
 
 /********************************************************************************/
-//	Condition (May) commands
+// Condition (May) commands
 /********************************************************************************/
 
 void ModeAuto::do_wait_delay(const AP_Mission::Mission_Command& cmd)
@@ -1359,15 +1359,15 @@ void ModeAuto::do_within_distance(const AP_Mission::Mission_Command& cmd)
 
 void ModeAuto::do_yaw(const AP_Mission::Mission_Command& cmd)
 {
-	auto_yaw.set_fixed_yaw(
-		cmd.content.yaw.angle_deg,
-		cmd.content.yaw.turn_rate_dps,
-		cmd.content.yaw.direction,
-		cmd.content.yaw.relative_angle > 0);
+    auto_yaw.set_fixed_yaw(
+        cmd.content.yaw.angle_deg,
+        cmd.content.yaw.turn_rate_dps,
+        cmd.content.yaw.direction,
+        cmd.content.yaw.relative_angle > 0);
 }
 
 /********************************************************************************/
-//	Do (Now) commands
+// Do (Now) commands
 /********************************************************************************/
 
 
@@ -1401,7 +1401,7 @@ void ModeAuto::do_set_home(const AP_Mission::Mission_Command& cmd)
 // do_roi - starts actions required by MAV_CMD_DO_SET_ROI
 //          this involves either moving the camera to point at the ROI (region of interest)
 //          and possibly rotating the copter to point at the ROI if our mount type does not support a yaw feature
-//	TO-DO: add support for other features of MAV_CMD_DO_SET_ROI including pointing at a given waypoint
+// TO-DO: add support for other features of MAV_CMD_DO_SET_ROI including pointing at a given waypoint
 void ModeAuto::do_roi(const AP_Mission::Mission_Command& cmd)
 {
     auto_yaw.set_roi(cmd.content.location);
@@ -1471,7 +1471,7 @@ void ModeAuto::do_RTL(void)
 }
 
 /********************************************************************************/
-//	Verify Nav (Must) commands
+// Verify Nav (Must) commands
 /********************************************************************************/
 
 // verify_takeoff - check if we have completed the takeoff
@@ -1778,18 +1778,18 @@ bool ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     // start timer if necessary
     if (loiter_time == 0) {
         loiter_time = millis();
-		if (loiter_time_max > 0) {
-			// play a tone
-			AP_Notify::events.waypoint_complete = 1;
-			}
+        if (loiter_time_max > 0) {
+            // play a tone
+            AP_Notify::events.waypoint_complete = 1;
+        }
     }
 
     // check if timer has run out
     if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
-		if (loiter_time_max == 0) {
-			// play a tone
-			AP_Notify::events.waypoint_complete = 1;
-			}
+        if (loiter_time_max == 0) {
+            // play a tone
+            AP_Notify::events.waypoint_complete = 1;
+        }
         gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
     }
