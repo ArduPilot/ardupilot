@@ -313,9 +313,6 @@ void NavEKF2_core::readIMUData()
     // average IMU sampling rate
     dtIMUavg = ins.get_loop_delta_t();
 
-    // the imu sample time is used as a common time reference throughout the filter
-    imuSampleTime_ms = AP_HAL::millis();
-
     // use the nominated imu or primary if not available
     uint8_t accel_active, gyro_active;
 
