@@ -404,7 +404,7 @@ void NavEKF3_core::SelectMagFusion()
         // above
         readMagData();
     }
-    
+
     // If we are using the compass and the magnetometer has been unhealthy for too long we declare a timeout
     if (magHealth) {
         magTimeout = false;

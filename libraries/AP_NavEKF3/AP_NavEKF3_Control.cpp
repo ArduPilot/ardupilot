@@ -45,7 +45,7 @@ NavEKF3_core::MagCal NavEKF3_core::effective_magCal(void) const
     MagCal magcal = MagCal(frontend->_magCal.get());
 
     // force use of simple magnetic heading fusion for specified cores
-    if (magcal != MagCal::EXTERNAL_YAW && magcal != MagCal::EXTERNAL_YAW_FALLBACK && magcal != MagCal::GSF_YAW && (frontend->_magMask & core_index)) {
+    if ((magcal != MagCal::EXTERNAL_YAW) && (magcal != MagCal::EXTERNAL_YAW_FALLBACK) && (magcal != MagCal::GSF_YAW) && (frontend->_magMask & core_index)) {
         return MagCal::NEVER;
     }
 
