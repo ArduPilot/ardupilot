@@ -97,23 +97,8 @@ void NavEKF3_core::controlMagYawReset()
         // update rotation matrix from body to NED frame
         stateStruct.quat.inverse().rotation_matrix(prevTnb);
 
-        // read the magnetometer data
-        readMagData();
-
-        // rotate the magnetic field into NED axes
-        Vector3f initMagNED = prevTnb * magDataDelayed.mag;
-
-        // calculate heading of mag field rel to body heading
-        float magHeading = atan2f(initMagNED.y, initMagNED.x);
-
-        // get the magnetic declination
-        float magDecAng = MagDeclination();
-
-        // calculate yaw angle delta
-        float yaw_delta = magDecAng - magHeading;
-
-        // update quaternion states and covariances
-        resetQuatStateYawOnly(yaw_delta, sq(MAX(frontend->_yawNoise, 1.0e-2f)), true);
+        // set yaw from a single mag sample
+        setYawFromMag();
 
         // send initial alignment status to console
         if (!yawAlignComplete) {
