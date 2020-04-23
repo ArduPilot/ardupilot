@@ -350,7 +350,7 @@ void NavEKF3::Log_Write_GSF(uint8_t _core, uint64_t time_us) const
     float ive[N_MODELS_EKFGSF];
     float wgt[N_MODELS_EKFGSF];
 
-    if (getDataEKFGSF(_core, &yaw_composite, &yaw_composite_variance, yaw, ivn, ive, wgt)) {
+    if (getDataEKFGSF(_core, yaw_composite, yaw_composite_variance, yaw, ivn, ive, wgt)) {
         AP::logger().Write("GSF0",
                         "TimeUS,C,YC,YCS,Y0,Y1,Y2,Y3,Y4,W0,W1,W2,W3,W4",
                         "s#rrrrrrr-----",
