@@ -187,7 +187,7 @@ void NavEKF3_core::realignYawGPS()
             }
 
             // keep roll and pitch and reset yaw
-            resetQuatStateYawOnly(gpsYaw, sq(radians(45.0f)), false);
+            resetQuatStateYawOnly(gpsYaw, sq(radians(45.0f)));
 
             // reset the velocity and position states as they will be inaccurate due to bad yaw
             velResetSource = GPS;
@@ -1489,7 +1489,7 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
     if (yawEstimator->getYawData(yawEKFGSF, yawVarianceEKFGSF) && is_positive(yawVarianceEKFGSF) && yawVarianceEKFGSF < sq(radians(15.0f))) {
 
         // keep roll and pitch and reset yaw
-        resetQuatStateYawOnly(yawEKFGSF, yawVarianceEKFGSF, false);
+        resetQuatStateYawOnly(yawEKFGSF, yawVarianceEKFGSF);
 
         // record the emergency reset event
         EKFGSF_yaw_reset_request_ms = 0;
@@ -1521,7 +1521,7 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
 
 }
 
-void NavEKF3_core::resetQuatStateYawOnly(float yaw, float yawVariance, bool isDeltaYaw)
+void NavEKF3_core::resetQuatStateYawOnly(float yaw, float yawVariance)
 {
     Quaternion quatBeforeReset = stateStruct.quat;
     Vector3f angleErrVarVec = calcRotVecVariances();
@@ -1533,16 +1533,10 @@ void NavEKF3_core::resetQuatStateYawOnly(float yaw, float yawVariance, bool isDe
     if (fabsf(prevTnb[2][0]) < fabsf(prevTnb[2][1])) {
         // rolled more than pitched so use 321 rotation order
         stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
-        if (isDeltaYaw) {
-            yaw = wrap_PI(yaw + eulerAngles.z);
-        }
         stateStruct.quat.from_euler(eulerAngles.x, eulerAngles.y, yaw);
     } else {
         // pitched more than rolled so use 312 rotation order
         eulerAngles = stateStruct.quat.to_vector312();
-        if (isDeltaYaw) {
-            yaw = wrap_PI(yaw + eulerAngles.z);
-        }
         stateStruct.quat.from_vector312(eulerAngles.x, eulerAngles.y, yaw);
     }
 
