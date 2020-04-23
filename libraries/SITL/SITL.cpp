@@ -241,6 +241,15 @@ const AP_Param::GroupInfo SITL::var_info3[] = {
     // Buyoancy for submarines
     AP_GROUPINFO_FRAME("BUOYANCY", 15, SITL, buoyancy, 1, AP_PARAM_FRAME_SUB),
 
+    // vicon glitch in NED frame
+    AP_GROUPINFO("VICON_GLIT",    16, SITL,  vicon_glitch, 0),
+
+    // vicon failure
+    AP_GROUPINFO("VICON_FAIL",    17, SITL,  vicon_fail, 0),
+
+    // vicon yaw (in earth frame)
+    AP_GROUPINFO("VICON_YAW",     18, SITL,  vicon_yaw, 0),
+
     AP_GROUPEND
 
 };
