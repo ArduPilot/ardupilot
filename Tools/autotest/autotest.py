@@ -379,6 +379,7 @@ def run_step(step):
         "disable_breakpoints": opts.disable_breakpoints,
         "frame": opts.frame,
         "_show_test_timings": opts.show_test_timings,
+        "force_ahrs_type": opts.force_ahrs_type,
     }
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
@@ -757,6 +758,10 @@ if __name__ == "__main__":
                          default=False,
                          action='store_true',
                          help="disable all breakpoints before starting")
+    group_sim.add_option("", "--force-ahrs-type",
+                         dest="force_ahrs_type",
+                         default=None,
+                         help="force a specific AHRS type (e.g. 10 for SITL-ekf")
     parser.add_option_group(group_sim)
 
     opts, args = parser.parse_args()
