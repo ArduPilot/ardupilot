@@ -588,20 +588,21 @@ void NavEKF2_core::UpdateFilter(bool predict)
         // Predict the covariance growth
         CovariancePrediction();
 
+        // Run the IMU prediction step for the GSF yaw estimator algorithm
+        // using IMU and optionally true airspeed data.
+        // Must be run before SelectMagFusion() to provide an up to date yaw estimate
+        runYawEstimatorPrediction();
+
         // Update states using  magnetometer data
         SelectMagFusion();
 
         // Update states using GPS and altimeter data
         SelectVelPosFusion();
 
-        // Generate an alternative yaw estimate used for inflight
-        // recovery from bad compass data requires horizontal GPS
-        // velocity. We only do this when posVelFusionDelayed is false
-        // as otherwise there will be no new GPS data, as the
-        // sttoredGPS recall will have been skipped
-        if (!posVelFusionDelayed) {
-            runYawEstimator();
-        }
+        // Run the GPS velocity correction step for the GSF yaw estimator algorithm
+        // and use the yaw estimate to reset the main EKF yaw if requested
+        // Muat be run after SelectVelPosFusion() so that fresh GPS data is available
+        runYawEstimatorCorrection();
 
         // Update states using range beacon data
         SelectRngBcnFusion();

@@ -801,9 +801,13 @@ private:
     // correct external navigation earth-frame position using sensor body-frame offset
     void CorrectExtNavForSensorOffset(Vector3f &ext_position) const;
     
-    // Run an independent yaw estimator algorithm that uses IMU, GPs horizontal velocity
-    // and optionally true airspeed data.
-    void runYawEstimator(void);
+    // Runs the IMU prediction step for an independent GSF yaw estimator algorithm
+    // that uses IMU, GPS horizontal velocity and optionally true airspeed data.
+    void runYawEstimatorPrediction(void);
+
+    // Run the GPS velocity correction step for the GSF yaw estimator and use the
+    // yaw estimate to reset the main EKF yaw if requested
+    void runYawEstimatorCorrection(void);
 
     // reset the quaternion states using the supplied yaw angle, maintaining the previous roll and pitch
     // also reset the body to nav frame rotation matrix

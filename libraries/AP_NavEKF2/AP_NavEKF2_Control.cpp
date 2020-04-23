@@ -539,7 +539,7 @@ void  NavEKF2_core::updateFilterStatus(void)
     filterStatus.flags.initalized = filterStatus.flags.initalized || healthy();
 }
 
-void NavEKF2_core::runYawEstimator()
+void NavEKF2_core::runYawEstimatorPrediction()
 {
     if (yawEstimator != nullptr && frontend->_fusionModeGPS <= 1) {
         float trueAirspeed;
@@ -554,7 +554,12 @@ void NavEKF2_core::runYawEstimator()
         }
 
         yawEstimator->update(imuDataDelayed.delAng, imuDataDelayed.delVel, imuDataDelayed.delAngDT, imuDataDelayed.delVelDT, EKFGSF_run_filterbank, trueAirspeed);
+    }
+}
 
+void NavEKF2_core::runYawEstimatorCorrection()
+{
+    if (yawEstimator != nullptr && frontend->_fusionModeGPS <= 1) {
         if (gpsDataToFuse) {
             Vector2f gpsVelNE = Vector2f(gpsDataDelayed.vel.x, gpsDataDelayed.vel.y);
             float gpsVelAcc = fmaxf(gpsSpdAccuracy, frontend->_gpsHorizVelNoise);
@@ -566,7 +571,6 @@ void NavEKF2_core::runYawEstimator()
             EKFGSF_resetMainFilterYaw();
         }
     }
-
 }
 
 // request a reset the yaw to the GSF estimate
