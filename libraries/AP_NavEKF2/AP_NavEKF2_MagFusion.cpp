@@ -1216,7 +1216,7 @@ void NavEKF2_core::recordMagReset()
 // Reset states using yaw from EKF-GSF and velocity and position from GPS
 bool NavEKF2_core::EKFGSF_resetMainFilterYaw()
 {
-    // Don't do a reset unless permitted by the EK3_GSF_USE and EKF3_GSF_RUN parameter masks
+    // Don't do a reset unless permitted by the EK2_GSF_USE_MASK and EKF@_GSF_RUN_MASK parameter masks
     if ((yawEstimator == nullptr)
         || !(frontend->_gsfUseMask & (1U<<core_index))
         || EKFGSF_yaw_reset_count >= frontend->_gsfResetMaxCount) {
