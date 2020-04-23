@@ -363,6 +363,11 @@ public:
     EFI_MegaSquirt efi_ms;
 
     AP_Int8 led_layout;
+
+    // vicon parameters
+    AP_Vector3f vicon_glitch;   // glitch in meters in vicon's local NED frame
+    AP_Int8 vicon_fail;         // trigger vicon failure
+    AP_Int16 vicon_yaw;         // vicon local yaw in degrees
 };
 
 } // namespace SITL
