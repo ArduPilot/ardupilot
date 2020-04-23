@@ -1578,8 +1578,41 @@ struct PACKED log_Arm_Disarm {
 // @Field: SMS: time since system startup this sample was taken
 // @Field: Delta: system time delta between the last two reported positions
 
+//note: GPAB is a copy of GPA and GPA2!
+
+// @LoggerMessage: GPAB
+// @Description: Blended GPS accuracy information
+// @Field: TimeUS: Time since system startup
+// @Field: VDop: vertical degree of procession
+// @Field: HAcc: horizontal position accuracy
+// @Field: VAcc: vertical position accuracy
+// @Field: SAcc: speed accuracy
+// @Field: YAcc: yaw accuracy
+// @Field: VV: true if vertical velocity is available
+// @Field: SMS: time since system startup this sample was taken
+// @Field: Delta: system time delta between the last two reported positions
+
 // @LoggerMessage: GPS,GPS2
 // @Description: Information received from GNSS systems attached to the autopilot
+// @Field: TimeUS: Time since system startup
+// @Field: Status: GPS Fix type; 2D fix, 3D fix etc.
+// @Field: GMS: milliseconds since start of GPS Week
+// @Field: GWk: weeks since 5 Jan 1980
+// @Field: NSats: number of satellites visible
+// @Field: HDop: horizontal precision
+// @Field: Lat: latitude
+// @Field: Lng: longitude
+// @Field: Alt: altitude
+// @Field: Spd: ground speed
+// @Field: GCrs: ground course
+// @Field: VZ: vertical speed
+// @Field: Yaw: vehicle yaw
+// @Field: U: boolean value indicating whether this GPS is in use
+
+// Note: GPSB is a copy of GPS!
+
+// @LoggerMessage: GPSB
+// @Description: Information blended from GNSS systems attached to the autopilot
 // @Field: TimeUS: Time since system startup
 // @Field: Status: GPS Fix type; 2D fix, 3D fix etc.
 // @Field: GMS: milliseconds since start of GPS Week
