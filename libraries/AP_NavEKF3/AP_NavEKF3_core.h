@@ -738,6 +738,9 @@ private:
     // update quaternion, mag field states and associated variances using magnetomer and declination data
     void calcQuatAndFieldStates();
 
+    // reset yaw based on magnetic field sample
+    void setYawFromMag();
+
     // zero stored variables
     void InitialiseVariables();
 
