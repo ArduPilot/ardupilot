@@ -367,7 +367,7 @@ public:
 
     // log debug data for yaw estimator
     // return false if data not available
-	bool getDataEKFGSF(int8_t instance, float *yaw_composite, float *yaw_composite_variance, float yaw[N_MODELS_EKFGSF], float innov_VN[N_MODELS_EKFGSF], float innov_VE[N_MODELS_EKFGSF], float weight[N_MODELS_EKFGSF]) const;
+	bool getDataEKFGSF(int8_t instance, float &yaw_composite, float &yaw_composite_variance, float yaw[N_MODELS_EKFGSF], float innov_VN[N_MODELS_EKFGSF], float innov_VE[N_MODELS_EKFGSF], float weight[N_MODELS_EKFGSF]) const;
 
 private:
     uint8_t num_cores; // number of allocated cores
