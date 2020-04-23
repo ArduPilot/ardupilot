@@ -706,7 +706,8 @@ class AutoTest(ABC):
                  disable_breakpoints=False,
                  viewerip=None,
                  use_map=False,
-                 _show_test_timings=False):
+                 _show_test_timings=False,
+                 force_ahrs_type=None):
 
         if binary is None:
             raise ValueError("Should always have a binary")
@@ -740,6 +741,9 @@ class AutoTest(ABC):
         self.test_timings = dict()
         self.total_waiting_to_arm_time = 0
         self.waiting_to_arm_count = 0
+        self.force_ahrs_type = force_ahrs_type
+        if self.force_ahrs_type is not None:
+            self.force_ahrs_type = int(self.force_ahrs_type)
 
     @staticmethod
     def progress(text):
@@ -848,6 +852,12 @@ class AutoTest(ABC):
             self.repeatedly_apply_parameter_file(os.path.join(testdir, x))
         self.set_parameter('LOG_REPLAY', 1)
         self.set_parameter('LOG_DISARMED', 1)
+        if self.force_ahrs_type is not None:
+            if self.force_ahrs_type == 2:
+                self.set_parameter("EK2_ENABLE", 1)
+            if self.force_ahrs_type == 3:
+                self.set_parameter("EK3_ENABLE", 1)
+            self.set_parameter("AHRS_EKF_TYPE", self.force_ahrs_type)
         self.reboot_sitl()
         self.fetch_parameters()
 
