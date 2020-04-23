@@ -291,7 +291,7 @@ void NavEKF3_core::SelectMagFusion()
             }
 
             float yawEKFGSF, yawVarianceEKFGSF;
-            bool canUseEKFGSF = yawEstimator->getYawData(&yawEKFGSF, &yawVarianceEKFGSF) && is_positive(yawVarianceEKFGSF) && yawVarianceEKFGSF < sq(radians(15.0f));
+            bool canUseEKFGSF = yawEstimator->getYawData(yawEKFGSF, yawVarianceEKFGSF) && is_positive(yawVarianceEKFGSF) && yawVarianceEKFGSF < sq(radians(15.0f));
             if (yawAlignComplete && canUseEKFGSF) {
                 // use the EKF-GSF yaw estimator output as this is more robust than the EKF can achieve without a yaw measurement
                 yawAngDataDelayed.yawAngErr = MAX(sqrtf(yawVarianceEKFGSF), 0.05f);
@@ -949,7 +949,7 @@ void NavEKF3_core::fuseEulerYaw(bool usePredictedYaw, bool useExternalYawSensor)
     float gsfYaw = 0.0f;
     float gsfYawVariance = 0.0f;
     if (usePredictedYaw && yawEstimator != nullptr) {
-        canUseGsfYaw = yawEstimator->getYawData(&gsfYaw, &gsfYawVariance)
+        canUseGsfYaw = yawEstimator->getYawData(gsfYaw, gsfYawVariance)
                         && is_positive(gsfYawVariance)
                         && gsfYawVariance < sq(radians(15.0f));
     }
@@ -1501,7 +1501,7 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
     };
 
     float yawEKFGSF, yawVarianceEKFGSF;
-    if (yawEstimator->getYawData(&yawEKFGSF, &yawVarianceEKFGSF) && is_positive(yawVarianceEKFGSF) && yawVarianceEKFGSF < sq(radians(15.0f))) {
+    if (yawEstimator->getYawData(yawEKFGSF, yawVarianceEKFGSF) && is_positive(yawVarianceEKFGSF) && yawVarianceEKFGSF < sq(radians(15.0f))) {
 
         // keep roll and pitch and reset yaw
         resetQuatStateYawOnly(yawEKFGSF, yawVarianceEKFGSF, false);
