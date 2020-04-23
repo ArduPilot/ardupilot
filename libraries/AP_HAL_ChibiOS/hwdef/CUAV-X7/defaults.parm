@@ -1,5 +1,11 @@
-# close temperature compensation
-BRD_IMU_TARGTEMP -1
+# temperature control. We need lower P/I values
+# to prevent oscillation of the BMI088 temperature
+# the ADIS16470 is factory temperature calibrated,
+# but the BMI088 isn't, so temperature control is still
+# worthwhile
+BRD_IMU_TARGTEMP 45
+BRD_IMUHEAT_P 50
+BRD_IMUHEAT_I 0.07
 
 # turn on the CAN power monitoring(default)
 CAN_P1_DRIVER 1

@@ -409,29 +409,6 @@ void GCS_MAVLINK::send_ahrs2()
 #endif
 }
 
-void GCS_MAVLINK::send_ahrs3()
-{
-#if AP_AHRS_NAVEKF_AVAILABLE && HAL_NAVEKF2_AVAILABLE
-
-    const NavEKF2 &ekf2 = AP::ahrs_navekf().get_NavEKF2_const();
-    if (ekf2.activeCores() > 0 &&
-        HAVE_PAYLOAD_SPACE(chan, AHRS3)) {
-        struct Location loc {};
-        ekf2.getLLH(loc);
-        Vector3f euler;
-        ekf2.getEulerAngles(-1,euler);
-        mavlink_msg_ahrs3_send(chan,
-                               euler.x,
-                               euler.y,
-                               euler.z,
-                               loc.alt*1.0e-2f,
-                               loc.lat,
-                               loc.lng,
-                               0, 0, 0, 0);
-    }
-#endif
-}
-
 MissionItemProtocol *GCS::get_prot_for_mission_type(const MAV_MISSION_TYPE mission_type) const
 {
     switch (mission_type) {
@@ -759,7 +736,6 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_AHRS,                  MSG_AHRS},
         { MAVLINK_MSG_ID_SIMSTATE,              MSG_SIMSTATE},
         { MAVLINK_MSG_ID_AHRS2,                 MSG_AHRS2},
-        { MAVLINK_MSG_ID_AHRS3,                 MSG_AHRS3},
         { MAVLINK_MSG_ID_HWSTATUS,              MSG_HWSTATUS},
         { MAVLINK_MSG_ID_WIND,                  MSG_WIND},
         { MAVLINK_MSG_ID_RANGEFINDER,           MSG_RANGEFINDER},
@@ -1512,7 +1488,7 @@ void GCS_MAVLINK::log_mavlink_stats()
         flags |= (uint8_t)Flags::LOCKED;
     }
 
-    const struct log_MAV pkt = {
+    const struct log_MAV pkt{
     LOG_PACKET_HEADER_INIT(LOG_MAV_MSG),
     time_us                : AP_HAL::micros64(),
     chan                   : (uint8_t)chan,
@@ -1520,7 +1496,8 @@ void GCS_MAVLINK::log_mavlink_stats()
     packet_rx_success_count: status->packet_rx_success_count,
     packet_rx_drop_count   : status->packet_rx_drop_count,
     flags                  : flags,
-    stream_slowdown_ms     : stream_slowdown_ms
+    stream_slowdown_ms     : stream_slowdown_ms,
+    times_full             : out_of_space_to_send_count,
     };
 
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
@@ -4557,11 +4534,6 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_AHRS2:
         CHECK_PAYLOAD_SIZE(AHRS2);
         send_ahrs2();
-        break;
-
-    case MSG_AHRS3:
-        CHECK_PAYLOAD_SIZE(AHRS3);
-        send_ahrs3();
         break;
 
     case MSG_PID_TUNING:

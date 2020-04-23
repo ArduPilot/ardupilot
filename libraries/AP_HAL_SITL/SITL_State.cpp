@@ -310,6 +310,13 @@ int SITL_State::sim_fd(const char *name, const char *arg)
         nmea = new SITL::RF_NMEA();
         return nmea->fd();
 
+    } else if (streq(name, "rf_mavlink")) {
+        if (wasp != nullptr) {
+            AP_HAL::panic("Only one rf_mavlink at a time");
+        }
+        rf_mavlink = new SITL::RF_MAVLink();
+        return rf_mavlink->fd();
+
     } else if (streq(name, "frsky-d")) {
         if (frsky_d != nullptr) {
             AP_HAL::panic("Only one frsky_d at a time");
@@ -400,6 +407,11 @@ int SITL_State::sim_fd_write(const char *name)
             AP_HAL::panic("No nmea created");
         }
         return nmea->write_fd();
+    } else if (streq(name, "rf_mavlink")) {
+        if (rf_mavlink == nullptr) {
+            AP_HAL::panic("No rf_mavlink created");
+        }
+        return rf_mavlink->write_fd();
     } else if (streq(name, "frsky-d")) {
         if (frsky_d == nullptr) {
             AP_HAL::panic("No frsky-d created");
@@ -577,6 +589,9 @@ void SITL_State::_fdm_input_local(void)
     }
     if (nmea != nullptr) {
         nmea->update(sitl_model->get_range());
+    }
+    if (rf_mavlink != nullptr) {
+        rf_mavlink->update(sitl_model->get_range());
     }
 
     if (frsky_d != nullptr) {

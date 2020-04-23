@@ -234,7 +234,7 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: ThrOut: scaled output throttle
 // @Field: RdrOut: scaled output rudder
 // @Field: ThrDem: demanded speed-height-controller throttle
-// @Field: Aspd: airspeed estimate
+// @Field: Aspd: airspeed estimate (or measurement if airspeed sensor healthy and ARSPD_USE>0)
 
     { LOG_CTUN_MSG, sizeof(log_Control_Tuning),     
       "CTUN", "Qcccchhhf",    "TimeUS,NavRoll,Roll,NavPitch,Pitch,ThrOut,RdrOut,ThrDem,Aspd", "sdddd---n", "FBBBB---0" },

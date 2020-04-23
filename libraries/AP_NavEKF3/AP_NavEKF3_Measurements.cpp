@@ -1121,6 +1121,14 @@ void NavEKF3_core::updateMovementCheck(void)
 
     if (logStatusChange || imuSampleTime_ms - lastMoveCheckLogTime_ms > 200) {
         lastMoveCheckLogTime_ms = imuSampleTime_ms;
+// @LoggerMessage: XKFM
+// @Description: EKF3 diagnostic data for on-ground-and-not-moving check
+// @Field: TimeUS: Time since system startup
+// @Field: OGNM: True of on ground and not moving
+// @Field: GLR: Gyroscope length ratio
+// @Field: ALR: Accelerometer length ratio
+// @Field: GDR: Gyroscope rate of change ratio
+// @Field: ADR: Accelerometer rate of change ratio
         AP::logger().Write("XKFM",
                         "TimeUS,OGNM,GLR,ALR,GDR,ADR",
                         "s-----",

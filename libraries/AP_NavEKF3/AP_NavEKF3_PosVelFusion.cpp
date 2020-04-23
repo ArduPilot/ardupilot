@@ -28,9 +28,6 @@ void NavEKF3_core::ResetVelocity(void)
     zeroRows(P,4,5);
     zeroCols(P,4,5);
 
-    gps_elements gps_corrected = gpsDataNew;
-    CorrectGPSForAntennaOffset(gps_corrected);
-
     if (PV_AidingMode != AID_ABSOLUTE) {
         stateStruct.velocity.zero();
         // set the variances using the measurement noise parameter
@@ -38,6 +35,9 @@ void NavEKF3_core::ResetVelocity(void)
     } else {
         // reset horizontal velocity states to the GPS velocity if available
         if ((imuSampleTime_ms - lastTimeGpsReceived_ms < 250 && velResetSource == DEFAULT) || velResetSource == GPS) {
+            // correct for antenna position
+            gps_elements gps_corrected = gpsDataNew;
+            CorrectGPSForAntennaOffset(gps_corrected);
             stateStruct.velocity.x  = gps_corrected.vel.x;
             stateStruct.velocity.y  = gps_corrected.vel.y;
             // set the variances using the reported GPS speed accuracy
@@ -94,11 +94,11 @@ void NavEKF3_core::ResetPosition(void)
         // set the variances using the position measurement noise parameter
         P[7][7] = P[8][8] = sq(frontend->_gpsHorizPosNoise);
     } else  {
-        gps_elements gps_corrected = gpsDataNew;
-        CorrectGPSForAntennaOffset(gps_corrected);
-
         // Use GPS data as first preference if fresh data is available
         if ((imuSampleTime_ms - lastTimeGpsReceived_ms < 250 && posResetSource == DEFAULT) || posResetSource == GPS) {
+            // correct for antenna position
+            gps_elements gps_corrected = gpsDataNew;
+            CorrectGPSForAntennaOffset(gps_corrected);
             // record the ID of the GPS for the data we are using for the reset
             last_gps_idx = gps_corrected.sensor_idx;
             // write to state vector and compensate for offset  between last GPS measurement and the EKF time horizon
@@ -249,7 +249,7 @@ bool NavEKF3_core::resetHeightDatum(void)
 /*
   correct GPS data for position offset of antenna phase centre relative to the IMU
  */
-void NavEKF3_core::CorrectGPSForAntennaOffset(gps_elements &gps_data)
+void NavEKF3_core::CorrectGPSForAntennaOffset(gps_elements &gps_data) const
 {
     const Vector3f &posOffsetBody = AP::gps().get_antenna_offset(gps_data.sensor_idx) - accelPosOffset;
     if (posOffsetBody.is_zero()) {

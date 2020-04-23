@@ -865,7 +865,7 @@ private:
     void updateStateIndexLim(void);
 
     // correct GPS data for antenna position
-    void CorrectGPSForAntennaOffset(gps_elements &gps_data);
+    void CorrectGPSForAntennaOffset(gps_elements &gps_data) const;
 
     // Variables
     bool statesInitialised;         // boolean true when filter states have been initialised

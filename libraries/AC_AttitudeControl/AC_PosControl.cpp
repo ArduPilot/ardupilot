@@ -966,45 +966,13 @@ void AC_PosControl::init_vel_controller_xyz()
     init_ekf_z_reset();
 }
 
-/// update_velocity_controller_xy - run the velocity controller - should be called at 100hz or higher
-///     velocity targets should we set using set_desired_velocity_xy() method
-///     callers should use get_roll() and get_pitch() methods and sent to the attitude controller
-///     throttle targets will be sent directly to the motors
-void AC_PosControl::update_vel_controller_xy()
-{
-    // capture time since last iteration
-    const uint64_t now_us = AP_HAL::micros64();
-    float dt = (now_us - _last_update_xy_us) * 1.0e-6f;
-
-    // sanity check dt
-    if (dt >= 0.2f) {
-        dt = 0.0f;
-    }
-
-    // check for ekf xy position reset
-    check_for_ekf_xy_reset();
-
-    // check if xy leash needs to be recalculated
-    calc_leash_length_xy();
-
-    // apply desired velocity request to position target
-    // TODO: this will need to be removed and added to the calling function.
-    desired_vel_to_pos(dt);
-
-    // run position controller
-    run_xy_controller(dt);
-
-    // update xy update time
-    _last_update_xy_us = now_us;
-}
-
 /// update_velocity_controller_xyz - run the velocity controller - should be called at 100hz or higher
 ///     velocity targets should we set using set_desired_velocity_xyz() method
 ///     callers should use get_roll() and get_pitch() methods and sent to the attitude controller
 ///     throttle targets will be sent directly to the motors
 void AC_PosControl::update_vel_controller_xyz()
 {
-    update_vel_controller_xy();
+    update_xy_controller();
 
     // update altitude target
     set_alt_target_from_climb_rate_ff(_vel_desired.z, _dt, false);

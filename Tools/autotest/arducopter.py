@@ -4633,6 +4633,49 @@ class AutoTestCopter(AutoTest):
         if not self.current_onboard_log_contains_message("RFND"):
             raise NotAchievedException("No RFND messages in log")
 
+    def fly_rangefinder_mavlink(self):
+        # explicit test for the mavlink driver as it doesn't play so nice:
+        self.set_parameter("SERIAL5_PROTOCOL", 1)
+        self.set_parameter("RNGFND1_TYPE", 10)
+        self.customise_SITL_commandline(['--uartF=sim:rf_mavlink'])
+
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        expected_alt = 5
+        self.user_takeoff(alt_min=expected_alt)
+
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time() - tstart > 5:
+                raise NotAchievedException("Mavlink rangefinder not working")
+            rf = self.mav.recv_match(type="RANGEFINDER", timeout=1, blocking=True)
+            if rf is None:
+                raise NotAchievedException("Did not receive rangefinder message")
+            gpi = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=1)
+            if gpi is None:
+                raise NotAchievedException("Did not receive GLOBAL_POSITION_INT message")
+            if abs(rf.distance - gpi.relative_alt/1000.0) > 1:
+                success = False
+                print("rangefinder alt (%s) disagrees with global-position-int.relative_alt (%s)" % (rf.distance, gpi.relative_alt/1000.0))
+                continue
+
+            ds = self.mav.recv_match(
+                type="DISTANCE_SENSOR",
+                timeout=2,
+                blocking=True,
+            )
+            if ds is None:
+                raise NotAchievedException("Did not receive DISTANCE_SENSOR message")
+            self.progress("Got: %s" % str(ds))
+            if abs(ds.current_distance/100.0 - gpi.relative_alt/1000.0) > 1:
+                print(
+                    "distance sensor.current_distance (%f) disagrees with global-position-int.relative_alt (%s)" %
+                    (ds.current_distance/100.0, gpi.relative_alt/1000.0))
+                continue
+            break
+        self.progress("mavlink rangefinder OK")
+        self.land_and_disarm()
 
     def fly_rangefinder_drivers(self):
         self.set_parameter("RTL_ALT", 500)
@@ -4667,6 +4710,9 @@ class AutoTestCopter(AutoTest):
                     self.set_parameter("RNGFND%u_TYPE" % (offs+1), rngfnd_param_value)
             self.customise_SITL_commandline(command_line_args)
             self.fly_rangefinder_drivers_fly([x[0] for x in do_drivers])
+
+        self.fly_rangefinder_mavlink()
+
 
     def test_parameter_validation(self):
         self.progress("invalid; min must be less than max:")

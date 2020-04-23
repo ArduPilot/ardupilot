@@ -28,9 +28,6 @@ void NavEKF2_core::ResetVelocity(void)
     // reset the corresponding covariances
     zeroRows(P,3,4);
     zeroCols(P,3,4);
-
-    gps_elements gps_corrected = gpsDataNew;
-    CorrectGPSForAntennaOffset(gps_corrected);
     
     if (PV_AidingMode != AID_ABSOLUTE) {
         stateStruct.velocity.zero();
@@ -39,6 +36,9 @@ void NavEKF2_core::ResetVelocity(void)
     } else {
         // reset horizontal velocity states to the GPS velocity if available
         if (imuSampleTime_ms - lastTimeGpsReceived_ms < 250) {
+            // correct for antenna position
+            gps_elements gps_corrected = gpsDataNew;
+            CorrectGPSForAntennaOffset(gps_corrected);
             stateStruct.velocity.x  = gps_corrected.vel.x;
             stateStruct.velocity.y  = gps_corrected.vel.y;
             // set the variances using the reported GPS speed accuracy
@@ -85,9 +85,6 @@ void NavEKF2_core::ResetPosition(void)
     // reset the corresponding covariances
     zeroRows(P,6,7);
     zeroCols(P,6,7);
-
-    gps_elements gps_corrected = gpsDataNew;
-    CorrectGPSForAntennaOffset(gps_corrected);
     
     if (PV_AidingMode != AID_ABSOLUTE) {
         // reset all position state history to the last known position
@@ -98,6 +95,9 @@ void NavEKF2_core::ResetPosition(void)
     } else  {
         // Use GPS data as first preference if fresh data is available
         if (imuSampleTime_ms - lastTimeGpsReceived_ms < 250) {
+            // correct for antenna position
+            gps_elements gps_corrected = gpsDataNew;
+            CorrectGPSForAntennaOffset(gps_corrected);
             // record the ID of the GPS for the data we are using for the reset
             last_gps_idx = gps_corrected.sensor_idx;
             // write to state vector and compensate for offset  between last GPS measurement and the EKF time horizon
@@ -253,7 +253,7 @@ bool NavEKF2_core::resetHeightDatum(void)
 /*
   correct GPS data for position offset of antenna phase centre relative to the IMU
 */
-void NavEKF2_core::CorrectGPSForAntennaOffset(gps_elements &gps_data)
+void NavEKF2_core::CorrectGPSForAntennaOffset(gps_elements &gps_data) const
 {
     const Vector3f &posOffsetBody = AP::gps().get_antenna_offset(gpsDataDelayed.sensor_idx) - accelPosOffset;
     if (posOffsetBody.is_zero()) {
@@ -278,7 +278,7 @@ void NavEKF2_core::CorrectGPSForAntennaOffset(gps_elements &gps_data)
 }
 
 // correct external navigation earth-frame position using sensor body-frame offset
-void NavEKF2_core::CorrectExtNavForSensorOffset(Vector3f &ext_position)
+void NavEKF2_core::CorrectExtNavForSensorOffset(Vector3f &ext_position) const
 {
 #if HAL_VISUALODOM_ENABLED
     AP_VisualOdom *visual_odom = AP::visualodom();

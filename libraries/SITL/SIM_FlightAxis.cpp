@@ -42,6 +42,7 @@ static const struct {
     float value;
     bool save;
 } sim_defaults[] = {
+    { "BRD_OPTIONS", 0},
     { "AHRS_EKF_TYPE", 10 },
     { "INS_GYR_CAL", 0 },
     { "RC1_MIN", 1000, true },

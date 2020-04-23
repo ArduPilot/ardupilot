@@ -777,10 +777,10 @@ private:
     void updateTimingStatistics(void);
 
     // correct gps data for antenna position
-    void CorrectGPSForAntennaOffset(gps_elements &gps_data);
+    void CorrectGPSForAntennaOffset(gps_elements &gps_data) const;
 
     // correct external navigation earth-frame position using sensor body-frame offset
-    void CorrectExtNavForSensorOffset(Vector3f &ext_position);
+    void CorrectExtNavForSensorOffset(Vector3f &ext_position) const;
 
     // Length of FIFO buffers used for non-IMU sensor data.
     // Must be larger than the time period defined by IMU_BUFFER_LENGTH

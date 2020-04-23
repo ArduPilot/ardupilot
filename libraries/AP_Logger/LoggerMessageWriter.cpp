@@ -174,17 +174,13 @@ bool LoggerMessageWriter_DFLogStart::writeallrallypoints()
 void LoggerMessageWriter_WriteSysInfo::reset()
 {
     LoggerMessageWriter::reset();
-    stage = Stage::FORMATS;
+    stage = Stage::FIRMWARE_STRING;
 }
 
 void LoggerMessageWriter_WriteSysInfo::process() {
     const AP_FWVersion &fwver = AP::fwversion();
 
     switch(stage) {
-
-    case Stage::FORMATS:
-        stage = Stage::FIRMWARE_STRING;
-        FALLTHROUGH;
 
     case Stage::FIRMWARE_STRING:
         if (! _logger_backend->Write_Message(fwver.fw_string)) {

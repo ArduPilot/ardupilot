@@ -44,8 +44,8 @@
 
 #define TIMING_DEBUG 0
 #if TIMING_DEBUG
-#define DEBUG_SET_PIN(n,v) hal.gpio->write(55-n, v)
-#define DEBUG_TOGGLE_PIN(n) hal.gpio->toggle(55-n)
+#define DEBUG_SET_PIN(n,v) hal.gpio->write(52+n, v)
+#define DEBUG_TOGGLE_PIN(n) hal.gpio->toggle(52+n)
 #else
 #define DEBUG_SET_PIN(n,v)
 #define DEBUG_TOGGLE_PIN(n)
@@ -54,23 +54,26 @@
 extern const AP_HAL::HAL& hal;
 
 AP_InertialSensor_ADIS1647x::AP_InertialSensor_ADIS1647x(AP_InertialSensor &imu,
-                                                   AP_HAL::OwnPtr<AP_HAL::Device> _dev,
-                                                   enum Rotation _rotation)
+                                                         AP_HAL::OwnPtr<AP_HAL::Device> _dev,
+                                                         enum Rotation _rotation,
+                                                         uint8_t drdy_gpio)
     : AP_InertialSensor_Backend(imu)
     , dev(std::move(_dev))
     , rotation(_rotation)
+    , drdy_pin(drdy_gpio)
 {
 }
 
 AP_InertialSensor_Backend *
 AP_InertialSensor_ADIS1647x::probe(AP_InertialSensor &imu,
-                                AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                                enum Rotation rotation)
+                                   AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                                   enum Rotation rotation,
+                                   uint8_t drdy_gpio)
 {
     if (!dev) {
         return nullptr;
     }
-    auto sensor = new AP_InertialSensor_ADIS1647x(imu, std::move(dev), rotation);
+    auto sensor = new AP_InertialSensor_ADIS1647x(imu, std::move(dev), rotation, drdy_gpio);
 
     if (!sensor) {
         return nullptr;
@@ -305,10 +308,22 @@ void AP_InertialSensor_ADIS1647x::loop(void)
         // we deliberately set the period a bit fast to ensure we
         // don't lose a sample
         const uint32_t period_us = 480;
+        bool wait_ok = false;
+        if (drdy_pin != 0) {
+            // when we have a DRDY pin then wait for it to go high
+            DEBUG_SET_PIN(0, 1);
+            wait_ok = hal.gpio->wait_pin(drdy_pin, AP_HAL::GPIO::INTERRUPT_RISING, 1000);
+            DEBUG_SET_PIN(0, 0);
+        }
         read_sensor();
         uint32_t dt = AP_HAL::micros() - tstart;
         if (dt < period_us) {
-            hal.scheduler->delay_microseconds(period_us - dt);
+            uint32_t wait_us = period_us - dt;
+            if (!wait_ok || wait_us > period_us/2) {
+                DEBUG_SET_PIN(3, 1);
+                hal.scheduler->delay_microseconds(wait_us);
+                DEBUG_SET_PIN(3, 0);
+            }
         }
     }
 }

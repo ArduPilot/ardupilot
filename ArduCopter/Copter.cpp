@@ -22,7 +22,7 @@
  *  Based on code and ideas from the Arducopter team: Leonard Hall, Andrew Tridgell, Robert Lefebvre, Pat Hickey, Michael Oborne, Jani Hirvinen,
                                                       Olivier Adler, Kevin Hester, Arthur Benemann, Jonathan Challinger, John Arne Birkeland,
                                                       Jean-Louis Naudin, Mike Smith, and more
- *  Thanks to:	Chris Anderson, Jordi Munoz, Jason Short, Doug Weibel, Jose Julio
+ *  Thanks to: Chris Anderson, Jordi Munoz, Jason Short, Doug Weibel, Jose Julio
  *
  *  Special Thanks to contributors (in alphabetical order by first name):
  *
@@ -37,7 +37,7 @@
  *  Christof Schmid     :Alpha testing
  *  Craig Elder         :Release Management, Support
  *  Dani Saez           :V Octo Support
- *  Doug Weibel	        :DCM, Libraries, Control law advice
+ *  Doug Weibel         :DCM, Libraries, Control law advice
  *  Emile Castelnuovo   :VRBrain port, bug fixes
  *  Gregory Fletcher    :Camera mount orientation math
  *  Guntars             :Arming safety suggestion
@@ -48,7 +48,7 @@
  *  James Goppert       :Mavlink Support
  *  Jani Hiriven        :Testing feedback
  *  Jean-Louis Naudin   :Auto Landing
- *  John Arne Birkeland	:PPM Encoder
+ *  John Arne Birkeland :PPM Encoder
  *  Jose Julio          :Stabilization Control laws, MPU6k driver
  *  Julien Dubois       :PosHold flight mode
  *  Julian Oes          :Pixhawk
