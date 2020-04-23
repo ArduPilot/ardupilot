@@ -907,15 +907,15 @@ void ToyMode::blink_update(void)
     if (copter.motors->armed() && AP_Notify::flags.failsafe_battery) {
         pattern = BLINK_8;
     } else if (!copter.motors->armed() && (blink_disarm > 0)) {
-		pattern = BLINK_8;
-		blink_disarm--;
-	} else {
+        pattern = BLINK_8;
+        blink_disarm--;
+    } else {
         pattern = BLINK_FULL;
     }
     
     if (copter.motors->armed()) {
-		blink_disarm = 4;
-	}
+        blink_disarm = 4;
+    }
     
     if (red_blink_count == 0) {
         red_blink_pattern = pattern;
