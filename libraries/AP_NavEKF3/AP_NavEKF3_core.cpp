@@ -631,19 +631,20 @@ void NavEKF3_core::UpdateFilter(bool predict)
         // Predict the covariance growth
         CovariancePrediction();
 
-        // Read GPS data from the sensor
-        // This is required by multiple processes so needs to be done before other fusion steps
-        readGpsData();
-
-        // Generate an alternative yaw estimate used for inflight recovery from bad compass data
-        // requires horizontal GPS velocity
-        runYawEstimator();
-
         // Update states using  magnetometer or external yaw sensor data
         SelectMagFusion();
 
         // Update states using GPS and altimeter data
         SelectVelPosFusion();
+
+        // Generate an alternative yaw estimate used for inflight
+        // recovery from bad compass data requires horizontal GPS
+        // velocity. We only do this when posVelFusionDelayed is false
+        // as otherwise there will be no new GPS data, as the
+        // sttoredGPS recall will have been skipped
+        if (!posVelFusionDelayed) {
+            runYawEstimator();
+        }
 
         // Update states using range beacon data
         SelectRngBcnFusion();

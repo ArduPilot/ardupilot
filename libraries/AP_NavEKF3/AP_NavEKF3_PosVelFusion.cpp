@@ -284,6 +284,12 @@ void NavEKF3_core::SelectVelPosFusion()
         posVelFusionDelayed = false;
     }
 
+    // Read GPS data from the sensor
+    readGpsData();
+
+    // get data that has now fallen behind the fusion time horizon
+    gpsDataToFuse = storedGPS.recall(gpsDataDelayed,imuDataDelayed.time_ms);
+
     // Determine if we need to fuse position and velocity data on this time step
     if (gpsDataToFuse && PV_AidingMode == AID_ABSOLUTE) {
 
