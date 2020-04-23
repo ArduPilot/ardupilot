@@ -283,6 +283,7 @@ void NavEKF2::Log_Write_GSF(uint8_t _core, uint64_t time_us) const
         // @LoggerMessage: NKY0
         // @Description: EKF2 Yaw Estimator States
         // @Field: TimeUS: Time since system startup
+        // @Field: C: EKF2 core this data is for
         // @Field: YC: GSF yaw estimate (rad)
         // @Field: YCS: GSF yaw estimate 1-Sigma uncertainty (rad)
         // @Field: Y0: Yaw estimate from individual EKF filter 0 (rad)
@@ -320,6 +321,7 @@ void NavEKF2::Log_Write_GSF(uint8_t _core, uint64_t time_us) const
         // @LoggerMessage: NKY1
         // @Description: EKF2 Yaw Estimator Innovations
         // @Field: TimeUS: Time since system startup
+        // @Field: C: EKF2 core this data is for
         // @Field: IVN0: North velocity innovation from individual EKF filter 0 (m/s)
         // @Field: IVN1: North velocity innovation from individual EKF filter 1 (m/s)
         // @Field: IVN2: North velocity innovation from individual EKF filter 2 (m/s)
