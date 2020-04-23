@@ -28,6 +28,9 @@ static struct {
 // should be called at 10hz
 void Copter::ekf_check()
 {
+    // ensure EKF_CHECK_ITERATIONS_MAX is at least 7
+    static_assert(EKF_CHECK_ITERATIONS_MAX >= 7, "EKF_CHECK_ITERATIONS_MAX must be at least 7");
+
     // exit immediately if ekf has no origin yet - this assumes the origin can never become unset
     Location temp_loc;
     if (!ahrs.get_origin(temp_loc)) {
@@ -49,20 +52,16 @@ void Copter::ekf_check()
         if (!ekf_check_state.bad_variance) {
             // increase counter
             ekf_check_state.fail_count++;
-#if EKF_CHECK_ITERATIONS_MAX > 3
-            if (ekf_check_state.fail_count == MIN((EKF_CHECK_ITERATIONS_MAX-2), 5)) {
-                // we are just about to declare a EKF failsafe, ask the EKF if we can reset
+            if (ekf_check_state.fail_count == (EKF_CHECK_ITERATIONS_MAX-2)) {
+                // we are two iterations away from declaring an EKF failsafe, ask the EKF if we can reset
                 // yaw to resolve the issue
                 ahrs.request_yaw_reset();
             }
-#endif
-#if EKF_CHECK_ITERATIONS_MAX > 2
-            if (ekf_check_state.fail_count == EKF_CHECK_ITERATIONS_MAX-1) {
+            if (ekf_check_state.fail_count == (EKF_CHECK_ITERATIONS_MAX-1)) {
                 // we are just about to declare a EKF failsafe, ask the EKF if we can
                 // change lanes to resolve the issue
                 ahrs.check_lane_switch();
             }
-#endif
             // if counter above max then trigger failsafe
             if (ekf_check_state.fail_count >= EKF_CHECK_ITERATIONS_MAX) {
                 // limit count from climbing too high
