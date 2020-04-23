@@ -351,6 +351,23 @@ void NavEKF3::Log_Write_GSF(uint8_t _core, uint64_t time_us) const
     float wgt[N_MODELS_EKFGSF];
 
     if (getDataEKFGSF(_core, yaw_composite, yaw_composite_variance, yaw, ivn, ive, wgt)) {
+
+        // @LoggerMessage: XKY0
+        // @Description: EKF2 Yaw Estimator States
+        // @Field: TimeUS: Time since system startup
+        // @Field: YC: GSF yaw estimate (rad)
+        // @Field: YCS: GSF yaw estimate 1-Sigma uncertainty (rad)
+        // @Field: Y0: Yaw estimate from individual EKF filter 0 (rad)
+        // @Field: Y1: Yaw estimate from individual EKF filter 1 (rad)
+        // @Field: Y2: Yaw estimate from individual EKF filter 2 (rad)
+        // @Field: Y3: Yaw estimate from individual EKF filter 3 (rad)
+        // @Field: Y4: Yaw estimate from individual EKF filter 4 (rad)
+        // @Field: W0: Weighting applied to yaw estimate from individual EKF filter 0 (rad)
+        // @Field: W1: Weighting applied to yaw estimate from individual EKF filter 1 (rad)
+        // @Field: W2: Weighting applied to yaw estimate from individual EKF filter 2 (rad)
+        // @Field: W3: Weighting applied to yaw estimate from individual EKF filter 3 (rad)
+        // @Field: W4: Weighting applied to yaw estimate from individual EKF filter 4 (rad)
+
         AP::logger().Write("XKY0",
                         "TimeUS,C,YC,YCS,Y0,Y1,Y2,Y3,Y4,W0,W1,W2,W3,W4",
                         "s#rrrrrrr-----",
@@ -370,6 +387,20 @@ void NavEKF3::Log_Write_GSF(uint8_t _core, uint64_t time_us) const
                         wgt[2],
                         wgt[3],
                         wgt[4]);
+
+        // @LoggerMessage: XKY1
+        // @Description: EKF2 Yaw Estimator Innovations
+        // @Field: TimeUS: Time since system startup
+        // @Field: IVN0: North velocity innovation from individual EKF filter 0 (m/s)
+        // @Field: IVN1: North velocity innovation from individual EKF filter 1 (m/s)
+        // @Field: IVN2: North velocity innovation from individual EKF filter 2 (m/s)
+        // @Field: IVN3: North velocity innovation from individual EKF filter 3 (m/s)
+        // @Field: IVN4: North velocity innovation from individual EKF filter 4 (m/s)
+        // @Field: IVE0: East velocity innovation from individual EKF filter 0 (m/s)
+        // @Field: IVE1: East velocity innovation from individual EKF filter 1 (m/s)
+        // @Field: IVE2: East velocity innovation from individual EKF filter 2 (m/s)
+        // @Field: IVE3: East velocity innovation from individual EKF filter 3 (m/s)
+        // @Field: IVE4: East velocity innovation from individual EKF filter 4 (m/s)
 
         AP::logger().Write("XKY1",
                         "TimeUS,C,IVN0,IVN1,IVN2,IVN3,IVN4,IVE0,IVE1,IVE2,IVE3,IVE4",
