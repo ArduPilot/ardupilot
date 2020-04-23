@@ -840,7 +840,7 @@ void NavEKF2_core::fuseEulerYaw()
         } else {
             if (imuSampleTime_ms - prevBetaStep_ms > 1000 && yawEstimator != nullptr) {
                 float gsfYaw, gsfYawVariance;
-                if (yawEstimator->getYawData(&gsfYaw, &gsfYawVariance) &&
+                if (yawEstimator->getYawData(gsfYaw, gsfYawVariance) &&
                     is_positive(gsfYawVariance) &&
                     gsfYawVariance < sq(radians(15.0f))) {
                         measured_yaw = gsfYaw;
@@ -899,7 +899,7 @@ void NavEKF2_core::fuseEulerYaw()
         } else {
             if (imuSampleTime_ms - prevBetaStep_ms > 1000 && yawEstimator != nullptr) {
                 float gsfYaw, gsfYawVariance;
-                if (yawEstimator->getYawData(&gsfYaw, &gsfYawVariance) &&
+                if (yawEstimator->getYawData(gsfYaw, gsfYawVariance) &&
                     is_positive(gsfYawVariance) &&
                     gsfYawVariance < sq(radians(15.0f))) {
                         measured_yaw = gsfYaw;
@@ -1224,7 +1224,7 @@ bool NavEKF2_core::EKFGSF_resetMainFilterYaw()
     };
 
     float yawEKFGSF, yawVarianceEKFGSF;
-    if (yawEstimator->getYawData(&yawEKFGSF, &yawVarianceEKFGSF) && is_positive(yawVarianceEKFGSF) && yawVarianceEKFGSF < sq(radians(15.0f))) {
+    if (yawEstimator->getYawData(yawEKFGSF, yawVarianceEKFGSF) && is_positive(yawVarianceEKFGSF) && yawVarianceEKFGSF < sq(radians(15.0f))) {
 
         // keep roll and pitch and reset yaw
         resetQuatStateYawOnly(yawEKFGSF, yawVarianceEKFGSF, false);
