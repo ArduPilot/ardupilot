@@ -27,11 +27,11 @@ public:
 
     // get solution data for logging
     // return false if yaw estimation is inactive
-    bool getLogData(float *yaw_composite, float *yaw_composite_variance, float yaw[N_MODELS_EKFGSF], float innov_VN[N_MODELS_EKFGSF], float innov_VE[N_MODELS_EKFGSF], float weight[N_MODELS_EKFGSF]);
+    bool getLogData(float &yaw_composite, float &yaw_composite_variance, float yaw[N_MODELS_EKFGSF], float innov_VN[N_MODELS_EKFGSF], float innov_VE[N_MODELS_EKFGSF], float weight[N_MODELS_EKFGSF]);
 
     // get yaw estimated and corresponding variance
     // return false if yaw estimation is inactive
-    bool getYawData(float *yaw, float *yawVariance);
+    bool getYawData(float &yaw, float &yawVariance);
 
 private:
 
