@@ -903,8 +903,7 @@ private:
     // reset the quaternion state covariances using the supplied yaw variance
     // yaw          : new yaw angle (rad)
     // yaw_variance : variance of new yaw angle (rad^2)
-    // isDeltaYaw   : true when the yaw should be added to the existing yaw angle
-    void resetQuatStateYawOnly(float yaw, float yawVariance, bool isDeltaYaw);
+    void resetQuatStateYawOnly(float yaw, float yawVariance);
 
     // attempt to reset the yaw to the EKF-GSF value
     // returns false if unsuccessful

@@ -1657,7 +1657,7 @@ void NavEKF3_core::setYawFromMag()
     float yawAngMeasured = wrap_PI(-atan2f(magMeasNED.y, magMeasNED.x) + MagDeclination());
 
     // update quaternion states and covariances
-    resetQuatStateYawOnly(yawAngMeasured, sq(MAX(frontend->_yawNoise, 1.0e-2f)), false);
+    resetQuatStateYawOnly(yawAngMeasured, sq(MAX(frontend->_yawNoise, 1.0e-2f)));
 }
 
 // update quaternion, mag field states and associated variances using magnetomer and declination data
