@@ -33,7 +33,6 @@ void ExtendedKalmanFilter::update(float z, float Px, float Py, float driftX, flo
 {
     MatrixN<float,N> tempM;
     VectorN<float,N> H;
-    VectorN<float,N> P12;
     VectorN<float,N> K;
     
     // LINE 28
@@ -56,7 +55,7 @@ void ExtendedKalmanFilter::update(float z, float Px, float Py, float driftX, flo
 
     // LINE 40
     // P12 = P * H';
-    P12.mult(P, H); //cross covariance 
+    VectorN<float,N> P12 = P.mult(H); //cross covariance
     
     // LINE 41
     // Calculate the KALMAN GAIN

@@ -16,7 +16,6 @@
 
 #include <cmath>
 #include <string.h>
-#include "matrixN.h"
 
 #ifndef MATH_CHECK_INDEXES
 # define MATH_CHECK_INDEXES 0
@@ -156,17 +155,6 @@ public:
             ret += _v[i] * v._v[i];
         }
         return ret;
-    }
-    
-    // multiplication of a matrix by a vector, in-place
-    // C = A * B
-    void mult(const MatrixN<T,N> &A, const VectorN<T,N> &B) {
-        for (uint8_t i = 0; i < N; i++) {
-            _v[i] = 0;
-            for (uint8_t k = 0; k < N; k++) {
-                _v[i] += A.v[i][k] * B[k];
-            }
-        }
     }
 
 private:

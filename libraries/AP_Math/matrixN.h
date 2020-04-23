@@ -74,7 +74,20 @@ public:
             v[j][i] = v[i][j];
         }
     }
-}
+    }
+
+    // Multiply by a vector, to return a vector
+    VectorN<T,N> mult(const VectorN<T,N> &B)
+    {
+        VectorN<T,N> out;
+        for (uint8_t i = 0; i < N; i++) {
+            out[i] = 0;
+            for (uint8_t k = 0; k < N; k++) {
+                out[i] += v[i][k] * B[k];
+            }
+        }
+        return out;
+    }
 
 private:
     T v[N][N];
