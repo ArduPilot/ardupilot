@@ -48,10 +48,10 @@ private:
 #endif
 
     // Parameters
-    const float EKFGSF_gyroNoise{1.0e-1f}; 	// yaw rate noise used for covariance prediction (rad/sec)
-    const float EKFGSF_accelNoise{2.0f};	// horizontal accel noise used for covariance prediction (m/sec**2)
-    const float EKFGSF_tiltGain{0.2f};		// gain from tilt error to gyro correction for complementary filter (1/sec)
-    const float EKFGSF_gyroBiasGain{0.04f};	// gain applied to integral of gyro correction for complementary filter (1/sec)
+    const float EKFGSF_gyroNoise{1.0e-1f};  // yaw rate noise used for covariance prediction (rad/sec)
+    const float EKFGSF_accelNoise{2.0f};    // horizontal accel noise used for covariance prediction (m/sec**2)
+    const float EKFGSF_tiltGain{0.2f};      // gain from tilt error to gyro correction for complementary filter (1/sec)
+    const float EKFGSF_gyroBiasGain{0.04f}; // gain applied to integral of gyro correction for complementary filter (1/sec)
     const float EKFGSF_accelFiltRatio{10.0f}; // ratio  of time constant of AHRS tilt correction to time constant of first order LPF applied to accel data used by ahrs
 
     // Declarations used by the bank of AHRS complementary filters that use IMU data augmented by true
@@ -62,20 +62,20 @@ private:
     float angle_dt;
     float velocity_dt;
     struct ahrs_struct {
-        Matrix3f R;				// matrix that rotates a vector from body to earth frame
-        Vector3f gyro_bias;		// gyro bias learned and used by the quaternion calculation
-        bool aligned{false};	// true when AHRS has been aligned
-        float accel_FR[2];	    // front-right acceleration vector in a horizontal plane (m/s/s)
-        float vel_NE[2];		// NE velocity vector from last GPS measurement (m/s)
-        bool fuse_gps;	        // true when GPS should be fused on that frame
-        float accel_dt;		    // time step used when generating _simple_accel_FR data (sec)
+        Matrix3f R;             // matrix that rotates a vector from body to earth frame
+        Vector3f gyro_bias;     // gyro bias learned and used by the quaternion calculation
+        bool aligned{false};    // true when AHRS has been aligned
+        float accel_FR[2];      // front-right acceleration vector in a horizontal plane (m/s/s)
+        float vel_NE[2];        // NE velocity vector from last GPS measurement (m/s)
+        bool fuse_gps;          // true when GPS should be fused on that frame
+        float accel_dt;         // time step used when generating _simple_accel_FR data (sec)
     };
     ahrs_struct AHRS[N_MODELS_EKFGSF];
     bool ahrs_tilt_aligned;         // true the initial tilt alignment has been calculated
-    float accel_gain;	            // gain from accel vector tilt error to rate gyro correction used by AHRS calculation
-    Vector3f ahrs_accel;	        // filtered body frame specific force vector used by AHRS calculation (m/s/s)
-    float ahrs_accel_norm;	        // length of body frame specific force vector used by AHRS calculation (m/s/s)
-    bool ahrs_turn_comp_enabled;	// true when compensation for centripetal acceleration in coordinated turns using true airspeed is being used.
+    float accel_gain;               // gain from accel vector tilt error to rate gyro correction used by AHRS calculation
+    Vector3f ahrs_accel;            // filtered body frame specific force vector used by AHRS calculation (m/s/s)
+    float ahrs_accel_norm;          // length of body frame specific force vector used by AHRS calculation (m/s/s)
+    bool ahrs_turn_comp_enabled;    // true when compensation for centripetal acceleration in coordinated turns using true airspeed is being used.
     float true_airspeed;            // true airspeed used to correct for centripetal acceleratoin in coordinated turns (m/s)
 
     // Runs quaternion prediction for the selected AHRS using IMU (and optionally true airspeed) data

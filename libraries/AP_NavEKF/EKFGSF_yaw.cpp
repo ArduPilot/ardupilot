@@ -159,16 +159,16 @@ void EKFGSF_yaw::update(const Vector3f &delAng,
     /*
     memset(&GSF.P, 0, sizeof(GSF.P));
     for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
-		float delta[3];
-		for (uint8_t row = 0; row < 3; row++) {
-			delta[row] = EKF[mdl_idx].X[row] - GSF.X[row];
-		}
-		for (uint8_t row = 0; row < 3; row++) {
-			for (uint8_t col = 0; col < 3; col++) {
-				GSF.P[row][col] +=  GSF.weights[mdl_idx] * (EKF[mdl_idx].P[row][col] + delta[row] * delta[col]);
-			}
-		}
-	}
+        float delta[3];
+        for (uint8_t row = 0; row < 3; row++) {
+            delta[row] = EKF[mdl_idx].X[row] - GSF.X[row];
+        }
+        for (uint8_t row = 0; row < 3; row++) {
+            for (uint8_t col = 0; col < 3; col++) {
+                GSF.P[row][col] +=  GSF.weights[mdl_idx] * (EKF[mdl_idx].P[row][col] + delta[row] * delta[col]);
+            }
+        }
+    }
     */
 
     GSF.yaw_variance = 0.0f;
@@ -628,7 +628,7 @@ Matrix3f EKFGSF_yaw::updateRotMat(const Matrix3f &R, const Vector3f &g)
     ret[1][0] += R[1][1] * g[2] - R[1][2] * g[1];
     ret[1][1] += R[1][2] * g[0] - R[1][0] * g[2];
     ret[1][2] += R[1][0] * g[1] - R[1][1] * g[0];
-	ret[2][0] += R[2][1] * g[2] - R[2][2] * g[1];
+    ret[2][0] += R[2][1] * g[2] - R[2][2] * g[1];
     ret[2][1] += R[2][2] * g[0] - R[2][0] * g[2];
     ret[2][2] += R[2][0] * g[1] - R[2][1] * g[0];
 
