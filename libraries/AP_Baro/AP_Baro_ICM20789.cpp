@@ -339,6 +339,13 @@ void AP_Baro_ICM20789::update()
 {
 #if BARO_ICM20789_DEBUG
     // useful for debugging
+// @LoggerMessage: ICMB
+// @Description: ICM20789 diagnostics
+// @Field: TimeUS: Time since system startup
+// @Field: Traw: raw temperature from sensor
+// @Field: Praw: raw pressure from sensor
+// @Field: P: pressure
+// @Field: T: temperature
     AP::logger().Write("ICMB", "TimeUS,Traw,Praw,P,T", "QIIff",
                                            AP_HAL::micros64(),
                                            dd.Traw, dd.Praw, dd.P, dd.T);
