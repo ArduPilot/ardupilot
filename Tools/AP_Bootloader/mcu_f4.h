@@ -13,19 +13,19 @@ enum {
 };
 
 
-#define STM32_UNKNOWN	0
-#define STM32F40x_41x	0x413
-#define STM32F42x_43x	0x419
-#define STM32F42x_446xx	0x421
+#define STM32_UNKNOWN   0
+#define STM32F40x_41x   0x413
+#define STM32F42x_43x   0x419
+#define STM32F42x_446xx 0x421
 
 // The default CPU ID  of STM32_UNKNOWN is 0 and is in offset 0
 // Before a rev is known it is set to ?
 // There for new silicon will result in STM32F4..,?
 const mcu_des_t mcu_descriptions[] = {
-    { STM32_UNKNOWN,	"STM32F???",    '?'},
-    { STM32F40x_41x, 	"STM32F40x",	'?'},
-    { STM32F42x_43x, 	"STM32F42x",	'?'},
-    { STM32F42x_446xx, 	"STM32F446XX",	'?'},
+    { STM32_UNKNOWN,    "STM32F???",    '?'},
+    { STM32F40x_41x,    "STM32F40x",    '?'},
+    { STM32F42x_43x,    "STM32F42x",    '?'},
+    { STM32F42x_446xx,  "STM32F446XX",  '?'},
 };
 
 const mcu_rev_t silicon_revs[] = {

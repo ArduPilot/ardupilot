@@ -70,51 +70,51 @@
 //
 // Expected workflow (protocol 3) is:
 //
-// GET_SYNC		verify that the board is present
-// GET_DEVICE		determine which board (select firmware to upload)
-// CHIP_ERASE		erase the program area and reset address counter
+// GET_SYNC     verify that the board is present
+// GET_DEVICE       determine which board (select firmware to upload)
+// CHIP_ERASE       erase the program area and reset address counter
 // loop:
 //      PROG_MULTI      program bytes
-// GET_CRC		verify CRC of entire flashable area
-// RESET		finalise flash programming, reset chip and starts application
+// GET_CRC      verify CRC of entire flashable area
+// RESET        finalise flash programming, reset chip and starts application
 //
 
-#define BL_PROTOCOL_VERSION 		5		// The revision of the bootloader protocol
+#define BL_PROTOCOL_VERSION         5       // The revision of the bootloader protocol
 // protocol bytes
-#define PROTO_INSYNC				0x12    // 'in sync' byte sent before status
-#define PROTO_EOC					0x20    // end of command
+#define PROTO_INSYNC                0x12    // 'in sync' byte sent before status
+#define PROTO_EOC                   0x20    // end of command
 
 // Reply bytes
-#define PROTO_OK					0x10    // INSYNC/OK      - 'ok' response
-#define PROTO_FAILED				0x11    // INSYNC/FAILED  - 'fail' response
-#define PROTO_INVALID				0x13	// INSYNC/INVALID - 'invalid' response for bad commands
-#define PROTO_BAD_SILICON_REV 		0x14 	// On the F4 series there is an issue with < Rev 3 silicon
+#define PROTO_OK                    0x10    // INSYNC/OK      - 'ok' response
+#define PROTO_FAILED                0x11    // INSYNC/FAILED  - 'fail' response
+#define PROTO_INVALID               0x13    // INSYNC/INVALID - 'invalid' response for bad commands
+#define PROTO_BAD_SILICON_REV       0x14    // On the F4 series there is an issue with < Rev 3 silicon
 // see https://pixhawk.org/help/errata
 // Command bytes
-#define PROTO_GET_SYNC				0x21    // NOP for re-establishing sync
-#define PROTO_GET_DEVICE			0x22    // get device ID bytes
-#define PROTO_CHIP_ERASE			0x23    // erase program area and reset program address
-#define PROTO_PROG_MULTI			0x27    // write bytes at program address and increment
-#define PROTO_READ_MULTI			0x28    // read bytes at address and increment
-#define PROTO_GET_CRC				0x29	// compute & return a CRC
-#define PROTO_GET_OTP				0x2a	// read a byte from OTP at the given address
-#define PROTO_GET_SN				0x2b    // read a word from UDID area ( Serial)  at the given address
-#define PROTO_GET_CHIP				0x2c    // read chip version (MCU IDCODE)
-#define PROTO_SET_DELAY				0x2d    // set minimum boot delay
-#define PROTO_GET_CHIP_DES			0x2e    // read chip version In ASCII
-#define PROTO_BOOT					0x30    // boot the application
-#define PROTO_DEBUG					0x31    // emit debug information - format not defined
-#define PROTO_SET_BAUD				0x33    // baud rate on uart
+#define PROTO_GET_SYNC              0x21    // NOP for re-establishing sync
+#define PROTO_GET_DEVICE            0x22    // get device ID bytes
+#define PROTO_CHIP_ERASE            0x23    // erase program area and reset program address
+#define PROTO_PROG_MULTI            0x27    // write bytes at program address and increment
+#define PROTO_READ_MULTI            0x28    // read bytes at address and increment
+#define PROTO_GET_CRC               0x29    // compute & return a CRC
+#define PROTO_GET_OTP               0x2a    // read a byte from OTP at the given address
+#define PROTO_GET_SN                0x2b    // read a word from UDID area ( Serial)  at the given address
+#define PROTO_GET_CHIP              0x2c    // read chip version (MCU IDCODE)
+#define PROTO_SET_DELAY             0x2d    // set minimum boot delay
+#define PROTO_GET_CHIP_DES          0x2e    // read chip version In ASCII
+#define PROTO_BOOT                  0x30    // boot the application
+#define PROTO_DEBUG                 0x31    // emit debug information - format not defined
+#define PROTO_SET_BAUD              0x33    // baud rate on uart
 
-#define PROTO_PROG_MULTI_MAX    64	// maximum PROG_MULTI size
-#define PROTO_READ_MULTI_MAX    255	// size of the size field
+#define PROTO_PROG_MULTI_MAX    64  // maximum PROG_MULTI size
+#define PROTO_READ_MULTI_MAX    255 // size of the size field
 
 /* argument values for PROTO_GET_DEVICE */
-#define PROTO_DEVICE_BL_REV	1	// bootloader revision
-#define PROTO_DEVICE_BOARD_ID	2	// board ID
-#define PROTO_DEVICE_BOARD_REV	3	// board revision
-#define PROTO_DEVICE_FW_SIZE	4	// size of flashable area
-#define PROTO_DEVICE_VEC_AREA	5	// contents of reserved vectors 7-10
+#define PROTO_DEVICE_BL_REV 1   // bootloader revision
+#define PROTO_DEVICE_BOARD_ID   2   // board ID
+#define PROTO_DEVICE_BOARD_REV  3   // board revision
+#define PROTO_DEVICE_FW_SIZE    4   // size of flashable area
+#define PROTO_DEVICE_VEC_AREA   5   // contents of reserved vectors 7-10
 
 // interrupt vector table for STM32
 #define SCB_VTOR 0xE000ED08
@@ -124,9 +124,9 @@ static virtual_timer_t systick_vt;
 /*
   millisecond timer array
  */
-#define NTIMERS		    2
-#define TIMER_BL_WAIT	0
-#define TIMER_LED	    1
+#define NTIMERS         2
+#define TIMER_BL_WAIT   0
+#define TIMER_LED       1
 
 static enum led_state {LED_BLINK, LED_ON, LED_OFF} led_state;
 
@@ -197,9 +197,9 @@ do_jump(uint32_t stacktop, uint32_t entrypoint)
 
     // we set sp as well as msp to avoid an issue with loading NuttX
     asm volatile(
-        "mov sp, %0	\n"
-        "msr msp, %0	\n"
-        "bx	%1	\n"
+        "mov sp, %0 \n"
+        "msr msp, %0    \n"
+        "bx %1  \n"
         : : "r"(stacktop), "r"(entrypoint) :);
 }
 
@@ -274,8 +274,8 @@ static void
 sync_response(void)
 {
     uint8_t data[] = {
-        PROTO_INSYNC,	// "in sync"
-        PROTO_OK	// "OK"
+        PROTO_INSYNC,   // "in sync"
+        PROTO_OK    // "OK"
     };
 
     cout(data, sizeof(data));
@@ -285,8 +285,8 @@ static void
 invalid_response(void)
 {
     uint8_t data[] = {
-        PROTO_INSYNC,	// "in sync"
-        PROTO_INVALID	// "invalid command"
+        PROTO_INSYNC,   // "in sync"
+        PROTO_INVALID   // "invalid command"
     };
 
     cout(data, sizeof(data));
@@ -296,8 +296,8 @@ static void
 failure_response(void)
 {
     uint8_t data[] = {
-        PROTO_INSYNC,	// "in sync"
-        PROTO_FAILED	// "command failed"
+        PROTO_INSYNC,   // "in sync"
+        PROTO_FAILED    // "command failed"
     };
 
     cout(data, sizeof(data));
@@ -437,9 +437,9 @@ bootloader(unsigned timeout)
     test_flash();
 #endif
 
-    uint32_t	address = board_info.fw_size;	/* force erase before upload will work */
-    uint32_t	read_address = 0;
-    uint32_t	first_words[RESERVE_LEAD_WORDS];
+    uint32_t    address = board_info.fw_size;   /* force erase before upload will work */
+    uint32_t    read_address = 0;
+    uint32_t    first_words[RESERVE_LEAD_WORDS];
     bool done_sync = false;
     bool done_get_device = false;
     bool done_erase = false;
@@ -466,8 +466,8 @@ bootloader(unsigned timeout)
         volatile int c;
         int arg;
         static union {
-            uint8_t		c[256];
-            uint32_t	w[64];
+            uint8_t     c[256];
+            uint32_t    w[64];
         } flash_buffer;
 
         // Wait for a command byte
@@ -495,8 +495,8 @@ bootloader(unsigned timeout)
 
         // sync
         //
-        // command:		GET_SYNC/EOC
-        // reply:		INSYNC/OK
+        // command:     GET_SYNC/EOC
+        // reply:       INSYNC/OK
         //
         case PROTO_GET_SYNC:
 
@@ -509,13 +509,13 @@ bootloader(unsigned timeout)
 
         // get device info
         //
-        // command:		GET_DEVICE/<arg:1>/EOC
-        // BL_REV reply:	<revision:4>/INSYNC/EOC
-        // BOARD_ID reply:	<board type:4>/INSYNC/EOC
-        // BOARD_REV reply:	<board rev:4>/INSYNC/EOC
-        // FW_SIZE reply:	<firmware size:4>/INSYNC/EOC
-        // VEC_AREA reply	<vectors 7-10:16>/INSYNC/EOC
-        // bad arg reply:	INSYNC/INVALID
+        // command:     GET_DEVICE/<arg:1>/EOC
+        // BL_REV reply:    <revision:4>/INSYNC/EOC
+        // BOARD_ID reply:  <board type:4>/INSYNC/EOC
+        // BOARD_REV reply: <board rev:4>/INSYNC/EOC
+        // FW_SIZE reply:   <firmware size:4>/INSYNC/EOC
+        // VEC_AREA reply   <vectors 7-10:16>/INSYNC/EOC
+        // bad arg reply:   INSYNC/INVALID
         //
         case PROTO_GET_DEVICE:
             /* expect arg then EOC */
@@ -568,9 +568,9 @@ bootloader(unsigned timeout)
 
         // erase and prepare for programming
         //
-        // command:		ERASE/EOC
-        // success reply:	INSYNC/OK
-        // erase failure:	INSYNC/FAILURE
+        // command:     ERASE/EOC
+        // success reply:   INSYNC/OK
+        // erase failure:   INSYNC/FAILURE
         //
         case PROTO_CHIP_ERASE:
 
@@ -620,12 +620,12 @@ bootloader(unsigned timeout)
 
         // program bytes at current address
         //
-        // command:		PROG_MULTI/<len:1>/<data:len>/EOC
-        // success reply:	INSYNC/OK
-        // invalid reply:	INSYNC/INVALID
-        // readback failure:	INSYNC/FAILURE
+        // command:     PROG_MULTI/<len:1>/<data:len>/EOC
+        // success reply:   INSYNC/OK
+        // invalid reply:   INSYNC/INVALID
+        // readback failure:    INSYNC/FAILURE
         //
-        case PROTO_PROG_MULTI:		// program bytes
+        case PROTO_PROG_MULTI:      // program bytes
             if (!done_sync || !done_get_device) {
                 // lower chance of random data on a uart triggering erase
                 goto cmd_bad;
@@ -685,8 +685,8 @@ bootloader(unsigned timeout)
 
         // fetch CRC of the entire flash area
         //
-        // command:			GET_CRC/EOC
-        // reply:			<crc:4>/INSYNC/OK
+        // command:         GET_CRC/EOC
+        // reply:           <crc:4>/INSYNC/OK
         //
         case PROTO_GET_CRC: {
             // expect EOC
@@ -718,8 +718,8 @@ bootloader(unsigned timeout)
 
         // read a word from the OTP
         //
-        // command:			GET_OTP/<addr:4>/EOC
-        // reply:			<value:4>/INSYNC/OK
+        // command:         GET_OTP/<addr:4>/EOC
+        // reply:           <value:4>/INSYNC/OK
         case PROTO_GET_OTP:
             // expect argument
         {
@@ -740,8 +740,8 @@ bootloader(unsigned timeout)
 
         // read the SN from the UDID
         //
-        // command:			GET_SN/<addr:4>/EOC
-        // reply:			<value:4>/INSYNC/OK
+        // command:         GET_SN/<addr:4>/EOC
+        // reply:           <value:4>/INSYNC/OK
         case PROTO_GET_SN:
             // expect argument
         {
@@ -762,8 +762,8 @@ bootloader(unsigned timeout)
 
         // read the chip ID code
         //
-        // command:			GET_CHIP/EOC
-        // reply:			<value:4>/INSYNC/OK
+        // command:         GET_CHIP/EOC
+        // reply:           <value:4>/INSYNC/OK
         case PROTO_GET_CHIP: {
             // expect EOC
             if (!wait_for_eoc(2)) {
@@ -776,8 +776,8 @@ bootloader(unsigned timeout)
 
         // read the chip  description
         //
-        // command:			GET_CHIP_DES/EOC
-        // reply:			<value:4>/INSYNC/OK
+        // command:         GET_CHIP_DES/EOC
+        // reply:           <value:4>/INSYNC/OK
         case PROTO_GET_CHIP_DES: {
             uint8_t buffer[MAX_DES_LENGTH];
             unsigned len = MAX_DES_LENGTH;
@@ -863,8 +863,8 @@ bootloader(unsigned timeout)
 
         // finalise programming and boot the system
         //
-        // command:			BOOT/EOC
-        // reply:			INSYNC/OK
+        // command:         BOOT/EOC
+        // reply:           INSYNC/OK
         //
         case PROTO_BOOT:
 
@@ -897,7 +897,7 @@ bootloader(unsigned timeout)
             // XXX reserved for ad-hoc debugging as required
             break;
 
-		case PROTO_SET_BAUD: {
+        case PROTO_SET_BAUD: {
             if (!done_sync || !done_get_device) {
                 // prevent timeout going to zero on noise
                 goto cmd_bad;
@@ -909,9 +909,9 @@ bootloader(unsigned timeout)
                 goto cmd_bad;
             }
 
-			if (!wait_for_eoc(2)) {
+            if (!wait_for_eoc(2)) {
                 goto cmd_bad;
-			}
+            }
 
             // send the sync response for this command
             sync_response();

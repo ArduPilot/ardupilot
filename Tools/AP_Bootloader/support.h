@@ -1,13 +1,13 @@
 #pragma once
 
-#define LED_ACTIVITY	1
-#define LED_BOOTLOADER	2
+#define LED_ACTIVITY    1
+#define LED_BOOTLOADER  2
 
 /* board info forwarded from board-specific code to booloader */
 struct boardinfo {
-    uint32_t	board_type;
-    uint32_t	board_rev;
-    uint32_t	fw_size;
+    uint32_t    board_type;
+    uint32_t    board_rev;
+    uint32_t    fw_size;
 } __attribute__((packed));
 
 extern struct boardinfo board_info;

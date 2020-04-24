@@ -166,8 +166,8 @@ uint32_t get_mcu_id(void)
     return *(uint32_t *)DBGMCU_BASE;
 }
 
-#define REVID_MASK	0xFFFF0000
-#define DEVID_MASK	0xFFF
+#define REVID_MASK  0xFFFF0000
+#define DEVID_MASK  0xFFF
 
 uint32_t get_mcu_desc(uint32_t max, uint8_t *revstr)
 {
