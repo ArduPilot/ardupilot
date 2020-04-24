@@ -62,7 +62,7 @@ bool TSYS01::_reset()
 }
 
 // Register map
-// prom word	Address
+// prom word    Address
 //      0       0xA0 -> unused
 //      1       0xA2 -> _k[4]
 //      2       0xA4 -> _k[3]
