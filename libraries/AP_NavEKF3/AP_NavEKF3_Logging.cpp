@@ -5,7 +5,7 @@
 
 void NavEKF3::Log_Write_XKF1(uint8_t _core, uint64_t time_us) const
 {
-	// Write first EKF packet
+    // Write first EKF packet
     Vector3f euler;
     Vector2f posNE;
     float posD;
