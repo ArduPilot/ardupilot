@@ -268,7 +268,7 @@ AP_AHRS_DCM::check_matrix(void)
             // normalisation didn't fix the problem! We're
             // in real trouble. All we can do is reset
             //Serial.printf("ERROR: DCM matrix error. _dcm_matrix.c.x=%f\n",
-            //	   _dcm_matrix.c.x);
+            //     _dcm_matrix.c.x);
             AP_AHRS_DCM::reset(true);
         }
     }
@@ -311,7 +311,7 @@ AP_AHRS_DCM::renorm(Vector3f const &a, Vector3f &result)
             // can recover our attitude using drift
             // correction before we hit the ground!
             //Serial.printf("ERROR: DCM renormalisation error. renorm_val=%f\n",
-            //	   renorm_val);
+            //     renorm_val);
             return false;
         }
     }
