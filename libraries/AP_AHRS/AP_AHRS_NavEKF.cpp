@@ -489,7 +489,12 @@ bool AP_AHRS_NavEKF::get_position(struct Location &loc) const
     }
 #endif
     }
-    return AP_AHRS_DCM::get_position(loc);
+
+    // fall back to position from DCM
+    if (!always_use_EKF()) {
+        return AP_AHRS_DCM::get_position(loc);
+    }
+    return false;
 }
 
 // status reporting of estimated errors
@@ -2286,4 +2291,3 @@ bool AP_AHRS_NavEKF::is_ext_nav_used_for_yaw(void) const
 }
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE
-
