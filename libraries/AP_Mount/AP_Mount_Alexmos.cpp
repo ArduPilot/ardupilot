@@ -263,7 +263,7 @@ void AP_Mount_Alexmos::read_incoming()
                 _step++;
                 break;
 
-            case 3:	// checksum of the header
+            case 3:    // checksum of the header
                 if (_checksum != data ) {
                     _step = 0;
                     _checksum = 0;

@@ -203,7 +203,7 @@ private:
         uint8_t rc_expo_rate;
         uint8_t rc_virt_mode;
         uint8_t rc_map_roll;
-        uint8_t rc_map_pitch;	
+        uint8_t rc_map_pitch;   
         uint8_t rc_map_yaw;
         uint8_t rc_map_cmd;
         uint8_t rc_map_fc_roll;

@@ -1,21 +1,21 @@
 /************************************************************
-* AP_mount -- library to control a 2 or 3 axis mount.		*
-*															*
-* Author:  Joe Holdsworth;									*
-*		   Ritchie Wilson;									*
-*		   Amilcar Lucas;									*
-*		   Gregory Fletcher;								*
+* AP_mount -- library to control a 2 or 3 axis mount.       *
+*                                                           *
+* Author:  Joe Holdsworth;                                  *
+*          Ritchie Wilson;                                  *
+*          Amilcar Lucas;                                   *
+*          Gregory Fletcher;                                *
 *          heavily modified by Randy Mackay                 *
-*															*
-* Purpose:  Move a 2 or 3 axis mount attached to vehicle,	*
-*			Used for mount to track targets or stabilise	*
-*			camera plus	other modes.						*
-*															*
-* Usage:	Use in main code to control	mounts attached to	*
-*			vehicle.										*
-*															*
+*                                                           *
+* Purpose:  Move a 2 or 3 axis mount attached to vehicle,   *
+*           Used for mount to track targets or stabilise    *
+*           camera plus other modes.                        *
+*                                                           *
+* Usage:    Use in main code to control mounts attached to  *
+*           vehicle.                                        *
+*                                                           *
 * Comments: All angles in degrees * 100, distances in meters*
-*			unless otherwise stated.						*
+*           unless otherwise stated.                        *
 ************************************************************/
 #pragma once
 

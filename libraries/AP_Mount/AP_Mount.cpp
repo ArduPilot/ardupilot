@@ -404,7 +404,7 @@ AP_Mount::AP_Mount()
     }
     _singleton = this;
 
-	AP_Param::setup_object_defaults(this, var_info);
+    AP_Param::setup_object_defaults(this, var_info);
 }
 
 // init - detect and initialise all mounts
