@@ -1,5 +1,5 @@
-/// @file	PID.h
-/// @brief	Generic PID algorithm, with EEPROM-backed storage of constants.
+/// @file   PID.h
+/// @brief  Generic PID algorithm, with EEPROM-backed storage of constants.
 #pragma once
 
 #include <AP_Common/AP_Common.h>
@@ -8,8 +8,8 @@
 #include <stdlib.h>
 #include <cmath>
 
-/// @class	PID
-/// @brief	Object managing one PID control
+/// @class  PID
+/// @brief  Object managing one PID control
 class PID {
 public:
 
@@ -18,24 +18,24 @@ public:
         const float &   initial_d = 0.0f,
         const int16_t & initial_imax = 0)
     {
-		AP_Param::setup_object_defaults(this, var_info);
+        AP_Param::setup_object_defaults(this, var_info);
         _kp = initial_p;
         _ki = initial_i;
         _kd = initial_d;
         _imax = initial_imax;
 
-		// set _last_derivative as invalid when we startup
-		_last_derivative = NAN;
+        // set _last_derivative as invalid when we startup
+        _last_derivative = NAN;
     }
 
     /// Iterate the PID, return the new control value
     ///
     /// Positive error produces positive output.
     ///
-    /// @param error	The measured error value
-    /// @param scaler	An arbitrary scale factor
+    /// @param error    The measured error value
+    /// @param scaler   An arbitrary scale factor
     ///
-    /// @returns		The updated control output.
+    /// @returns        The updated control output.
     ///
     float        get_pid(float error, float scaler = 1.0);
 
@@ -55,7 +55,7 @@ public:
     ///
     void        save_gains();
 
-    /// @name	parameter accessors
+    /// @name   parameter accessors
     //@{
 
     /// Overload the function call operator to permit relatively easy initialisation
