@@ -215,5 +215,5 @@ check_registers:
 
 void AP_Compass_RM3100::read()
 {
-	drain_accumulated_samples(compass_instance);
+    drain_accumulated_samples(compass_instance);
 }

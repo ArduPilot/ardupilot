@@ -44,8 +44,8 @@
 
 #define QMC5883L_OSR_512 (0x00 << 6)
 #define QMC5883L_OSR_256 (0x01 << 6)
-#define QMC5883L_OSR_128	(0x10 << 6)
-#define QMC5883L_OSR_64	(0x11	<< 6)
+#define QMC5883L_OSR_128    (0x10 << 6)
+#define QMC5883L_OSR_64 (0x11   << 6)
 
 #define QMC5883L_RST 0x80
 
@@ -79,7 +79,7 @@ AP_Compass_QMC5883L::AP_Compass_QMC5883L(AP_HAL::OwnPtr<AP_HAL::Device> dev,
                                          enum Rotation rotation)
     : _dev(std::move(dev))
     , _rotation(rotation)
-	, _force_external(force_external)
+    , _force_external(force_external)
 {
 }
 
@@ -94,18 +94,18 @@ bool AP_Compass_QMC5883L::init()
 #endif
 
     if(!_check_whoami()){
-    	 goto fail;
+         goto fail;
     }
 
     if (!_dev->write_register(0x0B, 0x01)||
-    	 !_dev->write_register(0x20, 0x40)||
-		 !_dev->write_register(0x21, 0x01)||
-		 !_dev->write_register(QMC5883L_REG_CONF1,
-						QMC5883L_MODE_CONTINUOUS|
-						QMC5883L_ODR_100HZ|
-						QMC5883L_OSR_512|
-						QMC5883L_RNG_8G)) {
-    		  	  goto fail;
+         !_dev->write_register(0x20, 0x40)||
+         !_dev->write_register(0x21, 0x01)||
+         !_dev->write_register(QMC5883L_REG_CONF1,
+                        QMC5883L_MODE_CONTINUOUS|
+                        QMC5883L_ODR_100HZ|
+                        QMC5883L_OSR_512|
+                        QMC5883L_RNG_8G)) {
+                  goto fail;
      }
 
     // lower retries for run
@@ -145,12 +145,12 @@ bool AP_Compass_QMC5883L::_check_whoami()
     //Affected by other devices,must read registers 0x00 once or reset,after can read the ID registers reliably
     _dev->read_registers(0x00,&whoami,1);
     if (!_dev->read_registers(0x0C, &whoami,1)||
-      		whoami != 0x01){
-    	return false;
+            whoami != 0x01){
+        return false;
     }
     if (!_dev->read_registers(QMC5883L_REG_ID, &whoami,1)||
-    		whoami != QMC5883_ID_VAL){
-    	return false;
+            whoami != QMC5883_ID_VAL){
+        return false;
     }
     return true;
 }
@@ -158,24 +158,24 @@ bool AP_Compass_QMC5883L::_check_whoami()
 void AP_Compass_QMC5883L::timer()
 {
     struct PACKED {
-    	le16_t rx;
-    	le16_t ry;
-    	le16_t rz;
+        le16_t rx;
+        le16_t ry;
+        le16_t rz;
     } buffer;
 
     const float range_scale = 1000.0f / 3000.0f;
 
     uint8_t status;
     if(!_dev->read_registers(QMC5883L_REG_STATUS,&status,1)){
-    	return;
+        return;
     }
     //new data is ready
     if (!(status & 0x04)) {
-    	return;
+        return;
     }
 
   if(!_dev->read_registers(QMC5883L_REG_DATA_OUTPUT_X, (uint8_t *) &buffer, sizeof(buffer))){
-	  return ;
+      return ;
   }
 
     auto x = -static_cast<int16_t>(le16toh(buffer.rx));
@@ -205,14 +205,14 @@ void AP_Compass_QMC5883L::read()
 
 void AP_Compass_QMC5883L::_dump_registers()
 {
-	  printf("QMC5883L registers dump\n");
-	    for (uint8_t reg = QMC5883L_REG_DATA_OUTPUT_X; reg <= 0x30; reg++) {
-	        uint8_t v;
-	        _dev->read_registers(reg,&v,1);
-	        printf("%02x:%02x ", (unsigned)reg, (unsigned)v);
-	        if ((reg - ( QMC5883L_REG_DATA_OUTPUT_X-1)) % 16 == 0) {
-	            printf("\n");
-	        }
-	    }
+      printf("QMC5883L registers dump\n");
+        for (uint8_t reg = QMC5883L_REG_DATA_OUTPUT_X; reg <= 0x30; reg++) {
+            uint8_t v;
+            _dev->read_registers(reg,&v,1);
+            printf("%02x:%02x ", (unsigned)reg, (unsigned)v);
+            if ((reg - ( QMC5883L_REG_DATA_OUTPUT_X-1)) % 16 == 0) {
+                printf("\n");
+            }
+        }
 }
 

@@ -355,7 +355,7 @@ bool AP_Compass_HMC5843::_calibrate()
     /*
      * the expected values are based on observation of real sensors
      */
-	float expected[3] = { 1.16*600, 1.08*600, 1.16*600 };
+    float expected[3] = { 1.16*600, 1.08*600, 1.16*600 };
 
     uint8_t base_config = HMC5843_OSR_15HZ;
     uint8_t num_samples = 0;

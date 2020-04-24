@@ -97,7 +97,7 @@ public:
 
     /// Calculate the tilt-compensated heading_ variables.
     ///
-    /// @param dcm_matrix			The current orientation rotation matrix
+    /// @param dcm_matrix           The current orientation rotation matrix
     ///
     /// @returns heading in radians
     ///
@@ -408,7 +408,7 @@ private:
         DRIVER_SITL     =13,
         DRIVER_MAG3110  =14,
         DRIVER_IST8308  = 15,
-		DRIVER_RM3100   =16,
+        DRIVER_RM3100   =16,
     };
 
     bool _driver_enabled(enum DriverType driver_type);
