@@ -80,14 +80,14 @@ static const uint8_t crc8_table[] = {
  */
 uint8_t crc_crc8(const uint8_t *p, uint8_t len)
 {
-	uint16_t crc = 0x0;
+    uint16_t crc = 0x0;
 
-	while (len--) {
-		const uint16_t i = (crc ^ *p++) & 0xFF;
-		crc = (crc8_table[i] ^ (crc << 8)) & 0xFF;
-	}
+    while (len--) {
+        const uint16_t i = (crc ^ *p++) & 0xFF;
+        crc = (crc8_table[i] ^ (crc << 8)) & 0xFF;
+    }
 
-	return crc & 0xFF;
+    return crc & 0xFF;
 }
 
 /*
@@ -96,17 +96,17 @@ uint8_t crc_crc8(const uint8_t *p, uint8_t len)
  */
 uint16_t crc_xmodem_update(uint16_t crc, uint8_t data)
 {
-	crc = crc ^ ((uint16_t)data << 8);
-	for (uint16_t i=0; i<8; i++)
-	{
-		if(crc & 0x8000) {
-			crc = (crc << 1) ^ 0x1021;
-		} else {
-			crc <<= 1;
+    crc = crc ^ ((uint16_t)data << 8);
+    for (uint16_t i=0; i<8; i++)
+    {
+        if(crc & 0x8000) {
+            crc = (crc << 1) ^ 0x1021;
+        } else {
+            crc <<= 1;
         }
-	}
+    }
 
-	return crc;
+    return crc;
 }
 
 uint16_t crc_xmodem(const uint8_t *data, uint16_t len)
@@ -170,11 +170,11 @@ static const uint32_t crc32_tab[] = {
 
 uint32_t crc_crc32(uint32_t crc, const uint8_t *buf, uint32_t size)
 {
-	for (uint32_t i=0; i<size; i++) {
-		crc = crc32_tab[(crc ^ buf[i]) & 0xff] ^ (crc >> 8);
-	}
+    for (uint32_t i=0; i<size; i++) {
+        crc = crc32_tab[(crc ^ buf[i]) & 0xff] ^ (crc >> 8);
+    }
 
-	return crc;
+    return crc;
 }
 
 // smaller (and slower) crc32 for bootloader

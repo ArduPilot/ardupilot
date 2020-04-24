@@ -29,11 +29,11 @@
 //
 // In addition to the template, this header defines the following types:
 //
-// Matrix3i		3x3 matrix of signed integers
-// Matrix3ui	3x3 matrix of unsigned integers
-// Matrix3l		3x3 matrix of signed longs
-// Matrix3ul	3x3 matrix of unsigned longs
-// Matrix3f		3x3 matrix of signed floats
+// Matrix3i     3x3 matrix of signed integers
+// Matrix3ui    3x3 matrix of unsigned integers
+// Matrix3l     3x3 matrix of signed longs
+// Matrix3ul    3x3 matrix of unsigned longs
+// Matrix3f     3x3 matrix of signed floats
 //
 #pragma once
 

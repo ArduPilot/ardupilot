@@ -69,7 +69,7 @@ public:
     void        rotation_matrix_norm(Matrix3f &m) const;
 
     // return the rotation matrix equivalent for this quaternion
-    void		from_rotation_matrix(const Matrix3f &m);
+    void        from_rotation_matrix(const Matrix3f &m);
 
     // create a quaternion from a given rotation
     void        from_rotation(enum Rotation rotation);
