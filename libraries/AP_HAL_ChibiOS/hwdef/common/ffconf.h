@@ -266,7 +266,7 @@
 /  SemaphoreHandle_t and etc.. A header file for O/S definitions needs to be
 /  included somewhere in the scope of ff.h. */
 
-/* #include <windows.h>	// O/S definitions  */
+/* #include <windows.h> // O/S definitions  */
 
 
 /*--- End of configuration options ---*/

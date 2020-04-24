@@ -187,7 +187,7 @@ static void stm32_flash_wait_idle(void)
         // nop
     }
 #else
-	while (FLASH->SR & FLASH_SR_BSY) {
+    while (FLASH->SR & FLASH_SR_BSY) {
         // nop
     }
 #endif
