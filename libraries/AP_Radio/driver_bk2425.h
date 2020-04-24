@@ -81,7 +81,7 @@ enum BK_INFO_TYPE_E {
 typedef uint8_t BK_INFO_TYPE;
 
 /** Data for packets that are not droneid packets
-	Onair order = little-endian */
+    Onair order = little-endian */
 typedef struct packetDataDeviceCtrl_s {
     uint8_t roll; ///< 2: Low 8 bits of the roll joystick
     uint8_t pitch; ///< 3: Low 8 bits of the pitch joystick
@@ -100,7 +100,7 @@ enum { SZ_CRC_GUID = 4 }; ///< Size of UUID for drone (32 bits)
 enum { SZ_DFU = 16 }; ///< Size of DFU packets
 
 /** Data for packets that are binding packets
-	Onair order = little-endian */
+    Onair order = little-endian */
 typedef struct packetDataDeviceBind_s {
     uint8_t bind_address[SZ_ADDRESS]; ///< The address being used by control packets
     uint8_t hopping; ///< The hopping table in use for this connection
@@ -151,7 +151,7 @@ typedef enum {
     BK_REG_MASK        = 0x1F,  // The range of registers that can be read and written
     BK_READ_REG        = 0x00,  // Define read command to register (0..1F)
     BK_WRITE_REG       = 0x20,  // Define write command to register (0..1F)
-    BK_ACTIVATE_CMD	   = 0x50,
+    BK_ACTIVATE_CMD    = 0x50,
     BK_R_RX_PL_WID_CMD = 0x60,
     BK_RD_RX_PLOAD     = 0x61,  // Define RX payload register address
     BK_WR_TX_PLOAD     = 0xA0,  // Define TX payload register address

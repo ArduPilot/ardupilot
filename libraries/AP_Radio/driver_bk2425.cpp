@@ -500,7 +500,7 @@ void Radio_Beken::SwitchToRxMode(void)
 
     BEKEN_CE_LOW();
     DelayCE();
-    value = ReadReg(BK_CONFIG);	// read register CONFIG's value
+    value = ReadReg(BK_CONFIG); // read register CONFIG's value
     value |= BK_CONFIG_PRIM_RX; // set bit 0
     value |= BK_CONFIG_PWR_UP;
     WriteReg(BK_WRITE_REG | BK_CONFIG, value); // Set PWR_UP bit, enable CRC(2 length) & Prim:RX. RX_DR enabled..
@@ -555,7 +555,7 @@ void Radio_Beken::SwitchToSleepMode(void)
     BEKEN_PA_LOW();
     BEKEN_CE_LOW();
     DelayCE();
-    value = ReadReg(BK_CONFIG);	// read register CONFIG's value
+    value = ReadReg(BK_CONFIG); // read register CONFIG's value
     value |= BK_CONFIG_PRIM_RX; // Receive mode
     value &= ~BK_CONFIG_PWR_UP; // Power down
     WriteReg(BK_WRITE_REG | BK_CONFIG, value); // Clear PWR_UP bit, enable CRC(2 length) & Prim:RX. RX_DR enabled..
@@ -652,7 +652,7 @@ bool Radio_Beken::SendPacket(uint8_t type, ///< WR_TX_PLOAD or W_TX_PAYLOAD_NOAC
                              const uint8_t* pbuf, ///< a buffer pointer
                              uint8_t len) ///< packet length in bytes
 {
-    uint8_t fifo_sta = ReadReg(BK_FIFO_STATUS);	// read register FIFO_STATUS's value
+    uint8_t fifo_sta = ReadReg(BK_FIFO_STATUS); // read register FIFO_STATUS's value
     bool returnValue = ClearAckOverflow();
 
     if (!(fifo_sta & BK_FIFO_STATUS_TX_FULL)) { // if not full, send data

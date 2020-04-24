@@ -357,7 +357,7 @@ void AP_Radio_cc2500::radio_init(void)
         }
     }
 
-    cc2500.Strobe(CC2500_SIDLE);	// Go to idle...
+    cc2500.Strobe(CC2500_SIDLE);    // Go to idle...
 
     hal.scheduler->delay_microseconds(10*1000);
 

@@ -17,7 +17,7 @@
 
 // start of 12 byte CPU ID
 #ifndef UDID_START
-#define UDID_START	0x1FFF7A10
+#define UDID_START  0x1FFF7A10
 #endif
 
 #define TIMEOUT_PRIORITY 250      // Right above timer thread
