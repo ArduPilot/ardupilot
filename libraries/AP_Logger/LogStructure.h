@@ -106,7 +106,7 @@ const struct MultiplierStructure log_Multipliers[] = {
   unfortunately these need to be macros because of a limitation of
   named member structure initialisation in g++
  */
-#define LOG_PACKET_HEADER	       uint8_t head1, head2, msgid;
+#define LOG_PACKET_HEADER          uint8_t head1, head2, msgid;
 #define LOG_PACKET_HEADER_INIT(id) head1 : HEAD_BYTE1, head2 : HEAD_BYTE2, msgid : id
 #define LOG_PACKET_HEADER_LEN 3 // bytes required for LOG_PACKET_HEADER
 
@@ -936,20 +936,20 @@ struct PACKED log_GPS_RAWS {
 };
 
 struct PACKED log_GPS_SBF_EVENT {  
-	LOG_PACKET_HEADER; 
-	uint64_t time_us;
-	uint32_t TOW;
-	uint16_t WNc;
-	uint8_t Mode;
-	uint8_t Error;
-	double Latitude;
-	double Longitude;
-	double Height;
-	float Undulation;
-	float Vn;
-	float Ve;
-	float Vu;
-	float COG;
+    LOG_PACKET_HEADER; 
+    uint64_t time_us;
+    uint32_t TOW;
+    uint16_t WNc;
+    uint8_t Mode;
+    uint8_t Error;
+    double Latitude;
+    double Longitude;
+    double Height;
+    float Undulation;
+    float Vn;
+    float Ve;
+    float Vu;
+    float COG;
 };
 
 struct PACKED log_Esc {
@@ -2346,7 +2346,7 @@ struct PACKED log_Arm_Disarm {
       "BAT", "QBfffffcf", "TimeUS,Instance,Volt,VoltR,Curr,CurrTot,EnrgTot,Temp,Res", "s#vvA?JOw", "F-000?/?0" },  \
     { LOG_CURRENT_CELLS_MSG, sizeof(log_Current_Cells), \
       "BCL", "QBfHHHHHHHHHH", "TimeUS,Instance,Volt,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10", "s#vvvvvvvvvvv", "F-00000000000" }, \
-	{ LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
+    { LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
       "ATT", "QccccCCCC", "TimeUS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw", "sddddhhdh", "FBBBBBBBB" }, \
     { LOG_COMPASS_MSG, sizeof(log_Compass), \
       "MAG", MAG_FMT,    MAG_LABELS, MAG_UNITS, MAG_MULTS }, \
@@ -2611,7 +2611,7 @@ enum LogMessages : uint8_t {
     LOG_FORMAT_MSG = 128, // this must remain #128
 
     LOG_GPS_RAWS_MSG,
-	LOG_GPS_SBF_EVENT_MSG,
+    LOG_GPS_SBF_EVENT_MSG,
     LOG_ACC1_MSG,
     LOG_ACC2_MSG,
     LOG_ACC3_MSG,

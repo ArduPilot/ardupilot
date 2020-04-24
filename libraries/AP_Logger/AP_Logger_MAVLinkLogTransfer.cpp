@@ -295,7 +295,7 @@ bool AP_Logger::handle_log_send_data()
 
     int16_t ret = 0;
     uint32_t len = _log_data_remaining;
-	mavlink_log_data_t packet;
+    mavlink_log_data_t packet;
 
     if (len > MAVLINK_MSG_LOG_DATA_FIELD_DATA_LEN) {
         len = MAVLINK_MSG_LOG_DATA_FIELD_DATA_LEN;
