@@ -105,8 +105,8 @@ void PCA9685LED_I2C::_timer(void)
 
 
     uint8_t transaction[] = {PCA9685_PWM, 0x00, 0x00, blue_channel_lsb, blue_channel_msb,
-			     0x00, 0x00, green_channel_lsb, green_channel_msb,
-			     0x00, 0x00, red_channel_lsb, red_channel_msb};
+                 0x00, 0x00, green_channel_lsb, green_channel_msb,
+                 0x00, 0x00, red_channel_lsb, red_channel_msb};
 
     _dev->transfer(transaction, sizeof(transaction), nullptr, 0);
 }

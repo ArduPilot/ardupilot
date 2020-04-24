@@ -60,7 +60,7 @@ void AP_BoardLED::update(void)
         hal.gpio->write(HAL_GPIO_A_LED_PIN, (counter2 & 1) ? HAL_GPIO_LED_ON : HAL_GPIO_LED_OFF);
         hal.gpio->write(HAL_GPIO_C_LED_PIN, (counter2 & 1) ? HAL_GPIO_LED_OFF : HAL_GPIO_LED_ON);
         return;
-	}
+    }
 
     // save trim and ESC calibration
     if (AP_Notify::flags.save_trim || AP_Notify::flags.esc_calibration) {
@@ -93,7 +93,7 @@ void AP_BoardLED::update(void)
 
     // arming light
     static uint8_t arm_counter = 0;
-	if (AP_Notify::flags.armed) {
+    if (AP_Notify::flags.armed) {
         // red led solid
         hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
     }else{

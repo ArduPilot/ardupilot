@@ -53,7 +53,7 @@ private:
         OREOLED_PATTERN_ENUM_COUNT
     };
 
-    /* enum of available macros	defined by hardware */
+    /* enum of available macros defined by hardware */
     enum oreoled_macro {
         OREOLED_PARAM_MACRO_RESET = 0,
         OREOLED_PARAM_MACRO_COLOUR_CYCLE = 1,

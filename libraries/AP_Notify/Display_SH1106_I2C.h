@@ -4,8 +4,8 @@
 #include "Display_Backend.h"
 #include <AP_HAL/I2CDevice.h>
 
-#define SH1106_COLUMNS 132		// display columns
-#define SH1106_ROWS 64		    // display rows
+#define SH1106_COLUMNS 132      // display columns
+#define SH1106_ROWS 64          // display rows
 #define SH1106_ROWS_PER_PAGE 8
 
 class Display_SH1106_I2C: public Display_Backend {

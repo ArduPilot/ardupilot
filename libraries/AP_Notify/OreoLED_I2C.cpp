@@ -37,8 +37,8 @@
 #define PERIOD_SUPER                    150     // super fast rate
 #define PO_ALTERNATE                    180     // 180 degree phase offset
 
-#define OREOLED_BOOT_CMD_BOOT_APP		0x60
-#define OREOLED_BOOT_CMD_BOOT_NONCE		0xA2
+#define OREOLED_BOOT_CMD_BOOT_APP       0x60
+#define OREOLED_BOOT_CMD_BOOT_NONCE     0xA2
 
 extern const AP_HAL::HAL& hal;
 

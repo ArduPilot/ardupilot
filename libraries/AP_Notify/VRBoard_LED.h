@@ -25,7 +25,7 @@
 
 class VRBoard_LED: public RGBLed {
 public:
-	VRBoard_LED();
+    VRBoard_LED();
 
 protected:
     bool hw_init(void) override;
