@@ -14,9 +14,9 @@
  */
 
 //
-/// @file	AP_Param.h
-/// @brief	A system for managing and storing variables that are of
-///			general interest to the system.
+/// @file   AP_Param.h
+/// @brief  A system for managing and storing variables that are of
+///         general interest to the system.
 #pragma once
 
 #include <stddef.h>
@@ -241,9 +241,9 @@ public:
     /// Note that if the combination of names is larger than the buffer, the
     /// result in the buffer will be truncated.
     ///
-    /// @param	token			token giving current variable
-    /// @param	buffer			The destination buffer
-    /// @param	bufferSize		Total size of the destination buffer.
+    /// @param  token           token giving current variable
+    /// @param  buffer          The destination buffer
+    /// @param  bufferSize      Total size of the destination buffer.
     ///
     void copy_name_info(const struct AP_Param::Info *info,
                         const struct GroupInfo *ginfo,
@@ -596,7 +596,7 @@ private:
                                     const struct GroupInfo *  &group_ret,
                                     struct GroupNesting       &group_nesting,
                                     uint8_t *                 idx) const;
-    const struct Info *			find_var_info_token(const ParamToken &token,
+    const struct Info *         find_var_info_token(const ParamToken &token,
                                                     uint32_t *                 group_element,
                                                     const struct GroupInfo *  &group_ret,
                                                     struct GroupNesting       &group_nesting,
@@ -628,7 +628,7 @@ private:
     static bool                 scan(
                                     const struct Param_header *phdr,
                                     uint16_t *pofs);
-    static uint8_t				type_size(enum ap_var_type type);
+    static uint8_t              type_size(enum ap_var_type type);
     static void                 eeprom_write_check(
                                     const void *ptr,
                                     uint16_t ofs,
@@ -712,8 +712,8 @@ namespace AP {
 /// Objects of this type have a value, and can be treated in many ways as though they
 /// were the value.
 ///
-/// @tparam T			The scalar type of the variable
-/// @tparam PT			The AP_PARAM_* type
+/// @tparam T           The scalar type of the variable
+/// @tparam PT          The AP_PARAM_* type
 ///
 template<typename T, ap_var_type PT>
 class AP_ParamT : public AP_Param
@@ -829,8 +829,8 @@ protected:
 /// Objects of this type have a value, and can be treated in many ways as though they
 /// were the value.
 ///
-/// @tparam T			The scalar type of the variable
-/// @tparam PT			AP_PARAM_* type
+/// @tparam T           The scalar type of the variable
+/// @tparam PT          AP_PARAM_* type
 ///
 template<typename T, ap_var_type PT>
 class AP_ParamV : public AP_Param
