@@ -431,8 +431,8 @@ void AP_SerialManager::init()
                                     // Note baudrate is hardcoded to 115200
                                     state[i].baud = AP_SERIALMANAGER_VOLZ_BAUD;   // update baud param in case user looks at it
                                     state[i].uart->begin(map_baudrate(state[i].baud),
-                                    		AP_SERIALMANAGER_VOLZ_BUFSIZE_RX,
-											AP_SERIALMANAGER_VOLZ_BUFSIZE_TX);
+                                            AP_SERIALMANAGER_VOLZ_BUFSIZE_RX,
+                                            AP_SERIALMANAGER_VOLZ_BUFSIZE_TX);
                                     state[i].uart->set_unbuffered_writes(true);
                                     state[i].uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
                                     break;
