@@ -57,13 +57,13 @@ class ESCStatusCb;
     the Callback will invoke registery to register the node as separate backend.
 */
 #define UC_REGISTRY_BINDER(ClassName_, DataType_) \
-	class ClassName_ : public AP_UAVCAN::RegistryBinder<DataType_> { \
+    class ClassName_ : public AP_UAVCAN::RegistryBinder<DataType_> { \
         typedef void (*CN_Registry)(AP_UAVCAN*, uint8_t, const ClassName_&); \
-	    public: \
-	        ClassName_() : RegistryBinder() {} \
-	        ClassName_(AP_UAVCAN* uc,  CN_Registry ffunc) : \
-				RegistryBinder(uc, (Registry)ffunc) {} \
-	}
+        public: \
+            ClassName_() : RegistryBinder() {} \
+            ClassName_(AP_UAVCAN* uc,  CN_Registry ffunc) : \
+                RegistryBinder(uc, (Registry)ffunc) {} \
+    }
 
 class AP_UAVCAN : public AP_HAL::CANProtocol {
 public:
@@ -102,7 +102,7 @@ public:
 
     public:
         RegistryBinder() :
-        	_uc(),
+            _uc(),
             _ffunc(),
             msg() {}
 
