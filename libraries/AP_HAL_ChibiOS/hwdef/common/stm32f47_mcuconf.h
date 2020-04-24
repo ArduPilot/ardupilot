@@ -81,9 +81,55 @@
 #ifndef STM32_PLLSRC
 #define STM32_PLLSRC                        STM32_PLLSRC_HSE
 #endif
-#ifndef STM32_PLLM_VALUE
+
+#if !defined(HAL_CUSTOM_CLOCK_TREE)
+#if defined(STM32F7xx_MCUCONF)
+// F7 clock config
+#if STM32_HSECLK == 8000000U
+#define STM32_PLLM_VALUE                    8
+#define STM32_PLLN_VALUE                    432
+#define STM32_PLLP_VALUE                    2
+#define STM32_PLLQ_VALUE                    9
+#elif STM32_HSECLK == 16000000U
+#define STM32_PLLM_VALUE                    8
+#define STM32_PLLN_VALUE                    216
+#define STM32_PLLP_VALUE                    2
+#define STM32_PLLQ_VALUE                    9
+#elif STM32_HSECLK == 24000000U
 #define STM32_PLLM_VALUE                    24
+#define STM32_PLLN_VALUE                    432
+#define STM32_PLLP_VALUE                    2
+#define STM32_PLLQ_VALUE                    9
+#else
+#error "Unsupported F7 HSE clock"
 #endif
+#else // F4
+// F4 clock config
+#if STM32_HSECLK == 8000000U
+#define STM32_PLLM_VALUE                    8
+#define STM32_PLLN_VALUE                    336
+#define STM32_PLLP_VALUE                    2
+#define STM32_PLLQ_VALUE                    7
+#elif STM32_HSECLK == 16000000U
+#define STM32_PLLM_VALUE                    16
+#define STM32_PLLN_VALUE                    384
+#define STM32_PLLP_VALUE                    4
+#define STM32_PLLQ_VALUE                    8
+#elif STM32_HSECLK == 24000000U
+#define STM32_PLLM_VALUE                    24
+#define STM32_PLLN_VALUE                    336
+#define STM32_PLLP_VALUE                    2
+#define STM32_PLLQ_VALUE                    7
+#else
+#error "Unsupported F4 HSE clock"
+#endif
+#endif // MCU
+#endif // HAL_CUSTOM_CLOCK_TREE
+
+// we don't use LSE, but we need the defines
+#define STM32_LSECLK   32768U
+#define STM32_LSEDRV   (3U << 3U)
+
 #ifndef STM32_PLLN_VALUE
 #define STM32_PLLN_VALUE                    336
 #endif
