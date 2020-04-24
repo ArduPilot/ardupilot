@@ -49,6 +49,9 @@ public:
 
     /// run the loiter controller
     void update();
+    
+    //set maximum horizontal speed
+    void set_max_xy_speed(float max_xy_speed);
 
     /// get desired roll, pitch which should be fed into stabilize controllers
     float get_roll() const { return _pos_control.get_roll(); }
