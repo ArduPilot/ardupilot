@@ -2079,7 +2079,7 @@ void GCS_MAVLINK::handle_set_mode(const mavlink_message_t &msg)
     // command.  The command we are acking (ID=11) doesn't actually
     // exist, but if it did we'd probably be acking something
     // completely unrelated to setting modes.
-    if (HAVE_PAYLOAD_SPACE(chan, MAVLINK_MSG_ID_COMMAND_ACK)) {
+    if (HAVE_PAYLOAD_SPACE(chan, COMMAND_ACK)) {
         mavlink_msg_command_ack_send(chan, MAVLINK_MSG_ID_SET_MODE, result);
     }
 }
