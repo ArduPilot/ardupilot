@@ -228,16 +228,16 @@ static const unsigned ESC_PACKET_DATA_OFFSET = 3;
  * channelID: assigned channel number
  *
  * ESCStatus: status of ESC
- *  Num		Health status
- *  0		HEALTHY
- *  1		WARNING_LOW_VOLTAGE
- *  2		WARNING_OVER_CURRENT
- *  3		WARNING_OVER_HEAT
- *  4		ERROR_MOTOR_LOW_SPEED_LOSE_STEP
- *  5		ERROR_MOTOR_STALL
- *  6		ERROR_HARDWARE
- *  7		ERROR_LOSE_PROPELLER
- *  8		ERROR_OVER_CURRENT
+ *  Num     Health status
+ *  0       HEALTHY
+ *  1       WARNING_LOW_VOLTAGE
+ *  2       WARNING_OVER_CURRENT
+ *  3       WARNING_OVER_HEAT
+ *  4       ERROR_MOTOR_LOW_SPEED_LOSE_STEP
+ *  5       ERROR_MOTOR_STALL
+ *  6       ERROR_HARDWARE
+ *  7       ERROR_LOSE_PROPELLER
+ *  8       ERROR_OVER_CURRENT
  *
  * speed: -32767 - 32767 rpm
  *
@@ -385,8 +385,8 @@ void RCOutput_Tap::init()
 
     /*
      * To Unlock the ESC from the Power up state we need to issue 10
-	 * ESCBUS_MSG_ID_RUN request with all the values 0;
-	 */
+     * ESCBUS_MSG_ID_RUN request with all the values 0;
+     */
     EscPacket unlock_packet = {0xfe, _channels_count, ESCBUS_MSG_ID_RUN};
     unlock_packet.len *= sizeof(unlock_packet.d.reqRun.value[0]);
     memset(unlock_packet.d.bytes, 0, sizeof(packet.d.bytes));

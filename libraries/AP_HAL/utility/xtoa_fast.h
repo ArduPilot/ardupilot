@@ -29,13 +29,13 @@
   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
   POSSIBILITY OF SUCH DAMAGE. */
 
-/* $Id: xtoa_fast.h 1223 2007-02-18 13:33:09Z dmix $	*/
+/* $Id: xtoa_fast.h 1223 2007-02-18 13:33:09Z dmix $    */
 #pragma once
 
-/* Internal function for use from `printf'.	*/
+/* Internal function for use from `printf'. */
 char *ultoa_invert (uint32_t val, char *s, uint8_t base);
 char *ulltoa_invert (uint64_t val, char *s, uint8_t base);
 
-/* Next flags are to use with `base'. Unused fields are reserved.	*/
-#define XTOA_PREFIX	0x0100	/* put prefix for octal or hex	*/
-#define XTOA_UPPER	0x0200	/* use upper case letters	*/
+/* Next flags are to use with `base'. Unused fields are reserved.   */
+#define XTOA_PREFIX 0x0100  /* put prefix for octal or hex  */
+#define XTOA_UPPER  0x0200  /* use upper case letters   */

@@ -14,10 +14,10 @@
 class GetOptLong {
 public:
     struct option {
-	const char *name;
-	bool        has_arg;
-	int        *flag;
-	int         val;
+    const char *name;
+    bool        has_arg;
+    int        *flag;
+    int         val;
     };
 
     GetOptLong(int argc, char *const argv[], const char *optstring, const option * longopts);
