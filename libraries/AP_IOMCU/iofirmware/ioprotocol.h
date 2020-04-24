@@ -13,12 +13,12 @@
 //#define IOMCU_DEBUG
 
 struct PACKED IOPacket {
-    uint8_t 	count:6;
-    uint8_t 	code:2;
-    uint8_t 	crc;
-    uint8_t 	page;
-    uint8_t 	offset;
-    uint16_t	regs[PKT_MAX_REGS];
+    uint8_t     count:6;
+    uint8_t     code:2;
+    uint8_t     crc;
+    uint8_t     page;
+    uint8_t     offset;
+    uint16_t    regs[PKT_MAX_REGS];
 
     // get packet size in bytes
     uint8_t get_size(void) const
@@ -59,9 +59,9 @@ enum iopage {
 };
 
 // setup page registers
-#define PAGE_REG_SETUP_FEATURES	0
-#define P_SETUP_FEATURES_SBUS1_OUT	1
-#define P_SETUP_FEATURES_SBUS2_OUT	2
+#define PAGE_REG_SETUP_FEATURES 0
+#define P_SETUP_FEATURES_SBUS1_OUT  1
+#define P_SETUP_FEATURES_SBUS2_OUT  2
 #define P_SETUP_FEATURES_PWM_RSSI   4
 #define P_SETUP_FEATURES_ADC_RSSI   8
 #define P_SETUP_FEATURES_ONESHOT   16
@@ -71,14 +71,14 @@ enum iopage {
 #define P_SETUP_ARMING_IO_ARM_OK (1<<0)
 #define P_SETUP_ARMING_FMU_ARMED (1<<1)
 #define P_SETUP_ARMING_RC_HANDLING_DISABLED (1<<6)
-#define P_SETUP_ARMING_SAFETY_DISABLE_ON	(1 << 11) // disable use of safety button for safety off->on
-#define P_SETUP_ARMING_SAFETY_DISABLE_OFF	(1 << 12) // disable use of safety button for safety on->off
+#define P_SETUP_ARMING_SAFETY_DISABLE_ON    (1 << 11) // disable use of safety button for safety off->on
+#define P_SETUP_ARMING_SAFETY_DISABLE_OFF   (1 << 12) // disable use of safety button for safety on->off
 
 #define PAGE_REG_SETUP_PWM_RATE_MASK 2
 #define PAGE_REG_SETUP_DEFAULTRATE   3
 #define PAGE_REG_SETUP_ALTRATE       4
 #define PAGE_REG_SETUP_REBOOT_BL    10
-#define PAGE_REG_SETUP_CRC			11
+#define PAGE_REG_SETUP_CRC          11
 #define PAGE_REG_SETUP_SBUS_RATE    19
 #define PAGE_REG_SETUP_IGNORE_SAFETY 20 /* bitmask of surfaces to ignore the safety status */
 #define PAGE_REG_SETUP_HEATER_DUTY_CYCLE 21

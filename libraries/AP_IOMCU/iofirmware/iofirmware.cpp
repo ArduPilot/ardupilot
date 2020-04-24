@@ -82,10 +82,10 @@ static void idle_rx_handler(UARTDriver *uart)
 {
     volatile uint16_t sr = uart->usart->SR;
 
-    if (sr & (USART_SR_LBD | USART_SR_ORE |	/* overrun error - packet was too big for DMA or DMA was too slow */
-              USART_SR_NE |		/* noise error - we have lost a byte due to noise */
+    if (sr & (USART_SR_LBD | USART_SR_ORE | /* overrun error - packet was too big for DMA or DMA was too slow */
+              USART_SR_NE |     /* noise error - we have lost a byte due to noise */
               USART_SR_FE |
-              USART_SR_PE)) {		/* framing error - start/stop bit lost or line break */
+              USART_SR_PE)) {       /* framing error - start/stop bit lost or line break */
         /* send a line break - this will abort transmission/reception on the other end */
         osalSysLockFromISR();
         uart->usart->SR = ~USART_SR_LBD;
@@ -416,11 +416,11 @@ void AP_IOMCU_FW::page_status_update(void)
 bool AP_IOMCU_FW::handle_code_read()
 {
     uint16_t *values = nullptr;
-#define COPY_PAGE(_page_name)							\
-	do {									\
-		values = (uint16_t *)&_page_name;				\
-		tx_io_packet.count = sizeof(_page_name) / sizeof(uint16_t);	\
-	} while(0);
+#define COPY_PAGE(_page_name)                           \
+    do {                                    \
+        values = (uint16_t *)&_page_name;               \
+        tx_io_packet.count = sizeof(_page_name) / sizeof(uint16_t); \
+    } while(0);
 
     switch (rx_io_packet.page) {
     case PAGE_CONFIG:
