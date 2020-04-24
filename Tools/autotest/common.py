@@ -3297,6 +3297,20 @@ class AutoTest(ABC):
             return ret
         return traceback.format_exc(e)
 
+    def assert_vehicle_armable(self):
+        self.delay_sim_time(1)
+        self.drain_mav()
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True, timeout=1)
+        bit = mavutil.mavlink.MAV_SYS_STATUS_PREARM_CHECK
+        if m is None:
+            raise NotAchievedException("Not receiving SYS_STATUS")
+        if (not (m.onboard_control_sensors_present & bit)):
+            raise NotAchievedException("PREARM sensor not present")
+        if (not (m.onboard_control_sensors_enabled & bit)):
+            raise NotAchievedException("PREARM sensor not enabled")
+        if (not (m.onboard_control_sensors_health & bit)):
+            raise NotAchievedException("PREARM sensor not healthy")
+
     def run_one_test(self, name, desc, test_function, interact=False):
         '''new-style run-one-test used by run_tests'''
         test_output_filename = self.buildlogs_path("%s-%s.txt" %
@@ -3333,15 +3347,23 @@ class AutoTest(ABC):
             passed = False
 
         self.wait_heartbeat()
-        if self.armed() and not self.is_tracker():
-            if ex is None:
-                ex = ArmedAtEndOfTestException("Still armed at end of test")
-            self.progress("Armed at end of test; force-rebooting SITL")
-            self.disarm_vehicle(force=True)
-            self.forced_post_test_sitl_reboots += 1
-            self.progress("Force-resetting SITL")
-            self.reboot_sitl() # that'll learn it
-            passed = False
+        if not self.is_tracker():
+            if self.armed():
+                if ex is None:
+                    ex = ArmedAtEndOfTestException("Still armed at end of test")
+                self.progress("Armed at end of test; force-rebooting SITL")
+                self.disarm_vehicle(force=True)
+                self.forced_post_test_sitl_reboots += 1
+                self.progress("Force-resetting SITL")
+                self.reboot_sitl() # that'll learn it
+                passed = False
+            else:
+                try:
+                    self.assert_vehicle_armable()
+                    self.progress("Vehicle armable after test - good!")
+                except Exception as e:
+                    self.progress("Vehicle not armable after test")
+                    passed = False
 
         if passed:
             self.progress('PASSED: "%s"' % prettyname)
