@@ -20,9 +20,9 @@ extern const AP_HAL::HAL& hal;
 
 static bool remount_needed;
 
-#define FATFS_R (S_IRUSR | S_IRGRP | S_IROTH)	/*< FatFs Read perms */
-#define FATFS_W (S_IWUSR | S_IWGRP | S_IWOTH)	/*< FatFs Write perms */
-#define FATFS_X (S_IXUSR | S_IXGRP | S_IXOTH)	/*< FatFs Execute perms */
+#define FATFS_R (S_IRUSR | S_IRGRP | S_IROTH)   /*< FatFs Read perms */
+#define FATFS_W (S_IWUSR | S_IWGRP | S_IWOTH)   /*< FatFs Write perms */
+#define FATFS_X (S_IXUSR | S_IXGRP | S_IXOTH)   /*< FatFs Execute perms */
 
 // don't write more than 4k at a time to prevent needing too much
 // DMAable memory
