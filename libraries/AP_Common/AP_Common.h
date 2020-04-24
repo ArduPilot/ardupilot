@@ -14,8 +14,8 @@
  */
 ///
 /// @file       AP_Common.h
-/// @brief		Common definitions and utility routines for the ArduPilot
-///				libraries.
+/// @brief      Common definitions and utility routines for the ArduPilot
+///             libraries.
 ///
 
 #pragma once
@@ -63,8 +63,8 @@
 
 #define NORETURN __attribute__ ((noreturn))
 
-#define ToRad(x) radians(x)	// *pi/180
-#define ToDeg(x) degrees(x)	// *180/pi
+#define ToRad(x) radians(x) // *pi/180
+#define ToDeg(x) degrees(x) // *180/pi
 
 /* Declare and implement const and non-const versions of the array subscript
  * operator. The object is treated as an array of type_ values. */
@@ -125,7 +125,7 @@ template<typename s, size_t t> struct assert_storage_size {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @name	Conversions
+/// @name   Conversions
 ///
 /// Conversion macros and factors.
 ///
