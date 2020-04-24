@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /* 
-	Simulator Connector for AirSim
+    Simulator Connector for AirSim
 */
 
 #include "SIM_AirSim.h"
@@ -31,8 +31,8 @@ extern const AP_HAL::HAL& hal;
 using namespace SITL;
 
 AirSim::AirSim(const char *frame_str) :
-	Aircraft(frame_str),
-	sock(true)
+    Aircraft(frame_str),
+    sock(true)
 {
     if (strstr(frame_str, "-copter")) {
         output_type = OutputType::Copter;
@@ -43,50 +43,50 @@ AirSim::AirSim(const char *frame_str) :
         output_type = OutputType::Copter;
     }
 
-	printf("Starting SITL Airsim type %u\n", (unsigned)output_type);
+    printf("Starting SITL Airsim type %u\n", (unsigned)output_type);
 }
 
 /*
-	Create & set in/out socket
+    Create & set in/out socket
 */
 void AirSim::set_interface_ports(const char* address, const int port_in, const int port_out)
 {
-	if (!sock.bind("0.0.0.0", port_in)) {
-		printf("Unable to bind Airsim sensor_in socket at port %u - Error: %s\n",
-				 port_in, strerror(errno));
-		return;
-	}
-	printf("Bind SITL sensor input at %s:%u\n", "127.0.0.1", port_in);
-	sock.set_blocking(false);
-	sock.reuseaddress();
+    if (!sock.bind("0.0.0.0", port_in)) {
+        printf("Unable to bind Airsim sensor_in socket at port %u - Error: %s\n",
+                 port_in, strerror(errno));
+        return;
+    }
+    printf("Bind SITL sensor input at %s:%u\n", "127.0.0.1", port_in);
+    sock.set_blocking(false);
+    sock.reuseaddress();
 
-	airsim_ip = address;
-	airsim_control_port = port_out;
-	airsim_sensor_port = port_in;
+    airsim_ip = address;
+    airsim_control_port = port_out;
+    airsim_sensor_port = port_in;
 
-	printf("AirSim control interface set to %s:%u\n", airsim_ip, airsim_control_port);
+    printf("AirSim control interface set to %s:%u\n", airsim_ip, airsim_control_port);
 }
 
 /*
-	Decode and send servos
+    Decode and send servos
 */
 void AirSim::output_copter(const struct sitl_input &input)
 {
     servo_packet pkt;
 
-	for (uint8_t i=0; i<kArduCopterRotorControlCount; i++) {
-		pkt.pwm[i] = input.servos[i];
-	}
+    for (uint8_t i=0; i<kArduCopterRotorControlCount; i++) {
+        pkt.pwm[i] = input.servos[i];
+    }
 
-	ssize_t send_ret = sock.sendto(&pkt, sizeof(pkt), airsim_ip, airsim_control_port);
-	if (send_ret != sizeof(pkt)) {
-		if (send_ret <= 0) {
-			printf("Unable to send servo output to %s:%u - Error: %s, Return value: %ld\n",
+    ssize_t send_ret = sock.sendto(&pkt, sizeof(pkt), airsim_ip, airsim_control_port);
+    if (send_ret != sizeof(pkt)) {
+        if (send_ret <= 0) {
+            printf("Unable to send servo output to %s:%u - Error: %s, Return value: %ld\n",
                    airsim_ip, airsim_control_port, strerror(errno), (long)send_ret);
-		} else {
-			printf("Sent %ld bytes instead of %lu bytes\n", (long)send_ret, (unsigned long)sizeof(pkt));
-		}
-	}
+        } else {
+            printf("Sent %ld bytes instead of %lu bytes\n", (long)send_ret, (unsigned long)sizeof(pkt));
+        }
+    }
 }
 
 void AirSim::output_rover(const struct sitl_input &input)
@@ -239,8 +239,8 @@ bool AirSim::parse_sensors(const char *json)
 }
 
 /*
-	Receive new sensor data from simulator
-	This is a blocking function
+    Receive new sensor data from simulator
+    This is a blocking function
 */
 void AirSim::recv_fdm()
 {

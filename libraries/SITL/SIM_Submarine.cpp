@@ -91,7 +91,7 @@ void Submarine::calculate_forces(const struct sitl_input &input, Vector3f &rot_a
     range = floor_depth - position.z;
     // Limit movement at the sea floor
     if (position.z > floor_depth && body_accel.z > -GRAVITY_MSS) {
-    	body_accel.z = -GRAVITY_MSS;
+        body_accel.z = -GRAVITY_MSS;
     }
 
     // Calculate linear drag forces
@@ -249,5 +249,5 @@ void Submarine::update(const struct sitl_input &input)
 */
 bool Submarine::on_ground() const
 {
-	return false;
+    return false;
 }

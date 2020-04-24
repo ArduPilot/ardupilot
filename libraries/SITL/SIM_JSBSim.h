@@ -92,26 +92,26 @@ public:
         FG_MAX_TANKS = 4
     };
 
-    uint32_t version;		// increment when data values change
-    uint32_t padding;		// padding
+    uint32_t version;       // increment when data values change
+    uint32_t padding;       // padding
 
     // Positions
-    double longitude;		// geodetic (radians)
-    double latitude;		// geodetic (radians)
-    double altitude;		// above sea level (meters)
-    float agl;			    // above ground level (meters)
-    float phi;			    // roll (radians)
-    float theta;		    // pitch (radians)
-    float psi;			    // yaw or true heading (radians)
+    double longitude;       // geodetic (radians)
+    double latitude;        // geodetic (radians)
+    double altitude;        // above sea level (meters)
+    float agl;              // above ground level (meters)
+    float phi;              // roll (radians)
+    float theta;            // pitch (radians)
+    float psi;              // yaw or true heading (radians)
     float alpha;        // angle of attack (radians)
     float beta;         // side slip angle (radians)
 
     // Velocities
-    float phidot;		     // roll rate (radians/sec)
-    float thetadot;		   // pitch rate (radians/sec)
-    float psidot;		     // yaw rate (radians/sec)
+    float phidot;            // roll rate (radians/sec)
+    float thetadot;        // pitch rate (radians/sec)
+    float psidot;            // yaw rate (radians/sec)
     float vcas;          // calibrated airspeed
-    float climb_rate;		 // feet per second
+    float climb_rate;        // feet per second
     float v_north;       // north velocity in local/body frame, fps
     float v_east;        // east velocity in local/body frame, fps
     float v_down;        // down/vertical velocity in local/body frame, fps
@@ -120,13 +120,13 @@ public:
     float v_body_w;      // ECEF velocity in body axis
 
     // Accelerations
-    float A_X_pilot;		// X accel in body frame ft/sec^2
-    float A_Y_pilot;		// Y accel in body frame ft/sec^2
-    float A_Z_pilot;		// Z accel in body frame ft/sec^2
+    float A_X_pilot;        // X accel in body frame ft/sec^2
+    float A_Y_pilot;        // Y accel in body frame ft/sec^2
+    float A_Z_pilot;        // Z accel in body frame ft/sec^2
 
     // Stall
     float stall_warning;  // 0.0 - 1.0 indicating the amount of stall
-    float slip_deg;		    // slip ball deflection
+    float slip_deg;         // slip ball deflection
 
     // Pressure
 
@@ -144,7 +144,7 @@ public:
     float oil_px[FG_MAX_ENGINES];       // Oil pressure psi
 
     // Consumables
-    uint32_t num_tanks;		              // Max number of fuel tanks
+    uint32_t num_tanks;                   // Max number of fuel tanks
     float fuel_quantity[FG_MAX_TANKS];
 
     // Gear status

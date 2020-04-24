@@ -82,7 +82,7 @@ private:
     bool recv_fdm(void);
     void process_packet();
     bool interim_update();
-	
+    
     /*  Create and set in/out socket for Silent Wings simulator */
     void set_interface_ports(const char* address, const int port_in, const int port_out) override;
     

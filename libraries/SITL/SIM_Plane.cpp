@@ -109,12 +109,12 @@ float Plane::liftCoeff(float alpha) const
     } else if (alpha0-alpha > max_alpha_delta) {
         alpha = alpha0 - max_alpha_delta;
     }
-	double sigmoid = ( 1+exp(-M*(alpha-alpha0))+exp(M*(alpha+alpha0)) ) / (1+exp(-M*(alpha-alpha0))) / (1+exp(M*(alpha+alpha0)));
-	double linear = (1.0-sigmoid) * (c_lift_0 + c_lift_a0*alpha); //Lift at small AoA
-	double flatPlate = sigmoid*(2*copysign(1,alpha)*pow(sin(alpha),2)*cos(alpha)); //Lift beyond stall
+    double sigmoid = ( 1+exp(-M*(alpha-alpha0))+exp(M*(alpha+alpha0)) ) / (1+exp(-M*(alpha-alpha0))) / (1+exp(M*(alpha+alpha0)));
+    double linear = (1.0-sigmoid) * (c_lift_0 + c_lift_a0*alpha); //Lift at small AoA
+    double flatPlate = sigmoid*(2*copysign(1,alpha)*pow(sin(alpha),2)*cos(alpha)); //Lift beyond stall
 
-	float result  = linear+flatPlate;
-	return result;
+    float result  = linear+flatPlate;
+    return result;
 }
 
 float Plane::dragCoeff(float alpha) const
@@ -126,10 +126,10 @@ float Plane::dragCoeff(float alpha) const
     const float c_lift_a0 = coefficient.c_lift_a;
     const float oswald = coefficient.oswald;
     
-	double AR = pow(b,2)/s;
-	double c_drag_a = c_drag_p + pow(c_lift_0+c_lift_a0*alpha,2)/(M_PI*oswald*AR);
+    double AR = pow(b,2)/s;
+    double c_drag_a = c_drag_p + pow(c_lift_0+c_lift_a0*alpha,2)/(M_PI*oswald*AR);
 
-	return c_drag_a;
+    return c_drag_a;
 }
 
 // Torque calculation function
@@ -137,7 +137,7 @@ Vector3f Plane::getTorque(float inputAileron, float inputElevator, float inputRu
 {
     float alpha = angle_of_attack;
 
-	//calculate aerodynamic torque
+    //calculate aerodynamic torque
     float effective_airspeed = airspeed;
 
     if (tailsitter) {
@@ -173,34 +173,34 @@ Vector3f Plane::getTorque(float inputAileron, float inputElevator, float inputRu
     
     float rho = air_density;
 
-	//read angular rates
-	double p = gyro.x;
-	double q = gyro.y;
-	double r = gyro.z;
+    //read angular rates
+    double p = gyro.x;
+    double q = gyro.y;
+    double r = gyro.z;
 
-	double qbar = 1.0/2.0*rho*pow(effective_airspeed,2)*s; //Calculate dynamic pressure
-	double la, na, ma;
-	if (is_zero(effective_airspeed))
-	{
-		la = 0;
-		ma = 0;
-		na = 0;
-	}
-	else
-	{
-		la = qbar*b*(c_l_0 + c_l_b*beta + c_l_p*b*p/(2*effective_airspeed) + c_l_r*b*r/(2*effective_airspeed) + c_l_deltaa*inputAileron + c_l_deltar*inputRudder);
-		ma = qbar*c*(c_m_0 + c_m_a*alpha + c_m_q*c*q/(2*effective_airspeed) + c_m_deltae*inputElevator);
-		na = qbar*b*(c_n_0 + c_n_b*beta + c_n_p*b*p/(2*effective_airspeed) + c_n_r*b*r/(2*effective_airspeed) + c_n_deltaa*inputAileron + c_n_deltar*inputRudder);
-	}
+    double qbar = 1.0/2.0*rho*pow(effective_airspeed,2)*s; //Calculate dynamic pressure
+    double la, na, ma;
+    if (is_zero(effective_airspeed))
+    {
+        la = 0;
+        ma = 0;
+        na = 0;
+    }
+    else
+    {
+        la = qbar*b*(c_l_0 + c_l_b*beta + c_l_p*b*p/(2*effective_airspeed) + c_l_r*b*r/(2*effective_airspeed) + c_l_deltaa*inputAileron + c_l_deltar*inputRudder);
+        ma = qbar*c*(c_m_0 + c_m_a*alpha + c_m_q*c*q/(2*effective_airspeed) + c_m_deltae*inputElevator);
+        na = qbar*b*(c_n_0 + c_n_b*beta + c_n_p*b*p/(2*effective_airspeed) + c_n_r*b*r/(2*effective_airspeed) + c_n_deltaa*inputAileron + c_n_deltar*inputRudder);
+    }
 
 
-	// Add torque to to force misalignment with CG
-	// r x F, where r is the distance from CoG to CoL
-	la +=  CGOffset.y * force.z - CGOffset.z * force.y;
-	ma += -CGOffset.x * force.z + CGOffset.z * force.x;
-	na += -CGOffset.y * force.x + CGOffset.x * force.y;
+    // Add torque to to force misalignment with CG
+    // r x F, where r is the distance from CoG to CoL
+    la +=  CGOffset.y * force.z - CGOffset.z * force.y;
+    ma += -CGOffset.x * force.z + CGOffset.z * force.x;
+    na += -CGOffset.y * force.x + CGOffset.x * force.y;
 
-	return Vector3f(la, ma, na);
+    return Vector3f(la, ma, na);
 }
 
 // Force calculation function from last_letter
@@ -223,38 +223,38 @@ Vector3f Plane::getForce(float inputAileron, float inputElevator, float inputRud
     
     float rho = air_density;
 
-	//request lift and drag alpha-coefficients from the corresponding functions
-	double c_lift_a = liftCoeff(alpha);
-	double c_drag_a = dragCoeff(alpha);
+    //request lift and drag alpha-coefficients from the corresponding functions
+    double c_lift_a = liftCoeff(alpha);
+    double c_drag_a = dragCoeff(alpha);
 
-	//convert coefficients to the body frame
-	double c_x_a = -c_drag_a*cos(alpha)+c_lift_a*sin(alpha);
-	double c_x_q = -c_drag_q*cos(alpha)+c_lift_q*sin(alpha);
-	double c_z_a = -c_drag_a*sin(alpha)-c_lift_a*cos(alpha);
-	double c_z_q = -c_drag_q*sin(alpha)-c_lift_q*cos(alpha);
+    //convert coefficients to the body frame
+    double c_x_a = -c_drag_a*cos(alpha)+c_lift_a*sin(alpha);
+    double c_x_q = -c_drag_q*cos(alpha)+c_lift_q*sin(alpha);
+    double c_z_a = -c_drag_a*sin(alpha)-c_lift_a*cos(alpha);
+    double c_z_q = -c_drag_q*sin(alpha)-c_lift_q*cos(alpha);
 
-	//read angular rates
-	double p = gyro.x;
-	double q = gyro.y;
-	double r = gyro.z;
+    //read angular rates
+    double p = gyro.x;
+    double q = gyro.y;
+    double r = gyro.z;
 
-	//calculate aerodynamic force
-	double qbar = 1.0/2.0*rho*pow(airspeed,2)*s; //Calculate dynamic pressure
-	double ax, ay, az;
-	if (is_zero(airspeed))
-	{
-		ax = 0;
-		ay = 0;
-		az = 0;
-	}
-	else
-	{
-		ax = qbar*(c_x_a + c_x_q*c*q/(2*airspeed) - c_drag_deltae*cos(alpha)*fabs(inputElevator) + c_lift_deltae*sin(alpha)*inputElevator);
-		// split c_x_deltae to include "abs" term
-		ay = qbar*(c_y_0 + c_y_b*beta + c_y_p*b*p/(2*airspeed) + c_y_r*b*r/(2*airspeed) + c_y_deltaa*inputAileron + c_y_deltar*inputRudder);
-		az = qbar*(c_z_a + c_z_q*c*q/(2*airspeed) - c_drag_deltae*sin(alpha)*fabs(inputElevator) - c_lift_deltae*cos(alpha)*inputElevator);
-		// split c_z_deltae to include "abs" term
-	}
+    //calculate aerodynamic force
+    double qbar = 1.0/2.0*rho*pow(airspeed,2)*s; //Calculate dynamic pressure
+    double ax, ay, az;
+    if (is_zero(airspeed))
+    {
+        ax = 0;
+        ay = 0;
+        az = 0;
+    }
+    else
+    {
+        ax = qbar*(c_x_a + c_x_q*c*q/(2*airspeed) - c_drag_deltae*cos(alpha)*fabs(inputElevator) + c_lift_deltae*sin(alpha)*inputElevator);
+        // split c_x_deltae to include "abs" term
+        ay = qbar*(c_y_0 + c_y_b*beta + c_y_p*b*p/(2*airspeed) + c_y_r*b*r/(2*airspeed) + c_y_deltaa*inputAileron + c_y_deltar*inputRudder);
+        az = qbar*(c_z_a + c_z_q*c*q/(2*airspeed) - c_drag_deltae*sin(alpha)*fabs(inputElevator) - c_lift_deltae*cos(alpha)*inputElevator);
+        // split c_z_deltae to include "abs" term
+    }
     return Vector3f(ax, ay, az);
 }
 
