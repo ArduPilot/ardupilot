@@ -26,7 +26,7 @@ AP_RPM_Pin::IrqState AP_RPM_Pin::irq_state[RPM_MAX_INSTANCES];
    open the sensor in constructor
 */
 AP_RPM_Pin::AP_RPM_Pin(AP_RPM &_ap_rpm, uint8_t instance, AP_RPM::RPM_State &_state) :
-	AP_RPM_Backend(_ap_rpm, instance, _state)
+    AP_RPM_Backend(_ap_rpm, instance, _state)
 {
 }
 
