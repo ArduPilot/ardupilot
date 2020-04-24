@@ -22,7 +22,9 @@ public:
                 bool runEKF,          // set to true when flying or movement suitable for yaw estimation
                 float TAS);           // true airspeed used for centripetal accel compensation - set to 0 when not required.
 
-    void pushVelData(Vector2f vel,    // NE velocity measurement (m/s)
+    // Fuse NE velocty mesurements and update the EKF's and GSF state and covariance estimates
+    // Should be called after update(...) whenever new velocity data is available
+    void fuseVelData(Vector2f vel,    // NE velocity measurement (m/s)
                      float velAcc);   // 1-sigma accuracy of velocity measurement (m/s)
 
     // get solution data for logging
@@ -100,10 +102,9 @@ private:
     };
     EKF_struct EKF[N_MODELS_EKFGSF];
     bool vel_fuse_running;  // true when the bank of EKF's has started fusing GPS velocity data
-    bool vel_data_updated;  // true when velocity data has been updated
     bool run_ekf_gsf;       // true when operating condition is suitable for to run the GSF and EKF models and fuse velocity data
     Vector2f vel_NE;        // NE velocity observations (m/s)
-    float vel_accuracy;     // 1-sigma accuracy of velocity observations (m/s)
+    float velObsVar;        // variance of velocity observations (m/s)^2
 
     // Initialises the EKF's and GSF states, but not the AHRS complementary filters
     void initialise();
