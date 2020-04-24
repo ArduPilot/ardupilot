@@ -565,7 +565,7 @@ void NavEKF2_core::runYawEstimatorCorrection()
         if (gpsDataToFuse) {
             Vector2f gpsVelNE = Vector2f(gpsDataDelayed.vel.x, gpsDataDelayed.vel.y);
             float gpsVelAcc = fmaxf(gpsSpdAccuracy, frontend->_gpsHorizVelNoise);
-            yawEstimator->pushVelData(gpsVelNE, gpsVelAcc);
+            yawEstimator->fuseVelData(gpsVelNE, gpsVelAcc);
         }
 
         // action an external reset request
