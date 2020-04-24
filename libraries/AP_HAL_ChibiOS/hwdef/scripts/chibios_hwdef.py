@@ -534,12 +534,14 @@ class generic_pin(object):
                                   str)
 
 
-def get_config(name, column=0, required=True, default=None, type=None, spaces=False):
+def get_config(name, column=0, required=True, default=None, type=None, spaces=False, aslist=False):
     '''get a value from config dictionary'''
     if name not in config:
         if required and default is None:
             error("missing required value %s in hwdef.dat" % name)
         return default
+    if aslist:
+        return config[name]
     if len(config[name]) < column + 1:
         if not required:
             return None
@@ -1071,13 +1073,30 @@ def get_extra_bylabel(label, name, default=None):
         return default
     return p.extra_value(name, type=str, default=default)
 
+def get_UART_ORDER():
+    '''get UART_ORDER from SERIAL_ORDER option'''
+    if get_config('UART_ORDER', required=False, aslist=True) is not None:
+        error('Please convert UART_ORDER to SERIAL_ORDER')
+    serial_order = get_config('SERIAL_ORDER', required=False, aslist=True)
+    if serial_order is None:
+        return None
+    if args.bootloader:
+        # in bootloader SERIAL_ORDER is treated the same as UART_ORDER
+        return serial_order
+    map = [ 0, 3, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12 ]
+    while len(serial_order) < 4:
+        serial_order += ['EMPTY']
+    uart_order = []
+    for i in range(len(serial_order)):
+        uart_order.append(serial_order[map[i]])
+    return uart_order
 
 def write_UART_config(f):
     '''write UART config defines'''
     global dual_USB_enabled
-    if get_config('UART_ORDER', required=False) is None:
+    uart_list = get_UART_ORDER()
+    if uart_list is None:
         return
-    uart_list = config['UART_ORDER']
     f.write('\n// UART configuration\n')
 
     # write out driver declarations for HAL_ChibOS_Class.cpp
@@ -1194,9 +1213,9 @@ def write_UART_config(f):
 
 def write_UART_config_bootloader(f):
     '''write UART config defines'''
-    if get_config('UART_ORDER', required=False) is None:
+    uart_list = get_UART_ORDER()
+    if uart_list is None:
         return
-    uart_list = config['UART_ORDER']
     f.write('\n// UART configuration\n')
     devlist = []
     have_uart = False
