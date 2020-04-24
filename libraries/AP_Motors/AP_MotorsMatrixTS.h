@@ -1,5 +1,5 @@
-/// @file	AP_MotorsMatrixTS.h
-/// @brief	Motor control class for tailsitters with multicopter motor configurations
+/// @file   AP_MotorsMatrixTS.h
+/// @brief  Motor control class for tailsitters with multicopter motor configurations
 
 #pragma once
 

@@ -1,5 +1,5 @@
-/// @file	AP_Motors6DOF.h
-/// @brief	Motor control class for ROVs with direct control over 6DOF (or fewer) in movement
+/// @file   AP_Motors6DOF.h
+/// @brief  Motor control class for ROVs with direct control over 6DOF (or fewer) in movement
 
 #pragma once
 

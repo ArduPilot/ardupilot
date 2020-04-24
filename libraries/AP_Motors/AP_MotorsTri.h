@@ -1,5 +1,5 @@
-/// @file	AP_MotorsTri.h
-/// @brief	Motor control class for Tricopters
+/// @file   AP_MotorsTri.h
+/// @brief  Motor control class for Tricopters
 #pragma once
 
 #include <AP_Common/AP_Common.h>

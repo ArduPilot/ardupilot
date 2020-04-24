@@ -1,5 +1,5 @@
-/// @file	AP_MotorsMatrix.h
-/// @brief	Motor control class for Matrixcopters
+/// @file   AP_MotorsMatrix.h
+/// @brief  Motor control class for Matrixcopters
 #pragma once
 
 #include <AP_Common/AP_Common.h>

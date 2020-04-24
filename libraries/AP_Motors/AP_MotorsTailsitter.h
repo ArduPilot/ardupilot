@@ -1,5 +1,5 @@
-/// @file	AP_MotorsTailsitter.h
-/// @brief	Motor control class for tailsitters and bicopters
+/// @file   AP_MotorsTailsitter.h
+/// @brief  Motor control class for tailsitters and bicopters
 #pragma once
 
 #include <AP_Common/AP_Common.h>

@@ -1,5 +1,5 @@
-/// @file	AP_MotorsHeli_Swash.h
-/// @brief	Swashplate Library for traditional heli
+/// @file   AP_MotorsHeli_Swash.h
+/// @brief  Swashplate Library for traditional heli
 #pragma once
 
 #include <AP_Common/AP_Common.h>

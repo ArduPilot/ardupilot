@@ -1,5 +1,5 @@
-/// @file	AP_MotorsHeli.h
-/// @brief	Motor control class for Traditional Heli
+/// @file   AP_MotorsHeli.h
+/// @brief  Motor control class for Traditional Heli
 #pragma once
 
 #include <inttypes.h>

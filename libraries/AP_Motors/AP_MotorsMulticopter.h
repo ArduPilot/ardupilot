@@ -1,5 +1,5 @@
-/// @file	AP_MotorsMulticopter.h
-/// @brief	Motor control class for Multicopters
+/// @file   AP_MotorsMulticopter.h
+/// @brief  Motor control class for Multicopters
 #pragma once
 
 #include "AP_Motors_Class.h"

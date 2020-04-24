@@ -1,5 +1,5 @@
-/// @file	AP_MotorsCoax.h
-/// @brief	Motor and Servo control class for Co-axial helicopters with two motors and two flaps
+/// @file   AP_MotorsCoax.h
+/// @brief  Motor and Servo control class for Co-axial helicopters with two motors and two flaps
 #pragma once
 
 #include <AP_Common/AP_Common.h>

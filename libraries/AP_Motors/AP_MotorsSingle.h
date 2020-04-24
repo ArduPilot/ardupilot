@@ -1,5 +1,5 @@
-/// @file	AP_MotorsSingle.h
-/// @brief	Motor and Servo control class for Singlecopters
+/// @file   AP_MotorsSingle.h
+/// @brief  Motor and Servo control class for Singlecopters
 #pragma once
 
 #include <AP_Common/AP_Common.h>

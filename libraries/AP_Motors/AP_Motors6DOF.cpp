@@ -353,7 +353,7 @@ void AP_Motors6DOF::output_armed_stabilizing()
 
     const AP_BattMonitor &battery = AP::battery();
 
-	// Current limiting
+    // Current limiting
     float _batt_current;
     if (_batt_current_max <= 0.0f || !battery.current_amps(_batt_current)) {
         return;
