@@ -291,11 +291,11 @@ void NavEKF2::Log_Write_GSF(uint8_t _core, uint64_t time_us) const
         // @Field: Y2: Yaw estimate from individual EKF filter 2 (rad)
         // @Field: Y3: Yaw estimate from individual EKF filter 3 (rad)
         // @Field: Y4: Yaw estimate from individual EKF filter 4 (rad)
-        // @Field: W0: Weighting applied to yaw estimate from individual EKF filter 0 (rad)
-        // @Field: W1: Weighting applied to yaw estimate from individual EKF filter 1 (rad)
-        // @Field: W2: Weighting applied to yaw estimate from individual EKF filter 2 (rad)
-        // @Field: W3: Weighting applied to yaw estimate from individual EKF filter 3 (rad)
-        // @Field: W4: Weighting applied to yaw estimate from individual EKF filter 4 (rad)
+        // @Field: W0: Weighting applied to yaw estimate from individual EKF filter 0
+        // @Field: W1: Weighting applied to yaw estimate from individual EKF filter 1
+        // @Field: W2: Weighting applied to yaw estimate from individual EKF filter 2
+        // @Field: W3: Weighting applied to yaw estimate from individual EKF filter 3
+        // @Field: W4: Weighting applied to yaw estimate from individual EKF filter 4
 
     if (getDataEKFGSF(_core, yaw_composite, yaw_composite_variance, yaw, ivn, ive, wgt)) {
         AP::logger().Write("NKY0",
