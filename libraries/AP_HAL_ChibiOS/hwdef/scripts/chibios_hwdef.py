@@ -1467,7 +1467,7 @@ def write_ADC_config(f):
             f.write('#define HAL_HAVE_SERVO_VOLTAGE 1\n')
         adc_chans.append((chan, scale, p.label, p.portpin))
     adc_chans = sorted(adc_chans)
-    vdd = get_config('STM32_VDD')
+    vdd = get_config('STM32_VDD', default='330U')
     if vdd[-1] == 'U':
         vdd = vdd[:-1]
     vdd = float(vdd) * 0.01
