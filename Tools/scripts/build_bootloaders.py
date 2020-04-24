@@ -39,7 +39,7 @@ def run_program(cmd_list):
     return True
 
 def build_board(board):
-    if not run_program(["./waf", "configure", "--board", board, "--bootloader", "--no-submodule-update"]):
+    if not run_program(["./waf", "configure", "--board", board, "--bootloader", "--no-submodule-update", "--Werror"]):
         return False
     if not run_program(["./waf", "clean"]):
         return False
