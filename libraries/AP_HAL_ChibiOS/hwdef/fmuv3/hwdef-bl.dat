@@ -31,7 +31,7 @@ USB_STRING_SERIAL  "%SERIAL%"
 define BOOTLOADER_BAUDRATE 115200
 
 # uarts and USB to run bootloader protocol on
-UART_ORDER OTG1 USART2 USART3 UART7
+SERIAL_ORDER OTG1 USART2 USART3 UART7
 
 # this is the pin that senses USB being connected. It is an input pin
 # setup as OPENDRAIN
