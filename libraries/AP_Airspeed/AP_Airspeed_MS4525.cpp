@@ -192,18 +192,18 @@ void AP_Airspeed_MS4525::_collect()
  */
 void AP_Airspeed_MS4525::_voltage_correction(float &diff_press_pa, float &temperature)
 {
-	const float slope = 65.0f;
-	const float temp_slope = 0.887f;
+    const float slope = 65.0f;
+    const float temp_slope = 0.887f;
 
-	/*
-	  apply a piecewise linear correction within range given by above graph
-	 */
-	float voltage_diff = hal.analogin->board_voltage() - 5.0f;
+    /*
+      apply a piecewise linear correction within range given by above graph
+     */
+    float voltage_diff = hal.analogin->board_voltage() - 5.0f;
 
     voltage_diff = constrain_float(voltage_diff, -0.7f, 0.5f);
 
-	diff_press_pa -= voltage_diff * slope;
-	temperature -= voltage_diff * temp_slope;
+    diff_press_pa -= voltage_diff * slope;
+    temperature -= voltage_diff * temp_slope;
 }
 
 // 50Hz timer

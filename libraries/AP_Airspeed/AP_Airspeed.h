@@ -190,11 +190,11 @@ private:
     struct airspeed_state {
         float   raw_airspeed;
         float   airspeed;
-        float	last_pressure;
+        float   last_pressure;
         float   filtered_pressure;
-        float	corrected_pressure;
-        bool	healthy:1;
-        bool	hil_set:1;
+        float   corrected_pressure;
+        bool    healthy:1;
+        bool    hil_set:1;
         float   hil_pressure;
         uint32_t last_update_ms;
         bool use_zero_offset;

@@ -24,18 +24,18 @@
 
 #include <stdio.h>
 
-#define SDP3X_SCALE_TEMPERATURE		200.0f
+#define SDP3X_SCALE_TEMPERATURE     200.0f
 
-#define SDP3XD0_I2C_ADDR            	0x21
-#define SDP3XD1_I2C_ADDR            	0x22
-#define SDP3XD2_I2C_ADDR            	0x23
+#define SDP3XD0_I2C_ADDR                0x21
+#define SDP3XD1_I2C_ADDR                0x22
+#define SDP3XD2_I2C_ADDR                0x23
 
-#define SDP3X_CONT_MEAS_AVG_MODE    	0x3615
-#define SDP3X_CONT_MEAS_STOP        	0x3FF9
+#define SDP3X_CONT_MEAS_AVG_MODE        0x3615
+#define SDP3X_CONT_MEAS_STOP            0x3FF9
 
-#define SDP3X_SCALE_PRESSURE_SDP31	60
-#define SDP3X_SCALE_PRESSURE_SDP32	240
-#define SDP3X_SCALE_PRESSURE_SDP33	20
+#define SDP3X_SCALE_PRESSURE_SDP31  60
+#define SDP3X_SCALE_PRESSURE_SDP32  240
+#define SDP3X_SCALE_PRESSURE_SDP33  20
 
 extern const AP_HAL::HAL &hal;
 
