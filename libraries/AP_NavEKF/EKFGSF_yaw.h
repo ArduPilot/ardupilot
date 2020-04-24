@@ -103,18 +103,16 @@ private:
     EKF_struct EKF[N_MODELS_EKFGSF];
     bool vel_fuse_running;  // true when the bank of EKF's has started fusing GPS velocity data
     bool run_ekf_gsf;       // true when operating condition is suitable for to run the GSF and EKF models and fuse velocity data
-    Vector2f vel_NE;        // NE velocity observations (m/s)
-    float velObsVar;        // variance of velocity observations (m/s)^2
 
-    // Initialises the EKF's and GSF states, but not the AHRS complementary filters
-    void initialise();
+    // Resets states and covariances for the EKF's and GSF including GSF weights, but not the AHRS complementary filters
+    void resetEKFGSF();
 
     // Runs the state and covariance prediction for the selected EKF
     void predict(const uint8_t mdl_idx);
 
     // Runs the state and covariance update for the selected EKF using the GPS NE velocity measurement
     // Returns false if the sttae and covariance correction failed
-    bool correct(const uint8_t mdl_idx);
+    bool correct(const uint8_t mdl_idx, const Vector2f &vel, const float velObsVar);
 
     // Forces symmetry on the covariance matrix for the selected EKF
     void forceSymmetry(const uint8_t mdl_idx);
