@@ -133,46 +133,46 @@ void Plane::rudder_arm_disarm_check()
         return;      
     }
 
-	if (!arming.is_armed()) {
-		// when not armed, full right rudder starts arming counter
-		if (channel_rudder->get_control_in() > 4000) {
-			uint32_t now = millis();
+    if (!arming.is_armed()) {
+        // when not armed, full right rudder starts arming counter
+        if (channel_rudder->get_control_in() > 4000) {
+            uint32_t now = millis();
+
+            if (rudder_arm_timer == 0 ||
+                now - rudder_arm_timer < 3000) {
+
+                if (rudder_arm_timer == 0) {
+                    rudder_arm_timer = now;
+                }
+            } else {
+                //time to arm!
+                arming.arm(AP_Arming::Method::RUDDER);
+                rudder_arm_timer = 0;
+            }
+        } else {
+            // not at full right rudder
+            rudder_arm_timer = 0;
+        }
+    } else if ((arming_rudder == AP_Arming::RudderArming::ARMDISARM) && !is_flying()) {
+        // when armed and not flying, full left rudder starts disarming counter
+        if (channel_rudder->get_control_in() < -4000) {
+            uint32_t now = millis();
 
 			if (rudder_arm_timer == 0 ||
 				now - rudder_arm_timer < 3000) {
-
 				if (rudder_arm_timer == 0) {
                     rudder_arm_timer = now;
                 }
-			} else {
-				//time to arm!
-				arming.arm(AP_Arming::Method::RUDDER);
-				rudder_arm_timer = 0;
-			}
-		} else {
-			// not at full right rudder
-			rudder_arm_timer = 0;
-		}
-	} else if ((arming_rudder == AP_Arming::RudderArming::ARMDISARM) && !is_flying()) {
-		// when armed and not flying, full left rudder starts disarming counter
-		if (channel_rudder->get_control_in() < -4000) {
-			uint32_t now = millis();
-
-			if (rudder_arm_timer == 0 ||
-				now - rudder_arm_timer < 3000) {
-				if (rudder_arm_timer == 0) {
-                    rudder_arm_timer = now;
-                }
-			} else {
-				//time to disarm!
-				arming.disarm(AP_Arming::Method::RUDDER);
-				rudder_arm_timer = 0;
-			}
-		} else {
-			// not at full left rudder
-			rudder_arm_timer = 0;
-		}
-	}
+            } else {
+                //time to disarm!
+                arming.disarm(AP_Arming::Method::RUDDER);
+                rudder_arm_timer = 0;
+            }
+        } else {
+            // not at full left rudder
+            rudder_arm_timer = 0;
+        }
+    }
 }
 
 void Plane::read_radio()

@@ -645,7 +645,7 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
                           (unsigned)mission.get_current_nav_cmd().index,
                           (unsigned)current_loc.get_distance(flex_next_WP_loc));
         return true;
-	}
+    }
 
     // have we flown past the waypoint?
     if (current_loc.past_interval_finish_line(prev_WP_loc, flex_next_WP_loc)) {
@@ -770,13 +770,13 @@ bool Plane::verify_RTL()
         loiter.direction = 1;
     }
     update_loiter(abs(g.rtl_radius));
-	if (auto_state.wp_distance <= (uint32_t)MAX(g.waypoint_radius,0) || 
+    if (auto_state.wp_distance <= (uint32_t)MAX(g.waypoint_radius,0) || 
         reached_loiter_target()) {
-			gcs().send_text(MAV_SEVERITY_INFO,"Reached RTL location");
-			return true;
+            gcs().send_text(MAV_SEVERITY_INFO,"Reached RTL location");
+            return true;
     } else {
         return false;
-	}
+    }
 }
 
 bool Plane::verify_continue_and_change_alt()

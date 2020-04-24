@@ -142,8 +142,8 @@ void Plane::calc_airspeed_errors()
         target_airspeed_cm = landing.get_target_airspeed_cm();
     } else if ((control_mode == &mode_auto) &&
                (quadplane.options & QuadPlane::OPTION_MISSION_LAND_FW_APPROACH) &&
-							 ((vtol_approach_s.approach_stage == Landing_ApproachStage::APPROACH_LINE) ||
-							  (vtol_approach_s.approach_stage == Landing_ApproachStage::VTOL_LANDING))) {
+                             ((vtol_approach_s.approach_stage == Landing_ApproachStage::APPROACH_LINE) ||
+                              (vtol_approach_s.approach_stage == Landing_ApproachStage::VTOL_LANDING))) {
         float land_airspeed = SpdHgt_Controller->get_land_airspeed();
         if (is_positive(land_airspeed)) {
             target_airspeed_cm = SpdHgt_Controller->get_land_airspeed() * 100;
@@ -160,8 +160,8 @@ void Plane::calc_airspeed_errors()
     // but only when this is faster than the target airspeed commanded
     // above.
     if (auto_throttle_mode &&
-    	aparm.min_gndspeed_cm > 0 &&
-    	control_mode != &mode_circle) {
+        aparm.min_gndspeed_cm > 0 &&
+        control_mode != &mode_circle) {
         int32_t min_gnd_target_airspeed = airspeed_measured*100 + groundspeed_undershoot;
         if (min_gnd_target_airspeed > target_airspeed_cm) {
             target_airspeed_cm = min_gnd_target_airspeed;
@@ -187,7 +187,7 @@ void Plane::calc_gndspeed_undershoot()
     // Use the component of ground speed in the forward direction
     // This prevents flyaway if wind takes plane backwards
     if (gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
-	      Vector2f gndVel = ahrs.groundspeed_vector();
+          Vector2f gndVel = ahrs.groundspeed_vector();
         const Matrix3f &rotMat = ahrs.get_rotation_body_to_ned();
         Vector2f yawVect = Vector2f(rotMat.a.x,rotMat.b.x);
         if (!yawVect.is_zero()) {

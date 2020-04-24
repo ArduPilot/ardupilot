@@ -169,9 +169,9 @@ void Plane::ahrs_update()
 void Plane::update_speed_height(void)
 {
     if (auto_throttle_mode) {
-	    // Call TECS 50Hz update. Note that we call this regardless of
-	    // throttle suppressed, as this needs to be running for
-	    // takeoff detection
+        // Call TECS 50Hz update. Note that we call this regardless of
+        // throttle suppressed, as this needs to be running for
+        // takeoff detection
         SpdHgt_Controller->update_50hz();
     }
 
