@@ -82,7 +82,7 @@ const extern AP_HAL::HAL &hal;
 #define L3G4200D_REG_XL                            0x28
 
 // this bit is ORd into the register to enable auto-increment mode
-#define L3G4200D_REG_AUTO_INCREMENT		           0x80
+#define L3G4200D_REG_AUTO_INCREMENT                0x80
 
 // L3G4200D Gyroscope scaling
 // running at 2000 DPS full range, 16 bit signed data, datasheet

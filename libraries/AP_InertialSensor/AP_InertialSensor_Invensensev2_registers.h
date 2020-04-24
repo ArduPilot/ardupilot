@@ -214,6 +214,6 @@
 #define INV2REG_BANK_SEL               0x7F
 
 // WHOAMI values
-#define INV2_WHOAMI_ICM20648		0xe0
-#define INV2_WHOAMI_ICM20948		0xea
+#define INV2_WHOAMI_ICM20648        0xe0
+#define INV2_WHOAMI_ICM20948        0xea
 #define INV2_WHOAMI_ICM20649        0xe1

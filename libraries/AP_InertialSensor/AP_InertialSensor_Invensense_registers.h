@@ -166,11 +166,11 @@
 #define MPUREG_ICM_UNDOC1_VALUE 0xc9
 
 // WHOAMI values
-#define MPU_WHOAMI_6000			0x68
-#define MPU_WHOAMI_20608		0xaf
-#define MPU_WHOAMI_20602		0x12
-#define MPU_WHOAMI_20601		0xac
-#define MPU_WHOAMI_6500			0x70
+#define MPU_WHOAMI_6000         0x68
+#define MPU_WHOAMI_20608        0xaf
+#define MPU_WHOAMI_20602        0x12
+#define MPU_WHOAMI_20601        0xac
+#define MPU_WHOAMI_6500         0x70
 #define MPU_WHOAMI_MPU9250      0x71
 #define MPU_WHOAMI_MPU9255      0x73
 #define MPU_WHOAMI_ICM20789     0x03
@@ -193,15 +193,15 @@
 
 // Product ID Description for MPU6000. Used to detect buggy chips
 // high 4 bits  low 4 bits
-// Product Name	Product Revision
-#define MPU6000ES_REV_C4                        0x14    // 0001			0100
-#define MPU6000ES_REV_C5                        0x15    // 0001			0101
-#define MPU6000ES_REV_D6                        0x16    // 0001			0110
-#define MPU6000ES_REV_D7                        0x17    // 0001			0111
-#define MPU6000ES_REV_D8                        0x18    // 0001			1000
-#define MPU6000_REV_C4                          0x54    // 0101			0100
-#define MPU6000_REV_C5                          0x55    // 0101			0101
-#define MPU6000_REV_D6                          0x56    // 0101			0110
-#define MPU6000_REV_D7                          0x57    // 0101			0111
-#define MPU6000_REV_D8                          0x58    // 0101			1000
-#define MPU6000_REV_D9                          0x59    // 0101			1001
+// Product Name Product Revision
+#define MPU6000ES_REV_C4                        0x14    // 0001         0100
+#define MPU6000ES_REV_C5                        0x15    // 0001         0101
+#define MPU6000ES_REV_D6                        0x16    // 0001         0110
+#define MPU6000ES_REV_D7                        0x17    // 0001         0111
+#define MPU6000ES_REV_D8                        0x18    // 0001         1000
+#define MPU6000_REV_C4                          0x54    // 0101         0100
+#define MPU6000_REV_C5                          0x55    // 0101         0101
+#define MPU6000_REV_D6                          0x56    // 0101         0110
+#define MPU6000_REV_D7                          0x57    // 0101         0111
+#define MPU6000_REV_D8                          0x58    // 0101         1000
+#define MPU6000_REV_D9                          0x59    // 0101         1001
