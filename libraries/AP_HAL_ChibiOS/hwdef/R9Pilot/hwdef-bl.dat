@@ -20,7 +20,7 @@ FLASH_BOOTLOADER_LOAD_KB 96
 
 
 # order of UARTs (and USB). Allow bootloading on USB
-UART_ORDER OTG1
+SERIAL_ORDER OTG1
 
 # PA10 IO-debug-console
 PA11 OTG_FS_DM OTG1

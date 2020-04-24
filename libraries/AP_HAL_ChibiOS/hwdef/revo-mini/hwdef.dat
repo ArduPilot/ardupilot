@@ -23,7 +23,7 @@ FLASH_SIZE_KB 1024
 I2C_ORDER I2C1
 
 # order of UARTs (and USB)
-UART_ORDER OTG1 USART3 USART1
+SERIAL_ORDER OTG1 USART1 EMPTY USART3
 
 # rcinput is PC6, which is the 3rd "PWM IN" pin (the yellow wire on a
 # revolution board)
