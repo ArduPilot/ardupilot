@@ -58,7 +58,7 @@ private:
     // what type of autotune is this
     ATType type;
 
-	const AP_Vehicle::FixedWing &aparm;
+    const AP_Vehicle::FixedWing &aparm;
 
     // did we saturate surfaces?
     bool saturated_surfaces:1;

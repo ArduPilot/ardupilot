@@ -337,7 +337,7 @@ void AP_AutoTune::write_log(float servo, float demanded, float achieved)
         LOG_PACKET_HEADER_INIT(LOG_ATRP_MSG),
         time_us    : AP_HAL::micros64(),
         type       : static_cast<uint8_t>(type),
-    	state      : (uint8_t)state,
+        state      : (uint8_t)state,
         servo      : (int16_t)(servo*100),
         demanded   : demanded,
         achieved   : achieved,

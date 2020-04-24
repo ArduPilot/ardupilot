@@ -21,10 +21,10 @@ public:
     AP_RollController(const AP_RollController &other) = delete;
     AP_RollController &operator=(const AP_RollController&) = delete;
 
-	int32_t get_rate_out(float desired_rate, float scaler);
-	int32_t get_servo_out(int32_t angle_err, float scaler, bool disable_integrator);
+    int32_t get_rate_out(float desired_rate, float scaler);
+    int32_t get_servo_out(int32_t angle_err, float scaler, bool disable_integrator);
 
-	void reset_I();
+    void reset_I();
 
     /*
       reduce the integrator, used when we have a low scale factor in a quadplane hover
@@ -39,7 +39,7 @@ public:
 
     const       AP_Logger::PID_Info& get_pid_info(void) const { return _pid_info; }
 
-	static const struct AP_Param::GroupInfo var_info[];
+    static const struct AP_Param::GroupInfo var_info[];
 
 
     // tuning accessors
@@ -57,13 +57,13 @@ private:
     const AP_Vehicle::FixedWing &aparm;
     AP_AutoTune::ATGains gains;
     AP_AutoTune autotune;
-	uint32_t _last_t;
-	float _last_out;
+    uint32_t _last_t;
+    float _last_out;
 
     AP_Logger::PID_Info _pid_info;
 
-	int32_t _get_rate_out(float desired_rate, float scaler, bool disable_integrator);
+    int32_t _get_rate_out(float desired_rate, float scaler, bool disable_integrator);
 
-	AP_AHRS &_ahrs;
+    AP_AHRS &_ahrs;
 
 };
