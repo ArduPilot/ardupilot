@@ -29,7 +29,8 @@ MultiCopter::MultiCopter(const char *frame_str) :
 {
     //mass = 1.5f;
     //mass = 14.5f;
-    mass = 25.0f;
+    float lb2kg = 0.453592;
+    mass = 25.0f*lb2kg;
 
     frame = Frame::find_frame(frame_str);
     if (frame == nullptr) {
