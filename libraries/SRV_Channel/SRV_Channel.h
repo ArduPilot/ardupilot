@@ -294,7 +294,7 @@ private:
 };
 
 /*
-  class	SRV_Channels
+  class SRV_Channels
 */
 class SRV_Channels {
 public:
