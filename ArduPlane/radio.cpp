@@ -158,9 +158,9 @@ void Plane::rudder_arm_disarm_check()
         if (channel_rudder->get_control_in() < -4000) {
             uint32_t now = millis();
 
-			if (rudder_arm_timer == 0 ||
-				now - rudder_arm_timer < 3000) {
-				if (rudder_arm_timer == 0) {
+            if (rudder_arm_timer == 0 ||
+                now - rudder_arm_timer < 3000) {
+                if (rudder_arm_timer == 0) {
                     rudder_arm_timer = now;
                 }
             } else {
