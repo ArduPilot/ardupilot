@@ -38,8 +38,6 @@ PB3 LED_ACTIVITY2 OUTPUT
 
 define HAL_LED_ON 0
 
-# board voltage
-STM32_VDD 330U
 
 # order of UARTs (and USB)
 UART_ORDER OTG1 UART7

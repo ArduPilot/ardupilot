@@ -44,9 +44,6 @@ env OPTIMIZE -O2
 # now define the voltage the MCU runs at. This is needed for ChibiOS
 # to set various internal driver limits. It is in 0.01 volt units
 
-# board voltage
-STM32_VDD 330U
-
 # this is the STM32 timer that ChibiOS will use for the low level
 # driver. This must be a 32 bit timer. We currently only support
 # timers 2, 3, 4, 5 and 21. See hal_st_lld.c in ChibiOS for details

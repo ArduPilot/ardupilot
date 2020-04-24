@@ -18,8 +18,6 @@ FLASH_SIZE_KB 64
 # ChibiOS system timer
 
 
-# board voltage
-STM32_VDD 330U
 
 # order of UARTs
 UART_ORDER EMPTY

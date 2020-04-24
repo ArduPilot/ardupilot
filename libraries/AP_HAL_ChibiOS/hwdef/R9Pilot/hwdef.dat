@@ -22,8 +22,6 @@ FLASH_SIZE_KB 2048
 # leave 2 sectors free
 FLASH_RESERVE_START_KB 96
 
-# board voltage
-STM32_VDD 330U
 
 # one I2C bus (I2C2 can be used with loss of USART3)
 I2C_ORDER I2C3

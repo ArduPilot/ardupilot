@@ -27,8 +27,6 @@ define CH_CFG_ST_FREQUENCY 1000
 # assume the 128k flash part for now
 FLASH_SIZE_KB 128
 
-# board voltage
-STM32_VDD 330U
 
 # order of UARTs
 UART_ORDER EMPTY USART1

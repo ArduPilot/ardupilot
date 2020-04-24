@@ -27,8 +27,6 @@ FLASH_RESERVE_START_KB 0
 # the location where the bootloader will put the firmware
 FLASH_BOOTLOADER_LOAD_KB 96
 
-# board voltage
-STM32_VDD 330U
 
 # order of UARTs (and USB). Allow bootloading on USB and telem1
 UART_ORDER OTG1 UART7
