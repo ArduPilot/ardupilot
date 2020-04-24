@@ -98,47 +98,7 @@ void EKFGSF_yaw::update(const Vector3f &delAng,
         predict(mdl_idx);
     }
 
-    // The 3-state EKF models only run when flying to avoid corrupted estimates due to operator handling and GPS interference
-    if (vel_data_updated && run_ekf_gsf) {
-        if (!vel_fuse_running) {
-            // Perform in-flight alignment
-            for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
-                // Use the firstGPS  measurement to set the velocities and corresponding variances
-                EKF[mdl_idx].X[0] = vel_NE[0];
-                EKF[mdl_idx].X[1] = vel_NE[1];
-                EKF[mdl_idx].P[0][0] = sq(fmaxf(vel_accuracy, 0.5f));
-                EKF[mdl_idx].P[1][1] = EKF[mdl_idx].P[0][0];
-            }
-            alignYaw();
-            vel_fuse_running = true;
-        } else {
-            float total_w = 0.0f;
-            float newWeight[(uint8_t)N_MODELS_EKFGSF];
-            bool state_update_failed = false;
-            for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
-                // Update states and covariances using GPS NE velocity measurements fused as direct state observations
-                if (!correct(mdl_idx)) {
-                    state_update_failed = true;
-                }
-            }
-
-            if (!state_update_failed) {
-                // Calculate weighting for each model assuming a normal error distribution
-                for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
-                    newWeight[mdl_idx]= fmaxf(gaussianDensity(mdl_idx) * GSF.weights[mdl_idx], 0.0f);
-                    total_w += newWeight[mdl_idx];
-                }
-
-                // Normalise the sum of weights to unity
-                if (vel_fuse_running && is_positive(total_w)) {
-                    float total_w_inv = 1.0f / total_w;
-                    for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
-                        GSF.weights[mdl_idx]  = newWeight[mdl_idx] * total_w_inv;
-                    }
-                }
-            }
-        }
-    } else if (vel_fuse_running && !run_ekf_gsf) {
+    if (vel_fuse_running && !run_ekf_gsf) {
         // We have landed so reset EKF-GSF states and wait to fly again
         // Do not reset the AHRS as it continues to run when on ground
         initialise();
@@ -176,16 +136,55 @@ void EKFGSF_yaw::update(const Vector3f &delAng,
         float yawDelta = wrap_PI(EKF[mdl_idx].X[2] - GSF.yaw);
         GSF.yaw_variance +=  GSF.weights[mdl_idx] * (EKF[mdl_idx].P[2][2] + sq(yawDelta));
     }
-
-    // prevent the same velocity data being used again
-    vel_data_updated = false;
 }
 
-void EKFGSF_yaw::pushVelData(Vector2f vel, float velAcc)
+void EKFGSF_yaw::fuseVelData(Vector2f vel, float velAcc)
 {
+    // set class variables
+    velObsVar = sq(fmaxf(velAcc, 0.5f));
     vel_NE = vel;
-    vel_accuracy = velAcc;
-    vel_data_updated = true;
+
+    // The 3-state EKF models only run when flying to avoid corrupted estimates due to operator handling and GPS interference
+    if (run_ekf_gsf) {
+        if (!vel_fuse_running) {
+            // Perform in-flight alignment
+            for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
+                // Use the firstGPS  measurement to set the velocities and corresponding variances
+                EKF[mdl_idx].X[0] = vel_NE[0];
+                EKF[mdl_idx].X[1] = vel_NE[1];
+                EKF[mdl_idx].P[0][0] = velObsVar;
+                EKF[mdl_idx].P[1][1] = velObsVar;
+            }
+            alignYaw();
+            vel_fuse_running = true;
+        } else {
+            float total_w = 0.0f;
+            float newWeight[(uint8_t)N_MODELS_EKFGSF];
+            bool state_update_failed = false;
+            for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
+                // Update states and covariances using GPS NE velocity measurements fused as direct state observations
+                if (!correct(mdl_idx)) {
+                    state_update_failed = true;
+                }
+            }
+
+            if (!state_update_failed) {
+                // Calculate weighting for each model assuming a normal error distribution
+                for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
+                    newWeight[mdl_idx]= fmaxf(gaussianDensity(mdl_idx) * GSF.weights[mdl_idx], 0.0f);
+                    total_w += newWeight[mdl_idx];
+                }
+
+                // Normalise the sum of weights to unity
+                if (vel_fuse_running && is_positive(total_w)) {
+                    float total_w_inv = 1.0f / total_w;
+                    for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
+                        GSF.weights[mdl_idx]  = newWeight[mdl_idx] * total_w_inv;
+                    }
+                }
+            }
+        }
+    }
 }
 
 void EKFGSF_yaw::predictAHRS(const uint8_t mdl_idx)
@@ -386,9 +385,6 @@ void EKFGSF_yaw::predict(const uint8_t mdl_idx)
 // Returns false if the sttae and covariance correction failed
 bool EKFGSF_yaw::correct(const uint8_t mdl_idx)
 {
-    // set observation variance from accuracy estimate supplied by GPS and apply a sanity check minimum
-    const float velObsVar = sq(fmaxf(vel_accuracy, 0.5f));
-
     // calculate velocity observation innovations
     EKF[mdl_idx].innov[0] = EKF[mdl_idx].X[0] - vel_NE[0];
     EKF[mdl_idx].innov[1] = EKF[mdl_idx].X[1] - vel_NE[1];
@@ -539,7 +535,6 @@ void EKFGSF_yaw::initialise()
 {
     memset(&GSF, 0, sizeof(GSF));
     vel_fuse_running = false;
-    vel_data_updated = false;
     run_ekf_gsf = false;
 
     memset(&EKF, 0, sizeof(EKF));
@@ -554,8 +549,8 @@ void EKFGSF_yaw::initialise()
         // Take state and variance estimates direct from velocity sensor
         EKF[mdl_idx].X[0] = vel_NE[0];
         EKF[mdl_idx].X[1] = vel_NE[1];
-        EKF[mdl_idx].P[0][0] = sq(fmaxf(vel_accuracy, 0.5f));
-        EKF[mdl_idx].P[1][1] = EKF[mdl_idx].P[0][0];
+        EKF[mdl_idx].P[0][0] = velObsVar;
+        EKF[mdl_idx].P[1][1] = velObsVar;
 
         // Use half yaw interval for yaw uncertainty as that is the maximum that the best model can be away from truth
         GSF.yaw_variance = sq(0.5f * yaw_increment);
