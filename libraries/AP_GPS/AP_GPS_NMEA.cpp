@@ -21,8 +21,8 @@
 // All rights reserved.
 //
 
-/// @file	AP_GPS_NMEA.cpp
-/// @brief	NMEA protocol parser
+/// @file   AP_GPS_NMEA.cpp
+/// @brief  NMEA protocol parser
 ///
 /// This is a lightweight NMEA parser, derived originally from the
 /// TinyGPS parser by Mikal Hart.
@@ -432,34 +432,34 @@ bool AP_GPS_NMEA::_term_complete()
 bool
 AP_GPS_NMEA::_detect(struct NMEA_detect_state &state, uint8_t data)
 {
-	switch (state.step) {
-	case 0:
-		state.ck = 0;
-		if ('$' == data) {
-			state.step++;
-		}
-		break;
-	case 1:
-		if ('*' == data) {
-			state.step++;
-		} else {
-			state.ck ^= data;
-		}
-		break;
-	case 2:
-		if (hexdigit(state.ck>>4) == data) {
-			state.step++;
-		} else {
-			state.step = 0;
-		}
-		break;
-	case 3:
-		if (hexdigit(state.ck&0xF) == data) {
+    switch (state.step) {
+    case 0:
+        state.ck = 0;
+        if ('$' == data) {
+            state.step++;
+        }
+        break;
+    case 1:
+        if ('*' == data) {
+            state.step++;
+        } else {
+            state.ck ^= data;
+        }
+        break;
+    case 2:
+        if (hexdigit(state.ck>>4) == data) {
+            state.step++;
+        } else {
             state.step = 0;
-			return true;
-		}
-		state.step = 0;
-		break;
+        }
+        break;
+    case 3:
+        if (hexdigit(state.ck&0xF) == data) {
+            state.step = 0;
+            return true;
+        }
+        state.step = 0;
+        break;
     }
     return false;
 }

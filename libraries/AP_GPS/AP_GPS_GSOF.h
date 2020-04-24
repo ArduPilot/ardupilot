@@ -15,7 +15,7 @@
 
 //
 //  Trimble GPS driver for ArduPilot.
-//	Code by Michael Oborne
+//  Code by Michael Oborne
 //
 #pragma once
 

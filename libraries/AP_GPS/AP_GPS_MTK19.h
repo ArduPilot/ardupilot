@@ -15,9 +15,9 @@
 
 //
 //  DIYDrones Custom Mediatek GPS driver for ArduPilot and ArduPilotMega.
-//	Code by Michael Smith, Jordi Munoz and Jose Julio, Craig Elder, DIYDrones.com
+//  Code by Michael Smith, Jordi Munoz and Jose Julio, Craig Elder, DIYDrones.com
 //
-//	GPS configuration : Custom protocol per "Customize Function Specification, 3D Robotics, v1.6, v1.7, v1.8, v1.9"
+//  GPS configuration : Custom protocol per "Customize Function Specification, 3D Robotics, v1.6, v1.7, v1.8, v1.9"
 //
 #pragma once
 
@@ -55,12 +55,12 @@ private:
         FIX_NONE = 1,
         FIX_2D = 2,
         FIX_3D = 3,
-		FIX_2D_SBAS = 6,
+        FIX_2D_SBAS = 6,
         FIX_3D_SBAS = 7
     };
 
     enum diyd_mtk_protocol_bytes {
-	    PREAMBLE1_V16 = 0xd0,
+        PREAMBLE1_V16 = 0xd0,
         PREAMBLE1_V19 = 0xd1,
         PREAMBLE2     = 0xdd,
     };
@@ -72,7 +72,7 @@ private:
     // State machine state
     uint8_t         _step;
     uint8_t         _payload_counter;
-	uint8_t			_mtk_revision;
+    uint8_t         _mtk_revision;
 
     uint8_t         _fix_counter;
 

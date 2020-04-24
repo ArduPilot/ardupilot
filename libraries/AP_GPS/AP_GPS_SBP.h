@@ -15,7 +15,7 @@
 
 //
 //  Swift Navigation SBP GPS driver for ArduPilot.
-//	Code by Niels Joubert
+//  Code by Niels Joubert
 //
 //  Swift Binary Protocol format: http://docs.swift-nav.com/
 //

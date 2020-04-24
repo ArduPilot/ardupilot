@@ -15,9 +15,9 @@
 
 //
 //  DIYDrones Custom Mediatek GPS driver for ArduPilot and ArduPilotMega.
-//	Code by Michael Smith, Jordi Munoz and Jose Julio, DIYDrones.com
+//  Code by Michael Smith, Jordi Munoz and Jose Julio, DIYDrones.com
 //
-//	GPS configuration : Custom protocol per "DIYDrones Custom Binary Sentence Specification V1.1"
+//  GPS configuration : Custom protocol per "DIYDrones Custom Binary Sentence Specification V1.1"
 //
 // Note - see AP_GPS_MTK16.h for firmware 1.6 and later.
 //

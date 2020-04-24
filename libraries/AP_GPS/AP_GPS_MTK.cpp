@@ -15,9 +15,9 @@
 
 //
 //  DIYDrones Custom Mediatek GPS driver for ArduPilot and ArduPilotMega.
-//	Code by Michael Smith, Jordi Munoz and Jose Julio, DIYDrones.com
+//  Code by Michael Smith, Jordi Munoz and Jose Julio, DIYDrones.com
 //
-//	GPS configuration : Custom protocol per "DIYDrones Custom Binary Sentence Specification V1.1"
+//  GPS configuration : Custom protocol per "DIYDrones Custom Binary Sentence Specification V1.1"
 //
 
 #include "AP_GPS.h"
@@ -167,7 +167,7 @@ restart:
 bool
 AP_GPS_MTK::_detect(struct MTK_detect_state &state, uint8_t data)
 {
-	switch (state.step) {
+    switch (state.step) {
         case 1:
             if (PREAMBLE2 == data) {
                 state.step++;
@@ -176,7 +176,7 @@ AP_GPS_MTK::_detect(struct MTK_detect_state &state, uint8_t data)
             state.step = 0;
             FALLTHROUGH;
         case 0:
-			state.ck_b = state.ck_a = state.payload_counter = 0;
+            state.ck_b = state.ck_a = state.payload_counter = 0;
             if(PREAMBLE1 == data)
                 state.step++;
             break;
@@ -211,8 +211,8 @@ AP_GPS_MTK::_detect(struct MTK_detect_state &state, uint8_t data)
         case 6:
             state.step = 0;
             if (state.ck_b == data) {
-				return true;
+                return true;
             }
-	}
+    }
     return false;
 }

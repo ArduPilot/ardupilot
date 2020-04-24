@@ -15,7 +15,7 @@
 
 //
 //  u-blox UBX GPS driver for ArduPilot and ArduPilotMega.
-//	Code by Michael Smith, Jordi Munoz and Jose Julio, DIYDrones.com
+//  Code by Michael Smith, Jordi Munoz and Jose Julio, DIYDrones.com
 //
 //  UBlox Lea6H protocol: http://www.u-blox.com/images/downloads/Product_Docs/u-blox6_ReceiverDescriptionProtocolSpec_%28GPS.G6-SW-10018%29.pdf
 #pragma once
@@ -719,7 +719,7 @@ private:
     void        _configure_sbas(bool enable);
     void        _update_checksum(uint8_t *data, uint16_t len, uint8_t &ck_a, uint8_t &ck_b);
     bool        _send_message(uint8_t msg_class, uint8_t msg_id, void *msg, uint16_t size);
-    void	send_next_rate_update(void);
+    void    send_next_rate_update(void);
     bool        _request_message_rate(uint8_t msg_class, uint8_t msg_id);
     void        _request_next_config(void);
     void        _request_port(void);

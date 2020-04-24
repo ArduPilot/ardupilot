@@ -22,8 +22,8 @@
 //
 //
 
-/// @file	AP_GPS_NMEA.h
-/// @brief	NMEA protocol parser
+/// @file   AP_GPS_NMEA.h
+/// @brief  NMEA protocol parser
 ///
 /// This is a lightweight NMEA parser, derived originally from the
 /// TinyGPS parser by Mikal Hart.  It is frugal in its use of memory
@@ -61,7 +61,7 @@ public:
     /// accordingly.
     bool        read() override;
 
-	static bool _detect(struct NMEA_detect_state &state, uint8_t data);
+    static bool _detect(struct NMEA_detect_state &state, uint8_t data);
 
     const char *name() const override { return "NMEA"; }
 
@@ -77,17 +77,17 @@ private:
 
     /// Update the decode state machine with a new character
     ///
-    /// @param	c		The next character in the NMEA input stream
-    /// @returns		True if processing the character has resulted in
-    ///					an update to the GPS state
+    /// @param  c       The next character in the NMEA input stream
+    /// @returns        True if processing the character has resulted in
+    ///                 an update to the GPS state
     ///
     bool                        _decode(char c);
 
     /// Parses the @p as a NMEA-style decimal number with
     /// up to 3 decimal digits.
     ///
-    /// @returns		The value expressed by the string in @p,
-    ///					multiplied by 100.
+    /// @returns        The value expressed by the string in @p,
+    ///                 multiplied by 100.
     ///
     static int32_t _parse_decimal_100(const char *p);
 
@@ -96,8 +96,8 @@ private:
     ///
     /// This gives a theoretical resolution limit of around 1cm.
     ///
-    /// @returns		The value expressed by the string in _term,
-    ///					multiplied by 1e7.
+    /// @returns        The value expressed by the string in _term,
+    ///                 multiplied by 1e7.
     ///
     uint32_t    _parse_degrees();
 
@@ -107,8 +107,8 @@ private:
     /// Each GPS message is broken up into terms separated by commas.
     /// Each term is then processed by this function as it is received.
     ///
-    /// @returns		True if completing the term has resulted in
-    ///					an update to the GPS state.
+    /// @returns        True if completing the term has resulted in
+    ///                 an update to the GPS state.
     bool                        _term_complete();
 
     /// return true if we have a new set of NMEA messages
@@ -143,10 +143,10 @@ private:
     uint32_t _last_VTG_ms = 0;
     uint32_t _last_HDT_ms = 0;
 
-    /// @name	Init strings
-    ///			In ::init, an attempt is made to configure the GPS
-    ///			unit to send just the messages that we are interested
-    ///			in using these strings
+    /// @name   Init strings
+    ///         In ::init, an attempt is made to configure the GPS
+    ///         unit to send just the messages that we are interested
+    ///         in using these strings
     //@{
     static const char _SiRF_init_string[];         ///< init string for SiRF units
     static const char _MTK_init_string[];                  ///< init string for MediaTek units

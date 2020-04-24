@@ -15,7 +15,7 @@
 
 //
 //  SiRF Binary GPS driver for ArduPilot and ArduPilotMega.
-//	Code by Michael Smith.
+//  Code by Michael Smith.
 //
 #pragma once
 
@@ -29,11 +29,11 @@
 
 class AP_GPS_SIRF : public AP_GPS_Backend {
 public:
-	AP_GPS_SIRF(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
+    AP_GPS_SIRF(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
 
     bool read() override;
 
-	static bool _detect(struct SIRF_detect_state &state, uint8_t data);
+    static bool _detect(struct SIRF_detect_state &state, uint8_t data);
 
     const char *name() const override { return "SIRF"; }
 
