@@ -1,15 +1,15 @@
 #pragma once
 
-/// @file	AC_PID_2D.h
-/// @brief	Generic PID algorithm, with EEPROM-backed storage of constants.
+/// @file   AC_PID_2D.h
+/// @brief  Generic PID algorithm, with EEPROM-backed storage of constants.
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <stdlib.h>
 #include <cmath>
 
-/// @class	AC_PID_2D
-/// @brief	Copter PID control class
+/// @class  AC_PID_2D
+/// @brief  Copter PID control class
 class AC_PID_2D {
 public:
 

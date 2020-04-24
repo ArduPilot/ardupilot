@@ -1,5 +1,5 @@
-/// @file	AC_P.cpp
-/// @brief	Generic P algorithm
+/// @file   AC_P.cpp
+/// @brief  Generic P algorithm
 
 #include <AP_Math/AP_Math.h>
 #include "AC_P.h"

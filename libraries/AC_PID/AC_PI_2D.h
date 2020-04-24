@@ -1,7 +1,7 @@
 #pragma once
 
-/// @file	AC_PI_2D.h
-/// @brief	Generic PID algorithm, with EEPROM-backed storage of constants.
+/// @file   AC_PI_2D.h
+/// @brief  Generic PID algorithm, with EEPROM-backed storage of constants.
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
@@ -11,8 +11,8 @@
 #define AC_PI_2D_FILT_HZ_DEFAULT  20.0f   // default input filter frequency
 #define AC_PI_2D_FILT_HZ_MIN      0.01f   // minimum input filter frequency
 
-/// @class	AC_PI_2D
-/// @brief	Copter PID control class
+/// @class  AC_PI_2D
+/// @brief  Copter PID control class
 class AC_PI_2D {
 public:
 

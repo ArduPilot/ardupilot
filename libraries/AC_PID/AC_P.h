@@ -1,28 +1,28 @@
 #pragma once
 
-/// @file	AC_PD.h
-/// @brief	Generic PID algorithm, with EEPROM-backed storage of constants.
+/// @file   AC_PD.h
+/// @brief  Generic PID algorithm, with EEPROM-backed storage of constants.
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <stdlib.h>
 #include <cmath>
 
-/// @class	AC_P
-/// @brief	Object managing one P controller
+/// @class  AC_P
+/// @brief  Object managing one P controller
 class AC_P {
 public:
 
     /// Constructor for P that saves its settings to EEPROM
     ///
-    /// @note	PIs must be named to avoid either multiple parameters with the
-    ///			same name, or an overly complex constructor.
+    /// @note   PIs must be named to avoid either multiple parameters with the
+    ///         same name, or an overly complex constructor.
     ///
     /// @param  initial_p       Initial value for the P term.
     ///
     AC_P(const float &initial_p = 0.0f)
     {
-		AP_Param::setup_object_defaults(this, var_info);
+        AP_Param::setup_object_defaults(this, var_info);
         _kp = initial_p;
     }
 
@@ -30,13 +30,13 @@ public:
     ///
     /// Positive error produces positive output.
     ///
-    /// @param error	The measured error value
-    /// @param dt		The time delta in milliseconds (note
-    ///					that update interval cannot be more
-    ///					than 65.535 seconds due to limited range
-    ///					of the data type).
+    /// @param error    The measured error value
+    /// @param dt       The time delta in milliseconds (note
+    ///                 that update interval cannot be more
+    ///                 than 65.535 seconds due to limited range
+    ///                 of the data type).
     ///
-    /// @returns		The updated control output.
+    /// @returns        The updated control output.
     ///
     float       get_p(float error) const;
 
@@ -48,7 +48,7 @@ public:
     ///
     void        save_gains();
 
-    /// @name	parameter accessors
+    /// @name   parameter accessors
     //@{
 
     /// Overload the function call operator to permit relatively easy initialisation

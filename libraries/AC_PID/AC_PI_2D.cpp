@@ -1,5 +1,5 @@
-/// @file	AC_PI_2D.cpp
-/// @brief	Generic PID algorithm
+/// @file   AC_PI_2D.cpp
+/// @brief  Generic PID algorithm
 
 #include <AP_Math/AP_Math.h>
 #include "AC_PI_2D.h"
