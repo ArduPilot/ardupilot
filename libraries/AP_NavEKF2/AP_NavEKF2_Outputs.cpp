@@ -349,6 +349,8 @@ bool NavEKF2_core::getLLH(struct Location &loc) const
             } else {
                 // if no GPS fix, provide last known position before entering the mode
                 // correct for IMU offset (EKF calculations are at the IMU position)
+                loc.lat = EKF_origin.lat;
+                loc.lng = EKF_origin.lng;
                 loc.offset((lastKnownPositionNE.x + posOffsetNED.x), (lastKnownPositionNE.y + posOffsetNED.y));
                 return false;
             }
