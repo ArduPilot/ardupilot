@@ -778,7 +778,7 @@ void AP_IOMCU::update_safety_options(void)
 bool AP_IOMCU::check_crc(void)
 {
     // flash size minus 4k bootloader
-	const uint32_t flash_size = 0x10000 - 0x1000;
+    const uint32_t flash_size = 0x10000 - 0x1000;
 
     fw = AP_ROMFS::find_decompress(fw_name, fw_size);
     if (!fw) {
@@ -788,10 +788,10 @@ bool AP_IOMCU::check_crc(void)
     uint32_t crc = crc32_small(0, fw, fw_size);
 
     // pad CRC to max size
-	for (uint32_t i=0; i<flash_size-fw_size; i++) {
-		uint8_t b = 0xff;
+    for (uint32_t i=0; i<flash_size-fw_size; i++) {
+        uint8_t b = 0xff;
         crc = crc32_small(crc, &b, 1);
-	}
+    }
 
     uint32_t io_crc = 0;
     uint8_t tries = 32;
