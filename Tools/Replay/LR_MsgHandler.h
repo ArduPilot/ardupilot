@@ -63,8 +63,8 @@ class LR_MsgHandler_ARSP : public LR_MsgHandler
 {
 public:
     LR_MsgHandler_ARSP(log_Format &_f, AP_Logger &_logger,
-		    uint64_t &_last_timestamp_usec, AP_Airspeed &_airspeed) :
-	LR_MsgHandler(_f, _logger, _last_timestamp_usec), airspeed(_airspeed) { };
+            uint64_t &_last_timestamp_usec, AP_Airspeed &_airspeed) :
+    LR_MsgHandler(_f, _logger, _last_timestamp_usec), airspeed(_airspeed) { };
 
     void process_message(uint8_t *msg) override;
 
@@ -76,8 +76,8 @@ class LR_MsgHandler_NKF1 : public LR_MsgHandler
 {
 public:
     LR_MsgHandler_NKF1(log_Format &_f, AP_Logger &_logger,
-		    uint64_t &_last_timestamp_usec) :
-	LR_MsgHandler(_f, _logger, _last_timestamp_usec) { };
+            uint64_t &_last_timestamp_usec) :
+    LR_MsgHandler(_f, _logger, _last_timestamp_usec) { };
 
     void process_message(uint8_t *msg) override;
 };
@@ -366,7 +366,7 @@ class LR_MsgHandler_MAG_Base : public LR_MsgHandler
 public:
     LR_MsgHandler_MAG_Base(log_Format &_f, AP_Logger &_logger,
                         uint64_t &_last_timestamp_usec, Compass &_compass)
-	: LR_MsgHandler(_f, _logger, _last_timestamp_usec), compass(_compass) { };
+    : LR_MsgHandler(_f, _logger, _last_timestamp_usec), compass(_compass) { };
 
 protected:
     void update_from_msg_compass(uint8_t compass_offset, uint8_t *msg);
@@ -419,8 +419,8 @@ class LR_MsgHandler_NTUN_Copter : public LR_MsgHandler
 {
 public:
     LR_MsgHandler_NTUN_Copter(log_Format &_f, AP_Logger &_logger,
-			   uint64_t &_last_timestamp_usec, Vector3f &_inavpos)
-	: LR_MsgHandler(_f, _logger, _last_timestamp_usec), inavpos(_inavpos) {};
+               uint64_t &_last_timestamp_usec, Vector3f &_inavpos)
+    : LR_MsgHandler(_f, _logger, _last_timestamp_usec), inavpos(_inavpos) {};
 
     void process_message(uint8_t *msg) override;
 

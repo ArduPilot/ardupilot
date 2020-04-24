@@ -74,25 +74,25 @@ struct log_Format deferred_formats[LOGREADER_MAX_FORMATS];
 // dealing with.
 void LogReader::maybe_install_vehicle_specific_parsers() {
     if (! installed_vehicle_specific_parsers &&
-	vehicle != VehicleType::VEHICLE_UNKNOWN) {
-	switch(vehicle) {
-	case VehicleType::VEHICLE_COPTER:
-	    for (uint8_t i = 0; i<LOGREADER_MAX_FORMATS; i++) {
-		if (deferred_formats[i].type != 0) {
-		    msgparser[i] = new LR_MsgHandler_NTUN_Copter
-			(deferred_formats[i], logger, last_timestamp_usec,
+    vehicle != VehicleType::VEHICLE_UNKNOWN) {
+    switch(vehicle) {
+    case VehicleType::VEHICLE_COPTER:
+        for (uint8_t i = 0; i<LOGREADER_MAX_FORMATS; i++) {
+        if (deferred_formats[i].type != 0) {
+            msgparser[i] = new LR_MsgHandler_NTUN_Copter
+            (deferred_formats[i], logger, last_timestamp_usec,
                          inavpos);
-		}
-	    }
-	    break;
-	case VehicleType::VEHICLE_PLANE:
-	    break;
-	case VehicleType::VEHICLE_ROVER:
-	    break;
-	case VehicleType::VEHICLE_UNKNOWN:
-	    break;
-	}
-	installed_vehicle_specific_parsers = true;
+        }
+        }
+        break;
+    case VehicleType::VEHICLE_PLANE:
+        break;
+    case VehicleType::VEHICLE_ROVER:
+        break;
+    case VehicleType::VEHICLE_UNKNOWN:
+        break;
+    }
+    installed_vehicle_specific_parsers = true;
     }
 }
 
@@ -245,10 +245,10 @@ bool LogReader::save_message_type(const char *name)
 
 bool LogReader::handle_log_format_msg(const struct log_Format &f) 
 {
-	char name[5];
-	memset(name, '\0', 5);
-	memcpy(name, f.name, 4);
-	debug("Defining log format for type (%d) (%s)\n", f.type, name);
+    char name[5];
+    memset(name, '\0', 5);
+    memcpy(name, f.name, 4);
+    debug("Defining log format for type (%d) (%s)\n", f.type, name);
 
     struct LogStructure s = _log_structure[_log_structure_count++];
     logger.set_num_types(_log_structure_count);
@@ -298,113 +298,113 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f)
         return true;
     }
 
-	// map from format name to a parser subclass:
-	if (streq(name, "PARM")) {
+    // map from format name to a parser subclass:
+    if (streq(name, "PARM")) {
             msgparser[f.type] = new LR_MsgHandler_PARM
                 (formats[f.type], logger,
                  last_timestamp_usec,
                  [this](const char *xname, const float xvalue) {
                     return set_parameter(xname, xvalue);
                  });
-	} else if (streq(name, "GPS")) {
-	    msgparser[f.type] = new LR_MsgHandler_GPS(formats[f.type],
+    } else if (streq(name, "GPS")) {
+        msgparser[f.type] = new LR_MsgHandler_GPS(formats[f.type],
                                                       logger,
                                                       last_timestamp_usec,
                                                       gps, ground_alt_cm);
-	} else if (streq(name, "GPS2")) {
-	    msgparser[f.type] = new LR_MsgHandler_GPS2(formats[f.type], logger,
+    } else if (streq(name, "GPS2")) {
+        msgparser[f.type] = new LR_MsgHandler_GPS2(formats[f.type], logger,
                                                        last_timestamp_usec,
                                                        gps, ground_alt_cm);
-	} else if (streq(name, "GPA")) {
-	    msgparser[f.type] = new LR_MsgHandler_GPA(formats[f.type],
+    } else if (streq(name, "GPA")) {
+        msgparser[f.type] = new LR_MsgHandler_GPA(formats[f.type],
                                                       logger,
                                                       last_timestamp_usec,
                                                       gps);
-	} else if (streq(name, "GPA2")) {
-	    msgparser[f.type] = new LR_MsgHandler_GPA2(formats[f.type], logger,
+    } else if (streq(name, "GPA2")) {
+        msgparser[f.type] = new LR_MsgHandler_GPA2(formats[f.type], logger,
                                                        last_timestamp_usec,
                                                        gps);
-	} else if (streq(name, "MSG")) {
-	    msgparser[f.type] = new LR_MsgHandler_MSG(formats[f.type], logger,
+    } else if (streq(name, "MSG")) {
+        msgparser[f.type] = new LR_MsgHandler_MSG(formats[f.type], logger,
                                                    last_timestamp_usec,
-						   vehicle, ahrs);
-	} else if (streq(name, "IMU")) {
-	    msgparser[f.type] = new LR_MsgHandler_IMU(formats[f.type], logger,
+                           vehicle, ahrs);
+    } else if (streq(name, "IMU")) {
+        msgparser[f.type] = new LR_MsgHandler_IMU(formats[f.type], logger,
                                                    last_timestamp_usec,
-						   accel_mask, gyro_mask, ins);
-	} else if (streq(name, "IMU2")) {
-	    msgparser[f.type] = new LR_MsgHandler_IMU2(formats[f.type], logger,
+                           accel_mask, gyro_mask, ins);
+    } else if (streq(name, "IMU2")) {
+        msgparser[f.type] = new LR_MsgHandler_IMU2(formats[f.type], logger,
                                                     last_timestamp_usec,
-						    accel_mask, gyro_mask, ins);
-	} else if (streq(name, "IMU3")) {
-	    msgparser[f.type] = new LR_MsgHandler_IMU3(formats[f.type], logger,
+                            accel_mask, gyro_mask, ins);
+    } else if (streq(name, "IMU3")) {
+        msgparser[f.type] = new LR_MsgHandler_IMU3(formats[f.type], logger,
                                                     last_timestamp_usec,
-						    accel_mask, gyro_mask, ins);
-	} else if (streq(name, "IMT")) {
-	    msgparser[f.type] = new LR_MsgHandler_IMT(formats[f.type], logger,
+                            accel_mask, gyro_mask, ins);
+    } else if (streq(name, "IMT")) {
+        msgparser[f.type] = new LR_MsgHandler_IMT(formats[f.type], logger,
                                                       last_timestamp_usec,
                                                       accel_mask, gyro_mask, use_imt, ins);
-	} else if (streq(name, "IMT2")) {
-	    msgparser[f.type] = new LR_MsgHandler_IMT2(formats[f.type], logger,
+    } else if (streq(name, "IMT2")) {
+        msgparser[f.type] = new LR_MsgHandler_IMT2(formats[f.type], logger,
                                                        last_timestamp_usec,
                                                        accel_mask, gyro_mask, use_imt, ins);
-	} else if (streq(name, "IMT3")) {
-	    msgparser[f.type] = new LR_MsgHandler_IMT3(formats[f.type], logger,
+    } else if (streq(name, "IMT3")) {
+        msgparser[f.type] = new LR_MsgHandler_IMT3(formats[f.type], logger,
                                                        last_timestamp_usec,
                                                        accel_mask, gyro_mask, use_imt, ins);
-	} else if (streq(name, "SIM")) {
-	  msgparser[f.type] = new LR_MsgHandler_SIM(formats[f.type], logger,
+    } else if (streq(name, "SIM")) {
+      msgparser[f.type] = new LR_MsgHandler_SIM(formats[f.type], logger,
                                                  last_timestamp_usec,
-						 sim_attitude);
-	} else if (streq(name, "BARO")) {
-	  msgparser[f.type] = new LR_MsgHandler_BARO(formats[f.type], logger,
+                         sim_attitude);
+    } else if (streq(name, "BARO")) {
+      msgparser[f.type] = new LR_MsgHandler_BARO(formats[f.type], logger,
                                                   last_timestamp_usec);
-	} else if (streq(name, "ARM")) {
-	  msgparser[f.type] = new LR_MsgHandler_ARM(formats[f.type], logger,
+    } else if (streq(name, "ARM")) {
+      msgparser[f.type] = new LR_MsgHandler_ARM(formats[f.type], logger,
                                                   last_timestamp_usec);
-	} else if (streq(name, "EV")) {
-	  msgparser[f.type] = new LR_MsgHandler_Event(formats[f.type], logger,
+    } else if (streq(name, "EV")) {
+      msgparser[f.type] = new LR_MsgHandler_Event(formats[f.type], logger,
                                                   last_timestamp_usec);
-	} else if (streq(name, "AHR2")) {
-	  msgparser[f.type] = new LR_MsgHandler_AHR2(formats[f.type], logger,
-						  last_timestamp_usec,
+    } else if (streq(name, "AHR2")) {
+      msgparser[f.type] = new LR_MsgHandler_AHR2(formats[f.type], logger,
+                          last_timestamp_usec,
                                                   ahr2_attitude);
-	} else if (streq(name, "ATT")) {
-	  // this parser handles *all* attitude messages - the common one,
-	  // and also the rover/copter/plane-specific (old) messages
-	  msgparser[f.type] = new LR_MsgHandler_ATT(formats[f.type], logger,
-						 last_timestamp_usec,
+    } else if (streq(name, "ATT")) {
+      // this parser handles *all* attitude messages - the common one,
+      // and also the rover/copter/plane-specific (old) messages
+      msgparser[f.type] = new LR_MsgHandler_ATT(formats[f.type], logger,
+                         last_timestamp_usec,
                                                  attitude);
-	} else if (streq(name, "MAG")) {
-	  msgparser[f.type] = new LR_MsgHandler_MAG(formats[f.type], logger,
-						 last_timestamp_usec, compass);
-	} else if (streq(name, "MAG2")) {
-	  msgparser[f.type] = new LR_MsgHandler_MAG2(formats[f.type], logger,
-						 last_timestamp_usec, compass);
-	} else if (streq(name, "NTUN")) {
-	    // the label "NTUN" is used by rover, copter and plane -
-	    // and they all look different!  creation of a parser is
-	    // deferred until we receive a MSG log entry telling us
-	    // which vehicle type to use.  Sucks.
-	    memcpy(&deferred_formats[f.type], &formats[f.type],
+    } else if (streq(name, "MAG")) {
+      msgparser[f.type] = new LR_MsgHandler_MAG(formats[f.type], logger,
+                         last_timestamp_usec, compass);
+    } else if (streq(name, "MAG2")) {
+      msgparser[f.type] = new LR_MsgHandler_MAG2(formats[f.type], logger,
+                         last_timestamp_usec, compass);
+    } else if (streq(name, "NTUN")) {
+        // the label "NTUN" is used by rover, copter and plane -
+        // and they all look different!  creation of a parser is
+        // deferred until we receive a MSG log entry telling us
+        // which vehicle type to use.  Sucks.
+        memcpy(&deferred_formats[f.type], &formats[f.type],
                    sizeof(struct log_Format));
-	} else if (streq(name, "ARSP")) { // plane-specific(?!)
-	    msgparser[f.type] = new LR_MsgHandler_ARSP(formats[f.type], logger,
+    } else if (streq(name, "ARSP")) { // plane-specific(?!)
+        msgparser[f.type] = new LR_MsgHandler_ARSP(formats[f.type], logger,
                                                     last_timestamp_usec,
                                                     airspeed);
-	} else if (streq(name, "NKF1")) {
-	    msgparser[f.type] = new LR_MsgHandler_NKF1(formats[f.type], logger,
+    } else if (streq(name, "NKF1")) {
+        msgparser[f.type] = new LR_MsgHandler_NKF1(formats[f.type], logger,
                                                        last_timestamp_usec);
-	} else if (streq(name, "CHEK")) {
-	  msgparser[f.type] = new LR_MsgHandler_CHEK(formats[f.type], logger,
+    } else if (streq(name, "CHEK")) {
+      msgparser[f.type] = new LR_MsgHandler_CHEK(formats[f.type], logger,
                                                      last_timestamp_usec,
                                                      check_state);
-	} else if (streq(name, "PM")) {
-	  msgparser[f.type] = new LR_MsgHandler_PM(formats[f.type], logger,
+    } else if (streq(name, "PM")) {
+      msgparser[f.type] = new LR_MsgHandler_PM(formats[f.type], logger,
                                                    last_timestamp_usec);
-	} else {
+    } else {
             debug("  No parser for (%s)\n", name);
-	}
+    }
 
         return true;
 }
@@ -434,7 +434,7 @@ bool LogReader::handle_msg(const struct log_Format &f, uint8_t *msg) {
 
     LR_MsgHandler *p = msgparser[f.type];
     if (p == NULL) {
-	return true;
+    return true;
     }
 
     p->process_message(msg);

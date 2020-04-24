@@ -231,7 +231,7 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
 
     int opt;
     while ((opt = gopt.getoption()) != -1) {
-		switch (opt) {
+        switch (opt) {
         case 'g':
             logreader.set_gyro_mask(strtol(gopt.optarg, NULL, 0));
             break;
@@ -318,8 +318,8 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
         }
     }
 
-	argv += gopt.optind;
-	argc -= gopt.optind;
+    argv += gopt.optind;
+    argc -= gopt.optind;
 
     if (argc > 0) {
         filename = argv[0];

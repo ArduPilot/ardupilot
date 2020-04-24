@@ -24,7 +24,7 @@ public:
 
     bool field_value(uint8_t *msg, const char *label, Vector3f &ret);
     bool field_value(uint8_t *msg, const char *label,
-		     char *buffer, uint8_t bufferlen);
+             char *buffer, uint8_t bufferlen);
     
     template <typename R>
     void require_field(uint8_t *msg, const char *label, R &ret)
@@ -72,19 +72,19 @@ protected:
     ~MsgHandler();
 
     void location_from_msg(uint8_t *msg, Location &loc, const char *label_lat,
-			   const char *label_long, const char *label_alt);
+               const char *label_long, const char *label_alt);
 
     void ground_vel_from_msg(uint8_t *msg,
-			     Vector3f &vel,
-			     const char *label_speed,
-			     const char *label_course,
-			     const char *label_vz);
+                 Vector3f &vel,
+                 const char *label_speed,
+                 const char *label_course,
+                 const char *label_vz);
 
     void attitude_from_msg(uint8_t *msg,
-			   Vector3f &att,
-			   const char *label_roll,
-			   const char *label_pitch,
-			   const char *label_yaw);
+               Vector3f &att,
+               const char *label_roll,
+               const char *label_pitch,
+               const char *label_yaw);
     [[noreturn]] void field_not_found(uint8_t *msg, const char *label);
 };
 

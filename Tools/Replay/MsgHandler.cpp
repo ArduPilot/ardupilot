@@ -90,12 +90,12 @@ void MsgHandler::parse_format_fields()
     uint8_t msg_offset = 3; // 3 bytes for the header
 
     while ((next_label = strtok(arg, ",")) != NULL) {
-	if (label_offset > strlen(f.format)) {
-	    free(labels);
-	    printf("too few field times for labels %s (format=%s) (labels=%s)\n",
-		   f.name, f.format, f.labels);
-	    exit(1);
-	}
+    if (label_offset > strlen(f.format)) {
+        free(labels);
+        printf("too few field times for labels %s (format=%s) (labels=%s)\n",
+           f.name, f.format, f.labels);
+        exit(1);
+    }
         uint8_t field_type = f.format[label_offset];
         uint8_t length = size_for_type(field_type);
         add_field(next_label, field_type, msg_offset, length);
@@ -138,10 +138,10 @@ bool MsgHandler::field_value(uint8_t *msg, const char *label, Vector3f &ret)
     const char *axes = "XYZ";
     uint8_t i;
     for(i=0; i<next_field; i++) {
-	if (!strncmp(field_info[i].label, label, strlen(label)) &&
-	    strlen(field_info[i].label) == strlen(label)+1) {
-	    for (uint8_t j=0; j<3; j++) {
-		if (field_info[i].label[strlen(label)] == axes[j]) {
+    if (!strncmp(field_info[i].label, label, strlen(label)) &&
+        strlen(field_info[i].label) == strlen(label)+1) {
+        for (uint8_t j=0; j<3; j++) {
+        if (field_info[i].label[strlen(label)] == axes[j]) {
                     field_value_for_type_at_offset(msg,
                                                    field_info[i].type,
                                                    field_info[i].offset,
@@ -233,10 +233,10 @@ void MsgHandler::ground_vel_from_msg(uint8_t *msg,
 }
 
 void MsgHandler::attitude_from_msg(uint8_t *msg,
-				   Vector3f &att,
-				   const char *label_roll,
-				   const char *label_pitch,
-				   const char *label_yaw)
+                   Vector3f &att,
+                   const char *label_roll,
+                   const char *label_pitch,
+                   const char *label_yaw)
 {
     att[0] = require_field_int16_t(msg, label_roll) * 0.01f;
     att[1] = require_field_int16_t(msg, label_pitch) * 0.01f;

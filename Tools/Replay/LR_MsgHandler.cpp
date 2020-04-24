@@ -71,8 +71,8 @@ void LR_MsgHandler_ARSP::process_message(uint8_t *msg)
     wait_timestamp_from_msg(msg);
 
     airspeed.setHIL(require_field_float(msg, "Airspeed"),
-		    require_field_float(msg, "DiffPress"),
-		    require_field_float(msg, "Temp"));
+            require_field_float(msg, "DiffPress"),
+            require_field_float(msg, "Temp"));
 }
 
 void LR_MsgHandler_NKF1::process_message(uint8_t *msg)
@@ -108,10 +108,10 @@ void LR_MsgHandler_BARO::process_message(uint8_t *msg)
         last_update_ms = 0;
     }
     AP::baro().setHIL(0,
-		require_field_float(msg, "Press"),
-		require_field_int16_t(msg, "Temp") * 0.01f,
-		require_field_float(msg, "Alt"),
-		require_field_float(msg, "CRt"),
+        require_field_float(msg, "Press"),
+        require_field_int16_t(msg, "Temp") * 0.01f,
+        require_field_float(msg, "Alt"),
+        require_field_float(msg, "CRt"),
                 last_update_ms);
 }
 
@@ -351,21 +351,21 @@ void LR_MsgHandler_MSG::process_message(uint8_t *msg)
     require_field(msg, "Message", msg_text, msg_text_len);
 
     if (strncmp(msg_text, "ArduPlane", strlen("ArduPlane")) == 0) {
-	vehicle = VehicleType::VEHICLE_PLANE;
-	::printf("Detected Plane\n");
-	ahrs.set_vehicle_class(AHRS_VEHICLE_FIXED_WING);
-	ahrs.set_fly_forward(true);
+    vehicle = VehicleType::VEHICLE_PLANE;
+    ::printf("Detected Plane\n");
+    ahrs.set_vehicle_class(AHRS_VEHICLE_FIXED_WING);
+    ahrs.set_fly_forward(true);
     } else if (strncmp(msg_text, "ArduCopter", strlen("ArduCopter")) == 0 ||
-	       strncmp(msg_text, "APM:Copter", strlen("APM:Copter")) == 0) {
-	vehicle = VehicleType::VEHICLE_COPTER;
-	::printf("Detected Copter\n");
-	ahrs.set_vehicle_class(AHRS_VEHICLE_COPTER);
-	ahrs.set_fly_forward(false);
+           strncmp(msg_text, "APM:Copter", strlen("APM:Copter")) == 0) {
+    vehicle = VehicleType::VEHICLE_COPTER;
+    ::printf("Detected Copter\n");
+    ahrs.set_vehicle_class(AHRS_VEHICLE_COPTER);
+    ahrs.set_fly_forward(false);
     } else if (strncmp(msg_text, "ArduRover", strlen("ArduRover")) == 0) {
-	vehicle = VehicleType::VEHICLE_ROVER;
-	::printf("Detected Rover\n");
-	ahrs.set_vehicle_class(AHRS_VEHICLE_GROUND);
-	ahrs.set_fly_forward(true);
+    vehicle = VehicleType::VEHICLE_ROVER;
+    ::printf("Detected Rover\n");
+    ahrs.set_vehicle_class(AHRS_VEHICLE_GROUND);
+    ahrs.set_fly_forward(true);
     }
 }
 
@@ -373,8 +373,8 @@ void LR_MsgHandler_MSG::process_message(uint8_t *msg)
 void LR_MsgHandler_NTUN_Copter::process_message(uint8_t *msg)
 {
     inavpos = Vector3f(require_field_float(msg, "PosX") * 0.01f,
-		       require_field_float(msg, "PosY") * 0.01f,
-		       0);
+               require_field_float(msg, "PosY") * 0.01f,
+               0);
 }
 
 
