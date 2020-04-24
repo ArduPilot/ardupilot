@@ -53,11 +53,11 @@
 
 #include "AP_RCProtocol_SBUS.h"
 
-#define SBUS_FRAME_SIZE		25
-#define SBUS_INPUT_CHANNELS	16
-#define SBUS_FLAGS_BYTE		23
-#define SBUS_FAILSAFE_BIT	3
-#define SBUS_FRAMELOST_BIT	2
+#define SBUS_FRAME_SIZE     25
+#define SBUS_INPUT_CHANNELS 16
+#define SBUS_FLAGS_BYTE     23
+#define SBUS_FAILSAFE_BIT   3
+#define SBUS_FRAMELOST_BIT  2
 
 /* define range mapping here, -+100% -> 1000..2000 */
 #define SBUS_RANGE_MIN 200.0f

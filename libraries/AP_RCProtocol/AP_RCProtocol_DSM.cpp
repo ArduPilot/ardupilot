@@ -23,14 +23,14 @@ extern const AP_HAL::HAL& hal;
 
 // #define DSM_DEBUG
 #ifdef DSM_DEBUG
-# define debug(fmt, args...)	printf(fmt "\n", ##args)
+# define debug(fmt, args...)    printf(fmt "\n", ##args)
 #else
-# define debug(fmt, args...)	do {} while(0)
+# define debug(fmt, args...)    do {} while(0)
 #endif
 
 
-#define DSM_FRAME_SIZE		16		/**<DSM frame size in bytes*/
-#define DSM_FRAME_CHANNELS	7		/**<Max supported DSM channels*/
+#define DSM_FRAME_SIZE      16      /**<DSM frame size in bytes*/
+#define DSM_FRAME_CHANNELS  7       /**<Max supported DSM channels*/
 
 void AP_RCProtocol_DSM::process_pulse(uint32_t width_s0, uint32_t width_s1)
 {
@@ -134,15 +134,15 @@ void AP_RCProtocol_DSM::dsm_guess_format(bool reset, const uint8_t dsm_frame[16]
      *     of this issue.
      */
     static const uint32_t masks[] = {
-        0x3f,	/* 6 channels (DX6) */
-        0x7f,	/* 7 channels (DX7) */
-        0xff,	/* 8 channels (DX8) */
-        0x1ff,	/* 9 channels (DX9, etc.) */
-        0x3ff,	/* 10 channels (DX10) */
-        0x7ff,	/* 11 channels DX8 22ms */
-        0xfff,	/* 12 channels DX8 22ms */
-        0x1fff,	/* 13 channels (DX10t) */
-        0x3fff	/* 18 channels (DX10) */
+        0x3f,   /* 6 channels (DX6) */
+        0x7f,   /* 7 channels (DX7) */
+        0xff,   /* 8 channels (DX8) */
+        0x1ff,  /* 9 channels (DX9, etc.) */
+        0x3ff,  /* 10 channels (DX10) */
+        0x7ff,  /* 11 channels DX8 22ms */
+        0xfff,  /* 12 channels DX8 22ms */
+        0x1fff, /* 13 channels (DX10t) */
+        0x3fff  /* 18 channels (DX10) */
     };
     unsigned votes10 = 0;
     unsigned votes11 = 0;
@@ -376,9 +376,9 @@ bool AP_RCProtocol_DSM::dsm_parse_byte(uint32_t frame_time_ms, uint8_t b, uint16
                                        uint16_t *num_values, uint16_t max_channels)
 {
     /* this is set by the decoding state machine and will default to false
-	 * once everything that was decodable has been decoded.
-	 */
-	bool decode_ret = false;
+     * once everything that was decodable has been decoded.
+     */
+    bool decode_ret = false;
 
     /* overflow check */
     if (byte_input.ofs == sizeof(byte_input.buf) / sizeof(byte_input.buf[0])) {
@@ -450,13 +450,13 @@ bool AP_RCProtocol_DSM::dsm_parse_byte(uint32_t frame_time_ms, uint8_t b, uint16
 
 
     if (decode_ret) {
-		*num_values = chan_count;
-	}
+        *num_values = chan_count;
+    }
 
     last_rx_time_ms = frame_time_ms;
 
-	/* return false as default */
-	return decode_ret;
+    /* return false as default */
+    return decode_ret;
 }
 
 // support byte input

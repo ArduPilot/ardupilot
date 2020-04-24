@@ -44,8 +44,8 @@ private:
     uint8_t channel_shift;
 
     // format guessing state
-    uint32_t	cs10;
-    uint32_t	cs11;
+    uint32_t    cs10;
+    uint32_t    cs11;
     uint32_t samples;
 
     // bind state machine

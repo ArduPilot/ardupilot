@@ -45,11 +45,11 @@
 #include "AP_RCProtocol_SUMD.h"
 #include <AP_Math/crc.h>
 
-#define SUMD_HEADER_LENGTH	3
-#define SUMD_HEADER_ID		0xA8
-#define SUMD_ID_SUMH		0x00
-#define SUMD_ID_SUMD		0x01
-#define SUMD_ID_FAILSAFE	0x81
+#define SUMD_HEADER_LENGTH  3
+#define SUMD_HEADER_ID      0xA8
+#define SUMD_ID_SUMH        0x00
+#define SUMD_ID_SUMD        0x01
+#define SUMD_ID_FAILSAFE    0x81
 
 /* define range mapping here, -+100% -> 1000..2000 */
 #define SUMD_RANGE_MIN 0.0f

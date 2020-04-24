@@ -34,8 +34,8 @@ extern const AP_HAL::HAL& hal;
 #define MIN_FRAME_SIZE 12
 #define MAX_CHANNELS 16
 
-#define FLAGS_FAILSAFE_BIT	3
-#define FLAGS_FRAMELOST_BIT	2
+#define FLAGS_FAILSAFE_BIT  3
+#define FLAGS_FRAMELOST_BIT 2
 
 #define CHAN_SCALE_FACTOR ((2000.0 - 1000.0) / (1800.0 - 200.0))
 #define CHAN_SCALE_OFFSET (int)(1000.0 - (CHAN_SCALE_FACTOR * 200.0 + 0.5f))

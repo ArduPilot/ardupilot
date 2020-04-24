@@ -16,8 +16,8 @@
 
 #pragma once
 
-#define IBUS_FRAME_SIZE		32
-#define IBUS_INPUT_CHANNELS	14
+#define IBUS_FRAME_SIZE     32
+#define IBUS_INPUT_CHANNELS 14
 
 #include "AP_RCProtocol.h"
 #include "SoftSerial.h"
