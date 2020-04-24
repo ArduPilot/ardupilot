@@ -13,8 +13,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/// @file	Derivative.cpp
-/// @brief	A class to implement a derivative (slope) filter
+/// @file   Derivative.cpp
+/// @brief  A class to implement a derivative (slope) filter
 /// See http://www.holoborodko.com/pavel/numerical-methods/numerical-derivative/smooth-low-noise-differentiators/
 //
 #include <inttypes.h>

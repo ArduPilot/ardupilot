@@ -14,8 +14,8 @@
  */
 
 //
-/// @file	ModeFilter.h
-/// @brief	A class to apply a mode filter which is basically picking the median value from the last x samples
+/// @file   ModeFilter.h
+/// @brief  A class to apply a mode filter which is basically picking the median value from the last x samples
 ///         the filter size (i.e buffer size) should always be an odd number
 #pragma once
 

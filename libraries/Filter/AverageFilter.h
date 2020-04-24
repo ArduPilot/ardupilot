@@ -14,8 +14,8 @@
  */
 
 //
-/// @file	AverageFilter.h
-/// @brief	A class to provide the average of a number of samples
+/// @file   AverageFilter.h
+/// @brief  A class to provide the average of a number of samples
 #pragma once
 
 #include "FilterClass.h"

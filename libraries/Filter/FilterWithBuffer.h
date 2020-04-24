@@ -14,8 +14,8 @@
  */
 
 //
-/// @file	FilterWithBuffer.h
-/// @brief	A filter with a buffer.
+/// @file   FilterWithBuffer.h
+/// @brief  A filter with a buffer.
 ///         This is implemented separately to the base Filter class to get around
 ///         restrictions caused by the use of templates which makes different sizes essentially
 ///         completely different classes

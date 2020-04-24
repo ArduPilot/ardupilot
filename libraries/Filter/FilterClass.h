@@ -14,8 +14,8 @@
  */
 
 //
-/// @file	FilterClass.h
-/// @brief	A pure virtual interface class
+/// @file   FilterClass.h
+/// @brief  A pure virtual interface class
 ///
 #pragma once
 
