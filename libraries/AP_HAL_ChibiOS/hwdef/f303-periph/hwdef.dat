@@ -28,8 +28,6 @@ define CH_CFG_ST_TIMEDELTA 0
 # assume the 256k flash part for now
 FLASH_SIZE_KB 256
 
-# board voltage
-STM32_VDD 330U
 
 # order of UARTs
 UART_ORDER USART2 USART1

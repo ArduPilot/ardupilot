@@ -14,8 +14,6 @@ STM32_PLLM_VALUE 8
 
 STM32_ST_USE_TIMER 5
 
-# board voltage
-STM32_VDD 330U
 
 # flash size
 FLASH_SIZE_KB 2048

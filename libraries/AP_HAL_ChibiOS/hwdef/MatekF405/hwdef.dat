@@ -18,8 +18,6 @@ define CH_CFG_ST_RESOLUTION 16
 
 FLASH_SIZE_KB 1024
 
-# board voltage
-STM32_VDD 330U
 
 # only one I2C bus
 I2C_ORDER I2C1

@@ -15,8 +15,6 @@ STM32_PLLM_VALUE 8
 # flash size
 FLASH_SIZE_KB 1024
 
-# board voltage
-STM32_VDD 330U
 
 # USB setup
 USB_VENDOR 0x27AC

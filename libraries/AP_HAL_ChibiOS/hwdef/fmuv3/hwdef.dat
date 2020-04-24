@@ -77,8 +77,6 @@ OSCILLATOR_HZ 24000000
 # Now define the voltage the MCU runs at. This is needed for ChibiOS
 # to set various internal driver limits. It is in 0.01 volt units.
 
-# board voltage
-STM32_VDD 330U
 
 # This is the STM32 timer that ChibiOS will use for the low level
 # driver. This must be a 32 bit timer. We currently only support

@@ -16,8 +16,6 @@ env OPTIMIZE -O2
 # bootloader takes first sector
 FLASH_RESERVE_START_KB 128
 
-# board voltage
-STM32_VDD 330U
 
 # ChibiOS system timer
 STM32_ST_USE_TIMER 12

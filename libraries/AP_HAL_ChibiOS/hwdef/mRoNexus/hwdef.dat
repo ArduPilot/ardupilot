@@ -13,8 +13,6 @@ APJ_BOARD_ID 1015
 # crystal frequency
 OSCILLATOR_HZ 25000000
 
-# board voltage
-STM32_VDD 330U
 
 FLASH_SIZE_KB 2048
 

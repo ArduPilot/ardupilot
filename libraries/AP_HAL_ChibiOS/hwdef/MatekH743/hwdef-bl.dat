@@ -22,8 +22,6 @@ FLASH_RESERVE_END_KB 256
 # the H743 has 128k sectors
 FLASH_BOOTLOADER_LOAD_KB 128
 
-# board voltage
-STM32_VDD 330U
 
 # order of UARTs (and USB). Allow bootloading on USB and telem1
 UART_ORDER OTG1 UART7
