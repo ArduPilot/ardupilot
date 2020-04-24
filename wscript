@@ -76,6 +76,11 @@ def options(opt):
         default=False,
         help='Configure as debug variant.')
 
+    g.add_option('--Werror',
+        action='store_true',
+        default=False,
+        help='build with -Werror.')
+    
     g.add_option('--toolchain',
         action='store',
         default=None,
