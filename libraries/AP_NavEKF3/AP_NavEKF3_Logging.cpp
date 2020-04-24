@@ -353,7 +353,7 @@ void NavEKF3::Log_Write_GSF(uint8_t _core, uint64_t time_us) const
     if (getDataEKFGSF(_core, yaw_composite, yaw_composite_variance, yaw, ivn, ive, wgt)) {
 
         // @LoggerMessage: XKY0
-        // @Description: EKF2 Yaw Estimator States
+        // @Description: EKF3 Yaw Estimator States
         // @Field: TimeUS: Time since system startup
         // @Field: C: EKF3 core this data is for
         // @Field: YC: GSF yaw estimate (rad)
