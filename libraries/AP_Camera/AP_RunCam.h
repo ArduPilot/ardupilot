@@ -42,8 +42,8 @@
 #define RUNCAM_5KEY_BUTTON_PRESS_DELAY      100
 
 
-/// @class	AP_RunCam
-/// @brief	Object managing a RunCam device
+/// @class  AP_RunCam
+/// @brief  Object managing a RunCam device
 class AP_RunCam
 {
 public:

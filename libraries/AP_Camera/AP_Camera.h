@@ -1,5 +1,5 @@
-/// @file	AP_Camera.h
-/// @brief	Photo or video camera manager, with EEPROM-backed storage of constants.
+/// @file   AP_Camera.h
+/// @brief  Photo or video camera manager, with EEPROM-backed storage of constants.
 #pragma once
 
 #include <AP_Param/AP_Param.h>
@@ -12,8 +12,8 @@
 
 #define AP_CAMERA_FEEDBACK_DEFAULT_FEEDBACK_PIN -1  // default is to not use camera feedback pin
 
-/// @class	Camera
-/// @brief	Object managing a Photo or video camera
+/// @class  Camera
+/// @brief  Object managing a Photo or video camera
 class AP_Camera {
 
 public:
