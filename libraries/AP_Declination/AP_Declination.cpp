@@ -14,12 +14,12 @@
  */
 
 /*
- *	Adam M Rivera
- *	With direction from: Andrew Tridgell, Jason Short, Justin Beech
+ *  Adam M Rivera
+ *  With direction from: Andrew Tridgell, Jason Short, Justin Beech
  *
- *	Adapted from: http://www.societyofrobots.com/robotforum/index.php?topic=11855.0
- *	Scott Ferguson
- *	scottfromscott@gmail.com
+ *  Adapted from: http://www.societyofrobots.com/robotforum/index.php?topic=11855.0
+ *  Scott Ferguson
+ *  scottfromscott@gmail.com
  *
  */
 #include "AP_Declination.h"
