@@ -735,7 +735,7 @@ void AC_PosControl::get_stopping_point_xy(Vector3f &stopping_point) const
     Vector3f curr_vel = _inav.get_velocity();
     float linear_distance;      // the distance at which we swap from a linear to sqrt response
     float linear_velocity;      // the velocity above which we swap from a linear to sqrt response
-    float stopping_dist;	    // the distance within the vehicle can stop
+    float stopping_dist;        // the distance within the vehicle can stop
     float kP = _p_pos_xy.kP();
 
     // add velocity error to current velocity

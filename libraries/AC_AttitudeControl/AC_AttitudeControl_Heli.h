@@ -66,15 +66,15 @@ public:
     // subclass non-passthrough too, for external gyro, no flybar
     void input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds) override;
 
-	// rate_controller_run - run lowest level body-frame rate controller and send outputs to the motors
-	// should be called at 100hz or more
-	virtual void rate_controller_run() override;
+    // rate_controller_run - run lowest level body-frame rate controller and send outputs to the motors
+    // should be called at 100hz or more
+    virtual void rate_controller_run() override;
 
     // Update Alt_Hold angle maximum
     void update_althold_lean_angle_max(float throttle_in) override;
 
-	// use_leaky_i - controls whether we use leaky i term for body-frame to motor output stage
-	void use_leaky_i(bool leaky_i) override {  _flags_heli.leaky_i = leaky_i; }
+    // use_leaky_i - controls whether we use leaky i term for body-frame to motor output stage
+    void use_leaky_i(bool leaky_i) override {  _flags_heli.leaky_i = leaky_i; }
     
     // use_flybar_passthrough - controls whether we pass-through
     // control inputs to swash-plate and tail
@@ -122,7 +122,7 @@ private:
     //
     // body-frame rate controller
     //
-	// rate_bf_to_motor_roll_pitch - ask the rate controller to calculate the motor outputs to achieve the target body-frame rate (in radians/sec) for roll, pitch and yaw
+    // rate_bf_to_motor_roll_pitch - ask the rate controller to calculate the motor outputs to achieve the target body-frame rate (in radians/sec) for roll, pitch and yaw
     // outputs are sent directly to motor class
     void rate_bf_to_motor_roll_pitch(const Vector3f &rate_rads, float rate_roll_target_rads, float rate_pitch_target_rads);
     float rate_target_to_motor_yaw(float rate_yaw_actual_rads, float rate_yaw_rads);

@@ -307,8 +307,8 @@ public:
     // enable use of flybass passthrough on heli
     virtual void use_flybar_passthrough(bool passthrough, bool tail_passthrough) {}
 
-	// use_leaky_i - controls whether we use leaky i term for body-frame to motor output stage on heli
-	virtual void use_leaky_i(bool leaky_i) {}
+    // use_leaky_i - controls whether we use leaky i term for body-frame to motor output stage on heli
+    virtual void use_leaky_i(bool leaky_i) {}
 
     // set_hover_roll_scalar - scales Hover Roll Trim parameter. To be used by vehicle code according to vehicle condition.
     virtual void set_hover_roll_trim_scalar(float scalar) {}
@@ -477,5 +477,5 @@ public:
     float control_monitor_rms_output_yaw(void) const;
 };
 
-#define AC_ATTITUDE_CONTROL_LOG_FORMAT(msg) { msg, sizeof(AC_AttitudeControl::log_Attitude),	\
+#define AC_ATTITUDE_CONTROL_LOG_FORMAT(msg) { msg, sizeof(AC_AttitudeControl::log_Attitude),    \
                             "ATT", "cccccCC",      "RollIn,Roll,PitchIn,Pitch,YawIn,Yaw,NavYaw" }
