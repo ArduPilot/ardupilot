@@ -20,6 +20,9 @@
 #include "lauxlib.h"
 #include "lualib.h"
 
+#if defined(ARDUPILOT_BUILD)
+#pragma GCC diagnostic ignored "-Wunused-function"
+#endif
 
 static int luaB_print (lua_State *L) {
   int n = lua_gettop(L);  /* number of arguments */
