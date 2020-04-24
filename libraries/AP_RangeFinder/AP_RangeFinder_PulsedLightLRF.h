@@ -37,7 +37,7 @@ private:
     // constructor
     AP_RangeFinder_PulsedLightLRF(uint8_t bus,
                                   RangeFinder::RangeFinder_State &_state,
-								  AP_RangeFinder_Params &_params,
+                                  AP_RangeFinder_Params &_params,
                                   RangeFinder::Type rftype);
 
     // start a reading

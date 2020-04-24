@@ -14,7 +14,7 @@
 
 struct range {
         uint32_t distance;
-	uint32_t status;
+    uint32_t status;
 };
 
 class AP_RangeFinder_BBB_PRU : public AP_RangeFinder_Backend

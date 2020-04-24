@@ -26,7 +26,7 @@ extern const AP_HAL::HAL& hal;
 */
 AP_RangeFinder_Backend::AP_RangeFinder_Backend(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
         state(_state),
-		params(_params)
+        params(_params)
 {
     _backend_type = type();
 }

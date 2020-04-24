@@ -44,7 +44,7 @@ AP_RangeFinder_MaxsonarI2CXL::AP_RangeFinder_MaxsonarI2CXL(RangeFinder::RangeFin
    there.
 */
 AP_RangeFinder_Backend *AP_RangeFinder_MaxsonarI2CXL::detect(RangeFinder::RangeFinder_State &_state,
-																AP_RangeFinder_Params &_params,
+                                                                AP_RangeFinder_Params &_params,
                                                              AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
 {
     if (!dev) {

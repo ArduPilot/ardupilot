@@ -93,7 +93,7 @@ void AP_RangeFinder_analog::update(void)
     case RangeFinder::Function::LINEAR:
         dist_m = (v - offset) * scaling;
         break;
-	  
+      
     case RangeFinder::Function::INVERTED:
         dist_m = (offset - v) * scaling;
         break;
