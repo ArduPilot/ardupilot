@@ -121,7 +121,7 @@ void Motor::current_and_voltage(const struct sitl_input &input, float &voltage, 
     float motor_speed = constrain_float((input.servos[motor_offset+servo]-1100)/900.0, 0, 1);
 
     // assume 10A per motor at full speed
-    current = 10 * motor_speed;
+    current = 10 * motor_speed * 1/.80; // 60 Amps at 80% throttle
 
 //printf("motor speed = %f, current = %f\n",motor_speed,current);
 
