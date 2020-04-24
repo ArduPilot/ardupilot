@@ -343,6 +343,33 @@ void Plane::set_servos_manual_passthrough(void)
 }
 
 /*
+  Scale the throttle to conpensate for battery voltage drop
+ */
+void Plane::throttle_voltage_comp()
+{
+    // return if not enabled, or setup incorrectly
+    if (g2.fwd_thr_batt_voltage_min >= g2.fwd_thr_batt_voltage_max || !is_positive(g2.fwd_thr_batt_voltage_max)) {
+        return;
+    }
+
+    float batt_voltage_resting_estimate = AP::battery().voltage_resting_estimate(g2.fwd_thr_batt_idx);
+    // Return for a very low battery
+    if (batt_voltage_resting_estimate < 0.25f * g2.fwd_thr_batt_voltage_min) {
+        return;
+    }
+
+    // constrain read voltage to min and max params
+    batt_voltage_resting_estimate = constrain_float(batt_voltage_resting_estimate,g2.fwd_thr_batt_voltage_min,g2.fwd_thr_batt_voltage_max);
+
+    // Scale the throttle up to compensate for voltage drop
+    // Ratio = 1 when voltage = voltage max, ratio increases as voltage drops
+    const float ratio = g2.fwd_thr_batt_voltage_max / batt_voltage_resting_estimate;
+
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle,
+                                        constrain_int16(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * ratio, -100, 100));
+}
+
+/*
   calculate any throttle limits based on the watt limiter
  */
 void Plane::throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle)
@@ -421,10 +448,13 @@ void Plane::set_servos_controlled(void)
     } else if (landing.is_flaring()) {
         min_throttle = 0;
     }
-    
+
+    // conpensate for battery voltage drop
+    throttle_voltage_comp();
+
     // apply watt limiter
     throttle_watt_limiter(min_throttle, max_throttle);
-    
+
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttle,
                                     constrain_int16(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle), min_throttle, max_throttle));
     
