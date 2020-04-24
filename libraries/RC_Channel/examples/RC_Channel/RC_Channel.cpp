@@ -101,8 +101,8 @@ void loop()
 
     rc().read_input();
     for (uint8_t i=0; i<RC_CHANNELS_TO_DISPLAY; i++) {
-	    hal.console->printf("%5d ", (int)rc().channel(i)->get_control_in());
-	    // hal.console->printf("%4d ", (int)rc().channel(i)->percent_input());
+        hal.console->printf("%5d ", (int)rc().channel(i)->get_control_in());
+        // hal.console->printf("%4d ", (int)rc().channel(i)->percent_input());
     }
     hal.console->printf("\n");
 
@@ -113,10 +113,10 @@ void loop()
 static void print_radio_values()
 {
     for (int i=0; i<RC_CHANNELS_TO_DISPLAY; i++) {
-	     hal.console->printf("CH%u: %u|%u\n",
-			  (unsigned)i+1,
+         hal.console->printf("CH%u: %u|%u\n",
+              (unsigned)i+1,
               (unsigned)rc().channel(i)->get_radio_min(),
-			  (unsigned)rc().channel(i)->get_radio_max());
+              (unsigned)rc().channel(i)->get_radio_max());
     }
 }
 
