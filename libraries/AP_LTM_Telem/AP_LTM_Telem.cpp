@@ -2,7 +2,7 @@
  * LightTelemetry protocol (LTM)
  *
  * Ghettostation one way telemetry protocol for really low bitrates (2400 bauds). 
- *			   
+ *             
  * Protocol details: 3 different frames, little endian.
  *   G Frame (GPS position) (2 Hz): 18BYTES
  *    0x24 0x54 0x47 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF  0xFF   0xC0
