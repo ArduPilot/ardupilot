@@ -17,9 +17,6 @@ define STM32_PLLQ_VALUE 9
 # board ID for firmware load
 APJ_BOARD_ID 120
 
-# board voltage
-STM32_VDD 330U
-
 # flash size
 FLASH_SIZE_KB 2048
 

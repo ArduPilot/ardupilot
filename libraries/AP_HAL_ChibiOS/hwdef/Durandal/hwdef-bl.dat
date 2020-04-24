@@ -32,8 +32,6 @@ PC7 LED_BOOTLOADER OUTPUT LOW # blue
 
 define HAL_LED_ON 0
 
-# board voltage
-STM32_VDD 330U
 
 # order of UARTs (and USB)
 UART_ORDER OTG1 UART7

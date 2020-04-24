@@ -15,8 +15,6 @@ define STM32_ST_USE_TIMER 5
 
 FLASH_SIZE_KB 1024
 
-# board voltage
-STM32_VDD 330U
 
 # use USB for stdout, so no STDOUT_SERIAL
 # STDOUT_SERIAL SD1

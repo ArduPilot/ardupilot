@@ -28,9 +28,6 @@ PC6 LED_BOOTLOADER OUTPUT OPENDRAIN HIGH # green
 
 define HAL_LED_ON 0
 
-# board voltage
-STM32_VDD 330U
-
 # order of UARTs (and USB)
 UART_ORDER OTG1 UART7
 

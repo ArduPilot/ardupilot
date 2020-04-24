@@ -24,8 +24,6 @@ APJ_BOARD_ID 50
 
 FLASH_RESERVE_START_KB 32
 
-# board voltage
-STM32_VDD 330U
 
 # flash size
 FLASH_SIZE_KB 2048

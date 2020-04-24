@@ -25,8 +25,6 @@ FLASH_SIZE_KB 1024
 # reserve one sector for bootloader and 2 for storage
 FLASH_RESERVE_START_KB 96
 
-# board voltage
-STM32_VDD 330U
 
 # only one I2C bus
 I2C_ORDER I2C2
