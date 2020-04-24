@@ -48,9 +48,9 @@ extern const AP_HAL::HAL &hal;
 #define LPS25H_CTRL_REG3_ADDR      0x22
 #define LPS25H_CTRL_REG4_ADDR      0x23
 #define LPS25H_FIFO_CTRL           0x2E
-#define TEMP_OUT_ADDR      		   0x2B
-#define PRESS_OUT_XL_ADDR		   0x28
-#define STATUS_ADDR		  		   0x27
+#define TEMP_OUT_ADDR              0x2B
+#define PRESS_OUT_XL_ADDR          0x28
+#define STATUS_ADDR                0x27
 
 //putting 1 in the MSB of those two registers turns on Auto increment for faster reading.
 
@@ -155,13 +155,13 @@ bool AP_Baro_LPS2XH::_init()
 
     //init control registers.
     if (_lps2xh_type == BARO_LPS25H) {
-    	_dev->write_register(LPS25H_CTRL_REG1_ADDR,0x00); // turn off for config
-    	_dev->write_register(LPS25H_CTRL_REG2_ADDR,0x00); //FIFO Disabled
-    	_dev->write_register(LPS25H_FIFO_CTRL, 0x01);
-    	_dev->write_register(LPS25H_CTRL_REG1_ADDR,0xc0);
+        _dev->write_register(LPS25H_CTRL_REG1_ADDR,0x00); // turn off for config
+        _dev->write_register(LPS25H_CTRL_REG2_ADDR,0x00); //FIFO Disabled
+        _dev->write_register(LPS25H_FIFO_CTRL, 0x01);
+        _dev->write_register(LPS25H_CTRL_REG1_ADDR,0xc0);
 
-    	// request 25Hz update (maximum refresh Rate according to datasheet)
-    	CallTime = 40 * AP_USEC_PER_MSEC;
+        // request 25Hz update (maximum refresh Rate according to datasheet)
+        CallTime = 40 * AP_USEC_PER_MSEC;
     }
 
     if (_lps2xh_type == BARO_LPS22H) {
@@ -191,7 +191,7 @@ bool AP_Baro_LPS2XH::_check_whoami(void)
 {
     uint8_t whoami;
     if (!_dev->read_registers(REG_ID, &whoami, 1)) {
-	   return false;
+       return false;
     }
     hal.console->printf("LPS2XH whoami 0x%02x\n", whoami);
 
