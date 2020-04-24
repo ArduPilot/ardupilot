@@ -161,7 +161,7 @@ bool generate(sf::SoundBuffer* buffer, sEnvelope env, std::vector<sTone> tones, 
         dTime += dIncrement;
     }
 
-	// Load into SFML SoundBuffer
+    // Load into SFML SoundBuffer
     bool bSuccess = buffer->loadFromSamples(iRaw, iBufferSize, 1, uSampleRate);
     delete[] iRaw;
 

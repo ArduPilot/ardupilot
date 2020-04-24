@@ -64,20 +64,20 @@ void dump_stack_trace()
     }
 
     char cmd[100];
-	char progname[100];
-	char *p;
-	int n;
+    char progname[100];
+    char *p;
+    int n;
 
-	n = readlink("/proc/self/exe", progname, sizeof(progname)-1);
-	if (n == -1) {
+    n = readlink("/proc/self/exe", progname, sizeof(progname)-1);
+    if (n == -1) {
         strncpy(progname, "unknown", sizeof(progname));
         n = strlen(progname);
-	}
-	progname[n] = 0;
+    }
+    progname[n] = 0;
 
-	p = strrchr(progname, '/');
+    p = strrchr(progname, '/');
     if (p != nullptr) {
-	    *p = 0;
+        *p = 0;
     } else {
         p = progname;
     }
@@ -88,7 +88,7 @@ void dump_stack_trace()
              "dumpstack_%s.%d.out",
              p+1,
              (int)getpid());
-	snprintf(cmd,
+    snprintf(cmd,
              sizeof(cmd),
              "sh %s %d >%s 2>&1",
              dumpstack,
@@ -96,7 +96,7 @@ void dump_stack_trace()
              output_filepath);
     fprintf(stderr, "Running: %s\n", cmd);
 
-	if (system(cmd)) {
+    if (system(cmd)) {
         fprintf(stderr, "Failed\n");
         return;
     }
