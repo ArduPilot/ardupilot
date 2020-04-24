@@ -12,7 +12,7 @@
  * The inaccurcy of these estimates grows over time due to noisy sensor data.
  * To improve the accuracy, baro and gps readings are used:
  *      An error value is calculated as the difference between the sensor's measurement and the last position estimation.
- *   	This value is weighted with a gain factor and incorporated into the new estimation
+ *      This value is weighted with a gain factor and incorporated into the new estimation
  *
  * Special thanks to Tony Lambregts (FAA) for advice which contributed to the development of this filter.
  *
@@ -50,9 +50,9 @@ public:
      * get_velocity - returns the current velocity in cm/s
      *
      * @return velocity vector:
-     *      		.x : latitude  velocity in cm/s
-     * 				.y : longitude velocity in cm/s
-     * 				.z : vertical  velocity in cm/s
+     *              .x : latitude  velocity in cm/s
+     *              .y : longitude velocity in cm/s
+     *              .z : vertical  velocity in cm/s
      */
     virtual const Vector3f&    get_velocity() const = 0;
 
