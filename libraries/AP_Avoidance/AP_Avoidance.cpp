@@ -543,8 +543,8 @@ void AP_Avoidance::handle_avoidance_local(AP_Avoidance::Obstacle *threat)
                 AP::ahrs().get_position(my_loc) && ((my_loc.alt*0.01f) < _fail_altitude_minimum)) {
                 // disable avoidance when close to ground, report only
                 action = MAV_COLLISION_ACTION_REPORT;
-			}
-		}
+            }
+        }
     }
 
     uint32_t now = AP_HAL::millis();
