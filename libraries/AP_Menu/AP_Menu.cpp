@@ -163,10 +163,10 @@ Menu::_run_command(bool prompt_on_enter)
 void
 Menu::run(void)
 {
-	if (_port == nullptr) {
-		// default to main serial port
-		_port = hal.console;
-	}
+    if (_port == nullptr) {
+        // default to main serial port
+        _port = hal.console;
+    }
 
     _allocate_buffers();
 
@@ -203,10 +203,10 @@ Menu::run(void)
 bool
 Menu::check_input(void)
 {
-	if (_port == nullptr) {
-		// default to main serial port
-		_port = hal.console;
-	}
+    if (_port == nullptr) {
+        // default to main serial port
+        _port = hal.console;
+    }
 
     _allocate_buffers();
 
@@ -225,9 +225,9 @@ Menu::_help(void)
 
     _port->printf("Commands:\n");
     for (i = 0; i < _entries; i++) {
-		hal.scheduler->delay(10);
+        hal.scheduler->delay(10);
         _port->printf("  %s\n", _commands[i].command);
-	}
+    }
 }
 
 // run the n'th command in the menu

@@ -1,5 +1,5 @@
-/// @file	menu.h
-/// @brief	Simple commandline menu subsystem.
+/// @file   menu.h
+/// @brief  Simple commandline menu subsystem.
 /// @discussion
 /// The Menu class implements a simple CLI that accepts commands typed by
 /// the user, and passes the arguments to those commands to a function
@@ -42,20 +42,20 @@ public:
     /// Functions called by menu array entries are expected to be of this
     /// type.
     ///
-    /// @param	argc		The number of valid arguments, including the
-    ///						name of the command in argv[0].  Will never be
-    ///						more than MENU_ARGS_MAX.
-    /// @param	argv		Pointer to an array of Menu::arg structures
-    ///						detailing any optional arguments given to the
-    ///						command.  argv[0] is always the name of the
-    ///						command, so that the same function can be used
-    ///						to handle more than one command.
+    /// @param  argc        The number of valid arguments, including the
+    ///                     name of the command in argv[0].  Will never be
+    ///                     more than MENU_ARGS_MAX.
+    /// @param  argv        Pointer to an array of Menu::arg structures
+    ///                     detailing any optional arguments given to the
+    ///                     command.  argv[0] is always the name of the
+    ///                     command, so that the same function can be used
+    ///                     to handle more than one command.
     ///
     FUNCTOR_TYPEDEF(func, int8_t, uint8_t, const struct arg *);
 
-	static void set_port(AP_HAL::BetterStream *port) {
-		_port = port;
-	}
+    static void set_port(AP_HAL::BetterStream *port) {
+        _port = port;
+    }
 
     /// menu pre-prompt function
     ///
@@ -93,9 +93,9 @@ public:
     /// Note that you should normally not call the constructor directly.  Use
     /// the MENU and MENU2 macros defined below.
     ///
-    /// @param prompt		The prompt to be displayed with this menu.
-    /// @param commands		An array of ::command structures in program memory.
-    /// @param entries		The number of entries in the menu.
+    /// @param prompt       The prompt to be displayed with this menu.
+    /// @param commands     An array of ::command structures in program memory.
+    /// @param entries      The number of entries in the menu.
     ///
     Menu(const char *prompt, const struct command *commands, uint8_t entries, preprompt ppfunc = 0);
 
@@ -117,8 +117,8 @@ private:
 
     /// calls the function for the n'th menu item
     ///
-    /// @param n			Index for the menu item to call
-    /// @param argc			Number of arguments prepared for the menu item
+    /// @param n            Index for the menu item to call
+    /// @param argc         Number of arguments prepared for the menu item
     ///
     int8_t                  _call(uint8_t n, uint8_t argc);
 
@@ -148,8 +148,8 @@ private:
 
     void                    _display_prompt();
     
-	// port to run on
-	static AP_HAL::BetterStream  *_port;
+    // port to run on
+    static AP_HAL::BetterStream  *_port;
 };
 
 /// Macros used to define a menu.
