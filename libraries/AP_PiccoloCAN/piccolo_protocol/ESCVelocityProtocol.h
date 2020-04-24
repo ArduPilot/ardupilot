@@ -40,7 +40,7 @@ extern "C" {
  */
 
 #include <stdint.h>
-#include <string.h>	// C string manipulation function header
+#include <string.h> // C string manipulation function header
 
 //! \return the protocol API enumeration
 #define getESCVelocityApi() 23
