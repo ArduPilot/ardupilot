@@ -16,6 +16,7 @@ parser.add_argument('--build', action='store_true', default=False, help='build a
 parser.add_argument('--build-target', default='copter', help='build target')
 parser.add_argument('--stop', action='store_true', default=False, help='stop on build fail')
 parser.add_argument('--no-bl', action='store_true', default=False, help="don't check bootloader builds")
+parser.add_argument('--Werror', action='store_true', default=False, help="build with -Werror")
 parser.add_argument('--pattern', default='*')
 parser.add_argument('--python', default='python')
 args = parser.parse_args()
@@ -48,7 +49,10 @@ for board in get_board_list():
     if not fnmatch.fnmatch(board, args.pattern):
         continue
     print("Configuring for %s" % board)
-    run_program([args.python, "waf", "configure", "--board", board], "configure: " + board)
+    config_opts = ["--board", board]
+    if args.Werror:
+        config_opts += ["--Werror"]
+    run_program([args.python, "waf", "configure"] + config_opts, "configure: " + board)
     if args.build:
         if board == "iomcu":
             target = "iofirmware"
@@ -56,7 +60,10 @@ for board in get_board_list():
             target = "AP_Periph"
         else:
             target = args.build_target
-        run_program([args.python, "waf", target], "build: " + board)
+        if target.find('/') != -1:
+            run_program([args.python, "waf", "--target", target], "build: " + board)
+        else:
+            run_program([args.python, "waf", target], "build: " + board)
     if args.no_bl:
         continue
     # check for bootloader def
