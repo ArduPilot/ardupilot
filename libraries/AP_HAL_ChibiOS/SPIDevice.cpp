@@ -139,7 +139,7 @@ SPIDevice::~SPIDevice()
 }
 
 SPIDriver * SPIDevice::get_driver() {
-	return spi_devices[device_desc.bus].driver;
+    return spi_devices[device_desc.bus].driver;
 }
 
 bool SPIDevice::set_speed(AP_HAL::Device::Speed speed)

@@ -637,8 +637,8 @@ size_t UARTDriver::write(uint8_t c)
 size_t UARTDriver::write(const uint8_t *buffer, size_t size)
 {
     if (!_initialised || lock_write_key != 0) {
-		return 0;
-	}
+        return 0;
+    }
 
     if (_blocking_writes && !unbuffered_writes) {
         /*

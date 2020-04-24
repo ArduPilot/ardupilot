@@ -384,7 +384,7 @@ void AnalogIn::update_power_flags(void)
 #endif
 
 #ifdef HAL_GPIO_PIN_VBUS
-	if (palReadLine(HAL_GPIO_PIN_VBUS)) {
+    if (palReadLine(HAL_GPIO_PIN_VBUS)) {
         flags |= MAV_POWER_STATUS_USB_CONNECTED;
     }
 #elif defined(HAL_GPIO_PIN_nVBUS)
