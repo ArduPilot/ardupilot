@@ -31,22 +31,22 @@
 ** an unsigned char.
 */
 #if !defined(LUA_MAXCAPTURES)
-#define LUA_MAXCAPTURES		32
+#define LUA_MAXCAPTURES     32
 #endif
 
 
 /* macro to 'unsign' a character */
-#define uchar(c)	((unsigned char)(c))
+#define uchar(c)    ((unsigned char)(c))
 
 
 /*
 ** Some sizes are better limited to fit in 'int', but must also fit in
 ** 'size_t'. (We assume that 'lua_Integer' cannot be smaller than 'int'.)
 */
-#define MAX_SIZET	((size_t)(~(size_t)0))
+#define MAX_SIZET   ((size_t)(~(size_t)0))
 
 #define MAXSIZE  \
-	(sizeof(size_t) < sizeof(int) ? MAX_SIZET : (size_t)(INT_MAX))
+    (sizeof(size_t) < sizeof(int) ? MAX_SIZET : (size_t)(INT_MAX))
 
 
 
@@ -207,8 +207,8 @@ static int str_dump (lua_State *L) {
 */
 
 
-#define CAP_UNFINISHED	(-1)
-#define CAP_POSITION	(-2)
+#define CAP_UNFINISHED  (-1)
+#define CAP_POSITION    (-2)
 
 
 typedef struct MatchState {
@@ -231,12 +231,12 @@ static const char *match (MatchState *ms, const char *s, const char *p);
 
 /* maximum recursion depth for 'match' */
 #if !defined(MAXCCALLS)
-#define MAXCCALLS	200
+#define MAXCCALLS   200
 #endif
 
 
-#define L_ESC		'%'
-#define SPECIALS	"^$*+?.([%-"
+#define L_ESC       '%'
+#define SPECIALS    "^$*+?.([%-"
 
 
 static int check_capture (MatchState *ms, int l) {
@@ -807,7 +807,7 @@ static int str_gsub (lua_State *L) {
 ** =======================================================
 */
 
-#if !defined(lua_number2strx)	/* { */
+#if !defined(lua_number2strx)   /* { */
 
 /*
 ** Hexadecimal floating-point formatter
@@ -815,7 +815,7 @@ static int str_gsub (lua_State *L) {
 
 #include <math.h>
 
-#define SIZELENMOD	(sizeof(LUA_NUMBER_FRMLEN)/sizeof(char))
+#define SIZELENMOD  (sizeof(LUA_NUMBER_FRMLEN)/sizeof(char))
 
 
 /*
@@ -824,7 +824,7 @@ static int str_gsub (lua_State *L) {
 ** to nibble boundaries by making what is left after that first digit a
 ** multiple of 4.
 */
-#define L_NBFD		((l_mathlim(MANT_DIG) - 1)%4 + 1)
+#define L_NBFD      ((l_mathlim(MANT_DIG) - 1)%4 + 1)
 
 
 /*
@@ -883,7 +883,7 @@ static int lua_number2strx (lua_State *L, char *buff, int sz,
   return n;
 }
 
-#endif				/* } */
+#endif              /* } */
 
 
 /*
@@ -897,12 +897,12 @@ static int lua_number2strx (lua_State *L, char *buff, int sz,
 
 
 /* valid flags in a format specification */
-#define FLAGS	"-+ #0"
+#define FLAGS   "-+ #0"
 
 /*
 ** maximum size of each format specification (such as "%-099.99d")
 */
-#define MAX_FORMAT	32
+#define MAX_FORMAT  32
 
 
 static void addquoted (luaL_Buffer *b, const char *s, size_t len) {
@@ -1104,20 +1104,20 @@ static int str_format (lua_State *L) {
 
 /* value used for padding */
 #if !defined(LUAL_PACKPADBYTE)
-#define LUAL_PACKPADBYTE		0x00
+#define LUAL_PACKPADBYTE        0x00
 #endif
 
 /* maximum size for the binary representation of an integer */
-#define MAXINTSIZE	16
+#define MAXINTSIZE  16
 
 /* number of bits in a character */
-#define NB	CHAR_BIT
+#define NB  CHAR_BIT
 
 /* mask for one character (NB 1's) */
-#define MC	((1 << NB) - 1)
+#define MC  ((1 << NB) - 1)
 
 /* size of a lua_Integer */
-#define SZINT	((int)sizeof(lua_Integer))
+#define SZINT   ((int)sizeof(lua_Integer))
 
 
 /* dummy union to get native endianness */
@@ -1133,7 +1133,7 @@ struct cD {
   union { double d; void *p; lua_Integer i; lua_Number n; } u;
 };
 
-#define MAXALIGN	(offsetof(struct cD, u))
+#define MAXALIGN    (offsetof(struct cD, u))
 
 
 /*
@@ -1161,15 +1161,15 @@ typedef struct Header {
 ** options for pack/unpack
 */
 typedef enum KOption {
-  Kint,		/* signed integers */
-  Kuint,	/* unsigned integers */
-  Kfloat,	/* floating-point numbers */
-  Kchar,	/* fixed-length strings */
-  Kstring,	/* strings with prefixed length */
-  Kzstr,	/* zero-terminated strings */
-  Kpadding,	/* padding */
-  Kpaddalign,	/* padding for alignment */
-  Knop		/* no-op (configuration or spaces) */
+  Kint,     /* signed integers */
+  Kuint,    /* unsigned integers */
+  Kfloat,   /* floating-point numbers */
+  Kchar,    /* fixed-length strings */
+  Kstring,  /* strings with prefixed length */
+  Kzstr,    /* zero-terminated strings */
+  Kpadding, /* padding */
+  Kpaddalign,   /* padding for alignment */
+  Knop      /* no-op (configuration or spaces) */
 } KOption;
 
 

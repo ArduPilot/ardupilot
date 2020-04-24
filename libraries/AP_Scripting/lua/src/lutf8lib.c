@@ -20,9 +20,9 @@
 #include "lauxlib.h"
 #include "lualib.h"
 
-#define MAXUNICODE	0x10FFFF
+#define MAXUNICODE  0x10FFFF
 
-#define iscont(p)	((*(p) & 0xC0) == 0x80)
+#define iscont(p)   ((*(p) & 0xC0) == 0x80)
 
 
 /* from strlib */
@@ -232,7 +232,7 @@ static int iter_codes (lua_State *L) {
 
 
 /* pattern to match a single UTF-8 character */
-#define UTF8PATT	"[\0-\x7F\xC2-\xF4][\x80-\xBF]*"
+#define UTF8PATT    "[\0-\x7F\xC2-\xF4][\x80-\xBF]*"
 
 
 static const luaL_Reg funcs[] = {

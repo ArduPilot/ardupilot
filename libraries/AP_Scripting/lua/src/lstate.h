@@ -57,7 +57,7 @@ struct lua_longjmp;  /* defined in ldo.c */
 */
 #if !defined(l_signalT)
 #include <signal.h>
-#define l_signalT	sig_atomic_t
+#define l_signalT   sig_atomic_t
 #endif
 
 
@@ -69,8 +69,8 @@ struct lua_longjmp;  /* defined in ldo.c */
 
 
 /* kinds of Garbage Collection */
-#define KGC_NORMAL	0
-#define KGC_EMERGENCY	1	/* gc was forced by an allocation failure */
+#define KGC_NORMAL  0
+#define KGC_EMERGENCY   1   /* gc was forced by an allocation failure */
 
 
 typedef struct stringtable {
@@ -91,7 +91,7 @@ typedef struct stringtable {
 */
 typedef struct CallInfo {
   StkId func;  /* function index in the stack */
-  StkId	top;  /* top for this function */
+  StkId top;  /* top for this function */
   struct CallInfo *previous, *next;  /* dynamic call link */
   union {
     struct {  /* only for Lua functions */
@@ -113,22 +113,22 @@ typedef struct CallInfo {
 /*
 ** Bits in CallInfo status
 */
-#define CIST_OAH	(1<<0)	/* original value of 'allowhook' */
-#define CIST_LUA	(1<<1)	/* call is running a Lua function */
-#define CIST_HOOKED	(1<<2)	/* call is running a debug hook */
-#define CIST_FRESH	(1<<3)	/* call is running on a fresh invocation
+#define CIST_OAH    (1<<0)  /* original value of 'allowhook' */
+#define CIST_LUA    (1<<1)  /* call is running a Lua function */
+#define CIST_HOOKED (1<<2)  /* call is running a debug hook */
+#define CIST_FRESH  (1<<3)  /* call is running on a fresh invocation
                                    of luaV_execute */
-#define CIST_YPCALL	(1<<4)	/* call is a yieldable protected call */
-#define CIST_TAIL	(1<<5)	/* call was tail called */
-#define CIST_HOOKYIELD	(1<<6)	/* last hook called yielded */
-#define CIST_LEQ	(1<<7)  /* using __lt for __le */
-#define CIST_FIN	(1<<8)  /* call is running a finalizer */
+#define CIST_YPCALL (1<<4)  /* call is a yieldable protected call */
+#define CIST_TAIL   (1<<5)  /* call was tail called */
+#define CIST_HOOKYIELD  (1<<6)  /* last hook called yielded */
+#define CIST_LEQ    (1<<7)  /* using __lt for __le */
+#define CIST_FIN    (1<<8)  /* call is running a finalizer */
 
-#define isLua(ci)	((ci)->callstatus & CIST_LUA)
+#define isLua(ci)   ((ci)->callstatus & CIST_LUA)
 
 /* assume that CIST_OAH has offset 0 and that 'v' is strictly 0/1 */
-#define setoah(st,v)	((st) = ((st) & ~CIST_OAH) | (v))
-#define getoah(st)	((st) & CIST_OAH)
+#define setoah(st,v)    ((st) = ((st) & ~CIST_OAH) | (v))
+#define getoah(st)  ((st) & CIST_OAH)
 
 
 /*
@@ -202,7 +202,7 @@ struct lua_State {
 };
 
 
-#define G(L)	(L->l_G)
+#define G(L)    (L->l_G)
 
 
 /*
@@ -219,16 +219,16 @@ union GCUnion {
 };
 
 
-#define cast_u(o)	cast(union GCUnion *, (o))
+#define cast_u(o)   cast(union GCUnion *, (o))
 
 /* macros to convert a GCObject into a specific value */
 #define gco2ts(o)  \
-	check_exp(novariant((o)->tt) == LUA_TSTRING, &((cast_u(o))->ts))
+    check_exp(novariant((o)->tt) == LUA_TSTRING, &((cast_u(o))->ts))
 #define gco2u(o)  check_exp((o)->tt == LUA_TUSERDATA, &((cast_u(o))->u))
 #define gco2lcl(o)  check_exp((o)->tt == LUA_TLCL, &((cast_u(o))->cl.l))
 #define gco2ccl(o)  check_exp((o)->tt == LUA_TCCL, &((cast_u(o))->cl.c))
 #define gco2cl(o)  \
-	check_exp(novariant((o)->tt) == LUA_TFUNCTION, &((cast_u(o))->cl))
+    check_exp(novariant((o)->tt) == LUA_TFUNCTION, &((cast_u(o))->cl))
 #define gco2t(o)  check_exp((o)->tt == LUA_TTABLE, &((cast_u(o))->h))
 #define gco2p(o)  check_exp((o)->tt == LUA_TPROTO, &((cast_u(o))->p))
 #define gco2th(o)  check_exp((o)->tt == LUA_TTHREAD, &((cast_u(o))->th))
@@ -236,11 +236,11 @@ union GCUnion {
 
 /* macro to convert a Lua object into a GCObject */
 #define obj2gco(v) \
-	check_exp(novariant((v)->tt) < LUA_TDEADKEY, (&(cast_u(v)->gc)))
+    check_exp(novariant((v)->tt) < LUA_TDEADKEY, (&(cast_u(v)->gc)))
 
 
 /* actual number of total bytes allocated */
-#define gettotalbytes(g)	cast(lu_mem, (g)->totalbytes + (g)->GCdebt)
+#define gettotalbytes(g)    cast(lu_mem, (g)->totalbytes + (g)->GCdebt)
 
 LUAI_FUNC void luaE_setdebt (global_State *g, l_mem debt);
 LUAI_FUNC void luaE_freethread (lua_State *L, lua_State *L1);

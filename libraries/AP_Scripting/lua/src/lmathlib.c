@@ -20,20 +20,20 @@
 
 
 #undef PI
-#define PI	(l_mathop(3.141592653589793238462643383279502884))
+#define PI  (l_mathop(3.141592653589793238462643383279502884))
 
 
-#if !defined(l_rand)		/* { */
+#if !defined(l_rand)        /* { */
 #if defined(LUA_USE_POSIX)
-#define l_rand()	random()
-#define l_srand(x)	srandom(x)
-#define L_RANDMAX	2147483647	/* (2^31 - 1), following POSIX */
+#define l_rand()    random()
+#define l_srand(x)  srandom(x)
+#define L_RANDMAX   2147483647  /* (2^31 - 1), following POSIX */
 #else
-#define l_rand()	rand()
-#define l_srand(x)	srand(x)
-#define L_RANDMAX	RAND_MAX
+#define l_rand()    rand()
+#define l_srand(x)  srand(x)
+#define L_RANDMAX   RAND_MAX
 #endif
-#endif				/* } */
+#endif              /* } */
 
 
 static int math_abs (lua_State *L) {

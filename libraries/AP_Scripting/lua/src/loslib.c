@@ -28,10 +28,10 @@
 ** options are grouped by length; group of length 2 start with '||'.
 ** ===================================================================
 */
-#if !defined(LUA_STRFTIMEOPTIONS)	/* { */
+#if !defined(LUA_STRFTIMEOPTIONS)   /* { */
 
 /* options for ANSI C 89 (only 1-char options) */
-#define L_STRFTIMEC89		"aAbBcdHIjmMpSUwWxXyYZ%"
+#define L_STRFTIMEC89       "aAbBcdHIjmMpSUwWxXyYZ%"
 
 /* options for ISO C 99 and POSIX */
 #define L_STRFTIMEC99 "aAbBcCdDeFgGhHIjmMnprRStTuUVwWxXyYzZ%" \
@@ -42,14 +42,14 @@
     "||" "#c#x#d#H#I#j#m#M#S#U#w#W#y#Y"  /* two-char options */
 
 #if defined(LUA_USE_WINDOWS)
-#define LUA_STRFTIMEOPTIONS	L_STRFTIMEWIN
+#define LUA_STRFTIMEOPTIONS L_STRFTIMEWIN
 #elif defined(LUA_USE_C89)
-#define LUA_STRFTIMEOPTIONS	L_STRFTIMEC89
+#define LUA_STRFTIMEOPTIONS L_STRFTIMEC89
 #else  /* C99 specification */
-#define LUA_STRFTIMEOPTIONS	L_STRFTIMEC99
+#define LUA_STRFTIMEOPTIONS L_STRFTIMEC99
 #endif
 
-#endif					/* } */
+#endif                  /* } */
 /* }================================================================== */
 
 
@@ -59,12 +59,12 @@
 ** ===================================================================
 */
 
-#if !defined(l_time_t)		/* { */
+#if !defined(l_time_t)      /* { */
 /*
 ** type to represent time_t in Lua
 */
-#define l_timet			lua_Integer
-#define l_pushtime(L,t)		lua_pushinteger(L,(lua_Integer)(t))
+#define l_timet         lua_Integer
+#define l_pushtime(L,t)     lua_pushinteger(L,(lua_Integer)(t))
 
 static time_t l_checktime (lua_State *L, int arg) {
   lua_Integer t = luaL_checkinteger(L, arg);
@@ -72,29 +72,29 @@ static time_t l_checktime (lua_State *L, int arg) {
   return (time_t)t;
 }
 
-#endif				/* } */
+#endif              /* } */
 
 
-#if !defined(l_gmtime)		/* { */
+#if !defined(l_gmtime)      /* { */
 /*
 ** By default, Lua uses gmtime/localtime, except when POSIX is available,
 ** where it uses gmtime_r/localtime_r
 */
 
-#if defined(LUA_USE_POSIX)	/* { */
+#if defined(LUA_USE_POSIX)  /* { */
 
-#define l_gmtime(t,r)		gmtime_r(t,r)
-#define l_localtime(t,r)	localtime_r(t,r)
+#define l_gmtime(t,r)       gmtime_r(t,r)
+#define l_localtime(t,r)    localtime_r(t,r)
 
-#else				/* }{ */
+#else               /* }{ */
 
 /* ISO C definitions */
-#define l_gmtime(t,r)		((void)(r)->tm_sec, gmtime(t))
-#define l_localtime(t,r)  	((void)(r)->tm_sec, localtime(t))
+#define l_gmtime(t,r)       ((void)(r)->tm_sec, gmtime(t))
+#define l_localtime(t,r)    ((void)(r)->tm_sec, localtime(t))
 
-#endif				/* } */
+#endif              /* } */
 
-#endif				/* } */
+#endif              /* } */
 
 /* }================================================================== */
 
@@ -106,16 +106,16 @@ static time_t l_checktime (lua_State *L, int arg) {
 ** it uses mkstemp.
 ** ===================================================================
 */
-#if !defined(lua_tmpnam)	/* { */
+#if !defined(lua_tmpnam)    /* { */
 
-#if defined(LUA_USE_POSIX)	/* { */
+#if defined(LUA_USE_POSIX)  /* { */
 
 #include <unistd.h>
 
-#define LUA_TMPNAMBUFSIZE	32
+#define LUA_TMPNAMBUFSIZE   32
 
 #if !defined(LUA_TMPNAMTEMPLATE)
-#define LUA_TMPNAMTEMPLATE	"/tmp/lua_XXXXXX"
+#define LUA_TMPNAMTEMPLATE  "/tmp/lua_XXXXXX"
 #endif
 
 #define lua_tmpnam(b,e) { \
@@ -124,15 +124,15 @@ static time_t l_checktime (lua_State *L, int arg) {
         if (e != -1) close(e); \
         e = (e == -1); }
 
-#else				/* }{ */
+#else               /* }{ */
 
 /* ISO C definitions */
-#define LUA_TMPNAMBUFSIZE	L_tmpnam
-#define lua_tmpnam(b,e)		{ e = (tmpnam(b) == NULL); }
+#define LUA_TMPNAMBUFSIZE   L_tmpnam
+#define lua_tmpnam(b,e)     { e = (tmpnam(b) == NULL); }
 
-#endif				/* } */
+#endif              /* } */
 
-#endif				/* } */
+#endif              /* } */
 /* }================================================================== */
 
 
@@ -233,7 +233,7 @@ static int getboolfield (lua_State *L, const char *key) {
 
 /* maximum value for date fields (to avoid arithmetic overflows with 'int') */
 #if !defined(L_MAXDATEFIELD)
-#define L_MAXDATEFIELD	(INT_MAX / 2)
+#define L_MAXDATEFIELD  (INT_MAX / 2)
 #endif
 
 static int getfield (lua_State *L, const char *key, int d, int delta) {
@@ -277,7 +277,7 @@ static const char *checkoption (lua_State *L, const char *conv,
 
 
 /* maximum size for an individual 'strftime' item */
-#define SIZETIMEFMT	250
+#define SIZETIMEFMT 250
 
 
 static int os_date (lua_State *L) {

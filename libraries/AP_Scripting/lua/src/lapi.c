@@ -37,24 +37,24 @@ const char lua_ident[] =
 
 
 /* value at a non-valid index */
-#define NONVALIDVALUE		cast(TValue *, luaO_nilobject)
+#define NONVALIDVALUE       cast(TValue *, luaO_nilobject)
 
 /* corresponding test */
-#define isvalid(o)	((o) != luaO_nilobject)
+#define isvalid(o)  ((o) != luaO_nilobject)
 
 /* test for pseudo index */
-#define ispseudo(i)		((i) <= LUA_REGISTRYINDEX)
+#define ispseudo(i)     ((i) <= LUA_REGISTRYINDEX)
 
 /* test for upvalue */
-#define isupvalue(i)		((i) < LUA_REGISTRYINDEX)
+#define isupvalue(i)        ((i) < LUA_REGISTRYINDEX)
 
 /* test for valid but not pseudo index */
-#define isstackindex(i, o)	(isvalid(o) && !ispseudo(i))
+#define isstackindex(i, o)  (isvalid(o) && !ispseudo(i))
 
 #define api_checkvalidindex(l,o)  api_check(l, isvalid(o), "invalid index")
 
 #define api_checkstackindex(l, i, o)  \
-	api_check(l, isstackindex(i, o), "index not in the stack")
+    api_check(l, isstackindex(i, o), "index not in the stack")
 
 
 static TValue *index2addr (lua_State *L, int idx) {
@@ -903,7 +903,7 @@ LUA_API void lua_setuservalue (lua_State *L, int idx) {
 
 #define checkresults(L,na,nr) \
      api_check(L, (nr) == LUA_MULTRET || (L->ci->top - L->top >= (nr) - (na)), \
-	"results from function overflow current stack size")
+    "results from function overflow current stack size")
 
 
 LUA_API void lua_callk (lua_State *L, int nargs, int nresults,

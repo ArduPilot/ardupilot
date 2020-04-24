@@ -16,16 +16,16 @@
 #include "lualib.h"
 
 
-#if defined(LUA_COMPAT_BITLIB)		/* { */
+#if defined(LUA_COMPAT_BITLIB)      /* { */
 
 
-#define pushunsigned(L,n)	lua_pushinteger(L, (lua_Integer)(n))
-#define checkunsigned(L,i)	((lua_Unsigned)luaL_checkinteger(L,i))
+#define pushunsigned(L,n)   lua_pushinteger(L, (lua_Integer)(n))
+#define checkunsigned(L,i)  ((lua_Unsigned)luaL_checkinteger(L,i))
 
 
 /* number of bits to consider in a number */
 #if !defined(LUA_NBITS)
-#define LUA_NBITS	32
+#define LUA_NBITS   32
 #endif
 
 
@@ -34,15 +34,15 @@
 ** be made in two parts to avoid problems when LUA_NBITS is equal to the
 ** number of bits in a lua_Unsigned.)
 */
-#define ALLONES		(~(((~(lua_Unsigned)0) << (LUA_NBITS - 1)) << 1))
+#define ALLONES     (~(((~(lua_Unsigned)0) << (LUA_NBITS - 1)) << 1))
 
 
 /* macro to trim extra bits */
-#define trim(x)		((x) & ALLONES)
+#define trim(x)     ((x) & ALLONES)
 
 
 /* builds a number with 'n' ones (1 <= n <= LUA_NBITS) */
-#define mask(n)		(~((ALLONES << 1) << ((n) - 1)))
+#define mask(n)     (~((ALLONES << 1) << ((n) - 1)))
 
 
 
@@ -223,11 +223,11 @@ LUAMOD_API int luaopen_bit32 (lua_State *L) {
 }
 
 
-#else					/* }{ */
+#else                   /* }{ */
 
 
 LUAMOD_API int luaopen_bit32 (lua_State *L) {
   return luaL_error(L, "library 'bit32' has been deprecated");
 }
 
-#endif					/* } */
+#endif                  /* } */

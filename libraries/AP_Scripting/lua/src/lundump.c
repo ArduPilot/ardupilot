@@ -46,7 +46,7 @@ static l_noret error(LoadState *S, const char *why) {
 ** All high-level loads go through LoadVector; you can change it to
 ** adapt to the endianness of the input
 */
-#define LoadVector(S,b,n)	LoadBlock(S,b,(n)*sizeof((b)[0]))
+#define LoadVector(S,b,n)   LoadBlock(S,b,(n)*sizeof((b)[0]))
 
 static void LoadBlock (LoadState *S, void *b, size_t size) {
   if (luaZ_read(S->Z, b, size) != 0)
@@ -54,7 +54,7 @@ static void LoadBlock (LoadState *S, void *b, size_t size) {
 }
 
 
-#define LoadVar(S,x)		LoadVector(S,&x,1)
+#define LoadVar(S,x)        LoadVector(S,&x,1)
 
 
 static lu_byte LoadByte (LoadState *S) {
@@ -231,7 +231,7 @@ static void fchecksize (LoadState *S, size_t size, const char *tname) {
 }
 
 
-#define checksize(S,t)	fchecksize(S,sizeof(t),#t)
+#define checksize(S,t)  fchecksize(S,sizeof(t),#t)
 
 static void checkHeader (LoadState *S) {
   checkliteral(S, LUA_SIGNATURE + 1, "not a");  /* 1st char already checked */

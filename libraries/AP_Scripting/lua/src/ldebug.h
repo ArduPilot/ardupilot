@@ -11,11 +11,11 @@
 #include "lstate.h"
 
 
-#define pcRel(pc, p)	(cast(int, (pc) - (p)->code) - 1)
+#define pcRel(pc, p)    (cast(int, (pc) - (p)->code) - 1)
 
-#define getfuncline(f,pc)	(((f)->lineinfo) ? (f)->lineinfo[pc] : -1)
+#define getfuncline(f,pc)   (((f)->lineinfo) ? (f)->lineinfo[pc] : -1)
 
-#define resethookcount(L)	(L->hookcount = L->basehookcount)
+#define resethookcount(L)   (L->hookcount = L->basehookcount)
 
 
 LUAI_FUNC l_noret luaG_typeerror (lua_State *L, const TValue *o,

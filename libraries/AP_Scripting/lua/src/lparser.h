@@ -48,8 +48,8 @@ typedef enum {
 } expkind;
 
 
-#define vkisvar(k)	(VLOCAL <= (k) && (k) <= VINDEXED)
-#define vkisinreg(k)	((k) == VNONRELOC || (k) == VLOCAL)
+#define vkisvar(k)  (VLOCAL <= (k) && (k) <= VINDEXED)
+#define vkisinreg(k)    ((k) == VNONRELOC || (k) == VLOCAL)
 
 typedef struct expdesc {
   expkind k;

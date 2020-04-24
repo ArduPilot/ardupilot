@@ -21,16 +21,16 @@
 ** at every check.
 */
 #define luaD_checkstackaux(L,n,pre,pos)  \
-	if (L->stack_last - L->top <= (n)) \
-	  { pre; luaD_growstack(L, n); pos; } else { condmovestack(L,pre,pos); }
+    if (L->stack_last - L->top <= (n)) \
+      { pre; luaD_growstack(L, n); pos; } else { condmovestack(L,pre,pos); }
 
 /* In general, 'pre'/'pos' are empty (nothing to save) */
-#define luaD_checkstack(L,n)	luaD_checkstackaux(L,n,(void)0,(void)0)
+#define luaD_checkstack(L,n)    luaD_checkstackaux(L,n,(void)0,(void)0)
 
 
 
-#define savestack(L,p)		((char *)(p) - (char *)L->stack)
-#define restorestack(L,n)	((TValue *)((char *)L->stack + (n)))
+#define savestack(L,p)      ((char *)(p) - (char *)L->stack)
+#define restorestack(L,n)   ((TValue *)((char *)L->stack + (n)))
 
 
 /* type of protected functions, to be ran by 'runprotected' */

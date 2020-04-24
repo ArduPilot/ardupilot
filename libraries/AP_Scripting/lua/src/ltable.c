@@ -43,8 +43,8 @@
 ** Maximum size of array part (MAXASIZE) is 2^MAXABITS. MAXABITS is
 ** the largest integer such that MAXASIZE fits in an unsigned int.
 */
-#define MAXABITS	cast_int(sizeof(int) * CHAR_BIT - 1)
-#define MAXASIZE	(1u << MAXABITS)
+#define MAXABITS    cast_int(sizeof(int) * CHAR_BIT - 1)
+#define MAXASIZE    (1u << MAXABITS)
 
 /*
 ** Maximum size of hash part is 2^MAXHBITS. MAXHBITS is the largest
@@ -52,27 +52,27 @@
 ** maximum number of elements in a table, 2^MAXABITS + 2^MAXHBITS, still
 ** fits comfortably in an unsigned int.)
 */
-#define MAXHBITS	(MAXABITS - 1)
+#define MAXHBITS    (MAXABITS - 1)
 
 
-#define hashpow2(t,n)		(gnode(t, lmod((n), sizenode(t))))
+#define hashpow2(t,n)       (gnode(t, lmod((n), sizenode(t))))
 
-#define hashstr(t,str)		hashpow2(t, (str)->hash)
-#define hashboolean(t,p)	hashpow2(t, p)
-#define hashint(t,i)		hashpow2(t, i)
+#define hashstr(t,str)      hashpow2(t, (str)->hash)
+#define hashboolean(t,p)    hashpow2(t, p)
+#define hashint(t,i)        hashpow2(t, i)
 
 
 /*
 ** for some types, it is better to avoid modulus by power of 2, as
 ** they tend to have many 2 factors.
 */
-#define hashmod(t,n)	(gnode(t, ((n) % ((sizenode(t)-1)|1))))
+#define hashmod(t,n)    (gnode(t, ((n) % ((sizenode(t)-1)|1))))
 
 
-#define hashpointer(t,p)	hashmod(t, point2uint(p))
+#define hashpointer(t,p)    hashmod(t, point2uint(p))
 
 
-#define dummynode		(&dummynode_)
+#define dummynode       (&dummynode_)
 
 static const Node dummynode_ = {
   {NILCONSTANT},  /* value */

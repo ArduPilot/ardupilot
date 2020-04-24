@@ -32,7 +32,7 @@
 
 
 /* limit for table tag-method chains (to avoid loops) */
-#define MAXTAGLOOP	2000
+#define MAXTAGLOOP  2000
 
 
 
@@ -44,7 +44,7 @@
 #if !defined(l_intfitsf)
 
 /* number of bits in the mantissa of a float */
-#define NBM		(l_mathlim(MANT_DIG))
+#define NBM     (l_mathlim(MANT_DIG))
 
 /*
 ** Check whether some integers may not fit in a float, that is, whether
@@ -54,7 +54,7 @@
 ** sizeof(integer) == 32.)
 */
 #if ((((LUA_MAXINTEGER >> (NBM / 4)) >> (NBM / 4)) >> (NBM / 4)) \
-	>> (NBM - (3 * (NBM / 4))))  >  0
+    >> (NBM - (3 * (NBM / 4))))  >  0
 
 #define l_intfitsf(i)  \
   (-((lua_Integer)1 << NBM) <= (i) && (i) <= ((lua_Integer)1 << NBM))
@@ -452,9 +452,9 @@ int luaV_equalobj (lua_State *L, const TValue *t1, const TValue *t2) {
 
 /* macro used by 'luaV_concat' to ensure that element at 'o' is a string */
 #define tostring(L,o)  \
-	(ttisstring(o) || (cvt2str(o) && (luaO_tostring(L, o), 1)))
+    (ttisstring(o) || (cvt2str(o) && (luaO_tostring(L, o), 1)))
 
-#define isemptystr(o)	(ttisshrstring(o) && tsvalue(o)->shrlen == 0)
+#define isemptystr(o)   (ttisshrstring(o) && tsvalue(o)->shrlen == 0)
 
 /* copy strings in stack from top - n up to top - 1 to buffer */
 static void copy2buff (StkId top, int n, char *buff) {
@@ -585,7 +585,7 @@ lua_Integer luaV_mod (lua_State *L, lua_Integer m, lua_Integer n) {
 
 
 /* number of bits in an integer */
-#define NBITS	cast_int(sizeof(lua_Integer) * CHAR_BIT)
+#define NBITS   cast_int(sizeof(lua_Integer) * CHAR_BIT)
 
 /*
 ** Shift left operation. (Shift right just negates 'y'.)
@@ -725,13 +725,13 @@ void luaV_finishOp (lua_State *L) {
 */
 
 
-#define RA(i)	(base+GETARG_A(i))
-#define RB(i)	check_exp(getBMode(GET_OPCODE(i)) == OpArgR, base+GETARG_B(i))
-#define RC(i)	check_exp(getCMode(GET_OPCODE(i)) == OpArgR, base+GETARG_C(i))
-#define RKB(i)	check_exp(getBMode(GET_OPCODE(i)) == OpArgK, \
-	ISK(GETARG_B(i)) ? k+INDEXK(GETARG_B(i)) : base+GETARG_B(i))
-#define RKC(i)	check_exp(getCMode(GET_OPCODE(i)) == OpArgK, \
-	ISK(GETARG_C(i)) ? k+INDEXK(GETARG_C(i)) : base+GETARG_C(i))
+#define RA(i)   (base+GETARG_A(i))
+#define RB(i)   check_exp(getBMode(GET_OPCODE(i)) == OpArgR, base+GETARG_B(i))
+#define RC(i)   check_exp(getCMode(GET_OPCODE(i)) == OpArgR, base+GETARG_C(i))
+#define RKB(i)  check_exp(getBMode(GET_OPCODE(i)) == OpArgK, \
+    ISK(GETARG_B(i)) ? k+INDEXK(GETARG_B(i)) : base+GETARG_B(i))
+#define RKC(i)  check_exp(getCMode(GET_OPCODE(i)) == OpArgK, \
+    ISK(GETARG_C(i)) ? k+INDEXK(GETARG_C(i)) : base+GETARG_C(i))
 
 
 /* execute a jump instruction */
@@ -741,19 +741,19 @@ void luaV_finishOp (lua_State *L) {
     ci->u.l.savedpc += GETARG_sBx(i) + e; }
 
 /* for test instructions, execute the jump instruction that follows it */
-#define donextjump(ci)	{ i = *ci->u.l.savedpc; dojump(ci, i, 1); }
+#define donextjump(ci)  { i = *ci->u.l.savedpc; dojump(ci, i, 1); }
 
 
-#define Protect(x)	{ {x;}; base = ci->u.l.base; }
+#define Protect(x)  { {x;}; base = ci->u.l.base; }
 
 #define checkGC(L,c)  \
-	{ luaC_condGC(L, L->top = (c),  /* limit of live values */ \
+    { luaC_condGC(L, L->top = (c),  /* limit of live values */ \
                          Protect(L->top = ci->top));  /* restore top */ \
            luai_threadyield(L); }
 
 
 /* fetch an instruction and prepare its execution */
-#define vmfetch()	{ \
+#define vmfetch()   { \
   i = *(ci->u.l.savedpc++); \
   if (L->hookmask & (LUA_MASKLINE | LUA_MASKCOUNT)) \
     Protect(luaG_traceexec(L)); \
@@ -762,9 +762,9 @@ void luaV_finishOp (lua_State *L) {
   lua_assert(base <= L->top && L->top < L->stack + L->stacksize); \
 }
 
-#define vmdispatch(o)	switch(o)
-#define vmcase(l)	case l:
-#define vmbreak		break
+#define vmdispatch(o)   switch(o)
+#define vmcase(l)   case l:
+#define vmbreak     break
 
 
 /*

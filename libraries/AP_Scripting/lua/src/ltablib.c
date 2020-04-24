@@ -24,13 +24,13 @@
 ** Operations that an object must define to mimic a table
 ** (some functions only need some of them)
 */
-#define TAB_R	1			/* read */
-#define TAB_W	2			/* write */
-#define TAB_L	4			/* length */
-#define TAB_RW	(TAB_R | TAB_W)		/* read/write */
+#define TAB_R   1           /* read */
+#define TAB_W   2           /* write */
+#define TAB_L   4           /* length */
+#define TAB_RW  (TAB_R | TAB_W)     /* read/write */
 
 
-#define aux_getn(L,n,w)	(checktab(L, n, (w) | TAB_L), luaL_len(L, n))
+#define aux_getn(L,n,w) (checktab(L, n, (w) | TAB_L), luaL_len(L, n))
 
 
 static int checkfield (lua_State *L, const char *key, int n) {
@@ -242,12 +242,12 @@ typedef unsigned int IdxT;
 ** of a partition. (If you don't want/need this "randomness", ~0 is a
 ** good choice.)
 */
-#if !defined(l_randomizePivot)		/* { */
+#if !defined(l_randomizePivot)      /* { */
 
 #include <time.h>
 
 /* size of 'e' measured in number of 'unsigned int's */
-#define sof(e)		(sizeof(e) / sizeof(unsigned int))
+#define sof(e)      (sizeof(e) / sizeof(unsigned int))
 
 /*
 ** Use 'time' and 'clock' as sources of "randomness". Because we don't
@@ -267,11 +267,11 @@ static unsigned int l_randomizePivot (void) {
   return rnd;
 }
 
-#endif					/* } */
+#endif                  /* } */
 
 
 /* arrays larger than 'RANLIMIT' may use randomized pivots */
-#define RANLIMIT	100u
+#define RANLIMIT    100u
 
 
 static void set2 (lua_State *L, IdxT i, IdxT j) {

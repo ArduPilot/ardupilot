@@ -31,11 +31,11 @@
 
 
 
-#define noLuaClosure(f)		((f) == NULL || (f)->c.tt == LUA_TCCL)
+#define noLuaClosure(f)     ((f) == NULL || (f)->c.tt == LUA_TCCL)
 
 
 /* Active Lua function (given call info) */
-#define ci_func(ci)		(clLvalue((ci)->func))
+#define ci_func(ci)     (clLvalue((ci)->func))
 
 
 static const char *funcnamefromcode (lua_State *L, CallInfo *ci,

@@ -184,7 +184,7 @@ static int isneg (const char **s) {
 
 /* maximum number of significant digits to read (to avoid overflows
    even with single floats) */
-#define MAXSIGDIG	30
+#define MAXSIGDIG   30
 
 /*
 ** convert an hexadecimal numeric string to a number, following
@@ -245,7 +245,7 @@ static lua_Number lua_strx2number (const char *s, char **endptr) {
 
 /* maximum length of a numeral */
 #if !defined (L_MAXLENNUM)
-#define L_MAXLENNUM	200
+#define L_MAXLENNUM 200
 #endif
 
 static const char *l_str2dloc (const char *s, lua_Number *result, int mode) {
@@ -293,8 +293,8 @@ static const char *l_str2d (const char *s, lua_Number *result) {
 }
 
 
-#define MAXBY10		cast(lua_Unsigned, LUA_MAXINTEGER / 10)
-#define MAXLASTD	cast_int(LUA_MAXINTEGER % 10)
+#define MAXBY10     cast(lua_Unsigned, LUA_MAXINTEGER / 10)
+#define MAXLASTD    cast_int(LUA_MAXINTEGER % 10)
 
 static const char *l_str2int (const char *s, lua_Integer *result) {
   lua_Unsigned a = 0;
@@ -362,7 +362,7 @@ int luaO_utf8esc (char *buff, unsigned long x) {
 
 
 /* maximum length of the conversion of a number to a string */
-#define MAXNUMBER2STR	50
+#define MAXNUMBER2STR   50
 
 
 /*
@@ -476,13 +476,13 @@ const char *luaO_pushfstring (lua_State *L, const char *fmt, ...) {
 
 
 /* number of chars of a literal string without the ending \0 */
-#define LL(x)	(sizeof(x)/sizeof(char) - 1)
+#define LL(x)   (sizeof(x)/sizeof(char) - 1)
 
-#define RETS	"..."
-#define PRE	"[string \""
-#define POS	"\"]"
+#define RETS    "..."
+#define PRE "[string \""
+#define POS "\"]"
 
-#define addstr(a,b,l)	( memcpy(a,b,(l) * sizeof(char)), a += (l) )
+#define addstr(a,b,l)   ( memcpy(a,b,(l) * sizeof(char)), a += (l) )
 
 void luaO_chunkid (char *out, const char *source, size_t bufflen) {
   size_t l = strlen(source);
