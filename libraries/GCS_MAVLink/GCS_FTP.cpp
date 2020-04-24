@@ -85,7 +85,7 @@ void GCS_MAVLINK::handle_file_transfer_protocol(const mavlink_message_t &msg) {
 }
 
 void GCS_MAVLINK::send_ftp_replies(void) {
-    if (ftp.replies == nullptr) {
+    if (ftp.replies == nullptr || ftp.replies->empty()) {
         return;
     }
 
