@@ -1,5 +1,5 @@
-/// @file	GCS.h
-/// @brief	Interface definition for the various Ground Control System
+/// @file   GCS.h
+/// @brief  Interface definition for the various Ground Control System
 // protocols.
 #pragma once
 
@@ -83,8 +83,8 @@ public:
 };
 
 ///
-/// @class	GCS_MAVLINK
-/// @brief	MAVLink transport control class
+/// @class  GCS_MAVLINK
+/// @brief  MAVLink transport control class
 ///
 class GCS_MAVLINK
 {

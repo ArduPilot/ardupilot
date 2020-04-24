@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/// @file	GCS_MAVLink.cpp
+/// @file   GCS_MAVLink.cpp
 
 /*
 This provides some support code and variables for MAVLink enabled sketches
@@ -36,7 +36,7 @@ extern const AP_HAL::HAL& hal;
 #pragma GCC diagnostic pop
 #endif
 
-AP_HAL::UARTDriver	*mavlink_comm_port[MAVLINK_COMM_NUM_BUFFERS];
+AP_HAL::UARTDriver  *mavlink_comm_port[MAVLINK_COMM_NUM_BUFFERS];
 bool gcs_alternative_active[MAVLINK_COMM_NUM_BUFFERS];
 
 // per-channel lock
@@ -60,13 +60,13 @@ void GCS_MAVLINK::set_channel_private(mavlink_channel_t _chan)
 MAV_PARAM_TYPE GCS_MAVLINK::mav_param_type(enum ap_var_type t)
 {
     if (t == AP_PARAM_INT8) {
-	    return MAV_PARAM_TYPE_INT8;
+        return MAV_PARAM_TYPE_INT8;
     }
     if (t == AP_PARAM_INT16) {
-	    return MAV_PARAM_TYPE_INT16;
+        return MAV_PARAM_TYPE_INT16;
     }
     if (t == AP_PARAM_INT32) {
-	    return MAV_PARAM_TYPE_INT32;
+        return MAV_PARAM_TYPE_INT32;
     }
     // treat any others as float
     return MAV_PARAM_TYPE_REAL32;
@@ -75,8 +75,8 @@ MAV_PARAM_TYPE GCS_MAVLINK::mav_param_type(enum ap_var_type t)
 
 /// Check for available transmit space on the nominated MAVLink channel
 ///
-/// @param chan		Channel to check
-/// @returns		Number of bytes available
+/// @param chan     Channel to check
+/// @returns        Number of bytes available
 uint16_t comm_get_txspace(mavlink_channel_t chan)
 {
     GCS_MAVLINK *link = gcs().chan(chan);

@@ -13,8 +13,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/// @file	MAVLink_routing.h
-/// @brief	handle routing of MAVLink packets by sysid/componentid
+/// @file   MAVLink_routing.h
+/// @brief  handle routing of MAVLink packets by sysid/componentid
 
 #include <stdio.h>
 #include <AP_HAL/AP_HAL.h>

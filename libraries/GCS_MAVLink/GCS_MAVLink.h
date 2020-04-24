@@ -1,5 +1,5 @@
-/// @file	GCS_MAVLink.h
-/// @brief	One size fits all header for MAVLink integration.
+/// @file   GCS_MAVLink.h
+/// @brief  One size fits all header for MAVLink integration.
 #pragma once
 
 #include <AP_HAL/AP_HAL_Boards.h>
@@ -41,7 +41,7 @@
 #include "include/mavlink/v2.0/mavlink_types.h"
 
 /// MAVLink stream used for uartA
-extern AP_HAL::UARTDriver	*mavlink_comm_port[MAVLINK_COMM_NUM_BUFFERS];
+extern AP_HAL::UARTDriver   *mavlink_comm_port[MAVLINK_COMM_NUM_BUFFERS];
 extern bool gcs_alternative_active[MAVLINK_COMM_NUM_BUFFERS];
 
 /// MAVLink system definition
@@ -49,7 +49,7 @@ extern mavlink_system_t mavlink_system;
 
 /// Sanity check MAVLink channel
 ///
-/// @param chan		Channel to send to
+/// @param chan     Channel to send to
 static inline bool valid_channel(mavlink_channel_t chan)
 {
 #pragma clang diagnostic push
@@ -62,8 +62,8 @@ void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len);
 
 /// Check for available transmit space on the nominated MAVLink channel
 ///
-/// @param chan		Channel to check
-/// @returns		Number of bytes available
+/// @param chan     Channel to check
+/// @returns        Number of bytes available
 uint16_t comm_get_txspace(mavlink_channel_t chan);
 
 #define MAVLINK_USE_CONVENIENCE_FUNCTIONS

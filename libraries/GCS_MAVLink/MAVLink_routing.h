@@ -1,5 +1,5 @@
-/// @file	MAVLink_routing.h
-/// @brief	handle routing of MAVLink packets by ID
+/// @file   MAVLink_routing.h
+/// @brief  handle routing of MAVLink packets by ID
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
