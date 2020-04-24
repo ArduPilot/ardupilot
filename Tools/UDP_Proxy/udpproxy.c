@@ -36,36 +36,36 @@ static double timestamp()
 */
 int open_socket_in(int port)
 {
-	struct sockaddr_in sock;
-	int res;
-	int one=1;
+    struct sockaddr_in sock;
+    int res;
+    int one=1;
 
-	memset(&sock,0,sizeof(sock));
+    memset(&sock,0,sizeof(sock));
 
 #ifdef HAVE_SOCK_SIN_LEN
-	sock.sin_len = sizeof(sock);
+    sock.sin_len = sizeof(sock);
 #endif
-	sock.sin_port = htons(port);
-	sock.sin_family = AF_INET;
+    sock.sin_port = htons(port);
+    sock.sin_family = AF_INET;
 
-	res = socket(AF_INET, SOCK_DGRAM, 0);
-	if (res == -1) { 
-		fprintf(stderr, "socket failed\n"); return -1; 
-		return -1;
-	}
+    res = socket(AF_INET, SOCK_DGRAM, 0);
+    if (res == -1) { 
+        fprintf(stderr, "socket failed\n"); return -1; 
+        return -1;
+    }
 
-	setsockopt(res,SOL_SOCKET,SO_REUSEADDR,(char *)&one,sizeof(one));
+    setsockopt(res,SOL_SOCKET,SO_REUSEADDR,(char *)&one,sizeof(one));
 
-	if (bind(res, (struct sockaddr *)&sock, sizeof(sock)) < 0) { 
-		return(-1); 
-	}
+    if (bind(res, (struct sockaddr *)&sock, sizeof(sock)) < 0) { 
+        return(-1); 
+    }
 
-	return res;
+    return res;
 }
 
 static void main_loop(int sock1, int sock2)
 {
-	unsigned char buf[10240];
+    unsigned char buf[10240];
         bool have_conn1=false;
         bool have_conn2=false;
         double last_pkt1=0;
@@ -75,7 +75,7 @@ static void main_loop(int sock1, int sock2)
         uint32_t bytes_in1=0;
         uint32_t bytes_in2=0;
         
-	while (1) {
+    while (1) {
             fd_set fds;
             int ret;
             struct timeval tval;
@@ -157,7 +157,7 @@ static void main_loop(int sock1, int sock2)
                     }
                 }
             }
-	}
+    }
 }
 
 int main(int argc, char *argv[])
