@@ -92,7 +92,7 @@ void AP_Volz_Protocol::update()
             uint8_t data[VOLZ_DATA_FRAME_SIZE];
 
             data[0] = VOLZ_SET_EXTENDED_POSITION_CMD;
-            data[1] = i + 1;		// send actuator id as 1 based index so ch1 will have id 1, ch2 will have id 2 ....
+            data[1] = i + 1;        // send actuator id as 1 based index so ch1 will have id 1, ch2 will have id 2 ....
             data[2] = HIGHBYTE(value);
             data[3] = LOWBYTE(value);
 
