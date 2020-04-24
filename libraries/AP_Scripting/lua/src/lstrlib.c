@@ -24,6 +24,10 @@
 #include "lauxlib.h"
 #include "lualib.h"
 
+#if defined(ARDUPILOT_BUILD)
+#pragma GCC diagnostic ignored "-Wunused-function"
+#endif
+
 
 /*
 ** maximum number of captures that a pattern can do during
