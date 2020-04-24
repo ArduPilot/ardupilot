@@ -10,7 +10,6 @@ APJ_BOARD_ID 1910
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
-STM32_PLLM_VALUE 8
 
 # flash size
 FLASH_SIZE_KB 1024

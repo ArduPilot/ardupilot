@@ -18,8 +18,6 @@ FLASH_SIZE_KB 1024
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
-STM32_PLLM_VALUE 8
-
 
 # this is the STM32 timer that ChibiOS will use for the low level
 # driver. This must be a 32 bit timer. We currently only support

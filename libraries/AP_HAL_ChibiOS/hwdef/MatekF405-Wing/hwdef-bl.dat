@@ -9,7 +9,6 @@ APJ_BOARD_ID 127
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
-STM32_PLLM_VALUE 8
 
 # bootloader is installed at zero offset
 FLASH_RESERVE_START_KB 0
