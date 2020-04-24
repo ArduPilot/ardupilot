@@ -133,7 +133,7 @@ private:
         uint32_t last_update_us;    // last position update in microseconds
         uint32_t last_update_ms;    // last position update in milliseconds
         Vector3f vel;           // the vehicle's velocity in m/s
-        int32_t relative_alt;	// the vehicle's relative altitude in meters * 100
+        int32_t relative_alt;   // the vehicle's relative altitude in meters * 100
     } vehicle;
 
     // Navigation controller state

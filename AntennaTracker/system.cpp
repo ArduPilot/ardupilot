@@ -189,8 +189,8 @@ void Tracker::set_mode(Mode &newmode, const ModeReason reason)
         disarm_servos();
     }
 
-	// log mode change
-	logger.Write_Mode((uint8_t)mode->number(), reason);
+    // log mode change
+    logger.Write_Mode((uint8_t)mode->number(), reason);
     gcs().send_message(MSG_HEARTBEAT);
 
     nav_status.bearing = ahrs.yaw_sensor * 0.01f;

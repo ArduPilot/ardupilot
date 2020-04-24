@@ -134,7 +134,7 @@ void Tracker::update_pitch_cr_servo(float pitch)
  */
 void Tracker::update_yaw_servo(float yaw)
 {
-	switch ((enum ServoType)g.servo_yaw_type.get()) {
+    switch ((enum ServoType)g.servo_yaw_type.get()) {
     case SERVO_TYPE_ONOFF:
         update_yaw_onoff_servo(yaw);
         break;

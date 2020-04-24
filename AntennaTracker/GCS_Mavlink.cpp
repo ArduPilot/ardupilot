@@ -75,7 +75,7 @@ MAV_STATE GCS_MAVLINK_Tracker::vehicle_system_status() const
 
 void GCS_MAVLINK_Tracker::send_nav_controller_output() const
 {
-	float alt_diff = (tracker.g.alt_source == ALT_SOURCE_BARO) ? tracker.nav_status.alt_difference_baro : tracker.nav_status.alt_difference_gps;
+    float alt_diff = (tracker.g.alt_source == ALT_SOURCE_BARO) ? tracker.nav_status.alt_difference_baro : tracker.nav_status.alt_difference_gps;
 
     mavlink_msg_nav_controller_output_send(
         chan,

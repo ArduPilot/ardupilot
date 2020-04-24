@@ -103,7 +103,7 @@ void Mode::calc_angle_error(float pitch, float yaw, bool direction_reversed)
 
 void Mode::convert_ef_to_bf(float pitch, float yaw, float& bf_pitch, float& bf_yaw)
 {
-	// earth frame to body frame pitch and yaw conversion
+    // earth frame to body frame pitch and yaw conversion
     const AP_AHRS &ahrs = AP::ahrs();
     bf_pitch = ahrs.cos_roll() * pitch + ahrs.sin_roll() * ahrs.cos_pitch() * yaw;
     bf_yaw = -ahrs.sin_roll() * pitch + ahrs.cos_pitch() * ahrs.cos_roll() * yaw;
