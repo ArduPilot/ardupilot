@@ -219,7 +219,7 @@ int16_t RC_Channel::pwm_to_angle_dz(uint16_t _dead_zone) const
  */
 int16_t RC_Channel::pwm_to_angle() const
 {
-	return pwm_to_angle_dz(dead_zone);
+    return pwm_to_angle_dz(dead_zone);
 }
 
 
@@ -232,7 +232,7 @@ int16_t RC_Channel::pwm_to_range_dz(uint16_t _dead_zone) const
     int16_t r_in = constrain_int16(radio_in, radio_min.get(), radio_max.get());
 
     if (reversed) {
-	    r_in = radio_max.get() - (r_in - radio_min.get());
+        r_in = radio_max.get() - (r_in - radio_min.get());
     }
 
     int16_t radio_trim_low  = radio_min + _dead_zone;

@@ -1,5 +1,5 @@
-/// @file	RC_Channel.h
-/// @brief	RC_Channel manager, with EEPROM-backed storage of constants.
+/// @file   RC_Channel.h
+/// @brief  RC_Channel manager, with EEPROM-backed storage of constants.
 #pragma once
 
 #include <AP_Common/AP_Common.h>
@@ -7,8 +7,8 @@
 
 #define NUM_RC_CHANNELS 16
 
-/// @class	RC_Channel
-/// @brief	Object managing one RC channel
+/// @class  RC_Channel
+/// @brief  Object managing one RC channel
 class RC_Channel {
 public:
     friend class SRV_Channels;
@@ -274,7 +274,7 @@ private:
 
 
 /*
-  class	RC_Channels. Hold the full set of RC_Channel objects
+  class RC_Channels. Hold the full set of RC_Channel objects
 */
 class RC_Channels {
 public:
