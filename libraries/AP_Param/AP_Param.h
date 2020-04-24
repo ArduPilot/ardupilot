@@ -769,7 +769,10 @@ public:
     /// value separately, as otherwise the value in EEPROM won't be
     /// updated correctly.
     void set_and_save_ifchanged(const T &v) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
         if (v == _value) {
+#pragma GCC diagnostic pop
             return;
         }
         set(v);
