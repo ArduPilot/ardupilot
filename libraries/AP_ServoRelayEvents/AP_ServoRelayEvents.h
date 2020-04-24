@@ -44,20 +44,20 @@ private:
 
     enum event_type type;
 
-	// when the event was started in ms
+    // when the event was started in ms
     uint32_t start_time_ms;
 
-	// how long to delay the next firing of event in millis
+    // how long to delay the next firing of event in millis
     uint16_t delay_ms;
 
-	// how many times to cycle : -1 (or -2) = forever, 2 = do one cycle, 4 = do two cycles
+    // how many times to cycle : -1 (or -2) = forever, 2 = do one cycle, 4 = do two cycles
     int16_t repeat;
 
     // RC channel for servos, relay number for relays
     uint8_t channel;
 
-	// PWM for servos
-	uint16_t servo_value;
+    // PWM for servos
+    uint16_t servo_value;
 };
 
 namespace AP {
