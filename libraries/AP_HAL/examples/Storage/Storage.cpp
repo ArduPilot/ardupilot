@@ -40,7 +40,7 @@ void setup(void)
 
 // In main loop do nothing
 void loop(void) 
-{	
+{   
     hal.scheduler->delay(1000);
 }
 
