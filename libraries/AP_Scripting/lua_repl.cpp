@@ -15,8 +15,8 @@
 #endif
 
 #if !defined(LUA_PROMPT)
-#define LUA_PROMPT		"> "
-#define LUA_PROMPT2		">> "
+#define LUA_PROMPT      "> "
+#define LUA_PROMPT2     ">> "
 #endif
 
 extern const AP_HAL::HAL& hal;
@@ -71,8 +71,8 @@ const char * lua_scripts::get_prompt(lua_State *L, int firstline) {
 }
 
 /* mark in error messages for incomplete statements */
-#define EOFMARK		"<eof>"
-#define marklen		(sizeof(EOFMARK)/sizeof(char) - 1)
+#define EOFMARK     "<eof>"
+#define marklen     (sizeof(EOFMARK)/sizeof(char) - 1)
 
 
 /*
