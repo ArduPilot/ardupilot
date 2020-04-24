@@ -257,7 +257,7 @@ void AP_BoardConfig::validate_board_type(void)
 #endif
 
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V4PRO)
-	// Nothing to do for the moment
+    // Nothing to do for the moment
 #endif
 }
 
@@ -329,7 +329,7 @@ void AP_BoardConfig::board_autodetect(void)
 #elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4PRO) || defined(HAL_CHIBIOS_ARCH_FMUV4PRO)
     // only one choice
     state.board_type.set_and_notify(PX4_BOARD_PIXHAWK_PRO);
-    hal.console->printf("Detected Pixhawk Pro\n");	
+    hal.console->printf("Detected Pixhawk Pro\n");  
 #elif defined(CONFIG_ARCH_BOARD_AEROFC_V1)
     state.board_type.set_and_notify(PX4_BOARD_AEROFC);
     hal.console->printf("Detected Aero FC\n");
