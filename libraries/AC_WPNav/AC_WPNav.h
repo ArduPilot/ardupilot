@@ -147,7 +147,7 @@ public:
     void shift_wp_origin_and_destination_to_stopping_point_xy();
 
     /// get_wp_stopping_point_xy - calculates stopping point based on current position, velocity, waypoint acceleration
-    ///		results placed in stopping_position vector
+    ///     results placed in stopping_position vector
     void get_wp_stopping_point_xy(Vector3f& stopping_point) const;
     void get_wp_stopping_point(Vector3f& stopping_point) const;
 
@@ -280,7 +280,7 @@ protected:
     bool advance_spline_target_along_track(float dt);
 
     /// calc_spline_pos_vel - update position and velocity from given spline time
-    /// 	relies on update_spline_solution being called since the previous
+    ///     relies on update_spline_solution being called since the previous
     void calc_spline_pos_vel(float spline_time, Vector3f& position, Vector3f& velocity);
 
     // get terrain's altitude (in cm above the ekf origin) at the current position (+ve means terrain below vehicle is above ekf origin's altitude)
@@ -330,7 +330,7 @@ protected:
     Vector3f    _spline_origin_vel;     // the target velocity vector at the origin of the spline segment
     Vector3f    _spline_destination_vel;// the target velocity vector at the destination point of the spline segment
     Vector3f    _hermite_spline_solution[4]; // array describing spline path between origin and destination
-    float       _spline_vel_scaler;	    //
+    float       _spline_vel_scaler;     //
     float       _yaw;                   // heading according to yaw
 
     // terrain following variables

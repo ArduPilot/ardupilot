@@ -206,7 +206,7 @@ bool AC_WPNav::get_wp_destination(Location& destination) const
 ///     terrain_alt should be true if destination.z is a desired altitude above terrain
 bool AC_WPNav::set_wp_destination(const Vector3f& destination, bool terrain_alt)
 {
-	Vector3f origin;
+    Vector3f origin;
 
     // if waypoint controller is active use the existing position target as the origin
     if ((AP_HAL::millis() - _wp_last_update) < 1000) {
@@ -361,7 +361,7 @@ void AC_WPNav::shift_wp_origin_and_destination_to_stopping_point_xy()
 /// get_wp_stopping_point_xy - returns vector to stopping point based on a horizontal position and velocity
 void AC_WPNav::get_wp_stopping_point_xy(Vector3f& stopping_point) const
 {
-	_pos_control.get_stopping_point_xy(stopping_point);
+    _pos_control.get_stopping_point_xy(stopping_point);
 }
 
 /// get_wp_stopping_point - returns vector to stopping point based on 3D position and velocity
@@ -467,16 +467,16 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     }
     // advance the current target
     if (!reached_leash_limit) {
-    	_track_desired += _limited_speed_xy_cms * dt;
+        _track_desired += _limited_speed_xy_cms * dt;
 
-    	// reduce speed if we reach end of leash
+        // reduce speed if we reach end of leash
         if (_track_desired > track_desired_max) {
-        	_track_desired = track_desired_max;
-        	_limited_speed_xy_cms -= 2.0f * _track_accel * dt;
-        	if (_limited_speed_xy_cms < 0.0f) {
-        	    _limited_speed_xy_cms = 0.0f;
-        	}
-    	}
+            _track_desired = track_desired_max;
+            _limited_speed_xy_cms -= 2.0f * _track_accel * dt;
+            if (_limited_speed_xy_cms < 0.0f) {
+                _limited_speed_xy_cms = 0.0f;
+            }
+        }
     }
 
     // do not let desired point go past the end of the track unless it's a fast waypoint
@@ -740,17 +740,17 @@ bool AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
 
     // calculate spline velocity at origin
     if (stopped_at_start || !prev_segment_exists) {
-    	// if vehicle is stopped at the origin, set origin velocity to 0.02 * distance vector from origin to destination
-    	_spline_origin_vel = (destination - origin) * dt;
-    	_spline_time = 0.0f;
-    	_spline_vel_scaler = 0.0f;
+        // if vehicle is stopped at the origin, set origin velocity to 0.02 * distance vector from origin to destination
+        _spline_origin_vel = (destination - origin) * dt;
+        _spline_time = 0.0f;
+        _spline_vel_scaler = 0.0f;
     }else{
-    	// look at previous segment to determine velocity at origin
+        // look at previous segment to determine velocity at origin
         if (_flags.segment_type == SEGMENT_STRAIGHT) {
             // previous segment is straight, vehicle is moving so vehicle should fly straight through the origin
             // before beginning it's spline path to the next waypoint. Note: we are using the previous segment's origin and destination
             _spline_origin_vel = (_destination - _origin);
-            _spline_time = 0.0f;	// To-Do: this should be set based on how much overrun there was from straight segment?
+            _spline_time = 0.0f;    // To-Do: this should be set based on how much overrun there was from straight segment?
             _spline_vel_scaler = _pos_control.get_vel_target().length();    // start velocity target from current target velocity
         }else{
             // previous segment is splined, vehicle will fly through origin
@@ -869,7 +869,7 @@ bool AC_WPNav::update_spline()
 }
 
 /// update_spline_solution - recalculates hermite_spline_solution grid
-///		relies on _spline_origin_vel, _spline_destination_vel and _origin and _destination
+///     relies on _spline_origin_vel, _spline_destination_vel and _origin and _destination
 void AC_WPNav::update_spline_solution(const Vector3f& origin, const Vector3f& dest, const Vector3f& origin_vel, const Vector3f& dest_vel)
 {
     _hermite_spline_solution[0] = origin;
@@ -987,7 +987,7 @@ bool AC_WPNav::advance_spline_target_along_track(float dt)
 }
 
 // calc_spline_pos_vel_accel - calculates target position, velocity and acceleration for the given "spline_time"
-/// 	relies on update_spline_solution being called when the segment's origin and destination were set
+///     relies on update_spline_solution being called when the segment's origin and destination were set
 void AC_WPNav::calc_spline_pos_vel(float spline_time, Vector3f& position, Vector3f& velocity)
 {
     float spline_time_sqrd = spline_time * spline_time;
@@ -1073,11 +1073,11 @@ bool AC_WPNav::get_vector_NEU(const Location &loc, Vector3f &vec, bool &terrain_
 /// calc_slow_down_distance - calculates distance before waypoint that target point should begin to slow-down assuming it is travelling at full speed
 void AC_WPNav::calc_slow_down_distance(float speed_cms, float accel_cmss)
 {
-	// protect against divide by zero
-	if (accel_cmss <= 0.0f) {
-		_slow_down_dist = 0.0f;
-		return;
-	}
+    // protect against divide by zero
+    if (accel_cmss <= 0.0f) {
+        _slow_down_dist = 0.0f;
+        return;
+    }
     // To-Do: should we use a combination of horizontal and vertical speeds?
     // To-Do: update this automatically when speed or acceleration is changed
     _slow_down_dist = speed_cms * speed_cms / (4.0f*accel_cmss);

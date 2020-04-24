@@ -62,7 +62,7 @@ protected:
     void sanity_check_params();
 
     /// updates desired velocity (i.e. feed forward) with pilot requested acceleration and fake wind resistance
-    ///		updated velocity sent directly to position controller
+    ///     updated velocity sent directly to position controller
     void calc_desired_velocity(float nav_dt);
 
     // references and pointers to external libraries
