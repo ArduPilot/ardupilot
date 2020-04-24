@@ -5,16 +5,16 @@
  *      Author: Amilcar Lucas
  */
 
-/// @file	AP_Relay.h
-/// @brief	APM relay control class
+/// @file   AP_Relay.h
+/// @brief  APM relay control class
 #pragma once
 
 #include <AP_Param/AP_Param.h>
 
 #define AP_RELAY_NUM_RELAYS 6
 
-/// @class	AP_Relay
-/// @brief	Class to manage the ArduPilot relay
+/// @class  AP_Relay
+/// @brief  Class to manage the ArduPilot relay
 class AP_Relay {
 public:
     AP_Relay();
