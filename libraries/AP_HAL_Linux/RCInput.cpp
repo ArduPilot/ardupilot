@@ -362,7 +362,7 @@ bool RCInput::add_dsm_input(const uint8_t *bytes, size_t nbytes)
             bytes += n;
         }
 
-	if (dsm.partial_frame_count == dsm_frame_size) {
+    if (dsm.partial_frame_count == dsm_frame_size) {
             dsm.partial_frame_count = 0;
             uint16_t values[16] {};
             uint16_t num_values=0;
@@ -523,7 +523,7 @@ void RCInput::add_sbus_input(const uint8_t *bytes, size_t nbytes)
             bytes += n;
         }
 
-	if (sbus.partial_frame_count == sbus_frame_size) {
+    if (sbus.partial_frame_count == sbus_frame_size) {
             sbus.partial_frame_count = 0;
             uint16_t values[16] {};
             uint16_t num_values=0;

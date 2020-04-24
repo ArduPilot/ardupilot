@@ -71,8 +71,8 @@ protected:
 
     // state of SBUS bit decoder
     struct {
-	uint16_t bytes[25]; // including start bit, parity and stop bits
-	uint16_t bit_ofs;
+    uint16_t bytes[25]; // including start bit, parity and stop bits
+    uint16_t bit_ofs;
     } sbus_state;
 
     // state of DSM decoder

@@ -19,14 +19,14 @@
 using namespace Linux;
 
 #define PWM_CHAN_COUNT 8
-#define RCOUT_ZYNQ_PWM_BASE	 0x43c00000
-#define PWM_CMD_CONFIG	         0	/* full configuration in one go */
-#define PWM_CMD_ENABLE	         1	/* enable a pwm */
-#define PWM_CMD_DISABLE	         2	/* disable a pwm */
-#define PWM_CMD_MODIFY	         3	/* modify a pwm */
-#define PWM_CMD_SET	         4	/* set a pwm output explicitly */
-#define PWM_CMD_CLR	         5	/* clr a pwm output explicitly */
-#define PWM_CMD_TEST	         6	/* various crap */
+#define RCOUT_ZYNQ_PWM_BASE  0x43c00000
+#define PWM_CMD_CONFIG           0  /* full configuration in one go */
+#define PWM_CMD_ENABLE           1  /* enable a pwm */
+#define PWM_CMD_DISABLE          2  /* disable a pwm */
+#define PWM_CMD_MODIFY           3  /* modify a pwm */
+#define PWM_CMD_SET          4  /* set a pwm output explicitly */
+#define PWM_CMD_CLR          5  /* clr a pwm output explicitly */
+#define PWM_CMD_TEST             6  /* various crap */
 
 
 static void catch_sigbus(int sig)

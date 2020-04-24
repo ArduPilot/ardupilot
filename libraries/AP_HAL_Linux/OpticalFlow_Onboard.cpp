@@ -362,8 +362,8 @@ void OpticalFlow_Onboard::_run_optflow()
         int fd = open(OPTICALFLOW_ONBOARD_VIDEO_FILE, O_CLOEXEC | O_CREAT | O_WRONLY
                 | O_APPEND, S_IRUSR | S_IWUSR | S_IRGRP |
                 S_IWGRP | S_IROTH | S_IWOTH);
-	    if (fd != -1) {
-	        write(fd, video_frame.data, _sizeimage);
+        if (fd != -1) {
+            write(fd, video_frame.data, _sizeimage);
 #ifdef OPTICALFLOW_ONBOARD_RECORD_METADATAS
             struct PACKED {
                 uint32_t timestamp;
@@ -373,7 +373,7 @@ void OpticalFlow_Onboard::_run_optflow()
             } metas = { video_frame.timestamp, rate_x, rate_y, rate_z};
             write(fd, &metas, sizeof(metas));
 #endif
-	        close(fd);
+            close(fd);
         }
 #endif
 

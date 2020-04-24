@@ -4,7 +4,7 @@
 
 namespace Linux {
 
-#define MAX_ZYNQ_PWMS            8	/* number of pwm channels */
+#define MAX_ZYNQ_PWMS            8  /* number of pwm channels */
 
 class RCOutput_ZYNQ : public AP_HAL::RCOutput {
 public:
