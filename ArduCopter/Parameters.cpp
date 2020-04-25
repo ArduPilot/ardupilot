@@ -136,7 +136,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @DisplayName: RTL Final Altitude
     // @Description: This is the altitude the vehicle will move to as the final stage of Returning to Launch or after completing a mission.  Set to zero to land.
     // @Units: cm
-    // @Range: -1 1000
+    // @Range: 0 1000
     // @Increment: 1
     // @User: Standard
     GSCALAR(rtl_alt_final,  "RTL_ALT_FINAL", RTL_ALT_FINAL),
