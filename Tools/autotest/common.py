@@ -2816,7 +2816,7 @@ class AutoTest(ABC):
         """Wait some second in SITL time."""
         tstart = self.get_sim_time()
         tnow = tstart
-        self.progress("Delaying %f seconds" % (seconds_to_wait,))
+        self.progress("Delaying %f seconds" % (seconds_to_wait))
         while tstart + seconds_to_wait > tnow:
             tnow = self.get_sim_time()
 
