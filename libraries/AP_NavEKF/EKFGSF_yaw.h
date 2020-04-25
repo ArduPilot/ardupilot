@@ -24,8 +24,8 @@ public:
 
     // Fuse NE velocty mesurements and update the EKF's and GSF state and covariance estimates
     // Should be called after update(...) whenever new velocity data is available
-    void fuseVelData(Vector2f vel,    // NE velocity measurement (m/s)
-                     float velAcc);   // 1-sigma accuracy of velocity measurement (m/s)
+    void fuseVelData(const Vector2f &vel,    // NE velocity measurement (m/s)
+                     const float velAcc);   // 1-sigma accuracy of velocity measurement (m/s)
 
     // get solution data for logging
     // return false if yaw estimation is inactive

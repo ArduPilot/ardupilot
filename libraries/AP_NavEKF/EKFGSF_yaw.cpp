@@ -134,7 +134,7 @@ void EKFGSF_yaw::update(const Vector3f &delAng,
     }
 }
 
-void EKFGSF_yaw::fuseVelData(Vector2f vel, float velAcc)
+void EKFGSF_yaw::fuseVelData(const Vector2f &vel, const float velAcc)
 {
     // convert reported accuracy to a variance, but limit lower value to protect algorithm stability
     const float velObsVar = sq(fmaxf(velAcc, 0.5f));
