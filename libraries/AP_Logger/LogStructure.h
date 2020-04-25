@@ -2446,13 +2446,9 @@ struct PACKED log_Arm_Disarm {
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
       "TERR","QBLLHffHH","TimeUS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded", "s-DU-mm--", "F-GG-00--" }, \
     { LOG_GPS_UBX1_MSG, sizeof(log_Ubx1), \
-      "UBX1", "QBHBBHI",  "TimeUS,Instance,noisePerMS,jamInd,aPower,agcCnt,config", "s------", "F------"  }, \
+      "UBX1", "QBHBBHI",  "TimeUS,Instance,noisePerMS,jamInd,aPower,agcCnt,config", "s#-----", "F------"  }, \
     { LOG_GPS_UBX2_MSG, sizeof(log_Ubx2), \
-      "UBX2", "QBbBbB", "TimeUS,Instance,ofsI,magI,ofsQ,magQ", "s-----", "F-----" }, \
-    { LOG_GPS2_UBX1_MSG, sizeof(log_Ubx1), \
-      "UBY1", "QBHBBHI",  "TimeUS,Instance,noisePerMS,jamInd,aPower,agcCnt,config", "s------", "F------"   }, \
-    { LOG_GPS2_UBX2_MSG, sizeof(log_Ubx2), \
-      "UBY2", "QBbBbB", "TimeUS,Instance,ofsI,magI,ofsQ,magQ", "s-----", "F-----" }, \
+      "UBX2", "QBbBbB", "TimeUS,Instance,ofsI,magI,ofsQ,magQ", "s#----", "F-----" }, \
     { LOG_GPS_RAW_MSG, sizeof(log_GPS_RAW), \
       "GRAW", "QIHBBddfBbB", "TimeUS,WkMS,Week,numSV,sv,cpMes,prMes,doMes,mesQI,cno,lli", "s--S-------", "F--0-------" }, \
     { LOG_GPS_RAWH_MSG, sizeof(log_GPS_RAWH), \
@@ -2615,8 +2611,6 @@ enum LogMessages : uint8_t {
     LOG_TERRAIN_MSG,
     LOG_GPS_UBX1_MSG,
     LOG_GPS_UBX2_MSG,
-    LOG_GPS2_UBX1_MSG,
-    LOG_GPS2_UBX2_MSG,
     LOG_ESC1_MSG,
     LOG_ESC2_MSG,
     LOG_ESC3_MSG,
