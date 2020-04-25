@@ -157,21 +157,21 @@ public:
     }
 
     /*
-      setup neopixel (WS2812B) output for a given channel number, with
+      setup serial LED output for a given channel number, with
       the given max number of LEDs in the chain.
      */
-    bool set_neopixel_num_LEDs(const uint16_t chan, uint8_t num_leds) override;
+    bool set_serial_led_num_LEDs(const uint16_t chan, uint8_t num_leds, output_mode mode = MODE_PWM_NONE, uint16_t clock_mask = 0) override;
 
     /*
-      setup neopixel (WS2812B) output data for a given output channel
-      and mask of LEDs on the channel
+      setup serial LED output data for a given output channel
+      and LEDs number. LED -1 is all LEDs
      */
-    void set_neopixel_rgb_data(const uint16_t chan, uint32_t ledmask, uint8_t red, uint8_t green, uint8_t blue) override;
+    void set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t red, uint8_t green, uint8_t blue) override;
 
     /*
-      trigger send of neopixel data
+      trigger send of serial LED data
      */
-    void neopixel_send(void) override;
+    void serial_led_send(const uint16_t chan) override;
 
 private:
     struct pwm_group {
@@ -201,7 +201,10 @@ private:
         bool in_serial_dma;
         uint64_t last_dmar_send_us;
         virtual_timer_t dma_timeout;
-        uint8_t neopixel_nleds;
+        uint8_t serial_nleds;
+        uint8_t clock_mask;
+        bool serial_led_pending;
+        bool prepared_send;
 
         // serial output
         struct {
@@ -336,10 +339,11 @@ private:
     uint16_t telem_request_mask;
 
     /*
-      NeoPixel handling. Max of 32 LEDs uses max 12k of memory per group
+      Serial lED handling. Max of 32 LEDs uses max 12k of memory per group
+      return true if send was successful
     */
-    void neopixel_send(pwm_group &group);
-    bool neopixel_pending;
+    bool serial_led_send(pwm_group &group);
+    bool serial_led_pending;
 
     void dma_allocate(Shared_DMA *ctx);
     void dma_deallocate(Shared_DMA *ctx);
@@ -354,6 +358,18 @@ private:
     void set_group_mode(pwm_group &group);
     bool is_dshot_protocol(const enum output_mode mode) const;
     uint32_t protocol_bitrate(const enum output_mode mode) const;
+
+    /*
+      setup neopixel (WS2812B) output data for a given output channel
+     */
+    void _set_neopixel_rgb_data(pwm_group *grp, uint8_t idx, uint8_t led, uint8_t red, uint8_t green, uint8_t blue);
+
+    /*
+      setup ProfiLED output data for a given output channel
+     */
+    void _set_profiled_rgb_data(pwm_group *grp, uint8_t idx, uint8_t led, uint8_t red, uint8_t green, uint8_t blue);
+    void _set_profiled_clock(pwm_group *grp, uint8_t idx, uint8_t led);
+    void _set_profiled_blank_frame(pwm_group *grp, uint8_t idx, uint8_t led);
 
     // serial output support
     static const eventmask_t serial_event_mask = EVENT_MASK(1);

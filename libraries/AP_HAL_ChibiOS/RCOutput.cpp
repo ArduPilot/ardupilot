@@ -399,7 +399,7 @@ void RCOutput::push_local(void)
                     pwmEnableChannel(group.pwm_drv, j, width);
                 }
 #ifndef DISABLE_DSHOT
-                else if (is_dshot_protocol(group.current_mode) || group.current_mode == MODE_NEOPIXEL) {
+                else if (is_dshot_protocol(group.current_mode) || group.current_mode == MODE_NEOPIXEL || group.current_mode == MODE_PROFILED) {
                     // set period_us to time for pulse output, to enable very fast rates
                     period_us = dshot_pulse_time_us;
                 }
@@ -410,6 +410,7 @@ void RCOutput::push_local(void)
                 if (group.current_mode == MODE_PWM_ONESHOT ||
                     group.current_mode == MODE_PWM_ONESHOT125 ||
                     group.current_mode == MODE_NEOPIXEL ||
+                    group.current_mode == MODE_PROFILED ||
                     is_dshot_protocol(group.current_mode)) {
                     need_trigger |= (1U<<i);
                 }
@@ -488,7 +489,7 @@ bool RCOutput::mode_requires_dma(enum output_mode mode) const
 #ifdef DISABLE_DSHOT
     return false;
 #else
-    return is_dshot_protocol(mode) || (mode == MODE_NEOPIXEL);
+    return is_dshot_protocol(mode) || (mode == MODE_NEOPIXEL) || (mode == MODE_PROFILED);
 #endif //#ifdef DISABLE_DSHOT
 }
 
@@ -618,24 +619,32 @@ void RCOutput::set_group_mode(pwm_group &group)
         break;
 
     case MODE_NEOPIXEL:
+    case MODE_PROFILED:
     {
+        uint8_t bits_per_pixel = 24;
+        bool active_high = true;
+
+        if (group.current_mode == MODE_PROFILED) {
+            bits_per_pixel = 25;
+            active_high = false;
+        }
+
         const uint32_t rate = protocol_bitrate(group.current_mode);
         const uint32_t bit_period = 20;
 
         // configure timer driver for DMAR at requested rate
         const uint8_t pad_end_bits = 8;
         const uint8_t pad_start_bits = 1;
-        const uint8_t bits_per_pixel = 24;
         const uint8_t channels_per_group = 4;
-        const uint16_t neopixel_bit_length = bits_per_pixel * channels_per_group * group.neopixel_nleds + (pad_start_bits + pad_end_bits) * channels_per_group;
-        const uint16_t neopixel_buffer_length = neopixel_bit_length * sizeof(uint32_t);
-        if (!setup_group_DMA(group, rate, bit_period, true, neopixel_buffer_length, true)) {
+        const uint16_t bit_length = bits_per_pixel * channels_per_group * group.serial_nleds + (pad_start_bits + pad_end_bits) * channels_per_group;
+        const uint16_t buffer_length = bit_length * sizeof(uint32_t);
+        if (!setup_group_DMA(group, rate, bit_period, active_high, buffer_length, true)) {
             group.current_mode = MODE_PWM_NONE;
             break;
         }
 
         // calculate min time between pulses
-        dshot_pulse_time_us = 1000000UL * neopixel_bit_length / rate;
+        dshot_pulse_time_us = 1000000UL * bit_length / rate;
         break;
     }
 
@@ -901,12 +910,14 @@ void RCOutput::timer_tick(void)
             dshot_send(group, true);
         }
     }
-    if (neopixel_pending && chMtxTryLock(&trigger_mutex)) {
-        neopixel_pending = false;
+    if (serial_led_pending && chMtxTryLock(&trigger_mutex)) {
+        serial_led_pending = false;
         for (uint8_t j = 0; j < NUM_GROUPS; j++) {
             pwm_group &group = pwm_group_list[j];
-            if (group.current_mode == MODE_NEOPIXEL) {
-                neopixel_send(group);
+            if (group.serial_led_pending && (group.current_mode == MODE_NEOPIXEL || group.current_mode == MODE_PROFILED)) {
+                group.serial_led_pending = !serial_led_send(group);
+                group.prepared_send = group.serial_led_pending;
+                serial_led_pending |=  group.serial_led_pending;
             }
         }
         chMtxUnlock(&trigger_mutex);
@@ -1081,14 +1092,15 @@ void RCOutput::dshot_send(pwm_group &group, bool blocking)
 
 
 /*
-  send a set of Neopixel packets for a channel group
+  send a set of Serial LED packets for a channel group
+  return true if send was successful
  */
-void RCOutput::neopixel_send(pwm_group &group)
+bool RCOutput::serial_led_send(pwm_group &group)
 {
 #ifndef DISABLE_DSHOT
     if (irq.waiter || !group.dma_handle->lock_nonblock()) {
-        // doing serial output, don't send Neopixel pulses
-        return;
+        // doing serial output, don't send Serial LED pulses
+        return false;
     }
 
     // start sending the pulses out
@@ -1096,6 +1108,7 @@ void RCOutput::neopixel_send(pwm_group &group)
 
     group.last_dmar_send_us = AP_HAL::micros64();
 #endif //#ifndef DISABLE_DSHOT
+    return true;
 }
 
 
@@ -1666,6 +1679,8 @@ uint32_t RCOutput::protocol_bitrate(const enum output_mode mode) const
         return 1200000;
     case MODE_NEOPIXEL:
         return 800000;
+    case MODE_PROFILED:
+        return 1500000; // experiment winding this up 3000000 max from data sheet
     default:
         // use 1 to prevent a possible divide-by-zero
         return 1;
@@ -1673,30 +1688,120 @@ uint32_t RCOutput::protocol_bitrate(const enum output_mode mode) const
 }
 
 /*
-  setup neopixel (WS2812B) output for a given channel number, with
+  setup serial led output for a given channel number, with
   the given max number of LEDs in the chain.
 */
-bool RCOutput::set_neopixel_num_LEDs(const uint16_t chan, uint8_t num_leds)
+bool RCOutput::set_serial_led_num_LEDs(const uint16_t chan, uint8_t num_leds, output_mode mode, uint16_t clock_mask)
 {
     uint8_t i;
     pwm_group *grp = find_chan(chan, i);
     if (!grp) {
         return false;
     }
-    if (grp->neopixel_nleds == num_leds && grp->current_mode == MODE_NEOPIXEL) {
-        // no change
-        return true;
+
+    switch (mode) {
+        case MODE_NEOPIXEL: {
+            grp->serial_nleds = MAX(num_leds, grp->serial_nleds);
+            break;
+        }
+        case MODE_PROFILED: {
+            // ProfiLED requires two dummy LED's to mark end of transmission
+            grp->serial_nleds = MAX(num_leds + 2, grp->serial_nleds);
+
+            // Enable any clock channels in the same group
+            grp->clock_mask = 0;
+            for (uint8_t j = 0; j < 4; j++) {
+                if ((clock_mask & (1U<<(grp->chan[j] + chan_offset))) != 0) {
+                    grp->clock_mask |= 1U<<j;
+                }
+            }
+
+            break;
+        }
+        default: {
+            return false;
+        }
     }
-    grp->neopixel_nleds = MAX(num_leds, grp->neopixel_nleds);
-    set_output_mode(1U<<chan, MODE_NEOPIXEL);
-    return grp->current_mode == MODE_NEOPIXEL;
+
+    set_output_mode(1U<<chan, mode);
+
+    return grp->current_mode == mode;
 }
 
 /*
   setup neopixel (WS2812B) output data for a given output channel
-  and mask of LEDs on the channel
+  and a LED number. LED -1 is all LEDs
 */
-void RCOutput::set_neopixel_rgb_data(const uint16_t chan, uint32_t ledmask, uint8_t red, uint8_t green, uint8_t blue)
+void RCOutput::_set_neopixel_rgb_data(pwm_group *grp, uint8_t idx, uint8_t led, uint8_t red, uint8_t green, uint8_t blue)
+{
+    const uint8_t pad_start_bits = 1;
+    const uint8_t neopixel_bit_length = 24;
+    const uint8_t stride = 4;
+    uint32_t *buf = grp->dma_buffer + (led * neopixel_bit_length + pad_start_bits) * stride + idx;
+    uint32_t bits = (green<<16) | (red<<8) | blue;
+    const uint32_t BIT_0 = 7 * grp->bit_width_mul;
+    const uint32_t BIT_1 = 14 * grp->bit_width_mul;
+    for (uint16_t b=0; b < 24; b++) {
+        buf[b * stride] = (bits & 0x800000) ? BIT_1 : BIT_0;
+        bits <<= 1;
+    }
+}
+
+/*
+  ProfiLED frame for a given output channel
+  channel is active high and bits inverted to get clock rising edge away from data rising edge
+*/
+void RCOutput::_set_profiled_rgb_data(pwm_group *grp, uint8_t idx, uint8_t led, uint8_t red, uint8_t green, uint8_t blue)
+{
+    const uint8_t pad_start_bits = 1;
+    const uint8_t bit_length = 25;
+    const uint8_t stride = 4;
+    uint32_t *buf = grp->dma_buffer + (led * bit_length + pad_start_bits) * stride + idx;
+    uint32_t bits = 0x1000000 | (blue<<16) | (red<<8) | green;
+    const uint32_t BIT_1 = 14 * grp->bit_width_mul;
+    for (uint16_t b=0; b < bit_length; b++) {
+        buf[b * stride] = (bits & 0x1000000) ? 0 : BIT_1;
+        bits <<= 1;
+    }
+}
+
+/*
+  ProfiLED blank frame for a given output channel
+  channel is active high and bits inverted to get clock rising edge away from data rising edge
+*/
+void RCOutput::_set_profiled_blank_frame(pwm_group *grp, uint8_t idx, uint8_t led)
+{
+    const uint8_t pad_start_bits = 1;
+    const uint8_t bit_length = 25;
+    const uint8_t stride = 4;
+    uint32_t *buf = grp->dma_buffer + (led * bit_length + pad_start_bits) * stride + idx;
+    const uint32_t BIT_1 = 14 * grp->bit_width_mul;
+    for (uint16_t b=0; b < bit_length; b++) {
+        buf[b * stride] = BIT_1;
+    }
+}
+
+/*
+  setup ProfiLED clock frame for a given output channel
+*/
+void RCOutput::_set_profiled_clock(pwm_group *grp, uint8_t idx, uint8_t led)
+{
+    const uint8_t pad_start_bits = 1;
+    const uint8_t bit_length = 25;
+    const uint8_t stride = 4;
+    uint32_t *buf = grp->dma_buffer + (led * bit_length + pad_start_bits) * stride + idx;
+    const uint32_t BIT_1 = 7 * grp->bit_width_mul;
+    for (uint16_t b=0; b < bit_length; b++) {
+        buf[b * stride] = BIT_1;
+    }
+}
+
+
+/*
+  setup serial LED output data for a given output channel
+  and a LED number. LED -1 is all LEDs
+*/
+void RCOutput::set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t red, uint8_t green, uint8_t blue)
 {
     uint8_t i;
     pwm_group *grp = find_chan(chan, i);
@@ -1704,35 +1809,66 @@ void RCOutput::set_neopixel_rgb_data(const uint16_t chan, uint32_t ledmask, uint
         return;
     }
 
-    // mask out for enabled LEDs
-    ledmask &= (1U<<grp->neopixel_nleds)-1;
+    if (led >= grp->serial_nleds || (grp->current_mode != MODE_NEOPIXEL && grp->current_mode != MODE_PROFILED)) {
+        return;
+    }
 
-    uint8_t led = 0;
-    while (ledmask) {
-        if (ledmask & 1) {
-            const uint8_t pad_start_bits = 1;
-            const uint8_t neopixel_bit_length = 24;
-            const uint8_t stride = 4;
-            uint32_t *buf = grp->dma_buffer + (led * neopixel_bit_length + pad_start_bits) * stride + i;
-            uint32_t bits = (green<<16) | (red<<8) | blue;
-            const uint32_t BIT_0 = 7 * grp->bit_width_mul;
-            const uint32_t BIT_1 = 14 * grp->bit_width_mul;
-            for (uint16_t b=0; b < 24; b++) {
-                buf[b * stride] = (bits & 0x800000) ? BIT_1 : BIT_0;
-                bits <<= 1;
-            }
+    if (led == -1) {
+        grp->prepared_send = true;
+        for (uint8_t n=0; n<grp->serial_nleds; n++) {
+            set_serial_led_rgb_data(chan, n, red, green, blue);
         }
-        ledmask >>= 1;
-        led++;
+        return;
+    } else if (!grp->prepared_send) {
+        // if not ouput clock and trailing frames, run through all LED's to do it now
+        set_serial_led_rgb_data(chan, -1, 0, 0, 0);
+    }
+
+    switch (grp->current_mode) {
+        case MODE_NEOPIXEL: {
+            _set_neopixel_rgb_data(grp, i, uint8_t(led), red, green, blue);
+            break;
+        }
+
+        case MODE_PROFILED: {
+            if (led < grp->serial_nleds - 2) {
+                _set_profiled_rgb_data(grp, i, uint8_t(led), red, green, blue);
+            } else {
+                _set_profiled_blank_frame(grp, i, uint8_t(led));
+            }
+
+            for (uint8_t j = 0; j < 4; j++) {
+                if ((grp->clock_mask & 1U<<j) != 0) {
+                   _set_profiled_clock(grp, j, uint8_t(led));
+                }
+            }
+
+            break;
+        }
+
+        default: {
+            return;
+        }
     }
 }
 
 /*
-  trigger send of neopixel data
+  trigger send of serial led data for one group
 */
-void RCOutput::neopixel_send(void)
+void RCOutput::serial_led_send(const uint16_t chan)
 {
-    neopixel_pending = true;
+    uint8_t i;
+    pwm_group *grp = find_chan(chan, i);
+    if (!grp) {
+        return;
+    }
+    if (grp->current_mode != MODE_NEOPIXEL && grp->current_mode != MODE_PROFILED) {
+        return;
+    }
+    if (grp->prepared_send) {
+        serial_led_pending = true; 
+        grp->serial_led_pending = true;
+    }
 }
 
 #endif // HAL_USE_PWM

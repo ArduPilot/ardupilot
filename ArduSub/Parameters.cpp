@@ -720,15 +720,5 @@ void Sub::convert_old_parameters()
         AP_Param::convert_old_parameters(&filt_conversion_info[i], 1.0f);
     }
 
-    const uint8_t old_rc_keys[14] = { Parameters::k_param_rc_1_old,  Parameters::k_param_rc_2_old,
-                                      Parameters::k_param_rc_3_old,  Parameters::k_param_rc_4_old,
-                                      Parameters::k_param_rc_5_old,  Parameters::k_param_rc_6_old,
-                                      Parameters::k_param_rc_7_old,  Parameters::k_param_rc_8_old,
-                                      Parameters::k_param_rc_9_old,  Parameters::k_param_rc_10_old,
-                                      Parameters::k_param_rc_11_old, Parameters::k_param_rc_12_old,
-                                      Parameters::k_param_rc_13_old, Parameters::k_param_rc_14_old
-                                    };
-    const uint16_t old_aux_chan_mask = 0x3FF0;
-    // note that we don't pass in rcmap as we don't want output channel functions changed based on rcmap
-    SRV_Channels::upgrade_parameters(old_rc_keys, old_aux_chan_mask, nullptr);
+    SRV_Channels::upgrade_parameters();
 }
