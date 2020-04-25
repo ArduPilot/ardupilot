@@ -216,6 +216,8 @@ public:
     void set_declination(float radians, bool save_to_eeprom = true);
     float get_declination() const;
 
+    bool auto_declination_enabled() const { return _auto_declination != 0; }
+
     // set overall board orientation
     void set_board_orientation(enum Rotation orientation, Matrix3f* custom_rotation = nullptr) {
         _board_orientation = orientation;
