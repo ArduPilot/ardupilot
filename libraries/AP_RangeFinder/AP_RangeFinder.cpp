@@ -335,10 +335,12 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         }
         break;
     case Type::MBI2C:
-        FOREACH_I2C(i) {
-            if (_add_backend(AP_RangeFinder_MaxsonarI2CXL::detect(state[instance], params[instance],
-                                                                     hal.i2c_mgr->get_device(i, params[instance].address)))) {
-                break;
+        if (params[instance].address){
+            FOREACH_I2C(i) {
+                if (_add_backend(AP_RangeFinder_MaxsonarI2CXL::detect(state[instance], params[instance],
+                                                                        hal.i2c_mgr->get_device(i, params[instance].address)))) {
+                    break;
+                }
             }
         }
         break;
