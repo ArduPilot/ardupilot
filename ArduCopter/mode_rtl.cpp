@@ -73,10 +73,8 @@ void ModeRTL::run(bool disarm_on_land)
             }
             break;
         case RTL_FinalDescent:
+        case RTL_Land:  // rtl_land_run will take care of disarming motors
             // do nothing
-            break;
-        case RTL_Land:
-            // do nothing - rtl_land_run will take care of disarming motors
             break;
         }
     }
@@ -90,9 +88,6 @@ void ModeRTL::run(bool disarm_on_land)
         FALLTHROUGH;
 
     case RTL_InitialClimb:
-        climb_return_run();
-        break;
-
     case RTL_ReturnHome:
         climb_return_run();
         break;
@@ -543,11 +538,9 @@ bool ModeRTL::get_wp(Location& destination)
     case RTL_FinalDescent:
         return wp_nav->get_oa_wp_destination(destination);
     case RTL_Land:
+    default:
         return false;
     }
-
-    // we should never get here but just in case
-    return false;
 }
 
 uint32_t ModeRTL::wp_distance() const
