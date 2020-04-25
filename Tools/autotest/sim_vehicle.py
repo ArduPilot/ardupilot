@@ -971,7 +971,7 @@ group.add_option("", "--out",
                  action="append",
                  help="create an additional mavlink output")
 group.add_option("", "--map",
-                 default=False,
+                 default=True,
                  action='store_true',
                  help="load map module on startup")
 group.add_option("", "--console",

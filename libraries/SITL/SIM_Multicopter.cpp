@@ -27,7 +27,10 @@ MultiCopter::MultiCopter(const char *frame_str) :
     Aircraft(frame_str),
     frame(nullptr)
 {
-    mass = 1.5f;
+    //mass = 1.5f;
+    //mass = 14.5f;
+    float lb2kg = 0.453592;
+    mass = 34.5f*lb2kg;
 
     frame = Frame::find_frame(frame_str);
     if (frame == nullptr) {
@@ -39,9 +42,12 @@ MultiCopter::MultiCopter(const char *frame_str) :
     if (strstr(frame_str, "-fast")) {
         frame->init(gross_mass(), 0.5, 85, 4*radians(360));
     } else {
-        frame->init(gross_mass(), 0.51, 15, 4*radians(360));
+        //frame->init(gross_mass(), 0.51, 15, 4*radians(360));
+        //float _mass, float hover_throttle, float _terminal_velocity, float _terminal_rotation_rate
+        frame->init(gross_mass(), 0.64, 15, 4*radians(360));
     }
     frame_height = 0.1;
+//    frame_height = 0.5;
     ground_behavior = GROUND_BEHAVIOR_NO_MOVEMENT;
 }
 

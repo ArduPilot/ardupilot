@@ -216,6 +216,8 @@ void Frame::init(float _mass, float hover_throttle, float _terminal_velocity, fl
 
     terminal_velocity = _terminal_velocity;
     terminal_rotation_rate = _terminal_rotation_rate;
+
+printf("mass = %f, motors = %d, thrust_scale = %f, hover throttle = %f\n",_mass, num_motors,thrust_scale,hover_throttle);
 }
 
 /*
@@ -248,6 +250,8 @@ void Frame::calculate_forces(const Aircraft &aircraft,
     }
 
     body_accel = thrust/aircraft.gross_mass();
+
+//printf("body accel = %f, thrust = %f, mass = %f\n",body_accel, thrust, aircraft.gross_mass());
 
     if (terminal_rotation_rate > 0) {
         // rotational air resistance
