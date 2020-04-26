@@ -348,19 +348,16 @@ bool GPIO::wait_pin(uint8_t pin, INTERRUPT_TRIGGER_TYPE mode, uint32_t timeout_u
         osalSysUnlock();
         return false;
     }
-    g->thd_wait = chThdGetSelfX();
 
     if (!_attach_interruptI(g->pal_line,
                            palcallback_t(pal_interrupt_wait),
                            g,
                            mode)) {
-        g->thd_wait = nullptr;
         osalSysUnlock();
         return false;
     }
         
     msg_t msg = osalThreadSuspendTimeoutS(&g->thd_wait, TIME_US2I(timeout_us));
-    g->thd_wait = nullptr;
     _attach_interruptI(g->pal_line,
                        palcallback_t(nullptr),
                        nullptr,
