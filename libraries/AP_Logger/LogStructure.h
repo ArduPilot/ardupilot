@@ -285,36 +285,6 @@ struct PACKED log_Vibe {
     uint32_t clipping_0, clipping_1, clipping_2;
 };
 
-struct PACKED log_Gimbal1 {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    float delta_time;
-    float delta_angles_x;
-    float delta_angles_y;
-    float delta_angles_z;
-    float delta_velocity_x;
-    float delta_velocity_y;
-    float delta_velocity_z;
-    float joint_angles_x;
-    float joint_angles_y;
-    float joint_angles_z;
-};
-
-struct PACKED log_Gimbal2 {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t  est_sta;
-    float est_x;
-    float est_y;
-    float est_z;
-    float rate_x;
-    float rate_y;
-    float rate_z;
-    float target_x;
-    float target_y;
-    float target_z;
-};
-
 struct PACKED log_RCIN {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -2508,10 +2478,6 @@ struct PACKED log_Arm_Disarm {
       "DSF", "QIHIIII", "TimeUS,Dp,Blk,Bytes,FMn,FMx,FAv", "s--b---", "F--0---" }, \
     { LOG_RPM_MSG, sizeof(log_RPM), \
       "RPM",  "Qff", "TimeUS,rpm1,rpm2", "sqq", "F00" }, \
-    { LOG_GIMBAL1_MSG, sizeof(log_Gimbal1), \
-      "GMB1", "Qffffffffff", "TimeUS,dt,dax,day,daz,dvx,dvy,dvz,jx,jy,jz", "ssrrrEEELLL", "FC000000000" }, \
-    { LOG_GIMBAL2_MSG, sizeof(log_Gimbal2), \
-      "GMB2", "QBfffffffff", "TimeUS,es,ex,ey,ez,rx,ry,rz,tx,ty,tz", "s-rrrEEELLL", "F-000000000" }, \
     { LOG_RATE_MSG, sizeof(log_Rate), \
       "RATE", "Qffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut", "skk-kk-kk-oo-", "F?????????BB-" }, \
     { LOG_RALLY_MSG, sizeof(log_Rally), \
@@ -2658,8 +2624,6 @@ enum LogMessages : uint8_t {
     LOG_MSG_SBPEVENT,
     LOG_TRIGGER_MSG,
 
-    LOG_GIMBAL1_MSG,
-    LOG_GIMBAL2_MSG,
     LOG_RATE_MSG,
     LOG_RALLY_MSG,
     LOG_VISUALODOM_MSG,
