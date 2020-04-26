@@ -1773,7 +1773,7 @@ class AutoTestPlane(AutoTest):
         polarB   = self.get_parameter('SOAR_POLAR_B')
 
         if polarCD0<0.045 or polarB<0.04 or polarCD0>0.055 or polarB>0.05:
-           raise NotAchievedException("Failed to learn glide polar parameters (%3.1f %3.1f)" % (polarCD0, polarB))
+           raise NotAchievedException("Failed to learn glide polar parameters (%3.3f %3.3f)" % (polarCD0, polarB))
 
         # Disarm
         self.disarm_vehicle()
