@@ -38,6 +38,7 @@
 #include <AP_GyroFFT/AP_GyroFFT.h>
 #include <AP_RCMapper/AP_RCMapper.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
+#include <AP_OSD/AP_OSD.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
@@ -941,6 +942,26 @@ bool AP_Arming::camera_checks(bool display_failure)
     return true;
 }
 
+bool AP_Arming::osd_checks(bool display_failure) const
+{
+#if OSD_ENABLED
+    if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_CAMERA)) {
+        const AP_OSD *osd = AP::osd();
+        if (osd == nullptr) {
+            return true;
+        }
+
+        // check camera is ready
+        char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+        if (!osd->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
+            check_failed(ARMING_CHECK_CAMERA, display_failure, "%s", fail_msg);
+            return false;
+        }
+    }
+#endif
+    return true;
+}
+
 // request an auxiliary authorisation id.  This id should be used in subsequent calls to set_aux_auth_passed/failed
 // returns true on success
 bool AP_Arming::get_aux_auth_id(uint8_t& auth_id)
@@ -1099,6 +1120,7 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  generator_checks(report)
         &  proximity_checks(report)
         &  camera_checks(report)
+        &  osd_checks(report)
         &  visodom_checks(report)
         &  aux_auth_checks(report)
         &  disarm_switch_checks(report);
