@@ -333,6 +333,10 @@ void Scheduler::_timer_thread(void *arg)
 */
 bool Scheduler::in_expected_delay(void) const
 {
+    if (!_initialized) {
+        // until setup() is complete we expect delays
+        return true;
+    }
     if (expect_delay_start != 0) {
         uint32_t now = AP_HAL::millis();
         if (now - expect_delay_start <= expect_delay_length) {
