@@ -257,8 +257,18 @@ bool AP_RunCam::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) 
 // OSD update loop
 void AP_RunCam::update_osd()
 {
+    bool use_armed_state_machine = hal.util->get_soft_armed();
+#if OSD_ENABLED
+    // prevent runcam stick gestures interferring with osd stick gestures
+    if (!use_armed_state_machine) {
+        const AP_OSD* osd = AP::osd();
+        if (osd != nullptr) {
+            use_armed_state_machine = !osd->is_readonly_screen();
+        }
+    }
+#endif
     // run a reduced state simulation process when armed
-    if (AP::arming().is_armed()) {
+    if (use_armed_state_machine) {
         update_state_machine_armed();
         return;
     }
