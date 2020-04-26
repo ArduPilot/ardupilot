@@ -148,8 +148,11 @@ void ModeAuto::rtl_start()
 //payload release - initialises payload release in AUTO flight mode
 void ModeAuto::payload_release_start(const AP_Mission::Mission_Command& cmd)
 {
+    hal.console->printf("I am inside ModeAuto::payload_release_start.");
     //ap_ahrs_dcm has wind estimate.
     _mode = Auto_PayloadRelease;
+
+    // Location home = ahrs.get_airspeed()
 
     Location home = ahrs.get_home();
     Location target_loc = loc_from_cmd(cmd);

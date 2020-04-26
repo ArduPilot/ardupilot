@@ -340,10 +340,20 @@ void Copter::fourhundred_hz_logging()
     }
 }
 
+/*********** my code
+ * start
+ */
+void sensor_info()
+{
+    hal.console->printf("***********");
+    hal.console->printf("my loop in running 10 times per second");
+}
+
 // ten_hz_logging_loop
 // should be run at 10hz
 void Copter::ten_hz_logging_loop()
 {
+    // sensor_info();
     // log attitude data if we're not already logging at the higher rate
     if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST) && !copter.flightmode->logs_attitude()) {
         Log_Write_Attitude();
@@ -437,6 +447,7 @@ void Copter::three_hz_loop()
 // one_hz_loop - runs at 1Hz
 void Copter::one_hz_loop()
 {
+    // sensor_info();
     if (should_log(MASK_LOG_ANY)) {
         Log_Write_Data(LogDataID::AP_STATE, ap.value);
     }
