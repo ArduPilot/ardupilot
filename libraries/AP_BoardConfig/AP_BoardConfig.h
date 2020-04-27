@@ -257,6 +257,15 @@ private:
     AP_Int32 _options;
 
     AP_Int8  _alt_config;
+
+private:
+#if AP_FEATURE_BOARD_DETECT
+
+    bool check_ms5611(const char* devname);
+
+#endif // AP_FEATURE_BOARD_DETECT
+
+
 };
 
 namespace AP {

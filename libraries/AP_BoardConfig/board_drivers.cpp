@@ -152,7 +152,7 @@ bool AP_BoardConfig::spi_check_register(const char *devname, uint8_t regnum, uin
     return v == value;
 }
 
-static bool check_ms5611(const char* devname) {
+bool AP_BoardConfig::check_ms5611(const char* devname) {
     auto dev = hal.spi->get_device(devname);
     if (!dev) {
 #if SPI_PROBE_DEBUG
