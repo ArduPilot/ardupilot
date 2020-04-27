@@ -101,7 +101,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Description: Automatic switchover to GPS reporting best lock
     // @Values: 0:Disabled,1:UseBest,2:Blend,3:UseSecond
     // @User: Advanced
-    AP_GROUPINFO("AUTO_SWITCH", 3, AP_GPS, _auto_switch, 1),
+    AP_GROUPINFO("AUTO_SWITCH", 3, AP_GPS, _auto_switch, GPS_AUTO_SWITCH_USE_BEST),
 #endif
 
     // @Param: MIN_DGPS
@@ -837,7 +837,7 @@ void AP_GPS::update_primary(void)
 {
 #if defined(GPS_BLENDED_INSTANCE)
     // if blending is requested, attempt to calculate weighting for each GPS
-    if (_auto_switch == 2) {
+    if (_auto_switch == GPS_AUTO_SWITCH_BLEND) {
         _output_is_blended = calc_blend_weights();
         // adjust blend health counter
         if (!_output_is_blended) {
@@ -862,13 +862,13 @@ void AP_GPS::update_primary(void)
         return;
     }
 
-    if (_auto_switch == 0) {
+    if (_auto_switch == GPS_AUTO_SWITCH_DISABLED) {
         // AUTO_SWITCH is 0 so no switching of GPSs, always use first instance
         primary_instance = 0;
         return;
     }
 
-    if (_auto_switch == 3) {
+    if (_auto_switch == GPS_AUTO_SWITCH_USE_SECOND) {
         // always select the second GPS instance
         primary_instance = 1;
         return;
