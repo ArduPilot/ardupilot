@@ -267,6 +267,7 @@ def configure(cfg):
     cfg.load('waf_unit_test')
     cfg.load('mavgen')
     cfg.load('uavcangen')
+    cfg.load('luagen')
 
     cfg.env.SUBMODULE_UPDATE = cfg.options.submodule_update
 
@@ -314,6 +315,7 @@ def configure(cfg):
 
     cfg.env.prepend_value('INCLUDES', [
         cfg.srcnode.abspath() + '/libraries/',
+        cfg.bldnode.abspath() +'/' + cfg.env.BOARD + '/libraries/AP_Scripting',
     ])
 
     cfg.find_program('rsync', mandatory=False)
@@ -378,6 +380,12 @@ def _build_cmd_tweaks(bld):
         bld.options.clear_failed_tests = True
 
 def _build_dynamic_sources(bld):
+
+    bld(
+        features=['luagen'],
+        name='lua',
+        )
+
     if not bld.env.BOOTLOADER:
         bld(
             features='mavgen',
@@ -529,7 +537,8 @@ def build(bld):
         for name in bld.env.GIT_SUBMODULES:
             bld.git_submodule(name)
 
-    bld.recurse('libraries/AP_Scripting/generator')    
+    bld.recurse('libraries/AP_Scripting/generator')
+    #bld.env.AP_LIBRARIES += [ '../build/'+ bld.env.BOARD +'/libraries/AP_Scripting/' ]    
 
     bld.add_group('dynamic_sources')
     _build_dynamic_sources(bld)

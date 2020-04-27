@@ -17,10 +17,5 @@ def build(bld):
 	)
 	bld.add_group()
 
-	bld(
-		rule = './${SRC} -o ../lua_generated_bindings -i description/bindings.desc',
-		source = 'gen-bindings',
-		cwd = './',
-    )
-	bld.add_group()
+
 	

@@ -1928,7 +1928,7 @@ int main(int argc, char **argv) {
   sanity_check_userdata();
 
   fprintf(source, "#include \"lua_generated_bindings.h\"\n");
-  fprintf(source, "#include \"lua_boxed_numerics.h\"\n");
+  fprintf(source, "#include <AP_Scripting/lua_boxed_numerics.h>\n");
 
   trace(TRACE_GENERAL, "Starting emission");
 
@@ -1980,7 +1980,7 @@ int main(int argc, char **argv) {
   fprintf(header, "#pragma once\n");
   fprintf(header, "// auto generated bindings, don't manually edit.  See README.md for details.\n");
   emit_headers(header);
-  fprintf(header, "#include \"lua/src/lua.hpp\"\n");
+  fprintf(header, "#include <AP_Scripting/lua/src/lua.hpp>\n");
   fprintf(header, "#include <new>\n\n");
   emit_dependencies(header);
   fprintf(header, "\n\n");
