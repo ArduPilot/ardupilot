@@ -409,7 +409,7 @@ private:
     AP_Int8  _flowDelay_ms;         // effective average delay of optical flow measurements rel to IMU (msec)
     AP_Int16  _rngInnovGate;        // Percentage number of standard deviations applied to range finder innovation consistency check
     AP_Float _maxFlowRate;          // Maximum flow rate magnitude that will be accepted by the filter
-    AP_Int8 _altSource;             // Primary alt source during optical flow navigation. 0 = use Baro, 1 = use range finder.
+    AP_Int8 _altSource;             // Primary alt source during optical flow navigation. 0 = use Baro, 1 = use range finder, 2 = use GPS, 3 = use Range Beacon
     AP_Float _gyroScaleProcessNoise;// gyro scale factor state process noise : 1/s
     AP_Float _rngNoise;             // Range finder noise : m
     AP_Int8 _gpsCheck;              // Bitmask controlling which preflight GPS checks are bypassed
