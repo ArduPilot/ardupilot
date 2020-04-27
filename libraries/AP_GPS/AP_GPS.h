@@ -632,6 +632,7 @@ private:
         GPS_AUTO_SWITCH_USE_BEST     = 1,
         GPS_AUTO_SWITCH_BLEND        = 2,
         GPS_AUTO_SWITCH_USE_SECOND   = 3,
+        GPS_AUTO_SWITCH_USE_WORST    = 4,
     };
 
     // used for flight testing with GPS loss

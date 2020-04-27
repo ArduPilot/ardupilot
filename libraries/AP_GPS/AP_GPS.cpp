@@ -99,7 +99,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: AUTO_SWITCH
     // @DisplayName: Automatic Switchover Setting
     // @Description: Automatic switchover to GPS reporting best lock
-    // @Values: 0:Disabled,1:UseBest,2:Blend,3:UseSecond
+    // @Values: 0:Disabled,1:UseBest,2:Blend,3:UseSecond,4:UseWorst
     // @User: Advanced
     AP_GROUPINFO("AUTO_SWITCH", 3, AP_GPS, _auto_switch, GPS_AUTO_SWITCH_USE_BEST),
 #endif
@@ -905,6 +905,23 @@ void AP_GPS::update_primary(void)
         }
         return;
     }
+
+    // Handle switching to "worst" receiver, including a real good vs real inferior unit or between
+    // a real vs disconnected unit. This is also useful to test temporary gps-denied environments by
+    // the primary instance producing lousy data but the secondary being available for "true" logging.
+    if (_auto_switch == GPS_AUTO_SWITCH_USE_WORST) {
+        for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+            if (i == primary_instance) {
+                continue;
+            }
+            // do simple check for worse instance
+            if (state[i].status < state[primary_instance].status || state[i].num_sats < state[primary_instance].num_sats) {
+                primary_instance = i;
+            }
+        }
+        return;
+    }
+
 
     // handle switch between real GPSs
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
