@@ -151,8 +151,8 @@ void Variometer::update_polar_learning(bool throttle_suppressed, float dsp_dem)
 
     if (!throttle_suppressed ||
             fabs(_ahrs.roll) > LEARN_THRESHOLD_ROLL ||
-            _aspd_filt < _aparm.airspeed_min ||
-            _aspd_filt > _aparm.airspeed_max ||
+            _aspd_filt < 0.7*_aparm.airspeed_min ||
+            _aspd_filt > 1.3*_aparm.airspeed_max ||
             fabs(dsp_dem) > 0.2) {
         // Conditions not ok.
         _learn_skipped_time = AP_HAL::millis();
