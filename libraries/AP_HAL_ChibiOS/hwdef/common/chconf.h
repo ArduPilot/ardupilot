@@ -735,7 +735,7 @@
  * @details This hook is invoked when we have a stack overflow on task switch
  */
 #define CH_CFG_STACK_OVERFLOW_HOOK(tp) {                                         \
-  extern void stack_overflow_hook(thread_t *tp); \
+  extern void stack_overflow(thread_t *tp); \
   stack_overflow(tp); \
 }
 
