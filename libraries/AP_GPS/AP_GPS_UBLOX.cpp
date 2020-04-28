@@ -1494,8 +1494,6 @@ AP_GPS_UBLOX::_parse_gps(void)
         }
         _check_new_itow(_buffer.velned.itow);
         _last_vel_time         = _buffer.velned.itow;
-        state.ground_speed     = _buffer.velned.speed_2d*0.01f;          // m/s
-        state.ground_course    = wrap_360(_buffer.velned.heading_2d * 1.0e-5f);       // Heading 2D deg * 100000
         state.have_vertical_velocity = true;
         state.velocity.x = _buffer.velned.ned_north * 0.01f;
         state.velocity.y = _buffer.velned.ned_east * 0.01f;
