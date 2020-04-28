@@ -307,7 +307,7 @@ void Scheduler::_run_timers()
 void Scheduler::_timer_thread(void *arg)
 {
     Scheduler *sched = (Scheduler *)arg;
-    chRegSetThreadName("apm_timer");
+    chRegSetThreadName("timer");
 
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(1000);
@@ -346,7 +346,7 @@ bool Scheduler::in_expected_delay(void) const
 void Scheduler::_monitor_thread(void *arg)
 {
     Scheduler *sched = (Scheduler *)arg;
-    chRegSetThreadName("apm_monitor");
+    chRegSetThreadName("monitor");
 
     while (!sched->_initialized) {
         sched->delay(100);
@@ -389,7 +389,7 @@ void Scheduler::_monitor_thread(void *arg)
 void Scheduler::_rcin_thread(void *arg)
 {
     Scheduler *sched = (Scheduler *)arg;
-    chRegSetThreadName("apm_rcin");
+    chRegSetThreadName("rcin");
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(20000);
     }
@@ -423,7 +423,7 @@ void Scheduler::_run_io(void)
 void Scheduler::_io_thread(void* arg)
 {
     Scheduler *sched = (Scheduler *)arg;
-    chRegSetThreadName("apm_io");
+    chRegSetThreadName("io");
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(1000);
     }
@@ -449,7 +449,7 @@ void Scheduler::_io_thread(void* arg)
 void Scheduler::_storage_thread(void* arg)
 {
     Scheduler *sched = (Scheduler *)arg;
-    chRegSetThreadName("apm_storage");
+    chRegSetThreadName("storage");
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(10000);
     }
