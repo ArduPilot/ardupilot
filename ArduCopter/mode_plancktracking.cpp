@@ -174,7 +174,20 @@ void ModePlanckTracking::run() {
                           pos_cmd.z = new_alt_cm;
                       }
                   }
-                  ModeGuided::set_destination_posvel(pos_cmd,vel_cmd);
+
+                  float desired_yaw_cd;
+                  //If within 2.5 m of the target, use current heading, else cmd heading based on vel cmd
+                  //Using default Planck KP_GPS of 0.4 -> (1.0 m/s) / (0.4) = 2.5 m
+                  if(vel_cmd.length() > 1.0)
+                  {
+                    desired_yaw_cd = degrees(atan2f(vel_cmd.y,vel_cmd.x))*100.0f;
+                  }
+                  else
+                  {
+                    desired_yaw_cd = copter.attitude_control->get_att_target_euler_cd().z;
+                  }
+
+                  ModeGuided::set_destination_posvel(pos_cmd,vel_cmd,true,desired_yaw_cd);
               }
               break;
           }
