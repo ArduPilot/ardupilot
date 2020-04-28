@@ -161,6 +161,20 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("THML_FLAP", 20, SoaringController, soar_thermal_flap, 0),
 
+    // @Param: VSPD_MINALT
+    // @DisplayName: Vertical speed threshold for thermalling at minimum altitude
+    // @Description: This allows a different vertical speed threshold for operation at the bottom of the soaring altitude band. Typically this would be a smaller value reflecting willingness to utilize weaker lift to remain aloft. Set to -1 to disable, in which case VSPEED is used.
+    // @Range: 5 50
+    // @User: Advanced
+    AP_GROUPINFO("VSPD_MIN", 21, SoaringController, vspeed_minalt, 0),
+
+    // @Param: VSPD_MAXALT
+    // @DisplayName: Vertical speed threshold for thermalling at maxnimum altitude
+    // @Description: This allows a different vertical speed threshold for operation at the top of the soaring altitude band. Typically this would be a larger value reflecting willingness to utilize only strong lift when there is already a larger altitude buffer. Set to -1 to disable, in which case VSPEED is used.
+    // @Range: 5 50
+    // @User: Advanced
+    AP_GROUPINFO("VSPD_MAX", 22, SoaringController, vspeed_maxalt, 0),
+
     AP_GROUPEND
 };
 
@@ -378,8 +392,25 @@ void SoaringController::update_vario()
 
 float SoaringController::McCready(float alt)
 {
-    // A method shell to be filled in later
-    return thermal_vspeed;
+    // Parameter thermal_vspeed defines the vspeed that always applies in the middle of the altitude band.
+    // If >0, vspeed_minalt and vspeed_maxalt define the vpseeds that apply at the bottom and top of the
+    // altitude band, i.e. alt_min and alt_max, respectively. Linear interpolation is used for values in 
+    // between, and boutside of the altitude band (which won't be used in any case) the values are clamped
+    // at vspeed_minalt and vspeed_maxalt.
+
+    float vspeed1 = vspeed_minalt>0 ? vspeed_minalt : thermal_vspeed;
+    float vspeed2 = thermal_vspeed;
+    float vspeed3 = vspeed_maxalt>0 ? vspeed_maxalt : thermal_vspeed;
+
+    float alt_mid = (alt_min + alt_max)*0.5;
+    
+    if (alt<alt_mid) {
+        float alt_fraction = constrain_float((alt - alt_min)/(alt_mid - alt_min), 0.0f, 1.0f);
+        return vspeed1 + alt_fraction*(vspeed2 - vspeed1);
+    } else {
+        float alt_fraction = constrain_float((alt_max - alt)/(alt_max - alt_mid), 0.0f, 1.0f);
+        return vspeed2 + alt_fraction*(vspeed3 - vspeed2);
+    }
 }
 
 SoaringController::ActiveStatus SoaringController::active_state() const

@@ -75,6 +75,8 @@ protected:
     AP_Float soar_thermal_airspeed;
     AP_Float soar_cruise_airspeed;
     AP_Float soar_thermal_flap;
+    AP_Float vspeed_minalt;
+    AP_Float vspeed_maxalt;
 
 public:
     SoaringController(AP_AHRS &ahrs, AP_SpdHgtControl &spdHgt, const AP_Vehicle::FixedWing &parms);
