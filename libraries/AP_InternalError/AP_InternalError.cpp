@@ -25,7 +25,6 @@ void AP_InternalError::error(const AP_InternalError::error_t e) {
     hal.util->persistent_data.internal_error_count = total_error_count;
 }
 
-
 namespace AP {
 
 AP_InternalError &internalerror()
@@ -34,3 +33,20 @@ AP_InternalError &internalerror()
 }
 
 };
+
+// stack overflow hook for low level RTOS code, C binding
+void AP_stack_overflow(const char *thread_name)
+{
+    static bool done_stack_overflow;
+    AP::internalerror().error(AP_InternalError::error_t::stack_overflow);
+    if (!done_stack_overflow) {
+        // we don't want to record the thread name more than once, as
+        // first overflow can trigger a 2nd
+        strncpy(hal.util->persistent_data.thread_name4, thread_name, 4);
+        done_stack_overflow = true;
+    }
+    hal.util->persistent_data.fault_type = 42; // magic value
+    if (!hal.util->get_soft_armed()) {
+        AP_HAL::panic("stack overflow %s\n", thread_name);
+    }
+}

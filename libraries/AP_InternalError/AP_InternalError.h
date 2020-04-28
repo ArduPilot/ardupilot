@@ -56,6 +56,7 @@ public:
         flow_of_control             = (1U << 20),  //0x100000  1048576 for generic we-should-never-get-here situations
         switch_full_sector_recursion= (1U << 21),  //0x200000  2097152
         bad_rotation                = (1U << 22),  //0x400000  4194304
+        stack_overflow              = (1U << 23),  //0x800000  8388608
     };
 
     void error(const AP_InternalError::error_t error);
@@ -77,3 +78,8 @@ private:
 namespace AP {
     AP_InternalError &internalerror();
 };
+
+extern "C" {
+    void AP_stack_overflow(const char *thread_name);
+}
+
