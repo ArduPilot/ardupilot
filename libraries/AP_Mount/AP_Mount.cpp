@@ -16,7 +16,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _DEFLT_MODE
     // @DisplayName: Mount default operating mode
     // @Description: Mount default operating mode on startup and after control is returned from autopilot
-    // @Values: 0:Retracted,1:Neutral,2:MavLink Targeting,3:RC Targeting,4:GPS Point
+    // @Values: 0:Retracted,1:Neutral,2:MavLink Targeting,3:RC Targeting,4:GPS Point,5:SYSID Target,6:Track
     // @User: Standard
     AP_GROUPINFO("_DEFLT_MODE", 0, AP_Mount, state[0]._default_mode, MAV_MOUNT_MODE_RC_TARGETING),
 
@@ -216,7 +216,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_DEFLT_MODE
     // @DisplayName: Mount default operating mode
     // @Description: Mount default operating mode on startup and after control is returned from autopilot
-    // @Values: 0:Retracted,1:Neutral,2:MavLink Targeting,3:RC Targeting,4:GPS Point
+    // @Values: 0:Retracted,1:Neutral,2:MavLink Targeting,3:RC Targeting,4:GPS Point,5:SYSID Target,6:Track
     // @User: Standard
     AP_GROUPINFO("2_DEFLT_MODE",    25, AP_Mount, state[1]._default_mode, MAV_MOUNT_MODE_RC_TARGETING),
 
@@ -528,7 +528,7 @@ bool AP_Mount::has_pan_control(uint8_t instance) const
     return _backends[instance]->has_pan_control();
 }
 
-// get_mode - returns current mode of mount (i.e. Retracted, Neutral, RC_Targeting, GPS Point)
+// get_mode - returns current mode of mount (i.e. Retracted, Neutral, RC_Targeting, GPS Point, SYSID Target, Track)
 MAV_MOUNT_MODE AP_Mount::get_mode(uint8_t instance) const
 {
     // sanity check instance
@@ -760,7 +760,14 @@ void AP_Mount::send_gimbal_report(mavlink_channel_t chan)
         }
     }    
 }
-
+void AP_Mount::set_retract(bool retracted)
+{
+//    bool mount_open_new = (get_mode() == MAV_MOUNT_MODE_RETRACT) ? 0 : 1;
+//    if (mount_open != mount_open_new) {
+//        mount_open = mount_open_new;
+//        move_servo(_open_idx, mount_open_new, 0, 1);
+//    }
+}
 
 // singleton instance
 AP_Mount *AP_Mount::_singleton;

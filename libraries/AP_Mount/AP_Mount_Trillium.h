@@ -90,6 +90,7 @@ private:
     OrionNetworkByteSettings_t _network_settings_current;
     GeolocateTelemetryCore_t _telemetry_core;
     OrionUartConfig_t _uart_config;
+    StareStart_t _stare_start;
 
     const OrionNetworkByteSettings_t _network_settings_desired = {
         .Ip         = {172,  20, 114,   5},

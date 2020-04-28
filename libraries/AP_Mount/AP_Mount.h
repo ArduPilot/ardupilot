@@ -195,6 +195,8 @@ protected:
 
 private:
 
+    void set_retract(bool retracted);
+
     void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg);
     void handle_mount_configure(const mavlink_message_t &msg);
     void handle_mount_control(const mavlink_message_t &msg);

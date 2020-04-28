@@ -187,6 +187,10 @@ void AP_Mount_Trillium::update()
             }
             break;
 
+        case MAV_MOUNT_MODE_TRACK:
+            // do nothing, roi_target is getting auto-populated by incoming gimbal telemetry
+            break;
+
         default:
             // we do not know this mode so do nothing
             break;
@@ -366,9 +370,16 @@ void AP_Mount_Trillium::handle_packet(OrionPkt_t &packet)
     case ORION_PKT_GEOLOCATE_TELEMETRY:
         // Received at 10Hz
         decodeGeolocateTelemetryCorePacketStructure(&packet, &_telemetry_core);
+//        if (get_mode() == MAV_MOUNT_MODE_TRACK) {
+//            _state._roi_target.lat = Location(_telemetry_core.posLat, _telemetry_core.posLon, _telemetry_core.posAlt, Location::AltFrame::ABSOLUTE);
+//        }
         break;
 
     case ORION_PKT_CAMERAS:
+        break;
+
+    case ORION_PKT_STARE_START:
+        decodeStareStartPacketStructure(&packet, &_stare_start);
         break;
 
         // TODO: Implement eithe rstoring or debug printing these
@@ -385,7 +396,6 @@ void AP_Mount_Trillium::handle_packet(OrionPkt_t &packet)
     case ORION_PKT_CMD:
     case ORION_PKT_STARTUP_CMD:
     case ORION_PKT_AUTOPILOT_DATA:
-    case ORION_PKT_STARE_START:
     case ORION_PKT_STARE_ACK:
     case ORION_PKT_RANGE_DATA:
 
