@@ -731,6 +731,15 @@
 #endif
 
 /**
+ * @brief   stack overflow event hook.
+ * @details This hook is invoked when we have a stack overflow on task switch
+ */
+#define CH_CFG_STACK_OVERFLOW_HOOK(tp) {                                         \
+  extern void stack_overflow_hook(thread_t *tp); \
+  stack_overflow(tp); \
+}
+
+/**
  * @brief   Trace hook.
  * @details This hook is invoked each time a new record is written in the
  *          trace buffer.
