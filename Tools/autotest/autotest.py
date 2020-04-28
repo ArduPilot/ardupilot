@@ -337,6 +337,7 @@ def run_step(step):
         "debug": opts.debug,
         "clean": not opts.no_clean,
         "configure": not opts.no_configure,
+        "math_check_indexes": opts.math_check_indexes,
         "extra_configure_args": opts.waf_configure_args,
     }
 
@@ -726,6 +727,11 @@ if __name__ == "__main__":
                            default=False,
                            action='store_true',
                            help='make built binaries debug binaries')
+    group_build.add_option("--enable-math-check-indexes",
+                           default=False,
+                           action="store_true",
+                           dest="math_check_indexes",
+                           help="enable checking of math indexes")
     parser.add_option_group(group_build)
 
     group_sim = optparse.OptionGroup(parser, "Simulation options")
