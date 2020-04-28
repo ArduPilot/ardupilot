@@ -352,6 +352,9 @@ void Scheduler::_monitor_thread(void *arg)
         sched->delay(100);
     }
     bool using_watchdog = AP_BoardConfig::watchdog_enabled();
+#ifndef HAL_NO_LOGGING
+    uint8_t log_wd_counter = 0;
+#endif
 
     while (true) {
         sched->delay(100);
@@ -382,6 +385,30 @@ void Scheduler::_monitor_thread(void *arg)
             // at 500ms we declare an internal error
             AP::internalerror().error(AP_InternalError::error_t::main_loop_stuck);
         }
+
+#ifndef HAL_NO_LOGGING
+    if (log_wd_counter++ == 10 && hal.util->was_watchdog_reset()) {
+        log_wd_counter = 0;
+        // log watchdog message once a second
+        const AP_HAL::Util::PersistentData &pd = hal.util->last_persistent_data;
+        AP::logger().WriteCritical("WDOG", "TimeUS,Tsk,IE,IEC,MvMsg,MvCmd,SmLn,FL,FT,FA,FP,ICSR,LR,TN", "QbIIHHHHHIBIIn",
+                                   AP_HAL::micros64(),
+                                   pd.scheduler_task,
+                                   pd.internal_errors,
+                                   pd.internal_error_count,
+                                   pd.last_mavlink_msgid,
+                                   pd.last_mavlink_cmd,
+                                   pd.semaphore_line,
+                                   pd.fault_line,
+                                   pd.fault_type,
+                                   pd.fault_addr,
+                                   pd.fault_thd_prio,
+                                   pd.fault_icsr,
+                                   pd.fault_lr,
+                                   pd.thread_name4);
+    }
+#endif // HAL_NO_LOGGING
+
     }
 }
 #endif // HAL_NO_MONITOR_THREAD
