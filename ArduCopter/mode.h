@@ -151,16 +151,16 @@ protected:
     public:
         void start(float alt_cm);
         void stop();
-        void get_climb_rates(float& pilot_climb_rate,
-                             float& takeoff_climb_rate);
+        void get_climb_rates(float& pilot_climb_rate, float& takeoff_climb_rate, float dt);
         bool triggered(float target_climb_rate) const;
 
         bool running() const { return _running; }
     private:
         bool _running;
-        float max_speed;
-        float alt_delta;
-        uint32_t start_ms;
+        float max_speed_cms;    // maximum climb rate
+        float alt_delta_cm;     // desired total climb in cm
+        float tkoff_climb_rate; // desired climb rate in the current iteration
+        float alt_climbed_cm;   // expected altitude climbed so far
     };
 
     static _TakeOff takeoff;
