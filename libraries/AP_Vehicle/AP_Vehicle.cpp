@@ -178,7 +178,7 @@ void AP_Vehicle::send_watchdog_reset_statustext()
     }
     const AP_HAL::Util::PersistentData &pd = hal.util->last_persistent_data;
     gcs().send_text(MAV_SEVERITY_CRITICAL,
-                    "WDG: T%d SL%u FL%u FT%u FA%x FTP%u FLR%x FICSR%u MM%u MC%u IE%u IEC%u",
+                    "WDG: T%d SL%u FL%u FT%u FA%x FTP%u FLR%x FICSR%u MM%u MC%u IE%u IEC%u TN:%.4s",
                     pd.scheduler_task,
                     pd.semaphore_line,
                     pd.fault_line,
@@ -190,7 +190,8 @@ void AP_Vehicle::send_watchdog_reset_statustext()
                     pd.last_mavlink_msgid,
                     pd.last_mavlink_cmd,
                     (unsigned)pd.internal_errors,
-                    (unsigned)pd.internal_error_count
+                    (unsigned)pd.internal_error_count,
+                    pd.thread_name4
         );
 }
 
