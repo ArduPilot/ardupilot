@@ -305,6 +305,9 @@ def do_build_waf(opts, frame_options):
     if opts.flash_storage:
         cmd_configure.append("--sitl-flash-storage")
 
+    if opts.math_check_indexes:
+        cmd_configure.append("--enable-math-check-indexes")
+
     if opts.disable_ekf2:
         cmd_configure.append("--disable-ekf2")
 
@@ -846,6 +849,11 @@ group_build.add_option("-s", "--build-system",
                        type='choice',
                        choices=["make", "waf"],
                        help="build system to use")
+group_build.add_option("--enable-math-check-indexes",
+                       default=False,
+                       action="store_true",
+                       dest="math_check_indexes",
+                       help="enable checking of math indexes")
 group_build.add_option("", "--rebuild-on-failure",
                        dest="rebuild_on_failure",
                        action='store_true',
