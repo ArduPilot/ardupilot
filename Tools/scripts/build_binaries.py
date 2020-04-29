@@ -618,6 +618,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "f303-GPS",
                 "f303-Universal",
                 "f303-M10025",
+                "f303-M10070",
                 "CUAV_GPS",
                 "ZubaxGNSS",
                 ]
