@@ -111,6 +111,9 @@ public:
     void set_roi_target(const struct Location &target_loc) { set_roi_target(_primary,target_loc); }
     void set_roi_target(uint8_t instance, const struct Location &target_loc);
 
+    Location get_roi_target() const { return get_roi_target(_primary); }
+    Location get_roi_target(uint8_t instance) const { return state[instance]._roi_target; }
+
     // point at system ID sysid
     void set_target_sysid(uint8_t instance, const uint8_t sysid);
     void set_target_sysid(const uint8_t sysid) { set_target_sysid(_primary, sysid); }
