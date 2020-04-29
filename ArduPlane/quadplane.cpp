@@ -2065,6 +2065,7 @@ bool QuadPlane::init_mode(void)
         init_qrtl();
         break;
     case Mode::Number::GUIDED:
+    case Mode::Number::FOLLOW:
         guided_takeoff = false;
         break;
 #if QAUTOTUNE_ENABLED

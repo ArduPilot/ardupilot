@@ -98,6 +98,10 @@
 #include "afs_plane.h"
 #endif
 
+#if MODE_FOLLOW_ENABLED == ENABLED
+#include <AP_Follow/AP_Follow.h>
+#endif
+
 // Local modules
 #include "defines.h"
 #include "mode.h"
@@ -147,6 +151,7 @@ public:
     friend class ModeLoiter;
     friend class ModeAvoidADSB;
     friend class ModeGuided;
+    friend class ModeFollow;
     friend class ModeInitializing;
     friend class ModeManual;
     friend class ModeQStabilize;
@@ -272,6 +277,9 @@ private:
     ModeLoiter mode_loiter;
     ModeAvoidADSB mode_avoidADSB;
     ModeGuided mode_guided;
+#if MODE_FOLLOW_ENABLED == ENABLED
+    ModeFollow mode_follow;
+#endif
     ModeInitializing mode_initializing;
     ModeManual mode_manual;
     ModeQStabilize mode_qstabilize;

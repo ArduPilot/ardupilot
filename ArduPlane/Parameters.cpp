@@ -1268,6 +1268,12 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("FLAP_TRIM", 25, ParametersG2, flap_trim, 0),
 
+#if MODE_FOLLOW_ENABLED == ENABLED
+    // @Group: FOLL
+    // @Path: ../libraries/AP_Follow/AP_Follow.cpp
+    AP_SUBGROUPINFO(follow, "FOLL", 26, ParametersG2, AP_Follow),
+#endif
+
     AP_GROUPEND
 };
 

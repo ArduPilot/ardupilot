@@ -39,6 +39,7 @@ public:
         QRTL          = 21,
         QAUTOTUNE     = 22,
         QACRO         = 23,
+        FOLLOW        = 24,  // follow attempts to follow another vehicle or ground station or gimbal roi
     };
 
     // Constructor
@@ -140,10 +141,43 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
+    bool _enter() override;
 
 protected:
 
+};
+
+class ModeFollow : public Mode {
+
+public:
+
+    Number mode_number() const override { return Number::FOLLOW; }
+    const char *name() const override { return "FOLLOW"; }
+    const char *name4() const override { return "FOLL"; }
+
+    // inherit constructor
+    //using ModeGuided::Mode;
+
+//    bool init(bool ignore_checks) override;
+    void update() override;
+
+//    bool requires_GPS() const override { return true; }
+//    bool has_manual_throttle() const override { return false; }
+//    bool allows_arming(bool from_gcs) const override { return false; }
+//    bool is_autopilot() const override { return true; }
+
+protected:
+
+
     bool _enter() override;
+    void _exit() override;
+
+    // for reporting to GCS
+    bool get_wp(Location &loc);
+    uint32_t wp_distance() const;
+    int32_t wp_bearing() const;
+
+    uint32_t last_log_ms;   // system time of last time desired velocity was logging
 };
 
 class ModeCircle: public Mode
