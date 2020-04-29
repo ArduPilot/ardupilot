@@ -431,7 +431,7 @@ void NavEKF3_core::SelectVelPosFusion()
     selectHeightForFusion();
 
     // if we are using GPS, check for a change in receiver and reset position and height
-    if (gpsDataToFuse && PV_AidingMode == AID_ABSOLUTE && gpsDataDelayed.sensor_idx != last_gps_idx) {
+    if (gpsDataToFuse && (PV_AidingMode == AID_ABSOLUTE) && (frontend->_fusionModeGPS != 3) && (gpsDataDelayed.sensor_idx != last_gps_idx)) {
         // record the ID of the GPS that we are using for the reset
         last_gps_idx = gpsDataDelayed.sensor_idx;
 
