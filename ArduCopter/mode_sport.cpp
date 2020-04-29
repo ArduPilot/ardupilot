@@ -91,7 +91,7 @@ void ModeSport::run()
         }
 
         // get take-off adjusted pilot and takeoff climb rates
-        takeoff.get_climb_rates(target_climb_rate, takeoff_climb_rate);
+        takeoff.get_climb_rates(target_climb_rate, takeoff_climb_rate, G_Dt);
 
         // get avoidance adjusted climb rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
