@@ -823,9 +823,8 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
         // controlled modes (e.g., MANUAL, TRAINING)
         // this command should be ignored since it comes in from GCS
         // or a companion computer:
-        if ((plane.control_mode != &plane.mode_guided) &&
-            (plane.control_mode != &plane.mode_auto) &&
-            (plane.control_mode != &plane.mode_avoidADSB)) {
+        if (!plane.control_mode->is_guided() &&
+            plane.control_mode != &plane.mode_auto) {
             // failed
             return MAV_RESULT_FAILED;
         }
@@ -1186,8 +1185,7 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
         // in e.g., RTL, CICLE. Specifying a single mode for companion
         // computer control is more safe (even more so when using
         // FENCE_ACTION = 4 for geofence failures).
-        if ((plane.control_mode != &plane.mode_guided) &&
-            (plane.control_mode != &plane.mode_avoidADSB)) { // don't screw up failsafes
+        if (!plane.control_mode->is_guided()) { // don't screw up failsafes
             break; 
         }
 
@@ -1272,7 +1270,7 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
         mavlink_msg_set_position_target_local_ned_decode(&msg, &packet);
 
         // exit if vehicle is not in Guided mode
-        if (plane.control_mode != &plane.mode_guided) {
+        if (!plane.control_mode->is_guided()) {
             break;
         }
 
@@ -1297,7 +1295,7 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
         // in modes such as RTL, CIRCLE, etc.  Specifying ONLY one mode
         // for companion computer control is more safe (provided
         // one uses the FENCE_ACTION = 4 (RTL) for geofence failures).
-        if (plane.control_mode != &plane.mode_guided && plane.control_mode != &plane.mode_avoidADSB) {
+        if (!plane.control_mode->is_guided()) {
             //don't screw up failsafes
             break;
         }

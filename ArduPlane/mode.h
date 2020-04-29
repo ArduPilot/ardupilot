@@ -64,6 +64,8 @@ public:
     // methods that sub classes should override to affect movement of the vehicle in this mode
     //
 
+    virtual bool is_guided() const { return false; }
+
     // convert user input to targets, implement high level control for this mode
     virtual void update() = 0;
 
@@ -140,6 +142,7 @@ public:
     const char *name4() const override { return "GUID"; }
 
     // methods that affect movement of the vehicle in this mode
+    bool is_guided() const override { return true; }
     void update() override;
     bool _enter() override;
 
@@ -158,6 +161,7 @@ public:
     // inherit constructor
     //using ModeGuided::Mode;
 
+    bool is_guided() const override { return true; }
 //    bool init(bool ignore_checks) override;
     void update() override;
 
@@ -355,6 +359,7 @@ public:
     const char *name4() const override { return "AVOI"; }
 
     // methods that affect movement of the vehicle in this mode
+    bool is_guided() const override { return true; }
     void update() override;
 
 protected:

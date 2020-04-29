@@ -2166,7 +2166,7 @@ bool QuadPlane::in_vtol_mode(void) const
             plane.control_mode == &plane.mode_qrtl ||
             plane.control_mode == &plane.mode_qacro ||
             plane.control_mode == &plane.mode_qautotune ||
-            ((plane.control_mode == &plane.mode_guided || plane.control_mode == &plane.mode_avoidADSB) && plane.auto_state.vtol_loiter) ||
+            (plane.control_mode->is_guided() && plane.auto_state.vtol_loiter) ||
             in_vtol_auto());
 }
 
@@ -2985,7 +2985,7 @@ void QuadPlane::guided_start(void)
  */
 void QuadPlane::guided_update(void)
 {
-    if (plane.control_mode == &plane.mode_guided && guided_takeoff && plane.current_loc.alt < plane.next_WP_loc.alt) {
+    if (plane.control_mode->is_guided() && guided_takeoff && plane.current_loc.alt < plane.next_WP_loc.alt) {
         throttle_wait = false;
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
         takeoff_controller();
