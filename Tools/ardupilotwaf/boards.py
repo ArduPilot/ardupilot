@@ -154,6 +154,9 @@ class Board:
                 '-g',
                 '-O0',
             ]
+            env.DEFINES.update(
+                HAL_DEBUG_BUILD = 1,
+            )
 
         if cfg.options.bootloader:
             # don't let bootloaders try and pull scripting in
