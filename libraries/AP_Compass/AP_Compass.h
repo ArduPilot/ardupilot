@@ -344,7 +344,7 @@ public:
 private:
     static Compass *_singleton;
 
-    // Use Priority and StateIndex typesafe index types 
+    // Use Priority and StateIndex typesafe index types
     // to distinguish between two different type of indexing
     // We use StateIndex for access by Backend
     // and Priority for access by Frontend
@@ -518,8 +518,10 @@ private:
     
     //Create Arrays to be accessible by Priority only
     RestrictIDTypeArray<AP_Int8, COMPASS_MAX_INSTANCES, Priority> _use_for_yaw;
+#if COMPASS_MAX_INSTANCES > 1
     RestrictIDTypeArray<AP_Int32, COMPASS_MAX_INSTANCES, Priority> _priority_did_stored_list;
     RestrictIDTypeArray<int32_t, COMPASS_MAX_INSTANCES, Priority> _priority_did_list;
+#endif
 
     AP_Int16 _offset_max;
 

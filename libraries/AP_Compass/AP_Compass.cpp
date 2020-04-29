@@ -29,7 +29,6 @@
 #include "Compass_learn.h"
 #include <stdio.h>
 
-
 extern const AP_HAL::HAL& hal;
 
 #ifndef COMPASS_LEARN_DEFAULT
@@ -87,12 +86,14 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("DEC",    2, Compass, _declination, 0),
 
+#if COMPASS_LEARN_ENABLED
     // @Param: LEARN
     // @DisplayName: Learn compass offsets automatically
     // @Description: Enable or disable the automatic learning of compass offsets. You can enable learning either using a compass-only method that is suitable only for fixed wing aircraft or using the offsets learnt by the active EKF state estimator. If this option is enabled then the learnt offsets are saved when you disarm the vehicle. If InFlight learning is enabled then the compass with automatically start learning once a flight starts (must be armed). While InFlight learning is running you cannot use position control modes.
     // @Values: 0:Disabled,1:Internal-Learning,2:EKF-Learning,3:InFlight-Learning
     // @User: Advanced
     AP_GROUPINFO("LEARN",  3, Compass, _learn, COMPASS_LEARN_DEFAULT),
+#endif
 
     // @Param: USE
     // @DisplayName: Use compass for yaw
@@ -108,6 +109,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("AUTODEC",5, Compass, _auto_declination, 1),
 
+#if COMPASS_MOT_ENABLED
     // @Param: MOTCT
     // @DisplayName: Motor interference compensation type
     // @Description: Set motor interference compensation type to disabled, throttle or current.  Do not change manually.
@@ -142,6 +144,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("MOT",    7, Compass, _state._priv_instance[0].motor_compensation, 0),
+#endif
 
     // @Param: ORIENT
     // @DisplayName: Compass orientation
@@ -453,6 +456,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     AP_GROUPINFO("ODI3",    29, Compass, _state._priv_instance[2].offdiagonals, 0),
 #endif // COMPASS_MAX_INSTANCES
 
+#if COMPASS_CAL_ENABLED
     // @Param: CAL_FIT
     // @DisplayName: Compass calibration fitness
     // @Description: This controls the fitness level required for a successful compass calibration. A lower value makes for a stricter fit (less likely to pass). This is the value used for the primary magnetometer. Other magnetometers get double the value.
@@ -461,6 +465,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("CAL_FIT", 30, Compass, _calibration_threshold, AP_COMPASS_CALIBRATION_FITNESS_DEFAULT),
+#endif
 
     // @Param: OFFS_MAX
     // @DisplayName: Compass maximum offset
@@ -491,19 +496,21 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Increment: 1
     AP_GROUPINFO("FLTR_RNG", 34, Compass, _filter_range, HAL_COMPASS_FILTER_DEFAULT),
 
+#if COMPASS_CAL_ENABLED
     // @Param: AUTO_ROT
     // @DisplayName: Automatically check orientation
     // @Description: When enabled this will automatically check the orientation of compasses on successful completion of compass calibration. If set to 2 then external compasses will have their orientation automatically corrected.
     // @Values: 0:Disabled,1:CheckOnly,2:CheckAndFix
     AP_GROUPINFO("AUTO_ROT", 35, Compass, _rotate_auto, HAL_COMPASS_AUTO_ROT_DEFAULT),
+#endif
 
+#if COMPASS_MAX_INSTANCES > 1
     // @Param: PRIO1_ID
     // @DisplayName: Compass device id with 1st order priority
     // @Description: Compass device id with 1st order priority, set automatically if 0. Reboot required after change.
     // @User: Advanced
     AP_GROUPINFO("PRIO1_ID",  36, Compass, _priority_did_stored_list._priv_instance[0], 0),
 
-#if COMPASS_MAX_INSTANCES > 1
     // @Param: PRIO2_ID
     // @DisplayName: Compass device id with 2nd order priority
     // @Description: Compass device id with 2nd order priority, set automatically if 0. Reboot required after change.
@@ -630,6 +637,7 @@ void Compass::init()
         return;
     }
 
+#if COMPASS_MAX_INSTANCES > 1
     // Look if there was a primary compass setup in previous version
     // if so and the the primary compass is not set in current setup
     // make the devid as primary.
@@ -667,6 +675,7 @@ void Compass::init()
             }
         }
     }
+#endif // COMPASS_MAX_INSTANCES
 
     // cache expected dev ids for use during runtime detection
     for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
@@ -710,6 +719,7 @@ void Compass::init()
 #endif
 }
 
+#if COMPASS_MAX_INSTANCES > 1 || COMPASS_MAX_UNREG_DEV
 // Update Priority List for Mags, by default, we just
 // load them as they come up the first time
 Compass::Priority Compass::_update_priority_list(int32_t dev_id)
@@ -737,6 +747,8 @@ Compass::Priority Compass::_update_priority_list(int32_t dev_id)
     }
     return Priority(COMPASS_MAX_INSTANCES);
 }
+#endif
+
 
 // This method reorganises devid list to match
 // priority list, only call before detection at boot
@@ -771,8 +783,20 @@ void Compass::mag_state::copy_from(const Compass::mag_state& state)
 //
 bool Compass::register_compass(int32_t dev_id, uint8_t& instance)
 {
-    Priority priority;
 
+#if COMPASS_MAX_INSTANCES == 1 && !COMPASS_MAX_UNREG_DEV
+    // simple single compass setup for AP_Periph
+    Priority priority(0);
+    StateIndex i(0);
+    if (_state[i].registered) {
+        return false;
+    }
+    _state[i].registered = true;
+    _state[i].priority = priority;
+    instance = uint8_t(i);
+    return true;
+#else
+    Priority priority;
     // Check if we already have this dev_id registered
     for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
         priority = _update_priority_list(dev_id);
@@ -806,6 +830,7 @@ bool Compass::register_compass(int32_t dev_id, uint8_t& instance)
             return true;
         }
     }
+#endif
 
 #if COMPASS_MAX_UNREG_DEV
     // Set extra dev id
@@ -835,12 +860,16 @@ bool Compass::register_compass(int32_t dev_id, uint8_t& instance)
 
 Compass::StateIndex Compass::_get_state_id(Compass::Priority priority) const
 {
+#if COMPASS_MAX_INSTANCES > 1
     for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
         if (_priority_did_list[priority] == _state[i].expected_dev_id) {
             return i;
         }
     }
     return StateIndex(COMPASS_MAX_INSTANCES);
+#else
+    return StateIndex(0);
+#endif
 }
 
 bool Compass::_add_backend(AP_Compass_Backend *backend)
@@ -1180,12 +1209,6 @@ void Compass::_detect_backends(void)
 #endif
 
 
-    /* for chibios external board coniguration */
-#ifdef HAL_EXT_COMPASS_HMC5843_I2C_BUS
-    ADD_BACKEND(DRIVER_HMC5843, AP_Compass_HMC5843::probe(GET_I2C_DEVICE(HAL_EXT_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR),
-                true, ROTATION_ROLL_180));
-#endif
-
 #if HAL_WITH_UAVCAN
     if (_driver_enabled(DRIVER_UAVCAN)) {
         for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
@@ -1517,6 +1540,7 @@ bool Compass::configured(uint8_t i)
 
 bool Compass::configured(char *failure_msg, uint8_t failure_msg_len)
 {
+#if COMPASS_MAX_INSTANCES > 1
     // Check if any of the registered devs are not registered
     for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
         if (_priority_did_list[i] != 0 && use_for_yaw(uint8_t(i))) {
@@ -1530,6 +1554,7 @@ bool Compass::configured(char *failure_msg, uint8_t failure_msg_len)
             }
         }
     }
+#endif
 
     bool all_configured = true;
     for (uint8_t i=0; i<get_count(); i++) {
