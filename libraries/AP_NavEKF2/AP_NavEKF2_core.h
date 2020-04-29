@@ -20,7 +20,9 @@
  */
 #pragma once
 
-#pragma GCC optimize("O2")
+#if !defined(HAL_DEBUG_BUILD) || !HAL_DEBUG_BUILD
+    #pragma GCC optimize("O2")
+#endif
 
 #define EK2_DISABLE_INTERRUPTS 0
 
