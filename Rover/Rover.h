@@ -68,7 +68,7 @@
 #include <AP_Follow/AP_Follow.h>
 #include <AP_OSD/AP_OSD.h>
 #include <AP_WindVane/AP_WindVane.h>
-#include <AP_TemperatureSensor/TSY01.h>		    //Temperature sensor TSY01 library
+#include <AP_TemperatureSensor/TSYS01.h>   	        //Temperature sensor TSY01 library
 
 #ifdef ENABLE_SCRIPTING
 #include <AP_Scripting/AP_Scripting.h>
