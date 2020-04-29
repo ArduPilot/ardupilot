@@ -68,17 +68,11 @@ private:
     static const uint8_t SBP_PREAMBLE = 0x55;
 
     //Message types supported by this driver
-    static const uint16_t SBP_STARTUP_MSGTYPE        = 0xFF00;
     static const uint16_t SBP_HEARTBEAT_MSGTYPE      = 0xFFFF;
     static const uint16_t SBP_GPS_TIME_MSGTYPE       = 0x0100;
     static const uint16_t SBP_DOPS_MSGTYPE           = 0x0206;
-    static const uint16_t SBP_POS_ECEF_MSGTYPE       = 0x0200;
     static const uint16_t SBP_POS_LLH_MSGTYPE        = 0x0201;
-    static const uint16_t SBP_BASELINE_ECEF_MSGTYPE  = 0x0202;
-    static const uint16_t SBP_BASELINE_NED_MSGTYPE   = 0x0203;
-    static const uint16_t SBP_VEL_ECEF_MSGTYPE       = 0x0204;
     static const uint16_t SBP_VEL_NED_MSGTYPE        = 0x0205;
-    static const uint16_t SBP_TRACKING_STATE_MSGTYPE = 0x0016;
     static const uint16_t SBP_IAR_STATE_MSGTYPE      = 0x0019;
 
     // Heartbeat
@@ -137,13 +131,6 @@ private:
         uint8_t n_sats;        //< Number of satellites used in solution
         uint8_t flags;         //< Status flags (reserved)
     }; // 22 bytes
-
-    // Activity and Signal-to-Noise data of a tracking channel on the GPS.
-    struct PACKED sbp_tracking_state_t {
-        uint8_t state;         //< 0 if disabled, 1 if running
-        uint8_t prn;           //< PRN identifier of tracked satellite
-        float cn0;             //< carrier to noise power ratio.
-    };
 
     // Integer Ambiguity Resolution state - how is the RTK resolution doing?
     struct PACKED sbp_iar_state_t {

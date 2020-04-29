@@ -208,11 +208,6 @@ AP_GPS_SBP::_sbp_process_message() {
             check_new_itow(last_dops.tow, parser_state.msg_len);
             break;
 
-        case SBP_TRACKING_STATE_MSGTYPE:
-            //INTENTIONALLY BLANK
-            //Currently unhandled, but logged after switch statement.
-            break;
-
         case SBP_IAR_STATE_MSGTYPE: {
             sbp_iar_state_t *iar = (struct sbp_iar_state_t*)parser_state.msg_buff;
             last_iar_num_hypotheses = iar->num_hypotheses;
