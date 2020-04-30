@@ -266,7 +266,7 @@ T constrain_value(const T amt, const T low, const T high)
     // errors through any function that uses constrain_value(). The normal
     // float semantics already handle -Inf and +Inf
     if (isnan(amt)) {
-        AP::internalerror().error(AP_InternalError::error_t::constraining_nan);
+        INTERNAL_ERROR(AP_InternalError::error_t::constraining_nan);
         return (low + high) / 2;
     }
 
