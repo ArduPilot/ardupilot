@@ -19,6 +19,16 @@ The VFS interfaces that don't represent local filesystem objects on
 the flight controller are prefixed with an '@' symbol. Currently there
 are two interfaces, the @PARAM interface and the @SYS interface.
 
+### FTP Protocol Extension
+
+To facilitate more efficient file transfer over commonly used SiK
+radios I have added an extension to the ftp burst protocol where the
+'size' field in the burst read request sets the block size of the
+burst replies. This helps as SiK radios do badly with very large
+packets. I have found that the best results with SiK radios is
+achieved with a burst read size of 110. If the size field is set to
+zero then the default of the max size (239) is used.
+
 ## The @PARAM VFS
 
 The @PARAM VFS allows a GCS to very efficiently download full or
@@ -27,6 +37,13 @@ partial parameter list from the flight controller. Currently the
 which is a packed representation of the full parameter
 list. Downloading the full parameter list via this interface is a lot
 faster than using the traditional mavlink parameter messages.
+
+The @PARAM/param.pck file has a special restriction that all reads
+from the file on a single file handle must be of the same size. This
+allows the server to ensure that filling in of lost transfers cannot
+cause a parameter value to be split across a network block, which
+prevents corruption. Attempts to vary the read size after the first
+read will return a failed read.
 
 The file format of the @PARAM/param.pck file is as follows
 
