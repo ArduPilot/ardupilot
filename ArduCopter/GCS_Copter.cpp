@@ -86,7 +86,9 @@ void GCS_Copter::update_vehicle_sensor_status_flags(void)
     case Mode::Number::THROW:
     case Mode::Number::SMART_RTL:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
+        control_sensors_health |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;
+        control_sensors_health |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;
         break;
     case Mode::Number::ALT_HOLD:
     case Mode::Number::GUIDED_NOGPS:
@@ -94,6 +96,7 @@ void GCS_Copter::update_vehicle_sensor_status_flags(void)
     case Mode::Number::AUTOTUNE:
     case Mode::Number::FLOWHOLD:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
+        control_sensors_health |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
         break;
     default:
         // stabilize, acro, drift, and flip have no automatic x,y or z control (i.e. all manual)
