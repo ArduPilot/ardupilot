@@ -32,6 +32,7 @@ known_param_fields = [
              'Volatile',
              'ReadOnly',
              'Calibration',
+             'Default'
                       ]
 
 # Follow SI units conventions from:
