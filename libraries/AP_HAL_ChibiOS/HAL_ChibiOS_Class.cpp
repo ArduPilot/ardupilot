@@ -222,7 +222,7 @@ static void main_loop()
 
 #ifndef HAL_NO_LOGGING
     if (hal.util->was_watchdog_reset()) {
-        AP::internalerror().error(AP_InternalError::error_t::watchdog_reset);
+        INTERNAL_ERROR(AP_InternalError::error_t::watchdog_reset);
     }
 #endif // HAL_NO_LOGGING
 #endif // IOMCU_FW
