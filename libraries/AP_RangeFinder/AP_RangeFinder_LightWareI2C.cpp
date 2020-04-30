@@ -23,6 +23,8 @@ extern const AP_HAL::HAL& hal;
 #define LIGHTWARE_LOST_SIGNAL_TIMEOUT_WRITE_REG 23
 #define LIGHTWARE_TIMEOUT_REG_DESIRED_VALUE 5
 
+#define LIGHTWARE_OUT_OF_RANGE_ADD_CM   100
+
 static const size_t lx20_max_reply_len_bytes = 32;
 static const size_t lx20_max_expected_stream_reply_len_bytes = 14;
 
@@ -398,6 +400,17 @@ bool AP_RangeFinder_LightWareI2C::sf20_parse_stream(uint8_t *stream_buf,
             return false;
         }
         (*p_num_processed_chars)++;
+    }
+
+    /*
+      special case for being beyond maximum range, we receive a message like this:
+      ldl,1:-1.00
+      we will return max distance
+     */
+    if (strncmp((const char *)&stream_buf[*p_num_processed_chars], "-1.00", 5) == 0) {
+        val = uint16_t(max_distance_cm() + LIGHTWARE_OUT_OF_RANGE_ADD_CM);
+        (*p_num_processed_chars) += 5;
+        return true;
     }
 
     /* Number is always returned in hundredths. So 6.33 is returned as 633. 6.3 is returned as 630.
