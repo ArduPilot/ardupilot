@@ -59,7 +59,8 @@ public:
         uint32_t fault_icsr;
         uint32_t fault_lr;
         uint32_t internal_errors;
-        uint32_t internal_error_count;
+        uint16_t internal_error_count;
+        uint16_t internal_error_last_line;
         uint32_t spi_count;
         uint32_t i2c_count;
         uint32_t i2c_isr_count;
