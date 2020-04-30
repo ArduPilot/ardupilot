@@ -38,14 +38,15 @@ public:
         return _singleton;
     }
 
-    enum TargetType {
-        TARGET_TYPE_SYSID       = 0,
-        TARGET_TYPE_GIMBAL1,
-//        TARGET_TYPE_GIMBAL1_ROI,
-//        TARGET_TYPE_GIMBAL2,
-//        TARGET_TYPE_GIMBAL2_ROI,
-        TARGET_TYPE_MAX_SIZE,
+    enum class TargetType {
+        SYSID       = 0,
+        GIMBAL1,
+//        GIMBAL1_ROI,
+//        GIMBAL2,
+//        GIMBAL2_ROI,
+        MAX_SIZE,
     };
+
     // enum for YAW_BEHAVE parameter
     enum YawBehave {
         YAW_BEHAVE_NONE = 0,
@@ -149,7 +150,7 @@ private:
         float heading;                 // heading in degrees
         float dist_to_target;          // latest distance to target in meters (for reporting purposes)
         float bearing_to_target;       // latest bearing to target in degrees (for reporting purposes)
-    } _targets[TargetType::TARGET_TYPE_MAX_SIZE];
+    } _targets[uint8_t(TargetType::MAX_SIZE)];
 
 
     // local variables
