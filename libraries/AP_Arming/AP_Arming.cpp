@@ -783,7 +783,7 @@ bool AP_Arming::system_checks(bool report)
     if (AP::internalerror().errors() != 0) {
         uint8_t buffer[32];
         AP::internalerror().errors_as_string(buffer, ARRAY_SIZE(buffer));
-        check_failed(report, "Internal errors 0x%x l:%u (%s)", (unsigned int)AP::internalerror().errors(), AP::internalerror().last_error_line(), buffer);
+        check_failed(report, "Internal errors 0x%x l:%u %s", (unsigned int)AP::internalerror().errors(), AP::internalerror().last_error_line(), buffer);
         return false;
     }
 

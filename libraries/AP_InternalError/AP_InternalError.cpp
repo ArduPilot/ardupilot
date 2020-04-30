@@ -27,6 +27,62 @@ void AP_InternalError::error(const AP_InternalError::error_t e, uint16_t line) {
     hal.util->persistent_data.internal_error_last_line = line;
 }
 
+void AP_InternalError::errors_as_string(uint8_t *buffer, const uint16_t len) const
+{
+    static const char * const error_bit_descriptions[] {
+        "mapfailure",  // logger_mapfailure
+        "miss_struct",  // logger_missing_logstructure
+        "write_mssfmt",  // logger_logwrite_missingfmt
+        "many_deletes",  // logger_too_many_deletions
+        "bad_getfile",  // logger_bad_getfilename
+        "unused1",
+        "flush_no_sem",  // logger_flushing_without_sem
+        "bad_curr_blk",  // logger_bad_current_block
+        "blkcnt_bad",  // logger_blockcount_mismatch
+        "dq_failure",  // logger_dequeue_failure
+        "cnstring_nan",  // constraining_nan
+        "watchdog_rst",  // watchdog_reset
+        "iomcu_reset",
+        "iomcu_fail",
+        "spi_fail",
+        "main_loop_stk",  // main_loop_stuck
+        "gcs_bad_link",  // gcs_bad_missionprotocol_link
+        "bitmask_range",
+        "gcs_offset",
+        "i2c_isr",
+        "flow_of_ctrl",  // flow_of_control
+        "sfs_recursion",  // switch_full_sector_recursion
+        "bad_rotation",
+        "stack_ovrflw",  // stack_overflow
+    };
+
+    static_assert((1U<<(ARRAY_SIZE(error_bit_descriptions))) == uint32_t(AP_InternalError::error_t::__LAST__), "too few descriptions for bits");
+
+    buffer[0] = 0;
+    uint32_t buffer_used = 0;
+    for (uint8_t i=0; i<ARRAY_SIZE(error_bit_descriptions); i++) {
+        if (buffer_used >= len) {
+            break;
+        }
+        if (internal_errors & (1U<<i)) {
+            const char *format;
+            if (i == 0) {
+                format = "%s";
+            } else {
+                format = ",%s";
+            }
+            const size_t written = hal.util->snprintf((char*)&buffer[buffer_used],
+                                                      len-buffer_used,
+                                                      format,
+                                                      error_bit_descriptions[i]);
+            if (written <= 0) {
+                break;
+            }
+            buffer_used += written;
+        }
+    }
+}
+
 namespace AP {
 
 AP_InternalError &internalerror()
