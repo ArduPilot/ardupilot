@@ -813,9 +813,8 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
         // controlled modes (e.g., MANUAL, TRAINING)
         // this command should be ignored since it comes in from GCS
         // or a companion computer:
-        if ((plane.control_mode != &plane.mode_guided) &&
-            (plane.control_mode != &plane.mode_auto) &&
-            (plane.control_mode != &plane.mode_avoidADSB)) {
+        if (!plane.control_mode->is_guided() &&
+            plane.control_mode != &plane.mode_auto) {
             // failed
             return MAV_RESULT_FAILED;
         }

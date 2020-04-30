@@ -2181,7 +2181,7 @@ bool QuadPlane::in_vtol_mode(void) const
             plane.control_mode == &plane.mode_qrtl ||
             plane.control_mode == &plane.mode_qacro ||
             plane.control_mode == &plane.mode_qautotune ||
-            ((plane.control_mode == &plane.mode_guided || plane.control_mode == &plane.mode_avoidADSB) && plane.auto_state.vtol_loiter) ||
+            (plane.control_mode->is_guided() && plane.auto_state.vtol_loiter) ||
             in_vtol_auto());
 }
 
