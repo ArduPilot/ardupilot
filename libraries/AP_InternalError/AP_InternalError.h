@@ -57,11 +57,22 @@ public:
         switch_full_sector_recursion= (1U << 21),  //0x200000  2097152
         bad_rotation                = (1U << 22),  //0x400000  4194304
         stack_overflow              = (1U << 23),  //0x800000  8388608
+        __LAST__                    = (1U << 24),  // used only for sanity check
     };
+
+    // if you've changed __LAST__ to be 32, then you will want to
+    // rejig the way we do sanity checks as we don't want to move to a
+    // 64-bit type for error_t:
+    static_assert(sizeof(error_t) == 4, "error_t should be 32-bit type");
 
     uint16_t last_error_line() const { return last_line; }
 
     void error(const AP_InternalError::error_t error, uint16_t line);
+
+    // fill buffer with a description of the exceptions present in
+    // internal errors.  buffer will always be null-terminated.
+    void errors_as_string(uint8_t *buffer, uint16_t len) const;
+
     uint32_t count() const { return total_error_count; }
 
     // internal_errors - return mask of internal errors seen
