@@ -12,7 +12,7 @@ public:
     // return GCS link at offset ofs
     GCS_MAVLINK_Rover *chan(const uint8_t ofs) override {
         if (ofs > _num_gcs) {
-            AP::internalerror().error(AP_InternalError::error_t::gcs_offset);
+            INTERNAL_ERROR(AP_InternalError::error_t::gcs_offset);
             return nullptr;
         }
         return (GCS_MAVLINK_Rover*)_chan[ofs];
@@ -20,7 +20,7 @@ public:
     // return GCS link at offset ofs
     const GCS_MAVLINK_Rover *chan(const uint8_t ofs) const override {
         if (ofs > _num_gcs) {
-            AP::internalerror().error(AP_InternalError::error_t::gcs_offset);
+            INTERNAL_ERROR(AP_InternalError::error_t::gcs_offset);
             return nullptr;
         }
         return (GCS_MAVLINK_Rover*)_chan[ofs];
