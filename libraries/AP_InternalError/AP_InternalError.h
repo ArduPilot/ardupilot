@@ -32,6 +32,10 @@ public:
     // of thing.  Examples of what NOT to put in here - sd card
     // filling up, bad input received from GCS, GPS unit was working
     // and now is not.
+
+    // note that this map is an internal ArduPilot fixture and is
+    // prone to change at regular intervals.  The meanings of these
+    // bits can change day-to-day.
     enum class error_t {                           // Hex      Decimal
         logger_mapfailure           = (1U <<  0),  // 0x00001  1
         logger_missing_logstructure = (1U <<  1),  // 0x00002  2
