@@ -59,7 +59,9 @@ public:
         stack_overflow              = (1U << 23),  //0x800000  8388608
     };
 
-    void error(const AP_InternalError::error_t error);
+    uint16_t last_error_line() const { return last_line; }
+
+    void error(const AP_InternalError::error_t error, uint16_t line);
     uint32_t count() const { return total_error_count; }
 
     // internal_errors - return mask of internal errors seen
@@ -73,6 +75,7 @@ private:
     uint32_t internal_errors;
 
     uint32_t total_error_count;
+    uint16_t last_line;
 };
 
 namespace AP {
@@ -83,3 +86,5 @@ extern "C" {
     void AP_stack_overflow(const char *thread_name);
 }
 
+#define INTERNAL_ERROR(error_number) \
+    AP::internalerror().error(error_number, __LINE__);
