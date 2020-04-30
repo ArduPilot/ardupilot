@@ -834,7 +834,7 @@ void AP_Logger::WriteV(const char *name, const char *labels, const char *units, 
     if (f == nullptr) {
         // unable to map name to a messagetype; could be out of
         // msgtypes, could be out of slots, ...
-        AP::internalerror().error(AP_InternalError::error_t::logger_mapfailure);
+        INTERNAL_ERROR(AP_InternalError::error_t::logger_mapfailure);
         return;
     }
 

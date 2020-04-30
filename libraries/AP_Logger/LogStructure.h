@@ -1684,6 +1684,7 @@ struct PACKED log_Arm_Disarm {
 // @Field: Task: Current scheduler task number
 // @Field: IErr: Internal error mask; which internal errors have been detected
 // @Field: IErrCnt: Internal error count; how many internal errors have been detected
+// @Field: IErrLn: Line on which internal error ocurred
 // @Field: MavMsg: Id of the last mavlink message processed
 // @Field: MavCmd: Id of the last mavlink command processed
 // @Field: SemLine: Line number of semaphore most recently taken

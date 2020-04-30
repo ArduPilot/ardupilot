@@ -149,7 +149,7 @@ bool AP_Logger_MAVLink::_WritePrioritisedBlock(const void *pBuffer, uint16_t siz
             _current_block = next_block();
             if (_current_block == nullptr) {
                 // should not happen - there's a sanity check above
-                AP::internalerror().error(AP_InternalError::error_t::logger_bad_current_block);
+                INTERNAL_ERROR(AP_InternalError::error_t::logger_bad_current_block);
                 semaphore.give();
                 return false;
             }
@@ -401,7 +401,7 @@ void AP_Logger_MAVLink::stats_collect()
     uint8_t sfree = stack_size(_blocks_free);
 
     if (sfree != _blockcount_free) {
-        AP::internalerror().error(AP_InternalError::error_t::logger_blockcount_mismatch);
+        INTERNAL_ERROR(AP_InternalError::error_t::logger_blockcount_mismatch);
     }
     semaphore.give();
 
@@ -456,7 +456,7 @@ bool AP_Logger_MAVLink::send_log_blocks_from_queue(dm_block_queue_t &queue)
         if (tmp != nullptr) { // should never be nullptr
             enqueue_block(_blocks_sent, tmp);
         } else {
-            AP::internalerror().error(AP_InternalError::error_t::logger_dequeue_failure);
+            INTERNAL_ERROR(AP_InternalError::error_t::logger_dequeue_failure);
         }
     }
     return true;
