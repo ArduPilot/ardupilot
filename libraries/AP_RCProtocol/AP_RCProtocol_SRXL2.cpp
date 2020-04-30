@@ -39,12 +39,17 @@ AP_RCProtocol_SRXL2* AP_RCProtocol_SRXL2::_singleton;
 AP_RCProtocol_SRXL2::AP_RCProtocol_SRXL2(AP_RCProtocol &_frontend) : AP_RCProtocol_Backend(_frontend)
 {
     const uint32_t uniqueID = AP_HAL::micros();
-
+#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
     if (_singleton != nullptr) {
         AP_HAL::panic("Duplicate SRXL2 handler");
     }
 
     _singleton = this;
+#else
+    if (_singleton == nullptr) {
+        _singleton = this;
+    }
+#endif
     // Init the local SRXL device
     if (!srxlInitDevice(SRXL_DEVICE_ID, SRXL_DEVICE_PRIORITY, SRXL_DEVICE_INFO, uniqueID)) {
         AP_HAL::panic("Failed to initialize SRXL2 device");
@@ -55,6 +60,10 @@ AP_RCProtocol_SRXL2::AP_RCProtocol_SRXL2(AP_RCProtocol &_frontend) : AP_RCProtoc
         AP_HAL::panic("Failed to initialize SRXL2 bus");
     }
 
+}
+
+AP_RCProtocol_SRXL2::~AP_RCProtocol_SRXL2() {
+    _singleton = nullptr;
 }
 
 void AP_RCProtocol_SRXL2::_process_byte(uint32_t timestamp_us, uint8_t byte)

@@ -18,6 +18,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_RCProtocol/AP_RCProtocol.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 #include <stdio.h>
 
 void setup();
@@ -182,9 +183,9 @@ static bool test_protocol(const char *name, uint32_t baudrate,
                           int8_t pause_at=0)
 {
     bool ret = true;
-
     rcprot = new AP_RCProtocol();
     rcprot->init();
+
     ret &= test_byte_protocol(name, baudrate, bytes, nbytes, values, nvalues, repeats, pause_at);
     delete rcprot;
 
@@ -206,8 +207,8 @@ void loop()
     const uint8_t sbus_bytes[] = {0x0F, 0x4C, 0x1C, 0x5F, 0x32, 0x34, 0x38, 0xDD, 0x89,
                                   0x83, 0x0F, 0x7C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                                   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    const uint16_t sbus_output[] = {1562, 1496, 1000, 1530, 1806, 2006, 1494, 1494, 874,
-                                    874, 874, 874, 874, 874, 874, 874};
+    const uint16_t sbus_output[] = {1562, 1496, 1000, 1531, 1806, 2006, 1495, 1495, 875,
+                                    875, 875, 875, 875, 875, 875, 875};
 
     const uint8_t dsm_bytes[] = {0x00, 0xab, 0x00, 0xae, 0x08, 0xbf, 0x10, 0xd0, 0x18,
                                  0xe1, 0x20, 0xf2, 0x29, 0x03, 0x31, 0x14, 0x00, 0xab,
