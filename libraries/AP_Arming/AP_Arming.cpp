@@ -781,7 +781,9 @@ bool AP_Arming::system_checks(bool report)
 #endif
     }
     if (AP::internalerror().errors() != 0) {
-        check_failed(report, "Internal errors (0x%x) (last line:%u)", (unsigned int)AP::internalerror().errors(), AP::internalerror().last_error_line());
+        uint8_t buffer[32];
+        AP::internalerror().errors_as_string(buffer, ARRAY_SIZE(buffer));
+        check_failed(report, "Internal errors 0x%x l:%u (%s)", (unsigned int)AP::internalerror().errors(), AP::internalerror().last_error_line(), buffer);
         return false;
     }
 
