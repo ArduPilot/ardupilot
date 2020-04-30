@@ -368,12 +368,13 @@ void Scheduler::_monitor_thread(void *arg)
             // 200ms. Starting logging the main loop state
             const AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
             if (AP_Logger::get_singleton()) {
-                AP::logger().Write("MON", "TimeUS,LDelay,Task,IErr,IErrCnt,MavMsg,MavCmd,SemLine,SPICnt,I2CCnt", "QIbIIHHHII",
+                AP::logger().Write("MON", "TimeUS,LDelay,Task,IErr,IErrCnt,IErrLn,MavMsg,MavCmd,SemLine,SPICnt,I2CCnt", "QIbIHHHHHII",
                                    AP_HAL::micros64(),
                                    loop_delay,
                                    pd.scheduler_task,
                                    pd.internal_errors,
                                    pd.internal_error_count,
+                                   pd.internal_error_last_line,
                                    pd.last_mavlink_msgid,
                                    pd.last_mavlink_cmd,
                                    pd.semaphore_line,
@@ -383,7 +384,7 @@ void Scheduler::_monitor_thread(void *arg)
         }
         if (loop_delay >= 500) {
             // at 500ms we declare an internal error
-            AP::internalerror().error(AP_InternalError::error_t::main_loop_stuck);
+            INTERNAL_ERROR(AP_InternalError::error_t::main_loop_stuck);
         }
 
 #ifndef HAL_NO_LOGGING
@@ -391,11 +392,12 @@ void Scheduler::_monitor_thread(void *arg)
         log_wd_counter = 0;
         // log watchdog message once a second
         const AP_HAL::Util::PersistentData &pd = hal.util->last_persistent_data;
-        AP::logger().WriteCritical("WDOG", "TimeUS,Tsk,IE,IEC,MvMsg,MvCmd,SmLn,FL,FT,FA,FP,ICSR,LR,TN", "QbIIHHHHHIBIIn",
+        AP::logger().WriteCritical("WDOG", "TimeUS,Tsk,IE,IEC,IEL,MvMsg,MvCmd,SmLn,FL,FT,FA,FP,ICSR,LR,TN", "QbIHHHHHHHIBIIn",
                                    AP_HAL::micros64(),
                                    pd.scheduler_task,
                                    pd.internal_errors,
                                    pd.internal_error_count,
+                                   pd.internal_error_last_line,
                                    pd.last_mavlink_msgid,
                                    pd.last_mavlink_cmd,
                                    pd.semaphore_line,
