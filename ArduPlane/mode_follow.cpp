@@ -49,7 +49,9 @@ void ModeFollow::update_follow_wp()
     Vector3f vel_ned;
     // this will get us the waypoint with the offset and radius applied
     if (plane.g2.follow.get_target_location_and_velocity(loc, vel_ned)) {
-        plane.guided_WP_loc = loc;
+        plane.guided_WP_loc.lat = loc.lat;
+        plane.guided_WP_loc.lng = loc.lng;
+        plane.guided_WP_loc.alt = plane.current_loc.alt;
     } else {
         plane.guided_WP_loc = plane.current_loc;
     }
