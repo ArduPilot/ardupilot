@@ -103,7 +103,7 @@ static MAV_MISSION_RESULT convert_MISSION_ITEM_INT_to_AC_PolyFenceItem(const mav
 MAV_MISSION_RESULT MissionItemProtocol_Fence::replace_item(const mavlink_mission_item_int_t &mission_item_int)
 {
     if (_new_items == nullptr) {
-        AP::internalerror().error(AP_InternalError::error_t::flow_of_control);
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         return MAV_MISSION_ERROR;
     }
     if (mission_item_int.seq >= _new_items_count) {
@@ -180,7 +180,7 @@ MAV_MISSION_RESULT MissionItemProtocol_Fence::allocate_receive_resources(const u
     if (_new_items != nullptr) {
         // this is an error - the base class should have called
         // free_upload_resources first
-        AP::internalerror().error(AP_InternalError::error_t::flow_of_control);
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         return MAV_MISSION_ERROR;
     }
 
