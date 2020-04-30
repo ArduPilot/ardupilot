@@ -4690,7 +4690,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_scaled_pressure3();
         break;
 
-    case MSG_SCALED_PRESSURE3:
+    case MSG_SCALED_PRESSURE4:
         CHECK_PAYLOAD_SIZE(SCALED_PRESSURE3);
         send_scaled_pressure4();
         break;
