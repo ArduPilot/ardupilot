@@ -34,15 +34,16 @@ public:
     AP_Follow &operator=(const AP_Follow&) = delete;
 
     // get singleton
-    static AP_Follow *get_singleton(void) {
+    static AP_Follow *get_singleton() {
         return _singleton;
     }
+
 
     enum class TargetType {
         SYSID       = 0,
         GIMBAL1,
 //        GIMBAL1_ROI,
-//        GIMBAL2,
+        GIMBAL2,
 //        GIMBAL2_ROI,
         MAX_SIZE,
     };
@@ -75,6 +76,11 @@ public:
     bool get_target_location_and_velocity(Location &loc, Vector3f &vel_ned) { return get_target_location_and_velocity((TargetType)_type.get(), loc, vel_ned); }
     bool get_target_location_and_velocity(TargetType type, Location &loc, Vector3f &vel_ned) const;
 
+    // set target's location and velocity (in NED) or a MAVLink packet
+    void set_target_location_and_velocity(Location &loc, Vector3f &vel_ned) { return set_target_location_and_velocity((TargetType)_type.get(), loc, vel_ned); }
+    void set_target_location_and_velocity(TargetType type, Location &loc, Vector3f &vel_ned);
+    void set_target_location_and_velocity(mavlink_global_position_int_t &packet);
+
     // get distance vector to target (in meters), target plus offsets, and target's velocity all in NED frame
     bool get_target_dist_and_vel_ned(TargetType type, Vector3f &dist_ned, Vector3f &dist_with_ofs, Vector3f &vel_ned);
 
@@ -100,11 +106,11 @@ public:
 
     // get horizontal distance to target (including offset) in meters (for reporting purposes)
     float get_distance_to_target() const { return get_distance_to_target((TargetType)_type.get()); }
-    float get_distance_to_target(TargetType type) const { return _targets[type].dist_to_target; }
+    float get_distance_to_target(TargetType type) const { return _targets[uint8_t(type)].dist_to_target; }
 
     // get bearing to target (including offset) in degrees (for reporting purposes)
     float get_bearing_to_target() const { return get_bearing_to_target((TargetType)_type.get()); }
-    float get_bearing_to_target(TargetType type) const { return _targets[type].bearing_to_target; }
+    float get_bearing_to_target(TargetType type) const { return _targets[uint8_t(type)].bearing_to_target; }
 
     // parameter list
     static const struct AP_Param::GroupInfo var_info[];
@@ -127,6 +133,9 @@ private:
 
     // set recorded distance and bearing to target to zero
     void clear_dist_and_bearing_to_target(TargetType type);
+
+    // write a log entry for the target
+    void log_target(TargetType type);
 
     // parameters
     AP_Int8     _enabled;           // 1 if this subsystem is enabled
@@ -162,6 +171,6 @@ private:
 
 
 namespace AP {
-AP_Follow &follow();
+AP_Follow *follow();
 };
 

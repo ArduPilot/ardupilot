@@ -49,7 +49,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Description: Configure to follow different types of target
     // @Values: 0:SYSID,1:Gimbal1,2:Gimbal1_ROI,3:Gimbal2,4:Gimbal2_ROI
     // @User: Standard
-    AP_GROUPINFO("_TYPE", 2, AP_Follow, _type, TargetType::TARGET_TYPE_MAX_SIZE),
+    AP_GROUPINFO("_TYPE", 2, AP_Follow, _type, int8_t(TargetType::MAX_SIZE)),
 
     // @Param: _SYSID
     // @DisplayName: Follow target's mavlink system id
@@ -137,6 +137,11 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
 AP_Follow::AP_Follow() :
         _p_pos(AP_FOLLOW_POS_P_DEFAULT)
 {
+    if (_singleton != nullptr) {
+        AP_HAL::panic("AP_Follow must be singleton");
+    }
+    _singleton = this;
+
     AP_Param::setup_object_defaults(this, var_info);
 }
 
@@ -149,6 +154,53 @@ void AP_Follow::clear_offsets_if_required()
     _offsets_were_zero = false;
 }
 
+// set target's location
+void AP_Follow::set_target_location_and_velocity(TargetType type, Location &loc, Vector3f &vel_ned)
+{
+    const uint8_t type_index = uint8_t(type);
+
+    _targets[type_index].location = loc;
+    _targets[type_index].velocity_ned = vel_ned;
+
+    log_target(type);
+}
+
+// set target's location using a mavlin kpacket
+void AP_Follow::set_target_location_and_velocity(mavlink_global_position_int_t &packet)
+{
+    const uint8_t type_index = uint8_t(TargetType::SYSID);
+
+    // get location
+    Location location {};
+    location.lat = packet.lat;
+    location.lng = packet.lon;
+
+    // select altitude source based on FOLL_ALT_TYPE param
+    if (_alt_type == AP_FOLLOW_ALTITUDE_TYPE_RELATIVE) {
+        // relative altitude
+        location.alt = packet.relative_alt / 10;        // convert millimeters to cm
+        location.relative_alt = 1;                // set relative_alt flag
+    } else {
+        // absolute altitude
+        location.alt = packet.alt / 10;                 // convert millimeters to cm
+        location.relative_alt = 0;                // reset relative_alt flag
+    }
+
+    // get Velocity
+    Vector3f velocity_ned = Vector3f(packet.vx, packet.vy, packet.vz) * 0.01f;
+
+    // set them
+    set_target_location_and_velocity(TargetType::SYSID, location, velocity_ned);
+
+    // get a local timestamp with correction for transport jitter
+    _targets[type_index].last_location_update_ms = _jitter.correct_offboard_timestamp_msec(packet.time_boot_ms, AP_HAL::millis());
+
+    if (packet.hdg <= 36000) {                  // heading (UINT16_MAX if unknown)
+        _targets[type_index].heading = packet.hdg * 0.01f;   // convert centi-degrees to degrees
+        _targets[type_index].last_heading_update_ms = _targets[type_index].last_location_update_ms;
+    }
+}
+
 // get target's estimated location
 bool AP_Follow::get_target_location_and_velocity(TargetType type, Location &loc, Vector3f &vel_ned) const
 {
@@ -157,13 +209,15 @@ bool AP_Follow::get_target_location_and_velocity(TargetType type, Location &loc,
         return false;
     }
 
+    const uint8_t type_index = uint8_t(TargetType::SYSID);
+
     // check for timeout
-    if ((_targets[type].last_location_update_ms == 0) || (AP_HAL::millis() - _targets[type].last_location_update_ms > AP_FOLLOW_TIMEOUT_MS)) {
+    if ((_targets[type_index].last_location_update_ms == 0) || (AP_HAL::millis() - _targets[type_index].last_location_update_ms > AP_FOLLOW_TIMEOUT_MS)) {
         return false;
     }
 
     // calculate time since last actual position update
-    const float dt = (AP_HAL::millis() - _targets[type].last_location_update_ms) * 0.001f;
+    const float dt = (AP_HAL::millis() - _targets[type_index].last_location_update_ms) * 0.001f;
 
     // get velocity estimate
     if (!get_velocity_ned(type, vel_ned, dt)) {
@@ -171,7 +225,7 @@ bool AP_Follow::get_target_location_and_velocity(TargetType type, Location &loc,
     }
 
     // project the vehicle position
-    Location last_loc = _targets[type].location;
+    Location last_loc = _targets[type_index].location;
     last_loc.offset(vel_ned.x * dt, vel_ned.y * dt);
     last_loc.alt -= vel_ned.z * 100.0f * dt; // convert m/s to cm/s, multiply by dt.  minus because NED
 
@@ -183,6 +237,8 @@ bool AP_Follow::get_target_location_and_velocity(TargetType type, Location &loc,
 // get distance vector to target (in meters) and target's velocity all in NED frame
 bool AP_Follow::get_target_dist_and_vel_ned(TargetType type, Vector3f &dist_ned, Vector3f &dist_with_offs, Vector3f &vel_ned)
 {
+    const uint8_t type_index = uint8_t(type);
+
     // get our location
     Location current_loc;
     if (!AP::ahrs().get_position(current_loc)) {
@@ -231,8 +287,8 @@ bool AP_Follow::get_target_dist_and_vel_ned(TargetType type, Vector3f &dist_ned,
     if (is_zero(dist_with_offs.x) && is_zero(dist_with_offs.y)) {
         clear_dist_and_bearing_to_target(type);
     } else {
-        _targets[type].dist_to_target = safe_sqrt(sq(dist_with_offs.x) + sq(dist_with_offs.y));
-        _targets[type].bearing_to_target = degrees(atan2f(dist_with_offs.y, dist_with_offs.x));
+        _targets[type_index].dist_to_target = safe_sqrt(sq(dist_with_offs.x) + sq(dist_with_offs.y));
+        _targets[type_index].bearing_to_target = degrees(atan2f(dist_with_offs.y, dist_with_offs.x));
     }
 
     return true;
@@ -246,13 +302,15 @@ bool AP_Follow::get_target_heading_deg(TargetType type, float &heading) const
         return false;
     }
 
+    const uint8_t type_index = uint8_t(type);
+
     // check for timeout
-    if ((_targets[type].last_heading_update_ms == 0) || (AP_HAL::millis() - _targets[type].last_heading_update_ms > AP_FOLLOW_TIMEOUT_MS)) {
+    if ((_targets[type_index].last_heading_update_ms == 0) || (AP_HAL::millis() - _targets[type_index].last_heading_update_ms > AP_FOLLOW_TIMEOUT_MS)) {
         return false;
     }
 
     // return latest heading estimate
-    heading = _targets[type].heading;
+    heading = _targets[type_index].heading;
     return true;
 }
 
@@ -269,13 +327,13 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
         return;
     }
 
-    const TargetType type = TargetType::TARGET_TYPE_SYSID;
+    const uint8_t type_index = uint8_t(TargetType::SYSID);
 
     // skip message if not from our target
     if (_sysid != 0 && msg.sysid != _sysid) {
         if (_automatic_sysid) {
             // maybe timeout who we were following...
-            if ((_targets[type].last_location_update_ms == 0) || (AP_HAL::millis() - _targets[type].last_location_update_ms > AP_FOLLOW_SYSID_TIMEOUT_MS)) {
+            if ((_targets[type_index].last_location_update_ms == 0) || (AP_HAL::millis() - _targets[type_index].last_location_update_ms > AP_FOLLOW_SYSID_TIMEOUT_MS)) {
                 _sysid.set(0);
             }
         }
@@ -294,65 +352,51 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
             return;
         }
 
-        // get estimated location and velocity (for logging)
-        Location loc_estimate{};
-        Vector3f vel_estimate;
-        UNUSED_RESULT(get_target_location_and_velocity(type, loc_estimate, vel_estimate));
-
-        _targets[type].location.lat = packet.lat;
-        _targets[type].location.lng = packet.lon;
-
-        // select altitude source based on FOLL_ALT_TYPE param 
-        if (_alt_type == AP_FOLLOW_ALTITUDE_TYPE_RELATIVE) {
-            // relative altitude
-            _targets[type].location.alt = packet.relative_alt / 10;        // convert millimeters to cm
-            _targets[type].location.relative_alt = 1;                // set relative_alt flag
-        } else {
-            // absolute altitude
-            _targets[type].location.alt = packet.alt / 10;                 // convert millimeters to cm
-            _targets[type].location.relative_alt = 0;                // reset relative_alt flag
-        }
-
-        _targets[type].velocity_ned.x = packet.vx * 0.01f; // velocity north
-        _targets[type].velocity_ned.y = packet.vy * 0.01f; // velocity east
-        _targets[type].velocity_ned.z = packet.vz * 0.01f; // velocity down
-
-        // get a local timestamp with correction for transport jitter
-        _targets[TargetType::TARGET_TYPE_SYSID].last_location_update_ms = _jitter.correct_offboard_timestamp_msec(packet.time_boot_ms, AP_HAL::millis());
-        if (packet.hdg <= 36000) {                  // heading (UINT16_MAX if unknown)
-            _targets[type].heading = packet.hdg * 0.01f;   // convert centi-degrees to degrees
-            _targets[type].last_heading_update_ms = _targets[type].last_location_update_ms;
-        }
         // initialise _sysid if zero to sender's id
         if (_sysid == 0) {
             _sysid.set(msg.sysid);
             _automatic_sysid = true;
         }
 
-        // log lead's estimated vs reported position
-        AP::logger().Write("FOLL",
-                                               "TimeUS,Lat,Lon,Alt,VelN,VelE,VelD,LatE,LonE,AltE",  // labels
-                                               "sDUmnnnDUm",    // units
-                                               "F--B000--B",    // mults
-                                               "QLLifffLLi",    // fmt
-                                               AP_HAL::micros64(),
-                                               _targets[type].location.lat,
-                                               _targets[type].location.lng,
-                                               _targets[type].location.alt,
-                                               (double)_targets[type].velocity_ned.x,
-                                               (double)_targets[type].velocity_ned.y,
-                                               (double)_targets[type].velocity_ned.z,
-                                               loc_estimate.lat,
-                                               loc_estimate.lng,
-                                               loc_estimate.alt
-                                               );
+
+        set_target_location_and_velocity(packet);
     }
+}
+
+void AP_Follow::log_target(TargetType type)
+{
+    const uint8_t type_index = uint8_t(type);
+
+    // get estimated location and velocity (for logging)
+    Location loc_estimate{};
+    Vector3f vel_estimate;
+    UNUSED_RESULT(get_target_location_and_velocity(type, loc_estimate, vel_estimate));
+
+    // log lead's estimated vs reported position
+    AP::logger().Write("FOLL",
+                       "TimeUS,Lat,Lon,Alt,VelN,VelE,VelD,LatE,LonE,AltE",  // labels
+                       "sDUmnnnDUm",    // units
+                       "F--B000--B",    // mults
+                       "QLLifffLLi",    // fmt
+                       AP_HAL::micros64(),
+                       _targets[type_index].location.lat,
+                       _targets[type_index].location.lng,
+                       _targets[type_index].location.alt,
+                       (double)_targets[type_index].velocity_ned.x,
+                       (double)_targets[type_index].velocity_ned.y,
+                       (double)_targets[type_index].velocity_ned.z,
+                       loc_estimate.lat,
+                       loc_estimate.lng,
+                       loc_estimate.alt
+                       );
 }
 
 // get velocity estimate in m/s in NED frame using dt since last update
 bool AP_Follow::get_velocity_ned(TargetType type, Vector3f &vel_ned, float dt) const
 {
-    vel_ned = _targets[type].velocity_ned + (_targets[type].accel_ned * dt);
+    const uint8_t type_index = uint8_t(type);
+
+    vel_ned = _targets[type_index].velocity_ned + (_targets[type_index].accel_ned * dt);
     return true;
 }
 
@@ -413,14 +457,21 @@ Vector3f AP_Follow::rotate_vector(const Vector3f &vec, float angle_deg) const
 // set recorded distance and bearing to target to zero
 void AP_Follow::clear_dist_and_bearing_to_target(TargetType type)
 {
-    _targets[type].dist_to_target = 0.0f;
-    _targets[type].bearing_to_target = 0.0f;
+    const uint8_t type_index = uint8_t(type);
+
+    _targets[type_index].dist_to_target = 0.0f;
+    _targets[type_index].bearing_to_target = 0.0f;
 }
+
 
 // singleton instance
 AP_Follow *AP_Follow::_singleton;
+
 namespace AP {
-    AP_Follow &follow() {
-        return *AP_Follow::get_singleton();
-    }
-};
+AP_Follow *follow()
+{
+    return AP_Follow::get_singleton();
+}
+
+}
+
