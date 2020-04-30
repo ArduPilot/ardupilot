@@ -1055,7 +1055,8 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  proximity_checks(report)
         &  camera_checks(report)
         &  visodom_checks(report)
-        &  aux_auth_checks(report);
+        &  aux_auth_checks(report)
+        &  disarm_switch_checks(report);
 }
 
 bool AP_Arming::arm_checks(AP_Arming::Method method)
@@ -1212,6 +1213,20 @@ bool AP_Arming::visodom_checks(bool display_failure) const
         }
     }
 #endif
+
+    return true;
+}
+
+// check disarm switch is asserted
+bool AP_Arming::disarm_switch_checks(bool display_failure) const
+{
+    const RC_Channel *chan = rc().find_channel_for_option(RC_Channel::AUX_FUNC::DISARM);
+    if (chan != nullptr &&
+        chan->get_aux_switch_pos() == RC_Channel::aux_switch_pos_t::HIGH &&
+        (checks_to_perform & ARMING_CHECK_ALL)) {
+        check_failed(display_failure, "Disarm Switch on");
+        return false;
+    }
 
     return true;
 }
