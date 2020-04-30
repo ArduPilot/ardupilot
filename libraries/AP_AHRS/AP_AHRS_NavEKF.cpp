@@ -2179,7 +2179,7 @@ int8_t AP_AHRS_NavEKF::get_primary_core_index() const
     }
 
     // we should never get here
-    AP::internalerror().error(AP_InternalError::error_t::flow_of_control);
+    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
     return -1;
 }
 
