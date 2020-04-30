@@ -58,6 +58,8 @@
 
 //#define HIL_MODE              HIL_MODE_SENSORS    // build for hardware-in-the-loop simulation
 
+#define RANGEFINDER_TILT_CORRECTION DISABLED        // disable tilt correction for use of range finder data by EKF
+
 // User Hooks : For User Developed code that you wish to run
 // Put your variable definitions into the UserVariables.h file (or another file name and then change the #define below).
 //#define USERHOOK_VARIABLES "UserVariables.h"
