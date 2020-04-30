@@ -253,13 +253,13 @@ void Vector3<T>::rotate(enum Rotation rotation)
     }
     case ROTATION_CUSTOM: 
         // Error: caller must perform custom rotations via matrix multiplication
-        AP::internalerror().error(AP_InternalError::error_t::flow_of_control);
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         return;
     case ROTATION_MAX:
         break;
     }
     // rotation invalid
-    AP::internalerror().error(AP_InternalError::error_t::bad_rotation);
+    INTERNAL_ERROR(AP_InternalError::error_t::bad_rotation);
 }
 
 template <typename T>
