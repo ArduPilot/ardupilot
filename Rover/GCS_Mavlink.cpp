@@ -356,12 +356,12 @@ void GCS_MAVLINK_Rover::packetReceived(const mavlink_status_t &status, const mav
 }
 
 // Work around to get temperature sensor data out
-void GCS_MAVLINK_Sub::send_scaled_pressure4()
+void GCS_MAVLINK_Rover::send_scaled_pressure3()
 {
     if (!rover.celsius.healthy()) {
         return;
     }
-    mavlink_msg_scaled_pressure4_send(
+    mavlink_msg_scaled_pressure3_send(
         chan,
         AP_HAL::millis(),
         0,

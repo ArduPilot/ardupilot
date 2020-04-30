@@ -21,7 +21,8 @@ protected:
     MAV_RESULT handle_command_int_do_reposition(const mavlink_command_int_t &packet);
 
     // override sending of scaled_pressure4 to send on-board temperature:
-    void send_scaled_pressure4() override;
+    void send_scaled_pressure3() override;
+
 
     void send_position_target_global_int() override;
 

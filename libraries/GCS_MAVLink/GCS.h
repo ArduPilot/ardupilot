@@ -239,8 +239,7 @@ public:
     void send_scaled_pressure_instance(uint8_t instance, void (*send_fn)(mavlink_channel_t chan, uint32_t time_boot_ms, float press_abs, float press_diff, int16_t temperature, int16_t temperature_press_diff));
     void send_scaled_pressure();
     void send_scaled_pressure2();
-    virtual void send_scaled_pressure3(); // allow sub to override this
-    virtual void send_scaled_pressure4(); // allow rover to override this
+    virtual void send_scaled_pressure3(); // allow sub and rover to override this
     void send_sensor_offsets();
     virtual void send_simstate() const;
     void send_ahrs();
