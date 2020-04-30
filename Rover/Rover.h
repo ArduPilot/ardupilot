@@ -68,6 +68,7 @@
 #include <AP_Follow/AP_Follow.h>
 #include <AP_OSD/AP_OSD.h>
 #include <AP_WindVane/AP_WindVane.h>
+#include <AP_TemperatureSensor/TSYS01.h>	    //TSYS01 library
 
 #ifdef ENABLE_SCRIPTING
 #include <AP_Scripting/AP_Scripting.h>
@@ -160,6 +161,8 @@ private:
     AP_Arming_Rover arming;
 
     AP_L1_Control L1_controller{ahrs, nullptr};
+
+    TSYS01 celsius;
 
 #if AP_AHRS_NAVEKF_AVAILABLE
     OpticalFlow optflow;

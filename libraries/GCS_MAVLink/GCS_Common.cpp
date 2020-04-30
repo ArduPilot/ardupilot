@@ -1804,6 +1804,11 @@ void GCS_MAVLINK::send_scaled_pressure3()
     send_scaled_pressure_instance(2, mavlink_msg_scaled_pressure3_send);
 }
 
+void GCS_MAVLINK::send_scaled_pressure4()
+{
+    send_scaled_pressure_instance(3, mavlink_msg_scaled_pressure4_send);
+}
+
 void GCS_MAVLINK::send_sensor_offsets()
 {
     const AP_InertialSensor &ins = AP::ins();
@@ -4683,6 +4688,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_SCALED_PRESSURE3:
         CHECK_PAYLOAD_SIZE(SCALED_PRESSURE3);
         send_scaled_pressure3();
+        break;
+
+    case MSG_SCALED_PRESSURE3:
+        CHECK_PAYLOAD_SIZE(SCALED_PRESSURE3);
+        send_scaled_pressure4();
         break;
 
     case MSG_SENSOR_OFFSETS:

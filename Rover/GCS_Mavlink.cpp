@@ -355,6 +355,20 @@ void GCS_MAVLINK_Rover::packetReceived(const mavlink_status_t &status, const mav
     GCS_MAVLINK::packetReceived(status, msg);
 }
 
+// Work around to get temperature sensor data out
+void GCS_MAVLINK_Sub::send_scaled_pressure4()
+{
+    if (!rover.celsius.healthy()) {
+        return;
+    }
+    mavlink_msg_scaled_pressure4_send(
+        chan,
+        AP_HAL::millis(),
+        0,
+        0,
+        rover.celsius.temperature() * 100);
+}
+
 /*
   default stream rates to 1Hz
  */
