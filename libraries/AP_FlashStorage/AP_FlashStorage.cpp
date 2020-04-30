@@ -142,7 +142,7 @@ bool AP_FlashStorage::switch_full_sector(void)
     debug("running switch_full_sector()\n");
 
     if (in_switch_full_sector) {
-        AP::internalerror().error(AP_InternalError::error_t::switch_full_sector_recursion);
+        INTERNAL_ERROR(AP_InternalError::error_t::switch_full_sector_recursion);
         return false;
     }
     in_switch_full_sector = true;
