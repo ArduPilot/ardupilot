@@ -157,9 +157,10 @@ protected:
         bool running() const { return _running; }
     private:
         bool _running;
-        float max_speed_cms;    // maximum climb rate
         float alt_delta_cm;     // desired total climb in cm
         float tkoff_climb_rate; // desired climb rate in the current iteration
+        float tkoff_climb_rate_max; // maximum desired climb rate from this controller (i.e. not including pilot input)
+        float climb_rate_max;   // overall maximum climb rate from this controller and pilot input
         float alt_climbed_cm;   // expected altitude climbed so far
     };
 
