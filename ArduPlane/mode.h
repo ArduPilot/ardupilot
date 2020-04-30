@@ -172,14 +172,15 @@ public:
 
 protected:
 
+    void update_follow_wp();
 
     bool _enter() override;
     void _exit() override;
 
     // for reporting to GCS
     bool get_wp(Location &loc);
-    uint32_t wp_distance() const;
-    int32_t wp_bearing() const;
+    uint32_t wp_distance_cm() const;
+    int32_t wp_bearing_cd() const;
 
     uint32_t last_log_ms;   // system time of last time desired velocity was logging
 };

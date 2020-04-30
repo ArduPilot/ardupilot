@@ -68,7 +68,7 @@ public:
     //
 
     // true if we have a valid target location estimate
-    bool have_target() const;
+    //bool have_target() const;
 
     // get target's estimated location and velocity (in NED)
     bool get_target_location_and_velocity(Location &loc, Vector3f &vel_ned) { return get_target_location_and_velocity((TargetType)_type.get(), loc, vel_ned); }
