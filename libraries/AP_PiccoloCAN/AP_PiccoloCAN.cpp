@@ -536,14 +536,14 @@ bool AP_PiccoloCAN::pre_arm_check(char* reason, uint8_t reason_len)
         if (SRV_Channels::function_assigned(motor_function)) {
 
             if (!is_esc_present(ii)) {
-                snprintf(reason, reason_len, "PiccoloCAN: ESC %u not detected", ii + 1);
+                snprintf(reason, reason_len, "ESC %u not detected", ii + 1);
                 return false;
             }
 
             PiccoloESC_Info_t &esc = _esc_info[ii];
 
             if (esc.statusA.status.hwInhibit) {
-                snprintf(reason, reason_len, "PiccoloCAN: ESC %u is hardware inhibited", (ii + 1));
+                snprintf(reason, reason_len, "ESC %u is hardware inhibited", (ii + 1));
                 return false;
             }
         }
