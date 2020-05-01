@@ -2015,7 +2015,7 @@ void GCS_MAVLINK::handle_set_mode(const mavlink_message_t &msg)
     const MAV_MODE _base_mode = (MAV_MODE)packet.base_mode;
     const uint32_t _custom_mode = packet.custom_mode;
 
-    send_text(MAV_SEVERITY_INFO,"Received SET_MODE message %u", _custom_mode);
+    send_text(MAV_SEVERITY_INFO,"Received SET_MODE message %u", (unsigned)_custom_mode);
 
     const MAV_RESULT result = _set_mode_common(_base_mode, _custom_mode);
 
