@@ -1190,7 +1190,7 @@ bool NavEKF2_core::EKFGSF_resetMainFilterYaw()
         if (!use_compass()) {
             gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u yaw aligned using GPS",(unsigned)imu_index);
         } else {
-            gcs().send_text(MAV_SEVERITY_WARNING, "EKF2 IMU%u emergency yaw reset - mag sensor stopped",(unsigned)imu_index);
+            gcs().send_text(MAV_SEVERITY_WARNING, "EKF2 IMU%u emergency yaw reset",(unsigned)imu_index);
         }
 
         // Fail the magnetomer so it doesn't get used and pull the yaw away from the correct value
