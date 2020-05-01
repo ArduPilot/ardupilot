@@ -59,9 +59,9 @@ env OPTIMIZE -O2
 # in drivers.
 
 # serial port for stdout. This is optional. If you leave it out then
-# output from printf() lines will be thrown away (you can stil use
+# output from printf() lines will be sent to
 # hal.console->printf() for the ArduPilot console, which is the first
-# UART in the SERIAL_ORDER list). The value for STDOUT_SERIAL is a
+# UART in the SERIAL_ORDER list. The value for STDOUT_SERIAL is a
 # serial device name, and must be for a serial device for which pins
 # are defined in this file. For example, SD7 is for UART7 (SD7 ==
 # "serial device 7" in ChibiOS).
