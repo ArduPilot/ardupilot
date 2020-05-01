@@ -81,6 +81,7 @@ public:
     void set_target_location_and_velocity(TargetType type, Location &loc, Vector3f &vel_ned, uint32_t timestamp = 0);
 
     // get distance vector to target (in meters), target plus offsets, and target's velocity all in NED frame
+    bool get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_with_ofs, Vector3f &vel_ned)  { return get_target_dist_and_vel_ned((TargetType)_type.get(), dist_ned, dist_with_ofs, vel_ned); }
     bool get_target_dist_and_vel_ned(TargetType type, Vector3f &dist_ned, Vector3f &dist_with_ofs, Vector3f &vel_ned);
 
     // get position controller.  this controller is not used within this library but it is convenient to hold it here
@@ -94,6 +95,7 @@ public:
     YawBehave get_yaw_behave() const { return (YawBehave)_yaw_behave.get(); }
 
     // get target's heading in degrees (0 = north, 90 = east)
+    bool get_target_heading_deg(float &heading) const { return get_target_heading_deg((TargetType)_type.get(), heading); }
     bool get_target_heading_deg(TargetType type, float &heading) const;
 
     // parse mavlink messages which may hold target's position, velocity and attitude
