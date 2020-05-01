@@ -155,50 +155,27 @@ void AP_Follow::clear_offsets_if_required()
 }
 
 // set target's location
-void AP_Follow::set_target_location_and_velocity(TargetType type, Location &loc, Vector3f &vel_ned)
+void AP_Follow::set_target_location_and_velocity(TargetType type, Location &loc, Vector3f &vel_ned, uint32_t timestamp)
 {
     const uint8_t type_index = uint8_t(type);
 
     _targets[type_index].location = loc;
-    _targets[type_index].velocity_ned = vel_ned;
 
-    log_target(type);
-}
-
-// set target's location using a mavlin kpacket
-void AP_Follow::set_target_location_and_velocity(mavlink_global_position_int_t &packet)
-{
-    const uint8_t type_index = uint8_t(TargetType::SYSID);
-
-    // get location
-    Location location {};
-    location.lat = packet.lat;
-    location.lng = packet.lon;
-
-    // select altitude source based on FOLL_ALT_TYPE param
-    if (_alt_type == AP_FOLLOW_ALTITUDE_TYPE_RELATIVE) {
-        // relative altitude
-        location.alt = packet.relative_alt / 10;        // convert millimeters to cm
-        location.relative_alt = 1;                // set relative_alt flag
+    const uint32_t now_ms =  AP_HAL::millis();
+    if (timestamp == 0) {
+        _targets[type_index].last_location_update_ms = now_ms;
     } else {
-        // absolute altitude
-        location.alt = packet.alt / 10;                 // convert millimeters to cm
-        location.relative_alt = 0;                // reset relative_alt flag
+        // get a local timestamp with correction for transport jitter
+        _targets[type_index].last_location_update_ms = _jitter[type_index].correct_offboard_timestamp_msec(timestamp, now_ms);
     }
 
-    // get Velocity
-    Vector3f velocity_ned = Vector3f(packet.vx, packet.vy, packet.vz) * 0.01f;
-
-    // set them
-    set_target_location_and_velocity(TargetType::SYSID, location, velocity_ned);
-
-    // get a local timestamp with correction for transport jitter
-    _targets[type_index].last_location_update_ms = _jitter.correct_offboard_timestamp_msec(packet.time_boot_ms, AP_HAL::millis());
-
-    if (packet.hdg <= 36000) {                  // heading (UINT16_MAX if unknown)
-        _targets[type_index].heading = packet.hdg * 0.01f;   // convert centi-degrees to degrees
+    _targets[type_index].velocity_ned = vel_ned;
+    if (!vel_ned.is_zero()) {
+        _targets[type_index].heading = degrees(atan2f(-vel_ned.y, -vel_ned.x));
         _targets[type_index].last_heading_update_ms = _targets[type_index].last_location_update_ms;
     }
+
+    log_target(type);
 }
 
 // get target's estimated location
@@ -340,26 +317,97 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
         return;
     }
 
-    // decode global-position-int message
-    if (msg.msgid == MAVLINK_MSG_ID_GLOBAL_POSITION_INT) {
-
-        // decode message
-        mavlink_global_position_int_t packet;
-        mavlink_msg_global_position_int_decode(&msg, &packet);
-
-        // ignore message if lat and lon are (exactly) zero
-        if ((packet.lat == 0 && packet.lon == 0)) {
+    switch (msg.msgid) {
+    case MAVLINK_MSG_ID_FOLLOW_TARGET:
+        mavlink_follow_target_t packet_follow_target;
+        mavlink_msg_follow_target_decode(&msg, &packet_follow_target);
+        if (packet_follow_target.lat == 0 && packet_follow_target.lon == 0) {
+            // ignore message if lat and lon are (exactly) zero
             return;
         }
+        handle_packet(packet_follow_target);
+        break;
 
-        // initialise _sysid if zero to sender's id
-        if (_sysid == 0) {
-            _sysid.set(msg.sysid);
-            _automatic_sysid = true;
+    case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
+        mavlink_global_position_int_t packet_global_position_int;
+        mavlink_msg_global_position_int_decode(&msg, &packet_global_position_int);
+        if (packet_global_position_int.lat == 0 && packet_global_position_int.lon == 0) {
+            // ignore message if lat and lon are (exactly) zero
+            return;
+        }
+        handle_packet(packet_global_position_int);
+        break;
+
+    default:
+        return;
+    }
+
+    // packet was handled.
+
+
+    // initialise _sysid if zero to sender's id
+    if (_sysid == 0) {
+        _sysid.set(msg.sysid);
+        _automatic_sysid = true;
+    }
+
+}
+
+void AP_Follow::handle_packet(mavlink_follow_target_t &packet)
+{
+        gcs().send_text(MAV_SEVERITY_INFO, "Updating follow target");
+
+        Location location = Location();
+        Vector3f velocity_ned = Vector3f();
+
+        //
+        // TODO: respect est_capabilities
+        // bit positions for tracker reporting capabilities (POS = 0, VEL = 1, ACCEL = 2, ATT + RATES = 3)
+
+        //const uint8_t capabilities = packet.est_capabilities;
+        const uint8_t capabilities = 0xFF;
+
+        if ((capabilities & 0x01) && (packet.lat != 0 || packet.lon != 0)) {
+            location = Location(packet.lat, packet.lon, (uint32_t)(packet.alt * 100), Location::AltFrame::ABSOLUTE);
         }
 
+        if (capabilities & 0x02) {
+            velocity_ned = Vector3f(packet.vel[0], packet.vel[1], packet.vel[2]);
+        }
 
-        set_target_location_and_velocity(packet);
+        // set them
+        set_target_location_and_velocity(TargetType::SYSID, location, velocity_ned, packet.timestamp);
+}
+
+void AP_Follow::handle_packet(mavlink_global_position_int_t &packet)
+{
+    const uint8_t type_index = uint8_t(TargetType::SYSID);
+
+    // get location
+    Location location {};
+    location.lat = packet.lat;
+    location.lng = packet.lon;
+
+    // select altitude source based on FOLL_ALT_TYPE param
+    if (_alt_type == AP_FOLLOW_ALTITUDE_TYPE_RELATIVE) {
+        // relative altitude
+        location.alt = packet.relative_alt / 10;        // convert millimeters to cm
+        location.relative_alt = 1;                // set relative_alt flag
+    } else {
+        // absolute altitude
+        location.alt = packet.alt / 10;                 // convert millimeters to cm
+        location.relative_alt = 0;                // reset relative_alt flag
+    }
+
+    // get Velocity
+    Vector3f velocity_ned = Vector3f(packet.vx, packet.vy, packet.vz) * 0.01f; // convert cm/s to m/s
+
+    // set them
+    set_target_location_and_velocity(TargetType::SYSID, location, velocity_ned, packet.time_boot_ms);
+
+    if (packet.hdg <= 36000) {                  // heading (UINT16_MAX if unknown)
+        _targets[type_index].heading = packet.hdg * 0.01f;   // convert centi-degrees to degrees
+        _targets[type_index].last_heading_update_ms = _targets[type_index].last_location_update_ms;
     }
 }
 

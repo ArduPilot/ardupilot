@@ -77,9 +77,8 @@ public:
     bool get_target_location_and_velocity(TargetType type, Location &loc, Vector3f &vel_ned) const;
 
     // set target's location and velocity (in NED) or a MAVLink packet
-    void set_target_location_and_velocity(Location &loc, Vector3f &vel_ned) { return set_target_location_and_velocity((TargetType)_type.get(), loc, vel_ned); }
-    void set_target_location_and_velocity(TargetType type, Location &loc, Vector3f &vel_ned);
-    void set_target_location_and_velocity(mavlink_global_position_int_t &packet);
+    void set_target_location_and_velocity(Location &loc, Vector3f &vel_ned, uint32_t timestamp = 0) { return set_target_location_and_velocity((TargetType)_type.get(), loc, vel_ned, timestamp); }
+    void set_target_location_and_velocity(TargetType type, Location &loc, Vector3f &vel_ned, uint32_t timestamp = 0);
 
     // get distance vector to target (in meters), target plus offsets, and target's velocity all in NED frame
     bool get_target_dist_and_vel_ned(TargetType type, Vector3f &dist_ned, Vector3f &dist_with_ofs, Vector3f &vel_ned);
@@ -137,6 +136,9 @@ private:
     // write a log entry for the target
     void log_target(TargetType type);
 
+    void handle_packet(mavlink_follow_target_t &packet);
+    void handle_packet(mavlink_global_position_int_t &packet);
+
     // parameters
     AP_Int8     _enabled;           // 1 if this subsystem is enabled
     AP_Int8     _type;              // type of target to follow
@@ -147,8 +149,8 @@ private:
     AP_Int8     _yaw_behave;        // following vehicle's yaw/heading behaviour (see YAW_BEHAVE enum)
     AP_Int8     _alt_type;          // altitude source for follow mode
     AC_P        _p_pos;             // position error P controller
-    bool _automatic_sysid;          // did we lock onto a sysid automatically?
-    bool _offsets_were_zero;        // true if offsets were originally zero and then initialised to the offset from lead vehicle
+    bool        _automatic_sysid;          // did we lock onto a sysid automatically?
+    bool        _offsets_were_zero;        // true if offsets were originally zero and then initialised to the offset from lead vehicle
 
     struct  {
         uint32_t last_location_update_ms;  // system time of last position update
@@ -161,12 +163,8 @@ private:
         float bearing_to_target;       // latest bearing to target in degrees (for reporting purposes)
     } _targets[uint8_t(TargetType::MAX_SIZE)];
 
-
-    // local variables
-    bool _healthy;                  // true if we are receiving mavlink messages (regardless of whether they have target position info within them)
-
     // setup jitter correction with max transport lag of 3s
-    JitterCorrection _jitter{3000};
+    JitterCorrection _jitter[uint8_t(TargetType::MAX_SIZE)] {3000}; // NOTE: this initializes _max_lag_ms=3000 only for SYSID and other indexes are default
 };
 
 
