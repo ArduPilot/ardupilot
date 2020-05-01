@@ -172,7 +172,7 @@ public:
 
 protected:
 
-    void update_follow_wp();
+    bool get_follow_wp(Location &loc);
 
     bool _enter() override;
     void _exit() override;
@@ -182,7 +182,7 @@ protected:
     uint32_t wp_distance_cm() const;
     int32_t wp_bearing_cd() const;
 
-    uint32_t last_log_ms;   // system time of last time desired velocity was logging
+    uint32_t last_wp_change_ms;   // if we change wp too fast the nav controller gets angry
 };
 
 class ModeCircle: public Mode

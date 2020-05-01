@@ -26,7 +26,7 @@ bool ModeFollow::_enter()
        return false;
     }
 
-    update_follow_wp();
+    last_wp_change_ms = AP_HAL::millis();
 
     return true;
 }
@@ -39,24 +39,36 @@ void ModeFollow::_exit()
 
 void ModeFollow::update()
 {
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - last_wp_change_ms > 1000) {
+
+        // if we change wp too fast the nav controller gets angry
+        Location loc_next;
+        if (get_follow_wp(loc_next) && (plane.guided_WP_loc != loc_next)) {
+            last_wp_change_ms = now_ms;
+            plane.set_guided_WP();
+            gcs().send_text(MAV_SEVERITY_WARNING, "new (%d, %d, %d)", loc_next.lat, loc_next.lng, loc_next.alt);
+        }
+    }
+
     plane.mode_guided.update();
-    update_follow_wp();
 }
 
-void ModeFollow::update_follow_wp()
+// returns true if
+bool ModeFollow::get_follow_wp(Location &loc_next)
 {
     Location loc;
     Vector3f vel_ned;
     // this will get us the waypoint with the offset and radius applied
     if (plane.g2.follow.get_target_location_and_velocity(loc, vel_ned)) {
-        plane.guided_WP_loc.lat = loc.lat;
-        plane.guided_WP_loc.lng = loc.lng;
-        plane.guided_WP_loc.alt = plane.current_loc.alt;
-    } else {
-        plane.guided_WP_loc = plane.current_loc;
+        loc_next.lat = loc.lat;
+        loc_next.lng = loc.lng;
+        loc_next.alt = plane.current_loc.alt;
+        return true;
     }
 
-    plane.set_guided_WP();
+    loc_next = plane.current_loc;
+    return false;
 }
 
 

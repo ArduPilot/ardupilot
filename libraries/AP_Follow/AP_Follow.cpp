@@ -188,6 +188,11 @@ bool AP_Follow::get_target_location_and_velocity(TargetType type, Location &loc,
 
     const uint8_t type_index = uint8_t(TargetType::SYSID);
 
+    // check for valid location
+    if (_targets[type_index].location.lat == 0 && _targets[type_index].location.lng == 0) {
+        return false;
+    }
+
     // check for timeout
     if ((_targets[type_index].last_location_update_ms == 0) || (AP_HAL::millis() - _targets[type_index].last_location_update_ms > AP_FOLLOW_TIMEOUT_MS)) {
         return false;
