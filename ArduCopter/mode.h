@@ -912,6 +912,11 @@ public:
 
     void do_not_use_GPS();
 
+    // returns true if LAND mode is trying to control X/Y position
+    bool controlling_position() const { return control_position; }
+
+    void set_land_pause(bool new_value) { land_pause = new_value; }
+
 protected:
 
     const char *name() const override { return "LAND"; }
@@ -921,6 +926,11 @@ private:
 
     void gps_run();
     void nogps_run();
+
+    bool control_position; // true if we are using an external reference to control position
+
+    uint32_t land_start_time;
+    bool land_pause;
 };
 
 
