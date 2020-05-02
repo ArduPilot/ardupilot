@@ -65,7 +65,8 @@
 #include <AP_Arming/AP_Arming.h>
 #include <AP_SmartRTL/AP_SmartRTL.h>
 #include <AP_TempCalibration/AP_TempCalibration.h>
-#include <AC_AutoTune/AC_AutoTune.h>
+#include <AC_AutoTune/AC_AutoTune_Multi.h>
+#include <AC_AutoTune/AC_AutoTune_Heli.h>
 #include <AP_Common/AP_FWVersion.h>
 
 // Configuration
