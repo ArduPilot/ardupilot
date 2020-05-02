@@ -351,8 +351,6 @@ private:
 
     // OSD update loop
     void update_osd();
-    // return radio values as LOW, MIDDLE, HIGH
-    RC_Channel::aux_switch_pos_t get_channel_pos(uint8_t rcmapchan) const;
     // update the state machine when armed or flying
     void update_state_machine_armed();
     // update the state machine when disarmed
