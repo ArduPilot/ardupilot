@@ -57,7 +57,13 @@
 // format of grid on disk
 #define TERRAIN_GRID_FORMAT_VERSION 1
 
+// we allow for a 2cm discrepancy in the grid corners. This is to
+// account for different rounding in terrain DAT file generators using
+// different programming languages
+#define TERRAIN_LATLON_EQUAL(v1, v2) (labs((v1)-(v2)) <= 2)
+
 #if TERRAIN_DEBUG
+#include <assert.h>
 #define ASSERT_RANGE(v,minv,maxv) assert((v)<=(maxv)&&(v)>=(minv))
 #else
 #define ASSERT_RANGE(v,minv,maxv)
@@ -325,6 +331,7 @@ private:
     void io_timer(void);
     void open_file(void);
     void seek_offset(void);
+    uint32_t east_blocks(struct grid_block &block) const;
     void write_block(void);
     void read_block(void);
 
@@ -342,6 +349,11 @@ private:
     // parameters
     AP_Int8  enable;
     AP_Int16 grid_spacing; // meters between grid points
+    AP_Int16 options; // option bits
+
+    enum class Options {
+        DisableDownload = (1U<<0),
+    };
 
     // reference to AP_Mission, so we can ask preload terrain data for 
     // all waypoints

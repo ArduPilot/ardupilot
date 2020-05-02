@@ -47,6 +47,13 @@ const AP_Param::GroupInfo AP_Terrain::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SPACING",   1, AP_Terrain, grid_spacing, 100),
 
+    // @Param: OPTIONS
+    // @DisplayName: Terrain options
+    // @Description: Options to change behaviour of terrain system
+    // @Bitmask: 0:Disable Download
+    // @User: Advanced
+    AP_GROUPINFO("OPTIONS",   2, AP_Terrain, options, 0),
+    
     AP_GROUPEND
 };
 
