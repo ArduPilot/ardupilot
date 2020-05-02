@@ -113,8 +113,8 @@ AP_Terrain::grid_cache &AP_Terrain::find_grid_cache(const struct grid_info &info
 
     // see if we have that grid
     for (uint16_t i=0; i<cache_size; i++) {
-        if (cache[i].grid.lat == info.grid_lat && 
-            cache[i].grid.lon == info.grid_lon &&
+        if (TERRAIN_LATLON_EQUAL(cache[i].grid.lat,info.grid_lat) &&
+            TERRAIN_LATLON_EQUAL(cache[i].grid.lon,info.grid_lon) &&
             cache[i].grid.spacing == grid_spacing) {
             cache[i].last_access_ms = AP_HAL::millis();
             return cache[i];
@@ -152,16 +152,16 @@ int16_t AP_Terrain::find_io_idx(enum GridCacheState state)
 {
     // try first with given state
     for (uint16_t i=0; i<cache_size; i++) {
-        if (disk_block.block.lat == cache[i].grid.lat &&
-            disk_block.block.lon == cache[i].grid.lon && 
+        if (TERRAIN_LATLON_EQUAL(disk_block.block.lat,cache[i].grid.lat) &&
+            TERRAIN_LATLON_EQUAL(disk_block.block.lon,cache[i].grid.lon) &&
             cache[i].state == state) {
             return i;
         }
     }    
     // then any state
     for (uint16_t i=0; i<cache_size; i++) {
-        if (disk_block.block.lat == cache[i].grid.lat &&
-            disk_block.block.lon == cache[i].grid.lon) {
+        if (TERRAIN_LATLON_EQUAL(disk_block.block.lat,cache[i].grid.lat) &&
+            TERRAIN_LATLON_EQUAL(disk_block.block.lon,cache[i].grid.lon)) {
             return i;
         }
     }    

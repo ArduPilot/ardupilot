@@ -39,6 +39,10 @@ bool AP_Terrain::request_missing(mavlink_channel_t chan, struct grid_cache &gcac
 {
     struct grid_block &grid = gcache.grid;
 
+    if (options.get() & uint16_t(Options::DisableDownload)) {
+        return false;
+    }
+
     if (grid.spacing != grid_spacing) {
         // an invalid grid
         return false;
@@ -263,8 +267,8 @@ void AP_Terrain::handle_terrain_data(const mavlink_message_t &msg)
 
     uint16_t i;
     for (i=0; i<cache_size; i++) {
-        if (cache[i].grid.lat == packet.lat && 
-            cache[i].grid.lon == packet.lon && 
+        if (TERRAIN_LATLON_EQUAL(cache[i].grid.lat,packet.lat) &&
+            TERRAIN_LATLON_EQUAL(cache[i].grid.lon,packet.lon) &&
             cache[i].grid.spacing == packet.grid_spacing &&
             grid_spacing == packet.grid_spacing &&
             packet.gridbit < 56) {
