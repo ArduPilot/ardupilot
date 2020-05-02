@@ -1769,7 +1769,7 @@ void GCS_MAVLINK::send_ahrs()
 */
 void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, uint8_t dest_bitmask)
 {
-    char first_piece_of_text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1]{};
+    char first_piece_of_text[MAVLINK_MSG_ID_STATUSTEXT_LEN]{};
 
     do {
         WITH_SEMAPHORE(_statustext_sem);
@@ -2760,7 +2760,7 @@ void GCS_MAVLINK::handle_statustext(const mavlink_message_t &msg)
     mavlink_statustext_t packet;
     mavlink_msg_statustext_decode(&msg, &packet);
     const uint8_t max_prefix_len = 20;
-    const uint8_t text_len = MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1+max_prefix_len;
+    const uint8_t text_len = MAVLINK_MSG_ID_STATUSTEXT_LEN+max_prefix_len;
     char text[text_len] = { 'G','C','S',':'};
     uint8_t offset = strlen(text);
 
@@ -3349,7 +3349,7 @@ void GCS_MAVLINK::send_banner()
     }
 
     // send RC output mode info if available
-    char banner_msg[50];
+    char banner_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN];
     if (hal.rcout->get_output_mode_banner(banner_msg, sizeof(banner_msg))) {
         send_text(MAV_SEVERITY_INFO, "%s", banner_msg);
     }
