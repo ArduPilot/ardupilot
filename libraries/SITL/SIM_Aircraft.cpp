@@ -807,6 +807,8 @@ float Aircraft::get_local_updraft(Vector3f currentPos)
 
     int n_thermals = 0;
 
+    float sink_correction = 0.0f;
+
     switch (scenario) {
         case 1:
             n_thermals = 1;
@@ -829,6 +831,32 @@ float Aircraft::get_local_updraft(Vector3f currentPos)
             thermals_x[0] = -180.0;
             thermals_y[0] = -260.0;
             break;
+        case 4:
+            n_thermals = 1;
+            thermals_w[0] = 2.5;
+            thermals_r[0] = 80.0;
+
+            // spacing between thermals
+            float l = 300.0;
+
+            float a = currentPos.x - 0.5774*currentPos.y;
+            float b =                1.1547*currentPos.y;
+
+            float ra = round(a/l);
+            float rb = round(b/l);
+
+            // Check if nearest is a gap
+            if (is_equal(fmod(ra,3.0f),fmod(rb,3.0f))) {
+                ra -= 1.0f;
+            }
+
+            float px = ra + 0.5*rb;
+            float py =    0.866*rb;
+
+            thermals_x[0] = px*l;
+            thermals_y[0] = py*l;
+
+            sink_correction = 0.163*thermals_w[0];
     }
 
     // Wind drift at this altitude
@@ -847,7 +875,7 @@ float Aircraft::get_local_updraft(Vector3f currentPos)
         w += thermals_w[iThermal]*exp(-r2/(thermals_r[iThermal]*thermals_r[iThermal]));
     }
 
-    return w;
+    return w - sink_correction;
 }
 
 void Aircraft::add_twist_forces(Vector3f &rot_accel)
