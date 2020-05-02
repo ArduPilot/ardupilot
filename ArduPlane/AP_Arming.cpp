@@ -77,7 +77,7 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
 
     if (plane.quadplane.enabled() && plane.quadplane.available()) {
         // ensure controllers are OK with us arming:
-        char failure_msg[50];
+        char failure_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN];
         if (!plane.quadplane.pos_control->pre_arm_checks("PSC", failure_msg, ARRAY_SIZE(failure_msg))) {
             check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Bad parameter: %s", failure_msg);
             return false;
