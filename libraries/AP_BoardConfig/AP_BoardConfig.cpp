@@ -363,7 +363,7 @@ void AP_BoardConfig::config_error(const char *fmt, ...)
             vprintf(printfmt, arg_list);
             va_end(arg_list);
 #if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN) && !defined(HAL_BUILD_AP_PERIPH)
-            char taggedfmt[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+            char taggedfmt[MAVLINK_MSG_ID_STATUSTEXT_LEN];
             hal.util->snprintf(taggedfmt, sizeof(taggedfmt), "Config error: %s", fmt);
             va_start(arg_list, fmt);
             gcs().send_textv(MAV_SEVERITY_CRITICAL, taggedfmt, arg_list);
