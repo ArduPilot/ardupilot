@@ -175,7 +175,7 @@ void AP_Arming::check_failed(const enum AP_Arming::ArmingChecks check, bool repo
     if (!report) {
         return;
     }
-    char taggedfmt[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+    char taggedfmt[MAVLINK_MSG_ID_STATUSTEXT_LEN];
     hal.util->snprintf(taggedfmt, sizeof(taggedfmt), "PreArm: %s", fmt);
     MAV_SEVERITY severity = check_severity(check);
     va_list arg_list;
@@ -189,7 +189,7 @@ void AP_Arming::check_failed(bool report, const char *fmt, ...) const
     if (!report) {
         return;
     }
-    char taggedfmt[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+    char taggedfmt[MAVLINK_MSG_ID_STATUSTEXT_LEN];
     hal.util->snprintf(taggedfmt, sizeof(taggedfmt), "PreArm: %s", fmt);
     va_list arg_list;
     va_start(arg_list, fmt);
@@ -361,7 +361,7 @@ bool AP_Arming::ins_checks(bool report)
         }
 
         // check AHRS attitudes are consistent
-        char failure_msg[50] = {};
+        char failure_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] = {};
         if (!AP::ahrs().attitudes_consistent(failure_msg, ARRAY_SIZE(failure_msg))) {
             check_failed(ARMING_CHECK_INS, report, "%s", failure_msg);
             return false;
@@ -412,7 +412,7 @@ bool AP_Arming::compass_checks(bool report)
         }
         // check compass learning is on or offsets have been set
         if (!_compass.learn_offsets_enabled()) {
-            char failure_msg[50] = {};
+            char failure_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] = {};
             if (!_compass.configured(failure_msg, ARRAY_SIZE(failure_msg))) {
                 check_failed(ARMING_CHECK_COMPASS, report, "%s", failure_msg);
                 return false;
@@ -507,7 +507,7 @@ bool AP_Arming::battery_checks(bool report)
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_BATTERY)) {
 
-        char buffer[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] {};
+        char buffer[MAVLINK_MSG_ID_STATUSTEXT_LEN] {};
         if (!AP::battery().arming_checks(sizeof(buffer), buffer)) {
             check_failed(ARMING_CHECK_BATTERY, report, "%s", buffer);
             return false;
@@ -687,7 +687,7 @@ bool AP_Arming::rangefinder_checks(bool report)
             return true;
         }
 
-        char buffer[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+        char buffer[MAVLINK_MSG_ID_STATUSTEXT_LEN];
         if (!range->prearm_healthy(buffer, ARRAY_SIZE(buffer))) {
             check_failed(ARMING_CHECK_RANGEFINDER, report, "%s", buffer);
             return false;
@@ -814,7 +814,7 @@ bool AP_Arming::can_checks(bool report)
 {
 #if HAL_WITH_UAVCAN
     if (check_enabled(ARMING_CHECK_SYSTEM)) {
-        char fail_msg[50] = {};
+        char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] = {};
         uint8_t num_drivers = AP::can().get_num_drivers();
 
         for (uint8_t i = 0; i < num_drivers; i++) {
@@ -903,7 +903,7 @@ bool AP_Arming::camera_checks(bool display_failure)
         }
 
         // check camera is ready
-        char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+        char fail_msg[MAVLINK_MSG_ID_STATUSTEXT_LEN];
         if (!runcam->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
             check_failed(ARMING_CHECK_CAMERA, display_failure, "%s", fail_msg);
             return false;
@@ -1205,7 +1205,7 @@ bool AP_Arming::visodom_checks(bool display_failure) const
 #if HAL_VISUALODOM_ENABLED
     AP_VisualOdom *visual_odom = AP::visualodom();
     if (visual_odom != nullptr) {
-        char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+        char fail_msg[MAVLINK_MSG_ID_STATUSTEXT_LEN];
         if (!visual_odom->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
             check_failed(ARMING_CHECK_VISION, display_failure, "VisualOdom: %s", fail_msg);
             return false;
