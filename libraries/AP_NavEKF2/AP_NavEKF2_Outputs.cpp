@@ -351,7 +351,11 @@ bool NavEKF2_core::getLLH(struct Location &loc) const
                 // correct for IMU offset (EKF calculations are at the IMU position)
                 loc.lat = EKF_origin.lat;
                 loc.lng = EKF_origin.lng;
-                loc.offset((lastKnownPositionNE.x + posOffsetNED.x), (lastKnownPositionNE.y + posOffsetNED.y));
+                if (PV_AidingMode == AID_NONE) {
+                    loc.offset((lastKnownPositionNE.x + posOffsetNED.x), (lastKnownPositionNE.y + posOffsetNED.y));
+                } else {
+                    loc.offset((outputDataNew.position.x + posOffsetNED.x), (outputDataNew.position.y + posOffsetNED.y));
+                }
                 return false;
             }
         }
