@@ -96,7 +96,7 @@ bool AP_Arming_Copter::compass_checks(bool display_failure)
     if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_COMPASS)) {
         // check compass offsets have been set.  AP_Arming only checks
         // this if learning is off; Copter *always* checks.
-        char failure_msg[50] = {};
+        char failure_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] = {};
         if (!AP::compass().configured(failure_msg, ARRAY_SIZE(failure_msg))) {
             check_failed(ARMING_CHECK_COMPASS, display_failure, "%s", failure_msg);
             ret = false;
@@ -198,7 +198,7 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
             return false;
         }
 
-        char fail_msg[50];
+        char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN];
         // check input mangager parameters
         if (!copter.input_manager.parameter_check(fail_msg, ARRAY_SIZE(fail_msg))) {
             check_failed(ARMING_CHECK_PARAMETERS, display_failure, "%s", fail_msg);
@@ -281,7 +281,7 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
 #endif
 
         // ensure controllers are OK with us arming:
-        char failure_msg[50];
+        char failure_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN];
         if (!copter.pos_control->pre_arm_checks("PSC", failure_msg, ARRAY_SIZE(failure_msg))) {
             check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Bad parameter: %s", failure_msg);
             return false;
@@ -379,7 +379,7 @@ bool AP_Arming_Copter::pilot_throttle_checks(bool display_failure)
 bool AP_Arming_Copter::oa_checks(bool display_failure)
 {
 #if AC_OAPATHPLANNER_ENABLED == ENABLED
-    char failure_msg[50];
+    char failure_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN];
     if (copter.g2.oa.pre_arm_check(failure_msg, ARRAY_SIZE(failure_msg))) {
         return true;
     }
