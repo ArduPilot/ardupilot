@@ -347,7 +347,11 @@ bool NavEKF3_core::getLLH(struct Location &loc) const
                 // if no GPS fix, provide last known position before entering the mode
                 loc.lat = EKF_origin.lat;
                 loc.lng = EKF_origin.lng;
-                loc.offset(lastKnownPositionNE.x, lastKnownPositionNE.y);
+                if (PV_AidingMode == AID_NONE) {
+                    loc.offset(lastKnownPositionNE.x, lastKnownPositionNE.y);
+                } else {
+                    loc.offset(outputDataNew.position.x, outputDataNew.position.y);
+                }
                 return false;
             }
         }
