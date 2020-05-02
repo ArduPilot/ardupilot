@@ -160,7 +160,7 @@ void AP_GPS_Backend::_detection_message(char *buffer, const uint8_t buflen) cons
 void AP_GPS_Backend::broadcast_gps_type() const
 {
 #ifndef HAL_NO_GCS
-    char buffer[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+    char buffer[MAVLINK_MSG_ID_STATUSTEXT_LEN];
     _detection_message(buffer, sizeof(buffer));
     gcs().send_text(MAV_SEVERITY_INFO, "%s", buffer);
 #endif
@@ -169,7 +169,7 @@ void AP_GPS_Backend::broadcast_gps_type() const
 void AP_GPS_Backend::Write_AP_Logger_Log_Startup_messages() const
 {
 #ifndef HAL_NO_LOGGING
-    char buffer[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+    char buffer[MAVLINK_MSG_ID_STATUSTEXT_LEN];
     _detection_message(buffer, sizeof(buffer));
     AP::logger().Write_Message(buffer);
 #endif
