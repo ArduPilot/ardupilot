@@ -155,7 +155,7 @@ bool AP_Arming_Rover::disarm(const AP_Arming::Method method)
 // check object avoidance has initialised correctly
 bool AP_Arming_Rover::oa_check(bool report)
 {
-    char failure_msg[50];
+    char failure_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN];
     if (rover.g2.oa.pre_arm_check(failure_msg, ARRAY_SIZE(failure_msg))) {
         return true;
     }
