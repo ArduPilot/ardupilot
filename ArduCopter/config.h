@@ -55,7 +55,7 @@
 #if FRAME_CONFIG == HELI_FRAME
   # define RC_FAST_SPEED                        125
   # define WP_YAW_BEHAVIOR_DEFAULT              WP_YAW_BEHAVIOR_LOOK_AHEAD
-  # define AUTOTUNE_ENABLED                     DISABLED
+  # define AUTOTUNE_ENABLED                     ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
