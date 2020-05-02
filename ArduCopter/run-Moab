@@ -1,0 +1,1 @@
+python3 ../Tools/autotest/sim_vehicle.py -f hexa --map --console -L Moab
