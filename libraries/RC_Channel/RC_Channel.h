@@ -324,6 +324,7 @@ public:
 
     class RC_Channel *find_channel_for_option(const RC_Channel::aux_func_t option);
     bool duplicate_options_exist();
+    RC_Channel::aux_switch_pos_t get_channel_pos(const uint8_t rcmapchan) const;
 
     void init_aux_all();
     void read_aux_all();
