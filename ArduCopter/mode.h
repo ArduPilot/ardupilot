@@ -586,7 +586,12 @@ private:
 /*
   wrapper class for AC_AutoTune
  */
-class AutoTune : public AC_AutoTune
+
+#if FRAME_CONFIG == HELI_FRAME
+class AutoTune : public AC_AutoTune_Heli
+#else
+class AutoTune : public AC_AutoTune_Multi
+#endif
 {
 public:
     bool init() override;
