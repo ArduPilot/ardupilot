@@ -479,7 +479,7 @@ bool AP_BattMonitor::get_cycle_count(uint8_t instance, uint16_t &cycles) const
 
 bool AP_BattMonitor::arming_checks(size_t buflen, char *buffer) const
 {
-    char temp_buffer[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] {};
+    char temp_buffer[MAVLINK_MSG_ID_STATUSTEXT_LEN] {};
 
     for (uint8_t i = 0; i < AP_BATT_MONITOR_MAX_INSTANCES; i++) {
         if (drivers[i] != nullptr && !(drivers[i]->arming_checks(temp_buffer, sizeof(temp_buffer)))) {
