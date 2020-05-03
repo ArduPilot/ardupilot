@@ -234,7 +234,6 @@ void NavEKF2_core::setAidingMode()
 
         // Check if the loss of position accuracy has become critical
         bool posAidLossCritical = false;
-        bool posAidLossPending = false;
         if (!posAiding ) {
             uint16_t maxLossTime_ms;
             if (!velAiding) {
@@ -245,9 +244,6 @@ void NavEKF2_core::setAidingMode()
             posAidLossCritical = (imuSampleTime_ms - lastRngBcnPassTime_ms > maxLossTime_ms) &&
                                  (imuSampleTime_ms - lastExtNavPassTime_ms > maxLossTime_ms) &&
                                  (imuSampleTime_ms - lastPosPassTime_ms > maxLossTime_ms);
-            posAidLossPending = (imuSampleTime_ms - lastRngBcnPassTime_ms > (uint32_t)frontend->_gsfResetDelay) &&
-                                (imuSampleTime_ms - lastExtNavPassTime_ms > (uint32_t)frontend->_gsfResetDelay) &&
-                                (imuSampleTime_ms - lastPosPassTime_ms > (uint32_t)frontend->_gsfResetDelay);
         }
 
         if (attAidLossCritical) {
@@ -267,9 +263,6 @@ void NavEKF2_core::setAidingMode()
             velTimeout = true;
             rngBcnTimeout = true;
             gpsNotAvailable = true;
-        } else if (posAidLossPending) {
-            // attempt to reset the yaw to the estimate from the EKF-GSF algorithm
-            EKFGSF_yaw_reset_request_ms = imuSampleTime_ms;
         }
         break;
     }
