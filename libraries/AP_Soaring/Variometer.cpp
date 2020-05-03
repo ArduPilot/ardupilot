@@ -150,10 +150,10 @@ void Variometer::update_polar_learning(bool throttle_suppressed, float dsp_dem)
     // Conditioned on throttle, speed, roll, rate of change of speed target
 
     if (!throttle_suppressed ||
-            fabs(_ahrs.roll) > LEARN_THRESHOLD_ROLL ||
+            abs(_ahrs.roll) > LEARN_THRESHOLD_ROLL ||
             _aspd_filt < 0.7*_aparm.airspeed_min ||
             _aspd_filt > 1.3*_aparm.airspeed_max ||
-            fabs(dsp_dem) > 0.2) {
+            abs(dsp_dem) > 0.2) {
         // Conditions not ok.
         _learn_skipped_time = AP_HAL::millis();
 
@@ -173,8 +173,8 @@ void Variometer::update_polar_learning(bool throttle_suppressed, float dsp_dem)
         _learn_EKF.update(input, u_in);
 
         // Save parameters if changed by >0.1%
-        if (fabs((_polarParams.CD0 - _learn_EKF.X[0])/_polarParams.CD0) > 0.001f ||
-            fabs((_polarParams.B   - _learn_EKF.X[1])/_polarParams.B)   > 0.001f) {
+        if (abs((_polarParams.CD0 - _learn_EKF.X[0])/_polarParams.CD0) > 0.001f ||
+            abs((_polarParams.B   - _learn_EKF.X[1])/_polarParams.B)   > 0.001f) {
             _polarParams.CD0.set(_learn_EKF.X[0]);
             _polarParams.CD0.save();
             AP::logger().Write_Parameter("SOAR_POLAR_CD0",_learn_EKF.X[0]);
