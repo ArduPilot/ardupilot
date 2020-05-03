@@ -544,6 +544,8 @@ private:
 
     MAV_RESULT _set_mode_common(const MAV_MODE base_mode, const uint32_t custom_mode);
 
+    void service_statustext(void);
+
     virtual void        handleMessage(const mavlink_message_t &msg) = 0;
 
     MAV_RESULT handle_servorelay_message(const mavlink_command_long_t &packet);
@@ -886,6 +888,24 @@ public:
     virtual MAV_TYPE frame_type() const = 0;
     virtual const char* frame_string() const { return nullptr; }
 
+    struct statustext_t {
+        mavlink_statustext_t    msg;
+        uint8_t                 bitmask;
+    };
+    class StatusTextQueue : public ObjectArray<statustext_t> {
+    public:
+        using ObjectArray::ObjectArray;
+        HAL_Semaphore &semaphore() { return _sem; }
+    private:
+        // a lock for the statustext queue, to make it safe to use send_text()
+        // from multiple threads
+        HAL_Semaphore _sem;
+    };
+
+    StatusTextQueue &statustext_queue() {
+        return _statustext_queue;
+    }
+
     void send_to_active_channels(uint32_t msgid, const char *pkt);
 
     void send_text(MAV_SEVERITY severity, const char *fmt, ...) FMT_PRINTF(3, 4);
@@ -982,10 +1002,6 @@ private:
     void create_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
                                     AP_HAL::UARTDriver &uart);
 
-    struct statustext_t {
-        uint8_t                 bitmask;
-        mavlink_statustext_t    msg;
-    };
     char statustext_printf_buffer[256+1];
 
     virtual AP_GPS::GPS_Status min_status_for_gps_healthy() const {
@@ -1002,12 +1018,8 @@ private:
     static const uint8_t _status_capacity = 30;
 #endif
 
-    // a lock for the statustext queue, to make it safe to use send_text()
-    // from multiple threads
-    HAL_Semaphore _statustext_sem;
-
     // queue of outgoing statustext messages
-    ObjectArray<statustext_t> _statustext_queue{_status_capacity};
+    StatusTextQueue _statustext_queue{_status_capacity};
 
     // true if we have already allocated protocol objects:
     bool initialised_missionitemprotocol_objects;
