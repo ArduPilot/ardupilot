@@ -740,6 +740,7 @@ private:
         FTP_FILE_MODE mode; // work around AP_Filesystem not supporting file modes
         int16_t current_session;
         uint32_t last_send_ms;
+        uint8_t need_banner_send_mask;
     };
     static struct ftp_state ftp;
 
