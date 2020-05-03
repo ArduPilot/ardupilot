@@ -950,6 +950,8 @@ void NavEKF3_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, 
         extNavMeasTime_ms = timeStamp_ms;
     }
 
+    ext_nav_elements extNavDataNew {};
+
     if (resetTime_ms != extNavLastPosResetTime_ms) {
         extNavDataNew.posReset = true;
         extNavLastPosResetTime_ms = resetTime_ms;

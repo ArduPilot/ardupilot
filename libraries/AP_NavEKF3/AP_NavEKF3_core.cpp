@@ -395,8 +395,7 @@ void NavEKF3_core::InitialiseVariables()
     memset(&yawAngDataDelayed, 0, sizeof(yawAngDataDelayed));
 
     // external nav data fusion
-    memset(&extNavDataNew, 0, sizeof(extNavDataNew));
-    memset(&extNavDataDelayed, 0, sizeof(extNavDataDelayed));
+    extNavDataDelayed = {};
     extNavMeasTime_ms = 0;
     extNavLastPosResetTime_ms = 0;
     lastExtNavPassTime_ms = 0;
