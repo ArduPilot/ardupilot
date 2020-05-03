@@ -97,7 +97,11 @@ int32_t AP_Filesystem_ROMFS::lseek(int fd, int32_t offset, int seek_from)
     }
     switch (seek_from) {
     case SEEK_SET:
-        file[fd].ofs = MIN(file[fd].size, offset);
+        if (offset < 0) {
+            errno = EINVAL;
+            return -1;
+        }
+        file[fd].ofs = MIN(file[fd].size, (uint32_t)offset);
         break;
     case SEEK_CUR:
         file[fd].ofs = MIN(file[fd].size, offset+file[fd].ofs);
