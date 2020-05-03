@@ -2904,11 +2904,35 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                             want_type=mavutil.mavlink.MAV_MISSION_DENIED)
 
             # wait for the upload from sysid=1 to time out:
-            self.wait_text("upload timeout")
-            self.assert_receive_mission_ack(
-                mavutil.mavlink.MAV_MISSION_TYPE_RALLY,
-                want_type=mavutil.mavlink.MAV_MISSION_OPERATION_CANCELLED,
-                target_system=old_srcSystem)
+            tstart = self.get_sim_time()
+            got_statustext = False
+            got_ack = False
+            while True:
+                if got_statustext and got_ack:
+                    self.progress("Got both ack and statustext")
+                    break
+                if self.get_sim_time_cached() - tstart > 100:
+                    raise NotAchievedException("Did not get both ack and statustext")
+                m = self.mav.recv_match(type=['STATUSTEXT','MISSION_ACK'], blocking=True, timeout=1)
+                if m is None:
+                    continue
+                self.progress("Got (%s)" % str(m))
+                if m.get_type() == 'STATUSTEXT':
+                    if "upload timeout" in m.text:
+                        got_statustext = True
+                        self.progress("Received desired statustext")
+                    continue
+                if m.get_type() == 'MISSION_ACK':
+                    if m.target_system != old_srcSystem:
+                        raise NotAchievedException("Incorrect sourcesystem")
+                    if m.type != mavutil.mavlink.MAV_MISSION_OPERATION_CANCELLED:
+                        raise NotAchievedException("Incorrect result")
+                    if m.mission_type != mavutil.mavlink.MAV_MISSION_TYPE_RALLY:
+                        raise NotAchievedException("Incorrect mission_type")
+                    got_ack = True
+                    self.progress("Received desired ACK")
+                    continue
+                raise NotAchievedException("Huh?")
 
             self.progress("Now trying to upload empty mission after timeout")
             self.mav.mav.mission_count_send(target_system,
