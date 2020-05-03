@@ -840,6 +840,7 @@ public:
     void send_text(MAV_SEVERITY severity, const char *fmt, ...) FMT_PRINTF(3, 4);
     void send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list);
     virtual void send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, uint8_t mask);
+    void send_text_rate_limited(MAV_SEVERITY severity, const uint32_t interval_ms, uint32_t &ref_to_timetime_ms, const char *fmt, ...);
 
     virtual GCS_MAVLINK *chan(const uint8_t ofs) = 0;
     virtual const GCS_MAVLINK *chan(const uint8_t ofs) const = 0;
