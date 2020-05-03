@@ -5165,15 +5165,29 @@ switch value'''
         self.wait_ready_to_arm()
 
         # test we get statustext strings.  This relies on ArduPilot
-        # emitting statustext strings when we fetch parameters.
-        self.mavproxy.send("param fetch\n")
+        # emitting statustext strings when we fetch parameters. (or,
+        # now, an updating-barometer statustext)
         tstart = self.get_sim_time_cached()
         old_data = None
         text = ""
+        sent_request = False
         while True:
             now = self.get_sim_time()
             if now - tstart > 60: # it can take a *long* time to get these messages down!
                 raise NotAchievedException("Did not get statustext in time")
+            if now - tstart > 30 and not sent_request:
+                # have to wait this long or our message gets squelched....
+                sent_request = True
+#                                self.mavproxy.send("param fetch\n")
+                self.run_cmd(mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
+                             0, #p1
+                             0, #p2
+                             1, #p3, baro
+                             0, #p4
+                             0, #p5
+                             0, #p6
+                             0, #p7
+                )
             frsky.update()
             data = frsky.get_data(0x5000) # no timestamping on this data, so we can't catch legitimate repeats.
             if data is None:
@@ -5195,7 +5209,9 @@ switch value'''
                 if (x & 0x7f) == 0x00:
                     last = True
             if last:
-                m = re.match("Ardu(Plane|Copter|Rover|Tracker|Sub) V[345]", text)
+                # we used to do a 'param fetch' and expect this back, but the params-via-ftp thing broke it.
+#                m = re.match("Ardu(Plane|Copter|Rover|Tracker|Sub) V[345]", text)
+                m = re.match("Updating barometer calibration", text)
                 if m is not None:
                     want_sev = mavutil.mavlink.MAV_SEVERITY_INFO
                     if severity != want_sev:
