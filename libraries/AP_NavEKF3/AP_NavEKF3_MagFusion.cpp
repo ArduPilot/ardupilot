@@ -261,7 +261,9 @@ void NavEKF3_core::SelectMagFusion()
 
     // Handle case where we are not using a yaw sensor of any type and and attempt to reset the yaw in
     // flight using the output from the GSF yaw estimator.
-    if (effectiveMagCal == MagCal::GSF_YAW || !use_compass()) {
+    if ((effectiveMagCal == MagCal::GSF_YAW || !use_compass()) &&
+        effectiveMagCal != MagCal::EXTERNAL_YAW &&
+        effectiveMagCal != MagCal::EXTERNAL_YAW_FALLBACK) {
         if (!yawAlignComplete) {
             yawAlignComplete = EKFGSF_resetMainFilterYaw();
         }
