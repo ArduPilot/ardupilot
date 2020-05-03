@@ -85,7 +85,16 @@ void GCS_MAVLINK::handle_file_transfer_protocol(const mavlink_message_t &msg) {
     }
 }
 
-void GCS_MAVLINK::send_ftp_replies(void) {
+void GCS_MAVLINK::send_ftp_replies(void)
+{
+    /*
+      provide same banner we would give with old param download
+    */
+    if (ftp.need_banner_send_mask & (1U<<chan)) {
+        ftp.need_banner_send_mask &= ~(1U<<chan);
+        send_banner();
+    }
+    
     if (ftp.replies == nullptr || ftp.replies->empty()) {
         return;
     }
@@ -273,6 +282,11 @@ void GCS_MAVLINK::ftp_worker(void) {
                         reply.opcode = FTP_OP::Ack;
                         reply.size = sizeof(uint32_t);
                         *((int32_t *)reply.data) = (int32_t)file_size;
+
+                        // provide compatibility with old protocol banner download
+                        if (strncmp((const char *)request.data, "@PARAM/param.pck", 16) == 0) {
+                            ftp.need_banner_send_mask |= 1U<<reply.chan;
+                        }
                         break;
                     }
                 case FTP_OP::ReadFile:
