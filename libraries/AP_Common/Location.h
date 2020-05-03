@@ -10,13 +10,6 @@ class Location
 {
 public:
 
-    bool operator==(const Location &that) {
-        return (memcmp(this, &that, sizeof(*this)) == 0);
-    }
-    bool operator!=(const Location &that) {
-        return !(*this == that);
-    }
-
     uint8_t relative_alt : 1;           // 1 if altitude is relative to home
     uint8_t loiter_ccw   : 1;           // 0 if clockwise, 1 if counter clockwise
     uint8_t terrain_alt  : 1;           // this altitude is above terrain
