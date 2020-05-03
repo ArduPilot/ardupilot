@@ -126,6 +126,14 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     AP_GROUPINFO("_ALT_TYPE", 10, AP_Follow, _alt_type, AP_FOLLOW_ALTITUDE_TYPE_RELATIVE),
 #endif
 
+
+    // @Param: _STNDOFF
+    // @DisplayName: Follow stand-off distance
+    // @Description: Follow stand-off distance. Range to keep a target waypoint away from the target. Equivalent to a keep-out exclusion zone. Keep in mind that this does not consider the loiter radius of fixed-wing, only of the loiter waypoint. Use 0 to disable
+    // @Units: m
+    // @User: Standard
+    AP_GROUPINFO("_STNDOFF", 11, AP_Follow, _standoff_distance, 0),
+
     AP_GROUPEND
 };
 

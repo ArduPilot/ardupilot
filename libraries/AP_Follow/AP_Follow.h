@@ -153,6 +153,7 @@ private:
     AC_P        _p_pos;             // position error P controller
     bool        _automatic_sysid;          // did we lock onto a sysid automatically?
     bool        _offsets_were_zero;        // true if offsets were originally zero and then initialised to the offset from lead vehicle
+    AP_Float    _standoff_distance; // distance in meters to keep waypoint away from target. Exclusion radius.
 
     struct  {
         uint32_t last_location_update_ms;  // system time of last position update
