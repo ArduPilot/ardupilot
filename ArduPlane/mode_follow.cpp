@@ -44,10 +44,12 @@ void ModeFollow::update()
 
         // if we change wp too fast the nav controller gets angry
         Location loc_next;
-        if (get_follow_wp(loc_next) && (plane.guided_WP_loc != loc_next)) {
+        if (get_follow_wp(loc_next) && plane.guided_WP_loc.same_latlngalt_as(loc_next)) {
+            plane.guided_WP_loc = loc_next;
+            gcs().send_text(MAV_SEVERITY_DEBUG, "ModeFollow::new (%.5f, %.5f, %d)", (double)plane.guided_WP_loc.lat*1e-7f, (double)plane.guided_WP_loc.lng*1e-7f, static_cast<int>(plane.guided_WP_loc.alt * 0.01f));
+
             last_wp_change_ms = now_ms;
             plane.set_guided_WP();
-            gcs().send_text(MAV_SEVERITY_WARNING, "new (%d, %d, %d)", loc_next.lat, loc_next.lng, loc_next.alt);
         }
     }
 

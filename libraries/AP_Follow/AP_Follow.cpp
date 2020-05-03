@@ -186,7 +186,7 @@ bool AP_Follow::get_target_location_and_velocity(TargetType type, Location &loc,
         return false;
     }
 
-    const uint8_t type_index = uint8_t(TargetType::SYSID);
+    const uint8_t type_index = uint8_t(type);
 
     // check for valid location
     if (_targets[type_index].location.lat == 0 && _targets[type_index].location.lng == 0) {
@@ -194,7 +194,12 @@ bool AP_Follow::get_target_location_and_velocity(TargetType type, Location &loc,
     }
 
     // check for timeout
-    if ((_targets[type_index].last_location_update_ms == 0) || (AP_HAL::millis() - _targets[type_index].last_location_update_ms > AP_FOLLOW_TIMEOUT_MS)) {
+    if (_targets[type_index].last_location_update_ms == 0) {
+        return false;
+    }
+
+    // check if it's an old location (ignore this check if we don't have a velocity, so we assume the location doesn't change and therefore never expires
+    if (AP_HAL::millis() - _targets[type_index].last_location_update_ms > AP_FOLLOW_TIMEOUT_MS && !vel_ned.is_zero()) {
         return false;
     }
 

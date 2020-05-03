@@ -68,9 +68,9 @@ public:
     //
     // position tracking related methods
     //
-
-    // true if we have a valid target location estimate
-    //bool have_target() const;
+    // get target's estimated location and velocity (in NED)
+//    bool get_target_location(Location &loc) { return get_target_location((TargetType)_type.get(), loc); }
+//    bool get_target_location(TargetType type, Location &loc) const;
 
     // get target's estimated location and velocity (in NED)
     bool get_target_location_and_velocity(Location &loc, Vector3f &vel_ned) { return get_target_location_and_velocity((TargetType)_type.get(), loc, vel_ned); }
