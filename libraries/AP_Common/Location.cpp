@@ -325,6 +325,14 @@ bool Location::same_latlon_as(const Location &loc2) const
     return (lat == loc2.lat) && (lng == loc2.lng);
 }
 
+/*
+  return true if lat and lng and alt match. Ignores options
+ */
+bool Location::same_latlngalt_as(const Location &loc2) const
+{
+    return (lat == loc2.lat) && (lng == loc2.lng) && (alt == loc2.alt);
+}
+
 // return true when lat and lng are within range
 bool Location::check_latlng() const
 {
