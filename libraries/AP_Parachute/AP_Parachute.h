@@ -41,7 +41,7 @@ public:
         // setup parameter defaults
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         if (_singleton != nullptr) {
-            AP_HAL::panic("Rally must be singleton");
+            AP_HAL::panic("Parachute must be singleton");
         }
 #endif
         _singleton = this;
