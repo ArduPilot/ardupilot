@@ -1899,9 +1899,9 @@ void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, u
     char first_piece_of_text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1]{};
 
     do {
-        WITH_SEMAPHORE(_statustext_sem);
         // send_text can be called from multiple threads; we must
         // protect the "text" member with _statustext_sem
+        WITH_SEMAPHORE(_statustext_queue.semaphore());
         hal.util->vsnprintf(statustext_printf_buffer, sizeof(statustext_printf_buffer), fmt, arg_list);
         memcpy(first_piece_of_text, statustext_printf_buffer, ARRAY_SIZE(first_piece_of_text)-1);
 
@@ -1959,11 +1959,6 @@ void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, u
                 break;
             }
         }
-
-        // try and send immediately if possible
-        if (hal.scheduler->in_main_thread()) {
-            service_statustext();
-        }
     } while (false);
 
     // given we don't really know what these methods get up to, we
@@ -1993,53 +1988,77 @@ void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, u
     if (notify) {
         notify->send_text(first_piece_of_text);
     }
+
+    // push the messages out straight away until the vehicle states
+    // that it is initialised.  At that point we can assume
+    // update_send is being called
+    if (!vehicle_initialised()) {
+        service_statustext();
+    }
 }
 
-/*
-    send a statustext message to specific MAVLink connections in a bitmask
- */
 void GCS::service_statustext(void)
 {
-    // create bitmask of what mavlink ports we should send this text to.
-    // note, if sending to all ports, we only need to store the bitmask for each and the string only once.
-    // once we send over a link, clear the port but other busy ports bit may stay allowing for faster links
-    // to clear the bit and send quickly but slower links to still store the string. Regardless of mixed
-    // bitrates of ports, a maximum of _status_capacity strings can be buffered. Downside
-    // is if you have a super slow link mixed with a faster port, if there are _status_capacity
-    // strings in the slow queue then the next item can not be queued for the faster link
+    WITH_SEMAPHORE(_statustext_queue.semaphore());
 
     if (_statustext_queue.is_empty()) {
         // nothing to do
         return;
     }
 
-    for (uint8_t idx=0; idx<_status_capacity; ) {
-        statustext_t *statustext = _statustext_queue[idx];
+    for (uint8_t i=first_backend_to_send; i<num_gcs(); i++) {
+        chan(i)->service_statustext();
+    }
+    for (uint8_t i=0; i<first_backend_to_send; i++) {
+        chan(i)->service_statustext();
+    }
+}
+
+/*
+    send a statustext message to specific MAVLink connections in a bitmask
+
+    must be called with semaphore held
+ */
+void GCS_MAVLINK::service_statustext(void)
+{
+    GCS::StatusTextQueue &_statustext_queue = gcs().statustext_queue();
+
+    const uint8_t chan_bit = (1U<<chan);
+    // note the lack of idx++ here.  We may remove the iteration item
+    // from the queue as the last thing we do, in which case we don't
+    // want to move idx.
+    const uint16_t payload_size = PAYLOAD_SIZE(chan, STATUSTEXT);
+    for (uint8_t idx=0; idx<_statustext_queue.available(); ) {
+        if (txspace() < payload_size) {
+            break;
+        }
+        GCS::statustext_t *statustext = _statustext_queue[idx];
         if (statustext == nullptr) {
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
             break;
         }
 
-        // try and send to all active mavlink ports listed in the statustext.bitmask
-        for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
-            uint8_t chan_bit = (1U<<i);
-            // logical AND (&) to mask them together
-            if (statustext->bitmask & chan_bit) {
-                // something is queued on a port and that's the port index we're looped at
-                mavlink_channel_t chan_index = (mavlink_channel_t)(MAVLINK_COMM_0+i);
-                if (HAVE_PAYLOAD_SPACE(chan_index, STATUSTEXT)) {
-                    // we have space so send then clear that channel bit on the mask
-                    mavlink_msg_statustext_send(chan_index, statustext->msg.severity, statustext->msg.text, statustext->msg.id, statustext->msg.chunk_seq);
-                    statustext->bitmask &= ~chan_bit;
-                }
+        // check to see if we need to send this queue entry:
+        if (statustext->bitmask & chan_bit) {
+            mavlink_msg_statustext_send(chan,
+                                        statustext->msg.severity,
+                                        statustext->msg.text,
+                                        statustext->msg.id,
+                                        statustext->msg.chunk_seq);
+            // indicate we've sent the message:
+            statustext->bitmask &= ~chan_bit;
+
+            if (statustext->bitmask == 0) {
+                // sent everywhere it needs to be sent, remove it from the
+                // queue but leave idx as-is as we want to handle the
+                // remaining items which have been bumped up to out
+                // current index
+                _statustext_queue.remove(idx);
+                continue;
             }
         }
-
-        if (statustext->bitmask == 0) {
-            _statustext_queue.remove(idx);
-        } else {
-            // move to next index
-            idx++;
-        }
+        // this item still has places to go.  Continue to iterate over the queue
+        idx++;
     }
 }
 
@@ -2087,12 +2106,13 @@ void GCS::update_send()
     for (uint8_t i=0; i<first_backend_to_send; i++) {
         chan(i)->update_send();
     }
+
+    service_statustext();
+
     first_backend_to_send++;
     if (first_backend_to_send >= num_gcs()) {
         first_backend_to_send = 0;
     }
-    WITH_SEMAPHORE(_statustext_sem);
-    service_statustext();
 }
 
 void GCS::update_receive(void)
