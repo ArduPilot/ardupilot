@@ -709,6 +709,10 @@ class AutoTest(ABC):
                  _show_test_timings=False,
                  force_ahrs_type=None):
 
+        self.start_time = time.time()
+        global __autotest__ # FIXME; make progress a non-staticmethod
+        __autotest__ = self
+
         if binary is None:
             raise ValueError("Should always have a binary")
 
@@ -748,7 +752,9 @@ class AutoTest(ABC):
     @staticmethod
     def progress(text):
         """Display autotest progress text."""
-        print("AUTOTEST: " + text)
+        global __autotest__
+        delta_time = time.time() - __autotest__.start_time
+        print("AT-%06.1f: %s" % (delta_time,text))
 
     # following two functions swiped from autotest.py:
     @staticmethod
