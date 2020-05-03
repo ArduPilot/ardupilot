@@ -1856,6 +1856,18 @@ void QuadPlane::update(void)
  */
 void QuadPlane::update_throttle_suppression(void)
 {
+#if PARACHUTE == ENABLED
+    // if parachute has been released shut down motors
+    if (plane.parachute.release_initiated()) {
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
+        
+        // set throttle to 0 for correct last_motors_active_ms behaviour
+        motors->set_throttle(0);
+        last_motors_active_ms = 0;
+        return;
+    }
+#endif
+
     // if the motors have been running in the last 2 seconds then
     // allow them to run now
     if (AP_HAL::millis() - last_motors_active_ms < 2000) {
