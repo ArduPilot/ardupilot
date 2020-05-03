@@ -1329,7 +1329,6 @@ private:
 
     // external navigation fusion
     obs_ring_buffer_t<ext_nav_elements> storedExtNav; // external navigation data buffer
-    ext_nav_elements extNavDataNew;     // External nav data at the current time horizon
     ext_nav_elements extNavDataDelayed; // External nav at the fusion time horizon
     uint32_t extNavMeasTime_ms;         // time external measurements were accepted for input to the data buffer (msec)
     uint32_t extNavLastPosResetTime_ms; // last time the external nav systen performed a position reset (msec)
