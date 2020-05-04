@@ -7,7 +7,7 @@ extern const AP_HAL::HAL &hal;
 // actually create the instance:
 static AP_InternalError instance;
 
-void AP_InternalError::error(const AP_InternalError::error_t e) {
+void AP_InternalError::error(const AP_InternalError::error_t e, uint16_t line) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     switch (e) {
     case AP_InternalError::error_t::watchdog_reset:
@@ -20,11 +20,12 @@ void AP_InternalError::error(const AP_InternalError::error_t e) {
 #endif
     internal_errors |= uint32_t(e);
     total_error_count++;
+    last_line = line;
 
     hal.util->persistent_data.internal_errors = internal_errors;
     hal.util->persistent_data.internal_error_count = total_error_count;
+    hal.util->persistent_data.internal_error_last_line = line;
 }
-
 
 namespace AP {
 
@@ -34,3 +35,20 @@ AP_InternalError &internalerror()
 }
 
 };
+
+// stack overflow hook for low level RTOS code, C binding
+void AP_stack_overflow(const char *thread_name)
+{
+    static bool done_stack_overflow;
+    INTERNAL_ERROR(AP_InternalError::error_t::stack_overflow);
+    if (!done_stack_overflow) {
+        // we don't want to record the thread name more than once, as
+        // first overflow can trigger a 2nd
+        strncpy(hal.util->persistent_data.thread_name4, thread_name, 4);
+        done_stack_overflow = true;
+    }
+    hal.util->persistent_data.fault_type = 42; // magic value
+    if (!hal.util->get_soft_armed()) {
+        AP_HAL::panic("stack overflow %s\n", thread_name);
+    }
+}

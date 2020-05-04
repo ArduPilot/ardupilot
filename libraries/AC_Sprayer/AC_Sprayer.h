@@ -1,5 +1,5 @@
-/// @file	AC_Sprayer.h
-/// @brief	Crop sprayer library
+/// @file   AC_Sprayer.h
+/// @brief  Crop sprayer library
 
 /**
     The crop spraying functionality can be enabled in ArduCopter by doing the following:

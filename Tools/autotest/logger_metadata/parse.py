@@ -31,7 +31,7 @@ re_vehicles = re.compile(r"\s*//\s*@Vehicles\s*:\s*(.*)")
 class LoggerDocco(object):
 
     vehicle_map = {
-        "Rover": "APMrover2",
+        "Rover": "Rover",
         "Sub": "ArduSub",
         "Copter": "ArduCopter",
         "Plane": "ArduPlane",

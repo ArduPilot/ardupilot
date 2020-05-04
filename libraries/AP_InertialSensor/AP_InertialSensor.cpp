@@ -23,6 +23,7 @@
 #include "AP_InertialSensor_BMI055.h"
 #include "AP_InertialSensor_BMI088.h"
 #include "AP_InertialSensor_Invensensev2.h"
+#include "AP_InertialSensor_ADIS1647x.h"
 
 /* Define INS_TIMING_DEBUG to track down scheduling issues with the main loop.
  * Output is on the debug console. */
@@ -43,7 +44,7 @@ extern const AP_HAL::HAL& hal;
 #define DEFAULT_GYRO_FILTER  20
 #define DEFAULT_ACCEL_FILTER 20
 #define DEFAULT_STILL_THRESH 2.5f
-#elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
+#elif APM_BUILD_TYPE(APM_BUILD_Rover)
 #define DEFAULT_GYRO_FILTER  4
 #define DEFAULT_ACCEL_FILTER 10
 #define DEFAULT_STILL_THRESH 0.1f
@@ -727,7 +728,8 @@ AP_InertialSensor::init(uint16_t sample_rate)
     _calculated_harmonic_notch_freq_hz = _harmonic_notch_filter.center_freq_hz();
 
     for (uint8_t i=0; i<get_gyro_count(); i++) {
-        _gyro_harmonic_notch_filter[i].allocate_filters(_harmonic_notch_filter.harmonics());
+        _gyro_harmonic_notch_filter[i].allocate_filters(_harmonic_notch_filter.harmonics(),
+            _harmonic_notch_filter.hasOption(HarmonicNotchFilterParams::Options::DoubleNotch));
         // initialise default settings, these will be subsequently changed in AP_InertialSensor_Backend::update_gyro()
         _gyro_harmonic_notch_filter[i].init(_gyro_raw_sample_rates[i], _calculated_harmonic_notch_freq_hz,
              _harmonic_notch_filter.bandwidth_hz(), _harmonic_notch_filter.attenuation_dB());

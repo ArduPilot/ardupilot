@@ -39,6 +39,7 @@
 #include <AP_Hott_Telem/AP_Hott_Telem.h>
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include <AP_GyroFFT/AP_GyroFFT.h>
+#include <AP_VisualOdom/AP_VisualOdom.h>
 
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
 
@@ -229,6 +230,10 @@ protected:
 
 #if HAL_HOTT_TELEM_ENABLED
     AP_Hott_Telem hott_telem;
+#endif
+
+#if HAL_VISUALODOM_ENABLED
+    AP_VisualOdom visual_odom;
 #endif
 
     AP_ESC_Telem esc_telem;

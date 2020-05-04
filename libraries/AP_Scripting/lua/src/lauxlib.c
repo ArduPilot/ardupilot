@@ -26,6 +26,9 @@
 
 #include "lauxlib.h"
 
+#if defined(ARDUPILOT_BUILD)
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
 
 /*
 ** {======================================================

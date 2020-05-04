@@ -213,7 +213,7 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
         #endif
 
         if (!in_autorotation_check) {
-            gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed");
+            gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed %s", new_flightmode->name());
             AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
             return false;
         }
@@ -251,7 +251,7 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
     }
 
     if (!new_flightmode->init(ignore_checks)) {
-        gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed");
+        gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed %s", new_flightmode->name());
         AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;
     }
@@ -409,7 +409,7 @@ void Mode::get_pilot_desired_lean_angles(float &roll_out, float &pitch_out, floa
     roll_out = channel_roll->get_control_in();
     pitch_out = channel_pitch->get_control_in();
 
-	// limit max lean angle
+    // limit max lean angle
     angle_limit = constrain_float(angle_limit, 1000.0f, angle_max);
 
     // scale roll and pitch inputs to ANGLE_MAX parameter range

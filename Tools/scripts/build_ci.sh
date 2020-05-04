@@ -203,7 +203,7 @@ for t in $CI_BUILD_TARGET; do
     fi
 done
 
-python Tools/autotest/param_metadata/param_parse.py --vehicle APMrover2
+python Tools/autotest/param_metadata/param_parse.py --vehicle Rover
 python Tools/autotest/param_metadata/param_parse.py --vehicle AntennaTracker
 python Tools/autotest/param_metadata/param_parse.py --vehicle ArduCopter
 python Tools/autotest/param_metadata/param_parse.py --vehicle ArduPlane

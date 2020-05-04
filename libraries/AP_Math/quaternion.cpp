@@ -19,6 +19,7 @@
 #pragma GCC optimize("O2")
 
 #include "AP_Math.h"
+#include <AP_InternalError/AP_InternalError.h>
 
 // return the rotation matrix equivalent for this quaternion
 void Quaternion::rotation_matrix(Matrix3f &m) const
@@ -116,6 +117,276 @@ void Quaternion::from_rotation_matrix(const Matrix3f &m)
         qy = (m12 + m21) / S;
         qz = 0.25f * S;
     }
+}
+
+// create a quaternion from a given rotation
+void Quaternion::from_rotation(enum Rotation rotation)
+{
+    // the constants below can be calculated using the following formula:
+    //     Matrix3f m_from_rot;
+    //     m_from_rot.from_rotation(rotation);
+    //     Quaternion q_from_m;
+    //     from_rotation_matrix(m_from_rot);
+
+    switch (rotation) {
+    case ROTATION_NONE:
+        q1 = 1;
+        q2 = q3 = q4 = 0;
+        return;
+
+    case ROTATION_YAW_45:
+        q1 = 0.92387956f;
+        q2 = q3 = 0;
+        q4 = 0.38268343f;
+        return;
+
+    case ROTATION_YAW_90:
+        q1 = HALF_SQRT_2;
+        q2 = q3 = 0;
+        q4 = HALF_SQRT_2;
+        return;
+
+    case ROTATION_YAW_135:
+        q1 = 0.38268343f;
+        q2 = q3 = 0;
+        q4 = 0.92387956f;
+        return;
+
+    case ROTATION_YAW_180:
+        q1 = q2 = q3 = 0;
+        q4=1;
+        return;
+
+    case ROTATION_YAW_225:
+        q1 = -0.38268343f;
+        q2 = q3 = 0;
+        q4 = 0.92387956f;
+        return;
+
+    case ROTATION_YAW_270:
+        q1 = HALF_SQRT_2;
+        q2 = q3 = 0;
+        q4 = -HALF_SQRT_2;
+        return;
+
+    case ROTATION_YAW_315:
+        q1 = 0.92387956f;
+        q2 = q3 = 0;
+        q4 = -0.38268343f;
+        return;
+
+    case ROTATION_ROLL_180:
+        q1 = q3 = q4 = 0;
+        q2 = 1;
+        return;
+
+    case ROTATION_ROLL_180_YAW_45:
+        q1 = q4 = 0;
+        q2 = 0.92387956f;
+        q3 = 0.38268343f;
+        return;
+
+    case ROTATION_ROLL_180_YAW_90:
+        q1 = q4 = 0;
+        q2 = q3 = HALF_SQRT_2;
+        return;
+
+    case ROTATION_ROLL_180_YAW_135:
+        q1 = q4 = 0;
+        q2 = 0.38268343f;
+        q3 = 0.92387956f;
+        return;
+
+    case ROTATION_PITCH_180:
+        q1 = q2 = q4 = 0;
+        q3 = 1;
+        return;
+
+    case ROTATION_ROLL_180_YAW_225:
+        q1 = q4 = 0;
+        q2 = -0.38268343f;
+        q3 = 0.92387956f;
+        return;
+
+    case ROTATION_ROLL_180_YAW_270:
+        q1 = q4 = 0;
+        q2 = -HALF_SQRT_2;
+        q3 = HALF_SQRT_2;
+        return;
+
+    case ROTATION_ROLL_180_YAW_315:
+        q1 = q4 = 0;
+        q2 = 0.92387956f;
+        q3 = -0.38268343f;
+        return;
+
+    case ROTATION_ROLL_90:
+        q1 = q2 = HALF_SQRT_2;
+        q3 = q4 = 0;
+        return;
+
+    case ROTATION_ROLL_90_YAW_45:
+        q1 = 0.65328151f;
+        q2 = 0.65328145f;
+        q3 = q4 = 0.27059802f;
+        return;
+
+    case ROTATION_ROLL_90_YAW_90:
+        q1 = q2 = q3 = q4 = 0.5f;
+        return;
+
+    case ROTATION_ROLL_90_YAW_135:
+        q1 = q2 = 0.27059802f;
+        q3 = 0.65328145f;
+        q4 = 0.65328151f;
+        return;
+
+    case ROTATION_ROLL_270:
+        q1 = HALF_SQRT_2;
+        q2 = -HALF_SQRT_2;
+        q3 = q4 = 0;
+        return;
+
+    case ROTATION_ROLL_270_YAW_45:
+        q1 = 0.65328151f;
+        q2 = -0.65328145f;
+        q3 = -0.27059802f;
+        q4 = 0.27059802f;
+        return;
+
+    case ROTATION_ROLL_270_YAW_90:
+        q1 = q4 = 0.5f;
+        q2 = q3 = -0.5f;
+        return;
+
+    case ROTATION_ROLL_270_YAW_135:
+        q1 = 0.27059802f;
+        q2 = -0.27059802f;
+        q3 = -0.65328145f;
+        q4 = 0.65328151f;
+        return;
+
+    case ROTATION_PITCH_90:
+        q1 = q3 = HALF_SQRT_2;
+        q2 = q4 = 0;
+        return;
+
+    case ROTATION_PITCH_270:
+        q1 = HALF_SQRT_2;
+        q2 = q4 = 0;
+        q3 = -HALF_SQRT_2;
+        return;
+
+    case ROTATION_PITCH_180_YAW_90:
+        q1 = q4 = 0;
+        q2 = -HALF_SQRT_2;
+        q3 = HALF_SQRT_2;
+        return;
+
+    case ROTATION_PITCH_180_YAW_270:
+        q1 = q4 = 0;
+        q2 = q3 = HALF_SQRT_2;
+        return;
+
+    case ROTATION_ROLL_90_PITCH_90:
+        q1 = q2 = q3 = -0.5f;
+        q4 = 0.5f;
+        return;
+
+    case ROTATION_ROLL_180_PITCH_90:
+        q1 = q3 = 0;
+        q2 = -HALF_SQRT_2;
+        q4 = HALF_SQRT_2;
+        return;
+
+    case ROTATION_ROLL_270_PITCH_90:
+        q1 = q3 = q4 = 0.5f;
+        q2 = -0.5f;
+        return;
+
+    case ROTATION_ROLL_90_PITCH_180:
+        q1 = q2 = 0;
+        q3 = -HALF_SQRT_2;
+        q4 = HALF_SQRT_2;
+        return;
+
+    case ROTATION_ROLL_270_PITCH_180:
+        q1 = q2 = 0;
+        q3 = q4 = HALF_SQRT_2;
+        return;
+
+    case ROTATION_ROLL_90_PITCH_270:
+        q1 = q2 = q4 = 0.5f;
+        q3 = -0.5;
+        return;
+
+    case ROTATION_ROLL_180_PITCH_270:
+        q1 = q3 = 0;
+        q2 = q4 = HALF_SQRT_2;
+        return;
+
+    case ROTATION_ROLL_270_PITCH_270:
+        q1 = -0.5f;
+        q2 = q3 = q4 = 0.5f;
+        return;
+
+    case ROTATION_ROLL_90_PITCH_180_YAW_90:
+        q1 = q3 = -0.5f;
+        q2 = q4 = 0.5f;
+        return;
+
+    case ROTATION_ROLL_90_YAW_270:
+        q1 = q2 = -0.5f;
+        q3 = q4 = 0.5f;
+        return;
+
+    case ROTATION_ROLL_90_PITCH_68_YAW_293:
+        q1 = 0.26774535f;
+        q2 = 0.70698798f;
+        q3 = 0.01295743f;
+        q4 = -0.65445596f;
+        return;
+
+    case ROTATION_PITCH_315:
+        q1 = 0.92387956f;
+        q2 = q4 = 0;
+        q3 = -0.38268343f;
+        return;
+
+    case ROTATION_ROLL_90_PITCH_315:
+        q1 = 0.65328151f;
+        q2 = 0.65328145f;
+        q3 = -0.27059802f;
+        q4 = 0.27059802f;
+        return;
+
+    case ROTATION_PITCH_7:
+        q1 = 0.99813479f;
+        q2 = q4 = 0;
+        q3 = 0.06104854f;
+        return;
+
+    case ROTATION_CUSTOM:
+        // Error; custom rotations not supported
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        return;
+
+    case ROTATION_MAX:
+        break;
+    }
+    // rotation invalid
+    INTERNAL_ERROR(AP_InternalError::error_t::bad_rotation);
+}
+
+// rotate this quaternion by the given rotation
+void Quaternion::rotate(enum Rotation rotation)
+{
+    // create quaternion from rotation matrix
+    Quaternion q_from_rot;
+    q_from_rot.from_rotation(rotation);
+
+    // rotate this quaternion
+    *this *= q_from_rot;
 }
 
 // convert a vector from earth to body frame
@@ -302,9 +573,18 @@ float Quaternion::length(void) const
     return sqrtf(sq(q1) + sq(q2) + sq(q3) + sq(q4));
 }
 
+// return the reverse rotation of this quaternion
 Quaternion Quaternion::inverse(void) const
 {
     return Quaternion(q1, -q2, -q3, -q4);
+}
+
+// reverse the rotation of this quaternion
+void Quaternion::invert()
+{
+    q2 = -q2;
+    q3 = -q3;
+    q4 = -q4;
 }
 
 void Quaternion::normalize(void)

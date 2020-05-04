@@ -137,6 +137,9 @@ public:
         return _airspeed;
     }
 
+    // return the index of the primary core or -1 if no primary core selected
+    virtual int8_t get_primary_core_index() const { return -1; }
+
     // get the index of the current primary accelerometer sensor
     virtual uint8_t get_primary_accel_index(void) const {
         return AP::ins().get_primary_accel();
@@ -183,7 +186,13 @@ public:
 
     // see if EKF lane switching is possible to avoid EKF failsafe
     virtual void check_lane_switch(void) {}
+
+    // check whether external navigation is providing yaw.  Allows compass pre-arm checks to be bypassed
+    virtual bool is_ext_nav_used_for_yaw(void) const { return false; }
     
+    // request EKF yaw reset to try and avoid the need for an EKF lane switch or failsafe
+    virtual void request_yaw_reset(void) {}
+
     // Euler angles (radians)
     float roll;
     float pitch;
@@ -225,10 +234,10 @@ public:
     // since last call
     virtual float get_error_yaw(void) const = 0;
 
-    // return a DCM rotation matrix representing our current attitude
+    // return a DCM rotation matrix representing our current attitude in NED frame
     virtual const Matrix3f &get_rotation_body_to_ned(void) const = 0;
 
-    // return a Quaternion representing our current attitude
+    // return a Quaternion representing our current attitude in NED frame
     void get_quat_body_to_ned(Quaternion &quat) const {
         quat.from_rotation_matrix(get_rotation_body_to_ned());
     }
@@ -389,8 +398,8 @@ public:
         return _sin_yaw;
     }
 
-    // for holding parameters
-    static const struct AP_Param::GroupInfo var_info[];
+    // return the quaternion defining the rotation from NED to XYZ (body) axes
+    virtual bool get_quaternion(Quaternion &quat) const WARN_IF_UNUSED = 0;
 
     // return secondary attitude solution if available, as eulers in radians
     virtual bool get_secondary_attitude(Vector3f &eulers) const WARN_IF_UNUSED {
@@ -548,15 +557,21 @@ public:
     virtual bool get_hgt_ctrl_limit(float &limit) const WARN_IF_UNUSED { return false; };
 
     // Write position and quaternion data from an external navigation system
-    virtual void writeExtNavData(const Vector3f &sensOffset, const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint32_t resetTime_ms) { }
+    virtual void writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint32_t resetTime_ms) { }
 
     // return current vibration vector for primary IMU
     Vector3f get_vibration(void) const;
-    
+
+    // set and save the alt noise parameter value
+    virtual void set_alt_measurement_noise(float noise) {};
+
     // allow threads to lock against AHRS update
     HAL_Semaphore &get_semaphore(void) {
         return _rsem;
     }
+
+    // for holding parameters
+    static const struct AP_Param::GroupInfo var_info[];
 
 protected:
     void update_nmea_out();

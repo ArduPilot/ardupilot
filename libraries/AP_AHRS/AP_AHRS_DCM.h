@@ -96,6 +96,9 @@ public:
 
     bool            use_compass() override;
 
+    // return the quaternion defining the rotation from NED to XYZ (body) axes
+    bool get_quaternion(Quaternion &quat) const override WARN_IF_UNUSED;
+
     bool set_home(const Location &loc) override WARN_IF_UNUSED;
     void estimate_wind(void);
 

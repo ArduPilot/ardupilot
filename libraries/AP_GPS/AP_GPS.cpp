@@ -290,6 +290,15 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     AP_GROUPINFO("BLEND_TC", 21, AP_GPS, _blend_tc, 10.0f),
 #endif
 
+#if GPS_UBLOX_MOVING_BASELINE
+    // @Param: DRV_OPTIONS
+    // @DisplayName: driver options
+    // @Description: Additional backend specific options
+    // @Bitmask: 0:Use UART2 for moving baseline on ublox
+    // @User: Advanced
+    AP_GROUPINFO("DRV_OPTIONS", 22, AP_GPS, _driver_options, 0),
+#endif
+
     AP_GROUPEND
 };
 
@@ -758,6 +767,25 @@ void AP_GPS::update_instance(uint8_t instance)
     }
 #endif
 
+    if (data_should_be_logged) {
+        // keep count of delayed frames and average frame delay for health reporting
+        const uint16_t gps_max_delta_ms = 245; // 200 ms (5Hz) + 45 ms buffer
+        GPS_timing &t = timing[instance];
+
+        if (t.delta_time_ms > gps_max_delta_ms) {
+            t.delayed_count++;
+        } else {
+            t.delayed_count = 0;
+        }
+        if (t.delta_time_ms < 2000) {
+            if (t.average_delta_ms <= 0) {
+                t.average_delta_ms = t.delta_time_ms;
+            } else {
+                t.average_delta_ms = 0.98f * t.average_delta_ms + 0.02f * t.delta_time_ms;
+            }
+        }
+    }
+    
 #ifndef HAL_BUILD_AP_PERIPH
     if (data_should_be_logged &&
         (should_log() || AP::ahrs().have_ekf_logging())) {
@@ -1144,7 +1172,7 @@ void AP_GPS::broadcast_first_configuration_failure_reason(void) const
     uint8_t unconfigured;
     if (first_unconfigured_gps(unconfigured)) {
         if (drivers[unconfigured] == nullptr) {
-            gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: was not found", unconfigured + 1);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %d: was not found", unconfigured + 1);
         } else {
             drivers[unconfigured]->broadcast_configuration_failure_reason();
         }
@@ -1677,18 +1705,24 @@ bool AP_GPS::is_healthy(uint8_t instance) const
         return false;
     }
 
-    const uint16_t gps_max_delta_ms = 245; // 200 ms (5Hz) + 45 ms buffer
-
-    bool last_msg_valid = last_message_delta_time_ms(instance) < gps_max_delta_ms;
+    /*
+      allow two lost frames before declaring the GPS unhealthy, but
+      require the average frame rate to be close to 5Hz. We allow for
+      a bit higher average for a rover due to the packet loss that
+      happens with the RTCMv3 data
+     */
+    const uint8_t delay_threshold = 2;
+    const float delay_avg_max = _type[instance] == GPS_TYPE_UBLOX_RTK_ROVER?245:215;
+    const GPS_timing &t = timing[instance];
+    bool delay_ok = (t.delayed_count < delay_threshold) && t.average_delta_ms < delay_avg_max;
 
 #if defined(GPS_BLENDED_INSTANCE)
     if (instance == GPS_BLENDED_INSTANCE) {
-        return last_msg_valid && blend_health_check();
+        return delay_ok && blend_health_check();
     }
 #endif
 
-    return last_msg_valid &&
-           drivers[instance] != nullptr &&
+    return delay_ok && drivers[instance] != nullptr &&
            drivers[instance]->is_healthy();
 }
 

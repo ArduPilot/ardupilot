@@ -159,7 +159,7 @@ bool AP_Logger_Backend::Write_Emit_FMT(uint8_t msg_type)
         // this is a bug; we've been asked to write out the FMT
         // message for a msg_type, but the frontend can't supply the
         // required information
-        AP::internalerror().error(AP_InternalError::error_t::logger_missing_logstructure);
+        INTERNAL_ERROR(AP_InternalError::error_t::logger_missing_logstructure);
         return false;
     }
 
@@ -189,7 +189,7 @@ bool AP_Logger_Backend::Write(const uint8_t msg_type, va_list arg_list, bool is_
         }
     }
     if (fmt == nullptr) {
-        AP::internalerror().error(AP_InternalError::error_t::logger_logwrite_missingfmt);
+        INTERNAL_ERROR(AP_InternalError::error_t::logger_logwrite_missingfmt);
         return false;
     }
     if (bufferspace_available() < msg_len) {
@@ -440,9 +440,8 @@ bool AP_Logger_Backend::Write_RallyPoint(uint8_t total,
 }
 
 // Write rally points
-void AP_Logger_Backend::Write_Rally()
+bool AP_Logger_Backend::Write_Rally()
 {
-    LoggerMessageWriter_WriteAllRallyPoints writer;
-    writer.set_logger_backend(this);
-    writer.process();
+    // kick off asynchronous write:
+    return _startup_messagewriter->writeallrallypoints();
 }

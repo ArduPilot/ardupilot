@@ -41,6 +41,8 @@ extern const AP_HAL::HAL& hal;
 #include <AP_Avoidance/AP_Avoidance.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AC_Fence/AC_Fence.h>
+#include <AP_VisualOdom/AP_VisualOdom.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 #define SWITCH_DEBOUNCE_TIME_MS  200
 
@@ -90,8 +92,8 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Param: OPTION
     // @DisplayName: RC input option
     // @Description: Function assigned to this RC channel
-    // @Values{Copter}: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 13:Super Simple Mode, 14:Acro Trainer, 15:Sprayer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 37:Throw, 38:ADSB Avoidance En, 39:PrecLoiter, 40:Proximity Avoidance, 41:ArmDisarm, 42:SmartRTL, 43:InvertedFlight, 46:RC Override Enable, 47:User Function 1, 48:User Function 2, 49:User Function 3, 52:Acro, 55:Guided, 56:Loiter, 57:Follow, 58:Clear Waypoints, 60:ZigZag, 61:ZigZag SaveWP, 62:Compass Learn, 65:GPS Disable, 66:Relay5, 67:Relay6, 68:Stabilize, 69:PosHold, 70:AltHold, 71:FlowHold, 72:Circle, 73:Drift, 76:Standby Mode, 78:RunCam Control, 79:RunCam OSD Control, 100:KillIMU1, 101:KillIMU2, 102:Camera Mode Toggle
-    // @Values{Rover}: 0:Do Nothing, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 11:Fence, 16:Auto, 19:Gripper, 24:Auto Mission Reset, 28:Relay On/Off, 30:Lost Rover Sound, 31:Motor Emergency Stop, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 40:Proximity Avoidance, 41:ArmDisarm, 42:SmartRTL, 46:RC Override Enable, 50:LearnCruise, 51:Manual, 52:Acro, 53:Steering, 54:Hold, 55:Guided, 56:Loiter, 57:Follow, 58:Clear Waypoints, 59:Simple Mode, 62:Compass Learn, 63:Sailboat Tack, 65:GPS Disable, 66:Relay5, 67:Relay6, 74:Sailboat motoring 3pos, 78:RunCam Control, 79:RunCam OSD Control, 100:KillIMU1, 101:KillIMU2, 207:MainSail, 102:Camera Mode Toggle
+    // @Values{Copter}: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 13:Super Simple Mode, 14:Acro Trainer, 15:Sprayer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 37:Throw, 38:ADSB Avoidance En, 39:PrecLoiter, 40:Proximity Avoidance, 41:ArmDisarm, 42:SmartRTL, 43:InvertedFlight, 46:RC Override Enable, 47:User Function 1, 48:User Function 2, 49:User Function 3, 52:Acro, 55:Guided, 56:Loiter, 57:Follow, 58:Clear Waypoints, 60:ZigZag, 61:ZigZag SaveWP, 62:Compass Learn, 65:GPS Disable, 66:Relay5, 67:Relay6, 68:Stabilize, 69:PosHold, 70:AltHold, 71:FlowHold, 72:Circle, 73:Drift, 76:Standby Mode, 78:RunCam Control, 79:RunCam OSD Control, 80:Viso Align, 100:KillIMU1, 101:KillIMU2, 102:Camera Mode Toggle
+    // @Values{Rover}: 0:Do Nothing, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 11:Fence, 16:Auto, 19:Gripper, 24:Auto Mission Reset, 28:Relay On/Off, 30:Lost Rover Sound, 31:Motor Emergency Stop, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 40:Proximity Avoidance, 41:ArmDisarm, 42:SmartRTL, 46:RC Override Enable, 50:LearnCruise, 51:Manual, 52:Acro, 53:Steering, 54:Hold, 55:Guided, 56:Loiter, 57:Follow, 58:Clear Waypoints, 59:Simple Mode, 62:Compass Learn, 63:Sailboat Tack, 65:GPS Disable, 66:Relay5, 67:Relay6, 74:Sailboat motoring 3pos, 78:RunCam Control, 79:RunCam OSD Control, 80:Viso Align, 100:KillIMU1, 101:KillIMU2, 207:MainSail, 102:Camera Mode Toggle
     // @Values{Plane}: 0:Do Nothing, 4:ModeRTL, 9:Camera Trigger, 16:ModeAuto, 24:Auto Mission Reset, 28:Relay On/Off, 29:Landing Gear, 34:Relay2 On/Off, 30:Lost Plane Sound, 31:Motor Emergency Stop, 35:Relay3 On/Off, 36:Relay4 On/Off, 38:ADSB Avoidance En, 41:ArmDisarm, 43:InvertedFlight, 46:RC Override Enable, 51:ModeManual, 55:ModeGuided, 56:ModeLoiter, 58:Clear Waypoints, 62:Compass Learn, 64:Reverse Throttle, 65:GPS Disable, 66:Relay5, 67:Relay6, 72:ModeCircle, 77:ModeTakeoff, 78:RunCam Control, 79:RunCam OSD Control, 100:KillIMU1, 101:KillIMU2, 208:Flap, 102:Camera Mode Toggle
     // @User: Standard
     AP_GROUPINFO_FRAME("OPTION",  6, RC_Channel, option, 0, AP_PARAM_FRAME_COPTER|AP_PARAM_FRAME_ROVER|AP_PARAM_FRAME_PLANE),
@@ -462,6 +464,9 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const aux_switch_
     case AUX_FUNC::RELAY4:
     case AUX_FUNC::RELAY5:
     case AUX_FUNC::RELAY6:
+    case AUX_FUNC::VISODOM_CALIBRATE:
+    case AUX_FUNC::EKF_LANE_SWITCH:
+    case AUX_FUNC::EKF_YAW_RESET:
         break;
     case AUX_FUNC::AVOID_ADSB:
     case AUX_FUNC::AVOID_PROXIMITY:
@@ -884,6 +889,17 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_po
         }
         break;
 
+    case AUX_FUNC::VISODOM_CALIBRATE:
+#if HAL_VISUALODOM_ENABLED
+        if (ch_flag == HIGH) {
+            AP_VisualOdom *visual_odom = AP::visualodom();
+            if (visual_odom != nullptr) {
+                visual_odom->align_sensor_to_vehicle();
+            }
+        }
+#endif
+        break;
+
 #if !HAL_MINIMIZE_FEATURES
     case AUX_FUNC::KILL_IMU1:
         if (ch_flag == HIGH) {
@@ -921,6 +937,16 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_po
         }
         break;
     }
+
+    case AUX_FUNC::EKF_LANE_SWITCH:
+        // used to test emergency lane switch
+        AP::ahrs().check_lane_switch();
+        break;
+
+    case AUX_FUNC::EKF_YAW_RESET:
+        // used to test emergency yaw reset
+        AP::ahrs().request_yaw_reset();
+        break;
 
     default:
         gcs().send_text(MAV_SEVERITY_INFO, "Invalid channel option (%u)", (unsigned int)ch_option);

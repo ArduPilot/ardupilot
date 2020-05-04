@@ -31,6 +31,8 @@
 #define debug(fmt, args ...)
 #endif
 
+#define PAGE_SIZE           (4*1024)
+
 //Parametres
 #define RCIN_RPI_BUFFER_LENGTH   4
 #define RCIN_RPI_SAMPLE_FREQ     125

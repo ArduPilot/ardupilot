@@ -65,7 +65,7 @@ _sim_vehicle() {
     # get the calling program, remove anything after the space == all commands arguments
     local caller; caller=$(echo $@ | sed 's/ .*//g');
     # get options between "vehicle type " and closing ")", remove line return, remove spaces, anything before the opening (, remove the "|" and closing ")"
-    opts=$($caller --help | sed -n '/vehicle type (/,/)/p' | tr '\n' ' ' | sed -e 's/ //g' -e 's/.*(//g' -e 's/[|)]/ /g')
+    opts=$($caller --help | sed -n '/vehicle type/,/)/p' | sed -e '1d' | tr -d '()' | tr '\n' ' ' | sed -e 's/ //g' -e 's/.*(//g' -e 's/[|)]/ /g')
     COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
     return 0
     ;;

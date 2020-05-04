@@ -177,9 +177,12 @@ public:
         TAKEOFF   =           77, // takeoff
         RUNCAM_CONTROL =      78, // control RunCam device
         RUNCAM_OSD_CONTROL =  79, // control RunCam OSD
+        VISODOM_CALIBRATE  =  80, // calibrate visual odometry camera's attitude
         KILL_IMU1 =          100, // disable first IMU (for IMU failure testing)
         KILL_IMU2 =          101, // disable second IMU (for IMU failure testing)
         CAM_MODE_TOGGLE =    102, // Momentary switch to cycle camera modes
+        EKF_LANE_SWITCH =    103, // trigger lane switch attempt
+        EKF_YAW_RESET =      104, // trigger yaw reset attempt
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
         // also, if you add an option >255, you will need to fix duplicate_options_exist
 

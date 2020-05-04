@@ -122,6 +122,7 @@ class Board:
             '-Werror=parentheses',
             '-Werror=format-extra-args',
             '-Werror=ignored-qualifiers',
+            '-DARDUPILOT_BUILD',
         ]
 
         if cfg.options.scripting_checks:
@@ -205,6 +206,7 @@ class Board:
             '-Wfatal-errors',
             '-Wno-trigraphs',
             '-Werror=parentheses',
+            '-DARDUPILOT_BUILD',
         ]
 
         if 'clang++' in cfg.env.COMPILER_CXX:
@@ -249,6 +251,15 @@ class Board:
                     '-Werror=implicit-fallthrough',
                 ]
 
+        if cfg.options.Werror:
+            errors = ['-Werror',
+                      '-Werror=missing-declarations',
+                      '-Werror=float-equal',
+                      '-Werror=undef',
+                    ]
+            env.CFLAGS += errors
+            env.CXXFLAGS += errors
+
         if cfg.env.DEBUG:
             env.CXXFLAGS += [
                 '-g',
@@ -290,6 +301,11 @@ class Board:
         # We always want to use PRI format macros
         cfg.define('__STDC_FORMAT_MACROS', 1)
 
+        if cfg.options.disable_ekf2:
+            env.CXXFLAGS += ['-DHAL_NAVEKF2_AVAILABLE=0']
+
+        if cfg.options.disable_ekf3:
+            env.CXXFLAGS += ['-DHAL_NAVEKF3_AVAILABLE=0']
 
     def pre_build(self, bld):
         '''pre-build hook that gets called before dynamic sources'''
@@ -380,6 +396,12 @@ class sitl(Board):
                 '-O3',
             ]
 
+        if 'clang++' in cfg.env.COMPILER_CXX and cfg.options.asan:
+            env.CXXFLAGS += [
+                '-fsanitize=address',
+                '-fno-omit-frame-pointer',
+            ]
+
         env.LIB += [
             'm',
         ]
@@ -388,6 +410,10 @@ class sitl(Board):
         cfg.check_feenableexcept()
 
         env.LINKFLAGS += ['-pthread',]
+
+        if cfg.env.DEBUG and 'clang++' in cfg.env.COMPILER_CXX and cfg.options.asan:
+             env.LINKFLAGS += ['-fsanitize=address']
+
         env.AP_LIBRARIES += [
             'AP_HAL_SITL',
             'SITL',
@@ -466,11 +492,6 @@ class chibios(Board):
             '-Wframe-larger-than=1300',
             '-fsingle-precision-constant',
             '-Wno-attributes',
-            '-Wno-error=double-promotion',
-            '-Wno-error=missing-declarations',
-            '-Wno-error=float-equal',
-            '-Wno-error=undef',
-            '-Wno-error=cpp',
             '-fno-exceptions',
             '-Wall',
             '-Wextra',
@@ -506,6 +527,15 @@ class chibios(Board):
             '-D__USE_CMSIS',
             '-Werror=deprecated-declarations'
         ]
+        if not cfg.options.Werror:
+            env.CFLAGS += [
+            '-Wno-error=double-promotion',
+            '-Wno-error=missing-declarations',
+            '-Wno-error=float-equal',
+            '-Wno-error=undef',
+            '-Wno-error=cpp',
+            ]
+
         env.CXXFLAGS += env.CFLAGS + [
             '-fno-rtti',
             '-fno-threadsafe-statics',

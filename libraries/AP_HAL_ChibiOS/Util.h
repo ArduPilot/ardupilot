@@ -65,6 +65,11 @@ public:
     // return true if the reason for the reboot was a watchdog reset
     bool was_watchdog_reset() const override;
 
+#if CH_DBG_ENABLE_STACK_CHECK == TRUE
+    // request information on running threads
+    size_t thread_info(char *buf, size_t bufsize) override;
+#endif
+    
 private:
 #ifdef HAL_PWM_ALARM
     struct ToneAlarmPwmGroup {

@@ -17,9 +17,6 @@ import operator
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
-MISSION = 'ArduPlane-Missions/Dalby-OBC2016.txt'
-GYRO_MISSION = 'ArduPlane-Missions/quadplane-gyro-mission.txt'
-FENCE = 'ArduPlane-Missions/Dalby-OBC2016-fence.txt'
 WIND = "0,180,0.2"  # speed,direction,variance
 SITL_START_LOCATION = mavutil.location(-27.274439, 151.290064, 343, 8.7)
 
@@ -58,20 +55,16 @@ class AutoTestQuadPlane(AutoTest):
     def log_name(self):
         return "QuadPlane"
 
+    def set_current_test_name(self, name):
+        self.current_test_name_directory = "ArduPlane_Tests/" + name + "/"
+
     def apply_defaultfile_parameters(self):
-        # plane passes in a defaults_file in place of applying
+        # plane passes in a defaults_filepath in place of applying
         # parameters afterwards.
         pass
 
     def defaults_filepath(self):
-        vinfo = vehicleinfo.VehicleInfo()
-        defaults_file = vinfo.options["ArduPlane"]["frames"][self.frame]["default_params_filename"]
-        if isinstance(defaults_file, str):
-            defaults_file = [defaults_file]
-        defaults_list = []
-        for d in defaults_file:
-            defaults_list.append(os.path.join(testdir, d))
-        return ','.join(defaults_list)
+        return self.model_defaults_filepath("ArduPlane",self.frame)
 
     def is_plane(self):
         return True
@@ -190,7 +183,7 @@ class AutoTestQuadPlane(AutoTest):
 
     def fly_home_land_and_disarm(self):
         self.set_parameter("LAND_TYPE", 0)
-        filename = os.path.join(testdir, "flaps.txt")
+        filename = "flaps.txt"
         self.progress("Using %s to fly home" % filename)
         self.load_mission(filename)
         self.change_mode("AUTO")
@@ -364,7 +357,7 @@ class AutoTestQuadPlane(AutoTest):
 
             # Step 4: take off as a copter land as a plane, make sure we track
             self.progress("Flying with gyro FFT - vtol to plane")
-            self.load_mission(os.path.join(testdir, GYRO_MISSION))
+            self.load_mission("quadplane-gyro-mission.txt")
             self.mavproxy.send('wp list\n')
             self.mavproxy.expect('Requesting [0-9]+ waypoints')
             self.wait_ready_to_arm()
@@ -413,9 +406,6 @@ class AutoTestQuadPlane(AutoTest):
 
     def tests(self):
         '''return list of all tests'''
-        m = os.path.join(testdir, "ArduPlane-Missions/Dalby-OBC2016.txt")
-        f = os.path.join(testdir,
-                         "ArduPlane-Missions/Dalby-OBC2016-fence.txt")
 
         ret = super(AutoTestQuadPlane, self).tests()
         ret.extend([
@@ -426,7 +416,7 @@ class AutoTestQuadPlane(AutoTest):
              self.test_parameter_checks),
 
             ("Mission", "Dalby Mission",
-             lambda: self.fly_mission(m, f)),
+             lambda: self.fly_mission("Dalby-OBC2016.txt", "Dalby-OBC2016-fence.txt")),
 
             ("GyroFFT", "Fly Gyro FFT",
              self.fly_gyro_fft)

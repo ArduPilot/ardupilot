@@ -425,7 +425,6 @@ static const ap_message STREAM_EXTRA1_msgs[] = {
     MSG_ATTITUDE,
     MSG_SIMSTATE,
     MSG_AHRS2,
-    MSG_AHRS3,
     MSG_PID_TUNING // Up to four PID_TUNING messages are sent, depending on GCS_PID_MASK parameter
 };
 static const ap_message STREAM_EXTRA2_msgs[] = {
@@ -1242,12 +1241,6 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
 } // end handle mavlink
 
 
-/*
- *  a delay() callback that processes MAVLink packets. We set this as the
- *  callback in long running library initialisation routines to allow
- *  MAVLink to process packets while waiting for the initialisation to
- *  complete
- */
 MAV_RESULT GCS_MAVLINK_Copter::handle_flight_termination(const mavlink_command_long_t &packet) {
     MAV_RESULT result = MAV_RESULT_FAILED;
 

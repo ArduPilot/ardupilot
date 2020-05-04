@@ -224,7 +224,7 @@ void RangeFinder::convert_params(void) {
     info.old_key = 53;
 #elif APM_BUILD_TYPE(APM_BUILD_ArduSub)
     info.old_key = 35;
-#elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
+#elif APM_BUILD_TYPE(APM_BUILD_Rover)
     info.old_key = 197;
 #else
     params[0].type.save(true);
@@ -510,6 +510,9 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
     if (drivers[instance] && state[instance].var_info) {
         backend_var_info[instance] = state[instance].var_info;
         AP_Param::load_object_from_eeprom(drivers[instance], backend_var_info[instance]);
+
+        // param count could have changed
+        AP_Param::invalidate_count();
     }
 }
 

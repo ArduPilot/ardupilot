@@ -298,6 +298,10 @@ void GCS_MAVLINK::handle_param_set(const mavlink_message_t &msg)
     // save the change
     vp->save(force_save);
 
+    if (force_save && (parameter_flags & AP_PARAM_FLAG_ENABLE)) {
+        AP_Param::invalidate_count();
+    }
+    
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger != nullptr) {
         logger->Write_Parameter(key, vp->cast_to_float(var_type));

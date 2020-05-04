@@ -40,8 +40,6 @@
 #include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
 #include <AP_InertialSensor/AP_InertialSensor.h>  // ArduPilot Mega Inertial Sensor (accel & gyro) Library
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_NavEKF2/AP_NavEKF2.h>
-#include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_Mission/AP_Mission.h>     // Mission command library
 #include <AC_AttitudeControl/AC_AttitudeControl_Multi.h> // Attitude control library
 #include <AC_AttitudeControl/AC_AttitudeControl_Heli.h> // Attitude control library for traditional helicopter
@@ -128,9 +126,6 @@
 #endif
 #if OPTFLOW == ENABLED
  # include <AP_OpticalFlow/AP_OpticalFlow.h>
-#endif
-#if VISUAL_ODOMETRY_ENABLED == ENABLED
- # include <AP_VisualOdom/AP_VisualOdom.h>
 #endif
 #if RANGEFINDER_ENABLED == ENABLED
  # include <AP_RangeFinder/AP_RangeFinder.h>
@@ -847,7 +842,6 @@ private:
     void accel_cal_update(void);
     void init_proximity();
     void update_proximity();
-    void init_visual_odom();
     void winch_init();
     void winch_update();
 

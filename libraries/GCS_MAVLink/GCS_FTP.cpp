@@ -20,11 +20,12 @@
 
 #include <AP_Filesystem/AP_Filesystem.h>
 
-#if HAVE_FILESYSTEM_SUPPORT
-
 extern const AP_HAL::HAL& hal;
 
 struct GCS_MAVLINK::ftp_state GCS_MAVLINK::ftp;
+
+// timeout for session inactivity
+#define FTP_SESSION_TIMEOUT 3000
 
 bool GCS_MAVLINK::ftp_init(void) {
     // we can simply check if we allocated everything we need
@@ -85,7 +86,7 @@ void GCS_MAVLINK::handle_file_transfer_protocol(const mavlink_message_t &msg) {
 }
 
 void GCS_MAVLINK::send_ftp_replies(void) {
-    if (ftp.replies == nullptr) {
+    if (ftp.replies == nullptr || ftp.replies->empty()) {
         return;
     }
 
@@ -186,16 +187,29 @@ void GCS_MAVLINK::ftp_worker(void) {
             continue;
         }
 
+        uint32_t now = AP_HAL::millis();
+
         // check for session termination
         if (request.session != ftp.current_session &&
             (request.opcode == FTP_OP::TerminateSession || request.opcode == FTP_OP::ResetSessions)) {
             // terminating a different session, just ack
             reply.opcode = FTP_OP::Ack;
-        } else if (ftp.fd != -1 && request.session != ftp.current_session) {
+        } else if (ftp.fd != -1 && request.session != ftp.current_session &&
+                   now - ftp.last_send_ms < FTP_SESSION_TIMEOUT) {
             // if we have an open file and the session isn't right
             // then reject. This prevents IO on the wrong file
             ftp_error(reply, FTP_ERROR::InvalidSession);
         } else {
+            if (ftp.fd != -1 &&
+                request.session != ftp.current_session &&
+                now - ftp.last_send_ms >= FTP_SESSION_TIMEOUT) {
+                // if a new session appears and the old session has
+                // been idle for more than the timeout then force
+                // close the old session
+                AP::FS().close(ftp.fd);
+                ftp.fd = -1;
+                ftp.current_session = -1;
+            }
             // dispatch the command as needed
             switch (request.opcode) {
                 case FTP_OP::None:
@@ -217,6 +231,14 @@ void GCS_MAVLINK::ftp_worker(void) {
                 case FTP_OP::OpenFileRO:
                     {
                         // only allow one file to be open per session
+                        if (ftp.fd != -1 && now - ftp.last_send_ms > FTP_SESSION_TIMEOUT) {
+                            // no activity for 3s, assume client has
+                            // timed out receiving open reply, close
+                            // the file
+                            AP::FS().close(ftp.fd);
+                            ftp.fd = -1;
+                            ftp.current_session = -1;
+                        }
                         if (ftp.fd != -1) {
                             ftp_error(reply, FTP_ERROR::Fail);
                             break;
@@ -482,6 +504,11 @@ void GCS_MAVLINK::ftp_worker(void) {
 
                             ftp_push_replies(reply);
 
+                            if (read_bytes < max_read) {
+                                // ensure the NACK which we send next is at the right offset
+                                reply.offset += read_bytes;
+                            }
+
                             // prep the reply to be used again
                             reply.seq_number++;
                         }
@@ -606,5 +633,3 @@ void GCS_MAVLINK::ftp_list_dir(struct pending_ftp &request, struct pending_ftp &
 
     AP::FS().closedir(dir);
 }
-
-#endif // HAVE_FILESYSTEM_SUPPORT

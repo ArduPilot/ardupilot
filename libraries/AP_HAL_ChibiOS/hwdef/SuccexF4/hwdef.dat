@@ -10,10 +10,6 @@ APJ_BOARD_ID 1011
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
-STM32_PLLM_VALUE 8
-
-# board voltage
-STM32_VDD 330U
 
 STM32_ST_USE_TIMER 5
 
@@ -56,7 +52,7 @@ PC12 SPI3_MOSI SPI3
 I2C_ORDER I2C1
 
 # UART ports and I2C bus
-UART_ORDER OTG1 USART3 USART1 USART2 USART6
+SERIAL_ORDER OTG1 USART1 USART2 USART3 USART6
 
 # Note that this board needs pull-ups on I2C pins
 PB8 I2C1_SCL I2C1 PULLUP
@@ -135,6 +131,9 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 # disable parachute and sprayer to save flash
 define HAL_PARACHUTE_ENABLED 0
 define HAL_SPRAYER_ENABLED 0
+
+#eliminate EKF2 to save flash size
+define HAL_NAVEKF2_AVAILABLE 0
 
 # reduce max size of embedded params for apj_tool.py
 define AP_PARAM_MAX_EMBEDDED_PARAM 1024

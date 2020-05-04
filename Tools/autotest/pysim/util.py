@@ -92,10 +92,12 @@ def relwaf():
     return "./modules/waf/waf-light"
 
 
-def waf_configure(board, j=None, debug=False, extra_args=[]):
+def waf_configure(board, j=None, debug=False, math_check_indexes=False, extra_args=[]):
     cmd_configure = [relwaf(), "configure", "--board", board]
     if debug:
         cmd_configure.append('--debug')
+    if math_check_indexes:
+        cmd_configure.append('--enable-math-check-indexes')
     if j is not None:
         cmd_configure.extend(['-j', str(j)])
     pieces = [shlex.split(x) for x in extra_args]
@@ -108,12 +110,16 @@ def waf_clean():
     run_cmd([relwaf(), "clean"], directory=topdir(), checkfail=True)
 
 
-def build_SITL(build_target, j=None, debug=False, board='sitl', clean=True, configure=True, extra_configure_args=[]):
+def build_SITL(build_target, j=None, debug=False, board='sitl', clean=True, configure=True, math_check_indexes=False, extra_configure_args=[]):
     """Build desktop SITL."""
 
     # first configure
     if configure:
-        waf_configure(board, j=j, debug=debug, extra_args=extra_configure_args)
+        waf_configure(board,
+                      j=j,
+                      debug=debug,
+                      math_check_indexes=math_check_indexes,
+                      extra_args=extra_configure_args)
 
     # then clean
     if clean:
@@ -235,7 +241,7 @@ def start_SITL(binary,
                home=None,
                model=None,
                speedup=1,
-               defaults_file=None,
+               defaults_filepath=None,
                unhide_parameters=False,
                gdbserver=False,
                breakpoints=[],
@@ -243,6 +249,10 @@ def start_SITL(binary,
                vicon=False,
                customisations=[],
                lldb=False):
+
+    if model is None:
+        raise ValueError("model must not be None")
+
     """Launch a SITL instance."""
     cmd = []
     if valgrind and os.path.exists('/usr/bin/valgrind'):
@@ -311,12 +321,13 @@ def start_SITL(binary,
         cmd.append('-S')
     if home is not None:
         cmd.extend(['--home', home])
-    if model is not None:
-        cmd.extend(['--model', model])
+    cmd.extend(['--model', model])
     if speedup != 1:
         cmd.extend(['--speedup', str(speedup)])
-    if defaults_file is not None:
-        cmd.extend(['--defaults', defaults_file])
+    if defaults_filepath is not None:
+        if type(defaults_filepath) == list:
+            defaults_filepath = ",".join(defaults_filepath)
+        cmd.extend(['--defaults', defaults_filepath])
     if unhide_parameters:
         cmd.extend(['--unhide-groups'])
     if vicon:

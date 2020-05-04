@@ -313,9 +313,6 @@ void NavEKF2_core::readIMUData()
     // average IMU sampling rate
     dtIMUavg = ins.get_loop_delta_t();
 
-    // the imu sample time is used as a common time reference throughout the filter
-    imuSampleTime_ms = AP_HAL::millis();
-
     // use the nominated imu or primary if not available
     uint8_t accel_active, gyro_active;
 
@@ -588,7 +585,7 @@ void NavEKF2_core::readGpsData()
 
             if (gpsGoodToAlign && !have_table_earth_field) {
                 const Compass *compass = _ahrs->get_compass();
-                if (compass && compass->have_scale_factor(magSelectIndex)) {
+                if (compass && compass->have_scale_factor(magSelectIndex) && compass->auto_declination_enabled()) {
                     table_earth_field_ga = AP_Declination::get_earth_field_ga(gpsloc);
                     table_declination = radians(AP_Declination::get_declination(gpsloc.lat*1.0e-7,
                                                                                 gpsloc.lng*1.0e-7));
@@ -893,7 +890,7 @@ void NavEKF2_core::getTimingStatistics(struct ekf_timing &_timing)
     memset(&timing, 0, sizeof(timing));
 }
 
-void NavEKF2_core::writeExtNavData(const Vector3f &sensOffset, const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint32_t resetTime_ms)
+void NavEKF2_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint32_t resetTime_ms)
 {
     // limit update rate to maximum allowed by sensor buffers and fusion process
     // don't try to write to buffer until the filter has been initialised
@@ -903,7 +900,7 @@ void NavEKF2_core::writeExtNavData(const Vector3f &sensOffset, const Vector3f &p
         extNavMeasTime_ms = timeStamp_ms;
     }
 
-    if (resetTime_ms > extNavLastPosResetTime_ms) {
+    if (resetTime_ms != extNavLastPosResetTime_ms) {
         extNavDataNew.posReset = true;
         extNavLastPosResetTime_ms = resetTime_ms;
     } else {
@@ -918,7 +915,6 @@ void NavEKF2_core::writeExtNavData(const Vector3f &sensOffset, const Vector3f &p
         extNavDataNew.posErr = frontend->_gpsHorizPosNoise;
     }
     extNavDataNew.angErr = angErr;
-    extNavDataNew.body_offset = &sensOffset;
     timeStamp_ms = timeStamp_ms - frontend->_extnavDelay_ms;
     // Correct for the average intersampling delay due to the filter updaterate
     timeStamp_ms -= localFilterTimeStep_ms/2;
@@ -1014,3 +1010,8 @@ void NavEKF2_core::learnInactiveBiases(void)
     }
 }
 
+// Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
+void NavEKF2_core::writeDefaultAirSpeed(float airspeed)
+{
+    defaultAirSpeed = airspeed;
+}

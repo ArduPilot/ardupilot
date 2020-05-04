@@ -20,18 +20,26 @@ public:
     AC_Circle(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosControl& pos_control);
 
     /// init - initialise circle controller setting center specifically
+    ///     set terrain_alt to true if center.z should be interpreted as an alt-above-terrain
     ///     caller should set the position controller's x,y and z speeds and accelerations before calling this
-    void init(const Vector3f& center);
+    void init(const Vector3f& center, bool terrain_alt);
 
     /// init - initialise circle controller setting center using stopping point and projecting out based on the copter's heading
     ///     caller should set the position controller's x,y and z speeds and accelerations before calling this
     void init();
 
-    /// set_circle_center in cm from home
-    void set_center(const Vector3f& center) { _center = center; }
+    /// set circle center to a Location
+    void set_center(const Location& center);
+
+    /// set_circle_center as a vector from ekf origin
+    ///     terrain_alt should be true if center.z is alt is above terrain
+    void set_center(const Vector3f& center, bool terrain_alt) { _center = center; _terrain_alt = terrain_alt; }
 
     /// get_circle_center in cm from home
     const Vector3f& get_center() const { return _center; }
+
+    /// returns true if using terrain altitudes
+    bool center_is_terrain_alt() const { return _terrain_alt; }
 
     /// get_radius - returns radius of circle in cm
     float get_radius() const { return _radius; }
@@ -52,12 +60,17 @@ public:
     float get_angle_total() const { return _angle_total; }
 
     /// update - update circle controller
-    void update();
+    ///     returns false on failure which indicates a terrain failsafe
+    bool update() WARN_IF_UNUSED;
 
     /// get desired roll, pitch which should be fed into stabilize controllers
     float get_roll() const { return _pos_control.get_roll(); }
     float get_pitch() const { return _pos_control.get_pitch(); }
     float get_yaw() const { return _yaw; }
+
+    /// returns true if update has been run recently
+    /// used by vehicle code to determine if get_yaw() is valid
+    bool is_active() const;
 
     // get_closest_point_on_circle - returns closest point on the circle
     //  circle's center should already have been set
@@ -75,6 +88,9 @@ public:
     /// true if pilot control of radius and turn rate is enabled
     bool pilot_control_enabled() const { return _control > 0; }
 
+    /// provide rangefinder altitude
+    void set_rangefinder_alt(bool use, bool healthy, float alt_cm) { _rangefinder_available = use; _rangefinder_healthy = healthy; _rangefinder_alt_cm = alt_cm; }
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -89,6 +105,17 @@ private:
     //  if use_heading is true the vehicle's heading will be used to init the angle causing minimum yaw movement
     //  if use_heading is false the vehicle's position from the center will be used to initialise the angle
     void init_start_angle(bool use_heading);
+
+    // get expected source of terrain data
+    enum class TerrainSource {
+        TERRAIN_UNAVAILABLE,
+        TERRAIN_FROM_RANGEFINDER,
+        TERRAIN_FROM_TERRAINDATABASE,
+    };
+    AC_Circle::TerrainSource get_terrain_source() const;
+
+    // get terrain's altitude (in cm above the ekf origin) at the current position (+ve means terrain below vehicle is above ekf origin's altitude)
+    bool get_terrain_offset(float& offset_cm);
 
     // flags structure
     struct circle_flags {
@@ -113,4 +140,11 @@ private:
     float       _angular_vel;   // angular velocity in radians/sec
     float       _angular_vel_max;   // maximum velocity in radians/sec
     float       _angular_accel; // angular acceleration in radians/sec/sec
+    uint32_t    _last_update_ms;    // system time of last update
+
+    // terrain following variables
+    bool        _terrain_alt;           // true if _center.z is alt-above-terrain, false if alt-above-ekf-origin
+    bool        _rangefinder_available; // true if range finder could be used
+    bool        _rangefinder_healthy;   // true if range finder is healthy
+    float       _rangefinder_alt_cm;    // latest rangefinder altitude
 };

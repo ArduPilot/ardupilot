@@ -303,3 +303,45 @@ bool Util::was_watchdog_reset() const
 {
     return stm32_was_watchdog_reset();
 }
+
+#if CH_DBG_ENABLE_STACK_CHECK == TRUE
+/*
+  display stack usage as text buffer for @SYS/threads.txt
+ */
+size_t Util::thread_info(char *buf, size_t bufsize)
+{
+  thread_t *tp;
+  size_t total = 0;
+
+  // a header to allow for machine parsers to determine format
+  int n = snprintf(buf, bufsize, "ThreadsV1\n");
+  if (n <= 0) {
+      return 0;
+  }
+  buf += n;
+  bufsize -= n;
+  total += n;
+
+  tp = chRegFirstThread();
+
+  do {
+      uint32_t stklimit = (uint32_t)tp->wabase;
+      uint8_t *p = (uint8_t *)tp->wabase;
+      while (*p == CH_DBG_STACK_FILL_VALUE) {
+          p++;
+      }
+      uint32_t stack_left = ((uint32_t)p) - stklimit;
+      n = snprintf(buf, bufsize, "%-13.13s PRI=%3u STACK_LEFT=%u\n", tp->name, unsigned(tp->prio), unsigned(stack_left));
+      if (n <= 0) {
+          break;
+      }
+      buf += n;
+      bufsize -= n;
+      total += n;
+      tp = chRegNextThread(tp);
+  } while (tp != NULL);
+
+  return total;
+}
+#endif // CH_DBG_ENABLE_STACK_CHECK == TRUE
+

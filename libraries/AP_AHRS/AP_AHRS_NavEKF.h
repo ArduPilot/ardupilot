@@ -55,6 +55,9 @@ public:
     // Constructor
     AP_AHRS_NavEKF(uint8_t flags = FLAG_NONE);
 
+    // initialise
+    void init(void) override;
+
     /* Do not allow copies */
     AP_AHRS_NavEKF(const AP_AHRS_NavEKF &other) = delete;
     AP_AHRS_NavEKF &operator=(const AP_AHRS_NavEKF&) = delete;
@@ -115,6 +118,9 @@ public:
     }
 #endif
 
+    // return the quaternion defining the rotation from NED to XYZ (body) axes
+    bool get_quaternion(Quaternion &quat) const override WARN_IF_UNUSED;
+
     // return secondary attitude solution if available, as eulers in radians
     bool get_secondary_attitude(Vector3f &eulers) const override;
 
@@ -173,8 +179,11 @@ public:
     // write body odometry measurements to the EKF
     void writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset);
 
+    // Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
+    void writeDefaultAirSpeed(float airspeed);
+
     // Write position and quaternion data from an external navigation system
-    void writeExtNavData(const Vector3f &sensOffset, const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint32_t resetTime_ms) override;
+    void writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint32_t resetTime_ms) override;
 
     // inhibit GPS usage
     uint8_t setInhibitGPS(void);
@@ -269,6 +278,9 @@ public:
     // is the EKF backend doing its own sensor logging?
     bool have_ekf_logging(void) const override;
 
+    // return the index of the primary core or -1 if no primary core selected
+    int8_t get_primary_core_index() const override;
+
     // get the index of the current primary accelerometer sensor
     uint8_t get_primary_accel_index(void) const override;
 
@@ -278,10 +290,16 @@ public:
     // see if EKF lane switching is possible to avoid EKF failsafe
     void check_lane_switch(void) override;
 
+    // request EKF yaw reset to try and avoid the need for an EKF lane switch or failsafe
+    void request_yaw_reset(void) override;
+
     void Log_Write();
 
-    // check whether compass can be bypassed for arming check in case when external navigation data is available 
-    bool is_ext_nav_used_for_yaw(void) const;
+    // check whether external navigation is providing yaw.  Allows compass pre-arm checks to be bypassed
+    bool is_ext_nav_used_for_yaw(void) const override;
+
+    // set and save the ALT_M_NSE parameter value
+    void set_alt_measurement_noise(float noise) override;
 
     // these are only out here so vehicles can reference them for parameters
 #if HAL_NAVEKF2_AVAILABLE
@@ -293,12 +311,12 @@ public:
 
 private:
     enum class EKFType {
-        NONE = 0,
+        NONE = 0
 #if HAL_NAVEKF3_AVAILABLE
-        THREE = 3,
+        ,THREE = 3
 #endif
 #if HAL_NAVEKF2_AVAILABLE
-        TWO = 2
+        ,TWO = 2
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         ,SITL = 10

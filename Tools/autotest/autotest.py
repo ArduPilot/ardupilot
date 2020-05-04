@@ -17,7 +17,7 @@ import sys
 import time
 import traceback
 
-import apmrover2
+import rover
 import arducopter
 import arduplane
 import ardusub
@@ -167,7 +167,7 @@ def param_parse_filepath():
 def all_vehicles():
     return ('ArduPlane',
             'ArduCopter',
-            'APMrover2',
+            'Rover',
             'AntennaTracker',
             'ArduSub')
 
@@ -252,7 +252,6 @@ __bin_names = {
     "QuadPlane": "arduplane",
     "Sub": "ardusub",
     "BalanceBot": "ardurover",
-    "Soaring": "arduplane",
 }
 
 
@@ -300,12 +299,11 @@ tester_class_map = {
     "test.CopterTests2": arducopter.AutoTestCopterTests2,
     "test.Plane": arduplane.AutoTestPlane,
     "test.QuadPlane": quadplane.AutoTestQuadPlane,
-    "test.Rover": apmrover2.AutoTestRover,
+    "test.Rover": rover.AutoTestRover,
     "test.BalanceBot": balancebot.AutoTestBalanceBot,
     "test.Helicopter": arducopter.AutoTestHeli,
     "test.Sub": ardusub.AutoTestSub,
     "test.Tracker": antennatracker.AutoTestTracker,
-    "test.Soaring": arduplane.AutoTestSoaring,
 }
 
 def run_specific_test(step, *args, **kwargs):
@@ -339,6 +337,7 @@ def run_step(step):
         "debug": opts.debug,
         "clean": not opts.no_clean,
         "configure": not opts.no_configure,
+        "math_check_indexes": opts.math_check_indexes,
         "extra_configure_args": opts.waf_configure_args,
     }
 
@@ -381,6 +380,7 @@ def run_step(step):
         "disable_breakpoints": opts.disable_breakpoints,
         "frame": opts.frame,
         "_show_test_timings": opts.show_test_timings,
+        "force_ahrs_type": opts.force_ahrs_type,
     }
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
@@ -542,7 +542,7 @@ def write_fullresults():
     results.addglob('APM:Libraries documentation', 'docs/libraries/index.html')
     results.addglob('APM:Plane documentation', 'docs/ArduPlane/index.html')
     results.addglob('APM:Copter documentation', 'docs/ArduCopter/index.html')
-    results.addglob('APM:Rover documentation', 'docs/APMrover2/index.html')
+    results.addglob('APM:Rover documentation', 'docs/Rover/index.html')
     results.addglob('APM:Sub documentation', 'docs/ArduSub/index.html')
     results.addglobimage("Flight Track", '*.png')
 
@@ -727,6 +727,11 @@ if __name__ == "__main__":
                            default=False,
                            action='store_true',
                            help='make built binaries debug binaries')
+    group_build.add_option("--enable-math-check-indexes",
+                           default=False,
+                           action="store_true",
+                           dest="math_check_indexes",
+                           help="enable checking of math indexes")
     parser.add_option_group(group_build)
 
     group_sim = optparse.OptionGroup(parser, "Simulation options")
@@ -759,6 +764,10 @@ if __name__ == "__main__":
                          default=False,
                          action='store_true',
                          help="disable all breakpoints before starting")
+    group_sim.add_option("", "--force-ahrs-type",
+                         dest="force_ahrs_type",
+                         default=None,
+                         help="force a specific AHRS type (e.g. 10 for SITL-ekf")
     parser.add_option_group(group_sim)
 
     opts, args = parser.parse_args()
@@ -778,7 +787,6 @@ if __name__ == "__main__":
         'defaults.Plane',
         'test.Plane',
         'test.QuadPlane',
-        'test.Soaring',
 
         'build.Rover',
         'defaults.Rover',

@@ -42,6 +42,10 @@
 
 #define UNIX_OFFSET_MSEC (17000ULL * 86400ULL + 52ULL * 10ULL * AP_MSEC_PER_WEEK - GPS_LEAPSECONDS_MILLIS)
 
+#ifndef GPS_UBLOX_MOVING_BASELINE
+#define GPS_UBLOX_MOVING_BASELINE !HAL_MINIMIZE_FEATURES && GPS_MAX_RECEIVERS>1
+#endif
+
 class AP_GPS_Backend;
 
 /// @class AP_GPS
@@ -493,6 +497,7 @@ protected:
     AP_Int16 _delay_ms[GPS_MAX_RECEIVERS];
     AP_Int8 _blend_mask;
     AP_Float _blend_tc;
+    AP_Int16 _driver_options;
 
     uint32_t _log_gps_bit = -1;
 
@@ -515,6 +520,12 @@ private:
 
         // delta time between the last pair of GPS updates in system milliseconds
         uint16_t delta_time_ms;
+
+        // count of delayed frames
+        uint8_t delayed_count;
+
+        // the average time delta
+        float average_delta_ms;
     };
     // Note allowance for an additional instance to contain blended data
     GPS_timing timing[GPS_MAX_INSTANCES];

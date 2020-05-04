@@ -209,14 +209,17 @@ void NavEKF2_core::setAidingMode()
         bool posUsed = (imuSampleTime_ms - lastPosPassTime_ms <= minTestTime_ms);
         bool gpsVelUsed = (imuSampleTime_ms - lastVelPassTime_ms <= minTestTime_ms);
 
+        // Check if external nav is being used
+        bool extNavUsed = (imuSampleTime_ms - lastExtNavPassTime_ms <= minTestTime_ms);
+
         // Check if attitude drift has been constrained by a measurement source
-        bool attAiding = posUsed || gpsVelUsed || optFlowUsed || airSpdUsed || rngBcnUsed;
+        bool attAiding = posUsed || gpsVelUsed || optFlowUsed || airSpdUsed || rngBcnUsed || extNavUsed;
 
         // check if velocity drift has been constrained by a measurement source
         bool velAiding = gpsVelUsed || airSpdUsed || optFlowUsed;
 
         // check if position drift has been constrained by a measurement source
-        bool posAiding = posUsed || rngBcnUsed;
+        bool posAiding = posUsed || rngBcnUsed || extNavUsed;
 
         // Check if the loss of attitude aiding has become critical
         bool attAidLossCritical = false;
@@ -225,11 +228,13 @@ void NavEKF2_core::setAidingMode()
                    (imuSampleTime_ms - lastTasPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
                    (imuSampleTime_ms - lastRngBcnPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
                    (imuSampleTime_ms - lastPosPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
+                   (imuSampleTime_ms - lastExtNavPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
                    (imuSampleTime_ms - lastVelPassTime_ms > frontend->tiltDriftTimeMax_ms);
         }
 
         // Check if the loss of position accuracy has become critical
         bool posAidLossCritical = false;
+        bool posAidLossPending = false;
         if (!posAiding ) {
             uint16_t maxLossTime_ms;
             if (!velAiding) {
@@ -238,7 +243,11 @@ void NavEKF2_core::setAidingMode()
                 maxLossTime_ms = frontend->posRetryTimeUseVel_ms;
             }
             posAidLossCritical = (imuSampleTime_ms - lastRngBcnPassTime_ms > maxLossTime_ms) &&
-                   (imuSampleTime_ms - lastPosPassTime_ms > maxLossTime_ms);
+                                 (imuSampleTime_ms - lastExtNavPassTime_ms > maxLossTime_ms) &&
+                                 (imuSampleTime_ms - lastPosPassTime_ms > maxLossTime_ms);
+            posAidLossPending = (imuSampleTime_ms - lastRngBcnPassTime_ms > (uint32_t)frontend->_gsfResetDelay) &&
+                                (imuSampleTime_ms - lastExtNavPassTime_ms > (uint32_t)frontend->_gsfResetDelay) &&
+                                (imuSampleTime_ms - lastPosPassTime_ms > (uint32_t)frontend->_gsfResetDelay);
         }
 
         if (attAidLossCritical) {
@@ -258,6 +267,9 @@ void NavEKF2_core::setAidingMode()
             velTimeout = true;
             rngBcnTimeout = true;
             gpsNotAvailable = true;
+        } else if (posAidLossPending) {
+            // attempt to reset the yaw to the estimate from the EKF-GSF algorithm
+            EKFGSF_yaw_reset_request_ms = imuSampleTime_ms;
         }
         break;
     }
@@ -329,6 +341,7 @@ void NavEKF2_core::setAidingMode()
             lastPosPassTime_ms = imuSampleTime_ms;
             lastVelPassTime_ms = imuSampleTime_ms;
             lastRngBcnPassTime_ms = imuSampleTime_ms;
+            lastExtNavPassTime_ms = imuSampleTime_ms;
             }
             break;
         }
@@ -465,9 +478,18 @@ bool NavEKF2_core::checkGyroCalStatus(void)
 {
     // check delta angle bias variances
     const float delAngBiasVarMax = sq(radians(0.15f * dtEkfAvg));
-    delAngBiasLearned =  (P[9][9] <= delAngBiasVarMax) &&
-                            (P[10][10] <= delAngBiasVarMax) &&
-                            (P[11][11] <= delAngBiasVarMax);
+    if (!use_compass()) {
+        // rotate the variances into earth frame and evaluate horizontal terms only as yaw component is poorly observable without a compass
+        // which can make this check fail
+        Vector3f delAngBiasVarVec = Vector3f(P[9][9],P[10][10],P[11][11]);
+        Vector3f temp = prevTnb * delAngBiasVarVec;
+        delAngBiasLearned = (fabsf(temp.x) < delAngBiasVarMax) &&
+                            (fabsf(temp.y) < delAngBiasVarMax);
+    } else {
+        delAngBiasLearned =  (P[9][9] <= delAngBiasVarMax) &&
+                             (P[10][10] <= delAngBiasVarMax) &&
+                             (P[11][11] <= delAngBiasVarMax);
+    }
     return delAngBiasLearned;
 }
 
@@ -524,3 +546,43 @@ void  NavEKF2_core::updateFilterStatus(void)
     filterStatus.flags.initalized = filterStatus.flags.initalized || healthy();
 }
 
+void NavEKF2_core::runYawEstimatorPrediction()
+{
+    if (yawEstimator != nullptr && frontend->_fusionModeGPS <= 1) {
+        float trueAirspeed;
+        if (is_positive(defaultAirSpeed) && assume_zero_sideslip()) {
+            if (imuDataDelayed.time_ms - tasDataDelayed.time_ms < 5000) {
+                trueAirspeed = tasDataDelayed.tas;
+            } else {
+                trueAirspeed = defaultAirSpeed * AP::ahrs().get_EAS2TAS();
+            }
+        } else {
+            trueAirspeed = 0.0f;
+        }
+
+        yawEstimator->update(imuDataDelayed.delAng, imuDataDelayed.delVel, imuDataDelayed.delAngDT, imuDataDelayed.delVelDT, EKFGSF_run_filterbank, trueAirspeed);
+    }
+}
+
+void NavEKF2_core::runYawEstimatorCorrection()
+{
+    if (yawEstimator != nullptr && frontend->_fusionModeGPS <= 1) {
+        if (gpsDataToFuse) {
+            Vector2f gpsVelNE = Vector2f(gpsDataDelayed.vel.x, gpsDataDelayed.vel.y);
+            float gpsVelAcc = fmaxf(gpsSpdAccuracy, frontend->_gpsHorizVelNoise);
+            yawEstimator->pushVelData(gpsVelNE, gpsVelAcc);
+        }
+
+        // action an external reset request
+        if (EKFGSF_yaw_reset_request_ms > 0 && imuSampleTime_ms - EKFGSF_yaw_reset_request_ms < YAW_RESET_TO_GSF_TIMEOUT_MS) {
+            EKFGSF_resetMainFilterYaw();
+        }
+    }
+}
+
+// request a reset the yaw to the GSF estimate
+// request times out after YAW_RESET_TO_GSF_TIMEOUT_MS if it cannot be actioned
+void NavEKF2_core::EKFGSF_requestYawReset()
+{
+    EKFGSF_yaw_reset_request_ms = imuSampleTime_ms;
+}

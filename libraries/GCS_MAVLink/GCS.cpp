@@ -214,6 +214,17 @@ void GCS::update_sensor_status_flags()
         }
     }
 
+#if HAL_VISUALODOM_ENABLED
+    const AP_VisualOdom *visual_odom = AP::visualodom();
+    if (visual_odom && visual_odom->enabled()) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
+        if (visual_odom->healthy()) {
+            control_sensors_health |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
+        }
+    }
+#endif
+
     // give GCS status of prearm checks. This is enabled if any arming checks are enabled.
     // it is healthy if armed or checks are passing
     control_sensors_present |= MAV_SYS_STATUS_PREARM_CHECK;
@@ -244,4 +255,9 @@ bool GCS::out_of_time() const
     }
 
     return true;
+}
+
+void gcs_out_of_space_to_send_count(mavlink_channel_t chan)
+{
+    gcs().chan(chan)->out_of_space_to_send();
 }

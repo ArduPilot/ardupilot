@@ -22,32 +22,31 @@
 
 #include "AP_Filesystem_Available.h"
 
-#if HAVE_FILESYSTEM_SUPPORT
 class AP_Filesystem_Backend {
 
 public:
     // functions that closely match the equivalent posix calls
-    virtual int open(const char *fname, int flags) = 0;
-    virtual int close(int fd) = 0;
-    virtual ssize_t read(int fd, void *buf, size_t count) = 0;
-    virtual ssize_t write(int fd, const void *buf, size_t count) = 0;
-    virtual int fsync(int fd) = 0;
-    virtual off_t lseek(int fd, off_t offset, int whence) = 0;
-    virtual int stat(const char *pathname, struct stat *stbuf) = 0;
-    virtual int unlink(const char *pathname) = 0;
-    virtual int mkdir(const char *pathname) = 0;
-    virtual void *opendir(const char *pathname) = 0;
-    virtual struct dirent *readdir(void *dirp) = 0;
-    virtual int closedir(void *dirp) = 0;
+    virtual int open(const char *fname, int flags) {
+        return -1;
+    }
+    virtual int close(int fd) { return -1; }
+    virtual int32_t read(int fd, void *buf, uint32_t count) { return -1; }
+    virtual int32_t write(int fd, const void *buf, uint32_t count) { return -1; }
+    virtual int fsync(int fd) { return 0; }
+    virtual int32_t lseek(int fd, int32_t offset, int whence) { return -1; }
+    virtual int stat(const char *pathname, struct stat *stbuf) { return -1; }
+    virtual int unlink(const char *pathname) { return -1; }
+    virtual int mkdir(const char *pathname) { return -1; }
+    virtual void *opendir(const char *pathname) { return nullptr; }
+    virtual struct dirent *readdir(void *dirp) { return nullptr; }
+    virtual int closedir(void *dirp) { return -1; }
 
     // return free disk space in bytes, -1 on error
-    virtual int64_t disk_free(const char *path) = 0;
+    virtual int64_t disk_free(const char *path) { return 0; }
 
     // return total disk space in bytes, -1 on error
-    virtual int64_t disk_space(const char *path) = 0;
+    virtual int64_t disk_space(const char *path) { return 0; }
 
     // set modification time on a file
-    virtual bool set_mtime(const char *filename, const time_t mtime_sec) = 0;
+    virtual bool set_mtime(const char *filename, const uint32_t mtime_sec) { return false; }
 };
-
-#endif // HAVE_FILESYSTEM_SUPPORT

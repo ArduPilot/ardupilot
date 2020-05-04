@@ -18,6 +18,8 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 #include "Storage.h"
+#include "HAL_ChibiOS_Class.h"
+#include "Scheduler.h"
 #include "hwdef/common/flash.h"
 #include <AP_Filesystem/AP_Filesystem.h>
 #include "sdcard.h"
@@ -170,6 +172,7 @@ void Storage::write_block(uint16_t loc, const void *src, size_t n)
     }
     if (memcmp(src, &_buffer[loc], n) != 0) {
         _storage_open();
+        WITH_SEMAPHORE(sem);
         memcpy(&_buffer[loc], src, n);
         _mark_dirty(loc, n);
     }
@@ -198,12 +201,19 @@ void Storage::_timer_tick(void)
         return;
     }
 
+    {
+        // take a copy of the line we are writing with a semaphore held
+        WITH_SEMAPHORE(sem);
+        memcpy(tmpline, &_buffer[CH_STORAGE_LINE_SIZE*i], CH_STORAGE_LINE_SIZE);
+    }
+
+    bool write_ok = false;
+
 #if HAL_WITH_RAMTRON
     if (_initialisedType == StorageBackend::FRAM) {
-        if (fram.write(CH_STORAGE_LINE_SIZE*i, &_buffer[CH_STORAGE_LINE_SIZE*i], CH_STORAGE_LINE_SIZE)) {
-            _dirty_mask.clear(i);
+        if (fram.write(CH_STORAGE_LINE_SIZE*i, tmpline, CH_STORAGE_LINE_SIZE)) {
+            write_ok = true;
         }
-        return;
     }
 #endif
 
@@ -219,17 +229,31 @@ void Storage::_timer_tick(void)
         if (AP::FS().fsync(log_fd) != 0) {
             return;
         }
-        _dirty_mask.clear(i);
-        return;
+        write_ok = true;
     }
 #endif
 
 #ifdef STORAGE_FLASH_PAGE
     if (_initialisedType == StorageBackend::Flash) {
         // save to storage backend
-        _flash_write(i);
+        if (_flash_write(i)) {
+            write_ok = true;
+        }
     }
 #endif
+
+    if (write_ok) {
+        WITH_SEMAPHORE(sem);
+        // while holding the semaphore we check if the copy of the
+        // line is different from the original line. If it is
+        // different then someone has re-dirtied the line while we
+        // were writing it, in which case we should not mark it
+        // clean. If it matches then we know we can mark the line as
+        // clean
+        if (memcmp(tmpline, &_buffer[CH_STORAGE_LINE_SIZE*i], CH_STORAGE_LINE_SIZE) == 0) {
+            _dirty_mask.clear(i);
+        }
+    }
 }
 
 /*
@@ -253,13 +277,12 @@ void Storage::_flash_load(void)
 /*
   write one storage line. This also updates _dirty_mask.
 */
-void Storage::_flash_write(uint16_t line)
+bool Storage::_flash_write(uint16_t line)
 {
 #ifdef STORAGE_FLASH_PAGE
-    if (_flash.write(line*CH_STORAGE_LINE_SIZE, CH_STORAGE_LINE_SIZE)) {
-        // mark the line clean
-        _dirty_mask.clear(line);
-    }
+    return _flash.write(line*CH_STORAGE_LINE_SIZE, CH_STORAGE_LINE_SIZE);
+#else
+    return false;
 #endif
 }
 
@@ -314,10 +337,22 @@ bool Storage::_flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, u
 bool Storage::_flash_erase_sector(uint8_t sector)
 {
 #ifdef STORAGE_FLASH_PAGE
+    // erasing a page can take long enough that USB may not initialise properly if it happens
+    // while the host is connecting. Only do a flash erase if we have been up for more than 4s
     for (uint8_t i=0; i<STORAGE_FLASH_RETRIES; i++) {
+        /*
+          a sector erase stops the whole MCU. We need to setup a long
+          expected delay, and not only when running in the main
+          thread.  We can't use EXPECT_DELAY_MS() as it checks we are
+          in the main thread
+         */
+        ChibiOS::Scheduler *sched = (ChibiOS::Scheduler *)hal.scheduler;
+        sched->_expect_delay_ms(1000);
         if (hal.flash->erasepage(_flash_page+sector)) {
+            sched->_expect_delay_ms(0);
             return true;
         }
+        sched->_expect_delay_ms(0);
         hal.scheduler->delay(1);
     }
     return false;
@@ -342,7 +377,7 @@ bool Storage::_flash_erase_ok(void)
 bool Storage::healthy(void)
 {
     return ((_initialisedType != StorageBackend::None) &&
-            (AP_HAL::millis() - (_last_empty_ms < 2000)));
+            (AP_HAL::millis() - _last_empty_ms < 2000u));
 }
 
 /*

@@ -50,6 +50,11 @@ void NavEKF2_core::controlMagYawReset()
 
     }
 
+    // reset the limit on the number of magnetic anomaly resets for each takeoff
+    if (onGround) {
+        magYawAnomallyCount = 0;
+    }
+
     // Check if conditions for a interim or final yaw/mag reset are met
     bool finalResetRequest = false;
     bool interimResetRequest = false;
@@ -72,7 +77,12 @@ void NavEKF2_core::controlMagYawReset()
 
         // if yaw innovations and height have increased and we haven't rotated much
         // then we are climbing away from a ground based magnetic anomaly and need to reset
-        interimResetRequest = hgtIncreasing && yawInnovIncreasing && !largeAngleChange;
+        interimResetRequest = !finalInflightYawInit
+                                && !finalResetRequest
+                                && (magYawAnomallyCount < MAG_ANOMALY_RESET_MAX)
+                                && hgtIncreasing
+                                && yawInnovIncreasing
+                                && !largeAngleChange;
     }
 
     // an initial reset is required if we have not yet aligned the yaw angle
@@ -103,7 +113,7 @@ void NavEKF2_core::controlMagYawReset()
             // the new quaternion uses the old roll/pitch and new yaw angle
             stateStruct.quat.from_euler(eulerAnglesOld.x, eulerAnglesOld.y, eulerAnglesNew.z);
 
-            // calculate the change in the quaternion state and apply it to the ouput history buffer
+            // calculate the change in the quaternion state and apply it to the output history buffer
             prevQuat = stateStruct.quat/prevQuat;
             StoreQuatRotate(prevQuat);
 
@@ -236,6 +246,19 @@ void NavEKF2_core::SelectMagFusion()
     // used for load levelling
     magFusePerformed = false;
 
+    // Handle case where we are not using a yaw sensor of any type and and attempt to reset the yaw in
+    // flight using the output from the GSF yaw estimator.
+    if (!use_compass() && tiltAlignComplete) {
+        if ((onGround || !assume_zero_sideslip()) && (imuSampleTime_ms - lastYawTime_ms > 140)) {
+            fuseEulerYaw();
+        }
+        if (yawAlignComplete) {
+            return;
+        }
+        yawAlignComplete = EKFGSF_resetMainFilterYaw();
+        return;
+    }
+
     // check for and read new magnetometer measurements
     readMagData();
 
@@ -283,16 +306,6 @@ void NavEKF2_core::SelectMagFusion()
                 }
             }
             // zero the test ratio output from the inactive simple magnetometer yaw fusion
-            yawTestRatio = 0.0f;
-        }
-    }
-
-    // If we have no magnetometer and are on the ground, fuse in a synthetic heading measurement to prevent the
-    // filter covariances from becoming badly conditioned
-    if (!use_compass()) {
-        if (onGround && (imuSampleTime_ms - lastYawTime_ms > 1000)) {
-            fuseEulerYaw();
-            magTestRatio.zero();
             yawTestRatio = 0.0f;
         }
     }
@@ -771,8 +784,8 @@ void NavEKF2_core::fuseEulerYaw()
     float q2 = stateStruct.quat[2];
     float q3 = stateStruct.quat[3];
 
-    // compass measurement error variance (rad^2)
-    const float R_YAW = sq(frontend->_yawNoise);
+    // compass measurement error variance (rad^2) set to parameter value as a default
+    float R_YAW = sq(frontend->_yawNoise);
 
     // calculate observation jacobian, predicted yaw and zero yaw body to earth rotation matrix
     // determine if a 321 or 312 Euler sequence is best
@@ -825,8 +838,21 @@ void NavEKF2_core::fuseEulerYaw()
             extNavDataDelayed.quat.to_euler(euler321.x, euler321.y, euler321.z);
             measured_yaw =  euler321.z;
         } else {
-            // no data so use predicted to prevent unconstrained variance growth
-            measured_yaw = predicted_yaw;
+            if (imuSampleTime_ms - prevBetaStep_ms > 1000 && yawEstimator != nullptr) {
+                float gsfYaw, gsfYawVariance;
+                if (yawEstimator->getYawData(gsfYaw, gsfYawVariance) &&
+                    is_positive(gsfYawVariance) &&
+                    gsfYawVariance < sq(radians(15.0f))) {
+                        measured_yaw = gsfYaw;
+                        R_YAW = gsfYawVariance;
+                } else {
+                    // use predicted to prevent unconstrained variance growth
+                    measured_yaw = predicted_yaw;
+                }
+            } else {
+                // use predicted to prevent unconstrained variance growth
+                measured_yaw = predicted_yaw;
+            }
         }
     } else {
         // calculate observation jacobian when we are observing a rotation in a 312 sequence
@@ -871,8 +897,21 @@ void NavEKF2_core::fuseEulerYaw()
             euler312 = extNavDataDelayed.quat.to_vector312();
             measured_yaw =  euler312.z;
         } else {
-            // no data so use predicted to prevent unconstrained variance growth
-            measured_yaw = predicted_yaw;
+            if (imuSampleTime_ms - prevBetaStep_ms > 1000 && yawEstimator != nullptr) {
+                float gsfYaw, gsfYawVariance;
+                if (yawEstimator->getYawData(gsfYaw, gsfYawVariance) &&
+                    is_positive(gsfYawVariance) &&
+                    gsfYawVariance < sq(radians(15.0f))) {
+                        measured_yaw = gsfYaw;
+                        R_YAW = gsfYawVariance;
+                } else {
+                    // use predicted to prevent unconstrained variance growth
+                    measured_yaw = predicted_yaw;
+                }
+            } else {
+                // use predicted to prevent unconstrained variance growth
+                measured_yaw = predicted_yaw;
+            }
         }
     }
 
@@ -1174,3 +1213,111 @@ void NavEKF2_core::recordMagReset()
     yawInnovAtLastMagReset = innovYaw;
 }
 
+// Reset states using yaw from EKF-GSF and velocity and position from GPS
+bool NavEKF2_core::EKFGSF_resetMainFilterYaw()
+{
+    // Don't do a reset unless permitted by the EK2_GSF_USE_MASK and EKF@_GSF_RUN_MASK parameter masks
+    if ((yawEstimator == nullptr)
+        || !(frontend->_gsfUseMask & (1U<<core_index))
+        || EKFGSF_yaw_reset_count >= frontend->_gsfResetMaxCount) {
+        return false;
+    };
+
+    float yawEKFGSF, yawVarianceEKFGSF;
+    if (yawEstimator->getYawData(yawEKFGSF, yawVarianceEKFGSF) && is_positive(yawVarianceEKFGSF) && yawVarianceEKFGSF < sq(radians(15.0f))) {
+
+        // keep roll and pitch and reset yaw
+        resetQuatStateYawOnly(yawEKFGSF, yawVarianceEKFGSF, false);
+
+        // record the emergency reset event
+        EKFGSF_yaw_reset_request_ms = 0;
+        EKFGSF_yaw_reset_ms = imuSampleTime_ms;
+        EKFGSF_yaw_reset_count++;
+
+        if (!use_compass()) {
+            gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u yaw aligned using GPS",(unsigned)imu_index);
+        } else {
+            gcs().send_text(MAV_SEVERITY_WARNING, "EKF2 IMU%u emergency yaw reset - mag sensor stopped",(unsigned)imu_index);
+        }
+
+        // Fail the magnetomer so it doesn't get used and pull the yaw away from the correct value
+        allMagSensorsFailed = true;
+
+        // reset velocity and position states to GPS - if yaw is fixed then the filter should start to operate correctly
+        ResetVelocity();
+        ResetPosition();
+
+        // reset test ratios that are reported to prevent a race condition with the external state machine requesting the reset
+        velTestRatio = 0.0f;
+        posTestRatio = 0.0f;
+
+        return true;
+
+    }
+
+    return false;
+
+}
+
+void NavEKF2_core::resetQuatStateYawOnly(float yaw, float yawVariance, bool isDeltaYaw)
+{
+    Quaternion quatBeforeReset = stateStruct.quat;
+
+    // check if we should use a 321 or 312 Rotation sequence and update the quaternion
+    // states using the preferred yaw definition
+    stateStruct.quat.inverse().rotation_matrix(prevTnb);
+    Vector3f eulerAngles;
+    if (fabsf(prevTnb[2][0]) < fabsf(prevTnb[2][1])) {
+        // rolled more than pitched so use 321 rotation order
+        stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
+        if (isDeltaYaw) {
+            yaw = wrap_PI(yaw + eulerAngles.z);
+        }
+        stateStruct.quat.from_euler(eulerAngles.x, eulerAngles.y, yaw);
+    } else {
+        // pitched more than rolled so use 312 rotation order
+        eulerAngles = stateStruct.quat.to_vector312();
+        if (isDeltaYaw) {
+            yaw = wrap_PI(yaw + eulerAngles.z);
+        }
+        stateStruct.quat.from_vector312(eulerAngles.x, eulerAngles.y, yaw);
+    }
+
+    // Update the rotation matrix
+    stateStruct.quat.inverse().rotation_matrix(prevTnb);
+    
+    float deltaYaw = wrap_PI(yaw - eulerAngles.z);
+
+    // calculate the change in the quaternion state and apply it to the output history buffer
+    Quaternion quat_delta = stateStruct.quat / quatBeforeReset;
+    StoreQuatRotate(quat_delta);
+
+    // rotate attitude error variances into earth frame
+    Vector3f bf_variances = Vector3f(P[0][0], P[1][1], P[2][2]);
+    Vector3f ef_variances = prevTnb.transposed() * bf_variances;
+
+    // reset vertical component to supplied value
+    ef_variances.z = yawVariance;
+
+    // rotate back into body frame
+    bf_variances = prevTnb * ef_variances;
+
+    // Reset all attitude error state covariances
+    zeroRows(P, 0, 2);
+    zeroCols(P, 0, 2);
+
+    // Initialise variances
+    P[0][0] = bf_variances.x;
+    P[1][1] = bf_variances.y;
+    P[2][2] = bf_variances.z;
+
+    // record the yaw reset event
+    yawResetAngle += deltaYaw;
+    lastYawReset_ms = imuSampleTime_ms;
+    recordYawReset();
+
+    // clear all pending yaw reset requests
+    gpsYawResetRequest = false;
+    magYawResetRequest = false;
+    
+}

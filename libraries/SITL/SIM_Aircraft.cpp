@@ -75,9 +75,10 @@ Aircraft::Aircraft(const char *frame_str) :
     enum ap_var_type ptype;
     ahrs_orientation = (AP_Int8 *)AP_Param::find("AHRS_ORIENTATION", &ptype);
 
+    // ahrs_orientation->get() returns ROTATION_NONE here, regardless of the actual value
     enum Rotation imu_rotation = ahrs_orientation?(enum Rotation)ahrs_orientation->get():ROTATION_NONE;
-    ahrs_rotation_inv.from_rotation(imu_rotation);
-    ahrs_rotation_inv.transpose();
+    sitl->ahrs_rotation.from_rotation(imu_rotation);
+    sitl->ahrs_rotation_inv = sitl->ahrs_rotation.transposed();
     last_imu_rotation = imu_rotation;
 
     terrain = reinterpret_cast<AP_Terrain *>(AP_Param::find_object("TERRAIN_"));
@@ -149,6 +150,18 @@ void Aircraft::update_position(void)
 #if 0
     // logging of raw sitl data
     Vector3f accel_ef = dcm * accel_body;
+// @LoggerMessage: SITL
+// @Description: Simulation data
+// @Field: TimeUS: Time since system startup
+// @Field: VN: Velocity - North component
+// @Field: VE: Velocity - East component
+// @Field: VD: Velocity - Down component
+// @Field: AN: Acceleration - North component
+// @Field: AE: Acceleration - East component
+// @Field: AD: Acceleration - Down component
+// @Field: PN: Position - North component
+// @Field: PE: Position - East component
+// @Field: PD: Position - Down component
     AP::logger().Write("SITL", "TimeUS,VN,VE,VD,AN,AE,AD,PN,PE,PD", "Qfffffffff",
                                            AP_HAL::micros64(),
                                            velocity_ef.x, velocity_ef.y, velocity_ef.z,
@@ -377,15 +390,31 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
 
     if (ahrs_orientation != nullptr) {
         enum Rotation imu_rotation = (enum Rotation)ahrs_orientation->get();
-
         if (imu_rotation != last_imu_rotation) {
-            ahrs_rotation_inv.from_rotation(imu_rotation);
-            ahrs_rotation_inv.transpose();
-            last_imu_rotation = imu_rotation;
+            // Surprisingly, Matrix3<T>::from_rotation(ROTATION_CUSTOM) is the identity matrix
+            // so we must deal with that here
+            if (imu_rotation == ROTATION_CUSTOM) {
+                if ((custom_roll == nullptr) || (custom_pitch == nullptr) || (custom_yaw == nullptr)) {
+                    enum ap_var_type ptype;
+                    custom_roll = (AP_Float *)AP_Param::find("AHRS_CUSTOM_ROLL", &ptype);
+                    custom_pitch = (AP_Float *)AP_Param::find("AHRS_CUSTOM_PIT", &ptype);
+                    custom_yaw = (AP_Float *)AP_Param::find("AHRS_CUSTOM_YAW", &ptype);
+                }
+                if ((custom_roll != nullptr) && (custom_pitch != nullptr) && (custom_yaw != nullptr)) {
+                    sitl->ahrs_rotation.from_euler(radians(*custom_roll), radians(*custom_pitch), radians(*custom_yaw));
+                    sitl->ahrs_rotation_inv = sitl->ahrs_rotation.transposed();
+                } else {
+                    AP_HAL::panic("could not find one or more of parameters AHRS_CUSTOM_ROLL/PITCH/YAW");
+                }
+            } else {
+                sitl->ahrs_rotation.from_rotation(imu_rotation);
+                sitl->ahrs_rotation_inv = sitl->ahrs_rotation.transposed();
+                last_imu_rotation = imu_rotation;
+            }
         }
         if (imu_rotation != ROTATION_NONE) {
             Matrix3f m = dcm;
-            m = m * ahrs_rotation_inv;
+            m = m * sitl->ahrs_rotation_inv;
 
             m.to_euler(&r, &p, &y);
             fdm.rollDeg  = degrees(r);
@@ -651,6 +680,21 @@ void Aircraft::smooth_sensors(void)
     dcm.to_euler(&R2, &P2, &Y2);
 
 #if 0
+// @LoggerMessage: SMOO
+// @Description: Smoothed sensor data fed to EKF to avoid inconsistencies
+// @Field: TimeUS: Time since system startup
+// @Field: AEx: Angular Velocity (around x-axis)
+// @Field: AEy: Angular Velocity (around y-axis)
+// @Field: AEz: Angular Velocity (around z-axis)
+// @Field: DPx: Velocity (along x-axis)
+// @Field: DPy: Velocity (along y-axis)
+// @Field: DPz: Velocity (along z-axis)
+// @Field: R: Roll
+// @Field: P: Pitch
+// @Field: Y: Yaw
+// @Field: R2: DCM Roll
+// @Field: P2: DCM Pitch
+// @Field: Y2: DCM Yaw
     AP::logger().Write("SMOO", "TimeUS,AEx,AEy,AEz,DPx,DPy,DPz,R,P,Y,R2,P2,Y2",
                                            "Qffffffffffff",
                                            AP_HAL::micros64(),

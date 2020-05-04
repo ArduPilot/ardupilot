@@ -53,10 +53,15 @@ public:
         bitmask_range               = (1U << 17),  // 0x20000  131072
         gcs_offset                  = (1U << 18),  // 0x40000  262144
         i2c_isr                     = (1U << 19),  // 0x80000  524288
-        flow_of_control             = (1U << 20), // for generic we-should-never-get-here situations
+        flow_of_control             = (1U << 20),  //0x100000  1048576 for generic we-should-never-get-here situations
+        switch_full_sector_recursion= (1U << 21),  //0x200000  2097152
+        bad_rotation                = (1U << 22),  //0x400000  4194304
+        stack_overflow              = (1U << 23),  //0x800000  8388608
     };
 
-    void error(const AP_InternalError::error_t error);
+    uint16_t last_error_line() const { return last_line; }
+
+    void error(const AP_InternalError::error_t error, uint16_t line);
     uint32_t count() const { return total_error_count; }
 
     // internal_errors - return mask of internal errors seen
@@ -70,8 +75,16 @@ private:
     uint32_t internal_errors;
 
     uint32_t total_error_count;
+    uint16_t last_line;
 };
 
 namespace AP {
     AP_InternalError &internalerror();
 };
+
+extern "C" {
+    void AP_stack_overflow(const char *thread_name);
+}
+
+#define INTERNAL_ERROR(error_number) \
+    AP::internalerror().error(error_number, __LINE__);

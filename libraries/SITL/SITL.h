@@ -124,6 +124,10 @@ public:
     static const struct AP_Param::GroupInfo var_info2[];
     static const struct AP_Param::GroupInfo var_info3[];
 
+    // Board Orientation (and inverse)
+    Matrix3f ahrs_rotation;
+    Matrix3f ahrs_rotation_inv;
+
     // noise levels for simulated sensors
     AP_Float baro_noise;  // in metres
     AP_Float baro_drift;  // in metres per second
@@ -187,10 +191,11 @@ public:
     AP_Int8  telem_baudlimit_enable; // enable baudrate limiting on links
     AP_Float flow_noise; // optical flow measurement noise (rad/sec)
     AP_Int8  baro_count; // number of simulated baros to create
-    AP_Int8 gps_hdg_enabled; // enable the output of a NMEA heading HDT sentence
+    AP_Int8 gps_hdg_enabled[2]; // enable the output of a NMEA heading HDT sentence or UBLOX RELPOSNED
     AP_Int32 loop_delay; // extra delay to add to every loop
     AP_Float mag_scaling; // scaling factor on first compasses
     AP_Int32 mag_devid[MAX_CONNECTED_MAGS]; // Mag devid
+    AP_Float buoyancy; // submarine buoyancy in Newtons
 
     // EFI type
     enum EFIType {
@@ -238,6 +243,7 @@ public:
     AP_Vector3f gps_pos_offset[2];  // XYZ position of the GPS antenna phase centre relative to the body frame origin (m)
     AP_Vector3f rngfnd_pos_offset;  // XYZ position of the range finder zero range datum relative to the body frame origin (m)
     AP_Vector3f optflow_pos_offset; // XYZ position of the optical flow sensor focal point relative to the body frame origin (m)
+    AP_Vector3f vicon_pos_offset;   // XYZ position of the vicon sensor relative to the body frame origin (m)
 
     // temperature control
     AP_Float temp_start;
@@ -357,6 +363,11 @@ public:
     EFI_MegaSquirt efi_ms;
 
     AP_Int8 led_layout;
+
+    // vicon parameters
+    AP_Vector3f vicon_glitch;   // glitch in meters in vicon's local NED frame
+    AP_Int8 vicon_fail;         // trigger vicon failure
+    AP_Int16 vicon_yaw;         // vicon local yaw in degrees
 };
 
 } // namespace SITL

@@ -88,10 +88,34 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
         return;
     }
 
+    // failure simulation
+    if (_sitl->vicon_fail.get() != 0) {
+        return;
+    }
+
     float roll;
     float pitch;
     float yaw;
     attitude.to_euler(roll, pitch, yaw);
+
+    // calculate sensor offset in earth frame
+    const Vector3f& pos_offset = _sitl->vicon_pos_offset.get();
+    Matrix3f rot;
+    rot.from_euler(radians(_sitl->state.rollDeg), radians(_sitl->state.pitchDeg), radians(_sitl->state.yawDeg));
+    Vector3f pos_offset_ef = rot * pos_offset;
+
+    // add earth frame sensor offset and glitch to position
+    Vector3f pos_corrected = position + pos_offset_ef + _sitl->vicon_glitch.get();
+
+    // adjust yaw and position to account for vicon's yaw
+    const int16_t vicon_yaw_deg = _sitl->vicon_yaw.get();
+    if (vicon_yaw_deg != 0) {
+        const float vicon_yaw_rad = radians(vicon_yaw_deg);
+        yaw = wrap_PI(yaw - vicon_yaw_rad);
+        Matrix3f vicon_yaw_rot;
+        vicon_yaw_rot.from_euler(0, 0, -vicon_yaw_rad);
+        pos_corrected = vicon_yaw_rot * pos_corrected;
+    }
 
 #if USE_VISION_POSITION_ESTIMATE
     // use the more recent VISION_POSITION_ESTIMATE message
@@ -101,9 +125,9 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
         mavlink_ch,
         &obs_msg,
         now_us + time_offset_us,
-        position.x,
-        position.y,
-        position.z,
+        pos_corrected.x,
+        pos_corrected.y,
+        pos_corrected.z,
         roll,
         pitch,
         yaw,
@@ -115,9 +139,9 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
         mavlink_ch,
         &obs_msg,
         now_us + time_offset_us,
-        position.x,
-        position.y,
-        position.z,
+        pos_corrected.x,
+        pos_corrected.y,
+        pos_corrected.z,
         roll,
         pitch,
         yaw,
