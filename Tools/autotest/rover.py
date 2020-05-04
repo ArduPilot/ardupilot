@@ -3833,7 +3833,13 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise NotAchievedException("Incorrect target component in MISSION_REQUEST")
         tstart = self.get_sim_time()
         rerequest_count = 0
+        received_text = False
+        received_ack = False
         while True:
+            if received_ack and received_text:
+                break
+            if self.get_sim_time_cached() - tstart > 10:
+                raise NotAchievedException("Did not get expected ack and statustext")
             m = self.mav.recv_match(type=['MISSION_REQUEST', 'MISSION_ACK', 'STATUSTEXT'],
                                     blocking=True,
                                     timeout=1)
@@ -3852,17 +3858,18 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 self.progress("Valid re-request received.")
                 continue
             if m.get_type() == "MISSION_ACK":
-                raise NotAchievedException("Received unexpected MISSION_ACK")
+                if m.mission_type != mavutil.mavlink.MAV_MISSION_TYPE_FENCE:
+                    raise NotAchievedException("Wrong mission type")
+                if m.type != mavutil.mavlink.MAV_MISSION_OPERATION_CANCELLED:
+                    raise NotAchievedException("Wrong result")
+                received_ack = True
+                continue
             if m.get_type() == "STATUSTEXT":
                 if "upload time" in m.text:
-                    break
+                    received_text = True
+                continue
         if rerequest_count < 3:
             raise NotAchievedException("Expected several re-requests of mission item")
-        # timeouts come with an ack:
-        self.assert_receive_mission_ack(
-            mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
-            want_type=mavutil.mavlink.MAV_MISSION_OPERATION_CANCELLED,
-        )
 
     def expect_request_for_item(self, item):
         m = self.mav.recv_match(type=['MISSION_REQUEST', 'MISSION_ACK'],
@@ -3933,7 +3940,13 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.progress("Now waiting for a timeout")
         tstart = self.get_sim_time()
         rerequest_count = 0
+        received_text = False
+        received_ack = False
         while True:
+            if received_ack and received_text:
+                break
+            if self.get_sim_time_cached() - tstart > 10:
+                raise NotAchievedException("Did not get expected ack and statustext")
             m = self.mav.recv_match(type=['MISSION_REQUEST', 'MISSION_ACK', 'STATUSTEXT'],
                                     blocking=True,
                                     timeout=0.1)
@@ -3952,17 +3965,18 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 self.progress("Valid re-request received.")
                 continue
             if m.get_type() == "MISSION_ACK":
-                raise NotAchievedException("Received unexpected MISSION_ACK")
+                if m.mission_type != mavutil.mavlink.MAV_MISSION_TYPE_FENCE:
+                    raise NotAchievedException("Wrong mission type")
+                if m.type != mavutil.mavlink.MAV_MISSION_OPERATION_CANCELLED:
+                    raise NotAchievedException("Wrong result")
+                received_ack = True
+                continue
             if m.get_type() == "STATUSTEXT":
                 if "upload time" in m.text:
-                    break
+                    received_text = True
+                continue
         if rerequest_count < 3:
             raise NotAchievedException("Expected several re-requests of mission item")
-        # timeouts come with an ack:
-        self.assert_receive_mission_ack(
-            mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
-            want_type=mavutil.mavlink.MAV_MISSION_OPERATION_CANCELLED,
-        )
 
     def test_fence_upload_timeouts(self, target_system=1, target_component=1):
         self.test_fence_upload_timeouts_1(target_system=target_system,
