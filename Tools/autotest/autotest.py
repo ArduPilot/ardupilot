@@ -381,6 +381,7 @@ def run_step(step):
         "frame": opts.frame,
         "_show_test_timings": opts.show_test_timings,
         "force_ahrs_type": opts.force_ahrs_type,
+        "logs_dir": buildlogs_dirpath(),
     }
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
@@ -549,32 +550,6 @@ def write_fullresults():
     write_webresults(results)
 
 
-def check_logs(step):
-    """Check for log files from a step."""
-    print("check step: ", step)
-    if step.startswith('test.'):
-        vehicle = step[5:]
-    else:
-        return
-    logs = glob.glob("logs/*.BIN")
-    for log in logs:
-        bname = os.path.basename(log)
-        newname = buildlogs_path("%s-%s" % (vehicle, bname))
-        print("Renaming %s to %s" % (log, newname))
-        shutil.move(log, newname)
-
-    corefile = "core"
-    if os.path.exists(corefile):
-        newname = buildlogs_path("%s.core" % vehicle)
-        print("Renaming %s to %s" % (corefile, newname))
-        shutil.move(corefile, newname)
-        try:
-            util.run_cmd('/bin/cp build/sitl/bin/* %s' % buildlogs_dirpath(),
-                         directory=util.reltopdir('.'))
-        except Exception:
-            print("Unable to save binary")
-
-
 def run_tests(steps):
     """Run a list of steps."""
     global results
@@ -606,7 +581,6 @@ def run_tests(steps):
                     failed_testinstances[step].append(testinstance)
                 results.add(step, '<span class="failed-text">FAILED</span>',
                             time.time() - t1)
-                check_logs(step)
         except Exception as msg:
             passed = False
             failed.append(step)
@@ -616,7 +590,6 @@ def run_tests(steps):
             results.add(step,
                         '<span class="failed-text">FAILED</span>',
                         time.time() - t1)
-            check_logs(step)
     if not passed:
         keys = failed_testinstances.keys()
         if len(keys):
