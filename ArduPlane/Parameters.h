@@ -575,6 +575,8 @@ public:
     // EFI Engine Monitor
     AP_EFI efi;
 #endif
+
+    AP_Float        fs_ekf_thresh;
 };
 
 extern const AP_Param::Info var_info[];

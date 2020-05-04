@@ -1036,6 +1036,14 @@ private:
     static_assert(_failsafe_priorities[ARRAY_SIZE(_failsafe_priorities) - 1] == -1,
                   "_failsafe_priorities is missing the sentinel");
 
+    // EKF checks for loss of navigation performed in ekf_check.cpp
+    // These are specific to VTOL operation
+    void ekf_check();
+    bool ekf_over_threshold();
+    void failsafe_ekf_event();
+    void failsafe_ekf_off_event(void);
+    bool ekf_position_ok() const;
+
 public:
     void failsafe_check(void);
     bool set_target_location(const Location& target_loc) override;

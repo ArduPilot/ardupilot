@@ -2189,6 +2189,21 @@ bool QuadPlane::in_vtol_mode(void) const
             in_vtol_auto());
 }
 
+/*
+  are we in a VTOL mode that needs position and velocity estimates?
+ */
+bool QuadPlane::in_vtol_posvel_mode(void) const
+{
+    if (!available()) {
+        return false;
+    }
+    return (plane.control_mode == &plane.mode_qloiter ||
+            plane.control_mode == &plane.mode_qland ||
+            plane.control_mode == &plane.mode_qrtl ||
+            plane.control_mode == &plane.mode_qautotune ||
+            ((plane.control_mode == &plane.mode_guided || plane.control_mode == &plane.mode_avoidADSB) && plane.auto_state.vtol_loiter) ||
+            in_vtol_auto());
+}
 
 /*
   main landing controller. Used for landing and RTL.
