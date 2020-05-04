@@ -11,10 +11,10 @@ uint8_t Rotoye_cell_ids[] = { 0x3f,  // cell 1
                               0x3d,  // cell 3
                               0x3c,  // cell 4
                               0x3b,  // cell 5
-                              0x3a,   // cell 6
-                              0x39,   // cell 7
-                              0x38,   // cell 8
-                              0x37,   // cell 9
+                              0x3a,  // cell 6
+                              0x39,  // cell 7
+                              0x38,  // cell 8
+                              0x37,  // cell 9
                               0x36}; // cell 10
 
 #define SMBUS_READ_BLOCK_MAXIMUM_TRANSFER    0x20   // A Block Read or Write is allowed to transfer a maximum of 32 data bytes.
