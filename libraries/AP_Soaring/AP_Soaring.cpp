@@ -175,6 +175,13 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("VSPD_MAX", 22, SoaringController, vspeed_maxalt, 0),
 
+    // @Param: VSPD_TRIG
+    // @DisplayName: Vertical speed threshold to begin thermalling.
+    // @Description: This allows a different vertical speed threshold for starting thermalling versus continuing to thermal. Values >= 0 represent the absolute threshold in terms estimated achievable climb rate. Values between -1 and 0 represent the ratio to the usual vertical speed at the current altitude. -1 and below means use the vertical speed at the current altitude.
+    // @Range: 5 50
+    // @User: Advanced
+    AP_GROUPINFO("VSPD_TRIG", 23, SoaringController, vspeed_trigger, -1),
+
     AP_GROUPEND
 };
 
@@ -224,9 +231,12 @@ bool SoaringController::check_thermal_criteria()
 {
     ActiveStatus status = active_state();
 
+    const float vspeed_trig_constrained = constrain_float(vspeed_trigger, -1.0f, 100.0f);
+    const float trigSpd = vspeed_trig_constrained > 0 ? vspeed_trig_constrained : -vspeed_trig_constrained*McCready(_vario.alt);
+
     return (status == SOARING_STATUS_AUTO_MODE_CHANGE
             && ((AP_HAL::micros64() - _cruise_start_time_us) > ((unsigned)min_cruise_s * 1e6))
-            && (_vario.filtered_reading - _vario.get_exp_thermalling_sink()) > thermal_vspeed
+            && (_vario.filtered_reading - _vario.get_exp_thermalling_sink()) > trigSpd
             && _vario.alt < alt_max
             && _vario.alt > alt_min);
 }
