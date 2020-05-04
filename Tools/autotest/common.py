@@ -709,6 +709,7 @@ class AutoTest(ABC):
                  viewerip=None,
                  use_map=False,
                  _show_test_timings=False,
+                 logs_dir=None,
                  force_ahrs_type=None):
 
         self.start_time = time.time()
@@ -750,6 +751,7 @@ class AutoTest(ABC):
         self.force_ahrs_type = force_ahrs_type
         if self.force_ahrs_type is not None:
             self.force_ahrs_type = int(self.force_ahrs_type)
+        self.logs_dir = logs_dir
 
     @staticmethod
     def progress(text):
@@ -1433,7 +1435,9 @@ class AutoTest(ABC):
             self.mavproxy.send("module unload map\n")
             self.mavproxy.expect("Unloaded module map")
 
-        self.mav.close()
+        if self.mav is not None:
+            self.mav.close()
+            self.mav = None
         util.pexpect_close(self.mavproxy)
         self.stop_SITL()
 
@@ -3736,6 +3740,34 @@ class AutoTest(ABC):
             return ret
         return traceback.format_exc(e)
 
+    def bin_logs(self):
+        return glob.glob("logs/*.BIN")
+
+    def remove_bin_logs(self):
+        util.run_cmd('/bin/rm -f logs/*.BIN logs/LASTLOG.TXT')
+
+    def check_logs(self, name):
+        '''called to move relevant log files from our working directory to the
+        buildlogs directory'''
+        to_dir = self.logs_dir
+        # move binary log files
+        for log in self.bin_logs():
+            bname = os.path.basename(log)
+            newname = os.path.join(to_dir, "%s-%s-%s" % (self.log_name(), name, bname))
+            print("Renaming %s to %s" % (log, newname))
+            shutil.move(log, newname)
+        # move core files
+        save_binaries = False
+        for log in glob.glob("core*"):
+            bname = os.path.basename(log)
+            newname = os.path.join(to_dir, "%s-%s-%s" % (bname, self.log_name(), name))
+            print("Renaming %s to %s" % (log, newname))
+            shutil.move(log, newname)
+            save_binaries = True
+        if save_binaries:
+            util.run_cmd('/bin/cp build/sitl/bin/* %s' % to_dir,
+                         directory=util.reltopdir('.'))
+
     def run_one_test(self, name, desc, test_function, interact=False):
         '''new-style run-one-test used by run_tests'''
         test_output_filename = self.buildlogs_path("%s-%s.txt" %
@@ -3781,6 +3813,19 @@ class AutoTest(ABC):
             self.progress("Force-resetting SITL")
             self.reboot_sitl() # that'll learn it
             passed = False
+
+        corefiles = glob.glob("core*")
+        if corefiles:
+            self.progress('Corefiles detected: %s' % str(corefiles))
+            passed = False
+
+        if passed:
+#            self.remove_bin_logs() # can't do this as one of the binlogs is probably open for writing by the SITL process.  If we force a rotate before running tests then we can do this.
+            pass
+        else:
+            if self.logs_dir is not None:
+                # stash the binary logs and corefiles away for later analysis
+                self.check_logs(name)
 
         if passed:
             self.progress('PASSED: "%s"' % prettyname)
@@ -5106,12 +5151,19 @@ switch value'''
     def last_onboard_log(self):
         '''return number of last onboard log'''
         self.mavproxy.send("module load log\n")
-        self.mavproxy.expect("Loaded module log")
+        loaded_module = False
+        self.mavproxy.expect(["Loaded module log", "module log already loaded"])
+        if self.mavproxy.match.group(0) == "Loaded module log":
+            loaded_module = True
         self.mavproxy.send("log list\n")
-        self.mavproxy.expect("lastLog ([0-9]+)")
-        num_log = int(self.mavproxy.match.group(1))
-        self.mavproxy.send("module unload log\n")
-        self.mavproxy.expect("Unloaded module log")
+        self.mavproxy.expect(["lastLog ([0-9]+)", "No logs"])
+        if self.mavproxy.match.group(1) == "No logs":
+            num_log = None
+        else:
+            num_log = int(self.mavproxy.match.group(1))
+        if loaded_module:
+            self.mavproxy.send("module unload log\n")
+            self.mavproxy.expect("Unloaded module log")
         return num_log
 
     def current_onboard_log_filepath(self):
@@ -5134,11 +5186,11 @@ switch value'''
             raise ValueError("run_tests called twice")
         self.run_tests_called = True
 
-        self.init()
-
         self.fail_list = []
 
         try:
+            self.init()
+
             self.progress("Waiting for a heartbeat with mavlink protocol %s"
                           % self.mav.WIRE_PROTOCOL_VERSION)
             self.wait_heartbeat()
@@ -5156,6 +5208,9 @@ switch value'''
         except pexpect.TIMEOUT:
             self.progress("Failed with timeout")
             self.fail_list.append(["Failed with timeout", None, None])
+            if self.logs_dir:
+                if glob.glob("core*"):
+                    self.check_logs("FRAMEWORK")
         self.close()
 
         if len(self.skip_list):
