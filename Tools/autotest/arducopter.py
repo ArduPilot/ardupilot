@@ -3554,13 +3554,25 @@ class AutoTestCopter(AutoTest):
         self.watch_altitude_maintained(-1, 0.2) # should not take off in guided
         self.run_cmd_do_set_mode(
             "ACRO",
-            want_result=mavutil.mavlink.MAV_RESULT_UNSUPPORTED) # should fix this result code!
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED)
         self.run_cmd_do_set_mode(
             "STABILIZE",
-            want_result=mavutil.mavlink.MAV_RESULT_UNSUPPORTED) # should fix this result code!
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED)
         self.run_cmd_do_set_mode(
             "DRIFT",
-            want_result=mavutil.mavlink.MAV_RESULT_UNSUPPORTED) # should fix this result code!
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        self.progress("Check setting an invalid mode")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_MODE,
+                     mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,
+                     126,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+                     timeout=1
+        )
         self.set_rc(3, 1000)
         self.run_cmd_do_set_mode("ACRO")
         self.wait_disarmed()
