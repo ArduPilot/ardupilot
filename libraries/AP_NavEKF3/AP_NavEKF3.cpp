@@ -85,7 +85,7 @@
 #define FLOW_MEAS_DELAY         10
 #define FLOW_M_NSE_DEFAULT      0.15f
 #define FLOW_I_GATE_DEFAULT     500
-#define CHECK_SCALER_DEFAULT    100
+#define CHECK_SCALER_DEFAULT    150
 #define FLOW_USE_DEFAULT        2
 
 #else
