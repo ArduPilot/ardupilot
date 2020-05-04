@@ -308,3 +308,9 @@
 #ifndef LANDING_GEAR_ENABLED
  #define LANDING_GEAR_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
+
+//////////////////////////////////////////////////////////////////////////////
+//  EKF Failsafe
+#ifndef FS_EKF_THRESHOLD_DEFAULT
+ # define FS_EKF_THRESHOLD_DEFAULT      0.8f    // EKF failsafe's default compass and velocity variance threshold above which the EKF failsafe will be triggered
+#endif
