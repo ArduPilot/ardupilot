@@ -55,6 +55,10 @@ class SoaringController {
     LowPassFilter<float> _position_x_filter;
     LowPassFilter<float> _position_y_filter;
 
+    // Offset between the mean McCready value over the altitude range
+    // and the actual climb rate at which the  watchdog will trigger exit.
+    static constexpr const float _minSinkBuffer = 1.0f;
+
 protected:
     AP_Int8 soar_active;
     AP_Int8 soar_active_ch;

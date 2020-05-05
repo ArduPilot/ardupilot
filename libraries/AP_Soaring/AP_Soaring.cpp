@@ -265,13 +265,22 @@ SoaringController::LoiterStatus SoaringController::check_cruise_criteria(Vector2
             gcs().send_text(MAV_SEVERITY_ALERT, "Reached lower alt = %dm", (int16_t)alt);
         }
     } else if ((AP_HAL::micros64() - _thermal_start_time_us) > ((unsigned)min_thermal_s * 1e6)) {
-        const float mcCreadyAlt = McCready(alt);
+        
+        // Acceptable climb rate at current alt.
+        const float mcCreadyAlt  = McCready(alt);
+
+        // Minimum acceptable climb rate over altitude band.
+        const float minClimbThresh = constrain_float(0.5f * (mcCreadyAlt + McCready(-_thermal_start_pos.z)) - _minSinkBuffer, -5.0f, 0.0f);
+
+        // Minimum acceptable climb since thermal start.
+        const float minAltChange = (AP_HAL::micros64() - _thermal_start_time_us)*1e-6*minClimbThresh;
+
         if (_thermalability < mcCreadyAlt) {
             result = THERMAL_WEAK;
             if (result != _cruise_criteria_msg_last) {
                 gcs().send_text(MAV_SEVERITY_INFO, "Thermal weak: th %3.1fm/s alt %3.1fm Mc %3.1fm/s", (double)_thermalability, (double)alt, (double)mcCreadyAlt);
             }
-        } else if (alt < (-_thermal_start_pos.z) || _vario.smoothed_climb_rate < 0.0) {
+        } else if ((alt +_thermal_start_pos.z) < minAltChange || _vario.smoothed_climb_rate < minClimbThresh) {
             result = ALT_LOST;
             if (result != _cruise_criteria_msg_last) {
                 gcs().send_text(MAV_SEVERITY_INFO, "Not climbing");
