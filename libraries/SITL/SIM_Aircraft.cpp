@@ -833,7 +833,7 @@ float Aircraft::get_local_updraft(Vector3f currentPos)
             break;
         case 4:
             n_thermals = 1;
-            thermals_w[0] = 4.0;
+            thermals_w[0] = 2.5;
             thermals_r[0] = 80.0;
 
             // spacing between thermals
