@@ -41,6 +41,16 @@ static int binding_argcheck(lua_State *L, int expected_arg_count) {
     return 0;
 }
 
+int new_mavlink_mission_item_int_t(lua_State *L) {
+    luaL_checkstack(L, 2, "Out of stack");
+    void *ud = lua_newuserdata(L, sizeof(mavlink_mission_item_int_t));
+    memset(ud, 0, sizeof(mavlink_mission_item_int_t));
+    new (ud) mavlink_mission_item_int_t();
+    luaL_getmetatable(L, "mavlink_mission_item_int_t");
+    lua_setmetatable(L, -2);
+    return 1;
+}
+
 int new_Vector2f(lua_State *L) {
     luaL_checkstack(L, 2, "Out of stack");
     void *ud = lua_newuserdata(L, sizeof(Vector2f));
@@ -71,6 +81,11 @@ int new_Location(lua_State *L) {
     return 1;
 }
 
+mavlink_mission_item_int_t * check_mavlink_mission_item_int_t(lua_State *L, int arg) {
+    void *data = luaL_checkudata(L, arg, "mavlink_mission_item_int_t");
+    return (mavlink_mission_item_int_t *)data;
+}
+
 Vector2f * check_Vector2f(lua_State *L, int arg) {
     void *data = luaL_checkudata(L, arg, "Vector2f");
     return (Vector2f *)data;
@@ -98,6 +113,204 @@ int new_AP_HAL__UARTDriver(lua_State *L) {
 AP_HAL::UARTDriver ** check_AP_HAL__UARTDriver(lua_State *L, int arg) {
     void *data = luaL_checkudata(L, arg, "AP_HAL::UARTDriver");
     return (AP_HAL::UARTDriver **)data;
+}
+
+static int mavlink_mission_item_int_t_current(lua_State *L) {
+    mavlink_mission_item_int_t *ud = check_mavlink_mission_item_int_t(L, 1);
+    switch(lua_gettop(L)) {
+        case 1:
+            lua_pushinteger(L, ud->current);
+            return 1;
+        case 2: {
+            const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
+            luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(UINT8_MAX, UINT8_MAX))), 2, "current out of range");
+            const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
+            ud->current = data_2;
+            return 0;
+         }
+        default:
+            return luaL_argerror(L, lua_gettop(L), "too many arguments");
+    }
+}
+
+static int mavlink_mission_item_int_t_frame(lua_State *L) {
+    mavlink_mission_item_int_t *ud = check_mavlink_mission_item_int_t(L, 1);
+    switch(lua_gettop(L)) {
+        case 1:
+            lua_pushinteger(L, ud->frame);
+            return 1;
+        case 2: {
+            const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
+            luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(UINT8_MAX, UINT8_MAX))), 2, "frame out of range");
+            const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
+            ud->frame = data_2;
+            return 0;
+         }
+        default:
+            return luaL_argerror(L, lua_gettop(L), "too many arguments");
+    }
+}
+
+static int mavlink_mission_item_int_t_command(lua_State *L) {
+    mavlink_mission_item_int_t *ud = check_mavlink_mission_item_int_t(L, 1);
+    switch(lua_gettop(L)) {
+        case 1:
+            lua_pushinteger(L, ud->command);
+            return 1;
+        case 2: {
+            const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
+            luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(UINT16_MAX, UINT16_MAX))), 2, "command out of range");
+            const uint16_t data_2 = static_cast<uint16_t>(raw_data_2);
+            ud->command = data_2;
+            return 0;
+         }
+        default:
+            return luaL_argerror(L, lua_gettop(L), "too many arguments");
+    }
+}
+
+static int mavlink_mission_item_int_t_seq(lua_State *L) {
+    mavlink_mission_item_int_t *ud = check_mavlink_mission_item_int_t(L, 1);
+    switch(lua_gettop(L)) {
+        case 1:
+            lua_pushinteger(L, ud->seq);
+            return 1;
+        case 2: {
+            const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
+            luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(UINT16_MAX, UINT16_MAX))), 2, "seq out of range");
+            const uint16_t data_2 = static_cast<uint16_t>(raw_data_2);
+            ud->seq = data_2;
+            return 0;
+         }
+        default:
+            return luaL_argerror(L, lua_gettop(L), "too many arguments");
+    }
+}
+
+static int mavlink_mission_item_int_t_z(lua_State *L) {
+    mavlink_mission_item_int_t *ud = check_mavlink_mission_item_int_t(L, 1);
+    switch(lua_gettop(L)) {
+        case 1:
+            lua_pushnumber(L, ud->z);
+            return 1;
+        case 2: {
+            const float raw_data_2 = luaL_checknumber(L, 2);
+            luaL_argcheck(L, ((raw_data_2 >= MAX(-FLT_MAX, -INFINITY)) && (raw_data_2 <= MIN(FLT_MAX, INFINITY))), 2, "z out of range");
+            const float data_2 = raw_data_2;
+            ud->z = data_2;
+            return 0;
+         }
+        default:
+            return luaL_argerror(L, lua_gettop(L), "too many arguments");
+    }
+}
+
+static int mavlink_mission_item_int_t_y(lua_State *L) {
+    mavlink_mission_item_int_t *ud = check_mavlink_mission_item_int_t(L, 1);
+    switch(lua_gettop(L)) {
+        case 1:
+            lua_pushinteger(L, ud->y);
+            return 1;
+        case 2: {
+            const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
+            luaL_argcheck(L, ((raw_data_2 >= MAX(-INT32_MAX, INT32_MIN)) && (raw_data_2 <= MIN(INT32_MAX, INT32_MAX))), 2, "y out of range");
+            const int32_t data_2 = raw_data_2;
+            ud->y = data_2;
+            return 0;
+         }
+        default:
+            return luaL_argerror(L, lua_gettop(L), "too many arguments");
+    }
+}
+
+static int mavlink_mission_item_int_t_x(lua_State *L) {
+    mavlink_mission_item_int_t *ud = check_mavlink_mission_item_int_t(L, 1);
+    switch(lua_gettop(L)) {
+        case 1:
+            lua_pushinteger(L, ud->x);
+            return 1;
+        case 2: {
+            const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
+            luaL_argcheck(L, ((raw_data_2 >= MAX(-INT32_MAX, INT32_MIN)) && (raw_data_2 <= MIN(INT32_MAX, INT32_MAX))), 2, "x out of range");
+            const int32_t data_2 = raw_data_2;
+            ud->x = data_2;
+            return 0;
+         }
+        default:
+            return luaL_argerror(L, lua_gettop(L), "too many arguments");
+    }
+}
+
+static int mavlink_mission_item_int_t_param4(lua_State *L) {
+    mavlink_mission_item_int_t *ud = check_mavlink_mission_item_int_t(L, 1);
+    switch(lua_gettop(L)) {
+        case 1:
+            lua_pushnumber(L, ud->param4);
+            return 1;
+        case 2: {
+            const float raw_data_2 = luaL_checknumber(L, 2);
+            luaL_argcheck(L, ((raw_data_2 >= MAX(-FLT_MAX, -INFINITY)) && (raw_data_2 <= MIN(FLT_MAX, INFINITY))), 2, "param4 out of range");
+            const float data_2 = raw_data_2;
+            ud->param4 = data_2;
+            return 0;
+         }
+        default:
+            return luaL_argerror(L, lua_gettop(L), "too many arguments");
+    }
+}
+
+static int mavlink_mission_item_int_t_param3(lua_State *L) {
+    mavlink_mission_item_int_t *ud = check_mavlink_mission_item_int_t(L, 1);
+    switch(lua_gettop(L)) {
+        case 1:
+            lua_pushnumber(L, ud->param3);
+            return 1;
+        case 2: {
+            const float raw_data_2 = luaL_checknumber(L, 2);
+            luaL_argcheck(L, ((raw_data_2 >= MAX(-FLT_MAX, -INFINITY)) && (raw_data_2 <= MIN(FLT_MAX, INFINITY))), 2, "param3 out of range");
+            const float data_2 = raw_data_2;
+            ud->param3 = data_2;
+            return 0;
+         }
+        default:
+            return luaL_argerror(L, lua_gettop(L), "too many arguments");
+    }
+}
+
+static int mavlink_mission_item_int_t_param2(lua_State *L) {
+    mavlink_mission_item_int_t *ud = check_mavlink_mission_item_int_t(L, 1);
+    switch(lua_gettop(L)) {
+        case 1:
+            lua_pushnumber(L, ud->param2);
+            return 1;
+        case 2: {
+            const float raw_data_2 = luaL_checknumber(L, 2);
+            luaL_argcheck(L, ((raw_data_2 >= MAX(-FLT_MAX, -INFINITY)) && (raw_data_2 <= MIN(FLT_MAX, INFINITY))), 2, "param2 out of range");
+            const float data_2 = raw_data_2;
+            ud->param2 = data_2;
+            return 0;
+         }
+        default:
+            return luaL_argerror(L, lua_gettop(L), "too many arguments");
+    }
+}
+
+static int mavlink_mission_item_int_t_param1(lua_State *L) {
+    mavlink_mission_item_int_t *ud = check_mavlink_mission_item_int_t(L, 1);
+    switch(lua_gettop(L)) {
+        case 1:
+            lua_pushnumber(L, ud->param1);
+            return 1;
+        case 2: {
+            const float raw_data_2 = luaL_checknumber(L, 2);
+            luaL_argcheck(L, ((raw_data_2 >= MAX(-FLT_MAX, -INFINITY)) && (raw_data_2 <= MIN(FLT_MAX, INFINITY))), 2, "param1 out of range");
+            const float data_2 = raw_data_2;
+            ud->param1 = data_2;
+            return 0;
+         }
+        default:
+            return luaL_argerror(L, lua_gettop(L), "too many arguments");
+    }
 }
 
 static int Vector2f_y(lua_State *L) {
@@ -510,6 +723,21 @@ static int Location_get_distance(lua_State *L) {
     return 1;
 }
 
+const luaL_Reg mavlink_mission_item_int_t_meta[] = {
+    {"current", mavlink_mission_item_int_t_current},
+    {"frame", mavlink_mission_item_int_t_frame},
+    {"command", mavlink_mission_item_int_t_command},
+    {"seq", mavlink_mission_item_int_t_seq},
+    {"z", mavlink_mission_item_int_t_z},
+    {"y", mavlink_mission_item_int_t_y},
+    {"x", mavlink_mission_item_int_t_x},
+    {"param4", mavlink_mission_item_int_t_param4},
+    {"param3", mavlink_mission_item_int_t_param3},
+    {"param2", mavlink_mission_item_int_t_param2},
+    {"param1", mavlink_mission_item_int_t_param1},
+    {NULL, NULL}
+};
+
 const luaL_Reg Vector2f_meta[] = {
     {"y", Vector2f_y},
     {"x", Vector2f_x},
@@ -588,6 +816,53 @@ static int AP_RPM_get_rpm(lua_State *L) {
 
     if (data) {
         lua_pushnumber(L, data_5003);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
+}
+
+static int AP_Mission_set_item(lua_State *L) {
+    AP_Mission * ud = AP_Mission::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "mission not supported on this firmware");
+    }
+
+    binding_argcheck(L, 3);
+    const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(UINT16_MAX, UINT16_MAX))), 2, "argument out of range");
+    const uint16_t data_2 = static_cast<uint16_t>(raw_data_2);
+    mavlink_mission_item_int_t & data_3 = *check_mavlink_mission_item_int_t(L, 3);
+    AP::scheduler().get_semaphore().take_blocking();
+    const bool data = ud->set_item(
+            data_2,
+            data_3);
+
+    AP::scheduler().get_semaphore().give();
+    lua_pushboolean(L, data);
+    return 1;
+}
+
+static int AP_Mission_get_item(lua_State *L) {
+    AP_Mission * ud = AP_Mission::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "mission not supported on this firmware");
+    }
+
+    binding_argcheck(L, 2);
+    const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(UINT16_MAX, UINT16_MAX))), 2, "argument out of range");
+    const uint16_t data_2 = static_cast<uint16_t>(raw_data_2);
+    mavlink_mission_item_int_t data_5003 = {};
+    AP::scheduler().get_semaphore().take_blocking();
+    const bool data = ud->get_item(
+            data_2,
+            data_5003);
+
+    AP::scheduler().get_semaphore().give();
+    if (data) {
+        new_mavlink_mission_item_int_t(L);
+        *check_mavlink_mission_item_int_t(L, -1) = data_5003;
     } else {
         lua_pushnil(L);
     }
@@ -2407,6 +2682,8 @@ const luaL_Reg AP_RPM_meta[] = {
 };
 
 const luaL_Reg AP_Mission_meta[] = {
+    {"set_item", AP_Mission_set_item},
+    {"get_item", AP_Mission_get_item},
     {"num_commands", AP_Mission_num_commands},
     {"get_current_do_cmd_id", AP_Mission_get_current_do_cmd_id},
     {"get_current_nav_id", AP_Mission_get_current_nav_id},
@@ -2693,6 +2970,7 @@ struct userdata_meta {
 };
 
 const struct userdata_meta userdata_fun[] = {
+    {"mavlink_mission_item_int_t", mavlink_mission_item_int_t_meta, NULL},
     {"Vector2f", Vector2f_meta, NULL},
     {"Vector3f", Vector3f_meta, NULL},
     {"Location", Location_meta, NULL},
@@ -2800,6 +3078,7 @@ const struct userdata {
     const char *name;
     const lua_CFunction fun;
 } new_userdata[] = {
+    {"mavlink_mission_item_int_t", new_mavlink_mission_item_int_t},
     {"Vector2f", new_Vector2f},
     {"Vector3f", new_Vector3f},
     {"Location", new_Location},

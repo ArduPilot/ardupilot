@@ -31,6 +31,8 @@
 #endif // !defined(AP_TERRAIN_AVAILABLE) || (AP_TERRAIN_AVAILABLE != 1)
 
 
+int new_mavlink_mission_item_int_t(lua_State *L);
+mavlink_mission_item_int_t * check_mavlink_mission_item_int_t(lua_State *L, int arg);
 int new_Vector2f(lua_State *L);
 Vector2f * check_Vector2f(lua_State *L, int arg);
 int new_Vector3f(lua_State *L);
