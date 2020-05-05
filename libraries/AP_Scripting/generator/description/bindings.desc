@@ -215,6 +215,24 @@ singleton AP_Mission method get_prev_nav_cmd_id uint16_t
 singleton AP_Mission method get_current_nav_id uint16_t
 singleton AP_Mission method get_current_do_cmd_id uint16_t
 singleton AP_Mission method num_commands uint16_t
+singleton AP_Mission method get_item boolean uint16_t 0 UINT16_MAX mavlink_mission_item_int_t'Null
+singleton AP_Mission method set_item boolean uint16_t 0 UINT16_MAX mavlink_mission_item_int_t
+
+userdata mavlink_mission_item_int_t field param1 float read write -FLT_MAX FLT_MAX
+userdata mavlink_mission_item_int_t field param2 float read write -FLT_MAX FLT_MAX
+userdata mavlink_mission_item_int_t field param3 float read write -FLT_MAX FLT_MAX
+userdata mavlink_mission_item_int_t field param4 float read write -FLT_MAX FLT_MAX
+userdata mavlink_mission_item_int_t field x int32_t read write -INT32_MAX INT32_MAX
+userdata mavlink_mission_item_int_t field y int32_t read write -INT32_MAX INT32_MAX
+userdata mavlink_mission_item_int_t field z float read write -FLT_MAX FLT_MAX
+userdata mavlink_mission_item_int_t field seq uint16_t read write 0 UINT16_MAX
+userdata mavlink_mission_item_int_t field command uint16_t read write 0 UINT16_MAX
+-- userdata mavlink_mission_item_int_t field target_system uint8_t read write 0 UINT8_MAX
+-- userdata mavlink_mission_item_int_t field target_component uint8_t read write 0 UINT8_MAX
+userdata mavlink_mission_item_int_t field frame uint8_t read write  0 UINT8_MAX
+userdata mavlink_mission_item_int_t field current uint8_t read write  0 UINT8_MAX
+-- userdata mavlink_mission_item_int_t field autocontinue uint8_t read write  0 UINT8_MAX
+
 
 include AP_RPM/AP_RPM.h
 singleton AP_RPM alias RPM
