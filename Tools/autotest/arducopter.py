@@ -3906,7 +3906,7 @@ class AutoTestCopter(AutoTest):
 
             # Step 1b: run the same test with an FFT length of 256 which is needed to flush out a
             # whole host of bugs related to uint8_t. This also tests very accurately the frequency resolution
-            self.set_parameter("FFT_WINDOW_SIZE", 256)
+            self.set_parameter("FFT_WINDOW_SIZE", 128) # requires #13741 to work at 256
             self.start_subtest("Inject noise at 250Hz and check the FFT can find the noise")
 
             self.reboot_sitl()
