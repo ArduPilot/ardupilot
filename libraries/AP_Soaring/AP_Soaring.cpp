@@ -138,10 +138,9 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     AP_GROUPEND
 };
 
-SoaringController::SoaringController(AP_AHRS &ahrs, AP_SpdHgtControl &spdHgt, const AP_Vehicle::FixedWing &parms) :
-    _ahrs(ahrs),
+SoaringController::SoaringController(AP_SpdHgtControl &spdHgt, const AP_Vehicle::FixedWing &parms) :
     _spdHgt(spdHgt),
-    _vario(ahrs,parms),
+    _vario(parms),
     _aparm(parms),
     _throttle_suppressed(true)
 {
@@ -153,7 +152,7 @@ SoaringController::SoaringController(AP_AHRS &ahrs, AP_SpdHgtControl &spdHgt, co
 
 void SoaringController::get_target(Location &wp)
 {
-    wp = _ahrs.get_home();
+    wp = AP::ahrs().get_home();
     wp.offset(_position_x_filter.get(), _position_y_filter.get());
 }
 
@@ -260,7 +259,8 @@ void SoaringController::init_thermalling()
     const MatrixN<float,4> p{init_p};
 
     Vector3f position;
-    
+
+    const AP_AHRS &_ahrs = AP::ahrs();
     if (!_ahrs.get_relative_position_NED_home(position)) {
         return;
     }
@@ -301,6 +301,7 @@ void SoaringController::update_thermalling()
 
     Vector3f current_position;
 
+    const AP_AHRS &_ahrs = AP::ahrs();
     if (!_ahrs.get_relative_position_NED_home(current_position)) {
         return;
     }
