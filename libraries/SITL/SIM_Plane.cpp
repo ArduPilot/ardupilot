@@ -90,8 +90,8 @@ Plane::Plane(const char *frame_str) :
     }
 
     if (strstr(frame_str, "-k1000")) {
-        mass = 10.5;
-        coefficient.c_drag_p = 0.05;
+        mass = 12.5;
+        coefficient.c_drag_p = 0.021;
         coefficient.s = 1.04;
         coefficient.b = 5.0;
         coefficient.c = 0.25;
