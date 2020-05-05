@@ -18,6 +18,7 @@
 
 #define DF_PAGE_SIZE 256UL
 #define DF_PAGE_PER_SECTOR 16 // 4k sectors
+#define DF_PAGE_PER_BLOCK 256 // 4k sectors
 #define DF_NUM_PAGES 65536UL
 
 #define ERASE_TIME_MS 10000
@@ -30,17 +31,15 @@ void AP_Logger_SITL::Init()
         flash_fd = open(filename, O_RDWR|O_CLOEXEC, 0777);
         if (flash_fd == -1) {
             flash_fd = open(filename, O_RDWR | O_CREAT | O_CLOEXEC, 0777);
-            StartErase();
-            erase_started_ms = 0;
-        }
-        if (ftruncate(flash_fd, DF_PAGE_SIZE*uint32_t(DF_NUM_PAGES)) != 0) {
-            AP_HAL::panic("Failed to create %s", filename);
+            if (ftruncate(flash_fd, DF_PAGE_SIZE*uint32_t(DF_NUM_PAGES)) != 0) {
+                AP_HAL::panic("Failed to create %s", filename);
+            }
         }
     }
 
     df_PageSize = DF_PAGE_SIZE;
     df_PagePerSector = DF_PAGE_PER_SECTOR;
-    df_PagePerBlock = DF_PAGE_PER_SECTOR;
+    df_PagePerBlock = DF_PAGE_PER_BLOCK;
     df_NumPages = DF_NUM_PAGES;
 
     AP_Logger_Block::Init();
@@ -69,21 +68,25 @@ void AP_Logger_SITL::BufferToPage(uint32_t PageAdr)
 
 void AP_Logger_SITL::SectorErase(uint32_t SectorAdr)
 {
-    uint8_t fill[DF_PAGE_SIZE*DF_PAGE_PER_SECTOR];
+    uint8_t fill[DF_PAGE_SIZE*DF_PAGE_PER_BLOCK];
     memset(fill, 0xFF, sizeof(fill));
-    if (pwrite(flash_fd, fill, sizeof(fill), SectorAdr*DF_PAGE_PER_SECTOR*DF_PAGE_SIZE) != sizeof(fill)) {
+    if (pwrite(flash_fd, fill, sizeof(fill), SectorAdr*DF_PAGE_PER_BLOCK*DF_PAGE_SIZE) != sizeof(fill)) {
         printf("Failed sector erase");
     }
 }
 
 void AP_Logger_SITL::Sector4kErase(uint32_t SectorAdr)
 {
-    SectorErase(SectorAdr);
+    uint8_t fill[DF_PAGE_SIZE*DF_PAGE_PER_SECTOR];
+    memset(fill, 0xFF, sizeof(fill));
+    if (pwrite(flash_fd, fill, sizeof(fill), SectorAdr*DF_PAGE_PER_SECTOR*DF_PAGE_SIZE) != sizeof(fill)) {
+        printf("Failed sector 4k erase");
+    }
 }
 
 void AP_Logger_SITL::StartErase()
 {
-    for (uint32_t i=0; i<DF_NUM_PAGES/DF_PAGE_PER_SECTOR; i++) {
+    for (uint32_t i=0; i<DF_NUM_PAGES/DF_PAGE_PER_BLOCK; i++) {
         SectorErase(i);
     }
     erase_started_ms = AP_HAL::millis();

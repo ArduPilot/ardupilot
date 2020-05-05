@@ -49,7 +49,7 @@ public:
     // erase handling
     void EraseAll() override {}
 
-    bool NeedPrep() override { return false; }
+    void PrepForArming() override {}
     void Prep() override { }
 
     // high level interface
@@ -59,12 +59,12 @@ public:
     int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) override { return 0; }
     uint16_t get_num_logs(void) override { return 0; }
 
-    void push_log_blocks() override;
-
     void remote_log_block_status_msg(const mavlink_channel_t chan, const mavlink_message_t& msg) override;
+    void vehicle_was_disarmed() override {}
 
 protected:
 
+    void push_log_blocks() override;
     bool WritesOK() const override;
 
 private:
@@ -157,7 +157,6 @@ private:
 
     void periodic_10Hz(uint32_t now) override;
     void periodic_1Hz() override;
-    void periodic_fullrate() override;
     
     void stats_init();
     void stats_reset();

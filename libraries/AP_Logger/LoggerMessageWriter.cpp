@@ -6,7 +6,10 @@
 #include "ap_version.h"
 #undef FORCE_VERSION_H_INCLUDE
 
-#define MIN_LOOP_TIME_REMAINING_FOR_MESSAGE_WRITE_US 200
+// the message writers are mainly called at the end of periodic_fullrate() with a budget of 300us
+// until they are finished calls to Write() will fail so we want to take up as much of
+// the budget as possible in order that logging can begin in earnest as early as possible
+#define MIN_LOOP_TIME_REMAINING_FOR_MESSAGE_WRITE_US 50
 
 extern const AP_HAL::HAL& hal;
 
@@ -42,7 +45,7 @@ void LoggerMessageWriter_DFLogStart::process()
     case Stage::FORMATS:
         // write log formats so the log is self-describing
         while (next_format_to_send < _logger_backend->num_types()) {
-            if (AP::scheduler().time_available_usec() < MIN_LOOP_TIME_REMAINING_FOR_MESSAGE_WRITE_US) {
+            if (AP::scheduler().time_available_usec() == 0) { // write out the FMT messages as fast as we can
                 return;
             }
             if (!_logger_backend->Write_Format(_logger_backend->structure(next_format_to_send))) {
