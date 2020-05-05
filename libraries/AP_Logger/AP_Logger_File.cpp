@@ -27,7 +27,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define MAX_LOG_FILES 500U
 #define LOGGER_PAGE_SIZE 1024UL
 
 #ifndef HAL_LOGGER_WRITE_CHUNK_SIZE
@@ -80,8 +79,6 @@ void AP_Logger_File::ensure_log_directory_exists()
 
 void AP_Logger_File::Init()
 {
-    AP_Logger_Backend::Init();
-
     // determine and limit file backend buffersize
     uint32_t bufsize = _front._params.file_bufsize;
     if (bufsize > 64) {
@@ -135,11 +132,7 @@ bool AP_Logger_File::log_exists(const uint16_t lognum) const
 
 void AP_Logger_File::periodic_1Hz()
 {
-    if (_rotate_pending && !logging_enabled()) {
-        _rotate_pending = false;
-        // handle log rotation once we stop logging
-        stop_logging();
-    }
+    AP_Logger_Backend::periodic_1Hz();
 
     if (!io_thread_alive()) {
         if (io_thread_warning_decimation_counter == 0 && _initialised) {
@@ -159,7 +152,6 @@ void AP_Logger_File::periodic_1Hz()
         _write_fd = -1;
         _initialised = false;
     }
-    df_stats_log();
 }
 
 void AP_Logger_File::periodic_fullrate()
@@ -170,7 +162,7 @@ void AP_Logger_File::periodic_fullrate()
 uint32_t AP_Logger_File::bufferspace_available()
 {
     const uint32_t space = _writebuf.space();
-    const uint32_t crit = critical_message_reserved_space();
+    const uint32_t crit = critical_message_reserved_space(_writebuf.get_size());
 
     return (space > crit) ? space - crit : 0;
 }
@@ -496,7 +488,7 @@ bool AP_Logger_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
         const uint32_t now = AP_HAL::millis();
         const bool must_dribble = (now - last_messagewrite_message_sent) > 100;
         if (!must_dribble &&
-            space < non_messagewriter_message_reserved_space()) {
+            space < non_messagewriter_message_reserved_space(_writebuf.get_size())) {
             // this message isn't dropped, it will be sent again...
             semaphore.give();
             return false;
@@ -504,7 +496,7 @@ bool AP_Logger_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
         last_messagewrite_message_sent = now;
     } else {
         // we reserve some amount of space for critical messages:
-        if (!is_critical && space < critical_message_reserved_space()) {
+        if (!is_critical && space < critical_message_reserved_space(_writebuf.get_size())) {
             _dropped++;
             semaphore.give();
             return false;
@@ -520,7 +512,7 @@ bool AP_Logger_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
     }
 
     _writebuf.write((uint8_t*)pBuffer, size);
-    df_stats_gather(size);
+    df_stats_gather(size, _writebuf.space());
     semaphore.give();
     return true;
 }
@@ -605,33 +597,11 @@ uint32_t AP_Logger_File::_get_log_time(const uint16_t log_num)
 }
 
 /*
-  convert a list entry number back into a log number (which can then
-  be converted into a filename).  A "list entry number" is a sequence
-  where the oldest log has a number of 1, the second-from-oldest 2,
-  and so on.  Thus the highest list entry number is equal to the
-  number of logs.
-*/
-uint16_t AP_Logger_File::_log_num_from_list_entry(const uint16_t list_entry)
-{
-    uint16_t oldest_log = find_oldest_log();
-    if (oldest_log == 0) {
-        // We don't have any logs...
-        return 0;
-    }
-
-    uint32_t log_num = oldest_log + list_entry - 1;
-    if (log_num > MAX_LOG_FILES) {
-        log_num -= MAX_LOG_FILES;
-    }
-    return (uint16_t)log_num;
-}
-
-/*
   find the number of pages in a log
  */
 void AP_Logger_File::get_log_boundaries(const uint16_t list_entry, uint32_t & start_page, uint32_t & end_page)
 {
-    const uint16_t log_num = _log_num_from_list_entry(list_entry);
+    const uint16_t log_num = log_num_from_list_entry(list_entry);
     if (log_num == 0) {
         // that failed - probably no logs
         start_page = 0;
@@ -652,7 +622,7 @@ int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t p
         return -1;
     }
 
-    const uint16_t log_num = _log_num_from_list_entry(list_entry);
+    const uint16_t log_num = log_num_from_list_entry(list_entry);
     if (log_num == 0) {
         // that failed - probably no logs
         return -1;
@@ -706,7 +676,7 @@ int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t p
  */
 void AP_Logger_File::get_log_info(const uint16_t list_entry, uint32_t &size, uint32_t &time_utc)
 {
-    uint16_t log_num = _log_num_from_list_entry(list_entry);
+    uint16_t log_num = log_num_from_list_entry(list_entry);
     if (log_num == 0) {
         // that failed - probably no logs
         size = 0;
@@ -760,18 +730,6 @@ void AP_Logger_File::stop_logging(void)
     if (have_sem) {
         write_fd_semaphore.give();
     }
-}
-
-void AP_Logger_File::PrepForArming()
-{
-    if (_rotate_pending) {
-        _rotate_pending = false;
-        stop_logging();
-    }
-    if (logging_started()) {
-        return;
-    }
-    start_new_log();
 }
 
 /*
@@ -1019,16 +977,6 @@ void AP_Logger_File::_io_timer(void)
     hal.util->perf_end(_perf_write);
 }
 
-// this sensor is enabled if we should be logging at the moment
-bool AP_Logger_File::logging_enabled() const
-{
-    if (hal.util->get_soft_armed() ||
-        _front.log_while_disarmed()) {
-        return true;
-    }
-    return false;
-}
-
 bool AP_Logger_File::io_thread_alive() const
 {
     // if the io thread hasn't had a heartbeat in a full seconds then it is dead
@@ -1055,57 +1003,6 @@ bool AP_Logger_File::logging_failed() const
 
     return false;
 }
-
-
-void AP_Logger_File::vehicle_was_disarmed()
-{
-    if (_front._params.file_disarm_rot) {
-        // rotate our log.  Closing the current one and letting the
-        // logging restart naturally based on log_disarmed should do
-        // the trick:
-        _rotate_pending = true;
-    }
-}
-
-void AP_Logger_File::Write_AP_Logger_Stats_File(const struct df_stats &_stats)
-{
-    struct log_DSF pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_DF_FILE_STATS),
-        time_us         : AP_HAL::micros64(),
-        dropped         : _dropped,
-        blocks          : _stats.blocks,
-        bytes           : _stats.bytes,
-        buf_space_min   : _stats.buf_space_min,
-        buf_space_max   : _stats.buf_space_max,
-        buf_space_avg   : (_stats.blocks) ? (_stats.buf_space_sigma / _stats.blocks) : 0,
-
-    };
-    WriteBlock(&pkt, sizeof(pkt));
-}
-
-void AP_Logger_File::df_stats_gather(const uint16_t bytes_written) {
-    const uint32_t space_remaining = _writebuf.space();
-    if (space_remaining < stats.buf_space_min) {
-        stats.buf_space_min = space_remaining;
-    }
-    if (space_remaining > stats.buf_space_max) {
-        stats.buf_space_max = space_remaining;
-    }
-    stats.buf_space_sigma += space_remaining;
-    stats.bytes += bytes_written;
-    stats.blocks++;
-}
-
-void AP_Logger_File::df_stats_clear() {
-    memset(&stats, '\0', sizeof(stats));
-    stats.buf_space_min = -1;
-}
-
-void AP_Logger_File::df_stats_log() {
-    Write_AP_Logger_Stats_File(stats);
-    df_stats_clear();
-}
-
 
 #endif // HAVE_FILESYSTEM_SUPPORT
 

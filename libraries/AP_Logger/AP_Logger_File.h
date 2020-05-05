@@ -29,7 +29,6 @@ public:
     void EraseAll() override;
 
     // possibly time-consuming preparation handling:
-    bool NeedPrep() override;
     void Prep() override;
 
     /* Write a block of data at current offset */
@@ -43,6 +42,7 @@ public:
     int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) override;
     uint16_t get_num_logs() override;
     void start_new_log(void) override;
+    uint16_t find_oldest_log() override;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     void flush(void) override;
@@ -51,14 +51,9 @@ public:
     void periodic_fullrate() override;
 
     // this method is used when reporting system status over mavlink
-    bool logging_enabled() const override;
     bool logging_failed() const override;
 
     bool logging_started(void) const override { return _write_fd != -1; }
-
-    void vehicle_was_disarmed() override;
-
-    virtual void PrepForArming() override;
 
 protected:
 
@@ -85,20 +80,13 @@ private:
     bool io_thread_alive() const;
     uint8_t io_thread_warning_decimation_counter;
 
-    uint16_t _cached_oldest_log;
-
-    // should we rotate when we next stop logging
-    bool _rotate_pending;
-
-    uint16_t _log_num_from_list_entry(const uint16_t list_entry);
-
     // possibly time-consuming preparations handling
     void Prep_MinSpace();
-    uint16_t find_oldest_log();
     int64_t disk_space_avail();
     int64_t disk_space();
 
     void ensure_log_directory_exists();
+    bool NeedPrep();
 
     bool file_exists(const char *filename) const;
     bool log_exists(const uint16_t lognum) const;
@@ -120,26 +108,6 @@ private:
 
     void _io_timer(void);
 
-    uint32_t critical_message_reserved_space() const {
-        // possibly make this a proportional to buffer size?
-        uint32_t ret = 1024;
-        if (ret > _writebuf.get_size()) {
-            // in this case you will only get critical messages
-            ret = _writebuf.get_size();
-        }
-        return ret;
-    };
-    uint32_t non_messagewriter_message_reserved_space() const {
-        // possibly make this a proportional to buffer size?
-        uint32_t ret = 1024;
-        if (ret >= _writebuf.get_size()) {
-            // need to allow messages out from the messagewriters.  In
-            // this case while you have a messagewriter you won't get
-            // any other messages.  This should be a corner case!
-            ret = 0;
-        }
-        return ret;
-    };
     uint32_t last_messagewrite_message_sent;
 
     // free-space checks; filling up SD cards under NuttX leads to
@@ -163,21 +131,6 @@ private:
     AP_HAL::Util::perf_counter_t  _perf_overruns;
 
     const char *last_io_operation = "";
-
-    struct df_stats {
-        uint16_t blocks;
-        uint32_t bytes;
-        uint32_t buf_space_min;
-        uint32_t buf_space_max;
-        uint32_t buf_space_sigma;
-    };
-    struct df_stats stats;
-
-    void Write_AP_Logger_Stats_File(const struct df_stats &_stats);
-    void df_stats_gather(uint16_t bytes_written);
-    void df_stats_log();
-    void df_stats_clear();
-
 };
 
 #endif // HAVE_FILESYSTEM_SUPPORT

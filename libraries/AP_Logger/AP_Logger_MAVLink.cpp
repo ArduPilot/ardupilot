@@ -26,8 +26,6 @@ extern const AP_HAL::HAL& hal;
 // initialisation
 void AP_Logger_MAVLink::Init()
 {
-    AP_Logger_Backend::Init();
-
     _blocks = nullptr;
     while (_blockcount >= 8) { // 8 is a *magic* number
         _blocks = (struct dm_block *) calloc(_blockcount, sizeof(struct dm_block));
@@ -534,11 +532,6 @@ void AP_Logger_MAVLink::periodic_1Hz()
         return;
     }
     stats_log();
-}
-
-void AP_Logger_MAVLink::periodic_fullrate()
-{
-    push_log_blocks();
 }
 
 //TODO: handle full txspace properly
