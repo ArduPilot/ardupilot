@@ -54,6 +54,7 @@
 #define RATE_POSLLH 1
 #define RATE_STATUS 1
 #define RATE_SOL 1
+#define RATE_RTK 1
 #define RATE_TIMEGPS 5
 #define RATE_PVT 1
 #define RATE_VELNED 1
@@ -78,13 +79,14 @@
 #define CONFIG_TP5           (1<<14)
 #define CONFIG_RATE_TIMEGPS  (1<<15)
 #define CONFIG_TMODE_MODE    (1<<16)
-#define CONFIG_LAST          (1<<17) // this must always be the last bit
+#define CONFIG_RATE_RTK      (1<<17)
+#define CONFIG_LAST          (1<<18) // this must always be the last bit
 
 #define CONFIG_REQUIRED_INITIAL (CONFIG_RATE_NAV | CONFIG_RATE_POSLLH | CONFIG_RATE_STATUS | CONFIG_RATE_VELNED)
 
 #define CONFIG_ALL (CONFIG_RATE_NAV | CONFIG_RATE_POSLLH | CONFIG_RATE_STATUS | CONFIG_RATE_SOL | CONFIG_RATE_VELNED \
                     | CONFIG_RATE_DOP | CONFIG_RATE_MON_HW | CONFIG_RATE_MON_HW2 | CONFIG_RATE_RAW | CONFIG_VERSION \
-                    | CONFIG_NAV_SETTINGS | CONFIG_GNSS | CONFIG_SBAS)
+                    | CONFIG_NAV_SETTINGS | CONFIG_GNSS | CONFIG_SBAS | CONFIG_RATE_RTK)
 
 //Configuration Sub-Sections
 #define SAVE_CFG_IO     (1<<0)
@@ -108,6 +110,8 @@ public:
 
     static bool _detect(struct UBLOX_detect_state &state, uint8_t data);
 
+    bool supports_mavlink_gps_rtk_message() override { return state.rtk_time_week_ms > 0; }
+
     bool is_configured(void) override {
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
         if (!gps._auto_config) {
@@ -129,6 +133,8 @@ public:
     const char *name() const override { return "u-blox"; }
 
 private:
+     void _process_rtk_solution_v00(void);
+     void _process_rtk_solution_v01(void);
     // u-blox UBX protocol essentials
     struct PACKED ubx_header {
         uint8_t preamble1;
@@ -299,29 +305,47 @@ private:
         uint32_t headVeh;
         uint8_t reserved2[4]; 
     };
-    struct PACKED ubx_nav_relposned {
+    struct PACKED ubx_nav_relposned_v01 { // F9P
         uint8_t version;
         uint8_t reserved1;
-        uint16_t refStationId;
-        uint32_t iTOW;
-        int32_t relPosN;
-        int32_t relPosE;
-        int32_t relPosD;
-        int32_t relPosLength;
-        int32_t relPosHeading;
+        uint16_t ref_station_id;
+        uint32_t itow_ms; // GPS time of week in ms
+        int32_t rel_pos_n_cm;
+        int32_t rel_pos_e_cm;
+        int32_t rel_pos_d_cm;
+        int32_t rel_pos_length_cm;
+        int32_t rel_pos_heading_deg;
         uint8_t reserved2[4];
-        int8_t relPosHPN;
-        int8_t relPosHPE;
-        int8_t relPosHPD;
-        int8_t relPosHPLength;
-        uint32_t accN;
-        uint32_t accE;
-        uint32_t accD;
-        uint32_t accLength;
-        uint32_t accHeading;
+        int8_t rel_pos_hp_n_mm;
+        int8_t rel_pos_hp_e_mm;
+        int8_t rel_pos_hp_d_mm;
+        int8_t rel_pos_hp_length_mm;
+        uint32_t acc_n_mm;
+        uint32_t acc_e_mm;
+        uint32_t acc_d_mm;
+        uint32_t acc_length_mm;
+        uint32_t acc_heading_deg;
         uint8_t reserved3[4];
         uint32_t flags;
     };
+
+    struct PACKED ubx_nav_relposned_v00 { // M8P
+         uint8_t version;
+         uint8_t reserved1;
+         uint16_t ref_station_id;
+         uint32_t itow_ms;      // GPS time of week
+         int32_t rel_pos_n_cm;  //position(meters) = (rel_pos + rel_pos_hp*1e-02)/100.0;
+         int32_t rel_pos_e_cm;
+         int32_t rel_pos_d_cm;
+         int8_t rel_pos_hp_n_mm;
+         int8_t rel_pos_hp_e_mm;
+         int8_t rel_pos_hp_d_mm;
+         uint8_t reserved2;
+         uint32_t acc_n_mm;
+         uint32_t acc_e_mm;
+         uint32_t acc_d_mm;
+         uint32_t flags_bitfield;
+     };
 
     struct PACKED ubx_nav_velned {
         uint32_t itow;                                  // GPS msToW
@@ -487,7 +511,8 @@ private:
         ubx_cfg_sbas sbas;
         ubx_cfg_valget valget;
         ubx_nav_svinfo_header svinfo_header;
-        ubx_nav_relposned relposned;
+        ubx_nav_relposned_v00 relposned_v00;
+        ubx_nav_relposned_v01 relposned_v01;
 #if UBLOX_RXM_RAW_LOGGING
         ubx_rxm_raw rxm_raw;
         ubx_rxm_rawx rxm_rawx;
@@ -541,7 +566,8 @@ private:
         MSG_MON_VER = 0x04,
         MSG_NAV_SVINFO = 0x30,
         MSG_RXM_RAW = 0x10,
-        MSG_RXM_RAWX = 0x15
+        MSG_RXM_RAWX = 0x15,
+		MSG_NAV_RELPOSNED = 0x3c
     };
     enum ubx_gnss_identifier {
         GNSS_GPS     = 0x00,
@@ -596,6 +622,7 @@ private:
         STEP_RAW,
         STEP_RAWX,
         STEP_VERSION,
+        STEP_NAV_RELPOSNED,
         STEP_LAST
     };
 

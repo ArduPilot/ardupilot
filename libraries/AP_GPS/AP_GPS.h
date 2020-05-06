@@ -103,6 +103,7 @@ public:
         GPS_OK_FIX_3D_DGPS = GPS_FIX_TYPE_DGPS,           ///< Receiving valid messages and 3D lock with differential improvements
         GPS_OK_FIX_3D_RTK_FLOAT = GPS_FIX_TYPE_RTK_FLOAT, ///< Receiving valid messages and 3D RTK Float
         GPS_OK_FIX_3D_RTK_FIXED = GPS_FIX_TYPE_RTK_FIXED, ///< Receiving valid messages and 3D RTK Fixed
+        GPS_OK_FIX_3D_STATIC = GPS_FIX_TYPE_STATIC        ///< Receiving valid messages and 3D static lock from manual entry or survey
     };
 
     // GPS navigation engine settings. Not all GPS receivers support
