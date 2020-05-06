@@ -1,9 +1,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Notify/AP_Notify.h>
-#include <AP_GPS/AP_GPS.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_GPS/AP_GPS.h>
 
 #include "AP_Compass.h"
 

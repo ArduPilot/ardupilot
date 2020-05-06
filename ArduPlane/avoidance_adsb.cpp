@@ -24,6 +24,7 @@ MAV_COLLISION_ACTION AP_Avoidance_Plane::handle_avoidance(const AP_Avoidance::Ob
 
     // take no action in some flight modes
     if (plane.control_mode == &plane.mode_manual ||
+        (plane.stall_state.is_stalled()) ||
         (plane.control_mode == &plane.mode_auto && !plane.auto_state.takeoff_complete) ||
         (plane.flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) || // TODO: consider allowing action during approach
         plane.control_mode == &plane.mode_autotune ||

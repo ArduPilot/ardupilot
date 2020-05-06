@@ -387,7 +387,7 @@ void Plane::stabilize_acro(float speed_scaler)
  */
 void Plane::stabilize()
 {
-    if (control_mode == &mode_manual) {
+    if (control_mode == &mode_manual || plane.stall_state.is_stalled()) {
         // reset steering controls
         steer_state.locked_course = false;
         steer_state.locked_course_err = 0;
@@ -437,7 +437,7 @@ void Plane::stabilize()
         }
         stabilize_roll(speed_scaler);
         stabilize_pitch(speed_scaler);
-        if (g.stick_mixing == STICK_MIXING_DIRECT || control_mode == &mode_stabilize) {
+        if (g.stick_mixing == STICK_MIXING_DIRECT || control_mode == &mode_stabilize || stall_state.is_recoverying()) {
             stabilize_stick_mixing_direct();
         }
         stabilize_yaw(speed_scaler);
@@ -449,7 +449,7 @@ void Plane::stabilize()
     if (get_throttle_input() == 0 &&
         fabsf(relative_altitude) < 5.0f && 
         fabsf(barometer.get_climb_rate()) < 0.5f &&
-        gps.ground_speed() < 3) {
+        ahrs.groundspeed() < 3) {
         // we are low, with no climb rate, and zero throttle, and very
         // low ground speed. Zero the attitude controller
         // integrators. This prevents integrator buildup pre-takeoff.
@@ -458,7 +458,7 @@ void Plane::stabilize()
         yawController.reset_I();
 
         // if moving very slowly also zero the steering integrator
-        if (gps.ground_speed() < 1) {
+        if (ahrs.groundspeed() < 1) {
             steerController.reset_I();            
         }
     }
@@ -541,7 +541,7 @@ void Plane::calc_nav_yaw_course(void)
  */
 void Plane::calc_nav_yaw_ground(void)
 {
-    if (gps.ground_speed() < 1 && 
+    if (ahrs.groundspeed() < 1 &&
         get_throttle_input() == 0 &&
         flight_stage != AP_Vehicle::FixedWing::FLIGHT_TAKEOFF &&
         flight_stage != AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {

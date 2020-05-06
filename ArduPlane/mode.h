@@ -39,6 +39,7 @@ public:
         QRTL          = 21,
         QAUTOTUNE     = 22,
         QACRO         = 23,
+        STALLRECOVERY = 24,
     };
 
     // Constructor
@@ -192,10 +193,32 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
-protected:
-
     bool _enter() override;
     void _exit() override;
+
+protected:
+
+};
+
+class ModeStallRecovery : public Mode
+{
+public:
+    Number mode_number() const override { return Number::STALLRECOVERY; }
+    const char *name() const override { return "STALL"; }
+    const char *name4() const override { return "STALL"; }
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override;
+
+protected:
+    bool _enter() override;
+    void _exit() override;
+
+private:
+
+    void behavior_stalled();
+    void behavior_level_wings();
+    bool state_complete_algorithm();
 };
 
 

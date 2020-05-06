@@ -22,7 +22,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_LandingGear/AP_LandingGear.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_GPS/AP_GPS.h>
 
 void AP_Landing::type_slope_do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude)
 {
@@ -31,6 +30,7 @@ void AP_Landing::type_slope_do_land(const AP_Mission::Mission_Command& cmd, cons
 
     // once landed, post some landing statistics to the GCS
     type_slope_flags.post_stats = false;
+    type_slope_flags.is_landed = false;
 
     type_slope_stage = SLOPE_STAGE_NORMAL;
     gcs().send_text(MAV_SEVERITY_INFO, "Landing approach start at %.1fm", (double)relative_altitude);
@@ -94,15 +94,14 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
         (!rangefinder_state_in_range && wp_proportion >= 1) ||
         probably_crashed) {
 
-        const AP_GPS &gps = AP::gps();
         if (type_slope_stage != SLOPE_STAGE_FINAL) {
             type_slope_flags.post_stats = true;
             if (is_flying && (AP_HAL::millis()-last_flying_ms) > 3000) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "Flare crash detected: speed=%.1f", (double)gps.ground_speed());
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "Flare crash detected: speed=%.1f", (double)ahrs.groundspeed());
             } else {
                 gcs().send_text(MAV_SEVERITY_INFO, "Flare %.1fm sink=%.2f speed=%.1f dist=%.1f",
                                   (double)height, (double)sink_rate,
-                                  (double)gps.ground_speed(),
+                                  (double)ahrs.groundspeed(),
                                   (double)current_loc.get_distance(next_WP_loc));
             }
             
@@ -117,15 +116,6 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
             }
         }
 
-        if (gps.ground_speed() < 3) {
-            // reload any airspeed or groundspeed parameters that may have
-            // been set for landing. We don't do this till ground
-            // speed drops below 3.0 m/s as otherwise we will change
-            // target speeds too early.
-            aparm.airspeed_cruise_cm.load();
-            aparm.min_gndspeed_cm.load();
-            aparm.throttle_cruise.load();
-        }
     } else if (type_slope_stage == SLOPE_STAGE_APPROACH && pre_flare_airspeed > 0) {
         bool reached_pre_flare_alt = pre_flare_alt > 0 && (height <= pre_flare_alt);
         bool reached_pre_flare_sec = pre_flare_sec > 0 && (height <= sink_rate * pre_flare_sec);
@@ -154,6 +144,19 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
     // check if we should auto-disarm after a confirmed landing
     if (type_slope_stage == SLOPE_STAGE_FINAL) {
         disarm_if_autoland_complete_fn();
+
+        if (!type_slope_flags.is_landed && !is_flying) {
+            type_slope_flags.is_landed = true;
+            // we just landed
+
+
+            // reload any airspeed or groundspeed parameters that may have been set for landing.
+            aparm.airspeed_cruise_cm.load();
+            aparm.min_gndspeed_cm.load();
+            aparm.throttle_cruise.load();
+        }
+    } else {
+        type_slope_flags.is_landed = false;
     }
 
     /*

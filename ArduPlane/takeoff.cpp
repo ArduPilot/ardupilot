@@ -29,12 +29,6 @@ bool Plane::auto_takeoff_check(void)
 
     takeoff_state.last_check_ms = now;
 
-    // Check for bad GPS
-    if (gps.status() < AP_GPS::GPS_OK_FIX_3D) {
-        // no auto takeoff without GPS lock
-        return false;
-    }
-
     if (!takeoff_state.launchTimerStarted && !is_zero(g.takeoff_throttle_min_accel)) {
         // we are requiring an X acceleration event to launch
         float xaccel = SpdHgt_Controller->get_VXdot();
@@ -91,9 +85,9 @@ bool Plane::auto_takeoff_check(void)
     }
 
     // Check ground speed and time delay
-    if (((gps.ground_speed() > g.takeoff_throttle_min_speed || is_zero(g.takeoff_throttle_min_speed))) &&
+    if (((ahrs.groundspeed() > g.takeoff_throttle_min_speed || is_zero(g.takeoff_throttle_min_speed))) &&
         ((now - takeoff_state.last_tkoff_arm_time) >= wait_time_ms)) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Triggered AUTO. GPS speed = %.1f", (double)gps.ground_speed());
+        gcs().send_text(MAV_SEVERITY_INFO, "Triggered AUTO. GPS speed = %.1f", (double)ahrs.groundspeed());
         takeoff_state.launchTimerStarted = false;
         takeoff_state.last_tkoff_arm_time = 0;
         takeoff_state.start_time_ms = now;
@@ -164,7 +158,7 @@ void Plane::takeoff_calc_pitch(void)
             nav_pitch_cd = takeoff_pitch_min_cd;
         }
     } else {
-        nav_pitch_cd = ((gps.ground_speed()*100) / (float)aparm.airspeed_cruise_cm) * auto_state.takeoff_pitch_cd;
+        nav_pitch_cd = (ahrs.groundspeed_cm() / (float)aparm.airspeed_cruise_cm) * auto_state.takeoff_pitch_cd;
         nav_pitch_cd = constrain_int32(nav_pitch_cd, 500, auto_state.takeoff_pitch_cd);
     }
 

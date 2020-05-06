@@ -204,17 +204,12 @@ void Plane::calc_gndspeed_undershoot()
 {
     // Use the component of ground speed in the forward direction
     // This prevents flyaway if wind takes plane backwards
-    if (gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
-	      Vector2f gndVel = ahrs.groundspeed_vector();
-        const Matrix3f &rotMat = ahrs.get_rotation_body_to_ned();
-        Vector2f yawVect = Vector2f(rotMat.a.x,rotMat.b.x);
-        if (!yawVect.is_zero()) {
-            yawVect.normalize();
-            float gndSpdFwd = yawVect * gndVel;
-            groundspeed_undershoot = (aparm.min_gndspeed_cm > 0) ? (aparm.min_gndspeed_cm - gndSpdFwd*100) : 0;
-        }
-    } else {
-        groundspeed_undershoot = 0;
+    const Matrix3f &rotMat = ahrs.get_rotation_body_to_ned();
+    Vector2f yawVect = Vector2f(rotMat.a.x,rotMat.b.x);
+    if (!yawVect.is_zero()) {
+        yawVect.normalize();
+        float gndSpdFwd = yawVect * ahrs.groundspeed_vector();
+        groundspeed_undershoot = (aparm.min_gndspeed_cm > 0) ? (aparm.min_gndspeed_cm - gndSpdFwd*100) : 0;
     }
 }
 
@@ -282,8 +277,7 @@ void Plane::update_cruise()
     if (!cruise_state.locked_heading &&
         channel_roll->get_control_in() == 0 &&
         rudder_input() == 0 &&
-        gps.status() >= AP_GPS::GPS_OK_FIX_2D &&
-        gps.ground_speed() >= 3 &&
+        ahrs.groundspeed() >= 3 &&
         cruise_state.lock_timer_ms == 0) {
         // user wants to lock the heading - start the timer
         cruise_state.lock_timer_ms = millis();
@@ -294,7 +288,7 @@ void Plane::update_cruise()
         // from user
         cruise_state.locked_heading = true;
         cruise_state.lock_timer_ms = 0;
-        cruise_state.locked_heading_cd = gps.ground_course_cd();
+        cruise_state.locked_heading_cd = ahrs.ground_course_cd();
         prev_WP_loc = current_loc;
     }
     if (cruise_state.locked_heading) {

@@ -40,8 +40,8 @@ void Plane::update_is_flying_5Hz(void)
     } else if(arming.is_armed()) {
         // when armed assuming flying and we need overwhelming evidence that we ARE NOT flying
         // short drop-outs of GPS are common during flight due to banking which points the antenna in different directions
-        bool gps_lost_recently = (gps.last_fix_time_ms() > 0) && // we have locked to GPS before
-                        (gps.status() < AP_GPS::GPS_OK_FIX_2D) && // and it's lost now
+        bool gps_lost_recently = (gps.status() < AP_GPS::GPS_OK_FIX_2D) && // and it's lost now
+                        (gps.last_fix_time_ms() > 0) && // we have locked to GPS before
                         (now_ms - gps.last_fix_time_ms() < 5000); // but it wasn't that long ago (<5s)
 
         if ((auto_state.last_flying_ms > 0) && gps_lost_recently) {

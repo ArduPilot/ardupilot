@@ -80,7 +80,7 @@ bool Plane::suppress_throttle(void)
         return false;
     }
 
-    bool gps_movement = (gps.status() >= AP_GPS::GPS_OK_FIX_2D && gps.ground_speed() >= 5);
+    bool has_ground_movement = ahrs.groundspeed() >= 5;
     
     if ((control_mode == &mode_auto &&
          auto_state.takeoff_complete == false) ||
@@ -91,7 +91,7 @@ bool Plane::suppress_throttle(void)
             millis() - started_flying_ms > MAX(launch_duration_ms, 5000U) && // been flying >5s in any mode
             adjusted_relative_altitude_cm() > 500 && // are >5m above AGL/home
             labs(ahrs.pitch_sensor) < 3000 && // not high pitch, which happens when held before launch
-            gps_movement) { // definite gps movement
+            has_ground_movement) {
             // we're already flying, do not suppress the throttle. We can get
             // stuck in this condition if we reset a mission and cmd 1 is takeoff
             // but we're currently flying around below the takeoff altitude
@@ -114,7 +114,7 @@ bool Plane::suppress_throttle(void)
         return false;
     }
 
-    if (gps_movement) {
+    if (has_ground_movement) {
         // if we have an airspeed sensor, then check it too, and
         // require 5m/s. This prevents throttle up due to spiky GPS
         // groundspeed with bad GPS reception
@@ -546,6 +546,7 @@ void Plane::set_servos_controlled(void)
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
         }
     } else if (control_mode == &mode_stabilize ||
+               stall_state.is_recoverying() ||
                control_mode == &mode_training ||
                control_mode == &mode_acro ||
                control_mode == &mode_fbwa ||
@@ -777,6 +778,11 @@ void Plane::set_servos(void)
     // function
     SRV_Channels::cork();
     
+    if (plane.stall_state.is_stalled()) {
+        // servos are set by the mode
+        return;
+    }
+
     // this is to allow the failsafe module to deliberately crash 
     // the plane. Only used in extreme circumstances to meet the
     // OBC rules
@@ -853,28 +859,7 @@ void Plane::set_servos(void)
     }
 
     if (!arming.is_armed()) {
-        //Some ESCs get noisy (beep error msgs) if PWM == 0.
-        //This little segment aims to avoid this.
-        switch (arming.arming_required()) { 
-        case AP_Arming::Required::NO:
-            //keep existing behavior: do nothing to radio_out
-            //(don't disarm throttle channel even if AP_Arming class is)
-            break;
-
-        case AP_Arming::Required::YES_ZERO_PWM:
-            SRV_Channels::set_output_pwm(SRV_Channel::k_throttle, 0);
-            SRV_Channels::set_output_pwm(SRV_Channel::k_throttleLeft, 0);
-            SRV_Channels::set_output_pwm(SRV_Channel::k_throttleRight, 0);
-            break;
-
-        case AP_Arming::Required::YES_MIN_PWM:
-        default:
-            int8_t min_throttle = MAX(aparm.throttle_min.get(),0);
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, min_throttle);
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, min_throttle);
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, min_throttle);
-            break;
-        }
+        set_servos_throttle_while_disarmed();
     }
 
 #if HIL_SUPPORT
@@ -918,6 +903,31 @@ void Plane::set_servos(void)
     servos_output();
 }
 
+void Plane::set_servos_throttle_while_disarmed()
+{
+    //Some ESCs get noisy (beep error msgs) if PWM == 0.
+    //This little segment aims to avoid this.
+    switch (arming.arming_required()) {
+    case AP_Arming::Required::NO:
+        //keep existing behavior: do nothing to radio_out
+        //(don't disarm throttle channel even if AP_Arming class is)
+        break;
+
+    case AP_Arming::Required::YES_ZERO_PWM:
+        SRV_Channels::set_output_pwm(SRV_Channel::k_throttle, 0);
+        SRV_Channels::set_output_pwm(SRV_Channel::k_throttleLeft, 0);
+        SRV_Channels::set_output_pwm(SRV_Channel::k_throttleRight, 0);
+        break;
+
+    case AP_Arming::Required::YES_MIN_PWM:
+    default:
+        int8_t min_throttle = MAX(aparm.throttle_min.get(),0);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, min_throttle);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, min_throttle);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, min_throttle);
+        break;
+    }
+}
 
 /*
   run configured output mixer. This takes calculated servo_out values
@@ -942,7 +952,7 @@ void Plane::servos_output(void)
     servo_output_mixers();
 
     // support MANUAL_RCMASK
-    if (g2.manual_rc_mask.get() != 0 && control_mode == &mode_manual) {
+    if (g2.manual_rc_mask.get() != 0 && (control_mode == &mode_manual)) {
         SRV_Channels::copy_radio_in_out_mask(uint16_t(g2.manual_rc_mask.get()));
     }
 

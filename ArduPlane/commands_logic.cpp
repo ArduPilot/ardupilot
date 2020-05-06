@@ -473,15 +473,10 @@ void Plane::do_continue_and_change_alt(const AP_Mission::Mission_Command& cmd)
     if (!prev_WP_loc.same_latlon_as(next_WP_loc)) {
         // use waypoint based bearing, this is the usual case
         steer_state.hold_course_cd = -1;
-    } else if (AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
+    } else {
         // use gps ground course based bearing hold
         steer_state.hold_course_cd = -1;
-        bearing = AP::gps().ground_course_cd() * 0.01f;
-        next_WP_loc.offset_bearing(bearing, 1000); // push it out 1km
-    } else {
-        // use yaw based bearing hold
-        steer_state.hold_course_cd = wrap_360_cd(ahrs.yaw_sensor);
-        bearing = ahrs.yaw_sensor * 0.01f;
+        bearing = ahrs.ground_course();
         next_WP_loc.offset_bearing(bearing, 1000); // push it out 1km
     }
 
@@ -513,11 +508,12 @@ void Plane::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
 /********************************************************************************/
 bool Plane::verify_takeoff()
 {
+    const float ground_speed = ahrs.groundspeed();
+
     if (ahrs.yaw_initialised() && steer_state.hold_course_cd == -1) {
-        const float min_gps_speed = 5;
+        const float min_gound_speed = 5;
         if (auto_state.takeoff_speed_time_ms == 0 && 
-            gps.status() >= AP_GPS::GPS_OK_FIX_3D && 
-            gps.ground_speed() > min_gps_speed &&
+                ground_speed > min_gound_speed &&
             hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
             auto_state.takeoff_speed_time_ms = millis();
         }
@@ -529,12 +525,12 @@ bool Plane::verify_takeoff()
             // course. This keeps wings level until we are ready to
             // rotate, and also allows us to cope with arbitrary
             // compass errors for auto takeoff
-            float takeoff_course = wrap_PI(radians(gps.ground_course_cd()*0.01f)) - steer_state.locked_course_err;
+            float takeoff_course = wrap_PI(radians(ahrs.ground_course())) - steer_state.locked_course_err;
             takeoff_course = wrap_PI(takeoff_course);
             steer_state.hold_course_cd = wrap_360_cd(degrees(takeoff_course)*100);
             gcs().send_text(MAV_SEVERITY_INFO, "Holding course %d at %.1fm/s (%.1f)",
                               (int)steer_state.hold_course_cd,
-                              (double)gps.ground_speed(),
+                              (double)ground_speed,
                               (double)degrees(steer_state.locked_course_err));
         }
     }
@@ -548,7 +544,6 @@ bool Plane::verify_takeoff()
 
     // check for optional takeoff timeout
     if (takeoff_state.start_time_ms != 0 && g2.takeoff_timeout > 0) {
-        const float ground_speed = gps.ground_speed();
         const float takeoff_min_ground_speed = 4;
         if (!hal.util->get_soft_armed()) {
             return false;

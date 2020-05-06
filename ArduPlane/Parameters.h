@@ -576,6 +576,16 @@ public:
     AP_Int16 airbrake_slewrate;
 
     AP_Int8 flap_trim;
+
+    AP_Int8     stall_recovery_throttle1;
+    AP_Int8     stall_recovery_throttle2;
+    AP_Int8     stall_recovery_elevator;
+    AP_Int32    stall_recovery_duration1_max_ms;
+    AP_Int32    stall_recovery_duration2_max_ms;
+    AP_Int32    stall_recovery_duration1_min_ms;
+    AP_Int32    stall_recovery_duration2_min_ms;
+    AP_Int32    stall_recovery_algorithm1;
+    AP_Int32    stall_recovery_algorithm2;
 };
 
 extern const AP_Param::Info var_info[];

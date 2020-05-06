@@ -166,7 +166,7 @@ private:
     struct {
         // once landed, post some landing statistics to the GCS
         bool post_stats:1;
-
+        bool is_landed :1;
         bool has_aborted_due_to_slope_recalc:1;
     } type_slope_flags;
 

@@ -2,7 +2,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/include/mavlink/v2.0/checksum.h>
-#include <AP_GPS/AP_GPS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 
 extern const AP_HAL::HAL& hal;

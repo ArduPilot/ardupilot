@@ -287,8 +287,8 @@ void Plane::one_second_loop()
     // update home position if NOT armed and gps position has
     // changed. Update every 5s at most
     if (!arming.is_armed() &&
-        gps.last_message_time_ms() - last_home_update_ms > 5000 &&
-        gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+        gps.status() >= AP_GPS::GPS_OK_FIX_3D &&
+        gps.last_message_time_ms() - last_home_update_ms > 5000) {
             last_home_update_ms = gps.last_message_time_ms();
             update_home();
             
@@ -365,7 +365,7 @@ void Plane::update_GPS_50Hz(void)
 void Plane::update_GPS_10Hz(void)
 {
     static uint32_t last_gps_msg_ms;
-    if (gps.last_message_time_ms() != last_gps_msg_ms && gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+    if (gps.status() >= AP_GPS::GPS_OK_FIX_3D && gps.last_message_time_ms() != last_gps_msg_ms) {
         last_gps_msg_ms = gps.last_message_time_ms();
 
         if (ground_start_count > 1) {
@@ -511,6 +511,7 @@ void Plane::update_navigation()
         break;
 
     case Mode::Number::MANUAL:
+    case Mode::Number::STALLRECOVERY:
     case Mode::Number::STABILIZE:
     case Mode::Number::TRAINING:
     case Mode::Number::INITIALISING:

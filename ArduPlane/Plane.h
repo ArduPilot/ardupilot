@@ -149,6 +149,7 @@ public:
     friend class ModeGuided;
     friend class ModeInitializing;
     friend class ModeManual;
+    friend class ModeStallRecovery;
     friend class ModeQStabilize;
     friend class ModeQHover;
     friend class ModeQLoiter;
@@ -274,6 +275,7 @@ private:
     ModeGuided mode_guided;
     ModeInitializing mode_initializing;
     ModeManual mode_manual;
+    ModeStallRecovery mode_stallrecovery;
     ModeQStabilize mode_qstabilize;
     ModeQHover mode_qhover;
     ModeQLoiter mode_qloiter;
@@ -525,6 +527,19 @@ private:
         float forced_throttle;
         uint32_t last_forced_throttle_ms;
     } guided_state;
+
+    enum STALLED_STATE {
+        UNSTALLED,
+        RELAX_WINGS_FULL_THR_PITCH_DOWN,
+        LEVEL_WINGS_GAIN_AIRSPEED,
+    };
+
+    struct {
+        STALLED_STATE state = STALLED_STATE::UNSTALLED;
+        uint32_t start_ms;
+        bool is_stalled() { return state == STALLED_STATE::RELAX_WINGS_FULL_THR_PITCH_DOWN; }
+        bool is_recoverying() { return state == STALLED_STATE::LEVEL_WINGS_GAIN_AIRSPEED; }
+    } stall_state;
 
 #if LANDING_GEAR_ENABLED == ENABLED
     // landing gear state
@@ -942,6 +957,7 @@ private:
     void stabilize();
     void set_servos_idle(void);
     void set_servos();
+    void set_servos_throttle_while_disarmed();
     void set_servos_manual_passthrough(void);
     void set_servos_controlled(void);
     void set_servos_old_elevons(void);

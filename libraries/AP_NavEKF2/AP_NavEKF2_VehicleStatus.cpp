@@ -269,7 +269,7 @@ void NavEKF2_core::calcGpsGoodForFlight(void)
 
     // get the receivers reported speed accuracy
     float gpsSpdAccRaw;
-    if (!AP::gps().speed_accuracy(gpsSpdAccRaw)) {
+    if (AP::gps().status() < AP_GPS::GPS_OK_FIX_2D ||!AP::gps().speed_accuracy(gpsSpdAccRaw)) {
         gpsSpdAccRaw = 0.0f;
     }
 

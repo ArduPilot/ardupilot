@@ -52,6 +52,7 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
         // APM does in any mode, as that is defined as "system finds its own goal
         // positions", which APM does not currently do
         break;
+    case Mode::Number::STALLRECOVERY:
     case Mode::Number::INITIALISING:
         break;
     }
@@ -60,7 +61,7 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
         _base_mode |= MAV_MODE_FLAG_STABILIZE_ENABLED;        
     }
 
-    if (plane.control_mode != &plane.mode_manual && plane.control_mode != &plane.mode_initializing) {
+    if (plane.control_mode != &plane.mode_manual && !plane.stall_state.is_stalled() && plane.control_mode != &plane.mode_initializing) {
         // stabiliser of some form is enabled
         _base_mode |= MAV_MODE_FLAG_STABILIZE_ENABLED;
     }
@@ -707,7 +708,7 @@ void GCS_MAVLINK_Plane::packetReceived(const mavlink_status_t &status,
 
 bool GCS_MAVLINK_Plane::set_home_to_current_location(bool _lock)
 {
-    if (!plane.set_home_persistently(AP::gps().location())) {
+    if (AP::gps().status() < AP_GPS::GPS_OK_FIX_3D || !plane.set_home_persistently(AP::gps().location())) {
         return false;
     }
     if (_lock) {
@@ -922,7 +923,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
         // param6 : longitude
         // param7 : altitude (absolute)
         if (is_equal(packet.param1,1.0f)) {
-            if (!plane.set_home_persistently(AP::gps().location())) {
+            if (AP::gps().status() < AP_GPS::GPS_OK_FIX_3D || !plane.set_home_persistently(AP::gps().location())) {
                 return MAV_RESULT_FAILED;
             }
             AP::ahrs().lock_home();

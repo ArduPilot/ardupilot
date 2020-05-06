@@ -61,7 +61,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_GeodesicGrid.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_GPS/AP_GPS.h>
 #include <GCS_MAVLink/GCS.h>
 
 #define FIELD_RADIUS_MIN 150

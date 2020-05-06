@@ -337,6 +337,21 @@ public:
         return groundspeed_vector().length();
     }
 
+    // return ground speed estimate in centimeters/second. Used by ground vehicles.
+    int32_t groundspeed_cm(void) {
+        return groundspeed() * 100;
+    }
+
+    // return ground course estimate in degrees from 0 to 360
+    float ground_course(void) {
+        return wrap_360(degrees(groundspeed_vector().angle()));
+    }
+
+    // return ground course estimate in centidegrees
+    int32_t ground_course_cd(void) {
+        return ground_course() * 100;
+    }
+
     // return true if we will use compass for yaw
     virtual bool use_compass(void) {
         return _compass && _compass->use_for_yaw();

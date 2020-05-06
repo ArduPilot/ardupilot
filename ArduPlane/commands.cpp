@@ -122,7 +122,7 @@ void Plane::update_home()
     }
     if (ahrs.home_is_set() && !ahrs.home_is_locked()) {
         Location loc;
-        if(ahrs.get_position(loc) && gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+        if(gps.status() >= AP_GPS::GPS_OK_FIX_3D && ahrs.get_position(loc)) {
             // we take the altitude directly from the GPS as we are
             // about to reset the baro calibration. We can't use AHRS
             // altitude or we can end up perpetuating a bias in

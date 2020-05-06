@@ -1510,6 +1510,7 @@ bool QuadPlane::assistance_needed(float aspeed)
 void QuadPlane::update_transition(void)
 {
     if (plane.control_mode == &plane.mode_manual ||
+        plane.control_mode == &plane.mode_stallrecovery ||
         plane.control_mode == &plane.mode_acro ||
         plane.control_mode == &plane.mode_training) {
         // in manual modes quad motors are always off

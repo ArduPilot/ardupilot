@@ -19,7 +19,7 @@ float QuadPlane::tilt_max_change(bool up)
     }
     if (tilt.tilt_type != TILT_TYPE_BINARY && !up) {
         bool fast_tilt = false;
-        if (plane.control_mode == &plane.mode_manual) {
+        if (plane.control_mode == &plane.mode_manual || plane.control_mode == &plane.mode_stallrecovery) {
             fast_tilt = true;
         }
         if (hal.util->get_soft_armed() && !in_vtol_mode() && !assisted_flight) {

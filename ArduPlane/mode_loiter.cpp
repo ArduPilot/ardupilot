@@ -52,7 +52,7 @@ bool ModeLoiter::isHeadingLinedUp_cd(const int32_t bearing_cd)
     // Tolerance is initially 10 degrees and grows at 10 degrees for each loiter circle completed.
 
     // get current heading.
-    const int32_t heading_cd = plane.gps.ground_course_cd();
+    const int32_t heading_cd = plane.ahrs.ground_course_cd();
 
     const int32_t heading_err_cd = wrap_180_cd(bearing_cd - heading_cd);
 
