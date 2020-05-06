@@ -580,12 +580,15 @@ public:
     AP_Int8     stall_recovery_throttle1;
     AP_Int8     stall_recovery_throttle2;
     AP_Int8     stall_recovery_elevator;
-    AP_Int32    stall_recovery_duration1_max_ms;
-    AP_Int32    stall_recovery_duration2_max_ms;
-    AP_Int32    stall_recovery_duration1_min_ms;
-    AP_Int32    stall_recovery_duration2_min_ms;
+    AP_Float    stall_recovery_duration1_max;
+    AP_Float    stall_recovery_duration2_max;
+    AP_Float    stall_recovery_duration1_min;
+    AP_Float    stall_recovery_duration2_min;
     AP_Int32    stall_recovery_algorithm1;
     AP_Int32    stall_recovery_algorithm2;
+    AP_Float    stall_recovery_sink_rate;
+    AP_Float    stall_recovery_spin_rate;
+
 };
 
 extern const AP_Param::Info var_info[];

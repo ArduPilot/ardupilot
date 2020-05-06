@@ -10,7 +10,7 @@ bool ModeStallRecovery::_enter()
     plane.stall_state.state = Plane::STALLED_STATE::RELAX_WINGS_FULL_THR_PITCH_DOWN;
     plane.stall_state.start_ms = AP_HAL::millis();
 
-    gcs().send_text(MAV_SEVERITY_INFO, "Stall recovery engaged!");
+    gcs().send_text(MAV_SEVERITY_INFO, "%sstart", gcsStrHeader);
 
     return true;
 }
@@ -18,6 +18,7 @@ bool ModeStallRecovery::_enter()
 void ModeStallRecovery::_exit()
 {
     plane.stall_state.state = Plane::STALLED_STATE::UNSTALLED;
+    gcs().send_text(MAV_SEVERITY_INFO, "%sdone", gcsStrHeader);
 }
 
 void ModeStallRecovery::update()
@@ -25,7 +26,6 @@ void ModeStallRecovery::update()
     const uint32_t now_ms = AP_HAL::millis();
     const uint32_t duration_ms = now_ms - plane.stall_state.start_ms;
 
-    bool timed_out = false;
     bool stage_complete = false;
     int32_t min_ms, max_ms;
 
@@ -33,13 +33,13 @@ void ModeStallRecovery::update()
     // determine timeout
     switch (plane.stall_state.state) {
     case Plane::STALLED_STATE::RELAX_WINGS_FULL_THR_PITCH_DOWN:
-        min_ms = plane.g2.stall_recovery_duration1_min_ms;
-        max_ms = plane.g2.stall_recovery_duration1_max_ms;
+        min_ms = plane.g2.stall_recovery_duration1_min * 1000;
+        max_ms = plane.g2.stall_recovery_duration1_max * 1000;
         break;
 
     case Plane::STALLED_STATE::LEVEL_WINGS_GAIN_AIRSPEED:
-        min_ms = plane.g2.stall_recovery_duration2_min_ms;
-        max_ms = plane.g2.stall_recovery_duration2_max_ms;
+        min_ms = plane.g2.stall_recovery_duration2_min * 1000;
+        max_ms = plane.g2.stall_recovery_duration2_max * 1000;
         break;
 
     default:
@@ -48,14 +48,22 @@ void ModeStallRecovery::update()
         max_ms = -1;
         break;
     }
-    if ((min_ms >= 0) && (duration_ms < (uint32_t)min_ms)) {
-        // during minimum time, we never timeout - force staying in this mode for a minimum duration
-        timed_out = false;
 
-    } else if ((max_ms >= 0) && (duration_ms >= (uint32_t)max_ms)) {
-        // when max timeout is reached, we've timed out
-        timed_out = true;
+    // sanity check params so we never get stuck here
+    if (min_ms > max_ms) {
+        min_ms = 1000;
+        max_ms = 5000;
+    } else {
+        min_ms = constrain_int32(min_ms, -1, max_ms);
+        max_ms = constrain_int32(max_ms, min_ms, 30000);
     }
+
+
+    // during minimum time, we never timeout - force staying in this mode for a minimum duration
+    const bool allow_next_state = (min_ms <= 0) || (duration_ms >= (uint32_t)min_ms);
+
+    // when max timeout is reached, we've timed out
+    const bool timed_out = (max_ms >= 0) && (duration_ms >= (uint32_t)max_ms);
 
 
     // determine state
@@ -63,7 +71,7 @@ void ModeStallRecovery::update()
     case Plane::STALLED_STATE::RELAX_WINGS_FULL_THR_PITCH_DOWN:
         stage_complete = state_complete_algorithm();
 
-        if (timed_out || stage_complete) {
+        if (allow_next_state && (timed_out || stage_complete)) {
             plane.stall_state.start_ms = now_ms;
             plane.stall_state.state = Plane::STALLED_STATE::LEVEL_WINGS_GAIN_AIRSPEED;
         }
@@ -72,7 +80,8 @@ void ModeStallRecovery::update()
     case Plane::STALLED_STATE::LEVEL_WINGS_GAIN_AIRSPEED:
         stage_complete = state_complete_algorithm();
 
-        if (timed_out || stage_complete) {
+        if (allow_next_state && (timed_out || stage_complete)) {
+            plane.stall_state.start_ms = now_ms;
             plane.stall_state.state = Plane::STALLED_STATE::UNSTALLED;
         }
         break;
@@ -81,27 +90,36 @@ void ModeStallRecovery::update()
         break;
     } // switch _state
 
+    if (timed_out) {
+        gcs().send_text(MAV_SEVERITY_INFO, "%stimed out", gcsStrHeader);
+    }
+
 
     // we've successfully recovered from the stall or have been doing it for too long and timed-out
     if (plane.stall_state.state == Plane::STALLED_STATE::UNSTALLED) {
         const bool mode_success = plane.set_mode(*plane.previous_mode, ModeReason::STALL_RECOVERY_RESUME);
-        const char* stallRecoveryDonestr = "Stall recovery done,";
         if (mode_success) {
-            gcs().send_text(MAV_SEVERITY_INFO, "%s resuming mode %s", stallRecoveryDonestr, plane.control_mode->name());
+            gcs().send_text(MAV_SEVERITY_INFO, "%sresuming mode %s", gcsStrHeader, plane.control_mode->name());
         } else {
-            gcs().send_text(MAV_SEVERITY_INFO, "%s failed switch to %s", stallRecoveryDonestr, plane.previous_mode->name());
+            gcs().send_text(MAV_SEVERITY_INFO, "%sfailed switch to %s", gcsStrHeader, plane.previous_mode->name());
             plane.set_mode(plane.mode_rtl, ModeReason::STALL_RECOVERY_RESUME_FAIL);
         }
         return;
     }
+}
 
-
+bool ModeStallRecovery::has_servo_overrides()
+{
     // apply servo behavior
     if (plane.stall_state.is_stalled()) {
         behavior_stalled();
-    } else { //if (plane.stall_state.is_recoverying()()) {
+        return true;
+
+    } else if (plane.stall_state.is_recoverying()) {
         behavior_level_wings();
-    } // switch _state
+        return true;
+    }
+    return false;
 }
 
 
@@ -112,34 +130,61 @@ bool ModeStallRecovery::state_complete_algorithm()
     float airspeed = -1.0f;
     plane.ahrs.airspeed_estimate(airspeed);
 
-
     switch (plane.stall_state.state) {
     case Plane::STALLED_STATE::RELAX_WINGS_FULL_THR_PITCH_DOWN:
         if (plane.g2.stall_recovery_algorithm1 & 0x01) {
-            stage_complete |= (airspeed > 0) && (airspeed >= plane.aparm.airspeed_min);
+            if ((airspeed > 0) && (plane.aparm.airspeed_min > 0) && (airspeed >= plane.aparm.airspeed_min)) {
+                stage_complete = true;
+                gcs().send_text(MAV_SEVERITY_INFO, "%sA arspd %.1f >= %d", gcsStrHeader, (double)airspeed, plane.aparm.airspeed_min.get());
+            }
         }
         if (plane.g2.stall_recovery_algorithm1 & 0x02) {
-            stage_complete |=  plane.ahrs.get_gyro().z < 1;
+            const float threshold = plane.g2.stall_recovery_spin_rate;
+            const float spin_rate = fabsf(degrees(plane.ahrs.get_gyro().z));
+            if ((threshold > 0) && (spin_rate < threshold)) {
+                stage_complete = true;
+                gcs().send_text(MAV_SEVERITY_INFO, "%sB spin %.1f < %.1f", gcsStrHeader, (double)spin_rate, (double)threshold);
+            }
         }
         if (plane.g2.stall_recovery_algorithm1 & 0x04) {
-            stage_complete |=  plane.auto_state.sink_rate < 10;
+            const float threshold = plane.g2.stall_recovery_sink_rate;
+            if ((threshold > 0) && (plane.auto_state.sink_rate < threshold)) {
+                stage_complete = true;
+                gcs().send_text(MAV_SEVERITY_INFO, "%sC sink %.1f < %.1f", gcsStrHeader, (double)plane.auto_state.sink_rate, (double)threshold);
+            }
         }
         break;
 
     case Plane::STALLED_STATE::LEVEL_WINGS_GAIN_AIRSPEED:
+        {
+        const float airspeed_cruise = plane.aparm.airspeed_cruise_cm * 0.01f;
         if (plane.g2.stall_recovery_algorithm2 & 0x01) {
-            stage_complete |= (airspeed > 0) && (airspeed >= plane.aparm.airspeed_cruise_cm * 0.01f);
+            const float airspeed_cruise_thresh = airspeed_cruise * 0.95f;
+            if ((airspeed > 0) && (airspeed_cruise_thresh > 0) && (airspeed >= airspeed_cruise_thresh)) {
+                stage_complete = true;
+                gcs().send_text(MAV_SEVERITY_INFO, "%sA arspd %.1f >= %.1f", gcsStrHeader, (double)airspeed, (double)airspeed_cruise_thresh);
+            }
         }
         if (plane.g2.stall_recovery_algorithm2 & 0x02) {
-            stage_complete |= (airspeed > 0) && (airspeed >= plane.aparm.airspeed_cruise_cm * 0.01f * 0.95);
+            const float airspeed_cruise_thresh = airspeed_cruise * 0.95f;
+            if ((airspeed > 0) && (airspeed_cruise_thresh > 0) && (airspeed >= airspeed_cruise_thresh)) {
+                stage_complete = true;
+                gcs().send_text(MAV_SEVERITY_INFO, "%sB arspd %.1f >= %.1f", gcsStrHeader, (double)airspeed, (double)airspeed_cruise_thresh);
+            }
         }
         if (plane.g2.stall_recovery_algorithm2 & 0x04) {
-            stage_complete |= (airspeed > 0) && (airspeed >= plane.aparm.airspeed_cruise_cm * 0.01f * 0.90);
+            const float airspeed_cruise_thresh = airspeed_cruise * 0.90f;
+            if ((airspeed > 0) && (airspeed_cruise_thresh > 0) && (airspeed >= airspeed_cruise_thresh)) {
+                stage_complete = true;
+                gcs().send_text(MAV_SEVERITY_INFO, "%sC arspd %.1f >= %.1f", gcsStrHeader, (double)airspeed, (double)airspeed_cruise_thresh);
+            }
+        }
         }
         break;
 
     default:
         stage_complete = true;
+        gcs().send_text(MAV_SEVERITY_INFO, "%sC unknown state %d", gcsStrHeader, (int32_t)plane.stall_state.state);
         break;
     }
 

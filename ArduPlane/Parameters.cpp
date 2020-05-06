@@ -1286,23 +1286,23 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("STALL_ELEV", 27, ParametersG2, stall_recovery_elevator, -10),
 
-    // @Param: STALL_DUR1_MS
+    // @Param: STALL_DUR1
     // @DisplayName: Stall recovery duration1 max
     // @Description: The maximum duration that we'll attempt to recover from a stall before leveling wings. Use -1 to never timeout.
-    // @Units: ms
+    // @Units: s
     // @Range: -1, 30000
     // @Increment: 100
     // @User: Advanced
-    AP_GROUPINFO("STALL_DUR1_MS", 28, ParametersG2, stall_recovery_duration1_max_ms, 10000),
+    AP_GROUPINFO("STALL_DUR1MAX", 28, ParametersG2, stall_recovery_duration1_max, 10.0f),
 
-    // @Param: STALL_DUR2_MS
+    // @Param: STALL_DUR2
     // @DisplayName: Stall recovery duration2 max
     // @Description: The maximum duration that we'll attempt to level wings after a stall to gain airspeed before resuming previous mode. Use -1 to never timeout.
-    // @Units: ms
-    // @Range: -1, 30000
-    // @Increment: 100
+    // @Units: s
+    // @Range: -1, 30
+    // @Increment: 0.1
     // @User: Advanced
-    AP_GROUPINFO("STALL_DUR2_MS", 29, ParametersG2, stall_recovery_duration2_max_ms, 10000),
+    AP_GROUPINFO("STALL_DUR2MAX", 29, ParametersG2, stall_recovery_duration2_max, 10.0f),
 
     // @Param: STALL_ALGORITHM1
     // @DisplayName: Stall recovery algorithm1
@@ -1316,12 +1316,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("STALL_ALGORITHM2", 31, ParametersG2, stall_recovery_algorithm2, 0),
 
-//    // @Param: STALL_SPIN_RATE
-//    // @DisplayName: Stall recovery
-//    // @Description: Stall recovery
-//    // @User: Advanced
-//    AP_GROUPINFO("STALL_SPIN_RATE", 32, ParametersG2, stall_recovery_spingRate_threshold, 0),
-
     // @Param: STALL_THR2
     // @DisplayName: Stall recovery throttle
     // @Description: The throttle to apply when trying to recovery from a stall while leveling the wings. Use -1 for auto controlled throttle, otherwise its a fixed percent.
@@ -1329,26 +1323,39 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Range: 0 100
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("STALL_THR2", 33, ParametersG2, stall_recovery_throttle2, 100),
+    AP_GROUPINFO("STALL_THR2", 32, ParametersG2, stall_recovery_throttle2, 100),
 
-    // @Param: STALL_DUR1MIN_MS
+    // @Param: STALL_DUR1MIN
     // @DisplayName: Stall recovery duration1 min
     // @Description: The minimum duration that we'll force a stall recovery before attempting to level the wings. Use -1 to disable.
-    // @Units: ms
-    // @Range: -1, 30000
-    // @Increment: 100
+    // @Units: s
+    // @Range: -1, 30
+    // @Increment: .1
     // @User: Advanced
-    AP_GROUPINFO("STALL_DUR2_MS", 34, ParametersG2, stall_recovery_duration1_min_ms, 2000),
+    AP_GROUPINFO("STALL_DUR1MIN", 33, ParametersG2, stall_recovery_duration1_min, 2.0f),
 
-    // @Param: STALL_DUR2MIN_MS
+    // @Param: STALL_DUR2MIN
     // @DisplayName: Stall recovery duration2 min
     // @Description: The minimum duration that we'll force attempt to level wings after a stall before we allow a timeout to happen. Use -1 to disable.
-    // @Units: ms
-    // @Range: -1, 30000
-    // @Increment: 100
+    // @Units: s
+    // @Range: -1, 30
+    // @Increment: .100
     // @User: Advanced
-    AP_GROUPINFO("STALL_DUR2_MS", 35, ParametersG2, stall_recovery_duration2_min_ms, 2000),
+    AP_GROUPINFO("STALL_DUR2MIN", 34, ParametersG2, stall_recovery_duration2_min, 2.0f),
 
+    // @Param: STALL_SPIN_RATE
+    // @DisplayName: Stall recovery
+    // @Description: Stall recovery
+    // @User: Advanced
+    // @Units: deg/s
+    AP_GROUPINFO("STALL_SPIN_RATE", 35, ParametersG2, stall_recovery_spin_rate, -1),
+
+    // @Param: STALL_SINK_RATE
+    // @DisplayName: Stall recovery
+    // @Description: Stall recovery
+    // @User: Advanced
+    // @Units: m/s
+    AP_GROUPINFO("STALL_SINK_RATE", 36, ParametersG2, stall_recovery_sink_rate, 0),
 
     AP_GROUPEND
 };

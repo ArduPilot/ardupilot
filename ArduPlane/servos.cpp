@@ -805,6 +805,12 @@ void Plane::set_servos(void)
         return;
     }
 
+    if (control_mode->has_servo_overrides()) {
+        // special handling for stall recovery
+        servos_output();
+        return;
+    }
+
     /*
       see if we are doing ground steering.
      */
@@ -952,7 +958,7 @@ void Plane::servos_output(void)
     servo_output_mixers();
 
     // support MANUAL_RCMASK
-    if (g2.manual_rc_mask.get() != 0 && (control_mode == &mode_manual)) {
+    if (g2.manual_rc_mask.get() != 0 && control_mode == &mode_manual) {
         SRV_Channels::copy_radio_in_out_mask(uint16_t(g2.manual_rc_mask.get()));
     }
 
