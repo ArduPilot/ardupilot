@@ -193,17 +193,17 @@ private:
         float	last_pressure;
         float   filtered_pressure;
         float	corrected_pressure;
-        bool	healthy:1;
-        bool	hil_set:1;
         float   hil_pressure;
         uint32_t last_update_ms;
         bool use_zero_offset;
+        bool	healthy;
+        bool	hil_set;
 
         // state of runtime calibration
         struct {
             uint32_t start_ms;
-            uint16_t count;
             float    sum;
+            uint16_t count;
             uint16_t read_count;
         } cal;
 
