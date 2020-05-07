@@ -147,36 +147,47 @@ bool ModeStallRecovery::is_recovered_early()
 
 void ModeStallRecovery::set_servo_behavior()
 {
+    int16_t throttle = 0;
+
     if (plane.is_stalled) {
         SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, 0);
         SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, 0);
 
-        const int16_t scaled_elev = constrain_int16(((int16_t)plane.g2.stall_recovery_elevator) * 45, -4500, 4500);
+        const int16_t scaled_elev = constrain_int16(plane.g2.stall_recovery_elevator,-100,100) * 45; // convert +/- percent to +/-4500
         SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, scaled_elev);
 
+        throttle = plane.g2.stall_recovery_throttle1;
         plane.auto_throttle_mode = false;
-        float throttle = plane.g2.stall_recovery_throttle1;
-
-        if (plane.auto_state.last_flying_ms == 0) {
-            // if we've never flown, don't allow throttle. This
-            // inhibits the throttle while on the ground testing the feature
-            throttle = 0;
-        }
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
 
     } else {
-        if (plane.g2.stall_recovery_throttle2 < 0) {
-            plane.auto_throttle_mode = true;
-            plane.calc_throttle();
-        } else {
-            plane.auto_throttle_mode = false;
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.g2.stall_recovery_throttle2);
-        }
-
         // hold wings level
         plane.nav_roll_cd = 0;
         plane.nav_pitch_cd = 0;
+
+        // assign throttle. Negative means auto-throttle
+        throttle = plane.g2.stall_recovery_throttle2;
+        if (throttle < 0) {
+            plane.auto_throttle_mode = true;
+        } else {
+            plane.auto_throttle_mode = false;
+        }
     }
+
+    // set throttle
+    if (plane.auto_state.last_flying_ms == 0) {
+        // if we've never flown, don't allow throttle. This inhibits
+        // the throttle while on the ground testing the feature
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
+
+    } else if (plane.auto_throttle_mode) {
+        plane.calc_throttle();
+
+    } else {
+        throttle = constrain_int16(throttle, 0, 100);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
+    }
+
+
 }
 
 
