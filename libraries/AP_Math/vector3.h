@@ -143,6 +143,11 @@ public:
     // dot product
     T operator *(const Vector3<T> &v) const;
 
+    // dot product for Lua
+    T dot(const Vector3<T> &v) const {
+        return *this * v;
+    }
+    
     // multiply a row vector by a matrix, to give a row vector
     Vector3<T> operator *(const Matrix3<T> &m) const;
 
@@ -152,6 +157,16 @@ public:
     // cross product
     Vector3<T> operator %(const Vector3<T> &v) const;
 
+    // cross product for Lua
+    Vector3<T> cross(const Vector3<T> &v) const {
+        return *this % v;
+    }
+
+    // scale a vector3
+    Vector3<T> scale(const float v) const {
+        return *this * v;
+    }
+    
     // computes the angle between this vector and another vector
     float angle(const Vector3<T> &v2) const;
 
