@@ -150,6 +150,3 @@ define BOARD_PWM_COUNT_DEFAULT 8
 define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
-
-#eliminate EKF2 to save flash size
-define HAL_NAVEKF2_AVAILABLE 0

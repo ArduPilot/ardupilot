@@ -104,7 +104,4 @@ define HAL_GPIO_A_LED_PIN 57
 #To complementary channels work we define this
 define STM32_PWM_USE_ADVANCED TRUE
 
-#eliminate EKF2 to save flash size
-define HAL_NAVEKF2_AVAILABLE 0
-
 define BOARD_PWM_COUNT_DEFAULT 6
