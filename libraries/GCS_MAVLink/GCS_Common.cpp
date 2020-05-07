@@ -2158,8 +2158,34 @@ void GCS_MAVLINK::send_local_position() const
         velocity.z);
 }
 
-void GCS_MAVLINK::send_planck_stateinfo() const
+void GCS::send_planck_stateinfo()
 {
+    for(uint8_t i=0; i<num_gcs(); i++) {
+        chan(i)->send_planck_stateinfo();
+    }
+}
+
+void GCS_MAVLINK::send_planck_stateinfo()
+{
+    //Sanity check
+    uint16_t now = AP_HAL::millis16();
+    if(now <= last_planck_stateinfo_sent_ms) {
+        last_planck_stateinfo_sent_ms = now;
+        return;
+    }
+
+    //Don't send if its too soon
+    uint16_t interval = get_interval_for_stream(STREAM_PLANCK);
+    uint16_t dt = now - last_planck_stateinfo_sent_ms;
+    if((interval == 0) || (dt < (interval - interval/10))) { //within 10%
+        return;
+    }
+
+    //Make sure theres space
+    if(!HAVE_PAYLOAD_SPACE(chan,PLANCK_STATEINFO)) {
+        return;
+    }
+
     uint8_t status = 0x00;
     if(AP::arming().is_armed())
       status |= 0x01;
@@ -2207,6 +2233,8 @@ void GCS_MAVLINK::send_planck_stateinfo() const
             alt_above_terrain_cm = alt_above_home_cm;
         }
     }
+
+    last_planck_stateinfo_sent_ms = now;
 
     mavlink_msg_planck_stateinfo_send(
       chan,
@@ -4556,8 +4584,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     }
 
     case MSG_PLANCK_STATEINFO: {
-        CHECK_PAYLOAD_SIZE(PLANCK_STATEINFO);
-        send_planck_stateinfo();
+        //Don't do anything, as this is run in its own task
         break;
     }
 
