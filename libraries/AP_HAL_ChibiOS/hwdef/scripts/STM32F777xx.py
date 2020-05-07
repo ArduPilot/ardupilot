@@ -37,6 +37,8 @@ mcu = {
         (0x20000000, 128, 1), # DTCM, DMA
     ],
 
+    'EXPECTED_CLOCK' : 216000000,
+
     # this MCU has M7 instructions and hardware double precision
     'CORTEX'    : 'cortex-m7',
     'CPU_FLAGS' : '-mcpu=cortex-m7 -mfpu=fpv5-d16 -mfloat-abi=hard',
