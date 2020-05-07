@@ -104,14 +104,14 @@ bool ModeStallRecovery::is_recovered_early()
         if (plane.g2.stall_recovery_algorithm1 & 0x02) {
             const float threshold = plane.g2.stall_recovery_spin_rate;
             const float spin_rate = fabsf(degrees(plane.ahrs.get_gyro().z));
-            if ((threshold > 0) && (spin_rate < threshold)) {
+            if (!is_zero(threshold) && (spin_rate < threshold)) {
                 is_recovered = true;
                 gcs().send_text(MAV_SEVERITY_INFO, "%sspin %.1f < %.1f", gcsStrHeader, (double)spin_rate, (double)threshold);
             }
         }
         if (plane.g2.stall_recovery_algorithm1 & 0x04) {
             const float threshold = plane.g2.stall_recovery_sink_rate;
-            if ((threshold > 0) && (plane.auto_state.sink_rate < threshold)) {
+            if (!is_zero(threshold) && (plane.auto_state.sink_rate < threshold)) {
                 is_recovered = true;
                 gcs().send_text(MAV_SEVERITY_INFO, "%ssink %.1f < %.1f", gcsStrHeader, (double)plane.auto_state.sink_rate, (double)threshold);
             }
@@ -155,7 +155,14 @@ void ModeStallRecovery::set_servo_behavior()
         SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, scaled_elev);
 
         plane.auto_throttle_mode = false;
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.g2.stall_recovery_throttle1);
+        float throttle = plane.g2.stall_recovery_throttle1;
+
+        if (plane.auto_state.last_flying_ms == 0) {
+            // if we've never flown, don't allow throttle. This
+            // inhibits the throttle while on the ground testing the feature
+            throttle = 0;
+        }
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
 
     } else {
         if (plane.g2.stall_recovery_throttle2 < 0) {
