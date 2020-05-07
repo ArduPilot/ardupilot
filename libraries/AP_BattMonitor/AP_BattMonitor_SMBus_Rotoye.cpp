@@ -48,7 +48,7 @@ void AP_BattMonitor_SMBus_Rotoye::timer()
 {
 
     uint16_t data;
-    uint32_t tnow = AP_HAL::micros();
+    const uint32_t tnow = AP_HAL::micros();
 
     // read voltage (V)
     if (read_word(BATTMONITOR_SMBUS_VOLTAGE, data)) {
