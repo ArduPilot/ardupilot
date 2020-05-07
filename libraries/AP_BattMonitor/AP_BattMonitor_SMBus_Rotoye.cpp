@@ -89,8 +89,9 @@ void AP_BattMonitor_SMBus_Rotoye::timer()
     read_serial_number();
 }
 
-// read_block - returns number of characters read if successful, zero if unsuccessful
-uint8_t AP_BattMonitor_SMBus_Rotoye::read_block(uint8_t reg, uint8_t* data, bool append_zero) const
+// This could be used for Batmon features like safety flags
+
+/*uint8_t AP_BattMonitor_SMBus_Rotoye::read_block(uint8_t reg, uint8_t* data, bool append_zero) const
 {
     // get length
     uint8_t bufflen;
@@ -131,4 +132,4 @@ uint8_t AP_BattMonitor_SMBus_Rotoye::read_block(uint8_t reg, uint8_t* data, bool
 
     // return success
     return bufflen;
-}
+}*/
