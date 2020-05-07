@@ -40,14 +40,12 @@ AP_BattMonitor_SMBus_Rotoye::AP_BattMonitor_SMBus_Rotoye(AP_BattMonitor &mon,
                                                    AP_BattMonitor_Params &params,
                                                    AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
     : AP_BattMonitor_SMBus(mon, mon_state, params, std::move(dev))
-{}
+{
+    _pec_supported = true;
+}
 
 void AP_BattMonitor_SMBus_Rotoye::timer()
 {
-	// check if PEC is supported
-    if (!check_pec_support()) {
-        return;
-    }
 
     uint16_t data;
     uint32_t tnow = AP_HAL::micros();
@@ -134,29 +132,3 @@ uint8_t AP_BattMonitor_SMBus_Rotoye::read_block(uint8_t reg, uint8_t* data, bool
     // return success
     return bufflen;
 }
-
-// check if PEC supported with the version value in SpecificationInfo() function
-// returns true once PEC is confirmed as working or not working
-bool AP_BattMonitor_SMBus_Rotoye::check_pec_support()
-{
-    // exit immediately if we have already confirmed pec support
-    if (_pec_confirmed) {
-        return true;
-    }
-
-    // check manufacturer name
-    uint8_t buff[SMBUS_READ_BLOCK_MAXIMUM_TRANSFER + 1];
-    if (read_block(BATTMONITOR_SMBUS_MANUFACTURE_NAME, buff, true)) {
-        if (strcmp((char*)buff, "Rotoye") == 0) {
-            _pec_supported = false;
-            _pec_confirmed = true;
-            return true;
-        }
-    }
-
-    // assume all other batteries support PEC
-	_pec_supported = true;
-	_pec_confirmed = true;
-	return true;
-}
-

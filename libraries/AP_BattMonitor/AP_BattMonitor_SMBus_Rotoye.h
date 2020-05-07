@@ -20,12 +20,7 @@ private:
 
     void timer(void) override;
 
-    // check if PEC supported with the version value in SpecificationInfo() function
-    // returns true once PEC is confirmed as working or not working
-    bool check_pec_support();
-
     // read_block - returns number of characters read if successful, zero if unsuccessful
     uint8_t read_block(uint8_t reg, uint8_t* data, bool append_zero) const;
 
-    uint8_t _pec_confirmed; // count of the number of times PEC has been confirmed as working
 };
