@@ -11,8 +11,5 @@ FLASH_SIZE_KB 1024
 # added to the build
 define HAL_MINIMIZE_FEATURES 1
 
-#eliminate EKF2 to save flash size
-define HAL_NAVEKF2_AVAILABLE 0
-
 # we don't have a flash page spare to write parameters to:
 undef STORAGE_FLASH_PAGE
