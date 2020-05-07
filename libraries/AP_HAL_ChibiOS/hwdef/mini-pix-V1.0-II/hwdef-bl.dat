@@ -5,7 +5,7 @@
 MCU STM32F4xx STM32F405xx
 
 # board ID for firmware load
-APJ_BOARD_ID 3
+APJ_BOARD_ID 1016
 
 # crystal frequency
 OSCILLATOR_HZ 24000000
@@ -25,8 +25,7 @@ PE12 LED_ACTIVITY  OUTPUT LOW
 define HAL_LED_ON 0
 
 # the location where the bootloader will put the firmware
-FLASH_BOOTLOADER_LOAD_KB 16
-
+FLASH_BOOTLOADER_LOAD_KB 64
 
 # order of UARTs (and USB)
 SERIAL_ORDER OTG1
@@ -41,4 +40,3 @@ define HAL_STORAGE_SIZE 16384
 # Add CS pins to ensure they are high in bootloader
 PC2 LPS22HB_CS CS
 PC15 MPU6500_CS CS
-PD10 FRAM_CS CS
