@@ -313,9 +313,6 @@ void NavEKF2_core::readIMUData()
     // average IMU sampling rate
     dtIMUavg = ins.get_loop_delta_t();
 
-    // the imu sample time is used as a common time reference throughout the filter
-    imuSampleTime_ms = AP_HAL::millis();
-
     // use the nominated imu or primary if not available
     uint8_t accel_active, gyro_active;
 
@@ -588,7 +585,7 @@ void NavEKF2_core::readGpsData()
 
             if (gpsGoodToAlign && !have_table_earth_field) {
                 const Compass *compass = _ahrs->get_compass();
-                if (compass && compass->have_scale_factor(magSelectIndex)) {
+                if (compass && compass->have_scale_factor(magSelectIndex) && compass->auto_declination_enabled()) {
                     table_earth_field_ga = AP_Declination::get_earth_field_ga(gpsloc);
                     table_declination = radians(AP_Declination::get_declination(gpsloc.lat*1.0e-7,
                                                                                 gpsloc.lng*1.0e-7));
@@ -1013,3 +1010,8 @@ void NavEKF2_core::learnInactiveBiases(void)
     }
 }
 
+// Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
+void NavEKF2_core::writeDefaultAirSpeed(float airspeed)
+{
+    defaultAirSpeed = airspeed;
+}

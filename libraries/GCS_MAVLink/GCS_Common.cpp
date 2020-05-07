@@ -34,6 +34,7 @@
 #include <AP_RTC/AP_RTC.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_RCTelemetry/AP_Spektrum_Telem.h>
 #include <AP_Mount/AP_Mount.h>
 #include <AP_Common/AP_FWVersion.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
@@ -823,12 +824,10 @@ uint16_t GCS_MAVLINK::get_reschedule_interval_ms(const deferred_message_bucket_t
         // we are sending requests for waypoints, penalize streams:
         interval_ms *= 4;
     }
-#if HAVE_FILESYSTEM_SUPPORT
     if (ftp.replies && AP_HAL::millis() - ftp.last_send_ms < 500) {
         // we are sending ftp replies
         interval_ms *= 4;
     }
-#endif
 
     if (interval_ms > 60000) {
         return 60000;
@@ -1004,9 +1003,7 @@ void GCS_MAVLINK::update_send()
         AP::logger().handle_log_send();
     }
 
-#if HAVE_FILESYSTEM_SUPPORT
     send_ftp_replies();
-#endif // HAVE_FILESYSTEM_SUPPORT
 
     if (!deferred_messages_initialised) {
         initialise_message_intervals_from_streamrates();
@@ -1854,7 +1851,12 @@ void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, u
     if (frsky != nullptr) {
         frsky->queue_message(severity, first_piece_of_text);
     }
-
+#if HAL_SPEKTRUM_TELEM_ENABLED
+    AP_Spektrum_Telem* spektrum = AP::spektrum_telem();
+    if (spektrum != nullptr) {
+        spektrum->queue_message(severity, first_piece_of_text);
+    }
+#endif
     AP_Notify *notify = AP_Notify::get_singleton();
     if (notify) {
         notify->send_text(first_piece_of_text);
@@ -2038,7 +2040,6 @@ void GCS::setup_uarts()
             frsky = nullptr;
         }
     }
-
 #if !HAL_MINIMIZE_FEATURES
     ltm_telemetry.init();
     devo_telemetry.init();
@@ -2079,7 +2080,7 @@ void GCS_MAVLINK::handle_set_mode(const mavlink_message_t &msg)
     // command.  The command we are acking (ID=11) doesn't actually
     // exist, but if it did we'd probably be acking something
     // completely unrelated to setting modes.
-    if (HAVE_PAYLOAD_SPACE(chan, MAVLINK_MSG_ID_COMMAND_ACK)) {
+    if (HAVE_PAYLOAD_SPACE(chan, COMMAND_ACK)) {
         mavlink_msg_command_ack_send(chan, MAVLINK_MSG_ID_SET_MODE, result);
     }
 }
@@ -3122,9 +3123,7 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         break;
 
     case MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL:
-#if HAVE_FILESYSTEM_SUPPORT
         handle_file_transfer_protocol(msg);
-#endif // HAVE_FILESYSTEM_SUPPORT
         break;
 
     case MAVLINK_MSG_ID_DIGICAM_CONTROL:
@@ -4900,9 +4899,7 @@ uint64_t GCS_MAVLINK::capabilities() const
         ret |= MAV_PROTOCOL_CAPABILITY_MISSION_FENCE;
     }
 
-#if HAVE_FILESYSTEM_SUPPORT
     ret |= MAV_PROTOCOL_CAPABILITY_FTP;
-#endif // HAVE_FILESYSTEM_SUPPORT
 
     return ret;
 }

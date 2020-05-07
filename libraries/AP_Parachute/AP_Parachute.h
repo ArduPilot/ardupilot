@@ -1,5 +1,5 @@
-/// @file	AP_Parachute.h
-/// @brief	Parachute release library
+/// @file   AP_Parachute.h
+/// @brief  Parachute release library
 #pragma once
 
 #include <AP_Param/AP_Param.h>
@@ -29,8 +29,8 @@
 
 #if HAL_PARACHUTE_ENABLED
 
-/// @class	AP_Parachute
-/// @brief	Class managing the release of a parachute
+/// @class  AP_Parachute
+/// @brief  Class managing the release of a parachute
 class AP_Parachute {
 
 public:
@@ -41,7 +41,7 @@ public:
         // setup parameter defaults
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         if (_singleton != nullptr) {
-            AP_HAL::panic("Rally must be singleton");
+            AP_HAL::panic("Parachute must be singleton");
         }
 #endif
         _singleton = this;

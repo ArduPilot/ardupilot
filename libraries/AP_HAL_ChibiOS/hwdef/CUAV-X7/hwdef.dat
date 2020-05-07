@@ -20,11 +20,8 @@ STM32_ST_USE_TIMER 2
 # bootloader takes first sector
 FLASH_RESERVE_START_KB 128
 
-# board voltage
-STM32_VDD 330U
-
 # order of UARTs (and USB)
-UART_ORDER OTG1 USART1 USART2 USART6 UART4 UART8 UART7 OTG2
+SERIAL_ORDER OTG1 USART2 USART6 USART1 UART4 UART8 UART7 OTG2
 
 # default the 2nd interface to MAVLink2 until MissionPlanner updates drivers
 define HAL_OTG2_PROTOCOL SerialProtocol_MAVLink2

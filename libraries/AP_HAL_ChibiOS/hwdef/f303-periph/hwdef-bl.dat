@@ -23,11 +23,9 @@ FLASH_SIZE_KB 256
 STDOUT_SERIAL SD1
 STDOUT_BAUDRATE 57600
 
-# board voltage
-STM32_VDD 330U
 
 # order of UARTs
-UART_ORDER
+SERIAL_ORDER
 define HAL_USE_UART FALSE
 
 PA4 LED_BOOTLOADER OUTPUT LOW
@@ -95,11 +93,6 @@ PB6 STAY_IN_BOOTLOADER INPUT FLOATING
 
 # reserve 256 bytes for comms between app and bootloader
 RAM_RESERVE_START 256
-
-# use DNA
-define HAL_CAN_DEFAULT_NODE_ID 0
-
-define CAN_APP_NODE_NAME "org.ardupilot.ap_periph_gps"
 
 # Add CS pins to ensure they are high in bootloader
 PB0 MAG_CS CS

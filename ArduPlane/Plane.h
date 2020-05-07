@@ -763,9 +763,6 @@ private:
     void update_load_factor(void);
     void send_fence_status(mavlink_channel_t chan);
     void send_servo_out(mavlink_channel_t chan);
-    void send_wind(mavlink_channel_t chan);
-
-    void send_aoa_ssa(mavlink_channel_t chan);
 
     void Log_Write_Fast(void);
     void Log_Write_Attitude(void);
@@ -938,6 +935,7 @@ private:
     void servos_output(void);
     void servos_auto_trim(void);
     void servos_twin_engine_mix();
+    void throttle_voltage_comp();
     void throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle);
     void update_is_flying_5Hz(void);
     void crash_detection_update(void);

@@ -1172,7 +1172,7 @@ void AP_GPS::broadcast_first_configuration_failure_reason(void) const
     uint8_t unconfigured;
     if (first_unconfigured_gps(unconfigured)) {
         if (drivers[unconfigured] == nullptr) {
-            gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: was not found", unconfigured + 1);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %d: was not found", unconfigured + 1);
         } else {
             drivers[unconfigured]->broadcast_configuration_failure_reason();
         }

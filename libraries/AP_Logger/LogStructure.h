@@ -285,36 +285,6 @@ struct PACKED log_Vibe {
     uint32_t clipping_0, clipping_1, clipping_2;
 };
 
-struct PACKED log_Gimbal1 {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    float delta_time;
-    float delta_angles_x;
-    float delta_angles_y;
-    float delta_angles_z;
-    float delta_velocity_x;
-    float delta_velocity_y;
-    float delta_velocity_z;
-    float joint_angles_x;
-    float joint_angles_y;
-    float joint_angles_z;
-};
-
-struct PACKED log_Gimbal2 {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t  est_sta;
-    float est_x;
-    float est_y;
-    float est_z;
-    float rate_x;
-    float rate_y;
-    float rate_z;
-    float target_x;
-    float target_y;
-    float target_z;
-};
-
 struct PACKED log_RCIN {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -933,23 +903,6 @@ struct PACKED log_GPS_RAWS {
     uint8_t cpStdev;
     uint8_t doStdev;
     uint8_t trkStat;
-};
-
-struct PACKED log_GPS_SBF_EVENT {  
-	LOG_PACKET_HEADER; 
-	uint64_t time_us;
-	uint32_t TOW;
-	uint16_t WNc;
-	uint8_t Mode;
-	uint8_t Error;
-	double Latitude;
-	double Longitude;
-	double Height;
-	float Undulation;
-	float Vn;
-	float Ve;
-	float Vu;
-	float COG;
 };
 
 struct PACKED log_Esc {
@@ -1578,8 +1531,41 @@ struct PACKED log_Arm_Disarm {
 // @Field: SMS: time since system startup this sample was taken
 // @Field: Delta: system time delta between the last two reported positions
 
+//note: GPAB is a copy of GPA and GPA2!
+
+// @LoggerMessage: GPAB
+// @Description: Blended GPS accuracy information
+// @Field: TimeUS: Time since system startup
+// @Field: VDop: vertical degree of procession
+// @Field: HAcc: horizontal position accuracy
+// @Field: VAcc: vertical position accuracy
+// @Field: SAcc: speed accuracy
+// @Field: YAcc: yaw accuracy
+// @Field: VV: true if vertical velocity is available
+// @Field: SMS: time since system startup this sample was taken
+// @Field: Delta: system time delta between the last two reported positions
+
 // @LoggerMessage: GPS,GPS2
 // @Description: Information received from GNSS systems attached to the autopilot
+// @Field: TimeUS: Time since system startup
+// @Field: Status: GPS Fix type; 2D fix, 3D fix etc.
+// @Field: GMS: milliseconds since start of GPS Week
+// @Field: GWk: weeks since 5 Jan 1980
+// @Field: NSats: number of satellites visible
+// @Field: HDop: horizontal precision
+// @Field: Lat: latitude
+// @Field: Lng: longitude
+// @Field: Alt: altitude
+// @Field: Spd: ground speed
+// @Field: GCrs: ground course
+// @Field: VZ: vertical speed
+// @Field: Yaw: vehicle yaw
+// @Field: U: boolean value indicating whether this GPS is in use
+
+// Note: GPSB is a copy of GPS!
+
+// @LoggerMessage: GPSB
+// @Description: Information blended from GNSS systems attached to the autopilot
 // @Field: TimeUS: Time since system startup
 // @Field: Status: GPS Fix type; 2D fix, 3D fix etc.
 // @Field: GMS: milliseconds since start of GPS Week
@@ -1698,6 +1684,7 @@ struct PACKED log_Arm_Disarm {
 // @Field: Task: Current scheduler task number
 // @Field: IErr: Internal error mask; which internal errors have been detected
 // @Field: IErrCnt: Internal error count; how many internal errors have been detected
+// @Field: IErrLn: Line on which internal error ocurred
 // @Field: MavMsg: Id of the last mavlink message processed
 // @Field: MavCmd: Id of the last mavlink command processed
 // @Field: SemLine: Line number of semaphore most recently taken
@@ -2413,21 +2400,15 @@ struct PACKED log_Arm_Disarm {
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
       "TERR","QBLLHffHH","TimeUS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded", "s-DU-mm--", "F-GG-00--" }, \
     { LOG_GPS_UBX1_MSG, sizeof(log_Ubx1), \
-      "UBX1", "QBHBBHI",  "TimeUS,Instance,noisePerMS,jamInd,aPower,agcCnt,config", "s------", "F------"  }, \
+      "UBX1", "QBHBBHI",  "TimeUS,Instance,noisePerMS,jamInd,aPower,agcCnt,config", "s#-----", "F------"  }, \
     { LOG_GPS_UBX2_MSG, sizeof(log_Ubx2), \
-      "UBX2", "QBbBbB", "TimeUS,Instance,ofsI,magI,ofsQ,magQ", "s-----", "F-----" }, \
-    { LOG_GPS2_UBX1_MSG, sizeof(log_Ubx1), \
-      "UBY1", "QBHBBHI",  "TimeUS,Instance,noisePerMS,jamInd,aPower,agcCnt,config", "s------", "F------"   }, \
-    { LOG_GPS2_UBX2_MSG, sizeof(log_Ubx2), \
-      "UBY2", "QBbBbB", "TimeUS,Instance,ofsI,magI,ofsQ,magQ", "s-----", "F-----" }, \
+      "UBX2", "QBbBbB", "TimeUS,Instance,ofsI,magI,ofsQ,magQ", "s#----", "F-----" }, \
     { LOG_GPS_RAW_MSG, sizeof(log_GPS_RAW), \
       "GRAW", "QIHBBddfBbB", "TimeUS,WkMS,Week,numSV,sv,cpMes,prMes,doMes,mesQI,cno,lli", "s--S-------", "F--0-------" }, \
     { LOG_GPS_RAWH_MSG, sizeof(log_GPS_RAWH), \
       "GRXH", "QdHbBB", "TimeUS,rcvTime,week,leapS,numMeas,recStat", "s-----", "F-----" }, \
     { LOG_GPS_RAWS_MSG, sizeof(log_GPS_RAWS), \
       "GRXS", "QddfBBBHBBBBB", "TimeUS,prMes,cpMes,doMes,gnss,sv,freq,lock,cno,prD,cpD,doD,trk", "s------------", "F------------" }, \
-    { LOG_GPS_SBF_EVENT_MSG, sizeof(log_GPS_SBF_EVENT), \
-      "SBFE", "QIHBBdddfffff", "TimeUS,TOW,WN,Mode,Err,Lat,Lng,Height,Undul,Vn,Ve,Vu,COG", "s----DUm-nnnh", "F----000-0000" }, \
     { LOG_ESC1_MSG, sizeof(log_Esc), \
       "ESC1",  ESC_FMT, ESC_LABELS, ESC_UNITS, ESC_MULTS }, \
     { LOG_ESC2_MSG, sizeof(log_Esc), \
@@ -2498,10 +2479,6 @@ struct PACKED log_Arm_Disarm {
       "DSF", "QIHIIII", "TimeUS,Dp,Blk,Bytes,FMn,FMx,FAv", "s--b---", "F--0---" }, \
     { LOG_RPM_MSG, sizeof(log_RPM), \
       "RPM",  "Qff", "TimeUS,rpm1,rpm2", "sqq", "F00" }, \
-    { LOG_GIMBAL1_MSG, sizeof(log_Gimbal1), \
-      "GMB1", "Qffffffffff", "TimeUS,dt,dax,day,daz,dvx,dvy,dvz,jx,jy,jz", "ssrrrEEELLL", "FC000000000" }, \
-    { LOG_GIMBAL2_MSG, sizeof(log_Gimbal2), \
-      "GMB2", "QBfffffffff", "TimeUS,es,ex,ey,ez,rx,ry,rz,tx,ty,tz", "s-rrrEEELLL", "F-000000000" }, \
     { LOG_RATE_MSG, sizeof(log_Rate), \
       "RATE", "Qffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut", "skk-kk-kk-oo-", "F?????????BB-" }, \
     { LOG_RALLY_MSG, sizeof(log_Rally), \
@@ -2582,8 +2559,6 @@ enum LogMessages : uint8_t {
     LOG_TERRAIN_MSG,
     LOG_GPS_UBX1_MSG,
     LOG_GPS_UBX2_MSG,
-    LOG_GPS2_UBX1_MSG,
-    LOG_GPS2_UBX2_MSG,
     LOG_ESC1_MSG,
     LOG_ESC2_MSG,
     LOG_ESC3_MSG,
@@ -2611,7 +2586,6 @@ enum LogMessages : uint8_t {
     LOG_FORMAT_MSG = 128, // this must remain #128
 
     LOG_GPS_RAWS_MSG,
-	LOG_GPS_SBF_EVENT_MSG,
     LOG_ACC1_MSG,
     LOG_ACC2_MSG,
     LOG_ACC3_MSG,
@@ -2651,8 +2625,6 @@ enum LogMessages : uint8_t {
     LOG_MSG_SBPEVENT,
     LOG_TRIGGER_MSG,
 
-    LOG_GIMBAL1_MSG,
-    LOG_GIMBAL2_MSG,
     LOG_RATE_MSG,
     LOG_RALLY_MSG,
     LOG_VISUALODOM_MSG,

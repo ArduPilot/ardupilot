@@ -27,6 +27,8 @@
 
 #define GCS_DEBUG_SEND_MESSAGE_TIMINGS 0
 
+#ifndef HAL_NO_GCS
+
 // macros used to determine if a message will fit in the space available.
 
 void gcs_out_of_space_to_send_count(mavlink_channel_t chan);
@@ -38,13 +40,15 @@ void gcs_out_of_space_to_send_count(mavlink_channel_t chan);
 // PAYLOAD_SIZE returns the amount of space required to send the
 // mavlink message with id id on channel chan.  Mavlink2 has higher
 // overheads than mavlink1, for example.
+
+// check if a message will fit in the payload space available
 #define PAYLOAD_SIZE(chan, id) (unsigned(GCS_MAVLINK::packet_overhead_chan(chan)+MAVLINK_MSG_ID_ ## id ## _LEN))
 
 // HAVE_PAYLOAD_SPACE evaluates to an expression that can be used
 // anywhere in the code to determine if the mavlink message with ID id
 // can currently fit in the output of _chan.  Note the use of the ","
 // operator here to increment a counter.
-#define HAVE_PAYLOAD_SPACE(_chan, id) (comm_get_txspace(_chan) >= PAYLOAD_SIZE(_chan, id) ? (gcs_out_of_space_to_send_count(_chan), true) : false)
+#define HAVE_PAYLOAD_SPACE(_chan, id) (comm_get_txspace(_chan) >= PAYLOAD_SIZE(_chan, id) ? true : (gcs_out_of_space_to_send_count(_chan), false))
 
 // CHECK_PAYLOAD_SIZE - macro which may only be used within a
 // GCS_MAVLink object's methods.  It inserts code which will
@@ -673,8 +677,6 @@ private:
 
     uint8_t send_parameter_async_replies();
 
-#if HAVE_FILESYSTEM_SUPPORT
-
     enum class FTP_OP : uint8_t {
         None = 0,
         TerminateSession = 1,
@@ -750,7 +752,6 @@ private:
     void send_ftp_replies(void);
     void ftp_worker(void);
     void ftp_push_replies(pending_ftp &reply);
-#endif // HAVE_FILESYSTEM_SUPPORT
 
     void send_distance_sensor(const class AP_RangeFinder_Backend *sensor, const uint8_t instance) const;
 
@@ -1012,3 +1013,13 @@ private:
 };
 
 GCS &gcs();
+
+// send text when we do have a GCS
+#define GCS_SEND_TEXT(severity, format, args...) gcs().send_text(severity, format, ##args)
+
+#else // HAL_NO_GCS
+// empty send text when we have no GCS
+#define GCS_SEND_TEXT(severity, format, args...)
+
+#endif // HAL_NO_GCS
+

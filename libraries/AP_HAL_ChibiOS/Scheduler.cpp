@@ -307,7 +307,7 @@ void Scheduler::_run_timers()
 void Scheduler::_timer_thread(void *arg)
 {
     Scheduler *sched = (Scheduler *)arg;
-    chRegSetThreadName("apm_timer");
+    chRegSetThreadName("timer");
 
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(1000);
@@ -346,12 +346,15 @@ bool Scheduler::in_expected_delay(void) const
 void Scheduler::_monitor_thread(void *arg)
 {
     Scheduler *sched = (Scheduler *)arg;
-    chRegSetThreadName("apm_monitor");
+    chRegSetThreadName("monitor");
 
     while (!sched->_initialized) {
         sched->delay(100);
     }
     bool using_watchdog = AP_BoardConfig::watchdog_enabled();
+#ifndef HAL_NO_LOGGING
+    uint8_t log_wd_counter = 0;
+#endif
 
     while (true) {
         sched->delay(100);
@@ -365,12 +368,13 @@ void Scheduler::_monitor_thread(void *arg)
             // 200ms. Starting logging the main loop state
             const AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
             if (AP_Logger::get_singleton()) {
-                AP::logger().Write("MON", "TimeUS,LDelay,Task,IErr,IErrCnt,MavMsg,MavCmd,SemLine,SPICnt,I2CCnt", "QIbIIHHHII",
+                AP::logger().Write("MON", "TimeUS,LDelay,Task,IErr,IErrCnt,IErrLn,MavMsg,MavCmd,SemLine,SPICnt,I2CCnt", "QIbIHHHHHII",
                                    AP_HAL::micros64(),
                                    loop_delay,
                                    pd.scheduler_task,
                                    pd.internal_errors,
                                    pd.internal_error_count,
+                                   pd.internal_error_last_line,
                                    pd.last_mavlink_msgid,
                                    pd.last_mavlink_cmd,
                                    pd.semaphore_line,
@@ -380,8 +384,33 @@ void Scheduler::_monitor_thread(void *arg)
         }
         if (loop_delay >= 500) {
             // at 500ms we declare an internal error
-            AP::internalerror().error(AP_InternalError::error_t::main_loop_stuck);
+            INTERNAL_ERROR(AP_InternalError::error_t::main_loop_stuck);
         }
+
+#ifndef HAL_NO_LOGGING
+    if (log_wd_counter++ == 10 && hal.util->was_watchdog_reset()) {
+        log_wd_counter = 0;
+        // log watchdog message once a second
+        const AP_HAL::Util::PersistentData &pd = hal.util->last_persistent_data;
+        AP::logger().WriteCritical("WDOG", "TimeUS,Tsk,IE,IEC,IEL,MvMsg,MvCmd,SmLn,FL,FT,FA,FP,ICSR,LR,TN", "QbIHHHHHHHIBIIn",
+                                   AP_HAL::micros64(),
+                                   pd.scheduler_task,
+                                   pd.internal_errors,
+                                   pd.internal_error_count,
+                                   pd.internal_error_last_line,
+                                   pd.last_mavlink_msgid,
+                                   pd.last_mavlink_cmd,
+                                   pd.semaphore_line,
+                                   pd.fault_line,
+                                   pd.fault_type,
+                                   pd.fault_addr,
+                                   pd.fault_thd_prio,
+                                   pd.fault_icsr,
+                                   pd.fault_lr,
+                                   pd.thread_name4);
+    }
+#endif // HAL_NO_LOGGING
+
     }
 }
 #endif // HAL_NO_MONITOR_THREAD
@@ -389,7 +418,7 @@ void Scheduler::_monitor_thread(void *arg)
 void Scheduler::_rcin_thread(void *arg)
 {
     Scheduler *sched = (Scheduler *)arg;
-    chRegSetThreadName("apm_rcin");
+    chRegSetThreadName("rcin");
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(20000);
     }
@@ -423,7 +452,7 @@ void Scheduler::_run_io(void)
 void Scheduler::_io_thread(void* arg)
 {
     Scheduler *sched = (Scheduler *)arg;
-    chRegSetThreadName("apm_io");
+    chRegSetThreadName("io");
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(1000);
     }
@@ -449,7 +478,7 @@ void Scheduler::_io_thread(void* arg)
 void Scheduler::_storage_thread(void* arg)
 {
     Scheduler *sched = (Scheduler *)arg;
-    chRegSetThreadName("apm_storage");
+    chRegSetThreadName("storage");
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(10000);
     }

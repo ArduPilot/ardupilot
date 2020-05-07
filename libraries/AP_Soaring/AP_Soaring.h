@@ -25,7 +25,6 @@
 
 class SoaringController {
     ExtendedKalmanFilter _ekf{};
-    AP_AHRS &_ahrs;
     AP_SpdHgtControl &_spdHgt;
     Variometer _vario;
     const AP_Vehicle::FixedWing &_aparm;
@@ -74,7 +73,7 @@ protected:
     AP_Float max_drift;
 
 public:
-    SoaringController(AP_AHRS &ahrs, AP_SpdHgtControl &spdHgt, const AP_Vehicle::FixedWing &parms);
+    SoaringController(AP_SpdHgtControl &spdHgt, const AP_Vehicle::FixedWing &parms);
 
     enum class LoiterStatus {
         DISABLED,

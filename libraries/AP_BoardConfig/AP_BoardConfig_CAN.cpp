@@ -199,6 +199,9 @@ void AP_BoardConfig_CAN::init()
 #endif
         }
     }
+
+    // param count could have changed
+    AP_Param::invalidate_count();
 }
 
 #if AP_UAVCAN_SLCAN_ENABLED

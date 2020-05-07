@@ -27,4 +27,4 @@ the board IDs in that file match the APJ_BOARD_ID in the hwdef.dat and
 hwdef-bl.dat files
 
 The bootloader can load from USB or UARTs. The list of devices to load
-from is given in the UART_ORDER option in hwdef-bl.dat
+from is given in the SERIAL_ORDER option in hwdef-bl.dat

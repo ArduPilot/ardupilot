@@ -146,6 +146,37 @@ void NavEKF2_core::ResetPosition(void)
 
 }
 
+// reset the stateStruct's NE position to the specified position
+//    posResetNE is updated to hold the change in position
+//    storedOutput, outputDataNew and outputDataDelayed are updated with the change in position
+//    lastPosReset_ms is updated with the time of the reset
+void NavEKF2_core::ResetPositionNE(float posN, float posE)
+{
+    // Store the position before the reset so that we can record the reset delta
+    const Vector3f posOrig = stateStruct.position;
+
+    // Set the position states to the new position
+    stateStruct.position.x = posN;
+    stateStruct.position.y = posE;
+
+    // Calculate the position offset due to the reset
+    posResetNE.x = stateStruct.position.x - posOrig.x;
+    posResetNE.y = stateStruct.position.y - posOrig.y;
+
+    // Add the offset to the output observer states
+    for (uint8_t i=0; i<imu_buffer_length; i++) {
+        storedOutput[i].position.x += posResetNE.x;
+        storedOutput[i].position.y += posResetNE.y;
+    }
+    outputDataNew.position.x += posResetNE.x;
+    outputDataNew.position.y += posResetNE.y;
+    outputDataDelayed.position.x += posResetNE.x;
+    outputDataDelayed.position.y += posResetNE.y;
+
+    // store the time of the reset
+    lastPosReset_ms = imuSampleTime_ms;
+}
+
 // reset the vertical position state using the last height measurement
 void NavEKF2_core::ResetHeight(void)
 {
@@ -208,6 +239,33 @@ void NavEKF2_core::ResetHeight(void)
     // set the variances to the measurement variance
     P[5][5] = sq(frontend->_gpsVertVelNoise);
 
+}
+
+// reset the stateStruct's D position
+//    posResetD is updated to hold the change in position
+//    storedOutput, outputDataNew and outputDataDelayed are updated with the change in position
+//    lastPosResetD_ms is updated with the time of the reset
+void NavEKF2_core::ResetPositionD(float posD)
+{
+    // Store the position before the reset so that we can record the reset delta
+    const float posDOrig = stateStruct.position.z;
+
+    // write to the state vector
+    stateStruct.position.z = posD;
+
+    // Calculate the position jump due to the reset
+    posResetD = stateStruct.position.z - posDOrig;
+
+    // Add the offset to the output observer states
+    outputDataNew.position.z += posResetD;
+    vertCompFiltState.pos = outputDataNew.position.z;
+    outputDataDelayed.position.z += posResetD;
+    for (uint8_t i=0; i<imu_buffer_length; i++) {
+        storedOutput[i].position.z += posResetD;
+    }
+
+    // store the time of the reset
+    lastPosResetD_ms = imuSampleTime_ms;
 }
 
 // Zero the EKF height datum
@@ -318,6 +376,7 @@ void NavEKF2_core::SelectVelPosFusion()
     // read GPS data from the sensor and check for new data in the buffer
     readGpsData();
     gpsDataToFuse = storedGPS.recall(gpsDataDelayed,imuDataDelayed.time_ms);
+
     // Determine if we need to fuse position and velocity data on this time step
     if (gpsDataToFuse && PV_AidingMode == AID_ABSOLUTE) {
         // set fusion request flags
@@ -344,7 +403,7 @@ void NavEKF2_core::SelectVelPosFusion()
     } else if (extNavDataToFuse && PV_AidingMode == AID_ABSOLUTE) {
         // This is a special case that uses and external nav system for position
         extNavUsedForPos = true;
-        activeHgtSource = HGT_SOURCE_EV;
+        activeHgtSource = HGT_SOURCE_EXTNAV;
         fuseVelData = false;
         fuseHgtData = true;
         fusePosData = true;
@@ -437,6 +496,14 @@ void NavEKF2_core::SelectVelPosFusion()
 
             // store the time of the reset
             lastPosResetD_ms = imuSampleTime_ms;
+        }
+    }
+
+    // check for external nav position reset
+    if (extNavDataToFuse && (PV_AidingMode == AID_ABSOLUTE) && (frontend->_fusionModeGPS == 3) && extNavDataDelayed.posReset) {
+        ResetPositionNE(extNavDataDelayed.pos.x, extNavDataDelayed.pos.y);
+        if (activeHgtSource == HGT_SOURCE_EXTNAV) {
+            ResetPositionD(-hgtMea);
         }
     }
 
@@ -874,7 +941,7 @@ void NavEKF2_core::selectHeightForFusion()
     // select height source
     if (extNavUsedForPos) {
         // always use external vision as the height source if using for position.
-        activeHgtSource = HGT_SOURCE_EV;
+        activeHgtSource = HGT_SOURCE_EXTNAV;
     } else if (_rng && ((frontend->_useRngSwHgt > 0) && (frontend->_altSource == 1)) && (imuSampleTime_ms - rngValidMeaTime_ms < 500)) {
         if (frontend->_altSource == 1) {
             // always use range finder
@@ -921,7 +988,7 @@ void NavEKF2_core::selectHeightForFusion()
     // Use Baro alt as a fallback if we lose range finder, GPS or external nav
     bool lostRngHgt = ((activeHgtSource == HGT_SOURCE_RNG) && ((imuSampleTime_ms - rngValidMeaTime_ms) > 500));
     bool lostGpsHgt = ((activeHgtSource == HGT_SOURCE_GPS) && ((imuSampleTime_ms - lastTimeGpsReceived_ms) > 2000));
-    bool lostExtNavHgt = ((activeHgtSource == HGT_SOURCE_EV) && ((imuSampleTime_ms - extNavMeasTime_ms) > 2000));
+    bool lostExtNavHgt = ((activeHgtSource == HGT_SOURCE_EXTNAV) && ((imuSampleTime_ms - extNavMeasTime_ms) > 2000));
     if (lostRngHgt || lostGpsHgt || lostExtNavHgt) {
         activeHgtSource = HGT_SOURCE_BARO;
     }
@@ -953,7 +1020,7 @@ void NavEKF2_core::selectHeightForFusion()
     }
 
     // Select the height measurement source
-    if (extNavDataToFuse && (activeHgtSource == HGT_SOURCE_EV)) {
+    if (extNavDataToFuse && (activeHgtSource == HGT_SOURCE_EXTNAV)) {
         hgtMea = -extNavDataDelayed.pos.z;
         posDownObsNoise = sq(constrain_float(extNavDataDelayed.posErr, 0.01f, 10.0f));
     } else if (rangeDataToFuse && (activeHgtSource == HGT_SOURCE_RNG)) {

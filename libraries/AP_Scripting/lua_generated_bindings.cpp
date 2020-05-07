@@ -871,6 +871,66 @@ static int RC_Channels_get_pwm(lua_State *L) {
     return 1;
 }
 
+static int SRV_Channels_set_output_scaled(lua_State *L) {
+    SRV_Channels * ud = SRV_Channels::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "SRV_Channels not supported on this firmware");
+    }
+
+    binding_argcheck(L, 3);
+    const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= static_cast<int32_t>(SRV_Channel::k_none)) && (raw_data_2 <= static_cast<int32_t>(SRV_Channel::k_nr_aux_servo_functions-1))), 2, "argument out of range");
+    const SRV_Channel::Aux_servo_function_t data_2 = static_cast<SRV_Channel::Aux_servo_function_t>(raw_data_2);
+    const lua_Integer raw_data_3 = luaL_checkinteger(L, 3);
+    luaL_argcheck(L, ((raw_data_3 >= MAX(INT16_MIN, INT16_MIN)) && (raw_data_3 <= MIN(INT16_MAX, INT16_MAX))), 3, "argument out of range");
+    const int16_t data_3 = static_cast<int16_t>(raw_data_3);
+    ud->set_output_scaled(
+            data_2,
+            data_3);
+
+    return 0;
+}
+
+static int SRV_Channels_set_output_pwm_chan(lua_State *L) {
+    SRV_Channels * ud = SRV_Channels::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "SRV_Channels not supported on this firmware");
+    }
+
+    binding_argcheck(L, 3);
+    const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(NUM_SERVO_CHANNELS-1, UINT8_MAX))), 2, "argument out of range");
+    const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
+    const lua_Integer raw_data_3 = luaL_checkinteger(L, 3);
+    luaL_argcheck(L, ((raw_data_3 >= MAX(0, 0)) && (raw_data_3 <= MIN(UINT16_MAX, UINT16_MAX))), 3, "argument out of range");
+    const uint16_t data_3 = static_cast<uint16_t>(raw_data_3);
+    ud->set_output_pwm_chan(
+            data_2,
+            data_3);
+
+    return 0;
+}
+
+static int SRV_Channels_set_output_pwm(lua_State *L) {
+    SRV_Channels * ud = SRV_Channels::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "SRV_Channels not supported on this firmware");
+    }
+
+    binding_argcheck(L, 3);
+    const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= static_cast<int32_t>(SRV_Channel::k_none)) && (raw_data_2 <= static_cast<int32_t>(SRV_Channel::k_nr_aux_servo_functions-1))), 2, "argument out of range");
+    const SRV_Channel::Aux_servo_function_t data_2 = static_cast<SRV_Channel::Aux_servo_function_t>(raw_data_2);
+    const lua_Integer raw_data_3 = luaL_checkinteger(L, 3);
+    luaL_argcheck(L, ((raw_data_3 >= MAX(0, 0)) && (raw_data_3 <= MIN(UINT16_MAX, UINT16_MAX))), 3, "argument out of range");
+    const uint16_t data_3 = static_cast<uint16_t>(raw_data_3);
+    ud->set_output_pwm(
+            data_2,
+            data_3);
+
+    return 0;
+}
+
 static int SRV_Channels_find_channel(lua_State *L) {
     SRV_Channels * ud = SRV_Channels::get_singleton();
     if (ud == nullptr) {
@@ -2387,6 +2447,9 @@ const luaL_Reg RC_Channels_meta[] = {
 };
 
 const luaL_Reg SRV_Channels_meta[] = {
+    {"set_output_scaled", SRV_Channels_set_output_scaled},
+    {"set_output_pwm_chan", SRV_Channels_set_output_pwm_chan},
+    {"set_output_pwm", SRV_Channels_set_output_pwm},
     {"find_channel", SRV_Channels_find_channel},
     {NULL, NULL}
 };

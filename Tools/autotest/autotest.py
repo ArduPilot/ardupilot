@@ -337,6 +337,7 @@ def run_step(step):
         "debug": opts.debug,
         "clean": not opts.no_clean,
         "configure": not opts.no_configure,
+        "math_check_indexes": opts.math_check_indexes,
         "extra_configure_args": opts.waf_configure_args,
     }
 
@@ -379,6 +380,7 @@ def run_step(step):
         "disable_breakpoints": opts.disable_breakpoints,
         "frame": opts.frame,
         "_show_test_timings": opts.show_test_timings,
+        "force_ahrs_type": opts.force_ahrs_type,
     }
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
@@ -725,6 +727,11 @@ if __name__ == "__main__":
                            default=False,
                            action='store_true',
                            help='make built binaries debug binaries')
+    group_build.add_option("--enable-math-check-indexes",
+                           default=False,
+                           action="store_true",
+                           dest="math_check_indexes",
+                           help="enable checking of math indexes")
     parser.add_option_group(group_build)
 
     group_sim = optparse.OptionGroup(parser, "Simulation options")
@@ -757,6 +764,10 @@ if __name__ == "__main__":
                          default=False,
                          action='store_true',
                          help="disable all breakpoints before starting")
+    group_sim.add_option("", "--force-ahrs-type",
+                         dest="force_ahrs_type",
+                         default=None,
+                         help="force a specific AHRS type (e.g. 10 for SITL-ekf")
     parser.add_option_group(group_sim)
 
     opts, args = parser.parse_args()

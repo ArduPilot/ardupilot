@@ -706,7 +706,12 @@ class AutoTest(ABC):
                  disable_breakpoints=False,
                  viewerip=None,
                  use_map=False,
-                 _show_test_timings=False):
+                 _show_test_timings=False,
+                 force_ahrs_type=None):
+
+        self.start_time = time.time()
+        global __autotest__ # FIXME; make progress a non-staticmethod
+        __autotest__ = self
 
         if binary is None:
             raise ValueError("Should always have a binary")
@@ -740,11 +745,16 @@ class AutoTest(ABC):
         self.test_timings = dict()
         self.total_waiting_to_arm_time = 0
         self.waiting_to_arm_count = 0
+        self.force_ahrs_type = force_ahrs_type
+        if self.force_ahrs_type is not None:
+            self.force_ahrs_type = int(self.force_ahrs_type)
 
     @staticmethod
     def progress(text):
         """Display autotest progress text."""
-        print("AUTOTEST: " + text)
+        global __autotest__
+        delta_time = time.time() - __autotest__.start_time
+        print("AT-%06.1f: %s" % (delta_time,text))
 
     # following two functions swiped from autotest.py:
     @staticmethod
@@ -848,6 +858,12 @@ class AutoTest(ABC):
             self.repeatedly_apply_parameter_file(os.path.join(testdir, x))
         self.set_parameter('LOG_REPLAY', 1)
         self.set_parameter('LOG_DISARMED', 1)
+        if self.force_ahrs_type is not None:
+            if self.force_ahrs_type == 2:
+                self.set_parameter("EK2_ENABLE", 1)
+            if self.force_ahrs_type == 3:
+                self.set_parameter("EK3_ENABLE", 1)
+            self.set_parameter("AHRS_EKF_TYPE", self.force_ahrs_type)
         self.reboot_sitl()
         self.fetch_parameters()
 
@@ -5155,15 +5171,29 @@ switch value'''
         self.wait_ready_to_arm()
 
         # test we get statustext strings.  This relies on ArduPilot
-        # emitting statustext strings when we fetch parameters.
-        self.mavproxy.send("param fetch\n")
+        # emitting statustext strings when we fetch parameters. (or,
+        # now, an updating-barometer statustext)
         tstart = self.get_sim_time_cached()
         old_data = None
         text = ""
+        sent_request = False
         while True:
             now = self.get_sim_time()
             if now - tstart > 60: # it can take a *long* time to get these messages down!
                 raise NotAchievedException("Did not get statustext in time")
+            if now - tstart > 30 and not sent_request:
+                # have to wait this long or our message gets squelched....
+                sent_request = True
+#                                self.mavproxy.send("param fetch\n")
+                self.run_cmd(mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
+                             0, #p1
+                             0, #p2
+                             1, #p3, baro
+                             0, #p4
+                             0, #p5
+                             0, #p6
+                             0, #p7
+                )
             frsky.update()
             data = frsky.get_data(0x5000) # no timestamping on this data, so we can't catch legitimate repeats.
             if data is None:
@@ -5185,7 +5215,9 @@ switch value'''
                 if (x & 0x7f) == 0x00:
                     last = True
             if last:
-                m = re.match("Ardu(Plane|Copter|Rover|Tracker|Sub) V[345]", text)
+                # we used to do a 'param fetch' and expect this back, but the params-via-ftp thing broke it.
+#                m = re.match("Ardu(Plane|Copter|Rover|Tracker|Sub) V[345]", text)
+                m = re.match("Updating barometer calibration", text)
                 if m is not None:
                     want_sev = mavutil.mavlink.MAV_SEVERITY_INFO
                     if severity != want_sev:

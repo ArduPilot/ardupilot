@@ -27,7 +27,7 @@ void update_motors();
 SRV_Channels srvs;
 
 // uncomment the row below depending upon what frame you are using
-//AP_MotorsTri	motors(400);
+//AP_MotorsTri  motors(400);
 AP_MotorsMatrix   motors(400);
 //AP_MotorsHeli_Single motors(rc7, rsc, h1, h2, h3, h4, 400);
 //AP_MotorsSingle motors(400);

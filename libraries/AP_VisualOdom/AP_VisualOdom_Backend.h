@@ -22,13 +22,13 @@ class AP_VisualOdom_Backend
 {
 public:
     // constructor. This incorporates initialisation as well.
-	AP_VisualOdom_Backend(AP_VisualOdom &frontend);
+    AP_VisualOdom_Backend(AP_VisualOdom &frontend);
 
-	// return true if sensor is basically healthy (we are receiving data)
-	bool healthy() const;
+    // return true if sensor is basically healthy (we are receiving data)
+    bool healthy() const;
 
-	// consume vision_position_delta mavlink messages
-	void handle_vision_position_delta_msg(const mavlink_message_t &msg);
+    // consume vision_position_delta mavlink messages
+    void handle_vision_position_delta_msg(const mavlink_message_t &msg);
 
     // consume vision position estimate data and send to EKF. distances in meters
     virtual void handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude, uint8_t reset_counter) = 0;

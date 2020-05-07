@@ -208,7 +208,7 @@ bool SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
     if (msg == MSG_TIMEOUT) {
         ret = false;
         if (!hal.scheduler->in_expected_delay()) {
-            AP::internalerror().error(AP_InternalError::error_t::spi_fail);
+            INTERNAL_ERROR(AP_InternalError::error_t::spi_fail);
         }
         spiAbort(spi_devices[device_desc.bus].driver);
     }

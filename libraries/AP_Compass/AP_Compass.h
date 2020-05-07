@@ -216,6 +216,8 @@ public:
     void set_declination(float radians, bool save_to_eeprom = true);
     float get_declination() const;
 
+    bool auto_declination_enabled() const { return _auto_declination != 0; }
+
     // set overall board orientation
     void set_board_orientation(enum Rotation orientation, Matrix3f* custom_rotation = nullptr) {
         _board_orientation = orientation;
@@ -342,7 +344,7 @@ public:
 private:
     static Compass *_singleton;
 
-    // Use Priority and StateIndex typesafe index types 
+    // Use Priority and StateIndex typesafe index types
     // to distinguish between two different type of indexing
     // We use StateIndex for access by Backend
     // and Priority for access by Frontend
@@ -431,6 +433,7 @@ private:
 
     // board orientation from AHRS
     enum Rotation _board_orientation = ROTATION_NONE;
+    // custom rotation matrix
     Matrix3f* _custom_rotation;
 
     // declination in radians
@@ -451,6 +454,11 @@ private:
 
     // automatic compass orientation on calibration
     AP_Int8     _rotate_auto;
+
+    // custom compass rotation
+    AP_Float    _custom_roll;
+    AP_Float    _custom_pitch;
+    AP_Float    _custom_yaw;
     
     // throttle expressed as a percentage from 0 ~ 1.0, used for motor compensation
     float       _thr;
@@ -516,8 +524,10 @@ private:
     
     //Create Arrays to be accessible by Priority only
     RestrictIDTypeArray<AP_Int8, COMPASS_MAX_INSTANCES, Priority> _use_for_yaw;
+#if COMPASS_MAX_INSTANCES > 1
     RestrictIDTypeArray<AP_Int32, COMPASS_MAX_INSTANCES, Priority> _priority_did_stored_list;
     RestrictIDTypeArray<int32_t, COMPASS_MAX_INSTANCES, Priority> _priority_did_list;
+#endif
 
     AP_Int16 _offset_max;
 

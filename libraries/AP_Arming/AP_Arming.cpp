@@ -592,11 +592,11 @@ bool AP_Arming::rc_calibration_checks(bool report)
         }
         const uint16_t trim = c->get_radio_trim();
         if (c->get_radio_min() > trim) {
-            check_failed(ARMING_CHECK_RC, report, "RC%d minimum is greater than trim", i + 1);
+            check_failed(ARMING_CHECK_RC, report, "RC%d_MIN is greater than RC%d_TRIM", i + 1, i + 1);
             check_passed = false;
         }
         if (c->get_radio_max() < trim) {
-            check_failed(ARMING_CHECK_RC, report, "RC%d maximum is less than trim", i + 1);
+            check_failed(ARMING_CHECK_RC, report, "RC%d_MAX is less than RC%d_TRIM", i + 1, i + 1);
             check_passed = false;
         }
     }
@@ -708,11 +708,11 @@ bool AP_Arming::servo_checks(bool report) const
 
         const uint16_t trim = c->get_trim();
         if (c->get_output_min() > trim) {
-            check_failed(report, "SERVO%d minimum is greater than trim", i + 1);
+            check_failed(report, "SERVO%d_MIN is greater than SERVO%d_TRIM", i + 1, i + 1);
             check_passed = false;
         }
         if (c->get_output_max() < trim) {
-            check_failed(report, "SERVO%d maximum is less than trim", i + 1);
+            check_failed(report, "SERVO%d_MAX is less than SERVO%d_TRIM", i + 1, i + 1);
             check_passed = false;
         }
     }
@@ -781,7 +781,9 @@ bool AP_Arming::system_checks(bool report)
 #endif
     }
     if (AP::internalerror().errors() != 0) {
-        check_failed(report, "Internal errors (0x%x)", (unsigned int)AP::internalerror().errors());
+        uint8_t buffer[32];
+        AP::internalerror().errors_as_string(buffer, ARRAY_SIZE(buffer));
+        check_failed(report, "Internal errors 0x%x l:%u %s", (unsigned int)AP::internalerror().errors(), AP::internalerror().last_error_line(), buffer);
         return false;
     }
 
@@ -823,9 +825,8 @@ bool AP_Arming::can_checks(bool report)
 // To be replaced with macro saying if KDECAN library is included
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
                     AP_KDECAN *ap_kdecan = AP_KDECAN::get_kdecan(i);
-                    snprintf(fail_msg, ARRAY_SIZE(fail_msg), "KDECAN failed");
                     if (ap_kdecan != nullptr && !ap_kdecan->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
-                        check_failed(ARMING_CHECK_SYSTEM, report, "%s", fail_msg);
+                        check_failed(ARMING_CHECK_SYSTEM, report, "KDECAN: %s", fail_msg);
                         return false;
                     }
 #endif
@@ -836,12 +837,7 @@ bool AP_Arming::can_checks(bool report)
                     AP_PiccoloCAN *ap_pcan = AP_PiccoloCAN::get_pcan(i);
 
                     if (ap_pcan != nullptr && !ap_pcan->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
-                        if (fail_msg == nullptr) {
-                            check_failed(ARMING_CHECK_SYSTEM, report, "PiccoloCAN failed");
-                        } else {
-                            check_failed(ARMING_CHECK_SYSTEM, report, "%s", fail_msg);
-                        }
-
+                        check_failed(ARMING_CHECK_SYSTEM, report, "PiccoloCAN: %s", fail_msg);
                         return false;
                     }
 
@@ -853,15 +849,20 @@ bool AP_Arming::can_checks(bool report)
                 }
                 case AP_BoardConfig_CAN::Protocol_Type_UAVCAN:
                 {
-                    snprintf(fail_msg, ARRAY_SIZE(fail_msg), "UAVCAN failed");
                     if (!AP::uavcan_dna_server().prearm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
-                        check_failed(ARMING_CHECK_SYSTEM, report, "%s", fail_msg);
+                        check_failed(ARMING_CHECK_SYSTEM, report, "UAVCAN: %s", fail_msg);
                         return false;
                     }
                     break;
                 }
+                case AP_BoardConfig_CAN::Protocol_Type_ToshibaCAN:
+                {
+                    // toshibacan doesn't currently have any prearm
+                    // checks.  Theres scope for adding a "not
+                    // initialised" prearm check.
+                    break;
+                }
                 case AP_BoardConfig_CAN::Protocol_Type_None:
-                default:
                     break;
             }
         }
@@ -1055,7 +1056,8 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  proximity_checks(report)
         &  camera_checks(report)
         &  visodom_checks(report)
-        &  aux_auth_checks(report);
+        &  aux_auth_checks(report)
+        &  disarm_switch_checks(report);
 }
 
 bool AP_Arming::arm_checks(AP_Arming::Method method)
@@ -1212,6 +1214,20 @@ bool AP_Arming::visodom_checks(bool display_failure) const
         }
     }
 #endif
+
+    return true;
+}
+
+// check disarm switch is asserted
+bool AP_Arming::disarm_switch_checks(bool display_failure) const
+{
+    const RC_Channel *chan = rc().find_channel_for_option(RC_Channel::AUX_FUNC::DISARM);
+    if (chan != nullptr &&
+        chan->get_aux_switch_pos() == RC_Channel::aux_switch_pos_t::HIGH &&
+        (checks_to_perform & ARMING_CHECK_ALL)) {
+        check_failed(display_failure, "Disarm Switch on");
+        return false;
+    }
 
     return true;
 }
