@@ -1,0 +1,20 @@
+# hw definition file for processing by chibios_hwdef.py
+
+# this is for the original Mini-Pix, which has an FRAM.  The part was
+#  omitted in the second iteration of this board.
+
+include ../mini-pix-V1.0-II/hwdef-bl.dat
+
+APJ_BOARD_ID 3
+
+FLASH_RESERVE_START_KB 0 # bootloader is loaded at start of flash
+FLASH_BOOTLOADER_LOAD_KB 16 # the location where the bootloader will put the firmware
+
+PD10 FRAM_CS CS
+
+SPIDEV ramtron SPI2 DEVID4 FRAM_CS    MODE3 8*MHZ 8*MHZ
+
+define HAL_STORAGE_SIZE        16384
+
+# enable RAMTROM parameter storage
+define HAL_WITH_RAMTRON 1
