@@ -1339,7 +1339,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Description: The minimum duration that we'll force attempt to level wings after a stall before we allow a timeout to happen. Use -1 to disable.
     // @Units: s
     // @Range: -1, 30
-    // @Increment: .100
+    // @Increment: .1
     // @User: Advanced
     AP_GROUPINFO("STALL_DUR2MIN", 34, ParametersG2, stall_recovery_duration2_min, 2.0f),
 
@@ -1355,7 +1355,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Description: Stall recovery
     // @User: Advanced
     // @Units: m/s
-    AP_GROUPINFO("STALL_SINK_RATE", 36, ParametersG2, stall_recovery_sink_rate, 0),
+    AP_GROUPINFO("STALL_SINK_RATE", 36, ParametersG2, stall_recovery_sink_rate, -1),
 
     AP_GROUPEND
 };

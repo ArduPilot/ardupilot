@@ -546,7 +546,6 @@ void Plane::set_servos_controlled(void)
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
         }
     } else if (control_mode == &mode_stabilize ||
-               stall_state.is_recoverying() ||
                control_mode == &mode_training ||
                control_mode == &mode_acro ||
                control_mode == &mode_fbwa ||
@@ -778,11 +777,6 @@ void Plane::set_servos(void)
     // function
     SRV_Channels::cork();
     
-    if (plane.stall_state.is_stalled()) {
-        // servos are set by the mode
-        return;
-    }
-
     // this is to allow the failsafe module to deliberately crash 
     // the plane. Only used in extreme circumstances to meet the
     // OBC rules
@@ -801,12 +795,6 @@ void Plane::set_servos(void)
     if (control_mode == &mode_auto && auto_state.idle_mode) {
         // special handling for balloon launch
         set_servos_idle();
-        servos_output();
-        return;
-    }
-
-    if (control_mode->has_servo_overrides()) {
-        // special handling for stall recovery
         servos_output();
         return;
     }

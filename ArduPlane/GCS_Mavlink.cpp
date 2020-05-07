@@ -27,6 +27,7 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
         _base_mode = MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
         break;
     case Mode::Number::STABILIZE:
+    case Mode::Number::STALLRECOVERY:
     case Mode::Number::FLY_BY_WIRE_A:
     case Mode::Number::AUTOTUNE:
     case Mode::Number::FLY_BY_WIRE_B:
@@ -52,7 +53,6 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
         // APM does in any mode, as that is defined as "system finds its own goal
         // positions", which APM does not currently do
         break;
-    case Mode::Number::STALLRECOVERY:
     case Mode::Number::INITIALISING:
         break;
     }
@@ -61,7 +61,7 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
         _base_mode |= MAV_MODE_FLAG_STABILIZE_ENABLED;        
     }
 
-    if (plane.control_mode != &plane.mode_manual && !plane.stall_state.is_stalled() && plane.control_mode != &plane.mode_initializing) {
+    if (plane.control_mode != &plane.mode_manual && plane.control_mode != &plane.mode_initializing) {
         // stabiliser of some form is enabled
         _base_mode |= MAV_MODE_FLAG_STABILIZE_ENABLED;
     }

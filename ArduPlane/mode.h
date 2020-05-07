@@ -70,9 +70,6 @@ public:
     // true for all q modes
     virtual bool is_vtol_mode() const { return false; }
 
-    // mode is currently wanting to write directly to servo channels
-    virtual bool has_servo_overrides() { return false; }
-
 protected:
 
     // subclasses override this to perform checks before entering the mode
@@ -213,18 +210,17 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
-    bool has_servo_overrides() override;
-
 protected:
     bool _enter() override;
     void _exit() override;
 
 private:
     const char* gcsStrHeader = "Stall: ";
+    uint32_t start_ms;
 
-    void behavior_stalled();
-    void behavior_level_wings();
-    bool state_complete_algorithm();
+    void set_servo_behavior();
+    bool is_recovered_early();
+    void resume_previous_mode();
 };
 
 

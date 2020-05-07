@@ -387,7 +387,7 @@ void Plane::stabilize_acro(float speed_scaler)
  */
 void Plane::stabilize()
 {
-    if (control_mode == &mode_manual || plane.stall_state.is_stalled()) {
+    if (control_mode == &mode_manual || plane.is_stalled) {
         // reset steering controls
         steer_state.locked_course = false;
         steer_state.locked_course_err = 0;
@@ -437,7 +437,7 @@ void Plane::stabilize()
         }
         stabilize_roll(speed_scaler);
         stabilize_pitch(speed_scaler);
-        if (g.stick_mixing == STICK_MIXING_DIRECT || control_mode == &mode_stabilize || stall_state.is_recoverying()) {
+        if (g.stick_mixing == STICK_MIXING_DIRECT || control_mode == &mode_stabilize) {
             stabilize_stick_mixing_direct();
         }
         stabilize_yaw(speed_scaler);

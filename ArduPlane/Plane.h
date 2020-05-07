@@ -528,19 +528,6 @@ private:
         uint32_t last_forced_throttle_ms;
     } guided_state;
 
-    enum STALLED_STATE {
-        UNSTALLED,
-        RELAX_WINGS_FULL_THR_PITCH_DOWN,
-        LEVEL_WINGS_GAIN_AIRSPEED,
-    };
-
-    struct {
-        STALLED_STATE state = STALLED_STATE::UNSTALLED;
-        uint32_t start_ms;
-        bool is_stalled() { return state == STALLED_STATE::RELAX_WINGS_FULL_THR_PITCH_DOWN; }
-        bool is_recoverying() { return state == STALLED_STATE::LEVEL_WINGS_GAIN_AIRSPEED; }
-    } stall_state;
-
 #if LANDING_GEAR_ENABLED == ENABLED
     // landing gear state
     struct {
@@ -569,6 +556,9 @@ private:
         // length of time impact_detected has been true. Times out after a few seconds. Used to clip isFlyingProbability
         uint32_t impact_timer_ms;
     } crash_state;
+
+    // true if the aircraft is currently stalled
+    bool is_stalled:1;
 
     // true if we are in an auto-throttle mode, which means
     // we need to run the speed/height controller
