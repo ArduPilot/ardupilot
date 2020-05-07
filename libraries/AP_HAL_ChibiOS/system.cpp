@@ -32,6 +32,16 @@ static_assert(sizeof(systime_t) == 2, "expected 16 bit systime_t");
 static_assert(sizeof(systime_t) == 4, "expected 32 bit systime_t");
 #endif
 
+#if defined(HAL_EXPECTED_SYSCLOCK)
+#ifdef STM32_SYS_CK
+static_assert(HAL_EXPECTED_SYSCLOCK == STM32_SYS_CK, "unexpected STM32_SYS_CK value");
+#elif defined(STM32_HCLK)
+static_assert(HAL_EXPECTED_SYSCLOCK == STM32_HCLK, "unexpected STM32_HCLK value");
+#else
+#error "unknown system clock"
+#endif
+#endif
+
 extern const AP_HAL::HAL& hal;
 extern "C"
 {

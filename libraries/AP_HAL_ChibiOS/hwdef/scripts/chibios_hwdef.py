@@ -727,6 +727,9 @@ def write_mcu_config(f):
         env_vars['CPU_FLAGS'] = ["-mcpu=%s" % cortex, "-mfpu=fpv4-sp-d16", "-mfloat-abi=hard"]
         build_info['MCU'] = cortex
 
+    if get_mcu_config('EXPECTED_CLOCK'):
+        f.write('#define HAL_EXPECTED_SYSCLOCK %u\n' % get_mcu_config('EXPECTED_CLOCK'))
+
     env_vars['CORTEX'] = cortex
 
     if not args.bootloader:
