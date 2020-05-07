@@ -573,6 +573,16 @@ public:
         return _rsem;
     }
 
+    // convert a vector from body to earth frame
+    Vector3f body_to_earth(const Vector3f &v) const {
+        return v * get_rotation_body_to_ned();
+    }
+
+    // convert a vector from earth to body frame
+    Vector3f earth_to_body(const Vector3f &v) const {
+        return get_rotation_body_to_ned().mul_transpose(v);
+    }
+    
     // for holding parameters
     static const struct AP_Param::GroupInfo var_info[];
 
