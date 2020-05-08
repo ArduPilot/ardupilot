@@ -205,9 +205,17 @@ void AP_Baro::calibrate(bool save)
     }
 
     if (hal.util->was_watchdog_reset()) {
-        BARO_SEND_TEXT(MAV_SEVERITY_INFO, "Baro: skipping calibration");
+        BARO_SEND_TEXT(MAV_SEVERITY_INFO, "Baro: skipping calibration after WDG reset");
         return;
     }
+    
+    #ifdef HAL_BARO_ALLOW_INIT_NO_BARO
+    if (_num_drivers == 0 || _num_sensors == 0 || drivers[0] == nullptr) {
+            BARO_SEND_TEXT(MAV_SEVERITY_INFO, "Baro: no sensors found, skipping calibration");
+            return;
+    }
+    #endif
+    
     BARO_SEND_TEXT(MAV_SEVERITY_INFO, "Calibrating barometer");
 
     // reset the altitude offset when we calibrate. The altitude
