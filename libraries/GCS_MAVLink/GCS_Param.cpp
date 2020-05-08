@@ -145,6 +145,10 @@ void GCS_MAVLINK::handle_request_data_stream(const mavlink_message_t &msg)
                 // considered "internal".
                 continue;
             }
+            if (i == STREAM_PLANCK) {
+                // don't touch planck_stateinfo
+                continue;
+            }
             if (persist_streamrates()) {
                 streamRates[i].set_and_save_ifchanged(freq);
             } else {
@@ -224,7 +228,7 @@ void GCS_MAVLINK::handle_param_request_read(const mavlink_message_t &msg)
         // we can't process this right now, drop it
         return;
     }
-    
+
     mavlink_param_request_read_t packet;
     mavlink_msg_param_request_read_decode(&msg, &packet);
 
@@ -361,7 +365,7 @@ void GCS_MAVLINK::param_io_timer(void)
         // no room
         return;
     }
-    
+
     if (!param_requests.pop(req)) {
         // nothing to do
         return;
