@@ -118,13 +118,16 @@ void NavEKF3_core::readRangeFinder(void)
     }
 }
 
-void NavEKF3_core::writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset)
+void NavEKF3_core::writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, uint16_t delay_ms, const Vector3f &posOffset)
 {
     // limit update rate to maximum allowed by sensor buffers and fusion process
     // don't try to write to buffer until the filter has been initialised
     if (((timeStamp_ms - bodyOdmMeasTime_ms) < frontend->sensorIntervalMin_ms) || (delTime < dtEkfAvg) || !statesInitialised) {
         return;
     }
+
+    // subtract delay from timestamp
+    timeStamp_ms -= delay_ms;
 
     bodyOdmDataNew.body_offset = &posOffset;
     bodyOdmDataNew.vel = delPos * (1.0f/delTime);
