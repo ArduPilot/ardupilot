@@ -1,0 +1,5 @@
+# Just inherit everything from the working board.  The user flashes
+#  the transition firmware which has embedded a bootloader compatible
+#  with the ArduPilot binary this way.
+
+include ../mini-pix-V1.0-II/hwdef-bl.dat

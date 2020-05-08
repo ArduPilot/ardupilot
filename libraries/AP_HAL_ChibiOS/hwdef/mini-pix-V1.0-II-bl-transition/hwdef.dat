@@ -1,0 +1,27 @@
+# this is a configuration which boots on the Mini-Pix hardware as
+#  shipped from the factory.  The firmware metadata reports an APJ
+#  board ID of three but its ROMFS has a bootloader that reports a
+#  board ID of 1016 - so you can then flash on the ArduPilot
+#  MiniPix-V1.0-II firmware
+
+# start by including the definition of the working firmware:
+include ../mini-pix-V1.0-II/hwdef.dat
+
+# now fiddle things to match the layout of the thing coming from the factory:
+
+APJ_BOARD_ID 3
+
+FLASH_RESERVE_START_KB 32
+
+# and don't try to store anything, ever:
+define HAL_USE_EMPTY_STORAGE 1
+undef STORAGE_FLASH_PAGE
+
+# ./waf configure --board=mini-pix-V1.0-II-bl-transition --bootloader
+# ./waf bootloader
+# cp build/mini-pix-V1.0-II-bl-transition/bin/AP_Bootloader.bin Tools/bootloaders/mini-pix-V1.0-II-bl-transition_bl.bin
+# cp build/mini-pix-V1.0-II-bl-transition/bootloader/AP_Bootloader Tools/bootloaders/mini-pix-V1.0-II-bl-transition_bl.elf
+# ./waf configure --board=mini-pix-V1.0-II-bl-transition
+# ./waf build --target=bin/arduplane
+# scp /home/pbarker/rc/ardupilot/build/mini-pix-V1.0-II-bl-transition/bin/arduplane.apj mini-pix-transition.apj
+# scp /home/pbarker/rc/ardupilot/build/mini-pix-V1.0-II-bl-transition/bin/arduplane.bin root@autotest:/home/autotest/APM/buildlogs/binaries/MiniPix-v1.0-II-Transition/mini-pix-transition.bin
