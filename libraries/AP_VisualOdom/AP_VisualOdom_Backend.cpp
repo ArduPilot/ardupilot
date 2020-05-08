@@ -62,6 +62,7 @@ void AP_VisualOdom_Backend::handle_vision_position_delta_msg(const mavlink_messa
                                          angle_delta,
                                          time_delta_sec,
                                          now_ms,
+                                         _frontend.get_delay_ms(),
                                          _frontend.get_pos_offset());
 
     // log sensor data
