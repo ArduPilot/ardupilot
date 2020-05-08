@@ -137,6 +137,9 @@ public:
     // return the number of compass instances
     uint8_t get_count(void) const { return _compass_count; }
 
+    // return the number of enabled sensors
+    uint8_t get_num_enabled(void) const;
+    
     /// Return the current field as a Vector3f in milligauss
     const Vector3f &get_field(uint8_t i) const { return _get_state(Priority(i)).field; }
     const Vector3f &get_field(void) const { return get_field(0); }

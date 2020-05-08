@@ -1478,6 +1478,24 @@ Compass::use_for_yaw(uint8_t i) const
     return _use_for_yaw[Priority(i)] && _learn.get() != LEARN_INFLIGHT;
 }
 
+/*
+  return the number of enabled sensors. Used to determine if
+  non-compass operation is desired
+ */
+uint8_t Compass::get_num_enabled(void) const
+{
+    if (get_count() == 0) {
+        return 0;
+    }
+    uint8_t count = 0;
+    for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+        if (use_for_yaw(i)) {
+            count++;
+        }
+    }
+    return count;
+}
+
 void
 Compass::set_use_for_yaw(uint8_t i, bool use)
 {
