@@ -940,7 +940,7 @@ void NavEKF3_core::writeDefaultAirSpeed(float airspeed)
 *            External Navigation Measurements           *
 ********************************************************/
 
-void NavEKF3_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint32_t resetTime_ms)
+void NavEKF3_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint16_t delay_ms, uint32_t resetTime_ms)
 {
     // limit update rate to maximum allowed by sensor buffers and fusion process
     // don't try to write to buffer until the filter has been initialised
@@ -967,8 +967,7 @@ void NavEKF3_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, 
     }
 
     // calculate timestamp
-    const uint32_t extnav_delay_ms = 10;
-    timeStamp_ms = timeStamp_ms - extnav_delay_ms;
+    timeStamp_ms = timeStamp_ms - delay_ms;
     // Correct for the average intersampling delay due to the filter update rate
     timeStamp_ms -= localFilterTimeStep_ms/2;
     // Prevent time delay exceeding age of oldest IMU data in the buffer
