@@ -23,7 +23,7 @@
 #include "AP_RCProtocol_SBUS.h"
 #include "AP_RCProtocol_SUMD.h"
 #include "AP_RCProtocol_SRXL.h"
-#if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
+#ifndef IOMCU_FW
 #include "AP_RCProtocol_SRXL2.h"
 #endif
 #include "AP_RCProtocol_CRSF.h"
@@ -44,7 +44,7 @@ void AP_RCProtocol::init()
     backend[AP_RCProtocol::DSM] = new AP_RCProtocol_DSM(*this);
     backend[AP_RCProtocol::SUMD] = new AP_RCProtocol_SUMD(*this);
     backend[AP_RCProtocol::SRXL] = new AP_RCProtocol_SRXL(*this);
-#if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
+#ifndef IOMCU_FW
     backend[AP_RCProtocol::SRXL2] = new AP_RCProtocol_SRXL2(*this);
     backend[AP_RCProtocol::CRSF] = new AP_RCProtocol_CRSF(*this);
 #endif
@@ -165,6 +165,7 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
         // we're using pulse inputs, discard bytes
         return false;
     }
+
     // first try current protocol
     if (_detected_protocol != AP_RCProtocol::NONE && !searching) {
         backend[_detected_protocol]->process_byte(byte, baudrate);
@@ -205,6 +206,22 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
         }
     }
     return false;
+}
+
+// handshake if nothing else has succeeded so far
+void AP_RCProtocol::process_handshake( uint32_t baudrate)
+{
+    // if we ever succeeded before then do not handshake
+    if (_detected_protocol != AP_RCProtocol::NONE || _last_input_ms > 0) {
+        return;
+    }
+
+    // otherwise handshake all protocols
+    for (uint8_t i = 0; i < AP_RCProtocol::NONE; i++) {
+        if (backend[i] != nullptr) {
+            backend[i]->process_handshake(baudrate);
+        }
+    }
 }
 
 /*
@@ -257,6 +274,9 @@ void AP_RCProtocol::check_added_uart(void)
         added.uart->begin(added.baudrate, 128, 128);
         added.last_baud_change_ms = AP_HAL::millis();
     }
+
+    process_handshake(added.baudrate);
+
     uint32_t n = added.uart->available();
     n = MIN(n, 255U);
     for (uint8_t i=0; i<n; i++) {
