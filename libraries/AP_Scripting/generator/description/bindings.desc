@@ -38,6 +38,7 @@ singleton AP_AHRS method airspeed_estimate boolean float'Null
 singleton AP_AHRS method get_vibration Vector3f
 singleton AP_AHRS method earth_to_body Vector3f Vector3f
 singleton AP_AHRS method body_to_earth Vector3f Vector3f
+singleton AP_AHRS method get_EAS2TAS float
 
 include AP_Arming/AP_Arming.h
 
