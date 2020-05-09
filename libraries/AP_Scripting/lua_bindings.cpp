@@ -35,9 +35,20 @@ static int lua_millis(lua_State *L) {
     return 1;
 }
 
+// micros
+static int lua_micros(lua_State *L) {
+    check_arguments(L, 0, "micros");
+
+    new_uint32_t(L);
+    *check_uint32_t(L, -1) = AP_HAL::micros();
+
+    return 1;
+}
+
 static const luaL_Reg global_functions[] =
 {
     {"millis", lua_millis},
+    {"micros", lua_micros},
     {NULL, NULL}
 };
 
