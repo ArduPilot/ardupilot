@@ -1045,7 +1045,6 @@ private:
     bool ekf_over_threshold();
     void failsafe_ekf_event();
     void failsafe_ekf_off_event(void);
-    bool ekf_position_ok() const;
 
 public:
     void failsafe_check(void);

@@ -134,10 +134,7 @@ bool Plane::ekf_over_threshold()
         return true;
     }
 
-    if (ekf_position_ok()) {
-        return false;
-    }
-    return true;
+    return false;
 }
 
 
@@ -177,27 +174,4 @@ void Plane::failsafe_ekf_off_event(void)
 
     ekf_check_state.failsafe_on = false;
     AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_EKFINAV, LogErrorCode::FAILSAFE_RESOLVED);
-}
-
-// ekf_position_ok - returns true if the ekf claims it's horizontal absolute position estimate is ok and home position is set
-bool Plane::ekf_position_ok() const
-{
-    if (!ahrs.have_inertial_nav()) {
-        // do not allow navigation with dcm position
-        return false;
-    }
-
-    // with EKF use filter status and ekf check
-    nav_filter_status filt_status;
-    if(ahrs.get_filter_status(filt_status)) {
-
-    }
-
-    // if disarmed we accept a predicted horizontal position
-    if (!plane.arming.is_armed()) {
-        return ((filt_status.flags.horiz_pos_abs || filt_status.flags.pred_horiz_pos_abs));
-    } else {
-        // once armed we require a good absolute position and EKF must not be in const_pos_mode
-        return (filt_status.flags.horiz_pos_abs && !filt_status.flags.const_pos_mode);
-    }
 }
