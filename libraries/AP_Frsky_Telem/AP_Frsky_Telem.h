@@ -57,14 +57,16 @@ for FrSky SPort and SPort Passthrough (OpenTX) protocols (X-receivers)
 #define SENSOR_ID_FAS               0x22 // Sensor ID  2
 #define SENSOR_ID_GPS               0x83 // Sensor ID  3
 #define SENSOR_ID_SP2UR             0xC6 // Sensor ID  6
-#define SENSOR_ID_28                0x1B // Sensor ID 28
+#define SENSOR_ID_27                0x1B // Sensor ID 27
 
 // FrSky data IDs
 #define GPS_LONG_LATI_FIRST_ID      0x0800
 #define DIY_FIRST_ID                0x5000
 
-#define START_STOP_SPORT            0x7E
-#define BYTESTUFF_SPORT             0x7D
+#define FRAME_HEAD                  0x7E
+#define FRAME_DLE                   0x7D
+#define FRAME_XOR                   0x20
+
 #define SPORT_DATA_FRAME            0x10
 /* 
 for FrSky SPort Passthrough
@@ -218,11 +220,9 @@ private:
     // tick - main call to send updates to transmitter (called by scheduler at 1kHz)
     void loop(void);
     // methods related to the nuts-and-bolts of sending data
-    void calc_crc(uint8_t byte);
-    void send_crc(void);
     void send_byte(uint8_t value);
     void send_uint16(uint16_t id, uint16_t data);
-    void send_uint32(uint8_t frame, uint16_t id, uint32_t data);
+    void send_sport_frame(uint8_t frame, uint16_t appid, uint32_t data);
 
     // methods to convert flight controller data to FrSky SPort Passthrough (OpenTX) format
     bool get_next_msg_chunk(void) override;
