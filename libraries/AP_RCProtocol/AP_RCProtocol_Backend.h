@@ -28,6 +28,7 @@ public:
     virtual ~AP_RCProtocol_Backend() {}
     virtual void process_pulse(uint32_t width_s0, uint32_t width_s1) {}
     virtual void process_byte(uint8_t byte, uint32_t baudrate) {}
+    virtual void process_handshake(uint32_t baudrate) {}
     uint16_t read(uint8_t chan);
     void read(uint16_t *pwm, uint8_t n);
     bool new_input();
@@ -56,6 +57,10 @@ public:
     // get number of frames, honoring failsafe
     uint32_t get_rc_input_count(void) const {
         return rc_input_count;
+    }
+
+    uint32_t get_rc_protocols_mask(void) const {
+        return frontend.rc_protocols_mask;
     }
 
     // get RSSI
