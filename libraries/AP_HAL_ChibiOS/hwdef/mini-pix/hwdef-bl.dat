@@ -1,44 +1,20 @@
-# hw definition file for processing by chibios_pins.py
-# for bootloader for mini-pix hardware from RadioLink
+# hw definition file for processing by chibios_hwdef.py
 
-# MCU class and specific type
-MCU STM32F4xx STM32F405xx
+# this is for the original Mini-Pix, which has an FRAM.  The part was
+#  omitted in the second iteration of this board.
 
-# board ID for firmware load
+include ../mini-pix-V1.0-II/hwdef-bl.dat
+
 APJ_BOARD_ID 3
 
-# crystal frequency
-OSCILLATOR_HZ 24000000
+FLASH_RESERVE_START_KB 0 # bootloader is loaded at start of flash
+FLASH_BOOTLOADER_LOAD_KB 16 # the location where the bootloader will put the firmware
 
-# flash size
-FLASH_SIZE_KB 1024
-
-# don't allow bootloader to use more than 16k
-FLASH_USE_MAX_KB 16
-
-# bootloader loads at start of flash
-FLASH_RESERVE_START_KB 0
-
-# LEDs
-PB1 LED_BOOTLOADER OUTPUT LOW
-PE12 LED_ACTIVITY  OUTPUT LOW
-define HAL_LED_ON 0
-
-# the location where the bootloader will put the firmware
-FLASH_BOOTLOADER_LOAD_KB 16
-
-
-# order of UARTs (and USB)
-SERIAL_ORDER OTG1
-
-# USB pins
-PA11 OTG_FS_DM OTG1
-PA12 OTG_FS_DP OTG1
-
-define HAL_USE_EMPTY_STORAGE 1
-define HAL_STORAGE_SIZE 16384
-
-# Add CS pins to ensure they are high in bootloader
-PC2 LPS22HB_CS CS
-PC15 MPU6500_CS CS
 PD10 FRAM_CS CS
+
+SPIDEV ramtron SPI2 DEVID4 FRAM_CS    MODE3 8*MHZ 8*MHZ
+
+define HAL_STORAGE_SIZE        16384
+
+# enable RAMTROM parameter storage
+define HAL_WITH_RAMTRON 1
