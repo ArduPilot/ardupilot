@@ -148,15 +148,15 @@ void AP_Frsky_Telem::process_packet(uint8_t idx)
     switch (idx) {
         case TEXT: // 0x5000 status text
             if (get_next_msg_chunk()) {
-                send_uint32(SPORT_DATA_FRAME, DIY_FIRST_ID, _msg_chunk.chunk);
+                send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID, _msg_chunk.chunk);
             }
             break;
         case ATTITUDE: // 0x5006 Attitude and range
-            send_uint32(SPORT_DATA_FRAME, DIY_FIRST_ID+6, calc_attiandrng());
+            send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+6, calc_attiandrng());
             break;
         case GPS_LAT: // 0x800 GPS lat
             // sample both lat and lon at the same time
-            send_uint32(SPORT_DATA_FRAME, GPS_LONG_LATI_FIRST_ID, calc_gps_latlng(&_passthrough.send_latitude)); // gps latitude or longitude
+            send_sport_frame(SPORT_DATA_FRAME, GPS_LONG_LATI_FIRST_ID, calc_gps_latlng(&_passthrough.send_latitude)); // gps latitude or longitude
             _passthrough.gps_lng_sample = calc_gps_latlng(&_passthrough.send_latitude);
             // force the scheduler to select GPS lon as packet that's been waiting the most
             // this guarantees that gps coords are sent at max 
@@ -164,28 +164,28 @@ void AP_Frsky_Telem::process_packet(uint8_t idx)
             _scheduler.packet_timer[GPS_LON] = _scheduler.packet_timer[GPS_LAT] - 10000;
             break;
         case GPS_LON: // 0x800 GPS lon
-            send_uint32(SPORT_DATA_FRAME, GPS_LONG_LATI_FIRST_ID, _passthrough.gps_lng_sample); // gps longitude
+            send_sport_frame(SPORT_DATA_FRAME, GPS_LONG_LATI_FIRST_ID, _passthrough.gps_lng_sample); // gps longitude
             break;
         case VEL_YAW: // 0x5005 Vel and Yaw
-            send_uint32(SPORT_DATA_FRAME, DIY_FIRST_ID+5, calc_velandyaw());
+            send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+5, calc_velandyaw());
             break;
         case AP_STATUS: // 0x5001 AP status
-            send_uint32(SPORT_DATA_FRAME, DIY_FIRST_ID+1, calc_ap_status());
+            send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+1, calc_ap_status());
             break;
         case GPS_STATUS: // 0x5002 GPS Status
-            send_uint32(SPORT_DATA_FRAME, DIY_FIRST_ID+2, calc_gps_status());
+            send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+2, calc_gps_status());
             break;
         case HOME: // 0x5004 Home
-            send_uint32(SPORT_DATA_FRAME, DIY_FIRST_ID+4, calc_home());
+            send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+4, calc_home());
             break;
         case BATT_2: // 0x5008 Battery 2 status
-            send_uint32(SPORT_DATA_FRAME, DIY_FIRST_ID+8, calc_batt(1));
+            send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+8, calc_batt(1));
             break;
         case BATT_1: // 0x5003 Battery 1 status
-            send_uint32(SPORT_DATA_FRAME, DIY_FIRST_ID+3, calc_batt(0));
+            send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+3, calc_batt(0));
             break;
         case PARAM: // 0x5007 parameters
-            send_uint32(SPORT_DATA_FRAME, DIY_FIRST_ID+7, calc_param());
+            send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+7, calc_param());
             break;
     }
 }
@@ -214,8 +214,8 @@ void AP_Frsky_Telem::send_SPort_Passthrough(void)
         prev_byte = _passthrough.new_byte;
         _passthrough.new_byte = _port->read();
     }
-    if (prev_byte == START_STOP_SPORT) {
-        if (_passthrough.new_byte == SENSOR_ID_28) { // byte 0x7E is the header of each poll request
+    if (prev_byte == FRAME_HEAD) {
+        if (_passthrough.new_byte == SENSOR_ID_27) { // byte 0x7E is the header of each poll request
             run_wfq_scheduler();
         }
     }
@@ -256,7 +256,7 @@ void AP_Frsky_Telem::send_SPort(void)
     for (int16_t i = 0; i < numc; i++) {
         int16_t readbyte = _port->read();
         if (_SPort.sport_status == false) {
-            if  (readbyte == START_STOP_SPORT) {
+            if  (readbyte == FRAME_HEAD) {
                 _SPort.sport_status = true;
             }
         } else {
@@ -265,13 +265,13 @@ void AP_Frsky_Telem::send_SPort(void)
                 case SENSOR_ID_VARIO:   // Sensor ID  0
                     switch (_SPort.vario_call) {
                         case 0:
-                            send_uint32(SPORT_DATA_FRAME, DATA_ID_BARO_ALT_BP, _SPort_data.alt_nav_meters); // send altitude integer part
+                            send_sport_frame(SPORT_DATA_FRAME, DATA_ID_BARO_ALT_BP, _SPort_data.alt_nav_meters); // send altitude integer part
                             break;
                         case 1:
-                            send_uint32(SPORT_DATA_FRAME, DATA_ID_BARO_ALT_AP, _SPort_data.alt_nav_cm); // send altitude decimal part
+                            send_sport_frame(SPORT_DATA_FRAME, DATA_ID_BARO_ALT_AP, _SPort_data.alt_nav_cm); // send altitude decimal part
                             break;
                         case 2:
-                            send_uint32(SPORT_DATA_FRAME, DATA_ID_VARIO, _SPort_data.vario_vspd); // send vspeed m/s
+                            send_sport_frame(SPORT_DATA_FRAME, DATA_ID_VARIO, _SPort_data.vario_vspd); // send vspeed m/s
                             _SPort.vario_refresh = true;
                             break;
                     }
@@ -282,10 +282,10 @@ void AP_Frsky_Telem::send_SPort(void)
                 case SENSOR_ID_FAS: // Sensor ID  2
                     switch (_SPort.fas_call) {
                         case 0:
-                            send_uint32(SPORT_DATA_FRAME, DATA_ID_FUEL, (uint16_t)roundf(_battery.capacity_remaining_pct())); // send battery remaining
+                            send_sport_frame(SPORT_DATA_FRAME, DATA_ID_FUEL, (uint16_t)roundf(_battery.capacity_remaining_pct())); // send battery remaining
                             break;
                         case 1:
-                            send_uint32(SPORT_DATA_FRAME, DATA_ID_VFAS, (uint16_t)roundf(_battery.voltage() * 10.0f)); // send battery voltage
+                            send_sport_frame(SPORT_DATA_FRAME, DATA_ID_VFAS, (uint16_t)roundf(_battery.voltage() * 10.0f)); // send battery voltage
                             break;
                         case 2:
                             {
@@ -293,7 +293,7 @@ void AP_Frsky_Telem::send_SPort(void)
                                 if (!_battery.current_amps(current)) {
                                     current = 0;
                                 }
-                                send_uint32(SPORT_DATA_FRAME, DATA_ID_CURRENT, (uint16_t)roundf(current * 10.0f)); // send current consumption
+                                send_sport_frame(SPORT_DATA_FRAME, DATA_ID_CURRENT, (uint16_t)roundf(current * 10.0f)); // send current consumption
                                 break;
                             }                        
                             break;
@@ -305,25 +305,25 @@ void AP_Frsky_Telem::send_SPort(void)
                 case SENSOR_ID_GPS: // Sensor ID  3
                     switch (_SPort.gps_call) {
                         case 0:
-                            send_uint32(SPORT_DATA_FRAME, GPS_LONG_LATI_FIRST_ID, calc_gps_latlng(&_passthrough.send_latitude)); // gps latitude or longitude
+                            send_sport_frame(SPORT_DATA_FRAME, GPS_LONG_LATI_FIRST_ID, calc_gps_latlng(&_passthrough.send_latitude)); // gps latitude or longitude
                             break;
                         case 1:
-                            send_uint32(SPORT_DATA_FRAME, GPS_LONG_LATI_FIRST_ID, calc_gps_latlng(&_passthrough.send_latitude)); // gps latitude or longitude
+                            send_sport_frame(SPORT_DATA_FRAME, GPS_LONG_LATI_FIRST_ID, calc_gps_latlng(&_passthrough.send_latitude)); // gps latitude or longitude
                             break;
                         case 2:
-                            send_uint32(SPORT_DATA_FRAME, DATA_ID_GPS_SPEED_BP, _SPort_data.speed_in_meter); // send gps speed integer part
+                            send_sport_frame(SPORT_DATA_FRAME, DATA_ID_GPS_SPEED_BP, _SPort_data.speed_in_meter); // send gps speed integer part
                             break;
                         case 3:
-                            send_uint32(SPORT_DATA_FRAME, DATA_ID_GPS_SPEED_AP, _SPort_data.speed_in_centimeter); // send gps speed decimal part
+                            send_sport_frame(SPORT_DATA_FRAME, DATA_ID_GPS_SPEED_AP, _SPort_data.speed_in_centimeter); // send gps speed decimal part
                             break;
                         case 4:
-                            send_uint32(SPORT_DATA_FRAME, DATA_ID_GPS_ALT_BP, _SPort_data.alt_gps_meters); // send gps altitude integer part
+                            send_sport_frame(SPORT_DATA_FRAME, DATA_ID_GPS_ALT_BP, _SPort_data.alt_gps_meters); // send gps altitude integer part
                             break;
                         case 5:
-                            send_uint32(SPORT_DATA_FRAME, DATA_ID_GPS_ALT_AP, _SPort_data.alt_gps_cm); // send gps altitude decimals
+                            send_sport_frame(SPORT_DATA_FRAME, DATA_ID_GPS_ALT_AP, _SPort_data.alt_gps_cm); // send gps altitude decimals
                             break;
                         case 6:
-                            send_uint32(SPORT_DATA_FRAME, DATA_ID_GPS_COURS_BP, _SPort_data.yaw); // send heading in degree based on AHRS and not GPS
+                            send_sport_frame(SPORT_DATA_FRAME, DATA_ID_GPS_COURS_BP, _SPort_data.yaw); // send heading in degree based on AHRS and not GPS
                             _SPort.gps_refresh = true;
                             break;
                     }
@@ -334,10 +334,10 @@ void AP_Frsky_Telem::send_SPort(void)
                 case SENSOR_ID_SP2UR: // Sensor ID  6
                     switch (_SPort.various_call) {
                         case 0 :
-                            send_uint32(SPORT_DATA_FRAME, DATA_ID_TEMP2, (uint16_t)(AP::gps().num_sats() * 10 + AP::gps().status())); // send GPS status and number of satellites as num_sats*10 + status (to fit into a uint8_t)
+                            send_sport_frame(SPORT_DATA_FRAME, DATA_ID_TEMP2, (uint16_t)(AP::gps().num_sats() * 10 + AP::gps().status())); // send GPS status and number of satellites as num_sats*10 + status (to fit into a uint8_t)
                             break;
                         case 1:
-                            send_uint32(SPORT_DATA_FRAME, DATA_ID_TEMP1, gcs().custom_mode()); // send flight mode
+                            send_sport_frame(SPORT_DATA_FRAME, DATA_ID_TEMP1, gcs().custom_mode()); // send flight mode
                             break;
                     }
                     if (++_SPort.various_call > 1) {
@@ -422,79 +422,80 @@ void AP_Frsky_Telem::loop(void)
     }
 }
 
-/* 
- * build up the frame's crc
- * for FrSky SPort protocol (X-receivers)
- */
-void AP_Frsky_Telem::calc_crc(uint8_t byte)
-{
-    _crc += byte; //0-1FF
-    _crc += _crc >> 8; //0-100
-    _crc &= 0xFF;
-}
-
-/*
- * send the frame's crc at the end of the frame
- * for FrSky SPort protocol (X-receivers)
- */
-void AP_Frsky_Telem::send_crc(void) 
-{
-    send_byte(0xFF - _crc);
-    _crc = 0;
-}
-
-
 /*
   send 1 byte and do byte stuffing
 */
 void AP_Frsky_Telem::send_byte(uint8_t byte)
 {
-    if (_protocol == AP_SerialManager::SerialProtocol_FrSky_D) { // FrSky D protocol (D-receivers)
-        if (byte == START_STOP_D) {
-            _port->write(0x5D);
-            _port->write(0x3E);
-        } else if (byte == BYTESTUFF_D) {
-            _port->write(0x5D);
-            _port->write(0x3D);
-        } else {
-            _port->write(byte);
-        }
-    } else { // FrSky SPort protocol (X-receivers)
-        if (byte == START_STOP_SPORT) {
-            _port->write(0x7D);
-            _port->write(0x5E);
-        } else if (byte == BYTESTUFF_SPORT) {
-            _port->write(0x7D);
-            _port->write(0x5D);
-        } else {
-            _port->write(byte);
-        }
-        calc_crc(byte);
+    if (byte == START_STOP_D) {
+        _port->write(0x5D);
+        _port->write(0x3E);
+    } else if (byte == BYTESTUFF_D) {
+        _port->write(0x5D);
+        _port->write(0x3D);
+    } else {
+        _port->write(byte);
     }
 }
 
 /*
- * send one uint32 frame of FrSky data - for FrSky SPort protocol (X-receivers)
+ * send an 8 bytes SPort frame of FrSky data - for FrSky SPort protocol (X-receivers)
  */
-void  AP_Frsky_Telem::send_uint32(uint8_t frame, uint16_t id, uint32_t data)
+void  AP_Frsky_Telem::send_sport_frame(uint8_t frame, uint16_t appid, uint32_t data)
 {
     if (use_external_data) {
         external_data.frame = frame;
-        external_data.appid = id;
+        external_data.appid = appid;
         external_data.data = data;
         external_data.pending = true;
         return;
     }
-    send_byte(frame); // frame type
-    uint8_t *bytes = (uint8_t*)&id;
-    send_byte(bytes[0]); // LSB
-    send_byte(bytes[1]); // MSB
-    bytes = (uint8_t*)&data;
-    send_byte(bytes[0]); // LSB
-    send_byte(bytes[1]);
-    send_byte(bytes[2]);
-    send_byte(bytes[3]); // MSB
-    send_crc();
+
+    uint8_t buf[8];
+
+    buf[0] = frame;
+    buf[1] = appid & 0xFF;
+    buf[2] = appid >> 8;
+    memcpy(&buf[3], &data, 4);
+
+    uint16_t sum = 0;
+    for (uint8_t i=0; i<sizeof(buf)-1; i++) {
+        sum += buf[i];
+        sum += sum >> 8;
+        sum &= 0xFF;              
+    }
+    sum = 0xff - ((sum & 0xff) + (sum >> 8));
+    buf[7] = (uint8_t)sum;
+
+    // perform byte stuffing per SPort spec
+    uint8_t len = 0;
+    uint8_t buf2[sizeof(buf)*2+1];
+
+    for (uint8_t i=0; i<sizeof(buf); i++) {
+        uint8_t c = buf[i];
+        if (c == FRAME_DLE || buf[i] == FRAME_HEAD) {
+            buf2[len++] = FRAME_DLE;
+            buf2[len++] = c ^ FRAME_XOR;
+        } else {
+            buf2[len++] = c;
+        }
+    }
+    /*
+      check that we haven't been too slow in responding to the new
+      UART data. If we respond too late then we will overwrite the next
+      polling frame.
+      SPort poll-to-pool period is 11.65ms, a frame takes 1.38ms
+      this leaves us with up to 10ms to respond but to play it safe we
+      allow no more than 7500us
+     */
+    uint64_t tend = _port->receive_time_constraint_us(1);
+    uint64_t now = AP_HAL::micros64();
+    uint64_t tdelay = now - tend;
+    if (tdelay > 7500) {
+        // we've been too slow in responding
+        return;
+    }
+    _port->write(buf2, len);
 }
 
 /*
