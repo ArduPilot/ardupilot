@@ -165,8 +165,7 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
 
     // constructor
 AP_Landing::AP_Landing(AP_Mission &_mission, AP_AHRS &_ahrs, AP_TECS *_tecs_Controller, AP_Navigation *_nav_controller, AP_Vehicle::FixedWing &_aparm,
-                       set_target_altitude_proportion_fn_t _set_target_altitude_proportion_fn,
-                       constrain_target_altitude_location_fn_t _constrain_target_altitude_location_fn,
+                       AP_AltitudePlanner &_altitudePlanner,
                        adjusted_altitude_cm_fn_t _adjusted_altitude_cm_fn,
                        adjusted_relative_altitude_cm_fn_t _adjusted_relative_altitude_cm_fn,
                        disarm_if_autoland_complete_fn_t _disarm_if_autoland_complete_fn,
@@ -176,8 +175,7 @@ AP_Landing::AP_Landing(AP_Mission &_mission, AP_AHRS &_ahrs, AP_TECS *_tecs_Cont
     ,tecs_Controller(_tecs_Controller)
     ,nav_controller(_nav_controller)
     ,aparm(_aparm)
-    ,set_target_altitude_proportion_fn(_set_target_altitude_proportion_fn)
-    ,constrain_target_altitude_location_fn(_constrain_target_altitude_location_fn)
+    ,altitudePlanner(_altitudePlanner)
     ,adjusted_altitude_cm_fn(_adjusted_altitude_cm_fn)
     ,adjusted_relative_altitude_cm_fn(_adjusted_relative_altitude_cm_fn)
     ,disarm_if_autoland_complete_fn(_disarm_if_autoland_complete_fn)
@@ -281,11 +279,11 @@ bool AP_Landing::verify_abort_landing(const Location &prev_WP_loc, Location &nex
      return false;
 }
 
-void AP_Landing::adjust_landing_slope_for_rangefinder_bump(AP_Vehicle::FixedWing::Rangefinder_State &rangefinder_state, Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc, const float wp_distance, int32_t &target_altitude_offset_cm)
+void AP_Landing::adjust_landing_slope_for_rangefinder_bump(AP_Vehicle::FixedWing::Rangefinder_State &rangefinder_state, Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc, const float wp_distance)
 {
     switch (type) {
     case TYPE_STANDARD_GLIDE_SLOPE:
-        type_slope_adjust_landing_slope_for_rangefinder_bump(rangefinder_state, prev_WP_loc, next_WP_loc, current_loc, wp_distance, target_altitude_offset_cm);
+        type_slope_adjust_landing_slope_for_rangefinder_bump(rangefinder_state, prev_WP_loc, next_WP_loc, current_loc, wp_distance);
         break;
 #if HAL_LANDING_DEEPSTALL_ENABLED
     case TYPE_DEEPSTALL:
@@ -431,11 +429,11 @@ const AP_PIDInfo* AP_Landing::get_pid_info(void) const
   which can lead to erratic pitch control
  */
 
-void AP_Landing::setup_landing_glide_slope(const Location &prev_WP_loc, const Location &next_WP_loc, const Location &current_loc, int32_t &target_altitude_offset_cm)
+void AP_Landing::setup_landing_glide_slope(const Location &prev_WP_loc, const Location &next_WP_loc, const Location &current_loc)
 {
     switch (type) {
     case TYPE_STANDARD_GLIDE_SLOPE:
-        type_slope_setup_landing_glide_slope(prev_WP_loc, next_WP_loc, current_loc, target_altitude_offset_cm);
+        type_slope_setup_landing_glide_slope(prev_WP_loc, next_WP_loc, current_loc);
         break;
 #if HAL_LANDING_DEEPSTALL_ENABLED
     case TYPE_DEEPSTALL:

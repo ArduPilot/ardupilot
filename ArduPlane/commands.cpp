@@ -79,7 +79,7 @@ void Plane::set_guided_WP(const Location &loc)
 
     // used to control FBW and limit the rate of climb
     // -----------------------------------------------
-    set_target_altitude_current();
+    altitudePlanner.set_target_altitude_current();
 
     setup_glide_slope();
     setup_turn_angle();

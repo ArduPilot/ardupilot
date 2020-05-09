@@ -181,7 +181,7 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
     return false;
 }
 
-void AP_Landing::type_slope_adjust_landing_slope_for_rangefinder_bump(AP_Vehicle::FixedWing::Rangefinder_State &rangefinder_state, Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc, const float wp_distance, int32_t &target_altitude_offset_cm)
+void AP_Landing::type_slope_adjust_landing_slope_for_rangefinder_bump(AP_Vehicle::FixedWing::Rangefinder_State &rangefinder_state, Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc, const float wp_distance)
 {
     // check the rangefinder correction for a large change. When found, recalculate the glide slope. This is done by
     // determining the slope from your current location to the land point then following that back up to the approach
@@ -201,7 +201,7 @@ void AP_Landing::type_slope_adjust_landing_slope_for_rangefinder_bump(AP_Vehicle
     prev_WP_loc.alt = top_of_glide_slope_alt_m*100 + next_WP_loc.alt;
 
     // re-calculate auto_state.land_slope with updated prev_WP_loc
-    setup_landing_glide_slope(prev_WP_loc, next_WP_loc, current_loc, target_altitude_offset_cm);
+    setup_landing_glide_slope(prev_WP_loc, next_WP_loc, current_loc);
 
     if (rangefinder_state.correction >= 0) { // we're too low or object is below us
         // correction positive means we're too low so we should continue on with
@@ -244,7 +244,7 @@ bool AP_Landing::type_slope_request_go_around(void)
   itself as that leads to discontinuities close to the landing point,
   which can lead to erratic pitch control
  */
-void AP_Landing::type_slope_setup_landing_glide_slope(const Location &prev_WP_loc, const Location &next_WP_loc, const Location &current_loc, int32_t &target_altitude_offset_cm)
+void AP_Landing::type_slope_setup_landing_glide_slope(const Location &prev_WP_loc, const Location &next_WP_loc, const Location &current_loc)
 {
     float total_distance = prev_WP_loc.get_distance(next_WP_loc);
 
@@ -318,16 +318,16 @@ void AP_Landing::type_slope_setup_landing_glide_slope(const Location &prev_WP_lo
     loc.alt -= slope * land_projection * 100;
 
     // setup the offset_cm for set_target_altitude_proportion()
-    target_altitude_offset_cm = loc.alt - prev_WP_loc.alt;
+    altitudePlanner.set_target_offset_cm(loc.alt - prev_WP_loc.alt);
 
     // calculate the proportion we are to the target
     float land_proportion = current_loc.line_path_proportion(prev_WP_loc, loc);
 
     // now setup the glide slope for landing
-    set_target_altitude_proportion_fn(loc, 1.0f - land_proportion);
+    altitudePlanner.set_target_altitude_proportion(prev_WP_loc, loc, 1.0f - land_proportion, true);
 
     // stay within the range of the start and end locations in altitude
-    constrain_target_altitude_location_fn(loc, prev_WP_loc);
+    altitudePlanner.constrain_target_altitude_location(loc, prev_WP_loc);
 }
 
 int32_t AP_Landing::type_slope_get_target_airspeed_cm(void)

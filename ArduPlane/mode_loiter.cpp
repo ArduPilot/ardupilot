@@ -10,7 +10,7 @@ bool ModeLoiter::_enter()
     // this allows us to do FBWB style stick control
     /*IGNORE_RETURN(plane.next_WP_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, plane.target_altitude.amsl_cm));*/
     if (plane.stick_mixing_enabled() && (plane.g2.flight_options & FlightOptions::ENABLE_LOITER_ALT_CONTROL)) {
-        plane.set_target_altitude_current();
+        plane.altitudePlanner.set_target_altitude_current();
     }
 
     plane.loiter_angle_reset();
@@ -88,7 +88,7 @@ void ModeLoiter::navigate()
 {
     if (plane.g2.flight_options & FlightOptions::ENABLE_LOITER_ALT_CONTROL) {
         // update the WP alt from the global target adjusted by update_fbwb_speed_height
-        plane.next_WP_loc.set_alt_cm(plane.target_altitude.amsl_cm, Location::AltFrame::ABSOLUTE);
+        plane.next_WP_loc.set_alt_cm(plane.altitudePlanner.get_target_amsl_cm(), Location::AltFrame::ABSOLUTE);
     }
 
     // Zero indicates to use WP_LOITER_RAD
