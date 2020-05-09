@@ -26,7 +26,7 @@
 
 using namespace SITL;
 
-#define USE_VISION_POSITION_ESTIMATE 1
+#define USE_VISION_POSITION_ESTIMATE 1  // 1 = send VISION_POSITION_ESTIMATE messages, 0 = send VICON_POSITION_ESTIMATE
 
 
 Vicon::Vicon() :
