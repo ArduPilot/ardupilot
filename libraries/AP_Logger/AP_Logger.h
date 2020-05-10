@@ -305,6 +305,7 @@ public:
         float I;
         float D;
         float FF;
+        float Dmod;
     };
 
     void Write_PID(uint8_t msg_type, const PID_Info &info);
