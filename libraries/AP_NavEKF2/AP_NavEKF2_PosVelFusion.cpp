@@ -942,7 +942,7 @@ void NavEKF2_core::selectHeightForFusion()
     if (extNavUsedForPos) {
         // always use external vision as the height source if using for position.
         activeHgtSource = HGT_SOURCE_EXTNAV;
-    } else if (_rng && ((frontend->_useRngSwHgt > 0) && (frontend->_altSource == 1)) && (imuSampleTime_ms - rngValidMeaTime_ms < 500)) {
+    } else if (_rng && (frontend->_useRngSwHgt > 0 || frontend->_altSource == 1) && (imuSampleTime_ms - rngValidMeaTime_ms < 500)) {
         if (frontend->_altSource == 1) {
             // always use range finder
             activeHgtSource = HGT_SOURCE_RNG;
@@ -1031,6 +1031,7 @@ void NavEKF2_core::selectHeightForFusion()
             hgtMea  = MAX(rangeDataDelayed.rng * prevTnb.c.z, rngOnGnd);
             // correct for terrain position relative to datum
             hgtMea -= terrainState;
+
             // enable fusion
             fuseHgtData = true;
             velPosObs[5] = -hgtMea;

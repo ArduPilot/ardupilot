@@ -85,7 +85,7 @@ void NavEKF2_core::EstimateTerrainOffset()
 
     // don't fuse flow data if LOS rate is misaligned, without GPS, or insufficient velocity, as it is poorly observable
     // don't fuse flow data if it exceeds validity limits
-    // don't update terrain offset if grpund is being used as the zero height datum in the main filter
+    // don't update terrain offset if ground is being used as the zero height datum in the main filter
     bool cantFuseFlowData = ((frontend->_flowUse != FLOW_USE_TERRAIN)
     || gpsNotAvailable 
     || PV_AidingMode == AID_RELATIVE 
@@ -159,9 +159,7 @@ void NavEKF2_core::EstimateTerrainOffset()
 
             }
         }
-
         if (!cantFuseFlowData) {
-
             Vector3f relVelSensor;          // velocity of sensor relative to ground in sensor axes
             Vector2f losPred;               // predicted optical flow angular rate measurement
             float q0 = stateStruct.quat[0]; // quaternion at optical flow measurement time
