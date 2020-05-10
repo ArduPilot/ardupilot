@@ -4,7 +4,7 @@
 
 
 #include "lua_scripts.h"
-#include "lua_generated_bindings.h"
+#include <AP_Scripting/lua_generated_bindings.h>
 
 #include "lua/src/lua.h"
 #include "lua/src/lauxlib.h"
