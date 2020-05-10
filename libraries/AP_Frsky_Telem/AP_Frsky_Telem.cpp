@@ -480,6 +480,7 @@ void  AP_Frsky_Telem::send_sport_frame(uint8_t frame, uint16_t appid, uint32_t d
             buf2[len++] = c;
         }
     }
+#ifndef HAL_BOARD_SITL
     /*
       check that we haven't been too slow in responding to the new
       UART data. If we respond too late then we will overwrite the next
@@ -495,6 +496,7 @@ void  AP_Frsky_Telem::send_sport_frame(uint8_t frame, uint16_t appid, uint32_t d
         // we've been too slow in responding
         return;
     }
+#endif
     _port->write(buf2, len);
 }
 
