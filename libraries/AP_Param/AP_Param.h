@@ -314,6 +314,9 @@ public:
     ///
     static AP_Param * find_by_index(uint16_t idx, enum ap_var_type *ptype, ParamToken *token);
 
+    // by-name equivalent of find_by_index()
+    static AP_Param* find_by_name(const char* name, enum ap_var_type *ptype, ParamToken *token);
+
     /// Find a variable by pointer
     ///
     ///
@@ -474,6 +477,9 @@ public:
 
     // return true if the parameter is read-only
     bool is_read_only(void) const;
+
+    // return the persistent top level key for the ParamToken key
+    static uint16_t get_persistent_key(uint16_t key) { return _var_info[key].key; }
     
     // count of parameters in tree
     static uint16_t count_parameters(void);
