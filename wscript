@@ -318,6 +318,7 @@ def configure(cfg):
         cfg.end_msg('disabled', color='YELLOW')
     else:
         cfg.end_msg('enabled')
+        cfg.recurse('libraries/AP_Scripting')
 
     cfg.start_msg('Scripting runtime checks')
     if cfg.options.scripting_checks:
@@ -488,6 +489,8 @@ def _build_recursion(bld):
     if bld.env.PERIPH_FW is not None:
         if bld.env.PERIPH_FW:
             dirs_to_recurse.append('Tools/AP_Periph')
+
+    dirs_to_recurse.append('libraries/AP_Scripting')
 
     for p in hal_dirs_patterns:
         dirs_to_recurse += collect_dirs_to_recurse(
