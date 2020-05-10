@@ -20,7 +20,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 static struct {
     uint8_t fail_count;         // number of iterations ekf or dcm have been out of tolerances
-    uint8_t bad_variance : 1;   // true if ekf should be considered untrusted (fail_count has exceeded EKF_CHECK_ITERATIONS_MAX)
+    bool bad_variance : true;   // true if ekf should be considered untrusted (fail_count has exceeded EKF_CHECK_ITERATIONS_MAX)
     uint32_t last_warn_time;    // system time of last warning in milliseconds.  Used to throttle text warnings sent to GCS
     bool failsafe_on;           // true when the loss of navigation failsafe is on
 } ekf_check_state;
