@@ -81,7 +81,25 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
 	// @User: User
 	AP_GROUPINFO("FF",        6, AP_RollController, gains.FF,          0.0f),
 
-	AP_GROUPEND
+    // @Param: SRMAX
+    // @DisplayName: Servo slew rate limit
+    // @Description: Sets an upper limit on the servo slew rate produced by the D-gain (roll rate feedback). If the amplitude of the control action produced by the roll rate feedback exceeds this value, then the D-gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive D-gain. The parameter should be set to no more than 25% of the servo's specified slew rate to allow for inertia and aerodynamic load effects. Note: The D-gain will not be reduced to less than 10% of the nominal value. A valule of zero will disable this feature.
+    // @Units: deg/s
+    // @Range: 0 500
+    // @Increment: 10.0
+    // @User: Advanced
+    AP_GROUPINFO("SRMAX", 7, AP_RollController, _slew_rate_max, 150.0f),
+
+    // @Param: SRTAU
+    // @DisplayName: Servo slew rate decay time constant
+    // @Description: This sets the time constant used to recover the D-gain after it has been reduced due to excessive servo slew rate.
+    // @Units: s
+    // @Range: 0.5 5.0
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("SRTAU", 8, AP_RollController, _slew_rate_tau, 1.0f),
+
+    AP_GROUPEND
 };
 
 
@@ -110,7 +128,10 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
 	
 	// Calculate the roll rate error (deg/sec) and apply gain scaler
     float achieved_rate = ToDeg(omega_x);
-	float rate_error = (desired_rate - achieved_rate) * scaler;
+    _pid_info.error = desired_rate - achieved_rate;
+    float rate_error = _pid_info.error * scaler;
+    _pid_info.target = desired_rate;
+    _pid_info.actual = achieved_rate;
 	
 	// Get an airspeed estimate - default to zero if none available
 	float aspeed;
@@ -152,10 +173,26 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
     _pid_info.D = rate_error * gains.D * scaler;
     _pid_info.P = desired_rate * kp_ff * scaler;
     _pid_info.FF = desired_rate * k_ff * scaler;
-    _pid_info.target = desired_rate;
-    _pid_info.actual = achieved_rate;
 
-	_last_out = _pid_info.FF + _pid_info.P + _pid_info.D;
+    if (dt > 0 && _slew_rate_max > 0) {
+        // Calculate the slew rate amplitude produced by the unmodified D term
+
+        // calculate a low pass filtered slew rate
+        float Dterm_slew_rate = _slew_rate_filter.apply(((_pid_info.D - _last_pid_info_D)/ delta_time), delta_time);
+
+        // rectify and apply a decaying envelope filter
+        float alpha = 1.0f - constrain_float(delta_time/_slew_rate_tau, 0.0f , 1.0f);
+        _slew_rate_amplitude = fmaxf(fabsf(Dterm_slew_rate), alpha * _slew_rate_amplitude);
+        _slew_rate_amplitude = fminf(_slew_rate_amplitude, 10.0f*_slew_rate_max);
+
+        // Calculate and apply the D gain adjustment
+        _pid_info.Dmod = _D_gain_modifier = _slew_rate_max / fmaxf(_slew_rate_amplitude, _slew_rate_max);
+        _pid_info.D *= _D_gain_modifier;
+    }
+
+    _last_pid_info_D = _pid_info.D;
+
+    _last_out = _pid_info.D + _pid_info.FF + _pid_info.P;
 
     if (autotune.running && aspeed > aparm.airspeed_min) {
         // let autotune have a go at the values 
