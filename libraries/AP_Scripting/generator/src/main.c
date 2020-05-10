@@ -68,8 +68,8 @@ FILE *description;
 FILE *header;
 FILE *source;
 
-static struct generator_state state = {};
-static struct header * headers = NULL;
+static struct generator_state state;
+static struct header * headers;
 
 enum trace_level {
   TRACE_TOKENS    = (1 << 0),
@@ -321,8 +321,8 @@ struct userdata {
   int flags; // flags from the userdata_flags enum
 };
 
-static struct userdata *parsed_userdata = NULL;
-static struct userdata *parsed_ap_objects = NULL;
+static struct userdata *parsed_userdata;
+static struct userdata *parsed_ap_objects;
 
 
 struct dependency {
@@ -332,7 +332,7 @@ struct dependency {
   char *error_msg; // message if the check fails
 };
 
-static struct dependency *parsed_dependencies = NULL;
+static struct dependency *parsed_dependencies;
 
 // lazy helper that allocates a storage buffer and does strcpy for us
 void string_copy(char **dest, const char * src) {
@@ -1928,7 +1928,7 @@ int main(int argc, char **argv) {
   sanity_check_userdata();
 
   fprintf(source, "#include \"lua_generated_bindings.h\"\n");
-  fprintf(source, "#include \"lua_boxed_numerics.h\"\n");
+  fprintf(source, "#include <AP_Scripting/lua_boxed_numerics.h>\n");
 
   trace(TRACE_GENERAL, "Starting emission");
 
@@ -1980,7 +1980,7 @@ int main(int argc, char **argv) {
   fprintf(header, "#pragma once\n");
   fprintf(header, "// auto generated bindings, don't manually edit.  See README.md for details.\n");
   emit_headers(header);
-  fprintf(header, "#include \"lua/src/lua.hpp\"\n");
+  fprintf(header, "#include <AP_Scripting/lua/src/lua.hpp>\n");
   fprintf(header, "#include <new>\n\n");
   emit_dependencies(header);
   fprintf(header, "\n\n");

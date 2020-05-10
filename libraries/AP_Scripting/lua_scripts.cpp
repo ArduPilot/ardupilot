@@ -18,7 +18,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include "AP_Scripting.h"
 
-#include "lua_generated_bindings.h"
+#include <AP_Scripting/lua_generated_bindings.h>
 
 #ifndef SCRIPTING_DIRECTORY
   #if HAL_OS_FATFS_IO
