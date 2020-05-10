@@ -929,8 +929,7 @@ AP_Logger::log_write_fmt *AP_Logger::msg_fmt_for_name(const char *name, const ch
             }
         } else {
             // direct comparison used from scripting where pointer is not maintained
-            char *test_name = strdup(f->name);
-            if (strcmp(test_name,name) == 0) {
+            if (strcmp(f->name,name) == 0) {
                 // already have an ID for this name:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
                 assert_same_fmt_for_name(f, name, labels, units, mults, fmt);
