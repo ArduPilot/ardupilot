@@ -39,7 +39,7 @@ void Plane::ekf_check()
     }
 
     // return immediately if motors are not armed, or ekf check is disabled
-    if (!plane.arming.is_armed() || quadplane.in_vtol_posvel_mode() || (g2.fs_ekf_thresh <= 0.0f)) {
+    if (!plane.arming.is_armed() || !quadplane.in_vtol_posvel_mode() || (g2.fs_ekf_thresh <= 0.0f)) {
         ekf_check_state.fail_count = 0;
         ekf_check_state.bad_variance = false;
         AP_Notify::flags.ekf_bad = ekf_check_state.bad_variance;
