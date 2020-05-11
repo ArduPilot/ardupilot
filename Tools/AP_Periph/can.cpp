@@ -1595,6 +1595,7 @@ void AP_Periph_FW::can_rangefinder_update(void)
     }
     uint16_t dist_cm = rangefinder.distance_cm_orient(ROTATION_NONE);
     uavcan_equipment_range_sensor_Measurement pkt {};
+    pkt.sensor_id = rangefinder.get_address(0);
     switch (status) {
     case RangeFinder::Status::OutOfRangeLow:
         pkt.reading_type = UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_READING_TYPE_TOO_CLOSE;
