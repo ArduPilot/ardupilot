@@ -1596,12 +1596,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 raise NotAchievedException("Count mismatch (want=%u got=%u)" %
                                            (count, m.count))
 
-    def assert_parameter_value(self, parameter, required):
-        got = self.get_parameter(parameter)
-        if got != required:
-            raise NotAchievedException("%s has unexpected value; want=%f got=%f" %
-                                       (parameter, required, got))
-
     def send_fencepoint_expect_statustext(self, offset, count, lat, lng, statustext_fragment, target_system=1, target_component=1, timeout=10):
         self.mav.mav.fence_point_send(target_system,
                                       target_component,
