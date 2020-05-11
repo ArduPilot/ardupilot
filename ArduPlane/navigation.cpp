@@ -235,7 +235,7 @@ void Plane::update_loiter(uint16_t radius)
             quadplane.guided_start();
         }
     } else if ((loiter.start_time_ms == 0 &&
-                (control_mode == &mode_auto || control_mode == &mode_guided) &&
+                (control_mode == &mode_auto || control_mode->is_guided()) &&
                 auto_state.crosstrack &&
                 current_loc.get_distance(next_WP_loc) > radius*3) ||
                (control_mode == &mode_rtl && quadplane.available() && quadplane.rtl_mode == 1)) {
@@ -257,7 +257,7 @@ void Plane::update_loiter(uint16_t radius)
             auto_state.wp_proportion > 1) {
             // we've reached the target, start the timer
             loiter.start_time_ms = millis();
-            if (control_mode == &mode_guided || control_mode == &mode_avoidADSB) {
+            if (control_mode->is_guided()) {
                 // starting a loiter in GUIDED means we just reached the target point
                 gcs().send_mission_item_reached_message(0);
             }

@@ -610,6 +610,26 @@ bool SRV_Channels::get_output_pwm(SRV_Channel::Aux_servo_function_t function, ui
     return true;
 }
 
+// set output to min value
+void SRV_Channels::set_output_to_min(SRV_Channel::Aux_servo_function_t function)
+{
+    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
+        if (channels[i].function == function) {
+            channels[i].set_output_pwm(channels[i].servo_min);
+        }
+    }
+}
+
+// set output to max value
+void SRV_Channels::set_output_to_max(SRV_Channel::Aux_servo_function_t function)
+{
+    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
+        if (channels[i].function == function) {
+            channels[i].set_output_pwm(channels[i].servo_max);
+        }
+    }
+}
+
 // set output pwm to trim for the given function
 void SRV_Channels::set_output_to_trim(SRV_Channel::Aux_servo_function_t function)
 {

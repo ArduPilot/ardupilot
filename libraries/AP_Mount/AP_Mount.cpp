@@ -7,6 +7,7 @@
 #include "AP_Mount_Alexmos.h"
 #include "AP_Mount_SToRM32.h"
 #include "AP_Mount_SToRM32_serial.h"
+#include "AP_Mount_Trillium.h"
 #include <AP_Math/location.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -15,7 +16,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _DEFLT_MODE
     // @DisplayName: Mount default operating mode
     // @Description: Mount default operating mode on startup and after control is returned from autopilot
-    // @Values: 0:Retracted,1:Neutral,2:MavLink Targeting,3:RC Targeting,4:GPS Point
+    // @Values: 0:Retracted,1:Neutral,2:MavLink Targeting,3:RC Targeting,4:GPS Point,5:SYSID Target,6:Track
     // @User: Standard
     AP_GROUPINFO("_DEFLT_MODE", 0, AP_Mount, state[0]._default_mode, MAV_MOUNT_MODE_RC_TARGETING),
 
@@ -196,7 +197,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Mount Type
     // @Description: Mount Type (None, Servo or MAVLink)
-    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial
+    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial, 7:Trillium
     // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO("_TYPE", 19, AP_Mount, state[0]._type, 0),
@@ -215,7 +216,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_DEFLT_MODE
     // @DisplayName: Mount default operating mode
     // @Description: Mount default operating mode on startup and after control is returned from autopilot
-    // @Values: 0:Retracted,1:Neutral,2:MavLink Targeting,3:RC Targeting,4:GPS Point
+    // @Values: 0:Retracted,1:Neutral,2:MavLink Targeting,3:RC Targeting,4:GPS Point,5:SYSID Target,6:Track
     // @User: Standard
     AP_GROUPINFO("2_DEFLT_MODE",    25, AP_Mount, state[1]._default_mode, MAV_MOUNT_MODE_RC_TARGETING),
 
@@ -388,7 +389,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_TYPE
     // @DisplayName: Mount2 Type
     // @Description: Mount Type (None, Servo or MAVLink)
-    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial
+    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial, 7:Trillium
     // @User: Standard
     AP_GROUPINFO("2_TYPE",           42, AP_Mount, state[1]._type, 0),
 #endif // AP_MOUNT_MAX_INSTANCES > 1
@@ -460,6 +461,13 @@ void AP_Mount::init()
             _backends[instance] = new AP_Mount_SToRM32(*this, state[instance], instance);
             _num_instances++;
 
+#if AP_MOUNT_TRILLIUM_ENABLED
+        // check for Trillium mounts
+        } else if (mount_type == Mount_Type_Trillium) {
+            _backends[instance] = new AP_Mount_Trillium(*this, state[instance], instance);
+            _num_instances++;
+#endif
+
         // check for SToRM32 mounts using serial protocol
         } else if (mount_type == Mount_Type_SToRM32_serial) {
             _backends[instance] = new AP_Mount_SToRM32_serial(*this, state[instance], instance);
@@ -520,7 +528,7 @@ bool AP_Mount::has_pan_control(uint8_t instance) const
     return _backends[instance]->has_pan_control();
 }
 
-// get_mode - returns current mode of mount (i.e. Retracted, Neutral, RC_Targeting, GPS Point)
+// get_mode - returns current mode of mount (i.e. Retracted, Neutral, RC_Targeting, GPS Point, SYSID Target, Track)
 MAV_MOUNT_MODE AP_Mount::get_mode(uint8_t instance) const
 {
     // sanity check instance
@@ -625,6 +633,19 @@ void AP_Mount::handle_global_position_int(const mavlink_message_t &msg)
         _state._target_sysid_location.set_alt_cm(packet.alt*0.1,
                                                  Location::AltFrame::ABSOLUTE);
         _state._target_sysid_location_set = true;
+    }
+}
+
+/// Process mavlink passthough commands for mounts
+void AP_Mount::handle_passthrough(const mavlink_channel_t chan, const mavlink_passthrough_t &packet)
+{
+    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
+        if (_backends[instance] == nullptr) {
+            continue;
+        }
+        if (packet.device == 0 || packet.device-1 == instance) {
+            _backends[instance]->handle_passthrough(chan, packet);
+        }
     }
 }
 
@@ -739,7 +760,14 @@ void AP_Mount::send_gimbal_report(mavlink_channel_t chan)
         }
     }    
 }
-
+void AP_Mount::set_retract(bool retracted)
+{
+//    bool mount_open_new = (get_mode() == MAV_MOUNT_MODE_RETRACT) ? 0 : 1;
+//    if (mount_open != mount_open_new) {
+//        mount_open = mount_open_new;
+//        move_servo(_open_idx, mount_open_new, 0, 1);
+//    }
+}
 
 // singleton instance
 AP_Mount *AP_Mount::_singleton;

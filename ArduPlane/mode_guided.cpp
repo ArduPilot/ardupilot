@@ -22,12 +22,6 @@ void ModeGuided::update()
     if (plane.auto_state.vtol_loiter && plane.quadplane.available()) {
         plane.quadplane.guided_update();
     } else {
-
-        if (plane.follow_target.lat != 0 && plane.follow_target.lng != 0) {
-            plane.next_WP_loc.lat = plane.follow_target.lat;
-            plane.next_WP_loc.lng = plane.follow_target.lng;
-        }
-
         plane.calc_nav_roll();
         plane.calc_nav_pitch();
         plane.calc_throttle();

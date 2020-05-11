@@ -39,7 +39,8 @@ public:
         QRTL          = 21,
         QAUTOTUNE     = 22,
         QACRO         = 23,
-        STALLRECOVERY = 24,
+        FOLLOW        = 24,  // follow attempts to follow another vehicle or ground station or gimbal roi
+        STALLRECOVERY = 25,
     };
 
     // Constructor
@@ -63,6 +64,8 @@ public:
     //
     // methods that sub classes should override to affect movement of the vehicle in this mode
     //
+
+    virtual bool is_guided() const { return false; }
 
     // convert user input to targets, implement high level control for this mode
     virtual void update() = 0;
@@ -140,11 +143,47 @@ public:
     const char *name4() const override { return "GUID"; }
 
     // methods that affect movement of the vehicle in this mode
+    bool is_guided() const override { return true; }
     void update() override;
+    bool _enter() override;
 
 protected:
 
+};
+
+class ModeFollow : public Mode {
+
+public:
+
+    Number mode_number() const override { return Number::FOLLOW; }
+    const char *name() const override { return "FOLLOW"; }
+    const char *name4() const override { return "FOLL"; }
+
+    // inherit constructor
+    //using ModeGuided::Mode;
+
+    bool is_guided() const override { return true; }
+//    bool init(bool ignore_checks) override;
+    void update() override;
+
+//    bool requires_GPS() const override { return true; }
+//    bool has_manual_throttle() const override { return false; }
+//    bool allows_arming(bool from_gcs) const override { return false; }
+//    bool is_autopilot() const override { return true; }
+
+protected:
+
+    bool get_follow_wp(Location &loc);
+
     bool _enter() override;
+    void _exit() override;
+
+    // for reporting to GCS
+    bool get_wp(Location &loc);
+    uint32_t wp_distance_cm() const;
+    int32_t wp_bearing_cd() const;
+
+    uint32_t last_wp_change_ms;   // if we change wp too fast the nav controller gets angry
 };
 
 class ModeCircle: public Mode
@@ -346,6 +385,7 @@ public:
     const char *name4() const override { return "AVOI"; }
 
     // methods that affect movement of the vehicle in this mode
+    bool is_guided() const override { return true; }
     void update() override;
 
 protected:

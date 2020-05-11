@@ -73,8 +73,15 @@ Mode *Plane::mode_from_mode_num(const enum Mode::Number num)
     case Mode::Number::QAUTOTUNE:
         ret = &mode_qautotune;
         break;
+#if MODE_FOLLOW_ENABLED == ENABLED
+    case Mode::Number::FOLLOW:
+        ret = &mode_follow;
+        break;
+#endif
     case Mode::Number::TAKEOFF:
         ret = &mode_takeoff;
+        break;
+    default:
         break;
     }
     return ret;

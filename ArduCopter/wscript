@@ -25,7 +25,6 @@ def build(bld):
             'AP_Arming',
             'AP_WheelEncoder',
             'AP_Winch',
-            'AP_Follow',
             'AP_LTM_Telem',
             'AP_Devo_Telem',
             'AP_OSD',

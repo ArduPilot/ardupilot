@@ -1,5 +1,6 @@
 #include "AP_Mount_Backend.h"
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_Follow/AP_Follow.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -24,6 +25,23 @@ void AP_Mount_Backend::set_roi_target(const struct Location &target_loc)
 
     // set the mode to GPS tracking mode
     _frontend.set_mode(_instance, MAV_MOUNT_MODE_GPS_POINT);
+
+    AP_Follow *follow = AP::follow();
+    if (follow != nullptr) {
+        Vector3f ned_zero = Vector3f();
+        AP_Follow::TargetType type;
+
+        if (_instance == 0) {
+            type = AP_Follow::TargetType::GIMBAL1;
+            //type = AP_Follow::TargetType::GIMBAL1_ROI;
+        } else if (_instance == 1) {
+            type = AP_Follow::TargetType::GIMBAL2;
+            //type = AP_Follow::TargetType::GIMBAL2_ROI;
+        } else {
+            return;
+        }
+        follow->set_target_location_and_velocity(type, _state._roi_target, ned_zero);
+    }
 }
 
 // set_sys_target - sets system that mount should attempt to point towards

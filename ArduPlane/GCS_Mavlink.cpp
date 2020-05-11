@@ -44,6 +44,7 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
     case Mode::Number::LOITER:
     case Mode::Number::AVOID_ADSB:
     case Mode::Number::GUIDED:
+    case Mode::Number::FOLLOW:
     case Mode::Number::CIRCLE:
     case Mode::Number::TAKEOFF:
     case Mode::Number::QRTL:
@@ -702,6 +703,11 @@ void GCS_MAVLINK_Plane::packetReceived(const mavlink_status_t &status,
                                        const mavlink_message_t &msg)
 {
     plane.avoidance_adsb.handle_msg(msg);
+
+#if MODE_FOLLOW_ENABLED == ENABLED
+    plane.g2.follow.handle_msg(msg);
+#endif
+
     GCS_MAVLINK::packetReceived(status, msg);
 }
 
@@ -791,6 +797,16 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_in
 {
     switch(packet.command) {
 
+    case MAV_CMD_DO_FOLLOW:
+#if MODE_FOLLOW_ENABLED == ENABLED
+        // param1: sysid of target to follow
+        if ((packet.param1 > 0) && (packet.param1 <= 255)) {
+            plane.g2.follow.set_target_sysid((uint8_t)packet.param1);
+            return MAV_RESULT_ACCEPTED;
+        }
+#endif
+        return MAV_RESULT_UNSUPPORTED;
+
     case MAV_CMD_DO_REPOSITION:
         return handle_command_int_do_reposition(packet);
 
@@ -808,9 +824,8 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
         // controlled modes (e.g., MANUAL, TRAINING)
         // this command should be ignored since it comes in from GCS
         // or a companion computer:
-        if ((plane.control_mode != &plane.mode_guided) &&
-            (plane.control_mode != &plane.mode_auto) &&
-            (plane.control_mode != &plane.mode_avoidADSB)) {
+        if (!plane.control_mode->is_guided() &&
+            plane.control_mode != &plane.mode_auto) {
             // failed
             return MAV_RESULT_FAILED;
         }
@@ -852,6 +867,16 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;
+
+#if MODE_FOLLOW_ENABLED == ENABLED
+    case MAV_CMD_DO_FOLLOW:
+        // param1: sysid of target to follow
+        if ((packet.param1 > 0) && (packet.param1 <= 255)) {
+            plane.g2.follow.set_target_sysid((uint8_t)packet.param1);
+            return MAV_RESULT_ACCEPTED;
+        }
+        return MAV_RESULT_FAILED;
+#endif
 
     case MAV_CMD_DO_GO_AROUND:
         {
@@ -1161,8 +1186,7 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
         // in e.g., RTL, CICLE. Specifying a single mode for companion
         // computer control is more safe (even more so when using
         // FENCE_ACTION = 4 for geofence failures).
-        if ((plane.control_mode != &plane.mode_guided) &&
-            (plane.control_mode != &plane.mode_avoidADSB)) { // don't screw up failsafes
+        if (!plane.control_mode->is_guided()) { // don't screw up failsafes
             break; 
         }
 
@@ -1247,7 +1271,7 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
         mavlink_msg_set_position_target_local_ned_decode(&msg, &packet);
 
         // exit if vehicle is not in Guided mode
-        if (plane.control_mode != &plane.mode_guided) {
+        if (!plane.control_mode->is_guided()) {
             break;
         }
 
@@ -1272,7 +1296,7 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
         // in modes such as RTL, CIRCLE, etc.  Specifying ONLY one mode
         // for companion computer control is more safe (provided
         // one uses the FENCE_ACTION = 4 (RTL) for geofence failures).
-        if (plane.control_mode != &plane.mode_guided && plane.control_mode != &plane.mode_avoidADSB) {
+        if (!plane.control_mode->is_guided()) {
             //don't screw up failsafes
             break;
         }
@@ -1324,18 +1348,10 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_UAVIONIX_ADSB_TRANSCEIVER_HEALTH_REPORT:
         plane.adsb.handle_message(chan, msg);
         break;
+
     case MAVLINK_MSG_ID_FOLLOW_TARGET:
-    {
-        gcs().send_text(MAV_SEVERITY_INFO, "Updating follow target");
-
-        mavlink_follow_target_t follow_target;
-        mavlink_msg_follow_target_decode(&msg, &follow_target);
-
-        plane.follow_target.lat = follow_target.lat;
-        plane.follow_target.lng = follow_target.lon;
-
+        plane.g2.follow.handle_msg(msg);
         break;
-    }
 
     default:
         handle_common_message(msg);

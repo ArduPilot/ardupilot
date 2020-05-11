@@ -98,6 +98,10 @@
 #include "afs_plane.h"
 #endif
 
+#if MODE_FOLLOW_ENABLED == ENABLED
+#include <AP_Follow/AP_Follow.h>
+#endif
+
 // Local modules
 #include "defines.h"
 #include "mode.h"
@@ -147,6 +151,7 @@ public:
     friend class ModeLoiter;
     friend class ModeAvoidADSB;
     friend class ModeGuided;
+    friend class ModeFollow;
     friend class ModeInitializing;
     friend class ModeManual;
     friend class ModeStallRecovery;
@@ -273,6 +278,9 @@ private:
     ModeLoiter mode_loiter;
     ModeAvoidADSB mode_avoidADSB;
     ModeGuided mode_guided;
+#if MODE_FOLLOW_ENABLED == ENABLED
+    ModeFollow mode_follow;
+#endif
     ModeInitializing mode_initializing;
     ModeManual mode_manual;
     ModeStallRecovery mode_stallrecovery;
@@ -700,9 +708,6 @@ private:
 
     // The location of the active waypoint in Guided mode.
     struct Location guided_WP_loc {};
-
-    // Target for follow me
-    struct Location follow_target {};
 
     // Altitude control
     struct {

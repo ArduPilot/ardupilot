@@ -493,7 +493,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: FS_SHORT_ACTN
     // @DisplayName: Short failsafe action
     // @Description: The action to take on a short (FS_SHORT_TIMEOUT) failsafe event. A short failsafe even can be triggered either by loss of RC control (see THR_FS_VALUE) or by loss of GCS control (see FS_GCS_ENABL). If in CIRCLE or RTL mode this parameter is ignored. A short failsafe event in stabilization and manual modes will cause an change to CIRCLE mode if FS_SHORT_ACTN is 0 or 1, and a change to FBWA mode if FS_SHORT_ACTN is 2. In all other modes (AUTO, GUIDED and LOITER) a short failsafe event will cause no mode change if FS_SHORT_ACTN is set to 0, will cause a change to CIRCLE mode if set to 1 and will change to FBWA mode if set to 2. Please see the documentation for FS_LONG_ACTN for the behaviour after FS_LONG_TIMEOUT seconds of failsafe.
-    // @Values: 0:CIRCLE/no change(if already in AUTO|GUIDED|LOITER),1:CIRCLE,2:FBWA,3:Disable
+    // @Values: 0:CIRCLE/no change(if already in AUTO|GUIDED|FOLLOW|LOITER),1:CIRCLE,2:FBWA,3:Disable
     // @User: Standard
     GSCALAR(fs_action_short,        "FS_SHORT_ACTN",  FS_ACTION_SHORT_BESTGUESS),
 
@@ -538,49 +538,49 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: FLTMODE1
     // @DisplayName: FlightMode1
     // @Description: Flight mode for switch position 1 (910 to 1230 and above 2049)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO,24:GUIDED
     // @User: Standard
     GSCALAR(flight_mode1,           "FLTMODE1",       FLIGHT_MODE_1),
 
     // @Param: FLTMODE2
     // @DisplayName: FlightMode2
     // @Description: Flight mode for switch position 2 (1231 to 1360)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO,24:GUIDED
     // @User: Standard
     GSCALAR(flight_mode2,           "FLTMODE2",       FLIGHT_MODE_2),
 
     // @Param: FLTMODE3
     // @DisplayName: FlightMode3
     // @Description: Flight mode for switch position 3 (1361 to 1490)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO,24:GUIDED
     // @User: Standard
     GSCALAR(flight_mode3,           "FLTMODE3",       FLIGHT_MODE_3),
 
     // @Param: FLTMODE4
     // @DisplayName: FlightMode4
     // @Description: Flight mode for switch position 4 (1491 to 1620)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO,24:GUIDED
     // @User: Standard
     GSCALAR(flight_mode4,           "FLTMODE4",       FLIGHT_MODE_4),
 
     // @Param: FLTMODE5
     // @DisplayName: FlightMode5
     // @Description: Flight mode for switch position 5 (1621 to 1749)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO,24:GUIDED
     // @User: Standard
     GSCALAR(flight_mode5,           "FLTMODE5",       FLIGHT_MODE_5),
 
     // @Param: FLTMODE6
     // @DisplayName: FlightMode6
     // @Description: Flight mode for switch position 6 (1750 to 2049)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO,24:GUIDED
     // @User: Standard
     GSCALAR(flight_mode6,           "FLTMODE6",       FLIGHT_MODE_6),
 
     // @Param: INITIAL_MODE
     // @DisplayName: Initial flight mode
     // @Description: This selects the mode to start in on boot. This is useful for when you want to start in AUTO mode on boot without a receiver.
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO,24:GUIDED
     // @User: Advanced
     GSCALAR(initial_mode,        "INITIAL_MODE",     Mode::Number::MANUAL),
 
@@ -1268,6 +1268,12 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("FLAP_TRIM", 25, ParametersG2, flap_trim, 0),
 
+#if MODE_FOLLOW_ENABLED == ENABLED
+    // @Group: FOLL
+    // @Path: ../libraries/AP_Follow/AP_Follow.cpp
+    AP_SUBGROUPINFO(follow, "FOLL", 26, ParametersG2, AP_Follow),
+#endif
+
     // @Param: STALL_THR1
     // @DisplayName: Stall throttle
     // @Description: The throttle to apply when stalled
@@ -1275,7 +1281,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Range: 0 100
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("STALL_THR1", 26, ParametersG2, stall_recovery_throttle1, 100),
+    AP_GROUPINFO("STALL_THR1", 27, ParametersG2, stall_recovery_throttle1, 100),
 
     // @Param: STALL_ELEV
     // @DisplayName: Stall recovery elevator
@@ -1284,7 +1290,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Range: -100 100
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("STALL_ELEV", 27, ParametersG2, stall_recovery_elevator, -10),
+    AP_GROUPINFO("STALL_ELEV", 28, ParametersG2, stall_recovery_elevator, -10),
 
     // @Param: STALL_DUR1
     // @DisplayName: Stall recovery duration1 max
@@ -1293,7 +1299,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Range: -1, 30000
     // @Increment: 100
     // @User: Advanced
-    AP_GROUPINFO("STALL_DUR1MAX", 28, ParametersG2, stall_recovery_duration1_max, 10.0f),
+    AP_GROUPINFO("STALL_DUR1MAX", 29, ParametersG2, stall_recovery_duration1_max, 10.0f),
 
     // @Param: STALL_DUR2
     // @DisplayName: Stall recovery duration2 max
@@ -1302,19 +1308,19 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Range: -1, 30
     // @Increment: 0.1
     // @User: Advanced
-    AP_GROUPINFO("STALL_DUR2MAX", 29, ParametersG2, stall_recovery_duration2_max, 10.0f),
+    AP_GROUPINFO("STALL_DUR2MAX", 30, ParametersG2, stall_recovery_duration2_max, 10.0f),
 
     // @Param: STALL_ALGORITHM1
     // @DisplayName: Stall recovery algorithm1
     // @Description: Stall recovery algorithm1.
     // @User: Advanced
-    AP_GROUPINFO("STALL_ALGORITHM1", 30, ParametersG2, stall_recovery_algorithm1, 0),
+    AP_GROUPINFO("STALL_ALGORITHM1", 31, ParametersG2, stall_recovery_algorithm1, 0),
 
     // @Param: STALL_ALGORITHM2
     // @DisplayName: Stall recovery algorithm2
     // @Description: Stall recovery algorithm2.
     // @User: Advanced
-    AP_GROUPINFO("STALL_ALGORITHM2", 31, ParametersG2, stall_recovery_algorithm2, 0),
+    AP_GROUPINFO("STALL_ALGORITHM2", 32, ParametersG2, stall_recovery_algorithm2, 0),
 
     // @Param: STALL_THR2
     // @DisplayName: Stall recovery throttle
@@ -1323,7 +1329,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Range: 0 100
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("STALL_THR2", 32, ParametersG2, stall_recovery_throttle2, 100),
+    AP_GROUPINFO("STALL_THR2", 33, ParametersG2, stall_recovery_throttle2, 100),
 
     // @Param: STALL_DUR1MIN
     // @DisplayName: Stall recovery duration1 min
@@ -1332,7 +1338,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Range: -1, 30
     // @Increment: .1
     // @User: Advanced
-    AP_GROUPINFO("STALL_DUR1MIN", 33, ParametersG2, stall_recovery_duration1_min, 2.0f),
+    AP_GROUPINFO("STALL_DUR1MIN", 34, ParametersG2, stall_recovery_duration1_min, 2.0f),
 
     // @Param: STALL_DUR2MIN
     // @DisplayName: Stall recovery duration2 min
@@ -1341,21 +1347,21 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Range: -1, 30
     // @Increment: .1
     // @User: Advanced
-    AP_GROUPINFO("STALL_DUR2MIN", 34, ParametersG2, stall_recovery_duration2_min, 2.0f),
+    AP_GROUPINFO("STALL_DUR2MIN", 35, ParametersG2, stall_recovery_duration2_min, 2.0f),
 
     // @Param: STALL_SPIN_RATE
     // @DisplayName: Stall recovery
     // @Description: Stall recovery
     // @User: Advanced
     // @Units: deg/s
-    AP_GROUPINFO("STALL_SPIN_RATE", 35, ParametersG2, stall_recovery_spin_rate, -1),
+    AP_GROUPINFO("STALL_SPIN_RATE", 36, ParametersG2, stall_recovery_spin_rate, -1),
 
     // @Param: STALL_SINK_RATE
     // @DisplayName: Stall recovery
     // @Description: Stall recovery
     // @User: Advanced
     // @Units: m/s
-    AP_GROUPINFO("STALL_SINK_RATE", 36, ParametersG2, stall_recovery_sink_rate, -1),
+    AP_GROUPINFO("STALL_SINK_RATE", 37, ParametersG2, stall_recovery_sink_rate, -1),
 
     AP_GROUPEND
 };

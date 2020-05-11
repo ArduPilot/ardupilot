@@ -72,6 +72,9 @@ public:
     // send_mount_status - called to allow mounts to send their status to GCS via MAVLink
     virtual void send_mount_status(mavlink_channel_t chan) = 0;
 
+    // tunnel messages from mavlink to mount driver
+    virtual void handle_passthrough(const mavlink_channel_t chan, const mavlink_passthrough_t &packet) {}
+
     // handle a GIMBAL_REPORT message
     virtual void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg) {}
 

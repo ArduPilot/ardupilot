@@ -1,0 +1,60 @@
+
+# Author: Tom Pittenger at Kraus-Himdani Aerospace
+# email: tom.pittenger@krausaerospace.com
+
+
+# Protocol's names.
+PROTONAME         Trillium Protocol
+PROTOSHORTNAME    Trillium
+PROTOABBREV       trillium
+
+# Specify when the dissector is used.
+PARENT_SUBFIELD          udp.port
+PARENT_SUBFIELD_VALUES   8745 8746 8748
+
+
+#PACKET_CONTAINS_ONLY_COMPLETE_MSG  yes
+#PACKET_CONTAINS_ONLY_1_MSG         yes
+
+
+# Message's header type.
+# The message must begin by the header.
+# The header must contains MSG_ID_FIELD_NAME and any MSG_SUMMARY_SUBSIDIARY_FIELD_NAMES.
+MSG_HEADER_TYPE       T_my_msg_header
+
+# Field which permits to identify the message type.
+# Must be part of MSG_HEADER_TYPE.
+MSG_ID_FIELD_NAME     msg_id
+
+# Optional parameter.
+# Field displayed into Info column (instead of MSG_ID_FIELD_NAME)
+MSG_TITLE             Msg_Title
+
+MSG_HEADER_LENGTH                      4
+
+# Optional parameter.
+# Fields displayed into the 1st line.
+# The specified fields must be part of MSG_HEADER_TYPE.
+MSG_SUMMARY_SUBSIDIARY_FIELD_NAMES     Size
+
+
+# Optional parameter. But very useful in some cases.
+# Specifies the total length of a message.
+# This length is computed from a field inside the MSG_HEADER_TYPE.
+# If there is a field called Size which specifies the total length of the message :
+# MSG_TOTAL_LENGTH                     Size
+# Or if this Size field specifies the length after the header (and the header length is 4) :
+MSG_TOTAL_LENGTH                       Size + 6
+
+
+# The main message type.
+# Must begins by the header.
+# This is a switch case depending on
+#  the MSG_ID_FIELD_NAME field which is inside MSG_HEADER_TYPE.
+MSG_MAIN_TYPE           T_msg_main_type
+
+
+PROTO_TYPE_DEFINITIONS
+
+include  trillium.fdesc ;
+

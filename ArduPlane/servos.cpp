@@ -561,7 +561,7 @@ void Plane::set_servos_controlled(void)
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle,
                                             constrain_int16(get_throttle_input(true), min_throttle, max_throttle));
         }
-    } else if ((control_mode == &mode_guided || control_mode == &mode_avoidADSB) &&
+    } else if (control_mode->is_guided() &&
                guided_throttle_passthru) {
         // manual pass through of throttle while in GUIDED
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));

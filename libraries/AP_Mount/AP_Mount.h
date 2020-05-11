@@ -24,6 +24,12 @@
 #include <AP_Common/Location.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
+
+#ifndef AP_MOUNT_TRILLIUM_ENABLED
+    #define AP_MOUNT_TRILLIUM_ENABLED !HAL_MINIMIZE_FEATURES
+#endif
+
+
 // maximum number of mounts
 #define AP_MOUNT_MAX_INSTANCES          1
 
@@ -34,6 +40,7 @@ class AP_Mount_SoloGimbal;
 class AP_Mount_Alexmos;
 class AP_Mount_SToRM32;
 class AP_Mount_SToRM32_serial;
+class AP_Mount_Trillium;
 
 /*
   This is a workaround to allow the MAVLink backend access to the
@@ -49,6 +56,7 @@ class AP_Mount
     friend class AP_Mount_Alexmos;
     friend class AP_Mount_SToRM32;
     friend class AP_Mount_SToRM32_serial;
+    friend class AP_Mount_Trillium;
 
 public:
     AP_Mount();
@@ -69,7 +77,8 @@ public:
         Mount_Type_SoloGimbal = 2,      /// Solo's gimbal
         Mount_Type_Alexmos = 3,         /// Alexmos mount
         Mount_Type_SToRM32 = 4,         /// SToRM32 mount using MAVLink protocol
-        Mount_Type_SToRM32_serial = 5   /// SToRM32 mount using custom serial protocol
+        Mount_Type_SToRM32_serial = 5,  /// SToRM32 mount using custom serial protocol
+        Mount_Type_Trillium = 7,        /// Trillium Gimbal custom serial protocol
     };
 
     // init - detect and initialise all mounts
@@ -111,6 +120,9 @@ public:
     void set_roi_target(const struct Location &target_loc) { set_roi_target(_primary,target_loc); }
     void set_roi_target(uint8_t instance, const struct Location &target_loc);
 
+    Location get_roi_target() const { return get_roi_target(_primary); }
+    Location get_roi_target(uint8_t instance) const { return state[instance]._roi_target; }
+
     // point at system ID sysid
     void set_target_sysid(uint8_t instance, const uint8_t sysid);
     void set_target_sysid(const uint8_t sysid) { set_target_sysid(_primary, sysid); }
@@ -122,6 +134,8 @@ public:
 
     // send a GIMBAL_REPORT message to GCS
     void send_gimbal_report(mavlink_channel_t chan);
+
+    void handle_passthrough(const mavlink_channel_t chan, const mavlink_passthrough_t &packet);
 
     // send a MOUNT_STATUS message to GCS:
     void send_mount_status(mavlink_channel_t chan);
@@ -180,6 +194,8 @@ protected:
     } state[AP_MOUNT_MAX_INSTANCES];
 
 private:
+
+    void set_retract(bool retracted);
 
     void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg);
     void handle_mount_configure(const mavlink_message_t &msg);

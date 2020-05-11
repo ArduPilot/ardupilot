@@ -123,3 +123,5 @@ segv_*out
 /ArduPlane/scripts/
 /ArduSub/scripts/
 persistent.dat
+*.pcapng
+wireshark_generic_dissector_traces.txt
