@@ -470,6 +470,10 @@ class AutoTestQuadPlane(AutoTest):
              "Test Arming Parameter Checks",
              self.test_parameter_checks),
 
+            ("TestLogDownload",
+             "Test Onboard Log Download",
+             self.test_log_download),
+
             ("Mission", "Dalby Mission",
              lambda: self.fly_mission("Dalby-OBC2016.txt", "Dalby-OBC2016-fence.txt")),
 

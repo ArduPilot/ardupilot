@@ -312,10 +312,13 @@ class AutoTestSub(AutoTest):
              "Move vehicle using SET_POSITION_TARGET_GLOBAL_INT",
              self.dive_set_position_target),
 
-            ("DownLoadLogs", "Download logs", lambda:
-             self.log_download(
-                 self.buildlogs_path("ArduSub-log.bin"),
-                 upload_logs=len(self.fail_list) > 0)),
+            ("TestLogDownloadMAVProxy",
+             "Test Onboard Log Download using MAVProxy",
+             self.test_log_download_mavproxy),
+
+            ("LogUpload",
+             "Upload logs",
+             self.log_upload),
         ])
 
         return ret

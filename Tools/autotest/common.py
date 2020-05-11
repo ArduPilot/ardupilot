@@ -17,6 +17,7 @@ import operator
 import numpy
 import socket
 import struct
+import random
 
 from MAVProxy.modules.lib import mp_util
 
@@ -1530,6 +1531,250 @@ class AutoTest(ABC):
 
         self.progress("Drained %u messages from mav (%s)" % (count, rate))
 
+    def log_filepath(self, lognum):
+        '''return filepath to lognum (where lognum comes from LOG_ENTRY'''
+        log_list = sorted(self.log_list())
+        return log_list[lognum-1]
+
+    def assert_bytes_equal(self, bytes1, bytes2):
+        for i in range(0,len(bytes1)):
+            if bytes1[i] != bytes2[i]:
+                raise NotAchievedException("differ at offset %u" % i)
+
+    def test_log_download(self):
+        if self.is_tracker():
+            # tracker starts armed, which is annoying
+            return
+        self.progress("Ensuring we have contents we care about")
+        self.set_parameter("LOG_FILE_DSRMROT", 1)
+        self.set_parameter("LOG_DISARMED", 0)
+        self.reboot_sitl()
+        original_log_list = self.log_list()
+        for i in range(0,10):
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.delay_sim_time(1)
+            self.disarm_vehicle()
+        new_log_list = self.log_list()
+        new_log_count = len(new_log_list) - len(original_log_list)
+        if new_log_count != 10:
+            raise NotAchievedException("Expected exactly 10 new logs got %u (%s) to (%s)" %
+                                       (new_log_count, original_log_list, new_log_list))
+        self.progress("Directory contents: %s" % str(new_log_list))
+
+        tstart = self.get_sim_time()
+        self.mav.mav.log_request_list_send(self.sysid_thismav(),
+                                           1, # target component
+                                           0,
+                                           0xff)
+        logs = []
+        last_id = None
+        num_logs = None
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > 5:
+                raise NotAchievedException("Did not download list")
+            m = self.mav.recv_match(type='LOG_ENTRY',
+                                    blocking=True,
+                                    timeout=1)
+            print("Received (%s)" % str(m))
+            if m is None:
+                continue
+            logs.append(m)
+            if last_id is None:
+                if m.num_logs == 0:
+                    # caller to guarantee this works:
+                    raise NotAchievedException("num_logs is zero")
+                num_logs = m.num_logs
+            else:
+                if m.id != last_id + 1:
+                    raise NotAchievedException("Sequence not increasing")
+                if m.num_logs != num_logs:
+                    raise NotAchievedException("Number of logs changed")
+                if m.time_utc < 1000:
+                    raise NotAchievedException("Bad timestamp")
+                if m.id != m.last_log_num:
+                    if m.size == 0:
+                        raise NotAchievedException("Zero-sized log")
+            last_id = m.id
+            if m.id == m.last_log_num:
+                self.progress("Got all logs")
+                break
+
+        # ensure we don't get any extras:
+        m = self.mav.recv_match(type='LOG_ENTRY',
+                                blocking=True,
+                                timeout=2)
+        if m is not None:
+            raise NotAchievedException("Received extra LOG_ENTRY?!")
+
+        # download  the 6th and seventh byte of the fifth log
+        log_id = 5
+        ofs = 6
+        count = 2
+        self.mav.mav.log_request_data_send(self.sysid_thismav(),
+                                           1, # target component
+                                           log_id,
+                                           ofs,
+                                           count
+        )
+        m = self.mav.recv_match(type='LOG_DATA',
+                                blocking=True,
+                                timeout=2)
+        if m is None:
+            raise NotAchievedException("Did not get log data")
+        if m.ofs != ofs:
+            raise NotAchievedException("Incorrect offset")
+        if m.count != count:
+            raise NotAchievedException("Did not get correct number of bytes")
+        log_filepath = self.log_filepath(log_id)
+        self.progress("Checking against log_filepath (%s)" % str(log_filepath))
+        with open(log_filepath, "rb") as bob:
+            bob.seek(ofs)
+            actual_bytes = bob.read(2)
+            actual_bytes = bytearray(actual_bytes)
+        if m.data[0] != actual_bytes[0]:
+            raise NotAchievedException("Bad first byte got=(0x%02x) want=(0x%02x)" %
+                                       (m.data[0], actual_bytes[0]))
+        if m.data[1] != actual_bytes[1]:
+            raise NotAchievedException("Bad second byte")
+
+        # make file contents available
+        # download an entire file
+        log_id = 7
+        log_filepath = self.log_filepath(log_id)
+        with open(log_filepath, "rb") as bob:
+            actual_bytes = bytearray(bob.read())
+
+        # get the size first
+        self.mav.mav.log_request_list_send(self.sysid_thismav(),
+                                           1, # target component
+                                           log_id,
+                                           log_id)
+        log_entry = self.mav.recv_match(type='LOG_ENTRY',
+                                        blocking=True,
+                                        timeout=2)
+        if log_entry.size != len(actual_bytes):
+            raise NotAchievedException("Incorrect bytecount")
+        self.progress("Using log entry (%s)" % str(log_entry))
+        if log_entry.id != log_id:
+            raise NotAchievedException("Incorrect log id received")
+
+        # download the log file in the normal way:
+        bytes_to_fetch = 10000000
+        self.progress("Sending request for %u bytes at offset 0" % (bytes_to_fetch,))
+        tstart = self.get_sim_time()
+        self.mav.mav.log_request_data_send(
+            self.sysid_thismav(),
+            1, # target component
+            log_id,
+            0,
+            bytes_to_fetch
+        )
+        bytes_to_read = log_entry.size
+        data_downloaded = []
+        bytes_read = 0
+        last_print = 0
+        while True:
+            if bytes_read >= bytes_to_read:
+                break
+            if self.get_sim_time_cached() - tstart > 120:
+                raise NotAchievedException("Did not download log in good time")
+            m = self.mav.recv_match(type='LOG_DATA',
+                                    blocking=True,
+                                    timeout=2)
+            if m is None:
+                raise NotAchievedException("Did not get data")
+            if m.ofs != bytes_read:
+                raise NotAchievedException("Unexpected offset")
+            if m.id != log_id:
+                raise NotAchievedException("Unexpected id")
+            data_downloaded.extend(m.data[0:m.count])
+            bytes_read += m.count
+            #self.progress("Read %u bytes at offset %u" % (m.count, m.ofs))
+            if time.time() - last_print > 10:
+                last_print = time.time()
+                self.progress("Read %u/%u" % (bytes_read, bytes_to_read))
+
+        self.progress("actual_bytes_len=%u data_downloaded_len=%u" %
+                      (len(actual_bytes), len(data_downloaded)))
+        self.assert_bytes_equal(actual_bytes, data_downloaded)
+
+        if False:
+            bytes_to_read = log_entry.size
+            bytes_read = 0
+            data_downloaded = []
+            while bytes_read < bytes_to_read:
+                bytes_to_fetch = int(random.random() * 100)
+                if bytes_to_fetch > 90:
+                    bytes_to_fetch = 90
+                self.progress("Sending request for %u bytes at offset %u" % (bytes_to_fetch, bytes_read))
+                self.mav.mav.log_request_data_send(
+                    self.sysid_thismav(),
+                    1, # target component
+                    log_id,
+                    bytes_read,
+                    bytes_to_fetch
+                )
+                m = self.mav.recv_match(type='LOG_DATA',
+                                        blocking=True,
+                                        timeout=2)
+                if m is None:
+                    raise NotAchievedException("Did not get reply")
+                self.progress("Read %u bytes at offset %u" % (m.count, m.ofs))
+                if m.ofs != bytes_read:
+                    raise NotAchievedException("Incorrect offset in reply want=%u got=%u (%s)" % (bytes_read, m.ofs, str(m)))
+                stuff = m.data[0:m.count]
+                data_downloaded.extend(stuff)
+                bytes_read += m.count
+                if len(data_downloaded) != bytes_read:
+                    raise NotAchievedException("extend fail")
+
+            if len(actual_bytes) != len(data_downloaded):
+                raise NotAchievedException("Incorrect length: disk:%u downloaded: %u" %
+                                           (len(actual_bytes), len(data_downloaded)))
+            self.assert_bytes_equal(actual_bytes, data_downloaded)
+
+        # ... and now download it reading backwards...
+        bytes_to_read = log_entry.size
+        bytes_read = 0
+        backwards_data_downloaded = []
+        last_print = 0
+        while bytes_read < bytes_to_read:
+            bytes_to_fetch = int(random.random() * 100)
+            if bytes_to_fetch > 90:
+                bytes_to_fetch = 90
+            if bytes_to_fetch > bytes_to_read - bytes_read:
+                bytes_to_fetch = bytes_to_read - bytes_read
+            ofs = bytes_to_read - bytes_read - bytes_to_fetch
+            # self.progress("bytes_to_read=%u bytes_read=%u bytes_to_fetch=%u ofs=%d" % (bytes_to_read, bytes_read, bytes_to_fetch, ofs))
+            self.mav.mav.log_request_data_send(
+                self.sysid_thismav(),
+                1, # target component
+                log_id,
+                ofs,
+                bytes_to_fetch
+            )
+            m = self.mav.recv_match(type='LOG_DATA',
+                                    blocking=True,
+                                    timeout=2)
+            if m is None:
+                raise NotAchievedException("Did not get reply")
+            stuff = m.data[0:m.count]
+            stuff.extend(backwards_data_downloaded)
+            backwards_data_downloaded = stuff
+            bytes_read += m.count
+            # self.progress("Read %u bytes at offset %u" % (m.count, m.ofs))
+            if time.time() - last_print > 10:
+                last_print = time.time()
+                self.progress("Read %u/%u" % (bytes_read, bytes_to_read))
+
+        self.assert_bytes_equal(actual_bytes, backwards_data_downloaded)
+        if len(actual_bytes) != len(backwards_data_downloaded):
+            raise NotAchievedException("Size delta: actual=%u vs downloaded=%u" %
+                                       (len(actual_bytes), len(backwards_data_downloaded)))
+
+
     #################################################
     # SIM UTILITIES
     #################################################
@@ -1740,9 +1985,9 @@ class AutoTest(ABC):
         self.onboard_logging_not_log_disarmed()
 
 
-    def log_download(self, filename, timeout=360, upload_logs=False):
+    def test_log_download_mavproxy(self, upload_logs=False):
         """Download latest log."""
-        self.wait_heartbeat()
+        filename = "MAVProxy-downloaded-log.BIN"
         self.mavproxy.send("module load log\n")
         self.mavproxy.expect("Loaded module log")
         self.mavproxy.send("log list\n")
@@ -1751,18 +1996,17 @@ class AutoTest(ABC):
         self.wait_heartbeat()
         self.mavproxy.send("set shownoise 0\n")
         self.mavproxy.send("log download latest %s\n" % filename)
-        self.mavproxy.expect("Finished downloading", timeout=timeout)
+        self.mavproxy.expect("Finished downloading", timeout=120)
         self.mavproxy.send("module unload log\n")
         self.mavproxy.expect("Unloaded module log")
-        self.drain_mav_unparsed()
-        self.wait_heartbeat()
-        self.wait_heartbeat()
-        if upload_logs and os.getenv("AUTOTEST_UPLOAD"):
+
+    def log_upload(self):
+        if len(self.fail_list) > 0 and os.getenv("AUTOTEST_UPLOAD"):
             # optionally upload logs to server so we can see travis failure logs
             import datetime
             import glob
             import subprocess
-            logdir = os.path.dirname(filename)
+            logdir = self.buildlogs_dirpath()
             datedir = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
             flist = glob.glob("logs/*.BIN")
             for e in ['BIN', 'bin', 'tlog']:

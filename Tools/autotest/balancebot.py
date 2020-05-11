@@ -123,10 +123,9 @@ inherit Rover's tests!'''
              "Test ServoRelayEvents",
              self.test_servorelayevents),
 
-            ("DownLoadLogs", "Download logs", lambda:
-             self.log_download(
-                 self.buildlogs_path("Rover-log.bin"),
-                 upload_logs=len(self.fail_list) > 0)),
+            ("LogUpload",
+             "Upload logs",
+             self.log_upload),
         ])
         return ret
 
