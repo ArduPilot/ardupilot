@@ -123,6 +123,7 @@ public:
         SerialProtocol_WindVane = 21,
         SerialProtocol_SLCAN = 22,
         SerialProtocol_RCIN = 23,
+        SerialProtocol_Hott = 27,
     };
 
     // get singleton instance
@@ -197,7 +198,7 @@ private:
     bool protocol_match(enum SerialProtocol protocol1, enum SerialProtocol protocol2) const;
 
     // setup any special options
-    void set_options(uint8_t i);
+    void set_options(uint16_t i);
 };
 
 namespace AP {
