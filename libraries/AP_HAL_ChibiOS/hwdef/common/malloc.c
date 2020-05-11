@@ -287,3 +287,18 @@ void memory_flush_all(void)
         stm32_cacheBufferFlush(memory_regions[i].address, memory_regions[i].size);
     }
 }
+
+/*
+  replacement for strdup
+ */
+char *strdup(const char *str)
+{
+    const size_t len = strlen(str);
+    char *ret = malloc(len+1);
+    if (!ret) {
+        return NULL;
+    }
+    memcpy(ret, str, len);
+    ret[len] = 0;
+    return ret;
+}

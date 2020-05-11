@@ -48,10 +48,13 @@ UARTDriver *UARTDriver::uart_drivers[UART_MAX_DRIVERS];
 
 // event used to wake up waiting thread. This event number is for
 // caller threads
-#define EVT_DATA EVENT_MASK(0)
+#define EVT_DATA EVENT_MASK(10)
 
 // event for parity error
-#define EVT_PARITY EVENT_MASK(1)
+#define EVT_PARITY EVENT_MASK(11)
+
+// event for transmit end for half-duplex
+#define EVT_TRANSMIT_END EVENT_MASK(12)
 
 #ifndef HAL_UART_MIN_TX_SIZE
 #define HAL_UART_MIN_TX_SIZE 1024
@@ -98,8 +101,9 @@ void UARTDriver::uart_thread(void* arg)
             if (uart_drivers[i] == nullptr) {
                 continue;
             }
-            if ((mask & EVENT_MASK(i)) &&
-                uart_drivers[i]->_initialised) {
+            if (uart_drivers[i]->_initialised &&
+                (mask & EVENT_MASK(i) ||
+                 (uart_drivers[i]->hd_tx_active && (mask & EVT_TRANSMIT_END)))) {
                 uart_drivers[i]->_timer_tick();
             }
         }
@@ -209,13 +213,24 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     }
 
 #ifndef HAL_UART_NODMA
-    if (rx_bounce_buf == nullptr) {
-        rx_bounce_buf = (uint8_t *)hal.util->malloc_type(RX_BOUNCE_BUFSIZE, AP_HAL::Util::MEM_DMA_SAFE);
+    if (!half_duplex && !(_last_options & OPTION_NODMA_RX)) {
+        if (rx_bounce_buf[0] == nullptr && sdef.dma_rx) {
+            rx_bounce_buf[0] = (uint8_t *)hal.util->malloc_type(RX_BOUNCE_BUFSIZE, AP_HAL::Util::MEM_DMA_SAFE);
+        }
+        if (rx_bounce_buf[1] == nullptr && sdef.dma_rx) {
+            rx_bounce_buf[1] = (uint8_t *)hal.util->malloc_type(RX_BOUNCE_BUFSIZE, AP_HAL::Util::MEM_DMA_SAFE);
+        }
     }
-    if (tx_bounce_buf == nullptr) {
+    if (tx_bounce_buf == nullptr && sdef.dma_tx && !(_last_options & OPTION_NODMA_TX)) {
         tx_bounce_buf = (uint8_t *)hal.util->malloc_type(TX_BOUNCE_BUFSIZE, AP_HAL::Util::MEM_DMA_SAFE);
         chVTObjectInit(&tx_timeout);
         tx_bounce_buf_ready = true;
+    }
+    if (half_duplex) {
+        rx_dma_enabled = tx_dma_enabled = false;
+    } else {
+        rx_dma_enabled = rx_bounce_buf[0] != nullptr && rx_bounce_buf[1] != nullptr;
+        tx_dma_enabled = tx_bounce_buf != nullptr;
     }
 #endif
 
@@ -241,21 +256,7 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
          */
         if (!_device_initialised) {
             if ((SerialUSBDriver*)sdef.serial == &SDU1) {
-                sduObjectInit(&SDU1);
-                sduStart(&SDU1, &serusbcfg1);
-#if HAL_HAVE_DUAL_USB_CDC
-                sduObjectInit(&SDU2);
-                sduStart(&SDU2, &serusbcfg2);
-#endif
-                /*
-                * Activates the USB driver and then the USB bus pull-up on D+.
-                * Note, a delay is inserted in order to not have to disconnect the cable
-                * after a reset.
-                */
-                usbDisconnectBus(serusbcfg1.usbp);
-                hal.scheduler->delay_microseconds(1500);
-                usbStart(serusbcfg1.usbp, &usbcfg);
-                usbConnectBus(serusbcfg1.usbp);
+                usb_initialise();
             }
             _device_initialised = true;
         }
@@ -265,9 +266,9 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         if (_baudrate != 0) {
 #ifndef HAL_UART_NODMA
             bool was_initialised = _device_initialised;
-            //setup Rx DMA
-            if(!_device_initialised) {
-                if(sdef.dma_rx) {
+            // setup Rx DMA
+            if (!_device_initialised) {
+                if (rx_dma_enabled) {
                     osalDbgAssert(rxdma == nullptr, "double DMA allocation");
                     chSysLock();
                     rxdma = dmaStreamAllocI(sdef.dma_rx_stream_id,
@@ -276,7 +277,7 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
                                             (void *)this);
                     osalDbgAssert(rxdma, "stream alloc failed");
                     chSysUnlock();
-#if defined(STM32F7) || defined(STM32H7)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3)
                     dmaStreamSetPeripheral(rxdma, &((SerialDriver*)sdef.serial)->usart->RDR);
 #else
                     dmaStreamSetPeripheral(rxdma, &((SerialDriver*)sdef.serial)->usart->DR);
@@ -285,7 +286,7 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
                     dmaSetRequestSource(rxdma, sdef.dma_rx_channel_id);
 #endif
                 }
-                if (sdef.dma_tx) {
+                if (tx_dma_enabled) {
                     // we only allow for sharing of the TX DMA channel, not the RX
                     // DMA channel, as the RX side is active all the time, so
                     // cannot be shared
@@ -300,20 +301,17 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
             sercfg.speed = _baudrate;
 
             // start with options from set_options()
-            sercfg.cr1 = 0;
+            sercfg.cr1 = _cr1_options;
             sercfg.cr2 = _cr2_options;
             sercfg.cr3 = _cr3_options;
 
 #ifndef HAL_UART_NODMA
-            if (!sdef.dma_tx && !sdef.dma_rx) {
-            } else {
-                if (sdef.dma_rx) {
-                    sercfg.cr1 |= USART_CR1_IDLEIE;
-                    sercfg.cr3 |= USART_CR3_DMAR;
-                }
-                if (sdef.dma_tx) {
-                    sercfg.cr3 |= USART_CR3_DMAT;
-                }
+            if (rx_dma_enabled) {
+                sercfg.cr1 |= USART_CR1_IDLEIE;
+                sercfg.cr3 |= USART_CR3_DMAR;
+            }
+            if (tx_dma_enabled) {
+                sercfg.cr3 |= USART_CR3_DMAT;
             }
             sercfg.irq_cb = rx_irq_cb;
 #endif // HAL_UART_NODMA
@@ -323,20 +321,14 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
             sdStart((SerialDriver*)sdef.serial, &sercfg);
 
 #ifndef HAL_UART_NODMA
-            if(sdef.dma_rx) {
+            if (rx_dma_enabled) {
                 //Configure serial driver to skip handling RX packets
                 //because we will handle them via DMA
                 ((SerialDriver*)sdef.serial)->usart->CR1 &= ~USART_CR1_RXNEIE;
-                //Start DMA
-                if(!was_initialised) {
-                    uint32_t dmamode = STM32_DMA_CR_DMEIE | STM32_DMA_CR_TEIE;
-                    dmamode |= STM32_DMA_CR_CHSEL(sdef.dma_rx_channel_id);
-                    dmamode |= STM32_DMA_CR_PL(0);
-                    dmaStreamSetMemory0(rxdma, rx_bounce_buf);
-                    dmaStreamSetTransactionSize(rxdma, RX_BOUNCE_BUFSIZE);
-                    dmaStreamSetMode(rxdma, dmamode    | STM32_DMA_CR_DIR_P2M |
-                                         STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
-                    dmaStreamEnable(rxdma);
+                // Start DMA
+                if (!was_initialised) {
+                    dmaStreamDisable(rxdma);
+                    dma_rx_enable();
                 }
             }
 #endif // HAL_UART_NODMA
@@ -374,7 +366,7 @@ void UARTDriver::dma_tx_allocate(Shared_DMA *ctx)
                             (void *)this);
     osalDbgAssert(txdma, "stream alloc failed");
     chSysUnlock();
-#if defined(STM32F7) || defined(STM32H7)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3)
     dmaStreamSetPeripheral(txdma, &((SerialDriver*)sdef.serial)->usart->TDR);
 #else
     dmaStreamSetPeripheral(txdma, &((SerialDriver*)sdef.serial)->usart->DR);
@@ -385,6 +377,21 @@ void UARTDriver::dma_tx_allocate(Shared_DMA *ctx)
 #endif // HAL_USE_SERIAL
 }
 
+#ifndef HAL_UART_NODMA
+void UARTDriver::dma_rx_enable(void)
+{
+    uint32_t dmamode = STM32_DMA_CR_DMEIE | STM32_DMA_CR_TEIE;
+    dmamode |= STM32_DMA_CR_CHSEL(sdef.dma_rx_channel_id);
+    dmamode |= STM32_DMA_CR_PL(0);
+    rx_bounce_idx ^= 1;
+    dmaStreamSetMemory0(rxdma, rx_bounce_buf[rx_bounce_idx]);
+    dmaStreamSetTransactionSize(rxdma, RX_BOUNCE_BUFSIZE);
+    dmaStreamSetMode(rxdma, dmamode | STM32_DMA_CR_DIR_P2M |
+                     STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
+    dmaStreamEnable(rxdma);
+}
+#endif
+
 void UARTDriver::dma_tx_deallocate(Shared_DMA *ctx)
 {
     chSysLock();
@@ -394,7 +401,7 @@ void UARTDriver::dma_tx_deallocate(Shared_DMA *ctx)
 }
 
 /*
-  DMA transmit complettion interrupt handler
+  DMA transmit completion interrupt handler
  */
 void UARTDriver::tx_complete(void* self, uint32_t flags)
 {
@@ -416,16 +423,21 @@ void UARTDriver::tx_complete(void* self, uint32_t flags)
 }
 
 
+#ifndef HAL_UART_NODMA
 void UARTDriver::rx_irq_cb(void* self)
 {
 #if HAL_USE_SERIAL == TRUE
     UARTDriver* uart_drv = (UARTDriver*)self;
-    if (!uart_drv->sdef.dma_rx) {
+    if (!uart_drv->rx_dma_enabled) {
         return;
     }
 #if defined(STM32F7) || defined(STM32H7)
     //disable dma, triggering DMA transfer complete interrupt
     uart_drv->rxdma->stream->CR &= ~STM32_DMA_CR_EN;
+#elif defined(STM32F3)
+    //disable dma, triggering DMA transfer complete interrupt
+    dmaStreamDisable(uart_drv->rxdma);
+    uart_drv->rxdma->channel->CCR &= ~STM32_DMA_CR_EN;
 #else
     volatile uint16_t sr = ((SerialDriver*)(uart_drv->sdef.serial))->usart->SR;
     if(sr & USART_SR_IDLE) {
@@ -437,37 +449,37 @@ void UARTDriver::rx_irq_cb(void* self)
 #endif // STM32F7
 #endif // HAL_USE_SERIAL
 }
+#endif
 
+/*
+  handle a RX DMA full interrupt
+ */
 void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
 {
 #if HAL_USE_SERIAL == TRUE
     UARTDriver* uart_drv = (UARTDriver*)self;
-    if (uart_drv->_lock_rx_in_timer_tick) {
+    if (!uart_drv->rx_dma_enabled) {
         return;
     }
-    if (!uart_drv->sdef.dma_rx) {
-        return;
-    }
-    stm32_cacheBufferInvalidate(uart_drv->rx_bounce_buf, RX_BOUNCE_BUFSIZE);
-    uint8_t len = RX_BOUNCE_BUFSIZE - dmaStreamGetTransactionSize(uart_drv->rxdma);
+    uint16_t len = RX_BOUNCE_BUFSIZE - dmaStreamGetTransactionSize(uart_drv->rxdma);
+    const uint8_t bounce_idx = uart_drv->rx_bounce_idx;
+
+    // restart the DMA transfers immediately. This switches to the
+    // other bounce buffer. We restart the DMA before we copy the data
+    // out to minimise the time with DMA disabled, which allows us to
+    // handle much higher receiver baudrates
+    dmaStreamDisable(uart_drv->rxdma);
+    uart_drv->dma_rx_enable();
+    
     if (len > 0) {
-        if (uart_drv->half_duplex) {
-            uint32_t now = AP_HAL::micros();
-            if (now - uart_drv->hd_write_us < uart_drv->hd_read_delay_us) {
-                len = 0;
-            }
-        }
-
-        stm32_cacheBufferInvalidate(uart_drv->rx_bounce_buf, len);
-        uart_drv->_readbuf.write(uart_drv->rx_bounce_buf, len);
-
+        /*
+          we have data to copy out
+         */
+        stm32_cacheBufferInvalidate(uart_drv->rx_bounce_buf[bounce_idx], len);
+        uart_drv->_readbuf.write(uart_drv->rx_bounce_buf[bounce_idx], len);
         uart_drv->receive_timestamp_update();
     }
 
-    //restart the DMA transfers
-    dmaStreamSetMemory0(uart_drv->rxdma, uart_drv->rx_bounce_buf);
-    dmaStreamSetTransactionSize(uart_drv->rxdma, RX_BOUNCE_BUFSIZE);
-    dmaStreamEnable(uart_drv->rxdma);
     if (uart_drv->_wait.thread_ctx && uart_drv->_readbuf.available() >= uart_drv->_wait.n) {
         chSysLockFromISR();
         chEvtSignalI(uart_drv->_wait.thread_ctx, EVT_DATA);
@@ -590,12 +602,13 @@ int16_t UARTDriver::read_locked(uint32_t key)
     return byte;
 }
 
-/* Empty implementations of Print virtual methods */
+/* write one byte to the port */
 size_t UARTDriver::write(uint8_t c)
 {
-    if (lock_write_key != 0 || !_write_mutex.take_nonblocking()) {
+    if (lock_write_key != 0) {
         return 0;
     }
+    _write_mutex.take_blocking();
 
     if (!_initialised) {
         _write_mutex.give();
@@ -607,7 +620,10 @@ size_t UARTDriver::write(uint8_t c)
             _write_mutex.give();
             return 0;
         }
+        // release the semaphore while sleeping
+        _write_mutex.give();
         hal.scheduler->delay(1);
+        _write_mutex.take_blocking();
     }
     size_t ret = _writebuf.write(&c, 1);
     if (unbuffered_writes) {
@@ -617,25 +633,17 @@ size_t UARTDriver::write(uint8_t c)
     return ret;
 }
 
+/* write a block of bytes to the port */
 size_t UARTDriver::write(const uint8_t *buffer, size_t size)
 {
     if (!_initialised || lock_write_key != 0) {
 		return 0;
 	}
 
-    if (_blocking_writes && unbuffered_writes) {
-        _write_mutex.take_blocking();
-    } else {
-        if (!_write_mutex.take_nonblocking()) {
-            return 0;
-        }
-    }
-
     if (_blocking_writes && !unbuffered_writes) {
         /*
           use the per-byte delay loop in write() above for blocking writes
          */
-        _write_mutex.give();
         size_t ret = 0;
         while (size--) {
             if (write(*buffer++) != 1) break;
@@ -644,11 +652,12 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
         return ret;
     }
 
+    WITH_SEMAPHORE(_write_mutex);
+
     size_t ret = _writebuf.write(buffer, size);
     if (unbuffered_writes) {
         write_pending_bytes();
     }
-    _write_mutex.give();
     return ret;
 }
 
@@ -679,14 +688,8 @@ size_t UARTDriver::write_locked(const uint8_t *buffer, size_t size, uint32_t key
     if (lock_write_key != 0 && key != lock_write_key) {
         return 0;
     }
-    if (!_write_mutex.take_nonblocking()) {
-        return 0;
-    }
-    size_t ret = _writebuf.write(buffer, size);
-
-    _write_mutex.give();
-
-    return ret;
+    WITH_SEMAPHORE(_write_mutex);
+    return _writebuf.write(buffer, size);
 }
 
 /*
@@ -717,7 +720,12 @@ void UARTDriver::check_dma_tx_completion(void)
 {
     chSysLock();
     if (!tx_bounce_buf_ready) {
-        if (!(txdma->stream->CR & STM32_DMA_CR_EN)) {
+#if defined(STM32F3)
+        bool enabled = (txdma->channel->CCR & STM32_DMA_CR_EN);
+#else
+        bool enabled = (txdma->stream->CR & STM32_DMA_CR_EN);
+#endif
+        if (!enabled) {
             if (dmaStreamGetTransactionSize(txdma) == 0) {
                 tx_bounce_buf_ready = true;
                 _last_write_completed_us = AP_HAL::micros();
@@ -751,6 +759,7 @@ void UARTDriver::handle_tx_timeout(void *arg)
  */
 void UARTDriver::write_pending_bytes_DMA(uint32_t n)
 {
+    WITH_SEMAPHORE(_write_mutex);
     check_dma_tx_completion();
 
     if (!tx_bounce_buf_ready) {
@@ -781,10 +790,7 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
         }
     }
 
-    if (half_duplex) {
-        half_duplex_setup_delay(tx_len);
-    }
-
+    dmaStreamDisable(txdma);
     tx_bounce_buf_ready = false;
     osalDbgAssert(txdma != nullptr, "UART TX DMA allocation failed");
     stm32_cacheBufferFlush(tx_bounce_buf, tx_len);
@@ -806,8 +812,14 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
  */
 void UARTDriver::write_pending_bytes_NODMA(uint32_t n)
 {
+    WITH_SEMAPHORE(_write_mutex);
+
     ByteBuffer::IoVec vec[2];
     uint16_t nwritten = 0;
+
+    if (half_duplex && n > 1) {
+        half_duplex_setup_tx();
+    }
 
     const auto n_vec = _writebuf.peekiovec(vec, n);
     for (int i = 0; i < n_vec; i++) {
@@ -838,10 +850,6 @@ void UARTDriver::write_pending_bytes_NODMA(uint32_t n)
     }
 
     _total_written += nwritten;
-
-    if (half_duplex) {
-        half_duplex_setup_delay(nwritten);
-    }
 }
 
 /*
@@ -852,7 +860,7 @@ void UARTDriver::write_pending_bytes(void)
     uint32_t n;
 
 #ifndef HAL_UART_NODMA
-    if (sdef.dma_tx) {
+    if (tx_dma_enabled) {
         check_dma_tx_completion();
     }
 #endif
@@ -864,7 +872,7 @@ void UARTDriver::write_pending_bytes(void)
     }
 
 #ifndef HAL_UART_NODMA
-    if (sdef.dma_tx) {
+    if (tx_dma_enabled) {
         write_pending_bytes_DMA(n);
     } else
 #endif
@@ -878,7 +886,7 @@ void UARTDriver::write_pending_bytes(void)
             _first_write_started_us = AP_HAL::micros();
         }
 #ifndef HAL_UART_NODMA
-        if (sdef.dma_tx) {
+        if (tx_dma_enabled) {
             // when we are using DMA we have a reliable indication that a write
             // has completed from the DMA completion interrupt
             if (_last_write_completed_us != 0) {
@@ -909,15 +917,24 @@ void UARTDriver::write_pending_bytes(void)
 }
 
 /*
-  setup a delay after writing bytes to a half duplex UART to prevent
-  read-back of the same bytes that we wrote. half-duplex protocols
-  tend to have quite loose timing, which makes this possible
+  setup for half duplex tramsmit. To cope with uarts that have level
+  shifters and pullups we need to play a trick where we temporarily
+  disable half-duplex while transmitting. That disables the receive
+  part of the uart on the pin which allows the transmit side to
+  correctly setup the idle voltage before the transmit starts.
  */
-void UARTDriver::half_duplex_setup_delay(uint16_t len)
+void UARTDriver::half_duplex_setup_tx(void)
 {
-    const uint16_t pad_us = 1000;
-    hd_write_us = AP_HAL::micros();
-    hd_read_delay_us = ((1000000UL * len * 10) / _baudrate) + pad_us;
+#ifdef HAVE_USB_SERIAL
+    if (!hd_tx_active) {
+        chEvtGetAndClearFlags(&hd_listener);
+        hd_tx_active = true;
+        SerialDriver *sd = (SerialDriver*)(sdef.serial);
+        sdStop(sd);
+        sercfg.cr3 &= ~USART_CR3_HDSEL;
+        sdStart(sd, &sercfg);
+    }
+#endif
 }
 
 
@@ -930,30 +947,48 @@ void UARTDriver::_timer_tick(void)
 {
     if (!_initialised) return;
 
+#ifdef HAVE_USB_SERIAL
+    if (hd_tx_active && (chEvtGetAndClearFlags(&hd_listener) & CHN_OUTPUT_EMPTY) != 0) {
+        /*
+          half-duplex transmit has finished. We now re-enable the
+          HDSEL bit for receive
+         */
+        SerialDriver *sd = (SerialDriver*)(sdef.serial);
+        sdStop(sd);
+        sercfg.cr3 |= USART_CR3_HDSEL;
+        sdStart(sd, &sercfg);
+        hd_tx_active = false;
+    }
+#endif
+
 #ifndef HAL_UART_NODMA
-    if (sdef.dma_rx && rxdma) {
-        _lock_rx_in_timer_tick = true;
+    if (rx_dma_enabled && rxdma) {
+        chSysLock();
         //Check if DMA is enabled
         //if not, it might be because the DMA interrupt was silenced
         //let's handle that here so that we can continue receiving
-        if (!(rxdma->stream->CR & STM32_DMA_CR_EN)) {
+#if defined(STM32F3)
+        bool enabled = (rxdma->channel->CCR & STM32_DMA_CR_EN);
+#else
+        bool enabled = (rxdma->stream->CR & STM32_DMA_CR_EN);
+#endif
+        if (!enabled) {
             uint8_t len = RX_BOUNCE_BUFSIZE - dmaStreamGetTransactionSize(rxdma);
             if (len != 0) {
-                stm32_cacheBufferInvalidate(rx_bounce_buf, len);
-                _readbuf.write(rx_bounce_buf, len);
+                stm32_cacheBufferInvalidate(rx_bounce_buf[rx_bounce_idx], len);
+                _readbuf.write(rx_bounce_buf[rx_bounce_idx], len);
 
                 receive_timestamp_update();
                 if (_rts_is_active) {
                     update_rts_line();
                 }
             }
-            //DMA disabled by idle interrupt never got a chance to be handled
-            //we will enable it here
-            dmaStreamSetMemory0(rxdma, rx_bounce_buf);
-            dmaStreamSetTransactionSize(rxdma, RX_BOUNCE_BUFSIZE);
-            dmaStreamEnable(rxdma);
+            // DMA disabled by idle interrupt never got a chance to be handled
+            // we will enable it here
+            dmaStreamDisable(rxdma);
+            dma_rx_enable();
         }
-        _lock_rx_in_timer_tick = false;
+        chSysUnlock();
     }
 #endif
 
@@ -973,7 +1008,7 @@ void UARTDriver::_timer_tick(void)
     _in_timer = true;
 
 #ifndef HAL_UART_NODMA
-    if (!sdef.dma_rx)
+    if (!rx_dma_enabled)
 #endif
     {
         // try to fill the read buffer
@@ -1001,15 +1036,10 @@ void UARTDriver::_timer_tick(void)
                 ret = -1;
             }
 #endif
-            if (half_duplex) {
-                uint32_t now = AP_HAL::micros();
-                if (now - hd_write_us < hd_read_delay_us) {
-                    break;
-                }
+            if (!hd_tx_active) {
+                _readbuf.commit((unsigned)ret);
+                receive_timestamp_update();
             }
-            _readbuf.commit((unsigned)ret);
-
-            receive_timestamp_update();
 
             /* stop reading as we read less than we asked for */
             if ((unsigned)ret < vec[i].len) {
@@ -1026,9 +1056,8 @@ void UARTDriver::_timer_tick(void)
         // provided by the write() call, but if the write is larger
         // than the DMA buffer size then there can be extra bytes to
         // send here, and they must be sent with the write lock held
-        _write_mutex.take(HAL_SEMAPHORE_BLOCK_FOREVER);
+        WITH_SEMAPHORE(_write_mutex);
         write_pending_bytes();
-        _write_mutex.give();
     } else {
         write_pending_bytes();
     }
@@ -1120,16 +1149,8 @@ void UARTDriver::update_rts_line(void)
  */
 bool UARTDriver::set_unbuffered_writes(bool on)
 {
-#ifdef HAL_UART_NODMA
-    return false;
-#else
-    if (on && !sdef.dma_tx) {
-        // we can't implement low latemcy writes safely without TX DMA
-        return false;
-    }
     unbuffered_writes = on;
     return true;
-#endif
 }
 
 /*
@@ -1146,7 +1167,7 @@ void UARTDriver::configure_parity(uint8_t v)
     sdStop((SerialDriver*)sdef.serial);
 
 #ifdef USART_CR1_M0
-    // cope with F7 where there are 2 bits in CR1_M
+    // cope with F3 and F7 where there are 2 bits in CR1_M
     const uint32_t cr1_m0 = USART_CR1_M0;
 #else
     const uint32_t cr1_m0 = USART_CR1_M;
@@ -1187,9 +1208,9 @@ void UARTDriver::configure_parity(uint8_t v)
 #endif
 
 #ifndef HAL_UART_NODMA
-    if(sdef.dma_rx) {
-        //Configure serial driver to skip handling RX packets
-        //because we will handle them via DMA
+    if (rx_dma_enabled) {
+        // Configure serial driver to skip handling RX packets
+        // because we will handle them via DMA
         ((SerialDriver*)sdef.serial)->usart->CR1 &= ~USART_CR1_RXNEIE;
     }
 #endif
@@ -1220,7 +1241,7 @@ void UARTDriver::set_stop_bits(int n)
 
     sdStart((SerialDriver*)sdef.serial, &sercfg);
 #ifndef HAL_UART_NODMA
-    if(sdef.dma_rx) {
+    if (rx_dma_enabled) {
         //Configure serial driver to skip handling RX packets
         //because we will handle them via DMA
         ((SerialDriver*)sdef.serial)->usart->CR1 &= ~USART_CR1_RXNEIE;
@@ -1261,8 +1282,29 @@ uint64_t UARTDriver::receive_time_constraint_us(uint16_t nbytes)
     return last_receive_us;
 }
 
+/*
+ set user specified PULLUP/PULLDOWN options from SERIALn_OPTIONS
+*/
+void UARTDriver::set_pushpull(uint16_t options)
+{
+#if HAL_USE_SERIAL == TRUE && !defined(STM32F1)
+    if ((options & OPTION_PULLDOWN_RX) && sdef.rx_line) {
+        palLineSetPushPull(sdef.rx_line, PAL_PUSHPULL_PULLDOWN);
+    }
+    if ((options & OPTION_PULLDOWN_TX) && sdef.tx_line) {
+        palLineSetPushPull(sdef.tx_line, PAL_PUSHPULL_PULLDOWN);
+    }
+    if ((options & OPTION_PULLUP_RX) && sdef.rx_line) {
+        palLineSetPushPull(sdef.rx_line, PAL_PUSHPULL_PULLUP);
+    }
+    if ((options & OPTION_PULLUP_TX) && sdef.tx_line) {
+        palLineSetPushPull(sdef.tx_line, PAL_PUSHPULL_PULLUP);
+    }
+#endif
+}
+
 // set optional features, return true on success
-bool UARTDriver::set_options(uint8_t options)
+bool UARTDriver::set_options(uint16_t options)
 {
     if (sdef.is_usb) {
         // no options allowed on USB
@@ -1278,19 +1320,33 @@ bool UARTDriver::set_options(uint8_t options)
     uint32_t cr3 = sd->usart->CR3;
     bool was_enabled = (sd->usart->CR1 & USART_CR1_UE);
 
-#if defined(STM32F7) || defined(STM32H7)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3)
     // F7 has built-in support for inversion in all uarts
+    ioline_t rx_line = (options & OPTION_SWAP)?sdef.tx_line:sdef.rx_line;
+    ioline_t tx_line = (options & OPTION_SWAP)?sdef.rx_line:sdef.tx_line;
     if (options & OPTION_RXINV) {
         cr2 |= USART_CR2_RXINV;
         _cr2_options |= USART_CR2_RXINV;
+        if (rx_line != 0) {
+            palLineSetPushPull(rx_line, PAL_PUSHPULL_PULLDOWN);
+        }
     } else {
         cr2 &= ~USART_CR2_RXINV;
+        if (rx_line != 0) {
+            palLineSetPushPull(rx_line, PAL_PUSHPULL_PULLUP);
+        }
     }
     if (options & OPTION_TXINV) {
         cr2 |= USART_CR2_TXINV;
         _cr2_options |= USART_CR2_TXINV;
+        if (tx_line != 0) {
+            palLineSetPushPull(tx_line, PAL_PUSHPULL_PULLDOWN);
+        }
     } else {
         cr2 &= ~USART_CR2_TXINV;
+        if (tx_line != 0) {
+            palLineSetPushPull(tx_line, PAL_PUSHPULL_PULLUP);
+        }
     }
     // F7 can also support swapping RX and TX pins
     if (options & OPTION_SWAP) {
@@ -1325,10 +1381,26 @@ bool UARTDriver::set_options(uint8_t options)
     if (options & OPTION_HDPLEX) {
         cr3 |= USART_CR3_HDSEL;
         _cr3_options |= USART_CR3_HDSEL;
-        half_duplex = true;
+        if (!half_duplex) {
+            chEvtRegisterMaskWithFlags(chnGetEventSource((SerialDriver*)sdef.serial),
+                                       &hd_listener,
+                                       EVT_TRANSMIT_END,
+                                       CHN_OUTPUT_EMPTY);
+            half_duplex = true;
+        }
+#ifndef HAL_UART_NODMA
+        if (rx_dma_enabled && rxdma) {
+            dmaStreamDisable(rxdma);
+        }
+#endif
+        // force DMA off when using half-duplex as the timing may affect other devices
+        // sharing the DMA channel
+        rx_dma_enabled = tx_dma_enabled = false;
     } else {
         cr3 &= ~USART_CR3_HDSEL;
     }
+
+    set_pushpull(options);
 
     if (sd->usart->CR2 == cr2 &&
         sd->usart->CR3 == cr3) {
@@ -1355,5 +1427,35 @@ uint8_t UARTDriver::get_options(void) const
 {
     return _last_options;
 }
+
+#if HAL_USE_SERIAL_USB == TRUE
+/*
+  initialise the USB bus, called from both UARTDriver and stdio for startup debug
+  This can be called before the hal is initialised so must not call any hal functions
+ */
+void usb_initialise(void)
+{
+    static bool initialised;
+    if (initialised) {
+        return;
+    }
+    initialised = true;
+    sduObjectInit(&SDU1);
+    sduStart(&SDU1, &serusbcfg1);
+#if HAL_HAVE_DUAL_USB_CDC
+    sduObjectInit(&SDU2);
+    sduStart(&SDU2, &serusbcfg2);
+#endif
+    /*
+     * Activates the USB driver and then the USB bus pull-up on D+.
+     * Note, a delay is inserted in order to not have to disconnect the cable
+     * after a reset.
+     */
+    usbDisconnectBus(serusbcfg1.usbp);
+    chThdSleep(chTimeUS2I(1500));
+    usbStart(serusbcfg1.usbp, &usbcfg);
+    usbConnectBus(serusbcfg1.usbp);
+}
+#endif
 
 #endif //CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS

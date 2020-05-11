@@ -10,3 +10,6 @@ FLASH_SIZE_KB 1024
 # 1M, but it prepares us for when large features such as scripting are
 # added to the build
 define HAL_MINIMIZE_FEATURES 1
+
+# we don't have a flash page spare to write parameters to:
+undef STORAGE_FLASH_PAGE
