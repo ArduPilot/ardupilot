@@ -3,6 +3,7 @@ from __future__ import print_function
 import abc
 import copy
 import errno
+import glob
 import math
 import os
 import re
@@ -1573,6 +1574,171 @@ class AutoTest(ABC):
         self.set_rc(ch, 1000)
         self.mavproxy.send('wp list\n')
         self.mavproxy.expect('Requesting 0 waypoints')
+
+    def log_list(self):
+        '''return a list of log files present in POSIX-style loging dir'''
+        ret = glob.glob("logs/*.BIN")
+        self.progress("log list: %s" % str(ret))
+        return ret
+
+    def assert_parameter_value(self, parameter, required):
+        got = self.get_parameter(parameter)
+        if got != required:
+            raise NotAchievedException("%s has unexpected value; want=%f got=%f" %
+                                       (parameter, required, got))
+        self.progress("%s has value %f" % (parameter, required))
+
+    def onboard_logging_not_log_disarmed(self):
+        self.set_parameter("LOG_DISARMED", 0)
+        self.set_parameter("LOG_FILE_DSRMROT", 0)
+        self.reboot_sitl()
+        self.wait_ready_to_arm() # let things setttle
+        self.start_subtest("Ensure setting LOG_DISARMED yields a new file")
+        original_list = self.log_list()
+        self.progress("original list: %s" % str(original_list))
+        self.set_parameter("LOG_DISARMED", 1)
+        self.delay_sim_time(1) # LOG_DISARMED is polled by the logger code
+        new_list = self.log_list()
+        self.progress("new list: %s" % str(new_list))
+        if len(new_list) - len(original_list) != 1:
+            raise NotAchievedException("Got more than one new log")
+        self.set_parameter("LOG_DISARMED", 0)
+        self.delay_sim_time(1) # LOG_DISARMED is polled by the logger code
+        new_list = self.log_list()
+        if len(new_list) - len(original_list) != 1:
+            raise NotAchievedException("Got more or less than one new log after toggling LOG_DISARMED off")
+
+        self.start_subtest("Ensuring toggling LOG_DISARMED on and off doesn't increase the number of files")
+        self.set_parameter("LOG_DISARMED", 1)
+        self.delay_sim_time(1) # LOG_DISARMED is polled by the logger code
+        new_new_list = self.log_list()
+        if len(new_new_list) != len(new_list):
+            raise NotAchievedException("Got extra files when toggling LOG_DISARMED")
+        self.set_parameter("LOG_DISARMED", 0)
+        self.delay_sim_time(1) # LOG_DISARMED is polled by the logger code
+        new_new_list = self.log_list()
+        if len(new_new_list) != len(new_list):
+            raise NotAchievedException("Got extra files when toggling LOG_DISARMED to 0 again")
+        self.end_subtest("Ensuring toggling LOG_DISARMED on and off doesn't increase the number of files")
+
+        self.start_subtest("Check disarm rot when log disarmed is zero")
+        self.assert_parameter_value("LOG_DISARMED", 0)
+        self.set_parameter("LOG_FILE_DSRMROT", 1)
+        old_speedup = self.get_parameter("SIM_SPEEDUP")
+        # reduce speedup to reduce chance of race condition here
+        self.set_parameter("SIM_SPEEDUP", 1)
+        pre_armed_list = self.log_list()
+        if self.is_copter() or self.is_heli():
+            self.set_parameter("DISARM_DELAY", 0)
+        self.arm_vehicle()
+        post_armed_list = self.log_list()
+        if len(post_armed_list) != len(pre_armed_list):
+            raise NotAchievedException("Got unexpected new log")
+        self.disarm_vehicle()
+        old_speedup = self.set_parameter("SIM_SPEEDUP", old_speedup)
+        post_disarmed_list = self.log_list()
+        if len(post_disarmed_list) != len(post_armed_list):
+            raise NotAchievedException("Log rotated immediately")
+        self.progress("Allowing time for post-disarm-logging to occur if it will")
+        self.delay_sim_time(5)
+        post_disarmed_post_delay_list = self.log_list()
+        if len(post_disarmed_post_delay_list) != len(post_disarmed_list):
+            raise NotAchievedException("Got log rotation when we shouldn't have")
+        self.progress("Checking that arming does produce a new log")
+        self.arm_vehicle()
+        post_armed_list = self.log_list()
+        if len(post_armed_list) - len(post_disarmed_post_delay_list) != 1:
+            raise NotAchievedException("Did not get new log for rotation")
+        self.progress("Now checking natural rotation after HAL_LOGGER_ARM_PERSIST")
+        self.disarm_vehicle()
+        post_disarmed_list = self.log_list()
+        if len(post_disarmed_list) != len(post_armed_list):
+            raise NotAchievedException("Log rotated immediately")
+        self.delay_sim_time(30)
+        delayed_post_disarmed_list = self.log_list()
+        # should *still* not get another log as LOG_DISARMED is false
+        if len(post_disarmed_list) != len(delayed_post_disarmed_list):
+            self.progress("Unexpected new log found")
+
+    def onboard_logging_log_disarmed(self):
+        start_list = self.log_list()
+        self.set_parameter("LOG_FILE_DSRMROT", 0)
+        self.set_parameter("LOG_DISARMED", 0)
+        self.reboot_sitl()
+        restart_list = self.log_list()
+        if len(start_list) != len(restart_list):
+            raise NotAchievedException("Unexpected log detected (pre-delay) initial=(%s) restart=(%s)" % (str(sorted(start_list)), str(sorted(restart_list))))
+        self.delay_sim_time(20)
+        restart_list = self.log_list()
+        if len(start_list) != len(restart_list):
+            raise NotAchievedException("Unexpected log detected (post-delay)")
+        self.set_parameter("LOG_DISARMED", 1)
+        self.delay_sim_time(5) # LOG_DISARMED is polled
+        post_log_disarmed_set_list = self.log_list()
+        if len(post_log_disarmed_set_list) == len(restart_list):
+            raise NotAchievedException("Did not get new log when LOG_DISARMED set")
+        self.progress("Ensuring we get a new log after a reboot")
+        self.reboot_sitl()
+        self.delay_sim_time(5)
+        post_reboot_log_list = self.log_list()
+        if len(post_reboot_log_list) == len(post_log_disarmed_set_list):
+            raise NotAchievedException("Did not get fresh log-disarmed log after a reboot")
+        self.progress("Ensuring no log rotation when we toggle LOG_DISARMED off then on again")
+        self.set_parameter("LOG_DISARMED", 0)
+        current_log_filepath = self.current_onboard_log_filepath()
+        self.delay_sim_time(10) # LOG_DISARMED is polled
+        post_toggleoff_list = self.log_list()
+        if len(post_toggleoff_list) != len(post_reboot_log_list):
+            raise NotAchievedException("Shouldn't get new file yet")
+        self.progress("Ensuring log does not grow when LOG_DISARMED unset...")
+        current_log_filepath_size = os.path.getsize(current_log_filepath)
+        self.delay_sim_time(5)
+        current_log_filepath_new_size = os.path.getsize(current_log_filepath)
+        if current_log_filepath_new_size != current_log_filepath_size:
+            raise NotAchievedException(
+                "File growing after LOG_DISARMED unset (new=%u old=%u" %
+                (current_log_filepath_new_size, current_log_filepath_size))
+        self.progress("Turning LOG_DISARMED back on again")
+        self.set_parameter("LOG_DISARMED", 1)
+        self.delay_sim_time(5) # LOG_DISARMED is polled
+        post_toggleon_list = self.log_list()
+        if len(post_toggleon_list) != len(post_toggleoff_list):
+            raise NotAchievedException("Log rotated when it shouldn't")
+        self.progress("Checking log is now growing again")
+        if os.path.getsize(current_log_filepath) == current_log_filepath_size:
+            raise NotAchievedException("Log is not growing")
+
+        # self.progress("Checking LOG_FILE_DSRMROT behaviour when log_DISARMED set")
+        # self.set_parameter("LOG_FILE_DSRMROT", 1)
+        # self.wait_ready_to_arm()
+        # pre = self.log_list()
+        # self.arm_vehicle()
+        # post = self.log_list()
+        # if len(pre) != len(post):
+        #     raise NotAchievedException("Rotation happened on arming?!")
+        # size_a = os.path.getsize(current_log_filepath)
+        # self.delay_sim_time(5)
+        # size_b = os.path.getsize(current_log_filepath)
+        # if size_b <= size_a:
+        #     raise NotAchievedException("Log not growing")
+        # self.disarm_vehicle()
+        # instant_post_disarm_list = self.log_list()
+        # self.progress("Should not rotate straight away")
+        # if len(instant_post_disarm_list) != len(post):
+        #     raise NotAchievedException("Should not rotate straight away")
+        # self.delay_sim_time(20)
+        # post_disarm_list = self.log_list()
+        # if len(post_disarm_list) - len(instant_post_disarm_list) != 1:
+        #     raise NotAchievedException("Did not get exactly one more log")
+
+        # self.progress("If we re-arm during the HAL_LOGGER_ARM_PERSIST period it should rotate")
+
+    def test_onboard_logging(self):
+        if self.is_tracker():
+            return
+        self.onboard_logging_log_disarmed()
+        self.onboard_logging_not_log_disarmed()
+
 
     def log_download(self, filename, timeout=360, upload_logs=False):
         """Download latest log."""
@@ -5463,6 +5629,10 @@ switch value'''
             ("LoggerDocumentation",
              "Test Onboard Logging Generation",
              self.test_onboard_logging_generation),
+
+            ("Logging",
+             "Test Onboard Logging",
+             self.test_onboard_logging),
 
             ("GetCapabilities",
              "Get Capabilities",
