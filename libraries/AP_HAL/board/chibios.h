@@ -59,7 +59,7 @@
 // allow for static semaphores
 #include <AP_HAL_ChibiOS/Semaphores.h>
 #define HAL_Semaphore ChibiOS::Semaphore
-#define HAL_Semaphore_Recursive ChibiOS::Semaphore_Recursive
+#define HAL_Semaphore_Recursive ChibiOS::Semaphore
 
 /* string names for well known SPI devices */
 #define HAL_BARO_MS5611_NAME "ms5611"
