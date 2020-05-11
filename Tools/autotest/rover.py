@@ -5157,10 +5157,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
              "Accelerometer Calibration testing",
              self.accelcal),
 
-            ("DownLoadLogs", "Download logs", lambda:
-             self.log_download(
-                 self.buildlogs_path("Rover-log.bin"),
-                 upload_logs=len(self.fail_list) > 0)),
+            ("LogUpload",
+             "Upload logs",
+             self.log_upload),
             ])
         return ret
 
