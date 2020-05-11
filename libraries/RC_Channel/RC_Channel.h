@@ -333,6 +333,11 @@ public:
         return get_singleton() != nullptr && (_options & uint32_t(Option::IGNORE_FAILSAFE));
     }
 
+    // should we add a pad byte to Fport data
+    bool fport_pad(void) const {
+        return get_singleton() != nullptr && (_options & uint32_t(Option::FPORT_PAD));
+    }
+
     bool ignore_overrides() const {
         return _options & uint32_t(Option::IGNORE_OVERRIDES);
     }
@@ -351,6 +356,7 @@ protected:
         IGNORE_RECEIVER  = (1 << 0), // RC receiver modules
         IGNORE_OVERRIDES = (1 << 1), // MAVLink overrides
         IGNORE_FAILSAFE  = (1 << 2), // ignore RC failsafe bits
+        FPORT_PAD             = (1 << 3), // pad fport telem output
     };
 
     void new_override_received() {
