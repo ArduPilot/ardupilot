@@ -47,6 +47,8 @@ public:
 
     bool is_healthy(void) const override;
 
+    bool logging_healthy(void) const override;
+
     bool prepare_for_arming(void) override;
 
 

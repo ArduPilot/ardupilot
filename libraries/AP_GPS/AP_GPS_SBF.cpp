@@ -106,6 +106,17 @@ AP_GPS_SBF::read(void)
     return ret;
 }
 
+bool AP_GPS_SBF::logging_healthy(void) const
+{
+    switch (gps._raw_data) {
+        case 1:
+        default:
+            return (RxState & SBF_DISK_MOUNTED) && (RxState & SBF_DISK_ACTIVITY);
+        case 2:
+            return ((RxState & SBF_DISK_MOUNTED) && (RxState & SBF_DISK_ACTIVITY)) || (!hal.util->get_soft_armed() && _has_been_armed);
+    }
+}
+
 bool
 AP_GPS_SBF::parse(uint8_t temp)
 {
@@ -340,7 +351,7 @@ AP_GPS_SBF::process_message(void)
         check_new_itow(temp.TOW, sbf_msg.length);
         RxState = temp.RxState;
         if ((RxError & RX_ERROR_MASK) != (temp.RxError & RX_ERROR_MASK)) {
-            gcs().send_text(MAV_SEVERITY_INFO, "GPS %u: SBF error changed (0x%08x/0x%08x)", (unsigned int)(state.instance + 1),
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %u: SBF error changed (0x%08x/0x%08x)", (unsigned int)(state.instance + 1),
                             (unsigned int)(RxError & RX_ERROR_MASK), (unsigned int)(temp.RxError & RX_ERROR_MASK));
         }
         RxError = temp.RxError;
@@ -371,7 +382,7 @@ void AP_GPS_SBF::broadcast_configuration_failure_reason(void) const
 {
     if (gps._auto_config != AP_GPS::GPS_AUTO_CONFIG_DISABLE &&
         _init_blob_index < ARRAY_SIZE(_initialisation_blob)) {
-        gcs().send_text(MAV_SEVERITY_INFO, "GPS %u: SBF is not fully configured (%u/%u)", state.instance + 1,
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %u: SBF is not fully configured (%u/%u)", state.instance + 1,
                         _init_blob_index, (unsigned)ARRAY_SIZE(_initialisation_blob));
     }
 }
@@ -393,7 +404,7 @@ void AP_GPS_SBF::mount_disk (void) const {
 
 void AP_GPS_SBF::unmount_disk (void) const {
     const char* command = "emd, DSK1, Unmount\n";
-    Debug("Unmounting disk");
+    GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "SBF unmounting disk");
     port->write((const uint8_t*)command, strlen(command));
 }
 
@@ -402,22 +413,22 @@ bool AP_GPS_SBF::prepare_for_arming(void) {
     if (gps._raw_data) {
         if (!(RxState & SBF_DISK_MOUNTED)){
             is_logging = false;
-            gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: SBF disk is not mounted", state.instance + 1);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %d: SBF disk is not mounted", state.instance + 1);
 
             // simply attempt to mount the disk, no need to check if the command was
             // ACK/NACK'd as we don't continuously attempt to remount the disk
-            gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: Attempting to mount disk", state.instance + 1);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %d: Attempting to mount disk", state.instance + 1);
             mount_disk();
             // reset the flag to indicate if we should be logging
             _has_been_armed = false;
         }
         else if (RxState & SBF_DISK_FULL) {
             is_logging = false;
-            gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: SBF disk is full", state.instance + 1);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %d: SBF disk is full", state.instance + 1);
         }
         else if (!(RxState & SBF_DISK_ACTIVITY)) {
             is_logging = false;
-            gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: SBF is not currently logging", state.instance + 1);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %d: SBF is not currently logging", state.instance + 1);
         }
     }
 
