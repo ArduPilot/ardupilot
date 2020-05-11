@@ -98,6 +98,8 @@ private:
     int64_t disk_space_avail();
     int64_t disk_space();
 
+    void ensure_log_directory_exists();
+
     bool file_exists(const char *filename) const;
     bool log_exists(const uint16_t lognum) const;
 

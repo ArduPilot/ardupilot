@@ -58,10 +58,8 @@ AP_Logger_File::AP_Logger_File(AP_Logger &front,
 }
 
 
-void AP_Logger_File::Init()
+void AP_Logger_File::ensure_log_directory_exists()
 {
-    AP_Logger_Backend::Init();
-    // create the log directory if need be
     int ret;
     struct stat st;
 
@@ -78,6 +76,14 @@ void AP_Logger_File::Init()
     if (ret == -1 && errno != EEXIST) {
         printf("Failed to create log directory %s : %s\n", _log_directory, strerror(errno));
     }
+}
+
+void AP_Logger_File::Init()
+{
+    AP_Logger_Backend::Init();
+
+    // create the log directory if need be
+    ensure_log_directory_exists();
 
     // determine and limit file backend buffersize
     uint32_t bufsize = _front._params.file_bufsize;
