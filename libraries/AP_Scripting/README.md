@@ -50,6 +50,5 @@ return update, 1000 -- request to be rerun again 1000 milliseconds (1 second) fr
 
 ## Working with bindings
 
-Edit bindings.desc
-
-cd into the generator subdirectory and type `make run`
+Edit bindings.desc and rebuild. The waf build will automatically
+re-run the code generator.
