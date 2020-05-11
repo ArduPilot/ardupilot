@@ -135,8 +135,6 @@ void Plane::init_ardupilot()
 #if LANDING_GEAR_ENABLED == ENABLED
     // initialise landing gear position
     g2.landing_gear.init();
-    gear.last_auto_cmd = -1;
-    gear.last_cmd = -1;
 #endif
 
 #if FENCE_TRIGGERED_PIN > 0
