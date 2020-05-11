@@ -116,12 +116,13 @@ bool AP_Compass_MAG3110::init(enum Rotation rotation)
     read();
     
     /* register the compass instance in the frontend */
-    _compass_instance = register_compass();
+    _dev->set_device_type(DEVTYPE_MAG3110);
+    if (!register_compass(_dev->get_bus_id(), _compass_instance)) {
+        return false;
+    }
+    set_dev_id(_compass_instance, _dev->get_bus_id());
 
     set_rotation(_compass_instance, rotation);
-
-    _dev->set_device_type(DEVTYPE_MAG3110);
-    set_dev_id(_compass_instance, _dev->get_bus_id());
 
     set_external(_compass_instance, true);
 
@@ -135,9 +136,7 @@ bool AP_Compass_MAG3110::_hardware_init()
 {
 
     AP_HAL::Semaphore *bus_sem = _dev->get_semaphore();
-    if (!bus_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        AP_HAL::panic("MAG3110: Unable to get semaphore");
-    }
+    bus_sem->take_blocking();
 
     // initially run the bus at low speed
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);

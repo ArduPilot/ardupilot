@@ -75,9 +75,7 @@ AP_Compass_LIS3MDL::AP_Compass_LIS3MDL(AP_HAL::OwnPtr<AP_HAL::Device> _dev,
 
 bool AP_Compass_LIS3MDL::init()
 {
-    if (!dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return false;
-    }
+    dev->get_semaphore()->take_blocking();
 
     if (dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
         dev->set_read_flag(0xC0);
@@ -107,7 +105,11 @@ bool AP_Compass_LIS3MDL::init()
     dev->get_semaphore()->give();
 
     /* register the compass instance in the frontend */
-    compass_instance = register_compass();
+    dev->set_device_type(DEVTYPE_LIS3MDL);
+    if (!register_compass(dev->get_bus_id(), compass_instance)) {
+        return false;
+    }
+    set_dev_id(compass_instance, dev->get_bus_id());
 
     printf("Found a LIS3MDL on 0x%x as compass %u\n", dev->get_bus_id(), compass_instance);
     
@@ -117,9 +119,6 @@ bool AP_Compass_LIS3MDL::init()
         set_external(compass_instance, true);
     }
     
-    dev->set_device_type(DEVTYPE_LIS3MDL);
-    set_dev_id(compass_instance, dev->get_bus_id());
-
     // call timer() at 80Hz
     dev->register_periodic_callback(1000000U/80U,
                                     FUNCTOR_BIND_MEMBER(&AP_Compass_LIS3MDL::timer, void));
