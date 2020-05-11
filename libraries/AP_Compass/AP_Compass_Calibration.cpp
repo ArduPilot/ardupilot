@@ -7,7 +7,7 @@
 
 #include "AP_Compass.h"
 
-extern AP_HAL::HAL& hal;
+const extern AP_HAL::HAL& hal;
 
 #if COMPASS_CAL_ENABLED
 
@@ -19,7 +19,7 @@ void Compass::cal_update()
 
     bool running = false;
 
-    for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+    for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
         bool failure;
         _calibrator[i].update(failure);
         if (failure) {
@@ -34,7 +34,7 @@ void Compass::cal_update()
         if (_calibrator[i].running()) {
             running = true;
         } else if (_cal_autosave && !_cal_saved[i] && _calibrator[i].get_status() == CompassCalibrator::Status::SUCCESS) {
-            _accept_calibration(i);
+            _accept_calibration(uint8_t(i));
         }
     }
 
@@ -57,6 +57,11 @@ bool Compass::_start_calibration(uint8_t i, bool retry, float delay)
     if (!use_for_yaw(i)) {
         return false;
     }
+    Priority prio = Priority(i);
+    if (_priority_did_list[prio] != _priority_did_stored_list[prio]) {
+        gcs().send_text(MAV_SEVERITY_ERROR, "Compass cal requires reboot after priority change");
+        return false;
+    }
     if (_options.get() & uint16_t(Option::CAL_REQUIRE_GPS)) {
         if (AP::gps().status() < AP_GPS::GPS_OK_FIX_2D) {
             gcs().send_text(MAV_SEVERITY_ERROR, "Compass cal requires GPS lock");
@@ -66,22 +71,22 @@ bool Compass::_start_calibration(uint8_t i, bool retry, float delay)
     if (!is_calibrating()) {
         AP_Notify::events.initiated_compass_cal = 1;
     }
-    if (i == get_primary() && _state[i].external != 0) {
-        _calibrator[i].set_tolerance(_calibration_threshold);
+    if (i == 0 && _get_state(prio).external != 0) {
+        _calibrator[prio].set_tolerance(_calibration_threshold);
     } else {
         // internal compasses or secondary compasses get twice the
         // threshold. This is because internal compasses tend to be a
         // lot noisier
-        _calibrator[i].set_tolerance(_calibration_threshold*2);
+        _calibrator[prio].set_tolerance(_calibration_threshold*2);
     }
     if (_rotate_auto) {
-        enum Rotation r = _state[i].external?(enum Rotation)_state[i].orientation.get():ROTATION_NONE;
+        enum Rotation r = _get_state(prio).external?(enum Rotation)_get_state(prio).orientation.get():ROTATION_NONE;
         if (r != ROTATION_CUSTOM) {
-            _calibrator[i].set_orientation(r, _state[i].external, _rotate_auto>=2);
+            _calibrator[prio].set_orientation(r, _get_state(prio).external, _rotate_auto>=2);
         }
     }
-    _cal_saved[i] = false;
-    _calibrator[i].start(retry, delay, get_offsets_max(), i);
+    _cal_saved[prio] = false;
+    _calibrator[prio].start(retry, delay, get_offsets_max(), i);
 
     // disable compass learning both for calibration and after completion
     _learn.set_and_save(0);
@@ -120,12 +125,13 @@ void Compass::start_calibration_all(bool retry, bool autosave, float delay, bool
 void Compass::_cancel_calibration(uint8_t i)
 {
     AP_Notify::events.initiated_compass_cal = 0;
+    Priority prio = Priority(i);
 
-    if (_calibrator[i].running() || _calibrator[i].get_status() == CompassCalibrator::Status::WAITING_TO_START) {
+    if (_calibrator[prio].running() || _calibrator[prio].get_status() == CompassCalibrator::Status::WAITING_TO_START) {
         AP_Notify::events.compass_cal_canceled = 1;
     }
-    _cal_saved[i] = false;
-    _calibrator[i].stop();
+    _cal_saved[prio] = false;
+    _calibrator[prio].stop();
 }
 
 void Compass::_cancel_calibration_mask(uint8_t mask)
@@ -144,14 +150,16 @@ void Compass::cancel_calibration_all()
 
 bool Compass::_accept_calibration(uint8_t i)
 {
-    CompassCalibrator& cal = _calibrator[i];
+    Priority prio = Priority(i);
+
+    CompassCalibrator& cal = _calibrator[prio];
     const CompassCalibrator::Status cal_status = cal.get_status();
 
-    if (_cal_saved[i] || cal_status == CompassCalibrator::Status::NOT_STARTED) {
+    if (_cal_saved[prio] || cal_status == CompassCalibrator::Status::NOT_STARTED) {
         return true;
     } else if (cal_status == CompassCalibrator::Status::SUCCESS) {
         _cal_complete_requires_reboot = true;
-        _cal_saved[i] = true;
+        _cal_saved[prio] = true;
 
         Vector3f ofs, diag, offdiag;
         float scale_factor;
@@ -162,8 +170,8 @@ bool Compass::_accept_calibration(uint8_t i)
         set_and_save_offdiagonals(i,offdiag);
         set_and_save_scale_factor(i,scale_factor);
 
-        if (_state[i].external && _rotate_auto >= 2) {
-            _state[i].orientation.set_and_save_ifchanged(cal.get_orientation());
+        if (_get_state(prio).external && _rotate_auto >= 2) {
+            set_and_save_orientation(i, cal.get_orientation());
         }
 
         if (!is_calibrating()) {
@@ -178,9 +186,9 @@ bool Compass::_accept_calibration(uint8_t i)
 bool Compass::_accept_calibration_mask(uint8_t mask)
 {
     bool success = true;
-    for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
-        if ((1<<i) & mask) {
-            if (!_accept_calibration(i)) {
+    for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
+        if ((1<<uint8_t(i)) & mask) {
+            if (!_accept_calibration(uint8_t(i))) {
                 success = false;
             }
             _calibrator[i].stop();
@@ -194,7 +202,7 @@ bool Compass::send_mag_cal_progress(const GCS_MAVLINK& link)
 {
     uint8_t cal_mask = _get_cal_mask();
 
-    for (uint8_t compass_id=0; compass_id<COMPASS_MAX_INSTANCES; compass_id++) {
+    for (Priority compass_id(0); compass_id<COMPASS_MAX_INSTANCES; compass_id++) {
         // ensure we don't try to send with no space available
         if (!HAVE_PAYLOAD_SPACE(link.get_chan(), MAG_CAL_PROGRESS)) {
             // ideally we would only send one progress message per
@@ -216,7 +224,7 @@ bool Compass::send_mag_cal_progress(const GCS_MAVLINK& link)
 
             mavlink_msg_mag_cal_progress_send(
                 link.get_chan(),
-                compass_id, cal_mask,
+                uint8_t(compass_id), cal_mask,
                 (uint8_t)cal_status, attempt, completion_pct, completion_mask,
                 direction.x, direction.y, direction.z
             );
@@ -230,7 +238,7 @@ bool Compass::send_mag_cal_report(const GCS_MAVLINK& link)
 {
     uint8_t cal_mask = _get_cal_mask();
 
-    for (uint8_t compass_id=0; compass_id<COMPASS_MAX_INSTANCES; compass_id++) {
+    for (Priority compass_id(0); compass_id<COMPASS_MAX_INSTANCES; compass_id++) {
         // ensure we don't try to send with no space available
         if (!HAVE_PAYLOAD_SPACE(link.get_chan(), MAG_CAL_REPORT)) {
             // ideally we would only send one progress message per
@@ -251,7 +259,7 @@ bool Compass::send_mag_cal_report(const GCS_MAVLINK& link)
 
             mavlink_msg_mag_cal_report_send(
                 link.get_chan(),
-                compass_id, cal_mask,
+                uint8_t(compass_id), cal_mask,
                 (uint8_t)cal_status, autosaved,
                 fitness,
                 ofs.x, ofs.y, ofs.z,
@@ -269,7 +277,7 @@ bool Compass::send_mag_cal_report(const GCS_MAVLINK& link)
 
 bool Compass::is_calibrating() const
 {
-    for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+    for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
         switch(_calibrator[i].get_status()) {
             case CompassCalibrator::Status::NOT_STARTED:
             case CompassCalibrator::Status::SUCCESS:
@@ -286,9 +294,9 @@ bool Compass::is_calibrating() const
 uint8_t Compass::_get_cal_mask() const
 {
     uint8_t cal_mask = 0;
-    for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+    for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
         if (_calibrator[i].get_status() != CompassCalibrator::Status::NOT_STARTED) {
-            cal_mask |= 1 << i;
+            cal_mask |= 1 << uint8_t(i);
         }
     }
     return cal_mask;
@@ -305,7 +313,7 @@ MAV_RESULT Compass::handle_mag_cal_command(const mavlink_command_long_t &packet)
     case MAV_CMD_DO_START_MAG_CAL: {
         result = MAV_RESULT_ACCEPTED;
         if (hal.util->get_soft_armed()) {
-            hal.console->printf("Disarm for compass calibration\n");
+            gcs().send_text(MAV_SEVERITY_NOTICE, "Disarm to allow compass calibration");
             result = MAV_RESULT_FAILED;
             break;
         }
