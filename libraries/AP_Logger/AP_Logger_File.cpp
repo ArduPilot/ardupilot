@@ -79,9 +79,6 @@ void AP_Logger_File::Init()
 {
     AP_Logger_Backend::Init();
 
-    // create the log directory if need be
-    ensure_log_directory_exists();
-
     // determine and limit file backend buffersize
     uint32_t bufsize = _front._params.file_bufsize;
     if (bufsize > 64) {
@@ -842,6 +839,9 @@ void AP_Logger_File::start_new_log(void)
     uint64_t utc_usec;
     _need_rtc_update = !AP::rtc().get_utc_usec(utc_usec);
 #endif
+
+    // create the log directory if need be
+    ensure_log_directory_exists();
 
     EXPECT_DELAY_MS(3000);
     _write_fd = AP::FS().open(_write_filename, O_WRONLY|O_CREAT|O_TRUNC);
