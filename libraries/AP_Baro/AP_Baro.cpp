@@ -33,6 +33,7 @@
 #include "AP_Baro_SITL.h"
 #include "AP_Baro_BMP085.h"
 #include "AP_Baro_BMP280.h"
+#include "AP_Baro_SPL06.h"
 #include "AP_Baro_HIL.h"
 #include "AP_Baro_KellerLD.h"
 #include "AP_Baro_MS5611.h"
