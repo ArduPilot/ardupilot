@@ -1,5 +1,32 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.0.3 28-Feb-2020 / 4.0.3-rc1 20-Feb-2020
+Changes from 4.0.2
+1) Bug Fixes:
+    a) "RCInput: decoding" message watchdog reset when using MAVLink signing (Critical Fix)
+    b) HeliQuad yaw control fix
+    c) Do-Set-Servo commands can affect sprayer, gripper outputs
+    d) BLHeli passthrough fix for H7 boards (CubeOrange, Holybro Durandal)
+2) USB IDs updated for "composite" devices (fixes GCS<->autopilot connection issues for boards which present 2 USB ports)
+3) RCOut banner helps confirm correct setup for pwm, oneshot, dshot 
+4) ZigZag mode supports arming, takeoff and landing
+------------------------------------------------------------------
+Copter 4.0.2 11-Feb-2020
+Changes from 4.0.2-rc4
+1) MAVFTP stack size increased to 3k (fixes reboot when using MAVFTP)
+------------------------------------------------------------------
+Copter 4.0.2 11-Feb-2020 / 4.0.2-rc4 05-Feb-2020
+Changes from 4.0.2-rc3
+1) Bug Fixes:
+    a) Spektrum receivers decoding fix for Pixracer
+    b) Current Alt frame always relative to home (RTL could return at wrong alt)
+    c) Circle mode pitch control direction fixed
+    d) EKF only uses world magnetic tables if COMPASS_SCALE is set
+    e) Logging reliability improvements especially for FRAM logs
+    f) RangeFinders using PWM interface use RNGFNDx_OFFSET param (attempt2)
+    g) SpeedyBeeF5 probes all I2C ports for external baro
+2) Rangefinder fallback support (both must have same _ORIENT) 
+------------------------------------------------------------------
 Copter 4.0.2-rc3 01-Feb-2020
 Changes from 4.0.2-rc2
 1) Bug Fixes:
