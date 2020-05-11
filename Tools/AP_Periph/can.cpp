@@ -938,25 +938,38 @@ static void process1HzTasks(uint64_t timestamp_usec)
 static void can_wait_node_id(void)
 {
     uint8_t node_id_allocation_transfer_id = 0;
+    const uint32_t led_pattern = 0xAAAA;
+    uint8_t led_idx = 0;
+    uint32_t last_led_change = AP_HAL::millis();
+    const uint32_t led_change_period = 50;
 
     while (canardGetLocalNodeID(&canard) == CANARD_BROADCAST_NODE_ID)
     {
         printf("Waiting for dynamic node ID allocation... (pool %u)\n", pool_peak_percent());
 
         stm32_watchdog_pat();
+        uint32_t now = AP_HAL::millis();
 
         send_next_node_id_allocation_request_at_ms =
-            AP_HAL::millis() + UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_MIN_REQUEST_PERIOD_MS +
+            now + UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_MIN_REQUEST_PERIOD_MS +
             get_random_range(UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_MAX_FOLLOWUP_DELAY_MS);
 
-        while ((AP_HAL::millis() < send_next_node_id_allocation_request_at_ms) &&
+        while (((now=AP_HAL::millis()) < send_next_node_id_allocation_request_at_ms) &&
                (canardGetLocalNodeID(&canard) == CANARD_BROADCAST_NODE_ID))
         {
             processTx();
             processRx();
             canardCleanupStaleTransfers(&canard, AP_HAL::micros64());
             stm32_watchdog_pat();
+
+            if (now - last_led_change > led_change_period) {
+                // blink LED in recognisable pattern while waiting for DNA
+                palWriteLine(HAL_GPIO_PIN_LED, (led_pattern & (1U<<led_idx))?1:0);
+                led_idx = (led_idx+1) % 32;
+                last_led_change = now;
+            }
         }
+
 
         if (canardGetLocalNodeID(&canard) != CANARD_BROADCAST_NODE_ID)
         {
