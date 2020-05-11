@@ -64,7 +64,7 @@ public:
   bool get_position_cmd(Location &loc);
 
   //Get a position, velocity, yaw command
-  bool get_posvel_cmd(Location &loc, Vector3f &vel_cms);
+  bool get_posvel_cmd(Location &loc, Vector3f &vel_cms, float &yaw_cd);
 
 private:
 

@@ -253,11 +253,12 @@ bool AC_Planck::get_position_cmd(Location &loc)
 }
 
 //Get a position, velocity cmd
-bool AC_Planck::get_posvel_cmd(Location &loc, Vector3f &vel_cms)
+bool AC_Planck::get_posvel_cmd(Location &loc, Vector3f &vel_cms, float &yaw_cd)
 {
   if(!_cmd.is_new) return false;
   loc = _cmd.pos;
   vel_cms = _cmd.vel_cms;
+  yaw_cd = _cmd.att_cd.z;
   _cmd.is_new = false;
   return true;
 }
