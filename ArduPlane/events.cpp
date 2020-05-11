@@ -40,6 +40,9 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
         break;
         
     case Mode::Number::AUTO:
+    // added
+    case Mode::Number::PAYLOADRELEASE:
+    // add finish
     case Mode::Number::AVOID_ADSB:
     case Mode::Number::GUIDED:
     case Mode::Number::LOITER:
@@ -106,7 +109,10 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
         }
         break;
         
-    case Mode::Number::AUTO:
+    case Mode::Number::AUTO: 
+    //added
+    case Mode::Number::PAYLOADRELEASE:
+    // add finish
     case Mode::Number::AVOID_ADSB:
     case Mode::Number::GUIDED:
     case Mode::Number::LOITER:

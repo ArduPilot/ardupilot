@@ -34,6 +34,11 @@ Mode *Plane::mode_from_mode_num(const enum Mode::Number num)
     case Mode::Number::AUTO:
         ret = &mode_auto;
         break;
+    // added
+    case Mode::Number::PAYLOADRELEASE:
+        ret = &mode_auto;
+        break;
+    // add finish
     case Mode::Number::RTL:
         ret = &mode_rtl;
         break;

@@ -3,6 +3,7 @@
 
 bool ModeAuto::_enter()
 {
+    gcs().send_text(MAV_SEVERITY_INFO,"inside: ModeAuto::_enter");
     plane.throttle_allows_nudging = true;
     plane.auto_throttle_mode = true;
     plane.auto_navigation_mode = true;
@@ -32,6 +33,18 @@ bool ModeAuto::_enter()
 
 void ModeAuto::_exit()
 {
+    gcs().send_text(MAV_SEVERITY_INFO,"inside: ModeAuto::_exit");
+    uint16_t nav_cmd_id = plane.mission.get_current_nav_cmd().id;
+
+// added
+    if (nav_cmd_id == MAV_CMD_NAV_PAYLOAD_RELEASE) {
+        gcs().send_text(MAV_SEVERITY_INFO,"since payload is releasing I will not do anything");
+
+        return;
+    }
+    //add finish
+
+
     if (plane.mission.state() == AP_Mission::MISSION_RUNNING) {
         plane.mission.stop();
 
@@ -46,6 +59,9 @@ void ModeAuto::_exit()
 
 void ModeAuto::update()
 {
+    gcs().send_text(MAV_SEVERITY_INFO,"inside: ModeAuto::_update");
+
+
     if (plane.mission.state() != AP_Mission::MISSION_RUNNING) {
         // this could happen if AP_Landing::restart_landing_sequence() returns false which would only happen if:
         // restart_landing_sequence() is called when not executing a NAV_LAND or there is no previous nav point
@@ -55,11 +71,15 @@ void ModeAuto::update()
     }
 
     uint16_t nav_cmd_id = plane.mission.get_current_nav_cmd().id;
+    // plane.mission.set_current_cmd(MAV_CMD_NAV_PAYLOAD_RELEASE);
+    gcs().send_text(MAV_SEVERITY_INFO,"cmd_id: %d", nav_cmd_id);
+
 
     if (plane.quadplane.in_vtol_auto()) {
         plane.quadplane.control_auto();
     } else if (nav_cmd_id == MAV_CMD_NAV_TAKEOFF ||
         (nav_cmd_id == MAV_CMD_NAV_LAND && plane.flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND)) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Hi I am takeoff command");
         plane.takeoff_calc_roll();
         plane.takeoff_calc_pitch();
         plane.calc_throttle();
@@ -76,6 +96,25 @@ void ModeAuto::update()
         } else {
             plane.calc_throttle();
         }
+    } else if (nav_cmd_id == MAV_CMD_NAV_PAYLOAD_RELEASE) {
+        gcs().send_text(MAV_SEVERITY_INFO, "************");
+        gcs().send_text(MAV_SEVERITY_INFO, "Hi I am payload release command");
+        // plane.steer_state.hold_course_cd = -1;
+        if(plane.auto_state.is_payload_released){
+            gcs().send_text(MAV_SEVERITY_INFO, "Hi I have completed the mission");
+            
+            // plane.mission.start_or_resume();
+        } else {
+            plane.next_WP_loc = plane.mission.get_current_nav_cmd().content.location;
+
+        }
+        plane.calc_nav_roll();
+        plane.calc_nav_pitch();
+        plane.calc_throttle();
+        // plane.set_mode(plane.mode_payloadrelease, ModeReason::UNKNOWN);
+        // return;
+
+
     } else {
         // we are doing normal AUTO flight, the special cases
         // are for takeoff and landing

@@ -434,7 +434,7 @@ void Plane::stabilize()
 
         // if moving very slowly also zero the steering integrator
         if (gps.ground_speed() < 1) {
-            steerController.reset_I();            
+            steerController.reset_I();
         }
     }
 }

@@ -38,6 +38,9 @@ public:
         QRTL          = 21,
         QAUTOTUNE     = 22,
         QACRO         = 23,
+        // added
+        PAYLOADRELEASE = 24,
+        // add finish
     };
 
     // Constructor
@@ -101,6 +104,23 @@ public:
     Number mode_number() const override { return Number::AUTO; }
     const char *name() const override { return "AUTO"; }
     const char *name4() const override { return "AUTO"; }
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override;
+
+protected:
+
+    bool _enter() override;
+    void _exit() override;
+};
+
+class ModePayloadRelease : public Mode
+{
+public:
+
+    Number mode_number() const override { return Number::PAYLOADRELEASE; }
+    const char *name() const override { return "PAYLOADRELEASE"; }
+    const char *name4() const override { return "PAYR"; }
 
     // methods that affect movement of the vehicle in this mode
     void update() override;

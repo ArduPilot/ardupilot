@@ -76,6 +76,9 @@ void GCS_Plane::update_vehicle_sensor_status_flags(void)
         break;
 
     case Mode::Number::AUTO:
+    // added
+    case Mode::Number::PAYLOADRELEASE:
+    // add finish
     case Mode::Number::RTL:
     case Mode::Number::LOITER:
     case Mode::Number::AVOID_ADSB:

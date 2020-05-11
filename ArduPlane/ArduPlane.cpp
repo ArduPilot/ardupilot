@@ -446,6 +446,11 @@ void Plane::update_navigation()
             mission.update();
         }
         break;
+    case Mode::Number::PAYLOADRELEASE:
+        if (ahrs.home_is_set()) {
+            mission.update();
+        }
+        break;
             
     case Mode::Number::RTL:
         if (quadplane.available() && quadplane.rtl_mode == 1 &&
