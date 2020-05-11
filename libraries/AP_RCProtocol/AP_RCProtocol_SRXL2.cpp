@@ -173,13 +173,37 @@ void AP_RCProtocol_SRXL2::_capture_scaled_input(const uint16_t *values, bool in_
 
     for (uint8_t i = 0; i < MAX_CHANNELS; i++) {
         /*
+         * Store the decoded channel into the R/C input buffer, taking into
+         * account the different ideas about channel assignement that we have.
+         *
+         * Specifically, the first four channels in rc_channel_data are roll, pitch, thrust, yaw,
+         * but the first four channels from the DSM receiver are thrust, roll, pitch, yaw.
+         */
+        uint8_t channel = i;
+        switch (channel) {
+        case 0:
+            channel = 2;
+            break;
+
+        case 1:
+            channel = 0;
+            break;
+
+        case 2:
+            channel = 1;
+            break;
+
+        default:
+            break;
+        }
+        /*
          * Each channel data value is sent as an unsigned 16-bit value from 0 to 65532 (0xFFFC)
          * with 32768 (0x8000) representing "Servo Center". The channel value must be bit-shifted
          * to the right to match the applications's accepted resolution.
          *
          * So here we scale to DSMX-2048 and then use our regular Spektrum conversion.
          */
-        _channels[i] = ((((int)(values[i] >> 5) - 1024) * 1000) / 1700) + 1500;
+        _channels[channel] = ((int32_t)(values[i] >> 5) * 1194) / 2048 + 903;
     }
 }
 
@@ -212,12 +236,14 @@ void AP_RCProtocol_SRXL2::send_on_uart(uint8_t* pBuffer, uint8_t length)
 // send data to the uart
 void AP_RCProtocol_SRXL2::_send_on_uart(uint8_t* pBuffer, uint8_t length)
 {
-    if (have_UART()) {
+    AP_HAL::UARTDriver* uart = get_available_UART();
+
+    if (uart != nullptr && uart->is_initialized()) {
         // check that we haven't been too slow in responding to the new UART data. If we respond too late then we will
         // corrupt the next incoming control frame. incoming packets at max 800bits @91Hz @115k baud gives total budget of 11ms 
         // per packet of which we need 7ms to receive a packet. outgoing packets are 220 bits which require 2ms to send
         // leaving at most 2ms of delay that can be tolerated
-        uint64_t tend = get_UART()->receive_time_constraint_us(1);
+        uint64_t tend = uart->receive_time_constraint_us(1);
         uint64_t now = AP_HAL::micros64();
         uint64_t tdelay = now - tend;
         if (tdelay > 2000) {
@@ -229,7 +255,7 @@ void AP_RCProtocol_SRXL2::_send_on_uart(uint8_t* pBuffer, uint8_t length)
             debug("0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x: %s",
                 pBuffer[0], pBuffer[1], pBuffer[2], pBuffer[3], pBuffer[4], pBuffer[5], pBuffer[6], pBuffer[7], pBuffer[8], pBuffer[9], &pBuffer[7]);
         }
-        get_UART()->write(pBuffer, length);
+        uart->write(pBuffer, length);
     }
 }
 
@@ -246,10 +272,11 @@ void AP_RCProtocol_SRXL2::change_baud_rate(uint32_t baudrate)
 // change the uart baud rate
 void AP_RCProtocol_SRXL2::_change_baud_rate(uint32_t baudrate)
 {
-    if (have_UART()) {
-        get_UART()->begin(baudrate);
-        get_UART()->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-        get_UART()->set_unbuffered_writes(true);
+    AP_HAL::UARTDriver* uart = get_available_UART();
+    if (uart != nullptr) {
+        uart->begin(baudrate);
+        uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+        uart->set_unbuffered_writes(true);
     }
 }
 
