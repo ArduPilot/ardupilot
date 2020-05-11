@@ -67,5 +67,6 @@ void GCS_MAVLINK::send_fence_status() const
                                   static_cast<int8_t>(fence->get_breaches() != 0),
                                   fence->get_breach_count(),
                                   mavlink_breach_type,
-                                  fence->get_breach_time());
+                                  fence->get_breach_time(),
+                                  0);
 }

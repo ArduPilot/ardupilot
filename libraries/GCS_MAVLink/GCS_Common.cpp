@@ -1833,7 +1833,7 @@ void GCS::service_statustext(void)
                 mavlink_channel_t chan_index = (mavlink_channel_t)(MAVLINK_COMM_0+i);
                 if (HAVE_PAYLOAD_SPACE(chan_index, STATUSTEXT)) {
                     // we have space so send then clear that channel bit on the mask
-                    mavlink_msg_statustext_send(chan_index, statustext->msg.severity, statustext->msg.text);
+                    mavlink_msg_statustext_send(chan_index, statustext->msg.severity, statustext->msg.text, 0, 0);
                     statustext->bitmask &= ~chan_bit;
                 }
             }

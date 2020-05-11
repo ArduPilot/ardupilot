@@ -24,6 +24,7 @@
 
 #define GCS_DEBUG_SEND_MESSAGE_TIMINGS 0
 
+#ifndef HAL_NO_GCS
 // check if a message will fit in the payload space available
 #define PAYLOAD_SIZE(chan, id) (GCS_MAVLINK::packet_overhead_chan(chan)+MAVLINK_MSG_ID_ ## id ## _LEN)
 #define HAVE_PAYLOAD_SPACE(chan, id) (comm_get_txspace(chan) >= PAYLOAD_SIZE(chan, id))
@@ -941,3 +942,13 @@ private:
 };
 
 GCS &gcs();
+
+// send text when we do have a GCS
+#define GCS_SEND_TEXT(severity, format, args...) gcs().send_text(severity, format, ##args)
+
+#else // HAL_NO_GCS
+// empty send text when we have no GCS
+#define GCS_SEND_TEXT(severity, format, args...)
+
+#endif // HAL_NO_GCS
+
