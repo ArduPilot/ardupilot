@@ -4,8 +4,6 @@
 # MCU class and specific type
 MCU STM32F4xx STM32F405xx
 
-define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_MINIPIX
-
 # board ID for firmware load
 APJ_BOARD_ID 3
 
@@ -17,8 +15,6 @@ STM32_ST_USE_TIMER 5
 
 FLASH_SIZE_KB 1024
 
-# board voltage
-STM32_VDD 330U
 
 # use USB for stdout, so no STDOUT_SERIAL
 # STDOUT_SERIAL SD2
@@ -28,7 +24,7 @@ STM32_VDD 330U
 I2C_ORDER I2C2 I2C1
 
 # order of UARTs (and USB)
-UART_ORDER OTG1 UART4 USART3 USART2
+SERIAL_ORDER OTG1 USART3 USART2 UART4
 
 # UART4 serial GPS
 PA0 UART4_TX UART4
@@ -74,7 +70,10 @@ PC2 LPS22HB_CS CS
 PC3 LED_SAFETY OUTPUT
 PC4 SAFETY_IN INPUT
 
-PC7 TIM8_CH2 TIM8 RCIN PULLUP LOW # also USART6_RX for serial RC
+# default to RCIN using timer capture
+PC7 TIM8_CH2 TIM8 RCININT PULLDOWN
+
+
 PC8 SDIO_D0 SDIO
 PC9 SDIO_D1 SDIO
 PC10 SDIO_D2 SDIO
@@ -136,9 +135,6 @@ define HAL_STORAGE_SIZE        16384
 # enable RAMTROM parameter storage
 define HAL_WITH_RAMTRON 1
 
-# fallback to flash is no FRAM fitted
-define STORAGE_FLASH_PAGE 22
-
 # enable FAT filesystem
 define HAL_OS_FATFS_IO 1
 
@@ -154,5 +150,4 @@ define HAL_GPIO_C_LED_PIN 2
 
 define HAL_GPIO_LED_ON  0
 define HAL_GPIO_LED_OFF 1
-
 

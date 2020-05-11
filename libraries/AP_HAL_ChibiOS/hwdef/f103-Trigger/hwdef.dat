@@ -1,0 +1,27 @@
+# PWM input to Hardpoint output trigger firmware
+
+include ../f103-periph/hwdef.dat
+
+# use DNA
+define HAL_CAN_DEFAULT_NODE_ID 0
+
+define CAN_APP_NODE_NAME "org.ardupilot.ap_periph_trigger"
+
+# PWM input to hardpoint out
+define HAL_PERIPH_ENABLE_PWM_HARDPOINT
+
+define HAL_PWM_HARDPOINT_ID_DEFAULT 101
+
+# we need 10us resolution for PWM capture
+undef CH_CFG_ST_FREQUENCY
+define CH_CFG_ST_FREQUENCY 100000
+define CH_CFG_ST_RESOLUTION 16
+
+# use USART1_RX as input for PWM trigger
+undef PA10
+PA10 PWM_TRIGGER INPUT PULLDOWN GPIO(77)
+define PWM_HARDPOINT_PIN 77
+
+# no I2C
+undef I2C_ORDER
+
