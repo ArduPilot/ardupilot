@@ -60,6 +60,9 @@ public:
     // set_sys_target - sets system that mount should attempt to point towards
     void set_target_sysid(uint8_t sysid);
 
+    // custom command
+    virtual MAV_RESULT custom(const mavlink_command_long_t &packet) { return MAV_RESULT_UNSUPPORTED; }
+
     // control - control the mount
     virtual void control(int32_t pitch_or_lat, int32_t roll_or_lon, int32_t yaw_or_alt, MAV_MOUNT_MODE mount_mode);
     

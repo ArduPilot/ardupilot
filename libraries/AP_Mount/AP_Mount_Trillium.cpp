@@ -307,9 +307,9 @@ void AP_Mount_Trillium::send_target_angles(Vector3f angle, bool target_in_degree
         Cmd.Target[GIMBAL_AXIS_TILT] = angle.y;
     }
 
-    Cmd.Mode = ORION_MODE_RATE;
+    Cmd.Mode = _orionMode;
     Cmd.ImpulseTime = 1.0f;
-    Cmd.Stabilized = FALSE;
+    Cmd.Stabilized = TRUE;
 
     encodeOrionCmdPacket(&pPkt, &Cmd);
     OrionCommSend(&pPkt);
@@ -382,7 +382,7 @@ void AP_Mount_Trillium::handle_packet(OrionPkt_t &packet)
         decodeStareStartPacketStructure(&packet, &_stare_start);
         break;
 
-        // TODO: Implement eithe rstoring or debug printing these
+        // TODO: Implement either storing or debug printing these
     case ORION_PKT_CLEVIS_VERSION:
     case ORION_PKT_CROWN_VERSION:
     case ORION_PKT_PAYLOAD_VERSION:
@@ -537,9 +537,33 @@ void AP_Mount_Trillium::handle_passthrough(const mavlink_channel_t chan, const m
 
 size_t AP_Mount_Trillium::OrionCommSend(const OrionPkt_t *pPkt)
 {
-#if AP_MOUNT_TRILLIUM_DEBUG_TX_ALL_MSGS
-    gcs().send_text(MAV_SEVERITY_DEBUG, "%sTx 0x%02x,%3u:%s", _trilliumGcsHeader, pPkt->ID, pPkt->ID, get_packet_name(pPkt->ID));
+    bool debug = AP_MOUNT_TRILLIUM_DEBUG_TX_ALL_MSGS;
+
+#if AP_MOUNT_TRILLIUM_DEBUG_TX_CMD_DIFF_ONLY_MSGS
+    if (pPkt->ID == ORION_PKT_CMD) {
+        static OrionCmd_t orionCmd_previous {};
+        OrionCmd_t orionCmd_new {};
+        decodeOrionCmdPacket(&pPkt, &orionCmd_new);
+        if (memcmp(&orionCmd_previous, &orionCmd_new, sizeof(orionCmd_previous)) == 0) {
+            // it's the same, only debug if the cmd has changed
+            debug = false;
+        } else {
+            memcpy(&orionCmd_previous, &orionCmd_new, sizeof(OrionCmd_t));
+            gcs().send_text(MAV_SEVERITY_DEBUG, "%s mode set to %s", _trilliumGcsHeader, get_mode_name(orionCmd_new.Mode));
+        }
+    }
 #endif
+
+
+#if AP_MOUNT_TRILLIUM_DEBUG_TX_NOT_AUTOPILOT_MSGS
+    if (pPkt->ID == ORION_PKT_AUTOPILOT_DATA) {
+        debug = false;
+    }
+#endif
+
+    if (debug) {
+        gcs().send_text(MAV_SEVERITY_DEBUG, "%sTx (0x%02x,%3u): %s", _trilliumGcsHeader, pPkt->ID, pPkt->ID, get_packet_name(pPkt->ID));
+    }
 
     const uint32_t len = pPkt->Length + ORION_PKT_OVERHEAD;
 
@@ -552,6 +576,33 @@ size_t AP_Mount_Trillium::OrionCommSend(const OrionPkt_t *pPkt)
 #else
     return _port->write((uint8_t *)pPkt, len);
 #endif
+}
+
+const char* AP_Mount_Trillium::get_mode_name(uint8_t mode)
+{
+    switch (mode) {
+    case ORION_MODE_DISABLED:       return "DISABLED";
+
+    case ORION_MODE_FAULT:          return "FAULT";
+    case ORION_MODE_RATE:           return "RATE";
+    case ORION_MODE_GEO_RATE:       return "GEO_RATE";
+    case ORION_MODE_FFC_AUTO:       return "FFC_AUTO";
+    //case ORION_MODE_FFC:            return "FFC";
+    case ORION_MODE_FFC_MANUAL:     return "FFC_MANUAL";
+    case ORION_MODE_SCENE:          return "SCENE";
+    case ORION_MODE_TRACK:          return "TRACK";
+    case ORION_MODE_CALIBRATION:    return "CALIBRATION";
+    case ORION_MODE_POSITION:       return "POSITION";
+    case ORION_MODE_POSITION_NO_LIMITS: return "POS_NO_LIMITS";
+    case ORION_MODE_GEOPOINT:       return "GEOPOINT";
+    case ORION_MODE_PATH:           return "PATH";
+    case ORION_MODE_DOWN:           return "DOWN";
+    case ORION_MODE_UNKNOWN:        return "UNKNOWN";
+
+    default:
+        return "Unknown";
+    }
+
 }
 
 const char* AP_Mount_Trillium::get_packet_name(uint8_t id)
@@ -665,6 +716,17 @@ const char* AP_Mount_Trillium::get_packet_name(uint8_t id)
     default:
         return "Unknown";
     }
+}
+
+MAV_RESULT AP_Mount_Trillium::custom(const mavlink_command_long_t &packet)
+{
+    if (packet.command != SPECIAL_MAVLINK_LONG_ID_MOUNT_CUSTOM) {
+        return MAV_RESULT_UNSUPPORTED;
+    }
+
+    _orionMode = (OrionMode_t)packet.param1;
+
+    return MAV_RESULT_ACCEPTED;
 }
 #endif // MOUNT_TRILLIUM_ENABLE
 

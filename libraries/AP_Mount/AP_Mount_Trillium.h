@@ -15,6 +15,8 @@
 
 #include "Trillium_protocol/OrionPublicPacketShim.h"
 
+#define SPECIAL_MAVLINK_LONG_ID_MOUNT_CUSTOM      1331
+
 
 
 // config
@@ -47,7 +49,7 @@ public:
 
     void handle_passthrough(const mavlink_channel_t chan, const mavlink_passthrough_t &packet) override;
 
-
+    MAV_RESULT custom(const mavlink_command_long_t &packet) override;
 
 private:
 
@@ -102,10 +104,12 @@ private:
 
     OrionDiagnostics_t _diagnostics;
     OrionPerformance_t _performance;
+    OrionMode_t         _orionMode = ORION_MODE_DISABLED;
 
     size_t OrionCommSend(const OrionPkt_t *pPkt);
     void requestOrionMessageByID(uint8_t id);
     const char* get_packet_name(uint8_t id);
+    const char* get_mode_name(uint8_t mode);
     void SendGeopointCmd(const Location targetLoc, const Vector3f targetVelNed_vector, const float joystickRange, const geopointOptions options);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL

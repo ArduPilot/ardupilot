@@ -597,6 +597,16 @@ MAV_RESULT AP_Mount::handle_command_do_mount_control(const mavlink_command_long_
     return MAV_RESULT_ACCEPTED;
 }
 
+MAV_RESULT AP_Mount::handle_command_mountCustom(const mavlink_command_long_t &packet)
+{
+    if (_primary >= AP_MOUNT_MAX_INSTANCES || _backends[_primary] == nullptr) {
+        return MAV_RESULT_FAILED;
+    }
+
+    // send message to backend
+    return _backends[_primary]->custom(packet);
+}
+
 MAV_RESULT AP_Mount::handle_command_long(const mavlink_command_long_t &packet)
 {
     switch (packet.command) {
@@ -604,6 +614,8 @@ MAV_RESULT AP_Mount::handle_command_long(const mavlink_command_long_t &packet)
         return handle_command_do_mount_configure(packet);
     case MAV_CMD_DO_MOUNT_CONTROL:
         return handle_command_do_mount_control(packet);
+    case SPECIAL_MAVLINK_LONG_ID_MOUNT_CUSTOM:
+        return handle_command_mountCustom(packet);
     default:
         return MAV_RESULT_UNSUPPORTED;
     }
