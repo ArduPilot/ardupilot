@@ -20,7 +20,7 @@ extern const AP_HAL::HAL& hal;
 // Do not reset vertical velocity using GPS as there is baro alt available to constrain drift
 void NavEKF3_core::ResetVelocity(void)
 {
-    // Store the position before the reset so that we can record the reset delta
+    // Store the velocity before the reset so that we can record the reset delta
     velResetNE.x = stateStruct.velocity.x;
     velResetNE.y = stateStruct.velocity.y;
 
@@ -64,7 +64,7 @@ void NavEKF3_core::ResetVelocity(void)
     outputDataDelayed.velocity.x = stateStruct.velocity.x;
     outputDataDelayed.velocity.y = stateStruct.velocity.y;
 
-    // Calculate the position jump due to the reset
+    // Calculate the velocity jump due to the reset
     velResetNE.x = stateStruct.velocity.x - velResetNE.x;
     velResetNE.y = stateStruct.velocity.y - velResetNE.y;
 
