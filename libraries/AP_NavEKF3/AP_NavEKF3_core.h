@@ -1332,10 +1332,8 @@ private:
     ext_nav_elements extNavDataDelayed; // External nav at the fusion time horizon
     uint32_t extNavMeasTime_ms;         // time external measurements were accepted for input to the data buffer (msec)
     uint32_t extNavLastPosResetTime_ms; // last time the external nav systen performed a position reset (msec)
-    uint32_t lastExtNavPassTime_ms;     // time stamp when external nav position measurement last passed innovation consistency check (msec)
     bool extNavDataToFuse;              // true when there is new external nav data to fuse
     bool extNavUsedForPos;              // true when the external nav data is being used as a position reference.
-    bool extNavTimeout;                 // true if external nav measurements have failed innovation consistency checks for too long
 
     // flags indicating severe numerical errors in innovation variance calculation for different fusion operations
     struct {

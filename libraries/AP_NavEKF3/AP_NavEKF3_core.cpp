@@ -398,10 +398,8 @@ void NavEKF3_core::InitialiseVariables()
     extNavDataDelayed = {};
     extNavMeasTime_ms = 0;
     extNavLastPosResetTime_ms = 0;
-    lastExtNavPassTime_ms = 0;
     extNavDataToFuse = false;
     extNavUsedForPos = false;
-    extNavTimeout = false;
 
     // zero data buffers
     storedIMU.reset();
