@@ -559,6 +559,9 @@ public:
     // Write position and quaternion data from an external navigation system
     virtual void writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint16_t delay_ms, uint32_t resetTime_ms) { }
 
+    // Write velocity data from an external navigation system
+    virtual void writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms) { }
+
     // return current vibration vector for primary IMU
     Vector3f get_vibration(void) const;
 
