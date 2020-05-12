@@ -9,6 +9,61 @@
 #define ZIGZAG_WP_RADIUS_CM 300
 #define ZIGZAG_LINE_INFINITY -1
 
+const AP_Param::GroupInfo ModeZigZag::var_info[] = {
+    // @Param: AUTO_ENABLE
+    // @DisplayName: ZigZag auto enable/disable
+    // @Description: Allows you to enable (1) or disable (0) ZigZag auto feature
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO_FLAGS("AUTO_ENABLE", 1, ModeZigZag, _auto_enabled, 0, AP_PARAM_FLAG_ENABLE),
+
+#if SPRAYER_ENABLED == ENABLED
+    // @Param: SPRAYER
+    // @DisplayName: Auto sprayer in ZigZag
+    // @Description: Enable the auto sprayer in ZigZag mode. SPRAY_ENABLE = 1 and SERVOx_FUNCTION = 22(SprayerPump) / 23(SprayerSpinner) also must be set. This makes the sprayer on while moving to destination A or B. The sprayer will stop if the vehicle reaches destination or the flight mode is changed from ZigZag to other.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("SPRAYER", 2, ModeZigZag, _spray_enabled, 0),
+#endif // SPRAYER_ENABLED == ENABLED
+
+    // @Param: WP_DELAY
+    // @DisplayName: The delay for zigzag waypoint
+    // @Description: Waiting time after reached the destination
+    // @Units: s
+    // @Range: 1 127
+    // @User: Advanced
+    AP_GROUPINFO("WP_DELAY", 3, ModeZigZag, _wp_delay, 1),
+
+    // @Param: SIDE_DIST
+    // @DisplayName: Sideways distance in ZigZag auto
+    // @Description: The distance to move sideways in ZigZag mode
+    // @Units: m
+    // @Range: 0.1 100
+    // @User: Advanced
+    AP_GROUPINFO("SIDE_DIST", 4, ModeZigZag, _side_dist, 4),
+
+    // @Param: DIRECTION
+    // @DisplayName: Sideways direction in ZigZag auto
+    // @Description: The direction to move sideways in ZigZag mode
+    // @Values: 0:forward, 1:right, 2:backward, 3:left
+    // @User: Advanced
+    AP_GROUPINFO("DIRECTION", 5, ModeZigZag, _direction, 0),
+
+    // @Param: LINE_NUM
+    // @DisplayName: Total number of lines
+    // @Description: Total number of lines for ZigZag auto if 1 or more. -1: Infinity, 0: Just moving to sideways
+    // @Range: -1 32767
+    // @User: Advanced
+    AP_GROUPINFO("LINE_NUM", 6, ModeZigZag, _line_num, 0),
+
+    AP_GROUPEND
+};
+
+ModeZigZag::ModeZigZag(void) : Mode()
+{
+    AP_Param::setup_object_defaults(this, var_info);
+}
+
 // initialise zigzag controller
 bool ModeZigZag::init(bool ignore_checks)
 {
@@ -61,8 +116,8 @@ void ModeZigZag::run()
     pos_control->set_max_accel_z(g.pilot_accel_z);
 
     // set the direction and the total number of lines
-    zigzag_direction = (Direction)constrain_int16(g2.zigzag_direction, 0, 3);
-    line_num = constrain_int16(g2.zigzag_line_num, -1, 32767);
+    zigzag_direction = (Direction)constrain_int16(_direction, 0, 3);
+    line_num = constrain_int16(_line_num, -1, 32767);
 
     // auto control
     if (stage == AUTO) {
@@ -356,7 +411,7 @@ bool ModeZigZag::reached_destination()
     if (reach_wp_time_ms == 0) {
         reach_wp_time_ms = now;
     }
-    return ((now - reach_wp_time_ms) > (uint16_t)constrain_int16(g2.zigzag_wp_delay, 1, 127) * 1000);
+    return ((now - reach_wp_time_ms) > (uint16_t)constrain_int16(_wp_delay, 1, 127) * 1000);
 }
 
 // calculate next destination according to vector A-B and current position
@@ -446,7 +501,7 @@ bool ModeZigZag::calculate_side_dest(Vector3f& next_dest, bool& terrain_alt) con
     }
 
     // adjust AB_side length to zigzag_side_dist
-    float scalar = constrain_float(g2.zigzag_side_dist, 0.1f, 100.0f) * 100 / safe_sqrt(AB_side.length_squared());
+    float scalar = constrain_float(_side_dist, 0.1f, 100.0f) * 100 / safe_sqrt(AB_side.length_squared());
 
     // get distance from vehicle to start_pos
     const Vector3f curr_pos = inertial_nav.get_position();
@@ -470,6 +525,11 @@ bool ModeZigZag::calculate_side_dest(Vector3f& next_dest, bool& terrain_alt) con
 // run zigzag auto feature which is automate both AB and sideways
 void ModeZigZag::run_auto()
 {
+    // exit immediately if we are disabled
+    if (!_auto_enabled) {
+        return;
+    }
+
     // make sure both A and B point are registered and not when moving to A or B
     if (stage != MANUAL_REGAIN) {
         return;
@@ -499,6 +559,11 @@ void ModeZigZag::run_auto()
 // suspend zigzag auto
 void ModeZigZag::suspend_auto()
 {
+    // exit immediately if we are disabled
+    if (!_auto_enabled) {
+        return;
+    }
+
     if (auto_stage != AutoState::MANUAL) {
         is_suspended = true;
         return_to_manual_control(true);
@@ -518,7 +583,7 @@ void ModeZigZag::init_auto()
 void ModeZigZag::spray(bool b)
 {
 #if SPRAYER_ENABLED == ENABLED
-    if (g2.zigzag_spray_enabled) {
+    if (_spray_enabled) {
         copter.sprayer.run(b);
     }
 #endif
