@@ -114,6 +114,7 @@ protected:
     void _exit() override;
 };
 
+//added
 class ModePayloadRelease : public Mode
 {
 public:
@@ -130,7 +131,7 @@ protected:
     bool _enter() override;
     void _exit() override;
 };
-
+//add finish
 
 class ModeAutoTune : public Mode
 {
