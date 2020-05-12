@@ -75,7 +75,7 @@ const AP_Param::GroupInfo SITL::var_info[] = {
     AP_GROUPINFO("BARO_DELAY",    38, SITL,  baro_delay, 0),
     AP_GROUPINFO("MAG_DELAY",     39, SITL,  mag_delay, 0),
     AP_GROUPINFO("WIND_DELAY",    40, SITL,  wind_delay, 0),
-    AP_GROUPINFO("MAG_OFS",       41, SITL,  mag_ofs, 0),
+    AP_GROUPINFO("MAG_OFS",       41, SITL,  mag_ofs[0], 0),
     AP_GROUPINFO("ACC2_RND",      42, SITL,  accel2_noise, 0),
     AP_GROUPINFO("ARSPD_FAIL",    43, SITL,  arspd_fail, 0),
     AP_GROUPINFO("GYR_SCALE",     44, SITL,  gyro_scale, 0),
@@ -119,9 +119,9 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     AP_GROUPINFO("WIND_T"      ,15, SITL,  wind_type, SITL::WIND_TYPE_SQRT),
     AP_GROUPINFO("WIND_T_ALT"  ,16, SITL,  wind_type_alt, 60),
     AP_GROUPINFO("WIND_T_COEF", 17, SITL,  wind_type_coef, 0.01f),
-    AP_GROUPINFO("MAG_DIA",     18, SITL,  mag_diag, 0),
-    AP_GROUPINFO("MAG_ODI",     19, SITL,  mag_offdiag, 0),
-    AP_GROUPINFO("MAG_ORIENT",  20, SITL,  mag_orient, 0),
+    AP_GROUPINFO("MAG_DIA",     18, SITL,  mag_diag[0], 0),
+    AP_GROUPINFO("MAG_ODI",     19, SITL,  mag_offdiag[0], 0),
+    AP_GROUPINFO("MAG_ORIENT",  20, SITL,  mag_orient[0], 0),
     AP_GROUPINFO("RC_CHANCOUNT",21, SITL,  rc_chancount, 16),
     // @Group: SPR_
     // @Path: ./SIM_Sprayer.cpp
@@ -258,6 +258,20 @@ const AP_Param::GroupInfo SITL::var_info3[] = {
     AP_GROUPINFO("VICON_VGLI",    21, SITL,  vicon_vel_glitch, 0),
 
     AP_GROUPINFO("RATE_HZ",  22, SITL,  loop_rate_hz, 1200),
+
+#if HAL_COMPASS_MAX_SENSORS > 1
+    AP_GROUPINFO("MAG2_OFS",     23, SITL,  mag_ofs[1], 0),
+    AP_GROUPINFO("MAG2_DIA",     24, SITL,  mag_diag[1], 0),
+    AP_GROUPINFO("MAG2_ODI",     25, SITL,  mag_offdiag[1], 0),
+    AP_GROUPINFO("MAG2_ORIENT",  26, SITL,  mag_orient[1], 0),
+#endif
+
+#if HAL_COMPASS_MAX_SENSORS > 2
+    AP_GROUPINFO("MAG3_OFS",     27, SITL,  mag_ofs[2], 0),
+    AP_GROUPINFO("MAG3_DIA",     28, SITL,  mag_diag[2], 0),
+    AP_GROUPINFO("MAG3_ODI",     29, SITL,  mag_offdiag[2], 0),
+    AP_GROUPINFO("MAG3_ORIENT",  30, SITL,  mag_orient[2], 0),
+#endif
 
     AP_GROUPEND
 
