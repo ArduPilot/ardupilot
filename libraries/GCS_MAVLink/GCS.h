@@ -890,16 +890,20 @@ public:
 
     struct statustext_t {
         mavlink_statustext_t    msg;
+        uint16_t                entry_created_ms;
         uint8_t                 bitmask;
     };
     class StatusTextQueue : public ObjectArray<statustext_t> {
     public:
         using ObjectArray::ObjectArray;
         HAL_Semaphore &semaphore() { return _sem; }
+        void prune();
     private:
         // a lock for the statustext queue, to make it safe to use send_text()
         // from multiple threads
         HAL_Semaphore _sem;
+
+        uint32_t last_prune_ms;
     };
 
     StatusTextQueue &statustext_queue() {
