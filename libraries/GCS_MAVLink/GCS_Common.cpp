@@ -1921,6 +1921,7 @@ void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, u
             break;
         }
 
+        statustext.entry_created_ms = AP_HAL::millis16();
         statustext.msg.severity = severity;
 
         static uint16_t msgid;
@@ -2011,6 +2012,37 @@ void GCS::service_statustext(void)
     }
     for (uint8_t i=0; i<first_backend_to_send; i++) {
         chan(i)->service_statustext();
+    }
+
+    _statustext_queue.prune();
+}
+
+void GCS::StatusTextQueue::prune(void)
+{
+    // consider pruning the statustext queue of ancient entries
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - last_prune_ms < 1000) {
+        return;
+    }
+    last_prune_ms = now_ms;
+
+    const uint16_t now16_ms = AP_HAL::millis16();
+    for (uint8_t idx=0; idx<available(); ) {
+        const GCS::statustext_t *statustext = (*this)[idx];
+        if (statustext == nullptr) {
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+            break;
+        }
+        // be wary of integer promotion here
+        const uint16_t age = now16_ms - statustext->entry_created_ms;
+        if (age > 5000) {
+            // too old.  Purge it.
+            remove(idx);
+            continue;
+        }
+        // this is a queue.  If this one wasn't too old then the next
+        // one isn't either.
+        break;
     }
 }
 
