@@ -964,46 +964,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 #endif
 
 #if MODE_ZIGZAG_ENABLED == ENABLED
-#if SPRAYER_ENABLED == ENABLED
-    // @Param: ZIGZ_SPRAYER
-    // @DisplayName: Auto sprayer in ZigZag
-    // @Description: Enable the auto sprayer in ZigZag mode. SPRAY_ENABLE = 1 and SERVOx_FUNCTION = 22(SprayerPump) / 23(SprayerSpinner) also must be set. This makes the sprayer on while moving to destination A or B. The sprayer will stop if the vehicle reaches destination or the flight mode is changed from ZigZag to other.
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Advanced
-    AP_GROUPINFO("ZIGZ_SPRAYER", 38, ParametersG2, zigzag_spray_enabled, ZIGZAG_SPRAY_ENABLED),
-#endif // SPRAYER_ENABLED == ENABLED
-
-    // @Param: ZIGZ_WP_DELAY
-    // @DisplayName: The delay for zigzag waypoint
-    // @Description: Waiting time after reached the destination
-    // @Units: s
-    // @Range: 1 127
-    // @User: Advanced
-    AP_GROUPINFO("ZIGZ_WP_DELAY", 39, ParametersG2, zigzag_wp_delay, ZIGZAG_WP_DELAY),
-
-    // @Param: ZIGZ_SIDE_DIST
-    // @DisplayName: Sideways distance in ZigZag auto
-    // @Description: The distance to move sideways in ZigZag mode
-    // @Units: m
-    // @Range: 0.1 100
-    // @User: Advanced
-    AP_GROUPINFO("ZIGZ_SIDE_DIST", 40, ParametersG2, zigzag_side_dist, 4),
-
-    // @Param: ZIGZ_DIRECTION
-    // @DisplayName: Sideways direction in ZigZag auto
-    // @Description: The direction to move sideways in ZigZag mode
-    // @Values: 0: forward, 1:right, 2: backward, 3: left
-    // @User: Advanced
-    AP_GROUPINFO("ZIGZ_DIRECTION", 41, ParametersG2, zigzag_direction, 0),
-
-    // @Param: ZIGZ_LINE_NUM
-    // @DisplayName: Total number of lines
-    // @Description: Total number of lines for ZigZag auto if 1 or more. -1: Infinity, 0: Just moving to sideways
-    // @Range: -1 32767
-    // @User: Advanced
-    AP_GROUPINFO("ZIGZ_LINE_NUM", 42, ParametersG2, zigzag_line_num, 0),
-#endif // MODE_ZIGZAG_ENABLED == ENABLED
-
+    // @Group: ZIGZ_
+    // @Path: mode_zigzag.cpp
+    AP_SUBGROUPPTR(mode_zigzag_ptr, "ZIGZ_", 38, ParametersG2, ModeZigZag),
+#endif
 
     AP_GROUPEND
 };
@@ -1044,6 +1008,9 @@ ParametersG2::ParametersG2(void)
     ,arot(copter.inertial_nav)
 #endif
     ,button_ptr(&copter.button)
+#if MODE_ZIGZAG_ENABLED == ENABLED
+    ,mode_zigzag_ptr(&copter.mode_zigzag)
+#endif
 {
     AP_Param::setup_object_defaults(this, var_info);
 }

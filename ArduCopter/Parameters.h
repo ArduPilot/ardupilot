@@ -612,14 +612,8 @@ public:
 #endif
 
 #if MODE_ZIGZAG_ENABLED == ENABLED
-#if SPRAYER_ENABLED == ENABLED
-    // auto pump enable/disable
-    AP_Int8 zigzag_spray_enabled;
-#endif
-    AP_Int8 zigzag_wp_delay;
-    AP_Float zigzag_side_dist;
-    AP_Int8 zigzag_direction;
-    AP_Int16 zigzag_line_num;
+    // we need a pointer to the mode for the G2 table
+    void *mode_zigzag_ptr;
 #endif
 
 };

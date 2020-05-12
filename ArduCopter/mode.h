@@ -1383,6 +1383,7 @@ protected:
 class ModeZigZag : public Mode {        
 
 public:
+    ModeZigZag(void);
 
     // Inherit constructor
     using Mode::Mode;
@@ -1419,6 +1420,8 @@ public:
     // return manual control to the pilot
     void return_to_manual_control(bool maintain_target);
 
+    static const struct AP_Param::GroupInfo var_info[];
+
 protected:
 
     const char *name() const override { return "ZIGZAG"; }
@@ -1438,6 +1441,16 @@ private:
     Vector2f dest_B;    // in NEU frame in cm relative to ekf origin
     Vector3f current_dest; // current target destination (use for resume after suspending)
     bool current_terr_alt;
+
+    // parameters
+    AP_Int8  _auto_enabled;    // top level enable/disable control
+#if SPRAYER_ENABLED == ENABLED
+    AP_Int8  _spray_enabled;   // auto spray enable/disable
+#endif
+    AP_Int8  _wp_delay;        // delay for zigzag waypoint
+    AP_Float _side_dist;       // sideways distance
+    AP_Int8  _direction;       // sideways direction
+    AP_Int16 _line_num;        // total number of lines
 
     enum ZigZagState {
         STORING_POINTS, // storing points A and B, pilot has manual control

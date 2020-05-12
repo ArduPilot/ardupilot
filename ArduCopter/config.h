@@ -364,10 +364,6 @@
 // ZigZag - allow vehicle to fly in a zigzag manner with predefined point A B
 #ifndef MODE_ZIGZAG_ENABLED
 # define MODE_ZIGZAG_ENABLED !HAL_MINIMIZE_FEATURES
-# define ZIGZAG_WP_DELAY 1
-#if HAL_SPRAYER_ENABLED
-# define ZIGZAG_SPRAY_ENABLED DISABLED
-#endif
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
