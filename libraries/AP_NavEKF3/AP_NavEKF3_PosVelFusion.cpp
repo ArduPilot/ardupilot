@@ -128,8 +128,8 @@ void NavEKF3_core::ResetPosition(void)
             // set the variances as received from external nav system data
             P[7][7] = P[8][8] = sq(extNavDataDelayed.posErr);
             // clear the timeout flags and counters
-            extNavTimeout = false;
-            lastExtNavPassTime_ms = imuSampleTime_ms;
+            posTimeout = false;
+            lastPosPassTime_ms = imuSampleTime_ms;
         }
     }
     for (uint8_t i=0; i<imu_buffer_length; i++) {
