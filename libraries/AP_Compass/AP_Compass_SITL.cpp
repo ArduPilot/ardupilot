@@ -32,7 +32,7 @@ AP_Compass_SITL::AP_Compass_SITL()
         // Scroll through the registered compasses, and set the offsets
         for (uint8_t i=0; i<_num_compass; i++) {
             if (_compass.get_offsets(i).is_zero()) {
-                _compass.set_offsets(i, _sitl->mag_ofs);
+                _compass.set_offsets(i, _sitl->mag_ofs[i]);
             }
         }
         
@@ -47,14 +47,14 @@ AP_Compass_SITL::AP_Compass_SITL()
 /*
   create correction matrix for diagnonals and off-diagonals
 */
-void AP_Compass_SITL::_setup_eliptical_correcion(void)
+void AP_Compass_SITL::_setup_eliptical_correcion(uint8_t i)
 {
-    Vector3f diag = _sitl->mag_diag.get();
+    Vector3f diag = _sitl->mag_diag[i].get();
     if (diag.is_zero()) {
         diag(1,1,1);
     }
     const Vector3f &diagonals = diag;
-    const Vector3f &offdiagonals = _sitl->mag_offdiag;
+    const Vector3f &offdiagonals = _sitl->mag_offdiag[i];
     
     if (diagonals == _last_dia && offdiagonals == _last_odi) {
         return;
@@ -117,23 +117,18 @@ void AP_Compass_SITL::_timer()
         new_mag_data = buffer[best_index].data;
     }
 
-    _setup_eliptical_correcion();        
-    
-    new_mag_data = _eliptical_corr * new_mag_data;
-    new_mag_data -= _sitl->mag_ofs.get();
-
     for (uint8_t i=0; i<_num_compass; i++) {
-        Vector3f f = new_mag_data;
+        _setup_eliptical_correcion(i);
+        Vector3f f = (_eliptical_corr * new_mag_data) - _sitl->mag_ofs[i].get();
+        // rotate compass
+        f.rotate_inverse((enum Rotation)_sitl->mag_orient[i].get());
+        // and add in AHRS_ORIENTATION setting if not an external compass
+        if (get_board_orientation() == ROTATION_CUSTOM) {
+            f = _sitl->ahrs_rotation * f;
+        } else {
+            f.rotate(get_board_orientation());
+        }
         if (i == 0) {
-            // rotate the first compass, allowing for testing of external compass rotation
-            f.rotate_inverse((enum Rotation)_sitl->mag_orient.get());
-            // and add in AHRS_ORIENTATION setting if not an external compass
-            if (get_board_orientation() == ROTATION_CUSTOM) {
-                f = _sitl->ahrs_rotation * f;
-            } else {
-                f.rotate(get_board_orientation());
-            }
-
             // scale the first compass to simulate sensor scale factor errors
             f *= _sitl->mag_scaling;
         }
