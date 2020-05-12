@@ -753,6 +753,13 @@ class FRSkyPassThrough(FRSkySPort):
     def progress_tag(self):
         return "FRSkyPassthrough"
 
+class LocationInt(object):
+    def __init__(self, lat, lon, alt, yaw):
+        self.lat = lat
+        self.lon = lon
+        self.alt = alt
+        self.yaw = yaw
+
 class AutoTest(ABC):
     """Base abstract class.
     It implements the common function for all vehicle types.
@@ -1911,6 +1918,14 @@ class AutoTest(ABC):
         m = self.mav.recv_match(type='SIMSTATE', blocking=True)
         return mavutil.location(m.lat*1.0e-7,
                                 m.lng*1.0e-7,
+                                0,
+                                math.degrees(m.yaw))
+
+    def sim_location_int(self):
+        """Return current simulator location."""
+        m = self.mav.recv_match(type='SIMSTATE', blocking=True)
+        return mavutil.location(m.lat,
+                                m.lng,
                                 0,
                                 math.degrees(m.yaw))
 
