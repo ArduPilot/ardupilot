@@ -62,13 +62,37 @@ void AP_VisualOdom_IntelT265::handle_vision_position_estimate(uint64_t remote_ti
     _last_update_ms = AP_HAL::millis();
 }
 
+// consume vision velocity estimate data and send to EKF, velocity in NED meters per second
+void AP_VisualOdom_IntelT265::handle_vision_speed_estimate(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, uint8_t reset_counter)
+{
+    // rotate velocity to align with vehicle
+    Vector3f vel_corrected = vel;
+    rotate_velocity(vel_corrected);
+
+    // send velocity to EKF
+    AP::ahrs().writeExtNavVelData(vel_corrected, _frontend.get_vel_noise(), time_ms, _frontend.get_delay_ms());
+
+    // record time for health monitoring
+    _last_update_ms = AP_HAL::millis();
+
+    AP::logger().Write_VisualVelocity(remote_time_us, time_ms, vel_corrected, reset_counter);
+}
+
 // apply rotation and correction to position
 void AP_VisualOdom_IntelT265::rotate_and_correct_position(Vector3f &position) const
 {
-    if (_use_pos_rotation) {
-        position = _pos_rotation * position;
+    if (_use_posvel_rotation) {
+        position = _posvel_rotation * position;
     }
     position += _pos_correction;
+}
+
+// apply rotation to velocity
+void AP_VisualOdom_IntelT265::rotate_velocity(Vector3f &velocity) const
+{
+    if (_use_posvel_rotation) {
+        velocity = _posvel_rotation * velocity;
+    }
 }
 
 // rotate attitude using _yaw_trim
@@ -135,11 +159,11 @@ bool AP_VisualOdom_IntelT265::align_sensor_to_vehicle(const Vector3f &position, 
     Vector3f pos_orig = position;
     rotate_and_correct_position(pos_orig);
 
-    // create position rotation from yaw trim
-    _use_pos_rotation = false;
+    // create position and velocity rotation from yaw trim
+    _use_posvel_rotation = false;
     if (!is_zero(_yaw_trim)) {
-        _pos_rotation.from_euler(0.0f, 0.0f, _yaw_trim);
-        _use_pos_rotation = true;
+        _posvel_rotation.from_euler(0.0f, 0.0f, _yaw_trim);
+        _use_posvel_rotation = true;
     }
 
     // recalculate position with new rotation
