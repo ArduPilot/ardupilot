@@ -366,6 +366,7 @@ public:
     AP_Vector3f vicon_glitch;   // glitch in meters in vicon's local NED frame
     AP_Int8 vicon_fail;         // trigger vicon failure
     AP_Int16 vicon_yaw;         // vicon local yaw in degrees
+    AP_Int16 vicon_yaw_error;   // vicon yaw error in degrees (added to reported yaw sent to vehicle)
 };
 
 } // namespace SITL
