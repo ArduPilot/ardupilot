@@ -773,6 +773,7 @@ private:
                                                      const float yaw,
                                                      const uint8_t reset_counter,
                                                      const uint16_t payload_size);
+    void handle_vision_speed_estimate(const mavlink_message_t &msg);
 
     void lock_channel(const mavlink_channel_t chan, bool lock);
 
