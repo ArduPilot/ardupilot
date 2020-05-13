@@ -206,7 +206,10 @@ private:
 
     // use multicopter rate controller
     void multicopter_attitude_rate_update(float yaw_rate_cds);
-    
+
+    // calculate limit forward tilt demand and calculate throttle required to compensate
+    void calc_fwd_tilt_throttle();
+
     // main entry points for VTOL flight modes
     void init_stabilize(void);
     void control_stabilize(void);
@@ -326,6 +329,10 @@ private:
     AP_Float acro_pitch_rate;
     AP_Float acro_yaw_rate;
 
+    // gain from forwarpitch/accel to forward thrust
+    AP_Float q_fwd_thr_gain;
+    AP_Int32 q_fwd_tilt_lim;
+
     // time we last got an EKF yaw reset
     uint32_t ekfYawReset_ms;
 
@@ -354,6 +361,9 @@ private:
 
     // last throttle value when active
     float last_throttle;
+
+    // true when forward throttle is being used in lieu of forward tilt.
+    bool fwd_throttle_use;
 
     // pitch when we enter loiter mode
     int32_t loiter_initial_pitch_cd;

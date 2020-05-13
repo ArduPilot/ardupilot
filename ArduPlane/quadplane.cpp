@@ -484,6 +484,22 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @User: Standard
     AP_GROUPINFO("TAILSIT_GSCMIN", 18, QuadPlane, tailsitter.gain_scaling_min, 0.4),
 
+    // @Param: FWD_THR_GAIN
+    // @DisplayName: Q mode fowd throttle gain
+    // @Description: Gain from forward accel/tilt to forward throttle. Set to 1/(thrust to weight ratio).
+    // @Range: 0.0 3.0
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("FWD_THR_GAIN", 19, QuadPlane, q_fwd_thr_gain, 0.0f),
+
+    // @Param: FWD_TILT_LIM
+    // @DisplayName: Q mode fwd tilt limit
+    // @Description: Forward tilt limit applied when forward throttle is used in Q modes.
+    // @Units: centi-deg
+    // @Range: 0 100
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("FWD_TILT_LIM", 20, QuadPlane, q_fwd_tilt_lim, 0),
     AP_GROUPEND
 };
 
@@ -826,6 +842,12 @@ void QuadPlane::init_stabilize(void)
 void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
 {
     check_attitude_relax();
+
+    // limit pitch angle if we are using forward thrust motor and calculate forward throttle
+    // to provide equivalent forward thrust to rotated 1g lift vector
+    if (fwd_throttle_use) {
+        calc_fwd_tilt_throttle();
+    }
 
     // tailsitter-only body-frame roll control options
     // Angle mode attitude control for pitch and body-frame roll, rate control for euler yaw.
@@ -1264,6 +1286,12 @@ void QuadPlane::control_loiter()
     // nav roll and pitch are controller by loiter controller
     plane.nav_roll_cd = loiter_nav->get_roll();
     plane.nav_pitch_cd = loiter_nav->get_pitch();
+
+    // limit pitch angle if we are using forward thrust motor and calculate forward throttle
+    // to provide equivalent forward thrust to rotated 1g lift vector
+    if (fwd_throttle_use) {
+        calc_fwd_tilt_throttle();
+    }
 
     if (now - last_pidz_init_ms < (uint32_t)transition_time_ms*2 && !is_tailsitter()) {
         // we limit pitch during initial transition
@@ -2017,8 +2045,18 @@ void QuadPlane::control_run(void)
         return;
     }
 
+    // handle special case where forward thrust motor is used instead of forward pitch.
+    plane.q_fwd_throttle = 0.0f;
+    if (plane.quadplane.q_fwd_thr_gain > 0.001f) {
+        plane.quadplane.vel_forward.gain = 0.0f; // disable legacy method
+        fwd_throttle_use = true;
+    } else {
+        fwd_throttle_use = false;
+    }
+
     switch (plane.control_mode->mode_number()) {
     case Mode::Number::QACRO:
+        fwd_throttle_use = false; // can't use fwd throttle in a rate controlled mode
         control_qacro();
         break;
     case Mode::Number::QSTABILIZE:
@@ -2036,6 +2074,7 @@ void QuadPlane::control_run(void)
         break;
 #if QAUTOTUNE_ENABLED
     case Mode::Number::QAUTOTUNE:
+        fwd_throttle_use = false; // fwd throttle use would prevent forward pitch required to autotune
         qautotune.run();
         break;
 #endif
@@ -2292,6 +2331,12 @@ void QuadPlane::vtol_position_controller(void)
             pos_control->set_limit_accel_xy();
         }
         
+        // limit pitch angle if we are using forward thrust motor and calculate forward throttle
+        // to provide equivalent forward thrust to rotated 1g lift vector
+        if (fwd_throttle_use) {
+            calc_fwd_tilt_throttle();
+        }
+
         // call attitude controller
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                              plane.nav_pitch_cd,
@@ -2335,6 +2380,11 @@ void QuadPlane::vtol_position_controller(void)
         plane.nav_roll_cd = pos_control->get_roll();
         plane.nav_pitch_cd = pos_control->get_pitch();
 
+        // limit pitch angle if we are using forward thrust motor and calculate forward throttle
+        // to provide equivalent forward thrust to rotated 1g lift vector
+        if (fwd_throttle_use) {
+            calc_fwd_tilt_throttle();
+        }
         // call attitude controller
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                       plane.nav_pitch_cd,
@@ -2452,6 +2502,12 @@ void QuadPlane::takeoff_controller(void)
     // nav roll and pitch are controller by position controller
     plane.nav_roll_cd = pos_control->get_roll();
     plane.nav_pitch_cd = pos_control->get_pitch();
+
+    // limit pitch angle if we are using forward thrust motor and calculate forward throttle
+    // to provide equivalent forward thrust to rotated 1g lift vector
+    if (fwd_throttle_use) {
+        calc_fwd_tilt_throttle();
+    }
 
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                   plane.nav_pitch_cd,
@@ -3268,4 +3324,25 @@ bool QuadPlane::in_vtol_land_final(void) const
 bool QuadPlane::in_vtol_land_sequence(void) const
 {
     return in_vtol_land_approach() || in_vtol_land_descent() || in_vtol_land_final();
+}
+
+// calculate limit forward tilt demand and calculate throttle required to compensate
+void QuadPlane::calc_fwd_tilt_throttle()
+{
+    float fwd_tilt_rad = radians(constrain_float(-0.01f * (float)plane.nav_pitch_cd, 0.0f, 45.0f));
+    plane.nav_pitch_cd = MAX(plane.nav_pitch_cd, -plane.quadplane.q_fwd_tilt_lim);
+    plane.q_fwd_throttle = MIN(plane.quadplane.q_fwd_thr_gain * tanf(fwd_tilt_rad), 1.0f);
+
+    // To prevent forward motor prop strike, reduce throttle to zero when close to ground
+    // When we are doing horizontal positioning in a VTOL land
+    // we always allow the fwd motor to run. Otherwise a bad
+    // lidar could cause the aircraft not to be able to
+    // approach the landing point when landing below the takeoff point
+    if (!in_vtol_land_approach()) {
+        float alt_cutoff = MAX(0,vel_forward_alt_cutoff);
+        float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+        float fwd_thr_scaler = linear_interpolate(0.0f, 1.0f, height_above_ground, alt_cutoff, alt_cutoff+2);
+        plane.q_fwd_throttle *= fwd_thr_scaler;
+    }
+
 }

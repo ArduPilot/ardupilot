@@ -1010,6 +1010,9 @@ private:
     bool have_reverse_thrust(void) const;
     int16_t get_throttle_input(bool no_deadzone=false) const;
 
+    // quadplane customisations
+    float q_fwd_throttle; // forward throttle used in q modes
+
     // support for AP_Avoidance custom flight mode, AVOID_ADSB
     bool avoid_adsb_init(bool ignore_checks);
     void avoid_adsb_run();

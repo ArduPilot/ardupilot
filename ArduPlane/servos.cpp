@@ -496,9 +496,16 @@ void Plane::set_servos_controlled(void)
         // manual pass through of throttle while in GUIDED
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
     } else if (quadplane.in_vtol_mode()) {
-        // ask quadplane code for forward throttle
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 
-            constrain_int16(quadplane.forward_throttle_pct(), min_throttle, max_throttle));
+        if (plane.quadplane.fwd_throttle_use) {
+        // handle special case where we are using forward throttle instead of forward tilt in Q modes
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 
+                constrain_int16((100.0f * q_fwd_throttle), min_throttle, max_throttle));
+        } else {
+            // ask quadplane code for forward throttle using legacy method that only works in 
+            // position control modes
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 
+                constrain_int16(quadplane.forward_throttle_pct(), min_throttle, max_throttle));
+        }
     }
 }
 
