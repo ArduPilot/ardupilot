@@ -2934,12 +2934,11 @@ class AutoTest(ABC):
                                                              m.result))
                 break
 
-    def verify_parameter_values(self, parameter_stuff):
+    def verify_parameter_values(self, parameter_stuff, max_delta=0.0):
         bad = ""
         for param in parameter_stuff:
             fetched_value = self.get_parameter(param)
             wanted_value = parameter_stuff[param]
-            max_delta = 0.0
             if type(wanted_value) == tuple:
                 max_delta = wanted_value[1]
                 wanted_value = wanted_value[0]
