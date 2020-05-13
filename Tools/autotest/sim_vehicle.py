@@ -954,6 +954,12 @@ group_sim.add_option("-m", "--mavproxy-args",
                      default=None,
                      type='string',
                      help="additional arguments to pass to mavproxy.py")
+group_sim.add_option("", "--scrimmage-args",
+                     default=None,
+                     type='string',
+                     help="arguments used to populate SCRIMMAGE mission (comma-separated). "
+                     "Currently visual_model, motion_model, and terrain are supported. "
+                     "Usage: [instance=]argument=value...")
 group_sim.add_option("", "--strace",
                      action='store_true',
                      default=False,
@@ -1264,18 +1270,43 @@ if cmd_opts.frame in ['scrimmage-plane', 'scrimmage-copter']:
     entities = []
     config = {}
     config['plane'] = cmd_opts.vehicle == 'ArduPlane'
-    config['terrain'] = 'mcmillan'
     if location is not None:
         config['lat'] = location[0]
         config['lon'] = location[1]
         config['alt'] = location[2]
-    config['entities'] = []
-    for k in offsets:
-        (x, y, z, heading) = offsets[k]
-        config['entities'].append({'x': x, 'y': y, 'z': z, 'heading': heading,
-            'to_ardupilot_port': 9003 + k * 10,
-            'from_ardupilot_port': 9002 + k * 10,
-            'to_ardupilot_ip': '127.0.0.1'})
+    entities = {}
+    for i in instances:
+        (x, y, z, heading) = offsets[i]
+        entities[i] = {
+            'x': x, 'y': y, 'z': z, 'heading': heading,
+            'to_ardupilot_port': 9003 + i * 10,
+            'from_ardupilot_port': 9002 + i * 10,
+            'to_ardupilot_ip': '127.0.0.1'
+        }
+    if cmd_opts.scrimmage_args is not None:
+        scrimmage_args = cmd_opts.scrimmage_args.split(',')
+        global_opts = ['terrain']
+        instance_opts = ['motion_model', 'visual_model']
+        for arg in scrimmage_args:
+            arg = arg.split('=', 2)
+            if len(arg) == 2:
+                k, v = arg
+                if k in global_opts:
+                    config[k] = v
+                elif k in instance_opts:
+                    for i in entities:
+                        # explicit instance args take precedence; don't overwrite
+                        if k not in entities[i]:
+                            entities[i][k] = v
+            elif len(arg) == 3:
+                i, k, v = arg
+                try:
+                    i = int(i)
+                except ValueError:
+                    continue
+                if i in entities and k in instance_opts:
+                    entities[i][k] = v
+    config['entities'] = list(entities.values())
     env = Environment(loader=FileSystemLoader(os.path.join(autotest_dir, 'template')))
     mission = env.get_template('scrimmage.xml').render(**config)
     tmp = mkstemp()
