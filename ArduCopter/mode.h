@@ -66,7 +66,6 @@ public:
     virtual bool is_taking_off() const;
     static void takeoff_stop() { takeoff.stop(); }
 
-    virtual bool landing_gear_should_be_deployed() const { return false; }
     virtual bool is_landing() const { return false; }
 
     // functions for reporting to GCS
@@ -354,7 +353,6 @@ public:
     void nav_guided_start();
 
     bool is_landing() const override;
-    bool landing_gear_should_be_deployed() const override;
 
     bool is_taking_off() const override;
 
@@ -856,7 +854,6 @@ public:
     bool is_autopilot() const override { return true; }
 
     bool is_landing() const override { return true; };
-    bool landing_gear_should_be_deployed() const override { return true; };
 
     void do_not_use_GPS();
 
@@ -1018,7 +1015,6 @@ public:
     bool state_complete() { return _state_complete; }
 
     bool is_landing() const override;
-    bool landing_gear_should_be_deployed() const override;
 
     void restart_without_terrain();
 

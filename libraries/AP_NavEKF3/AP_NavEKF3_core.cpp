@@ -406,9 +406,7 @@ void NavEKF3_core::InitialiseVariablesMag()
     mag_state.DCM.identity();
     inhibitMagStates = true;
     magStoreIndex = 0;
-    if (_ahrs->get_compass()) {
-        magSelectIndex = _ahrs->get_compass()->get_primary();
-    }
+    magSelectIndex = 0;
     lastMagOffsetsValid = false;
     magStateResetRequest = false;
     magStateInitComplete = false;

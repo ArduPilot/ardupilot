@@ -10,8 +10,6 @@ APJ_BOARD_ID 9
 # crystal frequency
 OSCILLATOR_HZ 24000000
 
-# board voltage
-STM32_VDD 330U
 
 # ChibiOS system timer
 STM32_ST_USE_TIMER 5
@@ -26,8 +24,6 @@ FLASH_BOOTLOADER_LOAD_KB 16
 FLASH_RESERVE_START_KB 0
 
 # USB setup
-USB_VENDOR 0x0483 # ST
-USB_PRODUCT 0x5740
 USB_STRING_MANUFACTURER "ArduPilot"
 USB_STRING_SERIAL  "%SERIAL%"
 
@@ -35,7 +31,7 @@ USB_STRING_SERIAL  "%SERIAL%"
 define BOOTLOADER_BAUDRATE 115200
 
 # uarts and USB to run bootloader protocol on
-UART_ORDER OTG1 USART2 USART3 UART7
+SERIAL_ORDER OTG1 USART2 USART3 UART7
 
 # this is the pin that senses USB being connected. It is an input pin
 # setup as OPENDRAIN
@@ -79,9 +75,12 @@ define HAL_CHIBIOS_ARCH_FMUV3 1
 # available (in bytes)
 define HAL_STORAGE_SIZE 16384
 
-# uncomment the lines below to enable strict API
-# checking in ChibiOS
-# define CH_DBG_ENABLE_ASSERTS TRUE
-# define CH_DBG_ENABLE_CHECKS TRUE
-# define CH_DBG_SYSTEM_STATE_CHECK TRUE
-# define CH_DBG_ENABLE_STACK_CHECK TRUE
+# Add CS pins to ensure they are high in bootloader
+PC1 MAG_CS CS
+PC2 MPU_CS CS
+PC13 GYRO_EXT_CS CS
+PC14 BARO_EXT_CS CS
+PC15 ACCEL_EXT_CS CS
+PD7 BARO_CS CS
+PE4 MPU_EXT_CS CS
+PD10 FRAM_CS CS SPEED_VERYLOW

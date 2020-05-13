@@ -56,7 +56,8 @@ compass_types = {
     0x0E : "DEVTYPE_MAG3110",
     0x0F : "DEVTYPE_SITL",
     0x10 : "DEVTYPE_IST8308",
-    0x11 : "DEVTYPE_RM3100",
+    0x11 : "DEVTYPE_RM3100_OLD",
+    0x12 : "DEVTYPE_RM3100",
 }
 
 imu_types = {
@@ -92,6 +93,13 @@ if opts.compass:
 if opts.imu:
     decoded_devname = imu_types.get(devtype, "UNKNOWN")
 
-print("bus_type:%s(%u)  bus:%u address:%u(0x%x) devtype:%u(0x%x) %s" % (
-    bustypes.get(bus_type,"UNKNOWN"), bus_type,
-    bus, address, address, devtype, devtype, decoded_devname))
+
+if bus_type == 3:
+    #uavcan devtype represents sensor_id
+    print("bus_type:%s(%u)  bus:%u address:%u(0x%x) sensor_id:%u(0x%x) %s" % (
+        bustypes.get(bus_type,"UNKNOWN"), bus_type,
+        bus, address, address, devtype-1, devtype-1, decoded_devname))
+else:
+    print("bus_type:%s(%u)  bus:%u address:%u(0x%x) devtype:%u(0x%x) %s" % (
+        bustypes.get(bus_type,"UNKNOWN"), bus_type,
+        bus, address, address, devtype, devtype, decoded_devname))

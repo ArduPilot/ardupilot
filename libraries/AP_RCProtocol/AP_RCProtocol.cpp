@@ -23,6 +23,7 @@
 #include "AP_RCProtocol_SUMD.h"
 #include "AP_RCProtocol_SRXL.h"
 #include "AP_RCProtocol_ST24.h"
+#include "AP_RCProtocol_FPort.h"
 #include <AP_Math/AP_Math.h>
 
 extern const AP_HAL::HAL& hal;
@@ -37,6 +38,7 @@ void AP_RCProtocol::init()
     backend[AP_RCProtocol::SUMD] = new AP_RCProtocol_SUMD(*this);
     backend[AP_RCProtocol::SRXL] = new AP_RCProtocol_SRXL(*this);
     backend[AP_RCProtocol::ST24] = new AP_RCProtocol_ST24(*this);
+    backend[AP_RCProtocol::FPORT] = new AP_RCProtocol_FPort(*this, true);
 }
 
 AP_RCProtocol::~AP_RCProtocol()
@@ -116,13 +118,13 @@ void AP_RCProtocol::process_pulse_list(const uint32_t *widths, uint16_t n, bool 
     }
 }
 
-void AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
+bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
 {
     uint32_t now = AP_HAL::millis();
     bool searching = (now - _last_input_ms >= 200);
     if (_detected_protocol != AP_RCProtocol::NONE && !_detected_with_bytes && !searching) {
         // we're using pulse inputs, discard bytes
-        return;
+        return false;
     }
     // first try current protocol
     if (_detected_protocol != AP_RCProtocol::NONE && !searching) {
@@ -131,7 +133,7 @@ void AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
             _new_input = true;
             _last_input_ms = now;
         }
-        return;
+        return true;
     }
 
     // otherwise scan all protocols
@@ -157,6 +159,7 @@ void AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
             }
         }
     }
+    return false;
 }
 
 /*
@@ -175,19 +178,29 @@ void AP_RCProtocol::check_added_uart(void)
         return;
     }
     if (!added.opened) {
-        added.uart->begin(added.baudrate, 128, 128);
         added.opened = true;
-        if (added.baudrate == 100000) {
-            // assume SBUS settings, even parity, 2 stop bits
-            added.uart->configure_parity(2);
-            added.uart->set_stop_bits(2);
-            added.uart->set_options(added.uart->get_options() | AP_HAL::UARTDriver::OPTION_RXINV);
-        } else {
-            // setup for 115200 protocols
+        switch (added.phase) {
+        case CONFIG_115200_8N1:
+            added.baudrate = 115200;
             added.uart->configure_parity(0);
             added.uart->set_stop_bits(1);
             added.uart->set_options(added.uart->get_options() & ~AP_HAL::UARTDriver::OPTION_RXINV);
+            break;
+        case CONFIG_115200_8N1I:
+            added.baudrate = 115200;
+            added.uart->configure_parity(0);
+            added.uart->set_stop_bits(1);
+            added.uart->set_options(added.uart->get_options() | AP_HAL::UARTDriver::OPTION_RXINV);
+            break;
+        case CONFIG_100000_8E2I:
+            // assume SBUS settings, even parity, 2 stop bits
+            added.baudrate = 100000;
+            added.uart->configure_parity(2);
+            added.uart->set_stop_bits(2);
+            added.uart->set_options(added.uart->get_options() | AP_HAL::UARTDriver::OPTION_RXINV);
+            break;
         }
+        added.uart->begin(added.baudrate, 128, 128);
         added.last_baud_change_ms = AP_HAL::millis();
     }
     uint32_t n = added.uart->available();
@@ -201,6 +214,10 @@ void AP_RCProtocol::check_added_uart(void)
     if (!_detected_with_bytes) {
         if (now - added.last_baud_change_ms > 1000) {
             // flip baudrates if not detected once a second
+            added.phase = (enum config_phase)(uint8_t(added.phase) + 1);
+            if (added.phase > CONFIG_100000_8E2I) {
+                added.phase = (enum config_phase)0;
+            }
             added.baudrate = (added.baudrate==100000)?115200:100000;
             added.opened = false;
         }
@@ -252,6 +269,14 @@ void AP_RCProtocol::read(uint16_t *pwm, uint8_t n)
     }
 }
 
+int16_t AP_RCProtocol::get_RSSI(void) const
+{
+    if (_detected_protocol != AP_RCProtocol::NONE) {
+        return backend[_detected_protocol]->get_RSSI();
+    }
+    return -1;
+}
+
 /*
   ask for bind start on supported receivers (eg spektrum satellite)
  */
@@ -285,6 +310,8 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
         return "SRXL";
     case ST24:
         return "ST24";
+    case FPORT:
+        return "FPORT";
     case NONE:
         break;
     }

@@ -62,7 +62,7 @@ void AP_Proximity_SITL::update(void)
             _distance_valid[last_sector] = false;
         }
         last_sector++;
-        if (last_sector >= _num_sectors) {
+        if (last_sector >= PROXIMITY_NUM_SECTORS) {
             last_sector = 0;
         }
     } else {

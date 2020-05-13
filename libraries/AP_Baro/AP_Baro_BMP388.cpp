@@ -89,15 +89,15 @@ bool AP_Baro_BMP388::init()
     dev->write_register(BMP388_REG_PWR_CTRL, 0x33, true);
     
     uint8_t whoami;
-    if (!dev->read_registers(BMP388_REG_ID, &whoami, 1)  ||
+    if (!read_registers(BMP388_REG_ID, &whoami, 1)  ||
         whoami != BMP388_ID) {
         // not a BMP388
         return false;
     }
 
     // read the calibration data
-    dev->read_registers(BMP388_REG_CAL_P, (uint8_t *)&calib_p, sizeof(calib_p));
-    dev->read_registers(BMP388_REG_CAL_T, (uint8_t *)&calib_t, sizeof(calib_t));
+    read_registers(BMP388_REG_CAL_P, (uint8_t *)&calib_p, sizeof(calib_p));
+    read_registers(BMP388_REG_CAL_T, (uint8_t *)&calib_t, sizeof(calib_t));
 
     scale_calibration_data();
 
@@ -121,7 +121,7 @@ void AP_Baro_BMP388::timer(void)
 {
     uint8_t buf[7];
 
-    if (!dev->read_registers(BMP388_REG_STATUS, buf, sizeof(buf))) {
+    if (!read_registers(BMP388_REG_STATUS, buf, sizeof(buf))) {
         return;
     }
     const uint8_t status = buf[0];
@@ -211,4 +211,25 @@ void AP_Baro_BMP388::update_pressure(uint32_t data)
     
     pressure = press;
     has_sample = true;
+}
+
+/*
+  read registers, special SPI handling needed
+*/
+bool AP_Baro_BMP388::read_registers(uint8_t reg, uint8_t *data, uint8_t len)
+{
+    // when on I2C we just read normally
+    if (dev->bus_type() != AP_HAL::Device::BUS_TYPE_SPI) {
+        return dev->read_registers(reg, data, len);
+    }
+    // for SPI we need to discard the first returned byte. See
+    // datasheet for explanation
+    uint8_t b[len+2];
+    b[0] = reg | 0x80;
+    memset(&b[1], 0, len+1);
+    if (!dev->transfer(b, len+2, b, len+2)) {
+        return false;
+    }
+    memcpy(data, &b[2], len);
+    return true;
 }

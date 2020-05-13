@@ -537,8 +537,7 @@ private:
 #if LANDING_GEAR_ENABLED == ENABLED
     // landing gear state
     struct {
-        int8_t last_auto_cmd;
-        int8_t last_cmd;
+        AP_Vehicle::FixedWing::FlightStage last_flight_stage;
     } gear;
 #endif
     
@@ -946,13 +945,13 @@ private:
     void set_servos_controlled(void);
     void set_servos_old_elevons(void);
     void set_servos_flaps(void);
-    void change_landing_gear(AP_LandingGear::LandingGearCommand cmd);
     void set_landing_gear(void);
     void dspoiler_update(void);
     void servo_output_mixers(void);
     void servos_output(void);
     void servos_auto_trim(void);
     void servos_twin_engine_mix();
+    void throttle_voltage_comp();
     void throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle);
     void update_is_flying_5Hz(void);
     void crash_detection_update(void);

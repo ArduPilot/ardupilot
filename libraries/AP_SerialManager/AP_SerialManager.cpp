@@ -642,7 +642,7 @@ bool AP_SerialManager::protocol_match(enum SerialProtocol protocol1, enum Serial
 }
 
 // setup any special options
-void AP_SerialManager::set_options(uint8_t i)
+void AP_SerialManager::set_options(uint16_t i)
 {
     struct UARTState &opt = state[i];
     // pass through to HAL

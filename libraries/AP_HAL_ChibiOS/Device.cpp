@@ -58,10 +58,8 @@ void DeviceBus::bus_thread(void *arg)
                     callback->next_usec += callback->period_usec;
                 }
                 // call it with semaphore held
-                if (binfo->semaphore.take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-                    callback->cb();
-                    binfo->semaphore.give();
-                }
+                WITH_SEMAPHORE(binfo->semaphore);
+                callback->cb();
             }
         }
 
@@ -106,12 +104,12 @@ AP_HAL::Device::PeriodicHandle DeviceBus::register_periodic_callback(uint32_t pe
         char *name = (char *)malloc(name_len);
         switch (hal_device->bus_type()) {
         case AP_HAL::Device::BUS_TYPE_I2C:
-            snprintf(name, name_len, "I2C:%u",
+            snprintf(name, name_len, "I2C%u",
                      hal_device->bus_num());
             break;
 
         case AP_HAL::Device::BUS_TYPE_SPI:
-            snprintf(name, name_len, "SPI:%u",
+            snprintf(name, name_len, "SPI%u",
                      hal_device->bus_num());
             break;
         default:

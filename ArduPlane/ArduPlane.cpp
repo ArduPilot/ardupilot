@@ -183,7 +183,7 @@ void Plane::update_speed_height(void)
 
     if (quadplane.in_vtol_mode() ||
         quadplane.in_assisted_flight()) {
-        quadplane.update_throttle_thr_mix();
+        quadplane.update_throttle_mix();
     }
 }
 

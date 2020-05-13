@@ -13,7 +13,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @Param: MONITOR
     // @DisplayName: Battery monitoring
     // @Description: Controls enabling monitoring of the battery's voltage and current
-    // @Values: 0:Disabled,3:Analog Voltage Only,4:Analog Voltage and Current,5:Solo,6:Bebop,7:SMBus-Maxell,8:UAVCAN-BatteryInfo,9:BLHeli ESC,10:SumOfFollowing,11:FuelFlow,12:FuelLevelPWM
+    // @Values: 0:Disabled,3:Analog Voltage Only,4:Analog Voltage and Current,5:Solo,6:Bebop,7:SMBus-Maxell,8:UAVCAN-BatteryInfo,9:BLHeli ESC,10:SumOfFollowing,11:FuelFlow,12:FuelLevelPWM,13:SMBUS-SUI3,14:SMBUS-SUI6,15:NeoDesign
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("MONITOR", 1, AP_BattMonitor_Params, _type, BattMonitor_TYPE_NONE, AP_PARAM_FLAG_ENABLE),
@@ -161,6 +161,13 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @Increment: 50
     // @User: Advanced
     AP_GROUPINFO("ARM_MAH", 19, AP_BattMonitor_Params, _arming_minimum_capacity, 0),
+
+    // @Param: BUS
+    // @DisplayName: Battery monitor I2C bus number
+    // @Description: Battery monitor I2C bus number
+    // @Range: 0 3
+    // @User: Standard
+    AP_GROUPINFO("BUS", 20, AP_BattMonitor_Params, _i2c_bus, 0),
 
     AP_GROUPEND
 

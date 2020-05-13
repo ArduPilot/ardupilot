@@ -69,6 +69,8 @@
 
 extern const AP_HAL::HAL& hal;
 
+static_assert(STM32_FDCANCLK <= 80U*1000U*1000U, "FDCAN clock must be max 80MHz");
+
 namespace ChibiOS_CAN
 {
 namespace
@@ -200,7 +202,8 @@ int CanIface::computeTimings(const uavcan::uint32_t target_bitrate, Timings& out
     /*
      * Hardware configuration
      */
-    const uavcan::uint32_t pclk = STM32_PLL1_Q_CK;
+    const uavcan::uint32_t pclk = STM32_FDCANCLK;
+
 
     static const int MaxBS1 = 16;
     static const int MaxBS2 = 8;

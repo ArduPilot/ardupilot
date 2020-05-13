@@ -564,6 +564,11 @@ public:
     AP_Int8 crow_flap_weight_inner;
     AP_Int8 crow_flap_options;
     AP_Int8 crow_flap_aileron_matching;
+
+    // Forward throttle battery voltage compenstaion
+    AP_Float fwd_thr_batt_voltage_max;
+    AP_Float fwd_thr_batt_voltage_min;
+    AP_Int8  fwd_thr_batt_idx;
 };
 
 extern const AP_Param::Info var_info[];

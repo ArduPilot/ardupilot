@@ -350,7 +350,7 @@ def configure(cfg):
 
     if cfg.options.default_parameters:
         cfg.msg('Default parameters', cfg.options.default_parameters, color='YELLOW')
-        env.DEFAULT_PARAMETERS = srcpath(cfg.options.default_parameters)
+        env.DEFAULT_PARAMETERS = cfg.options.default_parameters
 
     # we need to run chibios_hwdef.py at configure stage to generate the ldscript.ld
     # that is needed by the remaining configure checks
@@ -368,7 +368,7 @@ def configure(cfg):
         os.mkdir(hwdef_out)
     python = sys.executable
     try:
-        cmd = "{0} '{1}' -D '{2}' '{3}' {4}".format(python, hwdef_script, hwdef_out, env.HWDEF, env.BOOTLOADER_OPTION)
+        cmd = "{0} '{1}' -D '{2}' '{3}' {4} --params '{5}'".format(python, hwdef_script, hwdef_out, env.HWDEF, env.BOOTLOADER_OPTION, cfg.options.default_parameters)
         ret = subprocess.call(cmd, shell=True)
     except Exception:
         cfg.fatal("Failed to process hwdef.dat")
@@ -391,8 +391,8 @@ def build(bld):
     bld(
         # build hwdef.h from hwdef.dat. This is needed after a waf clean
         source=bld.path.ant_glob(bld.env.HWDEF),
-        rule="%s '${AP_HAL_ROOT}/hwdef/scripts/chibios_hwdef.py' -D '${BUILDROOT}' '%s' %s" % (
-            bld.env.get_flat('PYTHON'), bld.env.HWDEF, bld.env.BOOTLOADER_OPTION),
+        rule="%s '${AP_HAL_ROOT}/hwdef/scripts/chibios_hwdef.py' -D '${BUILDROOT}' '%s' %s --params '%s'" % (
+            bld.env.get_flat('PYTHON'), bld.env.HWDEF, bld.env.BOOTLOADER_OPTION, bld.env.default_parameters),
         group='dynamic_sources',
         target=[bld.bldnode.find_or_declare('hwdef.h'),
                 bld.bldnode.find_or_declare('ldscript.ld')]
