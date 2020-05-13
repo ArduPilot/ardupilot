@@ -1259,14 +1259,25 @@ bool AP_Logger::log_while_disarmed(void) const
     uint32_t now = AP_HAL::millis();
     uint32_t persist_ms = HAL_LOGGER_ARM_PERSIST*1000U;
 
-    // keep logging for HAL_LOGGER_ARM_PERSIST seconds after disarming
-    const uint32_t arm_change_ms = hal.util->get_last_armed_change();
-    if (!hal.util->get_soft_armed() && arm_change_ms != 0 && now - arm_change_ms < persist_ms) {
+    // keep logging for HAL_LOGGER_ARM_PERSIST seconds after an arming failure
+    if (_last_arming_failure_ms && now - _last_arming_failure_ms < persist_ms) {
         return true;
     }
 
-    // keep logging for HAL_LOGGER_ARM_PERSIST seconds after an arming failure
-    if (_last_arming_failure_ms && now - _last_arming_failure_ms < persist_ms) {
+    return log_arm_persist();
+}
+
+/*
+  return true for HAL_LOGGER_ARM_PERSIST seconds after disarming
+ */
+bool AP_Logger::log_arm_persist(void) const
+{
+    uint32_t now = AP_HAL::millis();
+    uint32_t persist_ms = HAL_LOGGER_ARM_PERSIST*1000U;
+
+    // keep logging for HAL_LOGGER_ARM_PERSIST seconds after disarming
+    const uint32_t arm_change_ms = hal.util->get_last_armed_change();
+    if (!hal.util->get_soft_armed() && arm_change_ms != 0 && now - arm_change_ms < persist_ms) {
         return true;
     }
 

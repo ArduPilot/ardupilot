@@ -329,6 +329,7 @@ public:
     // accesss to public parameters
     void set_force_log_disarmed(bool force_logging) { _force_log_disarmed = force_logging; }
     bool log_while_disarmed(void) const;
+    bool log_arm_persist(void) const;
     uint8_t log_replay(void) const { return _params.log_replay; }
     
     vehicle_startup_message_Writer _vehicle_messages;
