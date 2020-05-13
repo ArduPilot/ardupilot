@@ -20,7 +20,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 static struct {
     uint8_t fail_count;         // number of iterations ekf or dcm have been out of tolerances
-    bool bad_variance : true;   // true if ekf should be considered untrusted (fail_count has exceeded EKF_CHECK_ITERATIONS_MAX)
+    bool bad_variance;          // true if ekf should be considered untrusted (fail_count has exceeded EKF_CHECK_ITERATIONS_MAX)
     uint32_t last_warn_time;    // system time of last warning in milliseconds.  Used to throttle text warnings sent to GCS
     bool failsafe_on;           // true when the loss of navigation failsafe is on
 } ekf_check_state;
@@ -106,7 +106,8 @@ bool Plane::ekf_over_threshold()
         return false;
     }
 
-    // use EKF to get variance
+    // Get EKF innovations normalised wrt the innovaton test limits.
+    // A value above 1.0 means the EKF has rejected that sensor data
     float position_variance, vel_variance, height_variance, tas_variance;
     Vector3f mag_variance;
     Vector2f offset;
@@ -114,14 +115,23 @@ bool Plane::ekf_over_threshold()
         return false;
     };
 
+    // The EKF rejects all magnetometer axes if any single axis exceeds limits
+    // so take the maximum of all axes
     const float mag_max = fmaxf(fmaxf(mag_variance.x,mag_variance.y),mag_variance.z);
 
-    // return true if two of compass, velocity and position variances are over the threshold OR velocity variance is twice the threshold
+    // Assign a score to each over threshold based on severity
     uint8_t over_thresh_count = 0;
     if (mag_max >= g2.fs_ekf_thresh) {
         over_thresh_count++;
     }
 
+    if (vel_variance >= (2.0f * g2.fs_ekf_thresh)) {
+        over_thresh_count += 2;
+    } else if (vel_variance >= g2.fs_ekf_thresh) {
+        over_thresh_count++;
+    }
+
+    // Position is the most important so accept a lower score from other sensors if position failed
     if ((position_variance >= g2.fs_ekf_thresh && over_thresh_count >= 1) || over_thresh_count >= 2) {
         return true;
     }
