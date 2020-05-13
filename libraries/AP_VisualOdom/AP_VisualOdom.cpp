@@ -82,6 +82,14 @@ const AP_Param::GroupInfo AP_VisualOdom::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_DELAY_MS", 4, AP_VisualOdom, _delay_ms, 10),
 
+    // @Param: _VEL_M_NSE
+    // @DisplayName: Visual odometry velocity measurement noise
+    // @Description: Visual odometry velocity measurement noise in m/s
+    // @Units: m/s
+    // @Range: 0.05 5.0
+    // @User: Advanced
+    AP_GROUPINFO("_VEL_M_NSE", 5, AP_VisualOdom, _vel_noise, 0.1),
+
     AP_GROUPEND
 };
 
@@ -175,6 +183,19 @@ void AP_VisualOdom::handle_vision_position_estimate(uint64_t remote_time_us, uin
     // call backend
     if (_driver != nullptr) {
         _driver->handle_vision_position_estimate(remote_time_us, time_ms, x, y, z, attitude, reset_counter);
+    }
+}
+
+void AP_VisualOdom::handle_vision_speed_estimate(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, uint8_t reset_counter)
+{
+    // exit immediately if not enabled
+    if (!enabled()) {
+        return;
+    }
+
+    // call backend
+    if (_driver != nullptr) {
+        _driver->handle_vision_speed_estimate(remote_time_us, time_ms, vel, reset_counter);
     }
 }
 

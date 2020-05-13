@@ -71,6 +71,9 @@ public:
     // return the sensor delay in milliseconds (see _DELAY_MS parameter)
     uint16_t get_delay_ms() const { return MAX(0, _delay_ms); }
 
+    // return velocity measurement noise in m/s
+    float get_vel_noise() const { return _vel_noise; }
+
     // consume vision_position_delta mavlink messages
     void handle_vision_position_delta_msg(const mavlink_message_t &msg);
 
@@ -78,6 +81,10 @@ public:
     // distances in meters, roll, pitch and yaw are in radians
     void handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, float roll, float pitch, float yaw, uint8_t reset_counter);
     void handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude, uint8_t reset_counter);
+    
+    // general purpose methods to consume velocity estimate data and send to EKF
+    // velocity in NED meters per second
+    void handle_vision_speed_estimate(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, uint8_t reset_counter);
 
     // calibrate camera attitude to align with vehicle's AHRS/EKF attitude
     void align_sensor_to_vehicle();
@@ -97,6 +104,7 @@ private:
     AP_Int8 _orientation;       // camera orientation on vehicle frame
     AP_Float _pos_scale;        // position scale factor applied to sensor values
     AP_Int16 _delay_ms;         // average delay relative to inertial measurements
+    AP_Float _vel_noise;        // velocity measurement noise in m/s
 
     // reference to backends
     AP_VisualOdom_Backend *_driver;
