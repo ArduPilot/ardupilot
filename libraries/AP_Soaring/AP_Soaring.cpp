@@ -374,9 +374,7 @@ void SoaringController::update_vario()
 {
     _vario.update();
 
-    if (polar_learn) {
-        _vario.update_polar_learning(_throttle_suppressed, _spdHgt.get_target_accel());
-    }
+    _vario.update_polar_learning(polar_learn, _throttle_suppressed, _spdHgt.get_target_accel());
 }
 
 

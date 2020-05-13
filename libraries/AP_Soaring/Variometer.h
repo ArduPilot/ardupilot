@@ -80,7 +80,7 @@ public:
 
     float calculate_circling_time_constant();
 
-    void update_polar_learning(bool throttle_suppressed, float dsp_dem);
+    void update_polar_learning(bool learn_enabled, bool throttle_suppressed, float dsp_dem);
 
 private:
     PolarParams &_polarParams;
