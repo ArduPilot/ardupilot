@@ -117,6 +117,9 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
         pos_corrected = vicon_yaw_rot * pos_corrected;
     }
 
+    // add yaw error reported to vehicle
+    yaw = wrap_PI(yaw + radians(_sitl->vicon_yaw_error.get()));
+
 #if USE_VISION_POSITION_ESTIMATE
     // use the more recent VISION_POSITION_ESTIMATE message
     mavlink_msg_vision_position_estimate_pack_chan(

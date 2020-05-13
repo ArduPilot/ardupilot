@@ -248,6 +248,9 @@ const AP_Param::GroupInfo SITL::var_info3[] = {
     // vicon yaw (in earth frame)
     AP_GROUPINFO("VICON_YAW",     18, SITL,  vicon_yaw, 0),
 
+    // vicon yaw error in degrees (added to reported yaw sent to vehicle)
+    AP_GROUPINFO("VICON_YAWERR",  19, SITL,  vicon_yaw_error, 0),
+
     AP_GROUPEND
 
 };
