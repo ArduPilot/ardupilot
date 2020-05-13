@@ -157,9 +157,9 @@ public:
     friend class ModeQAcro;
     friend class ModeQAutotune;
     friend class ModeTakeoff;
-    // added
+    //added
     friend class ModePayloadRelease;
-    // add finish
+    //add finish
     Plane(void);
 
 private:
@@ -277,9 +277,9 @@ private:
     ModeQAcro mode_qacro;
     ModeQAutotune mode_qautotune;
     ModeTakeoff mode_takeoff;
-    // added
+    //added
     ModePayloadRelease mode_payloadrelease;
-    // add finish
+    //add finish
 
     // This is the state of the flight control system
     // There are multiple states defined such as MANUAL, FBW-A, AUTO
@@ -508,10 +508,6 @@ private:
 
         // are we doing loiter mode as a VTOL?
         bool vtol_loiter;
-
-        // added
-        bool is_payload_released;
-        // add finish
 
         // how much correction have we added for terrain data
         float terrain_correction;
@@ -981,9 +977,9 @@ private:
     void do_takeoff(const AP_Mission::Mission_Command& cmd);
     void do_nav_wp(const AP_Mission::Mission_Command& cmd);
     void do_land(const AP_Mission::Mission_Command& cmd);
-    // added
+    //added
     void do_payload_release(const AP_Mission::Mission_Command& cmd);
-    // add finish
+    //add finish
     void do_landing_vtol_approach(const AP_Mission::Mission_Command& cmd);
     void loiter_set_direction_wp(const AP_Mission::Mission_Command& cmd);
     void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
@@ -995,9 +991,9 @@ private:
     void do_vtol_takeoff(const AP_Mission::Mission_Command& cmd);
     void do_vtol_land(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
-    // added
+    //added
     bool verify_payload_release(const AP_Mission::Mission_Command& cmd);
-    // add finisth
+    //add finisth
     bool verify_landing_vtol_approach(const AP_Mission::Mission_Command& cmd);
     void do_wait_delay(const AP_Mission::Mission_Command& cmd);
     void do_within_distance(const AP_Mission::Mission_Command& cmd);

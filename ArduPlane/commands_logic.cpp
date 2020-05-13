@@ -4,7 +4,7 @@
 // Command Event Handlers
 /********************************************************************************/
 bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
-{
+{   
     // default to non-VTOL loiter
     auto_state.vtol_loiter = false;
 
@@ -90,11 +90,11 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         crash_state.is_crashed = false;
         return quadplane.do_vtol_takeoff(cmd);
 
-    // added
+    //added
     case MAV_CMD_NAV_PAYLOAD_RELEASE:
         do_payload_release(cmd);
         break;
-    // add finish
+    //add finish
 
     case MAV_CMD_NAV_VTOL_LAND:
         if (quadplane.options & QuadPlane::OPTION_MISSION_LAND_FW_APPROACH) {
@@ -227,10 +227,10 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_NAV_WAYPOINT:
         return verify_nav_wp(cmd);
 
-    // added
+    //added
     case MAV_CMD_NAV_PAYLOAD_RELEASE:
         return verify_payload_release(cmd);
-    // add finish
+    //add finish
 
     case MAV_CMD_NAV_LAND:
         if (quadplane.is_vtol_land(cmd.id)) {
@@ -371,18 +371,18 @@ void Plane::do_nav_wp(const AP_Mission::Mission_Command& cmd)
     set_next_WP(cmd.content.location);
 }
 
+//added
 void Plane::do_payload_release(const AP_Mission::Mission_Command& cmd)
 {
     set_next_WP(cmd.content.location);
-    // next_WP_loc.lat = home.lat + 10;
-    // next_WP_loc.lng = home.lng + 10;
 
-    gcs().send_text(MAV_SEVERITY_INFO, "do_payload_release() called");
-    Location target_loc = cmd.content.location;
-    // Location target_loc = plane.home;
-    gcs().send_text(MAV_SEVERITY_INFO, "target lat, lon, alt= %d %d %d", target_loc.lat, target_loc.lng, target_loc.alt);
-    gcs().send_text(MAV_SEVERITY_INFO, "current lat, lon, alt= %d %d %d", current_loc.lat, current_loc.lng, current_loc.alt);
+    gcs().send_text(MAV_SEVERITY_INFO, "initialise payload release called");
+    //Location target_loc = cmd.content.location;
+    //Location target_loc = plane.home;
+
 }
+//add finish
+
 void Plane::do_land(const AP_Mission::Mission_Command& cmd)
 {
     set_next_WP(cmd.content.location);
@@ -682,48 +682,19 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 
     return false;
 }
+//added
 bool Plane::verify_payload_release(const AP_Mission::Mission_Command &cmd)
 {
-    auto_state.is_payload_released = verify_nav_wp(cmd);
-    if(auto_state.is_payload_released){
-        gcs().send_text(MAV_SEVERITY_INFO, "Hi I have completed the mission verified");
-
-        mission.set_current_cmd(cmd.index + 1);
-        do_nav_wp(mission.get_current_nav_cmd());
-        auto_state.is_payload_released = 0;
-
-    }
-    return auto_state.is_payload_released;
-    // Location target_loc = cmd.content.location;
-    // Location flex_next_WP_loc = next_WP_loc;
     
-
-
-    // gcs().send_text(MAV_SEVERITY_INFO, "inside veriffy payload: %d %d", current_loc.lat, current_loc.lng);
-    // gcs().send_text(MAV_SEVERITY_INFO, "inside veriffy payload targget: %d %d", flex_next_WP_loc.lat, flex_next_WP_loc.lng);
-
-    // gcs().send_text(MAV_SEVERITY_INFO, "wp_distance: %f", auto_state.wp_distance);
-    // uint8_t cmd_passby = HIGHBYTE(cmd.p1); // distance in meters to pass beyond the wp
-    // uint8_t cmd_acceptance_distance = LOWBYTE(cmd.p1); // 
-
-    // float acceptance_distance_m = 0; // default to: if overflown - let it fly up to the point
-    // if (cmd_acceptance_distance > 0) {
-    //     // allow user to override acceptance radius
-    //     acceptance_distance_m = cmd_acceptance_distance;
-    // } else if (cmd_passby == 0) {
-    //     acceptance_distance_m = nav_controller->turn_distance(g.waypoint_radius, auto_state.next_turn_angle);
-    // } else {
-
-    // }
-    // if (auto_state.wp_distance <= acceptance_distance_m) {
-    //     gcs().send_text(MAV_SEVERITY_INFO, "Reached waypoint #%i dist %um",
-    //                       (unsigned)mission.get_current_nav_cmd().index,
-    //                       (unsigned)current_loc.get_distance(flex_next_WP_loc));
-    //     return true;
-	// }
-    // // set_next_WP(flex_next_WP_loc);
-    // return false;
+    gcs().send_text(MAV_SEVERITY_INFO, "Payloadrelease on progress");
+    plane.mode_payloadrelease.set_state(verify_nav_wp(cmd));
+    if(plane.mode_payloadrelease.get_state()){
+        gcs().send_text(MAV_SEVERITY_INFO, "Hi I have completed the mission verified");
+        
+    }
+    return plane.mode_payloadrelease.get_state();
 }
+//add finish
 bool Plane::verify_loiter_unlim(const AP_Mission::Mission_Command &cmd)
 {
     if (cmd.p1 <= 1 && abs(g.rtl_radius) > 1) {

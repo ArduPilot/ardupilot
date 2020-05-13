@@ -9,6 +9,7 @@
  */
 void Plane::set_next_WP(const struct Location &loc)
 {
+    gcs().send_text(MAV_SEVERITY_INFO, "set next wp");
     if (auto_state.next_wp_crosstrack) {
         // copy the current WP into the OldWP slot
         prev_WP_loc = next_WP_loc;

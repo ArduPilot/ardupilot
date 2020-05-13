@@ -117,19 +117,29 @@ protected:
 //added
 class ModePayloadRelease : public Mode
 {
-public:
 
+public:
+    ModePayloadRelease()
+    {
+        is_payload_released = false;
+    }
+    
     Number mode_number() const override { return Number::PAYLOADRELEASE; }
     const char *name() const override { return "PAYLOADRELEASE"; }
     const char *name4() const override { return "PAYR"; }
+    
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
+    void set_state(bool state){is_payload_released = state;}
+    bool get_state(){return is_payload_released;}
 
 protected:
 
     bool _enter() override;
     void _exit() override;
+private:
+    bool is_payload_released;
 };
 //add finish
 
@@ -228,8 +238,8 @@ public:
     void update() override;
 
 protected:
-
     bool _enter() override;
+    
 };
 
 class ModeStabilize : public Mode
