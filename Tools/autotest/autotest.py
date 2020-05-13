@@ -650,8 +650,9 @@ def list_subtests(*args, **kwargs):
 if __name__ == "__main__":
     ''' main program '''
     os.environ['PYTHONUNBUFFERED'] = '1'
-
-    os.putenv('TMPDIR', util.reltopdir('tmp'))
+    
+    if sys.platform != "darwin":
+        os.putenv('TMPDIR', util.reltopdir('tmp'))
 
     class MyOptionParser(optparse.OptionParser):
         def format_epilog(self, formatter):
