@@ -11,7 +11,7 @@ extern const AP_HAL::HAL& hal;
 #define AP_MOUNT_TRILLIUM_DEBUG_RX_ALL_MSGS                 1
 #define AP_MOUNT_TRILLIUM_DEBUG_RX_UNHANDLED_MSGS           1
 #define AP_MOUNT_TRILLIUM_DEBUG_TX_NOT_AUTOPILOT_MSGS       1
-#define AP_MOUNT_TRILLIUM_DEBUG_TX_CMD_DIFF_ONLY_MSGS       1
+#define AP_MOUNT_TRILLIUM_DEBUG_TX_CMD_CHANGE_ONLY_MSGS     1
 #define AP_MOUNT_TRILLIUM_DEBUG_TX_ALL_MSGS                 1
 #define AP_MOUNT_TRILLIUM_DEBUG_TX_PASSTHROUGH_DROPS        1
 
@@ -297,23 +297,21 @@ void AP_Mount_Trillium::read_incoming()
 // send_target_angles in degrees or radians
 void AP_Mount_Trillium::send_target_angles(Vector3f angle, bool target_in_degrees)
 {
-    OrionPkt_t pPkt;
-    OrionCmd_t Cmd = {};
-
     // Form a command that will tell the gimbal to move at 10 deg/s in pan for one second
     if (target_in_degrees) {
-        Cmd.Target[GIMBAL_AXIS_PAN]  = deg2radf(angle.x);
-        Cmd.Target[GIMBAL_AXIS_TILT] = deg2radf(angle.y);
+        _cmd_last.Target[GIMBAL_AXIS_PAN]  = deg2radf(angle.x);
+        _cmd_last.Target[GIMBAL_AXIS_TILT] = deg2radf(angle.y);
     } else {
-        Cmd.Target[GIMBAL_AXIS_PAN]  = angle.x;
-        Cmd.Target[GIMBAL_AXIS_TILT] = angle.y;
+        _cmd_last.Target[GIMBAL_AXIS_PAN]  = angle.x;
+        _cmd_last.Target[GIMBAL_AXIS_TILT] = angle.y;
     }
 
-    Cmd.Mode = _orionMode;
-    Cmd.ImpulseTime = 1.0f;
-    Cmd.Stabilized = TRUE;
+    _cmd_last.Mode = _desiredMode;
+    _cmd_last.ImpulseTime = 1.0f;
+    _cmd_last.Stabilized = TRUE;
 
-    encodeOrionCmdPacket(&pPkt, &Cmd);
+    OrionPkt_t pPkt;
+    encodeOrionCmdPacket(&pPkt, &_cmd_last);
     OrionCommSend(&pPkt);
 }
 
@@ -541,21 +539,17 @@ size_t AP_Mount_Trillium::OrionCommSend(const OrionPkt_t *pPkt)
 {
     bool debug = AP_MOUNT_TRILLIUM_DEBUG_TX_ALL_MSGS;
 
-#if AP_MOUNT_TRILLIUM_DEBUG_TX_CMD_DIFF_ONLY_MSGS
+#if AP_MOUNT_TRILLIUM_DEBUG_TX_CMD_CHANGE_ONLY_MSGS
     if (pPkt->ID == ORION_PKT_CMD) {
-        static OrionCmd_t orionCmd_previous {};
+        debug = false;
         OrionCmd_t orionCmd_new {};
         decodeOrionCmdPacket(&pPkt, &orionCmd_new);
-        if (memcmp(&orionCmd_previous, &orionCmd_new, sizeof(orionCmd_previous)) == 0) {
-            // it's the same, only debug if the cmd has changed
-            debug = false;
-        } else {
-            memcpy(&orionCmd_previous, &orionCmd_new, sizeof(OrionCmd_t));
-            gcs().send_text(MAV_SEVERITY_DEBUG, "%s mode set to %s", _trilliumGcsHeader, get_mode_name(orionCmd_new.Mode));
+        if (orionCmd_new.Mode != _telemetry_core.mode) {
+            gcs().send_text(MAV_SEVERITY_DEBUG, "%s Changing mode %s to %s", _trilliumGcsHeader, get_mode_name(_telemetry_core.mode), get_mode_name(orionCmd_new.Mode));
+            _telemetry_core.mode = orionCmd_new.Mode;
         }
     }
 #endif
-
 
 #if AP_MOUNT_TRILLIUM_DEBUG_TX_NOT_AUTOPILOT_MSGS
     if (pPkt->ID == ORION_PKT_AUTOPILOT_DATA) {
@@ -725,8 +719,57 @@ MAV_RESULT AP_Mount_Trillium::custom(const mavlink_command_long_t &packet)
     if (packet.command != SPECIAL_MAVLINK_LONG_ID_MOUNT_CUSTOM) {
         return MAV_RESULT_UNSUPPORTED;
     }
+    // param1 = bitmask of valid params where bit 1 is param2
+    // param2 = mode
+    // param3 = zoom
+    // param4 = Sensor type
+    // param5 = pan
+    // param6 = tilt
+    // param7 = unused
 
-    _orionMode = (OrionMode_t)packet.param1;
+    if (isnan(packet.param1)) {
+        return MAV_RESULT_FAILED;
+    }
+
+    const uint8_t bitmask = packet.param1;
+    OrionPkt_t PktOut;
+
+    if (!isnan(packet.param2) && (bitmask & (1 << 0))) {
+        _desiredMode = (OrionMode_t)packet.param2;
+        gcs().send_text(MAV_SEVERITY_DEBUG, "%sGCS Set to mode %s", _trilliumGcsHeader, get_mode_name(_desiredMode));
+
+        _cmd_last.Mode = _desiredMode;
+
+        encodeOrionCmdPacket(&PktOut, &_cmd_last);
+        OrionCommSend(&PktOut);
+    }
+
+    if (!isnan(packet.param3) && (bitmask & (1 << 1))) {
+        // zoom (+1, -1)
+        _zoom[_selected_camera] = constrain_int32(_zoom[_selected_camera] + (packet.param3 * 10), -32767, 32767);
+        gcs().send_text(MAV_SEVERITY_DEBUG, "%sGCS Set zoom %d", _trilliumGcsHeader, _zoom[_selected_camera]);
+
+        encodeOrionCameraStatePacket(&PktOut, _zoom[_selected_camera], -1, _selected_camera);
+        OrionCommSend(&PktOut);
+    }
+
+    if (!isnan(packet.param4) && (bitmask & (1 << 2))) {
+        // sensor type
+        // 0 - optical
+        // 1 - IR
+        _selected_camera = constrain_int16(packet.param4, 0, 1);
+        gcs().send_text(MAV_SEVERITY_DEBUG, "%sGCS Set sensor: %s", _trilliumGcsHeader, (_selected_camera == 0) ? "Optical" : "IR");
+
+        encodeOrionCameraSwitchPacket(&PktOut, _selected_camera);
+        OrionCommSend(&PktOut);
+    }
+
+    if (!isnan(packet.param5) && !isnan(packet.param6) && (bitmask & (1 << 3)) && (bitmask & (1 << 4))) {
+        // pan, tilt
+        gcs().send_text(MAV_SEVERITY_DEBUG, "%sGCS Set pan, tilt: %.1f, %.1f", _trilliumGcsHeader, packet.param5, packet.param6);
+    }
+    if (!isnan(packet.param7) && (bitmask & (1 << 5))) {
+    }
 
     return MAV_RESULT_ACCEPTED;
 }

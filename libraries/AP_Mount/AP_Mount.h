@@ -29,6 +29,8 @@
     #define AP_MOUNT_TRILLIUM_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
 
+#define SPECIAL_MAVLINK_LONG_ID_MOUNT_CUSTOM      1331
+
 
 // maximum number of mounts
 #define AP_MOUNT_MAX_INSTANCES          1

@@ -15,8 +15,6 @@
 
 #include "Trillium_protocol/OrionPublicPacketShim.h"
 
-#define SPECIAL_MAVLINK_LONG_ID_MOUNT_CUSTOM      1331
-
 
 
 // config
@@ -83,6 +81,8 @@ private:
     // keep the last _current_angle values
     Vector3f _current_angle_deg; // in degrees
     const char* _trilliumGcsHeader = "Trillium: ";
+    uint8_t _selected_camera;
+    int16_t _zoom[2]; // NUM_CAMERAS
 
 
     // Trillium SDK
@@ -93,6 +93,8 @@ private:
     GeolocateTelemetryCore_t _telemetry_core;
     OrionUartConfig_t _uart_config;
     StareStart_t _stare_start;
+    OrionCmd_t _cmd_last = {};
+
 
     const OrionNetworkByteSettings_t _network_settings_desired = {
         .Ip         = {172,  20, 114,   5},
@@ -104,7 +106,7 @@ private:
 
     OrionDiagnostics_t _diagnostics;
     OrionPerformance_t _performance;
-    OrionMode_t         _orionMode = ORION_MODE_DISABLED;
+    OrionMode_t         _desiredMode = ORION_MODE_DISABLED;
 
     size_t OrionCommSend(const OrionPkt_t *pPkt);
     void requestOrionMessageByID(uint8_t id);
