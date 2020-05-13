@@ -160,8 +160,14 @@ void Variometer::reset_polar_learning()
     _learn_EKF.reset(xr, p, q, powf(0.5,2));
 }
 
-void Variometer::update_polar_learning(bool throttle_suppressed, float dsp_dem)
+void Variometer::update_polar_learning(bool learn_enabled, bool throttle_suppressed, float dsp_dem)
 {
+    // If learning disabled, mark for filter intitialisation.
+    if (!learn_enabled) {
+        _learn_initialised = false;
+        return;
+    }
+
     // Check if conditions are suitable for updating the glide polar estimator.
     // Conditioned on throttle, speed, roll, rate of change of speed target
     float roll = AP::ahrs().roll;
