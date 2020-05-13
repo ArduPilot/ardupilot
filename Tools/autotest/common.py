@@ -2495,6 +2495,33 @@ class AutoTest(ABC):
                      0,
                      timeout=timeout)
 
+    def try_arm(self, result=True, expect_msg=None, timeout=60):
+        """Send Arming command, wait for the expected result and statustext."""
+        self.progress("Try arming and wait for expected result")
+        self.drain_mav()
+        self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+                     1,  # ARM
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED if result else mavutil.mavlink.MAV_RESULT_FAILED,
+                     timeout=timeout)
+        if expect_msg is not None:
+            self.wait_statustext(expect_msg, timeout=timeout, the_function=lambda: self.send_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+                                                                                                 1,  # ARM
+                                                                                                 0,
+                                                                                                 0,
+                                                                                                 0,
+                                                                                                 0,
+                                                                                                 0,
+                                                                                                 0,
+                                                                                                 target_sysid=None,
+                                                                                                 target_compid=None,
+                                                                                                 ))
+
     def arm_vehicle(self, timeout=20):
         """Arm vehicle with mavlink arm message."""
         self.progress("Arm motors with MAVLink cmd")
