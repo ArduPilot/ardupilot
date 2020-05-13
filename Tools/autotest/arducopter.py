@@ -5121,6 +5121,10 @@ class AutoTestCopter(AutoTest):
              "Fly Gyro FFT Harmonic Matching",
              self.fly_gyro_fft_harmonic),
 
+            ("SITLCompassCalibration",
+             "Test SITL onboard compass calibration",
+             self.test_mag_calibration),
+
             ("LogUpload",
              "Log upload",
              self.log_upload),
