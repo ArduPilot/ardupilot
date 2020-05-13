@@ -168,6 +168,8 @@ void GCS_MAVLINK::ftp_worker(void) {
     reply.session = -1; // flag the reply as invalid for any reuse
 
     while (true) {
+        bool skip_push_reply = false;
+
         while (!ftp.requests->pop(request)) {
             // nothing to handle, delay ourselves a bit then check again. Ideally we'd use conditional waits here
             hal.scheduler->delay(2);
@@ -527,6 +529,11 @@ void GCS_MAVLINK::ftp_worker(void) {
                             reply.seq_number++;
                         }
 
+                        if (reply.opcode != FTP_OP::Nack) {
+                            // prevent a duplicate packet send for
+                            // normal replies of burst reads
+                            skip_push_reply = true;
+                        }
                         break;
                     }
                 case FTP_OP::TruncateFile:
@@ -539,7 +546,10 @@ void GCS_MAVLINK::ftp_worker(void) {
             }
         }
 
-        ftp_push_replies(reply);
+        if (!skip_push_reply) {
+            ftp_push_replies(reply);
+        }
+
         continue;
     }
 }
