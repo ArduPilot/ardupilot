@@ -6,7 +6,7 @@
 #include <sys/time.h>
 #include <fenv.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
-#if defined (__clang__)
+#if defined (__clang__) || (defined (__APPLE__) && defined (__MACH__))
 #include <stdlib.h>
 #else
 #include <malloc.h>
