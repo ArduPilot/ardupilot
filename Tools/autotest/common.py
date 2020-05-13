@@ -4284,14 +4284,417 @@ class AutoTest(ABC):
             self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
+    def zero_mag_offset_parameters(self, compass_count=3):
+        self.progress("Zeroing Mag OFS parameters")
+        self.drain_mav()
+        self.get_sim_time()
+        self.run_cmd(mavutil.mavlink.MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS,
+                     2, # param1 (compass0)
+                     0, # param2
+                     0, # param3
+                     0, # param4
+                     0, # param5
+                     0, # param6
+                     0 # param7
+                     )
+        self.run_cmd(mavutil.mavlink.MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS,
+                     5, # param1 (compass1)
+                     0, # param2
+                     0, # param3
+                     0, # param4
+                     0, # param5
+                     0, # param6
+                     0 # param7
+                     )
+        self.run_cmd(mavutil.mavlink.MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS,
+                     6, # param1 (compass2)
+                     0, # param2
+                     0, # param3
+                     0, # param4
+                     0, # param5
+                     0, # param6
+                     0 # param7
+                     )
+        self.progress("zeroed mag parameters")
+        params = [
+            [("SIM_MAG_OFS_X", "COMPASS_OFS_X", 0),
+             ("SIM_MAG_OFS_Y", "COMPASS_OFS_Y", 0),
+             ("SIM_MAG_OFS_Z", "COMPASS_OFS_Z", 0), ],
+        ]
+        for count in range(2, compass_count + 1):
+            params += [
+                [("SIM_MAG%d_OFS_X" % count, "COMPASS_OFS%d_X" % count, 0),
+                 ("SIM_MAG%d_OFS_Y" % count, "COMPASS_OFS%d_Y" % count, 0),
+                 ("SIM_MAG%d_OFS_Z" % count, "COMPASS_OFS%d_Z" % count, 0), ],
+                ]
+        self.check_zero_mag_parameters(params)
+
+    def forty_two_mag_dia_odi_parameters(self, compass_count=3):
+        self.progress("Forty twoing Mag DIA and ODI parameters")
+        self.drain_mav()
+        self.get_sim_time()
+        params = [
+            [("SIM_MAG_DIA_X", "COMPASS_DIA_X", 42.0),
+             ("SIM_MAG_DIA_Y", "COMPASS_DIA_Y", 42.0),
+             ("SIM_MAG_DIA_Z", "COMPASS_DIA_Z", 42.0),
+             ("SIM_MAG_ODI_X", "COMPASS_ODI_X", 42.0),
+             ("SIM_MAG_ODI_Y", "COMPASS_ODI_Y", 42.0),
+             ("SIM_MAG_ODI_Z", "COMPASS_ODI_Z", 42.0), ],
+        ]
+        for count in range(2, compass_count + 1):
+            params += [
+                [("SIM_MAG%d_DIA_X" % count, "COMPASS_DIA%d_X" % count, 42.0),
+                 ("SIM_MAG%d_DIA_Y" % count, "COMPASS_DIA%d_Y" % count, 42.0),
+                 ("SIM_MAG%d_DIA_Z" % count, "COMPASS_DIA%d_Z" % count, 42.0),
+                 ("SIM_MAG%d_ODI_X" % count, "COMPASS_ODI%d_X" % count, 42.0),
+                 ("SIM_MAG%d_ODI_Y" % count, "COMPASS_ODI%d_Y" % count, 42.0),
+                 ("SIM_MAG%d_ODI_Z" % count, "COMPASS_ODI%d_Z" % count, 42.0), ],
+            ]
+        self.wait_heartbeat()
+        for param_set in params:
+            for param in param_set:
+                (_, _out, value) = param
+                self.set_parameter(_out, value)
+        self.check_zero_mag_parameters(params)
+
+    def check_mag_parameters(self, parameter_stuff, compass_number):
+        self.progress("Checking that Mag parameter")
+        for idx in range(0, compass_number, 1):
+            for param in parameter_stuff[idx]:
+                (_in, _out, value) = param
+                got_value = self.get_parameter(_out)
+                if abs(got_value - value) > abs(value) * 0.15:
+                    raise NotAchievedException("%s/%s not within 15%%; got %f want=%f" % (_in, _out, got_value, value))
+
+    def check_zero_mag_parameters(self, parameter_stuff):
+        self.progress("Checking that Mag OFS are zero")
+        for param_set in parameter_stuff:
+            for param in param_set:
+                (_in, _out, _) = param
+                got_value = self.get_parameter(_out)
+                max = 0.15
+                if "DIA" in _out or "ODI" in _out:
+                    max += 42.0
+                if abs(got_value) > max:
+                    raise NotAchievedException("%s/%s not within 15%%; got %f want=%f" % (_in, _out, got_value, 0.0 if max > 1 else 42.0))
+
+    def check_zeros_mag_orient(self, compass_count=3):
+        self.progress("zeroed mag parameters")
+        self.verify_parameter_values({"COMPASS_ORIENT": 0})
+        for count in range(2, compass_count + 1):
+            self.verify_parameter_values({"COMPASS_ORIENT%d" % count: 0})
+
+    def test_mag_calibration(self, compass_count=3, timeout=500):
+        ex = None
+        self.set_parameter("AHRS_EKF_TYPE", 10)
+        self.set_parameter("SIM_GND_BEHAV", 0)
+
+        def reset_pos_and_start_magcal(tmask):
+            self.mavproxy.send("sitl_stop\n")
+            self.mavproxy.send("sitl_attitude 0 0 0\n")
+            self.drain_mav()
+            self.get_sim_time()
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_START_MAG_CAL,
+                         tmask, # p1: mag_mask
+                         0, # p2: retry
+                         0, # p3: autosave
+                         0, # p4: delay
+                         0, # param5
+                         0, # param6
+                         0, # param7
+                         want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED,
+                         timeout=20,
+                         )
+            self.mavproxy.send("sitl_magcal\n")
+
+        def do_prep_mag_cal_test(params):
+            self.progress("Preparing the vehicle for magcal")
+            MAG_OFS = 100
+            MAG_DIA = 1.0
+            MAG_ODI = 0.004
+            params += [
+                [("SIM_MAG_OFS_X", "COMPASS_OFS_X", MAG_OFS),
+                 ("SIM_MAG_OFS_Y", "COMPASS_OFS_Y", MAG_OFS + 100),
+                 ("SIM_MAG_OFS_Z", "COMPASS_OFS_Z", MAG_OFS + 200),
+                 ("SIM_MAG_DIA_X", "COMPASS_DIA_X", MAG_DIA),
+                 ("SIM_MAG_DIA_Y", "COMPASS_DIA_Y", MAG_DIA + 0.1),
+                 ("SIM_MAG_DIA_Z", "COMPASS_DIA_Z", MAG_DIA + 0.2),
+                 ("SIM_MAG_ODI_X", "COMPASS_ODI_X", MAG_ODI),
+                 ("SIM_MAG_ODI_Y", "COMPASS_ODI_Y", MAG_ODI + 0.001),
+                 ("SIM_MAG_ODI_Z", "COMPASS_ODI_Z", MAG_ODI + 0.001), ],
+            ]
+            for count in range(2, compass_count + 1):
+                params += [
+                    [("SIM_MAG%d_OFS_X" % count, "COMPASS_OFS%d_X" % count, MAG_OFS + 100 * ((count+2) % compass_count)),
+                     ("SIM_MAG%d_OFS_Y" % count, "COMPASS_OFS%d_Y" % count, MAG_OFS + 100 * ((count+3) % compass_count)),
+                     ("SIM_MAG%d_OFS_Z" % count, "COMPASS_OFS%d_Z" % count, MAG_OFS + 100 * ((count+1) % compass_count)),
+                     ("SIM_MAG%d_DIA_X" % count, "COMPASS_DIA%d_X" % count, MAG_DIA + 0.1 * ((count+2) % compass_count)),
+                     ("SIM_MAG%d_DIA_Y" % count, "COMPASS_DIA%d_Y" % count, MAG_DIA + 0.1 * ((count+3) % compass_count)),
+                     ("SIM_MAG%d_DIA_Z" % count, "COMPASS_DIA%d_Z" % count, MAG_DIA + 0.1 * ((count+1) % compass_count)),
+                     ("SIM_MAG%d_ODI_X" % count, "COMPASS_ODI%d_X" % count, MAG_ODI + 0.001 * ((count+2) % compass_count)),
+                     ("SIM_MAG%d_ODI_Y" % count, "COMPASS_ODI%d_Y" % count, MAG_ODI + 0.001 * ((count+3) % compass_count)),
+                     ("SIM_MAG%d_ODI_Z" % count, "COMPASS_ODI%d_Z" % count, MAG_ODI + 0.001 * ((count+1) % compass_count)), ],
+                ]
+            self.progress("Setting calibration mode")
+            self.wait_heartbeat()
+            self.customise_SITL_commandline(["-M", "calibration"])
+            self.mavproxy_load_module("sitl_calibration")
+            self.mavproxy_load_module("calibration")
+            self.mavproxy_load_module("relay")
+            self.mavproxy.expect("is using GPS")
+            self.mavproxy.send("accelcalsimple\n")
+            self.mavproxy.expect("Calibrated")
+            # disable it to not interfert with calibration acceptation
+            self.mavproxy_unload_module("calibration")
+            if self.is_copter():
+                # set frame class to pass arming check on copter
+                self.set_parameter("FRAME_CLASS", 1)
+            self.drain_mav()
+            self.progress("Setting SITL Magnetometer model value")
+            MAG_ORIENT = 4
+            self.set_parameter("SIM_MAG_ORIENT", MAG_ORIENT)
+            for count in range(2, compass_count + 1):
+                self.set_parameter("SIM_MAG%d_ORIENT" % count, MAG_ORIENT * (count % 41))
+                # set compass external to check that orientation is found and auto set
+                self.set_parameter("COMPASS_EXTERN%d" % count, 1)
+            for param_set in params:
+                for param in param_set:
+                    (_in, _out, value) = param
+                    self.set_parameter(_in, value)
+                    self.set_parameter(_out, value)
+            self.start_subtest("Zeroing Mag OFS parameters with Mavlink")
+            self.zero_mag_offset_parameters()
+            self.progress("=========================================")
+            # Change the default value to unexpected 42
+            self.forty_two_mag_dia_odi_parameters()
+            self.progress("Zeroing Mags orientations")
+            self.set_parameter("COMPASS_ORIENT", 0)
+            for count in range(2, compass_count + 1):
+                self.set_parameter("COMPASS_ORIENT%d" % count, 0)
+
+            # Only care about compass prearm
+            self.set_parameter("ARMING_CHECK", 4)
+
+        #################################################
+        def do_test_mag_cal(params, compass_tnumber):
+            self.start_subtest("Try magcal and make it stop around 30%")
+            self.progress("Compass mask is %s" % "{0:b}".format(target_mask))
+            reset_pos_and_start_magcal(target_mask)
+            tstart = self.get_sim_time()
+            reached_pct = [0] * compass_tnumber
+            tstop = None
+            while True:
+                if self.get_sim_time_cached() - tstart > timeout:
+                    raise NotAchievedException("Cannot receive enough MAG_CAL_PROGRESS")
+                m = self.mav.recv_match(type='MAG_CAL_PROGRESS', blocking=True, timeout=5)
+                if m is None:
+                    if tstop is not None:
+                        # wait 3 second to unsure that the calibration is well stopped
+                        if self.get_sim_time_cached() - tstop > 10:
+                            if reached_pct[0] > 33:
+                                raise NotAchievedException("Mag calibration didn't stop")
+                            else:
+                                break
+                        else:
+                            continue
+                    else:
+                        continue
+                if m is not None:
+                    cid = m.compass_id
+                    new_pct = int(m.completion_pct)
+                    if new_pct != reached_pct[cid]:
+                        if new_pct < reached_pct[cid]:
+                            raise NotAchievedException("Mag calibration restart when it shouldn't")
+                        reached_pct[cid] = new_pct
+                        self.progress("Calibration progress compass ID %d: %s" % (cid, str(reached_pct[cid])))
+                        if cid == 0 and 13 <= reached_pct[0] <= 15:
+                            self.progress("Request again to start calibration, it shouldn't restart from 0")
+                            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_START_MAG_CAL,
+                                         target_mask,
+                                         0,
+                                         0,
+                                         0,
+                                         0,
+                                         0,
+                                         0,
+                                         want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED,
+                                         timeout=20,
+                                         )
+
+                if reached_pct[0] > 30:
+                    self.run_cmd(mavutil.mavlink.MAV_CMD_DO_CANCEL_MAG_CAL,
+                                 target_mask,  # p1: mag_mask
+                                 0,  # param2
+                                 0,  # param3
+                                 0,  # param4
+                                 0,  # param5
+                                 0,  # param6
+                                 0,  # param7
+                                 want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED,
+                                 )
+                    if tstop is None:
+                        tstop = self.get_sim_time_cached()
+                if tstop is not None:
+                    # wait 3 second to unsure that the calibration is well stopped
+                    if self.get_sim_time_cached() - tstop > 3:
+                        raise NotAchievedException("Mag calibration didn't stop")
+            self.check_zero_mag_parameters(params)
+            self.check_zeros_mag_orient()
+
+            #################################################
+            self.start_subtest("Try magcal and make it failed")
+            self.progress("Compass mask is %s" % "{0:b}".format(target_mask))
+            old_cal_fit = self.get_parameter("COMPASS_CAL_FIT")
+            self.set_parameter("COMPASS_CAL_FIT", 0.001, add_to_context=False)
+            reset_pos_and_start_magcal(target_mask)
+            tstart = self.get_sim_time()
+            reached_pct = [0] * compass_tnumber
+            report_get = [0] * compass_tnumber
+            while True:
+                if self.get_sim_time_cached() - tstart > timeout:
+                    raise NotAchievedException("Cannot receive enough MAG_CAL_PROGRESS")
+                m = self.mav.recv_match(type=["MAG_CAL_PROGRESS", "MAG_CAL_REPORT"], blocking=True, timeout=5)
+                if m.get_type() == "MAG_CAL_REPORT":
+                    if report_get[m.compass_id] == 0:
+                        self.progress("Report: %s" % str(m))
+                        if m.cal_status == mavutil.mavlink.MAG_CAL_FAILED:
+                            report_get[m.compass_id] = 1
+                        else:
+                            raise NotAchievedException("Mag calibration didn't failed")
+                    if all(ele >= 1 for ele in report_get):
+                        self.progress("All Mag report failure")
+                        break
+                if m is not None and m.get_type() == "MAG_CAL_PROGRESS":
+                    cid = m.compass_id
+                    new_pct = int(m.completion_pct)
+                    if new_pct != reached_pct[cid]:
+                        reached_pct[cid] = new_pct
+                        self.progress("Calibration progress compass ID %d: %s" % (cid, str(reached_pct[cid])))
+                        if cid == 0 and 49 <= reached_pct[0] <= 50:
+                            self.progress("Try arming during calibration, should failed")
+                            self.try_arm(False, "Compass calibration running")
+
+            self.check_zero_mag_parameters(params)
+            self.check_zeros_mag_orient()
+            self.set_parameter("COMPASS_CAL_FIT", old_cal_fit, add_to_context=False)
+
+            #################################################
+            self.start_subtest("Try magcal and wait success")
+            self.progress("Compass mask is %s" % "{0:b}".format(target_mask))
+            reset_pos_and_start_magcal(target_mask)
+            reached_pct = [0] * compass_tnumber
+            report_get = [0] * compass_tnumber
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > timeout:
+                    raise NotAchievedException("Cannot receive enough MAG_CAL_PROGRESS")
+                m = self.mav.recv_match(type=["MAG_CAL_PROGRESS", "MAG_CAL_REPORT"], blocking=True, timeout=5)
+                if m.get_type() == "MAG_CAL_REPORT":
+                    if report_get[m.compass_id] == 0:
+                        self.progress("Report: %s" % str(m))
+                        if m.cal_status == mavutil.mavlink.MAG_CAL_SUCCESS:
+                            if reached_pct[m.compass_id] < 99:
+                                raise NotAchievedException("Mag calibration report SUCCESS without 100%% completion")
+                            report_get[m.compass_id] = 1
+                        else:
+                            raise NotAchievedException("Mag calibration didn't SUCCESS")
+                    if all(ele >= 1 for ele in report_get):
+                        self.progress("All Mag report SUCCESS")
+                        break
+                if m is not None and m.get_type() == "MAG_CAL_PROGRESS":
+                    cid = m.compass_id
+                    new_pct = int(m.completion_pct)
+                    if new_pct != reached_pct[cid]:
+                        reached_pct[cid] = new_pct
+                        self.progress("Calibration progress compass ID %d: %s" % (cid, str(reached_pct[cid])))
+            self.mavproxy.send("sitl_stop\n")
+            self.mavproxy.send("sitl_attitude 0 0 0\n")
+            self.progress("Checking that value aren't changed without acceptation")
+            self.check_zero_mag_parameters(params)
+            self.check_zeros_mag_orient()
+            self.progress("Send acceptation and check value")
+            self.wait_heartbeat()
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_ACCEPT_MAG_CAL,
+                         target_mask, # p1: mag_mask
+                         0,
+                         0,
+                         0,
+                         0,
+                         0,
+                         0,
+                         want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED,
+                         timeout=20,
+                         )
+            self.check_mag_parameters(params, compass_tnumber)
+            self.verify_parameter_values({"COMPASS_ORIENT": self.get_parameter("SIM_MAG_ORIENT")})
+            for count in range(2, compass_tnumber + 1):
+                self.verify_parameter_values({"COMPASS_ORIENT%d" % count: self.get_parameter("SIM_MAG%d_ORIENT" % count)})
+            self.try_arm(False, "Compass calibrated requires reboot")
+
+            # test buzzer/notify ?
+            self.progress("Rebooting and making sure we could arm with these values")
+            self.drain_mav()
+            self.reboot_sitl()
+            self.wait_ready_to_arm(timeout=60)
+            self.progress("Setting manually the parameter for other sensor to avoid compass consistency error")
+            for idx in range(compass_tnumber, compass_count, 1):
+                for param in params[idx]:
+                    (_in, _out, value) = param
+                    self.set_parameter(_out, value)
+            for count in range(compass_tnumber + 1, compass_count + 1):
+                self.set_parameter("COMPASS_ORIENT%d" % count, self.get_parameter("SIM_MAG%d_ORIENT" % count))
+            self.arm_vehicle()
+            self.progress("Test calibration rejection when armed")
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_START_MAG_CAL,
+                         target_mask, # p1: mag_mask
+                         0, # p2: retry
+                         0, # p3: autosave
+                         0, # p4: delay
+                         0, # param5
+                         0, # param6
+                         0, # param7
+                         want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+                         timeout=20,
+                         )
+            self.disarm_vehicle()
+            self.mavproxy_unload_module("relay")
+            self.mavproxy_unload_module("sitl_calibration")
+
+        try:
+            curr_params = []
+            target_mask = 0
+            # we test all bitmask plus 0 for all
+            for run in range(-1, compass_count, 1):
+                ntest_compass = compass_count
+                if run < 0:
+                    # use bitmask 0 for all compass
+                    target_mask = 0
+                else:
+                    target_mask |= (1 << run)
+                    ntest_compass = run + 1
+                do_prep_mag_cal_test(curr_params)
+                do_test_mag_cal(curr_params, ntest_compass)
+
+        except Exception as e:
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
+            ex = e
+            self.mavproxy_unload_module("relay")
+            self.mavproxy_unload_module("sitl_calibration")
+        if ex is not None:
+            raise ex
+
     def test_fixed_yaw_calibration(self):
         self.context_push()
         ex = None
         try:
+            MAG_OFS_X = 100
+            MAG_OFS_Y = 200
+            MAG_OFS_Z = 300
             wanted = {
-                "COMPASS_OFS_X": (100, 3.0),
-                "COMPASS_OFS_Y": (200, 3.0),
-                "COMPASS_OFS_Z": (300, 3.0),
+                "COMPASS_OFS_X": (MAG_OFS_X, 3.0),
+                "COMPASS_OFS_Y": (MAG_OFS_Y, 3.0),
+                "COMPASS_OFS_Z": (MAG_OFS_Z, 3.0),
                 "COMPASS_DIA_X": 1,
                 "COMPASS_DIA_Y": 1,
                 "COMPASS_DIA_Z": 1,
@@ -4299,9 +4702,9 @@ class AutoTest(ABC):
                 "COMPASS_ODI_Y": 0,
                 "COMPASS_ODI_Z": 0,
 
-                "COMPASS_OFS2_X": (100, 3.0),
-                "COMPASS_OFS2_Y": (200, 3.0),
-                "COMPASS_OFS2_Z": (300, 3.0),
+                "COMPASS_OFS2_X": (MAG_OFS_X, 3.0),
+                "COMPASS_OFS2_Y": (MAG_OFS_Y, 3.0),
+                "COMPASS_OFS2_Z": (MAG_OFS_Z, 3.0),
                 "COMPASS_DIA2_X": 1,
                 "COMPASS_DIA2_Y": 1,
                 "COMPASS_DIA2_Z": 1,
@@ -4309,20 +4712,19 @@ class AutoTest(ABC):
                 "COMPASS_ODI2_Y": 0,
                 "COMPASS_ODI2_Z": 0,
 
-                "COMPASS_OFS3_X": (100, 3.0),
-                "COMPASS_OFS3_Y": (200, 3.0),
-                "COMPASS_OFS3_Z": (300, 3.0),
+                "COMPASS_OFS3_X": (MAG_OFS_X, 3.0),
+                "COMPASS_OFS3_Y": (MAG_OFS_Y, 3.0),
+                "COMPASS_OFS3_Z": (MAG_OFS_Z, 3.0),
                 "COMPASS_DIA3_X": 1,
                 "COMPASS_DIA3_Y": 1,
                 "COMPASS_DIA3_Z": 1,
-                "COMPASS_ODI2_X": 0,
-                "COMPASS_ODI2_Y": 0,
-                "COMPASS_ODI2_Z": 0,
+                "COMPASS_ODI3_X": 0,
+                "COMPASS_ODI3_Y": 0,
+                "COMPASS_ODI3_Z": 0,
             }
-            self.set_parameter("SIM_MAG_OFS_X", 100)
-            self.set_parameter("SIM_MAG_OFS_Y", 200)
-            self.set_parameter("SIM_MAG_OFS_Z", 300)
-
+            self.set_parameter("SIM_MAG_OFS_X", MAG_OFS_X)
+            self.set_parameter("SIM_MAG_OFS_Y", MAG_OFS_Y)
+            self.set_parameter("SIM_MAG_OFS_Z", MAG_OFS_Z)
             # set to some sensible-ish initial values.  If your initial
             # offsets are way, way off you can get some very odd effects.
             for param in wanted:
@@ -4332,28 +4734,9 @@ class AutoTest(ABC):
                 elif "ODI" in param:
                     value = 0.001
                 self.set_parameter(param, value)
-            # zero the parameters:
-            self.progress("zeroing parameters")
-            self.drain_mav()  # these two lines are odd....
-            self.get_sim_time()
-            self.run_cmd(mavutil.mavlink.MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS,
-                         2, # param1 (compass0)
-                         0, # param2
-                         0, # param3
-                         0, # param4
-                         0, # param5
-                         0, # param6
-                         0 # param7
-            )
-            self.progress("zeroed parameters")
-            # ensure these are all zero; note that we don't set the DIA or
-            # ODI in SET_SENSOR_OFFSETS...
-            for axis in "X", "Y", "Z":
-                name = "COMPASS_OFS_%s" % axis
-                value = self.get_parameter(name)
-                if value != 0.0:
-                    raise NotAchievedException("Failed to zero %s; got %f" %
-                                               (name, value))
+
+            self.zero_mag_offset_parameters()
+
             self.change_mode('LOITER')
             self.wait_ready_to_arm() # so we definitely have position
             ss = self.mav.recv_match(type='SIMSTATE', blocking=True, timeout=1)
