@@ -978,7 +978,10 @@ void NavEKF3_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, 
     // extract yaw from the attitude
     float roll_rad, pitch_rad, yaw_rad;
     quat.to_euler(roll_rad, pitch_rad, yaw_rad);
-    writeEulerYawAngle(yaw_rad, angErr, timeStamp_ms, 2);
+
+    // ensure yaw accuracy is no better than 5 degrees (some callers may send zero)
+    const float yaw_accuracy_rad = MAX(angErr, radians(5.0f));
+    writeEulerYawAngle(yaw_rad, yaw_accuracy_rad, timeStamp_ms, 2);
 
     storedExtNav.push(extNavDataNew);
 }
