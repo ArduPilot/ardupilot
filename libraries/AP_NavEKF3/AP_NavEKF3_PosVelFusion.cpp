@@ -932,7 +932,7 @@ void NavEKF3_core::selectHeightForFusion()
     if (extNavUsedForPos && (frontend->_altSource == 4)) {
         // always use external navigation as the height source if using for position.
         activeHgtSource = HGT_SOURCE_EXTNAV;
-    } else if (_rng && ((frontend->_useRngSwHgt > 0) && (frontend->_altSource == 1)) && (imuSampleTime_ms - rngValidMeaTime_ms < 500)) {
+    } else if (_rng && ((frontend->_useRngSwHgt > 0) || (frontend->_altSource == 1)) && (imuSampleTime_ms - rngValidMeaTime_ms < 500)) {
         if (frontend->_altSource == 1) {
             // always use range finder
             activeHgtSource = HGT_SOURCE_RNG;
