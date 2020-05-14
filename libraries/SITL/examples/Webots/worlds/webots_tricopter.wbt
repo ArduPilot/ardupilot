@@ -1,11 +1,28 @@
-#VRML_SIM R2019b utf8
+#VRML_SIM R2020a utf8
 WorldInfo {
   gravity 0 -9.80665 0
   physics "sitl_physics_env"
-  basicTimeStep 2
+  basicTimeStep 1
   FPS 25
-  optimalThreadCount 4
   randomSeed 52
+}
+Robot {
+  translation -1.949999999999999 0.23391237384410402 0
+  rotation 0 0 1 2.533555103014215e-15
+  children [
+    Emitter {
+      type "serial"
+      channel 1
+    }
+  ]
+  name "supervisor_sync"
+  boundingObject Box {
+    size 0.1 0.1 0.1
+  }
+  physics Physics {
+  }
+  controller "ardupilot_SITL_Supervisor"
+  supervisor TRUE
 }
 DogHouse {
   translation 34.82 0.76 -24.56
@@ -20,16 +37,14 @@ DogHouse {
   name "dog house(5)"
 }
 Viewpoint {
-  orientation 0.9997750421775041 -0.014997750480821456 -0.01499775048082146 4.712163997257285
-  position 0.17712971811531414 14.83048200793912 -1.4201693307676047
+  orientation 0.9952082156446058 0.09310572995296737 0.02986520656892867 5.659589519324221
+  position -0.1971228135348432 5.281009887921962 4.9181113380378845
   follow "tricopter"
 }
 Background {
   skyColor [
     0.15 0.5 1
   ]
-  cubemap Cubemap {
-  }
 }
 Solid {
   translation 36.93 0.77 -37.93
@@ -51,6 +66,12 @@ DEF DEF_VEHICLE Robot {
   translation -8.233889875751989e-05 0.666500515499142 -1.3598750857814472
   rotation 0.00514799893982893 0.9999767940663002 0.004461999081102697 0.261804
   children [
+    Receiver {
+      name "receiver_main"
+      type "serial"
+      channel 1
+      bufferSize 32
+    }
     Compass {
       name "compass1"
     }
@@ -75,8 +96,8 @@ DEF DEF_VEHICLE Robot {
             }
           ]
           endPoint Solid {
-            translation -4.884982810326628e-15 -4.1022629410960365e-12 1.8091922030330322e-13
-            rotation 2.3470124341273664e-11 1 -3.708275057969111e-10 1.5707963071795863
+            translation -4.8849852365954544e-15 -4.102262941093136e-12 1.8091922030330322e-13
+            rotation 3.4266344293343444e-10 1 -6.900208306501498e-10 1.5707963071795863
             children [
               Propeller {
                 shaftAxis 0 1 0
@@ -255,7 +276,7 @@ DEF DEF_VEHICLE Robot {
         size 0.1 0.1 0.1
       }
       physics Physics {
-        mass 0.6
+        mass 1
       }
     }
   ]
@@ -264,7 +285,8 @@ DEF DEF_VEHICLE Robot {
     mass 0.001
   }
   controller "ardupilot_SITL_TRICOPTER"
-  supervisor TRUE
+  controllerArgs "-p 5599  -df 0.01"
+  customData "1"
 }
 DirectionalLight {
   direction 0 -1 0
