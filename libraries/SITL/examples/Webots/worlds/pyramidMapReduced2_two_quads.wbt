@@ -13,12 +13,12 @@ WorldInfo {
   randomSeed 52
 }
 Robot {
-  translation -1.949999999999999 0.23391237384410402 0
-  rotation 0 0 1 2.533555103014215e-15
+  translation -1.949999999999999 0.04997547499999999 1.3757352866866031e-18
+  rotation -3.94393426594212e-05 -0.002428650104207135 0.9999970500472537 2.5335126167205975e-15
   children [
     Emitter {
       type "serial"
-      channel 1
+      channel 2
     }
   ]
   name "supervisor_sync"
@@ -31,8 +31,8 @@ Robot {
   supervisor TRUE
 }
 Viewpoint {
-  orientation -0.008430334675332775 -0.9889506387233125 -0.1480052824260481 2.792301901785628
-  position -2.7392169823215062 2.3278150473447536 -7.277902320169236
+  orientation 0.014725779314097494 -0.9919834300212472 -0.12550707544546588 3.0995220684886386
+  position 2.89801721483057 4.724764389642478 -15.01424412872485
   near 3
   follow "quad_plus_sitl"
   followType "Mounted Shot"
@@ -54,8 +54,8 @@ Floor {
   }
 }
 DEF DEF_VEHICLE Robot {
-  translation 7.15062e-12 0.06 1.08491e-11
-  rotation -1.6967771456756733e-10 1 2.4151813868919206e-10 -0.7512383045779282
+  translation 8.33573616371131e-12 0.049938687499999995 1.2630472301207377e-11
+  rotation -1.6967762900575007e-10 0.9999999999999999 2.4151770162007004e-10 -0.751238304577932
   children [
     Receiver {
       name "receiver_main"
@@ -375,6 +375,329 @@ DEF DEF_VEHICLE Robot {
   controller "ardupilot_SITL_QUAD"
   controllerArgs "-p 5599 -df 0.01"
   customData "1"
+}
+DEF DEF_VEHICLE2 Robot {
+  translation 3.47174 0.0499387 -3.51038
+  rotation -1.6967762900575007e-10 0.9999999999999999 2.4151770162007004e-10 -0.751238304577932
+  children [
+    Receiver {
+      name "receiver_main"
+      type "serial"
+      channel 1
+      bufferSize 32
+    }
+    Emitter {
+      name "emitter_plugin"
+      description "commuicates with physics plugin"
+    }
+    Shape {
+      appearance Appearance {
+        material Material {
+        }
+      }
+      geometry Box {
+        size 0.1 0.1 0.1
+      }
+    }
+    Camera {
+      translation 0 0.12 0
+      rotation 0.12942795977353752 0.9831056944488316 0.12942795977353752 -1.5878343071795866
+      name "camera1"
+      width 128
+      height 128
+    }
+    Compass {
+      name "compass1"
+      rotationStep 0.261799
+    }
+    GPS {
+      name "gps1"
+    }
+    Accelerometer {
+      name "accelerometer1"
+    }
+    Gyro {
+      name "gyro1"
+    }
+    InertialUnit {
+      name "inertial_unit"
+    }
+    Transform {
+      translation -0.09999999999999999 0 0
+      rotation -0.5773502691896258 0.5773502691896258 0.5773502691896258 2.094395
+      children [
+        Solid {
+          translation 0 0.35 0
+          rotation 1 0 0 1.5707959999999999
+          children [
+            Propeller {
+              shaftAxis 0 -1 0
+              thrustConstants -12.2583125 0
+              torqueConstants 18 0
+              device RotationalMotor {
+                name "motor3"
+                controlPID 10.001 0 0
+                maxVelocity 1000
+              }
+              fastHelix Solid {
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                        diffuseColor 1 0 0.1
+                      }
+                    }
+                    geometry Cylinder {
+                      height 0.002
+                      radius 0.02
+                    }
+                  }
+                ]
+              }
+              slowHelix Solid {
+                rotation 0 1 0 1.0783029265387833
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                        diffuseColor 1 0 0.1
+                      }
+                    }
+                    geometry Cylinder {
+                      height 0.002
+                      radius 0.02
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+          physics Physics {
+            mass 0.25
+          }
+        }
+        Shape {
+          appearance Appearance {
+            material Material {
+            }
+          }
+          geometry DEF DEF_ARM Cylinder {
+            height 0.1
+            radius 0.01
+          }
+        }
+      ]
+    }
+    Transform {
+      translation 0 0 0.09999999999999999
+      rotation 0 0.7071067811865476 0.7071067811865476 -3.1415923071795864
+      children [
+        Solid {
+          translation 0 0.35 0
+          rotation 1 0 0 1.5707959999999999
+          children [
+            Propeller {
+              shaftAxis 0 1 0
+              thrustConstants 12.2583125 0
+              torqueConstants 18 0
+              device RotationalMotor {
+                name "motor2"
+                controlPID 10.001 0 0
+                maxVelocity 1000
+              }
+              fastHelix Solid {
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                        diffuseColor 1 0 0.1
+                      }
+                    }
+                    geometry Cylinder {
+                      height 0.002
+                      radius 0.02
+                    }
+                  }
+                ]
+              }
+              slowHelix Solid {
+                rotation 0 -1 0 5.723596857910636
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                        diffuseColor 1 0 0.1
+                      }
+                    }
+                    geometry Cylinder {
+                      height 0.002
+                      radius 0.02
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+          name "solid(2)"
+          physics Physics {
+            mass 0.25
+          }
+        }
+        Shape {
+          appearance Appearance {
+            material Material {
+            }
+          }
+          geometry USE DEF_ARM
+        }
+      ]
+    }
+    Transform {
+      translation 0.09999999999999999 0 0
+      rotation 0.5773502691896258 0.5773502691896258 0.5773502691896258 -2.094395307179586
+      children [
+        Solid {
+          translation 0 0.35 0
+          rotation 1 0 0 1.5707959999999999
+          children [
+            Propeller {
+              shaftAxis 0 -1 0
+              thrustConstants -12.2583 0
+              torqueConstants 18 0
+              device RotationalMotor {
+                name "motor1"
+                controlPID 10.001 0 0
+                maxVelocity 1000
+              }
+              fastHelix Solid {
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                        diffuseColor 1 0 0.1
+                      }
+                    }
+                    geometry Cylinder {
+                      height 0.002
+                      radius 0.02
+                    }
+                  }
+                ]
+              }
+              slowHelix Solid {
+                rotation 0 -0.9999999999999999 0 4.897215133097218
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                        diffuseColor 1 0 0.1
+                      }
+                    }
+                    geometry Cylinder {
+                      height 0.002
+                      radius 0.02
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+          name "solid(1)"
+          physics Physics {
+            mass 0.25
+          }
+        }
+        Shape {
+          appearance Appearance {
+            material Material {
+              diffuseColor 1 0.09999999999999999 0
+            }
+          }
+          geometry USE DEF_ARM
+        }
+      ]
+    }
+    Transform {
+      translation 0 0 -0.09999999999999999
+      rotation 1 0 0 -1.5707963071795863
+      children [
+        Solid {
+          translation 0 0.35 0
+          rotation 1 0 0 1.5707959999999999
+          children [
+            Propeller {
+              shaftAxis 0 1 0
+              thrustConstants 12.2583125 0
+              torqueConstants 18 0
+              device RotationalMotor {
+                name "motor4"
+                controlPID 10.001 0 0
+                maxVelocity 1000
+              }
+              fastHelix Solid {
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                        diffuseColor 1 0 0.1
+                      }
+                    }
+                    geometry Cylinder {
+                      height 0.002
+                      radius 0.02
+                    }
+                  }
+                ]
+              }
+              slowHelix Solid {
+                rotation 0 0.9999999999999999 0 6.252850469660148
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                        diffuseColor 1 0 0.1
+                      }
+                    }
+                    geometry Cylinder {
+                      height 0.002
+                      radius 0.02
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+          name "solid(3)"
+          physics Physics {
+            mass 0.25
+          }
+        }
+        Shape {
+          appearance Appearance {
+            material Material {
+              diffuseColor 0.7999999999999999 0.7999999999999999 0.7999999999999999
+            }
+          }
+          geometry USE DEF_ARM
+        }
+      ]
+    }
+  ]
+  name "quad_plus_sitl2"
+  boundingObject Box {
+    size 0.1 0.1 0.1
+  }
+  physics Physics {
+    density -1
+    mass 1.5
+    centerOfMass [
+      0 0 0
+    ]
+  }
+  rotationStep 0.261799
+  controller "ardupilot_SITL_QUAD"
+  controllerArgs "-p 5598 -df 0.01"
+  customData "2"
 }
 Road {
   translation -972.826351 0.01 137.636697
