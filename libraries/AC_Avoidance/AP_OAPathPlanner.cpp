@@ -27,7 +27,8 @@ extern const AP_HAL::HAL &hal;
 const float OA_LOOKAHEAD_DEFAULT = 15;
 const float OA_MARGIN_MAX_DEFAULT = 5;
 
-const int16_t OA_TIMEOUT_MS = 2000;             // avoidance results over 2 seconds old are ignored
+const int16_t OA_UPDATE_MS = 1000;      // path planning updates run at 1hz
+const int16_t OA_TIMEOUT_MS = 3000;     // results over 3 seconds old are ignored
 
 const AP_Param::GroupInfo AP_OAPathPlanner::var_info[] = {
 
@@ -56,11 +57,9 @@ const AP_Param::GroupInfo AP_OAPathPlanner::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("MARGIN_MAX", 3, AP_OAPathPlanner, _margin_max, OA_MARGIN_MAX_DEFAULT),
 
-#if !HAL_MINIMIZE_FEATURES
     // @Group: DB_
     // @Path: AP_OADatabase.cpp
     AP_SUBGROUPINFO(_oadatabase, "DB_", 4, AP_OAPathPlanner, AP_OADatabase),
-#endif
 
     AP_GROUPEND
 };
@@ -194,7 +193,6 @@ AP_OAPathPlanner::OA_RetState AP_OAPathPlanner::mission_avoidance(const Location
 void AP_OAPathPlanner::avoidance_thread()
 {
     while (true) {
-#if !HAL_MINIMIZE_FEATURES
 
         // if database queue needs attention, service it faster
         if (_oadatabase.process_queue()) {
@@ -204,16 +202,12 @@ void AP_OAPathPlanner::avoidance_thread()
         }
 
         const uint32_t now = AP_HAL::millis();
-        if (now - avoidance_latest_ms < 100) {
+        if (now - avoidance_latest_ms < OA_UPDATE_MS) {
             continue;
         }
         avoidance_latest_ms = now;
 
         _oadatabase.update();
-#else
-        hal.scheduler->delay(100);
-        const uint32_t now = AP_HAL::millis();
-#endif
 
         Location origin_new;
         Location destination_new;

@@ -1,8 +1,6 @@
 # hw definition file for processing by chibios_hwdef.py
 # for FMUv4pro hardware (Pixhawk 3 Pro)
 
-define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_FMUV4PRO
-
 define BOARD_TYPE_DEFAULT 14
 
 # MCU class and specific type
@@ -14,8 +12,6 @@ APJ_BOARD_ID 13
 # crystal frequency
 OSCILLATOR_HZ 24000000
 
-# board voltage
-STM32_VDD 330U
 
 # ChibiOS system timer
 STM32_ST_USE_TIMER 5
@@ -44,7 +40,7 @@ I2C_ORDER I2C1 I2C2
 # 6) SERIAL5: extra UART (usually RTOS debug console)
 
 # order of UARTs (and USB)
-UART_ORDER OTG1 UART4 USART2 USART3 UART8 USART1 UART7
+SERIAL_ORDER OTG1 USART2 USART3 UART4 UART8 USART1 UART7
 
 # UART for IOMCU
 IOMCU_UART USART6
@@ -232,9 +228,6 @@ define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 define HAL_STORAGE_SIZE 16384
 define HAL_WITH_RAMTRON 1
-
-# fallback to flash is no FRAM fitted
-define STORAGE_FLASH_PAGE 22
 
 # enable FAT filesystem support (needs a microSD defined via SDIO)
 define HAL_OS_FATFS_IO 1

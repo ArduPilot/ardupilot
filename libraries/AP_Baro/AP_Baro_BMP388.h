@@ -78,4 +78,5 @@ private:
     } calib;
 
     void scale_calibration_data(void);
+    bool read_registers(uint8_t reg, uint8_t *data, uint8_t len);
 };

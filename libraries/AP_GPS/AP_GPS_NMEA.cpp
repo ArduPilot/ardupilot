@@ -295,6 +295,11 @@ bool AP_GPS_NMEA::_term_complete()
                     _last_HDT_ms = now;
                     state.gps_yaw = wrap_360(_new_gps_yaw*0.01f);
                     state.have_gps_yaw = true;
+                    // remember that we are setup to provide yaw. With
+                    // a NMEA GPS we can only tell if the GPS is
+                    // configured to provide yaw when it first sends a
+                    // HDT sentence.
+                    state.gps_yaw_configured = true;
                     break;
                 }
             } else {

@@ -386,7 +386,7 @@ bool AP_Arming::compass_checks(bool report)
 
         // avoid Compass::use_for_yaw(void) as it implicitly calls healthy() which can
         // incorrectly skip the remaining checks, pass the primary instance directly
-        if (!_compass.use_for_yaw(_compass.get_primary())) {
+        if (!_compass.use_for_yaw(0)) {
             // compass use is disabled
             return true;
         }
@@ -396,9 +396,12 @@ bool AP_Arming::compass_checks(bool report)
             return false;
         }
         // check compass learning is on or offsets have been set
-        if (!_compass.learn_offsets_enabled() && !_compass.configured()) {
-            check_failed(ARMING_CHECK_COMPASS, report, "Compass not calibrated");
-            return false;
+        if (!_compass.learn_offsets_enabled()) {
+            char failure_msg[50] = {};
+            if (!_compass.configured(failure_msg, ARRAY_SIZE(failure_msg))) {
+                check_failed(ARMING_CHECK_COMPASS, report, "%s", failure_msg);
+                return false;
+            }
         }
 
         // check for unreasonable compass offsets

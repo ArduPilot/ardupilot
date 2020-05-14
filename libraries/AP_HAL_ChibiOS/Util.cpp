@@ -86,6 +86,26 @@ void *Util::allocate_heap_memory(size_t size)
     return heap;
 }
 
+/*
+  realloc implementation thanks to wolfssl, used by AP_Scripting
+ */
+void *Util::std_realloc(void *addr, size_t size)
+{
+    if (size == 0) {
+       free(addr);
+       return nullptr;
+    }
+    if (addr == nullptr) {
+        return malloc(size);
+    }
+    void *new_mem = malloc(size);
+    if (new_mem != nullptr) {
+        memcpy(new_mem, addr, chHeapGetSize(addr) > size ? size : chHeapGetSize(addr));
+        free(addr);
+    }
+    return new_mem;
+}
+
 void *Util::heap_realloc(void *heap, void *ptr, size_t new_size)
 {
     if (heap == nullptr) {
@@ -165,7 +185,14 @@ uint64_t Util::get_hw_rtc() const
 
 #if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
 
-bool Util::flash_bootloader()
+#if defined(HAL_NO_GCS) || defined(HAL_BOOTLOADER_BUILD)
+#define Debug(fmt, args ...)  do { hal.console->printf(fmt, ## args); } while (0)
+#else
+#include <GCS_MAVLink/GCS.h>
+#define Debug(fmt, args ...)  do { gcs().send_text(MAV_SEVERITY_INFO, fmt, ## args); } while (0)
+#endif
+
+Util::FlashBootloader Util::flash_bootloader()
 {
     uint32_t fw_size;
     const char *fw_name = "bootloader.bin";
@@ -174,8 +201,8 @@ bool Util::flash_bootloader()
 
     const uint8_t *fw = AP_ROMFS::find_decompress(fw_name, fw_size);
     if (!fw) {
-        hal.console->printf("failed to find %s\n", fw_name);
-        return false;
+        Debug("failed to find %s\n", fw_name);
+        return FlashBootloader::NOT_AVAILABLE;
     }
 
     // make sure size is multiple of 32
@@ -183,36 +210,53 @@ bool Util::flash_bootloader()
 
     const uint32_t addr = hal.flash->getpageaddr(0);
     if (!memcmp(fw, (const void*)addr, fw_size)) {
-        hal.console->printf("Bootloader up-to-date\n");
+        Debug("Bootloader up-to-date\n");
         AP_ROMFS::free(fw);
-        return true;
+        return FlashBootloader::NO_CHANGE;
     }
 
-    hal.console->printf("Erasing\n");
-    if (!hal.flash->erasepage(0)) {
-        hal.console->printf("Erase failed\n");
-        AP_ROMFS::free(fw);
-        return false;
+    Debug("Erasing\n");
+    uint32_t erased_size = 0;
+    uint8_t erase_page = 0;
+    while (erased_size < fw_size) {
+        uint32_t page_size = hal.flash->getpagesize(erase_page);
+        if (page_size == 0) {
+            AP_ROMFS::free(fw);
+            return FlashBootloader::FAIL;
+        }
+        hal.scheduler->expect_delay_ms(1000);
+        if (!hal.flash->erasepage(erase_page)) {
+            Debug("Erase %u failed\n", erase_page);
+            AP_ROMFS::free(fw);
+            return FlashBootloader::FAIL;
+        }
+        erased_size += page_size;
+        erase_page++;
     }
-    hal.console->printf("Flashing %s @%08x\n", fw_name, (unsigned int)addr);
+
+    Debug("Flashing %s @%08x\n", fw_name, (unsigned int)addr);
     const uint8_t max_attempts = 10;
+    hal.flash->keep_unlocked(true);
     for (uint8_t i=0; i<max_attempts; i++) {
+        hal.scheduler->expect_delay_ms(1000);
         bool ok = hal.flash->write(addr, fw, fw_size);
         if (!ok) {
-            hal.console->printf("Flash failed! (attempt=%u/%u)\n",
+            Debug("Flash failed! (attempt=%u/%u)\n",
                                 i+1,
                                 max_attempts);
-            hal.scheduler->delay(1000);
+            hal.scheduler->delay(100);
             continue;
         }
-        hal.console->printf("Flash OK\n");
+        Debug("Flash OK\n");
+        hal.flash->keep_unlocked(false);
         AP_ROMFS::free(fw);
-        return true;
+        return FlashBootloader::OK;
     }
 
-    hal.console->printf("Flash failed after %u attempts\n", max_attempts);
+    hal.flash->keep_unlocked(false);
+    Debug("Flash failed after %u attempts\n", max_attempts);
     AP_ROMFS::free(fw);
-    return false;
+    return FlashBootloader::FAIL;
 }
 #endif // !HAL_NO_FLASH_SUPPORT && !HAL_NO_ROMFS_SUPPORT
 

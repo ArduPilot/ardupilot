@@ -11,28 +11,17 @@ APJ_BOARD_ID 145
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
 
-define STM32_LSECLK   32768U
-define STM32_LSEDRV   (3U << 3U)
-
-define STM32_PLLSRC     STM32_PLLSRC_HSE
-define STM32_PLLM_VALUE 8
-define STM32_PLLN_VALUE 432
-define STM32_PLLP_VALUE 2
-define STM32_PLLQ_VALUE 9
-
 FLASH_SIZE_KB 1024
 
 # leave 2 sectors free
 FLASH_RESERVE_START_KB 96
 
-# board voltage
-STM32_VDD 330U
 
 # only one I2C bus
 I2C_ORDER I2C1
 
 # order of UARTs (and USB), USART3 should be in second place to map order with the board's silk screen
-UART_ORDER OTG1 USART3 USART1 USART2 UART4 EMPTY USART6 UART7
+SERIAL_ORDER OTG1 USART1 USART2 USART3 UART4 EMPTY USART6 UART7
 
 # buzzer
 PD15 TIM4_CH4 TIM4 GPIO(77) ALARM
@@ -99,9 +88,13 @@ PB10 USART3_TX USART3
 PA0 UART4_TX UART4 NODMA
 PA1 UART4_RX UART4 NODMA
 
-# USART6, RX only for RCIN
-PC7 TIM8_CH2 TIM8 RCININT FLOAT LOW
-PC6 USART6_TX USART6 NODMA LOW
+# RC input defaults to timer capture
+PC7 TIM8_CH2 TIM8 RCININT PULLDOWN
+PC6 USART6_TX USART6 NODMA
+
+# alt config to allow RCIN on UART for bi-directional
+# protocols like FPort
+PC7 USART6_RX USART6 NODMA ALT(1)
 
 # UART7, RX only for ESC Telemetry
 PE7 UART7_RX UART7
@@ -147,10 +140,24 @@ IMU Invensense SPI:mpu6000 ROTATION_YAW_180
 BARO BMP280 I2C:0:0x76
 
 # setup for OSD
-define OSD_ENABLED ENABLED
+define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 define BOARD_PWM_COUNT_DEFAULT 6
 define STM32_PWM_USE_ADVANCED TRUE
 
+# disable SMBUS and fuel battery monitors to save flash
+define HAL_BATTMON_SMBUS_ENABLE 0
+define HAL_BATTMON_FUEL_ENABLE 0
+
+# disable parachute and sprayer to save flash
+define HAL_PARACHUTE_ENABLED 0
+define HAL_SPRAYER_ENABLED 0
+
+# reduce max size of embedded params for apj_tool.py
+define AP_PARAM_MAX_EMBEDDED_PARAM 1024
+
+# we are low on flash on this board
+define HAL_MINIMIZE_FEATURES 1
+define HAL_WITH_DSP 1

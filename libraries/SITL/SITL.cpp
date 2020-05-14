@@ -94,7 +94,7 @@ const AP_Param::GroupInfo SITL::var_info[] = {
     AP_GROUPINFO("GP2_GLITCH",    59, SITL,  gps2_glitch,  0),
     AP_GROUPINFO("ENGINE_FAIL",   60, SITL,  engine_fail,  0),
     AP_GROUPINFO("GPS2_TYPE",     61, SITL,  gps2_type,  SITL::GPS_TYPE_UBLOX),
-    AP_GROUPINFO("ODOM_ENABLE",   62, SITL,  odom_enable, 0),
+    AP_SUBGROUPEXTENSION("",      62, SITL,  var_info3),
     AP_SUBGROUPEXTENSION("",      63, SITL,  var_info2),
     AP_GROUPEND
 };
@@ -201,6 +201,20 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
 
 };
 
+// third table of user settable parameters for SITL. 
+const AP_Param::GroupInfo SITL::var_info3[] = {
+    AP_GROUPINFO("ODOM_ENABLE",   1, SITL,  odom_enable, 0),
+    AP_GROUPINFO("MAG1_DEVID",    3, SITL,  mag_devid[0], 97539),
+    AP_GROUPINFO("MAG2_DEVID",    4, SITL,  mag_devid[1], 131874),
+    AP_GROUPINFO("MAG3_DEVID",    5, SITL,  mag_devid[2], 263178),
+    AP_GROUPINFO("MAG4_DEVID",    6, SITL,  mag_devid[3], 97283),    
+    AP_GROUPINFO("MAG5_DEVID",    7, SITL,  mag_devid[4], 97795),
+    AP_GROUPINFO("MAG6_DEVID",    8, SITL,  mag_devid[5], 98051),
+    AP_GROUPINFO("MAG7_DEVID",    9, SITL,  mag_devid[6], 0),
+    AP_GROUPINFO("MAG8_DEVID",    10, SITL, mag_devid[7], 0),
+    AP_GROUPEND
+
+};
 
 /* report SITL state via MAVLink */
 void SITL::simstate_send(mavlink_channel_t chan)

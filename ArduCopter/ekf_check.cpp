@@ -105,9 +105,11 @@ bool Copter::ekf_over_threshold()
     Vector2f offset;
     ahrs.get_variances(vel_variance, position_variance, height_variance, mag_variance, tas_variance, offset);
 
+    const float mag_max = fmaxf(fmaxf(mag_variance.x,mag_variance.y),mag_variance.z);
+
     // return true if two of compass, velocity and position variances are over the threshold OR velocity variance is twice the threshold
     uint8_t over_thresh_count = 0;
-    if (mag_variance.length() >= g.fs_ekf_thresh) {
+    if (mag_max >= g.fs_ekf_thresh) {
         over_thresh_count++;
     }
     if (!optflow.healthy() && (vel_variance >= (2.0f * g.fs_ekf_thresh))) {

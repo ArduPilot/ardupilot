@@ -428,7 +428,9 @@ bool AP_InertialSensor_Invensense::_accumulate(uint8_t *samples, uint8_t n_sampl
 
         int16_t t2 = int16_val(data, 3);
         if (!_check_raw_temp(t2)) {
-            debug("temp reset IMU[%u] %d %d", _accel_instance, _raw_temp, t2);
+            if (!hal.scheduler->in_expected_delay()) {
+                debug("temp reset IMU[%u] %d %d", _accel_instance, _raw_temp, t2);
+            }
             _fifo_reset();
             return false;
         }
@@ -471,7 +473,9 @@ bool AP_InertialSensor_Invensense::_accumulate_sensor_rate_sampling(uint8_t *sam
         // use temperatue to detect FIFO corruption
         int16_t t2 = int16_val(data, 3);
         if (!_check_raw_temp(t2)) {
-            debug("temp reset IMU[%u] %d %d", _accel_instance, _raw_temp, t2);
+            if (!hal.scheduler->in_expected_delay()) {
+                debug("temp reset IMU[%u] %d %d", _accel_instance, _raw_temp, t2);
+            }
             _fifo_reset();
             ret = false;
             break;
@@ -588,7 +592,9 @@ void AP_InertialSensor_Invensense::_read_fifo()
             }
             memset(rx, 0, n * MPU_SAMPLE_SIZE);
             if (!_dev->transfer(rx, n * MPU_SAMPLE_SIZE, rx, n * MPU_SAMPLE_SIZE)) {
-                hal.console->printf("MPU60x0: error in fifo read %u bytes\n", n * MPU_SAMPLE_SIZE);
+                if (!hal.scheduler->in_expected_delay()) {
+                    debug("MPU60x0: error in fifo read %u bytes\n", n * MPU_SAMPLE_SIZE);
+                }
                 _dev->set_chip_select(false);
                 goto check_registers;
             }
@@ -597,7 +603,9 @@ void AP_InertialSensor_Invensense::_read_fifo()
 
         if (_fast_sampling) {
             if (!_accumulate_sensor_rate_sampling(rx, n)) {
-                debug("IMU[%u] stop at %u of %u", _accel_instance, n_samples, bytes_read/MPU_SAMPLE_SIZE);
+                if (!hal.scheduler->in_expected_delay()) {
+                    debug("IMU[%u] stop at %u of %u", _accel_instance, n_samples, bytes_read/MPU_SAMPLE_SIZE);
+                }
                 break;
             }
         } else {

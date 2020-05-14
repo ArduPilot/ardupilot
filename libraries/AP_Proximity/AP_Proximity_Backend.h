@@ -19,7 +19,8 @@
 #include "AP_Proximity.h"
 #include <AP_Common/Location.h>
 
-#define PROXIMITY_SECTORS_MAX   12  // maximum number of sectors
+#define PROXIMITY_NUM_SECTORS           8       // number of sectors
+#define PROXIMITY_SECTOR_WIDTH_DEG      45.0f   // width of sectors in degrees
 #define PROXIMITY_BOUNDARY_DIST_MIN 0.6f    // minimum distance for a boundary point.  This ensures the object avoidance code doesn't think we are outside the boundary.
 #define PROXIMITY_BOUNDARY_DIST_DEFAULT 100 // if we have no data for a sector, boundary is placed 100m out
 
@@ -46,10 +47,6 @@ public:
     // handle mavlink DISTANCE_SENSOR messages
     virtual void handle_msg(const mavlink_message_t &msg) {}
 
-    // get distance in meters in a particular direction in degrees (0 is forward, clockwise)
-    // returns true on successful read and places distance in distance
-    bool get_horizontal_distance(float angle_deg, float &distance) const;
-
     // get boundary points around vehicle for use by avoidance
     //   returns nullptr and sets num_points to zero if no boundary can be returned
     const Vector2f* get_boundary_points(uint16_t& num_points) const;
@@ -71,7 +68,7 @@ protected:
     void set_status(AP_Proximity::Status status);
 
     // find which sector a given angle falls into
-    bool convert_angle_to_sector(float angle_degrees, uint8_t &sector) const;
+    uint8_t convert_angle_to_sector(float angle_degrees) const;
 
     // initialise the boundary and sector_edge_vector array used for object avoidance
     //   should be called if the sector_middle_deg or _setor_width_deg arrays are changed
@@ -82,30 +79,27 @@ protected:
     //   the boundary point is set to the shortest distance found in the two adjacent sectors, this is a conservative boundary around the vehicle
     void update_boundary_for_sector(const uint8_t sector, const bool push_to_OA_DB);
 
-    // get ignore area info
-    uint8_t get_ignore_area_count() const;
-    bool get_ignore_area(uint8_t index, uint16_t &angle_deg, uint8_t &width_deg) const;
-    bool get_next_ignore_start_or_end(uint8_t start_or_end, int16_t start_angle, int16_t &ignore_start) const;
+    // check if a reading should be ignored because it falls into an ignore area
+    // angles should be in degrees and in the range of 0 to 360
+    bool ignore_reading(uint16_t angle_deg) const;
 
-    // database helpers
-    bool database_prepare_for_push(Location &current_loc, float &current_vehicle_bearing);
-    void database_push(const float angle, const float distance);
-    void database_push(const float angle, const float distance, const uint32_t timestamp_ms, const Location &current_loc, const float current_vehicle_bearing);
+    // database helpers.  all angles are in degrees
+    bool database_prepare_for_push(Vector2f &current_pos, float &current_heading);
+    void database_push(float angle, float distance);
+    void database_push(float angle, float distance, uint32_t timestamp_ms, const Vector2f &current_pos, float current_heading);
 
     AP_Proximity &frontend;
     AP_Proximity::Proximity_State &state;   // reference to this instances state
 
     // sectors
-    uint8_t _num_sectors = PROXIMITY_MAX_DIRECTION;
-    uint16_t _sector_middle_deg[PROXIMITY_SECTORS_MAX] = {0, 45, 90, 135, 180, 225, 270, 315, 0, 0, 0, 0};  // middle angle of each sector
-    uint8_t _sector_width_deg[PROXIMITY_SECTORS_MAX] = {45, 45, 45, 45, 45, 45, 45, 45, 0, 0, 0, 0};        // width (in degrees) of each sector
+    const uint16_t _sector_middle_deg[PROXIMITY_NUM_SECTORS] = {0, 45, 90, 135, 180, 225, 270, 315};    // middle angle of each sector
 
     // sensor data
-    float _angle[PROXIMITY_SECTORS_MAX];            // angle to closest object within each sector
-    float _distance[PROXIMITY_SECTORS_MAX];         // distance to closest object within each sector
-    bool _distance_valid[PROXIMITY_SECTORS_MAX];    // true if a valid distance received for each sector
+    float _angle[PROXIMITY_NUM_SECTORS];            // angle to closest object within each sector
+    float _distance[PROXIMITY_NUM_SECTORS];         // distance to closest object within each sector
+    bool _distance_valid[PROXIMITY_NUM_SECTORS];    // true if a valid distance received for each sector
 
     // fence boundary
-    Vector2f _sector_edge_vector[PROXIMITY_SECTORS_MAX];    // vector for right-edge of each sector, used to speed up calculation of boundary
-    Vector2f _boundary_point[PROXIMITY_SECTORS_MAX];        // bounding polygon around the vehicle calculated conservatively for object avoidance
+    Vector2f _sector_edge_vector[PROXIMITY_NUM_SECTORS];    // vector for right-edge of each sector, used to speed up calculation of boundary
+    Vector2f _boundary_point[PROXIMITY_NUM_SECTORS];        // bounding polygon around the vehicle calculated conservatively for object avoidance
 };

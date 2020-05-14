@@ -85,9 +85,7 @@ AP_Compass_QMC5883L::AP_Compass_QMC5883L(AP_HAL::OwnPtr<AP_HAL::Device> dev,
 
 bool AP_Compass_QMC5883L::init()
 {
-    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return false;
-    }
+    _dev->get_semaphore()->take_blocking();
 
     _dev->set_retries(10);
 
@@ -115,15 +113,17 @@ bool AP_Compass_QMC5883L::init()
 
     _dev->get_semaphore()->give();
 
-    _instance = register_compass();
+    //register compass instance
+    _dev->set_device_type(DEVTYPE_QMC5883L);
+    if (!register_compass(_dev->get_bus_id(), _instance)) {
+        return false;
+    }
+    set_dev_id(_instance, _dev->get_bus_id());
 
     printf("%s found on bus %u id %u address 0x%02x\n", name,
            _dev->bus_num(), _dev->get_bus_id(), _dev->get_bus_address());
 
     set_rotation(_instance, _rotation);
-
-    _dev->set_device_type(DEVTYPE_QMC5883L);
-    set_dev_id(_instance, _dev->get_bus_id());
 
     if (_force_external) {
         set_external(_instance, true);

@@ -343,6 +343,8 @@ bool NavEKF2_core::getLLH(struct Location &loc) const
             } else {
                 // if no GPS fix, provide last known position before entering the mode
                 // correct for IMU offset (EKF calculations are at the IMU position)
+                loc.lat = EKF_origin.lat;
+                loc.lng = EKF_origin.lng;
                 loc.offset((lastKnownPositionNE.x + posOffsetNED.x), (lastKnownPositionNE.y + posOffsetNED.y));
                 return false;
             }
@@ -578,6 +580,8 @@ void NavEKF2_core::send_status_report(mavlink_channel_t chan)
     Vector2f offset;
     getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
 
+    const float mag_max = fmaxf(fmaxf(magVar.x,magVar.y),magVar.z);
+
     // Only report range finder normalised innovation levels if the EKF needs the data for primary
     // height estimation or optical flow operation. This prevents false alarms at the GCS if a
     // range finder is fitted for other applications
@@ -589,7 +593,7 @@ void NavEKF2_core::send_status_report(mavlink_channel_t chan)
     }
 
     // send message
-    mavlink_msg_ekf_status_report_send(chan, flags, velVar, posVar, hgtVar, magVar.length(), temp, tasVar);
+    mavlink_msg_ekf_status_report_send(chan, flags, velVar, posVar, hgtVar, mag_max, temp, tasVar);
 }
 
 // report the reason for why the backend is refusing to initialise

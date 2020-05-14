@@ -5,7 +5,6 @@
 #include "AP_BattMonitor_SMBus_Maxell.h"
 #include <utility>
 
-#define BATTMONITOR_SMBUS_MAXELL_NUM_CELLS 6
 uint8_t maxell_cell_ids[] = { 0x3f,  // cell 1
                               0x3e,  // cell 2
                               0x3d,  // cell 3
@@ -60,7 +59,8 @@ void AP_BattMonitor_SMBus_Maxell::timer()
         if (read_word(maxell_cell_ids[i], data)) {
             _has_cell_voltages = true;
             _state.cell_voltages.cells[i] = data;
-        } else {
+            _last_cell_update_ms[i] = tnow;
+        } else if ((tnow - _last_cell_update_ms[i]) > AP_BATTMONITOR_SMBUS_TIMEOUT_MICROS) {
             _state.cell_voltages.cells[i] = UINT16_MAX;
         }
     }
@@ -85,6 +85,8 @@ void AP_BattMonitor_SMBus_Maxell::timer()
     read_temp();
 
     read_serial_number();
+
+    read_cycle_count();
 }
 
 // read_block - returns number of characters read if successful, zero if unsuccessful
