@@ -366,16 +366,13 @@ void Plane::crow_update(void)
         airbrake_function_output = airbrake;
     }
 
-    // Full CROW should always mean inner flap full down and outer flap full up.
-    float flap_rs = 0.5 + flap_function_output/2;
+    float flap_inner = flap_function_output * g2.crow_flap_weight_inner*0.01f;
+    float flap_outer = flap_function_output * g2.crow_flap_weight_outer*0.01f;
 
-    float crow_inner = flap_rs + airbrake_function_output*(0.0 - flap_rs);
-    float crow_outer = flap_rs + airbrake_function_output*(1.0 - flap_rs);
+    float crow_inner = flap_inner - airbrake_function_output - flap_inner*airbrake_function_output;
+    float crow_outer = flap_outer + airbrake_function_output - flap_outer*airbrake_function_output;
 
     // Rescale to use -4500 to 4500 (enables trim)
-    crow_inner = -1.0 + 2*crow_inner;
-    crow_outer = -1.0 + 2*crow_outer;
-
     crow_inner  = constrain_float(crow_inner*4500, -4500, 4500);
     crow_outer  = constrain_float(crow_outer*4500, -4500, 4500);
 
