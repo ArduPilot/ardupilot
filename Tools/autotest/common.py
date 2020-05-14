@@ -2516,6 +2516,11 @@ class AutoTest(ABC):
     def get_parameter(self, name, retry=1, timeout=60):
         """Get parameters from vehicle."""
         for i in range(0, retry):
+            # we call get_parameter while the vehicle is rebooting.
+            # We need to read out the SITL binary's STDOUT or the
+            # process blocks writing to it.
+            if self.sitl is not None:
+                util.pexpect_drain(self.sitl)
             self.mavproxy.send("param fetch %s\n" % name)
             try:
                 self.mavproxy.expect("%s = ([-0-9.]*)\r\n" % (name,), timeout=timeout/retry)
