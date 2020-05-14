@@ -1,17 +1,35 @@
-#VRML_SIM R2019b utf8
+#VRML_SIM R2020a utf8
 WorldInfo {
   gravity 0 -9.80665 0
   physics "sitl_physics_env"
-  basicTimeStep 2
+  basicTimeStep 1
   FPS 15
   optimalThreadCount 4
   randomSeed 52
 }
+Robot {
+  translation -1.949999999999999 0.23391237384410402 0
+  rotation 0 0 1 2.533555103014215e-15
+  children [
+    Emitter {
+      type "serial"
+      channel 1
+    }
+  ]
+  name "supervisor_sync"
+  boundingObject Box {
+    size 0.1 0.1 0.1
+  }
+  physics Physics {
+  }
+  controller "ardupilot_SITL_Supervisor"
+  supervisor TRUE
+}
 Viewpoint {
-  orientation 0.5542589845891367 0.8247263718920818 0.11235385844706426 5.801159266912386
-  position -4.295082945651872 3.093288102690911 9.827811912728198
+  orientation 0.9997978097496996 0.017446300161270606 0.009998311376764756 5.242214502651711
+  position -0.10961792118984595 8.021071573852062 4.261928842800047
   follow "quad_plus_sitl"
-  followOrientation TRUE
+  followType "Mounted Shot"
 }
 DogHouse {
   translation 34.82 0.76 -24.56
@@ -29,8 +47,6 @@ Background {
   skyColor [
     0.15 0.5 1
   ]
-  cubemap Cubemap {
-  }
 }
 Solid {
   translation 36.93 0.77 -37.93
@@ -52,6 +68,12 @@ DEF DEF_VEHICLE Robot {
   translation -0.027601 0.674307 0.005031
   rotation -0.012461000916064287 0.999885073506054 -0.008635000634797779 -0.22761130717958622
   children [
+    Receiver {
+      name "receiver_main"
+      type "serial"
+      channel 1
+      bufferSize 32
+    }
     Emitter {
       name "emitter_plugin"
       description "commuicates with physics plugin"
@@ -362,7 +384,7 @@ DEF DEF_VEHICLE Robot {
   rotationStep 0.261799
   controller "ardupilot_SITL_QUAD"
   controllerArgs "-p 5599 -df 0.01"
-  supervisor TRUE
+  customData "1"
 }
 DirectionalLight {
   direction 0 -1 0
