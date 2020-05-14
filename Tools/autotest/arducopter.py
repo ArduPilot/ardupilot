@@ -2221,6 +2221,65 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def test_rangefinder_switchover(self):
+        """test that the EKF correctly handles the switchover between baro and rangefinder"""
+        ex = None
+        self.context_push()
+
+        try:
+            self.set_analog_rangefinder_parameters()
+
+            self.set_parameter("RNGFND1_MAX_CM", 1500)
+            self.set_parameter("EK2_RNG_USE_HGT", 70)
+            self.set_parameter("EK2_ENABLE", 1)
+            self.set_parameter("AHRS_EKF_TYPE", 2)
+
+            self.reboot_sitl() # needed for both rangefinder and initial position
+            self.assert_vehicle_location_is_at_startup_location()
+
+            self.change_mode("LOITER")
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.set_rc(3, 1800)
+            self.set_rc(2, 1200)
+            # wait till we get to 50m
+            self.wait_altitude(50, 52, True, 60)
+
+            self.change_mode("RTL")
+            # wait till we get to 25m
+            self.wait_altitude(25, 27, True, 120)
+
+            # level up
+            self.set_rc(2, 1500)
+            self.wait_altitude(14, 15, relative=True)
+
+            tstart = self.get_sim_time()
+            while self.get_sim_time_cached() < tstart + 200:
+                m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+                alt = m.relative_alt / 1000.0 # mm -> m
+                home_distance = self.distance_to_home(use_cached_home=True)
+                home = ""
+                if alt <= 1:
+                    home = "HOME"
+                self.progress("Alt: %.02f  HomeDist: %.02f %s" %
+                          (alt, home_distance, home))
+                # our post-condition is that we are disarmed:
+                if not self.armed():
+                    break
+
+            if home == "":
+                raise NotAchievedException("Did not get home and disarm")
+
+        except Exception as e:
+            self.progress("Exception caught: %s" % (
+                self.get_exception_stacktrace(e)))
+            self.disarm_vehicle(force=True)
+            ex = e
+        self.context_pop()
+        self.reboot_sitl()
+        if ex is not None:
+            raise ex
+
     def test_parachute(self):
 
         self.set_rc(9, 1000)
@@ -5067,6 +5126,10 @@ class AutoTestCopter(AutoTest):
             ("GyroFFTHarmonic",
              "Fly Gyro FFT Harmonic Matching",
              self.fly_gyro_fft_harmonic),
+
+            ("RangefinderSwitchover",
+             "Test that EKF height calculation switches between the rangefinder and barometer",
+             self.test_rangefinder_switchover),
 
             ("LogDownLoad",
              "Log download",
