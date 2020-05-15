@@ -251,6 +251,12 @@ const AP_Param::GroupInfo SITL::var_info3[] = {
     // vicon yaw error in degrees (added to reported yaw sent to vehicle)
     AP_GROUPINFO("VICON_YAWERR",  19, SITL,  vicon_yaw_error, 0),
 
+    // vicon message type mask
+    AP_GROUPINFO("VICON_TMASK",   20, SITL,  vicon_type_mask, 1),
+
+    // vicon velocity glitch in NED frame
+    AP_GROUPINFO("VICON_VGLI",    21, SITL,  vicon_vel_glitch, 0),
+
     AP_GROUPEND
 
 };
