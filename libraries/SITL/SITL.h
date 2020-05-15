@@ -367,6 +367,8 @@ public:
     AP_Int8 vicon_fail;         // trigger vicon failure
     AP_Int16 vicon_yaw;         // vicon local yaw in degrees
     AP_Int16 vicon_yaw_error;   // vicon yaw error in degrees (added to reported yaw sent to vehicle)
+    AP_Int8 vicon_type_mask;    // vicon message type mask (bit0:vision position estimate, bit1:vision speed estimate, bit2:vicon position estimate)
+    AP_Vector3f vicon_vel_glitch;   // velocity glitch in m/s in vicon's local frame
 };
 
 } // namespace SITL
