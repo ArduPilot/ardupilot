@@ -499,23 +499,17 @@ void AP_TECS::_update_height_demand(void)
     // be kinematically consistent with the height rate.
     if (_landing.is_flaring()) {
         _integSEB_state = 0;
-
-        float land_sink_rate_adj = _land_sink + _land_sink_rate_change*_distance_beyond_land_wp;
-
         if (_flare_counter == 0) {
-            _hgt_rate_dem = - land_sink_rate_adj;
-            // _hgt_rate_dem = _climb_rate;
+            _hgt_rate_dem = _climb_rate;
             _land_hgt_dem = _hgt_dem_adj;
-            // _land_hgt_dem = _hgt_dem;
         }
 
         // adjust the flare sink rate to increase/decrease as your travel further beyond the land wp
-        // float land_sink_rate_adj = _land_sink + _land_sink_rate_change*_distance_beyond_land_wp;
+        float land_sink_rate_adj = _land_sink + _land_sink_rate_change*_distance_beyond_land_wp;
 
         // bring it in over 1s to prevent overshoot
         if (_flare_counter < 10) {
-            //_hgt_rate_dem = _hgt_rate_dem * 0.8f - 0.2f * land_sink_rate_adj;
-            _hgt_rate_dem = - land_sink_rate_adj;
+            _hgt_rate_dem = _hgt_rate_dem * 0.8f - 0.2f * land_sink_rate_adj;
             _flare_counter++;
         } else {
             _hgt_rate_dem = - land_sink_rate_adj;
