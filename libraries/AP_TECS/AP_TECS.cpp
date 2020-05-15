@@ -516,7 +516,11 @@ void AP_TECS::_update_height_demand(void)
         } else {
             _hgt_rate_dem = - land_sink_rate_adj;
         }
-        _land_hgt_dem += 0.1f * _hgt_rate_dem;
+
+        if (_flare_counter > 1) {
+            _land_hgt_dem += 0.1f * _hgt_rate_dem;
+        }
+
         _hgt_dem_adj = _land_hgt_dem;
     } else {
         _hgt_rate_dem = (_hgt_dem_adj - _hgt_dem_adj_last) / 0.1f;
