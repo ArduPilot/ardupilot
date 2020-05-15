@@ -929,6 +929,22 @@ void AP_Logger::Write_VisualPosition(uint64_t remote_time_us, uint32_t time_ms, 
     WriteBlock(&pkt_visualpos, sizeof(log_VisualPosition));
 }
 
+// Write visual velocity sensor data, velocity in NED meters per second
+void AP_Logger::Write_VisualVelocity(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, uint8_t reset_counter)
+{
+    const struct log_VisualVelocity pkt_visualvel {
+        LOG_PACKET_HEADER_INIT(LOG_VISUALVEL_MSG),
+        time_us         : AP_HAL::micros64(),
+        remote_time_us  : remote_time_us,
+        time_ms         : time_ms,
+        vel_x           : vel.x,
+        vel_y           : vel.y,
+        vel_z           : vel.z,
+        reset_counter   : reset_counter
+    };
+    WriteBlock(&pkt_visualvel, sizeof(log_VisualVelocity));
+}
+
 // Write AOA and SSA
 void AP_Logger::Write_AOA_SSA(AP_AHRS &ahrs)
 {
