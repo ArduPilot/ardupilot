@@ -726,6 +726,10 @@ private:
         uint32_t last_trim_save;
     } auto_trim;
 
+    struct {
+        bool done_climb;
+    } rtl;
+
     // last time home was updated while disarmed
     uint32_t last_home_update_ms;
 
