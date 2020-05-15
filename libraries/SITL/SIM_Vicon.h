@@ -51,11 +51,6 @@ private:
     uint64_t time_offset_us;
     mavlink_message_t obs_msg;
 
-    struct obs_elements {
-        uint32_t    time_ms;        // measurement timestamp (msec)
-        Vector3f    position;
-        Quaternion  attitude;
-    };
 
     void update_vicon_position_estimate(const Location &loc,
                                         const Vector3f &position,
