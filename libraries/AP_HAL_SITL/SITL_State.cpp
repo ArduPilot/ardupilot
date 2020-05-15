@@ -563,6 +563,7 @@ void SITL_State::_fdm_input_local(void)
         sitl_model->get_attitude(attitude);
         vicon->update(sitl_model->get_location(),
                       sitl_model->get_position(),
+                      sitl_model->get_velocity_ef(),
                       attitude);
     }
     if (benewake_tf02 != nullptr) {
