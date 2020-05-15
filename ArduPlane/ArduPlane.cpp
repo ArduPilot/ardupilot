@@ -580,8 +580,17 @@ void Plane::update_alt()
         if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND && current_loc.past_interval_finish_line(prev_WP_loc, next_WP_loc)) {
             distance_beyond_land_wp = current_loc.get_distance(next_WP_loc);
         }
-        
-        SpdHgt_Controller->update_pitch_throttle(relative_target_altitude_cm(),
+
+        float target_alt = relative_target_altitude_cm();
+
+        if (control_mode == &mode_rtl && !rtl.done_climb && g2.rtl_climb_min > 0) {
+            // ensure we do the initial climb in RTL. We add an extra
+            // 10m in the demanded height to push TECS to climb
+            // quickly
+            target_alt = MAX(target_alt, prev_WP_loc.alt + (g2.rtl_climb_min+10)*100);
+        }
+
+        SpdHgt_Controller->update_pitch_throttle(target_alt,
                                                  target_airspeed_cm,
                                                  flight_stage,
                                                  distance_beyond_land_wp,
