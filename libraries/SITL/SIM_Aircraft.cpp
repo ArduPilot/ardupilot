@@ -77,9 +77,12 @@ Aircraft::Aircraft(const char *frame_str) :
 
     // ahrs_orientation->get() returns ROTATION_NONE here, regardless of the actual value
     enum Rotation imu_rotation = ahrs_orientation?(enum Rotation)ahrs_orientation->get():ROTATION_NONE;
-    sitl->ahrs_rotation.from_rotation(imu_rotation);
-    sitl->ahrs_rotation_inv = sitl->ahrs_rotation.transposed();
     last_imu_rotation = imu_rotation;
+    // sitl is null if running example program
+    if (sitl) {
+        sitl->ahrs_rotation.from_rotation(imu_rotation);
+        sitl->ahrs_rotation_inv = sitl->ahrs_rotation.transposed();
+    }
 
     terrain = reinterpret_cast<AP_Terrain *>(AP_Param::find_object("TERRAIN_"));
 }
