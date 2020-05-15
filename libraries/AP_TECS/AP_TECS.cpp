@@ -500,6 +500,7 @@ void AP_TECS::_update_height_demand(void)
     if (_landing.is_flaring()) {
         _integSEB_state = 0;
         if (_flare_counter == 0) {
+            _flare_sinkrate = _climb_rate;
             _hgt_rate_dem = _climb_rate;
             _land_hgt_dem = _hgt_dem_adj;
         }
@@ -508,8 +509,9 @@ void AP_TECS::_update_height_demand(void)
         float land_sink_rate_adj = _land_sink + _land_sink_rate_change*_distance_beyond_land_wp;
 
         // bring it in over 1s to prevent overshoot
-        if (_flare_counter < 10) {
-            _hgt_rate_dem = _hgt_rate_dem * 0.8f - 0.2f * land_sink_rate_adj;
+        const float nFlareStep = 20.0f;
+        if (_flare_counter < nFlareStep) {
+            _hgt_rate_dem = _flare_sinkrate * (1.0f - _flare_counter/nFlareStep) - land_sink_rate_adj * _flare_counter/nFlareStep;
             _flare_counter++;
         } else {
             _hgt_rate_dem = - land_sink_rate_adj;

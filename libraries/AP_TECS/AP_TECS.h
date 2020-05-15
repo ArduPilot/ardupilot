@@ -335,6 +335,9 @@ private:
     // counter for demanded sink rate on land final
     uint8_t _flare_counter;
 
+    // starting sink rate for sink rate slew post-flare
+    float _flare_sinkrate;
+
     // slew height demand lag filter value when transition to land
     float hgt_dem_lag_filter_slew;
 
