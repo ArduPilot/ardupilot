@@ -628,6 +628,17 @@ struct PACKED log_VisualPosition {
     uint8_t reset_counter;
 };
 
+struct PACKED log_VisualVelocity {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint64_t remote_time_us;
+    uint32_t time_ms;
+    float vel_x;
+    float vel_y;
+    float vel_z;
+    uint8_t reset_counter;
+};
+
 struct PACKED log_ekfBodyOdomDebug {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -2482,6 +2493,8 @@ struct PACKED log_Arm_Disarm {
       "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf", "ssrrrmmm-", "FF000000-" }, \
     { LOG_VISUALPOS_MSG, sizeof(log_VisualPosition), \
       "VISP", "QQIffffffb", "TimeUS,RemTimeUS,CTimeMS,PX,PY,PZ,Roll,Pitch,Yaw,ResetCnt", "sssmmmddh-", "FFC000000-" }, \
+    { LOG_VISUALVEL_MSG, sizeof(log_VisualVelocity), \
+      "VISV", "QQIfffb", "TimeUS,RemTimeUS,CTimeMS,VX,VY,VZ,ResetCnt", "sssnnn-", "FFC000-" }, \
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow), \
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEnn", "F-0000" }, \
     { LOG_WHEELENCODER_MSG, sizeof(log_WheelEncoder), \
@@ -2651,6 +2664,7 @@ enum LogMessages : uint8_t {
     LOG_ARM_DISARM_MSG,
     LOG_OA_BENDYRULER_MSG,
     LOG_OA_DIJKSTRA_MSG,
+    LOG_VISUALVEL_MSG,
 
     _LOG_LAST_MSG_
 };
