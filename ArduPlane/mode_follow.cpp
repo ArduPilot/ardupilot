@@ -21,6 +21,12 @@ bool ModeFollow::_enter()
         return false;
     }
 
+    Location loc_next;
+    if (!get_follow_wp(loc_next)) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Error: Enable GCS Position Stream");
+        return false;
+    }
+
     // re-use guided mode
     if (!plane.mode_guided._enter()) {
        return false;
