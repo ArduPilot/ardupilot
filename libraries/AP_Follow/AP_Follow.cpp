@@ -49,7 +49,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Description: Configure to follow different types of target
     // @Values: 0:SYSID,1:Gimbal1,2:Gimbal1_ROI,3:Gimbal2,4:Gimbal2_ROI
     // @User: Standard
-    AP_GROUPINFO("_TYPE", 2, AP_Follow, _type, int8_t(TargetType::MAX_SIZE)),
+    AP_GROUPINFO("_TYPE", 2, AP_Follow, _type, int8_t(TargetType::SYSID)),
 
     // @Param: _SYSID
     // @DisplayName: Follow target's mavlink system id
