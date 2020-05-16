@@ -79,8 +79,8 @@ define HAL_DEFAULT_AIRSPEED_PIN 10
 # define default battery setup
 define HAL_BATT_VOLT_PIN 12
 define HAL_BATT_CURR_PIN 13
-define HAL_BATT_VOLT_SCALE 10.1
-define HAL_BATT_CURR_SCALE 17.0
+define HAL_BATT_VOLT_SCALE 11
+define HAL_BATT_CURR_SCALE 40
 
 # analog RSSI
 PC1 RSSI_ADC ADC1
