@@ -1035,7 +1035,8 @@ if (extNavUsedForPos) {
     bool lostRngHgt = ((activeHgtSource == HGT_SOURCE_RNG) && ((imuSampleTime_ms - rngValidMeaTime_ms) > 500));
     bool lostGpsHgt = ((activeHgtSource == HGT_SOURCE_GPS) && ((imuSampleTime_ms - lastTimeGpsReceived_ms) > 2000));
     bool lostExtNavHgt = ((activeHgtSource == HGT_SOURCE_EXTNAV) && ((imuSampleTime_ms - extNavMeasTime_ms) > 2000));
-    if (lostRngHgt || lostGpsHgt || lostExtNavHgt) {
+    bool lostRngBcnHgt = ((activeHgtSource == HGT_SOURCE_BCN) && ((imuSampleTime_ms - rngBcnDataDelayed.time_ms) > 2000));
+    if (lostRngHgt || lostGpsHgt || lostExtNavHgt || lostRngBcnHgt) {
         activeHgtSource = HGT_SOURCE_BARO;
     }
 
