@@ -113,6 +113,17 @@ public:
     float get_bearing_to_target() const { return get_bearing_to_target((TargetType)_type.get()); }
     float get_bearing_to_target(TargetType type) const { return _targets[uint8_t(type)].bearing_to_target; }
 
+    // get offsets in meters in NED frame
+    bool get_offsets_ned(Vector3f &offsets) const { return get_offsets_ned((TargetType)_type.get(), offsets); }
+
+    // get offsets in meters in NED frame
+    void set_alt_offset(float alt) {
+        Vector3f offset = _offset.get();
+        offset.z = alt;
+        _offset.set(offset);
+    }
+
+
     // parameter list
     static const struct AP_Param::GroupInfo var_info[];
 

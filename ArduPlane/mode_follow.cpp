@@ -33,6 +33,7 @@ bool ModeFollow::_enter()
     }
 
     last_wp_change_ms = AP_HAL::millis();
+    plane.g2.follow.set_alt_offset(plane.relative_ground_altitude(true));
 
     return true;
 }
@@ -71,7 +72,11 @@ bool ModeFollow::get_follow_wp(Location &loc_next)
     if (plane.g2.follow.get_target_location_and_velocity(loc, vel_ned)) {
         loc_next.lat = loc.lat;
         loc_next.lng = loc.lng;
-        loc_next.alt = plane.current_loc.alt;
+
+        Vector3f offset_ned;
+        if (plane.g2.follow.get_offsets_ned(offset_ned)) {
+            loc_next.alt = loc.alt + (offset_ned.z * 100);
+        }
         return true;
     }
 
