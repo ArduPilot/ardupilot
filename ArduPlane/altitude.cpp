@@ -31,7 +31,28 @@ void Plane::adjust_altitude_target()
         control_mode == &mode_cruise) {
         return;
     }
-    if (landing.is_flaring()) {
+#if OFFBOARD_GUIDED == ENABLED
+    if (control_mode == &mode_guided && ((guided_state.target_alt_time_ms != 0) || guided_state.target_alt > -0.001 )) { // target_alt now defaults to -1, and _time_ms defaults to zero.
+        // offboard altitude demanded
+        uint32_t now = AP_HAL::millis();
+        float delta = 1e-3f * (now - guided_state.target_alt_time_ms);
+        guided_state.target_alt_time_ms = now;
+        // determine delta accurately as a float
+        float delta_amt_f = delta * guided_state.target_alt_accel;
+        // then scale x100 to match last_target_alt and convert to a signed int32_t as it may be negative
+        int32_t delta_amt_i = (int32_t)(100.0 * delta_amt_f); 
+        Location temp {};
+        temp.alt = guided_state.last_target_alt + delta_amt_i; // ...to avoid floats here, 
+        if (is_positive(guided_state.target_alt_accel)) {
+            temp.alt = MIN(guided_state.target_alt, temp.alt);
+        } else {
+            temp.alt = MAX(guided_state.target_alt, temp.alt);
+        }
+        guided_state.last_target_alt = temp.alt;
+        set_target_altitude_location(temp);
+    } else 
+#endif // OFFBOARD_GUIDED == ENABLED
+      if (landing.is_flaring()) {
         // during a landing flare, use TECS_LAND_SINK as a target sink
         // rate, and ignores the target altitude
         set_target_altitude_location(next_WP_loc);
