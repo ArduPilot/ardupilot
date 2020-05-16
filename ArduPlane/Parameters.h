@@ -576,6 +576,12 @@ public:
     AP_EFI efi;
 #endif
 
+#if OFFBOARD_GUIDED == ENABLED
+    // guided yaw heading PID
+    AC_PID guidedHeading{5000.0,  0.0,   0.0, 0 ,  10.0,   5.0,  5.0 ,  5.0  , 0.2};
+#endif
+
+
     AP_Float        fs_ekf_thresh;
 
     // min initial climb in RTL

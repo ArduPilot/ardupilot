@@ -90,7 +90,13 @@ enum log_messages {
     LOG_PIQP_MSG,
     LOG_PIQY_MSG,
     LOG_PIQA_MSG,
+    LOG_PIDG_MSG,
     LOG_AETR_MSG,
+    LOG_OFG_MSG,
+    LOG_CMDI_MSG,
+    LOG_CMDA_MSG,
+    LOG_CMDS_MSG,
+    LOG_CMDH_MSG,
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
@@ -153,3 +159,9 @@ enum CrowFlapOptions {
     PROGRESSIVE_CROW = (1 << 2),
 }; 
 
+
+enum guided_heading_type_t {
+    GUIDED_HEADING_NONE = 0, // no heading track
+    GUIDED_HEADING_COG,      // maintain ground track
+    GUIDED_HEADING_HEADING,  // maintain a heading
+};
