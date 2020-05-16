@@ -113,6 +113,37 @@ void Plane::Log_Write_Control_Tuning()
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
 
+struct PACKED log_OFG_Guided {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float target_airspeed_cm;
+    float target_airspeed_accel;
+    float target_alt;
+    float target_alt_accel;
+    uint8_t target_alt_frame;
+    float target_heading;
+    float target_heading_limit;
+};
+
+// Write a OFG Guided packet.
+void Plane::Log_Write_OFG_Guided()
+{
+#if OFFBOARD_GUIDED == ENABLED
+    struct log_OFG_Guided pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_OFG_MSG),
+        time_us                : AP_HAL::micros64(),
+        target_airspeed_cm     : (float)guided_state.target_airspeed_cm*(float)0.01,
+        target_airspeed_accel  : guided_state.target_airspeed_accel,
+        target_alt             : guided_state.target_alt,
+        target_alt_accel       : guided_state.target_alt_accel,
+        target_alt_frame       : guided_state.target_alt_frame,
+        target_heading         : guided_state.target_heading,
+        target_heading_limit   : guided_state.target_heading_accel_limit
+    };
+    logger.WriteBlock(&pkt, sizeof(pkt));
+#endif
+}
+
 struct PACKED log_Nav_Tuning {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -215,6 +246,42 @@ void Plane::Log_Write_RC(void)
     }
     Log_Write_AETR();
 }
+
+void Plane::Log_Write_Guided(void)
+{
+#if OFFBOARD_GUIDED == ENABLED
+    if (control_mode != &mode_guided) {
+        return;
+    }
+
+    if (guided_state.target_heading_time_ms != 0) {
+        logger.Write_PID(LOG_PIDG_MSG, g2.guidedHeading.get_pid_info());
+    }
+
+    if ( is_positive(guided_state.target_alt) || is_positive(guided_state.target_airspeed_cm) ) {
+        Log_Write_OFG_Guided();
+    }
+#endif // OFFBOARD_GUIDED == ENABLED
+}
+
+// incoming-to-vehicle mavlink COMMAND_INT can be logged
+struct PACKED log_CMDI {
+    LOG_PACKET_HEADER;
+    uint64_t TimeUS;
+    uint16_t CId;
+    uint8_t TSys;
+    uint8_t TCmp;
+    uint8_t cur;
+    uint8_t cont;
+    float Prm1;
+    float Prm2;
+    float Prm3;
+    float Prm4;
+    int32_t Lat;
+    int32_t Lng;
+    float Alt;
+    uint8_t F;
+};
 
 // type and unit information can be found in
 // libraries/AP_Logger/Logstructure.h; search for "log_Units" for
@@ -328,6 +395,19 @@ const struct LogStructure Plane::log_structure[] = {
     { LOG_PIQA_MSG, sizeof(log_PID),
       "PIQA", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
 
+// @LoggerMessage: PIDG
+// @Description: Plane Proportional/Integral/Derivative gain values for Heading when using COMMAND_INT control.
+// @Field: TimeUS: Time since system startup
+// @Field: Tar: desired value
+// @Field: Act: achieved value
+// @Field: Err: error between target and achieved
+// @Field: P: proportional part of PID
+// @Field: I: integral part of PID
+// @Field: D: derivative part of PID
+// @Field: FF: controller feed-forward portion of response
+    { LOG_PIDG_MSG, sizeof(log_PID),
+      "PIDG", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
+
 // @LoggerMessage: AETR
 // @Description: Normalised pre-mixer control surface outputs
 // @Field: TimeUS: Time since system startup
@@ -338,7 +418,84 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: Flap: Pre-mixer value for flaps output (between -4500 to 4500)
     { LOG_AETR_MSG, sizeof(log_AETR),
       "AETR", "Qhhhhh",  "TimeUS,Ail,Elev,Thr,Rudd,Flap", "s-----", "F-----" },
+
+// @LoggerMessage: OFG
+// @Description: OFfboard-Guided - an advanced version of GUIDED for companion computers that includes rate/s.  
+// @Field: TimeUS: Time since system startup
+// @Field: Arsp:  target airspeed cm
+// @Field: ArspA:  target airspeed accel
+// @Field: Alt:  target alt
+// @Field: AltA: target alt accel
+// @Field: AltF: target alt frame
+// @Field: Hdg:  target heading
+// @Field: HdgA: target heading lim
+    { LOG_OFG_MSG, sizeof(log_OFG_Guided),     
+      "OFG", "QffffBff",    "TimeUS,Arsp,ArspA,Alt,AltA,AltF,Hdg,HdgA", "s-------", "F-------" }, 
+
+// @LoggerMessage: CMDI
+// @Description: Generic CommandInt message logger(CMDI) 
+// @Field: TimeUS: Time since system startup
+// @Field: CId:  command id
+// @Field: TSys: target system
+// @Field: TCmp: target component
+// @Field: cur:  current
+// @Field: cont: autocontinue
+// @Field: Prm1: parameter 1
+// @Field: Prm2: parameter 2
+// @Field: Prm3: parameter 3
+// @Field: Prm4: parameter 4
+// @Field: Lat: target latitude
+// @Field: Lng: target longitude
+// @Field: Alt: target altitude
+// @Field: F:   frame
+    { LOG_CMDI_MSG, sizeof(log_CMDI),     
+      "CMDI", "QHBBBBffffiifB",    "TimeUS,CId,TSys,TCmp,cur,cont,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt,F", "s---------DUm-", "F---------GGB-" }, 
+// these next three are same format as log_CMDI just each a different name for Heading,Speed and Alt COMMAND_INTs
+    { LOG_CMDS_MSG, sizeof(log_CMDI),     
+      "CMDS", "QHBBBBffffiifB",    "TimeUS,CId,TSys,TCmp,cur,cont,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt,F", "s---------DUm-", "F---------GGB-" }, 
+    { LOG_CMDA_MSG, sizeof(log_CMDI),     
+      "CMDA", "QHBBBBffffiifB",    "TimeUS,CId,TSys,TCmp,cur,cont,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt,F", "s---------DUm-", "F---------GGB-" }, 
+    { LOG_CMDH_MSG, sizeof(log_CMDI),     
+      "CMDH", "QHBBBBffffiifB",    "TimeUS,CId,TSys,TCmp,cur,cont,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt,F", "s---------DUm-", "F---------GGB-" }, 
+
 };
+
+
+// Write a COMMAND INT packet.
+void Plane::Log_Write_MavCmdI(const mavlink_command_int_t &mav_cmd)
+{
+    struct log_CMDI pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_CMDI_MSG),
+        TimeUS:AP_HAL::micros64(),
+        CId:   mav_cmd.command,
+        TSys:  mav_cmd.target_system,
+        TCmp:  mav_cmd.target_component,
+        cur:   mav_cmd.current,
+        cont:  mav_cmd.autocontinue,
+        Prm1:  mav_cmd.param1,
+        Prm2:  mav_cmd.param2,
+        Prm3:  mav_cmd.param3,
+        Prm4:  mav_cmd.param4,
+        Lat:   mav_cmd.x,
+        Lng:   mav_cmd.y,
+        Alt:   mav_cmd.z,
+        F:     mav_cmd.frame
+};
+
+// rather than have 4 different functions for these similar outputs, we just create it as a CMDI and rename it here
+#if OFFBOARD_GUIDED == ENABLED
+    if (mav_cmd.command == MAV_CMD_GUIDED_CHANGE_SPEED) {
+        pkt.msgid = LOG_CMDS_MSG;
+    } else if (mav_cmd.command == MAV_CMD_GUIDED_CHANGE_ALTITUDE) {
+        pkt.msgid = LOG_CMDA_MSG;
+    } else if (mav_cmd.command == MAV_CMD_GUIDED_CHANGE_HEADING) {
+        pkt.msgid = LOG_CMDH_MSG;
+    }
+#endif
+    //normally pkt.msgid = LOG_CMDI_MSG
+    logger.WriteBlock(&pkt, sizeof(pkt));
+
+}
 
 void Plane::Log_Write_Vehicle_Startup_Messages()
 {
@@ -364,8 +521,10 @@ void Plane::Log_Write_Fast(void) {}
 void Plane::Log_Write_Performance() {}
 void Plane::Log_Write_Startup(uint8_t type) {}
 void Plane::Log_Write_Control_Tuning() {}
+void Plane::Log_Write_OFG_Guided() {}
 void Plane::Log_Write_Nav_Tuning() {}
 void Plane::Log_Write_Status() {}
+void Plane::Log_Write_Guided(void) {}
 
 void Plane::Log_Write_RC(void) {}
 void Plane::Log_Write_Vehicle_Startup_Messages() {}

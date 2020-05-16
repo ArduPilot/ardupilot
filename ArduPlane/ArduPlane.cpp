@@ -221,8 +221,10 @@ void Plane::update_logging2(void)
 #endif
     }
     
-    if (should_log(MASK_LOG_NTUN))
+    if (should_log(MASK_LOG_NTUN)) {
         Log_Write_Nav_Tuning();
+        Log_Write_Guided();
+    }
 
     if (should_log(MASK_LOG_RC))
         Log_Write_RC();
