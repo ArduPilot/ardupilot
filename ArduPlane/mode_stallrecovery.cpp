@@ -89,60 +89,65 @@ void ModeStallRecovery::resume_previous_mode()
 
 bool ModeStallRecovery::is_recovered_early()
 {
-    bool is_recovered = false;
+    int32_t is_recovered_bits = 0;
+    const int32_t algorithm_bits = (plane.is_stalled) ? plane.g2.stall_recovery_algorithm1 : plane.g2.stall_recovery_algorithm2;
+
+    if (algorithm_bits == 0) {
+        return false;
+    }
 
     float airspeed = -1.0f;
     plane.ahrs.airspeed_estimate(airspeed);
 
     if (plane.is_stalled) {
-        if (plane.g2.stall_recovery_algorithm1 & 0x01) {
+        if (algorithm_bits & 0x01) {
             if ((airspeed > 0) && (plane.aparm.airspeed_min > 0) && (airspeed >= plane.aparm.airspeed_min)) {
-                is_recovered = true;
+                is_recovered_bits |= 0x01;
                 gcs().send_text(MAV_SEVERITY_INFO, "%sarspd %.1f >= %d", gcsStrHeader, (double)airspeed, plane.aparm.airspeed_min.get());
             }
         }
-        if (plane.g2.stall_recovery_algorithm1 & 0x02) {
+        if (algorithm_bits & 0x02) {
             const float threshold = plane.g2.stall_recovery_spin_rate;
             const float spin_rate = fabsf(degrees(plane.ahrs.get_gyro().z));
             if (!is_zero(threshold) && (spin_rate < threshold)) {
-                is_recovered = true;
+                is_recovered_bits |= 0x02;
                 gcs().send_text(MAV_SEVERITY_INFO, "%sspin %.1f < %.1f", gcsStrHeader, (double)spin_rate, (double)threshold);
             }
         }
-        if (plane.g2.stall_recovery_algorithm1 & 0x04) {
+        if (algorithm_bits & 0x04) {
             const float threshold = plane.g2.stall_recovery_sink_rate;
             if (!is_zero(threshold) && (plane.auto_state.sink_rate < threshold)) {
-                is_recovered = true;
+                is_recovered_bits |= 0x04;
                 gcs().send_text(MAV_SEVERITY_INFO, "%ssink %.1f < %.1f", gcsStrHeader, (double)plane.auto_state.sink_rate, (double)threshold);
             }
         }
 
     } else {
         const float airspeed_cruise = plane.aparm.airspeed_cruise_cm * 0.01f;
-        if (plane.g2.stall_recovery_algorithm2 & 0x01) {
+        if (algorithm_bits & 0x01) {
             const float airspeed_cruise_thresh = airspeed_cruise * 0.95f;
             if ((airspeed > 0) && (airspeed_cruise_thresh > 0) && (airspeed >= airspeed_cruise_thresh)) {
-                is_recovered = true;
+                is_recovered_bits |= 0x01;
                 gcs().send_text(MAV_SEVERITY_INFO, "%sA arspd %.1f >= %.1f", gcsStrHeader, (double)airspeed, (double)airspeed_cruise_thresh);
             }
         }
-        if (plane.g2.stall_recovery_algorithm2 & 0x02) {
+        if (algorithm_bits & 0x02) {
             const float airspeed_cruise_thresh = airspeed_cruise * 0.95f;
             if ((airspeed > 0) && (airspeed_cruise_thresh > 0) && (airspeed >= airspeed_cruise_thresh)) {
-                is_recovered = true;
+                is_recovered_bits |= 0x02;
                 gcs().send_text(MAV_SEVERITY_INFO, "%sB arspd %.1f >= %.1f", gcsStrHeader, (double)airspeed, (double)airspeed_cruise_thresh);
             }
         }
-        if (plane.g2.stall_recovery_algorithm2 & 0x04) {
+        if (algorithm_bits & 0x04) {
             const float airspeed_cruise_thresh = airspeed_cruise * 0.90f;
             if ((airspeed > 0) && (airspeed_cruise_thresh > 0) && (airspeed >= airspeed_cruise_thresh)) {
-                is_recovered = true;
+                is_recovered_bits |= 0x04;
                 gcs().send_text(MAV_SEVERITY_INFO, "%sC arspd %.1f >= %.1f", gcsStrHeader, (double)airspeed, (double)airspeed_cruise_thresh);
             }
         }
     }
 
-    return is_recovered;
+    return (is_recovered_bits & algorithm_bits) == algorithm_bits;
 }
 
 void ModeStallRecovery::set_servo_behavior()
