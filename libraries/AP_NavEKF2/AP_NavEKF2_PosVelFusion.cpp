@@ -987,7 +987,7 @@ void NavEKF2_core::selectHeightForFusion()
     baroDataToFuse = storedBaro.recall(baroDataDelayed, imuDataDelayed.time_ms);
 
     // select height source
-if (extNavUsedForPos) {
+    if (extNavUsedForPos) {
         // always use external navigation as the height source if using for position.
         activeHgtSource = HGT_SOURCE_EXTNAV;
     } else if ((frontend->_altSource == 1) && _rng && (imuSampleTime_ms - rngValidMeaTime_ms < 500)) {
