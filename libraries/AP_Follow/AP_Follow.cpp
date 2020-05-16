@@ -367,13 +367,14 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
     if (_sysid == 0) {
         _sysid.set(msg.sysid);
         _automatic_sysid = true;
+        gcs().send_text(MAV_SEVERITY_INFO, "Follow: Set SYSID to %d", (int)_sysid);
     }
 
 }
 
 void AP_Follow::handle_packet(mavlink_follow_target_t &packet)
 {
-        gcs().send_text(MAV_SEVERITY_INFO, "Updating follow target");
+        //gcs().send_text(MAV_SEVERITY_INFO, "Updating follow target");
 
         Location location = Location();
         Vector3f velocity_ned = Vector3f();
