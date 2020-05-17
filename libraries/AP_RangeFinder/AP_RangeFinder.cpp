@@ -39,6 +39,7 @@
 #include "AP_RangeFinder_Benewake_TFMini.h"
 #include "AP_RangeFinder_Benewake_TFMiniPlus.h"
 #include "AP_RangeFinder_PWM.h"
+#include "AP_RangeFinder_HC_SR04.h"
 #include "AP_RangeFinder_BLPing.h"
 #include "AP_RangeFinder_UAVCAN.h"
 #include "AP_RangeFinder_Lanbao.h"
@@ -456,6 +457,14 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         // note that analog will always come back as present if the pin is valid
         if (AP_RangeFinder_analog::detect(params[instance])) {
             drivers[instance] = new AP_RangeFinder_analog(state[instance], params[instance]);
+        }
+#endif
+        break;
+    case Type::HC_SR04:
+#ifndef HAL_BUILD_AP_PERIPH
+        // note that this will always come back as present if the pin is valid
+        if (AP_RangeFinder_HC_SR04::detect(params[instance])) {
+            drivers[instance] = new AP_RangeFinder_HC_SR04(state[instance], params[instance]);
         }
 #endif
         break;
