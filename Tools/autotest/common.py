@@ -3001,6 +3001,7 @@ class AutoTest(ABC):
     #################################################
     def delay_sim_time(self, seconds_to_wait):
         """Wait some second in SITL time."""
+        self.drain_mav_unparsed()
         tstart = self.get_sim_time()
         tnow = tstart
         self.progress("Delaying %f seconds" % (seconds_to_wait,))
