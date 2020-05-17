@@ -184,7 +184,6 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
 {
     Parameters &g = rover.g;
     ParametersG2 &g2 = rover.g2;
-    const AP_AHRS &ahrs = AP::ahrs();
 
     const AP_Logger::PID_Info *pid_info;
 
@@ -193,7 +192,7 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
         pid_info = &g2.attitude_control.get_steering_rate_pid().get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_STEER,
                                     degrees(pid_info->target),
-                                    degrees(ahrs.get_yaw_rate_earth()),
+                                    degrees(pid_info->actual),
                                     pid_info->FF,
                                     pid_info->P,
                                     pid_info->I,
@@ -206,12 +205,10 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
     // speed to throttle PID
     if (g.gcs_pid_mask & 2) {
         pid_info = &g2.attitude_control.get_throttle_speed_pid().get_pid_info();
-        float speed = 0.0f;
-        g2.attitude_control.get_forward_speed(speed);
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_ACCZ,
                                     pid_info->target,
-                                    speed,
-                                    0,
+                                    pid_info->actual,
+                                    pid_info->FF,
                                     pid_info->P,
                                     pid_info->I,
                                     pid_info->D);
@@ -225,7 +222,7 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
         pid_info = &g2.attitude_control.get_pitch_to_throttle_pid().get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_PITCH,
                                     degrees(pid_info->target),
-                                    degrees(ahrs.pitch),
+                                    degrees(pid_info->actual),
                                     pid_info->FF,
                                     pid_info->P,
                                     pid_info->I,
