@@ -44,6 +44,7 @@ class AP_BattMonitor
     friend class AP_BattMonitor_SMBus_Maxell;
     friend class AP_BattMonitor_UAVCAN;
     friend class AP_BattMonitor_Sum;
+    friend class AP_BattMonitor_Math;
     friend class AP_BattMonitor_FuelFlow;
     friend class AP_BattMonitor_FuelLevel_PWM;
 
