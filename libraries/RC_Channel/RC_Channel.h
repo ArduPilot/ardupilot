@@ -401,7 +401,10 @@ public:
     float override_timeout_ms() const {
         return _override_timeout.get() * 1e3f;
     }
-    
+
+    // returns true if we have had a direct detach RC reciever, does not include overrides
+    bool has_had_rc_receiver() const { return _has_had_rc_receiver; }
+
     /*
       get the RC input PWM value given a channel number.  Note that
       channel numbers start at 1, as this API is designed for use in
@@ -435,6 +438,7 @@ private:
 
     uint32_t last_update_ms;
     bool has_new_overrides;
+    bool _has_had_rc_receiver; // true if we have had a direct detach RC reciever, does not include overrides
 
     AP_Float _override_timeout;
     AP_Int32  _options;
