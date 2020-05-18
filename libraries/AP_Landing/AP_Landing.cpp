@@ -143,7 +143,7 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @Path: AP_Landing_Deepstall.cpp
     AP_SUBGROUPINFO(deepstall, "DS_", 15, AP_Landing, AP_Landing_Deepstall),
 
-    // @Param: _OPTIONS
+    // @Param: OPTIONS
     // @DisplayName: Landing options bitmask
     // @Description: Bitmask of options to use with landing.
     // @Bitmask: 0: honor min throttle during landing flare
