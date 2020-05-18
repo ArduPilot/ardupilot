@@ -4680,6 +4680,14 @@ class AutoTest(ABC):
             self.set_parameter("SIM_MAG_OFS_X", MAG_OFS_X)
             self.set_parameter("SIM_MAG_OFS_Y", MAG_OFS_Y)
             self.set_parameter("SIM_MAG_OFS_Z", MAG_OFS_Z)
+
+            self.set_parameter("SIM_MAG2_OFS_X", MAG_OFS_X)
+            self.set_parameter("SIM_MAG2_OFS_Y", MAG_OFS_Y)
+            self.set_parameter("SIM_MAG2_OFS_Z", MAG_OFS_Z)
+
+            self.set_parameter("SIM_MAG3_OFS_X", MAG_OFS_X)
+            self.set_parameter("SIM_MAG3_OFS_Y", MAG_OFS_Y)
+            self.set_parameter("SIM_MAG3_OFS_Z", MAG_OFS_Z)
             # set to some sensible-ish initial values.  If your initial
             # offsets are way, way off you can get some very odd effects.
             for param in wanted:
