@@ -345,9 +345,7 @@ void GCS_MAVLINK_Plane::send_pid_tuning()
     }
 
     const Parameters &g = plane.g;
-    AP_AHRS &ahrs = AP::ahrs();
 
-    const Vector3f &gyro = ahrs.get_gyro();
     const AP_Logger::PID_Info *pid_info;
     if (g.gcs_pid_mask & TUNING_BITS_ROLL) {
         if (plane.quadplane.in_vtol_mode()) {
@@ -355,7 +353,7 @@ void GCS_MAVLINK_Plane::send_pid_tuning()
         } else {
             pid_info = &plane.rollController.get_pid_info();
         }
-        send_pid_info(pid_info, PID_TUNING_ROLL, degrees(gyro.x));
+        send_pid_info(pid_info, PID_TUNING_ROLL, pid_info->actual);
     }
     if (g.gcs_pid_mask & TUNING_BITS_PITCH) {
         if (plane.quadplane.in_vtol_mode()) {
@@ -363,7 +361,7 @@ void GCS_MAVLINK_Plane::send_pid_tuning()
         } else {
             pid_info = &plane.pitchController.get_pid_info();
         }
-        send_pid_info(pid_info, PID_TUNING_PITCH, degrees(gyro.y));
+        send_pid_info(pid_info, PID_TUNING_PITCH, pid_info->actual);
     }
     if (g.gcs_pid_mask & TUNING_BITS_YAW) {
         if (plane.quadplane.in_vtol_mode()) {
@@ -371,18 +369,20 @@ void GCS_MAVLINK_Plane::send_pid_tuning()
         } else {
             pid_info = &plane.yawController.get_pid_info();
         }
-        send_pid_info(pid_info, PID_TUNING_YAW, degrees(gyro.z));
+        send_pid_info(pid_info, PID_TUNING_YAW, pid_info->actual);
     }
     if (g.gcs_pid_mask & TUNING_BITS_STEER) {
-        send_pid_info(&plane.steerController.get_pid_info(), PID_TUNING_STEER, degrees(gyro.z));
+        pid_info = &plane.steerController.get_pid_info();
+        send_pid_info(pid_info, PID_TUNING_STEER, pid_info->actual);
     }
     if ((g.gcs_pid_mask & TUNING_BITS_LAND) && (plane.flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND)) {
+        AP_AHRS &ahrs = AP::ahrs();
+        const Vector3f &gyro = ahrs.get_gyro();
         send_pid_info(plane.landing.get_pid_info(), PID_TUNING_LANDING, degrees(gyro.z));
     }
     if (g.gcs_pid_mask & TUNING_BITS_ACCZ && plane.quadplane.in_vtol_mode()) {
-        const Vector3f &accel = ahrs.get_accel_ef();
         pid_info = &plane.quadplane.pos_control->get_accel_z_pid().get_pid_info();
-        send_pid_info(pid_info, PID_TUNING_ACCZ, -accel.z);
+        send_pid_info(pid_info, PID_TUNING_ACCZ, pid_info->actual);
     }
  }
 
