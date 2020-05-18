@@ -1337,6 +1337,21 @@ void NavEKF3::writeExtNavData(const Vector3f &pos, const Quaternion &quat, float
     }
 }
 
+/* Write velocity data from an external navigation system
+ * vel : velocity in NED (m)
+ * err : velocity error (m/s)
+ * timeStamp_ms : system time the measurement was taken, not the time it was received (mSec)
+ * delay_ms : average delay of external nav system measurements relative to inertial measurements
+*/
+void NavEKF3::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms)
+{
+    if (core) {
+        for (uint8_t i=0; i<num_cores; i++) {
+            core[i].writeExtNavVelData(vel, err, timeStamp_ms, delay_ms);
+        }
+    }
+}
+
 // return data for debugging optical flow fusion
 void NavEKF3::getFlowDebug(int8_t instance, float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov,
                            float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const
