@@ -60,6 +60,17 @@ void AP_BattMonitor_Math::read()
         return;
     }
 
+    const uint32_t tnow = AP_HAL::micros();
+    const double dt = tnow - _state.last_time_micros;
+    // update total current drawn since startup
+    if (_has_current && (_state.last_time_micros != 0) && (dt < 2000000.0)) {
+        // .0002778 is 1/3600 (conversion to hours)
+        const double mah = _state.current_amps * (dt * 0.0000002778);
+        _state.consumed_mah += mah;
+        _state.consumed_wh  += 0.001 * mah * _state.voltage;
+    }
+
+    // record time
+    _state.last_time_micros = tnow;
     _state.healthy = true;
-    _state.last_time_micros = AP_HAL::micros();
 }
