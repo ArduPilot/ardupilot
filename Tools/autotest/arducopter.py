@@ -4054,98 +4054,6 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
-    def test_onboard_compass_calibration(self, timeout=300):
-        params = [
-            ("SIM_MAG_DIA_X", "COMPASS_DIA_X", 1.0),
-            ("SIM_MAG_DIA_Y", "COMPASS_DIA_Y", 1.1),
-            ("SIM_MAG_DIA_Z", "COMPASS_DIA_Z", 1.2),
-            ("SIM_MAG_ODI_X", "COMPASS_ODI_X", 0.004),
-            ("SIM_MAG_ODI_Y", "COMPASS_ODI_Y", 0.005),
-            ("SIM_MAG_ODI_Z", "COMPASS_ODI_Z", 0.006),
-        ]
-        twist_x = 2.1
-        twist_y = 2.2
-        twist_z = 2.3
-        ex = None
-        self.context_push()
-        try:
-            self.set_parameter("SIM_GND_BEHAV", 0)
-            self.set_parameter("AHRS_EKF_TYPE", 10)
-            for param in params:
-                (_in, _out, value) = param
-                self.set_parameter(_in, value)
-                # ensure new parameters get reversed at end of test:
-                self.set_parameter(_out, self.get_parameter(_out))
-            self.reboot_sitl()
-
-            report = self.mav.messages.get("MAG_CAL_REPORT", None)
-            if report is not None:
-                raise PreconditionFailedException("MAG_CAL_REPORT found")
-
-            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_START_MAG_CAL,
-                         1, # bitmask of compasses to calibrate
-                         0,
-                         1, # save without user input
-                         0,
-                         0,
-                         0,
-                         0,
-                         timeout=2)
-            tstart = self.get_sim_time()
-            last_twist_time = 0
-            while True:
-                now = self.get_sim_time_cached()
-                if now - tstart > timeout:
-                    raise NotAchievedException("timeout before cal complete")
-                report = self.mav.messages.get("MAG_CAL_REPORT", None)
-                if report is not None:
-                    print("Report: %s" % str(report))
-                    # give time for things to save or whatever:
-                    self.wait_heartbeat()
-                    self.wait_heartbeat()
-                    for param in params:
-                        (_in, _out, value) = param
-                        got_value = self.get_parameter(_out)
-                        if abs(got_value - value) > value*0.15:
-                            raise NotAchievedException("%s/%s not within 15%%; got %f want=%f" % (_in, _out, got_value, value))
-                    break
-                if now - last_twist_time > 5:
-                    last_twist_time = now
-                    twist_x *= 1.1
-                    twist_y *= 1.2
-                    twist_z *= 1.3
-                    if abs(twist_x) > 10:
-                        twist_x /= -2
-                    if abs(twist_y) > 10:
-                        twist_y /= -2
-                    if abs(twist_z) > 10:
-                        twist_z /= -2
-                    self.set_parameter("SIM_TWIST_X", twist_x/10.0)
-                    self.set_parameter("SIM_TWIST_Y", twist_y/10.0)
-                    self.set_parameter("SIM_TWIST_Z", twist_z/10.0)
-                    try:
-                        self.set_parameter("SIM_TWIST_TIME", 100)
-                    except ValueError as e:
-                        # the shove resets this to zero
-                        pass
-
-                m = self.mav.recv_match(type="MAG_CAL_PROGRESS", timeout=1)
-                self.progress("progress: %s" % str(m))
-                if m is None:
-                    continue
-                att = self.mav.messages.get("ATTITUDE", None)
-                self.progress("Attitude: %f %f %f" %
-                              (math.degrees(att.roll), math.degrees(att.pitch), math.degrees(att.yaw)))
-        except Exception as e:
-            self.progress("Exception caught: %s" % (
-                self.get_exception_stacktrace(e)))
-            ex = e
-
-        self.context_pop()
-        self.reboot_sitl()
-        if ex is not None:
-            raise ex
-
     def fly_brake_mode(self):
         # test brake mode
         self.progress("Testing brake mode")
@@ -5075,10 +4983,6 @@ class AutoTestCopter(AutoTest):
             ("FOLLOW",
              "Fly follow mode",
              self.fly_follow_mode),
-
-            ("OnboardCompassCalibration",
-             "Test onboard compass calibration",
-             self.test_onboard_compass_calibration),
 
             ("RangeFinderDrivers",
              "Test rangefinder drivers",
