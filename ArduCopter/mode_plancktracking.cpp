@@ -147,6 +147,7 @@ void ModePlanckTracking::run() {
               float yaw_cmd;
               bool is_yaw_rate;
               float yaw_rate_cmd = 0;
+
               bool good_cmd = copter.planck_interface.get_posvel_cmd(
                 loc_cmd,
                 vel_cmd,
@@ -178,7 +179,6 @@ void ModePlanckTracking::run() {
                           pos_cmd.z = new_alt_cm;
                       }
                   }
-
                   if(is_yaw_rate)
                   {
                     yaw_rate_cmd = yaw_cmd;
