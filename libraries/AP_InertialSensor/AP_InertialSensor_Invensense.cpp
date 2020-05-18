@@ -56,6 +56,20 @@ extern const AP_HAL::HAL& hal;
 #define MPU_SAMPLE_SIZE 14
 #define MPU_FIFO_BUFFER_LEN 16
 
+/*
+ * all of the gyro-rate filters use the backend rate as the sample frequency. thus there is an upper Nyquist limit
+ * of half the backend rate. with high RPM motors it is possible to exceed this (default of 500Hz). if fast-sampling
+ * is enabled we can choose any backend rate that is a multiple of the sensor rates, thus here we pick a 2kHz rate
+ * on processors that can easily support it.
+ */
+#if defined(STM32H7) || defined(STM32F7)
+#define MPU_FIFO_DOWNSAMPLE_RATE 4
+#define MPU_FIFO_DOWNSAMPLE_RATE_FASTLOOP 2
+#else
+#define MPU_FIFO_DOWNSAMPLE_RATE 8
+#define MPU_FIFO_DOWNSAMPLE_RATE_FASTLOOP 4
+#endif
+
 #define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx] << 8) | v[2*idx+1]))
 #define uint16_val(v, idx)(((uint16_t)v[2*idx] << 8) | v[2*idx+1])
 
@@ -685,9 +699,9 @@ void AP_InertialSensor_Invensense::_set_filter_register(void)
         _fast_sampling = (_mpu_type >= Invensense_MPU9250 && _dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI);
         if (_fast_sampling) {
             if (get_sample_rate_hz() <= 1000) {
-                _fifo_downsample_rate = 8;
+                _fifo_downsample_rate = MPU_FIFO_DOWNSAMPLE_RATE;
             } else if (get_sample_rate_hz() <= 2000) {
-                _fifo_downsample_rate = 4;
+                _fifo_downsample_rate = MPU_FIFO_DOWNSAMPLE_RATE_FASTLOOP;
             } else {
                 _fifo_downsample_rate = 2;
             }
