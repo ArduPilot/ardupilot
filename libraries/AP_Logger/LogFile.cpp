@@ -657,7 +657,7 @@ void AP_Logger::Write_Current_instance(const uint64_t time_us,
         consumed_wh = quiet_nanf();
     }
 
-    const struct log_Current pkt = {
+    struct log_Current pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CURRENT_MSG),
         time_us             : time_us,
         instance            : battery_instance,
@@ -670,6 +670,56 @@ void AP_Logger::Write_Current_instance(const uint64_t time_us,
         resistance          : battery.get_resistance(battery_instance)
     };
     WriteBlock(&pkt, sizeof(pkt));
+
+    switch(battery_instance) {
+    case 0:
+        pkt = {
+            LOG_PACKET_HEADER_INIT(LOG_CURRENT1_MSG),
+            time_us             : time_us,
+            instance            : battery_instance,
+            voltage             : battery.voltage(battery_instance),
+            voltage_resting     : battery.voltage_resting_estimate(battery_instance),
+            current_amps        : current,
+            current_total       : consumed_mah,
+            consumed_wh         : consumed_wh,
+            temperature         : (int16_t)(has_temp ? (temp * 100) : 0),
+            resistance          : battery.get_resistance(battery_instance)
+        };
+        WriteBlock(&pkt, sizeof(pkt));
+        break;
+
+    case 1:
+        pkt = {
+            LOG_PACKET_HEADER_INIT(LOG_CURRENT2_MSG),
+            time_us             : time_us,
+            instance            : battery_instance,
+            voltage             : battery.voltage(battery_instance),
+            voltage_resting     : battery.voltage_resting_estimate(battery_instance),
+            current_amps        : current,
+            current_total       : consumed_mah,
+            consumed_wh         : consumed_wh,
+            temperature         : (int16_t)(has_temp ? (temp * 100) : 0),
+            resistance          : battery.get_resistance(battery_instance)
+        };
+        WriteBlock(&pkt, sizeof(pkt));
+        break;
+
+    case 2:
+        pkt = {
+            LOG_PACKET_HEADER_INIT(LOG_CURRENT3_MSG),
+            time_us             : time_us,
+            instance            : battery_instance,
+            voltage             : battery.voltage(battery_instance),
+            voltage_resting     : battery.voltage_resting_estimate(battery_instance),
+            current_amps        : current,
+            current_total       : consumed_mah,
+            consumed_wh         : consumed_wh,
+            temperature         : (int16_t)(has_temp ? (temp * 100) : 0),
+            resistance          : battery.get_resistance(battery_instance)
+        };
+        WriteBlock(&pkt, sizeof(pkt));
+        break;
+    }
 
     // individual cell voltages
     if (battery.has_cell_voltages(battery_instance)) {
