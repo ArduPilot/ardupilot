@@ -161,7 +161,7 @@ AP_BattMonitor::init()
             case AP_BattMonitor_Params::BattMonitor_TYPE_Math_1_Plus_2:
             case AP_BattMonitor_Params::BattMonitor_TYPE_Math_1_Minus_2:
             case AP_BattMonitor_Params::BattMonitor_TYPE_Math_2_Minus_1:
-                drivers[instance] = new AP_BattMonitor_Math(*this, state[instance], _params[instance], instance, get_type(instance));
+                drivers[instance] = new AP_BattMonitor_Math(*this, state[instance], _params[instance], instance);
                 break;
 #if HAL_BATTMON_FUEL_ENABLE
             case AP_BattMonitor_Params::BattMonitor_TYPE_FuelFlow:

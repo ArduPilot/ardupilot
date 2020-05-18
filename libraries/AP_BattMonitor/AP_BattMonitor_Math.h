@@ -8,7 +8,7 @@ class AP_BattMonitor_Math : public AP_BattMonitor_Backend
 public:
 
     /// Constructor
-    AP_BattMonitor_Math(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state, AP_BattMonitor_Params &params, uint8_t instance, uint8_t type);
+    AP_BattMonitor_Math(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state, AP_BattMonitor_Params &params, uint8_t instance);
 
     /// Read the battery voltage and current.  Should be called at 10hz
     void read() override;
@@ -23,6 +23,5 @@ public:
 
 private:
     uint8_t _instance;
-    uint8_t _type;
     bool _has_current;
 };
