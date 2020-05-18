@@ -145,11 +145,13 @@ void ModePlanckTracking::run() {
               Location loc_cmd;
               Vector3f vel_cmd;
               float yaw_cmd;
-
+              bool is_yaw_rate;
+              float yaw_rate_cmd = 0;
               bool good_cmd = copter.planck_interface.get_posvel_cmd(
                 loc_cmd,
                 vel_cmd,
-                yaw_cmd);
+                yaw_cmd,
+                is_yaw_rate);
 
               //Set a zero velocity if this is a bad command
               if(!good_cmd)
@@ -177,7 +179,12 @@ void ModePlanckTracking::run() {
                       }
                   }
 
-                  ModeGuided::set_destination_posvel(pos_cmd,vel_cmd,true,yaw_cmd);
+                  if(is_yaw_rate)
+                  {
+                    yaw_rate_cmd = yaw_cmd;
+                  }
+
+                  ModeGuided::set_destination_posvel(pos_cmd,vel_cmd,!is_yaw_rate,yaw_cmd,is_yaw_rate,yaw_rate_cmd);
               }
               break;
           }
