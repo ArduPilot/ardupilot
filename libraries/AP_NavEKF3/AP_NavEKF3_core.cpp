@@ -143,6 +143,9 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     if (!storedExtNav.init(obs_buffer_length)) {
         return false;
     }
+    if (!storedExtNavVel.init(obs_buffer_length)) {
+        return false;
+    }
     if(!storedIMU.init(imu_buffer_length)) {
         return false;
     }
@@ -400,6 +403,11 @@ void NavEKF3_core::InitialiseVariables()
     extNavLastPosResetTime_ms = 0;
     extNavDataToFuse = false;
     extNavUsedForPos = false;
+    memset(&extNavVelNew, 0, sizeof(extNavVelNew));
+    memset(&extNavVelDelayed, 0, sizeof(extNavVelDelayed));
+    extNavVelToFuse = false;
+    useExtNavVel = false;
+    extNavVelMeasTime_ms = 0;
 
     // zero data buffers
     storedIMU.reset();
@@ -412,6 +420,7 @@ void NavEKF3_core::InitialiseVariables()
     storedBodyOdm.reset();
     storedWheelOdm.reset();
     storedExtNav.reset();
+    storedExtNavVel.reset();
 
     // initialise pre-arm message
     hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string), "EKF3 still initialising");
