@@ -277,6 +277,14 @@ Vector3f rand_vec3f(void);
 // return true if two rotations are equal
 bool rotation_equal(enum Rotation r1, enum Rotation r2) WARN_IF_UNUSED;
 
+/*
+ * return a velocity correction (in m/s in NED) for a sensor's position given it's position offsets
+ * sensor_offset_bf is in meters in body frame (Foward, Right, Down)
+ * rot_ef_to_bf is a rotation matrix to rotate from earth-frame (NED) to body frame
+ * angular_rate is rad/sec
+ */
+Vector3f get_vel_correction_for_sensor_offset(const Vector3f &sensor_offset_bf, const Matrix3f &rot_ef_to_bf, const Vector3f &angular_rate);
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 // fill an array of float with NaN, used to invalidate memory in SITL
 void fill_nanf(float *f, uint16_t count);
