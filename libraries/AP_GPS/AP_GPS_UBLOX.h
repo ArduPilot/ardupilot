@@ -25,6 +25,8 @@
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
 
+#define GPS_UBLOX_MOVING_BASELINE 1
+
 /*
  *  try to put a UBlox into binary mode. This is in two parts. 
  *
