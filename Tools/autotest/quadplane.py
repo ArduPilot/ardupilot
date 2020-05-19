@@ -181,14 +181,14 @@ class AutoTestQuadPlane(AutoTest):
         self.wait_altitude(-5, 1, relative=True, timeout=60)
         self.wait_disarmed()
 
-    def fly_home_land_and_disarm(self):
+    def fly_home_land_and_disarm(self, timeout=30):
         self.set_parameter("LAND_TYPE", 0)
         filename = "flaps.txt"
         self.progress("Using %s to fly home" % filename)
         self.load_mission(filename)
         self.change_mode("AUTO")
         self.mavproxy.send('wp set 7\n')
-        self.wait_disarmed()
+        self.wait_disarmed(timeout=timeout)
 
     def wait_level_flight(self, accuracy=5, timeout=30):
         """Wait for level flight."""
@@ -410,6 +410,39 @@ class AutoTestQuadPlane(AutoTest):
         '''In lockup Plane should copy RC inputs to RC outputs'''
         self.plane_CPUFailsafe()
 
+    def test_qassist(self):
+        # find a motor peak
+        self.takeoff(10, mode="QHOVER")
+        self.set_rc(3, 1800)
+        self.change_mode("FBWA")
+        thr_min_pwm = self.get_parameter("Q_THR_MIN_PWM")
+        self.progress("Waiting for motors to stop (transition completion)")
+        self.wait_servo_channel_value(5,
+                                      thr_min_pwm,
+                                      timeout=30,
+                                      comparator=operator.eq)
+        self.delay_sim_time(5)
+        self.wait_servo_channel_value(5,
+                                      thr_min_pwm,
+                                      timeout=30,
+                                      comparator=operator.eq)
+        self.progress("Stopping forward motor to kill airspeed below limit")
+        self.set_rc(3, 1000)
+        self.progress("Waiting for qassist to kick in")
+        self.wait_servo_channel_value(5, 1400, timeout=30, comparator=operator.gt)
+        self.progress("Move forward again, check qassist stops")
+        self.set_rc(3, 1800)
+        self.progress("Checking qassist stops")
+        self.wait_servo_channel_value(5,
+                                      thr_min_pwm,
+                                      timeout=30,
+                                      comparator=operator.eq)
+        self.set_rc(3, 1500)
+        self.change_mode("RTL")
+        self.delay_sim_time(20)
+        self.change_mode("QRTL")
+        self.wait_disarmed(timeout=180)
+
     def tests(self):
         '''return list of all tests'''
 
@@ -423,6 +456,10 @@ class AutoTestQuadPlane(AutoTest):
 
             ("Mission", "Dalby Mission",
              lambda: self.fly_mission("Dalby-OBC2016.txt", "Dalby-OBC2016-fence.txt")),
+
+            ("QAssist",
+             "QuadPlane Assist tests",
+             self.test_qassist),
 
             ("GyroFFT", "Fly Gyro FFT",
              self.fly_gyro_fft)
