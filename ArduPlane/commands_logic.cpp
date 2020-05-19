@@ -687,12 +687,12 @@ bool Plane::verify_payload_release(const AP_Mission::Mission_Command &cmd)
 {
     
     gcs().send_text(MAV_SEVERITY_INFO, "Payloadrelease on progress");
-    plane.mode_payloadrelease.set_state(verify_nav_wp(cmd));
-    if(plane.mode_payloadrelease.get_state()){
+    mode_payloadrelease.set_state(verify_nav_wp(cmd));
+    if(mode_payloadrelease.get_state()){
         gcs().send_text(MAV_SEVERITY_INFO, "Hi I have completed the mission verified");
-        
     }
-    return plane.mode_payloadrelease.get_state();
+    mode_payloadrelease.update();
+    return mode_payloadrelease.get_state();
 }
 //add finish
 bool Plane::verify_loiter_unlim(const AP_Mission::Mission_Command &cmd)
