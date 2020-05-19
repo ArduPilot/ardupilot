@@ -2577,6 +2577,8 @@ class AutoTest(ABC):
         if target_compid is None:
             target_compid = 1
 
+        self.get_sim_time() # required for timeout in run_cmd_get_ack to work
+
         """Send a MAVLink command int."""
         self.mav.mav.command_int_send(target_sysid,
                                       target_compid,
@@ -2652,6 +2654,7 @@ class AutoTest(ABC):
                 target_compid=None,
                 timeout=10,
                 quiet=False):
+        self.get_sim_time() # required for timeout in run_cmd_get_ack to work
         self.send_cmd(command,
                       p1,
                       p2,
@@ -2666,6 +2669,8 @@ class AutoTest(ABC):
         self.run_cmd_get_ack(command, want_result, timeout, quiet=quiet)
 
     def run_cmd_get_ack(self, command, want_result, timeout, quiet=False):
+        # note that the caller should ensure that this cached
+        # timestamp is reasonably up-to-date!
         tstart = self.get_sim_time_cached()
         while True:
             delta_time = self.get_sim_time_cached() - tstart
