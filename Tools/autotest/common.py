@@ -2302,7 +2302,8 @@ class AutoTest(ABC):
         while True:
             delta = self.get_sim_time_cached() - tstart
             if delta > timeout:
-                raise AutoTestTimeoutException("Failed to DISARM")
+                raise AutoTestTimeoutException("Failed to DISARM within %fs" %
+                                               (timeout,))
             self.wait_heartbeat()
             self.progress("Got heartbeat")
             if not self.mav.motors_armed():
