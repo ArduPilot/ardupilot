@@ -977,14 +977,15 @@ void NavEKF3_core::selectHeightForFusion()
     readBaroData();
     baroDataToFuse = storedBaro.recall(baroDataDelayed, imuDataDelayed.time_ms);
 
+    bool rangeFinderDataIsFresh = (imuSampleTime_ms - rngValidMeaTime_ms < 500);
     // select height source
     if (extNavUsedForPos && (frontend->_altSource == 4)) {
         // always use external navigation as the height source if using for position.
         activeHgtSource = HGT_SOURCE_EXTNAV;
-    } else if ((frontend->_altSource == 1) && _rng && (imuSampleTime_ms - rngValidMeaTime_ms < 500)) {
+    } else if ((frontend->_altSource == 1) && _rng && rangeFinderDataIsFresh) {
         // user has specified the range finder as a primary height source
         activeHgtSource = HGT_SOURCE_RNG;
-    } else if ((frontend->_useRngSwHgt > 0) && ((frontend->_altSource == 0) || (frontend->_altSource == 2)) && _rng && (imuSampleTime_ms - rngValidMeaTime_ms < 500)) {
+    } else if ((frontend->_useRngSwHgt > 0) && ((frontend->_altSource == 0) || (frontend->_altSource == 2)) && _rng && rangeFinderDataIsFresh) {
         // determine if we are above or below the height switch region
         float rangeMaxUse = 1e-4f * (float)_rng->max_distance_cm_orient(ROTATION_PITCH_270) * (float)frontend->_useRngSwHgt;
         bool aboveUpperSwHgt = (terrainState - stateStruct.position.z) > rangeMaxUse;
@@ -1030,8 +1031,8 @@ void NavEKF3_core::selectHeightForFusion()
         activeHgtSource = HGT_SOURCE_BCN;
     }
 
-    // Use Baro alt as a fallback if we lose range finder, GPS or external nav
-    bool lostRngHgt = ((activeHgtSource == HGT_SOURCE_RNG) && ((imuSampleTime_ms - rngValidMeaTime_ms) > 500));
+    // Use Baro alt as a fallback if we lose range finder, GPS, external nav or Beacon
+    bool lostRngHgt = ((activeHgtSource == HGT_SOURCE_RNG) && !rangeFinderDataIsFresh);
     bool lostGpsHgt = ((activeHgtSource == HGT_SOURCE_GPS) && ((imuSampleTime_ms - lastTimeGpsReceived_ms) > 2000));
     bool lostExtNavHgt = ((activeHgtSource == HGT_SOURCE_EXTNAV) && ((imuSampleTime_ms - extNavMeasTime_ms) > 2000));
     bool lostRngBcnHgt = ((activeHgtSource == HGT_SOURCE_BCN) && ((imuSampleTime_ms - rngBcnDataDelayed.time_ms) > 2000));
