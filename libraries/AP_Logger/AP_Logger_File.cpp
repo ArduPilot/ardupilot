@@ -756,8 +756,8 @@ int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t p
         hal.scheduler->expect_delay_ms(0);
         if (_read_fd == -1) {
             _open_error = true;
-            int saved_errno = errno;
 #ifdef DBG_CONSOLEMSGS
+            int saved_errno = errno;
             ::printf("Log read open fail for %s - %s\n",
                                 fname, strerror(saved_errno));
             hal.console->printf("Log read open fail for %s - %s\n",
@@ -974,8 +974,8 @@ uint16_t AP_Logger_File::start_new_log(void)
         _initialised = false;
         _open_error = true;
         write_fd_semaphore.give();
-        int saved_errno = errno;
 #ifdef DBG_CONSOLEMSGS
+        int saved_errno = errno;
         ::printf("Log open fail for %s - %s\n",
                  _write_filename, strerror(saved_errno));
         hal.console->printf("Log open fail for %s - %s\n",

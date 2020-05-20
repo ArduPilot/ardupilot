@@ -21,7 +21,9 @@
 #include "AP_HAL_ESP32.h"
 #include "driver/rmt.h"
 
-class ESP32::SoftSigReaderRMT  {
+namespace ESP32 {
+
+class SoftSigReaderRMT  {
 public:
     // get singleton
     static SoftSigReaderRMT *get_instance(void)
@@ -39,5 +41,5 @@ private:
     bool started = false;
 
 };
-
+}
 

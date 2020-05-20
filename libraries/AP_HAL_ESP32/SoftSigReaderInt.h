@@ -33,8 +33,9 @@
 #define SOFTSIG_MAX_SIGNAL_TRANSITIONS 128
 #endif
 
+namespace ESP32 {
 
-class ESP32::SoftSigReaderInt  {
+class SoftSigReaderInt  {
 public:
     SoftSigReaderInt();
     ~SoftSigReaderInt();
@@ -63,6 +64,6 @@ private:
     ObjectBuffer<pulse_t> sigbuf{SOFTSIG_MAX_SIGNAL_TRANSITIONS};
     uint16_t last_value;
 };
-
+}
 #endif // HAL_USE_EICU
 

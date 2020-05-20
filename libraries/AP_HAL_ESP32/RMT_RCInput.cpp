@@ -174,8 +174,8 @@ void RCInput::_timer_tick(void)
 /*
   start a bind operation, if supported
  */
-bool RCInput::rc_bind(int dsmMode)
-{
+//bool RCInput::rc_bind(int dsmMode)
+//{
   // not impl
-    return true;
-}
+ //   return true;
+//}
