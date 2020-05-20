@@ -436,7 +436,7 @@ void AP_BoardConfig::board_setup_sbus(void)
  */
 void AP_BoardConfig::board_setup()
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS || CONFIG_HAL_BOARD == HAL_BOARD_ESP32
     // init needs to be done after boardconfig is read so parameters are set
     hal.gpio->init();
     hal.rcin->init();
