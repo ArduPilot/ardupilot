@@ -13,6 +13,7 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <AP_Math/AP_Math.h>
 #include "AP_HAL_ESP32/Scheduler.h"
 #include "AP_HAL_ESP32/RCInput.h"
 #include "SdCard.h"
@@ -34,13 +35,14 @@ Scheduler::Scheduler()
 
 void Scheduler::init()
 {
-    xTaskCreate(_main_thread, "APM_MAIN", Scheduler::MAIN_SS, this, Scheduler::MAIN_PRIO, &_main_task_handle);
+    xTaskCreatePinnedToCore(_main_thread, "APM_MAIN", Scheduler::MAIN_SS, this, Scheduler::MAIN_PRIO, &_main_task_handle, 0);
     xTaskCreate(_timer_thread, "APM_TIMER", TIMER_SS, this, TIMER_PRIO, &_timer_task_handle);
     xTaskCreate(_rcin_thread, "APM_RCIN", RCIN_SS, this, RCIN_PRIO, &_rcin_task_handle);
     xTaskCreate(_uart_thread, "APM_UART", UART_SS, this, UART_PRIO, &_uart_task_handle);
     xTaskCreate(_io_thread, "APM_IO", IO_SS, this, IO_PRIO, &_io_task_handle);
     xTaskCreate(_storage_thread, "APM_STORAGE", STORAGE_SS, this, STORAGE_PRIO, &_storage_task_handle);
 }
+
 
 void Scheduler::delay(uint16_t ms)
 {
@@ -256,6 +258,56 @@ void print_stats()
         heap_caps_print_heap_info(0);
         last_run = AP_HAL::millis64();
     }
+}
+
+void Scheduler::thread_create_trampoline(void *ctx)
+{
+    AP_HAL::MemberProc *t = (AP_HAL::MemberProc *)ctx;
+    (*t)();
+    free(t);
+}
+
+bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_t stack_size, priority_base base, int8_t priority)
+{
+    // take a copy of the MemberProc, it is freed after thread exits
+    AP_HAL::MemberProc *tproc = (AP_HAL::MemberProc *)malloc(sizeof(proc));
+    if (!tproc) {
+        return false;
+    }
+    *tproc = proc;
+
+    uint8_t thread_priority = MAIN_PRIO;
+    static const struct {
+        priority_base base;
+        uint8_t p;
+    } priority_map[] = {
+        { PRIORITY_BOOST, MAIN_PRIO},
+        { PRIORITY_MAIN, MAIN_PRIO},
+        { PRIORITY_SPI, SPI_PRIORITY},
+        { PRIORITY_I2C, I2C_PRIORITY},
+        { PRIORITY_CAN, MAIN_PRIO},
+        { PRIORITY_TIMER, TIMER_PRIO},
+        { PRIORITY_RCIN, RCIN_PRIO},
+        { PRIORITY_IO, IO_PRIO},
+        { PRIORITY_UART, UART_PRIO},
+        { PRIORITY_STORAGE, IO_PRIO},
+        { PRIORITY_SCRIPTING, MAIN_PRIO},
+    };
+    for (uint8_t i=0; i<ARRAY_SIZE(priority_map); i++) {
+        if (priority_map[i].base == base) {
+            thread_priority = constrain_int16(priority_map[i].p + priority, 0, 32);
+            break;
+        }
+    }
+
+    void *handle = nullptr;
+    xTaskCreate(thread_create_trampoline, name, 4 * stack_size, tproc, thread_priority, &handle);
+
+    if (handle == nullptr) {
+        free(tproc);
+        return false;
+    }
+    return true;
 }
 
 void Scheduler::_main_thread(void *arg)

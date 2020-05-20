@@ -33,6 +33,9 @@ def configure(cfg):
     print(cmd)
     result = subprocess.check_output(cmd, shell=True)
     #env.INCLUDES += parse_inc_dir(result)
+    if not isinstance(result, str):
+        result = result.decode()
+    env.INCLUDES += parse_inc_dir(result)
 
 class build_esp32_image_plane(Task.Task):
     '''build an esp32 image'''
