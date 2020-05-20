@@ -390,8 +390,13 @@ class esp32(Board):
     toolchain = 'xtensa-esp32-elf'
     def configure_env(self, cfg, env):
         def expand_path(p):
-            idf = os.environ['IDF_PATH']
-            return cfg.root.find_dir(idf+p).abspath()
+            print("USING EXPRESSIF IDF:"+str(env.idf))
+            return cfg.root.find_dir(env.IDF+p).abspath()
+        try:
+            env.IDF = os.environ['IDF_PATH'] 
+        except:
+            env.IDF = cfg.srcnode.abspath()+"/modules/esp_idf"
+
         super(esp32, self).configure_env(cfg, env)
         cfg.load('esp32')
         env.DEFINES.update(

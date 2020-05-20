@@ -160,10 +160,14 @@ def _build_summary(bld):
     if hasattr(bld, 'extra_build_summary'):
         bld.extra_build_summary(bld, sys.modules[__name__])
 
-def _parse_size_output(s):
+# totals=True means relying on -t flag to give us a "(TOTALS)" output
+def _parse_size_output(s, totals=False):
+    import re
+    pattern = re.compile("^.*TOTALS.*$")
     lines = s.splitlines()[1:]
     l = []
     for line in lines:
+      if pattern.match(line) or totals==False:
         row = line.strip().split()
         l.append(dict(
             size_text=int(row[0]),
@@ -183,15 +187,24 @@ def size_summary(bld, nodes):
         l.append(dict(binary_path=path))
 
     if bld.env.SIZE:
-        cmd = [bld.env.get_flat('SIZE')] + [d['binary_path'] for d in l]
+        if bld.env.get_flat('SIZE').endswith("xtensa-esp32-elf-size"):
+            cmd = [bld.env.get_flat('SIZE')] + ["-t"] + [d['binary_path'] for d in l]
+        else:
+            cmd = [bld.env.get_flat('SIZE')] + [d['binary_path'] for d in l]
         out = bld.cmd_and_log(
             cmd,
             cwd=bld.bldnode.abspath(),
             quiet=Context.BOTH,
         )
-        parsed = _parse_size_output(out)
+        if bld.env.get_flat('SIZE').endswith("xtensa-esp32-elf-size"):
+            parsed = _parse_size_output(out,True)
+        else:
+            parsed = _parse_size_output(out,False)
         for i, data in enumerate(parsed):
-            l[i].update(data)
+            try:
+              l[i].update(data)
+            except:
+              print("build summary debug: "+str(i)+"->"+str(data))
 
     return l
 
