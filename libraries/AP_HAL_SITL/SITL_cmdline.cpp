@@ -33,6 +33,7 @@
 #include <SITL/SIM_AirSim.h>
 #include <SITL/SIM_Scrimmage.h>
 #include <SITL/SIM_Webots.h>
+#include <SITL/SIM_JSON.h>
 
 #include <signal.h>
 #include <stdio.h>
@@ -146,7 +147,7 @@ static const struct {
     { "airsim",             AirSim::create},
     { "scrimmage",          Scrimmage::create },
     { "webots",             Webots::create },
-
+    { "JSON",               JSON::create },
 };
 
 void SITL_State::_set_signal_handlers(void) const
