@@ -2000,6 +2000,12 @@ const char *AP_Mission::Mission_Command::type() const {
         return "PayloadPlace";
     case MAV_CMD_DO_PARACHUTE:
         return "Parachute";
+    case MAV_CMD_NAV_PLANCK_TAKEOFF:
+        return "PlanckTakeoff";
+    case MAV_CMD_NAV_PLANCK_RTB:
+        return "PlanckRTB";
+    case MAV_CMD_NAV_PLANCK_WINGMAN:
+        return "PlanckWingman";
 
     default:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
