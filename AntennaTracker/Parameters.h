@@ -124,6 +124,8 @@ public:
         k_param_initial_mode,
         k_param_disarm_pwm,
 
+        k_param_logger = 253, // 253 - Logging Group
+
         k_param_vehicle = 257, // vehicle common block of parameters
     };
 
