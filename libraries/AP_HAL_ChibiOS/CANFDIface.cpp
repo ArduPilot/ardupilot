@@ -598,7 +598,6 @@ void CanIface::setupMessageRam()
     num_elements = MIN((FDCAN_TX_FIFO_BUFFER_SIZE/FDCAN_FRAME_BUFFER_SIZE), 32U);
     if (num_elements) {
         can_->TXBC = (FDCANMessageRAMOffset_ << 2) | (num_elements << 24);
-        can_->TXBC |= 1U << 30; //Set Queue mode
         MessageRam_.TxFIFOQSA = SRAMCAN_BASE + (FDCANMessageRAMOffset_ * 4U);
         FDCANMessageRAMOffset_ += num_elements*FDCAN_FRAME_BUFFER_SIZE;
     }
