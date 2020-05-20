@@ -54,6 +54,8 @@ void NavEKF3_core::readRangeFinder(void)
                 }
                 storedRngMeasTime_ms[sensorIndex][rngMeasIndex[sensorIndex]] = imuSampleTime_ms - 25;
                 storedRngMeas[sensorIndex][rngMeasIndex[sensorIndex]] = sensor->distance_cm() * 0.01f;
+            } else {
+                continue;
             }
 
             // check for three fresh samples
