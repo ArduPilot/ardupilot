@@ -1389,7 +1389,7 @@ void AP_BLHeli::read_telemetry_packet(void)
         return;
     }
     struct telem_data td;
-    td.temperature = buf[0];
+    td.temperature = int8_t(buf[0]);
     td.voltage = (buf[1]<<8) | buf[2];
     td.current = (buf[3]<<8) | buf[4];
     td.consumption = (buf[5]<<8) | buf[6];
