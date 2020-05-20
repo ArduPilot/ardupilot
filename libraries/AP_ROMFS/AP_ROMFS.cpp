@@ -19,9 +19,6 @@
 #include "AP_ROMFS.h"
 #include "tinf.h"
 
-#include "string.h"
-
-
 #ifdef HAL_HAVE_AP_ROMFS_EMBEDDED_H
 #include <ap_romfs_embedded.h>
 #else
@@ -50,7 +47,7 @@ const uint8_t *AP_ROMFS::find_file(const char *name, uint32_t &size)
 */
 uint8_t *AP_ROMFS::find_decompress(const char *name, uint32_t &size)
 {
-    uint32_t compressed_size = 0;
+    uint32_t compressed_size;
     const uint8_t *compressed_data = find_file(name, compressed_size);
     if (!compressed_data) {
         return nullptr;

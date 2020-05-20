@@ -28,8 +28,6 @@
 #define debug(fmt, args...)  do { } while(0)
 #endif
 
-#include "string.h"
-
 // constructor.
 AP_FlashStorage::AP_FlashStorage(uint8_t *_mem_buffer,
                                  uint32_t _flash_sector_size,

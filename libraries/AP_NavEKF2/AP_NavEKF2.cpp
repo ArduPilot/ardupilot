@@ -641,9 +641,8 @@ bool NavEKF2::InitialiseFilter(void)
             }
         }
 
-        unsigned int x = hal.util->available_memory();
         // check if there is enough memory to create the EKF cores
-        if (x < sizeof(NavEKF2_core)*num_cores + 4096) {
+        if (hal.util->available_memory() < sizeof(NavEKF2_core)*num_cores + 4096) {
             gcs().send_text(MAV_SEVERITY_CRITICAL, "NavEKF2: not enough memory");
             _enable.set(0);
             return false;

@@ -26,7 +26,7 @@ Do NOT use "./waf build", it's broken right now.
 
 
 ```
-5. To flash binary use espressif flash tool via `make flash` inside libraries/AP_HAL_ESP32/plane/ directory. Also other make targets are avaliable (`make monitor` , `make size` and so on) 
+5. To flash binary use espressif flash tool via `make flash` inside `libraries/AP_HAL_ESP32/targets/plane/` directory. Also other make targets are avaliable (`make monitor` , `make size` and so on) 
 
 ## Test hardware
 Currently esp32 dev board with connected gy-91 10dof sensor board is supported. Pinout (consult UARTDriver.cpp and SPIDevice.cpp for reference):
@@ -98,29 +98,22 @@ Currently used debugger is called a 'TIAO USB Multi Protocol Adapter' which is a
 - [X] GPS testing/integration ( Serial ublox GPS, as ardupilot SERIAL0 on RX2/TX2 aka GPIO16 and GPIO17 )
 - [ ] PWM driver
 - [ ] RCOUT driver
-- [ ] GPIO driver
-- [ ] AnalogIn driver
 - [x] I2C driver
 - [x] Storage
-- [ ] OTA update of the fw
-- [ ] SdCard
+- [X] OTA update of the fw
+- [X] SdCard
 - [ ] Buzzer
-- [ ] GSD
 
-- [x] OTA update of the fw
-- [x] SdCard
 - [x] Custom boards build
 - [x] Perfomance optimization
 
-
 ### Future development
 - [ ] Pin remapping via parameters
-- [ ] Custom boards build
-- [ ] Perfomance optimization
 - [ ] GPIO driver
 - [ ] AnalogIn driver
 - [ ] DShot driver / 4way pass / esc telemetry / ws2812b led
-
+- [ ] INA219 driver
+- [ ] GSD
 
 example log of boot messages:
  

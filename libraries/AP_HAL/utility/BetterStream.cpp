@@ -2,8 +2,6 @@
 
 #include "print_vprintf.h"
 
-#include "string.h"
-
 void AP_HAL::BetterStream::printf(const char *fmt, ...)
 {
     va_list ap;

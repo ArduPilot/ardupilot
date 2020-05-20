@@ -19,9 +19,6 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Math/crc.h>
 
-#include "string.h"
-
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 static THD_WORKING_AREA(_irq_handler_wa, 512);
 #define TIMEOUT_PRIORITY 250	//Right above timer thread

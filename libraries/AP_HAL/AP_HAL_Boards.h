@@ -66,9 +66,6 @@
 #define HAL_BOARD_SUBTYPE_ESP32_DIY             6001
 #define HAL_BOARD_SUBTYPE_ESP32_ICARUS          6002
 
-#define HAL_BOARD_SUBTYPE_ESP32_DIY             6001
-#define HAL_BOARD_SUBTYPE_ESP32_ICARUS          6002
-
 /* InertialSensor driver types */
 #define HAL_INS_NONE         0
 #define HAL_INS_MPU60XX_SPI  2
@@ -158,9 +155,6 @@
  * - HAL_OS_SOCKETS  : has posix-like sockets */
 
 /* DEFINITIONS FOR BOARDS */
-
-#define CONFIG_HAL_BOARD HAL_BOARD_ESP32
-
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     #include <AP_HAL/board/sitl.h>

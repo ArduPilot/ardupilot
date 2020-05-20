@@ -23,9 +23,6 @@
 #include "AP_RCProtocol_SRXL.h"
 #include <AP_Math/crc.h>
 
-#include "string.h"
-
-
 // #define SUMD_DEBUG
 extern const AP_HAL::HAL& hal;
 

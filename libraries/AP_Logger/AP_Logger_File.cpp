@@ -98,6 +98,7 @@ void AP_Logger_File::Init()
     }
     hal.scheduler->expect_delay_ms(0);
     if (ret == -1 && errno != EEXIST) {
+#ifdef DBG_CONSOLEMSGS
         printf("Failed to create log directory %s : %s\n", _log_directory, strerror(errno));
 #endif
     }
@@ -364,11 +365,13 @@ void AP_Logger_File::Prep_MinSpace()
         }
         if (file_exists(filename_to_remove)) {
 #ifdef DBG_CONSOLEMSGS
-            printf("Removing (%s) for minimum-space requirements (%.2f%% < %.0f%%)\n",
+            hal.console->printf("Removing (%s) for minimum-space requirements (%.2f%% < %.0f%%)\n",
                                 filename_to_remove, (double)avail, (double)min_avail_space_percent);
+#endif
+            hal.scheduler->expect_delay_ms(2000);
             if (unlink(filename_to_remove) == -1) {
 #ifdef DBG_CONSOLEMSGS
-                printf("Failed to remove %s: %s\n", filename_to_remove, strerror(errno));
+                hal.console->printf("Failed to remove %s: %s\n", filename_to_remove, strerror(errno));
 #endif
                 free(filename_to_remove);
                 if (errno == ENOENT) {
@@ -755,7 +758,9 @@ int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t p
             _open_error = true;
             int saved_errno = errno;
 #ifdef DBG_CONSOLEMSGS
-            printf("Log read open fail for %s - %s\n",
+            ::printf("Log read open fail for %s - %s\n",
+                                fname, strerror(saved_errno));
+            hal.console->printf("Log read open fail for %s - %s\n",
                                 fname, strerror(saved_errno));
 #endif
             free(fname);
@@ -921,7 +926,7 @@ uint16_t AP_Logger_File::start_new_log(void)
 
     if (disk_space_avail() < _free_space_min_avail) {
 #ifdef DBG_CONSOLEMSGS
-        printf("Out of space for logging\n");
+				hal.console->printf("Out of space for logging\n");
 #endif
         _open_error = true;
         return 0xffff;
@@ -971,7 +976,9 @@ uint16_t AP_Logger_File::start_new_log(void)
         write_fd_semaphore.give();
         int saved_errno = errno;
 #ifdef DBG_CONSOLEMSGS
-        printf("Log open fail for %s - %s\n",
+        ::printf("Log open fail for %s - %s\n",
+                 _write_filename, strerror(saved_errno));
+        hal.console->printf("Log open fail for %s - %s\n",
                             _write_filename, strerror(saved_errno));
 #endif
         return 0xFFFF;
@@ -1072,7 +1079,7 @@ void AP_Logger_File::_io_timer(void)
         last_io_operation = "disk_space_avail";
         if (disk_space_avail() < _free_space_min_avail) {
 #ifdef DBG_CONSOLEMSGS
-        	printf("Out of space for logging\n");
+            hal.console->printf("Out of space for logging\n");;
 #endif
             stop_logging();
             _open_error = true; // prevent logging starting again

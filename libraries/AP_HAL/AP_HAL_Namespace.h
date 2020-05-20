@@ -1,6 +1,6 @@
 #pragma once
 
-//#include "string.h"
+#include "string.h"
 #include "utility/functor.h"
 
 namespace AP_HAL {

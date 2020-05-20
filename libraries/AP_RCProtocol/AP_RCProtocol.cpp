@@ -23,8 +23,6 @@
 #include "AP_RCProtocol_SRXL.h"
 #include "AP_RCProtocol_ST24.h"
 
-#include "string.h"
-
 // singleton
 AP_RCProtocol *AP_RCProtocol::_singleton;
 

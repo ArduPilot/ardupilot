@@ -19,8 +19,6 @@
  */
 #include "AP_RCProtocol_DSM.h"
 
-#include "string.h"
-
 extern const AP_HAL::HAL& hal;
 
 // #define DSM_DEBUG
