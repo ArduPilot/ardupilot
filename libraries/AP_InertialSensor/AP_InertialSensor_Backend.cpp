@@ -479,11 +479,11 @@ void AP_InertialSensor_Backend::_inc_gyro_error_count(uint8_t instance)
     _imu._gyro_error_count[instance]++;
 }
 
-// return the requested sample rate in Hz
-uint16_t AP_InertialSensor_Backend::get_sample_rate_hz(void) const
+// return the requested loop rate at which samples will be made available in Hz
+uint16_t AP_InertialSensor_Backend::get_loop_rate_hz(void) const
 {
     // enum can be directly cast to Hz
-    return (uint16_t)_imu._sample_rate;
+    return (uint16_t)_imu._loop_rate;
 }
 
 /*

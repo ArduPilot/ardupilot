@@ -97,6 +97,9 @@ public:
     ///
     void init_gyro(void);
 
+    // get startup messages to output to the GCS
+    bool get_output_banner(uint8_t instance_id, char* banner, uint8_t banner_len);
+
     /// Fetch the current gyro values
     ///
     /// @returns	vector of rotational rates in radians/sec
@@ -206,8 +209,8 @@ public:
         _custom_rotation = custom_rotation;
     }
 
-    // return the selected sample rate
-    uint16_t get_sample_rate(void) const { return _sample_rate; }
+    // return the selected loop rate at which samples are made avilable
+    uint16_t get_loop_rate_hz(void) const { return _loop_rate; }
 
     // return the main loop delta_t in seconds
     float get_loop_delta_t(void) const { return _loop_delta_t; }
@@ -433,8 +436,8 @@ private:
     uint8_t _accel_count;
     uint8_t _backend_count;
 
-    // the selected sample rate
-    uint16_t _sample_rate;
+    // the selected loop rate at which samples are made available
+    uint16_t _loop_rate;
     float _loop_delta_t;
     float _loop_delta_t_max;
 
@@ -540,6 +543,9 @@ private:
 
     // control enable of fast sampling
     AP_Int8     _fast_sampling_mask;
+
+    // control enable of fast sampling
+    AP_Int8     _fast_sampling_rate;
 
     // control enable of detected sensors
     AP_Int8     _enable_mask;
