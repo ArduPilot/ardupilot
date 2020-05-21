@@ -890,6 +890,29 @@ void AP_GPS::update_primary(void)
             }
             return;
         }
+        /*
+          if this is a BASE and the other GPS is a MB rover, then we
+          should force the use of the BASE GPS if the rover doesn't
+          have a yaw lock. This is important as when the rover doesn't
+          have a lock it will often report a higher status than the
+          base (eg. status=4), but the velocity and position data can
+          be very bad. As the rover is getting it's base position from
+          the base GPS then the position and velocity are expected to
+          be worse than the base GPS unless it has a full moving
+          baseline lock
+         */
+        const uint8_t i2 = i^1; // the other GPS in the pair
+        if (_type[i] == GPS_TYPE_UBLOX_RTK_BASE &&
+            state[i].status >= GPS_OK_FIX_3D &&
+            _type[i2] == GPS_TYPE_UBLOX_RTK_ROVER &&
+            (state[i2].status != GPS_OK_FIX_3D_RTK_FIXED ||
+             !state[i2].have_gps_yaw)) {
+            if (primary_instance != i) {
+                _last_instance_swap_ms = now;
+                primary_instance = i;
+            }
+            return;
+        }
     }
     
     // handling switching away from blended GPS
