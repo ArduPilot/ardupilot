@@ -1368,17 +1368,13 @@ uint8_t AP_BLHeli::telem_crc8(uint8_t crc, uint8_t crc_seed) const
 void AP_BLHeli::read_telemetry_packet(void)
 {
     uint8_t buf[telem_packet_size];
-    uint8_t crc = 0;
-    for (uint8_t i=0; i<telem_packet_size; i++) {
-        int16_t v = telem_uart->read();
-        if (v < 0) {
-            // short read, we should have 10 bytes ready when this function is called
-            return;
-        }
-        buf[i] = uint8_t(v);
+    if (telem_uart->read(buf, telem_packet_size) < telem_packet_size) {
+        // short read, we should have 10 bytes ready when this function is called
+        return;
     }
 
     // calculate crc
+    uint8_t crc = 0;
     for (uint8_t i=0; i<telem_packet_size-1; i++) {    
         crc = telem_crc8(buf[i], crc);
     }
