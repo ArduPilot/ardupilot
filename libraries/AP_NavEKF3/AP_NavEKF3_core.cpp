@@ -51,8 +51,8 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
      */
 
     // Calculate the expected EKF time step
-    if (AP::ins().get_sample_rate() > 0) {
-        dtEkfAvg = 1.0f / AP::ins().get_sample_rate();
+    if (AP::ins().get_loop_rate_hz() > 0) {
+        dtEkfAvg = 1.0f / AP::ins().get_loop_rate_hz();
         dtEkfAvg = MAX(dtEkfAvg,EKF_TARGET_DT);
     } else {
         return false;
