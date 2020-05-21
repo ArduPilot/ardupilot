@@ -72,7 +72,7 @@ bool NavEKF2_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
       than 100Hz is downsampled. For 50Hz main loop rate we need a
       shorter buffer.
      */
-    if (AP::ins().get_sample_rate() < 100) {
+    if (AP::ins().get_loop_rate_hz() < 100) {
         imu_buffer_length = 13;
     } else {
         // maximum 260 msec delay at 100 Hz fusion rate
