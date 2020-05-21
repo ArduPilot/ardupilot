@@ -112,6 +112,10 @@ void AR_WPNav::update(float dt)
 
     // run path planning around obstacles
     bool stop_vehicle = false;
+   
+    // true if OA has been recently active;
+    bool _oa_was_active = _oa_active;
+
     AP_OAPathPlanner *oa = AP_OAPathPlanner::get_singleton();
     if (oa != nullptr) {
         const AP_OAPathPlanner::OA_RetState oa_retstate = oa->mission_avoidance(current_loc, _origin, _destination, _oa_origin, _oa_destination);
@@ -136,6 +140,14 @@ void AR_WPNav::update(float dt)
     }
 
     update_distance_and_bearing_to_destination();
+
+    // check if vehicle is in recovering state after switching off OA
+    if (!_oa_active && _oa_was_active) {
+        if (oa->get_options() & AP_OAPathPlanner::OA_OPTION_WP_RESET) {
+            //reset wp origin to vehicles current location
+            _origin = current_loc;
+        }
+    }
 
     // check if vehicle has reached the destination
     const bool near_wp = _distance_to_destination <= _radius;
