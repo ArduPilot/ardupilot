@@ -76,6 +76,9 @@ public:
     // notify of a fifo reset
     void notify_fifo_reset(void);
 
+    // get a startup banner to output to the GCS
+    virtual bool get_output_banner(char* banner, uint8_t banner_len) { return false; }
+
     /*
       device driver IDs. These are used to fill in the devtype field
       of the device ID, which shows up as INS*ID* parameters to
@@ -234,7 +237,7 @@ protected:
     uint16_t _gyro_filter_cutoff(void) const { return _imu._gyro_filter_cutoff; }
 
     // return the requested sample rate in Hz
-    uint16_t get_sample_rate_hz(void) const;
+    uint16_t get_loop_rate_hz(void) const;
 
     // return the notch filter center in Hz for the sample rate
     float _gyro_notch_center_freq_hz(void) const { return _imu._notch_filter.center_freq_hz(); }
@@ -299,6 +302,11 @@ protected:
     // should fast sampling be enabled on this IMU?
     bool enable_fast_sampling(uint8_t instance) {
         return (_imu._fast_sampling_mask & (1U<<instance)) != 0;
+    }
+
+    // if fast sampling is enabled, the rate to use in kHz
+    uint8_t get_fast_sampling_rate() {
+        return (1 << uint8_t(_imu._fast_sampling_rate));
     }
 
     // called by subclass when data is received from the sensor, thus
