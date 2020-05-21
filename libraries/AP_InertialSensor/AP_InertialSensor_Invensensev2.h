@@ -128,11 +128,17 @@ private:
     // are we doing more than 1kHz sampling?
     bool _fast_sampling;
 
-    // what downsampling rate are we using from the FIFO?
-    uint8_t _fifo_downsample_rate;
+    // what downsampling rate are we using from the FIFO for gyros?
+    uint8_t _gyro_fifo_downsample_rate;
 
-    // what rate are we generating samples into the backend?
-    uint16_t _backend_rate_hz;
+    // what downsampling rate are we using from the FIFO for accels?
+    uint8_t _accel_fifo_downsample_rate;
+
+    // what rate are we generating samples into the backend for gyros?
+    uint16_t _gyro_backend_rate_hz;
+
+    // what rate are we generating samples into the backend for accels?
+    uint16_t _accel_backend_rate_hz;
 
     // Last status from register user control
     uint8_t _last_stat_user_ctrl;    
@@ -148,7 +154,8 @@ private:
     struct {
         Vector3f accel;
         Vector3f gyro;
-        uint8_t count;
+        uint8_t accel_count;
+        uint8_t gyro_count;
         LowPassFilterVector3f accel_filter{4500, 188};
         LowPassFilterVector3f gyro_filter{9000, 188};
     } _accum;

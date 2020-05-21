@@ -258,8 +258,8 @@ void AP_InertialSensor_Invensense::start()
     _set_filter_register();
 
     // update backend sample rate
-    _set_accel_raw_sample_rate(_accel_instance, _backend_rate_hz);
-    _set_gyro_raw_sample_rate(_gyro_instance, _backend_rate_hz);
+    _set_accel_raw_sample_rate(_accel_instance, _accel_backend_rate_hz);
+    _set_gyro_raw_sample_rate(_gyro_instance, _gyro_backend_rate_hz);
 
     // indicate what multiplier is appropriate for the sensors'
     // readings to fit them into an int16_t:
@@ -332,8 +332,8 @@ void AP_InertialSensor_Invensense::start()
     set_accel_orientation(_accel_instance, _rotation);
 
     // setup scale factors for fifo data after downsampling
-    _fifo_accel_scale = _accel_scale / (MAX(_fifo_downsample_rate,2)/2);
-    _fifo_gyro_scale = _gyro_scale / _fifo_downsample_rate;
+    _fifo_accel_scale = _accel_scale / _accel_fifo_downsample_rate;
+    _fifo_gyro_scale = _gyro_scale / _gyro_fifo_downsample_rate;
     
     // allocate fifo buffer
     _fifo_buffer = (uint8_t *)hal.util->malloc_type(MPU_FIFO_BUFFER_LEN * MPU_SAMPLE_SIZE, AP_HAL::Util::MEM_DMA_SAFE);
@@ -341,15 +341,15 @@ void AP_InertialSensor_Invensense::start()
         AP_HAL::panic("Invensense: Unable to allocate FIFO buffer");
     }
 
-    // start the timer process to read samples
-    _dev->register_periodic_callback(1000000UL / _backend_rate_hz, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_Invensense::_poll_data, void));
+    // start the timer process to read samples, using the fastest rate avilable
+    _dev->register_periodic_callback(1000000UL / _gyro_backend_rate_hz, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_Invensense::_poll_data, void));
 }
 
 // get a startup banner to output to the GCS
 bool AP_InertialSensor_Invensense::get_output_banner(char* banner, uint8_t banner_len) {
     if (_fast_sampling) {
         snprintf(banner, banner_len, "IMU%u: fast sampling enabled %.1fkHz/%.1fkHz",
-            _accel_instance, _backend_rate_hz*_fifo_downsample_rate / 1000.0, _backend_rate_hz/ 1000.0);
+            _gyro_instance, _gyro_backend_rate_hz * _gyro_fifo_downsample_rate / 1000.0, _gyro_backend_rate_hz / 1000.0);
         return true;
     }
     return false;
@@ -484,8 +484,8 @@ bool AP_InertialSensor_Invensense::_accumulate_sensor_rate_sampling(uint8_t *sam
         }
         tsum += t2;
 
-        if ((_accum.count & 1) == 0) {
-            // accel data is at 4kHz
+        if (_accum.gyro_count % _gyro_to_accel_sample_ratio == 0) {
+            // accel data is at 4kHz or 1kHz
             Vector3f a(int16_val(data, 1),
                        int16_val(data, 0),
                        -int16_val(data, 2));
@@ -495,9 +495,24 @@ bool AP_InertialSensor_Invensense::_accumulate_sensor_rate_sampling(uint8_t *sam
                 clipped = true;
             }
             _accum.accel += _accum.accel_filter.apply(a);
+
             Vector3f a2 = a * _accel_scale;
             _notify_new_accel_sensor_rate_sample(_accel_instance, a2);
+
+            _accum.accel_count++;
+
+            if (_accum.accel_count % _accel_fifo_downsample_rate == 0) {
+                _accum.accel *= _fifo_accel_scale;
+                _rotate_and_correct_accel(_accel_instance, _accum.accel);
+                _notify_new_accel_raw_sample(_accel_instance, _accum.accel, 0, false);
+                _accum.accel.zero();
+                _accum.accel_count = 0;
+                // we assume that the gyro rate is always >= and a multiple of the accel rate
+                _accum.gyro_count = 0;
+            }
         }
+
+        _accum.gyro_count++;
 
         Vector3f g(int16_val(data, 5),
                    int16_val(data, 4),
@@ -507,22 +522,12 @@ bool AP_InertialSensor_Invensense::_accumulate_sensor_rate_sampling(uint8_t *sam
         _notify_new_gyro_sensor_rate_sample(_gyro_instance, g2);
 
         _accum.gyro += _accum.gyro_filter.apply(g);
-        _accum.count++;
 
-        if (_accum.count == _fifo_downsample_rate) {
-
-            _accum.accel *= _fifo_accel_scale;
+        if (_accum.gyro_count % _gyro_fifo_downsample_rate == 0) {
             _accum.gyro *= _fifo_gyro_scale;
-
-            _rotate_and_correct_accel(_accel_instance, _accum.accel);
             _rotate_and_correct_gyro(_gyro_instance, _accum.gyro);
-
-            _notify_new_accel_raw_sample(_accel_instance, _accum.accel, 0, false);
             _notify_new_gyro_raw_sample(_gyro_instance, _accum.gyro);
-
-            _accum.accel.zero();
             _accum.gyro.zero();
-            _accum.count = 0;
         }
     }
 
@@ -682,11 +687,12 @@ void AP_InertialSensor_Invensense::_set_filter_register(void)
 #endif
 
     // assume 1kHz sampling to start
-    _fifo_downsample_rate = 1;
-    _backend_rate_hz = 1000;
+    _gyro_fifo_downsample_rate = _accel_fifo_downsample_rate = 1;
+    _gyro_to_accel_sample_ratio = 2;
+    _gyro_backend_rate_hz = _accel_backend_rate_hz =  1000;
     
     if (enable_fast_sampling(_accel_instance)) {
-        _fast_sampling = (_mpu_type >= Invensense_MPU9250 && _dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI);
+        _fast_sampling = _dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI;
         if (_fast_sampling) {
             // constrain the gyro rate to be at least the loop rate
             uint8_t loop_limit = 1;
@@ -697,15 +703,25 @@ void AP_InertialSensor_Invensense::_set_filter_register(void)
                 loop_limit = 4;
             }
             // constrain the gyro rate to be a 2^N multiple
-            uint8_t fast_sampling_rate = constrain_int16(get_fast_sampling_rate(), loop_limit, 4);
+            uint8_t fast_sampling_rate = constrain_int16(get_fast_sampling_rate(), loop_limit, 8);
 
             // calculate rate we will be giving gyro samples to the backend
-            _fifo_downsample_rate = 8 / fast_sampling_rate;
-            _backend_rate_hz *= fast_sampling_rate;
+            _gyro_fifo_downsample_rate = 8 / fast_sampling_rate;
+            _gyro_backend_rate_hz *= fast_sampling_rate;
+
+            // calculate rate we will be giving accel samples to the backend
+            if (_mpu_type >= Invensense_MPU9250) {
+                _accel_fifo_downsample_rate = MAX(4 / fast_sampling_rate, 1);
+                _accel_backend_rate_hz *= MIN(fast_sampling_rate, 4);
+            } else {
+                _gyro_to_accel_sample_ratio = 8;
+                _accel_fifo_downsample_rate = 1;
+                _accum.accel_filter.set_cutoff_frequency(1000, 188);
+            }
 
             // for logging purposes set the oversamping rate
-            _set_accel_oversampling(_accel_instance, _fifo_downsample_rate/2);
-            _set_gyro_oversampling(_gyro_instance, _fifo_downsample_rate);
+            _set_accel_oversampling(_accel_instance, _accel_fifo_downsample_rate);
+            _set_gyro_oversampling(_gyro_instance, _gyro_fifo_downsample_rate);
 
             _set_accel_sensor_rate_sampling_enabled(_accel_instance, true);
             _set_gyro_sensor_rate_sampling_enabled(_gyro_instance, true);
