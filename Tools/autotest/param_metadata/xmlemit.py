@@ -46,6 +46,9 @@ class XmlEmit(Emit):
             if hasattr(param, 'User'):
                 t += ' user=%s' % quoteattr(param.User)  # i.e. Standard or Advanced
 
+            if hasattr(param, 'Calibration'):
+                t += ' calibration=%s' % quoteattr(param.Calibration)  # i.e. Standard or Advanced
+
             t += ">\n"
 
             # Add values as chidren of this node
