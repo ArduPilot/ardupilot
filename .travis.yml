@@ -60,16 +60,13 @@ matrix:
   include:
     - if: type != cron
       compiler: "gcc"
-      env: CI_BUILD_TARGET="revo-bootloader periph-build CubeOrange-bootloader iofirmware stm32f7 stm32h7 fmuv2-plane"
+      env: CI_BUILD_TARGET="stm32f7 stm32h7 fmuv2-plane"
     - if: type != cron
       compiler: "gcc"
       env: CI_BUILD_TARGET="sitltest-copter"
     - if: type != cron
       compiler: "gcc"
       env: CI_BUILD_TARGET="sitltest-quadplane sitltest-plane"
-    - if: type != cron
-      compiler: "clang-7"
-      env: CI_BUILD_TARGET="sitltest-rover sitltest-sub sitltest-balancebot"
     - if: type != cron
       compiler: "gcc"
       env: CI_BUILD_TARGET="unit-tests"
