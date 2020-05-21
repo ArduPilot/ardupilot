@@ -582,6 +582,27 @@ bool UARTDriver::discard_input()
     return true;
 }
 
+ssize_t UARTDriver::read(uint8_t *buffer, uint16_t count)
+{
+    if (lock_read_key != 0 || _uart_owner_thd != chThdGetSelfX()){
+        return -1;
+    }
+    if (!_initialised) {
+        return -1;
+    }
+
+    const uint32_t ret = _readbuf.read(buffer, count);
+    if (ret == 0) {
+        return 0;
+    }
+
+    if (!_rts_is_active) {
+        update_rts_line();
+    }
+
+    return ret;
+}
+
 int16_t UARTDriver::read()
 {
     if (lock_read_key != 0 || _uart_owner_thd != chThdGetSelfX()){
