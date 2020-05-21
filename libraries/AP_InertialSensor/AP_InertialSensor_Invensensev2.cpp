@@ -200,8 +200,8 @@ void AP_InertialSensor_Invensensev2::start()
     _register_write(INV2REG_FSYNC_CONFIG, FSYNC_CONFIG_EXT_SYNC_AZ, true);
 #endif
     // update backend sample rate
-    _set_accel_raw_sample_rate(_accel_instance, _backend_rate_hz);
-    _set_gyro_raw_sample_rate(_gyro_instance, _backend_rate_hz);
+    _set_accel_raw_sample_rate(_accel_instance, _accel_backend_rate_hz);
+    _set_gyro_raw_sample_rate(_gyro_instance, _gyro_backend_rate_hz);
 
     // indicate what multiplier is appropriate for the sensors'
     // readings to fit them into an int16_t:
@@ -225,8 +225,8 @@ void AP_InertialSensor_Invensensev2::start()
     set_accel_orientation(_accel_instance, _rotation);
 
     // setup scale factors for fifo data after downsampling
-    _fifo_accel_scale = _accel_scale / (MAX(_fifo_downsample_rate,2)/2);
-    _fifo_gyro_scale = GYRO_SCALE / _fifo_downsample_rate;
+    _fifo_accel_scale = _accel_scale / _accel_fifo_downsample_rate;
+    _fifo_gyro_scale = GYRO_SCALE / _gyro_fifo_downsample_rate;
     
     // allocate fifo buffer
     _fifo_buffer = (uint8_t *)hal.util->malloc_type(INV2_FIFO_BUFFER_LEN * INV2_SAMPLE_SIZE, AP_HAL::Util::MEM_DMA_SAFE);
@@ -235,14 +235,14 @@ void AP_InertialSensor_Invensensev2::start()
     }
 
     // start the timer process to read samples
-    _dev->register_periodic_callback(1265625UL / _backend_rate_hz, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_Invensensev2::_poll_data, void));
+    _dev->register_periodic_callback(1265625UL / _gyro_backend_rate_hz, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_Invensensev2::_poll_data, void));
 }
 
 // get a startup banner to output to the GCS
 bool AP_InertialSensor_Invensensev2::get_output_banner(char* banner, uint8_t banner_len) {
     if (_fast_sampling) {
         snprintf(banner, banner_len, "IMU%u: fast sampling enabled %.1fkHz/%.1fkHz",
-            _accel_instance, _backend_rate_hz*_fifo_downsample_rate / 1000.0, _backend_rate_hz/ 1000.0);
+            _gyro_instance, _gyro_backend_rate_hz * _gyro_fifo_downsample_rate / 1000.0, _gyro_backend_rate_hz / 1000.0);
         return true;
     }
     return false;
@@ -376,20 +376,35 @@ bool AP_InertialSensor_Invensensev2::_accumulate_sensor_rate_sampling(uint8_t *s
             break;
         }
         tsum += t2;
-        // accel data is at 4kHz
-        if ((_accum.count & 1) == 0) {
+        if (_accum.gyro_count % 2 == 0) {
+            // accel data is at 4kHz or 1kHz
             Vector3f a(int16_val(data, 1),
-                    int16_val(data, 0),
-                    -int16_val(data, 2));
+                       int16_val(data, 0),
+                       -int16_val(data, 2));
             if (fabsf(a.x) > unscaled_clip_limit ||
                 fabsf(a.y) > unscaled_clip_limit ||
                 fabsf(a.z) > unscaled_clip_limit) {
                 clipped = true;
             }
             _accum.accel += _accum.accel_filter.apply(a);
+
             Vector3f a2 = a * _accel_scale;
             _notify_new_accel_sensor_rate_sample(_accel_instance, a2);
+
+            _accum.accel_count++;
+
+            if (_accum.accel_count % _accel_fifo_downsample_rate == 0) {
+                _accum.accel *= _fifo_accel_scale;
+                _rotate_and_correct_accel(_accel_instance, _accum.accel);
+                _notify_new_accel_raw_sample(_accel_instance, _accum.accel, 0, false);
+                _accum.accel.zero();
+                _accum.accel_count = 0;
+                // we assume that the gyro rate is always >= and a multiple of the accel rate
+                _accum.gyro_count = 0;
+            }
         }
+
+        _accum.gyro_count++;
 
         Vector3f g(int16_val(data, 4),
                    int16_val(data, 3),
@@ -399,20 +414,12 @@ bool AP_InertialSensor_Invensensev2::_accumulate_sensor_rate_sampling(uint8_t *s
         _notify_new_gyro_sensor_rate_sample(_gyro_instance, g2);
 
         _accum.gyro += _accum.gyro_filter.apply(g);
-        _accum.count++;
 
-        if (_accum.count == _fifo_downsample_rate) {
-            _accum.accel *= _fifo_accel_scale;
+        if (_accum.gyro_count % _gyro_fifo_downsample_rate == 0) {
             _accum.gyro *= _fifo_gyro_scale;
-            _rotate_and_correct_accel(_accel_instance, _accum.accel);
             _rotate_and_correct_gyro(_gyro_instance, _accum.gyro);
-
-            _notify_new_accel_raw_sample(_accel_instance, _accum.accel, 0, false);
             _notify_new_gyro_raw_sample(_gyro_instance, _accum.gyro);
-
-            _accum.accel.zero();
             _accum.gyro.zero();
-            _accum.count = 0;
         }
     }
 
@@ -578,8 +585,8 @@ void AP_InertialSensor_Invensensev2::_set_filter_and_scaling(void)
     uint8_t accel_config = (_inv2_type == Invensensev2_ICM20649)?BITS_ACCEL_FS_30G_20649:BITS_ACCEL_FS_16G;
 
     // assume 1.125kHz sampling to start
-    _fifo_downsample_rate = 1;
-    _backend_rate_hz = 1125;
+    _gyro_fifo_downsample_rate = _accel_fifo_downsample_rate = 1;
+    _gyro_backend_rate_hz = _accel_backend_rate_hz =  1125;
     
     if (enable_fast_sampling(_accel_instance)) {
         _fast_sampling = _dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI;
@@ -596,12 +603,16 @@ void AP_InertialSensor_Invensensev2::_set_filter_and_scaling(void)
             uint8_t fast_sampling_rate = constrain_int16(get_fast_sampling_rate(), loop_limit, 8);
 
             // calculate rate we will be giving gyro samples to the backend
-            _fifo_downsample_rate = 8 / fast_sampling_rate;
-            _backend_rate_hz *= fast_sampling_rate;
+            _gyro_fifo_downsample_rate = 8 / fast_sampling_rate;
+            _gyro_backend_rate_hz *= fast_sampling_rate;
+
+            // calculate rate we will be giving accel samples to the backend
+            _accel_fifo_downsample_rate = MAX(4 / fast_sampling_rate, 1);
+            _accel_backend_rate_hz *= MIN(fast_sampling_rate, 4);
 
             // for logging purposes set the oversamping rate
-            _set_accel_oversampling(_accel_instance, _fifo_downsample_rate/2);
-            _set_gyro_oversampling(_gyro_instance, _fifo_downsample_rate);
+            _set_accel_oversampling(_accel_instance, _accel_fifo_downsample_rate);
+            _set_gyro_oversampling(_gyro_instance, _gyro_fifo_downsample_rate);
 
             _set_accel_sensor_rate_sampling_enabled(_accel_instance, true);
             _set_gyro_sensor_rate_sampling_enabled(_gyro_instance, true);
