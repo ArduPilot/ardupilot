@@ -2496,6 +2496,24 @@ struct PACKED log_Arm_Disarm {
       "ERR",   "QBB",         "TimeUS,Subsys,ECode", "s--", "F--" }
 
 
+// @LoggerMessage: SBPH
+// @Description: Swift Health Data
+// @Field: TimeUS: Time since system startup
+// @Field: CrcError: Number of packet CRC errors on serial connection
+// @Field: LastInject: Timestamp of last raw data injection to GPS
+// @Field: IARhyp: Current number of integer ambiguity hypotheses
+
+// @LoggerMessage: SBRH
+// @Description: Swift Raw Message Data
+// @Field: TimeUS: Time since system startup
+// @Field: msg_flag: Swift message type
+// @Field: 1: Sender ID
+// @Field: 2: index; always 1
+// @Field: 3: pages; number of pages received
+// @Field: 4: msg length; number of bytes received
+// @Field: 5: unused; always zero
+// @Field: 6: data received from device
+
 #define LOG_SBP_STRUCTURES \
     { LOG_MSG_SBPHEALTH, sizeof(log_SbpHealth), \
       "SBPH", "QIII", "TimeUS,CrcError,LastInject,IARhyp", "s---", "F---" }, \
