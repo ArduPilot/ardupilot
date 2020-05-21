@@ -32,8 +32,8 @@ void AP_Compass_Backend::rotate_field(Vector3f &mag, uint8_t instance)
         // add user selectable orientation
 #if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
         Rotation rotation = Rotation(state.orientation.get());
-        if (rotation == ROTATION_CUSTOM && _compass._custom_rotation) {
-            mag = *_compass._custom_rotation * mag;
+        if (rotation == ROTATION_CUSTOM && _compass._custom_external_rotation) {
+            mag = *_compass._custom_external_rotation * mag;
         } else {
             mag.rotate(rotation);
         }
@@ -234,9 +234,11 @@ void AP_Compass_Backend::set_rotation(uint8_t instance, enum Rotation rotation)
     _compass._state[Compass::StateIndex(instance)].rotation = rotation;
 #if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
     // lazily create the custom rotation matrix
-    if (!_compass._custom_rotation && Rotation(_compass._state[Compass::StateIndex(instance)].orientation.get()) == ROTATION_CUSTOM) {
-        _compass._custom_rotation = new Matrix3f();
-        _compass._custom_rotation->from_euler(radians(_compass._custom_roll), radians(_compass._custom_pitch), radians(_compass._custom_yaw));
+    if (!_compass._custom_external_rotation && Rotation(_compass._state[Compass::StateIndex(instance)].orientation.get()) == ROTATION_CUSTOM) {
+        _compass._custom_external_rotation = new Matrix3f();
+        if (_compass._custom_external_rotation) {
+            _compass._custom_external_rotation->from_euler(radians(_compass._custom_roll), radians(_compass._custom_pitch), radians(_compass._custom_yaw));
+        }
     }
 #endif
 }
