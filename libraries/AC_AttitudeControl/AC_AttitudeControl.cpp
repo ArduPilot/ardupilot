@@ -552,11 +552,7 @@ void AC_AttitudeControl::attitude_controller_run_quat()
     // Compute the angular velocity target from the attitude error
     _rate_target_ang_vel = update_ang_vel_target_from_att_error(attitude_error_vector);
 
-    // Add feedforward term that attempts to ensure that roll and pitch errors rotate with the body frame rather than the reference frame.
-    // todo: this should probably be a matrix that couples yaw as well.
-    _rate_target_ang_vel.x += constrain_float(attitude_error_vector.y, -M_PI / 4, M_PI / 4) * _ahrs.get_gyro().z;
-    _rate_target_ang_vel.y += -constrain_float(attitude_error_vector.x, -M_PI / 4, M_PI / 4) * _ahrs.get_gyro().z;
-
+    // ensure angular velocity does not go over configured limits
     ang_vel_limit(_rate_target_ang_vel, radians(_ang_vel_roll_max), radians(_ang_vel_pitch_max), radians(_ang_vel_yaw_max));
 
     // Add the angular velocity feedforward, rotated into vehicle frame
