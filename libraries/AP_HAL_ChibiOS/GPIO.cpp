@@ -30,6 +30,7 @@ static struct gpio_entry {
     AP_HAL::GPIO::irq_handler_fn_t fn; // callback for GPIO interface
     bool is_input;
     uint8_t mode;
+    thread_reference_t thd_wait;
 } _gpio_tab[] = HAL_GPIO_PINS;
 
 #define NUM_PINS ARRAY_SIZE(_gpio_tab)
@@ -67,7 +68,46 @@ void GPIO::init()
             g->enabled = g->pwm_num > pwm_count;
         }
     }
+#ifdef HAL_PIN_ALT_CONFIG
+    setup_alt_config();
+#endif
 }
+
+#ifdef HAL_PIN_ALT_CONFIG
+/*
+  alternative config table, selected using BRD_ALT_CONFIG
+ */
+static const struct alt_config {
+    uint8_t alternate;
+    uint16_t mode;
+    ioline_t line;
+} alternate_config[] HAL_PIN_ALT_CONFIG;
+
+/*
+  change pin configuration based on ALT() lines in hwdef.dat
+ */
+void GPIO::setup_alt_config(void)
+{
+    AP_BoardConfig *bc = AP::boardConfig();
+    if (!bc) {
+        return;
+    }
+    const uint8_t alt = bc->get_alt_config();
+    if (alt == 0) {
+        // use defaults
+        return;
+    }
+    for (uint8_t i=0; i<ARRAY_SIZE(alternate_config); i++) {
+        if (alt == alternate_config[i].alternate) {
+            const iomode_t mode = alternate_config[i].mode & ~PAL_STM32_HIGH;
+            const uint8_t odr = (alternate_config[i].mode & PAL_STM32_HIGH)?1:0;
+            palSetLineMode(alternate_config[i].line, mode);
+            palWriteLine(alternate_config[i].line, odr);
+        }
+    }
+}
+#endif // HAL_PIN_ALT_CONFIG
+
 
 void GPIO::pinMode(uint8_t pin, uint8_t output)
 {
@@ -180,7 +220,7 @@ bool GPIO::attach_interrupt(uint8_t pin,
     return _attach_interrupt(g->pal_line, proc, mode);
 }
 
-bool GPIO::_attach_interrupt(ioline_t line, palcallback_t cb, void *p, uint8_t mode)
+bool GPIO::_attach_interruptI(ioline_t line, palcallback_t cb, void *p, uint8_t mode)
 {
     uint32_t chmode = 0;
     switch(mode) {
@@ -200,11 +240,9 @@ bool GPIO::_attach_interrupt(ioline_t line, palcallback_t cb, void *p, uint8_t m
             break;
     }
 
-    osalSysLock();
     palevent_t *pep = pal_lld_get_line_event(line);
     if (pep->cb && p != nullptr) {
         // the pad is already being used for a callback
-        osalSysUnlock();
         return false;
     }
 
@@ -215,9 +253,16 @@ bool GPIO::_attach_interrupt(ioline_t line, palcallback_t cb, void *p, uint8_t m
     palDisableLineEventI(line);
     palSetLineCallbackI(line, cb, p);
     palEnableLineEventI(line, chmode);
-    osalSysUnlock();
 
     return true;
+}
+
+bool GPIO::_attach_interrupt(ioline_t line, palcallback_t cb, void *p, uint8_t mode)
+{
+    osalSysLock();
+    bool ret = _attach_interruptI(line, cb, p, mode);
+    osalSysUnlock();
+    return ret;
 }
 
 bool GPIO::usb_connected(void)
@@ -249,14 +294,14 @@ void DigitalSource::toggle()
     palToggleLine(line);
 }
 
-void pal_interrupt_cb(void *arg)
+static void pal_interrupt_cb(void *arg)
 {
     if (arg != nullptr) {
         ((AP_HAL::Proc)arg)();
     }
 }
 
-void pal_interrupt_cb_functor(void *arg)
+static void pal_interrupt_cb_functor(void *arg)
 {
     const uint32_t now = AP_HAL::micros();
 
@@ -269,4 +314,55 @@ void pal_interrupt_cb_functor(void *arg)
         return;
     }
     (g->fn)(g->pin_num, palReadLine(g->pal_line), now);
+}
+
+/*
+  handle interrupt from pin change for wait_pin()
+ */
+static void pal_interrupt_wait(void *arg)
+{
+    osalSysLockFromISR();
+    struct gpio_entry *g = (gpio_entry *)arg;
+    if (g == nullptr || g->thd_wait == nullptr) {
+        osalSysUnlockFromISR();
+        return;
+    }
+    osalThreadResumeI(&g->thd_wait, MSG_OK);
+    osalSysUnlockFromISR();
+}
+
+/*
+  block waiting for a pin to change. A timeout of 0 means wait
+  forever. Return true on pin change, false on timeout
+*/
+bool GPIO::wait_pin(uint8_t pin, INTERRUPT_TRIGGER_TYPE mode, uint32_t timeout_us)
+{
+    struct gpio_entry *g = gpio_by_pin_num(pin);
+    if (!g) {
+        return false;
+    }
+
+    osalSysLock();
+    if (g->thd_wait) {
+        // only allow single waiter
+        osalSysUnlock();
+        return false;
+    }
+
+    if (!_attach_interruptI(g->pal_line,
+                           palcallback_t(pal_interrupt_wait),
+                           g,
+                           mode)) {
+        osalSysUnlock();
+        return false;
+    }
+        
+    msg_t msg = osalThreadSuspendTimeoutS(&g->thd_wait, TIME_US2I(timeout_us));
+    _attach_interruptI(g->pal_line,
+                       palcallback_t(nullptr),
+                       nullptr,
+                       mode);
+    osalSysUnlock();
+
+    return msg == MSG_OK;
 }

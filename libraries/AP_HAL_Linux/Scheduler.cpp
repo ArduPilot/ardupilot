@@ -237,9 +237,7 @@ void Scheduler::_timer_task()
 
 void Scheduler::_run_io(void)
 {
-    if (!_io_semaphore.take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return;
-    }
+    _io_semaphore.take_blocking();
 
     // now call the IO based drivers
     for (int i = 0; i < _num_io_procs; i++) {

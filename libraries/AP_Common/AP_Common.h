@@ -38,6 +38,9 @@
 // sometimes we need to prevent inlining to prevent large stack usage
 #define NOINLINE __attribute__((noinline))
 
+// used to ignore results for functions marked as warn unused
+#define IGNORE_RETURN(x) do {if (x) {}} while(0)
+
 #define FMT_PRINTF(a,b) __attribute__((format(printf, a, b)))
 #define FMT_SCANF(a,b) __attribute__((format(scanf, a, b)))
 

@@ -1203,6 +1203,29 @@ static int AP_GPS_num_sensors(lua_State *L) {
     return 1;
 }
 
+static int AP_BattMonitor_get_cycle_count(lua_State *L) {
+    AP_BattMonitor * ud = AP_BattMonitor::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "battery not supported on this firmware");
+    }
+
+    binding_argcheck(L, 2);
+    const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(ud->num_instances(), UINT8_MAX))), 2, "argument out of range");
+    const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
+    uint16_t data_5003 = {};
+    const bool data = ud->get_cycle_count(
+            data_2,
+            data_5003);
+
+    if (data) {
+        lua_pushinteger(L, data_5003);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
+}
+
 static int AP_BattMonitor_get_temperature(lua_State *L) {
     AP_BattMonitor * ud = AP_BattMonitor::get_singleton();
     if (ud == nullptr) {
@@ -1764,6 +1787,7 @@ const luaL_Reg AP_GPS_meta[] = {
 };
 
 const luaL_Reg AP_BattMonitor_meta[] = {
+    {"get_cycle_count", AP_BattMonitor_get_cycle_count},
     {"get_temperature", AP_BattMonitor_get_temperature},
     {"overpower_detected", AP_BattMonitor_overpower_detected},
     {"has_failsafed", AP_BattMonitor_has_failsafed},

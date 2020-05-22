@@ -87,9 +87,9 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Param: OPTION
     // @DisplayName: RC input option
     // @Description: Function assigned to this RC channel
-    // @Values{Copter}: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 13:Super Simple Mode, 14:Acro Trainer, 15:Sprayer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw, 38:ADSB-Avoidance, 39:PrecLoiter, 40:Proximity Avoidance, 41:ArmDisarm, 42:SmartRTL, 43:InvertedFlight, 44:Winch Enable, 45:WinchControl, 46:RC Override Enable, 47:User Function 1, 48:User Function 2, 49:User Function 3, 58:Clear Waypoints, 60:ZigZag, 61:ZigZag SaveWP, 62:Compass Learn, 65:GPS Disable, 66:Relay5, 67:Relay6, 68:Stabilize, 69:PosHold, 70:AltHold, 71:FlowHold, 72:Circle, 73:Drift, 100:KillIMU1, 101:KillIMU2
-    // @Values{Rover}: 0:Do Nothing, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 11:Fence, 16:Auto, 19:Gripper, 24:Auto Mission Reset, 28:Relay On/Off, 30:Lost Rover Sound, 31:Motor Emergency Stop, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 40:Proximity Avoidance, 41:ArmDisarm, 42:SmartRTL, 46:RC Override Enable, 50:LearnCruise, 51:Manual, 52:Acro, 53:Steering, 54:Hold, 55:Guided, 56:Loiter, 57:Follow, 58:Clear Waypoints, 59:Simple, 62:Compass Learn, 63:Sailboat Tack, 65:GPS Disable, 66:Relay5, 67:Relay6, 74:Sailboat motoring 3pos, 100:KillIMU1, 101:KillIMU2,207:MainSail
-    // @Values{Plane}: 0:Do Nothing, 4:ModeRTL, 9:Camera Trigger, 16:ModeAuto, 24:Auto Mission Reset, 28:Relay On/Off, 29:Landing Gear, 34:Relay2 On/Off, 30:Lost Plane Sound, 31:Motor Emergency Stop, 35:Relay3 On/Off, 36:Relay4 On/Off, 41:ArmDisarm, 43:InvertedFlight, 46:RC Override Enable, 51:ModeManual, 55:ModeGuided, 58:Clear Waypoints, 62:Compass Learn, 64:Reverse Throttle, 65:GPS Disable, 66:Relay5, 67:Relay6, 72:ModeCircle, 77:ModeTakeoff, 100:KillIMU1, 101:KillIMU2
+    // @Values{Copter}: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 13:Super Simple Mode, 14:Acro Trainer, 15:Sprayer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw, 38:ADSB-Avoidance, 39:PrecLoiter, 40:Proximity Avoidance, 41:ArmDisarm, 42:SmartRTL, 43:InvertedFlight, 44:Winch Enable, 45:WinchControl, 46:RC Override Enable, 47:User Function 1, 48:User Function 2, 49:User Function 3, 58:Clear Waypoints, 60:ZigZag, 61:ZigZag SaveWP, 62:Compass Learn, 65:GPS Disable, 66:Relay5, 67:Relay6, 68:Stabilize, 69:PosHold, 70:AltHold, 71:FlowHold, 72:Circle, 73:Drift, 100:KillIMU1, 101:KillIMU2, 102:Camera Mode Toggle
+    // @Values{Rover}: 0:Do Nothing, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 11:Fence, 16:Auto, 19:Gripper, 24:Auto Mission Reset, 28:Relay On/Off, 30:Lost Rover Sound, 31:Motor Emergency Stop, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 40:Proximity Avoidance, 41:ArmDisarm, 42:SmartRTL, 46:RC Override Enable, 50:LearnCruise, 51:Manual, 52:Acro, 53:Steering, 54:Hold, 55:Guided, 56:Loiter, 57:Follow, 58:Clear Waypoints, 59:Simple, 62:Compass Learn, 63:Sailboat Tack, 65:GPS Disable, 66:Relay5, 67:Relay6, 74:Sailboat motoring 3pos, 100:KillIMU1, 101:KillIMU2, 102:Camera Mode Toggle,207:MainSail
+    // @Values{Plane}: 0:Do Nothing, 4:ModeRTL, 9:Camera Trigger, 16:ModeAuto, 24:Auto Mission Reset, 28:Relay On/Off, 29:Landing Gear, 34:Relay2 On/Off, 30:Lost Plane Sound, 31:Motor Emergency Stop, 35:Relay3 On/Off, 36:Relay4 On/Off, 41:ArmDisarm, 43:InvertedFlight, 46:RC Override Enable, 51:ModeManual, 55:ModeGuided, 58:Clear Waypoints, 62:Compass Learn, 64:Reverse Throttle, 65:GPS Disable, 66:Relay5, 67:Relay6, 72:ModeCircle, 77:ModeTakeoff, 100:KillIMU1, 101:KillIMU2, 102:Camera Mode Toggle
     // @User: Standard
     AP_GROUPINFO_FRAME("OPTION",  6, RC_Channel, option, 0, AP_PARAM_FRAME_COPTER|AP_PARAM_FRAME_ROVER|AP_PARAM_FRAME_PLANE),
 
@@ -103,35 +103,30 @@ RC_Channel::RC_Channel(void)
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-void
-RC_Channel::set_range(uint16_t high)
+void RC_Channel::set_range(uint16_t high)
 {
     type_in = RC_CHANNEL_TYPE_RANGE;
     high_in = high;
 }
 
-void
-RC_Channel::set_angle(uint16_t angle)
+void RC_Channel::set_angle(uint16_t angle)
 {
     type_in = RC_CHANNEL_TYPE_ANGLE;
     high_in = angle;
 }
 
-void
-RC_Channel::set_default_dead_zone(int16_t dzone)
+void RC_Channel::set_default_dead_zone(int16_t dzone)
 {
     dead_zone.set_default(abs(dzone));
 }
 
-bool
-RC_Channel::get_reverse(void) const
+bool RC_Channel::get_reverse(void) const
 {
     return bool(reversed.get());
 }
 
 // read input from hal.rcin or overrides
-bool
-RC_Channel::update(void)
+bool RC_Channel::update(void)
 {
     if (has_override() && !rc().ignore_overrides()) {
         radio_in = override_value;
@@ -154,8 +149,7 @@ RC_Channel::update(void)
 // recompute control values with no deadzone
 // When done this way the control_in value can be used as servo_out
 // to give the same output as input
-void
-RC_Channel::recompute_pwm_no_deadzone()
+void RC_Channel::recompute_pwm_no_deadzone()
 {
     if (type_in == RC_CHANNEL_TYPE_RANGE) {
         control_in = pwm_to_range_dz(0);
@@ -190,8 +184,7 @@ int16_t RC_Channel::get_control_mid() const
   return an "angle in centidegrees" (normally -4500 to 4500) from
   the current radio_in value using the specified dead_zone
  */
-int16_t
-RC_Channel::pwm_to_angle_dz_trim(uint16_t _dead_zone, uint16_t _trim) const
+int16_t RC_Channel::pwm_to_angle_dz_trim(uint16_t _dead_zone, uint16_t _trim) const
 {
     int16_t radio_trim_high = _trim + _dead_zone;
     int16_t radio_trim_low  = _trim - _dead_zone;
@@ -210,8 +203,7 @@ RC_Channel::pwm_to_angle_dz_trim(uint16_t _dead_zone, uint16_t _trim) const
   return an "angle in centidegrees" (normally -4500 to 4500) from
   the current radio_in value using the specified dead_zone
  */
-int16_t
-RC_Channel::pwm_to_angle_dz(uint16_t _dead_zone) const
+int16_t RC_Channel::pwm_to_angle_dz(uint16_t _dead_zone) const
 {
     return pwm_to_angle_dz_trim(_dead_zone, radio_trim);
 }
@@ -220,8 +212,7 @@ RC_Channel::pwm_to_angle_dz(uint16_t _dead_zone) const
   return an "angle in centidegrees" (normally -4500 to 4500) from
   the current radio_in value
  */
-int16_t
-RC_Channel::pwm_to_angle() const
+int16_t RC_Channel::pwm_to_angle() const
 {
 	return pwm_to_angle_dz(dead_zone);
 }
@@ -231,8 +222,7 @@ RC_Channel::pwm_to_angle() const
   convert a pulse width modulation value to a value in the configured
   range, using the specified deadzone
  */
-int16_t
-RC_Channel::pwm_to_range_dz(uint16_t _dead_zone) const
+int16_t RC_Channel::pwm_to_range_dz(uint16_t _dead_zone) const
 {
     int16_t r_in = constrain_int16(radio_in, radio_min.get(), radio_max.get());
 
@@ -252,8 +242,7 @@ RC_Channel::pwm_to_range_dz(uint16_t _dead_zone) const
   convert a pulse width modulation value to a value in the configured
   range
  */
-int16_t
-RC_Channel::pwm_to_range() const
+int16_t RC_Channel::pwm_to_range() const
 {
     return pwm_to_range_dz(dead_zone);
 }
@@ -269,8 +258,7 @@ int16_t RC_Channel::get_control_in_zero_dz(void) const
 
 // ------------------------------------------
 
-float
-RC_Channel::norm_input() const
+float RC_Channel::norm_input() const
 {
     float ret;
     int16_t reverse_mul = (reversed?-1:1);
@@ -288,8 +276,7 @@ RC_Channel::norm_input() const
     return constrain_float(ret, -1.0f, 1.0f);
 }
 
-float
-RC_Channel::norm_input_dz() const
+float RC_Channel::norm_input_dz() const
 {
     int16_t dz_min = radio_trim - dead_zone;
     int16_t dz_max = radio_trim + dead_zone;
@@ -305,11 +292,22 @@ RC_Channel::norm_input_dz() const
     return constrain_float(ret, -1.0f, 1.0f);
 }
 
+// return a normalised input for a channel, in range -1 to 1,
+// ignores trim and deadzone
+float RC_Channel::norm_input_ignore_trim() const
+{
+    // sanity check min and max to avoid divide by zero
+    if (radio_max <= radio_min) {
+        return 0.0f;
+    }
+    const float ret = (reversed ? -2.0f : 2.0f) * (((float)(radio_in - radio_min) / (float)(radio_max - radio_min)) - 0.5f);
+    return constrain_float(ret, -1.0f, 1.0f);
+}
+
 /*
   get percentage input from 0 to 100. This ignores the trim value.
  */
-uint8_t
-RC_Channel::percent_input() const
+uint8_t RC_Channel::percent_input() const
 {
     if (radio_in <= radio_min) {
         return reversed?100:0;
@@ -808,6 +806,26 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_po
         }
         break;
 #endif // HAL_MINIMIZE_FEATURES
+
+    case AUX_FUNC::CAM_MODE_TOGGLE: {
+        // Momentary switch to for cycling camera modes
+        AP_Camera *camera = AP_Camera::get_singleton();
+        if (camera == nullptr) {
+            break;
+        }
+        switch (ch_flag) {
+        case LOW:
+            // nothing
+            break;
+        case MIDDLE:
+            // nothing
+            break;
+        case HIGH:
+            camera->cam_mode_toggle();
+            break;
+        }
+        break;
+    }
 
     default:
         gcs().send_text(MAV_SEVERITY_INFO, "Invalid channel option (%u)", (unsigned int)ch_option);

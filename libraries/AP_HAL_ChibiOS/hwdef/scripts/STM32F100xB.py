@@ -30,7 +30,9 @@ mcu = {
     # flags of 2 means faster memory for CPU intensive work
     'RAM_MAP' : [
         (0x20000000, 8, 1), # main memory, DMA safe
-    ]
+    ],
+
+    'EXPECTED_CLOCK' : 24000000
 }
 
 ADC1_map = {

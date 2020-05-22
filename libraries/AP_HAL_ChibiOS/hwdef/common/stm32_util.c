@@ -260,8 +260,10 @@ enum rtc_boot_magic check_fast_reboot(void)
 // set RTC register for a fast reboot
 void set_fast_reboot(enum rtc_boot_magic v)
 {
-    uint32_t vv = (uint32_t)v;
-    set_rtc_backup(0, &vv, 1);
+    if (check_fast_reboot() != v) {
+        uint32_t vv = (uint32_t)v;
+        set_rtc_backup(0, &vv, 1);
+    }
 }
 
 #else // NO_FASTBOOT
@@ -319,7 +321,7 @@ void peripheral_power_enable(void)
 #endif
 }
 
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3)
 /*
   read mode of a pin. This allows a pin config to be read, changed and
   then written back
@@ -340,7 +342,18 @@ iomode_t palReadLineMode(ioline_t line)
     }
     return ret;
 }
-#endif
+
+/*
+  set pin as pullup, pulldown or floating
+ */
+void palLineSetPushPull(ioline_t line, enum PalPushPull pp)
+{
+    ioportid_t port = PAL_PORT(line);
+    uint8_t pad = PAL_PAD(line);
+    port->PUPDR = (port->PUPDR & ~(3<<(pad*2))) | (pp<<(pad*2));
+}
+
+#endif // F7, H7, F4
 
 void stm32_cacheBufferInvalidate(const void *p, size_t size)
 {
@@ -350,4 +363,89 @@ void stm32_cacheBufferInvalidate(const void *p, size_t size)
 void stm32_cacheBufferFlush(const void *p, size_t size)
 {
     cacheBufferFlush(p, size);
+}
+
+
+#ifdef HAL_GPIO_PIN_FAULT
+/*
+  optional support for hard-fault debugging using soft-serial output to a pin
+  To use this setup a pin like this:
+
+    Pxx FAULT OUTPUT HIGH
+
+  for some pin Pxx
+
+  On a STM32F405 the baudrate will be around 42kBaud. Use the
+  auto-baud function on your logic analyser to decode
+*/
+/*
+  send one bit out a debug line
+ */
+static void fault_send_bit(ioline_t line, uint8_t b)
+{
+    palWriteLine(line, b);
+    for (uint32_t i=0; i<1000; i++) {
+        palWriteLine(line, b);
+    }
+}
+
+/*
+  send a byte out a debug line
+ */
+static void fault_send_byte(ioline_t line, uint8_t b)
+{
+    fault_send_bit(line, 0); // start bit
+    for (uint8_t i=0; i<8; i++) {
+        uint8_t bit = (b & (1U<<i))?1:0;
+        fault_send_bit(line, bit);
+    }
+    fault_send_bit(line, 1); // stop bit
+}
+
+/*
+  send a string out a debug line
+ */
+static void fault_send_string(const char *str)
+{
+    while (*str) {
+        fault_send_byte(HAL_GPIO_PIN_FAULT, (uint8_t)*str++);
+    }
+    fault_send_byte(HAL_GPIO_PIN_FAULT, (uint8_t)'\n');
+}
+
+void fault_printf(const char *fmt, ...)
+{
+    static char buffer[100];
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(buffer, sizeof(buffer), fmt, ap);
+    va_end(ap);
+    fault_send_string(buffer);
+}
+#endif // HAL_GPIO_PIN_HARDFAULT
+
+void system_halt_hook(void)
+{
+#ifdef HAL_GPIO_PIN_FAULT
+    // optionally print the message on a fault pin
+    while (true) {
+        fault_printf("PANIC:%s\n", ch.dbg.panic_msg);
+        fault_printf("RA0:0x%08x\n", __builtin_return_address(0));
+    }
+#endif
+}
+
+// hook for stack overflow
+void stack_overflow(thread_t *tp)
+{
+#if !defined(HAL_BOOTLOADER_BUILD) && !defined(IOMCU_FW)
+    extern void AP_stack_overflow(const char *thread_name);
+    AP_stack_overflow(tp->name);
+    // if we get here then we are armed and got a stack overflow. We
+    // will report an internal error and keep trying to fly. We are
+    // quite likely to crash anyway due to memory corruption. The
+    // watchdog data should record the thread name and fault type
+#else
+    (void)tp;
+#endif
 }

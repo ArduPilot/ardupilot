@@ -304,6 +304,7 @@ void AP_IOMCU_FW::rcin_update()
         hal.rcin->read(rc_input.pwm, IOMCU_MAX_CHANNELS);
         rc_last_input_ms = last_ms;
         rc_input.rc_protocol = (uint16_t)AP::RC().protocol_detected();
+        rc_input.rssi = AP::RC().get_RSSI();
     } else if (last_ms - rc_last_input_ms > 200U) {
         rc_input.flags_rc_ok = false;
     }

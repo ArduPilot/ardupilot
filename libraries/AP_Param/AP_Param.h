@@ -303,6 +303,14 @@ public:
                                           ptrdiff_t offset, uint16_t &key);
     static bool find_key_by_pointer(const void *ptr, uint16_t &key);
 
+    /// Find key of top level group variable by pointer
+    ///
+    ///
+    /// @param  p               Pointer to variable
+    /// @return                 key for variable
+    static bool find_top_level_key_by_pointer(const void *ptr, uint16_t &key);
+
+
     /// Find a object in the top level var_info table
     ///
     /// If the variable has no name, it cannot be found by this interface.

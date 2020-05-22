@@ -12,7 +12,7 @@ SPIDEV icm20602_ext   SPI4 DEVID3  GYRO_EXT_CS  MODE3  4*MHZ  8*MHZ
 
 # pull Solo's default parameters from /Tools/Frame_params
 # these are parameters the Solo requires for proper operation that are different from the copter defaults.
-env DEFAULT_PARAMETERS 'Tools/Frame_params/Solo_Copter-4.param'
+env DEFAULT_PARAMETERS Tools/Frame_params/Solo_Copter-4.param
 
 # three IMUs, but allow for different varients. First two IMUs are
 # isolated, 3rd isn't

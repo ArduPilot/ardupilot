@@ -47,7 +47,7 @@ const PALConfig pal_default_config =
   {VAL_GPIOE_ODR, VAL_GPIOE_CRL, VAL_GPIOE_CRH},
 };
 
-#else //Other than STM32F1 series
+#else //Other than STM32F1/F3 series
 
 /**
  * @brief   Type of STM32 GPIO port setup.
@@ -173,6 +173,9 @@ static void stm32_gpio_init(void) {
 #if defined(STM32H7)
   rccResetAHB4(STM32_GPIO_EN_MASK);
   rccEnableAHB4(STM32_GPIO_EN_MASK, true);
+#elif defined(STM32F3)
+  rccResetAHB(STM32_GPIO_EN_MASK);
+  rccEnableAHB(STM32_GPIO_EN_MASK, true);
 #else
   rccResetAHB1(STM32_GPIO_EN_MASK);
   rccEnableAHB1(STM32_GPIO_EN_MASK, true);

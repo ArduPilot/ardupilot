@@ -89,6 +89,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_ADSB',
     'AC_PID',
     'AP_SerialLED',
+    'AP_Hott_Telem',
 ]
 
 def get_legacy_defines(sketch_name):

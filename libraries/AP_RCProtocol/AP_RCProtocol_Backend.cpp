@@ -19,6 +19,7 @@
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_Logger/AP_Logger.h>
 
 AP_RCProtocol_Backend::AP_RCProtocol_Backend(AP_RCProtocol &_frontend) :
     frontend(_frontend),
@@ -57,7 +58,7 @@ void AP_RCProtocol_Backend::read(uint16_t *pwm, uint8_t n)
 /*
   provide input from a backend
  */
-void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool in_failsafe)
+void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool in_failsafe, int16_t _rssi)
 {
     num_values = MIN(num_values, MAX_RCIN_CHANNELS);
     memcpy(_pwm_values, values, num_values*sizeof(uint16_t));
@@ -71,4 +72,6 @@ void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool
     if (!in_failsafe) {
         rc_input_count++;
     }
+    rssi = _rssi;
 }
+

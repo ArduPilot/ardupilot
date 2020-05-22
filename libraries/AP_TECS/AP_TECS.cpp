@@ -248,7 +248,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @Bitmask: 0:GliderOnly
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 28, AP_TECS, _options, 0),
-    
+
     AP_GROUPEND
 };
 
@@ -911,7 +911,7 @@ void AP_TECS::_update_pitch(void)
 void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
 {
     // Initialise states and variables if DT > 1 second or in climbout
-    if (_DT > 1.0f)
+    if (_DT > 1.0f || _need_reset)
     {
         _integTHR_state      = 0.0f;
         _integSEB_state      = 0.0f;
@@ -927,6 +927,7 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
         _flags.reached_speed_takeoff = false;
         _DT                = 0.1f; // when first starting TECS, use a
         // small time constant
+        _need_reset = false;
     }
     else if (_flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF || _flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND)
     {
@@ -1065,6 +1066,13 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         _PITCHminf = MIN(_PITCHminf, _land_pitch_min+delta_per_loop);
         _land_pitch_min = MAX(_land_pitch_min, _PITCHminf);
         _PITCHminf = MAX(_land_pitch_min, _PITCHminf);
+    }
+
+    if (_landing.is_flaring()) {
+        // ensure we don't violate the limits for flare pitch
+        if (_land_pitch_max != 0) {
+            _PITCHmaxf = MIN(_land_pitch_max, _PITCHmaxf);
+        }
     }
 
     if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF || flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
