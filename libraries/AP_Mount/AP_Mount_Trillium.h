@@ -66,6 +66,8 @@ private:
 
     uint32_t    _last_send_isFlying_ms;
 
+    uint32_t    _deploy_command_last_ms;
+
     struct {
         uint32_t            last_MAVLink_to_gimbal_ms;
         uint32_t            last_gimbal_to_MAvLink_ms;
