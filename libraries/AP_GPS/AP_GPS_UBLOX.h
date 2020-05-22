@@ -37,7 +37,7 @@
  * modules are configured with all ubx binary messages off, which
  * would mean we would never detect it.
  */
-#define UBLOX_SET_BINARY "\265\142\006\001\003\000\001\006\001\022\117$PUBX,41,1,0023,0001,115200,0*1C\r\n"
+#define UBLOX_SET_BINARY_115200 "\265\142\006\001\003\000\001\006\001\022\117$PUBX,41,1,0023,0001,115200,0*1C\r\n"
 
 // a varient with 230400 baudrate
 #define UBLOX_SET_BINARY_230400 "\265\142\006\001\003\000\001\006\001\022\117$PUBX,41,1,0023,0001,230400,0*1E\r\n"
