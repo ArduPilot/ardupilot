@@ -183,7 +183,6 @@ void ModePlanckTracking::run() {
                   {
                     yaw_rate_cmd = yaw_cmd;
                   }
-
                   ModeGuided::set_destination_posvel(pos_cmd,vel_cmd,!is_yaw_rate,yaw_cmd,is_yaw_rate,yaw_rate_cmd);
               }
               break;
