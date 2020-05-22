@@ -57,7 +57,6 @@ public:
     virtual bool is_autopilot() const { return false; }
     virtual bool has_user_takeoff(bool must_navigate) const { return false; }
     virtual bool in_guided_mode() const { return false; }
-    virtual bool in_4d_mode() const { return false; }
     virtual bool logs_attitude() const { return false; }
 
     // return a string for this flightmode
@@ -1502,59 +1501,178 @@ private:
 #endif
 
 
-class Mode4DAuto : public Mode {
+class Mode4DAuto : public ModeAuto {
 
 public:
     // inherit constructor
-    using Mode::Mode;
+    using ModeAuto::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
 
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return from_gcs; };
+    bool allows_arming(bool from_gcs) const override { return false; };
     bool is_autopilot() const override { return true; }
-    bool has_user_takeoff(bool must_navigate) const override { return true; }
-    bool in_4d_mode() const override { return true; }
-    bool in_guided_mode() const override { return true; }
+    bool in_guided_mode() const override { return mode() == Auto_NavGuided; }
 
-    bool requires_terrain_failsafe() const override { return true; }
+    // Auto
+    AutoMode mode() const { return _mode; }
 
-    void set_angle(const Quaternion &q, float climb_rate_cms, bool use_yaw_rate, float yaw_rate_rads);
-    bool set_destination(const Vector3f& destination, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool terrain_alt = false);
-    bool set_destination(const Location& dest_loc, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
-    bool get_wp(Location &loc) override;
-    void set_velocity(const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool log_request = true);
-    bool set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
+    bool loiter_start();
+    void rtl_start();
+    void takeoff_start(const Location& dest_loc);
+    void wp_start(const Location& dest_loc);
+    void land_start();
+    void land_start(const Vector3f& destination);
+    void circle_movetoedge_start(const Location &circle_center, float radius_m);
+    void circle_start();
+    void spline_start(const Vector3f& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Vector3f& next_spline_destination);
+    void spline_start(const Location& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Location& next_destination);
+    void nav_guided_start();
+
+    bool is_landing() const override;
 
     bool is_taking_off() const override;
 
-    bool do_user_takeoff_start(float takeoff_alt_cm) override;
+    bool requires_terrain_failsafe() const override { return true; }
 
-    FourDAutoMode mode() const { return four_d_mode; }
+    // return true if this flight mode supports user takeoff
+    //  must_nagivate is true if mode must also control horizontal position
+    virtual bool has_user_takeoff(bool must_navigate) const override { return false; }
 
-    void angle_control_start();
-    //void angle_control_run();
+    void payload_place_start();
+
+    // for GCS_MAVLink to call:
+    bool do_guided(const AP_Mission::Mission_Command& cmd);
+
+    AP_Mission mission{
+        FUNCTOR_BIND_MEMBER(&Mode4DAuto::start_command, bool, const AP_Mission::Mission_Command &),
+        FUNCTOR_BIND_MEMBER(&Mode4DAuto::verify_command, bool, const AP_Mission::Mission_Command &),
+        FUNCTOR_BIND_MEMBER(&Mode4DAuto::exit_mission, void)};
 
 protected:
 
     const char *name() const override { return "4DAUTO"; }
     const char *name4() const override { return "4DA"; }
 
+    uint32_t wp_distance() const override;
+    int32_t wp_bearing() const override;
+    float crosstrack_error() const override { return wp_nav->crosstrack_error();}
+    bool get_wp(Location &loc) override;
+    void run_autopilot() override;
+
 private:
 
-    void pos_control_start();
-    void vel_control_start();
-    void posvel_control_start();
-    void takeoff_run();
-    void pos_control_run();
-    //void vel_control_run();
-    //void posvel_control_run();
-    //void set_desired_velocity_with_accel_and_fence_limits(const Vector3f& vel_des);
-    void set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle);
+    bool start_command(const AP_Mission::Mission_Command& cmd);
+    bool verify_command(const AP_Mission::Mission_Command& cmd);
+    void exit_mission();
 
-    // controls which controller is run (pos or vel):
-    FourDAutoMode four_d_mode = FourDAuto_TakeOff;
+    void takeoff_run();
+    void wp_run();
+    void spline_run();
+    void land_run();
+    void rtl_run();
+    void circle_run();
+    void nav_guided_run();
+    void loiter_run();
+    void loiter_to_alt_run();
+
+    Location loc_from_cmd(const AP_Mission::Mission_Command& cmd) const;
+
+    void payload_place_start(const Vector3f& destination);
+    void payload_place_run();
+    bool payload_place_run_should_run();
+    void payload_place_run_loiter();
+    void payload_place_run_descend();
+    void payload_place_run_release();
+
+    AutoMode _mode = Auto_TakeOff;   // controls which auto controller is run
+
+    Location terrain_adjusted_location(const AP_Mission::Mission_Command& cmd) const;
+
+    void do_takeoff(const AP_Mission::Mission_Command& cmd);
+    void do_nav_wp(const AP_Mission::Mission_Command& cmd);
+    void do_land(const AP_Mission::Mission_Command& cmd);
+    void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
+    void do_circle(const AP_Mission::Mission_Command& cmd);
+    void do_loiter_time(const AP_Mission::Mission_Command& cmd);
+    void do_loiter_to_alt(const AP_Mission::Mission_Command& cmd);
+    void do_spline_wp(const AP_Mission::Mission_Command& cmd);
+#if NAV_GUIDED == ENABLED
+    void do_nav_guided_enable(const AP_Mission::Mission_Command& cmd);
+    void do_guided_limits(const AP_Mission::Mission_Command& cmd);
+#endif
+    void do_nav_delay(const AP_Mission::Mission_Command& cmd);
+    void do_wait_delay(const AP_Mission::Mission_Command& cmd);
+    void do_within_distance(const AP_Mission::Mission_Command& cmd);
+    void do_yaw(const AP_Mission::Mission_Command& cmd);
+    void do_change_speed(const AP_Mission::Mission_Command& cmd);
+    void do_set_home(const AP_Mission::Mission_Command& cmd);
+    void do_roi(const AP_Mission::Mission_Command& cmd);
+    void do_mount_control(const AP_Mission::Mission_Command& cmd);
+#if PARACHUTE == ENABLED
+    void do_parachute(const AP_Mission::Mission_Command& cmd);
+#endif
+#if WINCH_ENABLED == ENABLED
+    void do_winch(const AP_Mission::Mission_Command& cmd);
+#endif
+    void do_payload_place(const AP_Mission::Mission_Command& cmd);
+    void do_RTL(void);
+
+    bool verify_takeoff();
+    bool verify_land();
+    bool verify_payload_place();
+    bool verify_loiter_unlimited();
+    bool verify_loiter_time(const AP_Mission::Mission_Command& cmd);
+    bool verify_loiter_to_alt();
+    bool verify_RTL();
+    bool verify_wait_delay();
+    bool verify_within_distance();
+    bool verify_yaw();
+    bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
+    bool verify_circle(const AP_Mission::Mission_Command& cmd);
+    bool verify_spline_wp(const AP_Mission::Mission_Command& cmd);
+#if NAV_GUIDED == ENABLED
+    bool verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd);
+#endif
+    bool verify_nav_delay(const AP_Mission::Mission_Command& cmd);
+
+    // Loiter control
+    uint16_t loiter_time_max;                // How long we should stay in Loiter Mode for mission scripting (time in seconds)
+    uint32_t loiter_time;                    // How long have we been loitering - The start time in millis
+
+    struct {
+        bool reached_destination_xy : 1;
+        bool loiter_start_done : 1;
+        bool reached_alt : 1;
+        float alt_error_cm;
+        int32_t alt;
+    } loiter_to_alt;
+
+    // Delay the next navigation command
+    uint32_t nav_delay_time_max_ms;  // used for delaying the navigation commands (eg land,takeoff etc.)
+    uint32_t nav_delay_time_start_ms;
+
+    // Delay Mission Scripting Command
+    int32_t condition_value;  // used in condition commands (eg delay, change alt, etc.)
+    uint32_t condition_start;
+
+    enum class State {
+        FlyToLocation = 0,
+        Descending = 1
+    };
+    State state = State::FlyToLocation;
+
+    struct {
+        PayloadPlaceStateType state = PayloadPlaceStateType_Calibrating_Hover_Start; // records state of place (descending, releasing, released, ...)
+        uint32_t hover_start_timestamp; // milliseconds
+        float hover_throttle_level;
+        uint32_t descend_start_timestamp; // milliseconds
+        uint32_t place_start_timestamp; // milliseconds
+        float descend_throttle_level;
+        float descend_start_altitude;
+        float descend_max; // centimetres
+    } nav_payload_place;
 };
 

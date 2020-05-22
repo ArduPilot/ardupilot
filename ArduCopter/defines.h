@@ -107,6 +107,14 @@ enum GuidedMode {
     Guided_Angle,
 };
 
+enum FourDAutoMode {
+	FourDAuto_TakeOff,
+	FourDAuto_WP,
+	FourDAuto_Velocity,
+	FourDAuto_PosVel,
+	FourDAuto_Angle,
+};
+
 // Safe RTL states
 enum SmartRTLState {
     SmartRTL_WaitForPathCleanup,
@@ -149,6 +157,7 @@ enum LoggingParameters {
      LOG_HELI_MSG,
      LOG_PRECLAND_MSG,
      LOG_GUIDEDTARGET_MSG,
+	 LOG_4DAutoTARGET_MSG,
      LOG_SYSIDD_MSG,
      LOG_SYSIDS_MSG,
 };

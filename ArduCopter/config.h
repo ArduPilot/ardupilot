@@ -277,6 +277,12 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// 4DAuto mode - allows vehicle to trace waypoints and perform automated actions with 4D Autopilot algorithm
+#ifndef MODE_4DAUTO_ENABLED
+# define MODE_4DAUTO_ENABLED ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // Brake mode - bring vehicle to stop
 #ifndef MODE_BRAKE_ENABLED
 # define MODE_BRAKE_ENABLED ENABLED

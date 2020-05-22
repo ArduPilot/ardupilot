@@ -272,7 +272,7 @@ void Copter::fast_loop()
 bool Copter::start_takeoff(float alt)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
-    if (!flightmode->in_guided_mode()) {
+    if (!(flightmode->in_guided_mode() || (flightmode->in_4d_mode()))) {
         return false;
     }
 
@@ -280,6 +280,12 @@ bool Copter::start_takeoff(float alt)
         copter.set_auto_armed(true);
         return true;
     }
+
+    if (mode_4dauto.do_user_takeoff_start(alt * 100.0f)) {
+    	copter.set_auto_armed(true);
+    	return true;
+    }
+
     return false;
 }
 
