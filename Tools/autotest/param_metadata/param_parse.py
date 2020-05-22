@@ -13,6 +13,7 @@ from rstemit import RSTEmit
 from wikiemit import WikiEmit
 from xmlemit import XmlEmit
 from mdemit import MDEmit
+from jsonemit import JSONEmit
 
 parser = ArgumentParser(description="Parse ArduPilot parameters.")
 parser.add_argument("-v", "--verbose", dest='verbose', action='store_true', default=False, help="show debugging output")
@@ -26,19 +27,19 @@ parser.add_argument("--format",
                     dest='output_format',
                     action='store',
                     default='all',
-                    choices=['all', 'html', 'rst', 'wiki', 'xml', 'edn', 'md'],
+                    choices=['all', 'html', 'rst', 'wiki', 'xml', 'json', 'edn', 'md'],
                     help="what output format to use")
 args = parser.parse_args()
 
 
 # Regular expressions for parsing the parameter metadata
 
-prog_param = re.compile(r"@Param: (\w+).*((?:\n[ \t]*// @(\w+)(?:{([^}]+)})?: (.*))+)(?:\n\n|\n[ \t]+[A-Z])", re.MULTILINE)
+prog_param = re.compile(r"@Param: (\w+).*((?:\n[ \t]*// @(\w+)(?:{([^}]+)})?: (.*))+)(?:\n[ \t\r]*\n|\n[ \t]+[A-Z])", re.MULTILINE)
 
 # match e.g @Value: 0=Unity, 1=Koala, 17=Liability
-prog_param_fields = re.compile(r"[ \t]*// @(\w+): (.*)")
+prog_param_fields = re.compile(r"[ \t]*// @(\w+): ([^\r\n]*)")
 # match e.g @Value{Copter}: 0=Volcano, 1=Peppermint
-prog_param_tagged_fields = re.compile(r"[ \t]*// @(\w+){([^}]+)}: (.*)")
+prog_param_tagged_fields = re.compile(r"[ \t]*// @(\w+){([^}]+)}: ([^\r\n]*)")
 
 prog_groups = re.compile(r"@Group: *(\w+).*((?:\n[ \t]*// @(Path): (\S+))+)", re.MULTILINE)
 
@@ -52,6 +53,12 @@ vehicle_paths.sort(reverse=True)
 
 vehicles = []
 libraries = []
+
+# AP_Vehicle also has parameters rooted at "", but isn't referenced
+# from the vehicle in any way:
+ap_vehicle_lib = Library("") # the "" is tacked onto the front of param name
+setattr(ap_vehicle_lib, "Path", os.path.join('..', 'libraries', 'AP_Vehicle', 'AP_Vehicle.cpp'))
+libraries.append(ap_vehicle_lib)
 
 error_count = 0
 current_param = None
@@ -69,14 +76,14 @@ def error(str_to_print):
     global error_count
     error_count += 1
     if current_file is not None:
-        print("In %s" % current_file)
+        print("Error in %s" % current_file)
     if current_param is not None:
         print("At param %s" % current_param)
     print(str_to_print)
 
 
 truename_map = {
-    "APMrover2": "Rover",
+    "Rover": "Rover",
     "ArduSub": "Sub",
     "ArduCopter": "Copter",
     "ArduPlane": "Plane",
@@ -124,7 +131,7 @@ for vehicle in vehicles:
         for field in fields:
             field_list.append(field[0])
             if field[0] in known_param_fields:
-                value = re.sub('@PREFIX@', "", field[1])
+                value = re.sub('@PREFIX@', "", field[1]).rstrip()
                 setattr(p, field[0], value)
             else:
                 error("param: unknown parameter metadata field '%s'" % field[0])
@@ -165,7 +172,7 @@ def process_library(vehicle, library, pathprefix=None):
             p_text = f.read()
             f.close()
         else:
-            error("Path %s not found for library %s" % (path, library.name))
+            error("Path %s not found for library %s (fname=%s)" % (path, library.name, libraryfname))
             continue
 
         param_matches = prog_param.findall(p_text)
@@ -278,7 +285,8 @@ def validate(param):
     if (hasattr(param, "Range")):
         rangeValues = param.__dict__["Range"].split(" ")
         if (len(rangeValues) != 2):
-            error("Invalid Range values for %s" % (param.name))
+            error("Invalid Range values for %s (%s)" %
+                  (param.name, param.__dict__["Range"]))
             return
         min_value = rangeValues[0]
         max_value = rangeValues[1]
@@ -288,6 +296,15 @@ def validate(param):
         if not is_number(max_value):
             error("Max value not number: %s %s" % (param.name, max_value))
             return
+    # Check for duplicate in @value field 
+    if (hasattr(param, "Values")):
+        valueList = param.__dict__["Values"].split(",")
+        values = []
+        for i in valueList:
+            i = i.replace(" ","")
+            values.append(i.partition(":")[0])
+        if (len(values) != len(set(values))):
+            print("Duplicate values found")
     # Validate units
     if (hasattr(param, "Units")):
         if (param.__dict__["Units"] != "") and (param.__dict__["Units"] not in known_units):
@@ -335,6 +352,8 @@ def do_emit(emit):
 
 
 if args.emit_params:
+    if args.output_format == 'all' or args.output_format == 'json':
+        do_emit(JSONEmit())
     if args.output_format == 'all' or args.output_format == 'xml':
         do_emit(XmlEmit())
     if args.output_format == 'all' or args.output_format == 'wiki':
