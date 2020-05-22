@@ -2507,7 +2507,7 @@ void GCS_MAVLINK::send_vfr_hud()
         vfr_hud_airspeed(),
         ahrs.groundspeed(),
         (ahrs.yaw_sensor / 100) % 360,
-        abs(vfr_hud_throttle()),
+        vfr_hud_throttle(),
         vfr_hud_alt(),
         vfr_hud_climbrate());
 }
