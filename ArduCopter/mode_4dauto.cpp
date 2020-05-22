@@ -10,8 +10,8 @@
  # define GUIDED_LOOK_AT_TARGET_MIN_DISTANCE_CM     500     // point nose at target if it is more than 5m away
 #endif
 
-#define GUIDED_POSVEL_TIMEOUT_MS    3000    // guided mode's position-velocity controller times out after 3seconds with no new updates
-#define GUIDED_ATTITUDE_TIMEOUT_MS  1000    // guided mode's attitude controller times out after 1 second with no new updates
+#define FOURDAUTO_POSVEL_TIMEOUT_MS    3000    // guided mode's position-velocity controller times out after 3seconds with no new updates
+#define FOURDAUTO_ATTITUDE_TIMEOUT_MS  1000    // guided mode's attitude controller times out after 1 second with no new updates
 
 static Vector3f four_d_pos_target_cm;       // position target (used by posvel controller only)
 static Vector3f four_d_vel_target_cms;      // velocity target (used by velocity controller and posvel controller)
@@ -267,7 +267,7 @@ void Mode4DAuto::set_velocity(const Vector3f& velocity, bool use_yaw, float yaw_
     set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
 
     // record velocity target
-    guided_vel_target_cms = velocity;
+    four_d_vel_target_cms = velocity;
     vel_update_time_ms = millis();
 
     // log target
@@ -353,6 +353,17 @@ void Mode4DAuto::run()
     	pos_control_run();
     	break;
 
+    case FourDAuto_Velocity:
+    	vel_control_run();
+    	break;
+
+    case FourDAuto_PosVel:
+		posvel_control_run();
+		break;
+
+    case FourDAuto_Angle:
+    	angle_control_run();
+    	break;
     }
 }
 
@@ -413,6 +424,224 @@ void Mode4DAuto::pos_control_run()
     }
 }
 
+// 4dauto_vel_control_run - runs the guided velocity controller
+// called from four_d_run
+void Mode4DAuto::vel_control_run()
+{
+    // process pilot's yaw input
+    float target_yaw_rate = 0;
+    if (!copter.failsafe.radio) {
+        // get pilot's desired yaw rate
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        if (!is_zero(target_yaw_rate)) {
+            auto_yaw.set_mode(AUTO_YAW_HOLD);
+        }
+    }
+
+    // if not armed set throttle to zero and exit immediately
+    if (is_disarmed_or_landed()) {
+        make_safe_spool_down();
+        return;
+    }
+
+    // set motors to full range
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+
+    // set velocity to zero and stop rotating if no updates received for 3 seconds
+    uint32_t tnow = millis();
+    if (tnow - vel_update_time_ms > FOURDAUTO_POSVEL_TIMEOUT_MS) {
+        if (!pos_control->get_desired_velocity().is_zero()) {
+            set_desired_velocity_with_accel_and_fence_limits(Vector3f(0.0f, 0.0f, 0.0f));
+        }
+        if (auto_yaw.mode() == AUTO_YAW_RATE) {
+            auto_yaw.set_rate(0.0f);
+        }
+    } else {
+        set_desired_velocity_with_accel_and_fence_limits(four_d_vel_target_cms);
+    }
+
+    // call velocity controller which includes z axis controller
+    pos_control->update_vel_controller_xyz();
+
+    // call attitude controller
+    if (auto_yaw.mode() == AUTO_YAW_HOLD) {
+        // roll & pitch from waypoint controller, yaw rate from pilot
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pos_control->get_roll(), pos_control->get_pitch(), target_yaw_rate);
+    } else if (auto_yaw.mode() == AUTO_YAW_RATE) {
+        // roll & pitch from velocity controller, yaw rate from mavlink command or mission item
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pos_control->get_roll(), pos_control->get_pitch(), auto_yaw.rate_cds());
+    } else {
+        // roll, pitch from waypoint controller, yaw heading from GCS or auto_heading()
+        attitude_control->input_euler_angle_roll_pitch_yaw(pos_control->get_roll(), pos_control->get_pitch(), auto_yaw.yaw(), true);
+    }
+}
+
+// guided_posvel_control_run - runs the guided spline controller
+// called from guided_run
+void Mode4DAuto::posvel_control_run()
+{
+    // process pilot's yaw input
+    float target_yaw_rate = 0;
+
+    if (!copter.failsafe.radio) {
+        // get pilot's desired yaw rate
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        if (!is_zero(target_yaw_rate)) {
+            auto_yaw.set_mode(AUTO_YAW_HOLD);
+        }
+    }
+
+    // if not armed set throttle to zero and exit immediately
+    if (is_disarmed_or_landed()) {
+        make_safe_spool_down();
+        return;
+    }
+
+    // set motors to full range
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+
+    // set velocity to zero and stop rotating if no updates received for 3 seconds
+    uint32_t tnow = millis();
+    if (tnow - posvel_update_time_ms > FOURDAUTO_POSVEL_TIMEOUT_MS) {
+        four_d_vel_target_cms.zero();
+        if (auto_yaw.mode() == AUTO_YAW_RATE) {
+            auto_yaw.set_rate(0.0f);
+        }
+    }
+
+    // calculate dt
+    float dt = pos_control->time_since_last_xy_update();
+
+    // sanity check dt
+    if (dt >= 0.2f) {
+        dt = 0.0f;
+    }
+
+    // advance position target using velocity target
+    four_d_pos_target_cm += four_d_vel_target_cms * dt;
+
+    // send position and velocity targets to position controller
+    pos_control->set_pos_target(four_d_pos_target_cm);
+    pos_control->set_desired_velocity_xy(four_d_vel_target_cms.x, four_d_vel_target_cms.y);
+
+    // run position controllers
+    pos_control->update_xy_controller();
+    pos_control->update_z_controller();
+
+    // call attitude controller
+    if (auto_yaw.mode() == AUTO_YAW_HOLD) {
+        // roll & pitch from waypoint controller, yaw rate from pilot
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pos_control->get_roll(), pos_control->get_pitch(), target_yaw_rate);
+    } else if (auto_yaw.mode() == AUTO_YAW_RATE) {
+        // roll & pitch from position-velocity controller, yaw rate from mavlink command or mission item
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pos_control->get_roll(), pos_control->get_pitch(), auto_yaw.rate_cds());
+    } else {
+        // roll, pitch from waypoint controller, yaw heading from GCS or auto_heading()
+        attitude_control->input_euler_angle_roll_pitch_yaw(pos_control->get_roll(), pos_control->get_pitch(), auto_yaw.yaw(), true);
+    }
+}
+
+// guided_angle_control_run - runs the guided angle controller
+// called from guided_run
+void Mode4DAuto::angle_control_run()
+{
+    // constrain desired lean angles
+    float roll_in = four_d_auto_angle_state.roll_cd;
+    float pitch_in = four_d_auto_angle_state.pitch_cd;
+    float total_in = norm(roll_in, pitch_in);
+    float angle_max = MIN(attitude_control->get_althold_lean_angle_max(), copter.aparm.angle_max);
+    if (total_in > angle_max) {
+        float ratio = angle_max / total_in;
+        roll_in *= ratio;
+        pitch_in *= ratio;
+    }
+
+    // wrap yaw request
+    float yaw_in = wrap_180_cd(four_d_auto_angle_state.yaw_cd);
+    float yaw_rate_in = wrap_180_cd(four_d_auto_angle_state.yaw_rate_cds);
+
+    // constrain climb rate
+    float climb_rate_cms = constrain_float(four_d_auto_angle_state.climb_rate_cms, -fabsf(wp_nav->get_default_speed_down()), wp_nav->get_default_speed_up());
+
+    // get avoidance adjusted climb rate
+    climb_rate_cms = get_avoidance_adjusted_climbrate(climb_rate_cms);
+
+    // check for timeout - set lean angles and climb rate to zero if no updates received for 3 seconds
+    uint32_t tnow = millis();
+    if (tnow - four_d_auto_angle_state.update_time_ms > FOURDAUTO_ATTITUDE_TIMEOUT_MS) {
+        roll_in = 0.0f;
+        pitch_in = 0.0f;
+        climb_rate_cms = 0.0f;
+        yaw_rate_in = 0.0f;
+    }
+
+    // if not armed set throttle to zero and exit immediately
+    if (!motors->armed() || !copter.ap.auto_armed || (copter.ap.land_complete && (four_d_auto_angle_state.climb_rate_cms <= 0.0f))) {
+        make_safe_spool_down();
+        return;
+    }
+
+    // TODO: use get_alt_hold_state
+    // landed with positive desired climb rate, takeoff
+    if (copter.ap.land_complete && (four_d_auto_angle_state.climb_rate_cms > 0.0f)) {
+        zero_throttle_and_relax_ac();
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+        if (motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
+            set_land_complete(false);
+            set_throttle_takeoff();
+        }
+        return;
+    }
+
+    // set motors to full range
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+
+    // call attitude controller
+    if (four_d_auto_angle_state.use_yaw_rate) {
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(roll_in, pitch_in, yaw_rate_in);
+    } else {
+        attitude_control->input_euler_angle_roll_pitch_yaw(roll_in, pitch_in, yaw_in, true);
+    }
+
+    // call position controller
+    pos_control->set_alt_target_from_climb_rate_ff(climb_rate_cms, G_Dt, false);
+    pos_control->update_z_controller();
+}
+
+// helper function to update position controller's desired velocity while respecting acceleration limits
+void Mode4DAuto::set_desired_velocity_with_accel_and_fence_limits(const Vector3f& vel_des)
+{
+    // get current desired velocity
+    Vector3f curr_vel_des = pos_control->get_desired_velocity();
+
+    // get change in desired velocity
+    Vector3f vel_delta = vel_des - curr_vel_des;
+
+    // limit xy change
+    float vel_delta_xy = safe_sqrt(sq(vel_delta.x)+sq(vel_delta.y));
+    float vel_delta_xy_max = G_Dt * pos_control->get_max_accel_xy();
+    float ratio_xy = 1.0f;
+    if (!is_zero(vel_delta_xy) && (vel_delta_xy > vel_delta_xy_max)) {
+        ratio_xy = vel_delta_xy_max / vel_delta_xy;
+    }
+    curr_vel_des.x += (vel_delta.x * ratio_xy);
+    curr_vel_des.y += (vel_delta.y * ratio_xy);
+
+    // limit z change
+    float vel_delta_z_max = G_Dt * pos_control->get_max_accel_z();
+    curr_vel_des.z += constrain_float(vel_delta.z, -vel_delta_z_max, vel_delta_z_max);
+
+#if AC_AVOID_ENABLED
+    // limit the velocity to prevent fence violations
+    copter.avoid.adjust_velocity(pos_control->get_pos_xy_p().kP(), pos_control->get_max_accel_xy(), curr_vel_des, G_Dt);
+    // get avoidance adjusted climb rate
+    curr_vel_des.z = get_avoidance_adjusted_climbrate(curr_vel_des.z);
+#endif
+
+    // update position controller with new target
+    pos_control->set_desired_velocity(curr_vel_des);
+}
+
 // helper function to set yaw state and targets
 void Mode4DAuto::set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle)
 {
@@ -420,6 +649,109 @@ void Mode4DAuto::set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, fl
         auto_yaw.set_fixed_yaw(yaw_cd * 0.01f, 0.0f, 0, relative_angle);
     } else if (use_yaw_rate) {
         auto_yaw.set_rate(yaw_rate_cds);
+    }
+}
+
+// Guided Limit code
+
+// guided_limit_clear - clear/turn off guided limits
+void Mode4DAuto::limit_clear()
+{
+	four_d_auto_limit.timeout_ms = 0;
+	four_d_auto_limit.alt_min_cm = 0.0f;
+	four_d_auto_limit.alt_max_cm = 0.0f;
+	four_d_auto_limit.horiz_max_cm = 0.0f;
+}
+
+// guided_limit_set - set guided timeout and movement limits
+void Mode4DAuto::limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm)
+{
+	four_d_auto_limit.timeout_ms = timeout_ms;
+	four_d_auto_limit.alt_min_cm = alt_min_cm;
+	four_d_auto_limit.alt_max_cm = alt_max_cm;
+	four_d_auto_limit.horiz_max_cm = horiz_max_cm;
+}
+
+// guided_limit_init_time_and_pos - initialise guided start time and position as reference for limit checking
+//  only called from AUTO mode's auto_nav_guided_start function
+void Mode4DAuto::limit_init_time_and_pos()
+{
+    // initialise start time
+	four_d_auto_limit.start_time = AP_HAL::millis();
+
+    // initialise start position from current position
+	four_d_auto_limit.start_pos = inertial_nav.get_position();
+}
+
+// guided_limit_check - returns true if guided mode has breached a limit
+//  used when guided is invoked from the NAV_GUIDED_ENABLE mission command
+bool Mode4DAuto::limit_check()
+{
+    // check if we have passed the timeout
+    if ((four_d_auto_limit.timeout_ms > 0) && (millis() - four_d_auto_limit.start_time >= four_d_auto_limit.timeout_ms)) {
+        return true;
+    }
+
+    // get current location
+    const Vector3f& curr_pos = inertial_nav.get_position();
+
+    // check if we have gone below min alt
+    if (!is_zero(four_d_auto_limit.alt_min_cm) && (curr_pos.z < four_d_auto_limit.alt_min_cm)) {
+        return true;
+    }
+
+    // check if we have gone above max alt
+    if (!is_zero(four_d_auto_limit.alt_max_cm) && (curr_pos.z > four_d_auto_limit.alt_max_cm)) {
+        return true;
+    }
+
+    // check if we have gone beyond horizontal limit
+    if (four_d_auto_limit.horiz_max_cm > 0.0f) {
+        float horiz_move = get_horizontal_distance_cm(four_d_auto_limit.start_pos, curr_pos);
+        if (horiz_move > four_d_auto_limit.horiz_max_cm) {
+            return true;
+        }
+    }
+
+    // if we got this far we must be within limits
+    return false;
+}
+
+
+uint32_t Mode4DAuto::wp_distance() const
+{
+    switch(mode()) {
+    case FourDAuto_WP:
+        return wp_nav->get_wp_distance_to_destination();
+        break;
+    case FourDAuto_PosVel:
+        return pos_control->get_distance_to_target();
+        break;
+    default:
+        return 0;
+    }
+}
+
+int32_t Mode4DAuto::wp_bearing() const
+{
+    switch(mode()) {
+    case FourDAuto_WP:
+        return wp_nav->get_wp_bearing_to_destination();
+        break;
+    case FourDAuto_PosVel:
+        return pos_control->get_bearing_to_target();
+        break;
+    default:
+        return 0;
+    }
+}
+
+float Mode4DAuto::crosstrack_error() const
+{
+    if (mode() == FourDAuto_WP) {
+        return wp_nav->crosstrack_error();
+    } else {
+        return 0;
     }
 }
 

@@ -164,7 +164,7 @@ void GCS_MAVLINK_Copter::send_position_target_local_ned()
     if (four_d_mode == FourDAuto_WP) {
         type_mask = 0x0FF8; // ignore everything except position
         target_pos = copter.wp_nav->get_wp_destination() * 0.01f; // convert to metres
-    } //else if (four_d_mode == Guided_Velocity) {
+    } //else if (four_d_mode == FourDAuto_Velocity) {
 //        type_mask = 0x0FC7; // ignore everything except velocity
 //        target_vel = copter.flightmode->get_desired_velocity() * 0.01f; // convert to m/s
 //    } else {
@@ -965,7 +965,7 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
         mavlink_msg_set_attitude_target_decode(&msg, &packet);
 
         // exit if vehicle is not in Guided mode or Auto-Guided mode
-        if (!copter.flightmode->in_guided_mode()) {
+        if (!(copter.flightmode->in_guided_mode() || copter.flightmode->in_4d_mode())) {
             break;
         }
 
@@ -993,9 +993,14 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
         if ((packet.type_mask & (1<<2)) == 0) {
             use_yaw_rate = true;
         }
-
-        copter.mode_guided.set_angle(Quaternion(packet.q[0],packet.q[1],packet.q[2],packet.q[3]),
-            climb_rate_cms, use_yaw_rate, packet.body_yaw_rate);
+        if (copter.flightmode->in_4d_mode()) {
+        	copter.mode_4dauto.set_angle(Quaternion(packet.q[0],packet.q[1],packet.q[2],packet.q[3]),
+        	            climb_rate_cms, use_yaw_rate, packet.body_yaw_rate);
+        }
+        else if (copter.flightmode->in_guided_mode()) {
+        	copter.mode_guided.set_angle(Quaternion(packet.q[0],packet.q[1],packet.q[2],packet.q[3]),
+        	            climb_rate_cms, use_yaw_rate, packet.body_yaw_rate);
+        }
 
         break;
     }
@@ -1084,10 +1089,13 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
         // send request
         if (!pos_ignore && !vel_ignore) {
             copter.mode_guided.set_destination_posvel(pos_vector, vel_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
+            copter.mode_4dauto.set_destination_posvel(pos_vector, vel_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
         } else if (pos_ignore && !vel_ignore) {
             copter.mode_guided.set_velocity(vel_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
+            copter.mode_4dauto.set_velocity(vel_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
         } else if (!pos_ignore && vel_ignore) {
             copter.mode_guided.set_destination(pos_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
+            copter.mode_4dauto.set_destination(pos_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
         }
 
         break;
@@ -1154,10 +1162,13 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
                 break;
             }
             copter.mode_guided.set_destination_posvel(pos_neu_cm, Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f), !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
+            copter.mode_4dauto.set_destination_posvel(pos_neu_cm, Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f), !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
         } else if (pos_ignore && !vel_ignore) {
             copter.mode_guided.set_velocity(Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f), !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
+            copter.mode_4dauto.set_velocity(Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f), !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
         } else if (!pos_ignore && vel_ignore) {
             copter.mode_guided.set_destination(loc, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
+            copter.mode_4dauto.set_destination(loc, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
         }
 
         break;

@@ -293,23 +293,33 @@ bool Copter::start_takeoff(float alt)
 bool Copter::set_target_location(const Location& target_loc)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
-    if (!flightmode->in_guided_mode()) {
+    if (!(flightmode->in_guided_mode() || (flightmode->in_4d_mode()))) {
         return false;
     }
-
-    return mode_guided.set_destination(target_loc);
+    if (flightmode->in_4d_mode()) {
+    	return mode_4dauto.set_destination(target_loc);
+    }
+    else if (flightmode->in_guided_mode()) {
+    	return mode_guided.set_destination(target_loc);
+    }
+    return false;
 }
 
 bool Copter::set_target_velocity_NED(const Vector3f& vel_ned)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
-    if (!flightmode->in_guided_mode()) {
+	if (!(flightmode->in_guided_mode() || (flightmode->in_4d_mode()))) {
         return false;
     }
 
     // convert vector to neu in cm
     const Vector3f vel_neu_cms(vel_ned.x * 100.0f, vel_ned.y * 100.0f, -vel_ned.z * 100.0f);
-    mode_guided.set_velocity(vel_neu_cms);
+    if (flightmode->in_4d_mode()) {
+    	mode_4dauto.set_velocity(vel_neu_cms);
+    }
+    else if (flightmode->in_guided_mode()) {
+    	mode_guided.set_velocity(vel_neu_cms);
+    }
     return true;
 }
 

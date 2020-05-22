@@ -525,7 +525,7 @@ void ModeAuto::exit_mission()
 bool ModeAuto::do_guided(const AP_Mission::Mission_Command& cmd)
 {
     // only process guided waypoint if we are in guided mode
-    if (copter.control_mode != Mode::Number::GUIDED && !(copter.control_mode == Mode::Number::AUTO && mode() == Auto_NavGuided)) {
+    if (copter.control_mode != Mode::Number::GUIDED && copter.control_mode != Mode::Number::FOURDAUTO && !(copter.control_mode == Mode::Number::AUTO && mode() == Auto_NavGuided)) {
         return false;
     }
 

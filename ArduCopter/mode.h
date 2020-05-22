@@ -1528,6 +1528,11 @@ public:
     void set_velocity(const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool log_request = true);
     bool set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
 
+    void limit_clear();
+    void limit_init_time_and_pos();
+    void limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm);
+    bool limit_check();
+
     bool is_taking_off() const override;
 
     bool do_user_takeoff_start(float takeoff_alt_cm) override;
@@ -1535,12 +1540,16 @@ public:
     FourDAutoMode mode() const { return four_d_mode; }
 
     void angle_control_start();
-    //void angle_control_run();
+    void angle_control_run();
 
 protected:
 
     const char *name() const override { return "4DAUTO"; }
     const char *name4() const override { return "4DA"; }
+
+    uint32_t wp_distance() const override;
+    int32_t wp_bearing() const override;
+    float crosstrack_error() const override;
 
 private:
 
@@ -1549,9 +1558,9 @@ private:
     void posvel_control_start();
     void takeoff_run();
     void pos_control_run();
-    //void vel_control_run();
-    //void posvel_control_run();
-    //void set_desired_velocity_with_accel_and_fence_limits(const Vector3f& vel_des);
+    void vel_control_run();
+    void posvel_control_run();
+    void set_desired_velocity_with_accel_and_fence_limits(const Vector3f& vel_des);
     void set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle);
 
     // controls which controller is run (pos or vel):
