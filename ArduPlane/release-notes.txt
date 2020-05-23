@@ -1,3 +1,47 @@
+Release 4.0.6beta1, 23rd May 2020
+---------------------------------
+
+This is a major release with a significant number of new features and
+bug fixes.
+
+ - scripting generator bug fix
+ - changed LED scripting API to allow more than 32 LEDs on a pin
+ - added support for ProfiLED LEDs
+ - added u-blox GPS moving baseline u-blox auto-configuration
+ - fixed handling of GPS antenna positions on EKF GPS switch
+ - changed default USB IDs to new ArduPilot specific IDs
+ - fixed bug in handling trim for RC control of camera mounts
+ - added LGR_OPTIONS bits to control landing gear behaviour on takeoff/landing
+ - improved mavlink streaming output control to better allocate time to each channel
+ - fixed send of mavlink PARAM_VALUE on set of a readonly parameter
+ - fixed mag variance reporting in EKF_STATUS_REPORT mavlink message
+ - fixed time wrap bug in BMP085 barometer driver
+ - fixed buffer overflow in ST24 RC input driver
+ - fixed EKF usage of WMM tables when user has specified a specific
+   declination with COMPASS_DEC and COMPASS_AUTODEC
+ - fixed bug in AP_Terrain on-disk format
+ - added script for offline generation of terrain data
+ - severel improvements to smbus battery drivers
+ - fixed a race condition in parameter storage on ChibiOS
+ - fixed use of zero GNSS timestamp in UAVCAN GPS driver
+ - improved GCS messages during bootloader flash
+ - fixed CS pin in bootloader that could corrupt FRAM on some boards
+ - added GPS yaw to MAVLink GPS_RAW_INT message
+ - added Hott telemetry support
+ - added FRSky FPort support
+ - fixed bug in CAN clock and queue handling on H7 based boards
+ - added support for BRD_ALT_CONFIG for alternative hardware configs on several boards
+ - added new boards CUAV-Nora, CUAV-X7, MatekH743, R9Pilot, mRoNexus
+ - improved reporting of internal errors to GCS
+ - fixed recursion bug in tonealarm player
+ - fixed flaperon SERVO_AUTO_TRIM behaviour
+ - added option to compensate forward throttle for battery voltage
+ - added compensation in VTOL gains for pressure altitude
+ - switched to new more flexible compass ordering system
+ - fixed forcing of safety off on IOMCU reset
+ - increased maximum compass scale factor to 1.4
+
+
 Release 4.0.5, 4th March 2020
 -----------------------------
 
