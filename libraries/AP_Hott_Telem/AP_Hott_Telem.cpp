@@ -419,10 +419,7 @@ void AP_Hott_Telem::loop(void)
             continue;
         }
         if (n > 2) {
-            while (n--) {
-                uart->read();
-                hal.scheduler->delay_microseconds(100);
-            }
+            uart->discard_input();
             continue;
         }
 
