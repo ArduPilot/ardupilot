@@ -1459,18 +1459,18 @@ void QuadPlane::update_transition(void)
         // set a single loop pitch limit in TECS
         if (plane.ahrs.groundspeed() < 3) {
             // until we have some ground speed limit to zero pitch
-            plane.TECS_controller.set_pitch_max_limit(0);
+            plane.SpdHgt_Controller->set_pitch_max_limit(0);
         } else {
-            plane.TECS_controller.set_pitch_max_limit(transition_pitch_max);
+            plane.SpdHgt_Controller->set_pitch_max_limit(transition_pitch_max);
         }
     } else if (transition_state < TRANSITION_DONE) {
-        plane.TECS_controller.set_pitch_max_limit((transition_pitch_max+1)*2);
+        plane.SpdHgt_Controller->set_pitch_max_limit((transition_pitch_max+1)*2);
     }
     if (transition_state < TRANSITION_DONE) {
         // during transition we ask TECS to use a synthetic
         // airspeed. Otherwise the pitch limits will throw off the
         // throttle calculation which is driven by pitch
-        plane.TECS_controller.use_synthetic_airspeed();
+        plane.SpdHgt_Controller->use_synthetic_airspeed();
     }
     
     switch (transition_state) {
@@ -2871,7 +2871,7 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
         return false;
     }
     transition_state = tailsitter.enabled() ? TRANSITION_ANGLE_WAIT_FW : TRANSITION_AIRSPEED_WAIT;
-    plane.TECS_controller.set_pitch_max_limit(transition_pitch_max);
+    plane.SpdHgt_Controller->set_pitch_max_limit(transition_pitch_max);
 
     // todo: why are you doing this, I want to delete it.
     set_alt_target_current();
