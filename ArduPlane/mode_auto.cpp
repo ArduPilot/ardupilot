@@ -15,6 +15,8 @@ bool ModeAuto::_enter()
     // start or resume the mission, based on MIS_AUTORESET
     plane.mission.start_or_resume();
 
+    plane.auto_state.is_on_landing_pattern = plane.detect_landing_pattern_in_mission(plane.mission.get_current_nav_index(), -2, +2);
+
     if (hal.util->was_watchdog_armed()) {
         if (hal.util->persistent_data.waypoint_num != 0) {
             gcs().send_text(MAV_SEVERITY_INFO, "Watchdog: resume WP %u", hal.util->persistent_data.waypoint_num);

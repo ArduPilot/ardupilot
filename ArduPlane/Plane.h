@@ -523,6 +523,9 @@ private:
 
         // how much correction have we added for terrain data
         float terrain_correction;
+
+        // true when executing NAV_LAND or between DO_LAND_START and NAV_LAND
+        bool is_on_landing_pattern;
     } auto_state;
 
     struct {
@@ -1018,6 +1021,8 @@ private:
     bool start_command_callback(const AP_Mission::Mission_Command &cmd);
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
     void notify_mode(const Mode& mode);
+    bool jump_to_landing_sequence(ModeReason mode_change_reason);
+    bool detect_landing_pattern_in_mission(const uint16_t indexRef, const int16_t startDelta, const int16_t endDelta);
     void log_init();
     void parachute_check();
 #if PARACHUTE == ENABLED

@@ -471,10 +471,7 @@ void Plane::update_navigation()
             reached_loiter_target() && 
             labs(altitude_error_cm) < 1000) {
             // we've reached the RTL point, see if we have a landing sequence
-            if (mission.jump_to_landing_sequence()) {
-                // switch from RTL -> AUTO
-                set_mode(mode_auto, ModeReason::UNKNOWN);
-            }
+            jump_to_landing_sequence(ModeReason::RTL);
 
             // prevent running the expensive jump_to_landing_sequence
             // on every loop
@@ -483,10 +480,7 @@ void Plane::update_navigation()
         else if (g.rtl_autoland == 2 &&
             !auto_state.checked_for_rtl_autoland) {
             // Go directly to the landing sequence
-            if (mission.jump_to_landing_sequence()) {
-                // switch from RTL -> AUTO
-                set_mode(mode_auto, ModeReason::UNKNOWN);
-            }
+            jump_to_landing_sequence(ModeReason::RTL);
 
             // prevent running the expensive jump_to_landing_sequence
             // on every loop
@@ -683,6 +677,38 @@ float Plane::tecs_hgt_afe(void)
         hgt_afe = relative_altitude;
     }
     return hgt_afe;
+}
+
+bool Plane::jump_to_landing_sequence(ModeReason mode_change_reason)
+{
+    if (mission.jump_to_landing_sequence()) {
+        // if we're not in auto, set to auto now
+        set_mode(mode_auto, mode_change_reason);
+        plane.auto_state.is_on_landing_pattern = true;
+        return true;
+    }
+    return false;
+}
+
+bool Plane::detect_landing_pattern_in_mission(const uint16_t indexRef, const int16_t startDelta, const int16_t endDelta)
+{
+    const uint16_t index_start = MAX(indexRef - startDelta, 1);
+    const uint16_t index_end = indexRef + endDelta;
+
+    for (uint16_t i=index_start; i<=index_end; i++) {
+        AP_Mission::Mission_Command missionCmd;
+        if (!plane.mission.read_cmd_from_storage(i, missionCmd)) {
+            continue;
+        }
+        if ((i <= indexRef) && (missionCmd.id == MAV_CMD_DO_LAND_START)) {
+            return true;
+        }
+        // note, at (i == indexRef) we're checking for both cmds
+        if ((i >= indexRef) && (missionCmd.id == MAV_CMD_NAV_LAND)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 #if OSD_ENABLED == ENABLED

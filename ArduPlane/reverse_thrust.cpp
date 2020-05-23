@@ -61,6 +61,10 @@ bool Plane::allow_reverse_thrust(void) const
         allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_AUTO_WAYPOINT) &&
                     (nav_cmd == MAV_CMD_NAV_WAYPOINT ||
                      nav_cmd == MAV_CMD_NAV_SPLINE_WAYPOINT);
+
+        // we are on a landing pattern
+        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_AUTO_LANDING_PATTERN) &&
+                auto_state.is_on_landing_pattern;
         }
         break;
 
