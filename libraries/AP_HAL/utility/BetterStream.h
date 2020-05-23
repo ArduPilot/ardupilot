@@ -43,6 +43,11 @@ public:
      * -1 if nothing available, uint8_t value otherwise. */
     virtual int16_t read() = 0;
 
+    // no base-class implementation to force descendants to
+    // do things efficiently.  Looping over 2^32-1 bytes would be bad.
+    // returns false if discard failed (e.g. port locked)
+    virtual bool discard_input() = 0; // discard all bytes available for reading
+
     /* NB txspace was traditionally a member of BetterStream in the
      * FastSerial library. As far as concerns go, it belongs with available() */
     virtual uint32_t txspace() = 0;
