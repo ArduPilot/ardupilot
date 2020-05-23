@@ -1262,6 +1262,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("FWD_BAT_IDX", 25, ParametersG2, fwd_thr_batt_idx, 0),
 
+    // @Param: RTL_CLIMB_MIN
+    // @DisplayName: RTL minimum climb
+    // @Description: The vehicle will climb this many m during the initial climb portion of the RTL. During this time the roll will be limited to LEVEL_ROLL_LIMIT degrees.
+    // @Units: m
+    // @Range: 0 30
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("RTL_CLIMB_MIN", 27, ParametersG2, rtl_climb_min, 0),
+
     AP_GROUPEND
 };
 
