@@ -16,7 +16,7 @@ bool Rover::set_home_to_current_location(bool lock)
 }
 
 // sets ahrs home to specified location
-//  returns true if home location set successfully
+// returns true if home location set successfully
 bool Rover::set_home(const Location& loc, bool lock)
 {
     const bool home_was_set = ahrs.home_is_set();

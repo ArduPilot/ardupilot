@@ -436,8 +436,7 @@ bool AP_MotorsUGV::pre_arm_check(bool report) const
         return false;
     }
     // check all omni motor outputs have been configured
-    for (uint8_t i=0; i<_motors_num; i++)
-    {
+    for (uint8_t i=0; i<_motors_num; i++) {
         SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(i);
         if (!SRV_Channels::function_assigned(function)) {
             if (report) {

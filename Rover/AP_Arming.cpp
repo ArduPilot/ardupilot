@@ -10,8 +10,8 @@ bool AP_Arming_Rover::rc_calibration_checks(const bool display_failure)
     }
 
     const RC_Channel *channels[] = {
-            rover.channel_steer,
-            rover.channel_throttle,
+        rover.channel_steer,
+        rover.channel_throttle
     };
     const char *channel_names[] = {"Steer", "Throttle"};
 
@@ -188,7 +188,7 @@ bool AP_Arming_Rover::parameter_checks(bool report)
 
 // check if arming allowed from this mode
 bool AP_Arming_Rover::mode_checks(bool report)
-{   
+{
     //display failure if arming in this mode is not allowed
     if (!rover.control_mode->allows_arming()) {
         check_failed(report, "Mode not armable");
