@@ -71,6 +71,12 @@ public:
     // set propulsion failed flag
     virtual void set_propulsion_failed_flag(bool propulsion_failed) = 0;
 
+    // set pitch max limit in degrees
+    virtual void set_pitch_max_limit(int8_t pitch_limit) = 0;
+
+    // force use of synthetic airspeed for one loop
+    virtual void use_synthetic_airspeed(void) = 0;
+
 	// add new controllers to this enum. Users can then
 	// select which controller to use by setting the
 	// SPDHGT_CONTROLLER parameter

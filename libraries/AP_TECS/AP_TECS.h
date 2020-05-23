@@ -122,12 +122,12 @@ public:
 
 
     // set pitch max limit in degrees
-    void set_pitch_max_limit(int8_t pitch_limit) {
+    void set_pitch_max_limit(int8_t pitch_limit) override {
         _pitch_max_limit = pitch_limit;
     }
 
     // force use of synthetic airspeed for one loop
-    void use_synthetic_airspeed(void) {
+    void use_synthetic_airspeed(void) override {
         _use_synthetic_airspeed_once = true;
     }
     

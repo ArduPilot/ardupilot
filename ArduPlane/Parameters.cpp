@@ -1369,6 +1369,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 ParametersG2::ParametersG2(void) :
     ice_control(plane.rpm_sensor)
 #if SOARING_ENABLED == ENABLED
+// TODO: change to:  ,soaring_controller(plane.ahrs, *plane.SpdHgt_Controller, plane.aparm)
     ,soaring_controller(plane.ahrs, plane.TECS_controller, plane.aparm)
 #endif
     ,button_ptr(&plane.button)
