@@ -748,10 +748,7 @@ void AP_RunCam::drain()
         return;
     }
 
-    uint32_t avail = uart->available();
-    while (avail-- > 0) {
-       uart->read();
-    }
+    uart->discard_input();
 }
 
 // get the device info (firmware version, protocol version and features)
