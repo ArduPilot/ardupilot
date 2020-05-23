@@ -293,6 +293,15 @@ int16_t UARTDriver::read()
     return byte;
 }
 
+bool UARTDriver::discard_input()
+{
+    if (!_initialised) {
+        return false;
+    }
+    _readbuf.empty();
+    return true;
+}
+
 /* Linux implementations of Print virtual methods */
 size_t UARTDriver::write(uint8_t c)
 {
