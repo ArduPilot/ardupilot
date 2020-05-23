@@ -479,7 +479,7 @@ Mode *Rover::mode_from_mode_num(const enum Mode::Number num)
         ret = &mode_smartrtl;
         break;
     case Mode::Number::GUIDED:
-       ret = &mode_guided;
+        ret = &mode_guided;
         break;
     case Mode::Number::INITIALISING:
         ret = &mode_initializing;

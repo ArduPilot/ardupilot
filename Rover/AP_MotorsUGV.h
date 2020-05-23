@@ -6,7 +6,6 @@
 
 class AP_MotorsUGV {
 public:
-
     // Constructor
     AP_MotorsUGV(AP_ServoRelayEvents &relayEvents);
 
@@ -20,7 +19,7 @@ public:
         PWM_TYPE_DSHOT300 = 6,
         PWM_TYPE_DSHOT600 = 7,
         PWM_TYPE_DSHOT1200 = 8
-     };
+    };
 
     enum motor_test_order {
         MOTOR_TEST_THROTTLE = 1,
@@ -110,7 +109,6 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
-
     // sanity check parameters
     void sanity_check_parameters();
 

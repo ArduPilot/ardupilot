@@ -50,7 +50,7 @@ MAV_MODE GCS_MAVLINK_Rover::base_mode() const
     // indicate we have set a custom mode
     _base_mode |= MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 
-return (MAV_MODE)_base_mode;
+    return (MAV_MODE)_base_mode;
 }
 
 uint32_t GCS_Rover::custom_mode() const
@@ -294,6 +294,7 @@ uint8_t GCS_MAVLINK_Rover::sysid_my_gcs() const
 {
     return rover.g.sysid_my_gcs;
 }
+
 bool GCS_MAVLINK_Rover::sysid_enforce() const
 {
     return rover.g2.sysid_enforce;
@@ -585,6 +586,7 @@ MAV_RESULT GCS_MAVLINK_Rover::_handle_command_preflight_calibration(const mavlin
 bool GCS_MAVLINK_Rover::set_home_to_current_location(bool _lock) {
     return rover.set_home_to_current_location(_lock);
 }
+
 bool GCS_MAVLINK_Rover::set_home(const Location& loc, bool _lock) {
     return rover.set_home(loc, _lock);
 }
@@ -678,7 +680,6 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_long_packet(const mavlink_command_l
     }
 }
 
-
 // a RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
 void GCS_MAVLINK_Rover::handle_rc_channels_override(const mavlink_message_t &msg)
 {
@@ -686,13 +687,9 @@ void GCS_MAVLINK_Rover::handle_rc_channels_override(const mavlink_message_t &msg
     GCS_MAVLINK::handle_rc_channels_override(msg);
 }
 
-
 void GCS_MAVLINK_Rover::handleMessage(const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
-
-    
-
     case MAVLINK_MSG_ID_MANUAL_CONTROL:
     {
         if (msg.sysid != rover.g.sysid_my_gcs) {  // Only accept control from our gcs
