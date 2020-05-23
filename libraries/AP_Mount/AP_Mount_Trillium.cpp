@@ -121,7 +121,7 @@ void AP_Mount_Trillium::update()
     bool resend_now = false;
     OrionPkt_t PktOut;
     const uint32_t now_ms = AP_HAL::millis();
-    const SRV_Channel* deplyServo = SRV_Channels::get_channel_for(SRV_Channel::k_mount_open);
+    //const SRV_Channel* deplyServo = SRV_Channels::get_channel_for(SRV_Channel::k_mount_open);
     bool notifyGcs = false;
 
     // update based on mount mode
@@ -129,9 +129,10 @@ void AP_Mount_Trillium::update()
             // move mount to a "retracted" position.  we do not implement a separate servo based retract mechanism
         case MAV_MOUNT_MODE_RETRACT:
             _angle_ef_target_rad = _state._retract_angles.get() * DEG_TO_RAD;
-            if (deplyServo != nullptr) {
-                notifyGcs = deplyServo->get_output_pwm() != deplyServo->get_output_min();
-                SRV_Channels::set_output_to_min(SRV_Channel::k_mount_open);
+            if (false) {
+//            if (deplyServo != nullptr) {
+//                notifyGcs = deplyServo->get_output_pwm() != deplyServo->get_output_min();
+//                SRV_Channels::set_output_to_min(SRV_Channel::k_mount_open);
 
             } else if ((now_ms - _deploy_command_last_ms > 2000) && (_retract_status.State == RETRACT_STATE_DEPLOYED || _retract_status.State == RETRACT_STATE_DEPLOYING)) {
                 _deploy_command_last_ms = now_ms;
@@ -147,9 +148,10 @@ void AP_Mount_Trillium::update()
         // move mount to a neutral position, typically pointing forward
         case MAV_MOUNT_MODE_NEUTRAL:
             _angle_ef_target_rad = _state._neutral_angles.get() * DEG_TO_RAD;
-            if (deplyServo != nullptr) {
-                notifyGcs = deplyServo->get_output_pwm() != deplyServo->get_output_max();
-                SRV_Channels::set_output_to_max(SRV_Channel::k_mount_open);
+            if (false) {
+//            if (deplyServo != nullptr) {
+//                notifyGcs = deplyServo->get_output_pwm() != deplyServo->get_output_max();
+//                SRV_Channels::set_output_to_max(SRV_Channel::k_mount_open);
 
             } else if ((now_ms - _deploy_command_last_ms > 2000) && (_retract_status.State == RETRACT_STATE_RETRACTED || _retract_status.State == RETRACT_STATE_RETRACTING)) {
                 _deploy_command_last_ms = now_ms;
