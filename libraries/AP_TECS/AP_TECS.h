@@ -85,6 +85,16 @@ public:
         return _maxClimbRate;
     }
 
+    // return maximum sink rate
+    float get_max_sinkrate(void) const override {
+        return _maxSinkRate;
+    }
+
+    // true when in Bad descent condition caused by unachievable airspeed demand
+    bool get_flag_badDescent(void) const override {
+        return _flags.badDescent;
+    }
+
     // added to let SoaringContoller reset pitch integrator to zero
     void reset_pitch_I(void) override {
         _integSEB_state = 0.0f;
