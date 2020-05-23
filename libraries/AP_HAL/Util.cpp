@@ -38,6 +38,7 @@ public:
     uint32_t available() override { return 0; }
     int16_t read() override { return -1; }
     uint32_t txspace() override { return 0; }
+    bool discard_input() override { return false; }
 };
 
 int AP_HAL::Util::snprintf(char* str, size_t size, const char *format, ...)
