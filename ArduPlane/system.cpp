@@ -168,7 +168,7 @@ void Plane::init_ardupilot()
     // choose the nav controller
     set_nav_controller();
 
-    set_mode_by_number((enum Mode::Number)g.initial_mode.get(), ModeReason::UNKNOWN);
+    set_mode_by_number((enum Mode::Number)g.initial_mode.get(), ModeReason::INITIALISED);
 
     // set the correct flight mode
     // ---------------------------
@@ -199,7 +199,7 @@ void Plane::init_ardupilot()
 //********************************************************************************
 void Plane::startup_ground(void)
 {
-    set_mode(mode_initializing, ModeReason::UNKNOWN);
+    set_mode(mode_initializing, ModeReason::STARTUP);
 
 #if (GROUND_START_DELAY > 0)
     gcs().send_text(MAV_SEVERITY_NOTICE,"Ground start with delay");
@@ -254,7 +254,7 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
 #if !QAUTOTUNE_ENABLED
     if (&new_mode == &plane.mode_qautotune) {
         gcs().send_text(MAV_SEVERITY_INFO,"QAUTOTUNE disabled");
-        set_mode(plane.mode_qhover, ModeReason::UNAVAILABLE);
+        set_mode(plane.mode_qhover, ModeReason::QAUTOTUNE_DISABLED);
         return false;
     }
 #endif
