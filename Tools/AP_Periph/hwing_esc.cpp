@@ -49,10 +49,7 @@ bool HWESC_Telem::update()
         n = 500;
     }
     if (len == 0 && !frame_gap) {
-        // discard
-        while (n--) {
-            uart->read();
-        }
+        uart->discard_input();
         return false;
     }
 
