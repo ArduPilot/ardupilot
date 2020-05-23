@@ -508,7 +508,7 @@ private:
         bool fbwa_tdrag_takeoff_mode;
 
         // have we checked for an auto-land?
-        bool checked_for_autoland;
+        bool checked_for_rtl_autoland;
 
         // Altitude threshold to complete a takeoff command in autonomous modes.  Centimeters
         // are we in idle mode? used for balloon launch to stop servo

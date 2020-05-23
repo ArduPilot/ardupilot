@@ -467,7 +467,7 @@ void Plane::update_navigation()
             set_mode(mode_qrtl, ModeReason::RTL);
             break;
         } else if (g.rtl_autoland == 1 &&
-            !auto_state.checked_for_autoland &&
+            !auto_state.checked_for_rtl_autoland &&
             reached_loiter_target() && 
             labs(altitude_error_cm) < 1000) {
             // we've reached the RTL point, see if we have a landing sequence
@@ -478,10 +478,10 @@ void Plane::update_navigation()
 
             // prevent running the expensive jump_to_landing_sequence
             // on every loop
-            auto_state.checked_for_autoland = true;
+            auto_state.checked_for_rtl_autoland = true;
         }
         else if (g.rtl_autoland == 2 &&
-            !auto_state.checked_for_autoland) {
+            !auto_state.checked_for_rtl_autoland) {
             // Go directly to the landing sequence
             if (mission.jump_to_landing_sequence()) {
                 // switch from RTL -> AUTO
@@ -490,7 +490,7 @@ void Plane::update_navigation()
 
             // prevent running the expensive jump_to_landing_sequence
             // on every loop
-            auto_state.checked_for_autoland = true;
+            auto_state.checked_for_rtl_autoland = true;
         }
         radius = abs(g.rtl_radius);
         if (radius > 0) {
