@@ -1447,9 +1447,7 @@ void AP_BLHeli::update_telemetry(void)
     if (nbytes > telem_packet_size) {
         // if we have more than 10 bytes then we don't know which ESC
         // they are from. Throw them all away
-        while (nbytes--) {
-            telem_uart->read();
-        }
+        telem_uart->discard_input();
         return;
     }
     if (nbytes > 0 &&
@@ -1464,9 +1462,7 @@ void AP_BLHeli::update_telemetry(void)
     }
     if (nbytes > 0 && nbytes < telem_packet_size) {
         // we've waited long enough, discard bytes if we don't have 10 yet
-        while (nbytes--) {
-            telem_uart->read();
-        }
+        telem_uart->discard_input();
         return;
     }
     if (nbytes == telem_packet_size) {
