@@ -4,7 +4,6 @@ Release 4.0.6beta1, 23rd May 2020
 This is a major release with a significant number of new features and
 bug fixes.
 
- - scripting generator bug fix
  - changed LED scripting API to allow more than 32 LEDs on a pin
  - added support for ProfiLED LEDs
  - added u-blox GPS moving baseline u-blox auto-configuration
@@ -17,8 +16,7 @@ bug fixes.
  - fixed mag variance reporting in EKF_STATUS_REPORT mavlink message
  - fixed time wrap bug in BMP085 barometer driver
  - fixed buffer overflow in ST24 RC input driver
- - fixed EKF usage of WMM tables when user has specified a specific
-   declination with COMPASS_DEC and COMPASS_AUTODEC
+ - fixed EKF usage of WMM tables when user has specified a specific declination
  - fixed bug in AP_Terrain on-disk format
  - added script for offline generation of terrain data
  - severel improvements to smbus battery drivers
@@ -40,6 +38,7 @@ bug fixes.
  - switched to new more flexible compass ordering system
  - fixed forcing of safety off on IOMCU reset
  - increased maximum compass scale factor to 1.4
+ - added RTL_CLIMB_MIN parameter for initial climb in RTL
 
 
 Release 4.0.5, 4th March 2020
