@@ -36,8 +36,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
             !quadplane.is_vtol_land(next_nav_cmd.id);
 
         // true when executing NAV_LAND or between DO_LAND_START and NAV_LAND
-        plane.auto_state.is_on_landing_pattern = (auto_state.wp_is_land_approach);
-
+        plane.auto_state.is_on_landing_pattern |= (auto_state.wp_is_land_approach);
     }
 
     switch(cmd.id) {
