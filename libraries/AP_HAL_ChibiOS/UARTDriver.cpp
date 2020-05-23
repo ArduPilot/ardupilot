@@ -564,6 +564,24 @@ uint32_t UARTDriver::txspace()
     return _writebuf.space();
 }
 
+bool UARTDriver::discard_input()
+{
+    if (lock_read_key != 0 || _uart_owner_thd != chThdGetSelfX()){
+        return false;
+    }
+    if (!_initialised) {
+        return false;
+    }
+
+    _readbuf.empty();
+
+    if (!_rts_is_active) {
+        update_rts_line();
+    }
+
+    return true;
+}
+
 int16_t UARTDriver::read()
 {
     if (lock_read_key != 0 || _uart_owner_thd != chThdGetSelfX()){
