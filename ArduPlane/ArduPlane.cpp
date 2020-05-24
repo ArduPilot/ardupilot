@@ -87,6 +87,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Terrain, &plane.terrain, update, 10, 200),
 #endif // AP_TERRAIN_AVAILABLE
     SCHED_TASK(update_is_flying_5Hz,    5,    100),
+    SCHED_TASK(stall_detection_update,  5,    100),
 #if LOGGING_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Logger, &plane.logger, periodic_tasks, 50, 400),
 #endif

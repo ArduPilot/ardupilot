@@ -565,8 +565,31 @@ private:
         uint32_t impact_timer_ms;
     } crash_state;
 
-    // true if the aircraft is currently stalled
-    bool is_stalled:1;
+    struct {
+        // true if there is high confidence that he aircraft is currently stalled
+        bool is_stalled() { return (confidence > 0.9f); }
+        void stall_start() { confidence = 1; stall_start_ms = AP_HAL::millis(); count++; }
+        void stall_clear() { confidence = 0; stall_start_ms = 0; }
+        uint32_t stall_duration_ms() { return is_stalled() ? (AP_HAL::millis() - stall_start_ms) : 0; }
+        uint32_t stall_start_ms;
+
+
+        // true for a short time after a stall. Used to fly conservatively while we build airspeed and confidence
+        bool is_recovering() { return (recovering_start_ms != 0); }
+        void recovering_start() { recovering_start_ms = AP_HAL::millis(); }
+        void recovering_clear() { recovering_start_ms = 0; }
+        uint32_t recovering_duration_ms() { return is_recovering() ? (AP_HAL::millis() - recovering_start_ms) : 0; }
+        uint32_t recovering_start_ms;
+
+        // 0.0 to 1.0 metric where 1 means very confident that the aircraft is stalling
+        float confidence;
+
+        // LowPass Filter coef of confidence. Higher means confidence changes faster
+        const float coef = 0.1f;
+
+        // keep track of how many times we've stalled
+        uint32_t count;
+    } stall_state;
 
     // true if we are in an auto-throttle mode, which means
     // we need to run the speed/height controller
@@ -969,6 +992,9 @@ private:
     void update_is_flying_5Hz(void);
     void crash_detection_update(void);
     bool in_preLaunch_flight_stage(void);
+    void stall_detection_update();
+    void stall_detection_log();
+    bool stall_detection_algorithm(bool allow_changing_state);
     void calc_throttle();
     void calc_nav_roll();
     void calc_nav_pitch();

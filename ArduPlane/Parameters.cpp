@@ -1363,6 +1363,20 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Units: m/s
     AP_GROUPINFO("STALL_SINK_RATE", 37, ParametersG2, stall_recovery_sink_rate, -1),
 
+    // @Param: STALL_DETECT
+    // @DisplayName: Stall detection type
+    // @Description: Stall detection type. Different aircraft stall in different ways.
+    // @User: Advanced
+    // @Bitmask: 0:SinkRate*2Max,1:TECSbadDescent
+    AP_GROUPINFO("STALL_DETECT", 38, ParametersG2, stall_detection_bitmask, 0),
+
+    // @Param: STALL_SELF_RECVY
+    // @DisplayName: Stall self recovery
+    // @Description: Stall self recovery enable. When enabled, when a stall is detected it will automatically trigger the stall recovery system
+    // @User: Advanced
+    // @Values: 0:Disabled,1:Enabled
+    AP_GROUPINFO("STALL_SELF_RECVY", 39, ParametersG2, stall_self_recovery_enable, 0),
+
     AP_GROUPEND
 };
 

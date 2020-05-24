@@ -140,6 +140,19 @@ enum {
     USE_REVERSE_THRUST_GUIDED                   = (1<<10),
 };
 
+enum {
+    STALL_DETECT_NEVER                          = 0,
+    STALL_DETECT_BAD_DESCENT                    = (1<<0),
+    STALL_DETECT_SINKRATE_2X_MAX                = (1<<1),
+    STALL_DETECT_SINKRATE_4X_MAX                = (1<<2),
+    STALL_DETECT_BAD_ROLL_30DEG                 = (1<<3),
+    STALL_DETECT_BAD_ROLL_45DEG                 = (1<<4),
+    STALL_DETECT_BAD_PITCH_10DEG                = (1<<5),
+    STALL_DETECT_BAD_PITCH_20DEG                = (1<<6),
+    STALL_DETECT_BAD_PITCH_30DEG                = (1<<7),
+    STALL_DETECT_BAD_PITCH_40DEG                = (1<<8),
+};
+
 enum FlightOptions {
     DIRECT_RUDDER_ONLY   = (1 << 0),
     CRUISE_TRIM_THROTTLE = (1 << 1),

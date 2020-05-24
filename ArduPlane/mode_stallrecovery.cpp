@@ -9,7 +9,9 @@ bool ModeStallRecovery::_enter()
 
     start_ms = AP_HAL::millis();
 
-    plane.is_stalled = true;
+    if (!plane.stall_state.is_stalled()) {
+        plane.stall_state.stall_start();
+    }
 
     gcs().send_text(MAV_SEVERITY_INFO, "%sstart", gcsStrHeader);
 
@@ -18,8 +20,9 @@ bool ModeStallRecovery::_enter()
 
 void ModeStallRecovery::_exit()
 {
-    plane.is_stalled = false;
     gcs().send_text(MAV_SEVERITY_INFO, "%sexit", gcsStrHeader);
+    plane.stall_state.stall_clear();
+    plane.stall_state.recovering_clear();
 }
 
 void ModeStallRecovery::update()
@@ -28,7 +31,7 @@ void ModeStallRecovery::update()
     const uint32_t now_ms = AP_HAL::millis();
     const uint32_t duration_ms = now_ms - start_ms;
 
-    if (plane.is_stalled) {
+    if (plane.stall_state.is_stalled()) {
         min_ms = plane.g2.stall_recovery_duration1_min * 1000;
         max_ms = plane.g2.stall_recovery_duration1_max * 1000;
     } else {
@@ -61,9 +64,10 @@ void ModeStallRecovery::update()
                 gcs().send_text(MAV_SEVERITY_INFO, "%stimed out", gcsStrHeader);
             }
 
-            if (plane.is_stalled) {
+            if (plane.stall_state.is_stalled()) {
                 // we've successfully recovered from the stall, now lets do some level flight for phase 2
-                plane.is_stalled = false;
+                plane.stall_state.stall_clear();
+                plane.stall_state.recovering_start();
             } else {
                 // Phase 2 complete, we've successfully recovered from the stall finished performing some
                 // level flight. Now lets go back to what we were doing before the stall
@@ -90,7 +94,7 @@ void ModeStallRecovery::resume_previous_mode()
 bool ModeStallRecovery::is_recovered_early()
 {
     int32_t is_recovered_bits = 0;
-    const int32_t algorithm_bits = (plane.is_stalled) ? plane.g2.stall_recovery_algorithm1 : plane.g2.stall_recovery_algorithm2;
+    const int32_t algorithm_bits = (plane.stall_state.is_stalled()) ? plane.g2.stall_recovery_algorithm1 : plane.g2.stall_recovery_algorithm2;
 
     if (algorithm_bits == 0) {
         return false;
@@ -99,7 +103,7 @@ bool ModeStallRecovery::is_recovered_early()
     float airspeed = -1.0f;
     plane.ahrs.airspeed_estimate(airspeed);
 
-    if (plane.is_stalled) {
+    if (plane.stall_state.is_stalled()) {
         if (algorithm_bits & 0x01) {
             if ((airspeed > 0) && (plane.aparm.airspeed_min > 0) && (airspeed >= plane.aparm.airspeed_min)) {
                 is_recovered_bits |= 0x01;
@@ -154,7 +158,7 @@ void ModeStallRecovery::set_servo_behavior()
 {
     int16_t throttle = 0;
 
-    if (plane.is_stalled) {
+    if (plane.stall_state.is_stalled()) {
         SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, 0);
         SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, 0);
 
