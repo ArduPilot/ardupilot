@@ -63,6 +63,10 @@ private:
 
     void init_hw();
 
+    bool is_pointed_in_stow_orientation() { return true; }
+    bool gimbal_is_stowed;
+    uint32_t notify_gcs_last_ms;
+
     AP_HAL::UARTDriver *_port;
 
     uint32_t    _last_send_ms;
@@ -85,7 +89,7 @@ private:
 
     // keep the last _current_angle values
     Vector3f _current_angle_deg; // in degrees
-    static constexpr char* _trilliumGcsHeader = "Trillium: ";
+    const char* _trilliumGcsHeader = "Trillium: ";
     uint8_t _selected_camera;
     int16_t _zoom[2]; // NUM_CAMERAS
 
