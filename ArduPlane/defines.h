@@ -151,6 +151,10 @@ enum {
     STALL_DETECT_BAD_PITCH_20DEG                = (1<<6),
     STALL_DETECT_BAD_PITCH_30DEG                = (1<<7),
     STALL_DETECT_BAD_PITCH_40DEG                = (1<<8),
+    STALL_DETECT_BAD_ALT_10m                    = (1<<9),
+    STALL_DETECT_BAD_ALT_20m                    = (1<<10),
+    STALL_DETECT_BAD_ALT_40m                    = (1<<11),
+    STALL_DETECT_BAD_ALT_60m                    = (1<<12),
 };
 
 enum FlightOptions {
