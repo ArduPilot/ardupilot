@@ -10,6 +10,12 @@
 */
 void Plane::stall_detection_update(void)
 {
+    if (control_mode == &mode_stallrecovery) {
+        // we are actively recovering from a stall. Let the mode control all stall values, we'll take over when it's done.
+        stall_detection_log();
+        return;
+    }
+
     if (!arming.is_armed() ||
         auto_state.last_flying_ms == 0 ||
         !is_flying() ||
@@ -22,11 +28,6 @@ void Plane::stall_detection_update(void)
         return;
     }
 
-    if (control_mode == &mode_stallrecovery) {
-        // we are actively recovering from a stall. Let the mode control all stall values, we'll take over when it's done.
-        stall_detection_log();
-        return;
-    }
 
     const bool is_stalled_initial = stall_state.is_stalled();
 
