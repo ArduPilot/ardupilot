@@ -112,6 +112,7 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const AuxS
     case AUX_FUNC::SUPERSIMPLE_MODE:
     case AUX_FUNC::SURFACE_TRACKING:
     case AUX_FUNC::WINCH_ENABLE:
+    case AUX_FUNC::AIRMODE:
         do_aux_function(ch_option, ch_flag);
         break;
     default:
@@ -586,6 +587,19 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
             }
 #endif
             break;
+
+        case AUX_FUNC::AIRMODE:
+            switch (ch_flag) {
+            case AuxSwitchPos::HIGH:
+                copter.air_mode = AirMode::AIRMODE_ENABLED;
+                break;
+            case AuxSwitchPos::MIDDLE:
+                break;
+            case AuxSwitchPos::LOW:
+                copter.air_mode = AirMode::AIRMODE_DISABLED;
+                break;
+            }
+        break;
             
     default:
         RC_Channel::do_aux_function(ch_option, ch_flag);
