@@ -24,6 +24,8 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         
         nav_controller->set_data_is_stale();
 
+        stall_state.inhibit_briefly();
+
         // reset loiter start time. New command is a new loiter
         loiter.start_time_ms = 0;
 

@@ -28,6 +28,16 @@ void Plane::stall_detection_update(void)
         return;
     }
 
+    if (stall_state.inhibit_ms != 0) {
+        // if someone told us to inihibt, freeze all stall processing for a brief time.
+        // This is useful when changing waypoints where we will likely perform a
+        // hard turn and roll/pitch error spikes for a moment
+        if (AP_HAL::millis() - stall_state.inhibit_ms > 2000) {
+            stall_state.inhibit_ms = 0;
+        }
+        stall_detection_log();
+        return;
+    }
 
     const bool is_stalled_initial = stall_state.is_stalled();
 

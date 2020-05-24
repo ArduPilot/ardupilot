@@ -587,6 +587,11 @@ private:
         // LowPass Filter coef of confidence. Higher means confidence changes faster
         const float coef = 0.1f;
 
+        void inhibit_briefly() {
+            inhibit_ms = AP_HAL::millis();
+        }
+        uint32_t inhibit_ms;
+
         // keep track of how many times we've stalled
         uint32_t count;
     } stall_state;
