@@ -81,6 +81,16 @@ public:
         return _maxClimbRate;
     }
 
+    // return maximum sink rate
+    float get_max_sinkrate(void) const override {
+        return _maxSinkRate;
+    }
+
+    // true when in Bad descent condition caused by unachievable airspeed demand
+    bool uncommanded_altitude_loss(void) const override {
+        return _flags.badDescent;
+    }
+
     // added to let SoaringContoller reset pitch integrator to zero
     void reset_pitch_I(void) override {
         _integSEB_state = 0.0f;
@@ -131,6 +141,10 @@ public:
     void reset(void) override {
         _need_reset = true;
     }
+
+    float get_altitude_error(void) const override {
+        return _hgt_dem_adj - _height;
+    };
 
     // this supports the TECS_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
