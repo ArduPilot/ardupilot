@@ -8,11 +8,12 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define AP_MOUNT_TRILLIUM_DEBUG_RX_ALL_MSGS                 1
+#define AP_MOUNT_TRILLIUM_ENABLE_RX_PARSING                 1
+#define AP_MOUNT_TRILLIUM_DEBUG_RX_ALL_MSGS                 0
 #define AP_MOUNT_TRILLIUM_DEBUG_RX_UNHANDLED_MSGS           1
 #define AP_MOUNT_TRILLIUM_DEBUG_TX_NOT_AUTOPILOT_MSGS       1
 #define AP_MOUNT_TRILLIUM_DEBUG_TX_CMD_CHANGE_ONLY_MSGS     1
-#define AP_MOUNT_TRILLIUM_DEBUG_TX_ALL_MSGS                 1
+#define AP_MOUNT_TRILLIUM_DEBUG_TX_ALL_MSGS                 0
 #define AP_MOUNT_TRILLIUM_DEBUG_TX_PASSTHROUGH_DROPS        1
 
 #define AP_MOUNT_TRILLIUM_MAVLINK_PASSTHROUGH_DEVICE        13
@@ -34,11 +35,22 @@ void AP_Mount_Trillium::init()
     memset(&_booting, 0, sizeof(_booting));
 
     if (_port != nullptr) {
+        _port->begin(AP::serialmanager().find_baudrate(AP_SerialManager::SerialProtocol_Trillium, 0));
         _port->set_unbuffered_writes(true);
         _port->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
 
         set_mode((enum MAV_MOUNT_MODE)_state._default_mode.get());
     }
+
+    //gcs().send_text(MAV_SEVERITY_DEBUG, "%sinit: %u", _trilliumGcsHeader, (unsigned)(_port != nullptr));
+}
+
+// detect if a Trillium gimbal has a configured serial port
+bool AP_Mount_Trillium::detect()
+{
+    bool detect = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_Trillium, 0) != nullptr;
+    //gcs().send_text(MAV_SEVERITY_DEBUG, "%sdetect: %u", _trilliumGcsHeader, (unsigned)detect);
+    return detect;
 }
 
 void AP_Mount_Trillium::init_hw()
@@ -110,7 +122,9 @@ void AP_Mount_Trillium::init_hw()
 // update mount position - should be called periodically
 void AP_Mount_Trillium::update()
 {
+#if AP_MOUNT_TRILLIUM_ENABLE_RX_PARSING
     read_incoming(); // read the incoming messages from the gimbal. This must be done before _booting.done is checked
+#endif
 
     if (!_booting.done) {
         init_hw();
@@ -121,7 +135,7 @@ void AP_Mount_Trillium::update()
     bool resend_now = false;
     OrionPkt_t PktOut;
     const uint32_t now_ms = AP_HAL::millis();
-    //const SRV_Channel* deplyServo = SRV_Channels::get_channel_for(SRV_Channel::k_mount_open);
+    const SRV_Channel* deplyServo = SRV_Channels::get_channel_for(SRV_Channel::k_mount_open);
     bool notifyGcs = false;
 
     // update based on mount mode
@@ -129,10 +143,9 @@ void AP_Mount_Trillium::update()
             // move mount to a "retracted" position.  we do not implement a separate servo based retract mechanism
         case MAV_MOUNT_MODE_RETRACT:
             _angle_ef_target_rad = _state._retract_angles.get() * DEG_TO_RAD;
-            if (false) {
-//            if (deplyServo != nullptr) {
-//                notifyGcs = deplyServo->get_output_pwm() != deplyServo->get_output_min();
-//                SRV_Channels::set_output_to_min(SRV_Channel::k_mount_open);
+            if (deplyServo != nullptr) {
+                notifyGcs = deplyServo->get_output_pwm() != deplyServo->get_output_max();
+                SRV_Channels::set_output_to_max(SRV_Channel::k_mount_open);
 
             } else if ((now_ms - _deploy_command_last_ms > 2000) && (_retract_status.State == RETRACT_STATE_DEPLOYED || _retract_status.State == RETRACT_STATE_DEPLOYING)) {
                 _deploy_command_last_ms = now_ms;
@@ -148,10 +161,9 @@ void AP_Mount_Trillium::update()
         // move mount to a neutral position, typically pointing forward
         case MAV_MOUNT_MODE_NEUTRAL:
             _angle_ef_target_rad = _state._neutral_angles.get() * DEG_TO_RAD;
-            if (false) {
-//            if (deplyServo != nullptr) {
-//                notifyGcs = deplyServo->get_output_pwm() != deplyServo->get_output_max();
-//                SRV_Channels::set_output_to_max(SRV_Channel::k_mount_open);
+            if (deplyServo != nullptr) {
+                notifyGcs = deplyServo->get_output_pwm() != deplyServo->get_output_min();
+                SRV_Channels::set_output_to_min(SRV_Channel::k_mount_open);
 
             } else if ((now_ms - _deploy_command_last_ms > 2000) && (_retract_status.State == RETRACT_STATE_RETRACTED || _retract_status.State == RETRACT_STATE_RETRACTING)) {
                 _deploy_command_last_ms = now_ms;
@@ -550,6 +562,9 @@ void AP_Mount_Trillium::handle_passthrough(const mavlink_channel_t chan, const m
 
 size_t AP_Mount_Trillium::OrionCommSend(const OrionPkt_t *pPkt)
 {
+    if (_port == nullptr) {
+        return 0;
+    }
     bool debug = AP_MOUNT_TRILLIUM_DEBUG_TX_ALL_MSGS;
 
 #if AP_MOUNT_TRILLIUM_DEBUG_TX_CMD_CHANGE_ONLY_MSGS

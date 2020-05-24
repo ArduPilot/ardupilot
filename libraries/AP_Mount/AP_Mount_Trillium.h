@@ -30,6 +30,9 @@ public:
         AP_Mount_Backend(frontend, state, instance)
     {}
 
+    // static detection function
+    static bool detect();
+
     // init - performs any required initialisation for this instance
     void init() override;
 
@@ -82,7 +85,7 @@ private:
 
     // keep the last _current_angle values
     Vector3f _current_angle_deg; // in degrees
-    const char* _trilliumGcsHeader = "Trillium: ";
+    static constexpr char* _trilliumGcsHeader = "Trillium: ";
     uint8_t _selected_camera;
     int16_t _zoom[2]; // NUM_CAMERAS
 
