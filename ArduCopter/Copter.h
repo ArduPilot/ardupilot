@@ -374,6 +374,8 @@ private:
 
     ap_t ap;
 
+    AirMode air_mode; // air mode is 0 = not-configured ; 1 = disabled; 2 = enabled
+
     static_assert(sizeof(uint32_t) == sizeof(ap), "ap_t must be uint32_t");
 
     // This is the state of the flight control system
