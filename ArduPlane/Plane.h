@@ -594,6 +594,13 @@ private:
 
         // keep track of how many times we've stalled
         uint32_t count;
+
+        // previous update time
+        uint32_t last_update_ms;
+
+        // previous rate-limited nav roll angle
+        float last_limited_nav_roll;
+
     } stall_state;
 
     // true if we are in an auto-throttle mode, which means

@@ -101,6 +101,28 @@ bool Plane::stall_detection_algorithm(bool allow_changing_state)
         return false;
     }
 
+    //
+    // Preprocess nav roll to apply rate limit. Needs to be done before potential early returns.
+    //
+
+    // Time since last update.
+    float deltaT = 0.001f * (AP_HAL::millis() - stall_state.last_update_ms);
+
+    // Directly take nav_roll_cd, used if time since last update is too long indicating a reset.
+    float limited_nav_roll = 0.01f*nav_roll_cd;
+
+    if (deltaT<0.5) {
+        // Difference between current nav roll and previous limited value.
+        float delta_angle      = 0.01f*nav_roll_cd - stall_state.last_limited_nav_roll;
+
+        // New limited nav roll
+        limited_nav_roll = stall_state.last_limited_nav_roll + constrain_float(delta_angle, -50.0f*deltaT, 50.0f*deltaT);
+    }
+
+    // Save into old values
+    stall_state.last_update_ms        = AP_HAL::millis();
+    stall_state.last_limited_nav_roll = limited_nav_roll;
+
     bool is_stalled = false;
 
     // check some generic things that are true for all aircraft types
@@ -136,7 +158,7 @@ bool Plane::stall_detection_algorithm(bool allow_changing_state)
         }
     }
 
-    const uint32_t roll_error_cd = labs(labs(nav_roll_cd) - labs(ahrs.roll_sensor));
+    const uint32_t roll_error_cd = labs(100.0f*limited_nav_roll - ahrs.roll_sensor);
     if (g2.stall_detection_bitmask & STALL_DETECT_BAD_ROLL_30DEG) {
         is_stalled |= roll_error_cd >= 3000;
     }
