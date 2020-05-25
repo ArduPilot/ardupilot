@@ -58,7 +58,7 @@ void Plane::stall_detection_update(void)
         if ((g2.stall_self_recovery_enable > 1) && !(plane.stall_state.count % g2.stall_self_recovery_enable)) {
             // bump up the min and cruise airspeeds after every couple stalls
 
-            plane.aparm.airspeed_min = plane.aparm.airspeed_min.get() * 1.02f;
+            plane.aparm.airspeed_min = plane.aparm.airspeed_min.get() + 1;
             gcs().send_text(MAV_SEVERITY_WARNING, "STALL set ARSPD_FBW_MIN: %d", (int)plane.aparm.airspeed_min);
 
             plane.aparm.airspeed_cruise_cm = plane.aparm.airspeed_cruise_cm.get() * 1.02f;
