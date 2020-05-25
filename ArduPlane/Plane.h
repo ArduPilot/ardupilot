@@ -604,6 +604,11 @@ private:
         // algorithm output
         bool raw_algorithm_output;
 
+        // algorithm output bitmask for each trigger if all options enabled
+        uint32_t algorithm_output_if_everything_enabled;
+
+        // notify GCS timer so we dont's spam
+        uint32_t stall_stall_detect_notify_gcs_last_ms;
     } stall_state;
 
     // true if we are in an auto-throttle mode, which means
@@ -1010,6 +1015,7 @@ private:
     void stall_detection_update();
     void stall_detection_log();
     bool stall_detection_algorithm(bool allow_changing_state);
+    bool stall_detection_single_check(const uint32_t bitmask, const bool check);
     void calc_throttle();
     void calc_nav_roll();
     void calc_nav_pitch();
