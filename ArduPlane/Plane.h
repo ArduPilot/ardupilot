@@ -585,7 +585,7 @@ private:
         float confidence;
 
         // LowPass Filter coef of confidence. Higher means confidence changes faster
-        const float coef = 0.1f;
+        const float coef = 0.2f;
 
         void inhibit_briefly() {
             inhibit_ms = AP_HAL::millis();
