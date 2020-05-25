@@ -3896,7 +3896,7 @@ class AutoTestCopter(AutoTest):
 
             except Exception as e:
                 self.progress("Exception caught in %s loop: %s" % (loop, self.get_exception_stacktrace(e)))
-                if loop is not "second":
+                if loop != "second":
                     continue
                 ex = e
             break
@@ -4044,7 +4044,7 @@ class AutoTestCopter(AutoTest):
 
             except Exception as e:
                 self.progress("Exception caught in %s loop: %s" % (loop, self.get_exception_stacktrace(e)))
-                if loop is not "second":
+                if loop != "second":
                     continue
                 ex = e
             break
