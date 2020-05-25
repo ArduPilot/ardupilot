@@ -144,54 +144,57 @@ bool Plane::stall_detection_algorithm(bool allow_changing_state)
 
     // TECS is not able to hold the desired altitude
     if (g2.stall_detection_bitmask & STALL_DETECT_BAD_DESCENT) {
-        is_stalled |= SpdHgt_Controller->get_flag_badDescent();
+        is_stalled &= SpdHgt_Controller->get_flag_badDescent();
     }
 
     // we're sinking twice as fast as a controlled sink is allowed to
     if (g2.stall_detection_bitmask & STALL_DETECT_SINKRATE_2X_MAX) {
-        is_stalled |= auto_state.sink_rate > (SpdHgt_Controller->get_max_sinkrate() * 2);
+        is_stalled &= auto_state.sink_rate > (SpdHgt_Controller->get_max_sinkrate() * 2);
     }
     if (g2.stall_detection_bitmask & STALL_DETECT_SINKRATE_4X_MAX) {
-        is_stalled |= auto_state.sink_rate > (SpdHgt_Controller->get_max_sinkrate() * 4);
+        is_stalled &= auto_state.sink_rate > (SpdHgt_Controller->get_max_sinkrate() * 4);
         if (allow_changing_state) {
             stall_state.confidence *= 2;
         }
     }
 
     const uint32_t roll_error_cd = labs(100.0f*limited_nav_roll - ahrs.roll_sensor);
+    if (g2.stall_detection_bitmask & STALL_DETECT_BAD_ROLL_20DEG) {
+        is_stalled &= roll_error_cd >= 2000;
+    }
     if (g2.stall_detection_bitmask & STALL_DETECT_BAD_ROLL_30DEG) {
-        is_stalled |= roll_error_cd >= 3000;
+        is_stalled &= roll_error_cd >= 3000;
     }
     if (g2.stall_detection_bitmask & STALL_DETECT_BAD_ROLL_45DEG) {
-        is_stalled |= roll_error_cd >= 4500;
+        is_stalled &= roll_error_cd >= 4500;
     }
 
     const uint32_t pitch_error_cd = labs(labs(nav_pitch_cd) - labs(ahrs.pitch_sensor));
     if (g2.stall_detection_bitmask & STALL_DETECT_BAD_PITCH_10DEG) {
-        is_stalled |= pitch_error_cd >= 1000;
+        is_stalled &= pitch_error_cd >= 1000;
     }
     if (g2.stall_detection_bitmask & STALL_DETECT_BAD_PITCH_20DEG) {
-        is_stalled |= pitch_error_cd >= 2000;
+        is_stalled &= pitch_error_cd >= 2000;
     }
     if (g2.stall_detection_bitmask & STALL_DETECT_BAD_PITCH_30DEG) {
-        is_stalled |= pitch_error_cd >= 3000;
+        is_stalled &= pitch_error_cd >= 3000;
     }
     if (g2.stall_detection_bitmask & STALL_DETECT_BAD_PITCH_40DEG) {
-        is_stalled |= pitch_error_cd >= 4000;
+        is_stalled &= pitch_error_cd >= 4000;
     }
 
     if (g2.stall_detection_bitmask & STALL_DETECT_BAD_ALT_10m) {
         // posituve plane.altitude_error_cm means too high
-        is_stalled |= plane.altitude_error_cm < -1000;
+        is_stalled &= plane.altitude_error_cm < -1000;
     }
     if (g2.stall_detection_bitmask & STALL_DETECT_BAD_ALT_20m) {
-        is_stalled |= plane.altitude_error_cm < -2000;
+        is_stalled &= plane.altitude_error_cm < -2000;
     }
     if (g2.stall_detection_bitmask & STALL_DETECT_BAD_ALT_40m) {
-        is_stalled |= plane.altitude_error_cm < -4000;
+        is_stalled &= plane.altitude_error_cm < -4000;
     }
     if (g2.stall_detection_bitmask & STALL_DETECT_BAD_ALT_60m) {
-        is_stalled |= plane.altitude_error_cm < -6000;
+        is_stalled &= plane.altitude_error_cm < -6000;
     }
 
     return is_stalled;
