@@ -135,6 +135,9 @@ public:
     void reset(void) override {
         _need_reset = true;
     }
+    
+    // get expected specific energy rate from throttle output
+    float get_expected_specific_energy_rate(void) const override;
 
     // this supports the TECS_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
