@@ -123,7 +123,7 @@ bool Plane::stall_detection_algorithm(bool allow_changing_state)
     stall_state.last_update_ms        = AP_HAL::millis();
     stall_state.last_limited_nav_roll = limited_nav_roll;
 
-    bool is_stalled = false;
+    bool is_stalled = true;
 
     // check some generic things that are true for all aircraft types
     // ----------------
@@ -183,18 +183,21 @@ bool Plane::stall_detection_algorithm(bool allow_changing_state)
         is_stalled &= pitch_error_cd >= 4000;
     }
 
+    // We don't use plane.altitude_error because the target component of this is not
+    // limited by the maximum climb/sink rates.
+    const float altitude_error = SpdHgt_Controller->get_altitude_error();
     if (g2.stall_detection_bitmask & STALL_DETECT_BAD_ALT_10m) {
-        // posituve plane.altitude_error_cm means too high
-        is_stalled &= plane.altitude_error_cm < -1000;
+        // posituve plane.altitude_error_cm means too low
+        is_stalled &= altitude_error> 10.0f;
     }
     if (g2.stall_detection_bitmask & STALL_DETECT_BAD_ALT_20m) {
-        is_stalled &= plane.altitude_error_cm < -2000;
+        is_stalled &= altitude_error > 20.0f;
     }
     if (g2.stall_detection_bitmask & STALL_DETECT_BAD_ALT_40m) {
-        is_stalled &= plane.altitude_error_cm < -4000;
+        is_stalled &= altitude_error > 40.0f;
     }
     if (g2.stall_detection_bitmask & STALL_DETECT_BAD_ALT_60m) {
-        is_stalled &= plane.altitude_error_cm < -6000;
+        is_stalled &= altitude_error > 60.0f;
     }
 
     return is_stalled;

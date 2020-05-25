@@ -567,7 +567,7 @@ private:
 
     struct {
         // true if there is high confidence that he aircraft is currently stalled
-        bool is_stalled() { return (confidence > 0.9f); }
+        bool is_stalled() { return (confidence > 0.5f); }
         void stall_start() { confidence = 1; stall_start_ms = AP_HAL::millis(); count++; }
         void stall_clear() { confidence = 0; stall_start_ms = 0; }
         uint32_t stall_duration_ms() { return is_stalled() ? (AP_HAL::millis() - stall_start_ms) : 0; }

@@ -83,6 +83,9 @@ public:
     // force use of synthetic airspeed for one loop
     virtual void use_synthetic_airspeed(void) = 0;
 
+    // get altitude error. Positive m if too low.
+    virtual float get_altitude_error(void) const = 0;
+
 	// add new controllers to this enum. Users can then
 	// select which controller to use by setting the
 	// SPDHGT_CONTROLLER parameter

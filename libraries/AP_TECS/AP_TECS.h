@@ -140,6 +140,10 @@ public:
     void use_synthetic_airspeed(void) override {
         _use_synthetic_airspeed_once = true;
     }
+
+    float get_altitude_error(void) const override {
+        return _hgt_dem_adj - _height;
+    };
     
     // this supports the TECS_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
