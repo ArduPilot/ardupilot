@@ -608,6 +608,26 @@ float AP_TECS::timeConstant(void) const
 }
 
 /*
+    expected energy rate, from throttle output
+*/
+float AP_TECS::get_expected_specific_energy_rate(void) const
+{
+    float exp_e_rate = 0.0f;
+
+    float THRcruisef = aparm.throttle_cruise*0.01f;
+    if (_throttle_dem>0) {
+        if (_throttle_dem < THRcruisef)
+            exp_e_rate = - _STEdot_min * _throttle_dem/THRcruisef;
+        else {
+            exp_e_rate = - _STEdot_min + (_STEdot_max + _STEdot_min) * (_throttle_dem - THRcruisef)/(_THRmaxf - THRcruisef);
+        }
+    } else {
+        exp_e_rate = _throttle_dem * _maxSinkRate_approach * GRAVITY_MSS;
+    }
+    return exp_e_rate;
+}
+
+/*
   calculate throttle demand - airspeed enabled case
  */
 void AP_TECS::_update_throttle_with_airspeed(void)

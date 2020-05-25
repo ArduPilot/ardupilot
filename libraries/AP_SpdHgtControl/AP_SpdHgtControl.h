@@ -74,6 +74,9 @@ public:
     // set propulsion failed flag
     virtual void set_propulsion_failed_flag(bool propulsion_failed) = 0;
 
+    // get expected specific energy rate from throttle output
+    virtual float get_expected_specific_energy_rate(void) const = 0;
+
 	// add new controllers to this enum. Users can then
 	// select which controller to use by setting the
 	// SPDHGT_CONTROLLER parameter
