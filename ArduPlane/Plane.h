@@ -601,6 +601,9 @@ private:
         // previous rate-limited nav roll angle
         float last_limited_nav_roll;
 
+        // algorithm output
+        bool raw_algorithm_output;
+
     } stall_state;
 
     // true if we are in an auto-throttle mode, which means

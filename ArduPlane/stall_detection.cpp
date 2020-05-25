@@ -10,6 +10,8 @@
 */
 void Plane::stall_detection_update(void)
 {
+    stall_state.raw_algorithm_output = false;
+
     if (control_mode == &mode_stallrecovery) {
         // we are actively recovering from a stall. Let the mode control all stall values, we'll take over when it's done.
         stall_detection_log();
@@ -41,10 +43,10 @@ void Plane::stall_detection_update(void)
 
     const bool is_stalled_initial = stall_state.is_stalled();
 
-    const bool is_stalled_new = stall_detection_algorithm(true);
+    stall_state.raw_algorithm_output = stall_detection_algorithm(true);
 
     // LPF confidence
-    stall_state.confidence = ((float)is_stalled_new * stall_state.coef) + (stall_state.confidence * (1.0f - stall_state.coef));
+    stall_state.confidence = ((float)stall_state.raw_algorithm_output * stall_state.coef) + (stall_state.confidence * (1.0f - stall_state.coef));
 
     if ((is_stalled_initial != stall_state.is_stalled()) && stall_state.is_stalled()) {
         // we just stalled
@@ -70,28 +72,16 @@ void Plane::stall_detection_update(void)
 
 void Plane::stall_detection_log()
 {
-//    // log to AP_Logger
-//    AP::logger().Write(
-//        "STAL",
-//        "TimeUS,h,dh,hdem,dhdem,spdem,sp,dsp,ith,iph,th,ph,dspdem,w,f",
-//        "smnmnnnn----o--",
-//        "F0000000----0--",
-//        "QfffffffffffffB",
-//        now,
-//        (double)_height,
-//        (double)_climb_rate,
-//        (double)_hgt_dem_adj,
-//        (double)_hgt_rate_dem,
-//        (double)_TAS_dem_adj,
-//        (double)_TAS_state,
-//        (double)_vel_dot,
-//        (double)_integTHR_state,
-//        (double)_integSEB_state,
-//        (double)_throttle_dem,
-//        (double)_pitch_dem,
-//        (double)_TAS_rate_dem,
-//        (double)logging.SKE_weighting,
-//        _flags_byte);
+    // log to AP_Logger
+    AP::logger().Write(
+       "STAL",
+       "TimeUS,latest,conf",
+       "s--",
+       "F--",
+       "Qff",
+       AP_HAL::micros64(),
+       (double)stall_state.raw_algorithm_output,
+       (double)stall_state.confidence);
 }
 
 // return true if we think we're stalling
