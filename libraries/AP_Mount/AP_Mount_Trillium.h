@@ -30,6 +30,9 @@ public:
         AP_Mount_Backend(frontend, state, instance)
     {}
 
+    // static detection function
+    static bool detect();
+
     // init - performs any required initialisation for this instance
     void init() override;
 
@@ -59,6 +62,10 @@ private:
     void handle_packet(OrionPkt_t &packet);
 
     void init_hw();
+
+    bool is_pointed_in_stow_orientation() { return true; }
+    bool gimbal_is_stowed;
+    uint32_t notify_gcs_last_ms;
 
     AP_HAL::UARTDriver *_port;
 
