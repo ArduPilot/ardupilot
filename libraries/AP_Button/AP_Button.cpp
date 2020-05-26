@@ -166,7 +166,7 @@ void AP_Button::send_report(void)
 void AP_Button::do_functions(void)
 {
 
-    if (pin[0] != -1 && CHECK_BIT(last_mask, 0) == 1) {
+    if (pin[0] != -1 && CHECK_BIT(last_mask, 0) == 0) {
 
         AP_Arming *arming = AP_Arming::get_singleton();
         if (arming == nullptr) {
@@ -180,7 +180,7 @@ void AP_Button::do_functions(void)
 
     }
 
-    if (pin[1] != -1 && CHECK_BIT(last_mask, 1) == 1) {
+    if (pin[1] != -1 && CHECK_BIT(last_mask, 1) == 0) {
 
         AP_Arming *arming = AP_Arming::get_singleton();
         if (arming == nullptr) {
@@ -194,7 +194,7 @@ void AP_Button::do_functions(void)
 
     }
 
-    if (pin[2] != -1 && CHECK_BIT(last_mask, 2) == 1) {
+    if (pin[2] != -1 && CHECK_BIT(last_mask, 2) == 0) {
         //Do auto
         AP_Vehicle *vehicle = AP_Vehicle::get_singleton();
         if (vehicle == nullptr) {
@@ -223,7 +223,7 @@ void AP_Button::setup_pins(void)
         }
         hal.gpio->pinMode(pin[i], HAL_GPIO_INPUT);
         // setup pullup
-        hal.gpio->write(pin[i], 0);
+        hal.gpio->write(pin[i], 1);
     }
 }
 
