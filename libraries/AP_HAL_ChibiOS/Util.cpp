@@ -86,6 +86,26 @@ void *Util::allocate_heap_memory(size_t size)
     return heap;
 }
 
+/*
+  realloc implementation thanks to wolfssl, used by AP_Scripting
+ */
+void *Util::std_realloc(void *addr, size_t size)
+{
+    if (size == 0) {
+       free(addr);
+       return nullptr;
+    }
+    if (addr == nullptr) {
+        return malloc(size);
+    }
+    void *new_mem = malloc(size);
+    if (new_mem != nullptr) {
+        memcpy(new_mem, addr, chHeapGetSize(addr) > size ? size : chHeapGetSize(addr));
+        free(addr);
+    }
+    return new_mem;
+}
+
 void *Util::heap_realloc(void *heap, void *ptr, size_t new_size)
 {
     if (heap == nullptr) {
@@ -165,6 +185,13 @@ uint64_t Util::get_hw_rtc() const
 
 #if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
 
+#if defined(HAL_NO_GCS) || defined(HAL_BOOTLOADER_BUILD)
+#define Debug(fmt, args ...)  do { hal.console->printf(fmt, ## args); } while (0)
+#else
+#include <GCS_MAVLink/GCS.h>
+#define Debug(fmt, args ...)  do { gcs().send_text(MAV_SEVERITY_INFO, fmt, ## args); } while (0)
+#endif
+
 Util::FlashBootloader Util::flash_bootloader()
 {
     uint32_t fw_size;
@@ -174,7 +201,7 @@ Util::FlashBootloader Util::flash_bootloader()
 
     const uint8_t *fw = AP_ROMFS::find_decompress(fw_name, fw_size);
     if (!fw) {
-        hal.console->printf("failed to find %s\n", fw_name);
+        Debug("failed to find %s\n", fw_name);
         return FlashBootloader::NOT_AVAILABLE;
     }
     // make sure size is multiple of 32
@@ -182,12 +209,12 @@ Util::FlashBootloader Util::flash_bootloader()
 
     const uint32_t addr = hal.flash->getpageaddr(0);
     if (!memcmp(fw, (const void*)addr, fw_size)) {
-        hal.console->printf("Bootloader up-to-date\n");
+        Debug("Bootloader up-to-date\n");
         AP_ROMFS::free(fw);
         return FlashBootloader::NO_CHANGE;
     }
 
-    hal.console->printf("Erasing\n");
+    Debug("Erasing\n");
     uint32_t erased_size = 0;
     uint8_t erase_page = 0;
     while (erased_size < fw_size) {
@@ -198,7 +225,7 @@ Util::FlashBootloader Util::flash_bootloader()
         }
         hal.scheduler->expect_delay_ms(1000);
         if (!hal.flash->erasepage(erase_page)) {
-            hal.console->printf("Erase %u failed\n", erase_page);
+            Debug("Erase %u failed\n", erase_page);
             AP_ROMFS::free(fw);
             return FlashBootloader::FAIL;
         }
@@ -206,27 +233,27 @@ Util::FlashBootloader Util::flash_bootloader()
         erase_page++;
     }
 
-    hal.console->printf("Flashing %s @%08x\n", fw_name, (unsigned int)addr);
+    Debug("Flashing %s @%08x\n", fw_name, (unsigned int)addr);
     const uint8_t max_attempts = 10;
     hal.flash->keep_unlocked(true);
     for (uint8_t i=0; i<max_attempts; i++) {
         hal.scheduler->expect_delay_ms(1000);
         bool ok = hal.flash->write(addr, fw, fw_size);
         if (!ok) {
-            hal.console->printf("Flash failed! (attempt=%u/%u)\n",
+            Debug("Flash failed! (attempt=%u/%u)\n",
                                 i+1,
                                 max_attempts);
             hal.scheduler->delay(100);
             continue;
         }
-        hal.console->printf("Flash OK\n");
+        Debug("Flash OK\n");
         hal.flash->keep_unlocked(false);
         AP_ROMFS::free(fw);
         return FlashBootloader::OK;
     }
 
     hal.flash->keep_unlocked(false);
-    hal.console->printf("Flash failed after %u attempts\n", max_attempts);
+    Debug("Flash failed after %u attempts\n", max_attempts);
     AP_ROMFS::free(fw);
     return FlashBootloader::FAIL;
 }
@@ -276,3 +303,45 @@ bool Util::was_watchdog_reset() const
 {
     return stm32_was_watchdog_reset();
 }
+
+#if CH_DBG_ENABLE_STACK_CHECK == TRUE
+/*
+  display stack usage as text buffer for @SYS/threads.txt
+ */
+size_t Util::thread_info(char *buf, size_t bufsize)
+{
+  thread_t *tp;
+  size_t total = 0;
+
+  // a header to allow for machine parsers to determine format
+  int n = snprintf(buf, bufsize, "ThreadsV1\n");
+  if (n <= 0) {
+      return 0;
+  }
+  buf += n;
+  bufsize -= n;
+  total += n;
+
+  tp = chRegFirstThread();
+
+  do {
+      uint32_t stklimit = (uint32_t)tp->wabase;
+      uint8_t *p = (uint8_t *)tp->wabase;
+      while (*p == CH_DBG_STACK_FILL_VALUE) {
+          p++;
+      }
+      uint32_t stack_left = ((uint32_t)p) - stklimit;
+      n = snprintf(buf, bufsize, "%-13.13s PRI=%3u STACK_LEFT=%u\n", tp->name, unsigned(tp->prio), unsigned(stack_left));
+      if (n <= 0) {
+          break;
+      }
+      buf += n;
+      bufsize -= n;
+      total += n;
+      tp = chRegNextThread(tp);
+  } while (tp != NULL);
+
+  return total;
+}
+#endif // CH_DBG_ENABLE_STACK_CHECK == TRUE
+

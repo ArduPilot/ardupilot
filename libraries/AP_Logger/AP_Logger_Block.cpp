@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <GCS_MAVLink/GCS.h>
 
-extern AP_HAL::HAL& hal;
+const extern AP_HAL::HAL& hal;
 
 // the last page holds the log format in first 4 bytes. Please change
 // this if (and only if!) the low level format changes

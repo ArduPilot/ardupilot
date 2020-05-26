@@ -17,13 +17,13 @@
 #include "AP_Button.h"
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
-#include <AP_Vehicle/AP_Vehicle.h>
-#include <AP_Arming/AP_Arming.h>
+
+// very crude debounce method
+#define DEBOUNCE_MS 50
 
 extern const AP_HAL::HAL& hal;
 
 AP_Button *AP_Button::_singleton;
-#define CHECK_BIT(var, pos) ((var) & (1<<(pos)))
 
 const AP_Param::GroupInfo AP_Button::var_info[] = {
 
@@ -101,6 +101,7 @@ void AP_Button::update(void)
 
         // get initial mask
         last_mask = get_mask();
+        debounce_mask = last_mask;
 
         // register 1kHz timer callback
         hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Button::timer_update, void));
@@ -114,10 +115,20 @@ void AP_Button::update(void)
 
         // send a report to GCS
         send_report();
-
-        do_functions();
     }
 }
+
+// get state of a button
+// used by scripting
+bool AP_Button::get_button_state(uint8_t number)
+{
+    // pins params are 1 indexed not zero
+    if (number == 0 || number > AP_BUTTON_NUM_PINS) {
+        return false;
+    }
+
+    return ( ((1 << (number - 1)) & debounce_mask) != 0);
+};
 
 /*
   get current mask
@@ -143,9 +154,14 @@ void AP_Button::timer_update(void)
         return;
     }
     uint8_t mask = get_mask();
+    uint64_t now = AP_HAL::millis64();
     if (mask != last_mask) {
         last_mask = mask;
-        last_change_time_ms = AP_HAL::millis64();
+        last_change_time_ms = now;
+    }
+    if ((now - last_change_time_ms) > DEBOUNCE_MS) {
+        // crude de-bouncing, debounces all buttons as one, not individually
+        debounce_mask = last_mask;
     }
 }
 
@@ -163,60 +179,6 @@ void AP_Button::send_report(void)
                                   (const char *)&packet);
 }
 
-void AP_Button::do_functions(void)
-{
-
-    if (pin[0] != -1 && CHECK_BIT(last_mask, 0) == 1) {
-
-        AP_Arming *arming = AP_Arming::get_singleton();
-        if (arming == nullptr) {
-            gcs().send_text(MAV_SEVERITY_NOTICE, "Null Arming");
-        } else {
-            const bool armed = arming->is_armed();
-            if(armed) {
-                const bool operation_status = arming->disarm(AP_Arming::Method::SCRIPTING);
-                if (!operation_status) {
-                    gcs().send_text(MAV_SEVERITY_NOTICE, "Disarm failed");
-                }
-            } else {
-                const bool operation_status = arming->arm(AP_Arming::Method::SCRIPTING);
-                if (!operation_status) {
-                    gcs().send_text(MAV_SEVERITY_NOTICE, "Arm failed");
-                }
-            }
-        }
-    }
-
-    if (pin[1] != -1 && CHECK_BIT(last_mask, 1) == 1) {
-        //Do auto
-        AP_Vehicle *vehicle = AP_Vehicle::get_singleton();
-        if (vehicle == nullptr) {
-            gcs().send_text(MAV_SEVERITY_NOTICE, "Null vehicle");
-        } else {
-            const uint8_t mode = vehicle->get_mode();
-            if(mode == 10){
-                const bool mode_changed = vehicle->set_mode(
-                        0,
-                        ModeReason::SCRIPTING);
-                if (!mode_changed) {
-                    //MANUAL_MODE
-                    gcs().send_text(MAV_SEVERITY_NOTICE, "MANUAL mode failed");
-                }
-            } else {
-                const bool mode_changed = vehicle->set_mode(
-                        10,
-                        ModeReason::SCRIPTING);
-                if (!mode_changed) {
-                    //AUTO_MODE
-                    gcs().send_text(MAV_SEVERITY_NOTICE, "AUTO mode failed");
-                }
-
-            }
-        }
-    }
-
-}
-
 /*
   setup the pins as input with pullup. We need pullup to give reliable
   input with a pulldown button
@@ -229,7 +191,7 @@ void AP_Button::setup_pins(void)
         }
         hal.gpio->pinMode(pin[i], HAL_GPIO_INPUT);
         // setup pullup
-        hal.gpio->write(pin[i], 0);
+        hal.gpio->write(pin[i], 1);
     }
 }
 

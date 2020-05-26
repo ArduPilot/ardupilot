@@ -167,7 +167,9 @@ void Copter::heli_update_rotor_speed_targets()
             // set rpm from rotor speed sensor
             if (motors->get_interlock()) {
 #if RPM_ENABLED == ENABLED
-                motors->set_rpm(rpm_sensor.get_rpm(0));
+                float rpm = -1;
+                rpm_sensor.get_rpm(0, rpm);
+                motors->set_rpm(rpm);
 #endif
                 motors->set_desired_rotor_speed(motors->get_rsc_setpoint());
             }else{
@@ -191,17 +193,21 @@ void Copter::heli_update_rotor_speed_targets()
 void Copter::heli_update_autorotation()
 {
 #if MODE_AUTOROTATE_ENABLED == ENABLED
-    //set autonomous autorotation flight mode
-    if (!ap.land_complete && !motors->get_interlock() && !flightmode->has_manual_throttle() && g2.arot.is_enable()) {
+    // check if flying and interlock disengaged
+    if (!ap.land_complete && !motors->get_interlock()) {
+        if (!flightmode->has_manual_throttle() && g2.arot.is_enable()) {
+            // set autonomous autorotation flight mode
+            set_mode(Mode::Number::AUTOROTATE, ModeReason::AUTOROTATION_START);
+        }
+        // set flag to facilitate both auto and manual autorotations
         heli_flags.in_autorotation = true;
-        set_mode(Mode::Number::AUTOROTATE, ModeReason::AUTOROTATION_START);
     } else {
         heli_flags.in_autorotation = false;
     }
 
     // sets autorotation flags through out libraries
     heli_set_autorotation(heli_flags.in_autorotation);
-    if (!ap.land_complete && g2.arot.is_enable()) {
+    if (!ap.land_complete) {
         motors->set_enable_bailout(true);
     } else {
         motors->set_enable_bailout(false);
@@ -213,7 +219,7 @@ void Copter::heli_update_autorotation()
 }
 
 #if MODE_AUTOROTATE_ENABLED == ENABLED
-// heli_set_autorotation - set the autorotation f`lag throughout libraries
+// heli_set_autorotation - set the autorotation flag throughout libraries
 void Copter::heli_set_autorotation(bool autorotation)
 {
     motors->set_in_autorotation(autorotation);

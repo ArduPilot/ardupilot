@@ -171,8 +171,9 @@ protected:
     // waypoint navigation but the user can control the yaw.
     void auto_takeoff_run();
     void auto_takeoff_set_start_alt(void);
-    void auto_takeoff_attitude_run(float target_yaw_rate);
-    // altitude below which we do no navigation in auto takeoff
+
+    // altitude above-ekf-origin below which auto takeoff does not control horizontal position
+    static bool auto_takeoff_no_nav_active;
     static float auto_takeoff_no_nav_alt_cm;
 
 public:
@@ -795,7 +796,7 @@ public:
 
     bool is_taking_off() const override;
 
-    bool do_user_takeoff_start(float final_alt_above_home) override;
+    bool do_user_takeoff_start(float takeoff_alt_cm) override;
 
     GuidedMode mode() const { return guided_mode; }
 
@@ -1387,6 +1388,7 @@ public:
     using Mode::Mode;
 
     bool init(bool ignore_checks) override;
+    void exit();
     void run() override;
 
     bool requires_GPS() const override { return true; }
@@ -1452,21 +1454,14 @@ private:
     // --- Internal variables ---
     float _initial_rpm;             // Head speed recorded at initiation of flight mode (RPM)
     float _target_head_speed;       // The terget head main rotor head speed.  Normalised by main rotor set point
-    float _fwd_speed_target;        // Target forward speed (cm/s)
     float _desired_v_z;             // Desired vertical
     int32_t _pitch_target;          // Target pitch attitude to pass to attitude controller
-    float _collective_aggression;   // The 'aggresiveness' of collective appliction
-    float _z_touch_down_start;      // The height in cm that the touch down phase began
-    float _t_touch_down_initiate;   // The time in ms that the touch down phase began
-    float now;                      // Current time in millis
-    float _entry_time_start;        // Time remaining until entry phase moves on to glide phase
+    uint32_t _entry_time_start_ms;  // Time remaining until entry phase moves on to glide phase
     float _hs_decay;                // The head accerleration during the entry phase
     float _bail_time;               // Timer for exiting the bail out phase (s)
-    float _bail_time_start;         // Time at start of bail out
-    float _des_z;                   // Desired vertical position
+    uint32_t _bail_time_start_ms;   // Time at start of bail out
     float _target_climb_rate_adjust;// Target vertical acceleration used during bail out phase
     float _target_pitch_adjust;     // Target pitch rate used during bail out phase
-    uint16_t log_counter;           // Used to reduce the data flash logging rate
 
     enum class Autorotation_Phase {
         ENTRY,

@@ -24,7 +24,6 @@ const uint8_t SERVO_CHAN_1 = 9; // Pixhawk Aux1
 const uint8_t SERVO_CHAN_2 = 10; // Pixhawk Aux2
 const uint8_t SERVO_CHAN_3 = 11; // Pixhawk Aux3
 
-uint8_t roll_pitch_flag = false; // Flag to adjust roll/pitch instead of forward/lateral
 bool controls_reset_since_input_hold = true;
 }
 
@@ -562,6 +561,12 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
     case JSButton::button_function_t::k_roll_pitch_toggle:
         if (!held) {
             roll_pitch_flag = !roll_pitch_flag;
+            if (roll_pitch_flag) {
+                gcs().send_text(MAV_SEVERITY_INFO, "#Attitude Control");
+            }
+            else {
+                gcs().send_text(MAV_SEVERITY_INFO, "#Movement Control");
+            }
         }
         break;
 

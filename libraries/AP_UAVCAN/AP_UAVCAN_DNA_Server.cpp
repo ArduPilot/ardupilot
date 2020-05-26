@@ -646,25 +646,23 @@ void trampoline_handleAllocation(AP_UAVCAN* ap_uavcan, uint8_t node_id, const Al
 //report the server state, along with failure message if any
 bool AP_UAVCAN_DNA_Server::prearm_check(char* fail_msg, uint8_t fail_msg_len) const
 {
-    if (server_state == HEALTHY) {
-        return true;
-    }
     switch (server_state) {
+    case HEALTHY:
+        return true;
     case STORAGE_FAILURE: {
-        snprintf(fail_msg, fail_msg_len, "UC: Failed to access storage!");
+        snprintf(fail_msg, fail_msg_len, "Failed to access storage!");
         return false;
     }
     case DUPLICATE_NODES: {
-        snprintf(fail_msg, fail_msg_len, "UC: Duplicate Node %s../%d!", fault_node_name, fault_node_id);
+        snprintf(fail_msg, fail_msg_len, "Duplicate Node %s../%d!", fault_node_name, fault_node_id);
         return false;
     }
     case FAILED_TO_ADD_NODE: {
-        snprintf(fail_msg, fail_msg_len, "UC: Failed to add Node %d!", fault_node_id);
+        snprintf(fail_msg, fail_msg_len, "Failed to add Node %d!", fault_node_id);
         return false;
     }
-    default:
-        break;
     }
+    // should never get; compiler should enforce all server_states are covered
     return false;
 }
 

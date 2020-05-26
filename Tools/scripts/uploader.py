@@ -65,6 +65,7 @@ import time
 import array
 import os
 import platform
+import re
 
 from sys import platform as _platform
 
@@ -672,10 +673,54 @@ class uploader(object):
 
         print("Info:")
         print("  flash size: %u" % self.fw_maxsize)
-        print("  board_type: %u" % self.board_type)
+        name = self.board_name_for_board_id(self.board_type)
+        if name is not None:
+            print("  board_type: %u (%s)" % (self.board_type, name))
+        else:
+            print("  board_type: %u" % self.board_type)
         print("  board_rev: %u" % self.board_rev)
 
         print("Identification complete")
+
+    def board_name_for_board_id(self, board_id):
+        '''return name for board_id, None if it can't be found'''
+        shared_ids = {
+            9: "fmuv3",
+            50: "fmuv5",
+        }
+        if board_id in shared_ids:
+            return shared_ids[board_id]
+
+        try:
+            ret = []
+
+            hwdef_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                     "..", "..", "libraries", "AP_HAL_ChibiOS", "hwdef")
+            # uploader.py is swiped into other places, so if the dir
+            # doesn't exist then fail silently
+            if os.path.exists(hwdef_dir):
+                dirs = [x if (x not in ["scripts","common","STM32CubeConf"] and os.path.isdir(os.path.join(hwdef_dir, x))) else None for x in os.listdir(hwdef_dir)]
+                for adir in dirs:
+                    if adir is None:
+                        continue
+                    filepath = os.path.join(hwdef_dir, adir, "hwdef.dat")
+                    fh = open(filepath)
+                    if fh is None:
+#                        print("Failed to open (%s)" % filepath)
+                        continue
+                    text = fh.readlines()
+                    for line in text:
+                        m = re.match("^\s*APJ_BOARD_ID\s+(\d+)\s*$", line)
+                        if m is None:
+                            continue
+                        if int(m.group(1)) == board_id:
+                            ret.append(adir)
+            if len(ret) == 0:
+                return None
+            return " or ".join(ret)
+        except Exception as e:
+            print("Failed to get name: %s" % str(e))
+        return None
 
     # upload the firmware
     def upload(self, fw, force=False, boot_delay=None):

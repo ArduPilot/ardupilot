@@ -15,6 +15,7 @@
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 #include "AP_RCProtocol.h"
 #include "AP_RCProtocol_PPMSum.h"
 #include "AP_RCProtocol_DSM.h"
@@ -22,6 +23,9 @@
 #include "AP_RCProtocol_SBUS.h"
 #include "AP_RCProtocol_SUMD.h"
 #include "AP_RCProtocol_SRXL.h"
+#if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
+#include "AP_RCProtocol_SRXL2.h"
+#endif
 #include "AP_RCProtocol_ST24.h"
 #include "AP_RCProtocol_FPort.h"
 #include <AP_Math/AP_Math.h>
@@ -37,6 +41,9 @@ void AP_RCProtocol::init()
     backend[AP_RCProtocol::DSM] = new AP_RCProtocol_DSM(*this);
     backend[AP_RCProtocol::SUMD] = new AP_RCProtocol_SUMD(*this);
     backend[AP_RCProtocol::SRXL] = new AP_RCProtocol_SRXL(*this);
+#if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
+    backend[AP_RCProtocol::SRXL2] = new AP_RCProtocol_SRXL2(*this);
+#endif
     backend[AP_RCProtocol::ST24] = new AP_RCProtocol_ST24(*this);
     backend[AP_RCProtocol::FPORT] = new AP_RCProtocol_FPort(*this, true);
 }
@@ -308,6 +315,8 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
         return "SUMD";
     case SRXL:
         return "SRXL";
+    case SRXL2:
+        return "SRXL2";
     case ST24:
         return "ST24";
     case FPORT:

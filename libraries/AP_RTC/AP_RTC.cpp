@@ -74,8 +74,10 @@ void AP_RTC::set_utc_usec(uint64_t time_utc_usec, source_type type)
 
     rtc_source_type = type;
 
+#ifndef HAL_NO_GCS
     // update signing timestamp
     GCS_MAVLINK::update_signing_timestamp(time_utc_usec);
+#endif
 }
 
 bool AP_RTC::get_utc_usec(uint64_t &usec) const

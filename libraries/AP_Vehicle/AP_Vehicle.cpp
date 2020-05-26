@@ -19,6 +19,13 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Path: ../AP_GyroFFT/AP_GyroFFT.cpp
     AP_SUBGROUPINFO(gyro_fft, "FFT_",  2, AP_Vehicle, AP_GyroFFT),
 #endif
+
+#if HAL_VISUALODOM_ENABLED
+    // @Group: VISO
+    // @Path: ../AP_VisualOdom/AP_VisualOdom.cpp
+    AP_SUBGROUPINFO(visual_odom, "VISO",  3, AP_Vehicle, AP_VisualOdom),
+#endif
+
     AP_GROUPEND
 };
 
@@ -79,6 +86,7 @@ void AP_Vehicle::setup()
 
     // init_ardupilot is where the vehicle does most of its initialisation.
     init_ardupilot();
+
     // gyro FFT needs to be initialized really late
 #if HAL_GYROFFT_ENABLED
     gyro_fft.init(AP::scheduler().get_loop_period_us());
@@ -89,12 +97,30 @@ void AP_Vehicle::setup()
 #if HAL_HOTT_TELEM_ENABLED
     hott_telem.init();
 #endif
+#if HAL_VISUALODOM_ENABLED
+    // init library used for visual position estimation
+    visual_odom.init();
+#endif
+
+#if AP_PARAM_KEY_DUMP
+    AP_Param::show_all(hal.console, true);
+#endif
 }
 
 void AP_Vehicle::loop()
 {
     scheduler.loop();
     G_Dt = scheduler.get_loop_period_s();
+}
+
+/*
+ fast loop callback for all vehicles. This will get called at the end of any vehicle-specific fast loop.
+ */
+void AP_Vehicle::fast_loop()
+{
+#if HAL_GYROFFT_ENABLED
+    gyro_fft.sample_gyros();
+#endif
 }
 
 /*
@@ -107,9 +133,10 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_RunCam,    &vehicle.runcam,         update,                   50, 50),
 #endif
 #if HAL_GYROFFT_ENABLED
-    SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       sample_gyros,      LOOP_RATE, 50),
+    SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update,                  400, 50),
     SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update_parameters,         1, 50),
 #endif
+    SCHED_TASK(send_watchdog_reset_statustext,         0.1,     20),
 };
 
 void AP_Vehicle::get_common_scheduler_tasks(const AP_Scheduler::Task*& tasks, uint8_t& num_tasks)
@@ -151,6 +178,31 @@ void AP_Vehicle::scheduler_delay_callback()
     }
 
     logger.EnableWrites(true);
+}
+
+// if there's been a watchdog reset, notify the world via a statustext:
+void AP_Vehicle::send_watchdog_reset_statustext()
+{
+    if (!hal.util->was_watchdog_reset()) {
+        return;
+    }
+    const AP_HAL::Util::PersistentData &pd = hal.util->last_persistent_data;
+    gcs().send_text(MAV_SEVERITY_CRITICAL,
+                    "WDG: T%d SL%u FL%u FT%u FA%x FTP%u FLR%x FICSR%u MM%u MC%u IE%u IEC%u TN:%.4s",
+                    pd.scheduler_task,
+                    pd.semaphore_line,
+                    pd.fault_line,
+                    pd.fault_type,
+                    (unsigned)pd.fault_addr,
+                    pd.fault_thd_prio,
+                    (unsigned)pd.fault_lr,
+                    (unsigned)pd.fault_icsr,
+                    pd.last_mavlink_msgid,
+                    pd.last_mavlink_cmd,
+                    (unsigned)pd.internal_errors,
+                    (unsigned)pd.internal_error_count,
+                    pd.thread_name4
+        );
 }
 
 AP_Vehicle *AP_Vehicle::_singleton = nullptr;

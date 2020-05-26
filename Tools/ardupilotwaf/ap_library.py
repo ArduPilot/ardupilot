@@ -62,6 +62,11 @@ _depends_on_vehicle_cache = {}
 def _depends_on_vehicle(bld, source_node):
     path = source_node.srcpath()
 
+    if not bld.env.BUILDROOT:
+        bld.env.BUILDROOT = bld.bldnode.make_node('').abspath()
+    if path.startswith(bld.env.BUILDROOT) or path.startswith("build/"):
+        _depends_on_vehicle_cache[path] = False
+
     if path not in _depends_on_vehicle_cache:
         s = _remove_comments(source_node.read())
         _depends_on_vehicle_cache[path] = _macros_re.search(s) is not None
@@ -95,6 +100,12 @@ def ap_library(bld, library, vehicle):
         bld.fatal('ap_library: %s not found' % library)
 
     src = library_dir.ant_glob(wildcard)
+
+    # allow for dynamically generated sources in a library that inherit the
+    # dependencies and includes
+    if library in bld.env.AP_LIB_EXTRA_SOURCES:
+        for s in bld.env.AP_LIB_EXTRA_SOURCES[library]:
+            src.append(bld.bldnode.find_or_declare(os.path.join('libraries', library, s)))
 
     if not common_tg:
         kw = dict(bld.env.AP_LIBRARIES_OBJECTS_KW)
@@ -209,3 +220,4 @@ def ap_library_register_for_check(self):
 
 def configure(cfg):
     cfg.env.AP_LIBRARIES_OBJECTS_KW = dict()
+    cfg.env.AP_LIB_EXTRA_SOURCES = dict()

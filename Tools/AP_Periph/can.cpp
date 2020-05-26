@@ -507,8 +507,8 @@ static void handle_RTCMStream(CanardInstance* ins, CanardRxTransfer* transfer)
 static void set_rgb_led(uint8_t red, uint8_t green, uint8_t blue)
 {
 #ifdef HAL_PERIPH_NEOPIXEL_COUNT
-    hal.rcout->set_neopixel_rgb_data(HAL_PERIPH_NEOPIXEL_CHAN, -1, red, green, blue);
-    hal.rcout->neopixel_send();
+    hal.rcout->set_serial_led_rgb_data(HAL_PERIPH_NEOPIXEL_CHAN, -1, red, green, blue);
+    hal.rcout->serial_led_send(HAL_PERIPH_NEOPIXEL_CHAN);
 #endif // HAL_PERIPH_NEOPIXEL_COUNT
 #ifdef HAL_PERIPH_ENABLE_NCP5623_LED
     {
@@ -938,25 +938,38 @@ static void process1HzTasks(uint64_t timestamp_usec)
 static void can_wait_node_id(void)
 {
     uint8_t node_id_allocation_transfer_id = 0;
+    const uint32_t led_pattern = 0xAAAA;
+    uint8_t led_idx = 0;
+    uint32_t last_led_change = AP_HAL::millis();
+    const uint32_t led_change_period = 50;
 
     while (canardGetLocalNodeID(&canard) == CANARD_BROADCAST_NODE_ID)
     {
         printf("Waiting for dynamic node ID allocation... (pool %u)\n", pool_peak_percent());
 
         stm32_watchdog_pat();
+        uint32_t now = AP_HAL::millis();
 
         send_next_node_id_allocation_request_at_ms =
-            AP_HAL::millis() + UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_MIN_REQUEST_PERIOD_MS +
+            now + UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_MIN_REQUEST_PERIOD_MS +
             get_random_range(UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_MAX_FOLLOWUP_DELAY_MS);
 
-        while ((AP_HAL::millis() < send_next_node_id_allocation_request_at_ms) &&
+        while (((now=AP_HAL::millis()) < send_next_node_id_allocation_request_at_ms) &&
                (canardGetLocalNodeID(&canard) == CANARD_BROADCAST_NODE_ID))
         {
             processTx();
             processRx();
             canardCleanupStaleTransfers(&canard, AP_HAL::micros64());
             stm32_watchdog_pat();
+
+            if (now - last_led_change > led_change_period) {
+                // blink LED in recognisable pattern while waiting for DNA
+                palWriteLine(HAL_GPIO_PIN_LED, (led_pattern & (1U<<led_idx))?1:0);
+                led_idx = (led_idx+1) % 32;
+                last_led_change = now;
+            }
         }
+
 
         if (canardGetLocalNodeID(&canard) != CANARD_BROADCAST_NODE_ID)
         {
@@ -1117,9 +1130,10 @@ void AP_Periph_FW::hwesc_telem_update()
     pkt.esc_index = g.esc_number;
     pkt.voltage = t.voltage;
     pkt.current = t.current;
-    pkt.temperature = t.temperature;
+    pkt.temperature = MAX(t.mos_temperature, t.cap_temperature);
     pkt.rpm = t.rpm;
-    pkt.power_rating_pct = (t.load & 0x7F);
+    pkt.power_rating_pct = t.phase_current;
+    pkt.error_count = t.error_count;
 
     fix_float16(pkt.voltage);
     fix_float16(pkt.current);
@@ -1244,7 +1258,11 @@ void AP_Periph_FW::can_gps_update(void)
 
         pkt.timestamp.usec = AP_HAL::micros64();
         pkt.gnss_timestamp.usec = gps.time_epoch_usec();
-        pkt.gnss_time_standard = UAVCAN_EQUIPMENT_GNSS_FIX_GNSS_TIME_STANDARD_UTC;
+        if (pkt.gnss_timestamp.usec == 0) {
+            pkt.gnss_time_standard = UAVCAN_EQUIPMENT_GNSS_FIX_GNSS_TIME_STANDARD_NONE;
+        } else {
+            pkt.gnss_time_standard = UAVCAN_EQUIPMENT_GNSS_FIX_GNSS_TIME_STANDARD_UTC;
+        }
         pkt.longitude_deg_1e8 = uint64_t(loc.lng) * 10ULL;
         pkt.latitude_deg_1e8 = uint64_t(loc.lat) * 10ULL;
         pkt.height_ellipsoid_mm = loc.alt * 10;
@@ -1323,7 +1341,11 @@ void AP_Periph_FW::can_gps_update(void)
 
         pkt.timestamp.usec = AP_HAL::micros64();
         pkt.gnss_timestamp.usec = gps.time_epoch_usec();
-        pkt.gnss_time_standard = UAVCAN_EQUIPMENT_GNSS_FIX2_GNSS_TIME_STANDARD_UTC;
+        if (pkt.gnss_timestamp.usec == 0) {
+            pkt.gnss_time_standard = UAVCAN_EQUIPMENT_GNSS_FIX_GNSS_TIME_STANDARD_NONE;
+        } else {
+            pkt.gnss_time_standard = UAVCAN_EQUIPMENT_GNSS_FIX_GNSS_TIME_STANDARD_UTC;
+        }
         pkt.longitude_deg_1e8 = uint64_t(loc.lng) * 10ULL;
         pkt.latitude_deg_1e8 = uint64_t(loc.lat) * 10ULL;
         pkt.height_ellipsoid_mm = loc.alt * 10;
@@ -1518,7 +1540,7 @@ void AP_Periph_FW::can_airspeed_update(void)
         // don't send any data
         return;
     }
-    const float press = airspeed.get_differential_pressure();
+    const float press = airspeed.get_corrected_pressure();
     float temp;
     if (!airspeed.get_temperature(temp)) {
         temp = nanf("");
@@ -1586,6 +1608,7 @@ void AP_Periph_FW::can_rangefinder_update(void)
     }
     uint16_t dist_cm = rangefinder.distance_cm_orient(ROTATION_NONE);
     uavcan_equipment_range_sensor_Measurement pkt {};
+    pkt.sensor_id = rangefinder.get_address(0);
     switch (status) {
     case RangeFinder::Status::OutOfRangeLow:
         pkt.reading_type = UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_READING_TYPE_TOO_CLOSE;

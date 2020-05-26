@@ -19,6 +19,7 @@
 #pragma GCC optimize("O2")
 
 #include "AP_Math.h"
+#include <AP_InternalError/AP_InternalError.h>
 
 // return the rotation matrix equivalent for this quaternion
 void Quaternion::rotation_matrix(Matrix3f &m) const
@@ -118,6 +119,276 @@ void Quaternion::from_rotation_matrix(const Matrix3f &m)
     }
 }
 
+// create a quaternion from a given rotation
+void Quaternion::from_rotation(enum Rotation rotation)
+{
+    // the constants below can be calculated using the following formula:
+    //     Matrix3f m_from_rot;
+    //     m_from_rot.from_rotation(rotation);
+    //     Quaternion q_from_m;
+    //     from_rotation_matrix(m_from_rot);
+
+    switch (rotation) {
+    case ROTATION_NONE:
+        q1 = 1;
+        q2 = q3 = q4 = 0;
+        return;
+
+    case ROTATION_YAW_45:
+        q1 = 0.92387956f;
+        q2 = q3 = 0;
+        q4 = 0.38268343f;
+        return;
+
+    case ROTATION_YAW_90:
+        q1 = HALF_SQRT_2;
+        q2 = q3 = 0;
+        q4 = HALF_SQRT_2;
+        return;
+
+    case ROTATION_YAW_135:
+        q1 = 0.38268343f;
+        q2 = q3 = 0;
+        q4 = 0.92387956f;
+        return;
+
+    case ROTATION_YAW_180:
+        q1 = q2 = q3 = 0;
+        q4=1;
+        return;
+
+    case ROTATION_YAW_225:
+        q1 = -0.38268343f;
+        q2 = q3 = 0;
+        q4 = 0.92387956f;
+        return;
+
+    case ROTATION_YAW_270:
+        q1 = HALF_SQRT_2;
+        q2 = q3 = 0;
+        q4 = -HALF_SQRT_2;
+        return;
+
+    case ROTATION_YAW_315:
+        q1 = 0.92387956f;
+        q2 = q3 = 0;
+        q4 = -0.38268343f;
+        return;
+
+    case ROTATION_ROLL_180:
+        q1 = q3 = q4 = 0;
+        q2 = 1;
+        return;
+
+    case ROTATION_ROLL_180_YAW_45:
+        q1 = q4 = 0;
+        q2 = 0.92387956f;
+        q3 = 0.38268343f;
+        return;
+
+    case ROTATION_ROLL_180_YAW_90:
+        q1 = q4 = 0;
+        q2 = q3 = HALF_SQRT_2;
+        return;
+
+    case ROTATION_ROLL_180_YAW_135:
+        q1 = q4 = 0;
+        q2 = 0.38268343f;
+        q3 = 0.92387956f;
+        return;
+
+    case ROTATION_PITCH_180:
+        q1 = q2 = q4 = 0;
+        q3 = 1;
+        return;
+
+    case ROTATION_ROLL_180_YAW_225:
+        q1 = q4 = 0;
+        q2 = -0.38268343f;
+        q3 = 0.92387956f;
+        return;
+
+    case ROTATION_ROLL_180_YAW_270:
+        q1 = q4 = 0;
+        q2 = -HALF_SQRT_2;
+        q3 = HALF_SQRT_2;
+        return;
+
+    case ROTATION_ROLL_180_YAW_315:
+        q1 = q4 = 0;
+        q2 = 0.92387956f;
+        q3 = -0.38268343f;
+        return;
+
+    case ROTATION_ROLL_90:
+        q1 = q2 = HALF_SQRT_2;
+        q3 = q4 = 0;
+        return;
+
+    case ROTATION_ROLL_90_YAW_45:
+        q1 = 0.65328151f;
+        q2 = 0.65328145f;
+        q3 = q4 = 0.27059802f;
+        return;
+
+    case ROTATION_ROLL_90_YAW_90:
+        q1 = q2 = q3 = q4 = 0.5f;
+        return;
+
+    case ROTATION_ROLL_90_YAW_135:
+        q1 = q2 = 0.27059802f;
+        q3 = 0.65328145f;
+        q4 = 0.65328151f;
+        return;
+
+    case ROTATION_ROLL_270:
+        q1 = HALF_SQRT_2;
+        q2 = -HALF_SQRT_2;
+        q3 = q4 = 0;
+        return;
+
+    case ROTATION_ROLL_270_YAW_45:
+        q1 = 0.65328151f;
+        q2 = -0.65328145f;
+        q3 = -0.27059802f;
+        q4 = 0.27059802f;
+        return;
+
+    case ROTATION_ROLL_270_YAW_90:
+        q1 = q4 = 0.5f;
+        q2 = q3 = -0.5f;
+        return;
+
+    case ROTATION_ROLL_270_YAW_135:
+        q1 = 0.27059802f;
+        q2 = -0.27059802f;
+        q3 = -0.65328145f;
+        q4 = 0.65328151f;
+        return;
+
+    case ROTATION_PITCH_90:
+        q1 = q3 = HALF_SQRT_2;
+        q2 = q4 = 0;
+        return;
+
+    case ROTATION_PITCH_270:
+        q1 = HALF_SQRT_2;
+        q2 = q4 = 0;
+        q3 = -HALF_SQRT_2;
+        return;
+
+    case ROTATION_PITCH_180_YAW_90:
+        q1 = q4 = 0;
+        q2 = -HALF_SQRT_2;
+        q3 = HALF_SQRT_2;
+        return;
+
+    case ROTATION_PITCH_180_YAW_270:
+        q1 = q4 = 0;
+        q2 = q3 = HALF_SQRT_2;
+        return;
+
+    case ROTATION_ROLL_90_PITCH_90:
+        q1 = q2 = q3 = -0.5f;
+        q4 = 0.5f;
+        return;
+
+    case ROTATION_ROLL_180_PITCH_90:
+        q1 = q3 = 0;
+        q2 = -HALF_SQRT_2;
+        q4 = HALF_SQRT_2;
+        return;
+
+    case ROTATION_ROLL_270_PITCH_90:
+        q1 = q3 = q4 = 0.5f;
+        q2 = -0.5f;
+        return;
+
+    case ROTATION_ROLL_90_PITCH_180:
+        q1 = q2 = 0;
+        q3 = -HALF_SQRT_2;
+        q4 = HALF_SQRT_2;
+        return;
+
+    case ROTATION_ROLL_270_PITCH_180:
+        q1 = q2 = 0;
+        q3 = q4 = HALF_SQRT_2;
+        return;
+
+    case ROTATION_ROLL_90_PITCH_270:
+        q1 = q2 = q4 = 0.5f;
+        q3 = -0.5;
+        return;
+
+    case ROTATION_ROLL_180_PITCH_270:
+        q1 = q3 = 0;
+        q2 = q4 = HALF_SQRT_2;
+        return;
+
+    case ROTATION_ROLL_270_PITCH_270:
+        q1 = -0.5f;
+        q2 = q3 = q4 = 0.5f;
+        return;
+
+    case ROTATION_ROLL_90_PITCH_180_YAW_90:
+        q1 = q3 = -0.5f;
+        q2 = q4 = 0.5f;
+        return;
+
+    case ROTATION_ROLL_90_YAW_270:
+        q1 = q2 = -0.5f;
+        q3 = q4 = 0.5f;
+        return;
+
+    case ROTATION_ROLL_90_PITCH_68_YAW_293:
+        q1 = 0.26774535f;
+        q2 = 0.70698798f;
+        q3 = 0.01295743f;
+        q4 = -0.65445596f;
+        return;
+
+    case ROTATION_PITCH_315:
+        q1 = 0.92387956f;
+        q2 = q4 = 0;
+        q3 = -0.38268343f;
+        return;
+
+    case ROTATION_ROLL_90_PITCH_315:
+        q1 = 0.65328151f;
+        q2 = 0.65328145f;
+        q3 = -0.27059802f;
+        q4 = 0.27059802f;
+        return;
+
+    case ROTATION_PITCH_7:
+        q1 = 0.99813479f;
+        q2 = q4 = 0;
+        q3 = 0.06104854f;
+        return;
+
+    case ROTATION_CUSTOM:
+        // Error; custom rotations not supported
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        return;
+
+    case ROTATION_MAX:
+        break;
+    }
+    // rotation invalid
+    INTERNAL_ERROR(AP_InternalError::error_t::bad_rotation);
+}
+
+// rotate this quaternion by the given rotation
+void Quaternion::rotate(enum Rotation rotation)
+{
+    // create quaternion from rotation matrix
+    Quaternion q_from_rot;
+    q_from_rot.from_rotation(rotation);
+
+    // rotate this quaternion
+    *this *= q_from_rot;
+}
+
 // convert a vector from earth to body frame
 void Quaternion::earth_to_body(Vector3f &v) const
 {
@@ -142,8 +413,9 @@ void Quaternion::from_euler(float roll, float pitch, float yaw)
     q4 = cr2*cp2*sy2 - sr2*sp2*cy2;
 }
 
-// create a quaternion from Euler angles
-void Quaternion::from_vector312(float roll ,float pitch, float yaw)
+// create a quaternion from Euler angles applied in yaw, roll, pitch order
+// instead of the normal yaw, pitch, roll order
+void Quaternion::from_vector312(float roll, float pitch, float yaw)
 {
     Matrix3f m;
     m.from_euler312(roll, pitch, yaw);
@@ -151,6 +423,7 @@ void Quaternion::from_vector312(float roll ,float pitch, float yaw)
     from_rotation_matrix(m);
 }
 
+// create a quaternion from its axis-angle representation
 void Quaternion::from_axis_angle(Vector3f v)
 {
     const float theta = v.length();
@@ -163,6 +436,8 @@ void Quaternion::from_axis_angle(Vector3f v)
     from_axis_angle(v,theta);
 }
 
+// create a quaternion from its axis-angle representation
+// the axis vector must be length 1, theta is in radians
 void Quaternion::from_axis_angle(const Vector3f &axis, float theta)
 {
     // axis must be a unit vector as there is no check for length
@@ -179,6 +454,7 @@ void Quaternion::from_axis_angle(const Vector3f &axis, float theta)
     q4 = axis.z * st2;
 }
 
+// rotate by the provided axis angle
 void Quaternion::rotate(const Vector3f &v)
 {
     Quaternion r;
@@ -186,6 +462,8 @@ void Quaternion::rotate(const Vector3f &v)
     (*this) *= r;
 }
 
+// convert this quaternion to a rotation vector where the direction of the vector represents
+// the axis of rotation and the length of the vector represents the angle of rotation
 void Quaternion::to_axis_angle(Vector3f &v)
 {
     const float l = sqrtf(sq(q2)+sq(q3)+sq(q4));
@@ -196,6 +474,8 @@ void Quaternion::to_axis_angle(Vector3f &v)
     }
 }
 
+// create a quaternion from its axis-angle representation
+// only use with small angles.  I.e. length of v should less than 0.17 radians (i.e. 10 degrees)
 void Quaternion::from_axis_angle_fast(Vector3f v)
 {
     const float theta = v.length();
@@ -208,6 +488,8 @@ void Quaternion::from_axis_angle_fast(Vector3f v)
     from_axis_angle_fast(v,theta);
 }
 
+// create a quaternion from its axis-angle representation
+// theta should less than 0.17 radians (i.e. 10 degrees)
 void Quaternion::from_axis_angle_fast(const Vector3f &axis, float theta)
 {
     const float t2 = theta/2.0f;
@@ -220,6 +502,8 @@ void Quaternion::from_axis_angle_fast(const Vector3f &axis, float theta)
     q4 = axis.z * st2;
 }
 
+// rotate by the provided axis angle
+// only use with small angles.  I.e. length of v should less than 0.17 radians (i.e. 10 degrees)
 void Quaternion::rotate_fast(const Vector3f &v)
 {
     const float theta = v.length();
@@ -289,9 +573,18 @@ float Quaternion::length(void) const
     return sqrtf(sq(q1) + sq(q2) + sq(q3) + sq(q4));
 }
 
+// return the reverse rotation of this quaternion
 Quaternion Quaternion::inverse(void) const
 {
     return Quaternion(q1, -q2, -q3, -q4);
+}
+
+// reverse the rotation of this quaternion
+void Quaternion::invert()
+{
+    q2 = -q2;
+    q3 = -q3;
+    q4 = -q4;
 }
 
 void Quaternion::normalize(void)

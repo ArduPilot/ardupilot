@@ -408,7 +408,18 @@ for i = 1, #batt_info do
   -- subtract the capacity we want remaining when we get home
   local rated_cap = battery:pack_capacity_mah(instance)
   if rated_cap then
-    batt_info[i][3] = rated_cap - batt_info[i][4]
+    -- read in the critical MAH
+    local param_string = 'BATT' .. tostring(instance + 1) .. '_CRT_MAH'
+    if instance == 0 then
+      param_string = 'BATT_CRT_MAH'
+    end
+
+    local value = param:get(param_string)
+    if  not value then
+      error('LUA: get '.. param_string .. ' failed')
+    end
+
+    batt_info[i][3] = rated_cap - (batt_info[i][4] + value)
   else
     error("Battery " .. instance .. " does not support current monitoring")
   end

@@ -384,7 +384,15 @@ bool AP_Landing::type_slope_is_complete(void) const
 
 void AP_Landing::type_slope_log(void) const
 {
-    // log to AP_Logger
+// @LoggerMessage: LAND
+// @Description: Slope Landing data
+// @Field: TimeUS: Time since system startup
+// @Field: stage: progress through landing sequence
+// @Field: f1: Landing flags
+// @Field: f2: Slope-specific landing flags
+// @Field: slope: Slope to landing point
+// @Field: slopeInit: Initial slope to landing point
+// @Field: altO: Rangefinder correction
     AP::logger().Write("LAND", "TimeUS,stage,f1,f2,slope,slopeInit,altO", "QBBBfff",
                                             AP_HAL::micros64(),
                                             type_slope_stage,

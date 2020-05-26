@@ -47,6 +47,7 @@ public:
       set simulation speedup
      */
     void set_speedup(float speedup);
+    float get_speedup() { return target_speedup; }
 
     /*
       set instance number
@@ -204,7 +205,9 @@ protected:
     // allow for AHRS_ORIENTATION
     AP_Int8 *ahrs_orientation;
     enum Rotation last_imu_rotation;
-    Matrix3f ahrs_rotation_inv;
+    AP_Float* custom_roll;
+    AP_Float* custom_pitch;
+    AP_Float* custom_yaw;
 
     enum GroundBehaviour {
         GROUND_BEHAVIOR_NONE = 0,
@@ -267,6 +270,9 @@ protected:
 
     void add_shove_forces(Vector3f &rot_accel, Vector3f &body_accel);
     void add_twist_forces(Vector3f &rot_accel);
+
+    // get local thermal updraft
+    float get_local_updraft(Vector3f currentPos);
 
 private:
     uint64_t last_time_us = 0;

@@ -9,7 +9,7 @@
 # time (cd /vagrant && ./waf configure --board=fmuv3 && ./waf build --target=bin/ardusub) # ~ minutes (after building fmuv2)
 # time (cd /vagrant && ./waf configure --board=navio2 && ./waf build --target=bin/arduplane)
 # time (cd /vagrant && ./Tools/autotest/sim_vehicle.py --map --console -v ArduPlane -f jsbsim) # should test JSBSim
-# time (cd /vagrant && ./Tools/autotest/autotest.py build.APMrover2 drive.APMrover2)
+# time (cd /vagrant && ./Tools/autotest/autotest.py build.Rover test.Rover)
 
 # Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
 VAGRANTFILE_API_VERSION = "2"

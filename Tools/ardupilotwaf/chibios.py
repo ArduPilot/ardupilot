@@ -74,7 +74,7 @@ class set_default_parameters(Task.Task):
     def keyword(self):
         return "apj_tool"
     def run(self):
-        rel_default_parameters = self.env.get_flat('DEFAULT_PARAMETERS')
+        rel_default_parameters = self.env.get_flat('DEFAULT_PARAMETERS').replace("'", "")
         abs_default_parameters = os.path.join(self.env.SRCROOT, rel_default_parameters)
         apj_tool = self.env.APJ_TOOL
         sys.path.append(os.path.dirname(apj_tool))
@@ -352,24 +352,8 @@ def configure(cfg):
         cfg.msg('Default parameters', cfg.options.default_parameters, color='YELLOW')
         env.DEFAULT_PARAMETERS = cfg.options.default_parameters
 
-    # we need to run chibios_hwdef.py at configure stage to generate the ldscript.ld
-    # that is needed by the remaining configure checks
-    import subprocess
-
-    if env.BOOTLOADER:
-        env.HWDEF = srcpath('libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef-bl.dat' % env.BOARD)
-        env.BOOTLOADER_OPTION="--bootloader"
-    else:
-        env.HWDEF = srcpath('libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % env.BOARD)
-        env.BOOTLOADER_OPTION=""
-    hwdef_script = srcpath('libraries/AP_HAL_ChibiOS/hwdef/scripts/chibios_hwdef.py')
-    hwdef_out = env.BUILDROOT
-    if not os.path.exists(hwdef_out):
-        os.mkdir(hwdef_out)
-    python = sys.executable
     try:
-        cmd = "{0} '{1}' -D '{2}' '{3}' {4} --params '{5}'".format(python, hwdef_script, hwdef_out, env.HWDEF, env.BOOTLOADER_OPTION, cfg.options.default_parameters)
-        ret = subprocess.call(cmd, shell=True)
+        ret = generate_hwdef_h(env)
     except Exception:
         cfg.fatal("Failed to process hwdef.dat")
     if ret != 0:
@@ -379,11 +363,39 @@ def configure(cfg):
         setup_can_build(cfg)
     setup_optimization(cfg.env)
 
+def generate_hwdef_h(env):
+    '''run chibios_hwdef.py'''
+    import subprocess
+
+    if env.BOOTLOADER:
+        env.HWDEF = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef-bl.dat' % env.BOARD)
+        env.BOOTLOADER_OPTION="--bootloader"
+    else:
+        env.HWDEF = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % env.BOARD)
+        env.BOOTLOADER_OPTION=""
+    hwdef_script = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/scripts/chibios_hwdef.py')
+    hwdef_out = env.BUILDROOT
+    if not os.path.exists(hwdef_out):
+        os.mkdir(hwdef_out)
+    python = sys.executable
+    cmd = "{0} '{1}' -D '{2}' '{3}' {4} --params '{5}'".format(python, hwdef_script, hwdef_out, env.HWDEF, env.BOOTLOADER_OPTION, env.DEFAULT_PARAMETERS)
+    return subprocess.call(cmd, shell=True)
+
 def pre_build(bld):
     '''pre-build hook to change dynamic sources'''
     load_env_vars(bld.env)
     if bld.env.HAL_WITH_UAVCAN:
         bld.get_board().with_uavcan = True
+    hwdef_h = os.path.join(bld.env.BUILDROOT, 'hwdef.h')
+    if not os.path.exists(hwdef_h):
+        print("Generating hwdef.h")
+        try:
+            ret = generate_hwdef_h(bld.env)
+        except Exception:
+            bld.fatal("Failed to process hwdef.dat")
+        if ret != 0:
+            bld.fatal("Failed to process hwdef.dat ret=%d" % ret)
+    setup_optimization(bld.env)
 
 def build(bld):
 
@@ -394,7 +406,8 @@ def build(bld):
             bld.env.get_flat('PYTHON'), bld.env.HWDEF, bld.env.BOOTLOADER_OPTION, bld.env.default_parameters),
         group='dynamic_sources',
         target=[bld.bldnode.find_or_declare('hwdef.h'),
-                bld.bldnode.find_or_declare('ldscript.ld')]
+                bld.bldnode.find_or_declare('ldscript.ld'),
+                bld.bldnode.find_or_declare('hw.dat')]
     )
     
     bld(
@@ -405,6 +418,7 @@ def build(bld):
     )
 
     common_src = [bld.bldnode.find_or_declare('hwdef.h'),
+                  bld.bldnode.find_or_declare('hw.dat'),
                   bld.bldnode.find_or_declare('modules/ChibiOS/include_dirs')]
     common_src += bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/common/*.[ch]')
     common_src += bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/common/*.mk')

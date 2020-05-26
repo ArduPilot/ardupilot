@@ -23,11 +23,9 @@ FLASH_SIZE_KB 128
 STDOUT_SERIAL SD1
 STDOUT_BAUDRATE 57600
 
-# board voltage
-STM32_VDD 330U
 
 # order of UARTs
-UART_ORDER
+SERIAL_ORDER
 define HAL_USE_UART FALSE
 
 PA4 LED_BOOTLOADER OUTPUT LOW
@@ -95,3 +93,6 @@ PB6 STAY_IN_BOOTLOADER INPUT FLOATING
 
 # reserve 256 bytes for comms between app and bootloader
 RAM_RESERVE_START 256
+
+# Add CS pins to ensure they are high in bootloader
+PB0 MAG_CS CS

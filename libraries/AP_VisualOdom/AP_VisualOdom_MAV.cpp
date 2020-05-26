@@ -13,9 +13,13 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_HAL/AP_HAL.h>
 #include "AP_VisualOdom_MAV.h"
-#include <AP_SerialManager/AP_SerialManager.h>
+
+#if HAL_VISUALODOM_ENABLED
+
+#include <AP_HAL/AP_HAL.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -25,14 +29,28 @@ AP_VisualOdom_MAV::AP_VisualOdom_MAV(AP_VisualOdom &frontend) :
 {
 }
 
-// consume VISIOIN_POSITION_DELTA MAVLink message
-void AP_VisualOdom_MAV::handle_msg(const mavlink_message_t &msg)
+// consume vision position estimate data and send to EKF. distances in meters
+void AP_VisualOdom_MAV::handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude, uint8_t reset_counter)
 {
-    // decode message
-    mavlink_vision_position_delta_t packet;
-    mavlink_msg_vision_position_delta_decode(&msg, &packet);
+    const float scale_factor =  _frontend.get_pos_scale();
+    Vector3f pos{x * scale_factor, y * scale_factor, z * scale_factor};
 
-    const Vector3f angle_delta(packet.angle_delta[0], packet.angle_delta[1], packet.angle_delta[2]);
-    const Vector3f position_delta(packet.position_delta[0], packet.position_delta[1], packet.position_delta[2]);
-    set_deltas(angle_delta, position_delta, packet.time_delta_usec, packet.confidence);
+    // send attitude and position to EKF
+    const float posErr = 0; // parameter required?
+    const float angErr = 0; // parameter required?
+    AP::ahrs().writeExtNavData(pos, attitude, posErr, angErr, time_ms, _frontend.get_delay_ms(), get_reset_timestamp_ms(reset_counter));
+
+    // calculate euler orientation for logging
+    float roll;
+    float pitch;
+    float yaw;
+    attitude.to_euler(roll, pitch, yaw);
+
+    // log sensor data
+    AP::logger().Write_VisualPosition(remote_time_us, time_ms, pos.x, pos.y, pos.z, degrees(roll), degrees(pitch), degrees(yaw), reset_counter);
+
+    // record time for health monitoring
+    _last_update_ms = AP_HAL::millis();
 }
+
+#endif

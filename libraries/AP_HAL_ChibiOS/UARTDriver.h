@@ -44,8 +44,11 @@ public:
     uint32_t available() override;
     uint32_t txspace() override;
     int16_t read() override;
+    ssize_t read(uint8_t *buffer, uint16_t count) override;
     int16_t read_locked(uint32_t key) override;
     void _timer_tick(void) override;
+
+    bool discard_input() override;
 
     size_t write(uint8_t c) override;
     size_t write(const uint8_t *buffer, size_t size) override;

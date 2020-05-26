@@ -35,6 +35,8 @@ public:
         ARMING_CHECK_RANGEFINDER = (1U << 15),
         ARMING_CHECK_CAMERA      = (1U << 16),
         ARMING_CHECK_AUX_AUTH    = (1U << 17),
+        ARMING_CHECK_VISION      = (1U << 18),
+        ARMING_CHECK_FFT         = (1U << 19),
     };
 
     enum class Method {
@@ -150,6 +152,8 @@ protected:
 
     virtual bool rc_calibration_checks(bool report);
 
+    bool rc_arm_checks(AP_Arming::Method method);
+
     bool manual_transmitter_checks(bool report);
 
     bool mission_checks(bool report);
@@ -170,6 +174,9 @@ protected:
 
     bool servo_checks(bool report) const;
     bool rc_checks_copter_sub(bool display_failure, const RC_Channel *channels[4]) const;
+
+    bool visodom_checks(bool report) const;
+    bool disarm_switch_checks(bool report) const;
 
     // mandatory checks that cannot be bypassed.  This function will only be called if ARMING_CHECK is zero or arming forced
     virtual bool mandatory_checks(bool report) { return true; }

@@ -4,6 +4,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Scheduler/AP_Scheduler.h>
 #include <GCS_MAVLink/GCS_Dummy.h>
 #include <stdio.h>
 
@@ -106,6 +107,7 @@ private:
 
     AP_Int32 log_bitmask;
     AP_Logger logger{log_bitmask};
+    AP_Scheduler scheduler;
 
     void Log_Write_TypeMessages();
     void Log_Write_TypeMessages_Log_Write();

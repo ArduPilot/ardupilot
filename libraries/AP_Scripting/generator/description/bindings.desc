@@ -35,6 +35,7 @@ singleton AP_AHRS method get_relative_position_NED_home boolean Vector3f'Null
 singleton AP_AHRS method home_is_set boolean
 singleton AP_AHRS method prearm_healthy boolean
 singleton AP_AHRS method airspeed_estimate boolean float'Null
+singleton AP_AHRS method get_vibration Vector3f
 
 include AP_Arming/AP_Arming.h
 
@@ -153,17 +154,25 @@ singleton AP_Vehicle method set_mode boolean uint8_t 0 UINT8_MAX ModeReason::SCR
 singleton AP_Vehicle method get_mode uint8_t
 singleton AP_Vehicle method get_likely_flying boolean
 singleton AP_Vehicle method get_time_flying_ms uint32_t
+singleton AP_Vehicle method start_takeoff boolean float (-LOCATION_ALT_MAX_M*100+1) (LOCATION_ALT_MAX_M*100-1)
 singleton AP_Vehicle method set_target_location boolean Location
+singleton AP_Vehicle method get_target_location boolean Location'Null
+singleton AP_Vehicle method set_target_velocity_NED boolean Vector3f
 
 include AP_SerialLED/AP_SerialLED.h
 singleton AP_SerialLED alias serialLED
-singleton AP_SerialLED method set_num_LEDs boolean uint8_t 1 16 uint8_t 0 AP_SERIALLED_MAX_LEDS
+singleton AP_SerialLED method set_num_neopixel boolean uint8_t 1 16 uint8_t 0 AP_SERIALLED_MAX_LEDS
+singleton AP_SerialLED method set_num_profiled boolean uint8_t 1 16 uint8_t 0 AP_SERIALLED_MAX_LEDS
 singleton AP_SerialLED method set_RGB void uint8_t 1 16 int8_t -1 INT8_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX
-singleton AP_SerialLED method send void
+singleton AP_SerialLED method send void uint8_t 1 16
 
 include SRV_Channel/SRV_Channel.h
 singleton SRV_Channels alias SRV_Channels
 singleton SRV_Channels method find_channel boolean SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint8_t'Null
+singleton SRV_Channels method set_output_pwm void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t 0 UINT16_MAX
+singleton SRV_Channels method set_output_pwm_chan void uint8_t 0 NUM_SERVO_CHANNELS-1 uint16_t 0 UINT16_MAX
+singleton SRV_Channels method set_output_pwm_chan_timeout void uint8_t 0 NUM_SERVO_CHANNELS-1 uint16_t 0 UINT16_MAX uint16_t 0 UINT16_MAX
+singleton SRV_Channels method set_output_scaled void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 int16_t INT16_MIN INT16_MAX
 
 include RC_Channel/RC_Channel.h
 singleton RC_Channels alias rc
@@ -207,3 +216,29 @@ singleton AP_Mission method get_prev_nav_cmd_id uint16_t
 singleton AP_Mission method get_current_nav_id uint16_t
 singleton AP_Mission method get_current_do_cmd_id uint16_t
 singleton AP_Mission method num_commands uint16_t
+singleton AP_Mission method get_item boolean uint16_t 0 UINT16_MAX mavlink_mission_item_int_t'Null
+singleton AP_Mission method set_item boolean uint16_t 0 UINT16_MAX mavlink_mission_item_int_t
+
+userdata mavlink_mission_item_int_t field param1 float read write -FLT_MAX FLT_MAX
+userdata mavlink_mission_item_int_t field param2 float read write -FLT_MAX FLT_MAX
+userdata mavlink_mission_item_int_t field param3 float read write -FLT_MAX FLT_MAX
+userdata mavlink_mission_item_int_t field param4 float read write -FLT_MAX FLT_MAX
+userdata mavlink_mission_item_int_t field x int32_t read write -INT32_MAX INT32_MAX
+userdata mavlink_mission_item_int_t field y int32_t read write -INT32_MAX INT32_MAX
+userdata mavlink_mission_item_int_t field z float read write -FLT_MAX FLT_MAX
+userdata mavlink_mission_item_int_t field seq uint16_t read write 0 UINT16_MAX
+userdata mavlink_mission_item_int_t field command uint16_t read write 0 UINT16_MAX
+-- userdata mavlink_mission_item_int_t field target_system uint8_t read write 0 UINT8_MAX
+-- userdata mavlink_mission_item_int_t field target_component uint8_t read write 0 UINT8_MAX
+userdata mavlink_mission_item_int_t field frame uint8_t read write  0 UINT8_MAX
+userdata mavlink_mission_item_int_t field current uint8_t read write  0 UINT8_MAX
+-- userdata mavlink_mission_item_int_t field autocontinue uint8_t read write  0 UINT8_MAX
+
+
+include AP_RPM/AP_RPM.h
+singleton AP_RPM alias RPM
+singleton AP_RPM method get_rpm boolean uint8_t 0 RPM_MAX_INSTANCES float'Null
+
+include AP_Button/AP_Button.h
+singleton AP_Button alias button
+singleton AP_Button method get_button_state boolean uint8_t 1 AP_BUTTON_NUM_PINS

@@ -48,45 +48,45 @@ static const char *map_filename(const char *fname)
     return fname;
 }
 
-int AP_Filesystem::open(const char *fname, int flags)
+int AP_Filesystem_Posix::open(const char *fname, int flags)
 {
     fname = map_filename(fname);
     // we automatically add O_CLOEXEC as we always want it for ArduPilot FS usage
     return ::open(fname, flags | O_CLOEXEC, 0644);
 }
 
-int AP_Filesystem::close(int fd)
+int AP_Filesystem_Posix::close(int fd)
 {
     return ::close(fd);
 }
 
-ssize_t AP_Filesystem::read(int fd, void *buf, size_t count)
+int32_t AP_Filesystem_Posix::read(int fd, void *buf, uint32_t count)
 {
     return ::read(fd, buf, count);
 }
 
-ssize_t AP_Filesystem::write(int fd, const void *buf, size_t count)
+int32_t AP_Filesystem_Posix::write(int fd, const void *buf, uint32_t count)
 {
     return ::write(fd, buf, count);
 }
 
-int AP_Filesystem::fsync(int fd)
+int AP_Filesystem_Posix::fsync(int fd)
 {
     return ::fsync(fd);
 }
 
-off_t AP_Filesystem::lseek(int fd, off_t offset, int seek_from)
+int32_t AP_Filesystem_Posix::lseek(int fd, int32_t offset, int seek_from)
 {
     return ::lseek(fd, offset, seek_from);
 }
 
-int AP_Filesystem::stat(const char *pathname, struct stat *stbuf)
+int AP_Filesystem_Posix::stat(const char *pathname, struct stat *stbuf)
 {
     pathname = map_filename(pathname);
     return ::stat(pathname, stbuf);
 }
 
-int AP_Filesystem::unlink(const char *pathname)
+int AP_Filesystem_Posix::unlink(const char *pathname)
 {
     pathname = map_filename(pathname);
     // we match the FATFS interface and use unlink
@@ -98,30 +98,30 @@ int AP_Filesystem::unlink(const char *pathname)
     return ret;
 }
 
-int AP_Filesystem::mkdir(const char *pathname)
+int AP_Filesystem_Posix::mkdir(const char *pathname)
 {
     pathname = map_filename(pathname);
     return ::mkdir(pathname, 0775);
 }
 
-DIR *AP_Filesystem::opendir(const char *pathname)
+void *AP_Filesystem_Posix::opendir(const char *pathname)
 {
     pathname = map_filename(pathname);
-    return ::opendir(pathname);
+    return (void*)::opendir(pathname);
 }
 
-struct dirent *AP_Filesystem::readdir(DIR *dirp)
+struct dirent *AP_Filesystem_Posix::readdir(void *dirp)
 {
-    return ::readdir(dirp);
+    return ::readdir((DIR *)dirp);
 }
 
-int AP_Filesystem::closedir(DIR *dirp)
+int AP_Filesystem_Posix::closedir(void *dirp)
 {
-    return ::closedir(dirp);
+    return ::closedir((DIR *)dirp);
 }
 
 // return free disk space in bytes
-int64_t AP_Filesystem::disk_free(const char *path)
+int64_t AP_Filesystem_Posix::disk_free(const char *path)
 {
     path = map_filename(path);
     struct statfs stats;
@@ -132,7 +132,7 @@ int64_t AP_Filesystem::disk_free(const char *path)
 }
 
 // return total disk space in bytes
-int64_t AP_Filesystem::disk_space(const char *path)
+int64_t AP_Filesystem_Posix::disk_space(const char *path)
 {
     path = map_filename(path);
     struct statfs stats;
@@ -146,7 +146,7 @@ int64_t AP_Filesystem::disk_space(const char *path)
 /*
   set mtime on a file
  */
-bool AP_Filesystem::set_mtime(const char *filename, const time_t mtime_sec)
+bool AP_Filesystem_Posix::set_mtime(const char *filename, const uint32_t mtime_sec)
 {
     filename = map_filename(filename);
     struct utimbuf times {};

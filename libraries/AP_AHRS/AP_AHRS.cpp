@@ -518,6 +518,12 @@ void AP_AHRS::update_nmea_out()
 #endif
 }
 
+// return current vibration vector for primary IMU
+Vector3f AP_AHRS::get_vibration(void) const
+{
+    return AP::ins().get_vibration_levels();
+}
+
 // singleton instance
 AP_AHRS *AP_AHRS::_singleton;
 

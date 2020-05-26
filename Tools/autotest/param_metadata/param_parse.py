@@ -34,7 +34,7 @@ args = parser.parse_args()
 
 # Regular expressions for parsing the parameter metadata
 
-prog_param = re.compile(r"@Param: (\w+).*((?:\n[ \t]*// @(\w+)(?:{([^}]+)})?: (.*))+)(?:\n[ \t]*\n|\n[ \t]+[A-Z])", re.MULTILINE)
+prog_param = re.compile(r"@Param: (\w+).*((?:\n[ \t]*// @(\w+)(?:{([^}]+)})?: (.*))+)(?:\n[ \t\r]*\n|\n[ \t]+[A-Z])", re.MULTILINE)
 
 # match e.g @Value: 0=Unity, 1=Koala, 17=Liability
 prog_param_fields = re.compile(r"[ \t]*// @(\w+): ([^\r\n]*)")
@@ -76,14 +76,14 @@ def error(str_to_print):
     global error_count
     error_count += 1
     if current_file is not None:
-        print("In %s" % current_file)
+        print("Error in %s" % current_file)
     if current_param is not None:
         print("At param %s" % current_param)
     print(str_to_print)
 
 
 truename_map = {
-    "APMrover2": "Rover",
+    "Rover": "Rover",
     "ArduSub": "Sub",
     "ArduCopter": "Copter",
     "ArduPlane": "Plane",
@@ -296,6 +296,15 @@ def validate(param):
         if not is_number(max_value):
             error("Max value not number: %s %s" % (param.name, max_value))
             return
+    # Check for duplicate in @value field 
+    if (hasattr(param, "Values")):
+        valueList = param.__dict__["Values"].split(",")
+        values = []
+        for i in valueList:
+            i = i.replace(" ","")
+            values.append(i.partition(":")[0])
+        if (len(values) != len(set(values))):
+            error("Duplicate values found")
     # Validate units
     if (hasattr(param, "Units")):
         if (param.__dict__["Units"] != "") and (param.__dict__["Units"] not in known_units):

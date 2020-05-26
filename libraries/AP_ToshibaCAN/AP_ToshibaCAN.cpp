@@ -58,6 +58,8 @@ static const uint32_t TOSHIBA_CAN_ESC_UPDATE_MS = 100;
 AP_ToshibaCAN::AP_ToshibaCAN()
 {
     debug_can(2, "ToshibaCAN: constructed\n\r");
+    (void)COMMAND_STOP;
+    (void)MOTOR_DATA5;
 }
 
 AP_ToshibaCAN *AP_ToshibaCAN::get_tcan(uint8_t driver_index)
@@ -300,7 +302,7 @@ void AP_ToshibaCAN::loop()
             uavcan::CanFrame recv_frame;
             while (read_frame(recv_frame, timeout)) {
                 // decode rpm and voltage data
-                if ((recv_frame.id >= MOTOR_DATA1) && (recv_frame.id <= MOTOR_DATA1 + 12)) {
+                if ((recv_frame.id >= MOTOR_DATA1) && (recv_frame.id <= MOTOR_DATA1 + TOSHIBACAN_MAX_NUM_ESCS)) {
                     // copy contents to our structure
                     motor_reply_data1_t reply_data;
                     memcpy(reply_data.data, recv_frame.data, sizeof(reply_data.data));
@@ -326,7 +328,7 @@ void AP_ToshibaCAN::loop()
                 }
 
                 // decode temperature data
-                if ((recv_frame.id >= MOTOR_DATA2) && (recv_frame.id <= MOTOR_DATA2 + 12)) {
+                if ((recv_frame.id >= MOTOR_DATA2) && (recv_frame.id <= MOTOR_DATA2 + TOSHIBACAN_MAX_NUM_ESCS)) {
                     // motor data2 data format is 8 bytes (64 bits)
                     //    10 bits: U temperature
                     //    10 bits: V temperature
@@ -350,7 +352,7 @@ void AP_ToshibaCAN::loop()
                 }
 
                 // decode cumulative usage data
-                if ((recv_frame.id >= MOTOR_DATA3) && (recv_frame.id <= MOTOR_DATA3 + 12)) {
+                if ((recv_frame.id >= MOTOR_DATA3) && (recv_frame.id <= MOTOR_DATA3 + TOSHIBACAN_MAX_NUM_ESCS)) {
                     // motor data3 data format is 8 bytes (64 bits)
                     //    3 bytes: usage in seconds
                     //    2 bytes: number of times rotors started and stopped

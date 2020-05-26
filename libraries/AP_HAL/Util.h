@@ -42,7 +42,7 @@ public:
     // commands
     virtual bool run_debug_shell(AP_HAL::BetterStream *stream) = 0;
 
-    enum safety_state {
+    enum safety_state : uint8_t {
         SAFETY_NONE, SAFETY_DISARMED, SAFETY_ARMED
     };
 
@@ -55,25 +55,30 @@ public:
     struct PersistentData {
         float roll_rad, pitch_rad, yaw_rad; // attitude
         int32_t home_lat, home_lon, home_alt_cm; // home position
-        bool armed; // true if vehicle was armed
-        enum safety_state safety_state;
+        uint32_t fault_addr;
+        uint32_t fault_icsr;
+        uint32_t fault_lr;
         uint32_t internal_errors;
-        uint32_t internal_error_count;
-        uint16_t waypoint_num;
-        int8_t scheduler_task;
-        uint16_t last_mavlink_msgid;
-        uint16_t last_mavlink_cmd;
-        uint16_t semaphore_line;
+        uint16_t internal_error_count;
+        uint16_t internal_error_last_line;
         uint32_t spi_count;
         uint32_t i2c_count;
         uint32_t i2c_isr_count;
+        uint16_t waypoint_num;
+        uint16_t last_mavlink_msgid;
+        uint16_t last_mavlink_cmd;
+        uint16_t semaphore_line;
         uint16_t fault_line;
         uint8_t fault_type;
         uint8_t fault_thd_prio;
-        uint32_t fault_addr;
-        uint32_t fault_icsr;
+        char thread_name4[4];
+        int8_t scheduler_task;
+        bool armed; // true if vehicle was armed
+        enum safety_state safety_state;
     };
     struct PersistentData persistent_data;
+    // last_persistent_data is only filled in if we've suffered a watchdog reset
+    struct PersistentData last_persistent_data;
 
     /*
       return state of safety switch, if applicable
@@ -158,7 +163,13 @@ public:
     // heap functions, note that a heap once alloc'd cannot be dealloc'd
     virtual void *allocate_heap_memory(size_t size) = 0;
     virtual void *heap_realloc(void *heap, void *ptr, size_t new_size) = 0;
+#if USE_LIBC_REALLOC
+    virtual void *std_realloc(void *ptr, size_t new_size) { return realloc(ptr, new_size); }
+#else
+    virtual void *std_realloc(void *ptr, size_t new_size) = 0;
+#endif // USE_LIBC_REALLOC
 #endif // ENABLE_HEAP
+
 
     /**
        how much free memory do we have in bytes. If unknown return 4096
@@ -172,6 +183,9 @@ public:
 
     // attempt to trap the processor, presumably to enter an attached debugger
     virtual bool trap() const { return false; }
+
+    // request information on running threads
+    virtual size_t thread_info(char *buf, size_t bufsize) { return 0; }
 
 protected:
     // we start soft_armed false, so that actuators don't send any
