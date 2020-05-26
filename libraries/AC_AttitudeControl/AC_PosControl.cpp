@@ -276,8 +276,13 @@ void AC_PosControl::set_max_speed_z(float speed_down, float speed_up)
     // ensure speed_down is always negative
     speed_down = -fabsf(speed_down);
 
-    // only update if there is a minimum of 1cm/s change and is valid
-    if (((fabsf(_speed_down_cms - speed_down) > 1.0f) || (fabsf(_speed_up_cms - speed_up) > 1.0f)) && is_positive(speed_up) && is_negative(speed_down) ) {
+    // exit immediately if no change in speed up or down
+    if (is_equal(_speed_down_cms, speed_down) && is_equal(_speed_up_cms, speed_up)) {
+        return;
+    }
+
+    // sanity check speeds and update
+    if (is_positive(speed_up) && is_negative(speed_down)) {
         _speed_down_cms = speed_down;
         _speed_up_cms = speed_up;
         _flags.recalc_leash_z = true;
@@ -288,11 +293,14 @@ void AC_PosControl::set_max_speed_z(float speed_down, float speed_up)
 /// set_max_accel_z - set the maximum vertical acceleration in cm/s/s
 void AC_PosControl::set_max_accel_z(float accel_cmss)
 {
-    if (fabsf(_accel_z_cms - accel_cmss) > 1.0f) {
-        _accel_z_cms = accel_cmss;
-        _flags.recalc_leash_z = true;
-        calc_leash_length_z();
+    // exit immediately if no change in acceleration
+    if (is_equal(_accel_z_cms, accel_cmss)) {
+        return;
     }
+
+    _accel_z_cms = accel_cmss;
+    _flags.recalc_leash_z = true;
+    calc_leash_length_z();
 }
 
 /// set_alt_target_with_slew - adjusts target towards a final altitude target
@@ -657,21 +665,26 @@ void AC_PosControl::run_z_controller()
 /// set_max_accel_xy - set the maximum horizontal acceleration in cm/s/s
 void AC_PosControl::set_max_accel_xy(float accel_cmss)
 {
-    if (fabsf(_accel_cms - accel_cmss) > 1.0f) {
-        _accel_cms = accel_cmss;
-        _flags.recalc_leash_xy = true;
-        calc_leash_length_xy();
+    // return immediately if no change
+    if (is_equal(_accel_cms, accel_cmss)) {
+        return;
     }
+    _accel_cms = accel_cmss;
+    _flags.recalc_leash_xy = true;
+    calc_leash_length_xy();
 }
 
 /// set_max_speed_xy - set the maximum horizontal speed maximum in cm/s
 void AC_PosControl::set_max_speed_xy(float speed_cms)
 {
-    if (fabsf(_speed_cms - speed_cms) > 1.0f) {
-        _speed_cms = speed_cms;
-        _flags.recalc_leash_xy = true;
-        calc_leash_length_xy();
+    // return immediately if no change in speed
+    if (is_equal(_speed_cms, speed_cms)) {
+        return;
     }
+
+    _speed_cms = speed_cms;
+    _flags.recalc_leash_xy = true;
+    calc_leash_length_xy();
 }
 
 /// set_pos_target in cm from home

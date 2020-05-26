@@ -135,9 +135,9 @@ bool AP_Arming_Rover::arm(AP_Arming::Method method, const bool do_arming_checks)
 /*
   disarm motors
  */
-bool AP_Arming_Rover::disarm(void)
+bool AP_Arming_Rover::disarm(const AP_Arming::Method method)
 {
-    if (!AP_Arming::disarm()) {
+    if (!AP_Arming::disarm(method)) {
         return false;
     }
     if (rover.control_mode != &rover.mode_auto) {

@@ -33,6 +33,11 @@ const MAV_MISSION_TYPE GCS_MAVLINK::supported_mission_types[] = {
     MAV_MISSION_TYPE_FENCE,
 };
 
+void GCS::init()
+{
+    mavlink_system.sysid = sysid_this_mav();
+}
+
 /*
   send a text message to all GCS
  */

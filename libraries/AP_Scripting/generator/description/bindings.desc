@@ -4,6 +4,7 @@ include AP_Common/Location.h
 
 userdata Location field lat int32_t read write -900000000 900000000
 userdata Location field lng int32_t read write -1800000000 1800000000
+userdata Location field alt int32_t read write (-LOCATION_ALT_MAX_M*100+1) (LOCATION_ALT_MAX_M*100-1)
 userdata Location field relative_alt boolean read write
 userdata Location field terrain_alt boolean read write
 userdata Location field origin_alt boolean read write
@@ -38,9 +39,12 @@ singleton AP_AHRS method airspeed_estimate boolean float'Null
 include AP_Arming/AP_Arming.h
 
 singleton AP_Arming alias arming
-singleton AP_Arming method disarm boolean
+singleton AP_Arming method disarm boolean AP_Arming::Method::SCRIPTING'literal
 singleton AP_Arming method is_armed boolean
 singleton AP_Arming method arm boolean AP_Arming::Method::SCRIPTING'literal
+singleton AP_Arming method get_aux_auth_id boolean uint8_t'Null
+singleton AP_Arming method set_aux_auth_passed void uint8_t 0 UINT8_MAX
+singleton AP_Arming method set_aux_auth_failed void uint8_t 0 UINT8_MAX string
 
 include AP_BattMonitor/AP_BattMonitor.h
 
@@ -149,11 +153,12 @@ singleton AP_Vehicle method set_mode boolean uint8_t 0 UINT8_MAX ModeReason::SCR
 singleton AP_Vehicle method get_mode uint8_t
 singleton AP_Vehicle method get_likely_flying boolean
 singleton AP_Vehicle method get_time_flying_ms uint32_t
+singleton AP_Vehicle method set_target_location boolean Location
 
 include AP_SerialLED/AP_SerialLED.h
 singleton AP_SerialLED alias serialLED
-singleton AP_SerialLED method set_num_LEDs boolean uint8_t 1 16 uint8_t 0 32
-singleton AP_SerialLED method set_RGB void uint8_t 1 16 uint32_t 0U UINT32_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX
+singleton AP_SerialLED method set_num_LEDs boolean uint8_t 1 16 uint8_t 0 AP_SERIALLED_MAX_LEDS
+singleton AP_SerialLED method set_RGB void uint8_t 1 16 int8_t -1 INT8_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX
 singleton AP_SerialLED method send void
 
 include SRV_Channel/SRV_Channel.h
@@ -190,3 +195,15 @@ singleton AP_Param alias param
 singleton AP_Param method get boolean string float'Null
 singleton AP_Param method set boolean string float -FLT_MAX FLT_MAX
 singleton AP_Param method set_and_save boolean string float -FLT_MAX FLT_MAX
+
+include AP_Mission/AP_Mission.h
+singleton AP_Mission alias mission
+singleton AP_Mission scheduler-semaphore
+singleton AP_Mission enum MISSION_STOPPED MISSION_RUNNING MISSION_COMPLETE
+singleton AP_Mission method state uint8_t
+singleton AP_Mission method get_current_nav_index uint16_t
+singleton AP_Mission method set_current_cmd boolean uint16_t 0 (ud->num_commands()-1) 
+singleton AP_Mission method get_prev_nav_cmd_id uint16_t
+singleton AP_Mission method get_current_nav_id uint16_t
+singleton AP_Mission method get_current_do_cmd_id uint16_t
+singleton AP_Mission method num_commands uint16_t

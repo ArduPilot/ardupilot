@@ -40,17 +40,17 @@ public:
     // for hover throttle
     int16_t     pwm_to_angle_dz_trim(uint16_t dead_zone, uint16_t trim) const;
 
-    /*
-      return a normalised input for a channel, in range -1 to 1,
-      centered around the channel trim. Ignore deadzone.
-     */
+    // return a normalised input for a channel, in range -1 to 1,
+    // centered around the channel trim. Ignore deadzone.
     float       norm_input() const;
 
-    /*
-      return a normalised input for a channel, in range -1 to 1,
-      centered around the channel trim. Take into account the deadzone
-    */
+    // return a normalised input for a channel, in range -1 to 1,
+    // centered around the channel trim. Take into account the deadzone
     float       norm_input_dz() const;
+
+    // return a normalised input for a channel, in range -1 to 1,
+    // ignores trim and deadzone
+    float       norm_input_ignore_trim() const;
 
     uint8_t     percent_input() const;
     int16_t     pwm_to_range() const;
@@ -95,7 +95,7 @@ public:
 
     AP_Int16    option; // e.g. activate EPM gripper / enable fence
 
-    // auxillary switch support:
+    // auxiliary switch support
     void init_aux();
     bool read_aux();
 

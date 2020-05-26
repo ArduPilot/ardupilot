@@ -28,6 +28,8 @@ from pysim import vehicleinfo
 # List of open terminal windows for macosx
 windowID = []
 
+autotest_dir = os.path.dirname(os.path.realpath(__file__))
+root_dir = os.path.realpath(os.path.join(autotest_dir, '../..'))
 
 class CompatError(Exception):
     """A custom exception class to hold state if we encounter the parse
@@ -260,16 +262,6 @@ def progress(text):
     print("SIM_VEHICLE: " + text)
 
 
-def find_autotest_dir():
-    """Return path to autotest directory"""
-    return os.path.dirname(os.path.realpath(__file__))
-
-
-def find_root_dir():
-    """Return path to root directory"""
-    return os.path.realpath(os.path.join(find_autotest_dir(), '../..'))
-
-
 def wait_unlimited():
     """Wait until signal received"""
     while True:
@@ -284,7 +276,6 @@ def do_build_waf(opts, frame_options):
     progress("WAF build")
 
     old_dir = os.getcwd()
-    root_dir = find_root_dir()
     os.chdir(root_dir)
 
     waf_light = os.path.join(root_dir, "modules/waf/waf-light")
@@ -306,7 +297,7 @@ def do_build_waf(opts, frame_options):
 
     if opts.flash_storage:
         cmd_configure.append("--sitl-flash-storage")
-        
+
     pieces = [shlex.split(x) for x in opts.waf_configure_args]
     for piece in pieces:
         cmd_configure.extend(piece)
@@ -346,7 +337,7 @@ def do_build_parameters(vehicle):
     # now build parameters
     progress("Building fresh parameter descriptions")
     param_parse_path = os.path.join(
-        find_root_dir(), "Tools/autotest/param_metadata/param_parse.py")
+        autotest_dir, "param_metadata/param_parse.py")
     cmd_param_build = ["python", param_parse_path, '--vehicle', vehicle]
 
     _, sts = run_cmd_blocking("Building fresh params", cmd_param_build)
@@ -406,7 +397,7 @@ def get_user_locations_path():
 
 def find_new_spawn(loc, file_path):
     (lat, lon, alt, heading) = loc.split(",")
-    swarminit_filepath = os.path.join(find_autotest_dir(), "swarminit.txt")
+    swarminit_filepath = os.path.join(autotest_dir, "swarminit.txt")
     for path2 in [file_path, swarminit_filepath]:
         if os.path.isfile(path2):
             with open(path2, 'r') as swd:
@@ -425,11 +416,11 @@ def find_new_spawn(loc, file_path):
         return loc
 
 
-def find_location_by_name(autotest, locname):
+def find_location_by_name(locname):
     """Search locations.txt for locname, return GPS coords"""
     locations_userpath = os.environ.get('ARDUPILOT_LOCATIONS',
                                         get_user_locations_path())
-    locations_filepath = os.path.join(autotest, "locations.txt")
+    locations_filepath = os.path.join(autotest_dir, "locations.txt")
     comment_regex = re.compile("\s*#.*")
     for path in [locations_userpath, locations_filepath]:
         if not os.path.isfile(path):
@@ -476,11 +467,11 @@ def run_cmd_blocking(what, cmd, quiet=False, check=False, **kw):
     return ret
 
 
-def run_in_terminal_window(autotest, name, cmd):
+def run_in_terminal_window(name, cmd):
 
     """Execute the run_in_terminal_window.sh command for cmd"""
     global windowID
-    runme = [os.path.join(autotest, "run_in_terminal_window.sh"), name]
+    runme = [os.path.join(autotest_dir, "run_in_terminal_window.sh"), name]
     runme.extend(cmd)
     progress_cmd("Run " + name, runme)
 
@@ -511,14 +502,13 @@ def run_in_terminal_window(autotest, name, cmd):
 tracker_uarta = None  # blemish
 
 
-def start_antenna_tracker(autotest, opts):
+def start_antenna_tracker(opts):
     """Compile and run the AntennaTracker, add tracker to mavproxy"""
 
     global tracker_uarta
     progress("Preparing antenna tracker")
-    tracker_home = find_location_by_name(find_autotest_dir(),
-                                         opts.tracker_location)
-    vehicledir = os.path.join(autotest, "../../" + "AntennaTracker")
+    tracker_home = find_location_by_name(opts.tracker_location)
+    vehicledir = os.path.join(autotest_dir, "../../" + "AntennaTracker")
     options = vinfo.options["AntennaTracker"]
     tracker_default_frame = options["default_frame"]
     tracker_frame_options = options["frames"][tracker_default_frame]
@@ -528,8 +518,7 @@ def start_antenna_tracker(autotest, opts):
     os.chdir(vehicledir)
     tracker_uarta = "tcp:127.0.0.1:" + str(5760 + 10 * tracker_instance)
     exe = os.path.join(vehicledir, "AntennaTracker.elf")
-    run_in_terminal_window(autotest,
-                           "AntennaTracker",
+    run_in_terminal_window("AntennaTracker",
                            ["nice",
                             exe,
                             "-I" + str(tracker_instance),
@@ -538,7 +527,7 @@ def start_antenna_tracker(autotest, opts):
     os.chdir(oldpwd)
 
 
-def start_vehicle(binary, autotest, opts, stuff, loc=None):
+def start_vehicle(binary, opts, stuff, loc=None):
     """Run the ArduPilot binary"""
 
     cmd_name = opts.vehicle
@@ -605,7 +594,7 @@ def start_vehicle(binary, autotest, opts, stuff, loc=None):
         paths = stuff["default_params_filename"]
         if not isinstance(paths, list):
             paths = [paths]
-        paths = [os.path.join(autotest, x) for x in paths]
+        paths = [os.path.join(autotest_dir, x) for x in paths]
         for x in paths:
             if not os.path.isfile(x):
                 print("The parameter file (%s) does not exist" % (x,))
@@ -624,7 +613,7 @@ def start_vehicle(binary, autotest, opts, stuff, loc=None):
     if opts.mcast:
         cmd.extend(["--uartA mcast:"])
 
-    run_in_terminal_window(autotest, cmd_name, cmd)
+    run_in_terminal_window(cmd_name, cmd)
 
 
 def start_mavproxy(opts, stuff):
@@ -731,12 +720,15 @@ def start_mavproxy(opts, stuff):
     if len(extra_cmd):
         cmd.extend(['--cmd', extra_cmd])
 
+    # add Tools/mavproxy_modules to PYTHONPATH in autotest so we can
+    # find random MAVProxy helper modules like sitl_calibration
     local_mp_modules_dir = os.path.abspath(
         os.path.join(__file__, '..', '..', 'mavproxy_modules'))
     env = dict(os.environ)
-    env['PYTHONPATH'] = (local_mp_modules_dir +
-                         os.pathsep +
-                         env.get('PYTHONPATH', ''))
+    old = env.get('PYTHONPATH', None)
+    env['PYTHONPATH'] = local_mp_modules_dir
+    if old is not None:
+        env['PYTHONPATH'] += os.path.pathsep + old
 
     run_cmd_blocking("Run MavProxy", cmd, env=env)
     progress("MAVProxy exited")
@@ -1075,7 +1067,7 @@ frame_infos = vinfo.options_for_frame(cmd_opts.frame,
                                       cmd_opts.vehicle,
                                       cmd_opts)
 
-vehicle_dir = os.path.realpath(os.path.join(find_root_dir(), cmd_opts.vehicle))
+vehicle_dir = os.path.realpath(os.path.join(root_dir, cmd_opts.vehicle))
 if not os.path.exists(vehicle_dir):
     print("vehicle directory (%s) does not exist" % (vehicle_dir,))
     sys.exit(1)
@@ -1085,13 +1077,13 @@ if not cmd_opts.hil:
         kill_tasks()
 
 if cmd_opts.tracker:
-    start_antenna_tracker(find_autotest_dir(), cmd_opts)
+    start_antenna_tracker(cmd_opts)
 
 if cmd_opts.custom_location:
     location = cmd_opts.custom_location
     progress("Starting up at %s" % (location,))
 elif cmd_opts.location is not None:
-    location = find_location_by_name(find_autotest_dir(), cmd_opts.location)
+    location = find_location_by_name(cmd_opts.location)
     progress("Starting up at %s (%s)" % (location, cmd_opts.location))
 else:
     progress("Starting up at SITL location")
@@ -1109,14 +1101,14 @@ if cmd_opts.use_dir is not None:
 if cmd_opts.hil:
     # (unlikely)
     jsbsim_opts = [
-        os.path.join(find_autotest_dir(),
+        os.path.join(autotest_dir,
                      "jsb_sim/runsim.py"),
         "--speedup=" + str(cmd_opts.speedup)
     ]
     if location is not None:
         jsbsim_opts.extend(["--home", location])
 
-    run_in_terminal_window(find_autotest_dir(), "JSBSim", jsbsim_opts)
+    run_in_terminal_window("JSBSim", jsbsim_opts)
 else:
     if not cmd_opts.no_rebuild:  # i.e. we should rebuild
         do_build(vehicle_dir, cmd_opts, frame_infos)
@@ -1126,7 +1118,7 @@ else:
 
     if cmd_opts.build_system == "waf":
         binary_basedir = "build/sitl"
-        vehicle_binary = os.path.join(find_root_dir(),
+        vehicle_binary = os.path.join(root_dir,
                                       binary_basedir,
                                       frame_infos["waf_target"])
     else:
@@ -1137,7 +1129,6 @@ else:
         sys.exit(1)
 
     start_vehicle(vehicle_binary,
-                  find_autotest_dir(),
                   cmd_opts,
                   frame_infos,
                   loc=location)

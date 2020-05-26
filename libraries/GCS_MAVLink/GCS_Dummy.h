@@ -64,6 +64,8 @@ public:
 
 protected:
 
+    uint8_t sysid_this_mav() const override { return 1; }
+
     GCS_MAVLINK_Dummy *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
                                                AP_HAL::UARTDriver &uart) override {
         return new GCS_MAVLINK_Dummy(params, uart);

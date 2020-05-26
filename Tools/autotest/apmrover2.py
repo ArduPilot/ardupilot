@@ -1128,11 +1128,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         check_atts = ['mission_type', 'command', 'x', 'y', 'z', 'seq', 'param1']
         return self.check_mission_items_same(check_atts, want, got, skip_first_item=True)
 
-    def check_mission_item_upload_download(self, items, type, mission_type):
+    def check_mission_item_upload_download(self, items, itype, mission_type):
         self.progress("check %s _upload/download: upload %u items" %
-                      (type, len(items),))
+                      (itype, len(items),))
         self.upload_using_mission_protocol(mission_type, items)
-        self.progress("check %s upload/download: download items" % type)
+        self.progress("check %s upload/download: download items" % itype)
         downloaded_items = self.download_using_mission_protocol(mission_type)
         self.progress("Downloaded items: (%s)" % str(downloaded_items))
         if len(items) != len(downloaded_items):
@@ -3504,7 +3504,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
     def drive_somewhere_stop_at_boundary(self,
                                          loc,
                                          expected_stopping_point,
-                                         expected_distance_epsilon=1,
+                                         expected_distance_epsilon=1.0,
                                          target_system=1,
                                          target_component=1,
                                          timeout=120):
@@ -4323,9 +4323,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             target_component=target_component)
         return
         # twosquares is currently disabled because of the requirement to have an inclusion fence (which it doesn't have ATM)
-        self.test_poly_fence_object_avoidance_guided_two_squares(
-            target_system=target_system,
-            target_component=target_component)
+        # self.test_poly_fence_object_avoidance_guided_two_squares(
+        #     target_system=target_system,
+        #     target_component=target_component)
 
     def test_poly_fence_object_avoidance_auto(self, target_system=1, target_component=1):
         self.load_fence("rover-path-planning-fence.txt")
@@ -4714,10 +4714,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         ex = None
         example_script = "simple_loop.lua"
         messages = []
-        def my_message_hook(mav, m):
-            if m.get_type() != 'STATUSTEXT':
+        def my_message_hook(mav, message):
+            if message.get_type() != 'STATUSTEXT':
                 return
-            messages.append(m)
+            messages.append(message)
         self.install_message_hook(my_message_hook)
         try:
             self.set_parameter("SCR_ENABLE", 1)
@@ -4748,10 +4748,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         ex = None
         example_script = "scripting_test.lua"
         messages = []
-        def my_message_hook(mav, m):
-            if m.get_type() != 'STATUSTEXT':
+        def my_message_hook(mav, message):
+            if message.get_type() != 'STATUSTEXT':
                 return
-            messages.append(m)
+            messages.append(message)
         self.install_message_hook(my_message_hook)
         try:
             self.set_parameter("SCR_ENABLE", 1)
@@ -4783,10 +4783,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         ex = None
         example_script = "hello_world.lua"
         messages = []
-        def my_message_hook(mav, m):
-            if m.get_type() != 'STATUSTEXT':
+        def my_message_hook(mav, message):
+            if message.get_type() != 'STATUSTEXT':
                 return
-            messages.append(m)
+            messages.append(message)
         self.install_message_hook(my_message_hook)
         try:
             self.set_parameter("SCR_ENABLE", 1)
@@ -4946,10 +4946,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             # ("Drive Brake", self.drive_brake),
 
             ("GetBanner", "Get Banner", self.do_get_banner),
-
-            ("GetCapabilities",
-             "Get Capabilities",
-             self.test_get_autopilot_capabilities),
 
             ("DO_SET_MODE",
              "Set mode via MAV_COMMAND_DO_SET_MODE",

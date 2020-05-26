@@ -34,6 +34,11 @@ public:
     /* update model by one time step */
     void update(const struct sitl_input &input) override;
 
+    // get motor offset for model
+    virtual uint16_t get_motors_offset() const override {
+        return frame->motor_offset;
+    }
+
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
         return new MultiCopter(frame_str);

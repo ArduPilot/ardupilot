@@ -410,7 +410,7 @@ void ToyMode::update()
         const uint8_t disarm_limit = copter.flightmode->has_manual_throttle()?TOY_LAND_MANUAL_DISARM_COUNT:TOY_LAND_DISARM_COUNT;
         if (throttle_low_counter >= disarm_limit) {
             gcs().send_text(MAV_SEVERITY_INFO, "Tmode: throttle disarm");
-            copter.arming.disarm();
+            copter.arming.disarm(AP_Arming::Method::TOYMODELANDTHROTTLE);
         }
     } else {
         throttle_low_counter = 0;
@@ -569,7 +569,7 @@ void ToyMode::update()
     case ACTION_DISARM:
         if (copter.motors->armed()) {
             gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: Force disarm");
-            copter.arming.disarm();
+            copter.arming.disarm(AP_Arming::Method::TOYMODELANDFORCE);
         }
         break;
 
@@ -1063,9 +1063,10 @@ void ToyMode::arm_check_compass(void)
     Vector3f offsets = copter.compass.get_offsets();
     float field = copter.compass.get_field().length();
     
+    char unused_compass_configured_error_message[20];
     if (offsets.length() > copter.compass.get_offsets_max() ||
         field < 200 || field > 800 ||
-        !copter.compass.configured()) {
+        !copter.compass.configured(unused_compass_configured_error_message, ARRAY_SIZE(unused_compass_configured_error_message))) {
         if (copter.compass.get_learn_type() != Compass::LEARN_INFLIGHT) {
             gcs().send_text(MAV_SEVERITY_INFO, "Tmode: enable compass learning");
             copter.compass.set_learn_type(Compass::LEARN_INFLIGHT, false);

@@ -136,12 +136,12 @@ void AP_Frsky_Telem::update_avg_packet_rate()
  * WFQ scheduler
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
-void AP_Frsky_Telem::passthrough_wfq_adaptive_scheduler()
+void AP_Frsky_Telem::passthrough_wfq_adaptive_scheduler(void)
 {
     update_avg_packet_rate();
 
     uint32_t now = AP_HAL::millis();
-    uint8_t max_delay_idx = TIME_SLOT_MAX;
+    uint8_t max_delay_idx = 0;
     
     float max_delay = 0;
     float delay = 0;
@@ -151,7 +151,7 @@ void AP_Frsky_Telem::passthrough_wfq_adaptive_scheduler()
     check_sensor_status_flags();
     // build message queue for ekf_status
     check_ekf_status();
-
+    
     // dynamic priorities
     bool queue_empty;
     {
@@ -198,8 +198,6 @@ void AP_Frsky_Telem::passthrough_wfq_adaptive_scheduler()
     _passthrough.packet_timer[max_delay_idx] = AP_HAL::millis();
     // send packet
     switch (max_delay_idx) {
-        case TIME_SLOT_MAX: // nothing to send
-            break;
         case 0: // 0x5000 status text
             if (get_next_msg_chunk()) {
                 send_uint32(SPORT_DATA_FRAME, DIY_FIRST_ID, _msg_chunk.chunk);
@@ -422,9 +420,7 @@ void AP_Frsky_Telem::send_SPort(void)
  */
 void AP_Frsky_Telem::send_D(void)
 {
-    const AP_AHRS &_ahrs = AP::ahrs();
     const AP_BattMonitor &_battery = AP::battery();
-
     uint32_t now = AP_HAL::millis();
     // send frame1 every 200ms
     if (now - _D.last_200ms_frame >= 200) {
@@ -445,6 +441,7 @@ void AP_Frsky_Telem::send_D(void)
     // send frame2 every second
     if (now - _D.last_1000ms_frame >= 1000) {
         _D.last_1000ms_frame = now;
+        AP_AHRS &_ahrs = AP::ahrs();
         send_uint16(DATA_ID_GPS_COURS_BP, (uint16_t)((_ahrs.yaw_sensor / 100) % 360)); // send heading in degree based on AHRS and not GPS
         calc_gps_position();
         if (AP::gps().status() >= 3) {
@@ -712,13 +709,18 @@ void AP_Frsky_Telem::check_sensor_status_flags(void)
  */
 void AP_Frsky_Telem::check_ekf_status(void)
 {
-    const AP_AHRS &_ahrs = AP::ahrs();
 
     // get variances
+    bool get_variance;
     float velVar, posVar, hgtVar, tasVar;
     Vector3f magVar;
     Vector2f offset;
-    if (_ahrs.get_variances(velVar, posVar, hgtVar, magVar, tasVar, offset)) {
+    {
+        AP_AHRS &_ahrs = AP::ahrs();
+        WITH_SEMAPHORE(_ahrs.get_semaphore());
+        get_variance = _ahrs.get_variances(velVar, posVar, hgtVar, magVar, tasVar, offset);
+    }
+    if (get_variance) {
         uint32_t now = AP_HAL::millis();
         if ((now - check_ekf_status_timer) >= 10000) { // prevent repeating any ekf_status message unless 10 seconds have passed
             // multiple errors can be reported at a time. Same setup as Mission Planner.
@@ -896,14 +898,21 @@ uint32_t AP_Frsky_Telem::calc_ap_status(void)
  */
 uint32_t AP_Frsky_Telem::calc_home(void)
 {
-    const AP_AHRS &_ahrs = AP::ahrs();
-
     uint32_t home = 0;
     Location loc;
+    Location home_loc;
+    bool get_position;
     float _relative_home_altitude = 0;
-    if (_ahrs.get_position(loc)) {            
+
+    {
+        AP_AHRS &_ahrs = AP::ahrs();
+        WITH_SEMAPHORE(_ahrs.get_semaphore());
+        get_position = _ahrs.get_position(loc);
+        home_loc = _ahrs.get_home();
+    }
+
+    if (get_position) {            
         // check home_loc is valid
-        const Location &home_loc = _ahrs.get_home();
         if (home_loc.lat != 0 || home_loc.lng != 0) {
             // distance between vehicle and home_loc in meters
             home = prep_number(roundf(home_loc.get_distance(loc)), 3, 2);
@@ -914,7 +923,7 @@ uint32_t AP_Frsky_Telem::calc_home(void)
         _relative_home_altitude = loc.alt;
         if (!loc.relative_alt) {
             // loc.alt has home altitude added, remove it
-            _relative_home_altitude -= _ahrs.get_home().alt;
+            _relative_home_altitude -= home_loc.alt;
         }
     }
     // altitude above home in decimeters
@@ -928,17 +937,11 @@ uint32_t AP_Frsky_Telem::calc_home(void)
  */
 uint32_t AP_Frsky_Telem::calc_velandyaw(void)
 {
-    AP_AHRS &_ahrs = AP::ahrs();
-
-    uint32_t velandyaw;
-    Vector3f velNED {};
-
-    // if we can't get velocity then we use zero for vertical velocity
-    if (!_ahrs.get_velocity_NED(velNED)) {
-      velNED.zero();
-    }
+    float vspd = get_vspeed_ms();
     // vertical velocity in dm/s
-    velandyaw = prep_number(roundf(-velNED.z * 10), 2, 1);
+    uint32_t velandyaw = prep_number(roundf(vspd * 10), 2, 1);
+    AP_AHRS &_ahrs = AP::ahrs();
+    WITH_SEMAPHORE(_ahrs.get_semaphore());
     // horizontal velocity in dm/s (use airspeed if available and enabled - even if not used - otherwise use groundspeed)
     const AP_Airspeed *aspeed = _ahrs.get_airspeed();
     if (aspeed && aspeed->enabled()) {        
@@ -957,11 +960,10 @@ uint32_t AP_Frsky_Telem::calc_velandyaw(void)
  */
 uint32_t AP_Frsky_Telem::calc_attiandrng(void)
 {
-    const AP_AHRS &_ahrs = AP::ahrs();
     const RangeFinder *_rng = RangeFinder::get_singleton();
 
     uint32_t attiandrng;
-
+    AP_AHRS &_ahrs = AP::ahrs();
     // roll from [-18000;18000] centidegrees to unsigned .2 degree increments [0;1800] (just in case, limit to 2047 (0x7FF) since the value is stored on 11 bits)
     attiandrng = ((uint16_t)roundf((_ahrs.roll_sensor + 18000) * 0.05f) & ATTIANDRNG_ROLL_LIMIT);
     // pitch from [-9000;9000] centidegrees to unsigned .2 degree increments [0;900] (just in case, limit to 1023 (0x3FF) since the value is stored on 10 bits)
@@ -1135,7 +1137,6 @@ void AP_Frsky_Telem::calc_gps_position(void)
     }
 
     AP_AHRS &_ahrs = AP::ahrs();
-    WITH_SEMAPHORE(_ahrs.get_semaphore());
     _SPort_data.yaw = (uint16_t)((_ahrs.yaw_sensor / 100) % 360); // heading in degree based on AHRS and not GPS    
 }
 

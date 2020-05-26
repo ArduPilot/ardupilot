@@ -185,7 +185,7 @@ class Telem(object):
                     pass
             self.port = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.port.connect(self.destination_address)
-            self.port.setblocking(0)
+            self.port.setblocking(False)
             self.port.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
             self.connected = True
             self.progress("Connected")
@@ -495,8 +495,7 @@ class FRSkySPort(FRSky):
         self.id_descriptions = {
             0x5000: "status text (dynamic)",
             0x5006: "Attitude and range (dynamic)",
-            0x800: "GPS lat (600 with 1 sensor)",
-            0x800: "GPS lon (600 with 1 sensor)",
+            0x800: "GPS lat or lon (600 with 1 sensor)",
             0x5005: "Vel and Yaw",
             0x5001: "AP status",
             0x5002: "GPS Status",
@@ -513,7 +512,7 @@ class FRSkySPort(FRSky):
             0x21: "BARO_ALT_AP",
             0x30: "VARIO",
             0x39: "VFAS",
-            0x800: "GPS",
+            # 0x800: "GPS", ## comments as duplicated dictrionary key
         }
 
         self.sensors_to_poll = [
@@ -688,6 +687,9 @@ class AutoTest(ABC):
                  viewerip=None,
                  use_map=False,
                  _show_test_timings=False):
+
+        if binary is None:
+            raise ValueError("Should always have a binary")
 
         self.binary = binary
         self.valgrind = valgrind
@@ -1530,22 +1532,22 @@ class AutoTest(ABC):
         }
 
     def set_rc_from_map(self, _map, timeout=2000):
-        copy = _map.copy()
+        map_copy = _map.copy()
         tstart = self.get_sim_time()
-        while len(copy.keys()):
+        while len(map_copy.keys()):
             if self.get_sim_time_cached() - tstart > timeout:
                 raise SetRCTimeout("Failed to set RC channels")
-            for chan in copy:
-                value = copy[chan]
+            for chan in map_copy:
+                value = map_copy[chan]
                 self.send_set_rc(chan, value)
             m = self.mav.recv_match(type='RC_CHANNELS', blocking=True)
             self.progress("m: %s" % m)
             new = dict()
-            for chan in copy:
+            for chan in map_copy:
                 chan_pwm = getattr(m, "chan" + str(chan) + "_raw")
-                if chan_pwm != copy[chan]:
-                    new[chan] = copy[chan]
-            copy = new
+                if chan_pwm != map_copy[chan]:
+                    new[chan] = map_copy[chan]
+            map_copy = new
 
     def set_rc_default(self):
         """Setup all simulated RC control to 1500."""
@@ -2029,6 +2031,21 @@ class AutoTest(ABC):
                                                              m.result))
                 break
 
+    def verify_parameter_values(self, parameter_stuff):
+        bad = ""
+        for param in parameter_stuff:
+            fetched_value = self.get_parameter(param)
+            wanted_value = parameter_stuff[param]
+            max_delta = 0.0
+            if type(wanted_value) == tuple:
+                max_delta = wanted_value[1]
+                wanted_value = wanted_value[0]
+            if abs(fetched_value - wanted_value) > max_delta:
+                bad += "%s=%f (want=%f)    " % (param, fetched_value, wanted_value)
+        if len(bad):
+            raise NotAchievedException("Bad parameter values: %s" %
+                                       (bad,))
+
     #################################################
     # UTILITIES
     #################################################
@@ -2097,13 +2114,13 @@ class AutoTest(ABC):
             mavutil.location(loc1_lat*1e-7, loc1_lon*1e-7),
             mavutil.location(loc2_lat*1e-7, loc2_lon*1e-7))
 
-        dlat = loc2_lat - loc1_lat
-        dlong = loc2_lon - loc1_lon
-
-        dlat /= 10000000.0
-        dlong /= 10000000.0
-
-        return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
+        # dlat = loc2_lat - loc1_lat
+        # dlong = loc2_lon - loc1_lon
+        #
+        # dlat /= 10000000.0
+        # dlong /= 10000000.0
+        #
+        # return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
 
     @staticmethod
     def get_bearing(loc1, loc2):
@@ -2145,7 +2162,7 @@ class AutoTest(ABC):
 
     def get_autopilot_capabilities(self):
         # Cannot use run_cmd otherwise the respond is lost during the wait for ACK
-        self.mav.mav.command_long_send(1,
+        self.mav.mav.command_long_send(self.sysid_thismav(),
                                        1,
                                        mavutil.mavlink.MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES,
                                        0,  # confirmation
@@ -2791,8 +2808,8 @@ class AutoTest(ABC):
         for desc in self.test_timings.keys():
             if len(desc) > longest:
                 longest = len(desc)
-        for desc, test_time in sorted(self.test_timings.iteritems(),
-                                 key=self.show_test_timings_key_sorter):
+        for desc, test_time in sorted(self.test_timings.items(),
+                                      key=self.show_test_timings_key_sorter):
             fmt = "%" + str(longest) + "s: %.2fs"
             self.progress(fmt % (desc, test_time))
 
@@ -3279,6 +3296,107 @@ class AutoTest(ABC):
             # tracker starts armed...
             self.disarm_vehicle(force=True)
         self.reboot_sitl()
+
+    def test_fixed_yaw_calibration(self):
+        self.context_push()
+        ex = None
+        try:
+            wanted = {
+                "COMPASS_OFS_X": (100, 3.0),
+                "COMPASS_OFS_Y": (200, 3.0),
+                "COMPASS_OFS_Z": (300, 3.0),
+                "COMPASS_DIA_X": 1,
+                "COMPASS_DIA_Y": 1,
+                "COMPASS_DIA_Z": 1,
+                "COMPASS_ODI_X": 0,
+                "COMPASS_ODI_Y": 0,
+                "COMPASS_ODI_Z": 0,
+
+                "COMPASS_OFS2_X": (100, 3.0),
+                "COMPASS_OFS2_Y": (200, 3.0),
+                "COMPASS_OFS2_Z": (300, 3.0),
+                "COMPASS_DIA2_X": 1,
+                "COMPASS_DIA2_Y": 1,
+                "COMPASS_DIA2_Z": 1,
+                "COMPASS_ODI2_X": 0,
+                "COMPASS_ODI2_Y": 0,
+                "COMPASS_ODI2_Z": 0,
+
+                "COMPASS_OFS3_X": (100, 3.0),
+                "COMPASS_OFS3_Y": (200, 3.0),
+                "COMPASS_OFS3_Z": (300, 3.0),
+                "COMPASS_DIA3_X": 1,
+                "COMPASS_DIA3_Y": 1,
+                "COMPASS_DIA3_Z": 1,
+                "COMPASS_ODI2_X": 0,
+                "COMPASS_ODI2_Y": 0,
+                "COMPASS_ODI2_Z": 0,
+            }
+            self.set_parameter("SIM_MAG_OFS_X", 100)
+            self.set_parameter("SIM_MAG_OFS_Y", 200)
+            self.set_parameter("SIM_MAG_OFS_Z", 300)
+
+            # set to some sensible-ish initial values.  If your initial
+            # offsets are way, way off you can get some very odd effects.
+            for param in wanted:
+                value = 0.0
+                if "DIA" in param:
+                    value = 1.001
+                elif "ODI" in param:
+                    value = 0.001
+                self.set_parameter(param, value)
+            # zero the parameters:
+            self.progress("zeroing parameters")
+            self.drain_mav()  # these two lines are odd....
+            self.get_sim_time()
+            self.run_cmd(mavutil.mavlink.MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS,
+                         2, # param1 (compass0)
+                         0, # param2
+                         0, # param3
+                         0, # param4
+                         0, # param5
+                         0, # param6
+                         0 # param7
+            )
+            self.progress("zeroed parameters")
+            # ensure these are all zero; note that we don't set the DIA or
+            # ODI in SET_SENSOR_OFFSETS...
+            for axis in "X", "Y", "Z":
+                name = "COMPASS_OFS_%s" % axis
+                value = self.get_parameter(name)
+                if value != 0.0:
+                    raise NotAchievedException("Failed to zero %s; got %f" %
+                                               (name, value))
+            self.change_mode('LOITER')
+            self.wait_ready_to_arm() # so we definitely have position
+            ss = self.mav.recv_match(type='SIMSTATE', blocking=True, timeout=1)
+            if ss is None:
+                raise NotAchievedException("Did not get SIMSTATE")
+            self.progress("Got SIMSTATE (%s)" % str(ss))
+
+            self.run_cmd(mavutil.mavlink.MAV_CMD_FIXED_MAG_CAL_YAW,
+                         math.degrees(ss.yaw), # param1
+                         0, # param2
+                         0, # param3
+                         0, # param4
+
+                         0, # param5
+                         0, # param6
+                         0 # param7
+                         )
+            self.verify_parameter_values(wanted)
+
+            self.progress("Rebooting and making sure we could arm with these values")
+            self.reboot_sitl()
+            self.wait_ready_to_arm(timeout=60)
+
+        except Exception as e:
+            ex = e
+
+        self.context_pop()
+
+        if ex is not None:
+            raise ex
 
     def test_dataflash_over_mavlink(self):
         self.context_push()
@@ -4605,16 +4723,16 @@ switch value'''
         # This, at least makes sure we're getting some of each
         # message.  These are ordered according to the wfq scheduler
         wants = {
-            0x5000: lambda x : True,
-            0x5006: lambda x : True,
-            0x800: lambda x : True,
+            0x5000: lambda xx : True,
+            0x5006: lambda xx : True,
+            0x800: lambda xx : True,
             0x5005: self.tfp_validate_vel_and_yaw,
-            0x5001: lambda x : True,
-            0x5002: lambda x : True,
-            0x5004: lambda x : True,
+            0x5001: lambda xx : True,
+            0x5002: lambda xx : True,
+            0x5004: lambda xx : True,
             #            0x5008: lambda x : True, # no second battery, so this doesn't arrive
             0x5003: self.tfp_validate_battery1,
-            0x5007: lambda x : True,
+            0x5007: lambda xx : True,
         }
         tstart = self.get_sim_time_cached()
         while len(wants):
@@ -4828,6 +4946,10 @@ switch value'''
             ("Parameters",
              "Test Parameter Set/Get",
              self.test_parameters),
+
+            ("GetCapabilities",
+             "Get Capabilities",
+             self.test_get_autopilot_capabilities),
         ]
 
     def post_tests_announcements(self):

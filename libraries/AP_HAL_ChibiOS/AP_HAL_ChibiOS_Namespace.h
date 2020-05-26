@@ -4,6 +4,7 @@ namespace ChibiOS {
     class AnalogIn;
     class AnalogSource;
     class DigitalSource;
+    class DSP;
     class GPIO;
     class I2CBus;
     class I2CDevice;

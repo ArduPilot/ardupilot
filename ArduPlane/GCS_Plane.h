@@ -27,6 +27,7 @@ public:
 
 protected:
 
+    uint8_t sysid_this_mav() const override;
     void update_vehicle_sensor_status_flags(void) override;
     uint32_t custom_mode() const override;
     MAV_TYPE frame_type() const override;

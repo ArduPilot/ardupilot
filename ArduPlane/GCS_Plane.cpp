@@ -1,6 +1,11 @@
 #include "GCS_Plane.h"
 #include "Plane.h"
 
+uint8_t GCS_Plane::sysid_this_mav() const
+{
+    return plane.g.sysid_this_mav;
+}
+
 void GCS_Plane::update_vehicle_sensor_status_flags(void)
 {
     // first what sensors/controllers we have

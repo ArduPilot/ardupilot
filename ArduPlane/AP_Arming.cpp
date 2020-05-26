@@ -189,9 +189,9 @@ bool AP_Arming_Plane::arm(const AP_Arming::Method method, const bool do_arming_c
 /*
   disarm motors
  */
-bool AP_Arming_Plane::disarm(void)
+bool AP_Arming_Plane::disarm(const AP_Arming::Method method)
 {
-    if (!AP_Arming::disarm()) {
+    if (!AP_Arming::disarm(method)) {
         return false;
     }
     if (plane.control_mode != &plane.mode_auto) {

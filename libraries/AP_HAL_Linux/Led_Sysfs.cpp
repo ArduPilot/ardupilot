@@ -26,7 +26,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-static const AP_HAL::HAL &hal = AP_HAL::get_HAL();
+extern const AP_HAL::HAL& hal;
 
 namespace Linux {
 

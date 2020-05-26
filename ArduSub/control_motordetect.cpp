@@ -168,7 +168,7 @@ void Sub::motordetect_run()
     }
     case DONE:
         control_mode = prev_control_mode;
-        arming.disarm();
+        arming.disarm(AP_Arming::Method::MOTORDETECTDONE);
         break;
     }
 }

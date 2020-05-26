@@ -85,7 +85,7 @@ bool NeoPixel::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 
     for (uint16_t chan=0; chan<16; chan++) {
         if ((1U<<chan) & enable_mask) {
-            hal.rcout->set_neopixel_rgb_data(chan, (1U<<(pNotify->get_neo_len()))-1, red, green, blue);
+            hal.rcout->set_neopixel_rgb_data(chan, -1, red, green, blue);
         }
     }
     hal.rcout->neopixel_send();

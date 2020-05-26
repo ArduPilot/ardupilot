@@ -34,6 +34,7 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_Scripting/AP_Scripting.h>
 #include <AP_Camera/AP_RunCam.h>
+#include <AP_GyroFFT/AP_GyroFFT.h>
 
 #if HAL_WITH_UAVCAN
   #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
@@ -111,10 +112,10 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Param: CHECK
     // @DisplayName: Arm Checks to Perform (bitmask)
     // @Description: Checks prior to arming motor. This is a bitmask of checks that will be performed before allowing arming. The default is no checks, allowing arming at any time. You can select whatever checks you prefer by adding together the values of each check type to set this parameter. For example, to only allow arming when you have GPS lock and no RC failsafe you would set ARMING_CHECK to 72. For most users it is recommended that you set this to 1 to enable all checks.
-    // @Values: 0:None,1:All,2:Barometer,4:Compass,8:GPS Lock,16:INS(INertial Sensors - accels & gyros),32:Parameters(unused),64:RC Channels,128:Board voltage,256:Battery Level,1024:LoggingAvailable,2048:Hardware safety switch,4096:GPS configuration,8192:System,16384:Mission,32768:RangeFinder,65536:Camera
-    // @Values{Plane}: 0:None,1:All,2:Barometer,4:Compass,8:GPS Lock,16:INS(INertial Sensors - accels & gyros),32:Parameters(unused),64:RC Channels,128:Board voltage,256:Battery Level,512:Airspeed,1024:LoggingAvailable,2048:Hardware safety switch,4096:GPS configuration,8192:System,16384:Mission,32768:RangeFinder,65536:Camera
-    // @Bitmask: 0:All,1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera
-    // @Bitmask{Plane}: 0:All,1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,9:Airspeed,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera
+    // @Values: 0:None,1:All,2:Barometer,4:Compass,8:GPS Lock,16:INS(INertial Sensors - accels & gyros),32:Parameters(unused),64:RC Channels,128:Board voltage,256:Battery Level,1024:LoggingAvailable,2048:Hardware safety switch,4096:GPS configuration,8192:System,16384:Mission,32768:RangeFinder,65536:Camera,131072:AuxAuth
+    // @Values{Plane}: 0:None,1:All,2:Barometer,4:Compass,8:GPS Lock,16:INS(INertial Sensors - accels & gyros),32:Parameters(unused),64:RC Channels,128:Board voltage,256:Battery Level,512:Airspeed,1024:LoggingAvailable,2048:Hardware safety switch,4096:GPS configuration,8192:System,16384:Mission,32768:RangeFinder,65536:Camera,131072:AuxAuth
+    // @Bitmask: 0:All,1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera,17:AuxAuth
+    // @Bitmask{Plane}: 0:All,1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,9:Airspeed,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera,17:AuxAuth
     // @User: Standard
     AP_GROUPINFO("CHECK",        8,     AP_Arming,  checks_to_perform,       ARMING_CHECK_ALL),
 
@@ -146,7 +147,7 @@ bool AP_Arming::is_armed()
     return (Required)require.get() == Required::NO || armed;
 }
 
-uint16_t AP_Arming::get_enabled_checks()
+uint32_t AP_Arming::get_enabled_checks() const
 {
     return checks_to_perform;
 }
@@ -363,6 +364,15 @@ bool AP_Arming::ins_checks(bool report)
             check_failed(ARMING_CHECK_INS, report, "%s", failure_msg);
             return false;
         }
+
+#if HAL_GYROFFT_ENABLED
+        // Check that the noise analyser works
+        AP_GyroFFT *fft = AP::fft();
+        if (fft != nullptr && !fft->calibration_check()) {
+            check_failed(ARMING_CHECK_INS, report, "FFT self-test failed");
+            return false;
+        };
+#endif
     }
 
     return true;
@@ -853,6 +863,121 @@ bool AP_Arming::camera_checks(bool display_failure)
     return true;
 }
 
+// request an auxiliary authorisation id.  This id should be used in subsequent calls to set_aux_auth_passed/failed
+// returns true on success
+bool AP_Arming::get_aux_auth_id(uint8_t& auth_id)
+{
+    WITH_SEMAPHORE(aux_auth_sem);
+
+    // check we have enough room to allocate another id
+    if (aux_auth_count >= aux_auth_count_max) {
+        aux_auth_error = true;
+        return false;
+    }
+
+    // allocate buffer for failure message
+    if (aux_auth_fail_msg == nullptr) {
+        aux_auth_fail_msg = (char *)calloc(aux_auth_str_len, sizeof(char));
+        if (aux_auth_fail_msg == nullptr) {
+            aux_auth_error = true;
+            return false;
+        }
+    }
+    auth_id = aux_auth_count;
+    aux_auth_count++;
+    return true;
+}
+
+// set auxiliary authorisation passed
+void AP_Arming::set_aux_auth_passed(uint8_t auth_id)
+{
+    WITH_SEMAPHORE(aux_auth_sem);
+
+    // sanity check auth_id
+    if (auth_id >= aux_auth_count) {
+        return;
+    }
+
+    aux_auth_state[auth_id] = AuxAuthStates::AUTH_PASSED;
+}
+
+// set auxiliary authorisation failed and provide failure message
+void AP_Arming::set_aux_auth_failed(uint8_t auth_id, const char* fail_msg)
+{
+    WITH_SEMAPHORE(aux_auth_sem);
+
+    // sanity check auth_id
+    if (auth_id >= aux_auth_count) {
+        return;
+    }
+
+    // update state
+    aux_auth_state[auth_id] = AuxAuthStates::AUTH_FAILED;
+
+    // store failure message if this authoriser has the lowest auth_id
+    for (uint8_t i = 0; i < auth_id; i++) {
+        if (aux_auth_state[i] == AuxAuthStates::AUTH_FAILED) {
+            return;
+        }
+    }
+    if (aux_auth_fail_msg != nullptr) {
+        if (fail_msg == nullptr) {
+            strncpy(aux_auth_fail_msg, "Auxiliary authorisation refused", aux_auth_str_len);
+        } else {
+            strncpy(aux_auth_fail_msg, fail_msg, aux_auth_str_len);
+        }
+        aux_auth_fail_msg_source = auth_id;
+    }
+}
+
+bool AP_Arming::aux_auth_checks(bool display_failure)
+{
+    // handle error cases
+    if (aux_auth_error) {
+        if (aux_auth_fail_msg == nullptr) {
+            check_failed(ARMING_CHECK_AUX_AUTH, display_failure, "memory low for auxiliary authorisation");
+        } else {
+            check_failed(ARMING_CHECK_AUX_AUTH, display_failure, "Too many auxiliary authorisers");
+        }
+        return false;
+    }
+
+    WITH_SEMAPHORE(aux_auth_sem);
+
+    // check results for each auxiliary authorisation id
+    bool some_failures = false;
+    bool failure_msg_sent = false;
+    bool waiting_for_responses = false;
+    for (uint8_t i = 0; i < aux_auth_count; i++) {
+        switch (aux_auth_state[i]) {
+        case AuxAuthStates::NO_RESPONSE:
+            waiting_for_responses = true;
+            break;
+        case AuxAuthStates::AUTH_FAILED:
+            some_failures = true;
+            if (i == aux_auth_fail_msg_source) {
+                check_failed(ARMING_CHECK_AUX_AUTH, display_failure, "%s", aux_auth_fail_msg);
+                failure_msg_sent = true;
+            }
+            break;
+        case AuxAuthStates::AUTH_PASSED:
+            break;
+        }
+    }
+
+    // send failure or waiting message
+    if (some_failures && !failure_msg_sent) {
+        check_failed(ARMING_CHECK_AUX_AUTH, display_failure, "Auxiliary authorisation refused");
+        return false;
+    } else if (waiting_for_responses) {
+        check_failed(ARMING_CHECK_AUX_AUTH, display_failure, "Waiting for auxiliary authorisation");
+        return false;
+    }
+
+    // if we got this far all auxiliary checks must have passed
+    return true;
+}
+
 bool AP_Arming::pre_arm_checks(bool report)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_ArduCopter)
@@ -878,7 +1003,8 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  system_checks(report)
         &  can_checks(report)
         &  proximity_checks(report)
-        &  camera_checks(report);
+        &  camera_checks(report)
+        &  aux_auth_checks(report);
 }
 
 bool AP_Arming::arm_checks(AP_Arming::Method method)
@@ -933,14 +1059,14 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
 }
 
 //returns true if disarming occurred successfully
-bool AP_Arming::disarm() 
+bool AP_Arming::disarm(const AP_Arming::Method method)
 {
     if (!armed) { // already disarmed
         return false;
     }
     armed = false;
 
-    Log_Write_Disarm(); // should be able to pass through method and/or force here?
+    Log_Write_Disarm(method); // should be able to pass through force here?
 
 #if HAL_HAVE_SAFETY_SWITCH
     AP_BoardConfig *board_cfg = AP_BoardConfig::get_singleton();
@@ -949,6 +1075,13 @@ bool AP_Arming::disarm()
         hal.rcout->force_safety_on();
     }
 #endif // HAL_HAVE_SAFETY_SWITCH
+
+#if HAL_GYROFFT_ENABLED
+    AP_GyroFFT *fft = AP::fft();
+    if (fft != nullptr) {
+        fft->save_params_on_disarm();
+    }
+#endif
 
     return true;
 }
@@ -1018,7 +1151,7 @@ void AP_Arming::Log_Write_Arm(const bool forced, const AP_Arming::Method method)
     AP::logger().Write_Event(LogEvent::ARMED);
 }
 
-void AP_Arming::Log_Write_Disarm()
+void AP_Arming::Log_Write_Disarm(const AP_Arming::Method method)
 {
     const struct log_Arm_Disarm pkt {
         LOG_PACKET_HEADER_INIT(LOG_ARM_DISARM_MSG),
@@ -1026,7 +1159,7 @@ void AP_Arming::Log_Write_Disarm()
         arm_state               : is_armed(),
         arm_checks              : 0,
         forced                  : 0,
-        method                  : 0
+        method                  : (uint8_t)method
     };
     AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
     AP::logger().Write_Event(LogEvent::DISARMED);

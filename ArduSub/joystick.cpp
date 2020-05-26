@@ -145,7 +145,7 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
     switch (get_button(_button)->function(shift)) {
     case JSButton::button_function_t::k_arm_toggle:
         if (motors.armed()) {
-            arming.disarm();
+            arming.disarm(AP_Arming::Method::MAVLINK);
         } else {
             arming.arm(AP_Arming::Method::MAVLINK);
         }
@@ -154,7 +154,7 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
         arming.arm(AP_Arming::Method::MAVLINK);
         break;
     case JSButton::button_function_t::k_disarm:
-        arming.disarm();
+        arming.disarm(AP_Arming::Method::MAVLINK);
         break;
 
     case JSButton::button_function_t::k_mode_manual:

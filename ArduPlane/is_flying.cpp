@@ -295,23 +295,13 @@ void Plane::crash_detection_update(void)
 
     } else if ((now_ms - crash_state.debounce_timer_ms >= crash_state.debounce_time_total_ms) && !crash_state.is_crashed) {
         crash_state.is_crashed = true;
-
-        if (aparm.crash_detection_enable == CRASH_DETECT_ACTION_BITMASK_DISABLED) {
-            if (crashed_near_land_waypoint) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "Hard landing detected. No action taken");
-            } else {
-                gcs().send_text(MAV_SEVERITY_EMERGENCY, "Crash detected. No action taken");
-            }
+        if (aparm.crash_detection_enable & CRASH_DETECT_ACTION_BITMASK_DISARM) {
+            arming.disarm(AP_Arming::Method::CRASH);
         }
-        else {
-            if (aparm.crash_detection_enable & CRASH_DETECT_ACTION_BITMASK_DISARM) {
-                arming.disarm();
-            }
-            if (crashed_near_land_waypoint) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "Hard landing detected");
-            } else {
-                gcs().send_text(MAV_SEVERITY_EMERGENCY, "Crash detected");
-            }
+        if (crashed_near_land_waypoint) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "Hard landing detected");
+        } else {
+            gcs().send_text(MAV_SEVERITY_EMERGENCY, "Crash detected");
         }
     }
 }

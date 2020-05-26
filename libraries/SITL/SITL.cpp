@@ -208,6 +208,8 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     AP_GROUPINFO("VIB_MOT_MAX", 61, SITL,  vibe_motor, 0.0f),
     // minimum throttle for simulated ins noise
     AP_GROUPINFO("INS_THR_MIN", 62, SITL,  ins_noise_throttle_min, 0.1f),
+    // amplitude scaling of motor noise relative to gyro/accel noise
+    AP_GROUPINFO("VIB_MOT_MULT", 63, SITL,  vibe_motor_scale, 1.0f),
 
     AP_GROUPEND
 
@@ -217,15 +219,16 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
 const AP_Param::GroupInfo SITL::var_info3[] = {
     AP_GROUPINFO("ODOM_ENABLE",   1, SITL,  odom_enable, 0),
     AP_GROUPINFO("GPS2_POS",      2, SITL,  gps_pos_offset[1], 0),
-    AP_GROUPINFO("MAG1_DEVID",    3, SITL,  mag_devid[0], 97539),    
+    AP_GROUPINFO("MAG1_DEVID",    3, SITL,  mag_devid[0], 97539),
     AP_GROUPINFO("MAG2_DEVID",    4, SITL,  mag_devid[1], 131874),
     AP_GROUPINFO("MAG3_DEVID",    5, SITL,  mag_devid[2], 263178),
     AP_GROUPINFO("MAG4_DEVID",    6, SITL,  mag_devid[3], 97283),    
     AP_GROUPINFO("MAG5_DEVID",    7, SITL,  mag_devid[4], 97795),
     AP_GROUPINFO("MAG6_DEVID",    8, SITL,  mag_devid[5], 98051),
     AP_GROUPINFO("MAG7_DEVID",    9, SITL,  mag_devid[6], 0),
-    AP_GROUPINFO("MAG8_DEVID",    10, SITL,  mag_devid[7], 0),
+    AP_GROUPINFO("MAG8_DEVID",    10, SITL, mag_devid[7], 0),
 
+    AP_GROUPINFO("LED_LAYOUT",    11, SITL, led_layout, 0),
     AP_GROUPEND
 
 };

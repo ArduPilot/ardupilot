@@ -375,21 +375,29 @@ def start_MAVProxy_SITL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1
     local_mp_modules_dir = os.path.abspath(
         os.path.join(__file__, '..', '..', '..', 'mavproxy_modules'))
     env = dict(os.environ)
-    env['PYTHONPATH'] = (local_mp_modules_dir +
-                         os.pathsep +
-                         env.get('PYTHONPATH', ''))
+    old = env.get('PYTHONPATH', None)
+    env['PYTHONPATH'] = local_mp_modules_dir
+    if old is not None:
+        env['PYTHONPATH'] += os.path.pathsep + old
+
     import pexpect
     global close_list
-    MAVPROXY = mavproxy_cmd()
-    cmd = MAVPROXY + ' --master=%s --out=127.0.0.1:14550' % master
+    cmd = []
+    cmd.append(mavproxy_cmd())
+    cmd.extend(['--master', master])
+    cmd.extend(['--out', '127.0.0.1:14550'])
     if setup:
-        cmd += ' --setup'
+        cmd.append('--setup')
     if aircraft is None:
         aircraft = 'test.%s' % atype
-    cmd += ' --aircraft=%s' % aircraft
-    cmd += ' ' + ' '.join(options)
-    cmd += ' --default-modules misc,terrain,wp,rally,fence,param,arm,mode,rc,cmdlong,output'
-    ret = pexpect.spawn(cmd, logfile=logfile, encoding=ENCODING, timeout=60, env=env)
+    cmd.extend(['--aircraft', aircraft])
+    cmd.extend(options)
+    cmd.extend(['--default-modules', 'misc,terrain,wp,rally,fence,param,arm,mode,rc,cmdlong,output'])
+
+    print("PYTHONPATH: %s" % str(env['PYTHONPATH']))
+    print("Running: %s" % cmd_as_shell(cmd))
+
+    ret = pexpect.spawn(cmd[0], cmd[1:], logfile=logfile, encoding=ENCODING, timeout=60, env=env)
     ret.delaybeforesend = 0
     pexpect_autoclose(ret)
     return ret

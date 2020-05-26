@@ -1,6 +1,7 @@
 // auto generated bindings, don't manually edit.  See README.md for details.
 #include "lua_generated_bindings.h"
 #include "lua_boxed_numerics.h"
+#include <AP_Mission/AP_Mission.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include <AP_Baro/AP_Baro.h>
@@ -244,6 +245,24 @@ static int Location_relative_alt(lua_State *L) {
         case 2: {
             const bool data_2 = static_cast<bool>(lua_toboolean(L, 2));
             ud->relative_alt = data_2;
+            return 0;
+         }
+        default:
+            return luaL_argerror(L, lua_gettop(L), "too many arguments");
+    }
+}
+
+static int Location_alt(lua_State *L) {
+    Location *ud = check_Location(L, 1);
+    switch(lua_gettop(L)) {
+        case 1:
+            lua_pushinteger(L, ud->alt);
+            return 1;
+        case 2: {
+            const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
+            luaL_argcheck(L, ((raw_data_2 >= MAX((-LOCATION_ALT_MAX_M*100+1), INT32_MIN)) && (raw_data_2 <= MIN((LOCATION_ALT_MAX_M*100-1), INT32_MAX))), 2, "alt out of range");
+            const int32_t data_2 = raw_data_2;
+            ud->alt = data_2;
             return 0;
          }
         default:
@@ -521,6 +540,7 @@ const luaL_Reg Location_meta[] = {
     {"origin_alt", Location_origin_alt},
     {"terrain_alt", Location_terrain_alt},
     {"relative_alt", Location_relative_alt},
+    {"alt", Location_alt},
     {"lng", Location_lng},
     {"lat", Location_lat},
     {"get_distance_NE", Location_get_distance_NE},
@@ -531,6 +551,115 @@ const luaL_Reg Location_meta[] = {
     {"get_distance", Location_get_distance},
     {NULL, NULL}
 };
+
+static int AP_Mission_num_commands(lua_State *L) {
+    AP_Mission * ud = AP_Mission::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "mission not supported on this firmware");
+    }
+
+    binding_argcheck(L, 1);
+    AP::scheduler().get_semaphore().take_blocking();
+    const uint16_t data = ud->num_commands();
+
+    AP::scheduler().get_semaphore().give();
+    lua_pushinteger(L, data);
+    return 1;
+}
+
+static int AP_Mission_get_current_do_cmd_id(lua_State *L) {
+    AP_Mission * ud = AP_Mission::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "mission not supported on this firmware");
+    }
+
+    binding_argcheck(L, 1);
+    AP::scheduler().get_semaphore().take_blocking();
+    const uint16_t data = ud->get_current_do_cmd_id();
+
+    AP::scheduler().get_semaphore().give();
+    lua_pushinteger(L, data);
+    return 1;
+}
+
+static int AP_Mission_get_current_nav_id(lua_State *L) {
+    AP_Mission * ud = AP_Mission::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "mission not supported on this firmware");
+    }
+
+    binding_argcheck(L, 1);
+    AP::scheduler().get_semaphore().take_blocking();
+    const uint16_t data = ud->get_current_nav_id();
+
+    AP::scheduler().get_semaphore().give();
+    lua_pushinteger(L, data);
+    return 1;
+}
+
+static int AP_Mission_get_prev_nav_cmd_id(lua_State *L) {
+    AP_Mission * ud = AP_Mission::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "mission not supported on this firmware");
+    }
+
+    binding_argcheck(L, 1);
+    AP::scheduler().get_semaphore().take_blocking();
+    const uint16_t data = ud->get_prev_nav_cmd_id();
+
+    AP::scheduler().get_semaphore().give();
+    lua_pushinteger(L, data);
+    return 1;
+}
+
+static int AP_Mission_set_current_cmd(lua_State *L) {
+    AP_Mission * ud = AP_Mission::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "mission not supported on this firmware");
+    }
+
+    binding_argcheck(L, 2);
+    const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN((ud->num_commands()-1), UINT16_MAX))), 2, "argument out of range");
+    const uint16_t data_2 = static_cast<uint16_t>(raw_data_2);
+    AP::scheduler().get_semaphore().take_blocking();
+    const bool data = ud->set_current_cmd(
+            data_2);
+
+    AP::scheduler().get_semaphore().give();
+    lua_pushboolean(L, data);
+    return 1;
+}
+
+static int AP_Mission_get_current_nav_index(lua_State *L) {
+    AP_Mission * ud = AP_Mission::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "mission not supported on this firmware");
+    }
+
+    binding_argcheck(L, 1);
+    AP::scheduler().get_semaphore().take_blocking();
+    const uint16_t data = ud->get_current_nav_index();
+
+    AP::scheduler().get_semaphore().give();
+    lua_pushinteger(L, data);
+    return 1;
+}
+
+static int AP_Mission_state(lua_State *L) {
+    AP_Mission * ud = AP_Mission::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "mission not supported on this firmware");
+    }
+
+    binding_argcheck(L, 1);
+    AP::scheduler().get_semaphore().take_blocking();
+    const uint8_t data = ud->state();
+
+    AP::scheduler().get_semaphore().give();
+    lua_pushinteger(L, data);
+    return 1;
+}
 
 static int AP_Param_set_and_save(lua_State *L) {
     AP_Param * ud = AP_Param::get_singleton();
@@ -745,9 +874,9 @@ static int AP_SerialLED_set_RGB(lua_State *L) {
     const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
     luaL_argcheck(L, ((raw_data_2 >= MAX(1, 0)) && (raw_data_2 <= MIN(16, UINT8_MAX))), 2, "argument out of range");
     const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
-    const uint32_t raw_data_3 = coerce_to_uint32_t(L, 3);
-    luaL_argcheck(L, ((raw_data_3 >= MAX(0U, 0U)) && (raw_data_3 <= MIN(UINT32_MAX, UINT32_MAX))), 3, "argument out of range");
-    const uint32_t data_3 = static_cast<uint32_t>(raw_data_3);
+    const lua_Integer raw_data_3 = luaL_checkinteger(L, 3);
+    luaL_argcheck(L, ((raw_data_3 >= MAX(-1, INT8_MIN)) && (raw_data_3 <= MIN(INT8_MAX, INT8_MAX))), 3, "argument out of range");
+    const int8_t data_3 = static_cast<int8_t>(raw_data_3);
     const lua_Integer raw_data_4 = luaL_checkinteger(L, 4);
     luaL_argcheck(L, ((raw_data_4 >= MAX(0, 0)) && (raw_data_4 <= MIN(UINT8_MAX, UINT8_MAX))), 4, "argument out of range");
     const uint8_t data_4 = static_cast<uint8_t>(raw_data_4);
@@ -778,12 +907,29 @@ static int AP_SerialLED_set_num_LEDs(lua_State *L) {
     luaL_argcheck(L, ((raw_data_2 >= MAX(1, 0)) && (raw_data_2 <= MIN(16, UINT8_MAX))), 2, "argument out of range");
     const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
     const lua_Integer raw_data_3 = luaL_checkinteger(L, 3);
-    luaL_argcheck(L, ((raw_data_3 >= MAX(0, 0)) && (raw_data_3 <= MIN(32, UINT8_MAX))), 3, "argument out of range");
+    luaL_argcheck(L, ((raw_data_3 >= MAX(0, 0)) && (raw_data_3 <= MIN(AP_SERIALLED_MAX_LEDS, UINT8_MAX))), 3, "argument out of range");
     const uint8_t data_3 = static_cast<uint8_t>(raw_data_3);
     const bool data = ud->set_num_LEDs(
             data_2,
             data_3);
 
+    lua_pushboolean(L, data);
+    return 1;
+}
+
+static int AP_Vehicle_set_target_location(lua_State *L) {
+    AP_Vehicle * ud = AP_Vehicle::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "vehicle not supported on this firmware");
+    }
+
+    binding_argcheck(L, 2);
+    Location & data_2 = *check_Location(L, 2);
+    AP::scheduler().get_semaphore().take_blocking();
+    const bool data = ud->set_target_location(
+            data_2);
+
+    AP::scheduler().get_semaphore().give();
     lua_pushboolean(L, data);
     return 1;
 }
@@ -1710,6 +1856,59 @@ static int AP_BattMonitor_num_instances(lua_State *L) {
     return 1;
 }
 
+static int AP_Arming_set_aux_auth_failed(lua_State *L) {
+    AP_Arming * ud = AP_Arming::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "arming not supported on this firmware");
+    }
+
+    binding_argcheck(L, 3);
+    const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(UINT8_MAX, UINT8_MAX))), 2, "argument out of range");
+    const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
+    const char * data_3 = luaL_checkstring(L, 3);
+    ud->set_aux_auth_failed(
+            data_2,
+            data_3);
+
+    return 0;
+}
+
+static int AP_Arming_set_aux_auth_passed(lua_State *L) {
+    AP_Arming * ud = AP_Arming::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "arming not supported on this firmware");
+    }
+
+    binding_argcheck(L, 2);
+    const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(UINT8_MAX, UINT8_MAX))), 2, "argument out of range");
+    const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
+    ud->set_aux_auth_passed(
+            data_2);
+
+    return 0;
+}
+
+static int AP_Arming_get_aux_auth_id(lua_State *L) {
+    AP_Arming * ud = AP_Arming::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "arming not supported on this firmware");
+    }
+
+    binding_argcheck(L, 1);
+    uint8_t data_5002 = {};
+    const bool data = ud->get_aux_auth_id(
+            data_5002);
+
+    if (data) {
+        lua_pushinteger(L, data_5002);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
+}
+
 static int AP_Arming_arm(lua_State *L) {
     AP_Arming * ud = AP_Arming::get_singleton();
     if (ud == nullptr) {
@@ -1743,7 +1942,7 @@ static int AP_Arming_disarm(lua_State *L) {
     }
 
     binding_argcheck(L, 1);
-    const bool data = ud->disarm();
+    const bool data = ud->disarm(            AP_Arming::Method::SCRIPTING);
 
     lua_pushboolean(L, data);
     return 1;
@@ -1996,6 +2195,17 @@ static int AP_AHRS_get_roll(lua_State *L) {
     return 1;
 }
 
+const luaL_Reg AP_Mission_meta[] = {
+    {"num_commands", AP_Mission_num_commands},
+    {"get_current_do_cmd_id", AP_Mission_get_current_do_cmd_id},
+    {"get_current_nav_id", AP_Mission_get_current_nav_id},
+    {"get_prev_nav_cmd_id", AP_Mission_get_prev_nav_cmd_id},
+    {"set_current_cmd", AP_Mission_set_current_cmd},
+    {"get_current_nav_index", AP_Mission_get_current_nav_index},
+    {"state", AP_Mission_state},
+    {NULL, NULL}
+};
+
 const luaL_Reg AP_Param_meta[] = {
     {"set_and_save", AP_Param_set_and_save},
     {"set", AP_Param_set},
@@ -2038,6 +2248,7 @@ const luaL_Reg AP_SerialLED_meta[] = {
 };
 
 const luaL_Reg AP_Vehicle_meta[] = {
+    {"set_target_location", AP_Vehicle_set_target_location},
     {"get_time_flying_ms", AP_Vehicle_get_time_flying_ms},
     {"get_likely_flying", AP_Vehicle_get_likely_flying},
     {"get_mode", AP_Vehicle_get_mode},
@@ -2121,6 +2332,9 @@ const luaL_Reg AP_BattMonitor_meta[] = {
 };
 
 const luaL_Reg AP_Arming_meta[] = {
+    {"set_aux_auth_failed", AP_Arming_set_aux_auth_failed},
+    {"set_aux_auth_passed", AP_Arming_set_aux_auth_passed},
+    {"get_aux_auth_id", AP_Arming_get_aux_auth_id},
     {"arm", AP_Arming_arm},
     {"is_armed", AP_Arming_is_armed},
     {"disarm", AP_Arming_disarm},
@@ -2231,6 +2445,12 @@ struct userdata_enum {
     int value;
 };
 
+struct userdata_enum AP_Mission_enums[] = {
+    {"MISSION_COMPLETE", AP_Mission::MISSION_COMPLETE},
+    {"MISSION_RUNNING", AP_Mission::MISSION_RUNNING},
+    {"MISSION_STOPPED", AP_Mission::MISSION_STOPPED},
+    {NULL, 0}};
+
 struct userdata_enum AP_Terrain_enums[] = {
     {"TerrainStatusOK", AP_Terrain::TerrainStatusOK},
     {"TerrainStatusUnhealthy", AP_Terrain::TerrainStatusUnhealthy},
@@ -2260,6 +2480,7 @@ const struct userdata_meta userdata_fun[] = {
 };
 
 const struct userdata_meta singleton_fun[] = {
+    {"mission", AP_Mission_meta, AP_Mission_enums},
     {"param", AP_Param_meta, NULL},
     {"esc_telem", AP_ESC_Telem_meta, NULL},
     {"baro", AP_Baro_meta, NULL},
@@ -2332,6 +2553,7 @@ void load_generated_bindings(lua_State *L) {
 }
 
 const char *singletons[] = {
+    "mission",
     "param",
     "esc_telem",
     "baro",

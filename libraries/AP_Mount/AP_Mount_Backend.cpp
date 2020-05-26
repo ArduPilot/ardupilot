@@ -138,7 +138,7 @@ void AP_Mount_Backend::update_targets_from_rc()
 // returns the angle (radians) that the RC_Channel input is receiving
 float AP_Mount_Backend::angle_input_rad(const RC_Channel* rc, int16_t angle_min, int16_t angle_max)
 {
-    return radians(((rc->norm_input() + 1.0f) * 0.5f * (angle_max - angle_min) + angle_min)*0.01f);
+    return radians(((rc->norm_input_ignore_trim() + 1.0f) * 0.5f * (angle_max - angle_min) + angle_min)*0.01f);
 }
 
 bool AP_Mount_Backend::calc_angle_to_roi_target(Vector3f& angles_to_target_rad,

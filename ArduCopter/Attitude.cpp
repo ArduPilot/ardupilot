@@ -64,6 +64,9 @@ void Copter::update_throttle_hover()
         labs(ahrs.roll_sensor) < 500 && labs(ahrs.pitch_sensor) < 500) {
         // Can we set the time constant automatically
         motors->update_throttle_hover(0.01f);
+#if HAL_GYROFFT_ENABLED
+        gyro_fft.update_freq_hover(0.01f, motors->get_throttle_out());
+#endif
     }
 #endif
 }

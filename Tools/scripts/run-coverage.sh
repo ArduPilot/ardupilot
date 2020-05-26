@@ -31,7 +31,7 @@ rm -rf build
 # Run main vehicle tests
 ./Tools/autotest/autotest.py $OPTS build.ArduPlane fly.ArduPlane fly.QuadPlane
 ./Tools/autotest/autotest.py $OPTS build.ArduSub dive.ArduSub
-./Tools/autotest/autotest.py $OPTS build.ArduCopter fly.ArduCopter
+./Tools/autotest/autotest.py $OPTS build.ArduCopter fly.ArduCopter fly.ArduCopter
 ./Tools/autotest/autotest.py $OPTS build.Helicopter fly.CopterAVC
 ./Tools/autotest/autotest.py $OPTS build.AntennaTracker test.AntennaTracker
 ./Tools/autotest/autotest.py $OPTS build.APMrover2 drive.APMrover2

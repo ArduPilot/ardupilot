@@ -1,6 +1,6 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 4.0.3-rc1 20-Feb-2020
+Copter 4.0.3 28-Feb-2020 / 4.0.3-rc1 20-Feb-2020
 Changes from 4.0.2
 1) Bug Fixes:
     a) "RCInput: decoding" message watchdog reset when using MAVLink signing (Critical Fix)

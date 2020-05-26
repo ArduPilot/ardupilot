@@ -2,6 +2,11 @@
 
 #include "Copter.h"
 
+uint8_t GCS_Copter::sysid_this_mav() const
+{
+    return copter.g.sysid_this_mav;
+}
+
 const char* GCS_Copter::frame_string() const
 {
     return copter.get_frame_string();

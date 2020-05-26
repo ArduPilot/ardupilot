@@ -53,7 +53,7 @@ public:
     void takeoff_controller(void);
     void waypoint_controller(void);
 
-    void update_throttle_thr_mix(void);
+    void update_throttle_mix(void);
     
     // update transition handling
     void update(void);
@@ -537,6 +537,8 @@ private:
     AP_Float maximum_takeoff_airspeed;
     uint32_t takeoff_start_time_ms;
     uint32_t takeoff_time_limit_ms;
+
+    float last_land_final_agl;
 
     /*
       return true if current mission item is a vtol takeoff

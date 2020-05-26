@@ -17,10 +17,13 @@
 #include "AP_Button.h"
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_Arming/AP_Arming.h>
 
 extern const AP_HAL::HAL& hal;
 
 AP_Button *AP_Button::_singleton;
+#define CHECK_BIT(var, pos) ((var) & (1<<(pos)))
 
 const AP_Param::GroupInfo AP_Button::var_info[] = {
 
@@ -33,28 +36,28 @@ const AP_Param::GroupInfo AP_Button::var_info[] = {
 
     // @Param: PIN1
     // @DisplayName: First button Pin
-    // @Description: Digital pin number for first button input. 
+    // @Description: Digital pin number for first button input.
     // @User: Standard
     // @Values: -1:Disabled,50:AUXOUT1,51:AUXOUT2,52:AUXOUT3,53:AUXOUT4,54:AUXOUT5,55:AUXOUT6
     AP_GROUPINFO("PIN1",  1, AP_Button, pin[0], -1),
 
     // @Param: PIN2
     // @DisplayName: Second button Pin
-    // @Description: Digital pin number for second button input. 
+    // @Description: Digital pin number for second button input.
     // @User: Standard
     // @Values: -1:Disabled,50:AUXOUT1,51:AUXOUT2,52:AUXOUT3,53:AUXOUT4,54:AUXOUT5,55:AUXOUT6
     AP_GROUPINFO("PIN2",  2, AP_Button, pin[1], -1),
 
     // @Param: PIN3
     // @DisplayName: Third button Pin
-    // @Description: Digital pin number for third button input. 
+    // @Description: Digital pin number for third button input.
     // @User: Standard
     // @Values: -1:Disabled,50:AUXOUT1,51:AUXOUT2,52:AUXOUT3,53:AUXOUT4,54:AUXOUT5,55:AUXOUT6
     AP_GROUPINFO("PIN3",  3, AP_Button, pin[2], -1),
 
     // @Param: PIN4
     // @DisplayName: Fourth button Pin
-    // @Description: Digital pin number for fourth button input. 
+    // @Description: Digital pin number for fourth button input.
     // @User: Standard
     // @Values: -1:Disabled,50:AUXOUT1,51:AUXOUT2,52:AUXOUT3,53:AUXOUT4,54:AUXOUT5,55:AUXOUT6
     AP_GROUPINFO("PIN4",  4, AP_Button, pin[3], -1),
@@ -66,7 +69,7 @@ const AP_Param::GroupInfo AP_Button::var_info[] = {
     // @Range: 0 3600
     AP_GROUPINFO("REPORT_SEND", 5, AP_Button, report_send_time, 10),
 
-    AP_GROUPEND    
+    AP_GROUPEND
 };
 
 
@@ -100,7 +103,7 @@ void AP_Button::update(void)
         last_mask = get_mask();
 
         // register 1kHz timer callback
-        hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Button::timer_update, void));        
+        hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Button::timer_update, void));
     }
 
     if (last_change_time_ms != 0 &&
@@ -111,6 +114,8 @@ void AP_Button::update(void)
 
         // send a report to GCS
         send_report();
+
+        do_functions();
     }
 }
 
@@ -158,6 +163,54 @@ void AP_Button::send_report(void)
                                   (const char *)&packet);
 }
 
+void AP_Button::do_functions(void)
+{
+
+    if (pin[0] != -1 && CHECK_BIT(last_mask, 0) == 1) {
+
+        AP_Arming *arming = AP_Arming::get_singleton();
+        if (arming == nullptr) {
+            gcs().send_text(MAV_SEVERITY_NOTICE, "Null Arming");
+        } else {
+            const bool armed = arming->arm(AP_Arming::Method::SCRIPTING);
+            if (!armed) {
+                gcs().send_text(MAV_SEVERITY_NOTICE, "Arm failed");
+            }
+        }
+
+    }
+
+    if (pin[1] != -1 && CHECK_BIT(last_mask, 1) == 1) {
+
+        AP_Arming *arming = AP_Arming::get_singleton();
+        if (arming == nullptr) {
+            gcs().send_text(MAV_SEVERITY_NOTICE, "Null Arming");
+        } else {
+            const bool disarmed = arming->disarm(AP_Arming::Method::SCRIPTING);
+            if (!disarmed) {
+                gcs().send_text(MAV_SEVERITY_NOTICE, "Disarm failed");
+            }
+        }
+
+    }
+
+    if (pin[2] != -1 && CHECK_BIT(last_mask, 2) == 1) {
+        //Do auto
+        AP_Vehicle *vehicle = AP_Vehicle::get_singleton();
+        if (vehicle == nullptr) {
+            gcs().send_text(MAV_SEVERITY_NOTICE, "Null vehicle");
+        } else {
+            const bool mode_changed = vehicle->set_mode(
+                    10,
+                    ModeReason::SCRIPTING);
+            if (!mode_changed) {
+                //Arming
+                gcs().send_text(MAV_SEVERITY_NOTICE, "AUTO mode failed");
+            }
+        }
+    }
+}
+
 /*
   setup the pins as input with pullup. We need pullup to give reliable
   input with a pulldown button
@@ -170,7 +223,7 @@ void AP_Button::setup_pins(void)
         }
         hal.gpio->pinMode(pin[i], HAL_GPIO_INPUT);
         // setup pullup
-        hal.gpio->write(pin[i], 1);
+        hal.gpio->write(pin[i], 0);
     }
 }
 

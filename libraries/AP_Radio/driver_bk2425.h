@@ -373,7 +373,8 @@ public:
     Radio_Beken(AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev);
     bool lock_bus(void)
     {
-        return dev->get_semaphore()->take_blocking();
+        dev->get_semaphore()->take_blocking();
+        return true;
     }
     void unlock_bus(void)
     {

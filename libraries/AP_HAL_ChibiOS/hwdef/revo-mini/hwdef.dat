@@ -138,4 +138,5 @@ define HAL_LOGGING_DATAFLASH
 
 # 8 PWM available by default
 define BOARD_PWM_COUNT_DEFAULT 8
+define HAL_WITH_DSP FALSE
 

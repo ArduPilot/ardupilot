@@ -41,7 +41,7 @@ void Copter::failsafe_radio_on_event()
     if (should_disarm_on_failsafe()) {
         // should immediately disarm when we're on the ground
         gcs().send_text(MAV_SEVERITY_WARNING, "Radio Failsafe - Disarming");
-        arming.disarm();
+        arming.disarm(AP_Arming::Method::RADIOFAILSAFE);
         desired_action = Failsafe_Action_None;
 
     } else if (flightmode->is_landing() && ((battery.has_failsafed() && battery.get_highest_failsafe_priority() <= FAILSAFE_LAND_PRIORITY))) {
@@ -91,7 +91,7 @@ void Copter::handle_battery_failsafe(const char *type_str, const int8_t action)
     // Conditions to deviate from BATT_FS_XXX_ACT parameter setting
     if (should_disarm_on_failsafe()) {
         // should immediately disarm when we're on the ground
-        arming.disarm();
+        arming.disarm(AP_Arming::Method::BATTERYFAILSAFE);
         desired_action = Failsafe_Action_None;
         gcs().send_text(MAV_SEVERITY_WARNING, "Battery Failsafe - Disarming");
 
@@ -175,7 +175,7 @@ void Copter::failsafe_gcs_on_event(void)
 
     } else if (should_disarm_on_failsafe()) {
         // should immediately disarm when we're on the ground
-        arming.disarm();
+        arming.disarm(AP_Arming::Method::GCSFAILSAFE);
         desired_action = Failsafe_Action_None;
         gcs().send_text(MAV_SEVERITY_WARNING, "GCS Failsafe - Disarming");
 
@@ -259,7 +259,7 @@ void Copter::failsafe_terrain_on_event()
     AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_TERRAIN, LogErrorCode::FAILSAFE_OCCURRED);
 
     if (should_disarm_on_failsafe()) {
-        arming.disarm();
+        arming.disarm(AP_Arming::Method::TERRAINFAILSAFE);
 #if MODE_RTL_ENABLED == ENABLED
     } else if (control_mode == Mode::Number::RTL) {
         mode_rtl.restart_without_terrain();
@@ -375,7 +375,7 @@ void Copter::do_failsafe_action(Failsafe_Action action, ModeReason reason){
             snprintf(battery_type_str, 17, "%s battery", type_str);
             g2.afs.gcs_terminate(true, battery_type_str);
 #else
-            arming.disarm();
+            arming.disarm(AP_Arming::Method::FAILSAFE_ACTION_TERMINATE);
 #endif
     }
 }

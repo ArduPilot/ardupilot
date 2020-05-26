@@ -1,6 +1,11 @@
 #include "GCS_Tracker.h"
 #include "Tracker.h"
 
+uint8_t GCS_Tracker::sysid_this_mav() const
+{
+    return tracker.g.sysid_this_mav;
+}
+
 void GCS_Tracker::request_datastream_position(const uint8_t sysid, const uint8_t compid)
 {
     for (uint8_t i=0; i < num_gcs(); i++) {

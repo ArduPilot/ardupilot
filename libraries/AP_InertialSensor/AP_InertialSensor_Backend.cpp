@@ -225,7 +225,11 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
         // save previous delta angle for coning correction
         _imu._last_delta_angle[instance] = delta_angle;
         _imu._last_raw_gyro[instance] = gyro;
-
+#if HAL_WITH_DSP
+        // capture gyro window for FFT analysis
+        _last_gyro_window[_num_gyro_samples++] = gyro * _imu._gyro_raw_sampling_multiplier[instance];
+        _num_gyro_samples = _num_gyro_samples % INS_MAX_GYRO_WINDOW_SAMPLES; // protect against overrun
+#endif
         // apply the low pass filter
         Vector3f gyro_filtered = _imu._gyro_filter[instance].apply(gyro);
 
@@ -509,6 +513,21 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance)
     }
     if (_imu._new_gyro_data[instance]) {
         _publish_gyro(instance, _imu._gyro_filtered[instance]);
+        // copy the gyro samples from the backend to the frontend window
+#if HAL_WITH_DSP
+        if (_imu._gyro_window_size > 0) {
+            uint8_t idx = _imu._circular_buffer_idx[instance];
+            for (uint8_t i = 0; i < _num_gyro_samples; i++) {
+                _imu._gyro_window[instance][0][idx] = _last_gyro_window[i].x;
+                _imu._gyro_window[instance][1][idx] = _last_gyro_window[i].y;
+                _imu._gyro_window[instance][2][idx] = _last_gyro_window[i].z;
+                idx = (idx + 1) % _imu._gyro_window_size;
+            }
+            _num_gyro_samples = 0;
+            _imu._circular_buffer_idx[instance] = idx;
+        }
+        _imu._gyro_raw[instance] = _imu._last_raw_gyro[instance] * _imu._gyro_raw_sampling_multiplier[instance];
+#endif
         _imu._new_gyro_data[instance] = false;
     }
 

@@ -33,6 +33,8 @@ public:
 
 protected:
 
+    uint8_t sysid_this_mav() const override;
+
     GCS_MAVLINK_Tracker *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
                                                  AP_HAL::UARTDriver &uart) override {
         return new GCS_MAVLINK_Tracker(params, uart);

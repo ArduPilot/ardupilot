@@ -94,6 +94,10 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(hardpoint_id, "HARDPOINT_ID", HAL_PWM_HARDPOINT_ID_DEFAULT),
     GSCALAR(hardpoint_rate, "HARDPOINT_RATE", 100),
 #endif
+
+#ifdef HAL_PERIPH_ENABLE_HWESC
+    GSCALAR(esc_number, "ESC_NUMBER", 0),
+#endif
     
     AP_VAREND
 };

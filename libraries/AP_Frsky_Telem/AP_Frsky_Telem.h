@@ -199,7 +199,7 @@ private:
             500,    //0x5004 home       2Hz
             500,    //0x5008 batt 2     2Hz
             500,    //0x5003 batt 1     2Hz
-            1000   //0x5007 parameters 1Hz
+            1000    //0x5007 parameters 1Hz
         };
     } _sport_config;
 

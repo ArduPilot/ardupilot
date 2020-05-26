@@ -251,6 +251,8 @@ def should_run_step(step):
 
 __bin_names = {
     "ArduCopter": "arducopter",
+    "ArduCopterTests1": "arducopter",
+    "ArduCopterTests2": "arducopter",
     "ArduPlane": "arduplane",
     "APMrover2": "ardurover",
     "AntennaTracker": "antennatracker",
@@ -302,6 +304,8 @@ def find_specific_test_to_run(step):
 
 tester_class_map = {
     "fly.ArduCopter": arducopter.AutoTestCopter,
+    "fly.ArduCopterTests1": arducopter.AutoTestCopterTests1,
+    "fly.ArduCopterTests2": arducopter.AutoTestCopterTests2,
     "fly.ArduPlane": arduplane.AutoTestPlane,
     "fly.QuadPlane": quadplane.AutoTestQuadPlane,
     "drive.APMrover2": apmrover2.AutoTestRover,
@@ -784,6 +788,11 @@ if __name__ == "__main__":
         'convertgpx',
     ]
 
+    moresteps = [
+        'fly.ArduCopterTests1',
+        'fly.ArduCopterTests2',
+    ]
+
     skipsteps = opts.skip.split(',')
 
     # ensure we catch timeouts
@@ -816,6 +825,9 @@ if __name__ == "__main__":
             x = find_specific_test_to_run(a)
             if x is not None:
                 matches.append(x)
+
+            if a in moresteps:
+                matches.append(a)
 
             if not len(matches):
                 print("No steps matched {}".format(a))

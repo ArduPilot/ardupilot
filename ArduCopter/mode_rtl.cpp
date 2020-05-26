@@ -274,6 +274,9 @@ void ModeRTL::descent_start()
 
     // initialise yaw
     auto_yaw.set_mode(AUTO_YAW_HOLD);
+
+    // optionally deploy landing gear
+    copter.landinggear.deploy_for_landing();
 }
 
 // rtl_descent_run - implements the final descent to the RTL_ALT
@@ -357,24 +360,14 @@ void ModeRTL::land_start()
 
     // initialise yaw
     auto_yaw.set_mode(AUTO_YAW_HOLD);
+
+    // optionally deploy landing gear
+    copter.landinggear.deploy_for_landing();
 }
 
 bool ModeRTL::is_landing() const
 {
     return _state == RTL_Land;
-}
-
-bool ModeRTL::landing_gear_should_be_deployed() const
-{
-    switch(_state) {
-    case RTL_LoiterAtHome:
-    case RTL_Land:
-    case RTL_FinalDescent:
-        return true;
-    default:
-        return false;
-    }
-    return false;
 }
 
 // rtl_returnhome_run - return home
@@ -386,7 +379,7 @@ void ModeRTL::land_run(bool disarm_on_land)
 
     // disarm when the landing detector says we've landed
     if (disarm_on_land && copter.ap.land_complete && motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE) {
-        copter.arming.disarm();
+        copter.arming.disarm(AP_Arming::Method::LANDED);
     }
 
     // if not armed set throttle to zero and exit immediately
@@ -461,9 +454,7 @@ void ModeRTL::compute_return_target()
 
     // set curr_alt and return_target.alt from range finder
     if (alt_type == ReturnTargetAltType::RETURN_TARGET_ALTTYPE_RANGEFINDER) {
-        if (copter.rangefinder_state.alt_healthy) {
-            // set curr_alt based on rangefinder altitude
-            curr_alt = copter.rangefinder_state.alt_cm_filt.get();
+        if (copter.get_rangefinder_height_interpolated_cm(curr_alt)) {
             // set return_target.alt
             rtl_path.return_target.set_alt_cm(MAX(curr_alt + MAX(0, g.rtl_climb_min), MAX(g.rtl_altitude, RTL_ALT_MIN)), Location::AltFrame::ABOVE_TERRAIN);
         } else {

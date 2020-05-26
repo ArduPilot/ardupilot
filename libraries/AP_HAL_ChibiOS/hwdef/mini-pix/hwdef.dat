@@ -141,9 +141,6 @@ define HAL_STORAGE_SIZE        16384
 # enable RAMTROM parameter storage
 define HAL_WITH_RAMTRON 1
 
-# fallback to flash is no FRAM fitted
-define STORAGE_FLASH_PAGE 22
-
 # enable FAT filesystem
 define HAL_OS_FATFS_IO 1
 

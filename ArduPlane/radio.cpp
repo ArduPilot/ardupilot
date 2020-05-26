@@ -165,7 +165,7 @@ void Plane::rudder_arm_disarm_check()
                 }
 			} else {
 				//time to disarm!
-				arming.disarm();
+				arming.disarm(AP_Arming::Method::RUDDER);
 				rudder_arm_timer = 0;
 			}
 		} else {

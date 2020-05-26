@@ -1,3 +1,27 @@
+Release 4.0.5beta1, 23rd February 2020
+--------------------------------------
+
+This release includes a one important bug fix and some minor
+enhancements. The changes are:
+
+ - fixed bug handling change of RC input source while MAVLink signing
+   is active. This could cause a stack overflow and a crash
+
+ - added display of RC output types to aid in debugging DShot outputs
+
+ - modified clocking on H7 boards to produce more accurate clocks for
+   DShot
+
+ - switched to new USB VIDs for dual-CDC boards
+
+ - fixed a bug in handling LOITER_TURNS for quadplanes when
+   Q_GUIDED_MODE is enabled
+
+ - added a TECS reset at the end of a VTOL takeoff to handle aircraft
+   with TECS climb rates below VTOL climb rates
+
+Happy flying!
+
 Release 4.0.4, 16th February 2020
 ---------------------------------
 

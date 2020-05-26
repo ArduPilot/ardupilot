@@ -313,7 +313,7 @@ MAV_RESULT Compass::handle_mag_cal_command(const mavlink_command_long_t &packet)
     case MAV_CMD_DO_START_MAG_CAL: {
         result = MAV_RESULT_ACCEPTED;
         if (hal.util->get_soft_armed()) {
-            hal.console->printf("Disarm for compass calibration\n");
+            gcs().send_text(MAV_SEVERITY_NOTICE, "Disarm to allow compass calibration");
             result = MAV_RESULT_FAILED;
             break;
         }

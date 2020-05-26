@@ -196,3 +196,4 @@ define HAL_NAVEKF2_AVAILABLE 0
 
 # reduce max size of embedded params for apj_tool.py
 define AP_PARAM_MAX_EMBEDDED_PARAM 1024
+define HAL_WITH_DSP FALSE

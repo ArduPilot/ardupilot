@@ -177,7 +177,7 @@ void Plane::update_speed_height(void)
 
     if (quadplane.in_vtol_mode() ||
         quadplane.in_assisted_flight()) {
-        quadplane.update_throttle_thr_mix();
+        quadplane.update_throttle_mix();
     }
 }
 
@@ -213,8 +213,12 @@ void Plane::update_logging1(void)
  */
 void Plane::update_logging2(void)
 {
-    if (should_log(MASK_LOG_CTUN))
+    if (should_log(MASK_LOG_CTUN)) {
         Log_Write_Control_Tuning();
+#if HAL_GYROFFT_ENABLED
+        gyro_fft.write_log_messages();
+#endif
+    }
     
     if (should_log(MASK_LOG_NTUN))
         Log_Write_Nav_Tuning();
@@ -463,6 +467,7 @@ void Plane::update_navigation()
             // we've reached the RTL point, see if we have a landing sequence
             if (mission.jump_to_landing_sequence()) {
                 // switch from RTL -> AUTO
+                mission.set_force_resume(true);
                 set_mode(mode_auto, ModeReason::UNKNOWN);
             }
 
@@ -475,6 +480,7 @@ void Plane::update_navigation()
             // Go directly to the landing sequence
             if (mission.jump_to_landing_sequence()) {
                 // switch from RTL -> AUTO
+                mission.set_force_resume(true);
                 set_mode(mode_auto, ModeReason::UNKNOWN);
             }
 
@@ -649,7 +655,7 @@ void Plane::disarm_if_autoland_complete()
         arming.is_armed()) {
         /* we have auto disarm enabled. See if enough time has passed */
         if (millis() - auto_state.last_flying_ms >= landing.get_disarm_delay()*1000UL) {
-            if (arming.disarm()) {
+            if (arming.disarm(AP_Arming::Method::AUTOLANDED)) {
                 gcs().send_text(MAV_SEVERITY_INFO,"Auto disarmed");
             }
         }

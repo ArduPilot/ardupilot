@@ -26,6 +26,7 @@
 #include "PerfInfo.h"       // loop perf monitoring
 
 #define AP_SCHEDULER_NAME_INITIALIZER(_name) .name = #_name,
+#define LOOP_RATE 0
 
 /*
   useful macro for creating scheduler task table

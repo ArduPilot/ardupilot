@@ -194,7 +194,7 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
             snprintf(battery_type_str, 17, "%s battery", type_str);
             afs.gcs_terminate(true, battery_type_str);
 #else
-            arming.disarm();
+            arming.disarm(AP_Arming::Method::FAILSAFE_ACTION_TERMINATE);
 #endif
             break;
 

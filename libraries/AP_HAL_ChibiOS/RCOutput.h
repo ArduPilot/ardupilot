@@ -164,9 +164,9 @@ public:
 
     /*
       setup neopixel (WS2812B) output data for a given output channel
-      and mask of LEDs on the channel
+      and LEDs number. LED -1 is all LEDs
      */
-    void set_neopixel_rgb_data(const uint16_t chan, uint32_t ledmask, uint8_t red, uint8_t green, uint8_t blue) override;
+    void set_neopixel_rgb_data(const uint16_t chan, int8_t led, uint8_t red, uint8_t green, uint8_t blue) override;
 
     /*
       trigger send of neopixel data
@@ -337,8 +337,9 @@ private:
 
     /*
       NeoPixel handling. Max of 32 LEDs uses max 12k of memory per group
+      return true if send was successful
     */
-    void neopixel_send(pwm_group &group);
+    bool neopixel_send(pwm_group &group);
     bool neopixel_pending;
 
     void dma_allocate(Shared_DMA *ctx);
@@ -354,6 +355,12 @@ private:
     void set_group_mode(pwm_group &group);
     bool is_dshot_protocol(const enum output_mode mode) const;
     uint32_t protocol_bitrate(const enum output_mode mode) const;
+
+    /*
+      setup neopixel (WS2812B) output data for a given output channel
+      and LEDs number. LED -1 is all LEDs
+     */
+    void _set_neopixel_rgb_data(pwm_group *grp, uint8_t idx, uint8_t led, uint8_t red, uint8_t green, uint8_t blue);
 
     // serial output support
     static const eventmask_t serial_event_mask = EVENT_MASK(1);

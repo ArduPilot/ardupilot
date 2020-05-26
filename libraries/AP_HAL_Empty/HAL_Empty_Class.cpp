@@ -43,7 +43,8 @@ HAL_Empty::HAL_Empty() :
         &schedulerInstance,
         &utilInstance,
         &opticalFlowDriver,
-        &flashDriver)
+        &flashDriver,
+        nullptr)            /* no DSP */
 {}
 
 void HAL_Empty::run(int argc, char* const argv[], Callbacks* callbacks) const

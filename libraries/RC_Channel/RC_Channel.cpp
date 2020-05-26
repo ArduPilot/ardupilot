@@ -106,35 +106,30 @@ RC_Channel::RC_Channel(void)
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-void
-RC_Channel::set_range(uint16_t high)
+void RC_Channel::set_range(uint16_t high)
 {
     type_in = RC_CHANNEL_TYPE_RANGE;
     high_in = high;
 }
 
-void
-RC_Channel::set_angle(uint16_t angle)
+void RC_Channel::set_angle(uint16_t angle)
 {
     type_in = RC_CHANNEL_TYPE_ANGLE;
     high_in = angle;
 }
 
-void
-RC_Channel::set_default_dead_zone(int16_t dzone)
+void RC_Channel::set_default_dead_zone(int16_t dzone)
 {
     dead_zone.set_default(abs(dzone));
 }
 
-bool
-RC_Channel::get_reverse(void) const
+bool RC_Channel::get_reverse(void) const
 {
     return bool(reversed.get());
 }
 
 // read input from hal.rcin or overrides
-bool
-RC_Channel::update(void)
+bool RC_Channel::update(void)
 {
     if (has_override() && !rc().ignore_overrides()) {
         radio_in = override_value;
@@ -157,8 +152,7 @@ RC_Channel::update(void)
 // recompute control values with no deadzone
 // When done this way the control_in value can be used as servo_out
 // to give the same output as input
-void
-RC_Channel::recompute_pwm_no_deadzone()
+void RC_Channel::recompute_pwm_no_deadzone()
 {
     if (type_in == RC_CHANNEL_TYPE_RANGE) {
         control_in = pwm_to_range_dz(0);
@@ -193,8 +187,7 @@ int16_t RC_Channel::get_control_mid() const
   return an "angle in centidegrees" (normally -4500 to 4500) from
   the current radio_in value using the specified dead_zone
  */
-int16_t
-RC_Channel::pwm_to_angle_dz_trim(uint16_t _dead_zone, uint16_t _trim) const
+int16_t RC_Channel::pwm_to_angle_dz_trim(uint16_t _dead_zone, uint16_t _trim) const
 {
     int16_t radio_trim_high = _trim + _dead_zone;
     int16_t radio_trim_low  = _trim - _dead_zone;
@@ -213,8 +206,7 @@ RC_Channel::pwm_to_angle_dz_trim(uint16_t _dead_zone, uint16_t _trim) const
   return an "angle in centidegrees" (normally -4500 to 4500) from
   the current radio_in value using the specified dead_zone
  */
-int16_t
-RC_Channel::pwm_to_angle_dz(uint16_t _dead_zone) const
+int16_t RC_Channel::pwm_to_angle_dz(uint16_t _dead_zone) const
 {
     return pwm_to_angle_dz_trim(_dead_zone, radio_trim);
 }
@@ -223,8 +215,7 @@ RC_Channel::pwm_to_angle_dz(uint16_t _dead_zone) const
   return an "angle in centidegrees" (normally -4500 to 4500) from
   the current radio_in value
  */
-int16_t
-RC_Channel::pwm_to_angle() const
+int16_t RC_Channel::pwm_to_angle() const
 {
 	return pwm_to_angle_dz(dead_zone);
 }
@@ -234,8 +225,7 @@ RC_Channel::pwm_to_angle() const
   convert a pulse width modulation value to a value in the configured
   range, using the specified deadzone
  */
-int16_t
-RC_Channel::pwm_to_range_dz(uint16_t _dead_zone) const
+int16_t RC_Channel::pwm_to_range_dz(uint16_t _dead_zone) const
 {
     int16_t r_in = constrain_int16(radio_in, radio_min.get(), radio_max.get());
 
@@ -255,8 +245,7 @@ RC_Channel::pwm_to_range_dz(uint16_t _dead_zone) const
   convert a pulse width modulation value to a value in the configured
   range
  */
-int16_t
-RC_Channel::pwm_to_range() const
+int16_t RC_Channel::pwm_to_range() const
 {
     return pwm_to_range_dz(dead_zone);
 }
@@ -272,8 +261,7 @@ int16_t RC_Channel::get_control_in_zero_dz(void) const
 
 // ------------------------------------------
 
-float
-RC_Channel::norm_input() const
+float RC_Channel::norm_input() const
 {
     float ret;
     int16_t reverse_mul = (reversed?-1:1);
@@ -291,8 +279,7 @@ RC_Channel::norm_input() const
     return constrain_float(ret, -1.0f, 1.0f);
 }
 
-float
-RC_Channel::norm_input_dz() const
+float RC_Channel::norm_input_dz() const
 {
     int16_t dz_min = radio_trim - dead_zone;
     int16_t dz_max = radio_trim + dead_zone;
@@ -308,11 +295,22 @@ RC_Channel::norm_input_dz() const
     return constrain_float(ret, -1.0f, 1.0f);
 }
 
+// return a normalised input for a channel, in range -1 to 1,
+// ignores trim and deadzone
+float RC_Channel::norm_input_ignore_trim() const
+{
+    // sanity check min and max to avoid divide by zero
+    if (radio_max <= radio_min) {
+        return 0.0f;
+    }
+    const float ret = (reversed ? -2.0f : 2.0f) * (((float)(radio_in - radio_min) / (float)(radio_max - radio_min)) - 0.5f);
+    return constrain_float(ret, -1.0f, 1.0f);
+}
+
 /*
   get percentage input from 0 to 100. This ignores the trim value.
  */
-uint8_t
-RC_Channel::percent_input() const
+uint8_t RC_Channel::percent_input() const
 {
     if (radio_in <= radio_min) {
         return reversed?100:0;
@@ -528,7 +526,7 @@ void RC_Channel::do_aux_function_armdisarm(const aux_switch_pos_t ch_flag)
         // nothing
         break;
     case LOW:
-        AP::arming().disarm();
+        AP::arming().disarm(AP_Arming::Method::AUXSWITCH);
         break;
     }
 }

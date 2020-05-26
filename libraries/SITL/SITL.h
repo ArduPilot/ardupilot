@@ -19,6 +19,11 @@
 
 namespace SITL {
 
+enum class LedLayout {
+    ROWS=0,
+    LUMINOUSBEE=1,
+};
+    
 struct vector3f_array {
     uint16_t length;
     Vector3f *data;
@@ -251,6 +256,8 @@ public:
 
     // max frequency to use as baseline for adding motor noise for the gyros and accels
     AP_Float vibe_motor;
+    // amplitude scaling of motor noise relative to gyro/accel noise
+    AP_Float vibe_motor_scale;
     // minimum throttle for addition of ins noise
     AP_Float ins_noise_throttle_min;
 
@@ -346,6 +353,8 @@ public:
     } led;
 
     EFI_MegaSquirt efi_ms;
+
+    AP_Int8 led_layout;
 };
 
 } // namespace SITL
