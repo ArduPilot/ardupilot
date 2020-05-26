@@ -79,7 +79,7 @@ void Plane::stall_detection_log()
     // log to AP_Logger
     AP::logger().Write(
        "STAL",
-       "TimeUS,Actv,Raw,Any,Conf,Inh,Rec",
+       "TimeUS,Actv,Raw,All,Conf,Inh,Rec",
        "s------",
        "F------",
        "QBBIfIB",
