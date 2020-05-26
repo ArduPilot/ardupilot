@@ -172,43 +172,49 @@ void AP_Button::do_functions(void)
         if (arming == nullptr) {
             gcs().send_text(MAV_SEVERITY_NOTICE, "Null Arming");
         } else {
-            const bool armed = arming->arm(AP_Arming::Method::SCRIPTING);
-            if (!armed) {
-                gcs().send_text(MAV_SEVERITY_NOTICE, "Arm failed");
+            const bool armed = arming->is_armed();
+            if(armed) {
+                const bool operation_status = arming->disarm(AP_Arming::Method::SCRIPTING);
+                if (!operation_status) {
+                    gcs().send_text(MAV_SEVERITY_NOTICE, "Disarm failed");
+                }
+            } else {
+                const bool operation_status = arming->arm(AP_Arming::Method::SCRIPTING);
+                if (!operation_status) {
+                    gcs().send_text(MAV_SEVERITY_NOTICE, "Arm failed");
+                }
             }
         }
-
     }
 
     if (pin[1] != -1 && CHECK_BIT(last_mask, 1) == 1) {
-
-        AP_Arming *arming = AP_Arming::get_singleton();
-        if (arming == nullptr) {
-            gcs().send_text(MAV_SEVERITY_NOTICE, "Null Arming");
-        } else {
-            const bool disarmed = arming->disarm(AP_Arming::Method::SCRIPTING);
-            if (!disarmed) {
-                gcs().send_text(MAV_SEVERITY_NOTICE, "Disarm failed");
-            }
-        }
-
-    }
-
-    if (pin[2] != -1 && CHECK_BIT(last_mask, 2) == 1) {
         //Do auto
         AP_Vehicle *vehicle = AP_Vehicle::get_singleton();
         if (vehicle == nullptr) {
             gcs().send_text(MAV_SEVERITY_NOTICE, "Null vehicle");
         } else {
-            const bool mode_changed = vehicle->set_mode(
-                    10,
-                    ModeReason::SCRIPTING);
-            if (!mode_changed) {
-                //Arming
-                gcs().send_text(MAV_SEVERITY_NOTICE, "AUTO mode failed");
+            const uint8_t mode = vehicle->get_mode();
+            if(mode == 10){
+                const bool mode_changed = vehicle->set_mode(
+                        0,
+                        ModeReason::SCRIPTING);
+                if (!mode_changed) {
+                    //MANUAL_MODE
+                    gcs().send_text(MAV_SEVERITY_NOTICE, "MANUAL mode failed");
+                }
+            } else {
+                const bool mode_changed = vehicle->set_mode(
+                        10,
+                        ModeReason::SCRIPTING);
+                if (!mode_changed) {
+                    //AUTO_MODE
+                    gcs().send_text(MAV_SEVERITY_NOTICE, "AUTO mode failed");
+                }
+
             }
         }
     }
+
 }
 
 /*
