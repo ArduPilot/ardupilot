@@ -1,21 +1,21 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 4.0.4-rc1 25-May-2020
+Copter 4.0.4-rc1 26-May-2020
 Changes from 4.0.3
 1) Bug Fixes:
-    a) I/O CPU fix so safety remains off after infligth reboot (Critical fix)
+    a) I/O CPU fix so safety remains off after inflight reboot (Critical fix)
     b) Acro mode yaw expo supports values under 0.5 (see ACRO_Y_EXPO param)
     c) Auto mode Loiter-Turn commands points towards center
     d) Change-Speed commands applied smoothly
-    e) EKF compass variance reporting to GCS made consistent with onboard logs
-    f) Gimbal control using RC input ignores RCx_TRIM param
-    g) Holybro Durandal buzzer fix 
-    h) Parameter reset fix caused by Eeprom race condition
-    i) Read-only parameter write failure msg only sent once to GCS
-    j) RM3100 scaling factor threshhold increased
+    e) Compass scaling factor threshhold increased
+    f) EKF compass variance reporting to GCS made consistent with onboard logs
+    g) Gimbal control using RC input ignores RCx_TRIM param
+    h) Holybro Durandal buzzer fix
+    i) Parameter reset fix caused by Eeprom race condition
+    j) Read-only parameter write failure msg only sent once to GCS
     k) Compass declination can be overriden with COMPASS_DEC param (and EKF stops using world magnetic tables)
     l) Terrain database (SRTM) file fix (will cause all terrain to be reloaded after upgrade)
-2) Bootloader update to reduce change of param resets during firmware load
+2) Bootloader update to reduce chance of param resets during firmware load
 3) Compass ordering and prioritisation improvements
 4) Flight controller support:
     a) CUAV-Nora
@@ -23,7 +23,7 @@ Changes from 4.0.3
     c) MatekSys H743
     e) mRo Nexus
     d) R9Pilot
-5) GPS moving baseline (aka Yaw from GPS)
+5) GPS moving baseline (aka Yaw from GPS) for UBlox F9 and M9 GPSs
 6) Graupner Hott telemetry support
 7) Landing detector filter improvement improves detection on hard surfaces
 8) Object Avoidances Fixes and improvements:
