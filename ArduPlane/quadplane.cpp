@@ -483,7 +483,6 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Range: 0.1 1
     // @User: Standard
     AP_GROUPINFO("TAILSIT_GSCMIN", 18, QuadPlane, tailsitter.gain_scaling_min, 0.4),
-
     // @Param: ASSIST_DELAY
     // @DisplayName: Quadplane assistance delay
     // @Description: This is delay between the assistance thresholds being met and the assistance starting.
@@ -1494,8 +1493,8 @@ bool QuadPlane::assistance_needed(float aspeed, bool have_airspeed)
             if (alt_error_start_ms == 0) {
                 alt_error_start_ms = now;
             }
-            if (now - alt_error_start_ms > assist_delay*1000) {
-                // we've been below assistant alt for Q_ASSIST_DELAY seconds
+            if (now - alt_error_start_ms > 500) {
+                // we've been below assistant alt for 0.5s
                 if (!in_alt_assist) {
                     in_alt_assist = true;
                     gcs().send_text(MAV_SEVERITY_INFO, "Alt assist %.1fm", height_above_ground);
@@ -1540,7 +1539,7 @@ bool QuadPlane::assistance_needed(float aspeed, bool have_airspeed)
     if (angle_error_start_ms == 0) {
         angle_error_start_ms = now;
     }
-    bool ret = (now - angle_error_start_ms) >= assist_delay*1000;
+    bool ret = (now - angle_error_start_ms) >= 1000U;
     if (ret && !in_angle_assist) {
         in_angle_assist = true;
         gcs().send_text(MAV_SEVERITY_INFO, "Angle assist r=%d p=%d",
@@ -2299,7 +2298,7 @@ void QuadPlane::vtol_position_controller(void)
         float target_speed = target_speed_xy.length();
         if (distance < 1) {
             // prevent numerical error before switching to POSITION2
-            target_speed_xy = {0.1, 0.1};
+            target_speed_xy(0.1, 0.1);
         }
         if (target_speed < final_speed) {
             // until we enter the loiter we always aim for at least 2m/s
@@ -2808,26 +2807,19 @@ bool QuadPlane::land_detector(uint32_t timeout_ms)
 /*
   check if a landing is complete
  */
-bool QuadPlane::check_land_complete(void)
+void QuadPlane::check_land_complete(void)
 {
     if (poscontrol.state != QPOS_LAND_FINAL) {
         // only apply to final landing phase
-        return false;
+        return;
     }
     if (land_detector(4000)) {
+        plane.arming.disarm(AP_Arming::Method::LANDED);
         poscontrol.state = QPOS_LAND_COMPLETE;
         gcs().send_text(MAV_SEVERITY_INFO,"Land complete");
         // reload target airspeed which could have been modified by the mission
         plane.aparm.airspeed_cruise_cm.load();
-        if (plane.control_mode != &plane.mode_auto ||
-            !plane.mission.continue_after_land()) {
-            // disarm on land unless we have MIS_OPTIONS setup to
-            // continue after land in AUTO
-            plane.arming.disarm(AP_Arming::Method::LANDED);
-        }
-        return true;
     }
-    return false;
 }
 
 
@@ -2892,10 +2884,7 @@ bool QuadPlane::verify_vtol_land(void)
         gcs().send_text(MAV_SEVERITY_INFO,"Land final started");
     }
 
-    if (check_land_complete() && plane.mission.continue_after_land()) {
-        gcs().send_text(MAV_SEVERITY_INFO,"Mission continue");
-        return true;
-    }
+    check_land_complete();
     return false;
 }
 
@@ -2937,41 +2926,24 @@ void QuadPlane::Log_Write_QControl_Tuning()
   reduces the need for down pitch which reduces load on the vertical
   lift motors.
  */
-int8_t QuadPlane::forward_throttle_pct()
+int8_t QuadPlane::forward_throttle_pct(void)
 {
     /*
-      Unless an RC channel is assigned for manual forward throttle control,
-      we don't use forward throttle in QHOVER or QSTABILIZE as they are the primary
+      in non-VTOL modes or modes without a velocity controller. We
+      don't use it in QHOVER or QSTABILIZE as they are the primary
       recovery modes for a quadplane and need to be as simple as
-      possible. They will drift with the wind.
+      possible. They will drift with the wind
     */
-    if (plane.control_mode == &plane.mode_qacro ||
+    if (!in_vtol_mode() ||
+        !motors->armed() ||
+        vel_forward.gain <= 0 ||
         plane.control_mode == &plane.mode_qstabilize ||
-        plane.control_mode == &plane.mode_qhover) {
-
-        if (rc_fwd_thr_ch == nullptr) {
-            return 0;
-        } else {
-            // calculate fwd throttle demand from manual input
-            float fwd_thr = rc_fwd_thr_ch->percent_input();
-
-            // set forward throttle to fwd_thr_max * (manual input + mix): range [0,100]
-            fwd_thr *= .01f * constrain_float(fwd_thr_max, 0, 100);
-            return fwd_thr;
-        }
-    }
-
-    /*
-      in qautotune mode or modes without a velocity controller
-    */
-    if (vel_forward.gain <= 0 ||
-        plane.control_mode == &plane.mode_qautotune) {
+        plane.control_mode == &plane.mode_qhover ||
+        plane.control_mode == &plane.mode_qautotune ||
+        motors->get_desired_spool_state() < AP_Motors::DesiredSpoolState::GROUND_IDLE) {
         return 0;
     }
 
-    /*
-      in modes with a velocity controller
-    */
     float deltat = (AP_HAL::millis() - vel_forward.last_ms) * 0.001f;
     if (deltat > 1 || deltat < 0) {
         vel_forward.integrator = 0;
@@ -2992,10 +2964,10 @@ int8_t QuadPlane::forward_throttle_pct()
         vel_forward.integrator = 0;
         return 0;
     }
-    // get component of velocity error in fwd body frame direction
     Vector3f vel_error_body = ahrs.get_rotation_body_to_ned().transposed() * ((desired_velocity_cms*0.01f) - vel_ned);
 
-    float fwd_vel_error = vel_error_body.x;
+    // find component of velocity error in fwd body frame direction
+    float fwd_vel_error = vel_error_body * Vector3f(1,0,0);
 
     // scale forward velocity error by maximum airspeed
     fwd_vel_error /= MAX(plane.aparm.airspeed_max, 5);

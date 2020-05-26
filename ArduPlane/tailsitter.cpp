@@ -117,7 +117,6 @@ void QuadPlane::tailsitter_output(void)
     if (assisted_flight && tailsitter_transition_fw_complete()) {
         hold_stabilize(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * 0.01f);
         motors_output(true);
-
         if ((options & OPTION_TAILSIT_Q_ASSIST_MOTORS_ONLY) != 0) {
             // only use motors for Q assist, control surfaces remain under plane control
             // zero copter I terms and use plane
