@@ -72,9 +72,6 @@ private:
     // send a BUTTON_CHANGE report
     void send_report(void);
 
-    //do function
-    void do_functions(void);
-
     // setup pins as pullup input
     void setup_pins();
 };
