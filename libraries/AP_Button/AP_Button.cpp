@@ -114,8 +114,6 @@ void AP_Button::update(void)
 
         // send a report to GCS
         send_report();
-
-        do_functions();
     }
 }
 
@@ -170,11 +168,11 @@ void AP_Button::do_functions(void)
 
         AP_Arming *arming = AP_Arming::get_singleton();
         if (arming == nullptr) {
-            gcs().send_text(MAV_SEVERITY_NOTICE, "Null Arming");
+
         } else {
             const bool armed = arming->arm(AP_Arming::Method::SCRIPTING);
             if (!armed) {
-                gcs().send_text(MAV_SEVERITY_NOTICE, "Arm failed");
+
             }
         }
 
@@ -184,11 +182,11 @@ void AP_Button::do_functions(void)
 
         AP_Arming *arming = AP_Arming::get_singleton();
         if (arming == nullptr) {
-            gcs().send_text(MAV_SEVERITY_NOTICE, "Null Arming");
+
         } else {
             const bool disarmed = arming->disarm();
             if (!disarmed) {
-                gcs().send_text(MAV_SEVERITY_NOTICE, "Disarm failed");
+
             }
         }
 
@@ -198,14 +196,13 @@ void AP_Button::do_functions(void)
         //Do auto
         AP_Vehicle *vehicle = AP_Vehicle::get_singleton();
         if (vehicle == nullptr) {
-            gcs().send_text(MAV_SEVERITY_NOTICE, "Null vehicle");
+
         } else {
             const bool mode_changed = vehicle->set_mode(
                     10,
                     ModeReason::SCRIPTING);
-            if (!mode_changed) {
+            if (mode_changed) {
                 //Arming
-                gcs().send_text(MAV_SEVERITY_NOTICE, "AUTO mode failed");
             }
         }
     }
