@@ -63,7 +63,7 @@ private:
 
     void init_hw();
 
-    bool is_pointed_in_stow_orientation() { return true; }
+    bool is_pointed_in_stow_orientation() { return (fabsf(ToDeg(_telemetry_core.tilt)) < 5) && (fabsf(ToDeg(_telemetry_core.pan)) > 175); }
     bool gimbal_is_stowed;
     uint32_t notify_gcs_last_ms;
 
@@ -72,6 +72,7 @@ private:
     uint32_t    _last_send_ms;
 
     uint32_t    _last_send_isFlying_ms;
+    uint32_t    _last_send_GpsData_ms;
 
     uint32_t    _deploy_command_last_ms;
 
@@ -87,8 +88,6 @@ private:
     } _booting;
 
 
-    // keep the last _current_angle values
-    Vector3f _current_angle_deg; // in degrees
     const char* _trilliumGcsHeader = "Trillium: ";
     uint8_t _selected_camera;
     int16_t _zoom[2]; // NUM_CAMERAS
@@ -96,7 +95,6 @@ private:
 
     // Trillium SDK
     OrionPkt_t _PktIn;
-    //OrionPkt_t _PktOut;
     OrionRetractStatus_t _retract_status;
     OrionNetworkByteSettings_t _network_settings_current;
     GeolocateTelemetryCore_t _telemetry_core;

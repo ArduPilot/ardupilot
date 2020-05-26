@@ -10,7 +10,8 @@ extern const AP_HAL::HAL& hal;
 
 #define AP_MOUNT_TRILLIUM_ENABLE_RX_PARSING                 1
 #define AP_MOUNT_TRILLIUM_DEBUG_RX_ALL_MSGS                 0
-#define AP_MOUNT_TRILLIUM_DEBUG_RX_UNHANDLED_MSGS           1
+#define AP_MOUNT_TRILLIUM_DEBUG_RX_UNHANDLED_MSGS_COMMON    0
+#define AP_MOUNT_TRILLIUM_DEBUG_RX_UNHANDLED_MSGS_RARE      1
 #define AP_MOUNT_TRILLIUM_DEBUG_TX_NOT_AUTOPILOT_MSGS       1
 #define AP_MOUNT_TRILLIUM_DEBUG_TX_CMD_CHANGE_ONLY_MSGS     1
 #define AP_MOUNT_TRILLIUM_DEBUG_TX_ALL_MSGS                 0
@@ -140,6 +141,7 @@ void AP_Mount_Trillium::update()
             _angle_ef_target_rad = _state._retract_angles.get() * DEG_TO_RAD;
             if (SRV_Channels::function_assigned(SRV_Channel::k_mount_open)) {
                 notifyGcs = !gimbal_is_stowed;
+                _desiredMode = OrionMode_t::ORION_MODE_RATE;
                 if (is_pointed_in_stow_orientation()) {
                     gimbal_is_stowed = true;
                     SRV_Channels::set_output_to_max(SRV_Channel::k_mount_open);
@@ -238,6 +240,37 @@ void AP_Mount_Trillium::update()
         encodeOrionAutopilotDataPacketStructure(&PktOut, &packet);
         OrionCommSend(&PktOut);
     }
+//
+//    if (now_ms - _last_send_GpsData_ms > 1000) {
+//        _last_send_GpsData_ms = now_ms;
+//
+//        auto &ahrs = AP::ahrs();
+//        float value;
+//        GpsData_t packet {};
+//
+//        packet.multiAntHeadingValid = 0;
+//        packet.FixType = AP::gps().status();
+//        packet.FixState = AP::gps().status();
+//        packet.TrackedSats = AP::gps().num_sats();
+//        packet.PDOP = AP::gps().get_hdop();
+//        packet.Latitude = AP::gps().location().lat;
+//        packet.Longitude = AP::gps().location().lng;
+//        packet.Altitude = AP::gps().location().alt;
+//
+//        packet.VelNED[0] = AP::gps().velocity().x;
+//        packet.VelNED[1] = AP::gps().velocity().y;
+//        packet.VelNED[2] = AP::gps().velocity().z;
+//
+//        packet.Hacc = AP::gps().speed_accuracy(value) ? value : 0;
+//        packet.Vacc = AP::gps().vertical_accuracy(value) ? value : 0;
+//
+//
+//        packet.source = gpsSource_t::autopilotSource;
+//
+//
+//        encodeGpsDataPacketStructure(&PktOut, &packet);
+//        OrionCommSend(&PktOut);
+//    }
 }
 
 void AP_Mount_Trillium::SendGeopointCmd(const Location targetLoc, const Vector3f targetVelNed_vector, const float joystickRange, const geopointOptions options)
@@ -399,11 +432,24 @@ void AP_Mount_Trillium::handle_packet(OrionPkt_t &packet)
 //        }
         break;
 
-    case ORION_PKT_CAMERAS:
-        break;
-
     case ORION_PKT_STARE_START:
         decodeStareStartPacketStructure(&packet, &_stare_start);
+        break;
+
+    case ORION_PKT_FAULTS:
+        gcs().send_text(MAV_SEVERITY_DEBUG, "%sFAULT: len=%u", _trilliumGcsHeader, (unsigned)len);
+        break;
+
+    case ORION_PKT_CAMERAS:
+    case ORION_PKT_VIBRATION:
+    case ORION_PKT_GPS_DATA:
+    case ORION_PKT_INS_QUALITY:
+    case ORION_PKT_SOFTWARE_DIAGNOSTICS:
+    case ORION_PKT_NETWORK_DIAGNOSTICS:
+        // we're receiving these but don't handle them (yet)
+#if AP_MOUNT_TRILLIUM_DEBUG_RX_UNHANDLED_MSGS_COMMON
+        gcs().send_text(MAV_SEVERITY_DEBUG, "%sunhandled 0x%02x,%3u:%s", _trilliumGcsHeader, packet.ID, packet.ID, get_packet_name(packet.ID));
+#endif
         break;
 
         // TODO: Implement either storing or debug printing these
@@ -413,9 +459,6 @@ void AP_Mount_Trillium::handle_packet(OrionPkt_t &packet)
     case ORION_PKT_TRACKER_VERSION:
     case ORION_PKT_LENSCTL_VERSION:
     case ORION_PKT_BOARD:
-    case ORION_PKT_SOFTWARE_DIAGNOSTICS:
-    case ORION_PKT_VIBRATION:
-    case ORION_PKT_NETWORK_DIAGNOSTICS:
     case ORION_PKT_INITIALIZE:
     case ORION_PKT_CMD:
     case ORION_PKT_STARTUP_CMD:
@@ -442,7 +485,6 @@ void AP_Mount_Trillium::handle_packet(OrionPkt_t &packet)
     case ORION_PKT_PRIVATE_2B:
     case ORION_PKT_PRIVATE_2D:
     case ORION_PKT_PRIVATE_40:
-    case ORION_PKT_FAULTS:
     case ORION_PKT_PRIVATE_47:
     case ORION_PKT_PRIVATE_48:
     case ORION_PKT_PRIVATE_49:
@@ -476,9 +518,7 @@ void AP_Mount_Trillium::handle_packet(OrionPkt_t &packet)
     case ORION_PKT_PRIVATE_CE:
     case ORION_PKT_PRIVATE_CF:
     case ORION_PKT_PRIVATE_D0:
-    case ORION_PKT_GPS_DATA:
     case ORION_PKT_EXT_HEADING_DATA:
-    case ORION_PKT_INS_QUALITY:
     case ORION_PKT_GEOPOINT_CMD:
     case ORION_PKT_PATH:
     case ORION_PKT_INS_OPTIONS:
@@ -505,7 +545,7 @@ void AP_Mount_Trillium::handle_packet(OrionPkt_t &packet)
     case ORION_PKT_PRIVATE_F7:
     default:
         // unhandled
-#if AP_MOUNT_TRILLIUM_DEBUG_RX_UNHANDLED_MSGS
+#if AP_MOUNT_TRILLIUM_DEBUG_RX_UNHANDLED_MSGS_RARE
         gcs().send_text(MAV_SEVERITY_DEBUG, "%sunhandled 0x%02x,%3u:%s", _trilliumGcsHeader, packet.ID, packet.ID, get_packet_name(packet.ID));
 #endif
         break;
@@ -520,7 +560,17 @@ void AP_Mount_Trillium::send_mount_status(mavlink_channel_t chan)
     }
 
     // return target angles as gimbal's actual attitude.
-    mavlink_msg_mount_status_send(chan, 0, 0, _current_angle_deg.y, _current_angle_deg.x, _current_angle_deg.z);
+    //mavlink_msg_mount_status_send(chan, 0, 0, _current_angle_deg.y, _current_angle_deg.x, _current_angle_deg.z);
+
+    int32_t roll_cd  = 0;
+    int32_t pitch_cd = ToDeg(_telemetry_core.tilt) * 100;
+    int32_t yaw_cd   = ToDeg(_telemetry_core.pan) * 100;
+
+
+    mavlink_msg_mount_status_send(chan, 0, 0,
+            pitch_cd,
+            roll_cd,
+            yaw_cd);
 }
 
 void AP_Mount_Trillium::requestOrionMessageByID(uint8_t id)
