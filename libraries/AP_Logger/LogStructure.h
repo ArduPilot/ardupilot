@@ -2337,7 +2337,7 @@ struct PACKED log_Arm_Disarm {
     { LOG_ARSP_MSG, sizeof(log_AIRSPEED), "ARSP",  ARSP_FMT, ARSP_LABELS, ARSP_UNITS, ARSP_MULTS }, \
     { LOG_ASP2_MSG, sizeof(log_AIRSPEED), "ASP2",  ARSP_FMT, ARSP_LABELS, ARSP_UNITS, ARSP_MULTS }, \
     { LOG_CURRENT_MSG, sizeof(log_Current),                     \
-      "BAT", "QBfffffcf", "TimeUS,Instance,Volt,VoltR,Curr,CurrTot,EnrgTot,Temp,Res", "s#vvA?JOw", "F-000?/?0" },  \
+      "BAT", "QBfffffcf", "TimeUS,Instance,Volt,VoltR,Curr,CurrTot,EnrgTot,Temp,Res", "s#vvAiJOw", "F-000!/?0" },  \
     { LOG_CURRENT_CELLS_MSG, sizeof(log_Current_Cells), \
       "BCL", "QBfHHHHHHHHHH", "TimeUS,Instance,Volt,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10", "s#vvvvvvvvvvv", "F-00000000000" }, \
 	{ LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
