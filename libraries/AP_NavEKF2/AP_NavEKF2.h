@@ -319,7 +319,7 @@ public:
     void set_baro_alt_noise(float noise) { _baroAltNoise.set_and_save(noise); };
 
     // allow the enable flag to be set by Replay
-    void set_enable(bool enable) { _enable.set(enable); }
+    void set_enable(bool enable) { _enable.set_enable(enable); }
 
     // are we doing sensor logging inside the EKF?
     bool have_ekf_logging(void) const { return logging.enabled && _logging_mask != 0; }
@@ -330,15 +330,18 @@ public:
     /*
      * Write position and quaternion data from an external navigation system
      *
-     * pos        : position in the RH navigation frame. Frame is assumed to be NED if frameIsNED is true. (m)
+     * pos        : position in the RH navigation frame. Frame is assumed to be NED (m)
      * quat       : quaternion desribing the rotation from navigation frame to body frame
      * posErr     : 1-sigma spherical position error (m)
      * angErr     : 1-sigma spherical angle error (rad)
      * timeStamp_ms : system time the measurement was taken, not the time it was received (mSec)
+     * delay_ms   : average delay of external nav system measurements relative to inertial measurements
      * resetTime_ms : system time of the last position reset request (mSec)
      *
+     * Sensor offsets are pulled directly from the AP_VisualOdom library
+     *
     */
-    void writeExtNavData(const Vector3f &sensOffset, const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint32_t resetTime_ms);
+    void writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint16_t delay_ms, uint32_t resetTime_ms);
 
     /*
       check if switching lanes will reduce the normalised
@@ -348,11 +351,24 @@ public:
      */
     void checkLaneSwitch(void);
 
+    /*
+      Request a reset of the EKF yaw. This is called when the vehicle code is about to
+      trigger an EKF failsafe, and it would like to avoid that.
+     */
+    void requestYawReset(void);
+
     // write EKF information to on-board logs
     void Log_Write();
 
     // check if external navigation is being used for yaw observation
     bool isExtNavUsedForYaw(void) const;
+
+    // Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
+    void writeDefaultAirSpeed(float airspeed);
+
+    // log debug data for yaw estimator
+    // return false if data not available
+    bool getDataEKFGSF(int8_t instance, float &yaw_composite, float &yaw_composite_variance, float yaw[N_MODELS_EKFGSF], float innov_VN[N_MODELS_EKFGSF], float innov_VE[N_MODELS_EKFGSF], float weight[N_MODELS_EKFGSF]) const;
 
 private:
     uint8_t num_cores; // number of allocated cores
@@ -381,7 +397,7 @@ private:
     AP_Float _gyroBiasProcessNoise; // gyro bias state process noise : rad/s
     AP_Float _accelBiasProcessNoise;// accel bias state process noise : m/s^2
     AP_Int16 _hgtDelay_ms;          // effective average delay of Height measurements relative to inertial measurements (msec)
-    AP_Int8  _fusionModeGPS;        // 0 = use 3D velocity, 1 = use 2D velocity, 2 = use no velocity
+    AP_Int8  _fusionModeGPS;        // 0 = use 3D velocity, 1 = use 2D velocity, 2 = use no velocity, 3 = do not use GPS
     AP_Int16  _gpsVelInnovGate;     // Percentage number of standard deviations applied to GPS velocity innovation consistency check
     AP_Int16  _gpsPosInnovGate;     // Percentage number of standard deviations applied to GPS position innovation consistency check
     AP_Int16  _hgtInnovGate;        // Percentage number of standard deviations applied to height innovation consistency check
@@ -394,7 +410,7 @@ private:
     AP_Int8  _flowDelay_ms;         // effective average delay of optical flow measurements rel to IMU (msec)
     AP_Int16  _rngInnovGate;        // Percentage number of standard deviations applied to range finder innovation consistency check
     AP_Float _maxFlowRate;          // Maximum flow rate magnitude that will be accepted by the filter
-    AP_Int8 _altSource;             // Primary alt source during optical flow navigation. 0 = use Baro, 1 = use range finder.
+    AP_Int8 _altSource;             // Primary alt source during optical flow navigation. 0 = use Baro, 1 = use range finder, 2 = use GPS, 3 = use Range Beacon
     AP_Float _gyroScaleProcessNoise;// gyro scale factor state process noise : 1/s
     AP_Float _rngNoise;             // Range finder noise : m
     AP_Int8 _gpsCheck;              // Bitmask controlling which preflight GPS checks are bypassed
@@ -413,10 +429,13 @@ private:
     AP_Float _useRngSwSpd;          // Maximum horizontal ground speed to use range finder as the primary height source (m/s)
     AP_Int8 _magMask;               // Bitmask forcng specific EKF core instances to use simple heading magnetometer fusion.
     AP_Int8 _originHgtMode;         // Bitmask controlling post alignment correction and reporting of the EKF origin height.
-    AP_Int8 _extnavDelay_ms;        // effective average delay of external nav system measurements relative to inertial measurements (msec)
     AP_Int8 _flowUse;               // Controls if the optical flow data is fused into the main navigation estimator and/or the terrain estimator.
     AP_Int16 _mag_ef_limit;         // limit on difference between WMM tables and learned earth field.
     AP_Float _hrt_filt_freq;        // frequency of output observer height rate complementary filter in Hz
+    AP_Int8 _gsfRunMask;            // mask controlling which EKF2 instances run a separate EKF-GSF yaw estimator
+    AP_Int8 _gsfUseMask;            // mask controlling which EKF2 instances will use EKF-GSF yaw estimator data to assit with yaw resets
+    AP_Int16 _gsfResetDelay;        // number of mSec from loss of navigation to requesting a reset using EKF-GSF yaw estimator data
+    AP_Int8 _gsfResetMaxCount;      // maximum number of times the EKF2 is allowed to reset it's yaw to the EKF-GSF estimate
 
 // Possible values for _flowUse
 #define FLOW_USE_NONE    0
@@ -535,4 +554,5 @@ private:
     void Log_Write_NKF5(uint64_t time_us) const;
     void Log_Write_Quaternion(uint8_t core, uint64_t time_us) const;
     void Log_Write_Beacon(uint64_t time_us) const;
+    void Log_Write_GSF(uint8_t core, uint64_t time_us) const;
 };

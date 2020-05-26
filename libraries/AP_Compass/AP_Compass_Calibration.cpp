@@ -7,7 +7,7 @@
 
 #include "AP_Compass.h"
 
-extern AP_HAL::HAL& hal;
+const extern AP_HAL::HAL& hal;
 
 #if COMPASS_CAL_ENABLED
 

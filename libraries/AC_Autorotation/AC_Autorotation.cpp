@@ -219,10 +219,9 @@ float AC_Autorotation::get_rpm(bool update_counter)
 
         //Get RPM value
         uint8_t instance = _param_rpm_instance;
-        current_rpm = rpm->get_rpm(instance);
 
         //Check RPM sesnor is returning a healthy status
-        if (current_rpm <= -1) {
+        if (!rpm->get_rpm(instance, current_rpm) || current_rpm <= -1) {
             //unhealthy, rpm unreliable
             _flags.bad_rpm = true;
         }

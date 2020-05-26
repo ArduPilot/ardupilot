@@ -254,14 +254,8 @@ void Sub::auto_spline_run()
 //  we assume the caller has performed all required GPS_ok checks
 void Sub::auto_circle_movetoedge_start(const Location &circle_center, float radius_m)
 {
-    // convert location to vector from ekf origin
-    Vector3f circle_center_neu;
-    if (!circle_center.get_vector_from_origin_NEU(circle_center_neu)) {
-        // default to current position and log error
-        circle_center_neu = inertial_nav.get_position();
-        AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_CIRCLE_INIT);
-    }
-    circle_nav.set_center(circle_center_neu);
+    // set circle center
+    circle_nav.set_center(circle_center);
 
     // set circle radius
     if (!is_zero(radius_m)) {
@@ -291,6 +285,7 @@ void Sub::auto_circle_movetoedge_start(const Location &circle_center, float radi
         }
 
         // if we are outside the circle, point at the edge, otherwise hold yaw
+        const Vector3f &circle_center_neu = circle_nav.get_center();
         const Vector3f &curr_pos = inertial_nav.get_position();
         float dist_to_center = norm(circle_center_neu.x - curr_pos.x, circle_center_neu.y - curr_pos.y);
         if (dist_to_center > circle_nav.get_radius() && dist_to_center > 500) {
@@ -311,7 +306,7 @@ void Sub::auto_circle_start()
     auto_mode = Auto_Circle;
 
     // initialise circle controller
-    circle_nav.init(circle_nav.get_center());
+    circle_nav.init(circle_nav.get_center(), circle_nav.center_is_terrain_alt());
 }
 
 // auto_circle_run - circle in AUTO flight mode
@@ -319,7 +314,7 @@ void Sub::auto_circle_start()
 void Sub::auto_circle_run()
 {
     // call circle controller
-    circle_nav.update();
+    failsafe_terrain_set_status(circle_nav.update());
 
     float lateral_out, forward_out;
     translate_circle_nav_rp(lateral_out, forward_out);

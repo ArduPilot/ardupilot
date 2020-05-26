@@ -171,9 +171,6 @@ void Copter::init_ardupilot()
     g2.beacon.init();
 #endif
 
-    // init visual odometry
-    init_visual_odom();
-
 #if RPM_ENABLED == ENABLED
     // initialise AP_RPM library
     rpm_sensor.init();
@@ -224,10 +221,6 @@ void Copter::init_ardupilot()
 
     // flag that initialisation has completed
     ap.initialised = true;
-
-#if AP_PARAM_KEY_DUMP
-    AP_Param::show_all(hal.console, true);
-#endif
 }
 
 
@@ -269,9 +262,10 @@ void Copter::update_dynamic_notch()
 
 #if RPM_ENABLED == ENABLED
         case HarmonicNotchDynamicMode::UpdateRPM: // rpm sensor based tracking
-            if (rpm_sensor.healthy(0)) {
+            float rpm;
+            if (rpm_sensor.get_rpm(0, rpm)) {
                 // set the harmonic notch filter frequency from the main rotor rpm
-                ins.update_harmonic_notch_freq_hz(MAX(ref_freq, rpm_sensor.get_rpm(0) * ref / 60.0f));
+                ins.update_harmonic_notch_freq_hz(MAX(ref_freq, rpm * ref / 60.0f));
             } else {
                 ins.update_harmonic_notch_freq_hz(ref_freq);
             }
@@ -330,9 +324,6 @@ bool Copter::ekf_position_ok() const
 // optflow_position_ok - returns true if optical flow based position estimate is ok
 bool Copter::optflow_position_ok() const
 {
-#if OPTFLOW != ENABLED && VISUAL_ODOMETRY_ENABLED != ENABLED
-    return false;
-#else
     // return immediately if EKF not used
     if (!ahrs.have_inertial_nav()) {
         return false;
@@ -345,8 +336,8 @@ bool Copter::optflow_position_ok() const
         enabled = true;
     }
 #endif
-#if VISUAL_ODOMETRY_ENABLED == ENABLED
-    if (g2.visual_odom.enabled()) {
+#if HAL_VISUALODOM_ENABLED
+    if (visual_odom.enabled()) {
         enabled = true;
     }
 #endif
@@ -363,7 +354,6 @@ bool Copter::optflow_position_ok() const
     } else {
         return (filt_status.flags.horiz_pos_rel && !filt_status.flags.const_pos_mode);
     }
-#endif
 }
 
 // update_auto_armed - update status of auto_armed flag
@@ -621,6 +611,9 @@ void Copter::allocate_motors(void)
 #if FRAME_CONFIG == HELI_FRAME
     convert_tradheli_parameters();
 #endif
+
+    // param count could have changed
+    AP_Param::invalidate_count();
 }
 
 bool Copter::is_tradheli() const

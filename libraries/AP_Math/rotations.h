@@ -80,8 +80,11 @@ enum Rotation : uint8_t {
 // maximum rotation that will be used for auto-detection
 #define ROTATION_MAX_AUTO_ROTATION ROTATION_ROLL_90_PITCH_315
 
+// definitions used by quaterion and vector3f
+#define HALF_SQRT_2 0.70710678118654757f
+
 /*
-Here are the same values in a form sutable for a @Values attribute in
+Here are the same values in a form suitable for a @Values attribute in
 auto documentation:
 
 @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Roll180Yaw45,10:Roll180Yaw90,11:Roll180Yaw135,12:Pitch180,13:Roll180Yaw225,14:Roll180Yaw270,15:Roll180Yaw315,16:Roll90,17:Roll90Yaw45,18:Roll90Yaw90,19:Roll90Yaw135,20:Roll270,21:Roll270Yaw45,22:Roll270Yaw90,23:Roll270Yaw135,24:Pitch90,25:Pitch270,26:Pitch180Yaw90,27:Pitch180Yaw270,28:Roll90Pitch90,29:Roll180Pitch90,30:Roll270Pitch90,31:Roll90Pitch180,32:Roll270Pitch180,33:Roll90Pitch270,34:Roll180Pitch270,35:Roll270Pitch270,36:Roll90Pitch180Yaw90,37:Roll90Yaw270,38:Yaw293Pitch68Roll180,39:Pitch315,40:Roll90Pitch315,100:Custom

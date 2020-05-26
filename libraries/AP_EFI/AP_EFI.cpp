@@ -92,6 +92,23 @@ bool AP_EFI::is_healthy(void) const
  */
 void AP_EFI::log_status(void)
 {
+// @LoggerMessage: EFI
+// @Description: Electronic Fuel Injection system data
+// @Field: TimeUS: Time since system startup
+// @Field: LP: Reported engine load
+// @Field: Rpm: Reported engine RPM
+// @Field: SDT: Spark Dwell Time
+// @Field: ATM: Atmospheric pressure
+// @Field: IMP: Intake manifold pressure
+// @Field: IMT: Intake manifold temperature
+// @Field: ECT: Engine Coolant Temperature
+// @Field: OilP: Oil Pressure
+// @Field: OilT: Oil temperature
+// @Field: FP: Fuel Pressure
+// @Field: FCR: Fuel Consumption Rate
+// @Field: CFV: Consumed fueld volume
+// @Field: TPS: Throttle Position
+// @Field: IDX: Index of the publishing ECU
     AP::logger().Write("EFI",
                        "TimeUS,LP,Rpm,SDT,ATM,IMP,IMT,ECT,OilP,OilT,FP,FCR,CFV,TPS,IDX",
                        "s%qsPPOOPOP--%-",
@@ -113,8 +130,23 @@ void AP_EFI::log_status(void)
                        uint8_t(state.throttle_position_percent),
                        uint8_t(state.ecu_index));
 
+// @LoggerMessage: EFI2
+// @Description: Electronic Fuel Injection system data - redux
+// @Field: TimeUS: Time since system startup
+// @Field: Healthy: True if EFI is healthy
+// @Field: ES: Engine state
+// @Field: GE: General error
+// @Field: CSE: Crankshaft sensor status
+// @Field: TS: Temperature status
+// @Field: FPS: Fuel pressure status
+// @Field: OPS: Oil pressure status
+// @Field: DS: Detonation status
+// @Field: MS: Misfire status
+// @Field: DebS: Debris status
+// @Field: SPU: Spark plug usage
+// @Field: IDX: Index of the publishing ECU
     AP::logger().Write("EFI2",
-                       "TimeUS,Healthy,ES,GE,CSE,TS,FPS,OPS,DS,MS,DS,SPU,IDX",
+                       "TimeUS,Healthy,ES,GE,CSE,TS,FPS,OPS,DS,MS,DebS,SPU,IDX",
                        "s------------",
                        "F------------",
                        "QBBBBBBBBBBBB",
@@ -133,6 +165,16 @@ void AP_EFI::log_status(void)
                        uint8_t(state.ecu_index));
 
     for (uint8_t i = 0; i < ENGINE_MAX_CYLINDERS; i++) {
+// @LoggerMessage: ECYL
+// @Description: EFI per-cylinder information
+// @Field: TimeUS: Time since system startup
+// @Field: Inst: Cylinder this data belongs to
+// @Field: IgnT: Ignition timing
+// @Field: InjT: Injection time
+// @Field: CHT: Cylinder head temperature
+// @Field: EGT: Exhaust gas temperature
+// @Field: Lambda: Estimated lambda coefficient (dimensionless ratio)
+// @Field: IDX: Index of the publishing ECU
         AP::logger().Write("ECYL",
                            "TimeUS,Inst,IgnT,InjT,CHT,EGT,Lambda,IDX",
                            "s#dsOO--",

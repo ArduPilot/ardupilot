@@ -9,9 +9,6 @@
 #if MODE_FOLLOW_ENABLED == ENABLED
  # include <AP_Follow/AP_Follow.h>
 #endif
-#if VISUAL_ODOMETRY_ENABLED == ENABLED
- # include <AP_VisualOdom/AP_VisualOdom.h>
-#endif
 
 // Global parameter class.
 //
@@ -30,20 +27,20 @@ public:
     // Parameter identities.
     //
     // The enumeration defined here is used to ensure that every parameter
-    // or parameter group has a unique ID number.	This number is used by
+    // or parameter group has a unique ID number.  This number is used by
     // AP_Param to store and locate parameters in EEPROM.
     //
     // Note that entries without a number are assigned the next number after
-    // the entry preceding them.	When adding new entries, ensure that they
+    // the entry preceding them. When adding new entries, ensure that they
     // don't overlap.
     //
     // Try to group related variables together, and assign them a set
-    // range in the enumeration.	Place these groups in numerical order
+    // range in the enumeration. Place these groups in numerical order
     // at the end of the enumeration.
     //
     // WARNING: Care should be taken when editing this enumeration as the
-    //			AP_Param load/save code depends on the values here to identify
-    //			variables saved in EEPROM.
+    //          AP_Param load/save code depends on the values here to identify
+    //          variables saved in EEPROM.
     //
     //
     enum {
@@ -97,7 +94,7 @@ public:
                                                 // with next eeprom number
                                                 // change
         k_param_toy_yaw_rate,                   // deprecated - remove
-        k_param_crosstrack_min_distance,	// deprecated - remove with next eeprom number change
+        k_param_crosstrack_min_distance,    // deprecated - remove with next eeprom number change
         k_param_rssi_pin,                   // unused, replaced by rssi_ library parameters
         k_param_throttle_accel_enabled,     // deprecated - remove
         k_param_wp_yaw_behavior,
@@ -256,10 +253,10 @@ public:
         // 160: Navigation parameters
         //
         k_param_rtl_altitude = 160,
-        k_param_crosstrack_gain,	// deprecated - remove with next eeprom number change
+        k_param_crosstrack_gain,    // deprecated - remove with next eeprom number change
         k_param_rtl_loiter_time,
         k_param_rtl_alt_final,
-        k_param_tilt_comp, 	//164	deprecated - remove with next eeprom number change
+        k_param_tilt_comp, // 164 deprecated - remove with next eeprom number change
 
 
         //
@@ -512,11 +509,6 @@ public:
 #if BEACON_ENABLED == ENABLED
     // beacon (non-GPS positioning) library
     AP_Beacon beacon;
-#endif
-
-#if VISUAL_ODOMETRY_ENABLED == ENABLED
-    // Visual Odometry camera
-    AP_VisualOdom visual_odom;
 #endif
 
 #if PROXIMITY_ENABLED == ENABLED

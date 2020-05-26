@@ -17,7 +17,6 @@
 #define XYZ_AXIS_COUNT    3
 // The maximum we need to store is gyro-rate / loop-rate, worst case ArduCopter with BMI088 is 2000/400
 #define INS_MAX_GYRO_WINDOW_SAMPLES 8
-typedef float* GyroWindow;
 
 #define DEFAULT_IMU_LOG_BAT_MASK 0
 
@@ -25,6 +24,7 @@ typedef float* GyroWindow;
 
 #include <AP_AccelCal/AP_AccelCal.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/utility/RingBuffer.h>
 #include <AP_Math/AP_Math.h>
 #include <Filter/LowPassFilter2p.h>
 #include <Filter/LowPassFilter.h>
@@ -155,11 +155,8 @@ public:
     // FFT support access
 #if HAL_WITH_DSP
     const Vector3f     &get_raw_gyro(void) const { return _gyro_raw[_primary_gyro]; }
-    GyroWindow  get_raw_gyro_window(uint8_t instance, uint8_t axis) const { return _gyro_window[instance][axis]; }
-    GyroWindow  get_raw_gyro_window(uint8_t axis) const { return get_raw_gyro_window(_primary_gyro, axis); }
-    // returns the index one above the last valid gyro sample
-    uint16_t  get_raw_gyro_window_index(void) const { return get_raw_gyro_window_index(_primary_gyro); }
-    uint16_t  get_raw_gyro_window_index(uint8_t instance) const { return _circular_buffer_idx[instance]; }
+    FloatBuffer&  get_raw_gyro_window(uint8_t instance, uint8_t axis) { return _gyro_window[instance][axis]; }
+    FloatBuffer&  get_raw_gyro_window(uint8_t axis) { return get_raw_gyro_window(_primary_gyro, axis); }
     uint16_t get_raw_gyro_rate_hz() const { return get_raw_gyro_rate_hz(_primary_gyro); }
     uint16_t get_raw_gyro_rate_hz(uint8_t instance) const { return _gyro_raw_sample_rates[_primary_gyro]; }
 #endif
@@ -445,9 +442,7 @@ private:
 #if HAL_WITH_DSP
     // Thread-safe public version of _last_raw_gyro
     Vector3f _gyro_raw[INS_MAX_INSTANCES];
-    // circular buffer of gyro data for frequency analysis
-    uint16_t _circular_buffer_idx[INS_MAX_INSTANCES];
-    GyroWindow _gyro_window[INS_MAX_INSTANCES][XYZ_AXIS_COUNT];
+    FloatBuffer _gyro_window[INS_MAX_INSTANCES][XYZ_AXIS_COUNT];
     uint16_t _gyro_window_size;
 #endif
     bool _new_accel_data[INS_MAX_INSTANCES];

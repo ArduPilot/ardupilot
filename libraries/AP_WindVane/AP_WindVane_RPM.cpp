@@ -25,8 +25,9 @@ void AP_WindVane_RPM::update_speed()
 {
     const AP_RPM* rpm = AP_RPM::get_singleton();
     if (rpm != nullptr) {
-        const float temp_speed = rpm->get_rpm(0);
-        if (!is_negative(temp_speed)) {
+        float temp_speed;
+        if (rpm->get_rpm(0, temp_speed) &&
+            !is_negative(temp_speed)) {
             speed_update_frontend(temp_speed);
         }
     }

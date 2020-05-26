@@ -35,6 +35,7 @@
 #include "SITL_SFML_LED.h"
 #include <stdio.h>
 #include "AP_BoardLED2.h"
+#include "ProfiLED.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -145,7 +146,7 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @Param: LED_TYPES
     // @DisplayName: LED Driver Types
     // @Description: Controls what types of LEDs will be enabled
-    // @Bitmask: 0:Build in LED, 1:Internal ToshibaLED, 2:External ToshibaLED, 3:External PCA9685, 4:Oreo LED, 5:UAVCAN, 6:NCP5623 External, 7:NCP5623 Internal, 8:NeoPixel
+    // @Bitmask: 0:Build in LED, 1:Internal ToshibaLED, 2:External ToshibaLED, 3:External PCA9685, 4:Oreo LED, 5:UAVCAN, 6:NCP5623 External, 7:NCP5623 Internal, 8:NeoPixel, 9:ProfiLED
     // @User: Advanced
     AP_GROUPINFO("LED_TYPES", 6, AP_Notify, _led_type, BUILD_DEFAULT_LED_TYPE),
 
@@ -165,12 +166,12 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @Units: %
     AP_GROUPINFO("BUZZ_VOLUME", 8, AP_Notify, _buzzer_volume, 100),
 
-    // @Param: NEO_LEN
-    // @DisplayName: NeoPixel String Length
-    // @Description: The number of NeoPixel LEDs to use for notifications
+    // @Param: LED_LEN
+    // @DisplayName: Serial LED String Length
+    // @Description: The number of Serial LED's to use for notifications (NeoPixel's and ProfiLED)
     // @Range: 1 32
     // @User: Advanced
-    AP_GROUPINFO("NEO_LEN", 9, AP_Notify, _neo_len, 1),
+    AP_GROUPINFO("LED_LEN", 9, AP_Notify, _led_len, 1),
 
     AP_GROUPEND
 };
@@ -270,6 +271,9 @@ void AP_Notify::add_backends(void)
                 break;
             case Notify_LED_NeoPixel:
                 ADD_BACKEND(new NeoPixel());
+                break;
+            case Notify_LED_ProfiLED:
+                ADD_BACKEND(new ProfiLED());
                 break;
             case Notify_LED_OreoLED:
 #if !HAL_MINIMIZE_FEATURES

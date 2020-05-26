@@ -64,8 +64,8 @@ void AP_InertialSensor_Backend::_update_sensor_rate(uint16_t &count, uint32_t &s
         count++;
         if (now - start_us > 1000000UL) {
             float observed_rate_hz = count * 1.0e6f / (now - start_us);
-#if SENSOR_RATE_DEBUG
-            printf("RATE: %.1f should be %.1f\n", observed_rate_hz, rate_hz);
+#if 0
+            printf("IMU RATE: %.1f should be %.1f\n", observed_rate_hz, rate_hz);
 #endif
             float filter_constant = 0.98f;
             float upper_limit = 1.05f;
@@ -227,8 +227,12 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
         _imu._last_raw_gyro[instance] = gyro;
 #if HAL_WITH_DSP
         // capture gyro window for FFT analysis
-        _last_gyro_window[_num_gyro_samples++] = gyro * _imu._gyro_raw_sampling_multiplier[instance];
-        _num_gyro_samples = _num_gyro_samples % INS_MAX_GYRO_WINDOW_SAMPLES; // protect against overrun
+        if (_imu._gyro_window_size > 0) {
+            const Vector3f& scaled_gyro = gyro * _imu._gyro_raw_sampling_multiplier[instance];
+            _imu._gyro_window[instance][0].push(scaled_gyro.x);
+            _imu._gyro_window[instance][1].push(scaled_gyro.y);
+            _imu._gyro_window[instance][2].push(scaled_gyro.z);
+        }
 #endif
         // apply the low pass filter
         Vector3f gyro_filtered = _imu._gyro_filter[instance].apply(gyro);
@@ -515,17 +519,6 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance)
         _publish_gyro(instance, _imu._gyro_filtered[instance]);
         // copy the gyro samples from the backend to the frontend window
 #if HAL_WITH_DSP
-        if (_imu._gyro_window_size > 0) {
-            uint8_t idx = _imu._circular_buffer_idx[instance];
-            for (uint8_t i = 0; i < _num_gyro_samples; i++) {
-                _imu._gyro_window[instance][0][idx] = _last_gyro_window[i].x;
-                _imu._gyro_window[instance][1][idx] = _last_gyro_window[i].y;
-                _imu._gyro_window[instance][2][idx] = _last_gyro_window[i].z;
-                idx = (idx + 1) % _imu._gyro_window_size;
-            }
-            _num_gyro_samples = 0;
-            _imu._circular_buffer_idx[instance] = idx;
-        }
         _imu._gyro_raw[instance] = _imu._last_raw_gyro[instance] * _imu._gyro_raw_sampling_multiplier[instance];
 #endif
         _imu._new_gyro_data[instance] = false;

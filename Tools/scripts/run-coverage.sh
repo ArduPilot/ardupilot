@@ -29,12 +29,12 @@ rm -rf build
 ./Tools/autotest/autotest.py $OPTS build.unit_tests run.unit_tests
 
 # Run main vehicle tests
-./Tools/autotest/autotest.py $OPTS build.ArduPlane fly.ArduPlane fly.QuadPlane
-./Tools/autotest/autotest.py $OPTS build.ArduSub dive.ArduSub
-./Tools/autotest/autotest.py $OPTS build.ArduCopter fly.ArduCopter fly.ArduCopter
-./Tools/autotest/autotest.py $OPTS build.Helicopter fly.CopterAVC
-./Tools/autotest/autotest.py $OPTS build.AntennaTracker test.AntennaTracker
-./Tools/autotest/autotest.py $OPTS build.APMrover2 drive.APMrover2
+./Tools/autotest/autotest.py $OPTS build.Plane test.Plane test.QuadPlane
+./Tools/autotest/autotest.py $OPTS build.Sub test.Sub
+./Tools/autotest/autotest.py $OPTS build.Copter test.Copter
+./Tools/autotest/autotest.py $OPTS build.Helicopter test.Helicopter
+./Tools/autotest/autotest.py $OPTS build.Tracker test.Tracker
+./Tools/autotest/autotest.py $OPTS build.Rover test.Rover
 
 #TODO add any other execution path/s we can to maximise the actually
 # used code, can we run other tests or things?  Replay, perhaps?

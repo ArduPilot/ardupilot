@@ -517,13 +517,34 @@ private:
         // throttle  commanded from external controller in percent
         float forced_throttle;
         uint32_t last_forced_throttle_ms;
+
+#if OFFBOARD_GUIDED == ENABLED
+        // airspeed adjustments
+        float target_airspeed_cm = -1;  // don't default to zero here, as zero is a valid speed.
+        float target_airspeed_accel;
+        uint32_t target_airspeed_time_ms;
+
+        // altitude adjustments
+        float target_alt = -1;   // don't default to zero here, as zero is a valid alt.
+        uint32_t last_target_alt = 0;
+        float target_alt_accel;
+        uint32_t target_alt_time_ms = 0;
+        uint8_t target_alt_frame = 0;
+
+        // heading track
+        float target_heading = -4; // don't default to zero or -1 here, as both are valid headings in radians
+        float target_heading_accel_limit;
+        uint32_t target_heading_time_ms;
+        guided_heading_type_t target_heading_type;
+        bool target_heading_limit_low;
+        bool target_heading_limit_high;
+#endif // OFFBOARD_GUIDED == ENABLED
     } guided_state;
 
 #if LANDING_GEAR_ENABLED == ENABLED
     // landing gear state
     struct {
-        int8_t last_auto_cmd;
-        int8_t last_cmd;
+        AP_Vehicle::FixedWing::FlightStage last_flight_stage;
     } gear;
 #endif
     
@@ -727,6 +748,10 @@ private:
         uint32_t last_trim_save;
     } auto_trim;
 
+    struct {
+        bool done_climb;
+    } rtl;
+
     // last time home was updated while disarmed
     uint32_t last_home_update_ms;
 
@@ -757,26 +782,28 @@ private:
     // rudder mixing gain for differential thrust (0 - 1)
     float rudder_dt;
 
+    // soaring mode-change timer
+    uint32_t soaring_mode_timer;
+
     void adjust_nav_pitch_throttle(void);
     void update_load_factor(void);
     void send_fence_status(mavlink_channel_t chan);
     void send_servo_out(mavlink_channel_t chan);
-    void send_wind(mavlink_channel_t chan);
-
-    void send_aoa_ssa(mavlink_channel_t chan);
 
     void Log_Write_Fast(void);
     void Log_Write_Attitude(void);
     void Log_Write_Performance();
     void Log_Write_Startup(uint8_t type);
     void Log_Write_Control_Tuning();
+    void Log_Write_OFG_Guided();
+    void Log_Write_Guided(void);
     void Log_Write_Nav_Tuning();
     void Log_Write_Status();
-    void Log_Write_Sonar();
     void Log_Write_RC(void);
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Write_AOA_SSA();
     void Log_Write_AETR();
+    void Log_Write_MavCmdI(const mavlink_command_int_t &packet);
 
     void load_parameters(void) override;
     void convert_mixers(void);
@@ -931,13 +958,13 @@ private:
     void set_servos_controlled(void);
     void set_servos_old_elevons(void);
     void set_servos_flaps(void);
-    void change_landing_gear(AP_LandingGear::LandingGearCommand cmd);
     void set_landing_gear(void);
     void dspoiler_update(void);
     void servo_output_mixers(void);
     void servos_output(void);
     void servos_auto_trim(void);
     void servos_twin_engine_mix();
+    void throttle_voltage_comp();
     void throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle);
     void update_is_flying_5Hz(void);
     void crash_detection_update(void);
@@ -1038,8 +1065,17 @@ private:
     static_assert(_failsafe_priorities[ARRAY_SIZE(_failsafe_priorities) - 1] == -1,
                   "_failsafe_priorities is missing the sentinel");
 
+    // EKF checks for loss of navigation performed in ekf_check.cpp
+    // These are specific to VTOL operation
+    void ekf_check();
+    bool ekf_over_threshold();
+    void failsafe_ekf_event();
+    void failsafe_ekf_off_event(void);
+
 public:
     void failsafe_check(void);
+    bool set_target_location(const Location& target_loc) override;
+    bool get_target_location(Location& target_loc) override;
 };
 
 extern Plane plane;

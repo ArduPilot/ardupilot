@@ -28,11 +28,9 @@ define CH_CFG_ST_TIMEDELTA 0
 # assume the 256k flash part for now
 FLASH_SIZE_KB 256
 
-# board voltage
-STM32_VDD 330U
 
 # order of UARTs
-UART_ORDER USART2 USART1
+SERIAL_ORDER USART2 EMPTY EMPTY USART1
 
 # a LED to flash
 PA4 LED OUTPUT LOW
@@ -132,8 +130,6 @@ env APP_DESCRIPTOR MissionPlanner
 
 # reserve 256 bytes for comms between app and bootloader
 RAM_RESERVE_START 256
-
-# define CH_DBG_ENABLE_STACK_CHECK TRUE
 
 # keep ROMFS uncompressed as we don't have enough RAM
 # to uncompress the bootloader at runtime

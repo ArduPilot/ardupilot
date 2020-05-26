@@ -36,6 +36,9 @@ class AutoTestTracker(AutoTest):
     def default_frame(self):
         return "tracker"
 
+    def set_current_test_name(self, name):
+        self.current_test_name_directory = "AntennaTracker_Tests/" + name + "/"
+
     def apply_defaultfile_parameters(self):
         # tracker doesn't have a default parameters file
         pass
@@ -85,7 +88,12 @@ class AutoTestTracker(AutoTest):
                 self.progress("Achieved attitude")
                 break
 
+    def reboot_sitl(self, *args, **kwargs):
+        self.disarm_vehicle()
+        super(AutoTestTracker, self).reboot_sitl(*args, **kwargs)
+
     def GUIDED(self):
+        self.reboot_sitl() # temporary hack around control issues
         self.change_mode(4) # "GUIDED"
         self.achieve_attitude(desyaw=10, despitch=30)
         self.achieve_attitude(desyaw=0, despitch=0)
@@ -143,7 +151,7 @@ class AutoTestTracker(AutoTest):
     def disabled_tests(self):
         return {
             "ArmFeatures": "See https://github.com/ArduPilot/ardupilot/issues/10652",
-            "Parameters": "reboot does not work",
+            "CPUFailsafe": " tracker doesn't have a CPU failsafe",
         }
 
     def tests(self):

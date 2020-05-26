@@ -18,7 +18,7 @@ CCACHE_TARBALL="$CCACHE_ROOT.tar.bz2"
 mkdir -p $HOME/opt
 pushd $HOME
 
-# PX4 toolchain
+# STM32 toolchain
 dir=$ARM_ROOT
 if [ ! -d "$HOME/opt/$dir" -o ! -x "$HOME/opt/$dir/bin/arm-none-eabi-g++" ]; then
   wget https://firmware.ardupilot.org/Tools/STM32-tools/$ARM_TARBALL
@@ -77,7 +77,7 @@ exportline="${exportline}:$HOME/opt/$CCACHE_ROOT"
 exportline="${exportline}:\$PATH"
 
 if grep -Fxq "$exportline" ~/.profile; then
-    echo nothing to do;
+    echo "nothing to do";
 else
     echo $exportline >> ~/.profile;
 fi
@@ -88,3 +88,4 @@ pip install --user -U argparse empy pyserial pexpect future lxml
 pip install --user -U intelhex
 pip install --user -U numpy
 pip install --user -U edn_format
+

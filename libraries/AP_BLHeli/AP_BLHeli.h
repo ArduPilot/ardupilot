@@ -46,7 +46,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     struct telem_data {
-        uint8_t temperature; // degrees C
+        int8_t temperature;  // degrees C, negative values allowed
         uint16_t voltage;    // volts * 100
         uint16_t current;    // amps * 100
         uint16_t consumption;// mAh

@@ -7,6 +7,10 @@
 #define ltable_c
 #define LUA_CORE
 
+#if defined(ARDUPILOT_BUILD)
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
+
 #include "lprefix.h"
 
 

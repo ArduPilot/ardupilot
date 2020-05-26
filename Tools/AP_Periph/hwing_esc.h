@@ -21,12 +21,14 @@ public:
         uint32_t counter;
         uint16_t throttle_req;
         uint16_t throttle;
-        uint16_t rpm;
+        float rpm;
         float voltage;
-        uint16_t load;
+        float phase_current;
         float current;
-        uint16_t temperature;
-        uint16_t unknown;
+        uint8_t mos_temperature;
+        uint8_t cap_temperature;
+        uint16_t status;
+        uint32_t error_count;
     };
 
     const HWESC &get_telem(void) {
@@ -45,18 +47,21 @@ private:
         uint16_t rpm;
         uint16_t voltage;
         int16_t current;
-        int16_t load;
-        uint16_t temperature;
-        uint16_t unknown;
+        int16_t phase_current;
+        uint8_t mos_temperature;
+        uint8_t cap_temperature;
+        uint16_t status;
         uint16_t crc;
     } pkt;
 
     uint8_t len;
     uint32_t last_read_ms;
+    uint32_t error_count;
 
     struct HWESC decoded;
 
     bool parse_packet(void);
+    uint8_t temperature_decode(uint8_t temp_raw) const;
 };
 
 #endif // HAL_PERIPH_ENABLE_HWESC

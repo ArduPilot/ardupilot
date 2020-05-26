@@ -94,6 +94,10 @@ void Mode::AutoYaw::set_mode(autopilot_yaw_mode yaw_mode)
         // initialise target yaw rate to zero
         _rate_cds = 0.0f;
         break;
+
+    case AUTO_YAW_CIRCLE:
+        // no initialisation required
+        break;
     }
 }
 
@@ -196,6 +200,13 @@ float Mode::AutoYaw::yaw()
     case AUTO_YAW_RESETTOARMEDYAW:
         // changes yaw to be same as when quad was armed
         return copter.initial_armed_bearing;
+
+    case AUTO_YAW_CIRCLE:
+        if (copter.circle_nav->is_active()) {
+            return copter.circle_nav->get_yaw();
+        }
+        // return the current attitude target
+        return wrap_360_cd(copter.attitude_control->get_att_target_euler_cd().z);
 
     case AUTO_YAW_LOOK_AT_NEXT_WP:
     default:

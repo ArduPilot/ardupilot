@@ -46,7 +46,7 @@ static uint32_t system_time_u32_us(void)
 {
     systime_t now = chVTGetSystemTimeX();
 #if CH_CFG_ST_FREQUENCY != 1000000U
-    now *= 1000000U/CH_CFG_ST_FREQUENCY;
+    #error "must use 32 bit timer if system clock not 1MHz"
 #endif
     static systime_t last_systime;
     static uint32_t timer_base_us32;

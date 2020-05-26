@@ -656,6 +656,11 @@ private:
         STEP_LAST
     };
 
+    // GPS_DRV_OPTIONS bits
+    enum class DRV_OPTIONS {
+        MB_USE_UART2 = 1U<<0,
+    };
+
     // Packet checksum accumulators
     uint8_t         _ck_a;
     uint8_t         _ck_b;
@@ -681,6 +686,9 @@ private:
     struct ubx_mon_ver _version;
     uint32_t        _unconfigured_messages;
     uint8_t         _hardware_generation;
+    uint32_t        _last_pvt_itow;
+    uint32_t        _last_relposned_itow;
+    uint32_t        _last_relposned_ms;
 
     // the role set from GPS_TYPE
     AP_GPS::GPS_Role role;
@@ -731,6 +739,12 @@ private:
         return (uint8_t)(ubx_msg + (state.instance * UBX_MSG_TYPES));
     }
 
+#if GPS_UBLOX_MOVING_BASELINE
+    // see if we should use uart2 for moving baseline config
+    bool mb_use_uart2(void) const {
+        return (driver_options() & unsigned(DRV_OPTIONS::MB_USE_UART2))?true:false;
+    }
+#endif
 
     // structure for list of config key/value pairs for
     // specific configurations
@@ -753,12 +767,15 @@ private:
     // return true if GPS is capable of F9 config
     bool supports_F9_config(void) const;
 
+#if GPS_UBLOX_MOVING_BASELINE
     // config for moving baseline base
-    static const config_list config_MB_Base[];
+    static const config_list config_MB_Base_uart1[];
+    static const config_list config_MB_Base_uart2[];
 
     // config for moving baseline rover
-    static const config_list config_MB_Rover[];
-    
+    static const config_list config_MB_Rover_uart1[];
+    static const config_list config_MB_Rover_uart2[];
+
     // status of active configuration for a role
     struct {
         const config_list *list;
@@ -769,4 +786,5 @@ private:
 
     // RTCM3 parser for when in moving baseline base mode
     RTCM3_Parser *rtcm3_parser;
+#endif // GPS_UBLOX_MOVING_BASELINE
 };

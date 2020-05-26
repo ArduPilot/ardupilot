@@ -249,6 +249,20 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 28, AP_TECS, _options, 0),
 
+    // @Param: PTCH_FF_V0
+    // @DisplayName: Baseline airspeed for pitch feed-forward.
+    // @Description: This parameter sets the airspeed at which no feed-forward is applied between demanded airspeed and pitch. It should correspond to the airspeed in metres per second at which the plane glides at neutral pitch including STAB_PITCH_DOWN.
+    // @Range: 5.0 50.0
+    // @User: Advanced
+    AP_GROUPINFO("PTCH_FF_V0", 29, AP_TECS, _pitch_ff_v0, 12.0),
+
+    // @Param: PTCH_FF_K
+    // @DisplayName: Gain for pitch feed-forward.
+    // @Description: This parameter sets the gain between demanded airspeed and pitch. It has units of radians per metre per second and should generally be negative. A good starting value is -0.04 for gliders and -0.08 for draggy airframes. The default (0.0) disables this feed-forward.
+    // @Range: -5.0 0.0
+    // @User: Advanced
+    AP_GROUPINFO("PTCH_FF_K", 30, AP_TECS, _pitch_ff_k, 0.0),
+    
     AP_GROUPEND
 };
 
@@ -627,6 +641,10 @@ void AP_TECS::_update_throttle_with_airspeed(void)
     {
         _throttle_dem = 1.0f;
     }
+    else if (_flags.is_gliding)
+    {
+        _throttle_dem = 0.0f;
+    }
     else
     {
         // Calculate gain scaler from specific energy error to throttle
@@ -741,6 +759,11 @@ void AP_TECS::_update_throttle_without_airspeed(int16_t throttle_nudge)
         _throttle_dem = nomThr;
     }
 
+    if (_flags.is_gliding)
+    {
+        _throttle_dem = 0.0f;
+    }
+
     // Calculate additional throttle for turn drag compensation including throttle nudging
     const Matrix3f &rotMat = _ahrs.get_rotation_body_to_ned();
     // Use the demanded rate of change of total energy as the feed-forward demand, but add
@@ -766,7 +789,7 @@ void AP_TECS::_detect_bad_descent(void)
     // 2) Specific total energy error > 0
     // This mode will produce an undulating speed and height response as it cuts in and out but will prevent the aircraft from descending into the ground if an unachievable speed demand is set
     float STEdot = _SPEdot + _SKEdot;
-    if ((!_flags.underspeed && (_STE_error > 200.0f) && (STEdot < 0.0f) && (_throttle_dem >= _THRmaxf * 0.9f)) || (_flags.badDescent && !_flags.underspeed && (_STE_error > 0.0f)))
+    if (((!_flags.underspeed && (_STE_error > 200.0f) && (STEdot < 0.0f) && (_throttle_dem >= _THRmaxf * 0.9f)) || (_flags.badDescent && !_flags.underspeed && (_STE_error > 0.0f))) && !_flags.is_gliding)
     {
         _flags.badDescent = true;
     }
@@ -785,7 +808,7 @@ void AP_TECS::_update_pitch(void)
     // A SKE_weighting of 2 provides 100% priority to speed control. This is used when an underspeed condition is detected. In this instance, if airspeed
     // rises above the demanded value, the pitch angle will be increased by the TECS controller.
     float SKE_weighting = constrain_float(_spdWeight, 0.0f, 2.0f);
-    if (!_ahrs.airspeed_sensor_enabled()) {
+    if (!(_ahrs.airspeed_sensor_enabled()|| _use_synthetic_airspeed)) {
         SKE_weighting = 0.0f;
     } else if (_flight_stage == AP_Vehicle::FixedWing::FLIGHT_VTOL) {
         // if we are in VTOL mode then control pitch without regard to
@@ -793,7 +816,7 @@ void AP_TECS::_update_pitch(void)
         // height. This is needed as the usual relationship of speed
         // and height is broken by the VTOL motors
         SKE_weighting = 0.0f;        
-    } else if ( _flags.underspeed || _flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF || _flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
+    } else if ( _flags.underspeed || _flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF || _flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND || _flags.is_gliding) {
         SKE_weighting = 2.0f;
     } else if (_flags.is_doing_auto_land) {
         if (_spdWeightLand < 0) {
@@ -847,7 +870,7 @@ void AP_TECS::_update_pitch(void)
     // integrator has to catch up before the nose can be raised to reduce speed during climbout.
     // During flare a different damping gain is used
     float gainInv = (_TAS_state * timeConstant() * GRAVITY_MSS);
-    float temp = SEB_error + SEBdot_dem * timeConstant();
+    float temp = SEB_error + 0.5*SEBdot_dem * timeConstant();
 
     float pitch_damp = _ptchDamp;
     if (_landing.is_flaring()) {
@@ -885,6 +908,12 @@ void AP_TECS::_update_pitch(void)
 
     // Calculate pitch demand from specific energy balance signals
     _pitch_dem_unc = (temp + _integSEB_state) / gainInv;
+
+
+    // Add a feedforward term from demanded airspeed to pitch.
+    if (_flags.is_gliding) {
+        _pitch_dem_unc += (_TAS_dem_adj - _pitch_ff_v0) * _pitch_ff_k;
+    }
 
     // Constrain pitch demand
     _pitch_dem = constrain_float(_pitch_dem_unc, _PITCHminf, _PITCHmaxf);
@@ -962,14 +991,14 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
                                     int32_t ptchMinCO_cd,
                                     int16_t throttle_nudge,
                                     float hgt_afe,
-                                    float load_factor,
-                                    bool soaring_active)
+                                    float load_factor)
 {
     // Calculate time in seconds since last update
     uint64_t now = AP_HAL::micros64();
     _DT = (now - _update_pitch_throttle_last_usec) * 1.0e-6f;
     _update_pitch_throttle_last_usec = now;
 
+    _flags.is_gliding = _flags.gliding_requested || _flags.propulsion_failed || aparm.throttle_max==0;
     _flags.is_doing_auto_land = (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND);
     _distance_beyond_land_wp = distance_beyond_land_wp;
     _flight_stage = flight_stage;
@@ -1123,8 +1152,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     // Detect bad descent due to demanded airspeed being too high
     _detect_bad_descent();
 
-    // when soaring is active we never trigger a bad descent
-    if (soaring_active || (_options & OPTION_GLIDER_ONLY)) {
+    if (_options & OPTION_GLIDER_ONLY) {
         _flags.badDescent = false;        
     }
 
@@ -1132,6 +1160,26 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     _update_pitch();
 
     // log to AP_Logger
+    // @LoggerMessage: TECS
+    // @Vehicles: Plane
+    // @Description: Information about the Total Energy Control System
+    // @URL: http://ardupilot.org/plane/docs/tecs-total-energy-control-system-for-speed-height-tuning-guide.html
+    // @Field: TimeUS: Time since system startup
+    // @Field: h: height estimate (UP) currently in use by TECS
+    // @Field: dh: current climb rate ("delta-height")
+    // @Field: hdem: height TECS is currently trying to achieve
+    // @Field: dhdem: climb rate TECS is currently trying to achieve
+    // @Field: spdem: True AirSpeed TECS is currently trying to achieve
+    // @Field: sp: current estimated True AirSpeed
+    // @Field: dsp: x-axis acceleration estimate ("delta-speed")
+    // @Field: ith: throttle integrator value
+    // @Field: iph: Specific Energy Balance integrator value
+    // @Field: th: throttle output
+    // @Field: ph: pitch output
+    // @Field: dspdem: demanded acceleration output ("delta-speed demand")
+    // @Field: w: current TECS prioritization of height vs speed (0==100% height,2==100% speed, 1==50%height+50%speed
+    // @Field: f: flags
+    // @FieldBits: f: Underspeed,UnachievableDescent,AutoLanding,ReachedTakeoffSpd
     AP::logger().Write(
         "TECS",
         "TimeUS,h,dh,hdem,dhdem,spdem,sp,dsp,ith,iph,th,ph,dspdem,w,f",
@@ -1153,6 +1201,17 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         (double)_TAS_rate_dem,
         (double)logging.SKE_weighting,
         _flags_byte);
+    // @LoggerMessage: TEC2
+    // @Vehicles: Plane
+    // @Description: Additional Information about the Total Energy Control System
+    // @URL: http://ardupilot.org/plane/docs/tecs-total-energy-control-system-for-speed-height-tuning-guide.html
+    // @Field: TimeUS: Time since system startup
+    // @Field: pmax: maximum allowed pitch from parameter
+    // @Field: pmin: minimum allowed pitch from parameter
+    // @Field: KErr: difference between estimated kinetic energy and desired kinetic energy
+    // @Field: PErr: difference between estimated potential energy and desired potential energy
+    // @Field: EDelta: current error in speed/balance weighting
+    // @Field: LF: aerodynamic load factor
     AP::logger().Write("TEC2", "TimeUS,pmax,pmin,KErr,PErr,EDelta,LF",
                        "s------",
                        "F------",

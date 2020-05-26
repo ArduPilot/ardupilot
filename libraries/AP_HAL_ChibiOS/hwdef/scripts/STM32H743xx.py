@@ -26,6 +26,8 @@ mcu = {
         (0x00000400,  63, 2), # ITCM (first 1k removed, to keep address 0 unused)
     ],
 
+    'EXPECTED_CLOCK' : 400000000,
+
     # this MCU has M7 instructions and hardware double precision
     'CORTEX'    : 'cortex-m7',
     'CPU_FLAGS' : '-mcpu=cortex-m7 -mfpu=fpv5-d16 -mfloat-abi=hard',

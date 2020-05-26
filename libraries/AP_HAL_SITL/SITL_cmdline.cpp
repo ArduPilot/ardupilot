@@ -421,8 +421,8 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         if (_framerate == 0) {
             _framerate = 200;
         }
-    } else if (strcmp(SKETCH, "APMrover2") == 0) {
-        _vehicle = APMrover2;
+    } else if (strcmp(SKETCH, "Rover") == 0) {
+        _vehicle = Rover;
         if (_framerate == 0) {
             _framerate = 50;
         }

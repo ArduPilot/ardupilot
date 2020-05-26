@@ -80,7 +80,7 @@ void AP_RangeFinder_PWM::check_pin()
     // detach last one
     if (last_pin > 0) {
         if (!hal.gpio->detach_interrupt(last_pin)) {
-            gcs().send_text(MAV_SEVERITY_WARNING,
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
                             "RangeFinder_PWM: Failed to detach from pin %u",
                             last_pin);
             // ignore this failure or the user may be stuck
@@ -107,7 +107,7 @@ void AP_RangeFinder_PWM::check_pin()
                                 uint32_t),
             AP_HAL::GPIO::INTERRUPT_BOTH)) {
         // failed to attach interrupt
-        gcs().send_text(MAV_SEVERITY_WARNING,
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
                         "RangeFinder_PWM: Failed to attach to pin %u",
                         (unsigned int)params.pin);
         return;
