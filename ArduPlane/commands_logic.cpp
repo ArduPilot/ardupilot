@@ -34,11 +34,15 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         const uint16_t next_index = mission.get_current_nav_index() + 1;
         auto_state.wp_is_land_approach = mission.get_next_nav_cmd(next_index, next_nav_cmd) && (next_nav_cmd.id == MAV_CMD_NAV_LAND) &&
             !quadplane.is_vtol_land(next_nav_cmd.id);
+
+        // true when executing NAV_LAND or between DO_LAND_START and NAV_LAND
+        plane.auto_state.is_on_landing_pattern |= (auto_state.wp_is_land_approach);
     }
 
     switch(cmd.id) {
 
     case MAV_CMD_NAV_TAKEOFF:
+        plane.auto_state.is_on_landing_pattern = false;
         crash_state.is_crashed = false;
         if (quadplane.is_vtol_takeoff(cmd.id)) {
             return quadplane.do_vtol_takeoff(cmd);
@@ -51,6 +55,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_NAV_LAND:              // LAND to Waypoint
+        plane.auto_state.is_on_landing_pattern = true;
         if (quadplane.is_vtol_land(cmd.id)) {
             crash_state.is_crashed = false;
             return quadplane.do_vtol_land(cmd);            
@@ -131,6 +136,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_DO_LAND_START:
+        plane.auto_state.is_on_landing_pattern = true;
         break;
 
     case MAV_CMD_DO_FENCE_ENABLE:

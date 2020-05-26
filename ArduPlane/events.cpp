@@ -168,8 +168,7 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
         case Failsafe_Action_Land:
             if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND && control_mode != &mode_qland) {
                 // never stop a landing if we were already committed
-                if (plane.mission.jump_to_landing_sequence()) {
-                    plane.set_mode(mode_auto, ModeReason::BATTERY_FAILSAFE);
+                if (plane.jump_to_landing_sequence(ModeReason::BATTERY_FAILSAFE)) {
                     break;
                 }
             }

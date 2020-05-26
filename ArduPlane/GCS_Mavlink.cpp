@@ -862,8 +862,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
 
     case MAV_CMD_DO_LAND_START:
         // attempt to switch to next DO_LAND_START command in the mission
-        if (plane.mission.jump_to_landing_sequence()) {
-            plane.set_mode(plane.mode_auto, ModeReason::GCS_COMMAND);
+        if (plane.jump_to_landing_sequence(ModeReason::GCS_COMMAND)) {
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;
@@ -1405,6 +1404,13 @@ void GCS_MAVLINK_Plane::handle_mission_set_current(AP_Mission &mission, const ma
     if (plane.control_mode == &plane.mode_auto && plane.mission.state() == AP_Mission::MISSION_STOPPED) {
         plane.mission.resume();
     }
+
+
+    // if we jump, we can no longer trust flag plane.auto_state.is_on_landing_pattern unless we do a quick check.
+    mavlink_mission_set_current_t packet;
+    mavlink_msg_mission_set_current_decode(&msg, &packet);
+
+    plane.auto_state.is_on_landing_pattern = plane.detect_landing_pattern_in_mission(packet.seq, -2, +3);
 }
 
 uint64_t GCS_MAVLINK_Plane::capabilities() const

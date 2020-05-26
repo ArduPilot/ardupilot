@@ -21,6 +21,9 @@ bool Mode::enter()
     // reset landing check for RTL
     plane.auto_state.checked_for_rtl_autoland = false;
 
+    // reset landing pattern check, auto mode will set this for us
+    plane.auto_state.is_on_landing_pattern = false;
+
     // zero locked course
     plane.steer_state.locked_course_err = 0;
 
