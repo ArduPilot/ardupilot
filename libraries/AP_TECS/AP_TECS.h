@@ -85,6 +85,16 @@ public:
         return _maxClimbRate;
     }
 
+    // return maximum sink rate
+    float get_max_sinkrate(void) const override {
+        return _maxSinkRate;
+    }
+
+    // true when in Bad descent condition caused by unachievable airspeed demand
+    bool get_flag_badDescent(void) const override {
+        return _flags.badDescent;
+    }
+
     // added to let SoaringContoller reset pitch integrator to zero
     void reset_pitch_I(void) override {
         _integSEB_state = 0.0f;
@@ -122,14 +132,18 @@ public:
 
 
     // set pitch max limit in degrees
-    void set_pitch_max_limit(int8_t pitch_limit) {
+    void set_pitch_max_limit(int8_t pitch_limit) override {
         _pitch_max_limit = pitch_limit;
     }
 
     // force use of synthetic airspeed for one loop
-    void use_synthetic_airspeed(void) {
+    void use_synthetic_airspeed(void) override {
         _use_synthetic_airspeed_once = true;
     }
+
+    float get_altitude_error(void) const override {
+        return _hgt_dem_adj - _height;
+    };
     
     // this supports the TECS_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];

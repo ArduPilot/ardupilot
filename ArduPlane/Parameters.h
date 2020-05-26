@@ -593,6 +593,8 @@ public:
     AP_Int32    stall_recovery_algorithm2;
     AP_Float    stall_recovery_sink_rate;
     AP_Float    stall_recovery_spin_rate;
+    AP_Int32    stall_detection_bitmask;
+    AP_Int8     stall_self_recovery_enable;
 
 };
 
