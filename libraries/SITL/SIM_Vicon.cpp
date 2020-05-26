@@ -149,8 +149,8 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
     // add yaw error reported to vehicle
     yaw = wrap_PI(yaw + radians(_sitl->vicon_yaw_error.get()));
 
-    // 25ms to 324ms delay before sending
-    uint32_t delay_ms = 25 + unsigned(random()) % 300;
+    // 25ms to 124ms delay before sending
+    uint32_t delay_ms = 25 + unsigned(random()) % 100;
     uint64_t time_send_us = now_us + delay_ms * 1000UL;
 
     // send vision position estimate message
