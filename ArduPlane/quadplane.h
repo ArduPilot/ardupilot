@@ -554,6 +554,7 @@ private:
         OPTION_MISSION_LAND_FW_APPROACH=(1<<4),
         OPTION_FS_QRTL=(1<<5),
         OPTION_IDLE_GOV_MANUAL=(1<<6),
+        OPTION_Q_ASSIST_FORCE_ENABLE=(1<<7),
     };
 
     AP_Float takeoff_failure_scalar;
