@@ -186,7 +186,7 @@ void AP_Button::do_functions(void)
         if (arming == nullptr) {
             gcs().send_text(MAV_SEVERITY_NOTICE, "Null Arming");
         } else {
-            const bool disarmed = arming->disarm(AP_Arming::Method::SCRIPTING);
+            const bool disarmed = arming->disarm();
             if (!disarmed) {
                 gcs().send_text(MAV_SEVERITY_NOTICE, "Disarm failed");
             }
