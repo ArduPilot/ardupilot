@@ -161,7 +161,7 @@ void AP_Button::send_report(void)
                                   (const char *)&packet);
 }
 
-void AP_Button::do_functions(void)
+void APButton::do_functions(void)
 {
 
     if (pin[0] != -1 && CHECK_BIT(last_mask, 0) == 0) {
