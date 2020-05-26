@@ -329,7 +329,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: quadplane options
     // @Description: This provides a set of additional control options for quadplanes. LevelTransition means that the wings should be held level to within LEVEL_ROLL_LIMIT degrees during transition to fixed wing flight, and the vehicle will not use the vertical lift motors to climb during the transition. If AllowFWTakeoff bit is not set then fixed wing takeoff on quadplanes will instead perform a VTOL takeoff. If AllowFWLand bit is not set then fixed wing land on quadplanes will instead perform a VTOL land. If respect takeoff frame is not set the vehicle will interpret all takeoff waypoints as an altitude above the corrent position. When Use QRTL is set it will replace QLAND with QRTL for failsafe actions when in VTOL modes.
-    // @Bitmask: 0:LevelTransition,1:AllowFWTakeoff,2:AllowFWLand,3:Respect takeoff frame types,4:Use a fixed wing approach for VTOL landings,5:Use QRTL instead of QLAND for failsafe when in VTOL modes,6:Use idle governor in MANUAL
+    // @Bitmask: 0:LevelTransition,1:AllowFWTakeoff,2:AllowFWLand,3:Respect takeoff frame types,4:Use a fixed wing approach for VTOL landings,5:Use QRTL instead of QLAND for failsafe when in VTOL modes,6:Use idle governor in MANUAL,7:QAssist force enabled
     AP_GROUPINFO("OPTIONS", 58, QuadPlane, options, 0),
 
     AP_SUBGROUPEXTENSION("",59, QuadPlane, var_info2),
@@ -758,7 +758,11 @@ bool QuadPlane::setup(void)
         }
     }
 
-    
+    // default QAssist state as set with Q_OPTIONS
+    if ((options & OPTION_Q_ASSIST_FORCE_ENABLE) != 0) {
+        q_assist_state = Q_ASSIST_STATE_ENUM::Q_ASSIST_FORCE;
+    }
+
     setup_defaults();
 
     AP_Param::convert_old_parameters(&q_conversion_table[0], ARRAY_SIZE(q_conversion_table));
