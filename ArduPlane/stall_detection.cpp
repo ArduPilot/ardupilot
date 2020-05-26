@@ -117,7 +117,7 @@ bool Plane::stall_detection_algorithm(bool allow_changing_state)
     stall_state.last_update_ms        = AP_HAL::millis();
     stall_state.last_limited_nav_roll = limited_nav_roll;
 
-    bool is_stalled = true;
+    int32_t is_stalled = 0;
 
     // check some generic things that are true for all aircraft types
     // ----------------
@@ -137,49 +137,49 @@ bool Plane::stall_detection_algorithm(bool allow_changing_state)
     // ----------------
     // TECS is not able to hold the desired altitude
     const bool tecs_bad_descent = SpdHgt_Controller->get_flag_badDescent();
-    is_stalled &= stall_detection_single_check(STALL_DETECT_BAD_DESCENT, tecs_bad_descent);
+    is_stalled |= stall_detection_single_check(STALL_DETECT_BAD_DESCENT, tecs_bad_descent);
 
 
     // we're sinking faster than a controlled sink is allowed to be
     const float sink_rate = SpdHgt_Controller->get_max_sinkrate();
-    is_stalled &= stall_detection_single_check(STALL_DETECT_SINKRATE_2X_MAX, auto_state.sink_rate > (sink_rate * 2));
-    is_stalled &= stall_detection_single_check(STALL_DETECT_SINKRATE_4X_MAX, auto_state.sink_rate > (sink_rate * 4));
+    is_stalled |= stall_detection_single_check(STALL_DETECT_SINKRATE_2X_MAX, auto_state.sink_rate > (sink_rate * 2));
+    is_stalled |= stall_detection_single_check(STALL_DETECT_SINKRATE_4X_MAX, auto_state.sink_rate > (sink_rate * 4));
 
 
     // we're rolling faster than a controlled roll is allowed to be
     const uint32_t roll_error_cd = labs(100.0f*limited_nav_roll - ahrs.roll_sensor);
-    is_stalled &= stall_detection_single_check(STALL_DETECT_BAD_ROLL_20DEG, roll_error_cd > 2000);
-    is_stalled &= stall_detection_single_check(STALL_DETECT_BAD_ROLL_30DEG, roll_error_cd > 3000);
+    is_stalled |= stall_detection_single_check(STALL_DETECT_BAD_ROLL_20DEG, roll_error_cd > 2000);
+    is_stalled |= stall_detection_single_check(STALL_DETECT_BAD_ROLL_30DEG, roll_error_cd > 3000);
 
 
     // we're pitching faster than a controlled pitch is allowed to be
     const uint32_t pitch_error_cd = labs(labs(nav_pitch_cd) - labs(ahrs.pitch_sensor));
-    is_stalled &= stall_detection_single_check(STALL_DETECT_BAD_PITCH_10DEG, pitch_error_cd > 1000);
-    is_stalled &= stall_detection_single_check(STALL_DETECT_BAD_PITCH_20DEG, pitch_error_cd > 2000);
-    is_stalled &= stall_detection_single_check(STALL_DETECT_BAD_PITCH_30DEG, pitch_error_cd > 3000);
-    is_stalled &= stall_detection_single_check(STALL_DETECT_BAD_PITCH_40DEG, pitch_error_cd > 4000);
+    is_stalled |= stall_detection_single_check(STALL_DETECT_BAD_PITCH_10DEG, pitch_error_cd > 1000);
+    is_stalled |= stall_detection_single_check(STALL_DETECT_BAD_PITCH_20DEG, pitch_error_cd > 2000);
+    is_stalled |= stall_detection_single_check(STALL_DETECT_BAD_PITCH_30DEG, pitch_error_cd > 3000);
+    is_stalled |= stall_detection_single_check(STALL_DETECT_BAD_PITCH_40DEG, pitch_error_cd > 4000);
 
 
     // We don't use plane.altitude_error because the target component of this is not
     // limited by the maximum climb/sink rates.
     // positive plane.altitude_error_cm means too low
     const float altitude_error = SpdHgt_Controller->get_altitude_error();
-    is_stalled &= stall_detection_single_check(STALL_DETECT_BAD_ALT_10m, altitude_error > 10.0f);
-    is_stalled &= stall_detection_single_check(STALL_DETECT_BAD_ALT_20m, altitude_error > 20.0f);
-    is_stalled &= stall_detection_single_check(STALL_DETECT_BAD_ALT_40m, altitude_error > 40.0f);
-    is_stalled &= stall_detection_single_check(STALL_DETECT_BAD_ALT_60m, altitude_error > 60.0f);
+    is_stalled |= stall_detection_single_check(STALL_DETECT_BAD_ALT_10m, altitude_error > 10.0f);
+    is_stalled |= stall_detection_single_check(STALL_DETECT_BAD_ALT_20m, altitude_error > 20.0f);
+    is_stalled |= stall_detection_single_check(STALL_DETECT_BAD_ALT_40m, altitude_error > 40.0f);
+    is_stalled |= stall_detection_single_check(STALL_DETECT_BAD_ALT_60m, altitude_error > 60.0f);
 
-    return is_stalled;
+    stall_state.algorithm_output_if_everything_enabled = is_stalled;
+
+    return (is_stalled & g2.stall_detection_bitmask) == g2.stall_detection_bitmask;
 }
 
-bool Plane::stall_detection_single_check(const uint32_t bitmask, const bool check)
+int32_t Plane::stall_detection_single_check(const uint32_t bitmask, const bool check)
 {
     if (check) {
-        stall_state.algorithm_output_if_everything_enabled |= bitmask;
-    } else {
-        stall_state.algorithm_output_if_everything_enabled &= !bitmask;
+        return bitmask;
     }
 
-    return (g2.stall_detection_bitmask & bitmask) != 0;
+    return 0;
 }
 

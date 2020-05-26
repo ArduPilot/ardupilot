@@ -1018,7 +1018,7 @@ private:
     void stall_detection_update();
     void stall_detection_log();
     bool stall_detection_algorithm(bool allow_changing_state);
-    bool stall_detection_single_check(const uint32_t bitmask, const bool check);
+    int32_t stall_detection_single_check(const uint32_t bitmask, const bool check);
     void calc_throttle();
     void calc_nav_roll();
     void calc_nav_pitch();
