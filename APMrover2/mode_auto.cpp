@@ -449,10 +449,6 @@ void ModeAuto::exit_mission()
         return;
     }
 
-    if (g2.mis_done_behave == MIS_DONE_BEHAVE_MANUAL && rover.set_mode(rover.mode_manual, ModeReason::MISSION_END)) {
-        return;
-    }
-
     start_stop();
 }
 
