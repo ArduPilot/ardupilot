@@ -111,16 +111,32 @@ void QuadPlane::tailsitter_output(void)
         }
     }
 
-    // handle VTOL modes
+    // handle Copter controller
     // the MultiCopter rate controller has already been run in an earlier call
     // to motors_output() from quadplane.update(), unless we are in assisted flight
-    if (assisted_flight) {
+    if (assisted_flight && tailsitter_transition_fw_complete()) {
         hold_stabilize(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * 0.01f);
         motors_output(true);
+
+        if ((options & OPTION_TAILSIT_Q_ASSIST_MOTORS_ONLY) != 0) {
+            // only use motors for Q assist, control surfaces remain under plane control
+            // zero copter I terms and use plane
+            attitude_control->reset_rate_controller_I_terms();
+
+            // output tilt motors
+            if (tailsitter.vectored_hover_gain > 0) {
+                SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorLeft) * tailsitter.vectored_hover_gain);
+                SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorRight) * tailsitter.vectored_hover_gain);
+            }
+
+            // skip remainder of the function that overwrites plane control surface outputs with copter
+            return;
+        }
     } else {
         motors_output(false);
     }
 
+    // In full Q assist it is better to use cotper I and zero plane
     plane.pitchController.reset_I();
     plane.rollController.reset_I();
 
