@@ -225,7 +225,7 @@ uint16_t AP_Logger_File::find_oldest_log()
     // relying on the min_avail_space_percent feature we could end up
     // doing a *lot* of asprintf()s and stat()s
     EXPECT_DELAY_MS(3000);
-    DIR *d = AP::FS().opendir(_log_directory);
+    auto *d = AP::FS().opendir(_log_directory);
     if (d == nullptr) {
         // SD card may have died?  On linux someone may have rm-rf-d
         return 0;
@@ -301,12 +301,12 @@ void AP_Logger_File::Prep_MinSpace()
         }
         if (count++ > MAX_LOG_FILES+10) {
             // *way* too many deletions going on here.  Possible internal error.
-            AP::internalerror().error(AP_InternalError::error_t::logger_too_many_deletions);
+            INTERNAL_ERROR(AP_InternalError::error_t::logger_too_many_deletions);
             break;
         }
         char *filename_to_remove = _log_file_name(log_to_remove);
         if (filename_to_remove == nullptr) {
-            AP::internalerror().error(AP_InternalError::error_t::logger_bad_getfilename);
+            INTERNAL_ERROR(AP_InternalError::error_t::logger_bad_getfilename);
             break;
         }
         if (file_exists(filename_to_remove)) {
@@ -767,6 +767,10 @@ void AP_Logger_File::stop_logging(void)
 
 void AP_Logger_File::PrepForArming()
 {
+    if (_rotate_pending) {
+        _rotate_pending = false;
+        stop_logging();
+    }
     if (logging_started()) {
         return;
     }
@@ -778,15 +782,23 @@ void AP_Logger_File::PrepForArming()
  */
 void AP_Logger_File::start_new_log(void)
 {
-    stop_logging();
-
-    start_new_log_reset_variables();
-
     if (_open_error) {
         // we have previously failed to open a file - don't try again
         // to prevent us trying to open files while in flight
         return;
     }
+
+    // set _open_error here to avoid infinite recursion.  Simply
+    // writing a prioritised block may try to open a log - which means
+    // if anything in the start_new_log path does a gcs().send_text()
+    // (for example), you will end up recursing if we don't take
+    // precautions.  We will reset _open_error if we actually manage
+    // to open the log...
+    _open_error = true;
+
+    stop_logging();
+
+    start_new_log_reset_variables();
 
     if (_read_fd != -1) {
         AP::FS().close(_read_fd);
@@ -795,7 +807,6 @@ void AP_Logger_File::start_new_log(void)
 
     if (disk_space_avail() < _free_space_min_avail && disk_space() > 0) {
         hal.console->printf("Out of space for logging\n");
-        _open_error = true;
         return;
     }
 
@@ -808,7 +819,6 @@ void AP_Logger_File::start_new_log(void)
         log_num = 1;
     }
     if (!write_fd_semaphore.take(1)) {
-        _open_error = true;
         return;
     }
     if (_write_filename) {
@@ -817,7 +827,6 @@ void AP_Logger_File::start_new_log(void)
     }
     _write_filename = _log_file_name(log_num);
     if (_write_filename == nullptr) {
-        _open_error = true;
         write_fd_semaphore.give();
         return;
     }
@@ -834,7 +843,6 @@ void AP_Logger_File::start_new_log(void)
 
     if (_write_fd == -1) {
         _initialised = false;
-        _open_error = true;
         write_fd_semaphore.give();
         int saved_errno = errno;
         ::printf("Log open fail for %s - %s\n",
@@ -851,13 +859,10 @@ void AP_Logger_File::start_new_log(void)
     // now update lastlog.txt with the new log number
     char *fname = _lastlog_file_name();
 
-    // we avoid fopen()/fprintf() here as it is not available on as many
-    // systems as open/write
     EXPECT_DELAY_MS(3000);
     int fd = AP::FS().open(fname, O_WRONLY|O_CREAT);
     free(fname);
     if (fd == -1) {
-        _open_error = true;
         return;
     }
 
@@ -868,9 +873,9 @@ void AP_Logger_File::start_new_log(void)
     AP::FS().close(fd);
 
     if (written < to_write) {
-        _open_error = true;
         return;
     }
+    _open_error = false;
 
     return;
 }
@@ -895,7 +900,7 @@ void AP_Logger_File::flush(void)
         }
         write_fd_semaphore.give();
     } else {
-        AP::internalerror().error(AP_InternalError::error_t::logger_flushing_without_sem);
+        INTERNAL_ERROR(AP_InternalError::error_t::logger_flushing_without_sem);
     }
 }
 #else

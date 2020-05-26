@@ -151,6 +151,10 @@ public:
         k_thrust_out            = 126,
         k_yaw_out               = 127,
         k_wingsail_elevator     = 128,
+        k_ProfiLED_1            = 129,
+        k_ProfiLED_2            = 130,
+        k_ProfiLED_3            = 131,
+        k_ProfiLED_Clock        = 132,
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 
@@ -312,6 +316,9 @@ public:
 
     // set output value for a specific function channel as a pwm value
     static void set_output_pwm_chan(uint8_t chan, uint16_t value);
+
+    // set output value for a specific function channel as a pwm value for specified override time in ms
+    static void set_output_pwm_chan_timeout(uint8_t chan, uint16_t value, uint16_t timeout_ms);
 
     // set output value for a function channel as a scaled value. This
     // calls calc_pwm() to also set the pwm value
@@ -527,6 +534,9 @@ private:
 
     SRV_Channel obj_channels[NUM_SERVO_CHANNELS];
 
+    // override loop counter
+    static uint16_t override_counter[NUM_SERVO_CHANNELS];
+
     static struct srv_function {
         // mask of what channels this applies to
         SRV_Channel::servo_mask_t channel_mask;
@@ -544,4 +554,7 @@ private:
     }
 
     static bool emergency_stop;
+
+    // semaphore for multi-thread use of override_counter array
+    HAL_Semaphore override_counter_sem;
 };

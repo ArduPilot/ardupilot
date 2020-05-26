@@ -13,6 +13,27 @@ using namespace HALSITL;
 
 extern const AP_HAL::HAL& hal;
 
+/*
+  emulate flash sector sizes
+ */
+#ifndef HAL_FLASH_SECTOR_SIZE
+#if HAL_STORAGE_SIZE <= 16384
+#define HAL_FLASH_SECTOR_SIZE (16*1024)
+#elif HAL_STORAGE_SIZE <= 32768
+#define HAL_FLASH_SECTOR_SIZE (32*1024)
+#else
+#define HAL_FLASH_SECTOR_SIZE (128*1024)
+#endif
+#endif
+
+#ifndef HAL_FLASH_MIN_WRITE_SIZE
+#define HAL_FLASH_MIN_WRITE_SIZE 1
+#endif
+
+#ifndef HAL_FLASH_ALLOW_UPDATE
+#define HAL_FLASH_ALLOW_UPDATE 1
+#endif
+
 void Storage::_storage_open(void)
 {
     if (_initialised) {
@@ -183,7 +204,7 @@ static int flash_fd = -1;
 
 static uint32_t sitl_flash_getpageaddr(uint32_t page)
 {
-    return page * HAL_STORAGE_SIZE;
+    return page * HAL_FLASH_SECTOR_SIZE;
 }
 
 static void sitl_flash_open(void)
@@ -195,10 +216,10 @@ static void sitl_flash_open(void)
             if (flash_fd == -1) {
                 AP_HAL::panic("Failed to open flash.dat");
             }
-            if (ftruncate(flash_fd, 2*HAL_STORAGE_SIZE) != 0) {
+            if (ftruncate(flash_fd, 2*HAL_FLASH_SECTOR_SIZE) != 0) {
                 AP_HAL::panic("Failed to create flash.dat");
             }
-            uint8_t fill[HAL_STORAGE_SIZE*2];
+            uint8_t fill[HAL_FLASH_SECTOR_SIZE*2];
             memset(fill, 0xff, sizeof(fill));
             pwrite(flash_fd, fill, sizeof(fill), 0);
         }
@@ -210,14 +231,38 @@ static bool sitl_flash_write(uint32_t addr, const uint8_t *data, uint32_t length
     sitl_flash_open();
     uint8_t old[length];
     if (pread(flash_fd, old, length, addr) != length) {
-        AP_HAL::panic("Failed to read flash.dat");
+        AP_HAL::panic("Failed to read flash.dat at %u len=%u", unsigned(addr), unsigned(length));
     }
+#if defined(HAL_FLASH_MIN_WRITE_SIZE) && HAL_FLASH_MIN_WRITE_SIZE == 32
+    if ((length % HAL_FLASH_MIN_WRITE_SIZE) != 0 || (addr % HAL_FLASH_MIN_WRITE_SIZE) != 0) {
+        AP_HAL::panic("Attempt to write flash at %u length %u\n", addr, length);
+    }
+    // emulate H7 requirement that writes be to untouched bytes
+    for (uint32_t i=0; i<length; i+= 32) {
+        if (memcmp(&old[i], &data[i], 32) == 0) {
+            continue;
+        }
+        for (uint32_t j=0; j<32; j++) {
+            if (old[i+j] != 0xFF) {
+                AP_HAL::panic("Attempt to write modified flash at %u length %u\n", addr+i+j, length);
+            }
+        }
+    }
+#endif
     // check that we are only ever clearing bits (real flash storage can only ever clear bits,
     // except for an erase
     for (uint32_t i=0; i<length; i++) {
+#if HAL_FLASH_ALLOW_UPDATE
+        // emulating flash that allows setting any bit from 1 to 0
         if (data[i] & ~old[i]) {
             AP_HAL::panic("Attempt to set flash byte 0x%02x from 0x%02x at %u\n", data[i], old[i], addr+i);
         }
+#else
+        // emulating flash that only allows update if whole byte is 0xFF
+        if (data[i] != old[i] && old[i] != 0xFF) {
+            AP_HAL::panic("Attempt to set flash byte 0x%02x from 0x%02x at %u\n", data[i], old[i], addr+i);
+        }
+#endif
     }
     return pwrite(flash_fd, data, length, addr) == length;
 }
@@ -230,10 +275,10 @@ static bool sitl_flash_read(uint32_t addr, uint8_t *data, uint32_t length)
 
 static bool sitl_flash_erasepage(uint32_t page)
 {
-    uint8_t fill[HAL_STORAGE_SIZE];
+    uint8_t fill[HAL_FLASH_SECTOR_SIZE];
     memset(fill, 0xff, sizeof(fill));
     sitl_flash_open();
-    bool ret = pwrite(flash_fd, fill, sizeof(fill), page * HAL_STORAGE_SIZE) == sizeof(fill);
+    bool ret = pwrite(flash_fd, fill, sizeof(fill), page * HAL_FLASH_SECTOR_SIZE) == sizeof(fill);
     printf("erase %u -> %u\n", page, ret);
     return ret;
 }

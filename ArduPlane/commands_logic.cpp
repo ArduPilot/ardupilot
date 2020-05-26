@@ -15,9 +15,6 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 
     // special handling for nav vs non-nav commands
     if (AP_Mission::is_nav_cmd(cmd)) {
-        // set land_complete to false to stop us zeroing the throttle
-        auto_state.sink_rate = 0;
-
         // set takeoff_complete to true so we don't add extra elevator
         // except in a takeoff
         auto_state.takeoff_complete = true;
@@ -1074,47 +1071,9 @@ bool Plane::verify_loiter_heading(bool init)
         return true;
     }
 
-    if (next_WP_loc.get_distance(next_nav_cmd.content.location) < abs(aparm.loiter_radius)) {
-        /* Whenever next waypoint is within the loiter radius,
-           maintaining loiter would prevent us from ever pointing toward the next waypoint.
-           Hence break out of loiter immediately
-         */
-        return true;
-    }
-
-    // Bearing in degrees
-    int32_t bearing_cd = current_loc.get_bearing_to(next_nav_cmd.content.location);
-
-    // get current heading.
-    int32_t heading_cd = gps.ground_course_cd();
-
-    int32_t heading_err_cd = wrap_180_cd(bearing_cd - heading_cd);
-
     if (init) {
         loiter.sum_cd = 0;
     }
 
-    /*
-      Check to see if the the plane is heading toward the land
-      waypoint. We use 20 degrees (+/-10 deg) of margin so that
-      we can handle 200 degrees/second of yaw.
-
-      After every full circle, extend acceptance criteria to ensure
-      aircraft will not loop forever in case high winds are forcing
-      it beyond 200 deg/sec when passing the desired exit course
-    */
-
-    // Use integer division to get discrete steps
-    int32_t expanded_acceptance = 1000 * (loiter.sum_cd / 36000);
-
-    if (labs(heading_err_cd) <= 1000 + expanded_acceptance) {
-        // Want to head in a straight line from _here_ to the next waypoint instead of center of loiter wp
-
-        // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
-        if (next_WP_loc.loiter_xtrack) {
-            next_WP_loc = current_loc;
-        }
-        return true;
-    }
-    return false;
+    return plane.mode_loiter.isHeadingLinedUp(next_WP_loc, next_nav_cmd.content.location);
 }

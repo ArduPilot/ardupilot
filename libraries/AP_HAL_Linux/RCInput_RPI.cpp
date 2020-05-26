@@ -31,6 +31,8 @@
 #define debug(fmt, args ...)
 #endif
 
+#define PAGE_SIZE           (4*1024)
+
 //Parametres
 #define RCIN_RPI_BUFFER_LENGTH   4
 #define RCIN_RPI_SAMPLE_FREQ     125
@@ -44,9 +46,9 @@
 // Each gpio stands for a rcinput channel,
 // the first one in RcChnGpioTbl is channel 1 in receiver
 static uint16_t RcChnGpioTbl[RCIN_RPI_CHN_NUM] = {
-    RPI_GPIO_5,  RPI_GPIO_6,  RPI_GPIO_12,
-    RPI_GPIO_13, RPI_GPIO_19, RPI_GPIO_20,
-    RPI_GPIO_21, RPI_GPIO_26
+    RPI_GPIO_<5>(),  RPI_GPIO_<6>(),  RPI_GPIO_<12>(),
+    RPI_GPIO_<13>(), RPI_GPIO_<19>(), RPI_GPIO_<20>(),
+    RPI_GPIO_<21>(), RPI_GPIO_<26>()
 };
 #else
 #define RCIN_RPI_SIG_HIGH        1
@@ -56,7 +58,7 @@ static uint16_t RcChnGpioTbl[RCIN_RPI_CHN_NUM] = {
 #define PAGE_SIZE           (4*1024)
     NAVIO_GPIO_PPM_IN
 #else
-    RPI_GPIO_4
+    RPI_GPIO_<4>()
 #endif
 };
 #endif // CONFIG_HAL_BOARD_SUBTYPE

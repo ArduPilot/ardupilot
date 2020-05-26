@@ -46,12 +46,12 @@ _waf()
     for i in $( seq 0 $lim )
     do
         if [[ $opts == *"${COMP_WORDS[i]}"* ]]; then
-          opts=${opts/" ${COMP_WORDS[i]}"}
-          opts=${opts/" --${COMP_WORDS[i]}"}
+          opts=${opts//${COMP_WORDS[i]}/}
+          opts=${opts//--${COMP_WORDS[i]}/}
         fi
     done
 
-    case $prev in 
+    case $prev in
       --board)
         opts=$(./waf list_boards | sed -e '$d')
         COMPREPLY=($(compgen -W "${opts}" -- ${cur}))

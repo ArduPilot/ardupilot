@@ -21,6 +21,7 @@ import tempfile
 import textwrap
 import time
 import shlex
+import binascii
 
 from pymavlink import mavextra
 from pysim import vehicleinfo
@@ -30,6 +31,8 @@ windowID = []
 
 autotest_dir = os.path.dirname(os.path.realpath(__file__))
 root_dir = os.path.realpath(os.path.join(autotest_dir, '../..'))
+
+os.environ["SIM_VEHICLE_SESSION"] = binascii.hexlify(os.urandom(8)).decode()
 
 class CompatError(Exception):
     """A custom exception class to hold state if we encounter the parse
@@ -145,7 +148,7 @@ def cygwin_pidof(proc_name):
     pipe = subprocess.Popen("ps -ea | grep " + proc_name,
                             shell=True,
                             stdout=subprocess.PIPE)
-    output_lines = pipe.stdout.read().replace("\r", "").split("\n")
+    output_lines = pipe.stdout.read().decode('utf-8').replace("\r", "").split("\n")
     ret = pipe.wait()
     pids = []
     if ret != 0:
@@ -198,11 +201,12 @@ def kill_tasks_psutil(victims):
     use this routine"""
     import psutil
     for proc in psutil.process_iter():
-        pdict = proc.as_dict(attrs=['name', 'status'])
+        pdict = proc.as_dict(attrs=['environ', 'status'])
         if pdict['status'] == psutil.STATUS_ZOMBIE:
             continue
-        if pdict['name'] in victims:
-            proc.kill()
+        if pdict['environ'] is not None:
+            if pdict['environ'].get('SIM_VEHICLE_SESSION') == os.environ['SIM_VEHICLE_SESSION']:
+                proc.kill()
 
 
 def kill_tasks_pkill(victims):
@@ -227,13 +231,16 @@ def kill_tasks():
             'ArduPlane.elf',
             'ArduCopter.elf',
             'ArduSub.elf',
-            'APMrover2.elf',
+            'Rover.elf',
             'AntennaTracker.elf',
             'JSBSIm.exe',
             'MAVProxy.exe',
             'runsim.py',
             'AntennaTracker.elf',
             'scrimmage'
+            'ardurover',
+            'arduplane',
+            'arducopter'
         }
         for vehicle in vinfo.options:
             for frame in vinfo.options[vehicle]["frames"]:
@@ -298,6 +305,15 @@ def do_build_waf(opts, frame_options):
     if opts.flash_storage:
         cmd_configure.append("--sitl-flash-storage")
 
+    if opts.math_check_indexes:
+        cmd_configure.append("--enable-math-check-indexes")
+
+    if opts.disable_ekf2:
+        cmd_configure.append("--disable-ekf2")
+
+    if opts.disable_ekf3:
+        cmd_configure.append("--disable-ekf3")
+        
     pieces = [shlex.split(x) for x in opts.waf_configure_args]
     for piece in pieces:
         cmd_configure.extend(piece)
@@ -395,25 +411,31 @@ def get_user_locations_path():
     return user_locations_path
 
 
-def find_new_spawn(loc, file_path):
-    (lat, lon, alt, heading) = loc.split(",")
+def find_offsets(instances, file_path):
+    offsets = {}
     swarminit_filepath = os.path.join(autotest_dir, "swarminit.txt")
-    for path2 in [file_path, swarminit_filepath]:
-        if os.path.isfile(path2):
-            with open(path2, 'r') as swd:
-                next(swd)
-                for lines in swd:
-                    if len(lines) == 0:
+    comment_regex = re.compile("\s*#.*")
+    for path in [file_path, swarminit_filepath]:
+        if os.path.isfile(path):
+            with open(path, 'r') as fd:
+                for line in fd:
+                    line = re.sub(comment_regex, "", line)
+                    line = line.rstrip("\n")
+                    if len(line) == 0:
                         continue
-                    (instance, offset) = lines.split("=")
-                    if ((int)(instance) == (int)(cmd_opts.instance)):
-                        (x, y, z, head) = offset.split(",")
-                        g = mavextra.gps_offset((float)(lat), (float)(lon), (float)(x), (float)(y))
-                        loc = str(g[0])+","+str(g[1])+","+str(alt+z)+","+str(head)
-                        return loc
-        g = mavextra.gps_newpos((float)(lat), (float)(lon), 90, 20*(int)(cmd_opts.instance))
-        loc = str(g[0])+","+str(g[1])+","+str(alt)+","+str(heading)
-        return loc
+                    (instance, offset) = line.split("=")
+                    instance = (int)(instance)
+                    if (instance not in offsets) and (instance in instances):
+                        offsets[instance] = [ (float)(x) for x in offset.split(",") ]
+                        continue
+                    if len(offsets) == len(instances):
+                        return offsets
+        if len(offsets) == len(instances):
+            return offsets
+    for instance in instances:
+        if instance not in offsets:
+            offsets[instance] = [90.0, 20.0 * instance, 0.0, None]
+    return offsets
 
 
 def find_location_by_name(locname):
@@ -433,12 +455,22 @@ def find_location_by_name(locname):
                     continue
                 (name, loc) = line.split("=")
                 if name == locname:
-                    if cmd_opts.swarm is not None:
-                        loc = find_new_spawn(loc, cmd_opts.swarm)
-                    return loc
+                    return [ (float)(x) for x in loc.split(",") ]
 
     print("Failed to find location (%s)" % cmd_opts.location)
     sys.exit(1)
+
+
+def find_spawns(loc, offsets):
+    lat, lon, alt, heading = loc
+    spawns = {}
+    for k in offsets:
+        (x, y, z, head) = offsets[k]
+        if head is None:
+            head = heading
+        g = mavextra.gps_offset(lat, lon, x, y)
+        spawns[k] = ",".join([str(g[0]), str(g[1]), str(alt+z), str(head)])
+    return spawns
 
 
 def progress_cmd(what, cmd):
@@ -467,7 +499,7 @@ def run_cmd_blocking(what, cmd, quiet=False, check=False, **kw):
     return ret
 
 
-def run_in_terminal_window(name, cmd):
+def run_in_terminal_window(name, cmd, **kw):
 
     """Execute the run_in_terminal_window.sh command for cmd"""
     global windowID
@@ -477,7 +509,7 @@ def run_in_terminal_window(name, cmd):
 
     if under_macos() and os.environ.get('DISPLAY'):
         # on MacOS record the window IDs so we can close them later
-        out = subprocess.Popen(runme, stdout=subprocess.PIPE).communicate()[0]
+        out = subprocess.Popen(runme, stdout=subprocess.PIPE, **kw).communicate()[0]
         out = out.decode('utf-8')
         p = re.compile('tab 1 of window id (.*)')
 
@@ -496,7 +528,7 @@ def run_in_terminal_window(name, cmd):
         else:
             progress("Cannot find %s process terminal" % name)
     else:
-        subprocess.Popen(runme)
+        subprocess.Popen(runme, **kw)
 
 
 tracker_uarta = None  # blemish
@@ -527,7 +559,7 @@ def start_antenna_tracker(opts):
     os.chdir(oldpwd)
 
 
-def start_vehicle(binary, opts, stuff, loc=None):
+def start_vehicle(binary, opts, stuff, spawns=None):
     """Run the ArduPilot binary"""
 
     cmd_name = opts.vehicle
@@ -577,9 +609,6 @@ def start_vehicle(binary, opts, stuff, loc=None):
 
     cmd.append(binary)
     cmd.append("-S")
-    cmd.append("-I" + str(opts.instance))
-    if loc is not None:
-        cmd.extend(["--home", loc])
     if opts.wipe_eeprom:
         cmd.append("-w")
     cmd.extend(["--model", stuff["model"]])
@@ -613,7 +642,14 @@ def start_vehicle(binary, opts, stuff, loc=None):
     if opts.mcast:
         cmd.extend(["--uartA mcast:"])
 
-    run_in_terminal_window(cmd_name, cmd)
+    old_dir = os.getcwd()
+    for i, i_dir in zip(instances, instance_dir):
+        c = ["-I" + str(i)]
+        if spawns is not None:
+            c.extend(["--home", spawns[i]])
+        os.chdir(i_dir)
+        run_in_terminal_window(cmd_name, cmd + c)
+    os.chdir(old_dir)
 
 
 def start_mavproxy(opts, stuff):
@@ -629,26 +665,6 @@ def start_mavproxy(opts, stuff):
         cmd.append("mavproxy.exe")
     else:
         cmd.append("mavproxy.py")
-
-    if opts.hil:
-        cmd.extend(["--load-module", "HIL"])
-    else:
-        if opts.mcast:
-            cmd.extend(["--master", "mcast:"])
-        else:
-            cmd.extend(["--master", mavlink_port])
-        if stuff["sitl-port"] and not opts.no_rcin:
-            cmd.extend(["--sitl", simout_port])
-
-    if not opts.no_extra_ports:
-        ports = [p + 10 * cmd_opts.instance for p in [14550, 14551]]
-        for port in ports:
-            if os.path.isfile("/ardupilot.vagrant"):
-                # We're running inside of a vagrant guest; forward our
-                # mavlink out to the containing host OS
-                cmd.extend(["--out", "10.0.2.2:" + str(port)])
-            else:
-                cmd.extend(["--out", "127.0.0.1:" + str(port)])
 
     if opts.tracker:
         cmd.extend(["--load-module", "tracker"])
@@ -730,8 +746,36 @@ def start_mavproxy(opts, stuff):
     if old is not None:
         env['PYTHONPATH'] += os.path.pathsep + old
 
-    run_cmd_blocking("Run MavProxy", cmd, env=env)
-    progress("MAVProxy exited")
+    old_dir = os.getcwd()
+    for i, i_dir in zip(instances, instance_dir):
+        c = []
+
+        if not opts.no_extra_ports:
+            ports = [p + 10 * i for p in [14550, 14551]]
+            for port in ports:
+                if os.path.isfile("/ardupilot.vagrant"):
+                    # We're running inside of a vagrant guest; forward our
+                    # mavlink out to the containing host OS
+                    c.extend(["--out", "10.0.2.2:" + str(port)])
+                else:
+                    c.extend(["--out", "127.0.0.1:" + str(port)])
+
+        if opts.hil:
+            c.extend(["--load-module", "HIL"])
+        else:
+            if opts.mcast:
+                c.extend(["--master", "mcast:"])
+            else:
+                c.extend(["--master", "tcp:127.0.0.1:" + str(5760 + 10 * i)])
+            if stuff["sitl-port"] and not opts.no_rcin:
+                c.extend(["--sitl", "127.0.0.1:" + str(5501 + 10 * i)])
+
+        os.chdir(i_dir)
+        if i == instances[-1]:
+            run_cmd_blocking("Run MavProxy", cmd + c, env=env)
+        else:
+            run_in_terminal_window("Run MavProxy", cmd + c, env=env)
+    os.chdir(old_dir)
 
 
 vehicle_options_string = '|'.join(vinfo.options.keys())
@@ -756,11 +800,15 @@ parser = CompatOptionParser(
     "you are simulating, for example, start in the ArduPlane directory to "
     "simulate ArduPlane")
 
+vehicle_choices = list(vinfo.options.keys())
+# add an alias for people with too much m
+vehicle_choices.append("APMrover2")
+
 parser.add_option("-v", "--vehicle",
                   type='choice',
                   default=None,
                   help="vehicle type (%s)" % vehicle_options_string,
-                  choices=list(vinfo.options.keys()))
+                  choices=vehicle_choices)
 parser.add_option("-f", "--frame", type='string', default=None, help="""set vehicle frame type
 
 %s""" % (generate_frame_help()))
@@ -801,6 +849,11 @@ group_build.add_option("-s", "--build-system",
                        type='choice',
                        choices=["make", "waf"],
                        help="build system to use")
+group_build.add_option("--enable-math-check-indexes",
+                       default=False,
+                       action="store_true",
+                       dest="math_check_indexes",
+                       help="enable checking of math indexes")
 group_build.add_option("", "--rebuild-on-failure",
                        dest="rebuild_on_failure",
                        action='store_true',
@@ -825,6 +878,14 @@ group_sim.add_option("-I", "--instance",
                      default=0,
                      type='int',
                      help="instance of simulator")
+group_sim.add_option("-n", "--count",
+                     type='int',
+                     default=1,
+                     help="vehicle count; if this is specified, -I is used as a base-value")
+group_sim.add_option("-i", "--instances",
+                     default=None,
+                     type='string',
+                     help="a space delimited list of instances to spawn; if specified, overrides -I and -n.")
 group_sim.add_option("-V", "--valgrind",
                      action='store_true',
                      default=False,
@@ -893,6 +954,12 @@ group_sim.add_option("-m", "--mavproxy-args",
                      default=None,
                      type='string',
                      help="additional arguments to pass to mavproxy.py")
+group_sim.add_option("", "--scrimmage-args",
+                     default=None,
+                     type='string',
+                     help="arguments used to populate SCRIMMAGE mission (comma-separated). "
+                     "Currently visual_model, motion_model, and terrain are supported. "
+                     "Usage: [instance=]argument=value...")
 group_sim.add_option("", "--strace",
                      action='store_true',
                      default=False,
@@ -949,6 +1016,12 @@ group_sim.add_option("-Z", "--swarm",
 group_sim.add_option("--flash-storage",
                      action='store_true',
                      help="enable use of flash storage emulation")
+group_sim.add_option("--disable-ekf2",
+                     action='store_true',
+                     help="disable EKF2 in build")
+group_sim.add_option("--disable-ekf3",
+                     action='store_true',
+                     help="disable EKF3 in build")
 parser.add_option_group(group_sim)
 
 
@@ -1023,6 +1096,14 @@ if (cmd_opts.gdb or cmd_opts.gdb_stopped) and (cmd_opts.lldb or cmd_opts.lldb_st
     print("May not use lldb with gdb")
     sys.exit(1)
 
+if cmd_opts.instance < 0:
+    print("May not specify a negative instance ID")
+    sys.exit(1)
+
+if cmd_opts.count < 1:
+    print("May not specify a count less than 1")
+    sys.exit(1)
+
 if cmd_opts.strace and cmd_opts.valgrind:
     print("valgrind and strace almost certainly not a good idea")
 
@@ -1046,6 +1127,16 @@ if cmd_opts.vehicle not in vinfo.options:
             break
         cwd = os.path.dirname(cwd)
 
+# map from some vehicle aliases back to canonical names.  APMrover2
+# was the old name / directory name for Rover.
+vehicle_map = {
+    "APMrover2": "Rover",
+}
+if cmd_opts.vehicle in vehicle_map:
+    progress("%s is now known as %s" %
+             (cmd_opts.vehicle, vehicle_map[cmd_opts.vehicle]))
+    cmd_opts.vehicle = vehicle_map[cmd_opts.vehicle]
+
 # try to validate vehicle
 if cmd_opts.vehicle not in vinfo.options:
     progress('''
@@ -1059,10 +1150,6 @@ You could also try changing directory to e.g. the ArduCopter subdirectory
 if cmd_opts.frame is None:
     cmd_opts.frame = vinfo.options[cmd_opts.vehicle]["default_frame"]
 
-# setup ports for this instance
-mavlink_port = "tcp:127.0.0.1:" + str(5760 + 10 * cmd_opts.instance)
-simout_port = "127.0.0.1:" + str(5501 + 10 * cmd_opts.instance)
-
 frame_infos = vinfo.options_for_frame(cmd_opts.frame,
                                       cmd_opts.vehicle,
                                       cmd_opts)
@@ -1072,6 +1159,18 @@ if not os.path.exists(vehicle_dir):
     print("vehicle directory (%s) does not exist" % (vehicle_dir,))
     sys.exit(1)
 
+if cmd_opts.instances is not None:
+    instances = set()
+    for i in cmd_opts.instances.split(' '):
+        i = (int)(i)
+        if i < 0:
+            print("May not specify a negative instance ID")
+            sys.exit(1)
+        instances.add(i)
+    instances = sorted(instances) # to list
+else:
+    instances = range(cmd_opts.instance, cmd_opts.instance + cmd_opts.count)
+
 if not cmd_opts.hil:
     if cmd_opts.instance == 0:
         kill_tasks()
@@ -1080,7 +1179,7 @@ if cmd_opts.tracker:
     start_antenna_tracker(cmd_opts)
 
 if cmd_opts.custom_location:
-    location = cmd_opts.custom_location
+    location = [ (float)(x) for x in cmd_opts.custom_location.split(",") ]
     progress("Starting up at %s" % (location,))
 elif cmd_opts.location is not None:
     location = find_location_by_name(cmd_opts.location)
@@ -1088,15 +1187,38 @@ elif cmd_opts.location is not None:
 else:
     progress("Starting up at SITL location")
     location = None
+if cmd_opts.swarm is not None:
+    offsets = find_offsets(instances, cmd_opts.swarm)
+else:
+    offsets = { x: [0.0, 0.0, 0.0, None] for x in instances }
+if location is not None:
+    spawns = find_spawns(location, offsets)
+else:
+    spawns = None
 
 if cmd_opts.use_dir is not None:
-    new_dir = cmd_opts.use_dir
+    base_dir = os.path.realpath(cmd_opts.use_dir)
     try:
-        os.makedirs(os.path.realpath(new_dir))
+        os.makedirs(base_dir)
     except OSError as exception:
         if exception.errno != errno.EEXIST:
             raise
-    os.chdir(new_dir)
+    os.chdir(base_dir)
+else:
+    base_dir = os.getcwd()
+instance_dir = []
+if len(instances) == 1:
+    instance_dir.append(base_dir)
+else:
+    for i in instances:
+        i_dir = os.path.join(base_dir, str(i))
+        try:
+            os.makedirs(i_dir)
+        except OSError as exception:
+            if exception.errno != errno.EEXIST:
+                raise
+        finally:
+            instance_dir.append(i_dir)
 
 if cmd_opts.hil:
     # (unlikely)
@@ -1105,10 +1227,12 @@ if cmd_opts.hil:
                      "jsb_sim/runsim.py"),
         "--speedup=" + str(cmd_opts.speedup)
     ]
-    if location is not None:
-        jsbsim_opts.extend(["--home", location])
+    for i in instances:
+        c = []
+        if spawns is not None:
+            c = ["--home", spawns[i]]
+        run_in_terminal_window("JSBSim", jsbsim_opts + c)
 
-    run_in_terminal_window("JSBSim", jsbsim_opts)
 else:
     if not cmd_opts.no_rebuild:  # i.e. we should rebuild
         do_build(vehicle_dir, cmd_opts, frame_infos)
@@ -1131,7 +1255,67 @@ else:
     start_vehicle(vehicle_binary,
                   cmd_opts,
                   frame_infos,
-                  loc=location)
+                  spawns=spawns)
+
+
+if cmd_opts.delay_start:
+    progress("Sleeping for %f seconds" % (cmd_opts.delay_start,))
+    time.sleep(float(cmd_opts.delay_start))
+
+tmp = None
+if cmd_opts.frame in ['scrimmage-plane', 'scrimmage-copter']:
+    # import only here so as to avoid jinja dependency in whole script
+    from jinja2 import Environment, FileSystemLoader
+    from tempfile import mkstemp
+    entities = []
+    config = {}
+    config['plane'] = cmd_opts.vehicle == 'ArduPlane'
+    if location is not None:
+        config['lat'] = location[0]
+        config['lon'] = location[1]
+        config['alt'] = location[2]
+    entities = {}
+    for i in instances:
+        (x, y, z, heading) = offsets[i]
+        entities[i] = {
+            'x': x, 'y': y, 'z': z, 'heading': heading,
+            'to_ardupilot_port': 9003 + i * 10,
+            'from_ardupilot_port': 9002 + i * 10,
+            'to_ardupilot_ip': '127.0.0.1'
+        }
+    if cmd_opts.scrimmage_args is not None:
+        scrimmage_args = cmd_opts.scrimmage_args.split(',')
+        global_opts = ['terrain']
+        instance_opts = ['motion_model', 'visual_model']
+        for arg in scrimmage_args:
+            arg = arg.split('=', 2)
+            if len(arg) == 2:
+                k, v = arg
+                if k in global_opts:
+                    config[k] = v
+                elif k in instance_opts:
+                    for i in entities:
+                        # explicit instance args take precedence; don't overwrite
+                        if k not in entities[i]:
+                            entities[i][k] = v
+            elif len(arg) == 3:
+                i, k, v = arg
+                try:
+                    i = int(i)
+                except ValueError:
+                    continue
+                if i in entities and k in instance_opts:
+                    entities[i][k] = v
+    config['entities'] = list(entities.values())
+    env = Environment(loader=FileSystemLoader(os.path.join(autotest_dir, 'template')))
+    mission = env.get_template('scrimmage.xml').render(**config)
+    tmp = mkstemp()
+    atexit.register(os.remove, tmp[1])
+
+    with os.fdopen(tmp[0], 'w') as fd:
+        fd.write(mission)
+    run_in_terminal_window('SCRIMMAGE', ['scrimmage', tmp[1]])
+
 
 if cmd_opts.delay_start:
     progress("Sleeping for %f seconds" % (cmd_opts.delay_start,))

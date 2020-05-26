@@ -10,6 +10,10 @@ public:
     void stop();
 
 private:
+
+    // initialise ready to play string
+    void prepare_to_play_string(const char* string);
+
     bool _playing;
 
     uint32_t _note_duration_us;

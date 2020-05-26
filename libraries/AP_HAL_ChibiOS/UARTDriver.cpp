@@ -564,6 +564,45 @@ uint32_t UARTDriver::txspace()
     return _writebuf.space();
 }
 
+bool UARTDriver::discard_input()
+{
+    if (lock_read_key != 0 || _uart_owner_thd != chThdGetSelfX()){
+        return false;
+    }
+    if (!_initialised) {
+        return false;
+    }
+
+    _readbuf.empty();
+
+    if (!_rts_is_active) {
+        update_rts_line();
+    }
+
+    return true;
+}
+
+ssize_t UARTDriver::read(uint8_t *buffer, uint16_t count)
+{
+    if (lock_read_key != 0 || _uart_owner_thd != chThdGetSelfX()){
+        return -1;
+    }
+    if (!_initialised) {
+        return -1;
+    }
+
+    const uint32_t ret = _readbuf.read(buffer, count);
+    if (ret == 0) {
+        return 0;
+    }
+
+    if (!_rts_is_active) {
+        update_rts_line();
+    }
+
+    return ret;
+}
+
 int16_t UARTDriver::read()
 {
     if (lock_read_key != 0 || _uart_owner_thd != chThdGetSelfX()){
@@ -817,7 +856,7 @@ void UARTDriver::write_pending_bytes_NODMA(uint32_t n)
     ByteBuffer::IoVec vec[2];
     uint16_t nwritten = 0;
 
-    if (half_duplex) {
+    if (half_duplex && n > 1) {
         half_duplex_setup_tx();
     }
 
@@ -929,12 +968,10 @@ void UARTDriver::half_duplex_setup_tx(void)
     if (!hd_tx_active) {
         chEvtGetAndClearFlags(&hd_listener);
         hd_tx_active = true;
-        if (_last_options & (OPTION_RXINV | OPTION_TXINV)) {
-            SerialDriver *sd = (SerialDriver*)(sdef.serial);
-            sdStop(sd);
-            sercfg.cr3 &= ~USART_CR3_HDSEL;
-            sdStart(sd, &sercfg);
-        }
+        SerialDriver *sd = (SerialDriver*)(sdef.serial);
+        sdStop(sd);
+        sercfg.cr3 &= ~USART_CR3_HDSEL;
+        sdStart(sd, &sercfg);
     }
 #endif
 }
@@ -955,12 +992,10 @@ void UARTDriver::_timer_tick(void)
           half-duplex transmit has finished. We now re-enable the
           HDSEL bit for receive
          */
-        if (_last_options & (OPTION_RXINV | OPTION_TXINV)) {
-            SerialDriver *sd = (SerialDriver*)(sdef.serial);
-            sdStop(sd);
-            sercfg.cr3 |= USART_CR3_HDSEL;
-            sdStart(sd, &sercfg);
-        }
+        SerialDriver *sd = (SerialDriver*)(sdef.serial);
+        sdStop(sd);
+        sercfg.cr3 |= USART_CR3_HDSEL;
+        sdStart(sd, &sercfg);
         hd_tx_active = false;
     }
 #endif

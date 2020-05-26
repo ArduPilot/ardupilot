@@ -71,7 +71,7 @@ bool FlashTest::flash_write(uint8_t sector, uint32_t offset, const uint8_t *data
                           b[i],
                           data[i]);
         }
-#if !AP_FLASHSTORAGE_MULTI_WRITE
+#ifndef AP_FLASHSTORAGE_MULTI_WRITE
         if (data16[i] != b16[i] && data16[i] != 0xFFFF && b16[i] != 0xFFFF) {
             AP_HAL::panic("FATAL: invalid write16 at %u:%u 0x%04x 0x%04x\n",
                           (unsigned)sector,

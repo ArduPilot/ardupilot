@@ -878,15 +878,16 @@ bool CompassCalibrator::calculate_orientation(void)
         pass = _orientation_confidence > variance_threshold;
     }
     if (!pass) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Mag(%u) bad orientation: %u/%u %.1f", _compass_idx,
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Mag(%u) bad orientation: %u/%u %.1f", _compass_idx,
                         besti, besti2, (double)_orientation_confidence);
+        (void)besti2;
     } else if (besti == _orientation) {
         // no orientation change
-        gcs().send_text(MAV_SEVERITY_INFO, "Mag(%u) good orientation: %u %.1f", _compass_idx, besti, (double)_orientation_confidence);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mag(%u) good orientation: %u %.1f", _compass_idx, besti, (double)_orientation_confidence);
     } else if (!_is_external || !_fix_orientation) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Mag(%u) internal bad orientation: %u %.1f", _compass_idx, besti, (double)_orientation_confidence);
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Mag(%u) internal bad orientation: %u %.1f", _compass_idx, besti, (double)_orientation_confidence);
     } else {
-        gcs().send_text(MAV_SEVERITY_INFO, "Mag(%u) new orientation: %u was %u %.1f", _compass_idx, besti, _orientation, (double)_orientation_confidence);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mag(%u) new orientation: %u was %u %.1f", _compass_idx, besti, _orientation, (double)_orientation_confidence);
     }
 
     if (!pass) {
@@ -956,7 +957,7 @@ bool CompassCalibrator::fix_radius(void)
 
     if (correction > COMPASS_MAX_SCALE_FACTOR || correction < COMPASS_MIN_SCALE_FACTOR) {
         // don't allow more than 30% scale factor correction
-        gcs().send_text(MAV_SEVERITY_ERROR, "Mag(%u) bad radius %.0f expected %.0f",
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Mag(%u) bad radius %.0f expected %.0f",
                         _compass_idx,
                         _params.radius,
                         expected_radius);

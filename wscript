@@ -76,6 +76,11 @@ def options(opt):
         default=False,
         help='Configure as debug variant.')
 
+    g.add_option('--Werror',
+        action='store_true',
+        default=False,
+        help='build with -Werror.')
+    
     g.add_option('--toolchain',
         action='store',
         default=None,
@@ -199,6 +204,16 @@ configuration in order to save typing.
         action='store_true',
         default=False,
         help='Configure for building SITL with flash storage emulation.')
+
+    g.add_option('--disable-ekf2',
+        action='store_true',
+        default=False,
+        help='Configure without EKF2.')
+
+    g.add_option('--disable-ekf3',
+        action='store_true',
+        default=False,
+        help='Configure without EKF3.')
     
     g.add_option('--static',
         action='store_true',
@@ -303,6 +318,7 @@ def configure(cfg):
         cfg.end_msg('disabled', color='YELLOW')
     else:
         cfg.end_msg('enabled')
+        cfg.recurse('libraries/AP_Scripting')
 
     cfg.start_msg('Scripting runtime checks')
     if cfg.options.scripting_checks:
@@ -473,6 +489,8 @@ def _build_recursion(bld):
     if bld.env.PERIPH_FW is not None:
         if bld.env.PERIPH_FW:
             dirs_to_recurse.append('Tools/AP_Periph')
+
+    dirs_to_recurse.append('libraries/AP_Scripting')
 
     for p in hal_dirs_patterns:
         dirs_to_recurse += collect_dirs_to_recurse(

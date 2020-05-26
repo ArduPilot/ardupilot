@@ -9,7 +9,6 @@ APJ_BOARD_ID 12
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
-STM32_PLLM_VALUE 8
 
 define STM32_ST_USE_TIMER 5
 
@@ -29,11 +28,9 @@ define HAL_LED_ON 0
 # the location where the bootloader will put the firmware
 FLASH_BOOTLOADER_LOAD_KB 64
 
-# board voltage
-STM32_VDD 330U
 
 # order of UARTs
-UART_ORDER OTG1
+SERIAL_ORDER OTG1
 
 PA11 OTG_FS_DM OTG1
 PA12 OTG_FS_DP OTG1
@@ -41,3 +38,9 @@ PA12 OTG_FS_DP OTG1
 define HAL_USE_EMPTY_STORAGE 1
 define HAL_STORAGE_SIZE 15360
 
+
+# Add CS pins to ensure they are high in bootloader
+PC12 E_CS0 CS
+PB4 E_CS1 CS
+PB5 E_CS2 CS
+PB8 E_CS3 CS

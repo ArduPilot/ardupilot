@@ -55,6 +55,7 @@ public:
     void set_rangefinder_alt(bool use, bool healthy, float alt_cm) { _rangefinder_available = use; _rangefinder_healthy = healthy; _rangefinder_alt_cm = alt_cm; }
 
     // return true if range finder may be used for terrain following
+    bool rangefinder_used() const { return _rangefinder_use; }
     bool rangefinder_used_and_healthy() const { return _rangefinder_use && _rangefinder_healthy; }
 
     // get expected source of terrain data if alt-above-terrain command is executed (used by Copter's ModeRTL)
@@ -134,6 +135,16 @@ public:
     ///     used to reset the position just before takeoff
     ///     relies on set_wp_destination or set_wp_origin_and_destination having been called first
     void shift_wp_origin_to_current_pos();
+
+    /// shifts the origin and destination horizontally to the current position
+    ///     used to reset the track when taking off without horizontal position control
+    ///     relies on set_wp_destination or set_wp_origin_and_destination having been called first
+    void shift_wp_origin_and_destination_to_current_pos_xy();
+
+    /// shifts the origin and destination horizontally to the achievable stopping point
+    ///     used to reset the track when horizontal navigation is enabled after having been disabled (see Copter's wp_navalt_min)
+    ///     relies on set_wp_destination or set_wp_origin_and_destination having been called first
+    void shift_wp_origin_and_destination_to_stopping_point_xy();
 
     /// get_wp_stopping_point_xy - calculates stopping point based on current position, velocity, waypoint acceleration
     ///		results placed in stopping_position vector

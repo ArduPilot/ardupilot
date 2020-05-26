@@ -43,6 +43,7 @@ private:
     const uint8_t component_id = 18;
 
     // we share channels with the ArduPilot binary!
+    // Beware: the mavlink rangefinder shares this channel.
     const mavlink_channel_t mavlink_ch = (mavlink_channel_t)(MAVLINK_COMM_0+5);
 
     uint64_t last_observation_usec;

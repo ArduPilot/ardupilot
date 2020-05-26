@@ -5,31 +5,22 @@
 MCU STM32F7xx STM32F767xx
 
 # board ID for firmware load
-APJ_BOARD_ID 1004
+APJ_BOARD_ID 1008
 
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
-
-define STM32_LSECLK   32768U
-define STM32_LSEDRV   (3U << 3U)
-
-define STM32_PLLM_VALUE 8
-define STM32_PLLN_VALUE 432
-define STM32_PLLQ_VALUE 9
 
 FLASH_SIZE_KB 2048
 
 # leave 2 sectors free
 FLASH_RESERVE_START_KB 96
 
-# board voltage
-STM32_VDD 330U
 
 # one I2C bus (I2C2 can be used with loss of USART3)
 I2C_ORDER I2C3
 
 # order of UARTs (and USB)
-UART_ORDER OTG1 USART1 USART2 USART3 UART5 USART6 UART7 UART8
+SERIAL_ORDER OTG1 USART2 USART3 USART1 UART5 USART6 UART7 UART8
 
 # USB
 PA11 OTG_FS_DM OTG1

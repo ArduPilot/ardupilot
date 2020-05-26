@@ -240,6 +240,13 @@ bool AP_MotorsHeli_Dual::init_outputs()
 
     }
 
+    // set signal value for main rotor external governor to know when to use autorotation bailout ramp up
+    if (_main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SPEED_SETPOINT  ||  _main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH) {
+        _main_rotor.set_ext_gov_arot_bail(_main_rotor._ext_gov_arot_pct.get());
+    } else {
+        _main_rotor.set_ext_gov_arot_bail(0);
+    }
+
     // reset swash servo range and endpoints
     for (uint8_t i=0; i<AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS; i++) {
         reset_swash_servo(SRV_Channels::get_motor_function(i));
@@ -335,6 +342,12 @@ void AP_MotorsHeli_Dual::calculate_armed_scalars()
 
     // set bailout ramp time
     _main_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
+
+    // allow use of external governor autorotation bailout window on main rotor
+    if (_main_rotor._ext_gov_arot_pct.get() > 0  &&  (_main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SPEED_SETPOINT  ||  _main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH)){
+        // RSC only needs to know that the vehicle is in an autorotation if using the bailout window on an external governor
+        _main_rotor.set_autorotaion_flag(_heliflags.in_autorotation);
+    }
 }
 
 // calculate_scalars

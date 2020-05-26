@@ -212,6 +212,20 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
             usleep(1000);
         }
     }
+    // check the outbound TCP queue size.  If it is too long then
+    // MAVProxy/pymavlink take too long to process packets and it ends
+    // up seeing traffic well into our past and hits time-out
+    // conditions.
+    if (sitl_model->get_speedup() > 1) {
+        while (true) {
+            const int queue_length = ((HALSITL::UARTDriver*)hal.uartA)->get_system_outqueue_length();
+            // ::fprintf(stderr, "queue_length=%d\n", (signed)queue_length);
+            if (queue_length < 1024) {
+                break;
+            }
+            usleep(1000);
+        }
+    }
 }
 
 #define streq(a, b) (!strcmp(a, b))
@@ -296,6 +310,13 @@ int SITL_State::sim_fd(const char *name, const char *arg)
         nmea = new SITL::RF_NMEA();
         return nmea->fd();
 
+    } else if (streq(name, "rf_mavlink")) {
+        if (wasp != nullptr) {
+            AP_HAL::panic("Only one rf_mavlink at a time");
+        }
+        rf_mavlink = new SITL::RF_MAVLink();
+        return rf_mavlink->fd();
+
     } else if (streq(name, "frsky-d")) {
         if (frsky_d != nullptr) {
             AP_HAL::panic("Only one frsky_d at a time");
@@ -315,6 +336,12 @@ int SITL_State::sim_fd(const char *name, const char *arg)
     //     }
     //     frsky_sport = new SITL::Frsky_SPortPassthrough();
     //     return frsky_sportpassthrough->fd();
+    } else if (streq(name, "rplidara2")) {
+        if (rplidara2 != nullptr) {
+            AP_HAL::panic("Only one rplidara2 at a time");
+        }
+        rplidara2 = new SITL::PS_RPLidarA2();
+        return rplidara2->fd();
     }
 
     AP_HAL::panic("unknown simulated device: %s", name);
@@ -386,11 +413,21 @@ int SITL_State::sim_fd_write(const char *name)
             AP_HAL::panic("No nmea created");
         }
         return nmea->write_fd();
+    } else if (streq(name, "rf_mavlink")) {
+        if (rf_mavlink == nullptr) {
+            AP_HAL::panic("No rf_mavlink created");
+        }
+        return rf_mavlink->write_fd();
     } else if (streq(name, "frsky-d")) {
         if (frsky_d == nullptr) {
             AP_HAL::panic("No frsky-d created");
         }
         return frsky_d->write_fd();
+    } else if (streq(name, "rplidara2")) {
+        if (rplidara2 == nullptr) {
+            AP_HAL::panic("No rplidara2 created");
+        }
+        return rplidara2->write_fd();
     }
     AP_HAL::panic("unknown simulated device: %s", name);
 }
@@ -564,6 +601,9 @@ void SITL_State::_fdm_input_local(void)
     if (nmea != nullptr) {
         nmea->update(sitl_model->get_range());
     }
+    if (rf_mavlink != nullptr) {
+        rf_mavlink->update(sitl_model->get_range());
+    }
 
     if (frsky_d != nullptr) {
         frsky_d->update();
@@ -574,6 +614,9 @@ void SITL_State::_fdm_input_local(void)
     // if (frsky_sportpassthrough != nullptr) {
     //     frsky_sportpassthrough->update();
     // }
+    if (rplidara2 != nullptr) {
+        rplidara2->update(sitl_model->get_location());
+    }
 
     if (_sitl) {
         _sitl->efi_ms.update();
@@ -616,7 +659,7 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
         if (_vehicle == ArduPlane) {
             pwm_output[0] = pwm_output[1] = pwm_output[3] = 1500;
         }
-        if (_vehicle == APMrover2) {
+        if (_vehicle == Rover) {
             pwm_output[0] = pwm_output[1] = pwm_output[2] = pwm_output[3] = 1500;
         }
     }
@@ -681,7 +724,7 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
         engine_fail = 0;
     }
     // apply engine multiplier to motor defined by the SIM_ENGINE_FAIL parameter
-    if (_vehicle != APMrover2) {
+    if (_vehicle != Rover) {
         input.servos[engine_fail] = ((input.servos[engine_fail]-1000) * engine_mul) + 1000;
     } else {
         input.servos[engine_fail] = static_cast<uint16_t>(((input.servos[engine_fail] - 1500) * engine_mul) + 1500);
@@ -708,7 +751,7 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
         } else {
             throttle = hover_throttle;
         }
-    } else if (_vehicle == APMrover2) {
+    } else if (_vehicle == Rover) {
         input.servos[2] = static_cast<uint16_t>(constrain_int16(input.servos[2], 1000, 2000));
         input.servos[0] = static_cast<uint16_t>(constrain_int16(input.servos[0], 1000, 2000));
         throttle = fabsf((input.servos[2] - 1500) / 500.0f);

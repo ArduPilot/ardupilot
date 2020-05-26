@@ -19,6 +19,7 @@
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_Logger/AP_Logger.h>
 
 AP_RCProtocol_Backend::AP_RCProtocol_Backend(AP_RCProtocol &_frontend) :
     frontend(_frontend),
@@ -72,4 +73,43 @@ void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool
         rc_input_count++;
     }
     rssi = _rssi;
+}
+
+/*
+  optionally log RC input data
+ */
+void AP_RCProtocol_Backend::log_data(AP_RCProtocol::rcprotocol_t prot, uint32_t timestamp, const uint8_t *data, uint8_t len) const
+{
+#if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
+    if (rc().log_raw_data()) {
+        uint32_t u32[10] {};
+        if (len > sizeof(u32)) {
+            len = sizeof(u32);
+        }
+        memcpy(u32, data, len);
+// @LoggerMessage: RCDA
+// @Description: Raw RC data
+// @Field: TimeUS: Time since system startup
+// @Field: TS: data arrival timestamp
+// @Field: Prot: Protocol currently being decoded
+// @Field: Len: Number of valid bytes in message
+// @Field: U0: first quartet of bytes
+// @Field: U1: second quartet of bytes
+// @Field: U2: third quartet of bytes
+// @Field: U3: fourth quartet of bytes
+// @Field: U4: fifth quartet of bytes
+// @Field: U5: sixth quartet of bytes
+// @Field: U6: seventh quartet of bytes
+// @Field: U7: eight quartet of bytes
+// @Field: U8: ninth quartet of bytes
+// @Field: U9: tenth quartet of bytes
+        AP::logger().Write("RCDA", "TimeUS,TS,Prot,Len,U0,U1,U2,U3,U4,U5,U6,U7,U8,U9", "QIBBIIIIIIIIII",
+                           AP_HAL::micros64(),
+                           timestamp,
+                           (uint8_t)prot,
+                           len,
+                           u32[0], u32[1], u32[2], u32[3], u32[4],
+                           u32[5], u32[6], u32[7], u32[8], u32[9]);
+    }
+#endif
 }

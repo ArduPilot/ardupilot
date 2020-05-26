@@ -17,6 +17,7 @@
 #include "RPM_Pin.h"
 #include "RPM_SITL.h"
 #include "RPM_EFI.h"
+#include "RPM_HarmonicNotch.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -25,7 +26,7 @@ const AP_Param::GroupInfo AP_RPM::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: RPM type
     // @Description: What type of RPM sensor is connected
-    // @Values: 0:None,1:PWM,2:AUXPIN,3:EFI
+    // @Values: 0:None,1:PWM,2:AUXPIN,3:EFI,4:Harmonic Notch
     // @User: Standard
     AP_GROUPINFO("_TYPE",    0, AP_RPM, _type[0], 0),
 
@@ -68,7 +69,7 @@ const AP_Param::GroupInfo AP_RPM::var_info[] = {
     // @Param: 2_TYPE
     // @DisplayName: Second RPM type
     // @Description: What type of RPM sensor is connected
-    // @Values: 0:None,1:PWM,2:AUXPIN
+    // @Values: 0:None,1:PWM,2:AUXPIN,3:EFI,4:Harmonic Notch
     // @User: Advanced
     AP_GROUPINFO("2_TYPE",    10, AP_RPM, _type[1], 0),
 
@@ -125,6 +126,11 @@ void AP_RPM::init(void)
             drivers[i] = new AP_RPM_EFI(*this, i, state[i]);
         }
 #endif
+        // include harmonic notch last
+        // this makes whatever process is driving the dynamic notch appear as an RPM value
+        if (type == RPM_TYPE_HNTCH) {
+            drivers[i] = new AP_RPM_HarmonicNotch(*this, i, state[i]);
+        }
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         if (drivers[i] == nullptr) {
             drivers[i] = new AP_RPM_SITL(*this, i, state[i]);
@@ -185,6 +191,18 @@ bool AP_RPM::enabled(uint8_t instance) const
     if (_type[instance] == RPM_TYPE_NONE) {
         return false;
     }
+    return true;
+}
+
+/*
+  get RPM value, return true on success
+ */
+bool AP_RPM::get_rpm(uint8_t instance, float &rpm_value) const
+{
+    if (!healthy(instance)) {
+        return false;
+    }
+    rpm_value = state[instance].rate_rpm;
     return true;
 }
 

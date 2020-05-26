@@ -37,6 +37,7 @@ public:
         DSM,
         SUMD,
         SRXL,
+        SRXL2,
         ST24,
         FPORT,
         NONE    //last enum always is None

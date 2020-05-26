@@ -25,7 +25,8 @@ chan = chan + 1
 gcs:send_text(6, "LEDs: chan=" .. tostring(chan))
 
 -- initialisation code
-serialLED:set_num_LEDs(chan,  num_leds)
+--serialLED:set_num_neopixel(chan,  num_leds)
+serialLED:set_num_profiled(chan,  num_leds)
 
 -- constrain a value between limits
 function constrain(v, vmin, vmax)
@@ -76,7 +77,7 @@ function update_LEDs()
     local v  = constrain(0.5 + 0.5 * math.sin(roll * (led - num_leds/2) / (num_leds/2)), 0, 1)
     set_Rainbow(chan, led, v)
   end
-  serialLED:send()
+  serialLED:send(chan)
 
   return update_LEDs, 20 -- run at 50Hz
 end

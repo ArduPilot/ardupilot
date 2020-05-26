@@ -86,18 +86,6 @@ struct PACKED FPort_Frame {
     };
 };
 
-struct {
-    bool available = false;
-    uint32_t data;
-    uint16_t appid;
-    uint8_t frame;
-} telem_data;
-
-// receiver sends 0x10 when ready to receive telemetry frames (R-XSR)
-bool rx_driven_frame_rate = false;
-// if the receiver is not controlling frame rate apply a constraint on consecutive frames
-uint8_t consecutive_telemetry_frame_count;
-
 static_assert(sizeof(FPort_Frame) == FPORT_CONTROL_FRAME_SIZE, "FPort_Frame incorrect size");
 
 // constructor
@@ -322,17 +310,26 @@ void AP_RCProtocol_FPort::_process_byte(uint32_t timestamp_us, uint8_t b)
             (frame->type == FPORT_TYPE_DOWNLINK && frame->len != FRAME_LEN_DOWNLINK)) {
             goto reset;
         }
+        if (frame->type != FPORT_TYPE_CONTROL && frame->type != FPORT_TYPE_DOWNLINK) {
+            // invalid type
+            goto reset;
+        }
     }
 
     if (frame->type == FPORT_TYPE_CONTROL && byte_input.ofs == FRAME_LEN_CONTROL + 4) {
+        log_data(AP_RCProtocol::FPORT, timestamp_us, byte_input.buf, byte_input.ofs);
         if (check_checksum()) {
             decode_control(*frame);
         }
         goto reset;
     } else if (frame->type == FPORT_TYPE_DOWNLINK && byte_input.ofs == FRAME_LEN_DOWNLINK + 4) {
+        log_data(AP_RCProtocol::FPORT, timestamp_us, byte_input.buf, byte_input.ofs);
         if (check_checksum()) {
             decode_downlink(*frame);
         }
+        goto reset;
+    }
+    if (byte_input.ofs == sizeof(byte_input.buf)) {
         goto reset;
     }
     return;

@@ -229,8 +229,9 @@ void AP_ICEngine::update(void)
             gcs().send_text(MAV_SEVERITY_INFO, "Stopped engine");
         } else if (rpm_instance > 0) {
             // check RPM to see if still running
-            if (!rpm.healthy(rpm_instance-1) ||
-                rpm.get_rpm(rpm_instance-1) < rpm_threshold) {
+            float rpm_value;
+            if (!rpm.get_rpm(rpm_instance-1, rpm_value) ||
+                rpm_value < rpm_threshold) {
                 // engine has stopped when it should be running
                 state = ICE_START_DELAY;
             }
@@ -365,10 +366,10 @@ void AP_ICEngine::update_idle_governor(int8_t &min_throttle)
     }
 
     // get current RPM feedback
-    uint32_t rpmv = ap_rpm->get_rpm(rpm_instance-1);
+    float rpmv;
 
     // Double Check to make sure engine is really running
-    if (rpmv < 1) {
+    if (!ap_rpm->get_rpm(rpm_instance-1, rpmv) || rpmv < 1) {
         // Reset idle point to the default value when the engine is stopped
         idle_governor_integrator = min_throttle;
         return;

@@ -32,16 +32,8 @@ bool AP_RangeFinder_LeddarOne::get_reading(uint16_t &reading_cm)
 
     switch (modbus_status) {
     case LEDDARONE_MODBUS_STATE_INIT: {
-        uint8_t index = 0;
-        // clear read buffer
-        uint32_t nbytes = uart->available();
-        while (nbytes-- > 0) {
-            uart->read();
-            if (++index > LEDDARONE_SERIAL_PORT_MAX) {
-                // LEDDARONE_STATE_ERR_SERIAL_PORT
-                return false;
-            }
-        }
+        uart->discard_input();
+
         // clear buffer and buffer_len
         memset(read_buffer, 0, sizeof(read_buffer));
         read_len = 0;

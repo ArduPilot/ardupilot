@@ -68,6 +68,9 @@ def create_embedded_h(filename, files, uncompressed=False):
     out = open(filename, "wb")
     write_encode(out, '''// generated embedded files for AP_ROMFS\n\n''')
 
+    # remove duplicates and sort
+    files = sorted(list(set(files)))
+
     for i in range(len(files)):
         (name, filename) = files[i]
         if not embed_file(out, filename, i, name, uncompressed):

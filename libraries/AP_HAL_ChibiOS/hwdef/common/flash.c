@@ -448,7 +448,8 @@ static bool stm32_flash_write_h7(uint32_t addr, const void *buf, uint32_t count)
     }
     stm32_flash_unlock();
     while (count >= 32) {
-        if (!stm32h7_flash_write32(addr, b)) {
+        if (memcmp((void*)addr, b, 32) != 0 &&
+            !stm32h7_flash_write32(addr, b)) {
             return false;
         }
         // check contents

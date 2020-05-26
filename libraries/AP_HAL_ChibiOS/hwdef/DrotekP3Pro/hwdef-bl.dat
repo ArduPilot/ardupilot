@@ -10,9 +10,6 @@ APJ_BOARD_ID 13
 # crystal frequency
 OSCILLATOR_HZ 24000000
 
-# board voltage
-STM32_VDD 330U
-
 # ChibiOS system timer
 STM32_ST_USE_TIMER 5
 
@@ -26,7 +23,7 @@ FLASH_BOOTLOADER_LOAD_KB 16
 FLASH_RESERVE_START_KB 0
 
 # uarts and USB to run bootloader protocol on
-UART_ORDER OTG1 USART2 USART3
+SERIAL_ORDER OTG1 USART2 USART3
 
 # this is the pin that senses USB being connected. It is an input pin
 # setup as OPENDRAIN
@@ -62,9 +59,10 @@ define HAL_LED_ON 1
 # available (in bytes)
 define HAL_STORAGE_SIZE 16384
 
-# uncomment the lines below to enable strict API
-# checking in ChibiOS
-# define CH_DBG_ENABLE_ASSERTS TRUE
-# define CH_DBG_ENABLE_CHECKS TRUE
-# define CH_DBG_SYSTEM_STATE_CHECK TRUE
-# define CH_DBG_ENABLE_STACK_CHECK TRUE
+# Add CS pins to ensure they are high in bootloader
+PC2 MPU9250_CS CS
+PC15 20608_CS CS
+PD7 BARO_CS CS
+PE15 MAG_CS CS
+PH5 EEPROM_CS CS
+PD10 FRAM_CS CS

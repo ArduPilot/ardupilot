@@ -56,7 +56,7 @@ void NavEKF3::Log_Write_XKF2(uint8_t _core, uint64_t time_us) const
     getWind(_core,wind);
     getMagNED(_core,magNED);
     getMagXYZ(_core,magXYZ);
-    const struct log_NKF2a pkt2{
+    const struct log_XKF2 pkt2{
         LOG_PACKET_HEADER_INIT(LOG_XKF2_MSG),
         time_us : time_us,
         core    : _core,
@@ -317,6 +317,7 @@ void NavEKF3::Log_Write()
         Log_Write_XKF3(i, time_us);
         Log_Write_XKF4(i, time_us);
         Log_Write_Quaternion(i, time_us);
+        Log_Write_GSF(i, time_us);
     }
 
     // write range beacon fusion debug packet if the range value is non-zero
@@ -340,3 +341,85 @@ void NavEKF3::Log_Write()
     }
 }
 
+void NavEKF3::Log_Write_GSF(uint8_t _core, uint64_t time_us) const
+{
+    float yaw_composite;
+    float yaw_composite_variance;
+    float yaw[N_MODELS_EKFGSF];
+    float ivn[N_MODELS_EKFGSF];
+    float ive[N_MODELS_EKFGSF];
+    float wgt[N_MODELS_EKFGSF];
+
+    if (getDataEKFGSF(_core, yaw_composite, yaw_composite_variance, yaw, ivn, ive, wgt)) {
+
+        // @LoggerMessage: XKY0
+        // @Description: EKF3 Yaw Estimator States
+        // @Field: TimeUS: Time since system startup
+        // @Field: C: EKF3 core this data is for
+        // @Field: YC: GSF yaw estimate (rad)
+        // @Field: YCS: GSF yaw estimate 1-Sigma uncertainty (rad)
+        // @Field: Y0: Yaw estimate from individual EKF filter 0 (rad)
+        // @Field: Y1: Yaw estimate from individual EKF filter 1 (rad)
+        // @Field: Y2: Yaw estimate from individual EKF filter 2 (rad)
+        // @Field: Y3: Yaw estimate from individual EKF filter 3 (rad)
+        // @Field: Y4: Yaw estimate from individual EKF filter 4 (rad)
+        // @Field: W0: Weighting applied to yaw estimate from individual EKF filter 0
+        // @Field: W1: Weighting applied to yaw estimate from individual EKF filter 1
+        // @Field: W2: Weighting applied to yaw estimate from individual EKF filter 2
+        // @Field: W3: Weighting applied to yaw estimate from individual EKF filter 3
+        // @Field: W4: Weighting applied to yaw estimate from individual EKF filter 4
+
+        AP::logger().Write("XKY0",
+                        "TimeUS,C,YC,YCS,Y0,Y1,Y2,Y3,Y4,W0,W1,W2,W3,W4",
+                        "s#rrrrrrr-----",
+                        "F-000000000000",
+                        "QBffffffffffff",
+                        time_us,
+                        _core,
+                        yaw_composite,
+                        sqrtf(MAX(yaw_composite_variance, 0.0f)),
+                        yaw[0],
+                        yaw[1],
+                        yaw[2],
+                        yaw[3],
+                        yaw[4],
+                        wgt[0],
+                        wgt[1],
+                        wgt[2],
+                        wgt[3],
+                        wgt[4]);
+
+        // @LoggerMessage: XKY1
+        // @Description: EKF2 Yaw Estimator Innovations
+        // @Field: TimeUS: Time since system startup
+        // @Field: C: EKF3 core this data is for
+        // @Field: IVN0: North velocity innovation from individual EKF filter 0 (m/s)
+        // @Field: IVN1: North velocity innovation from individual EKF filter 1 (m/s)
+        // @Field: IVN2: North velocity innovation from individual EKF filter 2 (m/s)
+        // @Field: IVN3: North velocity innovation from individual EKF filter 3 (m/s)
+        // @Field: IVN4: North velocity innovation from individual EKF filter 4 (m/s)
+        // @Field: IVE0: East velocity innovation from individual EKF filter 0 (m/s)
+        // @Field: IVE1: East velocity innovation from individual EKF filter 1 (m/s)
+        // @Field: IVE2: East velocity innovation from individual EKF filter 2 (m/s)
+        // @Field: IVE3: East velocity innovation from individual EKF filter 3 (m/s)
+        // @Field: IVE4: East velocity innovation from individual EKF filter 4 (m/s)
+
+        AP::logger().Write("XKY1",
+                        "TimeUS,C,IVN0,IVN1,IVN2,IVN3,IVN4,IVE0,IVE1,IVE2,IVE3,IVE4",
+                        "s#nnnnnnnnnn",
+                        "F-0000000000",
+                        "QBffffffffff",
+                        time_us,
+                        _core,
+                        ivn[0],
+                        ivn[1],
+                        ivn[2],
+                        ivn[3],
+                        ivn[4],
+                        ive[0],
+                        ive[1],
+                        ive[2],
+                        ive[3],
+                        ive[4]);
+    }
+}
