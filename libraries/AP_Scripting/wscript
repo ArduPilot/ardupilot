@@ -1,0 +1,49 @@
+#!/usr/bin/env python
+# encoding: utf-8
+'''
+build generated bindings from bindings.desc for AP_Scripting
+'''
+
+from waflib.TaskGen import after_method, before_method, feature
+import os
+
+CFLAGS="-std=c99 -Wno-error=missing-field-initializers -Wall -Werror -Wextra"
+CC="gcc"
+
+def configure(cfg):
+    cfg.env.AP_LIB_EXTRA_SOURCES['AP_Scripting'] = ['lua_generated_bindings.cpp']
+
+def relpath(bld, node):
+    '''make a build relative path. This is needed for CI to pass on azure'''
+    blddir = bld.bldnode.make_node(".").abspath()
+    return os.path.relpath(node.abspath(), blddir)
+
+def build(bld):
+    main_c = bld.srcnode.make_node('libraries/AP_Scripting/generator/src/main.c')
+    gen_bindings = bld.bldnode.find_or_declare('gen-bindings')
+
+    main_c_rel = relpath(bld, main_c)
+    gen_bindings_rel = relpath(bld, gen_bindings)
+
+    bld(
+        # build gen-bindings compiler
+        source=main_c,
+        target=[gen_bindings],
+        # we should have configure tests for finding the native compiler
+        rule="%s %s -o %s %s" % (CC, CFLAGS, gen_bindings_rel, main_c_rel),
+        group='dynamic_sources',
+    )
+
+    bindings = bld.srcnode.make_node('libraries/AP_Scripting/generator/description/bindings.desc')
+    bindings_rel = relpath(bld, bindings)
+    gen_bindings = bld.bldnode.find_or_declare('gen-bindings')
+    generated_cpp = bld.bldnode.find_or_declare('libraries/AP_Scripting/lua_generated_bindings.cpp')
+    generated_h = bld.bldnode.find_or_declare('libraries/AP_Scripting/lua_generated_bindings.h')
+
+    bld(
+        # build the bindings
+        source=[bindings, gen_bindings],
+        rule="./gen-bindings -o libraries/AP_Scripting/lua_generated_bindings -i %s" % bindings_rel,
+        target=[generated_cpp, generated_h],
+        group='dynamic_sources',
+    )

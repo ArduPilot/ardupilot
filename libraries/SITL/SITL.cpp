@@ -50,7 +50,6 @@ const AP_Param::GroupInfo SITL::var_info[] = {
     AP_GROUPINFO("GPS_TYPE",  12, SITL,  gps_type[0],  SITL::GPS_TYPE_UBLOX),
     AP_GROUPINFO("GPS_BYTELOSS",  13, SITL,  gps_byteloss,  0),
     AP_GROUPINFO("GPS_NUMSATS",   14, SITL,  gps_numsats,   10),
-    AP_GROUPINFO("MAG_ERROR",     15, SITL,  mag_error,  0),
     AP_GROUPINFO("SERVO_SPEED",   16, SITL,  servo_speed,  0.14),
     AP_GROUPINFO("GPS_GLITCH",    17, SITL,  gps_glitch[0],  0),
     AP_GROUPINFO("GPS_HZ",        18, SITL,  gps_hertz,  5),
@@ -89,7 +88,7 @@ const AP_Param::GroupInfo SITL::var_info[] = {
     AP_GROUPINFO("ADSB_TX",       51, SITL,  adsb_tx, 0),
     AP_GROUPINFO("SPEEDUP",       52, SITL,  speedup, -1),
     AP_GROUPINFO("IMU_POS",       53, SITL,  imu_pos_offset, 0),
-    AP_GROUPINFO("GPS_POS",       54, SITL,  gps_pos_offset[0], 0),
+    AP_GROUPINFO("GPS_POS1",      54, SITL,  gps_pos_offset[0], 0),
     AP_GROUPINFO("SONAR_POS",     55, SITL,  rngfnd_pos_offset, 0),
     AP_GROUPINFO("FLOW_POS",      56, SITL,  optflow_pos_offset, 0),
     AP_GROUPINFO("ACC2_BIAS",     57, SITL,  accel2_bias, 0),
@@ -117,7 +116,6 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     AP_GROUPINFO("ARSPD2_FAIL", 11, SITL,  arspd2_fail, 0),
     AP_GROUPINFO("ARSPD2_FAILP",12, SITL,  arspd2_fail_pressure, 0),
     AP_GROUPINFO("ARSPD2_PITOT",13, SITL,  arspd2_fail_pitot_pressure, 0),
-    AP_GROUPINFO("VICON_HSTLEN",14, SITL,  vicon_observation_history_length, 0),
     AP_GROUPINFO("WIND_T"      ,15, SITL,  wind_type, SITL::WIND_TYPE_SQRT),
     AP_GROUPINFO("WIND_T_ALT"  ,16, SITL,  wind_type_alt, 60),
     AP_GROUPINFO("WIND_T_COEF", 17, SITL,  wind_type_coef, 0.01f),
@@ -172,7 +170,7 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     AP_GROUPINFO("GND_BEHAV",   41, SITL,  gnd_behav, -1),
     AP_GROUPINFO("BARO_COUNT",  42, SITL,  baro_count,  1),
 
-    AP_GROUPINFO("GPS_HDG",     43, SITL,  gps_hdg_enabled, 0),
+    AP_GROUPINFO("GPS_HDG",     43, SITL,  gps_hdg_enabled[0], 0),
 
     // sailboat wave and tide simulation parameters
     AP_GROUPINFO("WAVE_ENABLE", 44, SITL,  wave.enable, 0.0f),
@@ -218,7 +216,7 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
 // third table of user settable parameters for SITL. 
 const AP_Param::GroupInfo SITL::var_info3[] = {
     AP_GROUPINFO("ODOM_ENABLE",   1, SITL,  odom_enable, 0),
-    AP_GROUPINFO("GPS2_POS",      2, SITL,  gps_pos_offset[1], 0),
+    AP_GROUPINFO("GPS_POS2",      2, SITL,  gps_pos_offset[1], 0),
     AP_GROUPINFO("MAG1_DEVID",    3, SITL,  mag_devid[0], 97539),
     AP_GROUPINFO("MAG2_DEVID",    4, SITL,  mag_devid[1], 131874),
     AP_GROUPINFO("MAG3_DEVID",    5, SITL,  mag_devid[2], 263178),
@@ -229,6 +227,30 @@ const AP_Param::GroupInfo SITL::var_info3[] = {
     AP_GROUPINFO("MAG8_DEVID",    10, SITL, mag_devid[7], 0),
 
     AP_GROUPINFO("LED_LAYOUT",    11, SITL, led_layout, 0),
+
+    // Scenario for thermalling simulation, for soaring
+    AP_GROUPINFO("THML_SCENARI",  12, SITL,  thermal_scenario, 0),
+
+    AP_GROUPINFO("GPS2_HDG",      13, SITL,  gps_hdg_enabled[1], 0),
+
+    // vicon sensor position (position offsets in body frame)
+    AP_GROUPINFO("VICON_POS",     14, SITL,  vicon_pos_offset, 0),
+
+    // Buyoancy for submarines
+    AP_GROUPINFO_FRAME("BUOYANCY", 15, SITL, buoyancy, 1, AP_PARAM_FRAME_SUB),
+
+    // vicon glitch in NED frame
+    AP_GROUPINFO("VICON_GLIT",    16, SITL,  vicon_glitch, 0),
+
+    // vicon failure
+    AP_GROUPINFO("VICON_FAIL",    17, SITL,  vicon_fail, 0),
+
+    // vicon yaw (in earth frame)
+    AP_GROUPINFO("VICON_YAW",     18, SITL,  vicon_yaw, 0),
+
+    // vicon yaw error in degrees (added to reported yaw sent to vehicle)
+    AP_GROUPINFO("VICON_YAWERR",  19, SITL,  vicon_yaw_error, 0),
+
     AP_GROUPEND
 
 };

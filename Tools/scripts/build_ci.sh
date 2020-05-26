@@ -75,35 +75,35 @@ function run_autotest() {
 for t in $CI_BUILD_TARGET; do
     # special case for SITL testing in CI
     if [ "$t" == "sitltest-copter-tests1" ]; then
-        run_autotest "Copter" "build.ArduCopter" "fly.ArduCopterTests1"
+        run_autotest "Copter" "build.Copter" "test.CopterTests1"
         continue
     fi
     if [ "$t" == "sitltest-copter-tests2" ]; then
-        run_autotest "Copter" "build.ArduCopter" "fly.ArduCopterTests2"
+        run_autotest "Copter" "build.Copter" "test.CopterTests2"
         continue
     fi
     if [ "$t" == "sitltest-plane" ]; then
-        run_autotest "Plane" "build.ArduPlane" "fly.ArduPlane"
+        run_autotest "Plane" "build.Plane" "test.Plane"
         continue
     fi
     if [ "$t" == "sitltest-quadplane" ]; then
-        run_autotest "QuadPlane" "build.ArduPlane" "fly.QuadPlane"
+        run_autotest "QuadPlane" "build.Plane" "test.QuadPlane"
         continue
     fi
     if [ "$t" == "sitltest-rover" ]; then
-        run_autotest "Rover" "build.APMrover2" "drive.APMrover2"
+        run_autotest "Rover" "build.Rover" "test.Rover"
         continue
     fi
     if [ "$t" == "sitltest-tracker" ]; then
-        run_autotest "Tracker" "build.AntennaTracker" "test.AntennaTracker"
+        run_autotest "Tracker" "build.Tracker" "test.Tracker"
         continue
     fi
     if [ "$t" == "sitltest-balancebot" ]; then
-        run_autotest "BalanceBot" "build.APMrover2" "drive.BalanceBot"
+        run_autotest "BalanceBot" "build.Rover" "test.BalanceBot"
         continue
     fi
     if [ "$t" == "sitltest-sub" ]; then
-        run_autotest "Sub" "build.ArduSub" "dive.ArduSub"
+        run_autotest "Sub" "build.Sub" "test.Sub"
         continue
     fi
 
@@ -203,7 +203,7 @@ for t in $CI_BUILD_TARGET; do
     fi
 done
 
-python Tools/autotest/param_metadata/param_parse.py --vehicle APMrover2
+python Tools/autotest/param_metadata/param_parse.py --vehicle Rover
 python Tools/autotest/param_metadata/param_parse.py --vehicle AntennaTracker
 python Tools/autotest/param_metadata/param_parse.py --vehicle ArduCopter
 python Tools/autotest/param_metadata/param_parse.py --vehicle ArduPlane

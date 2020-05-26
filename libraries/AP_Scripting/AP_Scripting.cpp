@@ -157,6 +157,7 @@ void AP_Scripting::thread(void) {
     lua_scripts *lua = new lua_scripts(_script_vm_exec_count, _script_heap_size, _debug_level, terminal);
     if (lua == nullptr || !lua->heap_allocated()) {
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Unable to allocate scripting memory");
+        delete lua;
         _init_failed = true;
         return;
     }

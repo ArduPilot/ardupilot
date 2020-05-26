@@ -1,0 +1,51 @@
+#compdef autotest.py
+#autoload
+
+_ap_autotest() {
+  typeset -A opt_args
+  local context state line curcontext="$curcontext"
+  _arguments -C \
+    '(- 1 *)'{-h,--help}'[show help options and exit]' \
+    ': :_ap_autotest_cmds' \
+    '*:: :->args' &&
+    ret=0
+  case "$state" in
+    (args)
+      _arguments -C \
+        '--skip[list of steps to skip (comma separated)]' \
+        '(-j --jobs)'{-j,--jobs}'[number of processors to use during build]:int:' \
+        '--skip[list of steps to skip (comma separated)]' \
+        '--list[list the available steps]' \
+        '--list-subtests[list available subtests e.g. test.Copter]' \
+        '--viewerip[IP address to send MAVLink and fg packets to]:VIEWERIP:' \
+        '--map[show map]' \
+        '--experimental[enable experimental tests]' \
+        '--timeout[maximum runtime in seconds]:TIMEOUT:' \
+        '--frame[specify frame type]:FRAME:' \
+        '--show-test-timings[show how long each test took to run]' \
+        '--validate-parameters[validate vehicle parameter files]' \
+        '--no-configure [do not configure before building]' \
+        '--waf-configure-args[extra arguments passed to waf in configure]:WAF_CONFIGURE_ARGS:' \
+        '--no-clean[do not clean before building]' \
+        '--debug[make built binaries debug binaries]' \
+        '--speedup[speedup to run the simulations at]:SPEEDUP:' \
+        '--valgrind[run ArduPilot binaries under valgrind]' \
+        '--gdb[run ArduPilot binaries under gdb]' \
+        '--gdbserver[run ArduPilot binaries under gdbserver]' \
+        '(-B --breakpoint)'{-B,--breakpoint}'[add a breakpoint at given location in debugger]:BREAKPOINT:' \
+        '--disable-breakpoints[disable all breakpoints before starting]' \
+        '*: :_ap_autotest_cmds' \
+        && ret=0
+      ;;
+    esac
+}
+
+(( $+functions[_ap_autotest_cmds] )) ||
+  _ap_autotest_cmds() {
+    default_options=( $($caller --list))
+    _describe -t default-options 'default_options' default_options "$@" && ret=0
+  }
+
+# get the calling program, remove anything after the space == all commands arguments
+caller=$(echo ${words[@]} | sed 's/ .*//g');
+_ap_autotest "$@"

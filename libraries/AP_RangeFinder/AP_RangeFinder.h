@@ -144,6 +144,11 @@ public:
         return id >= RANGEFINDER_MAX_INSTANCES? Type::NONE : Type(params[id].type.get());
     }
 
+    // get rangefinder address (for AP_Periph CAN)
+    uint8_t get_address(uint8_t id) const {
+        return id >= RANGEFINDER_MAX_INSTANCES? 0 : uint8_t(params[id].address.get());
+    }
+    
     // methods to return a distance on a particular orientation from
     // any sensor which can current supply it
     uint16_t distance_cm_orient(enum Rotation orientation) const;
@@ -180,6 +185,8 @@ private:
     RangeFinder_State state[RANGEFINDER_MAX_INSTANCES];
     AP_RangeFinder_Backend *drivers[RANGEFINDER_MAX_INSTANCES];
     uint8_t num_instances;
+    bool init_done;
+    HAL_Semaphore detect_sem;
     float estimated_terrain_height;
     Vector3f pos_offset_zero;   // allows returning position offsets of zero for invalid requests
 

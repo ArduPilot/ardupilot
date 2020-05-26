@@ -3,6 +3,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/Location.h>
 #include <stdint.h>
+#include <AP_Common/Location.h>
 
 class Mode
 {
@@ -171,6 +172,9 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
+
+    bool isHeadingLinedUp(const Location loiterCenterLoc, const Location targetLoc);
+    bool isHeadingLinedUp_cd(const int32_t bearing_cd);
 
 protected:
 

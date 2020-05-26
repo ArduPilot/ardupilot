@@ -31,7 +31,6 @@ def build(bld):
         'AP_Baro',
         'Filter',
         'AP_InternalError',
-        'GCS_MAVLink',
         'AP_Airspeed',
         'AP_RangeFinder',
         'AP_ROMFS',

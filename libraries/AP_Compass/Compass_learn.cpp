@@ -104,6 +104,16 @@ void CompassLearn::update(void)
     }
 
     if (sample_available) {
+// @LoggerMessage: COFS
+// @Description: Current compass learn offsets
+// @Field: TimeUS: Time since system startup
+// @Field: OfsX: best learnt offset, x-axis
+// @Field: OfsY: best learnt offset, y-axis
+// @Field: OfsZ: best learnt offset, z-axis
+// @Field: Var: error of best offset vector
+// @Field: Yaw: best learnt yaw
+// @Field: WVar: error of best learn yaw
+// @Field: N: number of samples used
         AP::logger().Write("COFS", "TimeUS,OfsX,OfsY,OfsZ,Var,Yaw,WVar,N", "QffffffI",
                                                AP_HAL::micros64(),
                                                (double)best_offsets.x,

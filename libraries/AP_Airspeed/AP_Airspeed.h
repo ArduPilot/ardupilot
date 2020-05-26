@@ -159,6 +159,14 @@ public:
     uint8_t get_primary(void) const { return primary; }
 
     static AP_Airspeed *get_singleton() { return _singleton; }
+
+    // return the current corrected pressure, public for AP_Periph
+    float get_corrected_pressure(uint8_t i) const {
+        return state[i].corrected_pressure;
+    }
+    float get_corrected_pressure(void) const {
+        return get_corrected_pressure(primary);
+    }
     
 private:
     static AP_Airspeed *_singleton;
@@ -185,17 +193,17 @@ private:
         float	last_pressure;
         float   filtered_pressure;
         float	corrected_pressure;
-        bool	healthy:1;
-        bool	hil_set:1;
         float   hil_pressure;
         uint32_t last_update_ms;
         bool use_zero_offset;
+        bool	healthy;
+        bool	hil_set;
 
         // state of runtime calibration
         struct {
             uint32_t start_ms;
-            uint16_t count;
             float    sum;
+            uint16_t count;
             uint16_t read_count;
         } cal;
 
@@ -220,13 +228,7 @@ private:
     // return the differential pressure in Pascal for the last airspeed reading for the requested instance
     // returns 0 if the sensor is not enabled
     float get_pressure(uint8_t i);
-    // return the current corrected pressure
-    float get_corrected_pressure(uint8_t i) const {
-        return state[i].corrected_pressure;
-    }
-    float get_corrected_pressure(void) const {
-        return get_corrected_pressure(primary);
-    }
+
     // get the failure health probability
     float get_health_failure_probability(uint8_t i) const {
         return state[i].failures.health_probability;

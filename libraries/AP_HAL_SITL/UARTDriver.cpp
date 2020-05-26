@@ -174,6 +174,12 @@ int16_t UARTDriver::read(void)
     return c;
 }
 
+bool UARTDriver::discard_input(void)
+{
+    _readbuffer.empty();
+    return true;
+}
+
 void UARTDriver::flush(void)
 {
 }
@@ -768,6 +774,26 @@ uint64_t UARTDriver::receive_time_constraint_us(uint16_t nbytes)
         last_receive_us -= transport_time_us;
     }
     return last_receive_us;
+}
+
+ssize_t UARTDriver::get_system_outqueue_length() const
+{
+    if (!_connected) {
+        return 0;
+    }
+
+#if defined(__CYGWIN__) || defined(__CYGWIN64__) || defined(CYGWIN_BUILD)
+    return 0;
+#elif defined(__APPLE__) && defined(__MACH__)
+    return 0;
+#else
+    int size;
+    if (ioctl(_fd, TIOCOUTQ, &size) == -1) {
+        // ::fprintf(stderr, "ioctl TIOCOUTQ failed: %m\n");
+        return 0;
+    }
+    return size;
+#endif
 }
 
 #endif // CONFIG_HAL_BOARD

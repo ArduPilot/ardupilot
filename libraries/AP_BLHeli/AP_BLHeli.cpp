@@ -1368,28 +1368,24 @@ uint8_t AP_BLHeli::telem_crc8(uint8_t crc, uint8_t crc_seed) const
 void AP_BLHeli::read_telemetry_packet(void)
 {
     uint8_t buf[telem_packet_size];
-    uint8_t crc = 0;
-    for (uint8_t i=0; i<telem_packet_size; i++) {
-        int16_t v = telem_uart->read();
-        if (v < 0) {
-            // short read, we should have 10 bytes ready when this function is called
-            return;
-        }
-        buf[i] = uint8_t(v);
+    if (telem_uart->read(buf, telem_packet_size) < telem_packet_size) {
+        // short read, we should have 10 bytes ready when this function is called
+        return;
     }
 
     // calculate crc
+    uint8_t crc = 0;
     for (uint8_t i=0; i<telem_packet_size-1; i++) {    
         crc = telem_crc8(buf[i], crc);
     }
 
     if (buf[telem_packet_size-1] != crc) {
         // bad crc
-        debug("Bad CRC on %u\n", last_telem_esc);
+        debug("Bad CRC on %u", last_telem_esc);
         return;
     }
     struct telem_data td;
-    td.temperature = buf[0];
+    td.temperature = int8_t(buf[0]);
     td.voltage = (buf[1]<<8) | buf[2];
     td.current = (buf[3]<<8) | buf[4];
     td.consumption = (buf[5]<<8) | buf[6];
@@ -1447,9 +1443,7 @@ void AP_BLHeli::update_telemetry(void)
     if (nbytes > telem_packet_size) {
         // if we have more than 10 bytes then we don't know which ESC
         // they are from. Throw them all away
-        while (nbytes--) {
-            telem_uart->read();
-        }
+        telem_uart->discard_input();
         return;
     }
     if (nbytes > 0 &&
@@ -1464,9 +1458,7 @@ void AP_BLHeli::update_telemetry(void)
     }
     if (nbytes > 0 && nbytes < telem_packet_size) {
         // we've waited long enough, discard bytes if we don't have 10 yet
-        while (nbytes--) {
-            telem_uart->read();
-        }
+        telem_uart->discard_input();
         return;
     }
     if (nbytes == telem_packet_size) {

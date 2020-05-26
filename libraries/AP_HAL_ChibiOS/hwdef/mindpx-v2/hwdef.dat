@@ -5,19 +5,14 @@
 # MCU class and specific type
 MCU STM32F4xx STM32F427xx
 
-define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_MINDPXV2
-
 # board ID for firmware load
 APJ_BOARD_ID 88
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
-STM32_PLLM_VALUE 8
 
 STM32_ST_USE_TIMER 5
 
-# board voltage
-STM32_VDD 330U
 
 # flash size
 FLASH_SIZE_KB 2048
@@ -36,7 +31,7 @@ FLASH_RESERVE_END_KB 0
 I2C_ORDER I2C1 I2C2
 
 # order of UARTs (and USB)
-UART_ORDER OTG1 UART4 USART2 USART3 UART8 USART1 UART7 USART6
+SERIAL_ORDER OTG1 USART2 USART3 UART4 UART8 USART1 UART7 USART6
 
 # UART4 is GPS
 PA0 UART4_TX UART4
@@ -198,9 +193,6 @@ define HAL_STORAGE_SIZE 16384
 
 # enable RAMTROM parameter storage
 define HAL_WITH_RAMTRON 1
-
-# fallback to flash storage
-define STORAGE_FLASH_PAGE 22
 
 # allow to have have a dedicated safety switch pin
 define HAL_HAVE_SAFETY_SWITCH 1

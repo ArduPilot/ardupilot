@@ -276,7 +276,7 @@ static bool remount_file_system(void)
     return true;
 }
 
-int AP_Filesystem::open(const char *pathname, int flags)
+int AP_Filesystem_FATFS::open(const char *pathname, int flags)
 {
     int fileno;
     int fatfs_modes;
@@ -352,7 +352,7 @@ int AP_Filesystem::open(const char *pathname, int flags)
     return fileno;
 }
 
-int AP_Filesystem::close(int fileno)
+int AP_Filesystem_FATFS::close(int fileno)
 {
     FAT_FILE *stream;
     FIL *fh;
@@ -382,7 +382,7 @@ int AP_Filesystem::close(int fileno)
     return 0;
 }
 
-ssize_t AP_Filesystem::read(int fd, void *buf, size_t count)
+int32_t AP_Filesystem_FATFS::read(int fd, void *buf, uint32_t count)
 {
     UINT bytes = count;
     int res;
@@ -431,7 +431,7 @@ ssize_t AP_Filesystem::read(int fd, void *buf, size_t count)
     return (ssize_t)total;
 }
 
-ssize_t AP_Filesystem::write(int fd, const void *buf, size_t count)
+int32_t AP_Filesystem_FATFS::write(int fd, const void *buf, uint32_t count)
 {
     UINT bytes = count;
     FRESULT res;
@@ -479,7 +479,7 @@ ssize_t AP_Filesystem::write(int fd, const void *buf, size_t count)
     return (ssize_t)total;
 }
 
-int AP_Filesystem::fsync(int fileno)
+int AP_Filesystem_FATFS::fsync(int fileno)
 {
     FAT_FILE *stream;
     FIL *fh;
@@ -508,7 +508,7 @@ int AP_Filesystem::fsync(int fileno)
     return 0;
 }
 
-off_t AP_Filesystem::lseek(int fileno, off_t position, int whence)
+off_t AP_Filesystem_FATFS::lseek(int fileno, off_t position, int whence)
 {
     FRESULT res;
     FIL *fh;
@@ -599,7 +599,7 @@ static time_t fat_time_to_unix(uint16_t date, uint16_t time)
     return unix;
 }
 
-int AP_Filesystem::stat(const char *name, struct stat *buf)
+int AP_Filesystem_FATFS::stat(const char *name, struct stat *buf)
 {
     FILINFO info;
     int res;
@@ -667,7 +667,7 @@ int AP_Filesystem::stat(const char *name, struct stat *buf)
     return 0;
 }
 
-int AP_Filesystem::unlink(const char *pathname)
+int AP_Filesystem_FATFS::unlink(const char *pathname)
 {
     WITH_SEMAPHORE(sem);
 
@@ -680,7 +680,7 @@ int AP_Filesystem::unlink(const char *pathname)
     return 0;
 }
 
-int AP_Filesystem::mkdir(const char *pathname)
+int AP_Filesystem_FATFS::mkdir(const char *pathname)
 {
     WITH_SEMAPHORE(sem);
 
@@ -703,7 +703,7 @@ struct DIR_Wrapper {
     struct dirent de;
 };
 
-DIR *AP_Filesystem::opendir(const char *pathdir)
+void *AP_Filesystem_FATFS::opendir(const char *pathdir)
 {
     WITH_SEMAPHORE(sem);
 
@@ -730,9 +730,10 @@ DIR *AP_Filesystem::opendir(const char *pathdir)
     return &ret->d;
 }
 
-struct dirent *AP_Filesystem::readdir(DIR *dirp)
+struct dirent *AP_Filesystem_FATFS::readdir(void *dirp_void)
 {
     WITH_SEMAPHORE(sem);
+    DIR *dirp = (DIR *)dirp_void;
 
     struct DIR_Wrapper *d = (struct DIR_Wrapper *)dirp;
     if (!d) {
@@ -744,7 +745,7 @@ struct dirent *AP_Filesystem::readdir(DIR *dirp)
     int res;
 
     d->de.d_name[0] = 0;
-    res = f_readdir ( dirp, &fno );
+    res = f_readdir(dirp, &fno);
     if (res != FR_OK || fno.fname[0] == 0) {
         errno = fatfs_to_errno((FRESULT)res);
         return nullptr;
@@ -760,8 +761,9 @@ struct dirent *AP_Filesystem::readdir(DIR *dirp)
     return &d->de;
 }
 
-int AP_Filesystem::closedir(DIR *dirp)
+int AP_Filesystem_FATFS::closedir(void *dirp_void)
 {
+    DIR *dirp = (DIR *)dirp_void;
     WITH_SEMAPHORE(sem);
 
     struct DIR_Wrapper *d = (struct DIR_Wrapper *)dirp;
@@ -780,7 +782,7 @@ int AP_Filesystem::closedir(DIR *dirp)
 }
 
 // return free disk space in bytes
-int64_t AP_Filesystem::disk_free(const char *path)
+int64_t AP_Filesystem_FATFS::disk_free(const char *path)
 {
     WITH_SEMAPHORE(sem);
 
@@ -801,7 +803,7 @@ int64_t AP_Filesystem::disk_free(const char *path)
 }
 
 // return total disk space in bytes
-int64_t AP_Filesystem::disk_space(const char *path)
+int64_t AP_Filesystem_FATFS::disk_space(const char *path)
 {
     WITH_SEMAPHORE(sem);
 
@@ -841,7 +843,7 @@ static void unix_time_to_fat(time_t epoch, uint16_t &date, uint16_t &time)
 /*
   set mtime on a file
  */
-bool AP_Filesystem::set_mtime(const char *filename, const time_t mtime_sec)
+bool AP_Filesystem_FATFS::set_mtime(const char *filename, const uint32_t mtime_sec)
 {
     FILINFO fno;
     uint16_t fdate, ftime;

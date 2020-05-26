@@ -153,7 +153,7 @@ void Copter::thrust_loss_check()
 // called at MAIN_LOOP_RATE
 void Copter::parachute_check()
 {
-    static uint16_t control_loss_count;	// number of iterations we have been out of control
+    static uint16_t control_loss_count; // number of iterations we have been out of control
     static int32_t baro_alt_start;
 
     // exit immediately if parachute is not enabled

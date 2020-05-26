@@ -18,6 +18,9 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
 
+// very crude debounce method
+#define DEBOUNCE_MS 50
+
 extern const AP_HAL::HAL& hal;
 
 AP_Button *AP_Button::_singleton;
@@ -98,6 +101,7 @@ void AP_Button::update(void)
 
         // get initial mask
         last_mask = get_mask();
+        debounce_mask = last_mask;
 
         // register 1kHz timer callback
         hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Button::timer_update, void));        
@@ -113,6 +117,18 @@ void AP_Button::update(void)
         send_report();
     }
 }
+
+// get state of a button
+// used by scripting
+bool AP_Button::get_button_state(uint8_t number)
+{
+    // pins params are 1 indexed not zero
+    if (number == 0 || number > AP_BUTTON_NUM_PINS) {
+        return false;
+    }
+    
+    return ( ((1 << (number - 1)) & debounce_mask) != 0);
+};
 
 /*
   get current mask
@@ -138,9 +154,14 @@ void AP_Button::timer_update(void)
         return;
     }
     uint8_t mask = get_mask();
+    uint64_t now = AP_HAL::millis64();
     if (mask != last_mask) {
         last_mask = mask;
-        last_change_time_ms = AP_HAL::millis64();
+        last_change_time_ms = now;
+    }
+    if ((now - last_change_time_ms) > DEBOUNCE_MS) {
+        // crude de-bouncing, debounces all buttons as one, not individually
+        debounce_mask = last_mask;
     }
 }
 

@@ -69,14 +69,8 @@ adcsample_t *AnalogIn::samples;
 uint32_t AnalogIn::sample_sum[ADC_GRP1_NUM_CHANNELS];
 uint32_t AnalogIn::sample_count;
 
-AnalogSource::AnalogSource(int16_t pin, float initial_value) :
-    _pin(pin),
-    _value(initial_value),
-    _value_ratiometric(initial_value),
-    _latest_value(initial_value),
-    _sum_count(0),
-    _sum_value(0),
-    _sum_ratiometric(0)
+AnalogSource::AnalogSource(int16_t pin) :
+    _pin(pin)
 {
 }
 
@@ -351,7 +345,7 @@ AP_HAL::AnalogSource* AnalogIn::channel(int16_t pin)
 {
     for (uint8_t j=0; j<ANALOG_MAX_CHANNELS; j++) {
         if (_channels[j] == nullptr) {
-            _channels[j] = new AnalogSource(pin, 0.0f);
+            _channels[j] = new AnalogSource(pin);
             return _channels[j];
         }
     }

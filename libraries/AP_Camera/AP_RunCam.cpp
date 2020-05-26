@@ -32,8 +32,8 @@
 const AP_Param::GroupInfo AP_RunCam::var_info[] = {
     // @Param: TYPE
     // @DisplayName: RunCam device type
-    // @Description: RunCam deviee type used to determine OSD menu structure and shutter options
-    // @Values: 0:Disabled, 1:RunCam Split
+    // @Description: RunCam deviee type used to determine OSD menu structure and shutter options.
+    // @Values: 0:Disabled, 1:RunCam Split Micro/RunCam with UART, 2:RunCam Split
     AP_GROUPINFO_FLAGS("TYPE", 1, AP_RunCam, _cam_type, int(DeviceType::Disabled), AP_PARAM_FLAG_ENABLE),
 
     // @Param: FEATURES
@@ -265,18 +265,6 @@ void AP_RunCam::update_osd()
     update_state_machine_disarmed();
 }
 
-// return radio values as LOW, MIDDLE, HIGH
-RC_Channel::aux_switch_pos_t AP_RunCam::get_channel_pos(uint8_t rcmapchan) const
-{
-    RC_Channel::aux_switch_pos_t position = RC_Channel::LOW;
-    const RC_Channel* chan = rc().channel(rcmapchan-1);
-    if (chan == nullptr || !chan->read_3pos_switch(position)) {
-        return RC_Channel::LOW;
-    }
-
-    return position;
-}
-
 // update the state machine when armed or flying
 void AP_RunCam::update_state_machine_armed()
 {
@@ -449,10 +437,10 @@ void AP_RunCam::handle_in_menu(Event ev)
 // map rc input to an event
 AP_RunCam::Event AP_RunCam::map_rc_input_to_event() const
 {
-    const RC_Channel::aux_switch_pos_t throttle = get_channel_pos(AP::rcmap()->throttle());
-    const RC_Channel::aux_switch_pos_t yaw = get_channel_pos(AP::rcmap()->yaw());
-    const RC_Channel::aux_switch_pos_t roll = get_channel_pos(AP::rcmap()->roll());
-    const RC_Channel::aux_switch_pos_t pitch = get_channel_pos(AP::rcmap()->pitch());
+    const RC_Channel::aux_switch_pos_t throttle = rc().get_channel_pos(AP::rcmap()->throttle());
+    const RC_Channel::aux_switch_pos_t yaw = rc().get_channel_pos(AP::rcmap()->yaw());
+    const RC_Channel::aux_switch_pos_t roll = rc().get_channel_pos(AP::rcmap()->roll());
+    const RC_Channel::aux_switch_pos_t pitch = rc().get_channel_pos(AP::rcmap()->pitch());
 
     Event result = Event::NONE;
 
@@ -549,6 +537,7 @@ void AP_RunCam::handle_2_key_simulation_process(Event ev)
         // in a sub-menu and save-and-exit was selected
         if (_in_menu > 1 && get_top_menu_length() > 0 && _sub_menu_pos == (get_sub_menu_length(_top_menu_pos) - 1)) {
             simulate_camera_button(ControlOperation::RCDEVICE_PROTOCOL_SIMULATE_WIFI_BTN, _button_delay_ms);
+            _sub_menu_pos = 0;
             _in_menu--;
         // in the top-menu and save-and-exit was selected
         } else if (_in_menu == 1 && get_top_menu_length() > 0 && _top_menu_pos == (get_top_menu_length() - 1)) {
@@ -580,6 +569,7 @@ void AP_RunCam::handle_2_key_simulation_process(Event ev)
         // the only exception is if someone hits save and exit on the root menu - then we are lost.
         if (_in_menu > 0) {
             _in_menu--;
+            _sub_menu_pos = 0;
             simulate_camera_button(ControlOperation::RCDEVICE_PROTOCOL_CHANGE_MODE, _mode_delay_ms);     // move up/out a menu
         }
         // no longer in the menu so trigger the OSD re-enablement
@@ -758,10 +748,7 @@ void AP_RunCam::drain()
         return;
     }
 
-    uint32_t avail = uart->available();
-    while (avail-- > 0) {
-       uart->read();
-    }
+    uart->discard_input();
 }
 
 // get the device info (firmware version, protocol version and features)

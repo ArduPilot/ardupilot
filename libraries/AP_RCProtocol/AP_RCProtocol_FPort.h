@@ -47,4 +47,17 @@ private:
     } byte_input;
 
     const bool inverted;
+
+    struct {
+        bool available = false;
+        uint32_t data;
+        uint16_t appid;
+        uint8_t frame;
+    } telem_data;
+
+    // receiver sends 0x10 when ready to receive telemetry frames (R-XSR)
+    bool rx_driven_frame_rate = false;
+
+    // if the receiver is not controlling frame rate apply a constraint on consecutive frames
+    uint8_t consecutive_telemetry_frame_count;
 };

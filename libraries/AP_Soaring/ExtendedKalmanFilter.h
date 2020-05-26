@@ -20,8 +20,8 @@ public:
     MatrixN<float,N> Q;
     float R;
     void reset(const VectorN<float,N> &x, const MatrixN<float,N> &p, const MatrixN<float,N> q, float r);
-    void update(float z, float Vx, float Vy);
+    void update(float z, float Px, float Py, float driftX, float driftY);
 
 private:
-    float measurementpredandjacobian(VectorN<float,N> &A);
+    float measurementpredandjacobian(VectorN<float,N> &A, float Px, float Py);
 };

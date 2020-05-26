@@ -49,11 +49,12 @@ AP_RangeFinder_UAVCAN* AP_RangeFinder_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_u
         return nullptr;
     }
     AP_RangeFinder_UAVCAN* driver = nullptr;
+    RangeFinder &frontend = *AP::rangefinder();
     //Scan through the Rangefinder params to find UAVCAN RFND with matching address.
     for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
-        if ((RangeFinder::Type)AP::rangefinder()->params[i].type.get() == RangeFinder::Type::UAVCAN &&
-            AP::rangefinder()->params[i].address == address) {
-            driver = (AP_RangeFinder_UAVCAN*)AP::rangefinder()->drivers[i];
+        if ((RangeFinder::Type)frontend.params[i].type.get() == RangeFinder::Type::UAVCAN &&
+            frontend.params[i].address == address) {
+            driver = (AP_RangeFinder_UAVCAN*)frontend.drivers[i];
         }
         //Double check if the driver was initialised as UAVCAN Type
         if (driver != nullptr && (driver->_backend_type == RangeFinder::Type::UAVCAN)) {
@@ -70,19 +71,21 @@ AP_RangeFinder_UAVCAN* AP_RangeFinder_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_u
     
     if (create_new) {
         for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
-            if ((RangeFinder::Type)AP::rangefinder()->params[i].type.get() == RangeFinder::Type::UAVCAN &&
-                AP::rangefinder()->params[i].address == address) {
-                if (AP::rangefinder()->drivers[i] != nullptr) {
+            if ((RangeFinder::Type)frontend.params[i].type.get() == RangeFinder::Type::UAVCAN &&
+                frontend.params[i].address == address) {
+                WITH_SEMAPHORE(frontend.detect_sem);
+                if (frontend.drivers[i] != nullptr) {
                     //we probably initialised this driver as something else, reboot is required for setting
                     //it up as UAVCAN type
                     return nullptr;
                 }
-                AP::rangefinder()->drivers[i] = new AP_RangeFinder_UAVCAN(AP::rangefinder()->state[i], AP::rangefinder()->params[i]);
-                driver = (AP_RangeFinder_UAVCAN*)AP::rangefinder()->drivers[i];
+                frontend.drivers[i] = new AP_RangeFinder_UAVCAN(frontend.state[i], frontend.params[i]);
+                driver = (AP_RangeFinder_UAVCAN*)frontend.drivers[i];
                 if (driver == nullptr) {
                     break;
                 }
-                AP::rangefinder()->num_instances = MAX(i+1, AP::rangefinder()->num_instances);
+                gcs().send_text(MAV_SEVERITY_INFO, "RangeFinder[%u]: added UAVCAN node %u addr %u",
+                                unsigned(i), unsigned(node_id), unsigned(address));
                 //Assign node id and respective uavcan driver, for identification
                 if (driver->_ap_uavcan == nullptr) {
                     driver->_ap_uavcan = ap_uavcan;

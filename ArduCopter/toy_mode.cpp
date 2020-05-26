@@ -907,15 +907,15 @@ void ToyMode::blink_update(void)
     if (copter.motors->armed() && AP_Notify::flags.failsafe_battery) {
         pattern = BLINK_8;
     } else if (!copter.motors->armed() && (blink_disarm > 0)) {
-		pattern = BLINK_8;
-		blink_disarm--;
-	} else {
+        pattern = BLINK_8;
+        blink_disarm--;
+    } else {
         pattern = BLINK_FULL;
     }
     
     if (copter.motors->armed()) {
-		blink_disarm = 4;
-	}
+        blink_disarm = 4;
+    }
     
     if (red_blink_count == 0) {
         red_blink_pattern = pattern;
@@ -990,6 +990,17 @@ void ToyMode::thrust_limiting(float *thrust, uint8_t num_motors)
     }
     uint16_t pwm[4];
     hal.rcout->read(pwm, 4);
+
+// @LoggerMessage: THST
+// @Description: Maximum thrust limitation based on battery voltage in Toy Mode
+// @Field: TimeUS: Time since system startup
+// @Field: Vol: Filtered battery voltage
+// @Field: Mul: Thrust multiplier between 0 and 1 to limit the output thrust based on battery voltage
+// @Field: M1: Motor 1 pwm output
+// @Field: M2: Motor 2 pwm output
+// @Field: M3: Motor 3 pwm output
+// @Field: M4: Motor 4 pwm output
+
     if (motor_log_counter++ % 10 == 0) {
         AP::logger().Write("THST", "TimeUS,Vol,Mul,M1,M2,M3,M4", "QffHHHH",
                                                AP_HAL::micros64(),

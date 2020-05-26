@@ -21,7 +21,9 @@ mcu = {
     'RAM_MAP' : [
         (0x20000000,  40, 1), # main memory, DMA safe
         (0x10000000,   8, 2), # CCM memory, faster, but not DMA safe
-    ]
+    ],
+
+    'EXPECTED_CLOCK' : 72000000
 }
 
 AltFunction_map = {

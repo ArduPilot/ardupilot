@@ -18,6 +18,7 @@
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Filesystem/AP_Filesystem_Available.h>
 #include <AP_GPS/AP_GPS.h>
+#include <AP_VisualOdom/AP_VisualOdom.h>
 
 #include "MissionItemProtocol_Waypoints.h"
 #include "MissionItemProtocol_Rally.h"
@@ -26,10 +27,41 @@
 
 #define GCS_DEBUG_SEND_MESSAGE_TIMINGS 0
 
+#ifndef HAL_NO_GCS
+
+// macros used to determine if a message will fit in the space available.
+
+void gcs_out_of_space_to_send_count(mavlink_channel_t chan);
+
+// important note: despite the names, these messages do NOT check to
+// see if the payload will fit in the buffer.  They check to see if
+// the packed message along with any channel overhead will fit.
+
+// PAYLOAD_SIZE returns the amount of space required to send the
+// mavlink message with id id on channel chan.  Mavlink2 has higher
+// overheads than mavlink1, for example.
+
 // check if a message will fit in the payload space available
 #define PAYLOAD_SIZE(chan, id) (unsigned(GCS_MAVLINK::packet_overhead_chan(chan)+MAVLINK_MSG_ID_ ## id ## _LEN))
-#define HAVE_PAYLOAD_SPACE(chan, id) (comm_get_txspace(chan) >= PAYLOAD_SIZE(chan, id))
-#define CHECK_PAYLOAD_SIZE(id) if (txspace() < unsigned(packet_overhead()+MAVLINK_MSG_ID_ ## id ## _LEN)) return false
+
+// HAVE_PAYLOAD_SPACE evaluates to an expression that can be used
+// anywhere in the code to determine if the mavlink message with ID id
+// can currently fit in the output of _chan.  Note the use of the ","
+// operator here to increment a counter.
+#define HAVE_PAYLOAD_SPACE(_chan, id) (comm_get_txspace(_chan) >= PAYLOAD_SIZE(_chan, id) ? true : (gcs_out_of_space_to_send_count(_chan), false))
+
+// CHECK_PAYLOAD_SIZE - macro which may only be used within a
+// GCS_MAVLink object's methods.  It inserts code which will
+// immediately return false from the current function if there is no
+// room to fit the mavlink message with id id on the current object's
+// output
+#define CHECK_PAYLOAD_SIZE(id) if (txspace() < unsigned(packet_overhead()+MAVLINK_MSG_ID_ ## id ## _LEN)) { gcs_out_of_space_to_send_count(chan); return false; }
+
+// CHECK_PAYLOAD_SIZE2 - macro which inserts code which will
+// immediately return false from the current function if there is no
+// room to fit the mavlink message with id id on the mavlink output
+// channel "chan".  It is expecting there to be a "chan" variable in
+// scope.
 #define CHECK_PAYLOAD_SIZE2(id) if (!HAVE_PAYLOAD_SPACE(chan, id)) return false
 
 // convenience macros for defining which ap_message ids are in which streams:
@@ -89,6 +121,9 @@ public:
         // a single loop):
         return MIN(_port->txspace(), 8192U);
     }
+
+    // this is called when we discover we'd like to send something but can't:
+    void out_of_space_to_send() { out_of_space_to_send_count++; }
 
     void send_mission_ack(const mavlink_message_t &msg,
                           MAV_MISSION_TYPE mission_type,
@@ -194,7 +229,6 @@ public:
     virtual void send_nav_controller_output() const = 0;
     virtual void send_pid_tuning() = 0;
     void send_ahrs2();
-    void send_ahrs3();
     void send_system_time();
     void send_rc_channels() const;
     void send_rc_channels_raw() const;
@@ -292,7 +326,7 @@ public:
     static const struct stream_entries all_stream_entries[];
 
     virtual uint64_t capabilities() const;
-    uint8_t get_stream_slowdown_ms() const { return stream_slowdown_ms; }
+    uint16_t get_stream_slowdown_ms() const { return stream_slowdown_ms; }
 
     MAV_RESULT set_message_interval(uint32_t msg_id, int32_t interval_us);
 
@@ -643,8 +677,6 @@ private:
 
     uint8_t send_parameter_async_replies();
 
-#if HAVE_FILESYSTEM_SUPPORT
-
     enum class FTP_OP : uint8_t {
         None = 0,
         TerminateSession = 1,
@@ -707,6 +739,8 @@ private:
         int fd = -1;
         FTP_FILE_MODE mode; // work around AP_Filesystem not supporting file modes
         int16_t current_session;
+        uint32_t last_send_ms;
+        uint8_t need_banner_send_mask;
     };
     static struct ftp_state ftp;
 
@@ -719,7 +753,6 @@ private:
     void send_ftp_replies(void);
     void ftp_worker(void);
     void ftp_push_replies(pending_ftp &reply);
-#endif // HAVE_FILESYSTEM_SUPPORT
 
     void send_distance_sensor(const class AP_RangeFinder_Backend *sensor, const uint8_t instance) const;
 
@@ -738,15 +771,8 @@ private:
                                                      const float roll,
                                                      const float pitch,
                                                      const float yaw,
+                                                     const uint8_t reset_counter,
                                                      const uint16_t payload_size);
-    void log_vision_position_estimate_data(const uint64_t usec,
-                                           const uint32_t corrected_msec,
-                                           const float x,
-                                           const float y,
-                                           const float z,
-                                           const float roll,
-                                           const float pitch,
-                                           const float yaw);
 
     void lock_channel(const mavlink_channel_t chan, bool lock);
 
@@ -755,11 +781,11 @@ private:
       since boot in milliseconds
      */
     uint32_t correct_offboard_timestamp_usec_to_ms(uint64_t offboard_usec, uint16_t payload_size);
-    
+
     mavlink_signing_t signing;
     static mavlink_signing_streams_t signing_streams;
     static uint32_t last_signing_save_ms;
-    
+
     static StorageAccess _signing_storage;
     static bool signing_key_save(const struct SigningKey &key);
     static bool signing_key_load(struct SigningKey &key);
@@ -785,6 +811,7 @@ private:
 
     uint8_t last_tx_seq;
     uint16_t send_packet_count;
+    uint16_t out_of_space_to_send_count; // number of times HAVE_PAYLOAD_SPACE and friends have returned false
 
 #if GCS_DEBUG_SEND_MESSAGE_TIMINGS
     struct {
@@ -987,3 +1014,13 @@ private:
 };
 
 GCS &gcs();
+
+// send text when we do have a GCS
+#define GCS_SEND_TEXT(severity, format, args...) gcs().send_text(severity, format, ##args)
+
+#else // HAL_NO_GCS
+// empty send text when we have no GCS
+#define GCS_SEND_TEXT(severity, format, args...)
+
+#endif // HAL_NO_GCS
+

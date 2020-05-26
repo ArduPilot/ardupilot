@@ -27,6 +27,7 @@ public:
         BattMonitor_TYPE_FuelLevel_PWM              = 12,
         BattMonitor_TYPE_SUI3                       = 13,
         BattMonitor_TYPE_SUI6                       = 14,
+        BattMonitor_TYPE_NeoDesign                  = 15,
     };
 
     // low voltage sources (used for BATT_LOW_TYPE parameter)

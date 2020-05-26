@@ -20,7 +20,7 @@ support for new emerging vehicle types such as quad-planes and compound helicopt
 
 - ArduPlane (or APM:Plane) : [code](https://github.com/ArduPilot/ardupilot/tree/master/ArduPlane), [wiki](https://ardupilot.org/plane/index.html)
 
-- ArduRover (or APMrover2) : [code](https://github.com/ArduPilot/ardupilot/tree/master/APMrover2), [wiki](https://ardupilot.org/rover/index.html)
+- ArduRover (or Rover) : [code](https://github.com/ArduPilot/ardupilot/tree/master/Rover), [wiki](https://ardupilot.org/rover/index.html)
 
 - ArduSub (or APM:Sub) : [code](https://github.com/ArduPilot/ardupilot/tree/master/ArduSub), [wiki](http://ardusub.com/)
 
@@ -131,3 +131,5 @@ for reviewing patches on their specific area.  See also the list of developers w
   - ***Board***: PXF, Erle-Brain 2, PXFmini
 - [Amilcar Lucas](https://github.com/amilcarlucas):
   - ***Subsystem***: Marvelmind
+- [Samuel Tabor](https://github.com/samuelctabor):
+  - ***Subsystem***: Soaring/Gliding

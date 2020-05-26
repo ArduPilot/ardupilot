@@ -24,6 +24,7 @@ AP_Compass_SITL::AP_Compass_SITL()
 
                 // save so the compass always comes up configured in SITL
                 save_dev_id(_compass_instance[_num_compass]);
+                set_rotation(instance, ROTATION_NONE);
                 _num_compass++;
             }
         }
@@ -126,7 +127,12 @@ void AP_Compass_SITL::_timer()
         if (i == 0) {
             // rotate the first compass, allowing for testing of external compass rotation
             f.rotate_inverse((enum Rotation)_sitl->mag_orient.get());
-            f.rotate(get_board_orientation());
+            // and add in AHRS_ORIENTATION setting if not an external compass
+            if (get_board_orientation() == ROTATION_CUSTOM) {
+                f = _sitl->ahrs_rotation * f;
+            } else {
+                f.rotate(get_board_orientation());
+            }
 
             // scale the first compass to simulate sensor scale factor errors
             f *= _sitl->mag_scaling;

@@ -177,9 +177,14 @@ public:
         TAKEOFF   =           77, // takeoff
         RUNCAM_CONTROL =      78, // control RunCam device
         RUNCAM_OSD_CONTROL =  79, // control RunCam OSD
+        VISODOM_CALIBRATE  =  80, // calibrate visual odometry camera's attitude
+        DISARM =              81, // disarm vehicle
+        Q_ASSIST =            82, // disable, enable and force Q assist
         KILL_IMU1 =          100, // disable first IMU (for IMU failure testing)
         KILL_IMU2 =          101, // disable second IMU (for IMU failure testing)
         CAM_MODE_TOGGLE =    102, // Momentary switch to cycle camera modes
+        EKF_LANE_SWITCH =    103, // trigger lane switch attempt
+        EKF_YAW_RESET =      104, // trigger yaw reset attempt
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
         // also, if you add an option >255, you will need to fix duplicate_options_exist
 
@@ -197,6 +202,7 @@ public:
     };
 
     bool read_3pos_switch(aux_switch_pos_t &ret) const WARN_IF_UNUSED;
+    aux_switch_pos_t get_aux_switch_pos() const;
 
 protected:
 
@@ -319,6 +325,7 @@ public:
 
     class RC_Channel *find_channel_for_option(const RC_Channel::aux_func_t option);
     bool duplicate_options_exist();
+    RC_Channel::aux_switch_pos_t get_channel_pos(const uint8_t rcmapchan) const;
 
     void init_aux_all();
     void read_aux_all();
@@ -329,6 +336,8 @@ public:
 
     // has_valid_input should be pure-virtual when Plane is converted
     virtual bool has_valid_input() const { return false; };
+
+    virtual RC_Channel *get_arming_channel(void) const { return nullptr; };
 
     bool gcs_overrides_enabled() const { return _gcs_overrides_enabled; }
     void set_gcs_overrides_enabled(bool enable) {
@@ -356,6 +365,18 @@ public:
         return _options & uint32_t(Option::IGNORE_RECEIVER);
     }
 
+    bool log_raw_data() const {
+        return _options & uint32_t(Option::LOG_DATA);
+    }
+    
+    bool arming_check_throttle() const {
+        return _options & uint32_t(Option::ARMING_CHECK_THROTTLE);
+    }
+
+    bool arming_skip_checks_rpy() const {
+        return _options & uint32_t(Option::ARMING_SKIP_CHECK_RPY);
+    }
+
     float override_timeout_ms() const {
         return _override_timeout.get() * 1e3f;
     }
@@ -367,13 +388,18 @@ public:
     */
     bool get_pwm(uint8_t channel, uint16_t &pwm) const;
 
+    uint32_t last_input_ms() const { return last_update_ms; };
+
 protected:
 
     enum class Option {
-        IGNORE_RECEIVER  = (1 << 0), // RC receiver modules
-        IGNORE_OVERRIDES = (1 << 1), // MAVLink overrides
-        IGNORE_FAILSAFE  = (1 << 2), // ignore RC failsafe bits
-        FPORT_PAD        = (1 << 3), // pad fport telem output
+        IGNORE_RECEIVER       = (1 << 0), // RC receiver modules
+        IGNORE_OVERRIDES      = (1 << 1), // MAVLink overrides
+        IGNORE_FAILSAFE       = (1 << 2), // ignore RC failsafe bits
+        FPORT_PAD             = (1 << 3), // pad fport telem output
+        LOG_DATA              = (1 << 4), // log rc input bytes
+        ARMING_CHECK_THROTTLE = (1 << 5), // run an arming check for neutral throttle
+        ARMING_SKIP_CHECK_RPY = (1 << 6), // skip the an arming checks for the roll/pitch/yaw channels
     };
 
     void new_override_received() {
@@ -385,6 +411,7 @@ private:
     // this static arrangement is to avoid static pointers in AP_Param tables
     static RC_Channel *channels;
 
+    uint32_t last_update_ms;
     bool has_new_overrides;
 
     AP_Float _override_timeout;

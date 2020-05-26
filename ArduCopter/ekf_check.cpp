@@ -28,6 +28,9 @@ static struct {
 // should be called at 10hz
 void Copter::ekf_check()
 {
+    // ensure EKF_CHECK_ITERATIONS_MAX is at least 7
+    static_assert(EKF_CHECK_ITERATIONS_MAX >= 7, "EKF_CHECK_ITERATIONS_MAX must be at least 7");
+
     // exit immediately if ekf has no origin yet - this assumes the origin can never become unset
     Location temp_loc;
     if (!ahrs.get_origin(temp_loc)) {
@@ -49,13 +52,16 @@ void Copter::ekf_check()
         if (!ekf_check_state.bad_variance) {
             // increase counter
             ekf_check_state.fail_count++;
-#if EKF_CHECK_ITERATIONS_MAX > 2
-            if (ekf_check_state.fail_count == EKF_CHECK_ITERATIONS_MAX-1) {
-                // we are just about to declare a EKF failsafe, ask the EKF if we can change lanes
-                // to resolve the issue
+            if (ekf_check_state.fail_count == (EKF_CHECK_ITERATIONS_MAX-2)) {
+                // we are two iterations away from declaring an EKF failsafe, ask the EKF if we can reset
+                // yaw to resolve the issue
+                ahrs.request_yaw_reset();
+            }
+            if (ekf_check_state.fail_count == (EKF_CHECK_ITERATIONS_MAX-1)) {
+                // we are just about to declare a EKF failsafe, ask the EKF if we can
+                // change lanes to resolve the issue
                 ahrs.check_lane_switch();
             }
-#endif
             // if counter above max then trigger failsafe
             if (ekf_check_state.fail_count >= EKF_CHECK_ITERATIONS_MAX) {
                 // limit count from climbing too high
@@ -105,11 +111,14 @@ bool Copter::ekf_over_threshold()
     Vector2f offset;
     ahrs.get_variances(vel_variance, position_variance, height_variance, mag_variance, tas_variance, offset);
 
+    const float mag_max = fmaxf(fmaxf(mag_variance.x,mag_variance.y),mag_variance.z);
+
     // return true if two of compass, velocity and position variances are over the threshold OR velocity variance is twice the threshold
     uint8_t over_thresh_count = 0;
-    if (mag_variance.length() >= g.fs_ekf_thresh) {
+    if (mag_max >= g.fs_ekf_thresh) {
         over_thresh_count++;
     }
+
     bool optflow_healthy = false;
 #if OPTFLOW == ENABLED
     optflow_healthy = optflow.healthy();
@@ -119,11 +128,8 @@ bool Copter::ekf_over_threshold()
     } else if (vel_variance >= g.fs_ekf_thresh) {
         over_thresh_count++;
     }
-    if (position_variance >= g.fs_ekf_thresh) {
-        over_thresh_count++;
-    }
 
-    if (over_thresh_count >= 2) {
+    if ((position_variance >= g.fs_ekf_thresh && over_thresh_count >= 1) || over_thresh_count >= 2) {
         return true;
     }
 
@@ -198,12 +204,11 @@ void Copter::check_ekf_reset()
         AP::logger().Write_Event(LogEvent::EKF_YAW_RESET);
     }
 
-#if AP_AHRS_NAVEKF_AVAILABLE && HAL_NAVEKF2_AVAILABLE
-
-    // check for change in primary EKF (log only, AC_WPNav handles position target adjustment)
-    if ((ahrs.EKF2.getPrimaryCoreIndex() != ekf_primary_core) && (ahrs.EKF2.getPrimaryCoreIndex() != -1)) {
+#if AP_AHRS_NAVEKF_AVAILABLE && (HAL_NAVEKF2_AVAILABLE || HAL_NAVEKF3_AVAILABLE)
+    // check for change in primary EKF, reset attitude target and log.  AC_PosControl handles position target adjustment
+    if ((ahrs.get_primary_core_index() != ekf_primary_core) && (ahrs.get_primary_core_index() != -1)) {
         attitude_control->inertial_frame_reset();
-        ekf_primary_core = ahrs.EKF2.getPrimaryCoreIndex();
+        ekf_primary_core = ahrs.get_primary_core_index();
         AP::logger().Write_Error(LogErrorSubsystem::EKF_PRIMARY, LogErrorCode(ekf_primary_core));
         gcs().send_text(MAV_SEVERITY_WARNING, "EKF primary changed:%d", (unsigned)ekf_primary_core);
     }

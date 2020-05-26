@@ -63,6 +63,11 @@ public:
         return frontend._detected_with_bytes?frontend.added.uart:nullptr;
     }
 
+    // get an available uart regardless of whether we have detected a protocol via it
+    AP_HAL::UARTDriver *get_available_UART(void) const {
+        return frontend.added.uart;
+    }
+
     // return true if we have a uart available for protocol handling.
     bool have_UART(void) const {
         return frontend.added.uart != nullptr;
@@ -70,9 +75,11 @@ public:
     
 protected:
     void add_input(uint8_t num_channels, uint16_t *values, bool in_failsafe, int16_t rssi=-1);
+    AP_RCProtocol &frontend;
+
+    void log_data(AP_RCProtocol::rcprotocol_t prot, uint32_t timestamp, const uint8_t *data, uint8_t len) const;
 
 private:
-    AP_RCProtocol &frontend;
     uint32_t rc_input_count;
     uint32_t last_rc_input_count;
     uint32_t rc_frame_count;

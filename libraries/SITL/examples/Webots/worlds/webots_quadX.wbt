@@ -1,11 +1,35 @@
-#VRML_SIM R2019b utf8
+#VRML_SIM R2020a utf8
 WorldInfo {
   gravity 0 -9.80665 0
   physics "sitl_physics_env"
   basicTimeStep 2
-  FPS 25
+  FPS 15
   optimalThreadCount 4
   randomSeed 52
+}
+Robot {
+  translation -1.949999999999999 0.23391237384410402 0
+  rotation 0 0 1 2.533555103014215e-15
+  children [
+    Emitter {
+      type "serial"
+      channel 1
+    }
+  ]
+  name "supervisor_sync"
+  boundingObject Box {
+    size 0.1 0.1 0.1
+  }
+  physics Physics {
+  }
+  controller "ardupilot_SITL_Supervisor"
+  supervisor TRUE
+}
+Viewpoint {
+  orientation -0.9919331177114086 -0.11439530181889061 -0.054611399076472875 0.8971103745745552
+  position -0.9553539884549295 11.277792894156029 8.463112348647094
+  follow "quad_plus_sitl"
+  followType "Mounted Shot"
 }
 DogHouse {
   translation 34.82 0.76 -24.56
@@ -19,18 +43,10 @@ DogHouse {
   translation 185.42 0.77 48.97
   name "dog house(5)"
 }
-Viewpoint {
-  orientation 0.8271274640436935 0.5437841938242927 0.1419820720073933 5.671643293801365
-  position -7.234434459826133 13.00762277807382 18.43704042041417
-  follow "quad_x_sitl"
-  followOrientation TRUE
-}
 Background {
   skyColor [
     0.15 0.5 1
   ]
-  cubemap Cubemap {
-  }
 }
 Solid {
   translation 36.93 0.77 -37.93
@@ -49,9 +65,15 @@ Solid {
   name "solid(1)"
 }
 DEF DEF_VEHICLE Robot {
-  translation -0.027601 0.674307 0.005031
+  translation -0.027601 0.694307 0.005031
   rotation 0 1 0 0.785388
   children [
+    Receiver {
+      name "receiver_main"
+      type "serial"
+      channel 1
+      bufferSize 32
+    }
     Emitter {
       name "emitter_plugin"
       description "commuicates with physics plugin"
@@ -216,7 +238,7 @@ DEF DEF_VEHICLE Robot {
         Shape {
           appearance Appearance {
             material Material {
-              diffuseColor 1 0.09999999999999999 0
+              diffuseColor 1 0.09 0
             }
           }
           geometry USE DEF_ARM
@@ -367,8 +389,8 @@ DEF DEF_VEHICLE Robot {
   }
   rotationStep 0.261799
   controller "ardupilot_SITL_QUAD"
-  controllerArgs "-p 5599  -df 0.01"
-  supervisor TRUE
+  controllerArgs "-p 5577  -df 0.01"
+  customData "1"
 }
 DirectionalLight {
   direction 0 -1 0
