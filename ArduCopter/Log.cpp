@@ -560,12 +560,12 @@ const struct LogStructure Copter::log_structure[] = {
 // @Field: mX: Target's relative to origin postion as 3-D Vector, X-Axis
 // @Field: mY: Target's relative to origin postion as 3-D Vector, Y-Axis
 // @Field: mZ: Target's relative to origin postion as 3-D Vector, Z-Axis
-// @Field: LastMeasUS: Time when target was last detected
+// @Field: LastMeasMS: Time when target was last detected
 // @Field: EKFOutl: EKF's outlier count
 // @Field: Est: Type of estimator used
 #if PRECISION_LANDING == ENABLED
     { LOG_PRECLAND_MSG, sizeof(log_Precland),
-      "PL",    "QBBfffffffIIB",    "TimeUS,Heal,TAcq,pX,pY,vX,vY,mX,mY,mZ,LastMeasUS,EKFOutl,Est", "s--ddmmddms--","F--00BB00BC--" },
+      "PL",    "QBBfffffffIIB",    "TimeUS,Heal,TAcq,pX,pY,vX,vY,mX,mY,mZ,LastMeasMS,EKFOutl,Est", "s--mmnnmmms--","F--BBBBBBBC--" },
 #endif
 
 // @LoggerMessage: SIDD
