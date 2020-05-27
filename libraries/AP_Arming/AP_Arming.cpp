@@ -552,6 +552,11 @@ bool AP_Arming::rc_arm_checks(AP_Arming::Method method)
     }
 
     bool check_passed = true;
+    // ensure all rc channels have different functions
+    if (rc().duplicate_options_exist()) {
+        check_failed(ARMING_CHECK_PARAMETERS, true, "Duplicate Aux Switch Options");
+        check_passed = false;
+    }
     const RCMapper * rcmap = AP::rcmap();
     if (rcmap != nullptr) {
         if (!rc().arming_skip_checks_rpy()) {
