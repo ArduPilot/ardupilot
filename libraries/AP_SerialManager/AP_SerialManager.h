@@ -137,6 +137,7 @@ public:
         SerialProtocol_RunCam = 26,
         SerialProtocol_Hott = 27,
         SerialProtocol_Scripting = 28,
+        SerialProtocol_NoopLoop = 29                  // for use by NoopLoop positioning system (see AP_VisualOdom driver)
     };
 
     // get singleton instance
