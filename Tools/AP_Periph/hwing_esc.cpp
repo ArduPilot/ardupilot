@@ -66,6 +66,9 @@ bool HWESC_Telem::update()
             continue;
         }
         if (len == 1 && b != TELEM_LEN) {
+            if (b != TELEM_HEADER) {
+                len = 0; // start again
+            }
             continue;
         }
         uint8_t *buf = (uint8_t *)&pkt;
