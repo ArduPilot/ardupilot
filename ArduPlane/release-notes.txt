@@ -2,7 +2,8 @@ Release 4.0.6beta1, 23rd May 2020
 ---------------------------------
 
 This is a major release with a significant number of new features and
-bug fixes.
+bug fixes. You should read the list of changes and the information
+below carefully.
 
  - changed LED scripting API to allow more than 32 LEDs on a pin
  - added support for ProfiLED LEDs
@@ -39,6 +40,52 @@ bug fixes.
  - fixed forcing of safety off on IOMCU reset
  - increased maximum compass scale factor to 1.4
  - added RTL_CLIMB_MIN parameter for initial climb in RTL
+
+The key changes to existing behaviour to watch out for in this update
+are:
+
+USB IDs
+-------
+
+ArduPilot has now switched to it's own USB IDs for all boards. For
+most users this won't cause any change, except they may notice the
+drop down list of devices in MissionPlanner will have the ArduPilot
+flight controllers labelled more usefully as "ArduPilot" instead of
+just "STM32". If you hit issues on windows please try reinstalling the
+device drivers from this URL:
+https://firmware.ardupilot.org/Tools/MissionPlanner/driver.msi
+
+Terrain
+-------
+
+A bug fix in the format ArduPilot uses to store terrain data means
+that your flight controller will need to re-download the terrain data
+onto the sdcard via your GCS. If you fly without a GCS and you use
+terrain data then please re-download the terrain data you need by
+setting up a mission when you have internet access and allowing your
+flight controller to request terrain data from your GCS.
+
+Pressure Altitude Compensation
+------------------------------
+
+This release adds in the missing hook for the VTOL motor controller on
+a quadplane to compensate the VTOL gains using your pressure
+altitude. For most people this will not have a noticible effect, but
+some users that have tuned their aircraft for high locations may
+notice a tuning change.
+
+Compass Ordering
+----------------
+
+The new compass ordering system in this release gives a lot more
+flexibility and should preseve existing configurations and
+calibrations. If you hit issues then please have a look at the new
+compass ordering user interface in recent beta releases of
+MissionPlanner.
+
+Many thanks to everyone who contributed to and tested this release!
+
+Happy flying!
 
 
 Release 4.0.5, 4th March 2020
