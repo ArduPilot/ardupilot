@@ -28,7 +28,7 @@ bool ConsoleDevice::close()
 
 bool ConsoleDevice::open()
 {
-#if APM_BUILD_TYPE(APM_BUILD_Replay) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+#if APM_BUILD_TYPE(APM_BUILD_Replay)
     // we do not want a ConsoleDevice for Replay or any examples.  It
     // screws up the terminal settings and creates all sorts of
     // weirdnesses in Replay's output.
