@@ -2238,7 +2238,7 @@ void GCS_MAVLINK::send_planck_stateinfo()
 
     mavlink_msg_planck_stateinfo_send(
       chan,
-      PLANCK_SYS_ID,
+      mavlink_system.sysid,
       PLANCK_CTRL_COMP_ID,
       AP_HAL::micros64(),
       AP::gps().time_epoch_usec(),

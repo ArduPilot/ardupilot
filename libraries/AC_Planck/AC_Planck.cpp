@@ -128,7 +128,7 @@ void AC_Planck::request_takeoff(const float alt)
   //Send a takeoff command message to planck
   mavlink_msg_planck_cmd_request_send(
     _chan,
-    PLANCK_SYS_ID,         //uint8_t target_system
+    mavlink_system.sysid,         //uint8_t target_system
     PLANCK_CTRL_COMP_ID,   //uint8_t target_component,
     PLANCK_CMD_REQ_TAKEOFF,//uint8_t type
     alt,                   //float param1
@@ -141,7 +141,7 @@ void AC_Planck::request_alt_change(const float alt)
   uint8_t valid = 0b00000100;
   mavlink_msg_planck_cmd_request_send(
     _chan,
-    PLANCK_SYS_ID,
+    mavlink_system.sysid,
     PLANCK_CTRL_COMP_ID,
     PLANCK_CMD_REQ_MOVE_TARGET,
     (float)valid,     //param1
@@ -157,7 +157,7 @@ void AC_Planck::request_rtb(const float alt, const float rate_up, const float ra
   //Send an RTL command message to planck
   mavlink_msg_planck_cmd_request_send(
     _chan,
-    PLANCK_SYS_ID,         //uint8_t target_system
+    mavlink_system.sysid,         //uint8_t target_system
     PLANCK_CTRL_COMP_ID,   //uint8_t target_component,
     PLANCK_CMD_REQ_RTB,    //uint8_t type
     alt,                   //float param1
@@ -172,7 +172,7 @@ void AC_Planck::request_land(const float descent_rate)
   //Send a land command message to planck
   mavlink_msg_planck_cmd_request_send(
     _chan,
-    PLANCK_SYS_ID,         //uint8_t target_system
+    mavlink_system.sysid,         //uint8_t target_system
     PLANCK_CTRL_COMP_ID,   //uint8_t target_component,
     PLANCK_CMD_REQ_LAND,   //uint8_t type
     descent_rate,          //float param1
@@ -186,7 +186,7 @@ void AC_Planck::request_move_target(const Vector3f offset_cmd_NED, const bool is
   uint8_t valid = 0b00000111;
   mavlink_msg_planck_cmd_request_send(
     _chan,
-    PLANCK_SYS_ID,
+    mavlink_system.sysid,
     PLANCK_CTRL_COMP_ID,
     PLANCK_CMD_REQ_MOVE_TARGET,
     (float)valid,     //param1
@@ -205,7 +205,7 @@ void AC_Planck::stop_commanding(void)
 {
   mavlink_msg_planck_cmd_request_send(
     _chan,
-    PLANCK_SYS_ID,         //uint8_t target_system
+    mavlink_system.sysid,         //uint8_t target_system
     PLANCK_CTRL_COMP_ID,   //uint8_t target_component,
     PLANCK_CMD_REQ_STOP,   //uint8_t type
     0,0,0,0,0,0);
