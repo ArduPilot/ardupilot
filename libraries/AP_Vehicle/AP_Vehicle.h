@@ -41,6 +41,7 @@
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include <AP_GyroFFT/AP_GyroFFT.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
+#include <AP_RCTelemetry/AP_VideoTX.h>
 
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
 
@@ -221,6 +222,7 @@ protected:
 #if HAL_GYROFFT_ENABLED
     AP_GyroFFT gyro_fft;
 #endif
+    AP_VideoTX vtx;
     AP_SerialManager serial_manager;
 
     AP_Relay relay;
