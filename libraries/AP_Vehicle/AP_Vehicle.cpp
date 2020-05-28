@@ -27,6 +27,10 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(visual_odom, "VISO",  3, AP_Vehicle, AP_VisualOdom),
 #endif
 
+    // @Group: VTX_
+    // @Path: ../AP_RCTelemetry/AP_VideoTX.cpp
+    AP_SUBGROUPINFO(vtx, "VTX_",  4, AP_Vehicle, AP_VideoTX),
+
     AP_GROUPEND
 };
 
@@ -102,6 +106,7 @@ void AP_Vehicle::setup()
     // init library used for visual position estimation
     visual_odom.init();
 #endif
+    vtx.init();
 
 #if AP_PARAM_KEY_DUMP
     AP_Param::show_all(hal.console, true);
@@ -138,6 +143,7 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update_parameters,         1, 50),
 #endif
     SCHED_TASK(update_dynamic_notch,                   200,    200),
+    SCHED_TASK_CLASS(AP_VideoTX,   &vehicle.vtx,            update,                    2, 100),
     SCHED_TASK(send_watchdog_reset_statustext,         0.1,     20),
 };
 
