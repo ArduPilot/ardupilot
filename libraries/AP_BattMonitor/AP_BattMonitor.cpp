@@ -11,6 +11,7 @@
 #include "AP_BattMonitor_Sum.h"
 #include "AP_BattMonitor_FuelFlow.h"
 #include "AP_BattMonitor_FuelLevel_PWM.h"
+#include "AP_BattMonitor_FRSky_SPort.h"
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -180,6 +181,9 @@ AP_BattMonitor::init()
                 drivers[instance] = new AP_BattMonitor_SMBus_NeoDesign(*this, state[instance], _params[instance],
                                                                  hal.i2c_mgr->get_device(_params[instance]._i2c_bus, AP_BATTMONITOR_SMBUS_I2C_ADDR,
                                                                                          100000, true, 20));
+                break;
+            case AP_BattMonitor_Params::BattMonitor_TYPE_FRSKY_SPORT:
+                drivers[instance] = new AP_BattMonitor_FRSky_SPort(*this, state[instance], _params[instance]);
                 break;
             case AP_BattMonitor_Params::BattMonitor_TYPE_NONE:
             default:
