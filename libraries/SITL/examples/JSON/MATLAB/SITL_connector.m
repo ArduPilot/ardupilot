@@ -2,7 +2,7 @@
 % Toolbox 2.0.6 by Peter Rydesäter
 % https://uk.mathworks.com/matlabcentral/fileexchange/345-tcp-udp-ip-toolbox-2-0-6
 
-function SITL_connector(target_ip,state,init_function,physics_function,delta_t)
+function SITL_connector(state,init_function,physics_function,max_timestep)
 try
     pnet('closeall') % close any connections left open from past runs
 catch
@@ -31,17 +31,15 @@ pnet(u,'setreadtimeout',0);
 
 frame_time = tic;
 frame_count = 0;
-physics_time_us = 0;
+physics_time_s = 0;
 last_SITL_frame = -1;
-print_frame_count = 1000;
+print_frame_count = 1000; % print the fps every x frames
 connected = false;
-bytes_read =  4 + 4 + 16*2;
-time_correction = 1;
+bytes_read =  4 + 4 + 16*2; % the number of bytes received in each packet
 while true
-    mat_time = tic;
 
     % Wait for data
-     while true
+    while true
          in_bytes = pnet(u,'readpacket',bytes_read);
          if in_bytes > 0
              break;
@@ -59,14 +57,23 @@ while true
         continue;
     end
 
-    % read in the current SITL frame and PWM
+    % read in data from AP
+    magic = pnet(u,'read',1,'UINT16','intel');    
+    frame_rate = double(pnet(u,'read',1,'UINT16','intel'));
     SITL_frame = pnet(u,'read',1,'UINT32','intel');
-    speed_up = double(pnet(u,'read',1,'SINGLE','intel'));
     pwm_in = double(pnet(u,'read',16,'UINT16','intel'))';
+    
+    % check the magic value is what expect
+    if magic ~= 18458
+        warning('incorrect magic value')
+        continue;
+    end
+    
     % Check if the fame is in expected order
     if SITL_frame < last_SITL_frame
         % Controller has reset, reset physics also
         state = init_function(state);
+        connected = false;
         fprintf('Controller reset\n')
     elseif SITL_frame == last_SITL_frame
         % duplicate frame, skip
@@ -76,19 +83,21 @@ while true
         fprintf('Missed %i input frames\n',SITL_frame - last_SITL_frame - 1)
     end
     last_SITL_frame = SITL_frame;
-    physics_time_us = physics_time_us + delta_t * 10^6;
+    state.delta_t = min(1/frame_rate,max_timestep);
+    physics_time_s = physics_time_s + state.delta_t;
 
     if ~connected
         connected = true;
-        fprintf('Connected\n')
+        [ip, port] = pnet(u,'gethost');
+        fprintf('Connected to %i.%i.%i.%i:%i\n',ip,port)
     end
     frame_count = frame_count + 1;
 
-    % Do a physics time step
+    % do a physics time step
     state = physics_function(pwm_in,state);
 
     % build structure representing the JSON string to be sent
-    JSON.timestamp = physics_time_us;
+    JSON.timestamp = physics_time_s;
     JSON.imu.gyro = state.gyro;
     JSON.imu.accel_body = state.accel;
     JSON.position = state.position;
@@ -97,22 +106,14 @@ while true
 
     % Report to AP  
     pnet(u,'printf',sprintf('\n%s\n',jsonencode(JSON)));
-    pnet(u,'writepacket',target_ip,9003);
+    pnet(u,'writepacket');
 
     % print a fps and runtime update
     if rem(frame_count,print_frame_count) == 0
         total_time = toc(frame_time);
         frame_time = tic;
-        time_ratio = (print_frame_count*delta_t)/total_time;
+        time_ratio = (print_frame_count*state.delta_t)/total_time;
         fprintf("%0.2f fps, %0.2f%% of realtime\n",print_frame_count/total_time,time_ratio*100)
-        time_ratio = speed_up / time_ratio;
-        if time_ratio < 1.1 && time_ratio > 0.9
-            time_correction = time_correction * 0.95 + time_ratio * 0.05;
-        end
     end
-
-    while toc(mat_time) < (delta_t / speed_up) / time_correction
-    end
-
 end
 
