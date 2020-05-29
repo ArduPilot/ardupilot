@@ -87,6 +87,8 @@ while true
     physics_time_s = physics_time_s + state.delta_t;
 
     if ~connected
+        % use port -1 to indicate connection to address of last recv pkt
+        pnet(u,'udpconnect',"",-1);
         connected = true;
         [ip, port] = pnet(u,'gethost');
         fprintf('Connected to %i.%i.%i.%i:%i\n',ip,port)
