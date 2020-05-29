@@ -2136,6 +2136,17 @@ struct PACKED log_Arm_Disarm {
 // @Field: Yaw: Yaw angle
 // @Field: ResetCnt: Position reset counter
 
+// @LoggerMessage: VISV
+// @Description: Vision Velocity
+// @Field: TimeUS: System time
+// @Field: RemTimeUS: Remote system time
+// @Field: CTimeMS: Corrected system time
+// @Field: VX: Velocity X-axis (North-South)
+// @Field: VY: Velocity Y-axis (East-West)
+// @Field: VZ: Velocity Z-axis (Down-Up)
+// @Field: VErr: Velocity estimate error
+// @Field: ResetCnt: Position reset counter
+
 // @LoggerMessage: WENC
 // @Description: Wheel encoder measurements
 // @Field: TimeUS: Time since system startup
