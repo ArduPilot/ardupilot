@@ -279,6 +279,7 @@ bool rotation_equal(enum Rotation r1, enum Rotation r2) WARN_IF_UNUSED;
 
 /*
  * return a velocity correction (in m/s in NED) for a sensor's position given it's position offsets
+ * this correction should be added to the sensor NED measurement
  * sensor_offset_bf is in meters in body frame (Foward, Right, Down)
  * rot_ef_to_bf is a rotation matrix to rotate from earth-frame (NED) to body frame
  * angular_rate is rad/sec
