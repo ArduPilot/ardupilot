@@ -35,6 +35,8 @@ public:
     void init(float sample_freq_hz, float center_freq_hz, float bandwidth_hz, float attenuation_dB);
     // update the underlying filters' center frequencies using center_freq_hz as the fundamental
     void update(float center_freq_hz);
+    // update all o fthe underlying center frequencies individually
+    void update(uint8_t num_centers, const float center_freq_hz[]);
     // apply a sample to each of the underlying filters in turn
     T apply(const T &sample);
     // reset each of the underlying filters
@@ -78,6 +80,7 @@ class HarmonicNotchFilterParams : public NotchFilterParams {
 public:
     enum class Options {
         DoubleNotch = 1<<0,
+        DynamicHarmonic = 1<<1,
     };
 
     HarmonicNotchFilterParams(void);
