@@ -75,7 +75,7 @@ void AP_VisualOdom_IntelT265::handle_vision_speed_estimate(uint64_t remote_time_
     // record time for health monitoring
     _last_update_ms = AP_HAL::millis();
 
-    AP::logger().Write_VisualVelocity(remote_time_us, time_ms, vel_corrected, reset_counter);
+    AP::logger().Write_VisualVelocity(remote_time_us, time_ms, vel_corrected, _frontend.get_vel_noise(), reset_counter);
 }
 
 // apply rotation and correction to position

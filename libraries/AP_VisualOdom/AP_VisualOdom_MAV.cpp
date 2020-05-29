@@ -61,7 +61,7 @@ void AP_VisualOdom_MAV::handle_vision_speed_estimate(uint64_t remote_time_us, ui
     // record time for health monitoring
     _last_update_ms = AP_HAL::millis();
 
-    AP::logger().Write_VisualVelocity(remote_time_us, time_ms, vel, reset_counter);
+    AP::logger().Write_VisualVelocity(remote_time_us, time_ms, vel, _frontend.get_vel_noise(), reset_counter);
 }
 
 #endif
