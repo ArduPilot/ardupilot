@@ -54,7 +54,7 @@ bool AP_BattMonitor_FRSky_SPort::has_current() const
     return false;
 }
 
-bool AP_BattMonitor_FRSky_SPort::has_cell_voltages()
+bool AP_BattMonitor_FRSky_SPort::has_cell_voltages() const
 {
     if(_state.cell_voltages.cells[0] > 0)
     {
