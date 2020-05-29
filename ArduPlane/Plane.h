@@ -1014,7 +1014,7 @@ private:
     void startup_INS_ground(void);
     bool should_log(uint32_t mask);
     int8_t throttle_percentage(void);
-    void update_dynamic_notch();
+    void update_dynamic_notch() override;
     void notify_mode(const Mode& mode);
 
     // takeoff.cpp
