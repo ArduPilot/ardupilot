@@ -3848,6 +3848,7 @@ class AutoTestCopter(AutoTest):
                 self.hover_and_check_matched_frequency(-15, 100, 250, 64, None)
 
                 # Step 3: switch harmonics mid flight and check for tracking
+                self.start_subtest("Switch harmonics mid flight and check the right harmonic is found")
                 self.set_parameter("FFT_HMNC_PEAK", 0)
                 self.reboot_sitl()
 
@@ -3885,6 +3886,26 @@ class AutoTestCopter(AutoTest):
 
                 if abs(pkAvg - freq) > freqDelta:
                     raise NotAchievedException("FFT did not detect a harmonic motor peak, found %f, wanted %f" % (pkAvg, freq))
+
+                # Step 4: dynamic harmonic
+                self.start_subtest("Enable dynamic harmonics and make sure both frequency peaks are attenuated")
+                # find a motor peak
+                freq, vfr_hud, peakdb = self.hover_and_check_matched_frequency_with_fft(-15, 100, 350)
+
+                # now add a dynamic notch and check that the peak is squashed
+                self.set_parameter("INS_LOG_BAT_OPT", 2)
+                self.set_parameter("INS_HNTCH_ENABLE", 1)
+                self.set_parameter("INS_HNTCH_HMNCS", 3)
+                self.set_parameter("INS_HNTCH_MODE", 4)
+                self.set_parameter("INS_HNTCH_FREQ", freq)
+                #self.set_parameter("INS_HNTCH_REF", 1.0)
+                self.set_parameter("INS_HNTCH_REF", vfr_hud.throttle/100.)
+                self.set_parameter("INS_HNTCH_ATT", 100)
+                self.set_parameter("INS_HNTCH_BW", freq/2)
+                self.set_parameter("INS_HNTCH_OPTS", 3)
+                self.reboot_sitl()
+
+                self.hover_and_check_matched_frequency_with_fft(-1, 100, 350, reverse=True)
 
                 self.set_parameter("SIM_VIB_FREQ_X", 0)
                 self.set_parameter("SIM_VIB_FREQ_Y", 0)
