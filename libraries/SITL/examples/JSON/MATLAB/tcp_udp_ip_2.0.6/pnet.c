@@ -844,7 +844,7 @@ int writedata()
           ) {
             con[con_index].status=STATUS_NOCONNECT;
             perror( "sendto() / send()" );
-            mexPrintf("\nREMOTE HOST DISCONNECTED\n");
+            mexPrintf("\nREMOTE HOST DISCONNECTED %d\n", s_errno);
             break;
         }
         if( !IS_STATUS_TCP_CONNECTED(con[con_index].status) && sentlen>0 )
@@ -927,8 +927,9 @@ int read2buff(const int len,int newline,int noblock)
         int readlen=len-con[con_index].read.pos;
 //	mexPrintf("DEBUG: READLINE: readlen:%d\n",readlen);
         if(readlen>0) {
-            if(IS_STATUS_CONNECTED(con[con_index].status))
+            if(IS_STATUS_CONNECTED(con[con_index].status)) {
                 retval=recv(con[con_index].fid,&con[con_index].read.ptr[con[con_index].read.pos],readlen,MSG_NOSIGNAL);
+            }
             else {
                 struct sockaddr_in my_addr;
                 int fromlen=sizeof(my_addr);
@@ -1068,14 +1069,22 @@ int udp_connect(const char *hostname,int port)
 {
     if(con[con_index].status < STATUS_UDP_CLIENT)
         mexErrMsgTxt("Must pass UDP client or server handler!");
-    if(ipv4_lookup(hostname,port)==-1)
+    if (port == -1) {
+        // use address of last received packet
+        con[con_index].remote_addr.sin_family=AF_INET;
+    } else if (ipv4_lookup(hostname,port)==-1) {
         return -1;
-    if(connect(con[con_index].fid,(struct sockaddr *)&con[con_index].remote_addr,sizeof(struct sockaddr)) == -1)
+    }
+    mexPrintf("connecting to port %d\n", con[con_index].remote_addr.sin_port);
+    if(connect(con[con_index].fid,(struct sockaddr *)&con[con_index].remote_addr,sizeof(struct sockaddr)) == -1) {
+        mexErrMsgTxt("connect failed");
         return -1; /*Can't connect to remote host. */
-    if(con[con_index].status == STATUS_UDP_CLIENT)
+    }
+    if(con[con_index].status == STATUS_UDP_CLIENT) {
         con[con_index].status = STATUS_UDP_CLIENT_CONNECT;
-    else
+    } else {
         con[con_index].status = STATUS_UDP_SERVER_CONNECT;
+    }
     nonblockingsocket(con[con_index].fid); /* Non blocking read! */
     return con[con_index].status;
 }
