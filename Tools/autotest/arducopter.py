@@ -5272,6 +5272,45 @@ class AutoTestHeli(AutoTestCopter):
         if ex is not None:
             raise ex
 
+    def fly_heli_stabilize_takeoff(self):
+        """"""
+        self.context_push()
+
+        ex = None
+        try:
+            self.change_mode('STABILIZE')
+            self.set_rc(3, 1000)
+            self.set_rc(8, 1000)
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.set_rc(8, 2000)
+            self.progress("wait for rotor runup to complete")
+            self.wait_servo_channel_value(8, 1660, timeout=10)
+            self.delay_sim_time(20)
+            # check we are still on the ground...
+            m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+            if abs(m.relative_alt) > 100:
+                raise NotAchievedException("Took off prematurely")
+            self.progress("Pushing throttle past half-way")
+            self.set_rc(3, 1600)
+
+            self.progress("Monitoring takeoff")
+            self.wait_altitude(6.9, 8, relative=True)
+
+            self.progress("takeoff OK")
+        except Exception as e:
+            ex = e
+
+        self.mavproxy.send('mode LAND\n')
+        self.wait_mode('LAND')
+        self.wait_disarmed()
+        self.set_rc(8, 1000)
+
+        self.context_pop()
+
+        if ex is not None:
+            raise ex
+
     def fly_spline_waypoint(self, timeout=600):
         """ensure basic spline functionality works"""
         self.load_mission("copter_spline_mission.txt")
@@ -5336,6 +5375,10 @@ class AutoTestHeli(AutoTestCopter):
             ("PosHoldTakeOff",
              "Fly POSHOLD takeoff",
              self.fly_heli_poshold_takeoff),
+
+            ("StabilizeTakeOff",
+             "Fly stabilize takeoff",
+             self.fly_heli_stabilize_takeoff),
 
             ("SplineWaypoint",
              "Fly Spline Waypoints",
