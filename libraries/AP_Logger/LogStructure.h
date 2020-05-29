@@ -636,6 +636,7 @@ struct PACKED log_VisualVelocity {
     float vel_x;
     float vel_y;
     float vel_z;
+    float vel_err;
     uint8_t reset_counter;
 };
 
@@ -2494,7 +2495,7 @@ struct PACKED log_Arm_Disarm {
     { LOG_VISUALPOS_MSG, sizeof(log_VisualPosition), \
       "VISP", "QQIffffffb", "TimeUS,RemTimeUS,CTimeMS,PX,PY,PZ,Roll,Pitch,Yaw,ResetCnt", "sssmmmddh-", "FFC000000-" }, \
     { LOG_VISUALVEL_MSG, sizeof(log_VisualVelocity), \
-      "VISV", "QQIfffb", "TimeUS,RemTimeUS,CTimeMS,VX,VY,VZ,ResetCnt", "sssnnn-", "FFC000-" }, \
+      "VISV", "QQIffffb", "TimeUS,RemTimeUS,CTimeMS,VX,VY,VZ,VErr,ResetCnt", "sssnnnn-", "FFC0000-" }, \
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow), \
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEnn", "F-0000" }, \
     { LOG_WHEELENCODER_MSG, sizeof(log_WheelEncoder), \
