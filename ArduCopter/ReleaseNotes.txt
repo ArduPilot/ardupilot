@@ -1,5 +1,47 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.0.4-rc1 26-May-2020
+Changes from 4.0.3
+1) Bug Fixes:
+    a) I/O CPU fix so safety remains off after inflight reboot (Critical fix)
+    b) Acro mode yaw expo supports values under 0.5 (see ACRO_Y_EXPO param)
+    c) Auto mode Loiter-Turn commands points towards center
+    d) Change-Speed commands applied smoothly
+    e) Compass scaling factor threshhold increased
+    f) EKF compass variance reporting to GCS made consistent with onboard logs
+    g) Gimbal control using RC input ignores RCx_TRIM param
+    h) Holybro Durandal buzzer fix
+    i) Parameter reset fix caused by Eeprom race condition
+    j) Read-only parameter write failure msg only sent once to GCS
+    k) Compass declination can be overriden with COMPASS_DEC param (and EKF stops using world magnetic tables)
+    l) Terrain database (SRTM) file fix (will cause all terrain to be reloaded after upgrade)
+2) Bootloader update to reduce chance of param resets during firmware load
+3) Compass ordering and prioritisation improvements
+4) Flight controller support:
+    a) CUAV-Nora
+    b) CUAV-X7
+    c) MatekSys H743
+    e) mRo Nexus
+    d) R9Pilot
+5) GPS moving baseline (aka Yaw from GPS) for UBlox F9 and M9 GPSs
+6) Graupner Hott telemetry support
+7) Landing detector filter improvement improves detection on hard surfaces
+8) Object Avoidances Fixes and improvements:
+    a) BendyRuler runs more slowly to reduce CPU load and reduce timeouts
+    b) Dijkstra's avoidance works with more fence points
+    c) Proximity drivers (i.e. 360deg lidar) simplified to reduce CPU load
+9) ProfiLED LEDs support
+10) Smart Battery improvements:
+    a) Cycle count added
+    b) NeoDesign battery support
+    c) SUI battery support 
+11) Other enhancements:
+    a) Betaflight X frame type support
+    b) Landing gear auto deploy/retract configurable using LGR_OPTIONS param
+    c) MOT_PWM_MIN/MAX pre-arm check (checks fail if only one has been set)
+    d) Solo gimbal and camera control improvements
+    e) USB IDs updated to new ArduPilot specific IDs
+------------------------------------------------------------------
 Copter 4.0.3 28-Feb-2020 / 4.0.3-rc1 20-Feb-2020
 Changes from 4.0.2
 1) Bug Fixes:

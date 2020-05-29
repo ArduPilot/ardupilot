@@ -135,7 +135,6 @@ bool AP_Compass_RM3100::init()
     dev->write_register(RM3100_CCZ1_REG, CCP1, true); // cycle count z
     dev->write_register(RM3100_CCZ0_REG, CCP0, true); // cycle count z
 
-//    _scaler = (1 / GAIN_CC200) * UTESLA_TO_MGAUSS / 200.0; // has to be changed if using a different cycle count
     _scaler = (1 / GAIN_CC200) * UTESLA_TO_MGAUSS; // has to be changed if using a different cycle count
 
     // lower retries for run

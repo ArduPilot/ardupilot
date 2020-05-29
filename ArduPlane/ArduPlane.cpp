@@ -544,6 +544,10 @@ void Plane::update_alt()
 {
     barometer.update();
 
+    if (quadplane.available()) {
+        quadplane.motors->set_air_density_ratio(barometer.get_air_density_ratio());
+    }
+
     // calculate the sink rate.
     float sink_rate;
     Vector3f vel;
