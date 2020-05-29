@@ -863,7 +863,7 @@ private:
     // system.cpp
     void init_ardupilot() override;
     void startup_INS_ground();
-    void update_dynamic_notch();
+    void update_dynamic_notch() override;
     bool position_ok() const;
     bool ekf_position_ok() const;
     bool optflow_position_ok() const;
