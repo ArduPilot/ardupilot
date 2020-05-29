@@ -122,7 +122,42 @@ public:
     ModePayloadRelease()
     {
         is_payload_released = false;
+        g = 9.8;
+        m = 1;  //mass
+        Area = 0.015;
+        rho = 1.2;
+        dt = 0.01;
+        cd = 1.7;
+        z_0 = 0.1;
+        time_delay = 2;
+        a = 1;  //sign changing variable
+        vz = 0;
+        az = g;
+        z = 0;
+        total_height = 0;
+        remaining_height = 0;
+        vx = 0;
+        ax = 0;
+        x = 0;
+        vrx = 0;
+        v = 0;
+        fd = 0;
+        fdx = 0;
+        fdz = 0;
+        calculated = false;
     }
+    // This is for payload release state. 
+    enum PayloadReleaseState{
+        PayloadRelease_NotStarted,
+        PayloadRelease_Start,
+        PayloadRelease_Finish
+    };
+    //point where payload should be dropped
+    Location drop_point;
+    Vector3d drop_point_neu;
+    //point where payload should be released to reach drop point
+    Location release_point;
+    Vector3d release_point_neu;
     
     Number mode_number() const override { return Number::PAYLOADRELEASE; }
     const char *name() const override { return "PAYLOADRELEASE"; }
@@ -133,6 +168,10 @@ public:
     void update() override;
     void set_state(bool state){is_payload_released = state;}
     bool get_state(){return is_payload_released;}
+    void initialise_initial_condition();
+    void calculate_displacement();
+    void llh_to_local(Location &current_llh, Vector3d &current_neu);
+    void local_to_llh(Vector3d &current_neu, Location &current_llh);
 
 protected:
 
@@ -140,6 +179,45 @@ protected:
     void _exit() override;
 private:
     bool is_payload_released;
+    PayloadReleaseState _state = PayloadRelease_NotStarted;
+
+    uint8_t g; //acceleration due to gravity
+    uint8_t m; //mass of payload
+    float Area;    //Cross sectional area
+    float rho;  //air density
+    float dt;   //freefall prediction timestamp
+    float cd;   //coefficent of drag
+    float z_0;  //surface roughness
+    float time_delay;   //time to open payload mechanism
+    uint8_t a ; //sign changing value
+
+    float vz ;  //velocity in z direction
+    float az ;   //acceleration in z direction
+    float z ;    //intermediate height calculated
+    float total_height ;    //height over target
+    float remaining_height;   //remaining height over target
+    float vw;    //velocity of wind
+    float vx ;   //velocity in x direction
+    float ax ;   //acceleration in x direction
+    float x ;   //displacement in NE plane in NED frame
+    float vrx;  //velocity in x direction with relative to wind
+
+    float v ;   //relative speed vector
+    float fd;   //drag force
+    float fdx;  //drag force in x direction
+    float fdz;  //drag force in z direction
+
+    bool calculated;
+
+    Vector3f wind;
+    int wind_speed_north;
+    int wind_speed_east;
+    float wind_speed_normalized;
+    int airspeed_uav;
+    
+    float theta,phi,C,dirn; //angles
+    float relative; //relative direction vector in which payload and parachute will fall 
+
 };
 //add finish
 
