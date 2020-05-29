@@ -354,8 +354,6 @@ void Copter::throttle_loop()
 
     // compensate for ground effect (if enabled)
     update_ground_effect_detector();
-
-    update_dynamic_notch();
 }
 
 // update_batt_compass - read battery and compass
@@ -631,6 +629,8 @@ void Copter::update_altitude()
         Log_Write_Control_Tuning();
 #if HAL_GYROFFT_ENABLED
         gyro_fft.write_log_messages();
+#else
+        write_notch_log_messages();
 #endif
     }
 }
