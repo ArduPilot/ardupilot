@@ -82,12 +82,6 @@ JSON::JSON(const char *frame_str) :
 */
 void JSON::set_interface_ports(const char* address, const int port_in, const int port_out)
 {
-    if (!sock.bind("0.0.0.0", port_in)) {
-        printf("Unable to bind JSON sensor_in socket at port %u - Error: %s\n",
-                port_in, strerror(errno));
-        return;
-    }
-    printf("Bind SITL sensor input at %s:%u\n", "127.0.0.1", port_in);
     sock.set_blocking(false);
     sock.reuseaddress();
 
@@ -95,7 +89,6 @@ void JSON::set_interface_ports(const char* address, const int port_in, const int
         target_ip = address;
     }
     control_port = port_out;
-    sensor_port = port_in;
 
     printf("JSON control interface set to %s:%u\n", target_ip, control_port);
 }

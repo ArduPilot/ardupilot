@@ -45,9 +45,6 @@ private:
     // default connection_info_.ip_address
     const char *target_ip = "127.0.0.1";
 
-    // default connection_info_.ip_port
-    uint16_t sensor_port = 9003;
-
     // default connection_info_.sitl_ip_port
     uint16_t control_port = 9002;
 
