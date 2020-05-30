@@ -1,7 +1,6 @@
 #pragma once
 
 #include <AP_Motors/AP_Motors.h>
-#include <AC_PID/AC_PID.h>
 #include <AC_AttitudeControl/AC_AttitudeControl_Multi.h> // Attitude control library
 #include <AP_InertialNav/AP_InertialNav.h>
 #include <AC_AttitudeControl/AC_PosControl.h>

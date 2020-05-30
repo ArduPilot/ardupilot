@@ -51,3 +51,29 @@ bool Plane::get_target_location(Location& target_loc)
     }
     return false;
 }
+
+AC_PID* Plane::get_AC_PID(AC_PID_TYPE type)
+{
+    AC_PID *ret = nullptr;
+
+    if (plane.quadplane.enabled()) {
+        switch(type) {
+            case AC_PID_TYPE::RATE_ROLL:
+                ret = &quadplane.attitude_control->get_rate_roll_pid();
+                break;
+
+            case AC_PID_TYPE::RATE_PITCH:
+                ret = &quadplane.attitude_control->get_rate_pitch_pid();
+                break;
+
+            case AC_PID_TYPE::RATE_YAW:
+                ret = &quadplane.attitude_control->get_rate_yaw_pid();
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    return ret;
+}

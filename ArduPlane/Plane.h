@@ -1119,6 +1119,8 @@ public:
     // AP_Vehicle.h
     bool set_target_location(const Location& target_loc) override;
     bool get_target_location(Location& target_loc) override;
+    AC_PID *get_AC_PID(AC_PID_TYPE type) override;
+
 };
 
 extern Plane plane;
