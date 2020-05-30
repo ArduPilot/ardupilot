@@ -1293,6 +1293,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(guidedHeading, "GUIDED_", 28, ParametersG2, AC_PID),
 #endif // OFFBOARD_GUIDED == ENABLED
 
+    // @Param: ELEV_DT_GAIN
+    // @DisplayName: elevator differential thrust gain
+    // @Description: gain control from elevator to differential thrust
+    // @Range: 0 100
+    // @Units: %
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("ELEV_DT_GAIN", 29, ParametersG2, elev_dt_gain, 10),
+
     AP_GROUPEND
 };
 

@@ -530,8 +530,11 @@ public:
     SoaringController soaring_controller;
 #endif
 
-    // dual motor tailsitter rudder to differential thrust scaling: 0-100%
+    // dual motor and copter tailsitter rudder to differential thrust scaling: 0-100%
     AP_Int8 rudd_dt_gain;
+
+    // copter tailsitter elevator to differential thrust scaling: 0-100%
+    AP_Int8 elev_dt_gain;
 
     // QACRO mode max yaw rate in deg/sec
     AP_Int16 acro_yaw_rate;

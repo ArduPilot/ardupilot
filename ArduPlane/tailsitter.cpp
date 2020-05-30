@@ -71,8 +71,6 @@ void QuadPlane::tailsitter_output(void)
     float tilt_left = 0.0f;
     float tilt_right = 0.0f;
 
-
-
     // handle forward flight modes and transition to VTOL modes
     if (!tailsitter_active() || in_tailsitter_vtol_transition()) {
         // get FW controller throttle demand and mask of motors enabled during forward flight
@@ -95,7 +93,9 @@ void QuadPlane::tailsitter_output(void)
 
         if (!assisted_flight) {
             // set AP_MotorsMatrix throttles for forward flight
-            motors->output_motor_mask(throttle * 0.01f, tailsitter.motor_mask, plane.rudder_dt);
+            float elev_gain = float(plane.g2.elev_dt_gain) / 100;
+            plane.elevator_dt = elev_gain * SRV_Channels::get_output_scaled(SRV_Channel::k_elevator) / float(SERVO_MAX);
+            motors->output_motor_mask(throttle * 0.01f, tailsitter.motor_mask, plane.rudder_dt, plane.elevator_dt);
 
             // in forward flight: set motor tilt servos and throttles using FW controller
             if (tailsitter.vectored_forward_gain > 0) {

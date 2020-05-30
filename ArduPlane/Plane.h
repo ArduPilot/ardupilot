@@ -781,6 +781,7 @@ private:
 
     // rudder mixing gain for differential thrust (0 - 1)
     float rudder_dt;
+    float elevator_dt;
 
     // soaring mode-change timer
     uint32_t soaring_mode_timer;
