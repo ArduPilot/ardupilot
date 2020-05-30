@@ -239,6 +239,27 @@ bool Tracker::should_log(uint32_t mask)
     return true;
 }
 
+AC_PID* Tracker::get_AC_PID(AC_PID_TYPE type)
+{
+    AC_PID *ret = nullptr;
+
+    switch(type) {
+        case AC_PID_TYPE::TRACKER_PITCH:
+            ret = &g.pidPitch2Srv;
+            break;
+
+        case AC_PID_TYPE::TRACKER_YAW:
+            ret = &g.pidYaw2Srv;
+            break;
+
+        default:
+            break;
+    }
+
+    return ret;
+}
+
+
 
 #include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
 #include <AP_Avoidance/AP_Avoidance.h>

@@ -221,6 +221,7 @@ private:
     bool start_command_callback(const AP_Mission::Mission_Command& cmd) { return false; }
     void exit_mission_callback() { return; }
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd) { return false; }
+    AC_PID *get_AC_PID(AC_PID_TYPE type) override;
 
     // tracking.cpp
     void update_vehicle_pos_estimate();
