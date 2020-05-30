@@ -24,7 +24,6 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AC_PID/AC_P.h>
-#include <AC_PID/AC_PID.h>
 #include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
 #include <AP_AHRS/AP_AHRS.h>                        // ArduPilot Mega DCM Library
 #include <AP_Airspeed/AP_Airspeed.h>                // needed for AHRS build
@@ -278,6 +277,7 @@ private:
     // AP_Vehicle.cpp
     bool set_target_location(const Location& target_loc) override;
     bool set_target_velocity_NED(const Vector3f& vel_ned) override;
+    AC_PID *get_AC_PID(AC_PID_TYPE type) override;
 
     // Rover.cpp
     void stats_update();

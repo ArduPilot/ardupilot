@@ -44,3 +44,31 @@ bool Rover::set_target_velocity_NED(const Vector3f& vel_ned)
 
     return true;
 }
+
+AC_PID* Rover::get_AC_PID(AC_PID_TYPE type)
+{
+    AC_PID *ret = nullptr;
+
+    switch(type) {
+        case AC_PID_TYPE::RATE_STEER:
+            ret = &g2.attitude_control.get_steering_rate_pid();
+            break;
+
+        case AC_PID_TYPE::THROTTLE_SPEED:
+            ret = &g2.attitude_control.get_throttle_speed_pid();
+            break;
+
+        case AC_PID_TYPE::PITCH_THROTTLE:
+            ret = &g2.attitude_control.get_pitch_to_throttle_pid();
+            break;
+
+        case AC_PID_TYPE::SAILBOAT_HEEL:
+            ret = &g2.attitude_control.get_sailboat_heel_pid();
+            break;
+
+        default:
+            break;
+    }
+
+    return ret;
+}
