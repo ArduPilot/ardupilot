@@ -629,7 +629,7 @@ void AC_PosControl::run_z_controller()
 
     // ensure imax is always large enough to overpower hover throttle
     if (_motors.get_throttle_hover() * 1000.0f > _pid_accel_z.imax()) {
-        _pid_accel_z.imax(_motors.get_throttle_hover() * 1000.0f);
+        _pid_accel_z.set_imax(_motors.get_throttle_hover() * 1000.0f);
     }
 
     float thr_out;
