@@ -40,6 +40,7 @@
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include <AP_GyroFFT/AP_GyroFFT.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
+#include <AC_PID/AC_PID.h>
 
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
 
@@ -90,7 +91,7 @@ public:
         AP_Int8  crash_detection_enable;
         AP_Int16 roll_limit_cd;
         AP_Int16 pitch_limit_max_cd;
-        AP_Int16 pitch_limit_min_cd;        
+        AP_Int16 pitch_limit_min_cd;
         AP_Int8  autotune_level;
         AP_Int8  stall_prevention;
         AP_Int16 loiter_radius;
@@ -173,7 +174,23 @@ public:
 
     // get target location (for use by scripting)
     virtual bool get_target_location(Location& target_loc) { return false; }
-    
+
+    // PID type to return with get_AC_PID
+    enum AC_PID_TYPE {
+        RATE_ROLL = 0,
+        RATE_PITCH = 1,
+        RATE_YAW = 2,
+        RATE_STEER = 3,
+        THROTTLE_SPEED = 4,
+        PITCH_THROTTLE = 5,
+        SAILBOAT_HEEL = 6,
+        TRACKER_PITCH = 7,
+        TRACKER_YAW = 8,
+    };
+
+    // get AC_PID object for use by scripting
+    virtual AC_PID* get_AC_PID(AC_PID_TYPE type) { return nullptr; };
+
 protected:
 
     virtual void init_ardupilot() = 0;
