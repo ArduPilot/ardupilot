@@ -181,9 +181,10 @@ public:
     // set loop rate. Used to support loop rate as a parameter
     void                set_loop_rate(uint16_t loop_rate) { _loop_rate = loop_rate; }
 
-    // return the roll factor of any motor, this is used for tilt rotors and tail sitters
+    // return the roll or pitch factor of any motor, this is used for tilt rotors and tail sitters
     // using copter motors for forward flight
     virtual float       get_roll_factor(uint8_t i) { return 0.0f; }
+    virtual float       get_pitch_factor(uint8_t i) { return 0.0f; }
 
     // This function required for tradheli. Tradheli initializes targets when going from unarmed to armed state.
     // This function is overriden in motors_heli class.   Always true for multicopters.
