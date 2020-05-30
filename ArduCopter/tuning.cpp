@@ -39,18 +39,18 @@ void Copter::tuning()
         break;
 
     case TUNING_RATE_ROLL_PITCH_KP:
-        attitude_control->get_rate_roll_pid().kP(tuning_value);
-        attitude_control->get_rate_pitch_pid().kP(tuning_value);
+        attitude_control->get_rate_roll_pid().set_kP(tuning_value);
+        attitude_control->get_rate_pitch_pid().set_kP(tuning_value);
         break;
 
     case TUNING_RATE_ROLL_PITCH_KI:
-        attitude_control->get_rate_roll_pid().kI(tuning_value);
-        attitude_control->get_rate_pitch_pid().kI(tuning_value);
+        attitude_control->get_rate_roll_pid().set_kI(tuning_value);
+        attitude_control->get_rate_pitch_pid().set_kI(tuning_value);
         break;
 
     case TUNING_RATE_ROLL_PITCH_KD:
-        attitude_control->get_rate_roll_pid().kD(tuning_value);
-        attitude_control->get_rate_pitch_pid().kD(tuning_value);
+        attitude_control->get_rate_roll_pid().set_kD(tuning_value);
+        attitude_control->get_rate_pitch_pid().set_kD(tuning_value);
         break;
 
     // Yaw tuning
@@ -59,11 +59,11 @@ void Copter::tuning()
         break;
 
     case TUNING_YAW_RATE_KP:
-        attitude_control->get_rate_yaw_pid().kP(tuning_value);
+        attitude_control->get_rate_yaw_pid().set_kP(tuning_value);
         break;
 
     case TUNING_YAW_RATE_KD:
-        attitude_control->get_rate_yaw_pid().kD(tuning_value);
+        attitude_control->get_rate_yaw_pid().set_kD(tuning_value);
         break;
 
     // Altitude and throttle tuning
@@ -76,15 +76,15 @@ void Copter::tuning()
         break;
 
     case TUNING_ACCEL_Z_KP:
-        pos_control->get_accel_z_pid().kP(tuning_value);
+        pos_control->get_accel_z_pid().set_kP(tuning_value);
         break;
 
     case TUNING_ACCEL_Z_KI:
-        pos_control->get_accel_z_pid().kI(tuning_value);
+        pos_control->get_accel_z_pid().set_kI(tuning_value);
         break;
 
     case TUNING_ACCEL_Z_KD:
-        pos_control->get_accel_z_pid().kD(tuning_value);
+        pos_control->get_accel_z_pid().set_kD(tuning_value);
         break;
 
     // Loiter and navigation tuning
@@ -120,15 +120,15 @@ void Copter::tuning()
         break;
 
     case TUNING_RATE_PITCH_FF:
-        attitude_control->get_rate_pitch_pid().ff(tuning_value);
+        attitude_control->get_rate_pitch_pid().set_ff(tuning_value);
         break;
 
     case TUNING_RATE_ROLL_FF:
-        attitude_control->get_rate_roll_pid().ff(tuning_value);
+        attitude_control->get_rate_roll_pid().set_ff(tuning_value);
         break;
 
     case TUNING_RATE_YAW_FF:
-        attitude_control->get_rate_yaw_pid().ff(tuning_value);
+        attitude_control->get_rate_yaw_pid().set_ff(tuning_value);
         break;
 #endif
 
@@ -154,27 +154,27 @@ void Copter::tuning()
         break;
 
     case TUNING_RATE_PITCH_KP:
-        attitude_control->get_rate_pitch_pid().kP(tuning_value);
+        attitude_control->get_rate_pitch_pid().set_kP(tuning_value);
         break;
 
     case TUNING_RATE_PITCH_KI:
-        attitude_control->get_rate_pitch_pid().kI(tuning_value);
+        attitude_control->get_rate_pitch_pid().set_kI(tuning_value);
         break;
 
     case TUNING_RATE_PITCH_KD:
-        attitude_control->get_rate_pitch_pid().kD(tuning_value);
+        attitude_control->get_rate_pitch_pid().set_kD(tuning_value);
         break;
 
     case TUNING_RATE_ROLL_KP:
-        attitude_control->get_rate_roll_pid().kP(tuning_value);
+        attitude_control->get_rate_roll_pid().set_kP(tuning_value);
         break;
 
     case TUNING_RATE_ROLL_KI:
-        attitude_control->get_rate_roll_pid().kI(tuning_value);
+        attitude_control->get_rate_roll_pid().set_kI(tuning_value);
         break;
 
     case TUNING_RATE_ROLL_KD:
-        attitude_control->get_rate_roll_pid().kD(tuning_value);
+        attitude_control->get_rate_roll_pid().set_kD(tuning_value);
         break;
 
 #if FRAME_CONFIG != HELI_FRAME
@@ -184,7 +184,7 @@ void Copter::tuning()
 #endif
 
      case TUNING_RATE_YAW_FILT:
-         attitude_control->get_rate_yaw_pid().filt_E_hz(tuning_value);
+         attitude_control->get_rate_yaw_pid().set_filt_E_hz(tuning_value);
          break;
 
 #if WINCH_ENABLED == ENABLED
