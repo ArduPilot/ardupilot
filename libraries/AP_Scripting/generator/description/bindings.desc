@@ -242,3 +242,37 @@ singleton AP_RPM method get_rpm boolean uint8_t 0 RPM_MAX_INSTANCES float'Null
 include AP_Button/AP_Button.h
 singleton AP_Button alias button
 singleton AP_Button method get_button_state boolean uint8_t 1 AP_BUTTON_NUM_PINS
+
+
+include AC_PID/AC_PID.h
+ap_object AC_PID method reset_I void
+ap_object AC_PID method reset_filter void
+
+-- get accessors
+ap_object AC_PID method kP float
+ap_object AC_PID method kI float
+ap_object AC_PID method kD float
+ap_object AC_PID method ff float
+ap_object AC_PID method filt_T_hz float
+ap_object AC_PID method filt_E_hz float
+ap_object AC_PID method filt_D_hz float
+ap_object AC_PID method imax float
+ap_object AC_PID method get_filt_alpha float float 0 FLT_MAX
+ap_object AC_PID method get_filt_T_alpha float
+ap_object AC_PID method get_filt_E_alpha float
+ap_object AC_PID method get_filt_D_alpha float
+
+-- set accessors
+ap_object AC_PID method set_kP void float -FLT_MAX FLT_MAX
+ap_object AC_PID method set_kI void float -FLT_MAX FLT_MAX
+ap_object AC_PID method set_kD void float -FLT_MAX FLT_MAX
+ap_object AC_PID method set_ff void float -FLT_MAX FLT_MAX
+ap_object AC_PID method set_imax void float 0 FLT_MAX
+ap_object AC_PID method set_filt_T_hz void float 0 FLT_MAX
+ap_object AC_PID method set_filt_E_hz void float 0 FLT_MAX
+ap_object AC_PID method set_filt_D_hz void float 0 FLT_MAX
+ap_object AC_PID method save_gains void
+
+-- get AC_PID object from vehicle
+singleton AP_Vehicle method get_AC_PID AC_PID AP_Vehicle::AC_PID_TYPE'enum AP_Vehicle::AC_PID_TYPE::RATE_ROLL AP_Vehicle::AC_PID_TYPE::TRACKER_YAW
+singleton AP_Vehicle enum RATE_ROLL RATE_PITCH RATE_YAW RATE_STEER THROTTLE_SPEED PITCH_THROTTLE SAILBOAT_HEEL TRACKER_PITCH TRACKER_YAW
