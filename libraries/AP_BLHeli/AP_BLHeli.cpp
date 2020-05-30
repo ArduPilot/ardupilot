@@ -121,6 +121,8 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     AP_GROUPEND
 };
 
+#define RPM_SLEW_RATE 50
+
 AP_BLHeli *AP_BLHeli::_singleton;
 
 // constructor
@@ -1337,7 +1339,9 @@ float AP_BLHeli::get_average_motor_frequency_hz() const
     for (uint8_t i = 0; i < num_motors; i++) {
         if (last_telem[i].timestamp_ms && (now - last_telem[i].timestamp_ms < 1000)) {
             valid_escs++;
-            motor_freq += last_telem[i].rpm / 60.0f;
+            // slew the update
+            const float slew = MIN(1.0f, (now - last_telem[i].timestamp_ms) * telem_rate / 1000.0f);
+            motor_freq += (prev_motor_rpm[i] + (last_telem[i].rpm - prev_motor_rpm[i]) * slew) / 60.0f;
         }
     }
     if (valid_escs > 0) {
@@ -1345,6 +1349,23 @@ float AP_BLHeli::get_average_motor_frequency_hz() const
     }
 
     return motor_freq;
+}
+
+// return all the motor frequencies in Hz for dynamic filtering
+uint8_t AP_BLHeli::get_motor_frequencies_hz(uint8_t nfreqs, float* freqs) const
+{
+    const uint32_t now = AP_HAL::millis();
+    uint8_t valid_escs = 0;
+    // average the rpm of each motor as reported by BLHeli and convert to Hz
+    for (uint8_t i = 0; i < num_motors && i < nfreqs; i++) {
+        if (last_telem[i].timestamp_ms && (now - last_telem[i].timestamp_ms < 1000)) {
+            // slew the update
+            const float slew = MIN(1.0f, (now - last_telem[i].timestamp_ms) * telem_rate / 1000.0f);
+            freqs[valid_escs++] = (prev_motor_rpm[i] + (last_telem[i].rpm - prev_motor_rpm[i]) * slew) / 60.0f;
+        }
+    }
+
+    return MIN(valid_escs, nfreqs);
 }
 
 /*
@@ -1391,6 +1412,8 @@ void AP_BLHeli::read_telemetry_packet(void)
     td.consumption = (buf[5]<<8) | buf[6];
     td.rpm = ((buf[7]<<8) | buf[8]) * 200 / motor_poles;
     td.timestamp_ms = AP_HAL::millis();
+    // record the previous rpm so that we can slew to the new one
+    prev_motor_rpm[last_telem_esc] = last_telem[last_telem_esc].rpm;
 
     last_telem[last_telem_esc] = td;
     last_telem[last_telem_esc].count++;
