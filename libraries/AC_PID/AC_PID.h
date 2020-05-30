@@ -85,14 +85,14 @@ public:
     float get_filt_D_alpha() const;
 
     // set accessors
-    void kP(const float v) { _kp.set(v); }
-    void kI(const float v) { _ki.set(v); }
-    void kD(const float v) { _kd.set(v); }
-    void ff(const float v) { _kff.set(v); }
-    void imax(const float v) { _kimax.set(fabsf(v)); }
-    void filt_T_hz(const float v);
-    void filt_E_hz(const float v);
-    void filt_D_hz(const float v);
+    void set_kP(const float v) { _kp.set(v); }
+    void set_kI(const float v) { _ki.set(v); }
+    void set_kD(const float v) { _kd.set(v); }
+    void set_ff(const float v) { _kff.set(v); }
+    void set_imax(const float v) { _kimax.set(fabsf(v)); }
+    void set_filt_T_hz(const float v);
+    void set_filt_E_hz(const float v);
+    void set_filt_D_hz(const float v);
 
     // set the desired and actual rates (for logging purposes)
     void set_target_rate(float target) { _pid_info.target = target; }

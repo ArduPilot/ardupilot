@@ -74,9 +74,9 @@ AC_PID::AC_PID(float initial_p, float initial_i, float initial_d, float initial_
     _kd = initial_d;
     _kff = initial_ff;
     _kimax = fabsf(initial_imax);
-    filt_T_hz(initial_filt_T_hz);
-    filt_E_hz(initial_filt_E_hz);
-    filt_D_hz(initial_filt_D_hz);
+    set_filt_T_hz(initial_filt_T_hz);
+    set_filt_E_hz(initial_filt_E_hz);
+    set_filt_D_hz(initial_filt_D_hz);
 
     // reset input filter to first value received
     _flags._reset_filter = true;
@@ -92,19 +92,19 @@ void AC_PID::set_dt(float dt)
 }
 
 // filt_T_hz - set target filter hz
-void AC_PID::filt_T_hz(float hz)
+void AC_PID::set_filt_T_hz(float hz)
 {
     _filt_T_hz.set(fabsf(hz));
 }
 
 // filt_E_hz - set error filter hz
-void AC_PID::filt_E_hz(float hz)
+void AC_PID::set_filt_E_hz(float hz)
 {
     _filt_E_hz.set(fabsf(hz));
 }
 
 // filt_D_hz - set derivative filter hz
-void AC_PID::filt_D_hz(float hz)
+void AC_PID::set_filt_D_hz(float hz)
 {
     _filt_D_hz.set(fabsf(hz));
 }
