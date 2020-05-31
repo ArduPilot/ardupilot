@@ -26,7 +26,7 @@ public:
         //
         k_param_format_version = 0,
         k_param_software_type, // unused
-        k_param_BoardConfig_CAN,
+        k_param_can_mgr,
 
         // Misc
         //
