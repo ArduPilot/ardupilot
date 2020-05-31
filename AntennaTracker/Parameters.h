@@ -86,7 +86,7 @@ public:
         k_param_gcs3,               // stream rates for fourth MAVLink port
         k_param_log_bitmask,        // 140
         k_param_notify,
-        k_param_BoardConfig_CAN,
+        k_param_can_mgr,
         k_param_battery,
 
         //
