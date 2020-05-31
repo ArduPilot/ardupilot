@@ -22,9 +22,7 @@
 #include "Flash.h"
 #include "DSP.h"
 
-#if HAL_WITH_UAVCAN
-#include "CAN.h"
-#endif
+#include "CANIface.h"
 
 #include "utility/BetterStream.h"
 
