@@ -103,6 +103,9 @@ static ChibiOS::Flash flashDriver;
 static Empty::Flash flashDriver;
 #endif
 
+#if HAL_NUM_CAN_IFACES > 0
+static ChibiOS::CANIface* canDrivers[HAL_NUM_CAN_IFACES];
+#endif
 
 #if HAL_WITH_IO_MCU
 HAL_UART_IO_DRIVER;
@@ -133,7 +136,11 @@ HAL_ChibiOS::HAL_ChibiOS() :
         &opticalFlowDriver,
         &flashDriver,
         &dspDriver,
+#if HAL_NUM_CAN_IFACES
+        (AP_HAL::CANIface**)canDrivers
+#else
         nullptr
+#endif
         )
 {}
 
