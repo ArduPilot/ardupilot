@@ -5,6 +5,7 @@
 #include <uavcan/uavcan.hpp>
 #include <AP_Common/Bitmask.h>
 #include <StorageManager/StorageManager.h>
+#include <AP_CANManager/AP_CANManager.h>
 
 //Forward declaring classes
 class AllocationCb;
@@ -48,6 +49,7 @@ class AP_UAVCAN_DNA_Server
     uint8_t rcvd_unique_id_offset;
     uint8_t current_driver_index;
     uint32_t last_activity_ms;
+    uint32_t last_alloc_msg_ms;
 
     //Methods to handle and report Node IDs seen on the bus
     void addToSeenNodeMask(uint8_t node_id);
