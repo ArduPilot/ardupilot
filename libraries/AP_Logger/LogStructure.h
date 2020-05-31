@@ -448,7 +448,6 @@ struct PACKED log_NKF2 {
     int16_t magX;
     int16_t magY;
     int16_t magZ;
-    uint8_t index;
 };
 
 struct PACKED log_XKF2 {
@@ -569,6 +568,17 @@ struct PACKED log_NKF5 {
     float angErr;
     float velErr;
     float posErr;
+};
+
+// common sensor selection log message
+struct PACKED log_EKFS {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t core;
+    uint8_t mag_index;
+    uint8_t baro_index;
+    uint8_t gps_index;
+    uint8_t airspeed_index;
 };
 
 struct PACKED log_Quaternion {
@@ -1778,7 +1788,6 @@ struct PACKED log_Arm_Disarm {
 // @Field: MX: Magnetic field strength (body X-axis)
 // @Field: MY: Magnetic field strength (body Y-axis)
 // @Field: MZ: Magnetic field strength (body Z-axis)
-// @Field: MI: Magnetometer used for data
 
 // @LoggerMessage: NKF3
 // @Description: EKF2 innovations
@@ -1829,6 +1838,15 @@ struct PACKED log_Arm_Disarm {
 // @Field: eAng: Magnitude of angular error
 // @Field: eVel: Magnitude of velocity error
 // @Field: ePos: Magnitude of position error
+
+// @LoggerMessage: NKFS
+// @Description: EKF2 sensor selection
+// @Field: TimeUS: Time since system startup
+// @Field: C: EKF2 core this data is for
+// @Field: MI: compass selection index
+// @Field: BI: barometer selection index
+// @Field: GI: GPS selection index
+// @Field: AI: airspeed selection index
 
 // @LoggerMessage: NKQ
 // @Description: EKF2 quaternion defining the rotation from NED to XYZ (autopilot) axes
@@ -2406,7 +2424,7 @@ struct PACKED log_Arm_Disarm {
     { LOG_NKF1_MSG, sizeof(log_EKF1), \
       "NKF1","QBccCfffffffccce","TimeUS,C,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ,OH", "s#ddhnnnnmmmkkkm", "F-BBB0000000BBBB" }, \
     { LOG_NKF2_MSG, sizeof(log_NKF2), \
-      "NKF2","QBbccccchhhhhhB","TimeUS,C,AZbias,GSX,GSY,GSZ,VWN,VWE,MN,ME,MD,MX,MY,MZ,MI", "s#----nnGGGGGG-", "F-----BBCCCCCC-" }, \
+      "NKF2","QBbccccchhhhhh","TimeUS,C,AZbias,GSX,GSY,GSZ,VWN,VWE,MN,ME,MD,MX,MY,MZ", "s#----nnGGGGGG", "F-----BBCCCCCC" }, \
     { LOG_NKF3_MSG, sizeof(log_NKF3), \
       "NKF3","QBcccccchhhcc","TimeUS,C,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT", "s#nnnmmmGGG??", "F-BBBBBBCCCBB" }, \
     { LOG_NKF4_MSG, sizeof(log_NKF4), \
@@ -2415,6 +2433,8 @@ struct PACKED log_Arm_Disarm {
       "NKF5","QBhhhcccCCfff","TimeUS,NI,FIX,FIY,AFI,HAGL,offset,RI,rng,Herr,eAng,eVel,ePos", "s----m???mrnm", "F----BBBBB000" }, \
     { LOG_NKF10_MSG, sizeof(log_RngBcnDebug), \
       "NKF0","QBccCCcccccccc","TimeUS,ID,rng,innov,SIV,TR,BPN,BPE,BPD,OFH,OFL,OFN,OFE,OFD", "s-m---mmmmmmmm", "F-B---BBBBBBBB" }, \
+    { LOG_NKFS_MSG, sizeof(log_EKFS), \
+      "NKFS","QBBBBB","TimeUS,C,MI,BI,GI,AI", "s#----", "F-----" }, \
     { LOG_NKQ_MSG, sizeof(log_Quaternion), "NKQ", QUAT_FMT, QUAT_LABELS, QUAT_UNITS, QUAT_MULTS }, \
     { LOG_XKF1_MSG, sizeof(log_EKF1), \
       "XKF1","QBccCfffffffccce","TimeUS,C,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ,OH", "s#ddhnnnnmmmkkkm", "F-BBB0000000BBBB" }, \
@@ -2569,6 +2589,7 @@ enum LogMessages : uint8_t {
     LOG_NKF4_MSG,
     LOG_NKF5_MSG,
     LOG_NKF10_MSG,
+    LOG_NKFS_MSG,
     LOG_NKQ_MSG,
     LOG_XKF1_MSG,
     LOG_XKF2_MSG,
