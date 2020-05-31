@@ -56,8 +56,9 @@
 #include <SITL/SITL.h>
 #endif
 
-#if HAL_WITH_UAVCAN
-  #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+  #include <AP_CANManager/AP_CANManager.h>
+  #include <AP_CANManager/AP_CANTester.h>
   #include <AP_Common/AP_Common.h>
 
   // To be replaced with macro saying if KDECAN library is included
@@ -3592,7 +3593,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_preflight_calibration(const mavlink_comma
 
 MAV_RESULT GCS_MAVLINK::handle_command_preflight_can(const mavlink_command_long_t &packet)
 {
-#if HAL_WITH_UAVCAN
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS
     if (hal.util->get_soft_armed()) {
         // *preflight*, remember?
         return MAV_RESULT_TEMPORARILY_REJECTED;
@@ -3604,8 +3605,8 @@ MAV_RESULT GCS_MAVLINK::handle_command_preflight_can(const mavlink_command_long_
     uint8_t num_drivers = AP::can().get_num_drivers();
 
     for (uint8_t i = 0; i < num_drivers; i++) {
-        switch (AP::can().get_protocol_type(i)) {
-            case AP_BoardConfig_CAN::Protocol_Type_KDECAN: {
+        switch (AP::can().get_driver_type(i)) {
+            case AP_CANManager::Driver_Type_KDECAN: {
 // To be replaced with macro saying if KDECAN library is included
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
                 AP_KDECAN *ap_kdecan = AP_KDECAN::get_kdecan(i);
@@ -3619,11 +3620,25 @@ MAV_RESULT GCS_MAVLINK::handle_command_preflight_can(const mavlink_command_long_
 #endif
                 break;
             }
-            case AP_BoardConfig_CAN::Protocol_Type_PiccoloCAN:
+            case AP_CANManager::Driver_Type_CANTester: {
+// To be replaced with macro saying if KDECAN library is included
+#if (APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)) && (HAL_MAX_CAN_PROTOCOL_DRIVERS > 1 && !HAL_MINIMIZE_FEATURES)
+                CANTester *cantester = CANTester::get_cantester(i);
+
+                if (cantester != nullptr) {
+                    can_exists = true;
+                    result = cantester->run_kdecan_enumeration(start_stop) && result;
+                }
+#else
+                UNUSED_RESULT(start_stop); // prevent unused variable error
+#endif
+                break;
+            }
+            case AP_CANManager::Driver_Type_PiccoloCAN:
                 // TODO - Run PiccoloCAN pre-flight checks here
                 break;
-            case AP_BoardConfig_CAN::Protocol_Type_UAVCAN:
-            case AP_BoardConfig_CAN::Protocol_Type_None:
+            case AP_CANManager::Driver_Type_UAVCAN:
+            case AP_CANManager::Driver_Type_None:
             default:
                 break;
         }
@@ -4708,12 +4723,12 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
             blheli->send_esc_telemetry_mavlink(uint8_t(chan));
         }
 #endif
-#if HAL_WITH_UAVCAN
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS
         uint8_t num_drivers = AP::can().get_num_drivers();
 
         for (uint8_t i = 0; i < num_drivers; i++) {
-            switch (AP::can().get_protocol_type(i)) {
-                case AP_BoardConfig_CAN::Protocol_Type_KDECAN: {
+            switch (AP::can().get_driver_type(i)) {
+                case AP_CANManager::Driver_Type_KDECAN: {
 // To be replaced with macro saying if KDECAN library is included
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
                     AP_KDECAN *ap_kdecan = AP_KDECAN::get_kdecan(i);
@@ -4723,7 +4738,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 #endif
                     break;
                 }
-                case AP_BoardConfig_CAN::Protocol_Type_ToshibaCAN: {
+                case AP_CANManager::Driver_Type_ToshibaCAN: {
                     AP_ToshibaCAN *ap_tcan = AP_ToshibaCAN::get_tcan(i);
                     if (ap_tcan != nullptr) {
                         ap_tcan->send_esc_telemetry_mavlink(uint8_t(chan));
@@ -4731,7 +4746,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
                     break;
                 }
 #if HAL_PICCOLO_CAN_ENABLE
-                case AP_BoardConfig_CAN::Protocol_Type_PiccoloCAN: {
+                case AP_CANManager::Driver_Type_PiccoloCAN: {
                     AP_PiccoloCAN *ap_pcan = AP_PiccoloCAN::get_pcan(i);
                     if (ap_pcan != nullptr) {
                         ap_pcan->send_esc_telemetry_mavlink(uint8_t(chan));
@@ -4739,14 +4754,14 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
                     break;
                 }
 #endif
-                case AP_BoardConfig_CAN::Protocol_Type_UAVCAN: {
+                case AP_CANManager::Driver_Type_UAVCAN: {
                     AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(i);
                     if (ap_uavcan != nullptr) {
                         ap_uavcan->send_esc_telemetry_mavlink(uint8_t(chan));
                     }
                     break;
                 }
-                case AP_BoardConfig_CAN::Protocol_Type_None:
+                case AP_CANManager::Driver_Type_None:
                 default:
                     break;
             }
