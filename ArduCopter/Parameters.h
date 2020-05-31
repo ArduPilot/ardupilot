@@ -54,7 +54,7 @@ public:
         k_param_NavEKF2,
         k_param_g2, // 2nd block of parameters
         k_param_NavEKF3,
-        k_param_BoardConfig_CAN,
+        k_param_can_mgr,
         k_param_osd,
 
         // simulation
