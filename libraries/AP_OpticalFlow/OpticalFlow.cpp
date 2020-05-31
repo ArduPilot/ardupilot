@@ -131,7 +131,7 @@ void OpticalFlow::init(uint32_t log_bit)
         backend = AP_OpticalFlow_MAV::detect(*this);
         break;
     case OpticalFlowType::UAVCAN:
-#if HAL_WITH_UAVCAN
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
         backend = new AP_OpticalFlow_HereFlow(*this);
 #endif
         break;
