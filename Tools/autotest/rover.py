@@ -303,6 +303,42 @@ class AutoTestRover(AutoTest):
         if ex:
             raise ex
 
+    def drive_max_rcin(self, timeout=30):
+        """Test max RC inputs"""
+        self.context_push()
+        ex = None
+
+        try:
+            self.progress("Testing max RC inputs")
+            self.change_mode("MANUAL")
+
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+
+            self.set_rc(3, 2000)
+            self.set_rc(1, 1000)
+
+            tstart = self.get_sim_time()
+            while self.get_sim_time_cached() - tstart < timeout:
+                m = self.mav.recv_match(type='VFR_HUD', blocking=True, timeout=1)
+                if m is not None:
+                    self.progress("Current speed: %f" % m.groundspeed)
+
+            # reduce throttle
+            self.set_rc(3, 1500)
+            self.set_rc(1, 1500)
+
+        except Exception as e:
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
+            ex = e
+
+        self.disarm_vehicle()
+        self.context_pop()
+
+        if ex:
+            raise ex
+
     #################################################
     # AUTOTEST ALL
     #################################################
@@ -5019,6 +5055,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
              "Learn/Drive Square with Ch7 option",
              self.drive_square),
 
+            ("DriveMaxRCIN",
+             "Drive rover at max RC inputs",
+             self.drive_max_rcin),
+
             ("DriveMission",
              "Drive Mission %s" % "rover1.txt",
              lambda: self.drive_mission("rover1.txt")),
@@ -5166,6 +5206,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
     def disabled_tests(self):
         return {
             "PolyFenceObjectAvoidanceBendyRuler": "currently broken",
+            "DriveMaxRCIN": "currently triggers Arithmetic Exception",
         }
 
     def rc_defaults(self):
