@@ -41,6 +41,10 @@ public:
     // lock a port for exclusive use. Use a key of 0 to unlock
     virtual bool lock_port(uint32_t write_key, uint32_t read_key) { return false; }
 
+    // check data available on a locked port. If port is locked and key is not correct then 
+    // 0 is returned
+    virtual uint32_t available_locked(uint32_t key) { return 0; }
+
     // write to a locked port. If port is locked and key is not correct then 0 is returned
     // and write is discarded
     virtual size_t write_locked(const uint8_t *buffer, size_t size, uint32_t key) { return 0; }
