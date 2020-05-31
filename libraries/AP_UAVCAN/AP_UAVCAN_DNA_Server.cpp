@@ -585,14 +585,27 @@ void AP_UAVCAN_DNA_Server::handleAllocation(uint8_t driver_index, uint8_t node_i
         return;
     }
 
-    if (cb.msg->first_part_of_unique_id) {
-        rcvd_unique_id_offset = 0;
-        memset(rcvd_unique_id, 0, sizeof(rcvd_unique_id));
-    } else if (rcvd_unique_id_offset == 0) {
-        //we are only accepting first part
+    if (rcvd_unique_id_offset == 0 ||
+        (now - last_alloc_msg_ms) > 500) {
+        if (cb.msg->first_part_of_unique_id) {
+            rcvd_unique_id_offset = 0;
+            memset(rcvd_unique_id, 0, sizeof(rcvd_unique_id));
+        } else {
+            //we are only accepting first part
+            return;
+        }
+    } else if (cb.msg->first_part_of_unique_id) {
+        // we are only accepting follow up messages
         return;
     }
 
+    if (rcvd_unique_id_offset) {
+        debug_uavcan(AP_CANManager::LOG_DEBUG, "TIME: %ld  -- Accepting Followup part! %u\n", uavcan::SystemClock::instance().getMonotonic().toUSec()/1000, (now - last_alloc_msg_ms));
+    } else {
+        debug_uavcan(AP_CANManager::LOG_DEBUG, "TIME: %ld  -- Accepting First part! %u\n", uavcan::SystemClock::instance().getMonotonic().toUSec()/1000, (now - last_alloc_msg_ms));
+    }
+
+    last_alloc_msg_ms = now;
     if ((rcvd_unique_id_offset + cb.msg->unique_id.size()) > 16) {
         //This request is malformed, Reset!
         rcvd_unique_id_offset = 0;
@@ -609,6 +622,12 @@ void AP_UAVCAN_DNA_Server::handleAllocation(uint8_t driver_index, uint8_t node_i
     //send follow up message
     uavcan::protocol::dynamic_node_id::Allocation msg;
 
+    /* Respond with the message containing the received unique ID so far
+    or with node id if we successfully allocated one. */
+    for (uint8_t i = 0; i < rcvd_unique_id_offset; i++) {
+        msg.unique_id.push_back(rcvd_unique_id[i]);
+    }
+
     if (rcvd_unique_id_offset == 16) {
         //We have received the full Unique ID, time to do allocation
         uint8_t resp_node_id = getNodeIDForUniqueID((const uint8_t*)rcvd_unique_id, 16);
@@ -624,13 +643,11 @@ void AP_UAVCAN_DNA_Server::handleAllocation(uint8_t driver_index, uint8_t node_i
         } else {
             msg.node_id = resp_node_id;
         }
+        //reset states as well        
+        rcvd_unique_id_offset = 0;
+        memset(rcvd_unique_id, 0, sizeof(rcvd_unique_id));
     }
 
-    /* Respond with the message containing the received unique ID so far
-    or with node id if we successfully allocated one. */
-    for (uint8_t i = 0; i < rcvd_unique_id_offset; i++) {
-        msg.unique_id.push_back(rcvd_unique_id[i]);
-    }
     allocation_pub[driver_index]->broadcast(msg);
 }
 
