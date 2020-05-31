@@ -446,6 +446,24 @@ uint8_t NavEKF2_core::getActiveMag() const
     return (uint8_t)magSelectIndex;
 }
 
+// return the index for the active barometer
+uint8_t NavEKF2_core::getActiveBaro() const
+{
+    return (uint8_t)selected_baro;
+}
+
+// return the index for the active GPS
+uint8_t NavEKF2_core::getActiveGPS() const
+{
+    return (uint8_t)selected_gps;
+}
+
+// return the index for the active airspeed
+uint8_t NavEKF2_core::getActiveAirspeed() const
+{
+    return (uint8_t)selected_airspeed;
+}
+
 // return the innovations for the NED Pos, NED Vel, XYZ Mag and Vtas measurements
 void  NavEKF2_core::getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
 {

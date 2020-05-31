@@ -1109,6 +1109,39 @@ uint8_t NavEKF2::getActiveMag(int8_t instance) const
     }
 }
 
+// return the baro in use for the specified instance
+uint8_t NavEKF2::getActiveBaro(int8_t instance) const
+{
+    if (instance < 0 || instance >= num_cores) instance = primary;
+    if (core) {
+        return core[instance].getActiveBaro();
+    } else {
+        return 255;
+    }
+}
+
+// return the GPS in use for the specified instance
+uint8_t NavEKF2::getActiveGPS(int8_t instance) const
+{
+    if (instance < 0 || instance >= num_cores) instance = primary;
+    if (core) {
+        return core[instance].getActiveGPS();
+    } else {
+        return 255;
+    }
+}
+
+// return the airspeed sensor in use for the specified instance
+uint8_t NavEKF2::getActiveAirspeed(int8_t instance) const
+{
+    if (instance < 0 || instance >= num_cores) instance = primary;
+    if (core) {
+        return core[instance].getActiveAirspeed();
+    } else {
+        return 255;
+    }
+}
+
 // Return estimated magnetometer offsets
 // Return true if magnetometer offsets are valid
 bool NavEKF2::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const

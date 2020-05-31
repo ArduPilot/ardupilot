@@ -151,9 +151,12 @@ public:
     // An out of range instance (eg -1) returns data for the primary instance
     void getMagXYZ(int8_t instance, Vector3f &magXYZ) const;
 
-    // return the magnetometer in use for the specified instance
+    // return the sensor in use for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
     uint8_t getActiveMag(int8_t instance) const;
+    uint8_t getActiveBaro(int8_t instance) const;
+    uint8_t getActiveGPS(int8_t instance) const;
+    uint8_t getActiveAirspeed(int8_t instance) const;
 
     // Return estimated magnetometer offsets
     // Return true if magnetometer offsets are valid
@@ -564,6 +567,7 @@ private:
     void Log_Write_NKF3(uint8_t core, uint64_t time_us) const;
     void Log_Write_NKF4(uint8_t core, uint64_t time_us) const;
     void Log_Write_NKF5(uint64_t time_us) const;
+    void Log_Write_NKFS(uint8_t core, uint64_t time_us) const;
     void Log_Write_Quaternion(uint8_t core, uint64_t time_us) const;
     void Log_Write_Beacon(uint64_t time_us) const;
     void Log_Write_GSF(uint8_t core, uint64_t time_us) const;
