@@ -244,13 +244,10 @@ def setup_can_build(cfg):
         'modules/uavcan/libuavcan/src/**/*.cpp',
         ]
 
-    env.CFLAGS += ['-DUAVCAN_STM32_CHIBIOS=1',
-                   '-DUAVCAN_STM32_NUM_IFACES=2']
+    env.CFLAGS += ['-DHAL_CAN_IFACES=2']
 
     env.CXXFLAGS += [
         '-Wno-error=cast-align',
-        '-DUAVCAN_STM32_CHIBIOS=1',
-        '-DUAVCAN_STM32_NUM_IFACES=2'
         ]
 
     env.DEFINES += [
@@ -262,7 +259,7 @@ def setup_can_build(cfg):
     env.INCLUDES += [
         cfg.srcnode.find_dir('modules/uavcan/libuavcan/include').abspath(),
         ]
-    cfg.get_board().with_uavcan = True
+    cfg.get_board().with_can = True
 
 def load_env_vars(env):
     '''optionally load extra environment variables from env.py in the build directory'''
@@ -359,7 +356,7 @@ def configure(cfg):
     if ret != 0:
         cfg.fatal("Failed to process hwdef.dat ret=%d" % ret)
     load_env_vars(cfg.env)
-    if env.HAL_WITH_UAVCAN:
+    if env.HAL_NUM_CAN_IFACES:
         setup_can_build(cfg)
     setup_optimization(cfg.env)
 
@@ -384,8 +381,8 @@ def generate_hwdef_h(env):
 def pre_build(bld):
     '''pre-build hook to change dynamic sources'''
     load_env_vars(bld.env)
-    if bld.env.HAL_WITH_UAVCAN:
-        bld.get_board().with_uavcan = True
+    if bld.env.HAL_NUM_CAN_IFACES:
+        bld.get_board().with_can = True
     hwdef_h = os.path.join(bld.env.BUILDROOT, 'hwdef.h')
     if not os.path.exists(hwdef_h):
         print("Generating hwdef.h")
