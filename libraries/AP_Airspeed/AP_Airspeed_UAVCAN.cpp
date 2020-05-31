@@ -1,17 +1,17 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_WITH_UAVCAN
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
 
 #include "AP_Airspeed_UAVCAN.h"
 
-#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
+#include <AP_CANManager/AP_CANManager.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
 
 #include <uavcan/equipment/air_data/RawAirData.hpp>
 
 extern const AP_HAL::HAL& hal;
 
-#define debug_airspeed_uavcan(level_debug, can_driver, fmt, args...) do { if ((level_debug) <= AP::can().get_debug_level_driver(can_driver)) { printf(fmt, ##args); }} while (0)
+#define LOG_TAG "AirSpeed"
 
 // UAVCAN Frontend Registry Binder
 UC_REGISTRY_BINDER(AirspeedCb, uavcan::equipment::air_data::RawAirData);
@@ -51,15 +51,15 @@ AP_Airspeed_Backend* AP_Airspeed_UAVCAN::probe(AP_Airspeed &_frontend, uint8_t _
         if (_detected_modules[i].driver == nullptr && _detected_modules[i].ap_uavcan != nullptr) {
             backend = new AP_Airspeed_UAVCAN(_frontend, _instance);
             if (backend == nullptr) {
-                debug_airspeed_uavcan(2,
-                                      _detected_modules[i].ap_uavcan->get_driver_index(),
+                AP::can().log_text(AP_CANManager::LOG_INFO, 
+                                      LOG_TAG,
                                       "Failed register UAVCAN Airspeed Node %d on Bus %d\n",
                                       _detected_modules[i].node_id,
                                       _detected_modules[i].ap_uavcan->get_driver_index());
             } else {
                 _detected_modules[i].driver = backend;
-                debug_airspeed_uavcan(2,
-                                      _detected_modules[i].ap_uavcan->get_driver_index(),
+                AP::can().log_text(AP_CANManager::LOG_INFO, 
+                                      LOG_TAG,
                                       "Registered UAVCAN Airspeed Node %d on Bus %d\n",
                                       _detected_modules[i].node_id,
                                       _detected_modules[i].ap_uavcan->get_driver_index());
@@ -159,4 +159,4 @@ bool AP_Airspeed_UAVCAN::get_temperature(float &temperature)
     return true;
 }
 
-#endif // HAL_WITH_UAVCAN
+#endif // HAL_ENABLE_LIBUAVCAN_DRIVERS
