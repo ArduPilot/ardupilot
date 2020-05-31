@@ -18,10 +18,10 @@
 //
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_WITH_UAVCAN
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
 #include "AP_GPS_UAVCAN.h"
 
-#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
+#include <AP_CANManager/AP_CANManager.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
 
 #include <uavcan/equipment/gnss/Fix.hpp>
@@ -30,7 +30,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define debug_gps_uavcan(level_debug, can_driver, fmt, args...) do { if ((level_debug) <= AP::can().get_debug_level_driver(can_driver)) { printf(fmt, ##args); }} while (0)
+#define LOG_TAG "GPS"
 
 UC_REGISTRY_BINDER(FixCb, uavcan::equipment::gnss::Fix);
 UC_REGISTRY_BINDER(Fix2Cb, uavcan::equipment::gnss::Fix2);
@@ -93,16 +93,16 @@ AP_GPS_Backend* AP_GPS_UAVCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
         if (_detected_modules[i].driver == nullptr && _detected_modules[i].ap_uavcan != nullptr) {
             backend = new AP_GPS_UAVCAN(_gps, _state);
             if (backend == nullptr) {
-                debug_gps_uavcan(2,
-                                 _detected_modules[i].ap_uavcan->get_driver_index(),
+                AP::can().log_text(AP_CANManager::LOG_ERROR,
+                                 LOG_TAG,
                                  "Failed to register UAVCAN GPS Node %d on Bus %d\n",
                                  _detected_modules[i].node_id,
                                  _detected_modules[i].ap_uavcan->get_driver_index());
             } else {
                 _detected_modules[i].driver = backend;
                 backend->_detected_module = i;
-                debug_gps_uavcan(2,
-                                 _detected_modules[i].ap_uavcan->get_driver_index(),
+                AP::can().log_text(AP_CANManager::LOG_INFO,
+                                 LOG_TAG,
                                  "Registered UAVCAN GPS Node %d on Bus %d\n",
                                  _detected_modules[i].node_id,
                                  _detected_modules[i].ap_uavcan->get_driver_index());
@@ -452,4 +452,4 @@ void AP_GPS_UAVCAN::inject_data(const uint8_t *data, uint16_t len)
     }
 }
 
-#endif // HAL_WITH_UAVCAN
+#endif // HAL_ENABLE_LIBUAVCAN_DRIVERS
