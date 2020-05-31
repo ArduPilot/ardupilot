@@ -1,6 +1,6 @@
 #include "Copter.h"
 
-#if HAL_WITH_UAVCAN
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS
  #include <AP_ToshibaCAN/AP_ToshibaCAN.h>
 #endif
 
@@ -312,12 +312,12 @@ bool AP_Arming_Copter::motor_checks(bool display_failure)
     }
 
     // if this is a multicopter using ToshibaCAN ESCs ensure MOT_PMW_MIN = 1000, MOT_PWM_MAX = 2000
-#if HAL_WITH_UAVCAN && (FRAME_CONFIG != HELI_FRAME)
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS && (FRAME_CONFIG != HELI_FRAME)
     bool tcan_active = false;
     uint8_t tcan_index = 0;
     const uint8_t num_drivers = AP::can().get_num_drivers();
     for (uint8_t i = 0; i < num_drivers; i++) {
-        if (AP::can().get_protocol_type(i) == AP_BoardConfig_CAN::Protocol_Type_ToshibaCAN) {
+        if (AP::can().get_driver_type(i) == AP_CANManager::Driver_Type_ToshibaCAN) {
             tcan_active = true;
             tcan_index = i;
         }
