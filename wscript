@@ -408,7 +408,7 @@ def _build_dynamic_sources(bld):
             ],
             )
 
-    if bld.get_board().with_uavcan or bld.env.HAL_WITH_UAVCAN==True:
+    if bld.get_board().with_can or bld.env.HAL_NUM_CAN_IFACES:
         bld(
             features='uavcangen',
             source=bld.srcnode.ant_glob('modules/uavcan/dsdl/* libraries/AP_UAVCAN/dsdl/*', dir=True, src=False),
@@ -537,7 +537,7 @@ def build(bld):
 
     _load_pre_build(bld)
 
-    if bld.get_board().with_uavcan:
+    if bld.get_board().with_can:
         bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['uavcan']
 
     _build_cmd_tweaks(bld)
