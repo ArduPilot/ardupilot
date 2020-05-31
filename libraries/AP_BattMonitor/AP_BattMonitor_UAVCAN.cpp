@@ -1,19 +1,20 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_WITH_UAVCAN
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
 
 #include "AP_BattMonitor.h"
 #include "AP_BattMonitor_UAVCAN.h"
 
-#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
+#include <AP_CANManager/AP_CANManager.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
 
 #include <uavcan/equipment/power/BatteryInfo.hpp>
 
+#define LOG_TAG "BattMon"
+
 extern const AP_HAL::HAL& hal;
-#define debug_bm_uavcan(level_debug, can_driver, fmt, args...) do { if ((level_debug) <= AP::can().get_debug_level_driver(can_driver)) { printf(fmt, ##args); }} while (0)
 
 UC_REGISTRY_BINDER(BattInfoCb, uavcan::equipment::power::BatteryInfo);
 
@@ -68,8 +69,8 @@ AP_BattMonitor_UAVCAN* AP_BattMonitor_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_u
             batmon->_ap_uavcan = ap_uavcan;
             batmon->_node_id = node_id;
             batmon->init();
-            debug_bm_uavcan(2,
-                            ap_uavcan->get_driver_index(),
+            AP::can().log_text(AP_CANManager::LOG_INFO,
+                            LOG_TAG,
                             "Registered BattMonitor Node %d on Bus %d\n",
                             node_id,
                             ap_uavcan->get_driver_index());
