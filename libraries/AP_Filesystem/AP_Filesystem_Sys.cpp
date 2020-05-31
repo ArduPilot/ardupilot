@@ -20,6 +20,7 @@
 #include "AP_Filesystem.h"
 #include "AP_Filesystem_Sys.h"
 #include <AP_Math/AP_Math.h>
+#include <AP_CANManager/AP_CANManager.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -52,6 +53,29 @@ int AP_Filesystem_Sys::open(const char *fname, int flags)
             r.data->length = hal.util->thread_info(r.data->data, max_size);
         }
     }
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+    int8_t can_stats_num = -1;
+    if (strcmp(fname, "can_log.txt") == 0) {
+        const uint32_t max_size = 1024;
+        r.data->data = (char *)malloc(max_size);
+        if (r.data->data) {
+            r.data->length = AP::can().log_retrieve(r.data->data, max_size);
+        }
+    } else if (strcmp(fname, "can0_stats.txt") == 0) {
+        can_stats_num = 0;
+    } else if (strcmp(fname, "can1_stats.txt") == 0) {
+        can_stats_num = 1;
+    }
+    if (can_stats_num != -1 && can_stats_num < HAL_NUM_CAN_IFACES) {
+        if (hal.can[can_stats_num] != nullptr) {
+            const uint32_t max_size = 1024;
+            r.data->data = (char *)malloc(max_size);
+            if (r.data->data) {
+                r.data->length = hal.can[can_stats_num]->get_stats(r.data->data, max_size);
+            }
+        }
+    }
+#endif
     if (r.data->data == nullptr) {
         delete r.data;
         errno = ENOENT;
