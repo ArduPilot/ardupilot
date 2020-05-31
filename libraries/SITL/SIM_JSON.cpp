@@ -99,8 +99,8 @@ void JSON::set_interface_ports(const char* address, const int port_in, const int
 void JSON::output_servos(const struct sitl_input &input)
 {
     servo_packet pkt;
+    pkt.frame_rate = rate_hz;
     pkt.frame_count = frame_counter;
-    pkt.speedup = get_speedup();
     for (uint8_t i=0; i<16; i++) {
         pkt.pwm[i] = input.servos[i];
     }
@@ -149,7 +149,7 @@ bool JSON::parse_sensors(const char *json)
         p += strlen(key.key)+2;
         switch (key.type) {
             case DATA_UINT64:
-                *((uint64_t *)key.ptr) = atof(p); // using atof rather than strtoul means we support scientific notation
+                *((uint64_t *)key.ptr) = strtoull(p, nullptr, 10);
                 //printf("%s/%s = %lu\n", key.section, key.key, *((uint64_t *)key.ptr));
                 break;
 
@@ -241,24 +241,25 @@ void JSON::recv_fdm(const struct sitl_input &input)
     // Convert from a meters from origin physics to a lat long alt
     update_position();
 
-    if (last_timestamp) {
-        int deltat;
-        if (state.timestamp < last_timestamp) {
-            // Physics time has gone backwards, don't reset AP, assume an average size timestep
-            printf("Detected physics reset\n");
-            deltat = average_frame_time;
-        } else {
-            deltat = state.timestamp - last_timestamp;
-        }
-        time_now_us += deltat;
-
-        if (deltat > 0 && deltat < 100000) {
-            if (average_frame_time < 1) {
-                average_frame_time = deltat;
-            }
-            average_frame_time = average_frame_time * 0.98 + deltat * 0.02;
-        }
+    double deltat;
+    if (state.timestamp_s < last_timestamp_s) {
+        // Physics time has gone backwards, don't reset AP, assume an average size timestep
+        printf("Detected physics reset\n");
+        deltat = 0;
+    } else {
+        deltat = state.timestamp_s - last_timestamp_s;
     }
+    time_now_us += deltat * 1.0e6;
+
+    if (deltat > 0 && deltat < 0.1) {
+        // time in us to hz
+        adjust_frame_time(1.0 / deltat);
+
+        // match actual frame rate with desired speedup
+        time_advance();
+    }
+    last_timestamp_s = state.timestamp_s;
+    frame_counter++;
 
 #if 0
 // @LoggerMessage: JSN1
@@ -315,8 +316,6 @@ void JSON::recv_fdm(const struct sitl_input &input)
                        velocity_ef.z);
 #endif
 
-    last_timestamp = state.timestamp;
-    frame_counter++;
 }
 
 /*
@@ -333,4 +332,14 @@ void JSON::update(const struct sitl_input &input)
     // update magnetic field
     // as the model does not provide mag feild we calculate it from position and attitude
     update_mag_field_bf();
+
+    // allow for changes in physics step
+    adjust_frame_time(constrain_float(sitl->loop_rate_hz, rate_hz-1, rate_hz+1));
+
+#if 0
+    // report frame rate
+    if (frame_counter % 1000 == 0) {
+        printf("FPS %.2f\n", achieved_rate_hz); // this is instantaneous rather than any clever average
+    }
+#endif
 }
