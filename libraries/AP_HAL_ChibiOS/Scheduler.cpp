@@ -25,7 +25,7 @@
 #include <AP_HAL_ChibiOS/Storage.h>
 #include <AP_HAL_ChibiOS/RCOutput.h>
 #include <AP_HAL_ChibiOS/RCInput.h>
-#include <AP_HAL_ChibiOS/CAN.h>
+#include <AP_HAL_ChibiOS/CANIface.h>
 #include <AP_InternalError/AP_InternalError.h>
 
 #if CH_CFG_USE_DYNAMIC == TRUE
