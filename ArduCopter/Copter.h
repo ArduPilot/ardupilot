@@ -626,14 +626,16 @@ private:
     void set_failsafe_gcs(bool b);
     void update_using_interlock();
 
+    //AP_Vehicle.cpp
+    bool start_takeoff(float alt) override;
+    bool set_target_location(const Location& target_loc) override;
+    bool set_target_velocity_NED(const Vector3f& vel_ned) override;
+
     // Copter.cpp
     void get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
                              uint8_t &task_count,
                              uint32_t &log_bit) override;
     void fast_loop() override;
-    bool start_takeoff(float alt) override;
-    bool set_target_location(const Location& target_loc) override;
-    bool set_target_velocity_NED(const Vector3f& vel_ned) override;
     void rc_loop();
     void throttle_loop();
     void update_batt_compass(void);
