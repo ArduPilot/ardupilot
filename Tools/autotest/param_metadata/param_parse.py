@@ -231,10 +231,21 @@ def process_library(vehicle, library, pathprefix=None):
         group_matches = prog_groups.findall(p_text)
         debug("Found %u groups" % len(group_matches))
         debug(group_matches)
+        done_groups = dict()
         for group_match in group_matches:
             group = group_match[0]
             debug("Group: %s" % group)
-            lib = Library(group)
+            do_append = True
+            if group in done_groups:
+                # this is to handle cases like the RangeFinder
+                # parameters, where the wasp stuff gets tack into the
+                # same RNGFND1_ group
+                lib = done_groups[group]
+                do_append = False
+            else:
+                lib = Library(group)
+                done_groups[group] = lib
+
             fields = prog_param_fields.findall(group_match[1])
             for field in fields:
                 if field[0] in known_group_fields:
@@ -242,10 +253,12 @@ def process_library(vehicle, library, pathprefix=None):
                 else:
                     error("unknown parameter metadata field '%s'" % field[0])
             if not any(lib.name == parsed_l.name for parsed_l in libraries):
-                lib.name = library.name + lib.name
+                if do_append:
+                    lib.name = library.name + lib.name
                 debug("Group name: %s" % lib.name)
                 process_library(vehicle, lib, os.path.dirname(libraryfname))
-                alllibs.append(lib)
+                if do_append:
+                    alllibs.append(lib)
 
     current_file = None
 
