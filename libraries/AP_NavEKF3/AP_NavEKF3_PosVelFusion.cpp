@@ -47,10 +47,8 @@ void NavEKF3_core::ResetVelocity(void)
             lastVelPassTime_ms = imuSampleTime_ms;
         } else if ((imuSampleTime_ms - extNavVelMeasTime_ms < 250 && posResetSource == DEFAULT) || velResetSource == EXTNAV) {
             // use external nav data as the 2nd preference
-            // correct for sensor position
-            ext_nav_vel_elements extNavVelCorrected = extNavVelDelayed;
-            CorrectExtNavVelForSensorOffset(extNavVelCorrected.vel);
-            stateStruct.velocity = extNavVelCorrected.vel;
+            // already corrected for sensor position
+            stateStruct.velocity = extNavVelDelayed.vel;
             P[5][5] = P[4][4] = P[3][3] = sq(extNavVelDelayed.err);
             velTimeout = false;
             lastVelPassTime_ms = imuSampleTime_ms;
@@ -405,6 +403,9 @@ void NavEKF3_core::SelectVelPosFusion()
     // Check for data at the fusion time horizon
     extNavDataToFuse = storedExtNav.recall(extNavDataDelayed, imuDataDelayed.time_ms);
     extNavVelToFuse = storedExtNavVel.recall(extNavVelDelayed, imuDataDelayed.time_ms);
+    if (extNavVelToFuse) {
+        CorrectExtNavVelForSensorOffset(extNavVelDelayed.vel);
+    }
 
     // Read GPS data from the sensor
     readGpsData();
@@ -454,15 +455,12 @@ void NavEKF3_core::SelectVelPosFusion()
     }
 
     // fuse external navigation velocity data if available
+    // extNavVelDelayed is already corrected for sensor position
     if (extNavVelToFuse && (frontend->_fusionModeGPS == 3)) {
         fuseVelData = true;
-
-        // correct for external navigation sensor position
-        Vector3f vel_corrected = extNavVelDelayed.vel;
-        CorrectExtNavVelForSensorOffset(vel_corrected);
-        velPosObs[0] = vel_corrected.x;
-        velPosObs[1] = vel_corrected.y;
-        velPosObs[2] = vel_corrected.z;
+        velPosObs[0] = extNavVelDelayed.vel.x;
+        velPosObs[1] = extNavVelDelayed.vel.y;
+        velPosObs[2] = extNavVelDelayed.vel.z;
     }
 
     // we have GPS data to fuse and a request to align the yaw using the GPS course
