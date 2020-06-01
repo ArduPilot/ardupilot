@@ -1357,7 +1357,7 @@ private:
     bool extNavUsedForPos;              // true when the external nav data is being used as a position reference.
     obs_ring_buffer_t<ext_nav_vel_elements> storedExtNavVel;    // external navigation velocity data buffer
     ext_nav_vel_elements extNavVelNew;  // external navigation velocity data at the current time horizon
-    ext_nav_vel_elements extNavVelDelayed;  // external navigation velocity data at the fusion time horizon
+    ext_nav_vel_elements extNavVelDelayed;  // external navigation velocity data at the fusion time horizon.  Already corrected for sensor position
     uint32_t extNavVelMeasTime_ms;      // time external navigation velocity measurements were accepted for input to the data buffer (msec)
     bool extNavVelToFuse;               // true when there is new external navigation velocity to fuse
     bool useExtNavVel;                  // true if external nav velocity should be used
