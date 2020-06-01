@@ -136,37 +136,6 @@ Rover::Rover(void) :
 {
 }
 
-// set target location (for use by scripting)
-bool Rover::set_target_location(const Location& target_loc)
-{
-    // exit if vehicle is not in Guided mode or Auto-Guided mode
-    if (!control_mode->in_guided_mode()) {
-        return false;
-    }
-
-    return control_mode->set_desired_location(target_loc);
-}
-
-// set target velocity (for use by scripting)
-bool Rover::set_target_velocity_NED(const Vector3f& vel_ned)
-{
-    // exit if vehicle is not in Guided mode or Auto-Guided mode
-    if (!control_mode->in_guided_mode()) {
-        return false;
-    }
-
-    // convert vector length into speed
-    const float target_speed_m = safe_sqrt(sq(vel_ned.x) + sq(vel_ned.y));
-
-    // convert vector direction to target yaw
-    const float target_yaw_cd = degrees(atan2f(vel_ned.y, vel_ned.x)) * 100.0f;
-
-    // send target heading and speed
-    mode_guided.set_desired_heading_and_speed(target_yaw_cd, target_speed_m);
-
-    return true;
-}
-
 #if STATS_ENABLED == ENABLED
 /*
   update AP_Stats
@@ -177,7 +146,6 @@ void Rover::stats_update(void)
     g2.stats.update();
 }
 #endif
-
 
 // update AHRS system
 void Rover::ahrs_update()

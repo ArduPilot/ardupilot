@@ -275,9 +275,11 @@ private:
 
 private:
 
-    // Rover.cpp
+    // AP_Vehicle.cpp
     bool set_target_location(const Location& target_loc) override;
     bool set_target_velocity_NED(const Vector3f& vel_ned) override;
+
+    // Rover.cpp
     void stats_update();
     void ahrs_update();
     void gcs_failsafe_check(void);
