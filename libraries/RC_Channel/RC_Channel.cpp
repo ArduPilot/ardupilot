@@ -649,11 +649,13 @@ void RC_Channel::do_aux_function_fence(const aux_switch_pos_t ch_flag)
     AP_Logger *logger = AP_Logger::get_singleton();
     if (ch_flag == HIGH) {
         fence->enable(true);
+        gcs().send_text(MAV_SEVERITY_INFO, "Fence enabled");
         if (logger != nullptr) {
             logger->Write_Event(LogEvent::FENCE_ENABLE);
         }
     } else {
         fence->enable(false);
+        gcs().send_text(MAV_SEVERITY_INFO, "Fence disabled");
         if (logger != nullptr) {
             logger->Write_Event(LogEvent::FENCE_DISABLE);
         }
