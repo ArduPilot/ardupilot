@@ -183,9 +183,17 @@ void Plane::geofence_update_pwm_enabled_state()
     }
 
     if (geofence_state->is_pwm_enabled != is_pwm_enabled) {
+        if (is_pwm_enabled) {
+        gcs().send_text(MAV_SEVERITY_INFO, "GeoFence Enabled");
+        } else {  
+        gcs().send_text(MAV_SEVERITY_INFO, "GeoFence Disabled");  
+        }         
         geofence_set_enabled(is_pwm_enabled);
         geofence_state->is_pwm_enabled = is_pwm_enabled;
-    }    
+      
+    }
+
+        
 }
 
 //return true on success, false on failure
