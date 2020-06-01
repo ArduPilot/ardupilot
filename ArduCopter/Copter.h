@@ -630,6 +630,7 @@ private:
     bool start_takeoff(float alt) override;
     bool set_target_location(const Location& target_loc) override;
     bool set_target_velocity_NED(const Vector3f& vel_ned) override;
+    AC_PID *get_AC_PID(AC_PID_TYPE type) override;
 
     // Copter.cpp
     void get_scheduler_tasks(const AP_Scheduler::Task *&tasks,

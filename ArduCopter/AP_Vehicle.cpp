@@ -52,3 +52,27 @@ bool Copter::set_target_velocity_NED(const Vector3f& vel_ned)
     mode_guided.set_velocity(vel_neu_cms);
     return true;
 }
+
+AC_PID* Copter::get_AC_PID(AC_PID_TYPE type)
+{
+    AC_PID *ret = nullptr;
+
+    switch(type) {
+        case AC_PID_TYPE::RATE_ROLL:
+            ret = &copter.attitude_control->get_rate_roll_pid();
+            break;
+
+        case AC_PID_TYPE::RATE_PITCH:
+            ret = &copter.attitude_control->get_rate_pitch_pid();
+            break;
+
+        case AC_PID_TYPE::RATE_YAW:
+            ret = &copter.attitude_control->get_rate_yaw_pid();
+            break;
+
+        default:
+            break;
+    }
+
+    return ret;
+}
