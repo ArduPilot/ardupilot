@@ -252,8 +252,10 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
 #if RANGEFINDER_ENABLED == ENABLED
             if ((ch_flag == HIGH) && copter.rangefinder.has_orientation(ROTATION_PITCH_270)) {
                 copter.rangefinder_state.enabled = true;
+                gcs().send_text(MAV_SEVERITY_WARNING, "SurfaceTracking enabled");
             } else {
                 copter.rangefinder_state.enabled = false;
+                gcs().send_text(MAV_SEVERITY_WARNING, "SurfaceTracking disabled");
             }
 #endif
             break;
