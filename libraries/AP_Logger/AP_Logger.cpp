@@ -92,7 +92,15 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @User: Standard
     // @Units: s
     AP_GROUPINFO("_FILE_TIMEOUT",  6, AP_Logger, _params.file_timeout,     HAL_LOGGING_FILE_TIMEOUT),
-    
+
+    // @Param: _FILE_MB_FREE
+    // @DisplayName: Old logs on the SD card will be deleted to maintain this amount of free space
+    // @Description: Set this such that the free space is larger than your largest typical flight log
+    // @Units: MB
+    // @Range: 10 1000
+    // @User: Standard
+    AP_GROUPINFO("_FILE_MB_FREE",  7, AP_Logger, _params.min_MB_free, 500),
+
     AP_GROUPEND
 };
 

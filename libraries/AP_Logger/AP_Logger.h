@@ -343,6 +343,7 @@ public:
         AP_Int8 log_replay;
         AP_Int8 mav_bufsize; // in kilobytes
         AP_Int16 file_timeout; // in seconds
+        AP_Int16 min_MB_free;
     } _params;
 
     const struct LogStructure *structure(uint16_t num) const;
