@@ -3,6 +3,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_HAL/I2CDevice.h>
 #include "AP_BattMonitor_Backend.h"
 #include <utility>
 
@@ -96,8 +97,3 @@ protected:
 
     AP_HAL::Device::PeriodicHandle timer_handle;
 };
-
-// include specific implementations
-#include "AP_BattMonitor_SMBus_Solo.h"
-#include "AP_BattMonitor_SMBus_Generic.h"
-#include "AP_BattMonitor_SMBus_Maxell.h"
