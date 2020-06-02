@@ -1273,6 +1273,9 @@ class AutoTestPlane(AutoTest):
 
         self.change_mode('MANUAL')
 
+        self.progress("Asserting we don't support transfer of fence via mission item protocol")
+        self.assert_no_capability(mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_MISSION_FENCE)
+
         # grab home position:
         self.mav.recv_match(type='HOME_POSITION', blocking=True)
         self.homeloc = self.mav.location()
