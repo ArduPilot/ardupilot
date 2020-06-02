@@ -2,6 +2,7 @@
 
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -95,6 +96,11 @@ AC_Fence::AC_Fence()
 /// enable the Fence code generally; a master switch for all fences
 void AC_Fence::enable(bool value)
 {
+    if (_enabled && !value) {
+        AP::logger().Write_Event(LogEvent::FENCE_DISABLE);
+    } else if (!_enabled && value) {
+        AP::logger().Write_Event(LogEvent::FENCE_ENABLE);
+    }
     _enabled = value;
     if (!value) {
         clear_breach(AC_FENCE_TYPE_ALT_MAX | AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON);
