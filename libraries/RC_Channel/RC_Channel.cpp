@@ -646,18 +646,7 @@ void RC_Channel::do_aux_function_fence(const aux_switch_pos_t ch_flag)
         return;
     }
 
-    AP_Logger *logger = AP_Logger::get_singleton();
-    if (ch_flag == HIGH) {
-        fence->enable(true);
-        if (logger != nullptr) {
-            logger->Write_Event(LogEvent::FENCE_ENABLE);
-        }
-    } else {
-        fence->enable(false);
-        if (logger != nullptr) {
-            logger->Write_Event(LogEvent::FENCE_DISABLE);
-        }
-    }
+    fence->enable(ch_flag == HIGH);
 }
 
 void RC_Channel::do_aux_function_clear_wp(const aux_switch_pos_t ch_flag)
