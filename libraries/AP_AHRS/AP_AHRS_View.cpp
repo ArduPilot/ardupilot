@@ -90,14 +90,14 @@ Vector3f AP_AHRS_View::get_gyro_latest(void) const {
 }
 
 // rotate a 2D vector from earth frame to body frame
-Vector2f AP_AHRS_View::rotate_earth_to_body2D(const Vector2f &ef) const
+Vector2f AP_AHRS_View::earth_to_body2D(const Vector2f &ef) const
 {
     return Vector2f(ef.x * trig.cos_yaw + ef.y * trig.sin_yaw,
                     -ef.x * trig.sin_yaw + ef.y * trig.cos_yaw);
 }
 
 // rotate a 2D vector from earth frame to body frame
-Vector2f AP_AHRS_View::rotate_body_to_earth2D(const Vector2f &bf) const
+Vector2f AP_AHRS_View::body_to_earth2D(const Vector2f &bf) const
 {
     return Vector2f(bf.x * trig.cos_yaw - bf.y * trig.sin_yaw,
                     bf.x * trig.sin_yaw + bf.y * trig.cos_yaw);
