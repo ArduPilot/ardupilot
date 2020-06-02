@@ -1822,23 +1822,6 @@ bool ModeAuto::verify_circle(const AP_Mission::Mission_Command& cmd)
     // check if we've reached the edge
     if (mode() == Auto_CircleMoveToEdge) {
         if (copter.wp_nav->reached_wp_destination()) {
-            Vector3f circle_center;
-            if (!cmd.content.location.get_vector_from_origin_NEU(circle_center)) {
-                // should never happen
-                return true;
-            }
-            const Vector3f curr_pos = copter.inertial_nav.get_position();
-            // set target altitude if not provided
-            if (is_zero(circle_center.z)) {
-                circle_center.z = curr_pos.z;
-            }
-
-            // set lat/lon position if not provided
-            if (cmd.content.location.lat == 0 && cmd.content.location.lng == 0) {
-                circle_center.x = curr_pos.x;
-                circle_center.y = curr_pos.y;
-            }
-
             // start circling
             circle_start();
         }
