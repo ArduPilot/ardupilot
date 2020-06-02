@@ -25,21 +25,21 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @Param: Q1
     // @DisplayName: Process noise
     // @Description: Standard deviation of noise in process for strength
-    // @Range: 0 10
+    // @Range: 0.0001 0.01
     // @User: Advanced
     AP_GROUPINFO("Q1", 3, SoaringController, thermal_q1, 0.001f),
 
     // @Param: Q2
     // @DisplayName: Process noise
     // @Description: Standard deviation of noise in process for position and radius
-    // @Range: 0 10
+    // @Range: 0.01 1
     // @User: Advanced
     AP_GROUPINFO("Q2", 4, SoaringController, thermal_q2, 0.03f),
 
     // @Param: R
     // @DisplayName: Measurement noise
     // @Description: Standard deviation of noise in measurement
-    // @Range: 0 10
+    // @Range: 0.01 1
     // @User: Advanced
 
     AP_GROUPINFO("R", 5, SoaringController, thermal_r, 0.45f),
@@ -56,7 +56,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @DisplayName: Minimum thermalling time
     // @Description: Minimum number of seconds to spend thermalling
     // @Units: s
-    // @Range: 0 32768
+    // @Range: 0 600
     // @User: Advanced
     AP_GROUPINFO("MIN_THML_S", 7, SoaringController, min_thermal_s, 20),
 
@@ -64,21 +64,21 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @DisplayName: Minimum cruising time
     // @Description: Minimum number of seconds to spend cruising
     // @Units: s
-    // @Range: 0 32768
+    // @Range: 0 600
     // @User: Advanced
     AP_GROUPINFO("MIN_CRSE_S", 8, SoaringController, min_cruise_s, 30),
 
     // @Param: POLAR_CD0
     // @DisplayName: Zero lift drag coef.
     // @Description: Zero lift drag coefficient
-    // @Range: 0 0.5
+    // @Range: 0.005 0.5
     // @User: Advanced
     AP_GROUPINFO("POLAR_CD0", 9, SoaringController, polar_CD0, 0.027),
 
     // @Param: POLAR_B
     // @DisplayName: Induced drag coeffient
     // @Description: Induced drag coeffient
-    // @Range: 0 0.5
+    // @Range: 0.005 0.05
     // @User: Advanced
     AP_GROUPINFO("POLAR_B", 10, SoaringController, polar_B, 0.031),
 
@@ -86,7 +86,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @DisplayName: Cl factor
     // @Description: Cl factor 2*m*g/(rho*S)
     // @Units: m.m/s/s
-    // @Range: 0 0.5
+    // @Range: 20 400
     // @User: Advanced
     AP_GROUPINFO("POLAR_K", 11, SoaringController, polar_K, 25.6),
 
@@ -94,7 +94,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @DisplayName: Maximum soaring altitude, relative to the home location
     // @Description: Don't thermal any higher than this.
     // @Units: m
-    // @Range: 0 1000.0
+    // @Range: 0 5000.0
     // @User: Advanced
     AP_GROUPINFO("ALT_MAX", 12, SoaringController, alt_max, 350.0),
 
@@ -110,7 +110,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @DisplayName: Maximum power altitude, relative to the home location
     // @Description: Cut off throttle at this alt.
     // @Units: m
-    // @Range: 0 1000.0
+    // @Range: 0 5000.0
     // @User: Advanced
     AP_GROUPINFO("ALT_CUTOFF", 14, SoaringController, alt_cutoff, 250.0),
     
