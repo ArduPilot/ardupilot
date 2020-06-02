@@ -472,14 +472,14 @@ float AP_AHRS::getSSA(void)
 }
 
 // rotate a 2D vector from earth frame to body frame
-Vector2f AP_AHRS::rotate_earth_to_body2D(const Vector2f &ef) const
+Vector2f AP_AHRS::earth_to_body2D(const Vector2f &ef) const
 {
     return Vector2f(ef.x * _cos_yaw + ef.y * _sin_yaw,
                     -ef.x * _sin_yaw + ef.y * _cos_yaw);
 }
 
 // rotate a 2D vector from earth frame to body frame
-Vector2f AP_AHRS::rotate_body_to_earth2D(const Vector2f &bf) const
+Vector2f AP_AHRS::body_to_earth2D(const Vector2f &bf) const
 {
     return Vector2f(bf.x * _cos_yaw - bf.y * _sin_yaw,
                     bf.x * _sin_yaw + bf.y * _cos_yaw);
