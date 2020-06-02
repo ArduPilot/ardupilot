@@ -239,7 +239,7 @@ bool AP_Proximity_Backend::ignore_reading(uint16_t angle_deg) const
     // check angle vs each ignore area
     for (uint8_t i=0; i < PROXIMITY_MAX_IGNORE; i++) {
         if (frontend._ignore_width_deg[i] != 0) {
-            if (abs(angle_deg - frontend._ignore_width_deg[i]) <= (frontend._ignore_width_deg[i]/2)) {
+            if (abs(angle_deg - frontend._ignore_angle_deg[i]) <= (frontend._ignore_width_deg[i]/2)) {
                 return true;
             }
         }
