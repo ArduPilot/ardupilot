@@ -1100,7 +1100,7 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
                 //if we are not currently flying
                 if((copter.planck_interface.get_tag_tracking_state() ||
                     copter.planck_interface.get_commbox_state()) &&
-                   copter.ap.land_complete)
+                    !copter.ap.land_complete)
                 {
                     copter.planck_interface.request_alt_change(pos_vector.z / 100.);
                 }
