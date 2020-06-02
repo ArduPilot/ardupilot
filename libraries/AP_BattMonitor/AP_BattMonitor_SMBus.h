@@ -99,4 +99,4 @@ protected:
 
 // include specific implementations
 #include "AP_BattMonitor_SMBus_Solo.h"
-#include "AP_BattMonitor_SMBus_Maxell.h"
+#include "AP_BattMonitor_SMBus_Generic.h"

@@ -2,7 +2,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include "AP_BattMonitor.h"
-#include "AP_BattMonitor_SMBus_Maxell.h"
+#include "AP_BattMonitor_SMBus_Generic.h"
 #include <utility>
 
 uint8_t maxell_cell_ids[] = { 0x3f,  // cell 1
@@ -30,14 +30,14 @@ uint8_t maxell_cell_ids[] = { 0x3f,  // cell 1
 */
 
 // Constructor
-AP_BattMonitor_SMBus_Maxell::AP_BattMonitor_SMBus_Maxell(AP_BattMonitor &mon,
+AP_BattMonitor_SMBus_Generic::AP_BattMonitor_SMBus_Generic(AP_BattMonitor &mon,
                                                    AP_BattMonitor::BattMonitor_State &mon_state,
                                                    AP_BattMonitor_Params &params,
                                                    AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
     : AP_BattMonitor_SMBus(mon, mon_state, params, std::move(dev))
 {}
 
-void AP_BattMonitor_SMBus_Maxell::timer()
+void AP_BattMonitor_SMBus_Generic::timer()
 {
 	// check if PEC is supported
     if (!check_pec_support()) {
@@ -90,7 +90,7 @@ void AP_BattMonitor_SMBus_Maxell::timer()
 }
 
 // read_block - returns number of characters read if successful, zero if unsuccessful
-uint8_t AP_BattMonitor_SMBus_Maxell::read_block(uint8_t reg, uint8_t* data, bool append_zero) const
+uint8_t AP_BattMonitor_SMBus_Generic::read_block(uint8_t reg, uint8_t* data, bool append_zero) const
 {
     // get length
     uint8_t bufflen;
@@ -135,7 +135,7 @@ uint8_t AP_BattMonitor_SMBus_Maxell::read_block(uint8_t reg, uint8_t* data, bool
 
 // check if PEC supported with the version value in SpecificationInfo() function
 // returns true once PEC is confirmed as working or not working
-bool AP_BattMonitor_SMBus_Maxell::check_pec_support()
+bool AP_BattMonitor_SMBus_Generic::check_pec_support()
 {
     // exit immediately if we have already confirmed pec support
     if (_pec_confirmed) {
