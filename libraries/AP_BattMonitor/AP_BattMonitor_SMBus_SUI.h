@@ -1,9 +1,6 @@
 #pragma once
 
-#include <AP_Common/AP_Common.h>
-#include <AP_Math/AP_Math.h>
 #include "AP_BattMonitor_SMBus.h"
-#include <AP_HAL/I2CDevice.h>
 
 // Base SUI class
 class AP_BattMonitor_SMBus_SUI : public AP_BattMonitor_SMBus
