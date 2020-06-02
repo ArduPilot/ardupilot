@@ -138,7 +138,7 @@ void ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles, bool stick_input)
     sensor_flow *= constrain_float(height_estimate, height_min, height_max);
 
     // rotate controller input to earth frame
-    Vector2f input_ef = copter.ahrs.rotate_body_to_earth2D(sensor_flow);
+    Vector2f input_ef = copter.ahrs.body_to_earth2D(sensor_flow);
 
     // run PI controller
     flow_pi_xy.set_input(input_ef);
@@ -194,7 +194,7 @@ void ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles, bool stick_input)
     ef_output *= copter.aparm.angle_max;
 
     // convert to body frame
-    bf_angles += copter.ahrs.rotate_earth_to_body2D(ef_output);
+    bf_angles += copter.ahrs.earth_to_body2D(ef_output);
 
     // set limited flag to prevent integrator windup
     limited = fabsf(bf_angles.x) > copter.aparm.angle_max || fabsf(bf_angles.y) > copter.aparm.angle_max;
@@ -400,7 +400,7 @@ void ModeFlowHold::update_height_estimate(void)
     }
 
     // convert delta velocity back to body frame to match the flow sensor
-    Vector2f delta_vel_bf = copter.ahrs.rotate_earth_to_body2D(delta_velocity_ne);
+    Vector2f delta_vel_bf = copter.ahrs.earth_to_body2D(delta_velocity_ne);
 
     // and convert to an rate equivalent, to be comparable to flow
     Vector2f delta_vel_rate(-delta_vel_bf.y, delta_vel_bf.x);
