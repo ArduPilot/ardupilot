@@ -118,9 +118,13 @@ void SLCANRouter::slcan2can_router_trampoline(void)
         chSysUnlock();
         _slcan_if.reader();
         while (_can_tx_queue.available() && _can_if) {
-            _can_tx_queue.peek(it);
+            if (!_can_tx_queue.peek(it)) {
+                break;
+            }
             if (_can_if->send(it.frame, uavcan::MonotonicTime::fromUSec(AP_HAL::micros64() + 1000), 0)) {
-                _can_tx_queue.pop();
+                if (!_can_tx_queue.pop()) {
+                    break;
+                }
             } else {
                 break;
             }
@@ -142,9 +146,13 @@ void SLCANRouter::can2slcan_router_trampoline(void)
         chSysUnlock();
         _update_event->wait(uavcan::MonotonicDuration::fromUSec(1000));
         while (_slcan_tx_queue.available()) {
-            _slcan_tx_queue.peek(it);
+            if (!_slcan_tx_queue.peek(it)) {
+                break;
+            }
             if (_slcan_if.send(it.frame, uavcan::MonotonicTime::fromUSec(AP_HAL::micros64() + 1000), 0)) {
-                _slcan_tx_queue.pop();
+                if (!_slcan_tx_queue.pop()) {
+                    break;
+                }
             } else {
                 break;
             }
