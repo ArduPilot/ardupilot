@@ -798,7 +798,7 @@ struct PACKED log_Current_Cells {
     uint64_t time_us;
     uint8_t  instance;
     float    voltage;
-    uint16_t cell_voltages[10];
+    uint16_t cell_voltages[12];
 };
 
 struct PACKED log_Compass {
@@ -1395,6 +1395,8 @@ struct PACKED log_Arm_Disarm {
 // @Field: V8: eighth cell voltage
 // @Field: V9: ninth cell voltage
 // @Field: V10: tenth cell voltage
+// @Field: V11: eleventh cell voltage
+// @Field: V12: twelfth cell voltage
 
 // @LoggerMessage: BCN
 // @Description: Beacon informtaion
@@ -2366,7 +2368,7 @@ struct PACKED log_Arm_Disarm {
     { LOG_CURRENT_MSG, sizeof(log_Current),                     \
       "BAT", "QBfffffcf", "TimeUS,Instance,Volt,VoltR,Curr,CurrTot,EnrgTot,Temp,Res", "s#vvAiJOw", "F-000!/?0" },  \
     { LOG_CURRENT_CELLS_MSG, sizeof(log_Current_Cells), \
-      "BCL", "QBfHHHHHHHHHH", "TimeUS,Instance,Volt,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10", "s#vvvvvvvvvvv", "F-00000000000" }, \
+      "BCL", "QBfHHHHHHHHHHHH", "TimeUS,Instance,Volt,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10,V11,V12", "s#vvvvvvvvvvvvv", "F-0000000000000" }, \
 	{ LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
       "ATT", "QccccCCCC", "TimeUS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw", "sddddhhdh", "FBBBBBBBB" }, \
     { LOG_COMPASS_MSG, sizeof(log_Compass), \
