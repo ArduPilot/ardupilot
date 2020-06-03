@@ -637,7 +637,7 @@ def run_tests(steps):
     return passed
 
 def list_subtests(*args, **kwargs):
-    for vehicle in sorted(['Sub', 'Copter', 'Plane', 'Tracker', 'Rover']):
+    for vehicle in sorted(['Sub', 'Copter', 'Plane', 'Tracker', 'Rover', 'QuadPlane', 'BalanceBot', 'Helicopter']):
         tester_class = tester_class_map["test.%s" % vehicle]
         tester = tester_class("/bin/true", None)
         subtests = tester.tests()
