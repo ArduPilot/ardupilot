@@ -326,7 +326,10 @@ void Helicopter::push_to_buffer(const uint16_t servos_input[16])
 void Helicopter::pull_from_buffer(uint16_t servos_delayed[6])
 {
     servos_stored sample;
-    servos_stored_buffer->pop(sample);
+    if (!servos_stored_buffer->pop(sample)) {
+        // no sample
+        return;
+    }
     servos_delayed[0] = sample.servo1;
     servos_delayed[1] = sample.servo2; 
     servos_delayed[2] = sample.servo3;
