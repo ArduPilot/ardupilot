@@ -1899,7 +1899,7 @@ void GCS::service_statustext(void)
     // is if you have a super slow link mixed with a faster port, if there are _status_capacity
     // strings in the slow queue then the next item can not be queued for the faster link
 
-    if (_statustext_queue.empty()) {
+    if (_statustext_queue.is_empty()) {
         // nothing to do
         return;
     }
