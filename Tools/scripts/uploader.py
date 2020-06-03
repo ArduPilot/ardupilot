@@ -737,8 +737,11 @@ class uploader(object):
                     print("INFO: %s" % msg)
                     incomp = False
             if incomp:                        
-                msg = "Firmware not suitable for this board (board_type=%u board_id=%u)" % (
-                    self.board_type, fw.property('board_id'))
+                msg = "Firmware not suitable for this board (board_type=%u (%s) board_id=%u (%s))" % (
+                    self.board_type,
+                    self.board_name_for_board_id(self.board_type),
+                    fw.property('board_id'),
+                    self.board_name_for_board_id(fw.property('board_id')))
                 print("WARNING: %s" % msg)
                 
                 if force:
