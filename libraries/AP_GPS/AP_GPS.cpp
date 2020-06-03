@@ -784,6 +784,7 @@ void AP_GPS::update_instance(uint8_t instance)
                 t.average_delta_ms = 0.98f * t.average_delta_ms + 0.02f * t.delta_time_ms;
             }
         }
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS: delta_time_ms=%d, average_delta_ms=%f",t.delta_time_ms,t.average_delta_ms);
     }
     
 #ifndef HAL_BUILD_AP_PERIPH
