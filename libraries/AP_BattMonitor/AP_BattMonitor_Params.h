@@ -19,7 +19,7 @@ public:
         BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT = 4,
         BattMonitor_TYPE_SOLO                       = 5,
         BattMonitor_TYPE_BEBOP                      = 6,
-        BattMonitor_TYPE_MAXELL                     = 7,
+        BattMonitor_TYPE_SMBus_Generic              = 7,
         BattMonitor_TYPE_UAVCAN_BatteryInfo         = 8,
         BattMonitor_TYPE_BLHeliESC                  = 9,
         BattMonitor_TYPE_Sum                        = 10,
@@ -28,7 +28,7 @@ public:
         BattMonitor_TYPE_SUI3                       = 13,
         BattMonitor_TYPE_SUI6                       = 14,
         BattMonitor_TYPE_NeoDesign                  = 15,
-        BattMonitor_TYPE_SMBus_Generic              = 16,
+        BattMonitor_TYPE_MAXELL                     = 16,
     };
 
     // low voltage sources (used for BATT_LOW_TYPE parameter)
