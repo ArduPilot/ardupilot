@@ -473,6 +473,7 @@ private:
 
     // Used to exit the roll and pitch auto trim function
     uint8_t auto_trim_counter;
+    bool auto_trim_started = false;
 
     // Camera
 #if CAMERA == ENABLED
@@ -845,9 +846,10 @@ private:
     void winch_init();
     void winch_update();
 
-    // switches.cpp
+    // RC_Channel.cpp
     void save_trim();
     void auto_trim();
+    void auto_trim_cancel();
 
     // system.cpp
     void init_ardupilot() override;
