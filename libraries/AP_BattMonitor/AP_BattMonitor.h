@@ -19,6 +19,8 @@
 #define AP_BATT_MONITOR_RES_EST_TC_1        0.5f
 #define AP_BATT_MONITOR_RES_EST_TC_2        0.1f
 
+#define AP_BATT_MONITOR_CELLS_MAX           12
+
 #ifndef HAL_BATTMON_SMBUS_ENABLE
 #define HAL_BATTMON_SMBUS_ENABLE 1
 #endif
@@ -71,7 +73,7 @@ public:
     }
 
     struct cells {
-        uint16_t cells[MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN];
+        uint16_t cells[AP_BATT_MONITOR_CELLS_MAX];
     };
 
     // The BattMonitor_State structure is filled in by the backend driver
