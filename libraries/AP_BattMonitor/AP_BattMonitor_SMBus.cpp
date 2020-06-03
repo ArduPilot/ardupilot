@@ -61,7 +61,7 @@ bool AP_BattMonitor_SMBus::read_full_charge_capacity(void)
 }
 
 // reads the remaining capacity
-// returns true if the read was succesful, which is only considered to be the
+// returns true if the read was successful, which is only considered to be the
 // we know the full charge capacity
 bool AP_BattMonitor_SMBus::read_remaining_capacity(void)
 {
