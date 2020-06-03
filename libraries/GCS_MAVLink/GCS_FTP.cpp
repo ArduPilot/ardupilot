@@ -95,7 +95,7 @@ void GCS_MAVLINK::send_ftp_replies(void)
         send_banner();
     }
     
-    if (ftp.replies == nullptr || ftp.replies->empty()) {
+    if (ftp.replies == nullptr || ftp.replies->is_empty()) {
         return;
     }
 
