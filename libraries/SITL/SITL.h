@@ -194,6 +194,7 @@ public:
     AP_Float mag_scaling; // scaling factor on first compasses
     AP_Int32 mag_devid[MAX_CONNECTED_MAGS]; // Mag devid
     AP_Float buoyancy; // submarine buoyancy in Newtons
+    AP_Int16 loop_rate_hz;
 
     // EFI type
     enum EFIType {

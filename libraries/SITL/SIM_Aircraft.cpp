@@ -598,6 +598,9 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
         }
         }
     }
+
+    // allow for changes in physics step
+    adjust_frame_time(constrain_float(sitl->loop_rate_hz, rate_hz-1, rate_hz+1));
 }
 
 /*
