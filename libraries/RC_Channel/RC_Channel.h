@@ -194,6 +194,8 @@ public:
     };
     typedef enum AUX_FUNC aux_func_t;
 
+    const char *string_for_aux_function(AUX_FUNC function) const;
+
     // auxillary switch handling (n.b.: we store this as 2-bits!):
     enum aux_switch_pos_t : uint8_t {
         LOW,       // indicates auxiliary switch is in the low position (pwm <1200)
