@@ -33,10 +33,10 @@ RC_Channel * RC_Channels_Plane::get_arming_channel(void) const
 }
 
 void RC_Channel_Plane::do_aux_function_change_mode(const Mode::Number number,
-                                                   const aux_switch_pos_t ch_flag)
+                                                   const AuxSwitchPos ch_flag)
 {
     switch(ch_flag) {
-    case HIGH: {
+    case AuxSwitchPos::HIGH: {
         // engage mode (if not possible we remain in current flight mode)
         const bool success = plane.set_mode_by_number(number, ModeReason::RC_COMMAND);
         if (plane.control_mode != &plane.mode_initializing) {
@@ -58,20 +58,20 @@ void RC_Channel_Plane::do_aux_function_change_mode(const Mode::Number number,
     }
 }
 
-void RC_Channel_Plane::do_aux_function_q_assist_state(aux_switch_pos_t ch_flag)
+void RC_Channel_Plane::do_aux_function_q_assist_state(AuxSwitchPos ch_flag)
 {
     switch(ch_flag) {
-        case HIGH:
+        case AuxSwitchPos::HIGH:
             gcs().send_text(MAV_SEVERITY_INFO, "QAssist: Force enabled");
             plane.quadplane.set_q_assist_state(plane.quadplane.Q_ASSIST_STATE_ENUM::Q_ASSIST_FORCE);
             break;
 
-        case MIDDLE:
+        case AuxSwitchPos::MIDDLE:
             gcs().send_text(MAV_SEVERITY_INFO, "QAssist: Enabled");
             plane.quadplane.set_q_assist_state(plane.quadplane.Q_ASSIST_STATE_ENUM::Q_ASSIST_ENABLED);
             break;
 
-        case LOW:
+        case AuxSwitchPos::LOW:
             gcs().send_text(MAV_SEVERITY_INFO, "QAssist: Disabled");
             plane.quadplane.set_q_assist_state(plane.quadplane.Q_ASSIST_STATE_ENUM::Q_ASSIST_DISABLED);
             break;
@@ -79,7 +79,7 @@ void RC_Channel_Plane::do_aux_function_q_assist_state(aux_switch_pos_t ch_flag)
 }
 
 void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
-                                         const RC_Channel::aux_switch_pos_t ch_flag)
+                                         const RC_Channel::AuxSwitchPos ch_flag)
 {
     switch(ch_option) {
     // the following functions do not need to be initialised:
@@ -117,15 +117,15 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
 }
 
 // do_aux_function - implement the function invoked by auxillary switches
-void RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const aux_switch_pos_t ch_flag)
+void RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos ch_flag)
 {
     switch(ch_option) {
     case AUX_FUNC::INVERTED:
-        plane.inverted_flight = (ch_flag == HIGH);
+        plane.inverted_flight = (ch_flag == AuxSwitchPos::HIGH);
         break;
 
     case AUX_FUNC::REVERSE_THROTTLE:
-        plane.reversed_throttle = (ch_flag == HIGH);
+        plane.reversed_throttle = (ch_flag == AuxSwitchPos::HIGH);
         gcs().send_text(MAV_SEVERITY_INFO, "RevThrottle: %s", plane.reversed_throttle?"ENABLE":"DISABLE");
         break;
 
