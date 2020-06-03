@@ -298,7 +298,7 @@ bool UARTDriver::discard_input()
     if (!_initialised) {
         return false;
     }
-    _readbuf.empty();
+    _readbuf.clear();
     return true;
 }
 
