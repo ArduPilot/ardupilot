@@ -124,11 +124,11 @@ AP_BattMonitor::init()
                                                                   hal.i2c_mgr->get_device(_params[instance]._i2c_bus, AP_BATTMONITOR_SMBUS_I2C_ADDR,
                                                                                           100000, true, 20));
                 break;
-            case AP_BattMonitor_Params::BattMonitor_TYPE_MAXELL:
+            case AP_BattMonitor_Params::BattMonitor_TYPE_SMBus_Generic:
                 _params[instance]._i2c_bus.set_default(AP_BATTMONITOR_SMBUS_BUS_EXTERNAL);
-                drivers[instance] = new AP_BattMonitor_SMBus_Maxell(*this, state[instance], _params[instance],
-                                                                    hal.i2c_mgr->get_device(_params[instance]._i2c_bus, AP_BATTMONITOR_SMBUS_I2C_ADDR,
-                                                                                            100000, true, 20));
+                drivers[instance] = new AP_BattMonitor_SMBus_Generic(*this, state[instance], _params[instance],
+                                                                     hal.i2c_mgr->get_device(_params[instance]._i2c_bus, AP_BATTMONITOR_SMBUS_I2C_ADDR,
+                                                                                             100000, true, 20));
                 break;
             case AP_BattMonitor_Params::BattMonitor_TYPE_SUI3:
                 _params[instance]._i2c_bus.set_default(AP_BATTMONITOR_SMBUS_BUS_INTERNAL),
@@ -142,11 +142,11 @@ AP_BattMonitor::init()
                                                                  hal.i2c_mgr->get_device(_params[instance]._i2c_bus, AP_BATTMONITOR_SMBUS_I2C_ADDR,
                                                                                          100000, true, 20), 6);
                 break;
-            case AP_BattMonitor_Params::BattMonitor_TYPE_SMBus_Generic:
+            case AP_BattMonitor_Params::BattMonitor_TYPE_MAXELL:
                 _params[instance]._i2c_bus.set_default(AP_BATTMONITOR_SMBUS_BUS_EXTERNAL);
-                drivers[instance] = new AP_BattMonitor_SMBus_Generic(*this, state[instance], _params[instance],
-                                                                     hal.i2c_mgr->get_device(_params[instance]._i2c_bus, AP_BATTMONITOR_SMBUS_I2C_ADDR,
-                                                                                             100000, true, 20));
+                drivers[instance] = new AP_BattMonitor_SMBus_Maxell(*this, state[instance], _params[instance],
+                                                                    hal.i2c_mgr->get_device(_params[instance]._i2c_bus, AP_BATTMONITOR_SMBUS_I2C_ADDR,
+                                                                                            100000, true, 20));
                 break;
 #endif // HAL_BATTMON_SMBUS_ENABLE
             case AP_BattMonitor_Params::BattMonitor_TYPE_BEBOP:
