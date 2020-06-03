@@ -495,6 +495,56 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const AuxSwitchPo
     }
 }
 
+#if !HAL_MINIMIZE_FEATURES
+
+const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
+    { AUX_FUNC::SAVE_WP,"SaveWaypoint"},
+    { AUX_FUNC::CAMERA_TRIGGER,"CameraTrigger"},
+    { AUX_FUNC::RANGEFINDER,"Rangefinder"},
+    { AUX_FUNC::FENCE,"Fence"},
+    { AUX_FUNC::SPRAYER,"Sprayer"},
+    { AUX_FUNC::PARACHUTE_ENABLE,"ParachuteEnable"},
+    { AUX_FUNC::PARACHUTE_RELEASE,"ParachuteRelease"},
+    { AUX_FUNC::PARACHUTE_3POS,"Parachute3Position"},
+    { AUX_FUNC::MISSION_RESET,"MissionReset"},
+    { AUX_FUNC::RETRACT_MOUNT,"RetractMount"},
+    { AUX_FUNC::RELAY,"Relay1"},
+    { AUX_FUNC::LANDING_GEAR,"Landing"},
+    { AUX_FUNC::MOTOR_INTERLOCK,"MotorInterlock"},
+    { AUX_FUNC::RELAY2,"Relay2"},
+    { AUX_FUNC::RELAY3,"Relay3"},
+    { AUX_FUNC::RELAY4,"Relay4"},
+    { AUX_FUNC::PRECISION_LOITER,"PrecisionLoiter"},
+    { AUX_FUNC::AVOID_PROXIMITY,"AvoidPRoximity"},
+    { AUX_FUNC::WINCH_ENABLE,"WinchEnable"},
+    { AUX_FUNC::WINCH_CONTROL,"WinchControl"},
+    { AUX_FUNC::CLEAR_WP,"ClearWaypoint"},
+    { AUX_FUNC::COMPASS_LEARN,"CompassLearn"},
+    { AUX_FUNC::SAILBOAT_TACK,"SailboatTack"},
+    { AUX_FUNC::GPS_DISABLE,"GPSDisable"},
+    { AUX_FUNC::RELAY5,"Relay5"},
+    { AUX_FUNC::RELAY6,"Relay6"},
+    { AUX_FUNC::SAILBOAT_MOTOR_3POS,"SailboatMotor"},
+    { AUX_FUNC::SURFACE_TRACKING,"SurfaceTracking"},
+    { AUX_FUNC::RUNCAM_CONTROL,"RunCamControl"},
+    { AUX_FUNC::RUNCAM_OSD_CONTROL,"RunCamOSDControl"},
+    { AUX_FUNC::VISODOM_CALIBRATE,"VisodomCalibrate"},
+    { AUX_FUNC::CAM_MODE_TOGGLE,"CamModeToggle"},
+};
+
+/* lookup the announcement for switch change */
+const char *RC_Channel::string_for_aux_function(AUX_FUNC function) const     
+{
+     for (const struct LookupTable entry : lookuptable) {
+        if (entry.option == function) {
+            return entry.announcement;
+        }
+     }
+     return nullptr;
+}
+
+#endif // HAL_MINIMIZE_FEATURES
+
 /*
   read an aux channel. Return true if a switch has changed
  */
@@ -514,6 +564,26 @@ bool RC_Channel::read_aux()
     if (!debounce_completed((int8_t)new_position)) {
         return false;
     }
+
+#if !HAL_MINIMIZE_FEATURES
+    // announce the change to the GCS:
+    const char *aux_string = string_for_aux_function(_option);
+    if (aux_string != nullptr) {
+        const char *temp =  nullptr;
+        switch (new_position) {
+        case AuxSwitchPos::HIGH:
+            temp = "HIGH";           
+            break;
+        case AuxSwitchPos::MIDDLE:
+            temp = "MIDDLE";
+            break;
+        case AuxSwitchPos::LOW:
+            temp = "LOW";          
+            break;
+        }
+        gcs().send_text(MAV_SEVERITY_INFO, "%s %s", aux_string, temp);
+    }
+#endif
 
     // debounced; undertake the action:
     do_aux_function(_option, new_position);

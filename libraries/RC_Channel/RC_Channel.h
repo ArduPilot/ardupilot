@@ -274,6 +274,17 @@ private:
     void reset_mode_switch();
     void read_mode_switch();
     bool debounce_completed(int8_t position);
+
+#if !HAL_MINIMIZE_FEATURES
+    // Structure to lookup switch change announcements
+    struct LookupTable{
+       AUX_FUNC option;
+       const char *announcement;
+    };
+
+    static const LookupTable lookuptable[];
+    const char *string_for_aux_function(AUX_FUNC function) const;
+#endif
 };
 
 
