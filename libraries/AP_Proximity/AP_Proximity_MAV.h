@@ -25,7 +25,7 @@ public:
 
 private:
 
-    // initialise sensor (returns true if sensor is succesfully initialised)
+    // initialise sensor (returns true if sensor is successfully initialised)
     bool initialise();
 
     // horizontal distance support
