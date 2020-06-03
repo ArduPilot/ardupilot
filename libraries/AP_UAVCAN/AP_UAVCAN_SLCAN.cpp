@@ -483,7 +483,9 @@ int16_t SLCAN::CAN::receive(uavcan::CanFrame& out_frame, uavcan::MonotonicTime& 
     out_ts_monotonic = uavcan::MonotonicTime::fromUSec(AP_HAL::micros64());; // High precision is not required for monotonic timestamps
     uint64_t utc_usec;
     CanRxItem frm;
-    rx_queue_.pop(frm);
+    if (!rx_queue_.pop(frm)) {
+        return 0;
+    }
     out_frame = frm.frame;
     utc_usec = frm.utc_usec;
     out_flags = frm.flags;
