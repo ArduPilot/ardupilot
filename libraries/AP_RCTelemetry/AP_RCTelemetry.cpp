@@ -104,7 +104,7 @@ void AP_RCTelemetry::run_wfq_scheduler(void)
     bool queue_empty;
     {
         WITH_SEMAPHORE(_statustext.sem);
-        queue_empty = !_statustext.available && _statustext.queue.empty();
+        queue_empty = !_statustext.available && _statustext.queue.is_empty();
     }
 
     adjust_packet_weight(queue_empty);
