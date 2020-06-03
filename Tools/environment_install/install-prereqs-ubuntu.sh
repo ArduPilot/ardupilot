@@ -41,11 +41,11 @@ fi
 $APT_GET update
 
 function package_is_installed() {
-    return $(dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -c "ok installed")
+    dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -c "ok installed"
 }
 
 # Install lsb-release as it is needed to check Ubuntu version
-if package_is_installed "lsb-release" -ne 1; then
+if package_is_installed "lsb-release" -eq 1; then
     echo "$sep"
     echo "Installing lsb-release"
     echo "$sep"
@@ -154,7 +154,7 @@ echo "Done!"
 echo "$sep"
 echo "Removing modemmanager package that could conflict with firmware uploading"
 echo "$sep"
-if package_is_installed "modemmanager" -ne 1; then
+if package_is_installed "modemmanager" -eq 1; then
     $APT_GET remove modemmanager
 fi
 echo "Done!"
