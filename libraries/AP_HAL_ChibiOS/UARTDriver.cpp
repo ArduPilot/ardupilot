@@ -573,7 +573,7 @@ bool UARTDriver::discard_input()
         return false;
     }
 
-    _readbuf.empty();
+    _readbuf.clear();
 
     if (!_rts_is_active) {
         update_rts_line();
