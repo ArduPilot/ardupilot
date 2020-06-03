@@ -54,7 +54,7 @@ bool AP_BattMonitor_SMBus::read_full_charge_capacity(void)
     if (_full_charge_capacity != 0) {
         return true;
     } else if (read_word(BATTMONITOR_SMBUS_FULL_CHARGE_CAPACITY, data)) {
-        _full_charge_capacity = data;
+        _full_charge_capacity = data * get_capacity_scaler();
         return true;
     }
     return false;
@@ -70,7 +70,7 @@ bool AP_BattMonitor_SMBus::read_remaining_capacity(void)
     if (capacity > 0) {
         uint16_t data;
         if (read_word(BATTMONITOR_SMBUS_REMAINING_CAPACITY, data)) {
-            _state.consumed_mah = MAX(0, capacity - data);
+            _state.consumed_mah = MAX(0, capacity - (data * get_capacity_scaler()));
             return true;
         }
     }
