@@ -56,6 +56,8 @@ fi
 # Checking Ubuntu release to adapt software version to install
 RELEASE_CODENAME=$(lsb_release -c -s)
 PYTHON_V="python"  # starting from ubuntu 20.04, python isn't symlink to default python interpreter
+PIP=pip2
+
 if [ ${RELEASE_CODENAME} == 'xenial' ]; then
     SITLFML_VERSION="2.3v5"
     SITLCFML_VERSION="2.3"
@@ -69,6 +71,7 @@ elif [ ${RELEASE_CODENAME} == 'focal' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
     PYTHON_V="python3"
+    PIP=pip3
 elif [ ${RELEASE_CODENAME} == 'trusty' ]; then
     SITLFML_VERSION="2"
     SITLCFML_VERSION="2"
@@ -195,15 +198,7 @@ fi
 
 # Install all packages
 $APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS $ARM_LINUX_PKGS $COVERAGE_PKGS
-# Check python version for distro that don't have python2 support by default
-PYTHON_VERSION_MAJOR=$(python -c"import sys; print(sys.version_info.major)")
-if [ "$PYTHON_VERSION_MAJOR" -eq 2 ]; then
-    pip2 install --user -U $PYTHON_PKGS
-elif [ "$PYTHON_VERSION_MAJOR" -eq 3 ]; then
-    pip3 install --user -U $PYTHON_PKGS
-else
-    echo "Unknown python version: $PYTHON_VERSION_MAJOR"
-fi
+$PIP install --user -U $PYTHON_PKGS
 
 if [[ -z "${DO_AP_STM_ENV}" ]] && maybe_prompt_user "Install ArduPilot STM32 toolchain [N/y]?" ; then
     DO_AP_STM_ENV=1
