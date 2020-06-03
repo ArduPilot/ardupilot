@@ -495,6 +495,121 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const aux_switch_
     }
 }
 
+#if !HAL_MINIMIZE_FEATURES
+const char *RC_Channel::string_for_aux_function(AUX_FUNC function) const
+{
+    switch (function) {
+
+    case AUX_FUNC::SIMPLE_MODE:
+        return "SIMPLE_MODE";
+    case AUX_FUNC::SAVE_TRIM:
+        return "SAVE_TRIM";
+    case AUX_FUNC::SAVE_WP:
+        return "SAVE_WP";
+    case AUX_FUNC::CAMERA_TRIGGER:
+        return "CAMERA_TRIGGER";
+    case AUX_FUNC::RANGEFINDER:
+        return "RANGEFINDER";
+    case AUX_FUNC::FENCE:
+        return "FENCE";
+    case AUX_FUNC::RESETTOARMEDYAW:
+        return "RESETTOARMEDYAW";
+    case AUX_FUNC::SUPERSIMPLE_MODE:
+        return "SUPERSIMPLE_MODE";
+    case AUX_FUNC::SPRAYER:
+        return "SPRAYER";
+    case AUX_FUNC::GRIPPER:
+        return "GRIPPER";
+    case AUX_FUNC::PARACHUTE_ENABLE:
+        return "PARACHUTE_ENABLE";
+    case AUX_FUNC::PARACHUTE_RELEASE:
+        return "PARACHUTE_RELEASE";
+    case AUX_FUNC::PARACHUTE_3POS:
+        return "PARACHUTE_3POS";
+    case AUX_FUNC::MISSION_RESET:
+        return "MISSION_RESET";
+    case AUX_FUNC::RETRACT_MOUNT:
+        return "RETRACT_MOUNT";
+    case AUX_FUNC::RELAY:
+        return "RELAY";
+    case AUX_FUNC::LANDING_GEAR:
+        return "LANDING_GEAR";
+    case AUX_FUNC::MOTOR_INTERLOCK:
+        return "MOTOR_INTERLOCK";
+    case AUX_FUNC::RELAY2:
+        return "RELAY2";
+    case AUX_FUNC::RELAY3:
+        return "RELAY3";
+    case AUX_FUNC::RELAY4:
+        return "RELAY4";
+    case AUX_FUNC::AVOID_ADSB:
+        return "AVOID_ADSB";
+    case AUX_FUNC::PRECISION_LOITER:
+        return "PRECISION_LOITER";
+    case AUX_FUNC::AVOID_PROXIMITY:
+        return "AVOID_PROXIMITY";
+    case AUX_FUNC::WINCH_ENABLE:
+        return "WINCH_ENABLE";
+    case AUX_FUNC::WINCH_CONTROL:
+        return "WINCH_CONTROL";
+    case AUX_FUNC::RC_OVERRIDE_ENABLE:
+        return "RC_OVERRIDE_ENABLE";
+    case AUX_FUNC::USER_FUNC1:
+        return "USER_FUNC1";
+    case AUX_FUNC::USER_FUNC2:
+        return "USER_FUNC2";
+    case AUX_FUNC::USER_FUNC3:
+        return "USER_FUNC3";
+    case AUX_FUNC::LEARN_CRUISE:
+        return "LEARN_CRUISE";
+    case AUX_FUNC::CLEAR_WP:
+        return "CLEAR_WP";
+    case AUX_FUNC::SIMPLE:
+        return "SIMPLE";
+    case AUX_FUNC::ZIGZAG_SaveWP:
+        return "ZIGZAG_SaveWP";
+    case AUX_FUNC::COMPASS_LEARN:
+        return "COMPASS_LEARN";
+    case AUX_FUNC::SAILBOAT_TACK:
+        return "SAILBOAT_TACK";
+    case AUX_FUNC::GPS_DISABLE:
+        return "GPS_DISABLE";
+    case AUX_FUNC::RELAY5:
+        return "RELAY5";
+    case AUX_FUNC::RELAY6:
+        return "RELAY6";
+    case AUX_FUNC::SAILBOAT_MOTOR_3POS:
+        return "SAILBOAT_MOTOR_3POS";
+    case AUX_FUNC::SURFACE_TRACKING:
+        return "SURFACE_TRACKING";
+    case AUX_FUNC::TAKEOFF:
+        return "TAKEOFF";
+    case AUX_FUNC::RUNCAM_CONTROL:
+        return "RUNCAM_CONTROL";
+    case AUX_FUNC::RUNCAM_OSD_CONTROL:
+        return "RUNCAM_OSD_CONTROL";
+    case AUX_FUNC::VISODOM_CALIBRATE:
+        return "VISODOM_CALIBRATE";
+    case AUX_FUNC::Q_ASSIST:
+        return "Q_ASSIST";
+    case AUX_FUNC::KILL_IMU1:
+    case AUX_FUNC::CAM_MODE_TOGGLE:
+        return "CAM_MODE_TOGGLE";
+
+        // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
+        // also, if you add an option >255, you will need to fix duplicate_options_exist
+
+        // inputs eventually used to replace RCMAP
+    case AUX_FUNC::MAINSAIL:
+        return "MAINSAIL";
+    case AUX_FUNC::FLAP:
+        return "FLAP";
+    default: return "UNKNOWN";
+    };
+
+}
+#endif
+
 /*
   read an aux channel. Return true if a switch has changed
  */
@@ -514,6 +629,24 @@ bool RC_Channel::read_aux()
     if (!debounce_completed(new_position)) {
         return false;
     }
+#if !HAL_MINIMIZE_FEATURES
+    // announce the change to the GCS:
+   if (strcmp(string_for_aux_function(_option),"UNKNOWN") != 0){   //only if sw has an announcement defined
+        const char *temp =  nullptr;
+        switch (new_position) {
+        case HIGH:
+            temp = "SW:HIGH";           
+            break;
+        case MIDDLE:
+            temp = "SW:MIDDLE";
+            break;
+        case LOW:
+            temp = "SW:LOW";          
+            break;
+        }
+        gcs().send_text(MAV_SEVERITY_INFO, "%s %s", string_for_aux_function(_option),temp);
+    }
+#endif
 
     // debounced; undertake the action:
     do_aux_function(_option, new_position);
