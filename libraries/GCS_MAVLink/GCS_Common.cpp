@@ -72,7 +72,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-uint32_t GCS_MAVLINK::last_radio_status_remrssi_ms;
+struct GCS_MAVLINK::LastRadioStatus GCS_MAVLINK::last_radio_status;
 uint8_t GCS_MAVLINK::mavlink_active = 0;
 uint8_t GCS_MAVLINK::chan_is_streaming = 0;
 uint32_t GCS_MAVLINK::reserve_param_space_start_ms;
@@ -586,15 +586,33 @@ void GCS_MAVLINK::send_text(MAV_SEVERITY severity, const char *fmt, ...) const
     va_end(arg_list);
 }
 
+float GCS_MAVLINK::telemetry_radio_rssi()
+{
+    if (AP_HAL::millis() - last_radio_status.received_ms > 5000) {
+        // telemetry radio has disappeared?!
+        return 0;
+    }
+    if (last_radio_status.rssi == 255) {
+        // see RADIO_STATUS packet definition
+        return 0;
+    }
+    return last_radio_status.rssi/254.0f;
+}
+
 void GCS_MAVLINK::handle_radio_status(const mavlink_message_t &msg, bool log_radio)
 {
     mavlink_radio_t packet;
     mavlink_msg_radio_decode(&msg, &packet);
 
+    const uint32_t now = AP_HAL::millis();
+
+    last_radio_status.received_ms = now;
+    last_radio_status.rssi = packet.rssi;
+
     // record if the GCS has been receiving radio messages from
     // the aircraft
     if (packet.remrssi != 0) {
-        last_radio_status_remrssi_ms = AP_HAL::millis();
+        last_radio_status.remrssi_ms = now;
     }
 
     // use the state of the transmit buffer in the radio to
