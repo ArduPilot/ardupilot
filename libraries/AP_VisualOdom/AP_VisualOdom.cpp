@@ -90,6 +90,22 @@ const AP_Param::GroupInfo AP_VisualOdom::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_VEL_M_NSE", 5, AP_VisualOdom, _vel_noise, 0.1),
 
+    // @Param: _POS_M_NSE
+    // @DisplayName: Visual odometry position measurement noise
+    // @Description: Visual odometry position measurement noise in meters
+    // @Units: m
+    // @Range: 0.1 10.0
+    // @User: Advanced
+    AP_GROUPINFO("_POS_M_NSE", 6, AP_VisualOdom, _pos_noise, 0.2f),
+
+    // @Param: _YAW_M_NSE
+    // @DisplayName: Visual odometry yaw measurement noise
+    // @Description: Visual odometry yaw measurement noise in radians
+    // @Units: rad
+    // @Range: 0.05 1.0
+    // @User: Advanced
+    AP_GROUPINFO("_YAW_M_NSE", 7, AP_VisualOdom, _yaw_noise, 0.2f),
+
     AP_GROUPEND
 };
 
@@ -156,7 +172,7 @@ void AP_VisualOdom::handle_vision_position_delta_msg(const mavlink_message_t &ms
 
 // general purpose method to consume position estimate data and send to EKF
 // distances in meters, roll, pitch and yaw are in radians
-void AP_VisualOdom::handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, float roll, float pitch, float yaw, uint8_t reset_counter)
+void AP_VisualOdom::handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, float roll, float pitch, float yaw, float posErr, float angErr, uint8_t reset_counter)
 {
     // exit immediately if not enabled
     if (!enabled()) {
@@ -168,7 +184,7 @@ void AP_VisualOdom::handle_vision_position_estimate(uint64_t remote_time_us, uin
         // convert attitude to quaternion and call backend
         Quaternion attitude;
         attitude.from_euler(roll, pitch, yaw);
-        _driver->handle_vision_position_estimate(remote_time_us, time_ms, x, y, z, attitude, reset_counter);
+        _driver->handle_vision_position_estimate(remote_time_us, time_ms, x, y, z, attitude, posErr, angErr, reset_counter);
     }
 }
 
@@ -182,7 +198,7 @@ void AP_VisualOdom::handle_vision_position_estimate(uint64_t remote_time_us, uin
 
     // call backend
     if (_driver != nullptr) {
-        _driver->handle_vision_position_estimate(remote_time_us, time_ms, x, y, z, attitude, reset_counter);
+        _driver->handle_vision_position_estimate(remote_time_us, time_ms, x, y, z, attitude, 0, 0, reset_counter);
     }
 }
 

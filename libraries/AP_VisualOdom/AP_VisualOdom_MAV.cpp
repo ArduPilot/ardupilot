@@ -30,14 +30,14 @@ AP_VisualOdom_MAV::AP_VisualOdom_MAV(AP_VisualOdom &frontend) :
 }
 
 // consume vision position estimate data and send to EKF. distances in meters
-void AP_VisualOdom_MAV::handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude, uint8_t reset_counter)
+void AP_VisualOdom_MAV::handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude, float posErr, float angErr, uint8_t reset_counter)
 {
     const float scale_factor =  _frontend.get_pos_scale();
     Vector3f pos{x * scale_factor, y * scale_factor, z * scale_factor};
 
+    posErr = constrain_float(posErr, _frontend.get_pos_noise(), 100.0f);
+    angErr = constrain_float(angErr, _frontend.get_yaw_noise(), 1.5f);
     // send attitude and position to EKF
-    const float posErr = 0; // parameter required?
-    const float angErr = 0; // parameter required?
     AP::ahrs().writeExtNavData(pos, attitude, posErr, angErr, time_ms, _frontend.get_delay_ms(), get_reset_timestamp_ms(reset_counter));
 
     // calculate euler orientation for logging
@@ -47,7 +47,7 @@ void AP_VisualOdom_MAV::handle_vision_position_estimate(uint64_t remote_time_us,
     attitude.to_euler(roll, pitch, yaw);
 
     // log sensor data
-    AP::logger().Write_VisualPosition(remote_time_us, time_ms, pos.x, pos.y, pos.z, degrees(roll), degrees(pitch), degrees(yaw), reset_counter);
+    AP::logger().Write_VisualPosition(remote_time_us, time_ms, pos.x, pos.y, pos.z, degrees(roll), degrees(pitch), degrees(yaw), posErr, angErr, reset_counter);
 
     // record time for health monitoring
     _last_update_ms = AP_HAL::millis();
