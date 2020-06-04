@@ -47,12 +47,6 @@ struct Vector2
         : x(x0)
         , y(y0) {}
 
-    // function call operator
-    void operator ()(const T x0, const T y0)
-    {
-        x= x0; y= y0;
-    }
-
     // test for equality
     bool operator ==(const Vector2<T> &v) const;
 
