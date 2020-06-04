@@ -51,7 +51,7 @@ void AP_Compass_SITL::_setup_eliptical_correcion(uint8_t i)
 {
     Vector3f diag = _sitl->mag_diag[i].get();
     if (diag.is_zero()) {
-        diag(1,1,1);
+        diag = {1,1,1};
     }
     const Vector3f &diagonals = diag;
     const Vector3f &offdiagonals = _sitl->mag_offdiag[i];

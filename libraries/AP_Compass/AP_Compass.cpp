@@ -1673,7 +1673,7 @@ const Vector3f& Compass::getHIL(uint8_t instance) const
 void Compass::_setup_earth_field(void)
 {
     // assume a earth field strength of 400
-    _hil.Bearth(400, 0, 0);
+    _hil.Bearth = {400, 0, 0};
 
     // rotate _Bearth for inclination and declination. -66 degrees
     // is the inclination in Canberra, Australia
