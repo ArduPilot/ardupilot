@@ -65,6 +65,7 @@ lua_scripts::script_info *lua_scripts::load_script(lua_State *L, char *filename)
                 gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: Syntax error in %s", filename);
                 gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: Error: %s", lua_tostring(L, -1));
                 lua_pop(L, lua_gettop(L));
+                reload = true; // Lua script bug, reload
                 return nullptr;
             case LUA_ERRMEM:
                 gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: Insufficent memory loading %s", filename);
@@ -123,6 +124,12 @@ void lua_scripts::create_sandbox(lua_State *L) {
     load_lua_bindings(L);
     load_generated_sandbox(L);
 
+}
+
+// Scan the filesystem and autostart scripts
+void lua_scripts::load_scripts(lua_State *L) {
+    load_all_scripts_in_dir(L, SCRIPTING_DIRECTORY);
+    load_all_scripts_in_dir(L, "@ROMFS/scripts");
 }
 
 void lua_scripts::load_all_scripts_in_dir(lua_State *L, const char *dirname) {
@@ -206,6 +213,7 @@ void lua_scripts::run_next_script(lua_State *L) {
             hal.console->printf("Lua: Error: %s\n", lua_tostring(L, -1));
             gcs().send_text(MAV_SEVERITY_INFO, "Lua: %s", lua_tostring(L, -1));
             remove_script(L, script);
+            reload = true; // Lua script bug, reload
         }
         lua_pop(L, 1);
         return;
@@ -223,12 +231,14 @@ void lua_scripts::run_next_script(lua_State *L) {
                        gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: %s did not return a delay (0x%d)", script->name, lua_type(L, -1));
                        lua_pop(L, 2);
                        remove_script(L, script);
+                       reload = true; // Lua script bug, reload
                        return;
                    }
                    if (lua_type(L, -2) != LUA_TFUNCTION) {
                        gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: %s did not return a function (0x%d)", script->name, lua_type(L, -2));
                        lua_pop(L, 2);
                        remove_script(L, script);
+                       reload = true; // Lua script bug, reload
                        return;
                    }
 
@@ -370,9 +380,7 @@ void lua_scripts::run(void) {
     lua_atpanic(L, atpanic);
     load_generated_bindings(L);
 
-    // Scan the filesystem in an appropriate manner and autostart scripts
-    load_all_scripts_in_dir(L, SCRIPTING_DIRECTORY);
-    load_all_scripts_in_dir(L, "@ROMFS/scripts");
+    load_scripts(L);
 
 #ifndef __clang_analyzer__
     succeeded_initial_load = true;
@@ -431,6 +439,18 @@ void lua_scripts::run(void) {
             lua_gc(L, LUA_GCCOLLECT, 0);
 
         } else {
+            if (reload) {
+                reload = false;
+                if (!hal.util->get_soft_armed()) {
+                    gcs().send_text(MAV_SEVERITY_INFO, "Lua: Reloading scripts in 10 seconds");
+                    hal.scheduler->delay(10000);
+                    load_scripts(L);
+                    if (scripts != nullptr) {
+                        reload = false;
+                    }
+                    continue;
+                }
+            }
             if (_debug_level > 0) {
                 gcs().send_text(MAV_SEVERITY_DEBUG, "Lua: No scripts to run");
             }

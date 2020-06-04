@@ -73,6 +73,8 @@ private:
 
     void load_all_scripts_in_dir(lua_State *L, const char *dirname);
 
+    void load_scripts(lua_State *L);
+
     void run_next_script(lua_State *L);
 
     void remove_script(lua_State *L, script_info *script);
@@ -93,6 +95,8 @@ private:
     const char * get_prompt(lua_State *L, int firstline);
     int docall(lua_State *L, int narg, int nres);
     int sandbox_ref;
+
+    bool reload;
 
     script_info *scripts; // linked list of scripts to be run, sorted by next run time (soonest first)
 
