@@ -150,6 +150,7 @@ public:
 
         // all the following fields must all be filled by the backend driver
         GPS_Status status;                  ///< driver fix status
+        GPS_Status yaw_status;              ///< driver gps yaw fix status
         uint32_t time_week_ms;              ///< GPS time (milliseconds from start of GPS week)
         uint16_t time_week;                 ///< GPS week number
         Location location;                  ///< last fix location
@@ -222,6 +223,17 @@ public:
         return status(primary_instance);
     }
 
+    // Query GPS yaw status
+    GPS_Status yaw_status(uint8_t instance) const {
+        if (_force_disable_gps && state[instance].status > NO_FIX) {
+            return NO_FIX;
+        }
+        return state[instance].yaw_status;
+    }
+    GPS_Status yaw_status(void) const {
+        return yaw_status(primary_instance);
+    }
+
     // Query the highest status this GPS supports (always reports GPS_OK_FIX_3D for the blended GPS)
     GPS_Status highest_supported_status(uint8_t instance) const;
 
@@ -290,7 +302,7 @@ public:
         if (!have_gps_yaw(instance)) {
             return false;
         }
-        yaw_deg = state[instance].gps_yaw;
+        yaw_deg = state[instance].gps_yaw + _yaw_offset;
         if (state[instance].have_gps_yaw_accuracy) {
             accuracy_deg = state[instance].gps_yaw_accuracy;
         } else {
@@ -498,6 +510,7 @@ protected:
     AP_Int8 _blend_mask;
     AP_Float _blend_tc;
     AP_Int16 _driver_options;
+    AP_Float _yaw_offset;
 
     uint32_t _log_gps_bit = -1;
 

@@ -143,11 +143,24 @@ private:
         double vertspd;
         float resv;
     };
+
+    struct PACKED heading
+    {
+        uint32_t solstat;
+        uint32_t postype;
+        float length;
+        float heading;
+        float pitch;
+        float resv;
+        float hdgsdev;
+        // unused extra data
+    };
     
     union PACKED msgbuffer {
         bestvel bestvelu;
         bestpos bestposu;
         psrdop psrdopu;
+        heading headingu;
         uint8_t bytes[256];
     };
     

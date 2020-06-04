@@ -202,6 +202,7 @@ struct PACKED log_GPS {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     uint8_t  status;
+    uint8_t  yaw_status;
     uint32_t gps_week_ms;
     uint16_t gps_week;
     uint8_t  num_sats;
@@ -1237,10 +1238,10 @@ struct PACKED log_Arm_Disarm {
 #define GPA_MULTS "FBBBB0-CC"
 
 // see "struct GPS_State" and "Write_GPS":
-#define GPS_LABELS "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,Yaw,U"
-#define GPS_FMT   "QBIHBcLLeffffB"
-#define GPS_UNITS "s---SmDUmnhnh-"
-#define GPS_MULTS "F---0BGGB000--"
+#define GPS_LABELS "TimeUS,Status,YawStatus,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,Yaw,U"
+#define GPS_FMT   "QBBIHBcLLeffffB"
+#define GPS_UNITS "s----SmDUmnhnh-"
+#define GPS_MULTS "F----0BGGB000--"
 
 #define GYR_LABELS "TimeUS,SampleUS,GyrX,GyrY,GyrZ"
 #define GYR_FMT    "QQfff"
