@@ -208,8 +208,7 @@ public:
 
     uint32_t        last_heartbeat_time; // milliseconds
 
-    // last time we got a non-zero RSSI from RADIO_STATUS
-    static uint32_t last_radio_status_remrssi_ms;
+    static float telemetry_radio_rssi(); // 0==no signal, 1==full signal
 
     // mission item index to be sent on queued msg, delayed or not
     uint16_t mission_item_reached_index = AP_MISSION_CMD_INDEX_NONE;
@@ -506,6 +505,13 @@ protected:
     void manual_override(RC_Channel *c, int16_t value_in, uint16_t offset, float scaler, const uint32_t tnow, bool reversed = false);
 
 private:
+
+    // last time we got a non-zero RSSI from RADIO_STATUS
+    static struct LastRadioStatus {
+        uint32_t remrssi_ms;
+        uint8_t rssi;
+        uint32_t received_ms; // time RADIO_STATUS received
+    } last_radio_status;
 
     void log_mavlink_stats();
 
