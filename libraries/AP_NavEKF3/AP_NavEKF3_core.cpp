@@ -403,8 +403,8 @@ void NavEKF3_core::InitialiseVariables()
     extNavLastPosResetTime_ms = 0;
     extNavDataToFuse = false;
     extNavUsedForPos = false;
-    memset(&extNavVelNew, 0, sizeof(extNavVelNew));
-    memset(&extNavVelDelayed, 0, sizeof(extNavVelDelayed));
+    extNavVelNew = {};
+    extNavVelDelayed = {};
     extNavVelToFuse = false;
     useExtNavVel = false;
     extNavVelMeasTime_ms = 0;
