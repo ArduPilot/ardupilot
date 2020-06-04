@@ -39,7 +39,7 @@ void Motor::calculate_forces(const struct sitl_input &input,
     Vector3f rotor_torque(0, 0, yaw_factor * motor_speed * yaw_scale);
 
     // get thrust for untilted motor
-    thrust(0, 0, -motor_speed);
+    thrust = {0, 0, -motor_speed};
 
     // define the arm position relative to center of mass
     Vector3f arm(arm_scale * cosf(radians(angle)), arm_scale * sinf(radians(angle)), 0);
