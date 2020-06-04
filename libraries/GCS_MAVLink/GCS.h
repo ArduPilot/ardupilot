@@ -771,6 +771,7 @@ private:
                                                      const float roll,
                                                      const float pitch,
                                                      const float yaw,
+                                                     const float covariance[21],
                                                      const uint8_t reset_counter,
                                                      const uint16_t payload_size);
     void handle_vision_speed_estimate(const mavlink_message_t &msg);
