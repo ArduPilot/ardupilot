@@ -963,11 +963,7 @@ void NavEKF3_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, 
     }
 
     extNavDataNew.pos = pos;
-    if (posErr > 0) {
-        extNavDataNew.posErr = posErr;
-    } else {
-        extNavDataNew.posErr = frontend->_gpsHorizPosNoise;
-    }
+    extNavDataNew.posErr = posErr;
 
     // calculate timestamp
     timeStamp_ms = timeStamp_ms - delay_ms;
