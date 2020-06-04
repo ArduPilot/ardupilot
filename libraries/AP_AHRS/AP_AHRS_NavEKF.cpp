@@ -182,7 +182,7 @@ void AP_AHRS_NavEKF::update_DCM(bool skip_ins_update)
     AP_AHRS_DCM::update(skip_ins_update);
 
     // keep DCM attitude available for get_secondary_attitude()
-    _dcm_attitude(roll, pitch, yaw);
+    _dcm_attitude = {roll, pitch, yaw};
 }
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -419,7 +419,7 @@ void AP_AHRS_NavEKF::reset(bool recover_eulers)
     WITH_SEMAPHORE(_rsem);
     
     AP_AHRS_DCM::reset(recover_eulers);
-    _dcm_attitude(roll, pitch, yaw);
+    _dcm_attitude = {roll, pitch, yaw};
 #if HAL_NAVEKF2_AVAILABLE
     if (_ekf2_started) {
         _ekf2_started = EKF2.InitialiseFilter();
@@ -439,7 +439,7 @@ void AP_AHRS_NavEKF::reset_attitude(const float &_roll, const float &_pitch, con
     WITH_SEMAPHORE(_rsem);
     
     AP_AHRS_DCM::reset_attitude(_roll, _pitch, _yaw);
-    _dcm_attitude(roll, pitch, yaw);
+    _dcm_attitude = {roll, pitch, yaw};
 #if HAL_NAVEKF2_AVAILABLE
     if (_ekf2_started) {
         _ekf2_started = EKF2.InitialiseFilter();
