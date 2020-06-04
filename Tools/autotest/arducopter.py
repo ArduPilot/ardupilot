@@ -1438,7 +1438,7 @@ class AutoTestCopter(AutoTest):
         # switch to stabilize mode
         self.mavproxy.send('switch 6\n')
         self.wait_mode('STABILIZE')
-        self.set_rc(3, 1500)
+        self.set_rc(3, 1545)
 
         # fly south 50m
         self.progress("# Flying south %u meters" % side)
