@@ -38,7 +38,7 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] = {
     // @Param: TYPE
     // @DisplayName: RSSI Type
     // @Description: Radio Receiver RSSI type. If your radio receiver supports RSSI of some kind, set it here, then set its associated RSSI_XXXXX parameters, if any.
-    // @Values: 0:Disabled,1:AnalogPin,2:RCChannelPwmValue,3:ReceiverProtocol,4:PWMInputPin
+    // @Values: 0:Disabled,1:AnalogPin,2:RCChannelPwmValue,3:ReceiverProtocol,4:PWMInputPin,5:TelemetryRadioRSSI
     // @User: Standard
     AP_GROUPINFO_FLAGS("TYPE", 0, AP_RSSI, rssi_type,  BOARD_RSSI_DEFAULT, AP_PARAM_FLAG_ENABLE),
 
@@ -147,6 +147,8 @@ float AP_RSSI::read_receiver_rssi()
         }
         case RssiType::PWM_PIN:
             return read_pwm_pin_rssi();
+        case RssiType::TELEMETRY_RADIO_RSSI:
+            return read_telemetry_radio_rssi();
     }
     // should never get to here
     return 0.0f;
@@ -255,6 +257,11 @@ float AP_RSSI::read_pwm_pin_rssi()
     }
 
     return pwm_state.rssi_value;
+}
+
+float AP_RSSI::read_telemetry_radio_rssi()
+{
+    return GCS_MAVLINK::telemetry_radio_rssi();
 }
 
 // Scale and constrain a float rssi value to 0.0 to 1.0 range 
