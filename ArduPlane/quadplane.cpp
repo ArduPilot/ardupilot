@@ -2279,7 +2279,7 @@ void QuadPlane::vtol_position_controller(void)
         float target_speed = target_speed_xy.length();
         if (distance < 1) {
             // prevent numerical error before switching to POSITION2
-            target_speed_xy(0.1, 0.1);
+            target_speed_xy = {0.1, 0.1};
         }
         if (target_speed < final_speed) {
             // until we enter the loiter we always aim for at least 2m/s
