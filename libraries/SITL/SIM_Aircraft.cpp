@@ -45,8 +45,6 @@ Aircraft::Aircraft(const char *frame_str) :
     frame_height(0.0f),
     dcm(),
     gyro(),
-    gyro_prev(),
-    ang_accel(),
     velocity_ef(),
     mass(0.0f),
     accel_body(0.0f, 0.0f, -GRAVITY_MSS),
@@ -132,6 +130,7 @@ float Aircraft::hagl() const
 {
     return (-position.z) + home.alt * 0.01f - ground_level - frame_height - ground_height_difference();
 }
+
 /*
    return true if we are on the ground
 */
@@ -282,6 +281,13 @@ void Aircraft::sync_frame_time(void)
         last_wall_time_us = now;
         frame_counter = 0;
     }
+    uint32_t now_ms = now / 1000ULL;
+    if (now_ms - last_fps_report_ms > 2000) {
+        last_fps_report_ms = now_ms;
+        ::printf("Rate: target:%.1f achieved:%.1f speedup %.1f/%.1f\n",
+                 rate_hz*target_speedup, achieved_rate_hz,
+                 achieved_rate_hz/rate_hz, target_speedup);
+    }
 }
 
 /* add noise based on throttle level (from 0..1) */
@@ -332,8 +338,10 @@ double Aircraft::rand_normal(double mean, double stddev)
 */
 void Aircraft::fill_fdm(struct sitl_fdm &fdm)
 {
+    bool is_smoothed = false;
     if (use_smoothing) {
         smooth_sensors();
+        is_smoothed = true;
     }
     fdm.timestamp_us = time_now_us;
     if (fdm.home.lat == 0 && fdm.home.lng == 0) {
@@ -353,9 +361,6 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     fdm.rollRate  = degrees(gyro.x);
     fdm.pitchRate = degrees(gyro.y);
     fdm.yawRate   = degrees(gyro.z);
-    fdm.angAccel.x = degrees(ang_accel.x);
-    fdm.angAccel.y = degrees(ang_accel.y);
-    fdm.angAccel.z = degrees(ang_accel.z);
     float r, p, y;
     dcm.to_euler(&r, &p, &y);
     fdm.rollDeg  = degrees(r);
@@ -376,7 +381,7 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     fdm.scanner.points = scanner.points;
     fdm.scanner.ranges = scanner.ranges;
 
-    if (smoothing.enabled) {
+    if (is_smoothed) {
         fdm.xAccel = smoothing.accel_body.x;
         fdm.yAccel = smoothing.accel_body.y;
         fdm.zAccel = smoothing.accel_body.z;
@@ -489,11 +494,6 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
     gyro.x = constrain_float(gyro.x, -radians(2000.0f), radians(2000.0f));
     gyro.y = constrain_float(gyro.y, -radians(2000.0f), radians(2000.0f));
     gyro.z = constrain_float(gyro.z, -radians(2000.0f), radians(2000.0f));
-
-    // estimate angular acceleration using a first order difference calculation
-    // TODO the simulator interface should provide the angular acceleration
-    ang_accel = (gyro - gyro_prev) / delta_time;
-    gyro_prev = gyro;
 
     // update attitude
     dcm.rotate(gyro * delta_time);
@@ -726,7 +726,6 @@ void Aircraft::smooth_sensors(void)
     smoothing.location.alt  = static_cast<int32_t>(home.alt - smoothing.position.z * 100.0f);
 
     smoothing.last_update_us = now;
-    smoothing.enabled = true;
 }
 
 /*

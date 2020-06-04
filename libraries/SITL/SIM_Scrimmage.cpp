@@ -96,9 +96,6 @@ void Scrimmage::recv_fdm(const struct sitl_input &input)
     accel_body = Vector3f(pkt.xAccel, pkt.yAccel, pkt.zAccel) - dcm.transposed()*Vector3f(0.0f, 0.0f, GRAVITY_MSS);
     gyro = Vector3f(pkt.rollRate, pkt.pitchRate, pkt.yawRate);
 
-    ang_accel = (gyro - gyro_prev) * std::min((float)1000000, dt_inv);
-    gyro_prev = gyro;
-
     velocity_ef = Vector3f(pkt.speedN, pkt.speedE, pkt.speedD);
 
     location.lat = pkt.latitude * 1.0e7;
