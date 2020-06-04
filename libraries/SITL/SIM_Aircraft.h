@@ -188,12 +188,12 @@ protected:
     const float gyro_noise;
     const float accel_noise;
     float rate_hz;
-    float achieved_rate_hz;
     float target_speedup;
     uint64_t frame_time_us;
-    float scaled_frame_time_us;
     uint64_t last_wall_time_us;
     uint32_t last_fps_report_ms;
+    int64_t sleep_debt_us;
+    uint32_t last_frame_count;
     uint8_t instance;
     const char *autotest_dir;
     const char *frame;
