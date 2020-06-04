@@ -374,9 +374,11 @@ void Plane::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 //added
 void Plane::do_payload_release(const AP_Mission::Mission_Command& cmd)
 {
+    mode_payloadrelease.set_state(mode_payloadrelease.PayloadRelease_Start);
     set_next_WP(cmd.content.location);
 
     gcs().send_text(MAV_SEVERITY_INFO, "initialise payload release called");
+    // gcs().send_text(MA V_SEVERITY_INFO, "target location: %f %f");
     //Location target_loc = cmd.content.location;
     //Location target_loc = plane.home;
 
@@ -683,18 +685,21 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     return false;
 }
 //added
-bool Plane::verify_payload_release(const AP_Mission::Mission_Command &cmd)
-{
-    
+bool Plane::verify_payload_release(const AP_Mission::Mission_Command &cmd){
     gcs().send_text(MAV_SEVERITY_INFO, "Payloadrelease on progress");
-    mode_payloadrelease.set_state(verify_nav_wp(cmd));
-    if(mode_payloadrelease.get_state()){
-        gcs().send_text(MAV_SEVERITY_INFO, "Hi I have completed the mission verified");
+    if (verify_nav_wp(cmd)) {
+        mode_payloadrelease.set_state(mode_payloadrelease.PayloadRelease_Finish);
     }
+    // mode_payloadrelease.set_state(verify_nav_wp(cmd));
+    if(mode_payloadrelease.get_state() == mode_payloadrelease.PayloadRelease_Finish){
+        gcs().send_text(MAV_SEVERITY_INFO, "Hi I have completed the mission verified");
+        return true;
+    }
+    mode_payloadrelease.update_releasepoint();
     mode_payloadrelease.update();
-    return mode_payloadrelease.get_state();
-}
+    return false;
 //add finish
+}
 bool Plane::verify_loiter_unlim(const AP_Mission::Mission_Command &cmd)
 {
     if (cmd.p1 <= 1 && abs(g.rtl_radius) > 1) {

@@ -7,6 +7,9 @@ bool ModePayloadRelease::_enter()
     plane.throttle_allows_nudging = true;
     plane.auto_throttle_mode = true;
     plane.auto_navigation_mode = true;
+    calculated = false;
+    // do the state update outside the function that does work
+    // plane.mode_payloadrelease.set_state(plane.mode_payloadrelease.PayloadRelease_Start);
     return true;
 }
 
@@ -24,10 +27,9 @@ void ModePayloadRelease::update()
     // const AP_Airspeed *aspeed = plane.ahrs.get_airspeed();
     Vector3f wind_vel = plane.ahrs.wind_estimate();
     
-
-    gcs().send_text(MAV_SEVERITY_INFO, "cruise heading: %d", plane.cruise_state.locked_heading);
-    gcs().send_text(MAV_SEVERITY_INFO, "gps heading: %d", plane.gps.ground_course_cd());
-    // gcs().send_text(MAV_SEVERITY_INFO, "%f m/s", plane.cruise_state.locked_heading);
+    // gcs().send_text(MAV_SEVERITY_INFO, "cruise heading: %d", plane.cruise_state.locked_heading);
+    // gcs().send_text(MAV_SEVERITY_INFO, "gps heading: %d", plane.gps.ground_course_cd());
+    gcs().send_text(MAV_SEVERITY_INFO, "%f m/s", plane.gps.ground_speed());
     gcs().send_text(MAV_SEVERITY_INFO, "[%f %f %f]m/s wind estimates", wind_vel[0], wind_vel[1], wind_vel[2]);
 
     //These calculations is not required since mode_auto.cpp's update function calls this everytime in normal auto mission.
@@ -46,7 +48,7 @@ void ModePayloadRelease::initialise_initial_condition() {
     z = 0;
     total_height = plane.current_loc.alt / 10; // divided by 10 because current altitude in cms.
     remaining_height = total_height;
-    vx = AP::gps().ground_speed();
+    vx = plane.gps.ground_speed();
     ax = 0;
     x = 0;
     vrx = 0;
@@ -134,4 +136,67 @@ void ModePayloadRelease::llh_to_local(Location &current_llh, Vector3d &current_n
     v_current_llh.z = current_llh.alt * 1.0e-2f; //in meters
     //convert to ecef and store in current_neu
     wgsllh2ecef(v_current_llh,current_neu);
+}
+
+void ModePayloadRelease::local_to_llh(Vector3d &current_neu, Location &current_llh) {
+    Vector3d v_current_llh;
+    //convert current ecef to lng,lat,alt.
+    wgsecef2llh(current_neu, v_current_llh);
+    //store vector structure to location class
+
+    current_llh.lat = v_current_llh.x * RAD_TO_DEG * 1.0e7f;
+    current_llh.lng = v_current_llh.y * RAD_TO_DEG * 1.0e7f;
+    current_llh.alt = drop_point.alt; //same altitude as drop_point altitude
+}
+
+
+void ModePayloadRelease::calculate_release_point() {
+    //If the relative payload path is same as uav path
+    if(fabs(theta - phi) <= 0.001) {
+        release_point_neu.x = drop_point_neu.x - x * cos(dirn);
+        release_point_neu.y = drop_point_neu.y - x * sin(dirn);
+        release_point_neu.z = drop_point_neu.z;
+    }
+    //If the relative payload path is above the uav path
+    else if(theta - phi > 0.001) {
+        release_point_neu.x = drop_point_neu.x - x * cos(theta + a * dirn);
+        release_point_neu.y = drop_point_neu.y - x * sin(theta + a * dirn);
+        release_point_neu.z = drop_point_neu.z;
+    }
+    //If the relative payload path is below the uav path OR no wind is blowing
+    else if((phi - theta > 0.001) || phi <= 0.001) {
+        release_point_neu.x = drop_point_neu.x - x * cos(theta - a * dirn);
+        release_point_neu.y = drop_point_neu.y - x * sin(theta - a * dirn);
+        release_point_neu.z = drop_point_neu.z;
+    }
+}
+
+void ModePayloadRelease::update_releasepoint() {
+    gcs().send_text(MAV_SEVERITY_INFO,"inside: ModePayloadRelease::updating release point ");
+
+    if(get_state() == PayloadRelease_Start) {
+        gcs().send_text(MAV_SEVERITY_INFO,"inside: PayloadRelease_Start state");
+        gcs().send_text(MAV_SEVERITY_INFO,"calculated: %d", !calculated);
+        // if(!calculated) {
+        // if((!calculated) && plane.gps.ground_speed() > 3.5) {
+        if(true) {
+            gcs().send_text(MAV_SEVERITY_INFO, "drop lat = %d, drop lon = %d,drop ht =%d",drop_point.lat,drop_point.lng,drop_point.alt);
+            //gcs().send_text(MAV_SEVERITY_INFO, "inside here");
+            initialise_initial_condition();
+            //gcs().send_text(MAV_SEVERITY_INFO, "drop N = %f, drop E = %f",drop_point_neu.x,drop_point_neu.y);
+            calculate_displacement();
+            gcs().send_text(MAV_SEVERITY_INFO, "displacement = %f",x);
+            calculate_release_point();
+            local_to_llh(release_point_neu,release_point);
+            calculated = true;
+            //gcs().send_text(MAV_SEVERITY_INFO, "rel N = %f, rel E = %f",release_point_neu.x,release_point_neu.y);
+            gcs().send_text(MAV_SEVERITY_INFO, "new target rel lat = %d, rel lon = %d,rel ht = %d",release_point.lat,release_point.lng,release_point.alt);
+            plane.set_next_WP(release_point);
+            // if (!wp_nav->set_wp_destination(release_point)) {
+            //     // failure to set destination can only be because of missing terrain data
+            //     copter.failsafe_terrain_on_event();
+            //     return ;
+            // }
+        }
+    }
 }

@@ -121,6 +121,8 @@ class ModePayloadRelease : public Mode
 public:
     ModePayloadRelease()
     {
+        // gcs().send_text(MAV_SEVERITY_INFO, "mode Payloadrelease constructor");
+
         is_payload_released = false;
         g = 9.8;
         m = 1;  //mass
@@ -166,12 +168,16 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
-    void set_state(bool state){is_payload_released = state;}
-    bool get_state(){return is_payload_released;}
+    void set_state(PayloadReleaseState state){_state = state;}
+    PayloadReleaseState get_state() {return _state;}
+    // void set_state(bool state){is_payload_released = state;}
+    // bool get_state(){return is_payload_released;}
     void initialise_initial_condition();
     void calculate_displacement();
     void llh_to_local(Location &current_llh, Vector3d &current_neu);
     void local_to_llh(Vector3d &current_neu, Location &current_llh);
+    void calculate_release_point();
+    void update_releasepoint();
 
 protected:
 
