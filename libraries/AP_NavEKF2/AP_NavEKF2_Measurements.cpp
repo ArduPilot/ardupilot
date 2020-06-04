@@ -909,11 +909,7 @@ void NavEKF2_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, 
 
     extNavDataNew.pos = pos;
     extNavDataNew.quat = quat;
-    if (posErr > 0) {
-        extNavDataNew.posErr = posErr;
-    } else {
-        extNavDataNew.posErr = frontend->_gpsHorizPosNoise;
-    }
+    extNavDataNew.posErr = posErr;
     extNavDataNew.angErr = angErr;
     timeStamp_ms = timeStamp_ms - delay_ms;
     // Correct for the average intersampling delay due to the filter updaterate

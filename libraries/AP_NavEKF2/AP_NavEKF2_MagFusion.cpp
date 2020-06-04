@@ -788,6 +788,7 @@ void NavEKF2_core::fuseEulerYaw()
             measured_yaw = wrap_PI(-atan2f(magMeasNED.y, magMeasNED.x) + MagDeclination());
         } else if (extNavUsedForYaw) {
             // Get the yaw angle  from the external vision data
+            R_YAW = sq(extNavDataDelayed.angErr);
             extNavDataDelayed.quat.to_euler(euler321.x, euler321.y, euler321.z);
             measured_yaw =  euler321.z;
         } else {
@@ -847,6 +848,7 @@ void NavEKF2_core::fuseEulerYaw()
             measured_yaw = wrap_PI(-atan2f(magMeasNED.y, magMeasNED.x) + MagDeclination());
         } else if (extNavUsedForYaw) {
             // Get the yaw angle  from the external vision data
+            R_YAW = sq(extNavDataDelayed.angErr);
             euler312 = extNavDataDelayed.quat.to_vector312();
             measured_yaw =  euler312.z;
         } else {
