@@ -34,7 +34,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Proximity type
     // @Description: What type of proximity sensor is connected
-    // @Values: 0:None,7:LightwareSF40c,1:LightWareSF40C-legacy,2:MAVLink,3:TeraRangerTower,4:RangeFinder,5:RPLidarA2,6:TeraRangerTowerEvo,10:SITL,11:MorseSITL,12:AirSimSITL
+    // @Values: 0:None,7:LightwareSF40c,1:LightWareSF40C-legacy,2:MAVLink,3:TeraRangerTower,4:RangeFinder,5:RPLidarA2,6:TeraRangerTowerEvo,8:RPLidarS1,10:SITL,11:MorseSITL,12:AirSimSITL
     // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO("_TYPE",   1, AP_Proximity, _type[0], 0),
@@ -287,7 +287,9 @@ void AP_Proximity::detect_instance(uint8_t instance)
             return;
         }
         break;
+    //A2 and S1 uses the same protocol, only differ in reset
     case Type::RPLidarA2:
+    case Type::RPLidarS1:
         if (AP_Proximity_RPLidarA2::detect()) {
             state[instance].instance = instance;
             drivers[instance] = new AP_Proximity_RPLidarA2(*this, state[instance]);
