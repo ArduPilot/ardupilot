@@ -78,12 +78,6 @@ public:
         , y(y0)
         , z(z0) {}
 
-    // function call operator
-    void operator ()(const T x0, const T y0, const T z0)
-    {
-        x= x0; y= y0; z= z0;
-    }
-
     // test for equality
     bool operator ==(const Vector3<T> &v) const;
 
