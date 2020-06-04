@@ -625,6 +625,8 @@ struct PACKED log_VisualPosition {
     float roll;     // degrees
     float pitch;    // degrees
     float yaw;      // degrees
+    float pos_err;
+    float ang_err;
     uint8_t reset_counter;
 };
 
@@ -2134,6 +2136,8 @@ struct PACKED log_Arm_Disarm {
 // @Field: Roll: Roll lean angle
 // @Field: Pitch: Pitch lean angle
 // @Field: Yaw: Yaw angle
+// @Field: PosErr: Position estimate error
+// @Field: AngErr: Attitude estimate error
 // @Field: ResetCnt: Position reset counter
 
 // @LoggerMessage: VISV
@@ -2504,7 +2508,7 @@ struct PACKED log_Arm_Disarm {
     { LOG_VISUALODOM_MSG, sizeof(log_VisualOdom), \
       "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf", "ssrrrmmm-", "FF000000-" }, \
     { LOG_VISUALPOS_MSG, sizeof(log_VisualPosition), \
-      "VISP", "QQIffffffb", "TimeUS,RemTimeUS,CTimeMS,PX,PY,PZ,Roll,Pitch,Yaw,ResetCnt", "sssmmmddh-", "FFC000000-" }, \
+      "VISP", "QQIffffffffb", "TimeUS,RemTimeUS,CTimeMS,PX,PY,PZ,Roll,Pitch,Yaw,PosErr,AngErr,ResetCnt", "sssmmmddhmd-", "FFC00000000-" }, \
     { LOG_VISUALVEL_MSG, sizeof(log_VisualVelocity), \
       "VISV", "QQIffffb", "TimeUS,RemTimeUS,CTimeMS,VX,VY,VZ,VErr,ResetCnt", "sssnnnn-", "FFC0000-" }, \
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow), \
