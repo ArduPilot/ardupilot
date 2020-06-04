@@ -208,6 +208,9 @@ public:
 
     uint32_t        last_heartbeat_time; // milliseconds
 
+    static uint32_t last_radio_status_remrssi_ms() {
+        return last_radio_status.remrssi_ms;
+    }
     static float telemetry_radio_rssi(); // 0==no signal, 1==full signal
 
     // mission item index to be sent on queued msg, delayed or not
