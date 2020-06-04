@@ -340,8 +340,8 @@ void NavEKF2_core::InitialiseVariables()
     extNavUsedForPos = false;
     extNavYawResetRequest = false;
 
-    memset(&extNavVelNew, 0, sizeof(extNavVelNew));
-    memset(&extNavVelDelayed, 0, sizeof(extNavVelDelayed));
+    extNavVelNew = {};
+    extNavVelDelayed = {};
     extNavVelToFuse = false;
     extNavVelMeasTime_ms = 0;
     useExtNavVel = false;
