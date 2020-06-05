@@ -2128,7 +2128,7 @@ struct PACKED log_Arm_Disarm {
 // @LoggerMessage: VISP
 // @Description: Vision Position
 // @Field: TimeUS: System time
-// @Field: RemTimeUS: Remote system time
+// @Field: RTimeUS: Remote system time
 // @Field: CTimeMS: Corrected system time
 // @Field: PX: Position X-axis (North-South)
 // @Field: PY: Position Y-axis (East-West)
@@ -2136,20 +2136,20 @@ struct PACKED log_Arm_Disarm {
 // @Field: Roll: Roll lean angle
 // @Field: Pitch: Pitch lean angle
 // @Field: Yaw: Yaw angle
-// @Field: PosErr: Position estimate error
-// @Field: AngErr: Attitude estimate error
-// @Field: ResetCnt: Position reset counter
+// @Field: PErr: Position estimate error
+// @Field: AErr: Attitude estimate error
+// @Field: RstCnt: Position reset counter
 
 // @LoggerMessage: VISV
 // @Description: Vision Velocity
 // @Field: TimeUS: System time
-// @Field: RemTimeUS: Remote system time
+// @Field: RTimeUS: Remote system time
 // @Field: CTimeMS: Corrected system time
 // @Field: VX: Velocity X-axis (North-South)
 // @Field: VY: Velocity Y-axis (East-West)
 // @Field: VZ: Velocity Z-axis (Down-Up)
 // @Field: VErr: Velocity estimate error
-// @Field: ResetCnt: Position reset counter
+// @Field: RstCnt: Velocity reset counter
 
 // @LoggerMessage: WENC
 // @Description: Wheel encoder measurements
@@ -2508,9 +2508,9 @@ struct PACKED log_Arm_Disarm {
     { LOG_VISUALODOM_MSG, sizeof(log_VisualOdom), \
       "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf", "ssrrrmmm-", "FF000000-" }, \
     { LOG_VISUALPOS_MSG, sizeof(log_VisualPosition), \
-      "VISP", "QQIffffffffb", "TimeUS,RemTimeUS,CTimeMS,PX,PY,PZ,Roll,Pitch,Yaw,PosErr,AngErr,ResetCnt", "sssmmmddhmd-", "FFC00000000-" }, \
+      "VISP", "QQIffffffffb", "TimeUS,RTimeUS,CTimeMS,PX,PY,PZ,Roll,Pitch,Yaw,PErr,AErr,RstCnt", "sssmmmddhmd-", "FFC00000000-" }, \
     { LOG_VISUALVEL_MSG, sizeof(log_VisualVelocity), \
-      "VISV", "QQIffffb", "TimeUS,RemTimeUS,CTimeMS,VX,VY,VZ,VErr,ResetCnt", "sssnnnn-", "FFC0000-" }, \
+      "VISV", "QQIffffb", "TimeUS,RTimeUS,CTimeMS,VX,VY,VZ,VErr,RstCnt", "sssnnnn-", "FFC0000-" }, \
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow), \
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEnn", "F-0000" }, \
     { LOG_WHEELENCODER_MSG, sizeof(log_WheelEncoder), \
