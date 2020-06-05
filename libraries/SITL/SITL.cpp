@@ -257,7 +257,7 @@ const AP_Param::GroupInfo SITL::var_info3[] = {
     // vicon velocity glitch in NED frame
     AP_GROUPINFO("VICON_VGLI",    21, SITL,  vicon_vel_glitch, 0),
 
-    AP_GROUPINFO("RATE_HZ",  22, SITL,  loop_rate_hz, 600),
+    AP_GROUPINFO("RATE_HZ",  22, SITL,  loop_rate_hz, 1200),
 
 #if HAL_COMPASS_MAX_SENSORS > 1
     AP_GROUPINFO("MAG2_OFS",     23, SITL,  mag_ofs[1], 0),
