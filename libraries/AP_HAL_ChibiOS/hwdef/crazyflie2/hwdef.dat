@@ -99,10 +99,10 @@ define STORAGE_FLASH_PAGE 1
 FLASH_RESERVE_START_KB 64
 
 # one IMU
-IMU Invensense I2C:0:0x69 ROTATION_YAW_180
+IMU BMI088 I2C:0:0x18 I2C:0:0x69 ROTATION_ROLL_180
 
 # one baro, attached via I2C on IMU
-BARO LPS2XH:probe_InvensenseIMU I2C:0:0x5D 0x69
+BARO BMP388 I2C:0:0x77
 
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
