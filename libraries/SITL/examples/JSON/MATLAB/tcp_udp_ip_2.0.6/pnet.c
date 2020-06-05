@@ -5,7 +5,7 @@
 #define VERSION "Version  2.0.5  2003-09-16"
 
 /*
-%   This file(s) is part of the tcp_udp_ip toolbox (C) Peter Rydesäter et al.
+%   This file(s) is part of the tcp_udp_ip toolbox (C) Peter Rydesï¿½ter et al.
 %   et al.  1998-2003 for running in MATLAB(R) as scripts and/or plug-ins.
 %
 %   This program is free software; you can redistribute it and/or modify
@@ -22,7 +22,7 @@
 %   along with this program; if not, write to the Free Software
 %   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 %
-%   In addition, as a SPECIAL EXCEPTION, Peter Rydesäter, SWEDEN,
+%   In addition, as a SPECIAL EXCEPTION, Peter Rydesï¿½ter, SWEDEN,
 %   gives permission to link the code of this program with any library,
 %   and distribute linked combinations of it. You must obey the GNU
 %   General Public License in all respects for all of the code in the
@@ -49,9 +49,9 @@
 
 
   == Main Authour ==           == Windows support ==      == Earlie/Basic UDP support ==
-  Peter Rydesäter              Mario Bergeron             Mike Medeiros at 23-Jan-2001.
+  Peter Rydesï¿½ter              Mario Bergeron             Mike Medeiros at 23-Jan-2001.
                                LYRtech
-  Östersund, Sweden            Québec, Canada
+  ï¿½stersund, Sweden            Quï¿½bec, Canada
   +46 70 560 68 16
   Peter.Rydesater@mh.se        Mario.Bergeron@lyrtech.com
 
@@ -186,7 +186,7 @@ void Print_Start_Message() {
               "Loaded pnet MEX-file for the tcp/udp/ip-toolbox Compiled @ "
               __DATE__ " " __TIME__  "\n"
               VERSION "\n"
-              "Copyright (C) Peter Rydesäter, Sweden, et al. , 1998 - 2003\n"
+              "Copyright (C) Peter Rydesï¿½ter, Sweden, et al. , 1998 - 2003\n"
               "GNU General Public License, se license.txt for full license notis.\n"
               "You are allowed to (dynamicaly) link this file with non-free code. \n\n"
               "   http://www.rydesater.com \n\n"
@@ -765,7 +765,7 @@ void my_mexReturnArrayFromBuff(const int argno,io_buff *buff,const int line)
         }
         gret_args++;
     }
-    //    debug_view_con_status("GET_ARRAY NÄSTAN KLAR");
+    //    debug_view_con_status("GET_ARRAY Nï¿½STAN KLAR");
     // Delete from read buffer if not "VIEW" option and dims filled
     if(my_mexFindInputOption(argno+1,"VIEW")==0 && deleteelements>0 ) {
         buff->pos-=deleteelements*si;
@@ -822,13 +822,16 @@ int writedata()
     //	len=65534;
     while(sentlen<len)
     {
-        if(lastsize<1000)
+        if (lastsize<1000) {
             usleep(DEFAULT_USLEEP);
-        if(IS_STATUS_UDP_NO_CON(con[con_index].status))
+        }
+        if (IS_STATUS_UDP_NO_CON(con[con_index].status)) {
+            con[con_index].remote_addr.sin_family=AF_INET;
             retval = sendto(fid,&ptr[sentlen],len-sentlen,MSG_NOSIGNAL,
                             (struct sockaddr *)&con[con_index].remote_addr,sizeof(struct sockaddr));
-        else
+        } else {
             retval=send(fid,&ptr[sentlen],len-sentlen,MSG_NOSIGNAL);
+        }
         lastsize=retval>0?retval:0;
         sentlen+=lastsize;
         /*	if( retval==0){
@@ -1274,8 +1277,11 @@ void mexFunction(
         return;
     }
     if(myoptstrcmp(fun,"WRITEPACKET")==0) {
-        if(IS_STATUS_UDP_NO_CON(con[con_index].status))
-            ipv4_lookup(my_mexInputOptionString(2),my_mexInputScalar(3));
+        if (my_mexIsInputArgOK(2)) {
+            if (IS_STATUS_UDP_NO_CON(con[con_index].status)) {
+                ipv4_lookup(my_mexInputOptionString(2),my_mexInputScalar(3));
+            }
+        }
         my_mexReturnValue(writedata());
         con[con_index].write.pos=0;
         return;
