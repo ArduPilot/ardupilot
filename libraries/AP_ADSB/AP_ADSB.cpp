@@ -158,6 +158,13 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("LOG",  14, AP_ADSB, _log, 1),
 
+    // @Param: TYPE
+    // @DisplayName: ADS-B Hardware Type
+    // @Description: Select ADS-B hardware typr
+    // @Values: 0:uAvionix,1:Sagetech
+    // @User: Advanced
+    AP_GROUPINFO("TYPE",  15, AP_ADSB, _type, (float)AP_ADSBType::UAVIONIX),
+
     AP_GROUPEND
 };
 

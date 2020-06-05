@@ -26,6 +26,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/Location.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include "AP_ADSB_Sagetech.h"
 
 class AP_ADSB {
 public:
@@ -35,6 +36,11 @@ public:
     /* Do not allow copies */
     AP_ADSB(const AP_ADSB &other) = delete;
     AP_ADSB &operator=(const AP_ADSB&) = delete;
+
+    enum class AP_ADSBType {
+        UAVIONIX        = 0,
+        SAGETECH        = 1,
+    };
 
     struct adsb_vehicle_t {
         mavlink_adsb_vehicle_t info; // the whole mavlink struct with all the juicy details. sizeof() == 38
@@ -211,6 +217,7 @@ private:
         ALL             = 2
     };
 
+    AP_Int8 _type;
 
 };
 
