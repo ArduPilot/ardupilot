@@ -223,10 +223,9 @@ bool AP_InertialSensor_BMI088::gyro_init()
         return false;
     }
 
-    if (!dev_gyro->write_register(REGG_BGW_SOFTRESET, 0xB6)) {
-        return false;
-    }
-    hal.scheduler->delay(10);
+    // Soft-reset gyro
+    dev_gyro->write_register(REGG_BGW_SOFTRESET, 0xB6);
+    hal.scheduler->delay(30);
 
     dev_gyro->setup_checked_registers(5, 20);
     
