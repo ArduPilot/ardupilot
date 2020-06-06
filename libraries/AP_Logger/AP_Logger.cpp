@@ -9,6 +9,7 @@
 
 #include <AP_InternalError/AP_InternalError.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 AP_Logger *AP_Logger::_singleton;
 
@@ -308,10 +309,14 @@ void AP_Logger::dump_structures(const struct LogStructure *logstructures, const 
 
 bool AP_Logger::labels_string_is_good(const char *labels) const
 {
+    bool passed = true;
+    if (strlen(labels) >= LS_LABELS_SIZE) {
+        Debug("Labels string too long (%u > %u)", unsigned(strlen(labels)), unsigned(LS_LABELS_SIZE));
+        passed = false;
+    }
     // This goes through and slices labels up into substrings by
     // changing commas to nulls - keeping references to each string in
     // label_offsets.
-    bool passed = true;
     char *label_offsets[LS_LABELS_SIZE];
     uint8_t label_offsets_offset = 0;
     char labels_copy[LS_LABELS_SIZE];
@@ -513,8 +518,7 @@ void AP_Logger::validate_structures(const struct LogStructure *logstructures, co
     }
 
     if (!passed) {
-        Debug("Log structures are invalid");
-        abort();
+        AP_BoardConfig::config_error("See console: Log structures invalid");
     }
 }
 
@@ -915,8 +919,7 @@ void AP_Logger::assert_same_fmt_for_name(const AP_Logger::log_write_fmt *f,
         passed = false;
     }
     if (!passed) {
-        Debug("Format definition must be consistent for every call of Write");
-        abort();
+        AP_BoardConfig::config_error("See console: Format definition must be consistent for every call of Write");
     }
 }
 #endif
@@ -1005,8 +1008,7 @@ AP_Logger::log_write_fmt *AP_Logger::msg_fmt_for_name(const char *name, const ch
         memset((char*)ls_multipliers, '?', MIN(sizeof(ls_format), strlen(f->fmt)));
     }
     if (!validate_structure(&ls, (int16_t)-1)) {
-        Debug("Log structure invalid");
-        abort();
+        AP_BoardConfig::config_error("See console: Log structure invalid");
     }
 #endif
 
