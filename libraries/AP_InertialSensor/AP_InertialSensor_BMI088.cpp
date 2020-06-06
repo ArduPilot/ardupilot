@@ -223,7 +223,10 @@ bool AP_InertialSensor_BMI088::gyro_init()
         return false;
     }
 
-    // Soft-reset gyro
+    /* Soft-reset gyro
+        Return value of 'write_register()' is not checked.
+        This commands has the tendency to fail upon soft-reset.
+    */
     dev_gyro->write_register(REGG_BGW_SOFTRESET, 0xB6);
     hal.scheduler->delay(30);
 
