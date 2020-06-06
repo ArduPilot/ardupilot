@@ -5239,6 +5239,10 @@ class AutoTestCopter(AutoTest):
              "Test SITL onboard compass calibration",
              self.test_mag_calibration),
 
+            ("CRSF",
+             "Test RC CRSF",
+             self.test_crsf),
+
             ("LogUpload",
              "Log upload",
              self.log_upload),
