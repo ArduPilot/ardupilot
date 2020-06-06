@@ -978,10 +978,11 @@ void NavEKF3_core::writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_
     yawMeasTime_ms = timeStamp_ms;
 }
 
-// Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
-void NavEKF3_core::writeDefaultAirSpeed(float airspeed)
+// Writes the default equivalent airspeed and 1-sigma uncertainty in m/s to be used in forward flight if a measured airspeed is required and not available.
+void NavEKF3_core::writeDefaultAirSpeed(float airspeed, float uncertainty)
 {
     defaultAirSpeed = airspeed;
+    defaultAirSpeedVariance = sq(uncertainty);
 }
 
 /********************************************************
