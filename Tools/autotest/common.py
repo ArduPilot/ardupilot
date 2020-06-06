@@ -4384,7 +4384,7 @@ class AutoTest(ABC):
         for count in range(2, compass_count + 1):
             self.verify_parameter_values({"COMPASS_ORIENT%d" % count: 0})
 
-    def test_mag_calibration(self, compass_count=3, timeout=500):
+    def test_mag_calibration(self, compass_count=3, timeout=1000):
         ex = None
         self.set_parameter("AHRS_EKF_TYPE", 10)
         self.set_parameter("SIM_GND_BEHAV", 0)
