@@ -6,15 +6,14 @@ see Copter/SIM_multicopter.m for example usage.
 
 The function is defined as:
 ```
-    SITL_connector(target_ip,state,init_function,physics_function,delta_t)
+    SITL_connector(state,init_function,physics_function,max_timestep)
 ```
-- target_ip: the IP address of the machine running SITL eg '127.0.0.1'
 
 - state: this is the persistent physics state of the vehicle its is a structure and must contain the following felids:
 ```
     state.gyro(roll, pitch, yaw) (radians/sec) body frame
     state.attitude(roll, pitch yaw) (radians)
-    state.accel(north, east, down) (m/s^2) body frame
+    state.accel(x, y, z) (m/s^2) body frame
     state.velocity(north, east,down) (m/s) earth frame
     state.position(north, east, down) (m) earth frame 
 ```
@@ -22,14 +21,14 @@ the structure can have also any other felids required for the physics model
 
 - init_function: function handle that will be called to init the physics model, this will be called on the first run and after a SITL reboot. It should take and return the state.
     function state init(state)
-    init_function = @(state)init(state);
+    init_function = @init;
 
 - physics_function: function handle that will be called to update the physics model by a single time step. It should take in the state and array of 16 PWM inputs and return the state.
 ```
     function state = physics_step(pwm_in,state)
-    physics_function = @(pwm_in,state)physics_step(pwm_in,state);
+    physics_function = @physics_step;
 ```
-- delta_t: time step size the physics model wil use in seconds. Note that this is directly connected to the maximum speed you can run SITL at.
+- max_timestep: this is the maximum allowed time step size, the desired time step can be set with the SIM_RATE_HZ ArduPilot parameter.
 
 The JSON SITL interface is lock-step scheduled. This allows matlab breakpoints to work as normal.
 
