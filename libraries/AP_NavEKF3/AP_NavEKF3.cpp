@@ -416,8 +416,13 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Units: m
     AP_GROUPINFO("NOAID_M_NSE", 35, NavEKF3, _noaidHorizNoise, 10.0f),
 
-    // 36 was LOG_MASK, used for specifying which IMUs/cores to log
-    // replay data for
+    // @Param: BETA_MASK
+    // @DisplayName: Bitmask controlling sidelip angle fusion
+    // @Description: 1 byte bitmap controlling use of sideslip angle fuson for estimation of non wind states during operation of 'fly forward' vehicle types. Use of sideslip fusion to update non wind states is performed by default when dead reckoning and cannot be didsabled. 
+    // @Bitmask: 0:Always,1:WhenNoYawSensor
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("BETA_MASK", 36, NavEKF3, _betaMask, 0),
 
     // control of magnetic yaw angle fusion
 
@@ -642,6 +647,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @User: Advanced
     // @Bitmask: 0:EnableGPSAffinity,1:EnableBaroAffinity,2:EnableCompassAffinity,3:EnableAirspeedAffinity
     // @RebootRequired: True
+
     AP_GROUPINFO("AFFINITY", 62, NavEKF3, _affinity, 0),
 
     AP_SUBGROUPEXTENSION("", 63, NavEKF3, var_info2),
@@ -1236,12 +1242,15 @@ void NavEKF3::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainSca
 }
 
 // return the NED wind speed estimates in m/s (positive is air moving in the direction of the axis)
-void NavEKF3::getWind(int8_t instance, Vector3f &wind) const
+// returns true if wind state estimation is active
+bool NavEKF3::getWind(int8_t instance, Vector3f &wind) const
 {
+    bool ret = false;
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        core[instance].getWind(wind);
+        ret = core[instance].getWind(wind);
     }
+    return ret;
 }
 
 // return earth magnetic field estimates in measurement units / 1000
@@ -1997,14 +2006,14 @@ void NavEKF3::updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_
 
 }
 
-// Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
-void NavEKF3::writeDefaultAirSpeed(float airspeed)
+// Writes the default equivalent airspeed and 1-sigma uncertainty in m/s to be used in forward flight if a measured airspeed is required and not available.
+void NavEKF3::writeDefaultAirSpeed(float airspeed, float uncertainty)
 {
-    AP::dal().log_writeDefaultAirSpeed3(airspeed);
+    AP::dal().log_writeDefaultAirSpeed3(airspeed, uncertainty);
 
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
-            core[i].writeDefaultAirSpeed(airspeed);
+            core[i].writeDefaultAirSpeed(airspeed, uncertainty);
         }
     }
 }
