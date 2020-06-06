@@ -49,6 +49,7 @@ known_units = {
              'ds'      : 'deciseconds'           ,
              'cs'      : 'centiseconds'          ,
              'ms'      : 'milliseconds'          ,
+             'us'      : 'microseconds'          ,
              'PWM'     : 'PWM in microseconds'   , # should be microseconds, this is NOT a SI unit, but follows https://github.com/ArduPilot/ardupilot/pull/5538#issuecomment-271943061
              'Hz'      : 'hertz'                 ,
              'kHz'     : 'kilohertz'             ,
