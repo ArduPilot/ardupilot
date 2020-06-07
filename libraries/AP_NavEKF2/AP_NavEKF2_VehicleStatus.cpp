@@ -406,6 +406,9 @@ void NavEKF2_core::detectFlight()
         EKFGSF_yaw_reset_request_ms = 0;
         EKFGSF_yaw_reset_count = 0;
         EKFGSF_run_filterbank = true;
+        Vector3f gyroBias;
+        getGyroBias(gyroBias);
+        yawEstimator->setGyroBias(gyroBias);
     }
 
     // store current on-ground  and in-air status for next time
