@@ -1002,7 +1002,21 @@ RC_Channel::aux_switch_pos_t RC_Channel::get_aux_switch_pos() const
 RC_Channel::aux_switch_pos_t RC_Channels::get_channel_pos(const uint8_t rcmapchan) const
 {
     const RC_Channel* chan = rc().channel(rcmapchan-1);
-    return chan != nullptr ? chan->get_aux_switch_pos() : RC_Channel::aux_switch_pos_t::LOW;
+    if (chan != nullptr) {
+        if (chan->get_reverse()) {
+            switch (chan->get_aux_switch_pos()) {
+            case  RC_Channel::aux_switch_pos_t::LOW:
+                return  RC_Channel::aux_switch_pos_t::HIGH;
+            case  RC_Channel::aux_switch_pos_t::HIGH:
+                return  RC_Channel::aux_switch_pos_t::LOW;
+            case  RC_Channel::aux_switch_pos_t::MIDDLE:
+                return  RC_Channel::aux_switch_pos_t::MIDDLE;
+            }
+        } else {
+            return chan->get_aux_switch_pos();
+        }
+    }
+    return RC_Channel::aux_switch_pos_t::LOW;
 }
 
 RC_Channel *RC_Channels::find_channel_for_option(const RC_Channel::aux_func_t option)
