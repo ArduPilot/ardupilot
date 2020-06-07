@@ -224,6 +224,42 @@ class DataFile(object):
             return False
         return True
 
+def pos_range(filename):
+    '''return min/max of lat/lon in a file'''
+    fh = open(filename, 'rb')
+    lat_min = None
+    lat_max = None
+    lon_min = None
+    lon_max = None
+    while True:
+        buf = fh.read(IO_BLOCK_SIZE)
+        if len(buf) != IO_BLOCK_SIZE:
+            break
+        (bitmap, lat, lon, crc, version, spacing) = struct.unpack("<QiiHHH", buf[:22])
+        if (version != TERRAIN_GRID_FORMAT_VERSION):
+            print("Bad version %u in %s" % (version, filename))
+            break
+        buf = buf[:16] + struct.pack("<H", 0) + buf[18:]
+        crc2 = crc16.crc16xmodem(buf[:1821])
+        if crc2 != crc:
+            print("Bad CRC in %s" % filename)
+            break
+        if lat_min is None:
+            lat_min = lat
+            lat_max = lat
+            lon_min = lon
+            lon_max = lon
+        lat_min = min(lat_min, lat)
+        lat_max = max(lat_max, lat)
+        lon_min = min(lon_min, lon)
+        lon_max = max(lon_max, lon)
+    lat_min *= 1.0e-7
+    lat_max *= 1.0e-7
+    lon_min *= 1.0e-7
+    lon_max *= 1.0e-7
+    return lat_min, lat_max, lon_min, lon_max
+
+
 def create_degree(lat, lon):
     '''create data file for one degree lat/lon'''
     lat_int = int(math.floor(lat))
@@ -235,10 +271,13 @@ def create_degree(lat, lon):
 
     print("Creating for %d %d" % (lat_int, lon_int))
 
-    total_blocks = east_blocks(lat_int*1e7, lon_int*1e7) * TERRAIN_GRID_BLOCK_SIZE_Y
+    blocknum = -1
 
-    for blocknum in range(total_blocks):
+    while True:
+        blocknum += 1
         (lat_e7, lon_e7) = pos_from_file_offset(lat_int, lon_int, blocknum * IO_BLOCK_SIZE)
+        if int(lat_e7*1.0e-7) - lat_int > 1:
+            break
         lat = lat_e7 * 1.0e-7
         lon = lon_e7 * 1.0e-7
         grid = GridBlock(lat_int, lon_int, lat, lon)
@@ -276,7 +315,12 @@ parser.add_argument("--force", action='store_true', help="overwrite existing ful
 parser.add_argument("--radius", type=int, default=100, help="radius in km")
 parser.add_argument("--debug", action='store_true', default=False)
 parser.add_argument("--spacing", type=int, default=100, help="grid spacing in meters")
+parser.add_argument("--pos-range", default=None, help="show position range for a file")
 args = parser.parse_args()
+
+if args.pos_range is not None:
+    print(pos_range(args.pos_range))
+    sys.exit(0)
 
 downloader = srtm.SRTMDownloader(debug=args.debug)
 downloader.loadFileList()
@@ -288,6 +332,8 @@ done = set()
 for dx in range(-args.radius, args.radius):
     for dy in range(-args.radius, args.radius):
         (lat2,lon2) = add_offset(args.lat*1e7, args.lon*1e7, dx*1000.0, dy*1000.0)
+        if abs(lat2) > 90e7 or abs(lon2) > 180e7:
+            continue
         lat_int = int(round(lat2 * 1.0e-7))
         lon_int = int(round(lon2 * 1.0e-7))
         tag = (lat_int, lon_int)
