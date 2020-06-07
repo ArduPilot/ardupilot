@@ -269,7 +269,7 @@ SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::Aux_servo_function_t functi
     }
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
         if (channels[i].function.get() == function) {
-            channels[i].servo_trim.set_and_save_ifchanged(channels[i].output_pwm);
+            channels[i].servo_trim.set_and_save_ifchanged(channels[i].get_output_pwm());
         }
     }
 }
@@ -602,7 +602,7 @@ bool SRV_Channels::get_output_pwm(SRV_Channel::Aux_servo_function_t function, ui
         return false;
     }
     channels[chan].calc_pwm(functions[function].output_scaled);
-    value = channels[chan].output_pwm;
+    value = channels[chan].get_output_pwm();
     return true;
 }
 
@@ -656,7 +656,7 @@ void SRV_Channels::limit_slew_rate(SRV_Channel::Aux_servo_function_t function, f
         if (c.function == function) {
             c.calc_pwm(functions[function].output_scaled);
             uint16_t last_pwm = hal.rcout->read_last_sent(c.ch_num);
-            if (last_pwm == c.output_pwm) {
+            if (last_pwm == c.get_output_pwm()) {
                 continue;
             }
             uint16_t max_change = (c.get_output_max() - c.get_output_min()) * slew_rate * dt * 0.01f;
@@ -666,7 +666,7 @@ void SRV_Channels::limit_slew_rate(SRV_Channel::Aux_servo_function_t function, f
                 // change for this loop
                 max_change = 1;
             }
-            c.output_pwm = constrain_int16(c.output_pwm, last_pwm-max_change, last_pwm+max_change);
+            c.set_output_pwm(constrain_int16(c.get_output_pwm(), last_pwm-max_change, last_pwm+max_change));
         }
     }
 }
@@ -708,7 +708,7 @@ void SRV_Channels::constrain_pwm(SRV_Channel::Aux_servo_function_t function)
     for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
         SRV_Channel &c = channels[i];
         if (c.function == function) {
-            c.output_pwm = constrain_int16(c.output_pwm, c.servo_min, c.servo_max);
+            c.set_output_pwm(constrain_int16(c.output_pwm, c.servo_min, c.servo_max));
         }
     }
 }
