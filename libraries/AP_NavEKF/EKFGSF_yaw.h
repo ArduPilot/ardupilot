@@ -27,6 +27,9 @@ public:
     void fuseVelData(const Vector2f &vel,    // NE velocity measurement (m/s)
                      const float velAcc);   // 1-sigma accuracy of velocity measurement (m/s)
 
+    // set the gyro bias in rad/sec
+    void setGyroBias(Vector3f &gyroBias);
+
     // get solution data for logging
     // return false if yaw estimation is inactive
     bool getLogData(float &yaw_composite, float &yaw_composite_variance, float yaw[N_MODELS_EKFGSF], float innov_VN[N_MODELS_EKFGSF], float innov_VE[N_MODELS_EKFGSF], float weight[N_MODELS_EKFGSF]);
