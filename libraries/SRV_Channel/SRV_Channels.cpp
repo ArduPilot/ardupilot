@@ -215,10 +215,12 @@ void SRV_Channels::calc_pwm(void)
         // check if channel has been locked out for this loop
         // if it has, decrement the loop count for that channel
         if (override_counter[i] == 0) {
-            channels[i].calc_pwm(functions[channels[i].function].output_scaled);
+            channels[i].set_override(false);
         } else {
+            channels[i].set_override(true);
             override_counter[i]--;
         }
+        channels[i].calc_pwm(functions[channels[i].function].output_scaled);
     }
 }
 
@@ -242,7 +244,8 @@ void SRV_Channels::set_output_pwm_chan_timeout(uint8_t chan, uint16_t value, uin
         // round up so any non-zero requested value will result in at least one loop
         const uint32_t loop_count = ((timeout_ms * 1000U) + (loop_period_us - 1U)) / loop_period_us;
         override_counter[chan] = constrain_int32(loop_count, 0, UINT16_MAX);
-        SRV_Channels::set_output_pwm_chan(chan, value);
+        channels[chan].set_override(true);
+        channels[chan].set_output_pwm(value,true);
     }
 }
 
