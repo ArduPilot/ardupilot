@@ -641,3 +641,10 @@ bool EKFGSF_yaw::getYawData(float &yaw, float &yawVariance)
     yawVariance = GSF.yaw_variance;
     return true;
 }
+
+void EKFGSF_yaw::setGyroBias(Vector3f &gyroBias)
+{
+    for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx++) {
+        AHRS[mdl_idx].gyro_bias = gyroBias;
+    }
+}
