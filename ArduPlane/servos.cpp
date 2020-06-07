@@ -836,9 +836,6 @@ void Plane::servos_output(void)
     quadplane.tailsitter_output();
     quadplane.tiltrotor_bicopter();
 
-    // the mixers need pwm to be calculated now
-    SRV_Channels::calc_pwm();
-
     // run vtail and elevon mixers
     servo_output_mixers();
 
