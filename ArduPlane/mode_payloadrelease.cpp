@@ -60,7 +60,8 @@ void ModePayloadRelease::initialise_initial_condition() {
     airspeed_uav = 5;
 
     wind = plane.ahrs.wind_estimate();
-    // llh_to_local(drop_point,drop_point_neu);
+    //At first the drop_point which is in longitude and latitude must be changed into neu so that release point must be calculated
+    llh_to_local(drop_point,drop_point_neu);
     //intialize wind values
     wind_speed_north = wind.y;
     wind_speed_east = wind.x;
@@ -72,7 +73,8 @@ void ModePayloadRelease::initialise_initial_condition() {
     // Bearing in degrees
     // int32_t bearing_cd = plane.current_loc.get_;
     // get current heading.
-    int32_t heading_cd = plane.gps.ground_course_cd();
+    // gps.ground_course_cd() calculates heading in centi degrees so it needs to be divided by 100 to convert into degrees. 
+    int32_t heading_cd = plane.gps.ground_course_cd() / 100;
     theta = wrap_2PI((heading_cd / 100) * DEG_TO_RAD) ;  //calculate heading in radian
     phi = wrap_2PI(atan2f(wind_speed_east,wind_speed_north)); //wind vector direction
 
@@ -179,7 +181,7 @@ void ModePayloadRelease::update_releasepoint() {
         gcs().send_text(MAV_SEVERITY_INFO,"calculated: %d", !calculated);
         // if(!calculated) {
         // if((!calculated) && plane.gps.ground_speed() > 3.5) {
-        if(true) {
+        if(!calculated) {
             gcs().send_text(MAV_SEVERITY_INFO, "drop lat = %d, drop lon = %d,drop ht =%d",drop_point.lat,drop_point.lng,drop_point.alt);
             //gcs().send_text(MAV_SEVERITY_INFO, "inside here");
             initialise_initial_condition();

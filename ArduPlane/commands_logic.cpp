@@ -376,7 +376,7 @@ void Plane::do_payload_release(const AP_Mission::Mission_Command& cmd)
 {
     mode_payloadrelease.set_state(mode_payloadrelease.PayloadRelease_Start);
     set_next_WP(cmd.content.location);
-
+    mode_payloadrelease.drop_point = cmd.content.location;
     gcs().send_text(MAV_SEVERITY_INFO, "initialise payload release called");
     // gcs().send_text(MA V_SEVERITY_INFO, "target location: %f %f");
     //Location target_loc = cmd.content.location;
