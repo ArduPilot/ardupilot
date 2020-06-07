@@ -182,6 +182,8 @@ singleton SRV_Channels method set_output_pwm_chan_timeout void uint8_t 0 NUM_SER
 singleton SRV_Channels method set_output_scaled void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 int16_t INT16_MIN INT16_MAX
 singleton SRV_Channels method get_output_pwm boolean SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'Null
 singleton SRV_Channels method get_output_scaled int16_t SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1
+singleton SRV_Channels method set_angle void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_scripting1 SRV_Channel::k_scripting16 int16_t INT16_MIN INT16_MAX
+singleton SRV_Channels method set_range void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_scripting1 SRV_Channel::k_scripting16 int16_t INT16_MIN INT16_MAX
 
 include RC_Channel/RC_Channel.h
 singleton RC_Channels alias rc
