@@ -19,7 +19,7 @@ void NavEKF3_core::controlMagYawReset()
     // Vehicles that can use a zero sideslip assumption (Planes) are a special case
     // They can use the GPS velocity to recover from bad initial compass data
     // This allows recovery for heading alignment errors due to compass faults
-    if (assume_zero_sideslip() && !finalInflightYawInit && inFlight ) {
+    if (assume_zero_sideslip() && !finalInflightYawInit && inFlight) {
         gpsYawResetRequest = true;
         return;
     } else {
@@ -1498,6 +1498,9 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
 
         // Fail the magnetomer so it doesn't get used and pull the yaw away from the correct value
         allMagSensorsFailed = true;
+
+        // record the yaw reset event
+        recordYawReset();
 
         // reset velocity and position states to GPS - if yaw is fixed then the filter should start to operate correctly
         ResetVelocity();

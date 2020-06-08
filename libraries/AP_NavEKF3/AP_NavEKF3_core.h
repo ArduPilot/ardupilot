@@ -1040,6 +1040,7 @@ private:
     uint32_t lastSynthYawTime_ms;   // time stamp when yaw observation was last fused (msec)
     uint32_t ekfStartTime_ms;       // time the EKF was started (msec)
     Vector2f lastKnownPositionNE;   // last known position
+    uint32_t lastLaunchAccelTime_ms;
     uint32_t lastDecayTime_ms;      // time of last decay of GPS position offset
     float velTestRatio;             // sum of squares of GPS velocity innovation divided by fail threshold
     float posTestRatio;             // sum of squares of GPS position innovation divided by fail threshold
