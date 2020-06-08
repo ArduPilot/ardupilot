@@ -101,7 +101,7 @@ bool NavEKF2_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     if(!storedRangeBeacon.init(imu_buffer_length)) {
         return false;
     }
-    if(!storedExtNav.init(OBS_BUFFER_LENGTH)) {
+    if(!storedExtNav.init(EXTNAV_BUFFER_LENGTH)) {
         return false;
     }
     if(!storedIMU.init(imu_buffer_length)) {
@@ -110,7 +110,7 @@ bool NavEKF2_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     if(!storedOutput.init(imu_buffer_length)) {
         return false;
     }
-    if(!storedExtNavVel.init(OBS_BUFFER_LENGTH)) {
+    if(!storedExtNavVel.init(EXTNAV_BUFFER_LENGTH)) {
        return false;
     }
 

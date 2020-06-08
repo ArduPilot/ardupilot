@@ -894,7 +894,7 @@ void NavEKF2_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, 
 {
     // limit update rate to maximum allowed by sensor buffers and fusion process
     // don't try to write to buffer until the filter has been initialised
-    if ((timeStamp_ms - extNavMeasTime_ms) < 70) {
+    if ((timeStamp_ms - extNavMeasTime_ms) < 20) {
         return;
     } else {
         extNavMeasTime_ms = timeStamp_ms;
@@ -1018,7 +1018,7 @@ void NavEKF2_core::writeDefaultAirSpeed(float airspeed)
 
 void NavEKF2_core::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms)
 {
-    if ((timeStamp_ms - extNavVelMeasTime_ms) < 70) {
+    if ((timeStamp_ms - extNavVelMeasTime_ms) < 20) {
         return;
     }
 
