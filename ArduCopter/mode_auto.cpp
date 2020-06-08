@@ -489,13 +489,15 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         do_roi(cmd);
         break;
 
+#if MOUNT == ENABLED
     case MAV_CMD_DO_MOUNT_CONTROL:          // 205
         // point the camera to a specified angle
         do_mount_control(cmd);
         break;
-    
-    case MAV_CMD_DO_FENCE_ENABLE:
+#endif
+
 #if AC_FENCE == ENABLED
+    case MAV_CMD_DO_FENCE_ENABLE:
         if (cmd.p1 == 0) { //disable
             copter.fence.enable(false);
             gcs().send_text(MAV_SEVERITY_INFO, "Fence Disabled");
@@ -503,8 +505,8 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
             copter.fence.enable(true);
             gcs().send_text(MAV_SEVERITY_INFO, "Fence Enabled");
         }
-#endif //AC_FENCE == ENABLED
         break;
+#endif //AC_FENCE == ENABLED
 
 #if NAV_GUIDED == ENABLED
     case MAV_CMD_DO_GUIDED_LIMITS:                      // 220  accept guided mode limits
@@ -718,10 +720,18 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_CHANGE_SPEED:
     case MAV_CMD_DO_SET_HOME:
     case MAV_CMD_DO_SET_ROI:
+#if MOUNT == ENABLED    
     case MAV_CMD_DO_MOUNT_CONTROL:
+#endif
+#if NAV_GUIDED == ENABLED
     case MAV_CMD_DO_GUIDED_LIMITS:
+#endif
+#if AC_FENCE == ENABLED
     case MAV_CMD_DO_FENCE_ENABLE:
+#endif
+#if WINCH_ENABLED == ENABLED
     case MAV_CMD_DO_WINCH:
+#endif
         cmd_complete = true;
         break;
 
