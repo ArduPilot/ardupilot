@@ -354,8 +354,8 @@ bool AP_OABendyRuler::calc_margin_from_object_database(const Location &start, co
     }
 
     // convert start and end to offsets (in cm) from EKF origin
-    Vector2f start_NE, end_NE;
-    if (!start.get_vector_xy_from_origin_NE(start_NE) || !end.get_vector_xy_from_origin_NE(end_NE)) {
+    Vector3f start_NEU,end_NEU;
+    if (!start.get_vector_from_origin_NEU(start_NEU) || !end.get_vector_from_origin_NEU(end_NEU)) {
         return false;
     }
 
@@ -363,9 +363,9 @@ bool AP_OABendyRuler::calc_margin_from_object_database(const Location &start, co
     float smallest_margin = FLT_MAX;
     for (uint16_t i=0; i<oaDb->database_count(); i++) {
         const AP_OADatabase::OA_DbItem& item = oaDb->get_item(i);
-        const Vector2f point_cm = item.pos * 100.0f;
+        const Vector3f point_cm = item.pos * 100.0f;
         // margin is distance between line segment and obstacle minus obstacle's radius
-        const float m = Vector2f::closest_distance_between_line_and_point(start_NE, end_NE, point_cm) * 0.01f - item.radius;
+        const float m = Vector3f::closest_distance_between_line_and_point(start_NEU, end_NEU, point_cm) * 0.01f - item.radius;
         if (m < smallest_margin) {
             smallest_margin = m;
         }
