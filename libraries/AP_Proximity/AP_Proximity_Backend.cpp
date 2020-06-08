@@ -248,40 +248,53 @@ bool AP_Proximity_Backend::ignore_reading(uint16_t angle_deg) const
 }
 
 // returns true if database is ready to be pushed to and all cached data is ready
-bool AP_Proximity_Backend::database_prepare_for_push(Vector2f &current_pos, float &current_heading)
+bool AP_Proximity_Backend::database_prepare_for_push(Vector3f &current_pos, Matrix3f &body_to_ned)
 {
     AP_OADatabase *oaDb = AP::oadatabase();
     if (oaDb == nullptr || !oaDb->healthy()) {
         return false;
     }
 
-    if (!AP::ahrs().get_relative_position_NE_origin(current_pos)) {
+    if (!AP::ahrs().get_relative_position_NED_origin(current_pos)) {
         return false;
     }
 
-    current_heading = AP::ahrs().yaw_sensor * 0.01f;
+    body_to_ned = AP::ahrs().get_rotation_body_to_ned();
+
     return true;
 }
 
 // update Object Avoidance database with Earth-frame point
 void AP_Proximity_Backend::database_push(float angle, float distance)
 {
-    Vector2f current_pos;
-    float current_heading;
-    if (database_prepare_for_push(current_pos, current_heading)) {
-        database_push(angle, distance, AP_HAL::millis(), current_pos, current_heading);
+    Vector3f current_pos;
+    Matrix3f body_to_ned;
+
+    if (database_prepare_for_push(current_pos, body_to_ned)) {
+        database_push(angle, distance, AP_HAL::millis(), current_pos, body_to_ned);
     }
 }
 
 // update Object Avoidance database with Earth-frame point
-void AP_Proximity_Backend::database_push(float angle, float distance, uint32_t timestamp_ms, const Vector2f &current_pos, float current_heading)
+void AP_Proximity_Backend::database_push(float angle, float distance, uint32_t timestamp_ms, const Vector3f &current_pos, const Matrix3f &body_to_ned)
 {
     AP_OADatabase *oaDb = AP::oadatabase();
     if (oaDb == nullptr || !oaDb->healthy()) {
         return;
     }
-
-    Vector2f temp_pos = current_pos;
-    temp_pos.offset_bearing(wrap_180(current_heading + angle), distance);
+    
+    //Assume object is angle bearing and distance meters away from the vehicle 
+    Vector2f object_2D = {0.0f,0.0f};
+    object_2D.offset_bearing(wrap_180(angle), distance);	
+    
+    //rotate that vector to a 3D vector in NED frame
+    const Vector3f object_3D = {object_2D.x,object_2D.y,0.0f};
+    const Vector3f rotated_object_3D = body_to_ned * object_3D;
+    
+    //Calculate the position vector from origin
+    Vector3f temp_pos = current_pos + rotated_object_3D;
+    //Convert the vector to a NEU frame from NED
+    temp_pos.z = temp_pos.z * -1.0f;
+    
     oaDb->queue_push(temp_pos, timestamp_ms, distance);
 }
