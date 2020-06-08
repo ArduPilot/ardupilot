@@ -6,6 +6,7 @@
 *.bin -diff
 *.elf -diff
 *.hex -diff
+*.py text eol=lf
 
 *.bin binary linguist-generated
 *.elf binary linguist-generated
