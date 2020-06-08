@@ -1055,6 +1055,10 @@ group_sim.add_option("", "--sysid",
                      type='int',
                      default=None,
                      help="Set SYSID_THISMAV")
+group_sim.add_option("--fcu-host",
+                     type='string',
+                     default="127.0.0.1",
+                     help="fcu host to publish out messages from mavproxy")
 parser.add_option_group(group_sim)
 
 
