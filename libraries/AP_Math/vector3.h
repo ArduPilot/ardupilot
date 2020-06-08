@@ -256,6 +256,8 @@ public:
         return perpendicular;
     }
 
+    // Shortest distance between point(p) to a point contained in the line segment defined by w1,w2
+    static float closest_distance_between_line_and_point(const Vector3<T> &w1, const Vector3<T> &w2, const Vector3<T> &p);
 };
 
 typedef Vector3<int16_t>                Vector3i;
