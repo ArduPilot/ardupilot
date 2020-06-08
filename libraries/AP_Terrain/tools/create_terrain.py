@@ -396,6 +396,9 @@ def create_degree(lat, lon):
                     if waited:
                         print("downloaded %d,%d" % (lat2_int, lon2_int))
                     tiles[tile_idx] = tile
+                if isinstance(tile, srtm.SRTMOceanTile):
+                     # shortcut ocean tile creation
+                     break
                 altitude = tiles[tile_idx].getAltitudeFromLatLon(lat_e7*1.0e-7, lon_e7*1.0e-7)
                 grid.fill(gx, gy, altitude)
         dfile.write(grid)
