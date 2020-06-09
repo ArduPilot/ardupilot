@@ -493,6 +493,13 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @User: Standard
     AP_GROUPINFO("ASSIST_DELAY", 19, QuadPlane, assist_delay, 0.5),
     
+    // @Param: FWD_MANTHR_MAX
+    // @DisplayName: VTOL manual forward throttle max percent
+    // @Description: Maximum value for manual forward throttle; used with RC option FWD_THR (209)
+    // @Range: 0 100
+    // @RebootRequired: False
+    AP_GROUPINFO("FWD_MANTHR_MAX", 20, QuadPlane, fwd_thr_max, 0),
+
     AP_GROUPEND
 };
 
@@ -2919,24 +2926,41 @@ void QuadPlane::Log_Write_QControl_Tuning()
   reduces the need for down pitch which reduces load on the vertical
   lift motors.
  */
-int8_t QuadPlane::forward_throttle_pct(void)
+int8_t QuadPlane::forward_throttle_pct()
 {
     /*
-      in non-VTOL modes or modes without a velocity controller. We
-      don't use it in QHOVER or QSTABILIZE as they are the primary
+      Unless an RC channel is assigned for manual forward throttle control,
+      we don't use forward throttle in QHOVER or QSTABILIZE as they are the primary
       recovery modes for a quadplane and need to be as simple as
-      possible. They will drift with the wind
+      possible. They will drift with the wind.
     */
-    if (!in_vtol_mode() ||
-        !motors->armed() ||
-        vel_forward.gain <= 0 ||
+    if (plane.control_mode == &plane.mode_qacro ||
         plane.control_mode == &plane.mode_qstabilize ||
-        plane.control_mode == &plane.mode_qhover ||
-        plane.control_mode == &plane.mode_qautotune ||
-        motors->get_desired_spool_state() < AP_Motors::DesiredSpoolState::GROUND_IDLE) {
+        plane.control_mode == &plane.mode_qhover) {
+
+        if (rc_fwd_thr_ch == nullptr) {
+            return 0;
+        } else {
+            // calculate fwd throttle demand from manual input
+            float fwd_thr = rc_fwd_thr_ch->percent_input();
+
+            // set forward throttle to fwd_thr_max * (manual input + mix): range [0,100]
+            fwd_thr *= .01f * constrain_float(fwd_thr_max, 0, 100);
+            return fwd_thr;
+        }
+    }
+
+    /*
+      in qautotune mode or modes without a velocity controller
+    */
+    if (vel_forward.gain <= 0 ||
+        plane.control_mode == &plane.mode_qautotune) {
         return 0;
     }
 
+    /*
+      in modes with a velocity controller
+    */
     float deltat = (AP_HAL::millis() - vel_forward.last_ms) * 0.001f;
     if (deltat > 1 || deltat < 0) {
         vel_forward.integrator = 0;
@@ -2957,10 +2981,10 @@ int8_t QuadPlane::forward_throttle_pct(void)
         vel_forward.integrator = 0;
         return 0;
     }
+    // get component of velocity error in fwd body frame direction
     Vector3f vel_error_body = ahrs.get_rotation_body_to_ned().transposed() * ((desired_velocity_cms*0.01f) - vel_ned);
 
-    // find component of velocity error in fwd body frame direction
-    float fwd_vel_error = vel_error_body * Vector3f(1,0,0);
+    float fwd_vel_error = vel_error_body.x;
 
     // scale forward velocity error by maximum airspeed
     fwd_vel_error /= MAX(plane.aparm.airspeed_max, 5);

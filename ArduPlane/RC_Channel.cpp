@@ -92,6 +92,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
     case AUX_FUNC::MANUAL:
     case AUX_FUNC::RTL:
     case AUX_FUNC::TAKEOFF:
+    case AUX_FUNC::FWD_THR:
         break;
 
     case AUX_FUNC::Q_ASSIST:
@@ -113,7 +114,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
         // handle in parent class
         RC_Channel::init_aux_function(ch_option, ch_flag);
         break;
-}
+    }
 }
 
 // do_aux_function - implement the function invoked by auxillary switches
@@ -162,7 +163,9 @@ void RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwit
 
     case AUX_FUNC::Q_ASSIST:
         do_aux_function_q_assist_state(ch_flag);
-        break;
+
+    case AUX_FUNC::FWD_THR:
+        break; // VTOL forward throttle input label, nothing to do
 
     default:
         RC_Channel::do_aux_function(ch_option, ch_flag);
