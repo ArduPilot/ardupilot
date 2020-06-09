@@ -1,5 +1,5 @@
 # setup correct defaults for battery monitoring for cube power brick
-BATT2_CURR_PIN 14
+BATT2_CURR_PIN 4
 BATT2_VOLT_PIN 13
 BATT_AMP_PERVLT 39.877
 BATT_VOLT_MULT 12.02
