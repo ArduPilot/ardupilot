@@ -92,7 +92,7 @@ const AP_Param::GroupInfo AP_VisualOdom::var_info[] = {
 
     // @Param: _POS_M_NSE
     // @DisplayName: Visual odometry position measurement noise 
-    // @Description: Visual odometry position measurement noise minimum (meters). This value will be used if the sensor provides a lower noise value (or not noise value)
+    // @Description: Visual odometry position measurement noise minimum (meters). This value will be used if the sensor provides a lower noise value (or no noise value)
     // @Units: m
     // @Range: 0.1 10.0
     // @User: Advanced
@@ -100,7 +100,7 @@ const AP_Param::GroupInfo AP_VisualOdom::var_info[] = {
 
     // @Param: _YAW_M_NSE
     // @DisplayName: Visual odometry yaw measurement noise
-    // @Description: Visual odometry yaw measurement noise minimum (radians), This value will be used if the sensor provides a lower noise value (or not noise value)
+    // @Description: Visual odometry yaw measurement noise minimum (radians), This value will be used if the sensor provides a lower noise value (or no noise value)
     // @Units: rad
     // @Range: 0.05 1.0
     // @User: Advanced
