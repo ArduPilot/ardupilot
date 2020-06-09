@@ -578,10 +578,19 @@ bool AP_Arming::rc_arm_checks(AP_Arming::Method method)
         }
 
         if (rc().arming_check_throttle()) {
-            const RC_Channel *c = rc().channel(rcmap->throttle() - 1);
+            RC_Channel *c = rc().channel(rcmap->throttle() - 1);
             if (c != nullptr) {
                 if (c->get_control_in() != 0) {
                     check_failed(ARMING_CHECK_RC, true, "Throttle (RC%d) is not neutral", rcmap->throttle());
+                    check_passed = false;
+                }
+            }
+            c = rc().find_channel_for_option(RC_Channel::AUX_FUNC::FWD_THR);
+            if (c != nullptr) {
+                uint8_t fwd_thr = c->percent_input();
+                // require channel input within 2% of minimum
+                if (fwd_thr > 2) {
+                    check_failed(ARMING_CHECK_RC, true, "VTOL Fwd Throttle is not zero");
                     check_passed = false;
                 }
             }
