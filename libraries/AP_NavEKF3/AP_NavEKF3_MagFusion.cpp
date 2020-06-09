@@ -1548,6 +1548,8 @@ void NavEKF3_core::resetQuatStateYawOnly(float yaw, float yawVariance)
 
     // update the yaw angle variance using the variance of the EKF-GSF estimate
     angleErrVarVec.z = yawVariance;
+    zeroRows(P,0,3);
+    zeroCols(P,0,3);
     initialiseQuatCovariances(angleErrVarVec);
 
     // record the yaw reset event
