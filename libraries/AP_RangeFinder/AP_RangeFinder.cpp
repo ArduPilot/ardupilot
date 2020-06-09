@@ -294,6 +294,7 @@ void RangeFinder::init(enum Rotation orientation_default)
  */
 void RangeFinder::update(void)
 {
+
     for (uint8_t i=0; i<num_instances; i++) {
         if (drivers[i] != nullptr) {
             if ((Type)params[i].type.get() == Type::NONE) {

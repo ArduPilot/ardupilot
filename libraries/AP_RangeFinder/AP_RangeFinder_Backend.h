@@ -74,4 +74,9 @@ protected:
     RangeFinder::Type _backend_type;
 
     virtual MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const = 0;
+
+private:
+
+        uint32_t avrgd_distance_cm;     // last distance reported , a running average
+        uint8_t glitch_count;           // glitch counter
 };
