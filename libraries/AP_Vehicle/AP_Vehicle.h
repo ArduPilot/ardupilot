@@ -176,6 +176,11 @@ public:
     // get target location (for use by scripting)
     virtual bool get_target_location(Location& target_loc) { return false; }
 
+    // write out harmonic notch log messages
+    void write_notch_log_messages() const;
+    // update the harmonic notch
+    virtual void update_dynamic_notch() {};
+    
 protected:
 
     virtual void init_ardupilot() = 0;

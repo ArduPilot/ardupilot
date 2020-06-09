@@ -1,5 +1,6 @@
 #include "AP_Vehicle.h"
 
+#include <AP_BLHeli/AP_BLHeli.h>
 #include <AP_Common/AP_FWVersion.h>
 
 #define SCHED_TASK(func, rate_hz, max_time_micros) SCHED_TASK_CLASS(AP_Vehicle, &vehicle, func, rate_hz, max_time_micros)
@@ -136,6 +137,7 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update,                  400, 50),
     SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update_parameters,         1, 50),
 #endif
+    SCHED_TASK(update_dynamic_notch,                   200,    200),
     SCHED_TASK(send_watchdog_reset_statustext,         0.1,     20),
 };
 
@@ -203,6 +205,22 @@ void AP_Vehicle::send_watchdog_reset_statustext()
                     (unsigned)pd.internal_error_count,
                     pd.thread_name4
         );
+}
+
+// @LoggerMessage: FTN
+// @Description: Filter Tuning Messages
+// @Field: TimeUS: microseconds since system startup
+// @Field: NDn: number of active dynamic harmonic notches
+// @Field: DnF1: dynamic harmonic notch centre frequency for motor 1
+// @Field: DnF2: dynamic harmonic notch centre frequency for motor 2
+// @Field: DnF3: dynamic harmonic notch centre frequency for motor 3
+// @Field: DnF4: dynamic harmonic notch centre frequency for motor 4
+void AP_Vehicle::write_notch_log_messages() const
+{
+    const float* notches = ins.get_gyro_dynamic_notch_center_frequencies_hz();
+    AP::logger().Write(
+        "FTN", "TimeUS,NDn,DnF1,DnF2,DnF3,DnF4", "s-zzzz", "F-----", "QBffff", AP_HAL::micros64(), ins.get_num_gyro_dynamic_notch_center_frequencies(),
+            notches[0], notches[1], notches[2], notches[3]);
 }
 
 AP_Vehicle *AP_Vehicle::_singleton = nullptr;
