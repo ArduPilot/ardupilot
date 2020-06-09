@@ -625,8 +625,8 @@ struct PACKED log_VisualPosition {
     float roll;     // degrees
     float pitch;    // degrees
     float yaw;      // degrees
-    float pos_err;
-    float ang_err;
+    float pos_err;  // meters
+    float ang_err;  // radians
     uint8_t reset_counter;
 };
 
