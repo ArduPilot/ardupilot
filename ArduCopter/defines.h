@@ -202,14 +202,6 @@ enum LoggingParameters {
 #define FS_EKF_ACTION_ALTHOLD               2       // switch to ALTHOLD mode on EKF failsafe
 #define FS_EKF_ACTION_LAND_EVEN_STABILIZE   3       // switch to Land mode on EKF failsafe even if in a manual flight mode like stabilize
 
-// for mavlink SET_POSITION_TARGET messages
-#define MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE      ((1<<0) | (1<<1) | (1<<2))
-#define MAVLINK_SET_POS_TYPE_MASK_VEL_IGNORE      ((1<<3) | (1<<4) | (1<<5))
-#define MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE      ((1<<6) | (1<<7) | (1<<8))
-#define MAVLINK_SET_POS_TYPE_MASK_FORCE           (1<<9)
-#define MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE      (1<<10)
-#define MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE (1<<11)
-
 // for PILOT_THR_BHV parameter
 #define THR_BEHAVE_FEEDBACK_FROM_MID_STICK (1<<0)
 #define THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND (1<<1)
