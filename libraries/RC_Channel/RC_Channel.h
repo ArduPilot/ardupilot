@@ -197,6 +197,7 @@ public:
         // inputs from 200 will eventually used to replace RCMAP
         MAINSAIL =           207, // mainsail input
         FLAP =               208, // flap input
+        FWD_THR =            209, // VTOL manual forward throttle
     };
     typedef enum AUX_FUNC aux_func_t;
 
