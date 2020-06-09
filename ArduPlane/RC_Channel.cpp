@@ -163,6 +163,7 @@ void RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwit
 
     case AUX_FUNC::Q_ASSIST:
         do_aux_function_q_assist_state(ch_flag);
+        break;
 
     case AUX_FUNC::FWD_THR:
         break; // VTOL forward throttle input label, nothing to do
