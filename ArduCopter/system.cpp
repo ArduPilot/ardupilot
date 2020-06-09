@@ -69,8 +69,10 @@ void Copter::init_ardupilot()
     g2.gripper.init();
 #endif
 
+#if AC_FENCE == ENABLED
     fence.init();
-
+#endif
+    
     // init winch and wheel encoder
     winch_init();
 
