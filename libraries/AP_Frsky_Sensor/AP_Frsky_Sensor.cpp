@@ -14,7 +14,7 @@
 */
 
 /* 
-   FrSky Sensor library
+   FrSky Sensor library - largely borrowed from the AP_Frsky_Telem library
 
    Currently supported devices:
    - FLVSS
@@ -25,7 +25,6 @@
 #include <GCS_MAVLink/GCS.h>
 #include <stdio.h>
 #include <math.h>
-#include <AP_HAL/utility/sparse-endian.h>
 
 extern const AP_HAL::HAL& hal;
 
