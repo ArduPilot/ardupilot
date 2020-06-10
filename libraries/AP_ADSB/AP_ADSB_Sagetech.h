@@ -15,41 +15,34 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "AP_ADSB.h"
+#include "AP_ADSB_Backend.h"
 
-class AP_ADSB_Sagetech {
-public:
-    // constructor
-    AP_ADSB_Sagetech();
+//class AP_ADSB_Sagetech : public AP_ADSB_Backend {
+//public:
+//    // constructor
+//    AP_ADSB_Sagetech(AP_ADSB &frontend);
+//
+//private:
+//
+//    struct PACKED header {
+//        const uint8_t   start = 0xA5;
+//        const uint8_t   assemblyAddress = 0x01;
+//        uint8_t         message_type;
+//        uint8_t         message_id;
+//        uint8_t         payload_length;
+//        //uint8_t*        payload;
+//        uint8_t         checksumFletcher;
+//        uint8_t         checksum;
+//        const uint8_t   end = 0x5A;
+//    };
+//
+//    struct payload_installation {
+//        const uint8_t type = 0x01;
+//        const uint8_t len = 28;
+//        struct PACKED {
+//            uint8_t header1;
+//        } val;
+//    };
 
-    /* Do not allow copies */
-    AP_ADSB_Sagetech(const AP_ADSB_Sagetech &other) = delete;
-    AP_ADSB_Sagetech &operator=(const AP_ADSB_Sagetech&) = delete;
-
-private:
-
-    struct PACKED header {
-        const uint8_t   start = 0xA5;
-        const uint8_t   assemblyAddress = 0x01;
-        uint8_t         message_type;
-        uint8_t         message_id;
-        uint8_t         payload_length;
-        //uint8_t*        payload;
-        uint8_t         checksumFletcher;
-        uint8_t         checksum;
-        const uint8_t   end = 0x5A;
-    };
-
-    struct payload_installation {
-        const uint8_t type = 0x01;
-        const uint8_t len = 28;
-        union {
-            struct PACKED {
-                uint8_t header1;
-            } val;
-            uint8_t buffer[11];
-        } u;
-    };
-
-};
+//};
 

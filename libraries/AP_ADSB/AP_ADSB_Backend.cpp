@@ -13,13 +13,14 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-//#include <AP_HAL/AP_HAL.h>
-//#include "AP_ADSB_Sagetech.h"
-//
-//extern const AP_HAL::HAL& hal;
-//
-//// constructor
-//AP_ADSB_Sagetech::AP_ADSB_Sagetech(AP_ADSB &frontend) :
-//        AP_ADSB_Backend(frontend)
-//{
-//}
+#include "AP_ADSB_Backend.h"
+
+/*
+  base class constructor.
+  This incorporates initialisation as well.
+*/
+AP_ADSB_Backend::AP_ADSB_Backend(AP_ADSB &_frontend) :
+    frontend(_frontend)
+{
+}
+
