@@ -210,6 +210,11 @@ public:
     // return a smoothed and corrected gyro vector in radians/second
     virtual const Vector3f &get_gyro(void) const = 0;
 
+    // return primary accels, for lua
+    const Vector3f &get_accel(void) const {
+        return AP::ins().get_accel();
+    }
+    
     // return a smoothed and corrected gyro vector in radians/second using the latest ins data (which may not have been consumed by the EKF yet)
     Vector3f get_gyro_latest(void) const;
 
