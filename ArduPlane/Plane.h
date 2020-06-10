@@ -73,6 +73,7 @@
 
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
+#include <AP_Frsky_Sensor/AP_Frsky_Sensor.h>
 #include <AP_OSD/AP_OSD.h>
 
 #include <AP_Rally/AP_Rally.h>
@@ -386,6 +387,9 @@ private:
 
     // Airspeed Sensors
     AP_Airspeed airspeed;
+
+    // FrSky Sensors
+    AP_Frsky_Sensor frsky_sensors;
 
     // ACRO controller state
     struct {
@@ -1002,13 +1006,19 @@ private:
     void read_airspeed(void);
     void rpm_update(void);
     void accel_cal_update(void);
+    void update_frsky_sensors(void);
 
     // system.cpp
     void init_ardupilot() override;
+    void get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
+                             uint8_t &task_count,
+                             uint32_t &log_bit) override;
     void startup_ground(void);
     bool set_mode(Mode& new_mode, const ModeReason reason);
     bool set_mode(const uint8_t mode, const ModeReason reason) override;
     bool set_mode_by_number(const Mode::Number new_mode_number, const ModeReason reason);
+    uint8_t get_mode() const override { return (uint8_t)control_mode->mode_number(); }
+    Mode *mode_from_mode_num(const enum Mode::Number num);
     void check_long_failsafe();
     void check_short_failsafe();
     void startup_INS_ground(void);

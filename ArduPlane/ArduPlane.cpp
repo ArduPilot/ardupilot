@@ -111,6 +111,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(efi_update,             10,    200),
 #endif
     SCHED_TASK(update_dynamic_notch,   50,    200),
+    SCHED_TASK(update_frsky_sensors, 50, 100),
 };
 
 void Plane::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,

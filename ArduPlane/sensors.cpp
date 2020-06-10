@@ -79,3 +79,8 @@ void Plane::rpm_update(void)
         }
     }
 }
+
+void Plane::update_frsky_sensors(void)
+{
+    frsky_sensors.loop();
+}
