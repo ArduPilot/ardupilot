@@ -51,7 +51,7 @@ void Sub::guided_pos_control_start()
     // set to position control mode
     guided_mode = Guided_WP;
 
-    // initialise waypoint and spline controller
+    // initialise waypoint controller
     wp_nav.wp_and_spline_init();
 
     // initialise wpnav to stopping point at current altitude
@@ -181,7 +181,7 @@ bool Sub::guided_set_destination(const Location& dest_loc)
     }
 #endif
 
-    if (!wp_nav.set_wp_destination(dest_loc)) {
+    if (!wp_nav.set_wp_destination_loc(dest_loc)) {
         // failure to set destination can only be because of missing terrain data
         AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_TO_SET_DESTINATION);
         // failure is propagated to GCS with NAK
@@ -386,7 +386,7 @@ void Sub::guided_vel_control_run()
     }
 }
 
-// guided_posvel_control_run - runs the guided spline controller
+// guided_posvel_control_run - runs the guided posvel controller
 // called from guided_run
 void Sub::guided_posvel_control_run()
 {
