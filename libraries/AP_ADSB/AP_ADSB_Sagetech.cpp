@@ -13,13 +13,33 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-//#include <AP_HAL/AP_HAL.h>
-//#include "AP_ADSB_Sagetech.h"
-//
-//extern const AP_HAL::HAL& hal;
-//
-//// constructor
-//AP_ADSB_Sagetech::AP_ADSB_Sagetech(AP_ADSB &frontend) :
-//        AP_ADSB_Backend(frontend)
-//{
-//}
+#include <AP_HAL/AP_HAL.h>
+#include "AP_ADSB_Sagetech.h"
+
+extern const AP_HAL::HAL& hal;
+
+// constructor
+AP_ADSB_Sagetech::AP_ADSB_Sagetech(AP_ADSB &adsb) :
+        AP_ADSB_Backend(adsb)
+{
+}
+
+
+
+void AP_ADSB_Sagetech::update()
+{
+
+}
+
+void AP_ADSB_Sagetech::send_configure(const mavlink_channel_t chan)
+{
+
+}
+
+
+void AP_ADSB_Sagetech::send_dynamic_out(const mavlink_channel_t chan)
+{
+
+
+}
+

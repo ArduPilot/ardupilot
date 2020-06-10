@@ -50,7 +50,7 @@ public:
 
     enum class AP_ADSBType {
         UAVIONIX            = 0,
-//        SAGETECH            = 1,
+        SAGETECH            = 1,
     };
 
     struct adsb_vehicle_t {

@@ -25,11 +25,11 @@ public:
     void init() override {}
     void update() override {};
 
-    void handle_msg(const mavlink_channel_t chan, const mavlink_message_t &msg) override;
-
     // send static and dynamic data to ADSB transceiver
     void send_configure(const mavlink_channel_t chan) override;
     void send_dynamic_out(const mavlink_channel_t chan) override;
+
+    void handle_msg(const mavlink_channel_t chan, const mavlink_message_t &msg) override;
 
 private:
 

@@ -192,9 +192,9 @@ void AP_ADSB::hw_init(void)
             backend = new AP_ADSB_uAvionix(*this);
             break;
 
-//        case AP_ADSBType::SAGETECH:
-//            backend = new AP_ADSB_Sagetech(*this);
-//            break;
+        case AP_ADSBType::SAGETECH:
+            backend = new AP_ADSB_Sagetech(*this);
+            break;
     }
 
     if (backend != nullptr) {
