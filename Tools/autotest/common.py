@@ -3479,8 +3479,8 @@ class AutoTest(ABC):
             if m is None:
                 continue
             m_value = getattr(m, channel_field)
-            self.progress("RC_CHANNELS.%s=%u want=%u" %
-                          (channel_field, m_value, value))
+            self.progress("RC_CHANNELS.%s=%u want=%u time_boot_ms=%u" %
+                          (channel_field, m_value, value, m.time_boot_ms))
             if m_value is None:
                 raise ValueError("message (%s) has no field %s" %
                                  (str(m), channel_field))
