@@ -979,15 +979,18 @@ class AutoTest(ABC):
 
         self.initialise_after_reboot_sitl()
 
-    def set_streamrate(self, streamrate):
+    def set_streamrate(self, streamrate, timeout=10):
         tstart = time.time()
         while True:
-            if time.time() - tstart > 10:
+            if time.time() - tstart > timeout:
                 raise AutoTestTimeoutException("stream rate change failed")
 
             self.mavproxy.send("set streamrate %u\n" % (streamrate))
             self.mavproxy.send("set streamrate\n")
-            self.mavproxy.expect('.*streamrate ((?:-)?[0-9]+)', timeout=1)
+            try:
+                self.mavproxy.expect('.*streamrate ((?:-)?[0-9]+)', timeout=1)
+            except pexpect.TIMEOUT:
+                continue
             rate = self.mavproxy.match.group(1)
             print("rate: %s" % str(rate))
             if int(rate) == int(streamrate):
@@ -996,13 +999,20 @@ class AutoTest(ABC):
         if streamrate <= 0:
             return
 
-        self.drain_mav()
-        m = self.mav.recv_match(type='SYSTEM_TIME',
-                                blocking=True,
-                                timeout=10)
-        print("Received (%s)" % str(m))
-        if m is None:
-            raise NotAchievedException("Did not get SYSTEM_TIME")
+        self.progress("Waiting for SYSTEM_TIME for confirmation streams are working")
+        self.drain_mav_unparsed()
+        timeout = 60
+        tstart = time.time()
+        while True:
+            self.drain_all_pexpects()
+            if time.time() - tstart > timeout:
+                raise NotAchievedException("Did not get SYSTEM_TIME within %f seconds" % timeout)
+            m = self.mav.recv_match(timeout=0.1)
+            if m is None:
+                continue
+#            self.progress("Received (%s)" % str(m))
+            if m.get_type() == 'SYSTEM_TIME':
+                break
         self.drain_mav()
 
     def htree_from_xml(self, xml_filepath):
@@ -1786,7 +1796,7 @@ class AutoTest(ABC):
         """Get SITL time in seconds."""
         m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True, timeout=timeout)
         if m is None:
-            raise AutoTestTimeoutException("Did not get SYSTEM_TIME message")
+            raise AutoTestTimeoutException("Did not get SYSTEM_TIME message after %f seconds" % timeout)
         return m.time_boot_ms * 1.0e-3
 
     def get_sim_time_cached(self):
@@ -3953,12 +3963,12 @@ class AutoTest(ABC):
         self.progress("Starting MAVLink connection")
         self.get_mavlink_connection_going()
 
-        self.apply_defaultfile_parameters()
-
         util.expect_setup_callback(self.mavproxy, self.expect_callback)
 
         self.expect_list_clear()
         self.expect_list_extend([self.sitl, self.mavproxy])
+
+        self.apply_defaultfile_parameters()
 
         self.progress("Ready to start testing!")
 
