@@ -39,10 +39,8 @@ void AP_BattMonitor_FRSky_SPort::read()
     }
 
     // get the last time data was read successfully from the sensor
-    _state.last_time_micros = frsky_sensor->get_SPort_read_time(_id);
-
     // If no contact with the sensor for more than a second then set values to 0.
-    if((now - _state.last_time_micros) > 1000 ) {
+    if((now - frsky_sensor->get_SPort_read_time(_id)) > 1000 ) {
         _state.voltage = 0;
         for(uint8_t i=0;i < FRSKY_FLVSS_MAX_CELLS;i++) {
             _state.cell_voltages.cells[i] = 0;
