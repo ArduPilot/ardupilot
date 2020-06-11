@@ -25,7 +25,7 @@ if len(args) == 0:
 ICSR = num(args[0])
 
 # https://www.st.com/content/ccc/resource/technical/document/programming_manual/6c/3a/cb/e7/e4/ea/44/9b/DM00046982.pdf/files/DM00046982.pdf/jcr:content/translations/en.DM00046982.pdf
-# page 255
+# page 225
 
 
 def decoder_m4_vectactive(value):
@@ -56,7 +56,7 @@ def decoder_m4_vectactive(value):
 M4_BITS = [
     ("0-8", "VECTACTIVE", decoder_m4_vectactive),
     ("9-10", "RESERVED1", None),
-    ("11", "ROTOBASE", None),
+    ("11", "RETOBASE", None),
     ("12-18", "VECTPENDING", None),
     ("19-21", "RESERVED2", None),
     ("22", "ISRPENDING", None),
