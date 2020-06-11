@@ -2169,7 +2169,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         print("spgti: %s" % str(sptgi))
 
     def assert_mission_count_on_link(self, mav, expected_count, target_system, target_component, mission_type):
-        self.drain_mav(mav)
+        self.drain_mav_unparsed(mav=mav, freshen_sim_time=True)
         self.progress("waiting for a message - any message....")
         m = mav.recv_match(blocking=True, timeout=1)
         self.progress("Received (%s)" % str(m))
@@ -2229,6 +2229,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             (mission_type, m.count)))
 
     def get_mission_item_int_on_link(self, item, mav, target_system, target_component, mission_type):
+        self.drain_mav(mav=mav, unparsed=True)
         mav.mav.mission_request_int_send(target_system,
                                          target_component,
                                          item,
@@ -2256,13 +2257,14 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         return m
 
     def get_mission_item_on_link(self, item, mav, target_system, target_component, mission_type):
+        self.drain_mav(mav=mav, unparsed=True)
         mav.mav.mission_request_send(target_system,
                                      target_component,
                                      item,
                                      mission_type)
         m = mav.recv_match(type='MISSION_ITEM',
                            blocking=True,
-                           timeout=1)
+                           timeout=5)
         if m is None:
             raise NotAchievedException("Did not receive mission item int")
         if m.target_system != mav.mav.srcSystem:
@@ -3028,6 +3030,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             )
 
             self.start_subtest("Should enforce items come from correct GCS")
+            self.drain_mav(unparsed=True)
             self.mav.mav.mission_count_send(target_system,
                                             target_component,
                                             1,
@@ -3037,6 +3040,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             old_sysid = self.mav.mav.srcSystem
             self.mav.mav.srcSystem = 17
             items[0].pack(self.mav.mav)
+            self.drain_mav(unparsed=True)
             self.mav.mav.send(items[0])
             self.mav.mav.srcSystem = old_sysid
             self.assert_receive_mission_ack(mavutil.mavlink.MAV_MISSION_TYPE_RALLY,
@@ -3044,6 +3048,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                             target_system=17)
             self.progress("Sending from correct sysid")
             items[0].pack(self.mav.mav)
+            self.drain_mav(unparsed=True)
             self.mav.mav.send(items[0])
             self.assert_receive_mission_ack(mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
 
@@ -3052,6 +3057,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
             self.start_subtest("Attempt to send item on different link to that which we are sending requests on")
             self.progress("Sending count")
+            self.drain_mav(unparsed=True)
             self.mav.mav.mission_count_send(target_system,
                                             target_component,
                                             2,
@@ -3066,6 +3072,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             # this sysid/compid is on both links which may cause
             # weirdness...
             items[0].pack(mav2.mav)
+            self.drain_mav(mav=self.mav, unparsed=True)
             mav2.mav.send(items[0])
             mav2.mav.srcSystem = old_mav2_system
             mav2.mav.srcComponent = old_mav2_component
@@ -3080,6 +3087,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             if m.seq != 1:
                 raise NotAchievedException("Unexpected sequence number (expected=%u got=%u)" % (1, m.seq))
             items[1].pack(self.mav.mav)
+            self.drain_mav(unparsed=True)
             self.mav.mav.send(items[1])
             self.assert_receive_mission_ack(mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
 
@@ -3088,6 +3096,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
             self.start_subtest("Upload mission and rally points at same time")
             self.progress("Sending rally count")
+            self.drain_mav(unparsed=True)
             self.mav.mav.mission_count_send(target_system,
                                             target_component,
                                             3,
@@ -3102,6 +3111,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.assert_receive_mission_item_request(mavutil.mavlink.MAV_MISSION_TYPE_MISSION, 0)
 
             self.progress("Answering request for mission item 0")
+            self.drain_mav(mav=self.mav, unparsed=True)
             self.mav.mav.mission_item_int_send(
                 target_system,
                 target_component,
@@ -3122,22 +3132,26 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
             self.progress("Answering request for rally point 0")
             items[0].pack(self.mav.mav)
+            self.drain_mav(unparsed=True)
             self.mav.mav.send(items[0])
             self.progress("Expecting request for rally item 1")
             self.assert_receive_mission_item_request(mavutil.mavlink.MAV_MISSION_TYPE_RALLY, 1)
             self.progress("Answering request for rally point 1")
             items[1].pack(self.mav.mav)
+            self.drain_mav(unparsed=True)
             self.mav.mav.send(items[1])
             self.progress("Expecting request for rally item 2")
             self.assert_receive_mission_item_request(mavutil.mavlink.MAV_MISSION_TYPE_RALLY, 2)
 
             self.progress("Answering request for rally point 2")
             items[2].pack(self.mav.mav)
+            self.drain_mav(unparsed=True)
             self.mav.mav.send(items[2])
             self.progress("Expecting mission ack for rally")
             self.assert_receive_mission_ack(mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
 
             self.progress("Answering request for waypoints item 1")
+            self.drain_mav(unparsed=True)
             self.mav.mav.mission_item_int_send(
                 target_system,
                 target_component,
@@ -3157,6 +3171,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.assert_receive_mission_item_request(mavutil.mavlink.MAV_MISSION_TYPE_MISSION, 2)
 
             self.progress("Answering request for waypoints item 2")
+            self.drain_mav(unparsed=True)
             self.mav.mav.mission_item_int_send(
                 target_system,
                 target_component,
@@ -3183,6 +3198,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.progress("Should not be able to set items completely past the waypoint count")
             self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_RALLY,
                                                items)
+            self.drain_mav(unparsed=True)
             self.mav.mav.mission_write_partial_list_send(
                 target_system,
                 target_component,
@@ -3193,6 +3209,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                             want_type=mavutil.mavlink.MAV_MISSION_ERROR)
 
             self.progress("Should not be able to set items overlapping the waypoint count")
+            self.drain_mav(unparsed=True)
             self.mav.mav.mission_write_partial_list_send(
                 target_system,
                 target_component,
@@ -3203,6 +3220,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                             want_type=mavutil.mavlink.MAV_MISSION_ERROR)
 
             self.progress("try to overwrite items 1 and 2")
+            self.drain_mav(unparsed=True)
             self.mav.mav.mission_write_partial_list_send(
                 target_system,
                 target_component,
@@ -3211,6 +3229,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
             self.assert_receive_mission_item_request(mavutil.mavlink.MAV_MISSION_TYPE_RALLY, 1)
             self.progress("Try shoving up an incorrectly sequenced item")
+            self.drain_mav(unparsed=True)
             self.mav.mav.mission_item_int_send(
                 target_system,
                 target_component,
@@ -3231,6 +3250,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                             want_type=mavutil.mavlink.MAV_MISSION_INVALID_SEQUENCE)
 
             self.progress("Try shoving up an incorrectly sequenced item (but within band)")
+            self.drain_mav(unparsed=True)
             self.mav.mav.mission_item_int_send(
                 target_system,
                 target_component,
@@ -3252,6 +3272,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
             self.progress("Now provide correct item")
             item1_latitude = int(1.2345*1e7)
+            self.drain_mav(unparsed=True)
             self.mav.mav.mission_item_int_send(
                 target_system,
                 target_component,
@@ -3271,6 +3292,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.assert_receive_mission_item_request(mavutil.mavlink.MAV_MISSION_TYPE_RALLY, 2)
             self.progress("Answering request for rally point 2")
             items[2].pack(self.mav.mav)
+            self.drain_mav(unparsed=True)
             self.mav.mav.send(items[2])
             self.assert_receive_mission_ack(mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
             self.progress("TODO: ensure partial mission write was good")
@@ -3278,20 +3300,26 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.start_subtest("clear mission types")
             self.assert_mission_count_on_link(self.mav, 3, target_system, target_component, mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
             self.assert_mission_count_on_link(self.mav, 3, target_system, target_component, mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+            self.drain_mav(unparsed=True)
             self.mav.mav.mission_clear_all_send(target_system, target_component, mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
+            self.assert_receive_mission_ack(mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
             self.assert_mission_count_on_link(self.mav, 0, target_system, target_component, mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
             self.assert_mission_count_on_link(self.mav, 3, target_system, target_component, mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+            self.drain_mav(unparsed=True)
             self.mav.mav.mission_clear_all_send(target_system, target_component, mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+            self.assert_receive_mission_ack(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
             self.assert_mission_count_on_link(self.mav, 0, target_system, target_component, mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
             self.assert_mission_count_on_link(self.mav, 0, target_system, target_component, mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
 
             self.start_subtest("try sending out-of-range counts")
+            self.drain_mav(unparsed=True)
             self.mav.mav.mission_count_send(target_system,
                                             target_component,
                                             1,
                                             230)
             self.assert_receive_mission_ack(230,
                                             want_type=mavutil.mavlink.MAV_MISSION_UNSUPPORTED)
+            self.drain_mav(unparsed=True)
             self.mav.mav.mission_count_send(target_system,
                                             target_component,
                                             16000,
