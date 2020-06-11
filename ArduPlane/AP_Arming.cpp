@@ -187,6 +187,7 @@ bool AP_Arming_Plane::arm(const AP_Arming::Method method, const bool do_arming_c
     }
 
     change_arm_state();
+    plane.quadplane.delay_arming = true;
 
     gcs().send_text(MAV_SEVERITY_INFO, "Throttle armed");
 
