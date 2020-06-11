@@ -29,7 +29,7 @@ public:
         BattMonitor_TYPE_SUI6                       = 14,
         BattMonitor_TYPE_NeoDesign                  = 15,
         BattMonitor_TYPE_MAXELL                     = 16,
-        BattMonitor_TYPE_FRSKY_SPORT                = 15,
+        BattMonitor_TYPE_FRSKY_SPORT                = 17,
     };
 
     // low voltage sources (used for BATT_LOW_TYPE parameter)
