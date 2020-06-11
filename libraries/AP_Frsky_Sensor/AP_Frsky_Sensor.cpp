@@ -30,8 +30,6 @@
 extern const AP_HAL::HAL& hal;
 
 AP_Frsky_Sensor *AP_Frsky_Sensor::singleton;
-uint32_t last_called;
-int deviceID;
 
 AP_Frsky_Sensor::AP_Frsky_Sensor()
 {
@@ -67,8 +65,6 @@ bool AP_Frsky_Sensor::init()
             _FLVSS_inst[index].cell[j] = 0;
         }
     }
-
-    last_called = AP_HAL::millis();
     return true;
 }
 
@@ -79,23 +75,14 @@ void AP_Frsky_Sensor::loop(void)
 {
 
     // initialise uart (this must be called from within tick b/c the UART begin must be called from the same thread as it is used from)
+    // assuming this is correct based upon the FRSKY Telem library.....  Not sure if I really need the begin call every loop call, surely it can be done in the init call?
     if (_protocol == AP_SerialManager::SerialProtocol_FrSky_SPort_Sensor_Input) {
         _port->begin(AP_SERIALMANAGER_FRSKY_SPORT_BAUD, AP_SERIALMANAGER_FRSKY_BUFSIZE_RX, AP_SERIALMANAGER_FRSKY_BUFSIZE_TX);
+        read_SPort_Sensors(AP_HAL::millis());
     } else {
         return;
     }
-
-    _port->set_unbuffered_writes(true);
-
-    uint32_t now = AP_HAL::millis();
-
-    if(now - last_called >= 50) {
-        if(_protocol == AP_SerialManager::SerialProtocol_FrSky_SPort_Sensor_Input) {
-            read_SPort_Sensors(now);
-            last_called = now;
-        }
-    }
-}
+ }
 
 float AP_Frsky_Sensor::get_SPort_voltage(uint16_t id)
 {
@@ -129,29 +116,40 @@ uint16_t AP_Frsky_Sensor::get_SPort_cells(uint16_t id, uint8_t cell_num)
 // Read Sensors
 void AP_Frsky_Sensor::read_SPort_Sensors(uint32_t now)
 {
-
     //loop through the various sensors we want to poll.
-    uint8_t frsky_ids[28] = {0x00,0xA1};//,0x22,0x83,0xE4,0x45,0xC6,0x67,0x48,0xE9,0x6A,0xCB,0xAC,0x0D,0x8E,0x2F,0xD0,0x71,0xF2,0x53,0x34,0x95,0x16,0xB7,0x98,0x39,0xBA,0x1B};
+    uint8_t frsky_ids[28] = {0x00,0xA1,0x22,0x83,0xE4,0x45,0xC6,0x67,0x48,0xE9,0x6A,0xCB,0xAC,0x0D,0x8E,0x2F,0xD0,0x71,0xF2,0x53,0x34,0x95,0x16,0xB7,0x98,0x39,0xBA,0x1B};
 
     bool frame_header = false;
+    bool match = false;
+    uint16_t numc;
 
-    int16_t numc;
+    uint8_t next_deviceID;
 
-    if(!_receiving) {
-        send_byte(0x7E);
-        send_byte(frsky_ids[deviceID]);
-
-        deviceID++;
-        if(deviceID > 1)  // 28
-            deviceID=0;
+    if(_num_devices_found) {
+        if(_loop_counter%2) {
+            next_deviceID = _discovered_ids_list[_device_discovered_loop_count];
+            _device_discovered_loop_count++;
+        } else {
+            next_deviceID = frsky_ids[_deviceID_loop_count];
+            _deviceID_loop_count++;
+        }
+    } else {
+        next_deviceID = frsky_ids[_deviceID_loop_count];
+        _deviceID_loop_count++;
     }
+    _loop_counter++;
+
+    send_byte(0x7E);
+    send_byte(next_deviceID);
+
+    if(_deviceID_loop_count > 28)
+        _deviceID_loop_count=0;
+
+    // reset the device loop count to 0.
+    if(_device_discovered_loop_count > (_num_devices_found-1))
+        _device_discovered_loop_count = 0;
 
     numc = _port->available();
-
-    // check if available is negative
-    if (numc < 0) {
-        return;
-    }
 
     // this is the constant for hub data frame
     if (_port->txspace() < 19) {
@@ -165,8 +163,26 @@ void AP_Frsky_Sensor::read_SPort_Sensors(uint32_t now)
         // Frame header, need to decode the following data otherwise discard the byte and continue till frame header is found
         if(data == 0x10) {
             frame_header = true;
+            // if not in the list then increment and add to the list, if in the list continue on.
+            match=false;
+            for(uint8_t i = 0;i < _num_devices_found;i++) {
+                if((_discovered_ids_list[i] == _previous_byte) & (_previous_byte != 0)) {
+                    match = true;
+                    break;
+                }
+            }
+
+            if(!match) {
+                _discovered_ids_list[_num_devices_found] = _previous_byte;
+                _num_devices_found++;
+                gcs().send_text(MAV_SEVERITY_INFO, "Frsky: New Discovered ID: 0x%x | Num: %d", _previous_byte, _num_devices_found);
+            } else {
+                match = false;
+            }
+
             break;
         }
+        _previous_byte = data;
         numc--;
     }
 
@@ -182,7 +198,8 @@ void AP_Frsky_Sensor::read_SPort_Sensors(uint32_t now)
         payload = read_uint32();
         crc = read_byte();
         if(crc != 0) {
-            // Need to add crc check and exit safely if invalid.
+            // Should prob check the crc value and exit safely if invalid - low risk not too yet as its not transmitted over the 'air'
+            // it is a wired connection to the flight controller.
         }
 
 
@@ -222,8 +239,6 @@ void AP_Frsky_Sensor::read_SPort_Sensors(uint32_t now)
             }
         }
     }
-
-    _receiving = false;
 }
 
 // Find the matching id - Source ID will likely come from the battery serial id
@@ -254,6 +269,8 @@ void AP_Frsky_Sensor::calc_crc(uint8_t byte)
 /*
  * send the frame's crc at the end of the frame
  * for FrSky SPort protocol (X-receivers)
+ *
+ * Currently not required as we only send control bytes with single byte payloads that do not require CRC's to be calculated
  */
 void AP_Frsky_Sensor::send_crc(void)
 {
@@ -284,7 +301,7 @@ uint16_t  AP_Frsky_Sensor::read_uint16()
 {
     uint8_t data[2];
 
-    data[0] = _port->read(); // LSB
+    data[0] = _port->read();
     data[1] = _port->read();
 
     return (data[1] << 8) + (data[0]);
@@ -295,10 +312,8 @@ uint16_t  AP_Frsky_Sensor::read_uint16()
 */
 void AP_Frsky_Sensor::send_byte(uint8_t byte)
 {
-//    if(!_receiving) {
-        _port->write(byte);
-        calc_crc(byte);
- //   }
+    _port->write(byte);
+    calc_crc(byte);
 }
 
 namespace AP {

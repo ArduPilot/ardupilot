@@ -140,14 +140,6 @@ public:
         return singleton;
     }
 
-    struct FLVSS_State {
-        uint16_t    id;
-        uint8_t     num_cells;
-        uint16_t cell[FRSKY_FLVSS_MAX_CELLS];
-        float       voltage;
-        uint32_t    last_reading_ms;
-    };
-
     // get next telemetry data for external consumers of SPort data
     //static bool get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &data);
 
@@ -184,12 +176,23 @@ private:
     void read_SPort_Sensors(uint32_t now);
     uint8_t getFLVSS_inst(uint16_t id);
 
-    FLVSS_State _FLVSS_inst[FRSKY_MAX_FLVSS_INSTANCES];
+    struct FLVSS_State {
+        uint16_t    id;
+        uint8_t     num_cells;
+        uint16_t cell[FRSKY_FLVSS_MAX_CELLS];
+        float       voltage;
+        uint32_t    last_reading_ms;
+    } _FLVSS_inst[FRSKY_MAX_FLVSS_INSTANCES];
 
     static AP_Frsky_Sensor *singleton;
 
     uint8_t _num_sensors_FLVSS = 0;
-
+    uint8_t _num_devices_found = 0;
+    uint8_t _device_discovered_loop_count=0;
+    uint8_t _deviceID_loop_count=0;
+    uint8_t _previous_byte;
+    uint8_t _discovered_ids_list[28];
+    uint8_t _loop_counter=0;
 };
 
 namespace AP {
