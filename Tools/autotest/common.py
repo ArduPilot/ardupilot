@@ -1513,7 +1513,9 @@ class AutoTest(ABC):
                 continue
             util.pexpect_drain(p)
 
-    def drain_mav_unparsed(self, quiet=False):
+    def drain_mav_unparsed(self, mav=None, quiet=False, freshen_sim_time=False):
+        if mav is None:
+            mav = self.mav
         count = 0
         tstart = time.time()
         while True:
@@ -1529,8 +1531,12 @@ class AutoTest(ABC):
         else:
             rate = "%f/s" % (count/float(tdelta),)
         self.progress("Drained %u bytes from mav (%s).  These were unparsed." % (count, rate))
+        if freshen_sim_time:
+            self.get_sim_time()
 
-    def drain_mav(self, mav=None):
+    def drain_mav(self, mav=None, unparsed=False, quiet=False):
+        if unparsed:
+            return self.drain_mav_unparsed(quiet=quiet, mav=mav)
         if mav is None:
             mav = self.mav
         count = 0
