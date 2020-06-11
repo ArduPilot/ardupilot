@@ -41,6 +41,16 @@ public:
     // handle LED control, only used when LED_OVERRIDE=1
     virtual void handle_led_control(const mavlink_message_t &msg) override;
     
+    bool hold_flight_mode_fail;
+    bool hold_flight_mode_change;
+    bool hold_arming_fail;
+
+    uint8_t hold_counter;
+    uint8_t sequence_counter;
+    uint8_t step_timer;
+    bool step_hold_flag;
+
+
 protected:
     // methods implemented in hardware specific classes
     virtual bool hw_init(void) = 0;
@@ -81,7 +91,7 @@ protected:
     
 private:
     void update_colours();
-    uint32_t get_colour_sequence() const;
+    uint32_t get_colour_sequence() ;//const;
     uint32_t get_colour_sequence_obc() const;
     uint32_t get_colour_sequence_traffic_light() const;
 
@@ -92,12 +102,18 @@ private:
 
 #define DEFINE_COLOUR_SEQUENCE_SLOW(colour)                       \
     DEFINE_COLOUR_SEQUENCE(colour,colour,colour,colour,colour,OFF,OFF,OFF,OFF,OFF)
+
 #define DEFINE_COLOUR_SEQUENCE_FAILSAFE(colour) \
     DEFINE_COLOUR_SEQUENCE(YELLOW,YELLOW,YELLOW,YELLOW,YELLOW,colour,colour,colour,colour,colour)
+
 #define DEFINE_COLOUR_SEQUENCE_SOLID(colour) \
     DEFINE_COLOUR_SEQUENCE(colour,colour,colour,colour,colour,colour,colour,colour,colour,colour)
+
 #define DEFINE_COLOUR_SEQUENCE_ALTERNATE(colour1, colour2)                      \
     DEFINE_COLOUR_SEQUENCE(colour1,colour2,colour1,colour2,colour1,colour2,colour1,colour2,colour1,colour2)
+
+#define DEFINE_COLOUR_SEQUENCE_ALTERNATE_SLOW(colour1, colour2)                      \
+    DEFINE_COLOUR_SEQUENCE(colour1,colour1,colour2,colour2,colour1,colour1,colour2,colour2,colour1,colour1)
 
 #define OFF    0
 #define BLUE   1
@@ -111,7 +127,9 @@ private:
     const uint32_t sequence_failsafe_leak = DEFINE_COLOUR_SEQUENCE_FAILSAFE(WHITE);
     const uint32_t sequence_failsafe_ekf = DEFINE_COLOUR_SEQUENCE_FAILSAFE(RED);
     const uint32_t sequence_failsafe_gps_glitching = DEFINE_COLOUR_SEQUENCE_FAILSAFE(BLUE);
-    const uint32_t sequence_failsafe_radio_or_battery = DEFINE_COLOUR_SEQUENCE_FAILSAFE(OFF);
+    //const uint32_t sequence_failsafe_radio_or_battery = DEFINE_COLOUR_SEQUENCE_FAILSAFE(OFF);
+    const uint32_t sequence_failsafe_radio = DEFINE_COLOUR_SEQUENCE_FAILSAFE(WHITE);
+    const uint32_t sequence_failsafe_battery = DEFINE_COLOUR_SEQUENCE_FAILSAFE(OFF);
 
     const uint32_t sequence_armed = DEFINE_COLOUR_SEQUENCE_SOLID(GREEN);
     const uint32_t sequence_armed_nogps = DEFINE_COLOUR_SEQUENCE_SOLID(BLUE);
@@ -119,6 +137,14 @@ private:
     const uint32_t sequence_disarmed_good_dgps = DEFINE_COLOUR_SEQUENCE_ALTERNATE(GREEN,OFF);
     const uint32_t sequence_disarmed_good_gps = DEFINE_COLOUR_SEQUENCE_SLOW(GREEN);
     const uint32_t sequence_disarmed_bad_gps = DEFINE_COLOUR_SEQUENCE_SLOW(BLUE);
+
+    const uint32_t sequence_arming_gps = DEFINE_COLOUR_SEQUENCE_ALTERNATE(GREEN, YELLOW);
+    const uint32_t sequence_arming_no_gps = DEFINE_COLOUR_SEQUENCE_ALTERNATE(BLUE, YELLOW);
+
+    const uint32_t sequence_arming_failed = DEFINE_COLOUR_SEQUENCE_ALTERNATE_SLOW(OFF, RED);
+    const uint32_t sequence_flight_mode_change = DEFINE_COLOUR_SEQUENCE_ALTERNATE_SLOW(OFF, GREEN);
+    const uint32_t sequence_flight_mode_change_fail = DEFINE_COLOUR_SEQUENCE_ALTERNATE_SLOW(OFF, YELLOW);
+
 
     uint8_t last_step;
     enum rgb_source_t {

@@ -34,6 +34,11 @@ RGBLed::RGBLed(uint8_t led_off, uint8_t led_bright, uint8_t led_medium, uint8_t 
 
 bool RGBLed::init()
 {
+
+    hold_flight_mode_fail = false;
+    hold_flight_mode_change = false;
+    hold_arming_fail = false;
+
     return hw_init();
 }
 
@@ -143,17 +148,89 @@ uint32_t RGBLed::get_colour_sequence_obc(void) const
 }
 
 // _scheduled_update - updates _red, _green, _blue according to notify flags
-uint32_t RGBLed::get_colour_sequence(void) const
+uint32_t RGBLed::get_colour_sequence(void)// const
 {
+
+	if(AP_Notify::flags.arming_failed){
+		hold_arming_fail = true;
+		hold_flight_mode_fail = false;
+		hold_flight_mode_change= false;
+		step_hold_flag = true;
+		AP_Notify::flags.arming_failed = false;
+		sequence_counter = 0;
+		step_timer=0;
+
+	}else if(AP_Notify::events.user_mode_change_failed){
+		hold_arming_fail = false;
+		hold_flight_mode_fail = true;
+		hold_flight_mode_change= false;
+		sequence_counter = 0;
+		step_timer=0;
+		step_hold_flag = true;
+	}else if(AP_Notify::events.user_mode_change){
+		hold_arming_fail = false;
+		hold_flight_mode_fail = false;
+		hold_flight_mode_change= true;
+		sequence_counter = 0;
+		step_timer=0;
+		step_hold_flag = true;
+	}
+
+
+	if(!hold_arming_fail and !hold_flight_mode_fail and !hold_flight_mode_change){
+		hold_counter = 0;
+	}else{
+
+		hold_counter++;
+
+		if(hold_counter == 50){
+			hold_counter = 0;
+			sequence_counter = 0;
+			step_timer=0;
+			hold_arming_fail = false;
+			hold_flight_mode_fail = false;
+			hold_flight_mode_change = false;
+
+			AP_Notify::flags.arming_failed = false;
+		}
+
+
+		if(hold_arming_fail){
+			return sequence_arming_failed;
+
+		}else if(hold_flight_mode_fail){
+			return sequence_flight_mode_change_fail;
+
+		}else if(hold_flight_mode_change){
+			return sequence_flight_mode_change;
+		}
+
+
+	}
+
     // initialising pattern
     if (AP_Notify::flags.initialising) {
         return sequence_initialising;
     }
 
+
     // save trim and esc calibration pattern
     if (AP_Notify::flags.save_trim || AP_Notify::flags.esc_calibration) {
         return sequence_trim_or_esc;
     }
+
+    if (AP_Notify::flags.arming) {
+
+    	if(AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D){
+    		return sequence_arming_gps;
+
+    	}else{
+    		return sequence_arming_no_gps;
+
+    	}
+
+    }
+
 
     // radio and battery failsafe patter: flash yellow
     // gps failsafe pattern : flashing yellow and blue
@@ -174,9 +251,12 @@ uint32_t RGBLed::get_colour_sequence(void) const
         } else if (AP_Notify::flags.gps_glitching) {
             // blue on gps glitch
             return sequence_failsafe_gps_glitching;
+        }else if(AP_Notify::flags.failsafe_radio){
+        	// white for radio failsafe
+        	return sequence_failsafe_radio;
         }
-        // all off for radio or battery failsafe
-        return sequence_failsafe_radio_or_battery;
+        //  off for battery failsafe
+        return sequence_failsafe_battery;
     }
 
     // solid green or blue if armed
@@ -189,10 +269,13 @@ uint32_t RGBLed::get_colour_sequence(void) const
         return sequence_armed_nogps;
     }
 
+    /*
     // double flash yellow if failing pre-arm checks
     if (!AP_Notify::flags.pre_arm_check) {
         return sequence_prearm_failing;
     }
+    */
+
     if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D_DGPS && AP_Notify::flags.pre_arm_gps_check) {
         return sequence_disarmed_good_dgps;
     }
@@ -251,7 +334,50 @@ void RGBLed::update()
 
     const uint8_t brightness = get_brightness();
 
+
+
+    if(hold_arming_fail or hold_flight_mode_fail or hold_flight_mode_change){
+
+    	if(step_timer < 5){
+    		step_timer++;
+    		return;
+    	}else{
+    		step_timer = 0;
+    	}
+
+        const uint8_t colour = (current_colour_sequence >> (sequence_counter*3)) & 7;
+
+        _red_des_1 = (colour & RED) ? brightness : 0;
+        _green_des_1 = (colour & GREEN) ? brightness : 0;
+        _blue_des_1 = (colour & BLUE) ? brightness : 0;
+
+        _red_des_2 = (colour & RED) ? brightness : 0;
+        _green_des_2 = (colour & GREEN) ? brightness : 0;
+        _blue_des_2 = (colour & BLUE) ? brightness : 0;
+
+        set_rgb(_red_des_1, _green_des_1, _blue_des_1,_red_des_2, _green_des_2, _blue_des_2);
+
+        sequence_counter++;
+
+        if(sequence_counter > 10){
+        	sequence_counter = 0;
+        }
+
+        return;
+    }
+
+
     uint8_t step = (AP_HAL::millis()/100) % 10;
+/*
+    if(step_hold_flag == true){
+
+    	if(step > 1){
+    		return;
+    	}else{
+    		step_hold_flag = false;
+    	}
+    }
+    */
 
     // ensure we can't skip a step even with awful timing
     if (step != last_step) {
@@ -259,16 +385,70 @@ void RGBLed::update()
         last_step = step;
     }
 
-    const uint8_t colour = (current_colour_sequence >> (step*3)) & 7;
 
-    _red_des_1 = (colour & RED) ? brightness : 0;
-    _green_des_1 = (colour & GREEN) ? brightness : 0;
-    _blue_des_1 = (colour & BLUE) ? brightness : 0;
-    _red_des_2 = (colour & RED) ? brightness : 0;
-    _green_des_2 = (colour & GREEN) ? brightness : 0;
-    _blue_des_2 = (colour & BLUE) ? brightness : 0;
 
-    set_rgb(_red_des_1, _green_des_1, _blue_des_1,_red_des_2, _green_des_2, _blue_des_2);
+    //check for failsafe so all lights can be triggered
+
+
+    bool active_warning = (AP_Notify::flags.failsafe_radio ||
+								AP_Notify::flags.failsafe_gcs ||
+								AP_Notify::flags.failsafe_battery ||
+								AP_Notify::flags.ekf_bad ||
+								AP_Notify::flags.gps_glitching ||
+								AP_Notify::flags.leak_detected);
+
+
+
+   // if((current_colour_sequence == (sequence_armed_nogps or sequence_armed)) and !active_warning){
+   if(AP_Notify::flags.armed and !active_warning){
+
+    	const uint8_t colour = (current_colour_sequence >> (step*3)) & 7;
+
+    	    _red_des_2 = (colour & RED) ? brightness : 0;
+    	    _green_des_2 = (colour & GREEN) ? brightness : 0;
+    	    _blue_des_2 = (colour & BLUE) ? brightness : 0;
+
+    	    _red_des_1 = (colour & WHITE) ? brightness : 0;
+    	    _green_des_1 = (colour & WHITE) ? brightness : 0;
+    	    _blue_des_1 = (colour & WHITE) ? brightness : 0;
+
+    	    set_rgb(_red_des_1, _green_des_1, _blue_des_1,_red_des_2, _green_des_2, _blue_des_2);
+
+
+
+    }else if (active_warning or AP_Notify::flags.arming){
+
+
+        const uint8_t colour = (current_colour_sequence >> (step*3)) & 7;
+
+        _red_des_2 = (colour & RED) ? brightness : 0;
+        _green_des_2 = (colour & GREEN) ? brightness : 0;
+        _blue_des_2 = (colour & BLUE) ? brightness : 0;
+
+        _red_des_1 = (colour & RED) ? brightness : 0;
+        _green_des_1 = (colour & GREEN) ? brightness : 0;
+        _blue_des_1 = (colour & BLUE) ? brightness : 0;
+
+        set_rgb(_red_des_1, _green_des_1, _blue_des_1,_red_des_2, _green_des_2, _blue_des_2);
+
+
+
+    }else{
+
+        const uint8_t colour = (current_colour_sequence >> (step*3)) & 7;
+
+        _red_des_2 = (colour & RED) ? brightness : 0;
+        _green_des_2 = (colour & GREEN) ? brightness : 0;
+        _blue_des_2 = (colour & BLUE) ? brightness : 0;
+
+        _red_des_1 = (colour & OFF) ? brightness : 0;
+        _green_des_1 = (colour & OFF) ? brightness : 0;
+        _blue_des_1 = (colour & OFF) ? brightness : 0;
+
+        set_rgb(_red_des_1, _green_des_1, _blue_des_1,_red_des_2, _green_des_2, _blue_des_2);
+    }
+
+
 }
 
 /*
