@@ -580,6 +580,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "Pixhawk1",
                 "Pixhawk1-1M",
                 "Pixhawk4",
+                "Pix32v5",
                 "PH4-mini",
                 "CUAVv5",
                 "CUAVv5Nano",
