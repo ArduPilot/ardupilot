@@ -29,12 +29,6 @@ public:
 
     // handle mavlink messages
     virtual void handle_msg(const mavlink_channel_t chan, const mavlink_message_t &msg) {}
-
-
-    // send static and dynamic data to ADSB transceiver
-    virtual void send_configure(const mavlink_channel_t chan) = 0;
-    virtual void send_dynamic_out(const mavlink_channel_t chan) = 0;
-
 protected:
 
     // references

@@ -27,20 +27,58 @@
 
 extern const AP_HAL::HAL& hal;
 
+#define ADSB_CHAN_TIMEOUT_MS            15000
+
 // constructor
 AP_ADSB_uAvionix::AP_ADSB_uAvionix(AP_ADSB &adsb) :
         AP_ADSB_Backend(adsb)
 {
 }
 
+void AP_ADSB_uAvionix::update()
+{
+    const uint32_t now_ms = AP_HAL::millis();
+
+    // send static configuration data to transceiver, every 5s
+    if (_chan_last_ms > 0 && now_ms - _chan_last_ms > ADSB_CHAN_TIMEOUT_MS) {
+        // haven't gotten a heartbeat health status packet in a while, assume hardware failure
+        // TODO: reset out_state.chan
+        _chan = (mavlink_channel_t)-1;
+        gcs().send_text(MAV_SEVERITY_ERROR, "ADSB: Transceiver heartbeat timed out");
+    } else if (_chan >= 0 && _chan < MAVLINK_COMM_NUM_BUFFERS) {
+        if (now_ms - frontend.out_state.last_config_ms >= 5000 && HAVE_PAYLOAD_SPACE(_chan, UAVIONIX_ADSB_OUT_CFG)) {
+            frontend.out_state.last_config_ms = now_ms;
+            send_configure();
+        } // last_config_ms
+
+        // send dynamic data to transceiver at 5Hz
+        if (now_ms - frontend.out_state.last_report_ms >= 200 && HAVE_PAYLOAD_SPACE(_chan, UAVIONIX_ADSB_OUT_DYNAMIC)) {
+            frontend.out_state.last_report_ms = now_ms;
+            send_dynamic_out();
+        } // last_report_ms
+    } // chan_last_ms
+}
+
+
 void AP_ADSB_uAvionix::handle_msg(const mavlink_channel_t chan, const mavlink_message_t &msg) {
     switch (msg.msgid) {
     case MAVLINK_MSG_ID_UAVIONIX_ADSB_TRANSCEIVER_HEALTH_REPORT:
-        handle_transceiver_report(chan, msg);
+        {
+            _chan = chan;
+            mavlink_uavionix_adsb_transceiver_health_report_t packet {};
+            mavlink_msg_uavionix_adsb_transceiver_health_report_decode(&msg, &packet);
+            handle_transceiver_report(packet);
+        }
         break;
+
     case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CFG:
-        handle_out_cfg(msg);
+        {
+            mavlink_uavionix_adsb_out_cfg_t packet {};
+            mavlink_msg_uavionix_adsb_out_cfg_decode(&msg, &packet);
+            handle_out_cfg(packet);
+        }
         break;
+
     default:
         break;
     }
@@ -51,18 +89,9 @@ void AP_ADSB_uAvionix::handle_msg(const mavlink_channel_t chan, const mavlink_me
  * we determine which channel is on so we don't have to send out_state to all channels
  */
 
-void AP_ADSB_uAvionix::handle_transceiver_report(const mavlink_channel_t chan, const mavlink_message_t &msg)
+void AP_ADSB_uAvionix::handle_transceiver_report(const mavlink_uavionix_adsb_transceiver_health_report_t &packet)
 {
-    mavlink_uavionix_adsb_transceiver_health_report_t packet {};
-    mavlink_msg_uavionix_adsb_transceiver_health_report_decode(&msg, &packet);
-
-    if (frontend.out_state.chan != chan) {
-        gcs().send_text(MAV_SEVERITY_DEBUG, "ADSB: Found transceiver on channel %d", chan);
-    }
-
-
-    frontend.out_state.chan_last_ms = AP_HAL::millis();
-    frontend.out_state.chan = chan;
+    _chan_last_ms = AP_HAL::millis();
     frontend.out_state.status = (UAVIONIX_ADSB_RF_HEALTH)packet.rfHealth;
 }
 
@@ -73,11 +102,8 @@ void AP_ADSB_uAvionix::handle_transceiver_report(const mavlink_channel_t chan, c
  * This allows a GCS to send cfg info through the autopilot to the ADSB hardware.
  * This is done indirectly by reading and storing the packet and then another mechanism sends it out periodically
  */
-void AP_ADSB_uAvionix::handle_out_cfg(const mavlink_message_t &msg)
+void AP_ADSB_uAvionix::handle_out_cfg(const mavlink_uavionix_adsb_out_cfg_t &packet)
 {
-    mavlink_uavionix_adsb_out_cfg_t packet {};
-    mavlink_msg_uavionix_adsb_out_cfg_decode(&msg, &packet);
-
     frontend.out_state.cfg.was_set_externally = true;
 
     frontend.out_state.cfg.ICAO_id = packet.ICAO;
@@ -109,7 +135,7 @@ void AP_ADSB_uAvionix::handle_out_cfg(const mavlink_message_t &msg)
 /*
  * populate and send MAVLINK_MSG_UAVIONIX_ADSB_OUT_CFG
  */
-void AP_ADSB_uAvionix::send_configure(const mavlink_channel_t chan)
+void AP_ADSB_uAvionix::send_configure()
 {
     // MAVLink spec says the 9 byte callsign field is 8 byte string with 9th byte as null.
     // Here we temporarily set some flags in that null char to signify the callsign
@@ -128,7 +154,7 @@ void AP_ADSB_uAvionix::send_configure(const mavlink_channel_t chan)
     }
 
     mavlink_msg_uavionix_adsb_out_cfg_send(
-            chan,
+            _chan,
             icao,
             (const char*)callsign,
             (uint8_t)frontend.out_state.cfg.emitterType,
@@ -141,7 +167,7 @@ void AP_ADSB_uAvionix::send_configure(const mavlink_channel_t chan)
 
 
 
-void AP_ADSB_uAvionix::send_dynamic_out(const mavlink_channel_t chan)
+void AP_ADSB_uAvionix::send_dynamic_out()
 {
     const AP_GPS &gps = AP::gps();
     const Vector3f &gps_velocity = gps.velocity();
@@ -197,7 +223,7 @@ void AP_ADSB_uAvionix::send_dynamic_out(const mavlink_channel_t chan)
 
 
     mavlink_msg_uavionix_adsb_out_dynamic_send(
-            chan,
+            _chan,
             utcTime,
             latitude,
             longitude,

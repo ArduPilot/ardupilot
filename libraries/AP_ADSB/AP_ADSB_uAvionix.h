@@ -23,24 +23,26 @@ public:
     AP_ADSB_uAvionix(AP_ADSB &adsb);
 
     void init() override {}
-    void update() override {};
-
-    // send static and dynamic data to ADSB transceiver
-    void send_configure(const mavlink_channel_t chan) override;
-    void send_dynamic_out(const mavlink_channel_t chan) override;
+    void update() override;
 
     void handle_msg(const mavlink_channel_t chan, const mavlink_message_t &msg) override;
 
 private:
 
-    // mavlink handler
-    void handle_transceiver_report(mavlink_channel_t chan, const mavlink_message_t &msg);
+    // send static and dynamic data to ADSB transceiver
+    void send_configure();
+    void send_dynamic_out();
 
-    void handle_out_cfg(const mavlink_message_t &msg);
+    // mavlink handler
+    void handle_transceiver_report(const mavlink_uavionix_adsb_transceiver_health_report_t &packet);
+
+    void handle_out_cfg(const mavlink_uavionix_adsb_out_cfg_t &packet);
 
     // special helpers for uAvionix workarounds
     uint32_t get_encoded_icao(void);
     uint8_t get_encoded_callsign_null_char();
 
+    uint32_t            _chan_last_ms;
+    mavlink_channel_t   _chan = (mavlink_channel_t)-1;
 };
 

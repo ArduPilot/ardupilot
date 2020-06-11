@@ -37,7 +37,6 @@
 #define VEHICLE_TIMEOUT_MS              5000   // if no updates in this time, drop it from the list
 #define ADSB_VEHICLE_LIST_SIZE_DEFAULT  25
 #define ADSB_VEHICLE_LIST_SIZE_MAX      100 // This should be hw/ram dependent
-#define ADSB_CHAN_TIMEOUT_MS            15000
 #define ADSB_SQUAWK_OCTAL_DEFAULT       1200
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
@@ -187,6 +186,10 @@ AP_ADSB::AP_ADSB()
  */
 void AP_ADSB::hw_init(void)
 {
+    if (backend != nullptr) {
+        return;
+    }
+
     switch ((AP_ADSBType)_type.get()) {
         case AP_ADSBType::UAVIONIX:
             backend = new AP_ADSB_uAvionix(*this);
@@ -253,15 +256,10 @@ void AP_ADSB::update(void)
         return;
 
     } else if (in_state.vehicle_list == nullptr || in_state.list_size != in_state.list_size_param) {
-        // list size param changed or is not initilized, reinit the list
+        // list size param changed or is not initialized, reinit the list
         list_deinit();
         list_init();
         return;
-    }
-
-    if (backend == nullptr) {
-        hw_init();
-        // it's ok if this fails because we still want the list to run because other libraries use it
     }
 
 
@@ -284,17 +282,6 @@ void AP_ADSB::update(void)
             index++;
         }
     }
-
-    if (_my_loc.is_zero()) {
-        // if we don't have a GPS lock then there's nothing else to do
-        return;
-    }
-
-    if (out_state.chan < 0) {
-        // if there's no transceiver detected then do not set ICAO and do not service the transceiver
-        return;
-    }
-
 
     if (out_state.cfg.squawk_octal_param != out_state.cfg.squawk_octal) {
         // param changed, check that it's a valid octal
@@ -326,26 +313,12 @@ void AP_ADSB::update(void)
         out_state.last_config_ms = 0; // send now
     }
 
+    if (backend == nullptr) {
+        hw_init();
+    } else {
+        backend->update();
+    }
 
-    // send static configuration data to transceiver, every 5s
-    if (out_state.chan_last_ms > 0 && now - out_state.chan_last_ms > ADSB_CHAN_TIMEOUT_MS) {
-        // haven't gotten a heartbeat health status packet in a while, assume hardware failure
-        // TODO: reset out_state.chan
-        out_state.chan = -1;
-        gcs().send_text(MAV_SEVERITY_ERROR, "ADSB: Transceiver heartbeat timed out");
-    } else if (backend != nullptr && out_state.chan < MAVLINK_COMM_NUM_BUFFERS) {
-        const mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0 + out_state.chan);
-        if (now - out_state.last_config_ms >= 5000 && HAVE_PAYLOAD_SPACE(chan, UAVIONIX_ADSB_OUT_CFG)) {
-            out_state.last_config_ms = now;
-            backend->send_configure(chan);
-        } // last_config_ms
-
-        // send dynamic data to transceiver at 5Hz
-        if (now - out_state.last_report_ms >= 200 && HAVE_PAYLOAD_SPACE(chan, UAVIONIX_ADSB_OUT_DYNAMIC)) {
-            out_state.last_report_ms = now;
-            backend->send_dynamic_out(chan);
-        } // last_report_ms
-    } // chan_last_ms
 }
 
 
