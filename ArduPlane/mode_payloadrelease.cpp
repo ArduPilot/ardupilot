@@ -61,7 +61,7 @@ void ModePayloadRelease::initialise_initial_condition() {
 
     wind = plane.ahrs.wind_estimate();
     //At first the drop_point which is in longitude and latitude must be changed into neu so that release point must be calculated
-    llh_to_local(drop_point,drop_point_neu);
+    llh_to_neu(drop_point,drop_point_neu);
     //intialize wind values
     wind_speed_north = wind.y;
     wind_speed_east = wind.x;
@@ -130,7 +130,7 @@ void ModePayloadRelease::calculate_displacement() {
     }
 }
 
-void ModePayloadRelease::llh_to_local(Location &current_llh, Vector3d &current_neu) {
+void ModePayloadRelease::llh_to_ecef(Location &current_llh, Vector3d &current_neu) {
     Vector3d v_current_llh;
     //convert Location class to Vector3d structure form
     v_current_llh.x = current_llh.lat * 1.0e-7f * DEG_TO_RAD;
@@ -140,7 +140,7 @@ void ModePayloadRelease::llh_to_local(Location &current_llh, Vector3d &current_n
     wgsllh2ecef(v_current_llh,current_neu);
 }
 
-void ModePayloadRelease::local_to_llh(Vector3d &current_neu, Location &current_llh) {
+void ModePayloadRelease::ecef_to_llh(Vector3d &current_neu, Location &current_llh) {
     Vector3d v_current_llh;
     //convert current ecef to lng,lat,alt.
     wgsecef2llh(current_neu, v_current_llh);
@@ -149,6 +149,58 @@ void ModePayloadRelease::local_to_llh(Vector3d &current_neu, Location &current_l
     current_llh.lat = v_current_llh.x * RAD_TO_DEG * 1.0e7f;
     current_llh.lng = v_current_llh.y * RAD_TO_DEG * 1.0e7f;
     current_llh.alt = drop_point.alt; //same altitude as drop_point altitude
+}
+
+void ModePayloadRelease::llh_to_neu(Location &current_llh, Vector3d &current_neu){
+    float cLat, cLon, sLat, sLon;
+    double dx,dy,dz;
+    Vector3d current_ecef,home_ecef;
+    Location home = copter.ahrs.get_home();
+
+    llh_to_ecef(current_llh,current_ecef);
+    llh_to_ecef(home,home_ecef);
+
+    cLat = cos(home.lat * 1.0e-7f * DEG_TO_RAD);
+    sLat = sin(home.lat * 1.0e-7f * DEG_TO_RAD);
+
+    cLon = cos(home.lng * 1.0e-7f * DEG_TO_RAD);
+    sLon = sin(home.lng * 1.0e-7f * DEG_TO_RAD);
+
+    dx = current_ecef.x - home_ecef.x;
+    dy = current_ecef.y - home_ecef.y;
+    dz = current_ecef.z - home_ecef.z;
+
+    //x is N, y is E and z is U
+    current_neu.x = (-cLon * sLat * dx) - (sLat * sLon * dy) + cLat * dz ;
+    current_neu.y = (-dx * sLon) + (dy * cLon) ;
+    current_neu.z = (cLat * cLon * dx) + (cLat * sLon * dy) + (sLat * dz) ;
+
+}
+
+void ModePayloadRelease::neu_to_llh(Vector3d &current_neu, Location &current_llh){
+    float cLat, cLon, sLat, sLon;
+    double n,e,u;
+    Vector3d current_ecef,home_ecef;
+    Location home = copter.ahrs.get_home();
+    
+    llh_to_ecef(home,home_ecef);
+
+    cLat = cos(home.lat * 1.0e-7f * DEG_TO_RAD);
+    sLat = sin(home.lat * 1.0e-7f * DEG_TO_RAD);
+
+    cLon = cos(home.lng * 1.0e-7f * DEG_TO_RAD);
+    sLon = sin(home.lng * 1.0e-7f * DEG_TO_RAD);
+
+    n = current_neu.x;
+    e = current_neu.y;
+    u = current_neu.z;
+
+    current_ecef.x = (-sLon * e) + (-sLat * cLon * n) + (cLat * cLon * u) + home_ecef.x;
+    current_ecef.y = (cLon * e) + (-sLat * sLon * n) + (cLat * sLon * u) + home_ecef.y;
+    current_ecef.z = (cLat * n) + (sLat * u) + home_ecef.z;
+
+    ecef_to_llh(current_ecef,current_llh);
+
 }
 
 
@@ -189,7 +241,7 @@ void ModePayloadRelease::update_releasepoint() {
             calculate_displacement();
             gcs().send_text(MAV_SEVERITY_INFO, "displacement = %f",x);
             calculate_release_point();
-            local_to_llh(release_point_neu,release_point);
+            neu_to_llh(release_point_neu,release_point);
             calculated = true;
             //gcs().send_text(MAV_SEVERITY_INFO, "rel N = %f, rel E = %f",release_point_neu.x,release_point_neu.y);
             gcs().send_text(MAV_SEVERITY_INFO, "new target rel lat = %d, rel lon = %d,rel ht = %d",release_point.lat,release_point.lng,release_point.alt);

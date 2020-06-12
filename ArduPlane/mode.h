@@ -174,8 +174,10 @@ public:
     // bool get_state(){return is_payload_released;}
     void initialise_initial_condition();
     void calculate_displacement();
-    void llh_to_local(Location &current_llh, Vector3d &current_neu);
-    void local_to_llh(Vector3d &current_neu, Location &current_llh);
+    void llh_to_ecef(Location &current_llh, Vector3d &current_neu);
+    void ecef_to_llh(Vector3d &current_neu, Location &current_llh);
+    void llh_to_neu(Location &current_llh, Vector3d &current_neu);
+    void neu_to_llh(Vector3d &current_neu, Location &current_llh);
     void calculate_release_point();
     void update_releasepoint();
 
