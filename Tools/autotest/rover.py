@@ -2193,7 +2193,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                              mission_type,
                                              expected_target_system=None,
                                              expected_target_component=None,
-                                             timeout=10):
+                                             timeout=120):
         if expected_target_system is None:
             expected_target_system = mav.mav.srcSystem
         if expected_target_component is None:
@@ -2203,8 +2203,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         tstart = self.get_sim_time_cached()
         while True:
-            if self.get_sim_time_cached() - tstart > timeout:
-                raise NotAchievedException("Did not receive MISSION_COUNT on link")
+            delta = self.get_sim_time_cached() - tstart
+            if delta > timeout:
+                raise NotAchievedException("Did not receive MISSION_COUNT on link after %fs" % delta)
             m = mav.recv_match(blocking=True, timeout=1)
             if m is None:
                 self.progress("No messages")
@@ -2225,8 +2226,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if m.count != expected_count:
             raise NotAchievedException("Bad count received (want=%u got=%u)" %
                                        (expected_count, m.count))
-        self.progress("Asserted mission count (type=%u) is %u" % (
-            (mission_type, m.count)))
+        self.progress("Asserted mission count (type=%u) is %u after %fs" % (
+            (mission_type, m.count, delta)))
 
     def get_mission_item_int_on_link(self, item, mav, target_system, target_component, mission_type):
         self.drain_mav(mav=mav, unparsed=True)
@@ -2236,10 +2237,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                          mission_type)
         m = mav.recv_match(type='MISSION_ITEM_INT',
                            blocking=True,
-                           timeout=1,
+                           timeout=60,
                            condition='MISSION_ITEM_INT.mission_type==%u' % mission_type)
         if m is None:
-            raise NotAchievedException("Did not receive mission item int")
+            raise NotAchievedException("Did not receive MISSION_ITEM_INT")
         if m.mission_type != mission_type:
             raise NotAchievedException("Mission item of incorrect type")
         if m.target_system != mav.mav.srcSystem:
@@ -2264,9 +2265,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                      mission_type)
         m = mav.recv_match(type='MISSION_ITEM',
                            blocking=True,
-                           timeout=5)
+                           timeout=60)
         if m is None:
-            raise NotAchievedException("Did not receive mission item int")
+            raise NotAchievedException("Did not receive MISSION_ITEM")
         if m.target_system != mav.mav.srcSystem:
             raise NotAchievedException("Unexpected target system %u want=%u" %
                                        (m.target_system, mav.mav.srcSystem))
@@ -2287,7 +2288,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                 blocking=True,
                                 timeout=1)
         if m is None:
-            raise NotAchievedException("Did not get item request")
+            raise NotAchievedException("Did not get MISSION_REQUEST")
         if m.mission_type != mission_type:
             raise NotAchievedException("Incorrect mission type (wanted=%u got=%u)" %
                                        (mission_type, m.mission_type))
