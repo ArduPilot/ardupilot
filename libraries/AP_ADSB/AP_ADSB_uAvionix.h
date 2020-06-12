@@ -43,6 +43,6 @@ private:
     uint8_t get_encoded_callsign_null_char();
 
     uint32_t            _chan_last_ms;
-    mavlink_channel_t   _chan = (mavlink_channel_t)-1;
+    int8_t              _chan = -1;
 };
 

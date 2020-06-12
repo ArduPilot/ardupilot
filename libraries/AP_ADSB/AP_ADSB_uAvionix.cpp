@@ -43,16 +43,16 @@ void AP_ADSB_uAvionix::update()
     if (_chan_last_ms > 0 && now_ms - _chan_last_ms > ADSB_CHAN_TIMEOUT_MS) {
         // haven't gotten a heartbeat health status packet in a while, assume hardware failure
         // TODO: reset out_state.chan
-        _chan = (mavlink_channel_t)-1;
+        _chan = -1;
         gcs().send_text(MAV_SEVERITY_ERROR, "ADSB: Transceiver heartbeat timed out");
     } else if (_chan >= 0 && _chan < MAVLINK_COMM_NUM_BUFFERS) {
-        if (now_ms - frontend.out_state.last_config_ms >= 5000 && HAVE_PAYLOAD_SPACE(_chan, UAVIONIX_ADSB_OUT_CFG)) {
+        if (now_ms - frontend.out_state.last_config_ms >= 5000 && HAVE_PAYLOAD_SPACE((mavlink_channel_t)_chan, UAVIONIX_ADSB_OUT_CFG)) {
             frontend.out_state.last_config_ms = now_ms;
             send_configure();
         } // last_config_ms
 
         // send dynamic data to transceiver at 5Hz
-        if (now_ms - frontend.out_state.last_report_ms >= 200 && HAVE_PAYLOAD_SPACE(_chan, UAVIONIX_ADSB_OUT_DYNAMIC)) {
+        if (now_ms - frontend.out_state.last_report_ms >= 200 && HAVE_PAYLOAD_SPACE((mavlink_channel_t)_chan, UAVIONIX_ADSB_OUT_DYNAMIC)) {
             frontend.out_state.last_report_ms = now_ms;
             send_dynamic_out();
         } // last_report_ms
@@ -64,7 +64,7 @@ void AP_ADSB_uAvionix::handle_msg(const mavlink_channel_t chan, const mavlink_me
     switch (msg.msgid) {
     case MAVLINK_MSG_ID_UAVIONIX_ADSB_TRANSCEIVER_HEALTH_REPORT:
         {
-            _chan = chan;
+            _chan = (int8_t)chan;
             mavlink_uavionix_adsb_transceiver_health_report_t packet {};
             mavlink_msg_uavionix_adsb_transceiver_health_report_decode(&msg, &packet);
             handle_transceiver_report(packet);
@@ -154,7 +154,7 @@ void AP_ADSB_uAvionix::send_configure()
     }
 
     mavlink_msg_uavionix_adsb_out_cfg_send(
-            _chan,
+            (mavlink_channel_t)_chan,
             icao,
             (const char*)callsign,
             (uint8_t)frontend.out_state.cfg.emitterType,
@@ -223,7 +223,7 @@ void AP_ADSB_uAvionix::send_dynamic_out()
 
 
     mavlink_msg_uavionix_adsb_out_dynamic_send(
-            _chan,
+            (mavlink_channel_t)_chan,
             utcTime,
             latitude,
             longitude,
