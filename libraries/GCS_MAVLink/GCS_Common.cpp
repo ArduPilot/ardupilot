@@ -246,14 +246,19 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
 }
 
 // returns true if all battery instances were reported
-bool GCS_MAVLINK::send_battery_status() const
+bool GCS_MAVLINK::send_battery_status()
 {
     const AP_BattMonitor &battery = AP::battery();
 
-    for(uint8_t i = 0; i < battery.num_instances(); i++) {
-        if (battery.get_type(i) != AP_BattMonitor_Params::BattMonitor_Type::BattMonitor_TYPE_NONE) {
+    for(uint8_t i = 0; i < AP_BATT_MONITOR_MAX_INSTANCES; i++) {
+        const uint8_t battery_id = (last_battery_status_idx + 1) % AP_BATT_MONITOR_MAX_INSTANCES;
+        if (battery.get_type(battery_id) != AP_BattMonitor_Params::BattMonitor_Type::BattMonitor_TYPE_NONE) {
             CHECK_PAYLOAD_SIZE(BATTERY_STATUS);
-            send_battery_status(i);
+            send_battery_status(battery_id);
+            last_battery_status_idx = battery_id;
+            return true;
+        } else {
+            last_battery_status_idx = battery_id;
         }
     }
     return true;
