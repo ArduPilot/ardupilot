@@ -155,7 +155,7 @@ void ModePayloadRelease::llh_to_neu(Location &current_llh, Vector3d &current_neu
     float cLat, cLon, sLat, sLon;
     double dx,dy,dz;
     Vector3d current_ecef,home_ecef;
-    Location home = copter.ahrs.get_home();
+    Location home = plane.ahrs.get_home();
 
     llh_to_ecef(current_llh,current_ecef);
     llh_to_ecef(home,home_ecef);
@@ -181,7 +181,7 @@ void ModePayloadRelease::neu_to_llh(Vector3d &current_neu, Location &current_llh
     float cLat, cLon, sLat, sLon;
     double n,e,u;
     Vector3d current_ecef,home_ecef;
-    Location home = copter.ahrs.get_home();
+    Location home = plane.ahrs.get_home();
     
     llh_to_ecef(home,home_ecef);
 
@@ -225,32 +225,40 @@ void ModePayloadRelease::calculate_release_point() {
     }
 }
 
+void ModePayloadRelease::get_intermediate_point(Vector3d RP){
+    Vector3d int_point_neu;
+    Vector3d current_neu;
+
+    float angle = plane.current_loc.get_bearing_to(drop_point) * 0.01f * DEG_TO_RAD;
+
+    int_point_neu.x = RP.x - intermediate_distance * cos(angle);
+    int_point_neu.y = RP.y - intermediate_distance * sin(angle);
+    int_point_neu.z = RP.z;
+
+    neu_to_llh(int_point_neu,int_point);
+}
+
 void ModePayloadRelease::update_releasepoint() {
-    gcs().send_text(MAV_SEVERITY_INFO,"inside: ModePayloadRelease::updating release point ");
 
     if(get_state() == PayloadRelease_Start) {
-        gcs().send_text(MAV_SEVERITY_INFO,"inside: PayloadRelease_Start state");
-        gcs().send_text(MAV_SEVERITY_INFO,"calculated: %d", !calculated);
-        // if(!calculated) {
-        // if((!calculated) && plane.gps.ground_speed() > 3.5) {
+        
         if(!calculated) {
-            gcs().send_text(MAV_SEVERITY_INFO, "drop lat = %d, drop lon = %d,drop ht =%d",drop_point.lat,drop_point.lng,drop_point.alt);
-            //gcs().send_text(MAV_SEVERITY_INFO, "inside here");
+            
             initialise_initial_condition();
-            //gcs().send_text(MAV_SEVERITY_INFO, "drop N = %f, drop E = %f",drop_point_neu.x,drop_point_neu.y);
+            
             calculate_displacement();
-            gcs().send_text(MAV_SEVERITY_INFO, "displacement = %f",x);
+            
             calculate_release_point();
-            neu_to_llh(release_point_neu,release_point);
+
+            get_intermediate_point(release_point_neu);
             calculated = true;
-            //gcs().send_text(MAV_SEVERITY_INFO, "rel N = %f, rel E = %f",release_point_neu.x,release_point_neu.y);
-            gcs().send_text(MAV_SEVERITY_INFO, "new target rel lat = %d, rel lon = %d,rel ht = %d",release_point.lat,release_point.lng,release_point.alt);
-            plane.set_next_WP(release_point);
-            // if (!wp_nav->set_wp_destination(release_point)) {
-            //     // failure to set destination can only be because of missing terrain data
-            //     copter.failsafe_terrain_on_event();
-            //     return ;
-            // }
+
+            neu_to_llh(release_point_neu,release_point);
+            
+            
+            plane.set_next_WP(int_point);
+            
         }
+
     }
 }

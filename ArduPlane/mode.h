@@ -160,6 +160,16 @@ public:
     //point where payload should be released to reach drop point
     Location release_point;
     Vector3d release_point_neu;
+
+    // These variables are for intermediate point 
+    /*
+    before going to release point, plane should go to intermediate point
+    so that it travels from intermediate point to release point parallel
+    with the path to drop payload
+    */
+    Location int_point;
+    bool is_int_reached;
+    int intermediate_distance;
     
     Number mode_number() const override { return Number::PAYLOADRELEASE; }
     const char *name() const override { return "PAYLOADRELEASE"; }
@@ -178,6 +188,7 @@ public:
     void ecef_to_llh(Vector3d &current_neu, Location &current_llh);
     void llh_to_neu(Location &current_llh, Vector3d &current_neu);
     void neu_to_llh(Vector3d &current_neu, Location &current_llh);
+    void get_intermediate_point(Vector3d RP);
     void calculate_release_point();
     void update_releasepoint();
 
