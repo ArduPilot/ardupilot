@@ -269,7 +269,8 @@ float AP_MotorsUGV::get_slew_limited_throttle(float throttle, float dt) const
 bool AP_MotorsUGV::have_skid_steering() const
 {
     if (SRV_Channels::function_assigned(SRV_Channel::k_throttleLeft) &&
-        SRV_Channels::function_assigned(SRV_Channel::k_throttleRight)) {
+        SRV_Channels::function_assigned(SRV_Channel::k_throttleRight) &&
+        SRV_Channels::function_assigned(SRV_Channel::k_skid_steering_on)) {
         return true;
     }
     return false;
