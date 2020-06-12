@@ -222,7 +222,7 @@ public:
     void send_fence_status() const;
     void send_power_status(void);
     void send_battery_status(const uint8_t instance) const;
-    bool send_battery_status() const;
+    bool send_battery_status();
     void send_distance_sensor() const;
     // send_rangefinder sends only if a downward-facing instance is
     // found.  Rover overrides this!
@@ -843,6 +843,8 @@ private:
 #endif
 
     uint32_t last_mavlink_stats_logged;
+
+    uint8_t last_battery_status_idx;
 
     // true if we should NOT do MAVLink on this port (usually because
     // someone's doing SERIAL_CONTROL over mavlink)
