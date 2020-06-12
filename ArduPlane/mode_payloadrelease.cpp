@@ -46,7 +46,7 @@ void ModePayloadRelease::initialise_initial_condition() {
     vz = 0;
     az = g;
     z = 0;
-    total_height = plane.current_loc.alt / 10; // divided by 10 because current altitude in cms.
+    total_height = plane.current_loc.alt / 100; // divided by 10 because current altitude in cms.
     remaining_height = total_height;
     vx = plane.gps.ground_speed();
     ax = 0;
@@ -212,13 +212,13 @@ void ModePayloadRelease::calculate_release_point() {
         release_point_neu.z = drop_point_neu.z;
     }
     //If the relative payload path is above the uav path
-    else if(theta - phi > 0.001) {
+    else if(theta - phi < 0.001) {
         release_point_neu.x = drop_point_neu.x - x * cos(theta + a * dirn);
         release_point_neu.y = drop_point_neu.y - x * sin(theta + a * dirn);
         release_point_neu.z = drop_point_neu.z;
     }
     //If the relative payload path is below the uav path OR no wind is blowing
-    else if((phi - theta > 0.001) || phi <= 0.001) {
+    else if((theta - phi > 0.001) || phi <= 0.001) {
         release_point_neu.x = drop_point_neu.x - x * cos(theta - a * dirn);
         release_point_neu.y = drop_point_neu.y - x * sin(theta - a * dirn);
         release_point_neu.z = drop_point_neu.z;
