@@ -49,6 +49,11 @@ public:
         return typesafe_index(p++);
     }
 
+    typesafe_index operator%(const base_type& val)
+    {
+        return typesafe_index(p % val);
+    }
+
     bool operator<(const base_type& val) const
     {
         return (p<val);
