@@ -412,7 +412,7 @@ void NavEKF3_core::detectFlight()
     if (!prevOnGround && onGround) {
         // landed so disable filter bank
         EKFGSF_run_filterbank = false;
-    } else if (!prevInFlight && inFlight) {
+    } else if (!EKFGSF_run_filterbank && ((!prevInFlight && inFlight) || getTakeoffExpected())) {
         // started flying so reset counters and enable filter bank
         EKFGSF_yaw_reset_ms = 0;
         EKFGSF_yaw_reset_request_ms = 0;
@@ -429,8 +429,8 @@ void NavEKF3_core::detectFlight()
 
 }
 
-
-// determine if a takeoff is expected so that we can compensate for expected barometer errors due to ground effect
+// determine if a takeoff is expected so that we can compensate for expected barometer errors due to rotor wash ground interaction
+// also used when in fixed wing mode so that GSG yaw estimator can be started before throw or takeoff roll
 bool NavEKF3_core::getTakeoffExpected()
 {
     if (expectGndEffectTakeoff && imuSampleTime_ms - takeoffExpectedSet_ms > frontend->gndEffectTimeout_ms) {
