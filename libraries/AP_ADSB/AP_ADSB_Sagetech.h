@@ -104,14 +104,17 @@ private:
     void send_PreFlight();
     void send_Operating();
     void send_GPS();
-    void send_Request();
+
+    void send_packet(const MsgTypes_XP type);
+    void request_packet(const MsgTypes_XP type);
 
     AP_HAL::UARTDriver *uart;
+    bool            has_sent_initialize;
     uint32_t        last_packet_GPS_ms;
-    MsgTypes_XP     queued_packet_type = MsgTypes_XP::INVALID;
     uint32_t        last_packet_send_ms;
-    MsgTypes_XP     response_expected_type = MsgTypes_XP::INVALID;
+    MsgTypes_XP     last_packet_type_sent = MsgTypes_XP::INVALID;
     uint32_t        response_timeout_count;
+    uint32_t        baudrate;
 
 };
 
