@@ -307,7 +307,8 @@ public:
     void writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms);
 
     // called by vehicle code to specify that a takeoff is happening
-    // causes the EKF to compensate for expected barometer errors due to ground effect
+    // causes the EKF to compensate for expected barometer errors due to rotor wash ground interaction
+    // causes the EKF to start the EKF-GSF yaw estimator
     void setTakeoffExpected(bool val);
 
     // called by vehicle code to specify that a touchdown is expected to happen
