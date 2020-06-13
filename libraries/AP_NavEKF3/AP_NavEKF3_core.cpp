@@ -269,8 +269,9 @@ void NavEKF3_core::InitialiseVariables()
     gndOffsetValid =  false;
     validOrigin = false;
     takeoffExpectedSet_ms = 0;
-    expectGndEffectTakeoff = false;
+    expectTakeoff = false;
     touchdownExpectedSet_ms = 0;
+    expectGndEffectTakeoff = false;
     expectGndEffectTouchdown = false;
     gpsSpdAccuracy = 0.0f;
     gpsPosAccuracy = 0.0f;

@@ -408,11 +408,16 @@ void NavEKF3_core::detectFlight()
         }
     }
 
+    // check if vehicle control code has told the EKF to prepare for takeoff or landing
+    // and if rotor-wash ground interaction is expected to cause Baro errors
+    expectGndEffectTakeoff = updateTakeoffExpected() && !assume_zero_sideslip();
+    updateTouchdownExpected();
+
     // handle reset of counters used to control how many times we will try to reset the yaw to the EKF-GSF value per flight
     if (!prevOnGround && onGround) {
         // landed so disable filter bank
         EKFGSF_run_filterbank = false;
-    } else if (!EKFGSF_run_filterbank && ((!prevInFlight && inFlight) || getTakeoffExpected())) {
+    } else if (!EKFGSF_run_filterbank && ((!prevInFlight && inFlight) || expectTakeoff)) {
         // started flying so reset counters and enable filter bank
         EKFGSF_yaw_reset_ms = 0;
         EKFGSF_yaw_reset_request_ms = 0;
@@ -429,28 +434,31 @@ void NavEKF3_core::detectFlight()
 
 }
 
-// determine if a takeoff is expected so that we can compensate for expected barometer errors due to rotor wash ground interaction
-// also used when in fixed wing mode so that GSG yaw estimator can be started before throw or takeoff roll
-bool NavEKF3_core::getTakeoffExpected()
+// update and return the status that indicates takeoff is expected so that we can compensate for expected
+// barometer errors due to rotor-wash ground interaction and start the EKF-GSF yaw estimator prior to
+// takeoff movement
+bool NavEKF3_core::updateTakeoffExpected()
 {
-    if (expectGndEffectTakeoff && imuSampleTime_ms - takeoffExpectedSet_ms > frontend->gndEffectTimeout_ms) {
-        expectGndEffectTakeoff = false;
+    if (expectTakeoff && imuSampleTime_ms - takeoffExpectedSet_ms > frontend->gndEffectTimeout_ms) {
+        expectTakeoff = false;
     }
 
-    return expectGndEffectTakeoff;
+    return expectTakeoff;
 }
 
 // called by vehicle code to specify that a takeoff is happening
-// causes the EKF to compensate for expected barometer errors due to ground effect
+// causes the EKF to compensate for expected barometer errors due to rotor wash ground interaction
+// causes the EKF to start the EKF-GSF yaw estimator
 void NavEKF3_core::setTakeoffExpected(bool val)
 {
     takeoffExpectedSet_ms = imuSampleTime_ms;
-    expectGndEffectTakeoff = val;
+    expectTakeoff = val;
 }
 
 
-// determine if a touchdown is expected so that we can compensate for expected barometer errors due to ground effect
-bool NavEKF3_core::getTouchdownExpected()
+// update and return the status that indicates touchdown is expected so that we can compensate for expected
+// barometer errors due to rotor-wash ground interaction
+bool NavEKF3_core::updateTouchdownExpected()
 {
     if (expectGndEffectTouchdown && imuSampleTime_ms - touchdownExpectedSet_ms > frontend->gndEffectTimeout_ms) {
         expectGndEffectTouchdown = false;
