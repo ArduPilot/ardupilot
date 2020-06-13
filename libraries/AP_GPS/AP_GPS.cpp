@@ -299,6 +299,26 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     AP_GROUPINFO("DRV_OPTIONS", 22, AP_GPS, _driver_options, 0),
 #endif
 
+    // @Param: COM_PORT
+    // @DisplayName: GPS physical COM port
+    // @Description: The physical COM port on the connected device, currently only applies to SBF GPS
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("COM_PORT", 23, AP_GPS, _com_port[0], 1),
+
+#if GPS_MAX_RECEIVERS > 1
+    // @Param: COM_PORT2
+    // @DisplayName: GPS physical COM port
+    // @Description: The physical COM port on the connected device, currently only applies to SBF GPS
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("COM_PORT2", 24, AP_GPS, _com_port[1], 1),
+#endif
+
     AP_GROUPEND
 };
 
