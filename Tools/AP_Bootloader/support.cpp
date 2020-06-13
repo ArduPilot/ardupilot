@@ -88,6 +88,8 @@ void flash_init(void)
         reserved += stm32_flash_getpagesize(flash_base_page);
         flash_base_page++;
     }
+
+#if FLASH_RESERVE_END_KB
     /*
       reduce num_pages to account for FLASH_RESERVE_END_KB
      */
@@ -96,6 +98,7 @@ void flash_init(void)
         reserved += stm32_flash_getpagesize(num_pages-1);
         num_pages--;
     }
+#endif
 }
 
 void flash_set_keep_unlocked(bool set)
