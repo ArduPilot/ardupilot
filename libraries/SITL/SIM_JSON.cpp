@@ -232,6 +232,16 @@ void JSON::recv_fdm(const struct sitl_input &input)
                            state.velocity[1],
                            state.velocity[2]);
 
+
+    // velocity relative to airmass in body frame
+    velocity_air_bf = dcm.transposed() * velocity_ef;
+
+    // airspeed
+    airspeed = velocity_air_bf.length();
+
+    // airspeed as seen by a fwd pitot tube (limited to 120m/s)
+    airspeed_pitot = constrain_float(velocity_air_bf * Vector3f(1.0f, 0.0f, 0.0f), 0.0f, 120.0f);
+
     position = Vector3f(state.position[0],
                             state.position[1],
                             state.position[2]);
@@ -251,7 +261,7 @@ void JSON::recv_fdm(const struct sitl_input &input)
     }
     time_now_us += deltat * 1.0e6;
 
-    if (deltat > 0 && deltat < 0.1) {
+    if (is_positive(deltat) && deltat < 0.1) {
         // time in us to hz
         adjust_frame_time(1.0 / deltat);
 
@@ -264,56 +274,55 @@ void JSON::recv_fdm(const struct sitl_input &input)
 #if 0
 // @LoggerMessage: JSN1
 // @Description: Log data received from JSON simulator
-// @Field: TimeUS: Time since system startup
-// @Field: TUS: Simulation's timestamp
-// @Field: R: Simulation's roll
-// @Field: P: Simulation's pitch
-// @Field: Y: Simulation's yaw
-// @Field: GX: Simulated gyroscope, X-axis
-// @Field: GY: Simulated gyroscope, Y-axis
-// @Field: GZ: Simulated gyroscope, Z-axis
-    AP::logger().Write("JSN1", "TimeUS,TUS,R,P,Y,GX,GY,GZ",
-                       "QQffffff",
+// @Field: TimeUS: Time since system startup (us)
+// @Field: TStamp: Simulation's timestamp (s)
+// @Field: R: Simulation's roll (rad)
+// @Field: P: Simulation's pitch (rad)
+// @Field: Y: Simulation's yaw (rad)
+// @Field: GX: Simulated gyroscope, X-axis (rad/sec)
+// @Field: GY: Simulated gyroscope, Y-axis (rad/sec)
+// @Field: GZ: Simulated gyroscope, Z-axis (rad/sec)
+    AP::logger().Write("JSN1", "TimeUS,TStamp,R,P,Y,GX,GY,GZ",
+                       "ssrrrEEE",
+                       "F???????",
+                       "Qfffffff",
                        AP_HAL::micros64(),
-                       state.timestamp,
-                       degrees(state.pose.roll),
-                       degrees(state.pose.pitch),
-                       degrees(state.pose.yaw),
-                       degrees(gyro.x),
-                       degrees(gyro.y),
-                       degrees(gyro.z));
+                       state.timestamp_s,
+                       state.attitude[0],
+                       state.attitude[1],
+                       state.attitude[2],
+                       gyro.x,
+                       gyro.y,
+                       gyro.z);
 
-    Vector3f velocity_bf = dcm.transposed() * velocity_ef;
-    position = home.get_distance_NED(location);
+    Vector3f accel_ef = dcm.transposed() * accel_body;
 
 // @LoggerMessage: JSN2
 // @Description: Log data received from JSON simulator
-// @Field: TimeUS: Time since system startup
-// @Field: AX: simulation's acceleration, X-axis
-// @Field: AY: simulation's acceleration, Y-axis
-// @Field: AZ: simulation's acceleration, Z-axis
-// @Field: VX: simulation's velocity, X-axis
-// @Field: VY: simulation's velocity, Y-axis
-// @Field: VZ: simulation's velocity, Z-axis
-// @Field: PX: simulation's position, X-axis
-// @Field: PY: simulation's position, Y-axis
-// @Field: PZ: simulation's position, Z-axis
-// @Field: Alt: simulation's gps altitude
-// @Field: SD: simulation's earth-frame speed-down
-    AP::logger().Write("JSN2", "TimeUS,AX,AY,AZ,VX,VY,VZ,PX,PY,PZ,Alt,SD",
-                       "Qfffffffffff",
+// @Field: TimeUS: Time since system startup (us)
+// @Field: VN: simulation's velocity, North-axis (m/s)
+// @Field: VE: simulation's velocity, East-axis (m/s)
+// @Field: VD: simulation's velocity, Down-axis (m/s)
+// @Field: AX: simulation's acceleration, X-axis (m/s^2)
+// @Field: AY: simulation's acceleration, Y-axis (m/s^2)
+// @Field: AZ: simulation's acceleration, Z-axis (m/s^2)
+// @Field: AN: simulation's acceleration, North (m/s^2)
+// @Field: AE: simulation's acceleration, East (m/s^2)
+// @Field: AD: simulation's acceleration, Down (m/s^2)
+    AP::logger().Write("JSN2", "TimeUS,VN,VE,VD,AX,AY,AZ,AN,AE,AD",
+                       "snnnoooooo",
+                       "F?????????",
+                       "Qfffffffff",
                        AP_HAL::micros64(),
+                       velocity_ef.x,
+                       velocity_ef.y,
+                       velocity_ef.z,
                        accel_body.x,
                        accel_body.y,
                        accel_body.z,
-                       velocity_bf.x,
-                       velocity_bf.y,
-                       velocity_bf.z,
-                       position.x,
-                       position.y,
-                       position.z,
-                       state.gps.alt,
-                       velocity_ef.z);
+                       accel_ef.x,
+                       accel_ef.y,
+                       accel_ef.z);
 #endif
 
 }
