@@ -30,6 +30,7 @@ class AP_GPS_SBF : public AP_GPS_Backend
 {
 public:
     AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
+    ~AP_GPS_SBF();
 
     AP_GPS::GPS_Status highest_supported_status(void) override { return AP_GPS::GPS_OK_FIX_3D_RTK_FIXED; }
 
@@ -60,10 +61,12 @@ private:
     static const uint8_t SBF_PREAMBLE1 = '$';
     static const uint8_t SBF_PREAMBLE2 = '@';
 
-    uint8_t _init_blob_index = 0;
-    uint32_t _init_blob_time = 0;
-    const char* _initialisation_blob[5] = {
-    "sso, Stream1, COM1, PVTGeodetic+DOP+ReceiverStatus+VelCovGeodetic, msec100\n",
+    bool _validated_initial_sso;
+    uint8_t _init_blob_index;
+    uint32_t _init_blob_time;
+    char *_initial_sso;
+    const char* _sso_normal = ", PVTGeodetic+DOP+ReceiverStatus+VelCovGeodetic, msec100\n";
+    const char* _initialisation_blob[4] = {
     "srd, Moderate, UAV\n",
     "sem, PVT, 5\n",
     "spm, Rover, all\n",
