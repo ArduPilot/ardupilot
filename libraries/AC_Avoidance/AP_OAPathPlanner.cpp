@@ -24,7 +24,6 @@
 extern const AP_HAL::HAL &hal;
 
 // parameter defaults
-const float OA_LOOKAHEAD_DEFAULT = 15;
 const float OA_MARGIN_MAX_DEFAULT = 5;
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
     const int16_t OA_OPTIONS_DEFAULT = 1;
@@ -42,14 +41,8 @@ const AP_Param::GroupInfo AP_OAPathPlanner::var_info[] = {
     // @User: Standard
     AP_GROUPINFO_FLAGS("TYPE", 1,  AP_OAPathPlanner, _type, OA_PATHPLAN_DISABLED, AP_PARAM_FLAG_ENABLE),
 
-    // @Param: LOOKAHEAD
-    // @DisplayName: Object Avoidance look ahead distance maximum
-    // @Description: Object Avoidance will look this many meters ahead of vehicle
-    // @Units: m
-    // @Range: 1 100
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("LOOKAHEAD", 2, AP_OAPathPlanner, _lookahead, OA_LOOKAHEAD_DEFAULT),
+    // Note: Do not use Index "2" for any new parameter
+    //       It was being used by _LOOKAHEAD which was later moved to AP_OABendyRuler 
 
     // @Param: MARGIN_MAX
     // @DisplayName: Object Avoidance wide margin distance
@@ -73,6 +66,10 @@ const AP_Param::GroupInfo AP_OAPathPlanner::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("OPTIONS", 5, AP_OAPathPlanner, _options, OA_OPTIONS_DEFAULT),
 #endif
+    
+    // @Group: BR_
+    // @Path: AP_OABendyRuler.cpp
+    AP_SUBGROUPPTR(_oabendyruler, "BR_", 6, AP_OAPathPlanner, AP_OABendyRuler),
 
     AP_GROUPEND
 };
@@ -96,6 +93,7 @@ void AP_OAPathPlanner::init()
     case OA_PATHPLAN_BENDYRULER:
         if (_oabendyruler == nullptr) {
             _oabendyruler = new AP_OABendyRuler();
+            AP_Param::load_object_from_eeprom(_oabendyruler, AP_OABendyRuler::var_info);
         }
         break;
     case OA_PATHPLAN_DIJKSTRA:
@@ -259,7 +257,7 @@ void AP_OAPathPlanner::avoidance_thread()
             if (_oabendyruler == nullptr) {
                 continue;
             }
-            _oabendyruler->set_config(_lookahead, _margin_max);
+            _oabendyruler->set_config(_margin_max);
             if (_oabendyruler->update(avoidance_request2.current_loc, avoidance_request2.destination, avoidance_request2.ground_speed_vec, origin_new, destination_new)) {
                 res = OA_SUCCESS;
             }
