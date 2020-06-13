@@ -1071,7 +1071,7 @@ void NavEKF3_core::selectHeightForFusion()
         }
         // filtered baro data used to provide a reference for takeoff
         // it is is reset to last height measurement on disarming in performArmingChecks()
-        if (!getTakeoffExpected()) {
+        if (!getTakeoffExpected() || !assume_zero_sideslip()) {
             const float gndHgtFiltTC = 0.5f;
             const float dtBaro = frontend->hgtAvg_ms*1.0e-3f;
             float alpha = constrain_float(dtBaro / (dtBaro+gndHgtFiltTC),0.0f,1.0f);
@@ -1132,12 +1132,12 @@ void NavEKF3_core::selectHeightForFusion()
         // set the observation noise
         posDownObsNoise = sq(constrain_float(frontend->_baroAltNoise, 0.1f, 10.0f));
         // reduce weighting (increase observation noise) on baro if we are likely to be in ground effect
-        if (getTakeoffExpected() || getTouchdownExpected()) {
+        if ((getTakeoffExpected() && !assume_zero_sideslip()) || getTouchdownExpected()) {
             posDownObsNoise *= frontend->gndEffectBaroScaler;
         }
         // If we are in takeoff mode, the height measurement is limited to be no less than the measurement at start of takeoff
         // This prevents negative baro disturbances due to copter downwash corrupting the EKF altitude during initial ascent
-        if (motorsArmed && getTakeoffExpected()) {
+        if (motorsArmed && (getTakeoffExpected() && !assume_zero_sideslip())) {
             hgtMea = MAX(hgtMea, meaHgtAtTakeOff);
         }
         velPosObs[5] = -hgtMea;
