@@ -279,8 +279,9 @@ void NavEKF3_core::SelectMagFusion()
 
             float yawEKFGSF, yawVarianceEKFGSF;
             bool canUseEKFGSF = yawEstimator->getYawData(yawEKFGSF, yawVarianceEKFGSF) && is_positive(yawVarianceEKFGSF) && yawVarianceEKFGSF < sq(radians(15.0f));
-            if (yawAlignComplete && canUseEKFGSF) {
+            if (yawAlignComplete && canUseEKFGSF && !assume_zero_sideslip()) {
                 // use the EKF-GSF yaw estimator output as this is more robust than the EKF can achieve without a yaw measurement
+                // for non fixed wing platform types
                 yawAngDataDelayed.yawAngErr = MAX(sqrtf(yawVarianceEKFGSF), 0.05f);
                 yawAngDataDelayed.yawAng = yawEKFGSF;
                 fuseEulerYaw(false, true);
@@ -297,8 +298,10 @@ void NavEKF3_core::SelectMagFusion()
                 if (onGroundNotMoving) {
                     // fuse last known good yaw angle before we stopped moving to allow yaw bias learning when on ground before flight
                     fuseEulerYaw(false, true);
-                } else {
+                } else if (onGround || (sq(P[0][0])+sq(P[1][1])+sq(P[2][2])+sq(P[3][3]) > 0.01f)) {
                     // prevent uncontrolled yaw variance growth by fusing a zero innovation
+                    // when not on ground allow more variance growth so yaw can be corrected
+                    // by manoeuvring
                     fuseEulerYaw(true, true);
                 }
             }
