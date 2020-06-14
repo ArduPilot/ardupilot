@@ -283,6 +283,15 @@ void NavEKF3_core::setAidingMode()
                                      (imuSampleTime_ms - lastPosPassTime_ms > maxLossTime_ms);
             }
 
+            // This is a special case for when we are a fixed wing aircraft vehicle that has landed and
+            // has no yaw measurement that works when static. Declare the yaw as unaligned (unknown)
+            // and declare attitude aiding loss so that we fall back into a non-aiding mode
+            if (assume_zero_sideslip() && onGround && (effectiveMagCal == MagCal::GSF_YAW) && !use_compass()){
+                yawAlignComplete = false;
+                finalInflightYawInit = false;
+                attAidLossCritical = true;
+            }
+
             if (attAidLossCritical) {
                 // if the loss of attitude data is critical, then put the filter into a constant position mode
                 PV_AidingMode = AID_NONE;
