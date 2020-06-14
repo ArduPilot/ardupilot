@@ -343,24 +343,18 @@ void NavEKF3_core::detectFlight()
             largeHgtChange = true;
         }
 
-        // Determine to a high certainty we are flying
-        if (motorsArmed && highGndSpd && (highAirSpd || largeHgtChange)) {
+        if (motorsArmed) {
             onGround = false;
-            inFlight = true;
-        }
-
-        // if is possible we are in flight, set the time this condition was last detected
-        if (motorsArmed && (highGndSpd || highAirSpd || largeHgtChange)) {
-            airborneDetectTime_ms = imuSampleTime_ms;
-            onGround = false;
-        }
-
-        // Determine to a high certainty we are not flying
-        // after 5 seconds of not detecting a possible flight condition or we are disarmed, we transition to on-ground mode
-        if(!motorsArmed || ((imuSampleTime_ms - airborneDetectTime_ms) > 5000)) {
+            if (highGndSpd && (highAirSpd || largeHgtChange)) {
+                // to a high certainty we are flying
+                inFlight = true;
+            }
+        } else {
+            // to a high certainty we are not flying
             onGround = true;
             inFlight = false;
         }
+
     } else {
         // Non fly forward vehicle, so can only use height and motor arm status
 
