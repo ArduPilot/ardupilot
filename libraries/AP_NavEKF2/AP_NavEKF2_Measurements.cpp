@@ -924,7 +924,6 @@ void NavEKF2_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, 
     extNavDataNew.time_ms = timeStamp_ms;
 
     storedExtNav.push(extNavDataNew);
-
 }
 
 /*
