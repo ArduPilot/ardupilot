@@ -19,14 +19,21 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_RTC/AP_RTC.h>
 #include <stdio.h>
+#include <ctype.h>
+#include <AP_Math/bitwise.h>
 
 extern const AP_HAL::HAL& hal;
 
+#define SAGETECH_HARDCODE_CALLSIGN          "k1000ULE"  // comment out to disable
 #define SAGETECH_ENFORCE_ACKS               0
-#define SAGETECH_DEBUG_ACK_TIMEOUTS         1
-#define SAGETECH_DEBUG_TX                   1
-#define SAGETECH_DEBUG_RX                   1
-#define SAGETECH_DEBUG_RX_CRC_FAIL          1
+#define SAGETECH_DEBUG_ACK_TIMEOUTS         0
+#define SAGETECH_DEBUG_TX_ID_ONLY           0
+#define SAGETECH_DEBUG_TX_ID_PAYLOAD        0
+#define SAGETECH_DEBUG_TX_Operating         1
+#define SAGETECH_DEBUG_TX_GPS               0
+#define SAGETECH_DEBUG_RX                   0
+#define SAGETECH_DEBUG_RX_CRC_FAIL          0
+#define SAGETECH_DEBUG_RX_ACK               0
 
 // constructor
 AP_ADSB_Sagetech::AP_ADSB_Sagetech(AP_ADSB &adsb) :
@@ -97,34 +104,45 @@ void AP_ADSB_Sagetech::update()
     // -----------------------------
     // handle timers for generating data
     // -----------------------------
+#if SAGETECH_ENFORCE_ACKS
     if (last_packet_type_sent != MsgTypes_XP::INVALID) {
         // we're expecting an ACK
         if (now_ms - last_packet_send_ms >= 1000) {
             response_timeout_count++;
 #if SAGETECH_DEBUG_ACK_TIMEOUTS
-            gcs().send_text(MAV_SEVERITY_DEBUG, "%sACK Timeout type=%d, cnt=%d", _GcsHeader, last_packet_type_sent, (unsigned)response_timeout_count);
+            gcs().send_text(MAV_SEVERITY_DEBUG, "%sACK Timeout type=%u, cnt=%u", _GcsHeader, (unsigned)last_packet_type_sent, (unsigned)response_timeout_count);
 #endif
-#if SAGETECH_ENFORCE_ACKS
             // retry forever until we get an ACK
             send_packet(last_packet_type_sent);
-#endif
         }
-    } else {
-
+    } else
+#endif
+    {
 
         if (!has_sent_initialize) {
             has_sent_initialize = true;
             send_packet(MsgTypes_XP::Installation_Set);
 
-        } else if (now_ms - frontend.out_state.last_config_ms >= 10000) {
-            frontend.out_state.last_config_ms = now_ms;
+        } else if (now_ms - last_packet_PreFlight_ms >= 10000 && (last_packet_PreFlight_ms == 0)) {
+            // send once, for now..
+            last_packet_PreFlight_ms = now_ms;
             send_packet(MsgTypes_XP::Preflight_Set);
 
-//        } else if (now_ms - last_packet_GPS_ms >= 200 && !frontend._my_loc.is_zero()) {
-//            last_packet_GPS_ms = now_ms;
-//            // 5Hz GPS update
-//            send_GPS();
+        } else if (now_ms - last_packet_Operating_ms >= 1000 && (
+                // send as data changes
+                last_operating_squawk != frontend.out_state.cfg.squawk_octal ||
+                abs(last_operating_alt - frontend._my_loc.alt) > 1555 ||      // 1555cm == 51f. The output resolution is 100ft per bit
+                last_operating_rf_select != frontend.out_state.cfg.rfSelect))
+        {
+            last_packet_Operating_ms = now_ms;
+            send_packet(MsgTypes_XP::Operating_Set);
+
+        } else if ((now_ms - last_packet_GPS_ms >= (frontend.out_state.is_flying ? 200 : 1000)) && !frontend._my_loc.is_zero()) {
+            last_packet_GPS_ms = now_ms;
+            // 1Hz when not flying, 5Hz when flying
+            send_packet(MsgTypes_XP::GPS_Set);
         }
+
 
 
         //send_Operating();
@@ -176,13 +194,22 @@ void AP_ADSB_Sagetech::parse_packet_XP(const Packet_XP &msg)
     switch (msg.type) {
     case MsgTypes_XP::ACK: {
         // ACK received!
-        const uint16_t squawk = (uint16_t)msg.payload[7] << 8 | (uint16_t)msg.payload[8];
-        gcs().send_text(MAV_SEVERITY_DEBUG, "%sACK type=%u, squawk=%u", _GcsHeader, msg.payload[0], squawk);
-        if (last_packet_type_sent == msg.type) {
-            last_packet_type_sent = MsgTypes_XP::INVALID;
-        } else {
-            gcs().send_text(MAV_SEVERITY_DEBUG, "%sACK - did not expect type=%u", _GcsHeader, msg.payload[0]);
-        }
+#if SAGETECH_DEBUG_RX_ACK
+        const uint8_t acked_type = msg.payload[0];
+        const uint8_t acked_id = msg.payload[1];
+        const uint8_t system_state = msg.payload[2];
+        const int32_t pres_altitude = (int32_t)fetchU32(&msg.payload[3]);
+        const uint8_t transponder_type = msg.payload[6];
+        const uint16_t squawk = fetchU16(&msg.payload[7]);
+
+        gcs().send_text(MAV_SEVERITY_DEBUG, "%sACK %u, %u, 0x%02X, %d, %u, %u", _GcsHeader,
+                acked_type,
+                acked_id,
+                system_state,
+                pres_altitude,
+                transponder_type,
+                squawk);
+#endif
         }
         break;
 
@@ -329,8 +356,19 @@ void AP_ADSB_Sagetech::send_msg(Packet_XP &msg)
     last_packet_type_sent = msg.type;
     last_packet_send_ms = AP_HAL::millis();
 
-#if SAGETECH_DEBUG_TX
+#if SAGETECH_DEBUG_TX_ID_ONLY
     gcs().send_text(MAV_SEVERITY_DEBUG, "%sTx type=%d", _GcsHeader, msg.type);
+#endif
+#if SAGETECH_DEBUG_TX_ID_PAYLOAD
+    gcs().send_text(MAV_SEVERITY_DEBUG, "%sTx type=%u, payload.len=%u", _GcsHeader, (unsigned)msg.type, (unsigned)msg.payload_length);
+    for (uint8_t i=0; i<msg.payload_length; i++) {
+        const uint8_t data = msg.payload[i];
+        if (isalnum(data) || data == '.' || data == '-' || data == ' ') {
+            gcs().send_text(MAV_SEVERITY_DEBUG, "%sdata[%2u] = 0x%02x  %c", _GcsHeader, i, data, (char)data);
+        } else {
+            gcs().send_text(MAV_SEVERITY_DEBUG, "%sdata[%2u] = 0x%02x", _GcsHeader, i, data);
+        }
+    }
 #endif
 }
 
@@ -401,7 +439,7 @@ void AP_ADSB_Sagetech::send_Installation()
     pkt.payload[1] = frontend.out_state.cfg.ICAO_id >> 8;
     pkt.payload[2] = frontend.out_state.cfg.ICAO_id >> 0;
 
-    memcpy(&frontend.out_state.cfg.callsign, &pkt.payload[3], 8);
+    memcpy(&pkt.payload[3], &frontend.out_state.cfg.callsign, 8);
 
     pkt.payload[11] = 0;   // airspeed MAX
 
@@ -435,7 +473,11 @@ void AP_ADSB_Sagetech::send_PreFlight()
     pkt.id = 0;
     pkt.payload_length = 10;
 
-    memcpy(&frontend.out_state.cfg.callsign, &pkt.payload[0], 8);
+#ifdef SAGETECH_HARDCODE_CALLSIGN
+    memcpy(&pkt.payload[0], SAGETECH_HARDCODE_CALLSIGN, 8);
+#else
+    memcpy(&pkt.payload[0], &frontend.out_state.cfg.callsign, 8);
+#endif
     memset(&pkt.payload[8], 0, 2);
 
     send_msg(pkt);
@@ -449,22 +491,34 @@ void AP_ADSB_Sagetech::send_Operating()
     pkt.id = 0;
     pkt.payload_length = 8;
 
-    memcpy(&frontend.out_state.cfg.squawk_octal, &pkt.payload[0], 2);
+    // squawk
+    last_operating_squawk = frontend.out_state.cfg.squawk_octal;
+    //last_operating_squawk = 1200;       // TEST
+    loadUint(&pkt.payload[0], last_operating_squawk, 16);
 
-    const int32_t alt_m = frontend._my_loc.alt * 0.01f;
-    int16_t alt_feet = alt_m / FEET_TO_METERS;
-    memcpy(&alt_feet, &pkt.payload[2], 2);
+    // altitude
+    last_operating_alt = frontend._my_loc.alt;
+    int32_t alt_feet = (int32_t)((last_operating_alt * 0.01f) / FEET_TO_METERS);
+    //int32_t alt_feet = 126700;       // TEST
+    const int16_t alt_feet_adj = alt_feet / 100; // 1 = 100 feet, 5 = 500 feet
+    loadUint(&pkt.payload[2], alt_feet_adj, 16);
 
+    // RF mode
     uint8_t mode = 0;
-    if (frontend.out_state.cfg.rfSelect & 0x02) {
+    last_operating_rf_select = frontend.out_state.cfg.rfSelect;
+    if (last_operating_rf_select & 0x02) {
         // enable TX
         mode |= 1;
     }
-    if (frontend.out_state.cfg.rfSelect & 0x04) {
+    if (last_operating_rf_select & 0x04) {
         // enable Ident
         mode |= 2;
     }
     pkt.payload[4] = mode;
+
+#if SAGETECH_DEBUG_TX_Operating
+    gcs().send_text(MAV_SEVERITY_DEBUG, "%sOper squawk:%d, %dft, %d", _GcsHeader, fetchU16(&pkt.payload[0]), (int16_t)fetchU16(&pkt.payload[2])*100, pkt.payload[4]);
+#endif
 
     send_msg(pkt);
 }
@@ -472,32 +526,56 @@ void AP_ADSB_Sagetech::send_Operating()
 void AP_ADSB_Sagetech::send_GPS()
 {
     Packet_XP pkt {};
-    float deg;
 
     pkt.type = MsgTypes_XP::GPS_Set;
     pkt.payload_length = 52;
     pkt.id = 0;
 
-    const int32_t latitude =  58.565247 * 1.0e7f;
-    const int32_t longitude = 49.285211 * 1.0e7f;
-//    const int32_t latitude =  frontend._my_loc.lat;
-//    const int32_t longitude = frontend._my_loc.lng;
+//    frontend._my_loc.lng = 122.3291670 * 1.0e7f;
+//    frontend._my_loc.lat =   47.6204000 * 1.0e7f;
 
-    deg = fabsf(longitude * 1.0e-7f);
-    snprintf((char*)&pkt.payload[0], 11+1, "%03u.%08.5f", (unsigned)deg, double((deg - int(deg)) * 60));
+//    frontend._my_loc.lng =  58.5652470 * 1.0e7f;
+//    frontend._my_loc.lat =   49.2852110 * 1.0e7f;
 
-    deg = fabsf(latitude * 1.0e-7f);
-    snprintf((char*)&pkt.payload[11], 10+1, "%02u.%08.5f", (unsigned)deg, double((deg - int(deg)) * 60));
+    const int32_t latitude =  frontend._my_loc.lat;
+    const int32_t longitude = frontend._my_loc.lng;
 
 
+    // longitude and latitude
+    // NOTE: these MUST be done in double or else we get roundoff in the maths
+    const double lng_deg = longitude * 1.0e-7d * (longitude < 0 ? -1 : 1);
+    snprintf((char*)&pkt.payload[0], 12, "%03u%2.5f", (unsigned)lng_deg, double((lng_deg - int(lng_deg)) * 60));
 
+#if SAGETECH_DEBUG_TX_GPS
+    gcs().send_text(MAV_SEVERITY_DEBUG, "%sGPS lng: %s", _GcsHeader, &pkt.payload[0]);
+#endif
+
+    const double lon_deg = latitude * 1.0e-7d * (latitude < 0 ? -1 : 1);
+    snprintf((char*)&pkt.payload[11], 11, "%02u%2.5f", (unsigned)lon_deg, double((lon_deg - int(lon_deg)) * 60));
+
+#if SAGETECH_DEBUG_TX_GPS
+    gcs().send_text(MAV_SEVERITY_DEBUG, "%sGPS lat: %s", _GcsHeader, &pkt.payload[11]);
+#endif
+
+
+    // ground speed
     const Vector2f speed = AP::ahrs().groundspeed_vector();
+    float speed_knots = norm(speed.x, speed.y) * M_PER_SEC_TO_KNOTS;
+    speed_knots = 125.8;
+    snprintf((char*)&pkt.payload[21], 6+1, "%3.2f", double(speed_knots));
 
-    const float speed_knots = norm(speed.x, speed.y) * M_PER_SEC_TO_KNOTS;
-    snprintf((char*)&pkt.payload[21], 6+1, "%.2f", double(speed_knots));
+#if SAGETECH_DEBUG_TX_GPS
+    gcs().send_text(MAV_SEVERITY_DEBUG, "%sGPS speed: %s", _GcsHeader, &pkt.payload[21]);
+#endif
 
-    const float heading = wrap_360(degrees(atan2f(speed.x, speed.y)));
+    // heading
+    float heading = wrap_360(degrees(atan2f(speed.x, speed.y)));
+    heading = 77.52;
     snprintf((char*)&pkt.payload[27], 8+1, "%.4f", double(heading));
+
+#if SAGETECH_DEBUG_TX_GPS
+    gcs().send_text(MAV_SEVERITY_DEBUG, "%sGPS heading: %s", _GcsHeader, &pkt.payload[27]);
+#endif
 
     // hemisphere
     uint8_t hemisphere = 0;
@@ -506,7 +584,11 @@ void AP_ADSB_Sagetech::send_GPS()
     hemisphere |= (AP::gps().status() < AP_GPS::GPS_OK_FIX_2D) ? 0x80 : 0;  // isInvalid
     pkt.payload[35] = hemisphere;
 
+#if SAGETECH_DEBUG_TX_GPS
+    gcs().send_text(MAV_SEVERITY_DEBUG, "%sGPS hemisphere: 0x%02X", _GcsHeader, pkt.payload[35]);
+#endif
 
+    // time
     uint64_t time_usec;
     if (!AP::rtc().get_utc_usec(time_usec)) {
         memset(&pkt.payload[36],' ', 10);
@@ -518,6 +600,10 @@ void AP_ADSB_Sagetech::send_GPS()
         // format time string
         snprintf((char*)&pkt.payload[36], 10, "%06.3f", tm->tm_sec + (time_usec % 1000000) * 1.0e-6);
     }
+
+#if SAGETECH_DEBUG_TX_GPS
+    gcs().send_text(MAV_SEVERITY_DEBUG, "%sGPS time: %s", _GcsHeader, &pkt.payload[36]);
+#endif
 
     send_msg(pkt);
 }
