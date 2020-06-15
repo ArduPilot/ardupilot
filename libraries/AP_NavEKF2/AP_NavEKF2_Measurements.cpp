@@ -892,6 +892,11 @@ void NavEKF2_core::getTimingStatistics(struct ekf_timing &_timing)
 
 void NavEKF2_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint16_t delay_ms, uint32_t resetTime_ms)
 {
+    // protect against NaN
+    if (pos.is_nan() || isnan(posErr) || quat.is_nan() || isnan(angErr)) {
+        return;
+    }
+
     // limit update rate to maximum allowed by sensor buffers and fusion process
     // don't try to write to buffer until the filter has been initialised
     if ((timeStamp_ms - extNavMeasTime_ms) < 20) {
@@ -1014,6 +1019,11 @@ void NavEKF2_core::writeDefaultAirSpeed(float airspeed)
 
 void NavEKF2_core::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms)
 {
+    // protect against NaN
+    if (vel.is_nan() || isnan(err)) {
+        return;
+    }
+
     if ((timeStamp_ms - extNavVelMeasTime_ms) < 20) {
         return;
     }
