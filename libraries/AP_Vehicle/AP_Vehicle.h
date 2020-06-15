@@ -176,6 +176,9 @@ public:
     // get target location (for use by scripting)
     virtual bool get_target_location(Location& target_loc) { return false; }
 
+    // set steering and throttle (-1 to +1) (for use by scripting with Rover)
+    virtual bool set_steering_and_throttle(float steering, float throttle) { return false; }
+
     // write out harmonic notch log messages
     void write_notch_log_messages() const;
     // update the harmonic notch
