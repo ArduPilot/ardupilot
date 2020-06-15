@@ -39,9 +39,9 @@ void RC_Channel_Copter::mode_switch_changed(modeswitch_pos_t new_pos)
         // if none of the Aux Switches are set to Simple or Super Simple Mode then
         // set Simple Mode using stored parameters from EEPROM
         if (BIT_IS_SET(copter.g.super_simple, new_pos)) {
-            copter.set_simple_mode(2);
+            copter.set_simple_mode(Copter::SimpleMode::SUPERSIMPLE);
         } else {
-            copter.set_simple_mode(BIT_IS_SET(copter.g.simple_modes, new_pos));
+            copter.set_simple_mode(BIT_IS_SET(copter.g.simple_modes, new_pos) ? Copter::SimpleMode::SIMPLE : Copter::SimpleMode::NONE);
         }
     }
 }
@@ -170,17 +170,24 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
 
         case AUX_FUNC::SIMPLE_MODE:
             // low = simple mode off, middle or high position turns simple mode on
-            copter.set_simple_mode(ch_flag == AuxSwitchPos::HIGH ||
-                                   ch_flag == AuxSwitchPos::MIDDLE);
+            copter.set_simple_mode((ch_flag == AuxSwitchPos::LOW) ? Copter::SimpleMode::NONE : Copter::SimpleMode::SIMPLE);
             break;
 
-        case AUX_FUNC::SUPERSIMPLE_MODE:
-            // low = simple mode off, middle = simple mode, high = super simple mode
-            // there is an assumption here that the ch_flag
-            // enumeration's values match the different sorts of
-            // simple mode used in set_simple_mode
-            copter.set_simple_mode((uint8_t)ch_flag);
+        case AUX_FUNC::SUPERSIMPLE_MODE: {
+            Copter::SimpleMode newmode = Copter::SimpleMode::NONE;
+            switch (ch_flag) {
+            case AuxSwitchPos::LOW:
+                break;
+            case AuxSwitchPos::MIDDLE:
+                newmode = Copter::SimpleMode::SIMPLE;
+                break;
+            case AuxSwitchPos::HIGH:
+                newmode = Copter::SimpleMode::SUPERSIMPLE;
+                break;
+            }
+            copter.set_simple_mode(newmode);
             break;
+        }
 
         case AUX_FUNC::RTL:
 #if MODE_RTL_ENABLED == ENABLED
