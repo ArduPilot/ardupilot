@@ -29,6 +29,7 @@ def build(bld):
             'AP_Devo_Telem',
             'AP_OSD',
             'AC_AutoTune',
+            'AP_LQR_Control',
             'AP_KDECAN',
         ],
     )
