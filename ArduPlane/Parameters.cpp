@@ -1293,11 +1293,16 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(guidedHeading, "GUIDED_", 28, ParametersG2, AC_PID),
 #endif // OFFBOARD_GUIDED == ENABLED
 
+    // @Group: NAVLQR_
+    // @Path: ../libraries/AP_LQR_Control/AP_LQR_Control.cpp
+    AP_SUBGROUPINFO(LQR_controller, "NAVLQR_", 29, ParametersG2, AP_LQR_Control),
+    
     AP_GROUPEND
 };
 
 ParametersG2::ParametersG2(void) :
     ice_control(plane.rpm_sensor)
+    ,LQR_controller(plane.ahrs, &plane.TECS_controller)
 #if SOARING_ENABLED == ENABLED
     ,soaring_controller(plane.TECS_controller, plane.aparm)
 #endif
