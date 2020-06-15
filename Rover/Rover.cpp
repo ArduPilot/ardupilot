@@ -167,6 +167,19 @@ bool Rover::set_target_velocity_NED(const Vector3f& vel_ned)
     return true;
 }
 
+// set steering and throttle (-1 to +1) (for use by scripting)
+bool Rover::set_steering_and_throttle(float steering, float throttle)
+{
+    // exit if vehicle is not in Guided mode or Auto-Guided mode
+    if (!control_mode->in_guided_mode()) {
+        return false;
+    }
+
+    // set steering and throttle
+    mode_guided.set_steering_and_throttle(steering, throttle);
+    return true;
+}
+
 #if STATS_ENABLED == ENABLED
 /*
   update AP_Stats
