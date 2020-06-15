@@ -19,27 +19,26 @@ void Copter::set_auto_armed(bool b)
  *
  * @param [in] b 0:false or disabled, 1:true or SIMPLE, 2:SUPERSIMPLE
  */
-void Copter::set_simple_mode(uint8_t b)
+void Copter::set_simple_mode(SimpleMode b)
 {
-    if (ap.simple_mode != b) {
+    if (simple_mode != b) {
         switch (b) {
-            case 0:
+            case SimpleMode::NONE:
                 AP::logger().Write_Event(LogEvent::SET_SIMPLE_OFF);
                 gcs().send_text(MAV_SEVERITY_INFO, "SIMPLE mode off");
                 break;
-            case 1:
+            case SimpleMode::SIMPLE:
                 AP::logger().Write_Event(LogEvent::SET_SIMPLE_ON);
                 gcs().send_text(MAV_SEVERITY_INFO, "SIMPLE mode on");
                 break;
-            case 2:
-            default:
+            case SimpleMode::SUPERSIMPLE:
                 // initialise super simple heading
                 update_super_simple_bearing(true);
                 AP::logger().Write_Event(LogEvent::SET_SUPERSIMPLE_ON);
                 gcs().send_text(MAV_SEVERITY_INFO, "SUPERSIMPLE mode on");
                 break;
         }
-        ap.simple_mode = b;
+        simple_mode = b;
     }
 }
 
