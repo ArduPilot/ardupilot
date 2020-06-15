@@ -978,6 +978,9 @@ void NavEKF3_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, 
     timeStamp_ms = MAX(timeStamp_ms, imuDataDelayed.time_ms);
     extNavDataNew.time_ms = timeStamp_ms;
 
+    // store position data to buffer
+    storedExtNav.push(extNavDataNew);
+
     // protect against attitude or angle being NaN
     if (!quat.is_nan() && !isnan(angErr)) {
         // extract yaw from the attitude
@@ -988,8 +991,6 @@ void NavEKF3_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, 
         const float yaw_accuracy_rad = MAX(angErr, radians(5.0f));
         writeEulerYawAngle(yaw_rad, yaw_accuracy_rad, timeStamp_ms, 2);
     }
-
-    storedExtNav.push(extNavDataNew);
 }
 
 void NavEKF3_core::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms)
