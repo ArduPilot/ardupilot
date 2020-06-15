@@ -42,13 +42,13 @@ public:
     bool center_is_terrain_alt() const { return _terrain_alt; }
 
     /// get_radius - returns radius of circle in cm
-    float get_radius() const { return _radius; }
+    float get_radius() const { return _changed_radius; }
 
     /// set_radius - sets circle radius in cm
     void set_radius(float radius_cm);
 
     /// get_rate - returns target rate in deg/sec held in RATE parameter
-    float get_rate() const { return _rate; }
+    float get_rate() const { return _changed_rate; }
 
     /// get_rate_current - returns actual calculated rate target in deg/sec, which may be less than _rate
     float get_rate_current() const { return ToDeg(_angular_vel); }
@@ -147,4 +147,8 @@ private:
     bool        _rangefinder_available; // true if range finder could be used
     bool        _rangefinder_healthy;   // true if range finder is healthy
     float       _rangefinder_alt_cm;    // latest rangefinder altitude
+
+    // Radius and rate changes are retained 
+    float       _changed_radius;  // Changed radius
+    float       _changed_rate;    // Changed rate
 };
