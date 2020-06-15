@@ -147,11 +147,16 @@ public:
         fdx = 0;
         fdz = 0;
         calculated = false;
+        intermediate_distance = 20;
     }
     // This is for payload release state. 
     enum PayloadReleaseState{
         PayloadRelease_NotStarted,
         PayloadRelease_Start,
+        PayloadRelease_Intermediate_point_reached,
+        PayloadRelease_Loiter,
+        PayloadRelease_Loiter_complete,
+        PayloadRelease_Release_point_reached,
         PayloadRelease_Finish
     };
     //point where payload should be dropped

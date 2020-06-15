@@ -377,7 +377,13 @@ void Plane::do_payload_release(const AP_Mission::Mission_Command& cmd)
     mode_payloadrelease.set_state(mode_payloadrelease.PayloadRelease_Start);
     set_next_WP(cmd.content.location);
     mode_payloadrelease.drop_point = cmd.content.location;
+    mode_payloadrelease.release_point = mode_payloadrelease.drop_point;
+    mode_payloadrelease.int_point = mode_payloadrelease.drop_point;
     gcs().send_text(MAV_SEVERITY_INFO, "initialise payload release called");
+    condition_value = 1;
+    loiter.direction = -1;      //ccw loiter
+    loiter.total_cd = 36000UL;
+    gcs().send_text(MAV_SEVERITY_INFO, "loiter_total_cd: %d",loiter.total_cd);
     // gcs().send_text(MA V_SEVERITY_INFO, "target location: %f %f");
     //Location target_loc = cmd.content.location;
     //Location target_loc = plane.home;
@@ -686,17 +692,31 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 }
 //added
 bool Plane::verify_payload_release(const AP_Mission::Mission_Command &cmd){
-    gcs().send_text(MAV_SEVERITY_INFO, "Payloadrelease on progress");
-    if (verify_nav_wp(cmd)) {
-        mode_payloadrelease.set_state(mode_payloadrelease.PayloadRelease_Finish);
+    
+    if(mode_payloadrelease.get_state() == mode_payloadrelease.PayloadRelease_Start){
+        if (verify_nav_wp(cmd)) 
+        {
+            gcs().send_text(MAV_SEVERITY_INFO, "Intermediate point reached");
+            mode_payloadrelease.set_state(mode_payloadrelease.PayloadRelease_Intermediate_point_reached);
+        }
     }
-    // mode_payloadrelease.set_state(verify_nav_wp(cmd));
+    else if(mode_payloadrelease.get_state() == mode_payloadrelease.PayloadRelease_Loiter_complete)
+    {
+        if (verify_nav_wp(cmd))
+        {
+            gcs().send_text(MAV_SEVERITY_INFO, "Release point reached");
+            mode_payloadrelease.set_state(mode_payloadrelease.PayloadRelease_Release_point_reached);
+            mode_payloadrelease.set_state(mode_payloadrelease.PayloadRelease_Finish);
+        }
+    }
+
     if(mode_payloadrelease.get_state() == mode_payloadrelease.PayloadRelease_Finish){
         gcs().send_text(MAV_SEVERITY_INFO, "Hi I have completed the mission verified");
         return true;
     }
+
     mode_payloadrelease.update_releasepoint();
-    mode_payloadrelease.update();
+    //mode_payloadrelease.update();
     return false;
 //add finish
 }

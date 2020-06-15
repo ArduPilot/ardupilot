@@ -240,6 +240,8 @@ void ModePayloadRelease::get_intermediate_point(Vector3d RP){
 
 void ModePayloadRelease::update_releasepoint() {
 
+    bool result = false;
+
     if(get_state() == PayloadRelease_Start) {
         
         if(!calculated) {
@@ -256,9 +258,43 @@ void ModePayloadRelease::update_releasepoint() {
             neu_to_llh(release_point_neu,release_point);
             
             
+            gcs().send_text(MAV_SEVERITY_INFO, "rp_n = %d,rp_e = %d",release_point.lat,release_point.lng);
+            gcs().send_text(MAV_SEVERITY_INFO, "ip_n = %d,ip_e = %d",int_point.lat,int_point.lng);
+            int_point.loiter_xtrack = 1;
+            release_point.loiter_xtrack = 1;
+            gcs().send_text(MAV_SEVERITY_INFO, "loiter_xtrack_int: %d",int_point.loiter_xtrack);
+            gcs().send_text(MAV_SEVERITY_INFO, "loiter_xtrack_rp: %d",release_point.loiter_xtrack);
             plane.set_next_WP(int_point);
+            plane.loiter.total_cd = 2 * 36000UL;
             
         }
 
+    }
+    
+    if(get_state() == PayloadRelease_Intermediate_point_reached)
+    {
+        set_state(PayloadRelease_Loiter);
+        
+    }
+    if(get_state() == PayloadRelease_Loiter)
+    {
+        plane.update_loiter(50);
+
+        if (plane.condition_value != 0) {
+            // primary goal, loiter time
+            if (plane.loiter.sum_cd > plane.loiter.total_cd && plane.loiter.sum_cd > 1) {
+                // primary goal completed, initialize secondary heading goal
+                plane.condition_value = 0;
+                result = plane.verify_loiter_heading(true);
+            }
+        } else {
+            // secondary goal, loiter to heading
+            result = plane.verify_loiter_heading(false);
+        }
+        if(result){
+            plane.set_next_WP(release_point);
+            set_state(PayloadRelease_Loiter_complete);
+        }
+        
     }
 }
