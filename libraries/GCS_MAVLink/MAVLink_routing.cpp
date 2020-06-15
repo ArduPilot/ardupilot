@@ -126,7 +126,8 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
     bool broadcast_component = (target_component == 0 || target_component == -1);
     bool match_system = broadcast_system || (target_system == mavlink_system.sysid);
     bool match_component = match_system && (broadcast_component || 
-                                            (target_component == mavlink_system.compid));
+                                            target_component == mavlink_system.compid ||
+                                            target_component == MAV_COMP_ID_LOG);
     bool process_locally = match_system && match_component;
 
     if (process_locally && !broadcast_system && !broadcast_component) {
