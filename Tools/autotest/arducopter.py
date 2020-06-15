@@ -4085,8 +4085,8 @@ class AutoTestCopter(AutoTest):
                 1, # target component id
                 mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
                 0b1111111111111000, # mask specifying use-only-lat-lon-alt
-                destination.lat *1e7, # lat
-                destination.lng *1e7, # lon
+                int(destination.lat *1e7), # lat
+                int(destination.lng *1e7), # lon
                 destination.alt, # alt
                 0, # vx
                 0, # vy
