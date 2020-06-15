@@ -545,14 +545,14 @@ void Copter::update_simple_mode(void)
     float rollx, pitchx;
 
     // exit immediately if no new radio frame or not in simple mode
-    if (ap.simple_mode == 0 || !ap.new_radio_frame) {
+    if (simple_mode == SimpleMode::NONE || !ap.new_radio_frame) {
         return;
     }
 
     // mark radio frame as consumed
     ap.new_radio_frame = false;
 
-    if (ap.simple_mode == 1) {
+    if (simple_mode == SimpleMode::SIMPLE) {
         // rotate roll, pitch input by -initial simple heading (i.e. north facing)
         rollx = channel_roll->get_control_in()*simple_cos_yaw - channel_pitch->get_control_in()*simple_sin_yaw;
         pitchx = channel_roll->get_control_in()*simple_sin_yaw + channel_pitch->get_control_in()*simple_cos_yaw;
@@ -572,7 +572,7 @@ void Copter::update_simple_mode(void)
 void Copter::update_super_simple_bearing(bool force_update)
 {
     if (!force_update) {
-        if (ap.simple_mode != 2) {
+        if (simple_mode != SimpleMode::SUPERSIMPLE) {
             return;
         }
         if (home_distance() < SUPER_SIMPLE_RADIUS) {
