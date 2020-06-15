@@ -945,6 +945,11 @@ void NavEKF3_core::writeDefaultAirSpeed(float airspeed)
 
 void NavEKF3_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint16_t delay_ms, uint32_t resetTime_ms)
 {
+    // protect against NaN
+    if (pos.is_nan() || isnan(posErr)) {
+        return;
+    }
+
     // limit update rate to maximum allowed by sensor buffers and fusion process
     // don't try to write to buffer until the filter has been initialised
     if (((timeStamp_ms - extNavMeasTime_ms) < frontend->extNavIntervalMin_ms) || !statesInitialised) {
@@ -973,19 +978,27 @@ void NavEKF3_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, 
     timeStamp_ms = MAX(timeStamp_ms, imuDataDelayed.time_ms);
     extNavDataNew.time_ms = timeStamp_ms;
 
-    // extract yaw from the attitude
-    float roll_rad, pitch_rad, yaw_rad;
-    quat.to_euler(roll_rad, pitch_rad, yaw_rad);
+    // protect against attitude or angle being NaN
+    if (!quat.is_nan() && !isnan(angErr)) {
+        // extract yaw from the attitude
+        float roll_rad, pitch_rad, yaw_rad;
+        quat.to_euler(roll_rad, pitch_rad, yaw_rad);
 
-    // ensure yaw accuracy is no better than 5 degrees (some callers may send zero)
-    const float yaw_accuracy_rad = MAX(angErr, radians(5.0f));
-    writeEulerYawAngle(yaw_rad, yaw_accuracy_rad, timeStamp_ms, 2);
+        // ensure yaw accuracy is no better than 5 degrees (some callers may send zero)
+        const float yaw_accuracy_rad = MAX(angErr, radians(5.0f));
+        writeEulerYawAngle(yaw_rad, yaw_accuracy_rad, timeStamp_ms, 2);
+    }
 
     storedExtNav.push(extNavDataNew);
 }
 
 void NavEKF3_core::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms)
 {
+    // sanity check for NaNs
+    if (vel.is_nan() || isnan(err)) {
+        return;
+    }
+
     if ((timeStamp_ms - extNavVelMeasTime_ms) < frontend->extNavIntervalMin_ms) {
         return;
     }
