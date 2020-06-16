@@ -4,6 +4,8 @@
 #include "AP_Arming.h"
 #include "Plane.h"
 
+constexpr uint32_t AP_ARMING_DELAY_MS = 2000; // delay from arming to start of motor spoolup
+
 const AP_Param::GroupInfo AP_Arming_Plane::var_info[] = {
     // variables from parent vehicle
     AP_NESTEDGROUPINFO(AP_Arming, 0),
@@ -187,7 +189,9 @@ bool AP_Arming_Plane::arm(const AP_Arming::Method method, const bool do_arming_c
     }
 
     change_arm_state();
-    plane.quadplane.delay_arming = true;
+
+    // rising edge of delay_arming oneshot
+    delay_arming = true;
 
     gcs().send_text(MAV_SEVERITY_INFO, "Throttle armed");
 
@@ -246,5 +250,12 @@ void AP_Arming_Plane::update_soft_armed()
     hal.util->set_soft_armed(is_armed() &&
                              hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
     AP::logger().set_vehicle_armed(hal.util->get_soft_armed());
+
+    // update delay_arming oneshot
+    if (delay_arming &&
+        (AP_HAL::millis() - hal.util->get_last_armed_change() >= AP_ARMING_DELAY_MS)) {
+
+        delay_arming = false;
+    }
 }
 
