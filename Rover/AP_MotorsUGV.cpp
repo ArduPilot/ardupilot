@@ -720,7 +720,8 @@ void AP_MotorsUGV::output_regular(bool armed, float ground_speed, float steering
 // output to skid steering channels
 void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float throttle, float dt)
 {
-    if (!have_skid_steering()) {
+    if (SRV_Channels::function_assigned(SRV_Channel::k_steering)
+        && SRV_Channels::function_assigned(SRV_Channel::k_throttle)) {
         return;
     }
 
