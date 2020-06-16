@@ -178,6 +178,7 @@ private:
     volatile uint8_t rx_bounce_idx;
     uint8_t *rx_bounce_buf[2];
     uint8_t *tx_bounce_buf;
+    uint16_t contention_counter;
 #endif
     ByteBuffer _readbuf{0};
     ByteBuffer _writebuf{0};

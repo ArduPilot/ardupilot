@@ -908,6 +908,16 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
         chEvtGetAndClearEvents(EVT_TRANSMIT_DMA_COMPLETE);
 
         if (dma_handle->has_contention()) {
+            if (_baudrate <= 115200) {
+                contention_counter += 3;
+                if (contention_counter > 1000) {
+                    // more than 25% of attempts to use this DMA
+                    // channel are getting contention and we have a
+                    // low baudrate. Switch off DMA for future
+                    // transmits on this low baudrate UART
+                    tx_dma_enabled = false;
+                }
+            }
             /*
             someone else is using this same DMA channel. To reduce
             latency we will drop the TX size with DMA on this UART to
@@ -918,6 +928,8 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
             if (tx_len > max_tx_bytes) {
                 tx_len = max_tx_bytes;
             }
+        } else if (contention_counter > 0) {
+            contention_counter--;
         }
 
         chSysLock();
