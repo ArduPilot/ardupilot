@@ -86,6 +86,10 @@ public:
     float get_pilot_desired_yaw_rate(int16_t stick_angle);
     float get_pilot_desired_throttle() const;
 
+    // returns climb target_rate reduced to avoid obstacles and
+    // altitude fence
+    float get_avoidance_adjusted_climbrate(float target_rate);
+
     const Vector3f& get_desired_velocity() {
         // note that position control isn't used in every mode, so
         // this may return bogus data:
@@ -245,7 +249,6 @@ public:
     void set_land_complete(bool b);
     GCS_Copter &gcs();
     void set_throttle_takeoff(void);
-    float get_avoidance_adjusted_climbrate(float target_rate);
     uint16_t get_pilot_speed_dn(void);
 
     // end pass-through functions
