@@ -661,7 +661,6 @@ private:
     // Attitude.cpp
     float get_pilot_desired_yaw_rate(int16_t stick_angle);
     void update_throttle_hover();
-    void set_throttle_takeoff();
     float get_pilot_desired_climb_rate(float throttle_control);
     float get_non_takeoff_throttle();
     float get_avoidance_adjusted_climbrate(float target_rate);
