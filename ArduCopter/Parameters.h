@@ -616,6 +616,10 @@ public:
     void *mode_zigzag_ptr;
 #endif
 
+#if MODE_ACRO_ENABLED == ENABLED
+    AP_Int8 acro_options;
+#endif
+
 };
 
 extern const AP_Param::Info        var_info[];
