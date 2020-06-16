@@ -276,6 +276,9 @@ void AP_Camera::configure(float, float, float, float, float, float, float) {}
 void AP_Camera::control(float, float, float, float, float, float) {}
 void AP_Camera::send_feedback(mavlink_channel_t chan) {}
 void AP_Camera::take_picture() {}
+void AP_Camera::cam_mode_toggle() {}
+void AP_Camera::handle_message(mavlink_channel_t chan, const mavlink_message_t &msg) {}
+AP_Camera *AP_Camera::_singleton;
 namespace AP {
     AP_Camera *camera() {
         return nullptr;
