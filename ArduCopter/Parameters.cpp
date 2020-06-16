@@ -969,6 +969,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPPTR(mode_zigzag_ptr, "ZIGZ_", 38, ParametersG2, ModeZigZag),
 #endif
 
+#if MODE_ACRO_ENABLED == ENABLED
+    // @Param: ACRO_OPTIONS
+    // @DisplayName: Acro mode options
+    // @Description: A range of options that can be applied to change acro mode behaviour. Air-mode enables ATC_THR_MIX_MAN at all times (air-mode has no effect on helicopters). Rate Loop Only disables the use of angle stabilization and uses angular rate stabilization only.
+    // @Bitmask: 0:Air-mode,1:Rate Loop Only
+    // @User: Advanced
+    AP_GROUPINFO("ACRO_OPTIONS", 39, ParametersG2, acro_options, 0),
+#endif
+
     AP_GROUPEND
 };
 

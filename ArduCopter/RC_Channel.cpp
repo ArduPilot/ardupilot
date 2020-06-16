@@ -112,8 +112,10 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const AuxS
     case AUX_FUNC::SUPERSIMPLE_MODE:
     case AUX_FUNC::SURFACE_TRACKING:
     case AUX_FUNC::WINCH_ENABLE:
-    case AUX_FUNC::AIRMODE:
         do_aux_function(ch_option, ch_flag);
+        break;
+    case AUX_FUNC::AIRMODE:
+        do_aux_function_change_air_mode(ch_flag);
         break;
     default:
         RC_Channel::init_aux_function(ch_option, ch_flag);
@@ -596,20 +598,29 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
             break;
 
         case AUX_FUNC::AIRMODE:
-            switch (ch_flag) {
-            case AuxSwitchPos::HIGH:
-                copter.air_mode = AirMode::AIRMODE_ENABLED;
-                break;
-            case AuxSwitchPos::MIDDLE:
-                break;
-            case AuxSwitchPos::LOW:
-                copter.air_mode = AirMode::AIRMODE_DISABLED;
-                break;
-            }
-        break;
+            do_aux_function_change_air_mode(ch_flag);
+#if MODE_ACRO_ENABLED == ENABLED && FRAME_CONFIG != HELI_FRAME
+            copter.mode_acro.air_mode_aux_changed();
+#endif
+            break;
             
     default:
         RC_Channel::do_aux_function(ch_option, ch_flag);
+        break;
+    }
+}
+
+// change air-mode status
+void RC_Channel_Copter::do_aux_function_change_air_mode(const AuxSwitchPos ch_flag)
+{
+    switch (ch_flag) {
+    case AuxSwitchPos::HIGH:
+        copter.air_mode = AirMode::AIRMODE_ENABLED;
+        break;
+    case AuxSwitchPos::MIDDLE:
+        break;
+    case AuxSwitchPos::LOW:
+        copter.air_mode = AirMode::AIRMODE_DISABLED;
         break;
     }
 }
