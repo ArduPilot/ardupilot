@@ -265,6 +265,16 @@ void Location::offset_bearing(float bearing, float distance)
     offset(ofs_north, ofs_east);
 }
 
+// extrapolate latitude/longitude given bearing, pitch and distance
+void Location::offset_bearing_and_pitch(float bearing, float pitch, float distance)
+{
+    const float ofs_north =  cosf(radians(pitch)) * cosf(radians(bearing)) * distance;
+    const float ofs_east  =  cosf(radians(pitch)) * sinf(radians(bearing)) * distance;
+    offset(ofs_north, ofs_east);
+    const int32_t dalt =  sinf(radians(pitch)) * distance *100.0f;
+    alt += dalt; 
+}
+
 float Location::longitude_scale() const
 {
     float scale = cosf(lat * (1.0e-7f * DEG_TO_RAD));
