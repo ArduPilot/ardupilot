@@ -896,6 +896,9 @@ bool Compass::register_compass(int32_t dev_id, uint8_t& instance)
 Compass::StateIndex Compass::_get_state_id(Compass::Priority priority) const
 {
 #if COMPASS_MAX_INSTANCES > 1
+    if (_priority_did_list[priority] == 0) {
+        return StateIndex(COMPASS_MAX_INSTANCES);
+    }
     for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
         if (_priority_did_list[priority] == _state[i].expected_dev_id) {
             return i;
@@ -1569,7 +1572,8 @@ bool Compass::configured(uint8_t i)
 
     StateIndex id = _get_state_id(Priority(i));
     // exit immediately if dev_id hasn't been detected
-    if (_state[id].detected_dev_id == 0) {
+    if (_state[id].detected_dev_id == 0 || 
+        id == COMPASS_MAX_INSTANCES) {
         return false;
     }
 

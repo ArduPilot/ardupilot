@@ -127,9 +127,11 @@ static const uint32_t flash_memmap[STM32_FLASH_NPAGES] = { KB(32), KB(32), KB(32
 #error "Unsupported processor for flash.c"
 #endif
 
+#if defined(__GNUC__) && __GNUC__ >= 6
 #ifdef STORAGE_FLASH_PAGE
 static_assert(STORAGE_FLASH_PAGE < STM32_FLASH_NPAGES,
               "STORAGE_FLASH_PAGE out of range");
+#endif
 #endif
 
 // keep a cache of the page addresses
