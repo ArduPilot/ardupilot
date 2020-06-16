@@ -796,9 +796,12 @@ GCS_Copter &Mode::gcs()
     return copter.gcs();
 }
 
+// set_throttle_takeoff - allows modes to tell throttle controller we
+// are taking off so I terms can be cleared
 void Mode::set_throttle_takeoff()
 {
-    return copter.set_throttle_takeoff();
+    // tell position controller to reset alt target and reset I terms
+    pos_control->init_takeoff();
 }
 
 float Mode::get_avoidance_adjusted_climbrate(float target_rate)
