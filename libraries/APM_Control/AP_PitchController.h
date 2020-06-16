@@ -54,6 +54,7 @@ private:
 	AP_Float _roll_ff;
 	uint32_t _last_t;
 	float _last_out;
+	float _last_rate;
 	
     AP_Logger::PID_Info _pid_info;
 
