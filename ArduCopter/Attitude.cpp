@@ -118,17 +118,6 @@ float Copter::get_non_takeoff_throttle()
     return MAX(0,motors->get_throttle_hover()/2.0f);
 }
 
-// get target climb rate reduced to avoid obstacles and altitude fence
-float Copter::get_avoidance_adjusted_climbrate(float target_rate)
-{
-#if AC_AVOID_ENABLED == ENABLED
-    avoid.adjust_velocity_z(pos_control->get_pos_z_p().kP(), pos_control->get_max_accel_z(), target_rate, G_Dt);
-    return target_rate;
-#else
-    return target_rate;
-#endif
-}
-
 // set_accel_throttle_I_from_pilot_throttle - smoothes transition from pilot controlled throttle to autopilot throttle
 void Copter::set_accel_throttle_I_from_pilot_throttle()
 {

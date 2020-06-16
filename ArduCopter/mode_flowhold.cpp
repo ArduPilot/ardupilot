@@ -286,7 +286,7 @@ void ModeFlowHold::run()
         takeoff.get_climb_rates(target_climb_rate, takeoff_climb_rate);
 
         // get avoidance adjusted climb rate
-        target_climb_rate = copter.get_avoidance_adjusted_climbrate(target_climb_rate);
+        target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
         // call position controller
         copter.pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, copter.G_Dt, false);
@@ -309,7 +309,7 @@ void ModeFlowHold::run()
         target_climb_rate = copter.surface_tracking.adjust_climb_rate(target_climb_rate);
 
         // get avoidance adjusted climb rate
-        target_climb_rate = copter.get_avoidance_adjusted_climbrate(target_climb_rate);
+        target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
         copter.pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
         break;
