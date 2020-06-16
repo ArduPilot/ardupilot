@@ -112,10 +112,12 @@ bool AC_WPNav_OA::update_wpnav()
                 // convert Location to offset from EKF origin
                 Vector3f dest_NEU;
                 if (_oa_destination.get_vector_from_origin_NEU(dest_NEU)) {
-                    // calculate target altitude by calculating OA adjusted destination's distance along the original track
-                    // and then linear interpolate using the original track's origin and destination altitude
-                    const float dist_along_path = constrain_float(oa_destination_new.line_path_proportion(origin_loc, destination_loc), 0.0f, 1.0f);
-                    dest_NEU.z = linear_interpolate(_origin_oabak.z, _destination_oabak.z, dist_along_path, 0.0f, 1.0f);
+                    if (oa_ptr->get_bendy_type() == AP_OAPathPlanner::OA_BENDY_HORIZONTAL) {
+                        // calculate target altitude by calculating OA adjusted destination's distance along the original track
+                        // and then linear interpolate using the original track's origin and destination altitude
+                        const float dist_along_path = constrain_float(oa_destination_new.line_path_proportion(origin_loc, destination_loc), 0.0f, 1.0f);
+                        dest_NEU.z = linear_interpolate(_origin_oabak.z, _destination_oabak.z, dist_along_path, 0.0f, 1.0f);
+                    }
                     if (set_wp_destination(dest_NEU, _terrain_alt)) {
                         _oa_state = oa_retstate;
                     }
