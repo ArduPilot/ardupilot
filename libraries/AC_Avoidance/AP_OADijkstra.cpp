@@ -37,16 +37,6 @@ AP_OADijkstra::AP_OADijkstra() :
 // returns DIJKSTRA_STATE_SUCCESS and populates origin_new and destination_new if avoidance is required
 AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current_loc, const Location &destination, Location& origin_new, Location& destination_new)
 {
-    // require ekf origin to have been set
-    struct Location ekf_origin {};
-    {
-        WITH_SEMAPHORE(AP::ahrs().get_semaphore());
-        if (!AP::ahrs().get_origin(ekf_origin)) {
-            AP::logger().Write_OADijkstra(DIJKSTRA_STATE_NOT_REQUIRED, 0, 0, 0, destination, destination);
-            return DIJKSTRA_STATE_NOT_REQUIRED;
-        }
-    }
-
     WITH_SEMAPHORE(AP::fence()->polyfence().get_loaded_fence_semaphore());
 
     // avoidance is not required if no fences
