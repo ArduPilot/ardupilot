@@ -627,15 +627,3 @@ void GCS_MAVLINK_Tracker::send_global_position_int()
         0,                        // Z speed cm/s (+ve Down)
         tracker.ahrs.yaw_sensor); // compass heading in 1/100 degree
 }
-
-
-/* dummy methods to avoid having to link against AP_Camera */
-void AP_Camera::control_msg(const mavlink_message_t &) {}
-void AP_Camera::configure(float, float, float, float, float, float, float) {}
-void AP_Camera::control(float, float, float, float, float, float) {}
-void AP_Camera::send_feedback(mavlink_channel_t chan) {}
-/* end dummy methods to avoid having to link against AP_Camera */
-
-// dummy method to avoid linking AFS
-bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reason) {return false;}
-AP_AdvancedFailsafe *AP::advancedfailsafe() { return nullptr; }
