@@ -1168,8 +1168,9 @@ struct PACKED log_SRTL {
 struct PACKED log_OABendyRuler {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint16_t type;
     uint8_t active;
-    uint16_t target_yaw;
+    uint16_t target;
     uint16_t yaw;
     float margin;
     int32_t final_lat;
@@ -1839,8 +1840,9 @@ struct PACKED log_Arm_Disarm {
 // @LoggerMessage: OABR
 // @Description: Object avoidance (Bendy Ruler) diagnostics
 // @Field: TimeUS: Time since system startup
+// @Field: Type: Type of BendyRuler currently active
 // @Field: Active: True if Bendy Ruler avoidance is being used
-// @Field: DesYaw: Best yaw chosen to avoid obstacle
+// @Field: Target: Best yaw or pitch chosen to avoid obstacle
 // @Field: Yaw: Current vehicle yaw
 // @Field: Mar: Margin from path to obstacle on best yaw chosen
 // @Field: DLat: Destination latitude
@@ -2386,7 +2388,7 @@ struct PACKED log_Arm_Disarm {
     { LOG_SRTL_MSG, sizeof(log_SRTL), \
       "SRTL", "QBHHBfff", "TimeUS,Active,NumPts,MaxPts,Action,N,E,D", "s----mmm", "F----000" }, \
     { LOG_OA_BENDYRULER_MSG, sizeof(log_OABendyRuler), \
-      "OABR","QBHHfLLLL","TimeUS,Active,DesYaw,Yaw,Mar,DLat,DLng,OALat,OALng", "sbddmDUDU", "F----GGGG" }, \
+      "OABR","QHBHHfLLLL","TimeUS,Type,Active,Target,Yaw,Mar,DLat,DLng,OALat,OALng", "s-bddmDUDU", "F-----GGGG" }, \
     { LOG_OA_DIJKSTRA_MSG, sizeof(log_OADijkstra), \
       "OADJ","QBBBBLLLL","TimeUS,State,Err,CurrPoint,TotPoints,DLat,DLng,OALat,OALng", "sbbbbDUDU", "F----GGGG" }, \
     { LOG_IMU2_MSG, sizeof(log_IMU), \
