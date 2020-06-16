@@ -69,13 +69,6 @@ void Copter::update_throttle_hover()
 #endif
 }
 
-// set_throttle_takeoff - allows parents to tell throttle controller we are taking off so I terms can be cleared
-void Copter::set_throttle_takeoff()
-{
-    // tell position controller to reset alt target and reset I terms
-    pos_control->init_takeoff();
-}
-
 // get_pilot_desired_climb_rate - transform pilot's throttle input to climb rate in cm/s
 // without any deadzone at the bottom
 float Copter::get_pilot_desired_climb_rate(float throttle_control)

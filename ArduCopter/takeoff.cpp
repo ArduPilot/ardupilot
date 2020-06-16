@@ -54,7 +54,7 @@ void Mode::_TakeOff::start(float alt_cm)
     // indicate we are taking off
     copter.set_land_complete(false);
     // tell position controller to reset alt target and reset I terms
-    copter.set_throttle_takeoff();
+    copter.flightmode->set_throttle_takeoff();
 
     // calculate climb rate
     const float speed = MIN(copter.wp_nav->get_default_speed_up(), MAX(copter.g.pilot_speed_up*2.0f/3.0f, copter.g.pilot_speed_up-50.0f));
