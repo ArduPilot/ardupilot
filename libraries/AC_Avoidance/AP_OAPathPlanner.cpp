@@ -29,6 +29,7 @@ const float OA_MARGIN_MAX_DEFAULT = 5;
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
     const int16_t OA_OPTIONS_DEFAULT = 1;
 #endif
+const int16_t OA_BENDY_TYPE_DEFAULT = 1;
 
 const int16_t OA_UPDATE_MS = 1000;      // path planning updates run at 1hz
 const int16_t OA_TIMEOUT_MS = 3000;     // results over 3 seconds old are ignored
@@ -73,6 +74,14 @@ const AP_Param::GroupInfo AP_OAPathPlanner::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("OPTIONS", 5, AP_OAPathPlanner, _options, OA_OPTIONS_DEFAULT),
 #endif
+
+    // @Param: BENDY_TYPE
+    // @DisplayName: Type of BendyRuler
+    // @Description: BendyRuler will search for clear path along the direction defined by this parameter
+    // @Values{Rover}: 1:Horizontal search
+    // @Values: 1:Horizontal search, 2:Vertical search
+    // @User: Standard
+    AP_GROUPINFO("BENDY_TYPE", 6, AP_OAPathPlanner, _bendy_type, OA_BENDY_TYPE_DEFAULT),
 
     AP_GROUPEND
 };
@@ -248,7 +257,7 @@ void AP_OAPathPlanner::avoidance_thread()
             if (_oabendyruler == nullptr) {
                 continue;
             }
-            _oabendyruler->set_config(_lookahead, _margin_max);
+            _oabendyruler->set_config(_lookahead, _margin_max, _bendy_type);
             if (_oabendyruler->update(avoidance_request2.current_loc, avoidance_request2.destination, avoidance_request2.ground_speed_vec, origin_new, destination_new)) {
                 res = OA_SUCCESS;
             }

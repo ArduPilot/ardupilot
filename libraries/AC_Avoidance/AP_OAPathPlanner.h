@@ -60,7 +60,16 @@ public:
         OA_OPTION_WP_RESET = (1 << 0),
     };
 
+    // enumeration for _BENDY_TYPE parameter
+    enum OABendyType {
+        OA_BENDY_HORIZONTAL = 1,
+        OA_BENDY_VERTICAL   = 2,
+    };
+
     uint16_t get_options() const { return _options;}
+    
+    uint16_t get_bendy_type() const {return _bendy_type;}
+
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -93,6 +102,8 @@ private:
     AP_Float _lookahead;            // object avoidance will look this many meters ahead of vehicle
     AP_Float _margin_max;           // object avoidance will ignore objects more than this many meters from vehicle
     AP_Int16 _options;              // Bitmask for options while recovering from Object Avoidance
+    AP_Int16 _bendy_type;           // Type of BendyRuler to run
+
     // internal variables used by front end
     HAL_Semaphore _rsem;            // semaphore for multi-thread use of avoidance_request and avoidance_result
     bool _thread_created;           // true once background thread has been created
