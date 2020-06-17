@@ -57,14 +57,16 @@ void ModePayloadRelease::initialise_initial_condition() {
     fdx = 0;
     fdz = 0;
 
-    airspeed_uav = 5;
+    airspeed_uav = plane.gps.ground_speed();
 
     wind = plane.ahrs.wind_estimate();
     //At first the drop_point which is in longitude and latitude must be changed into neu so that release point must be calculated
     llh_to_neu(drop_point,drop_point_neu);
     //intialize wind values
-    wind_speed_north = wind.y;
-    wind_speed_east = wind.x;
+    //wind_speed_north = wind.y;
+    //wind_speed_east = wind.x;
+    wind_speed_north = 0;
+    wind_speed_east = 0;
     wind_speed_normalized = (wind_speed_east*wind_speed_east) + (wind_speed_north*wind_speed_north);
     wind_speed_normalized = sqrt(wind_speed_normalized);
     
@@ -74,7 +76,7 @@ void ModePayloadRelease::initialise_initial_condition() {
     // int32_t bearing_cd = plane.current_loc.get_;
     // get current heading.
     // gps.ground_course_cd() calculates heading in centi degrees so it needs to be divided by 100 to convert into degrees. 
-    int32_t heading_cd = plane.gps.ground_course_cd() / 100;
+    int32_t heading_cd = plane.gps.ground_course_cd();
     theta = wrap_2PI((heading_cd / 100) * DEG_TO_RAD) ;  //calculate heading in radian
     phi = wrap_2PI(atan2f(wind_speed_east,wind_speed_north)); //wind vector direction
 
@@ -227,15 +229,44 @@ void ModePayloadRelease::calculate_release_point() {
 
 void ModePayloadRelease::get_intermediate_point(Vector3d RP){
     Vector3d int_point_neu;
-    Vector3d current_neu;
-
-    float angle = plane.current_loc.get_bearing_to(drop_point) * 0.01f * DEG_TO_RAD;
+    Vector3d center_point_neu;
+    //int plus_minus = 1;  // 1 for center at left side , -1 for center at right side of intermediate point
+    // Find the heading in which intermediate point should be calculated
+    float angle = plane.prev_WP_loc.get_bearing_to(drop_point) * 0.01f * DEG_TO_RAD;
+    gcs().send_text(MAV_SEVERITY_INFO, "angle = %f",angle);    
 
     int_point_neu.x = RP.x - intermediate_distance * cos(angle);
     int_point_neu.y = RP.y - intermediate_distance * sin(angle);
     int_point_neu.z = RP.z;
 
-    neu_to_llh(int_point_neu,int_point);
+    gcs().send_text(MAV_SEVERITY_INFO, "rp_n = %f,rp_e = %f",release_point_neu.x,release_point_neu.y);
+    gcs().send_text(MAV_SEVERITY_INFO, "ip_n = %f,ip_e = %f",int_point_neu.x,int_point_neu.y);
+
+    //set loiter parameters for safety
+    set_loiter_parameters();
+
+    // after calculating intermediate point, calculate the center to loiter around  and update intermediate point
+    // slope of line connecting tangent to leave the loiter and center i.e intermediate point 
+    // use m1 * m2 = -1
+
+    float slope = -1.0 / tan(angle);    
+
+    //update intermediate point to be center of circle.
+    //plane.loiter.direction is used in the calculation below to make circle in negative direction of loiter
+    center_point_neu.x = int_point_neu.x + -1 * plane.loiter.direction * (radius) * (1.0 / sqrt(slope * slope + 1));
+    center_point_neu.y = int_point_neu.y + -1 * plane.loiter.direction * (radius) * slope * (1.0 / sqrt(slope * slope + 1));
+    center_point_neu.z = int_point_neu.z;
+
+    gcs().send_text(MAV_SEVERITY_INFO,"loiter dirn = %d", plane.loiter.direction);
+    gcs().send_text(MAV_SEVERITY_INFO, "cp_n = %f,cp_e = %f",center_point_neu.x,center_point_neu.y);
+    float dist = sqrt(sq(center_point_neu.x-int_point_neu.x) + sq(center_point_neu.y - int_point_neu.y));
+    gcs().send_text(MAV_SEVERITY_INFO,"dist = %f",dist);
+    neu_to_llh(center_point_neu,int_point);
+}
+
+void ModePayloadRelease::set_loiter_parameters(){
+    plane.loiter.direction = -1;
+    plane.loiter.total_cd = 2 * 36000UL;
 }
 
 void ModePayloadRelease::update_releasepoint() {
@@ -265,7 +296,11 @@ void ModePayloadRelease::update_releasepoint() {
             gcs().send_text(MAV_SEVERITY_INFO, "loiter_xtrack_int: %d",int_point.loiter_xtrack);
             gcs().send_text(MAV_SEVERITY_INFO, "loiter_xtrack_rp: %d",release_point.loiter_xtrack);
             plane.set_next_WP(int_point);
-            plane.loiter.total_cd = 2 * 36000UL;
+            
+            //set loiter parameters in case of resetting waypoint
+            //the payload release drop point behind current waypoint is not supported. the drop point should be selected in the direction of current waypoint.  
+            set_loiter_parameters();
+            
             
         }
 
@@ -278,7 +313,7 @@ void ModePayloadRelease::update_releasepoint() {
     }
     if(get_state() == PayloadRelease_Loiter)
     {
-        plane.update_loiter(50);
+        plane.update_loiter(radius);
 
         if (plane.condition_value != 0) {
             // primary goal, loiter time

@@ -382,11 +382,7 @@ void Plane::do_payload_release(const AP_Mission::Mission_Command& cmd)
     gcs().send_text(MAV_SEVERITY_INFO, "initialise payload release called");
     condition_value = 1;
     loiter.direction = -1;      //ccw loiter
-    loiter.total_cd = 36000UL;
     gcs().send_text(MAV_SEVERITY_INFO, "loiter_total_cd: %d",loiter.total_cd);
-    // gcs().send_text(MA V_SEVERITY_INFO, "target location: %f %f");
-    //Location target_loc = cmd.content.location;
-    //Location target_loc = plane.home;
 
 }
 //add finish

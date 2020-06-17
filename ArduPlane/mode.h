@@ -147,7 +147,8 @@ public:
         fdx = 0;
         fdz = 0;
         calculated = false;
-        intermediate_distance = 20;
+        intermediate_distance = 100;
+        radius = 50;
     }
     // This is for payload release state. 
     enum PayloadReleaseState{
@@ -202,8 +203,11 @@ protected:
     bool _enter() override;
     void _exit() override;
 private:
+
+    void set_loiter_parameters();
     bool is_payload_released;
     PayloadReleaseState _state = PayloadRelease_NotStarted;
+    int radius; //radius to loiter around intermediate point
 
     uint8_t g; //acceleration due to gravity
     uint8_t m; //mass of payload
