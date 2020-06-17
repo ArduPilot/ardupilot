@@ -230,7 +230,7 @@ void ModePayloadRelease::calculate_release_point() {
 void ModePayloadRelease::get_intermediate_point(Vector3d RP){
     Vector3d int_point_neu;
     Vector3d center_point_neu;
-    //int plus_minus = 1;  // 1 for center at left side , -1 for center at right side of intermediate point
+    int plus_minus = 1;  // 1 for center at left side , -1 for center at right side of intermediate point
     // Find the heading in which intermediate point should be calculated
     float angle = plane.prev_WP_loc.get_bearing_to(drop_point) * 0.01f * DEG_TO_RAD;
     gcs().send_text(MAV_SEVERITY_INFO, "angle = %f",angle);    
@@ -249,12 +249,29 @@ void ModePayloadRelease::get_intermediate_point(Vector3d RP){
     // slope of line connecting tangent to leave the loiter and center i.e intermediate point 
     // use m1 * m2 = -1
 
-    float slope = -1.0 / tan(angle);    
+    float slope = -1.0 / tan(angle);   
+    if (plane.loiter.direction == 1)
+    {
+        plus_minus = -1;
+        if(angle * RAD_TO_DEG <= 180 )
+        {
+            plus_minus = 1;
+        }
+    } 
+    else if (plane.loiter.direction == -1)
+    {
+        plus_minus = -1;
+        if(angle * RAD_TO_DEG > 180)
+        {
+            plus_minus = 1;
+        }
+    }
+    
 
     //update intermediate point to be center of circle.
     //plane.loiter.direction is used in the calculation below to make circle in negative direction of loiter
-    center_point_neu.x = int_point_neu.x + -1 * plane.loiter.direction * (radius) * (1.0 / sqrt(slope * slope + 1));
-    center_point_neu.y = int_point_neu.y + -1 * plane.loiter.direction * (radius) * slope * (1.0 / sqrt(slope * slope + 1));
+    center_point_neu.x = int_point_neu.x + (-1) * plus_minus * (radius) * (1.0 / sqrt(slope * slope + 1));
+    center_point_neu.y = int_point_neu.y + (-1) * plus_minus * (radius) * slope * (1.0 / sqrt(slope * slope + 1));
     center_point_neu.z = int_point_neu.z;
 
     gcs().send_text(MAV_SEVERITY_INFO,"loiter dirn = %d", plane.loiter.direction);
