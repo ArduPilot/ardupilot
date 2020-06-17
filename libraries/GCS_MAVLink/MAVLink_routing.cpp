@@ -266,9 +266,20 @@ bool MAVLink_routing::find_by_mavtype(uint8_t mavtype, uint8_t &sysid, uint8_t &
 void MAVLink_routing::learn_route(mavlink_channel_t in_channel, const mavlink_message_t &msg)
 {
     uint8_t i;
-    if (msg.sysid == 0 ||
-        (msg.sysid == mavlink_system.sysid &&
-         msg.compid == mavlink_system.compid)) {
+    if (msg.sysid == 0) {
+        // don't learn routes to the broadcast system
+        return;
+    }
+    if (msg.sysid == mavlink_system.sysid &&
+        msg.compid == mavlink_system.compid) {
+        // don't learn routes to ourself.  We know where we are.
+        return;
+    }
+    if (msg.sysid == mavlink_system.sysid &&
+        msg.compid == MAV_COMP_ID_ALL) {
+        // don't learn routes to the broadcast component ID for our
+        // own system id.  We should still broadcast these, but we
+        // should also process them locally.
         return;
     }
     for (i=0; i<num_routes; i++) {
