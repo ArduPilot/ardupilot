@@ -120,7 +120,6 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
 		dt = 0;
 	}
 	_last_t = tnow;
-	
 	float delta_time    = (float)dt * 0.001f;
 	
 	// Get body rate vector (radians/sec)
@@ -166,8 +165,14 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
 		_pid_info.I = 0;
 	}
 	
+    // Scale the integration limit
+    float intLimScaled = gains.imax * 0.01f;
+
+    // Constrain the integrator state
+    _pid_info.I = constrain_float(_pid_info.I, -intLimScaled, intLimScaled);
+
 	static const float D_Filt_f3db = 1.0f; // hz for 3 dB cutoff
-	static const float tau = 1.0f / (2.0f * M_PI * D_Filt_f3db); // tau for filtering
+	static const float tau = 1.0f / (M_2PI * D_Filt_f3db); // tau for filtering
 	
 	// Calculate the Derivative output
     if ( dt > 0 ) {
@@ -175,7 +180,6 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
 		//Tustin transform([Kd] * [s] * [1/(s*tau+1)]) // s => (2/T)(z-1) / (z+1)
 		// work by "Phil S" - "PID Contoller Implementation in Software"
 		// Tustin transform is stable where continuous time controller is stable. 
-		// as tau tends away from 0 low pass phase shifts D control to P control
 		
 		float D_measure = -achieved_rate * scaler * scaler;
 		
@@ -185,13 +189,7 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
 			
 		_last_rate =  D_measure; 
 	}
-
-    // Scale the integration limit
-    float intLimScaled = gains.imax * 0.01f;
-
-    // Constrain the integrator state
-    _pid_info.I = constrain_float(_pid_info.I, -intLimScaled, intLimScaled);
-
+	
 	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
     // No conversion is required for K_D
     float eas2tas = _ahrs.get_EAS2TAS();

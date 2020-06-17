@@ -98,8 +98,6 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
 	}
 	_last_t = tnow;
 	
-	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
-    // No conversion is required for K_D
     float eas2tas = _ahrs.get_EAS2TAS();
 	float k_ff = gains.FF / eas2tas;
 	
@@ -143,6 +141,25 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
 
     // Constrain the integrator state
     _pid_info.I = constrain_float(_pid_info.I, -intLimScaled, intLimScaled);
+	
+	static const float D_Filt_f3db = 1.0f; // hz for 3 dB cutoff
+	static const float tau = 1.0f / (M_2PI * D_Filt_f3db); // tau for filtering
+	
+	// Calculate the Derivative output
+    if ( dt > 0 ) {
+		
+		//Tustin transform([Kd] * [s] * [1/(s*tau+1)]) // s => (2/T)(z-1) / (z+1)
+		// work by "Phil S" - "PID Contoller Implementation in Software"
+		// Tustin transform is stable where continuous time controller is stable. 
+		
+		float D_measure = -achieved_rate * scaler * scaler;
+		
+		_pid_info.D = (2.0f * gains.D * (D_measure - _last_rate) 
+			+ (2.0f * tau - delta_time) * _pid_info.D) 
+			/ (2.0f * tau + delta_time);
+			
+		_last_rate =  D_measure; 
+	}
 	
 	// Calculate the demanded control surface deflection
 	// Note the scaler is applied again. We want a 1/speed scaler applied to the feed-forward
