@@ -186,6 +186,9 @@ public:
     // request EKF yaw reset to try and avoid the need for an EKF lane switch or failsafe
     virtual void request_yaw_reset(void) {}
 
+    // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
+    virtual void set_posvelyaw_source_set(uint8_t source_set_idx) {}
+
     // Euler angles (radians)
     float roll;
     float pitch;

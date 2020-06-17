@@ -2339,6 +2339,14 @@ void AP_AHRS_NavEKF::request_yaw_reset(void)
     }
 }
 
+// set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
+void AP_AHRS_NavEKF::set_posvelyaw_source_set(uint8_t source_set_idx)
+{
+#if HAL_NAVEKF3_AVAILABLE
+    EKF3.setPosVelYawSourceSet(source_set_idx);
+#endif
+}
+
 void AP_AHRS_NavEKF::Log_Write()
 {
 #if HAL_NAVEKF2_AVAILABLE
