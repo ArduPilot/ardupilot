@@ -24,6 +24,7 @@
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_NavEKF/AP_Nav_Common.h>
+#include <AP_NavEKF/AP_NavEKF_Source.h>
 
 class NavEKF3_core;
 
@@ -406,6 +407,9 @@ public:
      */
     void requestYawReset(void);
 
+    // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
+    void setPosVelYawSource(uint8_t source_set_idx);
+
     // write EKF information to on-board logs
     void Log_Write();
 
@@ -444,7 +448,6 @@ private:
     AP_Float _gyroBiasProcessNoise; // gyro bias state process noise : rad/s
     AP_Float _accelBiasProcessNoise;// accel bias state process noise : m/s^2
     AP_Int16 _hgtDelay_ms;          // effective average delay of Height measurements relative to inertial measurements (msec)
-    AP_Int8  _fusionModeGPS;        // 0 = use 3D velocity, 1 = use 2D velocity, 2 = use no velocity, 3 = do not use GPS
     AP_Int16  _gpsVelInnovGate;     // Percentage number of standard deviations applied to GPS velocity innovation consistency check
     AP_Int16  _gpsPosInnovGate;     // Percentage number of standard deviations applied to GPS position innovation consistency check
     AP_Int16  _hgtInnovGate;        // Percentage number of standard deviations applied to height innovation consistency check
@@ -615,4 +618,6 @@ private:
     void Log_Write_Timing(uint8_t core, uint64_t time_us) const;
     void Log_Write_GSF(uint8_t core, uint64_t time_us) const;
 
+    // position, velocity and yaw source control
+    AP_NavEKF_Source _sources;
 };

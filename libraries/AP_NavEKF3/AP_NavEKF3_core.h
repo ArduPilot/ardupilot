@@ -28,6 +28,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/vectorN.h>
 #include <AP_NavEKF/AP_NavEKF_core_common.h>
+#include <AP_NavEKF/AP_NavEKF_Source.h>
 #include <AP_NavEKF3/AP_NavEKF3_Buffer.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
@@ -1478,4 +1479,9 @@ private:
     uint8_t preferred_gps;
     uint8_t selected_baro;
     uint8_t selected_airspeed;
+
+    // source reset handling
+    AP_NavEKF_Source::SourceXY pos_source_last;   // position source on previous iteration (used to detect a changes)
+    bool pos_source_reset;                  // true when the position source has changed but the position has not yet been reset
+
 };
