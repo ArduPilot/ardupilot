@@ -100,10 +100,9 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
 	
 	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
     // No conversion is required for K_D
-	float ki_rate = gains.I * gains.tau;
     float eas2tas = _ahrs.get_EAS2TAS();
-	float kp_ff = MAX((gains.P - gains.I * gains.tau) * gains.tau  - gains.D , 0) / eas2tas;
-    float k_ff = gains.FF / eas2tas;
+	float k_ff = gains.FF / eas2tas;
+	
 	float delta_time    = (float)dt * 0.001f;
     // Get body rate vector (radians/sec)
 	float omega_x = _ahrs.get_gyro().x;
@@ -122,10 +121,10 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
 	// Scaler is applied before integrator so that integrator state relates directly to aileron deflection
 	// This means aileron trim offset doesn't change as the value of scaler changes with airspeed
 	// Don't integrate if in stabilise mode as the integrator will wind up against the pilots inputs
-	if (!disable_integrator && ki_rate > 0) {
+	if (!disable_integrator && gains.I > 0) {
 		//only integrate if gain and time step are positive and airspeed above min value.
 		if (dt > 0 && aspeed > float(aparm.airspeed_min)) {
-		    float integrator_delta = rate_error * ki_rate * delta_time * scaler;
+		    float integrator_delta = rate_error * gains.I * delta_time * scaler;
 			// prevent the integrator from increasing if surface defln demand is above the upper limit
 			if (_last_out < -45) {
                 integrator_delta = MAX(integrator_delta , 0);
@@ -149,8 +148,7 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
 	// Note the scaler is applied again. We want a 1/speed scaler applied to the feed-forward
 	// path, but want a 1/speed^2 scaler applied to the rate error path. 
 	// This is because acceleration scales with speed^2, but rate scales with speed.
-    _pid_info.D = rate_error * gains.D * scaler;
-    _pid_info.P = desired_rate * kp_ff * scaler;
+    _pid_info.P = rate_error * gains.P * scaler;
     _pid_info.FF = desired_rate * k_ff * scaler;
     _pid_info.target = desired_rate;
     _pid_info.actual = achieved_rate;

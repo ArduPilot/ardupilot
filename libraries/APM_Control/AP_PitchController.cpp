@@ -195,8 +195,7 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
 	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
     // No conversion is required for K_D
     float eas2tas = _ahrs.get_EAS2TAS();
-	//float kp_ff = MAX((gains.P - gains.I * gains.tau) * gains.tau  - gains.D , 0) / eas2tas;
-    float k_ff = gains.FF / eas2tas;
+	float k_ff = gains.FF / eas2tas;
 	
 	// Calculate the demanded control surface deflection
 	// Note the scaler is applied again. We want a 1/speed scaler applied to the feed-forward
