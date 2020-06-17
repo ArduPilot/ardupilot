@@ -18,7 +18,12 @@
 #if EFI_ENABLED
 
 #include "AP_EFI_Serial_MS.h"
+#include "AP_EFI_NWPMU.h"
 #include <AP_Logger/AP_Logger.h>
+
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#include <AP_CANManager/AP_CANManager.h>
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -27,7 +32,7 @@ const AP_Param::GroupInfo AP_EFI::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: EFI communication type
     // @Description: What method of communication is used for EFI #1
-    // @Values: 0:None,1:Serial-MS
+    // @Values: 0:None,1:Serial-MS,2:NWPMU
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("_TYPE", 1, AP_EFI, type, 0, AP_PARAM_FLAG_ENABLE),
@@ -68,8 +73,17 @@ void AP_EFI::init(void)
         return;
     }
     // Check for MegaSquirt Serial EFI
-    if (type == EFI_COMMUNICATION_TYPE_SERIAL_MS) {
-        backend = new AP_EFI_Serial_MS(*this);
+    switch (type) {
+        case EFI_COMMUNICATION_TYPE_NONE:
+            break;
+        case EFI_COMMUNICATION_TYPE_SERIAL_MS:
+            backend = new AP_EFI_Serial_MS(*this);
+            break;
+        case EFI_COMMUNICATION_TYPE_NWPMU:
+#if HAL_EFI_NWPWU_ENABLED
+            backend = new AP_EFI_NWPMU(*this);
+#endif
+            break;
     }
 }
 
