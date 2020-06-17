@@ -268,6 +268,10 @@ void ModePayloadRelease::set_loiter_parameters(){
     plane.loiter.direction = -1;
     plane.loiter.total_cd = 2 * 36000UL;
 }
+void ModePayloadRelease::release_payload(){
+    AP_ServoRelayEvents ServoRelayEvents;
+    ServoRelayEvents.do_set_servo(channel_payload, 1500);
+}
 
 void ModePayloadRelease::update_releasepoint() {
 

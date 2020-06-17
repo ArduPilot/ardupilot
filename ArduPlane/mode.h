@@ -149,6 +149,8 @@ public:
         calculated = false;
         intermediate_distance = 100;
         radius = 50;
+        //servo channel to release payload
+        channel_payload = 6;
     }
     // This is for payload release state. 
     enum PayloadReleaseState{
@@ -196,6 +198,7 @@ public:
     void neu_to_llh(Vector3d &current_neu, Location &current_llh);
     void get_intermediate_point(Vector3d RP);
     void calculate_release_point();
+    void release_payload();
     void update_releasepoint();
 
 protected:
@@ -246,6 +249,7 @@ private:
     float theta,phi,C,dirn; //angles
     float relative; //relative direction vector in which payload and parachute will fall 
 
+    uint8_t channel_payload;
 };
 //add finish
 

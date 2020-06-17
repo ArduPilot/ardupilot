@@ -700,6 +700,7 @@ bool Plane::verify_payload_release(const AP_Mission::Mission_Command &cmd){
     {
         if (verify_nav_wp(cmd))
         {
+            mode_payloadrelease.release_payload();
             gcs().send_text(MAV_SEVERITY_INFO, "Release point reached");
             mode_payloadrelease.set_state(mode_payloadrelease.PayloadRelease_Release_point_reached);
             mode_payloadrelease.set_state(mode_payloadrelease.PayloadRelease_Finish);
