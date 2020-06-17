@@ -396,7 +396,6 @@ void NavEKF3_core::setAidingMode()
         // Always reset the position and velocity when changing mode
         ResetVelocity(velResetSource);
         ResetPosition(posResetSource);
-
     }
 
 }
@@ -461,7 +460,11 @@ bool NavEKF3_core::readyToUseBodyOdm(void) const
 // return true if the filter to be ready to use gps
 bool NavEKF3_core::readyToUseGPS(void) const
 {
-    return validOrigin && tiltAlignComplete && yawAlignComplete && (delAngBiasLearned || assume_zero_sideslip()) && gpsGoodToAlign && (frontend->_fusionModeGPS != 3) && gpsDataToFuse && !gpsInhibit;
+    if (frontend->_sources.getPosXYSource() != AP_NavEKF_Source::SourceXY::GPS) {
+        return false;
+    }
+
+    return validOrigin && tiltAlignComplete && yawAlignComplete && (delAngBiasLearned || assume_zero_sideslip()) && gpsGoodToAlign && gpsDataToFuse && !gpsInhibit;
 }
 
 // return true if the filter to be ready to use the beacon range measurements
@@ -509,10 +512,11 @@ bool NavEKF3_core::assume_zero_sideslip(void) const
 // set the LLH location of the filters NED origin
 bool NavEKF3_core::setOriginLLH(const Location &loc)
 {
-    if ((PV_AidingMode == AID_ABSOLUTE) && (frontend->_fusionModeGPS != 3)) {
+    if ((PV_AidingMode == AID_ABSOLUTE) && (frontend->_sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::GPS)) {
         // reject attempt to set origin if GPS is being used
         return false;
     }
+
     EKF_origin = loc;
     ekfGpsRefHgt = (double)0.01 * (double)EKF_origin.alt;
     // define Earth rotation vector in the NED navigation frame at the origin
@@ -613,32 +617,51 @@ void  NavEKF3_core::updateFilterStatus(void)
     filterStatus.flags.takeoff = expectTakeoff; // The EKF has been told to expect takeoff is in a ground effect mitigation mode and has started the EKF-GSF yaw estimator
     filterStatus.flags.touchdown = expectGndEffectTouchdown; // The EKF has been told to detect touchdown and is in a ground effect mitigation mode
     filterStatus.flags.using_gps = ((imuSampleTime_ms - lastPosPassTime_ms) < 4000) && (PV_AidingMode == AID_ABSOLUTE);
-    filterStatus.flags.gps_glitching = !gpsAccuracyGood && (PV_AidingMode == AID_ABSOLUTE) && (frontend->_fusionModeGPS != 3); // GPS glitching is affecting navigation accuracy
+    filterStatus.flags.gps_glitching = !gpsAccuracyGood && (PV_AidingMode == AID_ABSOLUTE) && (frontend->_sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::GPS); // GPS glitching is affecting navigation accuracy
     filterStatus.flags.gps_quality_good = gpsGoodToAlign;
     filterStatus.flags.initalized = filterStatus.flags.initalized || healthy();
 }
 
 void NavEKF3_core::runYawEstimatorPrediction()
 {
-    if (yawEstimator != nullptr && frontend->_fusionModeGPS <= 1) {
-        float trueAirspeed;
-        if (is_positive(defaultAirSpeed) && assume_zero_sideslip()) {
-            if (imuDataDelayed.time_ms - tasDataDelayed.time_ms < 5000) {
-                trueAirspeed = tasDataDelayed.tas;
-            } else {
-                trueAirspeed = defaultAirSpeed * dal.get_EAS2TAS();
-            }
-        } else {
-            trueAirspeed = 0.0f;
-        }
-
-        yawEstimator->update(imuDataDelayed.delAng, imuDataDelayed.delVel, imuDataDelayed.delAngDT, imuDataDelayed.delVelDT, EKFGSF_run_filterbank, trueAirspeed);
+    // exit immediately if no yaw estimator
+    if (yawEstimator == nullptr) {
+        return;
     }
+
+    // ensure GPS is used for horizontal position and velocity
+    if (frontend->_sources.getPosXYSource() != AP_NavEKF_Source::SourceXY::GPS ||
+        frontend->_sources.getVelXYSource() != AP_NavEKF_Source::SourceXY::GPS) {
+        return;
+    }
+
+    float trueAirspeed;
+    if (is_positive(defaultAirSpeed) && assume_zero_sideslip()) {
+        if (imuDataDelayed.time_ms - tasDataDelayed.time_ms < 5000) {
+            trueAirspeed = tasDataDelayed.tas;
+        } else {
+            trueAirspeed = defaultAirSpeed * dal.get_EAS2TAS();
+        }
+    } else {
+        trueAirspeed = 0.0f;
+    }
+
+    yawEstimator->update(imuDataDelayed.delAng, imuDataDelayed.delVel, imuDataDelayed.delAngDT, imuDataDelayed.delVelDT, EKFGSF_run_filterbank, trueAirspeed);
 }
 
 void NavEKF3_core::runYawEstimatorCorrection()
 {
-    if (yawEstimator != nullptr && frontend->_fusionModeGPS <= 1 && EKFGSF_run_filterbank) {
+    // exit immediately if no yaw estimator
+    if (yawEstimator == nullptr) {
+        return;
+    }
+    // ensure GPS is used for horizontal position and velocity
+    if (frontend->_sources.getPosXYSource() != AP_NavEKF_Source::SourceXY::GPS ||
+        frontend->_sources.getVelXYSource() != AP_NavEKF_Source::SourceXY::GPS) {
+        return;
+    }
+
+    if (EKFGSF_run_filterbank) {
         if (gpsDataToFuse) {
             Vector2f gpsVelNE = Vector2f(gpsDataDelayed.vel.x, gpsDataDelayed.vel.y);
             float gpsVelAcc = fmaxf(gpsSpdAccuracy, frontend->_gpsHorizVelNoise);
@@ -658,6 +681,8 @@ void NavEKF3_core::runYawEstimatorCorrection()
             } else {
                 EKFGSF_yaw_valid_count = 0;
             }
+        } else {
+            EKFGSF_yaw_valid_count = 0;
         }
 
         // action an external reset request
