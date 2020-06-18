@@ -182,6 +182,8 @@ public:
         Q_ASSIST =            82, // disable, enable and force Q assist
         ZIGZAG_Auto =         83, // zigzag auto switch
         AIRMODE =             84, // enable / disable airmode for copter
+        // entries from 100 onwards are expected to be developer
+        // options used for testing
         KILL_IMU1 =          100, // disable first IMU (for IMU failure testing)
         KILL_IMU2 =          101, // disable second IMU (for IMU failure testing)
         CAM_MODE_TOGGLE =    102, // Momentary switch to cycle camera modes
@@ -191,7 +193,7 @@ public:
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
         // also, if you add an option >255, you will need to fix duplicate_options_exist
 
-        // inputs eventually used to replace RCMAP
+        // inputs from 200 will eventually used to replace RCMAP
         MAINSAIL =           207, // mainsail input
         FLAP =               208, // flap input
     };
