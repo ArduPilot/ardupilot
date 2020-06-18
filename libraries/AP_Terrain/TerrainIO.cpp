@@ -331,8 +331,12 @@ void AP_Terrain::read_block(void)
 void AP_Terrain::io_timer(void)
 {
     if (io_failure) {
-        // don't keep trying io, so we don't thrash the filesystem
-        // code while flying
+        // retry the IO every 5s to allow for remount of sdcard
+        uint32_t now = AP_HAL::millis();
+        if (now - last_retry_ms > 5000) {
+            io_failure = false;
+            last_retry_ms = now;
+        }
         return;
     }
 

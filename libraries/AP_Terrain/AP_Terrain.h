@@ -106,6 +106,7 @@ public:
     enum TerrainStatus status(void) const { return system_status; }
 
     // send any pending terrain request message
+    bool send_cache_request(mavlink_channel_t chan);
     void send_request(mavlink_channel_t chan);
 
     // handle terrain data and reports from GCS
@@ -391,6 +392,7 @@ private:
 
     // do we have an IO failure
     volatile bool io_failure;
+    uint32_t last_retry_ms;
 
     // have we created the terrain directory?
     bool directory_created;
