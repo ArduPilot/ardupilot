@@ -187,7 +187,7 @@ define HAL_DEFAULT_INS_FAST_SAMPLE 1
 # one BARO, multiple possible choices for different
 # board varients
 BARO BMP280 I2C:0:0x76
-BARO BMP388 I2C:0:0x76
+BARO DPS280 I2C:0:0x76
 BARO MS56XX I2C:0:0x77
 
 define HAL_OS_FATFS_IO 1
@@ -200,5 +200,4 @@ define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 define BOARD_PWM_COUNT_DEFAULT 13
-
 
