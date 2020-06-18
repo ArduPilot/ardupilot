@@ -46,7 +46,7 @@ void ModePayloadRelease::initialise_initial_condition() {
     vz = 0;
     az = g;
     z = 0;
-    total_height = plane.current_loc.alt / 100; // divided by 10 because current altitude in cms.
+    total_height = plane.current_loc.alt/100 - plane.home.alt/100; // divided by 100 because current altitude in cms.
     remaining_height = total_height;
     vx = plane.gps.ground_speed();
     ax = 0;
@@ -56,17 +56,18 @@ void ModePayloadRelease::initialise_initial_condition() {
     fd = 0;
     fdx = 0;
     fdz = 0;
-
+    gcs().send_text(MAV_SEVERITY_INFO, "ground speed: %f",vx);
     airspeed_uav = plane.gps.ground_speed();
 
     wind = plane.ahrs.wind_estimate();
     //At first the drop_point which is in longitude and latitude must be changed into neu so that release point must be calculated
     llh_to_neu(drop_point,drop_point_neu);
+    gcs().send_text(MAV_SEVERITY_INFO, "dp_n = %f,dp_e = %f",drop_point_neu.x,drop_point_neu.y);
     //intialize wind values
     //wind_speed_north = wind.y;
     //wind_speed_east = wind.x;
-    wind_speed_north = 0;
-    wind_speed_east = 0;
+    wind_speed_north = wind.y;
+    wind_speed_east = wind.x;
     wind_speed_normalized = (wind_speed_east*wind_speed_east) + (wind_speed_north*wind_speed_north);
     wind_speed_normalized = sqrt(wind_speed_normalized);
     
@@ -106,6 +107,7 @@ void ModePayloadRelease::initialise_initial_condition() {
 }
 
 void ModePayloadRelease::calculate_displacement() {
+    gcs().send_text(MAV_SEVERITY_INFO,"wind.x = %f, wind.y = %f", wind.x,wind.y);
     while (remaining_height > 0.01) {
         //calculation along z direction in NED frame
         vz = vz + az * dt;
@@ -274,10 +276,10 @@ void ModePayloadRelease::get_intermediate_point(Vector3d RP){
     center_point_neu.y = int_point_neu.y + (-1) * plus_minus * (radius) * slope * (1.0 / sqrt(slope * slope + 1));
     center_point_neu.z = int_point_neu.z;
 
-    gcs().send_text(MAV_SEVERITY_INFO,"loiter dirn = %d", plane.loiter.direction);
     gcs().send_text(MAV_SEVERITY_INFO, "cp_n = %f,cp_e = %f",center_point_neu.x,center_point_neu.y);
-    float dist = sqrt(sq(center_point_neu.x-int_point_neu.x) + sq(center_point_neu.y - int_point_neu.y));
-    gcs().send_text(MAV_SEVERITY_INFO,"dist = %f",dist);
+    
+   
+
     neu_to_llh(center_point_neu,int_point);
 }
 
@@ -302,20 +304,18 @@ void ModePayloadRelease::update_releasepoint() {
             
             calculate_displacement();
             
+            gcs().send_text(MAV_SEVERITY_INFO,"displacement: %f",x);
             calculate_release_point();
-
+            float check = sqrt(sq(release_point_neu.x - drop_point_neu.x) + sq(release_point_neu.y - drop_point_neu.y));
+            gcs().send_text(MAV_SEVERITY_INFO,"check displacement: %f",check);
             get_intermediate_point(release_point_neu);
             calculated = true;
 
             neu_to_llh(release_point_neu,release_point);
             
-            
-            gcs().send_text(MAV_SEVERITY_INFO, "rp_n = %d,rp_e = %d",release_point.lat,release_point.lng);
-            gcs().send_text(MAV_SEVERITY_INFO, "ip_n = %d,ip_e = %d",int_point.lat,int_point.lng);
             int_point.loiter_xtrack = 1;
             release_point.loiter_xtrack = 1;
-            gcs().send_text(MAV_SEVERITY_INFO, "loiter_xtrack_int: %d",int_point.loiter_xtrack);
-            gcs().send_text(MAV_SEVERITY_INFO, "loiter_xtrack_rp: %d",release_point.loiter_xtrack);
+        
             plane.set_next_WP(int_point);
             
             //set loiter parameters in case of resetting waypoint
