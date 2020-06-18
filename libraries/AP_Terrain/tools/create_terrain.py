@@ -314,6 +314,9 @@ class DataFile(object):
                     continue
                 if abs(heights[gy] - block.height[gx][gy]) > test_threshold:
                     err.incorrect += 1
+                    if args.verbose:
+                        lat_e7, lon_e7 = add_offset(lat, lon, gx*GRID_SPACING, gy*GRID_SPACING)
+                        print("incorrect at %f,%f got %dm should be %dm" % (lat_e7*1.0e-7, lon_e7*1.0e-7, heights[gy], block.height[gx][gy]))
             ofs += TERRAIN_GRID_BLOCK_SIZE_Y*2
 
         return err
@@ -483,10 +486,11 @@ parser.add_argument("--lon", type=float, default=None)
 parser.add_argument("--force", action='store_true', help="overwrite existing full blocks")
 parser.add_argument("--radius", type=int, default=100, help="radius in km")
 parser.add_argument("--debug", action='store_true', default=False)
+parser.add_argument("--verbose", action='store_true', default=False)
 parser.add_argument("--spacing", type=int, default=100, help="grid spacing in meters")
 parser.add_argument("--pos-range", default=None, help="show position range for a file")
 parser.add_argument("--test", action='store_true', help="test altitudes instead of writing them")
-parser.add_argument("--test-threshold", default=2.0, help="test altitude threshold")
+parser.add_argument("--test-threshold", default=2.0, type=float, help="test altitude threshold")
 parser.add_argument("--directory", default="terrain", help="directory to use")
 args = parser.parse_args()
 
