@@ -200,6 +200,7 @@ public:
     void calculate_release_point();
     void release_payload();
     void update_releasepoint();
+    bool verify_loiter_complete_heading(bool init);
 
 protected:
 

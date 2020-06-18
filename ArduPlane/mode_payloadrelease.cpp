@@ -292,6 +292,53 @@ void ModePayloadRelease::release_payload(){
     ServoRelayEvents.do_set_servo(channel_payload, 1500);
 }
 
+bool ModePayloadRelease::verify_loiter_complete_heading(bool init){
+    
+    if (int_point.get_distance(release_point) < abs(plane.aparm.loiter_radius)) {
+        /* Whenever next waypoint is within the loiter radius,
+           maintaining loiter would prevent us from ever pointing toward the next waypoint.
+           Hence break out of loiter immediately
+         */
+        return true;
+    }
+
+    // Bearing in degrees
+    int32_t bearing_cd = plane.current_loc.get_bearing_to(release_point);
+
+    // get current heading.
+    int32_t heading_cd = plane.gps.ground_course_cd();
+
+    int32_t heading_err_cd = wrap_180_cd(bearing_cd - heading_cd);
+
+    if (init) {
+        plane.loiter.sum_cd = 0;
+    }
+
+    /*
+      Check to see if the the plane is heading toward the land
+      waypoint. We use 20 degrees (+/-10 deg) of margin so that
+      we can handle 200 degrees/second of yaw.
+
+      After every full circle, extend acceptance criteria to ensure
+      aircraft will not loop forever in case high winds are forcing
+      it beyond 200 deg/sec when passing the desired exit course
+    */
+
+    // Use integer division to get discrete steps
+    int32_t expanded_acceptance = 1000 * (plane.loiter.sum_cd / 36000);
+
+    if (labs(heading_err_cd) <= 1000 + expanded_acceptance) {
+        // Want to head in a straight line from _here_ to the next waypoint instead of center of loiter wp
+
+        // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
+        if (plane.next_WP_loc.loiter_xtrack) {
+            plane.next_WP_loc = plane.current_loc;
+        }
+        return true;
+    }
+    return false;
+}
+
 void ModePayloadRelease::update_releasepoint() {
 
     bool result = false;
@@ -342,10 +389,12 @@ void ModePayloadRelease::update_releasepoint() {
                 // primary goal completed, initialize secondary heading goal
                 plane.condition_value = 0;
                 result = plane.verify_loiter_heading(true);
+                //result = verify_loiter_complete_heading(true);
             }
         } else {
             // secondary goal, loiter to heading
             result = plane.verify_loiter_heading(false);
+            //result = verify_loiter_complete_heading(false);
         }
         if(result){
             plane.set_next_WP(release_point);
