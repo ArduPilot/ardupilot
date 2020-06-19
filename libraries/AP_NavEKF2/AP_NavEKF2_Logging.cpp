@@ -102,7 +102,9 @@ void NavEKF2::Log_Write_NKF3(uint8_t _core, uint64_t time_us) const
         innovMY : (int16_t)(magInnov.y),
         innovMZ : (int16_t)(magInnov.z),
         innovYaw : (int16_t)(100*degrees(yawInnov)),
-        innovVT : (int16_t)(100*tasInnov)
+        innovVT : (int16_t)(100*tasInnov),
+        rerr : 0, // TODO : Relative Error based Lane-Switching like EK3
+        errorScore : 0 // TODO : Relative Error based Lane-Switching like EK3
     };
     AP::logger().WriteBlock(&pkt3, sizeof(pkt3));
 }
