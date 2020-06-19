@@ -99,7 +99,9 @@ void NavEKF3::Log_Write_XKF3(uint8_t _core, uint64_t time_us) const
         innovMY : (int16_t)(magInnov.y),
         innovMZ : (int16_t)(magInnov.z),
         innovYaw : (int16_t)(100*degrees(yawInnov)),
-        innovVT : (int16_t)(100*tasInnov)
+        innovVT : (int16_t)(100*tasInnov),
+        rerr : coreRelativeErrors[_core],
+        errorScore : coreErrorScores[_core]
     };
     AP::logger().WriteBlock(&pkt3, sizeof(pkt3));
 }
@@ -177,7 +179,7 @@ void NavEKF3::Log_Write_XKF5(uint64_t time_us) const
         angErr : (float)predictorErrors.x,
         velErr : (float)predictorErrors.y,
         posErr : (float)predictorErrors.z
-     };
+    };
     AP::logger().WriteBlock(&pkt5, sizeof(pkt5));
 }
 

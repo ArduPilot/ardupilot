@@ -58,8 +58,18 @@ public:
     
     // Check basic filter health metrics and return a consolidated health status
     bool healthy(void) const;
+
     // Check that all cores are started and healthy
     bool all_cores_healthy(void) const;
+
+    // Update instance error scores for all available cores 
+    float updateCoreErrorScores(void);
+
+    // Update relative error scores for all alternate available cores
+    void updateCoreRelativeErrors(void);
+
+    // Reset error scores for all available cores
+    void resetCoreErrors(void);
 
     // returns the index of the primary core
     // return -1 if no primary core selected
@@ -495,6 +505,7 @@ private:
     AP_Int8 _gsfUseMask;            // mask controlling which EKF3 instances will use EKF-GSF yaw estimator data to assit with yaw resets
     AP_Int16 _gsfResetDelay;        // number of mSec from loss of navigation to requesting a reset using EKF-GSF yaw estimator data
     AP_Int8 _gsfResetMaxCount;      // maximum number of times the EKF3 is allowed to reset it's yaw to the EKF-GSF estimate
+    AP_Float _err_thresh;           // lanes have to be consistently better than the primary by at least this threshold to reduce their overall relativeCoreError
 
 // Possible values for _flowUse
 #define FLOW_USE_NONE    0
@@ -567,9 +578,16 @@ private:
         float core_delta;             // the amount of D position change between cores when a change happened
     } pos_down_reset_data;
 
-    bool runCoreSelection; // true when the primary core has stabilised and the core selection logic can be started
-    bool coreSetupRequired[7]; // true when this core index needs to be setup
-    uint8_t coreImuIndex[7];   // IMU index used by this core
+#define MAX_EKF_CORES     3 // maximum allowed EKF Cores to be instantiated
+#define CORE_ERR_LIM      1 // -LIM to LIM relative error range for a core
+#define BETTER_THRESH   0.5 // a lane should have this much relative error difference to be considered for overriding a healthy primary core
+    
+    bool runCoreSelection;                          // true when the primary core has stabilised and the core selection logic can be started
+    bool coreSetupRequired[MAX_EKF_CORES];          // true when this core index needs to be setup
+    uint8_t coreImuIndex[MAX_EKF_CORES];            // IMU index used by this core
+    float coreRelativeErrors[MAX_EKF_CORES];        // relative errors of cores with respect to primary
+    float coreErrorScores[MAX_EKF_CORES];           // the instance error values used to update relative core error
+    uint64_t coreLastTimePrimary_us[MAX_EKF_CORES]; // last time we were using this core as primary
 
     bool inhibitGpsVertVelUse;  // true when GPS vertical velocity use is prohibited
 
