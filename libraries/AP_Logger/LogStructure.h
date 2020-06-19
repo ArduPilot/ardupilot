@@ -500,6 +500,8 @@ struct PACKED log_NKF3 {
     int16_t innovMZ;
     int16_t innovYaw;
     int16_t innovVT;
+    float rerr;
+    float errorScore;
 };
 
 struct PACKED log_EKF4 {
@@ -1778,6 +1780,8 @@ struct PACKED log_Arm_Disarm {
 // @Field: IMZ: Innovation in magnetic field strength (Z-axis component)
 // @Field: IYAW: Innovation in vehicle yaw
 // @Field: IVT: Innovation in true-airspeed
+// @Field: RErr: Accumulated relative error of this core with respect to active primary core
+// @Field: ErSc: A consolidated error score where higher numbers are less healthy
 
 // @LoggerMessage: NKF4
 // @Description: EKF2 variances
@@ -2200,6 +2204,8 @@ struct PACKED log_Arm_Disarm {
 // @Field: IMZ: Innovation in magnetic field strength (Z-axis component)
 // @Field: IYAW: Innovation in vehicle yaw
 // @Field: IVT: Innovation in true-airspeed
+// @Field: RErr: Accumulated relative error of this core with respect to active primary core
+// @Field: ErSc: A consolidated error score where higher numbers are less healthy
 
 // @LoggerMessage: XKF4
 // @Description: EKF3 variances
@@ -2377,7 +2383,7 @@ struct PACKED log_Arm_Disarm {
     { LOG_NKF2_MSG, sizeof(log_NKF2), \
       "NKF2","QBbccccchhhhhhB","TimeUS,C,AZbias,GSX,GSY,GSZ,VWN,VWE,MN,ME,MD,MX,MY,MZ,MI", "s#----nnGGGGGG-", "F-----BBCCCCCC-" }, \
     { LOG_NKF3_MSG, sizeof(log_NKF3), \
-      "NKF3","QBcccccchhhcc","TimeUS,C,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT", "s#nnnmmmGGG??", "F-BBBBBBCCCBB" }, \
+      "NKF3","QBcccccchhhccff","TimeUS,C,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT,RErr,ErSc", "s#nnnmmmGGG??--", "F-BBBBBBCCCBB00" }, \
     { LOG_NKF4_MSG, sizeof(log_NKF4), \
       "NKF4","QBcccccfbbHBIHb","TimeUS,C,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s#------??-----", "F-------??-----" }, \
     { LOG_NKF5_MSG, sizeof(log_NKF5), \
@@ -2390,7 +2396,7 @@ struct PACKED log_Arm_Disarm {
     { LOG_XKF2_MSG, sizeof(log_XKF2), \
       "XKF2","QBccccchhhhhhB","TimeUS,C,AX,AY,AZ,VWN,VWE,MN,ME,MD,MX,MY,MZ,MI", "s#---nnGGGGGG-", "F----BBCCCCCC-" }, \
     { LOG_XKF3_MSG, sizeof(log_NKF3), \
-      "XKF3","QBcccccchhhcc","TimeUS,C,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT", "s#nnnmmmGGG??", "F-BBBBBBCCCBB" }, \
+      "XKF3","QBcccccchhhccff","TimeUS,C,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT,RErr,ErSc", "s#nnnmmmGGG??--", "F-BBBBBBCCCBB00" }, \
     { LOG_XKF4_MSG, sizeof(log_NKF4), \
       "XKF4","QBcccccfbbHBIHb","TimeUS,C,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s#------??-----", "F-------??-----" }, \
     { LOG_XKF5_MSG, sizeof(log_NKF5), \
