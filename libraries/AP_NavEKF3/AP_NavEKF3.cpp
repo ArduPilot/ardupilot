@@ -639,6 +639,14 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("GSF_RST_MAX", 60, NavEKF3, _gsfResetMaxCount, 2),
 
+    // @Param: ERR_THRESH
+    // @DisplayName: EKF3 Lane Relative Error Sensitivity Threshold
+    // @Description: lanes have to be consistently better than the primary by at least this threshold to reduce their overall relativeCoreError, lowering this makes lane switching more sensitive to smaller error differences
+    // @Range: 0.05 1
+    // @Increment: 0.05
+    // @User: Advanced
+    AP_GROUPINFO("ERR_THRESH", 61, NavEKF3, _err_thresh, 0.2),
+
     AP_GROUPEND
 };
 
@@ -703,14 +711,14 @@ bool NavEKF3::InitialiseFilter(void)
         _imuMask.set(_imuMask.get() & mask);
         
         // initialise the setup variables
-        for (uint8_t i=0; i<7; i++) {
+        for (uint8_t i=0; i<MAX_EKF_CORES; i++) {
             coreSetupRequired[i] = false;
             coreImuIndex[i] = 0;
         }
         num_cores = 0;
 
         // count IMUs from mask
-        for (uint8_t i=0; i<7; i++) {
+        for (uint8_t i=0; i<MAX_EKF_CORES; i++) {
             if (_imuMask & (1U<<i)) {
                 coreSetupRequired[num_cores] = true;
                 coreImuIndex[num_cores] = i;
@@ -720,7 +728,7 @@ bool NavEKF3::InitialiseFilter(void)
 
         // check if there is enough memory to create the EKF cores
         if (hal.util->available_memory() < sizeof(NavEKF3_core)*num_cores + 4096) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "NavEKF3: not enough memory");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "EKF3 not enough memory");
             _enable.set(0);
             return false;
         }
@@ -729,7 +737,7 @@ bool NavEKF3::InitialiseFilter(void)
         core = (NavEKF3_core*)hal.util->malloc_type(sizeof(NavEKF3_core)*num_cores, AP_HAL::Util::MEM_FAST);
             if (core == nullptr) {
             _enable.set(0);
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "NavEKF3: allocation failed");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "EKF3 allocation failed");
             return false;
         }
 
@@ -756,6 +764,9 @@ bool NavEKF3::InitialiseFilter(void)
         return false;
     }
 
+    // set relative error scores for all cores to 0
+    resetCoreErrors();
+
     // Set the primary initially to be the lowest index
     primary = 0;
 
@@ -769,6 +780,9 @@ bool NavEKF3::InitialiseFilter(void)
         ret &= core[i].InitialiseFilterBootstrap();
     }
 
+    // set last time the cores were primary to 0
+    memset(coreLastTimePrimary_us, 0, sizeof(coreLastTimePrimary_us));
+
     // zero the structs used capture reset events
     memset(&yaw_reset_data, 0, sizeof(yaw_reset_data));
     memset((void *)&pos_reset_data, 0, sizeof(pos_reset_data));
@@ -778,7 +792,10 @@ bool NavEKF3::InitialiseFilter(void)
     return ret;
 }
 
-// Update Filter States - this should be called whenever new IMU data is available
+/* 
+  Update Filter States - this should be called whenever new IMU data is available
+  Execution speed governed by SCHED_LOOP_RATE
+*/
 void NavEKF3::UpdateFilter(void)
 {
     if (!core) {
@@ -814,37 +831,64 @@ void NavEKF3::UpdateFilter(void)
         }
         runCoreSelection = (imuSampleTime_us - lastUnhealthyTime_us) > 1E7;
     }
-    float primaryErrorScore = core[primary].errorScore();
-    if ((primaryErrorScore > 1.0f || !core[primary].healthy()) && runCoreSelection) {
-        float lowestErrorScore = 0.67f * primaryErrorScore;
-        uint8_t newPrimaryIndex = primary; // index for new primary
+
+    bool armed  = hal.util->get_soft_armed();
+    
+    // core selection is only available after the vehicle is armed, else forced to lane 0 if its healthy
+    if (runCoreSelection && armed) {
+        // update this instance's error scores for all active cores and get the primary core's error score
+        float primaryErrorScore = updateCoreErrorScores();
+
+        // update the accumulated relative error scores for all active cores
+        updateCoreRelativeErrors();
+
+        bool betterCore = false;
+        bool altCoreAvailable = false;
+        float bestCoreError = 0; // looking for cores that have error lower than the current primary
+        uint8_t newPrimaryIndex = primary;
+
+        // loop through all available cores to find if an alternative core is available
         for (uint8_t coreIndex=0; coreIndex<num_cores; coreIndex++) {
-
             if (coreIndex != primary) {
-                // an alternative core is available for selection only if healthy and if states have been updated on this time step
-                bool altCoreAvailable = core[coreIndex].healthy() && statePredictEnabled[coreIndex];
+                float altCoreError = coreRelativeErrors[coreIndex];
 
-                // If the primary core is unhealthy and another core is available, then switch now
-                // If the primary core is still healthy,then switching is optional and will only be done if
-                // a core with a significantly lower error score can be found
-                float altErrorScore = core[coreIndex].errorScore();
-                if (altCoreAvailable && (!core[newPrimaryIndex].healthy() || altErrorScore < lowestErrorScore)) {
+                // an alternative core is available for selection based on 2 conditions -
+                // 1. healthy and states have been updated on this time step
+                // 2. has relative error less than primary core error
+                // 3. not been the primary core for at least 10 seconds
+                altCoreAvailable = core[coreIndex].healthy() && 
+                                   altCoreError < bestCoreError &&
+                                   (imuSampleTime_us - coreLastTimePrimary_us[coreIndex] > 1E7);
+
+                if (altCoreAvailable) {
+                    // if this core has a significantly lower relative error to the active primary, we consider it as a 
+                    // better core and would like to switch to it even if the current primary is healthy
+                    betterCore = altCoreError <= -BETTER_THRESH; // a better core if its relative error is below a substantial level than the primary's
+                    bestCoreError = altCoreError;
                     newPrimaryIndex = coreIndex;
-                    lowestErrorScore = altErrorScore;
                 }
             }
         }
-        // update the yaw and position reset data to capture changes due to the lane switch
-        if (newPrimaryIndex != primary) {
+        altCoreAvailable = newPrimaryIndex != primary;
+
+        // Switch cores if another core is available and the active primary core meets one of the following conditions - 
+        // 1. has a bad error score
+        // 2. is unhealthy
+        // 3. is healthy, but a better core is available
+        // also update the yaw and position reset data to capture changes due to the lane switch
+        if (altCoreAvailable && (primaryErrorScore > 1.0f || !core[primary].healthy() || betterCore)) {
             updateLaneSwitchYawResetData(newPrimaryIndex, primary);
             updateLaneSwitchPosResetData(newPrimaryIndex, primary);
             updateLaneSwitchPosDownResetData(newPrimaryIndex, primary);
+            resetCoreErrors();
+            coreLastTimePrimary_us[primary] = imuSampleTime_us;
             primary = newPrimaryIndex;
             lastLaneSwitch_ms = AP_HAL::millis();
-        }
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "EKF3 lane switch %u", primary);
+        }       
     }
 
-    if (primary != 0 && core[0].healthy() && !hal.util->get_soft_armed()) {
+    if (primary != 0 && core[0].healthy() && !armed) {
         // when on the ground and disarmed force the first lane. This
         // avoids us ending with with a lottery for which IMU is used
         // in each flight. Otherwise the alignment of the timing of
@@ -895,7 +939,7 @@ void NavEKF3::checkLaneSwitch(void)
         updateLaneSwitchPosDownResetData(newPrimaryIndex, primary);
         primary = newPrimaryIndex;
         lastLaneSwitch_ms = now;
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "NavEKF3: lane switch %u", primary);
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "EKF3 lane switch %u", primary);
     }
 }
 
@@ -903,6 +947,45 @@ void NavEKF3::requestYawReset(void)
 {
     for (uint8_t i = 0; i < num_cores; i++) {
         core[primary].EKFGSF_requestYawReset();
+    }
+}
+
+/*
+  Update this instance error score value for all active cores
+*/
+float NavEKF3::updateCoreErrorScores()
+{
+    for (uint8_t i = 0; i < num_cores; i++) {
+        coreErrorScores[i] = core[i].errorScore();
+    }
+    return coreErrorScores[primary];
+}
+
+/*
+  Update the relative error for all alternate available cores with respect to primary core's error.
+  A positive relative error for a core means it has been more erroneous than the existing primary.
+  A negative relative error indicates a core which can be switched to.
+*/
+void NavEKF3::updateCoreRelativeErrors()
+{
+    float error = 0;
+    for (uint8_t i = 0; i < num_cores; i++) {
+        if (i != primary) {
+            error = coreErrorScores[i] - coreErrorScores[primary];
+            // reduce error for a core only if its better than the primary lane by at least the Relative Error Threshold, this should prevent unnecessary lane changes
+            if (error > 0 || error < -MAX(_err_thresh, 0.05)) {
+                coreRelativeErrors[i] += error;
+                coreRelativeErrors[i] = constrain_float(coreRelativeErrors[i], -CORE_ERR_LIM, CORE_ERR_LIM);
+            }
+        }
+    }
+}
+
+// Reset the relative error values
+void NavEKF3::resetCoreErrors(void)
+{
+    for (uint8_t i = 0; i < num_cores; i++) {
+        coreRelativeErrors[i] = 0;
     }
 }
 

@@ -45,6 +45,20 @@ float NavEKF3_core::errorScore() const
         score = MAX(score, 0.5f * (velTestRatio + posTestRatio));
         // Check altimeter fusion performance
         score = MAX(score, hgtTestRatio);
+        // Check airspeed fusion performance - only when we are using at least 2 airspeed sensors so we can switch lanes with 
+        // a better one. This only comes into effect for a forward flight vehicle. A sensitivity factor of 0.3 is added to keep the
+        // EKF less sensitive to innovations arising due events like strong gusts of wind, thus, prevent reporting high error scores
+        if (assume_zero_sideslip()) {
+            const auto *arsp = AP::airspeed();
+            if (arsp->get_num_sensors() >= 2 && (frontend->_affinity & EKF_AFFINITY_ARSP)) {
+                score = MAX(score, 0.3f * tasTestRatio);
+            }
+        }
+        // Check magnetometer fusion performance - need this when magnetometer affinity is enabled to override the inherent compass
+        // switching mechanism, and instead be able to move to a better lane
+        if (frontend->_affinity & EKF_AFFINITY_MAG) {
+            score = MAX(score, 0.3f * (magTestRatio.x + magTestRatio.y + magTestRatio.z));
+        }
     }
     return score;
 }
