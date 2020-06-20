@@ -63,7 +63,7 @@ private:
 
     uint64_t _last_read;
     uint8_t _num_channels;
-    HAL_Semaphore_Recursive rcin_mutex;
+    Semaphore rcin_mutex;
     int16_t _rssi = -1;
     uint32_t _rcin_timestamp_last_signal;
     bool _init;

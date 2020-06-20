@@ -12,8 +12,6 @@ APJ_BOARD_ID 11
 # crystal frequency
 OSCILLATOR_HZ 24000000
 
-# board voltage
-STM32_VDD 330U
 
 # ChibiOS system timer
 STM32_ST_USE_TIMER 5
@@ -35,7 +33,7 @@ define HAL_I2C_BUS_BASE 1
 define HAL_I2C_INTERNAL_MASK 0
 
 # order of UARTs (and USB)
-UART_ORDER OTG1 UART4 USART2 USART3 UART8 USART1 UART7
+SERIAL_ORDER OTG1 USART2 USART3 UART4 UART8 USART1 UART7
 
 # UART4 is GPS
 PA0 UART4_TX UART4
@@ -183,9 +181,6 @@ define HAL_STORAGE_SIZE        16384
 
 # enable RAMTROM parameter storage
 define HAL_WITH_RAMTRON 1
-
-# fallback to flash is no FRAM fitted
-define STORAGE_FLASH_PAGE 22
 
 # enable FAT filesystem
 define HAL_OS_FATFS_IO 1

@@ -51,16 +51,33 @@ public:
     uint32_t get_rc_input_count(void) const {
         return rc_input_count;
     }
+
+    // get RSSI
+    int16_t get_RSSI(void) const {
+        return rssi;
+    }
+
+    // get UART for RCIN, if available. This will return false if we
+    // aren't getting the active RC input protocol via the uart
+    AP_HAL::UARTDriver *get_UART(void) const {
+        return frontend._detected_with_bytes?frontend.added.uart:nullptr;
+    }
+
+    // return true if we have a uart available for protocol handling.
+    bool have_UART(void) const {
+        return frontend.added.uart != nullptr;
+    }
     
 protected:
-    void add_input(uint8_t num_channels, uint16_t *values, bool in_failsafe);
+    void add_input(uint8_t num_channels, uint16_t *values, bool in_failsafe, int16_t rssi=-1);
+    AP_RCProtocol &frontend;
 
 private:
-    AP_RCProtocol &frontend;
     uint32_t rc_input_count;
     uint32_t last_rc_input_count;
     uint32_t rc_frame_count;
 
     uint16_t _pwm_values[MAX_RCIN_CHANNELS];
     uint8_t  _num_channels;
+    int16_t rssi = -1;
 };

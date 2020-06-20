@@ -4,21 +4,16 @@
 # MCU class and specific type
 MCU STM32F4xx STM32F405xx
 
-define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_REVOMINI
-
 # board ID for firmware load
 APJ_BOARD_ID 124
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
-STM32_PLLM_VALUE 8
 
 define STM32_ST_USE_TIMER 5
 
 FLASH_SIZE_KB 1024
 
-# board voltage
-STM32_VDD 330U
 
 # use USB for stdout, so no STDOUT_SERIAL
 # STDOUT_SERIAL SD3
@@ -28,7 +23,7 @@ STM32_VDD 330U
 I2C_ORDER I2C1
 
 # order of UARTs (and USB)
-UART_ORDER OTG1 USART3 USART1
+SERIAL_ORDER OTG1 USART1 EMPTY USART3
 
 # rcinput is PC6, which is the 3rd "PWM IN" pin (the yellow wire on a
 # revolution board)
@@ -138,4 +133,5 @@ define HAL_LOGGING_DATAFLASH
 
 # 8 PWM available by default
 define BOARD_PWM_COUNT_DEFAULT 8
+define HAL_WITH_DSP FALSE
 

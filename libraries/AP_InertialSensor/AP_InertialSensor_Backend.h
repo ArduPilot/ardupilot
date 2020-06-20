@@ -108,6 +108,7 @@ public:
         DEVTYPE_INS_ICM20649 = 0x2E,
         DEVTYPE_INS_ICM20602 = 0x2F,
         DEVTYPE_INS_ICM20601 = 0x30,
+        DEVTYPE_INS_ADIS1647X = 0x31,
     };
 
 protected:

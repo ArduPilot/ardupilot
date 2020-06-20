@@ -6,8 +6,7 @@ MCU STM32F4xx STM32F407xx
 
 # board ID for firmware load
 APJ_BOARD_ID 20
-define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_F4BY
-                                
+
 # USB setup
 USB_VENDOR 0x27AC # Swift-Flyer 
 USB_PRODUCT 0x0201 # fmu usb driver 
@@ -19,10 +18,6 @@ FLASH_SIZE_KB 1024
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
-STM32_PLLM_VALUE 8
-
-# board voltage
-STM32_VDD 330U
 
 # this is the STM32 timer that ChibiOS will use for the low level
 # driver. This must be a 32 bit timer. We currently only support
@@ -53,7 +48,7 @@ PA14 JTCK-SWCLK SWD
 # setup as OPENDRAIN
 PA9 VBUS INPUT OPENDRAIN
 
-UART_ORDER OTG1 USART3 USART2 USART1 UART5
+SERIAL_ORDER OTG1 USART2 USART1 USART3 UART5
 
 # UART1 as board 2.1.5 for serial 3 gps
 PB6 USART1_TX USART1
@@ -75,7 +70,6 @@ PC12 UART5_TX UART5 NODMA
 PD2  UART5_RX UART5 NODMA
 
 define HAL_STORAGE_SIZE 16384
-define STORAGE_FLASH_PAGE 22
 
 #SPI1 for MPU
 PA5 SPI1_SCK SPI1

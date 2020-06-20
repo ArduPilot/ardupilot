@@ -16,19 +16,6 @@ env AP_PERIPH 1
 # crystal frequency
 OSCILLATOR_HZ 16000000
 
-STM32_HSE_ENABLED TRUE
-STM32_PLLM_VALUE 16
-STM32_PLLN_VALUE 384
-STM32_PLLP_VALUE 4
-STM32_PLLQ_VALUE 8
-STM32_PLLSRC STM32_PLLSRC_HSE
-STM32_PREE1  STM32_PREE1_DIV1
-STM32_PREE2  STM32_PREE2_DIV1
-STM32_HPRE   STM32_HPRE_DIV1
-STM32_PPRE1  STM32_PPRE1_DIV2
-STM32_PPRE2  STM32_PPRE2_DIV2
-
-
 define CH_CFG_ST_FREQUENCY 1000000
 
 # assume 512k flash part
@@ -37,11 +24,8 @@ FLASH_SIZE_KB 512
 STDOUT_SERIAL SD1
 STDOUT_BAUDRATE 57600
 
-# board voltage
-STM32_VDD 330U
-
 # order of UARTs
-UART_ORDER
+SERIAL_ORDER
 
 # use safety button to stay in bootloader
 PB3 STAY_IN_BOOTLOADER INPUT PULLDOWN
@@ -96,8 +80,8 @@ define STM32_CAN_USE_CAN1 TRUE
 
 define CAN_APP_NODE_NAME "org.ardupilot.cuav_gps"
 
-# start with a fixed node ID so the board is usable without DNA
-define HAL_CAN_DEFAULT_NODE_ID 116
+# use DNA
+define HAL_CAN_DEFAULT_NODE_ID 0
 
 # make bl baudrate match debug baudrate for easier debugging
 define BOOTLOADER_BAUDRATE 57600
@@ -107,3 +91,7 @@ define HAL_BOOTLOADER_TIMEOUT 1000
 
 # reserve 256 bytes for comms between app and bootloader
 RAM_RESERVE_START 256
+
+# Add CS pins to ensure they are high in bootloader
+PA4 MAG_CS CS
+PA10 MS5611_CS CS

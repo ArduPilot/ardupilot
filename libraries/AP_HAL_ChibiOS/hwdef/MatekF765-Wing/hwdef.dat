@@ -10,22 +10,11 @@ APJ_BOARD_ID 143
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
 
-define STM32_LSECLK   32768U
-define STM32_LSEDRV   (3U << 3U)
-
-define STM32_PLLSRC     STM32_PLLSRC_HSE
-define STM32_PLLM_VALUE 8
-define STM32_PLLN_VALUE 432
-define STM32_PLLP_VALUE 2
-define STM32_PLLQ_VALUE 9
-
 FLASH_SIZE_KB 2048
 
 # leave 2 sectors free
 FLASH_RESERVE_START_KB 96
 
-# board voltage
-STM32_VDD 330U
 
 STM32_ST_USE_TIMER 12
 define CH_CFG_ST_RESOLUTION 16
@@ -34,7 +23,7 @@ define CH_CFG_ST_RESOLUTION 16
 I2C_ORDER I2C2 I2C1
 
 # order of UARTs (and USB)
-UART_ORDER OTG1 USART2 UART7 USART1 USART3 UART8 UART4
+SERIAL_ORDER OTG1 UART7 USART1 USART2 USART3 UART8 UART4 USART6
 
 # tonealarm support
 PB9 TIM11_CH1 TIM11 GPIO(32) ALARM
@@ -90,8 +79,8 @@ define HAL_DEFAULT_AIRSPEED_PIN 10
 # define default battery setup
 define HAL_BATT_VOLT_PIN 12
 define HAL_BATT_CURR_PIN 13
-define HAL_BATT_VOLT_SCALE 10.1
-define HAL_BATT_CURR_SCALE 17.0
+define HAL_BATT_VOLT_SCALE 11
+define HAL_BATT_CURR_SCALE 40
 
 # analog RSSI
 PC1 RSSI_ADC ADC1
@@ -122,9 +111,14 @@ PD0 UART4_RX UART4 NODMA
 # UART5 (RX only, for ESC telem), disabled for now until we add uartH support
 # PB8 UART5_RX UART5 NODMA
 
-# USART6 (RC input)
+# USART6 (RC input), SERIAL7
 PC7 TIM3_CH2 TIM3 RCININT FLOAT LOW
-PC6 USART6_TX USART6 NODMA LOW
+PC6 USART6_TX USART6 NODMA
+
+# as an alternative config setup the RX6 pin as a uart. This allows
+# for bi-directional UART based receiver protocols such as FPort
+# without any extra hardware
+PC7 USART6_RX USART6 NODMA ALT(1)
 
 # UART7 (telem1)
 PE7 UART7_RX UART7
@@ -201,7 +195,7 @@ define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
 define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 # setup for OSD
-define OSD_ENABLED ENABLED
+define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 

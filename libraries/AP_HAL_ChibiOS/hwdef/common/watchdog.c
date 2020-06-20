@@ -11,7 +11,7 @@
 #define IWDG_BASE             0x58004800
 #elif defined(STM32F7) || defined(STM32F4)
 #define IWDG_BASE             0x40003000
-#elif defined(STM32F1)
+#elif defined(STM32F1) || defined(STM32F3)
 #define IWDG_BASE             0x40003000
 #else
 #error "Unsupported IWDG MCU config"
@@ -33,7 +33,7 @@
 #define WDG_RESET_STATUS (*(__IO uint32_t *)(RCC_BASE + 0x74))
 #define WDG_RESET_CLEAR (1U<<24)
 #define WDG_RESET_IS_IWDG (1U<<29)
-#elif defined(STM32F1)
+#elif defined(STM32F1) || defined(STM32F3)
 #define WDG_RESET_STATUS (*(__IO uint32_t *)(RCC_BASE + 0x24))
 #define WDG_RESET_CLEAR (1U<<24)
 #define WDG_RESET_IS_IWDG (1U<<29)

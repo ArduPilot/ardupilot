@@ -93,6 +93,8 @@ void AP_BattMonitor_SMBus_Solo::timer()
     read_temp();
 
     read_serial_number();
+
+    read_cycle_count();
 }
 
 // read_block - returns number of characters read if successful, zero if unsuccessful

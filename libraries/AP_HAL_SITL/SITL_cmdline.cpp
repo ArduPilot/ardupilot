@@ -107,6 +107,7 @@ static const struct {
     { "quad",               MultiCopter::create },
     { "copter",             MultiCopter::create },
     { "x",                  MultiCopter::create },
+    { "bfxrev",             MultiCopter::create },
     { "bfx",                MultiCopter::create },
     { "djix",               MultiCopter::create },
     { "cwx",                MultiCopter::create },

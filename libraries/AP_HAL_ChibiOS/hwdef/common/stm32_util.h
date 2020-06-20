@@ -58,7 +58,8 @@ enum rtc_boot_magic {
     RTC_BOOT_OFF  = 0,
     RTC_BOOT_HOLD = 0xb0070001,
     RTC_BOOT_FAST = 0xb0070002,
-    RTC_BOOT_CANBL = 0xb0080000 // ORd with 8 bit local node ID
+    RTC_BOOT_CANBL = 0xb0080000, // ORd with 8 bit local node ID
+    RTC_BOOT_FWOK = 0xb0093a26 // indicates FW ran for 30s
 };
     
 // see if RTC registers is setup for a fast reboot
@@ -77,8 +78,16 @@ void malloc_init(void);
   read mode of a pin. This allows a pin config to be read, changed and
   then written back
  */
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3)
 iomode_t palReadLineMode(ioline_t line);
+
+enum PalPushPull {
+    PAL_PUSHPULL_NOPULL=0,
+    PAL_PUSHPULL_PULLUP=1,
+    PAL_PUSHPULL_PULLDOWN=2
+};
+
+void palLineSetPushPull(ioline_t line, enum PalPushPull pp);
 #endif
 
 // set n RTC backup registers starting at given idx
@@ -90,6 +99,17 @@ void get_rtc_backup(uint8_t idx, uint32_t *v, uint8_t n);
 void stm32_cacheBufferInvalidate(const void *p, size_t size);
 void stm32_cacheBufferFlush(const void *p, size_t size);
 
+#ifdef HAL_GPIO_PIN_FAULT
+// printf for fault handlers
+void fault_printf(const char *fmt, ...);
+#endif
+
+// halt hook for printing panic message
+void system_halt_hook(void);
+
+// hook for stack overflow
+void stack_overflow(thread_t *tp);
+    
 #ifdef __cplusplus
 }
 #endif

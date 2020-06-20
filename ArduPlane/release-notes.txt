@@ -1,3 +1,265 @@
+Release 4.0.6beta1, 23rd May 2020
+---------------------------------
+
+This is a major release with a significant number of new features and
+bug fixes.
+
+ - scripting generator bug fix
+ - changed LED scripting API to allow more than 32 LEDs on a pin
+ - added support for ProfiLED LEDs
+ - added u-blox GPS moving baseline u-blox auto-configuration
+ - fixed handling of GPS antenna positions on EKF GPS switch
+ - changed default USB IDs to new ArduPilot specific IDs
+ - fixed bug in handling trim for RC control of camera mounts
+ - added LGR_OPTIONS bits to control landing gear behaviour on takeoff/landing
+ - improved mavlink streaming output control to better allocate time to each channel
+ - fixed send of mavlink PARAM_VALUE on set of a readonly parameter
+ - fixed mag variance reporting in EKF_STATUS_REPORT mavlink message
+ - fixed time wrap bug in BMP085 barometer driver
+ - fixed buffer overflow in ST24 RC input driver
+ - fixed EKF usage of WMM tables when user has specified a specific
+   declination with COMPASS_DEC and COMPASS_AUTODEC
+ - fixed bug in AP_Terrain on-disk format
+ - added script for offline generation of terrain data
+ - severel improvements to smbus battery drivers
+ - fixed a race condition in parameter storage on ChibiOS
+ - fixed use of zero GNSS timestamp in UAVCAN GPS driver
+ - improved GCS messages during bootloader flash
+ - fixed CS pin in bootloader that could corrupt FRAM on some boards
+ - added GPS yaw to MAVLink GPS_RAW_INT message
+ - added Hott telemetry support
+ - added FRSky FPort support
+ - fixed bug in CAN clock and queue handling on H7 based boards
+ - added support for BRD_ALT_CONFIG for alternative hardware configs on several boards
+ - added new boards CUAV-Nora, CUAV-X7, MatekH743, R9Pilot, mRoNexus
+ - improved reporting of internal errors to GCS
+ - fixed recursion bug in tonealarm player
+ - fixed flaperon SERVO_AUTO_TRIM behaviour
+ - added option to compensate forward throttle for battery voltage
+ - added compensation in VTOL gains for pressure altitude
+ - switched to new more flexible compass ordering system
+ - fixed forcing of safety off on IOMCU reset
+ - increased maximum compass scale factor to 1.4
+
+
+Release 4.0.5, 4th March 2020
+-----------------------------
+
+This release includes a one important bug fix and some minor
+enhancements. The changes are:
+
+ - fixed bug handling change of RC input source while MAVLink signing
+   is active. This could cause a stack overflow and a crash
+
+ - added display of RC output types to aid in debugging DShot outputs
+
+ - modified clocking on H7 boards to produce more accurate clocks for
+   DShot
+
+ - switched to new USB VIDs for dual-CDC boards
+
+ - fixed a bug in handling LOITER_TURNS for quadplanes when
+   Q_GUIDED_MODE is enabled
+
+ - added a TECS reset at the end of a VTOL takeoff to handle aircraft
+   with TECS climb rates below VTOL climb rates
+
+Happy flying!
+
+Release 4.0.4, 16th February 2020
+---------------------------------
+
+This release includes a significant number of changes from 4.0.3. Key
+changes are:
+
+ - re-sync the 4.0 release with Copter-4.0, bringing them in line so
+   as to maximise cross-vehicle testing
+
+ - fixed a timing issue in IOMCU that could lead to loss of RC input
+   frames and increased latency of output to ESCs on the IOMCU
+
+ - fixed a bug in restoring gains in QAUTOTUNE that could cause the
+   aircraft to be unstable on leaving QAUTOTUNE mode
+
+ - fixed stack size of ftp thread
+
+The Copter-4.0 re-sync brings in quite a few structural changes. The
+main user visible changes are:
+
+ - UAVCAN DNA server no longer needs a microSD card to operate
+
+ - added logging of UAVCAN servos and ESC feedback messages
+
+ - reduced QTUN logging rate to 25Hz
+
+ - reduced memory usage in EKF with multiple lanes
+
+ - Minor OSD improvements
+
+ - added a lot more scripting bindings
+
+ - fixed UAVCAN GPS status when not connected
+
+ - added EK3_MAG_EF_LIM limit for earth frame mag errors
+
+ - added MAVLink FTP support
+
+ - added support for WS2812 LEDs
+
+Due to the significant number of changes with the re-sync I would
+particularly appreciate as much flight testing as we can get on this
+release.
+
+Happy flying!
+
+Release 4.0.3, 21st January 2020
+--------------------------------
+
+This is a minor release with a few bug fixes and enhancements. The
+changes since beta1 are:
+
+ - fixed 3 missing semaphore waits
+ - fixed checking for bouncebuffer allocation on microSD card IO
+ - fixed incorrect param count
+ - prevent failsafe action from overriding a VTOL land
+ - fixed compass calibration failures with auto-rotation detection
+ - fixed errors on STM32H7 I2C (affects CubeOrange and Durandal)
+ - fixed a race condition in FrSky passthrough telemetry
+ - fixed DSM/Spektrum parsing for 22ms protocols
+ - added fixed yaw compass calibration method
+ - re-generated magnetic field tables
+ - ensure SERIAL0_PROTOCOL is mavlink on boot
+
+The most important fix is for FrSky pass-through telemetry. Pass
+through telemetry support had a race condition which could lead to the
+flight controller generating a fault and rebooting. Until you are
+running a firmware with the fix you should disable FrSky pass-through
+telemetry by changing SERIALn_PROTOCOL from 10 to 0 on the where you
+have SPort enabled.
+
+Happy flying!
+
+Release 4.0.2, 30th December 2019
+---------------------------------
+
+This is a minor release with a few bug fixes and enhancements. Changes
+are:
+
+ - fixed voltage scaling on CUAVv5Nano
+ - fixed 10Hz NMEA output
+ - fixed range check on RC channel selection
+ - scale UART RX size with baudrate
+ - default fast sampling enabled on first IMU for all capable boards
+ - fixed bootloader flash alignment bug
+ - fixed PWM 5 and 6 for MatekF765-Wing
+ - support RM3100 compass on I2C
+ - fixed error on AHRS level trim in preflight calibration
+ - fixed handling of SB without BUSY on I2Cv1 devices
+ - update bootloaders to be more robust to unexpected data
+ - added new COMPASS_SCALE parameters and estimator to fix issue with
+   compass in Here2 GPS
+ - fixed issue with millis wrap on boards with 16 bit system timer
+   (MatekF405, MatekF765, speedybeef4 and KakuteF4)
+ - fixed i2c internal masks for several boards
+ - fixed scaling of Blheli32 RPM conversion
+ - changed to WFQ FrSky telemetry scheduler
+ - enable LED pin on MatekF765
+ - added params for Durandal battery monitor pins to param docs
+ - updated bootloaders to reduce change of line noise stopping boot
+ - fixed DMA error causing memory corruption in ChibiOS I2C driver
+ - fixed param conversion from plane 3.9.x to plane 4.0.x for rangefinders
+ - cope with UAVCAN GPS that doesn't provide AUX messages (Here2 GPS)
+ - send temperatures for IMUs on mavlink
+ - fixed I2C clock speed error on STM32H7
+ - fixed CR/LF output error for NMEA output
+
+Happy flying!
+
+Release 4.0.1, 22nd November 2019
+---------------------------------
+
+This is a minor release with a few bug fixes and enhancements. Changes
+are:
+
+ - Added Q_ASSIST_ALT parameter which offers a way for VTOL assistance
+   at low altitudes
+
+ - fixed channels 5 and 6 on the MatekF765-Wing
+
+ - fixed a bug with sending data on a full UART in mavlink parameter
+   download
+
+ - fixed use of UAVCAN primary GPS with UART secondary GPS
+
+ - fixed failover between rangefinders of same orientation
+
+ - added RC option for TAKEOFF mode
+
+ - fixed logging of current on secondary battery monitors
+
+ - fixed register checking on DPS280 for mRoControlZeroF7
+
+ - added clock panel to OSD
+
+ - fixed B/E led brightness on Pixhawk4
+
+ - support RTCM injection to UAVCAN GPS for RTK support
+
+ - fixed an RC failsafe bug that could cause the geofence to disable
+
+ - fixed a bug in the SDP33 airspeed driver
+
+Happy flying!
+
+
+Release 4.0.1beta1, 17th November 2019
+--------------------------------------
+
+This is a minor release with a few bug fixes and enhancements for the
+4.0 stable version.
+
+Changes are:
+
+ - Added Q_ASSIST_ALT parameter which offers a way for VTOL assistance
+   at low altitudes
+
+ - fixed channels 5 and 6 on the MatekF765-Wing
+
+ - fixed a bug with sending data on a full UART in mavlink parameter
+   download
+
+ - added TECS_LAND_PMIN for constraining pitch minimum during landing
+
+ - fixed use of UAVCAN primary GPS with UART secondary GPS
+
+ - fixed failover between rangefinders of same orientation
+
+ - added RC option for TAKEOFF mode
+
+ - fixed logging of current on secondary battery monitors
+
+ - fixed register checking on DPS280 for mRoControlZeroF7
+
+ - added clock panel to OSD
+
+ - fixed B/E led brightness on Pixhawk4
+
+ - support RTCM injection to UAVCAN GPS for RTK support
+
+Happy flying!
+
+Release 4.0.0, 28th October 2019
+--------------------------------
+
+The final release of stable 4.0.0 has just one change from beta4,
+which is to fix a bug in the new TAKEOFF flight mode.
+
+Many thanks to everyone who has been testing the 4.0 release, and
+special thanks to Henry for his fantastic work in bringing the wiki up
+to date for this release!
+
+Happy flying!
+
 Release 4.0.0beta4, 19th October 2019
 ------------------------------------
 

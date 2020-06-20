@@ -29,7 +29,7 @@
 class ChibiOS::AnalogSource : public AP_HAL::AnalogSource {
 public:
     friend class ChibiOS::AnalogIn;
-    AnalogSource(int16_t pin, float initial_value);
+    AnalogSource(int16_t pin);
     float read_average() override;
     float read_latest() override;
     void set_pin(uint8_t p) override;
@@ -67,11 +67,6 @@ private:
     void read_adc(uint32_t *val);
     void update_power_flags(void);
 
-    int _battery_handle;
-    int _servorail_handle;
-    int _system_power_handle;
-    uint64_t _battery_timestamp;
-    uint64_t _servorail_timestamp;
     ChibiOS::AnalogSource* _channels[ANALOG_MAX_CHANNELS];
 
     uint32_t _last_run;

@@ -843,7 +843,10 @@ private:
 
     // Update the state index limit based on which states are active
     void updateStateIndexLim(void);
-    
+
+    // correct GPS data for antenna position
+    void CorrectGPSForAntennaOffset(gps_elements &gps_data);
+
     // Variables
     bool statesInitialised;         // boolean true when filter states have been initialised
     bool velHealth;                 // boolean true if velocity measurements have passed innovation consistency check

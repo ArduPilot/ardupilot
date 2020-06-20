@@ -69,6 +69,8 @@
 
 extern const AP_HAL::HAL& hal;
 
+static_assert(STM32_FDCANCLK <= 80U*1000U*1000U, "FDCAN clock must be max 80MHz");
+
 namespace ChibiOS_CAN
 {
 namespace
@@ -200,7 +202,8 @@ int CanIface::computeTimings(const uavcan::uint32_t target_bitrate, Timings& out
     /*
      * Hardware configuration
      */
-    const uavcan::uint32_t pclk = STM32_PLL1_Q_CK;
+    const uavcan::uint32_t pclk = STM32_FDCANCLK;
+
 
     static const int MaxBS1 = 16;
     static const int MaxBS2 = 8;
@@ -595,7 +598,6 @@ void CanIface::setupMessageRam()
     num_elements = MIN((FDCAN_TX_FIFO_BUFFER_SIZE/FDCAN_FRAME_BUFFER_SIZE), 32U);
     if (num_elements) {
         can_->TXBC = (FDCANMessageRAMOffset_ << 2) | (num_elements << 24);
-        can_->TXBC |= 1U << 30; //Set Queue mode
         MessageRam_.TxFIFOQSA = SRAMCAN_BASE + (FDCANMessageRAMOffset_ * 4U);
         FDCANMessageRAMOffset_ += num_elements*FDCAN_FRAME_BUFFER_SIZE;
     }

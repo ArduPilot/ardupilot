@@ -104,16 +104,14 @@ void AP_Proximity_MAV::handle_msg(const mavlink_message_t &msg)
             increment *= -1;
         }
 
-        Location current_loc;
-        float current_vehicle_bearing;
-        const bool database_ready = database_prepare_for_push(current_loc, current_vehicle_bearing);
+        Vector2f current_pos;
+        float current_heading;
+        const bool database_ready = database_prepare_for_push(current_pos, current_heading);
 
         // initialise updated array and proximity sector angles (to closest object) and distances
-        bool sector_updated[_num_sectors];
-        float sector_width_half[_num_sectors];
-        for (uint8_t i = 0; i < _num_sectors; i++) {
+        bool sector_updated[PROXIMITY_NUM_SECTORS];
+        for (uint8_t i = 0; i < PROXIMITY_NUM_SECTORS; i++) {
             sector_updated[i] = false;
-            sector_width_half[i] = _sector_width_deg[i] * 0.5f;
             _angle[i] = _sector_middle_deg[i];
             _distance[i] = MAX_DISTANCE;
         }
@@ -134,10 +132,10 @@ void AP_Proximity_MAV::handle_msg(const mavlink_message_t &msg)
             const float mid_angle = wrap_360((float)j * increment + yaw_correction);
 
             // iterate over proximity sectors
-            for (uint8_t i = 0; i < _num_sectors; i++) {
+            for (uint8_t i = 0; i < PROXIMITY_NUM_SECTORS; i++) {
                 float angle_diff = fabsf(wrap_180(_sector_middle_deg[i] - mid_angle));
                 // update distance array sector with shortest distance from message
-                if ((angle_diff <= sector_width_half[i]) && (packet_distance_m < _distance[i])) {
+                if ((angle_diff <= (PROXIMITY_SECTOR_WIDTH_DEG * 0.5f)) && (packet_distance_m < _distance[i])) {
                     _distance[i] = packet_distance_m;
                     _angle[i] = mid_angle;
                     sector_updated[i] = true;
@@ -146,12 +144,12 @@ void AP_Proximity_MAV::handle_msg(const mavlink_message_t &msg)
 
             // update Object Avoidance database with Earth-frame point
             if (database_ready) {
-                database_push(mid_angle, packet_distance_m, _last_update_ms, current_loc, current_vehicle_bearing);
+                database_push(mid_angle, packet_distance_m, _last_update_ms, current_pos, current_heading);
             }
         }
 
         // update proximity sectors validity and boundary point
-        for (uint8_t i = 0; i < _num_sectors; i++) {
+        for (uint8_t i = 0; i < PROXIMITY_NUM_SECTORS; i++) {
             _distance_valid[i] = (_distance[i] >= _distance_min) && (_distance[i] <= _distance_max);
             if (sector_updated[i]) {
                 update_boundary_for_sector(i, false);

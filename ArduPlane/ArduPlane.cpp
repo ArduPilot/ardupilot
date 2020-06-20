@@ -183,7 +183,7 @@ void Plane::update_speed_height(void)
 
     if (quadplane.in_vtol_mode() ||
         quadplane.in_assisted_flight()) {
-        quadplane.update_throttle_thr_mix();
+        quadplane.update_throttle_mix();
     }
 }
 
@@ -543,6 +543,10 @@ void Plane::set_flight_stage(AP_Vehicle::FixedWing::FlightStage fs)
 void Plane::update_alt()
 {
     barometer.update();
+
+    if (quadplane.available()) {
+        quadplane.motors->set_air_density_ratio(barometer.get_air_density_ratio());
+    }
 
     // calculate the sink rate.
     float sink_rate;
