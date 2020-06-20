@@ -97,12 +97,11 @@ void AP_Scripting::init(void) {
     }
 
     const char *dir_name = SCRIPTING_DIRECTORY;
-
-    if (!AP::FS().mkdir(dir_name)) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Lua: created new directory (%s)", dir_name);
-    } else if (errno != EEXIST) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Lua: failed to create (%s)", dir_name);
-        return;
+    if (AP::FS().mkdir(dir_name)) {
+        if (errno != EEXIST) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Lua: failed to create (%s)", dir_name);
+            return;
+        }
     }
 
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Scripting::thread, void),
