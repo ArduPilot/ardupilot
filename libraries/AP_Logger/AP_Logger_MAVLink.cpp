@@ -276,10 +276,13 @@ void AP_Logger_MAVLink::remote_log_block_status_msg(const mavlink_channel_t chan
     if (!semaphore.take_nonblocking()) {
         return;
     }
-    if(packet.status == 0){
+    switch(packet.status) {
+    case MAV_REMOTE_LOG_DATA_BLOCK_NACK:
         handle_retry(packet.seqno);
-    } else{
+        break;
+    case MAV_REMOTE_LOG_DATA_BLOCK_ACK:
         handle_ack(chan, msg, packet.seqno);
+        break;
     }
     semaphore.give();
 }
