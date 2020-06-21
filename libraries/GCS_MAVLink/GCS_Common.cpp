@@ -3379,11 +3379,16 @@ MAV_RESULT GCS_MAVLINK::handle_command_flash_bootloader(const mavlink_command_lo
         return MAV_RESULT_FAILED;
     }
 
-    if (hal.util->flash_bootloader() != AP_HAL::Util::FlashBootloader::OK) {
-        return MAV_RESULT_FAILED;
+    switch (hal.util->flash_bootloader()) {
+    case AP_HAL::Util::FlashBootloader::OK:
+    case AP_HAL::Util::FlashBootloader::NO_CHANGE:
+        // consider NO_CHANGE as success (so as not to display error to user)
+        return MAV_RESULT_ACCEPTED;
+    default:
+        break;
     }
 
-    return MAV_RESULT_ACCEPTED;
+    return MAV_RESULT_FAILED;
 }
 
 MAV_RESULT GCS_MAVLINK::handle_command_preflight_set_sensor_offsets(const mavlink_command_long_t &packet)
