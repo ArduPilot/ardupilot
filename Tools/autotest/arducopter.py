@@ -5476,6 +5476,14 @@ class AutoTestCopter(AutoTest):
              "Test that Alt Estimation is mandatory for ALT_HOLD",
              self.test_alt_estimate_prearm),
 
+            ("DataFlash",
+             "Test DataFlash Block backend",
+             self.test_dataflash_sitl),
+
+            ("DataFlashErase",
+             "Test DataFlash Block backend erase",
+             self.test_dataflash_erase),
+
             ("LogUpload",
              "Log upload",
              self.log_upload),
