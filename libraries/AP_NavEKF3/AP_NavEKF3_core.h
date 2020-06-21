@@ -79,6 +79,12 @@
 // number of seconds a request to reset the yaw to the GSF estimate is active before it times out
 #define YAW_RESET_TO_GSF_TIMEOUT_MS 5000
 
+// accuracy threshold applied to GSF yaw estimate use
+#define GSF_YAW_ACCURACY_THRESHOLD_DEG 15.0f
+
+// number of continuous valid GSF yaw estimates required to confirm valid hostory
+#define GSF_YAW_VALID_HISTORY_THRESHOLD 5
+
 class AP_AHRS;
 
 class NavEKF3_core : public NavEKF_core_common
@@ -1483,4 +1489,5 @@ private:
     uint32_t EKFGSF_yaw_reset_request_ms;   // timestamp of last emergency yaw reset request (uSec)
     uint8_t EKFGSF_yaw_reset_count;         // number of emergency yaw resets performed
     bool EKFGSF_run_filterbank;             // true when the filter bank is active
+    uint8_t EKFGSF_yaw_valid_count;         // number of updates since the last invalid yaw estimate
 };
