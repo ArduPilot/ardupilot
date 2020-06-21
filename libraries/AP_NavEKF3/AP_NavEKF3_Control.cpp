@@ -642,6 +642,18 @@ void NavEKF3_core::runYawEstimatorCorrection()
             Vector2f gpsVelNE = Vector2f(gpsDataDelayed.vel.x, gpsDataDelayed.vel.y);
             float gpsVelAcc = fmaxf(gpsSpdAccuracy, frontend->_gpsHorizVelNoise);
             yawEstimator->fuseVelData(gpsVelNE, gpsVelAcc);
+
+            // after velocity data has been fused the yaw variance esitmate will have been refreshed and
+            // is used maintain a history of validity
+            float yawEKFGSF, yawVarianceEKFGSF;
+            bool canUseEKFGSF = yawEstimator->getYawData(yawEKFGSF, yawVarianceEKFGSF) && is_positive(yawVarianceEKFGSF) && yawVarianceEKFGSF < sq(radians(GSF_YAW_ACCURACY_THRESHOLD_DEG));
+            if (canUseEKFGSF) {
+                if (EKFGSF_yaw_valid_count <  GSF_YAW_VALID_HISTORY_THRESHOLD) {
+                    EKFGSF_yaw_valid_count++;
+                }
+            } else {
+                EKFGSF_yaw_valid_count = 0;
+            }
         }
 
         // action an external reset request

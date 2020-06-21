@@ -439,6 +439,7 @@ void NavEKF3_core::InitialiseVariables()
     EKFGSF_yaw_reset_request_ms = 0;
     EKFGSF_yaw_reset_count = 0;
     EKFGSF_run_filterbank = false;
+    EKFGSF_yaw_valid_count = 0;
 
     effectiveMagCal = effective_magCal();
 }
