@@ -1171,6 +1171,7 @@ struct PACKED log_OABendyRuler {
     uint8_t active;
     uint16_t target_yaw;
     uint16_t yaw;
+    bool resist_chg;
     float margin;
     int32_t final_lat;
     int32_t final_lng;
@@ -1842,6 +1843,7 @@ struct PACKED log_Arm_Disarm {
 // @Field: Active: True if Bendy Ruler avoidance is being used
 // @Field: DesYaw: Best yaw chosen to avoid obstacle
 // @Field: Yaw: Current vehicle yaw
+// @Field: ResChg: True if BendyRuler resisted changing bearing and continued in last calculated bearing
 // @Field: Mar: Margin from path to obstacle on best yaw chosen
 // @Field: DLat: Destination latitude
 // @Field: DLng: Destination longitude
@@ -2386,7 +2388,7 @@ struct PACKED log_Arm_Disarm {
     { LOG_SRTL_MSG, sizeof(log_SRTL), \
       "SRTL", "QBHHBfff", "TimeUS,Active,NumPts,MaxPts,Action,N,E,D", "s----mmm", "F----000" }, \
     { LOG_OA_BENDYRULER_MSG, sizeof(log_OABendyRuler), \
-      "OABR","QBHHfLLLL","TimeUS,Active,DesYaw,Yaw,Mar,DLat,DLng,OALat,OALng", "sbddmDUDU", "F----GGGG" }, \
+      "OABR","QBHHBfLLLL","TimeUS,Active,DesYaw,Yaw,ResChg,Mar,DLat,DLng,OALat,OALng", "sbdd-mDUDU", "F-----GGGG" }, \
     { LOG_OA_DIJKSTRA_MSG, sizeof(log_OADijkstra), \
       "OADJ","QBBBBLLLL","TimeUS,State,Err,CurrPoint,TotPoints,DLat,DLng,OALat,OALng", "sbbbbDUDU", "F----GGGG" }, \
     { LOG_IMU2_MSG, sizeof(log_IMU), \
