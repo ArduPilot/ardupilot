@@ -264,7 +264,9 @@ void NavEKF3_core::SelectMagFusion()
     if ((effectiveMagCal == MagCal::GSF_YAW || !use_compass()) &&
         effectiveMagCal != MagCal::EXTERNAL_YAW &&
         effectiveMagCal != MagCal::EXTERNAL_YAW_FALLBACK) {
-        if (!yawAlignComplete) {
+
+        // because this type of reset event is not as time critical, require a continuous history of valid estimates
+        if (!yawAlignComplete && EKFGSF_yaw_valid_count >= GSF_YAW_VALID_HISTORY_THRESHOLD) {
             yawAlignComplete = EKFGSF_resetMainFilterYaw();
         }
 
@@ -278,7 +280,8 @@ void NavEKF3_core::SelectMagFusion()
             }
 
             float yawEKFGSF, yawVarianceEKFGSF;
-            bool canUseEKFGSF = yawEstimator->getYawData(yawEKFGSF, yawVarianceEKFGSF) && is_positive(yawVarianceEKFGSF) && yawVarianceEKFGSF < sq(radians(15.0f));
+            bool canUseEKFGSF = yawEstimator->getYawData(yawEKFGSF, yawVarianceEKFGSF) &&
+                                is_positive(yawVarianceEKFGSF) && yawVarianceEKFGSF < sq(radians(GSF_YAW_ACCURACY_THRESHOLD_DEG));
             if (yawAlignComplete && canUseEKFGSF && !assume_zero_sideslip()) {
                 // use the EKF-GSF yaw estimator output as this is more robust than the EKF can achieve without a yaw measurement
                 // for non fixed wing platform types
@@ -933,7 +936,7 @@ void NavEKF3_core::fuseEulerYaw(bool usePredictedYaw, bool useExternalYawSensor)
     if (usePredictedYaw && yawEstimator != nullptr) {
         canUseGsfYaw = yawEstimator->getYawData(gsfYaw, gsfYawVariance)
                         && is_positive(gsfYawVariance)
-                        && gsfYawVariance < sq(radians(15.0f));
+                        && gsfYawVariance < sq(radians(GSF_YAW_ACCURACY_THRESHOLD_DEG));
     }
 
     // yaw measurement error variance (rad^2)
@@ -1483,7 +1486,7 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
     };
 
     float yawEKFGSF, yawVarianceEKFGSF;
-    if (yawEstimator->getYawData(yawEKFGSF, yawVarianceEKFGSF) && is_positive(yawVarianceEKFGSF) && yawVarianceEKFGSF < sq(radians(15.0f))) {
+    if (yawEstimator->getYawData(yawEKFGSF, yawVarianceEKFGSF) && is_positive(yawVarianceEKFGSF) && yawVarianceEKFGSF < sq(radians(GSF_YAW_ACCURACY_THRESHOLD_DEG))) {
 
         // keep roll and pitch and reset yaw
         resetQuatStateYawOnly(yawEKFGSF, yawVarianceEKFGSF);
