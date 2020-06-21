@@ -69,7 +69,8 @@ public:
     float tau;
 
 
-    void update();
+    void update(float exp_e_rate);
+
     float calculate_aircraft_sinkrate(float phi);
 
     void reset_filter(float value) { _climb_filter.reset(value);}

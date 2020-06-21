@@ -372,7 +372,9 @@ void SoaringController::update_cruising()
 
 void SoaringController::update_vario()
 {
-    _vario.update();
+    float exp_e_rate = _spdHgt.get_expected_specific_energy_rate();
+
+    _vario.update(exp_e_rate);
 
     _vario.update_polar_learning(polar_learn, _throttle_suppressed, _spdHgt.get_target_accel());
 }

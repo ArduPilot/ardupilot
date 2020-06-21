@@ -16,7 +16,7 @@ Variometer::Variometer(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms, PolarP
     _vdot_filter2 = LowPassFilter<float>(1.0f/60.0f);
 }
 
-void Variometer::update()
+void Variometer::update(float exp_e_rate)
 {
     _ahrs.get_relative_position_D_home(alt);
     alt = -alt;
@@ -65,7 +65,10 @@ void Variometer::update()
     float roll = _ahrs.roll;
     float sinkrate = calculate_aircraft_sinkrate(roll);
 
-    reading = raw_climb_rate + dsp_cor*_aspd_filt_constrained/GRAVITY_MSS + sinkrate;
+    // Add contribution from throttle
+    float thr_climb = exp_e_rate/GRAVITY_MSS;
+
+    reading = raw_climb_rate + dsp_cor*_aspd_filt_constrained/GRAVITY_MSS + sinkrate - thr_climb;
     
 
     filtered_reading = TE_FILT * reading + (1 - TE_FILT) * filtered_reading;                       // Apply low pass timeconst filter for noise
@@ -76,7 +79,7 @@ void Variometer::update()
     float expected_roll = atanf(powf(_aspd_filt_constrained,2)/(GRAVITY_MSS*_aparm.loiter_radius));
     _expected_thermalling_sink = calculate_aircraft_sinkrate(expected_roll);
 
-    AP::logger().Write("VAR", "TimeUS,aspd_raw,aspd_filt,alt,roll,raw,filt,cl,fc,exs,dsp,dspb", "Qfffffffffff",
+    AP::logger().Write("VAR", "TimeUS,nil,aspd_filt,alt,roll,raw,filt,cl,fc,exs,dsp,dspb,sr,tcl", "Qfffffffffffff",
                        AP_HAL::micros64(),
                        (double)0.0,
                        (double)_aspd_filt_constrained,
@@ -88,7 +91,9 @@ void Variometer::update()
                        (double)smoothed_climb_rate,
                        (double)_expected_thermalling_sink,
                        (double)dsp,
-                       (double)dsp_bias);
+                       (double)dsp_bias,
+                       (double)sinkrate,
+                       (double)thr_climb);
 }
 
 
