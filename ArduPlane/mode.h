@@ -129,7 +129,7 @@ public:
         Area = 0.015;
         rho = 1.2;
         dt = 0.01;
-        cd = 1.7;
+        cd = 1.2;
         z_0 = 0.1;
         time_delay = 2;
         a = 1;  //sign changing variable
@@ -185,22 +185,13 @@ public:
     
 
     // methods that affect movement of the vehicle in this mode
-    void update() override;
+    void update() override;    
+    void update_releasepoint();
+    void release_payload();
     void set_state(PayloadReleaseState state){_state = state;}
     PayloadReleaseState get_state() {return _state;}
-    // void set_state(bool state){is_payload_released = state;}
-    // bool get_state(){return is_payload_released;}
-    void initialise_initial_condition();
-    void calculate_displacement();
-    void llh_to_ecef(Location &current_llh, Vector3d &current_neu);
-    void ecef_to_llh(Vector3d &current_neu, Location &current_llh);
-    void llh_to_neu(Location &current_llh, Vector3d &current_neu);
-    void neu_to_llh(Vector3d &current_neu, Location &current_llh);
-    void get_intermediate_point(Vector3d RP);
-    void calculate_release_point();
-    void release_payload();
-    void update_releasepoint();
-    bool verify_loiter_complete_heading(bool init);
+    void set_loiter_parameters();
+    
 
 protected:
 
@@ -208,7 +199,6 @@ protected:
     void _exit() override;
 private:
 
-    void set_loiter_parameters();
     bool is_payload_released;
     PayloadReleaseState _state = PayloadRelease_NotStarted;
     int radius; //radius to loiter around intermediate point
@@ -251,6 +241,20 @@ private:
     float relative; //relative direction vector in which payload and parachute will fall 
 
     uint8_t channel_payload;
+
+    // Functions used
+
+    void llh_to_ecef(Location &current_llh, Vector3d &current_neu);
+    void ecef_to_llh(Vector3d &current_neu, Location &current_llh);
+    void llh_to_neu(Location &current_llh, Vector3d &current_neu);
+    void neu_to_llh(Vector3d &current_neu, Location &current_llh);
+    void get_intermediate_point(Vector3d RP);
+    void calculate_release_point();
+    
+    bool verify_loiter_complete_heading(bool init);
+    void initialise_initial_condition();
+    void calculate_displacement();
+
 };
 //add finish
 

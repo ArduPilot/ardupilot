@@ -380,9 +380,8 @@ void Plane::do_payload_release(const AP_Mission::Mission_Command& cmd)
     mode_payloadrelease.release_point = mode_payloadrelease.drop_point;
     mode_payloadrelease.int_point = mode_payloadrelease.drop_point;
     gcs().send_text(MAV_SEVERITY_INFO, "initialise payload release called");
-    condition_value = 1;
-    loiter.direction = -1;      //ccw loiter
-    gcs().send_text(MAV_SEVERITY_INFO, "loiter_total_cd: %d",loiter.total_cd);
+    condition_value = 1;    //this should be set as this is used inside update release point
+    mode_payloadrelease.set_loiter_parameters();
 
 }
 //add finish

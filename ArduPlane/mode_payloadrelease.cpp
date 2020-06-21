@@ -107,7 +107,6 @@ void ModePayloadRelease::initialise_initial_condition() {
 }
 
 void ModePayloadRelease::calculate_displacement() {
-    gcs().send_text(MAV_SEVERITY_INFO,"wind.x = %f, wind.y = %f", wind.x,wind.y);
     while (remaining_height > 0.01) {
         //calculation along z direction in NED frame
         vz = vz + az * dt;
@@ -235,14 +234,14 @@ void ModePayloadRelease::get_intermediate_point(Vector3d RP){
     int plus_minus = 1;  // 1 for center at left side , -1 for center at right side of intermediate point
     // Find the heading in which intermediate point should be calculated
     float angle = plane.prev_WP_loc.get_bearing_to(drop_point) * 0.01f * DEG_TO_RAD;
-    gcs().send_text(MAV_SEVERITY_INFO, "angle = %f",angle);    
+    //gcs().send_text(MAV_SEVERITY_INFO, "angle = %f",angle);    
 
     int_point_neu.x = RP.x - intermediate_distance * cos(angle);
     int_point_neu.y = RP.y - intermediate_distance * sin(angle);
     int_point_neu.z = RP.z;
 
-    gcs().send_text(MAV_SEVERITY_INFO, "rp_n = %f,rp_e = %f",release_point_neu.x,release_point_neu.y);
-    gcs().send_text(MAV_SEVERITY_INFO, "ip_n = %f,ip_e = %f",int_point_neu.x,int_point_neu.y);
+    //gcs().send_text(MAV_SEVERITY_INFO, "rp_n = %f,rp_e = %f",release_point_neu.x,release_point_neu.y);
+    //gcs().send_text(MAV_SEVERITY_INFO, "ip_n = %f,ip_e = %f",int_point_neu.x,int_point_neu.y);
 
     //set loiter parameters for safety
     set_loiter_parameters();
@@ -276,7 +275,7 @@ void ModePayloadRelease::get_intermediate_point(Vector3d RP){
     center_point_neu.y = int_point_neu.y + (-1) * plus_minus * (radius) * slope * (1.0 / sqrt(slope * slope + 1));
     center_point_neu.z = int_point_neu.z;
 
-    gcs().send_text(MAV_SEVERITY_INFO, "cp_n = %f,cp_e = %f",center_point_neu.x,center_point_neu.y);
+    //gcs().send_text(MAV_SEVERITY_INFO, "cp_n = %f,cp_e = %f",center_point_neu.x,center_point_neu.y);
     
    
 
@@ -287,6 +286,7 @@ void ModePayloadRelease::set_loiter_parameters(){
     plane.loiter.direction = -1;
     plane.loiter.total_cd = 2 * 36000UL;
 }
+
 void ModePayloadRelease::release_payload(){
     AP_ServoRelayEvents ServoRelayEvents;
     ServoRelayEvents.do_set_servo(channel_payload, 1500);
@@ -388,13 +388,13 @@ void ModePayloadRelease::update_releasepoint() {
             if (plane.loiter.sum_cd > plane.loiter.total_cd && plane.loiter.sum_cd > 1) {
                 // primary goal completed, initialize secondary heading goal
                 plane.condition_value = 0;
-                result = plane.verify_loiter_heading(true);
-                //result = verify_loiter_complete_heading(true);
+                //result = plane.verify_loiter_heading(true);
+                result = verify_loiter_complete_heading(true);
             }
         } else {
             // secondary goal, loiter to heading
-            result = plane.verify_loiter_heading(false);
-            //result = verify_loiter_complete_heading(false);
+            //result = plane.verify_loiter_heading(false);
+            result = verify_loiter_complete_heading(false);
         }
         if(result){
             plane.set_next_WP(release_point);
