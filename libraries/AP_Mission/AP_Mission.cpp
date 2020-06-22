@@ -2464,6 +2464,23 @@ bool AP_Mission::contains_item(MAV_CMD command) const
     return false;
 }
 
+/*
+  return true if the mission has a terrain relative item
+ */
+bool AP_Mission::contains_terrain_relative(void) const
+{
+    for (int i = 1; i < num_commands(); i++) {
+        Mission_Command tmp;
+        if (!read_cmd_from_storage(i, tmp)) {
+            continue;
+        }
+        if (stored_in_location(tmp.id) && tmp.content.location.terrain_alt) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // reset the mission history to prevent recalling previous mission histories after a mission restart.
 void AP_Mission::reset_wp_history(void)
 {
