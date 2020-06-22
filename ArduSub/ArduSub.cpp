@@ -26,7 +26,7 @@
  */
 const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     SCHED_TASK(fifty_hz_loop,         50,     75),
-    SCHED_TASK(update_GPS,            50,    200),
+    SCHED_TASK_CLASS(AP_GPS, &sub.gps, update, 50, 300),
 #if OPTFLOW == ENABLED
     SCHED_TASK_CLASS(OpticalFlow,          &sub.optflow,             update,         200, 160),
 #endif
@@ -284,30 +284,6 @@ void Sub::one_hz_loop()
     // need to set "likely flying" when armed to allow for compass
     // learning to run
     set_likely_flying(hal.util->get_soft_armed());
-}
-
-// called at 50hz
-void Sub::update_GPS()
-{
-    static uint32_t last_gps_reading[GPS_MAX_INSTANCES];   // time of last gps message
-    bool gps_updated = false;
-
-    gps.update();
-
-    // log after every gps message
-    for (uint8_t i=0; i<gps.num_sensors(); i++) {
-        if (gps.last_message_time_ms(i) != last_gps_reading[i]) {
-            last_gps_reading[i] = gps.last_message_time_ms(i);
-            gps_updated = true;
-            break;
-        }
-    }
-
-    if (gps_updated) {
-#if CAMERA == ENABLED
-        camera.update();
-#endif
-    }
 }
 
 void Sub::read_AHRS()
