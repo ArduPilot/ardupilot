@@ -1,3 +1,18 @@
+Release 4.0.6beta2, 23rd June 2020
+----------------------------------
+
+This is a minor change over beta1
+
+ - prevent jump to circle mode in TAKEOFF if flying for less than 10s
+ - fixed handling of out of range on LightwareI2C Lidar
+ - fixed init of HoTT telemetry
+ - added support for mRo Pixracer Pro, Holybro Pix32v5
+ - added arming check for terrain data healthy if needed
+ - fixed compass ordering bug
+ - increased monitor thread size to 768
+
+Happy flying!
+
 Release 4.0.6beta1, 23rd May 2020
 ---------------------------------
 
