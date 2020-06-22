@@ -619,6 +619,9 @@ public:
     // returns true if the mission contains the requested items
     bool contains_item(MAV_CMD command) const;
 
+    // returns true if the mission has a terrain relative mission item
+    bool contains_terrain_relative(void) const;
+    
     // reset the mission history to prevent recalling previous mission histories when restarting missions.
     void reset_wp_history(void);
 
