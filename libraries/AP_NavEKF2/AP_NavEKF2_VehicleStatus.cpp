@@ -473,7 +473,6 @@ void NavEKF2_core::setTouchdownExpected(bool val)
 // enabled by the combination of EK2_RNG_AID_HGT and EK2_RNG_USE_SPD parameters.
 void NavEKF2_core::setTerrainHgtStable(bool val)
 {
-    terrainHgtStableSet_ms = imuSampleTime_ms;
     terrainHgtStable = val;
 }
 
