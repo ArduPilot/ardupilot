@@ -191,7 +191,7 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
 
     // @Param: _VELXY_D_FILT
     // @DisplayName: Velocity (horizontal) input filter
-    // @Description: Velocity (horizontal) input filter.  This filter (in hz) is applied to the input for P and I terms
+    // @Description: Velocity (horizontal) input filter.  This filter (in hz) is applied to the input for D term
     // @Range: 0 100
     // @Units: Hz
     // @User: Advanced
