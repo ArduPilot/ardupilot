@@ -381,15 +381,49 @@ void Mode::auto_takeoff_run()
     if (!motors->armed() || !copter.ap.auto_armed) {
         make_safe_spool_down();
         wp_nav->shift_wp_origin_to_current_pos();
+
+    	if (copter.ap.gimbal_control_active){
+    		copter.Spirit_Gimbal_Control_Auto();
+    	}
+
         return;
     }
 
     // process pilot's yaw input
     float target_yaw_rate = 0;
+
+
+    ////////////////////////////////////
+
+    if (copter.ap.gimbal_control_active){
+    	copter.Spirit_Gimbal_Control_Auto();
+    	target_yaw_rate = 0;
+    }else{
+        if (!copter.failsafe.radio) {
+            // get pilot's desired yaw rate
+            target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+
+    	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_tilt, 1500);
+    	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_pan, 1500);
+    	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_zoom, 1500);
+    	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_focus, 1500);
+
+        }
+    }
+
+
+    ////////////////////////////////////
+
+
+    /*
     if (!copter.failsafe.radio) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
     }
+   */
+
+
+    ////////////////////////////////////
 
     // aircraft stays in landed state until rotor speed runup has finished
     if (motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
@@ -417,6 +451,33 @@ void ModeGuided::pos_control_run()
 {
     // process pilot's yaw input
     float target_yaw_rate = 0;
+
+    /////////////////////////////
+
+	if (copter.ap.gimbal_control_active){
+		copter.Spirit_Gimbal_Control_Auto();
+		target_yaw_rate = 0;
+	}else{
+
+	    if (!copter.failsafe.radio) {
+	        // get pilot's desired yaw rate
+	        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+	        if (!is_zero(target_yaw_rate)) {
+	            auto_yaw.set_mode(AUTO_YAW_HOLD);
+	        }
+
+
+		  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_tilt, 1500);
+		  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_pan, 1500);
+		  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_zoom, 1500);
+		  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_focus, 1500);
+
+	    }
+	}
+
+    //////////////////////////////////////////////
+	/*
+
     if (!copter.failsafe.radio) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
@@ -425,9 +486,20 @@ void ModeGuided::pos_control_run()
         }
     }
 
+    */
+
+	///////////////////////////////////////////////////
+
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
         make_safe_spool_down();
+
+
+    	if (copter.ap.gimbal_control_active){
+    		copter.Spirit_Gimbal_Control_Auto();
+    	}
+
+
         return;
     }
 
@@ -459,6 +531,32 @@ void ModeGuided::vel_control_run()
 {
     // process pilot's yaw input
     float target_yaw_rate = 0;
+
+    /////////////////////////////
+
+  	if (copter.ap.gimbal_control_active){
+  		copter.Spirit_Gimbal_Control_Auto();
+  		target_yaw_rate = 0;
+  	}else{
+
+  	    if (!copter.failsafe.radio) {
+  	        // get pilot's desired yaw rate
+  	        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+  	        if (!is_zero(target_yaw_rate)) {
+  	            auto_yaw.set_mode(AUTO_YAW_HOLD);
+  	        }
+  	    }
+
+
+	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_tilt, 1500);
+	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_pan, 1500);
+	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_zoom, 1500);
+	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_focus, 1500);
+  	}
+
+      //////////////////////////////////////////////
+/*
+
     if (!copter.failsafe.radio) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
@@ -467,9 +565,16 @@ void ModeGuided::vel_control_run()
         }
     }
 
+    */
+
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
         make_safe_spool_down();
+
+        if (copter.ap.gimbal_control_active){
+          		copter.Spirit_Gimbal_Control_Auto();
+          	}
+
         return;
     }
 
@@ -512,6 +617,30 @@ void ModeGuided::posvel_control_run()
     // process pilot's yaw input
     float target_yaw_rate = 0;
 
+    /////////////////////////////
+
+  	if (copter.ap.gimbal_control_active){
+  		copter.Spirit_Gimbal_Control_Auto();
+  		target_yaw_rate = 0;
+  	}else{
+
+  	    if (!copter.failsafe.radio) {
+  	        // get pilot's desired yaw rate
+  	        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+  	        if (!is_zero(target_yaw_rate)) {
+  	            auto_yaw.set_mode(AUTO_YAW_HOLD);
+  	        }
+  	    }
+
+	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_tilt, 1500);
+	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_pan, 1500);
+	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_zoom, 1500);
+	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_focus, 1500);
+  	}
+
+      //////////////////////////////////////////////
+
+/*
     if (!copter.failsafe.radio) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
@@ -519,6 +648,10 @@ void ModeGuided::posvel_control_run()
             auto_yaw.set_mode(AUTO_YAW_HOLD);
         }
     }
+    */
+
+
+  	///////////////////////////////////////////
 
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {

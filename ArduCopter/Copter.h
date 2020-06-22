@@ -384,6 +384,7 @@ private:
             uint8_t compass_init_location   : 1; // 25      // true when the compass's initial location has been set
             uint8_t unused2                 : 1; // 26      // aux switch rc_override is allowed
             uint8_t armed_with_switch       : 1; // 27      // we armed using a arming switch
+            uint8_t gimbal_control_active   : 1; // 27      // we armed using a arming switch
         };
         uint32_t value;
     } ap_t;
@@ -775,6 +776,8 @@ private:
     void set_land_complete_maybe(bool b);
     void update_throttle_thr_mix();
 
+    void Spirit_Gimbal_Control_Auto();
+    void Decode_Buttons();
     // landing_gear.cpp
     void landinggear_update();
 

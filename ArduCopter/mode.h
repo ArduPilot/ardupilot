@@ -319,6 +319,16 @@ protected:
 
 private:
 
+    float last_roll;
+    float last_pitch;
+	float last_target_climb_rate;
+	float last_target_yaw_rate;
+
+    int16_t last_gimbal_tilt;
+    int16_t last_gimbal_pan;
+    int16_t last_gimbal_zoom;
+    int16_t last_gimbal_focus;
+
 };
 
 
@@ -593,6 +603,16 @@ protected:
     int32_t wp_bearing() const override;
 
 private:
+
+    float last_roll;
+    float last_pitch;
+	float last_target_climb_rate;
+	float last_target_yaw_rate;
+
+    int16_t last_gimbal_tilt;
+    int16_t last_gimbal_pan;
+    int16_t last_gimbal_zoom;
+    int16_t last_gimbal_focus;
 
     // Circle
     bool pilot_yaw_override = false; // true if pilot is overriding yaw
@@ -910,6 +930,19 @@ private:
     bool _precision_loiter_enabled;
 #endif
 
+
+    float last_roll;
+    float last_pitch;
+	float last_target_climb_rate;
+	float last_target_yaw_rate;
+
+    int16_t last_gimbal_tilt;
+    int16_t last_gimbal_pan;
+    int16_t last_gimbal_zoom;
+
+
+
+
 };
 
 
@@ -988,6 +1021,16 @@ private:
     // final output
     float roll;   // final roll angle sent to attitude controller
     float pitch;  // final pitch angle sent to attitude controller
+
+
+    float last_roll;
+    float last_pitch;
+	float last_target_climb_rate;
+	float last_target_yaw_rate;
+
+    int16_t last_gimbal_tilt;
+    int16_t last_gimbal_pan;
+    int16_t last_gimbal_zoom;
 
 };
 

@@ -31,6 +31,9 @@ bool ModeBrake::init(bool ignore_checks)
 // should be called at 100hz or more
 void ModeBrake::run()
 {
+
+	copter.Spirit_Gimbal_Control_Auto();
+
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
         make_safe_spool_down();

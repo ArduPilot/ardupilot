@@ -197,10 +197,20 @@ void Copter::set_throttle_zero_flag(int16_t throttle_control)
 // pass pilot's inputs to motors library (used to allow wiggling servos while disarmed on heli, single, coax copters)
 void Copter::radio_passthrough_to_motors()
 {
+
+	if(!copter.ap.gimbal_control_active){
     motors->set_radio_passthrough(channel_roll->norm_input(),
                                   channel_pitch->norm_input(),
                                   channel_throttle->get_control_in_zero_dz()*0.001f,
                                   channel_yaw->norm_input());
+	}else{
+
+	    motors->set_radio_passthrough(0,
+	                                  0,
+	                                  channel_throttle->get_control_in_zero_dz()*0.001f,
+	                                  channel_yaw->norm_input());
+
+	}
 }
 
 /*

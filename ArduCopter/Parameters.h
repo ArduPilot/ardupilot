@@ -373,6 +373,7 @@ public:
 
         // 254,255: reserved
 
+		k_param_herelink_enable,
         // the k_param_* space is 9-bits in size
         // 511: reserved
     };
@@ -465,6 +466,7 @@ public:
     AP_Int8                 acro_trainer;
     AP_Float                acro_rp_expo;
 
+    AP_Int8					herelink_enable;
     // Note: keep initializers here in the same order as they are declared
     // above.
     Parameters()

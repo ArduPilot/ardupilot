@@ -34,60 +34,97 @@ void ModeCircle::run()
     pos_control->set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
     pos_control->set_max_accel_z(g.pilot_accel_z);
 
-    // get pilot's desired yaw rate (or zero if in radio failsafe)
-    float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
-    if (!is_zero(target_yaw_rate)) {
-        pilot_yaw_override = true;
-    }
-
     // pilot changes to circle rate and radius
     // skip if in radio failsafe
-    if (!copter.failsafe.radio && copter.circle_nav->pilot_control_enabled()) {
-        // update the circle controller's radius target based on pilot pitch stick inputs
-        const float radius_current = copter.circle_nav->get_radius();           // circle controller's radius target, which begins as the circle_radius parameter
-        const float pitch_stick = channel_pitch->norm_input_dz();               // pitch stick normalized -1 to 1
-        const float nav_speed = copter.wp_nav->get_default_speed_xy();          // copter WP_NAV parameter speed
-        const float radius_pilot_change = (pitch_stick * nav_speed) * G_Dt;     // rate of change (pitch stick up reduces the radius, as in moving forward)
-        const float radius_new = MAX(radius_current + radius_pilot_change,0);   // new radius target
 
-        if (!is_equal(radius_current, radius_new)) {
-            copter.circle_nav->set_radius(radius_new);
-        }
+    float target_climb_rate, target_yaw_rate;
+    int16_t  gimbal_pan, gimbal_tilt, gimbal_zoom, gimbal_focus;
 
-        // update the orbicular rate target based on pilot roll stick inputs
-        // skip if using CH6 tuning knob for circle rate
-        if (g.radio_tuning != TUNING_CIRCLE_RATE) {
-            const float roll_stick = channel_roll->norm_input_dz();         // roll stick normalized -1 to 1
+    	if(copter.ap.gimbal_control_active){
 
-            if (is_zero(roll_stick)) {
-                // no speed change, so reset speed changing flag
-                speed_changing = false;
-            } else {
-                const float rate = copter.circle_nav->get_rate();           // circle controller's rate target, which begins as the circle_rate parameter
-                const float rate_current = copter.circle_nav->get_rate_current(); // current adjusted rate target, which is probably different from _rate
-                const float rate_pilot_change = (roll_stick * G_Dt);        // rate of change from 0 to 1 degrees per second
-                float rate_new = rate_current;                              // new rate target
-                if (is_positive(rate)) {
-                    // currently moving clockwise, constrain 0 to 90
-                    rate_new = constrain_float(rate_current + rate_pilot_change, 0, 90);
+    	    	target_climb_rate = 0;
+    	    	target_yaw_rate = 0;
 
-                } else if (is_negative(rate)) {
-                    // currently moving counterclockwise, constrain -90 to 0
-                    rate_new = constrain_float(rate_current + rate_pilot_change, -90, 0);
+    	    	gimbal_tilt = RC_Channels::rc_channel(CH_2)->get_radio_in();
+    	    	gimbal_pan = RC_Channels::rc_channel(CH_1)->get_radio_in();
+    	    	gimbal_zoom = RC_Channels::rc_channel(CH_3)->get_radio_in();
+    	    	gimbal_focus = RC_Channels::rc_channel(CH_4)->get_radio_in();
 
-                } else if (is_zero(rate) && !speed_changing) {
-                    // Stopped, pilot has released the roll stick, and pilot now wants to begin moving with the roll stick
-                    rate_new = rate_pilot_change;
-                }
+    	    	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_tilt, gimbal_tilt);
+    	    	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_pan, gimbal_pan);
+    	    	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_zoom, gimbal_zoom);
+    	    	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_focus, gimbal_focus);
 
-                speed_changing = true;
-                copter.circle_nav->set_rate(rate_new);
-            }
-        }
-    }
+    	    }else if (!copter.failsafe.radio && copter.circle_nav->pilot_control_enabled()) {
+				// update the circle controller's radius target based on pilot pitch stick inputs
+				const float radius_current = copter.circle_nav->get_radius();           // circle controller's radius target, which begins as the circle_radius parameter
+				const float pitch_stick = channel_pitch->norm_input_dz();               // pitch stick normalized -1 to 1
+				const float nav_speed = copter.wp_nav->get_default_speed_xy();          // copter WP_NAV parameter speed
+				const float radius_pilot_change = (pitch_stick * nav_speed) * G_Dt;     // rate of change (pitch stick up reduces the radius, as in moving forward)
+				const float radius_new = MAX(radius_current + radius_pilot_change,0);   // new radius target
 
-    // get pilot desired climb rate (or zero if in radio failsafe)
-    float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
+				if (!is_equal(radius_current, radius_new)) {
+					copter.circle_nav->set_radius(radius_new);
+				}
+
+    	    	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_tilt, 1500);
+    	    	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_pan, 1500);
+    	    	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_zoom, 1500);
+    	    	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_focus, 1500);
+
+					// update the orbicular rate target based on pilot roll stick inputs
+					// skip if using CH6 tuning knob for circle rate
+					if (g.radio_tuning != TUNING_CIRCLE_RATE) {
+						const float roll_stick = channel_roll->norm_input_dz();         // roll stick normalized -1 to 1
+
+						if (is_zero(roll_stick)) {
+							// no speed change, so reset speed changing flag
+							speed_changing = false;
+						} else {
+							const float rate = copter.circle_nav->get_rate();           // circle controller's rate target, which begins as the circle_rate parameter
+							const float rate_current = copter.circle_nav->get_rate_current(); // current adjusted rate target, which is probably different from _rate
+							const float rate_pilot_change = (roll_stick * G_Dt);        // rate of change from 0 to 1 degrees per second
+							float rate_new = rate_current;                              // new rate target
+							if (is_positive(rate)) {
+								// currently moving clockwise, constrain 0 to 90
+								rate_new = constrain_float(rate_current + rate_pilot_change, 0, 90);
+
+							} else if (is_negative(rate)) {
+								// currently moving counterclockwise, constrain -90 to 0
+								rate_new = constrain_float(rate_current + rate_pilot_change, -90, 0);
+
+							} else if (is_zero(rate) && !speed_changing) {
+								// Stopped, pilot has released the roll stick, and pilot now wants to begin moving with the roll stick
+								rate_new = rate_pilot_change;
+							}
+
+							speed_changing = true;
+							copter.circle_nav->set_rate(rate_new);
+						}
+					}
+
+	}
+
+
+
+    	if(!copter.ap.gimbal_control_active){
+
+	    	   // get pilot's desired yaw rate (or zero if in radio failsafe)
+	    	    target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+
+	    	    if (!is_zero(target_yaw_rate)) {
+	    	        pilot_yaw_override = true;
+	    	    }
+
+	    	    // get pilot desired climb rate (or zero if in radio failsafe)
+	    	      target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
+    	}else{
+
+    		target_climb_rate = 0;
+    		target_yaw_rate = 0;
+    	}
+
+
     // adjust climb rate using rangefinder
     if (copter.rangefinder_alt_ok()) {
         // if rangefinder is ok, use surface tracking

@@ -566,13 +566,67 @@ void Mode::land_run_horizontal_control()
 {
     float target_roll = 0.0f;
     float target_pitch = 0.0f;
-    float target_yaw_rate = 0;
+    float target_yaw_rate = 0.0f;
 
     // relax loiter target if we might be landed
     if (copter.ap.land_complete_maybe) {
         loiter_nav->soften_for_landing();
     }
 
+
+    ///////////////////////////////////////////////
+
+        if (copter.ap.gimbal_control_active){
+            	copter.Spirit_Gimbal_Control_Auto();
+            	target_pitch = 0;
+            	target_roll = 0;
+            	target_yaw_rate = 0;
+
+            }else{
+
+            	  // process pilot inputs
+            	    if (!copter.failsafe.radio) {
+            	        if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && copter.rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
+            	            copter.Log_Write_Event(DATA_LAND_CANCELLED_BY_PILOT);
+            	            // exit land if throttle is high
+            	            if (!set_mode(Mode::Number::LOITER, ModeReason::THROTTLE_LAND_ESCAPE)) {
+            	                set_mode(Mode::Number::ALT_HOLD, ModeReason::THROTTLE_LAND_ESCAPE);
+            	            }
+            	        }
+
+            	        if (g.land_repositioning) {
+            	            // apply SIMPLE mode transform to pilot inputs
+            	            update_simple_mode();
+
+            	            // convert pilot input to lean angles
+            	            get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max());
+
+            	            // record if pilot has overridden roll or pitch
+            	            if (!is_zero(target_roll) || !is_zero(target_pitch)) {
+            	                if (!copter.ap.land_repo_active) {
+            	                    copter.Log_Write_Event(DATA_LAND_REPO_ACTIVE);
+            	                }
+            	                copter.ap.land_repo_active = true;
+            	            }
+            	        }
+
+            	        // get pilot's desired yaw rate
+            	        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+            	        if (!is_zero(target_yaw_rate)) {
+            	            auto_yaw.set_mode(AUTO_YAW_HOLD);
+            	        }
+            	    }
+
+        	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_tilt, 1500);
+        	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_pan, 1500);
+        	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_zoom, 1500);
+        	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_focus, 1500);
+            }
+
+    //////////////////////////////
+
+
+/*
     // process pilot inputs
     if (!copter.failsafe.radio) {
         if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && copter.rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
@@ -605,6 +659,8 @@ void Mode::land_run_horizontal_control()
             auto_yaw.set_mode(AUTO_YAW_HOLD);
         }
     }
+
+    */
 
 #if PRECISION_LANDING == ENABLED
     bool doing_precision_landing = !copter.ap.land_repo_active && copter.precland.target_acquired();

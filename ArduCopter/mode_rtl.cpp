@@ -51,11 +51,26 @@ void ModeRTL::run(bool disarm_on_land)
         case RTL_Starting:
             build_path();
             climb_start();
+
+        	if (copter.ap.gimbal_control_active){
+        		copter.Spirit_Gimbal_Control_Auto();
+        	}
+
             break;
         case RTL_InitialClimb:
+
+        	if (copter.ap.gimbal_control_active){
+        		copter.Spirit_Gimbal_Control_Auto();
+        	}
+
             return_start();
             break;
         case RTL_ReturnHome:
+
+        	if (copter.ap.gimbal_control_active){
+        		copter.Spirit_Gimbal_Control_Auto();
+        	}
+
             loiterathome_start();
             break;
         case RTL_LoiterAtHome:
@@ -150,11 +165,40 @@ void ModeRTL::climb_return_run()
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
         make_safe_spool_down();
+
+    	if (copter.ap.gimbal_control_active){
+    		copter.Spirit_Gimbal_Control_Auto();
+    	}
+
         return;
     }
 
     // process pilot's yaw input
     float target_yaw_rate = 0;
+
+    /////////////////////////////////////////////////////////////
+
+    if (copter.ap.gimbal_control_active){
+		copter.Spirit_Gimbal_Control_Auto();
+		target_yaw_rate = 0;
+	}else{
+
+	    if (!copter.failsafe.radio) {
+	        // get pilot's desired yaw rate
+	        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+	        if (!is_zero(target_yaw_rate)) {
+	            auto_yaw.set_mode(AUTO_YAW_HOLD);
+	        }
+	    }
+	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_tilt, 1500);
+	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_pan, 1500);
+	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_zoom, 1500);
+	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_focus, 1500);
+	}
+
+    ////////////////////////////////////////
+
+/*
     if (!copter.failsafe.radio) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
@@ -162,6 +206,7 @@ void ModeRTL::climb_return_run()
             auto_yaw.set_mode(AUTO_YAW_HOLD);
         }
     }
+    */
 
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
@@ -192,6 +237,10 @@ void ModeRTL::loiterathome_start()
     _state_complete = false;
     _loiter_start_time = millis();
 
+	if (copter.ap.gimbal_control_active){
+		copter.Spirit_Gimbal_Control_Auto();
+	}
+
     // yaw back to initial take-off heading yaw unless pilot has already overridden yaw
     if(auto_yaw.default_mode(true) != AUTO_YAW_HOLD) {
         auto_yaw.set_mode(AUTO_YAW_RESETTOARMEDYAW);
@@ -207,6 +256,9 @@ void ModeRTL::loiterathome_run()
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
         make_safe_spool_down();
+    	if (copter.ap.gimbal_control_active){
+    		copter.Spirit_Gimbal_Control_Auto();
+    	}
         return;
     }
 

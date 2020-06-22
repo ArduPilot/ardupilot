@@ -14,6 +14,11 @@ bool ModeAltHold::init(bool ignore_checks)
         pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
     }
 
+    last_roll = 0.0;
+    last_pitch = 0.0;
+	last_target_climb_rate = 0.0;
+	last_target_yaw_rate = 0.0;
+
     return true;
 }
 
@@ -31,15 +36,66 @@ void ModeAltHold::run()
     update_simple_mode();
 
     // get pilot desired lean angles
-    float target_roll, target_pitch;
-    get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, attitude_control->get_althold_lean_angle_max());
+    //float target_roll, target_pitch;
+    //get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, attitude_control->get_althold_lean_angle_max());
+
+
+    /////////////////////////////////////////
+
+    float target_roll, target_pitch, target_climb_rate, target_yaw_rate;
+    int16_t  gimbal_pan, gimbal_tilt, gimbal_zoom, gimbal_focus;
+
+    if(copter.ap.gimbal_control_active){
+
+    	target_roll = last_roll;
+    	target_pitch = last_pitch;
+    	target_climb_rate = last_target_climb_rate;
+    	target_yaw_rate = 0;
+
+    	gimbal_tilt = RC_Channels::rc_channel(CH_2)->get_radio_in();
+    	gimbal_pan = RC_Channels::rc_channel(CH_1)->get_radio_in();
+    	gimbal_zoom = RC_Channels::rc_channel(CH_3)->get_radio_in();
+    	gimbal_focus = RC_Channels::rc_channel(CH_4)->get_radio_in();
+
+    	gimbal_tilt = ((1500 - gimbal_tilt) + 1500);
+
+    	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_tilt, gimbal_tilt);
+    	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_pan, gimbal_pan);
+    	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_zoom, gimbal_zoom);
+    	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_focus, gimbal_focus);
+
+    }else{
+
+		get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, attitude_control->get_althold_lean_angle_max());
+
+	 // get pilot's desired yaw rate
+		target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+
+	 // get pilot desired climb rate
+	  	target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
+	  	target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
+
+	  	last_roll = target_roll;
+	  	last_pitch = target_pitch;
+	  	last_target_climb_rate = target_climb_rate;
+
+	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_tilt, 1500);
+	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_pan, 1500);
+	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_zoom, 1500);
+	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_focus, 1500);
+    }
+
+
+    /////////////////////////////////////////
+
+
 
     // get pilot's desired yaw rate
-    float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+  //  float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
 
     // get pilot desired climb rate
-    float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
-    target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
+  //  float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
+   // target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
 
     // Alt Hold State Machine Determination
     AltHoldModeState althold_state = get_alt_hold_state(target_climb_rate);

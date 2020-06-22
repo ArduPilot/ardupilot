@@ -466,6 +466,16 @@ const AP_Param::Info Copter::var_info[] = {
     GSCALAR(acro_rp_expo,  "ACRO_RP_EXPO",    ACRO_RP_EXPO_DEFAULT),
 #endif
 
+    // @Param: VEHICLE_WEIGHT
+    // @DisplayName:
+    // @Description:
+    // @Values:
+    // @Range:
+    // @User:
+    GSCALAR(herelink_enable,  "EN_HERELINK",    0),
+
+
+
     // variables not in the g class which contain EEPROM saved variables
 
 #if CAMERA == ENABLED
