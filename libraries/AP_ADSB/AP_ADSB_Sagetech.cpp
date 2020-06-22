@@ -20,6 +20,7 @@
 #include <AP_RTC/AP_RTC.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <time.h>
 #include <AP_Math/bitwise.h>
 
 extern const AP_HAL::HAL& hal;
@@ -29,8 +30,9 @@ extern const AP_HAL::HAL& hal;
 #define SAGETECH_DEBUG_ACK_TIMEOUTS         0
 #define SAGETECH_DEBUG_TX_ID_ONLY           0
 #define SAGETECH_DEBUG_TX_ID_PAYLOAD        0
-#define SAGETECH_DEBUG_TX_Operating         1
+#define SAGETECH_DEBUG_TX_Operating         0
 #define SAGETECH_DEBUG_TX_GPS               0
+#define SAGETECH_DEBUG_TX_ALL_RAW           0
 #define SAGETECH_DEBUG_RX                   0
 #define SAGETECH_DEBUG_RX_CRC_FAIL          0
 #define SAGETECH_DEBUG_RX_ACK               0
@@ -46,6 +48,8 @@ AP_ADSB_Sagetech::AP_ADSB_Sagetech(AP_ADSB &adsb) :
 
         // no sagtech hardware have flow control pins exposed
         uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+
+//        gcs().send_text(MAV_SEVERITY_DEBUG, "%sUART init success", _GcsHeader);
     }
 }
 
@@ -119,25 +123,26 @@ void AP_ADSB_Sagetech::update()
 #endif
     {
 
-        if (!has_sent_initialize) {
-            has_sent_initialize = true;
-            send_packet(MsgTypes_XP::Installation_Set);
+//        if (!has_sent_initialize) {
+//            has_sent_initialize = true;
+//            send_packet(MsgTypes_XP::Installation_Set);
+//
+//        } else if (now_ms - last_packet_PreFlight_ms >= 10000 && (last_packet_PreFlight_ms == 0)) {
+//            // send once, for now..
+//            last_packet_PreFlight_ms = now_ms;
+//            send_packet(MsgTypes_XP::Preflight_Set);
+//
+//        } else if (now_ms - last_packet_Operating_ms >= 1000 && (
+//                // send as data changes
+//                last_operating_squawk != frontend.out_state.cfg.squawk_octal ||
+//                abs(last_operating_alt - frontend._my_loc.alt) > 1555 ||      // 1555cm == 51f. The output resolution is 100ft per bit
+//                last_operating_rf_select != frontend.out_state.cfg.rfSelect))
+//        {
+//            last_packet_Operating_ms = now_ms;
+//            send_packet(MsgTypes_XP::Operating_Set);
 
-        } else if (now_ms - last_packet_PreFlight_ms >= 10000 && (last_packet_PreFlight_ms == 0)) {
-            // send once, for now..
-            last_packet_PreFlight_ms = now_ms;
-            send_packet(MsgTypes_XP::Preflight_Set);
-
-        } else if (now_ms - last_packet_Operating_ms >= 1000 && (
-                // send as data changes
-                last_operating_squawk != frontend.out_state.cfg.squawk_octal ||
-                abs(last_operating_alt - frontend._my_loc.alt) > 1555 ||      // 1555cm == 51f. The output resolution is 100ft per bit
-                last_operating_rf_select != frontend.out_state.cfg.rfSelect))
-        {
-            last_packet_Operating_ms = now_ms;
-            send_packet(MsgTypes_XP::Operating_Set);
-
-        } else if ((now_ms - last_packet_GPS_ms >= (frontend.out_state.is_flying ? 200 : 1000)) && !frontend._my_loc.is_zero()) {
+//        } else
+        if ((now_ms - last_packet_GPS_ms >= (frontend.out_state.is_flying ? 200 : 1000)) && !frontend._my_loc.is_zero()) {
             last_packet_GPS_ms = now_ms;
             // 1Hz when not flying, 5Hz when flying
             send_packet(MsgTypes_XP::GPS_Set);
@@ -341,26 +346,42 @@ void AP_ADSB_Sagetech::send_msg(Packet_XP &msg)
     // generate and populate checksums.
     checksum_XP(msg);
 
+    const uint8_t message_format_header[5] = {
+            0xA5,   // start
+            0x01,   // assembly address
+            msg.type,
+            msg.id,
+            msg.payload_length
+    };
+    const uint8_t message_format_tail[3] = {
+            msg.checksumFletcher,
+            msg.checksum,
+            0x5A    // end
+    };
+
     if (uart != nullptr) {
-        uart->write(msg.start);
-        uart->write(msg.assemAddr);
-        uart->write(msg.type);
-        uart->write(msg.id);
-        uart->write(msg.payload_length);
+        uart->write(message_format_header, sizeof(message_format_header));
         uart->write(msg.payload, msg.payload_length);
-        uart->write(msg.checksumFletcher);
-        uart->write(msg.checksum);
-        uart->write(msg.end);
+        uart->write(message_format_tail, sizeof(message_format_tail));
     }
 
     last_packet_type_sent = msg.type;
     last_packet_send_ms = AP_HAL::millis();
 
+
+#if SAGETECH_DEBUG_TX_ALL_RAW
+    gcs().send_text(MAV_SEVERITY_DEBUG, "%s-------", _GcsHeader);
+    for (uint8_t i=0; i<sizeof(message_format_header); i++) {
+        gcs().send_text(MAV_SEVERITY_DEBUG, "%shead[%2u] = 0x%02x", _GcsHeader, i, message_format_header[i]);
+    }
+#endif
 #if SAGETECH_DEBUG_TX_ID_ONLY
     gcs().send_text(MAV_SEVERITY_DEBUG, "%sTx type=%d", _GcsHeader, msg.type);
 #endif
-#if SAGETECH_DEBUG_TX_ID_PAYLOAD
+#if SAGETECH_DEBUG_TX_ID_PAYLOAD || SAGETECH_DEBUG_TX_ALL_RAW
+    #if SAGETECH_DEBUG_TX_ID_PAYLOAD
     gcs().send_text(MAV_SEVERITY_DEBUG, "%sTx type=%u, payload.len=%u", _GcsHeader, (unsigned)msg.type, (unsigned)msg.payload_length);
+    #endif
     for (uint8_t i=0; i<msg.payload_length; i++) {
         const uint8_t data = msg.payload[i];
         if (isalnum(data) || data == '.' || data == '-' || data == ' ') {
@@ -368,6 +389,12 @@ void AP_ADSB_Sagetech::send_msg(Packet_XP &msg)
         } else {
             gcs().send_text(MAV_SEVERITY_DEBUG, "%sdata[%2u] = 0x%02x", _GcsHeader, i, data);
         }
+    }
+#endif
+
+#if SAGETECH_DEBUG_TX_ALL_RAW
+    for (uint8_t i=0; i<sizeof(message_format_tail); i++) {
+        gcs().send_text(MAV_SEVERITY_DEBUG, "%stail[%2u] = 0x%02x", _GcsHeader, (unsigned)(i + sizeof(message_format_header) + msg.payload_length), message_format_tail[i]);
     }
 #endif
 }
@@ -531,27 +558,39 @@ void AP_ADSB_Sagetech::send_GPS()
     pkt.payload_length = 52;
     pkt.id = 0;
 
-//    frontend._my_loc.lng = 122.3291670 * 1.0e7f;
-//    frontend._my_loc.lat =   47.6204000 * 1.0e7f;
+//    const int32_t longitude = -122.3291670 * 1.0e7f;    // Seattle
+//    const int32_t latitude =   47.6204000 * 1.0e7f;
 
-//    frontend._my_loc.lng =  58.5652470 * 1.0e7f;
-//    frontend._my_loc.lat =   49.2852110 * 1.0e7f;
+//    const int32_t longitude =  58.5652470 * 1.0e7f;
+//    const int32_t latitude =   49.2852110 * 1.0e7f;
 
-    const int32_t latitude =  frontend._my_loc.lat;
+//    const int32_t longitude =  9 * 1.0e7f;
+//    const int32_t latitude =   9 * 1.0e7f;
+
+//    const int32_t longitude =  -9 * 1.0e7f;
+//    const int32_t latitude =   -9 * 1.0e7f;
+
+//    const int32_t longitude =   149.1652300 * 1.0e7f;       // CMAC
+//    const int32_t latitude =    -35.3632000 * 1.0e7f;
+
     const int32_t longitude = frontend._my_loc.lng;
+    const int32_t latitude =  frontend._my_loc.lat;
 
 
     // longitude and latitude
     // NOTE: these MUST be done in double or else we get roundoff in the maths
-    const double lng_deg = longitude * 1.0e-7d * (longitude < 0 ? -1 : 1);
-    snprintf((char*)&pkt.payload[0], 12, "%03u%2.5f", (unsigned)lng_deg, double((lng_deg - int(lng_deg)) * 60));
+    const double lon_deg = longitude * 1.0e-7d * (longitude < 0 ? -1 : 1);
+    const double lon_minutes = (lon_deg - int(lon_deg)) * 60;
+    snprintf((char*)&pkt.payload[0], 12, "%03u%02u.%05u", (unsigned)lon_deg, (unsigned)lon_minutes, unsigned((lon_minutes - (int)lon_minutes) * 1.0E5));
 
 #if SAGETECH_DEBUG_TX_GPS
-    gcs().send_text(MAV_SEVERITY_DEBUG, "%sGPS lng: %s", _GcsHeader, &pkt.payload[0]);
+    gcs().send_text(MAV_SEVERITY_DEBUG, "%sGPS lon: %s", _GcsHeader, &pkt.payload[0]);
 #endif
 
-    const double lon_deg = latitude * 1.0e-7d * (latitude < 0 ? -1 : 1);
-    snprintf((char*)&pkt.payload[11], 11, "%02u%2.5f", (unsigned)lon_deg, double((lon_deg - int(lon_deg)) * 60));
+
+    const double lat_deg = latitude * 1.0e-7d * (latitude < 0 ? -1 : 1);
+    const double lat_minutes = (lat_deg - int(lat_deg)) * 60;
+    snprintf((char*)&pkt.payload[11], 11, "%02u%02u.%05u", (unsigned)lat_deg, (unsigned)lat_minutes, unsigned((lat_minutes - (int)lat_minutes) * 1.0E5));
 
 #if SAGETECH_DEBUG_TX_GPS
     gcs().send_text(MAV_SEVERITY_DEBUG, "%sGPS lat: %s", _GcsHeader, &pkt.payload[11]);
@@ -561,17 +600,17 @@ void AP_ADSB_Sagetech::send_GPS()
     // ground speed
     const Vector2f speed = AP::ahrs().groundspeed_vector();
     float speed_knots = norm(speed.x, speed.y) * M_PER_SEC_TO_KNOTS;
-    speed_knots = 125.8;
-    snprintf((char*)&pkt.payload[21], 6+1, "%3.2f", double(speed_knots));
+    snprintf((char*)&pkt.payload[21], 7, "%03u.%02u", (unsigned)speed_knots, unsigned((speed_knots - (int)speed_knots) * 1.0E2));
+
 
 #if SAGETECH_DEBUG_TX_GPS
     gcs().send_text(MAV_SEVERITY_DEBUG, "%sGPS speed: %s", _GcsHeader, &pkt.payload[21]);
 #endif
 
     // heading
-    float heading = wrap_360(degrees(atan2f(speed.x, speed.y)));
-    heading = 77.52;
-    snprintf((char*)&pkt.payload[27], 8+1, "%.4f", double(heading));
+    //float heading = wrap_360(degrees(atan2f(speed.x, speed.y)));
+    float heading = wrap_360(degrees(speed.angle()));
+    snprintf((char*)&pkt.payload[27], 10, "%03u.%04u", unsigned(heading), unsigned((heading - (int)heading) * 1.0E4));
 
 #if SAGETECH_DEBUG_TX_GPS
     gcs().send_text(MAV_SEVERITY_DEBUG, "%sGPS heading: %s", _GcsHeader, &pkt.payload[27]);
@@ -598,12 +637,83 @@ void AP_ADSB_Sagetech::send_GPS()
         struct tm* tm = gmtime(&time_sec);
 
         // format time string
-        snprintf((char*)&pkt.payload[36], 10, "%06.3f", tm->tm_sec + (time_usec % 1000000) * 1.0e-6);
+        snprintf((char*)&pkt.payload[36], 11, "%02u%02u%06.3f", tm->tm_hour, tm->tm_min, tm->tm_sec + (time_usec % 1000000) * 1.0e-6);
+
     }
 
 #if SAGETECH_DEBUG_TX_GPS
     gcs().send_text(MAV_SEVERITY_DEBUG, "%sGPS time: %s", _GcsHeader, &pkt.payload[36]);
 #endif
+//
+//    uint8_t i;
+//    (void)i;
+//     i = 0; // Longitude
+//    pkt.payload[i++] = 0x31;
+//    pkt.payload[i++] = 0x32;
+//    pkt.payload[i++] = 0x32;
+//    pkt.payload[i++] = 0x31;
+//    pkt.payload[i++] = 0x39;
+//    pkt.payload[i++] = 0x2E;
+//    pkt.payload[i++] = 0x37;
+//    pkt.payload[i++] = 0x35;
+//    pkt.payload[i++] = 0x30;
+//    pkt.payload[i++] = 0x30;
+//    pkt.payload[i++] = 0x32;
+////
+//
+//     i = 11; // Longitude
+//    pkt.payload[i++] = 0x34;
+//    pkt.payload[i++] = 0x37;
+//    pkt.payload[i++] = 0x33;
+//    pkt.payload[i++] = 0x37;
+//    pkt.payload[i++] = 0x2E;
+//    pkt.payload[i++] = 0x32;
+//    pkt.payload[i++] = 0x32;
+//    pkt.payload[i++] = 0x34;
+//    pkt.payload[i++] = 0x30;
+//    pkt.payload[i++] = 0x30;
+
+//     i = 21; // Speed over Ground
+//    pkt.payload[i++] = 0x31;
+//    pkt.payload[i++] = 0x32;
+//    pkt.payload[i++] = 0x35;
+//    pkt.payload[i++] = 0x2E;
+//    pkt.payload[i++] = 0x38;
+//    pkt.payload[i++] = 0x30;
+
+//     i = 27; // Course over Ground - heading
+//    pkt.payload[i++] = 0x30;
+//    pkt.payload[i++] = 0x37;
+//    pkt.payload[i++] = 0x37;
+//    pkt.payload[i++] = 0x2E;
+//    pkt.payload[i++] = 0x35;
+//    pkt.payload[i++] = 0x32;
+//    pkt.payload[i++] = 0x30;
+//    pkt.payload[i++] = 0x30;
+
+//     i = 35; // hemisphere
+//    pkt.payload[i++] = 0x01;
+
+//    i = 36; // GPS Time
+//    pkt.payload[i++] = 0x31;
+//    pkt.payload[i++] = 0x32;
+//    pkt.payload[i++] = 0x33;
+//    pkt.payload[i++] = 0x37;
+//    pkt.payload[i++] = 0x32;
+//    pkt.payload[i++] = 0x32;
+//    pkt.payload[i++] = 0x2E;
+//    pkt.payload[i++] = 0x34;
+//    pkt.payload[i++] = 0x30;
+//    pkt.payload[i++] = 0x30;
+//
+//    i = 46; // RESERVED
+//    pkt.payload[i++] = 0;
+//    pkt.payload[i++] = 0;
+//    pkt.payload[i++] = 0;
+//    pkt.payload[i++] = 0;
+//    pkt.payload[i++] = 0;
+//    pkt.payload[i++] = 0;
+
 
     send_msg(pkt);
 }
