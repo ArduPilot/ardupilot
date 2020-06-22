@@ -226,6 +226,8 @@ private:
     uint8_t num_motors;
 
     struct telem_data last_telem[max_motors];
+    // last log output to avoid beat frequencies
+    uint32_t last_log_ms[max_motors];
 
     // previous motor rpm so that changes can be slewed
     float prev_motor_rpm[max_motors];

@@ -1419,7 +1419,9 @@ void AP_BLHeli::read_telemetry_packet(void)
     last_telem[last_telem_esc].count++;
 
     AP_Logger *logger = AP_Logger::get_singleton();
-    if (logger && logger->logging_enabled()) {
+    if (logger && logger->logging_enabled()
+        // log at 10Hz
+        && td.timestamp_ms - last_log_ms[last_telem_esc] > 100) {
         logger->Write_ESC(uint8_t(last_telem_esc),
                       AP_HAL::micros64(),
                       td.rpm*100U,
@@ -1428,7 +1430,9 @@ void AP_BLHeli::read_telemetry_packet(void)
                       td.temperature * 100U,
                       td.consumption,
                       0);
+        last_log_ms[last_telem_esc] = td.timestamp_ms;
     }
+
     if (debug_level >= 2) {
         hal.console->printf("ESC[%u] T=%u V=%u C=%u con=%u RPM=%u t=%u\n",
                             last_telem_esc,
@@ -1544,4 +1548,3 @@ void AP_BLHeli::send_esc_telemetry_mavlink(uint8_t mav_chan)
 }
 
 #endif // HAVE_AP_BLHELI_SUPPORT
-
