@@ -238,9 +238,6 @@ private:
     // time that rudder/steering arming has been running
     uint32_t rudder_arm_timer;
 
-    // Store the time the last GPS message was received.
-    uint32_t last_gps_msg_ms{0};
-
     // latest wheel encoder values
     float wheel_encoder_last_distance_m[WHEELENCODER_MAX_INSTANCES];    // total distance recorded by wheel encoder (for reporting to GCS)
     bool wheel_encoder_initialised;                                     // true once arrays below have been initialised to sensors initial values
@@ -285,7 +282,6 @@ private:
     void update_logging1(void);
     void update_logging2(void);
     void one_second_loop(void);
-    void update_GPS(void);
     void update_current_mode(void);
     void update_mission(void);
 
