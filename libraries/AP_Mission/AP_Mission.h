@@ -480,6 +480,9 @@ public:
     // returns true if the mission contains the requested items
     bool contains_item(MAV_CMD command) const;
 
+    // returns true if the mission has a terrain relative mission item
+    bool contains_terrain_relative(void) const;
+    
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
