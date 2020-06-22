@@ -73,7 +73,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Mount, &plane.camera_mount, update, 50, 100),
 #endif // MOUNT == ENABLED
 #if CAMERA == ENABLED
-    SCHED_TASK_CLASS(AP_Camera, &plane.camera, update_trigger, 50, 100),
+    SCHED_TASK_CLASS(AP_Camera, &plane.camera, update,      50, 100),
 #endif // CAMERA == ENABLED
     SCHED_TASK_CLASS(AP_Scheduler, &plane.scheduler, update_logging,         0.2,    100),
     SCHED_TASK(compass_save,          0.1,    200),
@@ -393,10 +393,6 @@ void Plane::update_GPS_10Hz(void)
 
         // see if we've breached the geo-fence
         geofence_check(false);
-
-#if CAMERA == ENABLED
-        camera.update();
-#endif
 
         // update wind estimate
         ahrs.estimate_wind();
