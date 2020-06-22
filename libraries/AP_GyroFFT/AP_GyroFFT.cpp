@@ -402,7 +402,7 @@ uint16_t AP_GyroFFT::run_cycle()
     FloatBuffer& gyro_buffer = (_sample_mode == 0 ?_ins->get_raw_gyro_window(_update_axis) : _downsampled_gyro_data[_update_axis]);
     // if we have many more samples than the window size then we are struggling to 
     // stay ahead of the gyro loop so drop samples so that this cycle will use all available samples
-    if (gyro_buffer.available() > _state->_window_size + uint16_t(_samples_per_frame >> 1)) { // half the frame size is a heuristic
+    if (gyro_buffer.available() > uint32_t(_state->_window_size + uint16_t(_samples_per_frame >> 1))) { // half the frame size is a heuristic
         gyro_buffer.advance(gyro_buffer.available() - _state->_window_size);
     }
     // let's go!
