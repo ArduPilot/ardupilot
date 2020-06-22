@@ -391,10 +391,6 @@ void Plane::update_GPS_10Hz(void)
         // see if we've breached the geo-fence
         geofence_check(false);
 
-#if CAMERA == ENABLED
-        camera.update();
-#endif
-
         // update wind estimate
         ahrs.estimate_wind();
     } else if (gps.status() < AP_GPS::GPS_OK_FIX_3D && ground_start_count != 0) {
