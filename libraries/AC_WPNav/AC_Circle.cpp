@@ -139,7 +139,6 @@ void AC_Circle::set_rate(float deg_per_sec)
 {
     if (!is_equal(deg_per_sec, _rate.get())) {
         _rate = deg_per_sec;
-        calc_velocities(false);
     }
 }
 
@@ -147,7 +146,6 @@ void AC_Circle::set_rate(float deg_per_sec)
 void AC_Circle::set_radius(float radius_cm)
 {
     _radius = constrain_float(radius_cm, 0, AC_CIRCLE_RADIUS_MAX);
-    calc_velocities(false);
 }
 
 /// returns true if update has been run recently
@@ -160,6 +158,8 @@ bool AC_Circle::is_active() const
 /// update - update circle controller
 bool AC_Circle::update()
 {
+    calc_velocities(false);
+
     // calculate dt
     float dt = _pos_control.time_since_last_xy_update();
     if (dt >= 0.2f) {
