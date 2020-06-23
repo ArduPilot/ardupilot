@@ -5240,7 +5240,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def disabled_tests(self):
         return {
-            "PolyFenceObjectAvoidanceBendyRuler": "currently broken",
             "DriveMaxRCIN": "currently triggers Arithmetic Exception",
         }
 
