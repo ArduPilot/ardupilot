@@ -528,9 +528,21 @@ bool Plane::verify_takeoff()
             // course. This keeps wings level until we are ready to
             // rotate, and also allows us to cope with arbitrary
             // compass errors for auto takeoff
-            float takeoff_course = wrap_PI(radians(ahrs.ground_course())) - steer_state.locked_course_err;
+
+            const float ground_course = ahrs.ground_course();
+            float takeoff_course = wrap_PI(radians(ground_course)) - steer_state.locked_course_err;
             takeoff_course = wrap_PI(takeoff_course);
             steer_state.hold_course_cd = wrap_360_cd(degrees(takeoff_course)*100);
+
+            // when true, we will follow the recorded takeoff heading.
+            // when false, we xtrack to a virtual waypoint 10km ahead of us on this takeoff heading
+            steer_state.locked_course = false;
+
+            next_WP_loc = current_loc;
+            next_WP_loc.offset_bearing(ground_course, 10000); // push it out 10km
+            set_next_WP(next_WP_loc);
+            auto_state.crosstrack = true;
+
             gcs().send_text(MAV_SEVERITY_INFO, "Holding course %d at %.1fm/s (%.1f)",
                               (int)steer_state.hold_course_cd,
                               (double)ground_speed,
@@ -538,7 +550,10 @@ bool Plane::verify_takeoff()
         }
     }
 
-    if (steer_state.hold_course_cd != -1) {
+    if (!steer_state.locked_course && !prev_WP_loc.same_latlon_as(next_WP_loc)) {
+        // heading is not locked and we have valid waypoints to follow
+        nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
+    } else if (steer_state.hold_course_cd != -1) {
         // call navigation controller for heading hold
         nav_controller->update_heading_hold(steer_state.hold_course_cd);
     } else {
