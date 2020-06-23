@@ -19,7 +19,7 @@ uint8_t smbus_cell_ids[] = { 0x3f,  // cell 1
                              0x34}; // cell 12
 
 #define SMBUS_READ_BLOCK_MAXIMUM_TRANSFER    0x20   // A Block Read or Write is allowed to transfer a maximum of 32 data bytes.
-#define SMBUS_CELL_COUNT_CHECK_TIMEOUT       15000000   // check cell count for up to 15 seconds
+#define SMBUS_CELL_COUNT_CHECK_TIMEOUT       15     // check cell count for up to 15 seconds
 
 /*
  * Other potentially useful registers, listed here for future use
@@ -51,7 +51,7 @@ void AP_BattMonitor_SMBus_Generic::timer()
         return;
     }
 
-    uint16_t data = UINT16_MAX;
+    uint16_t data;
     uint32_t tnow = AP_HAL::micros();
 
     // read voltage (V)
@@ -61,8 +61,8 @@ void AP_BattMonitor_SMBus_Generic::timer()
         _state.healthy = true;
     }
 
-    // assert that BATTMONITOR_SMBUS_NUM_CELLS_MAX matches smbus_cell_ids
-    static_assert(BATTMONITOR_SMBUS_NUM_CELLS_MAX == ARRAY_SIZE(smbus_cell_ids), "BATTMONITOR_SMBUS_NUM_CELLS_MAX must match smbus_cell_ids");
+    // assert that BATTMONITOR_SMBUS_NUM_CELLS_MAX must be no more than smbus_cell_ids
+    static_assert(BATTMONITOR_SMBUS_NUM_CELLS_MAX <= ARRAY_SIZE(smbus_cell_ids), "BATTMONITOR_SMBUS_NUM_CELLS_MAX must be no more than smbus_cell_ids");
 
     // check cell count
     if (!_cell_count_fixed) {
@@ -71,7 +71,7 @@ void AP_BattMonitor_SMBus_Generic::timer()
             if (_cell_count_check_start_us == 0) {
                 _cell_count_check_start_us = tnow;
             }
-            if (tnow - _cell_count_check_start_us > SMBUS_CELL_COUNT_CHECK_TIMEOUT) {
+            if (tnow - _cell_count_check_start_us > (SMBUS_CELL_COUNT_CHECK_TIMEOUT * 1e6)) {
                 // give up checking cell count after 15sec of continuous healthy battery reads
                 _cell_count_fixed = true;
             }
