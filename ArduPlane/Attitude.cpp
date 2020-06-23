@@ -387,7 +387,7 @@ void Plane::stabilize_acro(float speed_scaler)
  */
 void Plane::stabilize()
 {
-    if (control_mode == &mode_manual || (control_mode == &mode_stallrecovery && plane.stall_state.is_stalled())) {
+    if (control_mode == &mode_manual || plane.stall_state.is_stalled()) {
         // reset steering controls
         steer_state.locked_course = false;
         steer_state.locked_course_err = 0;
