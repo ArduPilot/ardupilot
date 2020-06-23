@@ -6,6 +6,7 @@
 #define LOST_VEHICLE_DELAY      10  // called at 10hz so 1 second
 
 static uint32_t auto_disarm_begin;
+bool arming_hold;
 
 // arm_motors_check - checks for pilot input to arm or disarm the copter
 // called at 10hz
@@ -29,6 +30,8 @@ void Copter::arm_motors_check()
     // ensure throttle is down
     if (channel_throttle->get_control_in() > 0) {
         arming_counter = 0;
+        arming_hold = false;
+        AP_Notify::flags.arming = false;
         return;
     }
 
@@ -37,6 +40,14 @@ void Copter::arm_motors_check()
     // full right
     if (yaw_in > 4000) {
 
+    	if(arming_hold){
+    		AP_Notify::flags.arming = false;
+    		arming_counter = 0;
+    		return;
+    	}else if(!motors->armed()){
+    		AP_Notify::flags.arming = true;
+    	}
+
         // increase the arming counter to a maximum of 1 beyond the auto trim counter
         if (arming_counter <= AUTO_TRIM_DELAY) {
             arming_counter++;
@@ -44,9 +55,14 @@ void Copter::arm_motors_check()
 
         // arm the motors and configure for flight
         if (arming_counter == ARM_DELAY && !motors->armed()) {
+
+        	AP_Notify::flags.arming = false;
+
             // reset arming counter if arming fail
             if (!arming.arm(AP_Arming::Method::RUDDER)) {
                 arming_counter = 0;
+                arming_hold = true;
+                AP_Notify::flags.arming_failed = true;
             }
         }
 
@@ -77,6 +93,7 @@ void Copter::arm_motors_check()
     // Yaw is centered so reset arming counter
     } else {
         arming_counter = 0;
+        arming_hold = false;
     }
 }
 
