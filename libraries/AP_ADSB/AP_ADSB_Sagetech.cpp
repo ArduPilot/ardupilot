@@ -21,11 +21,12 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <time.h>
+#include <string>
 #include <AP_Math/bitwise.h>
 
 extern const AP_HAL::HAL& hal;
 
-#define SAGETECH_HARDCODE_CALLSIGN          "k1000ULE"  // comment out to disable
+#define SAGETECH_HARDCODE_CALLSIGN          "K1000ULE"  // comment out to disable
 #define SAGETECH_ENFORCE_ACKS               0
 #define SAGETECH_DEBUG_ACK_TIMEOUTS         0
 #define SAGETECH_DEBUG_TX_ID_ONLY           0
@@ -48,8 +49,6 @@ AP_ADSB_Sagetech::AP_ADSB_Sagetech(AP_ADSB &adsb) :
 
         // no sagtech hardware have flow control pins exposed
         uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-
-//        gcs().send_text(MAV_SEVERITY_DEBUG, "%sUART init success", _GcsHeader);
     }
 }
 
@@ -57,9 +56,18 @@ void AP_ADSB_Sagetech::init()
 {
     if (uart == nullptr) {
         gcs().send_text(MAV_SEVERITY_DEBUG, "%sInit failed, check SERIALx_PROTOCOL cfg", _GcsHeader);
-//    } else {
-//        gcs().send_text(MAV_SEVERITY_DEBUG, "%sInit", _GcsHeader);
     }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (uart != nullptr) {
+        gcs().send_text(MAV_SEVERITY_DEBUG, "%sUART Init successful", _GcsHeader);
+    }
+#endif
+
+#ifdef SAGETECH_HARDCODE_CALLSIGN
+    memcpy(&frontend.out_state.cfg.callsign, SAGETECH_HARDCODE_CALLSIGN, 8);
+#endif
+
 }
 
 void AP_ADSB_Sagetech::update()
@@ -123,35 +131,44 @@ void AP_ADSB_Sagetech::update()
 #endif
     {
 
-//        if (!has_sent_initialize) {
-//            has_sent_initialize = true;
-//            send_packet(MsgTypes_XP::Installation_Set);
-//
-//        } else if (now_ms - last_packet_PreFlight_ms >= 10000 && (last_packet_PreFlight_ms == 0)) {
-//            // send once, for now..
-//            last_packet_PreFlight_ms = now_ms;
-//            send_packet(MsgTypes_XP::Preflight_Set);
-//
-//        } else if (now_ms - last_packet_Operating_ms >= 1000 && (
-//                // send as data changes
-//                last_operating_squawk != frontend.out_state.cfg.squawk_octal ||
-//                abs(last_operating_alt - frontend._my_loc.alt) > 1555 ||      // 1555cm == 51f. The output resolution is 100ft per bit
-//                last_operating_rf_select != frontend.out_state.cfg.rfSelect))
-//        {
-//            last_packet_Operating_ms = now_ms;
-//            send_packet(MsgTypes_XP::Operating_Set);
+        //if (!last_packet_initialize_ms) {
+        if (!last_packet_initialize_ms || (now_ms - last_packet_initialize_ms >= 5000)) {
+            last_packet_initialize_ms = now_ms;
+            send_packet(MsgTypes_XP::Installation_Set);
 
-//        } else
-        if ((now_ms - last_packet_GPS_ms >= (frontend.out_state.is_flying ? 200 : 1000)) && !frontend._my_loc.is_zero()) {
-            last_packet_GPS_ms = now_ms;
+
+        //} else if (last_packet_PreFlight_ms == 0) {
+        } else if (!last_packet_PreFlight_ms || (now_ms - last_packet_PreFlight_ms >= 8200)) {
+            // send once, for now..
+            last_packet_PreFlight_ms = now_ms;
+            // TODO: allow callsign to not require a reboot
+            send_packet(MsgTypes_XP::Preflight_Set);
+
+        } else if (now_ms - last_packet_Operating_ms >= 1000 && (
+                last_packet_Operating_ms == 0 || // send once at boot
+                // send as data changes
+                last_operating_squawk != frontend.out_state.cfg.squawk_octal ||
+                abs(last_operating_alt - frontend._my_loc.alt) > 1555 ||      // 1493cm == 49ft. The output resolution is 100ft per bit
+                last_operating_rf_select != frontend.out_state.cfg.rfSelect))
+        {
+            last_packet_Operating_ms = now_ms;
+            last_operating_squawk = frontend.out_state.cfg.squawk_octal;
+            last_operating_alt = frontend._my_loc.alt;
+
+            frontend.out_state.cfg.rfSelect &= 0x06; // apply mask for valid bits
+            last_operating_rf_select = frontend.out_state.cfg.rfSelect;
+
+            send_packet(MsgTypes_XP::Operating_Set);
+            if (last_operating_rf_select != frontend.out_state.cfg.rfSelect) {
+                frontend.out_state.cfg.rfSelect.set_and_notify(last_operating_rf_select);
+                frontend.out_state.cfg.rfSelect.save();
+            }
+
+        } else if (now_ms - last_packet_GPS_ms >= (frontend.out_state.is_flying ? 200 : 1000)) {
             // 1Hz when not flying, 5Hz when flying
+            last_packet_GPS_ms = now_ms;
             send_packet(MsgTypes_XP::GPS_Set);
         }
-
-
-
-        //send_Operating();
-        //send_Request();
     }
 }
 
@@ -199,21 +216,32 @@ void AP_ADSB_Sagetech::parse_packet_XP(const Packet_XP &msg)
     switch (msg.type) {
     case MsgTypes_XP::ACK: {
         // ACK received!
+        transponder_type = (Transponder_Type)msg.payload[6];
+
 #if SAGETECH_DEBUG_RX_ACK
         const uint8_t acked_type = msg.payload[0];
         const uint8_t acked_id = msg.payload[1];
         const uint8_t system_state = msg.payload[2];
         const int32_t pres_altitude = (int32_t)fetchU32(&msg.payload[3]);
-        const uint8_t transponder_type = msg.payload[6];
         const uint16_t squawk = fetchU16(&msg.payload[7]);
 
-        gcs().send_text(MAV_SEVERITY_DEBUG, "%sACK %u, %u, 0x%02X, %d, %u, %u", _GcsHeader,
+        gcs().send_text(MAV_SEVERITY_DEBUG, "%sACK %u, %u, 0x%02X, %d, %u, %u %u", _GcsHeader,
                 acked_type,
                 acked_id,
                 system_state,
                 pres_altitude,
                 transponder_type,
-                squawk);
+                squawk,
+                system_state >> 6); // mode
+
+        for (uint8_t i=0; i<6; i++) {
+            const uint8_t stateBits = (system_state & (1<< i));
+            if (stateBits != 0 && stateBits != SystemStateBits::Altitidue_Source) {
+                gcs().send_text(MAV_SEVERITY_DEBUG, "%sACK status: %s", _GcsHeader, systemStatsBits_to_str((SystemStateBits)stateBits));
+            }
+        }
+        //gcs().send_text(MAV_SEVERITY_DEBUG, "%sACK mode: %u", _GcsHeader, system_state >> 6);
+
 #endif
         }
         break;
@@ -376,7 +404,7 @@ void AP_ADSB_Sagetech::send_msg(Packet_XP &msg)
     }
 #endif
 #if SAGETECH_DEBUG_TX_ID_ONLY
-    gcs().send_text(MAV_SEVERITY_DEBUG, "%sTx type=%d", _GcsHeader, msg.type);
+    gcs().send_text(MAV_SEVERITY_DEBUG, "%sTx type=%d %s", _GcsHeader, msg.type, type_to_str(msg.type));
 #endif
 #if SAGETECH_DEBUG_TX_ID_PAYLOAD || SAGETECH_DEBUG_TX_ALL_RAW
     #if SAGETECH_DEBUG_TX_ID_PAYLOAD
@@ -425,25 +453,30 @@ void AP_ADSB_Sagetech::send_Installation()
         baud_value = 4;
         adsb_in_vehicles_per_second = 10;
         break;
+    case 38:
     case 38400:
         baud_value = 5;
         adsb_in_vehicles_per_second = 20;
         break;
     default:
+    case 57:
     case 57600:
         baud_value = 0;
         adsb_in_vehicles_per_second = 30;
         break;
+    case 115:
     case 115000:
     case 115200:
         baud_value = 6;
         adsb_in_vehicles_per_second = 60;
         break;
+    case 230:
     case 230000:
     case 230400:
         baud_value = 7;
         adsb_in_vehicles_per_second = 100;
         break;
+    case 460:
     case 460000:
     case 460800:
         baud_value = 8;
@@ -454,31 +487,36 @@ void AP_ADSB_Sagetech::send_Installation()
     Packet_XP pkt {};
 
     pkt.type = MsgTypes_XP::Installation_Set;
-    pkt.payload_length = 28;
+    pkt.payload_length = 28; // 28== 0x1C
 
-//    // mode C version
-//    pkt.id = 3;
+    // Mode C = 3, Mode S = 0
+    pkt.id = (transponder_type == Transponder_Type::Mode_C) ? 3 : 0;
 
-    // mode S version
-    pkt.id = 0;
 
-    pkt.payload[0] = frontend.out_state.cfg.ICAO_id >> 16;
-    pkt.payload[1] = frontend.out_state.cfg.ICAO_id >> 8;
-    pkt.payload[2] = frontend.out_state.cfg.ICAO_id >> 0;
+    // convert a decimal 123456 to 0x123456
+    char hex_str[15];
+    snprintf(hex_str, sizeof(hex_str), "%X", (unsigned)frontend.out_state.cfg.ICAO_id_param);
+    const uint32_t icao_hex = strtol(hex_str, nullptr, 10);
+
+    // TODO: do a proper conversion. The param contains "131313" but what gets transmitted over the air is 0x200F1.
+    pkt.payload[0] = (uint32_t(icao_hex) >> 16) & 0xFF;
+    pkt.payload[1] = (uint32_t(icao_hex) >> 8) & 0xFF;
+    pkt.payload[2] = (uint32_t(icao_hex) >> 0) & 0xFF;
+
 
     memcpy(&pkt.payload[3], &frontend.out_state.cfg.callsign, 8);
 
     pkt.payload[11] = 0;   // airspeed MAX
 
     pkt.payload[12] = baud_value;   // COM Port 0 baud
-    pkt.payload[13] = 0;            // COM Port 1 baud
-    pkt.payload[14] = 0;            // COM Port 2 baud
+    pkt.payload[13] = 0;            // COM Port 1 baud, fixed at 57600
+    pkt.payload[14] = 0;            // COM Port 2 baud, fixed at 57600
 
     pkt.payload[15] = 1;   // GPS from COM port 0 (this port)
-    pkt.payload[16] = 0;   // GPS Integrity
+    pkt.payload[16] = 1;   // GPS Integrity
 
     pkt.payload[17] = frontend.out_state.cfg.emitterType / 8;   // Emitter Set
-    pkt.payload[18] = frontend.out_state.cfg.emitterType % 8;   // Emitter Type
+    pkt.payload[18] = frontend.out_state.cfg.emitterType & 0x0F;   // Emitter Type
 
     pkt.payload[19] = frontend.out_state.cfg.lengthWidth;   // Aircraft Size
 
@@ -500,11 +538,8 @@ void AP_ADSB_Sagetech::send_PreFlight()
     pkt.id = 0;
     pkt.payload_length = 10;
 
-#ifdef SAGETECH_HARDCODE_CALLSIGN
-    memcpy(&pkt.payload[0], SAGETECH_HARDCODE_CALLSIGN, 8);
-#else
     memcpy(&pkt.payload[0], &frontend.out_state.cfg.callsign, 8);
-#endif
+
     memset(&pkt.payload[8], 0, 2);
 
     send_msg(pkt);
@@ -519,29 +554,25 @@ void AP_ADSB_Sagetech::send_Operating()
     pkt.payload_length = 8;
 
     // squawk
-    last_operating_squawk = frontend.out_state.cfg.squawk_octal;
-    //last_operating_squawk = 1200;       // TEST
-    loadUint(&pkt.payload[0], last_operating_squawk, 16);
+    //last_operating_squawk = 0x0280; // TEST of 1200
+    loadUint(&pkt.payload[0], to_octal(last_operating_squawk), 16);
 
     // altitude
-    last_operating_alt = frontend._my_loc.alt;
     int32_t alt_feet = (int32_t)((last_operating_alt * 0.01f) / FEET_TO_METERS);
     //int32_t alt_feet = 126700;       // TEST
     const int16_t alt_feet_adj = alt_feet / 100; // 1 = 100 feet, 5 = 500 feet
     loadUint(&pkt.payload[2], alt_feet_adj, 16);
 
     // RF mode
-    uint8_t mode = 0;
-    last_operating_rf_select = frontend.out_state.cfg.rfSelect;
-    if (last_operating_rf_select & 0x02) {
-        // enable TX
-        mode |= 1;
-    }
+    last_operating_rf_select &= 7; // mask param to param bits
+    pkt.payload[4] = last_operating_rf_select & 0x06;   // mask to useful sagetech bits
+
     if (last_operating_rf_select & 0x04) {
-        // enable Ident
-        mode |= 2;
+        // Ident should only be sent once. Its held on in the hw for 18 seconds
+        gcs().send_text(MAV_SEVERITY_DEBUG, "%sIdent!", _GcsHeader);
+        last_operating_rf_select &= ~0x04;
     }
-    pkt.payload[4] = mode;
+
 
 #if SAGETECH_DEBUG_TX_Operating
     gcs().send_text(MAV_SEVERITY_DEBUG, "%sOper squawk:%d, %dft, %d", _GcsHeader, fetchU16(&pkt.payload[0]), (int16_t)fetchU16(&pkt.payload[2])*100, pkt.payload[4]);
@@ -644,80 +675,45 @@ void AP_ADSB_Sagetech::send_GPS()
 #if SAGETECH_DEBUG_TX_GPS
     gcs().send_text(MAV_SEVERITY_DEBUG, "%sGPS time: %s", _GcsHeader, &pkt.payload[36]);
 #endif
-//
-//    uint8_t i;
-//    (void)i;
-//     i = 0; // Longitude
-//    pkt.payload[i++] = 0x31;
-//    pkt.payload[i++] = 0x32;
-//    pkt.payload[i++] = 0x32;
-//    pkt.payload[i++] = 0x31;
-//    pkt.payload[i++] = 0x39;
-//    pkt.payload[i++] = 0x2E;
-//    pkt.payload[i++] = 0x37;
-//    pkt.payload[i++] = 0x35;
-//    pkt.payload[i++] = 0x30;
-//    pkt.payload[i++] = 0x30;
-//    pkt.payload[i++] = 0x32;
-////
-//
-//     i = 11; // Longitude
-//    pkt.payload[i++] = 0x34;
-//    pkt.payload[i++] = 0x37;
-//    pkt.payload[i++] = 0x33;
-//    pkt.payload[i++] = 0x37;
-//    pkt.payload[i++] = 0x2E;
-//    pkt.payload[i++] = 0x32;
-//    pkt.payload[i++] = 0x32;
-//    pkt.payload[i++] = 0x34;
-//    pkt.payload[i++] = 0x30;
-//    pkt.payload[i++] = 0x30;
-
-//     i = 21; // Speed over Ground
-//    pkt.payload[i++] = 0x31;
-//    pkt.payload[i++] = 0x32;
-//    pkt.payload[i++] = 0x35;
-//    pkt.payload[i++] = 0x2E;
-//    pkt.payload[i++] = 0x38;
-//    pkt.payload[i++] = 0x30;
-
-//     i = 27; // Course over Ground - heading
-//    pkt.payload[i++] = 0x30;
-//    pkt.payload[i++] = 0x37;
-//    pkt.payload[i++] = 0x37;
-//    pkt.payload[i++] = 0x2E;
-//    pkt.payload[i++] = 0x35;
-//    pkt.payload[i++] = 0x32;
-//    pkt.payload[i++] = 0x30;
-//    pkt.payload[i++] = 0x30;
-
-//     i = 35; // hemisphere
-//    pkt.payload[i++] = 0x01;
-
-//    i = 36; // GPS Time
-//    pkt.payload[i++] = 0x31;
-//    pkt.payload[i++] = 0x32;
-//    pkt.payload[i++] = 0x33;
-//    pkt.payload[i++] = 0x37;
-//    pkt.payload[i++] = 0x32;
-//    pkt.payload[i++] = 0x32;
-//    pkt.payload[i++] = 0x2E;
-//    pkt.payload[i++] = 0x34;
-//    pkt.payload[i++] = 0x30;
-//    pkt.payload[i++] = 0x30;
-//
-//    i = 46; // RESERVED
-//    pkt.payload[i++] = 0;
-//    pkt.payload[i++] = 0;
-//    pkt.payload[i++] = 0;
-//    pkt.payload[i++] = 0;
-//    pkt.payload[i++] = 0;
-//    pkt.payload[i++] = 0;
-
 
     send_msg(pkt);
 }
 
+uint16_t AP_ADSB_Sagetech::to_octal(uint16_t decimalNum)
+{
+    uint16_t octalNum = 0, placeValue = 1;
+    while (decimalNum != 0) {
+        octalNum += (decimalNum % 8) * placeValue;
+        decimalNum /= 8;
+        placeValue *= 10;
+    }
+    return octalNum;
+}
+
+const char* AP_ADSB_Sagetech::type_to_str(const uint8_t type)
+{
+    switch (type) {
+    case 0x01: return "Install";
+    case 0x02: return "PreFlight";
+    case 0x03: return "Operate";
+    case 0x04: return "GPS Data";
+    case 0x05: return "DataReq";
+    default: return "Unknown";
+    }
+}
+
+const char* AP_ADSB_Sagetech::systemStatsBits_to_str(const SystemStateBits systemStateBits)
+{
+    switch (systemStateBits) {
+    case SystemStateBits::Error_Transponder: return "Error_Transponder";
+    case SystemStateBits::Altitidue_Source: return "Altitidue_Source";
+    case SystemStateBits::Error_GPS: return "Error_GPS";
+    case SystemStateBits::Error_ICAO: return "Error_ICAO";
+    case SystemStateBits::Error_Over_Temperature: return "Error_Over_Temperature";
+    case SystemStateBits::Error_Extended_Squitter: return "Error_Extended_Squitter";
+     default: return "Unknown";
+    }
+}
 
 
 

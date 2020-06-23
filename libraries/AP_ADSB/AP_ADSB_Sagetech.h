@@ -26,12 +26,37 @@ public:
     void init() override;
     void update() override;
 
+    static uint8_t nibble2hex(uint8_t x) {
+        // Allocating in RAM because it's faster
+        static uint8_t ConversionTable[] = {
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
+        };
+        return ConversionTable[x & 0x0F];
+    }
+
 private:
 
     static const uint8_t PAYLOAD_XP_MAX_SIZE  = 52;
     //static const uint8_t PAYLOAD_MX_MAX_SIZE  = 250;
 
     const char* _GcsHeader = "Sagetech: ";
+
+    enum SystemStateBits {
+        Error_Transponder       = (1<<0),
+        Altitidue_Source        = (1<<1),
+        Error_GPS               = (1<<2),
+        Error_ICAO              = (1<<3),
+        Error_Over_Temperature  = (1<<4),
+        Error_Extended_Squitter = (1<<5),
+        Mode_Transponder        = (3<<6),   // 2 bit status:
+    };
+
+    enum Transponder_Type {
+        Mode_C                  = 0x00,
+        Mode_S_ADSB_OUT         = 0x01,
+        Mode_S_ADSB_OUT_and_IN  = 0x02,
+        Unknown                 = 0xFF,
+    };
 
     enum MsgTypes_XP {
         INVALID                 = 0,
@@ -108,8 +133,12 @@ private:
     void send_packet(const MsgTypes_XP type);
     void request_packet(const MsgTypes_XP type);
 
+    uint16_t to_octal(uint16_t value_dec);
+    const char* type_to_str(const uint8_t type);
+    const char* systemStatsBits_to_str(const SystemStateBits systemStateBits);
+
     AP_HAL::UARTDriver *uart;
-    bool            has_sent_initialize;
+    uint32_t        last_packet_initialize_ms;
     uint32_t        last_packet_PreFlight_ms;
     uint32_t        last_packet_GPS_ms;
     uint32_t        last_packet_send_ms;
@@ -121,5 +150,7 @@ private:
     uint16_t        last_operating_squawk;
     int32_t         last_operating_alt;
     uint8_t         last_operating_rf_select;
+
+    Transponder_Type transponder_type = Transponder_Type::Unknown;
 };
 
