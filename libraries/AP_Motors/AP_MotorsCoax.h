@@ -49,6 +49,7 @@ public:
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     uint16_t            get_motor_mask() override;
 
+
 protected:
     // output - sends commands to the motors
     void                output_armed_stabilizing() override;
@@ -57,6 +58,8 @@ protected:
     float               _thrust_yt_ccw;
     float               _thrust_yt_cw;
 
+    float				_rpm_fwd;
+    float				_rpm_aft;
 
     bool _delay_aft_rotor = true;
     bool _spool_up_complete = false;

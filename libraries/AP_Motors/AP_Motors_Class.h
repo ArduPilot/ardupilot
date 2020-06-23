@@ -109,6 +109,18 @@ public:
     bool                get_thrust_boost() const { return _thrust_boost; }
     virtual uint8_t     get_lost_motor() const { return 0; }
 
+
+
+    void				set_dynamic_trim(float pitch_FF_trim, float roll_FF_trim){
+    																				_pitch_FF_trim = pitch_FF_trim;
+    																				_roll_FF_trim = roll_FF_trim;
+    																				}
+
+
+    float				get_pitch_FF_total_values() const {  return _pitch_FF_total_log; }
+    float				get_pitch_FF_values() const {  return _pitch_FF_trim; }
+
+
     // desired spool states
     enum class DesiredSpoolState : uint8_t {
         SHUT_DOWN = 0,              // all motors should move to stop
@@ -178,6 +190,7 @@ public:
     // set loop rate. Used to support loop rate as a parameter
     void                set_loop_rate(uint16_t loop_rate) { _loop_rate = loop_rate; }
 
+
     // return the roll factor of any motor, this is used for tilt rotors and tail sitters
     // using copter motors for forward flight
     virtual float       get_roll_factor(uint8_t i) { return 0.0f; }
@@ -237,6 +250,16 @@ protected:
     LowPassFilterFloat  _throttle_filter;           // throttle input filter
     DesiredSpoolState   _spool_desired;             // desired spool state
     SpoolState          _spool_state;               // current spool mode
+
+
+    float 				_pitch_FF_trim;
+	float 				_roll_FF_trim;
+
+    float 				_pitch_FF_total_log; //for logging
+	float 				_roll_FF_total_log; //for logging
+
+	bool				_remain_stabilized;
+	uint16_t			_stabilized_counter;
 
     // air pressure compensation variables
     float               _air_density_ratio;     // air density / sea level density - decreases in altitude

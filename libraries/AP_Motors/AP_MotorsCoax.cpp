@@ -45,6 +45,11 @@ void AP_MotorsCoax::init(motor_frame_class frame_class, motor_frame_type frame_t
 
     // record successful initialisation if what we setup was the desired frame_class
     _flags.initialised_ok = (frame_class == MOTOR_FRAME_COAX);
+
+    _pitch_FF_trim = 0;
+	_roll_FF_trim = 0;
+	_remain_stabilized = false;
+	_stabilized_counter = 0;
 }
 
 // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
@@ -69,12 +74,29 @@ void AP_MotorsCoax::output_to_motors()
 {
     switch (_spool_state) {
         case SpoolState::SHUT_DOWN:
-            // sends minimum values out to the motors
-            rc_write_angle(AP_MOTORS_MOT_1, _pitch_radio_passthrough * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
-            rc_write_angle(AP_MOTORS_MOT_2, _roll_radio_passthrough * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+
+        	if(_remain_stabilized){
+
+                for (uint8_t i = 0; i < 2; i++) {
+                    rc_write_angle(AP_MOTORS_MOT_1 + i, _actuator_out[i] * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+                }
+
+                _stabilized_counter++;
+
+                if(_stabilized_counter > 400){
+                	_remain_stabilized = false;
+                	_stabilized_counter = 0;
+                }
+
+        	}else{
+
+                rc_write_angle(AP_MOTORS_MOT_1, _pitch_radio_passthrough * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+                rc_write_angle(AP_MOTORS_MOT_2, _roll_radio_passthrough * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+        	}
+
+        	 // sends minimum values out to the motors
             rc_write(AP_MOTORS_MOT_3, output_to_pwm(0));
             rc_write(AP_MOTORS_MOT_4, output_to_pwm(0));
-
 
             _delay_aft_rotor = true;
             _spool_up_complete = false;
@@ -86,7 +108,6 @@ void AP_MotorsCoax::output_to_motors()
             for (uint8_t i = 0; i < NUM_ACTUATORS_COAX; i++) {
                 rc_write_angle(AP_MOTORS_MOT_1 + i, _actuator_out[i] * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
             }
-
 
             if(_delay_aft_rotor){
 
@@ -133,16 +154,15 @@ void AP_MotorsCoax::output_to_motors()
         case SpoolState::SPOOLING_UP:
         case SpoolState::THROTTLE_UNLIMITED:
         case SpoolState::SPOOLING_DOWN:
+
             // set motor output based on thrust requests
             for (uint8_t i = 0; i < 2; i++) {
                 rc_write_angle(AP_MOTORS_MOT_1 + i, _actuator_out[i] * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
             }
-           // set_actuator_with_slew(_actuator[3], thrust_to_actuator(_thrust_yt_cw));
-           // set_actuator_with_slew(_actuator[4], thrust_to_actuator(_thrust_yt_ccw));
-
 
             if(_spool_up_complete){
 
+            	_remain_stabilized = true;
 
 				set_actuator_with_slew(_actuator[2], thrust_to_actuator(_thrust_yt_cw));
 				set_actuator_with_slew(_actuator[3], thrust_to_actuator(_thrust_yt_ccw));
@@ -168,7 +188,6 @@ void AP_MotorsCoax::output_to_motors()
 				  }
 
 			  }else{
-
 
 				_aft_rotor_start += (1.0f/(_spool_up_time * (float)_loop_rate)) * _spin_arm;
 
@@ -214,10 +233,15 @@ void AP_MotorsCoax::output_armed_stabilizing()
 
     // apply voltage and air pressure compensation
   //  const float compensation_gain = get_compensation_gain();
-    roll_thrust = (_roll_in + _roll_in_ff);// * compensation_gain;
-    pitch_thrust = (_pitch_in + _pitch_in_ff);// * compensation_gain;
+    roll_thrust = (_roll_in + _roll_in_ff + _roll_FF_trim);// * compensation_gain;
+    pitch_thrust = (_pitch_in + _pitch_in_ff + _pitch_FF_trim);// * compensation_gain;
     yaw_thrust = (_yaw_in + _yaw_in_ff);// * compensation_gain;
     throttle_thrust = get_throttle();
+
+
+    _pitch_FF_total_log = pitch_thrust;
+	_roll_FF_total_log = roll_thrust;
+
 
 
     // sanity check throttle is above zero and below current limited throttle
@@ -259,26 +283,31 @@ void AP_MotorsCoax::output_armed_stabilizing()
 	}
 
 	//compute headroom for yaw
-		float yaw_headroom_available =  _throttle_thrust_max - (throttle_thrust + (0.5f *fabsf(yaw_thrust)));
+		float yaw_headroom_available_max =  _throttle_thrust_max - (throttle_thrust + (0.5f *fabsf(yaw_thrust)));   /// goes negative if you don't have enough headroom
+		float yaw_headroom_available_min =  throttle_thrust - (0.5f *fabsf(yaw_thrust));			//// goes negative if you don't have enough headroom
 
 	//handle running out of headroom
-	   if( yaw_headroom_available  >=  0.0f ){
+	   if( yaw_headroom_available_max  >  0.0f   and   yaw_headroom_available_min  >  0.0f){
 
 			_thrust_yt_ccw = throttle_thrust + (0.5f * yaw_thrust);
 			_thrust_yt_cw = throttle_thrust - (0.5f * yaw_thrust);
 
-	   }else{
+	   }else if(yaw_headroom_available_max  <=  0.0f){
 
 		   limit.yaw = true;
+		   limit.throttle_upper = true;
 
-		   if(yaw_thrust >= 0.0f){
-				_thrust_yt_ccw = (throttle_thrust + (0.5f * yaw_thrust)) + yaw_headroom_available;
-				_thrust_yt_cw = (throttle_thrust - (0.5f * yaw_thrust)) + yaw_headroom_available;
-		   }else{
-				_thrust_yt_ccw = (throttle_thrust + (0.5f * yaw_thrust)) + yaw_headroom_available;
-				_thrust_yt_cw = (throttle_thrust - (0.5f * yaw_thrust)) + yaw_headroom_available;
-		   }
-	   }
+				_thrust_yt_ccw = (throttle_thrust + (0.5f * yaw_thrust)) + yaw_headroom_available_max;
+				_thrust_yt_cw = (throttle_thrust - (0.5f * yaw_thrust)) + yaw_headroom_available_max;
+
+	  }else{
+
+		  limit.yaw = true;
+		  limit.throttle_lower = true;
+
+			_thrust_yt_ccw = (throttle_thrust + (0.5f * yaw_thrust)) - yaw_headroom_available_min;
+			_thrust_yt_cw = (throttle_thrust - (0.5f * yaw_thrust)) - yaw_headroom_available_min;
+	  }
 }
 
 // output_test_seq - spin a motor at the pwm value specified

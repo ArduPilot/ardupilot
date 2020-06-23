@@ -101,7 +101,11 @@ public:
         bool waiting_for_throw;   // true when copter is in THROW mode and waiting to detect the user hand launch
         bool powering_off;        // true when the vehicle is powering off
         bool video_recording;     // true when the vehicle is recording video
+
+        bool arming;
+        bool arming_failed;
         bool gimbal_active;
+
     };
 
     /// notify_events_type - bitmask of active events.
