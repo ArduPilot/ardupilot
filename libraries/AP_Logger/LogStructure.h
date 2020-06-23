@@ -474,7 +474,6 @@ struct PACKED log_XKF2 {
     int16_t magX;
     int16_t magY;
     int16_t magZ;
-    uint8_t index;
 };
 
 struct PACKED log_EKF3 {
@@ -579,6 +578,17 @@ struct PACKED log_NKF5 {
     float angErr;
     float velErr;
     float posErr;
+};
+
+// common sensor selection log message
+struct PACKED log_EKFS {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t core;
+    uint8_t mag_index;
+    uint8_t baro_index;
+    uint8_t gps_index;
+    uint8_t airspeed_index;
 };
 
 struct PACKED log_Quaternion {
@@ -2313,7 +2323,6 @@ struct PACKED log_Winch {
 // @Field: MX: Magnetic field strength (body X-axis)
 // @Field: MY: Magnetic field strength (body Y-axis)
 // @Field: MZ: Magnetic field strength (body Z-axis)
-// @Field: MI: Magnetometer used for data
 
 // @LoggerMessage: XKF3
 // @Description: EKF3 innovations
@@ -2366,6 +2375,15 @@ struct PACKED log_Winch {
 // @Field: eAng: Magnitude of angular error
 // @Field: eVel: Magnitude of velocity error
 // @Field: ePos: Magnitude of position error
+
+// @LoggerMessage: XKFS
+// @Description: EKF3 sensor selection
+// @Field: TimeUS: Time since system startup
+// @Field: C: EKF3 core this data is for
+// @Field: MI: compass selection index
+// @Field: BI: barometer selection index
+// @Field: GI: GPS selection index
+// @Field: AI: airspeed selection index
 
 // @LoggerMessage: XKFD
 // @Description: EKF3 Body Frame Odometry errors
@@ -2539,7 +2557,7 @@ struct PACKED log_Winch {
     { LOG_XKF1_MSG, sizeof(log_EKF1), \
       "XKF1","QBccCfffffffccce","TimeUS,C,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ,OH", "s#ddhnnnnmmmkkkm", "F-BBB0000000BBBB" }, \
     { LOG_XKF2_MSG, sizeof(log_XKF2), \
-      "XKF2","QBccccchhhhhhB","TimeUS,C,AX,AY,AZ,VWN,VWE,MN,ME,MD,MX,MY,MZ,MI", "s#---nnGGGGGG-", "F----BBCCCCCC-" }, \
+      "XKF2","QBccccchhhhhh","TimeUS,C,AX,AY,AZ,VWN,VWE,MN,ME,MD,MX,MY,MZ", "s#---nnGGGGGG", "F----BBCCCCCC" }, \
     { LOG_XKF3_MSG, sizeof(log_NKF3), \
       "XKF3","QBcccccchhhccff","TimeUS,C,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT,RErr,ErSc", "s#nnnmmmGGG??--", "F-BBBBBBCCCBB00" }, \
     { LOG_XKF4_MSG, sizeof(log_NKF4), \
@@ -2548,6 +2566,8 @@ struct PACKED log_Winch {
       "XKF5","QBhhhcccCCfff","TimeUS,NI,FIX,FIY,AFI,HAGL,offset,RI,rng,Herr,eAng,eVel,ePos", "s----m???mrnm", "F----BBBBB000" }, \
     { LOG_XKF10_MSG, sizeof(log_RngBcnDebug), \
       "XKF0","QBccCCcccccccc","TimeUS,ID,rng,innov,SIV,TR,BPN,BPE,BPD,OFH,OFL,OFN,OFE,OFD", "s-m---mmmmmmmm", "F-B---BBBBBBBB" }, \
+    { LOG_XKFS_MSG, sizeof(log_EKFS), \
+      "XKFS","QBBBBB","TimeUS,C,MI,BI,GI,AI", "s#----", "F-----" }, \
     { LOG_XKQ_MSG, sizeof(log_Quaternion), "XKQ", QUAT_FMT, QUAT_LABELS, QUAT_UNITS, QUAT_MULTS }, \
     { LOG_XKFD_MSG, sizeof(log_ekfBodyOdomDebug), \
       "XKFD","Qffffff","TimeUS,IX,IY,IZ,IVX,IVY,IVZ", "s------", "F------" }, \
@@ -2697,6 +2717,7 @@ enum LogMessages : uint8_t {
     LOG_XKF4_MSG,
     LOG_XKF5_MSG,
     LOG_XKF10_MSG,
+    LOG_XKFS_MSG,
     LOG_XKQ_MSG,
     LOG_XKFD_MSG,
     LOG_XKV1_MSG,
