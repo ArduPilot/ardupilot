@@ -647,6 +647,14 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ERR_THRESH", 61, NavEKF3, _err_thresh, 0.2),
 
+    // @Param: AFFINITY
+    // @DisplayName: EKF3 Sensor Affinity Options
+    // @Description: These options control the affinity between sensor instances and EKF cores
+    // @User: Advanced
+    // @Bitmask: 0:EnableGPSAffinity,1:EnableBaroAffinity,2:EnableCompassAffinity,3:EnableAirspeedAffinity
+    // @RebootRequired: True
+    AP_GROUPINFO("AFFINITY", 62, NavEKF3, _affinity, 0),
+
     AP_GROUPEND
 };
 
@@ -1197,6 +1205,39 @@ uint8_t NavEKF3::getActiveMag(int8_t instance) const
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
         return core[instance].getActiveMag();
+    } else {
+        return 255;
+    }
+}
+
+// return the baro in use for the specified instance
+uint8_t NavEKF3::getActiveBaro(int8_t instance) const
+{
+    if (instance < 0 || instance >= num_cores) instance = primary;
+    if (core) {
+        return core[instance].getActiveBaro();
+    } else {
+        return 255;
+    }
+}
+
+// return the GPS in use for the specified instance
+uint8_t NavEKF3::getActiveGPS(int8_t instance) const
+{
+    if (instance < 0 || instance >= num_cores) instance = primary;
+    if (core) {
+        return core[instance].getActiveGPS();
+    } else {
+        return 255;
+    }
+}
+
+// return the airspeed sensor in use for the specified instance
+uint8_t NavEKF3::getActiveAirspeed(int8_t instance) const
+{
+    if (instance < 0 || instance >= num_cores) instance = primary;
+    if (core) {
+        return core[instance].getActiveAirspeed();
     } else {
         return 255;
     }
