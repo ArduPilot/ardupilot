@@ -170,7 +170,7 @@ bool Plane::stall_detection_algorithm(bool allow_changing_state)
 
     stall_state.algorithm_output_if_everything_enabled = is_stalled;
 
-    return (is_stalled & g2.stall_detection_bitmask) == g2.stall_detection_bitmask;
+    return ((g2.stall_detection_bitmask>0) & ((is_stalled & g2.stall_detection_bitmask) == g2.stall_detection_bitmask));
 }
 
 int32_t Plane::stall_detection_single_check(const uint32_t bitmask, const bool check)
