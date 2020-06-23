@@ -70,7 +70,7 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     if (frontend->_fusionModeGPS != 3) {
         // Wait for the configuration of all GPS units to be confirmed. Until this has occurred the GPS driver cannot provide a correct time delay
         float gps_delay_sec = 0;
-        if (!AP::gps().get_lag(gps_delay_sec)) {
+        if (!AP::gps().get_lag(selected_gps, gps_delay_sec)) {
             if (AP_HAL::millis() - lastInitFailReport_ms > 10000) {
                 lastInitFailReport_ms = AP_HAL::millis();
                 // provide an escalating series of messages
@@ -483,8 +483,11 @@ after the tilt has stabilised.
 */
 bool NavEKF3_core::InitialiseFilterBootstrap(void)
 {
+    // update sensor selection (for affinity)
+    update_sensor_selection();
+
     // If we are a plane and don't have GPS lock then don't initialise
-    if (assume_zero_sideslip() && AP::gps().status() < AP_GPS::GPS_OK_FIX_3D) {
+    if (assume_zero_sideslip() && AP::gps().status(preferred_gps) < AP_GPS::GPS_OK_FIX_3D) {
         hal.util->snprintf(prearm_fail_string,
                     sizeof(prearm_fail_string),
                     "EKF3 init failure: No GPS lock");
@@ -645,6 +648,9 @@ void NavEKF3_core::UpdateFilter(bool predict)
     hal.util->perf_begin(_perf_UpdateFilter);
 
     fill_scratch_variables();
+
+    // update sensor selection (for affinity)
+    update_sensor_selection();
 
     // TODO - in-flight restart method
 

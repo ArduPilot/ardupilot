@@ -51,7 +51,6 @@ void NavEKF3::Log_Write_XKF2(uint8_t _core, uint64_t time_us) const
     Vector3f wind;
     Vector3f magNED;
     Vector3f magXYZ;
-    uint8_t magIndex = getActiveMag(_core);
     getAccelBias(_core,accelBias);
     getWind(_core,wind);
     getMagNED(_core,magNED);
@@ -70,10 +69,28 @@ void NavEKF3::Log_Write_XKF2(uint8_t _core, uint64_t time_us) const
         magD    : (int16_t)(magNED.z),
         magX    : (int16_t)(magXYZ.x),
         magY    : (int16_t)(magXYZ.y),
-        magZ    : (int16_t)(magXYZ.z),
-        index   : (uint8_t)(magIndex)
+        magZ    : (int16_t)(magXYZ.z)
     };
     AP::logger().WriteBlock(&pkt2, sizeof(pkt2));
+}
+
+void NavEKF3::Log_Write_XKFS(uint8_t _core, uint64_t time_us) const
+{
+    // Write sensor selection EKF packet
+    uint8_t magIndex = getActiveMag(_core);
+    uint8_t baroIndex = getActiveBaro(_core);
+    uint8_t GPSIndex = getActiveGPS(_core);
+    uint8_t airspeedIndex = getActiveAirspeed(_core);
+    const struct log_EKFS pkt {
+        LOG_PACKET_HEADER_INIT(LOG_XKFS_MSG),
+        time_us : time_us,
+        core    : _core,
+        mag_index      : (uint8_t)(magIndex),
+        baro_index     : (uint8_t)(baroIndex),
+        gps_index      : (uint8_t)(GPSIndex),
+        airspeed_index : (uint8_t)(airspeedIndex),
+    };
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
 
 void NavEKF3::Log_Write_XKF3(uint8_t _core, uint64_t time_us) const
@@ -318,6 +335,7 @@ void NavEKF3::Log_Write()
         Log_Write_XKF2(i, time_us);
         Log_Write_XKF3(i, time_us);
         Log_Write_XKF4(i, time_us);
+        Log_Write_XKFS(i, time_us);
         Log_Write_Quaternion(i, time_us);
         Log_Write_GSF(i, time_us);
     }

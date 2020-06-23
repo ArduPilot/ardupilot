@@ -152,9 +152,12 @@ public:
     // An out of range instance (eg -1) returns data for the primary instance
     void getMagXYZ(int8_t instance, Vector3f &magXYZ) const;
 
-    // return the magnetometer in use for the specified instance
+    // return the sensor in use for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
     uint8_t getActiveMag(int8_t instance) const;
+    uint8_t getActiveBaro(int8_t instance) const;
+    uint8_t getActiveGPS(int8_t instance) const;
+    uint8_t getActiveAirspeed(int8_t instance) const;
 
     // Return estimated magnetometer offsets
     // Return true if magnetometer offsets are valid
@@ -506,6 +509,7 @@ private:
     AP_Int16 _gsfResetDelay;        // number of mSec from loss of navigation to requesting a reset using EKF-GSF yaw estimator data
     AP_Int8 _gsfResetMaxCount;      // maximum number of times the EKF3 is allowed to reset it's yaw to the EKF-GSF estimate
     AP_Float _err_thresh;           // lanes have to be consistently better than the primary by at least this threshold to reduce their overall relativeCoreError
+    AP_Int32 _affinity;             // bitmask of sensor affinity options
 
 // Possible values for _flowUse
 #define FLOW_USE_NONE    0
@@ -616,6 +620,7 @@ private:
     void Log_Write_XKF3(uint8_t core, uint64_t time_us) const;
     void Log_Write_XKF4(uint8_t core, uint64_t time_us) const;
     void Log_Write_XKF5(uint64_t time_us) const;
+    void Log_Write_XKFS(uint8_t core, uint64_t time_us) const;
     void Log_Write_Quaternion(uint8_t core, uint64_t time_us) const;
     void Log_Write_Beacon(uint64_t time_us) const;
     void Log_Write_BodyOdom(uint64_t time_us) const;
