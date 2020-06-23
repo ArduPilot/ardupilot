@@ -285,7 +285,10 @@ void NavEKF3_core::readMagData()
         // If the magnetometer has timed out (been rejected too long) we find another magnetometer to use if available
         // Don't do this if we are on the ground because there can be magnetic interference and we need to know if there is a problem
         // before taking off. Don't do this within the first 30 seconds from startup because the yaw error could be due to large yaw gyro bias affsets
-        if (magTimeout && (maxCount > 1) && !onGround && imuSampleTime_ms - ekfStartTime_ms > 30000) {
+        if (magTimeout && (maxCount > 1) &&
+            !onGround &&
+            imuSampleTime_ms - ekfStartTime_ms > 30000 &&
+            !(frontend->_affinity & EKF_AFFINITY_MAG)) {
 
             // search through the list of magnetometers
             for (uint8_t i=1; i<maxCount; i++) {
@@ -523,8 +526,8 @@ void NavEKF3_core::readGpsData()
     // limit update rate to avoid overflowing the FIFO buffer
     const AP_GPS &gps = AP::gps();
 
-    if (gps.last_message_time_ms() - lastTimeGpsReceived_ms > frontend->sensorIntervalMin_ms) {
-        if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+        if (gps.last_message_time_ms(selected_gps) - lastTimeGpsReceived_ms > frontend->sensorIntervalMin_ms) {
+            if (gps.status(selected_gps) >= AP_GPS::GPS_OK_FIX_3D) {
             // report GPS fix status
             gpsCheckStatus.bad_fix = false;
 
@@ -532,13 +535,13 @@ void NavEKF3_core::readGpsData()
             secondLastGpsTime_ms = lastTimeGpsReceived_ms;
 
             // get current fix time
-            lastTimeGpsReceived_ms = gps.last_message_time_ms();
+            lastTimeGpsReceived_ms = gps.last_message_time_ms(selected_gps);
 
             // estimate when the GPS fix was valid, allowing for GPS processing and other delays
             // ideally we should be using a timing signal from the GPS receiver to set this time
             // Use the driver specified delay
             float gps_delay_sec = 0;
-            gps.get_lag(gps_delay_sec);
+            gps.get_lag(selected_gps, gps_delay_sec);
             gpsDataNew.time_ms = lastTimeGpsReceived_ms - (uint32_t)(gps_delay_sec * 1000.0f);
 
             // Correct for the average intersampling delay due to the filter updaterate
@@ -548,17 +551,17 @@ void NavEKF3_core::readGpsData()
             gpsDataNew.time_ms = MIN(MAX(gpsDataNew.time_ms,imuDataDelayed.time_ms),imuDataDownSampledNew.time_ms);
 
             // Get which GPS we are using for position information
-            gpsDataNew.sensor_idx = gps.primary_sensor();
+            gpsDataNew.sensor_idx = selected_gps;
 
             // read the NED velocity from the GPS
-            gpsDataNew.vel = gps.velocity();
+            gpsDataNew.vel = gps.velocity(selected_gps);
 
             // Use the speed and position accuracy from the GPS if available, otherwise set it to zero.
             // Apply a decaying envelope filter with a 5 second time constant to the raw accuracy data
             float alpha = constrain_float(0.0002f * (lastTimeGpsReceived_ms - secondLastGpsTime_ms),0.0f,1.0f);
             gpsSpdAccuracy *= (1.0f - alpha);
             float gpsSpdAccRaw;
-            if (!gps.speed_accuracy(gpsSpdAccRaw)) {
+            if (!gps.speed_accuracy(selected_gps, gpsSpdAccRaw)) {
                 gpsSpdAccuracy = 0.0f;
             } else {
                 gpsSpdAccuracy = MAX(gpsSpdAccuracy,gpsSpdAccRaw);
@@ -567,7 +570,7 @@ void NavEKF3_core::readGpsData()
             }
             gpsPosAccuracy *= (1.0f - alpha);
             float gpsPosAccRaw;
-            if (!gps.horizontal_accuracy(gpsPosAccRaw)) {
+            if (!gps.horizontal_accuracy(selected_gps, gpsPosAccRaw)) {
                 gpsPosAccuracy = 0.0f;
             } else {
                 gpsPosAccuracy = MAX(gpsPosAccuracy,gpsPosAccRaw);
@@ -576,7 +579,7 @@ void NavEKF3_core::readGpsData()
             }
             gpsHgtAccuracy *= (1.0f - alpha);
             float gpsHgtAccRaw;
-            if (!gps.vertical_accuracy(gpsHgtAccRaw)) {
+            if (!gps.vertical_accuracy(selected_gps, gpsHgtAccRaw)) {
                 gpsHgtAccuracy = 0.0f;
             } else {
                 gpsHgtAccuracy = MAX(gpsHgtAccuracy,gpsHgtAccRaw);
@@ -585,16 +588,16 @@ void NavEKF3_core::readGpsData()
             }
 
             // check if we have enough GPS satellites and increase the gps noise scaler if we don't
-            if (gps.num_sats() >= 6 && (PV_AidingMode == AID_ABSOLUTE)) {
+            if (gps.num_sats(selected_gps) >= 6 && (PV_AidingMode == AID_ABSOLUTE)) {
                 gpsNoiseScaler = 1.0f;
-            } else if (gps.num_sats() == 5 && (PV_AidingMode == AID_ABSOLUTE)) {
+            } else if (gps.num_sats(selected_gps) == 5 && (PV_AidingMode == AID_ABSOLUTE)) {
                 gpsNoiseScaler = 1.4f;
             } else { // <= 4 satellites or in constant position mode
                 gpsNoiseScaler = 2.0f;
             }
 
             // Check if GPS can output vertical velocity, vertical velocity use is permitted and set GPS fusion mode accordingly
-            if (gps.have_vertical_velocity() && (frontend->_fusionModeGPS == 0) && !frontend->inhibitGpsVertVelUse) {
+            if (gps.have_vertical_velocity(selected_gps) && (frontend->_fusionModeGPS == 0) && !frontend->inhibitGpsVertVelUse) {
                 useGpsVertVel = true;
             } else {
                 useGpsVertVel = false;
@@ -612,7 +615,7 @@ void NavEKF3_core::readGpsData()
             }
 
             // Read the GPS location in WGS-84 lat,long,height coordinates
-            const struct Location &gpsloc = gps.location();
+            const struct Location &gpsloc = gps.location(selected_gps);
 
             // Set the EKF origin and magnetic field declination if not previously set and GPS checks have passed
             if (gpsGoodToAlign && !validOrigin) {
@@ -701,10 +704,10 @@ void NavEKF3_core::readBaroData()
     // check to see if baro measurement has changed so we know if a new measurement has arrived
     // limit update rate to avoid overflowing the FIFO buffer
     const AP_Baro &baro = AP::baro();
-    if (baro.get_last_update() - lastBaroReceived_ms > frontend->sensorIntervalMin_ms) {
+    if (baro.get_last_update(selected_baro) - lastBaroReceived_ms > frontend->sensorIntervalMin_ms) {
         frontend->logging.log_baro = true;
 
-        baroDataNew.hgt = baro.get_altitude();
+        baroDataNew.hgt = baro.get_altitude(selected_baro);
 
         // If we are in takeoff mode, the height measurement is limited to be no less than the measurement at start of takeoff
         // This prevents negative baro disturbances due to rotor wash ground interaction corrupting the EKF altitude during initial ascent
@@ -713,7 +716,7 @@ void NavEKF3_core::readBaroData()
         }
 
         // time stamp used to check for new measurement
-        lastBaroReceived_ms = baro.get_last_update();
+        lastBaroReceived_ms = baro.get_last_update(selected_baro);
 
         // estimate of time height measurement was taken, allowing for delays
         baroDataNew.time_ms = lastBaroReceived_ms - frontend->_hgtDelay_ms;
@@ -789,12 +792,12 @@ void NavEKF3_core::readAirSpdData()
     // if airspeed reading is valid and is set by the user to be used and has been updated then
     // we take a new reading, convert from EAS to TAS and set the flag letting other functions
     // know a new measurement is available
-    const AP_Airspeed *aspeed = _ahrs->get_airspeed();
-    if (aspeed &&
-            aspeed->use() &&
-            (aspeed->last_update_ms() - timeTasReceived_ms) > frontend->sensorIntervalMin_ms) {
-        tasDataNew.tas = aspeed->get_raw_airspeed() * AP::ahrs().get_EAS2TAS();
-        timeTasReceived_ms = aspeed->last_update_ms();
+    const auto *airspeed = AP::airspeed();
+    if (airspeed &&
+        airspeed->use(selected_airspeed) &&
+        (airspeed->last_update_ms(selected_airspeed) - timeTasReceived_ms) > frontend->sensorIntervalMin_ms) {
+        tasDataNew.tas = airspeed->get_airspeed(selected_airspeed) * _ahrs->get_EAS2TAS();
+        timeTasReceived_ms = airspeed->last_update_ms(selected_airspeed);
         tasDataNew.time_ms = timeTasReceived_ms - frontend->tasDelay_ms;
 
         // Correct for the average intersampling delay due to the filter update rate
@@ -1026,6 +1029,104 @@ void NavEKF3_core::writeExtNavVelData(const Vector3f &vel, float err, uint32_t t
         timeStamp_ms
     };
     storedExtNavVel.push(extNavVelNew);
+}
+
+/*
+  update the GPS selection
+ */
+void NavEKF3_core::update_gps_selection(void)
+{
+    auto &gps = AP::gps();
+
+    // in normal operation use the primary GPS
+    selected_gps = gps.primary_sensor();
+    preferred_gps = selected_gps;
+
+    if (frontend->_affinity & EKF_AFFINITY_GPS) {
+        if (core_index < gps.num_sensors() ) {
+            // always prefer our core_index, unless we don't have that
+            // many GPS sensors available
+            preferred_gps = core_index;
+        }
+        if (gps.status(preferred_gps) >= AP_GPS::GPS_OK_FIX_3D) {
+            // select our preferred_gps if it has a 3D fix, otherwise
+            // use the primary GPS
+            selected_gps = preferred_gps;
+        }
+    }
+}
+
+/*
+  update the mag selection
+ */
+void NavEKF3_core::update_mag_selection(void)
+{
+    const auto *compass = _ahrs->get_compass();
+    if (compass == nullptr) {
+        return;
+    }
+
+    if (frontend->_affinity & EKF_AFFINITY_MAG) {
+        if (core_index < compass->get_count() &&
+            compass->healthy(core_index) &&
+            compass->use_for_yaw(core_index)) {
+            // use core_index compass if it is healthy
+            magSelectIndex = core_index;
+        }
+    }
+}
+
+/*
+  update the baro selection
+ */
+void NavEKF3_core::update_baro_selection(void)
+{
+    auto &baro = AP::baro();
+
+    // in normal operation use the primary baro
+    selected_baro = baro.get_primary();
+
+    if (frontend->_affinity & EKF_AFFINITY_BARO) {
+        if (core_index < baro.num_instances() &&
+            baro.healthy(core_index)) {
+            // use core_index baro if it is healthy
+            selected_baro = core_index;
+        }
+    }
+}
+
+/*
+  update the airspeed selection
+ */
+void NavEKF3_core::update_airspeed_selection(void)
+{
+    const auto *arsp = AP::airspeed();
+    if (arsp == nullptr) {
+        return;
+    }
+
+    // in normal operation use the primary airspeed sensor
+    selected_airspeed = arsp->get_primary();
+
+    if (frontend->_affinity & EKF_AFFINITY_ARSP) {
+        if (core_index < arsp->get_num_sensors() &&
+            arsp->healthy(core_index) &&
+            arsp->use(core_index)) {
+            // use core_index airspeed if it is healthy
+            selected_airspeed = core_index;
+        }
+    }
+}
+
+/*
+  update sensor selections
+ */
+void NavEKF3_core::update_sensor_selection(void)
+{
+    update_gps_selection();
+    update_mag_selection();
+    update_baro_selection();
+    update_airspeed_selection();
 }
 
 /*
