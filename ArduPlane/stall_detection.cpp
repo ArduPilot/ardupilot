@@ -123,12 +123,11 @@ bool Plane::stall_detection_algorithm(bool allow_changing_state)
     // ----------------
 
     if (auto_state.sink_rate < -3) {
-        // we're going up fast, this is string evidence that we're not stalling
-        is_stalled = false;
-
+        // we're going up fast, this is strong evidence that we're not stalling
         if (allow_changing_state) {
             stall_state.stall_clear();
         }
+        return false;
     }
 
 
