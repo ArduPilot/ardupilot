@@ -203,13 +203,12 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
     uint16_t cell_volts[MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN];
     if (battery.has_cell_voltages(instance)) {
         const AP_BattMonitor::cells& batt_cells = battery.get_cell_voltages(instance);
-        for (uint8_t i = 0; i < ARRAY_SIZE(batt_cells.cells); i++) {
-            if (i < MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN) {
-                cell_volts[i] = batt_cells.cells[i];
-            } else {
-                // 10th cell reports the lowest voltage of the last 3 cells
-                cell_volts[MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN-1] = MIN(cell_volts[MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN-1], batt_cells.cells[i]);
-            }
+        // copy the first 10 cells
+        memcpy(cell_volts, batt_cells.cells, sizeof(cell_volts));
+        // 10th cell reports the lowest voltage of the last 3 cells
+        for (uint8_t i = MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN; i < ARRAY_SIZE(batt_cells.cells); i++) {
+            cell_volts[MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN-1] = MIN(cell_volts[MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN-1],
+                                                                              batt_cells.cells[i]);
         }
     } else {
         // for battery monitors that cannot provide voltages for individual cells the battery's total voltage is put into the first cell
