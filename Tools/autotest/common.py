@@ -2157,6 +2157,12 @@ class AutoTest(ABC):
                 raise ValueError("count %u not handled" % count)
         self.progress("Files same")
 
+    def assert_receive_message(self, type, timeout=1):
+        m = self.mav.recv_match(type=type, blocking=True, timeout=timeout)
+        if m is None:
+            raise NotAchievedException("Did not get %s" % type)
+        return m
+
     def assert_rally_files_same(self, file1, file2):
         self.progress("Comparing (%s) and (%s)" % (file1, file2, ))
         f1 = open(file1)
