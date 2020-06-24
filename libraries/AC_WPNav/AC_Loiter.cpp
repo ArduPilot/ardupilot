@@ -223,6 +223,13 @@ void AC_Loiter::update()
     _pos_control.update_xy_controller();
 }
 
+//set maximum horizontal speed
+void AC_Loiter::set_max_xy_speed(float max_xy_speed)
+{
+    max_xy_speed = MAX(max_xy_speed, LOITER_SPEED_MIN);
+    _speed_cms = max_xy_speed;
+}
+
 // sanity check parameters
 void AC_Loiter::sanity_check_params()
 {
