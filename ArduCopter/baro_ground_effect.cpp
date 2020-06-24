@@ -1,9 +1,5 @@
 #include "Copter.h"
 
-#ifndef EKF_TERRAIN_HGT_STABLE_SPEED_MAX
- # define EKF_TERRAIN_HGT_STABLE_SPEED_MAX  0.5f    // terrain height is only considered stable under 0.75m/s.  Note this is not related to terrain following
-#endif
-
 void Copter::update_ground_effect_detector(void)
 {
     if(!g2.gndeffect_comp_enabled || !motors->armed()) {
@@ -82,7 +78,6 @@ void Copter::update_ekf_terrain_height_stable()
         ahrs.set_terrain_hgt_stable(false);
     }
 
-    // consider terrain height stable if vehicle is taking off or landing and moving less than 0.5 m/s
-    const bool is_stable = (flightmode->is_taking_off() || flightmode->is_landing()) && (ahrs.groundspeed() <= EKF_TERRAIN_HGT_STABLE_SPEED_MAX);
-    ahrs.set_terrain_hgt_stable(is_stable);
+    // consider terrain height stable if vehicle is taking off or landing
+    ahrs.set_terrain_hgt_stable(flightmode->is_taking_off() || flightmode->is_landing());
 }
