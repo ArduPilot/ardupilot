@@ -430,6 +430,8 @@ struct PACKED log_GuidedTarget {
 };
 
 // Write a Guided mode target
+// pos_target is lat, lon, alt OR offset from ekf origin in cm OR roll, pitch, yaw target in centi-degrees
+// vel_target is cm/s
 void Copter::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target)
 {
     struct log_GuidedTarget pkt = {
@@ -604,7 +606,7 @@ const struct LogStructure Copter::log_structure[] = {
 // @Field: vZ: Target velocity, Z-Axis
     
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
-      "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ", "s-mmmnnn", "F-000000" },
+      "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ", "s-mmmnnn", "F-BBBBBB" },
 };
 
 void Copter::Log_Write_Vehicle_Startup_Messages()
