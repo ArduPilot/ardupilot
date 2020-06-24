@@ -23,7 +23,7 @@
 
 #include <AP_Baro/AP_Baro.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>     // board configuration library
-#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
+#include <AP_CANManager/AP_CANManager.h>
 #include <AP_Button/AP_Button.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Generator/AP_Generator_RichenPower.h>
@@ -197,9 +197,9 @@ protected:
     // board specific config
     AP_BoardConfig BoardConfig;
 
-#if HAL_WITH_UAVCAN
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS
     // board specific config for CAN bus
-    AP_BoardConfig_CAN BoardConfig_CAN;
+    AP_CANManager can_mgr;
 #endif
 
     // main loop scheduler
