@@ -1,7 +1,7 @@
 #pragma once
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_WITH_UAVCAN
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS
 #include <uavcan/uavcan.hpp>
 #include <AP_Common/Bitmask.h>
 #include <StorageManager/StorageManager.h>
@@ -30,7 +30,7 @@ class AP_UAVCAN_DNA_Server
 
     uint32_t last_verification_request;
     uint8_t curr_verifying_node;
-    uint8_t self_node_id[MAX_NUMBER_OF_CAN_DRIVERS];
+    uint8_t self_node_id[HAL_MAX_CAN_PROTOCOL_DRIVERS];
     bool nodeInfo_resp_rcvd;
 
     Bitmask<128> occupation_mask;
