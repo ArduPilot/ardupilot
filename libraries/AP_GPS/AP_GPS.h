@@ -632,6 +632,13 @@ private:
         GPS_AUTO_CONFIG_ENABLE  = 1
     };
 
+    enum class GPSAutoSwitch {
+        NONE        = 0,
+        USE_BEST    = 1,
+        BLEND       = 2,
+        USE_SECOND  = 3,
+    };
+
     // used for flight testing with GPS loss
     bool _force_disable_gps;
 
