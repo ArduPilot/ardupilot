@@ -2512,9 +2512,9 @@ struct PACKED log_Arm_Disarm {
     { LOG_VISUALODOM_MSG, sizeof(log_VisualOdom), \
       "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf", "ssrrrmmm-", "FF000000-" }, \
     { LOG_VISUALPOS_MSG, sizeof(log_VisualPosition), \
-      "VISP", "QQIffffffffb", "TimeUS,RTimeUS,CTimeMS,PX,PY,PZ,Roll,Pitch,Yaw,PErr,AErr,RstCnt", "sssmmmddhmd-", "FFC00000000-" }, \
+      "VISP", "QQIffffffffB", "TimeUS,RTimeUS,CTimeMS,PX,PY,PZ,Roll,Pitch,Yaw,PErr,AErr,RstCnt", "sssmmmddhmd-", "FFC00000000-" }, \
     { LOG_VISUALVEL_MSG, sizeof(log_VisualVelocity), \
-      "VISV", "QQIffffb", "TimeUS,RTimeUS,CTimeMS,VX,VY,VZ,VErr,RstCnt", "sssnnnn-", "FFC0000-" }, \
+      "VISV", "QQIffffB", "TimeUS,RTimeUS,CTimeMS,VX,VY,VZ,VErr,RstCnt", "sssnnnn-", "FFC0000-" }, \
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow), \
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEnn", "F-0000" }, \
     { LOG_WHEELENCODER_MSG, sizeof(log_WheelEncoder), \
