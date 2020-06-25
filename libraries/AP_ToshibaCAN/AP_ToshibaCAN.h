@@ -78,7 +78,7 @@ private:
     // telemetry data (rpm, voltage)
     HAL_Semaphore _telem_sem;
     struct telemetry_info_t {
-        uint16_t rpm;               // rpm
+        int16_t rpm;                // rpm
         uint16_t voltage_cv;        // voltage in centi-volts
         uint16_t current_ca;        // current in centi-amps
         uint16_t esc_temp;          // esc temperature in degrees
@@ -156,7 +156,7 @@ private:
         struct PACKED {
             uint8_t rxng:1;
             uint8_t state:7;
-            uint16_t rpm;
+            int16_t rpm;
             uint16_t current_ma;    // current in milliamps
             uint16_t voltage_mv;    // voltage in millivolts
             uint8_t position_est_error;
