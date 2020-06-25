@@ -21,11 +21,14 @@ struct {
     float roll_cd;
     float pitch_cd;
     float yaw_cd;
+    float roll_rate_cds;
+    float pitch_rate_cds;
     float yaw_rate_cds;
     float climb_rate_cms;   // climb rate in cms.  Used if use_thrust is false
     float thrust;           // thrust from -1 to 1.  Used if use_thrust is true
     bool use_yaw_rate;
     bool use_thrust;
+    bool use_body_rate;
 } static guided_angle_state;
 
 struct Guided_Limit {
@@ -468,6 +471,15 @@ bool ModeGuided::stabilizing_vel_xy() const
     return !((copter.g2.guided_options.get() & uint32_t(Options::DoNotStabilizeVelocityXY)) != 0);
 }
 
+// set guided mode body-frame rates
+void ModeGuided::set_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds, bool use_body_rate)
+{
+    guided_angle_state.use_body_rate = use_body_rate;
+    guided_angle_state.roll_rate_cds = ToDeg(roll_rate_bf_cds) * 100.0f;
+    guided_angle_state.pitch_rate_cds = ToDeg(pitch_rate_bf_cds) * 100.0f;
+    guided_angle_state.yaw_rate_cds = ToDeg(yaw_rate_bf_cds) * 100.0f;
+}
+
 // set guided mode angle target and climbrate
 void ModeGuided::set_angle(const Quaternion &q, float climb_rate_cms_or_thrust, bool use_yaw_rate, float yaw_rate_rads, bool use_thrust)
 {
@@ -867,6 +879,8 @@ void ModeGuided::angle_control_run()
     // call attitude controller
     if (guided_angle_state.use_yaw_rate) {
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(roll_in, pitch_in, yaw_rate_in);
+    } else if (guided_angle_state.use_body_rate) {
+        attitude_control->input_rate_bf_roll_pitch_yaw(guided_angle_state.roll_rate_cds, guided_angle_state.pitch_rate_cds, guided_angle_state.yaw_rate_cds);
     } else {
         attitude_control->input_euler_angle_roll_pitch_yaw(roll_in, pitch_in, yaw_in, true);
     }
