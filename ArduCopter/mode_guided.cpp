@@ -602,6 +602,15 @@ bool ModeGuided::use_wpnav_for_position_control() const
     return ((copter.g2.guided_options.get() & uint32_t(Options::WPNavUsedForPosControl)) != 0);
 }
 
+// set guided mode body-frame rates
+void ModeGuided::set_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds, bool use_body_rate)
+{
+    guided_angle_state.use_body_rate = use_body_rate;
+    guided_angle_state.roll_rate_cds = ToDeg(roll_rate_bf_cds) * 100.0f;
+    guided_angle_state.pitch_rate_cds = ToDeg(pitch_rate_bf_cds) * 100.0f;
+    guided_angle_state.yaw_rate_cds = ToDeg(yaw_rate_bf_cds) * 100.0f;
+}
+
 // set guided mode angle target and climbrate
 void ModeGuided::set_angle(const Quaternion &q, float climb_rate_cms_or_thrust, bool use_yaw_rate, float yaw_rate_rads, bool use_thrust)
 {
