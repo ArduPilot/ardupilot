@@ -554,13 +554,9 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
             switch (ch_flag) {
                 case AuxSwitchPos::HIGH:
                     copter.standby_active = true;
-                    AP::logger().Write_Event(LogEvent::STANDBY_ENABLE);
-                    gcs().send_text(MAV_SEVERITY_INFO, "Stand By Enabled");
                     break;
                 default:
                     copter.standby_active = false;
-                    AP::logger().Write_Event(LogEvent::STANDBY_DISABLE);
-                    gcs().send_text(MAV_SEVERITY_INFO, "Stand By Disabled");
                     break;
                 }
             break;
