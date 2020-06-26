@@ -625,6 +625,8 @@ struct PACKED log_VisualPosition {
     float roll;     // degrees
     float pitch;    // degrees
     float yaw;      // degrees
+    float pos_err;  // meters
+    float ang_err;  // radians
     uint8_t reset_counter;
 };
 
@@ -796,7 +798,7 @@ struct PACKED log_Current_Cells {
     uint64_t time_us;
     uint8_t  instance;
     float    voltage;
-    uint16_t cell_voltages[10];
+    uint16_t cell_voltages[12];
 };
 
 struct PACKED log_Compass {
@@ -1169,6 +1171,7 @@ struct PACKED log_OABendyRuler {
     uint8_t active;
     uint16_t target_yaw;
     uint16_t yaw;
+    bool resist_chg;
     float margin;
     int32_t final_lat;
     int32_t final_lng;
@@ -1393,6 +1396,8 @@ struct PACKED log_Arm_Disarm {
 // @Field: V8: eighth cell voltage
 // @Field: V9: ninth cell voltage
 // @Field: V10: tenth cell voltage
+// @Field: V11: eleventh cell voltage
+// @Field: V12: twelfth cell voltage
 
 // @LoggerMessage: BCN
 // @Description: Beacon informtaion
@@ -1840,6 +1845,7 @@ struct PACKED log_Arm_Disarm {
 // @Field: Active: True if Bendy Ruler avoidance is being used
 // @Field: DesYaw: Best yaw chosen to avoid obstacle
 // @Field: Yaw: Current vehicle yaw
+// @Field: ResChg: True if BendyRuler resisted changing bearing and continued in last calculated bearing
 // @Field: Mar: Margin from path to obstacle on best yaw chosen
 // @Field: DLat: Destination latitude
 // @Field: DLng: Destination longitude
@@ -2126,7 +2132,7 @@ struct PACKED log_Arm_Disarm {
 // @LoggerMessage: VISP
 // @Description: Vision Position
 // @Field: TimeUS: System time
-// @Field: RemTimeUS: Remote system time
+// @Field: RTimeUS: Remote system time
 // @Field: CTimeMS: Corrected system time
 // @Field: PX: Position X-axis (North-South)
 // @Field: PY: Position Y-axis (East-West)
@@ -2134,18 +2140,20 @@ struct PACKED log_Arm_Disarm {
 // @Field: Roll: Roll lean angle
 // @Field: Pitch: Pitch lean angle
 // @Field: Yaw: Yaw angle
-// @Field: ResetCnt: Position reset counter
+// @Field: PErr: Position estimate error
+// @Field: AErr: Attitude estimate error
+// @Field: RstCnt: Position reset counter
 
 // @LoggerMessage: VISV
 // @Description: Vision Velocity
 // @Field: TimeUS: System time
-// @Field: RemTimeUS: Remote system time
+// @Field: RTimeUS: Remote system time
 // @Field: CTimeMS: Corrected system time
 // @Field: VX: Velocity X-axis (North-South)
 // @Field: VY: Velocity Y-axis (East-West)
 // @Field: VZ: Velocity Z-axis (Down-Up)
 // @Field: VErr: Velocity estimate error
-// @Field: ResetCnt: Position reset counter
+// @Field: RstCnt: Velocity reset counter
 
 // @LoggerMessage: WENC
 // @Description: Wheel encoder measurements
@@ -2362,7 +2370,7 @@ struct PACKED log_Arm_Disarm {
     { LOG_CURRENT_MSG, sizeof(log_Current),                     \
       "BAT", "QBfffffcf", "TimeUS,Instance,Volt,VoltR,Curr,CurrTot,EnrgTot,Temp,Res", "s#vvAiJOw", "F-000!/?0" },  \
     { LOG_CURRENT_CELLS_MSG, sizeof(log_Current_Cells), \
-      "BCL", "QBfHHHHHHHHHH", "TimeUS,Instance,Volt,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10", "s#vvvvvvvvvvv", "F-00000000000" }, \
+      "BCL", "QBfHHHHHHHHHHHH", "TimeUS,Instance,Volt,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10,V11,V12", "s#vvvvvvvvvvvvv", "F-0CCCCCCCCCCCC" }, \
 	{ LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
       "ATT", "QccccCCCC", "TimeUS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw", "sddddhhdh", "FBBBBBBBB" }, \
     { LOG_COMPASS_MSG, sizeof(log_Compass), \
@@ -2382,7 +2390,7 @@ struct PACKED log_Arm_Disarm {
     { LOG_SRTL_MSG, sizeof(log_SRTL), \
       "SRTL", "QBHHBfff", "TimeUS,Active,NumPts,MaxPts,Action,N,E,D", "s----mmm", "F----000" }, \
     { LOG_OA_BENDYRULER_MSG, sizeof(log_OABendyRuler), \
-      "OABR","QBHHfLLLL","TimeUS,Active,DesYaw,Yaw,Mar,DLat,DLng,OALat,OALng", "sbddmDUDU", "F----GGGG" }, \
+      "OABR","QBHHBfLLLL","TimeUS,Active,DesYaw,Yaw,ResChg,Mar,DLat,DLng,OALat,OALng", "sbdd-mDUDU", "F-----GGGG" }, \
     { LOG_OA_DIJKSTRA_MSG, sizeof(log_OADijkstra), \
       "OADJ","QBBBBLLLL","TimeUS,State,Err,CurrPoint,TotPoints,DLat,DLng,OALat,OALng", "sbbbbDUDU", "F----GGGG" }, \
     { LOG_IMU2_MSG, sizeof(log_IMU), \
@@ -2504,9 +2512,9 @@ struct PACKED log_Arm_Disarm {
     { LOG_VISUALODOM_MSG, sizeof(log_VisualOdom), \
       "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf", "ssrrrmmm-", "FF000000-" }, \
     { LOG_VISUALPOS_MSG, sizeof(log_VisualPosition), \
-      "VISP", "QQIffffffb", "TimeUS,RemTimeUS,CTimeMS,PX,PY,PZ,Roll,Pitch,Yaw,ResetCnt", "sssmmmddh-", "FFC000000-" }, \
+      "VISP", "QQIffffffffB", "TimeUS,RTimeUS,CTimeMS,PX,PY,PZ,Roll,Pitch,Yaw,PErr,AErr,RstCnt", "sssmmmddhmd-", "FFC00000000-" }, \
     { LOG_VISUALVEL_MSG, sizeof(log_VisualVelocity), \
-      "VISV", "QQIffffb", "TimeUS,RemTimeUS,CTimeMS,VX,VY,VZ,VErr,ResetCnt", "sssnnnn-", "FFC0000-" }, \
+      "VISV", "QQIffffB", "TimeUS,RTimeUS,CTimeMS,VX,VY,VZ,VErr,RstCnt", "sssnnnn-", "FFC0000-" }, \
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow), \
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEnn", "F-0000" }, \
     { LOG_WHEELENCODER_MSG, sizeof(log_WheelEncoder), \

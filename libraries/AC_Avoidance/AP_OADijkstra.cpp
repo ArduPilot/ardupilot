@@ -37,16 +37,6 @@ AP_OADijkstra::AP_OADijkstra() :
 // returns DIJKSTRA_STATE_SUCCESS and populates origin_new and destination_new if avoidance is required
 AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current_loc, const Location &destination, Location& origin_new, Location& destination_new)
 {
-    // require ekf origin to have been set
-    struct Location ekf_origin {};
-    {
-        WITH_SEMAPHORE(AP::ahrs().get_semaphore());
-        if (!AP::ahrs().get_origin(ekf_origin)) {
-            AP::logger().Write_OADijkstra(DIJKSTRA_STATE_NOT_REQUIRED, 0, 0, 0, destination, destination);
-            return DIJKSTRA_STATE_NOT_REQUIRED;
-        }
-    }
-
     WITH_SEMAPHORE(AP::fence()->polyfence().get_loaded_fence_semaphore());
 
     // avoidance is not required if no fences
@@ -260,6 +250,14 @@ bool AP_OADijkstra::check_inclusion_polygon_updated() const
 bool AP_OADijkstra::create_inclusion_polygon_with_margin(float margin_cm, AP_OADijkstra_Error &err_id)
 {
     const AC_Fence *fence = AC_Fence::get_singleton();
+
+    // skip unnecessary retry to build inclusion polygon if previous fence points have not changed 
+    if (_inclusion_polygon_update_ms == fence->polyfence().get_inclusion_polygon_update_ms()) {
+        return false;
+    }
+
+    _inclusion_polygon_update_ms = fence->polyfence().get_inclusion_polygon_update_ms();
+
     if (fence == nullptr) {
         err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_FENCE_DISABLED;
         return false;
@@ -275,10 +273,6 @@ bool AP_OADijkstra::create_inclusion_polygon_with_margin(float margin_cm, AP_OAD
     for (uint8_t i = 0; i < num_inclusion_polygons; i++) {
         uint16_t num_points;
         const Vector2f* boundary = fence->polyfence().get_inclusion_polygon(i, num_points);
-        if (num_points < 3) {
-            // ignore exclusion polygons with less than 3 points
-            continue;
-        }
 
         // expand array if required
         if (!_inclusion_polygon_pts.expand_to_hold(_inclusion_polygon_numpoints + num_points)) {
@@ -328,10 +322,6 @@ bool AP_OADijkstra::create_inclusion_polygon_with_margin(float margin_cm, AP_OAD
         // update total number of points
         _inclusion_polygon_numpoints += num_points;
     }
-
-    // record fence update time so we don't process these inclusion polygons again
-    _inclusion_polygon_update_ms = fence->polyfence().get_inclusion_polygon_update_ms();
-
     return true;
 }
 
@@ -351,6 +341,14 @@ bool AP_OADijkstra::check_exclusion_polygon_updated() const
 bool AP_OADijkstra::create_exclusion_polygon_with_margin(float margin_cm, AP_OADijkstra_Error &err_id)
 {
     const AC_Fence *fence = AC_Fence::get_singleton();
+
+    // skip unnecessary retry to build exclusion polygon if previous fence points have not changed 
+    if (_exclusion_polygon_update_ms == fence->polyfence().get_exclusion_polygon_update_ms()) {
+        return false;
+    }
+
+    _exclusion_polygon_update_ms = fence->polyfence().get_exclusion_polygon_update_ms();
+
     if (fence == nullptr) {
         err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_FENCE_DISABLED;
         return false;
@@ -366,11 +364,7 @@ bool AP_OADijkstra::create_exclusion_polygon_with_margin(float margin_cm, AP_OAD
     for (uint8_t i = 0; i < num_exclusion_polygons; i++) {
         uint16_t num_points;
         const Vector2f* boundary = fence->polyfence().get_exclusion_polygon(i, num_points);
-        if (num_points < 3) {
-            // ignore exclusion polygons with less than 3 points
-            continue;
-        }
-
+   
         // expand array if required
         if (!_exclusion_polygon_pts.expand_to_hold(_exclusion_polygon_numpoints + num_points)) {
             err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_OUT_OF_MEMORY;
@@ -419,10 +413,6 @@ bool AP_OADijkstra::create_exclusion_polygon_with_margin(float margin_cm, AP_OAD
         // update total number of points
         _exclusion_polygon_numpoints += num_points;
     }
-
-    // record fence update time so we don't process these exclusion polygons again
-    _exclusion_polygon_update_ms = fence->polyfence().get_exclusion_polygon_update_ms();
-
     return true;
 }
 
@@ -543,7 +533,7 @@ bool AP_OADijkstra::intersects_fence(const Vector2f &seg_start, const Vector2f &
     uint16_t num_points = 0;
     for (uint8_t i = 0; i < fence->polyfence().get_inclusion_polygon_count(); i++) {
         const Vector2f* boundary = fence->polyfence().get_inclusion_polygon(i, num_points);
-        if ((boundary != nullptr) && (num_points >= 3)) {
+        if (boundary != nullptr) {
             Vector2f intersection;
             if (Polygon_intersects(boundary, num_points, seg_start, seg_end, intersection)) {
                 return true;
@@ -554,7 +544,7 @@ bool AP_OADijkstra::intersects_fence(const Vector2f &seg_start, const Vector2f &
     // determine if segment crosses any of the exclusion polygons
     for (uint8_t i = 0; i < fence->polyfence().get_exclusion_polygon_count(); i++) {
         const Vector2f* boundary = fence->polyfence().get_exclusion_polygon(i, num_points);
-        if ((boundary != nullptr) && (num_points >= 3)) {
+        if (boundary != nullptr) {
             Vector2f intersection;
             if (Polygon_intersects(boundary, num_points, seg_start, seg_end, intersection)) {
                 return true;

@@ -309,6 +309,21 @@ bool Copter::set_target_velocity_NED(const Vector3f& vel_ned)
     return true;
 }
 
+bool Copter::set_target_angle_and_climbrate(float roll_deg, float pitch_deg, float yaw_deg, float climb_rate_ms, bool use_yaw_rate, float yaw_rate_degs)
+{
+    // exit if vehicle is not in Guided mode or Auto-Guided mode
+    if (!flightmode->in_guided_mode()) {
+        return false;
+    }
+
+    Quaternion q;
+    q.from_euler(radians(roll_deg),radians(pitch_deg),radians(yaw_deg));
+
+    mode_guided.set_angle(q,climb_rate_ms*100,use_yaw_rate,radians(yaw_rate_degs));
+    return true;
+}
+
+
 // rc_loops - reads user input from transmitter/receiver
 // called at 100hz
 void Copter::rc_loop()
@@ -339,8 +354,7 @@ void Copter::throttle_loop()
 
     // compensate for ground effect (if enabled)
     update_ground_effect_detector();
-
-    update_dynamic_notch();
+    update_ekf_terrain_height_stable();
 }
 
 // update_batt_compass - read battery and compass
@@ -545,14 +559,14 @@ void Copter::update_simple_mode(void)
     float rollx, pitchx;
 
     // exit immediately if no new radio frame or not in simple mode
-    if (ap.simple_mode == 0 || !ap.new_radio_frame) {
+    if (simple_mode == SimpleMode::NONE || !ap.new_radio_frame) {
         return;
     }
 
     // mark radio frame as consumed
     ap.new_radio_frame = false;
 
-    if (ap.simple_mode == 1) {
+    if (simple_mode == SimpleMode::SIMPLE) {
         // rotate roll, pitch input by -initial simple heading (i.e. north facing)
         rollx = channel_roll->get_control_in()*simple_cos_yaw - channel_pitch->get_control_in()*simple_sin_yaw;
         pitchx = channel_roll->get_control_in()*simple_sin_yaw + channel_pitch->get_control_in()*simple_cos_yaw;
@@ -572,7 +586,7 @@ void Copter::update_simple_mode(void)
 void Copter::update_super_simple_bearing(bool force_update)
 {
     if (!force_update) {
-        if (ap.simple_mode != 2) {
+        if (simple_mode != SimpleMode::SUPERSIMPLE) {
             return;
         }
         if (home_distance() < SUPER_SIMPLE_RADIUS) {
@@ -616,6 +630,8 @@ void Copter::update_altitude()
         Log_Write_Control_Tuning();
 #if HAL_GYROFFT_ENABLED
         gyro_fft.write_log_messages();
+#else
+        write_notch_log_messages();
 #endif
     }
 }

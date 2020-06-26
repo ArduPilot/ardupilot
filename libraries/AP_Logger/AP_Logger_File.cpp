@@ -34,6 +34,9 @@ extern const AP_HAL::HAL& hal;
 #define HAL_LOGGER_WRITE_CHUNK_SIZE 4096
 #endif
 
+#define MB_to_B 1000000
+#define B_to_MB 0.000001
+
 /*
   constructor
  */
@@ -55,10 +58,8 @@ AP_Logger_File::AP_Logger_File(AP_Logger &front,
 }
 
 
-void AP_Logger_File::Init()
+void AP_Logger_File::ensure_log_directory_exists()
 {
-    AP_Logger_Backend::Init();
-    // create the log directory if need be
     int ret;
     struct stat st;
 
@@ -75,6 +76,11 @@ void AP_Logger_File::Init()
     if (ret == -1 && errno != EEXIST) {
         printf("Failed to create log directory %s : %s\n", _log_directory, strerror(errno));
     }
+}
+
+void AP_Logger_File::Init()
+{
+    AP_Logger_Backend::Init();
 
     // determine and limit file backend buffersize
     uint32_t bufsize = _front._params.file_bufsize;
@@ -190,22 +196,6 @@ int64_t AP_Logger_File::disk_space()
     return AP::FS().disk_space(_log_directory);
 }
 
-// returns the available space in _log_directory as a percentage
-// returns -1.0f on error
-float AP_Logger_File::avail_space_percent()
-{
-    int64_t avail = disk_space_avail();
-    if (avail == -1) {
-        return -1.0f;
-    }
-    int64_t space = disk_space();
-    if (space == -1) {
-        return -1.0f;
-    }
-
-    return (avail/(float)space) * 100;
-}
-
 // find_oldest_log - find oldest log in _log_directory
 // returns 0 if no log was found
 uint16_t AP_Logger_File::find_oldest_log()
@@ -286,17 +276,19 @@ void AP_Logger_File::Prep_MinSpace()
         return;
     }
 
+    const int64_t target_free = (int64_t)_front._params.min_MB_free * MB_to_B;
+
     _cached_oldest_log = 0;
 
     uint16_t log_to_remove = first_log_to_remove;
 
     uint16_t count = 0;
     do {
-        float avail = avail_space_percent();
-        if (is_equal(avail, -1.0f)) {
+        int64_t avail = disk_space_avail();
+        if (avail == -1) {
             break;
         }
-        if (avail >= min_avail_space_percent) {
+        if (avail >= target_free) {
             break;
         }
         if (count++ > MAX_LOG_FILES+10) {
@@ -310,8 +302,8 @@ void AP_Logger_File::Prep_MinSpace()
             break;
         }
         if (file_exists(filename_to_remove)) {
-            hal.console->printf("Removing (%s) for minimum-space requirements (%.2f%% < %.0f%%)\n",
-                                filename_to_remove, (double)avail, (double)min_avail_space_percent);
+            hal.console->printf("Removing (%s) for minimum-space requirements (%.0fMB < %.0fMB)\n",
+                                filename_to_remove, (double)avail*B_to_MB, (double)target_free*B_to_MB);
             EXPECT_DELAY_MS(2000);
             if (AP::FS().unlink(filename_to_remove) == -1) {
                 hal.console->printf("Failed to remove %s: %s\n", filename_to_remove, strerror(errno));
@@ -352,7 +344,12 @@ bool AP_Logger_File::NeedPrep()
         return false;
     }
 
-    if (avail_space_percent() < min_avail_space_percent) {
+    const int64_t actual = disk_space_avail();
+    if (actual == -1) {
+        return false;
+    }
+
+    if (actual < (int64_t)_front._params.min_MB_free * MB_to_B) {
         return true;
     }
 
@@ -836,6 +833,9 @@ void AP_Logger_File::start_new_log(void)
     uint64_t utc_usec;
     _need_rtc_update = !AP::rtc().get_utc_usec(utc_usec);
 #endif
+
+    // create the log directory if need be
+    ensure_log_directory_exists();
 
     EXPECT_DELAY_MS(3000);
     _write_fd = AP::FS().open(_write_filename, O_WRONLY|O_CREAT|O_TRUNC);

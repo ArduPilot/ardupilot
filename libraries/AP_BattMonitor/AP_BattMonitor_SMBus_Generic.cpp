@@ -5,14 +5,21 @@
 #include "AP_BattMonitor_SMBus_Generic.h"
 #include <utility>
 
-uint8_t maxell_cell_ids[] = { 0x3f,  // cell 1
-                              0x3e,  // cell 2
-                              0x3d,  // cell 3
-                              0x3c,  // cell 4
-                              0x3b,  // cell 5
-                              0x3a}; // cell 6
+uint8_t smbus_cell_ids[] = { 0x3f,  // cell 1
+                             0x3e,  // cell 2
+                             0x3d,  // cell 3
+                             0x3c,  // cell 4
+                             0x3b,  // cell 5
+                             0x3a,  // cell 6
+                             0x39,  // cell 7
+                             0x38,  // cell 8
+                             0x37,  // cell 9
+                             0x36,  // cell 10
+                             0x35,  // cell 11
+                             0x34}; // cell 12
 
 #define SMBUS_READ_BLOCK_MAXIMUM_TRANSFER    0x20   // A Block Read or Write is allowed to transfer a maximum of 32 data bytes.
+#define SMBUS_CELL_COUNT_CHECK_TIMEOUT       15     // check cell count for up to 15 seconds
 
 /*
  * Other potentially useful registers, listed here for future use
@@ -54,13 +61,36 @@ void AP_BattMonitor_SMBus_Generic::timer()
         _state.healthy = true;
     }
 
+    // assert that BATTMONITOR_SMBUS_NUM_CELLS_MAX must be no more than smbus_cell_ids
+    static_assert(BATTMONITOR_SMBUS_NUM_CELLS_MAX <= ARRAY_SIZE(smbus_cell_ids), "BATTMONITOR_SMBUS_NUM_CELLS_MAX must be no more than smbus_cell_ids");
+
+    // check cell count
+    if (!_cell_count_fixed) {
+        if (_state.healthy) {
+            // when battery first becomes healthy, start check of cell count
+            if (_cell_count_check_start_us == 0) {
+                _cell_count_check_start_us = tnow;
+            }
+            if (tnow - _cell_count_check_start_us > (SMBUS_CELL_COUNT_CHECK_TIMEOUT * 1e6)) {
+                // give up checking cell count after 15sec of continuous healthy battery reads
+                _cell_count_fixed = true;
+            }
+        } else {
+            // if battery becomes unhealthy restart cell count check
+            _cell_count_check_start_us = 0;
+        }
+    }
+
     // read cell voltages
-    for (uint8_t i = 0; i < BATTMONITOR_SMBUS_MAXELL_NUM_CELLS; i++) {
-        if (read_word(maxell_cell_ids[i], data)) {
+    for (uint8_t i = 0; i < (_cell_count_fixed ? _cell_count : BATTMONITOR_SMBUS_NUM_CELLS_MAX); i++) {
+        if (read_word(smbus_cell_ids[i], data) && (data > 0) && (data < UINT16_MAX)) {
             _has_cell_voltages = true;
             _state.cell_voltages.cells[i] = data;
-            _last_cell_update_ms[i] = tnow;
-        } else if ((tnow - _last_cell_update_ms[i]) > AP_BATTMONITOR_SMBUS_TIMEOUT_MICROS) {
+            _last_cell_update_us[i] = tnow;
+            if (!_cell_count_fixed) {
+                _cell_count = MAX(_cell_count, i + 1);
+            }
+        } else if ((tnow - _last_cell_update_us[i]) > AP_BATTMONITOR_SMBUS_TIMEOUT_MICROS) {
             _state.cell_voltages.cells[i] = UINT16_MAX;
         }
     }

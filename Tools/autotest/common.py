@@ -979,15 +979,18 @@ class AutoTest(ABC):
 
         self.initialise_after_reboot_sitl()
 
-    def set_streamrate(self, streamrate):
+    def set_streamrate(self, streamrate, timeout=10):
         tstart = time.time()
         while True:
-            if time.time() - tstart > 10:
+            if time.time() - tstart > timeout:
                 raise AutoTestTimeoutException("stream rate change failed")
 
             self.mavproxy.send("set streamrate %u\n" % (streamrate))
             self.mavproxy.send("set streamrate\n")
-            self.mavproxy.expect('.*streamrate ((?:-)?[0-9]+)', timeout=1)
+            try:
+                self.mavproxy.expect('.*streamrate ((?:-)?[0-9]+)', timeout=1)
+            except pexpect.TIMEOUT:
+                continue
             rate = self.mavproxy.match.group(1)
             print("rate: %s" % str(rate))
             if int(rate) == int(streamrate):
@@ -996,13 +999,20 @@ class AutoTest(ABC):
         if streamrate <= 0:
             return
 
-        self.drain_mav()
-        m = self.mav.recv_match(type='SYSTEM_TIME',
-                                blocking=True,
-                                timeout=10)
-        print("Received (%s)" % str(m))
-        if m is None:
-            raise NotAchievedException("Did not get SYSTEM_TIME")
+        self.progress("Waiting for SYSTEM_TIME for confirmation streams are working")
+        self.drain_mav_unparsed()
+        timeout = 60
+        tstart = time.time()
+        while True:
+            self.drain_all_pexpects()
+            if time.time() - tstart > timeout:
+                raise NotAchievedException("Did not get SYSTEM_TIME within %f seconds" % timeout)
+            m = self.mav.recv_match(timeout=0.1)
+            if m is None:
+                continue
+#            self.progress("Received (%s)" % str(m))
+            if m.get_type() == 'SYSTEM_TIME':
+                break
         self.drain_mav()
 
     def htree_from_xml(self, xml_filepath):
@@ -1503,7 +1513,9 @@ class AutoTest(ABC):
                 continue
             util.pexpect_drain(p)
 
-    def drain_mav_unparsed(self, quiet=False):
+    def drain_mav_unparsed(self, mav=None, quiet=False, freshen_sim_time=False):
+        if mav is None:
+            mav = self.mav
         count = 0
         tstart = time.time()
         while True:
@@ -1519,8 +1531,12 @@ class AutoTest(ABC):
         else:
             rate = "%f/s" % (count/float(tdelta),)
         self.progress("Drained %u bytes from mav (%s).  These were unparsed." % (count, rate))
+        if freshen_sim_time:
+            self.get_sim_time()
 
-    def drain_mav(self, mav=None):
+    def drain_mav(self, mav=None, unparsed=False, quiet=False):
+        if unparsed:
+            return self.drain_mav_unparsed(quiet=quiet, mav=mav)
         if mav is None:
             mav = self.mav
         count = 0
@@ -1786,7 +1802,7 @@ class AutoTest(ABC):
         """Get SITL time in seconds."""
         m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True, timeout=timeout)
         if m is None:
-            raise AutoTestTimeoutException("Did not get SYSTEM_TIME message")
+            raise AutoTestTimeoutException("Did not get SYSTEM_TIME message after %f seconds" % timeout)
         return m.time_boot_ms * 1.0e-3
 
     def get_sim_time_cached(self):
@@ -2140,6 +2156,12 @@ class AutoTest(ABC):
                     continue
                 raise ValueError("count %u not handled" % count)
         self.progress("Files same")
+
+    def assert_receive_message(self, type, timeout=1):
+        m = self.mav.recv_match(type=type, blocking=True, timeout=timeout)
+        if m is None:
+            raise NotAchievedException("Did not get %s" % type)
+        return m
 
     def assert_rally_files_same(self, file1, file2):
         self.progress("Comparing (%s) and (%s)" % (file1, file2, ))
@@ -2930,6 +2952,7 @@ class AutoTest(ABC):
                 target_compid=None,
                 timeout=10,
                 quiet=False):
+        self.drain_mav_unparsed()
         self.get_sim_time() # required for timeout in run_cmd_get_ack to work
         self.send_cmd(command,
                       p1,
@@ -3469,8 +3492,8 @@ class AutoTest(ABC):
             if m is None:
                 continue
             m_value = getattr(m, channel_field)
-            self.progress("RC_CHANNELS.%s=%u want=%u" %
-                          (channel_field, m_value, value))
+            self.progress("RC_CHANNELS.%s=%u want=%u time_boot_ms=%u" %
+                          (channel_field, m_value, value, m.time_boot_ms))
             if m_value is None:
                 raise ValueError("message (%s) has no field %s" %
                                  (str(m), channel_field))
@@ -3953,12 +3976,12 @@ class AutoTest(ABC):
         self.progress("Starting MAVLink connection")
         self.get_mavlink_connection_going()
 
-        self.apply_defaultfile_parameters()
-
         util.expect_setup_callback(self.mavproxy, self.expect_callback)
 
         self.expect_list_clear()
         self.expect_list_extend([self.sitl, self.mavproxy])
+
+        self.apply_defaultfile_parameters()
 
         self.progress("Ready to start testing!")
 
@@ -4384,7 +4407,7 @@ class AutoTest(ABC):
         for count in range(2, compass_count + 1):
             self.verify_parameter_values({"COMPASS_ORIENT%d" % count: 0})
 
-    def test_mag_calibration(self, compass_count=3, timeout=500):
+    def test_mag_calibration(self, compass_count=3, timeout=1000):
         ex = None
         self.set_parameter("AHRS_EKF_TYPE", 10)
         self.set_parameter("SIM_GND_BEHAV", 0)
@@ -5107,6 +5130,8 @@ class AutoTest(ABC):
 
     def set_message_rate_hz(self, id, rate_hz):
         '''set a message rate in Hz; 0 for original, -1 to disable'''
+        if type(id) == str:
+            id = eval("mavutil.mavlink.MAVLINK_MSG_ID_%s" % id)
         if rate_hz == 0 or rate_hz == -1:
             set_interval = rate_hz
         else:

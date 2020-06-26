@@ -430,6 +430,8 @@ struct PACKED log_GuidedTarget {
 };
 
 // Write a Guided mode target
+// pos_target is lat, lon, alt OR offset from ekf origin in cm OR roll, pitch, yaw target in centi-degrees
+// vel_target is cm/s
 void Copter::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target)
 {
     struct log_GuidedTarget pkt = {
@@ -555,7 +557,6 @@ const struct LogStructure Copter::log_structure[] = {
 // @Field: LastMeasUS: Time when target was last detected
 // @Field: EKFOutl: EKF's outlier count
 // @Field: Est: Type of estimator used
-
 #if PRECISION_LANDING == ENABLED
     { LOG_PRECLAND_MSG, sizeof(log_Precland),
       "PL",    "QBBfffffffIIB",    "TimeUS,Heal,TAcq,pX,pY,vX,vY,mX,mY,mZ,LastMeasUS,EKFOutl,Est", "s--ddmmddms--","F--00BB00BC--" },
@@ -576,7 +577,7 @@ const struct LogStructure Copter::log_structure[] = {
 
     { LOG_SYSIDD_MSG, sizeof(log_SysIdD),
       "SIDD", "Qfffffffff",  "TimeUS,Time,Targ,F,Gx,Gy,Gz,Ax,Ay,Az", "ss-zkkkooo", "F---------" },
-   
+
 // @LoggerMessage: SIDS
 // @Description: System ID settings
 // @Field: TimeUS: Time since system startup
@@ -591,7 +592,7 @@ const struct LogStructure Copter::log_structure[] = {
 
     { LOG_SYSIDS_MSG, sizeof(log_SysIdS),
       "SIDS", "QBfffffff",  "TimeUS,Ax,Mag,FSt,FSp,TFin,TC,TR,TFout", "s--ssssss", "F--------" },
-    
+
 // @LoggerMessage: GUID
 // @Description: Guided mode target information
 // @Field: TimeUS: Time since system startup
@@ -602,9 +603,9 @@ const struct LogStructure Copter::log_structure[] = {
 // @Field: vX: Target velocity, X-Axis
 // @Field: vY: Target velocity, Y-Axis
 // @Field: vZ: Target velocity, Z-Axis
-    
+
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
-      "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ", "s-mmmnnn", "F-000000" },
+      "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ", "s-mmmnnn", "F-BBBBBB" },
 };
 
 void Copter::Log_Write_Vehicle_Startup_Messages()

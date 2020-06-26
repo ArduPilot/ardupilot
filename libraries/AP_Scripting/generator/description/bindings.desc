@@ -164,6 +164,8 @@ singleton AP_Vehicle method start_takeoff boolean float (-LOCATION_ALT_MAX_M*100
 singleton AP_Vehicle method set_target_location boolean Location
 singleton AP_Vehicle method get_target_location boolean Location'Null
 singleton AP_Vehicle method set_target_velocity_NED boolean Vector3f
+singleton AP_Vehicle method set_target_angle_and_climbrate boolean float -180 180 float -90 90 float -360 360 float -FLT_MAX FLT_MAX boolean float -FLT_MAX FLT_MAX
+singleton AP_Vehicle method set_steering_and_throttle boolean float -1 1 float -1 1
 
 include AP_SerialLED/AP_SerialLED.h
 singleton AP_SerialLED alias serialLED
@@ -180,6 +182,7 @@ singleton SRV_Channels method set_output_pwm_chan void uint8_t 0 NUM_SERVO_CHANN
 singleton SRV_Channels method set_output_pwm_chan_timeout void uint8_t 0 NUM_SERVO_CHANNELS-1 uint16_t 0 UINT16_MAX uint16_t 0 UINT16_MAX
 singleton SRV_Channels method set_output_scaled void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 int16_t INT16_MIN INT16_MAX
 singleton SRV_Channels method get_output_pwm boolean SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'Null
+singleton SRV_Channels method get_output_scaled int16_t SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1
 
 include RC_Channel/RC_Channel.h
 singleton RC_Channels alias rc

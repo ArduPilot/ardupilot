@@ -345,7 +345,7 @@ void Plane::set_servos_manual_passthrough(void)
 /*
   Scale the throttle to conpensate for battery voltage drop
  */
-void Plane::throttle_voltage_comp()
+void Plane::throttle_voltage_comp(int8_t &min_throttle, int8_t &max_throttle)
 {
     // return if not enabled, or setup incorrectly
     if (g2.fwd_thr_batt_voltage_min >= g2.fwd_thr_batt_voltage_max || !is_positive(g2.fwd_thr_batt_voltage_max)) {
@@ -369,6 +369,10 @@ void Plane::throttle_voltage_comp()
     // Scale the throttle up to compensate for voltage drop
     // Ratio = 1 when voltage = voltage max, ratio increases as voltage drops
     const float ratio = g2.fwd_thr_batt_voltage_max / batt_voltage_resting_estimate;
+
+    // Scale the throttle limits to prevent subsequent clipping
+    min_throttle = MAX((int8_t)(ratio * (float)min_throttle), -100);
+    max_throttle = MIN((int8_t)(ratio * (float)max_throttle),  100);
 
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttle,
                                         constrain_int16(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * ratio, -100, 100));
@@ -444,8 +448,11 @@ void Plane::set_servos_controlled(void)
         min_throttle = 0;
     }
     
-    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF || flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
-        if(aparm.takeoff_throttle_max != 0) {
+    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF || 
+        flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND ||
+        quadplane.in_transition()) {
+
+        if (aparm.takeoff_throttle_max != 0) {
             max_throttle = aparm.takeoff_throttle_max;
         } else {
             max_throttle = aparm.throttle_max;
@@ -455,7 +462,7 @@ void Plane::set_servos_controlled(void)
     }
 
     // conpensate for battery voltage drop
-    throttle_voltage_comp();
+    throttle_voltage_comp(min_throttle, max_throttle);
 
     // apply watt limiter
     throttle_watt_limiter(min_throttle, max_throttle);
@@ -835,9 +842,6 @@ void Plane::servos_output(void)
     // cope with tailsitters and bicopters
     quadplane.tailsitter_output();
     quadplane.tiltrotor_bicopter();
-
-    // the mixers need pwm to be calculated now
-    SRV_Channels::calc_pwm();
 
     // run vtail and elevon mixers
     servo_output_mixers();

@@ -248,7 +248,13 @@ protected:
     bool _gyro_notch_enabled(void) const { return _imu._notch_filter.enabled(); }
 
     // return the harmonic notch filter center in Hz for the sample rate
-    float gyro_harmonic_notch_center_freq_hz() const { return _imu._calculated_harmonic_notch_freq_hz; }
+    float gyro_harmonic_notch_center_freq_hz() const { return _imu.get_gyro_dynamic_notch_center_freq_hz(); }
+
+    // set of harmonic notch current center frequencies
+    const float* gyro_harmonic_notch_center_frequencies_hz(void) const { return _imu.get_gyro_dynamic_notch_center_frequencies_hz(); }
+
+    // number of harmonic notch current center frequencies
+    uint8_t num_gyro_harmonic_notch_center_frequencies(void) const { return _imu.get_num_gyro_dynamic_notch_center_frequencies(); }
 
     // return the harmonic notch filter bandwidth in Hz for the sample rate
     float gyro_harmonic_notch_bandwidth_hz(void) const { return _imu._harmonic_notch_filter.bandwidth_hz(); }

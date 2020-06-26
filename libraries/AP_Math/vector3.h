@@ -78,12 +78,6 @@ public:
         , y(y0)
         , z(z0) {}
 
-    // function call operator
-    void operator ()(const T x0, const T y0, const T z0)
-    {
-        x= x0; y= y0; z= z0;
-    }
-
     // test for equality
     bool operator ==(const Vector3<T> &v) const;
 
@@ -262,6 +256,8 @@ public:
         return perpendicular;
     }
 
+    // Shortest distance between point(p) to a point contained in the line segment defined by w1,w2
+    static float closest_distance_between_line_and_point(const Vector3<T> &w1, const Vector3<T> &w2, const Vector3<T> &p);
 };
 
 typedef Vector3<int16_t>                Vector3i;

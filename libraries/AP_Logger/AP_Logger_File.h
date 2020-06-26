@@ -97,17 +97,12 @@ private:
     uint16_t find_oldest_log();
     int64_t disk_space_avail();
     int64_t disk_space();
-    float avail_space_percent();
+
+    void ensure_log_directory_exists();
 
     bool file_exists(const char *filename) const;
     bool log_exists(const uint16_t lognum) const;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    // I always seem to have less than 10% free space on my laptop:
-    const float min_avail_space_percent = 0.1f;
-#else
-    const float min_avail_space_percent = 10.0f;
-#endif
     // write buffer
     ByteBuffer _writebuf;
     const uint16_t _writebuf_chunk;

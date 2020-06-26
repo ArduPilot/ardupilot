@@ -567,7 +567,7 @@ bool AP_Arming::rc_arm_checks(AP_Arming::Method method)
                 if (c == nullptr) {
                     continue;
                 }
-                if (!c->in_trim_dz()) {
+                if (c->get_control_in() != 0) {
                     if ((method != Method::RUDDER) || (c != rc().get_arming_channel())) { // ignore the yaw input channel if rudder arming
                         check_failed(ARMING_CHECK_RC, true, "%s (RC%d) is not neutral", names[i], channels[i]);
                         check_passed = false;
@@ -1241,7 +1241,7 @@ bool AP_Arming::disarm_switch_checks(bool display_failure) const
 {
     const RC_Channel *chan = rc().find_channel_for_option(RC_Channel::AUX_FUNC::DISARM);
     if (chan != nullptr &&
-        chan->get_aux_switch_pos() == RC_Channel::aux_switch_pos_t::HIGH &&
+        chan->get_aux_switch_pos() == RC_Channel::AuxSwitchPos::HIGH &&
         (checks_to_perform & ARMING_CHECK_ALL)) {
         check_failed(display_failure, "Disarm Switch on");
         return false;

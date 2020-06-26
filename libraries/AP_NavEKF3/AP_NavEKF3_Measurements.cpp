@@ -54,6 +54,8 @@ void NavEKF3_core::readRangeFinder(void)
                 }
                 storedRngMeasTime_ms[sensorIndex][rngMeasIndex[sensorIndex]] = imuSampleTime_ms - 25;
                 storedRngMeas[sensorIndex][rngMeasIndex[sensorIndex]] = sensor->distance_cm() * 0.01f;
+            } else {
+                continue;
             }
 
             // check for three fresh samples
@@ -120,6 +122,11 @@ void NavEKF3_core::readRangeFinder(void)
 
 void NavEKF3_core::writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, uint16_t delay_ms, const Vector3f &posOffset)
 {
+    // protect against NaN
+    if (isnan(quality) || delPos.is_nan() || delAng.is_nan() || isnan(delTime) || posOffset.is_nan()) {
+        return;
+    }
+
     // limit update rate to maximum allowed by sensor buffers and fusion process
     // don't try to write to buffer until the filter has been initialised
     if (((timeStamp_ms - bodyOdmMeasTime_ms) < frontend->sensorIntervalMin_ms) || (delTime < dtEkfAvg) || !statesInitialised) {
@@ -945,9 +952,14 @@ void NavEKF3_core::writeDefaultAirSpeed(float airspeed)
 
 void NavEKF3_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint16_t delay_ms, uint32_t resetTime_ms)
 {
+    // protect against NaN
+    if (pos.is_nan() || isnan(posErr)) {
+        return;
+    }
+
     // limit update rate to maximum allowed by sensor buffers and fusion process
     // don't try to write to buffer until the filter has been initialised
-    if (((timeStamp_ms - extNavMeasTime_ms) < 70) || !statesInitialised) {
+    if (((timeStamp_ms - extNavMeasTime_ms) < frontend->extNavIntervalMin_ms) || !statesInitialised) {
         return;
     } else {
         extNavMeasTime_ms = timeStamp_ms;
@@ -963,11 +975,7 @@ void NavEKF3_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, 
     }
 
     extNavDataNew.pos = pos;
-    if (posErr > 0) {
-        extNavDataNew.posErr = posErr;
-    } else {
-        extNavDataNew.posErr = frontend->_gpsHorizPosNoise;
-    }
+    extNavDataNew.posErr = posErr;
 
     // calculate timestamp
     timeStamp_ms = timeStamp_ms - delay_ms;
@@ -977,20 +985,29 @@ void NavEKF3_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, 
     timeStamp_ms = MAX(timeStamp_ms, imuDataDelayed.time_ms);
     extNavDataNew.time_ms = timeStamp_ms;
 
-    // extract yaw from the attitude
-    float roll_rad, pitch_rad, yaw_rad;
-    quat.to_euler(roll_rad, pitch_rad, yaw_rad);
-
-    // ensure yaw accuracy is no better than 5 degrees (some callers may send zero)
-    const float yaw_accuracy_rad = MAX(angErr, radians(5.0f));
-    writeEulerYawAngle(yaw_rad, yaw_accuracy_rad, timeStamp_ms, 2);
-
+    // store position data to buffer
     storedExtNav.push(extNavDataNew);
+
+    // protect against attitude or angle being NaN
+    if (!quat.is_nan() && !isnan(angErr)) {
+        // extract yaw from the attitude
+        float roll_rad, pitch_rad, yaw_rad;
+        quat.to_euler(roll_rad, pitch_rad, yaw_rad);
+
+        // ensure yaw accuracy is no better than 5 degrees (some callers may send zero)
+        const float yaw_accuracy_rad = MAX(angErr, radians(5.0f));
+        writeEulerYawAngle(yaw_rad, yaw_accuracy_rad, timeStamp_ms, 2);
+    }
 }
 
 void NavEKF3_core::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms)
 {
-    if ((timeStamp_ms - extNavVelMeasTime_ms) < 70) {
+    // sanity check for NaNs
+    if (vel.is_nan() || isnan(err)) {
+        return;
+    }
+
+    if ((timeStamp_ms - extNavVelMeasTime_ms) < frontend->extNavIntervalMin_ms) {
         return;
     }
 

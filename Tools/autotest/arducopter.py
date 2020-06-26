@@ -2221,6 +2221,65 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def test_rangefinder_switchover(self):
+        """test that the EKF correctly handles the switchover between baro and rangefinder"""
+        ex = None
+        self.context_push()
+
+        try:
+            self.set_analog_rangefinder_parameters()
+
+            self.set_parameter("RNGFND1_MAX_CM", 1500)
+            self.set_parameter("EK2_RNG_USE_HGT", 70)
+            self.set_parameter("EK2_ENABLE", 1)
+            self.set_parameter("AHRS_EKF_TYPE", 2)
+
+            self.reboot_sitl() # needed for both rangefinder and initial position
+            self.assert_vehicle_location_is_at_startup_location()
+
+            self.change_mode("LOITER")
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.set_rc(3, 1800)
+            self.set_rc(2, 1200)
+            # wait till we get to 50m
+            self.wait_altitude(50, 52, True, 60)
+
+            self.change_mode("RTL")
+            # wait till we get to 25m
+            self.wait_altitude(25, 27, True, 120)
+
+            # level up
+            self.set_rc(2, 1500)
+            self.wait_altitude(14, 15, relative=True)
+
+            tstart = self.get_sim_time()
+            while self.get_sim_time_cached() < tstart + 200:
+                m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+                alt = m.relative_alt / 1000.0 # mm -> m
+                home_distance = self.distance_to_home(use_cached_home=True)
+                home = ""
+                if alt <= 1:
+                    home = "HOME"
+                self.progress("Alt: %.02f  HomeDist: %.02f %s" %
+                          (alt, home_distance, home))
+                # our post-condition is that we are disarmed:
+                if not self.armed():
+                    break
+
+            if home == "":
+                raise NotAchievedException("Did not get home and disarm")
+
+        except Exception as e:
+            self.progress("Exception caught: %s" % (
+                self.get_exception_stacktrace(e)))
+            self.disarm_vehicle(force=True)
+            ex = e
+        self.context_pop()
+        self.reboot_sitl()
+        if ex is not None:
+            raise ex
+
     def test_parachute(self):
 
         self.set_rc(9, 1000)
@@ -3848,6 +3907,7 @@ class AutoTestCopter(AutoTest):
                 self.hover_and_check_matched_frequency(-15, 100, 250, 64, None)
 
                 # Step 3: switch harmonics mid flight and check for tracking
+                self.start_subtest("Switch harmonics mid flight and check the right harmonic is found")
                 self.set_parameter("FFT_HMNC_PEAK", 0)
                 self.reboot_sitl()
 
@@ -3885,6 +3945,26 @@ class AutoTestCopter(AutoTest):
 
                 if abs(pkAvg - freq) > freqDelta:
                     raise NotAchievedException("FFT did not detect a harmonic motor peak, found %f, wanted %f" % (pkAvg, freq))
+
+                # Step 4: dynamic harmonic
+                self.start_subtest("Enable dynamic harmonics and make sure both frequency peaks are attenuated")
+                # find a motor peak
+                freq, vfr_hud, peakdb = self.hover_and_check_matched_frequency_with_fft(-15, 100, 350)
+
+                # now add a dynamic notch and check that the peak is squashed
+                self.set_parameter("INS_LOG_BAT_OPT", 2)
+                self.set_parameter("INS_HNTCH_ENABLE", 1)
+                self.set_parameter("INS_HNTCH_HMNCS", 3)
+                self.set_parameter("INS_HNTCH_MODE", 4)
+                self.set_parameter("INS_HNTCH_FREQ", freq)
+                #self.set_parameter("INS_HNTCH_REF", 1.0)
+                self.set_parameter("INS_HNTCH_REF", vfr_hud.throttle/100.)
+                self.set_parameter("INS_HNTCH_ATT", 100)
+                self.set_parameter("INS_HNTCH_BW", freq/2)
+                self.set_parameter("INS_HNTCH_OPTS", 3)
+                self.reboot_sitl()
+
+                self.hover_and_check_matched_frequency_with_fft(-1, 100, 350, reverse=True)
 
                 self.set_parameter("SIM_VIB_FREQ_X", 0)
                 self.set_parameter("SIM_VIB_FREQ_Y", 0)
@@ -4085,8 +4165,8 @@ class AutoTestCopter(AutoTest):
                 1, # target component id
                 mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
                 0b1111111111111000, # mask specifying use-only-lat-lon-alt
-                destination.lat *1e7, # lat
-                destination.lng *1e7, # lon
+                int(destination.lat *1e7), # lat
+                int(destination.lng *1e7), # lon
                 destination.alt, # alt
                 0, # vx
                 0, # vy

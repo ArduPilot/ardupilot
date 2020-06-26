@@ -208,8 +208,10 @@ public:
 
     uint32_t        last_heartbeat_time; // milliseconds
 
-    // last time we got a non-zero RSSI from RADIO_STATUS
-    static uint32_t last_radio_status_remrssi_ms;
+    static uint32_t last_radio_status_remrssi_ms() {
+        return last_radio_status.remrssi_ms;
+    }
+    static float telemetry_radio_rssi(); // 0==no signal, 1==full signal
 
     // mission item index to be sent on queued msg, delayed or not
     uint16_t mission_item_reached_index = AP_MISSION_CMD_INDEX_NONE;
@@ -220,7 +222,7 @@ public:
     void send_fence_status() const;
     void send_power_status(void);
     void send_battery_status(const uint8_t instance) const;
-    bool send_battery_status() const;
+    bool send_battery_status();
     void send_distance_sensor() const;
     // send_rangefinder sends only if a downward-facing instance is
     // found.  Rover overrides this!
@@ -278,6 +280,9 @@ public:
 
     // return a bitmap of streaming channels
     static uint8_t streaming_channel_mask(void) { return chan_is_streaming; }
+
+    // return a bitmap of private channels
+    static uint8_t private_channel_mask(void) { return mavlink_private; }
 
     // set a channel as private. Private channels get sent heartbeats, but
     // don't get broadcast packets or forwarded packets
@@ -506,6 +511,13 @@ protected:
     void manual_override(RC_Channel *c, int16_t value_in, uint16_t offset, float scaler, const uint32_t tnow, bool reversed = false);
 
 private:
+
+    // last time we got a non-zero RSSI from RADIO_STATUS
+    static struct LastRadioStatus {
+        uint32_t remrssi_ms;
+        uint8_t rssi;
+        uint32_t received_ms; // time RADIO_STATUS received
+    } last_radio_status;
 
     void log_mavlink_stats();
 
@@ -771,6 +783,7 @@ private:
                                                      const float roll,
                                                      const float pitch,
                                                      const float yaw,
+                                                     const float covariance[21],
                                                      const uint8_t reset_counter,
                                                      const uint16_t payload_size);
     void handle_vision_speed_estimate(const mavlink_message_t &msg);
@@ -831,6 +844,8 @@ private:
 
     uint32_t last_mavlink_stats_logged;
 
+    uint8_t last_battery_status_idx;
+
     // true if we should NOT do MAVLink on this port (usually because
     // someone's doing SERIAL_CONTROL over mavlink)
     bool _locked;
@@ -868,6 +883,7 @@ public:
     void send_text(MAV_SEVERITY severity, const char *fmt, ...) FMT_PRINTF(3, 4);
     void send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list);
     virtual void send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, uint8_t mask);
+    uint8_t statustext_send_channel_mask() const;
 
     virtual GCS_MAVLINK *chan(const uint8_t ofs) = 0;
     virtual const GCS_MAVLINK *chan(const uint8_t ofs) const = 0;

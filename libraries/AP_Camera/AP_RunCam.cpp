@@ -437,40 +437,40 @@ void AP_RunCam::handle_in_menu(Event ev)
 // map rc input to an event
 AP_RunCam::Event AP_RunCam::map_rc_input_to_event() const
 {
-    const RC_Channel::aux_switch_pos_t throttle = rc().get_channel_pos(AP::rcmap()->throttle());
-    const RC_Channel::aux_switch_pos_t yaw = rc().get_channel_pos(AP::rcmap()->yaw());
-    const RC_Channel::aux_switch_pos_t roll = rc().get_channel_pos(AP::rcmap()->roll());
-    const RC_Channel::aux_switch_pos_t pitch = rc().get_channel_pos(AP::rcmap()->pitch());
+    const RC_Channel::AuxSwitchPos throttle = rc().get_channel_pos(AP::rcmap()->throttle());
+    const RC_Channel::AuxSwitchPos yaw = rc().get_channel_pos(AP::rcmap()->yaw());
+    const RC_Channel::AuxSwitchPos roll = rc().get_channel_pos(AP::rcmap()->roll());
+    const RC_Channel::AuxSwitchPos pitch = rc().get_channel_pos(AP::rcmap()->pitch());
 
     Event result = Event::NONE;
 
     if (_button_pressed != ButtonState::NONE) {
-        if (_button_pressed == ButtonState::PRESSED && yaw == RC_Channel::MIDDLE && pitch == RC_Channel::MIDDLE && roll == RC_Channel::MIDDLE) {
+        if (_button_pressed == ButtonState::PRESSED && yaw == RC_Channel::AuxSwitchPos::MIDDLE && pitch == RC_Channel::AuxSwitchPos::MIDDLE && roll == RC_Channel::AuxSwitchPos::MIDDLE) {
             result = Event::BUTTON_RELEASE;
         } else {
             result = Event::NONE; // still waiting to be released
         }
-    } else if (throttle == RC_Channel::MIDDLE && yaw == RC_Channel::LOW
-        && pitch == RC_Channel::MIDDLE && roll == RC_Channel::MIDDLE
+    } else if (throttle == RC_Channel::AuxSwitchPos::MIDDLE && yaw == RC_Channel::AuxSwitchPos::LOW
+        && pitch == RC_Channel::AuxSwitchPos::MIDDLE && roll == RC_Channel::AuxSwitchPos::MIDDLE
         // don't allow an action close to arming unless the user had configured it or arming is not possible
         // but don't prevent the 5-Key control actually working
         && (_cam_control_option & uint8_t(ControlOption::STICK_YAW_RIGHT) || is_arming_prevented())) {
         result = Event::EXIT_MENU;
-    } else if (throttle == RC_Channel::MIDDLE && yaw == RC_Channel::HIGH
-        && pitch == RC_Channel::MIDDLE && roll == RC_Channel::MIDDLE
+    } else if (throttle == RC_Channel::AuxSwitchPos::MIDDLE && yaw == RC_Channel::AuxSwitchPos::HIGH
+        && pitch == RC_Channel::AuxSwitchPos::MIDDLE && roll == RC_Channel::AuxSwitchPos::MIDDLE
         && (_cam_control_option & uint8_t(ControlOption::STICK_YAW_RIGHT) || is_arming_prevented())) {
         result = Event::ENTER_MENU;
-    } else if (roll == RC_Channel::LOW) {
+    } else if (roll == RC_Channel::AuxSwitchPos::LOW) {
         result = Event::IN_MENU_EXIT;
-    } else if (yaw == RC_Channel::MIDDLE && pitch == RC_Channel::MIDDLE && roll == RC_Channel::HIGH) {
+    } else if (yaw == RC_Channel::AuxSwitchPos::MIDDLE && pitch == RC_Channel::AuxSwitchPos::MIDDLE && roll == RC_Channel::AuxSwitchPos::HIGH) {
         if (has_feature(Feature::RCDEVICE_PROTOCOL_FEATURE_SIMULATE_5_KEY_OSD_CABLE)) {
             result = Event::IN_MENU_RIGHT;
         } else {
             result = Event::IN_MENU_ENTER;
         }
-    } else if (pitch == RC_Channel::LOW) {
+    } else if (pitch == RC_Channel::AuxSwitchPos::LOW) {
         result = Event::IN_MENU_UP;
-    } else if (pitch == RC_Channel::HIGH) {
+    } else if (pitch == RC_Channel::AuxSwitchPos::HIGH) {
         result = Event::IN_MENU_DOWN;
     } else if (_video_recording != _last_video_recording) {
         switch (_video_recording) {

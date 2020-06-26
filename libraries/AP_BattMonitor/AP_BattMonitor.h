@@ -19,6 +19,8 @@
 #define AP_BATT_MONITOR_RES_EST_TC_1        0.5f
 #define AP_BATT_MONITOR_RES_EST_TC_2        0.1f
 
+#define AP_BATT_MONITOR_CELLS_MAX           12
+
 #ifndef HAL_BATTMON_SMBUS_ENABLE
 #define HAL_BATTMON_SMBUS_ENABLE 1
 #endif
@@ -70,8 +72,9 @@ public:
         return _singleton;
     }
 
+    // cell voltages in millivolts
     struct cells {
-        uint16_t cells[MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN];
+        uint16_t cells[AP_BATT_MONITOR_CELLS_MAX];
     };
 
     // The BattMonitor_State structure is filled in by the backend driver
@@ -107,7 +110,7 @@ public:
     bool healthy(uint8_t instance) const;
     bool healthy() const { return healthy(AP_BATT_PRIMARY_INSTANCE); }
 
-    /// voltage - returns battery voltage in millivolts
+    /// voltage - returns battery voltage in volts
     float voltage(uint8_t instance) const;
     float voltage() const { return voltage(AP_BATT_PRIMARY_INSTANCE); }
 
@@ -147,11 +150,11 @@ public:
     bool overpower_detected() const;
     bool overpower_detected(uint8_t instance) const;
 
-    // cell voltages
+    // cell voltages in millivolts
     bool has_cell_voltages() { return has_cell_voltages(AP_BATT_PRIMARY_INSTANCE); }
     bool has_cell_voltages(const uint8_t instance) const;
-    const cells & get_cell_voltages() const { return get_cell_voltages(AP_BATT_PRIMARY_INSTANCE); }
-    const cells & get_cell_voltages(const uint8_t instance) const;
+    const cells &get_cell_voltages() const { return get_cell_voltages(AP_BATT_PRIMARY_INSTANCE); }
+    const cells &get_cell_voltages(const uint8_t instance) const;
 
     // temperature
     bool get_temperature(float &temperature) const { return get_temperature(temperature, AP_BATT_PRIMARY_INSTANCE); }
