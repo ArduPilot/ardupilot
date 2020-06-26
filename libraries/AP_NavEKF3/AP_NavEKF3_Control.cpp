@@ -45,7 +45,7 @@ NavEKF3_core::MagCal NavEKF3_core::effective_magCal(void) const
     MagCal magcal = MagCal(frontend->_magCal.get());
 
     // force use of simple magnetic heading fusion for specified cores
-    if ((magcal != MagCal::EXTERNAL_YAW) && (magcal != MagCal::EXTERNAL_YAW_FALLBACK) && (magcal != MagCal::GSF_YAW) && (frontend->_magMask & core_index)) {
+    if ((magcal != MagCal::EXTERNAL_YAW) && (magcal != MagCal::EXTERNAL_YAW_FALLBACK) && (frontend->_magMask & core_index)) {
         return MagCal::NEVER;
     }
 
@@ -286,7 +286,7 @@ void NavEKF3_core::setAidingMode()
             // This is a special case for when we are a fixed wing aircraft vehicle that has landed and
             // has no yaw measurement that works when static. Declare the yaw as unaligned (unknown)
             // and declare attitude aiding loss so that we fall back into a non-aiding mode
-            if (assume_zero_sideslip() && onGround && (effectiveMagCal == MagCal::GSF_YAW) && !use_compass()){
+            if (assume_zero_sideslip() && onGround && !use_compass()){
                 yawAlignComplete = false;
                 finalInflightYawInit = false;
                 attAidLossCritical = true;
@@ -479,7 +479,6 @@ bool NavEKF3_core::readyToUseExtNav(void) const
 bool NavEKF3_core::use_compass(void) const
 {
     return effectiveMagCal != MagCal::EXTERNAL_YAW &&
-           effectiveMagCal != MagCal::GSF_YAW &&
            _ahrs->get_compass() &&
            _ahrs->get_compass()->use_for_yaw(magSelectIndex) &&
            !allMagSensorsFailed;
@@ -488,7 +487,7 @@ bool NavEKF3_core::use_compass(void) const
 // are we using a yaw source other than the magnetomer?
 bool NavEKF3_core::using_external_yaw(void) const
 {
-    if (effectiveMagCal == MagCal::EXTERNAL_YAW || effectiveMagCal == MagCal::EXTERNAL_YAW_FALLBACK || effectiveMagCal == MagCal::GSF_YAW) {
+    if (effectiveMagCal == MagCal::EXTERNAL_YAW || effectiveMagCal == MagCal::EXTERNAL_YAW_FALLBACK || !use_compass()) {
         return imuSampleTime_ms - last_gps_yaw_fusion_ms < 5000 || imuSampleTime_ms - lastSynthYawTime_ms < 5000;
     }
     return false;
@@ -553,7 +552,7 @@ void NavEKF3_core::checkGyroCalStatus(void)
 {
     // check delta angle bias variances
     const float delAngBiasVarMax = sq(radians(0.15f * dtEkfAvg));
-    if (effectiveMagCal == MagCal::GSF_YAW) {
+    if (!use_compass() && (effectiveMagCal != MagCal::EXTERNAL_YAW)) {
         // rotate the variances into earth frame and evaluate horizontal terms only as yaw component is poorly observable without a compass
         // which can make this check fail
         Vector3f delAngBiasVarVec = Vector3f(P[10][10],P[11][11],P[12][12]);
