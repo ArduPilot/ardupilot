@@ -24,6 +24,9 @@ public:
     // constructor. This incorporates initialisation as well.
     AP_VisualOdom_Backend(AP_VisualOdom &frontend);
 
+    // update sensor driver
+    virtual void update() {}
+
     // return true if sensor is basically healthy (we are receiving data)
     bool healthy() const;
 
@@ -31,10 +34,10 @@ public:
     void handle_vision_position_delta_msg(const mavlink_message_t &msg);
 
     // consume vision position estimate data and send to EKF. distances in meters
-    virtual void handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude, float posErr, float angErr, uint8_t reset_counter) = 0;
+    virtual void handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude, float posErr, float angErr, uint8_t reset_counter) {};
 
     // consume vision velocity estimate data and send to EKF, velocity in NED meters per second
-    virtual void handle_vision_speed_estimate(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, uint8_t reset_counter) = 0;
+    virtual void handle_vision_speed_estimate(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, uint8_t reset_counter) {};
 
     // handle request to align camera's attitude with vehicle's AHRS/EKF attitude
     virtual void align_sensor_to_vehicle() {}
