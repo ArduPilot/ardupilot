@@ -616,6 +616,8 @@ public:
     void *mode_zigzag_ptr;
 #endif
 
+    // pin to enable standby mode
+    AP_Int8 standby_pin;
 };
 
 extern const AP_Param::Info        var_info[];

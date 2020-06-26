@@ -579,6 +579,7 @@ private:
     } gndeffect_state;
 
     bool standby_active;
+    bool standby_last;
 
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
@@ -766,6 +767,8 @@ private:
 
     // standby.cpp
     void standby_update();
+    void standby_enable();
+    void standby_pin_active();
 
     // Log.cpp
     void Log_Write_Control_Tuning();
