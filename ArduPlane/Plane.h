@@ -1072,6 +1072,7 @@ private:
     // soaring.cpp
 #if SOARING_ENABLED == ENABLED
     void update_soaring();
+    bool soaring_exit_heading_aligned() const;
 #endif
 
     // reverse_thrust.cpp
