@@ -426,7 +426,6 @@ public:
         ALWAYS = 4,
         EXTERNAL_YAW = 5,
         EXTERNAL_YAW_FALLBACK = 6,
-        GSF_YAW = 7,
     };
 
     // are we using an external yaw source? This is needed by AHRS attitudes_consistent check
