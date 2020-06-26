@@ -6,6 +6,7 @@
 
 #include "ap_version.h"
 
+#define ACEVERSION "v1.0.3"
 #define THISFIRMWARE "ArduCopter V4.0.3 ACE Copter v1.0.3"
 
 // the following line is parsed by the autotest scripts

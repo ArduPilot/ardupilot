@@ -32,7 +32,7 @@ const AP_FWVersion AP_FWVersion::fwver{
     .fw_hash_str = GIT_VERSION,
 #endif
     .middleware_name = nullptr,
-    .middleware_hash_str = nullptr,
+    .middleware_hash_str = ACEVERSION,
 #ifdef CHIBIOS_GIT_VERSION
     .os_name = "ChibiOS",
     .os_hash_str = CHIBIOS_GIT_VERSION,
