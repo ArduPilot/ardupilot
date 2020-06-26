@@ -13,7 +13,22 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  simple particle sensor simulation
+  simple Vicon simulation
+
+  NoopLoop testing:
+
+./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --uartF=sim:vicon --speedup=1
+
+param set GPS_TYPE 0
+param set EK2_GPS_TYPE 3
+param set VISO_TYPE 3
+param set SERIAL5_PROTOCOL 29
+param set SIM_VICON_TMASK 8
+reboot
+
+arm throttle
+rc 3 1600
+
 */
 
 #pragma once
@@ -52,14 +67,16 @@ private:
     // buffer of messages to send
     struct {
         uint64_t time_send_us;      // system time this message should be sent or 0 if no message to send
-        mavlink_message_t obs_msg;  // message to be sent
+        uint8_t obs_msg[300];  // message to be sent
+        uint16_t obs_msg_len;
     } msg_buf[3];
 
     // SIM_VICON_TYPE parameter bit values
     enum class ViconTypeMask : uint8_t {
         VISION_POSITION_ESTIMATE    = (1 << 0),
         VISION_SPEED_ESTIMATE       = (1 << 1),
-        VICON_POSITION_ESTIMATE     = (1 << 2)
+        VICON_POSITION_ESTIMATE     = (1 << 2),
+        NOOPLOOP                    = (1 << 3),
     };
 
     // return true if the given message type should be sent
