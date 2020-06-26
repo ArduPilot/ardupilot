@@ -1150,10 +1150,8 @@ float NavEKF3_core::MagDeclination(void) const
 */
 void NavEKF3_core::updateMovementCheck(void)
 {
-    if (!onGround &&
-        effectiveMagCal != MagCal::EXTERNAL_YAW &&
-        effectiveMagCal != MagCal::EXTERNAL_YAW_FALLBACK &&
-        effectiveMagCal != MagCal::GSF_YAW)
+    const bool runCheck = onGround && (effectiveMagCal == MagCal::EXTERNAL_YAW || effectiveMagCal == MagCal::EXTERNAL_YAW_FALLBACK || !use_compass());
+    if (!runCheck)
     {
         onGroundNotMoving = false;
         return;
