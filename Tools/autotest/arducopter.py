@@ -5382,6 +5382,10 @@ class AutoTestHeli(AutoTestCopter):
         ])
         return ret
 
+    def disabled_tests(self):
+        return {
+            "SplineWaypoint": "See https://github.com/ArduPilot/ardupilot/issues/14593",
+        }
 
 class AutoTestCopterTests1(AutoTestCopter):
 
