@@ -783,7 +783,7 @@ private:
     float rudder_dt;
 
     // soaring mode-change timer
-    uint32_t soaring_mode_timer;
+    uint32_t soaring_mode_timer_ms;
 
     // terrain disable for non AUTO modes, set with an RC Option switch
     bool non_auto_terrain_disable;
@@ -1072,6 +1072,8 @@ private:
     // soaring.cpp
 #if SOARING_ENABLED == ENABLED
     void update_soaring();
+    bool soaring_exit_heading_aligned() const;
+    void soaring_restore_mode(const char *reason, ModeReason modereason, Mode &exit_mode);
 #endif
 
     // reverse_thrust.cpp
