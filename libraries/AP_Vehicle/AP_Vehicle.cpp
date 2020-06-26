@@ -3,6 +3,7 @@
 #include <AP_BLHeli/AP_BLHeli.h>
 #include <AP_Common/AP_FWVersion.h>
 
+#define SCHED_TASK_PRIO(func, rate_hz, max_time_micros, prio) SCHED_TASK_CLASS_PRIO(AP_Vehicle, &vehicle, func, rate_hz, max_time_micros, prio)
 #define SCHED_TASK(func, rate_hz, max_time_micros) SCHED_TASK_CLASS(AP_Vehicle, &vehicle, func, rate_hz, max_time_micros)
 
 /*
@@ -131,7 +132,7 @@ void AP_Vehicle::fast_loop()
  */
 const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #if HAL_RUNCAM_ENABLED
-    SCHED_TASK_CLASS(AP_RunCam,    &vehicle.runcam,         update,                   50, 50),
+    SCHED_TASK_CLASS_PRIO(AP_RunCam,    &vehicle.runcam,         update,                   50, 50, 200),
 #endif
 #if HAL_GYROFFT_ENABLED
     SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update,                  400, 50),
