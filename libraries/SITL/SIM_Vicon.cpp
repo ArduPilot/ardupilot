@@ -85,10 +85,7 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
     bool waiting_to_send = false;
     for (uint8_t i=0; i<ARRAY_SIZE(msg_buf); i++) {
         if ((msg_buf[i].time_send_us > 0) && (now_us >= msg_buf[i].time_send_us)) {
-            uint8_t buf[300];
-            uint16_t buf_len = mavlink_msg_to_send_buffer(buf, &msg_buf[i].obs_msg);
-
-            if (::write(fd_my_end, (void*)&buf, buf_len) != buf_len) {
+            if (::write(fd_my_end, msg_buf[i].obs_msg, msg_buf[i].obs_msg_len) != msg_buf[i].obs_msg_len) {
                 ::fprintf(stderr, "Vicon: write failure\n");
             }
             msg_buf[i].time_send_us = 0;
@@ -155,12 +152,18 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
 
     // send vision position estimate message
     uint8_t msg_buf_index;
-    if (should_send(ViconTypeMask::VISION_POSITION_ESTIMATE) && get_free_msg_buf_index(msg_buf_index)) {
+    if (!get_free_msg_buf_index(msg_buf_index)) {
+        return;
+    }
+
+    mavlink_message_t msg;
+    bool have_msg = false;
+    if (should_send(ViconTypeMask::VISION_POSITION_ESTIMATE)) {
         mavlink_msg_vision_position_estimate_pack_chan(
             system_id,
             component_id,
             mavlink_ch,
-            &msg_buf[msg_buf_index].obs_msg,
+            &msg,
             now_us + time_offset_us,
             pos_corrected.x,
             pos_corrected.y,
@@ -169,16 +172,16 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
             pitch,
             yaw,
             NULL, 0);
-        msg_buf[msg_buf_index].time_send_us = time_send_us;
+        have_msg = true;
     }
 
     // send older vicon position estimate message
-    if (should_send(ViconTypeMask::VICON_POSITION_ESTIMATE) && get_free_msg_buf_index(msg_buf_index)) {
+    if (should_send(ViconTypeMask::VICON_POSITION_ESTIMATE)) {
         mavlink_msg_vicon_position_estimate_pack_chan(
             system_id,
             component_id,
             mavlink_ch,
-            &msg_buf[msg_buf_index].obs_msg,
+            &msg,
             now_us + time_offset_us,
             pos_corrected.x,
             pos_corrected.y,
@@ -187,21 +190,96 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
             pitch,
             yaw,
             NULL);
-        msg_buf[msg_buf_index].time_send_us = time_send_us;
+        have_msg = true;
     }
 
     // send vision speed estimate
-    if (should_send(ViconTypeMask::VISION_SPEED_ESTIMATE) && get_free_msg_buf_index(msg_buf_index)) {
+    if (should_send(ViconTypeMask::VISION_SPEED_ESTIMATE)) {
         mavlink_msg_vision_speed_estimate_pack_chan(
             system_id,
             component_id,
             mavlink_ch,
-            &msg_buf[msg_buf_index].obs_msg,
+            &msg,
             now_us + time_offset_us,
             vel_corrected.x,
             vel_corrected.y,
             vel_corrected.z,
             NULL, 0);
+        have_msg = true;
+    }
+
+    if (have_msg) {
+        msg_buf[msg_buf_index].obs_msg_len = mavlink_msg_to_send_buffer(msg_buf[msg_buf_index].obs_msg, &msg);
+        msg_buf[msg_buf_index].time_send_us = time_send_us;
+    }
+
+
+    if (should_send(ViconTypeMask::NOOPLOOP)) {
+        static const uint8_t frame_len = 57;
+
+        class ThreeByteThing {
+        public:
+            ThreeByteThing(uint32_t value) {
+                bytes[2] = (value >> 16) & 0xff;
+                bytes[1] = (value >> 8) & 0xff;
+                bytes[0] = (value >> 0) & 0xff;
+            }
+            uint8_t bytes[3];
+        } PACKED;
+
+        struct NoopLoopMsg {
+            uint8_t header;
+            uint8_t frame;
+            uint16_t length;
+            uint8_t byte4;
+            uint8_t byte5;
+            uint32_t systime_ms;
+            uint8_t precision[3];
+            ThreeByteThing position_x;
+            ThreeByteThing position_y;
+            ThreeByteThing position_z;
+            ThreeByteThing velocity_x;
+            ThreeByteThing velocity_y;
+            ThreeByteThing velocity_z;
+            int16_t roll_cd;
+            int16_t pitch_cd;
+            int16_t yaw_cd;
+        } PACKED;
+        union MsgUnion {
+            ~MsgUnion() {}
+            MsgUnion() {}
+            NoopLoopMsg msg;
+            uint8_t bytes[frame_len];
+        } PACKED;
+        MsgUnion foo;
+        foo.msg = {
+                header: 0x55,    // message header
+                frame: 0x04, // NODE_FRAME2
+                length: frame_len,
+                byte4: 0x04,
+                byte5: 0x05,
+                systime_ms: htole32(uint32_t(now_us + time_offset_us)/1000),
+                precision: {0,0,0},
+                position_x: htole16(pos_corrected.x*1000U),
+                position_y: htole16(pos_corrected.y*1000U),
+                position_z: htole16(-pos_corrected.z*1000U), // convert to NEU
+                velocity_x: htole16(vel_corrected.x*10000U),
+                velocity_y: htole16(vel_corrected.y*10000U),
+                velocity_z: htole16(-vel_corrected.z*10000U), // convert to NEU
+                roll_cd: htole16(21*100), // random, unused by AP
+                pitch_cd: htole16(-32*100), // random, unused by AP
+                yaw_cd: htole16(2123), // random, unused by AP
+        };
+        static_assert(sizeof(NoopLoopMsg) < frame_len, "NoopLoopMsg must fit in buffer");
+        // fill the checksum:
+        foo.bytes[frame_len-1] = 0;
+        for (uint8_t i=0; i<frame_len-1; i++) {
+            foo.bytes[frame_len-1] += foo.bytes[i];
+        }
+
+        memcpy(msg_buf[msg_buf_index].obs_msg, foo.bytes, frame_len);
+        msg_buf[msg_buf_index].obs_msg_len = frame_len;
+
         msg_buf[msg_buf_index].time_send_us = time_send_us;
     }
 }
