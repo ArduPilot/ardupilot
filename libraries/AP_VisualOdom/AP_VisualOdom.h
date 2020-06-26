@@ -47,11 +47,15 @@ public:
     enum AP_VisualOdom_Type {
         AP_VisualOdom_Type_None         = 0,
         AP_VisualOdom_Type_MAV          = 1,
-        AP_VisualOdom_Type_IntelT265    = 2
+        AP_VisualOdom_Type_IntelT265    = 2,
+        AP_VisualOdom_Type_NoopLoop     = 3
     };
 
     // detect and initialise any sensors
     void init();
+
+    // update sensor driver backends
+    void update();
 
     // return true if sensor is enabled
     bool enabled() const;

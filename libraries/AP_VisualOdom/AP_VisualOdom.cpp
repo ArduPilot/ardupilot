@@ -20,6 +20,7 @@
 #include "AP_VisualOdom_Backend.h"
 #include "AP_VisualOdom_MAV.h"
 #include "AP_VisualOdom_IntelT265.h"
+#include "AP_VisualOdom_NoopLoop.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Logger/AP_Logger.h>
 
@@ -134,6 +135,17 @@ void AP_VisualOdom::init()
     case AP_VisualOdom_Type_IntelT265:
         _driver = new AP_VisualOdom_IntelT265(*this);
         break;
+    case AP_VisualOdom_Type_NoopLoop:
+        _driver = new AP_VisualOdom_NoopLoop(*this);
+        break;
+    }
+}
+
+// update sensor driver backends
+void AP_VisualOdom::update()
+{
+    if (_driver != nullptr) {
+        _driver->update();
     }
 }
 
