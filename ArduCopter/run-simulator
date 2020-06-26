@@ -1,0 +1,8 @@
+#!/bin/tcsh
+set gps=(-A "--uartB=uart:/dev/ttyACM0")
+#python3 ../Tools/autotest/sim_vehicle.py -M -f hexa --console --map  -L keywest --instance 1 $gps
+python3 ../Tools/autotest/sim_vehicle.py -M -f hexa --console --map  -L keywest --instance 1
+#python3 ../Tools/autotest/sim_vehicle.py -f quad --console --map  -L Home
+#python3 ../Tools/autotest/sim_vehicle.py -f hexax --console --map  -L Home
+#python3 ../Tools/autotest/sim_vehicle.py -v ArduCopter -f jsbsim:arducopter --console --map
+#python ../Tools/autotest/sim_vehicle.py -v ArduCopter -f jsbsim:arducopter --console --map
