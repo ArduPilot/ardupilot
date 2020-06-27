@@ -1669,9 +1669,12 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
-    # fly_autotune - autotune the virtual vehicle
     def fly_autotune(self):
+        """Test autotune mode"""
 
+        rlld = self.get_parameter("ATC_RAT_RLL_D")
+        rlli = self.get_parameter("ATC_RAT_RLL_I")
+        rllp = self.get_parameter("ATC_RAT_RLL_P")
         self.takeoff(10)
 
         # hold position in loiter
@@ -1694,10 +1697,90 @@ class AutoTestCopter(AutoTest):
                 # near enough for now:
                 self.change_mode('LAND')
                 self.wait_disarmed()
+                # check the original gains have been re-instated
+                if (rlld != self.get_parameter("ATC_RAT_RLL_D")
+                    or rlli != self.get_parameter("ATC_RAT_RLL_I")
+                    or rllp != self.get_parameter("ATC_RAT_RLL_P")):
+                    raise NotAchievedException("AUTOTUNE gains still present")
                 return
 
         raise NotAchievedException("AUTOTUNE failed (%u seconds)" %
-                                   (self.get_sim_time() - tstart))
+                                (self.get_sim_time() - tstart))
+
+
+    def fly_autotune_switch(self):
+        """Test autotune on a switch with gains being saved"""
+
+        self.set_parameter("RC8_OPTION", 17)
+        self.set_parameter("ATC_RAT_RLL_FLTT", 20)
+        rlld = self.get_parameter("ATC_RAT_RLL_D")
+        rlli = self.get_parameter("ATC_RAT_RLL_I")
+        rllp = self.get_parameter("ATC_RAT_RLL_P")
+        rllt = self.get_parameter("ATC_RAT_RLL_FLTT")
+        self.progress("AUTOTUNE pre-gains are P:%f I:%f D:%f" % ((self.get_parameter("ATC_RAT_RLL_P")),
+            self.get_parameter("ATC_RAT_RLL_I"), self.get_parameter("ATC_RAT_RLL_D")))
+        self.takeoff(10, mode = 'LOITER')
+
+        # hold position in loiter and run autotune
+        self.set_rc(8, 1850)
+        self.wait_mode('AUTOTUNE')
+
+        tstart = self.get_sim_time()
+        sim_time_expected = 5000
+        deadline = tstart + sim_time_expected
+        while self.get_sim_time_cached() < deadline:
+            now = self.get_sim_time_cached()
+            m = self.mav.recv_match(type='STATUSTEXT',
+                                    blocking=True,
+                                    timeout=1)
+            if m is None:
+                continue
+            self.progress("STATUSTEXT (%u<%u): %s" % (now, deadline, m.text))
+            if "AutoTune: Success" in m.text:
+                self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
+                # Check original gains are re-instated
+                self.set_rc(8, 1100)
+                self.delay_sim_time(1)
+                self.progress("AUTOTUNE original gains are P:%f I:%f D:%f" % \
+                    (self.get_parameter("ATC_RAT_RLL_P"), self.get_parameter("ATC_RAT_RLL_I"), \
+                    self.get_parameter("ATC_RAT_RLL_D")))
+                if (rlld != self.get_parameter("ATC_RAT_RLL_D")
+                    or rlli != self.get_parameter("ATC_RAT_RLL_I")
+                    or rllp != self.get_parameter("ATC_RAT_RLL_P")):
+                    raise NotAchievedException("AUTOTUNE gains still present")
+                # Use autotuned gains
+                self.set_rc(8, 1850)
+                self.delay_sim_time(1)
+                self.progress("AUTOTUNE testing gains are P:%f I:%f D:%f" % \
+                    (self.get_parameter("ATC_RAT_RLL_P"), self.get_parameter("ATC_RAT_RLL_I"), \
+                    self.get_parameter("ATC_RAT_RLL_D")))
+                if (rlld == self.get_parameter("ATC_RAT_RLL_D")
+                    or rlli == self.get_parameter("ATC_RAT_RLL_I")
+                    or rllp == self.get_parameter("ATC_RAT_RLL_P")):
+                    raise NotAchievedException("AUTOTUNE gains not present in pilot testing")
+                # land without changing mode
+                self.set_rc(3, 1000)
+                self.wait_for_alt(0)
+                self.wait_disarmed()
+                # Check gains are still there after disarm
+                if (rlld == self.get_parameter("ATC_RAT_RLL_D")
+                    or rlli == self.get_parameter("ATC_RAT_RLL_I")
+                    or rllp == self.get_parameter("ATC_RAT_RLL_P")):
+                    raise NotAchievedException("AUTOTUNE gains not present on disarm")
+
+                self.reboot_sitl()
+                # Check gains are still there after reboot
+                if (rlld == self.get_parameter("ATC_RAT_RLL_D") or
+                    rlli == self.get_parameter("ATC_RAT_RLL_I") or
+                    rllp == self.get_parameter("ATC_RAT_RLL_P")):
+                    raise NotAchievedException("AUTOTUNE gains not present on reboot")
+                # Check FLTT is unchanged
+                if rllt != self.get_parameter("ATC_RAT_RLL_FLTT"):
+                    raise NotAchievedException("AUTOTUNE FLTT was modified")
+                return
+
+        raise NotAchievedException("AUTOTUNE failed (%u seconds)" %
+                                (self.get_sim_time() - tstart))
 
     # fly_auto_test - fly mission which tests a significant number of commands
     def fly_auto_test(self):
@@ -4904,6 +4987,8 @@ class AutoTestCopter(AutoTest):
              self.test_aux_switch_options),
 
             ("AutoTune", "Fly AUTOTUNE mode", self.fly_autotune),
+
+            ("AutoTuneSwitch", "Fly AUTOTUNE on a switch", self.fly_autotune_switch),
 
             ("ThrowMode", "Fly Throw Mode", self.fly_throw_mode),
 
