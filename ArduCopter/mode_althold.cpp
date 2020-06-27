@@ -57,8 +57,6 @@ void ModeAltHold::run()
     	gimbal_zoom = RC_Channels::rc_channel(CH_3)->get_radio_in();
     	gimbal_focus = RC_Channels::rc_channel(CH_4)->get_radio_in();
 
-    	gimbal_tilt = ((1500 - gimbal_tilt) + 1500);
-
     	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_tilt, gimbal_tilt);
     	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_pan, gimbal_pan);
     	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_zoom, gimbal_zoom);
