@@ -567,8 +567,12 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(ins,            "INS_", AP_InertialSensor),
 
     // @Group: WPNAV_
-    // @Path: ../libraries/AC_WPNav/AC_WPNav.cpp
+    // @Path: ../libraries/AC_WPNav/AC_WPNav.cpp,../libraries/AC_WPNav/AC_WPNav_Heli.cpp
+#if FRAME_CONFIG == HELI_FRAME
+    GOBJECTPTR(wp_nav, "WPNAV_",       AC_WPNav_Heli),
+#else
     GOBJECTPTR(wp_nav, "WPNAV_",       AC_WPNav),
+#endif
 
     // @Group: LOIT_
     // @Path: ../libraries/AC_WPNav/AC_Loiter.cpp
@@ -801,6 +805,14 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(osd, "OSD", AP_OSD),
 #endif
     
+    // @Group: NAVL1_
+    // @Path: ../libraries/AP_L1_Control/AP_L1_Control_Heli.cpp
+    GOBJECT(L1_controller, "NAVL1_",   AP_L1_Control_Heli),
+
+    // @Group: SPDHGT_
+    // @Path: ../libraries/AP_SpdHgtControl/AP_SpdHgtControl_Heli.cpp
+    GOBJECT(helispdhgtctrl, "SPDHGT_",   AP_SpdHgtControl_Heli),
+
     // @Group:
     // @Path: Parameters.cpp
     GOBJECT(g2, "",  ParametersG2),

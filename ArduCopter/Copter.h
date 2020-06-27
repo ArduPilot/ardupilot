@@ -67,6 +67,7 @@
 #include <AP_Vehicle/AP_Vehicle.h>         // needed for AHRS build
 #include <AP_InertialNav/AP_InertialNav.h>     // ArduPilot Mega inertial navigation library
 #include <AC_WPNav/AC_WPNav.h>           // ArduCopter waypoint navigation library
+#include <AC_WPNav/AC_WPNav_Heli.h>
 #include <AC_WPNav/AC_Loiter.h>
 #include <AC_WPNav/AC_Circle.h>          // circle navigation library
 #include <AP_Declination/AP_Declination.h>     // ArduPilot Mega Declination Helper Library
@@ -83,6 +84,9 @@
 #include <AP_Arming/AP_Arming.h>
 #include <AP_SmartRTL/AP_SmartRTL.h>
 #include <AP_TempCalibration/AP_TempCalibration.h>
+#include <AP_L1_Control/AP_L1_Control_Heli.h>
+#include <AP_SpdHgtControl/AP_SpdHgtControl.h>
+#include <AP_SpdHgtControl/AP_SpdHgtControl_Heli.h>
 
 // Configuration
 #include "defines.h"
@@ -492,11 +496,23 @@ private:
 #endif
     AC_AttitudeControl_t *attitude_control;
     AC_PosControl *pos_control;
-    AC_WPNav *wp_nav;
+#if FRAME_CONFIG == HELI_FRAME
+    #define AC_WPNav_t AC_WPNav_Heli
+#else
+    #define AC_WPNav_t AC_WPNav
+#endif
+    AC_WPNav_t *wp_nav;
     AC_Loiter *loiter_nav;
 #if MODE_CIRCLE_ENABLED == ENABLED
     AC_Circle *circle_nav;
 #endif
+
+    // L1 Controller and SpdHgt controller declarations
+    AP_L1_Control_Heli L1_controller{ahrs,spdhgt_controller};
+
+    AP_SpdHgtControl_Heli helispdhgtctrl{ahrs};
+
+    AP_SpdHgtControl *spdhgt_controller = 0;
 
     // System Timers
     // --------------

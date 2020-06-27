@@ -46,7 +46,7 @@ public:
     };
 
     /// Constructor
-    AC_WPNav(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control);
+    AC_WPNav(const AP_InertialNav& inav, AP_AHRS_View& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control);
 
     /// provide pointer to terrain database
     void set_terrain(AP_Terrain* terrain_ptr) { _terrain = terrain_ptr; }
@@ -73,7 +73,7 @@ public:
     /// wp_and_spline_init - initialise straight line and spline waypoint controllers
     ///     updates target roll, pitch targets and I terms based on vehicle lean angles
     ///     should be called once before the waypoint controller is used but does not need to be called before subsequent updates to destination
-    void wp_and_spline_init();
+    virtual void wp_and_spline_init();
 
     /// set_speed_xy - allows main code to pass target horizontal velocity for wp navigation
     void set_speed_xy(float speed_cms);
@@ -101,7 +101,7 @@ public:
 
     /// set_wp_destination waypoint using location class
     ///     returns false if conversion from location to vector from ekf origin cannot be calculated
-    bool set_wp_destination(const Location_Class& destination);
+    virtual bool set_wp_destination(const Location_Class& destination);
 
     // returns wp location using location class.
     // returns false if unable to convert from target vector to global
@@ -110,7 +110,7 @@ public:
 
     /// set_wp_destination waypoint using position vector (distance from ekf origin in cm)
     ///     terrain_alt should be true if destination.z is a desired altitude above terrain
-    bool set_wp_destination(const Vector3f& destination, bool terrain_alt = false);
+    virtual bool set_wp_destination(const Vector3f& destination, bool terrain_alt = false);
 
     /// set waypoint destination using NED position vector from ekf origin in meters
     bool set_wp_destination_NED(const Vector3f& destination_NED);
@@ -240,6 +240,9 @@ protected:
 
     /// get_slow_down_speed - returns target speed of target point based on distance from the destination (in cm)
     float get_slow_down_speed(float dist_from_dest_cm, float accel_cmss);
+    
+    /// wp_speed_update - calculates how to change speed when changes are requested
+    void wp_speed_update(float dt);
 
     /// spline protected functions
 
@@ -266,7 +269,7 @@ protected:
 
     // references and pointers to external libraries
     const AP_InertialNav&   _inav;
-    const AP_AHRS_View&     _ahrs;
+    AP_AHRS_View&     _ahrs;
     AC_PosControl&          _pos_control;
     const AC_AttitudeControl& _attitude_control;
     AP_Terrain              *_terrain = nullptr;
@@ -283,6 +286,7 @@ protected:
     // waypoint controller internal variables
     uint32_t    _wp_last_update;        // time of last update_wpnav call
     uint8_t     _wp_step;               // used to decide which portion of wpnav controller to run during this iteration
+    float       _wp_desired_speed_cms;  // desired wp speed in cm/sec
     Vector3f    _origin;                // starting point of trip to next waypoint in cm from ekf origin
     Vector3f    _destination;           // target destination in cm from ekf origin
     Vector3f    _pos_delta_unit;        // each axis's percentage of the total track from origin to destination

@@ -66,3 +66,5 @@ LIBRARIES += AP_WheelEncoder
 LIBRARIES += AP_Follow
 LIBRARIES += AP_Devo_Telem
 LIBRARIES += AP_OSD
+LIBRARIES += AP_L1_Control
+LIBRARIES += AP_SpdHgtControl
