@@ -282,14 +282,8 @@ void AP_Mount_Trillium::sendGpsDataPacket()
     switch (AP::gps().status()) {
     default:
     case AP_GPS::NO_GPS:
-        fixType = ubloxFixType_t::noFix;
-        break;
     case AP_GPS::NO_FIX:
-        if (AP::gps().highest_status_seen() >= AP_GPS::GPS_OK_FIX_3D) {
-            fixType = ubloxFixType_t::deadReckoningOnly;
-        } else {
-            fixType = ubloxFixType_t::noFix;
-        }
+        fixType = ubloxFixType_t::noFix;
         break;
     case AP_GPS::GPS_OK_FIX_2D:
         fixType = ubloxFixType_t::twoDFix;
@@ -298,7 +292,7 @@ void AP_Mount_Trillium::sendGpsDataPacket()
     case AP_GPS::GPS_OK_FIX_3D_DGPS:
     case AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT:
     case AP_GPS::GPS_OK_FIX_3D_RTK_FIXED:
-        fixType = ubloxFixType_t::gnssDeadReckoning;
+        fixType = ubloxFixType_t::threeDFix;
         break;
     }
     packet.FixType = fixType;
