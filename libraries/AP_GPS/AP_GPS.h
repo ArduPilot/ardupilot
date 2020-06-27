@@ -146,7 +146,6 @@ public:
 
         // all the following fields must all be filled by the backend driver
         GPS_Status status;                  ///< driver fix status
-        GPS_Status highest_status_seen;     ///< driver fix status highest ever seen since boot
         uint32_t time_week_ms;              ///< GPS time (milliseconds from start of GPS week)
         uint16_t time_week;                 ///< GPS week number
         Location location;                  ///< last fix location
@@ -217,13 +216,6 @@ public:
     }
     GPS_Status status(void) const {
         return status(primary_instance);
-    }
-
-    GPS_Status highest_status_seen(uint8_t instance) const {
-        return state[instance].highest_status_seen;
-    }
-    GPS_Status highest_status_seen(void) const {
-        return highest_status_seen(primary_instance);
     }
 
     // Query the highest status this GPS supports (always reports GPS_OK_FIX_3D for the blended GPS)

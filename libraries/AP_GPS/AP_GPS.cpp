@@ -458,7 +458,6 @@ void AP_GPS::detect_instance(uint8_t instance)
     const uint32_t now = AP_HAL::millis();
 
     state[instance].status = NO_GPS;
-    state[instance].highest_status_seen = NO_GPS;
     state[instance].hdop = GPS_UNKNOWN_DOP;
     state[instance].vdop = GPS_UNKNOWN_DOP;
 
@@ -681,12 +680,6 @@ void AP_GPS::update_instance(uint8_t instance)
         // out and needs to be re-initialised
         detect_instance(instance);
         return;
-    }
-
-    if (state[instance].status == NO_GPS) {
-        state[instance].highest_status_seen = NO_GPS;
-    } else if (state[instance].highest_status_seen < state[instance].status) {
-        state[instance].highest_status_seen = state[instance].status;
     }
 
     if (_auto_config == GPS_AUTO_CONFIG_ENABLE) {
