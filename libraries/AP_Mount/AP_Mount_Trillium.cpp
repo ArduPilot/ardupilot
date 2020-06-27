@@ -157,7 +157,8 @@ void AP_Mount_Trillium::update()
                 OrionCommSend(&PktOut);
             }
             if (notifyGcs) {
-                gcs().send_text_rate_limited(MAV_SEVERITY_INFO, 1000, notify_gcs_last_ms, "%sRetracting", _trilliumGcsHeader);
+                // This is causing spam if we command ity to retract and it's not able to achieve it, such as when it's unplugged.
+                //gcs().send_text_rate_limited(MAV_SEVERITY_INFO, 1000, notify_gcs_last_ms, "%sRetracting", _trilliumGcsHeader);
             }
             break;
 
