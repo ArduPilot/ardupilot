@@ -769,7 +769,8 @@ void AP_GPS::update_instance(uint8_t instance)
 
     if (data_should_be_logged) {
         // keep count of delayed frames and average frame delay for health reporting
-        const uint16_t gps_max_delta_ms = 245; // 200 ms (5Hz) + 45 ms buffer
+//        const uint16_t gps_max_delta_ms = 245; // 200 ms (5Hz) + 45 ms buffer
+        const uint16_t gps_max_delta_ms = 445; // 400 ms  + 45 ms buffer
         GPS_timing &t = timing[instance];
 
         if (t.delta_time_ms > gps_max_delta_ms) {
@@ -1736,7 +1737,8 @@ bool AP_GPS::is_healthy(uint8_t instance) const
       happens with the RTCMv3 data
      */
     const uint8_t delay_threshold = 2;
-    const float delay_avg_max = _type[instance] == GPS_TYPE_UBLOX_RTK_ROVER?245:215;
+//    const float delay_avg_max = _type[instance] == GPS_TYPE_UBLOX_RTK_ROVER?245:215;
+    const float delay_avg_max = _type[instance] == GPS_TYPE_UBLOX_RTK_ROVER?245:445; // for TMRS moving base scenario
     const GPS_timing &t = timing[instance];
     bool delay_ok = (t.delayed_count < delay_threshold) && t.average_delta_ms < delay_avg_max;
 
