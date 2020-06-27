@@ -120,6 +120,7 @@ private:
     const char* get_packet_name(uint8_t id);
     const char* get_mode_name(uint8_t mode);
     void SendGeopointCmd(const Location targetLoc, const Vector3f targetVelNed_vector, const float joystickRange, const geopointOptions options);
+    void sendGpsDataPacket();
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SocketAPM sock{true};
