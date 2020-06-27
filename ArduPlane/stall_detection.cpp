@@ -19,6 +19,7 @@ void Plane::stall_detection_update(void)
     }
 
     if (!arming.is_armed() ||
+        g2.stall_detection_bitmask == 0 ||
         auto_state.last_flying_ms == 0 ||
         g2.stall_detection_bitmask == 0 ||
         !is_flying() ||
