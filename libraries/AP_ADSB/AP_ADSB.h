@@ -27,14 +27,31 @@
 #include <AP_Common/Location.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
+#define ADSB_BITBASK_RF_CAPABILITIES_UAT_IN         (1 << 0)
+#define ADSB_BITBASK_RF_CAPABILITIES_1090ES_IN      (1 << 1)
+
+class AP_ADSB_Backend;
+
 class AP_ADSB {
 public:
+    friend class AP_ADSB_Backend;
+
     // constructor
     AP_ADSB();
 
     /* Do not allow copies */
     AP_ADSB(const AP_ADSB &other) = delete;
     AP_ADSB &operator=(const AP_ADSB&) = delete;
+
+    // get singleton instance
+    static AP_ADSB *get_singleton(void) {
+        return _singleton;
+    }
+
+    enum class AP_ADSBType {
+        UAVIONIX            = 0,
+        SAGETECH            = 1,
+    };
 
     struct adsb_vehicle_t {
         mavlink_adsb_vehicle_t info; // the whole mavlink struct with all the juicy details. sizeof() == 38
@@ -89,57 +106,7 @@ public:
     // confirm a value is a valid callsign
     static bool is_valid_callsign(uint16_t octal) WARN_IF_UNUSED;
 
-    // get singleton instance
-    static AP_ADSB *get_singleton(void) {
-        return _singleton;
-    }
-
-private:
-    static AP_ADSB *_singleton;
-
-    // initialize _vehicle_list
-    void init();
-
-    // free _vehicle_list
-    void deinit();
-
-    // compares current vector against vehicle_list to detect threats
-    void determine_furthest_aircraft(void);
-
-    // return index of given vehicle if ICAO_ADDRESS matches. return -1 if no match
-    bool find_index(const adsb_vehicle_t &vehicle, uint16_t *index) const;
-
-    // remove a vehicle from the list
-    void delete_vehicle(const uint16_t index);
-
-    void set_vehicle(const uint16_t index, const adsb_vehicle_t &vehicle);
-
-    // Generates pseudorandom ICAO from gps time, lat, and lon
-    uint32_t genICAO(const Location &loc);
-
-    // set callsign: 8char string (plus null termination) then optionally append last 4 digits of icao
-    void set_callsign(const char* str, const bool append_icao);
-
-    // send static and dynamic data to ADSB transceiver
-    void send_configure(const mavlink_channel_t chan);
-    void send_dynamic_out(const mavlink_channel_t chan);
-
-    // special helpers for uAvionix workarounds
-    uint32_t get_encoded_icao(void);
-    uint8_t get_encoded_callsign_null_char(void);
-
-    // add or update vehicle_list from inbound mavlink msg
-    void handle_vehicle(const mavlink_message_t &msg);
-
-    // handle ADS-B transceiver report for ping2020
-    void handle_transceiver_report(mavlink_channel_t chan, const mavlink_message_t &msg);
-
-    void handle_out_cfg(const mavlink_message_t &msg);
-
-    AP_Int8     _enabled;
-
-    Location  _my_loc;
-
+//protected:
 
     // ADSB-IN state. Maintains list of external vehicles
     struct {
@@ -161,8 +128,6 @@ private:
     struct {
         uint32_t    last_config_ms; // send once every 10s
         uint32_t    last_report_ms; // send at 5Hz
-        int8_t      chan = -1; // channel that contains an ADS-b Transceiver. -1 means transceiver is not detected
-        uint32_t    chan_last_ms;
         UAVIONIX_ADSB_RF_HEALTH status;     // transceiver status
         bool        is_flying;
         bool        _is_in_auto_mode;
@@ -189,6 +154,42 @@ private:
     } out_state;
 
 
+    AP_Int8     _enabled;
+
+    Location     _my_loc;
+    AP_Int8     _type;
+
+private:
+
+    static AP_ADSB *_singleton;
+
+    // initialize driver
+    void hw_init();
+
+    // free/load _vehicle_list
+    void list_init();
+    void list_deinit();
+
+    // compares current vector against vehicle_list to detect threats
+    void determine_furthest_aircraft(void);
+
+    // return index of given vehicle if ICAO_ADDRESS matches. return -1 if no match
+    bool find_index(const adsb_vehicle_t &vehicle, uint16_t *index) const;
+
+    // remove a vehicle from the list
+    void delete_vehicle(const uint16_t index);
+
+    void set_vehicle(const uint16_t index, const adsb_vehicle_t &vehicle);
+
+    // Generates pseudorandom ICAO from gps time, lat, and lon
+    uint32_t genICAO(const Location &loc);
+
+    // set callsign: 8char string (plus null termination) then optionally append last 4 digits of icao
+    void set_callsign(const char* str, const bool append_icao);
+
+    // add or update vehicle_list from inbound mavlink msg
+    void handle_vehicle(const mavlink_message_t &msg);
+
     // index of and distance to furthest vehicle in list
     uint16_t    furthest_vehicle_index;
     float       furthest_vehicle_distance;
@@ -211,9 +212,14 @@ private:
         ALL             = 2
     };
 
+    // reference to backend
+    AP_ADSB_Backend *backend;
+
 
 };
 
 namespace AP {
     AP_ADSB *ADSB();
 };
+
+#include "AP_ADSB_Backend.h"
