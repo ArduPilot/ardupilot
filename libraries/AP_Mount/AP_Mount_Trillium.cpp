@@ -9,7 +9,8 @@
 extern const AP_HAL::HAL& hal;
 
 #define AP_MOUNT_TRILLIUM_ENABLE_RX_PARSING                 1
-#define AP_MOUNT_TRILLIUM_DISABLE_GPSDATA_PACKET            0
+#define AP_MOUNT_TRILLIUM_ENABLE_GPSDATA_PACKET             1
+#define AP_MOUNT_TRILLIUM_GPSDATA_OUT_USE_AHRS              1
 #define AP_MOUNT_TRILLIUM_DEBUG_RX_ALL_MSGS                 0
 #define AP_MOUNT_TRILLIUM_DEBUG_RX_UNHANDLED_MSGS_COMMON    0
 #define AP_MOUNT_TRILLIUM_DEBUG_RX_UNHANDLED_MSGS_RARE      0
@@ -57,12 +58,14 @@ void AP_Mount_Trillium::init_hw()
         return;
     }
 
-#if AP_MOUNT_TRILLIUM_SITL_USE_IP && (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && AP_MOUNT_TRILLIUM_SITL_USE_IP
     if (!sock_connected) {
         sock_connected = sock.connect(AP_MOUNT_TRILLIUM_SITL_IP, AP_MOUNT_TRILLIUM_SITL_PORT);
         if (!sock_connected) {
             return;
         }
+        gcs().send_text(MAV_SEVERITY_INFO, "%sConnected to %s:%d", _trilliumGcsHeader, AP_MOUNT_TRILLIUM_SITL_IP, AP_MOUNT_TRILLIUM_SITL_PORT);
+
     }
 #endif
 
@@ -242,41 +245,138 @@ void AP_Mount_Trillium::update()
         OrionCommSend(&PktOut);
     }
 
-#if AP_MOUNT_TRILLIUM_DISABLE_GPSDATA_PACKET
-    // reset timer so it never sends
-    _last_send_GpsData_ms = now_ms;
+
+#if AP_MOUNT_TRILLIUM_ENABLE_GPSDATA_PACKET
+    if (now_ms - _last_send_GpsData_ms > 250) {
+        _last_send_GpsData_ms = now_ms;
+        sendGpsDataPacket();
+    }
+#endif
+}
+
+void AP_Mount_Trillium::sendGpsDataPacket()
+{
+    OrionPkt_t PktOut;
+
+    auto &ahrs = AP::ahrs();
+    float value;
+    GpsData_t packet {};
+
+    Location loc;
+    Vector3f vel;
+#if AP_MOUNT_TRILLIUM_GPSDATA_OUT_USE_AHRS
+    loc = (ahrs.get_position(loc)) ? loc : AP::gps().location();
+    vel = (ahrs.get_velocity_NED(vel)) ? vel : AP::gps().velocity();
+#else
+    loc = AP::gps().location();
+    vel = AP::gps().velocity();
 #endif
 
-    if (now_ms - _last_send_GpsData_ms > 1000) {
-        _last_send_GpsData_ms = now_ms;
-
-        auto &ahrs = AP::ahrs();
-        float value;
-        GpsData_t packet {};
-
-        packet.multiAntHeadingValid = 0;
-        packet.FixType = AP::gps().status();
-        packet.FixState = AP::gps().status();
-        packet.TrackedSats = AP::gps().num_sats();
-        packet.PDOP = AP::gps().get_hdop();
-        packet.Latitude = AP::gps().location().lat;
-        packet.Longitude = AP::gps().location().lng;
-        packet.Altitude = AP::gps().location().alt;
-
-        packet.VelNED[0] = AP::gps().velocity().x;
-        packet.VelNED[1] = AP::gps().velocity().y;
-        packet.VelNED[2] = AP::gps().velocity().z;
-
-        packet.Hacc = AP::gps().speed_accuracy(value) ? value : 0;
-        packet.Vacc = AP::gps().vertical_accuracy(value) ? value : 0;
 
 
-        packet.source = gpsSource_t::autopilotSource;
+    // Set if the GPS has a multi antenna heading solution.
+    packet.multiAntHeadingValid = 0;
 
-
-        encodeGpsDataPacketStructure(&PktOut, &packet);
-        OrionCommSend(&PktOut);
+    ubloxFixType_t fixType = ubloxFixType_t::noFix;
+    switch (AP::gps().status()) {
+    default:
+    case AP_GPS::NO_GPS:
+        fixType = ubloxFixType_t::noFix;
+        break;
+    case AP_GPS::NO_FIX:
+        if (AP::gps().highest_status_seen() >= AP_GPS::GPS_OK_FIX_3D) {
+            fixType = ubloxFixType_t::deadReckoningOnly;
+        } else {
+            fixType = ubloxFixType_t::noFix;
+        }
+        break;
+    case AP_GPS::GPS_OK_FIX_2D:
+        fixType = ubloxFixType_t::twoDFix;
+        break;
+    case AP_GPS::GPS_OK_FIX_3D:
+    case AP_GPS::GPS_OK_FIX_3D_DGPS:
+    case AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT:
+    case AP_GPS::GPS_OK_FIX_3D_RTK_FIXED:
+        fixType = ubloxFixType_t::gnssDeadReckoning;
+        break;
     }
+    packet.FixType = fixType;
+    packet.FixState = AP::gps().status();
+    packet.TrackedSats = AP::gps().num_sats();
+
+    //Position dilution of precision.
+    packet.PDOP = AP::gps().get_hdop() * 0.1f;
+
+    //Geodetic latitude in radians, positive North. Scaled by 1E7*180/pi from -3.748066027288564 to 3.748066027288564.
+    packet.Latitude =  deg2rad(loc.lat * 1E-7);
+
+    //Longitude in radians, positive East. Scaled by 1E7*180/pi from -3.748066027288564 to 3.748066027288564.
+    packet.Longitude = deg2rad(loc.lng * 1E-7);
+
+    //Altitude in meters above the WGS-84 ellipsoid.
+    packet.Altitude =  (loc.alt * 0.01);
+
+    // Velocity in North, East, Down meters per second.
+    packet.VelNED[0] = vel.x;
+    packet.VelNED[1] = vel.y;
+    packet.VelNED[2] = vel.z;
+
+    // Horizontal/Vertical/Speed accuracy in meters. Scaled by 1000 from -2147483.647 to 2147483.647.
+    packet.Hacc = AP::gps().speed_accuracy(value) ? value : 0;
+    packet.Vacc = AP::gps().vertical_accuracy(value) ? value : 0;
+    packet.SpeedAcc = packet.Hacc;
+
+    // Course accuracy in radians. Scaled by 5729578 from -374.8065995436313 to 374.8065995436313.
+    packet.HeadingAcc = 0; // ????
+
+    // GPS time of week in milliseconds.
+    packet.ITOW = AP::gps().time_week_ms();
+
+    // GPS week number since Jan 6 1980.
+    packet.Week = AP::gps().time_week();
+
+    // Height of the mean seal level geoid with respect to the WGS-84 ellipsoid, in meters
+    packet.GeoidUndulation = 0;
+
+    packet.source = gpsSource_t::autopilotSource;
+
+    // Set if detailed accuracy information (posAccuracy and velAccuracy) are included in this packet.
+    float horiz_acc;
+    packet.detailedAccuracyValid = AP::gps().horizontal_accuracy(horiz_acc);
+
+    // 0 if vertical velocity data are not valid.
+    float speed_accuracy;
+    packet.verticalVelocityValid = AP::gps().have_vertical_velocity() && AP::gps().speed_accuracy(speed_accuracy);
+
+
+    // Leap seconds to subtract from GPS time to compute UTC time. This field is optional. If it is not included then the value is assumed to be 17.
+    packet.leapSeconds = 18;
+
+    // The heading in radians from the multi antenna solution from -pi to pi. Scaled by 32767/(&pi) from -pi to pi.
+    // Only included if multiAntHeadingValid is non-zero. This field is optional. If it is not included then the value is assumed to be 0.
+    if (packet.multiAntHeadingValid) {
+        packet.multiAntHeading = 0;
+    }
+
+    // North, East, Down position/velocity accuracy estimate in meters/meters-per-sec.
+    // Only included if detailedAccuracyValid is non-zero. This field is optional. If it is not included then the value is assumed to be 0.
+    if (packet.detailedAccuracyValid) {
+        packet.posAccuracy[0] = horiz_acc;
+        packet.posAccuracy[1] = horiz_acc;
+    }
+    float vert_acc;
+    if (AP::gps().horizontal_accuracy(vert_acc)) {
+        packet.posAccuracy[2] = vert_acc;
+    }
+
+    if (packet.verticalVelocityValid) {
+        packet.velAccuracy[0] = speed_accuracy;
+        packet.velAccuracy[1] = speed_accuracy;
+        packet.velAccuracy[2] = speed_accuracy;
+    }
+
+    encodeGpsDataPacketStructure(&PktOut, &packet);
+    OrionCommSend(&PktOut);
 }
 
 void AP_Mount_Trillium::SendGeopointCmd(const Location targetLoc, const Vector3f targetVelNed_vector, const float joystickRange, const geopointOptions options)
