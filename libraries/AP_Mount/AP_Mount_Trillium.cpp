@@ -9,6 +9,7 @@
 extern const AP_HAL::HAL& hal;
 
 #define AP_MOUNT_TRILLIUM_ENABLE_RX_PARSING                 1
+#define AP_MOUNT_TRILLIUM_DISABLE_GPSDATA_PACKET            0
 #define AP_MOUNT_TRILLIUM_DEBUG_RX_ALL_MSGS                 0
 #define AP_MOUNT_TRILLIUM_DEBUG_RX_UNHANDLED_MSGS_COMMON    0
 #define AP_MOUNT_TRILLIUM_DEBUG_RX_UNHANDLED_MSGS_RARE      0
@@ -240,37 +241,42 @@ void AP_Mount_Trillium::update()
         encodeOrionAutopilotDataPacketStructure(&PktOut, &packet);
         OrionCommSend(&PktOut);
     }
-//
-//    if (now_ms - _last_send_GpsData_ms > 1000) {
-//        _last_send_GpsData_ms = now_ms;
-//
-//        auto &ahrs = AP::ahrs();
-//        float value;
-//        GpsData_t packet {};
-//
-//        packet.multiAntHeadingValid = 0;
-//        packet.FixType = AP::gps().status();
-//        packet.FixState = AP::gps().status();
-//        packet.TrackedSats = AP::gps().num_sats();
-//        packet.PDOP = AP::gps().get_hdop();
-//        packet.Latitude = AP::gps().location().lat;
-//        packet.Longitude = AP::gps().location().lng;
-//        packet.Altitude = AP::gps().location().alt;
-//
-//        packet.VelNED[0] = AP::gps().velocity().x;
-//        packet.VelNED[1] = AP::gps().velocity().y;
-//        packet.VelNED[2] = AP::gps().velocity().z;
-//
-//        packet.Hacc = AP::gps().speed_accuracy(value) ? value : 0;
-//        packet.Vacc = AP::gps().vertical_accuracy(value) ? value : 0;
-//
-//
-//        packet.source = gpsSource_t::autopilotSource;
-//
-//
-//        encodeGpsDataPacketStructure(&PktOut, &packet);
-//        OrionCommSend(&PktOut);
-//    }
+
+#if AP_MOUNT_TRILLIUM_DISABLE_GPSDATA_PACKET
+    // reset timer so it never sends
+    _last_send_GpsData_ms = now_ms;
+#endif
+
+    if (now_ms - _last_send_GpsData_ms > 1000) {
+        _last_send_GpsData_ms = now_ms;
+
+        auto &ahrs = AP::ahrs();
+        float value;
+        GpsData_t packet {};
+
+        packet.multiAntHeadingValid = 0;
+        packet.FixType = AP::gps().status();
+        packet.FixState = AP::gps().status();
+        packet.TrackedSats = AP::gps().num_sats();
+        packet.PDOP = AP::gps().get_hdop();
+        packet.Latitude = AP::gps().location().lat;
+        packet.Longitude = AP::gps().location().lng;
+        packet.Altitude = AP::gps().location().alt;
+
+        packet.VelNED[0] = AP::gps().velocity().x;
+        packet.VelNED[1] = AP::gps().velocity().y;
+        packet.VelNED[2] = AP::gps().velocity().z;
+
+        packet.Hacc = AP::gps().speed_accuracy(value) ? value : 0;
+        packet.Vacc = AP::gps().vertical_accuracy(value) ? value : 0;
+
+
+        packet.source = gpsSource_t::autopilotSource;
+
+
+        encodeGpsDataPacketStructure(&PktOut, &packet);
+        OrionCommSend(&PktOut);
+    }
 }
 
 void AP_Mount_Trillium::SendGeopointCmd(const Location targetLoc, const Vector3f targetVelNed_vector, const float joystickRange, const geopointOptions options)
