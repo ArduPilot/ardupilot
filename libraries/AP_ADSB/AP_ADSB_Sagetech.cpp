@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <time.h>
-#include <string>
+#include <string.h>
 #include <AP_Math/bitwise.h>
 
 extern const AP_HAL::HAL& hal;
