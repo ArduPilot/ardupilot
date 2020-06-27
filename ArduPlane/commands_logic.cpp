@@ -529,18 +529,17 @@ bool Plane::verify_takeoff()
             // rotate, and also allows us to cope with arbitrary
             // compass errors for auto takeoff
 
-            const float ground_course = ahrs.ground_course();
-            float takeoff_course = wrap_PI(radians(ground_course)) - steer_state.locked_course_err;
-            takeoff_course = wrap_PI(takeoff_course);
-            steer_state.hold_course_cd = wrap_360_cd(degrees(takeoff_course)*100);
+            const float takeoff_course_rad = ahrs.groundspeed_vector().angle() - steer_state.locked_course_err;
+            steer_state.hold_course_cd = wrap_360_cd(degrees(takeoff_course_rad)*100);
 
-            // when true, we will follow the recorded takeoff heading.
-            // when false, we xtrack to a virtual waypoint 10km ahead of us on this takeoff heading
-            steer_state.locked_course = false;
+            // when true, we will follow the recorded takeoff heading. We start with this.
+            // once we gain a little (10m?) altitude we set this to false to xtrack to a virtual waypoint 10km ahead of us on this takeoff heading
+            steer_state.locked_course = true;
+            takeoff_state.loc = current_loc;
 
-            next_WP_loc = current_loc;
-            next_WP_loc.offset_bearing(ground_course, 10000); // push it out 10km
-            set_next_WP(next_WP_loc);
+            Location virtual_takeoff_distant_point = takeoff_state.loc;
+            virtual_takeoff_distant_point.offset_bearing(steer_state.hold_course_cd * 0.01, 500); // push it out 500m
+            set_next_WP(virtual_takeoff_distant_point);
             auto_state.crosstrack = true;
 
             gcs().send_text(MAV_SEVERITY_INFO, "Holding course %d at %.1fm/s (%.1f)",
@@ -550,14 +549,27 @@ bool Plane::verify_takeoff()
         }
     }
 
-    if (!steer_state.locked_course && !prev_WP_loc.same_latlon_as(next_WP_loc)) {
-        // heading is not locked and we have valid waypoints to follow
-        nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
-    } else if (steer_state.hold_course_cd != -1) {
-        // call navigation controller for heading hold
-        nav_controller->update_heading_hold(steer_state.hold_course_cd);
+    if (steer_state.hold_course_cd != -1) {
+        // lock course if we're low
+        steer_state.locked_course = (((current_loc.alt*0.01) - auto_state.baro_takeoff_alt) < mode_takeoff.level_alt);
+
+        if (steer_state.locked_course) {
+            // call navigation controller for heading hold
+            nav_controller->update_heading_hold(steer_state.hold_course_cd);
+        } else {
+            // we're up a little, it's safer to navigate normally and xtrack
+            if (auto_state.wp_proportion > 0.5) {
+                const float distance = takeoff_state.loc.get_distance(next_WP_loc);
+                Location virtual_takeoff_distant_point = takeoff_state.loc;
+                virtual_takeoff_distant_point.offset_bearing(steer_state.hold_course_cd * 0.01, distance*2); // push it out
+                set_next_WP(virtual_takeoff_distant_point);
+                auto_state.crosstrack = true;
+            }
+            nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
+        }
+
     } else {
-        nav_controller->update_level_flight();        
+        nav_controller->update_level_flight();
     }
 
     // check for optional takeoff timeout
