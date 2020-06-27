@@ -460,7 +460,7 @@ bool NavEKF3_core::readyToUseBodyOdm(void) const
 // return true if the filter to be ready to use gps
 bool NavEKF3_core::readyToUseGPS(void) const
 {
-    return validOrigin && tiltAlignComplete && yawAlignComplete && delAngBiasLearned && gpsGoodToAlign && (frontend->_fusionModeGPS != 3) && gpsDataToFuse && !gpsInhibit;
+    return validOrigin && tiltAlignComplete && yawAlignComplete && (delAngBiasLearned || assume_zero_sideslip()) && gpsGoodToAlign && (frontend->_fusionModeGPS != 3) && gpsDataToFuse && !gpsInhibit;
 }
 
 // return true if the filter to be ready to use the beacon range measurements
@@ -552,8 +552,8 @@ void NavEKF3_core::checkGyroCalStatus(void)
 {
     // check delta angle bias variances
     const float delAngBiasVarMax = sq(radians(0.15f * dtEkfAvg));
-    if (!use_compass() && (effectiveMagCal != MagCal::EXTERNAL_YAW)) {
-        // rotate the variances into earth frame and evaluate horizontal terms only as yaw component is poorly observable without a compass
+    if (!use_compass() && (effectiveMagCal != MagCal::EXTERNAL_YAW) && (effectiveMagCal != MagCal::EXTERNAL_YAW_FALLBACK)) {
+        // rotate the variances into earth frame and evaluate horizontal terms only as yaw component is poorly observable without a yaw reference
         // which can make this check fail
         Vector3f delAngBiasVarVec = Vector3f(P[10][10],P[11][11],P[12][12]);
         Vector3f temp = prevTnb * delAngBiasVarVec;
