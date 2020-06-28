@@ -136,7 +136,7 @@ void Plane::update_soaring() {
                     set_mode(*exit_mode, ModeReason::SOARING_ALT_TOO_HIGH);
                     break;
                 case SoaringController::LoiterStatus::ALT_TOO_LOW:
-                    gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Too low, restoring%s", exit_mode->name());
+                    gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Too low, restoring %s", exit_mode->name());
                     set_mode(*exit_mode, ModeReason::SOARING_ALT_TOO_LOW);
                     break;
                 default:
@@ -145,7 +145,7 @@ void Plane::update_soaring() {
                     set_mode(*exit_mode, ModeReason::SOARING_THERMAL_ESTIMATE_DETERIORATED);
                     break;
                 case SoaringController::LoiterStatus::DRIFT_EXCEEDED:
-                    gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Drifted too far, restoring  %s", exit_mode->name());
+                    gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Drifted too far, restoring %s", exit_mode->name());
                     set_mode(*exit_mode, ModeReason::SOARING_DRIFT_EXCEEDED);
                     break;
             } // switch loiterStatus
