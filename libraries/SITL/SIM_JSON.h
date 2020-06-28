@@ -19,6 +19,12 @@
 
 namespace SITL {
 
+struct vector4f
+{
+    float w,x,y,z;
+};
+typedef struct vector4f VECTOR4F;
+
 class JSON : public Aircraft {
 public:
     JSON(const char *frame_str);
@@ -68,6 +74,7 @@ private:
         DATA_FLOAT,
         DATA_DOUBLE,
         DATA_VECTOR3F,
+        DATA_VECTOR4F,
     };
 
     struct {
@@ -78,6 +85,7 @@ private:
         } imu;
         Vector3f position;
         Vector3f attitude;
+        VECTOR4F attitudeQ;
         Vector3f velocity;
     } state;
 
@@ -87,12 +95,13 @@ private:
         const char *key;
         void *ptr;
         enum data_type type;
-    } keytable[6] = {
+    } keytable[7] = {
         { "", "timestamp", &state.timestamp_s, DATA_DOUBLE },
         { "imu", "gyro",    &state.imu.gyro, DATA_VECTOR3F },
         { "imu", "accel_body", &state.imu.accel_body, DATA_VECTOR3F },
         { "", "position", &state.position, DATA_VECTOR3F },
         { "", "attitude", &state.attitude, DATA_VECTOR3F },
+        { "", "attitudeQ", &state.attitudeQ, DATA_VECTOR4F },
         { "", "velocity", &state.velocity, DATA_VECTOR3F },
     };
 };

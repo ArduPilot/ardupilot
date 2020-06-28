@@ -173,6 +173,15 @@ bool JSON::parse_sensors(const char *json)
                 break;
             }
 
+            case DATA_VECTOR4F: {
+                VECTOR4F *v = static_cast<VECTOR4F*>(key.ptr);
+                if (sscanf(p, "[%f, %f, %f, %f]", &(v->w), &(v->x), &(v->y), &(v->z)) != 4) {
+                    printf("Failed to parse Vector4f for %s/%s\n", key.section, key.key);
+                    return false;
+                }
+                break;
+            }
+
         }
     }
     return true;
@@ -236,7 +245,14 @@ void JSON::recv_fdm(const struct sitl_input &input)
                             state.position[1],
                             state.position[2]);
 
-    dcm.from_euler(state.attitude[0], state.attitude[1], state.attitude[2]);
+    // dcm.from_euler(state.attitude[0], state.attitude[1], state.attitude[2]);
+
+    Quaternion quat(static_cast<float>(state.attitudeQ.w),
+                    static_cast<float>(state.attitudeQ.x),
+                    static_cast<float>(state.attitudeQ.y),
+                    static_cast<float>(state.attitudeQ.z));
+    quat.rotation_matrix(dcm);
+
 
     // Convert from a meters from origin physics to a lat long alt
     update_position();
