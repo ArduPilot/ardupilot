@@ -170,26 +170,8 @@ private:
     // RC input generator for pilot to specify desired generator state
     RC_Channel *_rc_channel;
 
-    // a simple heat model to avoid the motor moving to run too fast
-    // or being stopped before cooldown.
-    uint32_t last_heat_print;
-    uint32_t last_heat_update_ms;
-    float heat;
-    void update_heat();
-
-    bool generator_ok_to_run() const;
-    bool generator_ok_to_supply() const;
-    static constexpr float heat_required_for_supply();
-    static constexpr float heat_required_for_run();
-
     static const uint16_t RUN_RPM = 15000;
     static const uint16_t IDLE_RPM = 4800;
-
-    static constexpr float environment_loss_factor = 0.005f;
-    // powf is not constexpr, so we create a const for it:
-    // powf(1.0f-environment_loss_factor, 30)
-    static constexpr float environment_loss_30s = 0.860384;
-    static constexpr float environment_loss_60s = 0.740261;
 
     // logging state
     uint32_t last_logged_reading_ms;
