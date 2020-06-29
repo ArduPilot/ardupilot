@@ -305,6 +305,12 @@ bool AP_Generator_RichenPower::pre_arm_check(char *failmsg, uint8_t failmsg_len)
         // not configured in serial manager
         return true;
     }
+    if (last_reading_ms == 0) {
+        // allow optional use of generator
+        snprintf(failmsg, failmsg_len, "no RichenPower generator present");
+        return true;
+    }
+
     const uint32_t now = AP_HAL::millis();
 
     if (now - last_reading_ms > 2000) { // we expect @1Hz
