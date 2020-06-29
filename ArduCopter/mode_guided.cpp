@@ -640,13 +640,29 @@ void ModeGuided::set_desired_velocity_with_accel_and_fence_limits(const Vector3f
 
 #if AC_AVOID_ENABLED
     // limit the velocity to prevent fence violations
-    copter.avoid.adjust_velocity(pos_control->get_pos_xy_p().kP(), pos_control->get_max_accel_xy(), curr_vel_des, G_Dt);
+    Vector2f rel_save_location_cm;
+    copter.avoid.adjust_velocity(pos_control->get_pos_xy_p().kP(), pos_control->get_max_accel_xy(), curr_vel_des, rel_save_location_cm, G_Dt);
     // get avoidance adjusted climb rate
     curr_vel_des.z = get_avoidance_adjusted_climbrate(curr_vel_des.z);
 #endif
 
     // update position controller with new target
     pos_control->set_desired_velocity(curr_vel_des);
+
+#if AC_AVOID_ENABLED
+    if (!rel_save_location_cm.is_zero()) {
+        pos_control->set_max_speed_xy(copter.avoid.get_backaway_speed() * 100);
+        pos_control->set_max_accel_xy(wp_nav->get_wp_acceleration() * 0.5);
+
+        Vector3f curr_pos = copter.inertial_nav.get_position();
+        pos_control->set_xy_target(curr_pos.x + rel_save_location_cm.x + curr_vel_des.x * G_Dt, curr_pos.y + rel_save_location_cm.y + curr_vel_des.y * G_Dt);
+    } else {
+        // set speed and acceleration from wpnav's speed and acceleration
+        pos_control->set_max_speed_xy(wp_nav->get_default_speed_xy());
+        pos_control->set_max_accel_xy(wp_nav->get_wp_acceleration());
+    }
+#endif
+
 }
 
 // helper function to set yaw state and targets
