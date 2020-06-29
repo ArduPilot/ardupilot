@@ -1481,9 +1481,9 @@ void NavEKF3::setTerrainHgtStable(bool val)
   1 = velocities are NaN
   2 = badly conditioned X magnetometer fusion
   3 = badly conditioned Y magnetometer fusion
-  5 = badly conditioned Z magnetometer fusion
-  6 = badly conditioned airspeed fusion
-  7 = badly conditioned synthetic sideslip fusion
+  4 = badly conditioned Z magnetometer fusion
+  5 = badly conditioned airspeed fusion
+  6 = badly conditioned synthetic sideslip fusion
   7 = filter is not initialised
 */
 void NavEKF3::getFilterFaults(int8_t instance, uint16_t &faults) const
@@ -1502,9 +1502,9 @@ void NavEKF3::getFilterFaults(int8_t instance, uint16_t &faults) const
   1 = velocity measurement timeout
   2 = height measurement timeout
   3 = magnetometer measurement timeout
+  4 = unassigned
   5 = unassigned
   6 = unassigned
-  7 = unassigned
   7 = unassigned
 */
 void NavEKF3::getFilterTimeouts(int8_t instance, uint8_t &timeouts) const
