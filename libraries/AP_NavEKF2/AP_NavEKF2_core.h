@@ -246,9 +246,9 @@ public:
      1 = velocities are NaN
      2 = badly conditioned X magnetometer fusion
      3 = badly conditioned Y magnetometer fusion
-     5 = badly conditioned Z magnetometer fusion
-     6 = badly conditioned airspeed fusion
-     7 = badly conditioned synthetic sideslip fusion
+     4 = badly conditioned Z magnetometer fusion
+     5 = badly conditioned airspeed fusion
+     6 = badly conditioned synthetic sideslip fusion
      7 = filter is not initialised
     */
     void  getFilterFaults(uint16_t &faults) const;
