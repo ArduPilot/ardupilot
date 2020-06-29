@@ -304,13 +304,26 @@ void AC_Loiter::calc_desired_velocity(float nav_dt)
     }
 
     // Limit the velocity to prevent fence violations
-    // TODO: We need to also limit the _desired_accel
+    // limit acceleration to remove unintuitive feedforward effects
+    // return the nearest safe location
+    Vector2f rel_safe_location_cm;
     AC_Avoid *_avoid = AP::ac_avoid();
     if (_avoid != nullptr) {
-        _avoid->adjust_velocity(_pos_control.get_pos_xy_p().kP(), _accel_cmss, desired_vel, nav_dt);
+        _avoid->adjust_velocity(_pos_control.get_pos_xy_p().kP(), _accel_cmss, desired_vel, _desired_accel, rel_safe_location_cm, nav_dt);
     }
 
     // send adjusted feed forward acceleration and velocity back to the Position Controller
     _pos_control.set_desired_accel_xy(_desired_accel.x, _desired_accel.y);
     _pos_control.set_desired_velocity_xy(desired_vel.x, desired_vel.y);
+
+    // back away to the safe location, add adjusted velocity to smooth movement
+    if (!rel_safe_location_cm.is_zero()) {
+        // reduce maximum speeds and aclerations for backing away
+        _pos_control.set_max_speed_xy(_avoid->get_backaway_speed() * 100);
+        _pos_control.set_max_accel_xy(_accel_cmss * 0.5);
+
+        Vector3f curr_pos = _inav.get_position();
+        _pos_control.set_xy_target(curr_pos.x + rel_safe_location_cm.x + desired_vel.x * nav_dt, curr_pos.y + rel_safe_location_cm.y + desired_vel.y * nav_dt);
+    }
+
 }
