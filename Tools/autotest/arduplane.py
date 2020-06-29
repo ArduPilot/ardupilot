@@ -1737,6 +1737,109 @@ class AutoTestPlane(AutoTest):
         self.progress("Waiting for next WP with no loiter")
         self.wait_waypoint(4,4,timeout=1200,max_dist=120)
 
+        #
+        ## Now do test with SOAR_ENABLE=2.
+        #
+        self.wait_current_waypoint(3,timeout=1200)
+
+        self.set_parameter("SOAR_ENABLE", 2)
+
+        # Enable thermalling RC
+        self.send_set_rc(rc_chan, 1900)
+
+        # Wait to detect thermal
+        self.progress("Waiting for thermal")
+        self.wait_mode('LOITER',timeout=600)
+
+        # Wait to climb to SOAR_ALT_MAX
+        self.progress("Waiting for climb to max altitude")
+        alt_max = self.get_parameter('SOAR_ALT_MAX')
+        self.wait_altitude(alt_max-10, alt_max, timeout=600, relative=True)
+
+        # Wait for AUTO
+        self.progress("Waiting for AUTO mode")
+        self.wait_mode('AUTO')
+
+        # Disable thermals
+        self.set_parameter("SIM_THML_SCENARI", 0)
+
+
+       # Wait to descent to mission altitude.
+        self.progress("Waiting for glide to mission altitude")
+        mission_alt = 200;
+        self.wait_altitude(mission_alt-5, mission_alt+5, timeout=600, relative=True)
+
+        self.progress("Waiting for throttle up")
+        self.wait_servo_channel_value(3, 1050, timeout=30, comparator=operator.gt)
+
+        # Now set FBWB mode
+        self.change_mode('FBWB')
+        self.delay_sim_time(5)
+
+        # Now disable soaring (should hold altitude)
+        self.set_parameter("SOAR_ENABLE", 0)
+        self.delay_sim_time(10)
+
+        #And reenable. This should NOT force throttle-down
+        self.set_parameter("SOAR_ENABLE", 2)
+        self.delay_sim_time(10)
+
+        # Set SOAR_ALT_MIN to just below mission altitude.
+        self.set_parameter("SOAR_ALT_MIN", mission_alt-30)
+
+        # Artificially force LOITER and check that we correctly go back to FBWB.
+        self.change_mode('LOITER')
+        self.wait_altitude(mission_alt-40, mission_alt-30, timeout=60, relative=True)
+
+        self.progress("Waiting for FBWB")
+        self.wait_mode('FBWB')
+
+        # Wait for climb to original target.
+        self.progress("Waiting for climb to RTL altitude")
+        self.wait_altitude(mission_alt-5, mission_alt+5, timeout=60, relative=True)
+
+        # Back to auto
+        self.change_mode('AUTO')
+        self.mavproxy.send("wp set 2\n")
+
+        # Reenable thermals
+        self.set_parameter("SIM_THML_SCENARI", 1)
+
+        # Disable soaring using RC channel.
+        self.send_set_rc(rc_chan, 1100)
+
+        # Wait to get back to waypoint before thermal.
+        self.progress("Waiting to get back to position")
+        self.wait_current_waypoint(3,timeout=1200)
+
+        # Wait for heading to line up
+        self.delay_sim_time(20)
+
+        # Go to cruise mode
+        self.change_mode('CRUISE')
+
+        # Wait for loiter 
+        self.send_set_rc(rc_chan, 1900)
+
+        self.progress("Waiting for thermal")
+        self.wait_mode('LOITER',timeout=600)
+
+        # Wait to climb to SOAR_ALT_MAX
+        self.progress("Waiting for climb to max altitude")
+        alt_max = self.get_parameter('SOAR_ALT_MAX')
+        self.wait_altitude(alt_max-10, alt_max, timeout=600, relative=True)
+
+        # Wait for CRUISE
+        self.progress("Waiting for CRUISE mode")
+        self.wait_mode('CRUISE')
+
+        # Wait for return to previous alt target
+        self.wait_altitude(mission_alt-5, mission_alt+5, timeout=600, relative=True)
+
+        # Make sure this is sustained
+        self.delay_sim_time(30)
+        self.wait_altitude(mission_alt-10, mission_alt+10, timeout=1, relative=True)
+
         # Disarm
         self.disarm_vehicle()
 
