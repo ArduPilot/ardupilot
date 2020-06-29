@@ -4689,7 +4689,7 @@ class AutoTestCopter(AutoTest):
         self.set_rc(9, 1000) # remember this is a switch position - stop
         self.mavproxy.expect("requested state is not RUN")
         self.set_rc(9, 2000) # remember this is a switch position - run
-        self.mavproxy.expect("warming up", timeout=200)
+        self.mavproxy.expect("Generator HIGH")
         self.set_rc(9, 1000) # remember this is a switch position - stop
         self.mavproxy.expect("requested state is not RUN", timeout=200)
         self.set_message_rate_hz("GENERATOR_STATUS", 1)
