@@ -26,7 +26,7 @@ void Plane::update_soaring() {
         break;
     case Mode::Number::FLY_BY_WIRE_B:
     case Mode::Number::CRUISE:
-        if (!g2.soaring_controller.suppress_throttle() && aparm.throttle_max > 0) {
+        if (!g2.soaring_controller.suppress_throttle() && aparm.throttle_max > 0 && g2.soaring_controller.is_suppress_throttle_mode()) {
             gcs().send_text(MAV_SEVERITY_INFO, "Soaring: forcing RTL");
             set_mode(mode_rtl, ModeReason::SOARING_FBW_B_WITH_MOTOR_RUNNING);
         }
@@ -42,7 +42,7 @@ void Plane::update_soaring() {
     }
 
     // Nothing to do if we are in powered flight
-    if (!g2.soaring_controller.get_throttle_suppressed() && aparm.throttle_max > 0) {
+    if (!g2.soaring_controller.get_throttle_suppressed() && aparm.throttle_max > 0 && g2.soaring_controller.is_suppress_throttle_mode()) {
         return;
     }
 
@@ -58,6 +58,10 @@ void Plane::update_soaring() {
 
             if (g2.soaring_controller.check_thermal_criteria()) {
                 gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal detected, entering %s", mode_loiter.name());
+
+                // Save altitude targets to restore later.
+                plane.soaring_restore_target_alt_amsl_cm    = plane.target_altitude.amsl_cm;
+                plane.soaring_restore_target_alt_terrain_cm = plane.target_altitude.terrain_alt_cm;
 
                 set_mode(mode_loiter, ModeReason::SOARING_THERMAL_DETECTED);
             }
@@ -125,7 +129,7 @@ void Plane::update_soaring() {
             Mode* exit_mode = previous_mode;
 
             if (loiterStatus == SoaringController::LoiterStatus::ALT_TOO_LOW && 
-               ((previous_mode->mode_number() == Mode::Number::CRUISE) || (previous_mode->mode_number() == Mode::Number::FLY_BY_WIRE_B))) {
+               (g2.soaring_controller.is_suppress_throttle_mode() && ((previous_mode->mode_number() == Mode::Number::CRUISE) || (previous_mode->mode_number() == Mode::Number::FLY_BY_WIRE_B)))) {
                 exit_mode = &mode_rtl;
             }
 
@@ -150,6 +154,14 @@ void Plane::update_soaring() {
                     break;
             } // switch loiterStatus
 
+            // Restore target altitude.
+            plane.target_altitude.amsl_cm        = plane.soaring_restore_target_alt_amsl_cm;
+            plane.target_altitude.terrain_alt_cm = plane.soaring_restore_target_alt_terrain_cm;
+
+            // If operating in mode 2, unsuppress the throttle now rather than waiting for next loop, to avoid target altitude reset.
+            if (!g2.soaring_controller.is_suppress_throttle_mode()) {
+                g2.soaring_controller.set_throttle_suppressed(false);
+            }
             break;
            
         } // case loiter

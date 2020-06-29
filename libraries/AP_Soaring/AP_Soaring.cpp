@@ -168,10 +168,10 @@ bool SoaringController::suppress_throttle()
 {
     float alt = _vario.alt;
 
-    if (_throttle_suppressed && (alt < alt_min)) {
+    if (_throttle_suppressed && (!is_suppress_throttle_mode() || (alt < alt_min))) {
         // Time to throttle up
         set_throttle_suppressed(false);
-    } else if ((!_throttle_suppressed) && (alt > alt_cutoff)) {
+    } else if (!_throttle_suppressed && (is_suppress_throttle_mode() && (alt > alt_cutoff))) {
         // Start glide
         set_throttle_suppressed(true);
 
@@ -488,4 +488,9 @@ bool SoaringController::check_drift(Vector2f prev_wp, Vector2f next_wp)
 
         return (powf(parallel,2)+powf(perpendicular,2)) > powf(max_drift,2);;
     }
+}
+
+bool SoaringController::is_suppress_throttle_mode() const
+{
+    return soar_active != 2;
 }

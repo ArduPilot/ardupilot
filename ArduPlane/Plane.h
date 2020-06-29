@@ -759,6 +759,10 @@ private:
     // soaring mode-change timer
     uint32_t soaring_mode_timer;
 
+    // soaring altitude target to restore
+    int32_t soaring_restore_target_alt_amsl_cm;
+    int32_t soaring_restore_target_alt_terrain_cm;
+
     void adjust_nav_pitch_throttle(void);
     void update_load_factor(void);
     void send_fence_status(mavlink_channel_t chan);

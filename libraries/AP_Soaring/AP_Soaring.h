@@ -125,6 +125,8 @@ public:
 
     bool is_active() const {return _last_update_status>=SoaringController::ActiveStatus::MANUAL_MODE_CHANGE;};
 
+    bool is_suppress_throttle_mode() const;
+
 private:
     // slow down messages if they are the same. During loiter we could smap the same message. Only show new messages during loiters
     LoiterStatus _cruise_criteria_msg_last;
