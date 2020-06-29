@@ -450,6 +450,22 @@ class AutoTestQuadPlane(AutoTest):
                                       timeout=30,
                                       comparator=operator.eq)
         self.set_rc(3, 1500)
+
+        self.context_push()
+        self.progress("Rolling over hard")
+        self.set_rc(1, 1000)
+        self.wait_roll(-50, 5)
+        self.progress("Killing servo outputs to force qassist to help")
+        self.set_parameter("SERVO1_MIN", 1500)
+        self.set_parameter("SERVO1_MAX", 1500)
+        self.set_parameter("SERVO1_TRIM", 1500)
+        self.progress("Trying ot roll over hard the other way")
+        self.set_rc(1, 2000)
+        self.progress("Waiting for qassist (angle) to kick in")
+        self.wait_servo_channel_value(5, 1400, timeout=30, comparator=operator.gt)
+        self.wait_roll(-45, 5)
+        self.context_pop()
+
         self.change_mode("RTL")
         self.delay_sim_time(20)
         self.change_mode("QRTL")
