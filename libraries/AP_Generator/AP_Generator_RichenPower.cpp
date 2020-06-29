@@ -148,53 +148,6 @@ bool AP_Generator_RichenPower::get_reading()
     return true;
 }
 
-void AP_Generator_RichenPower::update_heat()
-{
-    // assume heat increase is directly proportional to RPM.
-    const uint32_t now = AP_HAL::millis();
-    uint16_t rpm = last_reading.rpm;
-    if (now - last_reading_ms > 2000) {
-        // if we're not getting updates, assume we're getting colder
-        rpm = 0;
-        // ... and resend the version information when we get something again
-        protocol_information_anounced = false;
-    }
-
-    const uint32_t time_delta_ms = now - last_heat_update_ms;
-    last_heat_update_ms = now;
-
-    heat += rpm * time_delta_ms * (1/1000.0f);
-    // cap the heat of the motor:
-    heat = MIN(heat, 60 * RUN_RPM); // so cap heat at 60 seconds at run-speed
-    // now lose some heat to the environment
-    heat -= (heat * environment_loss_factor * (time_delta_ms * (1/1000.0f)));  // lose some % of heat per second
-}
-
-constexpr float AP_Generator_RichenPower::heat_required_for_run()
-{
-    // assume that heat is proportional to RPM.  Return a number
-    // proportial to RPM.  Reduce it to account for the cooling some%/s
-    // cooling
-    return (30 * IDLE_RPM) * environment_loss_30s;
-}
-bool AP_Generator_RichenPower::generator_ok_to_run() const
-{
-    return heat > heat_required_for_run();
-}
-
-constexpr float AP_Generator_RichenPower::heat_required_for_supply()
-{
-    // account for cooling that happens in that 60 seconds
-    return (30 * IDLE_RPM + 30 * RUN_RPM) * environment_loss_60s;
-}
-bool AP_Generator_RichenPower::generator_ok_to_supply() const
-{
-    // duplicated into prearms
-    return heat > heat_required_for_supply();
-}
-
-
-
 /*
   update the state of the sensor
 */
@@ -209,8 +162,6 @@ void AP_Generator_RichenPower::update(void)
     update_runstate();
 
     (void)get_reading();
-
-    update_heat();
 
     Log_Write();
 }
@@ -241,11 +192,6 @@ void AP_Generator_RichenPower::update_runstate()
         _servo_channel->set_output_pwm(SERVO_PWM_IDLE);
         break;
     case RunState::RUN:
-        // we must have
-        if (!generator_ok_to_run()) {
-            _servo_channel->set_output_pwm(SERVO_PWM_IDLE);
-            break;
-        }
         _servo_channel->set_output_pwm(SERVO_PWM_RUN);
         break;
     }
@@ -339,10 +285,6 @@ bool AP_Generator_RichenPower::pre_arm_check(char *failmsg, uint8_t failmsg_len)
     }
     if (runstate != RunState::RUN) {
         snprintf(failmsg, failmsg_len, "requested state is not RUN");
-        return false;
-    }
-    if (!generator_ok_to_supply()) {
-        snprintf(failmsg, failmsg_len, "warming up (%.0f%%)", (heat *100 / heat_required_for_supply()));
         return false;
     }
 
