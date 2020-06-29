@@ -162,6 +162,9 @@ void SoaringController::get_target(Location &wp)
 {
     wp = _ahrs.get_home();
     wp.offset(_position_x_filter.get(), _position_y_filter.get());
+    float alt;
+    _ahrs.get_relative_position_D_home(alt);
+    wp.set_alt_cm(-100.0f*alt, Location::AltFrame::ABOVE_HOME);
 }
 
 bool SoaringController::suppress_throttle()
