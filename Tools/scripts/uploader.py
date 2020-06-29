@@ -200,6 +200,7 @@ class uploader(object):
 
     REBOOT          = b'\x30'
     SET_BAUD        = b'\x33'     # set baud
+    GIT_GIT_HASH    = b'\x34'     # get git hash of bootloader
 
     INFO_BL_REV     = b'\x01'        # bootloader protocol revision
     BL_REV_MIN      = 2              # minimum supported bootloader protocol
@@ -564,6 +565,21 @@ class uploader(object):
                     uploader.EOC)
         self.__getSync()
 
+    # send the GET_CHIP command
+    def __getGitHash(self):
+        if self.bl_rev < 6:
+            return None
+        self.__send(uploader.GET_GIT_HASH + uploader.EOC)
+        length = self.__recv_int()
+        value = self.__recv(length)
+        self.__getSync()
+        # turn it back into a string
+        chars = ""
+        for i in range(0, length):
+            chars += chr(value[i] >> 4)
+            chars += chr(value[i] & 0x0f)
+        return chars
+
     # get basic data about the board
     def identify(self):
         # make sure we are in sync before starting
@@ -670,6 +686,12 @@ class uploader(object):
                 print("  %s %08x" % (H7_IDS[family], chip))
         else:
             print("  [unavailable; bootloader too old]")
+
+        if self.bl_rev >= 6:
+            h = self.__getGitHash()
+            if h is not None:
+                h = "[unavailable]"
+            print("BL Git hash: %s" % str(h))
 
         print("Info:")
         print("  flash size: %u" % self.fw_maxsize)
