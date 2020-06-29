@@ -258,6 +258,9 @@ void AP_MotorsMulticopter::output()
 
     // output raw roll/pitch/yaw/thrust
     output_rpyt();
+
+    // Output armed state on servo outputs
+    output_armed_state();
 };
 
 // output booster throttle, if any
@@ -790,5 +793,17 @@ void AP_MotorsMulticopter::save_params_on_disarm()
     // save hover throttle
     if (_throttle_hover_learn == HOVER_LEARN_AND_SAVE) {
         _throttle_hover.save();
+    }
+}
+
+void AP_MotorsMulticopter::output_armed_state()
+{
+    if(armed())
+    {
+        SRV_Channels::set_output_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::SRV_CHANNEL_LIMIT_MAX);
+    }
+    else
+    {
+        SRV_Channels::set_output_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::SRV_CHANNEL_LIMIT_MIN);
     }
 }

@@ -71,7 +71,7 @@ public:
         k_parachute_release     = 27,            ///< parachute release
         k_gripper               = 28,            ///< gripper
         k_landing_gear_control  = 29,            ///< landing gear controller
-        k_engine_run_enable     = 30,            ///< engine kill switch, used for gas airplanes and helicopters
+        k_engine_run_enable     = 30,            ///< Gas airplaines and helicopters: engine kill switch, Copter: monitor armed state
         k_heli_rsc              = 31,            ///< helicopter RSC output
         k_heli_tail_rsc         = 32,            ///< helicopter tail RSC output
         k_motor1                = 33,            ///< these allow remapping of copter motors

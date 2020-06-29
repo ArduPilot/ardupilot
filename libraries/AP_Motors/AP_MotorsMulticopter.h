@@ -143,6 +143,9 @@ protected:
     // save parameters as part of disarming
     void                save_params_on_disarm() override;
 
+    // if configured, output arm/disarm state on servo outputs
+    void                output_armed_state();
+
     // enum values for HOVER_LEARN parameter
     enum HoverLearn {
         HOVER_LEARN_DISABLED = 0,
