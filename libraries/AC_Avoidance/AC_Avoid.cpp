@@ -68,6 +68,14 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("BEHAVE", 5, AC_Avoid, _behavior, AP_AVOID_BEHAVE_DEFAULT),
 
+    // @Param: BACKUP_SPD
+    // @DisplayName: Back away speed
+    // @Description: Maximum speed that will be used to back away from obstacles in GPS modes (m/s)
+    // @Units: m/s
+    // @Range: 0 2
+    // @User: Standard
+    AP_GROUPINFO("BACKUP_SPD", 6, AC_Avoid, _backaway_speed, 0.5f),
+
     AP_GROUPEND
 };
 
@@ -79,37 +87,59 @@ AC_Avoid::AC_Avoid()
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-void AC_Avoid::adjust_velocity(float kP, float accel_cmss, Vector2f &desired_vel_cms, float dt)
+void AC_Avoid::adjust_velocity(float kP, float accel_cmss, Vector2f &desired_vel_cms, Vector2f &desired_accel_cmss, Vector2f &safe_location_rel_cm, float dt)
 {
     // exit immediately if disabled
     if (_enabled == AC_AVOID_DISABLED) {
         return;
     }
 
+    // there is no action to take return
+    if (desired_vel_cms.is_zero() && desired_accel_cmss.is_zero() && !is_positive(_backaway_speed)) {
+        return;
+    }
+
     // limit acceleration
     const float accel_cmss_limited = MIN(accel_cmss, AC_AVOID_ACCEL_CMSS_MAX);
 
+    // distance to move to be in a safe location
+    Vector2f distance_max;
+    Vector2f distance_min;
+
     if ((_enabled & AC_AVOID_STOP_AT_FENCE) > 0) {
-        adjust_velocity_circle_fence(kP, accel_cmss_limited, desired_vel_cms, dt);
-        adjust_velocity_inclusion_and_exclusion_polygons(kP, accel_cmss_limited, desired_vel_cms, dt);
-        adjust_velocity_inclusion_circles(kP, accel_cmss_limited, desired_vel_cms, dt);
-        adjust_velocity_exclusion_circles(kP, accel_cmss_limited, desired_vel_cms, dt);
+        adjust_velocity_circle_fence(kP, accel_cmss_limited, desired_vel_cms, desired_accel_cmss, safe_location_rel_cm, dt);
+        Vector2f_min_max(distance_min, distance_max, safe_location_rel_cm);
+
+        adjust_velocity_inclusion_and_exclusion_polygons(kP, accel_cmss_limited, desired_vel_cms, desired_accel_cmss, safe_location_rel_cm, dt);
+        Vector2f_min_max(distance_min, distance_max, safe_location_rel_cm);
+
+        adjust_velocity_inclusion_circles(kP, accel_cmss_limited, desired_vel_cms, desired_accel_cmss, safe_location_rel_cm, dt);
+        Vector2f_min_max(distance_min, distance_max, safe_location_rel_cm);
+
+        adjust_velocity_exclusion_circles(kP, accel_cmss_limited, desired_vel_cms, desired_accel_cmss, safe_location_rel_cm, dt);
+        Vector2f_min_max(distance_min, distance_max, safe_location_rel_cm);
+
     }
 
     if ((_enabled & AC_AVOID_STOP_AT_BEACON_FENCE) > 0) {
-        adjust_velocity_beacon_fence(kP, accel_cmss_limited, desired_vel_cms, dt);
+        adjust_velocity_beacon_fence(kP, accel_cmss_limited, desired_vel_cms, desired_accel_cmss, safe_location_rel_cm, dt);
+        Vector2f_min_max(distance_min, distance_max, safe_location_rel_cm);
     }
 
     if ((_enabled & AC_AVOID_USE_PROXIMITY_SENSOR) > 0 && _proximity_enabled) {
-        adjust_velocity_proximity(kP, accel_cmss_limited, desired_vel_cms, dt);
+        adjust_velocity_proximity(kP, accel_cmss_limited, desired_vel_cms, desired_accel_cmss, safe_location_rel_cm, dt);
+        Vector2f_min_max(distance_min, distance_max, safe_location_rel_cm);
     }
+
+    safe_location_rel_cm = distance_max + distance_min;
 }
 
 // convenience function to accept Vector3f.  Only x and y are adjusted
-void AC_Avoid::adjust_velocity(float kP, float accel_cmss, Vector3f &desired_vel_cms, float dt)
+void AC_Avoid::adjust_velocity(float kP, float accel_cmss, Vector3f &desired_vel_cms, Vector2f &safe_location_rel_cm, float dt)
 {
     Vector2f des_vel_xy(desired_vel_cms.x, desired_vel_cms.y);
-    adjust_velocity(kP, accel_cmss, des_vel_xy, dt);
+    Vector2f desired_accel_cmss;
+    adjust_velocity(kP, accel_cmss, des_vel_xy, desired_accel_cmss, safe_location_rel_cm, dt);
     desired_vel_cms.x = des_vel_xy.x;
     desired_vel_cms.y = des_vel_xy.y;
 }
@@ -253,8 +283,9 @@ void AC_Avoid::adjust_roll_pitch(float &roll, float &pitch, float veh_angle_max)
  *
  * Uses velocity adjustment idea from Randy's second email on this thread:
  * https://groups.google.com/forum/#!searchin/drones-discuss/obstacle/drones-discuss/QwUXz__WuqY/qo3G8iTLSJAJ
+ * acceleration is limited to zero when limiting is active, this removes unpredictable (for the pilot) feed forward effects
  */
-void AC_Avoid::limit_velocity(float kP, float accel_cmss, Vector2f &desired_vel_cms, const Vector2f& limit_direction, float limit_distance_cm, float dt)
+void AC_Avoid::limit_accel_velocity(float kP, float accel_cmss, Vector2f &desired_vel_cms, Vector2f &desired_accel_cms, const Vector2f& limit_direction, float limit_distance_cm, float dt)
 {
     const float max_speed = get_max_speed(kP, accel_cmss, limit_distance_cm, dt);
     // project onto limit direction
@@ -262,6 +293,10 @@ void AC_Avoid::limit_velocity(float kP, float accel_cmss, Vector2f &desired_vel_
     if (speed > max_speed) {
         // subtract difference between desired speed and maximum acceptable speed
         desired_vel_cms += limit_direction*(max_speed - speed);
+
+        // also limit acceleration in direction
+        desired_accel_cms.zero();
+
         _last_limit_time = AP_HAL::millis();
     }
 }
@@ -282,7 +317,7 @@ float AC_Avoid::get_max_speed(float kP, float accel_cmss, float distance_cm, flo
 /*
  * Adjusts the desired velocity for the circular fence.
  */
-void AC_Avoid::adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f &desired_vel_cms, float dt)
+void AC_Avoid::adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f &desired_vel_cms, Vector2f &desired_accel_cms, Vector2f &safe_location_rel_cm, float dt)
 {
     AC_Fence *fence = AP::fence();
     if (fence == nullptr) {
@@ -303,10 +338,6 @@ void AC_Avoid::adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f
 
     // get desired speed
     const float desired_speed = desired_vel_cms.length();
-    if (is_zero(desired_speed)) {
-        // no avoidance necessary when desired speed is zero
-        return;
-    }
 
     const AP_AHRS &_ahrs = AP::ahrs();
 
@@ -333,7 +364,10 @@ void AC_Avoid::adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f
     // vehicle is inside the circular fence
     if ((AC_Avoid::BehaviourType)_behavior.get() == BEHAVIOR_SLIDE) {
         // implement sliding behaviour
-        const Vector2f stopping_point = position_xy + desired_vel_cms*(get_stopping_distance(kP, accel_cmss, desired_speed)/desired_speed);
+        Vector2f stopping_point = position_xy;
+        if (is_positive(desired_speed)) {
+            stopping_point += desired_vel_cms*(get_stopping_distance(kP, accel_cmss, desired_speed)/desired_speed);
+        }
         const float stopping_point_dist_from_home = stopping_point.length();
         if (stopping_point_dist_from_home <= fence_radius - margin_cm) {
             // stopping before before fence so no need to adjust
@@ -348,12 +382,19 @@ void AC_Avoid::adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f
         if (is_positive(distance_to_target)) {
             const float max_speed = get_max_speed(kP, accel_cmss, distance_to_target, dt);
             desired_vel_cms = target_direction * (MIN(desired_speed,max_speed) / distance_to_target);
+            desired_accel_cms.zero();
             _last_limit_time = AP_HAL::millis();
+        } else {
+            // We need to back up
+            safe_location_rel_cm = target_direction.normalized() * distance_to_target;
         }
     } else {
         // implement stopping behaviour
         // calculate stopping point plus a margin so we look forward far enough to intersect with circular fence
-        const Vector2f stopping_point_plus_margin = position_xy + desired_vel_cms*((2.0f + margin_cm + get_stopping_distance(kP, accel_cmss, desired_speed))/desired_speed);
+        Vector2f stopping_point_plus_margin = position_xy;
+        if (is_positive(desired_speed)) {
+            stopping_point_plus_margin += desired_vel_cms*((2.0f + margin_cm + get_stopping_distance(kP, accel_cmss, desired_speed))/desired_speed);
+        }
         const float stopping_point_plus_margin_dist_from_home = stopping_point_plus_margin.length();
         if (dist_from_home >= fence_radius - margin_cm) {
             // vehicle has already breached margin around fence
@@ -361,6 +402,7 @@ void AC_Avoid::adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f
             // otherwise user is backing away from fence so do not apply limits
             if (stopping_point_plus_margin_dist_from_home >= dist_from_home) {
                 desired_vel_cms.zero();
+                desired_accel_cms.zero();
                 _last_limit_time = AP_HAL::millis();
             }
         } else {
@@ -369,8 +411,9 @@ void AC_Avoid::adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f
             if (Vector2f::circle_segment_intersection(position_xy, stopping_point_plus_margin, Vector2f(0.0f,0.0f), fence_radius - margin_cm, intersection)) {
                 const float distance_to_target = MAX((intersection - position_xy).length() - margin_cm, 0.0f);
                 const float max_speed = get_max_speed(kP, accel_cmss, distance_to_target, dt);
-                if (max_speed < desired_speed) {
+                if (max_speed < desired_speed && is_positive(desired_speed)) {
                     desired_vel_cms *= MAX(max_speed, 0.0f) / desired_speed;
+                    desired_accel_cms.zero();
                     _last_limit_time = AP_HAL::millis();
                 }
             }
@@ -381,7 +424,7 @@ void AC_Avoid::adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f
 /*
  * Adjusts the desired velocity for the exclusion polygons
  */
-void AC_Avoid::adjust_velocity_inclusion_and_exclusion_polygons(float kP, float accel_cmss, Vector2f &desired_vel_cms, float dt)
+void AC_Avoid::adjust_velocity_inclusion_and_exclusion_polygons(float kP, float accel_cmss, Vector2f &desired_vel_cms, Vector2f &desired_accel_cmss, Vector2f &safe_location_rel_cm, float dt)
 {
     const AC_Fence *fence = AP::fence();
     if (fence == nullptr) {
@@ -400,7 +443,7 @@ void AC_Avoid::adjust_velocity_inclusion_and_exclusion_polygons(float kP, float 
         const Vector2f* boundary = fence->polyfence().get_inclusion_polygon(i, num_points);
         
         // adjust velocity
-        adjust_velocity_polygon(kP, accel_cmss, desired_vel_cms, boundary, num_points, true, fence->get_margin(), dt, true);
+        adjust_velocity_polygon(kP, accel_cmss, desired_vel_cms, desired_accel_cmss, safe_location_rel_cm, boundary, num_points, true, fence->get_margin(), dt, true);
     }
 
     // iterate through exclusion polygons
@@ -410,14 +453,14 @@ void AC_Avoid::adjust_velocity_inclusion_and_exclusion_polygons(float kP, float 
         const Vector2f* boundary = fence->polyfence().get_exclusion_polygon(i, num_points);
  
         // adjust velocity
-        adjust_velocity_polygon(kP, accel_cmss, desired_vel_cms, boundary, num_points, true, fence->get_margin(), dt, false);
+        adjust_velocity_polygon(kP, accel_cmss, desired_vel_cms, desired_accel_cmss, safe_location_rel_cm, boundary, num_points, true, fence->get_margin(), dt, false);
     }
 }
 
 /*
  * Adjusts the desired velocity for the inclusion circles
  */
-void AC_Avoid::adjust_velocity_inclusion_circles(float kP, float accel_cmss, Vector2f &desired_vel_cms, float dt)
+void AC_Avoid::adjust_velocity_inclusion_circles(float kP, float accel_cmss, Vector2f &desired_vel_cms, Vector2f &desired_accel_cms, Vector2f &safe_location_rel_cm, float dt)
 {
     const AC_Fence *fence = AP::fence();
     if (fence == nullptr) {
@@ -437,10 +480,6 @@ void AC_Avoid::adjust_velocity_inclusion_circles(float kP, float accel_cmss, Vec
 
     // get desired speed
     const float desired_speed = desired_vel_cms.length();
-    if (is_zero(desired_speed)) {
-        // no avoidance necessary when desired speed is zero
-        return;
-    }
 
     // get vehicle position
     Vector2f position_NE;
@@ -455,15 +494,21 @@ void AC_Avoid::adjust_velocity_inclusion_circles(float kP, float accel_cmss, Vec
 
     // get stopping distance as an offset from the vehicle
     Vector2f stopping_offset;
-    switch ((AC_Avoid::BehaviourType)_behavior.get()) {
-        case BEHAVIOR_SLIDE:
-            stopping_offset = desired_vel_cms*(get_stopping_distance(kP, accel_cmss, desired_speed)/desired_speed);
-            break;
-        case BEHAVIOR_STOP:
-            // calculate stopping point plus a margin so we look forward far enough to intersect with circular fence
-            stopping_offset = desired_vel_cms*((2.0f + margin_cm + get_stopping_distance(kP, accel_cmss, desired_speed))/desired_speed);
-            break;
+    if (is_positive(desired_speed)) {
+        switch ((AC_Avoid::BehaviourType)_behavior.get()) {
+            case BEHAVIOR_SLIDE:
+                stopping_offset = desired_vel_cms*(get_stopping_distance(kP, accel_cmss, desired_speed)/desired_speed);
+                break;
+            case BEHAVIOR_STOP:
+                // calculate stopping point plus a margin so we look forward far enough to intersect with circular fence
+                stopping_offset = desired_vel_cms*((2.0f + margin_cm + get_stopping_distance(kP, accel_cmss, desired_speed))/desired_speed);
+                break;
+        }
     }
+
+    // distance to move to be in a safe location
+    Vector2f distance_max;
+    Vector2f distance_min;
 
     // iterate through inclusion circles
     for (uint8_t i = 0; i < num_circles; i++) {
@@ -498,6 +543,12 @@ void AC_Avoid::adjust_velocity_inclusion_circles(float kP, float accel_cmss, Vec
                     if (is_positive(distance_to_target)) {
                         const float max_speed = get_max_speed(kP, accel_cmss, distance_to_target, dt);
                         desired_vel_cms = target_direction * (MIN(desired_speed,max_speed) / distance_to_target);
+                        desired_accel_cms.zero();
+                        _last_limit_time = AP_HAL::millis();
+                    } else {
+                        // We need to back up
+                        const Vector2f active_limits_dist = target_direction.normalized() * distance_to_target;
+                        Vector2f_min_max(distance_min, distance_max, active_limits_dist);
                     }
                 }
                 break;
@@ -511,6 +562,8 @@ void AC_Avoid::adjust_velocity_inclusion_circles(float kP, float accel_cmss, Vec
                         // otherwise user is backing away from fence so do not apply limits
                         if (stopping_point_plus_margin.length() >= dist_cm) {
                             desired_vel_cms.zero();
+                            desired_accel_cms.zero();
+                            _last_limit_time = AP_HAL::millis();
                             return;
                         }
                     } else {
@@ -519,8 +572,10 @@ void AC_Avoid::adjust_velocity_inclusion_circles(float kP, float accel_cmss, Vec
                         if (Vector2f::circle_segment_intersection(position_NE_rel, stopping_point_plus_margin, Vector2f(0.0f,0.0f), radius_cm - margin_cm, intersection)) {
                             const float distance_to_target = MAX((intersection - position_NE_rel).length() - margin_cm, 0.0f);
                             const float max_speed = get_max_speed(kP, accel_cmss, distance_to_target, dt);
-                            if (max_speed < desired_speed) {
+                            if (max_speed < desired_speed && is_positive(desired_speed)) {
                                 desired_vel_cms *= MAX(max_speed, 0.0f) / desired_speed;
+                                desired_accel_cms.zero();
+                                _last_limit_time = AP_HAL::millis();
                             }
                         }
                     }
@@ -529,12 +584,15 @@ void AC_Avoid::adjust_velocity_inclusion_circles(float kP, float accel_cmss, Vec
             }
         }
     }
+
+    // safe location if between min and max limit, this results in staying halfway between limits on each side
+    safe_location_rel_cm = distance_max + distance_min;
 }
 
 /*
  * Adjusts the desired velocity for the exclusion circles
  */
-void AC_Avoid::adjust_velocity_exclusion_circles(float kP, float accel_cmss, Vector2f &desired_vel_cms, float dt)
+void AC_Avoid::adjust_velocity_exclusion_circles(float kP, float accel_cmss, Vector2f &desired_vel_cms, Vector2f &desired_accel_cmss, Vector2f &safe_location_rel_cm, float dt)
 {
     const AC_Fence *fence = AP::fence();
     if (fence == nullptr) {
@@ -554,10 +612,6 @@ void AC_Avoid::adjust_velocity_exclusion_circles(float kP, float accel_cmss, Vec
 
     // get desired speed
     const float desired_speed = desired_vel_cms.length();
-    if (is_zero(desired_speed)) {
-        // no avoidance necessary when desired speed is zero
-        return;
-    }
 
     // get vehicle position
     Vector2f position_NE;
@@ -573,9 +627,13 @@ void AC_Avoid::adjust_velocity_exclusion_circles(float kP, float accel_cmss, Vec
     // calculate stopping distance as an offset from the vehicle (only used for BEHAVIOR_STOP)
     // add a margin so we look forward far enough to intersect with circular fence
     Vector2f stopping_offset;
-    if ((AC_Avoid::BehaviourType)_behavior.get() == BEHAVIOR_STOP) {
+    if ((AC_Avoid::BehaviourType)_behavior.get() == BEHAVIOR_STOP && is_positive(desired_speed)) {
         stopping_offset = desired_vel_cms*((2.0f + margin_cm + get_stopping_distance(kP, accel_cmss, desired_speed))/desired_speed);
     }
+
+    // distance to move to be in a safe location
+    Vector2f distance_max;
+    Vector2f distance_min;
 
     // iterate through exclusion circles
     for (uint8_t i = 0; i < num_circles; i++) {
@@ -607,8 +665,14 @@ void AC_Avoid::adjust_velocity_exclusion_circles(float kP, float accel_cmss, Vec
                         continue;
                     }
                     // vehicle is outside the circle, adjust velocity to stay outside
+                    const float stop_dist = limit_distance_cm - margin_cm; 
                     limit_direction.normalize();
-                    limit_velocity(kP, accel_cmss, desired_vel_cms, limit_direction, MAX(limit_distance_cm - margin_cm, 0.0f), dt);
+                    limit_accel_velocity(kP, accel_cmss, desired_vel_cms, desired_accel_cmss, limit_direction, MAX(stop_dist, 0.0f), dt);
+                    if (is_negative(stop_dist)) {
+                        // We need to back up
+                        const Vector2f active_limits_dist = limit_direction * stop_dist;
+                        Vector2f_min_max(distance_min, distance_max, active_limits_dist);
+                    }
                 }
                 break;
                 case BEHAVIOR_STOP: {
@@ -621,7 +685,7 @@ void AC_Avoid::adjust_velocity_exclusion_circles(float kP, float accel_cmss, Vec
                         // otherwise user is backing away from fence so do not apply limits
                         if (stopping_point_plus_margin.length() <= dist_cm) {
                             desired_vel_cms.zero();
-                            return;
+                            break;
                         }
                     } else {
                         // shorten vector without adjusting its direction
@@ -629,7 +693,7 @@ void AC_Avoid::adjust_velocity_exclusion_circles(float kP, float accel_cmss, Vec
                         if (Vector2f::circle_segment_intersection(position_NE_rel, stopping_point_plus_margin, Vector2f(0.0f,0.0f), radius_cm + margin_cm, intersection)) {
                             const float distance_to_target = MAX((intersection - position_NE_rel).length() - margin_cm, 0.0f);
                             const float max_speed = get_max_speed(kP, accel_cmss, distance_to_target, dt);
-                            if (max_speed < desired_speed) {
+                            if (max_speed < desired_speed && is_positive(desired_speed)) {
                                 desired_vel_cms *= MAX(max_speed, 0.0f) / desired_speed;
                             }
                         }
@@ -639,12 +703,15 @@ void AC_Avoid::adjust_velocity_exclusion_circles(float kP, float accel_cmss, Vec
             }
         }
     }
+
+    // safe location if between min and max limit, this results in staying halfway between limits on each side
+    safe_location_rel_cm = distance_max + distance_min;
 }
 
 /*
  * Adjusts the desired velocity for the beacon fence.
  */
-void AC_Avoid::adjust_velocity_beacon_fence(float kP, float accel_cmss, Vector2f &desired_vel_cms, float dt)
+void AC_Avoid::adjust_velocity_beacon_fence(float kP, float accel_cmss, Vector2f &desired_vel_cms, Vector2f &desired_accel_cmss, Vector2f &safe_location_rel_cm, float dt)
 {
     AP_Beacon *_beacon = AP::beacon();
 
@@ -665,13 +732,13 @@ void AC_Avoid::adjust_velocity_beacon_fence(float kP, float accel_cmss, Vector2f
     if (AP::fence()) {
         margin = AP::fence()->get_margin();
     }
-    adjust_velocity_polygon(kP, accel_cmss, desired_vel_cms, boundary, num_points, true, margin, dt, true);
+    adjust_velocity_polygon(kP, accel_cmss, desired_vel_cms, desired_accel_cmss, safe_location_rel_cm, boundary, num_points, true, margin, dt, true);
 }
 
 /*
  * Adjusts the desired velocity based on output from the proximity sensor
  */
-void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector2f &desired_vel_cms, float dt)
+void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector2f &desired_vel_cms, Vector2f &desired_accel_cmss, Vector2f &safe_location_rel_cm, float dt)
 {
     // exit immediately if proximity sensor is not present
     AP_Proximity *proximity = AP::proximity();
@@ -688,21 +755,16 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector2f &d
     // get boundary from proximity sensor
     uint16_t num_points = 0;
     const Vector2f *boundary = _proximity.get_boundary_points(num_points);
-    adjust_velocity_polygon(kP, accel_cmss, desired_vel_cms, boundary, num_points, false, _margin, dt, true);
+    adjust_velocity_polygon(kP, accel_cmss, desired_vel_cms, desired_accel_cmss, safe_location_rel_cm, boundary, num_points, false, _margin, dt, true);
 }
 
 /*
  * Adjusts the desired velocity for the polygon fence.
  */
-void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &desired_vel_cms, const Vector2f* boundary, uint16_t num_points, bool earth_frame, float margin, float dt, bool stay_inside)
+void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &desired_vel_cms, Vector2f &desired_accel_cmss, Vector2f &safe_location_rel_cm, const Vector2f* boundary, uint16_t num_points, bool earth_frame, float margin, float dt, bool stay_inside)
 {
     // exit if there are no points
     if (boundary == nullptr || num_points == 0) {
-        return;
-    }
-
-    // exit immediately if no desired velocity
-    if (desired_vel_cms.is_zero()) {
         return;
     }
 
@@ -729,11 +791,14 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
     // We need a separate vector in case adjustment fails,
     // e.g. if we are exactly on the boundary.
     Vector2f safe_vel(desired_vel_cms);
+    Vector2f safe_accel(desired_accel_cmss);
 
     // if boundary points are in body-frame, rotate velocity vector from earth frame to body-frame
     if (!earth_frame) {
         safe_vel.x = desired_vel_cms.y * _ahrs.sin_yaw() + desired_vel_cms.x * _ahrs.cos_yaw(); // right
         safe_vel.y = desired_vel_cms.y * _ahrs.cos_yaw() - desired_vel_cms.x * _ahrs.sin_yaw(); // forward
+        safe_accel.x = desired_accel_cmss.y * _ahrs.sin_yaw() + desired_accel_cmss.x * _ahrs.cos_yaw(); // right
+        safe_accel.y = desired_accel_cmss.y * _ahrs.cos_yaw() - desired_accel_cmss.x * _ahrs.sin_yaw(); // forward
     }
 
     // calc margin in cm
@@ -741,7 +806,14 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
 
     // for stopping
     const float speed = safe_vel.length();
-    const Vector2f stopping_point_plus_margin = position_xy + safe_vel*((2.0f + margin_cm + get_stopping_distance(kP, accel_cmss, speed))/speed);
+    Vector2f stopping_point_plus_margin = position_xy;
+    if (is_positive(speed)) {
+        stopping_point_plus_margin += safe_vel*((2.0f + margin_cm + get_stopping_distance(kP, accel_cmss, speed))/speed);
+    }
+
+    // distance to move to be in a safe location
+    Vector2f distance_max;
+    Vector2f distance_min;
 
     for (uint16_t i=0; i<num_points; i++) {
         uint16_t j = i+1;
@@ -759,8 +831,14 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
             if (!is_zero(limit_distance_cm)) {
                 // We are strictly inside the given edge.
                 // Adjust velocity to not violate this edge.
-                limit_direction /= limit_distance_cm;
-                limit_velocity(kP, accel_cmss, safe_vel, limit_direction, MAX(limit_distance_cm - margin_cm, 0.0f), dt);
+                limit_direction.normalize();
+                const float stop_dist = limit_distance_cm - margin_cm; 
+                limit_accel_velocity(kP, accel_cmss, safe_vel, safe_accel, limit_direction, MAX(stop_dist,0.0f), dt);
+                if (is_negative(stop_dist)) {
+                    // We need to back up
+                    const Vector2f active_limits_dist = limit_direction * stop_dist;
+                    Vector2f_min_max(distance_min, distance_max, active_limits_dist);
+                }
             } else {
                 // We are exactly on the edge - treat this as a fence breach.
                 // i.e. do not adjust velocity.
@@ -791,13 +869,22 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
         }
     }
 
+    // safe location if between min and max limit, this results in staying halfway between limits on each side
+    Vector2f safe_location = distance_max + distance_min;
+
     // set modified desired velocity vector
     if (earth_frame) {
         desired_vel_cms = safe_vel;
+        desired_accel_cmss = safe_accel;
+        safe_location_rel_cm = safe_location;
     } else {
         // if points were in body-frame, rotate resulting vector back to earth-frame
         desired_vel_cms.x = safe_vel.x * _ahrs.cos_yaw() - safe_vel.y * _ahrs.sin_yaw();
         desired_vel_cms.y = safe_vel.x * _ahrs.sin_yaw() + safe_vel.y * _ahrs.cos_yaw();
+        desired_accel_cmss.x = safe_accel.x * _ahrs.cos_yaw() - safe_accel.y * _ahrs.sin_yaw();
+        desired_accel_cmss.y = safe_accel.x * _ahrs.sin_yaw() + safe_accel.y * _ahrs.cos_yaw();
+        safe_location_rel_cm.x = safe_location.x * _ahrs.cos_yaw() - safe_location.y * _ahrs.sin_yaw();
+        safe_location_rel_cm.y = safe_location.x * _ahrs.sin_yaw() + safe_location.y * _ahrs.cos_yaw();
     }
 }
 
