@@ -221,16 +221,8 @@ void AC_Avoid::adjust_roll_pitch(float &roll, float &pitch, float veh_angle_max)
         return;
     }
 
-    float roll_positive = 0.0f;    // maximum positive roll value
-    float roll_negative = 0.0f;    // minimum negative roll value
-    float pitch_positive = 0.0f;   // maximum positive pitch value
-    float pitch_negative = 0.0f;   // minimum negative pitch value
-
-    // get maximum positive and negative roll and pitch percentages from proximity sensor
-    get_proximity_roll_pitch_pct(roll_positive, roll_negative, pitch_positive, pitch_negative);
-
     // add maximum positive and negative percentages together for roll and pitch, convert to centi-degrees
-    Vector2f rp_out((roll_positive + roll_negative) * 4500.0f, (pitch_positive + pitch_negative) * 4500.0f);
+    Vector2f rp_out = get_proximity_roll_pitch_pct() * 4500.0f;
 
     // apply avoidance angular limits
     // the object avoidance lean angle is never more than 75% of the total angle-limit to allow the pilot to override
@@ -847,26 +839,31 @@ float AC_Avoid::distance_to_lean_pct(float dist_m)
     return 1.0f - (dist_m / _dist_max);
 }
 
-// returns the maximum positive and negative roll and pitch percentages (in -1 ~ +1 range) based on the proximity sensor
-void AC_Avoid::get_proximity_roll_pitch_pct(float &roll_positive, float &roll_negative, float &pitch_positive, float &pitch_negative)
+// returns the roll and pitch angle limits as a percentage (in -1 ~ +1 range) based on the proximity sensor
+Vector2f AC_Avoid::get_proximity_roll_pitch_pct()
 {
+    Vector2f rp;
+
     AP_Proximity *proximity = AP::proximity();
     if (proximity == nullptr) {
-        return;
+        return rp;
     }
     AP_Proximity &_proximity = *proximity;
 
     // exit immediately if proximity sensor is not present
     if (_proximity.get_status() != AP_Proximity::Status::Good) {
-        return;
+        return rp;
     }
 
     const uint8_t obj_count = _proximity.get_object_count();
 
     // if no objects return
     if (obj_count == 0) {
-        return;
+        return rp;
     }
+
+    Vector2f pct_min;
+    Vector2f pct_max;
 
     // calculate maximum roll, pitch values from objects
     for (uint8_t i=0; i<obj_count; i++) {
@@ -876,23 +873,29 @@ void AC_Avoid::get_proximity_roll_pitch_pct(float &roll_positive, float &roll_ne
                 // convert distance to lean angle (in 0 to 1 range)
                 const float lean_pct = distance_to_lean_pct(dist_m);
                 // convert angle to roll and pitch lean percentages
+                // 0 = no lean due to this object
+                // 1 = maximum lean due to this object
                 const float angle_rad = radians(ang_deg);
-                const float roll_pct = -sinf(angle_rad) * lean_pct;
-                const float pitch_pct = cosf(angle_rad) * lean_pct;
-                // update roll, pitch maximums
-                if (roll_pct > 0.0f) {
-                    roll_positive = MAX(roll_positive, roll_pct);
-                } else if (roll_pct < 0.0f) {
-                    roll_negative = MIN(roll_negative, roll_pct);
-                }
-                if (pitch_pct > 0.0f) {
-                    pitch_positive = MAX(pitch_positive, pitch_pct);
-                } else if (pitch_pct < 0.0f) {
-                    pitch_negative = MIN(pitch_negative, pitch_pct);
-                }
+                Vector2f roll_pitch_pct;
+                roll_pitch_pct.x = -sinf(angle_rad) * lean_pct;
+                roll_pitch_pct.y = cosf(angle_rad) * lean_pct;
+                // update roll, pitch maximums, use separate positive and negative so opposite objects cancel out
+                Vector2f_min_max(pct_min, pct_max, roll_pitch_pct);
             }
         }
     }
+
+    rp = pct_max + pct_min;
+    return rp;
+}
+
+// Update min and max vectors from a given value
+void AC_Avoid::Vector2f_min_max(Vector2f &min, Vector2f &max, const Vector2f &value)
+{
+    min.x = MAX(min.x, value.x);
+    min.y = MIN(min.y, value.y);
+    max.x = MAX(max.x, value.x);
+    max.y = MIN(max.y, value.y);
 }
 
 // singleton instance

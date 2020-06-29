@@ -142,8 +142,12 @@ private:
     // convert distance (in meters) to a lean percentage (in 0~1 range) for use in manual flight modes
     float distance_to_lean_pct(float dist_m);
 
-    // returns the maximum positive and negative roll and pitch percentages (in -1 ~ +1 range) based on the proximity sensor
-    void get_proximity_roll_pitch_pct(float &roll_positive, float &roll_negative, float &pitch_positive, float &pitch_negative);
+    // returns the roll and pitch angle limits as a percentage (in -1 ~ +1 range) based on the proximity sensor
+    Vector2f get_proximity_roll_pitch_pct();
+
+    // Update min and max vectors from a given value
+    void Vector2f_min_max(Vector2f &min, Vector2f &max, const Vector2f &value);
+
 
     // parameters
     AP_Int8 _enabled;
