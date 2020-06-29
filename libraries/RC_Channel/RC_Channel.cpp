@@ -534,6 +534,7 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
     { AUX_FUNC::RUNCAM_OSD_CONTROL,"RunCamOSDControl"},
     { AUX_FUNC::VISODOM_CALIBRATE,"VisodomCalibrate"},
     { AUX_FUNC::CAM_MODE_TOGGLE,"CamModeToggle"},
+    { AUX_FUNC::GENERATOR,"Generator"},
 };
 
 /* lookup the announcement for switch change */
