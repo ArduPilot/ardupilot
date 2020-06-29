@@ -789,6 +789,10 @@ private:
     bool non_auto_terrain_disable;
     bool terrain_disabled();
 
+    // soaring altitude target to restore
+    int32_t soaring_restore_target_alt_amsl_cm;
+    int32_t soaring_restore_target_alt_terrain_cm;
+
     // Attitude.cpp
     void adjust_nav_pitch_throttle(void);
     void update_load_factor(void);
