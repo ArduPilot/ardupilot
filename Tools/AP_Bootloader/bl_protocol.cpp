@@ -79,7 +79,7 @@
 // RESET		finalise flash programming, reset chip and starts application
 //
 
-#define BL_PROTOCOL_VERSION 		5		// The revision of the bootloader protocol
+#define BL_PROTOCOL_VERSION 		6		// The revision of the bootloader protocol
 // protocol bytes
 #define PROTO_INSYNC				0x12    // 'in sync' byte sent before status
 #define PROTO_EOC					0x20    // end of command
@@ -105,6 +105,7 @@
 #define PROTO_BOOT					0x30    // boot the application
 #define PROTO_DEBUG					0x31    // emit debug information - format not defined
 #define PROTO_SET_BAUD				0x33    // baud rate on uart
+#define PROTO_GET_GIT_HASH			0x34    // read git hash
 
 #define PROTO_PROG_MULTI_MAX    64	// maximum PROG_MULTI size
 #define PROTO_READ_MULTI_MAX    255	// size of the size field
@@ -118,6 +119,13 @@
 
 // interrupt vector table for STM32
 #define SCB_VTOR 0xE000ED08
+
+// git hash this binary was compiled from
+#ifndef BOOTLOADER_GIT_HASH
+#define BOOTLOADER_GIT_HASH 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19
+#endif
+
+uint8_t git_hash[20] { BOOTLOADER_GIT_HASH };
 
 static virtual_timer_t systick_vt;
 
@@ -930,7 +938,20 @@ bootloader(unsigned timeout)
             // returning the response...
             continue;
         }
-            
+        // read the git hash of the code the bootloader was compiled from
+        //
+        // command:			GET_GIT_HASH/EOC
+        // reply:			<value:20>/INSYNC/OK
+        case PROTO_GET_GIT_HASH: {
+            // expect EOC
+            if (!wait_for_eoc(2)) {
+                goto cmd_bad;
+            }
+
+            cout(git_hash, 20);
+        }
+        break;
+
         default:
             continue;
         }
