@@ -171,10 +171,10 @@ bool SoaringController::suppress_throttle()
 {
     float alt = _vario.alt;
 
-    if (_throttle_suppressed && (alt < alt_min)) {
+    if (_throttle_suppressed && (!is_suppress_throttle_mode() || (alt < alt_min))) {
         // Time to throttle up
         set_throttle_suppressed(false);
-    } else if ((!_throttle_suppressed) && (alt > alt_cutoff)) {
+    } else if (!_throttle_suppressed && (is_suppress_throttle_mode() && (alt > alt_cutoff))) {
         // Start glide
         set_throttle_suppressed(true);
 
@@ -306,7 +306,9 @@ void SoaringController::init_cruising()
     if (active_state()>=ActiveStatus::MANUAL_MODE_CHANGE) {
         _cruise_start_time_us = AP_HAL::micros64();
         // Start glide. Will be updated on the next loop.
-        set_throttle_suppressed(true);
+        if (is_suppress_throttle_mode()) {
+            set_throttle_suppressed(true);
+        }
     }
 }
 
@@ -503,4 +505,8 @@ float SoaringController::get_thermalling_radius() const
     return radius;
 }
 
+bool SoaringController::is_suppress_throttle_mode() const
+{
+    return soar_active != 2;
+}
 #endif // HAL_SOARING_ENABLED

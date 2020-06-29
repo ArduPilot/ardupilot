@@ -137,6 +137,8 @@ public:
 
     float get_thermalling_radius() const;
 
+    bool is_suppress_throttle_mode() const;
+
 private:
     // slow down messages if they are the same. During loiter we could smap the same message. Only show new messages during loiters
     LoiterStatus _cruise_criteria_msg_last;

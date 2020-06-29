@@ -12,6 +12,10 @@ bool ModeThermal::_enter()
     plane.do_loiter_at_location();
     plane.loiter_angle_reset();
 
+    // Save altitude targets to restore later.
+    restore_target_alt_amsl_cm    = plane.target_altitude.amsl_cm;
+    restore_target_alt_terrain_cm = plane.target_altitude.terrain_alt_cm;
+
     plane.g2.soaring_controller.init_thermalling();
     plane.g2.soaring_controller.get_target(plane.next_WP_loc); // ahead on flight path
 
@@ -92,6 +96,12 @@ void ModeThermal::update_soaring()
     }
 
     // Heading lined up and loiter status not good to continue. Need to restore previous mode.
+
+    // If operating in mode 2, unsuppress the throttle now rather than waiting for next loop, to avoid target altitude reset.
+    if (!plane.g2.soaring_controller.is_suppress_throttle_mode()) {
+        plane.g2.soaring_controller.set_throttle_suppressed(false);
+    }
+
     switch (loiterStatus) {
     case SoaringController::LoiterStatus::ALT_TOO_HIGH:
         restore_mode("Too high", ModeReason::SOARING_ALT_TOO_HIGH);
@@ -145,6 +155,10 @@ void ModeThermal::restore_mode(const char *reason, ModeReason modereason)
 {
     gcs().send_text(MAV_SEVERITY_INFO, "Soaring: %s, restoring %s", reason, plane.previous_mode->name());
     plane.set_mode(*plane.previous_mode, modereason);
+
+    // Restore target altitude.
+    plane.target_altitude.amsl_cm        = restore_target_alt_amsl_cm;
+    plane.target_altitude.terrain_alt_cm = restore_target_alt_terrain_cm;
 }
 
 #endif

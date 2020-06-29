@@ -37,7 +37,7 @@ void Plane::update_soaring() {
         // switch modes.
 
         // Check for throttle suppression change.
-        if (g2.soaring_controller.suppress_throttle()) {
+        if (g2.soaring_controller.suppress_throttle() || !g2.soaring_controller.is_suppress_throttle_mode()) {
             // Throttle is suppressed, perform cruising modes update and check for mode switch.
 
             // Cruising modes update.

@@ -629,6 +629,10 @@ public:
 
 protected:
 
+    // soaring altitude target to restore
+    int32_t restore_target_alt_amsl_cm;
+    int32_t restore_target_alt_terrain_cm;
+
     bool exit_heading_aligned() const;
     void restore_mode(const char *reason, ModeReason modereason);
 
