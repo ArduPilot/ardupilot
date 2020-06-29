@@ -405,6 +405,16 @@ void AP_Generator_RichenPower::send_generator_status(const GCS_MAVLINK &channel)
         status |= MAV_GENERATOR_STATUS_FLAG_REDUCED_POWER;
     }
 
+    if (last_reading.errors & (uint8_t)Errors::MaintenanceRequired) {
+        status |= MAV_GENERATOR_STATUS_FLAG_MAINTENANCE_REQUIRED;
+    }
+    if (last_reading.errors & (uint8_t)Errors::StartDisabled) {
+        status |= MAV_GENERATOR_STATUS_FLAG_START_INHIBITED;
+    }
+    if (last_reading.errors & (uint8_t)Errors::LowBatteryVoltage) {
+        status |= MAV_GENERATOR_STATUS_FLAG_BATTERY_UNDERVOLT_FAULT;
+    }
+
     mavlink_msg_generator_status_send(
         channel.get_chan(),
         status,
