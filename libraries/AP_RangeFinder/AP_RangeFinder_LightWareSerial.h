@@ -21,7 +21,7 @@ private:
     bool get_reading(uint16_t &reading_cm) override;
 
     char linebuf[10];           // legacy protocol buffer
-    uint8_t linebuf_len = 0;    // legacy protocol buffer length
+    uint8_t linebuf_len;        // legacy protocol buffer length
     uint32_t last_init_ms;      // init time used to switch lw20 to serial mode
     uint8_t high_byte;          // binary protocol high byte
     bool high_byte_received;    // true if high byte has been received
