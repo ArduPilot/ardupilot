@@ -261,6 +261,12 @@ int SITL_State::sim_fd(const char *name, const char *arg)
         }
         lightwareserial = new SITL::RF_LightWareSerial();
         return lightwareserial->fd();
+    } else if (streq(name, "lightwareserial-binary")) {
+        if (lightwareserial_binary != nullptr) {
+            AP_HAL::panic("Only one lightwareserial-binary at a time");
+        }
+        lightwareserial_binary = new SITL::RF_LightWareSerialBinary();
+        return lightwareserial_binary->fd();
     } else if (streq(name, "lanbao")) {
         if (lanbao != nullptr) {
             AP_HAL::panic("Only one lanbao at a time");
@@ -373,6 +379,11 @@ int SITL_State::sim_fd_write(const char *name)
             AP_HAL::panic("No lightwareserial created");
         }
         return lightwareserial->write_fd();
+    } else if (streq(name, "lightwareserial-binary")) {
+        if (lightwareserial_binary == nullptr) {
+            AP_HAL::panic("No lightwareserial_binary created");
+        }
+        return lightwareserial_binary->write_fd();
     } else if (streq(name, "lanbao")) {
         if (lanbao == nullptr) {
             AP_HAL::panic("No lanbao created");
@@ -577,6 +588,9 @@ void SITL_State::_fdm_input_local(void)
     }
     if (lightwareserial != nullptr) {
         lightwareserial->update(sitl_model->get_range());
+    }
+    if (lightwareserial_binary != nullptr) {
+        lightwareserial_binary->update(sitl_model->get_range());
     }
     if (lanbao != nullptr) {
         lanbao->update(sitl_model->get_range());
