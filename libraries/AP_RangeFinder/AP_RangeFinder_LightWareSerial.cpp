@@ -43,7 +43,7 @@ bool AP_RangeFinder_LightWareSerial::get_reading(uint16_t &reading_cm)
         if (protocol_state == ProtocolState::UNKNOWN || protocol_state == ProtocolState::LEGACY) {
             if (c == '\r') {
                 linebuf[linebuf_len] = 0;
-                const float dist = strtof(linebuf, NULL);
+                const float dist = strtof(linebuf, nullptr);
                 if (!is_negative(dist)) {
                     sum += dist;
                     valid_count++;
