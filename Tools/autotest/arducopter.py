@@ -4882,7 +4882,8 @@ class AutoTestCopter(AutoTest):
         self.set_parameter("RTL_ALT", 500)
         self.set_parameter("RTL_ALT_TYPE", 1)
         drivers = [
-            ("lightwareserial",8),
+            ("lightwareserial",8), # autodetected between this and -binary
+            ("lightwareserial-binary",8),
             ("ulanding_v0", 11),
             ("ulanding_v1", 11),
             ("leddarone", 12),
