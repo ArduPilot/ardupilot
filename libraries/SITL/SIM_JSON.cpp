@@ -124,8 +124,10 @@ void JSON::output_servos(const struct sitl_input &input)
     This parser does not do any syntax checking, and is not at all
     general purpose
 */
-bool JSON::parse_sensors(const char *json)
+uint8_t JSON::parse_sensors(const char *json)
 {
+    uint8_t received_bitmask = 0;
+
     //printf("%s\n", json);
     for (uint16_t i=0; i<ARRAY_SIZE(keytable); i++) {
         struct keytable &key = keytable[i];
@@ -142,9 +144,16 @@ bool JSON::parse_sensors(const char *json)
         // find key inside section
         p = strstr(p, key.key);
         if (!p) {
-            printf("Failed to find key %s/%s\n", key.section, key.key);
-            return false;
+            if (key.required) {
+                printf("Failed to find key %s/%s\n", key.section, key.key);
+                return 0;
+            } else {
+                continue;
+            }
         }
+
+        // record the keys that are found
+        received_bitmask |= 1U << i;
 
         p += strlen(key.key)+2;
         switch (key.type) {
@@ -167,15 +176,25 @@ bool JSON::parse_sensors(const char *json)
                 Vector3f *v = (Vector3f *)key.ptr;
                 if (sscanf(p, "[%f, %f, %f]", &v->x, &v->y, &v->z) != 3) {
                     printf("Failed to parse Vector3f for %s/%s\n", key.section, key.key);
-                    return false;
+                    return received_bitmask;
                 }
                 //printf("%s/%s = %f, %f, %f\n", key.section, key.key, v->x, v->y, v->z);
                 break;
             }
 
+            case QUATERNION: {
+                Quaternion *v = static_cast<Quaternion*>(key.ptr);
+                if (sscanf(p, "[%f, %f, %f, %f]", &(v->q1), &(v->q2), &(v->q3), &(v->q4)) != 4) {
+                    printf("Failed to parse Vector4f for %s/%s\n", key.section, key.key);
+                    return received_bitmask;
+                }
+                break;
+            }
+
         }
     }
-    return true;
+
+    return received_bitmask;
 }
 
 /*
@@ -215,23 +234,33 @@ void JSON::recv_fdm(const struct sitl_input &input)
         return;
     }
 
-    parse_sensors((const char *)(p1+1));
+    const uint8_t received_bitmask = parse_sensors((const char *)(p1+1));
+    if (received_bitmask == 0) {
+        // did not receve one of the required fields
+        return;
+    }
+
+    // Must get either attitude or quaternion fields
+    if ((received_bitmask & (EULER_ATT | QUAT_ATT)) == 0) {
+        printf("Did not receive attitude or quaternion\n");
+        return;
+    }
 
     memmove(sensor_buffer, p2, sensor_buffer_len - (p2 - sensor_buffer));
     sensor_buffer_len = sensor_buffer_len - (p2 - sensor_buffer);
 
-    accel_body = Vector3f(state.imu.accel_body[0],
-                          state.imu.accel_body[1],
-                          state.imu.accel_body[2]);
+    accel_body = state.imu.accel_body;
+    gyro = state.imu.gyro;
+    velocity_ef = state.velocity;
+    position = state.position;
 
-    gyro = Vector3f(state.imu.gyro[0],
-                    state.imu.gyro[1],
-                    state.imu.gyro[2]);
-
-    velocity_ef = Vector3f(state.velocity[0],
-                           state.velocity[1],
-                           state.velocity[2]);
-
+    // deal with euler or quaternion attitude
+    if ((received_bitmask & QUAT_ATT) != 0) {
+        // if we have a quaternion attitude use it rather than euler
+        state.quaternion.rotation_matrix(dcm);
+    } else {
+        dcm.from_euler(state.attitude[0], state.attitude[1], state.attitude[2]);
+    }
 
     // velocity relative to airmass in body frame
     velocity_air_bf = dcm.transposed() * velocity_ef;
@@ -241,12 +270,6 @@ void JSON::recv_fdm(const struct sitl_input &input)
 
     // airspeed as seen by a fwd pitot tube (limited to 120m/s)
     airspeed_pitot = constrain_float(velocity_air_bf * Vector3f(1.0f, 0.0f, 0.0f), 0.0f, 120.0f);
-
-    position = Vector3f(state.position[0],
-                            state.position[1],
-                            state.position[2]);
-
-    dcm.from_euler(state.attitude[0], state.attitude[1], state.attitude[2]);
 
     // Convert from a meters from origin physics to a lat long alt
     update_position();
@@ -272,6 +295,16 @@ void JSON::recv_fdm(const struct sitl_input &input)
     frame_counter++;
 
 #if 0
+
+    float roll, pitch, yaw;
+    if ((received_bitmask & QUAT_ATT) != 0) {
+        dcm.to_euler(&roll, &pitch, &yaw);
+    } else {
+        roll = state.attitude[0];
+        pitch = state.attitude[1];
+        yaw = state.attitude[2];
+    }
+
 // @LoggerMessage: JSN1
 // @Description: Log data received from JSON simulator
 // @Field: TimeUS: Time since system startup (us)
@@ -288,9 +321,9 @@ void JSON::recv_fdm(const struct sitl_input &input)
                        "Qfffffff",
                        AP_HAL::micros64(),
                        state.timestamp_s,
-                       state.attitude[0],
-                       state.attitude[1],
-                       state.attitude[2],
+                       roll,
+                       pitch,
+                       yaw,
                        gyro.x,
                        gyro.y,
                        gyro.z);
