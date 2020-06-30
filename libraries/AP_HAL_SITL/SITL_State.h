@@ -28,6 +28,7 @@
 #include <SITL/SIM_RF_Benewake_TF03.h>
 #include <SITL/SIM_RF_Benewake_TFmini.h>
 #include <SITL/SIM_RF_LightWareSerial.h>
+#include <SITL/SIM_RF_LightWareSerialBinary.h>
 #include <SITL/SIM_RF_Lanbao.h>
 #include <SITL/SIM_RF_BLping.h>
 #include <SITL/SIM_RF_LeddarOne.h>
@@ -249,8 +250,10 @@ private:
     // simulated Benewake tfmini rangefinder:
     SITL::RF_Benewake_TFmini *benewake_tfmini;
 
-    // simulated LightWareSerial rangefinder:
+    // simulated LightWareSerial rangefinder - legacy protocol::
     SITL::RF_LightWareSerial *lightwareserial;
+    // simulated LightWareSerial rangefinder - binary protocol:
+    SITL::RF_LightWareSerialBinary *lightwareserial_binary;
     // simulated Lanbao rangefinder:
     SITL::RF_Lanbao *lanbao;
     // simulated BLping rangefinder:
