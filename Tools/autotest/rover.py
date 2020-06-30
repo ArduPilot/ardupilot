@@ -253,7 +253,6 @@ class AutoTestRover(AutoTest):
             self.set_parameter("SERVO%u_MAX" % spinner_ch, spinner_ch_max)
 
             self.set_parameter("SIM_SPR_ENABLE", 1)
-            self.fetch_parameters()
             self.set_parameter("SIM_SPR_PUMP", pump_ch)
             self.set_parameter("SIM_SPR_SPIN", spinner_ch)
 
