@@ -2985,6 +2985,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_RALLY,
                                                items)
             self.progress("ensure a mavlink1 connection can't do anything useful with new item types")
+            self.set_parameter("SERIAL2_PROTOCOL", 1)
+            self.reboot_sitl()
             mav2 = mavutil.mavlink_connection("tcp:localhost:5763",
                                               robust_parsing=True,
                                               source_system = 7,
@@ -2999,6 +3001,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 want_type=mavutil.mavlink.MAV_MISSION_UNSUPPORTED,
                 mav=mav2,
             )
+            # this relies on magic upgrade to serial2:
             self.set_parameter("SERIAL2_PROTOCOL", 2)
             expected_count = 3
             self.progress("Assert mission count on new link")
@@ -3336,6 +3339,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.mavproxy.expect("Loaded module rally")
         self.mavproxy.send('module load wp\n')
         self.mavproxy.expect("Loaded module wp")
+        self.reboot_sitl()
 
     def test_gcs_mission(self):
         target_system = 1
