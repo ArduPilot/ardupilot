@@ -150,6 +150,7 @@ private:
     uint16_t        last_operating_squawk;
     int32_t         last_operating_alt;
     uint8_t         last_operating_rf_select;
+    uint8_t         last_ack_transponder_mode;
 
     Transponder_Type transponder_type = Transponder_Type::Unknown;
 };

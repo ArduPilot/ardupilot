@@ -216,12 +216,25 @@ void AP_ADSB_Sagetech::parse_packet_XP(const Packet_XP &msg)
     switch (msg.type) {
     case MsgTypes_XP::ACK: {
         // ACK received!
+        const uint8_t system_state = msg.payload[2];
         transponder_type = (Transponder_Type)msg.payload[6];
+
+        const char* rfmode = "RF mode: ";
+        const uint8_t prev_transponder_mode = last_ack_transponder_mode;
+        last_ack_transponder_mode = (system_state >> 6) & 0x03;
+        if (prev_transponder_mode != last_ack_transponder_mode) {
+            switch (last_ack_transponder_mode) {
+            case 0: gcs().send_text(MAV_SEVERITY_INFO, "%s%sOFF",   _GcsHeader, rfmode); break;
+            case 1: gcs().send_text(MAV_SEVERITY_INFO, "%s%sSTBY",  _GcsHeader, rfmode); break;
+            case 2: gcs().send_text(MAV_SEVERITY_INFO, "%s%sON",    _GcsHeader, rfmode); break;
+            case 3: gcs().send_text(MAV_SEVERITY_INFO, "%s%sON-ALT",_GcsHeader, rfmode); break;
+            default:  break;
+            }
+        }
 
 #if SAGETECH_DEBUG_RX_ACK
         const uint8_t acked_type = msg.payload[0];
         const uint8_t acked_id = msg.payload[1];
-        const uint8_t system_state = msg.payload[2];
         const int32_t pres_altitude = (int32_t)fetchU32(&msg.payload[3]);
         const uint16_t squawk = fetchU16(&msg.payload[7]);
 
@@ -232,7 +245,7 @@ void AP_ADSB_Sagetech::parse_packet_XP(const Packet_XP &msg)
                 pres_altitude,
                 transponder_type,
                 squawk,
-                system_state >> 6); // mode
+                last_ack_transponder_mode); // mode
 
         for (uint8_t i=0; i<6; i++) {
             const uint8_t stateBits = (system_state & (1<< i));

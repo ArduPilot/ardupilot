@@ -187,6 +187,11 @@ AP_ADSB::AP_ADSB()
  */
 void AP_ADSB::hw_init(void)
 {
+    if (out_state.cfg.rfSelect & 0xFE) {
+        // disable RF outputs on init
+        out_state.cfg.rfSelect.set_and_notify(~(out_state.cfg.rfSelect & 0xFE));
+    }
+
     if (backend != nullptr) {
         return;
     }
