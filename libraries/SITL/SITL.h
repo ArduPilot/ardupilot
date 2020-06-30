@@ -6,6 +6,7 @@
 
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Baro/AP_Baro.h>
 #include <AP_Common/Location.h>
 #include <AP_Compass/AP_Compass.h>
 #include "SIM_Buzzer.h"
@@ -132,9 +133,9 @@ public:
     Matrix3f ahrs_rotation_inv;
 
     // noise levels for simulated sensors
-    AP_Float baro_noise;  // in metres
-    AP_Float baro_drift;  // in metres per second
-    AP_Float baro_glitch; // glitch in meters
+    AP_Float baro_noise[BARO_MAX_INSTANCES];  // in metres
+    AP_Float baro_drift[BARO_MAX_INSTANCES];  // in metres per second
+    AP_Float baro_glitch[BARO_MAX_INSTANCES]; // glitch in meters
     AP_Float gyro_noise;  // in degrees/second
     AP_Vector3f gyro_scale;  // percentage
     AP_Float accel_noise; // in m/s/s
@@ -180,7 +181,7 @@ public:
     AP_Float accel_fail;  // accelerometer failure value
     AP_Int8  rc_fail;     // fail RC input
     AP_Int8  rc_chancount; // channel count
-    AP_Int8  baro_disable; // disable simulated barometer
+    AP_Int8  baro_disable[BARO_MAX_INSTANCES]; // disable simulated barometers
     AP_Int8  float_exception; // enable floating point exception checks
     AP_Int8  flow_enable; // enable simulated optflow
     AP_Int16 flow_rate; // optflow data rate (Hz)
