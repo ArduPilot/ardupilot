@@ -125,7 +125,7 @@ void AP_RCProtocol::process_pulse_list(const uint32_t *widths, uint16_t n, bool 
     }
 }
 
-bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
+bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate, uint32_t timestamp_us)
 {
     uint32_t now = AP_HAL::millis();
     bool searching = (now - _last_input_ms >= 200);
@@ -135,7 +135,7 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
     }
     // first try current protocol
     if (_detected_protocol != AP_RCProtocol::NONE && !searching) {
-        backend[_detected_protocol]->process_byte(byte, baudrate);
+        backend[_detected_protocol]->process_byte(byte, baudrate, timestamp_us);
         if (backend[_detected_protocol]->new_input()) {
             _new_input = true;
             _last_input_ms = now;
@@ -148,7 +148,7 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
         if (backend[i] != nullptr) {
             uint32_t frame_count = backend[i]->get_rc_frame_count();
             uint32_t input_count = backend[i]->get_rc_input_count();
-            backend[i]->process_byte(byte, baudrate);
+            backend[i]->process_byte(byte, baudrate, timestamp_us);
             if (frame_count != backend[i]->get_rc_frame_count()) {
                 _good_frames[i]++;
                 if (requires_3_frames((rcprotocol_t)i) && _good_frames[i] < 3) {
@@ -212,10 +212,16 @@ void AP_RCProtocol::check_added_uart(void)
     }
     uint32_t n = added.uart->available();
     n = MIN(n, 255U);
+    // get an estimate of when the 1st byte was received
+    uint32_t start_us = added.uart->receive_time_constraint_us(n);
+    // average per byte time
+    uint32_t us_per_byte = (10U * 1000000U) / added.baudrate;
     for (uint8_t i=0; i<n; i++) {
         int16_t b = added.uart->read();
         if (b >= 0) {
-            process_byte(uint8_t(b), added.baudrate);
+            // get an estimate of when the i-th byte was received
+            uint32_t byte_us = start_us + i * us_per_byte;
+            process_byte(uint8_t(b), added.baudrate, byte_us);
         }
     }
     if (!_detected_with_bytes) {

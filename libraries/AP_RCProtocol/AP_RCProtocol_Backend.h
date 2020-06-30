@@ -26,7 +26,7 @@ public:
     AP_RCProtocol_Backend(AP_RCProtocol &_frontend);
     virtual ~AP_RCProtocol_Backend() {}
     virtual void process_pulse(uint32_t width_s0, uint32_t width_s1) {}
-    virtual void process_byte(uint8_t byte, uint32_t baudrate) {}
+    virtual void process_byte(uint8_t byte, uint32_t baudrate, uint32_t timestamp_us) {}
     uint16_t read(uint8_t chan);
     void read(uint16_t *pwm, uint8_t n);
     bool new_input();

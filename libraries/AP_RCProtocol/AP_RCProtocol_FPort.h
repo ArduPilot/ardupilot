@@ -28,7 +28,7 @@ class AP_RCProtocol_FPort : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_FPort(AP_RCProtocol &_frontend, bool inverted);
     void process_pulse(uint32_t width_s0, uint32_t width_s1) override;
-    void process_byte(uint8_t byte, uint32_t baudrate) override;
+    void process_byte(uint8_t byte, uint32_t baudrate, uint32_t timestamp_us) override;
 
 private:
     void decode_control(const FPort_Frame &frame);

@@ -98,10 +98,10 @@ void AP_RCProtocol_IBUS::_process_byte(uint32_t timestamp_us, uint8_t b)
 }
 
 // support byte input
-void AP_RCProtocol_IBUS::process_byte(uint8_t b, uint32_t baudrate)
+void AP_RCProtocol_IBUS::process_byte(uint8_t b, uint32_t baudrate, uint32_t timestamp_us)
 {
     if (baudrate != 115200) {
         return;
     }
-    _process_byte(AP_HAL::micros(), b);
+    _process_byte(timestamp_us, b);
 }

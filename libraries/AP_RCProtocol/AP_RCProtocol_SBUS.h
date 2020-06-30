@@ -24,7 +24,7 @@ class AP_RCProtocol_SBUS : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_SBUS(AP_RCProtocol &_frontend, bool inverted);
     void process_pulse(uint32_t width_s0, uint32_t width_s1) override;
-    void process_byte(uint8_t byte, uint32_t baudrate) override;
+    void process_byte(uint8_t byte, uint32_t baudrate, uint32_t timestamp_us) override;
 private:
     void _process_byte(uint32_t timestamp_us, uint8_t byte);
     bool sbus_decode(const uint8_t frame[25], uint16_t *values, uint16_t *num_values,
