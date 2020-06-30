@@ -44,6 +44,7 @@
 #include "AP_RangeFinder_UAVCAN.h"
 #include "AP_RangeFinder_Lanbao.h"
 #include "AP_RangeFinder_LeddarVu8.h"
+#include "AP_RangeFinder_MaxsonarSerialIRXL.h"
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Logger/AP_Logger.h>
@@ -526,6 +527,12 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         num_instances = MAX(num_instances, instance+1);
         break;
 #endif
+
+    case Type::MBSERIR:
+        if (AP_RangeFinder_MaxsonarSerialIRXL::detect(serial_instance)) {
+            drivers[instance] = new AP_RangeFinder_MaxsonarSerialIRXL(state[instance], params[instance], serial_instance++);
+        }
+        break;
 
     default:
         break;
