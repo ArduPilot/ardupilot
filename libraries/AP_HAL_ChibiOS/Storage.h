@@ -40,6 +40,7 @@ static_assert(CH_STORAGE_SIZE % CH_STORAGE_LINE_SIZE == 0,
 class ChibiOS::Storage : public AP_HAL::Storage {
 public:
     void init() override {}
+    bool erase() override;
     void read_block(void *dst, uint16_t src, size_t n) override;
     void write_block(uint16_t dst, const void* src, size_t n) override;
 
