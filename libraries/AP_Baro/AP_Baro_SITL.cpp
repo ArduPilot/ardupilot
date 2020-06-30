@@ -54,16 +54,16 @@ void AP_Baro_SITL::_timer()
 
     float sim_alt = _sitl->state.altitude;
 
-    if (_sitl->baro_disable) {
+    if (_sitl->baro_disable[_instance]) {
         // barometer is disabled
         return;
     }
 
-    sim_alt += _sitl->baro_drift * now / 1000.0f;
-    sim_alt += _sitl->baro_noise * rand_float();
+    sim_alt += _sitl->baro_drift[_instance] * now / 1000.0f;
+    sim_alt += _sitl->baro_noise[_instance] * rand_float();
 
     // add baro glitch
-    sim_alt += _sitl->baro_glitch;
+    sim_alt += _sitl->baro_glitch[_instance];
 
     // add delay
     uint32_t best_time_delta = 200;  // initialise large time representing buffer entry closest to current time - delay.
@@ -116,6 +116,12 @@ void AP_Baro_SITL::_timer()
     _recent_press = p;
     _recent_temp = T;
     _has_sample = true;
+}
+
+// unhealthy if baro is turned off or beyond supported instances
+bool AP_Baro_SITL::healthy(uint8_t instance) 
+{
+    return !_sitl->baro_disable[instance];
 }
 
 // Read the sensor
