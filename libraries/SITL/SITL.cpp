@@ -35,7 +35,7 @@ SITL *SITL::_singleton = nullptr;
 
 // table of user settable parameters
 const AP_Param::GroupInfo SITL::var_info[] = {
-    AP_GROUPINFO("BARO_RND",   0, SITL,  baro_noise,  0.2f),
+    AP_GROUPINFO("BARO_RND",   0, SITL,  baro_noise[0],  0.2f),
     AP_GROUPINFO("GYR_RND",    1, SITL,  gyro_noise,  0),
     AP_GROUPINFO("ACC_RND",    2, SITL,  accel_noise, 0),
     AP_GROUPINFO("MAG_RND",    3, SITL,  mag_noise,   0),
@@ -56,16 +56,16 @@ const AP_Param::GroupInfo SITL::var_info[] = {
     AP_GROUPINFO("BATT_VOLTAGE",  19, SITL,  batt_voltage,  12.6f),
     AP_GROUPINFO("ARSPD_RND",     20, SITL,  arspd_noise,  0.5f),
     AP_GROUPINFO("ACCEL_FAIL",    21, SITL,  accel_fail,  0),
-    AP_GROUPINFO("BARO_DRIFT",    22, SITL,  baro_drift,  0),
+    AP_GROUPINFO("BARO_DRIFT",    22, SITL,  baro_drift[0],  0),
     AP_GROUPINFO("SONAR_GLITCH",  23, SITL,  sonar_glitch, 0),
     AP_GROUPINFO("SONAR_RND",     24, SITL,  sonar_noise, 0),
     AP_GROUPINFO("RC_FAIL",       25, SITL,  rc_fail, 0),
     AP_GROUPINFO("GPS2_ENABLE",   26, SITL,  gps2_enable, 0),
-    AP_GROUPINFO("BARO_DISABLE",  27, SITL,  baro_disable, 0),
+    AP_GROUPINFO("BARO_DISABLE",  27, SITL,  baro_disable[0], 0),
     AP_GROUPINFO("FLOAT_EXCEPT",  28, SITL,  float_exception, 1),
     AP_GROUPINFO("MAG_MOT",       29, SITL,  mag_mot, 0),
     AP_GROUPINFO("ACC_BIAS",      30, SITL,  accel_bias, 0),
-    AP_GROUPINFO("BARO_GLITCH",   31, SITL,  baro_glitch, 0),
+    AP_GROUPINFO("BARO_GLITCH",   31, SITL,  baro_glitch[0], 0),
     AP_GROUPINFO("SONAR_SCALE",   32, SITL,  sonar_scale, 12.1212f),
     AP_GROUPINFO("FLOW_ENABLE",   33, SITL,  flow_enable, 0),
     AP_GROUPINFO("TERRAIN",       34, SITL,  terrain_enable, 1),
@@ -276,8 +276,13 @@ const AP_Param::GroupInfo SITL::var_info3[] = {
     // @Path: ./SIM_RichenPower.cpp
     AP_SUBGROUPINFO(richenpower_sim, "RICH_", 31, SITL, RichenPower),
 
-    AP_GROUPEND
+    // user settable parameters for the 2nd barometer
+    AP_GROUPINFO("BARO2_RND",    32, SITL,  baro_noise[1], 0.1f),
+    AP_GROUPINFO("BARO2_DRIFT",  33, SITL,  baro_drift[1], 0),
+    AP_GROUPINFO("BARO2_DISABL", 34, SITL,  baro_disable[1], 0),
+    AP_GROUPINFO("BARO2_GLITCH", 35, SITL,  baro_glitch[1], 0),
 
+    AP_GROUPEND
 };
     
 /* report SITL state via MAVLink */
