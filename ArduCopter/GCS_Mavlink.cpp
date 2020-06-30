@@ -570,6 +570,55 @@ bool GCS_MAVLINK_Copter::set_home(const Location& loc, bool _lock) {
     return copter.set_home(loc, _lock);
 }
 
+MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_do_reposition(const mavlink_command_int_t &packet)
+{
+    const bool change_modes = ((int32_t)packet.param2 & MAV_DO_REPOSITION_FLAGS_CHANGE_MODE) == MAV_DO_REPOSITION_FLAGS_CHANGE_MODE;
+    if (!copter.flightmode->in_guided_mode() && !change_modes) {
+        return MAV_RESULT_DENIED;
+    }
+
+    // sanity check location
+    if (!check_latlng(packet.x, packet.y)) {
+        return MAV_RESULT_DENIED;
+    }
+
+    Location request_location {};
+    request_location.lat = packet.x;
+    request_location.lng = packet.y;
+
+    if (fabsf(packet.z) > LOCATION_ALT_MAX_M) {
+        return MAV_RESULT_DENIED;
+    }
+
+    Location::AltFrame frame;
+    if (!mavlink_coordinate_frame_to_location_alt_frame((MAV_FRAME)packet.frame, frame)) {
+        return MAV_RESULT_DENIED; // failed as the location is not valid
+    }
+    request_location.set_alt_cm((int32_t)(packet.z * 100.0f), frame);
+
+    if (request_location.sanitize(copter.current_loc)) {
+        // if the location wasn't already sane don't load it
+        return MAV_RESULT_DENIED; // failed as the location is not valid
+    }
+
+    // we need to do this first, as we don't want to change the flight mode unless we can also set the target
+    if (!copter.mode_guided.set_destination(request_location, false, 0, false, 0)) {
+        return MAV_RESULT_FAILED;
+    }
+
+    if (!copter.flightmode->in_guided_mode()) {
+        if (!copter.set_mode(Mode::Number::GUIDED, ModeReason::GCS_COMMAND)) {
+            return MAV_RESULT_FAILED;
+        }
+        // the position won't have been loaded if we had to change the flight mode, so load it again
+        if (!copter.mode_guided.set_destination(request_location, false, 0, false, 0)) {
+            return MAV_RESULT_FAILED;
+        }
+    }
+
+    return MAV_RESULT_ACCEPTED;
+}
+
 MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_int_t &packet)
 {
     switch(packet.command) {
@@ -583,6 +632,8 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_i
 #endif
         return MAV_RESULT_UNSUPPORTED;
 
+    case MAV_CMD_DO_REPOSITION:
+        return handle_command_int_do_reposition(packet);
     default:
         return GCS_MAVLINK::handle_command_int_packet(packet);
     }
