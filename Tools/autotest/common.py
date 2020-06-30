@@ -1809,7 +1809,7 @@ class AutoTest(ABC):
         """Get SITL time in seconds."""
         x = self.mav.messages.get("SYSTEM_TIME", None)
         if x is None:
-            raise NotAchievedException("No cached time available")
+            raise NotAchievedException("No cached time available (%s)" % (self.mav.sysid,))
         return x.time_boot_ms * 1.0e-3
 
     def sim_location(self):
@@ -3647,12 +3647,21 @@ class AutoTest(ABC):
         self.waiting_to_arm_count += 1
 
     def wait_heartbeat(self, drain_mav=True, *args, **x):
-        '''as opposed to mav.wait_heartbeat, raises an exception on timeout'''
+        '''as opposed to mav.wait_heartbeat, raises an exception on timeout.
+Also, ignores heartbeats not from our target system'''
         if drain_mav:
             self.drain_mav()
-        m = self.mav.wait_heartbeat(*args, **x)
-        if m is None:
-            raise AutoTestTimeoutException("Did not receive heartbeat")
+        orig_timeout = x.get("timeout", 10)
+        x["timeout"] = 1
+        tstart = time.time()
+        while True:
+            if time.time() - tstart > orig_timeout:
+                raise AutoTestTimeoutException("Did not receive heartbeat")
+            m = self.mav.wait_heartbeat(*args, **x)
+            if m is None:
+                continue
+            if m.get_srcSystem() == self.sysid_thismav():
+                break
 
     def wait_ekf_happy(self, timeout=30, require_absolute=True):
         """Wait for EKF to be happy"""
@@ -3981,6 +3990,13 @@ class AutoTest(ABC):
         self.expect_list_clear()
         self.expect_list_extend([self.sitl, self.mavproxy])
 
+        # need to wait for a heartbeat to arrive as then mavutil will
+        # select the correct set of messages for us to receive in
+        # self.mav.messages.  You can actually recieve messages with
+        # recv_match and those will not be in self.mav.messages until
+        # you do this!
+        self.wait_heartbeat()
+        self.progress("Sim time: %f" % (self.get_sim_time(),))
         self.apply_defaultfile_parameters()
 
         self.progress("Ready to start testing!")
