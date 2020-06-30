@@ -1400,6 +1400,12 @@ void AP_InertialSensor::update(void)
     _last_update_usec = AP_HAL::micros();
     
     _have_sample = false;
+
+#if !HAL_MINIMIZE_FEATURES
+    if (uart.imu_out_uart) {
+        send_uart_data();
+    }
+#endif
 }
 
 /*
@@ -2150,6 +2156,56 @@ void AP_InertialSensor::kill_imu(uint8_t imu_idx, bool kill_it)
     }
 }
 #endif // HAL_MINIMIZE_FEATURES
+
+/*
+  setup a UART for sending external data
+ */
+void AP_InertialSensor::set_imu_out_uart(AP_HAL::UARTDriver *_uart)
+{
+#if !HAL_MINIMIZE_FEATURES
+    uart.imu_out_uart = _uart;
+    uart.counter = 0;
+#endif
+}
+
+/*
+  send IMU delta-angle and delta-velocity to a UART
+ */
+void AP_InertialSensor::send_uart_data(void)
+{
+#if !HAL_MINIMIZE_FEATURES
+    struct {
+        uint16_t magic = 0x29c4;
+        uint16_t length;
+        uint32_t timestamp_us;
+        Vector3f delta_velocity;
+        Vector3f delta_angle;
+        float    delta_velocity_dt;
+        float    delta_angle_dt;
+        uint16_t counter;
+        uint16_t crc;
+    } data;
+
+    if (uart.imu_out_uart->txspace() < sizeof(data)) {
+        // not enough space
+        return;
+    }
+
+    data.length = sizeof(data);
+    data.timestamp_us = AP_HAL::micros();
+
+    get_delta_angle(data.delta_angle);
+    data.delta_angle_dt = get_delta_angle_dt();
+
+    get_delta_velocity(data.delta_velocity);
+    data.delta_velocity_dt = get_delta_velocity_dt();
+
+    data.counter = uart.counter++;
+    data.crc = crc_xmodem((const uint8_t *)&data, sizeof(data)-sizeof(uint16_t));
+
+    uart.imu_out_uart->write((const uint8_t *)&data, sizeof(data));
+#endif
+}
 
 
 namespace AP {
