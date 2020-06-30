@@ -573,10 +573,7 @@ void AP_Baro::init(void)
     if (sitl == nullptr) {
         AP_HAL::panic("No SITL pointer");
     }
-    if (sitl->baro_count > 1) {
-        ::fprintf(stderr, "More than one baro not supported.  Sorry.");
-    }
-    if (sitl->baro_count == 1) {
+    for(uint8_t i = 0; i < sitl->baro_count; i++) {
         ADD_BACKEND(new AP_Baro_SITL(*this));
     }
 #elif HAL_BARO_DEFAULT == HAL_BARO_HIL

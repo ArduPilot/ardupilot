@@ -14,7 +14,7 @@ public:
 
 protected:
 
-    void update_healthy_flag(uint8_t instance) override { _frontend.sensors[instance].healthy = true; }
+    void update_healthy_flag(uint8_t instance) override { _frontend.sensors[instance].healthy = healthy(instance); };
 
 private:
     uint8_t _instance;
@@ -32,7 +32,10 @@ private:
 
     // adjust for simulated board temperature
     void temperature_adjustment(float &p, float &T);
-
+    
+    // is the barometer usable for flight 
+    bool healthy(uint8_t instance);
+    
     void _timer();
     bool _has_sample;
     uint32_t _last_sample_time;
