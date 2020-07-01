@@ -133,7 +133,6 @@ private:
     void send_packet(const MsgTypes_XP type);
     void request_packet(const MsgTypes_XP type);
 
-    uint16_t to_octal(uint16_t value_dec);
     const char* type_to_str(const uint8_t type);
     const char* systemStatsBits_to_str(const SystemStateBits systemStateBits);
 

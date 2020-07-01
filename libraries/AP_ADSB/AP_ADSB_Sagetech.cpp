@@ -567,8 +567,7 @@ void AP_ADSB_Sagetech::send_Operating()
     pkt.payload_length = 8;
 
     // squawk
-    //last_operating_squawk = 0x0280; // TEST of 1200
-    loadUint(&pkt.payload[0], to_octal(last_operating_squawk), 16);
+    loadUint(&pkt.payload[0], last_operating_squawk, 16);
 
     // altitude
     int32_t alt_feet = (int32_t)((last_operating_alt * 0.01f) / FEET_TO_METERS);
@@ -690,17 +689,6 @@ void AP_ADSB_Sagetech::send_GPS()
 #endif
 
     send_msg(pkt);
-}
-
-uint16_t AP_ADSB_Sagetech::to_octal(uint16_t decimalNum)
-{
-    uint16_t octalNum = 0, placeValue = 1;
-    while (decimalNum != 0) {
-        octalNum += (decimalNum % 8) * placeValue;
-        decimalNum /= 8;
-        placeValue *= 10;
-    }
-    return octalNum;
 }
 
 const char* AP_ADSB_Sagetech::type_to_str(const uint8_t type)
