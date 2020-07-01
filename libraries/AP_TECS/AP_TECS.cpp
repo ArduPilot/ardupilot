@@ -699,8 +699,15 @@ void AP_TECS::_update_throttle_with_airspeed(void)
 
         // Rate limit PD + FF throttle
         // Calculate the throttle increment from the specified slew time
-        if (aparm.throttle_slewrate != 0) {
-            float thrRateIncr = _DT * (_THRmaxf - THRminf_clipped_to_zero) * aparm.throttle_slewrate * 0.01f;
+        int8_t throttle_slewrate = aparm.throttle_slewrate;
+        int8_t land_slewrate = _landing.get_throttle_slewrate();
+
+        if (_landing.is_on_approach() && land_slewrate >0) {
+            throttle_slewrate = land_slewrate;
+        }
+
+        if (throttle_slewrate != 0) {
+            float thrRateIncr = _DT * (_THRmaxf - THRminf_clipped_to_zero) * throttle_slewrate * 0.01f;
 
             _throttle_dem = constrain_float(_throttle_dem,
                                             _last_throttle_dem - thrRateIncr,
