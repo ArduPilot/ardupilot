@@ -25,8 +25,14 @@ Please see our [wiki article](https://ardupilot.org/dev/docs/submitting-patches-
 
 The ArduPilot project is open source and [maintained](https://github.com/ArduPilot/ardupilot#maintainers) by a team of volunteers.
 
-To contribute, you can send a pull request on Github. You can also join the
+To contribute, you can send a pull request on GitHub.
+
+New developers are recommended to join the `#general` channel on
+[Discord](https://ardupilot.org/discord).
+
+You can also join the
 [development discussion on Discourse](https://discuss.ardupilot.org/c/development-team),
-or [Gitter](https://gitter.im/ArduPilot/ardupilot). Note that our Discourse
-and Gitter are NOT for user tech support, and are moderated for new users to
-prevent off-topic discussion.
+or [Gitter](https://gitter.im/ArduPilot/ardupilot).
+
+Note that these are NOT for user tech support, and are moderated
+for new users to prevent off-topic discussion.
