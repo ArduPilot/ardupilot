@@ -15,8 +15,8 @@ function spit ()
   else
     step = step + 1
   end
-  return spit, 1000
   port:write(step)
+  return spit, 1000
 end
 
 return spit, 1000
