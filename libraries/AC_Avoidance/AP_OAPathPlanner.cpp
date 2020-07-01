@@ -107,6 +107,15 @@ void AP_OAPathPlanner::init()
     start_thread();
 }
 
+// return type of BendyRuler in use
+AP_OABendyRuler:: OABendyType AP_OAPathPlanner::get_bendy_type() const
+{
+    if (_oabendyruler == nullptr) {
+        return AP_OABendyRuler::OABendyType::OA_BENDY_DISABLED; 
+    }     
+    return _oabendyruler->get_type();
+}
+
 // pre-arm checks that algorithms have been initialised successfully
 bool AP_OAPathPlanner::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const
 {
