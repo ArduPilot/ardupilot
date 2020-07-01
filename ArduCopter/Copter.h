@@ -180,6 +180,31 @@
 
 #include "mode.h"
 
+// Methods for Standby can be found in standby.cpp
+class Standby {
+public:
+
+    Standby(); // constructor
+
+    void init();  // called once at startup
+    void update(); // called from the Scheduler
+
+    bool active() const { return _active; } // true if any standby actions should be taken e.g. zeroing integrators
+    void set_auxswitch_pos(RC_Channel::AuxSwitchPos pos) { _switch_pos = pos; }
+
+    static const struct AP_Param::GroupInfo        var_info[];
+    // pin to enable standby mode
+
+private:
+
+    AP_Int8 _pin;
+
+    bool _active;
+    bool _last_active;
+
+    RC_Channel::AuxSwitchPos _switch_pos;
+};
+
 class Copter : public AP_Vehicle {
 public:
     friend class GCS_MAVLINK_Copter;
@@ -196,6 +221,8 @@ public:
     friend class ToyMode;
     friend class RC_Channel_Copter;
     friend class RC_Channels_Copter;
+
+    friend class Standby;
 
     friend class AutoTune;
 
@@ -578,8 +605,7 @@ private:
         float takeoff_alt_cm;
     } gndeffect_state;
 
-    bool standby_active;
-    bool standby_last;
+    Standby standby;
 
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
@@ -764,11 +790,6 @@ private:
 
     // landing_gear.cpp
     void landinggear_update();
-
-    // standby.cpp
-    void standby_update();
-    void standby_enable();
-    void standby_pin_active();
 
     // Log.cpp
     void Log_Write_Control_Tuning();

@@ -969,13 +969,9 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPPTR(mode_zigzag_ptr, "ZIGZ_", 38, ParametersG2, ModeZigZag),
 #endif
 
-    // @Param: STANDBY_PIN
-    // @DisplayName: StandBy pin
-    // @Description: pin number to used to enable Stand By state. If set to -1 then it will not be used.
-    // @Values: -1:Disabled, 50:PX4 AUX1, 51:PX4 AUX2, 52:PX4 AUX3, 53:PX4 AUX4, 54:PX4 AUX5, 55:PX4 AUX6
-    // @User: Standard
-    // @RebootRequired: True
-    AP_GROUPINFO("STANDBY_PIN",  39, ParametersG2, standby_pin, -1),
+    // @Group: STANDBY_
+    // @Path: standby.cpp
+    AP_SUBGROUPPTR(standby, "STANDBY_", 39, ParametersG2, Standby),
 
     AP_GROUPEND
 };
@@ -1015,6 +1011,7 @@ ParametersG2::ParametersG2(void)
 #if MODE_AUTOROTATE_ENABLED == ENABLED
     ,arot(copter.inertial_nav)
 #endif
+    ,standby(&copter.standby)
     ,button_ptr(&copter.button)
 #if MODE_ZIGZAG_ENABLED == ENABLED
     ,mode_zigzag_ptr(&copter.mode_zigzag)

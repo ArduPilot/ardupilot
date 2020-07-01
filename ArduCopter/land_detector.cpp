@@ -54,7 +54,7 @@ void Copter::update_land_detector()
 #endif
             set_land_complete(false);
         }
-    } else if (standby_active) {
+    } else if (standby.active()) {
         // land detector will not run in standby mode
         land_detector_count = 0;
     } else {
