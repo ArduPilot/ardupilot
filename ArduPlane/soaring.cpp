@@ -8,6 +8,11 @@
 *  Peter Braswell, Samuel Tabor, Andrey Kolobov, and Iain Guilliard
 */
 void Plane::update_soaring() {
+
+    if (auto_state.is_on_landing_pattern) {
+        g2.soaring_controller.set_throttle_suppressed(false);
+        return;
+    }
     
     // Check if soaring is active. Also sets throttle suppressed
     // status on active state changes.
