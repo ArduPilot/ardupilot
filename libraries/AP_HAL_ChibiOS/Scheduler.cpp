@@ -361,6 +361,8 @@ void Scheduler::_monitor_thread(void *arg)
     uint8_t log_wd_counter = 0;
 #endif
 
+    uint32_t last_loop_stuck_check_ms = 0;
+
     while (true) {
         sched->delay(100);
         if (using_watchdog) {
@@ -373,6 +375,14 @@ void Scheduler::_monitor_thread(void *arg)
         uint32_t now = AP_HAL::millis();
         uint32_t loop_delay = now - sched->last_watchdog_pat_ms;
         if (loop_delay >= 200) {
+            const uint32_t delta_ms = now - last_loop_stuck_check_ms;
+            last_loop_stuck_check_ms = now;
+            if (delta_ms > 150) {
+                // our own scheduling is suspect.  This can happen in
+                // the case of e.g. flashing the bootloader, which
+                // locks the CPU out for the duration.
+                continue;
+            }
             // the main loop has been stuck for at least
             // 200ms. Starting logging the main loop state
             const AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
