@@ -207,8 +207,8 @@ void Copter::init_ardupilot()
     // enable CPU failsafe
     failsafe_enable();
 
-    // enable CPU standby
-    standby_enable();
+    // initialise standby
+    standby.init();
 
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 

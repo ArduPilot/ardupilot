@@ -551,14 +551,7 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
             break;
 
         case AUX_FUNC::STANDBY: {
-            switch (ch_flag) {
-                case AuxSwitchPos::HIGH:
-                    copter.standby_active = true;
-                    break;
-                default:
-                    copter.standby_active = false;
-                    break;
-                }
+            copter.standby.set_auxswitch_pos(ch_flag);
             break;
         }
 

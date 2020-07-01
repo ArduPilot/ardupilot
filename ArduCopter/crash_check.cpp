@@ -24,7 +24,7 @@ void Copter::crash_check()
     }
 
     // exit immediately if in standby
-    if (standby_active) {
+    if (standby.active()) {
         crash_counter = 0;
         return;
     }
@@ -88,7 +88,7 @@ void Copter::thrust_loss_check()
     }
 
     // exit immediately if in standby
-    if (standby_active) {
+    if (standby.active()) {
         return;
     }
 
@@ -162,7 +162,7 @@ void Copter::parachute_check()
     }
 
     // exit immediately if in standby
-    if (standby_active) {
+    if (standby.active()) {
         return;
     }
 
