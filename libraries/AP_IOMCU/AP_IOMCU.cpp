@@ -1023,6 +1023,16 @@ void AP_IOMCU::check_iomcu_reset(void)
         // all OK
         return;
     }
+    const uint32_t now = AP_HAL::millis();
+    const uint32_t time_since_last_check_ms = now - last_iomcu_reset_check_ms;
+    last_iomcu_reset_check_ms = now;
+    if (time_since_last_check_ms > 200) {
+        // we're supposed to be called at 20Hz but we haven't been
+        // called in way too long.  This can happen when flashing the
+        // bootloader as all threads are locked out at that point.
+        hal.console->printf("check_iomcu_reset rescheduled");
+        return;
+    }
     detected_io_reset = true;
     INTERNAL_ERROR(AP_InternalError::error_t::iomcu_reset);
     hal.console->printf("IOMCU reset t=%u %u %u dt=%u\n",

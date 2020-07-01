@@ -225,6 +225,7 @@ private:
     uint32_t read_status_errors;
     uint32_t read_status_ok;
     uint32_t last_rc_protocols;
+    uint32_t last_iomcu_reset_check_ms;
 
     // firmware upload
     const char *fw_name = "io_firmware.bin";
