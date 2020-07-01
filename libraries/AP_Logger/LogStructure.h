@@ -1170,15 +1170,19 @@ struct PACKED log_SRTL {
 struct PACKED log_OABendyRuler {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t type;
     uint8_t active;
     uint16_t target_yaw;
     uint16_t yaw;
+    uint16_t target_pitch;
     bool resist_chg;
     float margin;
     int32_t final_lat;
     int32_t final_lng;
+    int32_t final_alt;
     int32_t oa_lat;
     int32_t oa_lng;
+    int32_t oa_alt;
 };
 
 struct PACKED log_OADijkstra {
@@ -1910,15 +1914,19 @@ struct PACKED log_Winch {
 // @LoggerMessage: OABR
 // @Description: Object avoidance (Bendy Ruler) diagnostics
 // @Field: TimeUS: Time since system startup
-// @Field: Active: True if Bendy Ruler avoidance is being used
-// @Field: DesYaw: Best yaw chosen to avoid obstacle
+// @Field: Type: Type of BendyRuler currently active
+// @Field: Act: True if Bendy Ruler avoidance is being used
+// @Field: DYaw: Best yaw chosen to avoid obstacle
 // @Field: Yaw: Current vehicle yaw
-// @Field: ResChg: True if BendyRuler resisted changing bearing and continued in last calculated bearing
+// @Field: DP: Desired pitch chosen to avoid obstacle
+// @Field: RChg: True if BendyRuler resisted changing bearing and continued in last calculated bearing
 // @Field: Mar: Margin from path to obstacle on best yaw chosen
-// @Field: DLat: Destination latitude
-// @Field: DLng: Destination longitude
-// @Field: OALat: Intermediate location chosen for avoidance
-// @Field: OALng: Intermediate location chosen for avoidance
+// @Field: DLt: Destination latitude
+// @Field: DLg: Destination longitude
+// @Field: DAlt: Desired alt
+// @Field: OLt: Intermediate location chosen for avoidance
+// @Field: OLg: Intermediate location chosen for avoidance
+// @Field: OAlt: Intermediate alt chosen for avoidance
 
 // @LoggerMessage: OADJ
 // @Description: Object avoidance (Dijkstra) diagnostics
@@ -2485,7 +2493,7 @@ struct PACKED log_Winch {
     { LOG_SRTL_MSG, sizeof(log_SRTL), \
       "SRTL", "QBHHBfff", "TimeUS,Active,NumPts,MaxPts,Action,N,E,D", "s----mmm", "F----000" }, \
     { LOG_OA_BENDYRULER_MSG, sizeof(log_OABendyRuler), \
-      "OABR","QBHHBfLLLL","TimeUS,Active,DesYaw,Yaw,ResChg,Mar,DLat,DLng,OALat,OALng", "sbdd-mDUDU", "F-----GGGG" }, \
+      "OABR","QBBHHHBfLLfLLf","TimeUS,Type,Act,DYaw,Yaw,DP,RChg,Mar,DLt,DLg,DAlt,OLt,OLg,OAlt", "s-bddd-mDUmDUm", "F-------GGBGGB" }, \
     { LOG_OA_DIJKSTRA_MSG, sizeof(log_OADijkstra), \
       "OADJ","QBBBBLLLL","TimeUS,State,Err,CurrPoint,TotPoints,DLat,DLng,OALat,OALng", "sbbbbDUDU", "F----GGGG" }, \
     { LOG_SIMPLE_AVOID_MSG, sizeof(log_SimpleAvoid), \
