@@ -1,3 +1,5 @@
+-- Lua script to write and read from a serial
+
 local port = serial:find_serial(0)
 
 port:begin(115200)
@@ -15,8 +17,8 @@ function spit ()
   else
     step = step + 1
   end
-  return spit, 1000
   port:write(step)
+  return spit, 1000
 end
 
 return spit, 1000
