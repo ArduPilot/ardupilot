@@ -154,15 +154,8 @@ void AP_ADSB_Sagetech::update()
             last_packet_Operating_ms = now_ms;
             last_operating_squawk = frontend.out_state.cfg.squawk_octal;
             last_operating_alt = frontend._my_loc.alt;
-
-            frontend.out_state.cfg.rfSelect &= 0x06; // apply mask for valid bits
             last_operating_rf_select = frontend.out_state.cfg.rfSelect;
-
             send_packet(MsgTypes_XP::Operating_Set);
-            if (last_operating_rf_select != frontend.out_state.cfg.rfSelect) {
-                frontend.out_state.cfg.rfSelect.set_and_notify(last_operating_rf_select);
-                frontend.out_state.cfg.rfSelect.save();
-            }
 
         } else if (now_ms - last_packet_GPS_ms >= (frontend.out_state.is_flying ? 200 : 1000)) {
             // 1Hz when not flying, 5Hz when flying
@@ -585,15 +578,14 @@ void AP_ADSB_Sagetech::send_Operating()
 
 
     // RF mode
-    last_operating_rf_select &= 7; // mask param to param bits
-    pkt.payload[4] = last_operating_rf_select & 0x06;   // mask to useful sagetech bits
+    pkt.payload[4] = last_operating_rf_select;
 
     if (last_operating_rf_select & 0x04) {
-        // Ident should only be sent once. Its held on in the hw for 18 seconds
+        // Ident should only be sent once. It's held on in the hw and then automatically
+        // disabled after 18 seconds. It can not be turned off externally once enabled
         gcs().send_text(MAV_SEVERITY_DEBUG, "%sIdent!", _GcsHeader);
-        last_operating_rf_select &= ~0x04;
+        frontend.out_state.cfg.rfSelect.set_and_save_and_notify(last_operating_rf_select & ~0x04);
     }
-
 
 #if SAGETECH_DEBUG_TX_Operating
     gcs().send_text(MAV_SEVERITY_DEBUG, "%sOper squawk:%d, %dft, %d", _GcsHeader, fetchU16(&pkt.payload[0]), (int16_t)fetchU16(&pkt.payload[2])*100, pkt.payload[4]);
