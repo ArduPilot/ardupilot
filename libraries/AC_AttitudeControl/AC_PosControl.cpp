@@ -562,6 +562,12 @@ void AC_PosControl::run_z_controller()
     // calculate _vel_target.z using from _pos_error.z using sqrt controller
     _vel_target.z = AC_AttitudeControl::sqrt_controller(_pos_error.z, _p_pos_z.kP(), _accel_z_cms, _dt);
 
+    // adjust vertical climb rate so vehicle does not hit obstacles above or breach vertical fence
+    AC_Avoid *avoid = AP::ac_avoid();
+    if (avoid != nullptr) {
+        avoid->adjust_velocity_z(_p_pos_z.kP(), _accel_z_cms, _vel_target.z, _dt);
+    }
+
     // check speed limits
     // To-Do: check these speed limits here or in the pos->rate controller
     _limit.vel_up = false;
@@ -1071,6 +1077,11 @@ void AC_PosControl::run_xy_controller(float dt)
     // add velocity feed-forward
     _vel_target.x += _vel_desired.x;
     _vel_target.y += _vel_desired.y;
+
+    AC_Avoid *avoid = AP::ac_avoid();
+    if (avoid != nullptr) {
+        avoid->adjust_velocity(_p_pos_xy.kP(), _accel_cms, _vel_target, _dt);
+    }
 
     // the following section converts desired velocities in lat/lon directions to accelerations in lat/lon frame
 
