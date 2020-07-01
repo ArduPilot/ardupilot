@@ -717,6 +717,19 @@ public:
         }
     }
 
+    /// Value setter - set value and save, tell GCS
+    ///
+    void set_and_save_and_notify(const T &v) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+        if (v != _value) {
+#pragma GCC diagnostic pop
+            set(v);
+            save(true);
+            notify();
+        }
+    }
+
     /// Combined set and save
     ///
     void set_and_save(const T &v) {
