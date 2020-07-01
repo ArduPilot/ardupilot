@@ -166,9 +166,6 @@ void AP_RCProtocol_SRXL2::_capture_scaled_input(const uint16_t *values, bool in_
     // SRXL2 rssi: -ve rssi in dBM, +ve rssi in percentage
     if (new_rssi >= 0) {
         _new_rssi = new_rssi * 255 / 100;
-    } else {
-        // pretty much a guess
-        _new_rssi = 255 - 255 * (-20 - new_rssi) / (-20 - 85);
     }
 
     for (uint8_t i = 0; i < MAX_CHANNELS; i++) {
