@@ -810,6 +810,9 @@ bool AP_IOMCU::check_crc(void)
     const uint16_t magic = REBOOT_BL_MAGIC;
     write_registers(PAGE_SETUP, PAGE_REG_SETUP_REBOOT_BL, 1, &magic);
 
+    // don't raise a ruckus when the IO unit resets:
+    expect_io_reset = true;
+
     if (!upload_fw()) {
         AP_ROMFS::free(fw);
         fw = nullptr;
@@ -1006,7 +1009,10 @@ void AP_IOMCU::check_iomcu_reset(void)
         return;
     }
     detected_io_reset = true;
-    INTERNAL_ERROR(AP_InternalError::error_t::iomcu_reset);
+    if (!expect_io_reset) {
+        INTERNAL_ERROR(AP_InternalError::error_t::iomcu_reset);
+    }
+    expect_io_reset = false;
     hal.console->printf("IOMCU reset t=%u %u %u dt=%u\n",
                         unsigned(AP_HAL::millis()), unsigned(ts1), unsigned(reg_status.timestamp_ms), unsigned(dt_ms));
 

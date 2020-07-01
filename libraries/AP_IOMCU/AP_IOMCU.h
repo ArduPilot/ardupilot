@@ -215,6 +215,7 @@ private:
     bool detected_io_reset;
     bool initialised;
     bool is_chibios_backend;
+    bool expect_io_reset;
 
     uint32_t protocol_fail_count;
     uint32_t protocol_count;
