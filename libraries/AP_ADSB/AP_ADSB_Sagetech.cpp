@@ -570,10 +570,19 @@ void AP_ADSB_Sagetech::send_Operating()
     loadUint(&pkt.payload[0], last_operating_squawk, 16);
 
     // altitude
-    int32_t alt_feet = (int32_t)((last_operating_alt * 0.01f) / FEET_TO_METERS);
-    //int32_t alt_feet = 126700;       // TEST
-    const int16_t alt_feet_adj = alt_feet / 100; // 1 = 100 feet, 5 = 500 feet
-    loadUint(&pkt.payload[2], alt_feet_adj, 16);
+    if (frontend.out_state.cfg.rf_capable & 0x01) {
+        const float alt_meters = last_operating_alt * 0.01f;
+        const int32_t alt_feet = (int32_t)(alt_meters * FEET_TO_METERS);
+        //int32_t alt_feet = 126700;       // TEST
+        const int16_t alt_feet_adj = (alt_feet + 50) / 100; // 1 = 100 feet, 1 = 149 feet, 5 = 500 feet
+        loadUint(&pkt.payload[2], alt_feet_adj, 16);
+
+    } else {
+        // use integrated altitude - recommend by sagetech
+        pkt.payload[2] = 0x80;
+        pkt.payload[3] = 0x00;
+    }
+
 
     // RF mode
     last_operating_rf_select &= 7; // mask param to param bits
