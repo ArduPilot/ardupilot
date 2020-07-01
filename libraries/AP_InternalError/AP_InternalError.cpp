@@ -66,7 +66,7 @@ void AP_InternalError::errors_as_string(uint8_t *buffer, const uint16_t len) con
         }
         if (internal_errors & (1U<<i)) {
             const char *format;
-            if (i == 0) {
+            if (buffer_used == 0) {
                 format = "%s";
             } else {
                 format = ",%s";
