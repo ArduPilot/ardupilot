@@ -1044,20 +1044,24 @@ void AP_Logger::Write_SRTL(bool active, uint16_t num_points, uint16_t max_points
     WriteBlock(&pkt_srtl, sizeof(pkt_srtl));
 }
 
-void AP_Logger::Write_OABendyRuler(bool active, float target_yaw, bool resist_chg, float margin, const Location &final_dest, const Location &oa_dest)
+void AP_Logger::Write_OABendyRuler(uint8_t type, bool active, float target_yaw, float target_pitch, bool resist_chg, float margin, const Location &final_dest, const Location &oa_dest)
 {
     const struct log_OABendyRuler pkt{
         LOG_PACKET_HEADER_INIT(LOG_OA_BENDYRULER_MSG),
         time_us     : AP_HAL::micros64(),
+        type        : type,
         active      : active,
         target_yaw  : (uint16_t)wrap_360(target_yaw),
         yaw         : (uint16_t)wrap_360(AP::ahrs().yaw_sensor * 0.01f),
+        target_pitch: (uint16_t)target_pitch,
         resist_chg  : resist_chg,
         margin      : margin,
         final_lat   : final_dest.lat,
         final_lng   : final_dest.lng,
+        final_alt   : final_dest.alt,
         oa_lat      : oa_dest.lat,
-        oa_lng      : oa_dest.lng
+        oa_lng      : oa_dest.lng,
+        oa_alt      : oa_dest.alt
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
