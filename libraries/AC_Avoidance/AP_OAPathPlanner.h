@@ -62,6 +62,9 @@ public:
 
     uint16_t get_options() const { return _options;}
 
+    // helper function to return type of BendyRuler in use. This is used by AC_WPNav_OA
+    AP_OABendyRuler::OABendyType get_bendy_type() const;
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
