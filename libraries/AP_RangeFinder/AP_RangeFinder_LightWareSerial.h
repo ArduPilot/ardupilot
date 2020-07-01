@@ -28,9 +28,9 @@ private:
 
     // automatic protocol decision variables
     enum class ProtocolState {
-        UNKNOWN,
-        LEGACY,
-        BINARY
+        UNKNOWN,    // the protocol used is not yet known
+        LEGACY,     // legacy protocol, distances are sent as strings
+        BINARY      // binary protocol, distances are sent using two bytes
     } protocol_state;
     uint8_t legacy_valid_count;
     uint8_t binary_valid_count;
