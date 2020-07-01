@@ -200,7 +200,6 @@ void AP_Proximity_LightWareSF40C::process_replies()
 }
 
 // process one byte received on serial port
-// returns true if a message has been successfully parsed
 // state is stored in _msg structure
 void AP_Proximity_LightWareSF40C::parse_byte(uint8_t b)
 {
