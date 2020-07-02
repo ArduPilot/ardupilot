@@ -2,8 +2,7 @@
 /// @brief  Motor control class for dual heli (tandem or transverse)
 /// @author Fredrik Hedberg
 
-#ifndef __AP_MOTORS_HELI_DUAL_H__
-#define __AP_MOTORS_HELI_DUAL_H__
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
@@ -137,5 +136,3 @@ protected:
     // internal variables
     float           _collective2_mid_pct = 0.0f;      // collective mid parameter value for rear swashplate converted to 0 ~ 1 range
 };
-
-#endif  // AP_MotorsHeli_Dual
