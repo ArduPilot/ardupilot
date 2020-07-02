@@ -197,6 +197,7 @@ protected:
 
     enum mot_options {
         MOT_OPTIONS_NO_REVERSE = (1 << 0),
+        MOT_OPTIONS_NO_SPEED_SCALING = (1 << 1),
     };
 
     // internal variables

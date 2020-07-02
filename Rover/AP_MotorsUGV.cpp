@@ -107,8 +107,8 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
 
     // @Param: OPTIONS
     // @DisplayName: Options bitmask
-    // @Description: 0:do not allow reversing the speed scaler
-    // @Bitmask: 0:no reverse
+    // @Description: 0:do not allow reversing the speed scaler, 1:do not apply speed scaling to sterring and roll pitch outputs
+    // @Bitmask: 0:no reverse, 1:no speed scaling
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 14, AP_MotorsUGV, _options, 0),
 
@@ -198,7 +198,7 @@ void AP_MotorsUGV::setup_servo_output()
 void AP_MotorsUGV::set_steering(float steering, bool apply_scaling)
 {
     _steering = steering;
-    _scale_steering = apply_scaling;
+    _scale_steering = apply_scaling & ((_options & MOT_OPTIONS_NO_SPEED_SCALING) == 0);
 }
 
 // set throttle as a value from -100 to 100
