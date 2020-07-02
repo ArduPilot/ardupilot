@@ -5372,7 +5372,6 @@ class AutoTestHeli(AutoTestCopter):
             self.zero_throttle()
             self.set_rc(8, 1000)
             self.wait_ready_to_arm()
-            self.run_test("Arm features", self.test_arm_feature)
             # Arm
             self.arm_vehicle()
             self.progress("Raising rotor speed")
@@ -5419,6 +5418,8 @@ class AutoTestHeli(AutoTestCopter):
         self.context_pop()
 
         if ex is not None:
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(ex))
             raise ex
 
     def fly_heli_stabilize_takeoff(self):
