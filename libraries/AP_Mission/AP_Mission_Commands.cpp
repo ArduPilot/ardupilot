@@ -5,6 +5,7 @@
 #include <AP_Gripper/AP_Gripper.h>
 #include <AP_Parachute/AP_Parachute.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
+#include <AC_Sprayer/AC_Sprayer.h>
 
 bool AP_Mission::start_command_do_gripper(const AP_Mission::Mission_Command& cmd)
 {
@@ -145,4 +146,24 @@ bool AP_Mission::command_do_set_repeat_dist(const AP_Mission::Mission_Command& c
     _repeat_dist = cmd.p1;
     gcs().send_text(MAV_SEVERITY_INFO, "Resume repeat dist set to %u m",_repeat_dist);
     return true;
+}
+
+bool AP_Mission::start_command_do_sprayer(const AP_Mission::Mission_Command& cmd)
+{
+#if HAL_SPRAYER_ENABLED
+    AC_Sprayer *sprayer = AP::sprayer();
+    if (sprayer == nullptr) {
+        return false;
+    }
+
+    if (cmd.p1 == 1) {
+        sprayer->run(true);
+    } else {
+        sprayer->run(false);
+    }
+
+    return true;
+#else
+    return false;
+#endif // HAL_SPRAYER_ENABLED
 }
