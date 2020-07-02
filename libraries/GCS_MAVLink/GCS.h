@@ -511,6 +511,12 @@ protected:
 
     void manual_override(RC_Channel *c, int16_t value_in, uint16_t offset, float scaler, const uint32_t tnow, bool reversed = false);
 
+    /*
+      correct an offboard timestamp in microseconds to a local time
+      since boot in milliseconds
+     */
+    uint32_t correct_offboard_timestamp_usec_to_ms(uint64_t offboard_usec, uint16_t payload_size);
+
 private:
 
     // last time we got a non-zero RSSI from RADIO_STATUS
@@ -790,12 +796,6 @@ private:
     void handle_vision_speed_estimate(const mavlink_message_t &msg);
 
     void lock_channel(const mavlink_channel_t chan, bool lock);
-
-    /*
-      correct an offboard timestamp in microseconds to a local time
-      since boot in milliseconds
-     */
-    uint32_t correct_offboard_timestamp_usec_to_ms(uint64_t offboard_usec, uint16_t payload_size);
 
     mavlink_signing_t signing;
     static mavlink_signing_streams_t signing_streams;
