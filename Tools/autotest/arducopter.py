@@ -1515,6 +1515,11 @@ class AutoTestCopter(AutoTest):
 
     # fly_circle - flies a circle with 20m radius
     def fly_circle(self, holdtime=36):
+        # the following should not be required.  But there appears to
+        # be a physics failure in the simulation which is causing CI
+        # to fall over a lot.  -pb 202007021209
+        self.reboot_sitl()
+
         self.takeoff(10, mode="LOITER")
 
         # face west
