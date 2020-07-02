@@ -5,6 +5,7 @@ from __future__ import print_function
 
 import copy
 import math
+import operator
 import os
 import shutil
 import sys
@@ -294,6 +295,20 @@ class AutoTestRover(AutoTest):
 
             # this is somewhat empirical...
             self.wait_servo_channel_value(pump_ch, 1695, timeout=60)
+
+            self.progress("Turning it off again")
+            self.set_rc(rc_ch, 1000)
+            self.wait_servo_channel_value(spinner_ch, spinner_ch_min)
+            self.wait_servo_channel_value(pump_ch, pump_ch_min)
+
+            self.start_subtest("Sprayer Mission")
+            self.load_mission("sprayer-mission.txt")
+            self.change_mode("AUTO")
+#            self.send_debug_trap()
+            self.progress("Waiting for sprayer to start")
+            self.wait_servo_channel_value(pump_ch, 1300, timeout=60, comparator=operator.gt)
+            self.progress("Waiting for sprayer to stop")
+            self.wait_servo_channel_value(pump_ch, pump_ch_min, timeout=120)
 
             self.progress("Sprayer OK")
         except Exception as e:
