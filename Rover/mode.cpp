@@ -497,18 +497,18 @@ void Mode::get_pilot_desired_roll_pitch(float &target_roll, float &target_pitch)
 
     RC_Channel *rollin = rc().find_channel_for_option(RC_Channel::AUX_FUNC::ROLL);
     if (rollin != nullptr) {
-        target_roll = rollin->norm_input() * radians(10);
+        target_roll = rollin->norm_input() * radians(g2.angle_max);
     } else {
         float lat_accel = 0.0f;
         g2.attitude_control.get_lat_accel(lat_accel);
 
         // calculate roll angle required to bring resultant total acceleration in line with boat frame Z
-        target_roll = constrain_float(atan2f(lat_accel, GRAVITY_MSS),-radians(10),radians(10));
+        target_roll = constrain_float(atan2f(lat_accel, GRAVITY_MSS),-radians(g2.angle_max),radians(g2.angle_max));
     }
 
     RC_Channel *pitchin = rc().find_channel_for_option(RC_Channel::AUX_FUNC::PITCH);
     if (pitchin != nullptr) {
-        target_pitch = pitchin->norm_input() * radians(10);
+        target_pitch = pitchin->norm_input() * radians(g2.angle_max);
     }
 }
 
