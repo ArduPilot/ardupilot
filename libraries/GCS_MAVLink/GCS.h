@@ -385,7 +385,7 @@ protected:
 
     virtual MAV_RESULT handle_command_component_arm_disarm(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_set_home(const mavlink_command_long_t &packet);
-
+    MAV_RESULT handle_command_do_aux_function(const mavlink_command_long_t &packet);
     void handle_mission_request_list(const mavlink_message_t &msg);
     void handle_mission_request(const mavlink_message_t &msg) const;
     void handle_mission_request_int(const mavlink_message_t &msg) const;
