@@ -1,3 +1,5 @@
+-- Lua script to write and read from a serial
+
 local port = serial:find_serial(0)
 
 port:begin(115200)
