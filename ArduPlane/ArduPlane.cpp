@@ -453,7 +453,7 @@ void Plane::update_navigation()
         break;
             
     case Mode::Number::RTL:
-        if (quadplane.available() && quadplane.rtl_mode == 1 &&
+        if (quadplane.available() && quadplane.rtl_qrtl_enabled() &&
             (nav_controller->reached_loiter_target() ||
              current_loc.past_interval_finish_line(prev_WP_loc, next_WP_loc) ||
              auto_state.wp_distance < MAX(qrtl_radius, quadplane.stopping_distance())) &&

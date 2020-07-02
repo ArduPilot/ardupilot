@@ -570,8 +570,19 @@ private:
     AP_Float maximum_takeoff_airspeed;
     uint32_t takeoff_start_time_ms;
     uint32_t takeoff_time_limit_ms;
+    Vector3f takeoff_ofs;
 
     float last_land_final_agl;
+
+    struct {
+        AP_Int8 sysid;
+        uint32_t last_update_ms;
+        enum {
+            HOLDOFF,
+            APPROACH
+        } stage;
+        bool reached_alt;
+    } ship_landing;
 
     /*
       return true if current mission item is a vtol takeoff
@@ -608,6 +619,11 @@ private:
      */
     bool in_vtol_land_sequence(void) const;
 
+    /*
+      are we in a VTOL takeoff
+     */
+    bool in_vtol_takeoff(void) const;
+    
     // Q assist state, can be enabled, disabled or force. Default to enabled
     Q_ASSIST_STATE_ENUM q_assist_state = Q_ASSIST_STATE_ENUM::Q_ASSIST_ENABLED;
 
@@ -616,6 +632,42 @@ public:
     MAV_RESULT mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type,
                                         uint16_t throttle_value, float timeout_sec,
                                         uint8_t motor_count);
+
+    /*
+      is ship landing enabled
+     */
+    bool ship_landing_enabled(void) const;
+
+    /*
+      handle RTL init for ship landing
+     */
+    void ship_landing_RTL_init(void);
+
+    /*
+      handle RTL update for ship landing
+     */
+    void ship_landing_RTL_update(void);
+
+    /*
+      return true when ship landing is active
+     */
+    bool in_ship_landing(void) const;
+    
+    /*
+      update xy controller for ship takeoff/landing
+     */
+    void ship_update_xy(void);
+
+    /*
+      get offset to ship takeoff target
+     */
+    void ship_set_takeoff_offset(void);
+
+    /*
+      should we switch to QRTL on RTL completion
+     */
+    bool rtl_qrtl_enabled(void) const;
+
 private:
     void motor_test_stop();
 };

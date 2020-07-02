@@ -1204,6 +1204,16 @@ bool QuadPlane::should_relax(void)
         landing_detect.lower_limit_start_ms = tnow;
     }
 
+    if (plane.g.rangefinder_landing &&
+        plane.rangefinder_state.in_range &&
+        in_ship_landing() &&
+        plane.rangefinder_state.height_estimate > 2) {
+        // while ship landing we can hit lower limit of throttle while
+        // still well above the ground. Disable the relax code for
+        // that case
+        return false;
+    }
+
     return (tnow - landing_detect.lower_limit_start_ms) > 1000;
 }
 
@@ -2418,6 +2428,13 @@ void QuadPlane::vtol_position_controller(void)
             target_speed_xy = {0.1, 0.1};
         }
 
+        Vector3f targ_vel;
+        if (in_ship_landing() &&
+            plane.g2.follow.get_target_location_and_velocity_ofs_abs(plane.next_WP_loc, targ_vel)) {
+            target_speed_xy.x += targ_vel.x;
+            target_speed_xy.y += targ_vel.y;
+        }
+
         pos_control->set_desired_velocity_xy(target_speed_xy.x*100,
                                              target_speed_xy.y*100);
 
@@ -2458,6 +2475,7 @@ void QuadPlane::vtol_position_controller(void)
             poscontrol.state = QPOS_POSITION2;
             loiter_nav->clear_pilot_desired_acceleration();
             loiter_nav->init_target();
+            pos_control->init_pos_vel_xy();
             gcs().send_text(MAV_SEVERITY_INFO,"VTOL position2 started v=%.1f d=%.1f",
                             speed_towards_target, (double)plane.auto_state.wp_distance);
         }
@@ -2465,28 +2483,46 @@ void QuadPlane::vtol_position_controller(void)
     }
 
     case QPOS_POSITION2:
-    case QPOS_LAND_DESCEND:
+    case QPOS_LAND_DESCEND: {
         /*
           for final land repositioning and descent we run the position controller
          */
 
+        Vector3f targ_vel;
+        if (in_ship_landing()) {
+            // allow for moving target on landing
+            plane.g2.follow.get_target_location_and_velocity_ofs_abs(plane.next_WP_loc, targ_vel);
+        }
+        
         // also run fixed wing navigation
         plane.nav_controller->update_waypoint(plane.prev_WP_loc, loc);
+    }
         FALLTHROUGH;
 
-    case QPOS_LAND_FINAL:
+    case QPOS_LAND_FINAL: {
 
-        // set position controller desired velocity and acceleration to zero
-        pos_control->set_desired_velocity_xy(0.0f,0.0f);
-        pos_control->set_desired_accel_xy(0.0f,0.0f);
-
-        // set position control target and update
-        if (should_relax()) {
-            loiter_nav->soften_for_landing();
-        } else {
-            pos_control->set_xy_target(poscontrol.target.x, poscontrol.target.y);
+        Location origin;
+        if (ahrs.get_origin(origin)) {
+            const Vector2f diff2d = origin.get_distance_NE(plane.next_WP_loc);
+            poscontrol.target.x = diff2d.x * 100;
+            poscontrol.target.y = diff2d.y * 100;
         }
-        pos_control->update_xy_controller();
+        
+        // set position controller desired velocity and acceleration to zero
+        if (in_ship_landing()) {
+            ship_update_xy();
+        } else {
+            pos_control->set_desired_velocity_xy(0.0f,0.0f);
+            pos_control->set_desired_accel_xy(0.0f,0.0f);
+
+            // set position control target and update
+            if (should_relax()) {
+                loiter_nav->soften_for_landing();
+            } else {
+                pos_control->set_xy_target(poscontrol.target.x, poscontrol.target.y);
+            }
+            pos_control->update_xy_controller();
+        }
 
         // nav roll and pitch are controller by position controller
         plane.nav_roll_cd = pos_control->get_roll();
@@ -2497,6 +2533,7 @@ void QuadPlane::vtol_position_controller(void)
                                                                       plane.nav_pitch_cd,
                                                                       get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
         break;
+    }
 
     case QPOS_LAND_COMPLETE:
         // nothing to do
@@ -2583,11 +2620,13 @@ void QuadPlane::setup_target_position(void)
     poscontrol.target.z = plane.next_WP_loc.alt - origin.alt;
 
     const uint32_t now = AP_HAL::millis();
-    if (!loc.same_latlon_as(last_auto_target) ||
-        plane.next_WP_loc.alt != last_auto_target.alt ||
-        now - last_loiter_ms > 500) {
-        wp_nav->set_wp_destination(poscontrol.target);
-        last_auto_target = loc;
+    if (!in_ship_landing()) {
+        if (!loc.same_latlon_as(last_auto_target) ||
+            plane.next_WP_loc.alt != last_auto_target.alt ||
+            now - last_loiter_ms > 500) {
+            wp_nav->set_wp_destination(poscontrol.target);
+            last_auto_target = loc;
+        }
     }
     last_loiter_ms = now;
     
@@ -2610,15 +2649,19 @@ void QuadPlane::takeoff_controller(void)
     */
     check_attitude_relax();
 
-    setup_target_position();
+    if (ship_landing_enabled()) {
+        ship_update_xy();
+    } else {
+        setup_target_position();
+        // set position controller desired velocity and acceleration to zero
+        pos_control->set_desired_velocity_xy(0.0f,0.0f);
+        pos_control->set_desired_accel_xy(0.0f,0.0f);
 
-    // set position controller desired velocity and acceleration to zero
-    pos_control->set_desired_velocity_xy(0.0f,0.0f);
-    pos_control->set_desired_accel_xy(0.0f,0.0f);
+        // set position control target and update
+        pos_control->set_xy_target(poscontrol.target.x, poscontrol.target.y);
 
-    // set position control target and update
-    pos_control->set_xy_target(poscontrol.target.x, poscontrol.target.y);
-    pos_control->update_xy_controller();
+        pos_control->update_xy_controller();
+    }
 
     // nav roll and pitch are controller by position controller
     plane.nav_roll_cd = pos_control->get_roll();
@@ -2628,7 +2671,7 @@ void QuadPlane::takeoff_controller(void)
                                                                   plane.nav_pitch_cd,
                                                                   get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
 
-    pos_control->set_alt_target_from_climb_rate(wp_nav->get_default_speed_up(), plane.G_Dt, true);
+    pos_control->set_alt_target_from_climb_rate(wp_nav->get_default_speed_up(), plane.G_Dt, false);
     run_z_controller();
 }
 
@@ -2790,6 +2833,15 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
     takeoff_start_time_ms = millis();
     takeoff_time_limit_ms = MAX(travel_time * takeoff_failure_scalar * 1000, 5000); // minimum time 5 seconds
 
+    // ensure no I terms on takeoff
+    attitude_control->reset_rate_controller_I_terms();
+
+    // init pos controller
+    pos_control->init_pos_vel_xy();
+
+    // set takeoff offset
+    ship_set_takeoff_offset();
+
     return true;
 }
 
@@ -2840,6 +2892,17 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
     // reset takeoff start time if we aren't armed, as we won't have made any progress
     if (!hal.util->get_soft_armed()) {
         takeoff_start_time_ms = now;
+
+        // allow for change in target position
+        pos_control->init_pos_vel_xy();
+
+        // zero rate controller I terms on first part of takeoff
+        attitude_control->reset_rate_controller_I_terms();
+
+        // set takeoff offset
+        ship_set_takeoff_offset();
+
+        return false;
     }
 
     // check for failure conditions
@@ -3185,7 +3248,7 @@ float QuadPlane::get_weathervane_yaw_rate_cds(void)
         return 0;
     }
 
-    float roll = wp_nav->get_roll() / 100.0f;
+    float roll = pos_control->get_roll() / 100.0f;
     if (fabsf(roll) < weathervane.min_roll) {
         weathervane.last_output = 0;
         return 0;        
@@ -3484,4 +3547,26 @@ bool QuadPlane::in_vtol_land_final(void) const
 bool QuadPlane::in_vtol_land_sequence(void) const
 {
     return in_vtol_land_approach() || in_vtol_land_descent() || in_vtol_land_final();
+}
+
+/*
+  see if we are in a VTOL takeoff
+ */
+bool QuadPlane::in_vtol_takeoff(void) const
+{
+    if (in_vtol_auto() && is_vtol_takeoff(plane.mission.get_current_nav_cmd().id)) {
+        return true;
+    }
+    return false;
+}
+
+/*
+  should we switch to QRTL on RTL completion
+*/
+bool QuadPlane::rtl_qrtl_enabled(void) const
+{
+    if (ship_landing_enabled() && ship_landing.stage != ship_landing.APPROACH) {
+        return false;
+    }
+    return rtl_mode == 1;
 }

@@ -10,6 +10,10 @@ bool ModeRTL::_enter()
     plane.do_RTL(plane.get_RTL_altitude());
     plane.rtl.done_climb = false;
 
+    if (plane.quadplane.ship_landing_enabled()) {
+        plane.quadplane.ship_landing_RTL_init();
+    }
+    
     return true;
 }
 
@@ -18,6 +22,10 @@ void ModeRTL::update()
     plane.calc_nav_roll();
     plane.calc_nav_pitch();
     plane.calc_throttle();
+
+    if (plane.quadplane.ship_landing_enabled()) {
+        plane.quadplane.ship_landing_RTL_update();
+    }
 
     if (plane.g2.rtl_climb_min > 0) {
         /*
