@@ -4776,8 +4776,18 @@ class AutoTestCopter(AutoTest):
         self.customise_SITL_commandline(["--uartF=sim:richenpower"])
         self.set_rc(9, 1000) # remember this is a switch position - stop
         self.mavproxy.expect("requested state is not RUN")
-        self.set_rc(9, 2000) # remember this is a switch position - run
-        self.mavproxy.expect("Generator HIGH")
+        messages = []
+        def my_message_hook(mav, m):
+            if m.get_type() != 'STATUSTEXT':
+                return
+            messages.append(m)
+        self.install_message_hook(my_message_hook)
+        try:
+            self.set_rc(9, 2000) # remember this is a switch position - run
+        finally:
+            self.remove_message_hook(my_message_hook)
+        if "Generator HIGH" not in [x.text for x in messages]:
+            self.mavproxy.expect("Generator HIGH")
         self.set_rc(9, 1000) # remember this is a switch position - stop
         self.mavproxy.expect("requested state is not RUN", timeout=200)
         self.set_message_rate_hz("GENERATOR_STATUS", 1)
