@@ -115,6 +115,7 @@ userdata Vector2f method normalize void
 userdata Vector2f method is_nan boolean
 userdata Vector2f method is_inf boolean
 userdata Vector2f method is_zero boolean
+userdata Vector2f method rotate void float -FLT_MAX FLT_MAX
 userdata Vector2f operator +
 userdata Vector2f operator -
 
