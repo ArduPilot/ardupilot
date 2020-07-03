@@ -67,7 +67,6 @@
 #include <AC_Sprayer/AC_Sprayer.h>
 
 // Configuration
-#include "defines.h"
 #include "config.h"
 
 #if FRAME_CONFIG == HELI_FRAME
