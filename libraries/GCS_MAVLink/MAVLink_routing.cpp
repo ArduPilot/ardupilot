@@ -97,6 +97,11 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
         return true;
     }
 
+    // don't ever forward data from a private channel
+    if ((GCS_MAVLINK::is_private(in_channel))) {
+        return true;
+    }
+
     // learn new routes
     learn_route(in_channel, msg);
 
