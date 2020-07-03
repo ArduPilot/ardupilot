@@ -436,4 +436,10 @@ private:
 
     static AP_Terrain *singleton;
 };
+
+namespace AP {
+    AP_Terrain &terrain();
+};
+
 #endif // AP_TERRAIN_AVAILABLE
+
