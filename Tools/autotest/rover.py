@@ -310,6 +310,34 @@ class AutoTestRover(AutoTest):
             self.progress("Waiting for sprayer to stop")
             self.wait_servo_channel_value(pump_ch, pump_ch_min, timeout=120)
 
+            self.start_subtest("Checking mavlink commands")
+            self.change_mode("MANUAL")
+            self.progress("Starting Sprayer")
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SPRAYER,
+                         1,  # p1
+                         0,  # p2
+                         0,  # p3
+                         0,  # p4
+                         0,  # p5
+                         0,  # p6
+                         0,  # p7
+            );
+            self.progress("Testing speed-ramping")
+            self.set_rc(3, 1700) # start driving forward
+            self.wait_servo_channel_value(pump_ch, 1690, timeout=60, comparator=operator.gt)
+            self.start_subtest("Stopping Sprayer")
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SPRAYER,
+                         0,  # p1
+                         0,  # p2
+                         0,  # p3
+                         0,  # p4
+                         0,  # p5
+                         0,  # p6
+                         0,  # p7
+            );
+            self.wait_servo_channel_value(pump_ch, pump_ch_min)
+            self.set_rc(3, 1000) # start driving forward
+
             self.progress("Sprayer OK")
         except Exception as e:
             self.progress("Caught exception: %s" %
