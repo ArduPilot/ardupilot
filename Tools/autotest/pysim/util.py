@@ -299,6 +299,7 @@ def start_SITL(binary,
                     'bash -c "gdb -x /tmp/x.gdb"')
     elif gdb:
         f = open("/tmp/x.gdb", "w")
+        f.write("set pagination off\n")
         for breakpoint in breakpoints:
             f.write("b %s\n" % (breakpoint,))
         if disable_breakpoints:
