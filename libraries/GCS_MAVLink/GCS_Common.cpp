@@ -108,6 +108,10 @@ bool GCS_MAVLINK::init(uint8_t instance)
         return false;
     }
 
+    if (!serial_manager.should_forward_mavlink_telemetry(protocol, instance)) {
+        set_channel_private(chan);
+    }
+
     /*
       Now try to cope with SiK radios that may be stuck in bootloader
       mode because CTS was held while powering on. This tells the
