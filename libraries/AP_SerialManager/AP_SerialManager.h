@@ -165,6 +165,9 @@ public:
     //  returns true if a channel is found, false if not
     bool get_mavlink_channel(enum SerialProtocol protocol, uint8_t instance, mavlink_channel_t &mav_chan) const;
 
+    // should_forward_mavlink_telemetry - returns true if this port should forward telemetry
+    bool should_forward_mavlink_telemetry(enum SerialProtocol protocol, uint8_t instance) const;
+
     // get_mavlink_protocol - provides the specific MAVLink protocol for a
     // given channel, or SerialProtocol_None if not found
     SerialProtocol get_mavlink_protocol(mavlink_channel_t mav_chan) const;

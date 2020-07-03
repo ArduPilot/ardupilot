@@ -548,6 +548,15 @@ bool AP_SerialManager::get_mavlink_channel(enum SerialProtocol protocol, uint8_t
     return false;
 }
 
+// should_forward_mavlink_telemetry - returns true if this port should forward telemetry
+bool AP_SerialManager::should_forward_mavlink_telemetry(enum SerialProtocol protocol, uint8_t instance) const
+{
+    const struct UARTState *_state = find_protocol_instance(protocol, instance);
+    if (_state == nullptr) {
+        return true;
+    }
+    return (_state->options & AP_HAL::UARTDriver::OPTION_MAVLINK_NO_FORWARD) != AP_HAL::UARTDriver::OPTION_MAVLINK_NO_FORWARD;
+}
 
 // get_mavlink_protocol - provides the specific MAVLink protocol for a
 // given channel, or SerialProtocol_None if not found
