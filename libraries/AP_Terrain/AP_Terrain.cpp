@@ -400,4 +400,13 @@ bool AP_Terrain::allocate(void)
     return true;
 }
 
+namespace AP {
+
+AP_Terrain &terrain()
+{
+    return *AP_Terrain::get_singleton();
+}
+
+};
+
 #endif // AP_TERRAIN_AVAILABLE
