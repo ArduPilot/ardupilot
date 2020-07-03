@@ -1151,17 +1151,27 @@ void GCS_MAVLINK::update_send()
 void GCS_MAVLINK::remove_message_from_bucket(int8_t bucket, ap_message id)
 {
     deferred_message_bucket[bucket].ap_message_ids.clear(id);
-
-    if (bucket == sending_bucket_id) {
-        bucket_message_ids_to_send.clear(id);
-    }
-
     if (deferred_message_bucket[bucket].ap_message_ids.count() == 0) {
         // bucket empty.  Free it:
         deferred_message_bucket[bucket].interval_ms = 0;
         deferred_message_bucket[bucket].last_sent_ms = 0;
-        if (sending_bucket_id == bucket) {
+    }
+
+    if (bucket == sending_bucket_id) {
+        bucket_message_ids_to_send.clear(id);
+        if (bucket_message_ids_to_send.count() == 0) {
             find_next_bucket_to_send();
+        } else {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            if (deferred_message_bucket[bucket].interval_ms == 0 &&
+                deferred_message_bucket[bucket].last_sent_ms == 0) {
+                // we just freed this bucket!  this would mean that
+                // somehow our messages-still-to-send was a superset
+                // of the messages in the bucket we were sending,
+                // which would be bad.
+                INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+            }
+#endif
         }
     }
 }
