@@ -600,7 +600,7 @@ void  NavEKF3_core::updateFilterStatus(void)
     bool filterHealthy = healthy() && tiltAlignComplete && (yawAlignComplete || (!use_compass() && (PV_AidingMode != AID_ABSOLUTE)));
 
     // If GPS height usage is specified, height is considered to be inaccurate until the GPS passes all checks
-    bool hgtNotAccurate = (frontend->_altSource == 2) && !validOrigin;
+    bool hgtNotAccurate = (frontend->_sources.getPosZSource() == AP_NavEKF_Source::SourceZ::GPS) && !validOrigin;
 
     // set individual flags
     filterStatus.flags.attitude = !stateStruct.quat.is_nan() && filterHealthy;   // attitude valid (we need a better check)
