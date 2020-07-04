@@ -123,10 +123,8 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
             lastRngBcnPassTime_ms = imuSampleTime_ms;
         } else if ((imuSampleTime_ms - extNavDataDelayed.time_ms < 250 && posResetSource == resetDataSource::DEFAULT) || posResetSource == resetDataSource::EXTNAV) {
             // use external nav data as the third preference
-            ext_nav_elements extNavCorrected = extNavDataDelayed;
-            CorrectExtNavForSensorOffset(extNavCorrected.pos);
-            stateStruct.position.x = extNavCorrected.pos.x;
-            stateStruct.position.y = extNavCorrected.pos.y;
+            stateStruct.position.x = extNavDataDelayed.pos.x;
+            stateStruct.position.y = extNavDataDelayed.pos.y;
             // set the variances as received from external nav system data
             P[7][7] = P[8][8] = sq(extNavDataDelayed.posErr);
             // clear the timeout flags and counters
@@ -402,6 +400,9 @@ void NavEKF3_core::SelectVelPosFusion()
 
     // Check for data at the fusion time horizon
     extNavDataToFuse = storedExtNav.recall(extNavDataDelayed, imuDataDelayed.time_ms);
+    if (extNavDataToFuse) {
+        CorrectExtNavForSensorOffset(extNavDataDelayed.pos);
+    }
     extNavVelToFuse = storedExtNavVel.recall(extNavVelDelayed, imuDataDelayed.time_ms);
     if (extNavVelToFuse) {
         CorrectExtNavVelForSensorOffset(extNavVelDelayed.vel);
@@ -445,10 +446,6 @@ void NavEKF3_core::SelectVelPosFusion()
         // use external nav system for horizontal position
         extNavUsedForPos = true;
         fusePosData = true;
-
-        // correct for external navigation sensor position
-        CorrectExtNavForSensorOffset(extNavDataDelayed.pos);
-
         velPosObs[3] = extNavDataDelayed.pos.x;
         velPosObs[4] = extNavDataDelayed.pos.y;
     }
