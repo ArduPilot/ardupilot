@@ -128,7 +128,7 @@ bool NavEKF3_core::getHeightControlLimit(float &height) const
         }
         height = MAX(float(_rng->max_distance_cm_orient(ROTATION_PITCH_270)) * 0.007f - 1.0f, 1.0f);
         // If we are are not using the range finder as the height reference, then compensate for the difference between terrain and EKF origin
-        if (frontend->_altSource != 1) {
+        if (frontend->_sources.getPosZSource() != AP_NavEKF_Source::SourceZ::RANGEFINDER) {
             height -= terrainState;
         }
         return true;
@@ -635,7 +635,7 @@ void NavEKF3_core::send_status_report(mavlink_channel_t chan) const
     // height estimation or optical flow operation. This prevents false alarms at the GCS if a
     // range finder is fitted for other applications
     float temp;
-    if (((frontend->_useRngSwHgt > 0) && activeHgtSource == HGT_SOURCE_RNG) || (PV_AidingMode == AID_RELATIVE && flowDataValid)) {
+    if (((frontend->_useRngSwHgt > 0) && activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) || (PV_AidingMode == AID_RELATIVE && flowDataValid)) {
         temp = sqrtf(auxRngTestRatio);
     } else {
         temp = 0.0f;

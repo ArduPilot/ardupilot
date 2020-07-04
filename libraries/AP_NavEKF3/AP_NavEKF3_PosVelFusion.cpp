@@ -247,7 +247,7 @@ void NavEKF3_core::ResetHeight(void)
     // Check that GPS vertical velocity data is available and can be used
     if (inFlight && !gpsNotAvailable && (frontend->_sources.getVelZSource() == AP_NavEKF_Source::SourceZ::GPS) && !frontend->inhibitGpsVertVelUse) {
         stateStruct.velocity.z =  gpsDataNew.vel.z;
-    } else if (inFlight && useExtNavVel && (activeHgtSource == HGT_SOURCE_EXTNAV)) {
+    } else if (inFlight && useExtNavVel && (activeHgtSource == AP_NavEKF_Source::SourceZ::EXTNAV)) {
         stateStruct.velocity.z = extNavVelDelayed.vel.z;
     } else if (onGround) {
         stateStruct.velocity.z = 0.0f;
@@ -275,7 +275,7 @@ void NavEKF3_core::ResetHeight(void)
 // Return true if the height datum reset has been performed
 bool NavEKF3_core::resetHeightDatum(void)
 {
-    if (activeHgtSource == HGT_SOURCE_RNG || !onGround) {
+    if (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER || !onGround) {
         // only allow resets when on the ground.
         // If using using rangefinder for height then never perform a
         // reset of the height datum
@@ -489,7 +489,7 @@ void NavEKF3_core::SelectVelPosFusion()
         ResetPositionNE(gpsDataDelayed.pos.x, gpsDataDelayed.pos.y);
 
         // If we are also using GPS as the height reference, reset the height
-        if (activeHgtSource == HGT_SOURCE_GPS) {
+        if (activeHgtSource == AP_NavEKF_Source::SourceZ::GPS) {
             ResetPositionD(-hgtMea);
         }
     }
@@ -499,7 +499,7 @@ void NavEKF3_core::SelectVelPosFusion()
         // mark a source reset as consumed
         pos_source_reset = false;
         ResetPositionNE(extNavDataDelayed.pos.x, extNavDataDelayed.pos.y);
-        if (activeHgtSource == HGT_SOURCE_EXTNAV) {
+        if (activeHgtSource == AP_NavEKF_Source::SourceZ::EXTNAV) {
             ResetPositionD(-hgtMea);
         }
     }
@@ -635,7 +635,7 @@ void NavEKF3_core::FuseVelPosNED()
         // if vertical GPS velocity data and an independent height source is being used, check to see if the GPS vertical velocity and altimeter
         // innovations have the same sign and are outside limits. If so, then it is likely aliasing is affecting
         // the accelerometers and we should disable the GPS and barometer innovation consistency checks.
-        if (useGpsVertVel && fuseVelData && (frontend->_altSource != 2)) {
+        if (useGpsVertVel && fuseVelData && (frontend->_sources.getPosZSource() != AP_NavEKF_Source::SourceZ::GPS)) {
             // calculate innovations for height and vertical GPS vel measurements
             const float hgtErr  = stateStruct.position.z - velPosObs[5];
             const float velDErr = stateStruct.velocity.z - velPosObs[2];
@@ -810,7 +810,7 @@ void NavEKF3_core::FuseVelPosNED()
                     const float gndMaxBaroErr = 4.0f;
                     const float gndBaroInnovFloor = -0.5f;
 
-                    if(expectGndEffectTouchdown && activeHgtSource == HGT_SOURCE_BARO) {
+                    if (expectGndEffectTouchdown && activeHgtSource == AP_NavEKF_Source::SourceZ::BARO) {
                         // when a touchdown is expected, floor the barometer innovation at gndBaroInnovFloor
                         // constrain the correction between 0 and gndBaroInnovFloor+gndMaxBaroErr
                         // this function looks like this:
@@ -970,13 +970,13 @@ void NavEKF3_core::selectHeightForFusion()
     bool rangeFinderDataIsFresh = (imuSampleTime_ms - rngValidMeaTime_ms < 500);
     const bool extNavDataIsFresh = (imuSampleTime_ms - extNavMeasTime_ms < 500);
     // select height source
-    if (extNavUsedForPos && (frontend->_altSource == 4)) {
+    if (extNavUsedForPos && (frontend->_sources.getPosZSource() == AP_NavEKF_Source::SourceZ::EXTNAV)) {
         // always use external navigation as the height source if using for position.
-        activeHgtSource = HGT_SOURCE_EXTNAV;
-    } else if ((frontend->_altSource == 1) && _rng && rangeFinderDataIsFresh) {
+        activeHgtSource = AP_NavEKF_Source::SourceZ::EXTNAV;
+    } else if ((frontend->_sources.getPosZSource() == AP_NavEKF_Source::SourceZ::RANGEFINDER) && _rng && rangeFinderDataIsFresh) {
         // user has specified the range finder as a primary height source
-        activeHgtSource = HGT_SOURCE_RNG;
-    } else if ((frontend->_useRngSwHgt > 0) && ((frontend->_altSource == 0) || (frontend->_altSource == 2)) && _rng && rangeFinderDataIsFresh) {
+        activeHgtSource = AP_NavEKF_Source::SourceZ::RANGEFINDER;
+    } else if ((frontend->_useRngSwHgt > 0) && ((frontend->_sources.getPosZSource() == AP_NavEKF_Source::SourceZ::BARO) || (frontend->_sources.getPosZSource() == AP_NavEKF_Source::SourceZ::GPS)) && _rng && rangeFinderDataIsFresh) {
         // determine if we are above or below the height switch region
         float rangeMaxUse = 1e-4f * (float)_rng->max_distance_cm_orient(ROTATION_PITCH_270) * (float)frontend->_useRngSwHgt;
         bool aboveUpperSwHgt = (terrainState - stateStruct.position.z) > rangeMaxUse;
@@ -1003,40 +1003,40 @@ void NavEKF3_core::selectHeightForFusion()
             * hysteresis to avoid rapid switching. Using range finder for height requires a consistent terrain height
             * which cannot be assumed if the vehicle is moving horizontally.
         */
-        if ((aboveUpperSwHgt || dontTrustTerrain) && (activeHgtSource == HGT_SOURCE_RNG)) {
+        if ((aboveUpperSwHgt || dontTrustTerrain) && (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER)) {
             // cannot trust terrain or range finder so stop using range finder height
-            if (frontend->_altSource == 0) {
-                activeHgtSource = HGT_SOURCE_BARO;
-            } else if (frontend->_altSource == 2) {
-                activeHgtSource = HGT_SOURCE_GPS;
+            if (frontend->_sources.getPosZSource() == AP_NavEKF_Source::SourceZ::BARO) {
+                activeHgtSource = AP_NavEKF_Source::SourceZ::BARO;
+            } else if (frontend->_sources.getPosZSource() == AP_NavEKF_Source::SourceZ::GPS) {
+                activeHgtSource = AP_NavEKF_Source::SourceZ::GPS;
             }
         } else if (belowLowerSwHgt && trustTerrain && (prevTnb.c.z >= 0.7f)) {
             // reliable terrain and range finder so start using range finder height
-            activeHgtSource = HGT_SOURCE_RNG;
+            activeHgtSource = AP_NavEKF_Source::SourceZ::RANGEFINDER;
         }
-    } else if (frontend->_altSource == 0) {
-        activeHgtSource = HGT_SOURCE_BARO;
-    } else if ((frontend->_altSource == 2) && ((imuSampleTime_ms - lastTimeGpsReceived_ms) < 500) && validOrigin && gpsAccuracyGood) {
-        activeHgtSource = HGT_SOURCE_GPS;
-    } else if ((frontend->_altSource == 3) && validOrigin && rngBcnGoodToAlign) {
-        activeHgtSource = HGT_SOURCE_BCN;
-    } else if ((frontend->_altSource == 4) && extNavDataIsFresh) {
-        activeHgtSource = HGT_SOURCE_EXTNAV;
+    } else if (frontend->_sources.getPosZSource() == AP_NavEKF_Source::SourceZ::BARO) {
+        activeHgtSource = AP_NavEKF_Source::SourceZ::BARO;
+    } else if ((frontend->_sources.getPosZSource() == AP_NavEKF_Source::SourceZ::GPS) && ((imuSampleTime_ms - lastTimeGpsReceived_ms) < 500) && validOrigin && gpsAccuracyGood) {
+        activeHgtSource = AP_NavEKF_Source::SourceZ::GPS;
+    } else if ((frontend->_sources.getPosZSource() == AP_NavEKF_Source::SourceZ::BEACON) && validOrigin && rngBcnGoodToAlign) {
+        activeHgtSource = AP_NavEKF_Source::SourceZ::BEACON;
+    } else if ((frontend->_sources.getPosZSource() == AP_NavEKF_Source::SourceZ::EXTNAV) && extNavDataIsFresh) {
+        activeHgtSource = AP_NavEKF_Source::SourceZ::EXTNAV;
     }
 
     // Use Baro alt as a fallback if we lose range finder, GPS, external nav or Beacon
-    bool lostRngHgt = ((activeHgtSource == HGT_SOURCE_RNG) && !rangeFinderDataIsFresh);
-    bool lostGpsHgt = ((activeHgtSource == HGT_SOURCE_GPS) && ((imuSampleTime_ms - lastTimeGpsReceived_ms) > 2000));
-    bool lostExtNavHgt = ((activeHgtSource == HGT_SOURCE_EXTNAV) && !extNavDataIsFresh);
-    bool lostRngBcnHgt = ((activeHgtSource == HGT_SOURCE_BCN) && ((imuSampleTime_ms - rngBcnDataDelayed.time_ms) > 2000));
+    bool lostRngHgt = ((activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) && !rangeFinderDataIsFresh);
+    bool lostGpsHgt = ((activeHgtSource == AP_NavEKF_Source::SourceZ::GPS) && ((imuSampleTime_ms - lastTimeGpsReceived_ms) > 2000));
+    bool lostExtNavHgt = ((activeHgtSource == AP_NavEKF_Source::SourceZ::EXTNAV) && !extNavDataIsFresh);
+    bool lostRngBcnHgt = ((activeHgtSource == AP_NavEKF_Source::SourceZ::BEACON) && ((imuSampleTime_ms - rngBcnDataDelayed.time_ms) > 2000));
     if (lostRngHgt || lostGpsHgt || lostExtNavHgt || lostRngBcnHgt) {
-        activeHgtSource = HGT_SOURCE_BARO;
+        activeHgtSource = AP_NavEKF_Source::SourceZ::BARO;
     }
 
     // if there is new baro data to fuse, calculate filtered baro data required by other processes
     if (baroDataToFuse) {
         // calculate offset to baro data that enables us to switch to Baro height use during operation
-        if  (activeHgtSource != HGT_SOURCE_BARO) {
+        if (activeHgtSource != AP_NavEKF_Source::SourceZ::BARO) {
             calcFiltBaroOffset();
         }
         // filtered baro data used to provide a reference for takeoff
@@ -1053,19 +1053,19 @@ void NavEKF3_core::selectHeightForFusion()
     // combined local NED position height and origin height remains consistent with the GPS altitude
     // This also enables the GPS height to be used as a backup height source
     if (gpsDataToFuse &&
-            (((frontend->_originHgtMode & (1 << 0)) && (activeHgtSource == HGT_SOURCE_BARO)) ||
-            ((frontend->_originHgtMode & (1 << 1)) && (activeHgtSource == HGT_SOURCE_RNG)))
+            (((frontend->_originHgtMode & (1 << 0)) && (activeHgtSource == AP_NavEKF_Source::SourceZ::BARO)) ||
+            ((frontend->_originHgtMode & (1 << 1)) && (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER)))
             ) {
             correctEkfOriginHeight();
     }
 
     // Select the height measurement source
-    if (extNavDataToFuse && (activeHgtSource == HGT_SOURCE_EXTNAV)) {
+    if (extNavDataToFuse && (activeHgtSource == AP_NavEKF_Source::SourceZ::EXTNAV)) {
         hgtMea = -extNavDataDelayed.pos.z;
         velPosObs[5] = -hgtMea;
         posDownObsNoise = sq(constrain_float(extNavDataDelayed.posErr, 0.1f, 10.0f));
         fuseHgtData = true;
-    } else if (rangeDataToFuse && (activeHgtSource == HGT_SOURCE_RNG)) {
+    } else if (rangeDataToFuse && (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER)) {
         // using range finder data
         // correct for tilt using a flat earth model
         if (prevTnb.c.z >= 0.7) {
@@ -1084,7 +1084,7 @@ void NavEKF3_core::selectHeightForFusion()
             // disable fusion if tilted too far
             fuseHgtData = false;
         }
-    } else if  (gpsDataToFuse && (activeHgtSource == HGT_SOURCE_GPS)) {
+    } else if (gpsDataToFuse && (activeHgtSource == AP_NavEKF_Source::SourceZ::GPS)) {
         // using GPS data
         hgtMea = gpsDataDelayed.hgt;
         velPosObs[5] = -hgtMea;
@@ -1096,7 +1096,7 @@ void NavEKF3_core::selectHeightForFusion()
         } else {
             posDownObsNoise = sq(constrain_float(1.5f * frontend->_gpsHorizPosNoise, 0.1f, 10.0f));
         }
-    } else if (baroDataToFuse && (activeHgtSource == HGT_SOURCE_BARO)) {
+    } else if (baroDataToFuse && (activeHgtSource == AP_NavEKF_Source::SourceZ::BARO)) {
         // using Baro data
         hgtMea = baroDataDelayed.hgt - baroHgtOffset;
         // enable fusion
@@ -1115,6 +1115,12 @@ void NavEKF3_core::selectHeightForFusion()
         velPosObs[5] = -hgtMea;
     } else {
         fuseHgtData = false;
+    }
+
+    // detect changes in source and reset height
+    if ((activeHgtSource != prevHgtSource) && fuseHgtData) {
+        prevHgtSource = activeHgtSource;
+        ResetPositionD(-hgtMea);
     }
 
     // If we haven't fused height data for a while, then declare the height data as being timed out

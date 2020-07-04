@@ -46,13 +46,6 @@
 #define MASK_GPS_VERT_SPD   (1<<6)
 #define MASK_GPS_HORIZ_SPD  (1<<7)
 
-// active height source
-#define HGT_SOURCE_BARO     0
-#define HGT_SOURCE_RNG      1
-#define HGT_SOURCE_GPS      2
-#define HGT_SOURCE_BCN      3
-#define HGT_SOURCE_EXTNAV   4
-
 #define earthRate 0.000072921f // earth rotation rate (rad/sec)
 
 // maximum allowed gyro bias (rad/sec)
@@ -1306,7 +1299,8 @@ private:
     } rngBcnFusionReport[4];
 
     // height source selection logic
-    uint8_t activeHgtSource;    // integer defining active height source
+    AP_NavEKF_Source::SourceZ activeHgtSource;  // active height source
+    AP_NavEKF_Source::SourceZ prevHgtSource;    // previous height source used to detect changes in source
 
     // Movement detector
     bool takeOffDetected;           // true when takeoff for optical flow navigation has been detected
