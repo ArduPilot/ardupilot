@@ -1408,14 +1408,14 @@ class AutoTest(ABC):
         self.set_streamrate(self.sitl_streamrate())
         self.progress("Reboot complete")
 
-    def customise_SITL_commandline(self, customisations, model=None, defaults_filepath=None):
+    def customise_SITL_commandline(self, customisations, model=None, defaults_filepath=None, wipe=False):
         '''customisations could be "--uartF=sim:nmea" '''
         self.contexts[-1].sitl_commandline_customised = True
         self.stop_SITL()
         self.start_SITL(model=model,
                         defaults_filepath=defaults_filepath,
                         customisations=customisations,
-                        wipe=False)
+                        wipe=wipe)
         self.wait_heartbeat(drain_mav=True)
         # MAVProxy only checks the streamrates once every 15 seconds.
         # Encourage it:
