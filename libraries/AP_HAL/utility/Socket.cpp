@@ -18,6 +18,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #if HAL_OS_SOCKETS
+#include <netdb.h>
 
 #include "Socket.h"
 
@@ -50,6 +51,26 @@ SocketAPM::~SocketAPM()
 
 void SocketAPM::make_sockaddr(const char *address, uint16_t port, struct sockaddr_in &sockaddr)
 {
+    const char* resolved_address = address;
+    struct addrinfo hint = {0};
+    hint.ai_flags = AI_NUMERICHOST;
+    hint.ai_family = AF_UNSPEC;
+    hint.ai_socktype = SOCK_STREAM;
+    hint.ai_protocol = IPPROTO_TCP;
+
+    struct addrinfo *addrs = NULL;
+    int ret = getaddrinfo(address, NULL, &hint, &addrs);
+    if (ret == EAI_NONAME)
+    {
+        hint.ai_flags = 0;
+        ret = getaddrinfo(address, NULL, &hint, &addrs);
+    }
+
+    if(ret == 0) 
+    {
+        resolved_address = inet_ntoa(((sockaddr_in *) addrs -> ai_addr) -> sin_addr);
+    }
+
     memset(&sockaddr, 0, sizeof(sockaddr));
 
 #ifdef HAVE_SOCK_SIN_LEN
@@ -57,7 +78,7 @@ void SocketAPM::make_sockaddr(const char *address, uint16_t port, struct sockadd
 #endif
     sockaddr.sin_port = htons(port);
     sockaddr.sin_family = AF_INET;
-    sockaddr.sin_addr.s_addr = inet_addr(address);
+    sockaddr.sin_addr.s_addr = inet_addr(resolved_address);
 }
 
 /*
