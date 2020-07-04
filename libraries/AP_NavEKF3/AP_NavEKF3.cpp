@@ -189,13 +189,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // Height measurement parameters
 
-    // @Param: ALT_SOURCE
-    // @DisplayName: Primary altitude sensor source
-    // @Description: Primary height sensor used by the EKF. If a sensor other than Baro is selected and becomes unavailable, then the Baro sensor will be used as a fallback. NOTE: the EK3_RNG_USE_HGT parameter can be used to switch to range-finder when close to the ground in conjunction with EK3_ALT_SOURCE = 0 or 2 (Baro or GPS). NOTE: Setting EK3_ALT_SOURCE = 4 uses external nav system data only if data is also being used for horizontal position
-    // @Values: 0:Use Baro, 1:Use Range Finder, 2:Use GPS, 3:Use Range Beacon, 4:Use External Nav
-    // @User: Advanced
-    // @RebootRequired: True
-    AP_GROUPINFO("ALT_SOURCE", 9, NavEKF3, _altSource, 0),
+    // 9 was ALT_SOURCE
 
     // @Param: ALT_M_NSE
     // @DisplayName: Altitude measurement noise (m)
