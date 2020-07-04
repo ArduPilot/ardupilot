@@ -434,10 +434,8 @@ void NavEKF3_core::SelectVelPosFusion()
         velPosObs[3] = gpsDataDelayed.pos.x;
         velPosObs[4] = gpsDataDelayed.pos.y;
     } else if (extNavDataToFuse && (PV_AidingMode == AID_ABSOLUTE) && (frontend->_fusionModeGPS == 3)) {
-        // use external nav system for position
+        // use external nav system for horizontal position
         extNavUsedForPos = true;
-        activeHgtSource = HGT_SOURCE_EXTNAV;
-        fuseHgtData = true;
         fusePosData = true;
 
         // correct for external navigation sensor position
@@ -445,7 +443,6 @@ void NavEKF3_core::SelectVelPosFusion()
 
         velPosObs[3] = extNavDataDelayed.pos.x;
         velPosObs[4] = extNavDataDelayed.pos.y;
-        velPosObs[5] = extNavDataDelayed.pos.z;
     }
 
     // fuse external navigation velocity data if available
@@ -1046,6 +1043,8 @@ void NavEKF3_core::selectHeightForFusion()
         activeHgtSource = HGT_SOURCE_GPS;
     } else if ((frontend->_altSource == 3) && validOrigin && rngBcnGoodToAlign) {
         activeHgtSource = HGT_SOURCE_BCN;
+    } else if ((frontend->_altSource == 4) && ((imuSampleTime_ms - extNavMeasTime_ms) < 500)) {
+        activeHgtSource = HGT_SOURCE_EXTNAV;
     }
 
     // Use Baro alt as a fallback if we lose range finder, GPS, external nav or Beacon
@@ -1086,7 +1085,9 @@ void NavEKF3_core::selectHeightForFusion()
     // Select the height measurement source
     if (extNavDataToFuse && (activeHgtSource == HGT_SOURCE_EXTNAV)) {
         hgtMea = -extNavDataDelayed.pos.z;
+        velPosObs[5] = -hgtMea;
         posDownObsNoise = sq(constrain_float(extNavDataDelayed.posErr, 0.1f, 10.0f));
+        fuseHgtData = true;
     } else if (rangeDataToFuse && (activeHgtSource == HGT_SOURCE_RNG)) {
         // using range finder data
         // correct for tilt using a flat earth model
