@@ -407,6 +407,10 @@ void NavEKF3_core::SelectVelPosFusion()
     // get data that has now fallen behind the fusion time horizon
     gpsDataToFuse = storedGPS.recall(gpsDataDelayed,imuDataDelayed.time_ms);
 
+    // initialise all possible data we may fuse
+    fusePosData = false;
+    fuseVelData = false;
+
     // Determine if we need to fuse position and velocity data on this time step
     if (gpsDataToFuse && (PV_AidingMode == AID_ABSOLUTE) && (frontend->_fusionModeGPS != 3)) {
 
@@ -433,7 +437,6 @@ void NavEKF3_core::SelectVelPosFusion()
         // use external nav system for position
         extNavUsedForPos = true;
         activeHgtSource = HGT_SOURCE_EXTNAV;
-        fuseVelData = false;
         fuseHgtData = true;
         fusePosData = true;
 
@@ -443,9 +446,6 @@ void NavEKF3_core::SelectVelPosFusion()
         velPosObs[3] = extNavDataDelayed.pos.x;
         velPosObs[4] = extNavDataDelayed.pos.y;
         velPosObs[5] = extNavDataDelayed.pos.z;
-    } else {
-        fuseVelData = false;
-        fusePosData = false;
     }
 
     // fuse external navigation velocity data if available
