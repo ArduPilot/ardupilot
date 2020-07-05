@@ -761,13 +761,9 @@ bool AP_AHRS_NavEKF::set_origin(const Location &loc)
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKFType::SITL:
-        if (_sitl) {
-            struct SITL::sitl_fdm &fdm = _sitl->state;
-            fdm.home = loc;
-            return true;
-        } else {
-            return false;
-        }
+        // never allow origin set in SITL. The origin is set by the
+        // simulation backend
+        return false;
 #endif
     }
     // since there is no default case above, this is unreachable
@@ -978,12 +974,15 @@ bool AP_AHRS_NavEKF::get_relative_position_NED_origin(Vector3f &vec) const
         if (!_sitl) {
             return false;
         }
-        Location loc;
-        get_position(loc);
-        const Vector2f diff2d = get_home().get_distance_NE(loc);
+        Location loc, orgn;
+        if (!get_position(loc) ||
+            !get_origin(orgn)) {
+            return false;
+        }
+        const Vector2f diff2d = orgn.get_distance_NE(loc);
         const struct SITL::sitl_fdm &fdm = _sitl->state;
         vec = Vector3f(diff2d.x, diff2d.y,
-                       -(fdm.altitude - get_home().alt*0.01f));
+                       -(fdm.altitude - orgn.alt*0.01f));
         return true;
     }
 #endif
@@ -1035,9 +1034,12 @@ bool AP_AHRS_NavEKF::get_relative_position_NE_origin(Vector2f &posNE) const
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKFType::SITL: {
-        Location loc;
-        get_position(loc);
-        posNE = get_home().get_distance_NE(loc);
+        Location loc, orgn;
+        if (!get_position(loc) ||
+            !get_origin(orgn)) {
+            return false;
+        }
+        posNE = orgn.get_distance_NE(loc);
         return true;
     }
 #endif
@@ -1095,7 +1097,11 @@ bool AP_AHRS_NavEKF::get_relative_position_D_origin(float &posD) const
             return false;
         }
         const struct SITL::sitl_fdm &fdm = _sitl->state;
-        posD = -(fdm.altitude - get_home().alt*0.01f);
+        Location orgn;
+        if (!get_origin(orgn)) {
+            return false;
+        }
+        posD = -(fdm.altitude - orgn.alt*0.01f);
         return true;
     }
 #endif
