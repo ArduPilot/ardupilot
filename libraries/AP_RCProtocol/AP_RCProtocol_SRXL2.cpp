@@ -23,6 +23,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_RCTelemetry/AP_Spektrum_Telem.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_HAL/utility/sparse-endian.h>
 
 #include "spm_srxl.h"
 
@@ -149,17 +150,17 @@ void AP_RCProtocol_SRXL2::update(void)
     }
 }
 
-void AP_RCProtocol_SRXL2::capture_scaled_input(const uint16_t *values, bool in_failsafe, int16_t new_rssi)
+void AP_RCProtocol_SRXL2::capture_scaled_input(const uint8_t *values_p, bool in_failsafe, int16_t new_rssi)
 {
     AP_RCProtocol_SRXL2* srxl2 = AP_RCProtocol_SRXL2::get_singleton();
 
     if (srxl2 != nullptr) {
-        srxl2->_capture_scaled_input(values, in_failsafe, new_rssi);
+        srxl2->_capture_scaled_input(values_p, in_failsafe, new_rssi);
     }
 }
 
 // capture SRXL2 encoded values
-void AP_RCProtocol_SRXL2::_capture_scaled_input(const uint16_t *values, bool in_failsafe, int16_t new_rssi)
+void AP_RCProtocol_SRXL2::_capture_scaled_input(const uint8_t *values_p, bool in_failsafe, int16_t new_rssi)
 {
     _in_failsafe = in_failsafe;
     // AP rssi: -1 for unknown, 0 for no link, 255 for maximum link
@@ -203,7 +204,8 @@ void AP_RCProtocol_SRXL2::_capture_scaled_input(const uint16_t *values, bool in_
          *
          * So here we scale to DSMX-2048 and then use our regular Spektrum conversion.
          */
-        _channels[channel] = ((int32_t)(values[i] >> 5) * 1194) / 2048 + 903;
+        const uint16_t v = le16toh_ptr(&values_p[i*2]);
+        _channels[channel] = ((int32_t)(v >> 5) * 1194) / 2048 + 903;
     }
 }
 
@@ -319,9 +321,9 @@ void srxlFillTelemetry(SrxlTelemetryData* pTelemetryData)
 void srxlReceivedChannelData(SrxlChannelData* pChannelData, bool isFailsafe)
 {
     if (isFailsafe) {
-        AP_RCProtocol_SRXL2::capture_scaled_input(pChannelData->values, true, pChannelData->rssi);
+        AP_RCProtocol_SRXL2::capture_scaled_input((const uint8_t *)pChannelData->values, true, pChannelData->rssi);
     } else {
-        AP_RCProtocol_SRXL2::capture_scaled_input(srxlChData.values, false, srxlChData.rssi);
+        AP_RCProtocol_SRXL2::capture_scaled_input((const uint8_t *)srxlChData.values, false, srxlChData.rssi);
     }
 }
 

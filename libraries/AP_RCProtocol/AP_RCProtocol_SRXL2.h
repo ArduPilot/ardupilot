@@ -35,7 +35,7 @@ public:
     }
 
     // static functions for SRXL2 callbacks
-    static void capture_scaled_input(const uint16_t *values, bool in_failsafe, int16_t rssi);
+    static void capture_scaled_input(const uint8_t *values_p, bool in_failsafe, int16_t rssi);
     static void send_on_uart(uint8_t* pBuffer, uint8_t length);
     static void change_baud_rate(uint32_t baudrate);
 
@@ -48,7 +48,7 @@ private:
     void _process_byte(uint32_t timestamp_us, uint8_t byte);
     void _send_on_uart(uint8_t* pBuffer, uint8_t length);
     void _change_baud_rate(uint32_t baudrate);
-    void _capture_scaled_input(const uint16_t *values, bool in_failsafe, int16_t rssi);
+    void _capture_scaled_input(const uint8_t *values_p, bool in_failsafe, int16_t rssi);
 
     uint8_t _buffer[SRXL2_FRAMELEN_MAX];       /* buffer for raw srxl frame data in correct order --> buffer[0]=byte0  buffer[1]=byte1  */
     uint8_t _buflen;                          /* length in number of bytes of received srxl dataframe in buffer  */
