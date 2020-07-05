@@ -120,6 +120,14 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     AP_GROUPINFO("_ALT_TYPE", 10, AP_Follow, _alt_type, AP_FOLLOW_ALTITUDE_TYPE_RELATIVE),
 #endif
 
+    // @Param: _PATH_TC
+    // @DisplayName: Follow time constant
+    // @Description: Time constant used to generate the kinematically consistent path
+    // @Units: m
+    // @Range: 1 1000
+    // @User: Standard
+    AP_GROUPINFO("_PATH_TC", 11, AP_Follow, _path_tc, 5.0f),
+
     AP_GROUPEND
 };
 
@@ -220,6 +228,59 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
     dist_ned = dist_vec;
     dist_with_offs = dist_vec + offsets;
     vel_ned = veh_vel;
+
+    Vector3f current_location_ned;
+    Vector3f target_location_ned;
+    Vector3f target_velocity_ned;
+    if (_target_location.get_vector_from_origin_NEU(target_location_ned) && current_loc.get_vector_from_origin_NEU(current_location_ned)) {
+        // calculate time since last actual position update
+        const float dt = (AP_HAL::millis() - _last_location_update_ms) * 0.001f;
+        target_location_ned *= 0.01f;
+        current_location_ned *= 0.01f;
+        target_location_ned += _target_velocity_ned * dt + _target_accel_ned * 0.5f * sq(dt) + offsets;
+        target_velocity_ned += _target_velocity_ned + _target_accel_ned * dt;
+
+        // calculate time since last path update
+        if ((_last_path_update_ms == 0) || (AP_HAL::millis() - _last_path_update_ms > MIN(_path_tc * 1000.0f, AP_FOLLOW_TIMEOUT_MS))) {
+            _path_location_ned = target_location_ned;
+            _path_velocity_ned = target_velocity_ned;
+            _path_accel_ned.zero();
+            _last_path_update_ms = AP_HAL::millis();
+        } else {
+            const float path_dt = (AP_HAL::millis() - _last_path_update_ms) * 0.001f;
+            _last_path_update_ms = AP_HAL::millis();
+
+            _path_location_ned += _path_velocity_ned * path_dt + _path_accel_ned * 0.5f * sq(path_dt);
+            _path_velocity_ned += _path_accel_ned * path_dt;
+
+            float pv = 1.0f/_path_tc;
+            float pa = 4.0f * pv;
+            Vector3f error_location_ned = target_location_ned - _path_location_ned;
+            Vector3f error_velocity_ned = error_location_ned * pv + target_velocity_ned - _path_velocity_ned;
+            _path_accel_ned = error_velocity_ned * pa;
+        }
+
+        // calculate results
+        dist_with_offs = _path_location_ned - current_location_ned;
+        dist_with_offs.z = 0.0f;
+        vel_ned = _path_velocity_ned;
+
+        AP::logger().Write("FOL2", "TimeUS,PN,PE,PD,VN,VE,VD,TN,TE,TD,N,E,D", "Qffffffffffff",
+                                               AP_HAL::micros64(),
+                                               (double)_path_location_ned.x,
+                                               (double)_path_location_ned.y,
+                                               (double)_path_location_ned.z,
+                                               (double)_path_velocity_ned.x,
+                                               (double)_path_velocity_ned.y,
+                                               (double)_path_velocity_ned.z,
+                                               (double)target_location_ned.x,
+                                               (double)target_location_ned.y,
+                                               (double)target_location_ned.z,
+                                               (double)target_velocity_ned.x,
+                                               (double)target_velocity_ned.y,
+                                               (double)target_velocity_ned.z
+                                               );
+    }
 
     // record distance and heading for reporting purposes
     if (is_zero(dist_with_offs.x) && is_zero(dist_with_offs.y)) {

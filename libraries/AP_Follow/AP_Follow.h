@@ -115,13 +115,19 @@ private:
     AP_Int8     _yaw_behave;        // following vehicle's yaw/heading behaviour (see YAW_BEHAVE enum)
     AP_Int8     _alt_type;          // altitude source for follow mode
     AC_P        _p_pos;             // position error P controller
+    AP_Float    _path_tc;           // time constant used to update the path
 
     // local variables
     bool _healthy;                  // true if we are receiving mavlink messages (regardless of whether they have target position info within them)
     uint32_t _last_location_update_ms;  // system time of last position update
     Location _target_location;      // last known location of target
+    Vector3f _target_location_ned;  // last known velocity of target in NED frame in m
     Vector3f _target_velocity_ned;  // last known velocity of target in NED frame in m/s
     Vector3f _target_accel_ned;     // last known acceleration of target in NED frame in m/s/s
+    Vector3f _path_location_ned;    // current position of kinematically consistent path in NED frame in m
+    Vector3f _path_velocity_ned;    // current velocity of kinematically consistent path in NED frame in m/s
+    Vector3f _path_accel_ned;       // current acceleration of kinematically consistent path in NED frame in m/s/s
+    uint32_t _last_path_update_ms;  // system time of last path update
     uint32_t _last_heading_update_ms;   // system time of last heading update
     float _target_heading;          // heading in degrees
     bool _automatic_sysid;          // did we lock onto a sysid automatically?
