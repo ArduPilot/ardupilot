@@ -156,7 +156,6 @@ private:
         struct RichenPacket packet;
     };
     RichenUnion u;
-    uint16_t *checksum_buffer = (uint16_t*)&u.parse_buffer[2];
 
     uint8_t body_length;
 
