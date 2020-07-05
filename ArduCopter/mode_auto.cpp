@@ -480,6 +480,8 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
             copter.fence.enable(true);
             gcs().send_text(MAV_SEVERITY_INFO, "Fence Enabled");
         }
+#else
+        gcs().send_text(MAV_SEVERITY_INFO, "Fence UnSupported");
 #endif //AC_FENCE == ENABLED
         break;
 
