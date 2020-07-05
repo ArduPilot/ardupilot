@@ -112,8 +112,9 @@ bool AP_Generator_RichenPower::get_reading()
 
     // calculate checksum....
     uint16_t checksum = 0;
+    const uint8_t *checksum_buffer = &u.parse_buffer[2];
     for (uint8_t i=0; i<5; i++) {
-        checksum += be16toh(checksum_buffer[i]);
+        checksum += be16toh_ptr(&checksum_buffer[2*i]);
     }
 
     if (checksum != be16toh(u.packet.checksum)) {
