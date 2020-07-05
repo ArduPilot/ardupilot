@@ -38,6 +38,11 @@ public:
     // constructor
     AP_Follow();
 
+    // enable as singleton
+    static AP_Follow *get_singleton(void) {
+        return _singleton;
+    }
+
     // returns true if library is enabled
     bool enabled() const { return _enabled; }
 
@@ -91,6 +96,8 @@ public:
 
 private:
 
+    static AP_Follow *_singleton;
+
     // get velocity estimate in m/s in NED frame using dt since last update
     bool get_velocity_ned(Vector3f &vel_ned, float dt) const;
 
@@ -137,4 +144,8 @@ private:
 
     // setup jitter correction with max transport lag of 3s
     JitterCorrection _jitter{3000};
+};
+
+namespace AP {
+    AP_Follow &follow();
 };

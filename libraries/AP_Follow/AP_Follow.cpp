@@ -33,6 +33,8 @@ extern const AP_HAL::HAL& hal;
 
 #define AP_FOLLOW_POS_P_DEFAULT 0.1f    // position error gain default
 
+AP_Follow *AP_Follow::_singleton;
+
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Follow::var_info[] = {
 
@@ -139,6 +141,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
 AP_Follow::AP_Follow() :
         _p_pos(AP_FOLLOW_POS_P_DEFAULT)
 {
+    _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
 }
 
@@ -480,4 +483,13 @@ void AP_Follow::clear_dist_and_bearing_to_target()
 {
     _dist_to_target = 0.0f;
     _bearing_to_target = 0.0f;
+}
+
+namespace AP {
+
+AP_Follow &follow()
+{
+    return *AP_Follow::get_singleton();
+}
+
 }
