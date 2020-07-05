@@ -19,6 +19,7 @@
 #include "GCS.h"
 
 #include <AP_Filesystem/AP_Filesystem.h>
+#include <AP_HAL/utility/sparse-endian.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -66,14 +67,14 @@ void GCS_MAVLINK::handle_file_transfer_protocol(const mavlink_message_t &msg) {
         struct pending_ftp request;
 
         request.chan = chan;
-        request.seq_number = *(uint16_t *)packet.payload;
+        request.seq_number = le16toh_ptr(packet.payload);
 
         request.session = packet.payload[2];
         request.opcode = static_cast<FTP_OP>(packet.payload[3]);
         request.size = packet.payload[4];
         request.req_opcode = static_cast<FTP_OP>(packet.payload[5]);
         request.burst_complete = packet.payload[6];
-        request.offset = *(uint32_t *)(&packet.payload[8]);
+        request.offset = le32toh_ptr(&packet.payload[8]);
         request.sysid = msg.sysid;
         request.compid = msg.compid;
         memcpy(request.data, &packet.payload[12], sizeof(packet.payload) - 12);
@@ -111,20 +112,20 @@ void GCS_MAVLINK::send_ftp_replies(void)
         struct pending_ftp reply;
         uint8_t payload[251] = {};
         if (ftp.replies->peek(reply) && (reply.chan == chan)) {
-                ((uint16_t *)payload)[0] = reply.seq_number;
-                payload[2] = reply.session;
-                payload[3] = static_cast<uint8_t>(reply.opcode);
-                payload[4] = reply.size;
-                payload[5] = static_cast<uint8_t>(reply.req_opcode);
-                payload[6] = reply.burst_complete ? 1 : 0;
-                *(uint32_t *)(&payload[8]) = reply.offset;
-                memcpy(&payload[12], reply.data, sizeof(reply.data));
-                mavlink_msg_file_transfer_protocol_send(
-                    reply.chan,
-                    0, reply.sysid, reply.compid,
-                    payload);
-                ftp.replies->pop();
-                ftp.last_send_ms = AP_HAL::millis();
+            put_le16_ptr(payload, reply.seq_number);
+            payload[2] = reply.session;
+            payload[3] = static_cast<uint8_t>(reply.opcode);
+            payload[4] = reply.size;
+            payload[5] = static_cast<uint8_t>(reply.req_opcode);
+            payload[6] = reply.burst_complete ? 1 : 0;
+            put_le32_ptr(&payload[8], reply.offset);
+            memcpy(&payload[12], reply.data, sizeof(reply.data));
+            mavlink_msg_file_transfer_protocol_send(
+                reply.chan,
+                0, reply.sysid, reply.compid,
+                payload);
+            ftp.replies->pop();
+            ftp.last_send_ms = AP_HAL::millis();
         } else {
             return;
         }
@@ -283,7 +284,7 @@ void GCS_MAVLINK::ftp_worker(void) {
 
                         reply.opcode = FTP_OP::Ack;
                         reply.size = sizeof(uint32_t);
-                        *((int32_t *)reply.data) = (int32_t)file_size;
+                        put_le32_ptr(reply.data, (uint32_t)file_size);
 
                         // provide compatibility with old protocol banner download
                         if (strncmp((const char *)request.data, "@PARAM/param.pck", 16) == 0) {
@@ -469,7 +470,7 @@ void GCS_MAVLINK::ftp_worker(void) {
                         // reset our scratch area so we don't leak data, and can leverage trimming
                         memset(reply.data, 0, sizeof(reply.data));
                         reply.size = sizeof(uint32_t);
-                        ((uint32_t *)reply.data)[0] = checksum;
+                        put_le32_ptr(reply.data, checksum);
                         reply.opcode = FTP_OP::Ack;
                         break;
                     }
