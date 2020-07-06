@@ -43,6 +43,7 @@ void AP_RPM_SITL::update(void)
     state.rate_rpm *= ap_rpm._params[state.instance].scaling;
     state.signal_quality = 0.5f;
     state.last_reading_ms = AP_HAL::millis();
+    memcpy(state.rpm, sitl->state.rpm, sizeof(float) * 4);
 
 }
 
