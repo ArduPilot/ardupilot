@@ -206,7 +206,10 @@ class AutoTestSub(AutoTest):
         self.progress("Mission OK")
 
     def test_gripper_mission(self):
-        self.context_push()
+        with self.Context(self):
+            self.test_gripper_body()
+
+    def test_gripper_body(self):
         ex = None
         try:
             try:
@@ -225,7 +228,6 @@ class AutoTestSub(AutoTest):
         except Exception as e:
             self.progress("Exception caught")
             ex = e
-        self.context_pop()
         if ex is not None:
             raise ex
 
