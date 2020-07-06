@@ -75,7 +75,7 @@ void Scheduler::init_realtime()
     mlockall(MCL_CURRENT|MCL_FUTURE);
 
     struct sched_param param = { .sched_priority = APM_LINUX_MAIN_PRIORITY };
-    if (sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
+    if (pthread_setschedparam(pthread_self(), SCHED_FIFO, &param) == -1) {
         AP_HAL::panic("Scheduler: failed to set scheduling parameters: %s",
                       strerror(errno));
     }
