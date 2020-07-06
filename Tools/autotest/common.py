@@ -2858,6 +2858,15 @@ class AutoTest(ABC):
                                old_value,
                                add_to_context=False)
 
+    class Context(object):
+        def __init__(self, testsuite):
+            self.testsuite = testsuite
+        def __enter__(self):
+            self.testsuite.context_push()
+        def __exit__(self, type, value, traceback):
+            self.testsuite.context_pop()
+            return False # re-raise any exception
+
     def sysid_thismav(self):
         return 1
 
@@ -3842,6 +3851,7 @@ Also, ignores heartbeats not from our target system'''
         self.send_statustext(prettyname)
         self.start_test(prettyname)
         self.set_current_test_name(name)
+        old_contexts_length = len(self.contexts)
         self.context_push()
 
         start_time = time.time()
@@ -3881,6 +3891,11 @@ Also, ignores heartbeats not from our target system'''
         corefiles = glob.glob("core*")
         if corefiles:
             self.progress('Corefiles detected: %s' % str(corefiles))
+            passed = False
+
+        if len(self.contexts) != old_contexts_length:
+            self.progress("context count mismatch (want=%u got=%u)" %
+                          (old_contexts_length, len(self.contexts)))
             passed = False
 
         if passed:
@@ -5951,6 +5966,7 @@ switch value'''
         except Exception as e:
             ex = e
         self.mavproxy.send("fence disable\n")
+        self.context_pop()
         if ex is not None:
             raise ex
 
