@@ -1,4 +1,5 @@
 #include "AP_HAL.h"
+#include <SRV_Channel/SRV_Channel.h>
 #include "Util.h"
 #include "utility/print_vprintf.h"
 #if defined(__APPLE__) && defined(__MACH__)
@@ -105,4 +106,7 @@ void AP_HAL::Util::set_soft_armed(const bool b)
             persistent_data.armed = b;
         }
     }
+
+    SRV_Channels::set_output_limit(SRV_Channel::k_soft_armed_out,
+        (soft_armed ? SRV_Channel::Limit::MAX : SRV_Channel::Limit::MIN));
 }
