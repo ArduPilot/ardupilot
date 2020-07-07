@@ -28,6 +28,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
 
+// ignore cast errors in this case to keep complexity down
+#pragma GCC diagnostic ignored "-Wcast-align"
+
 extern const AP_HAL::HAL& hal;
 
 namespace SITL {
