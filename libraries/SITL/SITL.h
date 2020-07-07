@@ -154,9 +154,6 @@ public:
     AP_Float arspd_fail_pitot_pressure; // 1st pitot tube failure pressure
     AP_Float arspd2_fail_pressure; // 2nd pitot tube failure pressure
     AP_Float arspd2_fail_pitot_pressure; // 2nd pitot tube failure pressure
-    AP_Float gps_noise; // amplitude of the gps altitude error
-    AP_Int16 gps_lock_time; // delay in seconds before GPS gets lock
-    AP_Int16 gps_alt_offset; // gps alt error
 
     AP_Float mag_noise;   // in mag units (earth field is 818)
     AP_Vector3f mag_mot;  // in mag units per amp
@@ -174,14 +171,21 @@ public:
     AP_Float drift_time;  // period in minutes
     AP_Float engine_mul;  // engine multiplier
     AP_Int8  engine_fail; // engine servo to fail (0-7)
-    AP_Int8  gps_disable; // disable simulated GPS
-    AP_Int8  gps2_enable; // enable 2nd simulated GPS
-    AP_Int8  gps_delay;   // delay in samples
+
+    AP_Float gps_noise[2]; // amplitude of the gps altitude error
+    AP_Int16 gps_lock_time[2]; // delay in seconds before GPS gets lock
+    AP_Int16 gps_alt_offset[2]; // gps alt error
+    AP_Int8  gps_disable[2]; // disable simulated GPS
+    AP_Int8  gps_delay[2];   // delay in samples
     AP_Int8  gps_type[2]; // see enum GPSType
-    AP_Float gps_byteloss;// byte loss as a percent
-    AP_Int8  gps_numsats; // number of visible satellites
+    AP_Float gps_byteloss[2];// byte loss as a percent
+    AP_Int8  gps_numsats[2]; // number of visible satellites
     AP_Vector3f gps_glitch[2];  // glitch offsets in lat, lon and altitude
-    AP_Int8  gps_hertz;   // GPS update rate in Hz
+    AP_Int8  gps_hertz[2];   // GPS update rate in Hz
+    AP_Int8 gps_hdg_enabled[2]; // enable the output of a NMEA heading HDT sentence or UBLOX RELPOSNED
+    AP_Float gps_drift_alt[2];
+    AP_Vector3f gps_pos_offset[2];  // XYZ position of the GPS antenna phase centre relative to the body frame origin (m)
+
     AP_Float batt_voltage; // battery voltage base
     AP_Float accel_fail;  // accelerometer failure value
     AP_Int8  rc_fail;     // fail RC input
@@ -198,7 +202,6 @@ public:
     AP_Int8  telem_baudlimit_enable; // enable baudrate limiting on links
     AP_Float flow_noise; // optical flow measurement noise (rad/sec)
     AP_Int8  baro_count; // number of simulated baros to create
-    AP_Int8 gps_hdg_enabled[2]; // enable the output of a NMEA heading HDT sentence or UBLOX RELPOSNED
     AP_Int32 loop_delay; // extra delay to add to every loop
     AP_Float mag_scaling; // scaling factor on first compasses
     AP_Int32 mag_devid[MAX_CONNECTED_MAGS]; // Mag devid
@@ -226,7 +229,6 @@ public:
     AP_Float wind_speed;
     AP_Float wind_direction;
     AP_Float wind_turbulance;
-    AP_Float gps_drift_alt;
     AP_Float wind_dir_z;
     AP_Int8  wind_type; // enum WindLimitType
     AP_Float wind_type_alt;
@@ -248,7 +250,6 @@ public:
 
     // Body frame sensor position offsets
     AP_Vector3f imu_pos_offset;     // XYZ position of the IMU accelerometer relative to the body frame origin (m)
-    AP_Vector3f gps_pos_offset[2];  // XYZ position of the GPS antenna phase centre relative to the body frame origin (m)
     AP_Vector3f rngfnd_pos_offset;  // XYZ position of the range finder zero range datum relative to the body frame origin (m)
     AP_Vector3f optflow_pos_offset; // XYZ position of the optical flow sensor focal point relative to the body frame origin (m)
     AP_Vector3f vicon_pos_offset;   // XYZ position of the vicon sensor relative to the body frame origin (m)
