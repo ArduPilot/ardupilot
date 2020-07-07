@@ -73,6 +73,7 @@ private:
         _GPS_SENTENCE_VTG = 96,
         _GPS_SENTENCE_HDT = 128,
         _GPS_SENTENCE_PHD = 138, // extension for AllyStar GPS modules
+        _GPS_SENTENCE_THS = 160, // True heading with quality indicator, available on Trimble MB-Two
         _GPS_SENTENCE_OTHER = 0
     };
 
@@ -146,7 +147,7 @@ private:
     uint32_t _last_RMC_ms;
     uint32_t _last_GGA_ms;
     uint32_t _last_VTG_ms;
-    uint32_t _last_HDT_ms;
+    uint32_t _last_HDT_THS_ms;
     uint32_t _last_PHD_12_ms;
     uint32_t _last_PHD_26_ms;
     uint32_t _last_fix_ms;
