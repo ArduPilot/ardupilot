@@ -20,9 +20,9 @@ ToneAlarm::ToneAlarm()
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
-    period_fd = open("/sys/devices/ocp.3/pwm_test_P8_36.12/period",O_WRONLY|O_CLOEXEC);
-    duty_fd = open("/sys/devices/ocp.3/pwm_test_P8_36.12/duty",O_WRONLY|O_CLOEXEC);
-    run_fd = open("/sys/devices/ocp.3/pwm_test_P8_36.12/run",O_WRONLY|O_CLOEXEC);
+    period_fd = open("/sys/class/pwm/pwmchip0/pwm0/period",O_WRONLY|O_CLOEXEC);
+    duty_fd = open("/sys/class/pwm/pwmchip0/pwm0/duty_cycle",O_WRONLY|O_CLOEXEC);
+    run_fd = open("/sys/class/pwm/pwmchip0/pwm0/enable",O_WRONLY|O_CLOEXEC);
 #endif
 }
 
