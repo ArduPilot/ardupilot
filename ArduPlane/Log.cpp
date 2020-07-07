@@ -52,7 +52,7 @@ void Plane::Log_Write_Attitude(void)
     logger.Write_POS();
 }
 
-// do logging at loop rate
+// do fast logging for plane
 void Plane::Log_Write_Fast(void)
 {
     if (should_log(MASK_LOG_ATTITUDE_FAST)) {
