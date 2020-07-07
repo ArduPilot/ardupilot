@@ -785,6 +785,10 @@ private:
     // soaring mode-change timer
     uint32_t soaring_mode_timer;
 
+    // terrain disable for non AUTO modes, set with an RC Option switch
+    bool non_auto_terrain_disable;
+    bool terrain_disabled();
+
     // Attitude.cpp
     void adjust_nav_pitch_throttle(void);
     void update_load_factor(void);
