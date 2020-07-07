@@ -143,7 +143,7 @@ void AP_RCTelemetry::queue_message(MAV_SEVERITY severity, const char *text)
     mavlink_statustext_t statustext{};
 
     statustext.severity = severity;
-    strncpy(statustext.text, text, sizeof(statustext.text));
+    strncpy_noterm(statustext.text, text, sizeof(statustext.text));
 
     // The force push will ensure comm links do not block other comm links forever if they fail.
     // If we push to a full buffer then we overwrite the oldest entry, effectively removing the
