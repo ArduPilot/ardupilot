@@ -20,6 +20,7 @@
 
 #include "SIM_RichenPower.h"
 #include "SITL.h"
+#include <AP_HAL/utility/sparse-endian.h>
 
 #include <stdio.h>
 #include <errno.h>
