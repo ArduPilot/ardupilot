@@ -165,9 +165,6 @@ public:
     const Vector3f &get_pos_offset_orient(enum Rotation orientation) const;
     uint32_t last_reading_ms(enum Rotation orientation) const;
 
-    // indicate which bit in LOG_BITMASK indicates RFND should be logged
-    void set_rfnd_bit(uint32_t log_rfnd_bit) { _log_rfnd_bit = log_rfnd_bit; }
-
     /*
       set an externally estimated terrain height. Used to enable power
       saving (where available) at high altitudes.
