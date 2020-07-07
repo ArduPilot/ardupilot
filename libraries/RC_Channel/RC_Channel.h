@@ -202,6 +202,16 @@ public:
         MAINSAIL =           207, // mainsail input
         FLAP =               208, // flap input
         FWD_THR =            209, // VTOL manual forward throttle
+
+        // inputs for the use of onboard lua scripting
+        SCRIPTING_1 =        300,
+        SCRIPTING_2 =        301,
+        SCRIPTING_3 =        302,
+        SCRIPTING_4 =        303,
+        SCRIPTING_5 =        304,
+        SCRIPTING_6 =        305,
+        SCRIPTING_7 =        306,
+        SCRIPTING_8 =        307,
     };
     typedef enum AUX_FUNC aux_func_t;
 
