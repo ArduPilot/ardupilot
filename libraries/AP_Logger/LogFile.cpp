@@ -32,9 +32,9 @@ void AP_Logger_Backend::Fill_Format(const struct LogStructure *s, struct log_For
     pkt.msgid = LOG_FORMAT_MSG;
     pkt.type = s->msg_type;
     pkt.length = s->msg_len;
-    strncpy(pkt.name, s->name, sizeof(pkt.name));
-    strncpy(pkt.format, s->format, sizeof(pkt.format));
-    strncpy(pkt.labels, s->labels, sizeof(pkt.labels));
+    strncpy_noterm(pkt.name, s->name, sizeof(pkt.name));
+    strncpy_noterm(pkt.format, s->format, sizeof(pkt.format));
+    strncpy_noterm(pkt.labels, s->labels, sizeof(pkt.labels));
 }
 
 /*
@@ -48,8 +48,8 @@ void AP_Logger_Backend::Fill_Format_Units(const struct LogStructure *s, struct l
     pkt.msgid = LOG_FORMAT_UNITS_MSG;
     pkt.time_us = AP_HAL::micros64();
     pkt.format_type = s->msg_type;
-    strncpy(pkt.units, s->units, sizeof(pkt.units));
-    strncpy(pkt.multipliers, s->multipliers, sizeof(pkt.multipliers));
+    strncpy_noterm(pkt.units, s->units, sizeof(pkt.units));
+    strncpy_noterm(pkt.multipliers, s->multipliers, sizeof(pkt.multipliers));
 }
 
 /*
@@ -73,7 +73,7 @@ bool AP_Logger_Backend::Write_Unit(const struct UnitStructure *s)
         type    : s->ID,
         unit    : { }
     };
-    strncpy(pkt.unit, s->unit, sizeof(pkt.unit));
+    strncpy_noterm(pkt.unit, s->unit, sizeof(pkt.unit));
 
     return WriteCriticalBlock(&pkt, sizeof(pkt));
 }
@@ -114,7 +114,7 @@ bool AP_Logger_Backend::Write_Parameter(const char *name, float value)
         name  : {},
         value : value
     };
-    strncpy(pkt.name, name, sizeof(pkt.name));
+    strncpy_noterm(pkt.name, name, sizeof(pkt.name));
     return WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
@@ -462,7 +462,7 @@ bool AP_Logger_Backend::Write_Message(const char *message)
         time_us : AP_HAL::micros64(),
         msg  : {}
     };
-    strncpy(pkt.msg, message, sizeof(pkt.msg));
+    strncpy_noterm(pkt.msg, message, sizeof(pkt.msg));
     return WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
