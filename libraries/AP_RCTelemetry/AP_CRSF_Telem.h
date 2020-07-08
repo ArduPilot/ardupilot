@@ -87,7 +87,7 @@ public:
         uint8_t origin; // address
         uint8_t power;              // power in dBm
         uint16_t frequency;         // frequency in Mhz
-        bool pitmode;               // disable 0, enable 1
+        uint8_t pitmode;            // disable 0, enable 1
     } PACKED;
 
     struct LinkStatisticsFrame {

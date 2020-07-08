@@ -44,12 +44,12 @@ public:
     };
 
     enum VideoBand {
-        VTX_BAND_A,
-        VTX_BAND_B,
-        VTX_BAND_E,
-        VTX_BAND_FATSHARK,
-        VTX_BAND_RACEBAND,
-        VTX_BAND_LOW_RACEBAND,
+        BAND_A,
+        BAND_B,
+        BAND_E,
+        FATSHARK,
+        RACEBAND,
+        LOW_RACEBAND,
         MAX_BANDS
     };
 
@@ -70,16 +70,19 @@ public:
     bool update_power() const { return _defaults_set && _power_mw != _current_power; }
     // get / set the frequency band
     void set_band(uint8_t band) { _current_band = band; }
+    void set_configured_band(uint8_t band) { _band.set_and_save_ifchanged(band); }
     uint8_t get_configured_band() const { return _band; }
     uint8_t get_band() const { return _current_band; }
     bool update_band() const { return _defaults_set && _band != _current_band; }
     // get / set the frequency channel
     void set_channel(uint8_t channel) { _current_channel = channel; }
+    void set_configured_channel(uint8_t channel) { _channel.set_and_save_ifchanged(channel); }
     uint8_t get_configured_channel() const { return _channel; }
     uint8_t get_channel() const { return _current_channel; }
     bool update_channel() const { return _defaults_set && _channel != _current_channel; }
     // get / set vtx option
     void set_options(uint8_t options) { _current_options = options; }
+    void set_configured_options(uint8_t options) { _options.set_and_save_ifchanged(options); }
     uint8_t get_configured_options() const { return _options; }
     uint8_t get_options() const { return _current_options; }
     bool update_options() const { return _defaults_set && _options != _current_options; }

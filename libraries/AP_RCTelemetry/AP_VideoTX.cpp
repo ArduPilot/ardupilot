@@ -127,7 +127,7 @@ bool AP_VideoTX::get_band_and_channel(uint16_t freq, VideoBand& band, uint8_t& c
 
 // set the current power
 void AP_VideoTX::set_configured_power_mw(uint16_t power) {
-    _power_mw.set_and_save(power);
+    _power_mw.set_and_save_ifchanged(power);
 }
 
 // set the power in dbm, rounding appropriately
