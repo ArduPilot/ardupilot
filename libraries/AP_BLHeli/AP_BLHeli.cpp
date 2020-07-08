@@ -1534,14 +1534,15 @@ void AP_BLHeli::send_esc_telemetry_mavlink(uint8_t mav_chan)
             rpm[idx] = 0;
             count[idx] = 0;
         }
+        uint8_t reversed_mask = 0;  // not supported
         if (i % 4 == 3 || i == num_motors - 1) {
             if (!HAVE_PAYLOAD_SPACE((mavlink_channel_t)mav_chan, ESC_TELEMETRY_1_TO_4)) {
                 return;
             }
             if (i < 4) {
-                mavlink_msg_esc_telemetry_1_to_4_send((mavlink_channel_t)mav_chan, temperature, voltage, current, totalcurrent, rpm, count);
+                mavlink_msg_esc_telemetry_1_to_4_send((mavlink_channel_t)mav_chan, temperature, voltage, current, totalcurrent, rpm, count, reversed_mask);
             } else {
-                mavlink_msg_esc_telemetry_5_to_8_send((mavlink_channel_t)mav_chan, temperature, voltage, current, totalcurrent, rpm, count);
+                mavlink_msg_esc_telemetry_5_to_8_send((mavlink_channel_t)mav_chan, temperature, voltage, current, totalcurrent, rpm, count, reversed_mask);
             }
         }
     }
