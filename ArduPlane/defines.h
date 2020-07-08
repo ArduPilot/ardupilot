@@ -165,3 +165,9 @@ enum guided_heading_type_t {
     GUIDED_HEADING_COG,      // maintain ground track
     GUIDED_HEADING_HEADING,  // maintain a heading
 };
+
+
+enum class AirMode {
+    OFF,
+    ON,
+};

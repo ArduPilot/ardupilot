@@ -11,6 +11,7 @@
 #include <AC_Avoidance/AC_Avoid.h>
 #include <AP_Proximity/AP_Proximity.h>
 #include "qautotune.h"
+#include "defines.h"
 
 /*
   QuadPlane specific functionality
@@ -24,6 +25,8 @@ public:
     friend class AP_AdvancedFailsafe_Plane;
     friend class QAutoTune;
     friend class AP_Arming_Plane;
+    friend class RC_Channel_Plane;
+    friend class RC_Channel;
 
     friend class Mode;
     friend class ModeAuto;
@@ -188,7 +191,10 @@ private:
     // vertical acceleration the pilot may request
     AP_Int16 pilot_accel_z;
 
-    // check for quadplane assistance needed
+     // air mode state: OFF, ON
+    AirMode air_mode;
+
+   // check for quadplane assistance needed
     bool assistance_needed(float aspeed, bool have_airspeed);
 
     // check if it is safe to provide assistance
@@ -556,6 +562,7 @@ private:
         OPTION_IDLE_GOV_MANUAL=(1<<6),
         OPTION_Q_ASSIST_FORCE_ENABLE=(1<<7),
         OPTION_TAILSIT_Q_ASSIST_MOTORS_ONLY=(1<<8),
+        OPTION_AIRMODE=(1<<9),
     };
 
     AP_Float takeoff_failure_scalar;
