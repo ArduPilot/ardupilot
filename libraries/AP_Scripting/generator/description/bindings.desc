@@ -185,9 +185,14 @@ singleton SRV_Channels method set_output_scaled void SRV_Channel::Aux_servo_func
 singleton SRV_Channels method get_output_pwm boolean SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'Null
 singleton SRV_Channels method get_output_scaled int16_t SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1
 
+
+ap_object RC_Channel method norm_input float
+ap_object RC_Channel method get_aux_switch_pos uint8_t
+
 include RC_Channel/RC_Channel.h
 singleton RC_Channels alias rc
 singleton RC_Channels method get_pwm boolean uint8_t 1 NUM_RC_CHANNELS uint16_t'Null
+singleton RC_Channels method find_channel_for_option RC_Channel RC_Channel::AUX_FUNC'enum 0 UINT16_MAX
 
 include AP_SerialManager/AP_SerialManager.h
 
