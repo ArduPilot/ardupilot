@@ -29,7 +29,7 @@
 
 #if HAL_CRSF_TELEM_ENABLED
 
-#define CRSF_DEBUG
+// #define CRSF_DEBUG
 #ifdef CRSF_DEBUG
 # define debug(fmt, args...)	hal.console->printf("CRSF: " fmt "\n", ##args)
 #else
