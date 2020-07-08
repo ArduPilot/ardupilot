@@ -178,9 +178,9 @@ void AP_CRSF_Telem::process_vtx_frame(VTXFrame* vtx) {
             break;
     }
     if (vtx->is_in_pitmode) {
-        apvtx.set_options(apvtx.get_options() | uint16_t(AP_VideoTX::VideoOptions::VTX_PITMODE));
+        apvtx.set_options(apvtx.get_options() | uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE));
     } else {
-        apvtx.set_options(apvtx.get_options() & ~uint16_t(AP_VideoTX::VideoOptions::VTX_PITMODE));
+        apvtx.set_options(apvtx.get_options() & ~uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE));
     }
     // make sure the configured values now reflect reality
     apvtx.set_defaults();
@@ -206,9 +206,9 @@ void AP_CRSF_Telem::process_vtx_telem_frame(VTXTelemetryFrame* vtx) {
     apvtx.set_power_dbm(vtx->power);
 
     if (vtx->pitmode) {
-        apvtx.set_options(apvtx.get_options() | uint16_t(AP_VideoTX::VideoOptions::VTX_PITMODE));
+        apvtx.set_options(apvtx.get_options() | uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE));
     } else {
-        apvtx.set_options(apvtx.get_options() & ~uint16_t(AP_VideoTX::VideoOptions::VTX_PITMODE));
+        apvtx.set_options(apvtx.get_options() & ~uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE));
     }
     // make sure the configured values now reflect reality
     apvtx.set_defaults();
@@ -230,17 +230,18 @@ void AP_CRSF_Telem::update_params()
     _vtx_options_change_pending = vtx.update_options() || _vtx_options_change_pending;
 
     if (_vtx_freq_change_pending || _vtx_power_change_pending || _vtx_options_change_pending) {
-        debug("update_params(): freq %d, chan: %d->%d, band: %d->%d, pwr: %d->%d",
+        debug("update_params(): freq %d->%d, chan: %d->%d, band: %d->%d, pwr: %d->%d, opts: %d->%d",
             vtx.get_frequency_mhz(),
+            AP_VideoTX::get_frequency_mhz(vtx.get_configured_band(), vtx.get_configured_channel()),
             vtx.get_channel(), vtx.get_configured_channel(),
             vtx.get_band(), vtx.get_configured_band(),
-            vtx.get_power_mw(), vtx.get_configured_power_mw());
+            vtx.get_power_mw(), vtx.get_configured_power_mw(),
+            vtx.get_options(), vtx.get_configured_options());
 
         _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_COMMAND;
         _telem.ext.command.destination = AP_RCProtocol_CRSF::CRSF_ADDRESS_VTX;
         _telem.ext.command.origin = AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER;
         _telem.ext.command.command_id = AP_RCProtocol_CRSF::CRSF_COMMAND_VTX;
-
 
         // make the desired frequency match the desired band and channel
         if (_vtx_freq_change_pending) {
@@ -288,7 +289,11 @@ void AP_CRSF_Telem::update_params()
             _vtx_dbm_update = true;
         } else if (_vtx_options_change_pending) {
             _telem.ext.command.payload[0] = AP_RCProtocol_CRSF::CRSF_COMMAND_VTX_PITMODE;
-            _telem.ext.command.payload[1] = vtx.get_configured_options() & uint16_t(AP_VideoTX::VideoOptions::VTX_PITMODE);
+            if (vtx.get_configured_options() & uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE)) {
+                _telem.ext.command.payload[1] = 1;
+            } else {
+                _telem.ext.command.payload[1] = 0;
+            }
         }
         _telem_pending = true;
         // calculate command crc
