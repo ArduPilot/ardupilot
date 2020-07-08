@@ -721,10 +721,11 @@ void AP_KDECAN::send_mavlink(uint8_t chan)
                 return;
             }
 
+            uint8_t reversed_mask = 0;  // not supported
             if (i < 4) {
-                mavlink_msg_esc_telemetry_1_to_4_send((mavlink_channel_t)chan, temperature, voltage, current, totalcurrent, rpm, count);
+                mavlink_msg_esc_telemetry_1_to_4_send((mavlink_channel_t)chan, temperature, voltage, current, totalcurrent, rpm, count, reversed_mask);
             } else {
-                mavlink_msg_esc_telemetry_5_to_8_send((mavlink_channel_t)chan, temperature, voltage, current, totalcurrent, rpm, count);
+                mavlink_msg_esc_telemetry_5_to_8_send((mavlink_channel_t)chan, temperature, voltage, current, totalcurrent, rpm, count, reversed_mask);
             }
         }
     }
