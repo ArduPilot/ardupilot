@@ -524,6 +524,7 @@ void AP_ToshibaCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
             uint16_t current_tot[4] {};
             uint16_t rpm[4] {};
             uint16_t count[4] {};
+            uint8_t reversed_mask = (1U<<7);  // this helps us to tell the difference between "no extensions supported" and "no motors reversed"
 
             // fill in output arrays
             for (uint8_t j = 0; j < 4; j++) {
@@ -532,20 +533,23 @@ void AP_ToshibaCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
                 voltage[j] = _telemetry[esc_id].voltage_cv;
                 current[j] = _telemetry[esc_id].current_ca;
                 current_tot[j] = constrain_float(_telemetry[esc_id].current_tot_mah, 0, UINT16_MAX);
-                rpm[j] = abs(_telemetry[esc_id].rpm);   // mavlink message only accepts positive rpm values
+                rpm[j] = abs(_telemetry[esc_id].rpm);    // mavlink message only accepts positive rpm values
+                if (_telemetry[esc_id].rpm < 0) {
+                    reversed_mask |= (1U << i);
+                }
                 count[j] = _telemetry[esc_id].count;
             }
 
             // send messages
             switch (i) {
                 case 0:
-                    mavlink_msg_esc_telemetry_1_to_4_send((mavlink_channel_t)mav_chan, temperature, voltage, current, current_tot, rpm, count);
+                    mavlink_msg_esc_telemetry_1_to_4_send((mavlink_channel_t)mav_chan, temperature, voltage, current, current_tot, rpm, count, reversed_mask);
                     break;
                 case 1:
-                    mavlink_msg_esc_telemetry_5_to_8_send((mavlink_channel_t)mav_chan, temperature, voltage, current, current_tot, rpm, count);
+                    mavlink_msg_esc_telemetry_5_to_8_send((mavlink_channel_t)mav_chan, temperature, voltage, current, current_tot, rpm, count, reversed_mask);
                     break;
                 case 2:
-                    mavlink_msg_esc_telemetry_9_to_12_send((mavlink_channel_t)mav_chan, temperature, voltage, current, current_tot, rpm, count);
+                    mavlink_msg_esc_telemetry_9_to_12_send((mavlink_channel_t)mav_chan, temperature, voltage, current, current_tot, rpm, count, reversed_mask);
                     break;
                 default:
                     break;
