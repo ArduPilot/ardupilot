@@ -18,7 +18,12 @@
  * See https://www.spektrumrc.com/ProdInfo/Files/Remote%20Receiver%20Interfacing%20Rev%20A.pdf for official
  * Spektrum documentation on the format.
  */
+
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 #include "AP_RCProtocol_DSM.h"
+#if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
+#include "AP_RCProtocol_SRXL2.h"
+#endif
 #include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
@@ -39,6 +44,16 @@ extern const AP_HAL::HAL& hal;
 #define DSMX_2048_11MS      0xb2
 #define SPEKTRUM_VTX_CONTROL_FRAME_MASK 0xf000f000
 #define SPEKTRUM_VTX_CONTROL_FRAME      0xe000e000
+
+#define SPEKTRUM_VTX_BAND_MASK          0x00e00000
+#define SPEKTRUM_VTX_CHANNEL_MASK       0x000f0000
+#define SPEKTRUM_VTX_PIT_MODE_MASK      0x00000010
+#define SPEKTRUM_VTX_POWER_MASK         0x00000007
+
+#define SPEKTRUM_VTX_BAND_SHIFT         21
+#define SPEKTRUM_VTX_CHANNEL_SHIFT      16
+#define SPEKTRUM_VTX_PIT_MODE_SHIFT     4
+#define SPEKTRUM_VTX_POWER_SHIFT        0
 
 void AP_RCProtocol_DSM::process_pulse(uint32_t width_s0, uint32_t width_s1)
 {
@@ -68,7 +83,13 @@ bool AP_RCProtocol_DSM::dsm_decode(uint32_t frame_time_us, const uint8_t dsm_fra
     if ((vtxControl & SPEKTRUM_VTX_CONTROL_FRAME_MASK) == SPEKTRUM_VTX_CONTROL_FRAME 
         && (dsm_frame[2] & 0x80) == 0)  {
         dsm_frame_data_size = AP_DSM_FRAME_SIZE - 4;
-        // someday do something with the data
+#if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
+        AP_RCProtocol_SRXL2::configure_vtx(
+            (vtxControl & SPEKTRUM_VTX_BAND_MASK)     >> SPEKTRUM_VTX_BAND_SHIFT,
+            (vtxControl & SPEKTRUM_VTX_CHANNEL_MASK)  >> SPEKTRUM_VTX_CHANNEL_SHIFT,
+            (vtxControl & SPEKTRUM_VTX_POWER_MASK)    >> SPEKTRUM_VTX_POWER_SHIFT,
+            (vtxControl & SPEKTRUM_VTX_PIT_MODE_MASK) >> SPEKTRUM_VTX_PIT_MODE_SHIFT);
+#endif
     } else {
         dsm_frame_data_size = AP_DSM_FRAME_SIZE;
     }
