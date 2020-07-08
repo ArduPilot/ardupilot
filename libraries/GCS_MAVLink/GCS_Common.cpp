@@ -3436,6 +3436,13 @@ void GCS_MAVLINK::send_banner()
     if (hal.rcout->get_output_mode_banner(banner_msg, sizeof(banner_msg))) {
         send_text(MAV_SEVERITY_INFO, "%s", banner_msg);
     }
+
+    // output any fast sampling status messages
+    for (uint8_t i = 0; i < INS_MAX_BACKENDS; i++) {
+        if (AP::ins().get_output_banner(i, banner_msg, sizeof(banner_msg))) {
+            send_text(MAV_SEVERITY_INFO, "%s", banner_msg);
+        }
+    }
 }
 
 
