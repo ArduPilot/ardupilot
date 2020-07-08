@@ -179,6 +179,13 @@ bool AP_Arming_Plane::arm(const AP_Arming::Method method, const bool do_arming_c
         return false;
     }
 
+    if ((method == Method::AUXSWITCH) && (plane.quadplane.options & QuadPlane::OPTION_AIRMODE)) {
+        // if no airmode switch assigned, honour the QuadPlane option bit:
+        if (rc().find_channel_for_option(RC_Channel::AUX_FUNC::AIRMODE) == nullptr) {
+            plane.quadplane.air_mode = AirMode::ON;
+        }
+    }
+
     change_arm_state();
 
     gcs().send_text(MAV_SEVERITY_INFO, "Throttle armed");
@@ -201,6 +208,11 @@ bool AP_Arming_Plane::disarm(const AP_Arming::Method method)
 
     // suppress the throttle in auto-throttle modes
     plane.throttle_suppressed = plane.auto_throttle_mode;
+
+    // if no airmode switch assigned, ensure airmode is off:
+    if (rc().find_channel_for_option(RC_Channel::AUX_FUNC::AIRMODE) == nullptr) {
+        plane.quadplane.air_mode = AirMode::OFF;
+    }
 
     //only log if disarming was successful
     change_arm_state();
