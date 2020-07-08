@@ -17,6 +17,7 @@
 
 #include "AP_RCProtocol.h"
 #include <AP_Math/AP_Math.h>
+#include "AP_RCProtocol_SRXL.h"
 #include "SoftSerial.h"
 
 #define SRXL2_MAX_CHANNELS 32U           /* Maximum number of channels from srxl2 datastream  */
@@ -39,6 +40,8 @@ public:
     static void capture_scaled_input(const uint8_t *values_p, bool in_failsafe, int16_t rssi);
     static void send_on_uart(uint8_t* pBuffer, uint8_t length);
     static void change_baud_rate(uint32_t baudrate);
+    // configure the VTX from Spektrum data
+    static void configure_vtx(uint8_t band, uint8_t channel, uint8_t power, uint8_t pitmode);
 
 private:
 
