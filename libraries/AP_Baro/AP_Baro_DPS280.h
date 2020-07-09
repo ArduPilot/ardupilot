@@ -20,9 +20,9 @@ public:
     /* AP_Baro public interface: */
     void update() override;
 
-    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev, bool _is_dps310=false);
 
-private:
+protected:
     bool init(void);
     bool read_calibration(void);
     void timer(void);
@@ -43,6 +43,7 @@ private:
     float temperature_sum;
     float last_temperature;
     bool pending_reset;
+    bool is_dps310;
 
     struct dps280_cal {
         int16_t C0;  // 12bit
@@ -57,3 +58,12 @@ private:
         uint8_t temp_source;
     } calibration;
 };
+
+class AP_Baro_DPS310 : public AP_Baro_DPS280 {
+    // like DPS280 but workaround for temperature bug
+public:
+    using AP_Baro_DPS280::AP_Baro_DPS280;
+    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
+};
+
+
