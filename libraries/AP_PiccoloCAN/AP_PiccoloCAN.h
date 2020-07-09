@@ -136,9 +136,6 @@ private:
     } _esc_info[PICCOLO_CAN_MAX_NUM_ESC];
 
     // Piccolo CAN parameters
-    AP_Int32 _srv_bm;       //! Servo selection bitmask
-    AP_Int32 _srv_ms;       //! Servo update rate (ms)
-
     AP_Int32 _esc_bm;       //! ESC selection bitmask
     AP_Int32 _esc_ms;       //! ESC update rate (ms)
 

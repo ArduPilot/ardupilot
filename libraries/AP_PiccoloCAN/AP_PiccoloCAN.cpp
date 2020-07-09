@@ -59,20 +59,6 @@ const AP_Param::GroupInfo AP_PiccoloCAN::var_info[] = {
     // @Range: 2 100
     AP_GROUPINFO("ESC_MS", 2, AP_PiccoloCAN, _esc_ms, PICCOLO_MSG_RATE_MS_DEFAULT),
 
-    // @Param: SRV_BM
-    // @DisplayName: Servo channels
-    // @Description: Bitmask defining which servo channels are to be transmitted over PiccoloCAN
-    // @Bitmask: 0: Servo 1, 1: Servo 2, 2: Servo 3, 3: Servo 4, 4: Servo 5, 5: Servo 6, 6: Servo 7, 7: Servo 8, 8: Servo 9, 9: Servo 10, 10: Servo 11, 11: Servo 12, 12: Servo 13, 13: Servo 14, 14: Servo 15, 15: Servo 16
-    // @User: Advanced
-    AP_GROUPINFO("SRV_BM", 3, AP_PiccoloCAN, _srv_bm, 0),
-
-    // @Param: SRV_MS
-    // @DisplayName: Servo command rate
-    // @Description: Output rate of servo command messages
-    // @Units: ms
-    // @Range: 2 100
-    AP_GROUPINFO("SRV_MS", 4, AP_PiccoloCAN, _srv_ms, PICCOLO_MSG_RATE_MS_DEFAULT),
-
     AP_GROUPEND
 };
 
@@ -152,7 +138,6 @@ void AP_PiccoloCAN::loop()
 #define CMD_TX_PERIOD 10
 
     uint16_t esc_tx_counter = 0;
-    uint16_t srv_tx_counter = 0;
 
     // CAN Frame ID components
     uint8_t frame_id_group;     // Piccolo message group
@@ -179,15 +164,6 @@ void AP_PiccoloCAN::loop()
 
             if (_esc_ms >= PICCOLO_MSG_RATE_MS_MIN) {
                 send_esc_messages();
-            }
-        }
-
-        // Transmit servo commands at regular intervals
-        if (srv_tx_counter++ > _srv_ms) {
-            srv_tx_counter = 0;
-
-            if (_srv_ms >= PICCOLO_MSG_RATE_MS_MIN) {
-                // TODO - Transmit servo messages
             }
         }
 
