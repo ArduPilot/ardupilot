@@ -710,7 +710,7 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
     return cmd_complete;
 }
 
-// auto_takeoff_run - takeoff in auto mode
+// takeoff_run - takeoff in auto mode
 //      called by auto_run at 100hz or more
 void ModeAuto::takeoff_run()
 {
