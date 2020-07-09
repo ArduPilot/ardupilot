@@ -244,7 +244,7 @@ public:
         // do-guided-limits
         Guided_Limits_Command guided_limits;
 
-        // cam trigg distance
+        // high altitude balloon altitude wait
         Altitude_Wait altitude_wait;
 
         // do vtol transition
@@ -256,7 +256,7 @@ public:
         // navigation delay
         Navigation_Delay_Command nav_delay;
 
-        // navigation delay
+        // NAV_SET_YAW_SPEED support
         Set_Yaw_Speed set_yaw_speed;
 
         // do-winch
