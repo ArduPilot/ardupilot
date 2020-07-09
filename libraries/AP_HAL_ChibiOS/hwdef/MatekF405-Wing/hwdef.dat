@@ -149,7 +149,7 @@ IMU Invensense SPI:mpu6000 ROTATION_YAW_180
 
 # one baro, multiple possible choices for different board variants
 BARO BMP280 I2C:0:0x76
-BARO DPS280 I2C:0:0x76
+BARO DPS310 I2C:0:0x76
 
 define HAL_OS_FATFS_IO 1
 define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
