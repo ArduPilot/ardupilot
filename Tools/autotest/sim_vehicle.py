@@ -1055,7 +1055,26 @@ group.add_option("", "--no-rcin",
                  help="disable mavproxy rcin")
 parser.add_option_group(group)
 
+group_completion = optparse.OptionGroup(parser, "Completion helpers")
+group_completion.add_option("", "--list-vehicle",
+                            action='store_true',
+                            help="List the vehicles")
+group_completion.add_option("", "--list-frame",
+                            type='string',
+                            default=None,
+                            help="List the vehicle frames")
+parser.add_option_group(group_completion)
+
 cmd_opts, cmd_args = parser.parse_args()
+
+if cmd_opts.list_vehicle:
+    print(' '.join(vinfo.options.keys()))
+    sys.exit(1)
+if cmd_opts.list_frame:
+    frame_options = sorted(vinfo.options[cmd_opts.list_frame]["frames"].keys())
+    frame_options_string = ' '.join(frame_options)
+    print(frame_options_string)
+    sys.exit(1)
 
 # clean up processes at exit:
 atexit.register(kill_tasks)
