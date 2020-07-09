@@ -512,6 +512,10 @@ void Copter::one_hz_loop()
     adsb.set_is_flying(!ap.land_complete);
 #endif
 
+#if AC_AVOID_ENABLED == ENABLED
+    avoid.is_autonomous_mode(flightmode->is_autopilot());
+#endif
+
     AP_Notify::flags.flying = !ap.land_complete;
 }
 
