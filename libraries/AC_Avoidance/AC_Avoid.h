@@ -87,6 +87,8 @@ public:
     // return true if limiting is active
     bool limits_active() const {return (AP_HAL::millis() - _last_limit_time) < AC_AVOID_ACTIVE_LIMIT_TIMEOUT_MS;};
 
+    void is_autonomous_mode(bool is_autonomous)  { is_auto_mode = is_autonomous; }
+    
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -151,10 +153,12 @@ private:
     AP_Float _dist_max;         // distance (in meters) from object at which obstacle avoidance will begin in non-GPS modes
     AP_Float _margin;           // vehicle will attempt to stay this distance (in meters) from objects while in GPS modes
     AP_Int8 _behavior;          // avoidance behaviour (slide or stop)
+    AP_Int8 _enable_autonomous_mode; // avoidance enable/disable in autonomous modes
 
     bool _proximity_enabled = true; // true if proximity sensor based avoidance is enabled (used to allow pilot to enable/disable)
     uint32_t _last_limit_time;      // the last time a limit was active
-
+    bool is_auto_mode; 
+    
     static AC_Avoid *_singleton;
 };
 

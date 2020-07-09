@@ -27,6 +27,8 @@
  # define AP_AVOID_BEHAVE_DEFAULT AC_Avoid::BehaviourType::BEHAVIOR_SLIDE
 #endif
 
+#define AC_AVOID_AUTO_DEFAULT  1  // run avoidance in autonomous modes by default
+
 const AP_Param::GroupInfo AC_Avoid::var_info[] = {
 
     // @Param: ENABLE
@@ -68,6 +70,13 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("BEHAVE", 5, AC_Avoid, _behavior, AP_AVOID_BEHAVE_DEFAULT),
 
+    // @Param: AUTO_MODES
+    // @DisplayName: Enable Avoidance for Autonomous Modes
+    // @Description: This parameter enables/disables the use of Simple Avoidance in Autonomous modes(example: Auto, Guided)
+    // @Values: 0: Disable,1:Enable
+    // @User: Standard
+    AP_GROUPINFO("AUTO_MODES", 6, AC_Avoid, _enable_autonomous_mode, AC_AVOID_AUTO_DEFAULT),
+
     AP_GROUPEND
 };
 
@@ -107,7 +116,12 @@ void AC_Avoid::adjust_velocity(float kP, float accel_cmss, Vector2f &desired_vel
 
 // convenience function to accept Vector3f.  Only x and y are adjusted
 void AC_Avoid::adjust_velocity(float kP, float accel_cmss, Vector3f &desired_vel_cms, float dt)
-{
+{   
+    // return if user does not want avoidance in autonomous modes
+    if (!_enable_autonomous_mode && is_auto_mode) {
+        return;       
+    }
+
     Vector2f des_vel_xy(desired_vel_cms.x, desired_vel_cms.y);
     adjust_velocity(kP, accel_cmss, des_vel_xy, dt);
     desired_vel_cms.x = des_vel_xy.x;
