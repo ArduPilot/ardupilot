@@ -174,7 +174,7 @@ void AP_Proximity_Backend::update_boundary_for_sector(const uint8_t sector, cons
         return;
     }
 
-    if (push_to_OA_DB) {
+    if (push_to_OA_DB && _distance_valid[sector]) {
         database_push(_angle[sector], _distance[sector]);
     }
 
