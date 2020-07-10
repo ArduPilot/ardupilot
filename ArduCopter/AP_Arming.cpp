@@ -520,14 +520,14 @@ bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
     if (mode_requires_gps) {
         if (!copter.position_ok()) {
             // There is no need to call prearm_failure_reason again, because prearm_healthy sure be true if we reach here
-            check_failed(display_failure, "Need 3D Fix");
+            check_failed(display_failure, "Need Position Estimate");
             return false;
         }
     } else {
         if (fence_requires_gps) {
             if (!copter.position_ok()) {
                 // clarify to user why they need GPS in non-GPS flight mode
-                check_failed(display_failure, "Fence enabled, need 3D Fix");
+                check_failed(display_failure, "Fence enabled, need position estimate");
                 return false;
             }
         } else {
