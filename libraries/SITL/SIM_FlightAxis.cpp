@@ -508,6 +508,8 @@ void FlightAxis::update(const struct sitl_input &input)
 
     last_velocity_ef = velocity_ef;
 
+    update_external_payload(input);
+
     // update magnetic field
     update_mag_field_bf();
 
