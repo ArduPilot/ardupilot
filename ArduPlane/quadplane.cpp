@@ -329,7 +329,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: quadplane options
     // @Description: This provides a set of additional control options for quadplanes. LevelTransition means that the wings should be held level to within LEVEL_ROLL_LIMIT degrees during transition to fixed wing flight, and the vehicle will not use the vertical lift motors to climb during the transition. If AllowFWTakeoff bit is not set then fixed wing takeoff on quadplanes will instead perform a VTOL takeoff. If AllowFWLand bit is not set then fixed wing land on quadplanes will instead perform a VTOL land. If respect takeoff frame is not set the vehicle will interpret all takeoff waypoints as an altitude above the corrent position. When Use QRTL is set it will replace QLAND with QRTL for failsafe actions when in VTOL modes.
-    // @Bitmask: 0:LevelTransition,1:AllowFWTakeoff,2:AllowFWLand,3:Respect takeoff frame types,4:Use a fixed wing approach for VTOL landings,5:Use QRTL instead of QLAND for failsafe when in VTOL modes,6:Use idle governor in MANUAL,7:QAssist force enabled,8:Tailsitter QAssist motors only
+    // @Bitmask: 0:LevelTransition,1:AllowFWTakeoff,2:AllowFWLand,3:Respect takeoff frame types,4:Use a fixed wing approach for VTOL landings,5:Use QRTL instead of QLAND for failsafe when in VTOL modes,6:Use idle governor in MANUAL,7:QAssist force enabled,8:Tailsitter QAssist motors only,9:Enable Ship Landing Support,10:Enable Throttle for height control in landing
     AP_GROUPINFO("OPTIONS", 58, QuadPlane, options, 0),
 
     AP_SUBGROUPEXTENSION("",59, QuadPlane, var_info2),
@@ -1247,6 +1247,23 @@ float QuadPlane::landing_descent_rate_cms(float height_above_ground) const
     float ret = linear_interpolate(land_speed_cms, wp_nav->get_default_speed_down(),
                                    height_above_ground,
                                    land_final_alt, land_final_alt+6);
+    if ((options & OPTION_THR_LANDING_CONTROL) != 0) {
+        // allow throttle control for landing speed
+        float thr_in = MAX(0, plane.channel_throttle->get_control_in());
+        const float dz = 10.0;
+        const float thresh1 = 50+dz;
+        const float thresh2 = 50-dz;
+        const float scaling = 1.0 / (50 - dz);
+        if (thr_in > thresh1) {
+            // start climbing
+            ret *= -(thr_in - thresh1)*scaling;
+        } else if (thr_in > thresh2) {
+            // hold height
+            ret = 0;
+        } else {
+            ret *= (thresh2 - thr_in)*scaling;
+        }
+    }
     return ret;
 }
 

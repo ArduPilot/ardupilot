@@ -561,6 +561,8 @@ private:
         OPTION_IDLE_GOV_MANUAL=(1<<6),
         OPTION_Q_ASSIST_FORCE_ENABLE=(1<<7),
         OPTION_TAILSIT_Q_ASSIST_MOTORS_ONLY=(1<<8),
+        OPTION_SHIP_LANDING=(1<<9),
+        OPTION_THR_LANDING_CONTROL=(1<<10),
     };
 
     AP_Float takeoff_failure_scalar;
