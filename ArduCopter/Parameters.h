@@ -616,6 +616,8 @@ public:
     void *mode_zigzag_ptr;
 #endif
 
+    AP_Int16 parachute_trigger_delay;
+
 };
 
 extern const AP_Param::Info        var_info[];
