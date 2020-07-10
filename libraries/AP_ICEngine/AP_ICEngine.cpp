@@ -171,7 +171,7 @@ void AP_ICEngine::update(void)
         // while ignoring tiny noise
         if (cvalue >= 1700) {
             cvalue = 2000;
-        } else if (cvalue <= 1300) {
+        } else if ((cvalue > 800) && (cvalue <= 1300)) {
             cvalue = 1300;
         } else {
             cvalue = 1500;

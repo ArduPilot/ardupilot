@@ -123,7 +123,7 @@ private:
     AP_Int16 options;
 
     // start_chan debounce
-    uint16_t start_chan_last_value;
+    uint16_t start_chan_last_value = 1500;
     uint32_t start_chan_last_ms;
 };
 
