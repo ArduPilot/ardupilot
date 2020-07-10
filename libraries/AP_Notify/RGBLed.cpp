@@ -38,6 +38,7 @@ bool RGBLed::init()
     hold_flight_mode_fail = false;
     hold_flight_mode_change = false;
     hold_arming_fail = false;
+    hold_servo_low_voltage = false;
 
     return hw_init();
 }
@@ -159,7 +160,6 @@ uint32_t RGBLed::get_colour_sequence(void)// const
 		AP_Notify::flags.arming_failed = false;
 		sequence_counter = 0;
 		step_timer=0;
-
 	}else if(AP_Notify::events.user_mode_change_failed){
 		hold_arming_fail = false;
 		hold_flight_mode_fail = true;
@@ -174,10 +174,20 @@ uint32_t RGBLed::get_colour_sequence(void)// const
 		sequence_counter = 0;
 		step_timer=0;
 		step_hold_flag = true;
+	}else if(AP_Notify::flags.low_servo_voltage){
+
+		hold_arming_fail = false;
+		hold_flight_mode_fail = false;
+		hold_flight_mode_change= false;
+		hold_servo_low_voltage = true;
+		sequence_counter = 0;
+		step_timer=0;
+		step_hold_flag = true;
+
 	}
 
 
-	if(!hold_arming_fail and !hold_flight_mode_fail and !hold_flight_mode_change){
+	if(!hold_arming_fail and !hold_flight_mode_fail and !hold_flight_mode_change and !hold_servo_low_voltage){
 		hold_counter = 0;
 	}else{
 
@@ -190,8 +200,10 @@ uint32_t RGBLed::get_colour_sequence(void)// const
 			hold_arming_fail = false;
 			hold_flight_mode_fail = false;
 			hold_flight_mode_change = false;
+			hold_servo_low_voltage = false;
 
 			AP_Notify::flags.arming_failed = false;
+			AP_Notify::flags.low_servo_voltage = false;
 		}
 
 
@@ -203,6 +215,8 @@ uint32_t RGBLed::get_colour_sequence(void)// const
 
 		}else if(hold_flight_mode_change){
 			return sequence_flight_mode_change;
+		}else if(hold_servo_low_voltage){
+			return sequence_low_servo_voltage;
 		}
 
 

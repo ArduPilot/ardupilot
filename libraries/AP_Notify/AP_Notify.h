@@ -105,6 +105,7 @@ public:
         bool arming;
         bool arming_failed;
         bool gimbal_active;
+        bool low_servo_voltage;
 
     };
 

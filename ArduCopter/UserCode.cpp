@@ -14,6 +14,7 @@ void Copter::userhook_init()
 	speed_setting = 1;
 	function_counter = 0;
 	cam_button_debounce_timer = 0;
+	AP_Notify::flags.low_servo_voltage = false;
 
 	ch9_button_pressed = false;
 	ch10_button_pressed = false;
@@ -134,6 +135,20 @@ void Copter::userhook_50Hz()
 {
     // put your 50Hz code here
 	motors->set_dynamic_trim(0.0, 0.0);
+	////Servo Voltage Watcher///////////
+
+	if(ap.land_complete and motors->armed() and !hal.gpio->usb_connected()){
+
+	 const float servo_voltage = hal.analogin->servorail_voltage();
+
+	 if(servo_voltage < 5.0 ){
+		 copter.arming.disarm();
+		 AP_Notify::flags.low_servo_voltage = true;
+		 gcs().send_text(MAV_SEVERITY_CRITICAL,"LOW SERVO VOLTAGE");
+		}
+	}
+
+	//////////////////////////
 }
 #endif
 
