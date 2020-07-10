@@ -179,8 +179,9 @@ void ShipSim::send_report(void)
 
 #if AP_TERRAIN_AVAILABLE
     auto &terrain = AP::terrain();
+    auto *sitl = AP::sitl();
     float height;
-    if (terrain.enabled() && terrain.height_amsl(loc, height, true)) {
+    if (sitl->terrain_enable && terrain.enabled() && terrain.height_amsl(loc, height, true)) {
         alt = height * 1000;
         have_alt = true;
     }
