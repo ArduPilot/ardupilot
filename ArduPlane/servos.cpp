@@ -592,6 +592,10 @@ void Plane::set_servos_flaps(void)
             auto_flap_percent = g.flap_1_percent;
         } //else flaps stay at default zero deflection
 
+        if (control_mode == &mode_loiter && g2.soaring_controller.is_active()) {
+            auto_flap_percent = g2.soaring_controller.get_flap_thermalling();
+        }
+
         /*
           special flap levels for takeoff and landing. This works
           better than speed based flaps as it leads to less

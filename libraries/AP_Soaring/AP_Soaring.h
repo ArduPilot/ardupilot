@@ -75,7 +75,10 @@ protected:
     AP_Float alt_cutoff;
     AP_Float max_drift;
     AP_Float thermal_bank;
-    AP_Int8 polar_learn;
+    AP_Int8  polar_learn;
+    AP_Float soar_thermal_airspeed;
+    AP_Float soar_cruise_airspeed;
+    AP_Float soar_thermal_flap;
 
 public:
     SoaringController(AP_SpdHgtControl &spdHgt, const AP_Vehicle::FixedWing &parms);
@@ -138,6 +141,15 @@ public:
     float get_thermalling_radius() const;
 
     bool is_suppress_throttle_mode() const;
+
+    float get_target_airspeed_thermalling();
+
+    float get_target_airspeed_cruising();
+
+    float get_flap_thermalling() const
+    {
+        return soar_thermal_flap;
+    }
 
 private:
     // slow down messages if they are the same. During loiter we could smap the same message. Only show new messages during loiters
