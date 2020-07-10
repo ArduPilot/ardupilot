@@ -194,6 +194,27 @@ void Plane::calc_airspeed_errors()
 
 #endif // OFFBOARD_GUIDED == ENABLED
 
+#if HAL_SOARING_ENABLED
+    } else if (g2.soaring_controller.is_active() && g2.soaring_controller.get_throttle_suppressed()) {
+        if (control_mode == &mode_thermal) {
+            float arspd = g2.soaring_controller.get_thermalling_target_airspeed();
+
+            if (arspd > 0) {
+                target_airspeed_cm = arspd * 100;
+            } else {
+                target_airspeed_cm = aparm.airspeed_cruise_cm;
+            }
+        } else if (control_mode == &mode_auto) {
+            float arspd = g2.soaring_controller.get_cruising_target_airspeed();
+
+            if (arspd > 0) {
+                target_airspeed_cm = arspd * 100;
+            } else {
+                target_airspeed_cm = aparm.airspeed_cruise_cm;
+            }
+        }
+#endif
+
     } else if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
         // Landing airspeed target
         target_airspeed_cm = landing.get_target_airspeed_cm();

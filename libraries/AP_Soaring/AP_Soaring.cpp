@@ -139,6 +139,29 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @Units: deg
     AP_GROUPINFO("THML_BANK", 18, SoaringController, thermal_bank, 30.0),
 
+    // 19 reserved for POLAR_LEARN.
+
+    // @Param: THML_ARSPD
+    // @DisplayName: Specific setting for airspeed when thermalling.
+    // @Description: If non-zero this airspeed will be used when thermalling.
+    // @Range: 5 50
+    // @User: Advanced
+    AP_GROUPINFO("THML_ARSPD", 20, SoaringController, soar_thermal_airspeed, 0),
+
+    // @Param: CRSE_ARSPD
+    // @DisplayName: Specific setting for airspeed when cruising.
+    // @Description: If non-zero this airspeed will be used when cruising.
+    // @Range: 5 50
+    // @User: Advanced
+    AP_GROUPINFO("CRSE_ARSPD", 21, SoaringController, soar_cruise_airspeed, 0),
+
+    // @Param: THML_FLAP
+    // @DisplayName: Flap percent to be used during thermalling flight.
+    // @Description: This sets the flap when in LOITER with soaring active. Overrides the usual auto flap behaviour.
+    // @Range: 0 100
+    // @User: Advanced
+    AP_GROUPINFO("THML_FLAP", 22, SoaringController, soar_thermal_flap, 0),
+
     AP_GROUPEND
 };
 
@@ -467,6 +490,16 @@ float SoaringController::get_thermalling_radius() const
     const float radius = (target_aspd*target_aspd) / (GRAVITY_MSS * tanf(thermal_bank*DEG_TO_RAD));
 
     return radius;
+}
+
+float SoaringController::get_thermalling_target_airspeed()
+{
+    return soar_thermal_airspeed;
+}
+
+float SoaringController::get_cruising_target_airspeed()
+{
+    return soar_cruise_airspeed;
 }
 
 #endif // HAL_SOARING_ENABLED
