@@ -102,6 +102,12 @@ public:
         uint16_t sbus_rate_hz;
     } rate;
 
+    // output mode values
+     struct {
+         uint16_t mask;
+         uint16_t mode;
+     } mode_out;
+
     // MIXER values
     struct page_mixing mixing;
 
@@ -130,6 +136,7 @@ public:
     uint32_t safety_button_counter;
     uint8_t led_counter;
     uint32_t last_loop_ms;
+    bool dshot_enabled;
     bool oneshot_enabled;
     bool brushed_enabled;
     thread_t *thread_ctx;

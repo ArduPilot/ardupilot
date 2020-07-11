@@ -541,6 +541,11 @@ bool AP_IOMCU_FW::handle_code_write()
             }
             break;
 
+        case PAGE_REG_SETUP_OUTPUT_MODE:
+            mode_out.mask = rx_io_packet.regs[0];
+            mode_out.mode = rx_io_packet.regs[1];
+            break;
+
         case PAGE_REG_SETUP_HEATER_DUTY_CYCLE:
             reg_setup.heater_duty_cycle = rx_io_packet.regs[0];
             last_heater_ms = last_ms;
@@ -760,24 +765,27 @@ void AP_IOMCU_FW::safety_update(void)
  */
 void AP_IOMCU_FW::rcout_mode_update(void)
 {
-    bool use_oneshot = (reg_setup.features & P_SETUP_FEATURES_ONESHOT) != 0;
+    bool use_dshot = mode_out.mode >= AP_HAL::RCOutput::MODE_PWM_DSHOT150 && mode_out.mode <= AP_HAL::RCOutput::MODE_PWM_DSHOT600;
+    if (use_dshot && !dshot_enabled) {
+        dshot_enabled = true;
+        hal.rcout->set_output_mode(mode_out.mask, (AP_HAL::RCOutput::output_mode)mode_out.mode);
+    }
+    bool use_oneshot = mode_out.mode == AP_HAL::RCOutput::MODE_PWM_ONESHOT;
     if (use_oneshot && !oneshot_enabled) {
         oneshot_enabled = true;
-        hal.rcout->set_output_mode(reg_setup.pwm_rates, AP_HAL::RCOutput::MODE_PWM_ONESHOT);
+        hal.rcout->set_output_mode(mode_out.mask, AP_HAL::RCOutput::MODE_PWM_ONESHOT);
     }
-    bool use_brushed = (reg_setup.features & P_SETUP_FEATURES_BRUSHED) != 0;
+    bool use_brushed = mode_out.mode == AP_HAL::RCOutput::MODE_PWM_BRUSHED;
     if (use_brushed && !brushed_enabled) {
         brushed_enabled = true;
-        if (reg_setup.pwm_rates == 0) {
-            // default to 2kHz for all channels for brushed output
-            reg_setup.pwm_rates = 0xFF;
-            reg_setup.pwm_altrate = 2000;
-            hal.rcout->set_freq(reg_setup.pwm_rates, reg_setup.pwm_altrate);
-        }
+        // default to 2kHz for all channels for brushed output
+        hal.rcout->set_freq(mode_out.mask, 2000);
         hal.rcout->set_esc_scaling(1000, 2000);
-        hal.rcout->set_output_mode(reg_setup.pwm_rates, AP_HAL::RCOutput::MODE_PWM_BRUSHED);
-        hal.rcout->set_freq(reg_setup.pwm_rates, reg_setup.pwm_altrate);
+        hal.rcout->set_output_mode(mode_out.mask, AP_HAL::RCOutput::MODE_PWM_BRUSHED);
+        hal.rcout->set_freq(mode_out.mask, reg_setup.pwm_altrate);
     }
+    mode_out.mask = 0;
+    mode_out.mode = 0;
 }
 
 /*
