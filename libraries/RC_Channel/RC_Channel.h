@@ -199,6 +199,8 @@ public:
         // also, if you add an option >255, you will need to fix duplicate_options_exist
 
         // inputs from 200 will eventually used to replace RCMAP
+        ROLL =               201, // roll input
+        PITCH =              202, // pitch input
         MAINSAIL =           207, // mainsail input
         FLAP =               208, // flap input
         FWD_THR =            209, // VTOL manual forward throttle
