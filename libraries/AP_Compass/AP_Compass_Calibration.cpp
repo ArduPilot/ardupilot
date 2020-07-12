@@ -115,6 +115,9 @@ void Compass::start_calibration_all(bool retry, bool autosave, float delay, bool
         // start all should only calibrate compasses that are being used
         _start_calibration(i,retry,delay);
     }
+
+    gcs().send_text(MAV_SEVERITY_INFO, "Beginning Compass Calibration");
+
 }
 
 void Compass::_cancel_calibration(uint8_t i)
@@ -169,6 +172,9 @@ bool Compass::_accept_calibration(uint8_t i)
         if (!is_calibrating()) {
             AP_Notify::events.compass_cal_saved = 1;
         }
+
+        gcs().send_text(MAV_SEVERITY_INFO, "Compass Calibration Complete");
+
         return true;
     } else {
         return false;
