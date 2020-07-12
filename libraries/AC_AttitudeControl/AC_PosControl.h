@@ -11,6 +11,7 @@
 #include "AC_AttitudeControl.h" // Attitude control library
 #include <AP_Motors/AP_Motors.h>          // motors library
 #include <AP_Vehicle/AP_Vehicle.h>         // common vehicle parameters
+#include <AC_Avoidance/AC_Avoid.h>
 
 
 // position controller default definitions
