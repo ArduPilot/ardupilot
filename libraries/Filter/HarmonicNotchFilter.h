@@ -20,6 +20,7 @@
 #include "NotchFilter.h"
 
 #define HNF_MAX_HARMONICS 8
+#define HNF_MAX_HMNC_BITSET 0xF
 
 /*
   a filter that manages a set of notch filters targetted at a fundamental center frequency
@@ -87,7 +88,7 @@ public:
     // set the fundamental center frequency of the harmonic notch
     void set_center_freq_hz(float center_freq) { _center_freq_hz.set(center_freq); }
     // harmonics enabled on the harmonic notch
-    uint8_t harmonics(void) const { return _harmonics; }
+    uint8_t harmonics(void) const { return hasOption(Options::DynamicHarmonic) ? HNF_MAX_HMNC_BITSET : _harmonics; }
     // reference value of the harmonic notch
     float reference(void) const { return _reference; }
     // notch options
@@ -97,7 +98,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-    // notch harmonics
+    // configured notch harmonics
     AP_Int8 _harmonics;
     // notch reference value
     AP_Float _reference;
