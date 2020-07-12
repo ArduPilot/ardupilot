@@ -2,6 +2,7 @@
 #include "AC_PosControl.h"
 #include <AP_Math/AP_Math.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Follow/AP_Follow.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -560,7 +561,7 @@ void AC_PosControl::run_z_controller()
     }
 
     // calculate _vel_target.z using from _pos_error.z using sqrt controller
-    _vel_target.z = AC_AttitudeControl::sqrt_controller(_pos_error.z, _p_pos_z.kP(), _accel_z_cms, _dt);
+    _vel_target.z = sqrt_controller(_pos_error.z, _p_pos_z.kP(), _accel_z_cms, _dt);
 
     // check speed limits
     // To-Do: check these speed limits here or in the pos->rate controller
@@ -729,10 +730,9 @@ void AC_PosControl::set_target_to_stopping_point_xy()
 ///     results placed in stopping_position vector
 ///     set_max_accel_xy() should be called before this method to set vehicle acceleration
 ///     set_leash_length() should have been called before this method
-void AC_PosControl::get_stopping_point_xy(Vector3f &stopping_point) const
+void AC_PosControl::get_stopping_point_xy(Vector3f &stopping_point, Vector3f curr_vel) const
 {
     const Vector3f curr_pos = _inav.get_position();
-    Vector3f curr_vel = _inav.get_velocity();
     float linear_distance;      // the distance at which we swap from a linear to sqrt response
     float linear_velocity;      // the velocity above which we swap from a linear to sqrt response
     float stopping_dist;	    // the distance within the vehicle can stop
@@ -852,6 +852,124 @@ void AC_PosControl::standby_xyz_reset()
 
     // initialise ekf xy reset handler
     init_ekf_xy_reset();
+}
+
+/// init_pos_vel_xy - initialise the position controller to the current position and velocity with zero acceleration.
+///     This function should be called before input_vel_xy or input_pos_vel_xy are used.
+void AC_PosControl::init_pos_vel_xy()
+{
+    // set roll, pitch lean angle targets to current attitude
+    // todo: this should probably be based on the desired attitude not the current attitude
+    _roll_target = _ahrs.roll_sensor;
+    _pitch_target = _ahrs.pitch_sensor;
+
+
+    Vector3f curr_pos = _inav.get_position();
+    _pos_target.x = curr_pos.x;
+    _pos_target.y = curr_pos.y;
+
+    const Vector3f& curr_vel = _inav.get_velocity();
+    _vel_desired.x = curr_vel.x;
+    _vel_desired.y = curr_vel.y;
+
+    _accel_desired.x = 0.0f;
+    _accel_desired.y = 0.0f;
+
+    // initialise I terms from lean angles
+    _vel_target.x = 0.0f;
+    _vel_target.y = 0.0f;
+    _pid_vel_xy.reset_filter();
+    lean_angles_to_accel(_accel_target.x, _accel_target.y);
+    _pid_vel_xy.set_integrator(_accel_target);
+
+    // flag reset required in rate to accel step
+    _flags.reset_desired_vel_to_pos = true;
+    _flags.reset_accel_to_lean_xy = true;
+
+    // initialise ekf xy reset handler
+    init_ekf_xy_reset();
+}
+
+/// input_vel_xy calculate a jerk limited path from the current position, velocity and acceleration to an input velocity.
+///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
+///     The kinimatic path is constrained by :
+///         maximum velocity - vel_max,
+///         maximum acceleration - accel_max,
+///         time constant - tc.
+///     The time constant defines the acceleration error decay in the kinimatic path as the system approaches constant acceleration.
+///     The time constant also defines the time taken to achieve the maximum acceleration.
+///     The time constant must be positive.
+///     The function alters the input velocity to be the velocity that the system could reach zero acceleration in the minimum time.
+void AC_PosControl::input_vel_xy(Vector3f& vel, float vel_max, float accel_max, float tc)
+{
+    // compute dt
+    const uint64_t now_us = AP_HAL::micros64();
+    float dt = (now_us - _last_update_xy_us) * 1.0e-6f;
+
+    // sanity check dt
+    if (dt >= POSCONTROL_ACTIVE_TIMEOUT_US * 1.0e-6f) {
+        dt = 0.0f;
+    }
+
+    // check for ekf xy position reset
+    check_for_ekf_xy_reset();
+
+    // check if xy leash needs to be recalculated
+    calc_leash_length_xy();
+
+    if (_flags.reset_desired_vel_to_pos ) {
+        _flags.reset_desired_vel_to_pos = false;
+    } else {
+        update_pos_vel_accel_xy(_pos_target, _vel_desired, _accel_desired, dt);
+    }
+    shape_vel_xy(vel, _vel_desired, _accel_desired, vel_max, accel_max, tc, dt);
+
+    // run horizontal position controller
+    run_xy_controller(dt);
+
+    // update xy update time
+    _last_update_xy_us = now_us;
+}
+
+/// input_pos_vel_xy calculate a jerk limited path from the current position, velocity and acceleration to an input position and velocity.
+///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
+///     The kinimatic path is constrained by :
+///         maximum velocity - vel_max,
+///         maximum acceleration - accel_max,
+///         time constant - tc.
+///     The time constant defines the acceleration error decay in the kinimatic path as the system approaches constant acceleration.
+///     The time constant also defines the time taken to achieve the maximum acceleration.
+///     The time constant must be positive.
+///     The function alters the input position to be the closest position that the system could reach zero acceleration in the minimum time.
+void AC_PosControl::input_pos_vel_xy(Vector3f& pos, const Vector3f& vel, float vel_max, float accel_max, float tc)
+{
+    // compute dt
+    const uint64_t now_us = AP_HAL::micros64();
+    float dt = (now_us - _last_update_xy_us) * 1.0e-6f;
+
+    // sanity check dt
+    if (dt >= POSCONTROL_ACTIVE_TIMEOUT_US * 1.0e-6f) {
+        dt = 0.0f;
+    }
+
+    // check for ekf xy position reset
+    check_for_ekf_xy_reset();
+
+    // check if xy leash needs to be recalculated
+    calc_leash_length_xy();
+
+    if (_flags.reset_desired_vel_to_pos ) {
+        _flags.reset_desired_vel_to_pos = false;
+    } else {
+        update_pos_vel_accel_xy(_pos_target, _vel_desired, _accel_desired, dt);
+    }
+    shape_pos_vel_xy(pos, vel, _pos_target, _vel_desired, _accel_desired, vel_max, accel_max, tc, dt);
+
+    // run horizontal position controller
+    run_xy_controller(dt);
+
+    // update xy update time
+    _last_update_xy_us = now_us;
 }
 
 /// update_xy_controller - run the horizontal position controller - should be called at 100hz or higher
@@ -1067,7 +1185,7 @@ void AC_PosControl::run_xy_controller(float dt)
             _pos_target.y = curr_pos.y + _pos_error.y;
         }
 
-        _vel_target = sqrt_controller(_pos_error, kP, _accel_cms);
+        _vel_target = sqrt_controller_xy(_pos_error, kP, _accel_cms);
     }
 
     // add velocity feed-forward
@@ -1236,35 +1354,6 @@ void AC_PosControl::check_for_ekf_z_reset()
     }
 }
 
-/// limit vector to a given length, returns true if vector was limited
-bool AC_PosControl::limit_vector_length(float& vector_x, float& vector_y, float max_length)
-{
-    float vector_length = norm(vector_x, vector_y);
-    if ((vector_length > max_length) && is_positive(vector_length)) {
-        vector_x *= (max_length / vector_length);
-        vector_y *= (max_length / vector_length);
-        return true;
-    }
-    return false;
-}
-
-/// Proportional controller with piecewise sqrt sections to constrain second derivative
-Vector3f AC_PosControl::sqrt_controller(const Vector3f& error, float p, float second_ord_lim)
-{
-    if (second_ord_lim < 0.0f || is_zero(second_ord_lim) || is_zero(p)) {
-        return Vector3f(error.x * p, error.y * p, error.z);
-    }
-
-    float linear_dist = second_ord_lim / sq(p);
-    float error_length = norm(error.x, error.y);
-    if (error_length > linear_dist) {
-        float first_order_scale = safe_sqrt(2.0f * second_ord_lim * (error_length - (linear_dist * 0.5f))) / error_length;
-        return Vector3f(error.x * first_order_scale, error.y * first_order_scale, error.z);
-    } else {
-        return Vector3f(error.x * p, error.y * p, error.z);
-    }
-}
-
 bool AC_PosControl::pre_arm_checks(const char *param_prefix,
                                    char *failure_msg,
                                    const uint8_t failure_msg_len)
@@ -1302,6 +1391,7 @@ bool AC_PosControl::pre_arm_checks(const char *param_prefix,
 /// Initialises the velmatch velocity based on its state.
 void AC_PosControl::init_velmatch_velocity()
 {
+    auto &follow = AP::follow();
     switch (_velmatchState) {
     case OFF:
         // set velmatch velocity to zero
@@ -1314,8 +1404,17 @@ void AC_PosControl::init_velmatch_velocity()
         FALLTHROUGH;
     case ZERO:
         // Set velmatch velocity to current velocity and change to HOLD
-        _vel_velmatch = _inav.get_velocity();
-        set_velmatch_state_hold();
+        Vector3f target;
+        Vector3f dist_vec;  // vector to lead vehicle
+        Vector3f dist_vec_offs;  // vector to lead vehicle + offset
+        Vector3f vel_of_target;  // velocity of lead vehicle
+        if (follow.get_target_dist_and_vel_ned(dist_vec, dist_vec_offs, vel_of_target)) {
+            _vel_velmatch = vel_of_target * 100.0f;
+            set_velmatch_state_set();
+        } else {
+            _vel_velmatch = _inav.get_velocity();
+            set_velmatch_state_hold();
+        }
         break;
     }
 }
@@ -1352,8 +1451,19 @@ bool AC_PosControl::set_velmatch_state(enum VelMatchState velmatchState)
 }
 
 /// Proportional controller with piecewise sqrt sections to constrain second derivative
-void AC_PosControl::update_velmatch_velocity(float dt, Vector3f target)
+void AC_PosControl::update_velmatch_velocity(float dt)
 {
+    auto &follow = AP::follow();
+
+    Vector3f target;
+    Vector3f dist_vec;  // vector to lead vehicle
+    Vector3f dist_vec_offs;  // vector to lead vehicle + offset
+    Vector3f vel_of_target;  // velocity of lead vehicle
+    if (follow.get_target_dist_and_vel_ned(dist_vec, dist_vec_offs, vel_of_target)) {
+        target = vel_of_target * 100.0f;
+    } else {
+        target = _inav.get_velocity();
+    }
     switch (_velmatchState) {
     case OFF:
         // Slew velmatch velocity to zero
@@ -1367,7 +1477,6 @@ void AC_PosControl::update_velmatch_velocity(float dt, Vector3f target)
 
     case SET:
         // Slew velmatch velocity to current velocity
-//        target = _inav.get_velocity();
         break;
 
     case ZERO:

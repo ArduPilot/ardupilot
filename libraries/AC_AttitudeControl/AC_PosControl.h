@@ -239,6 +239,34 @@ public:
     // is_active_xy - returns true if the xy position controller has been run very recently
     bool is_active_xy() const;
 
+    /// init_pos_vel_xy - initialise the position controller to the current position and velocity with zero acceleration.
+    ///     This function should be called before input_vel_xy or input_pos_vel_xy are used.
+    void init_pos_vel_xy();
+
+    /// input_vel_xy calculate a jerk limited path from the current position, velocity and acceleration to an input velocity.
+    ///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
+    ///     The kinimatic path is constrained by :
+    ///         maximum velocity - vel_max,
+    ///         maximum acceleration - accel_max,
+    ///         time constant - tc.
+    ///     The time constant defines the acceleration error decay in the kinimatic path as the system approaches constant acceleration.
+    ///     The time constant also defines the time taken to achieve the maximum acceleration.
+    ///     The time constant must be positive.
+    ///     The function alters the input velocity to be the velocity that the system could reach zero acceleration in the minimum time.
+    void input_vel_xy(Vector3f& vel, float vel_max, float accel_max, float tc);
+
+    /// input_pos_vel_xy calculate a jerk limited path from the current position, velocity and acceleration to an input position and velocity.
+    ///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
+    ///     The kinimatic path is constrained by :
+    ///         maximum velocity - vel_max,
+    ///         maximum acceleration - accel_max,
+    ///         time constant - tc.
+    ///     The time constant defines the acceleration error decay in the kinimatic path as the system approaches constant acceleration.
+    ///     The time constant also defines the time taken to achieve the maximum acceleration.
+    ///     The time constant must be positive.
+    ///     The function alters the input position to be the closest position that the system could reach zero acceleration in the minimum time.
+    void input_pos_vel_xy(Vector3f& pos, const Vector3f& vel, float vel_max, float accel_max, float tc);
+
     /// update_xy_controller - run the horizontal position controller - should be called at 100hz or higher
     ///     when use_desired_velocity is true the desired velocity (i.e. feed forward) is incorporated at the pos_to_rate step
     void update_xy_controller();
@@ -250,7 +278,8 @@ public:
     ///     results placed in stopping_position vector
     ///     set_accel_xy() should be called before this method to set vehicle acceleration
     ///     set_leash_length() should have been called before this method
-    void get_stopping_point_xy(Vector3f &stopping_point) const;
+    void get_stopping_point_xy(Vector3f &stopping_point, Vector3f curr_vel) const;
+    void get_stopping_point_xy(Vector3f &stopping_point) {get_stopping_point_xy(stopping_point, _inav.get_velocity());}
 
     /// get_distance_to_target - get horizontal distance to position target in cm (used for reporting)
     float get_distance_to_target() const;
@@ -320,7 +349,7 @@ public:
     void init_velmatch_velocity();
 
     // update velmatch velocity
-    void update_velmatch_velocity(float dt, Vector3f target);
+    void update_velmatch_velocity(float dt);
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -378,12 +407,6 @@ protected:
     /// calc_leash_length - calculates the horizontal leash length given a maximum speed, acceleration and position kP gain
     float calc_leash_length(float speed_cms, float accel_cms, float kP) const;
 
-    /// limit vector to a given length, returns true if vector was limited
-    static bool limit_vector_length(float& vector_x, float& vector_y, float max_length);
-
-    /// Proportional controller with piecewise sqrt sections to constrain second derivative
-    static Vector3f sqrt_controller(const Vector3f& error, float p, float second_ord_lim);
-
     /// initialise and check for ekf position resets
     void init_ekf_xy_reset();
     void check_for_ekf_xy_reset();
@@ -428,8 +451,8 @@ protected:
     Vector3f    _pos_target;            // target location in cm from home
     Vector3f    _pos_error;             // error between desired and actual position in cm
     Vector3f    _vel_desired;           // desired velocity in cm/s
-    Vector3f    _vel_target;            // velocity target in cm/s calculated by pos_to_rate step
-    Vector3f    _vel_error;             // error between desired and actual acceleration in cm/s
+    Vector3f    _vel_target;            // velocity target in cm/s
+    Vector3f    _vel_error;             // velocity error in cm/s
     Vector3f    _vel_last;              // previous iterations velocity in cm/s
     Vector3f    _accel_desired;         // desired acceleration in cm/s/s (feed forward)
     Vector3f    _accel_target;          // acceleration target in cm/s/s
