@@ -50,8 +50,7 @@ public:
     void use_velmatch() { _use_velmatch = true; }
 
     /// run the loiter controller
-    void update() {_inav.get_velocity();}
-    void update(Vector3f target);
+    void update();
 
     /// get desired roll, pitch which should be fed into stabilize controllers
     float get_roll() const { return _pos_control.get_roll(); }
