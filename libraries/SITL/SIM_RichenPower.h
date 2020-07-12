@@ -15,7 +15,7 @@
 /*
   Simulator for the RichenPower Hybrid generators
 
-./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --uartF=sim:richenpower --speedup=1
+./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --uartF=sim:richenpower --speedup=1 --console
 
 param set SERIAL5_PROTOCOL 30
 param set SERIAL5_BAUD 9600
@@ -26,6 +26,10 @@ param set SIM_RICH_CTRL 8
 param set RC9_OPTION 85
 
 reboot
+
+graph SERVO_OUTPUT_RAW.servo8_raw
+graph RC_CHANNELS.chan9_raw
+module load generator
 
 arm throttle (denied because generator not running)
 
@@ -61,7 +65,7 @@ private:
     // with no load
     const float base_supply_voltage = 50.0f;
     const float max_current = 50.0f;
-    const uint32_t original_seconds_until_maintenance = 5*60; // 5 minutes
+    const uint32_t original_seconds_until_maintenance = 20*60; // 20 minutes
 
 // They have been... we know that the voltage drops to mid 46v
 // typically if gennie stops
@@ -104,8 +108,8 @@ private:
         uint8_t magic2;
         uint8_t version_minor;
         uint8_t version_major;
-        uint8_t runtime_seconds;
         uint8_t runtime_minutes;
+        uint8_t runtime_seconds;
         uint16_t runtime_hours;
         uint32_t seconds_until_maintenance;
         uint16_t errors;
@@ -115,8 +119,8 @@ private:
         uint16_t output_voltage;
         uint16_t output_current;
         uint16_t dynamo_current;
-        uint8_t mode;
         uint8_t unknown1;
+        uint8_t mode;
         uint8_t unknown6[38]; // "data"?!
         uint16_t checksum;
         uint8_t footermagic1;
