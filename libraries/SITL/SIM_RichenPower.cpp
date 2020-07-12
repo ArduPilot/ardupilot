@@ -216,11 +216,19 @@ void RichenPower::update_send()
         RUN = 1,
         CHARGE = 2,
         BALANCE = 3,
+        OFF = 4,
     };
-    if (_state == State::STOP) {
+    switch (_state) {
+    case State::STOP:
+        u.packet.mode = (uint8_t)Mode::OFF;
+        break;
+    case State::STOPPING:
+    case State::IDLE:
         u.packet.mode = (uint8_t)Mode::IDLE;
-    } else {
+        break;
+    case State::RUN:
         u.packet.mode = (uint8_t)Mode::RUN;
+        break;
     }
 
     u.update_checksum();
