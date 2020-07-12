@@ -249,17 +249,23 @@ void AP_GyroFFT::init(uint32_t target_looptime_us)
         return;
     }
 
+    // count the number of active harmonics
+    for (uint8_t i = 0; i < HNF_MAX_HARMONICS; i++) {
+        if (_ins->get_gyro_harmonic_notch_harmonics() & (1<<i)) {
+            _harmonics++;
+        }
+    }
+    _harmonics = constrain_int16(_harmonics, 1, FrequencyPeak::MAX_TRACKED_PEAKS);
+
     // calculate harmonic multiplier. this assumes the harmonics configured on the 
     // harmonic notch reflect the multiples of the fundamental harmonic that should be tracked
     uint8_t first_harmonic = 0;
-    _harmonics = 1; // always search for 1
     if (_harmonic_fit > 0) {
         for (uint8_t i = 0; i < HNF_MAX_HARMONICS; i++) {
             if (_ins->get_gyro_harmonic_notch_harmonics() & (1<<i)) {
                 if (first_harmonic == 0) {
                     first_harmonic = i + 1;
                 } else {
-                    _harmonics++;
                     _harmonic_multiplier = float(i + 1) / first_harmonic;
                     break;
                 }
