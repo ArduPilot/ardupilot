@@ -418,9 +418,7 @@ public:
         WHEN_MANOEUVRING = 1,
         NEVER = 2,
         AFTER_FIRST_CLIMB = 3,
-        ALWAYS = 4,
-        EXTERNAL_YAW = 5,
-        EXTERNAL_YAW_FALLBACK = 6,
+        ALWAYS = 4
     };
 
     // are we using an external yaw source? This is needed by AHRS attitudes_consistent check
@@ -1025,7 +1023,7 @@ private:
     ftype varInnovVtas;             // innovation variance output from fusion of airspeed measurements
     float defaultAirSpeed;          // default equivalent airspeed in m/s to be used if the measurement is unavailable. Do not use if not positive.
     bool magFusePerformed;          // boolean set to true when magnetometer fusion has been perfomred in that time step
-    MagCal effectiveMagCal;         // the actual mag calibration and yaw fusion method being used as the default
+    MagCal effectiveMagCal;         // the actual mag calibration being used as the default
     uint32_t prevTasStep_ms;        // time stamp of last TAS fusion step
     uint32_t prevBetaStep_ms;       // time stamp of last synthetic sideslip fusion step
     uint32_t lastMagUpdate_us;      // last time compass was updated in usec
@@ -1477,5 +1475,6 @@ private:
     // source reset handling
     AP_NavEKF_Source::SourceXY pos_source_last;   // position source on previous iteration (used to detect a changes)
     bool pos_source_reset;                  // true when the position source has changed but the position has not yet been reset
-
+    AP_NavEKF_Source::SourceYaw yaw_source_last;    // yaw source on previous iteration (used to detect a change)
+    bool yaw_source_reset;                          // true when the yaw source has changed but the yaw has not yet been reset
 };
