@@ -395,7 +395,7 @@ void Plane::do_land(const AP_Mission::Mission_Command& cmd)
         if (! geofence_set_floor_enabled(false)) {
             gcs().send_text(MAV_SEVERITY_NOTICE, "Disable fence floor failed (autodisable)");
         } else {
-            gcs().send_text(MAV_SEVERITY_NOTICE, "Fence floor disabled (auto disable)");
+            gcs().send_text(MAV_SEVERITY_NOTICE, "Fence floor disabled (autodisable)");
         }
     }
 #endif
