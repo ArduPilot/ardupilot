@@ -34,7 +34,7 @@ AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial(
 {
     uart = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);
     if (uart != nullptr) {
-        uart->begin(initial_baudrate(serial_instance), rx_bufsize(), tx_bufsize());
+        uart->begin(0, rx_bufsize(), tx_bufsize());
     }
 }
 
