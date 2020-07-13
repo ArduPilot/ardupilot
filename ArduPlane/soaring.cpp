@@ -111,8 +111,9 @@ void Plane::update_soaring() {
 
         // Some other loiter status, we need to think about exiting loiter.
         const uint32_t time_in_loiter_ms = AP_HAL::millis() - plane.soaring_mode_timer_ms;
+        const uint32_t timeout = MIN(1000*g2.soaring_controller.get_circling_time(), 20000);
 
-        if (!soaring_exit_heading_aligned() && loiterStatus!=SoaringController::LoiterStatus::ALT_TOO_LOW && time_in_loiter_ms < 20000) {
+        if (!soaring_exit_heading_aligned() && loiterStatus != SoaringController::LoiterStatus::ALT_TOO_LOW && time_in_loiter_ms < timeout) {
             // Heading not lined up, and not timed out or in a condition requiring immediate exit.
             break;
         }

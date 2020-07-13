@@ -127,6 +127,8 @@ public:
 
     float get_alt_cutoff() const {return alt_cutoff;}
 
+    float get_circling_time() const {return _vario.tau;}
+
 private:
     // slow down messages if they are the same. During loiter we could smap the same message. Only show new messages during loiters
     LoiterStatus _cruise_criteria_msg_last;
