@@ -1192,6 +1192,7 @@ private:
     bool extNavUsedForYaw;              // true when the external nav data is also being used as a yaw observation
     bool extNavUsedForPos;              // true when the external nav data is being used as a position reference.
     bool extNavYawResetRequest;         // true when a reset of vehicle yaw using the external nav data is requested
+    bool extNavPosResetRequest;         // true when a reset of vehicle pos using the external nav data is requested
 
     obs_ring_buffer_t<ext_nav_vel_elements> storedExtNavVel; // external navigation velocity data buffer
     ext_nav_vel_elements extNavVelNew;                       // external navigation velocity data at the current time horizon

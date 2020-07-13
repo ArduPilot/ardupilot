@@ -320,6 +320,7 @@ void NavEKF2_core::setAidingMode()
             }
             // We have commenced aiding and external nav usage is allowed
             if (canUseExtNav) {
+                extNavPosResetRequest = true;
                 gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u is using external nav data",(unsigned)imu_index);
                 gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u initial pos NED = %3.1f,%3.1f,%3.1f (m)",(unsigned)imu_index,(double)extNavDataDelayed.pos.x,(double)extNavDataDelayed.pos.y,(double)extNavDataDelayed.pos.z);
                 //handle yaw reset as special case only if compass is disabled

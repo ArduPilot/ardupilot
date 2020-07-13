@@ -540,7 +540,8 @@ void NavEKF2_core::SelectVelPosFusion()
     }
 
     // check for external nav position reset
-    if (extNavDataToFuse && (PV_AidingMode == AID_ABSOLUTE) && (frontend->_fusionModeGPS == 3) && extNavDataDelayed.posReset) {
+    if (extNavDataToFuse && (PV_AidingMode == AID_ABSOLUTE) && (frontend->_fusionModeGPS == 3) && (extNavDataDelayed.posReset || extNavPosResetRequest)) {
+        extNavPosResetRequest = false;
         ResetPositionNE(extNavDataDelayed.pos.x, extNavDataDelayed.pos.y);
         if (activeHgtSource == HGT_SOURCE_EXTNAV) {
             ResetPositionD(-hgtMea);
