@@ -21,6 +21,8 @@ private:
     void do_aux_function_q_assist_state(AuxSwitchPos ch_flag);
 
     void do_aux_function_crow_mode(AuxSwitchPos ch_flag);
+
+    void do_aux_function_soaring_3pos(AuxSwitchPos ch_flag);
 };
 
 class RC_Channels_Plane : public RC_Channels
