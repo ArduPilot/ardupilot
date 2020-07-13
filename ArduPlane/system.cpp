@@ -407,7 +407,7 @@ void Plane::startup_INS_ground(void)
         // --------------------------
         airspeed.calibrate(true);
     } else {
-        gcs().send_text(MAV_SEVERITY_WARNING,"No airspeed");
+        gcs().send_text(MAV_SEVERITY_WARNING,"No airspeed sensor present");
     }
 }
 
