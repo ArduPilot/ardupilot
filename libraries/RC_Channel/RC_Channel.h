@@ -185,6 +185,7 @@ public:
         GENERATOR   =         85, // generator control
         TER_DISABLE =         86, // disable terrain following in CRUISE/FBWB modes
         CROW_SELECT =         87, // select CROW mode for diff spoilers;high disables,mid forces progressive
+        SOARING =             88, // three-position switch to set soaring mode
 
         // entries from 100 onwards are expected to be developer
         // options used for testing
