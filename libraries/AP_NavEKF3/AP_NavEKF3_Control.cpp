@@ -38,14 +38,12 @@ void NavEKF3_core::controlFilterModes()
  */
 NavEKF3_core::MagCal NavEKF3_core::effective_magCal(void) const
 {
-    MagCal magcal = MagCal(frontend->_magCal.get());
-
     // force use of simple magnetic heading fusion for specified cores
-    if ((magcal != MagCal::EXTERNAL_YAW) && (magcal != MagCal::EXTERNAL_YAW_FALLBACK) && (frontend->_magMask & core_index)) {
+    if (frontend->_magMask & core_index) {
         return MagCal::NEVER;
     }
 
-    return magcal;
+    return MagCal(frontend->_magCal.get());
 }
 
 // Determine if learning of wind and magnetic field will be enabled and set corresponding indexing limits to
@@ -94,7 +92,6 @@ void NavEKF3_core::setWindMagStateLearningMode()
         ((effectiveMagCal == MagCal::WHEN_FLYING) && inFlight) || // when flying
         ((effectiveMagCal == MagCal::WHEN_MANOEUVRING) && manoeuvring)  || // when manoeuvring
         ((effectiveMagCal == MagCal::AFTER_FIRST_CLIMB) && finalInflightYawInit && finalInflightMagInit) || // when initial in-air yaw and mag field reset is complete
-        ((effectiveMagCal == MagCal::EXTERNAL_YAW_FALLBACK) && inFlight) ||
         (effectiveMagCal == MagCal::ALWAYS); // all the time
 
     // Deny mag calibration request if we aren't using the compass, it has been inhibited by the user,
@@ -483,8 +480,14 @@ bool NavEKF3_core::readyToUseExtNav(void) const
 bool NavEKF3_core::use_compass(void) const
 {
     const auto *compass  = dal.get_compass();
-    return effectiveMagCal != MagCal::EXTERNAL_YAW &&
-           compass &&
+    const AP_NavEKF_Source::SourceYaw yaw_source = frontend->_sources.getYawSource();
+    if ((yaw_source != AP_NavEKF_Source::SourceYaw::COMPASS) &&
+        (yaw_source != AP_NavEKF_Source::SourceYaw::EXTERNAL_COMPASS_FALLBACK)) {
+        // not using compass as a yaw source
+        return false;
+    }
+
+    return compass &&
            compass->use_for_yaw(magSelectIndex) &&
            !allMagSensorsFailed;
 }
@@ -492,7 +495,8 @@ bool NavEKF3_core::use_compass(void) const
 // are we using a yaw source other than the magnetomer?
 bool NavEKF3_core::using_external_yaw(void) const
 {
-    if (effectiveMagCal == MagCal::EXTERNAL_YAW || effectiveMagCal == MagCal::EXTERNAL_YAW_FALLBACK || !use_compass()) {
+    const AP_NavEKF_Source::SourceYaw yaw_source = frontend->_sources.getYawSource();
+    if (yaw_source == AP_NavEKF_Source::SourceYaw::EXTERNAL || yaw_source == AP_NavEKF_Source::SourceYaw::EXTERNAL_COMPASS_FALLBACK || !use_compass()) {
         return imuSampleTime_ms - last_gps_yaw_fusion_ms < 5000 || imuSampleTime_ms - lastSynthYawTime_ms < 5000;
     }
     return false;
@@ -558,7 +562,8 @@ void NavEKF3_core::checkGyroCalStatus(void)
 {
     // check delta angle bias variances
     const float delAngBiasVarMax = sq(radians(0.15f * dtEkfAvg));
-    if (!use_compass() && (effectiveMagCal != MagCal::EXTERNAL_YAW) && (effectiveMagCal != MagCal::EXTERNAL_YAW_FALLBACK)) {
+    const AP_NavEKF_Source::SourceYaw yaw_source = frontend->_sources.getYawSource();
+    if (!use_compass() && (yaw_source != AP_NavEKF_Source::SourceYaw::EXTERNAL) && (yaw_source != AP_NavEKF_Source::SourceYaw::EXTERNAL_COMPASS_FALLBACK)) {
         // rotate the variances into earth frame and evaluate horizontal terms only as yaw component is poorly observable without a yaw reference
         // which can make this check fail
         Vector3f delAngBiasVarVec = Vector3f(P[10][10],P[11][11],P[12][12]);
