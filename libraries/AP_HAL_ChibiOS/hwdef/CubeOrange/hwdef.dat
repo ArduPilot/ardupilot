@@ -19,12 +19,9 @@ APJ_BOARD_ID 140
 FLASH_SIZE_KB 2048
 
 # with 2M flash we can afford to optimize for speed
-env OPTIMIZE -O3
+env OPTIMIZE -O2
 
 FLASH_RESERVE_START_KB 128
-
-# board voltage
-STM32_VDD 330U
 
 define HAL_STORAGE_SIZE 16384
 
@@ -32,7 +29,7 @@ define HAL_STORAGE_SIZE 16384
 I2C_ORDER I2C2 I2C1
 
 # order of UARTs (and USB)
-UART_ORDER OTG1 UART4 USART2 USART3 UART8 UART7
+SERIAL_ORDER OTG1 USART2 USART3 UART4 UART8 UART7 OTG2
 
 # If the board has an IOMCU connected via a UART then this defines the
 # UART to talk to that MCU. Leave it out for boards with no IOMCU.
@@ -81,8 +78,8 @@ PB2 BOOT1 INPUT
 PB3 FMU_SW0 INPUT
 
 # This defines the pins for the 2nd CAN interface, if available.
-#PB6 CAN2_TX CAN2
-#PB12 CAN2_RX CAN2
+PB6 CAN2_TX CAN2
+PB12 CAN2_RX CAN2
 
 # Now the first I2C bus. The pin speeds are automatically setup
 # correctly, but can be overridden here if needed.
@@ -99,7 +96,7 @@ PB14 SPI2_MISO SPI2
 PB15 SPI2_MOSI SPI2
 
 # This input pin is used to detect that power is valid on USB.
-PC0 VBUS_VALID INPUT
+PC0 VBUS_nVALID INPUT PULLUP
 
 # This defines the CS pin for the magnetometer and first IMU. Note
 # that CS pins are software controlled, and are not tied to a particular
@@ -135,8 +132,8 @@ PD7 BARO_CS CS
 PE4 MPU_EXT_CS CS
 
 # the first CAN bus
-#PD0 CAN1_RX CAN1
-#PD1 CAN1_TX CAN1
+PD0 CAN1_RX CAN1
+PD1 CAN1_TX CAN1
 
 # Another USART, this one for telem1. This one has RTS and CTS lines.
 # USART2 serial2 telem1
@@ -206,10 +203,10 @@ PE12 FMU_LED_AMBER OUTPUT HIGH OPENDRAIN GPIO(0)
 # Power flag pins: these tell the MCU the status of the various power
 # supplies that are available. The pin names need to exactly match the
 # names used in AnalogIn.cpp. 
-PB5 VDD_BRICK_VALID INPUT PULLUP
-PB7 VDD_SERVO_VALID INPUT PULLUP
-PE10 VDD_5V_HIPOWER_OC INPUT PULLUP
-PE15 VDD_5V_PERIPH_OC INPUT PULLUP
+PB5 VDD_BRICK_nVALID INPUT PULLUP
+PB7 VDD_BRICK2_nVALID INPUT PULLUP
+PE10 VDD_5V_HIPOWER_nOC INPUT PULLUP
+PE15 VDD_5V_PERIPH_nOC INPUT PULLUP
 
 SPIDEV ms5611         SPI1 DEVID3  BARO_CS      MODE3 20*MHZ 20*MHZ
 SPIDEV ms5611_ext     SPI4 DEVID2  BARO_EXT_CS  MODE3 20*MHZ 20*MHZ
@@ -248,7 +245,24 @@ IMU Invensense SPI:icm20602_ext ROTATION_ROLL_180_YAW_270
 IMU Invensensev2 SPI:icm20948_ext ROTATION_PITCH_180
 IMU Invensensev2 SPI:icm20948 ROTATION_YAW_270
 
-define HAL_DEFAULT_INS_FAST_SAMPLE 1
+# Sensor Check alias for validating board type
+CHECK_ICM20649          spi_check_register("icm20948", INV2REG_WHOAMI, INV2_WHOAMI_ICM20649)
+CHECK_ICM20602_EXT      spi_check_register("icm20602_ext", MPUREG_WHOAMI, MPU_WHOAMI_ICM20602)
+CHECK_ICM20948_EXT      spi_check_register("icm20948_ext", INV2REG_WHOAMI, INV2_WHOAMI_ICM20948)
+CHECK_MS5611            check_ms5611("ms5611")
+CHECK_MS5611_EXT        check_ms5611("ms5611_ext")
+
+# Sensor Check Macros to be used for validating board type
+CHECK_IMU0_PRESENT   $CHECK_ICM20602_EXT
+CHECK_IMU1_PRESENT   $CHECK_ICM20948_EXT
+CHECK_IMU2_PRESENT   $CHECK_ICM20649
+CHECK_BARO0_PRESENT  $CHECK_MS5611
+CHECK_BARO1_PRESENT  $CHECK_MS5611_EXT
+
+BOARD_VALIDATE $CHECK_IMU0_PRESENT $CHECK_IMU1_PRESENT $CHECK_IMU2_PRESENT $CHECK_BARO0_PRESENT $CHECK_BARO1_PRESENT
+
+
+define HAL_DEFAULT_INS_FAST_SAMPLE 7
 
 # two baros
 BARO MS56XX SPI:ms5611_ext
@@ -286,12 +300,6 @@ define HAL_HAVE_IMU_HEATER 1
 # Enable FAT filesystem support (needs a microSD defined via SDMMC).
 define HAL_OS_FATFS_IO 1
 
-# Enable RTSCTS support. You should define this if you have any UARTs with RTS/CTS pins.
-define AP_FEATURE_RTSCTS 1
-
-# Enable SBUS_OUT on IOMCU (if you have an IOMCU).
-define AP_FEATURE_SBUS_OUT 1
-
 # Now setup the default battery pins driver analog pins and default
 # scaling for the power brick.
 define HAL_BATT_VOLT_PIN 14
@@ -304,7 +312,7 @@ define HAL_GPIO_PWM_VOLT_PIN 3
 # we can automatically update the IOMCU firmware on boot. The format
 # is "ROMFS ROMFS-filename source-filename". Paths are relative to the
 # ardupilot root.
-ROMFS io_firmware.bin Tools/IO_Firmware/fmuv2_IO.bin
+ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_highpolh.bin
 
 DMA_NOSHARE SPI1* SPI4* USART6*
 

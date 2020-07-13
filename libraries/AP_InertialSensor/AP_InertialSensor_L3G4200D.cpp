@@ -122,9 +122,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_L3G4200D::probe(AP_InertialSensor &
 
 bool AP_InertialSensor_L3G4200D::_init_sensor(void)
 {
-    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return false;
-    }
+    _dev->get_semaphore()->take_blocking();
 
     // Init the accelerometer
     uint8_t data = 0;

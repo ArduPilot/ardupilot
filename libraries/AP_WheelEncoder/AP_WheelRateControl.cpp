@@ -54,6 +54,30 @@ const AP_Param::GroupInfo AP_WheelRateControl::var_info[] = {
     // @Range: 1.000 100.000
     // @Units: Hz
     // @User: Standard
+
+    // @Param: _RATE_FLTT
+    // @DisplayName: Wheel rate control target frequency in Hz
+    // @Description: Wheel rate control target frequency in Hz
+    // @Range: 1 50
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: _RATE_FLTE
+    // @DisplayName: Wheel rate control error frequency in Hz
+    // @Description: Wheel rate control error frequency in Hz
+    // @Range: 1 50
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: _RATE_FLTD
+    // @DisplayName: Wheel rate control derivative frequency in Hz
+    // @Description: Wheel rate control derivative frequency in Hz
+    // @Range: 1 50
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
     AP_SUBGROUPINFO(_rate_pid0, "_RATE_", 3, AP_WheelRateControl, AC_PID),
 
     // @Param: 2_RATE_FF
@@ -92,6 +116,31 @@ const AP_Param::GroupInfo AP_WheelRateControl::var_info[] = {
     // @Range: 1.000 100.000
     // @Units: Hz
     // @User: Standard
+
+    // @Param: 2_RATE_FLTT
+    // @DisplayName: Wheel rate control target frequency in Hz
+    // @Description: Wheel rate control target frequency in Hz
+    // @Range: 1 50
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: 2_RATE_FLTE
+    // @DisplayName: Wheel rate control error frequency in Hz
+    // @Description: Wheel rate control error frequency in Hz
+    // @Range: 1 50
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: 2_RATE_FLTD
+    // @DisplayName: Wheel rate control derivative frequency in Hz
+    // @Description: Wheel rate control derivative frequency in Hz
+    // @Range: 1 50
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
     AP_SUBGROUPINFO(_rate_pid1, "2_RATE_", 4, AP_WheelRateControl, AC_PID),
 
     AP_GROUPEND
@@ -144,31 +193,9 @@ float AP_WheelRateControl::get_rate_controlled_throttle(uint8_t instance, float 
     // get actual rate from wheeel encoder
     float actual_rate = _wheel_encoder.get_rate(instance);
 
-    // calculate rate error and pass to pid controller
-    float rate_error = desired_rate - actual_rate;
-    rate_pid.set_input_filter_all(rate_error);
-
-    // store desired and actual for logging purposes
-    rate_pid.set_desired_rate(desired_rate);
-    rate_pid.set_actual_rate(actual_rate);
-
-    // get ff
-    float ff = rate_pid.get_ff(desired_rate);
-
-    // get p
-    float p = rate_pid.get_p();
-
-    // get i unless we hit limit on last iteration
-    float i = rate_pid.get_integrator();
-    if (((is_negative(rate_error) && !_limit[instance].lower) || (is_positive(rate_error) && !_limit[instance].upper))) {
-        i = rate_pid.get_i();
-    }
-
-    // get d
-    float d = rate_pid.get_d();
-
     // constrain and set limit flags
-    float output = ff + p + i + d;
+    float output = rate_pid.update_all(desired_rate, actual_rate, (_limit[instance].lower || _limit[instance].upper));
+    output += rate_pid.get_ff();
 
     // set limits for next iteration
     _limit[instance].upper = output >= 100.0f;

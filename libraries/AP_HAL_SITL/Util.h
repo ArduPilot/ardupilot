@@ -6,6 +6,11 @@
 #include "Semaphores.h"
 #include "ToneAlarm_SF.h"
 
+#if !defined(__CYGWIN__) && !defined(__CYGWIN64__)
+#include <sys/types.h>
+#include <signal.h>
+#endif
+
 class HALSITL::Util : public AP_HAL::Util {
 public:
     Util(SITL_State *_sitlState) :
@@ -49,7 +54,20 @@ public:
 
     // return true if the reason for the reboot was a watchdog reset
     bool was_watchdog_reset() const override { return getenv("SITL_WATCHDOG_RESET") != nullptr; }
-    
+
+    enum safety_state safety_switch_state(void) override;
+
+    bool trap() const override {
+#if defined(__CYGWIN__) || defined(__CYGWIN64__)
+        return false;
+#else
+        if (kill(0, SIGTRAP) == -1) {
+            return false;
+        }
+        return true;
+#endif
+    }
+
 private:
     SITL_State *sitlState;
 

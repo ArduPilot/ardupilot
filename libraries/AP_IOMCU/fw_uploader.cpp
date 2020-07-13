@@ -397,11 +397,11 @@ bool AP_IOMCU::verify_rev3(uint32_t fw_size_local)
         return ret;
     }
 
-    sum = crc_crc32(0, fw, fw_size_local);
+    sum = crc32_small(0, fw, fw_size_local);
 
     /* fill the rest of CRC with 0xff */
     for (uint32_t i=0; i<fw_size_remote - fw_size_local; i++) {
-        sum = crc_crc32(sum, &fill_blank, 1);
+        sum = crc32_small(sum, &fill_blank, 1);
     }
 
     /* request CRC from IO */
@@ -421,7 +421,7 @@ bool AP_IOMCU::verify_rev3(uint32_t fw_size_local)
     }
 
     crc_is_ok = true;
-    
+
     return true;
 }
 

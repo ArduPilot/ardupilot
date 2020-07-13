@@ -23,7 +23,6 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Common/Location.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AP_SerialManager/AP_SerialManager.h>
 
 // maximum number of mounts
 #define AP_MOUNT_MAX_INSTANCES          1
@@ -52,7 +51,7 @@ class AP_Mount
     friend class AP_Mount_SToRM32_serial;
 
 public:
-    AP_Mount(const struct Location &current_loc);
+    AP_Mount();
 
     /* Do not allow copies */
     AP_Mount(const AP_Mount &other) = delete;
@@ -74,7 +73,7 @@ public:
     };
 
     // init - detect and initialise all mounts
-    void init(const AP_SerialManager& serial_manager);
+    void init();
 
     // update - give mount opportunity to update servos.  should be called at 10hz or higher
     void update();
@@ -112,10 +111,14 @@ public:
     void set_roi_target(const struct Location &target_loc) { set_roi_target(_primary,target_loc); }
     void set_roi_target(uint8_t instance, const struct Location &target_loc);
 
+    // point at system ID sysid
+    void set_target_sysid(uint8_t instance, const uint8_t sysid);
+    void set_target_sysid(const uint8_t sysid) { set_target_sysid(_primary, sysid); }
+
     // mavlink message handling:
     MAV_RESULT handle_command_long(const mavlink_command_long_t &packet);
-    void handle_param_value(const mavlink_message_t *msg);
-    void handle_message(mavlink_channel_t chan, const mavlink_message_t *msg);
+    void handle_param_value(const mavlink_message_t &msg);
+    void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg);
 
     // send a GIMBAL_REPORT message to GCS
     void send_gimbal_report(mavlink_channel_t chan);
@@ -129,9 +132,6 @@ public:
 protected:
 
     static AP_Mount *_singleton;
-
-    // private members
-    const struct Location   &_current_loc;  // reference to the vehicle's current location
 
     // frontend parameters
     AP_Int8             _joystick_speed;    // joystick gain
@@ -171,17 +171,23 @@ protected:
 
         MAV_MOUNT_MODE  _mode;              // current mode (see MAV_MOUNT_MODE enum)
         struct Location _roi_target;        // roi target location
+        bool _roi_target_set;
+
+        uint8_t _target_sysid;           // sysid to track
+        Location _target_sysid_location; // sysid target location
+        bool _target_sysid_location_set;
+
     } state[AP_MOUNT_MAX_INSTANCES];
 
 private:
 
-    void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t *msg);
-    void handle_mount_configure(const mavlink_message_t *msg);
-    void handle_mount_control(const mavlink_message_t *msg);
+    void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg);
+    void handle_mount_configure(const mavlink_message_t &msg);
+    void handle_mount_control(const mavlink_message_t &msg);
 
     MAV_RESULT handle_command_do_mount_configure(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_mount_control(const mavlink_command_long_t &packet);
-
+    void handle_global_position_int(const mavlink_message_t &msg);
 };
 
 namespace AP {

@@ -3,6 +3,7 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include "Semaphores.h"
+#include "Scheduler.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -10,12 +11,6 @@ using namespace HALSITL;
 
 // construct a semaphore
 Semaphore::Semaphore()
-{
-    pthread_mutex_init(&_lock, nullptr);
-}
-
-// construct a recursive semaphore (allows a thread to take it more than once)
-Semaphore_Recursive::Semaphore_Recursive()
 {
     pthread_mutexattr_t attr;
     pthread_mutexattr_init(&attr);
@@ -42,7 +37,9 @@ bool Semaphore::take(uint32_t timeout_ms)
     }
     uint64_t start = AP_HAL::micros64();
     do {
+        Scheduler::from(hal.scheduler)->set_in_semaphore_take_wait(true);
         hal.scheduler->delay_microseconds(200);
+        Scheduler::from(hal.scheduler)->set_in_semaphore_take_wait(false);
         if (take_nonblocking()) {
             return true;
         }

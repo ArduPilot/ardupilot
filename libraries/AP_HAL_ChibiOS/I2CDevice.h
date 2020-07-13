@@ -13,7 +13,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Modified for use in AP_HAL_ChibiOS by Andrew Tridgell and Siddharth Bharat Purohit
  */
 
@@ -45,7 +45,7 @@ public:
     // have two DMA channels that we are handling with the shared_dma
     // code
     mutex_t dma_lock;
-    
+
     void dma_allocate(Shared_DMA *);
     void dma_deallocate(Shared_DMA *);
     void dma_init(void);
@@ -53,7 +53,7 @@ public:
     static void clear_bus(uint8_t busidx);
     static uint8_t read_sda(uint8_t busidx);
 };
-    
+
 class I2CDevice : public AP_HAL::I2CDevice {
 public:
     static I2CDevice *from(AP_HAL::I2CDevice *dev)
@@ -95,7 +95,7 @@ public:
     void set_split_transfers(bool set) override {
         _split_transfers = set;
     }
-    
+
 private:
     I2CBus &bus;
     bool _transfer(const uint8_t *send, uint32_t send_len,
@@ -115,10 +115,10 @@ public:
     friend class I2CDevice;
 
     static I2CBus businfo[];
-    
+
     // constructor
     I2CDeviceManager();
-    
+
     static I2CDeviceManager *from(AP_HAL::I2CDeviceManager *i2c_mgr)
     {
         return static_cast<I2CDeviceManager*>(i2c_mgr);
@@ -147,4 +147,3 @@ public:
 }
 
 #endif // HAL_USE_I2C
-

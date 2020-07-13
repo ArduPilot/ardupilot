@@ -350,6 +350,14 @@ void AP_SmartRTL::run_background_cleanup()
 
     // perform routine cleanup which removes 10 to 50 points if possible
     routine_cleanup(path_points_count, path_points_completed_limit);
+
+    // warn if buffer is about to be filled
+    uint32_t now_ms = AP_HAL::millis();
+    if ((path_points_count >0) && (path_points_count >= _path_points_max - 9) && (now_ms - _last_low_space_notify_ms > 10000)) {
+        gcs().send_text(MAV_SEVERITY_INFO, "SmartRTL Low on space!");
+       _last_low_space_notify_ms = now_ms;
+    }
+
 }
 
 // routine cleanup is called regularly from run_background_cleanup

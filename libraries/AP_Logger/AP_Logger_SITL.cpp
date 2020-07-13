@@ -40,6 +40,7 @@ void AP_Logger_SITL::Init()
 
     df_PageSize = DF_PAGE_SIZE;
     df_PagePerSector = DF_PAGE_PER_SECTOR;
+    df_PagePerBlock = DF_PAGE_PER_SECTOR;
     df_NumPages = DF_NUM_PAGES;
 
     AP_Logger_Block::Init();
@@ -73,6 +74,11 @@ void AP_Logger_SITL::SectorErase(uint32_t SectorAdr)
     if (pwrite(flash_fd, fill, sizeof(fill), SectorAdr*DF_PAGE_PER_SECTOR*DF_PAGE_SIZE) != sizeof(fill)) {
         printf("Failed sector erase");
     }
+}
+
+void AP_Logger_SITL::Sector4kErase(uint32_t SectorAdr)
+{
+    SectorErase(SectorAdr);
 }
 
 void AP_Logger_SITL::StartErase()

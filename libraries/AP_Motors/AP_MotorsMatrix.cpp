@@ -38,18 +38,18 @@ void AP_MotorsMatrix::init(motor_frame_class frame_class, motor_frame_type frame
 }
 
 // set update rate to motors - a value in hertz
-void AP_MotorsMatrix::set_update_rate( uint16_t speed_hz )
+void AP_MotorsMatrix::set_update_rate(uint16_t speed_hz)
 {
     // record requested speed
     _speed_hz = speed_hz;
 
     uint16_t mask = 0;
-    for (uint8_t i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+    for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
             mask |= 1U << i;
         }
     }
-    rc_set_freq(mask, _speed_hz );
+    rc_set_freq(mask, _speed_hz);
 }
 
 // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
@@ -76,7 +76,7 @@ void AP_MotorsMatrix::output_to_motors()
     switch (_spool_state) {
         case SpoolState::SHUT_DOWN: {
             // no output
-            for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+            for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
                 if (motor_enabled[i]) {
                     _actuator[i] = 0.0f;
                 }
@@ -85,7 +85,7 @@ void AP_MotorsMatrix::output_to_motors()
         }
         case SpoolState::GROUND_IDLE:
             // sends output to motors when armed but not flying
-            for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+            for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
                 if (motor_enabled[i]) {
                     set_actuator_with_slew(_actuator[i], actuator_spin_up_to_ground_idle());
                 }
@@ -95,7 +95,7 @@ void AP_MotorsMatrix::output_to_motors()
         case SpoolState::THROTTLE_UNLIMITED:
         case SpoolState::SPOOLING_DOWN:
             // set motor output based on thrust requests
-            for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+            for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
                 if (motor_enabled[i]) {
                     set_actuator_with_slew(_actuator[i], thrust_to_actuator(_thrust_rpyt_out[i]));
                 }
@@ -104,20 +104,19 @@ void AP_MotorsMatrix::output_to_motors()
     }
 
     // convert output to PWM and send to each motor
-    for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+    for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
             rc_write(i, output_to_pwm(_actuator[i]));
         }
     }
 }
 
-
 // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
 //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
 uint16_t AP_MotorsMatrix::get_motor_mask()
 {
     uint16_t motor_mask = 0;
-    for (uint8_t i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+    for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
             motor_mask |= 1U << i;
         }
@@ -148,12 +147,14 @@ void AP_MotorsMatrix::output_armed_stabilizing()
 
     // apply voltage and air pressure compensation
     const float compensation_gain = get_compensation_gain(); // compensation for battery voltage and altitude
-    roll_thrust = _roll_in * compensation_gain;
-    pitch_thrust = _pitch_in * compensation_gain;
-    yaw_thrust = _yaw_in * compensation_gain;
+    roll_thrust = (_roll_in + _roll_in_ff) * compensation_gain;
+    pitch_thrust = (_pitch_in + _pitch_in_ff) * compensation_gain;
+    yaw_thrust = (_yaw_in + _yaw_in_ff) * compensation_gain;
     throttle_thrust = get_throttle() * compensation_gain;
     throttle_avg_max = _throttle_avg_max * compensation_gain;
-    throttle_thrust_max = _thrust_boost_ratio + (1.0f - _thrust_boost_ratio) * _throttle_thrust_max;
+
+    // If thrust boost is active then do not limit maximum thrust
+    throttle_thrust_max = _thrust_boost_ratio + (1.0f - _thrust_boost_ratio) * _throttle_thrust_max * compensation_gain;
 
     // sanity check throttle is above zero and below current limited throttle
     if (throttle_thrust <= 0.0f) {
@@ -167,6 +168,9 @@ void AP_MotorsMatrix::output_armed_stabilizing()
 
     // ensure that throttle_avg_max is between the input throttle and the maximum throttle
     throttle_avg_max = constrain_float(throttle_avg_max, throttle_thrust, throttle_thrust_max);
+
+    // calculate the highest allowed average thrust that will provide maximum control range
+    throttle_thrust_best_rpy = MIN(0.5f, throttle_avg_max);
 
     // calculate throttle that gives most possible room for yaw which is the lower of:
     //      1. 0.5f - (rpy_low+rpy_high)/2.0 - this would give the maximum possible margin above the highest motor and below the lowest
@@ -193,43 +197,59 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     // this is always equal to or less than the requested yaw from the pilot or rate controller
     float rp_low = 1.0f;    // lowest thrust value
     float rp_high = -1.0f;  // highest thrust value
-    for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+    for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
             // calculate the thrust outputs for roll and pitch
             _thrust_rpyt_out[i] = roll_thrust * _roll_factor[i] + pitch_thrust * _pitch_factor[i];
-            // record lowest roll+pitch command
+            // record lowest roll + pitch command
             if (_thrust_rpyt_out[i] < rp_low) {
                 rp_low = _thrust_rpyt_out[i];
             }
-            // record highest roll+pitch command
+            // record highest roll + pitch command
             if (_thrust_rpyt_out[i] > rp_high && (!_thrust_boost || i != _motor_lost_index)) {
                 rp_high = _thrust_rpyt_out[i];
+            }
+
+            // Check the maximum yaw control that can be used on this channel
+            // Exclude any lost motors if thrust boost is enabled
+            if (!is_zero(_yaw_factor[i]) && (!_thrust_boost || i != _motor_lost_index)){
+                if (is_positive(yaw_thrust * _yaw_factor[i])) {
+                    yaw_allowed = MIN(yaw_allowed, fabsf(MAX(1.0f - (throttle_thrust_best_rpy + _thrust_rpyt_out[i]), 0.0f)/_yaw_factor[i]));
+                } else {
+                    yaw_allowed = MIN(yaw_allowed, fabsf(MAX(throttle_thrust_best_rpy + _thrust_rpyt_out[i], 0.0f)/_yaw_factor[i]));
+                }
             }
         }
     }
 
-    // include the lost motor scaled by _thrust_boost_ratio
+    // calculate the maximum yaw control that can be used
+    // todo: make _yaw_headroom 0 to 1
+    float yaw_allowed_min = (float)_yaw_headroom / 1000.0f;
+
+    // increase yaw headroom to 50% if thrust boost enabled
+    yaw_allowed_min = _thrust_boost_ratio * 0.5f + (1.0f - _thrust_boost_ratio) * yaw_allowed_min;
+
+    // Let yaw access minimum amount of head room
+    yaw_allowed = MAX(yaw_allowed, yaw_allowed_min);
+
+    // Include the lost motor scaled by _thrust_boost_ratio to smoothly transition this motor in and out of the calculation
     if (_thrust_boost && motor_enabled[_motor_lost_index]) {
-        // record highest roll+pitch command
+        // record highest roll + pitch command
         if (_thrust_rpyt_out[_motor_lost_index] > rp_high) {
-            rp_high = _thrust_boost_ratio*rp_high + (1.0f-_thrust_boost_ratio)*_thrust_rpyt_out[_motor_lost_index];
+            rp_high = _thrust_boost_ratio * rp_high + (1.0f - _thrust_boost_ratio) * _thrust_rpyt_out[_motor_lost_index];
+        }
+
+        // Check the maximum yaw control that can be used on this channel
+        // Exclude any lost motors if thrust boost is enabled
+        if (!is_zero(_yaw_factor[_motor_lost_index])){
+            if (is_positive(yaw_thrust * _yaw_factor[_motor_lost_index])) {
+                yaw_allowed = _thrust_boost_ratio * yaw_allowed + (1.0f - _thrust_boost_ratio) * MIN(yaw_allowed, fabsf(MAX(1.0f - (throttle_thrust_best_rpy + _thrust_rpyt_out[_motor_lost_index]), 0.0f)/_yaw_factor[_motor_lost_index]));
+            } else {
+                yaw_allowed = _thrust_boost_ratio * yaw_allowed + (1.0f - _thrust_boost_ratio) * MIN(yaw_allowed, fabsf(MAX(throttle_thrust_best_rpy + _thrust_rpyt_out[_motor_lost_index], 0.0f)/_yaw_factor[_motor_lost_index]));
+            }
         }
     }
 
-    // check for roll and pitch saturation
-    if (rp_high-rp_low > 1.0f || throttle_avg_max < -rp_low) {
-        // Full range is being used by roll and pitch.
-        limit.roll_pitch = true;
-    }
-
-    // calculate the highest allowed average thrust that will provide maximum control range
-    throttle_thrust_best_rpy = MIN(0.5f, throttle_avg_max);
-
-    // calculate the maximum yaw control that can be used
-    // todo: make _yaw_headroom 0 to 1
-    yaw_allowed = (float)_yaw_headroom / 1000.0f;
-    yaw_allowed = _thrust_boost_ratio*0.5f + (1.0f - _thrust_boost_ratio) * yaw_allowed;
-    yaw_allowed = MAX(MIN(throttle_thrust_best_rpy+rp_low, 1.0f - (throttle_thrust_best_rpy + rp_high)), yaw_allowed);
     if (fabsf(yaw_thrust) > yaw_allowed) {
         // not all commanded yaw can be used
         yaw_thrust = constrain_float(yaw_thrust, -yaw_allowed, yaw_allowed);
@@ -239,33 +259,34 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     // add yaw control to thrust outputs
     float rpy_low = 1.0f;   // lowest thrust value
     float rpy_high = -1.0f; // highest thrust value
-    for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+    for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
             _thrust_rpyt_out[i] = _thrust_rpyt_out[i] + yaw_thrust * _yaw_factor[i];
 
-            // record lowest roll+pitch+yaw command
+            // record lowest roll + pitch + yaw command
             if (_thrust_rpyt_out[i] < rpy_low) {
                 rpy_low = _thrust_rpyt_out[i];
             }
-            // record highest roll+pitch+yaw command
+            // record highest roll + pitch + yaw command
+            // Exclude any lost motors if thrust boost is enabled
             if (_thrust_rpyt_out[i] > rpy_high && (!_thrust_boost || i != _motor_lost_index)) {
                 rpy_high = _thrust_rpyt_out[i];
             }
         }
     }
-    // include the lost motor scaled by _thrust_boost_ratio
+    // Include the lost motor scaled by _thrust_boost_ratio to smoothly transition this motor in and out of the calculation
     if (_thrust_boost) {
-        // record highest roll+pitch+yaw command
+        // record highest roll + pitch + yaw command
         if (_thrust_rpyt_out[_motor_lost_index] > rpy_high && motor_enabled[_motor_lost_index]) {
-            rpy_high = _thrust_boost_ratio*rpy_high + (1.0f-_thrust_boost_ratio)*_thrust_rpyt_out[_motor_lost_index];
+            rpy_high = _thrust_boost_ratio * rpy_high + (1.0f - _thrust_boost_ratio) * _thrust_rpyt_out[_motor_lost_index];
         }
     }
 
     // calculate any scaling needed to make the combined thrust outputs fit within the output range
-    if (rpy_high-rpy_low > 1.0f) {
-        rpy_scale = 1.0f / (rpy_high-rpy_low);
+    if (rpy_high - rpy_low > 1.0f) {
+        rpy_scale = 1.0f / (rpy_high - rpy_low);
     }
-    if (is_negative(rpy_low)) {
+    if (throttle_avg_max + rpy_low < 0) {
         rpy_scale = MIN(rpy_scale, -throttle_avg_max / rpy_low);
     }
 
@@ -276,7 +297,8 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     thr_adj = throttle_thrust - throttle_thrust_best_rpy;
     if (rpy_scale < 1.0f) {
         // Full range is being used by roll, pitch, and yaw.
-        limit.roll_pitch = true;
+        limit.roll = true;
+        limit.pitch = true;
         limit.yaw = true;
         if (thr_adj > 0.0f) {
             limit.throttle_upper = true;
@@ -295,14 +317,19 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     }
 
     // add scaled roll, pitch, constrained yaw and throttle for each motor
-    for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+    for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
             _thrust_rpyt_out[i] = throttle_thrust_best_rpy + thr_adj + (rpy_scale * _thrust_rpyt_out[i]);
         }
     }
 
+    // determine throttle thrust for harmonic notch
+    const float throttle_thrust_best_plus_adj = throttle_thrust_best_rpy + thr_adj;
+    // compensation_gain can never be zero
+    _throttle_out = throttle_thrust_best_plus_adj / compensation_gain;
+
     // check for failed motor
-    check_for_failed_motor(throttle_thrust_best_rpy + thr_adj);
+    check_for_failed_motor(throttle_thrust_best_plus_adj);
 }
 
 // check for failed motor
@@ -330,11 +357,11 @@ void AP_MotorsMatrix::check_for_failed_motor(float throttle_thrust_best_plus_adj
         if (motor_enabled[i]) {
             number_motors += 1;
             rpyt_sum += _thrust_rpyt_out_filt[i];
-            // record highest thrust command
+            // record highest filtered thrust command
             if (_thrust_rpyt_out_filt[i] > rpyt_high) {
                 rpyt_high = _thrust_rpyt_out_filt[i];
-                // hold motor lost index constant while thrust balance is true
-                if (_thrust_balanced) {
+                // hold motor lost index constant while thrust boost is active
+                if (!_thrust_boost) {
                     _motor_lost_index = i;
                 }
             }
@@ -354,7 +381,7 @@ void AP_MotorsMatrix::check_for_failed_motor(float throttle_thrust_best_plus_adj
     }
 
     // check to see if thrust boost is using more throttle than _throttle_thrust_max
-    if (_throttle_thrust_max > throttle_thrust_best_plus_adj && rpyt_high < 0.9f && _thrust_balanced) {
+    if ((_throttle_thrust_max * get_compensation_gain() > throttle_thrust_best_plus_adj) && (rpyt_high < 0.9f) && _thrust_balanced) {
         _thrust_boost = false;
     }
 }
@@ -370,7 +397,7 @@ void AP_MotorsMatrix::output_test_seq(uint8_t motor_seq, int16_t pwm)
     }
 
     // loop through all the possible orders spinning any motors that match that description
-    for (uint8_t i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+    for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i] && _test_order[i] == motor_seq) {
             // turn on this motor
             rc_write(i, pwm);
@@ -390,7 +417,7 @@ bool AP_MotorsMatrix::output_test_num(uint8_t output_channel, int16_t pwm)
     }
 
     // Is channel in supported range?
-    if (output_channel > AP_MOTORS_MAX_NUM_MOTORS -1) {
+    if (output_channel > AP_MOTORS_MAX_NUM_MOTORS - 1) {
         return false;
     }
 
@@ -407,10 +434,10 @@ bool AP_MotorsMatrix::output_test_num(uint8_t output_channel, int16_t pwm)
 void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, uint8_t testing_order)
 {
     // ensure valid motor number is provided
-    if( motor_num >= 0 && motor_num < AP_MOTORS_MAX_NUM_MOTORS ) {
+    if (motor_num >= 0 && motor_num < AP_MOTORS_MAX_NUM_MOTORS) {
 
         // increment number of motors if this motor is being newly motor_enabled
-        if( !motor_enabled[motor_num] ) {
+        if (!motor_enabled[motor_num]) {
             motor_enabled[motor_num] = true;
         }
 
@@ -448,7 +475,7 @@ void AP_MotorsMatrix::add_motor(int8_t motor_num, float roll_factor_in_degrees, 
 void AP_MotorsMatrix::remove_motor(int8_t motor_num)
 {
     // ensure valid motor number is provided
-    if( motor_num >= 0 && motor_num < AP_MOTORS_MAX_NUM_MOTORS ) {
+    if (motor_num >= 0 && motor_num < AP_MOTORS_MAX_NUM_MOTORS) {
         // disable the motor, set all factors to zero
         motor_enabled[motor_num] = false;
         _roll_factor[motor_num] = 0;
@@ -460,7 +487,7 @@ void AP_MotorsMatrix::remove_motor(int8_t motor_num)
 void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_type frame_type)
 {
     // remove existing motors
-    for (int8_t i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+    for (int8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
         remove_motor(i);
     }
 
@@ -489,6 +516,13 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                     add_motor(AP_MOTORS_MOT_2,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,1);
                     add_motor(AP_MOTORS_MOT_3, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,3);
                     add_motor(AP_MOTORS_MOT_4,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 4);
+                    break;
+                case MOTOR_FRAME_TYPE_BF_X_REV:
+                    // betaflight quad X order, reversed motors
+                    add_motor(AP_MOTORS_MOT_1,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2);
+                    add_motor(AP_MOTORS_MOT_2,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1);
+                    add_motor(AP_MOTORS_MOT_3, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3);
+                    add_motor(AP_MOTORS_MOT_4,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4);
                     break;
                 case MOTOR_FRAME_TYPE_DJI_X:
                     // DJI quad X order
@@ -561,10 +595,10 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                     break;
                 case MOTOR_FRAME_TYPE_PLUSREV:
                     // plus with reversed motor directions
-                    add_motor(AP_MOTORS_MOT_1,  90, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 2);
+                    add_motor(AP_MOTORS_MOT_1, 90, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 2);
                     add_motor(AP_MOTORS_MOT_2, -90, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 4);
-                    add_motor(AP_MOTORS_MOT_3,   0, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,1);
-                    add_motor(AP_MOTORS_MOT_4, 180, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,3);
+                    add_motor(AP_MOTORS_MOT_3, 0, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1);
+                    add_motor(AP_MOTORS_MOT_4, 180, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3);
                     break;
                 default:
                     // quad frame class does not support this frame type
@@ -600,6 +634,22 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                     add_motor_raw(AP_MOTORS_MOT_5, -1.0f, 1.0f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1);
                     add_motor_raw(AP_MOTORS_MOT_6, 1.0f, -1.0f, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 4);
                     break;
+                case MOTOR_FRAME_TYPE_DJI_X:
+                    add_motor(AP_MOTORS_MOT_1,   30, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1);
+                    add_motor(AP_MOTORS_MOT_2,  -30, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  6);
+                    add_motor(AP_MOTORS_MOT_3,  -90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 5);
+                    add_motor(AP_MOTORS_MOT_4, -150, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4);
+                    add_motor(AP_MOTORS_MOT_5,  150, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3);
+                    add_motor(AP_MOTORS_MOT_6,   90, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2);
+                    break;
+                case MOTOR_FRAME_TYPE_CW_X:
+                    add_motor(AP_MOTORS_MOT_1,   30, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1);
+                    add_motor(AP_MOTORS_MOT_2,   90, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2);
+                    add_motor(AP_MOTORS_MOT_3,  150, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3);
+                    add_motor(AP_MOTORS_MOT_4, -150, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4);
+                    add_motor(AP_MOTORS_MOT_5,  -90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 5);
+                    add_motor(AP_MOTORS_MOT_6,  -30, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  6);
+                    break;
                 default:
                     // hexa frame class does not support this frame type
                     success = false;
@@ -630,14 +680,14 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                     add_motor(AP_MOTORS_MOT_8,  112.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3);
                     break;
                 case MOTOR_FRAME_TYPE_V:
-                    add_motor_raw(AP_MOTORS_MOT_1,  1.0f,  0.34f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  7);
-                    add_motor_raw(AP_MOTORS_MOT_2, -1.0f, -0.32f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3);
-                    add_motor_raw(AP_MOTORS_MOT_3,  1.0f, -0.32f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 6);
-                    add_motor_raw(AP_MOTORS_MOT_4, -0.5f,  -1.0f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4);
-                    add_motor_raw(AP_MOTORS_MOT_5,  1.0f,   1.0f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 8);
-                    add_motor_raw(AP_MOTORS_MOT_6, -1.0f,  0.34f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2);
-                    add_motor_raw(AP_MOTORS_MOT_7, -1.0f,   1.0f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1);
-                    add_motor_raw(AP_MOTORS_MOT_8,  0.5f,  -1.0f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  5);
+                    add_motor_raw(AP_MOTORS_MOT_1,  0.83f,  0.34f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  7);
+                    add_motor_raw(AP_MOTORS_MOT_2, -0.67f, -0.32f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3);
+                    add_motor_raw(AP_MOTORS_MOT_3,  0.67f, -0.32f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 6);
+                    add_motor_raw(AP_MOTORS_MOT_4, -0.50f, -1.00f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4);
+                    add_motor_raw(AP_MOTORS_MOT_5,  1.00f,  1.00f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 8);
+                    add_motor_raw(AP_MOTORS_MOT_6, -0.83f,  0.34f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2);
+                    add_motor_raw(AP_MOTORS_MOT_7, -1.00f,  1.00f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1);
+                    add_motor_raw(AP_MOTORS_MOT_8,  0.50f, -1.00f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  5);
                     break;
                 case MOTOR_FRAME_TYPE_H:
                     add_motor_raw(AP_MOTORS_MOT_1, -1.0f,    1.0f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1);
@@ -658,6 +708,26 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                     add_motor_raw(AP_MOTORS_MOT_6,   -1.0f,  1.0f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 6);
                     add_motor_raw(AP_MOTORS_MOT_7,   -1.0f, -1.0f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  7);
                     add_motor_raw(AP_MOTORS_MOT_8,    1.0f,  1.0f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3);
+                    break;
+                case MOTOR_FRAME_TYPE_DJI_X:
+                    add_motor(AP_MOTORS_MOT_1,   22.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1);
+                    add_motor(AP_MOTORS_MOT_2,  -22.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  8);
+                    add_motor(AP_MOTORS_MOT_3,  -67.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 7);
+                    add_motor(AP_MOTORS_MOT_4, -112.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  6);
+                    add_motor(AP_MOTORS_MOT_5, -157.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 5);
+                    add_motor(AP_MOTORS_MOT_6,  157.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4);
+                    add_motor(AP_MOTORS_MOT_7,  112.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3);
+                    add_motor(AP_MOTORS_MOT_8,   67.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2);
+                    break;
+                case MOTOR_FRAME_TYPE_CW_X:
+                    add_motor(AP_MOTORS_MOT_1,   22.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1);
+                    add_motor(AP_MOTORS_MOT_2,   67.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2);
+                    add_motor(AP_MOTORS_MOT_3,  112.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3);
+                    add_motor(AP_MOTORS_MOT_4,  157.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4);
+                    add_motor(AP_MOTORS_MOT_5, -157.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 5);
+                    add_motor(AP_MOTORS_MOT_6, -112.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  6);
+                    add_motor(AP_MOTORS_MOT_7,  -67.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 7);
+                    add_motor(AP_MOTORS_MOT_8,  -22.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  8);
                     break;
                 default:
                     // octa frame class does not support this frame type
@@ -708,6 +778,16 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                     add_motor(AP_MOTORS_MOT_6,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2);
                     add_motor(AP_MOTORS_MOT_7,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4);
                     add_motor(AP_MOTORS_MOT_8, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 6);
+                    break;
+                case MOTOR_FRAME_TYPE_CW_X:
+                    add_motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1);
+                    add_motor(AP_MOTORS_MOT_2,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2);
+                    add_motor(AP_MOTORS_MOT_3,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3);
+                    add_motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4);
+                    add_motor(AP_MOTORS_MOT_5, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 5);
+                    add_motor(AP_MOTORS_MOT_6, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  6);
+                    add_motor(AP_MOTORS_MOT_7,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 7);
+                    add_motor(AP_MOTORS_MOT_8,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  8);
                     break;
                 default:
                     // octaquad frame class does not support this frame type
@@ -788,7 +868,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
             // matrix doesn't support the configured class
             success = false;
             break;
-        } // switch frame_class
+    } // switch frame_class
 
     // normalise factors to magnitude 0.5
     normalise_rpy_factors();
@@ -804,7 +884,7 @@ void AP_MotorsMatrix::normalise_rpy_factors()
     float yaw_fac = 0.0f;
 
     // find maximum roll, pitch and yaw factors
-    for (uint8_t i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+    for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
             if (roll_fac < fabsf(_roll_factor[i])) {
                 roll_fac = fabsf(_roll_factor[i]);
@@ -819,16 +899,16 @@ void AP_MotorsMatrix::normalise_rpy_factors()
     }
 
     // scale factors back to -0.5 to +0.5 for each axis
-    for (uint8_t i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+    for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
             if (!is_zero(roll_fac)) {
-                _roll_factor[i] = 0.5f*_roll_factor[i]/roll_fac;
+                _roll_factor[i] = 0.5f * _roll_factor[i] / roll_fac;
             }
             if (!is_zero(pitch_fac)) {
-                _pitch_factor[i] = 0.5f*_pitch_factor[i]/pitch_fac;
+                _pitch_factor[i] = 0.5f * _pitch_factor[i] / pitch_fac;
             }
             if (!is_zero(yaw_fac)) {
-                _yaw_factor[i] = 0.5f*_yaw_factor[i]/yaw_fac;
+                _yaw_factor[i] = 0.5f * _yaw_factor[i] / yaw_fac;
             }
         }
     }

@@ -39,11 +39,11 @@ public:
 
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
                                             AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
-                                            enum Rotation rotation = ROTATION_NONE);
+                                            enum Rotation rotation);
 
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
                                             AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev,
-                                            enum Rotation rotation = ROTATION_NONE);
+                                            enum Rotation rotation);
 
     /* update accel and gyro state */
     bool update() override;
@@ -55,6 +55,9 @@ public:
     AuxiliaryBus *get_auxiliary_bus() override;
 
     void start() override;
+
+    // get a startup banner to output to the GCS
+    bool get_output_banner(char* banner, uint8_t banner_len) override;
 
     enum Invensense_Type {
         Invensense_MPU6000=0,

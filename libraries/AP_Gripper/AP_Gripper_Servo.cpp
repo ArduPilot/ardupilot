@@ -1,5 +1,7 @@
 #include <AP_Gripper/AP_Gripper_Servo.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Logger/AP_Logger.h>
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
   #include <SITL/SITL.h>
 #endif
@@ -22,6 +24,7 @@ void AP_Gripper_Servo::grab()
     is_released = true;
 #endif
     gcs().send_text(MAV_SEVERITY_INFO, "Gripper load grabbing");
+    AP::logger().Write_Event(LogEvent::GRIPPER_GRAB);
 }
 
 void AP_Gripper_Servo::release()
@@ -34,6 +37,7 @@ void AP_Gripper_Servo::release()
     is_released = false;
 #endif
     gcs().send_text(MAV_SEVERITY_INFO, "Gripper load releasing");
+    AP::logger().Write_Event(LogEvent::GRIPPER_RELEASE);
 }
 
 bool AP_Gripper_Servo::has_state_pwm(const uint16_t pwm) const

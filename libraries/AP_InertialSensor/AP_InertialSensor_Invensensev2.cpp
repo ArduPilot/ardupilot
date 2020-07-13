@@ -155,9 +155,7 @@ bool AP_InertialSensor_Invensensev2::_has_auxiliary_bus()
 
 void AP_InertialSensor_Invensensev2::start()
 {
-    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return;
-    }
+    _dev->get_semaphore()->take_blocking();
 
     // initially run the bus at low speed
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);
@@ -209,11 +207,6 @@ void AP_InertialSensor_Invensensev2::start()
     // readings to fit them into an int16_t:
     _set_raw_sample_accel_multiplier(_accel_instance, multiplier_accel);
 
-    if (_fast_sampling) {
-        hal.console->printf("INV2[%u]: enabled fast sampling rate %uHz/%uHz\n",
-                            _accel_instance, _backend_rate_hz*_fifo_downsample_rate, _backend_rate_hz);
-    }
-    
     // set sample rate to 1.125KHz
     _register_write(INV2REG_GYRO_SMPLRT_DIV, 0, true);
     hal.scheduler->delay(1);
@@ -245,6 +238,15 @@ void AP_InertialSensor_Invensensev2::start()
     _dev->register_periodic_callback(1265625UL / _backend_rate_hz, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_Invensensev2::_poll_data, void));
 }
 
+// get a startup banner to output to the GCS
+bool AP_InertialSensor_Invensensev2::get_output_banner(char* banner, uint8_t banner_len) {
+    if (_fast_sampling) {
+        snprintf(banner, banner_len, "IMU%u: fast sampling enabled %.1fkHz/%.1fkHz",
+            _accel_instance, _backend_rate_hz*_fifo_downsample_rate / 1000.0, _backend_rate_hz/ 1000.0);
+        return true;
+    }
+    return false;
+}
 
 /*
   publish any pending data
@@ -321,7 +323,9 @@ bool AP_InertialSensor_Invensensev2::_accumulate(uint8_t *samples, uint8_t n_sam
 
         int16_t t2 = int16_val(data, 6);
         if (!_check_raw_temp(t2)) {
-            debug("temp reset IMU[%u] %d %d", _accel_instance, _raw_temp, t2);
+            if (!hal.scheduler->in_expected_delay()) {
+                debug("temp reset IMU[%u] %d %d", _accel_instance, _raw_temp, t2);
+            }
             _fifo_reset();
             return false;
         }
@@ -364,7 +368,9 @@ bool AP_InertialSensor_Invensensev2::_accumulate_sensor_rate_sampling(uint8_t *s
         // use temperature to detect FIFO corruption
         int16_t t2 = int16_val(data, 6);
         if (!_check_raw_temp(t2)) {
-            debug("temp reset IMU[%u] %d %d", _accel_instance, _raw_temp, t2);
+            if (!hal.scheduler->in_expected_delay()) {
+                debug("temp reset IMU[%u] %d %d", _accel_instance, _raw_temp, t2);
+            }
             _fifo_reset();
             ret = false;
             break;
@@ -400,10 +406,10 @@ bool AP_InertialSensor_Invensensev2::_accumulate_sensor_rate_sampling(uint8_t *s
             _accum.gyro *= _fifo_gyro_scale;
             _rotate_and_correct_accel(_accel_instance, _accum.accel);
             _rotate_and_correct_gyro(_gyro_instance, _accum.gyro);
-            
+
             _notify_new_accel_raw_sample(_accel_instance, _accum.accel, 0, false);
             _notify_new_gyro_raw_sample(_gyro_instance, _accum.gyro);
-            
+
             _accum.accel.zero();
             _accum.gyro.zero();
             _accum.count = 0;
@@ -478,7 +484,9 @@ void AP_InertialSensor_Invensensev2::_read_fifo()
             }
             memset(rx, 0, n * INV2_SAMPLE_SIZE);
             if (!_dev->transfer(rx, n * INV2_SAMPLE_SIZE, rx, n * INV2_SAMPLE_SIZE)) {
-                hal.console->printf("INV2: error in fifo read %u bytes\n", n * INV2_SAMPLE_SIZE);
+                if (!hal.scheduler->in_expected_delay()) {
+                    debug("INV2: error in fifo read %u bytes\n", n * INV2_SAMPLE_SIZE);
+                }
                 _dev->set_chip_select(false);
                 goto check_registers;
             }
@@ -487,7 +495,9 @@ void AP_InertialSensor_Invensensev2::_read_fifo()
 
         if (_fast_sampling) {
             if (!_accumulate_sensor_rate_sampling(rx, n)) {
-                debug("IMU[%u] stop at %u of %u", _accel_instance, n_samples, bytes_read/INV2_SAMPLE_SIZE);
+                if (!hal.scheduler->in_expected_delay()) {
+                    debug("IMU[%u] stop at %u of %u", _accel_instance, n_samples, bytes_read/INV2_SAMPLE_SIZE);
+                }
                 break;
             }
         } else {
@@ -574,15 +584,20 @@ void AP_InertialSensor_Invensensev2::_set_filter_and_scaling(void)
     if (enable_fast_sampling(_accel_instance)) {
         _fast_sampling = _dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI;
         if (_fast_sampling) {
-            if (get_sample_rate_hz() <= 1125) {
-                _fifo_downsample_rate = 8;
-            } else if (get_sample_rate_hz() <= 2250) {
-                _fifo_downsample_rate = 4;
-            } else {
-                _fifo_downsample_rate = 2;
+            // constrain the gyro rate to be at least the loop rate
+            uint8_t loop_limit = 1;
+            if (get_loop_rate_hz() > 1125) {
+                loop_limit = 2;
             }
-            // calculate rate we will be giving samples to the backend
-            _backend_rate_hz *= (8 / _fifo_downsample_rate);
+            if (get_loop_rate_hz() > 2250) {
+                loop_limit = 4;
+            }
+            // constrain the gyro rate to be a 2^N multiple
+            uint8_t fast_sampling_rate = constrain_int16(get_fast_sampling_rate(), loop_limit, 8);
+
+            // calculate rate we will be giving gyro samples to the backend
+            _fifo_downsample_rate = 8 / fast_sampling_rate;
+            _backend_rate_hz *= fast_sampling_rate;
 
             // for logging purposes set the oversamping rate
             _set_accel_oversampling(_accel_instance, _fifo_downsample_rate/2);
@@ -636,9 +651,7 @@ bool AP_InertialSensor_Invensensev2::_check_whoami(void)
 
 bool AP_InertialSensor_Invensensev2::_hardware_init(void)
 {
-    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return false;
-    }
+    _dev->get_semaphore()->take_blocking();
 
     // disabled setup of checked registers as it can't cope with bank switching
     // _dev->setup_checked_registers(7, _dev->bus_type() == AP_HAL::Device::BUS_TYPE_I2C?200:20);
@@ -835,10 +848,8 @@ void AP_Invensensev2_AuxiliaryBus::_configure_slaves()
 {
     auto &backend = AP_InertialSensor_Invensensev2::from(_ins_backend);
 
-    if (!backend._dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return;
-    }
-    
+    backend._dev->get_semaphore()->take_blocking();
+
     /* Enable the I2C master to slaves on the auxiliary I2C bus*/
     if (!(backend._last_stat_user_ctrl & BIT_USER_CTRL_I2C_MST_EN)) {
         backend._last_stat_user_ctrl |= BIT_USER_CTRL_I2C_MST_EN;

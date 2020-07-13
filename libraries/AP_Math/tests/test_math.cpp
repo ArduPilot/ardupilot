@@ -238,6 +238,17 @@ TEST(MathWrapTest, Angle180)
     EXPECT_EQ(9000.f,  wrap_180_cd(-27000.f));
     EXPECT_EQ(0.f,     wrap_180_cd(-36000.f));
     EXPECT_EQ(0.f,     wrap_180_cd(-72000.f));
+
+    EXPECT_EQ(45,   wrap_180(int16_t(45)));
+    EXPECT_EQ(90,   wrap_180(int16_t(90)));
+    EXPECT_EQ(180,  wrap_180(int16_t(180)));
+    EXPECT_EQ(-179, wrap_180(int16_t(181)));
+    EXPECT_EQ(-90,  wrap_180(int16_t(270)));
+    EXPECT_EQ(0,      wrap_180(int16_t(360)));
+    EXPECT_EQ(0,      wrap_180(int16_t(720)));
+    EXPECT_EQ(0,      wrap_180(int16_t(3600)));
+    EXPECT_EQ(0,      wrap_180((int16_t(7200))));
+    EXPECT_EQ(0,      wrap_180((int16_t)-3600));
 }
 
 TEST(MathWrapTest, Angle360)
@@ -277,6 +288,17 @@ TEST(MathWrapTest, Angle360)
     EXPECT_EQ(0.f,     wrap_360_cd(-36000.f));
     EXPECT_EQ(35995.0f,wrap_360_cd(-36005.f));
     EXPECT_EQ(0.f,     wrap_360_cd(-72000.f));
+
+
+    EXPECT_EQ(45,  wrap_360((int16_t)45));
+    EXPECT_EQ(90,  wrap_360((int16_t)90));
+    EXPECT_EQ(180, wrap_360((int16_t)180));
+    EXPECT_EQ(270, wrap_360((int16_t)270));
+    EXPECT_EQ(0,     wrap_360((int16_t)360));
+    EXPECT_EQ(1,     wrap_360((int16_t)361));
+    EXPECT_EQ(0,     wrap_360((int16_t)720));
+    EXPECT_EQ(0,     wrap_360((int16_t)3600));
+    EXPECT_EQ(0,     wrap_360((int16_t)7200));
 }
 
 TEST(MathWrapTest, AnglePI)

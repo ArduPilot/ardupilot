@@ -37,7 +37,6 @@ void AP_BoardConfig::board_init_safety()
     }
     if (force_safety_off) {
         hal.rcout->force_safety_off();
-        hal.rcout->force_safety_no_wait();
         // wait until safety has been turned off
         uint8_t count = 20;
         while (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_ARMED && count--) {
@@ -79,15 +78,17 @@ void AP_BoardConfig::board_setup_drivers(void)
     // run board auto-detection
     board_autodetect();
 
+#if HAL_HAVE_IMU_HEATER
     if (state.board_type == PX4_BOARD_PH2SLIM ||
         state.board_type == PX4_BOARD_PIXHAWK2) {
-        _imu_target_temperature.set_default(45);
-        if (_imu_target_temperature.get() < 0) {
+        heater.imu_target_temperature.set_default(45);
+        if (heater.imu_target_temperature.get() < 0) {
             // don't allow a value of -1 on the cube, or it could cook
             // the IMU
-            _imu_target_temperature.set(45);
+            heater.imu_target_temperature.set(45);
         }
     }
+#endif
 
     px4_configured_board = (enum px4_board_type)state.board_type.get();
 
@@ -115,7 +116,7 @@ void AP_BoardConfig::board_setup_drivers(void)
     case PX4_BOARD_MINDPXV2:
         break;
     default:
-        sensor_config_error("Unknown board type");
+        config_error("Unknown board type");
         break;
     }
 }
@@ -135,9 +136,7 @@ bool AP_BoardConfig::spi_check_register(const char *devname, uint8_t regnum, uin
         return false;
     }
     dev->set_read_flag(read_flag);
-    if (!dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return false;
-    }
+    dev->get_semaphore()->take_blocking();
     uint8_t v;
     if (!dev->read_registers(regnum, &v, 1)) {
 #if SPI_PROBE_DEBUG
@@ -153,8 +152,8 @@ bool AP_BoardConfig::spi_check_register(const char *devname, uint8_t regnum, uin
     return v == value;
 }
 
-#if defined(HAL_CHIBIOS_ARCH_CUBEBLACK)
-static bool check_ms5611(const char* devname) {
+#if defined(HAL_VALIDATE_BOARD)
+bool AP_BoardConfig::check_ms5611(const char* devname) {
     auto dev = hal.spi->get_device(devname);
     if (!dev) {
 #if SPI_PROBE_DEBUG
@@ -165,9 +164,10 @@ static bool check_ms5611(const char* devname) {
 
     AP_HAL::Semaphore *dev_sem = dev->get_semaphore();
 
-    if (!dev_sem || !dev_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (!dev_sem) {
         return false;
     }
+    dev_sem->take_blocking();
 
     static const uint8_t CMD_MS56XX_RESET = 0x1E;
     static const uint8_t CMD_MS56XX_PROM = 0xA0;
@@ -211,7 +211,7 @@ static bool check_ms5611(const char* devname) {
 
     return true;
 }
-#endif
+#endif // HAL_VALIDATE_BOARD
 
 #define MPUREG_WHOAMI 0x75
 #define MPU_WHOAMI_MPU60X0  0x68
@@ -225,6 +225,7 @@ static bool check_ms5611(const char* devname) {
 
 #define INV2REG_WHOAMI 0x00
 #define INV2_WHOAMI_ICM20948 0xEA
+#define INV2_WHOAMI_ICM20649 0xE1
 
 /*
   validation of the board type
@@ -250,7 +251,7 @@ void AP_BoardConfig::validate_board_type(void)
         // configured for PIXHAWK1
 #if !defined(CONFIG_ARCH_BOARD_PX4FMU_V3) && !defined(HAL_CHIBIOS_ARCH_FMUV3)
         // force user to load the right firmware
-        sensor_config_error("Pixhawk2 requires FMUv3 firmware");        
+        config_error("Pixhawk2 requires FMUv3 firmware");        
 #endif
         state.board_type.set(PX4_BOARD_PIXHAWK2);
         hal.console->printf("Forced PIXHAWK2\n");
@@ -262,37 +263,19 @@ void AP_BoardConfig::validate_board_type(void)
 #endif
 }
 
-
-void AP_BoardConfig::check_cubeblack(void)
-{
-#if defined(HAL_CHIBIOS_ARCH_CUBEBLACK)
-    if (state.board_type != PX4_BOARD_PIXHAWK2) {
-        state.board_type.set(PX4_BOARD_PIXHAWK2);
-    }
-
-    bool success = true;
-    if (!spi_check_register("mpu9250", MPUREG_WHOAMI, MPU_WHOAMI_MPU9250)) { success = false; }
-    if (!spi_check_register("mpu9250_ext", MPUREG_WHOAMI, MPU_WHOAMI_MPU9250)) { success = false; }
-    if (!spi_check_register("lsm9ds0_ext_g", LSMREG_WHOAMI, LSM_WHOAMI_L3GD20)) { success = false; }
-    if (!spi_check_register("lsm9ds0_ext_am", LSMREG_WHOAMI, LSM_WHOAMI_LSM303D)) { success = false; }
-    if (!check_ms5611("ms5611")) { success = false; }
-    if (!check_ms5611("ms5611_ext")) { success = false; }
-
-    if (!success) {
-        sensor_config_error("Failed to init CubeBlack - sensor mismatch");
-    }
-#endif
-}
-
-
 /*
   auto-detect board type
  */
 void AP_BoardConfig::board_autodetect(void)
 {
-#if defined(HAL_CHIBIOS_ARCH_CUBEBLACK)
-    check_cubeblack();
-    return;
+#if defined(HAL_VALIDATE_BOARD)
+    const char* errored_check = HAL_VALIDATE_BOARD;
+    if (errored_check == nullptr) {
+        return;
+    } else {
+        config_error("Board Validation %s Failed", errored_check);
+        return;
+    }
 #endif
 
     if (state.board_type != PX4_BOARD_AUTO) {
@@ -335,7 +318,7 @@ void AP_BoardConfig::board_autodetect(void)
         state.board_type.set(PX4_BOARD_PIXHAWK);
         hal.console->printf("Detected Pixhawk\n");
     } else {
-        sensor_config_error("Unable to detect board type");
+        config_error("Unable to detect board type");
     }
 #elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4) || defined(HAL_CHIBIOS_ARCH_FMUV4)
     // only one choice

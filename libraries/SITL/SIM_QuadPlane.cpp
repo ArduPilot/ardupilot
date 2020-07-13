@@ -22,8 +22,8 @@
 
 using namespace SITL;
 
-QuadPlane::QuadPlane(const char *home_str, const char *frame_str) :
-    Plane(home_str, frame_str)
+QuadPlane::QuadPlane(const char *frame_str) :
+    Plane(frame_str)
 {
     // default to X frame
     const char *frame_type = "x";
@@ -73,6 +73,7 @@ QuadPlane::QuadPlane(const char *home_str, const char *frame_str) :
         printf("Failed to find frame '%s'\n", frame_type);
         exit(1);
     }
+    num_motors = 1 + frame->num_motors;
 
     if (strstr(frame_str, "cl84")) {
         // setup retract servos at front
@@ -107,7 +108,7 @@ void QuadPlane::update(const struct sitl_input &input)
     Vector3f quad_rot_accel;
     Vector3f quad_accel_body;
 
-    frame->calculate_forces(*this, input, quad_rot_accel, quad_accel_body);
+    frame->calculate_forces(*this, input, quad_rot_accel, quad_accel_body, &rpm[1]);
 
     // estimate voltage and current
     frame->current_and_voltage(input, battery_voltage, battery_current);
@@ -126,6 +127,7 @@ void QuadPlane::update(const struct sitl_input &input)
     accel_body += quad_accel_body;
 
     update_dynamics(rot_accel);
+    update_external_payload(input);
 
     // update lat/lon/altitude
     update_position();

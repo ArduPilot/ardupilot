@@ -259,7 +259,7 @@ void KDECAN_sniffer::loop(void)
 
 void KDECAN_sniffer::print_stats(void)
 {
-    hal.console->printf("%lu\n", AP_HAL::micros());
+    hal.console->printf("%u\n", (unsigned)AP_HAL::micros());
     for (uint16_t i=0;i<100;i++) {
         if (counters[i].frame_id == 0) {
             break;

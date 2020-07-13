@@ -27,6 +27,8 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
 
+AP_AdvancedFailsafe *AP_AdvancedFailsafe::_singleton;
+
 extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
@@ -56,7 +58,7 @@ const AP_Param::GroupInfo AP_AdvancedFailsafe::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("WP_COMMS",    2, AP_AdvancedFailsafe, _wp_comms_hold, 0),
 
-    // @Param: GPS_LOSS
+    // @Param: WP_GPS_LOSS
     // @DisplayName: GPS Loss Waypoint
     // @Description: Waypoint number to navigate to on GPS lock loss
     // @User: Advanced
@@ -149,6 +151,13 @@ const AP_Param::GroupInfo AP_AdvancedFailsafe::var_info[] = {
     // @Units: s
     AP_GROUPINFO("RC_FAIL_TIME",   19, AP_AdvancedFailsafe, _rc_fail_time_seconds,    0),
 
+    // @Param: MAX_RANGE
+    // @DisplayName: Max allowed range
+    // @Description: This is the maximum range of the vehicle in kilometers from first arming. If the vehicle goes beyond this range then the TERM_ACTION is performed. A value of zero disables this feature.
+    // @User: Advanced
+    // @Units: km
+    AP_GROUPINFO("MAX_RANGE",   20, AP_AdvancedFailsafe, _max_range_km,    0),
+    
     AP_GROUPEND
 };
 
@@ -170,6 +179,9 @@ AP_AdvancedFailsafe::check(uint32_t last_heartbeat_ms, bool geofence_breached, u
             }
         }
     }
+
+    // update max range check
+    max_range_update();
 
     enum control_mode mode = afs_mode();
     
@@ -404,3 +416,51 @@ bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reaso
     }
     return false;
 }
+
+/*
+  update check of maximum range
+ */
+void AP_AdvancedFailsafe::max_range_update(void)
+{
+    if (_max_range_km <= 0) {
+        return;
+    }
+
+    if (!_have_first_location) {
+        if (AP::gps().status() < AP_GPS::GPS_OK_FIX_3D) {
+            // wait for 3D fix
+            return;
+        }
+        if (!hal.util->get_soft_armed()) {
+            // wait for arming
+            return;
+        }
+        _first_location = AP::gps().location();
+        _have_first_location = true;
+    }
+
+    if (AP::gps().status() < AP_GPS::GPS_OK_FIX_2D) {
+        // don't trigger when dead-reckoning
+        return;
+    }
+    
+    // check distance from first location
+    float distance_km = _first_location.get_distance(AP::gps().location()) * 0.001;
+    if (distance_km > _max_range_km) {
+        uint32_t now = AP_HAL::millis();
+        if (now - _term_range_notice_ms > 5000) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "Terminating due to range %.1fkm", distance_km);
+            _term_range_notice_ms = now;
+        }
+        _terminate.set_and_notify(1);
+    }
+}
+
+namespace AP {
+
+AP_AdvancedFailsafe *advancedfailsafe()
+{
+    return AP_AdvancedFailsafe::get_singleton();
+}
+
+};

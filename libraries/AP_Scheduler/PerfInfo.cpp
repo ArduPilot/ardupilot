@@ -2,6 +2,7 @@
 
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
+#include "AP_Scheduler.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -114,13 +115,14 @@ float AP::PerfInfo::get_filtered_time() const
 void AP::PerfInfo::update_logging()
 {
     gcs().send_text(MAV_SEVERITY_WARNING,
-                    "PERF: %u/%u max=%lu min=%lu F=%u sd=%lu",
+                    "PERF: %u/%u [%lu:%lu] F=%uHz sd=%lu Ex=%lu",
                     (unsigned)get_num_long_running(),
                     (unsigned)get_num_loops(),
                     (unsigned long)get_max_time(),
                     (unsigned long)get_min_time(),
-                    (unsigned)(get_filtered_time()*1.0e6),
-                    (unsigned long)get_stddev_time());
+                    (unsigned)(0.5+(1.0f/get_filtered_time())),
+                    (unsigned long)get_stddev_time(),
+                    (unsigned long)AP::scheduler().get_extra_loop_us());
 }
 
 void AP::PerfInfo::set_loop_rate(uint16_t rate_hz)

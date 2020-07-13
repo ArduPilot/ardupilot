@@ -47,13 +47,23 @@ bool ModeGuided::init(bool ignore_checks)
 
 
 // do_user_takeoff_start - initialises waypoint controller to implement take-off
-bool ModeGuided::do_user_takeoff_start(float final_alt_above_home)
+bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
 {
     guided_mode = Guided_TakeOff;
 
     // initialise wpnav destination
     Location target_loc = copter.current_loc;
-    target_loc.set_alt_cm(final_alt_above_home, Location::AltFrame::ABOVE_HOME);
+    Location::AltFrame frame = Location::AltFrame::ABOVE_HOME;
+    if (wp_nav->rangefinder_used_and_healthy() &&
+            wp_nav->get_terrain_source() == AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER &&
+            takeoff_alt_cm < copter.rangefinder.max_distance_cm_orient(ROTATION_PITCH_270)) {
+        // can't takeoff downwards
+        if (takeoff_alt_cm <= copter.rangefinder_state.alt_cm) {
+            return false;
+        }
+        frame = Location::AltFrame::ABOVE_TERRAIN;
+    }
+    target_loc.set_alt_cm(takeoff_alt_cm, frame);
 
     if (!wp_nav->set_wp_destination(target_loc)) {
         // failure to set destination can only be because of missing terrain data
@@ -176,7 +186,7 @@ void ModeGuided::angle_control_start()
 // guided_set_destination - sets guided mode's target destination
 // Returns true if the fence is enabled and guided waypoint is within the fence
 // else return false if the waypoint is outside the fence
-bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
+bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw, bool terrain_alt)
 {
     // ensure we are in position control mode
     if (guided_mode != Guided_WP) {
@@ -197,7 +207,7 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
     set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
 
     // no need to check return status because terrain data is not used
-    wp_nav->set_wp_destination(destination, false);
+    wp_nav->set_wp_destination(destination, terrain_alt);
 
     // log target
     copter.Log_Write_GuidedTarget(guided_mode, destination, Vector3f());
@@ -209,7 +219,7 @@ bool ModeGuided::get_wp(Location& destination)
     if (guided_mode != Guided_WP) {
         return false;
     }
-    return wp_nav->get_wp_destination(destination);
+    return wp_nav->get_oa_wp_destination(destination);
 }
 
 // sets guided mode's target from a Location object
@@ -370,45 +380,13 @@ void ModeGuided::takeoff_run()
 {
     auto_takeoff_run();
     if (wp_nav->reached_wp_destination()) {
+        // optionally retract landing gear
+        copter.landinggear.retract_after_takeoff();
+
+        // switch to position control mode but maintain current target
         const Vector3f target = wp_nav->get_wp_destination();
-        set_destination(target);
+        set_destination(target, false, 0, false, 0, false, wp_nav->origin_and_destination_are_terrain_alt());
     }
-}
-
-void Mode::auto_takeoff_run()
-{
-    // if not armed set throttle to zero and exit immediately
-    if (!motors->armed() || !copter.ap.auto_armed) {
-        make_safe_spool_down();
-        wp_nav->shift_wp_origin_to_current_pos();
-        return;
-    }
-
-    // process pilot's yaw input
-    float target_yaw_rate = 0;
-    if (!copter.failsafe.radio) {
-        // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
-    }
-
-    // aircraft stays in landed state until rotor speed runup has finished
-    if (motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
-        set_land_complete(false);
-    } else {
-        wp_nav->shift_wp_origin_to_current_pos();
-    }
-
-    // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
-
-    // run waypoint controller
-    copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
-
-    // call z-axis position controller (wpnav should have already updated it's alt target)
-    copter.pos_control->update_z_controller();
-
-    // call attitude controller
-    auto_takeoff_attitude_run(target_yaw_rate);
 }
 
 // guided_pos_control_run - runs the guided position controller

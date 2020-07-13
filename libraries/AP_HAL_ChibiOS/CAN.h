@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 
@@ -28,7 +28,11 @@
 
 #include "CANThread.h"
 #include "CANClock.h"
+#if defined(STM32H7XX)
+#include "CANFDIface.h"
+#else
 #include "CANIface.h"
+#endif
 
 #define MAX_NUMBER_OF_CAN_INTERFACES    2
 #define MAX_NUMBER_OF_CAN_DRIVERS       2

@@ -14,8 +14,8 @@
  */
 #pragma once
 
-#include "RangeFinder.h"
-#include "RangeFinder_Backend.h"
+#include "AP_RangeFinder.h"
+#include "AP_RangeFinder_Backend.h"
 #include <AP_HAL_Linux/Thread.h>
 
 /*
@@ -92,11 +92,11 @@ public:
 
     ~AP_RangeFinder_Bebop(void);
     static bool detect();
-    void update(void);
+    void update(void) override;
 
 protected:
 
-    virtual MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const {
+    MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
         return MAV_DISTANCE_SENSOR_LASER;
     }
 

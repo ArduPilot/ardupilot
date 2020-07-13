@@ -114,12 +114,6 @@ void AnalogSource_IIO::set_pin(uint8_t pin)
     select_pin();
 }
 
-void AnalogSource_IIO::set_stop_pin(uint8_t p)
-{}
-
-void AnalogSource_IIO::set_settle_time(uint16_t settle_time_ms)
-{}
-
 AnalogIn_IIO::AnalogIn_IIO()
 {}
 

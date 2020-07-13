@@ -90,6 +90,26 @@ uint8_t crc_crc8(const uint8_t *p, uint8_t len)
 	return crc & 0xFF;
 }
 
+// crc8 from betaflight
+uint8_t crc8_dvb_s2(uint8_t crc, uint8_t a)
+{
+    return crc8_dvb(crc, a, 0xD5);
+}
+
+// crc8 from betaflight
+uint8_t crc8_dvb(uint8_t crc, uint8_t a, uint8_t seed)
+{
+    crc ^= a;
+    for (uint8_t i = 0; i < 8; ++i) {
+        if (crc & 0x80) {
+            crc = (crc << 1) ^ seed;
+        } else {
+            crc = crc << 1;
+        }
+    }
+    return crc;
+}
+
 /*
   xmodem CRC thanks to avr-liberty
   https://github.com/dreamiurg/avr-liberty
@@ -167,6 +187,7 @@ static const uint32_t crc32_tab[] = {
     0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d
 };
 
+
 uint32_t crc_crc32(uint32_t crc, const uint8_t *buf, uint32_t size)
 {
 	for (uint32_t i=0; i<size; i++) {
@@ -174,6 +195,21 @@ uint32_t crc_crc32(uint32_t crc, const uint8_t *buf, uint32_t size)
 	}
 
 	return crc;
+}
+
+// smaller (and slower) crc32 for bootloader
+uint32_t crc32_small(uint32_t crc, const uint8_t *buf, uint32_t size)
+{
+    while (size--) {
+        const uint8_t byte = *buf++;
+        crc ^= byte;
+        for (uint8_t i=0; i<8; i++) {
+            const uint32_t mask = -(crc & 1);
+            crc >>= 1;
+            crc ^= (0xEDB88320 & mask);
+        }
+    }
+    return crc;
 }
 
 /*
@@ -225,7 +261,44 @@ static const uint16_t crc16tab[256] = {
 
 uint16_t crc16_ccitt(const uint8_t *buf, uint32_t len, uint16_t crc)
 {
-    for (uint32_t i = 0; i < len; i++)
+    for (uint32_t i = 0; i < len; i++) {
         crc = (crc << 8) ^ crc16tab[((crc >> 8) ^ *buf++) & 0x00FF];
+    }
     return crc;
+}
+
+/**
+ * Calculate Modbus CRC16 for array of bytes
+ * 
+ * @param [in] buf input buffer
+ * @param [in] len size of buffer
+ * @return CRC value
+ */
+uint16_t calc_crc_modbus(uint8_t *buf, uint16_t len)
+{
+    uint16_t crc = 0xFFFF;
+    for (uint16_t pos = 0; pos < len; pos++) {
+        crc ^= (uint16_t) buf[pos]; // XOR byte into least sig. byte of crc
+        for (uint8_t i = 8; i != 0; i--) { // Loop over each bit
+            if ((crc & 0x0001) != 0) { // If the LSB is set
+                crc >>= 1; // Shift right and XOR 0xA001
+                crc ^= 0xA001;
+            } else {
+                // Else LSB is not set
+                crc >>= 1; // Just shift right
+            }
+        }
+    }
+    return crc;
+}
+
+// FNV-1a implementation
+#define FNV_1_PRIME_64 1099511628211UL
+void hash_fnv_1a(uint32_t len, const uint8_t* buf, uint64_t* hash)
+{
+    uint32_t i;
+    for (i=0; i<len; i++) {
+        *hash ^= (uint64_t)buf[i];
+        *hash *= FNV_1_PRIME_64;
+    }
 }

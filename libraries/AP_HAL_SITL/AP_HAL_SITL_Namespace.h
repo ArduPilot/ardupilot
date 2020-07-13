@@ -12,9 +12,9 @@ class ADCSource;
 class RCInput;
 class Util;
 class Semaphore;
-class Semaphore_Recursive;
 class GPIO;
 class DigitalSource;
+class DSP;
 class HALSITLCAN;
 class HALSITLCANDriver;
 }  // namespace HALSITL

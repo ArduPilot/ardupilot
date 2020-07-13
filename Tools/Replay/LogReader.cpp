@@ -183,6 +183,10 @@ void LogReader::initialise_fmt_map()
                 continue;
             }
             ::fprintf(stderr, "Failed to find apparently-generated-name (%s) in COMMON_LOG_STRUCTURES\n", *name);
+            if (strncmp(*name, "NK", 2)==0 || strncmp(*name, "XK", 2) == 0) {
+                // cope with older logs
+                continue;
+            }
             abort();
         }
     }

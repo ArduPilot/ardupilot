@@ -3,7 +3,6 @@
 set -e
 set -x
 
-WP_Auth_Dir="$HOME/WP_Auth"
 PARAMS_DIR="../buildlogs/Parameters"
 
 # work from either APM directory or above
@@ -13,20 +12,9 @@ PARAMS_DIR="../buildlogs/Parameters"
 
 generate_parameters() {
     VEHICLE="$1"
-    URL="$2"
-    AUTHFILE="$3"
-    POST_TITLE="$4"
 
     # generate Parameters.html, Parameters.rst etc etc:
     ./Tools/autotest/param_metadata/param_parse.py --vehicle $VEHICLE
-
-    # (Possibly) upload to the Wiki:
-    if [ -d "$WP_Auth_Dir" ]; then
-	if [ "$URL" != "NONE" ]; then
-	    AUTHFILEPATH="$WP_Auth_Dir/$AUTHFILE"
-	    ./Tools/scripts/update_wiki.py --url "$URL" $(cat $AUTHFILEPATH) --post-title="$POST_TITLE" Parameters.html
-	fi
-    fi
 
     # stash some of the results away:
     VEHICLE_PARAMS_DIR="$PARAMS_DIR/$VEHICLE"
@@ -38,12 +26,12 @@ generate_parameters() {
 }
 
 
-generate_parameters ArduPlane http://plane.ardupilot.org plane.auth 'Plane Parameters'
+generate_parameters ArduPlane
 
-generate_parameters ArduCopter http://copter.ardupilot.org copter.auth 'Copter Parameters'
+generate_parameters ArduCopter
 
-generate_parameters APMrover2 http://rover.ardupilot.org rover.auth 'Rover Parameters'
+generate_parameters Rover
 
-generate_parameters ArduSub http://sub.ardupilot.org sub.auth 'Sub Parameters'
+generate_parameters ArduSub
 
-generate_parameters AntennaTracker NONE NONE 'AntennaTracker Parameters'
+generate_parameters AntennaTracker

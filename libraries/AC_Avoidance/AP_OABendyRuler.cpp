@@ -14,13 +14,56 @@
  */
 
 #include "AP_OABendyRuler.h"
+#include <AC_Avoidance/AP_OADatabase.h>
 #include <AC_Fence/AC_Fence.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_Logger/AP_Logger.h>
+
+const float OA_BENDYRULER_LOOKAHEAD_DEFAULT = 15.0f;
+const float OA_BENDYRULER_RATIO_DEFAULT = 1.5f;
+const int16_t OA_BENDYRULER_ANGLE_DEFAULT = 75;
 
 const int16_t OA_BENDYRULER_BEARING_INC = 5;            // check every 5 degrees around vehicle
 const float OA_BENDYRULER_LOOKAHEAD_STEP2_RATIO = 1.0f; // step2's lookahead length as a ratio of step1's lookahead length
 const float OA_BENDYRULER_LOOKAHEAD_STEP2_MIN = 2.0f;   // step2 checks at least this many meters past step1's location
 const float OA_BENDYRULER_LOOKAHEAD_PAST_DEST = 2.0f;   // lookahead length will be at least this many meters past the destination
 const float OA_BENDYRULER_LOW_SPEED_SQUARED = (0.2f * 0.2f);    // when ground course is below this speed squared, vehicle's heading will be used
+
+const AP_Param::GroupInfo AP_OABendyRuler::var_info[] = {
+
+    // @Param: LOOKAHEAD
+    // @DisplayName: Object Avoidance look ahead distance maximum
+    // @Description: Object Avoidance will look this many meters ahead of vehicle
+    // @Units: m
+    // @Range: 1 100
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("LOOKAHEAD", 1, AP_OABendyRuler, _lookahead, OA_BENDYRULER_LOOKAHEAD_DEFAULT),
+
+    // @Param: CONT_RATIO
+    // @DisplayName: Obstacle Avoidance margin ratio for BendyRuler to change bearing significantly 
+    // @Description:  BendyRuler will avoid changing bearing unless ratio of previous margin from obstacle (or fence) to present calculated margin is atleast this much.
+    // @Range: 1.1 2
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("CONT_RATIO", 2, AP_OABendyRuler, _bendy_ratio, OA_BENDYRULER_RATIO_DEFAULT),
+
+    // @Param: CONT_ANGLE
+    // @DisplayName: BendyRuler's bearing change resistance threshold angle   
+    // @Description:  BendyRuler will resist changing current bearing if the change in bearing is over this angle
+    // @Range: 20 180
+    // @Increment: 5
+    // @User: Standard
+    AP_GROUPINFO("CONT_ANGLE", 3, AP_OABendyRuler, _bendy_angle, OA_BENDYRULER_ANGLE_DEFAULT),
+
+    AP_GROUPEND
+};
+
+AP_OABendyRuler::AP_OABendyRuler() 
+{ 
+    AP_Param::setup_object_defaults(this, var_info); 
+    _bearing_prev = FLT_MAX;
+}
 
 // run background task to find best path and update avoidance_results
 // returns true and updates origin_new and destination_new if a best path has been found
@@ -32,6 +75,9 @@ bool AP_OABendyRuler::update(const Location& current_loc, const Location& destin
     // calculate bearing and distance to final destination
     const float bearing_to_dest = current_loc.get_bearing_to(destination) * 0.01f;
     const float distance_to_dest = current_loc.get_distance(destination);
+
+    // make sure user has set a meaningful value for _lookahead
+    _lookahead = MAX(_lookahead,1.0f);
 
     // lookahead distance is adjusted dynamically based on avoidance results
     _current_lookahead = constrain_float(_current_lookahead, _lookahead * 0.5f, _lookahead);
@@ -109,12 +155,19 @@ bool AP_OABendyRuler::update(const Location& current_loc, const Location& destin
                     // calculate minimum margin to fence and obstacles for this scenario
                     float margin2 = calc_avoidance_margin(test_loc, test_loc2);
                     if (margin2 > _margin_max) {
+                        // if the chosen direction is directly towards the destination avoidance can be turned off 
+                        const bool active = (i != 0 || j != 0);
+                        float final_bearing = bearing_test;
+                        float final_margin = margin;
+                        // check if we need ignore test_bearing and continue on previous bearing
+                        const bool ignore_bearing_change = resist_bearing_change(destination, current_loc, active, bearing_test, lookahead_step1_dist, margin, _destination_prev,_bearing_prev, final_bearing, final_margin);
+
                         // all good, now project in the chosen direction by the full distance
                         destination_new = current_loc;
-                        destination_new.offset_bearing(bearing_test, distance_to_dest);
+                        destination_new.offset_bearing(final_bearing, distance_to_dest);
                         _current_lookahead = MIN(_lookahead, _current_lookahead * 1.1f);
-                        // if the chosen direction is directly towards the destination turn off avoidance
-                        return (i != 0 || j != 0);
+                        AP::logger().Write_OABendyRuler(active, bearing_to_dest, ignore_bearing_change, final_margin, destination, destination_new);
+                        return active;
                     }
                 }
             }
@@ -138,34 +191,87 @@ bool AP_OABendyRuler::update(const Location& current_loc, const Location& destin
     destination_new = current_loc;
     destination_new.offset_bearing(chosen_bearing, distance_to_dest);
 
+    // log results
+    AP::logger().Write_OABendyRuler(true, chosen_bearing, false, best_margin, destination, destination_new);
+
     return true;
 }
 
+/*
+This function is called when BendyRuler has found a bearing which is obstacles free at atleast lookahead_step1_dist and  then lookahead_step2_dist from the present location
+In many situations, this new bearing can be either left or right of the obstacle, and BendyRuler can have a tough time deciding between the two.
+It has the tendency to move the vehicle back and forth, if the margin obtained is even slightly better in the newer iteration.
+Therefore, this method attempts to avoid changing direction of the vehicle by more than _bendy_angle degrees, 
+unless the new margin is atleast _bendy_ratio times better than the margin with previously calculated bearing.
+We return true if we have resisted the change and will follow the last calculated bearing. 
+*/
+bool AP_OABendyRuler::resist_bearing_change(const Location &destination, const Location &current_loc, bool active, float bearing_test, float lookahead_step1_dist, float margin, Location &prev_dest, float &prev_bearing, float &final_bearing, float &final_margin) const
+{      
+    bool resisted_change = false;
+    // see if there was a change in destination, if so, do not resist changing bearing 
+    bool dest_change = false;
+    if (!destination.same_latlon_as(prev_dest)) {
+        dest_change = true;
+        prev_dest = destination;
+    }
+                        
+    // check if we need to resist the change in direction of the vehicle. If we have a clear path to destination, go there any how  
+    if (active && !dest_change && is_positive(_bendy_ratio)) { 
+        // check the change in bearing between freshly calculated and previous stored BendyRuler bearing
+        if ((fabsf(wrap_180(prev_bearing-bearing_test)) > _bendy_angle) && (!is_equal(prev_bearing,FLT_MAX))) {
+            // check margin in last bearing's direction
+            Location test_loc_previous_bearing = current_loc;
+            test_loc_previous_bearing.offset_bearing(wrap_180(prev_bearing), lookahead_step1_dist);
+            float previous_bearing_margin = calc_avoidance_margin(current_loc,test_loc_previous_bearing);
+
+            if (margin < (_bendy_ratio * previous_bearing_margin)) {
+                // don't change direction abruptly. If margin difference is not significant, follow the last direction
+                final_bearing = prev_bearing;
+                final_margin  = previous_bearing_margin;
+                resisted_change = true;
+            } 
+        } 
+    } else {
+        // reset stored bearing if BendyRuler is not active or if WP has changed for unnecessary resistance to path change
+        prev_bearing = FLT_MAX;
+    }
+    if (!resisted_change) {
+        // we are not resisting the change, hence store BendyRuler's presently calculated bearing for future iterations
+        prev_bearing = bearing_test;
+    }
+
+    return resisted_change;
+}
+
 // calculate minimum distance between a segment and any obstacle
-float AP_OABendyRuler::calc_avoidance_margin(const Location &start, const Location &end)
+float AP_OABendyRuler::calc_avoidance_margin(const Location &start, const Location &end) const
 {
-    float circular_fence_margin;
-    if (!calc_margin_from_circular_fence(start, end, circular_fence_margin)) {
-        circular_fence_margin = FLT_MAX;
+    float margin_min = FLT_MAX;
+
+    float latest_margin;
+    if (calc_margin_from_circular_fence(start, end, latest_margin)) {
+        margin_min = MIN(margin_min, latest_margin);
     }
 
-    float polygon_fence_margin;
-    if (!calc_margin_from_polygon_fence(start, end, polygon_fence_margin)) {
-        polygon_fence_margin = FLT_MAX;
+    if (calc_margin_from_object_database(start, end, latest_margin)) {
+        margin_min = MIN(margin_min, latest_margin);
     }
 
-    float proximity_margin;
-    if (!calc_margin_from_proximity_sensors(start, end, proximity_margin)) {
-        proximity_margin = FLT_MAX;
+    if (calc_margin_from_inclusion_and_exclusion_polygons(start, end, latest_margin)) {
+        margin_min = MIN(margin_min, latest_margin);
+    }
+
+    if (calc_margin_from_inclusion_and_exclusion_circles(start, end, latest_margin)) {
+        margin_min = MIN(margin_min, latest_margin);
     }
 
     // return smallest margin from any obstacle
-    return MIN(MIN(circular_fence_margin, polygon_fence_margin), proximity_margin);
+    return margin_min;
 }
 
 // calculate minimum distance between a path and the circular fence (centered on home)
 // on success returns true and updates margin
-bool AP_OABendyRuler::calc_margin_from_circular_fence(const Location &start, const Location &end, float &margin)
+bool AP_OABendyRuler::calc_margin_from_circular_fence(const Location &start, const Location &end, float &margin) const
 {
     // exit immediately if polygon fence is not enabled
     const AC_Fence *fence = AC_Fence::get_singleton();
@@ -181,32 +287,32 @@ bool AP_OABendyRuler::calc_margin_from_circular_fence(const Location &start, con
     const float start_dist_sq = ahrs_home.get_distance_NE(start).length_squared();
     const float end_dist_sq = ahrs_home.get_distance_NE(end).length_squared();
 
-    // get circular fence radius
-    const float fence_radius = fence->get_radius();
+    // get circular fence radius + margin
+    const float fence_radius_plus_margin = fence->get_radius() - fence->get_margin();
 
     // margin is fence radius minus the longer of start or end distance
-    margin = fence_radius - sqrtf(MAX(start_dist_sq, end_dist_sq));
+    margin = fence_radius_plus_margin - sqrtf(MAX(start_dist_sq, end_dist_sq));
     return true;
 }
 
-// calculate minimum distance between a path and the polygon fence
+// calculate minimum distance between a path and all inclusion and exclusion polygons
 // on success returns true and updates margin
-bool AP_OABendyRuler::calc_margin_from_polygon_fence(const Location &start, const Location &end, float &margin)
+bool AP_OABendyRuler::calc_margin_from_inclusion_and_exclusion_polygons(const Location &start, const Location &end, float &margin) const
 {
-    // exit immediately if polygon fence is not enabled
     const AC_Fence *fence = AC_Fence::get_singleton();
     if (fence == nullptr) {
         return false;
     }
-    if (((fence->get_enabled_fences() & AC_FENCE_TYPE_POLYGON) == 0) || !fence->is_polygon_valid()) {
+
+    // exclusion polygons enabled along with polygon fences
+    if ((fence->get_enabled_fences() & AC_FENCE_TYPE_POLYGON) == 0) {
         return false;
     }
 
-    // get polygon boundary
-    uint16_t num_points;
-    const Vector2f* boundary = fence->get_boundary_points(num_points);
-    if (num_points < 3) {
-        // this should have already been checked by is_polygon_valid() but just in case
+    // return immediately if no inclusion nor exclusion polygons
+    const uint8_t num_inclusion_polygons = fence->polyfence().get_inclusion_polygon_count();
+    const uint8_t num_exclusion_polygons = fence->polyfence().get_exclusion_polygon_count();
+    if ((num_inclusion_polygons == 0) && (num_exclusion_polygons == 0)) {
         return false;
     }
 
@@ -216,67 +322,147 @@ bool AP_OABendyRuler::calc_margin_from_polygon_fence(const Location &start, cons
         return false;
     }
 
-    // if outside the fence margin is the closest distance but with negative sign
-    const float sign = Polygon_outside(start_NE, boundary, num_points) ? -1.0f : 1.0f;
+    // get fence margin
+    const float fence_margin = fence->get_margin();
 
-    // calculate min distance (in meters) from line to polygon
-    margin = sign * Polygon_closest_distance_line(boundary, num_points, start_NE, end_NE) * 0.01f;
-    return true;
+    // iterate through inclusion polygons and calculate minimum margin
+    bool margin_updated = false;
+    for (uint8_t i = 0; i < num_inclusion_polygons; i++) {
+        uint16_t num_points;
+        const Vector2f* boundary = fence->polyfence().get_inclusion_polygon(i, num_points);
+     
+        // if outside the fence margin is the closest distance but with negative sign
+        const float sign = Polygon_outside(start_NE, boundary, num_points) ? -1.0f : 1.0f;
+
+        // calculate min distance (in meters) from line to polygon
+        float margin_new = (sign * Polygon_closest_distance_line(boundary, num_points, start_NE, end_NE) * 0.01f) - fence_margin;
+        if (!margin_updated || (margin_new < margin)) {
+            margin_updated = true;
+            margin = margin_new;
+        }
+    }
+
+    // iterate through exclusion polygons and calculate minimum margin
+    for (uint8_t i = 0; i < num_exclusion_polygons; i++) {
+        uint16_t num_points;
+        const Vector2f* boundary = fence->polyfence().get_exclusion_polygon(i, num_points);
+   
+        // if start is inside the polygon the margin's sign is reversed
+        const float sign = Polygon_outside(start_NE, boundary, num_points) ? 1.0f : -1.0f;
+
+        // calculate min distance (in meters) from line to polygon
+        float margin_new = (sign * Polygon_closest_distance_line(boundary, num_points, start_NE, end_NE) * 0.01f) - fence_margin;
+        if (!margin_updated || (margin_new < margin)) {
+            margin_updated = true;
+            margin = margin_new;
+        }
+    }
+
+    return margin_updated;
 }
 
-// calculate minimum distance between a path and proximity sensor obstacles
+// calculate minimum distance between a path and all inclusion and exclusion circles
 // on success returns true and updates margin
-bool AP_OABendyRuler::calc_margin_from_proximity_sensors(const Location &start, const Location &end, float &margin)
+bool AP_OABendyRuler::calc_margin_from_inclusion_and_exclusion_circles(const Location &start, const Location &end, float &margin) const
 {
-    AP_Proximity* prx = AP_Proximity::get_singleton();
-    if (prx == nullptr) {
+    // exit immediately if fence is not enabled
+    const AC_Fence *fence = AC_Fence::get_singleton();
+    if (fence == nullptr) {
         return false;
     }
 
-    // retrieve obstacles from proximity library
-    if (!prx->copy_locations(_prx_locs, ARRAY_SIZE(_prx_locs), _prx_loc_count)) {
+    // inclusion/exclusion circles enabled along with polygon fences
+    if ((fence->get_enabled_fences() & AC_FENCE_TYPE_POLYGON) == 0) {
         return false;
     }
 
-    // exit if no obstacles
-    if (_prx_loc_count == 0) {
+    // return immediately if no inclusion nor exclusion circles
+    const uint8_t num_inclusion_circles = fence->polyfence().get_inclusion_circle_count();
+    const uint8_t num_exclusion_circles = fence->polyfence().get_exclusion_circle_count();
+    if ((num_inclusion_circles == 0) && (num_exclusion_circles == 0)) {
         return false;
     }
 
-    // convert start and end to offsets (in cm) from EKF origin
+    // convert start and end to offsets from EKF origin
     Vector2f start_NE, end_NE;
     if (!start.get_vector_xy_from_origin_NE(start_NE) || !end.get_vector_xy_from_origin_NE(end_NE)) {
         return false;
     }
 
-    // check each obstacle's distance from segment
-    bool valid_loc_found = false;
-    float smallest_margin = FLT_MAX;
-    uint32_t now = AP_HAL::millis();
-    for (uint16_t i=0; i<_prx_loc_count; i++) {
+    // get fence margin
+    const float fence_margin = fence->get_margin();
 
-        // check time of objects is still valid
-        if ((now - _prx_locs[i].last_update_ms) > PROXIMITY_LOCATION_TIMEOUT_MS) {
-            continue;
-        }
-        valid_loc_found = true;
+    // iterate through inclusion circles and calculate minimum margin
+    bool margin_updated = false;
+    for (uint8_t i = 0; i < num_inclusion_circles; i++) {
+        Vector2f center_pos_cm;
+        float radius;
+        if (fence->polyfence().get_inclusion_circle(i, center_pos_cm, radius)) {
 
-        // convert obstacle's location to offset (in cm) from EKF origin
-        Vector2f point;
-        if (!_prx_locs[i].loc.get_vector_xy_from_origin_NE(point)) {
-            continue;
-        }
+            // calculate start and ends distance from the center of the circle
+            const float start_dist_sq = (start_NE - center_pos_cm).length_squared();
+            const float end_dist_sq = (end_NE - center_pos_cm).length_squared();
 
-        // margin is distance between line segment and obstacle minus obstacle's radius
-        const float m = Vector2f::closest_distance_between_line_and_point(start_NE, end_NE, point) * 0.01f - _prx_locs[i].radius_m;
-        if (m < smallest_margin) {
-            smallest_margin = m;
+            // margin is fence radius minus the longer of start or end distance
+            const float margin_new = (radius + fence_margin) - (sqrtf(MAX(start_dist_sq, end_dist_sq)) * 0.01f);
+
+            // update margin with lowest value so far
+            if (!margin_updated || (margin_new < margin)) {
+                margin_updated = true;
+                margin = margin_new;
+            }
         }
     }
 
-    // if no valid obstacles found then they've all expired so clear buffer
-    if (!valid_loc_found) {
-        _prx_loc_count = 0;
+    // iterate through exclusion circles and calculate minimum margin
+    for (uint8_t i = 0; i < num_exclusion_circles; i++) {
+        Vector2f center_pos_cm;
+        float radius;
+        if (fence->polyfence().get_exclusion_circle(i, center_pos_cm, radius)) {
+
+            // first calculate distance between circle's center and segment
+            const float dist_cm = Vector2f::closest_distance_between_line_and_point(start_NE, end_NE, center_pos_cm);
+
+            // margin is distance to the center minus the radius
+            const float margin_new = (dist_cm * 0.01f) - (radius + fence_margin);
+
+            // update margin with lowest value so far
+            if (!margin_updated || (margin_new < margin)) {
+                margin_updated = true;
+                margin = margin_new;
+            }
+        }
+    }
+
+    return margin_updated;
+}
+
+// calculate minimum distance between a path and proximity sensor obstacles
+// on success returns true and updates margin
+bool AP_OABendyRuler::calc_margin_from_object_database(const Location &start, const Location &end, float &margin) const
+{
+    // exit immediately if db is empty
+    AP_OADatabase *oaDb = AP::oadatabase();
+    if (oaDb == nullptr || !oaDb->healthy()) {
+        return false;
+    }
+
+    // convert start and end to offsets (in cm) from EKF origin
+    Vector3f start_NEU,end_NEU;
+    if (!start.get_vector_from_origin_NEU(start_NEU) || !end.get_vector_from_origin_NEU(end_NEU)) {
+        return false;
+    }
+
+    // check each obstacle's distance from segment
+    float smallest_margin = FLT_MAX;
+    for (uint16_t i=0; i<oaDb->database_count(); i++) {
+        const AP_OADatabase::OA_DbItem& item = oaDb->get_item(i);
+        const Vector3f point_cm = item.pos * 100.0f;
+        // margin is distance between line segment and obstacle minus obstacle's radius
+        const float m = Vector3f::closest_distance_between_line_and_point(start_NEU, end_NEU, point_cm) * 0.01f - item.radius;
+        if (m < smallest_margin) {
+            smallest_margin = m;
+        }
     }
 
     // return smallest margin

@@ -122,10 +122,10 @@ bool AP_Compass_AK8963::init()
 {
     AP_HAL::Semaphore *bus_sem = _bus->get_semaphore();
 
-    if (!bus_sem || !_bus->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        hal.console->printf("AK8963: Unable to get bus semaphore\n");
+    if (!bus_sem) {
         return false;
     }
+    _bus->get_semaphore()->take_blocking();
 
     if (!_bus->configure()) {
         hal.console->printf("AK8963: Could not configure the bus\n");
@@ -155,13 +155,13 @@ bool AP_Compass_AK8963::init()
     _initialized = true;
 
     /* register the compass instance in the frontend */
-    _compass_instance = register_compass();
-
-    set_rotation(_compass_instance, _rotation);
-    
     _bus->set_device_type(DEVTYPE_AK8963);
+    if (!register_compass(_bus->get_bus_id(), _compass_instance)) {
+        goto fail;
+    }
     set_dev_id(_compass_instance, _bus->get_bus_id());
 
+    set_rotation(_compass_instance, _rotation);
     bus_sem->give();
 
     _bus->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&AP_Compass_AK8963::_update, void));

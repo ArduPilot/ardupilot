@@ -61,7 +61,7 @@ public:
 
     void push_log_blocks() override;
 
-    void remote_log_block_status_msg(mavlink_channel_t chan, mavlink_message_t* msg) override;
+    void remote_log_block_status_msg(const mavlink_channel_t chan, const mavlink_message_t& msg) override;
 
 protected:
 
@@ -76,7 +76,7 @@ private:
         struct dm_block *next;
     };
     bool send_log_block(struct dm_block &block);
-    void handle_ack(mavlink_channel_t chan, mavlink_message_t* msg, uint32_t seqno);
+    void handle_ack(const mavlink_channel_t chan, const mavlink_message_t &msg, uint32_t seqno);
     void handle_retry(uint32_t block_num);
     void do_resends(uint32_t now);
     void free_all_blocks();
@@ -170,8 +170,8 @@ private:
     /* we currently ignore requests to start a new log.  Notionally we
      * could close the currently logging session and hope the client
      * re-opens one */
-    uint16_t start_new_log(void) override {
-        return 0;
+    void start_new_log(void) override {
+        return;
     }
     // performance counters
     AP_HAL::Util::perf_counter_t  _perf_errors;

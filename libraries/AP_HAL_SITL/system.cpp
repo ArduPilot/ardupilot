@@ -49,11 +49,12 @@ void panic(const char *errormsg, ...)
 void dump_stack_trace()
 {
     // find dumpstack command:
-    const char *dumpstack = "dumpstack"; // if we can't find it trust in PATH
+    const char *dumpstack = "dumpstack.sh"; // if we can't find it trust in PATH
     struct stat statbuf;
     const char *paths[] {
-        "Tools/scripts/dumpstack",
-        "APM/Tools/scripts/dumpstack", // for autotest server
+        "Tools/scripts/dumpstack.sh",
+        "APM/Tools/scripts/dumpstack.sh", // for autotest server
+        "../Tools/scripts/dumpstack.sh", // when run from e.g. ArduCopter subdirectory
     };
     for (uint8_t i=0; i<ARRAY_SIZE(paths); i++) {
         if (::stat(paths[i], &statbuf) != -1) {
@@ -67,16 +68,24 @@ void dump_stack_trace()
 	char *p;
 	int n;
 
-	n = readlink("/proc/self/exe", progname, sizeof(progname));
+	n = readlink("/proc/self/exe", progname, sizeof(progname)-1);
+	if (n == -1) {
+        strncpy(progname, "unknown", sizeof(progname));
+        n = strlen(progname);
+	}
 	progname[n] = 0;
 
 	p = strrchr(progname, '/');
-	*p = 0;
+    if (p != nullptr) {
+	    *p = 0;
+    } else {
+        p = progname;
+    }
 
     char output_filepath[30];
     snprintf(output_filepath,
              ARRAY_SIZE(output_filepath),
-             "segv_%s.%d.out",
+             "dumpstack_%s.%d.out",
              p+1,
              (int)getpid());
 	snprintf(cmd,

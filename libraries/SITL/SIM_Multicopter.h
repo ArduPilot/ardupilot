@@ -29,14 +29,19 @@ namespace SITL {
  */
 class MultiCopter : public Aircraft {
 public:
-    MultiCopter(const char *home_str, const char *frame_str);
+    MultiCopter(const char *frame_str);
 
     /* update model by one time step */
     void update(const struct sitl_input &input) override;
 
+    // get motor offset for model
+    virtual uint16_t get_motors_offset() const override {
+        return frame->motor_offset;
+    }
+
     /* static object creator */
-    static Aircraft *create(const char *home_str, const char *frame_str) {
-        return new MultiCopter(home_str, frame_str);
+    static Aircraft *create(const char *frame_str) {
+        return new MultiCopter(frame_str);
     }
 
 protected:

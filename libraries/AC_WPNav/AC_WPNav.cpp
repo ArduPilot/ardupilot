@@ -95,6 +95,23 @@ AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosC
     _wp_radius_cm = MAX(_wp_radius_cm, WPNAV_WP_RADIUS_MIN);
 }
 
+// get expected source of terrain data if alt-above-terrain command is executed (used by Copter's ModeRTL)
+AC_WPNav::TerrainSource AC_WPNav::get_terrain_source() const
+{
+    // use range finder if connected
+    if (_rangefinder_available && _rangefinder_use) {
+        return AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER;
+    }
+#if AP_TERRAIN_AVAILABLE
+    if ((_terrain != nullptr) && _terrain->enabled()) {
+        return AC_WPNav::TerrainSource::TERRAIN_FROM_TERRAINDATABASE;
+    } else {
+        return AC_WPNav::TerrainSource::TERRAIN_UNAVAILABLE;
+    }
+#else
+    return AC_WPNav::TerrainSource::TERRAIN_UNAVAILABLE;
+#endif
+}
 
 ///
 /// waypoint navigation
@@ -118,6 +135,9 @@ void AC_WPNav::wp_and_spline_init()
     // initialise feed forward velocity to zero
     _pos_control.set_desired_velocity_xy(0.0f, 0.0f);
 
+    // initialize the desired wp speed if not already done
+    _wp_desired_speed_xy_cms = _wp_speed_cms;
+
     // initialise position controller speed and acceleration
     _pos_control.set_max_speed_xy(_wp_speed_cms);
     _pos_control.set_max_accel_xy(_wp_accel_cmss);
@@ -133,11 +153,9 @@ void AC_WPNav::wp_and_spline_init()
 /// set_speed_xy - allows main code to pass target horizontal velocity for wp navigation
 void AC_WPNav::set_speed_xy(float speed_cms)
 {
-    // range check new target speed and update position controller
+    // range check target speed
     if (speed_cms >= WPNAV_WP_SPEED_MIN) {
-        _pos_control.set_max_speed_xy(speed_cms);
-        // flag that wp leash must be recalculated
-        _flags.recalc_wp_leash = true;
+        _wp_desired_speed_xy_cms = speed_cms;
     }
 }
 
@@ -173,7 +191,8 @@ bool AC_WPNav::set_wp_destination(const Location& destination)
     return set_wp_destination(dest_neu, terr_alt);
 }
 
-bool AC_WPNav::get_wp_destination(Location& destination) {
+bool AC_WPNav::get_wp_destination(Location& destination) const
+{
     Vector3f dest = get_wp_destination();
     if (!AP::ahrs().get_origin(destination)) {
         return false;
@@ -283,7 +302,7 @@ void AC_WPNav::shift_wp_origin_to_current_pos()
     }
 
     // get current and target locations
-    const Vector3f curr_pos = _inav.get_position();
+    const Vector3f &curr_pos = _inav.get_position();
     const Vector3f pos_target = _pos_control.get_pos_target();
 
     // calculate difference between current position and target
@@ -296,6 +315,47 @@ void AC_WPNav::shift_wp_origin_to_current_pos()
     // move pos controller target and disable feed forward
     _pos_control.set_pos_target(curr_pos);
     _pos_control.freeze_ff_z();
+}
+
+/// shifts the origin and destination horizontally to the current position
+///     used to reset the track when taking off without horizontal position control
+///     relies on set_wp_destination or set_wp_origin_and_destination having been called first
+void AC_WPNav::shift_wp_origin_and_destination_to_current_pos_xy()
+{
+    // get current and target locations
+    const Vector3f& curr_pos = _inav.get_position();
+
+    // shift origin and destination horizontally
+    _origin.x = curr_pos.x;
+    _origin.y = curr_pos.y;
+    _destination.x = curr_pos.x;
+    _destination.y = curr_pos.y;
+
+    // move pos controller target horizontally
+    _pos_control.set_xy_target(curr_pos.x, curr_pos.y);
+}
+
+/// shifts the origin and destination horizontally to the achievable stopping point
+///     used to reset the track when horizontal navigation is enabled after having been disabled (see Copter's wp_navalt_min)
+///     relies on set_wp_destination or set_wp_origin_and_destination having been called first
+void AC_WPNav::shift_wp_origin_and_destination_to_stopping_point_xy()
+{
+    // relax position control in xy axis
+    // removing velocity error also impacts stopping point calculation
+    _pos_control.relax_velocity_controller_xy();
+
+    // get current and target locations
+    Vector3f stopping_point;
+    get_wp_stopping_point_xy(stopping_point);
+
+    // shift origin and destination horizontally
+    _origin.x = stopping_point.x;
+    _origin.y = stopping_point.y;
+    _destination.x = stopping_point.x;
+    _destination.y = stopping_point.y;
+
+    // move pos controller target horizontally
+    _pos_control.set_xy_target(stopping_point.x, stopping_point.y);
 }
 
 /// get_wp_stopping_point_xy - returns vector to stopping point based on a horizontal position and velocity
@@ -321,7 +381,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     bool reached_leash_limit = false;   // true when track has reached leash limit and we need to slow down the target point
 
     // get current location
-    Vector3f curr_pos = _inav.get_position();
+    const Vector3f &curr_pos = _inav.get_position();
 
     // calculate terrain adjustments
     float terr_offset = 0.0f;
@@ -470,7 +530,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
 float AC_WPNav::get_wp_distance_to_destination() const
 {
     // get current location
-    Vector3f curr = _inav.get_position();
+    const Vector3f &curr = _inav.get_position();
     return norm(_destination.x-curr.x,_destination.y-curr.y);
 }
 
@@ -492,6 +552,9 @@ bool AC_WPNav::update_wpnav()
     // out of auto mode. This makes it easier to tune auto flight
     _pos_control.set_max_accel_xy(_wp_accel_cmss);
     _pos_control.set_max_accel_z(_wp_accel_z_cmss);
+
+    // wp_speed_update - update _pos_control.set_max_speed_xy if speed change has been requested
+    wp_speed_update(dt);
 
     // advance the target if necessary
     if (!advance_wp_target_along_track(dt)) {
@@ -602,16 +665,19 @@ bool AC_WPNav::set_spline_destination(const Location& destination, bool stopped_
         return false;
     }
 
-    // make altitude frames consistent
-    if (!next_destination.change_alt_frame(destination.get_alt_frame())) {
-        return false;
-    }
+    Vector3f next_dest_neu; // left uninitialised for valgrind
+    if (seg_end_type == SEGMENT_END_STRAIGHT ||
+        seg_end_type == SEGMENT_END_SPLINE) {
+        // make altitude frames consistent
+        if (!next_destination.change_alt_frame(destination.get_alt_frame())) {
+            return false;
+        }
 
-    // convert next destination to vector
-    Vector3f next_dest_neu;
-    bool next_dest_terr_alt;
-    if (!get_vector_NEU(next_destination, next_dest_neu, next_dest_terr_alt)) {
-        return false;
+        // convert next destination to vector
+        bool next_dest_terr_alt;
+        if (!get_vector_NEU(next_destination, next_dest_neu, next_dest_terr_alt)) {
+            return false;
+        }
     }
 
     // set target as vector from EKF origin
@@ -779,6 +845,9 @@ bool AC_WPNav::update_spline()
     // get dt from pos controller
     float dt = _pos_control.get_dt();
 
+    // wp_speed_update - update _pos_control.set_max_speed_xy if speed change has been requested
+    wp_speed_update(dt);
+
     // advance the target if necessary
     if (!advance_spline_target_along_track(dt)) {
         // To-Do: handle failure to advance along track (due to missing terrain data)
@@ -830,7 +899,7 @@ bool AC_WPNav::advance_spline_target_along_track(float dt)
         calculate_wp_leash_length();
 
         // get current location
-        Vector3f curr_pos = _inav.get_position();
+        const Vector3f &curr_pos = _inav.get_position();
 
         // get terrain altitude offset for origin and current position (i.e. change in terrain altitude from a position vs ekf origin)
         float terr_offset = 0.0f;
@@ -937,23 +1006,28 @@ void AC_WPNav::calc_spline_pos_vel(float spline_time, Vector3f& position, Vector
 // get terrain's altitude (in cm above the ekf origin) at the current position (+ve means terrain below vehicle is above ekf origin's altitude)
 bool AC_WPNav::get_terrain_offset(float& offset_cm)
 {
-    // use range finder if connected
-    if (_rangefinder_available && _rangefinder_use) {
+    // calculate offset based on source (rangefinder or terrain database)
+    switch (get_terrain_source()) {
+    case AC_WPNav::TerrainSource::TERRAIN_UNAVAILABLE:
+        return false;
+    case AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER:
         if (_rangefinder_healthy) {
             offset_cm = _inav.get_altitude() - _rangefinder_alt_cm;
             return true;
         }
         return false;
+    case AC_WPNav::TerrainSource::TERRAIN_FROM_TERRAINDATABASE:
+#if AP_TERRAIN_AVAILABLE
+        float terr_alt = 0.0f;
+        if (_terrain != nullptr && _terrain->height_above_terrain(terr_alt, true)) {
+            offset_cm = _inav.get_altitude() - (terr_alt * 100.0f);
+            return true;
+        }
+#endif
+        return false;
     }
 
-#if AP_TERRAIN_AVAILABLE
-    // use terrain database
-    float terr_alt = 0.0f;
-    if (_terrain != nullptr && _terrain->height_above_terrain(terr_alt, true)) {
-        offset_cm = _inav.get_altitude() - (terr_alt * 100.0f);
-        return true;
-    }
-#endif
+    // we should never get here but just in case
     return false;
 }
 
@@ -1026,4 +1100,34 @@ float AC_WPNav::get_slow_down_speed(float dist_from_dest_cm, float accel_cmss)
     } else {
         return target_speed;
     }
+}
+
+/// wp_speed_update - calculates how to handle speed change requests
+void AC_WPNav::wp_speed_update(float dt)
+{
+    // return if speed has not changed
+    float curr_max_speed_xy_cms = _pos_control.get_max_speed_xy();
+    if (is_equal(_wp_desired_speed_xy_cms, curr_max_speed_xy_cms)) {
+        return;
+    }
+    // calculate speed change
+    if (_wp_desired_speed_xy_cms > curr_max_speed_xy_cms) {
+        // speed up is requested so increase speed within limit set by WPNAV_ACCEL
+        curr_max_speed_xy_cms += _wp_accel_cmss * dt;
+        if (curr_max_speed_xy_cms > _wp_desired_speed_xy_cms) {
+            curr_max_speed_xy_cms = _wp_desired_speed_xy_cms;
+        }
+    } else if (_wp_desired_speed_xy_cms < curr_max_speed_xy_cms) {
+        // slow down is requested so reduce speed within limit set by WPNAV_ACCEL
+        curr_max_speed_xy_cms -= _wp_accel_cmss * dt;
+        if (curr_max_speed_xy_cms < _wp_desired_speed_xy_cms) {
+            curr_max_speed_xy_cms = _wp_desired_speed_xy_cms;
+        }
+    }
+
+    // update position controller speed
+    _pos_control.set_max_speed_xy(curr_max_speed_xy_cms);
+    
+    // flag that wp leash must be recalculated
+    _flags.recalc_wp_leash = true;
 }

@@ -2,6 +2,7 @@
 
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include "AccelCalibrator.h"
+#include "AP_Vehicle/AP_Vehicle_Type.h"
 
 #define AP_ACCELCAL_MAX_NUM_CLIENTS 4
 class GCS_MAVLINK;
@@ -33,7 +34,7 @@ public:
     // interface to the clients for registration
     static void register_client(AP_AccelCal_Client* client);
 
-    void handleMessage(const mavlink_message_t * msg);
+    void handleMessage(const mavlink_message_t &msg);
 
 private:
     GCS_MAVLINK *_gcs;
@@ -74,7 +75,6 @@ private:
     uint8_t _num_active_calibrators;
 
     AccelCalibrator* get_calibrator(uint8_t i);
-    void _printf(const char*, ...);
 };
 
 class AP_AccelCal_Client {

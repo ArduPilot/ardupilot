@@ -81,18 +81,56 @@
 #ifndef STM32_PLLSRC
 #define STM32_PLLSRC                        STM32_PLLSRC_HSE
 #endif
-#ifndef STM32_PLLM_VALUE
-#define STM32_PLLM_VALUE                    24
-#endif
-#ifndef STM32_PLLN_VALUE
-#define STM32_PLLN_VALUE                    336
-#endif
-#ifndef STM32_PLLP_VALUE
+
+#if !defined(HAL_CUSTOM_CLOCK_TREE)
+#if defined(STM32F7xx_MCUCONF)
+// F7 clock config
+#if STM32_HSECLK == 8000000U
+#define STM32_PLLM_VALUE                    8
+#define STM32_PLLN_VALUE                    432
 #define STM32_PLLP_VALUE                    2
+#define STM32_PLLQ_VALUE                    9
+#elif STM32_HSECLK == 16000000U
+#define STM32_PLLM_VALUE                    8
+#define STM32_PLLN_VALUE                    216
+#define STM32_PLLP_VALUE                    2
+#define STM32_PLLQ_VALUE                    9
+#elif STM32_HSECLK == 24000000U
+#define STM32_PLLM_VALUE                    24
+#define STM32_PLLN_VALUE                    432
+#define STM32_PLLP_VALUE                    2
+#define STM32_PLLQ_VALUE                    9
+#else
+#error "Unsupported F7 HSE clock"
 #endif
-#ifndef STM32_PLLQ_VALUE
+#else // F4
+// F4 clock config
+#if STM32_HSECLK == 8000000U
+#define STM32_PLLM_VALUE                    8
+#define STM32_PLLN_VALUE                    336
+#define STM32_PLLP_VALUE                    2
 #define STM32_PLLQ_VALUE                    7
+#elif STM32_HSECLK == 16000000U
+#define STM32_PLLM_VALUE                    16
+#define STM32_PLLN_VALUE                    384
+#define STM32_PLLP_VALUE                    4
+#define STM32_PLLQ_VALUE                    8
+#elif STM32_HSECLK == 24000000U
+#define STM32_PLLM_VALUE                    24
+#define STM32_PLLN_VALUE                    336
+#define STM32_PLLP_VALUE                    2
+#define STM32_PLLQ_VALUE                    7
+#else
+#error "Unsupported F4 HSE clock"
 #endif
+#endif // MCU
+#endif // HAL_CUSTOM_CLOCK_TREE
+
+// we don't use LSE, but we need the defines
+#define STM32_LSECLK   32768U
+#define STM32_LSEDRV   (3U << 3U)
+
+#define STM32_VDD 330U
 
 #define STM32_HPRE                          STM32_HPRE_DIV1
 #define STM32_PPRE1                         STM32_PPRE1_DIV4
@@ -114,9 +152,15 @@
  * ADC driver system settings.
  */
 #define STM32_ADC_ADCPRE                    ADC_CCR_ADCPRE_DIV4
+#ifndef STM32_ADC_USE_ADC1
 #define STM32_ADC_USE_ADC1                  TRUE
+#endif
+#ifndef STM32_ADC_USE_ADC2
 #define STM32_ADC_USE_ADC2                  FALSE
+#endif
+#ifndef STM32_ADC_USE_ADC3
 #define STM32_ADC_USE_ADC3                  FALSE
+#endif
 #define STM32_ADC_ADC1_DMA_PRIORITY         2
 #define STM32_ADC_ADC2_DMA_PRIORITY         2
 #define STM32_ADC_ADC3_DMA_PRIORITY         2
@@ -128,8 +172,12 @@
 /*
  * CAN driver system settings.
  */
+#ifndef STM32_CAN_USE_CAN1
 #define STM32_CAN_USE_CAN1                  FALSE
+#endif
+#ifndef STM32_CAN_USE_CAN2
 #define STM32_CAN_USE_CAN2                  FALSE
+#endif
 #define STM32_CAN_CAN1_IRQ_PRIORITY         11
 #define STM32_CAN_CAN2_IRQ_PRIORITY         11
 
@@ -382,3 +430,8 @@
  * WDG driver system settings.
  */
 #define STM32_WDG_USE_IWDG                  FALSE
+
+// limit ISR count per byte
+#define STM32_I2C_ISR_LIMIT                 6
+
+

@@ -55,7 +55,16 @@ public:
     void set_rangefinder_alt(bool use, bool healthy, float alt_cm) { _rangefinder_available = use; _rangefinder_healthy = healthy; _rangefinder_alt_cm = alt_cm; }
 
     // return true if range finder may be used for terrain following
-    bool rangefinder_used() const { return _rangefinder_use && _rangefinder_healthy; }
+    bool rangefinder_used() const { return _rangefinder_use; }
+    bool rangefinder_used_and_healthy() const { return _rangefinder_use && _rangefinder_healthy; }
+
+    // get expected source of terrain data if alt-above-terrain command is executed (used by Copter's ModeRTL)
+    enum class TerrainSource {
+        TERRAIN_UNAVAILABLE,
+        TERRAIN_FROM_RANGEFINDER,
+        TERRAIN_FROM_TERRAINDATABASE,
+    };
+    AC_WPNav::TerrainSource get_terrain_source() const;
 
     ///
     /// waypoint controller
@@ -104,7 +113,11 @@ public:
     // returns wp location using location class.
     // returns false if unable to convert from target vector to global
     // coordinates
-    bool get_wp_destination(Location& destination);
+    bool get_wp_destination(Location& destination) const;
+
+    // returns object avoidance adjusted destination which is always the same as get_wp_destination
+    // having this function unifies the AC_WPNav_OA and AC_WPNav interfaces making vehicle code simpler
+    virtual bool get_oa_wp_destination(Location& destination) const { return get_wp_destination(destination); }
 
     /// set_wp_destination waypoint using position vector (distance from ekf origin in cm)
     ///     terrain_alt should be true if destination.z is a desired altitude above terrain
@@ -116,12 +129,22 @@ public:
     /// set_wp_origin_and_destination - set origin and destination waypoints using position vectors (distance from ekf origin in cm)
     ///     terrain_alt should be true if origin.z and destination.z are desired altitudes above terrain (false if these are alt-above-ekf-origin)
     ///     returns false on failure (likely caused by missing terrain data)
-    bool set_wp_origin_and_destination(const Vector3f& origin, const Vector3f& destination, bool terrain_alt = false);
+    virtual bool set_wp_origin_and_destination(const Vector3f& origin, const Vector3f& destination, bool terrain_alt = false);
 
     /// shift_wp_origin_to_current_pos - shifts the origin and destination so the origin starts at the current position
     ///     used to reset the position just before takeoff
     ///     relies on set_wp_destination or set_wp_origin_and_destination having been called first
     void shift_wp_origin_to_current_pos();
+
+    /// shifts the origin and destination horizontally to the current position
+    ///     used to reset the track when taking off without horizontal position control
+    ///     relies on set_wp_destination or set_wp_origin_and_destination having been called first
+    void shift_wp_origin_and_destination_to_current_pos_xy();
+
+    /// shifts the origin and destination horizontally to the achievable stopping point
+    ///     used to reset the track when horizontal navigation is enabled after having been disabled (see Copter's wp_navalt_min)
+    ///     relies on set_wp_destination or set_wp_origin_and_destination having been called first
+    void shift_wp_origin_and_destination_to_stopping_point_xy();
 
     /// get_wp_stopping_point_xy - calculates stopping point based on current position, velocity, waypoint acceleration
     ///		results placed in stopping_position vector
@@ -129,13 +152,13 @@ public:
     void get_wp_stopping_point(Vector3f& stopping_point) const;
 
     /// get_wp_distance_to_destination - get horizontal distance to destination in cm
-    float get_wp_distance_to_destination() const;
+    virtual float get_wp_distance_to_destination() const;
 
     /// get_bearing_to_destination - get bearing to next waypoint in centi-degrees
-    int32_t get_wp_bearing_to_destination() const;
+    virtual int32_t get_wp_bearing_to_destination() const;
 
     /// reached_destination - true when we have come within RADIUS cm of the waypoint
-    bool reached_wp_destination() const { return _flags.reached_destination; }
+    virtual bool reached_wp_destination() const { return _flags.reached_destination; }
 
     // reached_wp_destination_xy - true if within RADIUS_CM of waypoint in x/y
     bool reached_wp_destination_xy() const {
@@ -146,7 +169,7 @@ public:
     void set_fast_waypoint(bool fast) { _flags.fast_waypoint = fast; }
 
     /// update_wpnav - run the wp controller - should be called at 100hz or higher
-    bool update_wpnav();
+    virtual bool update_wpnav();
 
     // check_wp_leash_length - check recalc_wp_leash flag and calls calculate_wp_leash_length() if necessary
     //  should be called after _pos_control.update_xy_controller which may have changed the position controller leash lengths
@@ -243,6 +266,9 @@ protected:
 
     /// get_slow_down_speed - returns target speed of target point based on distance from the destination (in cm)
     float get_slow_down_speed(float dist_from_dest_cm, float accel_cmss);
+    
+    /// wp_speed_update - calculates how to change speed when changes are requested
+    void wp_speed_update(float dt);
 
     /// spline protected functions
 
@@ -284,6 +310,7 @@ protected:
 
     // waypoint controller internal variables
     uint32_t    _wp_last_update;        // time of last update_wpnav call
+    float       _wp_desired_speed_xy_cms;   // desired wp speed in cm/sec
     Vector3f    _origin;                // starting point of trip to next waypoint in cm from ekf origin
     Vector3f    _destination;           // target destination in cm from ekf origin
     Vector3f    _pos_delta_unit;        // each axis's percentage of the total track from origin to destination

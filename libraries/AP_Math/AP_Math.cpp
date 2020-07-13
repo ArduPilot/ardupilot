@@ -32,7 +32,12 @@ is_equal(const Arithmetic1 v_1, const Arithmetic2 v_2)
         return fabs(v_1 - v_2) < std::numeric_limits<double>::epsilon();
     }
 #endif
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wabsolute-value"
+    // clang doesn't realise we catch the double case above and warns
+    // about loss of precision here.
     return fabsf(v_1 - v_2) < std::numeric_limits<float>::epsilon();
+#pragma clang diagnostic pop
 }
 
 template bool is_equal<int>(const int v_1, const int v_2);
@@ -98,7 +103,7 @@ float linear_interpolate(float low_output, float high_output,
  * alpha range: [0,1] min to max expo
  * input range: [-1,1]
  */
-float expo_curve(float alpha, float x)
+constexpr float expo_curve(float alpha, float x)
 {
     return (1.0f - alpha) * x + alpha * x * x * x;
 }
@@ -124,61 +129,106 @@ float throttle_curve(float thr_mid, float alpha, float thr_in)
 }
 
 template <typename T>
-float wrap_180(const T angle, float unit_mod)
+T wrap_180(const T angle)
 {
-    auto res = wrap_360(angle, unit_mod);
-    if (res > 180.f * unit_mod) {
-        res -= 360.f * unit_mod;
+    auto res = wrap_360(angle);
+    if (res > T(180)) {
+        res -= T(360);
     }
     return res;
 }
 
-template float wrap_180<int>(const int angle, float unit_mod);
-template float wrap_180<short>(const short angle, float unit_mod);
-template float wrap_180<float>(const float angle, float unit_mod);
-template float wrap_180<double>(const double angle, float unit_mod);
-
 template <typename T>
-auto wrap_180_cd(const T angle) -> decltype(wrap_180(angle, 100.f))
+T wrap_180_cd(const T angle)
 {
-    return wrap_180(angle, 100.f);
+    auto res = wrap_360_cd(angle);
+    if (res > T(18000)) {
+        res -= T(36000);
+    }
+    return res;
 }
 
-template auto wrap_180_cd<float>(const float angle) -> decltype(wrap_180(angle, 100.f));
-template auto wrap_180_cd<int>(const int angle) -> decltype(wrap_180(angle, 100.f));
-template auto wrap_180_cd<long>(const long angle) -> decltype(wrap_180(angle, 100.f));
-template auto wrap_180_cd<short>(const short angle) -> decltype(wrap_180(angle, 100.f));
-template auto wrap_180_cd<double>(const double angle) -> decltype(wrap_360(angle, 100.f));
+template int wrap_180<int>(const int angle);
+template short wrap_180<short>(const short angle);
+template float wrap_180<float>(const float angle);
+#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
+template double wrap_180<double>(const double angle);
+#endif
 
-template <typename T>
-float wrap_360(const T angle, float unit_mod)
+template int wrap_180_cd<int>(const int angle);
+template long wrap_180_cd<long>(const long angle);
+template short wrap_180_cd<short>(const short angle);
+template float wrap_180_cd<float>(const float angle);
+#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
+template double wrap_180_cd<double>(const double angle);
+#endif
+
+float wrap_360(const float angle)
 {
-    const float ang_360 = 360.f * unit_mod;
-    float res = fmodf(static_cast<float>(angle), ang_360);
+    float res = fmodf(angle, 360.0f);
     if (res < 0) {
-        res += ang_360;
+        res += 360.0f;
     }
     return res;
 }
 
-template float wrap_360<int>(const int angle, float unit_mod);
-template float wrap_360<short>(const short angle, float unit_mod);
-template float wrap_360<long>(const long angle, float unit_mod);
-template float wrap_360<float>(const float angle, float unit_mod);
-template float wrap_360<double>(const double angle, float unit_mod);
-
-template <typename T>
-auto wrap_360_cd(const T angle) -> decltype(wrap_360(angle, 100.f))
+#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
+double wrap_360(const double angle)
 {
-    return wrap_360(angle, 100.f);
+    double res = fmod(angle, 360.0);
+    if (res < 0) {
+        res += 360.0;
+    }
+    return res;
+}
+#endif
+
+int wrap_360(const int angle)
+{
+    int res = angle % 360;
+    if (res < 0) {
+        res += 360;
+    }
+    return res;
 }
 
-template auto wrap_360_cd<float>(const float angle) -> decltype(wrap_360(angle, 100.f));
-template auto wrap_360_cd<int>(const int angle) -> decltype(wrap_360(angle, 100.f));
-template auto wrap_360_cd<long>(const long angle) -> decltype(wrap_360(angle, 100.f));
-template auto wrap_360_cd<short>(const short angle) -> decltype(wrap_360(angle, 100.f));
-template auto wrap_360_cd<double>(const double angle) -> decltype(wrap_360(angle, 100.f));
+float wrap_360_cd(const float angle)
+{
+    float res = fmodf(angle, 36000.0f);
+    if (res < 0) {
+        res += 36000.0f;
+    }
+    return res;
+}
 
+#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
+double wrap_360_cd(const double angle)
+{
+    double res = fmod(angle, 36000.0);
+    if (res < 0) {
+        res += 36000.0;
+    }
+    return res;
+}
+#endif
+
+int wrap_360_cd(const int angle)
+{
+    int res = angle % 36000;
+    if (res < 0) {
+        res += 36000;
+    }
+    return res;
+}
+
+long wrap_360_cd(const long angle)
+{
+    long res = angle % 36000;
+    if (res < 0) {
+        res += 36000;
+    }
+    return res;
+}
 template <typename T>
 float wrap_PI(const T radian)
 {
@@ -216,7 +266,7 @@ T constrain_value(const T amt, const T low, const T high)
     // errors through any function that uses constrain_value(). The normal
     // float semantics already handle -Inf and +Inf
     if (isnan(amt)) {
-        AP::internalerror().error(AP_InternalError::error_t::constraining_nan);
+        INTERNAL_ERROR(AP_InternalError::error_t::constraining_nan);
         return (low + high) / 2;
     }
 
@@ -271,23 +321,6 @@ Vector3f rand_vec3f(void)
 }
 #endif
 
-bool is_valid_octal(uint16_t octal)
-{
-    // treat "octal" as decimal and test if any decimal digit is > 7
-    if (octal > 7777) {
-        return false;
-    } else if (octal % 10 > 7) {
-        return false;
-    } else if ((octal % 100)/10 > 7) {
-        return false;
-    } else if ((octal % 1000)/100 > 7) {
-        return false;
-    } else if ((octal % 10000)/1000 > 7) {
-        return false;
-    }
-    return true;
-}
-
 /*
   return true if two rotations are equivalent
   This copes with the fact that we have some duplicates, like ROLL_180_YAW_90 and PITCH_180_YAW_270
@@ -305,3 +338,30 @@ bool rotation_equal(enum Rotation r1, enum Rotation r2)
     return (v1 - v2).length() < 0.001;
 }
 
+/*
+ * return a velocity correction (in m/s in NED) for a sensor's position given it's position offsets
+ * this correction should be added to the sensor NED measurement
+ * sensor_offset_bf is in meters in body frame (Foward, Right, Down)
+ * rot_ef_to_bf is a rotation matrix to rotate from earth-frame (NED) to body frame
+ * angular_rate is rad/sec
+ */
+Vector3f get_vel_correction_for_sensor_offset(const Vector3f &sensor_offset_bf, const Matrix3f &rot_ef_to_bf, const Vector3f &angular_rate)
+{
+    if (sensor_offset_bf.is_zero()) {
+        return Vector3f();
+    }
+
+    // correct velocity
+    const Vector3f vel_offset_body = angular_rate % sensor_offset_bf;
+    return rot_ef_to_bf.mul_transpose(vel_offset_body) * -1.0f;
+}
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+// fill an array of float with NaN, used to invalidate memory in SITL
+void fill_nanf(float *f, uint16_t count)
+{
+    while (count--) {
+        *f++ = std::numeric_limits<float>::signaling_NaN();
+    }
+}
+#endif

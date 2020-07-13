@@ -40,6 +40,9 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     SCHED_TASK(one_hz_loop,            1,    100),
     SCHED_TASK_CLASS(GCS,                 (GCS*)&sub._gcs,   update_receive,     400, 180),
     SCHED_TASK_CLASS(GCS,                 (GCS*)&sub._gcs,   update_send,        400, 550),
+#if AC_FENCE == ENABLED
+    SCHED_TASK_CLASS(AC_Fence,            &sub.fence,        update,              10, 100),
+#endif
 #if MOUNT == ENABLED
     SCHED_TASK_CLASS(AP_Mount,            &sub.camera_mount, update,              50,  75),
 #endif
@@ -77,25 +80,16 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
 #endif
 };
 
+void Sub::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
+                                 uint8_t &task_count,
+                                 uint32_t &log_bit)
+{
+    tasks = &scheduler_tasks[0];
+    task_count = ARRAY_SIZE(scheduler_tasks);
+    log_bit = MASK_LOG_PM;
+}
+
 constexpr int8_t Sub::_failsafe_priorities[5];
-
-void Sub::setup()
-{
-    // Load the default values of variables listed in var_info[]s
-    AP_Param::setup_sketch_defaults();
-
-    init_ardupilot();
-
-    // initialise the main loop scheduler
-    scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks), MASK_LOG_PM);
-}
-
-void Sub::loop()
-{
-    scheduler.loop();
-    G_Dt = scheduler.get_loop_period_s();
-}
-
 
 // Main loop - 400hz
 void Sub::fast_loop()
@@ -103,7 +97,8 @@ void Sub::fast_loop()
     // update INS immediately to get current gyro data populated
     ins.update();
 
-    if (control_mode != MANUAL) { //don't run rate controller in manual mode
+    //don't run rate controller in manual or motordetection modes
+    if (control_mode != MANUAL && control_mode != MOTOR_DETECT) {
         // run low level rate controllers that only require IMU data
         attitude_control.rate_controller_run();
     }
@@ -140,6 +135,8 @@ void Sub::fast_loop()
     if (should_log(MASK_LOG_ANY)) {
         Log_Sensor_Health();
     }
+
+    AP_Vehicle::fast_loop();
 }
 
 // 50 Hz tasks
@@ -264,7 +261,7 @@ void Sub::one_hz_loop()
     AP_Notify::flags.flying = motors.armed();
 
     if (should_log(MASK_LOG_ANY)) {
-        Log_Write_Data(DATA_AP_STATE, ap.value);
+        Log_Write_Data(LogDataID::AP_STATE, ap.value);
     }
 
     if (!motors.armed()) {
@@ -284,12 +281,9 @@ void Sub::one_hz_loop()
     // log terrain data
     terrain_logging();
 
-    // init compass location for declination
-    init_compass_location();
-
     // need to set "likely flying" when armed to allow for compass
     // learning to run
-    ahrs.set_likely_flying(hal.util->get_soft_armed());
+    set_likely_flying(hal.util->get_soft_armed());
 }
 
 // called at 50hz
@@ -333,6 +327,11 @@ void Sub::update_altitude()
 
     if (should_log(MASK_LOG_CTUN)) {
         Log_Write_Control_Tuning();
+#if HAL_GYROFFT_ENABLED
+        gyro_fft.write_log_messages();
+#else
+        write_notch_log_messages();
+#endif
     }
 }
 

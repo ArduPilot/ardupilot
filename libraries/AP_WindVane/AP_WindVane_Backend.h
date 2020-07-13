@@ -49,4 +49,5 @@ private:
     LowPassFilterFloat _dir_sin_filt = LowPassFilterFloat(2.0f);
     LowPassFilterFloat _dir_cos_filt = LowPassFilterFloat(2.0f);
     LowPassFilterFloat _speed_filt = LowPassFilterFloat(2.0f);
+    LowPassFilterFloat _tack_filt = LowPassFilterFloat(TACK_FILT_CUTOFF);
 };

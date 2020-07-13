@@ -5,16 +5,25 @@
 #include "UARTDriver.h"
 #include <sys/time.h>
 #include <fenv.h>
-#if defined (__clang__)
+#include <AP_BoardConfig/AP_BoardConfig.h>
+#if defined (__clang__) || (defined (__APPLE__) && defined (__MACH__))
 #include <stdlib.h>
 #else
 #include <malloc.h>
 #endif
+#include <AP_RCProtocol/AP_RCProtocol.h>
 
 using namespace HALSITL;
 
 extern const AP_HAL::HAL& hal;
 
+#ifndef SITL_STACK_CHECKING_ENABLED
+//#define SITL_STACK_CHECKING_ENABLED !defined(__CYGWIN__) && !defined(__CYGWIN64__)
+// stack checking is disabled until the memory corruption issues are
+// fixed with pthread_attr_setstack.  These may be due to
+// changes in the way guard pages are handled.
+#define SITL_STACK_CHECKING_ENABLED 0
+#endif
 
 AP_HAL::Proc Scheduler::_failsafe = nullptr;
 
@@ -26,6 +35,9 @@ AP_HAL::MemberProc Scheduler::_io_proc[SITL_SCHEDULER_MAX_TIMER_PROCS] = {nullpt
 uint8_t Scheduler::_num_io_procs = 0;
 bool Scheduler::_in_io_proc = false;
 bool Scheduler::_should_reboot = false;
+bool Scheduler::_should_exit = false;
+
+bool Scheduler::_in_semaphore_take_wait = false;
 
 Scheduler::thread_attr *Scheduler::threads;
 HAL_Semaphore Scheduler::_thread_sem;
@@ -47,6 +59,27 @@ bool Scheduler::in_main_thread() const
         return true;
     }
     return false;
+}
+
+/*
+ * semaphore_wait_hack_required - possibly move time input step
+ * forward even if we are currently pretending to be the IO or timer
+ * threads.
+ *
+ * Without this, if another thread has taken a semaphore (e.g. the
+ * Object Avoidance thread), and an "IO process" tries to take that
+ * semaphore with a timeout specified, then we end up not advancing
+ * time (due to the logic in SITL_State::wait_clock) and thus taking
+ * the semaphore never times out - meaning we essentially deadlock.
+ */
+bool Scheduler::semaphore_wait_hack_required()
+{
+    if (pthread_self() != _main_ctx) {
+        // only the main thread ever moves stuff forwards
+        return false;
+    }
+
+    return _in_semaphore_take_wait;
 }
 
 void Scheduler::delay_microseconds(uint16_t usec)
@@ -137,6 +170,12 @@ void Scheduler::sitl_end_atomic() {
 
 void Scheduler::reboot(bool hold_in_bootloader)
 {
+    if (AP_BoardConfig::in_config_error()) {
+        // the _should_reboot flag set below is not checked by the
+        // sensor-config-error loop, so force the reboot here:
+        HAL_SITL::actually_reboot();
+        abort();
+    }
     _should_reboot = true;
 }
 
@@ -198,9 +237,14 @@ void Scheduler::_run_io_procs()
     hal.uartE->_timer_tick();
     hal.uartF->_timer_tick();
     hal.uartG->_timer_tick();
+    hal.uartH->_timer_tick();
     hal.storage->_timer_tick();
 
+#if SITL_STACK_CHECKING_ENABLED
     check_thread_stacks();
+#endif
+
+    AP::RC().update();
 }
 
 /*
@@ -279,11 +323,15 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
     a->stack_size = stack_size;
     a->f[0] = proc;
     a->name = name;
-    
-    pthread_attr_init(&a->attr);
+
+    if (pthread_attr_init(&a->attr) != 0) {
+        goto failed;
+    }
+#if SITL_STACK_CHECKING_ENABLED
     if (pthread_attr_setstack(&a->attr, a->stack, alloc_stack) != 0) {
         AP_HAL::panic("Failed to set stack of size %u for thread %s", alloc_stack, name);
     }
+#endif
     if (pthread_create(&thread, &a->attr, thread_create_trampoline, a) != 0) {
         goto failed;
     }

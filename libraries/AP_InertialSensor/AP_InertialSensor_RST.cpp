@@ -222,9 +222,7 @@ bool AP_InertialSensor_RST::_init_gyro(void)
 {
     uint8_t whoami;
 
-    if (!_dev_gyro->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return false;
-    }
+    _dev_gyro->get_semaphore()->take_blocking();
 
     // set flag for reading registers
     _dev_gyro->set_read_flag(0x80);
@@ -285,9 +283,7 @@ bool AP_InertialSensor_RST::_init_accel(void)
 {
     uint8_t whoami;
 
-    if (!_dev_accel->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return false;
-    }
+    _dev_accel->get_semaphore()->take_blocking();
 
     _dev_accel->set_speed(AP_HAL::Device::SPEED_HIGH);
 

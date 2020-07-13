@@ -1,5 +1,5 @@
-/// @file	AP_Parachute.h
-/// @brief	Parachute release library
+/// @file   AP_Parachute.h
+/// @brief  Parachute release library
 #pragma once
 
 #include <AP_Param/AP_Param.h>
@@ -22,8 +22,15 @@
 
 #define AP_PARACHUTE_CRITICAL_SINK_DEFAULT      0    // default critical sink speed in m/s to trigger emergency parachute
 
-/// @class	AP_Parachute
-/// @brief	Class managing the release of a parachute
+#ifndef HAL_PARACHUTE_ENABLED
+// default to parachute enabled to match previous configs
+#define HAL_PARACHUTE_ENABLED 1
+#endif
+
+#if HAL_PARACHUTE_ENABLED
+
+/// @class  AP_Parachute
+/// @brief  Class managing the release of a parachute
 class AP_Parachute {
 
 public:
@@ -34,7 +41,7 @@ public:
         // setup parameter defaults
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         if (_singleton != nullptr) {
-            AP_HAL::panic("Rally must be singleton");
+            AP_HAL::panic("Parachute must be singleton");
         }
 #endif
         _singleton = this;
@@ -109,3 +116,5 @@ private:
 namespace AP {
     AP_Parachute *parachute();
 };
+
+#endif // HAL_PARACHUTE_ENABLED

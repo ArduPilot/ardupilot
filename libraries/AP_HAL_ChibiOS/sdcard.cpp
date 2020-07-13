@@ -11,13 +11,14 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
 #include "SPIDevice.h"
 #include "sdcard.h"
 #include "hwdef/common/spi_hook.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_Filesystem/AP_Filesystem.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -55,7 +56,9 @@ bool sdcard_init()
 #if HAL_USE_SDC
 
     if (SDCD1.bouncebuffer == nullptr) {
-        bouncebuffer_init(&SDCD1.bouncebuffer, 512, true);
+        // allocate 4k bouncebuffer for microSD to match size in
+        // AP_Logger
+        bouncebuffer_init(&SDCD1.bouncebuffer, 4096, true);
     }
 
     if (sdcard_running) {
@@ -78,7 +81,7 @@ bool sdcard_init()
         printf("Successfully mounted SDCard (slowdown=%u)\n", (unsigned)sd_slowdown);
 
         // Create APM Directory if needed
-        mkdir("/APM", 0777);
+        AP::FS().mkdir("/APM");
         sdcard_running = true;
         return true;
     }
@@ -96,7 +99,7 @@ bool sdcard_init()
         return false;
     }
     device->set_slowdown(sd_slowdown);
-    
+
     mmcObjectInit(&MMCD1);
 
     mmcconfig.spip =
@@ -123,7 +126,7 @@ bool sdcard_init()
         printf("Successfully mounted SDCard (slowdown=%u)\n", (unsigned)sd_slowdown);
 
         // Create APM Directory if needed
-        mkdir("/APM", 0777);
+        AP::FS().mkdir("/APM");
         return true;
     }
 #endif
@@ -223,4 +226,3 @@ void spiReceiveHook(SPIDriver *spip, size_t n, void *rxbuf)
 }
 
 #endif
-

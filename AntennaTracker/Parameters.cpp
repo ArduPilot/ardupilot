@@ -229,19 +229,19 @@ const AP_Param::Info Tracker::var_info[] = {
 
     // @Group: SR0_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(gcs().chan(0), gcs0,        "SR0_",     GCS_MAVLINK),
+    GOBJECTN(_gcs.chan_parameters[0], gcs0,        "SR0_",     GCS_MAVLINK_Parameters),
 
     // @Group: SR1_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(gcs().chan(1),  gcs1,       "SR1_",     GCS_MAVLINK),
+    GOBJECTN(_gcs.chan_parameters[1],  gcs1,       "SR1_",     GCS_MAVLINK_Parameters),
 
     // @Group: SR2_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(gcs().chan(2),  gcs2,       "SR2_",     GCS_MAVLINK),
+    GOBJECTN(_gcs.chan_parameters[2],  gcs2,       "SR2_",     GCS_MAVLINK_Parameters),
 
     // @Group: SR3_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(gcs().chan(3),  gcs3,       "SR3_",     GCS_MAVLINK),
+    GOBJECTN(_gcs.chan_parameters[3],  gcs3,       "SR3_",     GCS_MAVLINK_Parameters),
 
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
@@ -284,9 +284,11 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Path: ../libraries/AP_Notify/AP_Notify.cpp
     GOBJECT(notify, "NTF_",  AP_Notify),
 
-    // @Path: RC_Channels.cpp
+    // @Group: RC
+    // @Path: ../libraries/RC_Channel/RC_Channels_VarInfo.h
     GOBJECT(rc_channels,     "RC", RC_Channels_Tracker),
 
+    // @Group: SERVO
     // @Path: ../libraries/SRV_Channel/SRV_Channels.cpp
     GOBJECT(servo_channels,     "SERVO", SRV_Channels),
     
@@ -322,6 +324,37 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Range: 0.001 0.1
     // @Increment: 0.001
     // @User: Standard
+
+    // @Param: PITCH2SRV_FF
+    // @DisplayName: Pitch axis controller feed forward
+    // @Description: Pitch axis controller feed forward
+    // @Range: 0 0.5
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: PITCH2SRV_FLTT
+    // @DisplayName: Pitch axis controller target frequency in Hz
+    // @Description: Pitch axis controller target frequency in Hz
+    // @Range: 1 50
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: PITCH2SRV_FLTE
+    // @DisplayName: Pitch axis controller error frequency in Hz
+    // @Description: Pitch axis controller error frequency in Hz
+    // @Range: 1 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: PITCH2SRV_FLTD
+    // @DisplayName: Pitch axis controller derivative frequency in Hz
+    // @Description: Pitch axis controller derivative frequency in Hz
+    // @Range: 1 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
 	GGROUP(pidPitch2Srv,       "PITCH2SRV_", AC_PID),
 
     // @Param: YAW2SRV_P
@@ -351,6 +384,37 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Description: Yaw axis controller D gain.  Compensates for short-term change in desired yaw angle (heading) vs actual yaw angle
     // @Range: 0.001 0.1
     // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: YAW2SRV_FF
+    // @DisplayName: Yaw axis controller feed forward
+    // @Description: Yaw axis controller feed forward
+    // @Range: 0 0.5
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: YAW2SRV_FLTT
+    // @DisplayName: Yaw axis controller target frequency in Hz
+    // @Description: Yaw axis controller target frequency in Hz
+    // @Range: 1 50
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: YAW2SRV_FLTE
+    // @DisplayName: Yaw axis controller error frequency in Hz
+    // @Description: Yaw axis controller error frequency in Hz
+    // @Range: 1 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: YAW2SRV_FLTD
+    // @DisplayName: Yaw axis controller derivative frequency in Hz
+    // @Description: Yaw axis controller derivative frequency in Hz
+    // @Range: 1 100
+    // @Increment: 1
+    // @Units: Hz
     // @User: Standard
 	GGROUP(pidYaw2Srv,         "YAW2SRV_", AC_PID),
 
@@ -402,6 +466,24 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Description: 0:MANUAL, 1:STOP, 2:SCAN, 10:AUTO
     // @User: Standard
     GSCALAR(initial_mode,            "INITIAL_MODE",     10),
+
+    // @Param: SAFE_DISARM_PWM
+    // @DisplayName: PWM that will be output when disarmed or in stop mode
+    // @Description: 0:zero pwm, 1:trim pwm
+    // @User: Standard
+    GSCALAR(disarm_pwm,              "SAFE_DISARM_PWM",        0),
+
+    // @Group: STAT
+    // @Path: ../libraries/AP_Stats/AP_Stats.cpp
+    GOBJECT(stats, "STAT",  AP_Stats),
+
+    // @Group:
+    // @Path: ../libraries/AP_Vehicle/AP_Vehicle.cpp
+    { AP_PARAM_GROUP, "", Parameters::k_param_vehicle, (const void *)&tracker, {group_info : AP_Vehicle::var_info} },
+
+    // @Group: LOG
+    // @Path: ../libraries/AP_Logger/AP_Logger.cpp
+    GOBJECT(logger,           "LOG",  AP_Logger),
 
     AP_VAREND
 };

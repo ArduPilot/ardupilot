@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #include "shared_dma.h"
@@ -20,7 +20,7 @@
   code to handle sharing of DMA channels between peripherals
  */
 
-#if CH_CFG_USE_SEMAPHORES == TRUE && STM32_DMA_ADVANCED
+#if CH_CFG_USE_SEMAPHORES == TRUE
 
 using namespace ChibiOS;
 
@@ -211,4 +211,4 @@ void Shared_DMA::lock_all(void)
     }
 }
 
-#endif // CH_CFG_USE_SEMAPHORES && STM32_DMA_ADVANCED
+#endif // CH_CFG_USE_SEMAPHORES

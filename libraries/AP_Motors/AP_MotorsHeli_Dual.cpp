@@ -46,6 +46,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Description: Feed-forward compensation to automatically add yaw input when differential collective pitch is applied.
     // @Range: -10 10
     // @Increment: 0.1
+    // @User: Standard
     AP_GROUPINFO("DCP_YAW", 11, AP_MotorsHeli_Dual, _dcp_yaw_effect, 0),
 
     // @Param: YAW_SCALER
@@ -53,13 +54,14 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Description: Scaler for mixing yaw into roll or pitch.
     // @Range: -10 10
     // @Increment: 0.1
+    // @User: Standard
     AP_GROUPINFO("YAW_SCALER", 12, AP_MotorsHeli_Dual, _yaw_scaler, 1.0f),
 
     // Indices 13-15 were used by RSC_PWM_MIN, RSC_PWM_MAX and RSC_PWM_REV and should not be used
 
     // @Param: COL2_MIN
-    // @DisplayName: Collective Pitch Minimum for rear swashplate
-    // @Description: Lowest possible servo position in PWM microseconds for the rear swashplate
+    // @DisplayName: Swash 2 Minimum Collective Pitch
+    // @Description: Lowest possible servo position in PWM microseconds for swashplate 2
     // @Range: 1000 2000
     // @Units: PWM
     // @Increment: 1
@@ -67,8 +69,8 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     AP_GROUPINFO("COL2_MIN", 16, AP_MotorsHeli_Dual, _collective2_min, AP_MOTORS_HELI_DUAL_COLLECTIVE2_MIN),
 
     // @Param: COL2_MAX
-    // @DisplayName: Collective Pitch Maximum for rear swashplate
-    // @Description: Highest possible servo position in PWM microseconds for the rear swashplate
+    // @DisplayName: Swash 2 Maximum Collective Pitch
+    // @Description: Highest possible servo position in PWM microseconds for swashplate 2
     // @Range: 1000 2000
     // @Units: PWM
     // @Increment: 1
@@ -76,7 +78,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     AP_GROUPINFO("COL2_MAX", 17, AP_MotorsHeli_Dual, _collective2_max, AP_MOTORS_HELI_DUAL_COLLECTIVE2_MAX),
 
     // @Param: COL2_MID
-    // @DisplayName: Collective Pitch Mid-Point for rear swashplate
+    // @DisplayName: Swash 2 Zero-Thrust Collective Pitch
     // @Description: Swash servo position in PWM microseconds corresponding to zero collective pitch for the rear swashplate (or zero lift for Asymmetrical blades)
     // @Range: 1000 2000
     // @Units: PWM
@@ -86,12 +88,112 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
 
     // Indice 19 was used by COL_CTRL_DIR and should not be used
 
-    // @Group: SW1_H3_
-    // @Path: AP_MotorsHeli_Swash.cpp
-    AP_SUBGROUPINFO(_swashplate1, "SW1_", 20, AP_MotorsHeli_Dual, AP_MotorsHeli_Swash),
+    // @Param: SW_TYPE
+    // @DisplayName: Swash 1 Type
+    // @Description: H3 is generic, three-servo only. H3_120/H3_140 plates have Motor1 left side, Motor2 right side, Motor3 elevator in rear. HR3_120/HR3_140 have Motor1 right side, Motor2 left side, Motor3 elevator in front - use H3_120/H3_140 and reverse servo and collective directions as necessary. For all H3_90 swashplates use H4_90 and don't use servo output for the missing servo. For H4-90 Motors1&2 are left/right respectively, Motors3&4 are rear/front respectively. For H4-45 Motors1&2 are LF/RF, Motors3&4 are LR/RR 
+    // @Values: 0:H3 Generic,1:H1 non-CPPM,2:H3_140,3:H3_120,4:H4_90,5:H4_45
+    // @User: Standard
 
-    // @Group: SW2_H3_
-    // @Path: AP_MotorsHeli_Swash.cpp
+    // @Param: SW_COL_DIR
+    // @DisplayName: Swash 1 Collective Direction
+    // @Description: Direction collective moves for positive pitch. 0 for Normal, 1 for Reversed
+    // @Values: 0:Normal,1:Reversed
+    // @User: Standard
+
+    // @Param: SW_LIN_SVO
+    // @DisplayName: Linearize Swash 1 Servos
+    // @Description: This linearizes the swashplate 1 servo's mechanical output to account for nonlinear output due to arm rotation.  This requires a specific setup procedure to work properly.  The servo arm must be centered on the mechanical throw at the servo trim position and the servo trim position kept as close to 1500 as possible. Leveling the swashplate can only be done through the pitch links.  See the ardupilot wiki for more details on setup.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+
+    // @Param: SW_H3_ENABLE
+    // @DisplayName: Swash 1 H3 Generic Enable
+    // @Description: Automatically set when H3 generic swash type is selected for swashplate 1. Do not set manually.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+
+    // @Param: SW_H3_SV1_POS
+    // @DisplayName: Swash 1 H3 Generic Servo 1 Position
+    // @Description: Azimuth position on swashplate for servo 1 with the front of the heli being 0 deg
+    // @Range: -180 180
+    // @Units: deg
+    // @User: Advanced
+
+    // @Param: SW_H3_SV2_POS
+    // @DisplayName: Swash 1 H3 Generic Servo 2 Position
+    // @Description: Azimuth position on swashplate 1 for servo 2 with the front of the heli being 0 deg
+    // @Range: -180 180
+    // @Units: deg
+    // @User: Advanced
+
+    // @Param: SW_H3_SV3_POS
+    // @DisplayName: Swash 1 H3 Generic Servo 3 Position
+    // @Description: Azimuth position on swashplate 1 for servo 3 with the front of the heli being 0 deg
+    // @Range: -180 180
+    // @Units: deg
+    // @User: Advanced
+    
+    // @Param: SW_H3_PHANG
+    // @DisplayName: Swash 1 H3 Generic Phase Angle Comp
+    // @Description: Only for H3 swashplate.  If pitching the swash forward induces a roll, this can be correct the problem
+    // @Range: -30 30
+    // @Units: deg
+    // @User: Advanced
+    // @Increment: 1
+    AP_SUBGROUPINFO(_swashplate1, "SW_", 20, AP_MotorsHeli_Dual, AP_MotorsHeli_Swash),
+
+    // @Param: SW2_TYPE
+    // @DisplayName: Swash 2 Type
+    // @Description: H3 is generic, three-servo only. H3_120/H3_140 plates have Motor1 left side, Motor2 right side, Motor3 elevator in rear. HR3_120/HR3_140 have Motor1 right side, Motor2 left side, Motor3 elevator in front - use H3_120/H3_140 and reverse servo and collective directions as necessary. For all H3_90 swashplates use H4_90 and don't use servo output for the missing servo. For H4-90 Motors1&2 are left/right respectively, Motors3&4 are rear/front respectively. For H4-45 Motors1&2 are LF/RF, Motors3&4 are LR/RR 
+    // @Values: 0:H3 Generic,1:H1 non-CPPM,2:H3_140,3:H3_120,4:H4_90,5:H4_45
+    // @User: Standard
+
+    // @Param: SW2_COL_DIR
+    // @DisplayName: Swash 2 Collective Direction
+    // @Description: Direction collective moves for positive pitch. 0 for Normal, 1 for Reversed
+    // @Values: 0:Normal,1:Reversed
+    // @User: Standard
+
+    // @Param: SW2_LIN_SVO
+    // @DisplayName: Linearize Swash 2 Servos
+    // @Description: This linearizes the swashplate 2 servo's mechanical output to account for nonlinear output due to arm rotation.  This requires a specific setup procedure to work properly.  The servo arm must be centered on the mechanical throw at the servo trim position and the servo trim position kept as close to 1500 as possible. Leveling the swashplate can only be done through the pitch links.  See the ardupilot wiki for more details on setup.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+
+    // @Param: SW2_H3_ENABLE
+    // @DisplayName: Swash 2 H3 Generic Enable
+    // @Description: Automatically set when H3 generic swash type is selected for swashplate 2. Do not set manually.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+
+    // @Param: SW2_H3_SV1_POS
+    // @DisplayName: Swash 2 H3 Generic Servo 1 Position
+    // @Description: Azimuth position on swashplate for servo 1 with the front of the heli being 0 deg
+    // @Range: -180 180
+    // @Units: deg
+    // @User: Advanced
+
+    // @Param: SW2_H3_SV2_POS
+    // @DisplayName: Swash 2 H3 Generic Servo 2 Position
+    // @Description: Azimuth position on swashplate 2 for servo 2 with the front of the heli being 0 deg
+    // @Range: -180 180
+    // @Units: deg
+    // @User: Advanced
+
+    // @Param: SW2_H3_SV3_POS
+    // @DisplayName: Swash 2 H3 Generic Servo 3 Position
+    // @Description: Azimuth position on swashplate 2 for servo 3 with the front of the heli being 0 deg
+    // @Range: -180 180
+    // @Units: deg
+    // @User: Advanced
+    
+    // @Param: SW2_H3_PHANG
+    // @DisplayName: Swash 2 H3 Generic Phase Angle Comp
+    // @Description: Only for H3 swashplate.  If pitching the swash forward induces a roll, this can be correct the problem
+    // @Range: -30 30
+    // @Units: deg
+    // @User: Advanced
+    // @Increment: 1
     AP_SUBGROUPINFO(_swashplate2, "SW2_", 21, AP_MotorsHeli_Dual, AP_MotorsHeli_Swash),
 
     AP_GROUPEND
@@ -134,8 +236,15 @@ bool AP_MotorsHeli_Dual::init_outputs()
         }
 
         // set rotor servo range
-        _rotor.init_servo();
+        _main_rotor.init_servo();
 
+    }
+
+    // set signal value for main rotor external governor to know when to use autorotation bailout ramp up
+    if (_main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SPEED_SETPOINT  ||  _main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH) {
+        _main_rotor.set_ext_gov_arot_bail(_main_rotor._ext_gov_arot_pct.get());
+    } else {
+        _main_rotor.set_ext_gov_arot_bail(0);
     }
 
     // reset swash servo range and endpoints
@@ -192,7 +301,7 @@ void AP_MotorsHeli_Dual::output_test_seq(uint8_t motor_seq, int16_t pwm)
         break;
     case 7:
         // main rotor
-        rc_write(AP_MOTORS_HELI_DUAL_RSC, pwm);
+        rc_write(AP_MOTORS_HELI_RSC, pwm);
         break;
     default:
         // do nothing
@@ -203,35 +312,41 @@ void AP_MotorsHeli_Dual::output_test_seq(uint8_t motor_seq, int16_t pwm)
 // set_desired_rotor_speed
 void AP_MotorsHeli_Dual::set_desired_rotor_speed(float desired_speed)
 {
-    _rotor.set_desired_speed(desired_speed);
+    _main_rotor.set_desired_speed(desired_speed);
 }
 
 // set_rotor_rpm - used for governor with speed sensor
 void AP_MotorsHeli_Dual::set_rpm(float rotor_rpm)
 {
-    _rotor.set_rotor_rpm(rotor_rpm);
+    _main_rotor.set_rotor_rpm(rotor_rpm);
 }
 
 // calculate_armed_scalars
 void AP_MotorsHeli_Dual::calculate_armed_scalars()
 {
-    // Set common RSC variables
-    _rotor.set_ramp_time(_rsc_ramp_time);
-    _rotor.set_runup_time(_rsc_runup_time);
-    _rotor.set_critical_speed(_rsc_critical*0.001f);
-    _rotor.set_idle_output(_rsc_idle_output*0.001f);
-    _rotor.set_slewrate(_rsc_slewrate);
-
     // Set rsc mode specific parameters
-    if (_rsc_mode == ROTOR_CONTROL_MODE_OPEN_LOOP_POWER_OUTPUT) {
-        _rotor.set_throttle_curve(_rsc_thrcrv.get_thrcrv());
-    } else if (_rsc_mode == ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT) {
-        _rotor.set_throttle_curve(_rsc_thrcrv.get_thrcrv());
-        _rotor.set_governor_disengage(_rsc_gov.get_disengage()*0.01f);
-        _rotor.set_governor_droop_response(_rsc_gov.get_droop_response()*0.01f);
-        _rotor.set_governor_reference(_rsc_gov.get_reference());
-        _rotor.set_governor_range(_rsc_gov.get_range());
-        _rotor.set_governor_thrcurve(_rsc_gov.get_thrcurve()*0.01f);
+    if (_main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_OPEN_LOOP_POWER_OUTPUT || _main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT) {
+        _main_rotor.set_throttle_curve();
+    }
+    // keeps user from changing RSC mode while armed
+    if (_main_rotor._rsc_mode.get() != _main_rotor.get_control_mode()) {
+        _main_rotor.reset_rsc_mode_param();
+        _heliflags.save_rsc_mode = true;
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "RSC control mode change failed");
+    }
+    // saves rsc mode parameter when disarmed if it had been reset while armed
+    if (_heliflags.save_rsc_mode && !_flags.armed) {
+        _main_rotor._rsc_mode.save();
+        _heliflags.save_rsc_mode = false;
+    }
+
+    // set bailout ramp time
+    _main_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
+
+    // allow use of external governor autorotation bailout window on main rotor
+    if (_main_rotor._ext_gov_arot_pct.get() > 0  &&  (_main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SPEED_SETPOINT  ||  _main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH)){
+        // RSC only needs to know that the vehicle is in an autorotation if using the bailout window on an external governor
+        _main_rotor.set_autorotaion_flag(_heliflags.in_autorotation);
     }
 }
 
@@ -267,8 +382,7 @@ void AP_MotorsHeli_Dual::calculate_scalars()
     _swashplate2.calculate_roll_pitch_collective_factors();
 
     // set mode of main rotor controller and trigger recalculation of scalars
-    _rotor.set_control_mode(static_cast<RotorControlMode>(_rsc_mode.get()));
-    enable_rsc_parameters();
+    _main_rotor.set_control_mode(static_cast<RotorControlMode>(_main_rotor._rsc_mode.get()));
     calculate_armed_scalars();
 }
 
@@ -341,7 +455,7 @@ uint16_t AP_MotorsHeli_Dual::get_motor_mask()
     if (_swashplate2.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate2.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
         mask |= 1U << AP_MOTORS_MOT_8;
     }
-    mask |= 1U << AP_MOTORS_HELI_DUAL_RSC;
+    mask |= 1U << AP_MOTORS_HELI_RSC;
     return mask;
 }
 
@@ -349,18 +463,18 @@ uint16_t AP_MotorsHeli_Dual::get_motor_mask()
 void AP_MotorsHeli_Dual::update_motor_control(RotorControlState state)
 {
     // Send state update to motors
-    _rotor.output(state);
+    _main_rotor.output(state);
 
     if (state == ROTOR_CONTROL_STOP) {
         // set engine run enable aux output to not run position to kill engine when disarmed
-        SRV_Channels::set_output_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::SRV_CHANNEL_LIMIT_MIN);
+        SRV_Channels::set_output_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::Limit::MIN);
     } else {
         // else if armed, set engine run enable output to run position
-        SRV_Channels::set_output_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::SRV_CHANNEL_LIMIT_MAX);
+        SRV_Channels::set_output_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::Limit::MAX);
     }
 
     // Check if rotors are run-up
-    _heliflags.rotor_runup_complete = _rotor.is_runup_complete();
+    _heliflags.rotor_runup_complete = _main_rotor.is_runup_complete();
 }
 
 //
@@ -374,7 +488,8 @@ void AP_MotorsHeli_Dual::update_motor_control(RotorControlState state)
 void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float collective_in, float yaw_out)
 {
     // initialize limits flag
-    limit.roll_pitch = false;
+    limit.roll = false;
+    limit.pitch = false;
     limit.yaw = false;
     limit.throttle_lower = false;
     limit.throttle_upper = false;
@@ -382,22 +497,22 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
     if (_dual_mode == AP_MOTORS_HELI_DUAL_MODE_TRANSVERSE) {
         if (pitch_out < -_cyclic_max/4500.0f) {
             pitch_out = -_cyclic_max/4500.0f;
-            limit.roll_pitch = true;
+            limit.pitch = true;
         }
 
         if (pitch_out > _cyclic_max/4500.0f) {
             pitch_out = _cyclic_max/4500.0f;
-            limit.roll_pitch = true;
+            limit.pitch = true;
         }
     } else {
         if (roll_out < -_cyclic_max/4500.0f) {
             roll_out = -_cyclic_max/4500.0f;
-            limit.roll_pitch = true;
+            limit.roll = true;
         }
 
         if (roll_out > _cyclic_max/4500.0f) {
             roll_out = _cyclic_max/4500.0f;
-            limit.roll_pitch = true;
+            limit.roll = true;
         }
     }
 
@@ -461,7 +576,7 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
 
     // feed power estimate into main rotor controller
     // ToDo: add main rotor cyclic power?
-    _rotor.set_collective(fabsf(collective_out));
+    _main_rotor.set_collective(fabsf(collective_out));
 
     // compute swashplate tilt
     float swash1_pitch = get_swashplate(1, AP_MOTORS_HELI_DUAL_SWASH_AXIS_PITCH, pitch_out, roll_out, yaw_out, collective_out_scaled);

@@ -1,6 +1,7 @@
 #pragma once
 
-#include <AP_Common/AP_Common.h>
+#include <AC_PID/AC_PID.h>
+#include <AP_Param/AP_Param.h>
 
 // Global parameter class.
 //
@@ -108,6 +109,7 @@ public:
         k_param_rc_channels,
         k_param_servo_channels,
 
+        k_param_stats = 218,
         k_param_scripting = 219,
 
         //
@@ -119,7 +121,12 @@ public:
         k_param_gcs_pid_mask = 225,
         k_param_scan_speed_yaw,
         k_param_scan_speed_pitch,
-        k_param_initial_mode
+        k_param_initial_mode,
+        k_param_disarm_pwm,
+
+        k_param_logger = 253, // 253 - Logging Group
+
+        k_param_vehicle = 257, // vehicle common block of parameters
     };
 
     AP_Int16 format_version;
@@ -156,6 +163,7 @@ public:
     AP_Int16 pitch_max;
     AP_Int16 gcs_pid_mask;
     AP_Int8  initial_mode;
+    AP_Int8 disarm_pwm;
 
     // Waypoints
     //
@@ -168,8 +176,8 @@ public:
     AC_PID         pidYaw2Srv;
 
     Parameters() :
-        pidPitch2Srv(0.2, 0, 0.05f, 4000.0f, 0.1, 0.02f),
-        pidYaw2Srv  (0.2, 0, 0.05f, 4000.0f, 0.1, 0.02f)
+        pidPitch2Srv(0.2, 0.0f, 0.05f, 0.02f, 4000.0f, 0.0f, 0.0f, 0.0f, 0.1f),
+        pidYaw2Srv  (0.2, 0.0f, 0.05f, 0.02f, 4000.0f, 0.0f, 0.0f, 0.0f, 0.1f)
         {}
 };
 

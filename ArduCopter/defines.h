@@ -19,6 +19,7 @@ enum autopilot_yaw_mode {
     AUTO_YAW_LOOK_AHEAD =       4,  // point in the direction the copter is moving
     AUTO_YAW_RESETTOARMEDYAW =  5,  // point towards heading at time motors were armed
     AUTO_YAW_RATE =             6,  // turn at a specified rate (held in auto_yaw_rate)
+    AUTO_YAW_CIRCLE =           7,  // use AC_Circle's provided yaw (used during Loiter-Turns commands)
 };
 
 // Frame types
@@ -29,55 +30,6 @@ enum autopilot_yaw_mode {
 // HIL enumerations
 #define HIL_MODE_DISABLED               0
 #define HIL_MODE_SENSORS                1
-
-// Auto Pilot Modes enumeration
-enum control_mode_t {
-    STABILIZE =     0,  // manual airframe angle with manual throttle
-    ACRO =          1,  // manual body-frame angular rate with manual throttle
-    ALT_HOLD =      2,  // manual airframe angle with automatic throttle
-    AUTO =          3,  // fully automatic waypoint control using mission commands
-    GUIDED =        4,  // fully automatic fly to coordinate or fly at velocity/direction using GCS immediate commands
-    LOITER =        5,  // automatic horizontal acceleration with automatic throttle
-    RTL =           6,  // automatic return to launching point
-    CIRCLE =        7,  // automatic circular flight with automatic throttle
-    LAND =          9,  // automatic landing with horizontal position control
-    DRIFT =        11,  // semi-automous position, yaw and throttle control
-    SPORT =        13,  // manual earth-frame angular rate control with manual throttle
-    FLIP =         14,  // automatically flip the vehicle on the roll axis
-    AUTOTUNE =     15,  // automatically tune the vehicle's roll and pitch gains
-    POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
-    BRAKE =        17,  // full-brake using inertial/GPS system, no pilot input
-    THROW =        18,  // throw to launch mode using inertial/GPS system, no pilot input
-    AVOID_ADSB =   19,  // automatic avoidance of obstacles in the macro scale - e.g. full-sized aircraft
-    GUIDED_NOGPS = 20,  // guided mode but only accepts attitude and altitude
-    SMART_RTL =    21,  // SMART_RTL returns to home by retracing its steps
-    FLOWHOLD  =    22,  // FLOWHOLD holds position with optical flow without rangefinder
-    FOLLOW    =    23,  // follow attempts to follow another vehicle or ground station
-    ZIGZAG    =    24,  // ZIGZAG mode is able to fly in a zigzag manner with predefined point A and point B
-    BRG_NOGPS =    25,  // new flight mode
-};
-
-enum mode_reason_t {
-    MODE_REASON_UNKNOWN=0,
-    MODE_REASON_TX_COMMAND,
-    MODE_REASON_GCS_COMMAND,
-    MODE_REASON_RADIO_FAILSAFE,
-    MODE_REASON_BATTERY_FAILSAFE,
-    MODE_REASON_GCS_FAILSAFE,
-    MODE_REASON_EKF_FAILSAFE,
-    MODE_REASON_GPS_GLITCH,
-    MODE_REASON_MISSION_END,
-    MODE_REASON_THROTTLE_LAND_ESCAPE,
-    MODE_REASON_FENCE_BREACH,
-    MODE_REASON_TERRAIN_FAILSAFE,
-    MODE_REASON_BRAKE_TIMEOUT,
-    MODE_REASON_FLIP_COMPLETE,
-    MODE_REASON_AVOIDANCE,
-    MODE_REASON_AVOIDANCE_RECOVERY,
-    MODE_REASON_THROW_COMPLETE,
-    MODE_REASON_TERMINATE,
-    MODE_REASON_TMODE,
-};
 
 // Tuning enumeration
 enum tuning_func {
@@ -106,9 +58,9 @@ enum tuning_func {
     TUNING_CIRCLE_RATE =                39, // circle turn rate in degrees (hard coded to about 45 degrees in either direction)
     TUNING_ACRO_YAW_KP =                40, // acro controller's P term.  converts pilot input to a desired roll, pitch or yaw rate
     TUNING_RANGEFINDER_GAIN =           41, // rangefinder gain
-    TUNING_EKF_VERTICAL_POS =           42, // EKF's baro vs accel (higher rely on accels more, baro impact is reduced).  Range should be 0.2 ~ 4.0?  2.0 is default
-    TUNING_EKF_HORIZONTAL_POS =         43, // EKF's gps vs accel (higher rely on accels more, gps impact is reduced).  Range should be 1.0 ~ 3.0?  1.5 is default
-    TUNING_EKF_ACCEL_NOISE =            44, // EKF's accel noise (lower means trust accels more, gps & baro less).  Range should be 0.02 ~ 0.5  0.5 is default (but very robust at that level)
+    TUNING_EKF_VERTICAL_POS =           42, // unused
+    TUNING_EKF_HORIZONTAL_POS =         43, // unused
+    TUNING_EKF_ACCEL_NOISE =            44, // unused
     TUNING_RC_FEEL_RP =                 45, // roll-pitch input smoothing
     TUNING_RATE_PITCH_KP =              46, // body frame pitch rate controller's P term
     TUNING_RATE_PITCH_KI =              47, // body frame pitch rate controller's I term
@@ -121,13 +73,9 @@ enum tuning_func {
     TUNING_RATE_YAW_FF =                54, // body frame yaw rate controller FF term
     TUNING_RATE_MOT_YAW_HEADROOM =      55, // motors yaw headroom minimum
     TUNING_RATE_YAW_FILT =              56, // yaw rate input filter
-    TUNING_WINCH =                      57  // winch control (not actually a value to be tuned)
+    TUNING_WINCH =                      57, // winch control (not actually a value to be tuned)
+    TUNING_SYSTEM_ID_MAGNITUDE =        58  // magnitude of the system ID signal
 };
-
-// Acro Trainer types
-#define ACRO_TRAINER_DISABLED   0
-#define ACRO_TRAINER_LEVELING   1
-#define ACRO_TRAINER_LIMITED    2
 
 // Yaw behaviours during missions - possible values for WP_YAW_BEHAVIOR parameter
 #define WP_YAW_BEHAVIOR_NONE                          0   // auto pilot will never control yaw during missions or rtl (except for DO_CONDITIONAL_YAW command received)
@@ -159,14 +107,11 @@ enum GuidedMode {
     Guided_Angle,
 };
 
-// RTL states
-enum RTLState {
-    RTL_Starting,
-    RTL_InitialClimb,
-    RTL_ReturnHome,
-    RTL_LoiterAtHome,
-    RTL_FinalDescent,
-    RTL_Land
+// Airmode
+enum class AirMode {
+    AIRMODE_NONE,
+    AIRMODE_DISABLED,
+    AIRMODE_ENABLED,
 };
 
 // Safe RTL states
@@ -176,11 +121,6 @@ enum SmartRTLState {
     SmartRTL_PreLandPosition,
     SmartRTL_Descend,
     SmartRTL_Land
-};
-
-enum LandStateType {
-    LandStateType_FlyToLocation = 0,
-    LandStateType_Descending = 1
 };
 
 enum PayloadPlaceStateType {
@@ -205,8 +145,6 @@ enum DevOptions {
 
 //  Logging parameters
 enum LoggingParameters {
-     TYPE_AIRSTART_MSG,
-     TYPE_GROUNDSTART_MSG,
      LOG_CONTROL_TUNING_MSG,
      LOG_DATA_INT16_MSG,
      LOG_DATA_UINT16_MSG,
@@ -218,6 +156,8 @@ enum LoggingParameters {
      LOG_HELI_MSG,
      LOG_PRECLAND_MSG,
      LOG_GUIDEDTARGET_MSG,
+     LOG_SYSIDD_MSG,
+     LOG_SYSIDS_MSG,
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
@@ -244,7 +184,7 @@ enum LoggingParameters {
 // Radio failsafe definitions (FS_THR parameter)
 #define FS_THR_DISABLED                            0
 #define FS_THR_ENABLED_ALWAYS_RTL                  1
-#define FS_THR_ENABLED_CONTINUE_MISSION            2
+#define FS_THR_ENABLED_CONTINUE_MISSION            2    // Deprecated in 4.0+, now use fs_options
 #define FS_THR_ENABLED_ALWAYS_LAND                 3
 #define FS_THR_ENABLED_ALWAYS_SMARTRTL_OR_RTL      4
 #define FS_THR_ENABLED_ALWAYS_SMARTRTL_OR_LAND     5
@@ -252,9 +192,10 @@ enum LoggingParameters {
 // GCS failsafe definitions (FS_GCS_ENABLE parameter)
 #define FS_GCS_DISABLED                        0
 #define FS_GCS_ENABLED_ALWAYS_RTL              1
-#define FS_GCS_ENABLED_CONTINUE_MISSION        2
+#define FS_GCS_ENABLED_CONTINUE_MISSION        2    // Deprecated in 4.0+, now use fs_options
 #define FS_GCS_ENABLED_ALWAYS_SMARTRTL_OR_RTL  3
 #define FS_GCS_ENABLED_ALWAYS_SMARTRTL_OR_LAND 4
+#define FS_GCS_ENABLED_ALWAYS_LAND             5
 
 // EKF failsafe definitions (FS_EKF_ACTION parameter)
 #define FS_EKF_ACTION_LAND                  1       // switch to LAND mode on EKF failsafe

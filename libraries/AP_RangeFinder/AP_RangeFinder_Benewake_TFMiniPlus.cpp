@@ -99,8 +99,8 @@ bool AP_RangeFinder_Benewake_TFMiniPlus::init()
         goto fail;
     }
 
-    if (val[5] * 10000 + val[4] * 100 + val[3] < 10706) {
-        hal.console->printf(DRIVER ": minimum required FW version 1.7.6, but version %u.%u.%u found\n",
+    if (val[5] * 10000 + val[4] * 100 + val[3] < 20003) {
+        hal.console->printf(DRIVER ": minimum required FW version 2.0.3, but version %u.%u.%u found\n",
                             val[5], val[4], val[3]);
         goto fail;
     }
@@ -145,7 +145,7 @@ void AP_RangeFinder_Benewake_TFMiniPlus::update()
         accum.count = 0;
         update_status();
     } else if (AP_HAL::millis() - state.last_reading_ms > 200) {
-        set_status(RangeFinder::RangeFinder_NoData);
+        set_status(RangeFinder::Status::NoData);
     }
 }
 
@@ -171,8 +171,9 @@ bool AP_RangeFinder_Benewake_TFMiniPlus::check_checksum(uint8_t *arr, int pkt_le
     int i;
 
     /* sum them all except the last (the checksum) */
-    for (i = 0; i < pkt_len - 1; i++)
+    for (i = 0; i < pkt_len - 1; i++) {
         checksum += arr[i];
+    }
 
     return checksum == arr[pkt_len - 1];
 }

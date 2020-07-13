@@ -29,43 +29,9 @@ class SoloGimbalEKF
 public:
     typedef float ftype;
 #if MATH_CHECK_INDEXES
-    typedef VectorN<ftype,2> Vector2;
-    typedef VectorN<ftype,3> Vector3;
-    typedef VectorN<ftype,5> Vector5;
-    typedef VectorN<ftype,6> Vector6;
-    typedef VectorN<ftype,8> Vector8;
-    typedef VectorN<ftype,9> Vector9;
-    typedef VectorN<ftype,10> Vector10;
-    typedef VectorN<ftype,11> Vector11;
     typedef VectorN<ftype,13> Vector13;
-    typedef VectorN<ftype,14> Vector14;
-    typedef VectorN<ftype,15> Vector15;
-    typedef VectorN<ftype,22> Vector22;
-    typedef VectorN<ftype,31> Vector31;
-    typedef VectorN<ftype,34> Vector34;
-    typedef VectorN<VectorN<ftype,3>,3> Matrix3;
-    typedef VectorN<VectorN<ftype,22>,22> Matrix22;
-    typedef VectorN<VectorN<ftype,34>,22> Matrix34_50;
-    typedef VectorN<uint32_t,50> Vector_u32_50;
 #else
-    typedef ftype Vector2[2];
-    typedef ftype Vector3[3];
-    typedef ftype Vector5[5];
-    typedef ftype Vector6[6];
-    typedef ftype Vector8[8];
-    typedef ftype Vector9[9];
-    typedef ftype Vector10[10];
-    typedef ftype Vector11[11];
     typedef ftype Vector13[13];
-    typedef ftype Vector14[14];
-    typedef ftype Vector15[15];
-    typedef ftype Vector22[22];
-    typedef ftype Vector31[31];
-    typedef ftype Vector34[34];
-    typedef ftype Matrix3[3][3];
-    typedef ftype Matrix22[22][22];
-    typedef ftype Matrix34_50[34][50];
-    typedef uint32_t Vector_u32_50[50];
 #endif
 
     // Constructor

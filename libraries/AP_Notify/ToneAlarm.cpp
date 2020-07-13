@@ -26,8 +26,13 @@
 
 #include <stdio.h>
 
+#include <AP_Filesystem/AP_Filesystem.h>
+
 extern const AP_HAL::HAL& hal;
 
+// Tunes follow the syntax of the Microsoft GWBasic/QBasic PLAY
+//   statement, with some exceptions and extensions.
+// See https://firmware.ardupilot.org/Tools/ToneTester/
 const AP_ToneAlarm::Tone AP_ToneAlarm::_tones[] {
 #define AP_NOTIFY_TONE_QUIET_NEG_FEEDBACK 0
     { "MFT200L4<<<B#A#2", false },
@@ -89,6 +94,8 @@ const AP_ToneAlarm::Tone AP_ToneAlarm::_tones[] {
     { "MFT200L4<B#4A#6G#6", false },
 #define AP_NOTIFY_TONE_STARTUP 29
     { "MFT240L8O4aO5dcO4aO5dcO4aO5dcL16dcdcdcdc", false },
+#define AP_NOTIFY_TONE_NO_SDCARD 30
+    { "MNBGG", false },
 };
 
 bool AP_ToneAlarm::init()
@@ -107,6 +114,19 @@ bool AP_ToneAlarm::init()
     flags.pre_arm_check = 1;
     _cont_tone_playing = -1;
     hal.scheduler->register_timer_process(FUNCTOR_BIND(this, &AP_ToneAlarm::_timer_task, void));
+
+#if HAVE_FILESYSTEM_SUPPORT && CONFIG_HAL_BOARD != HAL_BOARD_LINUX
+    // if we don't have a SDcard then play a failure tone instead of
+    // normal startup tone. This gives the user a chance to fix it
+    // before they try to arm. We don't do this on Linux as Linux
+    // flight controllers don't usually have removable storage
+    struct stat st;
+    if (AP::FS().stat(HAL_BOARD_STORAGE_DIRECTORY, &st) != 0) {
+        play_tone(AP_NOTIFY_TONE_NO_SDCARD);
+        return true;
+    }
+#endif
+
     play_tone(AP_NOTIFY_TONE_STARTUP);
     return true;
 }
@@ -279,6 +299,23 @@ void AP_ToneAlarm::update()
         }
     }
 
+    // notify the user when GCS failsafe is triggered
+    if (flags.failsafe_gcs != AP_Notify::flags.failsafe_gcs) {
+        flags.failsafe_gcs = AP_Notify::flags.failsafe_gcs;
+        if (flags.failsafe_gcs) {
+            // armed case handled by events.failsafe_mode_change
+            if (!AP_Notify::flags.armed) {
+                play_tone(AP_NOTIFY_TONE_QUIET_NEG_FEEDBACK);
+            }
+        } else {
+            if (AP_Notify::flags.armed) {
+                play_tone(AP_NOTIFY_TONE_LOUD_POS_FEEDBACK);
+            } else {
+                play_tone(AP_NOTIFY_TONE_QUIET_POS_FEEDBACK);
+            }
+        }
+    }
+
     // notify the user when pre_arm checks are passing
     if (flags.pre_arm_check != AP_Notify::flags.pre_arm_check) {
         flags.pre_arm_check = AP_Notify::flags.pre_arm_check;
@@ -378,12 +415,12 @@ void AP_ToneAlarm::update()
 /*
  *  handle a PLAY_TUNE message
  */
-void AP_ToneAlarm::handle_play_tune(mavlink_message_t *msg)
+void AP_ToneAlarm::handle_play_tune(const mavlink_message_t &msg)
 {
     // decode mavlink message
     mavlink_play_tune_t packet;
 
-    mavlink_msg_play_tune_decode(msg, &packet);
+    mavlink_msg_play_tune_decode(&msg, &packet);
 
     WITH_SEMAPHORE(_sem);
 

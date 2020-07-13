@@ -49,7 +49,7 @@ public:
     void update();
     
     // check that arming can happen
-    bool pre_arm_check(const char* &reason);
+    bool pre_arm_check(char* reason, uint8_t reason_len);
 
     // send MAVLink telemetry packets
     void send_mavlink(uint8_t chan);
@@ -62,7 +62,7 @@ private:
     void loop();
 
     bool _initialized;
-    char _thread_name[9];
+    char _thread_name[11];
     uint8_t _driver_index;
     uavcan::ICanDriver* _can_driver;
 

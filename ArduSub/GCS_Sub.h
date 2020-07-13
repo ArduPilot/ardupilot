@@ -9,24 +9,21 @@ class GCS_Sub : public GCS
 
 public:
 
-    // return the number of valid GCS objects
-    uint8_t num_gcs() const override { return ARRAY_SIZE(_chan); };
-
     // return GCS link at offset ofs
-    GCS_MAVLINK_Sub &chan(uint8_t ofs) override {
-        if (ofs >= num_gcs()) {
-            AP::internalerror().error(AP_InternalError::error_t::gcs_offset);
-            ofs = 0;
+    GCS_MAVLINK_Sub *chan(const uint8_t ofs) override {
+        if (ofs > _num_gcs) {
+            INTERNAL_ERROR(AP_InternalError::error_t::gcs_offset);
+            return nullptr;
         }
-        return _chan[ofs];
-    };
-    const GCS_MAVLINK_Sub &chan(uint8_t ofs) const override {
-        if (ofs >= num_gcs()) {
-            AP::internalerror().error(AP_InternalError::error_t::gcs_offset);
-            ofs = 0;
+        return (GCS_MAVLINK_Sub*)_chan[ofs];
+    }
+    const GCS_MAVLINK_Sub *chan(const uint8_t ofs) const override {
+        if (ofs > _num_gcs) {
+            INTERNAL_ERROR(AP_InternalError::error_t::gcs_offset);
+            return nullptr;
         }
-        return _chan[ofs];
-    };
+        return (GCS_MAVLINK_Sub*)_chan[ofs];
+    }
 
     void update_vehicle_sensor_status_flags() override;
 
@@ -37,6 +34,8 @@ public:
 
 protected:
 
+    uint8_t sysid_this_mav() const override;
+
     // minimum amount of time (in microseconds) that must remain in
     // the main scheduler loop before we are allowed to send any
     // mavlink messages.  We want to prioritise the main flight
@@ -45,8 +44,9 @@ protected:
         return 250;
     }
 
-private:
-
-    GCS_MAVLINK_Sub _chan[MAVLINK_COMM_NUM_BUFFERS];
+    GCS_MAVLINK_Sub *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
+                                             AP_HAL::UARTDriver &uart) override {
+        return new GCS_MAVLINK_Sub(params, uart);
+    }
 
 };

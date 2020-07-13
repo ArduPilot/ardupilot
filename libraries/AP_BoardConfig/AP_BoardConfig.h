@@ -4,6 +4,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_RTC/AP_RTC.h>
+#include <AC_PID/AC_PI.h>
 
 #ifndef AP_FEATURE_BOARD_DETECT
 #if defined(HAL_CHIBIOS_ARCH_FMUV3) || defined(HAL_CHIBIOS_ARCH_FMUV4) || defined(HAL_CHIBIOS_ARCH_FMUV5) || defined(HAL_CHIBIOS_ARCH_MINDPXV2) || defined(HAL_CHIBIOS_ARCH_FMUV4PRO) || defined(HAL_CHIBIOS_ARCH_BRAINV51) || defined(HAL_CHIBIOS_ARCH_BRAINV52) || defined(HAL_CHIBIOS_ARCH_UBRAINV51) || defined(HAL_CHIBIOS_ARCH_COREV10) || defined(HAL_CHIBIOS_ARCH_BRAINV54)
@@ -17,16 +18,16 @@
 #define AP_FEATURE_RTSCTS 0
 #endif
 
-#ifndef AP_FEATURE_RTSCTS
-#define AP_FEATURE_RTSCTS 0
-#endif
-
 #ifndef AP_FEATURE_SBUS_OUT
 #define AP_FEATURE_SBUS_OUT 0
 #endif
 
 #if HAL_RCINPUT_WITH_AP_RADIO
 #include <AP_Radio/AP_Radio.h>
+#endif
+
+#ifndef HAL_WATCHDOG_ENABLED_DEFAULT
+#define HAL_WATCHDOG_ENABLED_DEFAULT false
 #endif
 
 extern "C" typedef int (*main_fn_t)(int argc, char **);
@@ -53,11 +54,11 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     // notify user of a fatal startup error related to available sensors. 
-    static void sensor_config_error(const char *reason);
+    static void config_error(const char *reason, ...);
 
     // permit other libraries (in particular, GCS_MAVLink) to detect
     // that we're never going to boot properly:
-    static bool in_sensor_config_error(void) { return _in_sensor_config_error; }
+    static bool in_config_error(void) { return _in_sensor_config_error; }
 
     // valid types for BRD_TYPE: these values need to be in sync with the
     // values from the param description
@@ -103,7 +104,7 @@ public:
     // developer debugging by setting BRD_IO_ENABLE=100 to avoid the
     // crc check of IO firmware on startup
     static uint8_t io_enabled(void) {
-#if AP_FEATURE_BOARD_DETECT
+#if HAL_WITH_IO_MCU
         return _singleton?uint8_t(_singleton->state.io_enable.get()):0;
 #else
         return 0;
@@ -115,7 +116,11 @@ public:
         return _singleton?_singleton->pwm_count.get():8;
     }
 
-#if HAL_HAVE_SAFETY_SWITCH
+    // get alternative config selection
+    uint8_t get_alt_config(void) {
+        return uint8_t(_alt_config.get());
+    }
+    
     enum board_safety_button_option {
         BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF= (1 << 0),
         BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON=  (1 << 1),
@@ -127,7 +132,6 @@ public:
     uint16_t get_safety_button_options(void) {
         return uint16_t(state.safety_option.get());
     }
-#endif
 
     // return the value of BRD_SAFETY_MASK
     uint16_t get_safety_mask(void) const {
@@ -164,8 +168,16 @@ public:
 
     // return true if watchdog enabled
     static bool watchdog_enabled(void) {
-        return _singleton?(_singleton->_options & BOARD_OPTION_WATCHDOG)!=0:false;
+        return _singleton?(_singleton->_options & BOARD_OPTION_WATCHDOG)!=0:HAL_WATCHDOG_ENABLED_DEFAULT;
     }
+
+    // handle press of safety button. Return true if safety state
+    // should be toggled
+    bool safety_button_handle_pressed(uint8_t press_count);
+
+#if HAL_HAVE_IMU_HEATER
+    void set_imu_temp(float current_temp_c);
+#endif
 
 private:
     static AP_BoardConfig *_singleton;
@@ -173,7 +185,6 @@ private:
     AP_Int16 vehicleSerialNumber;
     AP_Int8 pwm_count;
 
-#if AP_FEATURE_BOARD_DETECT || defined(AP_FEATURE_BRD_PWM_COUNT_PARAM) || HAL_HAVE_SAFETY_SWITCH
     struct {
         AP_Int8 safety_enable;
         AP_Int16 safety_option;
@@ -186,7 +197,6 @@ private:
         AP_Int8 board_type;
         AP_Int8 io_enable;
     } state;
-#endif
 
 #if AP_FEATURE_BOARD_DETECT
     static enum px4_board_type px4_configured_board;
@@ -194,8 +204,8 @@ private:
     void board_setup_drivers(void);
     bool spi_check_register(const char *devname, uint8_t regnum, uint8_t value, uint8_t read_flag = 0x80);
     void validate_board_type(void);
-    void check_cubeblack(void);
     void board_autodetect(void);
+    bool check_ms5611(const char* devname);
 
 #endif // AP_FEATURE_BOARD_DETECT
 
@@ -207,8 +217,17 @@ private:
 
     static bool _in_sensor_config_error;
 
-    // target temperarure for IMU in Celsius, or -1 to disable
-    AP_Int8 _imu_target_temperature;
+#if HAL_HAVE_IMU_HEATER
+    struct {
+        AP_Int8 imu_target_temperature;
+        uint32_t last_update_ms;
+        AC_PI pi_controller{200, 0.3, 70};
+        uint16_t count;
+        float sum;
+        float output;
+        uint32_t last_log_ms;
+    } heater;
+#endif
 
 #if HAL_RCINPUT_WITH_AP_RADIO
     // direct attached radio
@@ -234,5 +253,13 @@ private:
     AP_Int8 _sdcard_slowdown;
 #endif
 
+    AP_Int16 _boot_delay_ms;
+
     AP_Int32 _options;
+
+    AP_Int8  _alt_config;
+};
+
+namespace AP {
+    AP_BoardConfig *boardConfig(void);
 };

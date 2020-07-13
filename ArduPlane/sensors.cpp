@@ -31,10 +31,6 @@ void Plane::read_rangefinder(void)
 
     rangefinder.update();
 
-    if ((rangefinder.num_sensors() > 0) && should_log(MASK_LOG_SONAR)) {
-        Log_Write_Sonar();
-    }
-
     rangefinder_height_update();
 }
 
@@ -66,7 +62,7 @@ void Plane::read_airspeed(void)
     
     // update smoothed airspeed estimate
     float aspeed;
-    if (ahrs.airspeed_estimate(&aspeed)) {
+    if (ahrs.airspeed_estimate(aspeed)) {
         smoothed_airspeed = smoothed_airspeed * 0.8f + aspeed * 0.2f;
     }
 }

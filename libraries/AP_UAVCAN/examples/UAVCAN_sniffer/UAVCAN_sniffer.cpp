@@ -35,6 +35,8 @@
 
 #include <uavcan/equipment/power/BatteryInfo.hpp>
 
+#include <com/hex/equipment/flow/Measurement.hpp>
+
 void setup();
 void loop();
 
@@ -66,19 +68,19 @@ private:
         }
 
         uavcan::UtcDuration utc_adjustment;
-        virtual void adjustUtc(uavcan::UtcDuration adjustment)
+        virtual void adjustUtc(uavcan::UtcDuration adjustment) override
         {
             utc_adjustment = adjustment;
         }
 
     public:
-        virtual uavcan::MonotonicTime getMonotonic() const
+        virtual uavcan::MonotonicTime getMonotonic() const override
         {
             uavcan::uint64_t usec = 0;
             usec = AP_HAL::micros64();
             return uavcan::MonotonicTime::fromUSec(usec);
         }
-        virtual uavcan::UtcTime getUtc() const
+        virtual uavcan::UtcTime getUtc() const override
         {
             uavcan::UtcTime utc;
             uavcan::uint64_t usec = 0;
@@ -149,6 +151,7 @@ MSG_CB(uavcan::equipment::power::BatteryInfo, BatteryInfo);
 MSG_CB(uavcan::equipment::actuator::ArrayCommand, ArrayCommand)
 MSG_CB(uavcan::equipment::esc::RawCommand, RawCommand)
 MSG_CB(uavcan::equipment::indication::LightsCommand, LightsCommand);
+MSG_CB(com::hex::equipment::flow::Measurement, Measurement);
 
 void UAVCAN_sniffer::init(void)
 {
@@ -222,6 +225,7 @@ void UAVCAN_sniffer::init(void)
     START_CB(uavcan::equipment::actuator::ArrayCommand, ArrayCommand);
     START_CB(uavcan::equipment::esc::RawCommand, RawCommand);
     START_CB(uavcan::equipment::indication::LightsCommand, LightsCommand);
+    START_CB(com::hex::equipment::flow::Measurement, Measurement);
 
 
     /*
@@ -290,14 +294,10 @@ void loop(void)
     // auto-reboot for --upload
     if (hal.console->available() > 50) {
         hal.console->printf("rebooting\n");
-        while (hal.console->available()) {
-            hal.console->read();
-        }
+        hal.console->discard_input();
         hal.scheduler->reboot(false);
     }
-    while (hal.console->available()) {
-        hal.console->read();
-    }
+    hal.console->discard_input();
 }
 
 AP_HAL_MAIN();

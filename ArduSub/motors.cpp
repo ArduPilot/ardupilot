@@ -9,6 +9,10 @@ void Sub::enable_motor_output()
 // motors_output - send output to motors library which will adjust and send to ESCs and servos
 void Sub::motors_output()
 {
+    // Motor detection mode controls the thrusters directly
+    if (control_mode == MOTOR_DETECT){
+        return;
+    }
     // check if we are performing the motor test
     if (ap.motor_test) {
         verify_motor_test();
@@ -28,7 +32,7 @@ bool Sub::init_motor_test()
     // Ten second cooldown period required with no do_set_motor requests required
     // after failure.
     if (tnow < last_do_motor_test_fail_ms + 10000 && last_do_motor_test_fail_ms > 0) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "10 second cool down required");
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "10 second cooldown required after motor test");
         return false;
     }
 
@@ -60,7 +64,7 @@ bool Sub::verify_motor_test()
 
     // Require at least 2 Hz incoming do_set_motor requests
     if (AP_HAL::millis() > last_do_motor_test_ms + 500) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Motor test timed out!");
+        gcs().send_text(MAV_SEVERITY_INFO, "Motor test timed out!");
         pass = false;
     }
 
@@ -78,10 +82,19 @@ bool Sub::handle_do_motor_test(mavlink_command_long_t command) {
     last_do_motor_test_ms = AP_HAL::millis();
 
     // If we are not already testing motors, initialize test
+    static uint32_t tLastInitializationFailed = 0;
     if(!ap.motor_test) {
-        if (!init_motor_test()) {
-            gcs().send_text(MAV_SEVERITY_WARNING, "motor test initialization failed!");
-            return false; // init fail
+        // Do not allow initializations attempt under 2 seconds
+        // If one fails, we need to give the user time to fix the issue
+        // instead of spamming error messages
+        if (AP_HAL::millis() > (tLastInitializationFailed + 2000)) {
+            if (!init_motor_test()) {
+                gcs().send_text(MAV_SEVERITY_WARNING, "motor test initialization failed!");
+                tLastInitializationFailed = AP_HAL::millis();
+                return false; // init fail
+            }
+        } else {
+            return false;
         }
     }
 

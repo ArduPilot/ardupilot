@@ -21,6 +21,7 @@
 #include "Display.h"
 #include "ExternalLED.h"
 #include "PCA9685LED_I2C.h"
+#include "NeoPixel.h"
 #include "NCP5623.h"
 #include "OreoLED_I2C.h"
 #include "RCOutputRGBLed.h"
@@ -34,6 +35,7 @@
 #include "SITL_SFML_LED.h"
 #include <stdio.h>
 #include "AP_BoardLED2.h"
+#include "ProfiLED.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -52,7 +54,7 @@ AP_Notify *AP_Notify::_singleton;
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
   #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
 
-// Linux boards    
+// Linux boards
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
   #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
     #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS |\
@@ -111,15 +113,15 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
 
     // @Param: LED_OVERRIDE
     // @DisplayName: Specifies colour source for the RGBLed
-    // @Description: Specifies the source for the colours and brightness for the LED.  OutbackChallenge conforms to the MedicalExpress (https://uavchallenge.org/medical-express/) rules, essentially "Green" is disarmed (safe-to-approach), "Red" is armed (not safe-to-approach).
-    // @Values: 0:Standard,1:MAVLink,2:OutbackChallenge
+    // @Description: Specifies the source for the colours and brightness for the LED.  OutbackChallenge conforms to the MedicalExpress (https://uavchallenge.org/medical-express/) rules, essentially "Green" is disarmed (safe-to-approach), "Red" is armed (not safe-to-approach). Traffic light is a simplified color set, red when armed, yellow when the safety switch is not surpressing outputs (but disarmed), and green when outputs are surpressed and disarmed, the LED will blink faster if disarmed and failing arming checks.
+    // @Values: 0:Standard,1:MAVLink/Scripting,2:OutbackChallenge,3:TrafficLight
     // @User: Advanced
     AP_GROUPINFO("LED_OVERRIDE", 2, AP_Notify, _rgb_led_override, 0),
 
     // @Param: DISPLAY_TYPE
     // @DisplayName: Type of on-board I2C display
     // @Description: This sets up the type of on-board I2C display. Disabled by default.
-    // @Values: 0:Disable,1:ssd1306,2:sh1106
+    // @Values: 0:Disable,1:ssd1306,2:sh1106,10:SITL
     // @User: Advanced
     AP_GROUPINFO("DISPLAY_TYPE", 3, AP_Notify, _display_type, 0),
 
@@ -144,7 +146,7 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @Param: LED_TYPES
     // @DisplayName: LED Driver Types
     // @Description: Controls what types of LEDs will be enabled
-    // @Bitmask: 0:Build in LED, 1:Internal ToshibaLED, 2:External ToshibaLED, 3:External PCA9685, 4:Oreo LED, 5:UAVCAN, 6:NCP5623 External, 7:NCP5623 Internal
+    // @Bitmask: 0:Build in LED, 1:Internal ToshibaLED, 2:External ToshibaLED, 3:External PCA9685, 4:Oreo LED, 5:UAVCAN, 6:NCP5623 External, 7:NCP5623 Internal, 8:NeoPixel, 9:ProfiLED
     // @User: Advanced
     AP_GROUPINFO("LED_TYPES", 6, AP_Notify, _led_type, BUILD_DEFAULT_LED_TYPE),
 
@@ -156,6 +158,20 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("BUZZ_ON_LVL", 7, AP_Notify, _buzzer_level, 1),
 #endif
+
+    // @Param: BUZZ_VOLUME
+    // @DisplayName: Buzzer volume
+    // @Description: Enable or disable the buzzer.
+    // @Range: 0 100
+    // @Units: %
+    AP_GROUPINFO("BUZZ_VOLUME", 8, AP_Notify, _buzzer_volume, 100),
+
+    // @Param: LED_LEN
+    // @DisplayName: Serial LED String Length
+    // @Description: The number of Serial LED's to use for notifications (NeoPixel's and ProfiLED)
+    // @Range: 1 32
+    // @User: Advanced
+    AP_GROUPINFO("LED_LEN", 9, AP_Notify, _led_len, 1),
 
     AP_GROUPEND
 };
@@ -213,6 +229,8 @@ void AP_Notify::add_backends(void)
                 ADD_BACKEND(new RCOutputRGBLed(HAL_RCOUT_RGBLED_RED, HAL_RCOUT_RGBLED_GREEN, HAL_RCOUT_RGBLED_BLUE));
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
                 ADD_BACKEND(new DiscoLED());
+  #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR
+                ADD_BACKEND(new DiscreteRGBLed(HAL_RGBLED_RED, HAL_RGBLED_GREEN, HAL_RGBLED_BLUE, HAL_RGBLED_NORMAL_POLARITY));
   #endif
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
@@ -250,6 +268,12 @@ void AP_Notify::add_backends(void)
 #endif
             case Notify_LED_PCA9685LED_I2C_External:
                 ADD_BACKEND(new PCA9685LED_I2C());
+                break;
+            case Notify_LED_NeoPixel:
+                ADD_BACKEND(new NeoPixel());
+                break;
+            case Notify_LED_ProfiLED:
+                ADD_BACKEND(new ProfiLED());
                 break;
             case Notify_LED_OreoLED:
 #if !HAL_MINIMIZE_FEATURES
@@ -299,6 +323,7 @@ void AP_Notify::add_backends(void)
 
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
     ADD_BACKEND(new AP_ToneAlarm());
+    ADD_BACKEND(new Buzzer());
 #ifdef WITH_SITL_RGBLED
     ADD_BACKEND(new SITL_SFML_LED());
 #endif
@@ -331,7 +356,7 @@ void AP_Notify::update(void)
 }
 
 // handle a LED_CONTROL message
-void AP_Notify::handle_led_control(mavlink_message_t *msg)
+void AP_Notify::handle_led_control(const mavlink_message_t &msg)
 {
     for (uint8_t i = 0; i < _num_devices; i++) {
         if (_devices[i] != nullptr) {
@@ -340,8 +365,18 @@ void AP_Notify::handle_led_control(mavlink_message_t *msg)
     }
 }
 
+// handle RGB from Scripting
+void AP_Notify::handle_rgb(uint8_t r, uint8_t g, uint8_t b, uint8_t rate_hz)
+{
+    for (uint8_t i = 0; i < _num_devices; i++) {
+        if (_devices[i] != nullptr) {
+            _devices[i]->rgb_control(r, g, b, rate_hz);
+        }
+    }
+}
+
 // handle a PLAY_TUNE message
-void AP_Notify::handle_play_tune(mavlink_message_t *msg)
+void AP_Notify::handle_play_tune(const mavlink_message_t &msg)
 {
     for (uint8_t i = 0; i < _num_devices; i++) {
         if (_devices[i] != nullptr) {

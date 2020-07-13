@@ -46,10 +46,10 @@ bool AP_RangeFinder_MAVLink::detect()
 /*
    Set the distance based on a MAVLINK message
 */
-void AP_RangeFinder_MAVLink::handle_msg(mavlink_message_t *msg)
+void AP_RangeFinder_MAVLink::handle_msg(const mavlink_message_t &msg)
 {
     mavlink_distance_sensor_t packet;
-    mavlink_msg_distance_sensor_decode(msg, &packet);
+    mavlink_msg_distance_sensor_decode(&msg, &packet);
 
     // only accept distances for downward facing sensors
     if (packet.orientation == MAV_SENSOR_ROTATION_PITCH_270) {
@@ -67,7 +67,7 @@ void AP_RangeFinder_MAVLink::update(void)
     //Time out on incoming data; if we don't get new
     //data in 500ms, dump it
     if (AP_HAL::millis() - state.last_reading_ms > AP_RANGEFINDER_MAVLINK_TIMEOUT_MS) {
-        set_status(RangeFinder::RangeFinder_NoData);
+        set_status(RangeFinder::Status::NoData);
         state.distance_cm = 0;
     } else {
         state.distance_cm = distance_cm;

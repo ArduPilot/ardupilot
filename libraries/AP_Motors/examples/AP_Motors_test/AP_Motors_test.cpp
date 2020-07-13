@@ -27,7 +27,7 @@ void update_motors();
 SRV_Channels srvs;
 
 // uncomment the row below depending upon what frame you are using
-//AP_MotorsTri	motors(400);
+//AP_MotorsTri  motors(400);
 AP_MotorsMatrix   motors(400);
 //AP_MotorsHeli_Single motors(rc7, rsc, h1, h2, h3, h4, 400);
 //AP_MotorsSingle motors(400);
@@ -148,11 +148,11 @@ void stability_test()
                     avg_out = ((hal.rcout->read(0) + hal.rcout->read(1) + hal.rcout->read(2) + hal.rcout->read(3))/4);
                     // display input and output
 #if NUM_OUTPUTS <= 4
-                    hal.console->printf("%d,%d,%d,%3.1f,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",                // quad
+                    hal.console->printf("%d,%d,%d,%3.1f,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",                // quad
 #elif NUM_OUTPUTS <= 6
-                    hal.console->printf("%d,%d,%d,%3.1f,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",          // hexa
+                    hal.console->printf("%d,%d,%d,%3.1f,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",          // hexa
 #else
-                    hal.console->printf("%d,%d,%d,%3.1f,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",    // octa
+                    hal.console->printf("%d,%d,%d,%3.1f,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",    // octa
 #endif
                             (int)roll_in,
                             (int)pitch_in,
@@ -171,7 +171,8 @@ void stability_test()
                             (int)hal.rcout->read(7),
 #endif
                             (int)avg_out,
-                            (int)motors.limit.roll_pitch,
+                            (int)motors.limit.roll,
+                            (int)motors.limit.pitch,
                             (int)motors.limit.yaw,
                             (int)motors.limit.throttle_lower,
                             (int)motors.limit.throttle_upper);

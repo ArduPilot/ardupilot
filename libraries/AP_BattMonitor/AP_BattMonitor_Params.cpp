@@ -13,7 +13,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @Param: MONITOR
     // @DisplayName: Battery monitoring
     // @Description: Controls enabling monitoring of the battery's voltage and current
-    // @Values: 0:Disabled,3:Analog Voltage Only,4:Analog Voltage and Current,5:Solo,6:Bebop,7:SMBus-Maxell,8:UAVCAN-BatteryInfo,9:BLHeli ESC,10:SumOfFollowing,11:FuelFlow
+    // @Values: 0:Disabled,3:Analog Voltage Only,4:Analog Voltage and Current,5:Solo,6:Bebop,7:SMBus-Generic,8:UAVCAN-BatteryInfo,9:BLHeli ESC,10:SumOfFollowing,11:FuelFlow,12:FuelLevelPWM,13:SMBUS-SUI3,14:SMBUS-SUI6,15:NeoDesign,16:SMBus-Maxell
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("MONITOR", 1, AP_BattMonitor_Params, _type, BattMonitor_TYPE_NONE, AP_PARAM_FLAG_ENABLE),
@@ -21,7 +21,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @Param: VOLT_PIN
     // @DisplayName: Battery Voltage sensing pin
     // @Description: Sets the analog input pin that should be used for voltage monitoring.
-    // @Values: -1:Disabled, 2:Pixhawk/Pixracer/Navio2/Pixhawk2_PM1, 13:Pixhawk2_PM2, 14:CubeOrange, 13:CubeOrange_PM2, 100:PX4-v1
+    // @Values: -1:Disabled, 2:Pixhawk/Pixracer/Navio2/Pixhawk2_PM1, 13:Pixhawk2_PM2/CubeOrange_PM2, 14:CubeOrange, 16:Durandal, 100:PX4-v1
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("VOLT_PIN", 2, AP_BattMonitor_Params, _volt_pin, AP_BATT_VOLT_PIN),
@@ -29,7 +29,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @Param: CURR_PIN
     // @DisplayName: Battery Current sensing pin
     // @Description: Sets the analog input pin that should be used for current monitoring.
-    // @Values: -1:Disabled, 3:Pixhawk/Pixracer/Navio2/Pixhawk2_PM1, 14:Pixhawk2_PM2, 15:CubeOrange, 4:CubeOrange_PM2, 101:PX4-v1
+    // @Values: -1:Disabled, 3:Pixhawk/Pixracer/Navio2/Pixhawk2_PM1, 14:Pixhawk2_PM2, 15:CubeOrange, 4:CubeOrange_PM2, 17:Durandal, 101:PX4-v1
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("CURR_PIN", 3, AP_BattMonitor_Params, _curr_pin, AP_BATT_CURR_PIN),
@@ -62,7 +62,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("CAPACITY", 7, AP_BattMonitor_Params, _pack_capacity, 3300),
 
-    // @Param: WATT_MAX
+    // @Param{Plane}: WATT_MAX
     // @DisplayName: Maximum allowed power (Watts)
     // @Description: If battery wattage (voltage * current) exceeds this value then the system will reduce max throttle (THR_MAX, TKOFF_THR_MAX and THR_MIN for reverse thrust) to satisfy this limit. This helps limit high current to low C rated batteries regardless of battery voltage. The max throttle will slowly grow back to THR_MAX (or TKOFF_THR_MAX ) and THR_MIN if demanding the current max and under the watt max. Use 0 to disable.
     // @Units: W
@@ -161,6 +161,13 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @Increment: 50
     // @User: Advanced
     AP_GROUPINFO("ARM_MAH", 19, AP_BattMonitor_Params, _arming_minimum_capacity, 0),
+
+    // @Param: BUS
+    // @DisplayName: Battery monitor I2C bus number
+    // @Description: Battery monitor I2C bus number
+    // @Range: 0 3
+    // @User: Standard
+    AP_GROUPINFO("BUS", 20, AP_BattMonitor_Params, _i2c_bus, 0),
 
     AP_GROUPEND
 

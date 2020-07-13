@@ -16,6 +16,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Common/Location.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AC_Avoidance/AP_OADatabase.h>
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Proximity.h"
 #include "AP_Proximity_Backend.h"
@@ -32,19 +33,6 @@ AP_Proximity_Backend::AP_Proximity_Backend(AP_Proximity &_frontend, AP_Proximity
     init_boundary();
 }
 
-// get distance in meters in a particular direction in degrees (0 is forward, angles increase in the clockwise direction)
-bool AP_Proximity_Backend::get_horizontal_distance(float angle_deg, float &distance) const
-{
-    uint8_t sector;
-    if (convert_angle_to_sector(angle_deg, sector)) {
-        if (_distance_valid[sector]) {
-            distance = _distance[sector];
-            return true;
-        }
-    }
-    return false;
-}
-
 // get distance and angle to closest object (used for pre-arm check)
 //   returns true on success, false if no valid readings
 bool AP_Proximity_Backend::get_closest_object(float& angle_deg, float &distance) const
@@ -53,7 +41,7 @@ bool AP_Proximity_Backend::get_closest_object(float& angle_deg, float &distance)
     uint8_t sector = 0;
 
     // check all sectors for shorter distance
-    for (uint8_t i=0; i<_num_sectors; i++) {
+    for (uint8_t i=0; i<PROXIMITY_NUM_SECTORS; i++) {
         if (_distance_valid[i]) {
             if (!sector_found || (_distance[i] < _distance[sector])) {
                 sector = i;
@@ -72,14 +60,14 @@ bool AP_Proximity_Backend::get_closest_object(float& angle_deg, float &distance)
 // get number of objects, used for non-GPS avoidance
 uint8_t AP_Proximity_Backend::get_object_count() const
 {
-    return _num_sectors;
+    return PROXIMITY_NUM_SECTORS;
 }
 
 // get an object's angle and distance, used for non-GPS avoidance
 // returns false if no angle or distance could be returned for some reason
 bool AP_Proximity_Backend::get_object_angle_and_distance(uint8_t object_number, float& angle_deg, float &distance) const
 {
-    if (object_number < _num_sectors && _distance_valid[object_number]) {
+    if (object_number < PROXIMITY_NUM_SECTORS && _distance_valid[object_number]) {
         angle_deg = _angle[object_number];
         distance = _distance[object_number];
         return true;
@@ -92,7 +80,7 @@ bool AP_Proximity_Backend::get_horizontal_distances(AP_Proximity::Proximity_Dist
 {
     // exit immediately if we have no good ranges
     bool valid_distances = false;
-    for (uint8_t i=0; i<_num_sectors; i++) {
+    for (uint8_t i=0; i<PROXIMITY_NUM_SECTORS; i++) {
         if (_distance_valid[i]) {
             valid_distances = true;
             break;
@@ -112,7 +100,7 @@ bool AP_Proximity_Backend::get_horizontal_distances(AP_Proximity::Proximity_Dist
     }
 
     // cycle through all sectors filling in distances
-    for (uint8_t i=0; i<_num_sectors; i++) {
+    for (uint8_t i=0; i<PROXIMITY_NUM_SECTORS; i++) {
         if (_distance_valid[i]) {
             // convert angle to orientation
             int16_t orientation = static_cast<int16_t>(_angle[i] * (PROXIMITY_MAX_DIRECTION / 360.0f));
@@ -141,14 +129,14 @@ bool AP_Proximity_Backend::get_horizontal_distances(AP_Proximity::Proximity_Dist
 const Vector2f* AP_Proximity_Backend::get_boundary_points(uint16_t& num_points) const
 {
     // high-level status check
-    if (state.status != AP_Proximity::Proximity_Good) {
+    if (state.status != AP_Proximity::Status::Good) {
         num_points = 0;
         return nullptr;
     }
 
     // check at least one sector has valid data, if not, exit
     bool some_valid = false;
-    for (uint8_t i=0; i<_num_sectors; i++) {
+    for (uint8_t i=0; i<PROXIMITY_NUM_SECTORS; i++) {
         if (_distance_valid[i]) {
             some_valid = true;
             break;
@@ -160,7 +148,7 @@ const Vector2f* AP_Proximity_Backend::get_boundary_points(uint16_t& num_points) 
     }
 
     // return boundary points
-    num_points = _num_sectors;
+    num_points = PROXIMITY_NUM_SECTORS;
     return _boundary_point;
 }
 
@@ -168,28 +156,31 @@ const Vector2f* AP_Proximity_Backend::get_boundary_points(uint16_t& num_points) 
 //   should be called if the sector_middle_deg or _setor_width_deg arrays are changed
 void AP_Proximity_Backend::init_boundary()
 {
-    for (uint8_t sector=0; sector < _num_sectors; sector++) {
-        float angle_rad = radians((float)_sector_middle_deg[sector]+(float)_sector_width_deg[sector]/2.0f);
+    for (uint8_t sector=0; sector < PROXIMITY_NUM_SECTORS; sector++) {
+        float angle_rad = radians((float)_sector_middle_deg[sector]+(PROXIMITY_SECTOR_WIDTH_DEG/2.0f));
         _sector_edge_vector[sector].x = cosf(angle_rad) * 100.0f;
         _sector_edge_vector[sector].y = sinf(angle_rad) * 100.0f;
         _boundary_point[sector] = _sector_edge_vector[sector] * PROXIMITY_BOUNDARY_DIST_DEFAULT;
     }
-    update_locations();
 }
 
 // update boundary points used for object avoidance based on a single sector's distance changing
 //   the boundary points lie on the line between sectors meaning two boundary points may be updated based on a single sector's distance changing
 //   the boundary point is set to the shortest distance found in the two adjacent sectors, this is a conservative boundary around the vehicle
-void AP_Proximity_Backend::update_boundary_for_sector(uint8_t sector)
+void AP_Proximity_Backend::update_boundary_for_sector(const uint8_t sector, const bool push_to_OA_DB)
 {
     // sanity check
-    if (sector >= _num_sectors) {
+    if (sector >= PROXIMITY_NUM_SECTORS) {
         return;
+    }
+
+    if (push_to_OA_DB && _distance_valid[sector]) {
+        database_push(_angle[sector], _distance[sector]);
     }
 
     // find adjacent sector (clockwise)
     uint8_t next_sector = sector + 1;
-    if (next_sector >= _num_sectors) {
+    if (next_sector >= PROXIMITY_NUM_SECTORS) {
         next_sector = 0;
     }
 
@@ -213,7 +204,7 @@ void AP_Proximity_Backend::update_boundary_for_sector(uint8_t sector)
     }
 
     // repeat for edge between sector and previous sector
-    uint8_t prev_sector = (sector == 0) ? _num_sectors-1 : sector-1;
+    uint8_t prev_sector = (sector == 0) ? PROXIMITY_NUM_SECTORS-1 : sector-1;
     shortest_distance = PROXIMITY_BOUNDARY_DIST_DEFAULT;
     if (_distance_valid[prev_sector] && _distance_valid[sector]) {
         shortest_distance = MIN(_distance[prev_sector], _distance[sector]);
@@ -225,166 +216,85 @@ void AP_Proximity_Backend::update_boundary_for_sector(uint8_t sector)
     _boundary_point[prev_sector] = _sector_edge_vector[prev_sector] * shortest_distance;
 
     // if the sector counter-clockwise from the previous sector has an invalid distance, set boundary to create a cup like boundary
-    uint8_t prev_sector_ccw = (prev_sector == 0) ? _num_sectors-1 : prev_sector-1;
+    uint8_t prev_sector_ccw = (prev_sector == 0) ? PROXIMITY_NUM_SECTORS - 1 : prev_sector - 1;
     if (!_distance_valid[prev_sector_ccw]) {
         _boundary_point[prev_sector_ccw] = _sector_edge_vector[prev_sector_ccw] * shortest_distance;
     }
-    update_locations();
-}
-
-// copy location points around vehicle into a buffer owned by the caller
-// caller should provide the buff_size which is the maximum number of locations the buffer can hold (normally PROXIMITY_MAX_DIRECTION)
-// num_copied is updated with the number of locations copied into the buffer
-// returns true on success, false on failure which should only happen if buff is nullptr
-bool AP_Proximity_Backend::copy_locations(AP_Proximity::Proximity_Location* buff, uint16_t buff_size, uint16_t& num_copied)
-{
-    // sanity check buffer
-    if (buff == nullptr) {
-        num_copied = 0;
-        return false;
-    }
-
-    WITH_SEMAPHORE(_rsem);
-
-    // copy locations into caller's buffer
-    num_copied = MIN(_location_count, buff_size);
-    memcpy(buff, _locations, num_copied * sizeof(AP_Proximity::Proximity_Location));
-    return true;
 }
 
 // set status and update valid count
-void AP_Proximity_Backend::set_status(AP_Proximity::Proximity_Status status)
+void AP_Proximity_Backend::set_status(AP_Proximity::Status status)
 {
     state.status = status;
 }
 
-bool AP_Proximity_Backend::convert_angle_to_sector(float angle_degrees, uint8_t &sector) const
+uint8_t AP_Proximity_Backend::convert_angle_to_sector(float angle_degrees) const
 {
-    // sanity check angle
-    if (angle_degrees > 360.0f || angle_degrees < -180.0f) {
-        return false;
-    }
-
-    // convert to 0 ~ 360
-    if (angle_degrees < 0.0f) {
-        angle_degrees += 360.0f;
-    }
-
-    bool closest_found = false;
-    uint8_t closest_sector;
-    float closest_angle;
-
-    // search for which sector angle_degrees falls into
-    for (uint8_t i = 0; i < _num_sectors; i++) {
-        float angle_diff = fabsf(wrap_180(_sector_middle_deg[i] - angle_degrees));
-
-        // record if closest
-        if (!closest_found || angle_diff < closest_angle) {
-            closest_found = true;
-            closest_sector = i;
-            closest_angle = angle_diff;
-        }
-
-        if (fabsf(angle_diff) <= _sector_width_deg[i] / 2.0f) {
-            sector = i;
-            return true;
-        }
-    }
-
-    // angle_degrees might have been within a gap between sectors
-    if (closest_found) {
-        sector = closest_sector;
-        return true;
-    }
-
-    return false;
+    return wrap_360(angle_degrees + (PROXIMITY_SECTOR_WIDTH_DEG * 0.5f)) / 45.0f;
 }
 
-// get ignore area info
-uint8_t AP_Proximity_Backend::get_ignore_area_count() const
+// check if a reading should be ignored because it falls into an ignore area
+bool AP_Proximity_Backend::ignore_reading(uint16_t angle_deg) const
 {
-    // count number of ignore sectors
-    uint8_t count = 0;
+    // check angle vs each ignore area
     for (uint8_t i=0; i < PROXIMITY_MAX_IGNORE; i++) {
         if (frontend._ignore_width_deg[i] != 0) {
-            count++;
-        }
-    }
-    return count;
-}
-
-// get next ignore angle
-bool AP_Proximity_Backend::get_ignore_area(uint8_t index, uint16_t &angle_deg, uint8_t &width_deg) const
-{
-    if (index >= PROXIMITY_MAX_IGNORE) {
-        return false;
-    }
-    angle_deg = frontend._ignore_angle_deg[index];
-    width_deg = frontend._ignore_width_deg[index];
-    return true;
-}
-
-// retrieve start or end angle of next ignore area (i.e. closest ignore area higher than the start_angle)
-// start_or_end = 0 to get start, 1 to retrieve end
-bool AP_Proximity_Backend::get_next_ignore_start_or_end(uint8_t start_or_end, int16_t start_angle, int16_t &ignore_start) const
-{
-    bool found = false;
-    int16_t smallest_angle_diff = 0;
-    int16_t smallest_angle_start = 0;
-
-    for (uint8_t i=0; i < PROXIMITY_MAX_IGNORE; i++) {
-        if (frontend._ignore_width_deg[i] != 0) {
-            int16_t offset = start_or_end == 0 ? -frontend._ignore_width_deg[i] : +frontend._ignore_width_deg[i];
-            int16_t ignore_start_angle = wrap_360(frontend._ignore_angle_deg[i] + offset/2.0f);
-            int16_t ang_diff = wrap_360(ignore_start_angle - start_angle);
-            if (!found || ang_diff < smallest_angle_diff) {
-                smallest_angle_diff = ang_diff;
-                smallest_angle_start = ignore_start_angle;
-                found = true;
+            if (abs(angle_deg - frontend._ignore_angle_deg[i]) <= (frontend._ignore_width_deg[i]/2)) {
+                return true;
             }
         }
     }
-
-    if (found) {
-        ignore_start = smallest_angle_start;
-    }
-    return found;
+    return false;
 }
 
-void AP_Proximity_Backend::update_locations()
+// returns true if database is ready to be pushed to and all cached data is ready
+bool AP_Proximity_Backend::database_prepare_for_push(Vector3f &current_pos, Matrix3f &body_to_ned)
 {
-    WITH_SEMAPHORE(_rsem);
+    AP_OADatabase *oaDb = AP::oadatabase();
+    if (oaDb == nullptr || !oaDb->healthy()) {
+        return false;
+    }
 
-    // get number of objects, return early if none
-    const uint8_t num_objects = get_object_count();
-    if (num_objects == 0) {
-        _location_count = 0;
+    if (!AP::ahrs().get_relative_position_NED_origin(current_pos)) {
+        return false;
+    }
+
+    body_to_ned = AP::ahrs().get_rotation_body_to_ned();
+
+    return true;
+}
+
+// update Object Avoidance database with Earth-frame point
+void AP_Proximity_Backend::database_push(float angle, float distance)
+{
+    Vector3f current_pos;
+    Matrix3f body_to_ned;
+
+    if (database_prepare_for_push(current_pos, body_to_ned)) {
+        database_push(angle, distance, AP_HAL::millis(), current_pos, body_to_ned);
+    }
+}
+
+// update Object Avoidance database with Earth-frame point
+void AP_Proximity_Backend::database_push(float angle, float distance, uint32_t timestamp_ms, const Vector3f &current_pos, const Matrix3f &body_to_ned)
+{
+    AP_OADatabase *oaDb = AP::oadatabase();
+    if (oaDb == nullptr || !oaDb->healthy()) {
         return;
     }
-
-    // get vehicle location and heading in degrees
-    float veh_bearing;
-    Location my_loc;
-    {
-        WITH_SEMAPHORE(AP::ahrs().get_semaphore());
-        if (!AP::ahrs().get_position(my_loc)) {
-            return;
-        }
-        veh_bearing = AP::ahrs().yaw_sensor * 0.01f;
-    }
-
-    // convert offset from vehicle position to earth frame location
-    const uint32_t now_ms = AP_HAL::millis();
-    _location_count = 0;
-    for (uint8_t i=0; i<num_objects; i++) {
-        float ang_deg, dist_m;
-        if (get_object_angle_and_distance(i, ang_deg, dist_m)) {
-            Location temp_loc = my_loc;
-            temp_loc.offset_bearing(wrap_180(veh_bearing + ang_deg), dist_m);
-            _locations[_location_count].loc = temp_loc;
-            _locations[_location_count].radius_m = 1;
-            _locations[_location_count].last_update_ms = now_ms;
-            _location_count++;
-        }
-    }
+    
+    //Assume object is angle bearing and distance meters away from the vehicle 
+    Vector2f object_2D = {0.0f,0.0f};
+    object_2D.offset_bearing(wrap_180(angle), distance);	
+    
+    //rotate that vector to a 3D vector in NED frame
+    const Vector3f object_3D = {object_2D.x,object_2D.y,0.0f};
+    const Vector3f rotated_object_3D = body_to_ned * object_3D;
+    
+    //Calculate the position vector from origin
+    Vector3f temp_pos = current_pos + rotated_object_3D;
+    //Convert the vector to a NEU frame from NED
+    temp_pos.z = temp_pos.z * -1.0f;
+    
+    oaDb->queue_push(temp_pos, timestamp_ms, distance);
 }

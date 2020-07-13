@@ -70,6 +70,9 @@ Mode *Plane::mode_from_mode_num(const enum Mode::Number num)
     case Mode::Number::QAUTOTUNE:
         ret = &mode_qautotune;
         break;
+    case Mode::Number::TAKEOFF:
+        ret = &mode_takeoff;
+        break;
     }
     return ret;
 }
@@ -113,7 +116,7 @@ void Plane::read_control_switch()
             return;
         }
 
-        set_mode_by_number((enum Mode::Number)flight_modes[switchPosition].get(), MODE_REASON_TX_COMMAND);
+        set_mode_by_number((enum Mode::Number)flight_modes[switchPosition].get(), ModeReason::RC_COMMAND);
 
         oldSwitchPosition = switchPosition;
     }

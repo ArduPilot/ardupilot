@@ -48,8 +48,8 @@ private:
 
     bool servo_based = true;
 
-    double field_strength; // percentage
-    double reported_field_strength = -1; // unlikely
+    float field_strength;   // percentage
+    float reported_field_strength = -1; // unlikely
 
     // I've a feeling these are probably a higher order than this:
     const float field_strength_slew_rate = 400; // (percentage of delta between field strength and 100)/second

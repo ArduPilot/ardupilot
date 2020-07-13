@@ -18,7 +18,7 @@ public:
 
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
                                             AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev,
-                                            enum Rotation rotation = ROTATION_NONE);
+                                            enum Rotation rotation);
 private:
     AP_InertialSensor_LSM9DS1(AP_InertialSensor &imu,
                               AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev,

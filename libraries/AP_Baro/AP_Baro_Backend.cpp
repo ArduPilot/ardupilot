@@ -23,6 +23,15 @@ void AP_Baro_Backend::update_healthy_flag(uint8_t instance)
         (now - _frontend.sensors[instance].last_update_ms < BARO_TIMEOUT_MS) &&
         (now - _frontend.sensors[instance].last_change_ms < BARO_DATA_CHANGE_TIMEOUT_MS) &&
         !is_zero(_frontend.sensors[instance].pressure);
+
+    if (_frontend.sensors[instance].temperature < -200 ||
+        _frontend.sensors[instance].temperature > 200) {
+        // if temperature is way out of range then we likely have bad
+        // data from the sensor, treat is as unhealthy. This is done
+        // so SPI sensors which have no data validity checking can
+        // mark a sensor unhealthy
+        _frontend.sensors[instance].healthy = false;
+    }
 }
 
 void AP_Baro_Backend::backend_update(uint8_t instance)

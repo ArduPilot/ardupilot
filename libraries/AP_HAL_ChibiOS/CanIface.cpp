@@ -1,18 +1,18 @@
 /*
  * The MIT License (MIT)
- * 
+ *
  * Copyright (c) 2014 Pavel Kirienko
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
  * the Software without restriction, including without limitation the rights to
  * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
  * the Software, and to permit persons to whom the Software is furnished to do so,
  * subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
  * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
@@ -34,7 +34,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Siddharth Bharat Purohit
  */
 
@@ -43,12 +43,14 @@
 #if HAL_WITH_UAVCAN
 #include <cassert>
 #include <cstring>
-#include "CANIface.h"
 #include "CANClock.h"
 #include "CANInternal.h"
 #include "CANSerialRouter.h"
 #include <AP_UAVCAN/AP_UAVCAN_SLCAN.h>
 # include <hal.h>
+
+# if !defined(STM32H7XX)
+#include "CANIface.h"
 
 #if CH_KERNEL_MAJOR == 2
 # if !(defined(STM32F10X_CL) || defined(STM32F2XX) || defined(STM32F3XX)  || defined(STM32F4XX))
@@ -136,7 +138,9 @@ inline void handleRxInterrupt(uavcan::uint8_t iface_index, uavcan::uint8_t fifo_
 }
 
 } // namespace
-
+#if AP_UAVCAN_SLCAN_ENABLED
+SLCANRouter CanIface::_slcan_router;
+#endif
 /*
  * CanIface::RxQueue
  */
@@ -696,10 +700,6 @@ void CanIface::handleTxInterrupt(const uavcan::uint64_t utc_usec)
     update_event_.signalFromInterrupt();
 
     pollErrorFlagsFromISR();
-
-    #if UAVCAN_STM32_FREERTOS
-    update_event_.yieldFromISR();
-    #endif
 }
 
 void CanIface::handleRxInterrupt(uavcan::uint8_t fifo_index, uavcan::uint64_t utc_usec)
@@ -759,17 +759,14 @@ void CanIface::handleRxInterrupt(uavcan::uint8_t fifo_index, uavcan::uint64_t ut
      * Store with timeout into the FIFO buffer and signal update event
      */
     rx_queue_.push(frame, utc_usec, 0);
- #if !HAL_MINIMIZE_FEATURES
-    slcan_router().route_frame_to_slcan(this, frame, utc_usec);
+#if AP_UAVCAN_SLCAN_ENABLED
+    _slcan_router.route_frame_to_slcan(this, frame, utc_usec);
 #endif
     had_activity_ = true;
     update_event_.signalFromInterrupt();
 
     pollErrorFlagsFromISR();
 
-    #if UAVCAN_STM32_FREERTOS
-    update_event_.yieldFromISR();
-    #endif
 }
 
 void CanIface::pollErrorFlagsFromISR()
@@ -932,25 +929,6 @@ uavcan::int16_t CanDriver::select(uavcan::CanSelectMasks& inout_masks,
     return 1;                                   // Return value doesn't matter as long as it is non-negative
 }
 
-
-#if UAVCAN_STM32_BAREMETAL || UAVCAN_STM32_FREERTOS
-
-static void nvicEnableVector(IRQn_Type irq,  uint8_t prio)
-{
-    #if !defined (USE_HAL_DRIVER)
-      NVIC_InitTypeDef NVIC_InitStructure;
-      NVIC_InitStructure.NVIC_IRQChannel = irq;
-      NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = prio;
-      NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
-      NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-      NVIC_Init(&NVIC_InitStructure);
-    #else
-      HAL_NVIC_SetPriority(irq, prio, 0);
-      HAL_NVIC_EnableIRQ(irq);
-    #endif
-}
-
-#endif
 
 void CanDriver::initOnce()
 {
@@ -1252,5 +1230,7 @@ UAVCAN_STM32_IRQ_HANDLER(CAN2_RX1_IRQHandler)
 # endif
 
 } // extern "C"
+
+#endif //!defined(STM32H7XX)
 
 #endif //HAL_WITH_UAVCAN

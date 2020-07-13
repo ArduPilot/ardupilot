@@ -52,6 +52,26 @@ class VehicleInfo(object):
                 "default_params_filename": ["default_params/copter.parm",
                                             "default_params/copter-hexa.parm" ],
             },
+            "hexa-cwx": {
+                "make_target": "sitl",
+                "waf_target": "bin/arducopter",
+                "default_params_filename": "default_params/copter.parm",
+            },
+            "hexa-dji": {
+                "make_target": "sitl",
+                "waf_target": "bin/arducopter",
+                "default_params_filename": "default_params/copter.parm",
+            },
+             "octa-cwx": {
+                "make_target": "sitl",
+                "waf_target": "bin/arducopter",
+                "default_params_filename": "default_params/copter.parm",
+            },
+            "octa-quad-cwx": {
+                "make_target": "sitl",
+                "waf_target": "bin/arducopter",
+                "default_params_filename": "default_params/copter.parm",
+            },
             "octa-quad": {
                 "make_target": "sitl",
                 "waf_target": "bin/arducopter",
@@ -63,6 +83,11 @@ class VehicleInfo(object):
                 "waf_target": "bin/arducopter",
                 "default_params_filename": ["default_params/copter.parm",
                                             "default_params/copter-octa.parm" ],
+            },
+            "octa-dji": {
+                "make_target": "sitl",
+                "waf_target": "bin/arducopter",
+                "default_params_filename": "default_params/copter.parm",
             },
             "tri": {
                 "make_target": "sitl",
@@ -92,6 +117,11 @@ class VehicleInfo(object):
                 "default_params_filename": ["default_params/copter.parm",
                                             "default_params/gazebo-iris.parm"],
             },
+            "airsim-copter": {
+                "waf_target": "bin/arducopter",
+                "default_params_filename": ["default_params/copter.parm",
+                                            "default_params/airsim-quadX.parm"],
+            },
             # HELICOPTER
             "heli": {
                 "make_target": "sitl-heli",
@@ -118,6 +148,11 @@ class VehicleInfo(object):
                 "waf_target": "bin/arducopter",
                 "default_params_filename": ["default_params/copter-single.parm",
                                             "default_params/copter-coax.parm"],
+            },
+            "scrimmage-copter" : {
+                "make_target": "sitl",
+                "waf_target": "bin/arducopter",
+                "default_params_filename": "default_params/copter.parm",
             },
             "calibration": {
                 "extra_mavlink_cmds": "module load sitl_calibration;",
@@ -173,6 +208,10 @@ class VehicleInfo(object):
                 "waf_target": "bin/arduplane",
                 "default_params_filename": "default_params/plane-tailsitter.parm",
             },
+            "plane-jet": {
+                "waf_target": "bin/arduplane",
+                "default_params_filename": ["default_params/plane.parm", "default_params/plane-jet.parm"],
+            },
             "plane": {
                 "waf_target": "bin/arduplane",
                 "default_params_filename": "default_params/plane.parm",
@@ -180,6 +219,10 @@ class VehicleInfo(object):
             "plane-dspoilers": {
                 "waf_target": "bin/arduplane",
                 "default_params_filename": ["default_params/plane.parm", "default_params/plane-dspoilers.parm"]
+            },
+            "plane-soaring": {
+                "waf_target": "bin/arduplane",
+                "default_params_filename": ["default_params/plane.parm", "default_params/plane-soaring.parm"]
             },
             "gazebo-zephyr": {
                 "waf_target": "bin/arduplane",
@@ -195,12 +238,17 @@ class VehicleInfo(object):
                 "waf_target": "bin/arduplane",
                 "default_params_filename": "default_params/plane-jsbsim.parm",
             },
+            "scrimmage-plane" : {
+                "make_target": "sitl",
+                "waf_target": "bin/arduplane",
+                "default_params_filename": "default_params/plane.parm",
+            },
             "calibration": {
                 "extra_mavlink_cmds": "module load sitl_calibration;",
             },
         },
     },
-    "APMrover2": {
+    "Rover": {
         "default_frame": "rover",
         "frames": {
             # ROVER
@@ -224,10 +272,20 @@ class VehicleInfo(object):
                 "default_params_filename": ["default_params/rover.parm",
                                             "default_params/sailboat.parm"],
             },
+            "sailboat-motor": {
+                "waf_target": "bin/ardurover",
+                "default_params_filename": ["default_params/rover.parm",
+                                            "default_params/sailboat-motor.parm"],
+            },
             "gazebo-rover": {
                 "waf_target": "bin/ardurover",
                 "default_params_filename": ["default_params/rover.parm",
                                             "default_params/rover-skid.parm"],
+            },
+            "airsim-rover": {
+                "waf_target": "bin/ardurover",
+                "default_params_filename": ["default_params/rover.parm",
+                                            "default_params/airsim-rover.parm"],
             },
             "calibration": {
                 "extra_mavlink_cmds": "module load sitl_calibration;",
@@ -240,6 +298,10 @@ class VehicleInfo(object):
             "vectored": {
                 "waf_target": "bin/ardusub",
                 "default_params_filename": "default_params/sub.parm",
+            },
+            "vectored_6dof": {
+                "waf_target": "bin/ardusub",
+                "default_params_filename": "default_params/sub-6dof.parm",
             },
             "gazebo-bluerov2": {
                 "waf_target": "bin/ardusub",
@@ -273,7 +335,7 @@ class VehicleInfo(object):
         if frame in frames:
             ret = self.options[vehicle]["frames"][frame]
         else:
-            for p in ["octa", "tri", "y6", "firefly", "heli", "gazebo", "last_letter", "jsbsim", "quadplane", "plane-elevon", "plane-vtail", "plane"]:
+            for p in ["octa", "tri", "y6", "firefly", "heli", "gazebo", "last_letter", "jsbsim", "quadplane", "plane-elevon", "plane-vtail", "plane", "airsim"]:
                 if frame.startswith(p):
                     ret = self.options[vehicle]["frames"][p]
                     break

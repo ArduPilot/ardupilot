@@ -15,41 +15,16 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Proximity_TeraRangerTower.h"
-#include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Math/crc.h>
 #include <ctype.h>
 #include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
 
-/*
-   The constructor also initialises the proximity sensor. Note that this
-   constructor is not called until detect() returns true, so we
-   already know that we should setup the proximity sensor
-*/
-AP_Proximity_TeraRangerTower::AP_Proximity_TeraRangerTower(AP_Proximity &_frontend,
-                                                         AP_Proximity::Proximity_State &_state,
-                                                         AP_SerialManager &serial_manager) :
-    AP_Proximity_Backend(_frontend, _state)
-{
-    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar360, 0);
-    if (uart != nullptr) {
-        uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Lidar360, 0));
-    }
-}
-
-// detect if a TeraRanger Tower proximity sensor is connected by looking for a configured serial port
-bool AP_Proximity_TeraRangerTower::detect(AP_SerialManager &serial_manager)
-{
-    AP_HAL::UARTDriver *uart = nullptr;
-    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar360, 0);
-    return uart != nullptr;
-}
-
 // update the state of the sensor
 void AP_Proximity_TeraRangerTower::update(void)
 {
-    if (uart == nullptr) {
+    if (_uart == nullptr) {
         return;
     }
 
@@ -58,9 +33,9 @@ void AP_Proximity_TeraRangerTower::update(void)
 
     // check for timeout and set health status
     if ((_last_distance_received_ms == 0) || (AP_HAL::millis() - _last_distance_received_ms > PROXIMITY_TRTOWER_TIMEOUT_MS)) {
-        set_status(AP_Proximity::Proximity_NoData);
+        set_status(AP_Proximity::Status::NoData);
     } else {
-        set_status(AP_Proximity::Proximity_Good);
+        set_status(AP_Proximity::Status::Good);
     }
 }
 
@@ -77,15 +52,15 @@ float AP_Proximity_TeraRangerTower::distance_min() const
 // check for replies from sensor, returns true if at least one message was processed
 bool AP_Proximity_TeraRangerTower::read_sensor_data()
 {
-    if (uart == nullptr) {
+    if (_uart == nullptr) {
         return false;
     }
 
     uint16_t message_count = 0;
-    int16_t nbytes = uart->available();
+    int16_t nbytes = _uart->available();
 
     while (nbytes-- > 0) {
-        char c = uart->read();
+        char c = _uart->read();
         if (c == 'T' ) {
             buffer_count = 0;
         }
@@ -117,13 +92,11 @@ bool AP_Proximity_TeraRangerTower::read_sensor_data()
 // process reply
 void AP_Proximity_TeraRangerTower::update_sector_data(int16_t angle_deg, uint16_t distance_cm)
 {
-    uint8_t sector;
-    if (convert_angle_to_sector(angle_deg, sector)) {
-        _angle[sector] = angle_deg;
-        _distance[sector] = ((float) distance_cm) / 1000;
-        _distance_valid[sector] = distance_cm != 0xffff;
-        _last_distance_received_ms = AP_HAL::millis();
-        // update boundary used for avoidance
-        update_boundary_for_sector(sector);
-    }
+    const uint8_t sector = convert_angle_to_sector(angle_deg);
+    _angle[sector] = angle_deg;
+    _distance[sector] = ((float) distance_cm) / 1000;
+    _distance_valid[sector] = distance_cm != 0xffff;
+    _last_distance_received_ms = AP_HAL::millis();
+    // update boundary used for avoidance
+    update_boundary_for_sector(sector, true);
 }

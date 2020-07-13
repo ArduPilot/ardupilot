@@ -101,3 +101,9 @@ static const double WGS84_E = (sqrt(2 * WGS84_F - WGS84_F * WGS84_F));
 #define AP_MSEC_PER_SEC   1000ULL
 #define AP_SEC_PER_WEEK   (7ULL * 86400ULL)
 #define AP_MSEC_PER_WEEK  (AP_SEC_PER_WEEK * AP_MSEC_PER_SEC)
+
+// speed and distance conversions
+#define KNOTS_TO_METERS_PER_SECOND 0.51444
+#define FEET_TO_METERS 0.3048
+
+

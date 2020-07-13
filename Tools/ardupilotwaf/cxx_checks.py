@@ -170,6 +170,22 @@ def check_librt(cfg, env):
     return ret
 
 @conf
+def check_feenableexcept(cfg):
+
+    cfg.check(
+        compiler='cxx',
+        fragment='''
+        #include <fenv.h>
+
+        int main() {
+            return feenableexcept(FE_OVERFLOW | FE_DIVBYZERO);
+        }''',
+        msg="Checking for feenableexcept",
+        define_name="HAVE_FEENABLEEXCEPT",
+        mandatory=False,
+    )
+
+@conf
 def check_package(cfg, env, libname):
     '''use pkg-config to look for an installed library that has a LIBNAME.pc file'''
     capsname = libname.upper()

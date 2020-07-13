@@ -1,0 +1,5 @@
+include ../f303-periph/hwdef-bl.dat
+
+define HAL_CAN_DEFAULT_NODE_ID 0
+
+define CAN_APP_NODE_NAME "org.ardupilot.ap_periph_HWESC"

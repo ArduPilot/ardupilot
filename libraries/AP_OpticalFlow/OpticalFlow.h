@@ -66,7 +66,7 @@ public:
     void update(void);
 
     // handle optical flow mavlink messages
-    void handle_msg(const mavlink_message_t *msg);
+    void handle_msg(const mavlink_message_t &msg);
 
     // quality - returns the surface quality as a measure from 0 ~ 255
     uint8_t quality() const { return _state.surface_quality; }

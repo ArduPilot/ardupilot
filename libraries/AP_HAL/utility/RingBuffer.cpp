@@ -71,7 +71,7 @@ uint32_t ByteBuffer::space(void) const
     return ret;
 }
 
-bool ByteBuffer::empty(void) const
+bool ByteBuffer::is_empty(void) const
 {
     return head == tail;
 }

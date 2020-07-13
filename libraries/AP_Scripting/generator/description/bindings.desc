@@ -4,6 +4,7 @@ include AP_Common/Location.h
 
 userdata Location field lat int32_t read write -900000000 900000000
 userdata Location field lng int32_t read write -1800000000 1800000000
+userdata Location field alt int32_t read write (-LOCATION_ALT_MAX_M*100+1) (LOCATION_ALT_MAX_M*100-1)
 userdata Location field relative_alt boolean read write
 userdata Location field terrain_alt boolean read write
 userdata Location field origin_alt boolean read write
@@ -12,11 +13,17 @@ userdata Location field loiter_xtrack boolean read write
 userdata Location method get_distance float Location
 userdata Location method offset void float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX
 userdata Location method get_vector_from_origin_NEU boolean Vector3f'Null
+userdata Location method get_bearing float Location
+userdata Location method get_distance_NED Vector3f Location
+userdata Location method get_distance_NE Vector2f Location
 
 include AP_AHRS/AP_AHRS.h
 
 singleton AP_AHRS alias ahrs
 singleton AP_AHRS semaphore
+singleton AP_AHRS method get_roll float
+singleton AP_AHRS method get_pitch float
+singleton AP_AHRS method get_yaw float
 singleton AP_AHRS method get_position boolean Location'Null
 singleton AP_AHRS method get_home Location
 singleton AP_AHRS method get_gyro Vector3f
@@ -27,49 +34,63 @@ singleton AP_AHRS method get_velocity_NED boolean Vector3f'Null
 singleton AP_AHRS method get_relative_position_NED_home boolean Vector3f'Null
 singleton AP_AHRS method home_is_set boolean
 singleton AP_AHRS method prearm_healthy boolean
+singleton AP_AHRS method airspeed_estimate boolean float'Null
+singleton AP_AHRS method get_vibration Vector3f
+singleton AP_AHRS method earth_to_body Vector3f Vector3f
+singleton AP_AHRS method body_to_earth Vector3f Vector3f
+singleton AP_AHRS method get_EAS2TAS float
+
+include AP_Arming/AP_Arming.h
+
+singleton AP_Arming alias arming
+singleton AP_Arming method disarm boolean AP_Arming::Method::SCRIPTING'literal
+singleton AP_Arming method is_armed boolean
+singleton AP_Arming method arm boolean AP_Arming::Method::SCRIPTING'literal
+singleton AP_Arming method get_aux_auth_id boolean uint8_t'Null
+singleton AP_Arming method set_aux_auth_passed void uint8_t 0 UINT8_MAX
+singleton AP_Arming method set_aux_auth_failed void uint8_t 0 UINT8_MAX string
 
 include AP_BattMonitor/AP_BattMonitor.h
 
 singleton AP_BattMonitor alias battery
 singleton AP_BattMonitor method num_instances uint8_t
-singleton AP_BattMonitor method healthy boolean uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
-singleton AP_BattMonitor method has_consumed_energy boolean uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
-singleton AP_BattMonitor method has_current boolean uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
-singleton AP_BattMonitor method voltage float uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
-singleton AP_BattMonitor method voltage_resting_estimate float uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
-singleton AP_BattMonitor method current_amps float uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
-singleton AP_BattMonitor method consumed_mah float uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
-singleton AP_BattMonitor method consumed_wh float uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
-singleton AP_BattMonitor method capacity_remaining_pct uint8_t uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
-singleton AP_BattMonitor method pack_capacity_mah int32_t uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
+singleton AP_BattMonitor method healthy boolean uint8_t 0 ud->num_instances()
+singleton AP_BattMonitor method voltage float uint8_t 0 ud->num_instances()
+singleton AP_BattMonitor method voltage_resting_estimate float uint8_t 0 ud->num_instances()
+singleton AP_BattMonitor method current_amps boolean float'Null uint8_t 0 ud->num_instances()
+singleton AP_BattMonitor method consumed_mah boolean float'Null uint8_t 0 ud->num_instances()
+singleton AP_BattMonitor method consumed_wh boolean float'Null uint8_t 0 ud->num_instances()
+singleton AP_BattMonitor method capacity_remaining_pct uint8_t uint8_t 0 ud->num_instances()
+singleton AP_BattMonitor method pack_capacity_mah int32_t uint8_t 0 ud->num_instances()
 singleton AP_BattMonitor method has_failsafed boolean
-singleton AP_BattMonitor method overpower_detected boolean uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
-singleton AP_BattMonitor method get_temperature boolean float'Null uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
+singleton AP_BattMonitor method overpower_detected boolean uint8_t 0 ud->num_instances()
+singleton AP_BattMonitor method get_temperature boolean float'Null uint8_t 0 ud->num_instances()
+singleton AP_BattMonitor method get_cycle_count boolean uint8_t 0 ud->num_instances() uint16_t'Null
 
 include AP_GPS/AP_GPS.h
 
 singleton AP_GPS alias gps
+singleton AP_GPS enum NO_GPS NO_FIX GPS_OK_FIX_2D GPS_OK_FIX_3D GPS_OK_FIX_3D_DGPS GPS_OK_FIX_3D_RTK_FLOAT GPS_OK_FIX_3D_RTK_FIXED
 singleton AP_GPS method num_sensors uint8_t
 singleton AP_GPS method primary_sensor uint8_t
-singleton AP_GPS method status uint8_t uint8_t 0 GPS_MAX_INSTANCES
-singleton AP_GPS method location Location uint8_t 0 GPS_MAX_INSTANCES
-singleton AP_GPS method speed_accuracy boolean uint8_t 0 GPS_MAX_INSTANCES float'Null
-singleton AP_GPS method horizontal_accuracy boolean uint8_t 0 GPS_MAX_INSTANCES float'Null
-singleton AP_GPS method vertical_accuracy boolean uint8_t 0 GPS_MAX_INSTANCES float'Null
-singleton AP_GPS method velocity Vector3f uint8_t 0 GPS_MAX_INSTANCES
-singleton AP_GPS method ground_speed float uint8_t 0 GPS_MAX_INSTANCES
-singleton AP_GPS method ground_course float uint8_t 0 GPS_MAX_INSTANCES
-singleton AP_GPS method num_sats uint8_t uint8_t 0 GPS_MAX_INSTANCES
-singleton AP_GPS method time_week uint16_t uint8_t 0 GPS_MAX_INSTANCES
-singleton AP_GPS method time_week_ms uint32_t uint8_t 0 GPS_MAX_INSTANCES
-singleton AP_GPS method get_hdop uint16_t uint8_t 0 GPS_MAX_INSTANCES
-singleton AP_GPS method get_vdop uint16_t uint8_t 0 GPS_MAX_INSTANCES
-singleton AP_GPS method last_fix_time_ms uint32_t uint8_t 0 GPS_MAX_INSTANCES
-singleton AP_GPS method last_message_time_ms uint32_t uint8_t 0 GPS_MAX_INSTANCES
-singleton AP_GPS method have_vertical_velocity boolean uint8_t 0 GPS_MAX_INSTANCES
-singleton AP_GPS method get_antenna_offset Vector3f uint8_t 0 GPS_MAX_INSTANCES
-singleton AP_GPS method all_configured boolean
-singleton AP_GPS method first_unconfigured_gps uint8_t
+singleton AP_GPS method status uint8_t uint8_t 0 ud->num_sensors()
+singleton AP_GPS method location Location uint8_t 0 ud->num_sensors()
+singleton AP_GPS method speed_accuracy boolean uint8_t 0 ud->num_sensors() float'Null
+singleton AP_GPS method horizontal_accuracy boolean uint8_t 0 ud->num_sensors() float'Null
+singleton AP_GPS method vertical_accuracy boolean uint8_t 0 ud->num_sensors() float'Null
+singleton AP_GPS method velocity Vector3f uint8_t 0 ud->num_sensors()
+singleton AP_GPS method ground_speed float uint8_t 0 ud->num_sensors()
+singleton AP_GPS method ground_course float uint8_t 0 ud->num_sensors()
+singleton AP_GPS method num_sats uint8_t uint8_t 0 ud->num_sensors()
+singleton AP_GPS method time_week uint16_t uint8_t 0 ud->num_sensors()
+singleton AP_GPS method time_week_ms uint32_t uint8_t 0 ud->num_sensors()
+singleton AP_GPS method get_hdop uint16_t uint8_t 0 ud->num_sensors()
+singleton AP_GPS method get_vdop uint16_t uint8_t 0 ud->num_sensors()
+singleton AP_GPS method last_fix_time_ms uint32_t uint8_t 0 ud->num_sensors()
+singleton AP_GPS method last_message_time_ms uint32_t uint8_t 0 ud->num_sensors()
+singleton AP_GPS method have_vertical_velocity boolean uint8_t 0 ud->num_sensors()
+singleton AP_GPS method get_antenna_offset Vector3f uint8_t 0 ud->num_sensors()
+singleton AP_GPS method first_unconfigured_gps boolean uint8_t'Null
 
 include AP_Math/AP_Math.h
 
@@ -78,25 +99,30 @@ userdata Vector3f field y float read write -FLT_MAX FLT_MAX
 userdata Vector3f field z float read write -FLT_MAX FLT_MAX
 userdata Vector3f method length float
 userdata Vector3f method normalize void
-userdata Vector3f method is_nan void
-userdata Vector3f method is_inf void
-userdata Vector3f method is_zero void
+userdata Vector3f method is_nan boolean
+userdata Vector3f method is_inf boolean
+userdata Vector3f method is_zero boolean
 userdata Vector3f operator +
 userdata Vector3f operator -
+userdata Vector3f method dot float Vector3f
+userdata Vector3f method cross Vector3f Vector3f
+userdata Vector3f method scale Vector3f float -FLT_MAX FLT_MAX
 
 userdata Vector2f field x float read write -FLT_MAX FLT_MAX
 userdata Vector2f field y float read write -FLT_MAX FLT_MAX
 userdata Vector2f method length float
 userdata Vector2f method normalize void
-userdata Vector2f method is_nan void
-userdata Vector2f method is_inf void
-userdata Vector2f method is_zero void
+userdata Vector2f method is_nan boolean
+userdata Vector2f method is_inf boolean
+userdata Vector2f method is_zero boolean
+userdata Vector2f method rotate void float -FLT_MAX FLT_MAX
 userdata Vector2f operator +
 userdata Vector2f operator -
 
 include AP_Notify/AP_Notify.h
-singleton notify alias notify
+singleton AP_Notify alias notify
 singleton AP_Notify method play_tune void string
+singleton AP_Notify method handle_rgb void uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX
 
 include AP_RangeFinder/AP_RangeFinder.h
 
@@ -105,12 +131,14 @@ singleton RangeFinder method num_sensors uint8_t
 
 include AP_Terrain/AP_Terrain.h
 
+depends AP_TERRAIN_AVAILABLE 1 Scripting requires terrain to be available
+
 singleton AP_Terrain alias terrain
 singleton AP_Terrain method enabled boolean
+singleton AP_Terrain enum TerrainStatusDisabled TerrainStatusUnhealthy TerrainStatusOK
 singleton AP_Terrain method status uint8_t
 singleton AP_Terrain method height_amsl boolean Location float'Null boolean
 singleton AP_Terrain method height_terrain_difference_home boolean float'Null boolean
-singleton AP_Terrain method height_relative_home_equivalent boolean float -FLT_MAX FLT_MAX float'Null boolean
 singleton AP_Terrain method height_above_terrain boolean float'Null boolean
 
 include AP_Relay/AP_Relay.h
@@ -123,4 +151,105 @@ singleton AP_Relay method toggle void uint8_t 0 AP_RELAY_NUM_RELAYS
 
 include GCS_MAVLink/GCS.h
 singleton GCS alias gcs
-singleton GCS method send_text void MAV_SEVERITY'enum MAV_SEVERITY_EMERGENCY MAV_SEVERITY_DEBUG string
+singleton GCS method send_text void MAV_SEVERITY'enum MAV_SEVERITY_EMERGENCY MAV_SEVERITY_DEBUG "%s"'literal string
+singleton GCS method set_message_interval MAV_RESULT'enum uint8_t 0 MAVLINK_COMM_NUM_BUFFERS uint32_t 0U UINT32_MAX int32_t -1 INT32_MAX
+
+include AP_Vehicle/AP_Vehicle.h
+singleton AP_Vehicle alias vehicle
+singleton AP_Vehicle scheduler-semaphore
+singleton AP_Vehicle method set_mode boolean uint8_t 0 UINT8_MAX ModeReason::SCRIPTING'literal
+singleton AP_Vehicle method get_mode uint8_t
+singleton AP_Vehicle method get_likely_flying boolean
+singleton AP_Vehicle method get_time_flying_ms uint32_t
+singleton AP_Vehicle method start_takeoff boolean float (-LOCATION_ALT_MAX_M*100+1) (LOCATION_ALT_MAX_M*100-1)
+singleton AP_Vehicle method set_target_location boolean Location
+singleton AP_Vehicle method get_target_location boolean Location'Null
+singleton AP_Vehicle method set_target_velocity_NED boolean Vector3f
+singleton AP_Vehicle method set_target_angle_and_climbrate boolean float -180 180 float -90 90 float -360 360 float -FLT_MAX FLT_MAX boolean float -FLT_MAX FLT_MAX
+singleton AP_Vehicle method set_steering_and_throttle boolean float -1 1 float -1 1
+
+include AP_SerialLED/AP_SerialLED.h
+singleton AP_SerialLED alias serialLED
+singleton AP_SerialLED method set_num_neopixel boolean uint8_t 1 16 uint8_t 0 AP_SERIALLED_MAX_LEDS
+singleton AP_SerialLED method set_num_profiled boolean uint8_t 1 16 uint8_t 0 AP_SERIALLED_MAX_LEDS
+singleton AP_SerialLED method set_RGB void uint8_t 1 16 int8_t -1 INT8_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX
+singleton AP_SerialLED method send void uint8_t 1 16
+
+include SRV_Channel/SRV_Channel.h
+singleton SRV_Channels alias SRV_Channels
+singleton SRV_Channels method find_channel boolean SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint8_t'Null
+singleton SRV_Channels method set_output_pwm void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t 0 UINT16_MAX
+singleton SRV_Channels method set_output_pwm_chan void uint8_t 0 NUM_SERVO_CHANNELS-1 uint16_t 0 UINT16_MAX
+singleton SRV_Channels method set_output_pwm_chan_timeout void uint8_t 0 NUM_SERVO_CHANNELS-1 uint16_t 0 UINT16_MAX uint16_t 0 UINT16_MAX
+singleton SRV_Channels method set_output_scaled void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 int16_t INT16_MIN INT16_MAX
+singleton SRV_Channels method get_output_pwm boolean SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'Null
+singleton SRV_Channels method get_output_scaled int16_t SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1
+
+include RC_Channel/RC_Channel.h
+singleton RC_Channels alias rc
+singleton RC_Channels method get_pwm boolean uint8_t 1 NUM_RC_CHANNELS uint16_t'Null
+
+include AP_SerialManager/AP_SerialManager.h
+
+ap_object AP_HAL::UARTDriver method begin void uint32_t 1U UINT32_MAX
+ap_object AP_HAL::UARTDriver method read int16_t
+ap_object AP_HAL::UARTDriver method write uint32_t uint8_t 0 UINT8_MAX
+ap_object AP_HAL::UARTDriver method available uint32_t
+ap_object AP_HAL::UARTDriver method set_flow_control void AP_HAL::UARTDriver::flow_control'enum AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE AP_HAL::UARTDriver::FLOW_CONTROL_AUTO
+
+singleton AP_SerialManager alias serial
+singleton AP_SerialManager method find_serial AP_HAL::UARTDriver AP_SerialManager::SerialProtocol_Scripting'literal uint8_t 0 UINT8_MAX
+
+include AP_Baro/AP_Baro.h
+singleton AP_Baro alias baro
+singleton AP_Baro method get_pressure float
+singleton AP_Baro method get_temperature float
+singleton AP_Baro method get_external_temperature float
+
+include AP_ESC_Telem/AP_ESC_Telem.h
+singleton AP_ESC_Telem alias esc_telem
+singleton AP_ESC_Telem method get_usage_seconds boolean uint8_t 0 NUM_SERVO_CHANNELS uint32_t'Null
+
+include AP_Param/AP_Param.h
+singleton AP_Param alias param
+singleton AP_Param method get boolean string float'Null
+singleton AP_Param method set boolean string float -FLT_MAX FLT_MAX
+singleton AP_Param method set_and_save boolean string float -FLT_MAX FLT_MAX
+
+include AP_Mission/AP_Mission.h
+singleton AP_Mission alias mission
+singleton AP_Mission scheduler-semaphore
+singleton AP_Mission enum MISSION_STOPPED MISSION_RUNNING MISSION_COMPLETE
+singleton AP_Mission method state uint8_t
+singleton AP_Mission method get_current_nav_index uint16_t
+singleton AP_Mission method set_current_cmd boolean uint16_t 0 (ud->num_commands()-1) 
+singleton AP_Mission method get_prev_nav_cmd_id uint16_t
+singleton AP_Mission method get_current_nav_id uint16_t
+singleton AP_Mission method get_current_do_cmd_id uint16_t
+singleton AP_Mission method num_commands uint16_t
+singleton AP_Mission method get_item boolean uint16_t 0 UINT16_MAX mavlink_mission_item_int_t'Null
+singleton AP_Mission method set_item boolean uint16_t 0 UINT16_MAX mavlink_mission_item_int_t
+
+userdata mavlink_mission_item_int_t field param1 float read write -FLT_MAX FLT_MAX
+userdata mavlink_mission_item_int_t field param2 float read write -FLT_MAX FLT_MAX
+userdata mavlink_mission_item_int_t field param3 float read write -FLT_MAX FLT_MAX
+userdata mavlink_mission_item_int_t field param4 float read write -FLT_MAX FLT_MAX
+userdata mavlink_mission_item_int_t field x int32_t read write -INT32_MAX INT32_MAX
+userdata mavlink_mission_item_int_t field y int32_t read write -INT32_MAX INT32_MAX
+userdata mavlink_mission_item_int_t field z float read write -FLT_MAX FLT_MAX
+userdata mavlink_mission_item_int_t field seq uint16_t read write 0 UINT16_MAX
+userdata mavlink_mission_item_int_t field command uint16_t read write 0 UINT16_MAX
+-- userdata mavlink_mission_item_int_t field target_system uint8_t read write 0 UINT8_MAX
+-- userdata mavlink_mission_item_int_t field target_component uint8_t read write 0 UINT8_MAX
+userdata mavlink_mission_item_int_t field frame uint8_t read write  0 UINT8_MAX
+userdata mavlink_mission_item_int_t field current uint8_t read write  0 UINT8_MAX
+-- userdata mavlink_mission_item_int_t field autocontinue uint8_t read write  0 UINT8_MAX
+
+
+include AP_RPM/AP_RPM.h
+singleton AP_RPM alias RPM
+singleton AP_RPM method get_rpm boolean uint8_t 0 RPM_MAX_INSTANCES float'Null
+
+include AP_Button/AP_Button.h
+singleton AP_Button alias button
+singleton AP_Button method get_button_state boolean uint8_t 1 AP_BUTTON_NUM_PINS

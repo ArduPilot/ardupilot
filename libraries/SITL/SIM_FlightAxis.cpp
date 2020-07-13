@@ -42,6 +42,7 @@ static const struct {
     float value;
     bool save;
 } sim_defaults[] = {
+    { "BRD_OPTIONS", 0},
     { "AHRS_EKF_TYPE", 10 },
     { "INS_GYR_CAL", 0 },
     { "RC1_MIN", 1000, true },
@@ -82,10 +83,11 @@ static const struct {
 };
 
 
-FlightAxis::FlightAxis(const char *home_str, const char *frame_str) :
-    Aircraft(home_str, frame_str)
+FlightAxis::FlightAxis(const char *frame_str) :
+    Aircraft(frame_str)
 {
     use_time_sync = false;
+    num_motors = 2;
     rate_hz = 250 / target_speedup;
     heli_demix = strstr(frame_str, "helidemix") != nullptr;
     rev4_servos = strstr(frame_str, "rev4") != nullptr;
@@ -407,7 +409,7 @@ void FlightAxis::update(const struct sitl_input &input)
     }
 
     /*
-      the queternion convention in realflight seems to have Z negative
+      the quaternion convention in realflight seems to have Z negative
      */
     Quaternion quat(state.m_orientationQuaternion_W,
                     state.m_orientationQuaternion_Y,
@@ -426,9 +428,11 @@ void FlightAxis::update(const struct sitl_input &input)
                         state.m_aircraftPositionX_MTR,
                         -state.m_altitudeASL_MTR - home.alt*0.01);
 
-    accel_body(state.m_accelerationBodyAX_MPS2,
-               state.m_accelerationBodyAY_MPS2,
-               state.m_accelerationBodyAZ_MPS2);
+    accel_body = {
+        float(state.m_accelerationBodyAX_MPS2),
+        float(state.m_accelerationBodyAY_MPS2),
+        float(state.m_accelerationBodyAZ_MPS2)
+    };
 
     // accel on the ground is nasty in realflight, and prevents helicopter disarm
     if (!is_zero(state.m_isTouchingGround)) {
@@ -452,13 +456,16 @@ void FlightAxis::update(const struct sitl_input &input)
     airspeed = state.m_airspeed_MPS;
 
     /* for pitot airspeed we need the airspeed along the X axis. We
-       can't get that from m_airspeed_MPS, so instead we canculate it
+       can't get that from m_airspeed_MPS, so instead we calculate it
        from wind vector and ground speed
      */
     Vector3f m_wind_ef(-state.m_windY_MPS,-state.m_windX_MPS,-state.m_windZ_MPS);
     Vector3f airspeed_3d_ef = m_wind_ef + velocity_ef;
     Vector3f airspeed3d = dcm.mul_transpose(airspeed_3d_ef);
 
+    if (last_imu_rotation != ROTATION_NONE) {
+        airspeed3d = airspeed3d * sitl->ahrs_rotation_inv;
+    }
     airspeed_pitot = MAX(airspeed3d.x,0);
 
 #if 0
@@ -473,8 +480,8 @@ void FlightAxis::update(const struct sitl_input &input)
 
     battery_voltage = state.m_batteryVoltage_VOLTS;
     battery_current = state.m_batteryCurrentDraw_AMPS;
-    rpm1 = state.m_heliMainRotorRPM;
-    rpm2 = state.m_propRPM;
+    rpm[0] = state.m_heliMainRotorRPM;
+    rpm[1] = state.m_propRPM;
 
     /*
       the interlink interface supports 8 input channels

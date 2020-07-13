@@ -30,7 +30,7 @@ void ModeFBWA::update()
         // FBWA failsafe glide
         plane.nav_roll_cd = 0;
         plane.nav_pitch_cd = 0;
-        SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_MIN);
+        SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::Limit::MIN);
     }
     if (plane.g.fbwa_tdrag_chan > 0) {
         // check for the user enabling FBWA taildrag takeoff mode

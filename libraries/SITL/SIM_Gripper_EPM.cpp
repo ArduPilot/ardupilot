@@ -107,7 +107,7 @@ bool Gripper_EPM::should_report()
         return false;
     }
 
-    if (abs(reported_field_strength - field_strength) > 10.0) {
+    if (fabsf(reported_field_strength - field_strength) > 10.0) {
         return true;
     }
 

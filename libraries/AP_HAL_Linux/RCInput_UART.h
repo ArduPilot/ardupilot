@@ -22,7 +22,7 @@ private:
     int _fd;
     uint8_t *_pdata;
     ssize_t _remain;
-    struct PACKED {
+    struct {
         uint16_t magic;
         uint16_t values[CHANNELS];
     } _data;

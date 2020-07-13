@@ -83,6 +83,9 @@ bool Plane::allow_reverse_thrust(void) const
     case Mode::Number::GUIDED:
         allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_GUIDED);
         break;
+    case Mode::Number::TAKEOFF:
+        allow = false;
+        break;
     default:
         // all other control_modes are auto_throttle_mode=false.
         // If we are not controlling throttle, don't limit it.
@@ -90,7 +93,8 @@ bool Plane::allow_reverse_thrust(void) const
         break;
     }
 
-    return allow;
+    // cope with bitwise ops above
+    return allow != false;
 }
 
 /*

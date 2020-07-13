@@ -318,7 +318,7 @@ bool AP_Baro_BMP085::_data_ready()
 
     // No EOC pin: use time from last read instead.
     if (_state == 0) {
-        return AP_HAL::millis() > _last_temp_read_command_time + 5;
+        return AP_HAL::millis() - _last_temp_read_command_time > 5u;
     }
 
     uint32_t conversion_time_msec;
@@ -335,9 +335,10 @@ bool AP_Baro_BMP085::_data_ready()
         break;
     case BMP085_OVERSAMPLING_ULTRAHIGHRES:
         conversion_time_msec = 26;
+        break;
     default:
         break;
     }
 
-    return AP_HAL::millis() > _last_press_read_command_time + conversion_time_msec;
+    return AP_HAL::millis() - _last_press_read_command_time > conversion_time_msec;
 }

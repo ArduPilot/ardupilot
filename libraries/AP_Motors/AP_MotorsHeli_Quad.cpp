@@ -15,7 +15,7 @@
 
 #include <stdlib.h>
 #include <AP_HAL/AP_HAL.h>
-
+#include <GCS_MAVLink/GCS.h>
 #include "AP_MotorsHeli_Quad.h"
 
 extern const AP_HAL::HAL& hal;
@@ -58,7 +58,14 @@ bool AP_MotorsHeli_Quad::init_outputs()
     }
 
     // set rotor servo range
-    _rotor.init_servo();
+    _main_rotor.init_servo();
+
+    // set signal value for main rotor external governor to know when to use autorotation bailout ramp up
+    if (_main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SPEED_SETPOINT  ||  _main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH) {
+        _main_rotor.set_ext_gov_arot_bail(_main_rotor._ext_gov_arot_pct.get());
+    } else {
+        _main_rotor.set_ext_gov_arot_bail(0);
+    }
 
     _flags.initialised_ok = true;
 
@@ -82,7 +89,7 @@ void AP_MotorsHeli_Quad::output_test_seq(uint8_t motor_seq, int16_t pwm)
         break;
     case AP_MOTORS_HELI_QUAD_NUM_MOTORS+1:
         // main rotor
-        rc_write(AP_MOTORS_HELI_QUAD_RSC, pwm);
+        rc_write(AP_MOTORS_HELI_RSC, pwm);
         break;
     default:
         // do nothing
@@ -93,35 +100,41 @@ void AP_MotorsHeli_Quad::output_test_seq(uint8_t motor_seq, int16_t pwm)
 // set_desired_rotor_speed
 void AP_MotorsHeli_Quad::set_desired_rotor_speed(float desired_speed)
 {
-    _rotor.set_desired_speed(desired_speed);
+    _main_rotor.set_desired_speed(desired_speed);
 }
 
 // set_rotor_rpm - used for governor with speed sensor
 void AP_MotorsHeli_Quad::set_rpm(float rotor_rpm)
 {
-    _rotor.set_rotor_rpm(rotor_rpm);
+    _main_rotor.set_rotor_rpm(rotor_rpm);
 }
 
 // calculate_armed_scalars
 void AP_MotorsHeli_Quad::calculate_armed_scalars()
 {
-    // Set common RSC variables
-    _rotor.set_ramp_time(_rsc_ramp_time);
-    _rotor.set_runup_time(_rsc_runup_time);
-    _rotor.set_critical_speed(_rsc_critical*0.001f);
-    _rotor.set_idle_output(_rsc_idle_output*0.001f);
-    _rotor.set_slewrate(_rsc_slewrate);
-
     // Set rsc mode specific parameters
-    if (_rsc_mode == ROTOR_CONTROL_MODE_OPEN_LOOP_POWER_OUTPUT) {
-        _rotor.set_throttle_curve(_rsc_thrcrv.get_thrcrv());
-    } else if (_rsc_mode == ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT) {
-        _rotor.set_throttle_curve(_rsc_thrcrv.get_thrcrv());
-        _rotor.set_governor_disengage(_rsc_gov.get_disengage()*0.01f);
-        _rotor.set_governor_droop_response(_rsc_gov.get_droop_response()*0.01f);
-        _rotor.set_governor_reference(_rsc_gov.get_reference());
-        _rotor.set_governor_range(_rsc_gov.get_range());
-        _rotor.set_governor_thrcurve(_rsc_gov.get_thrcurve()*0.01f);
+    if (_main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_OPEN_LOOP_POWER_OUTPUT || _main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT) {
+        _main_rotor.set_throttle_curve();
+    }
+    // keeps user from changing RSC mode while armed
+    if (_main_rotor._rsc_mode.get() != _main_rotor.get_control_mode()) {
+        _main_rotor.reset_rsc_mode_param();
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "RSC control mode change failed");
+        _heliflags.save_rsc_mode = true;
+    }
+    // saves rsc mode parameter when disarmed if it had been reset while armed
+    if (_heliflags.save_rsc_mode && !_flags.armed) {
+        _main_rotor._rsc_mode.save();
+        _heliflags.save_rsc_mode = false;
+    }
+
+    // set bailout ramp time
+    _main_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
+
+    // allow use of external governor autorotation bailout window on main rotor
+    if (_main_rotor._ext_gov_arot_pct.get() > 0  &&  (_main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SPEED_SETPOINT  ||  _main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH)){
+        // RSC only needs to know that the vehicle is in an autorotation if using the bailout window on an external governor
+        _main_rotor.set_autorotaion_flag(_heliflags.in_autorotation);
     }
 }
 
@@ -143,8 +156,7 @@ void AP_MotorsHeli_Quad::calculate_scalars()
     calculate_roll_pitch_collective_factors();
 
     // set mode of main rotor controller and trigger recalculation of scalars
-    _rotor.set_control_mode(static_cast<RotorControlMode>(_rsc_mode.get()));
-    enable_rsc_parameters();
+    _main_rotor.set_control_mode(static_cast<RotorControlMode>(_main_rotor._rsc_mode.get()));
     calculate_armed_scalars();
 }
 
@@ -163,9 +175,9 @@ void AP_MotorsHeli_Quad::calculate_roll_pitch_collective_factors()
             // reverse yaw for H frame
             clockwise = !clockwise;
         }
-        _rollFactor[CH_1+i]       = -0.5*sinf(radians(angles[i]))/cos45;
-        _pitchFactor[CH_1+i]      =  0.5*cosf(radians(angles[i]))/cos45;
-        _yawFactor[CH_1+i]        = clockwise?-0.5:0.5;
+        _rollFactor[CH_1+i]       = -0.25*sinf(radians(angles[i]))/cos45;
+        _pitchFactor[CH_1+i]      =  0.25*cosf(radians(angles[i]))/cos45;
+        _yawFactor[CH_1+i]        = clockwise?-0.25:0.25;
         _collectiveFactor[CH_1+i] = 1;
     }
 }
@@ -178,7 +190,7 @@ uint16_t AP_MotorsHeli_Quad::get_motor_mask()
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
         mask |= 1U << (AP_MOTORS_MOT_1+i);
     }
-    mask |= 1U << AP_MOTORS_HELI_QUAD_RSC;
+    mask |= 1U << AP_MOTORS_HELI_RSC;
     return mask;
 }
 
@@ -186,18 +198,18 @@ uint16_t AP_MotorsHeli_Quad::get_motor_mask()
 void AP_MotorsHeli_Quad::update_motor_control(RotorControlState state)
 {
     // Send state update to motors
-    _rotor.output(state);
+    _main_rotor.output(state);
 
     if (state == ROTOR_CONTROL_STOP) {
         // set engine run enable aux output to not run position to kill engine when disarmed
-        SRV_Channels::set_output_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::SRV_CHANNEL_LIMIT_MIN);
+        SRV_Channels::set_output_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::Limit::MIN);
     } else {
         // else if armed, set engine run enable output to run position
-        SRV_Channels::set_output_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::SRV_CHANNEL_LIMIT_MAX);
+        SRV_Channels::set_output_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::Limit::MAX);
     }
 
     // Check if rotors are run-up
-    _heliflags.rotor_runup_complete = _rotor.is_runup_complete();
+    _heliflags.rotor_runup_complete = _main_rotor.is_runup_complete();
 }
 
 //
@@ -211,7 +223,8 @@ void AP_MotorsHeli_Quad::update_motor_control(RotorControlState state)
 void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float collective_in, float yaw_out)
 {
     // initialize limits flag
-    limit.roll_pitch = false;
+    limit.roll = false;
+    limit.pitch = false;
     limit.yaw = false;
     limit.throttle_lower = false;
     limit.throttle_upper = false;
@@ -233,17 +246,17 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
         limit.throttle_lower = true;
     }
 
-    float collective_range = (_collective_max - _collective_min)*0.001f;
+    float collective_range = (_collective_max - _collective_min) * 0.001f;
 
     if (_heliflags.inverted_flight) {
-        collective_out = 1 - collective_out;
+        collective_out = 1.0f - collective_out;
     }
 
     // feed power estimate into main rotor controller
-    _rotor.set_collective(fabsf(collective_out));
+    _main_rotor.set_collective(fabsf(collective_out));
 
-    // scale collective to -1 to 1
-    collective_out = collective_out*2-1;
+    // rescale collective for overhead calc
+    collective_out -= _collective_mid_pct;
 
     // reserve some collective for attitude control
     collective_out *= collective_range;
@@ -258,11 +271,11 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
     // see if we need to scale down yaw_out
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
         float y = _yawFactor[CH_1+i] * yaw_out;
-        if (_out[i] < 0) {
+        if (_out[i] < 0.0f) {
             // the slope of the yaw effect changes at zero collective
             y = -y;
         }
-        if (_out[i] * (_out[i] + y) < 0) {
+        if (_out[i] * (_out[i] + y) < 0.0f) {
             // applying this yaw demand would change the sign of the
             // collective, which means the yaw would not be applied
             // evenly. We scale down the overall yaw demand to prevent
@@ -275,13 +288,19 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
     // now apply the yaw correction
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
         float y = _yawFactor[CH_1+i] * yaw_out;
-        if (_out[i] < 0) {
+        if (_out[i] < 0.0f) {
             // the slope of the yaw effect changes at zero collective
             y = -y;
         }
         _out[i] += y;
     }
 
+    for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
+        // scale output to 0 to 1
+        _out[i] += _collective_mid_pct;
+        // scale output to -1 to 1 for servo output
+        _out[i] = _out[i] * 2.0f - 1.0f;
+    }
 }
 
 void AP_MotorsHeli_Quad::output_to_motors()

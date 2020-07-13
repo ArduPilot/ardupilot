@@ -23,8 +23,8 @@
 
 using namespace SITL;
 
-MultiCopter::MultiCopter(const char *home_str, const char *frame_str) :
-    Aircraft(home_str, frame_str),
+MultiCopter::MultiCopter(const char *frame_str) :
+    Aircraft(frame_str),
     frame(nullptr)
 {
     mass = 1.5f;
@@ -42,13 +42,15 @@ MultiCopter::MultiCopter(const char *home_str, const char *frame_str) :
         frame->init(gross_mass(), 0.51, 15, 4*radians(360));
     }
     frame_height = 0.1;
+    num_motors = frame->num_motors;
     ground_behavior = GROUND_BEHAVIOR_NO_MOVEMENT;
 }
 
 // calculate rotational and linear accelerations
 void MultiCopter::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel)
 {
-    frame->calculate_forces(*this, input, rot_accel, body_accel);
+    frame->calculate_forces(*this, input, rot_accel, body_accel, rpm);
+
     add_shove_forces(rot_accel, body_accel);
     add_twist_forces(rot_accel);
 }
@@ -78,3 +80,4 @@ void MultiCopter::update(const struct sitl_input &input)
     // update magnetic field
     update_mag_field_bf();
 }
+

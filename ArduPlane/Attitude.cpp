@@ -8,7 +8,7 @@
 float Plane::get_speed_scaler(void)
 {
     float aspeed, speed_scaler;
-    if (ahrs.airspeed_estimate(&aspeed)) {
+    if (ahrs.airspeed_estimate(aspeed)) {
         if (aspeed > auto_state.highest_airspeed) {
             auto_state.highest_airspeed = aspeed;
         }
@@ -26,8 +26,14 @@ float Plane::get_speed_scaler(void)
             // when in VTOL modes limit surface movement at low speed to prevent instability
             float threshold = aparm.airspeed_min * 0.5;
             if (aspeed < threshold) {
-                float new_scaler = linear_interpolate(0, g.scaling_speed / threshold, aspeed, 0, threshold);
+                float new_scaler = linear_interpolate(0.001, g.scaling_speed / threshold, aspeed, 0, threshold);
                 speed_scaler = MIN(speed_scaler, new_scaler);
+
+                // we also decay the integrator to prevent an integrator from before
+                // we were at low speed persistint at high speed
+                rollController.decay_I();
+                pitchController.decay_I();
+                yawController.decay_I();
             }
         }
     } else if (hal.util->get_soft_armed()) {
@@ -51,6 +57,7 @@ bool Plane::stick_mixing_enabled(void)
     if (auto_throttle_mode && auto_navigation_mode) {
         // we're in an auto mode. Check the stick mixing flag
         if (g.stick_mixing != STICK_MIXING_DISABLED &&
+            g.stick_mixing != STICK_MIXING_VTOL_YAW &&
             geofence_stickmixing() &&
             failsafe.state == FAILSAFE_NONE &&
             !rc_failsafe_active()) {
@@ -357,7 +364,9 @@ void Plane::stabilize_acro(float speed_scaler)
 void Plane::stabilize()
 {
     if (control_mode == &mode_manual) {
-        // nothing to do
+        // reset steering controls
+        steer_state.locked_course = false;
+        steer_state.locked_course_err = 0;
         return;
     }
     float speed_scaler = get_speed_scaler();
@@ -370,7 +379,21 @@ void Plane::stabilize()
         nav_pitch_cd = constrain_float((quadplane.tailsitter.transition_angle+5)*100, 5500, 8500),
         nav_roll_cd = 0;
     }
-    
+
+    uint32_t now = AP_HAL::millis();
+    if (now - last_stabilize_ms > 2000) {
+        // if we haven't run the rate controllers for 2 seconds then
+        // reset the integrators
+        rollController.reset_I();
+        pitchController.reset_I();
+        yawController.reset_I();
+
+        // and reset steering controls
+        steer_state.locked_course = false;
+        steer_state.locked_course_err = 0;
+    }
+    last_stabilize_ms = now;
+
     if (control_mode == &mode_training) {
         stabilize_training(speed_scaler);
     } else if (control_mode == &mode_acro) {
@@ -565,6 +588,36 @@ void Plane::calc_nav_roll()
             plane.guided_state.last_forced_rpy_ms.x > 0 &&
             millis() - plane.guided_state.last_forced_rpy_ms.x < 3000) {
         commanded_roll = plane.guided_state.forced_rpy_cd.x;
+#if OFFBOARD_GUIDED == ENABLED
+    // guided_state.target_heading is radians at this point between -pi and pi ( defaults to -4 )
+    } else if ((control_mode == &mode_guided) && (guided_state.target_heading_type != GUIDED_HEADING_NONE) ) {
+        uint32_t tnow = AP_HAL::millis();
+        float delta = (tnow - guided_state.target_heading_time_ms) * 1e-3f;
+        guided_state.target_heading_time_ms = tnow;
+
+        float error = 0.0f;
+        if (guided_state.target_heading_type == GUIDED_HEADING_HEADING) {
+            error = wrap_PI(guided_state.target_heading - AP::ahrs().yaw);
+        } else {
+            Vector2f groundspeed = AP::ahrs().groundspeed_vector();
+            error = wrap_PI(guided_state.target_heading - atan2f(-groundspeed.y, -groundspeed.x) + M_PI);
+        }
+
+        float bank_limit = degrees(atanf(guided_state.target_heading_accel_limit/GRAVITY_MSS)) * 1e2f;
+
+        g2.guidedHeading.update_error(error); // push error into AC_PID , possible improvement is to use update_all instead.?
+        g2.guidedHeading.set_dt(delta);
+
+        float i = g2.guidedHeading.get_i(); // get integrator TODO
+        if (((is_negative(error) && !guided_state.target_heading_limit_low) || (is_positive(error) && !guided_state.target_heading_limit_high))) {
+            i = g2.guidedHeading.get_i();
+        }
+
+        float desired = g2.guidedHeading.get_p() + i + g2.guidedHeading.get_d();
+        guided_state.target_heading_limit_low = (desired <= -bank_limit);
+        guided_state.target_heading_limit_high = (desired >= bank_limit);
+        commanded_roll = constrain_float(desired, -bank_limit, bank_limit);
+#endif // OFFBOARD_GUIDED == ENABLED
     }
 
     nav_roll_cd = constrain_int32(commanded_roll, -roll_limit_cd, roll_limit_cd);

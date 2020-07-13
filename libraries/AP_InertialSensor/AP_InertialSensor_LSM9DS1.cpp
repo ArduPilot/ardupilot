@@ -246,9 +246,7 @@ bool AP_InertialSensor_LSM9DS1::_init_sensor()
 
 bool AP_InertialSensor_LSM9DS1::_hardware_init()
 {
-    if (!_spi_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return false;
-    }
+    _spi_sem->take_blocking();
 
     uint8_t tries, whoami;
 

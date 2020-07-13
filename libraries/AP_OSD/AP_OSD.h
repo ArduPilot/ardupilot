@@ -16,9 +16,14 @@
 
 #pragma once
 
+#include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_BLHeli/AP_BLHeli.h>
+
+#ifndef OSD_ENABLED
+#define OSD_ENABLED 0
+#endif
 
 class AP_OSD_Backend;
 
@@ -27,7 +32,8 @@ class AP_OSD_Backend;
 /*
   class to hold one setting
  */
-class AP_OSD_Setting {
+class AP_OSD_Setting
+{
 public:
     AP_Int8 enabled;
     AP_Int8 xpos;
@@ -44,7 +50,8 @@ class AP_OSD;
 /*
   class to hold one screen of settings
  */
-class AP_OSD_Screen {
+class AP_OSD_Screen
+{
 public:
     // constructor
     AP_OSD_Screen();
@@ -88,6 +95,7 @@ private:
     AP_OSD_Setting compass{true, 15, 3};
     AP_OSD_Setting wind{false, 2, 12};
     AP_OSD_Setting aspeed{false, 2, 13};
+    AP_OSD_Setting aspd1{false, 0, 0};
     AP_OSD_Setting aspd2{false, 0, 0};
     AP_OSD_Setting vspeed{true, 24, 9};
 
@@ -114,6 +122,7 @@ private:
     AP_OSD_Setting atemp{false, 0, 0};
     AP_OSD_Setting bat2_vlt{false, 0, 0};
     AP_OSD_Setting bat2used{false, 0, 0};
+    AP_OSD_Setting clk{false, 0, 0};
 
     bool check_option(uint32_t option);
 
@@ -135,6 +144,7 @@ private:
     void draw_rssi(uint8_t x, uint8_t y);
     void draw_current(uint8_t x, uint8_t y);
     void draw_batused(uint8_t x, uint8_t y);
+    void draw_batused(uint8_t instance, uint8_t x, uint8_t y);
     void draw_sats(uint8_t x, uint8_t y);
     void draw_fltmode(uint8_t x, uint8_t y);
     void draw_message(uint8_t x, uint8_t y);
@@ -146,6 +156,7 @@ private:
     void draw_compass(uint8_t x, uint8_t y);
     void draw_wind(uint8_t x, uint8_t y);
     void draw_aspeed(uint8_t x, uint8_t y);
+    void draw_aspd1(uint8_t x, uint8_t y);
     void draw_aspd2(uint8_t x, uint8_t y);
     void draw_vspeed(uint8_t x, uint8_t y);
 
@@ -176,9 +187,11 @@ private:
     void draw_atemp(uint8_t x, uint8_t y);
     void draw_bat2_vlt(uint8_t x, uint8_t y);
     void draw_bat2used(uint8_t x, uint8_t y);
+    void draw_clk(uint8_t x, uint8_t y);
 };
 
-class AP_OSD {
+class AP_OSD
+{
 public:
     friend class AP_OSD_Screen;
     //constructor
@@ -187,6 +200,12 @@ public:
     /* Do not allow copies */
     AP_OSD(const AP_OSD &other) = delete;
     AP_OSD &operator=(const AP_OSD&) = delete;
+
+    // get singleton instance
+    static AP_OSD *get_singleton()
+    {
+        return _singleton;
+    }
 
     // init - perform required initialisation
     void init();
@@ -250,7 +269,14 @@ public:
     };
 
     void set_nav_info(NavInfo &nav_info);
-    
+    // disable the display
+    void disable() {
+        _disable = true;
+    }
+    // enable the display
+    void enable() {
+        _disable = false;
+    }
 
 private:
     void osd_thread();
@@ -259,7 +285,7 @@ private:
     void update_current_screen();
     void next_screen();
     AP_OSD_Backend *backend;
-    
+
     //variables for screen switching
     uint8_t current_screen;
     uint16_t previous_channel_value;
@@ -270,11 +296,20 @@ private:
     int8_t pre_fs_screen;
     bool was_armed;
     bool was_failsafe;
-    
+    bool _disable;
+
     uint32_t last_update_ms;
     float last_distance_m;
     float max_dist_m;
     float max_alt_m;
     float max_speed_mps;
     float max_current_a;
+    float avg_current_a;
+
+    static AP_OSD *_singleton;
+};
+
+namespace AP
+{
+AP_OSD *osd();
 };

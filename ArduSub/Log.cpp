@@ -55,14 +55,14 @@ void Sub::Log_Write_Attitude()
 {
     Vector3f targets = attitude_control.get_att_target_euler_cd();
     targets.z = wrap_360_cd(targets.z);
-    logger.Write_Attitude(ahrs, targets);
+    logger.Write_Attitude(targets);
 
-    logger.Write_EKF(ahrs);
-    logger.Write_AHRS2(ahrs);
+    AP::ahrs_navekf().Log_Write();
+    logger.Write_AHRS2();
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     sitl.Log_Write_SIMSTATE();
 #endif
-    logger.Write_POS(ahrs);
+    logger.Write_POS();
 }
 
 struct PACKED log_MotBatt {
@@ -88,12 +88,6 @@ void Sub::Log_Write_MotBatt()
     logger.WriteBlock(&pkt_mot, sizeof(pkt_mot));
 }
 
-// Wrote an event packet
-void Sub::Log_Write_Event(Log_Event id)
-{
-    logger.Write_Event(id);
-}
-
 struct PACKED log_Data_Int16t {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -103,13 +97,13 @@ struct PACKED log_Data_Int16t {
 
 // Write an int16_t data packet
 UNUSED_FUNCTION
-void Sub::Log_Write_Data(uint8_t id, int16_t value)
+void Sub::Log_Write_Data(LogDataID id, int16_t value)
 {
     if (should_log(MASK_LOG_ANY)) {
         struct log_Data_Int16t pkt = {
             LOG_PACKET_HEADER_INIT(LOG_DATA_INT16_MSG),
             time_us     : AP_HAL::micros64(),
-            id          : id,
+            id          : (uint8_t)id,
             data_value  : value
         };
         logger.WriteCriticalBlock(&pkt, sizeof(pkt));
@@ -125,13 +119,13 @@ struct PACKED log_Data_UInt16t {
 
 // Write an uint16_t data packet
 UNUSED_FUNCTION
-void Sub::Log_Write_Data(uint8_t id, uint16_t value)
+void Sub::Log_Write_Data(LogDataID id, uint16_t value)
 {
     if (should_log(MASK_LOG_ANY)) {
         struct log_Data_UInt16t pkt = {
             LOG_PACKET_HEADER_INIT(LOG_DATA_UINT16_MSG),
             time_us     : AP_HAL::micros64(),
-            id          : id,
+            id          : (uint8_t)id,
             data_value  : value
         };
         logger.WriteCriticalBlock(&pkt, sizeof(pkt));
@@ -146,13 +140,13 @@ struct PACKED log_Data_Int32t {
 };
 
 // Write an int32_t data packet
-void Sub::Log_Write_Data(uint8_t id, int32_t value)
+void Sub::Log_Write_Data(LogDataID id, int32_t value)
 {
     if (should_log(MASK_LOG_ANY)) {
         struct log_Data_Int32t pkt = {
             LOG_PACKET_HEADER_INIT(LOG_DATA_INT32_MSG),
             time_us  : AP_HAL::micros64(),
-            id          : id,
+            id          : (uint8_t)id,
             data_value  : value
         };
         logger.WriteCriticalBlock(&pkt, sizeof(pkt));
@@ -167,13 +161,13 @@ struct PACKED log_Data_UInt32t {
 };
 
 // Write a uint32_t data packet
-void Sub::Log_Write_Data(uint8_t id, uint32_t value)
+void Sub::Log_Write_Data(LogDataID id, uint32_t value)
 {
     if (should_log(MASK_LOG_ANY)) {
         struct log_Data_UInt32t pkt = {
             LOG_PACKET_HEADER_INIT(LOG_DATA_UINT32_MSG),
             time_us     : AP_HAL::micros64(),
-            id          : id,
+            id          : (uint8_t)id,
             data_value  : value
         };
         logger.WriteCriticalBlock(&pkt, sizeof(pkt));
@@ -189,13 +183,13 @@ struct PACKED log_Data_Float {
 
 // Write a float data packet
 UNUSED_FUNCTION
-void Sub::Log_Write_Data(uint8_t id, float value)
+void Sub::Log_Write_Data(LogDataID id, float value)
 {
     if (should_log(MASK_LOG_ANY)) {
         struct log_Data_Float pkt = {
             LOG_PACKET_HEADER_INIT(LOG_DATA_FLOAT_MSG),
             time_us     : AP_HAL::micros64(),
-            id          : id,
+            id          : (uint8_t)id,
             data_value  : value
         };
         logger.WriteCriticalBlock(&pkt, sizeof(pkt));
@@ -247,6 +241,71 @@ void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
 
+// @LoggerMessage: CTUN
+// @Description: Control Tuning information
+// @Field: TimeUS: Time since system startup
+// @Field: ThI: throttle input
+// @Field: ABst: angle boost
+// @Field: ThO: throttle output
+// @Field: ThH: calculated hover throttle
+// @Field: DAlt: desired altitude
+// @Field: Alt: achieved altitude
+// @Field: BAlt: barometric altitude
+// @Field: DSAlt: desired rangefinder altitude
+// @Field: SAlt: achieved rangefinder altitude
+// @Field: TAlt: terrain altitude
+// @Field: DCRt: desired climb rate
+// @Field: CRt: climb rate
+
+// @LoggerMessage: MOTB
+// @Description: Battery information
+// @Field: TimeUS: Time since system startup
+// @Field: LiftMax: Maximum motor compensation gain
+// @Field: BatVolt: Ratio betwen detected battery voltage and maximum battery voltage
+// @Field: BatRes: Estimated battery resistance
+// @Field: ThLimit: Throttle limit set due to battery current limitations
+
+// @LoggerMessage: D16
+// @Description: Generic 16-bit-signed-integer storage
+// @Field: TimeUS: Time since system startup
+// @Field: Id: Data type identifier
+// @Field: Value: Value
+
+// @LoggerMessage: D32
+// @Description: Generic 32-bit-signed-integer storage
+// @Field: TimeUS: Time since system startup
+// @Field: Id: Data type identifier
+// @Field: Value: Value
+
+// @LoggerMessage: DFLT
+// @Description: Generic float storage
+// @Field: TimeUS: Time since system startup
+// @Field: Id: Data type identifier
+// @Field: Value: Value
+
+// @LoggerMessage: DU16
+// @Description: Generic 16-bit-unsigned-integer storage
+// @Field: TimeUS: Time since system startup
+// @Field: Id: Data type identifier
+// @Field: Value: Value
+
+// @LoggerMessage: DU32
+// @Description: Generic 32-bit-unsigned-integer storage
+// @Field: TimeUS: Time since system startup
+// @Field: Id: Data type identifier
+// @Field: Value: Value
+
+// @LoggerMessage: GUID
+// @Description: Guided mode target information
+// @Field: TimeUS: Time since system startup
+// @Field: Type: Type of guided mode
+// @Field: pX: Target position, X-Axis
+// @Field: pY: Target position, Y-Axis
+// @Field: pZ: Target position, Z-Axis
+// @Field: vX: Target velocity, X-Axis
+// @Field: vY: Target velocity, Y-Axis
+// @Field: vZ: Target velocity, Z-Axis
+
 // type and unit information can be found in
 // libraries/AP_Logger/Logstructure.h; search for "log_Units" for
 // units and "Format characters" for field type information
@@ -290,7 +349,6 @@ void Sub::Log_Write_Control_Tuning() {}
 void Sub::Log_Write_Performance() {}
 void Sub::Log_Write_Attitude(void) {}
 void Sub::Log_Write_MotBatt() {}
-void Sub::Log_Write_Event(Log_Event id) {}
 void Sub::Log_Write_Data(uint8_t id, int32_t value) {}
 void Sub::Log_Write_Data(uint8_t id, uint32_t value) {}
 void Sub::Log_Write_Data(uint8_t id, int16_t value) {}

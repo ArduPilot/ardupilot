@@ -95,15 +95,23 @@ public:
     T &operator[](uint16_t i)
     {
         const uint16_t chunk_num = i / chunk_size;
-        const uint16_t chunk_index = (i % chunk_size) * elem_size;
-        return (T &)(chunk_ptrs[chunk_num][chunk_index]);
+        const uint16_t chunk_index = (i % chunk_size);
+        #pragma GCC diagnostic push
+        #pragma GCC diagnostic ignored "-Wcast-align"
+        T *el_array = (T *)chunk_ptrs[chunk_num];
+        #pragma pop
+        return el_array[chunk_index];
     }
 
     // allow use as an array for accessing elements. no bounds checking is performed
     const T &operator[](uint16_t i) const
     {
         const uint16_t chunk_num = i / chunk_size;
-        const uint16_t chunk_index = (i % chunk_size) * elem_size;
-        return (const T &)(chunk_ptrs[chunk_num][chunk_index]);
+        const uint16_t chunk_index = (i % chunk_size);
+        #pragma GCC diagnostic push
+        #pragma GCC diagnostic ignored "-Wcast-align"
+        const T *el_array = (const T *)chunk_ptrs[chunk_num];
+        #pragma pop
+        return el_array[chunk_index];
     }
 };

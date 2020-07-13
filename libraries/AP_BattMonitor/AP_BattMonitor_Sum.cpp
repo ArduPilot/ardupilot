@@ -37,8 +37,9 @@ AP_BattMonitor_Sum::read()
         }
         voltage_sum += _mon.voltage(i);
         voltage_count++;
-        if (_mon.has_current(i)) {
-            current_sum += _mon.current_amps(i);
+        float current;
+        if (_mon.current_amps(current, i)) {
+            current_sum += current;
             current_count++;
         }
     }

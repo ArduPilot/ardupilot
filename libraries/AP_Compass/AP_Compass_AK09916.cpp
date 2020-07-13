@@ -25,6 +25,8 @@
 #include <AP_InertialSensor/AP_InertialSensor_Invensensev2.h>
 #include <GCS_MAVLink/GCS.h>
 
+extern const AP_HAL::HAL &hal;
+
 #define REG_COMPANY_ID      0x00
 #define REG_DEVICE_ID       0x01
 #define REG_ST1             0x10
@@ -102,9 +104,7 @@ AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948(AP_HAL::OwnPtr<AP_HAL::I2
         return nullptr;
     }
 
-    if (!dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return nullptr;
-    }
+    dev->get_semaphore()->take_blocking();
 
     /* Allow ICM20x48 to shortcut auxiliary bus and host bus */
     uint8_t rval;
@@ -152,7 +152,7 @@ AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948(AP_HAL::OwnPtr<AP_HAL::I2
     if (dev->read_registers(REG_COMPANY_ID, (uint8_t *)&whoami, 2)) {
         // a device is replying on the AK09916 I2C address, don't
         // load the ICM20948
-        gcs().send_text(MAV_SEVERITY_INFO, "ICM20948: AK09916 bus conflict\n");
+        hal.console->printf("ICM20948: AK09916 bus conflict\n");
         goto fail;
     }
 
@@ -190,40 +190,43 @@ bool AP_Compass_AK09916::init()
 {
     AP_HAL::Semaphore *bus_sem = _bus->get_semaphore();
 
-    if (!bus_sem || !_bus->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        gcs().send_text(MAV_SEVERITY_INFO,"AK09916: Unable to get bus semaphore\n");
+    if (!bus_sem) {
         return false;
     }
+    _bus->get_semaphore()->take_blocking();
 
     if (!_bus->configure()) {
-        gcs().send_text(MAV_SEVERITY_INFO,"AK09916: Could not configure the bus\n");
+        hal.console->printf("AK09916: Could not configure the bus\n");
         goto fail;
     }
 
     if (!_reset()) {
-        gcs().send_text(MAV_SEVERITY_INFO,"AK09916: Reset Failed\n");
         goto fail;
     }
 
     if (!_check_id()) {
-        gcs().send_text(MAV_SEVERITY_INFO,"AK09916: Wrong id\n");
+        hal.console->printf("AK09916: Wrong id\n");
         goto fail;
     }
 
     if (!_setup_mode()) {
-        gcs().send_text(MAV_SEVERITY_INFO,"AK09916: Could not setup mode\n");
+        hal.console->printf("AK09916: Could not setup mode\n");
         goto fail;
     }
 
     if (!_bus->start_measurements()) {
-        gcs().send_text(MAV_SEVERITY_INFO,"AK09916: Could not start measurements\n");
+        hal.console->printf("AK09916: Could not start measurements\n");
         goto fail;
     }
 
     _initialized = true;
 
     /* register the compass instance in the frontend */
-    _compass_instance = register_compass();
+    _bus->set_device_type(DEVTYPE_AK09916);
+    if (!register_compass(_bus->get_bus_id(), _compass_instance)) {
+        goto fail;
+    }
+    set_dev_id(_compass_instance, _bus->get_bus_id());
 
     if (_force_external) {
         set_external(_compass_instance, true);
@@ -231,9 +234,6 @@ bool AP_Compass_AK09916::init()
 
     set_rotation(_compass_instance, _rotation);
     
-    _bus->set_device_type(DEVTYPE_AK09916);
-    set_dev_id(_compass_instance, _bus->get_bus_id());
-
     bus_sem->give();
 
     _bus->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&AP_Compass_AK09916::_update, void));

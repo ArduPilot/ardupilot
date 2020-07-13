@@ -6,14 +6,14 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Rangefinder type
     // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TeraRangerI2C,15:LidarLiteV3-I2C,16:VL53L0X,17:NMEA,18:WASP-LRF,19:BenewakeTF02,20:BenewakeTFmini,21:LidarLightV3HP,22:PWM,23:BlueRoboticsPing,24:UAVCAN,25:BenewakeTFMiniPlus
+    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLite-I2C,5:PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TeraRangerI2C,15:LidarLiteV3-I2C,16:VL53L0X or VL53L1X,17:NMEA,18:WASP-LRF,19:BenewakeTF02,20:Benewake-Serial,21:LidarLightV3HP,22:PWM,23:BlueRoboticsPing,24:UAVCAN,25:BenewakeTFminiPlus-I2C,26:LanbaoPSK-CM8JL65-CC5,27:BenewakeTF03,28:VL53L1X-ShortRange,29:LeddarVu8-Serial,30:HC-SR04,31:GYUS42v2
     // @User: Standard
-    AP_GROUPINFO("TYPE",    1, AP_RangeFinder_Params, type, 0),
+    AP_GROUPINFO_FLAGS("TYPE", 1, AP_RangeFinder_Params, type, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: PIN
     // @DisplayName: Rangefinder pin
-    // @Description: Analog pin that rangefinder is connected to. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
-    // @Values: -1:Not Used, 11:PX4-airspeed port, 15:Pixhawk-airspeed port
+    // @Description: Analog or PWM input pin that rangefinder is connected to.  Airspeed ports can be used for Analog input, AUXOUT can be used for PWM input
+    // @Values: -1:Not Used,11:PX4-airspeed port, 15:Pixhawk-airspeed port,50:Pixhawk AUXOUT1,51:Pixhawk AUXOUT2,52:Pixhawk AUXOUT3,53:Pixhawk AUXOUT4,54:Pixhawk AUXOUT5,55:Pixhawk AUXOUT6
     // @User: Standard
     AP_GROUPINFO("PIN",     2, AP_RangeFinder_Params, pin, -1),
 
@@ -27,7 +27,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
 
     // @Param: OFFSET
     // @DisplayName: rangefinder offset
-    // @Description: Offset in volts for zero distance for analog rangefinders. Offset added to distance in centimeters for PWM and I2C Lidars
+    // @Description: Offset in volts for zero distance for analog rangefinders. Offset added to distance in centimeters for PWM lidars
     // @Units: V
     // @Increment: 0.001
     // @User: Standard
@@ -58,18 +58,12 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
 
     // @Param: STOP_PIN
     // @DisplayName: Rangefinder stop pin
-    // @Description: Digital pin that enables/disables rangefinder measurement for an analog rangefinder. A value of -1 means no pin. If this is set, then the pin is set to 1 to enable the rangefinder and set to 0 to disable it. This can be used to ensure that multiple sonar rangefinders don't interfere with each other.
+    // @Description: Digital pin that enables/disables rangefinder measurement for the pwm rangefinder. A value of -1 means no pin. If this is set, then the pin is set to 1 to enable the rangefinder and set to 0 to disable it. This is used to enable powersaving when out of range.
     // @Values: -1:Not Used,50:Pixhawk AUXOUT1,51:Pixhawk AUXOUT2,52:Pixhawk AUXOUT3,53:Pixhawk AUXOUT4,54:Pixhawk AUXOUT5,55:Pixhawk AUXOUT6,111:PX4 FMU Relay1,112:PX4 FMU Relay2,113:PX4IO Relay1,114:PX4IO Relay2,115:PX4IO ACC1,116:PX4IO ACC2
     // @User: Standard
     AP_GROUPINFO("STOP_PIN", 8, AP_RangeFinder_Params, stop_pin, -1),
 
-    // @Param: SETTLE
-    // @DisplayName: Rangefinder settle time
-    // @Description: The time in milliseconds that the rangefinder reading takes to settle. This is only used when a STOP_PIN is specified. It determines how long we have to wait for the rangefinder to give a reading after we set the STOP_PIN high. For a sonar rangefinder with a range of around 7m this would need to be around 50 milliseconds to allow for the sonar pulse to travel to the target and back again.
-    // @Units: ms
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("SETTLE", 9, AP_RangeFinder_Params, settle_time_ms, 0),
+    // 9 was SETTLE
 
     // @Param: RMETRIC
     // @DisplayName: Ratiometric
@@ -105,20 +99,26 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
 
     // @Param: POS_X
     // @DisplayName:  X position offset
-    // @Description: X position of the first rangefinder in body frame. Positive X is forward of the origin. Use the zero range datum point if supplied.
+    // @Description: X position of the rangefinder in body frame. Positive X is forward of the origin. Use the zero range datum point if supplied.
     // @Units: m
+    // @Range: -5 5
+    // @Increment: 0.01
     // @User: Advanced
 
     // @Param: POS_Y
     // @DisplayName: Y position offset
-    // @Description: Y position of the first rangefinder in body frame. Positive Y is to the right of the origin. Use the zero range datum point if supplied.
+    // @Description: Y position of the rangefinder in body frame. Positive Y is to the right of the origin. Use the zero range datum point if supplied.
     // @Units: m
+    // @Range: -5 5
+    // @Increment: 0.01
     // @User: Advanced
 
     // @Param: POS_Z
     // @DisplayName: Z position offset
-    // @Description: Z position of the first rangefinder in body frame. Positive Z is down from the origin. Use the zero range datum point if supplied.
+    // @Description: Z position of the rangefinder in body frame. Positive Z is down from the origin. Use the zero range datum point if supplied.
     // @Units: m
+    // @Range: -5 5
+    // @Increment: 0.01
     // @User: Advanced
     AP_GROUPINFO("POS", 49, AP_RangeFinder_Params, pos_offset, 0.0f),
 

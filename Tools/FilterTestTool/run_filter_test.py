@@ -51,7 +51,7 @@ if not log_file:
     root = Tk()
     root.withdraw()
     root.focus_force()
-    log_file = askopenfilename(title="Select log file", filetypes=(("log files", ".bin .log"), ("all files", "*.*")))
+    log_file = askopenfilename(title="Select log file", filetypes=(("log files", ".BIN .bin .log"), ("all files", "*.*")))
     root.update()
     root.destroy()
 

@@ -17,7 +17,7 @@ class AP_Compass_MAG3110 : public AP_Compass_Backend
 {
 public:
     static AP_Compass_Backend *probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                                     enum Rotation = ROTATION_NONE);
+                                     enum Rotation rotation);
 
     static constexpr const char *name = "MAG3110";
 

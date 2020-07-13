@@ -24,6 +24,7 @@
 #include <utility>
 #include "OpticalFlow.h"
 #include <stdio.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -60,7 +61,9 @@ bool AP_OpticalFlow_PX4Flow::scan_buses(void)
     uint8_t retry_attempt = 0;
 
     while (!success && retry_attempt < PX4FLOW_INIT_RETRIES) {
-        FOREACH_I2C_EXTERNAL(bus) {
+        bool all_external = (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK2);
+        uint32_t bus_mask = all_external? hal.i2c_mgr->get_bus_mask() : hal.i2c_mgr->get_bus_mask_external();
+        FOREACH_I2C_MASK(bus, bus_mask) {
     #ifdef HAL_OPTFLOW_PX4FLOW_I2C_BUS
             // only one bus from HAL
             if (bus != HAL_OPTFLOW_PX4FLOW_I2C_BUS) {

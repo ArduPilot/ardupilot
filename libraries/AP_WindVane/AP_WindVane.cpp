@@ -23,11 +23,6 @@
 #include "AP_WindVane_SITL.h"
 #include "AP_WindVane_NMEA.h"
 
-#define WINDVANE_DEFAULT_PIN 15                     // default wind vane sensor analog pin
-#define WINDSPEED_DEFAULT_SPEED_PIN 14              // default pin for reading speed from ModernDevice rev p wind sensor
-#define WINDSPEED_DEFAULT_TEMP_PIN 13               // default pin for reading temperature from ModernDevice rev p wind sensor
-#define WINDSPEED_DEFAULT_VOLT_OFFSET 1.346         // default voltage offset between speed and temp pins from ModernDevice rev p wind sensor
-
 const AP_Param::GroupInfo AP_WindVane::var_info[] = {
 
     // @Param: TYPE
@@ -49,7 +44,7 @@ const AP_Param::GroupInfo AP_WindVane::var_info[] = {
     // @Param: DIR_PIN
     // @DisplayName: Wind vane analog voltage pin for direction
     // @Description: Analog input pin to read as wind vane direction
-    // @Values: 11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6,15:Pixhawk2 ADC,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6,103:Pixhawk SBUS
+    // @Values: 11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6/Pixhawk2 ADC,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6,103:Pixhawk SBUS
     // @User: Standard
     AP_GROUPINFO("DIR_PIN", 3, AP_WindVane, _dir_analog_pin, WINDVANE_DEFAULT_PIN),
 
@@ -123,14 +118,14 @@ const AP_Param::GroupInfo AP_WindVane::var_info[] = {
     // @Param: SPEED_PIN
     // @DisplayName: Wind vane speed sensor analog pin
     // @Description: Wind speed analog speed input pin for Modern Devices Wind Sensor rev. p
-    // @Values: 11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6,15:Pixhawk2 ADC,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6,103:Pixhawk SBUS
+    // @Values: 11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6/Pixhawk2 ADC,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6,103:Pixhawk SBUS
     // @User: Standard
     AP_GROUPINFO("SPEED_PIN", 12, AP_WindVane, _speed_sensor_speed_pin,  WINDSPEED_DEFAULT_SPEED_PIN),
 
     // @Param: TEMP_PIN
     // @DisplayName: Wind vane speed sensor analog temp pin
     // @Description: Wind speed sensor analog temp input pin for Modern Devices Wind Sensor rev. p, set to -1 to diasble temp readings
-    // @Values: 11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6,15:Pixhawk2 ADC,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6,103:Pixhawk SBUS
+    // @Values: 11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6/Pixhawk2 ADC,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6,103:Pixhawk SBUS
     // @User: Standard
     AP_GROUPINFO("TEMP_PIN", 13, AP_WindVane, _speed_sensor_temp_pin,  WINDSPEED_DEFAULT_TEMP_PIN),
 
@@ -177,6 +172,12 @@ AP_WindVane *AP_WindVane::get_singleton()
 bool AP_WindVane::enabled() const
 {
     return _direction_type != WINDVANE_NONE;
+}
+
+// return true if wind speed is enabled
+bool AP_WindVane::wind_speed_enabled() const
+{
+    return (_speed_sensor_type != WINDSPEED_NONE);
 }
 
 // Initialize the Wind Vane object and prepare it for use
@@ -287,7 +288,7 @@ void AP_WindVane::update()
         update_true_wind_speed_and_direction();
     } else {
         // no wind speed sensor, so can't do true wind calcs
-        _direction_absolute = _direction_apparent_ef;
+        _direction_true = _direction_apparent_ef;
         _speed_true = 0.0f;
         return;
     }
@@ -325,7 +326,7 @@ void AP_WindVane::send_wind(mavlink_channel_t chan)
     // send wind
     mavlink_msg_wind_send(
         chan,
-        wrap_360(degrees(get_absolute_wind_direction_rad())),
+        wrap_360(degrees(get_true_wind_direction_rad())),
         get_true_wind_speed(),
         0);
 }
@@ -338,7 +339,7 @@ void AP_WindVane::update_true_wind_speed_and_direction()
     Vector3f veh_velocity;
     if (!AP::ahrs().get_velocity_NED(veh_velocity)) {
         // if no vehicle speed use apparent speed and direction directly
-        _direction_absolute = _direction_apparent_ef;
+        _direction_true = _direction_apparent_ef;
         _speed_true = _speed_apparent;
         return;
     }
@@ -351,7 +352,7 @@ void AP_WindVane::update_true_wind_speed_and_direction()
     Vector2f wind_true_vec = Vector2f(wind_apparent_vec.x + veh_velocity.x, wind_apparent_vec.y + veh_velocity.y);
 
     // calculate true speed and direction
-    _direction_absolute = wrap_PI(atan2f(wind_true_vec.y, wind_true_vec.x) - radians(180));
+    _direction_true = wrap_PI(atan2f(wind_true_vec.y, wind_true_vec.x) - radians(180));
     _speed_true = wind_true_vec.length();
 }
 

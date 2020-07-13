@@ -35,6 +35,8 @@
 #include <AP_UAVCAN/AP_UAVCAN.h>
 #include <AP_KDECAN/AP_KDECAN.h>
 #include <AP_ToshibaCAN/AP_ToshibaCAN.h>
+#include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_PiccoloCAN/AP_PiccoloCAN.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -77,7 +79,7 @@ const AP_Param::GroupInfo AP_BoardConfig_CAN::var_info[] = {
     AP_SUBGROUPINFO(_drivers[2], "D3_", 6, AP_BoardConfig_CAN, AP_BoardConfig_CAN::Driver),
 #endif
 
-#if !HAL_MINIMIZE_FEATURES
+#if AP_UAVCAN_SLCAN_ENABLED
     // @Group: SLCAN_
     // @Path: ../AP_BoardConfig/canbus_slcan.cpp
     AP_SUBGROUPINFO(_slcan, "SLCAN_", 7, AP_BoardConfig_CAN, AP_BoardConfig_CAN::SLCAN_Interface),
@@ -102,7 +104,7 @@ void AP_BoardConfig_CAN::init()
 {
     // Create all drivers that we need
     bool initret = true;
- #if !HAL_MINIMIZE_FEATURES
+#if AP_UAVCAN_SLCAN_ENABLED
     reset_slcan_serial();
 #endif
     for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_INTERFACES; i++) {
@@ -122,12 +124,12 @@ void AP_BoardConfig_CAN::init()
             // For this now existing driver (manager), start the physical interface
             if (hal.can_mgr[drv_num - 1] != nullptr) {
                 initret = initret && hal.can_mgr[drv_num - 1]->begin(_interfaces[i]._bitrate, i);
-                #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && !HAL_MINIMIZE_FEATURES
+#if AP_UAVCAN_SLCAN_ENABLED
                     if (_slcan._can_port == (i+1) && hal.can_mgr[drv_num - 1] != nullptr ) {
                         ChibiOS_CAN::CanDriver* drv = (ChibiOS_CAN::CanDriver*)hal.can_mgr[drv_num - 1]->get_driver();
-                        slcan_router().init(drv->getIface(i), drv->getUpdateEvent());
+                        ChibiOS_CAN::CanIface::slcan_router().init(drv->getIface(i), drv->getUpdateEvent());
                     }
-                #endif
+#endif
             } else {
                 printf("Failed to initialize can interface %d\n\r", i + 1);
             }
@@ -171,23 +173,52 @@ void AP_BoardConfig_CAN::init()
                 _drivers[i]._driver = _drivers[i]._tcan = new AP_ToshibaCAN;
 
                 if (_drivers[i]._driver == nullptr) {
-                    AP_BoardConfig::sensor_config_error("ToshibaCAN init failed");
+                    AP_BoardConfig::config_error("ToshibaCAN init failed");
                     continue;
                 }
+#if HAL_PICCOLO_CAN_ENABLE
+            } else if (prot_type == Protocol_Type_PiccoloCAN) {
+                _drivers[i]._driver = _drivers[i]._pcan = new AP_PiccoloCAN;
+
+                if (_drivers[i]._driver == nullptr) {
+                    AP_BoardConfig::config_error("PiccoloCAN init failed");
+                    continue;
+                }
+#endif
             } else {
                 continue;
             }
-#if !HAL_MINIMIZE_FEATURES
+#if AP_UAVCAN_SLCAN_ENABLED
             if (_slcan._can_port == 0) {
                 _drivers[i]._driver->init(i, true);
             } else {
                 _drivers[i]._driver->init(i, false);
             }
+#else
+            _drivers[i]._driver->init(i, true);
 #endif
         }
     }
+
+    // param count could have changed
+    AP_Param::invalidate_count();
 }
 
+#if AP_UAVCAN_SLCAN_ENABLED
+AP_HAL::UARTDriver *AP_BoardConfig_CAN::get_slcan_serial()
+{
+    if (_slcan._ser_port != -1) {
+        return AP::serialmanager().get_serial_by_id(_slcan._ser_port);
+    }
+    AP_HAL::UARTDriver *ser_port = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_SLCAN, 0);
+    if (ser_port != nullptr) {
+        if (ser_port->is_initialized()) {
+            return ser_port;
+        }
+    }
+    return nullptr;
+}
+#endif
 AP_BoardConfig_CAN& AP::can() {
     return *AP_BoardConfig_CAN::get_singleton();
 }

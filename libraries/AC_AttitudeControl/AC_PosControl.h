@@ -45,7 +45,7 @@ class AC_PosControl
 public:
 
     /// Constructor
-    AC_PosControl(const AP_AHRS_View& ahrs, const AP_InertialNav& inav,
+    AC_PosControl(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
                   const AP_Motors& motors, AC_AttitudeControl& attitude_control);
 
     ///
@@ -129,6 +129,9 @@ public:
     /// get_alt_error - returns altitude error in cm
     float get_alt_error() const;
 
+    /// get_vel_z_error_ratio - returns the proportion of error relative to the maximum request
+    float get_vel_z_control_ratio() const { return constrain_float(_vel_z_control_ratio, 0.0f, 1.0f); }
+    
     // returns horizontal error in cm
     float get_horizontal_error() const;
 
@@ -151,6 +154,9 @@ public:
     float get_leash_down_z() const { return _leash_down_z; }
     float get_leash_up_z() const { return _leash_up_z; }
 
+    /// freeze_ff_z - used to stop the feed forward being calculated during a known discontinuity
+    void freeze_ff_z() { _flags.freeze_ff_z = true; }
+
     ///
     /// xy position controller
     ///
@@ -163,6 +169,12 @@ public:
     ///     should be called once whenever significant changes to the position target are made
     ///     this does not update the xy target
     void init_xy_controller();
+
+    /// standby_xyz_reset - resets I terms and removes position error
+    ///     This function will let Loiter and Alt Hold continue to operate
+    ///     in the event that the flight controller is in control of the
+    ///     aircraft when in standby.
+    void standby_xyz_reset();
 
     /// set_max_accel_xy - set the maximum horizontal acceleration in cm/s/s
     ///     leash length will be recalculated
@@ -221,8 +233,8 @@ public:
     // overrides the velocity process variable for one timestep
     void override_vehicle_velocity_xy(const Vector2f& vel_xy) { _vehicle_horiz_vel = vel_xy; _flags.vehicle_horiz_vel_override = true; }
 
-    /// freeze_ff_z - used to stop the feed forward being calculated during a known discontinuity
-    void freeze_ff_z() { _flags.freeze_ff_z = true; }
+    // relax velocity controller by clearing velocity error and setting velocity target to current velocity
+    void relax_velocity_controller_xy();
 
     // is_active_xy - returns true if the xy position controller has been run very recently
     bool is_active_xy() const;
@@ -235,7 +247,6 @@ public:
     void set_target_to_stopping_point_xy();
 
     /// get_stopping_point_xy - calculates stopping point based on current position, velocity, vehicle acceleration
-    ///     distance_max allows limiting distance to stopping point
     ///     results placed in stopping_position vector
     ///     set_accel_xy() should be called before this method to set vehicle acceleration
     ///     set_leash_length() should have been called before this method
@@ -251,12 +262,6 @@ public:
 
     /// init_vel_controller_xyz - initialise the velocity controller - should be called once before the caller attempts to use the controller
     void init_vel_controller_xyz();
-
-    /// update_velocity_controller_xy - run the XY velocity controller - should be called at 100hz or higher
-    ///     velocity targets should we set using set_desired_velocity_xy() method
-    ///     callers should use get_roll() and get_pitch() methods and sent to the attitude controller
-    ///     throttle targets will be sent directly to the motors
-    void update_vel_controller_xy();
 
     /// update_velocity_controller_xyz - run the velocity controller - should be called at 100hz or higher
     ///     velocity targets should we set using set_desired_velocity_xyz() method
@@ -298,6 +303,9 @@ public:
                         char *failure_msg,
                         const uint8_t failure_msg_len);
 
+    // enable or disable high vibration compensation
+    void set_vibe_comp(bool on_off) { _vibe_comp_enabled = on_off; }
+
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
@@ -309,7 +317,6 @@ protected:
             uint16_t reset_desired_vel_to_pos   : 1;    // 1 if we should reset the rate_to_accel_xy step
             uint16_t reset_accel_to_lean_xy     : 1;    // 1 if we should reset the accel to lean angle step
             uint16_t reset_rate_to_accel_z      : 1;    // 1 if we should reset the rate_to_accel_z step
-            uint16_t reset_accel_to_throttle    : 1;    // 1 if we should reset the accel_to_throttle step of the z-axis controller
             uint16_t freeze_ff_z        : 1;    // 1 used to freeze velocity to accel feed forward for one iteration
             uint16_t use_desvel_ff_z    : 1;    // 1 to use z-axis desired velocity as feed forward into velocity step
             uint16_t vehicle_horiz_vel_override : 1; // 1 if we should use _vehicle_horiz_vel as our velocity process variable for one timestep
@@ -368,7 +375,7 @@ protected:
     void check_for_ekf_z_reset();
 
     // references to inertial nav and ahrs libraries
-    const AP_AHRS_View &        _ahrs;
+    AP_AHRS_View &        _ahrs;
     const AP_InertialNav&       _inav;
     const AP_Motors&            _motors;
     AC_AttitudeControl&         _attitude_control;
@@ -395,6 +402,7 @@ protected:
     float       _leash;                 // horizontal leash length in cm.  target will never be further than this distance from the vehicle
     float       _leash_down_z;          // vertical leash down in cm.  target will never be further than this distance below the vehicle
     float       _leash_up_z;            // vertical leash up in cm.  target will never be further than this distance above the vehicle
+    float       _vel_z_control_ratio = 2.0f;   // confidence that we have control in the vertical axis
 
     // output from controller
     float       _roll_target;           // desired roll angle in centi-degrees calculated by position controller
@@ -418,4 +426,7 @@ protected:
     // ekf reset handling
     uint32_t    _ekf_xy_reset_ms;      // system time of last recorded ekf xy position reset
     uint32_t    _ekf_z_reset_ms;       // system time of last recorded ekf altitude reset
+
+    // high vibration handling
+    bool        _vibe_comp_enabled;     // true when high vibration compensation is on
 };

@@ -59,13 +59,16 @@ public:
         MOTOR_FRAME_TYPE_DJI_X = 13, // X frame, DJI ordering
         MOTOR_FRAME_TYPE_CW_X = 14, // X frame, clockwise ordering
         MOTOR_FRAME_TYPE_I = 15, // (sideways H) octo only
+        MOTOR_FRAME_TYPE_NYT_PLUS = 16, // plus frame, no differential torque for yaw
+        MOTOR_FRAME_TYPE_NYT_X = 17, // X frame, no differential torque for yaw
+        MOTOR_FRAME_TYPE_BF_X_REV = 18, // X frame, betaflight ordering, reversed motors
     };
 
     // Constructor
     AP_Motors(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT);
 
     // singleton support
-    static AP_Motors *get_singleton(void) { return _singleton; }
+    static AP_Motors    *get_singleton(void) { return _singleton; }
 
     // check initialisation succeeded
     bool                initialised_ok() const { return _flags.initialised_ok; }
@@ -82,10 +85,13 @@ public:
 
     // set_roll, set_pitch, set_yaw, set_throttle
     void                set_roll(float roll_in) { _roll_in = roll_in; };        // range -1 ~ +1
+    void                set_roll_ff(float roll_in) { _roll_in_ff = roll_in; };    // range -1 ~ +1
     void                set_pitch(float pitch_in) { _pitch_in = pitch_in; };    // range -1 ~ +1
+    void                set_pitch_ff(float pitch_in) { _pitch_in_ff = pitch_in; };  // range -1 ~ +1
     void                set_yaw(float yaw_in) { _yaw_in = yaw_in; };            // range -1 ~ +1
+    void                set_yaw_ff(float yaw_in) { _yaw_in_ff = yaw_in; };      // range -1 ~ +1
     void                set_throttle(float throttle_in) { _throttle_in = throttle_in; };   // range 0 ~ 1
-    void                set_throttle_avg_max(float throttle_avg_max) { _throttle_avg_max = constrain_float(throttle_avg_max,0.0f,1.0f); };   // range 0 ~ 1
+    void                set_throttle_avg_max(float throttle_avg_max) { _throttle_avg_max = constrain_float(throttle_avg_max, 0.0f, 1.0f); };   // range 0 ~ 1
     void                set_throttle_filter_cutoff(float filt_hz) { _throttle_filter.set_cutoff_frequency(filt_hz); }
     void                set_forward(float forward_in) { _forward_in = forward_in; }; // range -1 ~ +1
     void                set_lateral(float lateral_in) { _lateral_in = lateral_in; };     // range -1 ~ +1
@@ -94,8 +100,9 @@ public:
     float               get_roll() const { return _roll_in; }
     float               get_pitch() const { return _pitch_in; }
     float               get_yaw() const { return _yaw_in; }
-    float               get_throttle() const { return constrain_float(_throttle_filter.get(),0.0f,1.0f); }
-    float               get_throttle_bidirectional() const { return constrain_float(2*(_throttle_filter.get()-0.5f),-1.0f,1.0f); }
+    float               get_throttle_out() const { return _throttle_out; }
+    float               get_throttle() const { return constrain_float(_throttle_filter.get(), 0.0f, 1.0f); }
+    float               get_throttle_bidirectional() const { return constrain_float(2 * (_throttle_filter.get() - 0.5f), -1.0f, 1.0f); }
     float               get_forward() const { return _forward_in; }
     float               get_lateral() const { return _lateral_in; }
     virtual float       get_throttle_hover() const = 0;
@@ -133,7 +140,8 @@ public:
 
     // structure for holding motor limit flags
     struct AP_Motors_limit {
-        uint8_t roll_pitch      : 1; // we have reached roll or pitch limit
+        uint8_t roll            : 1; // we have reached roll or pitch limit
+        uint8_t pitch           : 1; // we have reached roll or pitch limit
         uint8_t yaw             : 1; // we have reached yaw limit
         uint8_t throttle_lower  : 1; // we have reached throttle's lower limit
         uint8_t throttle_upper  : 1; // we have reached throttle's upper limit
@@ -177,6 +185,10 @@ public:
     // using copter motors for forward flight
     virtual float       get_roll_factor(uint8_t i) { return 0.0f; }
 
+    // This function required for tradheli. Tradheli initializes targets when going from unarmed to armed state.
+    // This function is overriden in motors_heli class.   Always true for multicopters.
+    virtual bool init_targets_on_arming() const { return true; }
+
     enum pwm_type { PWM_TYPE_NORMAL     = 0,
                     PWM_TYPE_ONESHOT    = 1,
                     PWM_TYPE_ONESHOT125 = 2,
@@ -189,7 +201,7 @@ public:
     
 protected:
     // output functions that should be overloaded by child classes
-    virtual void        output_armed_stabilizing()=0;
+    virtual void        output_armed_stabilizing() = 0;
     virtual void        rc_write(uint8_t chan, uint16_t pwm);
     virtual void        rc_write_angle(uint8_t chan, int16_t angle_cd);
     virtual void        rc_set_freq(uint32_t mask, uint16_t freq_hz);
@@ -215,9 +227,13 @@ protected:
     uint16_t            _loop_rate;                 // rate in Hz at which output() function is called (normally 400hz)
     uint16_t            _speed_hz;                  // speed in hz to send updates to motors
     float               _roll_in;                   // desired roll control from attitude controllers, -1 ~ +1
+    float               _roll_in_ff;                // desired roll feed forward control from attitude controllers, -1 ~ +1
     float               _pitch_in;                  // desired pitch control from attitude controller, -1 ~ +1
+    float               _pitch_in_ff;               // desired pitch feed forward control from attitude controller, -1 ~ +1
     float               _yaw_in;                    // desired yaw control from attitude controller, -1 ~ +1
+    float               _yaw_in_ff;                 // desired yaw feed forward control from attitude controller, -1 ~ +1
     float               _throttle_in;               // last throttle input from set_throttle caller
+    float               _throttle_out;              // throttle after mixing is complete
     float               _forward_in;                // last forward input from set_forward caller
     float               _lateral_in;                // last lateral input from set_lateral caller
     float               _throttle_avg_max;          // last throttle input from set_throttle_avg_max
@@ -246,4 +262,8 @@ protected:
 
 private:
     static AP_Motors *_singleton;
+};
+
+namespace AP {
+    AP_Motors *motors();
 };

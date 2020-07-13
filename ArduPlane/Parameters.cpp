@@ -105,8 +105,8 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: STICK_MIXING
     // @DisplayName: Stick Mixing
-    // @Description: When enabled, this adds user stick input to the control surfaces in auto modes, allowing the user to have some degree of flight control without changing modes.  There are two types of stick mixing available. If you set STICK_MIXING to 1 then it will use "fly by wire" mixing, which controls the roll and pitch in the same way that the FBWA mode does. This is the safest option if you usually fly ArduPlane in FBWA or FBWB mode. If you set STICK_MIXING to 2 then it will enable direct mixing mode, which is what the STABILIZE mode uses. That will allow for much more extreme maneuvers while in AUTO mode.
-    // @Values: 0:Disabled,1:FBWMixing,2:DirectMixing
+    // @Description: When enabled, this adds user stick input to the control surfaces in auto modes, allowing the user to have some degree of flight control without changing modes.  There are two types of stick mixing available. If you set STICK_MIXING to 1 then it will use "fly by wire" mixing, which controls the roll and pitch in the same way that the FBWA mode does. This is the safest option if you usually fly ArduPlane in FBWA or FBWB mode. If you set STICK_MIXING to 2 then it will enable direct mixing mode, which is what the STABILIZE mode uses. That will allow for much more extreme maneuvers while in AUTO mode. If you set STICK_MIXING to 3 then it will apply to the yaw while in quadplane modes only, such as while doing an automatic VTOL takeoff or landing.
+    // @Values: 0:Disabled,1:FBWMixing,2:DirectMixing,3:VTOL Yaw only
     // @User: Advanced
     GSCALAR(stick_mixing,           "STICK_MIXING",   STICK_MIXING_FBW),
 
@@ -359,7 +359,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: ARSPD_FBW_MAX
     // @DisplayName: Maximum Airspeed
-    // @Description: Maximum airspeed demanded in automatic throttle modes. Should be set slightly less than level flight speed at THR_MAX and also at least 50% above ARSPD_FBW_MAX to allow for accurate TECS altitude control.
+    // @Description: Maximum airspeed demanded in automatic throttle modes. Should be set slightly less than level flight speed at THR_MAX and also at least 50% above ARSPD_FBW_MIN to allow for accurate TECS altitude control.
     // @Units: m/s
     // @Range: 5 100
     // @Increment: 1
@@ -410,7 +410,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: THR_MAX
     // @DisplayName: Maximum Throttle
-    // @Description: Maximum throttle percentage used in automatic throttle modes.
+    // @Description: Maximum throttle percentage used in all modes except manual, provided THR_PASS_STAB is not set.
     // @Units: %
     // @Range: 0 100
     // @Increment: 1
@@ -538,49 +538,49 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: FLTMODE1
     // @DisplayName: FlightMode1
     // @Description: Flight mode for switch position 1 (910 to 1230 and above 2049)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO
     // @User: Standard
     GSCALAR(flight_mode1,           "FLTMODE1",       FLIGHT_MODE_1),
 
     // @Param: FLTMODE2
     // @DisplayName: FlightMode2
     // @Description: Flight mode for switch position 2 (1231 to 1360)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO
     // @User: Standard
     GSCALAR(flight_mode2,           "FLTMODE2",       FLIGHT_MODE_2),
 
     // @Param: FLTMODE3
     // @DisplayName: FlightMode3
     // @Description: Flight mode for switch position 3 (1361 to 1490)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO
     // @User: Standard
     GSCALAR(flight_mode3,           "FLTMODE3",       FLIGHT_MODE_3),
 
     // @Param: FLTMODE4
     // @DisplayName: FlightMode4
     // @Description: Flight mode for switch position 4 (1491 to 1620)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO
     // @User: Standard
     GSCALAR(flight_mode4,           "FLTMODE4",       FLIGHT_MODE_4),
 
     // @Param: FLTMODE5
     // @DisplayName: FlightMode5
     // @Description: Flight mode for switch position 5 (1621 to 1749)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO
     // @User: Standard
     GSCALAR(flight_mode5,           "FLTMODE5",       FLIGHT_MODE_5),
 
     // @Param: FLTMODE6
     // @DisplayName: FlightMode6
     // @Description: Flight mode for switch position 6 (1750 to 2049)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO
     // @User: Standard
     GSCALAR(flight_mode6,           "FLTMODE6",       FLIGHT_MODE_6),
 
     // @Param: INITIAL_MODE
     // @DisplayName: Initial flight mode
     // @Description: This selects the mode to start in on boot. This is useful for when you want to start in AUTO mode on boot without a receiver.
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO
     // @User: Advanced
     GSCALAR(initial_mode,        "INITIAL_MODE",     Mode::Number::MANUAL),
 
@@ -760,12 +760,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: User
     GSCALAR(FBWB_min_altitude_cm,   "ALT_HOLD_FBWCM", ALT_HOLD_FBW_CM),
 
-    // @Param: FLAP_IN_CHANNEL
-    // @DisplayName: Flap input channel
-    // @Description: An RC input channel to use for flaps control. If this is set to a RC channel number then that channel will be used for manual flaps control. When enabled, the percentage of flaps is taken as the percentage travel from the TRIM value of the channel to the MIN value of the channel. A value above the TRIM values will give inverse flaps (spoilers). This option needs to be enabled in conjunction with a FUNCTION setting on an output channel to one of the flap functions. When a FLAP_IN_CHANNEL is combined with auto-flaps the higher of the two flap percentages is taken.
-    // @User: User
-    GSCALAR(flapin_channel,         "FLAP_IN_CHANNEL",  0),
-
     // @Param: FLAP_1_PERCNT
     // @DisplayName: Flap 1 percentage
     // @Description: The percentage change in flap position when FLAP_1_SPEED is reached. Use zero to disable flaps
@@ -857,7 +851,8 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: CRASH_DETECT
     // @DisplayName: Crash Detection
-    // @Description: Automatically detect a crash during AUTO flight and perform the bitmask selected action(s). Disarm will turn off motor for safety and to help against burning out ESC and motor. Setting the mode to manual will help save the servos from burning out by overexerting if the aircraft crashed in an odd orientation such as upsidedown. Set to 0 to disable crash detection.
+    // @Description: Automatically detect a crash during AUTO flight and perform the bitmask selected action(s). Disarm will turn off motor for safety and to help against burning out ESC and motor. Set to 0 to disable crash detection.
+    // @Values: 0:Disabled
     // @Bitmask: 0:Disarm
     // @User: Advanced
     ASCALAR(crash_detection_enable,         "CRASH_DETECT",   0),
@@ -900,7 +895,7 @@ const AP_Param::Info Plane::var_info[] = {
 #endif
 
     // @Group: RNGFND
-    // @Path: ../libraries/AP_RangeFinder/RangeFinder.cpp
+    // @Path: ../libraries/AP_RangeFinder/AP_RangeFinder.cpp
     GOBJECT(rangefinder,            "RNGFND", RangeFinder),
 
     // @Param: RNGFND_LANDING
@@ -970,19 +965,19 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Group: SR0_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs._chan[0], gcs0,        "SR0_",     GCS_MAVLINK),
+    GOBJECTN(_gcs.chan_parameters[0], gcs0,        "SR0_",     GCS_MAVLINK_Parameters),
 
     // @Group: SR1_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs._chan[1],  gcs1,       "SR1_",     GCS_MAVLINK),
+    GOBJECTN(_gcs.chan_parameters[1],  gcs1,       "SR1_",     GCS_MAVLINK_Parameters),
 
     // @Group: SR2_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs._chan[2],  gcs2,       "SR2_",     GCS_MAVLINK),
+    GOBJECTN(_gcs.chan_parameters[2],  gcs2,       "SR2_",     GCS_MAVLINK_Parameters),
 
     // @Group: SR3_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs._chan[3],  gcs3,       "SR3_",     GCS_MAVLINK),
+    GOBJECTN(_gcs.chan_parameters[3],  gcs3,       "SR3_",     GCS_MAVLINK_Parameters),
 
     // @Group: INS_
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
@@ -1055,13 +1050,17 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(rally,  "RALLY_",       AP_Rally),
 
 #if AP_AHRS_NAVEKF_AVAILABLE
+#if HAL_NAVEKF2_AVAILABLE
     // @Group: EK2_
     // @Path: ../libraries/AP_NavEKF2/AP_NavEKF2.cpp
-    GOBJECTN(EKF2, NavEKF2, "EK2_", NavEKF2),
+    GOBJECTN(ahrs.EKF2, NavEKF2, "EK2_", NavEKF2),
+#endif
 
+#if HAL_NAVEKF3_AVAILABLE
     // @Group: EK3_
     // @Path: ../libraries/AP_NavEKF3/AP_NavEKF3.cpp
-    GOBJECTN(EKF3, NavEKF3, "EK3_", NavEKF3),
+    GOBJECTN(ahrs.EKF3, NavEKF3, "EK3_", NavEKF3),
+#endif
 #endif
 
     // @Group: RPM
@@ -1089,7 +1088,15 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/AP_OSD/AP_OSD.cpp
     GOBJECT(osd, "OSD", AP_OSD),
 #endif
-    
+
+    // @Group: TKOFF_
+    // @Path: mode_takeoff.cpp
+    GOBJECT(mode_takeoff, "TKOFF_", ModeTakeoff),
+
+    // @Group:
+    // @Path: ../libraries/AP_Vehicle/AP_Vehicle.cpp
+    { AP_PARAM_GROUP, "", Parameters::k_param_vehicle, (const void *)&plane, {group_info : AP_Vehicle::var_info} },
+
     AP_VAREND
 };
 
@@ -1100,7 +1107,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // @Group: BTN_
     // @Path: ../libraries/AP_Button/AP_Button.cpp
-    AP_SUBGROUPINFO(button, "BTN_", 1, ParametersG2, AP_Button),
+    AP_SUBGROUPPTR(button_ptr, "BTN_", 1, ParametersG2, AP_Button),
 
     // @Group: ICE_
     // @Path: ../libraries/AP_ICEngine/AP_ICEngine.cpp
@@ -1221,7 +1228,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: DSPOILER_OPTS
     // @DisplayName: Differential spoiler and crow flaps options
     // @Description: Differential spoiler and crow flaps options
-    // @Values: 0: none, 1: D spoilers have pitch input, 2: use both control surfaces on each wing for roll, 4: Progressive crow, flaps only first (0-50% flap in) then crow flaps (50 - 100% flap in)
+    // @Values: 0: none, 1: D spoilers have pitch input, 2: use both control surfaces on each wing for roll, 4: Progressive crow flaps only first (0-50% flap in) then crow flaps (50 - 100% flap in)
     // @Bitmask: 0:pitch control, 1:full span, 2:Progressive crow
     // @User: Advanced
     AP_GROUPINFO("DSPOILER_OPTS", 20, ParametersG2, crow_flap_options, 3),
@@ -1235,14 +1242,66 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DSPOILER_AILMTCH", 21, ParametersG2, crow_flap_aileron_matching, 100),
 
+#if EFI_ENABLED
+    // @Group: EFI
+    // @Path: ../libraries/AP_EFI/AP_EFI.cpp
+    AP_SUBGROUPINFO(efi, "EFI", 22, ParametersG2, AP_EFI),
+#endif
+
+    // @Param: FWD_BAT_VOLT_MAX
+    // @DisplayName: Forward throttle battery voltage compensation maximum voltage
+    // @Description: Forward throttle battery voltage compensation maximum voltage (voltage above this will have no additional scaling effect on thrust). Recommend 4.2 * cell count, 0 = Disabled. Recommend THR_MAX is set to no more than 100 x FWD_BAT_VOLT_MIN / FWD_BAT_VOLT_MAX, THR_MIN is set to no less than -100 x FWD_BAT_VOLT_MIN / FWD_BAT_VOLT_MAX and climb descent rate limits are set accordingly.
+    // @Range: 6 35
+    // @Units: V
+    // @User: Advanced
+    AP_GROUPINFO("FWD_BAT_VOLT_MAX", 23, ParametersG2, fwd_thr_batt_voltage_max, 0.0f),
+
+    // @Param: FWD_BAT_VOLT_MIN
+    // @DisplayName: Forward throttle battery voltage compensation minimum voltage
+    // @Description: Forward throttle battery voltage compensation minimum voltage (voltage below this will have no additional scaling effect on thrust).  Recommend 3.5 * cell count, 0 = Disabled. Recommend THR_MAX is set to no more than 100 x FWD_BAT_VOLT_MIN / FWD_BAT_VOLT_MAX, THR_MIN is set to no less than -100 x FWD_BAT_VOLT_MIN / FWD_BAT_VOLT_MAX and climb descent rate limits are set accordingly.
+    // @Range: 6 35
+    // @Units: V
+    // @User: Advanced
+    AP_GROUPINFO("FWD_BAT_VOLT_MIN", 24, ParametersG2, fwd_thr_batt_voltage_min, 0.0f),
+
+    // @Param: FWD_BAT_IDX
+    // @DisplayName: Forward throttle battery compensation index
+    // @Description: Which battery monitor should be used for doing compensation for the forward throttle
+    // @Values: 0:First battery, 1:Second battery
+    // @User: Advanced
+    AP_GROUPINFO("FWD_BAT_IDX", 25, ParametersG2, fwd_thr_batt_idx, 0),
+
+    // @Param: FS_EKF_THRESH
+    // @DisplayName: EKF failsafe variance threshold
+    // @Description: Allows setting the maximum acceptable compass and velocity variance used to check navigation health in VTOL modes
+    // @Values: 0.6:Strict, 0.8:Default, 1.0:Relaxed
+    // @User: Advanced
+    AP_GROUPINFO("FS_EKF_THRESH", 26, ParametersG2, fs_ekf_thresh, FS_EKF_THRESHOLD_DEFAULT),
+
+    // @Param: RTL_CLIMB_MIN
+    // @DisplayName: RTL minimum climb
+    // @Description: The vehicle will climb this many m during the initial climb portion of the RTL. During this time the roll will be limited to LEVEL_ROLL_LIMIT degrees.
+    // @Units: m
+    // @Range: 0 30
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("RTL_CLIMB_MIN", 27, ParametersG2, rtl_climb_min, 0),
+
+#if OFFBOARD_GUIDED == ENABLED
+    // @Group: GUIDED_
+    // @Path: ../libraries/AC_PID/AC_PID.cpp
+    AP_SUBGROUPINFO(guidedHeading, "GUIDED_", 28, ParametersG2, AC_PID),
+#endif // OFFBOARD_GUIDED == ENABLED
+
     AP_GROUPEND
 };
 
 ParametersG2::ParametersG2(void) :
     ice_control(plane.rpm_sensor)
 #if SOARING_ENABLED == ENABLED
-    ,soaring_controller(plane.ahrs, plane.TECS_controller, plane.aparm)
+    ,soaring_controller(plane.TECS_controller, plane.aparm)
 #endif
+    ,button_ptr(&plane.button)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -1302,8 +1361,8 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_fs_batt_mah,        0,      AP_PARAM_FLOAT, "BATT_LOW_MAH" },
 
     { Parameters::k_param_arming,             3,      AP_PARAM_INT8,  "ARMING_RUDDER" },
-
     { Parameters::k_param_compass_enabled_deprecated,       0,      AP_PARAM_INT8, "COMPASS_ENABLE" },
+    { Parameters::k_param_arming,           128,     AP_PARAM_INT16,  "ARMING_CHECK" },
 };
 
 void Plane::load_parameters(void)
@@ -1336,15 +1395,7 @@ void Plane::load_parameters(void)
     g2.servo_channels.set_default_function(CH_3, SRV_Channel::k_throttle);
     g2.servo_channels.set_default_function(CH_4, SRV_Channel::k_rudder);
         
-    const uint8_t old_rc_keys[14] = { Parameters::k_param_rc_1_old,  Parameters::k_param_rc_2_old,
-                                      Parameters::k_param_rc_3_old,  Parameters::k_param_rc_4_old,
-                                      Parameters::k_param_rc_5_old,  Parameters::k_param_rc_6_old,
-                                      Parameters::k_param_rc_7_old,  Parameters::k_param_rc_8_old,
-                                      Parameters::k_param_rc_9_old,  Parameters::k_param_rc_10_old,
-                                      Parameters::k_param_rc_11_old, Parameters::k_param_rc_12_old,
-                                      Parameters::k_param_rc_13_old, Parameters::k_param_rc_14_old };
-    const uint16_t old_aux_chan_mask = 0x3FF0;
-    SRV_Channels::upgrade_parameters(old_rc_keys, old_aux_chan_mask, &rcmap);
+    SRV_Channels::upgrade_parameters();
 
     // possibly convert elevon and vtail mixers
     convert_mixers();
@@ -1355,6 +1406,21 @@ void Plane::load_parameters(void)
     }
 
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_PLANE);
+
+    // Convert flap to RCx_OPTION
+    AP_Int8 flap_output;
+    AP_Param::ConversionInfo flap_info = {
+        Parameters::k_param_flapin_channel_old,
+        0,
+        AP_PARAM_INT8,
+        nullptr
+    };
+    if (AP_Param::find_old_parameter(&flap_info, &flap_output) && flap_output.get() != 0) {
+        RC_Channel *flapin = rc().channel(flap_output - 1);
+        if (flapin != nullptr && !flapin->option.configured()) {
+            flapin->option.set_and_save((int16_t)RC_Channel::AUX_FUNC::FLAP); // save the new param
+        }
+    }
 
     hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));
 }

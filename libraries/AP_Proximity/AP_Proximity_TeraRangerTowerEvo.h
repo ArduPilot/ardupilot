@@ -1,18 +1,15 @@
 #pragma once
 
 #include "AP_Proximity.h"
-#include "AP_Proximity_Backend.h"
+#include "AP_Proximity_Backend_Serial.h"
 
 #define PROXIMITY_TRTOWER_TIMEOUT_MS            300                               // requests timeout after 0.3 seconds
 
-class AP_Proximity_TeraRangerTowerEvo : public AP_Proximity_Backend {
+class AP_Proximity_TeraRangerTowerEvo : public AP_Proximity_Backend_Serial {
 
 public:
-    // constructor
-    AP_Proximity_TeraRangerTowerEvo(AP_Proximity &_frontend, AP_Proximity::Proximity_State &_state, AP_SerialManager &serial_manager);
 
-    // static detection function
-    static bool detect(AP_SerialManager &serial_manager);
+    using AP_Proximity_Backend_Serial::AP_Proximity_Backend_Serial;
 
     // update state
     void update(void) override;
@@ -38,7 +35,6 @@ private:
     };
     
     // reply related variables
-    AP_HAL::UARTDriver *uart = nullptr;
     uint8_t buffer[21]; // buffer where to store data from serial
     uint8_t buffer_count;
 

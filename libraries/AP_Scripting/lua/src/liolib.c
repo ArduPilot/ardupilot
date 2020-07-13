@@ -22,7 +22,9 @@
 #include "lauxlib.h"
 #include "lualib.h"
 
-
+#if defined(ARDUPILOT_BUILD)
+#pragma GCC diagnostic ignored "-Wunused-function"
+#endif
 
 
 /*
@@ -705,9 +707,9 @@ static const luaL_Reg iolib[] = {
   {"lines", io_lines},
   {"open", io_open},
   {"output", io_output},
-  {"popen", io_popen},
+//  {"popen", io_popen},
   {"read", io_read},
-  {"tmpfile", io_tmpfile},
+//  {"tmpfile", io_tmpfile},
   {"type", io_type},
   {"write", io_write},
   {NULL, NULL}

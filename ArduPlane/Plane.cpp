@@ -31,3 +31,4 @@ Plane::Plane(void)
 }
 
 Plane plane;
+AP_Vehicle& vehicle = plane;

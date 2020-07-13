@@ -10,16 +10,18 @@ import fnmatch
 import gen_stable
 import subprocess
 
-FIRMWARE_TYPES = ["AntennaTracker", "Copter", "Plane", "Rover", "Sub"]
+FIRMWARE_TYPES = ["AntennaTracker", "Copter", "Plane", "Rover", "Sub", "AP_Periph"]
 RELEASE_TYPES = ["beta", "latest", "stable", "stable-*", "dirty"]
 
 # mapping for board names to brand name and manufacturer
 brand_map = {
     'Pixhawk4' : ('Pixhawk 4', 'Holybro'),
-    'Pixhawk6' : ('Pixhawk 6', 'Holybro'),
+    'Pix32v5' :  ('Pix32 v5', 'Holybro'),
+    'Durandal' : ('Durandal', 'Holybro'),
     'PH4-mini' : ('Pixhawk 4 Mini', 'Holybro'),
     'KakuteF4' : ('KakuteF4', 'Holybro'),
     'KakuteF7' : ('KakuteF7', 'Holybro'),
+    'KakuteF7Mini' : ('KakuteF7Mini', 'Holybro'),
     'CubeBlack' : ('CubeBlack', 'Hex/ProfiCNC'),
     'CubeYellow' : ('CubeYellow', 'Hex/ProfiCNC'),
     'CubeOrange' : ('CubeOrange', 'Hex/ProfiCNC'),
@@ -28,6 +30,8 @@ brand_map = {
     'CubeGreen-solo' : ('CubeGreen Solo', 'Hex/ProfiCNC'),
     'CUAVv5' : ('CUAVv5', 'CUAV'),
     'CUAVv5Nano' : ('CUAVv5 Nano', 'CUAV'),
+    'CUAV-Nora' : ('CUAV Nora', 'CUAV'),
+    'CUAV-X7' : ('CUAV X7', 'CUAV'),
     'DrotekP3Pro' : ('Pixhawk 3 Pro', 'Drotek'),
     'MatekF405' : ('Matek F405', 'Matek'),
     'MatekF405-STD' : ('Matek F405 STD', 'Matek'),
@@ -37,6 +41,7 @@ brand_map = {
     'Pixracer' : ('PixRacer', 'mRobotics'),
     'mRoX21' : ('mRo X2.1', 'mRobotics'),
     'mRoX21-777' : ('mRo X2.1-777', 'mRobotics'),
+    'mRoNexus' : ('mRo Nexus', 'mRobotics'),
     'TBS-Colibri-F7' : ('Colibri F7', 'TBS'),
     'sparky2' : ('Sparky2', 'TauLabs'),
     'mindpx-v2' : ('MindPX V2', 'AirMind'),
@@ -94,7 +99,8 @@ class ManifestGenerator():
             "Plane": "FIXED_WING",
             "AntennaTracker": "ANTENNA_TRACKER",
             "Rover": "GROUND_ROVER",
-            "Sub": "SUBMARINE"
+            "Sub": "SUBMARINE",
+            "AP_Periph": "CAN_PERIPHERAL",
         }
         if frame in frame_to_mavlink_dict:
             return frame_to_mavlink_dict[frame]
@@ -178,14 +184,17 @@ class ManifestGenerator():
             'CubeYellow': ['0x2DAE/0x1002'],
             'Pixhawk4': ['0x3162/0x0047'],
             'PH4-mini': ['0x3162/0x0049'],
-            'Pixhawk6': ['0x3162/0x004B'],
+            'Durandal': ['0x3162/0x004B'],
             'VRBrain-v51': ['0x27AC/0x1151'],
             'VRBrain-v52': ['0x27AC/0x1152'],
             'VRBrain-v54': ['0x27AC/0x1154'],
             'VRCore-v10': ['0x27AC/0x1910'],
             'VRUBrain-v51': ['0x27AC/0x1351']
         }
-        if platform in USBID_MAP:
+        if 'USBID' in apj_json:
+            # newer APJ files have USBID in the json data
+            firmware['USBID'] = [apj_json['USBID']]
+        elif platform in USBID_MAP:
             firmware['USBID'] = USBID_MAP[platform]
         else:
             # all others use a single USB VID/PID
@@ -220,6 +229,11 @@ class ManifestGenerator():
             (brand_name, manufacturer) = brand_map[platform]
             firmware['brand_name'] = brand_name
             firmware['manufacturer'] = manufacturer
+        # copy over some extra information if available
+        extra_tags = [ 'image_size' ]
+        for tag in extra_tags:
+            if tag in apj_json:
+                firmware[tag] = apj_json[tag]
 
     def add_USB_IDs(self, firmware):
         '''add USB IDs to a firmware'''
@@ -284,7 +298,7 @@ class ManifestGenerator():
             try:
                 firmware_version = open(firmware_version_file).read()
                 firmware_version = firmware_version.strip()
-                (version_numbers, release_type) = firmware_version.split("-")
+                (_, _) = firmware_version.split("-")
             except ValueError:
                 print("malformed firmware-version.txt at (%s)" % (firmware_version_file,), file=sys.stderr)
                 continue
@@ -325,7 +339,7 @@ class ManifestGenerator():
 
                 filepath = os.path.join(some_dir, filename)
                 firmware_format = self.firmware_format_for_filepath(filepath)
-                if firmware_format not in [ "ELF", "abin", "apj", "hex", "px4" ]:
+                if firmware_format not in [ "ELF", "abin", "apj", "hex", "px4", "bin" ]:
                     print("Unknown firmware format (%s)" % firmware_format)
 
                 firmware = Firmware()
@@ -467,7 +481,7 @@ class ManifestGenerator():
                   file=sys.stderr)
 
         structure = self.walk_directory(self.basedir)
-        return json.dumps(structure, indent=4)
+        return json.dumps(structure, indent=4, separators=(',', ': '))
 
 
 def usage():
@@ -480,7 +494,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='generate manifest.json')
 
     parser.add_argument('--outfile', type=str, default=None, help='output file, default stdout')
-    parser.add_argument('--baseurl', type=str, default="http://firmware.ardupilot.org", help='base binaries directory')
+    parser.add_argument('--baseurl', type=str, default="https://firmware.ardupilot.org", help='base binaries directory')
     parser.add_argument('basedir', type=str, default="-", help='base binaries directory')
 
     args = parser.parse_args()

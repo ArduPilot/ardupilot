@@ -51,7 +51,7 @@ enum class SocketCanError
 #define CAN_MAX_INIT_TRIES_COUNT 100
 #define CAN_FILTER_NUMBER 8
 
-class CAN: public AP_HAL::CAN {
+class CAN: public AP_HAL::CANHal {
 public:
     CAN(int socket_fd=0)
       : _fd(socket_fd)

@@ -42,11 +42,11 @@ float AC_PrecLand_Companion::distance_to_target()
     return _distance_to_target;
 }
 
-void AC_PrecLand_Companion::handle_msg(mavlink_message_t* msg)
+void AC_PrecLand_Companion::handle_msg(const mavlink_message_t &msg)
 {
     // parse mavlink message
     __mavlink_landing_target_t packet;
-    mavlink_msg_landing_target_decode(msg, &packet);
+    mavlink_msg_landing_target_decode(&msg, &packet);
 
     _timestamp_us = packet.time_usec;
     _distance_to_target = packet.distance;

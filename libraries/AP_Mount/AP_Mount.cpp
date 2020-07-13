@@ -7,6 +7,7 @@
 #include "AP_Mount_Alexmos.h"
 #include "AP_Mount_SToRM32.h"
 #include "AP_Mount_SToRM32_serial.h"
+#include <AP_Math/location.h>
 
 const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _DEFLT_MODE
@@ -393,8 +394,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     AP_GROUPEND
 };
 
-AP_Mount::AP_Mount(const struct Location &current_loc) :
-    _current_loc(current_loc)
+AP_Mount::AP_Mount()
 {
     if (_singleton != nullptr) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -408,7 +408,7 @@ AP_Mount::AP_Mount(const struct Location &current_loc) :
 }
 
 // init - detect and initialise all mounts
-void AP_Mount::init(const AP_SerialManager& serial_manager)
+void AP_Mount::init()
 {
     // check init has not been called before
     if (_num_instances != 0) {
@@ -466,7 +466,7 @@ void AP_Mount::init(const AP_SerialManager& serial_manager)
 
         // init new instance
         if (_backends[instance] != nullptr) {
-            _backends[instance]->init(serial_manager);
+            _backends[instance]->init();
             if (!primary_set) {
                 _primary = instance;
                 primary_set = true;
@@ -598,28 +598,55 @@ MAV_RESULT AP_Mount::handle_command_long(const mavlink_command_long_t &packet)
 }
 
 /// Change the configuration of the mount
-void AP_Mount::handle_mount_configure(const mavlink_message_t *msg)
+void AP_Mount::handle_global_position_int(const mavlink_message_t &msg)
+{
+    mavlink_global_position_int_t packet;
+    mavlink_msg_global_position_int_decode(&msg, &packet);
+
+    if (!check_latlng(packet.lat, packet.lon)) {
+        return;
+    }
+
+    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
+        if (_backends[instance] == nullptr) {
+            continue;
+        }
+        struct mount_state &_state = state[instance];
+        if (_state._target_sysid != msg.sysid) {
+            continue;
+        }
+        _state._target_sysid_location.lat = packet.lat;
+        _state._target_sysid_location.lng = packet.lon;
+        // global_position_int.alt is *UP*, so is location.
+        _state._target_sysid_location.set_alt_cm(packet.alt*0.1,
+                                                 Location::AltFrame::ABSOLUTE);
+        _state._target_sysid_location_set = true;
+    }
+}
+
+/// Change the configuration of the mount
+void AP_Mount::handle_mount_configure(const mavlink_message_t &msg)
 {
     if (_primary >= AP_MOUNT_MAX_INSTANCES || _backends[_primary] == nullptr) {
         return;
     }
 
     mavlink_mount_configure_t packet;
-    mavlink_msg_mount_configure_decode(msg, &packet);
+    mavlink_msg_mount_configure_decode(&msg, &packet);
 
     // send message to backend
     _backends[_primary]->handle_mount_configure(packet);
 }
 
 /// Control the mount (depends on the previously set mount configuration)
-void AP_Mount::handle_mount_control(const mavlink_message_t *msg)
+void AP_Mount::handle_mount_control(const mavlink_message_t &msg)
 {
     if (_primary >= AP_MOUNT_MAX_INSTANCES || _backends[_primary] == nullptr) {
         return;
     }
 
     mavlink_mount_control_t packet;
-    mavlink_msg_mount_control_decode(msg, &packet);
+    mavlink_msg_mount_control_decode(&msg, &packet);
 
     // send message to backend
     _backends[_primary]->handle_mount_control(packet);
@@ -636,6 +663,15 @@ void AP_Mount::send_mount_status(mavlink_channel_t chan)
     }
 }
 
+// point at system ID sysid
+void AP_Mount::set_target_sysid(uint8_t instance, uint8_t sysid)
+{
+    // call instance's set_roi_cmd
+    if (instance < AP_MOUNT_MAX_INSTANCES && _backends[instance] != nullptr) {
+        _backends[instance]->set_target_sysid(sysid);
+    }
+}
+
 // set_roi_target - sets target location that mount should attempt to point towards
 void AP_Mount::set_roi_target(uint8_t instance, const struct Location &target_loc)
 {
@@ -646,7 +682,7 @@ void AP_Mount::set_roi_target(uint8_t instance, const struct Location &target_lo
 }
 
 // pass a GIMBAL_REPORT message to the backend
-void AP_Mount::handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t *msg)
+void AP_Mount::handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg)
 {
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         if (_backends[instance] != nullptr) {
@@ -655,9 +691,9 @@ void AP_Mount::handle_gimbal_report(mavlink_channel_t chan, const mavlink_messag
     }
 }
 
-void AP_Mount::handle_message(mavlink_channel_t chan, const mavlink_message_t *msg)
+void AP_Mount::handle_message(mavlink_channel_t chan, const mavlink_message_t &msg)
 {
-    switch (msg->msgid) {
+    switch (msg.msgid) {
     case MAVLINK_MSG_ID_GIMBAL_REPORT:
         handle_gimbal_report(chan, msg);
         break;
@@ -666,6 +702,9 @@ void AP_Mount::handle_message(mavlink_channel_t chan, const mavlink_message_t *m
         break;
     case MAVLINK_MSG_ID_MOUNT_CONTROL:
         handle_mount_control(msg);
+        break;
+    case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
+        handle_global_position_int(msg);
         break;
     default:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -676,7 +715,7 @@ void AP_Mount::handle_message(mavlink_channel_t chan, const mavlink_message_t *m
 }
 
 // handle PARAM_VALUE
-void AP_Mount::handle_param_value(const mavlink_message_t *msg)
+void AP_Mount::handle_param_value(const mavlink_message_t &msg)
 {
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         if (_backends[instance] != nullptr) {

@@ -4,19 +4,21 @@
 // returns desired yaw rate in centi-degrees per second
 float Copter::get_pilot_desired_yaw_rate(int16_t stick_angle)
 {
+    // throttle failsafe check
+    if (failsafe.radio || !ap.rc_receiver_present) {
+        return 0.0f;
+    }
     float yaw_request;
 
+    // range check expo
+    g2.acro_y_expo = constrain_float(g2.acro_y_expo, 0.0f, 1.0f);
+
     // calculate yaw rate request
-    if (g2.acro_y_expo <= 0) {
+    if (is_zero(g2.acro_y_expo)) {
         yaw_request = stick_angle * g.acro_yaw_p;
     } else {
         // expo variables
         float y_in, y_in3, y_out;
-
-        // range check expo
-        if (g2.acro_y_expo > 1.0f || g2.acro_y_expo < 0.5f) {
-            g2.acro_y_expo = 1.0f;
-        }
 
         // yaw expo
         y_in = float(stick_angle)/ROLL_PITCH_YAW_INPUT_MAX;
@@ -43,7 +45,7 @@ void Copter::update_throttle_hover()
     }
 
     // do not update in manual throttle modes or Drift
-    if (flightmode->has_manual_throttle() || (control_mode == DRIFT)) {
+    if (flightmode->has_manual_throttle() || (control_mode == Mode::Number::DRIFT)) {
         return;
     }
 
@@ -56,9 +58,13 @@ void Copter::update_throttle_hover()
     float throttle = motors->get_throttle();
 
     // calc average throttle if we are in a level hover
-    if (throttle > 0.0f && abs(inertial_nav.get_velocity_z()) < 60 && labs(ahrs.roll_sensor) < 500 && labs(ahrs.pitch_sensor) < 500) {
+    if (throttle > 0.0f && fabsf(inertial_nav.get_velocity_z()) < 60 &&
+        labs(ahrs.roll_sensor) < 500 && labs(ahrs.pitch_sensor) < 500) {
         // Can we set the time constant automatically
         motors->update_throttle_hover(0.01f);
+#if HAL_GYROFFT_ENABLED
+        gyro_fft.update_freq_hover(0.01f, motors->get_throttle_out());
+#endif
     }
 #endif
 }
@@ -75,7 +81,7 @@ void Copter::set_throttle_takeoff()
 float Copter::get_pilot_desired_climb_rate(float throttle_control)
 {
     // throttle failsafe check
-    if (failsafe.radio) {
+    if (failsafe.radio || !ap.rc_receiver_present) {
         return 0.0f;
     }
 
@@ -117,93 +123,6 @@ float Copter::get_pilot_desired_climb_rate(float throttle_control)
 float Copter::get_non_takeoff_throttle()
 {
     return MAX(0,motors->get_throttle_hover()/2.0f);
-}
-
-// get_surface_tracking_climb_rate - hold copter at the desired distance above the ground
-//      returns climb rate (in cm/s) which should be passed to the position controller
-float Copter::get_surface_tracking_climb_rate(int16_t target_rate)
-{
-#if RANGEFINDER_ENABLED == ENABLED
-    if (!copter.rangefinder_alt_ok()) {
-        // if rangefinder is not ok, do not use surface tracking
-        return target_rate;
-    }
-
-    const float current_alt = inertial_nav.get_altitude();
-    const float current_alt_target = pos_control->get_alt_target();
-    float distance_error;
-    float velocity_correction;
-
-    uint32_t now = millis();
-
-    surface_tracking.valid_for_logging = true;
-
-    // reset target altitude if this controller has just been engaged
-    if (now - surface_tracking.last_update_ms > SURFACE_TRACKING_TIMEOUT_MS) {
-        surface_tracking.target_alt_cm = rangefinder_state.alt_cm + current_alt_target - current_alt;
-    }
-    surface_tracking.last_update_ms = now;
-
-    // adjust rangefinder target alt if motors have not hit their limits
-    if ((target_rate<0 && !motors->limit.throttle_lower) || (target_rate>0 && !motors->limit.throttle_upper)) {
-        surface_tracking.target_alt_cm += target_rate * G_Dt;
-    }
-
-    /*
-      handle rangefinder glitches. When we get a rangefinder reading
-      more than RANGEFINDER_GLITCH_ALT_CM different from the current
-      rangefinder reading then we consider it a glitch and reject
-      until we get RANGEFINDER_GLITCH_NUM_SAMPLES samples in a
-      row. When that happens we reset the target altitude to the new
-      reading
-     */
-    int32_t glitch_cm = rangefinder_state.alt_cm - surface_tracking.target_alt_cm;
-    if (glitch_cm >= RANGEFINDER_GLITCH_ALT_CM) {
-        rangefinder_state.glitch_count = MAX(rangefinder_state.glitch_count+1,1);
-    } else if (glitch_cm <= -RANGEFINDER_GLITCH_ALT_CM) {
-        rangefinder_state.glitch_count = MIN(rangefinder_state.glitch_count-1,-1);
-    } else {
-        rangefinder_state.glitch_count = 0;
-    }
-    if (abs(rangefinder_state.glitch_count) >= RANGEFINDER_GLITCH_NUM_SAMPLES) {
-        // shift to the new rangefinder reading
-        surface_tracking.target_alt_cm = rangefinder_state.alt_cm;
-        rangefinder_state.glitch_count = 0;
-    }
-    if (rangefinder_state.glitch_count != 0) {
-        // we are currently glitching, just use the target rate
-        return target_rate;
-    }
-
-    // calc desired velocity correction from target rangefinder alt vs actual rangefinder alt (remove the error already passed to Altitude controller to avoid oscillations)
-    distance_error = (surface_tracking.target_alt_cm - rangefinder_state.alt_cm) - (current_alt_target - current_alt);
-    velocity_correction = distance_error * g.rangefinder_gain;
-    velocity_correction = constrain_float(velocity_correction, -SURFACE_TRACKING_VELZ_MAX, SURFACE_TRACKING_VELZ_MAX);
-
-    // return combined pilot climb rate + rate to correct rangefinder alt error
-    return (target_rate + velocity_correction);
-#else
-    return (float)target_rate;
-#endif
-}
-
-// get surfacing tracking alt
-// returns true if there is a valid target
-bool Copter::get_surface_tracking_target_alt_cm(float &target_alt_cm) const
-{
-    // check target has been updated recently
-    if (AP_HAL::millis() - surface_tracking.last_update_ms > SURFACE_TRACKING_TIMEOUT_MS) {
-        return false;
-    }
-    target_alt_cm = surface_tracking.target_alt_cm;
-    return true;
-}
-
-// set surface tracking target altitude
-void Copter::set_surface_tracking_target_alt_cm(float target_alt_cm)
-{
-    surface_tracking.target_alt_cm = target_alt_cm;
-    surface_tracking.last_update_ms = AP_HAL::millis();
 }
 
 // get target climb rate reduced to avoid obstacles and altitude fence

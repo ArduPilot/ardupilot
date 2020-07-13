@@ -7,10 +7,10 @@ The Pixhawk4 flight controller is sold by [Holybro](http://www.holybro.com/produ
  - STM32F765 microcontroller
  - Two IMUs: ICM20689 and BMI055
  - MS5611 SPI barometer
- - builtin SPI IST8310 magnetometer
+ - builtin I2C IST8310 magnetometer
  - microSD card slot
  - 6 UARTs plus USB
- - 14 PWM outputs
+ - 16 PWM outputs
  - Four I2C and two CAN ports
  - External Buzzer
  - external safety Switch
@@ -27,7 +27,7 @@ The Pixhawk4 flight controller is sold by [Holybro](http://www.holybro.com/produ
  - SERIAL1 -> UART2 (Telem1)
  - SERIAL2 -> UART3 (Telem2)
  - SERIAL3 -> UART1 (GPS)
- - SERIAL4 -> UART4 (GPS2)
+ - SERIAL4 -> UART4 (GPS2, marked UART/I2CB)
  - SERIAL5 -> UART6 (spare)
  - SERIAL6 -> UART7 (spare, debug)
 
@@ -157,7 +157,7 @@ outputs support all PWM output formats, but not DShot.
 
 The remaining 8 outputs (labelled AUX1 to AUX8) are the "auxillary"
 outputs. These are directly attached to the STM32F765 and support all
-PWM protocols. The first 6 of the auxillary PWM outputs support DShot.
+PWM protocols. The first 4 of the auxillary PWM outputs support DShot.
 
 The 8 main PWM outputs are in 3 groups:
 
@@ -165,7 +165,7 @@ The 8 main PWM outputs are in 3 groups:
  - PWM 3 and 4 in group2
  - PWM 5, 6, 7 and 8 in group3
 
-The 8 auxillary PWM outputs are in 2 groups:
+The 8 auxillary PWM outputs are in 3 groups:
 
  - PWM 1, 2, 3 and 4 in group1
  - PWM 5 and 6 in group2

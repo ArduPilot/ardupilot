@@ -44,6 +44,9 @@ public:
     // set which target to follow
     void set_target_sysid(uint8_t sysid) { _sysid = sysid; }
 
+    // restore offsets to zero if necessary, should be called when vehicle exits follow mode
+    void clear_offsets_if_required();
+
     //
     // position tracking related methods
     //
@@ -122,8 +125,9 @@ private:
     uint32_t _last_heading_update_ms;   // system time of last heading update
     float _target_heading;          // heading in degrees
     bool _automatic_sysid;          // did we lock onto a sysid automatically?
-    float   _dist_to_target;        // latest distance to target in meters (for reporting purposes)
-    float   _bearing_to_target;     // latest bearing to target in degrees (for reporting purposes)
+    float _dist_to_target;          // latest distance to target in meters (for reporting purposes)
+    float _bearing_to_target;       // latest bearing to target in degrees (for reporting purposes)
+    bool _offsets_were_zero;        // true if offsets were originally zero and then initialised to the offset from lead vehicle
 
     // setup jitter correction with max transport lag of 3s
     JitterCorrection _jitter{3000};

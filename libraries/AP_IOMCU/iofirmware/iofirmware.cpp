@@ -32,7 +32,7 @@ extern const AP_HAL::HAL &hal;
 // we build this file with optimisation to lower the interrupt
 // latency. This helps reduce the chance of losing an RC input byte
 // due to missing a UART interrupt
-#pragma GCC optimize("O3")
+#pragma GCC optimize("O2")
 
 static AP_IOMCU_FW iomcu;
 
@@ -49,11 +49,6 @@ enum ioevents {
     IOEVENT_PWM=1,
 };
 
-static struct {
-    uint32_t num_code_read, num_bad_crc, num_write_pkt, num_unknown_pkt;
-    uint32_t num_idle_rx, num_dma_complete_rx, num_total_rx, num_rx_error;
-} stats;
-
 static void dma_rx_end_cb(UARTDriver *uart)
 {
     osalSysLockFromISR();
@@ -66,8 +61,6 @@ static void dma_rx_end_cb(UARTDriver *uart)
     dmaStreamDisable(uart->dmatx);
 
     iomcu.process_io_packet();
-    stats.num_total_rx++;
-    stats.num_dma_complete_rx = stats.num_total_rx - stats.num_idle_rx;
 
     dmaStreamSetMemory0(uart->dmarx, &iomcu.rx_io_packet);
     dmaStreamSetTransactionSize(uart->dmarx, sizeof(iomcu.rx_io_packet));
@@ -97,7 +90,8 @@ static void idle_rx_handler(UARTDriver *uart)
         osalSysLockFromISR();
         uart->usart->SR = ~USART_SR_LBD;
         uart->usart->CR1 |= USART_CR1_SBK;
-        stats.num_rx_error++;
+        iomcu.reg_status.num_errors++;
+        iomcu.reg_status.err_uart++;
         uart->usart->CR3 &= ~(USART_CR3_DMAT | USART_CR3_DMAR);
         (void)uart->usart->SR;
         (void)uart->usart->DR;
@@ -117,7 +111,6 @@ static void idle_rx_handler(UARTDriver *uart)
 
     if (sr & USART_SR_IDLE) {
         dma_rx_end_cb(uart);
-        stats.num_idle_rx++;
     }
 }
 
@@ -171,8 +164,6 @@ void AP_IOMCU_FW::init()
         has_heater = true;
     }
 
-    //Set Heater PWM Polarity, 0 for Active Low and 1 for Active High
-    heater_pwm_polarity = !palReadLine(HAL_GPIO_PIN_HEATER);
     //Set Heater pin mode
     if (heater_pwm_polarity) {
         palSetLineMode(HAL_GPIO_PIN_HEATER, PAL_MODE_OUTPUT_PUSHPULL);
@@ -295,9 +286,12 @@ void AP_IOMCU_FW::heater_update()
         // turn off the heater
         HEATER_SET(!heater_pwm_polarity);
     } else {
-        uint8_t cycle = ((now / 10UL) % 100U);
-        //Turn off heater when cycle is greater than specified duty cycle
-        HEATER_SET((cycle >= reg_setup.heater_duty_cycle) ? !heater_pwm_polarity : heater_pwm_polarity);
+        // we use a pseudo random sequence to dither the cycling as
+        // the heater has a significant effect on the internal
+        // magnetometers. The random generator dithers this so we don't get a 1Hz cycly in the magnetometer.
+        // The impact on the mags is about 25 mGauss.
+        bool heater_on = (get_random16() < uint32_t(reg_setup.heater_duty_cycle) * 0xFFFFU / 100U);
+        HEATER_SET(heater_on? heater_pwm_polarity : !heater_pwm_polarity);
     }
 }
 
@@ -307,12 +301,11 @@ void AP_IOMCU_FW::rcin_update()
     if (hal.rcin->new_input()) {
         rc_input.count = hal.rcin->num_channels();
         rc_input.flags_rc_ok = true;
-        for (uint8_t i = 0; i < IOMCU_MAX_CHANNELS; i++) {
-            rc_input.pwm[i] = hal.rcin->read(i);
-        }
-        rc_input.last_input_ms = last_ms;
-        rc_input.data = (uint16_t)rcprotocol->protocol_detected();
-    } else if (last_ms - rc_input.last_input_ms > 200U) {
+        hal.rcin->read(rc_input.pwm, IOMCU_MAX_CHANNELS);
+        rc_last_input_ms = last_ms;
+        rc_input.rc_protocol = (uint16_t)AP::RC().protocol_detected();
+        rc_input.rssi = AP::RC().get_RSSI();
+    } else if (last_ms - rc_last_input_ms > 200U) {
         rc_input.flags_rc_ok = false;
     }
     if (update_rcout_freq) {
@@ -321,6 +314,7 @@ void AP_IOMCU_FW::rcin_update()
     }
     if (update_default_rate) {
         hal.rcout->set_default_rate(reg_setup.pwm_defaultrate);
+        update_default_rate = false;
     }
 
     bool old_override = override_active;
@@ -344,6 +338,8 @@ void AP_IOMCU_FW::rcin_update()
 
 void AP_IOMCU_FW::process_io_packet()
 {
+    iomcu.reg_status.total_pkts++;
+
     uint8_t rx_crc = rx_io_packet.crc;
     uint8_t calc_crc;
     rx_io_packet.crc = 0;
@@ -364,12 +360,12 @@ void AP_IOMCU_FW::process_io_packet()
         tx_io_packet.page = 0;
         tx_io_packet.offset = 0;
         tx_io_packet.crc =  crc_crc8((const uint8_t *)&tx_io_packet, tx_io_packet.get_size());
-        stats.num_bad_crc++;
+        iomcu.reg_status.num_errors++;
+        iomcu.reg_status.err_crc++;
         return;
     }
     switch (rx_io_packet.code) {
     case CODE_READ: {
-        stats.num_code_read++;
         if (!handle_code_read()) {
             tx_io_packet.count = 0;
             tx_io_packet.code = CODE_ERROR;
@@ -377,11 +373,12 @@ void AP_IOMCU_FW::process_io_packet()
             tx_io_packet.page = 0;
             tx_io_packet.offset = 0;
             tx_io_packet.crc =  crc_crc8((const uint8_t *)&tx_io_packet, tx_io_packet.get_size());
+            iomcu.reg_status.num_errors++;
+            iomcu.reg_status.err_read++;
         }
     }
     break;
     case CODE_WRITE: {
-        stats.num_write_pkt++;
         if (!handle_code_write()) {
             tx_io_packet.count = 0;
             tx_io_packet.code = CODE_ERROR;
@@ -389,11 +386,14 @@ void AP_IOMCU_FW::process_io_packet()
             tx_io_packet.page = 0;
             tx_io_packet.offset = 0;
             tx_io_packet.crc =  crc_crc8((const uint8_t *)&tx_io_packet, tx_io_packet.get_size());
+            iomcu.reg_status.num_errors++;
+            iomcu.reg_status.err_write++;
         }
     }
     break;
     default: {
-        stats.num_unknown_pkt++;
+        iomcu.reg_status.num_errors++;
+        iomcu.reg_status.err_bad_opcode++;
     }
     break;
     }
@@ -557,7 +557,7 @@ bool AP_IOMCU_FW::handle_code_write()
                 dsm_bind_state = 1;
             }
             break;
-            
+
         default:
             break;
         }
@@ -584,8 +584,6 @@ bool AP_IOMCU_FW::handle_code_write()
             i++;
         }
         fmu_data_received_time = last_ms;
-        reg_status.flag_fmu_ok = true;
-        reg_status.flag_raw_pwm = true;
         chEvtSignalI(thread_ctx, EVENT_MASK(IOEVENT_PWM));
         break;
     }
@@ -644,7 +642,7 @@ void AP_IOMCU_FW::calculate_fw_crc(void)
 
     for (unsigned p = 0; p < APP_SIZE_MAX; p += 4) {
         uint32_t bytes = *(uint32_t *)(p + APP_LOAD_ADDRESS);
-        sum = crc_crc32(sum, (const uint8_t *)&bytes, sizeof(bytes));
+        sum = crc32_small(sum, (const uint8_t *)&bytes, sizeof(bytes));
     }
 
     reg_setup.crc[0] = sum & 0xFFFF;
@@ -751,6 +749,3 @@ void AP_IOMCU_FW::fill_failsafe_pwm(void)
 }
 
 AP_HAL_MAIN();
-
-
-

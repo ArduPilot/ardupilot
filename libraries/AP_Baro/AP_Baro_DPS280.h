@@ -30,14 +30,19 @@ private:
 
     void fix_config_bits16(int16_t &v, uint8_t bits) const;
     void fix_config_bits32(int32_t &v, uint8_t bits) const;
+    void set_config_registers(void);
+    void check_health();
 
     AP_HAL::OwnPtr<AP_HAL::Device> dev;
 
     uint8_t instance;
 
     uint32_t count;
+    uint8_t err_count;
     float pressure_sum;
     float temperature_sum;
+    float last_temperature;
+    bool pending_reset;
 
     struct dps280_cal {
         int16_t C0;  // 12bit

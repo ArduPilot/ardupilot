@@ -18,15 +18,12 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_SerialManager/AP_SerialManager.h>
-#include <AP_RangeFinder/AP_RangeFinder.h>
-#include <AP_Common/Location.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 #define PROXIMITY_MAX_INSTANCES             1   // Maximum number of proximity sensor instances available on this platform
 #define PROXIMITY_MAX_IGNORE                6   // up to six areas can be ignored
 #define PROXIMITY_MAX_DIRECTION 8
 #define PROXIMITY_SENSOR_ID_START 10
-#define PROXIMITY_LOCATION_TIMEOUT_MS       3000 // locations (provided by copy_locations method) are valid for this many milliseconds
 
 class AP_Proximity_Backend;
 
@@ -35,28 +32,32 @@ class AP_Proximity
 public:
     friend class AP_Proximity_Backend;
 
-    AP_Proximity(AP_SerialManager &_serial_manager);
+    AP_Proximity();
 
     AP_Proximity(const AP_Proximity &other) = delete;
     AP_Proximity &operator=(const AP_Proximity) = delete;
 
     // Proximity driver types
-    enum Proximity_Type {
-        Proximity_Type_None    = 0,
-        Proximity_Type_SF40C   = 1,
-        Proximity_Type_MAV     = 2,
-        Proximity_Type_TRTOWER = 3,
-        Proximity_Type_RangeFinder = 4,
-        Proximity_Type_RPLidarA2 = 5,
-        Proximity_Type_TRTOWEREVO = 6,
-        Proximity_Type_SITL    = 10,
-        Proximity_Type_MorseSITL = 11,
+    enum class Type {
+        None    = 0,
+        SF40C_v09 = 1,
+        MAV     = 2,
+        TRTOWER = 3,
+        RangeFinder = 4,
+        RPLidarA2 = 5,
+        TRTOWEREVO = 6,
+        SF40C = 7,
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        SITL    = 10,
+        MorseSITL = 11,
+        AirSimSITL = 12,
+#endif
     };
 
-    enum Proximity_Status {
-        Proximity_NotConnected = 0,
-        Proximity_NoData,
-        Proximity_Good
+    enum class Status {
+        NotConnected = 0,
+        NoData,
+        Good
     };
 
     // structure holding distances in PROXIMITY_MAX_DIRECTION directions. used for sending distances to ground station
@@ -65,40 +66,24 @@ public:
         float distance[PROXIMITY_MAX_DIRECTION];      // distance in meters
     };
 
-    // structure holding locations of detected objects in earth frame
-    struct Proximity_Location {
-        float radius_m; // radius of object in meters
-        Location loc;
-        uint32_t last_update_ms;
-    };
-
     // detect and initialise any available proximity sensors
     void init(void);
 
     // update state of all proximity sensors. Should be called at high rate from main loop
     void update(void);
 
-    // set pointer to rangefinder object
-    void set_rangefinder(const RangeFinder *rangefinder) { _rangefinder = rangefinder; }
-    const RangeFinder *get_rangefinder() const { return _rangefinder; }
-
     // return sensor orientation and yaw correction
     uint8_t get_orientation(uint8_t instance) const;
     int16_t get_yaw_correction(uint8_t instance) const;
 
     // return sensor health
-    Proximity_Status get_status(uint8_t instance) const;
-    Proximity_Status get_status() const;
+    Status get_status(uint8_t instance) const;
+    Status get_status() const;
 
     // Return the number of proximity sensors
     uint8_t num_sensors(void) const {
         return num_instances;
     }
-
-    // get distance in meters in a particular direction in degrees (0 is forward, clockwise)
-    // returns true on successful read and places distance in distance
-    bool get_horizontal_distance(uint8_t instance, float angle_deg, float &distance) const;
-    bool get_horizontal_distance(float angle_deg, float &distance) const;
 
     // get distances in PROXIMITY_MAX_DIRECTION directions. used for sending distances to ground station
     bool get_horizontal_distances(Proximity_Distance_Array &prx_dist_array) const;
@@ -107,13 +92,6 @@ public:
     //   returns nullptr and sets num_points to zero if no boundary can be returned
     const Vector2f* get_boundary_points(uint8_t instance, uint16_t& num_points) const;
     const Vector2f* get_boundary_points(uint16_t& num_points) const;
-
-    // copy location points around vehicle into a buffer owned by the caller
-    // caller should provide the buff_size which is the maximum number of locations the buffer can hold (normally PROXIMITY_MAX_DIRECTION)
-    // num_copied is updated with the number of locations copied into the buffer
-    // returns true on success, false on failure (should only happen if there is a semaphore conflict)
-    bool copy_locations(uint8_t instance, Proximity_Location* buff, uint16_t buff_size, uint16_t& num_copied);
-    bool copy_locations(Proximity_Location* buff, uint16_t buff_size, uint16_t& num_copied);
 
     // get distance and angle to closest object (used for pre-arm check)
     //   returns true on success, false if no valid readings
@@ -128,12 +106,12 @@ public:
     float distance_min() const;
 
     // handle mavlink DISTANCE_SENSOR messages
-    void handle_msg(mavlink_message_t *msg);
+    void handle_msg(const mavlink_message_t &msg);
 
     // The Proximity_State structure is filled in by the backend driver
     struct Proximity_State {
         uint8_t                 instance;   // the instance number of this proximity sensor
-        enum Proximity_Status   status;     // sensor status
+        Status   status;     // sensor status
     };
 
     //
@@ -144,7 +122,7 @@ public:
     bool get_upward_distance(uint8_t instance, float &distance) const;
     bool get_upward_distance(float &distance) const;
 
-    Proximity_Type get_type(uint8_t instance) const;
+    Type get_type(uint8_t instance) const;
 
     // parameter list
     static const struct AP_Param::GroupInfo var_info[];
@@ -161,10 +139,15 @@ private:
     static AP_Proximity *_singleton;
     Proximity_State state[PROXIMITY_MAX_INSTANCES];
     AP_Proximity_Backend *drivers[PROXIMITY_MAX_INSTANCES];
-    const RangeFinder *_rangefinder;
     uint8_t primary_instance;
     uint8_t num_instances;
-    AP_SerialManager &serial_manager;
+
+    bool valid_instance(uint8_t i) const {
+        if (drivers[i] == nullptr) {
+            return false;
+        }
+        return (Type)_type[i].get() != Type::None;
+    }
 
     // parameters for all instances
     AP_Int8  _type[PROXIMITY_MAX_INSTANCES];

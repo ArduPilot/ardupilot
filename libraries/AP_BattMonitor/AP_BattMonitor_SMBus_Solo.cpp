@@ -40,7 +40,7 @@ void AP_BattMonitor_SMBus_Solo::timer()
 
 
     // read cell voltages
-    if (read_block(BATTMONITOR_SMBUS_SOLO_CELL_VOLTAGE, buff, 8, false)) {
+    if (read_block(BATTMONITOR_SMBUS_SOLO_CELL_VOLTAGE, buff, 8)) {
         float pack_voltage_mv = 0.0f;
         for (uint8_t i = 0; i < BATTMONITOR_SMBUS_SOLO_NUM_CELLS; i++) {
             uint16_t cell = buff[(i * 2) + 1] << 8 | buff[i * 2];
@@ -66,7 +66,7 @@ void AP_BattMonitor_SMBus_Solo::timer()
     }
 
     // read current
-    if (read_block(BATTMONITOR_SMBUS_SOLO_CURRENT, buff, 4, false) == 4) {
+    if (read_block(BATTMONITOR_SMBUS_SOLO_CURRENT, buff, 4) == 4) {
         _state.current_amps = -(float)((int32_t)((uint32_t)buff[3]<<24 | (uint32_t)buff[2]<<16 | (uint32_t)buff[1]<<8 | (uint32_t)buff[0])) / 1000.0f;
         _state.last_time_micros = tnow;
     }
@@ -75,7 +75,7 @@ void AP_BattMonitor_SMBus_Solo::timer()
     read_remaining_capacity();
 
     // read the button press indicator
-    if (read_block(BATTMONITOR_SMBUS_MANUFACTURE_DATA, buff, 6, false) == 6) {
+    if (read_block(BATTMONITOR_SMBUS_MANUFACTURE_DATA, buff, 6) == 6) {
         bool pressed = (buff[1] >> 3) & 0x01;
 
         if (_button_press_count >= BATTMONITOR_SMBUS_SOLO_BUTTON_DEBOUNCE) {
@@ -93,10 +93,12 @@ void AP_BattMonitor_SMBus_Solo::timer()
     read_temp();
 
     read_serial_number();
+
+    read_cycle_count();
 }
 
 // read_block - returns number of characters read if successful, zero if unsuccessful
-uint8_t AP_BattMonitor_SMBus_Solo::read_block(uint8_t reg, uint8_t* data, uint8_t max_len, bool append_zero) const
+uint8_t AP_BattMonitor_SMBus_Solo::read_block(uint8_t reg, uint8_t* data, uint8_t max_len) const
 {
     uint8_t buff[max_len+2];    // buffer to hold results (2 extra byte returned holding length and PEC)
 
@@ -121,11 +123,6 @@ uint8_t AP_BattMonitor_SMBus_Solo::read_block(uint8_t reg, uint8_t* data, uint8_
 
     // copy data (excluding PEC)
     memcpy(data, &buff[1], bufflen);
-
-    // optionally add zero to end
-    if (append_zero) {
-        data[bufflen] = '\0';
-    }
 
     // return success
     return bufflen;

@@ -45,32 +45,12 @@ enum failsafe_action_long {
     FS_ACTION_LONG_PARACHUTE = 3,
 };
 
-enum mode_reason_t {
-    MODE_REASON_UNKNOWN=0,
-    MODE_REASON_TX_COMMAND,
-    MODE_REASON_GCS_COMMAND,
-    MODE_REASON_RADIO_FAILSAFE,
-    MODE_REASON_BATTERY_FAILSAFE,
-    MODE_REASON_GCS_FAILSAFE,
-    MODE_REASON_EKF_FAILSAFE,
-    MODE_REASON_GPS_GLITCH,
-    MODE_REASON_MISSION_END,
-    MODE_REASON_FENCE_BREACH,
-    MODE_REASON_AVOIDANCE,
-    MODE_REASON_AVOIDANCE_RECOVERY,
-    MODE_REASON_SOARING_FBW_B_WITH_MOTOR_RUNNING,
-    MODE_REASON_SOARING_THERMAL_DETECTED,
-    MODE_REASON_SOARING_IN_THERMAL,
-    MODE_REASON_SOARING_THERMAL_ESTIMATE_DETERIORATED,
-    MODE_REASON_VTOL_FAILED_TRANSITION,
-    MODE_REASON_UNAVAILABLE,
-};
-
 // type of stick mixing enabled
 enum StickMixing {
     STICK_MIXING_DISABLED = 0,
     STICK_MIXING_FBW      = 1,
-    STICK_MIXING_DIRECT   = 2
+    STICK_MIXING_DIRECT   = 2,
+    STICK_MIXING_VTOL_YAW = 3,
 };
 
 enum ChannelMixing {
@@ -84,16 +64,6 @@ enum ChannelMixing {
     MIXING_DNUP_SWP = 7,
     MIXING_DNDN_SWP = 8,
 };
-
-/*
- * The cause for the most recent fence enable
- */
-typedef enum GeofenceEnableReason {
-    NOT_ENABLED = 0,     //The fence is not enabled
-    PWM_TOGGLED,         //Fence enabled/disabled by PWM signal
-    AUTO_TOGGLED,        //Fence auto enabled/disabled at takeoff.
-    GCS_TOGGLED          //Fence enabled/disabled by the GCS via Mavlink
-} GeofenceEnableReason;
 
 // PID broadcast bitmask
 enum tuning_pid_bits {
@@ -113,20 +83,20 @@ enum log_messages {
     LOG_CTUN_MSG,
     LOG_NTUN_MSG,
     LOG_STARTUP_MSG,
-    TYPE_AIRSTART_MSG,
     TYPE_GROUNDSTART_MSG,
-    LOG_RC_MSG,
-    LOG_SONAR_MSG,
     LOG_STATUS_MSG,
     LOG_QTUN_MSG,
-    LOG_PARAMTUNE_MSG,
-    LOG_THERMAL_MSG,
-    LOG_VARIO_MSG,
     LOG_PIQR_MSG,
     LOG_PIQP_MSG,
     LOG_PIQY_MSG,
     LOG_PIQA_MSG,
+    LOG_PIDG_MSG,
     LOG_AETR_MSG,
+    LOG_OFG_MSG,
+    LOG_CMDI_MSG,
+    LOG_CMDA_MSG,
+    LOG_CMDS_MSG,
+    LOG_CMDH_MSG,
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
@@ -189,3 +159,9 @@ enum CrowFlapOptions {
     PROGRESSIVE_CROW = (1 << 2),
 }; 
 
+
+enum guided_heading_type_t {
+    GUIDED_HEADING_NONE = 0, // no heading track
+    GUIDED_HEADING_COG,      // maintain ground track
+    GUIDED_HEADING_HEADING,  // maintain a heading
+};

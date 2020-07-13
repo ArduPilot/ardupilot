@@ -78,12 +78,6 @@ public:
         , y(y0)
         , z(z0) {}
 
-    // function call operator
-    void operator ()(const T x0, const T y0, const T z0)
-    {
-        x= x0; y= y0; z= z0;
-    }
-
     // test for equality
     bool operator ==(const Vector3<T> &v) const;
 
@@ -143,6 +137,11 @@ public:
     // dot product
     T operator *(const Vector3<T> &v) const;
 
+    // dot product for Lua
+    T dot(const Vector3<T> &v) const {
+        return *this * v;
+    }
+    
     // multiply a row vector by a matrix, to give a row vector
     Vector3<T> operator *(const Matrix3<T> &m) const;
 
@@ -152,17 +151,31 @@ public:
     // cross product
     Vector3<T> operator %(const Vector3<T> &v) const;
 
+    // cross product for Lua
+    Vector3<T> cross(const Vector3<T> &v) const {
+        return *this % v;
+    }
+
+    // scale a vector3
+    Vector3<T> scale(const float v) const {
+        return *this * v;
+    }
+    
     // computes the angle between this vector and another vector
     float angle(const Vector3<T> &v2) const;
 
     // check if any elements are NAN
-    bool is_nan(void) const;
+    bool is_nan(void) const WARN_IF_UNUSED;
 
     // check if any elements are infinity
-    bool is_inf(void) const;
+    bool is_inf(void) const WARN_IF_UNUSED;
 
     // check if all elements are zero
-    bool is_zero(void) const { return (fabsf(x) < FLT_EPSILON) && (fabsf(y) < FLT_EPSILON) && (fabsf(z) < FLT_EPSILON); }
+    bool is_zero(void) const WARN_IF_UNUSED {
+        return (fabsf(x) < FLT_EPSILON) &&
+               (fabsf(y) < FLT_EPSILON) &&
+               (fabsf(z) < FLT_EPSILON);
+    }
 
 
     // rotate by a standard rotation
@@ -243,6 +256,8 @@ public:
         return perpendicular;
     }
 
+    // Shortest distance between point(p) to a point contained in the line segment defined by w1,w2
+    static float closest_distance_between_line_and_point(const Vector3<T> &w1, const Vector3<T> &w2, const Vector3<T> &p);
 };
 
 typedef Vector3<int16_t>                Vector3i;

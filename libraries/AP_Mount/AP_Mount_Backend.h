@@ -37,7 +37,7 @@ public:
     virtual ~AP_Mount_Backend(void) {}
 
     // init - performs any required initialisation for this instance
-    virtual void init(const AP_SerialManager& serial_manager) = 0;
+    virtual void init() = 0;
 
     // update mount position - should be called periodically
     virtual void update() = 0;
@@ -52,10 +52,13 @@ public:
     virtual void set_mode(enum MAV_MOUNT_MODE mode) = 0;
 
     // set_angle_targets - sets angle targets in degrees
-    virtual void set_angle_targets(float roll, float tilt, float pan);
+    void set_angle_targets(float roll, float tilt, float pan);
 
     // set_roi_target - sets target location that mount should attempt to point towards
-    virtual void set_roi_target(const struct Location &target_loc);
+    void set_roi_target(const struct Location &target_loc);
+
+    // set_sys_target - sets system that mount should attempt to point towards
+    void set_target_sysid(uint8_t sysid);
 
     // control - control the mount
     virtual void control(int32_t pitch_or_lat, int32_t roll_or_lon, int32_t yaw_or_alt, MAV_MOUNT_MODE mount_mode);
@@ -70,10 +73,10 @@ public:
     virtual void send_mount_status(mavlink_channel_t chan) = 0;
 
     // handle a GIMBAL_REPORT message
-    virtual void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t *msg) {}
+    virtual void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg) {}
 
     // handle a PARAM_VALUE message
-    virtual void handle_param_value(const mavlink_message_t *msg) {}
+    virtual void handle_param_value(const mavlink_message_t &msg) {}
 
     // send a GIMBAL_REPORT message to the GCS
     virtual void send_gimbal_report(const mavlink_channel_t chan) {}
@@ -86,8 +89,29 @@ protected:
     // angle_input_rad - convert RC input into an earth-frame target angle
     float angle_input_rad(const RC_Channel* rc, int16_t angle_min, int16_t angle_max);
 
-    // calc_angle_to_location - calculates the earth-frame roll, tilt and pan angles (and radians) to point at the given target
-    void calc_angle_to_location(const struct Location &target, Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan, bool relative_pan = true);
+    // calc_angle_to_location - calculates the earth-frame roll, tilt
+    // and pan angles (and radians) to point at the given target
+    bool calc_angle_to_location(const struct Location &target,
+                                Vector3f& angles_to_target_rad,
+                                bool calc_tilt,
+                                bool calc_pan,
+                                bool relative_pan = true) const WARN_IF_UNUSED;
+
+    // calc_angle_to_roi_target - calculates the earth-frame roll, tilt
+    // and pan angles (and radians) to point at the ROI-target (as set
+    // by various mavlink messages)
+    bool calc_angle_to_roi_target(Vector3f& angles_to_target_rad,
+                                  bool calc_tilt,
+                                  bool calc_pan,
+                                  bool relative_pan = true) const WARN_IF_UNUSED;
+
+    // calc_angle_to_sysid_target - calculates the earth-frame roll, tilt
+    // and pan angles (and radians) to point at the sysid-target (as set
+    // by various mavlink messages)
+    bool calc_angle_to_sysid_target(Vector3f& angles_to_target_rad,
+                                    bool calc_tilt,
+                                    bool calc_pan,
+                                    bool relative_pan = true) const WARN_IF_UNUSED;
 
     // get the mount mode from frontend
     MAV_MOUNT_MODE get_mode(void) const { return _frontend.get_mode(_instance); }

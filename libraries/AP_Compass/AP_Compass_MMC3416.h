@@ -30,8 +30,8 @@ class AP_Compass_MMC3416 : public AP_Compass_Backend
 {
 public:
     static AP_Compass_Backend *probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
-                                     bool force_external = false,
-                                     enum Rotation rotation = ROTATION_NONE);
+                                     bool force_external,
+                                     enum Rotation rotation);
 
     void read() override;
 

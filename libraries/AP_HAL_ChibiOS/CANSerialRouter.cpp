@@ -17,17 +17,12 @@
 
 #include "CANSerialRouter.h"
 
-#if HAL_WITH_UAVCAN && !HAL_MINIMIZE_FEATURES
+#if AP_UAVCAN_SLCAN_ENABLED
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
-SLCANRouter* SLCANRouter::_singleton = nullptr;
 
 extern const AP_HAL::HAL& hal;
 
-SLCANRouter &slcan_router()
-{
-    return *SLCANRouter::get_singleton();
-}
 
 void SLCANRouter::init(ChibiOS_CAN::CanIface* can_if, ChibiOS_CAN::BusEvent* update_event)
 {
@@ -38,7 +33,10 @@ void SLCANRouter::init(ChibiOS_CAN::CanIface* can_if, ChibiOS_CAN::BusEvent* upd
 
 void SLCANRouter::run()
 {
-    _port = AP_SerialManager::get_singleton()->get_serial_by_id(AP::can().get_slcan_serial());
+    _port = AP::can().get_slcan_serial();
+    if (_port == nullptr) {
+        return;
+    }
     if (_slcan_if.init(921600, SLCAN::CAN::OperatingMode::NormalMode, _port) < 0) {
         return;
     }
@@ -62,7 +60,7 @@ void SLCANRouter::run()
 
 void SLCANRouter::timer()
 {
-    if ((!_thread_started || _thread_suspended) && (AP::can().get_slcan_serial() != -1)) {
+    if ((!_thread_started || _thread_suspended) && (AP::can().get_slcan_serial() != nullptr)) {
         run();
         AP::can().reset_slcan_serial();
         _last_active_time = AP_HAL::millis();
@@ -119,12 +117,16 @@ void SLCANRouter::slcan2can_router_trampoline(void)
         }
         chSysUnlock();
         _slcan_if.reader();
-        if (_can_tx_queue.available() && _can_if) {
+        while (_can_tx_queue.available() && _can_if) {
             _can_tx_queue.peek(it);
             if (_can_if->send(it.frame, uavcan::MonotonicTime::fromUSec(AP_HAL::micros64() + 1000), 0)) {
                 _can_tx_queue.pop();
+            } else {
+                break;
             }
+            hal.scheduler->delay_microseconds(100);
         }
+        hal.scheduler->delay_microseconds(100);
     }
 }
 
@@ -139,12 +141,16 @@ void SLCANRouter::can2slcan_router_trampoline(void)
         }
         chSysUnlock();
         _update_event->wait(uavcan::MonotonicDuration::fromUSec(1000));
-        if (_slcan_tx_queue.available()) {
+        while (_slcan_tx_queue.available()) {
             _slcan_tx_queue.peek(it);
             if (_slcan_if.send(it.frame, uavcan::MonotonicTime::fromUSec(AP_HAL::micros64() + 1000), 0)) {
                 _slcan_tx_queue.pop();
+            } else {
+                break;
             }
+            hal.scheduler->delay_microseconds(100);
         }
+        hal.scheduler->delay_microseconds(100);
     }
 }
 

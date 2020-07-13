@@ -21,20 +21,16 @@
   Tom Pittenger, November 2015
 */
 
+#include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/Location.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AP_AHRS/AP_AHRS.h>
-
-#include <AP_Buffer/AP_Buffer.h>
 
 class AP_ADSB {
 public:
-    AP_ADSB()
-    {
-        AP_Param::setup_object_defaults(this, var_info);
-    }
+    // constructor
+    AP_ADSB();
 
     /* Do not allow copies */
     AP_ADSB(const AP_ADSB &other) = delete;
@@ -77,8 +73,11 @@ public:
     }
     bool next_sample(adsb_vehicle_t &obstacle);
 
+    // handle a adsb_vehicle_t from an external source (used for UAVCAN)
+    void handle_adsb_vehicle(const adsb_vehicle_t &vehicle);
+
     // mavlink message handler
-    void handle_message(const mavlink_channel_t chan, const mavlink_message_t* msg);
+    void handle_message(const mavlink_channel_t chan, const mavlink_message_t &msg);
 
     // when true, a vehicle with that ICAO was found in database and the vehicle is populated.
     bool get_vehicle_by_ICAO(const uint32_t icao, adsb_vehicle_t &vehicle) const;
@@ -87,8 +86,17 @@ public:
     void set_special_ICAO_target(const uint32_t new_icao_target) { _special_ICAO_target = (int32_t)new_icao_target; };
     bool is_special_vehicle(uint32_t icao) const { return _special_ICAO_target != 0 && (_special_ICAO_target == (int32_t)icao); }
 
+    // confirm a value is a valid callsign
+    static bool is_valid_callsign(uint16_t octal) WARN_IF_UNUSED;
+
+    // get singleton instance
+    static AP_ADSB *get_singleton(void) {
+        return _singleton;
+    }
 
 private:
+    static AP_ADSB *_singleton;
+
     // initialize _vehicle_list
     void init();
 
@@ -121,12 +129,12 @@ private:
     uint8_t get_encoded_callsign_null_char(void);
 
     // add or update vehicle_list from inbound mavlink msg
-    void handle_vehicle(const mavlink_message_t* msg);
+    void handle_vehicle(const mavlink_message_t &msg);
 
     // handle ADS-B transceiver report for ping2020
-    void handle_transceiver_report(mavlink_channel_t chan, const mavlink_message_t* msg);
+    void handle_transceiver_report(mavlink_channel_t chan, const mavlink_message_t &msg);
 
-    void handle_out_cfg(const mavlink_message_t* msg);
+    void handle_out_cfg(const mavlink_message_t &msg);
 
     AP_Int8     _enabled;
 
@@ -190,9 +198,9 @@ private:
     AP_Int32 _special_ICAO_target;
 
     static const uint8_t max_samples = 30;
-    AP_Buffer<adsb_vehicle_t, max_samples> samples;
+    ObjectBuffer<adsb_vehicle_t> samples{max_samples};
 
-    void push_sample(adsb_vehicle_t &vehicle);
+    void push_sample(const adsb_vehicle_t &vehicle);
 
     // logging
     AP_Int8 _log;
@@ -202,4 +210,10 @@ private:
         SPECIAL_ONLY    = 1,
         ALL             = 2
     };
+
+
+};
+
+namespace AP {
+    AP_ADSB *ADSB();
 };

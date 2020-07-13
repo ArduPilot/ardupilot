@@ -17,8 +17,10 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Proximity.h"
+#include <AP_Common/Location.h>
 
-#define PROXIMITY_SECTORS_MAX   12  // maximum number of sectors
+#define PROXIMITY_NUM_SECTORS           8       // number of sectors
+#define PROXIMITY_SECTOR_WIDTH_DEG      45.0f   // width of sectors in degrees
 #define PROXIMITY_BOUNDARY_DIST_MIN 0.6f    // minimum distance for a boundary point.  This ensures the object avoidance code doesn't think we are outside the boundary.
 #define PROXIMITY_BOUNDARY_DIST_DEFAULT 100 // if we have no data for a sector, boundary is placed 100m out
 
@@ -43,11 +45,7 @@ public:
     virtual bool get_upward_distance(float &distance) const { return false; }
 
     // handle mavlink DISTANCE_SENSOR messages
-    virtual void handle_msg(mavlink_message_t *msg) {}
-
-    // get distance in meters in a particular direction in degrees (0 is forward, clockwise)
-    // returns true on successful read and places distance in distance
-    bool get_horizontal_distance(float angle_deg, float &distance) const;
+    virtual void handle_msg(const mavlink_message_t &msg) {}
 
     // get boundary points around vehicle for use by avoidance
     //   returns nullptr and sets num_points to zero if no boundary can be returned
@@ -64,19 +62,13 @@ public:
     // get distances in 8 directions. used for sending distances to ground station
     bool get_horizontal_distances(AP_Proximity::Proximity_Distance_Array &prx_dist_array) const;
 
-    // copy location points around vehicle into a buffer owned by the caller
-    // caller should provide the buff_size which is the maximum number of locations the buffer can hold (normally PROXIMITY_MAX_DIRECTION)
-    // num_copied is updated with the number of locations copied into the buffer
-    // returns true on success, false on failure which should only happen if buff is nullptr
-    bool copy_locations(AP_Proximity::Proximity_Location* buff, uint16_t buff_size, uint16_t& num_copied);
-
 protected:
 
     // set status and update valid_count
-    void set_status(AP_Proximity::Proximity_Status status);
+    void set_status(AP_Proximity::Status status);
 
     // find which sector a given angle falls into
-    bool convert_angle_to_sector(float angle_degrees, uint8_t &sector) const;
+    uint8_t convert_angle_to_sector(float angle_degrees) const;
 
     // initialise the boundary and sector_edge_vector array used for object avoidance
     //   should be called if the sector_middle_deg or _setor_width_deg arrays are changed
@@ -85,35 +77,28 @@ protected:
     // update boundary points used for object avoidance based on a single sector's distance changing
     //   the boundary points lie on the line between sectors meaning two boundary points may be updated based on a single sector's distance changing
     //   the boundary point is set to the shortest distance found in the two adjacent sectors, this is a conservative boundary around the vehicle
-    void update_boundary_for_sector(uint8_t sector);
+    void update_boundary_for_sector(const uint8_t sector, const bool push_to_OA_DB);
 
-    // get ignore area info
-    uint8_t get_ignore_area_count() const;
-    bool get_ignore_area(uint8_t index, uint16_t &angle_deg, uint8_t &width_deg) const;
-    bool get_next_ignore_start_or_end(uint8_t start_or_end, int16_t start_angle, int16_t &ignore_start) const;
+    // check if a reading should be ignored because it falls into an ignore area
+    // angles should be in degrees and in the range of 0 to 360
+    bool ignore_reading(uint16_t angle_deg) const;
 
-    // earth frame objects
-    void update_locations();
-
+    // database helpers.  all angles are in degrees
+    bool database_prepare_for_push(Vector3f &current_pos, Matrix3f &body_to_ned);
+    void database_push(float angle, float distance);
+    void database_push(float angle, float distance, uint32_t timestamp_ms, const Vector3f &current_pos, const Matrix3f &body_to_ned);
     AP_Proximity &frontend;
     AP_Proximity::Proximity_State &state;   // reference to this instances state
 
     // sectors
-    uint8_t _num_sectors = PROXIMITY_MAX_DIRECTION;
-    uint16_t _sector_middle_deg[PROXIMITY_SECTORS_MAX] = {0, 45, 90, 135, 180, 225, 270, 315, 0, 0, 0, 0};  // middle angle of each sector
-    uint8_t _sector_width_deg[PROXIMITY_SECTORS_MAX] = {45, 45, 45, 45, 45, 45, 45, 45, 0, 0, 0, 0};        // width (in degrees) of each sector
+    const uint16_t _sector_middle_deg[PROXIMITY_NUM_SECTORS] = {0, 45, 90, 135, 180, 225, 270, 315};    // middle angle of each sector
 
     // sensor data
-    float _angle[PROXIMITY_SECTORS_MAX];            // angle to closest object within each sector
-    float _distance[PROXIMITY_SECTORS_MAX];         // distance to closest object within each sector
-    bool _distance_valid[PROXIMITY_SECTORS_MAX];    // true if a valid distance received for each sector
+    float _angle[PROXIMITY_NUM_SECTORS];            // angle to closest object within each sector
+    float _distance[PROXIMITY_NUM_SECTORS];         // distance to closest object within each sector
+    bool _distance_valid[PROXIMITY_NUM_SECTORS];    // true if a valid distance received for each sector
 
     // fence boundary
-    Vector2f _sector_edge_vector[PROXIMITY_SECTORS_MAX];    // vector for right-edge of each sector, used to speed up calculation of boundary
-    Vector2f _boundary_point[PROXIMITY_SECTORS_MAX];        // bounding polygon around the vehicle calculated conservatively for object avoidance
-
-    // earth frame locations (i.e. detected obstacles stored as lat/lon points)
-    uint16_t _location_count;                               // number of locations held in _locations buffer
-    AP_Proximity::Proximity_Location _locations[PROXIMITY_SECTORS_MAX];   // buffer of locations
-    HAL_Semaphore_Recursive _rsem;                          // semaphore for access to _locations and _location_count
+    Vector2f _sector_edge_vector[PROXIMITY_NUM_SECTORS];    // vector for right-edge of each sector, used to speed up calculation of boundary
+    Vector2f _boundary_point[PROXIMITY_NUM_SECTORS];        // bounding polygon around the vehicle calculated conservatively for object avoidance
 };

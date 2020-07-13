@@ -23,8 +23,8 @@
 
 using namespace SITL;
 
-Plane::Plane(const char *home_str, const char *frame_str) :
-    Aircraft(home_str, frame_str)
+Plane::Plane(const char *frame_str) :
+    Aircraft(frame_str)
 {
     mass = 2.0f;
 
@@ -34,11 +34,17 @@ Plane::Plane(const char *home_str, const char *frame_str) :
     */
     thrust_scale = (mass * GRAVITY_MSS) / hover_throttle;
     frame_height = 0.1f;
+    num_motors = 1;
 
     ground_behavior = GROUND_BEHAVIOR_FWD_ONLY;
     
     if (strstr(frame_str, "-heavy")) {
         mass = 8;
+    }
+    if (strstr(frame_str, "-jet")) {
+        // a 22kg "jet", level top speed is 102m/s
+        mass = 22;
+        thrust_scale = (mass * GRAVITY_MSS) / hover_throttle;
     }
     if (strstr(frame_str, "-revthrust")) {
         reverse_thrust = true;
@@ -65,17 +71,22 @@ Plane::Plane(const char *home_str, const char *frame_str) :
     }
     if (strstr(frame_str, "-throw")) {
         have_launcher = true;
-        launch_accel = 10;
-        launch_time = 1;
+        launch_accel = 25;
+        launch_time = 0.4;
     }
-   if (strstr(frame_str, "-tailsitter")) {
-       tailsitter = true;
-       ground_behavior = GROUND_BEHAVIOR_TAILSITTER;
-       thrust_scale *= 1.5;
-   }
+    if (strstr(frame_str, "-tailsitter")) {
+        tailsitter = true;
+        ground_behavior = GROUND_BEHAVIOR_TAILSITTER;
+        thrust_scale *= 1.5;
+    }
 
     if (strstr(frame_str, "-ice")) {
         ice_engine = true;
+    }
+
+    if (strstr(frame_str, "-soaring")) {
+        mass = 2.0;
+        coefficient.c_drag_p = 0.05;
     }
 }
 
@@ -263,7 +274,7 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
         float ch1 = aileron;
         float ch2 = elevator;
         aileron  = (ch2-ch1)/2.0f;
-        // the minus does away with the need for RC2_REV=-1
+        // the minus does away with the need for RC2_REVERSED=-1
         elevator = -(ch2+ch1)/2.0f;
 
         // assume no rudder
@@ -327,8 +338,8 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
                 launch_start_ms = now;
             }
             if (now - launch_start_ms < launch_time*1000) {
-                force.x += launch_accel;
-                force.z += launch_accel/3;
+                force.x += mass * launch_accel;
+                force.z += mass * launch_accel/3;
             }
         } else {
             // allow reset of catapult
@@ -337,7 +348,7 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     }
     
     // simulate engine RPM
-    rpm1 = thrust * 7000;
+    rpm[0] = thrust * 7000;
     
     // scale thrust to newtons
     thrust *= thrust_scale;

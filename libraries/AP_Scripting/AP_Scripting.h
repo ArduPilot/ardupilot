@@ -18,6 +18,8 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
+#include <GCS_MAVLink/GCS.h>
+#include <AP_Filesystem/AP_Filesystem.h>
 
 class AP_Scripting
 {
@@ -28,13 +30,28 @@ public:
     AP_Scripting(const AP_Scripting &other) = delete;
     AP_Scripting &operator=(const AP_Scripting&) = delete;
 
-    bool init(void);
+    void init(void);
+    bool init_failed(void) const { return _init_failed; }
+
+    bool enabled(void) const { return _enable != 0; };
 
     static AP_Scripting * get_singleton(void) { return _singleton; }
 
     static const struct AP_Param::GroupInfo var_info[];
 
+    MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet);
+
+    struct terminal_s {
+        int output_fd;
+        off_t input_offset;
+        bool session;
+    } terminal;
+
 private:
+
+    bool repl_start(void);
+    void repl_stop(void);
+
     void load_script(const char *filename); // load a script from a file
 
     void thread(void); // main script execution thread
@@ -43,6 +60,8 @@ private:
     AP_Int32 _script_vm_exec_count;
     AP_Int32 _script_heap_size;
     AP_Int8 _debug_level;
+
+    bool _init_failed;  // true if memory allocation failed
 
     static AP_Scripting *_singleton;
 

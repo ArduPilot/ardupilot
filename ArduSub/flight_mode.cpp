@@ -2,7 +2,7 @@
 
 // change flight mode and perform any necessary initialisation
 // returns true if mode was successfully set
-bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
+bool Sub::set_mode(control_mode_t mode, ModeReason reason)
 {
     // boolean to record if flight mode could be set
     bool success = false;
@@ -55,6 +55,10 @@ bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
         success = manual_init();
         break;
 
+    case MOTOR_DETECT:
+        success = motordetect_init();
+        break;
+
     default:
         success = false;
         break;
@@ -93,6 +97,12 @@ bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
 
     // return success or failure
     return success;
+}
+
+bool Sub::set_mode(const uint8_t new_mode, const ModeReason reason)
+{
+    static_assert(sizeof(control_mode_t) == sizeof(new_mode), "The new mode can't be mapped to the vehicles mode number");
+    return sub.set_mode((control_mode_t)new_mode, reason);
 }
 
 // update_flight_mode - calls the appropriate attitude controllers based on flight mode
@@ -136,6 +146,10 @@ void Sub::update_flight_mode()
 
     case MANUAL:
         manual_run();
+        break;
+
+    case MOTOR_DETECT:
+        motordetect_run();
         break;
 
     default:

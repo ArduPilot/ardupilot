@@ -22,7 +22,7 @@ class AP_WheelEncoder_Backend
 {
 public:
     // constructor. This incorporates initialisation as well.
-	AP_WheelEncoder_Backend(AP_WheelEncoder &frontend, uint8_t instance, AP_WheelEncoder::WheelEncoder_State &state);
+    AP_WheelEncoder_Backend(AP_WheelEncoder &frontend, uint8_t instance, AP_WheelEncoder::WheelEncoder_State &state);
 
     // we declare a virtual destructor so that WheelEncoder drivers can
     // override with a custom destructor if need be

@@ -37,7 +37,7 @@ AP_BoardLED board_led;
 // create fake gcs object
 GCS_Dummy _gcs;
 
-const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
+const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
         AP_GROUPEND
 };
 

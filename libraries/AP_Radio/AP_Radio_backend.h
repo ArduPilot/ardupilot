@@ -26,13 +26,13 @@ class AP_Radio_backend
 public:
     AP_Radio_backend(AP_Radio &radio);
     virtual ~AP_Radio_backend();
-    
+
     // init - initialise radio
     virtual bool init(void) = 0;
 
     // init - reset radio
     virtual bool reset(void) = 0;
-    
+
     // send a packet
     virtual bool send(const uint8_t *pkt, uint16_t len) = 0;
 
@@ -56,82 +56,101 @@ public:
 
     // get TX fw version
     virtual uint32_t get_tx_version(void) = 0;
-    
+
     // get radio statistics structure
     virtual const AP_Radio::stats &get_stats(void) = 0;
 
     // set the 2.4GHz wifi channel used by companion computer, so it can be avoided
     virtual void set_wifi_channel(uint8_t channel) = 0;
-    
-protected:
 
-    AP_Radio::ap_radio_protocol get_protocol(void) const {
+protected:
+    // These functions are for the radio code to access the parameters
+    // that the user can set using the web interface.
+
+    AP_Radio::ap_radio_protocol get_protocol(void) const
+    {
         return (AP_Radio::ap_radio_protocol)radio.protocol.get();
     }
 
-    uint8_t get_debug_level(void) const {
+    uint8_t get_debug_level(void) const
+    {
         return (uint8_t)radio.debug_level.get();
     }
 
-    bool get_disable_crc(void) const {
+    bool get_disable_crc(void) const
+    {
         return (bool)radio.disable_crc.get();
     }
-    
-    uint8_t get_rssi_chan(void) const {
+
+    uint8_t get_rssi_chan(void) const
+    {
         return (uint8_t)radio.rssi_chan.get();
     }
 
-    uint8_t get_pps_chan(void) const {
+    uint8_t get_pps_chan(void) const
+    {
         return (uint8_t)radio.pps_chan.get();
     }
 
-    uint8_t get_tx_rssi_chan(void) const {
+    uint8_t get_tx_rssi_chan(void) const
+    {
         return (uint8_t)radio.tx_rssi_chan.get();
     }
 
-    uint8_t get_tx_pps_chan(void) const {
+    uint8_t get_tx_pps_chan(void) const
+    {
         return (uint8_t)radio.tx_pps_chan.get();
     }
-    
-    bool get_telem_enable(void) const {
+
+    bool get_telem_enable(void) const
+    {
         return radio.telem_enable.get() > 0;
     }
 
-    uint8_t get_transmit_power(void) const {
+    uint8_t get_transmit_power(void) const
+    {
         return constrain_int16(radio.transmit_power.get(), 1, 8);
     }
 
-    uint8_t get_tx_max_power(void) const {
+    uint8_t get_tx_max_power(void) const
+    {
         return constrain_int16(radio.tx_max_power.get(), 1, 8);
     }
 
-    void set_tx_max_power_default(uint8_t v) {
+    void set_tx_max_power_default(uint8_t v)
+    {
         return radio.tx_max_power.set_default(v);
     }
-    
-    int8_t get_fcc_test(void) const {
+
+    int8_t get_fcc_test(void) const
+    {
         return radio.fcc_test.get();
     }
 
-    uint8_t get_stick_mode(void) const {
+    uint8_t get_stick_mode(void) const
+    {
         return radio.stick_mode.get();
     }
 
-    uint8_t get_factory_test(void) const {
+    uint8_t get_factory_test(void) const
+    {
         return radio.factory_test.get();
     }
 
-    uint8_t get_tx_buzzer_adjust(void) const {
+    uint8_t get_tx_buzzer_adjust(void) const
+    {
         return radio.tx_buzzer_adjust.get();
     }
 
-    uint8_t get_autobind_time(void) const {
+    uint8_t get_autobind_time(void) const
+    {
         return radio.auto_bind_time.get();
     }
 
-    uint8_t get_autobind_rssi(void) const {
+    uint8_t get_autobind_rssi(void) const
+    {
         return radio.auto_bind_rssi.get();
     }
-    
+
     AP_Radio &radio;
 };

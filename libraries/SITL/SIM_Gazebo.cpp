@@ -27,8 +27,8 @@ extern const AP_HAL::HAL& hal;
 
 namespace SITL {
 
-Gazebo::Gazebo(const char *home_str, const char *frame_str) :
-    Aircraft(home_str, frame_str),
+Gazebo::Gazebo(const char *frame_str) :
+    Aircraft(frame_str),
     last_timestamp(0),
     socket_sitl{true}
 {

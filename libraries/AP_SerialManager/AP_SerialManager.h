@@ -1,5 +1,5 @@
 /*
-   Please contribute your ideas! See http://dev.ardupilot.org for details
+   Please contribute your ideas! See https://dev.ardupilot.org for details
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,8 +25,18 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Param/AP_Param.h>
 
-// we have hal.uartA to hal.uartG
-#define SERIALMANAGER_NUM_PORTS 7
+#ifdef HAL_UART_NUM_SERIAL_PORTS
+#if HAL_UART_NUM_SERIAL_PORTS >= 4
+#define SERIALMANAGER_NUM_PORTS HAL_UART_NUM_SERIAL_PORTS
+#else
+// we need a minimum of 4 to allow for a GPS due to the odd ordering
+// of hal.uartB as SERIAL3
+#define SERIALMANAGER_NUM_PORTS 4
+#endif
+#else
+// assume max 8 ports
+#define SERIALMANAGER_NUM_PORTS 8
+#endif
 
  // console default baud rates and buffer sizes
 #ifdef HAL_SERIAL0_BAUD_DEFAULT
@@ -41,6 +51,10 @@
 #define AP_SERIALMANAGER_MAVLINK_BAUD           57600
 #define AP_SERIALMANAGER_MAVLINK_BUFSIZE_RX     128
 #define AP_SERIALMANAGER_MAVLINK_BUFSIZE_TX     256
+
+// LTM buffer sizes
+#define AP_SERIALMANAGER_LTM_BUFSIZE_RX         0
+#define AP_SERIALMANAGER_LTM_BUFSIZE_TX         32
 
 // FrSky default baud rates, use default buffer sizes
 #define AP_SERIALMANAGER_FRSKY_D_BAUD           9600
@@ -70,10 +84,19 @@
 #define AP_SERIALMANAGER_ROBOTIS_BUFSIZE_RX  128
 #define AP_SERIALMANAGER_ROBOTIS_BUFSIZE_TX  128
 
+// MegaSquirt EFI protocol
+#define AP_SERIALMANAGER_EFI_MS_BAUD           115
+#define AP_SERIALMANAGER_EFI_MS_BUFSIZE_RX     512
+#define AP_SERIALMANAGER_EFI_MS_BUFSIZE_TX     16
+
 // SBUS servo outputs
 #define AP_SERIALMANAGER_SBUS1_BAUD           100000
 #define AP_SERIALMANAGER_SBUS1_BUFSIZE_RX     16
 #define AP_SERIALMANAGER_SBUS1_BUFSIZE_TX     32
+
+#define AP_SERIALMANAGER_SLCAN_BAUD             115200
+#define AP_SERIALMANAGER_SLCAN_BUFSIZE_RX       128
+#define AP_SERIALMANAGER_SLCAN_BUFSIZE_TX       128
 
 class AP_SerialManager {
 public:
@@ -107,6 +130,15 @@ public:
         SerialProtocol_Robotis = 19,
         SerialProtocol_NMEAOutput = 20,
         SerialProtocol_WindVane = 21,
+        SerialProtocol_SLCAN = 22,
+        SerialProtocol_RCIN = 23,
+        SerialProtocol_EFI_MS = 24,                   // MegaSquirt EFI serial protocol
+        SerialProtocol_LTM_Telem = 25,
+        SerialProtocol_RunCam = 26,
+        SerialProtocol_Hott = 27,
+        SerialProtocol_Scripting = 28,
+        SerialProtocol_CRSF = 29,
+        SerialProtocol_Generator = 30,
     };
 
     // get singleton instance
@@ -151,6 +183,11 @@ public:
     // get Serial Port
     AP_HAL::UARTDriver *get_serial_by_id(uint8_t id);
 
+    // accessors for AP_Periph to set baudrate and type
+    void set_protocol_and_baud(uint8_t sernum, enum SerialProtocol protocol, uint32_t baudrate);
+
+    static uint32_t map_baudrate(int32_t rate);
+
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -175,13 +212,11 @@ private:
     const UARTState *find_protocol_instance(enum SerialProtocol protocol,
                                       uint8_t instance) const;
 
-    uint32_t map_baudrate(int32_t rate) const;
-
     // protocol_match - returns true if the protocols match
     bool protocol_match(enum SerialProtocol protocol1, enum SerialProtocol protocol2) const;
 
     // setup any special options
-    void set_options(uint8_t i);
+    void set_options(uint16_t i);
 };
 
 namespace AP {

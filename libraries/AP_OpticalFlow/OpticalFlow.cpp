@@ -49,6 +49,7 @@ const AP_Param::GroupInfo OpticalFlow::var_info[] = {
     // @Param: _ORIENT_YAW
     // @DisplayName: Flow sensor yaw alignment
     // @Description: Specifies the number of centi-degrees that the flow sensor is yawed relative to the vehicle. A sensor with its X-axis pointing to the right of the vehicle X axis has a positive yaw angle.
+    // @Units: cdeg
     // @Range: -18000 +18000
     // @Increment: 1
     // @User: Standard
@@ -58,21 +59,24 @@ const AP_Param::GroupInfo OpticalFlow::var_info[] = {
     // @DisplayName:  X position offset
     // @Description: X position of the optical flow sensor focal point in body frame. Positive X is forward of the origin.
     // @Units: m
-    // @Range: -10 10
+    // @Range: -5 5
+    // @Increment: 0.01
     // @User: Advanced
 
     // @Param: _POS_Y
     // @DisplayName: Y position offset
     // @Description: Y position of the optical flow sensor focal point in body frame. Positive Y is to the right of the origin.
     // @Units: m
-    // @Range: -10 10
+    // @Range: -5 5
+    // @Increment: 0.01
     // @User: Advanced
 
     // @Param: _POS_Z
     // @DisplayName: Z position offset
     // @Description: Z position of the optical flow sensor focal point in body frame. Positive Z is down from the origin.
     // @Units: m
-    // @Range: -10 10
+    // @Range: -5 5
+    // @Increment: 0.01
     // @User: Advanced
     AP_GROUPINFO("_POS", 4, OpticalFlow, _pos_offset, 0.0f),
 
@@ -82,13 +86,6 @@ const AP_Param::GroupInfo OpticalFlow::var_info[] = {
     // @Range: 0 127
     // @User: Advanced
     AP_GROUPINFO("_ADDR", 5,  OpticalFlow, _address,   0),
-
-    // the parameter description below is for GCSs (like MP) that use master for the parameter descriptions.  This should be removed when Copter-3.7 is released
-    // @Param: _ENABLE
-    // @DisplayName: Optical flow enable/disable
-    // @Description: Setting this to Enabled(1) will enable optical flow. Setting this to Disabled(0) will disable optical flow
-    // @Values: 0:Disabled, 1:Enabled
-    // @User: Standard
 
     AP_GROUPEND
 };
@@ -164,7 +161,7 @@ void OpticalFlow::update(void)
     _flags.healthy = (AP_HAL::millis() - _last_update_ms < 500);
 }
 
-void OpticalFlow::handle_msg(const mavlink_message_t *msg)
+void OpticalFlow::handle_msg(const mavlink_message_t &msg)
 {
     // exit immediately if not enabled
     if (!enabled()) {

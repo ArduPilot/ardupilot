@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #pragma once
@@ -22,11 +22,11 @@
 #include "shared_dma.h"
 #include "Semaphores.h"
 
-#define RX_BOUNCE_BUFSIZE 128U
+#define RX_BOUNCE_BUFSIZE 64U
 #define TX_BOUNCE_BUFSIZE 64U
 
-// enough for uartA to uartG, plus IOMCU
-#define UART_MAX_DRIVERS 8
+// enough for uartA to uartH, plus IOMCU
+#define UART_MAX_DRIVERS 9
 
 class ChibiOS::UARTDriver : public AP_HAL::UARTDriver {
 public:
@@ -44,8 +44,11 @@ public:
     uint32_t available() override;
     uint32_t txspace() override;
     int16_t read() override;
+    ssize_t read(uint8_t *buffer, uint16_t count) override;
     int16_t read_locked(uint32_t key) override;
     void _timer_tick(void) override;
+
+    bool discard_input() override;
 
     size_t write(uint8_t c) override;
     size_t write(const uint8_t *buffer, size_t size) override;
@@ -54,21 +57,26 @@ public:
     bool lock_port(uint32_t write_key, uint32_t read_key) override;
 
     // control optional features
-    bool set_options(uint8_t options) override;
+    bool set_options(uint16_t options) override;
+    uint8_t get_options(void) const override;
 
     // write to a locked port. If port is locked and key is not correct then 0 is returned
     // and write is discarded
     size_t write_locked(const uint8_t *buffer, size_t size, uint32_t key) override;
-    
+
     struct SerialDef {
         BaseSequentialStream* serial;
         bool is_usb;
+#ifndef HAL_UART_NODMA
         bool dma_rx;
         uint8_t dma_rx_stream_id;
         uint32_t dma_rx_channel_id;
         bool dma_tx;
         uint8_t dma_tx_stream_id;
-        uint32_t dma_tx_channel_id; 
+        uint32_t dma_tx_channel_id;
+#endif
+        ioline_t tx_line;
+        ioline_t rx_line;
         ioline_t rts_line;
         int8_t rxinv_gpio;
         uint8_t rxinv_polarity;
@@ -113,8 +121,9 @@ public:
     }
 
 private:
-    bool tx_bounce_buf_ready;
     const SerialDef &sdef;
+    bool rx_dma_enabled;
+    bool tx_dma_enabled;
 
     // thread used for all UARTs
     static thread_t *uart_thread_ctx;
@@ -145,20 +154,27 @@ private:
 
     // we use in-task ring buffers to reduce the system call cost
     // of ::read() and ::write() in the main loop
-    uint8_t *rx_bounce_buf;
+#ifndef HAL_UART_NODMA
+    bool tx_bounce_buf_ready;
+    volatile uint8_t rx_bounce_idx;
+    uint8_t *rx_bounce_buf[2];
     uint8_t *tx_bounce_buf;
+#endif
     ByteBuffer _readbuf{0};
     ByteBuffer _writebuf{0};
-    Semaphore _write_mutex;
+    HAL_Semaphore _write_mutex;
+#ifndef HAL_UART_NODMA
     const stm32_dma_stream_t* rxdma;
     const stm32_dma_stream_t* txdma;
-    virtual_timer_t tx_timeout;    
+#endif
+    virtual_timer_t tx_timeout;
     bool _in_timer;
     bool _blocking_writes;
     bool _initialised;
     bool _device_initialised;
-    bool _lock_rx_in_timer_tick = false;
+#ifndef HAL_UART_NODMA
     Shared_DMA *dma_handle;
+#endif
     static const SerialDef _serial_tab[];
 
     // timestamp for receiving data on the UART, avoiding a lock
@@ -172,36 +188,59 @@ private:
     uint32_t _first_write_started_us;
     uint32_t _total_written;
 
-    // we remember cr2 and cr2 options from set_options to apply on sdStart()
-    uint32_t _cr3_options;
+    // we remember config options from set_options to apply on sdStart()
+    uint32_t _cr1_options;
     uint32_t _cr2_options;
+    uint32_t _cr3_options;
+    uint16_t _last_options;
 
     // half duplex control. After writing we throw away bytes for 4 byte widths to
     // prevent reading our own bytes back
+#if CH_CFG_USE_EVENTS == TRUE
     bool half_duplex;
-    uint32_t hd_read_delay_us;
-    uint32_t hd_write_us;
-    void half_duplex_setup_delay(uint16_t len);
+    event_listener_t hd_listener;
+    bool hd_tx_active;
+    void half_duplex_setup_tx(void);
+#endif
 
     // set to true for unbuffered writes (low latency writes)
     bool unbuffered_writes;
-    
+
+#if CH_CFG_USE_EVENTS == TRUE
+    // listener for parity error events
+    event_listener_t ev_listener;
+    bool parity_enabled;
+#endif
+
+#ifndef HAL_UART_NODMA
     static void rx_irq_cb(void* sd);
+#endif
     static void rxbuff_full_irq(void* self, uint32_t flags);
     static void tx_complete(void* self, uint32_t flags);
     static void handle_tx_timeout(void *arg);
 
+#ifndef HAL_UART_NODMA
     void dma_tx_allocate(Shared_DMA *ctx);
     void dma_tx_deallocate(Shared_DMA *ctx);
+    void dma_rx_enable(void);
+#endif
     void update_rts_line(void);
 
     void check_dma_tx_completion(void);
+#ifndef HAL_UART_NODMA
     void write_pending_bytes_DMA(uint32_t n);
+#endif
     void write_pending_bytes_NODMA(uint32_t n);
     void write_pending_bytes(void);
 
     void receive_timestamp_update(void);
-    
+
+    // set SERIALn_OPTIONS for pullup/pulldown
+    void set_pushpull(uint16_t options);
+
     void thread_init();
     static void uart_thread(void *);
 };
+
+// access to usb init for stdio.cpp
+void usb_initialise(void);

@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  simulator connector for ardupilot version of JSBSim
+  simulator connector for JSBSim
 */
 
 #include "SIM_JSBSim.h"
@@ -36,8 +36,8 @@ namespace SITL {
 
 #define DEBUG_JSBSIM 1
 
-JSBSim::JSBSim(const char *home_str, const char *frame_str) :
-    Aircraft(home_str, frame_str),
+JSBSim::JSBSim(const char *frame_str) :
+    Aircraft(frame_str),
     sock_control(false),
     sock_fgfdm(true),
     initialised(false),
@@ -62,6 +62,7 @@ JSBSim::JSBSim(const char *home_str, const char *frame_str) :
     }
     control_port = 5505 + instance*10;
     fdm_port = 5504 + instance*10;
+    num_motors = 2;
 
     printf("JSBSim backend started: control_port=%u fdm_port=%u\n",
            control_port, fdm_port);
@@ -346,7 +347,7 @@ void JSBSim::send_servos(const struct sitl_input &input)
         float ch1 = aileron;
         float ch2 = elevator;
         aileron  = (ch2-ch1)/2.0f;
-        // the minus does away with the need for RC2_REV=-1
+        // the minus does away with the need for RC2_REVERSED=-1
         elevator = -(ch2+ch1)/2.0f;
     } else if (frame == FRAME_VTAIL) {
         // fake a vtail plane
@@ -443,8 +444,8 @@ void JSBSim::recv_fdm(const struct sitl_input &input)
     // update magnetic field
     update_mag_field_bf();
     
-    rpm1 = fdm.rpm[0];
-    rpm2 = fdm.rpm[1];
+    rpm[0] = fdm.rpm[0];
+    rpm[1] = fdm.rpm[1];
     
     time_now_us = fdm.cur_time;
 }

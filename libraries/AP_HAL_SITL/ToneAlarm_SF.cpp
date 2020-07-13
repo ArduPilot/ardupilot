@@ -20,6 +20,10 @@ Synth::sEnvelope envelope;
 
 void ToneAlarm_SF::set_buzzer_tone(float frequency, float volume, float duration_ms)
 {
+    if (!AP::sitl()->tonealarm_sim.is_enabled()) {
+        return;
+    }
+
     if (frequency <= 0) {
         return;
     }

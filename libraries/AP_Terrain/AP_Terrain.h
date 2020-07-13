@@ -17,8 +17,9 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/Location.h>
+#include <AP_Filesystem/AP_Filesystem_Available.h>
 
-#if (HAL_OS_POSIX_IO || HAL_OS_FATFS_IO) && defined(HAL_BOARD_TERRAIN_DIRECTORY)
+#if HAVE_FILESYSTEM_SUPPORT && defined(HAL_BOARD_TERRAIN_DIRECTORY)
 #define AP_TERRAIN_AVAILABLE 1
 #else
 #define AP_TERRAIN_AVAILABLE 0
@@ -56,7 +57,13 @@
 // format of grid on disk
 #define TERRAIN_GRID_FORMAT_VERSION 1
 
+// we allow for a 2cm discrepancy in the grid corners. This is to
+// account for different rounding in terrain DAT file generators using
+// different programming languages
+#define TERRAIN_LATLON_EQUAL(v1, v2) (labs((v1)-(v2)) <= 2)
+
 #if TERRAIN_DEBUG
+#include <assert.h>
 #define ASSERT_RANGE(v,minv,maxv) assert((v)<=(maxv)&&(v)>=(minv))
 #else
 #define ASSERT_RANGE(v,minv,maxv)
@@ -103,9 +110,9 @@ public:
 
     // handle terrain data and reports from GCS
     void send_terrain_report(mavlink_channel_t chan, const Location &loc, bool extrapolate);
-    void handle_data(mavlink_channel_t chan, mavlink_message_t *msg);
-    void handle_terrain_check(mavlink_channel_t chan, mavlink_message_t *msg);
-    void handle_terrain_data(mavlink_message_t *msg);
+    void handle_data(mavlink_channel_t chan, const mavlink_message_t &msg);
+    void handle_terrain_check(mavlink_channel_t chan, const mavlink_message_t &msg);
+    void handle_terrain_data(const mavlink_message_t &msg);
 
     /*
       find the terrain height in meters above sea level for a location
@@ -152,11 +159,10 @@ public:
                                          bool extrapolate = false);
 
     /* 
-       return current height above terrain at current AHRS
-       position. 
+       return current height above terrain at current AHRS position.
 
        If extrapolate is true then extrapolate from most recently
-       available terrain data is terrain data is not available for the
+       available terrain data if terrain data is not available for the
        current location.
 
        Return true if height is available, otherwise false.
@@ -177,7 +183,12 @@ public:
     /*
       get some statistics for TERRAIN_REPORT
      */
-    void get_statistics(uint16_t &pending, uint16_t &loaded);
+    void get_statistics(uint16_t &pending, uint16_t &loaded) const;
+
+    /*
+      returns true if initialisation failed because out-of-memory
+     */
+    bool init_failed() const { return memory_alloc_failed; }
 
 private:
     // allocate the terrain subsystem data
@@ -308,7 +319,7 @@ private:
     /*
       get some statistics for TERRAIN_REPORT
      */
-    uint8_t bitcount64(uint64_t b);
+    uint8_t bitcount64(uint64_t b) const;
 
     /*
       disk IO functions
@@ -320,6 +331,7 @@ private:
     void io_timer(void);
     void open_file(void);
     void seek_offset(void);
+    uint32_t east_blocks(struct grid_block &block) const;
     void write_block(void);
     void read_block(void);
 
@@ -337,6 +349,11 @@ private:
     // parameters
     AP_Int8  enable;
     AP_Int16 grid_spacing; // meters between grid points
+    AP_Int16 options; // option bits
+
+    enum class Options {
+        DisableDownload = (1U<<0),
+    };
 
     // reference to AP_Mission, so we can ask preload terrain data for 
     // all waypoints
@@ -414,6 +431,15 @@ private:
     // status
     enum TerrainStatus system_status = TerrainStatusDisabled;
 
+    // memory allocation status
+    bool memory_alloc_failed;
+
     static AP_Terrain *singleton;
 };
+
+namespace AP {
+    AP_Terrain &terrain();
+};
+
 #endif // AP_TERRAIN_AVAILABLE
+
