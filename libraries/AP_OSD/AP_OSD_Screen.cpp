@@ -781,7 +781,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 
     // @Param: POWER_EN
     // @DisplayName: POWER_EN
-    // @Description: Displays power
+    // @Description: Displays total power draw from all batteries
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: POWER_X
@@ -932,7 +932,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 
     // @Param: ENERGY_EN
     // @DisplayName: ENERGY_EN
-    // @Description: Displays main consumed energy
+    // @Description: Displays total energy consumed from primary battery
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: ENERGY_X
