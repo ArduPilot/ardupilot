@@ -368,8 +368,8 @@ void AP_Airspeed::calibrate(bool in_startup)
         state[i].cal.count = 0;
         state[i].cal.sum = 0;
         state[i].cal.read_count = 0;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Airspeed %u calibration started", i+1);
     }
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Airspeed calibration started");
 }
 
 /*
