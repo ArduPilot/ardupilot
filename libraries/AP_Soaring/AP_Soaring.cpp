@@ -114,12 +114,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ALT_CUTOFF", 14, SoaringController, alt_cutoff, 250.0),
     
-    // @Param: ENABLE_CH
-    // @DisplayName: (Optional) RC channel that toggles the soaring controller on and off
-    // @Description: Toggles the soaring controller on and off. This parameter has any effect only if SOAR_ENABLE is set to 1 and this parameter is set to a valid non-zero channel number. When set, soaring will be activated when RC input to the specified channel is greater than or equal to 1700.
-    // @Range: 0 16
-    // @User: Advanced
-    AP_GROUPINFO("ENABLE_CH", 15, SoaringController, soar_active_ch, 0),
+    // 15 was SOAR_ENABLE_CH, now RCX_OPTION
 
     // @Param: MAX_DRIFT
     // @DisplayName: (Optional) Maximum drift distance to allow when thermalling.
@@ -376,23 +371,10 @@ float SoaringController::McCready(float alt)
 SoaringController::ActiveStatus SoaringController::active_state() const
 {
     if (!soar_active) {
-        return ActiveStatus::DISABLED;
-    }
-    if (soar_active_ch <= 0) {
-        // no activation channel
-        return ActiveStatus::AUTO_MODE_CHANGE;
+        return ActiveStatus::SOARING_DISABLED;
     }
 
-    uint16_t radio_in = RC_Channels::get_radio_in(soar_active_ch-1);
-
-    // active when above 1400, with auto mode changes when above 1700
-    if (radio_in >= 1700) {
-        return ActiveStatus::AUTO_MODE_CHANGE;
-    } else if (radio_in >= 1400) {
-        return ActiveStatus::MANUAL_MODE_CHANGE;
-    }
-
-    return ActiveStatus::DISABLED;
+    return _pilot_desired_state;
 }
 
 void SoaringController::update_active_state()
@@ -402,7 +384,7 @@ void SoaringController::update_active_state()
 
     if (state_changed) {
         switch (status) {
-            case ActiveStatus::DISABLED:
+            case ActiveStatus::SOARING_DISABLED:
                 // It's not enabled, but was enabled on the last loop.
                 gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Disabled.");
                 set_throttle_suppressed(false);
