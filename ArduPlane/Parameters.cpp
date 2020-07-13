@@ -1422,6 +1422,21 @@ void Plane::load_parameters(void)
         }
     }
 
+    // Convert SOAR_ENABLE_CH to RCx_OPTION
+    AP_Int8 soar_enable_ch;
+    AP_Param::ConversionInfo soar_info = {
+        Parameters::k_param_g2,
+        968,
+        AP_PARAM_INT8,
+        nullptr
+    };
+    if (AP_Param::find_old_parameter(&soar_info, &soar_enable_ch) && soar_enable_ch.get() != 0) {
+        RC_Channel *soar_ch = rc().channel(soar_enable_ch - 1);
+        if (soar_ch != nullptr && !soar_ch->option.configured()) {
+            soar_ch->option.set_and_save((int16_t)RC_Channel::AUX_FUNC::SOARING); // save the new param
+        }
+    }
+
     hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));
 }
 
