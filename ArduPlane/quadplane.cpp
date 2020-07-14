@@ -1307,6 +1307,7 @@ void QuadPlane::control_loiter()
                                                plane.G_Dt);
 
     // run loiter controller
+    loiter_nav->use_velmatch();
     loiter_nav->update();
 
     // nav roll and pitch are controller by loiter controller
