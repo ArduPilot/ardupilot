@@ -375,7 +375,7 @@ void AC_Avoid::adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f
             // shorten vector without adjusting its direction
             Vector2f intersection;
             if (Vector2f::circle_segment_intersection(position_xy, stopping_point_plus_margin, Vector2f(0.0f,0.0f), fence_radius - margin_cm, intersection)) {
-                const float distance_to_target = MAX((intersection - position_xy).length() - margin_cm, 0.0f);
+                const float distance_to_target = (intersection - position_xy).length();
                 const float max_speed = get_max_speed(kP, accel_cmss, distance_to_target, dt);
                 if (max_speed < desired_speed) {
                     desired_vel_cms *= MAX(max_speed, 0.0f) / desired_speed;
@@ -525,7 +525,7 @@ void AC_Avoid::adjust_velocity_inclusion_circles(float kP, float accel_cmss, Vec
                         // shorten vector without adjusting its direction
                         Vector2f intersection;
                         if (Vector2f::circle_segment_intersection(position_NE_rel, stopping_point_plus_margin, Vector2f(0.0f,0.0f), radius_cm - margin_cm, intersection)) {
-                            const float distance_to_target = MAX((intersection - position_NE_rel).length() - margin_cm, 0.0f);
+                            const float distance_to_target = (intersection - position_NE_rel).length();
                             const float max_speed = get_max_speed(kP, accel_cmss, distance_to_target, dt);
                             if (max_speed < desired_speed) {
                                 desired_vel_cms *= MAX(max_speed, 0.0f) / desired_speed;
@@ -635,7 +635,7 @@ void AC_Avoid::adjust_velocity_exclusion_circles(float kP, float accel_cmss, Vec
                         // shorten vector without adjusting its direction
                         Vector2f intersection;
                         if (Vector2f::circle_segment_intersection(position_NE_rel, stopping_point_plus_margin, Vector2f(0.0f,0.0f), radius_cm + margin_cm, intersection)) {
-                            const float distance_to_target = MAX((intersection - position_NE_rel).length() - margin_cm, 0.0f);
+                            const float distance_to_target = (intersection - position_NE_rel).length();
                             const float max_speed = get_max_speed(kP, accel_cmss, distance_to_target, dt);
                             if (max_speed < desired_speed) {
                                 desired_vel_cms *= MAX(max_speed, 0.0f) / desired_speed;
