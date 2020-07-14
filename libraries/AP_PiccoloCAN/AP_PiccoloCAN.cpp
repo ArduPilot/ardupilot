@@ -384,7 +384,11 @@ void AP_PiccoloCAN::send_esc_messages(void)
 
     // No ESCs are selected? Don't send anything
     if (_esc_bm == 0x00) {
-    } else if (hal.util->get_soft_armed()) {
+        return;
+    }
+
+    // System is armed - send out ESC commands
+    if (hal.util->get_soft_armed()) {
 
         bool send_cmd = false;
         int16_t cmd[4] {};
