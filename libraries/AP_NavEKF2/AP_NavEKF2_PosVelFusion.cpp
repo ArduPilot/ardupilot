@@ -124,14 +124,18 @@ void NavEKF2_core::ResetPosition(void)
             // clear the timeout flags and counters
             rngBcnTimeout = false;
             lastRngBcnPassTime_ms = imuSampleTime_ms;
-        } else if (imuSampleTime_ms - extNavDataDelayed.time_ms < 250) {
+        } else if (imuSampleTime_ms - extNavMeasTime_ms < 250) {
             // use external nav data as the third preference
-            ext_nav_elements extNavCorrected = extNavDataDelayed;
+            ext_nav_elements extNavCorrected = extNavDataNew;
+            // extNavDataDelay is too old to pass time check
             CorrectExtNavForSensorOffset(extNavCorrected.pos);
             stateStruct.position.x = extNavCorrected.pos.x;
             stateStruct.position.y = extNavCorrected.pos.y;
             // set the variances from the external nav filter
             P[7][7] = P[6][6] = sq(extNavCorrected.posErr);
+            // clear the timeout flags and counters
+            posTimeout = false;
+            lastPosPassTime_ms = imuSampleTime_ms;
         }
     }
     for (uint8_t i=0; i<imu_buffer_length; i++) {
