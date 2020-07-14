@@ -524,6 +524,19 @@ private:
         uint32_t time_ms;           // measurement timestamp (msec)
     };
 
+    // Specify source of data to be used for a partial state reset
+    // Checking the availability and quality of the data source specified is the responsibility of the caller
+    enum resetDataSource {
+                    DEFAULT=0,      // Use data source selected by reset function internal rules
+                    GPS=1,          // Use GPS
+                    RNGBCN=2,       // Use beacon range data
+                    FLOW=3,         // Use optical flow rates
+                    BARO=4,         // Use Baro height
+                    MAG=5,          // Use magnetometer data
+                    RNGFND=6,       // Use rangefinder data
+                    EXTNAV=7        // Use external nav data
+                        };
+
     // update the navigation filter status
     void  updateFilterStatus(void);
 
@@ -685,7 +698,7 @@ private:
     void InitialiseVariablesMag();
 
     // reset the horizontal position states uing the last GPS measurement
-    void ResetPosition(void);
+    void ResetPosition(resetDataSource resetSrc = DEFAULT);
 
     // reset the stateStruct's NE position to the specified position
     void ResetPositionNE(float posN, float posE);

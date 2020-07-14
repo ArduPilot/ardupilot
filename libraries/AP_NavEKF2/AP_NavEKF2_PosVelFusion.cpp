@@ -82,7 +82,7 @@ void NavEKF2_core::ResetVelocity(void)
 }
 
 // resets position states to last GPS measurement or to zero if in constant position mode
-void NavEKF2_core::ResetPosition(void)
+void NavEKF2_core::ResetPosition(resetDataSource resetSrc)
 {
     // Store the position before the reset so that we can record the reset delta
     posResetNE.x = stateStruct.position.x;
@@ -124,9 +124,9 @@ void NavEKF2_core::ResetPosition(void)
             // clear the timeout flags and counters
             rngBcnTimeout = false;
             lastRngBcnPassTime_ms = imuSampleTime_ms;
-        } else if (imuSampleTime_ms - extNavMeasTime_ms < 250) {
+        } else if ((imuSampleTime_ms - extNavDataDelayed.time_ms < 250) || resetSrc == EXTNAV) {
             // use external nav data as the third preference
-            ext_nav_elements extNavCorrected = extNavDataNew;
+            ext_nav_elements extNavCorrected = extNavDataDelayed;
             // extNavDataDelay is too old to pass time check
             CorrectExtNavForSensorOffset(extNavCorrected.pos);
             stateStruct.position.x = extNavCorrected.pos.x;
