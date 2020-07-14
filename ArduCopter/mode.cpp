@@ -635,6 +635,7 @@ void Mode::land_run_horizontal_control()
     loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch, G_Dt);
 
     // run loiter controller
+    loiter_nav->use_velmatch();
     loiter_nav->update();
 
     float nav_roll  = loiter_nav->get_roll();

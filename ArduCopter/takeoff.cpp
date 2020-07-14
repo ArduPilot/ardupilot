@@ -186,12 +186,7 @@ void Mode::auto_takeoff_run()
         }
     }
 
-    Vector3f dist_vec;  // vector to lead vehicle
-    Vector3f dist_vec_offs;  // vector to lead vehicle + offset
-    Vector3f vel_of_target;  // velocity of lead vehicle
-    g2.follow.get_target_dist_and_vel_ned(dist_vec, dist_vec_offs, vel_of_target);
-
-    pos_control->update_velmatch_velocity(pos_control->get_dt(), vel_of_target);
+    pos_control->update_velmatch_velocity(pos_control->get_dt());
     wp_nav->shift_wp_origin_and_destination_xy(pos_control->get_vel_velmatch()*pos_control->get_dt());
 
     // check if we are not navigating because of low altitude

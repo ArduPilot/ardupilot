@@ -23,6 +23,7 @@ bool ModeLoiter::init(bool ignore_checks)
         // clear out pilot desired acceleration in case radio failsafe event occurs and we do not switch to RTL for some reason
         loiter_nav->clear_pilot_desired_acceleration();
     }
+    pos_control->init_velmatch_velocity();
     loiter_nav->init_target();
 
     // initialise position and desired velocity
@@ -78,11 +79,6 @@ void ModeLoiter::run()
     float target_yaw_rate = 0.0f;
     float target_climb_rate = 0.0f;
     float takeoff_climb_rate = 0.0f;
-    loiter_nav->use_velmatch();
-    Vector3f dist_vec;  // vector to lead vehicle
-    Vector3f dist_vec_offs;  // vector to lead vehicle + offset
-    Vector3f vel_of_target;  // velocity of lead vehicle
-    g2.follow.get_target_dist_and_vel_ned(dist_vec, dist_vec_offs, vel_of_target);
 
     // initialize vertical speed and acceleration
     pos_control->set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
@@ -143,7 +139,8 @@ void ModeLoiter::run()
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
         // run loiter controller
-        loiter_nav->update(vel_of_target);
+        loiter_nav->use_velmatch();
+        loiter_nav->update();
 
         // call attitude controller
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(loiter_nav->get_roll(), loiter_nav->get_pitch(), target_yaw_rate);
@@ -177,7 +174,8 @@ void ModeLoiter::run()
 #endif
 
         // run loiter controller
-        loiter_nav->update(vel_of_target);
+        loiter_nav->use_velmatch();
+        loiter_nav->update();
 
         // call attitude controller
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(loiter_nav->get_roll(), loiter_nav->get_pitch(), target_yaw_rate);

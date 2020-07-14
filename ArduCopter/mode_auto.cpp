@@ -212,6 +212,7 @@ void ModeAuto::land_start()
 {
     // set target to stopping point
     Vector3f stopping_point;
+    loiter_nav->use_velmatch();
     loiter_nav->get_stopping_point_xy(stopping_point);
 
     // call location specific land start function
