@@ -9,6 +9,7 @@
 #include <AP_HAL_ChibiOS/hwdef/common/usbcfg.h>
 #include <AP_HAL_ChibiOS/hwdef/common/flash.h>
 #include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
+#include <AP_Math/AP_Math.h>
 #include "support.h"
 #include "mcu_f1.h"
 #include "mcu_f3.h"
@@ -159,6 +160,62 @@ uint32_t flash_func_read_otp(uint32_t idx)
 uint32_t flash_func_read_sn(uint32_t idx)
 {
     return *(uint32_t *)(UDID_START + idx);
+}
+
+/*
+  we use a write buffer for flashing, both for efficiency and to
+  ensure that we only ever do 32 byte aligned writes on STM32H7. If
+  you attempt to do writes on a H7 of less than 32 bytes or not
+  aligned then the flash can end up in a CRC error state, which can
+  generate a hardware fault (a double ECC error) on flash read, even
+  after a power cycle
+ */
+static struct {
+    uint32_t buffer[8];
+    uint32_t address;
+    uint8_t n;
+} fbuf;
+
+/*
+  flush the write buffer
+ */
+bool flash_write_flush(void)
+{
+    if (fbuf.n == 0) {
+        return true;
+    }
+    fbuf.n = 0;
+    return flash_func_write_words(fbuf.address, fbuf.buffer, ARRAY_SIZE(fbuf.buffer));
+}
+
+/*
+  write to flash with buffering to 32 bytes alignment
+ */
+bool flash_write_buffer(uint32_t address, const uint32_t *v, uint8_t nwords)
+{
+    if (fbuf.n > 0 && address != fbuf.address + fbuf.n*4) {
+        if (!flash_write_flush()) {
+            return false;
+        }
+    }
+    while (nwords > 0) {
+        if (fbuf.n == 0) {
+            fbuf.address = address;
+            memset(fbuf.buffer, 0xff, sizeof(fbuf.buffer));
+        }
+        uint8_t n = MIN(ARRAY_SIZE(fbuf.buffer)-fbuf.n, nwords);
+        memcpy(&fbuf.buffer[fbuf.n], v, n*4);
+        address += n*4;
+        v += n;
+        nwords -= n;
+        fbuf.n += n;
+        if (fbuf.n == ARRAY_SIZE(fbuf.buffer)) {
+            if (!flash_write_flush()) {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 uint32_t get_mcu_id(void)

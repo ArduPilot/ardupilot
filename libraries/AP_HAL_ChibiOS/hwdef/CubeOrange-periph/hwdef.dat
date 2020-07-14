@@ -7,6 +7,8 @@ undef ROMFS
 undef HAL_HAVE_SAFETY_SWITCH
 undef IMU
 undef HAL_CHIBIOS_ARCH_FMUV3
+undef BOOTLOADER_DEV_LIST
+
 # board ID for firmware load
 APJ_BOARD_ID 1400
 

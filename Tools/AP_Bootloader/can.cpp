@@ -71,7 +71,7 @@ static uint8_t node_id_allocation_transfer_id;
 static uavcan_protocol_NodeStatus node_status;
 static uint32_t send_next_node_id_allocation_request_at_ms;
 static uint8_t node_id_allocation_unique_id_offset;
-static uint32_t app_first_word = 0xFFFFFFFF;
+static uint32_t app_first_words[8];
 
 static struct {
     uint64_t ofs;
@@ -225,11 +225,11 @@ static void handle_file_read_response(CanardInstance* ins, CanardRxTransfer* tra
         flash_func_erase_sector(fw_update.sector+1);
     }
     for (uint16_t i=0; i<len/4; i++) {
-        if (i == 0 && fw_update.sector == 0 && fw_update.ofs == 0) {
+        if (fw_update.sector == 0 && (fw_update.ofs+i*4) < sizeof(app_first_words)) {
             // keep first word aside, to be flashed last
-            app_first_word = buf32[0];
+            app_first_words[i] = buf32[i];
         } else {
-            flash_func_write_word(fw_update.ofs+i*4, buf32[i]);
+            flash_write_buffer(fw_update.ofs+i*4, &buf32[i], 1);
         }
     }
     fw_update.ofs += len;
@@ -241,7 +241,8 @@ static void handle_file_read_response(CanardInstance* ins, CanardRxTransfer* tra
     if (len < UAVCAN_PROTOCOL_FILE_READ_RESPONSE_DATA_MAX_LENGTH) {
         fw_update.node_id = 0;
         // now flash the first word
-        flash_func_write_word(0, app_first_word);
+        flash_write_buffer(0, app_first_words, ARRAY_SIZE(app_first_words));
+        flash_write_flush();
         if (can_check_firmware()) {
             jump_to_app();
         }
@@ -262,6 +263,9 @@ static void handle_begin_firmware_update(CanardInstance* ins, CanardRxTransfer* 
     if (transfer->payload_len < 1 || transfer->payload_len > sizeof(fw_update.path)+1) {
         return;
     }
+
+    memset(app_first_words, 0xff, sizeof(app_first_words));
+
     if (fw_update.node_id == 0) {
         uint32_t offset = 0;
         canardDecodeScalar(transfer, 0, 8, false, (void*)&fw_update.node_id);
