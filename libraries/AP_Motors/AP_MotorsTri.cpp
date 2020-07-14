@@ -13,11 +13,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*
- *       AP_MotorsTri.cpp - ArduCopter motors library
- *       Code by RandyMackay. DIYDrones.com
- *
- */
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
