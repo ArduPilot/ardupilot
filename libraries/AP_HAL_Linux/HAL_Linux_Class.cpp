@@ -300,7 +300,7 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
         {0, false, 0, 0}
     };
 
-    GetOptLong gopt(argc, argv, "A:B:C:D:E:F:l:t:s:he:SM:",
+    GetOptLong gopt(argc, argv, "A:B:C:D:E:F:G:H:l:t:s:he:SM:",
                     options);
 
     /*
