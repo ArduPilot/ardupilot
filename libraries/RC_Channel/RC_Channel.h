@@ -184,6 +184,8 @@ public:
         AIRMODE =             84, // enable / disable airmode for copter
         GENERATOR   =         85, // generator control
         TER_DISABLE =         86, // disable terrain following in CRUISE/FBWB modes
+        CROW_SELECT =         87, // select CROW mode for diff spoilers;high disables,mid forces progressive
+
         // entries from 100 onwards are expected to be developer
         // options used for testing
         KILL_IMU1 =          100, // disable first IMU (for IMU failure testing)
