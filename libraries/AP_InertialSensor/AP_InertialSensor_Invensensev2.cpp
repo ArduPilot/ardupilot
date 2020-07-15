@@ -72,6 +72,7 @@ AP_InertialSensor_Invensensev2::~AP_InertialSensor_Invensensev2()
     if (_fifo_buffer != nullptr) {
         hal.util->free_type(_fifo_buffer, INV2_FIFO_BUFFER_LEN * INV2_SAMPLE_SIZE, AP_HAL::Util::MEM_DMA_SAFE);
     }
+    _dev->deregister_bankselect_callback();
     //delete _auxiliary_bus;
 }
 
@@ -483,9 +484,8 @@ void AP_InertialSensor_Invensensev2::_read_fifo()
             }
         } else {
             // this ensures we keep things nicely setup for DMA
-            _select_bank(GET_BANK(INV2REG_FIFO_R_W));
             uint8_t reg = GET_REG(INV2REG_FIFO_R_W) | 0x80;
-            if (!_dev->transfer(&reg, 1, nullptr, 0)) {
+            if (!_dev->transfer_bank(GET_BANK(INV2REG_FIFO_R_W), &reg, 1, nullptr, 0)) {
                 _dev->set_chip_select(false);
                 goto check_registers;
             }
@@ -549,31 +549,31 @@ bool AP_InertialSensor_Invensensev2::_check_raw_temp(int16_t t2)
 bool AP_InertialSensor_Invensensev2::_block_read(uint16_t reg, uint8_t *buf,
                                             uint32_t size)
 {
-    _select_bank(GET_BANK(reg));
-    return _dev->read_registers(reg, buf, size);
+    return _dev->read_bank_registers(GET_BANK(reg), GET_REG(reg), buf, size);
 }
 
 uint8_t AP_InertialSensor_Invensensev2::_register_read(uint16_t reg)
 {
     uint8_t val = 0;
-    _select_bank(GET_BANK(reg));
-    _dev->read_registers(GET_REG(reg), &val, 1);
+    _dev->read_bank_registers(GET_BANK(reg), GET_REG(reg), &val, 1);
     return val;
 }
 
 void AP_InertialSensor_Invensensev2::_register_write(uint16_t reg, uint8_t val, bool checked)
 {
     (void)checked;
-    _select_bank(GET_BANK(reg));
-    _dev->write_register(GET_REG(reg), val, false);
+    _dev->write_bank_register(GET_BANK(reg), GET_REG(reg), val, checked);
 }
 
-void AP_InertialSensor_Invensensev2::_select_bank(uint8_t bank)
+bool AP_InertialSensor_Invensensev2::_select_bank(uint8_t bank)
 {
     if (_current_bank != bank) {
-        _dev->write_register(INV2REG_BANK_SEL, bank << 4, true);
+        if (!_dev->write_register(INV2REG_BANK_SEL, bank << 4, true)) {
+            return false;
+        }
         _current_bank = bank;
     }
+    return true;
 }
 
 /*
@@ -665,8 +665,9 @@ bool AP_InertialSensor_Invensensev2::_hardware_init(void)
     _dev->get_semaphore()->take_blocking();
 
     // disabled setup of checked registers as it can't cope with bank switching
-    // _dev->setup_checked_registers(7, _dev->bus_type() == AP_HAL::Device::BUS_TYPE_I2C?200:20);
-    
+    _dev->setup_checked_registers(7, _dev->bus_type() == AP_HAL::Device::BUS_TYPE_I2C?200:20);
+    _dev->setup_bankselect_callback(FUNCTOR_BIND_MEMBER(&AP_InertialSensor_Invensensev2::_select_bank, bool, uint8_t));
+
     // initially run the bus at low speed
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);
 

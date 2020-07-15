@@ -94,7 +94,7 @@ private:
     bool _block_read(uint16_t reg, uint8_t *buf, uint32_t size);
     uint8_t _register_read(uint16_t reg);
     void _register_write(uint16_t reg, uint8_t val, bool checked=false);
-    void _select_bank(uint8_t bank);
+    bool _select_bank(uint8_t bank);
 
     bool _accumulate(uint8_t *samples, uint8_t n_samples);
     bool _accumulate_sensor_rate_sampling(uint8_t *samples, uint8_t n_samples);
