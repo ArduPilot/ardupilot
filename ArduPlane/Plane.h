@@ -1109,6 +1109,14 @@ private:
     bool ekf_over_threshold();
     void failsafe_ekf_event();
     void failsafe_ekf_off_event(void);
+    
+    enum class CrowMode {
+        NORMAL,
+        PROGRESSIVE,
+        CROW_DISABLED,
+    };
+
+    CrowMode crow_mode = CrowMode::NORMAL;
 
 public:
     void failsafe_check(void);

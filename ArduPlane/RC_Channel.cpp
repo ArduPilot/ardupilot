@@ -78,6 +78,24 @@ void RC_Channel_Plane::do_aux_function_q_assist_state(AuxSwitchPos ch_flag)
     }
 }
 
+void RC_Channel_Plane::do_aux_function_crow_mode(AuxSwitchPos ch_flag)
+{
+        switch(ch_flag) {
+        case AuxSwitchPos::HIGH:
+            plane.crow_mode = Plane::CrowMode::CROW_DISABLED;
+            gcs().send_text(MAV_SEVERITY_INFO, "Crow Flaps Disabled");
+            break;
+        case AuxSwitchPos::MIDDLE:
+            gcs().send_text(MAV_SEVERITY_INFO, "Progressive Crow Flaps"); 
+            plane.crow_mode = Plane::CrowMode::PROGRESSIVE;   
+            break;
+        case AuxSwitchPos::LOW:
+            plane.crow_mode = Plane::CrowMode::NORMAL;
+            gcs().send_text(MAV_SEVERITY_INFO, "Normal Crow Flaps");
+            break;
+        }    
+}
+
 void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
                                          const RC_Channel::AuxSwitchPos ch_flag)
 {
@@ -111,6 +129,10 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
         break;
 
     case AUX_FUNC::TER_DISABLE:
+        do_aux_function(ch_option, ch_flag);
+        break;
+
+    case AUX_FUNC::CROW_SELECT:
         do_aux_function(ch_option, ch_flag);
         break;
 
@@ -192,6 +214,9 @@ void RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwit
             gcs().send_text(MAV_SEVERITY_INFO, "NON AUTO TERRN: %s", plane.non_auto_terrain_disable?"OFF":"ON");
         break;
 
+    case AUX_FUNC::CROW_SELECT:
+        do_aux_function_crow_mode(ch_flag);
+        break;
 
     default:
         RC_Channel::do_aux_function(ch_option, ch_flag);
