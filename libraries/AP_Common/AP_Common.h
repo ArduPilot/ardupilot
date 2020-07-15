@@ -73,11 +73,19 @@
     inline uint8_t &operator[](size_t i) { return reinterpret_cast<uint8_t *>(this)[i]; }           \
     inline uint8_t operator[](size_t i) const { return reinterpret_cast<const uint8_t *>(this)[i]; }
 
-/*
-  check if bit bitnumber is set in value, returned as a
-  bool. Bitnumber starts at 0 for the first bit
+/**
+ * Check if bit bitnumber is set in value, returned as a
+ * bool. Bitnumber starts at 0 for the first bit
+ * @tparam T the variable type. It should be an integer type
+ * @param value the variable
+ * @param bitnumber bit number to be checked
+ * @return true if the bit is setted, false otherwise
  */
-#define BIT_IS_SET(value, bitnumber) (((value) & (1U<<(bitnumber))) != 0)
+template <typename T>
+bool BIT_IS_SET(T value, uint8_t bitnumber) noexcept {
+    static_assert(std::is_integral<T>::value, "Integral required.");
+    return (value & (1U<<(bitnumber))) != 0;
+}
 
 /**
  * Get low byte from 2 bytes integer
