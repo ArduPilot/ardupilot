@@ -202,7 +202,8 @@ void Plane::dspoiler_update(void)
     const int8_t bitmask = g2.crow_flap_options.get();
     const bool flying_wing       = (bitmask & CrowFlapOptions::FLYINGWING) != 0;
     const bool full_span_aileron = (bitmask & CrowFlapOptions::FULLSPAN) != 0;
-    const bool progresive_crow   = (bitmask & CrowFlapOptions::PROGRESSIVE_CROW) != 0;
+    //progressive crow when option is set or RC switch is set to progressive 
+    const bool progressive_crow   = (bitmask & CrowFlapOptions::PROGRESSIVE_CROW) != 0  || crow_mode == CrowMode::PROGRESSIVE; 
 
     // if flying wing use elevons else use ailerons
     float elevon_left;
@@ -253,7 +254,10 @@ void Plane::dspoiler_update(void)
         }
     }
 
-    const int16_t weight_outer = g2.crow_flap_weight_outer.get();
+    int16_t weight_outer = g2.crow_flap_weight_outer.get();
+    if (crow_mode == Plane::CrowMode::CROW_DISABLED) {   //override totally aileron crow if crow RC switch set to disabled
+        weight_outer = 0;
+    }
     const int16_t weight_inner = g2.crow_flap_weight_inner.get();
     if (weight_outer > 0 || weight_inner > 0) {
         /*
@@ -266,7 +270,7 @@ void Plane::dspoiler_update(void)
         if (flap_percent > 0) {
             float inner_flap_scaled = (float)flap_percent;
             float outer_flap_scaled = (float)flap_percent;
-            if (progresive_crow) {
+            if (progressive_crow) {
                 // apply 0 - full inner from 0 to 50% flap then add in outer above 50%
                 inner_flap_scaled = constrain_float(inner_flap_scaled * 2, 0,100);
                 outer_flap_scaled = constrain_float(outer_flap_scaled - 50, 0,50) * 2;
