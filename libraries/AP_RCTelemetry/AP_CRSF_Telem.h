@@ -90,22 +90,10 @@ public:
         uint8_t pitmode;            // disable 0, enable 1
     } PACKED;
 
-    struct LinkStatisticsFrame {
-        uint8_t uplink_rssi_ant1; // ( dBm * -1 )
-        uint8_t uplink_rssi_ant2; // ( dBm * -1 )
-        uint8_t uplink_status; // Package success rate / Link quality ( % )
-        int8_t uplink_snr; // ( db )
-        uint8_t active_antenna; // Diversity active antenna ( enum ant. 1 = 0, ant. 2 )
-        uint8_t rf_mode; // ( enum 4fps = 0 , 50fps, 150hz)
-        uint8_t uplink_tx_power; // ( enum 0mW = 0, 10mW, 25 mW, 100 mW, 500 mW, 1000 mW, 2000mW )
-        uint8_t downlink_rssi; // ( dBm * -1 )
-        uint8_t downlink_status; // Downlink package success rate / Link quality ( % ) ● int8_t Downlink SNR ( db )
-    } PACKED;
-
     struct AttitudeFrame {
-        int16_t pitch_angle; // ( rad / 10000 )
-        int16_t roll_angle; // ( rad / 10000 )
-        int16_t yaw_angle; // ( rad / 10000 )
+        int16_t pitch_angle; // ( rad * 10000 )
+        int16_t roll_angle; // ( rad * 10000 )
+        int16_t yaw_angle; // ( rad * 10000 )
     } PACKED;
 
     struct FlightModeFrame {
@@ -131,7 +119,6 @@ public:
         HeartbeatFrame heartbeat;
         BatteryFrame battery;
         VTXFrame vtx;
-        LinkStatisticsFrame link;
         AttitudeFrame attitude;
         FlightModeFrame flightmode;
     } PACKED;
