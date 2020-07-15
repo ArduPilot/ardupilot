@@ -79,9 +79,29 @@
  */
 #define BIT_IS_SET(value, bitnumber) (((value) & (1U<<(bitnumber))) != 0)
 
-// get high or low bytes from 2 byte integer
-#define LOWBYTE(i) ((uint8_t)(i))
-#define HIGHBYTE(i) ((uint8_t)(((uint16_t)(i))>>8))
+/**
+ * Get low byte from 2 bytes integer
+ * @tparam T the variable type. It will be checked to be uint16_t
+ * @param i the variable
+ * @return the low byte
+ */
+template <typename T>
+uint8_t LOWBYTE (T const& i) noexcept {
+    static_assert(std::is_same<T, uint16_t>::value, "type must be `uint16_t`");
+    return static_cast<uint8_t>(i);
+}
+
+/**
+ * Get high byte from 2 bytes integer
+ * @tparam T the variable type. It will be checked to be uint16_t
+ * @param i the variable
+ * @return the high byte
+ */
+template <typename T>
+uint8_t HIGHBYTE (T const& i) noexcept {
+    static_assert(std::is_same<T, uint16_t>::value, "type must be `uint16_t`");
+    return static_cast<uint8_t>(i>>8);
+}
 
 #define ARRAY_SIZE(_arr) (sizeof(_arr) / sizeof(_arr[0]))
 
