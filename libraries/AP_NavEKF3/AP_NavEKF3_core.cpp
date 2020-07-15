@@ -6,6 +6,7 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_GPS/AP_GPS.h>
+#include <AP_VisualOdom/AP_VisualOdom.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -92,6 +93,14 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     if (_ahrs->airspeed_sensor_enabled()) {
         maxTimeDelay_ms = MAX(maxTimeDelay_ms , frontend->tasDelay_ms);
     }
+
+#if HAL_VISUALODOM_ENABLED
+    // include delay from visual odometry if enabled
+    AP_VisualOdom *visual_odom = AP::visualodom();
+    if ((visual_odom != nullptr) && visual_odom->enabled()) {
+        maxTimeDelay_ms = MAX(maxTimeDelay_ms, MIN(visual_odom->get_delay_ms(), 250));
+    }
+#endif
 
     // calculate the IMU buffer length required to accommodate the maximum delay with some allowance for jitter
     imu_buffer_length = (maxTimeDelay_ms / (uint16_t)(EKF_TARGET_DT_MS)) + 1;
