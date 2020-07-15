@@ -148,6 +148,19 @@ public:
         uint8_t payload[CRSF_FRAMELEN_MAX - 3]; // +1 for crc
     } PACKED;
 
+    struct LinkStatisticsFrame {
+        uint8_t uplink_rssi_ant1; // ( dBm * -1 )
+        uint8_t uplink_rssi_ant2; // ( dBm * -1 )
+        uint8_t uplink_status; // Package success rate / Link quality ( % )
+        int8_t uplink_snr; // ( db )
+        uint8_t active_antenna; // Diversity active antenna ( enum ant. 1 = 0, ant. 2 )
+        uint8_t rf_mode; // ( enum 4fps = 0 , 50fps, 150hz)
+        uint8_t uplink_tx_power; // ( enum 0mW = 0, 10mW, 25 mW, 100 mW, 500 mW, 1000 mW, 2000mW )
+        uint8_t downlink_rssi; // ( dBm * -1 )
+        uint8_t downlink_status; // Downlink package success rate / Link quality ( % )
+        int8_t downlink_dnr; // ( db )
+    } PACKED;
+
 private:
     struct Frame _frame;
     struct Frame _telemetry_frame;
@@ -160,6 +173,7 @@ private:
     void _process_byte(uint32_t timestamp_us, uint8_t byte);
     bool decode_csrf_packet();
     bool process_telemetry(bool check_constraint = true);
+    void process_link_stats_frame(const void* data);
     void write_frame(Frame* frame);
     void start_uart();
     AP_HAL::UARTDriver* get_current_UART() { return (_uart ? _uart : get_available_UART()); }
@@ -174,6 +188,7 @@ private:
     uint32_t _start_frame_time_us;
     bool telem_available;
     bool _fast_telem; // is 150Hz telemetry active
+    int16_t _current_rssi = -1;
 
     AP_HAL::UARTDriver *_uart;
 
