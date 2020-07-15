@@ -206,7 +206,7 @@ void AP_RCProtocol_CRSF::_process_byte(uint32_t timestamp_us, uint8_t byte)
         _last_frame_time_us = timestamp_us;
         // decode here
         if (decode_csrf_packet()) {
-            add_input(MAX_CHANNELS, _channels, false, -1);
+            add_input(MAX_CHANNELS, _channels, false, _current_rssi);
         }
     }    
 }
@@ -284,6 +284,9 @@ bool AP_RCProtocol_CRSF::decode_csrf_packet()
             decode_11bit_channels((const uint8_t*)(&_frame.payload), CRSF_MAX_CHANNELS, _channels, 5U, 8U, 880U);
             rc_active = !_uart; // only accept RC data if we are not in standalone mode
             break;
+        case CRSF_FRAMETYPE_LINK_STATISTICS:
+            process_link_stats_frame((uint8_t*)&_frame.payload);
+            break;
         default:
             break;
     }
@@ -335,6 +338,28 @@ bool AP_RCProtocol_CRSF::process_telemetry(bool check_constraint)
     telem_available = false;
 
     return true;
+}
+
+// process link statistics to get RSSI
+void AP_RCProtocol_CRSF::process_link_stats_frame(const void* data)
+{
+    const LinkStatisticsFrame* link = (const LinkStatisticsFrame*)data;
+
+    uint8_t rssi_dbm;
+    if (link->active_antenna == 0) {
+        rssi_dbm = link->uplink_rssi_ant1;
+    } else {
+        rssi_dbm = link->uplink_rssi_ant2;
+    }
+     // AP rssi: -1 for unknown, 0 for no link, 255 for maximum link
+    if (rssi_dbm < 50) {
+        _current_rssi = 255;
+    } else if (rssi_dbm > 120) {
+        _current_rssi = 0;
+    } else {
+        // this is an approximation recommended by Remo from TBS
+        _current_rssi = int16_t(roundf((1.0f - (rssi_dbm - 50.0f) / 70.0f) * 255.0f));
+    }
 }
 
 // process a byte provided by a uart
