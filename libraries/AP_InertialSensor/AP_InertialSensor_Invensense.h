@@ -157,6 +157,7 @@ private:
     struct {
         Vector3f accel;
         Vector3f gyro;
+        Vector3f prev_gyro;
         uint8_t count;
         LowPassFilterVector3f accel_filter{4000, 188};
         LowPassFilterVector3f gyro_filter{8000, 188};
