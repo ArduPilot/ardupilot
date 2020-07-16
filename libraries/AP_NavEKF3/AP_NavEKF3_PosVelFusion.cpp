@@ -45,11 +45,12 @@ void NavEKF3_core::ResetVelocity(void)
             // clear the timeout flags and counters
             velTimeout = false;
             lastVelPassTime_ms = imuSampleTime_ms;
-        } else if ((imuSampleTime_ms - extNavVelMeasTime_ms < 250 && posResetSource == DEFAULT) || velResetSource == EXTNAV) {
+        } else if ((imuSampleTime_ms - extNavVelMeasTime_ms < 250 && velResetSource == DEFAULT) || velResetSource == EXTNAV) {
             // use external nav data as the 2nd preference
             // already corrected for sensor position
-            stateStruct.velocity = extNavVelDelayed.vel;
-            P[5][5] = P[4][4] = P[3][3] = sq(extNavVelDelayed.err);
+            stateStruct.velocity.x = extNavVelDelayed.vel.x;
+            stateStruct.velocity.y = extNavVelDelayed.vel.y;
+            P[5][5] = P[4][4] = sq(extNavVelDelayed.err);
             velTimeout = false;
             lastVelPassTime_ms = imuSampleTime_ms;
         } else {
@@ -264,7 +265,7 @@ void NavEKF3_core::ResetHeight(void)
     if (inFlight && !gpsNotAvailable && frontend->_fusionModeGPS == 0 && !frontend->inhibitGpsVertVelUse) {
         stateStruct.velocity.z =  gpsDataNew.vel.z;
     } else if (inFlight && useExtNavVel && (activeHgtSource == HGT_SOURCE_EXTNAV)) {
-        stateStruct.velocity.z = extNavVelNew.vel.z;
+        stateStruct.velocity.z = extNavVelDelayed.vel.z;
     } else if (onGround) {
         stateStruct.velocity.z = 0.0f;
     }
@@ -280,8 +281,11 @@ void NavEKF3_core::ResetHeight(void)
     zeroCols(P,6,6);
 
     // set the variances to the measurement variance
-    P[6][6] = sq(frontend->_gpsVertVelNoise);
-
+    if (useExtNavVel) {
+        P[6][6] = sq(extNavVelDelayed.err);
+    } else {
+        P[6][6] = sq(frontend->_gpsVertVelNoise);
+    }
 }
 
 // Zero the EKF height datum
