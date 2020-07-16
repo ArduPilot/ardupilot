@@ -28,13 +28,19 @@ Data is received from the physics backend in a plain text JSON format. The data 
     imu:
         gyro(roll, pitch, yaw) (radians/sec) body frame
         accel_body(x, y, z) (m/s^2) body frame
-
     position(north, east, down) (m) earth frame
-    attitude(roll, pitch yaw) (radians)
     velocity(north, east, down) (m/s) earth frame
 ```
+
+It is possible to send the attitude in a euler format using ```attitude``` or as a quaternion with ```quaternion```, one of these fields must be received. If both are received the quaternion attitude will be used.
+
+```
+    attitude(roll, pitch yaw) (radians)
+    quaternion(q1, q2, q3, q4)
+```
+
 This is a example input frame, it should be preceded by and terminated with a carriage return ("\n") :
 ```
 {"timestamp":2500,"imu":{"gyro":[0,0,0],"accel_body":[0,0,0]},"position":[0,0,0],"attitude":[0,0,0],"velocity":[0,0,0]}
 ```
-The order of fields is not important, this is minimum required fields. In the future a support for a number of additional optional felids will be added to allow readings to be provided for additional sensors such as airspeed and lidar.
+The order of fields is not important. In the future support for additional optional fields could be added to allow readings to be provided for additional sensors.
