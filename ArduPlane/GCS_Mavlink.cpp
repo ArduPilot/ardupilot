@@ -1002,7 +1002,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
     case MAV_CMD_DO_LAND_START:
         // attempt to switch to next DO_LAND_START command in the mission
         if (plane.mission.jump_to_landing_sequence()) {
-            plane.set_mode(plane.mode_auto, ModeReason::UNKNOWN);
+            plane.set_mode(plane.mode_auto, ModeReason::GCS_COMMAND);
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;
