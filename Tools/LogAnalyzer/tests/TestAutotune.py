@@ -68,7 +68,7 @@ class TestAutotune(Test):
         if r:
             return
 
-        events = filter(lambda x: x[1] in AUTOTUNE_EVENTS, logdata.channels["EV"]["Id"].listData)
+        events = list(filter(lambda x: x[1] in AUTOTUNE_EVENTS, logdata.channels["EV"]["Id"].listData))
         attempts = []
 
         j = None
