@@ -233,6 +233,9 @@ const AP_Param::GroupInfo SITL::var_info3[] = {
     AP_GROUPINFO("BARO2_DISABL", 34, SITL,  baro_disable[1], 0),
     AP_GROUPINFO("BARO2_GLITCH", 35, SITL,  baro_glitch[1], 0),
 
+    AP_GROUPINFO("ARSPD_OFS",  36, SITL,  arspd_offset[0], 2013),
+    AP_GROUPINFO("ARSPD2_OFS", 37, SITL,  arspd_offset[1], 2013),
+
     AP_GROUPEND
 };
 

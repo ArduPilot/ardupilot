@@ -154,6 +154,7 @@ public:
     AP_Float arspd_fail_pitot_pressure; // 1st pitot tube failure pressure
     AP_Float arspd2_fail_pressure; // 2nd pitot tube failure pressure
     AP_Float arspd2_fail_pitot_pressure; // 2nd pitot tube failure pressure
+    AP_Int16 arspd_offset[2]; // airspeed sensor offsets
 
     AP_Float mag_noise;   // in mag units (earth field is 818)
     AP_Vector3f mag_mot;  // in mag units per amp
