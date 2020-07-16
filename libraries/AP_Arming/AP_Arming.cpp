@@ -1171,6 +1171,7 @@ bool AP_Arming::disarm(const AP_Arming::Method method)
         return false;
     }
     armed = false;
+    _last_disarm_method = method;
 
     Log_Write_Disarm(method); // should be able to pass through force here?
 
