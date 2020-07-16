@@ -26,7 +26,6 @@ using namespace HALSITL;
 void SITL_State::_update_airspeed(float airspeed)
 {
     const float airspeed_ratio = 1.9936f;
-    const float airspeed_offset = 2013.0f;
     
     float airspeed2 = airspeed;
 
@@ -57,8 +56,9 @@ void SITL_State::_update_airspeed(float airspeed)
     if (_sitl->arspd_signflip) airspeed_pressure *= -1;
     if (_sitl->arspd_signflip) airspeed2_pressure *= -1;
 
-    float airspeed_raw = airspeed_pressure + airspeed_offset;
-    float airspeed2_raw = airspeed2_pressure + airspeed_offset;
+    float airspeed_raw = airspeed_pressure + _sitl->arspd_offset[0];
+    float airspeed2_raw = airspeed2_pressure + _sitl->arspd_offset[1];
+
     if (airspeed_raw / 4 > 0xFFFF) {
         airspeed_pin_value = 0xFFFF;
         return;
