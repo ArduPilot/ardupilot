@@ -1755,6 +1755,96 @@ class AutoTestPlane(AutoTest):
 
         self.fly_mission("ap-terrain.txt", mission_timeout=600)
 
+    def ekf_lane_switch(self):
+
+        # new lane swtich available only with EK3
+        self.set_parameter("EK3_ENABLE", 1)
+        self.set_parameter("EK2_ENABLE", 0)
+        self.set_parameter("AHRS_EKF_TYPE", 3)
+        self.set_parameter("EK3_AFFINITY", 15)
+        self.set_parameter("GPS_TYPE2", 1)
+        self.set_parameter("SIM_GPS2_DISABLE", 0)
+        self.set_parameter("SIM_BARO2_DISABL", 0)
+        self.set_parameter("SIM_BARO_COUNT", 2)
+
+        # some parameters need reboot to take effect
+        self.reboot_sitl()
+        
+        # get flying
+        self.load_mission('CMAC-soar.txt')
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.delay_sim_time(10)
+
+        self.context_push()
+        ex = None
+        try:
+            # start IMU tests
+            self.progress("Checking Lane Switch with Accelerometer")
+            # sudden acceleration in x - axis
+            self.wait_statustext(text="lane switch", timeout=3, the_function=self.set_parameter("INS_ACCOFFS_X", 5))
+            self.set_parameter("INS_ACCOFFS_X", 0)
+            self.delay_sim_time(10)
+
+            # sudden acceleration in y - axis
+            self.wait_statustext(text="lane switch", timeout=3, the_function=self.set_parameter("INS_ACC2OFFS_Y", 5))
+            self.set_parameter("INS_ACC2OFFS_Y", 0)
+            self.delay_sim_time(10)
+
+            # sudden acceleration in z - axis
+            self.wait_statustext(text="lane switch", timeout=3, the_function=self.set_parameter("INS_ACCOFFS_Z", 5))
+            self.set_parameter("INS_ACCOFFS_Z", 0)
+            self.delay_sim_time(10)
+
+            # self.progress("Checking Lane Switch with Gyroscope")
+            # # sudden gyro bias in x - axis
+            # self.wait_statustext(text="lane switch", timeout=10, the_function=self.set_parameter("INS_GYR2OFFS_X", 1))
+            # self.set_parameter("INS_GYR2OFFS_X", 0)
+            # self.delay_sim_time(20)
+
+            # # sudden gyro bias in y - axis
+            # self.wait_statustext(text="lane switch", timeout=10, the_function=self.set_parameter("INS_GYROFFS_Y", 1))
+            # self.set_parameter("INS_GYROFFS_Y", 0)
+            # self.delay_sim_time(20)
+
+            # # sudden gyro bias in z - axis
+            # self.wait_statustext(text="lane switch", timeout=10, the_function=self.set_parameter("INS_GYR2OFFS_Z", 1))
+            # self.set_parameter("INS_GYR2OFFS_Z", 0)
+            # self.delay_sim_time(20)
+
+            # start affinity tests
+            # gps affinity
+            self.progress("Checking Lane Switch with GPS")
+            self.wait_statustext(text="lane switch", timeout=3, the_function=self.set_parameter("SIM_GPS2_GLTCH_X", 1))
+            self.set_parameter("SIM_GPS2_GLTCH_X", 0)
+            self.delay_sim_time(10)
+            self.wait_statustext(text="lane switch", timeout=3, the_function=self.set_parameter("SIM_GPS_GLITCH_X", 1))
+            self.set_parameter("SIM_GPS_GLITCH_X", 0)
+
+            # baro affinity
+            self.progress("Checking Lane Switch with Barometer")
+            self.wait_statustext(text="lane switch", timeout=3, the_function=self.set_parameter("SIM_BARO2_RND", 100))
+            self.set_parameter("SIM_BARO2_RND", 0.1)
+            self.delay_sim_time(10)
+            self.wait_statustext(text="lane switch", timeout=3, the_function=self.set_parameter("SIM_BARO_RND", 100))
+            self.set_parameter("SIM_BARO_RND", 0.2)
+
+            # compass affinity
+            # TODO
+
+            # airspeed affinity
+            # TODO
+
+            self.disarm_vehicle()
+        except Exception as e:
+            self.progress("Caught exception: %s" %self.get_exception_stacktrace(e))
+            ex = e
+
+        self.context_pop()
+        if ex is not None:
+            raise ex
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -1871,5 +1961,9 @@ class AutoTestPlane(AutoTest):
             ("LogUpload",
              "Log upload",
              self.log_upload),
+
+            ("EKFlaneswitch",
+             "ekf_lane_switch",
+             self.ekf_lane_switch),
         ])
         return ret
