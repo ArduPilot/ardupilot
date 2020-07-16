@@ -166,6 +166,9 @@ public:
         return AP_HAL::millis() - _last_flying_ms;
     }
 
+    // returns true if the vehicle has crashed
+    virtual bool is_crashed() const;
+
     /*
       methods to control vehicle for use by scripting
     */
