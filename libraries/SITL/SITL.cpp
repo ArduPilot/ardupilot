@@ -35,36 +35,30 @@ SITL *SITL::_singleton = nullptr;
 
 // table of user settable parameters
 const AP_Param::GroupInfo SITL::var_info[] = {
-    AP_GROUPINFO("BARO_RND",   0, SITL,  baro_noise[0],  0.2f),
-    AP_GROUPINFO("GYR_RND",    1, SITL,  gyro_noise,  0),
-    AP_GROUPINFO("ACC_RND",    2, SITL,  accel_noise, 0),
-    AP_GROUPINFO("DRIFT_SPEED",5, SITL,  drift_speed, 0.05f),
-    AP_GROUPINFO("DRIFT_TIME", 6, SITL,  drift_time,  5),
-    AP_GROUPINFO("ENGINE_MUL", 8, SITL,  engine_mul,  1),
-    AP_GROUPINFO("WIND_SPD",   9, SITL,  wind_speed,  0),
-    AP_GROUPINFO("WIND_DIR",  10, SITL,  wind_direction,  180),
-    AP_GROUPINFO("WIND_TURB", 11, SITL,  wind_turbulance,  0),
+    
+    AP_GROUPINFO("GYR_RND",        1, SITL,  gyro_noise,  0),
+    AP_GROUPINFO("ACC_RND",        2, SITL,  accel_noise, 0),
+    AP_GROUPINFO("DRIFT_SPEED",    5, SITL,  drift_speed, 0.05f),
+    AP_GROUPINFO("DRIFT_TIME",     6, SITL,  drift_time,  5),
+    AP_GROUPINFO("ENGINE_MUL",     8, SITL,  engine_mul,  1),
+    AP_GROUPINFO("WIND_SPD",       9, SITL,  wind_speed,  0),
+    AP_GROUPINFO("WIND_DIR",      10, SITL,  wind_direction,  180),
+    AP_GROUPINFO("WIND_TURB",     11, SITL,  wind_turbulance,  0),
     AP_GROUPINFO("SERVO_SPEED",   16, SITL,  servo_speed,  0.14),
     AP_GROUPINFO("BATT_VOLTAGE",  19, SITL,  batt_voltage,  12.6f),
-    AP_GROUPINFO("ARSPD_RND",     20, SITL,  arspd_noise,  0.5f),
     AP_GROUPINFO("ACCEL_FAIL",    21, SITL,  accel_fail,  0),
-    AP_GROUPINFO("BARO_DRIFT",    22, SITL,  baro_drift[0],  0),
     AP_GROUPINFO("SONAR_GLITCH",  23, SITL,  sonar_glitch, 0),
     AP_GROUPINFO("SONAR_RND",     24, SITL,  sonar_noise, 0),
     AP_GROUPINFO("RC_FAIL",       25, SITL,  rc_fail, 0),
-    AP_GROUPINFO("BARO_DISABLE",  27, SITL,  baro_disable[0], 0),
     AP_GROUPINFO("FLOAT_EXCEPT",  28, SITL,  float_exception, 1),
     AP_GROUPINFO("ACC_BIAS",      30, SITL,  accel_bias, 0),
-    AP_GROUPINFO("BARO_GLITCH",   31, SITL,  baro_glitch[0], 0),
     AP_GROUPINFO("SONAR_SCALE",   32, SITL,  sonar_scale, 12.1212f),
     AP_GROUPINFO("FLOW_ENABLE",   33, SITL,  flow_enable, 0),
     AP_GROUPINFO("TERRAIN",       34, SITL,  terrain_enable, 1),
     AP_GROUPINFO("FLOW_RATE",     35, SITL,  flow_rate, 10),
     AP_GROUPINFO("FLOW_DELAY",    36, SITL,  flow_delay, 0),
-    AP_GROUPINFO("BARO_DELAY",    38, SITL,  baro_delay, 0),
     AP_GROUPINFO("WIND_DELAY",    40, SITL,  wind_delay, 0),
     AP_GROUPINFO("ACC2_RND",      42, SITL,  accel2_noise, 0),
-    AP_GROUPINFO("ARSPD_FAIL",    43, SITL,  arspd_fail, 0),
     AP_GROUPINFO("GYR_SCALE",     44, SITL,  gyro_scale, 0),
     AP_GROUPINFO("ADSB_COUNT",    45, SITL,  adsb_plane_count, -1),
     AP_GROUPINFO("ADSB_RADIUS",   46, SITL,  adsb_radius_m, 10000),
@@ -91,13 +85,8 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     AP_GROUPINFO("TEMP_FLIGHT",  2, SITL,  temp_flight, 35),
     AP_GROUPINFO("TEMP_TCONST",  3, SITL,  temp_tconst, 30),
     AP_GROUPINFO("TEMP_BFACTOR", 4, SITL,  temp_baro_factor, 0),
-    AP_GROUPINFO("ARSPD_FAIL_P", 6, SITL,  arspd_fail_pressure, 0),
-    AP_GROUPINFO("ARSPD_PITOT",  7, SITL,  arspd_fail_pitot_pressure, 0),
-    AP_GROUPINFO("ARSPD_SIGN",   9, SITL,  arspd_signflip, 0),
+
     AP_GROUPINFO("WIND_DIR_Z",  10, SITL,  wind_dir_z,     0),
-    AP_GROUPINFO("ARSPD2_FAIL", 11, SITL,  arspd2_fail, 0),
-    AP_GROUPINFO("ARSPD2_FAILP",12, SITL,  arspd2_fail_pressure, 0),
-    AP_GROUPINFO("ARSPD2_PITOT",13, SITL,  arspd2_fail_pitot_pressure, 0),
     AP_GROUPINFO("WIND_T"      ,15, SITL,  wind_type, SITL::WIND_TYPE_SQRT),
     AP_GROUPINFO("WIND_T_ALT"  ,16, SITL,  wind_type_alt, 60),
     AP_GROUPINFO("WIND_T_COEF", 17, SITL,  wind_type_coef, 0.01f),
@@ -147,8 +136,6 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     AP_GROUPINFO("TWIST_TIME",  40, SITL,  twist.t, 0),
 
     AP_GROUPINFO("GND_BEHAV",   41, SITL,  gnd_behav, -1),
-    AP_GROUPINFO("BARO_COUNT",  42, SITL,  baro_count,  1),
-
 
     // sailboat wave and tide simulation parameters
     AP_GROUPINFO("WAVE_ENABLE", 44, SITL,  wave.enable, 0.0f),
@@ -227,11 +214,40 @@ const AP_Param::GroupInfo SITL::var_info3[] = {
     // @Path: ./SIM_RichenPower.cpp
     AP_SUBGROUPINFO(richenpower_sim, "RICH_", 31, SITL, RichenPower),
 
+    // user settable parameters for the 1st barometer
+    AP_GROUPINFO("BARO_RND",      35, SITL,  baro_noise[0], 0.2f),
+    AP_GROUPINFO("BARO_DRIFT",    36, SITL,  baro_drift[0], 0),
+    AP_GROUPINFO("BARO_DISABLE",  37, SITL,  baro_disable[0], 0),
+    AP_GROUPINFO("BARO_GLITCH",   38, SITL,  baro_glitch[0], 0),
+    AP_GROUPINFO("BARO_FREEZE",   39, SITL,  baro_freeze[0], 0),
+
     // user settable parameters for the 2nd barometer
-    AP_GROUPINFO("BARO2_RND",    32, SITL,  baro_noise[1], 0.1f),
-    AP_GROUPINFO("BARO2_DRIFT",  33, SITL,  baro_drift[1], 0),
-    AP_GROUPINFO("BARO2_DISABL", 34, SITL,  baro_disable[1], 0),
-    AP_GROUPINFO("BARO2_GLITCH", 35, SITL,  baro_glitch[1], 0),
+    AP_GROUPINFO("BARO2_RND",     41, SITL,  baro_noise[1], 0.1f),
+    AP_GROUPINFO("BARO2_DRIFT",   42, SITL,  baro_drift[1], 0),
+    AP_GROUPINFO("BARO2_DISABL",  43, SITL,  baro_disable[1], 0),
+    AP_GROUPINFO("BARO2_GLITCH",  44, SITL,  baro_glitch[1], 0),
+    AP_GROUPINFO("BARO2_FREEZE",  45, SITL,  baro_freeze[1], 0),
+
+    // user settable common barometer parameters
+    AP_GROUPINFO("BARO_DELAY",    47, SITL,  baro_delay, 0),
+    AP_GROUPINFO("BARO_COUNT",    48, SITL,  baro_count, 1),
+
+    // user settable parameters for the 1st airspeed sensor
+    AP_GROUPINFO("ARSPD_RND",     50, SITL,  arspd_noise[0], 2.0),
+    AP_GROUPINFO("ARSPD_OFS",     51, SITL,  arspd_offset[0], 2013),
+    AP_GROUPINFO("ARSPD_FAIL",    52, SITL,  arspd_fail[0], 0),
+    AP_GROUPINFO("ARSPD_FAILP",   53, SITL,  arspd_fail_pressure[0], 0),
+    AP_GROUPINFO("ARSPD_PITOT",   54, SITL,  arspd_fail_pitot_pressure[0], 0),
+
+    // user settable parameters for the 2nd airspeed sensor
+    AP_GROUPINFO("ARSPD2_RND",    56, SITL,  arspd_noise[1], 2.0),
+    AP_GROUPINFO("ARSPD2_OFS",    57, SITL,  arspd_offset[1], 2013),
+    AP_GROUPINFO("ARSPD2_FAIL",   58, SITL,  arspd_fail[1], 0),
+    AP_GROUPINFO("ARSPD2_FAILP",  59, SITL,  arspd_fail_pressure[1], 0),
+    AP_GROUPINFO("ARSPD2_PITOT",  60, SITL,  arspd_fail_pitot_pressure[1], 0),
+
+    // user settable common airspeed parameters
+    AP_GROUPINFO("ARSPD_SIGN",    62, SITL,  arspd_signflip, 0),
 
     AP_GROUPEND
 };
@@ -252,6 +268,7 @@ const AP_Param::GroupInfo SITL::var_gps[] = {
     AP_GROUPINFO("GPS_ALT_OFS",   12, SITL,  gps_alt_offset[0], 0),
     AP_GROUPINFO("GPS_HDG",       13, SITL,  gps_hdg_enabled[0], 0),
     AP_GROUPINFO("GPS_ACC",       14, SITL,  gps_accuracy[0], 0.3),
+    AP_GROUPINFO("GPS_VERR",      15, SITL,  gps_vel_err[0], 0),
 
     AP_GROUPINFO("GPS2_DISABLE",  30, SITL,  gps_disable[1], 1),
     AP_GROUPINFO("GPS2_DELAY",    31, SITL,  gps_delay[1],   1),
@@ -267,6 +284,7 @@ const AP_Param::GroupInfo SITL::var_gps[] = {
     AP_GROUPINFO("GPS2_ALT_OFS",  41, SITL,  gps_alt_offset[1], 0),
     AP_GROUPINFO("GPS2_HDG",      42, SITL,  gps_hdg_enabled[1], 0),
     AP_GROUPINFO("GPS2_ACC",      43, SITL,  gps_accuracy[1], 0.3),
+    AP_GROUPINFO("GPS2_VERR",     44, SITL,  gps_vel_err[1], 0),
 
     AP_GROUPEND
 };

@@ -145,19 +145,19 @@ public:
     AP_Float baro_noise[BARO_MAX_INSTANCES];  // in metres
     AP_Float baro_drift[BARO_MAX_INSTANCES];  // in metres per second
     AP_Float baro_glitch[BARO_MAX_INSTANCES]; // glitch in meters
+    AP_Int8  baro_freeze[BARO_MAX_INSTANCES]; // freeze baro to last recorded altitude
     AP_Float gyro_noise;  // in degrees/second
     AP_Vector3f gyro_scale;  // percentage
     AP_Float accel_noise; // in m/s/s
     AP_Float accel2_noise; // in m/s/s
     AP_Vector3f accel_bias; // in m/s/s
     AP_Vector3f accel2_bias; // in m/s/s
-    AP_Float arspd_noise;  // in m/s
-    AP_Float arspd_fail;   // 1st pitot tube failure
-    AP_Float arspd2_fail;   // 2nd pitot tube failure
-    AP_Float arspd_fail_pressure; // 1st pitot tube failure pressure
-    AP_Float arspd_fail_pitot_pressure; // 1st pitot tube failure pressure
-    AP_Float arspd2_fail_pressure; // 2nd pitot tube failure pressure
-    AP_Float arspd2_fail_pitot_pressure; // 2nd pitot tube failure pressure
+
+    AP_Float arspd_noise[2];  // pressure noise
+    AP_Float arspd_fail[2];   // airspeed value in m/s to fail to
+    AP_Float arspd_fail_pressure[2]; // pitot tube failure pressure in Pa
+    AP_Float arspd_fail_pitot_pressure[2]; // pitot tube failure pressure in Pa
+    AP_Float arspd_offset[2]; // airspeed sensor offset in m/s
 
     AP_Float mag_noise;   // in mag units (earth field is 818)
     AP_Vector3f mag_mot;  // in mag units per amp
@@ -187,9 +187,10 @@ public:
     AP_Vector3f gps_glitch[2];  // glitch offsets in lat, lon and altitude
     AP_Int8  gps_hertz[2];   // GPS update rate in Hz
     AP_Int8 gps_hdg_enabled[2]; // enable the output of a NMEA heading HDT sentence or UBLOX RELPOSNED
-    AP_Float gps_drift_alt[2];
+    AP_Float gps_drift_alt[2]; // altitude drift error
     AP_Vector3f gps_pos_offset[2];  // XYZ position of the GPS antenna phase centre relative to the body frame origin (m)
     AP_Float gps_accuracy[2];
+    AP_Vector3f gps_vel_err[2]; // Velocity error offsets in NED (x = N, y = E, z = D)
 
     AP_Float batt_voltage; // battery voltage base
     AP_Float accel_fail;  // accelerometer failure value
