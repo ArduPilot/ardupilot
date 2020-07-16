@@ -2,6 +2,7 @@
 
 #include <AP_BLHeli/AP_BLHeli.h>
 #include <AP_Common/AP_FWVersion.h>
+#include <AP_Arming/AP_Arming.h>
 
 #define SCHED_TASK(func, rate_hz, max_time_micros) SCHED_TASK_CLASS(AP_Vehicle, &vehicle, func, rate_hz, max_time_micros)
 
@@ -211,6 +212,14 @@ void AP_Vehicle::send_watchdog_reset_statustext()
                     (unsigned)pd.internal_error_count,
                     pd.thread_name4
         );
+}
+
+bool AP_Vehicle::is_crashed() const
+{
+    if (AP::arming().is_armed()) {
+        return false;
+    }
+    return AP::arming().last_disarm_method() == AP_Arming::Method::CRASH;
 }
 
 // @LoggerMessage: FTN
