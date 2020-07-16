@@ -112,6 +112,10 @@ public:
     // landing altitude offset (meters)
     float alt_offset;
 
+    float get_preflare_alt(void) const {
+        return pre_flare_alt;
+    }
+
 private:
     struct {
         // denotes if a go-around has been commanded for landing
