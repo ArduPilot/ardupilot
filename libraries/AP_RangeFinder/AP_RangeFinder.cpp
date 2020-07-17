@@ -45,6 +45,7 @@
 #include "AP_RangeFinder_UAVCAN.h"
 #include "AP_RangeFinder_Lanbao.h"
 #include "AP_RangeFinder_LeddarVu8.h"
+#include "AP_RangeFinder_SITL.h"
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Logger/AP_Logger.h>
@@ -533,6 +534,12 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
             drivers[instance] = new AP_RangeFinder_GYUS42v2(state[instance], params[instance], serial_instance++);
         }
         break;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    case Type::SITL:
+        drivers[instance] = new AP_RangeFinder_SITL(state[instance], params[instance], instance);
+        break;
+#endif
 
     default:
         break;
