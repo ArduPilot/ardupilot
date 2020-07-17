@@ -87,6 +87,8 @@ private:
 
     uint16_t _cached_oldest_log;
 
+    bool _read_write_access;
+
     // should we rotate when we next stop logging
     bool _rotate_pending;
 

@@ -659,15 +659,30 @@ int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t p
     }
 
     if (_read_fd != -1 && log_num != _read_fd_log_num) {
-        AP::FS().close(_read_fd);
+        if (_read_write_access) {
+            _read_write_access = false;
+        } else {
+            AP::FS().close(_read_fd);
+        }
         _read_fd = -1;
     }
+
     if (_read_fd == -1) {
+        uint16_t last_log_num = find_last_log();
+        if (last_log_num == log_num) {
+            _read_write_access = true;
+            _read_fd = _write_fd;
+            _read_offset = 0;
+            _read_fd_log_num = log_num;
+        }
+    }
+
+    if (_read_fd == -1) {
+        _read_write_access = false;
         char *fname = _log_file_name(log_num);
         if (fname == nullptr) {
             return -1;
         }
-        stop_logging();
         EXPECT_DELAY_MS(3000);
         _read_fd = AP::FS().open(fname, O_RDONLY);
         if (_read_fd == -1) {
@@ -687,12 +702,15 @@ int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t p
     uint32_t ofs = page * (uint32_t)LOGGER_PAGE_SIZE + offset;
 
     if (ofs != _read_offset) {
-        if (AP::FS().lseek(_read_fd, ofs, SEEK_SET) == (off_t)-1) {
+        _read_offset = ofs;
+    }
+    off_t current = AP::FS().lseek(_read_fd, _read_offset, SEEK_SET);
+    if (current == (off_t)-1 || current != (off_t)_read_offset) {
+        if (!_read_write_access) {
             AP::FS().close(_read_fd);
             _read_fd = -1;
-            return -1;
         }
-        _read_offset = ofs;
+        return -1;
     }
     int16_t ret = (int16_t)AP::FS().read(_read_fd, data, len);
     if (ret > 0) {
@@ -838,7 +856,7 @@ void AP_Logger_File::start_new_log(void)
     ensure_log_directory_exists();
 
     EXPECT_DELAY_MS(3000);
-    _write_fd = AP::FS().open(_write_filename, O_WRONLY|O_CREAT|O_TRUNC);
+    _write_fd = AP::FS().open(_write_filename, O_RDWR|O_CREAT|O_TRUNC);
     _cached_oldest_log = 0;
 
     if (_write_fd == -1) {
@@ -966,6 +984,11 @@ void AP_Logger_File::_io_timer(void)
         return;
     }
     if (_write_fd == -1) {
+        write_fd_semaphore.give();
+        return;
+    }
+    off_t current = AP::FS().lseek(_write_fd, _write_offset, SEEK_SET);
+    if (current == (off_t)-1 || current != (off_t)_write_offset) {
         write_fd_semaphore.give();
         return;
     }
