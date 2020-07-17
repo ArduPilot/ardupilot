@@ -57,7 +57,7 @@ private:
     void output_servos(const struct sitl_input &input);
     void recv_fdm(const struct sitl_input &input);
 
-    uint8_t parse_sensors(const char *json);
+    uint16_t parse_sensors(const char *json);
 
     // buffer for parsing pose data in JSON format
     uint8_t sensor_buffer[65000];
@@ -81,6 +81,7 @@ private:
         Vector3f attitude;
         Quaternion quaternion;
         Vector3f velocity;
+        float rng[6];
     } state;
 
     // table to aid parsing of JSON sensor data
@@ -90,7 +91,7 @@ private:
         void *ptr;
         enum data_type type;
         bool required;
-    } keytable[7] = {
+    } keytable[13] = {
         { "", "timestamp", &state.timestamp_s, DATA_DOUBLE, true },
         { "imu", "gyro",    &state.imu.gyro, DATA_VECTOR3F, true },
         { "imu", "accel_body", &state.imu.accel_body, DATA_VECTOR3F, true },
@@ -98,6 +99,12 @@ private:
         { "", "attitude", &state.attitude, DATA_VECTOR3F, false },
         { "", "quaternion", &state.quaternion, QUATERNION, false },
         { "", "velocity", &state.velocity, DATA_VECTOR3F, true },
+        { "", "rng_1", &state.rng[0], DATA_FLOAT, false },
+        { "", "rng_2", &state.rng[1], DATA_FLOAT, false },
+        { "", "rng_3", &state.rng[2], DATA_FLOAT, false },
+        { "", "rng_4", &state.rng[3], DATA_FLOAT, false },
+        { "", "rng_5", &state.rng[4], DATA_FLOAT, false },
+        { "", "rng_6", &state.rng[5], DATA_FLOAT, false },
     };
 
     // Enum coresponding to the ordering of keys in the keytable.
@@ -109,7 +116,14 @@ private:
         EULER_ATT   = 1U << 4,
         QUAT_ATT    = 1U << 5,
         VELOCITY    = 1U << 6,
+        RNG_1       = 1U << 7,
+        RNG_2       = 1U << 8,
+        RNG_3       = 1U << 9,
+        RNG_4       = 1U << 10,
+        RNG_5       = 1U << 11,
+        RNG_6       = 1U << 12,
     };
+    uint16_t last_received_bitmask;
 };
 
 }

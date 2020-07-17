@@ -124,9 +124,9 @@ void JSON::output_servos(const struct sitl_input &input)
     This parser does not do any syntax checking, and is not at all
     general purpose
 */
-uint8_t JSON::parse_sensors(const char *json)
+uint16_t JSON::parse_sensors(const char *json)
 {
-    uint8_t received_bitmask = 0;
+    uint16_t received_bitmask = 0;
 
     //printf("%s\n", json);
     for (uint16_t i=0; i<ARRAY_SIZE(keytable); i++) {
@@ -234,9 +234,10 @@ void JSON::recv_fdm(const struct sitl_input &input)
         return;
     }
 
-    const uint8_t received_bitmask = parse_sensors((const char *)(p1+1));
+    const uint16_t received_bitmask = parse_sensors((const char *)(p1+1));
     if (received_bitmask == 0) {
-        // did not receve one of the required fields
+        // did not receve one of the mandatory fields
+        printf("Did not contain all mandatory fields\n");
         return;
     }
 
@@ -245,6 +246,20 @@ void JSON::recv_fdm(const struct sitl_input &input)
         printf("Did not receive attitude or quaternion\n");
         return;
     }
+
+    if (received_bitmask != last_received_bitmask) {
+        // some change in the message we have received, print what we got
+        printf("\nJSON received:\n");
+        for (uint16_t i=0; i<ARRAY_SIZE(keytable); i++) {
+            struct keytable &key = keytable[i];
+            if ((received_bitmask &  1U << i) == 0) {
+                continue;
+            }
+            printf("\t%s\n",key.key);
+        }
+        printf("\n");
+    }
+    last_received_bitmask = received_bitmask;
 
     memmove(sensor_buffer, p2, sensor_buffer_len - (p2 - sensor_buffer));
     sensor_buffer_len = sensor_buffer_len - (p2 - sensor_buffer);
@@ -274,11 +289,20 @@ void JSON::recv_fdm(const struct sitl_input &input)
     // Convert from a meters from origin physics to a lat long alt
     update_position();
 
+    // update range finder distances
+    for (uint8_t i=7; i<13; i++) {
+        if ((received_bitmask &  1U << i) == 0) {
+            continue;
+        }
+        rangefinder_m[i-7] = state.rng[i-7];
+    }
+
     double deltat;
     if (state.timestamp_s < last_timestamp_s) {
-        // Physics time has gone backwards, don't reset AP, assume an average size timestep
+        // Physics time has gone backwards, don't reset AP
         printf("Detected physics reset\n");
         deltat = 0;
+        last_received_bitmask = 0;
     } else {
         deltat = state.timestamp_s - last_timestamp_s;
     }
