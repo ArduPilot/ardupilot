@@ -211,4 +211,16 @@ void ShipSim::send_report(void)
     if (len > 0) {
         mav_socket.send(buf, len);
     }
+
+    mavlink_msg_attitude_pack_chan(sys_id,
+                                   component_id,
+                                   mavlink_ch,
+                                   &msg,
+                                   now,
+                                   0, 0, radians(ship.heading_deg),
+                                   0, 0, ship.yaw_rate);
+    len = mavlink_msg_to_send_buffer(buf, &msg);
+    if (len > 0) {
+        mav_socket.send(buf, len);
+    }
 }
