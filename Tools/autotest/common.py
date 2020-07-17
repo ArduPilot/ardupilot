@@ -6317,8 +6317,6 @@ switch value'''
         self.progress("validating params (0x%02x)" % value)
         param_id = self.bit_extract(value,24,4)
         param_value = self.bit_extract(value,0,24)
-        if param_id != 1:
-            return False
         frame_type = param_value
         hb = self.mav.recv_match(
             type='HEARTBEAT',
@@ -6328,7 +6326,9 @@ switch value'''
         if hb is None:
             raise NotAchievedException("Did not get HEARTBEAT message")
         hb_type = hb.type
-        self.progress("HEARTBEAT type==%f frsky==%f" % (hb_type, frame_type))
+        self.progress("validate_params: HEARTBEAT type==%f frsky==%f param_id=%u" % (hb_type, frame_type, param_id))
+        if param_id != 1:
+            return False
         if hb_type == frame_type:
             return True
             # FIXME: need to check other values as well
