@@ -190,10 +190,8 @@ void NavEKF3_core::realignYawGPS()
             resetQuatStateYawOnly(gpsYaw, sq(radians(45.0f)));
 
             // reset the velocity and position states as they will be inaccurate due to bad yaw
-            velResetSource = GPS;
-            ResetVelocity();
-            posResetSource = GPS;
-            ResetPosition();
+            ResetVelocity(resetDataSource::GPS);
+            ResetPosition(resetDataSource::GPS);
 
             // send yaw alignment information to console
             gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u yaw aligned to GPS velocity",(unsigned)imu_index);
@@ -1509,8 +1507,8 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
         recordYawReset();
 
         // reset velocity and position states to GPS - if yaw is fixed then the filter should start to operate correctly
-        ResetVelocity();
-        ResetPosition();
+        ResetVelocity(resetDataSource::DEFAULT);
+        ResetPosition(resetDataSource::DEFAULT);
 
         // reset test ratios that are reported to prevent a race condition with the external state machine requesting the reset
         velTestRatio = 0.0f;

@@ -343,8 +343,6 @@ void NavEKF3_core::InitialiseVariables()
     velOffsetNED.zero();
     posOffsetNED.zero();
     memset(&velPosObs, 0, sizeof(velPosObs));
-    posResetSource = DEFAULT;
-    velResetSource = DEFAULT;
 
     // range beacon fusion variables
     memset((void *)&rngBcnDataNew, 0, sizeof(rngBcnDataNew));
@@ -547,8 +545,8 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
     stateStruct.body_magfield.zero();
 
     // set the position, velocity and height
-    ResetVelocity();
-    ResetPosition();
+    ResetVelocity(resetDataSource::DEFAULT);
+    ResetPosition(resetDataSource::DEFAULT);
     ResetHeight();
 
     // define Earth rotation vector in the NED navigation frame

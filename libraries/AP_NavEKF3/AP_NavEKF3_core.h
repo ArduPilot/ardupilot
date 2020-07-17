@@ -628,6 +628,19 @@ private:
         Vector3f accel_bias;
     } inactiveBias[INS_MAX_INSTANCES];
 
+    // Specify source of data to be used for a partial state reset
+    // Checking the availability and quality of the data source specified is the responsibility of the caller
+    enum class resetDataSource {
+        DEFAULT=0,      // Use data source selected by reset function internal rules
+        GPS=1,          // Use GPS
+        RNGBCN=2,       // Use beacon range data
+        FLOW=3,         // Use optical flow rates
+        BARO=4,         // Use Baro height
+        MAG=5,          // Use magnetometer data
+        RNGFND=6,       // Use rangefinder data
+        EXTNAV=7        // Use external nav data
+    };
+
     // update the navigation filter status
     void updateFilterStatus(void);
 
@@ -797,7 +810,7 @@ private:
     void InitialiseVariablesMag();
 
     // reset the horizontal position states uing the last GPS measurement
-    void ResetPosition(void);
+    void ResetPosition(resetDataSource posResetSource);
 
     // reset the stateStruct's NE position to the specified position
     void ResetPositionNE(float posN, float posE);
@@ -806,7 +819,7 @@ private:
     void ResetPositionD(float posD);
 
     // reset velocity states using the last GPS measurement
-    void ResetVelocity(void);
+    void ResetVelocity(resetDataSource velResetSource);
 
     // reset the vertical position state using the last height measurement
     void ResetHeight(void);
@@ -1147,21 +1160,6 @@ private:
     Vector3f posOffsetNED;          // This adds to the earth frame position estimate at the IMU to give the position at the body origin (m)
     uint32_t firstInitTime_ms;      // First time the initialise function was called (msec)
     uint32_t lastInitFailReport_ms; // Last time the buffer initialisation failure report was sent (msec)
-
-    // Specify source of data to be used for a partial state reset
-    // Checking the availability and quality of the data source specified is the responsibility of the caller
-    enum resetDataSource {
-                    DEFAULT=0,      // Use data source selected by reset function internal rules
-                    GPS=1,          // Use GPS
-                    RNGBCN=2,       // Use beacon range data
-                    FLOW=3,         // Use optical flow rates
-                    BARO=4,         // Use Baro height
-                    MAG=5,          // Use magnetometer data
-                    RNGFND=6,       // Use rangefinder data
-                    EXTNAV=7        // Use external nav data
-                        };
-    resetDataSource posResetSource; // preferred source of data for position reset
-    resetDataSource velResetSource; // preferred source of data for a velocity reset
 
     // variables used to calculate a vertical velocity that is kinematically consistent with the vertical position
     struct {

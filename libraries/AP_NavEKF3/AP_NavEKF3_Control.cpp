@@ -197,6 +197,9 @@ void NavEKF3_core::updateStateIndexLim()
 // Set inertial navigation aiding mode
 void NavEKF3_core::setAidingMode()
 {
+    resetDataSource posResetSource = resetDataSource::DEFAULT;
+    resetDataSource velResetSource = resetDataSource::DEFAULT;
+
     // Save the previous status so we can detect when it has changed
     PV_AidingModePrev = PV_AidingMode;
 
@@ -357,26 +360,23 @@ void NavEKF3_core::setAidingMode()
         case AID_ABSOLUTE:
             if (readyToUseGPS()) {
                 // We are commencing aiding using GPS - this is the preferred method
-                posResetSource = GPS;
-                velResetSource = GPS;
+                posResetSource = resetDataSource::GPS;
+                velResetSource = resetDataSource::GPS;
                 gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u is using GPS",(unsigned)imu_index);
             } else if (readyToUseRangeBeacon()) {
                 // We are commencing aiding using range beacons
-                posResetSource = RNGBCN;
-                velResetSource = DEFAULT;
+                posResetSource = resetDataSource::RNGBCN;
                 gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u is using range beacons",(unsigned)imu_index);
                 gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u initial pos NE = %3.1f,%3.1f (m)",(unsigned)imu_index,(double)receiverPos.x,(double)receiverPos.y);
                 gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u initial beacon pos D offset = %3.1f (m)",(unsigned)imu_index,(double)bcnPosOffsetNED.z);
             } else if (readyToUseExtNav()) {
                 // we are commencing aiding using external nav
-                posResetSource = EXTNAV;
+                posResetSource = resetDataSource::EXTNAV;
                 gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u is using external nav data",(unsigned)imu_index);
                 gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u initial pos NED = %3.1f,%3.1f,%3.1f (m)",(unsigned)imu_index,(double)extNavDataDelayed.pos.x,(double)extNavDataDelayed.pos.y,(double)extNavDataDelayed.pos.z);
                 if (useExtNavVel) {
-                    velResetSource = EXTNAV;
+                    velResetSource = resetDataSource::EXTNAV;
                     gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u initial vel NED = %3.1f,%3.1f,%3.1f (m/s)",(unsigned)imu_index,(double)extNavVelDelayed.vel.x,(double)extNavVelDelayed.vel.y,(double)extNavVelDelayed.vel.z);
-                } else {
-                    velResetSource = DEFAULT;
                 }
                 // handle height reset as special case
                 hgtMea = -extNavDataDelayed.pos.z;
@@ -396,8 +396,8 @@ void NavEKF3_core::setAidingMode()
         }
 
         // Always reset the position and velocity when changing mode
-        ResetVelocity();
-        ResetPosition();
+        ResetVelocity(velResetSource);
+        ResetPosition(posResetSource);
 
     }
 
