@@ -447,6 +447,6 @@ void AR_WPNav::apply_speed_min(float &desired_speed)
 
     // ensure speed does not fall below minimum
     if (fabsf(desired_speed) < speed_min) {
-        desired_speed = is_negative(desired_speed) ? -speed_min : speed_min;
+        desired_speed = is_negative(_desired_speed) ? -speed_min : speed_min;
     }
 }
