@@ -20,6 +20,7 @@
 #include "SIM_EFI_MegaSquirt.h"
 #include "SIM_RichenPower.h"
 #include "SIM_Ship.h"
+#include <AP_RangeFinder/AP_RangeFinder.h>
 
 namespace SITL {
 
@@ -67,6 +68,8 @@ struct sitl_fdm {
         struct vector3f_array points;
         struct float_array ranges;
     } scanner;
+
+    float rangefinder_m[RANGEFINDER_MAX_INSTANCES];
 };
 
 // number of rc output channels
@@ -390,6 +393,10 @@ public:
     AP_Int16 vicon_yaw_error;   // vicon yaw error in degrees (added to reported yaw sent to vehicle)
     AP_Int8 vicon_type_mask;    // vicon message type mask (bit0:vision position estimate, bit1:vision speed estimate, bit2:vicon position estimate)
     AP_Vector3f vicon_vel_glitch;   // velocity glitch in m/s in vicon's local frame
+
+    // get the rangefinder reading for the desired instance, returns -1 for no data
+    float get_rangefinder(uint8_t instance);
+
 };
 
 } // namespace SITL
