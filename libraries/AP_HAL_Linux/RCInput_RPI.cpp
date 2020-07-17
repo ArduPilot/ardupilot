@@ -181,7 +181,7 @@ void *Memory_table::get_page(void **const pages, uint32_t addr) const
     if (addr >= PAGE_SIZE * _page_count) {
         return nullptr;
     }
-    return (uint8_t *)pages[(uint32_t)addr / 4096] + addr % 4096;
+    return (uint8_t *)pages[(uint32_t)addr / PAGE_SIZE] + addr % PAGE_SIZE;
 }
 
 //Get virtual address from the corresponding physical address from memory_table.
@@ -314,7 +314,7 @@ void RCInput_RPI::init_ctrl_data()
         if (i % 7 == 0) {
             cbp_curr = (dma_cb_t*)con_blocks->get_page(con_blocks->_virt_pages, cbp);
 
-            init_dma_cb(&cbp_curr, RCIN_RPI_DMA_NO_WIDE_BURSTS | RCIN_RPI_DMA_WAIT_RESP | RCIN_RPI_DMA_DEST_INC | RCIN_RPI_DMA_SRC_INC, RCIN_RPI_TIMER_BASE,
+            init_dma_cb(&cbp_curr, RCIN_RPI_DMA_NO_WIDE_BURSTS | RCIN_RPI_DMA_WAIT_RESP , RCIN_RPI_TIMER_BASE,
                         (uintptr_t)circle_buffer->get_page(circle_buffer->_phys_pages, dest),
                         8,
                         0,
@@ -524,8 +524,18 @@ void RCInput_RPI::_timer_tick()
         return;
     }
 
+    const uint32_t offset = con_blocks->get_offset(con_blocks->_virt_pages,(uintptr_t)ad);
     for (int j = 1; j >= -1; j--) {
-        void *x = circle_buffer->get_virt_addr((ad + j)->dst);
+        
+        // Get address of next or previous (dma_cb_t)
+        ad = (dma_cb_t *)con_blocks->get_page(con_blocks->_virt_pages,offset + (uint32_t)(sizeof(dma_cb_t) * j));
+        if (!ad) 
+        {
+           continue ;
+        }
+        
+        void *x = circle_buffer->get_virt_addr((ad)->dst);
+        
         if (x != nullptr) {
             counter = circle_buffer->bytes_available(curr_pointer,
                                                      circle_buffer->get_offset(circle_buffer->_virt_pages, (uintptr_t)x));
