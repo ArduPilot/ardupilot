@@ -181,7 +181,10 @@ protected:
         struct vector3f_array points;
         struct float_array ranges;
     } scanner;
-    
+
+    // Rangefinder
+    float rangefinder_m[RANGEFINDER_MAX_INSTANCES];
+
     // Wind Turbulence simulated Data
     float turbulence_azimuth = 0.0f;
     float turbulence_horizontal_speed = 0.0f;  // m/s
