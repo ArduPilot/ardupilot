@@ -307,6 +307,7 @@ define HAL_BATT_CURR_PIN 15
 define HAL_BATT_VOLT_SCALE 10.1
 define HAL_BATT_CURR_SCALE 17.0
 define HAL_GPIO_PWM_VOLT_PIN 3
+define HAL_GPIO_PWM_VOLT_3v3 1
 
 # List of files to put in ROMFS. For fmuv3 we need an IO firmware so
 # we can automatically update the IOMCU firmware on boot. The format
