@@ -18,6 +18,8 @@ import numpy
 import socket
 import struct
 import random
+import threading, sys, traceback
+import signal
 
 from MAVProxy.modules.lib import mp_util
 
@@ -32,6 +34,20 @@ expect_list = []
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
+
+def dumpstacks(signal, frame):
+    id2name = dict([(th.ident, th.name) for th in threading.enumerate()])
+    code = []
+    for threadId, stack in sys._current_frames().items():
+        code.append("\n# Thread: %s(%d)" % (id2name.get(threadId,""), threadId))
+        for filename, lineno, name, line in traceback.extract_stack(stack):
+            code.append('File: "%s", line %d, in %s' % (filename, lineno, name))
+            if line:
+                code.append("  %s" % (line.strip()))
+    print("\n".join(code))
+    exit(1)
+
+signal.signal(signal.SIGINT, dumpstacks)
 
 # Check python version for abstract base class
 if sys.version_info[0] >= 3 and sys.version_info[1] >= 4:
