@@ -3881,8 +3881,8 @@ class AutoTestCopter(AutoTest):
                 freq, vfr_hud, peakdb2 = self.hover_and_check_matched_frequency_with_fft(-15, 20, 350, reverse=True)
 
                 # double-notch should do better, but check for within 5%
-                if peakdb2 > peakdb1 * 1.05:
-                    raise NotAchievedException("Double-notch peak was higher than single-notch peak %fdB < %fdB" % (peakdb2, peakdb1))
+                if peakdb2 * 1.05 > peakdb1:
+                    raise NotAchievedException("Double-notch peak was higher than single-notch peak %fdB > %fdB" % (peakdb2, peakdb1))
 
             except Exception as e:
                 self.progress("Exception caught in %s loop: %s" % (loop, self.get_exception_stacktrace(e)))
