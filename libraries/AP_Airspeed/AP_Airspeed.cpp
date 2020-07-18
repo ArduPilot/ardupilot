@@ -24,6 +24,7 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Logger/AP_Logger.h>
 #include <utility>
+#include <AP_Vehicle/AP_Vehicle.h>
 #include "AP_Airspeed.h"
 #include "AP_Airspeed_MS4525.h"
 #include "AP_Airspeed_MS5525.h"
@@ -34,7 +35,9 @@
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
 #include "AP_Airspeed_UAVCAN.h"
 #endif
-
+#if APM_BUILD_TYPE(APM_BUILD_Rover) || APM_BUILD_TYPE(APM_BUILD_ArduSub) 
+#include "AP_Airspeed_NMEA.h"
+#endif
 extern const AP_HAL::HAL &hal;
 
 #ifdef HAL_AIRSPEED_TYPE_DEFAULT
@@ -77,7 +80,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Airspeed type
     // @Description: Type of airspeed sensor
-    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-MS5525 (0x76),5:I2C-MS5525 (0x77),6:I2C-SDP3X,7:I2C-DLVR-5in,8:UAVCAN,9:I2C-DLVR-10in,10:I2C-DLVR-20in,11:I2C-DLVR-30in,12:I2C-DLVR-60in
+    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-MS5525 (0x76),5:I2C-MS5525 (0x77),6:I2C-SDP3X,7:I2C-DLVR-5in,8:UAVCAN,9:I2C-DLVR-10in,10:I2C-DLVR-20in,11:I2C-DLVR-30in,12:I2C-DLVR-60in,13:NMEA water speed
     // @User: Standard
     AP_GROUPINFO_FLAGS("_TYPE", 0, AP_Airspeed, param[0].type, ARSPD_DEFAULT_TYPE, AP_PARAM_FLAG_ENABLE),
 
@@ -184,7 +187,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Param: 2_TYPE
     // @DisplayName: Second Airspeed type
     // @Description: Type of 2nd airspeed sensor
-    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-MS5525 (0x76),5:I2C-MS5525 (0x77),6:I2C-SDP3X,7:I2C-DLVR-5in,8:UAVCAN,9:I2C-DLVR-10in,10:I2C-DLVR-20in,11:I2C-DLVR-30in,12:I2C-DLVR-60in
+    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-MS5525 (0x76),5:I2C-MS5525 (0x77),6:I2C-SDP3X,7:I2C-DLVR-5in,8:UAVCAN,9:I2C-DLVR-10in,10:I2C-DLVR-20in,11:I2C-DLVR-30in,12:I2C-DLVR-60in,13:NMEA water speed
     // @User: Standard
     AP_GROUPINFO_FLAGS("2_TYPE", 11, AP_Airspeed, param[1].type, 0, AP_PARAM_FLAG_ENABLE),
 
@@ -355,6 +358,11 @@ void AP_Airspeed::init()
             sensor[i] = AP_Airspeed_UAVCAN::probe(*this, i);
 #endif
             break;
+        case TYPE_NMEA_WATER:
+#if APM_BUILD_TYPE(APM_BUILD_Rover) || APM_BUILD_TYPE(APM_BUILD_ArduSub) 
+            sensor[i] = new AP_Airspeed_NMEA(*this, i);
+#endif
+            break;
         }
 
         if (sensor[i] && !sensor[i]->init()) {
@@ -457,17 +465,24 @@ void AP_Airspeed::update_calibration(uint8_t i, float raw_pressure)
 // read one airspeed sensor
 void AP_Airspeed::read(uint8_t i)
 {
-    float airspeed_pressure;
     if (!enabled(i) || !sensor[i]) {
         return;
     }
+    state[i].last_update_ms = AP_HAL::millis();
+
+    // try and get a direct reading of airspeed
+    if (sensor[i]->has_airspeed()) {
+        state[i].healthy = sensor[i]->get_airspeed(state[i].airspeed);
+        return;
+    }
+
     bool prev_healthy = state[i].healthy;
     float raw_pressure = get_pressure(i);
     if (state[i].cal.start_ms != 0) {
         update_calibration(i, raw_pressure);
     }
-    
-    airspeed_pressure = raw_pressure - param[i].offset;
+
+    float airspeed_pressure = raw_pressure - param[i].offset;
 
     // remember raw pressure for logging
     state[i].corrected_pressure = airspeed_pressure;
@@ -511,7 +526,6 @@ void AP_Airspeed::read(uint8_t i)
         state[i].healthy = false;
     }
 
-    state[i].last_update_ms = AP_HAL::millis();
 }
 
 // read all airspeed sensors
