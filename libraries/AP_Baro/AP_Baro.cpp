@@ -172,6 +172,31 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     AP_GROUPINFO("PROBE_EXT", 14, AP_Baro, _baro_probe_ext, HAL_BARO_PROBE_EXT_DEFAULT),
 #endif
 
+    // @Param: BARO_ID
+    // @DisplayName: Baro ID
+    // @Description: Barometer sensor ID, taking into account its type, bus and instance
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO("BARO_ID", 15, AP_Baro, sensors[0].bus_id, 0),
+
+#if BARO_MAX_INSTANCES > 1
+    // @Param: BARO2_ID
+    // @DisplayName: Baro ID2
+    // @Description: Barometer2 sensor ID, taking into account its type, bus and instance
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO("BARO2_ID", 16, AP_Baro, sensors[1].bus_id, 0),
+#endif
+
+#if BARO_MAX_INSTANCES > 2
+    // @Param: BARO3_ID
+    // @DisplayName: Baro ID3
+    // @Description: Barometer3 sensor ID, taking into account its type, bus and instance
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO("BARO3_ID", 17, AP_Baro, sensors[2].bus_id, 0),
+#endif
+    
     AP_GROUPEND
 };
 
@@ -472,6 +497,11 @@ void AP_Baro::init(void)
     if (!is_zero(_user_ground_temperature)) {
         _user_ground_temperature.set_and_save(0.0f);
         _user_ground_temperature.notify();
+    }
+
+    // zero bus IDs before probing
+    for (uint8_t i = 0; i < BARO_MAX_INSTANCES; i++) {
+        sensors[i].bus_id.set(0);
     }
 
     if (_hil_mode) {
