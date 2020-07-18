@@ -147,6 +147,8 @@ public:
         SerialProtocol_Winch = 31,
         SerialProtocol_MSP = 32,
         SerialProtocol_DJI_FPV = 33,
+        SerialProtocol_AirSpeed = 34,
+
         SerialProtocol_NumProtocols                    // must be the last value
     };
 
