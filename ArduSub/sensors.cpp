@@ -107,3 +107,11 @@ void Sub::accel_cal_update()
         ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
     }
 }
+
+/*
+  ask airspeed sensor for a new value, duplicated from plane
+ */
+void Sub::read_airspeed()
+{
+    g2.airspeed.update(should_log(MASK_LOG_IMU));
+}
