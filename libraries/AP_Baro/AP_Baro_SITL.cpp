@@ -20,6 +20,7 @@ AP_Baro_SITL::AP_Baro_SITL(AP_Baro &baro) :
 #if APM_BUILD_TYPE(APM_BUILD_ArduSub)
         _frontend.set_type(_instance, AP_Baro::BARO_TYPE_WATER);
 #endif
+        set_bus_id(_instance, AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_SITL, 0, _instance, DEVTYPE_BARO_SITL));
         hal.scheduler->register_timer_process(FUNCTOR_BIND(this, &AP_Baro_SITL::_timer, void));
     }
 }

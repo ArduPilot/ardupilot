@@ -115,6 +115,9 @@ bool AP_Baro_BMP280::_init()
 
     _instance = _frontend.register_sensor();
 
+    _dev->set_device_type(DEVTYPE_BARO_BMP280);
+    set_bus_id(_instance, _dev->get_bus_id());
+    
     // request 50Hz update
     _dev->register_periodic_callback(20 * AP_USEC_PER_MSEC, FUNCTOR_BIND_MEMBER(&AP_Baro_BMP280::_timer, void));
 

@@ -179,6 +179,9 @@ bool AP_Baro_LPS2XH::_init()
 
     _instance = _frontend.register_sensor();
 
+    _dev->set_device_type(DEVTYPE_BARO_LPS2XH);
+    set_bus_id(_instance, _dev->get_bus_id());
+    
     _dev->get_semaphore()->give();
 
     _dev->register_periodic_callback(CallTime, FUNCTOR_BIND_MEMBER(&AP_Baro_LPS2XH::_timer, void));

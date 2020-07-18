@@ -206,6 +206,9 @@ bool AP_Baro_ICM20789::init()
 
     instance = _frontend.register_sensor();
 
+    dev->set_device_type(DEVTYPE_BARO_ICM20789);
+    set_bus_id(instance, dev->get_bus_id());
+    
     dev->get_semaphore()->give();
 
     debug("ICM20789: startup OK\n");

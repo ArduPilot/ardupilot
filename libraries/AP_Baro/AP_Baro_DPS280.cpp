@@ -163,6 +163,9 @@ bool AP_Baro_DPS280::init()
 
     instance = _frontend.register_sensor();
 
+    dev->set_device_type(DEVTYPE_BARO_DPS280);
+    set_bus_id(instance, dev->get_bus_id());
+    
     dev->get_semaphore()->give();
 
     // request 64Hz update. New data will be available at 32Hz

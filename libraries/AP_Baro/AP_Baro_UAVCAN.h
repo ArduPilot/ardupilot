@@ -13,10 +13,6 @@ public:
 
     void update() override;
 
-    inline void register_sensor() {
-        _instance = _frontend.register_sensor();
-    }
-
     static void subscribe_msgs(AP_UAVCAN* ap_uavcan);
     static AP_Baro_UAVCAN* get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t node_id, bool create_new);
     static AP_Baro_Backend* probe(AP_Baro &baro);
