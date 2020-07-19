@@ -186,6 +186,7 @@ public:
         TER_DISABLE =         86, // disable terrain following in CRUISE/FBWB modes
         CROW_SELECT =         87, // select CROW mode for diff spoilers;high disables,mid forces progressive
         SOARING =             88, // three-position switch to set soaring mode
+        PROXIMITY_AUTO_YAW =  89, // enable or disable automatic yawing to face closest obstacle
 
         // entries from 100 onwards are expected to be developer
         // options used for testing
