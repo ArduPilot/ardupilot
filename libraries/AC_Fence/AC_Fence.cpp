@@ -357,12 +357,6 @@ uint8_t AC_Fence::check(bool position_ok)
     return ret;
 }
 
-/// check - returns bitmask of fence types breached (if any)
-uint8_t AC_Fence::check()
-{
-    return check(true);
-}
-
 // returns true if the destination is within fence (used to reject waypoints outside the fence)
 bool AC_Fence::check_destination_within_fence(const Location& loc)
 {
