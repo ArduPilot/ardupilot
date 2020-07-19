@@ -499,11 +499,6 @@ void AP_ToshibaCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
         return;
     }
 
-    // return if no space in output buffer to send mavlink messages
-    if (!HAVE_PAYLOAD_SPACE((mavlink_channel_t)mav_chan, ESC_TELEMETRY_1_TO_4)) {
-        return;
-    }
-
     // output telemetry messages
     {
         // take semaphore to access telemetry data
@@ -511,6 +506,11 @@ void AP_ToshibaCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
 
         // loop through 3 groups of 4 ESCs
         for (uint8_t i = 0; i < 3; i++) {
+
+            // return if no space in output buffer to send mavlink messages
+            if (!HAVE_PAYLOAD_SPACE((mavlink_channel_t)mav_chan, ESC_TELEMETRY_1_TO_4)) {
+                return;
+            }
 
             // skip this group of ESCs if no data to send
             if ((_esc_present_bitmask & ((uint32_t)0x0F << i*4)) == 0) {
