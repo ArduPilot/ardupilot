@@ -6425,7 +6425,7 @@ switch value'''
             self.progress("Still wanting (%s)" % ",".join([ ("0x%02x" % x) for x in wants.keys()]))
             wants_copy = copy.copy(wants)
             t2 = self.get_sim_time_cached()
-            if t2 - tstart > 60:
+            if t2 - tstart > 300:
                 raise AutoTestTimeoutException("Failed to get frsky data")
             frsky.update()
             for want in wants_copy:
