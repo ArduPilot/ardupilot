@@ -315,7 +315,7 @@ bool AC_Fence::check_fence_circle()
 
 /// check - returns bitmask of fence types breached (if any)
 /// When the position is OK, implement the circle and polygon
-uint8_t AC_Fence::check(bool positionOK)
+uint8_t AC_Fence::check(bool position_ok)
 {
     uint8_t ret = 0;
 
@@ -344,12 +344,12 @@ uint8_t AC_Fence::check(bool positionOK)
     }
 
     // circle fence check
-    if (positionOK && check_fence_circle()) {
+    if (position_ok && check_fence_circle()) {
         ret |= AC_FENCE_TYPE_CIRCLE;
     }
 
     // polygon fence check
-    if (positionOK && check_fence_polygon()) {
+    if (position_ok && check_fence_polygon()) {
         ret |= AC_FENCE_TYPE_POLYGON;
     }
 

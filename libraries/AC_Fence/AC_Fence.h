@@ -70,11 +70,8 @@ public:
     ///
 
     /// check - returns the fence type that has been breached (if any)
-    uint8_t check(void);
-
-    /// check - returns the fence type that has been breached (if any)
     /// When the position is OK, implement the circle and polygon
-    uint8_t check(bool positionOK);
+    uint8_t check(bool position_ok);
 
     // returns true if the destination is within fence (used to reject waypoints outside the fence)
     bool check_destination_within_fence(const Location& loc);
