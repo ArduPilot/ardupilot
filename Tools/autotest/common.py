@@ -6246,9 +6246,9 @@ switch value'''
         )
         if gpi is None:
             raise NotAchievedException("Did not get GLOBAL_POSITION_INT message")
-        gpi_relative_alt = gpi.relative_alt
-        self.progress("GLOBAL_POSITION_INT rel_alt==%f frsky==%f" % (gpi_relative_alt, home_alt_m))
-        if abs(gpi_relative_alt - home_alt_m) < 1:
+        gpi_relative_alt_m = gpi.relative_alt/1000.0
+        self.progress("GLOBAL_POSITION_INT rel_alt==%fm frsky_home_alt==%fm" % (gpi_relative_alt_m, home_alt_m))
+        if abs(gpi_relative_alt_m - home_alt_m) < 1:
             return True
             # FIXME: need to check other values as well
         return False
