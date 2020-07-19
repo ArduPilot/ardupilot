@@ -98,7 +98,7 @@ void ModeAltHold::run()
     }
 
     // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
+    input_euler_angle_roll_pitch_proximity_yaw(target_roll, target_pitch, target_yaw_rate);
 
     // call z-axis position controller
     pos_control->update_z_controller();

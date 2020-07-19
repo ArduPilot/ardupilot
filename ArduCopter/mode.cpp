@@ -829,3 +829,20 @@ uint16_t Mode::get_pilot_speed_dn()
 {
     return copter.get_pilot_speed_dn();
 }
+
+void Mode::input_euler_angle_roll_pitch_proximity_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds)
+{
+#if PROXIMITY_ENABLED == ENABLED
+    // Proximity based automatic yawing if no pilot input
+    if (is_zero(euler_yaw_rate_cds) && copter.auto_yaw_enabled && is_positive(copter.g2.auto_yaw_min_dist)) {
+        float angle, distance;
+        if (copter.g2.proximity.get_closest_object(angle, distance)) {
+            if (distance < copter.g2.auto_yaw_min_dist) {
+                attitude_control->input_euler_angle_roll_pitch_yaw(euler_roll_angle_cd, euler_pitch_angle_cd, degrees(wrap_PI(copter.ahrs.get_yaw() + radians(angle))) * 100, true);
+                return;
+            }
+        }
+    }
+#endif
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(euler_roll_angle_cd, euler_pitch_angle_cd, euler_yaw_rate_cds);
+}
