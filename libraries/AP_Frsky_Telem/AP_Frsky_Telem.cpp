@@ -583,29 +583,31 @@ uint32_t AP_Frsky_Telem::calc_param(void)
     const AP_BattMonitor &_battery = AP::battery();
 
     uint32_t param = 0;
+    uint8_t last_param = AP::battery().num_instances() > 1 ? BATT_CAPACITY_2 : BATT_CAPACITY_1;
 
     // cycle through paramIDs
-    if (_paramID >= 5) {
+    if (_paramID >= last_param) {
         _paramID = 0;
     }
+
     _paramID++;
     switch(_paramID) {
-    case 1:
+    case FRAME_TYPE:
         param = gcs().frame_type(); // see MAV_TYPE in Mavlink definition file common.h
         break;
-    case 2: // was used to send the battery failsafe voltage
-    case 3: // was used to send the battery failsafe capacity in mAh
-        break;
-    case 4:
+    case BATT_FS_VOLTAGE:           // was used to send the battery failsafe voltage, lend slot to next param
+    case BATT_FS_CAPACITY:          // was used to send the battery failsafe capacity in mAh, lend slot to next param
+    case BATT_CAPACITY_1:
+        _paramID = 4;
         param = (uint32_t)roundf(_battery.pack_capacity_mah(0)); // battery pack capacity in mAh
         break;
-    case 5:
+    case BATT_CAPACITY_2:
         param = (uint32_t)roundf(_battery.pack_capacity_mah(1)); // battery pack capacity in mAh
         break;
     }
     //Reserve first 8 bits for param ID, use other 24 bits to store parameter value
     param = (_paramID << PARAM_ID_OFFSET) | (param & PARAM_VALUE_LIMIT);
-    
+
     return param;
 }
 
