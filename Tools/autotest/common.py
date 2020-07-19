@@ -6314,9 +6314,10 @@ switch value'''
         # FIXME: need to check other values as well
         return True
     def tfp_validate_params(self, value):
-        self.progress("validating params (0x%02x)" % value)
         param_id = self.bit_extract(value,24,4)
         param_value = self.bit_extract(value,0,24)
+        self.progress("received param (0x%02x) (id=%u value=%u)" %
+                      (value, param_id, param_value))
         frame_type = param_value
         hb = self.mav.recv_match(
             type='HEARTBEAT',
@@ -6431,7 +6432,7 @@ switch value'''
                 data = frsky.get_data(want)
                 if data is None:
                     continue
-                self.progress("Checking %s" % str(want))
+                self.progress("Checking 0x%x" % (want,))
                 if wants[want](data):
                     self.progress("  Fulfilled")
                     del wants[want]
@@ -6632,7 +6633,7 @@ switch value'''
                 data = frsky.get_data(want)
                 if data is None:
                     continue
-                self.progress("Checking %s" % str(want))
+                self.progress("Checking 0x%x" % (want,))
                 if wants[want](data):
                     self.progress("  Fulfilled")
                     del wants[want]
@@ -6767,7 +6768,7 @@ switch value'''
 
             wants_copy = copy.copy(wants)
             for want in wants_copy:
-                self.progress("Checking %s" % str(want))
+                self.progress("Checking %s" % (want,))
                 if wants[want](ltm):
                     self.progress("  Fulfilled")
                     del wants[want]
