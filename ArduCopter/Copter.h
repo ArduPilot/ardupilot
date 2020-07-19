@@ -624,7 +624,10 @@ private:
     static_assert(_failsafe_priorities[ARRAY_SIZE(_failsafe_priorities) - 1] == -1,
                   "_failsafe_priorities is missing the sentinel");
 
-
+#if PROXIMITY_ENABLED == ENABLED
+    // true is proximity based auto yawing is enabled
+    bool auto_yaw_enabled = true;
+#endif
 
     // AP_State.cpp
     void set_auto_armed(bool b);

@@ -985,6 +985,16 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_GROUPINFO("AUTO_OPTIONS", 40, ParametersG2, auto_options, 0),
 #endif
 
+#if PROXIMITY_ENABLED == ENABLED
+    // @Param: AUTOYAW_MIN_DIST
+    // @DisplayName: Proximity auto yaw distance
+    // @Description: If a object is closer than this distace the vehicle will yaw to face it, 0 is disabled
+    // @Units: m
+    // @Range: 2 5
+    // @User: Standard
+    AP_GROUPINFO("AUTOYAW_MIN_DIST", 41, ParametersG2, auto_yaw_min_dist, 0),
+#endif
+
     AP_GROUPEND
 };
 
