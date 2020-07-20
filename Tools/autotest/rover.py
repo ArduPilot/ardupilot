@@ -653,7 +653,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.progress("Establishing baseline RC input")
         self.mavproxy.send('rc 3 %u\n' % normal_rc_throttle)
-        tstart = self.get_sim_time_cached()
+        self.drain_mav()
+        tstart = self.get_sim_time()
         while True:
             if self.get_sim_time_cached() - tstart > 10:
                 raise AutoTestTimeoutException("Did not get rc change")
@@ -662,7 +663,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 break
 
         self.progress("Set override with RC_CHANNELS_OVERRIDE")
-        tstart = self.get_sim_time_cached()
+        self.drain_mav()
+        tstart = self.get_sim_time()
         while True:
             if self.get_sim_time_cached() - tstart > 10:
                 raise AutoTestTimeoutException("Did not override")
@@ -685,7 +687,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 break
 
         self.progress("disabling override and making sure we revert to RC input in good time")
-        tstart = self.get_sim_time_cached()
+        self.drain_mav()
+        tstart = self.get_sim_time()
         while True:
             if self.get_sim_time_cached() - tstart > 0.5:
                 raise AutoTestTimeoutException("Did not cancel override")
