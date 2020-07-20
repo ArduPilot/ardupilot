@@ -76,7 +76,7 @@ private:
         STATE_RELAXED = 0,              // winch is not operating
         STATE_POSITION,                 // moving or maintaining a target length
         STATE_RATE,                     // deploying or retracting at a target rate
-    }  winch_state;
+    } winch_state;
 
     struct Backend_Config {
         AP_Int8     type;               // winch type
