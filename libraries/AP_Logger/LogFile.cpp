@@ -480,6 +480,7 @@ void AP_Logger::Write_Power(void)
         Vcc     : hal.analogin->board_voltage(),
         Vservo  : hal.analogin->servorail_voltage(),
         flags   : hal.analogin->power_status_flags(),
+        accumulated_flags   : hal.analogin->accumulated_power_status_flags(),
         safety_and_arm : safety_and_armed
     };
     WriteBlock(&pkt, sizeof(pkt));
