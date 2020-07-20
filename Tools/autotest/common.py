@@ -541,9 +541,11 @@ class FRSkySPort(FRSky):
         self.state = self.state_WANT_FRAME_TYPE
 
         self.data_by_id = {}
+        self.dataid_counts = {}
         self.bad_chars = 0
 
         self.poll_sent = 0
+        self.sensor_id_poll_counts = {}
 
         self.id_descriptions = {
             0x5000: "status text (dynamic)",
@@ -588,6 +590,17 @@ class FRSkySPort(FRSky):
     def handle_data(self, dataid, value):
         self.progress("%s (0x%x)=%u" % (self.id_descriptions[dataid], dataid, value))
         self.data_by_id[dataid] = value
+        if dataid not in self.dataid_counts:
+            self.dataid_counts[dataid] = 0
+        self.dataid_counts[dataid] += 1
+
+    def dump_dataid_counts_as_progress_messages(self):
+        for dataid in self.dataid_counts:
+            self.progress("0x%x: %u  (%s)" % (dataid, self.dataid_counts[dataid], self.id_descriptions[dataid]))
+
+    def dump_sensor_id_poll_counts_as_progress_messages(self):
+        for sensor_id in self.sensor_id_poll_counts:
+            self.progress("(0x%x): %u" % (sensor_id, self.sensor_id_poll_counts[sensor_id]))
 
     def read_bytestuffed_byte(self):
         if sys.version_info.major >= 3:
@@ -634,6 +647,9 @@ class FRSkySPort(FRSky):
         if self.state == self.state_SEND_POLL:
             sensor_id = self.next_sensor()
             self.progress("Sending poll for 0x%02x" % sensor_id)
+            if sensor_id not in self.sensor_id_poll_counts:
+                self.sensor_id_poll_counts[sensor_id] = 0
+            self.sensor_id_poll_counts[sensor_id] += 1
             buf = struct.pack('<BB', self.START_STOP_SPORT, sensor_id)
             self.port.sendall(buf)
             self.state = self.state_WANT_FRAME_TYPE
@@ -6426,6 +6442,11 @@ switch value'''
             wants_copy = copy.copy(wants)
             t2 = self.get_sim_time_cached()
             if t2 - tstart > 300:
+                self.progress("Failed to get frsky data")
+                self.progress("Counts of sensor_id polls sent:")
+                frsky.dump_sensor_id_poll_counts_as_progress_messages()
+                self.progress("Counts of dataids received:")
+                frsky.dump_dataid_counts_as_progress_messages()
                 raise AutoTestTimeoutException("Failed to get frsky data")
             frsky.update()
             for want in wants_copy:
@@ -6436,6 +6457,10 @@ switch value'''
                 if wants[want](data):
                     self.progress("  Fulfilled")
                     del wants[want]
+        self.progress("Counts of sensor_id polls sent:")
+        frsky.dump_sensor_id_poll_counts_as_progress_messages()
+        self.progress("Counts of dataids received:")
+        frsky.dump_dataid_counts_as_progress_messages()
 
     def tfs_validate_gps_alt(self, value):
         self.progress("validating gps altitude integer part (0x%02x)" % value)
