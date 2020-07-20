@@ -473,6 +473,7 @@ void AnalogIn::update_power_flags(void)
         // the power status has changed while armed
         flags |= MAV_POWER_STATUS_CHANGED;
     }
+    _accumulated_power_flags |= flags;
     _power_flags = flags;
 }
 #endif // HAL_USE_ADC
