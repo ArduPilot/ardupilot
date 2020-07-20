@@ -22,6 +22,12 @@ import gzip
 import generate_manifest, gen_stable
 import build_binaries_history
 
+if sys.version_info[0] < 3:
+    running_python3 = False
+else:
+    running_python3 = True
+
+
 class build_binaries(object):
     def __init__(self, tags):
         self.tags = tags
@@ -77,6 +83,8 @@ class build_binaries(object):
                     # select not available on Windows... probably...
                 time.sleep(0.1)
                 continue
+            if running_python3:
+                x = x.decode('ascii')
             output += x
             x = x.rstrip()
             if show_output:
@@ -702,6 +710,8 @@ is bob we will attempt to checkout bob-AVR'''
         new_json_filepath_gz = os.path.join(self.binaries,
                                             "manifest.json.gz.new")
         with gzip.open(new_json_filepath_gz, 'wb') as gf:
+            if running_python3:
+                content = bytes(content, 'ascii')
             gf.write(content)
         json_filepath = os.path.join(self.binaries, "manifest.json")
         json_filepath_gz = os.path.join(self.binaries, "manifest.json.gz")
