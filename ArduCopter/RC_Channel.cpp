@@ -465,15 +465,15 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
         case AUX_FUNC::WINCH_CONTROL:
 #if WINCH_ENABLED == ENABLED
             switch (ch_flag) {
-                case LOW:
+                case AuxSwitchPos::LOW:
                     // raise winch at maximum speed
                     copter.g2.winch.set_desired_rate(-copter.g2.winch.get_rate_max());
                     break;
-                case HIGH:
+                case AuxSwitchPos::HIGH:
                     // lower winch at maximum speed
                     copter.g2.winch.set_desired_rate(copter.g2.winch.get_rate_max());
                     break;
-                case MIDDLE:
+                case AuxSwitchPos::MIDDLE:
                     copter.g2.winch.set_desired_rate(0.0f);
                     break;
                 }
