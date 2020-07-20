@@ -37,10 +37,11 @@ UC_REGISTRY_BINDER(Mag2Cb, uavcan::equipment::ahrs::MagneticFieldStrength2);
 AP_Compass_UAVCAN::DetectedModules AP_Compass_UAVCAN::_detected_modules[] = {0};
 HAL_Semaphore AP_Compass_UAVCAN::_sem_registry;
 
-AP_Compass_UAVCAN::AP_Compass_UAVCAN(AP_UAVCAN* ap_uavcan, uint8_t node_id, uint8_t sensor_id)
+AP_Compass_UAVCAN::AP_Compass_UAVCAN(AP_UAVCAN* ap_uavcan, uint8_t node_id, uint8_t sensor_id, uint32_t devid)
     : _ap_uavcan(ap_uavcan)
     , _node_id(node_id)
     , _sensor_id(sensor_id)
+    , _devid(devid)
 {
 }
 
@@ -75,7 +76,7 @@ AP_Compass_Backend* AP_Compass_UAVCAN::probe(uint8_t index)
     if (!_detected_modules[index].driver && _detected_modules[index].ap_uavcan) {
         WITH_SEMAPHORE(_sem_registry);
         // Register new Compass mode to a backend
-        driver = new AP_Compass_UAVCAN(_detected_modules[index].ap_uavcan, _detected_modules[index].node_id, _detected_modules[index].sensor_id);
+        driver = new AP_Compass_UAVCAN(_detected_modules[index].ap_uavcan, _detected_modules[index].node_id, _detected_modules[index].sensor_id, _detected_modules[index].devid);
         if (driver) {
             if (!driver->init()) {
                 delete driver;
@@ -95,16 +96,12 @@ AP_Compass_Backend* AP_Compass_UAVCAN::probe(uint8_t index)
 
 bool AP_Compass_UAVCAN::init()
 {
-    uint32_t devid = AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_UAVCAN,
-                                                 _ap_uavcan->get_driver_index(),
-                                                 _node_id,
-                                                 _sensor_id + 1); // we use sensor_id as devtype
     // Adding 1 is necessary to allow backward compatibilty, where this field was set as 1 by default
-    if (!register_compass(devid, _instance)) {
+    if (!register_compass(_devid, _instance)) {
         return false;
     }
 
-    set_dev_id(_instance, devid);
+    set_dev_id(_instance, _devid);
     set_external(_instance, true);
 
     debug_mag_uavcan(2, _ap_uavcan->get_driver_index(),  "AP_Compass_UAVCAN loaded\n\r");
@@ -142,6 +139,10 @@ AP_Compass_UAVCAN* AP_Compass_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, u
                 _detected_modules[i].ap_uavcan = ap_uavcan;
                 _detected_modules[i].node_id = node_id;
                 _detected_modules[i].sensor_id = sensor_id;
+                _detected_modules[i].devid = AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_UAVCAN,
+                                                 ap_uavcan->get_driver_index(),
+                                                 node_id,
+                                                 sensor_id + 1); // we use sensor_id as devtype
                 break;
             }
         }
