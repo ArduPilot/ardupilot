@@ -62,6 +62,10 @@ bool AP_RangeFinder_NMEA::decode(char c)
     case '\n':
     case '*':
     {
+        if (_sentence_done) {
+            return false;
+        }
+
         // null terminate and decode latest term
         _term[_term_offset] = 0;
         bool valid_sentence = decode_latest_term();
@@ -80,6 +84,7 @@ bool AP_RangeFinder_NMEA::decode(char c)
         _checksum = 0;
         _term_is_checksum = false;
         _distance_m = -1.0f;
+        _sentence_done = false;
         return false;
     }
 
@@ -100,6 +105,7 @@ bool AP_RangeFinder_NMEA::decode_latest_term()
 {
     // handle the last term in a message
     if (_term_is_checksum) {
+        _sentence_done = true;
         uint8_t nibble_high = 0;
         uint8_t nibble_low  = 0;
         if (!hex_to_uint8(_term[0], nibble_high) || !hex_to_uint8(_term[1], nibble_low)) {
