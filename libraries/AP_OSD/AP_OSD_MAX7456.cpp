@@ -322,9 +322,11 @@ void AP_OSD_MAX7456::reinit()
     if (VIN_IS_PAL(sense)) {
         video_signal_reg = VIDEO_MODE_PAL | OSD_ENABLE;
         video_lines = video_lines_pal;
+        _format = FORMAT_PAL;
     } else {
         video_signal_reg = VIDEO_MODE_NTSC | OSD_ENABLE;
         video_lines = video_lines_ntsc;
+        _format = FORMAT_NTSC;
     }
 
     // set all rows to same character black/white level
@@ -460,4 +462,19 @@ void AP_OSD_MAX7456::write(uint8_t x, uint8_t y, const char* text)
         ++text;
         ++x;
     }
+}
+
+// return a correction factor used to display angles correctly
+float AP_OSD_MAX7456::get_aspect_ratio_correction() const
+{
+    switch (_format) {
+    case FORMAT_NTSC:
+        return 12.0f/18.46f;
+
+    case FORMAT_PAL:
+        return 12.0f/15.0f;
+
+    default:
+        return 1.0f;
+    };
 }
