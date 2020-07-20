@@ -205,7 +205,6 @@ void AP_Compass_Backend::set_dev_id(uint8_t instance, uint32_t dev_id)
 {
     _compass._state[Compass::StateIndex(instance)].dev_id.set_and_notify(dev_id);
     _compass._state[Compass::StateIndex(instance)].detected_dev_id = dev_id;
-    _compass._state[Compass::StateIndex(instance)].expected_dev_id = dev_id;
 }
 
 /*
