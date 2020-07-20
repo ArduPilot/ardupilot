@@ -257,6 +257,34 @@ public:
         return change_bus_id(get_bus_id(), devtype);
     }
 
+    /**
+     * get bus type
+     */
+    static enum BusType devid_get_bus_type(uint32_t dev_id) {
+        union DeviceId d;
+        d.devid = dev_id;
+        return d.devid_s.bus_type;
+    }
+
+    static uint8_t devid_get_bus(uint32_t dev_id) {
+        union DeviceId d;
+        d.devid = dev_id;
+        return d.devid_s.bus;
+    }
+
+    static uint8_t devid_get_address(uint32_t dev_id) {
+        union DeviceId d;
+        d.devid = dev_id;
+        return d.devid_s.address;
+    }
+
+    static uint8_t devid_get_devtype(uint32_t dev_id) {
+        union DeviceId d;
+        d.devid = dev_id;
+        return d.devid_s.devtype;
+    }
+
+
     /* set number of retries on transfers */
     virtual void set_retries(uint8_t retries) {};
 
