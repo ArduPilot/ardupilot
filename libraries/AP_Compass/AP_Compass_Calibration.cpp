@@ -372,6 +372,7 @@ MAV_RESULT Compass::handle_mag_cal_command(const mavlink_command_long_t &packet)
         bool autoreboot = !is_zero(packet.param5);
 
         if (mag_mask == 0) { // 0 means all
+            _reset_compass_id();
             start_calibration_all(retry, autosave, delay, autoreboot);
         } else {
             if (!_start_calibration_mask(mag_mask, retry, autosave, delay, autoreboot)) {
@@ -472,6 +473,7 @@ bool Compass::get_uncorrected_field(uint8_t instance, Vector3f &field)
 MAV_RESULT Compass::mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
                                       float lat_deg, float lon_deg)
 {
+    _reset_compass_id();
     if (is_zero(lat_deg) && is_zero(lon_deg)) {
         Location loc;
         // get AHRS position. If unavailable then try GPS location
