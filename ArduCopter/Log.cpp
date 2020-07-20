@@ -488,6 +488,12 @@ const struct LogStructure Copter::log_structure[] = {
 // @Field: Id: Data type identifier
 // @Field: Value: Value
 
+// @LoggerMessage: DU16
+// @Description: Generic 16-bit-unsigned-integer storage
+// @Field: TimeUS: Time since system startup
+// @Field: Id: Data type identifier
+// @Field: Value: Value
+
 // @LoggerMessage: D32
 // @Description: Generic 32-bit-signed-integer storage
 // @Field: TimeUS: Time since system startup
