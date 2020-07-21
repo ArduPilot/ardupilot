@@ -79,7 +79,9 @@ void Plane::update_soaring() {
                 set_mode(mode_rtl, ModeReason::SOARING_DRIFT_EXCEEDED);
             }
 
-            // If previous mode was AUTO and there was a previous NAV command, we can use previous and next wps for drift calculation.
+            // If previous mode was AUTO and there was a previous NAV command, we can use previous and next wps for drift calculation
+            // with respect to the desired direction of travel. If these vectors are zero, drift will be calculated from thermal start
+            // position only, without taking account of the desired direction of travel.
             Vector2f prev_wp, next_wp;
 
             if (previous_mode->mode_number() == Mode::Number::AUTO) {
@@ -87,12 +89,10 @@ void Plane::update_soaring() {
                 AP_Mission::Mission_Command prev_nav_cmd;
 
                 if (!(mission.get_next_nav_cmd(mission.get_prev_nav_cmd_with_wp_index(), prev_nav_cmd) &&
-                       prev_nav_cmd.content.location.get_vector_xy_from_origin_NE(prev_wp) &&
+                    prev_nav_cmd.content.location.get_vector_xy_from_origin_NE(prev_wp) &&
                     current_nav_cmd.content.location.get_vector_xy_from_origin_NE(next_wp))) {
-                    prev_wp.x = 0.0;
-                    prev_wp.y = 0.0;
-                    next_wp.x = 0.0;
-                    next_wp.y = 0.0;
+                    prev_wp.zero();
+                    next_wp.zero();
                 }
             }
 
