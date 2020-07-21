@@ -1194,6 +1194,17 @@ struct PACKED log_OADijkstra {
     int32_t oa_lng;
 };
 
+struct PACKED log_SimpleAvoid {
+  LOG_PACKET_HEADER;
+  uint64_t time_us;
+  uint8_t state;
+  float desired_vel_x;
+  float desired_vel_y;
+  float modified_vel_x;
+  float modified_vel_y;
+  uint8_t backing_up;
+};
+
 struct PACKED log_DSTL {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -2107,6 +2118,16 @@ struct PACKED log_Arm_Disarm {
 // @Field: E: point associated with most recent action (East component)
 // @Field: D: point associated with most recent action (Down component)
 
+// @LoggerMessage: SA
+// @Description: Simple Avoidance messages
+// @Field: TimeUS: Time since system startup
+// @Field: State: True if Simple Avoidance is active
+// @Field: DVelX: Desired velocity, X-Axis (Velocity before Avoidance)
+// @Field: DVelY: Desired velocity, Y-Axis (Velocity before Avoidance)
+// @Field: MVelX: Modified velocity, X-Axis (Velocity after Avoidance)
+// @Field: MVelY: Modified velocity, Y-Axis (Velocity after Avoidance)
+// @Field: Back: True if vehicle is backing away 
+
 // @LoggerMessage: TERR
 // @Description: Terrain database infomration
 // @Field: TimeUS: Time since system startup
@@ -2436,6 +2457,8 @@ struct PACKED log_Arm_Disarm {
       "OABR","QBHHBfLLLL","TimeUS,Active,DesYaw,Yaw,ResChg,Mar,DLat,DLng,OALat,OALng", "sbdd-mDUDU", "F-----GGGG" }, \
     { LOG_OA_DIJKSTRA_MSG, sizeof(log_OADijkstra), \
       "OADJ","QBBBBLLLL","TimeUS,State,Err,CurrPoint,TotPoints,DLat,DLng,OALat,OALng", "sbbbbDUDU", "F----GGGG" }, \
+    { LOG_SIMPLE_AVOID_MSG, sizeof(log_SimpleAvoid), \
+      "SA",  "QBffffB","TimeUS,State,DVelX,DVelY,MVelX,MVelY,Back", "sbnnnnb", "F------"}, \
     { LOG_IMU2_MSG, sizeof(log_IMU), \
       "IMU2",  IMU_FMT,     IMU_LABELS, IMU_UNITS, IMU_MULTS }, \
     { LOG_IMU3_MSG, sizeof(log_IMU), \
@@ -2728,6 +2751,7 @@ enum LogMessages : uint8_t {
     LOG_OA_BENDYRULER_MSG,
     LOG_OA_DIJKSTRA_MSG,
     LOG_VISUALVEL_MSG,
+    LOG_SIMPLE_AVOID_MSG,
 
     _LOG_LAST_MSG_
 };

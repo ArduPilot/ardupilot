@@ -289,6 +289,7 @@ public:
     void Write_SRTL(bool active, uint16_t num_points, uint16_t max_points, uint8_t action, const Vector3f& point);
     void Write_OABendyRuler(bool active, float target_yaw, bool ignore_chg, float margin, const Location &final_dest, const Location &oa_dest);
     void Write_OADijkstra(uint8_t state, uint8_t error_id, uint8_t curr_point, uint8_t tot_points, const Location &final_dest, const Location &oa_dest);
+    void Write_SimpleAvoidance(uint8_t state, const Vector2f& desired_vel, const Vector2f& modified_vel, bool back_up);
 
     void Write(const char *name, const char *labels, const char *fmt, ...);
     void Write(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...);
