@@ -129,6 +129,11 @@ bool AC_Fence::pre_arm_check_polygon(const char* &fail_msg) const
         return false;
     }
 
+    if (!_poly_loader.check_inclusion_circle_margin(_margin)) {
+        fail_msg = "Margin is less than inclusion circle radius";
+        return false;
+    }
+
     return true;
 }
 
@@ -139,6 +144,11 @@ bool AC_Fence::pre_arm_check_circle(const char* &fail_msg) const
         fail_msg = "Invalid FENCE_RADIUS value";
         return false;
     }
+    if (_circle_radius < _margin) {
+        fail_msg = "FENCE_MARGIN is less than FENCE_RADIUS";
+        return false;
+    }
+
     return true;
 }
 
