@@ -110,6 +110,9 @@ public:
     /// center is offsets in cm from EKF origin in NE frame, radius is in meters
     bool get_inclusion_circle(uint8_t index, Vector2f &center_pos_cm, float &radius) const;
 
+    // false if margin < fence radius 
+    bool check_inclusion_circle_margin(float margin) const;
+
     ///
     /// mavlink
     ///
