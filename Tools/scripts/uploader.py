@@ -572,7 +572,7 @@ class uploader(object):
         # get the bootloader protocol ID first
         self.bl_rev = self.__getInfo(uploader.INFO_BL_REV)
         if (self.bl_rev < uploader.BL_REV_MIN) or (self.bl_rev > uploader.BL_REV_MAX):
-            print("Unsupported bootloader protocol %d" % uploader.INFO_BL_REV)
+            print("Unsupported bootloader protocol %d" % self.bl_rev)
             raise RuntimeError("Bootloader protocol mismatch")
 
         self.board_type = self.__getInfo(uploader.INFO_BOARD_ID)
