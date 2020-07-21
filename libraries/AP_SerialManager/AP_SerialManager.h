@@ -139,6 +139,7 @@ public:
         SerialProtocol_Scripting = 28,
         SerialProtocol_CRSF = 29,
         SerialProtocol_Generator = 30,
+        SerialProtocol_Winch = 31,
     };
 
     // get singleton instance
