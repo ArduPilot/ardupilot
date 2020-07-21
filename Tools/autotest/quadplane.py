@@ -396,6 +396,11 @@ class AutoTestQuadPlane(AutoTest):
     def test_parameter_checks(self):
         self.test_parameter_checks_poscontrol("Q_P")
 
+    def rc_defaults(self):
+        ret = super(AutoTestQuadPlane, self).rc_defaults()
+        ret[3] = 1000
+        return ret
+
     def default_mode(self):
         return "MANUAL"
 
