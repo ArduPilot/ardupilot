@@ -103,7 +103,7 @@ void Plane::update_soaring() {
                 // Reset loiter angle, so that the loiter exit heading criteria
                 // only starts expanding when we're ready to exit.
                 plane.loiter.sum_cd = 0;
-                plane.soaring_mode_timer = AP_HAL::millis();
+                plane.soaring_mode_timer_ms = AP_HAL::millis();
 
                 //update the wp location
                 g2.soaring_controller.get_target(next_WP_loc);
@@ -112,9 +112,9 @@ void Plane::update_soaring() {
             }
 
             // Some other loiter status, we need to think about exiting loiter.
-            uint32_t timer = AP_HAL::millis() - plane.soaring_mode_timer;
+            uint32_t timer_ms = AP_HAL::millis() - plane.soaring_mode_timer_ms;
 
-            if (!soaring_exit_heading_aligned() && loiterStatus!=SoaringController::LoiterStatus::ALT_TOO_LOW && timer<20e3) {
+            if (!soaring_exit_heading_aligned() && loiterStatus!=SoaringController::LoiterStatus::ALT_TOO_LOW && timer_ms<20000) {
                 // Heading not lined up, and not timed out or in a condition requiring immediate exit.
                 break;
             }

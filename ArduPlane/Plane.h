@@ -783,7 +783,7 @@ private:
     float rudder_dt;
 
     // soaring mode-change timer
-    uint32_t soaring_mode_timer;
+    uint32_t soaring_mode_timer_ms;
 
     // terrain disable for non AUTO modes, set with an RC Option switch
     bool non_auto_terrain_disable;
