@@ -6884,10 +6884,10 @@ switch value'''
                 avg = None
             else:
                 avg = self.total_waiting_to_arm_time/self.waiting_to_arm_count
-            self.progress("Spent %f seconds waiting to arm. count=%u avg=%f" %
+            self.progress("Spent %f seconds waiting to arm. count=%u avg=%s" %
                           (self.total_waiting_to_arm_time,
-                          self.waiting_to_arm_count,
-                          avg))
+                           self.waiting_to_arm_count,
+                           str(avg)))
             self.show_test_timings()
         if self.forced_post_test_sitl_reboots != 0:
             print("Had to force-reset SITL %u times" %
