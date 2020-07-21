@@ -4591,7 +4591,7 @@ class AutoTestCopter(AutoTest):
                                         0)
             self.wait_location(east_loc, accuracy=6)
             self.reach_heading_manual(225);
-            self.wait_location(west_loc, accuracy=6)
+            self.wait_location(west_loc, accuracy=6, timeout =200)
             self.set_rc(2, 1500)
             self.do_RTL()
 
