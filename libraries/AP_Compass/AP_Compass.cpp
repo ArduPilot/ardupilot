@@ -1006,7 +1006,6 @@ void Compass::_probe_external_i2c_compasses(void)
         }
     }
 
-#if !HAL_MINIMIZE_FEATURES
 #ifndef HAL_BUILD_AP_PERIPH
     // AK09916 on ICM20948
     FOREACH_I2C_EXTERNAL(i) {
@@ -1096,8 +1095,6 @@ void Compass::_probe_external_i2c_compasses(void)
         ADD_BACKEND(DRIVER_RM3100, AP_Compass_RM3100::probe(GET_I2C_DEVICE(i, HAL_COMPASS_RM3100_I2C_ADDR),
                     all_external, ROTATION_NONE));
     }
-
-#endif // HAL_MINIMIZE_FEATURES
 }
 
 /*
