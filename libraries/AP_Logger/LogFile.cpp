@@ -1078,3 +1078,18 @@ void AP_Logger::Write_OADijkstra(uint8_t state, uint8_t error_id, uint8_t curr_p
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
+
+void AP_Logger::Write_SimpleAvoidance(uint8_t state, const Vector2f& desired_vel, const Vector2f& modified_vel, bool back_up)
+{
+    struct log_SimpleAvoid pkt{
+        LOG_PACKET_HEADER_INIT(LOG_SIMPLE_AVOID_MSG),
+        time_us         : AP_HAL::micros64(),
+        state           : state,
+        desired_vel_x   : desired_vel.x * 0.01f,
+        desired_vel_y   : desired_vel.y * 0.01f,
+        modified_vel_x  : modified_vel.x * 0.01f,
+        modified_vel_y  : modified_vel.y * 0.01f,
+        backing_up      : back_up,
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}
