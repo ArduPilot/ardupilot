@@ -82,7 +82,7 @@ Aircraft::Aircraft(const char *frame_str) :
         sitl->ahrs_rotation_inv = sitl->ahrs_rotation.transposed();
     }
 
-    terrain = reinterpret_cast<AP_Terrain *>(AP_Param::find_object("TERRAIN_"));
+    terrain = &AP::terrain();
 }
 
 void Aircraft::set_start_location(const Location &start_loc, const float start_yaw)
