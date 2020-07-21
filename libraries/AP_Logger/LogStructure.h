@@ -1890,7 +1890,7 @@ struct PACKED log_Arm_Disarm {
 // @Field: Value: parameter vlaue
 
 // @LoggerMessage: PIDR,PIDP,PIDY,PIDA,PIDS
-// @Description: Proportional/Integral/Derivative gain values for Roll/Pitch/Yaw/Z/Steering
+// @Description: Proportional/Integral/Derivative gain values for Roll/Pitch/Yaw/Altitude/Steering
 // @Field: TimeUS: Time since system startup
 // @Field: Tar: desired value
 // @Field: Act: achieved value
