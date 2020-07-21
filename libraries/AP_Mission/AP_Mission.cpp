@@ -1142,6 +1142,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         break;
 
     case MAV_CMD_NAV_VTOL_LAND:
+        cmd.p1 = (NAV_VTOL_LAND_OPTIONS)packet.param1;
         break;
 
     case MAV_CMD_DO_VTOL_TRANSITION:
@@ -1637,6 +1638,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         break;
 
     case MAV_CMD_NAV_VTOL_LAND:
+        packet.param1 = cmd.p1;
         break;
 
     case MAV_CMD_DO_VTOL_TRANSITION:
