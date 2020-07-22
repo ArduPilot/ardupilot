@@ -60,6 +60,14 @@ public:
     float get_throttle() const { return _throttle; }
     void set_throttle(float throttle);
 
+    // get roll as a value from -100 to 100
+    float get_roll() const { return _roll; }
+    void set_roll(float roll);
+
+    // get pitch as a value from -100 to 100
+    float get_pitch() const { return _pitch; }
+    void set_pitch(float pitch);
+
     // get or set lateral input as a value from -100 to +100
     float get_lateral() const { return _lateral; }
     void set_lateral(float lateral);
@@ -179,6 +187,8 @@ protected:
     // internal variables
     float   _steering;  // requested steering as a value from -4500 to +4500
     float   _throttle;  // requested throttle as a value from -100 to 100
+    float   _roll;  // requested throttle as a value from -100 to 100
+    float   _pitch;  // requested pitch as a value from -100 to 100
     float   _throttle_prev; // throttle input from previous iteration
     bool    _scale_steering = true; // true if we should scale steering by speed or angle
     float   _lateral;  // requested lateral input as a value from -100 to +100

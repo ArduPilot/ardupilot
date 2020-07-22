@@ -15,7 +15,7 @@ void ModeManual::update()
 
     //walking robot roll and pitch
     get_pilot_desired_roll_and_pitch(desired_roll,desired_pitch);
-    
+
     // if vehicle is balance bot, calculate actual throttle required for balancing
     if (rover.is_balancebot()) {
         rover.balancebot_pitch_control(desired_throttle);
@@ -31,5 +31,7 @@ void ModeManual::update()
     // copy RC scaled inputs to outputs
     g2.motors.set_throttle(desired_throttle);
     g2.motors.set_steering(desired_steering, false);
+    g2.motors.set_roll(desired_roll);
+    g2.motors.set_pitch(desired_pitch);
     g2.motors.set_lateral(desired_lateral);
 }
