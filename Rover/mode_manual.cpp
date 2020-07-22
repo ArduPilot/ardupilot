@@ -18,6 +18,12 @@ void ModeManual::update()
         rover.balancebot_pitch_control(desired_throttle);
     }
 
+    // walking robots support roll and pitch
+    float desired_roll, desired_pitch;
+    get_pilot_desired_roll_and_pitch(desired_roll, desired_pitch);
+    g2.motors.set_roll(desired_roll);
+    g2.motors.set_pitch(desired_pitch);
+
     // set sailboat sails
     float desired_mainsail;
     float desired_wingsail;
