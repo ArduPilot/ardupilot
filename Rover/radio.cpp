@@ -9,10 +9,14 @@ void Rover::set_control_channels(void)
     channel_steer    = rc().channel(rcmap.roll()-1);
     channel_throttle = rc().channel(rcmap.throttle()-1);
     channel_lateral  = rc().channel(rcmap.yaw()-1);
+    channel_roll     = rc().channel(rcmap.yaw()-1);
+    channel_pitch    = rc().channel(rcmap.pitch()-1);
 
     // set rc channel ranges
     channel_steer->set_angle(SERVO_MAX);
     channel_throttle->set_angle(100);
+    channel_roll->set_angle(100);
+    channel_pitch->set_angle(100);
     if (channel_lateral != nullptr) {
         channel_lateral->set_angle(100);
     }
@@ -38,6 +42,8 @@ void Rover::init_rc_in()
     // set rc dead zones
     channel_steer->set_default_dead_zone(30);
     channel_throttle->set_default_dead_zone(30);
+    channel_roll->set_default_dead_zone(30);
+    channel_pitch->set_default_dead_zone(30);
     if (channel_lateral != nullptr) {
         channel_lateral->set_default_dead_zone(30);
     }
