@@ -157,7 +157,7 @@
 #endif
 
 #ifndef HAL_WITH_UAVCAN
-#define HAL_WITH_UAVCAN 0
+#define HAL_WITH_UAVCAN 1
 #endif
 
 #ifndef HAL_RCINPUT_WITH_AP_RADIO

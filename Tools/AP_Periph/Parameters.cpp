@@ -6,6 +6,10 @@ extern const AP_HAL::HAL &hal;
 #define AP_PERIPH_LED_BRIGHT_DEFAULT 100
 #endif
 
+#ifndef AP_PERIPH_CAN_DEBUG_LOG_MSG_DEFAULT
+#define AP_PERIPH_CAN_DEBUG_LOG_MSG_DEFAULT 1
+#endif
+
 #ifndef HAL_PERIPH_ADSB_BAUD_DEFAULT
 #define HAL_PERIPH_ADSB_BAUD_DEFAULT 57600
 #endif
@@ -34,9 +38,27 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // can node baudrate
     GSCALAR(can_baudrate,     "CAN_BAUDRATE", 1000000),
 
+    // bump module
+    GSCALAR(dropping_mod_number, "DROPING_MOD_NUM", 0),
+    
+    // Mavlink config
+    GSCALAR(mav_sys_id, "MAVLINK_SYS_ID", 0),
+    GSCALAR(mav_comp_id, "MAVLINK_COMP_ID", HAL_CAN_DEFAULT_NODE_ID),
+    
+    // @Group: SERVO
+    // @Path: ../libraries/SRV_Channel/SRV_Channels.cpp
+    //GOBJECT(servo_channels,     "SERVO", SRV_Channels),
+    
+    // @Group: SERIAL
+    // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
+    GOBJECT(serial_manager,    "SERIAL",   AP_SerialManager),
+
+    // debug MSG BY CAN
+    GSCALAR(debug_log_msg, "DEBUG_LOGMESSAGE", AP_PERIPH_CAN_DEBUG_LOG_MSG_DEFAULT),
+
 #if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
     // trigger bootloader flash
-    GSCALAR(flash_bootloader,     "FLASH_BOOTLOADER", 0),
+    GSCALAR(flash_bootloader,     "FLASH_BOOTLOADER", 1),
 #endif
     
 #ifdef HAL_PERIPH_ENABLE_BUZZER
@@ -48,6 +70,13 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Group: GPS_
     // @Path: ../../libraries/AP_GPS/AP_GPS.cpp
     GOBJECT(gps, "GPS_", AP_GPS),
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_SBUS
+    // GPS driver
+    // @Group: GPS_
+    // @Path: ../../libraries/AP_SBusOut/AP_SBusOut.cpp
+    GOBJECT(sbus, "SBUS_", AP_SBusOut),
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_MAG

@@ -39,6 +39,7 @@
 #include <uavcan/equipment/range_sensor/Measurement.h>
 #include <uavcan/equipment/hardpoint/Command.h>
 #include <uavcan/equipment/esc/Status.h>
+#include <uavcan/tunnel/Broadcast.h>
 #include <ardupilot/indication/SafetyState.h>
 #include <ardupilot/indication/Button.h>
 #include <ardupilot/equipment/trafficmonitor/TrafficReport.h>
@@ -49,6 +50,7 @@
 #include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
 #include <drivers/stm32/canard_stm32.h>
 #include <AP_HAL/I2CDevice.h>
+//#include <AP_SBusOut/AP_SBusOut.h>
 #include "../AP_Bootloader/app_comms.h"
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AP_Common/AP_FWVersion.h>
@@ -281,18 +283,7 @@ static void handle_param_executeopcode(CanardInstance* ins, CanardRxTransfer* tr
 #ifdef HAL_PERIPH_ENABLE_GPS
         AP_Param::setup_object_defaults(&periph.gps, periph.gps.var_info);
 #endif
-#ifdef HAL_PERIPH_ENABLE_MAG
-        AP_Param::setup_object_defaults(&periph.compass, periph.compass.var_info);
-#endif
-#ifdef HAL_PERIPH_ENABLE_BARO
-        AP_Param::setup_object_defaults(&periph.baro, periph.baro.var_info);
-#endif
-#ifdef HAL_PERIPH_ENABLE_AIRSPEED
-        AP_Param::setup_object_defaults(&periph.airspeed, periph.airspeed.var_info);
-#endif
-#ifdef HAL_PERIPH_ENABLE_RANGEFINDER
-        AP_Param::setup_object_defaults(&periph.rangefinder, periph.rangefinder.var_info);
-#endif
+
     }
 
     uavcan_protocol_param_ExecuteOpcodeResponse pkt {};
@@ -506,7 +497,7 @@ static void handle_RTCMStream(CanardInstance* ins, CanardRxTransfer* transfer)
 #ifdef AP_PERIPH_HAVE_LED
 static void set_rgb_led(uint8_t red, uint8_t green, uint8_t blue)
 {
-#ifdef HAL_PERIPH_NEOPIXEL_COUNT
+#ifdef AP_PERIPH_HAVE_LED
     hal.rcout->set_serial_led_rgb_data(HAL_PERIPH_NEOPIXEL_CHAN, -1, red, green, blue);
     hal.rcout->serial_led_send(HAL_PERIPH_NEOPIXEL_CHAN);
 #endif // HAL_PERIPH_NEOPIXEL_COUNT
@@ -749,6 +740,9 @@ static bool shouldAcceptTransfer(const CanardInstance* ins,
     case UAVCAN_PROTOCOL_PARAM_EXECUTEOPCODE_ID:
         *out_data_type_signature = UAVCAN_PROTOCOL_PARAM_EXECUTEOPCODE_SIGNATURE;
         return true;
+    case UAVCAN_TUNNEL_BROADCAST_ID:
+        *out_data_type_signature = UAVCAN_TUNNEL_BROADCAST_SIGNATURE;
+        return true;
 #ifdef HAL_PERIPH_ENABLE_BUZZER
     case UAVCAN_EQUIPMENT_INDICATION_BEEPCOMMAND_ID:
         *out_data_type_signature = UAVCAN_EQUIPMENT_INDICATION_BEEPCOMMAND_SIGNATURE;
@@ -789,6 +783,7 @@ static void processTx(void)
         if (canTransmit(&CAND1, CAN_ANY_MAILBOX, &txmsg, TIME_IMMEDIATE) == MSG_OK) {
             canardPopTxQueue(&canard);
             fail_count = 0;
+            
         } else {
             // just exit and try again later. If we fail 8 times in a row
             // then start discarding to prevent the pool filling up
@@ -797,9 +792,12 @@ static void processTx(void)
             } else {
                 canardPopTxQueue(&canard);
             }
+            //printf("processTx return\n\r");
             return;
         }
+        //printf("fail_count %u\n\r", (uint32_t)fail_count);
     }
+    //printf("processTx end\n\r");
 }
 
 static ObjectBuffer<CANRxFrame> rxbuffer{32};
@@ -964,7 +962,7 @@ static void can_wait_node_id(void)
 
             if (now - last_led_change > led_change_period) {
                 // blink LED in recognisable pattern while waiting for DNA
-                palWriteLine(HAL_GPIO_PIN_LED, (led_pattern & (1U<<led_idx))?1:0);
+                palWriteLine(HAL_GPIO_PIN_LED1, (led_pattern & (1U<<led_idx))?1:0);
                 led_idx = (led_idx+1) % 32;
                 last_led_change = now;
             }
@@ -1160,11 +1158,12 @@ void AP_Periph_FW::can_update()
         last_1Hz_ms = now;
         process1HzTasks(AP_HAL::micros64());
     }
-    can_mag_update();
-    can_gps_update();
-    can_baro_update();
-    can_airspeed_update();
-    can_rangefinder_update();
+    //can_mag_update();
+    //can_gps_update();
+    //can_baro_update();
+    //can_airspeed_update();
+    //can_rangefinder_update();
+    drop_module.update();
 #ifdef HAL_PERIPH_ENABLE_BUZZER
     can_buzzer_update();
 #endif
@@ -1743,5 +1742,51 @@ void can_printf(const char *fmt, ...)
                     CANARD_TRANSFER_PRIORITY_LOW,
                     buffer,
                     len);
-
 }
+
+// printf to CAN LogMessage for debugging
+void can_send_mav(const uint8_t *fmt, uint8_t _len, ...)
+{
+    uavcan_tunnel_Broadcast pkt {};
+    uint8_t buffer[UAVCAN_TUNNEL_BROADCAST_MAX_SIZE];
+    uint8_t tbuf[100];
+ 
+    memcpy(tbuf, fmt, _len);
+    uint32_t n = _len;
+ 
+    pkt.buffer.len = MIN(n, sizeof(tbuf));
+    pkt.buffer.data = (uint8_t *)&tbuf[0];
+    uint32_t len = uavcan_tunnel_Broadcast_encode(&pkt, buffer);
+  
+    canardBroadcast(&canard,
+                    UAVCAN_TUNNEL_BROADCAST_SIGNATURE,
+                    UAVCAN_TUNNEL_BROADCAST_ID,
+                    &transfer_id,
+                    CANARD_TRANSFER_PRIORITY_LOW,
+                    buffer,
+                    len);
+}
+
+// void can_read_mav(const uint8_t *fmt, ...)
+// {
+//     uavcan_protocol_debug_LogMessage pkt {};
+//     uint8_t buffer[UAVCAN_PROTOCOL_DEBUG_LOGMESSAGE_MAX_SIZE];
+//     char tbuf[100];
+//     va_list ap;
+//     va_start(ap, fmt);
+//     uint32_t n = vsnprintf(tbuf, sizeof(tbuf), fmt, ap);
+//     va_end(ap);
+//     pkt.text.len = MIN(n, sizeof(tbuf));
+//     pkt.text.data = (uint8_t *)&tbuf[0];
+//     uint32_t len = uavcan_tunnel_Broadcast_encode(&pkt, buffer);
+//     //uint32_t len = uavcan_protocol_debug_LogMessage_encode(&pkt, buffer);
+
+//     canardBroadcast(&canard,
+//                     UAVCAN_TUNNEL_BROADCAST_SIGNATURE,
+//                     UAVCAN_TUNNEL_BROADCAST_ID,
+//                     &transfer_id,
+//                     CANARD_TRANSFER_PRIORITY_LOW,
+//                     buffer,
+//                     len);
+
+// }

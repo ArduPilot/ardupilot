@@ -19,6 +19,17 @@
   It does not use the full AP_HAL API in order to keep the firmware
   size below the maximum of 16kByte required for F4 based
   boards. Instead it uses the ChibiOS APIs directly
+  ./waf distclean
+  ./waf configure --board f103-HWESC
+  ./waf AP_Periph
+
+  ./waf distclean
+    st-flash --reset write build/f103-HWESC/bin/AP_Periph.bin 0x8006400
+
+    Tools/scripts/build_bootloader.py f103-HWESC
+    st-flash write Tools/bootloaders/f103-GPS_bl.bin 0x8000000
+
+
  */
 
 #include <AP_HAL/AP_HAL.h>

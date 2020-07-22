@@ -51,7 +51,7 @@ PB7 I2C1_SDA I2C1
 
 PB0 MAG_CS CS
 
-# spi bus for compass
+# spi bus for compass off
 PA5 SPI1_SCK SPI1
 PA6 SPI1_MISO SPI1
 PA7 SPI1_MOSI SPI1
@@ -118,7 +118,7 @@ define HAL_DEVICE_THREAD_STACK 256
 
 define AP_PARAM_MAX_EMBEDDED_PARAM 0
 
-define HAL_I2C_INTERNAL_MASK 0
+# define HAL_I2C_INTERNAL_MASK 0
 
 # disable dual GPS and GPS blending to save flash space
 define GPS_MAX_RECEIVERS 1

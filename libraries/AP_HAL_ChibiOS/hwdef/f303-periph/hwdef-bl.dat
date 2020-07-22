@@ -21,7 +21,7 @@ define CH_CFG_ST_FREQUENCY 1000
 FLASH_SIZE_KB 256
 
 STDOUT_SERIAL SD1
-STDOUT_BAUDRATE 57600
+STDOUT_BAUDRATE 115200
 
 
 # order of UARTs
@@ -80,7 +80,7 @@ define HAL_USE_CAN TRUE
 define STM32_CAN_USE_CAN1 TRUE
 
 # make bl baudrate match debug baudrate for easier debugging
-define BOOTLOADER_BAUDRATE 57600
+define BOOTLOADER_BAUDRATE 115200
 
 # use a small bootloader timeout
 define HAL_BOOTLOADER_TIMEOUT 1000

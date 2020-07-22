@@ -1,7 +1,9 @@
 include ../f303-periph/hwdef.dat
 
-define HAL_CAN_DEFAULT_NODE_ID 0
+define HAL_CAN_DEFAULT_NODE_ID 2
 
 define CAN_APP_NODE_NAME "org.ardupilot.ap_periph_HWESC"
 
 define HAL_PERIPH_ENABLE_HWESC
+# a LED to flash
+PA1 LED1 OUTPUT LOW

@@ -35,6 +35,8 @@
 #define STM32_HSE_ENABLED                   TRUE
 #define STM32_LSE_ENABLED                   FALSE
 
+#define STM32_PLLSRC_PREDIV1                 (0x1UL << 17U)
+
 #if STM32_HSECLK == 8000000U
 #define STM32_SW                            STM32_SW_PLL
 #define STM32_PLLSRC                        STM32_PLLSRC_HSE

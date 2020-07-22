@@ -5,8 +5,11 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_SBusOut/AP_SBusOut.h>
+#include <SRV_Channel/SRV_Channel.h>
 #include "../AP_Bootloader/app_comms.h"
 #include "hwing_esc.h"
+#include "dropping_module.h"
 
 #if defined(HAL_PERIPH_NEOPIXEL_COUNT) || defined(HAL_PERIPH_ENABLE_NCP5623_LED)
 #define AP_PERIPH_HAVE_LED
@@ -34,10 +37,16 @@ public:
     void can_baro_update();
     void can_airspeed_update();
     void can_rangefinder_update();
+    // void dropping_mod();
 
     void load_parameters();
 
     AP_SerialManager serial_manager;
+    //SRV_Channels servo_channels;
+    DROP_Module drop_module;
+#ifdef HAL_PERIPH_ENABLE_SBUS
+   AP_SBusOut sbus;
+#endif
 
 #ifdef HAL_PERIPH_ENABLE_GPS
     AP_GPS gps;
@@ -102,5 +111,6 @@ extern AP_Periph_FW periph;
 
 extern "C" {
 void can_printf(const char *fmt, ...);
+void can_send_mav(const uint8_t *fmt, uint8_t _len, ...);
 }
 

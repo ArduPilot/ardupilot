@@ -1,6 +1,6 @@
 #pragma once
 
-#define THISFIRMWARE "AP_Periph V1.1"
+#define THISFIRMWARE "USS_DROPING_MODULE_V0_1"
 
 // the following line is parsed by the autotest scripts
 #define FIRMWARE_VERSION 1,1,0,FIRMWARE_VERSION_TYPE_OFFICIAL

@@ -28,11 +28,25 @@ public:
         k_param_hardpoint_rate,
         k_param_baro_enable,
         k_param_esc_number,
+        k_param_dropping_mod_number,
+        k_param_mav_sys_id,
+        k_param_mav_comp_id,
+        k_param_debug_log_msg,
+        k_param_sbus,
+        k_param_serial_manager, // Serial ports, AP_SerialManager
+        //k_param_servo_channels,
     };
 
     AP_Int16 format_version;
     AP_Int16 can_node;
     AP_Int32 can_baudrate;
+ //dump_module   
+    //AP_Int8 dump_bomd;
+    AP_Int8 dropping_mod_number;
+    AP_Int8 mav_sys_id;
+    AP_Int8 mav_comp_id;
+    AP_Int8 debug_log_msg;
+    //AP_Int8 servo_channels;
 #ifdef HAL_PERIPH_ENABLE_BUZZER
     AP_Int8 buzz_volume;
 #endif

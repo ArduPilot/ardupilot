@@ -18,7 +18,15 @@
   To flash this firmware on Linux use:
 
      st-flash write build/f103-periph/bin/AP_Periph.bin 0x8006000
+./waf distclean
+  ./waf configure --board f103-HWESC
+  ./waf AP_Periph
 
+  ./waf distclean
+    st-flash --reset write build/f103-HWESC/bin/AP_Periph.bin 0x8006400
+
+    Tools/scripts/build_bootloaders.py f103-HWESC
+    st-flash write Tools/bootloaders/f103-GPS_bl.bin 0x8000000
  */
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Periph.h"
@@ -82,7 +90,7 @@ void AP_Periph_FW::init()
     AFIO->MAPR = mapr | AFIO_MAPR_CAN_REMAP_REMAP2 | AFIO_MAPR_SPI3_REMAP;
 #endif
 
-    printf("Booting %08x:%08x %u/%u len=%u 0x%08x\n",
+    printf("Booting %08x:%08x %u/%u len=%u 0x%08x\n\r",
            app_descriptor.image_crc1,
            app_descriptor.image_crc2,
            app_descriptor.version_major, app_descriptor.version_minor,
@@ -132,6 +140,15 @@ void AP_Periph_FW::init()
         rangefinder.init(ROTATION_NONE);
     }
 #endif
+
+#ifdef HAL_PERIPH_ENABLE_SBUS
+    hal.uartA->printf("HAL_PERIPH_ENABLE_SBUS\n");
+    const uint8_t sernum =  2;
+    hal.uartA->begin(AP_SERIALMANAGER_SBUS1_BAUD);
+    serial_manager.set_protocol_and_baud(sernum, AP_SerialManager::SerialProtocol_Sbus1, AP_SERIALMANAGER_SBUS1_BAUD);
+
+#endif
+
 
 #ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
     pwm_hardpoint_init();
@@ -205,9 +222,22 @@ void AP_Periph_FW::update()
     if (now - last_led_ms > 1000) {
         last_led_ms = now;
         palToggleLine(HAL_GPIO_PIN_LED);
+        //palToggleLine(HAL_GPIO_PIN_LED1);
+        if(periph.g.debug_log_msg > 0){
+            can_printf("AP_Periph_FW::update()");
+        }
+        printf("now %u\n\r", (uint32_t)now);
+        // hal.uartA->printf("hal.uartA \n\r");
+        // hal.console->printf("hal.consolet \n\r");
+
+        // hal.uartB->printf("hal.uartB \n\r");
+        drop_module.update();
 #if 0
 #ifdef HAL_PERIPH_ENABLE_GPS
         hal.uartA->printf("GPS status: %u\n", (unsigned)gps.status());
+#endif
+#ifdef HAL_PERIPH_ENABLE_SBUS
+        sbus.update();
 #endif
 #ifdef HAL_PERIPH_ENABLE_MAG
         const Vector3f &field = compass.get_field();
@@ -235,5 +265,9 @@ void AP_Periph_FW::update()
     adsb_update();
 #endif
 }
+
+// void dropping_mod(void){
+
+// }
 
 AP_HAL_MAIN();
