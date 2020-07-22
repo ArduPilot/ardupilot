@@ -2213,7 +2213,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             if m is None:
                 self.progress("No messages")
                 continue
-            self.progress("Received (%s)" % str(m))
+#            self.progress("Received (%s)" % str(m))
             if m.get_type() == "MISSION_ACK":
                 if m.type != mavutil.mavlink.MAV_MISSION_ACCEPTED:
                     raise NotAchievedException("Expected MAV_MISSION_ACCEPTED, got (%s)" % m)
