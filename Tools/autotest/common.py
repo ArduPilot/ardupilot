@@ -3679,14 +3679,18 @@ class AutoTest(ABC):
         self.progress("Waiting for GPS health")
         tstart = self.get_sim_time_cached()
         while True:
-            if self.get_sim_time_cached() - tstart > timeout:
+            now = self.get_sim_time_cached()
+            if now - tstart > timeout:
                 raise AutoTestTimeoutException("GPS status bits did not become good")
             m = self.mav.recv_match(type='SYS_STATUS', blocking=True, timeout=1)
             if m is None:
                 continue
             if (not (m.onboard_control_sensors_present & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_GPS)):
                 self.progress("GPS not present")
-                return
+                if now > 5:
+                    # it's had long enough to be detected....
+                    return
+                continue
             if (not (m.onboard_control_sensors_enabled & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_GPS)):
                 self.progress("GPS not enabled")
                 continue
