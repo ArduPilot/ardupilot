@@ -143,6 +143,8 @@ private:
     RC_Channel *channel_steer;
     RC_Channel *channel_throttle;
     RC_Channel *channel_lateral;
+    RC_Channel *channel_roll;
+    RC_Channel *channel_pitch;
 
     AP_Logger logger;
 

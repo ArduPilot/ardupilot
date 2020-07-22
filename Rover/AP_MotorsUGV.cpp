@@ -210,6 +210,18 @@ void AP_MotorsUGV::set_lateral(float lateral)
     _lateral = constrain_float(lateral, -100.0f, 100.0f);
 }
 
+// set roll input as a value from -1 to +1
+void AP_MotorsUGV::set_roll(float roll)
+{
+    _roll = constrain_float(roll, -1.0f, 1.0f);
+}
+
+// set pitch input as a value from -1 to +1
+void AP_MotorsUGV::set_pitch(float pitch)
+{
+    _pitch = constrain_float(pitch, -1.0f, 1.0f);
+}
+
 // set mainsail input as a value from 0 to 100
 void AP_MotorsUGV::set_mainsail(float mainsail)
 {

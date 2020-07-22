@@ -8,6 +8,8 @@ Mode::Mode() :
     channel_steer(rover.channel_steer),
     channel_throttle(rover.channel_throttle),
     channel_lateral(rover.channel_lateral),
+    channel_roll(rover.channel_roll),
+    channel_pitch(rover.channel_pitch),
     attitude_control(rover.g2.attitude_control)
 { }
 
@@ -169,6 +171,22 @@ void Mode::get_pilot_desired_heading_and_speed(float &heading_out, float &speed_
     // calculate throttle using magnitude of input stick vector
     const float throttle = MIN(safe_sqrt(sq(desired_throttle) + sq(desired_steering)), 1.0f);
     speed_out = throttle * calc_speed_max(g.speed_cruise, g.throttle_cruise * 0.01f);
+}
+
+// decode pilot roll and pitch inputs and return in roll_out and pitch_out arguments
+// outputs are in the range -1 to +1
+void Mode::get_pilot_desired_roll_and_pitch(float &roll_out, float &pitch_out)
+{
+    if (channel_roll != nullptr) {
+        roll_out = channel_roll->norm_input();
+    } else {
+        roll_out = 0.0f;
+    }
+    if (channel_pitch != nullptr) {
+        pitch_out = channel_pitch->norm_input();
+    } else {
+        pitch_out = 0.0f;
+    }
 }
 
 // return heading (in degrees) to target destination (aka waypoint)
