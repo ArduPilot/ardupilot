@@ -498,6 +498,10 @@ class AutoTestQuadPlane(AutoTest):
              self.test_qassist),
 
             ("GyroFFT", "Fly Gyro FFT",
-             self.fly_gyro_fft)
+             self.fly_gyro_fft),
+
+            ("LogUpload",
+             "Log upload",
+             self.log_upload),
         ])
         return ret
