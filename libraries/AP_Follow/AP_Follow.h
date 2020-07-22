@@ -60,8 +60,11 @@ public:
     bool have_target() const;
 
     // get target's estimated location and velocity (in NED)
-    bool get_target_location_and_velocity(Location &loc, Vector3f &vel_ned) const;
+    bool get_target_location_and_velocity(Location &loc, Vector3f &vel_ned, bool force_absolute_alt=false) const;
 
+    // get target's estimated location and velocity (in NED), with offsets added, and absolute alt
+    bool get_target_location_and_velocity_ofs_abs(Location &loc, Vector3f &vel_ned) const;
+    
     // get distance vector to target (in meters), target plus offsets, and target's velocity all in NED frame
     bool get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_with_ofs, Vector3f &vel_ned);
 
@@ -131,6 +134,7 @@ private:
     bool _healthy;                  // true if we are receiving mavlink messages (regardless of whether they have target position info within them)
     uint32_t _last_location_update_ms;  // system time of last position update
     Location _target_location;      // last known location of target
+    int32_t  _target_alt_cm;        // last known location of target, absolute alt
     Vector3f _target_location_ned;  // last known velocity of target in NED frame in m
     Vector3f _target_velocity_ned;  // last known velocity of target in NED frame in m/s
     Vector3f _target_accel_ned;     // last known acceleration of target in NED frame in m/s/s

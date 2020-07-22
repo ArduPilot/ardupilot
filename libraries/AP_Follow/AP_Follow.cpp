@@ -125,8 +125,8 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Param: _PATH_TC
     // @DisplayName: Follow time constant
     // @Description: Time constant used to generate the kinematically consistent path
-    // @Units: m
-    // @Range: 1 1000
+    // @Units: s
+    // @Range: 0.1 10
     // @User: Standard
     AP_GROUPINFO("_PATH_TC", 11, AP_Follow, _path_tc, 5.0f),
 
@@ -154,16 +154,25 @@ void AP_Follow::clear_offsets_if_required()
     _offsets_were_zero = false;
 }
 
-// get target's estimated location
-bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ned) const
+// return true if we have a target
+bool AP_Follow::have_target(void) const
 {
-    // exit immediately if not enabled
     if (!_enabled) {
         return false;
     }
 
     // check for timeout
     if ((_last_location_update_ms == 0) || (AP_HAL::millis() - _last_location_update_ms > AP_FOLLOW_TIMEOUT_MS)) {
+        return false;
+    }
+    return true;
+}
+
+// get target's estimated location
+bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ned, bool force_absolute_alt) const
+{
+    // exit immediately if not enabled
+    if (!have_target()) {
         return false;
     }
 
@@ -177,6 +186,13 @@ bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ne
 
     // project the vehicle position
     Location last_loc = _target_location;
+
+    if (force_absolute_alt) {
+        // allow caller to request absolute altitude
+        last_loc.alt = _target_alt_cm;
+        last_loc.relative_alt = false;
+    }
+
     last_loc.offset(vel_ned.x * dt, vel_ned.y * dt);
     last_loc.alt -= vel_ned.z * 100.0f * dt; // convert m/s to cm/s, multiply by dt.  minus because NED
 
@@ -300,12 +316,7 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
 bool AP_Follow::get_target_heading_deg(float &heading) const
 {
     // exit immediately if not enabled
-    if (!_enabled) {
-        return false;
-    }
-
-    // check for timeout
-    if ((_last_heading_update_ms == 0) || (AP_HAL::millis() - _last_heading_update_ms > AP_FOLLOW_TIMEOUT_MS)) {
+    if (!have_target()) {
         return false;
     }
 
@@ -358,7 +369,10 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
         _target_location.lat = packet.lat;
         _target_location.lng = packet.lon;
 
-        // select altitude source based on FOLL_ALT_TYPE param 
+        // remember absolute alt
+        _target_alt_cm = packet.alt / 10;
+
+        // select altitude source based on FOLL_ALT_TYPE param
         if (_alt_type == AP_FOLLOW_ALTITUDE_TYPE_RELATIVE) {
             // relative altitude
             _target_location.alt = packet.relative_alt / 10;        // convert millimeters to cm
@@ -483,6 +497,20 @@ void AP_Follow::clear_dist_and_bearing_to_target()
 {
     _dist_to_target = 0.0f;
     _bearing_to_target = 0.0f;
+}
+
+// get target's estimated location and velocity (in NED), with offsets added, and absolute alt
+bool AP_Follow::get_target_location_and_velocity_ofs_abs(Location &loc, Vector3f &vel_ned) const
+{
+    Vector3f ofs;
+    if (!get_offsets_ned(ofs) ||
+        !get_target_location_and_velocity(loc, vel_ned, true)) {
+        return false;
+    }
+    // apply offsets
+    loc.offset(ofs.x, ofs.y);
+    loc.alt -= ofs.z*100;
+    return true;
 }
 
 namespace AP {
