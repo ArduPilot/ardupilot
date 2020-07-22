@@ -9,10 +9,13 @@ void ModeManual::_exit()
 
 void ModeManual::update()
 {
-    float desired_steering, desired_throttle, desired_lateral;
+    float desired_steering, desired_throttle, desired_lateral, desired_roll, desired_pitch;
     get_pilot_desired_steering_and_throttle(desired_steering, desired_throttle);
     get_pilot_desired_lateral(desired_lateral);
 
+    //walking robot roll and pitch
+    get_pilot_desired_roll_and_pitch(desired_roll,desired_pitch);
+    
     // if vehicle is balance bot, calculate actual throttle required for balancing
     if (rover.is_balancebot()) {
         rover.balancebot_pitch_control(desired_throttle);

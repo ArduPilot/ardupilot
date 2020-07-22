@@ -8,6 +8,8 @@ Mode::Mode() :
     channel_steer(rover.channel_steer),
     channel_throttle(rover.channel_throttle),
     channel_lateral(rover.channel_lateral),
+    channel_roll(rover.channel_roll),
+    channel_pitch(rover.channel_pitch), 
     attitude_control(rover.g2.attitude_control)
 { }
 
@@ -95,6 +97,14 @@ void Mode::get_pilot_input(float &steering_out, float &throttle_out)
             break;
         }
     }
+}
+
+// roll_out is in the range -100 ~ +100
+// pitch_out is in the range -100 ~ +100
+void Mode::get_pilot_desired_roll_and_pitch(float &roll_out, float &pitch_out)
+{
+    roll_out = rover.channel_roll->get_control_in();
+    pitch_out = rover.channel_pitch->get_control_in();
 }
 
 // decode pilot steering and throttle inputs and return in steer_out and throttle_out arguments

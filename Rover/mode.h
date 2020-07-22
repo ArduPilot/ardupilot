@@ -139,6 +139,10 @@ protected:
     // subclasses override this to perform any required cleanup when exiting the mode
     virtual void _exit() { return; }
 
+    // roll_out is in the range -100 ~ +100
+    // pitch_out is in the range -100 ~ +100
+    void get_pilot_desired_roll_and_pitch(float &roll_out, float &pitch_out);
+
     // decode pilot steering and throttle inputs and return in steer_out and throttle_out arguments
     // steering_out is in the range -4500 ~ +4500 with positive numbers meaning rotate clockwise
     // throttle_out is in the range -100 ~ +100
@@ -197,6 +201,8 @@ protected:
     class RC_Channel *&channel_steer;
     class RC_Channel *&channel_throttle;
     class RC_Channel *&channel_lateral;
+    class RC_Channel *&channel_roll;
+    class RC_Channel *&channel_pitch;
     class AR_AttitudeControl &attitude_control;
 
     // private members for waypoint navigation
