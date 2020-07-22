@@ -17,6 +17,18 @@ void Rover::set_control_channels(void)
         channel_lateral->set_angle(100);
     }
 
+    // walking robots rc input init
+    channel_roll = rc().find_channel_for_option(RC_Channel::AUX_FUNC::ROLL);
+    channel_pitch = rc().find_channel_for_option(RC_Channel::AUX_FUNC::PITCH);
+    if (channel_roll != nullptr) {
+        channel_roll->set_angle(SERVO_MAX);
+        channel_roll->set_default_dead_zone(30);
+    }
+    if (channel_pitch != nullptr) {
+        channel_pitch->set_angle(SERVO_MAX);
+        channel_pitch->set_default_dead_zone(30);
+    }
+
     // sailboat rc input init
     g2.sailboat.init_rc_in();
 
