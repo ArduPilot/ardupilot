@@ -843,7 +843,7 @@ class AutoTestCopter(AutoTest):
         self.change_mode("RTL")
         self.wait_disarmed()
         self.set_parameter('SIM_BATT_VOLTAGE', 12.5)
-        self.mavproxy.send('reboot\n')
+        self.reboot_sitl_mavproxy()
         self.end_subtest("Completed Batt failsafe disabled test")
 
         # TWO STAGE BATTERY FAILSAFE: Trigger low battery condition, then critical battery condition. Verify RTL and Land actions complete.
@@ -863,7 +863,7 @@ class AutoTestCopter(AutoTest):
         self.wait_mode("LAND")
         self.wait_disarmed()
         self.set_parameter('SIM_BATT_VOLTAGE', 12.5)
-        self.mavproxy.send('reboot\n')
+        self.reboot_sitl_mavproxy()
         self.end_subtest("Completed two stage battery failsafe test with RTL and Land")
 
         # TWO STAGE BATTERY FAILSAFE: Trigger low battery condition, then critical battery condition. Verify both SmartRTL actions complete
@@ -884,7 +884,7 @@ class AutoTestCopter(AutoTest):
         self.wait_mode("SMART_RTL")
         self.wait_disarmed()
         self.set_parameter('SIM_BATT_VOLTAGE', 12.5)
-        self.mavproxy.send('reboot\n')
+        self.reboot_sitl_mavproxy()
         self.end_subtest("Completed two stage battery failsafe test with SmartRTL")
 
         # Trigger low battery condition in land mode with FS_OPTIONS set to allow land mode to continue. Verify landing completes uninterupted.
@@ -899,7 +899,7 @@ class AutoTestCopter(AutoTest):
         self.wait_mode("LAND")
         self.wait_disarmed()
         self.set_parameter('SIM_BATT_VOLTAGE', 12.5)
-        self.mavproxy.send('reboot\n')
+        self.reboot_sitl_mavproxy()
         self.end_subtest("Completed battery failsafe with FS_OPTIONS set to continue landing")
 
         # Trigger a critical battery condition, which triggers a land mode failsafe. Trigger an RC failure. Verify the RC failsafe is prevented from stopping the low battery landing.
@@ -920,7 +920,7 @@ class AutoTestCopter(AutoTest):
         self.wait_disarmed()
         self.set_parameter('SIM_BATT_VOLTAGE', 12.5)
         self.set_parameter("SIM_RC_FAIL", 0)
-        self.mavproxy.send('reboot\n')
+        self.reboot_sitl_mavproxy()
         self.end_subtest("Completed battery failsafe critical landing")
 
         # Trigger low battery condition with failsafe set to terminate. Copter will disarm and crash.
