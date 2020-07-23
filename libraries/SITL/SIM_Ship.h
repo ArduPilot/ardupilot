@@ -54,14 +54,20 @@ public:
       get a ground speed adjustment for a landed vehicle based on
       whether it is on a ship
      */
-    Vector2f get_ground_speed_adjustment(const Location &loc, float &yaw_rate);
+    Vector2f get_ground_speed_adjustment(const Location &loc, float &yaw_rate) const;
 
+    /*
+      get a ground alt adjustment for ship
+     */
+    float get_ground_alt_adjustment(const Location &loc) const;
+    
 private:
 
     AP_Int8 enable;
     AP_Float speed;
     AP_Float path_size;
     AP_Float deck_size;
+    AP_Float deck_alt;
     AP_Int8 sys_id;
 
     Location home;
@@ -81,6 +87,8 @@ private:
     bool mavlink_connected;
 
     void send_report(void);
+
+    bool above_ship(const Location &loc) const;
 };
 
 }  // namespace SITL
