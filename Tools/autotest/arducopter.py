@@ -1716,6 +1716,24 @@ class AutoTestCopter(AutoTest):
     def fly_autotune_switch(self):
         """Test autotune on a switch with gains being saved"""
 
+        self.context_push()
+
+        ex = None
+
+        try:
+            self.fly_autotune_switch_body()
+        except Exception as e:
+            self.progress("Exception caught: %s" % (
+                self.get_exception_stacktrace(e)))
+            ex = e
+
+        self.context_pop()
+        self.reboot_sitl()
+
+        if ex is not None:
+            raise ex
+
+    def fly_autotune_switch_body(self):
         self.set_parameter("RC8_OPTION", 17)
         self.set_parameter("ATC_RAT_RLL_FLTT", 20)
         rlld = self.get_parameter("ATC_RAT_RLL_D")
