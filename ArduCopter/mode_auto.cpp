@@ -955,6 +955,8 @@ void ModeAuto::circle_run()
     }
 }
 
+}
+
 #if NAV_GUIDED == ENABLED
 // auto_nav_guided_run - allows control by external navigation controller
 //      called by auto_run at 100hz or more
