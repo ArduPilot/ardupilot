@@ -253,12 +253,12 @@ protected:
 
     AP_ESC_Telem esc_telem;
 
-    static const struct AP_Param::GroupInfo var_info[];
-    static const struct AP_Scheduler::Task scheduler_tasks[];
-
 #if GENERATOR_ENABLED
     AP_Generator_RichenPower generator;
 #endif
+
+    static const struct AP_Param::GroupInfo var_info[];
+    static const struct AP_Scheduler::Task scheduler_tasks[];
 
 private:
 
