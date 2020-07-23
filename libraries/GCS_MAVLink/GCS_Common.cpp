@@ -2634,6 +2634,17 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
 
     // send ack before we reboot
     mavlink_msg_command_ack_send(chan, packet.command, MAV_RESULT_ACCEPTED);
+
+    //Forward this message to ACE by finding the channel that ACE is connected to
+    for(int i=0; i<GCS::get_singleton()->num_gcs(); ++i) {
+        GCS_MAVLINK* chan_ = GCS::get_singleton()->chan(i);
+        if(chan_->get_interval_for_stream(STREAM_PLANCK) > 0) {
+            mavlink_command_long_t packet_to_ace = packet;
+            packet_to_ace.target_component = PLANCK_CTRL_COMP_ID;
+            mavlink_msg_command_long_send_struct(chan_->get_chan(),&packet_to_ace);
+        }
+    }
+
     // Notify might want to blink some LEDs:
     AP_Notify *notify = AP_Notify::get_singleton();
     if (notify) {
