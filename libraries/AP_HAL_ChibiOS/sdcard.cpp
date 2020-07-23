@@ -82,6 +82,7 @@ bool sdcard_init()
 
         // Create APM Directory if needed
         AP::FS().mkdir("/APM");
+        AP::FS().mkdir("/APM/TERRAIN");
         sdcard_running = true;
         return true;
     }
