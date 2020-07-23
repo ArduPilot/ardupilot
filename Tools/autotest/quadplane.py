@@ -166,6 +166,7 @@ class AutoTestQuadPlane(AutoTest):
         self.wait_disarmed()
 
     def takeoff(self, height, mode):
+        """climb to specified height and set throttle to 1500"""
         self.change_mode(mode)
         self.wait_ready_to_arm()
         self.arm_vehicle()
@@ -180,6 +181,7 @@ class AutoTestQuadPlane(AutoTest):
         self.change_mode("QRTL")
         self.wait_altitude(-5, 1, relative=True, timeout=60)
         self.wait_disarmed()
+        self.zero_throttle()
 
     def fly_home_land_and_disarm(self, timeout=30):
         self.set_parameter("LAND_TYPE", 0)
