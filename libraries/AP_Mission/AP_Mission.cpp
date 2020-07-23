@@ -2232,6 +2232,8 @@ const char *AP_Mission::Mission_Command::type() const
         return "Parachute";
     case MAV_CMD_DO_MOUNT_CONTROL:
         return "MountControl";
+    case MAV_CMD_DO_WINCH:
+        return "Winch";
 
     default:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
