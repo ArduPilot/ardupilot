@@ -4792,6 +4792,29 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def wait_generator_speed_and_state(self, rpm_min, rpm_max, want_state, timeout=240):
+        self.drain_mav()
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("Did not move to state/speed")
+
+            m = self.mav.recv_match(type="GENERATOR_STATUS", blocking=True, timeout=10)
+            if m is None:
+                raise NotAchievedException("Did not get GENERATOR_STATUS")
+
+            if m.generator_speed < rpm_min:
+                self.progress("Too slow (%u<%u)" % (m.generator_speed, rpm_min))
+                continue
+            if m.generator_speed > rpm_max:
+                self.progress("Too fast (%u>%u)" % (m.generator_speed, rpm_max))
+                continue
+            if m.status != want_state:
+                self.progress("Wrong state (got=%u want=%u)" % (m.status, want_state))
+            break
+        self.progress("Got generator speed and state")
+
+
     def test_richenpower(self):
         self.set_parameter("SERIAL5_PROTOCOL", 30)
         self.set_parameter("SIM_RICH_ENABLE", 1)
@@ -4799,9 +4822,15 @@ class AutoTestCopter(AutoTest):
         self.set_parameter("SIM_RICH_CTRL", 8)
         self.set_parameter("RC9_OPTION", 85)
         self.set_parameter("LOG_DISARMED", 1)
-        self.customise_SITL_commandline(["--uartF=sim:richenpower"])
         self.set_rc(9, 1000) # remember this is a switch position - stop
+        self.customise_SITL_commandline(["--uartF=sim:richenpower"])
         self.mavproxy.expect("requested state is not RUN")
+
+        self.set_message_rate_hz("GENERATOR_STATUS", 10)
+        self.drain_mav_unparsed()
+
+        self.wait_generator_speed_and_state(0, 0, mavutil.mavlink.MAV_GENERATOR_STATUS_FLAG_OFF)
+
         messages = []
         def my_message_hook(mav, m):
             if m.get_type() != 'STATUSTEXT':
@@ -4816,11 +4845,23 @@ class AutoTestCopter(AutoTest):
             self.mavproxy.expect("Generator HIGH")
         self.set_rc(9, 1000) # remember this is a switch position - stop
         self.mavproxy.expect("requested state is not RUN", timeout=200)
-        self.set_message_rate_hz("GENERATOR_STATUS", 1)
-        self.drain_mav_unparsed()
-        m = self.assert_receive_message("GENERATOR_STATUS",timeout=10)
-        if m.generator_speed == 0:
-            raise NotAchievedException("Zero GENERATOR_STATUS.generator_speed")
+
+        self.set_rc(9, 1500) # remember this is a switch position - idle
+        self.wait_generator_speed_and_state(3000, 8000, mavutil.mavlink.MAV_GENERATOR_STATUS_FLAG_IDLE)
+
+        self.set_rc(9, 2000) # remember this is a switch position - run
+#        self.wait_generator_speed_and_state(3000, 30000, mavutil.mavlink.MAV_GENERATOR_STATUS_FLAG_WARMING_UP)
+
+        self.wait_generator_speed_and_state(8000, 30000, mavutil.mavlink.MAV_GENERATOR_STATUS_FLAG_GENERATING)
+
+        self.progress("Moving *back* to idle")
+        self.set_rc(9, 1500) # remember this is a switch position - idle
+        self.wait_generator_speed_and_state(3000, 10000, mavutil.mavlink.MAV_GENERATOR_STATUS_FLAG_IDLE)
+
+        self.progress("Moving *back* to run")
+        self.set_rc(9, 2000) # remember this is a switch position - run
+        self.wait_generator_speed_and_state(8000, 30000, mavutil.mavlink.MAV_GENERATOR_STATUS_FLAG_GENERATING)
+
         self.set_message_rate_hz("GENERATOR_STATUS", -1)
         self.set_parameter("LOG_DISARMED", 0)
         if not self.current_onboard_log_contains_message("GEN"):
