@@ -169,7 +169,6 @@ private:
         uint8_t accel_count;
         uint8_t gyro_count;
         LowPassFilterVector3f accel_filter{4000, 188};
-        LowPassFilterVector3f gyro_filter{8000, 188};
     } _accum;
 };
 
