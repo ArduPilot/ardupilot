@@ -4693,6 +4693,7 @@ Also, ignores heartbeats not from our target system'''
             self.start_subtest("Try magcal and wait success")
             self.progress("Compass mask is %s" % "{0:b}".format(target_mask))
             reset_pos_and_start_magcal(target_mask)
+            progress_count = [0] * compass_tnumber
             reached_pct = [0] * compass_tnumber
             report_get = [0] * compass_tnumber
             tstart = self.get_sim_time()
@@ -4708,16 +4709,19 @@ Also, ignores heartbeats not from our target system'''
                                 raise NotAchievedException("Mag calibration report SUCCESS without 100%% completion")
                             report_get[m.compass_id] = 1
                         else:
-                            raise NotAchievedException("Mag calibration didn't SUCCESS")
+                            raise NotAchievedException(
+                                "Mag calibration didn't SUCCEED (cal_status=%u) (progress_count=%s)" %
+                                (m.cal_status, progress_count[m.compass_id],))
                     if all(ele >= 1 for ele in report_get):
                         self.progress("All Mag report SUCCESS")
                         break
                 if m is not None and m.get_type() == "MAG_CAL_PROGRESS":
                     cid = m.compass_id
                     new_pct = int(m.completion_pct)
+                    progress_count[cid] += 1
                     if new_pct != reached_pct[cid]:
                         reached_pct[cid] = new_pct
-                        self.progress("Calibration progress compass ID %d: %s" % (cid, str(reached_pct[cid])))
+                        self.progress("Calibration progress compass ID %d: %s%%" % (cid, str(reached_pct[cid])))
             self.mavproxy.send("sitl_stop\n")
             self.mavproxy.send("sitl_attitude 0 0 0\n")
             self.progress("Checking that value aren't changed without acceptation")
