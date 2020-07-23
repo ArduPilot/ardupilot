@@ -2849,7 +2849,7 @@ class AutoTest(ABC):
     def set_parameter(self, name, value, add_to_context=True, epsilon=0.0002, retries=10):
         """Set parameters from vehicle."""
         self.progress("Setting %s to %f" % (name, value))
-        old_value = self.get_parameter(name, retry=2)
+        old_value = self.get_parameter(name, attempts=2)
         for i in range(1, retries+2):
             self.mavproxy.send("param set %s %s\n" % (name, str(value)))
             returned_value = self.get_parameter(name)
@@ -2864,9 +2864,9 @@ class AutoTest(ABC):
         raise ValueError("Param fetch returned incorrect value (%s) vs (%s)"
                          % (returned_value, value))
 
-    def get_parameter(self, name, retry=1, timeout=60):
+    def get_parameter(self, name, attempts=1, timeout=60):
         """Get parameters from vehicle."""
-        for i in range(0, retry):
+        for i in range(0, attempts):
             # we call get_parameter while the vehicle is rebooting.
             # We need to read out the SITL binary's STDOUT or the
             # process blocks writing to it.
@@ -2874,7 +2874,7 @@ class AutoTest(ABC):
                 util.pexpect_drain(self.sitl)
             self.mavproxy.send("param fetch %s\n" % name)
             try:
-                self.mavproxy.expect("%s = ([-0-9.]*)\r\n" % (name,), timeout=timeout/retry)
+                self.mavproxy.expect("%s = ([-0-9.]*)\r\n" % (name,), timeout=timeout/attempts)
                 try:
                     # sometimes race conditions garble the MAVProxy output
                     ret = float(self.mavproxy.match.group(1))
@@ -5884,8 +5884,8 @@ switch value'''
             # uses CMD_TOTAL not MIS_TOTAL, and it's in a scalr not a
             # group and it's generally all bad.
             return
-        self.start_subtest("Ensure GCS is not be able to set MIS_TOTAL")
-        old_mt = self.get_parameter("MIS_TOTAL")
+        self.start_subtest("Ensure GCS is not able to set MIS_TOTAL")
+        old_mt = self.get_parameter("MIS_TOTAL", attempts=20) # retries to avoid seeming race condition with MAVProxy
         ex = None
         try:
             self.set_parameter("MIS_TOTAL", 17, retries=0)
