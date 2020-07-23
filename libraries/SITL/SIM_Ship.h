@@ -68,6 +68,7 @@ private:
     AP_Float path_size;
     AP_Float deck_size;
     AP_Float deck_alt;
+    AP_Vector3f offset;
     AP_Int8 sys_id;
 
     Location home;

@@ -38,6 +38,8 @@ const AP_Param::GroupInfo ShipSim::var_info[] = {
     AP_GROUPINFO("SYSID",     4, ShipSim,  sys_id, 17),
     AP_GROUPINFO("DSIZE",     5, ShipSim,  deck_size, 10),
     AP_GROUPINFO("ALT",       6, ShipSim,  deck_alt, 10),
+    AP_GROUPINFO("OFS",       7, ShipSim,  offset, 0),
+
     AP_GROUPEND
 };
 
@@ -132,6 +134,10 @@ void ShipSim::update(void)
         if (home.lat == 0 && home.lng == 0) {
             return;
         }
+        const Vector3f &ofs = offset.get();
+        home.offset(ofs.x, ofs.y);
+        home.alt -= ofs.z*100;
+
         initialised = true;
         ::printf("ShipSim home %f %f\n", home.lat*1.0e-7, home.lng*1.0e-7);
         ship.sim = this;
