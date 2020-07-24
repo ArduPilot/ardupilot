@@ -147,7 +147,7 @@ void AP_Scripting::init(void) {
 MAV_RESULT AP_Scripting::handle_command_int_packet(const mavlink_command_int_t &packet) {
     switch ((SCRIPTING_CMD)packet.param1) {
         case SCRIPTING_CMD_REPL_START:
-            return repl_start() ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
+            return repl_start(relp_type::REPL_FILE) ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
         case SCRIPTING_CMD_REPL_STOP:
             repl_stop();
             return MAV_RESULT_ACCEPTED;
@@ -158,9 +158,30 @@ MAV_RESULT AP_Scripting::handle_command_int_packet(const mavlink_command_int_t &
     return MAV_RESULT_UNSUPPORTED;
 }
 
-bool AP_Scripting::repl_start(void) {
+bool AP_Scripting::repl_start(relp_type type) {
     if (terminal.session) { // it's already running, this is fine
-        return true;
+        if (type == terminal.type) {
+            return true;
+        } else {
+            // running but wrong type, stop current session, second request will start new
+            repl_stop();
+            return false;
+        }
+    }
+    terminal.type = type;
+
+    if (terminal.type == relp_type::REPL_SERIAL) {
+        AP_SerialManager *serial_manager = AP_SerialManager::get_singleton();
+        if (serial_manager != nullptr) {
+            terminal.uart = serial_manager->find_serial(AP_SerialManager::SerialProtocol_Scripting_REPL, 0);
+            if (terminal.uart != nullptr) {
+                terminal.uart->begin(serial_manager->find_baudrate(AP_SerialManager::SerialProtocol_Scripting_REPL, 0));
+                terminal.uart->discard_input();
+                terminal.session = true;
+                return true;
+            }
+        }
+        return false;
     }
 
     // nuke the old folder and all contents
@@ -201,6 +222,8 @@ void AP_Scripting::thread(void) {
         _init_failed = true;
         return;
     }
+    repl_start(relp_type::REPL_SERIAL);
+
     lua->run();
 
     // only reachable if the lua backend has died for any reason

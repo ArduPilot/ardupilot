@@ -44,9 +44,16 @@ public:
    // User parameters for inputs into scripts 
    AP_Float _user[4]; 
 
+    enum class relp_type {
+        REPL_FILE,
+        REPL_SERIAL,
+    };
+
     struct terminal_s {
         int output_fd;
         off_t input_offset;
+        AP_HAL::UARTDriver *uart; 
+        relp_type type;
         bool session;
     } terminal;
 
@@ -58,7 +65,7 @@ public:
 
 private:
 
-    bool repl_start(void);
+    bool repl_start(relp_type type);
     void repl_stop(void);
 
     void load_script(const char *filename); // load a script from a file

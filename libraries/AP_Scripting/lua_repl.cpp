@@ -103,29 +103,54 @@ int lua_scripts::pushline(lua_State *L, int firstline) {
     // send prompt to the user
     terminal_print(get_prompt(L, firstline));
 
-    while (terminal.session) {
-        // reseek to where we need input from, as invalid reads could have done weird stuff, and we want to start from the last valid input
-        int input_fd = AP::FS().open(REPL_IN, O_RDONLY);
-        if (input_fd != -1) {
-            AP::FS().lseek(input_fd, terminal.input_offset, SEEK_SET);
-            ssize_t read_bytes = AP::FS().read(input_fd, buffer, ARRAY_SIZE(buffer) - 1);
-            AP::FS().close(input_fd);
-            if (read_bytes > 0) {
-                // locate the first newline
-                char * newline_chr = strchr(buffer, '\n');
-                if (newline_chr != NULL) {
-                    newline_chr[0] = '\0';
-                    // only advance to the newline
-                    l = strlen(buffer);
-                    terminal.input_offset += l + 1;
-                    break;
+    bool got_line = false;
+    while (terminal.session && !got_line) {
+        switch (terminal.type) {
+            case AP_Scripting::relp_type::REPL_FILE: {
+            // reseek to where we need input from, as invalid reads could have done weird stuff, and we want to start from the last valid input
+            int input_fd = AP::FS().open(REPL_IN, O_RDONLY);
+            if (input_fd != -1) {
+                AP::FS().lseek(input_fd, terminal.input_offset, SEEK_SET);
+                ssize_t read_bytes = AP::FS().read(input_fd, buffer, ARRAY_SIZE(buffer) - 1);
+                AP::FS().close(input_fd);
+                if (read_bytes > 0) {
+                    // locate the first newline
+                    char * newline_chr = strchr(buffer, '\n');
+                    if (newline_chr != NULL) {
+                        newline_chr[0] = '\0';
+                        // only advance to the newline
+                        l = strlen(buffer);
+                        terminal.input_offset += l + 1;
+                        got_line = true;
+                    }
                 }
             }
+            // wait for any input
+            hal.scheduler->delay(100);
+            break;
+            }
+
+            case AP_Scripting::relp_type::REPL_SERIAL: {
+            // can only read a byte at a time as we have to look out for the newline
+            if (terminal.uart == nullptr) {
+                terminal.session = false;
+                return 0;
+            } else if (terminal.uart->available()) {
+                buffer[l] = terminal.uart->read();
+                if (buffer[l] == '\n') {
+                    buffer[l + 1] = 0;
+                    got_line = true;
+                }
+                l++;
+            } else {
+                // wait for any input
+                hal.scheduler->delay(5);
+            }
+            break;
+            }
         }
-        // wait for any input
-        hal.scheduler->delay(100);
     }
-  
+
     lua_pop(L, 1);  /* remove prompt */
     lua_pushlstring(L, buffer, l);
     return 1;
@@ -188,11 +213,26 @@ int lua_scripts::loadline(lua_State *L) {
     return status;
 }
 
-// push the tring into the terminal, blocks until it's queued
+// push the string into the terminal, blocks until it's queued
 void lua_scripts::terminal_print(const char *str) {
-    if ((AP::FS().write(terminal.output_fd, str, strlen(str)) == -1) ||
-        (AP::FS().fsync(terminal.output_fd) != 0)) {
-        terminal.session = false;
+    switch (terminal.type) {
+    case AP_Scripting::relp_type::REPL_FILE:
+    {
+        if ((AP::FS().write(terminal.output_fd, str, strlen(str)) == -1) ||
+            (AP::FS().fsync(terminal.output_fd) != 0)) {
+            terminal.session = false;
+        }
+        break;
+    }
+    case AP_Scripting::relp_type::REPL_SERIAL:
+    {
+        if (terminal.uart == nullptr) {
+            terminal.session = false;
+            return;
+        }
+        terminal.uart->write(str);
+        break;
+    }
     }
 }
 
