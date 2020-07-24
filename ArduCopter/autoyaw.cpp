@@ -140,14 +140,14 @@ void Mode::AutoYaw::set_roi(const Location &roi_location)
     if (roi_location.alt == 0 && roi_location.lat == 0 && roi_location.lng == 0) {
         // set auto yaw mode back to default assuming the active command is a waypoint command.  A more sophisticated method is required to ensure we return to the proper yaw control for the active command
         auto_yaw.set_mode_to_default(false);
-#if MOUNT == ENABLED
+#if HAL_MOUNT_ENABLED
         // switch off the camera tracking if enabled
         if (copter.camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
             copter.camera_mount.set_mode_to_default();
         }
-#endif  // MOUNT == ENABLED
+#endif  // HAL_MOUNT_ENABLED
     } else {
-#if MOUNT == ENABLED
+#if HAL_MOUNT_ENABLED
         // check if mount type requires us to rotate the quad
         if (!copter.camera_mount.has_pan_control()) {
             if (roi_location.get_vector_from_origin_NEU(roi)) {
@@ -168,7 +168,7 @@ void Mode::AutoYaw::set_roi(const Location &roi_location)
         if (roi_location.get_vector_from_origin_NEU(roi)) {
             auto_yaw.set_mode(AUTO_YAW_ROI);
         }
-#endif  // MOUNT == ENABLED
+#endif  // HAL_MOUNT_ENABLED
     }
 }
 

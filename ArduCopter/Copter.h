@@ -133,9 +133,9 @@
 #if PROXIMITY_ENABLED == ENABLED
  # include <AP_Proximity/AP_Proximity.h>
 #endif
-#if MOUNT == ENABLED
- #include <AP_Mount/AP_Mount.h>
-#endif
+
+#include <AP_Mount/AP_Mount.h>
+
 #if CAMERA == ENABLED
  # include <AP_Camera/AP_Camera.h>
 #endif
@@ -489,7 +489,7 @@ private:
 #endif
 
     // Camera/Antenna mount tracking and stabilisation stuff
-#if MOUNT == ENABLED
+#if HAL_MOUNT_ENABLED
     AP_Mount camera_mount;
 #endif
 

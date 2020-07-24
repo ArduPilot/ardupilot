@@ -363,7 +363,7 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
             break;
 
         case AUX_FUNC::RETRACT_MOUNT:
-#if MOUNT == ENABLE
+#if HAL_MOUNT_ENABLED
             switch (ch_flag) {
                 case AuxSwitchPos::HIGH:
                     copter.camera_mount.set_mode(MAV_MOUNT_MODE_RETRACT);

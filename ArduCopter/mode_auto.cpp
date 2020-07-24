@@ -1420,7 +1420,7 @@ void ModeAuto::do_roi(const AP_Mission::Mission_Command& cmd)
 // point the camera to a specified angle
 void ModeAuto::do_mount_control(const AP_Mission::Mission_Command& cmd)
 {
-#if MOUNT == ENABLED
+#if HAL_MOUNT_ENABLED
     if (!copter.camera_mount.has_pan_control()) {
         auto_yaw.set_fixed_yaw(cmd.content.mount_control.yaw,0.0f,0,0);
     }
