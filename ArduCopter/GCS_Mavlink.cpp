@@ -229,6 +229,18 @@ void GCS_MAVLINK_Copter::send_pid_tuning()
     }
 }
 
+// send winch status message
+void GCS_MAVLINK_Copter::send_winch_status() const
+{
+#if WINCH_ENABLED == ENABLED
+    AP_Winch *winch = AP::winch();
+    if (winch == nullptr) {
+        return;
+    }
+    winch->send_status(*this);
+#endif
+}
+
 uint8_t GCS_MAVLINK_Copter::sysid_my_gcs() const
 {
     return copter.g.sysid_my_gcs;
@@ -445,6 +457,7 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_RPM,
     MSG_ESC_TELEMETRY,
     MSG_GENERATOR_STATUS,
+    MSG_WINCH_STATUS,
 };
 static const ap_message STREAM_PARAMS_msgs[] = {
     MSG_NEXT_PARAM
