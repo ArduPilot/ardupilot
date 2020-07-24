@@ -1,8 +1,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
-#if AP_AHRS_NAVEKF_AVAILABLE
-
 #include "SoloGimbal.h"
+
+#if HAL_SOLO_GIMBAL_ENABLED
 
 #include <stdio.h>
 #include <GCS_MAVLink/GCS.h>
@@ -529,4 +529,4 @@ void SoloGimbal::joint_rates_to_gimbal_ang_vel(const Vector3f& joint_rates, Vect
     ang_vel.z = sin_theta*joint_rates.x+cos_theta*cos_phi*joint_rates.z;
 }
 
-#endif // AP_AHRS_NAVEKF_AVAILABLE
+#endif // HAL_SOLO_GIMBAL_ENABLED
