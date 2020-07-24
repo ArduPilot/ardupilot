@@ -999,7 +999,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/AP_TECS/AP_TECS.cpp
     GOBJECT(TECS_controller,         "TECS_",   AP_TECS),
 
-#if MOUNT == ENABLED
+#if HAL_MOUNT_ENABLED
     // @Group: MNT
     // @Path: ../libraries/AP_Mount/AP_Mount.cpp
     GOBJECT(camera_mount,           "MNT",  AP_Mount),

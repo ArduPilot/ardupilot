@@ -108,7 +108,7 @@ void Plane::init_ardupilot()
 
     init_rc_in();               // sets up rc channels from radio
 
-#if MOUNT == ENABLED
+#if HAL_MOUNT_ENABLED
     // initialise camera mount
     camera_mount.init();
 #endif
