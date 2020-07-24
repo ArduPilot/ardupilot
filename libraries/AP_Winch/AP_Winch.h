@@ -25,6 +25,7 @@ class AP_Winch_Backend;
 class AP_Winch {
     friend class AP_Winch_Backend;
     friend class AP_Winch_Servo;
+    friend class AP_Winch_Daiwa;
 
 public:
     AP_Winch();
@@ -75,6 +76,7 @@ private:
     enum class WinchType {
         NONE = 0,
         SERVO = 1,
+        DAIWA = 2
     };
 
     // winch states
