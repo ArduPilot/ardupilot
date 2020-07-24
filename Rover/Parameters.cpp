@@ -298,7 +298,7 @@ const AP_Param::Info Rover::var_info[] = {
     GOBJECT(camera,                  "CAM_", AP_Camera),
 #endif
 
-#if MOUNT == ENABLED
+#if HAL_MOUNT_ENABLED
     // @Group: MNT
     // @Path: ../libraries/AP_Mount/AP_Mount.cpp
     GOBJECT(camera_mount,           "MNT",  AP_Mount),
