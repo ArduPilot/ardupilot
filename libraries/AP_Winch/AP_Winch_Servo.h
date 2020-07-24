@@ -24,17 +24,29 @@ public:
     AP_Winch_Servo(struct AP_Winch::Backend_Config &_config) :
         AP_Winch_Backend(_config) { }
 
+    // true if winch is healthy
+    bool healthy() const override;
+
     // initialise the winch
-    void init(const AP_WheelEncoder* wheel_encoder) override;
+    void init() override;
 
     // control the winch
     void update() override;
 
-private:
-    // external reference
-    const AP_WheelEncoder* _wheel_encoder;
+    // returns current length of line deployed
+    float get_current_length() const override { return line_length; }
 
-    uint32_t last_update_ms;    // last time update was called
-    bool limit_high;            // output hit limit on last iteration
-    bool limit_low;             // output hit lower limit on last iteration
+    // send status to ground station
+    void send_status(const GCS_MAVLINK &channel) override;
+
+    // write log
+    void write_log() override;
+
+private:
+
+    // update pwm outputs to control winch
+    void control_winch();
+
+    uint32_t control_update_ms; // last time control_winch was called
+    float line_length;          // estimated length of line in meters
 };
