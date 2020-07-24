@@ -345,8 +345,13 @@ bool AP_RangeFinder_LightWareI2C::legacy_get_reading(uint16_t &reading_cm)
 
     // read the high and low byte distance registers
     if (_dev->transfer(&read_reg, 1, (uint8_t *)&val, sizeof(val))) {
-        // combine results into distance
-        reading_cm = be16toh(val);
+        int16_t signed_val = int16_t(be16toh(val));
+        if (signed_val < 0) {
+            // some lidar firmwares will return 65436 for out of range
+            reading_cm = uint16_t(max_distance_cm() + LIGHTWARE_OUT_OF_RANGE_ADD_CM);
+        } else {
+            reading_cm = uint16_t(signed_val);
+        }
         return true;
     }
     return false;
