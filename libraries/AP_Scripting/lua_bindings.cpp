@@ -2,6 +2,7 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_HAL/HAL.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Scripting/AP_Scripting.h>
 
 #include "lua_bindings.h"
 
@@ -207,6 +208,123 @@ static int AP_Logger_Write(lua_State *L) {
     return 0;
 }
 
+static int AP_Scripting_find_in_dir(lua_State *L) {
+
+    const int args = lua_gettop(L);
+    if (args != 2) {
+        return luaL_argerror(L, args, "requires 1 argument");
+    }
+
+    const char * dirname = luaL_checkstring(L, 2);
+
+    auto *d = AP::FS().opendir(dirname);
+    if (d == nullptr) {
+        // could not find directory.
+        lua_pushnil(L);
+        return 1;
+    }
+
+    // find anything that ends in .lua
+    uint8_t i = 0;
+    for (struct dirent *de=AP::FS().readdir(d); de; de=AP::FS().readdir(d)) {
+        uint8_t length = strlen(de->d_name);
+        if (length < 5) {
+            // not long enough
+            continue;
+        }
+
+        if (strncmp(&de->d_name[length-4], ".lua", 4)) {
+            // doesn't end in .lua
+            continue;
+        }
+
+        char filename[sizeof(dirname) + sizeof(de->d_name)];
+        snprintf(filename, sizeof(filename), "%s/%s", dirname, de->d_name);
+
+        // create table
+        if (i == 0) {
+            lua_newtable(L);
+        }
+        lua_pushinteger(L, i+1);
+        lua_pushstring(L, filename);
+        lua_settable(L, -3);
+        i++;
+    }
+
+    AP::FS().closedir(d);
+
+    if (i == 0) {
+        lua_pushnil(L);
+    }
+
+    return 1;
+}
+
+static int AP_Scripting_script_stop(lua_State *L) {
+
+    const int args = lua_gettop(L);
+    if (args != 2) {
+        return luaL_argerror(L, args, "requires 1 argument");
+    }
+
+    const char * filename = luaL_checkstring(L, 2);
+
+    AP_Scripting *scripting = AP_Scripting::get_singleton();
+    if (scripting == nullptr) {
+        // something very odd going on if we hit this
+        return luaL_argerror(L, 1, "Scripting not found");;
+    }
+
+    lua_pushboolean(L, scripting->script_stop(filename));
+    return 1;
+}
+
+static int AP_Scripting_script_running(lua_State *L) {
+
+    const int args = lua_gettop(L);
+    if (args != 2) {
+        return luaL_argerror(L, args, "requires 1 argument");
+    }
+
+    const char * filename = luaL_checkstring(L, 2);
+
+    AP_Scripting *scripting = AP_Scripting::get_singleton();
+    if (scripting == nullptr) {
+        // something very odd going on if we hit this
+        return luaL_argerror(L, 1, "Scripting not found");;
+    }
+
+    lua_pushboolean(L, scripting->script_running(filename));
+    return 1;
+}
+
+static int AP_Scripting_script_start(lua_State *L) {
+
+    const int args = lua_gettop(L);
+    if (args != 2) {
+        return luaL_argerror(L, args, "requires 1 argument");
+    }
+
+    const char * filename = luaL_checkstring(L, 2);
+
+    AP_Scripting *scripting = AP_Scripting::get_singleton();
+    if (scripting == nullptr) {
+        // something very odd going on if we hit this
+        return luaL_argerror(L, 1, "Scripting not found");;
+    }
+
+    lua_pushboolean(L, scripting->script_start(filename));
+    return 1;
+}
+
+const luaL_Reg AP_Scripting_functions[] = {
+    {"find_in_dir", AP_Scripting_find_in_dir},
+    {"stop", AP_Scripting_script_stop},
+    {"running", AP_Scripting_script_running},
+    {"start", AP_Scripting_script_start},
+    {NULL, NULL}
+};
+
 const luaL_Reg AP_Logger_functions[] = {
     {"write", AP_Logger_Write},
     {NULL, NULL}
@@ -215,6 +333,10 @@ const luaL_Reg AP_Logger_functions[] = {
 void load_lua_bindings(lua_State *L) {
     lua_pushstring(L, "logger");
     luaL_newlib(L, AP_Logger_functions);
+    lua_settable(L, -3);
+
+    lua_pushstring(L, "scripting");
+    luaL_newlib(L, AP_Scripting_functions);
     lua_settable(L, -3);
 
     luaL_setfuncs(L, global_functions, 0);
