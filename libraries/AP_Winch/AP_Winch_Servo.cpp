@@ -1,13 +1,23 @@
 #include <AP_Winch/AP_Winch_Servo.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
-void AP_Winch_Servo::init(const AP_WheelEncoder* wheel_encoder)
+// true if winch is healthy
+bool AP_Winch_Servo::healthy() const
 {
-    _wheel_encoder = wheel_encoder;
+    // return immediately if no servo is assigned to control the winch
+    if (!SRV_Channels::function_assigned(SRV_Channel::k_winch)) {
+        return false;
+    }
 
-    // set servo output range
-    SRV_Channels::set_angle(SRV_Channel::k_winch,  1000);
+    return true;
+}
+
+void AP_Winch_Servo::init()
+{
+    // initialise rc input and output
+    init_input_and_output();
 }
 
 void AP_Winch_Servo::update()
@@ -17,59 +27,85 @@ void AP_Winch_Servo::update()
         return;
     }
 
-    // return immediately if no wheel encoder
-    if (_wheel_encoder == nullptr) {
-        return;
-    }
+    // read pilot input
+    read_pilot_desired_rate();
 
-    // if not doing any control output trim value
-    if (config.state == AP_Winch::STATE_RELAXED) {
-        SRV_Channels::set_output_limit(SRV_Channel::k_winch, SRV_Channel::Limit::TRIM);
-        return;
-    }
+    // send outputs to winch
+    control_winch();
+}
 
-    // calculate dt since last iteration
-    uint32_t now = AP_HAL::millis();
-    float dt = (now - last_update_ms) / 1000.0f;
+// update pwm outputs to control winch
+void AP_Winch_Servo::control_winch()
+{
+    uint32_t now_ms = AP_HAL::millis();
+    float dt = (now_ms - control_update_ms) / 1000.0f;
     if (dt > 1.0f) {
         dt = 0.0f;
     }
-    last_update_ms = now;
+    control_update_ms = now_ms;
 
-    // calculate latest rate
-    float distance = _wheel_encoder->get_distance(0);
-    float rate = 0.0f;
-    if (is_positive(dt)) {
-        rate = (distance - config.length_curr) / dt;
+    // if relaxed stop outputting pwm signals
+    if (config.control_mode == AP_Winch::ControlMode::RELAXED) {
+        // if not doing any control stop sending pwm to winch
+        SRV_Channels::set_output_pwm(SRV_Channel::k_winch, 0);
+
+        // rate used for acceleration limiting reset to zero
+        set_previous_rate(0.0f);
+        return;
     }
-
-    // update distance from wheel encoder
-    config.length_curr = distance;
 
     // if doing position control, calculate position error to desired rate
-    float rate_desired = 0.0f;
-    if (config.state == AP_Winch::STATE_POSITION) {
-        float position_error = config.length_desired - config.length_curr;
-        rate_desired = constrain_float(position_error * config.pos_p, -config.rate_desired, config.rate_desired);
+    if ((config.control_mode == AP_Winch::ControlMode::POSITION) && healthy()) {
+        float position_error = config.length_desired - line_length;
+        config.rate_desired = constrain_float(position_error * config.pos_p, -config.rate_max, config.rate_max);
     }
 
-    // if doing rate control, set desired rate
-    if (config.state == AP_Winch::STATE_RATE) {
-        rate_desired = config.rate_desired;
+    // apply acceleration limited to rate
+    const float rate_limited = get_rate_limited_by_accel(config.rate_desired, dt);
+
+    // use linear interpolation to calculate output to move winch at desired rate
+    const int16_t scaled_output = linear_interpolate(-1000, 1000, rate_limited, -config.rate_max, config.rate_max);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_winch, scaled_output);
+
+    // update distance estimate assuming winch will move exactly as requested
+    line_length += config.rate_desired * dt;
+}
+
+//send generator status
+void AP_Winch_Servo::send_status(const GCS_MAVLINK &channel)
+{
+    // prepare status bitmask
+    uint32_t status_bitmask = 0;
+    if (healthy()) {
+        status_bitmask |= MAV_WINCH_STATUS_HEALTHY;
     }
 
-    // calculate base output
-    float base = 0.0f;
-    if (is_positive(config.rate_max)) {
-        base = rate_desired / config.rate_max;
-    }
+    // send status
+    mavlink_msg_winch_status_send(
+        channel.get_chan(),
+        AP_HAL::micros64(),     // time_usec
+        line_length,            // line_length
+        config.rate_desired,    // speed
+        std::numeric_limits<double>::quiet_NaN(),   // tension
+        std::numeric_limits<double>::quiet_NaN(),   // voltage
+        std::numeric_limits<double>::quiet_NaN(),   // current
+        INT16_MAX,              // temperature
+        status_bitmask);        // status flags
+}
 
-    // constrain and set limit flags
-    float output = base + config.rate_pid.update_all(rate_desired, rate, (limit_low || limit_high));
-    limit_low = (output <= -1.0f);
-    limit_high = (output >= 1.0f);
-    output = constrain_float(output, -1.0f, 1.0f);
-
-    // output to servo
-    SRV_Channels::set_output_scaled(SRV_Channel::k_winch,  output * 1000);
+// write log
+void AP_Winch_Servo::write_log()
+{
+    AP::logger().Write_Winch(
+            healthy(),
+            0,              // thread end (unsupported)
+            0,              // moving (unsupported)
+            0,              // clutch (unsupported)
+            (uint8_t)config.control_mode,
+            config.length_desired,
+            get_current_length(),
+            config.rate_desired,
+            0,              // tension (unsupported)
+            0,              // voltage (unsupported)
+            0);             // temp (unsupported)
 }
