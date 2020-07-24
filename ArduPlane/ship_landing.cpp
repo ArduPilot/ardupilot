@@ -35,6 +35,7 @@ void QuadPlane::ship_landing_RTL_init(void)
     ship_landing.stage = ship_landing.HOLDOFF;
     ship_landing.reached_alt = false;
     ship_landing_RTL_update();
+    ship_landing.offset.zero();
 }
 
 
@@ -121,21 +122,21 @@ void QuadPlane::ship_update_xy(void)
         return;
     }
 
-    // add in offset for takeoff position
-    if (in_vtol_takeoff()) {
-        pos += takeoff_ofs;
-    }
+    // add in offset for takeoff position and landing repositioning
+    pos += ship_landing.offset;
 
     pos.z = 0;
     vel *= 100;
     vel.z = 0;
 
-    AP::logger().Write("SHXY", "TimeUS,px,py,vx,vy", "Qffff",
+    AP::logger().Write("SHXY", "TimeUS,px,py,vx,vy,ox,oy", "Qffffff",
                        AP_HAL::micros64(),
-                       double(pos.x * 0.01f),
-                       double(pos.y * 0.01f),
-                       double(vel.x * 0.01f),
-                       double(vel.y * 0.01f));
+                       pos.x * 0.01f,
+                       pos.y * 0.01f,
+                       vel.x * 0.01f,
+                       vel.y * 0.01f,
+                       ship_landing.offset.x,
+                       ship_landing.offset.y);
 
     pos_control->input_pos_vel_xy(pos, vel,
                                   wp_nav->get_default_speed_xy(),
@@ -151,11 +152,11 @@ void QuadPlane::ship_set_takeoff_offset(void)
     Vector3f vel;
 
     if (!plane.g2.follow.get_target_location_and_velocity_ofs_abs(loc, vel)) {
-        takeoff_ofs.zero();
+        ship_landing.offset.zero();
         return;
     }
 
-    takeoff_ofs = loc.get_distance_NED(plane.current_loc);
+    ship_landing.offset = loc.get_distance_NED(plane.current_loc);
 }
 
 /*

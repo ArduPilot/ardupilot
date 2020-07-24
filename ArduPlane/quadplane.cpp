@@ -2300,6 +2300,23 @@ bool QuadPlane::in_vtol_posvel_mode(void) const
 }
 
 /*
+  update landing positioning offset
+ */
+void QuadPlane::update_land_positioning(void)
+{
+    const float scale = 1.0 / 4500;
+    float roll_in = plane.channel_roll->get_control_in() * scale;
+    float pitch_in = plane.channel_pitch->get_control_in() * scale;
+    const float speed_max = wp_nav->get_default_speed_xy() * 0.01;
+    const float dt = plane.scheduler.get_loop_period_s();
+    Vector2f pos_change(-pitch_in, roll_in);
+    pos_change *= dt * speed_max;
+    pos_change.rotate(plane.ahrs.yaw);
+    ship_landing.offset.x += pos_change.x;
+    ship_landing.offset.y += pos_change.y;
+}
+
+/*
   main landing controller. Used for landing and RTL.
  */
 void QuadPlane::vtol_position_controller(void)
@@ -2433,6 +2450,9 @@ void QuadPlane::vtol_position_controller(void)
             plane.g2.follow.get_target_location_and_velocity_ofs_abs(plane.next_WP_loc, targ_vel)) {
             target_speed_xy.x += targ_vel.x;
             target_speed_xy.y += targ_vel.y;
+
+            // zero offset in POS1 and POS2
+            ship_landing.offset.zero();
         }
 
         pos_control->set_desired_velocity_xy(target_speed_xy.x*100,
@@ -2483,6 +2503,10 @@ void QuadPlane::vtol_position_controller(void)
     }
 
     case QPOS_POSITION2:
+        // zero offset in POS1 and POS2
+        ship_landing.offset.zero();
+        FALLTHROUGH;
+
     case QPOS_LAND_DESCEND: {
         /*
           for final land repositioning and descent we run the position controller
@@ -2510,6 +2534,7 @@ void QuadPlane::vtol_position_controller(void)
         
         // set position controller desired velocity and acceleration to zero
         if (in_ship_landing()) {
+            update_land_positioning();
             ship_update_xy();
         } else {
             pos_control->set_desired_velocity_xy(0.0f,0.0f);
@@ -2926,6 +2951,7 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
     set_alt_target_current();
 
     plane.complete_auto_takeoff();
+    ship_landing.offset.zero();
 
     if (plane.control_mode == &plane.mode_auto) {
         // we reset TECS so that the target height filter is not
