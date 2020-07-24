@@ -153,8 +153,12 @@ void AP_Camera::trigger_pic()
     case CamTrigType::relay:
         relay_pic();            // basic relay activation
         break;
+#if HAL_SOLO_GIMBAL_ENABLED
     case CamTrigType::gopro:  // gopro in Solo Gimbal
         AP_Camera_SoloGimbal::gopro_shutter_toggle();
+        break;
+#endif
+    default:
         break;
     }
 
@@ -208,6 +212,7 @@ void AP_Camera::handle_message(mavlink_channel_t chan, const mavlink_message_t &
     case MAVLINK_MSG_ID_DIGICAM_CONTROL:
         control_msg(msg);
         break;
+#if HAL_SOLO_GIMBAL_ENABLED
     case MAVLINK_MSG_ID_GOPRO_HEARTBEAT:
         // heartbeat from the Solo gimbal with a GoPro
         if (get_trigger_type() == CamTrigType::gopro) {
@@ -215,6 +220,7 @@ void AP_Camera::handle_message(mavlink_channel_t chan, const mavlink_message_t &
             break;
         }
         break;
+#endif
     }
 }
 
@@ -222,9 +228,11 @@ void AP_Camera::handle_message(mavlink_channel_t chan, const mavlink_message_t &
 void AP_Camera::cam_mode_toggle()
 {
     switch (get_trigger_type()) {
+#if HAL_SOLO_GIMBAL_ENABLED
     case CamTrigType::gopro:
         AP_Camera_SoloGimbal::gopro_capture_mode_toggle();
         break;
+#endif
     default:
         // no other cameras use this yet
         break;
