@@ -30,6 +30,7 @@ void panic(const char *errormsg, ...)
     va_list ap;
 
     fflush(stdout);
+    printf("PANIC: ");
     va_start(ap, errormsg);
     vprintf(errormsg, ap);
     va_end(ap);
