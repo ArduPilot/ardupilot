@@ -7,12 +7,12 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
 
-#if AP_AHRS_NAVEKF_AVAILABLE
+#include "AP_Mount_Backend.h"
+#if HAL_SOLO_GIMBAL_ENABLED
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <RC_Channel/RC_Channel.h>
-#include "AP_Mount_Backend.h"
 #include "SoloGimbal.h"
 
 
@@ -60,4 +60,4 @@ private:
     SoloGimbal _gimbal;
 };
 
-#endif // AP_AHRS_NAVEKF_AVAILABLE
+#endif // HAL_SOLO_GIMBAL_ENABLED

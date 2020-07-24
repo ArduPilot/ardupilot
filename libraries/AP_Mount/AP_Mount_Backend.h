@@ -21,6 +21,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include "AP_Mount.h"
+#if HAL_MOUNT_ENABLED
 #include <RC_Channel/RC_Channel.h>
 
 class AP_Mount_Backend
@@ -125,3 +126,5 @@ private:
 
     void rate_input_rad(float &out, const RC_Channel *ch, float min, float max) const;
 };
+
+#endif // HAL_MOUNT_ENABLED
