@@ -1093,3 +1093,23 @@ void AP_Logger::Write_SimpleAvoidance(uint8_t state, const Vector2f& desired_vel
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
+
+void AP_Logger::Write_Winch(bool healthy, bool thread_end, bool moving, bool clutch, uint8_t mode, float desired_length, float length, float desired_rate, uint16_t tension, float voltage, int8_t temp)
+{
+    struct log_Winch pkt{
+        LOG_PACKET_HEADER_INIT(LOG_WINCH_MSG),
+        time_us         : AP_HAL::micros64(),
+        healthy         : healthy,
+        thread_end      : thread_end,
+        moving          : moving,
+        clutch          : clutch,
+        mode            : mode,
+        desired_length  : desired_length,
+        length          : length,
+        desired_rate    : desired_rate,
+        tension         : tension,
+        voltage         : voltage,
+        temp            : temp
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}
