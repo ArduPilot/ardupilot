@@ -1,6 +1,9 @@
 #pragma once
 
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Mount/AP_Mount.h>
+
+#if HAL_SOLO_GIMBAL_ENABLED
 
 class AP_Camera_SoloGimbal {
 public:
@@ -16,3 +19,5 @@ private:
     static bool gopro_is_recording;
     static mavlink_channel_t heartbeat_channel;
 };
+
+#endif // HAL_SOLO_GIMBAL_ENABLED
