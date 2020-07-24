@@ -1076,6 +1076,24 @@ float QuadPlane::get_pilot_throttle()
 }
 
 /*
+  get pilot throttle in for landing code. Return value on scale of 0 to 1
+*/
+float QuadPlane::get_pilot_land_throttle(void) const
+{
+    if (plane.rc_failsafe_active()) {
+        // assume zero throttle if lost RC
+        return 0;
+    }
+    // get scaled throttle input
+    float throttle_in = plane.channel_throttle->get_control_in();
+
+    // normalize to [0,1]
+    throttle_in /= plane.channel_throttle->get_range();
+
+    return constrain_float(throttle_in, 0, 1);
+}
+
+/*
   control QACRO mode
  */
 void QuadPlane::control_qacro(void)
@@ -1260,11 +1278,11 @@ float QuadPlane::landing_descent_rate_cms(float height_above_ground) const
                                    land_final_alt, land_final_alt+6);
     if ((options & OPTION_THR_LANDING_CONTROL) != 0) {
         // allow throttle control for landing speed
-        float thr_in = MAX(0, plane.channel_throttle->get_control_in());
-        const float dz = 10.0;
-        const float thresh1 = 50+dz;
-        const float thresh2 = 50-dz;
-        const float scaling = 1.0 / (50 - dz);
+        float thr_in = get_pilot_land_throttle();
+        const float dz = 0.1;
+        const float thresh1 = 0.5+dz;
+        const float thresh2 = 0.5-dz;
+        const float scaling = 1.0 / (0.5 - dz);
         if (thr_in > thresh1) {
             // start climbing
             ret = -(thr_in - thresh1)*scaling*max_climb_speed;
@@ -2305,16 +2323,29 @@ bool QuadPlane::in_vtol_posvel_mode(void) const
  */
 void QuadPlane::update_land_positioning(void)
 {
+    if ((options & OPTION_THR_LANDING_CONTROL) == 0) {
+        // not enabled
+        return;
+    }
     const float scale = 1.0 / 4500;
     float roll_in = plane.channel_roll->get_control_in() * scale;
     float pitch_in = plane.channel_pitch->get_control_in() * scale;
-    const float speed_max = wp_nav->get_default_speed_xy() * 0.01;
+    float thr_in = get_pilot_land_throttle();
+    const float dz = 0.1;
+    if (thr_in < 0.5-dz || thr_in>0.5+dz) {
+        // only allow pilot reposition when pilot has stopped descent
+        roll_in = pitch_in = 0;
+    }
+    // limit correction speed to 25% of wp max speed
+    const float speed_max = wp_nav->get_default_speed_xy() * 0.01 * 0.25;
     const float dt = plane.scheduler.get_loop_period_s();
     Vector2f pos_change(-pitch_in, roll_in);
     pos_change *= dt * speed_max;
     pos_change.rotate(plane.ahrs.yaw);
     ship_landing.offset.x += pos_change.x;
     ship_landing.offset.y += pos_change.y;
+
+    ship_landing.pilot_correction_active = (fabsf(roll_in) > 0 || fabsf(pitch_in) > 0);
 }
 
 /*
@@ -2679,7 +2710,7 @@ void QuadPlane::takeoff_controller(void)
     */
     check_attitude_relax();
 
-    if (ship_landing_enabled()) {
+    if (in_ship_takeoff()) {
         ship_update_xy();
     } else {
         setup_target_position();

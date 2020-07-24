@@ -298,6 +298,10 @@ void Plane::one_second_loop()
             // reset the landing altitude correction
             landing.alt_offset = 0;
     }
+
+    if (quadplane.ship_landing_enabled()) {
+        quadplane.ship_report_beacon();
+    }
 }
 
 void Plane::compass_save()

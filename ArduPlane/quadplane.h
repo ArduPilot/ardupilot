@@ -582,6 +582,8 @@ private:
         } stage;
         bool reached_alt;
         Vector3f offset;
+        bool pilot_correction_active;
+        bool have_beacon;
     } ship_landing;
 
     /*
@@ -644,6 +646,21 @@ private:
      */
     void ship_set_takeoff_offset(void);
 
+    /*
+      return true when ship landing is active
+     */
+    bool in_ship_landing(void) const;
+
+    /*
+      return true when ship takeoff is active
+     */
+    bool in_ship_takeoff(void) const;
+
+    /*
+      get pilot throttle in for landing code. Return value on scale of 0 to 1
+     */
+    float get_pilot_land_throttle(void) const;
+    
     // Q assist state, can be enabled, disabled or force. Default to enabled
     Q_ASSIST_STATE_ENUM q_assist_state = Q_ASSIST_STATE_ENUM::Q_ASSIST_ENABLED;
 
@@ -669,14 +686,14 @@ public:
     void ship_landing_RTL_update(void);
 
     /*
-      return true when ship landing is active
-     */
-    bool in_ship_landing(void) const;
-    
-    /*
       should we switch to QRTL on RTL completion
      */
     bool rtl_qrtl_enabled(void) const;
+
+    /*
+      report beacon status
+     */
+    void ship_report_beacon(void);
 
 private:
     void motor_test_stop();

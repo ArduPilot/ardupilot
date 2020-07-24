@@ -81,8 +81,8 @@ void QuadPlane::ship_landing_RTL_update(void)
             ship_landing.reached_alt = true;
         }
 
-        int16_t throttle_in = plane.channel_throttle->get_control_in();
-        if (throttle_in <= 0) {
+        float thr_in = get_pilot_land_throttle();
+        if (thr_in <= 0) {
             // go to approach stage when throttle is low, we are
             // pointing at the ship and have reached target alt.
             // Also require we are within 2.5 radius of the ship, and our heading is within 20
@@ -114,18 +114,22 @@ void QuadPlane::ship_update_xy(void)
 {
     Location loc;
     Vector3f vel;
+    Vector3f pos_ship;
     Vector3f pos;
 
     if (!plane.g2.follow.get_target_location_and_velocity_ofs_abs(loc, vel)) {
         return;
     }
 
-    if (!loc.get_vector_from_origin_NEU(pos)) {
+    if (!loc.get_vector_from_origin_NEU(pos_ship)) {
         return;
     }
 
+    pos = pos_ship;
     // add in offset for takeoff position and landing repositioning
-    pos += ship_landing.offset;
+    if (in_ship_landing() || in_ship_takeoff()) {
+        pos += ship_landing.offset * 100;
+    }
 
     pos.z = 0;
     vel *= 100;
@@ -140,9 +144,19 @@ void QuadPlane::ship_update_xy(void)
                        ship_landing.offset.x,
                        ship_landing.offset.y);
 
+    // using the small angle approximation for simplicity and a conservative result when maximum acceleration is large
+    // this assumes the time taken to achieve the maximum acceleration angle is limited by the angular acceleration rather than maximum angular rate.
+    float lean_angle = wp_nav->get_wp_acceleration() / (GRAVITY_MSS * 100.0 * M_PI / 18000.0);
+    float angle_accel = MIN(attitude_control->get_accel_pitch_max(), attitude_control->get_accel_roll_max());
+    float tc = 2.0 * sqrt(lean_angle / angle_accel);
     pos_control->input_pos_vel_xy(pos, vel,
                                   wp_nav->get_default_speed_xy(),
-                                  wp_nav->get_wp_acceleration(), 1);
+                                  wp_nav->get_wp_acceleration(), tc);
+
+    // reset landing offset to the current stopping point when pilot correction is active.
+    if (ship_landing.pilot_correction_active) {
+        ship_landing.offset = (pos - pos_ship) * 0.01;
+    }
 }
 
 /*
@@ -175,6 +189,27 @@ bool QuadPlane::in_ship_landing(void) const
 }
 
 /*
+  return true when ship takeoff is active
+*/
+bool QuadPlane::in_ship_takeoff(void) const
+{
+    if (!ship_landing_enabled() ||
+        !in_vtol_takeoff() ||
+        !plane.g2.follow.have_target()) {
+        return false;
+    }
+    Location loc;
+    Vector3f vel;
+    if (!plane.g2.follow.get_target_location_and_velocity_ofs_abs(loc, vel)) {
+        return false;
+    }
+    if (loc.get_distance(plane.current_loc) > plane.aparm.loiter_radius) {
+        return false;
+    }
+    return true;
+}
+
+/*
   check for a landing abort with high throttle
  */
 void QuadPlane::ship_landing_check_abort(void)
@@ -190,3 +225,17 @@ void QuadPlane::ship_landing_check_abort(void)
     }
 }
 
+
+/*
+  report beacon status
+*/
+void QuadPlane::ship_report_beacon(void)
+{
+    bool ok = plane.g2.follow.have_target();
+    if (ok && !ship_landing.have_beacon) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Beacon OK");
+    } else if (!ok && ship_landing.have_beacon) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Beacon lost");
+    }
+    ship_landing.have_beacon = ok;
+}
