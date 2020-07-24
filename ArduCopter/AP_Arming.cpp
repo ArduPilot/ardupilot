@@ -61,8 +61,9 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
         & motor_checks(display_failure)
         & pilot_throttle_checks(display_failure)
         & oa_checks(display_failure)
-        & gcs_failsafe_check(display_failure) &
-        AP_Arming::pre_arm_checks(display_failure);
+        & gcs_failsafe_check(display_failure)
+        & winch_checks(display_failure)
+        & AP_Arming::pre_arm_checks(display_failure);
 }
 
 bool AP_Arming_Copter::barometer_checks(bool display_failure)
@@ -572,6 +573,28 @@ bool AP_Arming_Copter::gcs_failsafe_check(bool display_failure)
         check_failed(display_failure, "GCS failsafe on");
         return false;
     }
+    return true;
+}
+
+// check winch
+bool AP_Arming_Copter::winch_checks(bool display_failure) const
+{
+#if WINCH_ENABLED == ENABLED
+    // pass if parameter or all arming checks disabled
+    if (((checks_to_perform & ARMING_CHECK_ALL) == 0) && ((checks_to_perform & ARMING_CHECK_PARAMETERS) == 0)) {
+        return true;
+    }
+
+    const AP_Winch *winch = AP::winch();
+    if (winch == nullptr) {
+        return true;
+    }
+    char failure_msg[50] = {};
+    if (!winch->pre_arm_check(failure_msg, sizeof(failure_msg))) {
+        check_failed(display_failure, "%s", failure_msg);
+        return false;
+    }
+#endif
     return true;
 }
 
