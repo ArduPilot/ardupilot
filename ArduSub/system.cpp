@@ -100,7 +100,7 @@ void Sub::init_ardupilot()
     init_optflow();
 #endif
 
-#if MOUNT == ENABLED
+#if HAL_MOUNT_ENABLED
     // initialise camera mount
     camera_mount.init();
     // This step ncessary so the servo is properly initialized

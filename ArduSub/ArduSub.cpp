@@ -43,7 +43,7 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
 #if AC_FENCE == ENABLED
     SCHED_TASK_CLASS(AC_Fence,            &sub.fence,        update,              10, 100),
 #endif
-#if MOUNT == ENABLED
+#if HAL_MOUNT_ENABLED
     SCHED_TASK_CLASS(AP_Mount,            &sub.camera_mount, update,              50,  75),
 #endif
 #if CAMERA == ENABLED
@@ -126,7 +126,7 @@ void Sub::fast_loop()
     // check if we've reached the surface or bottom
     update_surface_and_bottom_detector();
 
-#if MOUNT == ENABLED
+#if HAL_MOUNT_ENABLED
     // camera mount's fast update
     camera_mount.update_fast();
 #endif
