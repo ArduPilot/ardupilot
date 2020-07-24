@@ -61,6 +61,11 @@ public:
     // run scripts, does not return unless an error occured
     void run(void);
 
+    // start, stop and check on scripts
+    bool script_start(const char *filename);
+    bool script_stop(const char *filename);
+    bool script_running(const char *filename);
+
     static bool overtime; // script exceeded it's execution slot, and we are bailing out
 private:
 
@@ -120,4 +125,6 @@ private:
     static void *alloc(void *ud, void *ptr, size_t osize, size_t nsize);
 
     static void *_heap;
+
+    HAL_Semaphore sem;
 };
