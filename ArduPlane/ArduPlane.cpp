@@ -463,7 +463,7 @@ void Plane::update_navigation()
               are within the maximum of the stopping distance and the
               RTL_RADIUS
              */
-            set_mode(mode_qrtl, ModeReason::UNKNOWN);
+            set_mode(mode_qrtl, ModeReason::RTL_COMPLETE_SWITCHING_TO_VTOL_LAND_RTL);
             break;
         } else if (g.rtl_autoland == 1 &&
             !auto_state.checked_for_autoland &&
@@ -473,7 +473,7 @@ void Plane::update_navigation()
             if (mission.jump_to_landing_sequence()) {
                 // switch from RTL -> AUTO
                 mission.set_force_resume(true);
-                set_mode(mode_auto, ModeReason::UNKNOWN);
+                set_mode(mode_auto, ModeReason::RTL_COMPLETE_SWITCHING_TO_FIXEDWING_AUTOLAND);
             }
 
             // prevent running the expensive jump_to_landing_sequence
@@ -486,7 +486,7 @@ void Plane::update_navigation()
             if (mission.jump_to_landing_sequence()) {
                 // switch from RTL -> AUTO
                 mission.set_force_resume(true);
-                set_mode(mode_auto, ModeReason::UNKNOWN);
+                set_mode(mode_auto, ModeReason::RTL_COMPLETE_SWITCHING_TO_FIXEDWING_AUTOLAND);
             }
 
             // prevent running the expensive jump_to_landing_sequence
