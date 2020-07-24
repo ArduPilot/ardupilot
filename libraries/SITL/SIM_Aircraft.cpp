@@ -933,7 +933,7 @@ float Aircraft::get_local_updraft(Vector3f currentPos)
     switch (scenario) {
         case 1:
             n_thermals = 1;
-            thermals_w[0] =  2.0;
+            thermals_w[0] =  4.0;
             thermals_r[0] =  80.0;
             thermals_x[0] = -180.0;
             thermals_y[0] = -260.0;
