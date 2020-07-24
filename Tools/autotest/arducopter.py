@@ -1608,7 +1608,7 @@ class AutoTestCopter(AutoTest):
             self.wait_attitude(despitch=90, tolerance=30)
             self.wait_attitude(despitch=-45, tolerance=30)
             self.progress("Waiting for level")
-            self.set_rc(1, 1500) # can't change quickly enough!
+            self.set_rc(2, 1500) # can't change quickly enough!
             self.wait_attitude(despitch=0, desroll=0, tolerance=5)
             self.set_parameter('SIM_SPEEDUP', old_speedup)
             self.change_mode('RTL')
