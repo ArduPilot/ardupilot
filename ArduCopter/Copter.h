@@ -154,7 +154,6 @@
  # include "toy_mode.h"
 #endif
 #if WINCH_ENABLED == ENABLED
- # include <AP_WheelEncoder/AP_WheelEncoder.h>
  # include <AP_Winch/AP_Winch.h>
 #endif
 #if RPM_ENABLED == ENABLED
@@ -851,8 +850,6 @@ private:
     void accel_cal_update(void);
     void init_proximity();
     void update_proximity();
-    void winch_init();
-    void winch_update();
 
     // RC_Channel.cpp
     void save_trim();

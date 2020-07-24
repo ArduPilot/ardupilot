@@ -809,20 +809,14 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         switch ((uint8_t)packet.param2) {
         case WINCH_RELAXED:
             copter.g2.winch.relax();
-            AP::logger().Write_Event(LogEvent::WINCH_RELAXED);
             return MAV_RESULT_ACCEPTED;
         case WINCH_RELATIVE_LENGTH_CONTROL: {
-            copter.g2.winch.release_length(packet.param3, fabsf(packet.param4));
-            AP::logger().Write_Event(LogEvent::WINCH_LENGTH_CONTROL);
+            copter.g2.winch.release_length(packet.param3);
             return MAV_RESULT_ACCEPTED;
         }
         case WINCH_RATE_CONTROL:
-            if (fabsf(packet.param4) <= copter.g2.winch.get_rate_max()) {
-                copter.g2.winch.set_desired_rate(packet.param4);
-                AP::logger().Write_Event(LogEvent::WINCH_RATE_CONTROL);
-                return MAV_RESULT_ACCEPTED;
-            }
-            return MAV_RESULT_FAILED;
+            copter.g2.winch.set_desired_rate(packet.param4);
+            return MAV_RESULT_ACCEPTED;
         default:
             break;
         }

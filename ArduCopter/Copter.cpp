@@ -179,7 +179,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Gripper,           &copter.g2.gripper,          update,          10,  75),
 #endif
 #if WINCH_ENABLED == ENABLED
-    SCHED_TASK(winch_update,          10,     50),
+    SCHED_TASK_CLASS(AP_Winch,             &copter.g2.winch,            update,          50,  50),
 #endif
 #if GENERATOR_ENABLED
     SCHED_TASK_CLASS(AP_Generator_RichenPower,     &copter.generator,      update,    10,     50),
@@ -425,6 +425,11 @@ void Copter::ten_hz_logging_loop()
     }
 #if FRAME_CONFIG == HELI_FRAME
     Log_Write_Heli();
+#endif
+#if WINCH_ENABLED == ENABLED
+    if (should_log(MASK_LOG_ANY)) {
+        g2.winch.write_log();
+    }
 #endif
 }
 
