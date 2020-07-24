@@ -223,21 +223,3 @@ void Copter::init_proximity(void)
     g2.proximity.init();
 #endif
 }
-
-// winch and wheel encoder initialisation
-void Copter::winch_init()
-{
-#if WINCH_ENABLED == ENABLED
-    g2.wheel_encoder.init();
-    g2.winch.init(&g2.wheel_encoder);
-#endif
-}
-
-// winch and wheel encoder update
-void Copter::winch_update()
-{
-#if WINCH_ENABLED == ENABLED
-    g2.wheel_encoder.update();
-    g2.winch.update();
-#endif
-}

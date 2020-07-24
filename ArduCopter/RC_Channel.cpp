@@ -448,36 +448,20 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
 #if WINCH_ENABLED == ENABLED
             switch (ch_flag) {
                 case AuxSwitchPos::HIGH:
-                    // high switch maintains current position
-                    copter.g2.winch.release_length(0.0f);
-                    AP::logger().Write_Event(LogEvent::WINCH_LENGTH_CONTROL);
+                    // high switch maintains changes the winch to rate control mode
+                    copter.g2.winch.set_desired_rate(0.0f);
                     break;
                 case AuxSwitchPos::MIDDLE:
                 case AuxSwitchPos::LOW:
                     // all other position relax winch
                     copter.g2.winch.relax();
-                    AP::logger().Write_Event(LogEvent::WINCH_RELAXED);
                     break;
                 }
 #endif
             break;
 
         case AUX_FUNC::WINCH_CONTROL:
-#if WINCH_ENABLED == ENABLED
-            switch (ch_flag) {
-                case AuxSwitchPos::LOW:
-                    // raise winch at maximum speed
-                    copter.g2.winch.set_desired_rate(-copter.g2.winch.get_rate_max());
-                    break;
-                case AuxSwitchPos::HIGH:
-                    // lower winch at maximum speed
-                    copter.g2.winch.set_desired_rate(copter.g2.winch.get_rate_max());
-                    break;
-                case AuxSwitchPos::MIDDLE:
-                    copter.g2.winch.set_desired_rate(0.0f);
-                    break;
-                }
-#endif
+            // do nothing, used to control the rate of the winch and is processed within AP_Winch
             break;
 
 #ifdef USERHOOK_AUXSWITCH
