@@ -36,7 +36,9 @@ void Copter::init_ardupilot()
 #endif
 
     // init winch and wheel encoder
-    winch_init();
+#if WINCH_ENABLED == ENABLED
+    g2.winch.init();
+#endif
 
     // initialise notify system
     notify.init();

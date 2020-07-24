@@ -187,16 +187,6 @@ void Copter::tuning()
          attitude_control->get_rate_yaw_pid().filt_E_hz(tuning_value);
          break;
 
-#if WINCH_ENABLED == ENABLED
-     case TUNING_WINCH:
-         // add small deadzone
-         if (fabsf(tuning_value) < 0.05f) {
-             tuning_value = 0;
-         }
-         g2.winch.set_desired_rate(tuning_value);
-         break;
-#endif
-
      case TUNING_SYSTEM_ID_MAGNITUDE:
 #if MODE_SYSTEMID_ENABLED == ENABLED
          copter.mode_systemid.set_magnitude(tuning_value);

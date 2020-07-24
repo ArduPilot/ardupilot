@@ -549,7 +549,6 @@ public:
 
     // wheel encoder and winch
 #if WINCH_ENABLED == ENABLED
-    AP_WheelEncoder wheel_encoder;
     AP_Winch winch;
 #endif
 
