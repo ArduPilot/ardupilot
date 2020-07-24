@@ -182,7 +182,7 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
         break;
 
     case JSButton::button_function_t::k_mount_center:
-#if MOUNT == ENABLED
+#if HAL_MOUNT_ENABLED
         camera_mount.set_angle_targets(0, 0, 0);
         // for some reason the call to set_angle_targets changes the mode to mavlink targeting!
         camera_mount.set_mode(MAV_MOUNT_MODE_RC_TARGETING);
