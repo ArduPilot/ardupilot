@@ -186,7 +186,7 @@ void AP_Scripting::repl_stop(void) {
 }
 
 void AP_Scripting::thread(void) {
-    lua_scripts *lua = new lua_scripts(_script_vm_exec_count, _script_heap_size, _debug_level, terminal);
+    lua = new lua_scripts(_script_vm_exec_count, _script_heap_size, _debug_level, terminal);
     if (lua == nullptr || !lua->heap_allocated()) {
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Unable to allocate scripting memory");
         delete lua;
@@ -197,6 +197,31 @@ void AP_Scripting::thread(void) {
 
     // only reachable if the lua backend has died for any reason
     gcs().send_text(MAV_SEVERITY_CRITICAL, "Scripting has stopped");
+}
+
+// start, stop and check on scripts
+bool AP_Scripting::script_start(const char *filename)
+{
+    if (lua == nullptr) {
+        return false;
+    }
+    return lua->script_start(filename);
+}
+
+bool AP_Scripting::script_stop(const char *filename)
+{
+    if (lua == nullptr) {
+        return false;
+    }
+    return lua->script_stop(filename);
+}
+
+bool AP_Scripting::script_running(const char *filename)
+{
+    if (lua == nullptr) {
+        return false;
+    }
+    return lua->script_running(filename);
 }
 
 AP_Scripting *AP_Scripting::_singleton = nullptr;
