@@ -90,9 +90,11 @@ void QuadPlane::ship_landing_RTL_update(void)
             float target_bearing_deg = wrap_180(degrees(plane.current_loc.get_bearing(loc0)));
             float ground_bearing_deg = wrap_180(degrees(plane.ahrs.groundspeed_vector().angle()));
             const float margin = 10;
+            const float distance = plane.current_loc.get_distance(loc0);
             if (ship_landing.reached_alt &&
                 fabsf(wrap_180(target_bearing_deg - ground_bearing_deg)) < margin &&
-                plane.current_loc.get_distance(loc0) < 2.5*holdoff_dist &&
+                distance < 2.5*holdoff_dist &&
+                distance > 0.25*holdoff_dist &&
                 fabsf(wrap_180(ground_bearing_deg - heading_deg)) < 2*margin) {
                 ship_landing.stage = ship_landing.APPROACH;
             }
@@ -171,3 +173,20 @@ bool QuadPlane::in_ship_landing(void) const
     }
     return plane.control_mode == &plane.mode_qrtl || in_vtol_land_sequence();
 }
+
+/*
+  check for a landing abort with high throttle
+ */
+void QuadPlane::ship_landing_check_abort(void)
+{
+    float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+    if (((options & OPTION_THR_LANDING_CONTROL) != 0) &&
+        in_ship_landing() && height_above_ground > qrtl_alt &&
+        plane.channel_throttle->get_control_in() > 0.9*plane.channel_throttle->get_range()) {
+        gcs().send_text(MAV_SEVERITY_INFO, "aborted landing");
+
+        ship_landing_RTL_init();
+        plane.set_mode(plane.mode_rtl, ModeReason::THROTTLE_LAND_ESCAPE);
+    }
+}
+

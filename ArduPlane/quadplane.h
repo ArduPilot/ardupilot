@@ -629,6 +629,21 @@ private:
      */
     void update_land_positioning();
 
+    /*
+      check for a landing abort with high throttle
+    */
+    void ship_landing_check_abort(void);
+
+    /*
+      update xy controller for ship takeoff/landing
+     */
+    void ship_update_xy(void);
+
+    /*
+      get offset to ship takeoff target
+     */
+    void ship_set_takeoff_offset(void);
+
     // Q assist state, can be enabled, disabled or force. Default to enabled
     Q_ASSIST_STATE_ENUM q_assist_state = Q_ASSIST_STATE_ENUM::Q_ASSIST_ENABLED;
 
@@ -658,16 +673,6 @@ public:
      */
     bool in_ship_landing(void) const;
     
-    /*
-      update xy controller for ship takeoff/landing
-     */
-    void ship_update_xy(void);
-
-    /*
-      get offset to ship takeoff target
-     */
-    void ship_set_takeoff_offset(void);
-
     /*
       should we switch to QRTL on RTL completion
      */

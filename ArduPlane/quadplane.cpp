@@ -1254,6 +1254,7 @@ bool QuadPlane::is_flying_vtol(void) const
  */
 float QuadPlane::landing_descent_rate_cms(float height_above_ground) const
 {
+    const float max_climb_speed = wp_nav->get_default_speed_up();
     float ret = linear_interpolate(land_speed_cms, wp_nav->get_default_speed_down(),
                                    height_above_ground,
                                    land_final_alt, land_final_alt+6);
@@ -1266,7 +1267,7 @@ float QuadPlane::landing_descent_rate_cms(float height_above_ground) const
         const float scaling = 1.0 / (50 - dz);
         if (thr_in > thresh1) {
             // start climbing
-            ret *= -(thr_in - thresh1)*scaling;
+            ret = -(thr_in - thresh1)*scaling*max_climb_speed;
         } else if (thr_in > thresh2) {
             // hold height
             ret = 0;
@@ -2579,6 +2580,8 @@ void QuadPlane::vtol_position_controller(void)
 
     case QPOS_POSITION1:
     case QPOS_POSITION2: {
+        ship_landing_check_abort();
+
         bool vtol_loiter_auto = false;
         if (plane.control_mode == &plane.mode_auto) {
             switch (plane.mission.get_current_nav_cmd().id) {
@@ -2608,17 +2611,19 @@ void QuadPlane::vtol_position_controller(void)
         break;
     }
 
-    case QPOS_LAND_DESCEND: {
-        const float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+    case QPOS_LAND_DESCEND:
+    case QPOS_LAND_FINAL: {
+        ship_landing_check_abort();
+        float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+        if (poscontrol.state == QPOS_LAND_FINAL) {
+            // when in final use descent rate for final even if alt has climbed again
+            height_above_ground = MIN(height_above_ground, land_final_alt);
+        }
         pos_control->set_alt_target_from_climb_rate(-landing_descent_rate_cms(height_above_ground),
                                                     plane.G_Dt, true);
         break;
     }
 
-    case QPOS_LAND_FINAL:
-        pos_control->set_alt_target_from_climb_rate(-land_speed_cms, plane.G_Dt, true);
-        break;
-        
     case QPOS_LAND_COMPLETE:
         break;
     }
