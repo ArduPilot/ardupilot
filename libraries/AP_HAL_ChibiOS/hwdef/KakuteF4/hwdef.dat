@@ -151,4 +151,3 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 # 8 PWM available by default
 define BOARD_PWM_COUNT_DEFAULT 8
-
