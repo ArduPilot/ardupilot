@@ -1,6 +1,9 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include "AP_Mount.h"
+
+#if HAL_MOUNT_ENABLED
+
 #include "AP_Mount_Backend.h"
 #include "AP_Mount_Servo.h"
 #include "AP_Mount_SoloGimbal.h"
@@ -439,14 +442,12 @@ void AP_Mount::init()
             _backends[instance] = new AP_Mount_Servo(*this, state[instance], instance);
             _num_instances++;
 
-#if AP_AHRS_NAVEKF_AVAILABLE
-#if !HAL_MINIMIZE_FEATURES
+#if HAL_SOLO_GIMBAL_ENABLED
         // check for MAVLink mounts
         } else if (mount_type == Mount_Type_SoloGimbal) {
             _backends[instance] = new AP_Mount_SoloGimbal(*this, state[instance], instance);
             _num_instances++;
-#endif // HAL_MINIMIZE_FEATURES
-#endif // AP_AHRS_NAVEKF_AVAILABLE
+#endif // HAL_SOLO_GIMBAL_ENABLED
 
         // check for Alexmos mounts
         } else if (mount_type == Mount_Type_Alexmos) {
@@ -746,3 +747,5 @@ AP_Mount *mount()
 }
 
 };
+
+#endif /* HAL_MOUNT_ENABLED */
