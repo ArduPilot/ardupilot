@@ -465,14 +465,14 @@ void Plane::update_navigation()
               are within the maximum of the stopping distance and the
               RTL_RADIUS
              */
-            set_mode(mode_qrtl, ModeReason::RTL);
+            set_mode(mode_qrtl, ModeReason::RTL_COMPLETE_SWITCHING_TO_VTOL_LAND_RTL);
             break;
         } else if (g.rtl_autoland == 1 &&
             !auto_state.checked_for_rtl_autoland &&
             reached_loiter_target() && 
             labs(altitude_error_cm) < 1000) {
             // we've reached the RTL point, see if we have a landing sequence
-            jump_to_landing_sequence(ModeReason::RTL);
+            jump_to_landing_sequence(ModeReason::RTL_COMPLETE_SWITCHING_TO_FIXEDWING_AUTOLAND);
 
             // prevent running the expensive jump_to_landing_sequence
             // on every loop
@@ -481,7 +481,7 @@ void Plane::update_navigation()
         else if (g.rtl_autoland == 2 &&
             !auto_state.checked_for_rtl_autoland) {
             // Go directly to the landing sequence
-            jump_to_landing_sequence(ModeReason::RTL);
+            jump_to_landing_sequence(ModeReason::RTL_COMPLETE_SWITCHING_TO_FIXEDWING_AUTOLAND);
 
             // prevent running the expensive jump_to_landing_sequence
             // on every loop
