@@ -1679,6 +1679,10 @@ void NavEKF3_core::calcEarthRateNED(Vector3f &omega, int32_t latitude) const
 // set yaw from a single magnetometer sample
 void NavEKF3_core::setYawFromMag()
 {
+    if (!use_compass()) {
+        return;
+    }
+
     // read the magnetometer data
     readMagData();
 
@@ -1698,40 +1702,34 @@ void NavEKF3_core::setYawFromMag()
     resetQuatStateYawOnly(yawAngMeasured, sq(MAX(frontend->_yawNoise, 1.0e-2f)));
 }
 
-// update quaternion, mag field states and associated variances using magnetomer and declination data
-void NavEKF3_core::calcQuatAndFieldStates()
+// update mag field states and associated variances using magnetomer and declination data
+void NavEKF3_core::resetMagFieldStates()
 {
-    if (!use_compass()) {
-        return;
-    }
+    // Rotate Mag measurements into NED to set initial NED magnetic field states
 
     // update rotation matrix from body to NED frame
     stateStruct.quat.inverse().rotation_matrix(prevTnb);
 
-    // set yaw from a single mag sample
-    setYawFromMag();
-
-    // Rotate Mag measurements into NED to set initial NED magnetic field states
-    // Don't do this if the earth field has already been learned
-    if (!magFieldLearned) {
-        if (have_table_earth_field && frontend->_mag_ef_limit > 0) {
-            stateStruct.earth_magfield = table_earth_field_ga;
-        } else {
-            stateStruct.earth_magfield = prevTnb.transposed() * magDataDelayed.mag;
-        }
-
-        // set the NE earth magnetic field states using the published declination
-        // and set the corresponding variances and covariances
-        alignMagStateDeclination();
-
-        // set the remaining variances and covariances
-        zeroRows(P,18,21);
-        zeroCols(P,18,21);
-        P[18][18] = sq(frontend->_magNoise);
-        P[19][19] = P[18][18];
-        P[20][20] = P[18][18];
-        P[21][21] = P[18][18];
+    if (have_table_earth_field && frontend->_mag_ef_limit > 0) {
+        stateStruct.earth_magfield = table_earth_field_ga;
+    } else {
+        stateStruct.earth_magfield = prevTnb.transposed() * magDataDelayed.mag;
     }
+
+    // set the NE earth magnetic field states using the published declination
+    // and set the corresponding variances and covariances
+    alignMagStateDeclination();
+
+    // set the remaining variances and covariances
+    zeroRows(P,18,21);
+    zeroCols(P,18,21);
+    P[18][18] = sq(frontend->_magNoise);
+    P[19][19] = P[18][18];
+    P[20][20] = P[18][18];
+    P[21][21] = P[18][18];
+
+    // prevent reset of variances in ConstrainVariances()
+    inhibitMagStates = false;
 
     // record the fact we have initialised the magnetic field states
     recordMagReset();

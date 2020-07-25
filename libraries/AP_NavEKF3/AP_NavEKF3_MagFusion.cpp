@@ -93,10 +93,7 @@ void NavEKF3_core::controlMagYawReset()
             finalResetRequest; // the final reset when we have achieved enough height to be in stable magnetic field environment
 
     // Perform a reset of magnetic field states and reset yaw to corrected magnetic heading
-    if (magYawResetRequest) {
-        // update rotation matrix from body to NED frame
-        stateStruct.quat.inverse().rotation_matrix(prevTnb);
-
+    if (magYawResetRequest && use_compass()) {
         // set yaw from a single mag sample
         setYawFromMag();
 
@@ -119,42 +116,15 @@ void NavEKF3_core::controlMagYawReset()
             finalInflightYawInit = false;
             finalInflightMagInit = false;
         }
+
+        // mag states
+        if (!magFieldLearned) {
+            resetMagFieldStates();
+        }
     }
 
     if (magStateResetRequest) {
-
-        // Rotate Mag measurements into NED to set initial NED magnetic field states
-        // Don't do this if the earth field has already been learned
-        if (!magFieldLearned) {
-            if (have_table_earth_field && frontend->_mag_ef_limit > 0) {
-                stateStruct.earth_magfield = table_earth_field_ga;
-            } else {
-                stateStruct.earth_magfield = prevTnb.transposed() * magDataDelayed.mag;
-            }
-
-            // set the NE earth magnetic field states using the published declination
-            // and set the corresponding variances and covariances
-            alignMagStateDeclination();
-
-            // set the remaining variances and covariances
-            zeroRows(P,18,21);
-            zeroCols(P,18,21);
-            P[18][18] = sq(frontend->_magNoise);
-            P[19][19] = P[18][18];
-            P[20][20] = P[18][18];
-            P[21][21] = P[18][18];
-
-        }
-
-        // record the fact we have initialised the magnetic field states
-        recordMagReset();
-
-        // prevent reset of variances in ConstrainVariances()
-        inhibitMagStates = false;
-
-        // clear mag state reset request
-        magStateResetRequest = false;
-
+        resetMagFieldStates();
     }
 }
 
@@ -1398,6 +1368,7 @@ void NavEKF3_core::alignMagStateDeclination()
 // record a magnetic field state reset event
 void NavEKF3_core::recordMagReset()
 {
+    magStateResetRequest = false;
     magStateInitComplete = true;
     if (inFlight) {
         finalInflightMagInit = true;
