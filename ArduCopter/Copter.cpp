@@ -291,6 +291,8 @@ void Copter::fast_loop()
     if (should_log(MASK_LOG_VIDEO_STABILISATION)) {
         ahrs.write_video_stabilisation();
     }
+
+    indi_control->calculate_torque_thrust_est();
 }
 
 #if AP_SCRIPTING_ENABLED
