@@ -182,6 +182,8 @@ void Plane::read_radio()
 {
     if (!rc().read_input()) {
         control_failsafe();
+        airspeed_nudge_cm = 0;
+        throttle_nudge = 0;
         return;
     }
 
