@@ -169,7 +169,7 @@ protected:
     uint8_t num_motors = 1;
     float rpm[12];
     uint8_t rcin_chan_count = 0;
-    float rcin[8];
+    float rcin[12];
     float range = -1.0f;                 // rangefinder detection in m
 
     struct {
