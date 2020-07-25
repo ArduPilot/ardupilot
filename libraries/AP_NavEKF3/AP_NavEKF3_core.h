@@ -784,8 +784,8 @@ private:
     // align the yaw angle for the quaternion states using the external yaw sensor
     void alignYawAngle();
 
-    // update quaternion, mag field states and associated variances using magnetomer and declination data
-    void calcQuatAndFieldStates();
+    // update mag field states and associated variances using magnetomer and declination data
+    void resetMagFieldStates();
 
     // reset yaw based on magnetic field sample
     void setYawFromMag();
