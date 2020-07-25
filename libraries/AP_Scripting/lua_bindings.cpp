@@ -72,7 +72,7 @@ static int AP_Logger_Write(lua_State *L) {
     if (strlen(name) >= LS_NAME_SIZE) {
         return luaL_error(L, "Name must be 4 or less chars long");
     }
-    int length = strlen(labels);
+    uint8_t length = strlen(labels);
     if (length >= (LS_LABELS_SIZE - 7)) { // need 7 chars to add 'TimeUS,'
         return luaL_error(L, "labels must be less than 58 chars long");
     }
@@ -83,18 +83,23 @@ static int AP_Logger_Write(lua_State *L) {
             commas++;
         }
     }
-    // check the number of arguments matches the number of values in the label
-    if (args - 3 != commas) {
-        return luaL_argerror(L, args, "label does not match No. of arguments");
-    }
 
     length = strlen(fmt);
     if (length >= (LS_FORMAT_SIZE - 1)) { // need 1 char to add timestamp
         return luaL_error(L, "format must be less than 15 chars long");
     }
 
-    // check the number of arguments matches the length of the foramt string
-    if (args - 3 != length) {
+    // check the number of arguments matches the number of values in the label
+    if (length != commas) {
+        return luaL_argerror(L, args, "label does not match format");
+    }
+
+    bool have_units = false;
+    if (args - 5 == length) {
+        // check if there are enough arguments for units and multiplyers
+        have_units = true;
+    } else if (args - 3 != length) {
+        // check the number of arguments matches the length of the foramt string
         return luaL_argerror(L, args, "format does not match No. of arguments");
     }
 
@@ -106,8 +111,40 @@ static int AP_Logger_Write(lua_State *L) {
     strcpy(fmt_cat,"Q");
     strcat(fmt_cat,fmt);
 
-    // ask for a mesage type
-    struct AP_Logger::log_write_fmt *f = AP_logger->msg_fmt_for_name(name, label_cat, nullptr, nullptr, fmt_cat, true);
+    // Need to declare these here so they don't go out of scope
+    char units_cat[LS_FORMAT_SIZE];
+    char multipliers_cat[LS_FORMAT_SIZE];
+
+    uint8_t field_start = 4;
+    struct AP_Logger::log_write_fmt *f;
+    if (!have_units) {
+        // ask for a mesage type
+        f = AP_logger->msg_fmt_for_name(name, label_cat, nullptr, nullptr, fmt_cat, true);
+
+    } else {
+        // read in units and multiplers strings
+        field_start += 2;
+        const char * units = luaL_checkstring(L, 4);
+        const char * multipliers = luaL_checkstring(L, 5);
+
+        if (length != strlen(units)) {
+            return luaL_error(L, "units must be same length as format");
+        }
+        if (length != strlen(multipliers)) {
+            return luaL_error(L, "multipliers must be same length as format");
+        }
+
+        // prepend timestamp to units and multiplyers
+        strcpy(units_cat,"s");
+        strcat(units_cat,units);
+
+        strcpy(multipliers_cat,"F");
+        strcat(multipliers_cat,multipliers);
+
+        // ask for a mesage type
+        f = AP_logger->msg_fmt_for_name(name, label_cat, units_cat, multipliers_cat, fmt_cat, true);
+    }
+
     if (f == nullptr) {
         // unable to map name to a messagetype; could be out of
         // msgtypes, could be out of slots, ...
@@ -132,9 +169,10 @@ static int AP_Logger_Write(lua_State *L) {
     const uint64_t now = AP_HAL::micros64();
     luaL_addlstring(&buffer, (char *)&now, sizeof(uint64_t));
 
-    for (uint8_t i=4; i<=args; i++) {
+    for (uint8_t i=field_start; i<=args; i++) {
         uint8_t charlen = 0;
-        switch(fmt_cat[i-3]) {
+        uint8_t index = have_units ? i-5 : i-3;
+        switch(fmt_cat[index]) {
             // logger varable types not available to scripting
             // 'b': int8_t
             // 'h': int16_t
