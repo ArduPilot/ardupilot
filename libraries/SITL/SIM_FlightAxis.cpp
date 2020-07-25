@@ -484,9 +484,9 @@ void FlightAxis::update(const struct sitl_input &input)
     rpm[1] = state.m_propRPM;
 
     /*
-      the interlink interface supports 8 input channels
+      the interlink interface supports 12 input channels
      */
-    rcin_chan_count = 8;
+    rcin_chan_count = 12;
     for (uint8_t i=0; i<rcin_chan_count; i++) {
         rcin[i] = state.rcin[i];
     }
