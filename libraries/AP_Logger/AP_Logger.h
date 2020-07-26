@@ -305,7 +305,11 @@ public:
         float I;
         float D;
         float FF;
+        float Pmod;
+        float Imod;
         float Dmod;
+        float FFmod;
+        float amplitude_ratio;
     };
 
     void Write_PID(uint8_t msg_type, const PID_Info &info);

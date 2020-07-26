@@ -850,7 +850,11 @@ void AP_Logger::Write_PID(uint8_t msg_type, const PID_Info &info)
         I               : info.I,
         D               : info.D,
         FF              : info.FF,
-        Dmod            : info.Dmod
+        Pmod            : info.Pmod,
+        Imod            : info.Imod,
+        Dmod            : info.Dmod,
+        FFmod           : info.FFmod,
+        amp_ratio       : info.amplitude_ratio
     };
     WriteBlock(&pkt, sizeof(pkt));
 }

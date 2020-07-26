@@ -764,7 +764,11 @@ struct PACKED log_PID {
     float   I;
     float   D;
     float   FF;
+    float   Pmod;
+    float   Imod;
     float   Dmod;
+    float   FFmod;
+    float   amp_ratio;
 };
 
 struct PACKED log_Current {
@@ -1315,10 +1319,10 @@ struct PACKED log_Winch {
 #define MAG_UNITS "sGGGGGGGGG-s"
 #define MAG_MULTS "FCCCCCCCCC-F"
 
-#define PID_LABELS "TimeUS,Tar,Act,Err,P,I,D,FF,Dmod"
-#define PID_FMT    "Qffffffff"
-#define PID_UNITS  "s--------"
-#define PID_MULTS  "F--------"
+#define PID_LABELS "TimeUS,Tar,Act,Err,P,I,D,FF,Pmod,Imod,Dmod,FFmod,amp_ratio"
+#define PID_FMT    "Qffffffffffff"
+#define PID_UNITS  "s------------"
+#define PID_MULTS  "F------------"
 
 #define QUAT_LABELS "TimeUS,C,Q1,Q2,Q3,Q4"
 #define QUAT_FMT    "QBffff"
@@ -1980,7 +1984,11 @@ struct PACKED log_Winch {
 // @Field: I: integral part of PID
 // @Field: D: derivative part of PID
 // @Field: FF: controller feed-forward portion of response
-// @Field: Dmod: scaler applied to D gain to reduce limit cycling
+// @Field: Pmod: scaler applied to P gain
+// @Field: Imod: scaler applied to I gain
+// @Field: Dmod: scaler applied to D gain
+// @Field: FFmod: scaler applied to FF gain
+// @Field: amp_ratio: ratio of amplitude of actual / target
 
 // @LoggerMessage: PM
 // @Description: autopilot system performance and general data dumping ground
