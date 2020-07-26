@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <cmath>
 #include <AP_Logger/AP_Logger.h>
+#include "AC_PID_OscillationDetector.h"
 
 #define AC_PID_TFILT_HZ_DEFAULT  0.0f   // default input filter frequency
 #define AC_PID_EFILT_HZ_DEFAULT  0.0f   // default input filter frequency
@@ -19,7 +20,7 @@ class AC_PID {
 public:
 
     // Constructor for PID
-    AC_PID(float initial_p, float initial_i, float initial_d, float initial_ff, float initial_imax, float initial_filt_T_hz, float initial_filt_E_hz, float initial_filt_D_hz, float dt);
+    AC_PID(float initial_p, float initial_i, float initial_d, float initial_ff, float initial_imax, float initial_filt_T_hz, float initial_filt_E_hz, float initial_filt_D_hz, float dt, float oscillation_magnitude_threshold = 0.0f, float oscillation_detector_threshold = 0.0f, float oscillation_detector_filter = 0.0f, float tune_PI_rato = 1.0f);
 
     // set_dt - set time step in seconds
     void set_dt(float dt);
@@ -49,9 +50,6 @@ public:
     float get_i() const;
     float get_d() const;
     float get_ff();
-
-    // todo: remove function when it is no longer used.
-    float get_ff(float target);
 
     // reset_I - reset the integrator
     void reset_I();
@@ -107,6 +105,8 @@ public:
 
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
+
+    AC_PID_OscillationDetector oscillationDetector;
 
 protected:
 
