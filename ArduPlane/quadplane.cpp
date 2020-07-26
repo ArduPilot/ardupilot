@@ -1227,7 +1227,7 @@ bool QuadPlane::is_flying_vtol(void) const
     if (plane.control_mode == &plane.mode_guided && guided_takeoff) {
         return true;
     }
-    if (plane.control_mode == &plane.mode_qstabilize || plane.control_mode == &plane.mode_qhover || plane.control_mode == &plane.mode_qloiter || plane.control_mode == &plane.mode_qautotune) {
+    if (plane.control_mode->is_vtol_man_mode()) {
         // in manual flight modes only consider aircraft landed when pilot demanded throttle is zero
         return plane.get_throttle_input() > 0;
     }
@@ -2227,13 +2227,7 @@ bool QuadPlane::in_vtol_mode(void) const
     if (!available()) {
         return false;
     }
-    return (plane.control_mode == &plane.mode_qstabilize ||
-            plane.control_mode == &plane.mode_qhover ||
-            plane.control_mode == &plane.mode_qloiter ||
-            plane.control_mode == &plane.mode_qland ||
-            plane.control_mode == &plane.mode_qrtl ||
-            plane.control_mode == &plane.mode_qacro ||
-            plane.control_mode == &plane.mode_qautotune ||
+    return (plane.control_mode->is_vtol_mode() ||
             ((plane.control_mode == &plane.mode_guided || plane.control_mode == &plane.mode_avoidADSB) && plane.auto_state.vtol_loiter) ||
             in_vtol_auto());
 }
