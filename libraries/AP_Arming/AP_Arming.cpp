@@ -1254,7 +1254,7 @@ bool AP_Arming::visodom_checks(bool display_failure) const
     if (visual_odom != nullptr) {
         char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
         if (!visual_odom->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
-            check_failed(ARMING_CHECK_VISION, display_failure, "VisualOdom: %s", fail_msg);
+            check_failed(ARMING_CHECK_VISION, display_failure, "VisOdom: %s", fail_msg);
             return false;
         }
     }
