@@ -148,7 +148,7 @@ bool AP_VisualOdom_IntelT265::align_sensor_to_vehicle(const Vector3f &position, 
     ahrs_quat.angular_difference(att_corrected).to_axis_angle(angle_diff);
     const float yaw_trim_orig = _yaw_trim;
     _yaw_trim = angle_diff.z;
-    gcs().send_text(MAV_SEVERITY_CRITICAL, "VisualOdom: yaw shifted %d to %d deg",
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "VisOdom: yaw shifted %d to %d deg",
                     (int)degrees(_yaw_trim - yaw_trim_orig),
                     (int)wrap_360(degrees(sens_yaw + _yaw_trim)));
 
