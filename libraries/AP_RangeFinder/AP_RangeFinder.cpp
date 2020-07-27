@@ -39,6 +39,7 @@
 #include "AP_RangeFinder_Benewake_TFMini.h"
 #include "AP_RangeFinder_Benewake_TFMiniPlus.h"
 #include "AP_RangeFinder_PWM.h"
+#include "AP_RangeFinder_GYUS42v2.h"
 #include "AP_RangeFinder_HC_SR04.h"
 #include "AP_RangeFinder_BLPing.h"
 #include "AP_RangeFinder_UAVCAN.h"
@@ -526,6 +527,12 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         num_instances = MAX(num_instances, instance+1);
         break;
 #endif
+
+    case Type::GYUS42v2:
+        if (AP_RangeFinder_GYUS42v2::detect(serial_instance)) {
+            drivers[instance] = new AP_RangeFinder_GYUS42v2(state[instance], params[instance], serial_instance++);
+        }
+        break;
 
     default:
         break;

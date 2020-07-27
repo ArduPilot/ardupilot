@@ -71,8 +71,8 @@ Plane::Plane(const char *frame_str) :
     }
     if (strstr(frame_str, "-throw")) {
         have_launcher = true;
-        launch_accel = 10;
-        launch_time = 1;
+        launch_accel = 25;
+        launch_time = 0.4;
     }
     if (strstr(frame_str, "-tailsitter")) {
         tailsitter = true;
@@ -338,8 +338,8 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
                 launch_start_ms = now;
             }
             if (now - launch_start_ms < launch_time*1000) {
-                force.x += launch_accel;
-                force.z += launch_accel/3;
+                force.x += mass * launch_accel;
+                force.z += mass * launch_accel/3;
             }
         } else {
             // allow reset of catapult

@@ -138,3 +138,8 @@ template<typename s, size_t t> struct assert_storage_size {
 bool is_bounded_int32(int32_t value, int32_t lower_bound, int32_t upper_bound);
 
 bool hex_to_uint8(uint8_t a, uint8_t &res);  // return the uint8 value of an ascii hex character
+
+/*
+  strncpy without the warning for not leaving room for nul termination
+ */
+void strncpy_noterm(char *dest, const char *src, size_t n);

@@ -80,6 +80,7 @@ public:
         VL53L1X_Short = 28,
         LeddarVu8_Serial = 29,
         HC_SR04 = 30,
+        GYUS42v2 = 31,
     };
 
     enum class Function {
@@ -163,9 +164,6 @@ public:
     uint8_t range_valid_count_orient(enum Rotation orientation) const;
     const Vector3f &get_pos_offset_orient(enum Rotation orientation) const;
     uint32_t last_reading_ms(enum Rotation orientation) const;
-
-    // indicate which bit in LOG_BITMASK indicates RFND should be logged
-    void set_rfnd_bit(uint32_t log_rfnd_bit) { _log_rfnd_bit = log_rfnd_bit; }
 
     /*
       set an externally estimated terrain height. Used to enable power

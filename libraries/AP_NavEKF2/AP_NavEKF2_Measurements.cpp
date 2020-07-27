@@ -59,6 +59,8 @@ void NavEKF2_core::readRangeFinder(void)
                 }
                 storedRngMeasTime_ms[sensorIndex][rngMeasIndex[sensorIndex]] = imuSampleTime_ms - 25;
                 storedRngMeas[sensorIndex][rngMeasIndex[sensorIndex]] = sensor->distance_cm() * 0.01f;
+            } else {
+                continue;
             }
 
             // check for three fresh samples
@@ -892,9 +894,14 @@ void NavEKF2_core::getTimingStatistics(struct ekf_timing &_timing)
 
 void NavEKF2_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint16_t delay_ms, uint32_t resetTime_ms)
 {
+    // protect against NaN
+    if (pos.is_nan() || isnan(posErr) || quat.is_nan() || isnan(angErr)) {
+        return;
+    }
+
     // limit update rate to maximum allowed by sensor buffers and fusion process
     // don't try to write to buffer until the filter has been initialised
-    if ((timeStamp_ms - extNavMeasTime_ms) < 70) {
+    if ((timeStamp_ms - extNavMeasTime_ms) < 20) {
         return;
     } else {
         extNavMeasTime_ms = timeStamp_ms;
@@ -909,11 +916,7 @@ void NavEKF2_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, 
 
     extNavDataNew.pos = pos;
     extNavDataNew.quat = quat;
-    if (posErr > 0) {
-        extNavDataNew.posErr = posErr;
-    } else {
-        extNavDataNew.posErr = frontend->_gpsHorizPosNoise;
-    }
+    extNavDataNew.posErr = posErr;
     extNavDataNew.angErr = angErr;
     timeStamp_ms = timeStamp_ms - delay_ms;
     // Correct for the average intersampling delay due to the filter updaterate
@@ -923,7 +926,6 @@ void NavEKF2_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, 
     extNavDataNew.time_ms = timeStamp_ms;
 
     storedExtNav.push(extNavDataNew);
-
 }
 
 /*
@@ -1018,7 +1020,12 @@ void NavEKF2_core::writeDefaultAirSpeed(float airspeed)
 
 void NavEKF2_core::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms)
 {
-    if ((timeStamp_ms - extNavVelMeasTime_ms) < 70) {
+    // protect against NaN
+    if (vel.is_nan() || isnan(err)) {
+        return;
+    }
+
+    if ((timeStamp_ms - extNavVelMeasTime_ms) < 20) {
         return;
     }
 

@@ -34,7 +34,7 @@ args = parser.parse_args()
 
 # Regular expressions for parsing the parameter metadata
 
-prog_param = re.compile(r"@Param: (\w+).*((?:\n[ \t]*// @(\w+)(?:{([^}]+)})?: (.*))+)(?:\n[ \t\r]*\n|\n[ \t]+[A-Z])", re.MULTILINE)
+prog_param = re.compile(r"@Param(?:{([^}]+)})?: (\w+).*((?:\n[ \t]*// @(\w+)(?:{([^}]+)})?: (.*))+)(?:\n[ \t\r]*\n|\n[ \t]+[A-Z])", re.MULTILINE)
 
 # match e.g @Value: 0=Unity, 1=Koala, 17=Liability
 prog_param_fields = re.compile(r"[ \t]*// @(\w+): ([^\r\n]*)")
@@ -89,6 +89,8 @@ truename_map = {
     "ArduPlane": "Plane",
     "AntennaTracker": "Tracker",
 }
+valid_truenames = frozenset(truename_map.values())
+
 for vehicle_path in vehicle_paths:
     name = os.path.basename(os.path.dirname(vehicle_path))
     path = os.path.normpath(os.path.dirname(vehicle_path))
@@ -122,10 +124,19 @@ for vehicle in vehicles:
             libraries.append(lib)
 
     for param_match in param_matches:
-        p = Parameter(vehicle.name+":"+param_match[0], current_file)
+        (only_vehicles, param_name, field_text) = (param_match[0],
+                                                   param_match[1],
+                                                   param_match[2])
+        if len(only_vehicles):
+            only_vehicles_list = [x.strip() for x in only_vehicles.split(",")]
+            for only_vehicle in only_vehicles_list:
+                if only_vehicle not in valid_truenames:
+                    raise ValueError("Invalid only_vehicle %s" % only_vehicle)
+            if vehicle.truename not in only_vehicles_list:
+                continue
+        p = Parameter(vehicle.name+":"+param_name, current_file)
         debug(p.name + ' ')
         current_param = p.name
-        field_text = param_match[1]
         fields = prog_param_fields.findall(field_text)
         field_list = []
         for field in fields:
@@ -178,11 +189,20 @@ def process_library(vehicle, library, pathprefix=None):
         param_matches = prog_param.findall(p_text)
         debug("Found %u documented parameters" % len(param_matches))
         for param_match in param_matches:
-            p = Parameter(library.name+param_match[0], current_file)
+            (only_vehicles, param_name, field_text) = (param_match[0],
+                                                       param_match[1],
+                                                       param_match[2])
+            if len(only_vehicles):
+                only_vehicles_list = [x.strip() for x in only_vehicles.split(",")]
+                for only_vehicle in only_vehicles_list:
+                    if only_vehicle not in valid_truenames:
+                        raise ValueError("Invalid only_vehicle %s" % only_vehicle)
+                if vehicle.truename not in only_vehicles_list:
+                    continue
+            p = Parameter(library.name+param_name, current_file)
             debug(p.name + ' ')
             global current_param
             current_param = p.name
-            field_text = param_match[1]
             fields = prog_param_fields.findall(field_text)
             non_vehicle_specific_values_seen = False
             for field in fields:

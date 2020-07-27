@@ -205,6 +205,7 @@ private:
     bool spi_check_register(const char *devname, uint8_t regnum, uint8_t value, uint8_t read_flag = 0x80);
     void validate_board_type(void);
     void board_autodetect(void);
+    bool check_ms5611(const char* devname);
 
 #endif // AP_FEATURE_BOARD_DETECT
 

@@ -90,6 +90,26 @@ uint8_t crc_crc8(const uint8_t *p, uint8_t len)
 	return crc & 0xFF;
 }
 
+// crc8 from betaflight
+uint8_t crc8_dvb_s2(uint8_t crc, uint8_t a)
+{
+    return crc8_dvb(crc, a, 0xD5);
+}
+
+// crc8 from betaflight
+uint8_t crc8_dvb(uint8_t crc, uint8_t a, uint8_t seed)
+{
+    crc ^= a;
+    for (uint8_t i = 0; i < 8; ++i) {
+        if (crc & 0x80) {
+            crc = (crc << 1) ^ seed;
+        } else {
+            crc = crc << 1;
+        }
+    }
+    return crc;
+}
+
 /*
   xmodem CRC thanks to avr-liberty
   https://github.com/dreamiurg/avr-liberty

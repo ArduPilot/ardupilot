@@ -17,6 +17,7 @@
 
 #include "AP_RCProtocol.h"
 #include <AP_Math/AP_Math.h>
+#include "AP_RCProtocol_SRXL.h"
 #include "SoftSerial.h"
 
 #define SRXL2_MAX_CHANNELS 32U           /* Maximum number of channels from srxl2 datastream  */
@@ -26,6 +27,7 @@
 class AP_RCProtocol_SRXL2 : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_SRXL2(AP_RCProtocol &_frontend);
+    virtual ~AP_RCProtocol_SRXL2();
     void process_byte(uint8_t byte, uint32_t baudrate) override;
     void start_bind(void) override;
     void update(void) override;
@@ -35,9 +37,11 @@ public:
     }
 
     // static functions for SRXL2 callbacks
-    static void capture_scaled_input(const uint16_t *values, bool in_failsafe, int16_t rssi);
+    static void capture_scaled_input(const uint8_t *values_p, bool in_failsafe, int16_t rssi);
     static void send_on_uart(uint8_t* pBuffer, uint8_t length);
     static void change_baud_rate(uint32_t baudrate);
+    // configure the VTX from Spektrum data
+    static void configure_vtx(uint8_t band, uint8_t channel, uint8_t power, uint8_t pitmode);
 
 private:
 
@@ -48,7 +52,7 @@ private:
     void _process_byte(uint32_t timestamp_us, uint8_t byte);
     void _send_on_uart(uint8_t* pBuffer, uint8_t length);
     void _change_baud_rate(uint32_t baudrate);
-    void _capture_scaled_input(const uint16_t *values, bool in_failsafe, int16_t rssi);
+    void _capture_scaled_input(const uint8_t *values_p, bool in_failsafe, int16_t rssi);
 
     uint8_t _buffer[SRXL2_FRAMELEN_MAX];       /* buffer for raw srxl frame data in correct order --> buffer[0]=byte0  buffer[1]=byte1  */
     uint8_t _buflen;                          /* length in number of bytes of received srxl dataframe in buffer  */

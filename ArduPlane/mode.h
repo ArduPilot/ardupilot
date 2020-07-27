@@ -69,6 +69,9 @@ public:
     // true for all q modes
     virtual bool is_vtol_mode() const { return false; }
 
+    // true if mode can have terrain following disabled by switch
+    virtual bool allows_terrain_disable() const { return false; }
+
 protected:
 
     // subclasses override this to perform checks before entering the mode
@@ -288,6 +291,8 @@ public:
     const char *name() const override { return "FLY_BY_WIRE_B"; }
     const char *name4() const override { return "FBWB"; }
 
+    bool allows_terrain_disable() const override { return true; }
+
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
@@ -303,6 +308,8 @@ public:
     Number mode_number() const override { return Number::CRUISE; }
     const char *name() const override { return "CRUISE"; }
     const char *name4() const override { return "CRUS"; }
+
+    bool allows_terrain_disable() const override { return true; }
 
     // methods that affect movement of the vehicle in this mode
     void update() override;

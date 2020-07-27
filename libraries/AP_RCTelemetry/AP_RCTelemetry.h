@@ -84,10 +84,10 @@ private:
 
     // passthrough WFQ scheduler
     virtual void setup_wfq_scheduler() = 0;
-    virtual bool get_next_msg_chunk(void) = 0;
-    virtual bool is_packet_ready(uint8_t idx, bool queue_empty) = 0;
+    virtual bool get_next_msg_chunk(void) { return false; }
+    virtual bool is_packet_ready(uint8_t idx, bool queue_empty) { return true; }
     virtual void process_packet(uint8_t idx) = 0;
-    virtual void adjust_packet_weight(bool queue_empty) = 0;
+    virtual void adjust_packet_weight(bool queue_empty) {};
 
     void update_avg_packet_rate();
 

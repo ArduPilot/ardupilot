@@ -24,7 +24,7 @@ public:
     uint32_t space(void) const;
 
     // true if available() is zero
-    bool empty(void) const;
+    bool is_empty(void) const WARN_IF_UNUSED;
 
     // write bytes to ringbuffer. Returns number of bytes written
     uint32_t write(const uint8_t *data, uint32_t len);
@@ -33,7 +33,7 @@ public:
     uint32_t read(uint8_t *data, uint32_t len);
 
     // read a byte from ring buffer. Returns true on success, false otherwise
-    bool read_byte(uint8_t *data);
+    bool read_byte(uint8_t *data) WARN_IF_UNUSED;
 
     /*
       update bytes at the read pointer. Used to update an object without
@@ -142,8 +142,8 @@ public:
 
     // true is available() == 0
     // !!! Note ObjectBuffer_TS is a duplicate of this update, in both places !!!
-    bool empty(void) const {
-        return buffer->empty();
+    bool is_empty(void) const WARN_IF_UNUSED {
+        return buffer->is_empty();
     }
 
     // push one object onto the back of the queue
@@ -176,7 +176,7 @@ public:
       pop earliest object off the front of the queue
      */
     // !!! Note ObjectBuffer_TS is a duplicate of this update, in both places !!!
-    bool pop(T &object) {
+    bool pop(T &object) WARN_IF_UNUSED {
         if (buffer->available() < sizeof(T)) {
             return false;
         }
@@ -212,7 +212,7 @@ public:
       peek copies an object out from the front of the queue without advancing the read pointer
      */
     // !!! Note ObjectBuffer_TS is a duplicate of this update, in both places !!!
-    bool peek(T &object) {
+    bool peek(T &object) WARN_IF_UNUSED {
         return buffer->peekbytes((uint8_t*)&object, sizeof(T)) == sizeof(T);
     }
 
@@ -309,9 +309,9 @@ public:
 
     // true is available() == 0
     // !!! Note this is a duplicate of ObjectBuffer with semaphore, update in both places !!!
-    bool empty(void) {
+    bool is_empty(void) WARN_IF_UNUSED {
         WITH_SEMAPHORE(sem);
-        return buffer->empty();
+        return buffer->is_empty();
     }
 
     // push one object onto the back of the queue
@@ -347,7 +347,7 @@ public:
       pop earliest object off the front of the queue
      */
     // !!! Note this is a duplicate of ObjectBuffer with semaphore, update in both places !!!
-    bool pop(T &object) {
+    bool pop(T &object) WARN_IF_UNUSED {
         WITH_SEMAPHORE(sem);
         if (buffer->available() < sizeof(T)) {
             return false;
@@ -385,7 +385,7 @@ public:
       peek copies an object out from the front of the queue without advancing the read pointer
      */
     // !!! Note this is a duplicate of ObjectBuffer with semaphore, update in both places !!!
-    bool peek(T &object) {
+    bool peek(T &object) WARN_IF_UNUSED {
         WITH_SEMAPHORE(sem);
         return buffer->peekbytes((uint8_t*)&object, sizeof(T)) == sizeof(T);
     }
@@ -459,7 +459,7 @@ public:
     }
 
     // true is available() == 0
-    bool empty(void) const {
+    bool is_empty(void) const WARN_IF_UNUSED {
         return _count == 0;
     }
 
@@ -476,8 +476,8 @@ public:
     /*
       throw away an object
      */
-    bool pop(void) {
-        if (empty()) {
+    bool pop(void) WARN_IF_UNUSED {
+        if (is_empty()) {
             return false;
         }
         _head = (_head+1) % _size;
@@ -494,8 +494,8 @@ public:
     /*
       pop earliest object off the queue
      */
-    bool pop(T &object) {
-        if (empty()) {
+    bool pop(T &object) WARN_IF_UNUSED {
+        if (is_empty()) {
             return false;
         }
         object = _buffer[_head];
@@ -509,7 +509,7 @@ public:
      */
     bool push_force(const T &object) {
         if (space() == 0) {
-            pop();
+            UNUSED_RESULT(pop());
         }
         return push(object);
     }

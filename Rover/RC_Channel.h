@@ -11,8 +11,8 @@ public:
 
 protected:
 
-    void init_aux_function(aux_func_t ch_option, aux_switch_pos_t) override;
-    void do_aux_function(aux_func_t ch_option, aux_switch_pos_t) override;
+    void init_aux_function(aux_func_t ch_option, AuxSwitchPos) override;
+    void do_aux_function(aux_func_t ch_option, AuxSwitchPos) override;
 
     // called when the mode switch changes position:
     void mode_switch_changed(modeswitch_pos_t new_pos) override;
@@ -20,11 +20,11 @@ protected:
 private:
 
     void do_aux_function_change_mode(Mode &mode,
-                                     const aux_switch_pos_t ch_flag);
+                                     const AuxSwitchPos ch_flag);
 
     void add_waypoint_for_current_loc();
 
-    void do_aux_function_sailboat_motor_3pos(const aux_switch_pos_t ch_flag);
+    void do_aux_function_sailboat_motor_3pos(const AuxSwitchPos ch_flag);
 };
 
 class RC_Channels_Rover : public RC_Channels

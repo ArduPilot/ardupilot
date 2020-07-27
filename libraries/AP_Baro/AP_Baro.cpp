@@ -172,6 +172,31 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     AP_GROUPINFO("PROBE_EXT", 14, AP_Baro, _baro_probe_ext, HAL_BARO_PROBE_EXT_DEFAULT),
 #endif
 
+    // @Param: BARO_ID
+    // @DisplayName: Baro ID
+    // @Description: Barometer sensor ID, taking into account its type, bus and instance
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO("BARO_ID", 15, AP_Baro, sensors[0].bus_id, 0),
+
+#if BARO_MAX_INSTANCES > 1
+    // @Param: BARO2_ID
+    // @DisplayName: Baro ID2
+    // @Description: Barometer2 sensor ID, taking into account its type, bus and instance
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO("BARO2_ID", 16, AP_Baro, sensors[1].bus_id, 0),
+#endif
+
+#if BARO_MAX_INSTANCES > 2
+    // @Param: BARO3_ID
+    // @DisplayName: Baro ID3
+    // @Description: Barometer3 sensor ID, taking into account its type, bus and instance
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO("BARO3_ID", 17, AP_Baro, sensors[2].bus_id, 0),
+#endif
+    
     AP_GROUPEND
 };
 
@@ -474,6 +499,11 @@ void AP_Baro::init(void)
         _user_ground_temperature.notify();
     }
 
+    // zero bus IDs before probing
+    for (uint8_t i = 0; i < BARO_MAX_INSTANCES; i++) {
+        sensors[i].bus_id.set(0);
+    }
+
     if (_hil_mode) {
         drivers[0] = new AP_Baro_HIL(*this);
         _num_drivers = 1;
@@ -573,10 +603,7 @@ void AP_Baro::init(void)
     if (sitl == nullptr) {
         AP_HAL::panic("No SITL pointer");
     }
-    if (sitl->baro_count > 1) {
-        ::fprintf(stderr, "More than one baro not supported.  Sorry.");
-    }
-    if (sitl->baro_count == 1) {
+    for(uint8_t i = 0; i < sitl->baro_count; i++) {
         ADD_BACKEND(new AP_Baro_SITL(*this));
     }
 #elif HAL_BARO_DEFAULT == HAL_BARO_HIL

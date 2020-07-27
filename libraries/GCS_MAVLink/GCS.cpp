@@ -39,11 +39,23 @@ void GCS::init()
 }
 
 /*
+ * returns a mask of channels that statustexts should be sent to
+ */
+uint8_t GCS::statustext_send_channel_mask() const
+{
+    uint8_t ret = 0;
+    ret |= GCS_MAVLINK::active_channel_mask();
+    ret |= GCS_MAVLINK::streaming_channel_mask();
+    ret &= ~GCS_MAVLINK::private_channel_mask();
+    return ret;
+}
+
+/*
   send a text message to all GCS
  */
 void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list)
 {
-    uint8_t mask = GCS_MAVLINK::active_channel_mask() | GCS_MAVLINK::streaming_channel_mask();
+    uint8_t mask = statustext_send_channel_mask();
     if (!update_send_has_been_called) {
         // we have not yet initialised the streaming-channel-mask,
         // which is done as part of the update() call.  So just send
@@ -69,6 +81,9 @@ void GCS::send_to_active_channels(uint32_t msgid, const char *pkt)
     }
     for (uint8_t i=0; i<num_gcs(); i++) {
         GCS_MAVLINK &c = *chan(i);
+        if (c.is_private()) {
+            continue;
+        }
         if (!c.is_active()) {
             continue;
         }

@@ -13,6 +13,7 @@
  */
 #define INS_MAX_INSTANCES 3
 #define INS_MAX_BACKENDS  6
+#define INS_MAX_NOTCHES 4
 #define INS_VIBRATION_CHECK_INSTANCES 2
 #define XYZ_AXIS_COUNT    3
 // The maximum we need to store is gyro-rate / loop-rate, worst case ArduCopter with BMI088 is 2000/400
@@ -95,6 +96,9 @@ public:
     ///       been called, as ::init may perform other work
     ///
     void init_gyro(void);
+
+    // get startup messages to output to the GCS
+    bool get_output_banner(uint8_t instance_id, char* banner, uint8_t banner_len);
 
     /// Fetch the current gyro values
     ///
@@ -205,8 +209,8 @@ public:
         _custom_rotation = custom_rotation;
     }
 
-    // return the selected sample rate
-    uint16_t get_sample_rate(void) const { return _sample_rate; }
+    // return the selected loop rate at which samples are made avilable
+    uint16_t get_loop_rate_hz(void) const { return _loop_rate; }
 
     // return the main loop delta_t in seconds
     float get_loop_delta_t(void) const { return _loop_delta_t; }
@@ -218,6 +222,8 @@ public:
 
     // Update the harmonic notch frequency
     void update_harmonic_notch_freq_hz(float scaled_freq);
+    // Update the harmonic notch frequencies
+    void update_harmonic_notch_frequencies_hz(uint8_t num_freqs, const float scaled_freq[]);
 
     // enable HIL mode
     void set_hil_mode(void) { _hil_mode = true; }
@@ -229,7 +235,13 @@ public:
     uint16_t get_accel_filter_hz(void) const { return _accel_filter_cutoff; }
 
     // harmonic notch current center frequency
-    float get_gyro_dynamic_notch_center_freq_hz(void) const { return _calculated_harmonic_notch_freq_hz; }
+    float get_gyro_dynamic_notch_center_freq_hz(void) const { return _calculated_harmonic_notch_freq_hz[0]; }
+
+    // set of harmonic notch current center frequencies
+    const float* get_gyro_dynamic_notch_center_frequencies_hz(void) const { return _calculated_harmonic_notch_freq_hz; }
+
+    // number of harmonic notch current center frequencies
+    uint8_t get_num_gyro_dynamic_notch_center_frequencies(void) const { return _num_calculated_harmonic_notch_frequencies; }
 
     // harmonic notch reference center frequency
     float get_gyro_harmonic_notch_center_freq_hz(void) const { return _harmonic_notch_filter.center_freq_hz(); }
@@ -242,6 +254,11 @@ public:
 
     // harmonic notch harmonics
     uint8_t get_gyro_harmonic_notch_harmonics(void) const { return _harmonic_notch_filter.harmonics(); }
+
+    // harmonic notch options
+    bool has_harmonic_option(HarmonicNotchFilterParams::Options option) {
+        return _harmonic_notch_filter.hasOption(option);
+    }
 
     // indicate which bit in LOG_BITMASK indicates raw logging enabled
     void set_log_raw_bit(uint32_t log_raw_bit) { _log_raw_bit = log_raw_bit; }
@@ -419,8 +436,8 @@ private:
     uint8_t _accel_count;
     uint8_t _backend_count;
 
-    // the selected sample rate
-    uint16_t _sample_rate;
+    // the selected loop rate at which samples are made available
+    uint16_t _loop_rate;
     float _loop_delta_t;
     float _loop_delta_t_max;
 
@@ -456,7 +473,8 @@ private:
     HarmonicNotchFilterParams _harmonic_notch_filter;
     HarmonicNotchFilterVector3f _gyro_harmonic_notch_filter[INS_MAX_INSTANCES];
     // the current center frequency for the notch
-    float _calculated_harmonic_notch_freq_hz;
+    float _calculated_harmonic_notch_freq_hz[INS_MAX_NOTCHES];
+    uint8_t _num_calculated_harmonic_notch_frequencies;
 
     // Most recent gyro reading
     Vector3f _gyro[INS_MAX_INSTANCES];
@@ -525,6 +543,9 @@ private:
 
     // control enable of fast sampling
     AP_Int8     _fast_sampling_mask;
+
+    // control enable of fast sampling
+    AP_Int8     _fast_sampling_rate;
 
     // control enable of detected sensors
     AP_Int8     _enable_mask;

@@ -37,30 +37,27 @@ public:
 private:
 
     struct servo_packet {
+        uint16_t magic = 18458; // constant magic value
+        uint16_t frame_rate;
         uint32_t frame_count;
-        float speedup;
         uint16_t pwm[16];
     };
 
     // default connection_info_.ip_address
     const char *target_ip = "127.0.0.1";
 
-    // default connection_info_.ip_port
-    uint16_t sensor_port = 9003;
-
     // default connection_info_.sitl_ip_port
     uint16_t control_port = 9002;
 
     SocketAPM sock;
 
-    double average_frame_time;
     uint32_t frame_counter;
-    uint64_t last_timestamp;
+    double last_timestamp_s;
 
     void output_servos(const struct sitl_input &input);
     void recv_fdm(const struct sitl_input &input);
 
-    bool parse_sensors(const char *json);
+    uint8_t parse_sensors(const char *json);
 
     // buffer for parsing pose data in JSON format
     uint8_t sensor_buffer[65000];
@@ -71,16 +68,18 @@ private:
         DATA_FLOAT,
         DATA_DOUBLE,
         DATA_VECTOR3F,
+        QUATERNION,
     };
 
     struct {
-        uint64_t timestamp;
+        double timestamp_s;
         struct {
             Vector3f gyro;
             Vector3f accel_body;
         } imu;
         Vector3f position;
         Vector3f attitude;
+        Quaternion quaternion;
         Vector3f velocity;
     } state;
 
@@ -90,13 +89,26 @@ private:
         const char *key;
         void *ptr;
         enum data_type type;
-    } keytable[6] = {
-        { "", "timestamp", &state.timestamp, DATA_UINT64 },
-        { "imu", "gyro",    &state.imu.gyro, DATA_VECTOR3F },
-        { "imu", "accel_body", &state.imu.accel_body, DATA_VECTOR3F },
-        { "", "position", &state.position, DATA_VECTOR3F },
-        { "", "attitude", &state.attitude, DATA_VECTOR3F },
-        { "", "velocity", &state.velocity, DATA_VECTOR3F },
+        bool required;
+    } keytable[7] = {
+        { "", "timestamp", &state.timestamp_s, DATA_DOUBLE, true },
+        { "imu", "gyro",    &state.imu.gyro, DATA_VECTOR3F, true },
+        { "imu", "accel_body", &state.imu.accel_body, DATA_VECTOR3F, true },
+        { "", "position", &state.position, DATA_VECTOR3F, true },
+        { "", "attitude", &state.attitude, DATA_VECTOR3F, false },
+        { "", "quaternion", &state.quaternion, QUATERNION, false },
+        { "", "velocity", &state.velocity, DATA_VECTOR3F, true },
+    };
+
+    // Enum coresponding to the ordering of keys in the keytable.
+    enum DataKey {
+        TIMESTAMP   = 1U << 0,
+        GYRO        = 1U << 1,
+        ACCEL_BODY  = 1U << 2,
+        POSITION    = 1U << 3,
+        EULER_ATT   = 1U << 4,
+        QUAT_ATT    = 1U << 5,
+        VELOCITY    = 1U << 6,
     };
 };
 

@@ -100,8 +100,8 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
         return;
     }
 
-    if (now_us - last_observation_usec < 70000) {
-        // create observations at 70ms intervals (matches EK2 max rate)
+    if (now_us - last_observation_usec < 20000) {
+        // create observations at 20ms intervals (matches EKF max rate)
         return;
     }
 

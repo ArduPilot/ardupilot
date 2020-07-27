@@ -92,26 +92,45 @@ void QuadPlane::tiltrotor_continuous_update(void)
     tilt.current_throttle = constrain_float(motors_throttle,
                                             tilt.current_throttle-max_change,
                                             tilt.current_throttle+max_change);
-    
+
     /*
       we are in a VTOL mode. We need to work out how much tilt is
-      needed. There are 3 strategies we will use:
+      needed. There are 4 strategies we will use:
 
-      1) in QSTABILIZE or QHOVER the angle will be set to zero. This
+      1) without manual forward throttle control, the angle will be set to zero
+         in QAUTOTUNE QACRO, QSTABILIZE and QHOVER. This
          enables these modes to be used as a safe recovery mode.
 
-      2) in fixed wing assisted flight or velocity controlled modes we
+      2) with manual forward throttle control we will set the angle based on
+         the demanded forward throttle via RC input.
+
+      3) in fixed wing assisted flight or velocity controlled modes we
          will set the angle based on the demanded forward throttle,
          with a maximum tilt given by Q_TILT_MAX. This relies on
-         Q_VFWD_GAIN being set
+         Q_VFWD_GAIN being set.
 
-      3) if we are in TRANSITION_TIMER mode then we are transitioning
+      4) if we are in TRANSITION_TIMER mode then we are transitioning
          to forward flight and should put the rotors all the way forward
     */
-    if (plane.control_mode == &plane.mode_qstabilize ||
-        plane.control_mode == &plane.mode_qhover ||
-        plane.control_mode == &plane.mode_qautotune) {
+
+    if (plane.control_mode == &plane.mode_qautotune) {
         tiltrotor_slew(0);
+        return;
+    }
+
+    // if not in assisted flight and in QACRO, QSTABILIZE or QHOVER mode
+    if (!assisted_flight &&
+        (plane.control_mode == &plane.mode_qacro ||
+         plane.control_mode == &plane.mode_qstabilize ||
+         plane.control_mode == &plane.mode_qhover)) {
+        if (rc_fwd_thr_ch == nullptr) {
+            // no manual throttle control, set angle to zero
+            tiltrotor_slew(0);
+        } else {
+            // manual control of forward throttle
+            float settilt = .01f * forward_throttle_pct();
+            tiltrotor_slew(settilt);
+        }
         return;
     }
 

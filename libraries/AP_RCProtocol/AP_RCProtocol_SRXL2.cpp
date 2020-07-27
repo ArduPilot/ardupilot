@@ -18,11 +18,12 @@
  */
 
 #include "AP_RCProtocol.h"
-#include "AP_RCProtocol_SRXL.h"
 #include "AP_RCProtocol_SRXL2.h"
 #include <AP_Math/AP_Math.h>
 #include <AP_RCTelemetry/AP_Spektrum_Telem.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_HAL/utility/sparse-endian.h>
+#include <AP_RCTelemetry/AP_VideoTX.h>
 
 #include "spm_srxl.h"
 
@@ -39,12 +40,17 @@ AP_RCProtocol_SRXL2* AP_RCProtocol_SRXL2::_singleton;
 AP_RCProtocol_SRXL2::AP_RCProtocol_SRXL2(AP_RCProtocol &_frontend) : AP_RCProtocol_Backend(_frontend)
 {
     const uint32_t uniqueID = AP_HAL::micros();
-
+#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
     if (_singleton != nullptr) {
         AP_HAL::panic("Duplicate SRXL2 handler");
     }
 
     _singleton = this;
+#else
+    if (_singleton == nullptr) {
+        _singleton = this;
+    }
+#endif
     // Init the local SRXL device
     if (!srxlInitDevice(SRXL_DEVICE_ID, SRXL_DEVICE_PRIORITY, SRXL_DEVICE_INFO, uniqueID)) {
         AP_HAL::panic("Failed to initialize SRXL2 device");
@@ -55,6 +61,10 @@ AP_RCProtocol_SRXL2::AP_RCProtocol_SRXL2(AP_RCProtocol &_frontend) : AP_RCProtoc
         AP_HAL::panic("Failed to initialize SRXL2 bus");
     }
 
+}
+
+AP_RCProtocol_SRXL2::~AP_RCProtocol_SRXL2() {
+    _singleton = nullptr;
 }
 
 void AP_RCProtocol_SRXL2::_process_byte(uint32_t timestamp_us, uint8_t byte)
@@ -149,26 +159,23 @@ void AP_RCProtocol_SRXL2::update(void)
     }
 }
 
-void AP_RCProtocol_SRXL2::capture_scaled_input(const uint16_t *values, bool in_failsafe, int16_t new_rssi)
+void AP_RCProtocol_SRXL2::capture_scaled_input(const uint8_t *values_p, bool in_failsafe, int16_t new_rssi)
 {
     AP_RCProtocol_SRXL2* srxl2 = AP_RCProtocol_SRXL2::get_singleton();
 
     if (srxl2 != nullptr) {
-        srxl2->_capture_scaled_input(values, in_failsafe, new_rssi);
+        srxl2->_capture_scaled_input(values_p, in_failsafe, new_rssi);
     }
 }
 
 // capture SRXL2 encoded values
-void AP_RCProtocol_SRXL2::_capture_scaled_input(const uint16_t *values, bool in_failsafe, int16_t new_rssi)
+void AP_RCProtocol_SRXL2::_capture_scaled_input(const uint8_t *values_p, bool in_failsafe, int16_t new_rssi)
 {
     _in_failsafe = in_failsafe;
     // AP rssi: -1 for unknown, 0 for no link, 255 for maximum link
     // SRXL2 rssi: -ve rssi in dBM, +ve rssi in percentage
     if (new_rssi >= 0) {
         _new_rssi = new_rssi * 255 / 100;
-    } else {
-        // pretty much a guess
-        _new_rssi = 255 - 255 * (-20 - new_rssi) / (-20 - 85);
     }
 
     for (uint8_t i = 0; i < MAX_CHANNELS; i++) {
@@ -203,7 +210,8 @@ void AP_RCProtocol_SRXL2::_capture_scaled_input(const uint16_t *values, bool in_
          *
          * So here we scale to DSMX-2048 and then use our regular Spektrum conversion.
          */
-        _channels[channel] = ((int32_t)(values[i] >> 5) * 1194) / 2048 + 903;
+        const uint16_t v = le16toh_ptr(&values_p[i*2]);
+        _channels[channel] = ((int32_t)(v >> 5) * 1194) / 2048 + 903;
     }
 }
 
@@ -230,6 +238,59 @@ void AP_RCProtocol_SRXL2::send_on_uart(uint8_t* pBuffer, uint8_t length)
 
     if (srxl2 != nullptr) {
         srxl2->_send_on_uart(pBuffer, length);
+    }
+}
+
+// configure the video transmitter, the input values are Spektrum-oriented
+void AP_RCProtocol_SRXL2::configure_vtx(uint8_t band, uint8_t channel, uint8_t power, uint8_t pitmode)
+{
+    AP_VideoTX& vtx = AP::vtx();
+    // VTX Band (0 = Fatshark, 1 = Raceband, 2 = E, 3 = B, 4 = A)
+    // map to TBS band A, B, E, Race, Airwave, LoRace
+    switch (band) {
+    case VTX_BAND_FATSHARK:
+        vtx.set_configured_band(AP_VideoTX::VideoBand::FATSHARK);
+        break;
+    case VTX_BAND_RACEBAND:
+        vtx.set_configured_band(AP_VideoTX::VideoBand::RACEBAND);
+        break;
+    case VTX_BAND_E_BAND:
+        vtx.set_configured_band(AP_VideoTX::VideoBand::BAND_E);
+        break;
+    case VTX_BAND_B_BAND:
+        vtx.set_configured_band(AP_VideoTX::VideoBand::BAND_B);
+        break;
+    case VTX_BAND_A_BAND:
+        vtx.set_configured_band(AP_VideoTX::VideoBand::BAND_A);
+        break;
+    default:
+        break;
+    }
+    // VTX Channel (0-7)
+    vtx.set_configured_channel(channel);
+    if (pitmode) {
+        vtx.set_configured_options(vtx.get_options() | uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE));
+    } else {
+        vtx.set_configured_options(vtx.get_options() & ~uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE));
+    }
+
+    switch (power) {
+    case VTX_POWER_1MW_14MW:
+    case VTX_POWER_15MW_25MW:
+        vtx.set_configured_power_mw(25);
+        break;
+    case VTX_POWER_26MW_99MW:
+    case VTX_POWER_100MW_299MW:
+        vtx.set_configured_power_mw(100);
+        break;
+    case VTX_POWER_300MW_600MW:
+        vtx.set_configured_power_mw(400);
+        break;
+    case VTX_POWER_601_PLUS:
+        vtx.set_configured_power_mw(800);
+        break;
+    default:
+        break;
     }
 }
 
@@ -319,9 +380,9 @@ void srxlFillTelemetry(SrxlTelemetryData* pTelemetryData)
 void srxlReceivedChannelData(SrxlChannelData* pChannelData, bool isFailsafe)
 {
     if (isFailsafe) {
-        AP_RCProtocol_SRXL2::capture_scaled_input(pChannelData->values, true, pChannelData->rssi);
+        AP_RCProtocol_SRXL2::capture_scaled_input((const uint8_t *)pChannelData->values, true, pChannelData->rssi);
     } else {
-        AP_RCProtocol_SRXL2::capture_scaled_input(srxlChData.values, false, srxlChData.rssi);
+        AP_RCProtocol_SRXL2::capture_scaled_input((const uint8_t *)srxlChData.values, false, srxlChData.rssi);
     }
 }
 
@@ -335,4 +396,5 @@ bool srxlOnBind(SrxlFullID device, SrxlBindData info)
 // User-provided callback routine to handle reception of a VTX control packet.
 void srxlOnVtx(SrxlVtxData* pVtxData)
 {
+    AP_RCProtocol_SRXL2::configure_vtx(pVtxData->band, pVtxData->channel, pVtxData->power, pVtxData->pit);
 }

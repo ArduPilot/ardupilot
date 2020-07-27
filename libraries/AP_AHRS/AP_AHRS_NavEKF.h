@@ -249,6 +249,10 @@ public:
     // it will return invalid when no limiting is required
     bool get_hgt_ctrl_limit(float &limit) const override;
 
+    // Set to true if the terrain underneath is stable enough to be used as a height reference
+    // this is not related to terrain following
+    void set_terrain_hgt_stable(bool stable) override;
+
     // get_location - updates the provided location with the latest
     // calculated location including absolute altitude
     // returns true on success (i.e. the EKF knows it's latest

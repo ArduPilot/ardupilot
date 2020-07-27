@@ -153,7 +153,7 @@ bool AP_BoardConfig::spi_check_register(const char *devname, uint8_t regnum, uin
 }
 
 #if defined(HAL_VALIDATE_BOARD)
-static bool check_ms5611(const char* devname) {
+bool AP_BoardConfig::check_ms5611(const char* devname) {
     auto dev = hal.spi->get_device(devname);
     if (!dev) {
 #if SPI_PROBE_DEBUG
@@ -428,9 +428,9 @@ void AP_BoardConfig::board_setup()
 
 #ifdef HAL_GPIO_PWM_VOLT_PIN
     if (_pwm_volt_sel == 0) {
-        hal.gpio->write(HAL_GPIO_PWM_VOLT_PIN, 1); //set pin for 3.3V PWM Output
+        hal.gpio->write(HAL_GPIO_PWM_VOLT_PIN, HAL_GPIO_PWM_VOLT_3v3); //set pin for 3.3V PWM Output
     } else if (_pwm_volt_sel == 1) {
-        hal.gpio->write(HAL_GPIO_PWM_VOLT_PIN, 0); //set pin for 5V PWM Output
+        hal.gpio->write(HAL_GPIO_PWM_VOLT_PIN, !HAL_GPIO_PWM_VOLT_3v3); //set pin for 5V PWM Output
     }
 #endif
     board_setup_uart();

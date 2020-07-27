@@ -6,6 +6,7 @@
 
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Baro/AP_Baro.h>
 #include <AP_Common/Location.h>
 #include <AP_Compass/AP_Compass.h>
 #include "SIM_Buzzer.h"
@@ -16,6 +17,8 @@
 #include "SIM_Sprayer.h"
 #include "SIM_ToneAlarm.h"
 #include "SIM_EFI_MegaSquirt.h"
+#include "SIM_RichenPower.h"
+#include "SIM_Ship.h"
 
 namespace SITL {
 
@@ -53,7 +56,7 @@ struct sitl_fdm {
     uint8_t num_motors;
     float rpm[12];         // RPM of all motors
     uint8_t rcin_chan_count;
-    float  rcin[8];         // RC input 0..1
+    float  rcin[12];         // RC input 0..1
     double range;           // rangefinder value
     Vector3f bodyMagField;  // Truth XYZ magnetic field vector in body-frame. Includes motor interference. Units are milli-Gauss.
     Vector3f angAccel; // Angular acceleration in degrees/s/s about the XYZ body axes
@@ -79,6 +82,8 @@ public:
         AP_Param::setup_object_defaults(this, var_info);
         AP_Param::setup_object_defaults(this, var_info2);
         AP_Param::setup_object_defaults(this, var_info3);
+        AP_Param::setup_object_defaults(this, var_gps);
+        AP_Param::setup_object_defaults(this, var_mag);
         if (_singleton != nullptr) {
             AP_HAL::panic("Too many SITL instances");
         }
@@ -125,15 +130,17 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
     static const struct AP_Param::GroupInfo var_info2[];
     static const struct AP_Param::GroupInfo var_info3[];
+    static const struct AP_Param::GroupInfo var_gps[];
+    static const struct AP_Param::GroupInfo var_mag[];
 
     // Board Orientation (and inverse)
     Matrix3f ahrs_rotation;
     Matrix3f ahrs_rotation_inv;
 
     // noise levels for simulated sensors
-    AP_Float baro_noise;  // in metres
-    AP_Float baro_drift;  // in metres per second
-    AP_Float baro_glitch; // glitch in meters
+    AP_Float baro_noise[BARO_MAX_INSTANCES];  // in metres
+    AP_Float baro_drift[BARO_MAX_INSTANCES];  // in metres per second
+    AP_Float baro_glitch[BARO_MAX_INSTANCES]; // glitch in meters
     AP_Float gyro_noise;  // in degrees/second
     AP_Vector3f gyro_scale;  // percentage
     AP_Float accel_noise; // in m/s/s
@@ -147,9 +154,6 @@ public:
     AP_Float arspd_fail_pitot_pressure; // 1st pitot tube failure pressure
     AP_Float arspd2_fail_pressure; // 2nd pitot tube failure pressure
     AP_Float arspd2_fail_pitot_pressure; // 2nd pitot tube failure pressure
-    AP_Float gps_noise; // amplitude of the gps altitude error
-    AP_Int16 gps_lock_time; // delay in seconds before GPS gets lock
-    AP_Int16 gps_alt_offset; // gps alt error
 
     AP_Float mag_noise;   // in mag units (earth field is 818)
     AP_Vector3f mag_mot;  // in mag units per amp
@@ -167,19 +171,26 @@ public:
     AP_Float drift_time;  // period in minutes
     AP_Float engine_mul;  // engine multiplier
     AP_Int8  engine_fail; // engine servo to fail (0-7)
-    AP_Int8  gps_disable; // disable simulated GPS
-    AP_Int8  gps2_enable; // enable 2nd simulated GPS
-    AP_Int8  gps_delay;   // delay in samples
+
+    AP_Float gps_noise[2]; // amplitude of the gps altitude error
+    AP_Int16 gps_lock_time[2]; // delay in seconds before GPS gets lock
+    AP_Int16 gps_alt_offset[2]; // gps alt error
+    AP_Int8  gps_disable[2]; // disable simulated GPS
+    AP_Int8  gps_delay[2];   // delay in samples
     AP_Int8  gps_type[2]; // see enum GPSType
-    AP_Float gps_byteloss;// byte loss as a percent
-    AP_Int8  gps_numsats; // number of visible satellites
+    AP_Float gps_byteloss[2];// byte loss as a percent
+    AP_Int8  gps_numsats[2]; // number of visible satellites
     AP_Vector3f gps_glitch[2];  // glitch offsets in lat, lon and altitude
-    AP_Int8  gps_hertz;   // GPS update rate in Hz
+    AP_Int8  gps_hertz[2];   // GPS update rate in Hz
+    AP_Int8 gps_hdg_enabled[2]; // enable the output of a NMEA heading HDT sentence or UBLOX RELPOSNED
+    AP_Float gps_drift_alt[2];
+    AP_Vector3f gps_pos_offset[2];  // XYZ position of the GPS antenna phase centre relative to the body frame origin (m)
+
     AP_Float batt_voltage; // battery voltage base
     AP_Float accel_fail;  // accelerometer failure value
     AP_Int8  rc_fail;     // fail RC input
     AP_Int8  rc_chancount; // channel count
-    AP_Int8  baro_disable; // disable simulated barometer
+    AP_Int8  baro_disable[BARO_MAX_INSTANCES]; // disable simulated barometers
     AP_Int8  float_exception; // enable floating point exception checks
     AP_Int8  flow_enable; // enable simulated optflow
     AP_Int16 flow_rate; // optflow data rate (Hz)
@@ -191,7 +202,6 @@ public:
     AP_Int8  telem_baudlimit_enable; // enable baudrate limiting on links
     AP_Float flow_noise; // optical flow measurement noise (rad/sec)
     AP_Int8  baro_count; // number of simulated baros to create
-    AP_Int8 gps_hdg_enabled[2]; // enable the output of a NMEA heading HDT sentence or UBLOX RELPOSNED
     AP_Int32 loop_delay; // extra delay to add to every loop
     AP_Float mag_scaling; // scaling factor on first compasses
     AP_Int32 mag_devid[MAX_CONNECTED_MAGS]; // Mag devid
@@ -219,7 +229,6 @@ public:
     AP_Float wind_speed;
     AP_Float wind_direction;
     AP_Float wind_turbulance;
-    AP_Float gps_drift_alt;
     AP_Float wind_dir_z;
     AP_Int8  wind_type; // enum WindLimitType
     AP_Float wind_type_alt;
@@ -241,7 +250,6 @@ public:
 
     // Body frame sensor position offsets
     AP_Vector3f imu_pos_offset;     // XYZ position of the IMU accelerometer relative to the body frame origin (m)
-    AP_Vector3f gps_pos_offset[2];  // XYZ position of the GPS antenna phase centre relative to the body frame origin (m)
     AP_Vector3f rngfnd_pos_offset;  // XYZ position of the range finder zero range datum relative to the body frame origin (m)
     AP_Vector3f optflow_pos_offset; // XYZ position of the optical flow sensor focal point relative to the body frame origin (m)
     AP_Vector3f vicon_pos_offset;   // XYZ position of the vicon sensor relative to the body frame origin (m)
@@ -344,6 +352,9 @@ public:
 
     Sprayer sprayer_sim;
 
+    // simulated ship takeoffs
+    ShipSim shipsim;
+
     Gripper_Servo gripper_sim;
     Gripper_EPM gripper_epm_sim;
 
@@ -351,6 +362,7 @@ public:
     Buzzer buzzer_sim;
     ToneAlarm tonealarm_sim;
     SIM_Precland precland_sim;
+    RichenPower richenpower_sim;
 
     struct {
         // LED state, for serial LED emulation

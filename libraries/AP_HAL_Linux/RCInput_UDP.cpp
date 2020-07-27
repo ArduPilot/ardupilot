@@ -79,5 +79,7 @@ void RCInput_UDP::_timer_tick(void)
     _last_buf_ts = _buf.timestamp_us;
     _last_buf_seq = _buf.sequence;
 
-    _update_periods(_buf.pwms, n_channels);
+    uint16_t pwms[n_channels];
+    memcpy(pwms, _buf.pwms, n_channels*sizeof(uint16_t));
+    _update_periods(pwms, n_channels);
 }

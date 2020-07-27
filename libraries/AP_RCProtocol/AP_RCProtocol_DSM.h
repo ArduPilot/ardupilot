@@ -21,6 +21,7 @@
 #include "SoftSerial.h"
 
 #define AP_DSM_MAX_CHANNELS 12
+#define AP_DSM_FRAME_SIZE 16
 
 class AP_RCProtocol_DSM : public AP_RCProtocol_Backend {
 public:
@@ -32,21 +33,13 @@ public:
 
 private:
     void _process_byte(uint32_t timestamp_ms, uint8_t byte);
-    void dsm_decode();
-    bool dsm_decode_channel(uint16_t raw, unsigned shift, unsigned *channel, unsigned *value);
-    void dsm_guess_format(bool reset, const uint8_t dsm_frame[16]);
-    bool dsm_parse_byte(uint32_t frame_time_ms, uint8_t b, uint16_t *values,
+    bool dsm_parse_byte(uint32_t frame_time_us, uint8_t b, uint16_t *values,
                         uint16_t *num_values, uint16_t max_channels);
-    bool dsm_decode(uint32_t frame_time_ms, const uint8_t dsm_frame[16],
+    bool dsm_decode(uint32_t frame_time_us, const uint8_t dsm_frame[16],
                     uint16_t *values, uint16_t *num_values, uint16_t max_values);
 
-    /**< Channel resolution, 0=unknown, 10=10 bit, 11=11 bit */
     uint8_t channel_shift;
-
-    // format guessing state
-    uint32_t	cs10;
-    uint32_t	cs11;
-    uint32_t samples;
+    uint8_t channel_mask;
 
     // bind state machine
     enum {
@@ -61,17 +54,13 @@ private:
     uint16_t last_values[AP_DSM_MAX_CHANNELS];
 
     struct {
-        uint8_t buf[16];
+        uint8_t buf[AP_DSM_FRAME_SIZE];
         uint8_t ofs;
     } byte_input;
 
-    enum DSM_DECODE_STATE {
-        DSM_DECODE_STATE_DESYNC = 0,
-        DSM_DECODE_STATE_SYNC
-    } dsm_decode_state;
-
-    uint32_t last_frame_time_ms;
-    uint32_t last_rx_time_ms;
+    uint32_t last_frame_time_us;
+    uint32_t last_rx_time_us;
+    uint32_t start_frame_time_us;
     uint16_t chan_count;
 
     SoftSerial ss{115200, SoftSerial::SERIAL_CONFIG_8N1};

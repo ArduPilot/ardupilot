@@ -41,6 +41,9 @@ public:
 
     MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet);
 
+   // User parameters for inputs into scripts 
+   AP_Float _user[4]; 
+
     struct terminal_s {
         int output_fd;
         off_t input_offset;

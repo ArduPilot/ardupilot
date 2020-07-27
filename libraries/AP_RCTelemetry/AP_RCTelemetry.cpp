@@ -89,7 +89,7 @@ void AP_RCTelemetry::run_wfq_scheduler(void)
     update_avg_packet_rate();
 
     uint32_t now = AP_HAL::millis();
-    uint8_t max_delay_idx = 0;
+    int8_t max_delay_idx = -1;
     
     float max_delay = 0;
     float delay = 0;
@@ -104,7 +104,7 @@ void AP_RCTelemetry::run_wfq_scheduler(void)
     bool queue_empty;
     {
         WITH_SEMAPHORE(_statustext.sem);
-        queue_empty = !_statustext.available && _statustext.queue.empty();
+        queue_empty = !_statustext.available && _statustext.queue.is_empty();
     }
 
     adjust_packet_weight(queue_empty);
@@ -125,6 +125,10 @@ void AP_RCTelemetry::run_wfq_scheduler(void)
             }
         }
     }
+
+    if (max_delay_idx < 0) {  // nothing was ready
+        return;
+    }
     now = AP_HAL::millis();
 #ifdef TELEM_DEBUG
     _scheduler.packet_rate[max_delay_idx] = (_scheduler.packet_rate[max_delay_idx] + 1000 / (now - _scheduler.packet_timer[max_delay_idx])) / 2;
@@ -143,7 +147,7 @@ void AP_RCTelemetry::queue_message(MAV_SEVERITY severity, const char *text)
     mavlink_statustext_t statustext{};
 
     statustext.severity = severity;
-    strncpy(statustext.text, text, sizeof(statustext.text));
+    strncpy_noterm(statustext.text, text, sizeof(statustext.text));
 
     // The force push will ensure comm links do not block other comm links forever if they fail.
     // If we push to a full buffer then we overwrite the oldest entry, effectively removing the

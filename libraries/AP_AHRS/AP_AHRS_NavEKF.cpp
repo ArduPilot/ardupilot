@@ -182,7 +182,7 @@ void AP_AHRS_NavEKF::update_DCM(bool skip_ins_update)
     AP_AHRS_DCM::update(skip_ins_update);
 
     // keep DCM attitude available for get_secondary_attitude()
-    _dcm_attitude(roll, pitch, yaw);
+    _dcm_attitude = {roll, pitch, yaw};
 }
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -419,7 +419,7 @@ void AP_AHRS_NavEKF::reset(bool recover_eulers)
     WITH_SEMAPHORE(_rsem);
     
     AP_AHRS_DCM::reset(recover_eulers);
-    _dcm_attitude(roll, pitch, yaw);
+    _dcm_attitude = {roll, pitch, yaw};
 #if HAL_NAVEKF2_AVAILABLE
     if (_ekf2_started) {
         _ekf2_started = EKF2.InitialiseFilter();
@@ -439,7 +439,7 @@ void AP_AHRS_NavEKF::reset_attitude(const float &_roll, const float &_pitch, con
     WITH_SEMAPHORE(_rsem);
     
     AP_AHRS_DCM::reset_attitude(_roll, _pitch, _yaw);
-    _dcm_attitude(roll, pitch, yaw);
+    _dcm_attitude = {roll, pitch, yaw};
 #if HAL_NAVEKF2_AVAILABLE
     if (_ekf2_started) {
         _ekf2_started = EKF2.InitialiseFilter();
@@ -761,13 +761,9 @@ bool AP_AHRS_NavEKF::set_origin(const Location &loc)
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKFType::SITL:
-        if (_sitl) {
-            struct SITL::sitl_fdm &fdm = _sitl->state;
-            fdm.home = loc;
-            return true;
-        } else {
-            return false;
-        }
+        // never allow origin set in SITL. The origin is set by the
+        // simulation backend
+        return false;
 #endif
     }
     // since there is no default case above, this is unreachable
@@ -978,12 +974,15 @@ bool AP_AHRS_NavEKF::get_relative_position_NED_origin(Vector3f &vec) const
         if (!_sitl) {
             return false;
         }
-        Location loc;
-        get_position(loc);
-        const Vector2f diff2d = get_home().get_distance_NE(loc);
+        Location loc, orgn;
+        if (!get_position(loc) ||
+            !get_origin(orgn)) {
+            return false;
+        }
+        const Vector2f diff2d = orgn.get_distance_NE(loc);
         const struct SITL::sitl_fdm &fdm = _sitl->state;
         vec = Vector3f(diff2d.x, diff2d.y,
-                       -(fdm.altitude - get_home().alt*0.01f));
+                       -(fdm.altitude - orgn.alt*0.01f));
         return true;
     }
 #endif
@@ -1035,9 +1034,12 @@ bool AP_AHRS_NavEKF::get_relative_position_NE_origin(Vector2f &posNE) const
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKFType::SITL: {
-        Location loc;
-        get_position(loc);
-        posNE = get_home().get_distance_NE(loc);
+        Location loc, orgn;
+        if (!get_position(loc) ||
+            !get_origin(orgn)) {
+            return false;
+        }
+        posNE = orgn.get_distance_NE(loc);
         return true;
     }
 #endif
@@ -1095,7 +1097,11 @@ bool AP_AHRS_NavEKF::get_relative_position_D_origin(float &posD) const
             return false;
         }
         const struct SITL::sitl_fdm &fdm = _sitl->state;
-        posD = -(fdm.altitude - get_home().alt*0.01f);
+        Location orgn;
+        if (!get_origin(orgn)) {
+            return false;
+        }
+        posD = -(fdm.altitude - orgn.alt*0.01f);
         return true;
     }
 #endif
@@ -1640,6 +1646,7 @@ bool AP_AHRS_NavEKF::attitudes_consistent(char *failure_msg, const uint8_t failu
     get_quat_body_to_ned(primary_quat);
     // only check yaw if compasses are being used
     bool check_yaw = _compass && _compass->use_for_yaw();
+    uint8_t total_ekf_cores = 0;
 
 #if HAL_NAVEKF2_AVAILABLE
     // check primary vs ekf2
@@ -1659,6 +1666,7 @@ bool AP_AHRS_NavEKF::attitudes_consistent(char *failure_msg, const uint8_t failu
             return false;
         }
     }
+    total_ekf_cores = EKF2.activeCores();
 #endif
 
 #if HAL_NAVEKF3_AVAILABLE
@@ -1679,32 +1687,33 @@ bool AP_AHRS_NavEKF::attitudes_consistent(char *failure_msg, const uint8_t failu
             return false;
         }
     }
+    total_ekf_cores += EKF3.activeCores();
 #endif
 
     // check primary vs dcm
-    Quaternion dcm_quat;
-    Vector3f angle_diff;
-    dcm_quat.from_rotation_matrix(get_DCM_rotation_body_to_ned());
-    primary_quat.angular_difference(dcm_quat).to_axis_angle(angle_diff);
-    float diff = safe_sqrt(sq(angle_diff.x)+sq(angle_diff.y));
-    if (diff > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "DCM Roll/Pitch inconsistent by %d deg", (int)degrees(diff));
-        return false;
-    }
-
-    // we only check yaw against DCM if we are not using external yaw
-    // for EKF3. DCM can't use external yaw, so we don't expect it's
-    // yaw to align with EKF3 when EKF3 is using an external yaw
-    // source
-    bool using_external_yaw = false;
-#if HAL_NAVEKF3_AVAILABLE
-    using_external_yaw = ekf_type() == EKFType::THREE && EKF3.using_external_yaw();
-#endif
-    if (!using_external_yaw) {
-        diff = fabsf(angle_diff.z);
-        if (check_yaw && (diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
-            hal.util->snprintf(failure_msg, failure_msg_len, "DCM Yaw inconsistent by %d deg", (int)degrees(diff));
+    if (!always_use_EKF() || (total_ekf_cores == 1)) {
+        Quaternion dcm_quat;
+        Vector3f angle_diff;
+        dcm_quat.from_rotation_matrix(get_DCM_rotation_body_to_ned());
+        primary_quat.angular_difference(dcm_quat).to_axis_angle(angle_diff);
+        float diff = safe_sqrt(sq(angle_diff.x)+sq(angle_diff.y));
+        if (diff > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "DCM Roll/Pitch inconsistent by %d deg", (int)degrees(diff));
             return false;
+        }
+
+        // Check vs DCM yaw if this vehicle could use DCM in flight
+        // and if not using an external yaw source (DCM does not support external yaw sources)
+        bool using_external_yaw = false;
+#if HAL_NAVEKF3_AVAILABLE
+        using_external_yaw = ekf_type() == EKFType::THREE && EKF3.using_external_yaw();
+#endif
+        if (!always_use_EKF() && !using_external_yaw) {
+            diff = fabsf(angle_diff.z);
+            if (check_yaw && (diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
+                hal.util->snprintf(failure_msg, failure_msg_len, "DCM Yaw inconsistent by %d deg", (int)degrees(diff));
+                return false;
+            }
         }
     }
 
@@ -1972,6 +1981,18 @@ bool AP_AHRS_NavEKF::get_hgt_ctrl_limit(float& limit) const
     }
 
     return false;
+}
+
+// Set to true if the terrain underneath is stable enough to be used as a height reference
+// this is not related to terrain following
+void AP_AHRS_NavEKF::set_terrain_hgt_stable(bool stable)
+{
+#if HAL_NAVEKF2_AVAILABLE
+    EKF2.setTerrainHgtStable(stable);
+#endif
+#if HAL_NAVEKF3_AVAILABLE
+    EKF3.setTerrainHgtStable(stable);
+#endif
 }
 
 // get_location - updates the provided location with the latest calculated location

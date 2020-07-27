@@ -138,7 +138,6 @@ void AP_Compass_LIS3MDL::timer()
         int16_t magz;
     } data;
     const float range_scale = 1000.0f / 6842.0f;
-    Vector3f field;
 
     // check data ready
     uint8_t status;
@@ -154,9 +153,15 @@ void AP_Compass_LIS3MDL::timer()
         goto check_registers;
     }
 
-    field(data.magx * range_scale, data.magy * range_scale, data.magz * range_scale);
+    {
+        Vector3f field{
+            data.magx * range_scale,
+            data.magy * range_scale,
+            data.magz * range_scale,
+        };
 
-    accumulate_sample(field, compass_instance);
+        accumulate_sample(field, compass_instance);
+    }
 
 check_registers:
     dev->check_next_register();

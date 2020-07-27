@@ -310,7 +310,7 @@ void AP_ToshibaCAN::loop()
                     const uint8_t esc_id = recv_frame.id - MOTOR_DATA1;
                     if (esc_id < TOSHIBACAN_MAX_NUM_ESCS) {
                         WITH_SEMAPHORE(_telem_sem);
-                        _telemetry[esc_id].rpm = be16toh(reply_data.rpm);
+                        _telemetry[esc_id].rpm = (int16_t)be16toh(reply_data.rpm);
                         _telemetry[esc_id].current_ca = MAX((int16_t)be16toh(reply_data.current_ma), 0) * (4.0f * 0.1f);    // milli-amps to centi-amps
                         _telemetry[esc_id].voltage_cv = be16toh(reply_data.voltage_mv) * 0.1f;  // millivolts to centi-volts
                         _telemetry[esc_id].count++;
@@ -499,11 +499,6 @@ void AP_ToshibaCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
         return;
     }
 
-    // return if no space in output buffer to send mavlink messages
-    if (!HAVE_PAYLOAD_SPACE((mavlink_channel_t)mav_chan, ESC_TELEMETRY_1_TO_4)) {
-        return;
-    }
-
     // output telemetry messages
     {
         // take semaphore to access telemetry data
@@ -511,6 +506,11 @@ void AP_ToshibaCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
 
         // loop through 3 groups of 4 ESCs
         for (uint8_t i = 0; i < 3; i++) {
+
+            // return if no space in output buffer to send mavlink messages
+            if (!HAVE_PAYLOAD_SPACE((mavlink_channel_t)mav_chan, ESC_TELEMETRY_1_TO_4)) {
+                return;
+            }
 
             // skip this group of ESCs if no data to send
             if ((_esc_present_bitmask & ((uint32_t)0x0F << i*4)) == 0) {
@@ -532,7 +532,7 @@ void AP_ToshibaCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
                 voltage[j] = _telemetry[esc_id].voltage_cv;
                 current[j] = _telemetry[esc_id].current_ca;
                 current_tot[j] = constrain_float(_telemetry[esc_id].current_tot_mah, 0, UINT16_MAX);
-                rpm[j] = _telemetry[esc_id].rpm;
+                rpm[j] = abs(_telemetry[esc_id].rpm);   // mavlink message only accepts positive rpm values
                 count[j] = _telemetry[esc_id].count;
             }
 

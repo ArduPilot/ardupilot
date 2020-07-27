@@ -26,7 +26,8 @@ public:
         ANALOG_PIN         = 1,
         RC_CHANNEL_VALUE   = 2,
         RECEIVER           = 3,
-        PWM_PIN            = 4
+        PWM_PIN            = 4,
+        TELEMETRY_RADIO_RSSI = 5,
     };
 
     AP_RSSI();
@@ -95,6 +96,9 @@ private:
 
     // read the PWM value from a pin
     float read_pwm_pin_rssi();
+
+    // read the (RC) RSSI value from telemtry radio RSSI (e.g. rfd900x pass-through)
+    float read_telemetry_radio_rssi();
 
     // Scale and constrain a float rssi value to 0.0 to 1.0 range
     float scale_and_constrain_float_rssi(float current_rssi_value, float low_rssi_range, float high_rssi_range);

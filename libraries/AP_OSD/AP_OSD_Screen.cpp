@@ -942,8 +942,7 @@ void AP_OSD_Screen::draw_rssi(uint8_t x, uint8_t y)
 {
     AP_RSSI *ap_rssi = AP_RSSI::get_singleton();
     if (ap_rssi) {
-        int rssiv = ap_rssi->read_receiver_rssi_uint8();
-        rssiv = (rssiv * 99) / 255;
+        const uint8_t rssiv = ap_rssi->read_receiver_rssi() * 99;
         backend->write(x, y, rssiv < osd->warn_rssi, "%c%2d", SYM_RSSI, rssiv);
     }
 }
@@ -1102,9 +1101,11 @@ void AP_OSD_Screen::draw_horizon(uint8_t x, uint8_t y)
     float ky = sinf(roll);
     float kx = cosf(roll);
 
+    float ratio = backend->get_aspect_ratio_correction();
+
     if (fabsf(ky) < fabsf(kx)) {
         for (int dx = -4; dx <= 4; dx++) {
-            float fy =  dx * (ky/kx) + pitch * ah_pitch_rad_to_char + 0.5f;
+            float fy = (ratio * dx) * (ky/kx) + pitch * ah_pitch_rad_to_char + 0.5f;
             int dy = floorf(fy);
             char c = (fy - dy) * SYM_AH_H_COUNT;
             //chars in font in reversed order
@@ -1115,7 +1116,7 @@ void AP_OSD_Screen::draw_horizon(uint8_t x, uint8_t y)
         }
     } else {
         for (int dy=-4; dy<=4; dy++) {
-            float fx = (dy - pitch * ah_pitch_rad_to_char) * (kx/ky) + 0.5f;
+            float fx = ((dy / ratio) - pitch * ah_pitch_rad_to_char) * (kx/ky) + 0.5f;
             int dx = floorf(fx);
             char c = (fx - dx) * SYM_AH_V_COUNT;
             c = SYM_AH_V_START + c;

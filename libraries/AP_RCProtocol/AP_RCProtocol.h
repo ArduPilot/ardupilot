@@ -38,6 +38,7 @@ public:
         SUMD,
         SRXL,
         SRXL2,
+        CRSF,
         ST24,
         FPORT,
         NONE    //last enum always is None
@@ -89,15 +90,16 @@ private:
     uint16_t _disabled_for_pulses;
     bool _detected_with_bytes;
     AP_RCProtocol_Backend *backend[NONE];
-    bool _new_input = false;
+    bool _new_input;
     uint32_t _last_input_ms;
-    bool _valid_serial_prot = false;
+    bool _valid_serial_prot;
     uint8_t _good_frames[NONE];
 
     enum config_phase {
         CONFIG_115200_8N1 = 0,
         CONFIG_115200_8N1I = 1,
         CONFIG_100000_8E2I = 2,
+        CONFIG_420000_8N1 = 3,
     };
 
     // optional additional uart

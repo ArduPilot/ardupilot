@@ -5,6 +5,10 @@
 
 #include <stdio.h>
 
+// ignore cast errors in this case to keep complexity down
+// on x86 where replay is run we don't care about cast alignment
+#pragma GCC diagnostic ignored "-Wcast-align"
+
 #define LOGREADER_MAX_FIELDS 30
 
 #define streq(x, y) (!strcmp(x, y))

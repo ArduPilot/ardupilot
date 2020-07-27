@@ -45,7 +45,7 @@ NavEKF3_core::MagCal NavEKF3_core::effective_magCal(void) const
     MagCal magcal = MagCal(frontend->_magCal.get());
 
     // force use of simple magnetic heading fusion for specified cores
-    if ((magcal != MagCal::EXTERNAL_YAW) && (magcal != MagCal::EXTERNAL_YAW_FALLBACK) && (magcal != MagCal::GSF_YAW) && (frontend->_magMask & core_index)) {
+    if ((magcal != MagCal::EXTERNAL_YAW) && (magcal != MagCal::EXTERNAL_YAW_FALLBACK) && (frontend->_magMask & core_index)) {
         return MagCal::NEVER;
     }
 
@@ -283,6 +283,15 @@ void NavEKF3_core::setAidingMode()
                                      (imuSampleTime_ms - lastPosPassTime_ms > maxLossTime_ms);
             }
 
+            // This is a special case for when we are a fixed wing aircraft vehicle that has landed and
+            // has no yaw measurement that works when static. Declare the yaw as unaligned (unknown)
+            // and declare attitude aiding loss so that we fall back into a non-aiding mode
+            if (assume_zero_sideslip() && onGround && !use_compass()){
+                yawAlignComplete = false;
+                finalInflightYawInit = false;
+                attAidLossCritical = true;
+            }
+
             if (attAidLossCritical) {
                 // if the loss of attitude data is critical, then put the filter into a constant position mode
                 PV_AidingMode = AID_NONE;
@@ -361,9 +370,14 @@ void NavEKF3_core::setAidingMode()
             } else if (readyToUseExtNav()) {
                 // we are commencing aiding using external nav
                 posResetSource = EXTNAV;
-                velResetSource = DEFAULT;
                 gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u is using external nav data",(unsigned)imu_index);
                 gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u initial pos NED = %3.1f,%3.1f,%3.1f (m)",(unsigned)imu_index,(double)extNavDataDelayed.pos.x,(double)extNavDataDelayed.pos.y,(double)extNavDataDelayed.pos.z);
+                if (useExtNavVel) {
+                    velResetSource = EXTNAV;
+                    gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u initial vel NED = %3.1f,%3.1f,%3.1f (m/s)",(unsigned)imu_index,(double)extNavVelDelayed.vel.x,(double)extNavVelDelayed.vel.y,(double)extNavVelDelayed.vel.z);
+                } else {
+                    velResetSource = DEFAULT;
+                }
                 // handle height reset as special case
                 hgtMea = -extNavDataDelayed.pos.z;
                 posDownObsNoise = sq(constrain_float(extNavDataDelayed.posErr, 0.1f, 10.0f));
@@ -451,7 +465,7 @@ bool NavEKF3_core::readyToUseBodyOdm(void) const
 // return true if the filter to be ready to use gps
 bool NavEKF3_core::readyToUseGPS(void) const
 {
-    return validOrigin && tiltAlignComplete && yawAlignComplete && delAngBiasLearned && gpsGoodToAlign && (frontend->_fusionModeGPS != 3) && gpsDataToFuse && !gpsInhibit;
+    return validOrigin && tiltAlignComplete && yawAlignComplete && (delAngBiasLearned || assume_zero_sideslip()) && gpsGoodToAlign && (frontend->_fusionModeGPS != 3) && gpsDataToFuse && !gpsInhibit;
 }
 
 // return true if the filter to be ready to use the beacon range measurements
@@ -470,7 +484,6 @@ bool NavEKF3_core::readyToUseExtNav(void) const
 bool NavEKF3_core::use_compass(void) const
 {
     return effectiveMagCal != MagCal::EXTERNAL_YAW &&
-           effectiveMagCal != MagCal::GSF_YAW &&
            _ahrs->get_compass() &&
            _ahrs->get_compass()->use_for_yaw(magSelectIndex) &&
            !allMagSensorsFailed;
@@ -479,7 +492,7 @@ bool NavEKF3_core::use_compass(void) const
 // are we using a yaw source other than the magnetomer?
 bool NavEKF3_core::using_external_yaw(void) const
 {
-    if (effectiveMagCal == MagCal::EXTERNAL_YAW || effectiveMagCal == MagCal::EXTERNAL_YAW_FALLBACK || effectiveMagCal == MagCal::GSF_YAW) {
+    if (effectiveMagCal == MagCal::EXTERNAL_YAW || effectiveMagCal == MagCal::EXTERNAL_YAW_FALLBACK || !use_compass()) {
         return imuSampleTime_ms - last_gps_yaw_fusion_ms < 5000 || imuSampleTime_ms - lastSynthYawTime_ms < 5000;
     }
     return false;
@@ -544,8 +557,8 @@ void NavEKF3_core::checkGyroCalStatus(void)
 {
     // check delta angle bias variances
     const float delAngBiasVarMax = sq(radians(0.15f * dtEkfAvg));
-    if (effectiveMagCal == MagCal::GSF_YAW) {
-        // rotate the variances into earth frame and evaluate horizontal terms only as yaw component is poorly observable without a compass
+    if (!use_compass() && (effectiveMagCal != MagCal::EXTERNAL_YAW) && (effectiveMagCal != MagCal::EXTERNAL_YAW_FALLBACK)) {
+        // rotate the variances into earth frame and evaluate horizontal terms only as yaw component is poorly observable without a yaw reference
         // which can make this check fail
         Vector3f delAngBiasVarVec = Vector3f(P[10][10],P[11][11],P[12][12]);
         Vector3f temp = prevTnb * delAngBiasVarVec;
@@ -600,7 +613,7 @@ void  NavEKF3_core::updateFilterStatus(void)
     filterStatus.flags.pred_horiz_pos_rel = filterStatus.flags.horiz_pos_rel; // EKF3 enters the required mode before flight
     filterStatus.flags.pred_horiz_pos_abs = filterStatus.flags.horiz_pos_abs; // EKF3 enters the required mode before flight
     filterStatus.flags.takeoff_detected = takeOffDetected; // takeoff for optical flow navigation has been detected
-    filterStatus.flags.takeoff = expectGndEffectTakeoff; // The EKF has been told to expect takeoff and is in a ground effect mitigation mode
+    filterStatus.flags.takeoff = expectTakeoff; // The EKF has been told to expect takeoff is in a ground effect mitigation mode and has started the EKF-GSF yaw estimator
     filterStatus.flags.touchdown = expectGndEffectTouchdown; // The EKF has been told to detect touchdown and is in a ground effect mitigation mode
     filterStatus.flags.using_gps = ((imuSampleTime_ms - lastPosPassTime_ms) < 4000) && (PV_AidingMode == AID_ABSOLUTE);
     filterStatus.flags.gps_glitching = !gpsAccuracyGood && (PV_AidingMode == AID_ABSOLUTE) && (frontend->_fusionModeGPS != 3); // GPS glitching is affecting navigation accuracy
@@ -632,7 +645,19 @@ void NavEKF3_core::runYawEstimatorCorrection()
         if (gpsDataToFuse) {
             Vector2f gpsVelNE = Vector2f(gpsDataDelayed.vel.x, gpsDataDelayed.vel.y);
             float gpsVelAcc = fmaxf(gpsSpdAccuracy, frontend->_gpsHorizVelNoise);
-            yawEstimator->pushVelData(gpsVelNE, gpsVelAcc);
+            yawEstimator->fuseVelData(gpsVelNE, gpsVelAcc);
+
+            // after velocity data has been fused the yaw variance esitmate will have been refreshed and
+            // is used maintain a history of validity
+            float yawEKFGSF, yawVarianceEKFGSF;
+            bool canUseEKFGSF = yawEstimator->getYawData(yawEKFGSF, yawVarianceEKFGSF) && is_positive(yawVarianceEKFGSF) && yawVarianceEKFGSF < sq(radians(GSF_YAW_ACCURACY_THRESHOLD_DEG));
+            if (canUseEKFGSF) {
+                if (EKFGSF_yaw_valid_count <  GSF_YAW_VALID_HISTORY_THRESHOLD) {
+                    EKFGSF_yaw_valid_count++;
+                }
+            } else {
+                EKFGSF_yaw_valid_count = 0;
+            }
         }
 
         // action an external reset request

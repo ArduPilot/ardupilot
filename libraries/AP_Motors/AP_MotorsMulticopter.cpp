@@ -13,12 +13,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*
- *       AP_MotorsMulticopter.cpp - ArduCopter multicopter motors library
- *       Code by Randy Mackay and Robert Lefebvre. DIYDrones.com
- *
- */
-
 #include "AP_MotorsMulticopter.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>

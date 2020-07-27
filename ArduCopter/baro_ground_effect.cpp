@@ -67,3 +67,17 @@ void Copter::update_ground_effect_detector(void)
     ahrs.setTakeoffExpected(gndeffect_state.takeoff_expected);
     ahrs.setTouchdownExpected(gndeffect_state.touchdown_expected);
 }
+
+// update ekf terrain height stable setting
+// when set to true, this allows the EKF to stabilize the normally barometer based altitude using a rangefinder
+// this is not related to terrain following
+void Copter::update_ekf_terrain_height_stable()
+{
+    // set to false if no position estimate
+    if (!position_ok() && !optflow_position_ok()) {
+        ahrs.set_terrain_hgt_stable(false);
+    }
+
+    // consider terrain height stable if vehicle is taking off or landing
+    ahrs.set_terrain_hgt_stable(flightmode->is_taking_off() || flightmode->is_landing());
+}

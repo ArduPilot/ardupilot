@@ -572,7 +572,7 @@ class uploader(object):
         # get the bootloader protocol ID first
         self.bl_rev = self.__getInfo(uploader.INFO_BL_REV)
         if (self.bl_rev < uploader.BL_REV_MIN) or (self.bl_rev > uploader.BL_REV_MAX):
-            print("Unsupported bootloader protocol %d" % uploader.INFO_BL_REV)
+            print("Unsupported bootloader protocol %d" % self.bl_rev)
             raise RuntimeError("Bootloader protocol mismatch")
 
         self.board_type = self.__getInfo(uploader.INFO_BOARD_ID)
@@ -737,8 +737,11 @@ class uploader(object):
                     print("INFO: %s" % msg)
                     incomp = False
             if incomp:                        
-                msg = "Firmware not suitable for this board (board_type=%u board_id=%u)" % (
-                    self.board_type, fw.property('board_id'))
+                msg = "Firmware not suitable for this board (board_type=%u (%s) board_id=%u (%s))" % (
+                    self.board_type,
+                    self.board_name_for_board_id(self.board_type),
+                    fw.property('board_id'),
+                    self.board_name_for_board_id(fw.property('board_id')))
                 print("WARNING: %s" % msg)
                 
                 if force:

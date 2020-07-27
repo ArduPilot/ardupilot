@@ -32,9 +32,9 @@ void AP_Logger_Backend::Fill_Format(const struct LogStructure *s, struct log_For
     pkt.msgid = LOG_FORMAT_MSG;
     pkt.type = s->msg_type;
     pkt.length = s->msg_len;
-    strncpy(pkt.name, s->name, sizeof(pkt.name));
-    strncpy(pkt.format, s->format, sizeof(pkt.format));
-    strncpy(pkt.labels, s->labels, sizeof(pkt.labels));
+    strncpy_noterm(pkt.name, s->name, sizeof(pkt.name));
+    strncpy_noterm(pkt.format, s->format, sizeof(pkt.format));
+    strncpy_noterm(pkt.labels, s->labels, sizeof(pkt.labels));
 }
 
 /*
@@ -48,8 +48,8 @@ void AP_Logger_Backend::Fill_Format_Units(const struct LogStructure *s, struct l
     pkt.msgid = LOG_FORMAT_UNITS_MSG;
     pkt.time_us = AP_HAL::micros64();
     pkt.format_type = s->msg_type;
-    strncpy(pkt.units, s->units, sizeof(pkt.units));
-    strncpy(pkt.multipliers, s->multipliers, sizeof(pkt.multipliers));
+    strncpy_noterm(pkt.units, s->units, sizeof(pkt.units));
+    strncpy_noterm(pkt.multipliers, s->multipliers, sizeof(pkt.multipliers));
 }
 
 /*
@@ -73,7 +73,7 @@ bool AP_Logger_Backend::Write_Unit(const struct UnitStructure *s)
         type    : s->ID,
         unit    : { }
     };
-    strncpy(pkt.unit, s->unit, sizeof(pkt.unit));
+    strncpy_noterm(pkt.unit, s->unit, sizeof(pkt.unit));
 
     return WriteCriticalBlock(&pkt, sizeof(pkt));
 }
@@ -114,7 +114,7 @@ bool AP_Logger_Backend::Write_Parameter(const char *name, float value)
         name  : {},
         value : value
     };
-    strncpy(pkt.name, name, sizeof(pkt.name));
+    strncpy_noterm(pkt.name, name, sizeof(pkt.name));
     return WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
@@ -462,7 +462,7 @@ bool AP_Logger_Backend::Write_Message(const char *message)
         time_us : AP_HAL::micros64(),
         msg  : {}
     };
-    strncpy(pkt.msg, message, sizeof(pkt.msg));
+    strncpy_noterm(pkt.msg, message, sizeof(pkt.msg));
     return WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
@@ -480,6 +480,7 @@ void AP_Logger::Write_Power(void)
         Vcc     : hal.analogin->board_voltage(),
         Vservo  : hal.analogin->servorail_voltage(),
         flags   : hal.analogin->power_status_flags(),
+        accumulated_flags   : hal.analogin->accumulated_power_status_flags(),
         safety_and_arm : safety_and_armed
     };
     WriteBlock(&pkt, sizeof(pkt));
@@ -831,7 +832,8 @@ void AP_Logger::Write_PID(uint8_t msg_type, const PID_Info &info)
         P               : info.P,
         I               : info.I,
         D               : info.D,
-        FF              : info.FF
+        FF              : info.FF,
+        Dmod            : info.Dmod
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
@@ -911,7 +913,7 @@ void AP_Logger::Write_VisualOdom(float time_delta, const Vector3f &angle_delta, 
 }
 
 // Write visual position sensor data.  x,y,z are in meters, angles are in degrees
-void AP_Logger::Write_VisualPosition(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, float roll, float pitch, float yaw, uint8_t reset_counter)
+void AP_Logger::Write_VisualPosition(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, float roll, float pitch, float yaw, float pos_err, float ang_err, uint8_t reset_counter)
 {
     const struct log_VisualPosition pkt_visualpos {
         LOG_PACKET_HEADER_INIT(LOG_VISUALPOS_MSG),
@@ -924,6 +926,8 @@ void AP_Logger::Write_VisualPosition(uint64_t remote_time_us, uint32_t time_ms, 
         roll            : roll,
         pitch           : pitch,
         yaw             : yaw,
+        pos_err         : pos_err,
+        ang_err         : ang_err,
         reset_counter   : reset_counter
     };
     WriteBlock(&pkt_visualpos, sizeof(log_VisualPosition));
@@ -1040,7 +1044,7 @@ void AP_Logger::Write_SRTL(bool active, uint16_t num_points, uint16_t max_points
     WriteBlock(&pkt_srtl, sizeof(pkt_srtl));
 }
 
-void AP_Logger::Write_OABendyRuler(bool active, float target_yaw, float margin, const Location &final_dest, const Location &oa_dest)
+void AP_Logger::Write_OABendyRuler(bool active, float target_yaw, bool resist_chg, float margin, const Location &final_dest, const Location &oa_dest)
 {
     const struct log_OABendyRuler pkt{
         LOG_PACKET_HEADER_INIT(LOG_OA_BENDYRULER_MSG),
@@ -1048,6 +1052,7 @@ void AP_Logger::Write_OABendyRuler(bool active, float target_yaw, float margin, 
         active      : active,
         target_yaw  : (uint16_t)wrap_360(target_yaw),
         yaw         : (uint16_t)wrap_360(AP::ahrs().yaw_sensor * 0.01f),
+        resist_chg  : resist_chg,
         margin      : margin,
         final_lat   : final_dest.lat,
         final_lng   : final_dest.lng,

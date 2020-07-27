@@ -202,7 +202,8 @@ void Plane::dspoiler_update(void)
     const int8_t bitmask = g2.crow_flap_options.get();
     const bool flying_wing       = (bitmask & CrowFlapOptions::FLYINGWING) != 0;
     const bool full_span_aileron = (bitmask & CrowFlapOptions::FULLSPAN) != 0;
-    const bool progresive_crow   = (bitmask & CrowFlapOptions::PROGRESSIVE_CROW) != 0;
+    //progressive crow when option is set or RC switch is set to progressive 
+    const bool progressive_crow   = (bitmask & CrowFlapOptions::PROGRESSIVE_CROW) != 0  || crow_mode == CrowMode::PROGRESSIVE; 
 
     // if flying wing use elevons else use ailerons
     float elevon_left;
@@ -253,7 +254,10 @@ void Plane::dspoiler_update(void)
         }
     }
 
-    const int16_t weight_outer = g2.crow_flap_weight_outer.get();
+    int16_t weight_outer = g2.crow_flap_weight_outer.get();
+    if (crow_mode == Plane::CrowMode::CROW_DISABLED) {   //override totally aileron crow if crow RC switch set to disabled
+        weight_outer = 0;
+    }
     const int16_t weight_inner = g2.crow_flap_weight_inner.get();
     if (weight_outer > 0 || weight_inner > 0) {
         /*
@@ -266,7 +270,7 @@ void Plane::dspoiler_update(void)
         if (flap_percent > 0) {
             float inner_flap_scaled = (float)flap_percent;
             float outer_flap_scaled = (float)flap_percent;
-            if (progresive_crow) {
+            if (progressive_crow) {
                 // apply 0 - full inner from 0 to 50% flap then add in outer above 50%
                 inner_flap_scaled = constrain_float(inner_flap_scaled * 2, 0,100);
                 outer_flap_scaled = constrain_float(outer_flap_scaled - 50, 0,50) * 2;
@@ -345,7 +349,7 @@ void Plane::set_servos_manual_passthrough(void)
 /*
   Scale the throttle to conpensate for battery voltage drop
  */
-void Plane::throttle_voltage_comp()
+void Plane::throttle_voltage_comp(int8_t &min_throttle, int8_t &max_throttle)
 {
     // return if not enabled, or setup incorrectly
     if (g2.fwd_thr_batt_voltage_min >= g2.fwd_thr_batt_voltage_max || !is_positive(g2.fwd_thr_batt_voltage_max)) {
@@ -369,6 +373,10 @@ void Plane::throttle_voltage_comp()
     // Scale the throttle up to compensate for voltage drop
     // Ratio = 1 when voltage = voltage max, ratio increases as voltage drops
     const float ratio = g2.fwd_thr_batt_voltage_max / batt_voltage_resting_estimate;
+
+    // Scale the throttle limits to prevent subsequent clipping
+    min_throttle = MAX((int8_t)(ratio * (float)min_throttle), -100);
+    max_throttle = MIN((int8_t)(ratio * (float)max_throttle),  100);
 
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttle,
                                         constrain_int16(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * ratio, -100, 100));
@@ -444,8 +452,11 @@ void Plane::set_servos_controlled(void)
         min_throttle = 0;
     }
     
-    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF || flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
-        if(aparm.takeoff_throttle_max != 0) {
+    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF || 
+        flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND ||
+        quadplane.in_transition()) {
+
+        if (aparm.takeoff_throttle_max != 0) {
             max_throttle = aparm.takeoff_throttle_max;
         } else {
             max_throttle = aparm.throttle_max;
@@ -455,7 +466,7 @@ void Plane::set_servos_controlled(void)
     }
 
     // conpensate for battery voltage drop
-    throttle_voltage_comp();
+    throttle_voltage_comp(min_throttle, max_throttle);
 
     // apply watt limiter
     throttle_watt_limiter(min_throttle, max_throttle);
@@ -504,9 +515,24 @@ void Plane::set_servos_controlled(void)
         // manual pass through of throttle while in GUIDED
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
     } else if (quadplane.in_vtol_mode()) {
-        // ask quadplane code for forward throttle
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 
-            constrain_int16(quadplane.forward_throttle_pct(), min_throttle, max_throttle));
+        int16_t fwd_thr = 0;
+        // if armed and not spooled down ask quadplane code for forward throttle
+        if (quadplane.motors->armed() &&
+            quadplane.motors->get_desired_spool_state() != AP_Motors::DesiredSpoolState::SHUT_DOWN) {
+
+            fwd_thr = constrain_int16(quadplane.forward_throttle_pct(), min_throttle, max_throttle);
+        }
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, fwd_thr);
+    }
+
+    // let EKF know to start GSF yaw estimator before takeoff movement starts so that yaw angle is better estimated
+    const float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
+    if (!is_flying() && arming.is_armed()) {
+        bool throw_detected = sq(ahrs.get_accel_ef().x) + sq(ahrs.get_accel_ef().y) > sq(g.takeoff_throttle_min_accel);
+        bool throttle_up_detected = throttle > aparm.throttle_cruise;
+        if (throw_detected || throttle_up_detected) {
+            plane.ahrs.setTakeoffExpected(true);
+        }
     }
 }
 
@@ -835,9 +861,6 @@ void Plane::servos_output(void)
     // cope with tailsitters and bicopters
     quadplane.tailsitter_output();
     quadplane.tiltrotor_bicopter();
-
-    // the mixers need pwm to be calculated now
-    SRV_Channels::calc_pwm();
 
     // run vtail and elevon mixers
     servo_output_mixers();

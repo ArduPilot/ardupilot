@@ -410,7 +410,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: THR_MAX
     // @DisplayName: Maximum Throttle
-    // @Description: Maximum throttle percentage used in automatic throttle modes.
+    // @Description: Maximum throttle percentage used in all modes except manual, provided THR_PASS_STAB is not set.
     // @Units: %
     // @Range: 0 100
     // @Increment: 1
@@ -1250,7 +1250,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // @Param: FWD_BAT_VOLT_MAX
     // @DisplayName: Forward throttle battery voltage compensation maximum voltage
-    // @Description: Forward throttle battery voltage compensation maximum voltage (voltage above this will have no additional scaling effect on thrust).  Recommend 4.4 * cell count, 0 = Disabled
+    // @Description: Forward throttle battery voltage compensation maximum voltage (voltage above this will have no additional scaling effect on thrust). Recommend 4.2 * cell count, 0 = Disabled. Recommend THR_MAX is set to no more than 100 x FWD_BAT_VOLT_MIN / FWD_BAT_VOLT_MAX, THR_MIN is set to no less than -100 x FWD_BAT_VOLT_MIN / FWD_BAT_VOLT_MAX and climb descent rate limits are set accordingly.
     // @Range: 6 35
     // @Units: V
     // @User: Advanced
@@ -1258,7 +1258,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // @Param: FWD_BAT_VOLT_MIN
     // @DisplayName: Forward throttle battery voltage compensation minimum voltage
-    // @Description: Forward throttle battery voltage compensation minimum voltage (voltage below this will have no additional scaling effect on thrust).  Recommend 3.5 * cell count, 0 = Disabled
+    // @Description: Forward throttle battery voltage compensation minimum voltage (voltage below this will have no additional scaling effect on thrust).  Recommend 3.5 * cell count, 0 = Disabled. Recommend THR_MAX is set to no more than 100 x FWD_BAT_VOLT_MIN / FWD_BAT_VOLT_MAX, THR_MIN is set to no less than -100 x FWD_BAT_VOLT_MIN / FWD_BAT_VOLT_MAX and climb descent rate limits are set accordingly.
     // @Range: 6 35
     // @Units: V
     // @User: Advanced
@@ -1419,6 +1419,21 @@ void Plane::load_parameters(void)
         RC_Channel *flapin = rc().channel(flap_output - 1);
         if (flapin != nullptr && !flapin->option.configured()) {
             flapin->option.set_and_save((int16_t)RC_Channel::AUX_FUNC::FLAP); // save the new param
+        }
+    }
+
+    // Convert SOAR_ENABLE_CH to RCx_OPTION
+    AP_Int8 soar_enable_ch;
+    AP_Param::ConversionInfo soar_info = {
+        Parameters::k_param_g2,
+        968,
+        AP_PARAM_INT8,
+        nullptr
+    };
+    if (AP_Param::find_old_parameter(&soar_info, &soar_enable_ch) && soar_enable_ch.get() != 0) {
+        RC_Channel *soar_ch = rc().channel(soar_enable_ch - 1);
+        if (soar_ch != nullptr && !soar_ch->option.configured()) {
+            soar_ch->option.set_and_save((int16_t)RC_Channel::AUX_FUNC::SOARING); // save the new param
         }
     }
 

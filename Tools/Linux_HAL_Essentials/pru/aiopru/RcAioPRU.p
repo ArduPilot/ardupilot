@@ -265,8 +265,8 @@ pwmend:
    sbco register.temp, ECAP, ECAP_ECCTL1, 4
 
    // -> 15.3.4.1.8 ECCTL2 Register in TRM
-   // ECAP_CONT_ONESHT = 1 : Operate in continuous mode - default
-   // ECAP_STOP_WRAP = = 1 : Wrap after Capture Event 2 in continuous mode
+   // ECAP_CONT_ONESHT = 0 : Operate in continuous mode - default
+   // ECAP_STOP_WRAP = 1 : Wrap after Capture Event 2 in continuous mode
    // ECAP_TSCTRSTOP = 1 : TSCTR free-running
    // ECAP_SYNCO_SEL = 2 : Disable sync out signal
    // ECAP_CAP_APWM = 0 : ECAP module operates in capture mode - default

@@ -154,6 +154,9 @@ class Board:
                 '-g',
                 '-O0',
             ]
+            env.DEFINES.update(
+                HAL_DEBUG_BUILD = 1,
+            )
 
         if cfg.options.bootloader:
             # don't let bootloaders try and pull scripting in
@@ -177,7 +180,6 @@ class Board:
             '-Wall',
             '-Wextra',
             '-Wpointer-arith',
-            '-Wcast-align',
             '-Wundef',
             '-Wno-unused-parameter',
             '-Wno-missing-field-initializers',
@@ -185,6 +187,7 @@ class Board:
             '-Wno-redundant-decls',
             '-Wno-unknown-pragmas',
             '-Wno-expansion-to-defined',
+            '-Werror=cast-align',
             '-Werror=attributes',
             '-Werror=format-security',
             '-Werror=format-extra-args',

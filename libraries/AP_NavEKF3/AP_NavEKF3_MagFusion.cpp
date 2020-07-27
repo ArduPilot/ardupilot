@@ -19,7 +19,7 @@ void NavEKF3_core::controlMagYawReset()
     // Vehicles that can use a zero sideslip assumption (Planes) are a special case
     // They can use the GPS velocity to recover from bad initial compass data
     // This allows recovery for heading alignment errors due to compass faults
-    if (assume_zero_sideslip() && !finalInflightYawInit && inFlight ) {
+    if (assume_zero_sideslip() && !finalInflightYawInit && inFlight) {
         gpsYawResetRequest = true;
         return;
     } else {
@@ -93,10 +93,7 @@ void NavEKF3_core::controlMagYawReset()
             finalResetRequest; // the final reset when we have achieved enough height to be in stable magnetic field environment
 
     // Perform a reset of magnetic field states and reset yaw to corrected magnetic heading
-    if (magYawResetRequest) {
-        // update rotation matrix from body to NED frame
-        stateStruct.quat.inverse().rotation_matrix(prevTnb);
-
+    if (magYawResetRequest && use_compass()) {
         // set yaw from a single mag sample
         setYawFromMag();
 
@@ -119,42 +116,15 @@ void NavEKF3_core::controlMagYawReset()
             finalInflightYawInit = false;
             finalInflightMagInit = false;
         }
+
+        // mag states
+        if (!magFieldLearned) {
+            resetMagFieldStates();
+        }
     }
 
     if (magStateResetRequest) {
-
-        // Rotate Mag measurements into NED to set initial NED magnetic field states
-        // Don't do this if the earth field has already been learned
-        if (!magFieldLearned) {
-            if (have_table_earth_field && frontend->_mag_ef_limit > 0) {
-                stateStruct.earth_magfield = table_earth_field_ga;
-            } else {
-                stateStruct.earth_magfield = prevTnb.transposed() * magDataDelayed.mag;
-            }
-
-            // set the NE earth magnetic field states using the published declination
-            // and set the corresponding variances and covariances
-            alignMagStateDeclination();
-
-            // set the remaining variances and covariances
-            zeroRows(P,18,21);
-            zeroCols(P,18,21);
-            P[18][18] = sq(frontend->_magNoise);
-            P[19][19] = P[18][18];
-            P[20][20] = P[18][18];
-            P[21][21] = P[18][18];
-
-        }
-
-        // record the fact we have initialised the magnetic field states
-        recordMagReset();
-
-        // prevent reset of variances in ConstrainVariances()
-        inhibitMagStates = false;
-
-        // clear mag state reset request
-        magStateResetRequest = false;
-
+        resetMagFieldStates();
     }
 }
 
@@ -261,10 +231,12 @@ void NavEKF3_core::SelectMagFusion()
 
     // Handle case where we are not using a yaw sensor of any type and and attempt to reset the yaw in
     // flight using the output from the GSF yaw estimator.
-    if ((effectiveMagCal == MagCal::GSF_YAW || !use_compass()) &&
+    if (!use_compass() &&
         effectiveMagCal != MagCal::EXTERNAL_YAW &&
         effectiveMagCal != MagCal::EXTERNAL_YAW_FALLBACK) {
-        if (!yawAlignComplete) {
+
+        // because this type of reset event is not as time critical, require a continuous history of valid estimates
+        if (!yawAlignComplete && EKFGSF_yaw_valid_count >= GSF_YAW_VALID_HISTORY_THRESHOLD) {
             yawAlignComplete = EKFGSF_resetMainFilterYaw();
         }
 
@@ -278,9 +250,11 @@ void NavEKF3_core::SelectMagFusion()
             }
 
             float yawEKFGSF, yawVarianceEKFGSF;
-            bool canUseEKFGSF = yawEstimator->getYawData(yawEKFGSF, yawVarianceEKFGSF) && is_positive(yawVarianceEKFGSF) && yawVarianceEKFGSF < sq(radians(15.0f));
-            if (yawAlignComplete && canUseEKFGSF) {
+            bool canUseEKFGSF = yawEstimator->getYawData(yawEKFGSF, yawVarianceEKFGSF) &&
+                                is_positive(yawVarianceEKFGSF) && yawVarianceEKFGSF < sq(radians(GSF_YAW_ACCURACY_THRESHOLD_DEG));
+            if (yawAlignComplete && canUseEKFGSF && !assume_zero_sideslip()) {
                 // use the EKF-GSF yaw estimator output as this is more robust than the EKF can achieve without a yaw measurement
+                // for non fixed wing platform types
                 yawAngDataDelayed.yawAngErr = MAX(sqrtf(yawVarianceEKFGSF), 0.05f);
                 yawAngDataDelayed.yawAng = yawEKFGSF;
                 fuseEulerYaw(false, true);
@@ -297,8 +271,10 @@ void NavEKF3_core::SelectMagFusion()
                 if (onGroundNotMoving) {
                     // fuse last known good yaw angle before we stopped moving to allow yaw bias learning when on ground before flight
                     fuseEulerYaw(false, true);
-                } else {
+                } else if (onGround || (sq(P[0][0])+sq(P[1][1])+sq(P[2][2])+sq(P[3][3]) > 0.01f)) {
                     // prevent uncontrolled yaw variance growth by fusing a zero innovation
+                    // when not on ground allow more variance growth so yaw can be corrected
+                    // by manoeuvring
                     fuseEulerYaw(true, true);
                 }
             }
@@ -930,7 +906,7 @@ void NavEKF3_core::fuseEulerYaw(bool usePredictedYaw, bool useExternalYawSensor)
     if (usePredictedYaw && yawEstimator != nullptr) {
         canUseGsfYaw = yawEstimator->getYawData(gsfYaw, gsfYawVariance)
                         && is_positive(gsfYawVariance)
-                        && gsfYawVariance < sq(radians(15.0f));
+                        && gsfYawVariance < sq(radians(GSF_YAW_ACCURACY_THRESHOLD_DEG));
     }
 
     // yaw measurement error variance (rad^2)
@@ -1392,6 +1368,7 @@ void NavEKF3_core::alignMagStateDeclination()
 // record a magnetic field state reset event
 void NavEKF3_core::recordMagReset()
 {
+    magStateResetRequest = false;
     magStateInitComplete = true;
     if (inFlight) {
         finalInflightMagInit = true;
@@ -1472,7 +1449,7 @@ bool NavEKF3_core::learnMagBiasFromGPS(void)
 // Reset states using yaw from EKF-GSF and velocity and position from GPS
 bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
 {
-    // Don't do a reset unless permitted by the EK3_GSF_USE and EKF3_GSF_RUN parameter masks
+    // Don't do a reset unless permitted by the EK3_GSF_USE and EK3_GSF_RUN parameter masks
     if ((yawEstimator == nullptr)
         || !(frontend->_gsfUseMask & (1U<<core_index))
         || EKFGSF_yaw_reset_count >= frontend->_gsfResetMaxCount) {
@@ -1480,7 +1457,7 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
     };
 
     float yawEKFGSF, yawVarianceEKFGSF;
-    if (yawEstimator->getYawData(yawEKFGSF, yawVarianceEKFGSF) && is_positive(yawVarianceEKFGSF) && yawVarianceEKFGSF < sq(radians(15.0f))) {
+    if (yawEstimator->getYawData(yawEKFGSF, yawVarianceEKFGSF) && is_positive(yawVarianceEKFGSF) && yawVarianceEKFGSF < sq(radians(GSF_YAW_ACCURACY_THRESHOLD_DEG))) {
 
         // keep roll and pitch and reset yaw
         resetQuatStateYawOnly(yawEKFGSF, yawVarianceEKFGSF);
@@ -1490,7 +1467,7 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
         EKFGSF_yaw_reset_ms = imuSampleTime_ms;
         EKFGSF_yaw_reset_count++;
 
-        if (effectiveMagCal == MagCal::GSF_YAW || AP::compass().get_num_enabled() == 0) {
+        if (!use_compass() || AP::compass().get_num_enabled() == 0) {
             gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u yaw aligned using GPS",(unsigned)imu_index);
         } else {
             gcs().send_text(MAV_SEVERITY_WARNING, "EKF3 IMU%u emergency yaw reset",(unsigned)imu_index);
@@ -1498,6 +1475,9 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
 
         // Fail the magnetomer so it doesn't get used and pull the yaw away from the correct value
         allMagSensorsFailed = true;
+
+        // record the yaw reset event
+        recordYawReset();
 
         // reset velocity and position states to GPS - if yaw is fixed then the filter should start to operate correctly
         ResetVelocity();
@@ -1545,6 +1525,8 @@ void NavEKF3_core::resetQuatStateYawOnly(float yaw, float yawVariance)
 
     // update the yaw angle variance using the variance of the EKF-GSF estimate
     angleErrVarVec.z = yawVariance;
+    zeroRows(P,0,3);
+    zeroCols(P,0,3);
     initialiseQuatCovariances(angleErrVarVec);
 
     // record the yaw reset event

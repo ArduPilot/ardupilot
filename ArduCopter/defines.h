@@ -107,6 +107,13 @@ enum GuidedMode {
     Guided_Angle,
 };
 
+// Airmode
+enum class AirMode {
+    AIRMODE_NONE,
+    AIRMODE_DISABLED,
+    AIRMODE_ENABLED,
+};
+
 // Safe RTL states
 enum SmartRTLState {
     SmartRTL_WaitForPathCleanup,

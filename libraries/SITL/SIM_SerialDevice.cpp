@@ -16,7 +16,11 @@
   base class for serially-attached simulated devices
 */
 
+#include <AP_HAL/AP_HAL.h>
+#include <SITL/SITL.h>
+
 #include "SIM_SerialDevice.h"
+
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>

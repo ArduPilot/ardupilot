@@ -37,21 +37,21 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("ENABLE", 1,  AC_Avoid, _enabled, AC_AVOID_DEFAULT),
 
-    // @Param: ANGLE_MAX
+    // @Param{Copter}: ANGLE_MAX
     // @DisplayName: Avoidance max lean angle in non-GPS flight modes
     // @Description: Max lean angle used to avoid obstacles while in non-GPS modes
     // @Units: cdeg
     // @Range: 0 4500
     // @User: Standard
-    AP_GROUPINFO("ANGLE_MAX", 2,  AC_Avoid, _angle_max, 1000),
+    AP_GROUPINFO_FRAME("ANGLE_MAX", 2,  AC_Avoid, _angle_max, 1000, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
 
-    // @Param: DIST_MAX
+    // @Param{Copter}: DIST_MAX
     // @DisplayName: Avoidance distance maximum in non-GPS flight modes
     // @Description: Distance from object at which obstacle avoidance will begin in non-GPS modes
     // @Units: m
     // @Range: 1 30
     // @User: Standard
-    AP_GROUPINFO("DIST_MAX", 3,  AC_Avoid, _dist_max, AC_AVOID_NONGPS_DIST_MAX_DEFAULT),
+    AP_GROUPINFO_FRAME("DIST_MAX", 3,  AC_Avoid, _dist_max, AC_AVOID_NONGPS_DIST_MAX_DEFAULT, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
 
     // @Param: MARGIN
     // @DisplayName: Avoidance distance margin in GPS modes
@@ -61,12 +61,12 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("MARGIN", 4, AC_Avoid, _margin, 2.0f),
 
-    // @Param: BEHAVE
+    // @Param{Copter}: BEHAVE
     // @DisplayName: Avoidance behaviour
     // @Description: Avoidance behaviour (slide or stop)
     // @Values: 0:Slide,1:Stop
     // @User: Standard
-    AP_GROUPINFO("BEHAVE", 5, AC_Avoid, _behavior, AP_AVOID_BEHAVE_DEFAULT),
+    AP_GROUPINFO_FRAME("BEHAVE", 5, AC_Avoid, _behavior, AP_AVOID_BEHAVE_DEFAULT, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
 
     AP_GROUPEND
 };
@@ -375,7 +375,7 @@ void AC_Avoid::adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f
             // shorten vector without adjusting its direction
             Vector2f intersection;
             if (Vector2f::circle_segment_intersection(position_xy, stopping_point_plus_margin, Vector2f(0.0f,0.0f), fence_radius - margin_cm, intersection)) {
-                const float distance_to_target = MAX((intersection - position_xy).length() - margin_cm, 0.0f);
+                const float distance_to_target = (intersection - position_xy).length();
                 const float max_speed = get_max_speed(kP, accel_cmss, distance_to_target, dt);
                 if (max_speed < desired_speed) {
                     desired_vel_cms *= MAX(max_speed, 0.0f) / desired_speed;
@@ -406,10 +406,7 @@ void AC_Avoid::adjust_velocity_inclusion_and_exclusion_polygons(float kP, float 
     for (uint8_t i = 0; i < num_inclusion_polygons; i++) {
         uint16_t num_points;
         const Vector2f* boundary = fence->polyfence().get_inclusion_polygon(i, num_points);
-        if (num_points < 3) {
-            // ignore exclusion polygons with less than 3 points
-            continue;
-        }
+        
         // adjust velocity
         adjust_velocity_polygon(kP, accel_cmss, desired_vel_cms, boundary, num_points, true, fence->get_margin(), dt, true);
     }
@@ -419,10 +416,7 @@ void AC_Avoid::adjust_velocity_inclusion_and_exclusion_polygons(float kP, float 
     for (uint8_t i = 0; i < num_exclusion_polygons; i++) {
         uint16_t num_points;
         const Vector2f* boundary = fence->polyfence().get_exclusion_polygon(i, num_points);
-        if (num_points < 3) {
-            // ignore exclusion polygons with less than 3 points
-            continue;
-        }
+ 
         // adjust velocity
         adjust_velocity_polygon(kP, accel_cmss, desired_vel_cms, boundary, num_points, true, fence->get_margin(), dt, false);
     }
@@ -531,7 +525,7 @@ void AC_Avoid::adjust_velocity_inclusion_circles(float kP, float accel_cmss, Vec
                         // shorten vector without adjusting its direction
                         Vector2f intersection;
                         if (Vector2f::circle_segment_intersection(position_NE_rel, stopping_point_plus_margin, Vector2f(0.0f,0.0f), radius_cm - margin_cm, intersection)) {
-                            const float distance_to_target = MAX((intersection - position_NE_rel).length() - margin_cm, 0.0f);
+                            const float distance_to_target = (intersection - position_NE_rel).length();
                             const float max_speed = get_max_speed(kP, accel_cmss, distance_to_target, dt);
                             if (max_speed < desired_speed) {
                                 desired_vel_cms *= MAX(max_speed, 0.0f) / desired_speed;
@@ -641,7 +635,7 @@ void AC_Avoid::adjust_velocity_exclusion_circles(float kP, float accel_cmss, Vec
                         // shorten vector without adjusting its direction
                         Vector2f intersection;
                         if (Vector2f::circle_segment_intersection(position_NE_rel, stopping_point_plus_margin, Vector2f(0.0f,0.0f), radius_cm + margin_cm, intersection)) {
-                            const float distance_to_target = MAX((intersection - position_NE_rel).length() - margin_cm, 0.0f);
+                            const float distance_to_target = (intersection - position_NE_rel).length();
                             const float max_speed = get_max_speed(kP, accel_cmss, distance_to_target, dt);
                             if (max_speed < desired_speed) {
                                 desired_vel_cms *= MAX(max_speed, 0.0f) / desired_speed;

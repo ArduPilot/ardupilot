@@ -265,11 +265,6 @@ void AP_InertialSensor_Invensense::start()
     // readings to fit them into an int16_t:
     _set_raw_sample_accel_multiplier(_accel_instance, multiplier_accel);
 
-    if (_fast_sampling) {
-        hal.console->printf("MPU[%u]: enabled fast sampling rate %uHz/%uHz\n",
-                            _accel_instance, _backend_rate_hz*_fifo_downsample_rate, _backend_rate_hz);
-    }
-    
     // set sample rate to 1000Hz and apply a software filter
     // In this configuration, the gyro sample rate is 8kHz
     _register_write(MPUREG_SMPLRT_DIV, 0, true);
@@ -350,6 +345,15 @@ void AP_InertialSensor_Invensense::start()
     _dev->register_periodic_callback(1000000UL / _backend_rate_hz, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_Invensense::_poll_data, void));
 }
 
+// get a startup banner to output to the GCS
+bool AP_InertialSensor_Invensense::get_output_banner(char* banner, uint8_t banner_len) {
+    if (_fast_sampling) {
+        snprintf(banner, banner_len, "IMU%u: fast sampling enabled %.1fkHz/%.1fkHz",
+            _accel_instance, _backend_rate_hz*_fifo_downsample_rate / 1000.0, _backend_rate_hz/ 1000.0);
+        return true;
+    }
+    return false;
+}
 
 /*
   publish any pending data
@@ -509,13 +513,13 @@ bool AP_InertialSensor_Invensense::_accumulate_sensor_rate_sampling(uint8_t *sam
 
             _accum.accel *= _fifo_accel_scale;
             _accum.gyro *= _fifo_gyro_scale;
-            
+
             _rotate_and_correct_accel(_accel_instance, _accum.accel);
             _rotate_and_correct_gyro(_gyro_instance, _accum.gyro);
-            
+
             _notify_new_accel_raw_sample(_accel_instance, _accum.accel, 0, false);
             _notify_new_gyro_raw_sample(_gyro_instance, _accum.gyro);
-            
+
             _accum.accel.zero();
             _accum.gyro.zero();
             _accum.count = 0;
@@ -684,15 +688,20 @@ void AP_InertialSensor_Invensense::_set_filter_register(void)
     if (enable_fast_sampling(_accel_instance)) {
         _fast_sampling = (_mpu_type >= Invensense_MPU9250 && _dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI);
         if (_fast_sampling) {
-            if (get_sample_rate_hz() <= 1000) {
-                _fifo_downsample_rate = 8;
-            } else if (get_sample_rate_hz() <= 2000) {
-                _fifo_downsample_rate = 4;
-            } else {
-                _fifo_downsample_rate = 2;
+            // constrain the gyro rate to be at least the loop rate
+            uint8_t loop_limit = 1;
+            if (get_loop_rate_hz() > 1000) {
+                loop_limit = 2;
             }
-            // calculate rate we will be giving samples to the backend
-            _backend_rate_hz *= (8 / _fifo_downsample_rate);
+            if (get_loop_rate_hz() > 2000) {
+                loop_limit = 4;
+            }
+            // constrain the gyro rate to be a 2^N multiple
+            uint8_t fast_sampling_rate = constrain_int16(get_fast_sampling_rate(), loop_limit, 4);
+
+            // calculate rate we will be giving gyro samples to the backend
+            _fifo_downsample_rate = 8 / fast_sampling_rate;
+            _backend_rate_hz *= fast_sampling_rate;
 
             // for logging purposes set the oversamping rate
             _set_accel_oversampling(_accel_instance, _fifo_downsample_rate/2);

@@ -234,8 +234,7 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
             _imu._gyro_window[instance][2].push(scaled_gyro.z);
         }
 #endif
-        // apply the low pass filter
-        Vector3f gyro_filtered = _imu._gyro_filter[instance].apply(gyro);
+        Vector3f gyro_filtered = gyro;
 
         // apply the notch filter
         if (_gyro_notch_enabled()) {
@@ -246,6 +245,9 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
         if (gyro_harmonic_notch_enabled()) {
             gyro_filtered = _imu._gyro_harmonic_notch_filter[instance].apply(gyro_filtered);
         }
+
+        // apply the low pass filter last to attentuate any notch induced noise
+        gyro_filtered = _imu._gyro_filter[instance].apply(gyro_filtered);
 
         // if the filtering failed in any way then reset the filters and keep the old value
         if (gyro_filtered.is_nan() || gyro_filtered.is_inf()) {
@@ -477,11 +479,11 @@ void AP_InertialSensor_Backend::_inc_gyro_error_count(uint8_t instance)
     _imu._gyro_error_count[instance]++;
 }
 
-// return the requested sample rate in Hz
-uint16_t AP_InertialSensor_Backend::get_sample_rate_hz(void) const
+// return the requested loop rate at which samples will be made available in Hz
+uint16_t AP_InertialSensor_Backend::get_loop_rate_hz(void) const
 {
     // enum can be directly cast to Hz
-    return (uint16_t)_imu._sample_rate;
+    return (uint16_t)_imu._loop_rate;
 }
 
 /*
@@ -539,7 +541,11 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance)
         _last_harmonic_notch_bandwidth_hz = gyro_harmonic_notch_bandwidth_hz();
         _last_harmonic_notch_attenuation_dB = gyro_harmonic_notch_attenuation_dB();
     } else if (!is_equal(_last_harmonic_notch_center_freq_hz, gyro_harmonic_notch_center_freq_hz())) {
-        _imu._gyro_harmonic_notch_filter[instance].update(gyro_harmonic_notch_center_freq_hz());
+        if (num_gyro_harmonic_notch_center_frequencies() > 1) {
+            _imu._gyro_harmonic_notch_filter[instance].update(num_gyro_harmonic_notch_center_frequencies(), gyro_harmonic_notch_center_frequencies_hz());
+        } else {
+            _imu._gyro_harmonic_notch_filter[instance].update(gyro_harmonic_notch_center_freq_hz());
+        }
         _last_harmonic_notch_center_freq_hz = gyro_harmonic_notch_center_freq_hz();
     }
     // possily update the notch filter parameters

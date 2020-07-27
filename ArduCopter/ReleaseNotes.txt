@@ -1,5 +1,25 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.0.4-rc2 16-Jun-2020
+Changes from 4.0.4-rc1
+1) Bug Fixes:
+    a) Watchdog monitor memory increased (may have caused watchdog reset)
+    b) Compass ordering fix when COMPASS_PRIOx_ID is 0
+    c) Hex CubeOrange 2nd current sensor pin correction
+    d) Hott telemetry fix
+    e) Lightware I2C driver fix when out-of-range
+    f) MatekF765-Wing voltage and scaling fixed
+    g) MatekH743 baro on I2C2 bus
+    h) Proximity (360 lidar) ignore zone fix
+2) Flight controller support:
+    a) Bitcraze Crazyflie 2.1
+    b) CUAV Nora V1.2
+    c) Holybro Pix32v5
+    d) mRo Pixracer Pro
+3) Minor enhancements:
+    a) Benewake RangeFinder parameter descriptions clarified
+    b) Pre-arm check of attitude ignores DCM if multiple EKF cores present
+------------------------------------------------------------------
 Copter 4.0.4-rc1 26-May-2020
 Changes from 4.0.3
 1) Bug Fixes:

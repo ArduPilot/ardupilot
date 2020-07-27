@@ -109,7 +109,7 @@ UINT32_T_BOX_OP(shr, >>)
         return 1; \
     }
 
-UINT32_T_BOX_OP_BOOL(eq, =)
+UINT32_T_BOX_OP_BOOL(eq, ==)
 UINT32_T_BOX_OP_BOOL(lt, <)
 UINT32_T_BOX_OP_BOOL(le, <=)
 

@@ -1974,11 +1974,8 @@ def process_line(line):
                 alllines.remove(line)
         newpins = []
         for pin in allpins:
-            if pin.type == a[1]:
-                continue
-            if pin.label == a[1]:
-                continue
-            if pin.portpin == a[1]:
+            if pin.type == a[1] or pin.label == a[1] or pin.portpin == a[1]:
+                portmap[pin.port][pin.pin] = generic_pin(pin.port, pin.pin, None, 'INPUT', [])
                 continue
             newpins.append(pin)
         allpins = newpins

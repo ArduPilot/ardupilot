@@ -85,7 +85,7 @@ known_units = {
              'mGauss'  : 'milligauss'            , # Gauss is not an SI unit, but 1 tesla = 10000 gauss so a simple replacement is not possible here
 # pressure
              'Pa'      : 'pascal'                ,
-             'mbar'    : 'millibar'              ,
+             'hPa'     : 'hectopascal'           ,
 # ratio
              '%'       : 'percent'               ,
              '%/s'     : 'percent per second'    ,
@@ -94,6 +94,7 @@ known_units = {
 # compound
 
              'kB'      : 'kilobytes'                ,
+             'MB'      : 'megabyte'                ,
              'm.m/s/s' : 'square meter per square second',
              'deg/m/s' : 'degrees per meter per second'  ,
              'm/s/m'   : 'meters per second per meter'   , # Why not use Hz here ????

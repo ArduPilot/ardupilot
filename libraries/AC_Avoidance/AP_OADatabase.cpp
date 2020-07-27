@@ -131,7 +131,7 @@ void AP_OADatabase::update()
 }
 
 // push a location into the database
-void AP_OADatabase::queue_push(const Vector2f &pos, uint32_t timestamp_ms, float distance)
+void AP_OADatabase::queue_push(const Vector3f &pos, uint32_t timestamp_ms, float distance)
 {
     if (!healthy()) {
         return;
@@ -341,12 +341,6 @@ void AP_OADatabase::send_adsb_vehicle(mavlink_channel_t chan, uint16_t interval_
         return;
     }
 
-    // use vehicle's current altitude
-    Location current_loc;
-    if (!AP::ahrs().get_position(current_loc)) {
-        current_loc.alt = 0;
-    }
-
     const uint8_t chan_as_bitmask = 1 << chan;
     const char callsign[9] = "OA_DB";
 
@@ -380,14 +374,14 @@ void AP_OADatabase::send_adsb_vehicle(mavlink_channel_t chan, uint16_t interval_
         }
 
         // convert object's position as an offset from EKF origin to Location
-        const Location item_loc(Vector3f(_database.items[idx].pos.x * 100.0f, _database.items[idx].pos.y * 100.0f, 0));
+        const Location item_loc(Vector3f(_database.items[idx].pos.x * 100.0f, _database.items[idx].pos.y * 100.0f, _database.items[idx].pos.z * 100.0f));
 
         mavlink_msg_adsb_vehicle_send(chan,
             idx,
             item_loc.lat,
             item_loc.lng,
             0,                          // altitude_type
-            current_loc.alt,            // use vehicle's current altitude
+            item_loc.alt,               
             0,                          // heading
             0,                          // hor_velocity
             0,                          // ver_velocity

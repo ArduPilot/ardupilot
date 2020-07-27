@@ -19,9 +19,8 @@ libraries/AP_HAL_CHibiOS/hwdef/BOARDNAME/hwdef-bl.dat
 
 The bootloader protocol is compatible with that used by the PX4
 project for boards like the Pixhawk. For compatibility purposes we
-maintain a list of board IDs here:
-
-  https://github.com/ArduPilot/Bootloader/blob/master/board_types.txt
+maintain a list of board IDs in the board_types.txt file in this
+directory.
   
 the board IDs in that file match the APJ_BOARD_ID in the hwdef.dat and
 hwdef-bl.dat files

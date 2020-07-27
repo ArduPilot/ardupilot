@@ -53,7 +53,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(read_rangefinders,      50,    200),
     SCHED_TASK(update_current_mode,   400,    200),
     SCHED_TASK(set_servos,            400,    200),
-    SCHED_TASK(update_GPS,             50,    300),
+    SCHED_TASK_CLASS(AP_GPS,              &rover.gps,              update,         50,  300),
     SCHED_TASK_CLASS(AP_Baro,             &rover.barometer,        update,         10,  200),
     SCHED_TASK_CLASS(AP_Beacon,           &rover.g2.beacon,        update,         50,  200),
     SCHED_TASK_CLASS(AP_Proximity,        &rover.g2.proximity,     update,         50,  200),
@@ -78,7 +78,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Mount,            &rover.camera_mount,     update,         50,  200),
 #endif
 #if CAMERA == ENABLED
-    SCHED_TASK_CLASS(AP_Camera,           &rover.camera,           update_trigger, 50,  200),
+    SCHED_TASK_CLASS(AP_Camera,           &rover.camera,           update,         50,  200),
 #endif
     SCHED_TASK(gcs_failsafe_check,     10,    200),
     SCHED_TASK(fence_check,            10,    200),
@@ -164,6 +164,19 @@ bool Rover::set_target_velocity_NED(const Vector3f& vel_ned)
     // send target heading and speed
     mode_guided.set_desired_heading_and_speed(target_yaw_cd, target_speed_m);
 
+    return true;
+}
+
+// set steering and throttle (-1 to +1) (for use by scripting)
+bool Rover::set_steering_and_throttle(float steering, float throttle)
+{
+    // exit if vehicle is not in Guided mode or Auto-Guided mode
+    if (!control_mode->in_guided_mode()) {
+        return false;
+    }
+
+    // set steering and throttle
+    mode_guided.set_steering_and_throttle(steering, throttle);
     return true;
 }
 
@@ -313,18 +326,6 @@ void Rover::one_second_loop(void)
 
     // send latest param values to wp_nav
     g2.wp_nav.set_turn_params(g.turn_max_g, g2.turn_radius, g2.motors.have_skid_steering());
-}
-
-void Rover::update_GPS(void)
-{
-    gps.update();
-    if (gps.last_message_time_ms() != last_gps_msg_ms) {
-        last_gps_msg_ms = gps.last_message_time_ms();
-
-#if CAMERA == ENABLED
-        camera.update();
-#endif
-    }
 }
 
 void Rover::update_current_mode(void)

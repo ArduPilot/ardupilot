@@ -58,7 +58,7 @@
 #endif
 
 #ifndef RCIN_THD_WA_SIZE
-#define RCIN_THD_WA_SIZE    512
+#define RCIN_THD_WA_SIZE    768
 #endif
 
 #ifndef IO_THD_WA_SIZE
@@ -70,7 +70,7 @@
 #endif
 
 #ifndef MONITOR_THD_WA_SIZE
-#define MONITOR_THD_WA_SIZE 512
+#define MONITOR_THD_WA_SIZE 768
 #endif
 
 /* Scheduler implementation: */

@@ -24,6 +24,7 @@
 #include <Filter/HarmonicNotchFilter.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Arming/AP_Arming.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 #include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
@@ -248,17 +249,23 @@ void AP_GyroFFT::init(uint32_t target_looptime_us)
         return;
     }
 
+    // count the number of active harmonics
+    for (uint8_t i = 0; i < HNF_MAX_HARMONICS; i++) {
+        if (_ins->get_gyro_harmonic_notch_harmonics() & (1<<i)) {
+            _harmonics++;
+        }
+    }
+    _harmonics = constrain_int16(_harmonics, 1, FrequencyPeak::MAX_TRACKED_PEAKS);
+
     // calculate harmonic multiplier. this assumes the harmonics configured on the 
     // harmonic notch reflect the multiples of the fundamental harmonic that should be tracked
     uint8_t first_harmonic = 0;
-    _harmonics = 1; // always search for 1
     if (_harmonic_fit > 0) {
         for (uint8_t i = 0; i < HNF_MAX_HARMONICS; i++) {
             if (_ins->get_gyro_harmonic_notch_harmonics() & (1<<i)) {
                 if (first_harmonic == 0) {
                     first_harmonic = i + 1;
                 } else {
-                    _harmonics++;
                     _harmonic_multiplier = float(i + 1) / first_harmonic;
                     break;
                 }
@@ -352,6 +359,23 @@ void AP_GyroFFT::update()
 
     _config._analysis_enabled = _analysis_enabled;
     _global_state = _thread_state;
+
+    // calculate health based on being 5 frames behind, SITL needs longer
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    const uint32_t output_delay = _frame_time_ms * FFT_MAX_MISSED_UPDATES * 2;
+#else
+    const uint32_t output_delay = _frame_time_ms * FFT_MAX_MISSED_UPDATES;
+#endif
+    uint32_t now = AP_HAL::millis();
+    _rpy_health.x = (now - _global_state._health_ms.x <= output_delay);
+    _rpy_health.y = (now - _global_state._health_ms.y <= output_delay);
+    _rpy_health.z = (now - _global_state._health_ms.z <= output_delay);
+
+    if (!_rpy_health.x && !_rpy_health.y) {
+        _health = 0;
+    } else {
+        _health = MIN(_global_state._health, _harmonics);
+    }
 }
 
 // analyse gyro data using FFT, returns number of samples still held
@@ -384,7 +408,7 @@ uint16_t AP_GyroFFT::run_cycle()
     FloatBuffer& gyro_buffer = (_sample_mode == 0 ?_ins->get_raw_gyro_window(_update_axis) : _downsampled_gyro_data[_update_axis]);
     // if we have many more samples than the window size then we are struggling to 
     // stay ahead of the gyro loop so drop samples so that this cycle will use all available samples
-    if (gyro_buffer.available() > _state->_window_size + uint16_t(_samples_per_frame >> 1)) { // half the frame size is a heuristic
+    if (gyro_buffer.available() > uint32_t(_state->_window_size + uint16_t(_samples_per_frame >> 1))) { // half the frame size is a heuristic
         gyro_buffer.advance(gyro_buffer.available() - _state->_window_size);
     }
     // let's go!
@@ -625,20 +649,13 @@ AP_GyroFFT::FrequencyPeak AP_GyroFFT::get_tracked_noise_peak() const
 
 // return an average center frequency weighted by bin energy
 // called from main thread
-float AP_GyroFFT::get_weighted_noise_center_freq_hz()
+float AP_GyroFFT::get_weighted_noise_center_freq_hz() const
 {
     if (!analysis_enabled()) {
         return _fft_min_hz;
     }
-    // calculate health based on being 5 frames behind, SITL needs longer
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    const uint32_t output_delay = _frame_time_ms * FFT_MAX_MISSED_UPDATES * 2;
-#else
-    const uint32_t output_delay = _frame_time_ms * FFT_MAX_MISSED_UPDATES;
-#endif
-    uint32_t now = AP_HAL::millis();
-    if (now - _global_state._health_ms.x > output_delay && now - _global_state._health_ms.y > output_delay) {
-        _health = 0;
+
+    if (!_health) {
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
         AP_Motors* motors = AP::motors();
         if (motors != nullptr) {
@@ -648,22 +665,62 @@ float AP_GyroFFT::get_weighted_noise_center_freq_hz()
 #endif
     }
 
-    _health = _global_state._health;
-
     const FrequencyPeak peak = get_tracked_noise_peak();
     // pitch was good or required, roll was not, use pitch only
-    if (now - _global_state._health_ms.x > output_delay || _harmonic_peak == FFT_HARMONIC_FIT_TRACK_PITCH) {
+    if (!_rpy_health.x || _harmonic_peak == FFT_HARMONIC_FIT_TRACK_PITCH) {
         return get_noise_center_freq_hz(peak).y;
     }
     // roll was good or required, pitch was not, use roll only
-    if (now - _global_state._health_ms.y > output_delay || _harmonic_peak == FFT_HARMONIC_FIT_TRACK_ROLL) {
+    if (!_rpy_health.y || _harmonic_peak == FFT_HARMONIC_FIT_TRACK_ROLL) {
         return get_noise_center_freq_hz(peak).x;
     }
 
     return calculate_weighted_freq_hz(get_center_freq_energy(peak), get_noise_center_freq_hz(peak));
 }
 
-float AP_GyroFFT::calculate_weighted_freq_hz(const Vector3f& energy, const Vector3f& freq)
+// return all the center frequencies weighted by bin energy
+// called from main thread
+uint8_t AP_GyroFFT::get_weighted_noise_center_frequencies_hz(uint8_t num_freqs, float* freqs) const
+{
+    if (!analysis_enabled()) {
+        freqs[0] = _fft_min_hz;
+        return 1;
+    }
+
+    if (!_health) {
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+        AP_Motors* motors = AP::motors();
+        if (motors != nullptr) {
+            // FFT is not healthy, fallback to throttle-based estimate
+            freqs[0] = constrain_float(_fft_min_hz * MAX(1.0f, sqrtf(motors->get_throttle_out() / _throttle_ref)), _fft_min_hz, _fft_max_hz);
+            return 1;
+        }
+#endif
+    }
+
+    const uint8_t tracked_peaks = MIN(_health, num_freqs);
+    // pitch was good or required, roll was not, use pitch only
+    if (!_rpy_health.x || _harmonic_peak == FFT_HARMONIC_FIT_TRACK_PITCH) {
+        for (uint8_t i = 0; i < tracked_peaks; i++) {
+            freqs[i] = get_noise_center_freq_hz(FrequencyPeak(i)).y;
+        }
+        return tracked_peaks;
+    }
+    // roll was good or required, pitch was not, use roll only
+    if (!_rpy_health.y || _harmonic_peak == FFT_HARMONIC_FIT_TRACK_ROLL) {
+        for (uint8_t i = 0; i < tracked_peaks; i++) {
+            freqs[i] = get_noise_center_freq_hz(FrequencyPeak(i)).x;
+        }
+        return tracked_peaks;
+    }
+
+    for (uint8_t i = 0; i < tracked_peaks; i++) {
+        freqs[i] = calculate_weighted_freq_hz(get_center_freq_energy(FrequencyPeak(i)), get_noise_center_freq_hz(FrequencyPeak(i)));
+    }
+    return tracked_peaks;
+}
+
+float AP_GyroFFT::calculate_weighted_freq_hz(const Vector3f& energy, const Vector3f& freq) const
 {
     // there is generally a lot of high-energy, slightly lower frequency noise on yaw, however this
     // appears to be a second-order effect as only targetting pitch and roll (x & y) produces much cleaner output all round
@@ -696,8 +753,7 @@ void AP_GyroFFT::write_log_messages()
 {
     if (!analysis_enabled()) {
         // still want to see the harmonic notch values
-        AP::logger().Write(
-            "FTN", "TimeUS,DnF", "sz", "F-", "Qf", AP_HAL::micros64(), AP::ins().get_gyro_dynamic_notch_center_freq_hz());
+        AP::vehicle()->write_notch_log_messages();
         return;
     }
 
@@ -719,10 +775,12 @@ void AP_GyroFFT::write_log_messages()
         get_raw_noise_harmonic_fit().z,
         _health, _output_cycle_micros);
 
-    log_noise_peak(0, FrequencyPeak::CENTER);
+    const float* notches = _ins->get_gyro_dynamic_notch_center_frequencies_hz();
+
+    log_noise_peak(0, FrequencyPeak::CENTER, notches[0]);
     if (_harmonics > 1) {
-        log_noise_peak(1, FrequencyPeak::LOWER_SHOULDER);
-        log_noise_peak(2, FrequencyPeak::UPPER_SHOULDER);
+        log_noise_peak(1, FrequencyPeak::LOWER_SHOULDER, notches[1]);
+        log_noise_peak(2, FrequencyPeak::UPPER_SHOULDER, notches[2]);
     }
 
 #if DEBUG_FFT
@@ -747,6 +805,7 @@ void AP_GyroFFT::write_log_messages()
 // @Field: PkX: noise frequency of the peak on roll
 // @Field: PkY: noise frequency of the peak on pitch
 // @Field: PkZ: noise frequency of the peak on yaw
+// @Field: DnF: dynamic harmonic notch centre frequency
 // @Field: BwX: bandwidth of the peak freqency on roll where edges are determined by FFT_ATT_REF
 // @Field: BwY: bandwidth of the peak freqency on pitch where edges are determined by FFT_ATT_REF
 // @Field: BwZ: bandwidth of the peak freqency on yaw where edges are determined by FFT_ATT_REF
@@ -755,14 +814,15 @@ void AP_GyroFFT::write_log_messages()
 // @Field: EnZ: power spectral density bin energy of the peak on roll
 
 // write a single log message
-void AP_GyroFFT::log_noise_peak(uint8_t id, FrequencyPeak peak)
+void AP_GyroFFT::log_noise_peak(uint8_t id, FrequencyPeak peak, float notch)
 {
-    AP::logger().Write("FTN2", "TimeUS,Id,PkX,PkY,PkZ,BwX,BwY,BwZ,EnX,EnY,EnZ", "s#zzzzzz---", "F----------", "QBfffffffff",
+    AP::logger().Write("FTN2", "TimeUS,Id,PkX,PkY,PkZ,DnF,BwX,BwY,BwZ,EnX,EnY,EnZ", "s#zzzzzzz---", "F-----------", "QBffffffffff",
         AP_HAL::micros64(),
         id,
         get_noise_center_freq_hz(peak).x,
         get_noise_center_freq_hz(peak).y,
         get_noise_center_freq_hz(peak).z,
+        notch,
         get_noise_center_bandwidth_hz(peak).x,
         get_noise_center_bandwidth_hz(peak).y,
         get_noise_center_bandwidth_hz(peak).z,
@@ -773,7 +833,7 @@ void AP_GyroFFT::log_noise_peak(uint8_t id, FrequencyPeak peak)
 
 // return an average noise bandwidth weighted by bin energy
 // called from main thread
-float AP_GyroFFT::get_weighted_noise_center_bandwidth_hz()
+float AP_GyroFFT::get_weighted_noise_center_bandwidth_hz() const
 {
     if (!analysis_enabled()) {
         return 0.0f;

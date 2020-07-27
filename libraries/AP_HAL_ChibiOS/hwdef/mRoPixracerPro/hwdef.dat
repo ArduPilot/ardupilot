@@ -209,8 +209,10 @@ PE3 VDD_3V3_SENSORS_EN OUTPUT HIGH
 # 1.8V Sensor Level Shifter Output Enable. We pull it high by default.
 PI3 VDD_1V8_SENSORS_EN OUTPUT HIGH
 
-# Set Output Logic Level, Default is 3.3v
-PG6 nSERVO_OUTPUT_3v3 OUTPUT LOW GPIO(74)
+# Pin for PWM Voltage Selection, 0 means 3.3v, 1 means 5v
+PG6 PWM_VOLT_SEL OUTPUT LOW GPIO(74)
+define HAL_GPIO_PWM_VOLT_PIN 74
+define HAL_GPIO_PWM_VOLT_3v3 0
 
 # Power flag pins: these tell the MCU the status of the various power
 # supplies that are available. The pin names need to exactly match the

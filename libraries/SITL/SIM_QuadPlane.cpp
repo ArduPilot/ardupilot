@@ -127,6 +127,7 @@ void QuadPlane::update(const struct sitl_input &input)
     accel_body += quad_accel_body;
 
     update_dynamics(rot_accel);
+    update_external_payload(input);
 
     // update lat/lon/altitude
     update_position();

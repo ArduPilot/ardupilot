@@ -307,7 +307,8 @@ public:
     void writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms);
 
     // called by vehicle code to specify that a takeoff is happening
-    // causes the EKF to compensate for expected barometer errors due to ground effect
+    // causes the EKF to compensate for expected barometer errors due to rotor wash ground interaction
+    // causes the EKF to start the EKF-GSF yaw estimator
     void setTakeoffExpected(bool val);
 
     // called by vehicle code to specify that a touchdown is expected to happen
@@ -316,7 +317,8 @@ public:
 
     // Set to true if the terrain underneath is stable enough to be used as a height reference
     // in combination with a range finder. Set to false if the terrain underneath the vehicle
-    // cannot be used as a height reference
+    // cannot be used as a height reference. Use to prevent range finder operation otherwise
+    // enabled by the combination of EK3_RNG_USE_HGT and EK3_RNG_USE_SPD parameters.
     void setTerrainHgtStable(bool val);
 
     /*
@@ -326,9 +328,9 @@ public:
      1 = velocities are NaN
      2 = badly conditioned X magnetometer fusion
      3 = badly conditioned Y magnetometer fusion
-     5 = badly conditioned Z magnetometer fusion
-     6 = badly conditioned airspeed fusion
-     7 = badly conditioned synthetic sideslip fusion
+     4 = badly conditioned Z magnetometer fusion
+     5 = badly conditioned airspeed fusion
+     6 = badly conditioned synthetic sideslip fusion
      7 = filter is not initialised
     */
     void getFilterFaults(int8_t instance, uint16_t &faults) const;
@@ -340,9 +342,9 @@ public:
      1 = velocity measurement timeout
      2 = height measurement timeout
      3 = magnetometer measurement timeout
+     4 = unassigned
      5 = unassigned
      6 = unassigned
-     7 = unassigned
      7 = unassigned
     */
     void getFilterTimeouts(int8_t instance, uint8_t &timeouts) const;
@@ -529,6 +531,7 @@ private:
     const uint16_t fusionTimeStep_ms = 10;         // The minimum time interval between covariance predictions and measurement fusions in msec
     const uint8_t sensorIntervalMin_ms = 50;       // The minimum allowed time between measurements from any non-IMU sensor (msec)
     const uint8_t flowIntervalMin_ms = 20;         // The minimum allowed time between measurements from optical flow sensors (msec)
+    const uint8_t extNavIntervalMin_ms = 20;       // The minimum allowed time between measurements from external navigation sensors (msec)
 
     struct {
         bool enabled:1;

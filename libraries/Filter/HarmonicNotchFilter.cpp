@@ -80,7 +80,7 @@ const AP_Param::GroupInfo HarmonicNotchFilterParams::var_info[] = {
     // @Param: OPTS
     // @DisplayName: Harmonic Notch Filter options
     // @Description: Harmonic Notch Filter options.
-    // @Bitmask: 0:Double notch
+    // @Bitmask: 0:Double notch,1:Dynamic harmonic
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("OPTS", 8, HarmonicNotchFilterParams, _options, 0),
@@ -176,32 +176,66 @@ void HarmonicNotchFilter<T>::update(float center_freq_hz)
 
     _num_enabled_filters = 0;
     // update all of the filters using the new center frequency and existing A & Q
-    for (uint8_t i = 0, filt = 0; i < HNF_MAX_HARMONICS && filt < _num_filters; i++) {
+    for (uint8_t i = 0; i < HNF_MAX_HARMONICS && _num_enabled_filters < _num_filters; i++) {
         if ((1U<<i) & _harmonics) {
             const float notch_center = center_freq_hz * (i+1);
             if (!_double_notch) {
                 // only enable the filter if its center frequency is below the nyquist frequency
                 if (notch_center < nyquist_limit) {
-                    _filters[filt].init_with_A_and_Q(_sample_freq_hz, notch_center, _A, _Q);
-                    _num_enabled_filters++;
+                    _filters[_num_enabled_filters++].init_with_A_and_Q(_sample_freq_hz, notch_center, _A, _Q);
                 }
             } else {
                 float notch_center_double;
                 // only enable the filter if its center frequency is below the nyquist frequency
                 notch_center_double = notch_center * (1.0 - _notch_spread);
                 if (notch_center_double < nyquist_limit) {
-                    _filters[filt].init_with_A_and_Q(_sample_freq_hz, notch_center_double, _A, _Q);
-                    _num_enabled_filters++;
+                    _filters[_num_enabled_filters++].init_with_A_and_Q(_sample_freq_hz, notch_center_double, _A, _Q);
                 }
-                filt++;
                 // only enable the filter if its center frequency is below the nyquist frequency
                 notch_center_double = notch_center * (1.0 + _notch_spread);
                 if (notch_center_double < nyquist_limit) {
-                    _filters[filt].init_with_A_and_Q(_sample_freq_hz, notch_center_double, _A, _Q);
-                    _num_enabled_filters++;
+                    _filters[_num_enabled_filters++].init_with_A_and_Q(_sample_freq_hz, notch_center_double, _A, _Q);
                 }
             }
-            filt++;
+        }
+    }
+}
+
+/*
+  update the underlying filters' center frequency using the current attenuation and quality
+  this function is cheaper than init() because A & Q do not need to be recalculated
+ */
+template <class T>
+void HarmonicNotchFilter<T>::update(uint8_t num_centers, const float center_freq_hz[])
+{
+    if (!_initialised) {
+        return;
+    }
+
+    // adjust the frequencies to be in the allowable range
+    const float nyquist_limit = _sample_freq_hz * 0.48f;
+
+    _num_enabled_filters = 0;
+    // update all of the filters using the new center frequencies and existing A & Q
+    for (uint8_t i = 0; i < HNF_MAX_HARMONICS && i < num_centers && _num_enabled_filters < _num_filters; i++) {
+        const float notch_center = constrain_float(center_freq_hz[i], 1.0f, nyquist_limit);
+        if (!_double_notch) {
+            // only enable the filter if its center frequency is below the nyquist frequency
+            if (notch_center < nyquist_limit) {
+                _filters[_num_enabled_filters++].init_with_A_and_Q(_sample_freq_hz, notch_center, _A, _Q);
+            }
+        } else {
+            float notch_center_double;
+            // only enable the filter if its center frequency is below the nyquist frequency
+            notch_center_double = notch_center * (1.0 - _notch_spread);
+            if (notch_center_double < nyquist_limit) {
+                _filters[_num_enabled_filters++].init_with_A_and_Q(_sample_freq_hz, notch_center_double, _A, _Q);
+            }
+            // only enable the filter if its center frequency is below the nyquist frequency
+            notch_center_double = notch_center * (1.0 + _notch_spread);
+            if (notch_center_double < nyquist_limit) {
+                _filters[_num_enabled_filters++].init_with_A_and_Q(_sample_freq_hz, notch_center_double, _A, _Q);
+            }
         }
     }
 }

@@ -83,6 +83,7 @@ public:
         k_motor7                = 39,
         k_motor8                = 40,
         k_motor_tilt            = 41,            ///< tiltrotor motor tilt control
+        k_richenpower_control   = 42,            ///< state control for RichenPower
         k_rcin1                 = 51,            ///< these are for pass-thru from arbitrary rc inputs
         k_rcin2                 = 52,
         k_rcin3                 = 53,
@@ -167,7 +168,7 @@ public:
     };
 
     // set the output value as a pwm value
-    void set_output_pwm(uint16_t pwm);
+    void set_output_pwm(uint16_t pwm, bool force = false);
 
     // get the output value as a pwm value
     uint16_t get_output_pwm(void) const { return output_pwm; }
@@ -291,6 +292,11 @@ private:
     // specify that small rcinput changes should be ignored during passthrough
     // used by DO_SET_SERVO commands
     bool ign_small_rcin_changes;
+
+    // if true we should ignore all imputs on this channel
+    bool override_active;
+
+    void set_override(bool b) {override_active = b;};
 };
 
 /*

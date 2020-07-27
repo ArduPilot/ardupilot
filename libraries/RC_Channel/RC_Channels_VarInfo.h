@@ -86,7 +86,7 @@ const AP_Param::GroupInfo RC_Channels::var_info[] = {
     // @DisplayName: RC options
     // @Description: RC input options
     // @User: Advanced
-    // @Bitmask: 0:Ignore RC Receiver, 1:Ignore MAVLink Overrides, 2:Ignore Receiver Failsafe, 3:FPort Pad, 4:Log RC input bytes, 5:Arming check throttle for 0 input, 6:Skip the arming check for neutral Roll/Pitch/Yay sticks
+    // @Bitmask: 0:Ignore RC Receiver, 1:Ignore MAVLink Overrides, 2:Ignore Receiver Failsafe, 3:FPort Pad, 4:Log RC input bytes, 5:Arming check throttle for 0 input, 6:Skip the arming check for neutral Roll/Pitch/Yay sticks, 7:Allow Switch reverse
     AP_GROUPINFO("_OPTIONS", 33, RC_CHANNELS_SUBCLASS, _options, 0),
 
     AP_GROUPEND

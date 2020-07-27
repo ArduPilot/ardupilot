@@ -73,13 +73,19 @@ public:
 
     // return velocity measurement noise in m/s
     float get_vel_noise() const { return _vel_noise; }
+    
+    // return position measurement noise in m
+    float get_pos_noise() const { return _pos_noise; }
+
+    // return yaw measurement noise in rad
+    float get_yaw_noise() const { return _yaw_noise; }
 
     // consume vision_position_delta mavlink messages
     void handle_vision_position_delta_msg(const mavlink_message_t &msg);
 
     // general purpose methods to consume position estimate data and send to EKF
     // distances in meters, roll, pitch and yaw are in radians
-    void handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, float roll, float pitch, float yaw, uint8_t reset_counter);
+    void handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, float roll, float pitch, float yaw, float posErr, float angErr, uint8_t reset_counter);
     void handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude, uint8_t reset_counter);
     
     // general purpose methods to consume velocity estimate data and send to EKF
@@ -105,6 +111,8 @@ private:
     AP_Float _pos_scale;        // position scale factor applied to sensor values
     AP_Int16 _delay_ms;         // average delay relative to inertial measurements
     AP_Float _vel_noise;        // velocity measurement noise in m/s
+    AP_Float _pos_noise;        // position measurement noise in meters
+    AP_Float _yaw_noise;        // yaw measurement noise in radians
 
     // reference to backends
     AP_VisualOdom_Backend *_driver;

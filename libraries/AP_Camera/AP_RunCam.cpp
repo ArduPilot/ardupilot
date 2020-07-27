@@ -26,6 +26,7 @@
 #if HAL_RUNCAM_ENABLED
 
 #include <AP_Math/AP_Math.h>
+#include <AP_Math/crc.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
 
@@ -437,40 +438,40 @@ void AP_RunCam::handle_in_menu(Event ev)
 // map rc input to an event
 AP_RunCam::Event AP_RunCam::map_rc_input_to_event() const
 {
-    const RC_Channel::aux_switch_pos_t throttle = rc().get_channel_pos(AP::rcmap()->throttle());
-    const RC_Channel::aux_switch_pos_t yaw = rc().get_channel_pos(AP::rcmap()->yaw());
-    const RC_Channel::aux_switch_pos_t roll = rc().get_channel_pos(AP::rcmap()->roll());
-    const RC_Channel::aux_switch_pos_t pitch = rc().get_channel_pos(AP::rcmap()->pitch());
+    const RC_Channel::AuxSwitchPos throttle = rc().get_channel_pos(AP::rcmap()->throttle());
+    const RC_Channel::AuxSwitchPos yaw = rc().get_channel_pos(AP::rcmap()->yaw());
+    const RC_Channel::AuxSwitchPos roll = rc().get_channel_pos(AP::rcmap()->roll());
+    const RC_Channel::AuxSwitchPos pitch = rc().get_channel_pos(AP::rcmap()->pitch());
 
     Event result = Event::NONE;
 
     if (_button_pressed != ButtonState::NONE) {
-        if (_button_pressed == ButtonState::PRESSED && yaw == RC_Channel::MIDDLE && pitch == RC_Channel::MIDDLE && roll == RC_Channel::MIDDLE) {
+        if (_button_pressed == ButtonState::PRESSED && yaw == RC_Channel::AuxSwitchPos::MIDDLE && pitch == RC_Channel::AuxSwitchPos::MIDDLE && roll == RC_Channel::AuxSwitchPos::MIDDLE) {
             result = Event::BUTTON_RELEASE;
         } else {
             result = Event::NONE; // still waiting to be released
         }
-    } else if (throttle == RC_Channel::MIDDLE && yaw == RC_Channel::LOW
-        && pitch == RC_Channel::MIDDLE && roll == RC_Channel::MIDDLE
+    } else if (throttle == RC_Channel::AuxSwitchPos::MIDDLE && yaw == RC_Channel::AuxSwitchPos::LOW
+        && pitch == RC_Channel::AuxSwitchPos::MIDDLE && roll == RC_Channel::AuxSwitchPos::MIDDLE
         // don't allow an action close to arming unless the user had configured it or arming is not possible
         // but don't prevent the 5-Key control actually working
         && (_cam_control_option & uint8_t(ControlOption::STICK_YAW_RIGHT) || is_arming_prevented())) {
         result = Event::EXIT_MENU;
-    } else if (throttle == RC_Channel::MIDDLE && yaw == RC_Channel::HIGH
-        && pitch == RC_Channel::MIDDLE && roll == RC_Channel::MIDDLE
+    } else if (throttle == RC_Channel::AuxSwitchPos::MIDDLE && yaw == RC_Channel::AuxSwitchPos::HIGH
+        && pitch == RC_Channel::AuxSwitchPos::MIDDLE && roll == RC_Channel::AuxSwitchPos::MIDDLE
         && (_cam_control_option & uint8_t(ControlOption::STICK_YAW_RIGHT) || is_arming_prevented())) {
         result = Event::ENTER_MENU;
-    } else if (roll == RC_Channel::LOW) {
+    } else if (roll == RC_Channel::AuxSwitchPos::LOW) {
         result = Event::IN_MENU_EXIT;
-    } else if (yaw == RC_Channel::MIDDLE && pitch == RC_Channel::MIDDLE && roll == RC_Channel::HIGH) {
+    } else if (yaw == RC_Channel::AuxSwitchPos::MIDDLE && pitch == RC_Channel::AuxSwitchPos::MIDDLE && roll == RC_Channel::AuxSwitchPos::HIGH) {
         if (has_feature(Feature::RCDEVICE_PROTOCOL_FEATURE_SIMULATE_5_KEY_OSD_CABLE)) {
             result = Event::IN_MENU_RIGHT;
         } else {
             result = Event::IN_MENU_ENTER;
         }
-    } else if (pitch == RC_Channel::LOW) {
+    } else if (pitch == RC_Channel::AuxSwitchPos::LOW) {
         result = Event::IN_MENU_UP;
-    } else if (pitch == RC_Channel::HIGH) {
+    } else if (pitch == RC_Channel::AuxSwitchPos::HIGH) {
         result = Event::IN_MENU_DOWN;
     } else if (_video_recording != _last_video_recording) {
         switch (_video_recording) {
@@ -900,20 +901,6 @@ void AP_RunCam::send_packet(Command command, uint8_t param)
     uart->flush();
 }
 
-// crc functions
-uint8_t AP_RunCam::crc8_dvb_s2(uint8_t crc, uint8_t a)
-{
-    crc ^= a;
-    for (uint8_t i = 0; i < 8; ++i) {
-        if (crc & 0x80) {
-            crc = (crc << 1) ^ 0xD5;
-        } else {
-            crc = crc << 1;
-        }
-    }
-    return crc;
-}
-
 uint8_t AP_RunCam::crc8_high_first(uint8_t *ptr, uint8_t len)
 {
     uint8_t crc = 0x00;
@@ -1027,7 +1014,7 @@ uint8_t AP_RunCam::Request::get_crc() const
 {
     uint8_t crc = 0;
     for (int i = 0; i < _recv_response_length; i++) {
-        crc = AP_RunCam::crc8_dvb_s2(crc, _recv_buf[i]);
+        crc = crc8_dvb_s2(crc, _recv_buf[i]);
     }
     return crc;
 }

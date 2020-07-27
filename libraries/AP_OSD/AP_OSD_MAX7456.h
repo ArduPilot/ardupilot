@@ -37,6 +37,9 @@ public:
     //clear framebuffer
     void clear() override;
 
+    // return a correction factor used to display angles correctly
+   float get_aspect_ratio_correction() const override;
+
 private:
 
     //constructor

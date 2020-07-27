@@ -25,6 +25,7 @@ define HAL_LED_ON 0
 # the location where the bootloader will put the firmware
 FLASH_BOOTLOADER_LOAD_KB 64
 
+PB4 BUZZER OUTPUT LOW PULLDOWN
 
 # order of UARTs
 SERIAL_ORDER OTG1

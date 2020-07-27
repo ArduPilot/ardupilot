@@ -200,7 +200,7 @@ void Plane::set_target_altitude_current(void)
 #if AP_TERRAIN_AVAILABLE
     // also record the terrain altitude if possible
     float terrain_altitude;
-    if (g.terrain_follow && terrain.height_above_terrain(terrain_altitude, true)) {
+    if (g.terrain_follow && terrain.height_above_terrain(terrain_altitude, true) && !terrain_disabled()) {
         target_altitude.terrain_following = true;
         target_altitude.terrain_alt_cm = terrain_altitude*100;
     } else {
@@ -289,12 +289,11 @@ void Plane::change_target_altitude(int32_t change_cm)
 {
     target_altitude.amsl_cm += change_cm;
 #if AP_TERRAIN_AVAILABLE
-    if (target_altitude.terrain_following) {
+    if (target_altitude.terrain_following && !terrain_disabled()) {
         target_altitude.terrain_alt_cm += change_cm;
     }
 #endif
 }
-
 /*
   change target altitude by a proportion of the target altitude offset
   (difference in height to next WP from previous WP). proportion
@@ -719,3 +718,13 @@ void Plane::rangefinder_height_update(void)
         
     }
 }
+
+/*
+  determine if Non Auto Terrain Disable is active and allowed in present control mode
+ */
+bool Plane::terrain_disabled()
+{
+    return control_mode->allows_terrain_disable() && non_auto_terrain_disable;
+}
+
+

@@ -61,8 +61,8 @@ copter.battery = battery;
 copter.mass = 2; % (kg)
 inertia = (2/5) * copter.mass * (0.45*0.2)^2; % (sphere)
 copter.inertia = diag(ones(3,1)*inertia); % rotational inertia matrix (kgm^2) 
-copter.cd = [0.5,0.5,0.5];
-copter.cd_ref_area = [1,1,1] * pi * (0.45*0.5)^2;
+copter.cd = [0.5;0.5;0.5];
+copter.cd_ref_area = [1;1;1] * pi * (0.45*0.5)^2;
 
 save('Hexsoon','copter')
 

@@ -265,12 +265,21 @@ public:
         LIMITED = 2,
     };
 
+    enum class AcroOptions {
+        AIR_MODE = 1 << 0,
+        RATE_LOOP_ONLY = 1 << 1,
+    };
+
     virtual void run() override;
 
     bool requires_GPS() const override { return false; }
     bool has_manual_throttle() const override { return true; }
     bool allows_arming(bool from_gcs) const override { return true; };
     bool is_autopilot() const override { return false; }
+    bool init(bool ignore_checks) override;
+    void exit();
+    // whether an air-mode aux switch has been toggled
+    void air_mode_aux_changed();
 
 protected:
 
@@ -282,7 +291,7 @@ protected:
     float throttle_hover() const override;
 
 private:
-
+    bool disable_air_mode_reset;
 };
 #endif
 

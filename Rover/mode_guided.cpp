@@ -105,6 +105,30 @@ void ModeGuided::update()
             break;
         }
 
+        case Guided_SteeringAndThrottle:
+        {
+            // handle timeout
+            if (_have_strthr && (AP_HAL::millis() - _strthr_time_ms) > 3000) {
+                _have_strthr = false;
+                gcs().send_text(MAV_SEVERITY_WARNING, "target not received last 3secs, stopping");
+            }
+            if (_have_strthr) {
+                // pass latest steering and throttle directly to motors library
+                g2.motors.set_steering(_strthr_steering * 4500.0f, false);
+                g2.motors.set_throttle(_strthr_throttle * 100.0f);
+            } else {
+                // loiter or stop vehicle
+                if (rover.is_boat()) {
+                    if (!start_loiter()) {
+                        stop_vehicle();
+                    }
+                } else {
+                    stop_vehicle();
+                }
+            }
+            break;
+        }
+
         default:
             gcs().send_text(MAV_SEVERITY_WARNING, "Unknown GUIDED mode");
             break;
@@ -122,6 +146,8 @@ float ModeGuided::get_distance_to_destination() const
         return 0.0f;
     case Guided_Loiter:
         return rover.mode_loiter.get_distance_to_destination();
+    case Guided_SteeringAndThrottle:
+        return 0.0f;
     }
 
     // we should never reach here but just in case, return 0
@@ -137,6 +163,7 @@ bool ModeGuided::reached_destination() const
     case Guided_HeadingAndSpeed:
     case Guided_TurnRateAndSpeed:
     case Guided_Loiter:
+    case Guided_SteeringAndThrottle:
         return true;
     }
 
@@ -160,6 +187,9 @@ bool ModeGuided::set_desired_speed(float speed)
         return false;
     case Guided_Loiter:
         return rover.mode_loiter.set_desired_speed(speed);
+    case Guided_SteeringAndThrottle:
+        // no speed control
+        return false;
     }
     return false;
 }
@@ -181,6 +211,9 @@ bool ModeGuided::get_desired_location(Location& destination) const
     case Guided_Loiter:
         // get destination from loiter
         return rover.mode_loiter.get_desired_location(destination);
+    case Guided_SteeringAndThrottle:
+        // no desired location in this submode
+        break;
     }
 
     // should never get here but just in case
@@ -244,6 +277,16 @@ void ModeGuided::set_desired_turn_rate_and_speed(float turn_rate_cds, float targ
 
     // log new target
     rover.Log_Write_GuidedTarget(_guided_mode, Vector3f(_desired_yaw_rate_cds, 0.0f, 0.0f), Vector3f(_desired_speed, 0.0f, 0.0f));
+}
+
+// set steering and throttle (both in the range -1 to +1)
+void ModeGuided::set_steering_and_throttle(float steering, float throttle)
+{
+    _guided_mode = ModeGuided::Guided_SteeringAndThrottle;
+    _strthr_time_ms = AP_HAL::millis();
+    _strthr_steering = constrain_float(steering, -1.0f, 1.0f);
+    _strthr_throttle = constrain_float(throttle, -1.0f, 1.0f);
+    _have_strthr = true;
 }
 
 bool ModeGuided::start_loiter()

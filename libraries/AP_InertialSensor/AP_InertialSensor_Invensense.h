@@ -56,6 +56,9 @@ public:
 
     void start() override;
 
+    // get a startup banner to output to the GCS
+    bool get_output_banner(char* banner, uint8_t banner_len) override;
+
     enum Invensense_Type {
         Invensense_MPU6000=0,
         Invensense_MPU6500,

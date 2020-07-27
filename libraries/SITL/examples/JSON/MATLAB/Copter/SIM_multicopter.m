@@ -19,18 +19,14 @@ state.environment.density = 1.225; % (kg/m^3)
 state.gravity_mss = 9.80665; % (m/s^2)
 
 % Setup the time step size for the Physics model
-delta_t = 1/400;
-
-% This is the ip that SITL is running at
-target_ip = '127.0.0.1';
-target_ip = '192.168.194.97';
+max_timestep = 1/50;
 
 % define init and time setup functions
-init_function = @(state)init(state);
-physics_function = @(pwm_in,state)physics_step(pwm_in,state,delta_t);
+init_function = @init;
+physics_function = @physics_step;
 
 % setup connection
-SITL_connector(target_ip,state,init_function,physics_function,delta_t);
+SITL_connector(state,init_function,physics_function,max_timestep);
 
 % Simulator model must take and return a structure with the felids: 
 % gyro(roll, pitch, yaw) (radians/sec) body frame
@@ -46,17 +42,17 @@ for i = 1:numel(state.copter.motors)
     state.copter.motors(i).rpm = 0;
     state.copter.motors(i).current = 0;
 end
-state.gyro = [0,0,0]; % (rad/sec)
-state.attitude = [0,0,0]; % (radians) (roll, pitch, yaw)
-state.accel = [0,0,0]; % (m/s^2) body frame
-state.velocity = [0,0,0]; % (m/s) earth frame
-state.position = [0,0,0]; % (m) earth frame
-state.drag = [0,0,0]; % (N) body frame drag
-state.rotational_drag = [0,0,0]; % (N/m) body frame rotational drag
+state.gyro = [0;0;0]; % (rad/sec)
+state.dcm = diag([1,1,1]); % direction cosine matrix
+state.attitude = [0;0;0]; % (radians) (roll, pitch, yaw)
+state.accel = [0;0;0]; % (m/s^2) body frame
+state.velocity = [0;0;0]; % (m/s) earth frame
+state.position = [0;0;0]; % (m) earth frame
+state.bf_velo = [0;0;0]; % (m/s) body frame
 end
 
 % Take a physics time step
-function state = physics_step(pwm_in,state,delta_t)
+function state = physics_step(pwm_in,state)
 
 % Calculate the dropped battery voltage, assume current draw from last step
 state.copter.battery.current = sum([state.copter.motors.current]);
@@ -86,7 +82,7 @@ for i = 1:numel(state.copter.motors)
 
     w = motor.rpm * ((2*pi)/60); % convert to rad/sec
 
-    w1 = w + ((torque-prop_drag) / motor.prop.inertia) * delta_t;
+    w1 = w + ((torque-prop_drag) / motor.prop.inertia) * state.delta_t;
 
     rps = w1 * (1/(2*pi));
 
@@ -111,50 +107,90 @@ for i = 1:numel(state.copter.motors)
     state.copter.motors(i).moment_yaw = moment_yaw;
 end
 
-% Update attitude, moments to rotational acceleration to rotational velocity to attitude
-moments = [-sum([state.copter.motors.moment_roll]),sum([state.copter.motors.moment_pitch]),sum([state.copter.motors.moment_yaw])] - state.rotational_drag;
-ang_acel = moments / state.copter.inertia;
-state.gyro = state.gyro + ang_acel * delta_t;
-state.attitude = state.attitude + state.gyro * delta_t;
-
-% Calculate a dcm, see https://github.com/ArduPilot/ardupilot/blob/f5320e88161a17e78ffc969bf7ce0bec48adbe7a/libraries/AP_Math/matrix3.cpp#L26
-cp = cos(state.attitude(2));
-sp = sin(state.attitude(2));
-sr = sin(state.attitude(1));
-cr = cos(state.attitude(1));
-sy = sin(state.attitude(3));
-cy = cos(state.attitude(3));
-
-dcm = [cp * cy,                   cp * sy,                    -sp;...
-      (sr * sp * cy) - (cr * sy), (sr * sp * sy) + (cr * cy), sr * cp;...
-      (cr * sp * cy) + (sr * sy), (cr * sp * sy) - (sr * cy), cr * cp;];
+drag = sign(state.bf_velo) .* state.copter.cd .* state.copter.cd_ref_area .* 0.5 .* state.environment.density .* state.bf_velo.^2;
 
 % Calculate the forces about the CG (N,E,D) (body frame)
-force = [0,0,-sum([state.copter.motors.thrust])] - state.drag;
+force = [0;0;-sum([state.copter.motors.thrust])] - drag;
 
-% body frame accelerations (NED)
+% estimate rotational drag
+rotational_drag = 0.2 * sign(state.gyro) .* state.gyro.^2; % estimated to give a reasonable max rotation rate
+
+% Update attitude, moments to rotational acceleration to rotational velocity to attitude
+moments = [-sum([state.copter.motors.moment_roll]);sum([state.copter.motors.moment_pitch]);sum([state.copter.motors.moment_yaw])] - rotational_drag;
+
+state = update_dynamics(state,force,moments);
+
+end
+
+% integrate the acceleration resulting from the forces and moments to get the
+% new state
+function state = update_dynamics(state,force,moments)
+
+rot_accel = (moments' / state.copter.inertia)';
+
+state.gyro = state.gyro + rot_accel * state.delta_t;
+
+% Constrain to 2000 deg per second, this is what typical sensors max out at
+state.gyro = max(state.gyro,deg2rad(-2000));
+state.gyro = min(state.gyro,deg2rad(2000));
+
+% update the dcm and attitude
+[state.dcm, state.attitude] = rotate_dcm(state.dcm,state.gyro * state.delta_t);
+
+% body frame accelerations
 state.accel = force / state.copter.mass;
 
 % earth frame accelerations (NED)
-acel_ef = state.accel * dcm;
-acel_ef(3) = acel_ef(3) + state.gravity_mss;
+accel_ef = state.dcm * state.accel;
+accel_ef(3) = accel_ef(3) + state.gravity_mss;
 
-state.velocity = state.velocity + acel_ef * delta_t;
-state.position = state.position + state.velocity * delta_t;
+% if we're on the ground, then our vertical acceleration is limited
+% to zero. This effectively adds the force of the ground on the aircraft
+if state.position(3) >= 0 && accel_ef(3) > 0
+    accel_ef(3) = 0;
+end
+
+% work out acceleration as seen by the accelerometers. It sees the kinematic
+% acceleration (ie. real movement), plus gravity
+state.accel = state.dcm' * (accel_ef + [0; 0; -state.gravity_mss]);
+
+state.velocity = state.velocity + accel_ef * state.delta_t;
+state.position = state.position + state.velocity * state.delta_t;
 
 % make sure we can't go underground (NED so underground is positive)
 if state.position(3) >= 0
     state.position(3) = 0;
-    state.velocity = [0,0,0];
-    state.accel = [0,0,-state.gravity_mss];
-    state.gyro = [0,0,0];
+    state.velocity = [0;0;0];
+    state.gyro = [0;0;0];
 end
 
-% caculate the body frame velocity and resulting drag
-bf_velo = (state.velocity / dcm);
-state.drag = sign(bf_velo) .* state.copter.cd .* state.copter.cd_ref_area .* 0.5 .* state.environment.density .* bf_velo.^2;
-
-% estimate rotational drag (mostly for yaw)
-state.rotational_drag = 0.3 * sign(state.gyro) .* state.gyro.^2; % estimated to give a reasonable max rotation rate
+% calculate the body frame velocity for drag calculation
+state.bf_velo = state.dcm' * state.velocity;
 
 end
+
+function [dcm, euler] = rotate_dcm(dcm, ang)
+
+% rotate
+delta = [dcm(1,2) * ang(3) - dcm(1,3) * ang(2),         dcm(1,3) * ang(1) - dcm(1,1) * ang(3),      dcm(1,1) * ang(2) - dcm(1,2) * ang(1);
+         dcm(2,2) * ang(3) - dcm(2,3) * ang(2),         dcm(2,3) * ang(1) - dcm(2,1) * ang(3),      dcm(2,1) * ang(2) - dcm(2,2) * ang(1);
+         dcm(3,2) * ang(3) - dcm(3,3) * ang(2),         dcm(3,3) * ang(1) - dcm(3,1) * ang(3),      dcm(3,1) * ang(2) - dcm(3,2) * ang(1)];
+
+dcm = dcm + delta;
+
+% normalise
+a = dcm(1,:);
+b = dcm(2,:);
+error = a * b';
+t0 = a - (b *(0.5 * error));
+t1 = b - (a *(0.5 * error));
+t2 = cross(t0,t1);
+dcm(1,:) = t0 * (1/norm(t0));
+dcm(2,:) = t1 * (1/norm(t1));
+dcm(3,:) = t2 * (1/norm(t2));
+
+% calculate euler angles
+euler = [atan2(dcm(3,2),dcm(3,3)); -asin(dcm(3,1)); atan2(dcm(2,1),dcm(1,1))]; 
+
+end
+

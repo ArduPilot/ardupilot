@@ -77,6 +77,30 @@ const AP_Param::GroupInfo AP_Scripting::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DEBUG_LVL", 4, AP_Scripting, _debug_level, 0),
 
+    // @Param: USER1
+    // @DisplayName: Scripting User Parameter1
+    // @Description: General purpose user variable input for scripts
+    // @User: Standard
+    AP_GROUPINFO("USER1", 5, AP_Scripting, _user[0], 0.0),
+
+    // @Param: USER2
+    // @DisplayName: Scripting User Parameter2
+    // @Description: General purpose user variable input for scripts
+    // @User: Standard
+    AP_GROUPINFO("USER2", 6, AP_Scripting, _user[1], 0.0),
+
+    // @Param: USER3
+    // @DisplayName: Scripting User Parameter3
+    // @Description: General purpose user variable input for scripts
+    // @User: Standard
+    AP_GROUPINFO("USER3", 7, AP_Scripting, _user[2], 0.0),
+
+    // @Param: USER4
+    // @DisplayName: Scripting User Parameter4
+    // @Description: General purpose user variable input for scripts
+    // @User: Standard
+    AP_GROUPINFO("USER4", 8, AP_Scripting, _user[3], 0.0),
+
     AP_GROUPEND
 };
 
@@ -94,6 +118,14 @@ AP_Scripting::AP_Scripting() {
 void AP_Scripting::init(void) {
     if (!_enable) {
         return;
+    }
+
+    const char *dir_name = SCRIPTING_DIRECTORY;
+    if (AP::FS().mkdir(dir_name)) {
+        if (errno != EEXIST) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Lua: failed to create (%s)", dir_name);
+            return;
+        }
     }
 
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Scripting::thread, void),

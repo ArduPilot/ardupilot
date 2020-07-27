@@ -114,8 +114,10 @@ void SRV_Channel::calc_pwm(int16_t output_scaled)
     }
 
     // check for E - stop
+    bool force = false;
     if (SRV_Channel::should_e_stop(get_function()) && SRV_Channels::emergency_stop) {
         output_scaled = 0;
+        force = true;
     }
 
     uint16_t pwm;
@@ -124,13 +126,15 @@ void SRV_Channel::calc_pwm(int16_t output_scaled)
     } else {
         pwm = pwm_from_range(output_scaled);
     }
-    set_output_pwm(pwm);
+    set_output_pwm(pwm,force);
 }
 
-void SRV_Channel::set_output_pwm(uint16_t pwm)
+void SRV_Channel::set_output_pwm(uint16_t pwm, bool force)
 {
-    output_pwm = pwm;
-    have_pwm_mask |= (1U<<ch_num);
+    if (!override_active || force) {
+        output_pwm = pwm;
+        have_pwm_mask |= (1U<<ch_num);
+    }
 }
 
 // set angular range of scaled output

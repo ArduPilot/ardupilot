@@ -406,6 +406,9 @@ void NavEKF2_core::detectFlight()
         EKFGSF_yaw_reset_request_ms = 0;
         EKFGSF_yaw_reset_count = 0;
         EKFGSF_run_filterbank = true;
+        Vector3f gyroBias;
+        getGyroBias(gyroBias);
+        yawEstimator->setGyroBias(gyroBias);
     }
 
     // store current on-ground  and in-air status for next time
@@ -469,10 +472,10 @@ void NavEKF2_core::setTouchdownExpected(bool val)
 
 // Set to true if the terrain underneath is stable enough to be used as a height reference
 // in combination with a range finder. Set to false if the terrain underneath the vehicle
-// cannot be used as a height reference
+// cannot be used as a height reference. Use to prevent range finder operation otherwise
+// enabled by the combination of EK2_RNG_AID_HGT and EK2_RNG_USE_SPD parameters.
 void NavEKF2_core::setTerrainHgtStable(bool val)
 {
-    terrainHgtStableSet_ms = imuSampleTime_ms;
     terrainHgtStable = val;
 }
 

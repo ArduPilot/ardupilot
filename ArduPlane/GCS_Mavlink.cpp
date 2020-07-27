@@ -738,31 +738,21 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_com
 {
     // sanity check location
     if (!check_latlng(packet.x, packet.y)) {
-        return MAV_RESULT_FAILED;
+        return MAV_RESULT_DENIED;
     }
 
     Location requested_position {};
     requested_position.lat = packet.x;
     requested_position.lng = packet.y;
 
-    // check the floating representation for overflow of altitude
-    if (fabsf(packet.z * 100.0f) >= 0x7fffff) {
-        return MAV_RESULT_FAILED;
+    if (fabsf(packet.z) > LOCATION_ALT_MAX_M) {
+        return MAV_RESULT_DENIED;
     }
-    requested_position.alt = (int32_t)(packet.z * 100.0f);
-
-    // load option flags
-    if (packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
-        requested_position.relative_alt = 1;
+    Location::AltFrame frame;
+    if (!mavlink_coordinate_frame_to_location_alt_frame((MAV_FRAME)packet.frame, frame)) {
+        return MAV_RESULT_DENIED; // failed as the location is not valid
     }
-    else if (packet.frame == MAV_FRAME_GLOBAL_TERRAIN_ALT_INT) {
-        requested_position.terrain_alt = 1;
-    }
-    else if (packet.frame != MAV_FRAME_GLOBAL_INT &&
-             packet.frame != MAV_FRAME_GLOBAL) {
-        // not a supported frame
-        return MAV_RESULT_FAILED;
-    }
+    requested_position.set_alt_cm((int32_t)(packet.z * 100.0f), frame);
 
     if (is_zero(packet.param4)) {
         requested_position.loiter_ccw = 0;
@@ -772,7 +762,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_com
 
     if (requested_position.sanitize(plane.current_loc)) {
         // if the location wasn't already sane don't load it
-        return MAV_RESULT_FAILED; // failed as the location is not valid
+        return MAV_RESULT_DENIED;
     }
 
     // location is valid load and set
@@ -1012,7 +1002,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
     case MAV_CMD_DO_LAND_START:
         // attempt to switch to next DO_LAND_START command in the mission
         if (plane.mission.jump_to_landing_sequence()) {
-            plane.set_mode(plane.mode_auto, ModeReason::UNKNOWN);
+            plane.set_mode(plane.mode_auto, ModeReason::GCS_COMMAND);
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;
