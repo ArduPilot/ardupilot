@@ -656,6 +656,7 @@ private:
     void update_super_simple_bearing(bool force_update);
     void read_AHRS(void);
     void update_altitude();
+    void update_oscillation_detector() override;
 
     // Attitude.cpp
     float get_pilot_desired_yaw_rate(int16_t stick_angle);

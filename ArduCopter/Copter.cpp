@@ -632,6 +632,27 @@ void Copter::publish_osd_info()
 }
 #endif
 
+void Copter::update_oscillation_detector()
+{
+    const uint8_t bitmask = copter.oscillation_detector_bitmask.get();
+    float P, I, D, FF;
+
+    copter.attitude_control->get_rate_roll_pid().oscillationDetector.set_enable((bitmask & (1 << (uint8_t)AP_Vehicle::PID_AXIS::ROLL)) != 0);
+    if (copter.attitude_control->get_rate_roll_pid().oscillationDetector.quick_tune_active(P, I, D, FF)) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Quick Tune: Roll: P %0.2f, I %0.2f, D %0.2f, FF %0.2f",P,I,D,FF);
+    }
+
+    copter.attitude_control->get_rate_pitch_pid().oscillationDetector.set_enable((bitmask & (1 << (uint8_t)AP_Vehicle::PID_AXIS::PITCH)) != 0);
+    if (copter.attitude_control->get_rate_pitch_pid().oscillationDetector.quick_tune_active(P, I, D, FF)) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Quick Tune: Pitch: P %0.2f, I %0.2f, D %0.2f, FF %0.2f",P,I,D,FF);
+    }
+
+    copter.attitude_control->get_rate_yaw_pid().oscillationDetector.set_enable((bitmask & (1 << (uint8_t)AP_Vehicle::PID_AXIS::YAW)) != 0);
+    if (copter.attitude_control->get_rate_yaw_pid().oscillationDetector.quick_tune_active(P, I, D, FF)) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Quick Tune: Yaw: P %0.2f, I %0.2f, D %0.2f, FF %0.2f",P,I,D,FF);
+    }
+}
+
 /*
   constructor for main Copter class
  */
