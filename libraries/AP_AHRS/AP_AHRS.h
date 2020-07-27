@@ -260,7 +260,7 @@ public:
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
-    virtual bool airspeed_estimate(float &airspeed_ret) const WARN_IF_UNUSED;
+    virtual bool airspeed_estimate(float &airspeed_ret) const WARN_IF_UNUSED = 0;
 
     // return a true airspeed estimate (navigation airspeed) if
     // available. return true if we have an estimate
