@@ -129,14 +129,6 @@ public:
     // this makes initial config easier
     void update_orientation();
 
-    void set_airspeed(AP_Airspeed *airspeed) {
-        _airspeed = airspeed;
-    }
-
-    const AP_Airspeed *get_airspeed(void) const {
-        return _airspeed;
-    }
-
     // return the index of the primary core or -1 if no primary core selected
     virtual int8_t get_primary_core_index() const { return -1; }
 
@@ -285,12 +277,14 @@ public:
     // return true if airspeed comes from an airspeed sensor, as
     // opposed to an IMU estimate
     bool airspeed_sensor_enabled(void) const {
+        const AP_Airspeed *_airspeed = AP::airspeed();
         return _airspeed != nullptr && _airspeed->use() && _airspeed->healthy();
     }
 
     // return true if airspeed comes from a specific airspeed sensor, as
     // opposed to an IMU estimate
     bool airspeed_sensor_enabled(uint8_t airspeed_index) const {
+        const AP_Airspeed *_airspeed = AP::airspeed();
         return _airspeed != nullptr && _airspeed->use(airspeed_index) && _airspeed->healthy(airspeed_index);
     }
 
@@ -661,7 +655,6 @@ protected:
     const OpticalFlow *_optflow;
 
     // pointer to airspeed object, if available
-    AP_Airspeed     * _airspeed;
 
     // time in microseconds of last compass update
     uint32_t _compass_last_update;

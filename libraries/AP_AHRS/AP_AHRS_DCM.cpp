@@ -698,7 +698,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
         }
         float airspeed;
         if (airspeed_sensor_enabled()) {
-            airspeed = _airspeed->get_airspeed();
+            airspeed = AP::airspeed()->get_airspeed();
         } else {
             airspeed = _last_airspeed;
         }
@@ -1007,7 +1007,7 @@ void AP_AHRS_DCM::estimate_wind(void)
         _last_wind_time = now;
     } else if (now - _last_wind_time > 2000 && airspeed_sensor_enabled()) {
         // when flying straight use airspeed to get wind estimate if available
-        const Vector3f airspeed = _dcm_matrix.colx() * _airspeed->get_airspeed();
+        const Vector3f airspeed = _dcm_matrix.colx() * AP::airspeed()->get_airspeed();
         const Vector3f wind = velocity - (airspeed * get_EAS2TAS());
         _wind = _wind * 0.92f + wind * 0.08f;
     }
@@ -1046,17 +1046,25 @@ bool AP_AHRS_DCM::get_position(struct Location &loc) const
     return _have_position;
 }
 
-// return an airspeed estimate if available
 bool AP_AHRS_DCM::airspeed_estimate(float &airspeed_ret) const
 {
-    return airspeed_estimate(_airspeed?_airspeed->get_primary():0, airspeed_ret);
+    const auto *airspeed = AP::airspeed();
+    if (airspeed == nullptr) {
+        // airspeed_estimate will also make this nullptr check and act
+        // appropriately when we call it with a dummy sensor ID.
+        return airspeed_estimate(0, airspeed_ret);
+    }
+    return airspeed_estimate(airspeed->get_primary(), airspeed_ret);
 }
 
-// return an airspeed estimate from a specific airspeed sensor instance if available
+// return an airspeed estimate:
+//  - from a real sensor if available
+//  - otherwise from a GPS-derived wind-triangle estimate (if GPS available)
+//  - otherwise from a cached wind-triangle estimate value (but returning false)
 bool AP_AHRS_DCM::airspeed_estimate(uint8_t airspeed_index, float &airspeed_ret) const
 {
     if (airspeed_sensor_enabled(airspeed_index)) {
-        airspeed_ret = _airspeed->get_airspeed(airspeed_index);
+        airspeed_ret = AP::airspeed()->get_airspeed(airspeed_index);
     } else if (_flags.wind_estimation && have_gps()) {
         // estimate it via GPS speed and wind
         airspeed_ret = _last_airspeed;
