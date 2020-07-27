@@ -394,7 +394,11 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: I: integral part of PID
 // @Field: D: derivative part of PID
 // @Field: FF: controller feed-forward portion of response
-// @Field: Dmod: scaler applied to D gain to reduce limit cycling
+// @Field: Pmod: scaler applied to P gain
+// @Field: Imod: scaler applied to I gain
+// @Field: Dmod: scaler applied to D gain
+// @Field: FFmod: scaler applied to FF gain
+// @Field: amp_ratio: ratio of amplitude of actual / target
     { LOG_PIQR_MSG, sizeof(log_PID),
       "PIQR", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
     { LOG_PIQP_MSG, sizeof(log_PID),
@@ -414,7 +418,11 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: I: integral part of PID
 // @Field: D: derivative part of PID
 // @Field: FF: controller feed-forward portion of response
-// @Field: Dmod: scaler applied to D gain to reduce limit cycling
+// @Field: Pmod: scaler applied to P gain
+// @Field: Imod: scaler applied to I gain
+// @Field: Dmod: scaler applied to D gain
+// @Field: FFmod: scaler applied to FF gain
+// @Field: amp_ratio: ratio of amplitude of actual / target
     { LOG_PIDG_MSG, sizeof(log_PID),
       "PIDG", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
 
