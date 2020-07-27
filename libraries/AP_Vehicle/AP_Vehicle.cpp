@@ -32,6 +32,26 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Path: ../AP_RCTelemetry/AP_VideoTX.cpp
     AP_SUBGROUPINFO(vtx, "VTX_",  4, AP_Vehicle, AP_VideoTX),
 
+    // @Param: OSCILLATION_DET
+    // @DisplayName: Oscillation Detection axis
+    // @Description: Enable oscillation detection to reduce gains on these axis
+    // @Bitmask{Copter}: 0:Roll, 1:Pitch, 2:Yaw
+    // @Bitmask{Plane}: 0:Roll, 1:Pitch, 3:QRoll, 4:QPitch, 5:QYaw
+    // @Bitmask{Rover}: 2:Steer, 6:Throttle
+    // @Bitmask{Tracker}: 1:Pitch, 2:Yaw
+    // @User: Advanced
+    AP_GROUPINFO("OSCILLATION_DET", 5, AP_Vehicle, oscillation_detector_bitmask, 0),
+
+    // @Param: QUICK_TUNE_AXIS
+    // @DisplayName: Quick tune axis
+    // @Description: Quick tune will work on these axis when the quick tune RC channel option is active, if multiple are selected they will be run in turn, OSCILLATION_DET must be enabled for each axis
+    // @Bitmask{Copter}: 0:Roll, 1:Pitch, 2:Yaw
+    // @Bitmask{Plane}: 0:Roll, 1:Pitch, 3:QRoll, 4:QPitch, 5:QYaw
+    // @Bitmask{Rover}: 2:Steer, 6:Throttle
+    // @Bitmask{Tracker}: 1:Pitch, 2:Yaw
+    // @User: Advanced
+    AP_GROUPINFO("QUICK_TUNE_AXIS", 6, AP_Vehicle, quick_tune_bitmask, 0),
+
     AP_GROUPEND
 };
 
@@ -146,6 +166,7 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
     SCHED_TASK(update_dynamic_notch,                   200,    200),
     SCHED_TASK_CLASS(AP_VideoTX,   &vehicle.vtx,            update,                    2, 100),
     SCHED_TASK(send_watchdog_reset_statustext,         0.1,     20),
+    SCHED_TASK(update_oscillation_detector,            0.2,     20),
 };
 
 void AP_Vehicle::get_common_scheduler_tasks(const AP_Scheduler::Task*& tasks, uint8_t& num_tasks)
@@ -237,6 +258,33 @@ void AP_Vehicle::write_notch_log_messages() const
         "FTN", "TimeUS,NDn,DnF1,DnF2,DnF3,DnF4", "s-zzzz", "F-----", "QBffff", AP_HAL::micros64(), ins.get_num_gyro_dynamic_notch_center_frequencies(),
             notches[0], notches[1], notches[2], notches[3]);
 }
+
+// advance to the next enabled quick tune axis from bitmask param
+bool AP_Vehicle::advance_quick_tune_axis()
+{
+    if (quick_tune_bitmask.get() <= 0) {
+        // not enabled
+        return false;
+    }
+
+    // search from current to end
+    for(int8_t i=(int8_t)quick_tune_axis + 1; i < (int8_t)AP_Vehicle::PID_AXIS::LAST; i++) {
+        if ( ((1 << i) & quick_tune_bitmask.get()) != 0) {
+            quick_tune_axis = (AP_Vehicle::PID_AXIS)i;
+            return true;
+        }
+    }
+
+    // searched from beginning and found nothing
+    if (quick_tune_axis == AP_Vehicle::PID_AXIS::NONE) {
+        return false;
+    }
+
+    // start again from the beginning
+    quick_tune_axis = AP_Vehicle::PID_AXIS::NONE;
+    return advance_quick_tune_axis();
+}
+
 
 AP_Vehicle *AP_Vehicle::_singleton = nullptr;
 

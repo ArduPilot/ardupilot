@@ -129,6 +129,21 @@ public:
         AP_Int16 angle_max;
     };
 
+    // Oscillation detector param and enum
+    AP_Int16 oscillation_detector_bitmask;
+    AP_Int16 quick_tune_bitmask;
+    enum class PID_AXIS : int8_t {
+        NONE = -1,
+        ROLL,
+        PITCH,
+        YAW,
+        QROll,
+        QPITCH,
+        QYAW,
+        THROTTLE,
+        LAST, // must be last
+    } quick_tune_axis = PID_AXIS::NONE;
+
     void get_common_scheduler_tasks(const AP_Scheduler::Task*& tasks, uint8_t& num_tasks);
     // implementations *MUST* fill in all passed-in fields or we get
     // Valgrind errors
@@ -203,7 +218,13 @@ public:
     void write_notch_log_messages() const;
     // update the harmonic notch
     virtual void update_dynamic_notch() {};
-    
+
+    // update the enabled state of Oscillation Detector from param
+    virtual void update_oscillation_detector() {};
+
+    // advance to the next enabled quick tune axis from bitmask param
+    bool advance_quick_tune_axis();
+
 protected:
 
     virtual void init_ardupilot() = 0;
