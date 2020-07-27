@@ -1,3 +1,19 @@
+Release 4.0.6beta4, 27th July 2020
+----------------------------------
+
+This is a minor change over beta3
+
+ - fixed an issue with swapping UAVCAN compasses and calibration
+
+ - fixed use of VTOL quadplane missions (where the plane flies as a
+   multi-rotor for auto waypoints)
+
+ - fixed legacy parsing of some lightware i2c lidars when beyond max
+   range
+
+Happy flying!
+
+
 Release 4.0.6beta3, 7th July 2020
 ----------------------------------
 
