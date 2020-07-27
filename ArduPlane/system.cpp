@@ -97,9 +97,6 @@ void Plane::init_ardupilot()
     g2.efi.init();
 #endif
 
-    // give AHRS the airspeed sensor
-    ahrs.set_airspeed(&airspeed);
-
     // GPS Initialization
     gps.set_log_gps_bit(MASK_LOG_GPS);
     gps.init(serial_manager);
