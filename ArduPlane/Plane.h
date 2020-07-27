@@ -966,6 +966,7 @@ private:
 #if OSD_ENABLED == ENABLED
     void publish_osd_info();
 #endif
+    void update_oscillation_detector() override;
 
     // navigation.cpp
     void set_nav_controller(void);

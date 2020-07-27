@@ -649,4 +649,40 @@ bool Plane::get_target_location(Location& target_loc)
     return false;
 }
 
+// set enable states, report tune progress
+void Plane::update_oscillation_detector()
+{
+    const uint8_t bitmask = plane.oscillation_detector_bitmask.get();
+
+    // Plane roll and pitch
+    float P, I, D, FF;
+    plane.rollController.oscillationDetector.set_enable((bitmask & (1 << (uint8_t)AP_Vehicle::PID_AXIS::ROLL)) != 0);
+    if (plane.rollController.oscillationDetector.quick_tune_active(P, I, D, FF)) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Quick Tune: Roll: P %0.2f, I %0.2f, D %0.2f, FF %0.2f",P,I,D,FF);
+    }
+
+    plane.pitchController.oscillationDetector.set_enable((bitmask & (1 << (uint8_t)AP_Vehicle::PID_AXIS::PITCH)) != 0);
+    if (plane.pitchController.oscillationDetector.quick_tune_active(P, I, D, FF)) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Quick Tune: Pitch: P %0.2f, I %0.2f, D %0.2f, FF %0.2f",P,I,D,FF);
+    }
+
+    // Quadplane roll, pitch and yaw
+    if (plane.quadplane.attitude_control != nullptr) {
+        plane.quadplane.attitude_control->get_rate_roll_pid().oscillationDetector.set_enable((bitmask & (1 << (uint8_t)AP_Vehicle::PID_AXIS::QROll)) != 0);
+        if (plane.quadplane.attitude_control->get_rate_roll_pid().oscillationDetector.quick_tune_active(P, I, D, FF)) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Quick Tune: QRoll: P %0.2f, I %0.2f, D %0.2f, FF %0.2f",P,I,D,FF);
+        }
+
+        plane.quadplane.attitude_control->get_rate_pitch_pid().oscillationDetector.set_enable((bitmask & (1 << (uint8_t)AP_Vehicle::PID_AXIS::QPITCH)) != 0);
+        if (plane.quadplane.attitude_control->get_rate_pitch_pid().oscillationDetector.quick_tune_active(P, I, D, FF)) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Quick Tune: QPitch: P %0.2f, I %0.2f, D %0.2f, FF %0.2f",P,I,D,FF);
+        }
+
+        plane.quadplane.attitude_control->get_rate_yaw_pid().oscillationDetector.set_enable((bitmask & (1 << (uint8_t)AP_Vehicle::PID_AXIS::QYAW)) != 0);
+        if (plane.quadplane.attitude_control->get_rate_yaw_pid().oscillationDetector.quick_tune_active(P, I, D, FF)) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Quick Tune: QYaw: P %0.2f, I %0.2f, D %0.2f, FF %0.2f",P,I,D,FF);
+        }
+    }
+}
+
 AP_HAL_MAIN_CALLBACKS(&plane);
