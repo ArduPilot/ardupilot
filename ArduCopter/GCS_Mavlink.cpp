@@ -994,17 +994,25 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
             break;
         }
 
-        // convert thrust to climb rate
-        packet.thrust = constrain_float(packet.thrust, 0.0f, 1.0f);
-        float climb_rate_cms = 0.0f;
-        if (is_equal(packet.thrust, 0.5f)) {
-            climb_rate_cms = 0.0f;
-        } else if (packet.thrust > 0.5f) {
-            // climb at up to WPNAV_SPEED_UP
-            climb_rate_cms = (packet.thrust - 0.5f) * 2.0f * copter.wp_nav->get_default_speed_up();
+        // check if the message's thrust field should be interpreted as a climb rate or as thrust
+        const bool use_thrust = copter.g2.dev_options.get() & DevOptionSetAttitudeTarget_ThrustAsThrust;
+
+        float climb_rate_or_thrust;
+        if (use_thrust) {
+            // interpret thrust as thrust
+            climb_rate_or_thrust = constrain_float(packet.thrust, -1.0f, 1.0f);
         } else {
-            // descend at up to WPNAV_SPEED_DN
-            climb_rate_cms = (0.5f - packet.thrust) * 2.0f * -fabsf(copter.wp_nav->get_default_speed_down());
+            // convert thrust to climb rate
+            packet.thrust = constrain_float(packet.thrust, 0.0f, 1.0f);
+            if (is_equal(packet.thrust, 0.5f)) {
+                climb_rate_or_thrust = 0.0f;
+            } else if (packet.thrust > 0.5f) {
+                // climb at up to WPNAV_SPEED_UP
+                climb_rate_or_thrust = (packet.thrust - 0.5f) * 2.0f * copter.wp_nav->get_default_speed_up();
+            } else {
+                // descend at up to WPNAV_SPEED_DN
+                climb_rate_or_thrust = (0.5f - packet.thrust) * 2.0f * -fabsf(copter.wp_nav->get_default_speed_down());
+            }
         }
 
         // if the body_yaw_rate field is ignored, use the commanded yaw position
@@ -1015,7 +1023,7 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
         }
 
         copter.mode_guided.set_angle(Quaternion(packet.q[0],packet.q[1],packet.q[2],packet.q[3]),
-            climb_rate_cms, use_yaw_rate, packet.body_yaw_rate);
+                climb_rate_or_thrust, use_yaw_rate, packet.body_yaw_rate, use_thrust);
 
         break;
     }
