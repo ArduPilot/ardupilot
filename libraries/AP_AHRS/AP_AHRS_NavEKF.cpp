@@ -2209,6 +2209,7 @@ uint8_t AP_AHRS_NavEKF::get_active_airspeed_index() const
     }
 #endif
     // for the rest, let the primary airspeed sensor be used
+    const AP_Airspeed * _airspeed = AP::airspeed();
     if (_airspeed != nullptr) {
         return _airspeed->get_primary();
     }
