@@ -717,8 +717,8 @@ void AP_GPS::update_instance(uint8_t instance)
             state[instance].vdop = GPS_UNKNOWN_DOP;
             timing[instance].last_message_time_ms = tnow;
             timing[instance].delta_time_ms = GPS_TIMEOUT_MS;
-            // do not try to detect again if type is MAV
-            if (_type[instance] == GPS_TYPE_MAV) {
+            // do not try to detect again if type is MAV or UAVCAN
+            if (_type[instance] == GPS_TYPE_MAV || _type[instance] == GPS_TYPE_UAVCAN) {
                 state[instance].status = NO_FIX;
             } else {
                 // free the driver before we run the next detection, so we
