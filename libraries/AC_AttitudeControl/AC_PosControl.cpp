@@ -2,6 +2,7 @@
 #include "AC_PosControl.h"
 #include <AP_Math/AP_Math.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AC_INDI_Control/AC_INDI_Control.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -646,6 +647,14 @@ void AC_PosControl::update_xy_controller()
     // update angle targets that will be passed to stabilize controller
     accel_to_lean_angles(_accel_target.x, _accel_target.y, _roll_target, _pitch_target);
     calculate_yaw_and_rate_yaw();
+
+    if (AP::indi_control().enabled()) {
+        AP::indi_control().run_pos_vel_xy_controller(Vector3f(_pos_target.x * 0.01f, _pos_target.y * 0.01f, _pos_target.z * 0.01f),
+                                                    curr_pos * 0.01f, 
+                                                    _vel_desired * 0.01f, 
+                                                    Vector3f(_inav.get_velocity_xy_cms().x * 0.01f, _inav.get_velocity_xy_cms().y * 0.01f, _inav.get_velocity_z_up_cms() * 0.01f),
+                                                    _accel_desired * 0.01f);
+    }
 }
 
 
@@ -959,8 +968,27 @@ void AC_PosControl::update_z_controller()
 
     // Actuator commands
 
-    // send throttle to attitude controller with angle boost
-    _attitude_control.set_throttle_out(thr_out, true, POSCONTROL_THROTTLE_CUTOFF_FREQ_HZ);
+    if (AP::indi_control().enabled()) {
+        // limit acceleration using maximum lean angles
+        float angle_max = MIN(_attitude_control.get_althold_lean_angle_max_cd(), get_lean_angle_max_cd());
+        float accel_max_xy = GRAVITY_MSS * tanf(ToRad(angle_max * 0.01f));
+        
+        AP::indi_control().run_pos_vel_z_controller(_pos_target.z * 0.01f, _inav.get_position_z_up_cm() * 0.01f, _vel_desired.z * 0.01f, curr_vel_z * 0.01f, _accel_desired.z * 0.0f, is_active_xy(), accel_max_xy);
+
+        if (is_active_xy()) {
+            Vector3f target_eul;
+            AP::indi_control().input_acc_des_euler_angle_yaw(_ahrs.yaw).to_euler(target_eul.x, target_eul.y, target_eul.z);
+            _roll_target = RadiansToCentiDegrees(target_eul.x);
+            _pitch_target = RadiansToCentiDegrees(target_eul.y);
+             Vector2f(_roll_target, _pitch_target).limit_length(angle_max);
+            _attitude_control.set_throttle_out(AP::indi_control().get_total_thrust_cmd_scaled(), false, 0.0f);
+        } else {
+            _attitude_control.set_throttle_out(AP::indi_control().get_total_thrust_cmd_scaled(), true, 0.0f);
+        }
+    } else {
+        // send throttle to attitude controller with angle boost
+        _attitude_control.set_throttle_out(thr_out, true, POSCONTROL_THROTTLE_CUTOFF_FREQ_HZ);
+    }
 
     // Check for vertical controller health
 
