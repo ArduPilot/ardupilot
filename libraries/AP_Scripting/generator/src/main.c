@@ -1556,8 +1556,9 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
           arg_index++;
           arg = arg->next;
         }
+        fprintf(source, "        return %d;\n", return_count);
         fprintf(source, "    } else {\n");
-        fprintf(source, "        lua_pushnil(L);\n");
+        fprintf(source, "        return 0;\n");
         fprintf(source, "    }\n");
       } else {
         fprintf(source, "    lua_pushboolean(L, data);\n");
@@ -1601,7 +1602,9 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
       break;
   }
 
-  fprintf(source, "    return %d;\n", return_count);
+  if ((method->return_type.type != TYPE_BOOLEAN) || ((method->flags & TYPE_FLAGS_NULLABLE) == 0)) {
+      fprintf(source, "    return %d;\n", return_count);
+  }
 
   fprintf(source, "}\n\n");
 }
