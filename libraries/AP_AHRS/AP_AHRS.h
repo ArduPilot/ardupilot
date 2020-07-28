@@ -272,6 +272,12 @@ public:
         return true;
     }
 
+    // return a synthetic airspeed estimate (one derived from sensors
+    // other than an actual airspeed sensor), if available. return
+    // true if we have a synthetic airspeed.  ret will not be modified
+    // on failure.
+    virtual bool synthetic_airspeed(float &ret) const WARN_IF_UNUSED = 0;
+
     // get apparent to true airspeed ratio
     float get_EAS2TAS(void) const;
 
