@@ -167,7 +167,7 @@ void Plane::channel_function_mixer(SRV_Channel::Aux_servo_function_t func1_in, S
 /*
   setup flaperon output channels
  */
-void Plane::flaperon_update(int8_t flap_percent)
+void Plane::flaperon_update()
 {
     if (!SRV_Channels::function_assigned(SRV_Channel::k_flaperon_left) &&
         !SRV_Channels::function_assigned(SRV_Channel::k_flaperon_right)) {
@@ -178,9 +178,10 @@ void Plane::flaperon_update(int8_t flap_percent)
       percentage of flaps. Flap input can come from a manual channel
       or from auto flaps.
      */
+    float flap_percent = SRV_Channels::get_output_scaled(SRV_Channel::k_flap_auto) * 45; // flap_auto is range 100, flaperons are angle 4500
     float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
-    float flaperon_left  = constrain_float(aileron + flap_percent * 45, -4500, 4500);
-    float flaperon_right = constrain_float(aileron - flap_percent * 45, -4500, 4500);
+    float flaperon_left  = constrain_float(aileron + flap_percent, -4500, 4500);
+    float flaperon_right = constrain_float(aileron - flap_percent, -4500, 4500);
     SRV_Channels::set_output_scaled(SRV_Channel::k_flaperon_left, flaperon_left);
     SRV_Channels::set_output_scaled(SRV_Channel::k_flaperon_right, flaperon_right);
 }
@@ -603,10 +604,10 @@ void Plane::set_servos_flaps(void)
     if (g.flap_slewrate) {
         SRV_Channels::limit_slew_rate(SRV_Channel::k_flap_auto, g.flap_slewrate, G_Dt);
         SRV_Channels::limit_slew_rate(SRV_Channel::k_flap, g.flap_slewrate, G_Dt);
-    }    
+    }
 
     // output to flaperons, if any
-    flaperon_update(auto_flap_percent);
+    flaperon_update();
 }
 
 #if LANDING_GEAR_ENABLED == ENABLED
