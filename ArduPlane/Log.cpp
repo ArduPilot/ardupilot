@@ -90,6 +90,7 @@ struct PACKED log_Control_Tuning {
     int16_t rudder_out;
     int16_t throttle_dem;
     float airspeed_estimate;
+    float synthetic_airspeed;
 };
 
 // Write a control tuning packet. Total length : 22 bytes
@@ -97,7 +98,12 @@ void Plane::Log_Write_Control_Tuning()
 {
     float est_airspeed = 0;
     ahrs.airspeed_estimate(est_airspeed);
-    
+
+    float synthetic_airspeed;
+    if (!ahrs.synthetic_airspeed(synthetic_airspeed)) {
+        synthetic_airspeed = logger.quiet_nan();
+    }
+
     struct log_Control_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CTUN_MSG),
         time_us         : AP_HAL::micros64(),
@@ -108,7 +114,8 @@ void Plane::Log_Write_Control_Tuning()
         throttle_out    : (int16_t)SRV_Channels::get_output_scaled(SRV_Channel::k_throttle),
         rudder_out      : (int16_t)SRV_Channels::get_output_scaled(SRV_Channel::k_rudder),
         throttle_dem    : (int16_t)SpdHgt_Controller->get_throttle_demand(),
-        airspeed_estimate : est_airspeed
+        airspeed_estimate : est_airspeed,
+        synthetic_airspeed : synthetic_airspeed
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -302,9 +309,10 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: RdrOut: scaled output rudder
 // @Field: ThrDem: demanded speed-height-controller throttle
 // @Field: Aspd: airspeed estimate (or measurement if airspeed sensor healthy and ARSPD_USE>0)
+// @Field: SAs: synthetic airspeed measurement derived from non-airspeed sensors, NaN if not available
 
     { LOG_CTUN_MSG, sizeof(log_Control_Tuning),     
-      "CTUN", "Qcccchhhf",    "TimeUS,NavRoll,Roll,NavPitch,Pitch,ThrOut,RdrOut,ThrDem,Aspd", "sdddd---n", "FBBBB---0" },
+      "CTUN", "Qcccchhhff",    "TimeUS,NavRoll,Roll,NavPitch,Pitch,ThrOut,RdrOut,ThrDem,Aspd,SAs", "sdddd---nn", "FBBBB---00" },
 
 // @LoggerMessage: NTUN
 // @Description: Navigation Tuning information - e.g. vehicle destination
