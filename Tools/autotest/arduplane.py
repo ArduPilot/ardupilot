@@ -1755,7 +1755,7 @@ class AutoTestPlane(AutoTest):
 
         # Wait to detect thermal
         self.progress("Waiting for thermal")
-        self.wait_mode('LOITER',timeout=600)
+        self.wait_mode(24,timeout=600)
 
         # Wait to climb to SOAR_ALT_MAX
         self.progress("Waiting for climb to max altitude")
