@@ -64,7 +64,7 @@ const AP_Param::GroupInfo SITL::var_info[] = {
     AP_GROUPINFO("BARO_DELAY",    38, SITL,  baro_delay, 0),
     AP_GROUPINFO("WIND_DELAY",    40, SITL,  wind_delay, 0),
     AP_GROUPINFO("ACC2_RND",      42, SITL,  accel2_noise, 0),
-    AP_GROUPINFO("ARSPD_FAIL",    43, SITL,  arspd_fail, 0),
+    AP_GROUPINFO("ARSPD_FAULT",   43, SITL,  arspd_fault_value, 0),
     AP_GROUPINFO("GYR_SCALE",     44, SITL,  gyro_scale, 0),
     AP_GROUPINFO("ADSB_COUNT",    45, SITL,  adsb_plane_count, -1),
     AP_GROUPINFO("ADSB_RADIUS",   46, SITL,  adsb_radius_m, 10000),
@@ -91,11 +91,11 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     AP_GROUPINFO("TEMP_FLIGHT",  2, SITL,  temp_flight, 35),
     AP_GROUPINFO("TEMP_TCONST",  3, SITL,  temp_tconst, 30),
     AP_GROUPINFO("TEMP_BFACTOR", 4, SITL,  temp_baro_factor, 0),
-    AP_GROUPINFO("ARSPD_FAIL_P", 6, SITL,  arspd_fail_pressure, 0),
+    AP_GROUPINFO("ARSPD_FAILP", 6, SITL,  arspd_fail_pressure, 0),
     AP_GROUPINFO("ARSPD_PITOT",  7, SITL,  arspd_fail_pitot_pressure, 0),
     AP_GROUPINFO("ARSPD_SIGN",   9, SITL,  arspd_signflip, 0),
     AP_GROUPINFO("WIND_DIR_Z",  10, SITL,  wind_dir_z,     0),
-    AP_GROUPINFO("ARSPD2_FAIL", 11, SITL,  arspd2_fail, 0),
+    AP_GROUPINFO("ARSPD2_FAULT",11, SITL,  arspd2_fault_value, 0),
     AP_GROUPINFO("ARSPD2_FAILP",12, SITL,  arspd2_fail_pressure, 0),
     AP_GROUPINFO("ARSPD2_PITOT",13, SITL,  arspd2_fail_pitot_pressure, 0),
     AP_GROUPINFO("WIND_T"      ,15, SITL,  wind_type, SITL::WIND_TYPE_SQRT),
@@ -232,6 +232,10 @@ const AP_Param::GroupInfo SITL::var_info3[] = {
     AP_GROUPINFO("BARO2_DRIFT",  33, SITL,  baro_drift[1], 0),
     AP_GROUPINFO("BARO2_DISABL", 34, SITL,  baro_disable[1], 0),
     AP_GROUPINFO("BARO2_GLITCH", 35, SITL,  baro_glitch[1], 0),
+
+    // arspfault type mode
+    AP_GROUPINFO("ARSPD_FT", 36, SITL, arspd_fault_type, SITL::ARSPD_FAULT_ENABLE),
+    AP_GROUPINFO("ARSPD2_FT", 37, SITL, arspd2_fault_type, SITL::ARSPD_FAULT_ENABLE),
 
     AP_GROUPEND
 };
