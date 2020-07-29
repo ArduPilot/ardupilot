@@ -279,39 +279,6 @@ void Plane::update_loiter(uint16_t radius)
 }
 
 /*
-  handle CRUISE mode, locking heading to GPS course when we have
-  sufficient ground speed, and no aileron or rudder input
- */
-void Plane::update_cruise()
-{
-    if (!cruise_state.locked_heading &&
-        channel_roll->get_control_in() == 0 &&
-        rudder_input() == 0 &&
-        gps.status() >= AP_GPS::GPS_OK_FIX_2D &&
-        gps.ground_speed() >= 3 &&
-        cruise_state.lock_timer_ms == 0) {
-        // user wants to lock the heading - start the timer
-        cruise_state.lock_timer_ms = millis();
-    }
-    if (cruise_state.lock_timer_ms != 0 &&
-        (millis() - cruise_state.lock_timer_ms) > 500) {
-        // lock the heading after 0.5 seconds of zero heading input
-        // from user
-        cruise_state.locked_heading = true;
-        cruise_state.lock_timer_ms = 0;
-        cruise_state.locked_heading_cd = gps.ground_course_cd();
-        prev_WP_loc = current_loc;
-    }
-    if (cruise_state.locked_heading) {
-        next_WP_loc = prev_WP_loc;
-        // always look 1km ahead
-        next_WP_loc.offset_bearing(cruise_state.locked_heading_cd*0.01f, prev_WP_loc.get_distance(current_loc) + 1000);
-        nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
-    }
-}
-
-
-/*
   handle speed and height control in FBWB or CRUISE mode. 
   In this mode the elevator is used to change target altitude. The
   throttle is used to change target airspeed or throttle
