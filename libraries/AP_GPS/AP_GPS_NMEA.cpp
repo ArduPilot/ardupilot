@@ -87,6 +87,9 @@ bool AP_GPS_NMEA::_decode(char c)
     case '\r':
     case '\n':
     case '*':
+        if (_sentence_done) {
+            return false;
+        }
         if (_term_offset < sizeof(_term)) {
             _term[_term_offset] = 0;
             valid_sentence = _term_complete();
@@ -103,6 +106,7 @@ bool AP_GPS_NMEA::_decode(char c)
         _is_checksum_term = false;
         _gps_data_good = false;
         _sentence_length = 1;
+        _sentence_done = false;
         return valid_sentence;
     }
 
@@ -227,6 +231,7 @@ bool AP_GPS_NMEA::_term_complete()
 {
     // handle the last term in a message
     if (_is_checksum_term) {
+        _sentence_done = true;
         uint8_t nibble_high = 0;
         uint8_t nibble_low  = 0;
         if (!hex_to_uint8(_term[0], nibble_high) || !hex_to_uint8(_term[1], nibble_low)) {
