@@ -3232,7 +3232,7 @@ bool QuadPlane::is_vtol_takeoff(uint16_t id) const
 bool QuadPlane::is_vtol_land(uint16_t id) const
 {
     if (id == MAV_CMD_NAV_VTOL_LAND) {
-        if (options & QuadPlane::OPTION_MISSION_LAND_FW_APPROACH) {
+        if (landing_with_fixed_wing_spiral_approach()) {
             return plane.vtol_approach_s.approach_stage == Plane::Landing_ApproachStage::VTOL_LANDING;
         } else {
             return true;
@@ -3358,4 +3358,14 @@ bool QuadPlane::in_vtol_land_final(void) const
 bool QuadPlane::in_vtol_land_sequence(void) const
 {
     return in_vtol_land_approach() || in_vtol_land_descent() || in_vtol_land_final();
+}
+
+bool QuadPlane::landing_with_fixed_wing_spiral_approach(void) const
+{
+    bool fw_approach_bit_set = (options & OPTION_MISSION_LAND_FW_APPROACH) == OPTION_MISSION_LAND_FW_APPROACH;
+
+    const AP_Mission::Mission_Command cmd = plane.mission.get_current_nav_cmd();
+
+    return ((cmd.id == MAV_CMD_NAV_VTOL_LAND) &&
+            (fw_approach_bit_set || cmd.p1 == NAV_VTOL_LAND_OPTIONS_FW_SPIRAL_APPROACH));
 }

@@ -157,7 +157,7 @@ void Plane::calc_airspeed_errors()
         // Landing airspeed target
         target_airspeed_cm = landing.get_target_airspeed_cm();
     } else if ((control_mode == &mode_auto) &&
-               (quadplane.options & QuadPlane::OPTION_MISSION_LAND_FW_APPROACH) &&
+               quadplane.landing_with_fixed_wing_spiral_approach() &&
 							 ((vtol_approach_s.approach_stage == Landing_ApproachStage::APPROACH_LINE) ||
 							  (vtol_approach_s.approach_stage == Landing_ApproachStage::VTOL_LANDING))) {
         float land_airspeed = SpdHgt_Controller->get_land_airspeed();

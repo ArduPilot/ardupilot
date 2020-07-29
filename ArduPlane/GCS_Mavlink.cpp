@@ -1023,7 +1023,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
                 // shooting a quadplane approach
                 if ((!plane.quadplane.available()) ||
                     ((!plane.quadplane.in_vtol_auto()) &&
-                     (!(plane.quadplane.options & QuadPlane::OPTION_MISSION_LAND_FW_APPROACH)))) {
+                     (!plane.quadplane.landing_with_fixed_wing_spiral_approach()))) {
                     // Initiate an aborted landing. This will trigger a pitch-up and
                     // climb-out to a safe altitude holding heading then one of the
                     // following actions will occur, check for in this order:
