@@ -80,3 +80,10 @@ bool ModeLoiter::isHeadingLinedUp_cd(const int32_t bearing_cd)
     }
     return false;
 }
+
+void ModeLoiter::_navigate()
+{
+    // Zero indicates to use WP_LOITER_RAD
+    plane.update_loiter(0);
+}
+

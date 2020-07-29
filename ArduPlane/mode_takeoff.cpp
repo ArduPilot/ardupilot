@@ -131,3 +131,8 @@ void ModeTakeoff::update()
     }
 }
 
+void ModeTakeoff::_navigate()
+{
+    plane.mode_loiter.navigate();
+}
+
