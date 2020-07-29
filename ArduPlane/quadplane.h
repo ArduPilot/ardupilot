@@ -415,6 +415,8 @@ private:
     uint32_t last_loiter_ms;
 
     enum position_control_state {
+        QPOS_APPROACH,
+        QPOS_AIRBRAKE,
         QPOS_POSITION1,
         QPOS_POSITION2,
         QPOS_LAND_DESCEND,
@@ -428,6 +430,7 @@ private:
         float max_speed;
         Vector3f target;
         bool slow_descent:1;
+        uint32_t approach_start_ms;
     } poscontrol;
 
     struct {
