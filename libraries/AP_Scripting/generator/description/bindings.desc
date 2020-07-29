@@ -124,6 +124,14 @@ singleton AP_Notify alias notify
 singleton AP_Notify method play_tune void string
 singleton AP_Notify method handle_rgb void uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX
 
+include AP_Proximity/AP_Proximity.h
+
+singleton AP_Proximity alias proximity
+singleton AP_Proximity method num_sensors uint8_t
+singleton AP_Proximity method get_object_count uint8_t
+singleton AP_Proximity method get_closest_object boolean float'Null float'Null
+singleton AP_Proximity method get_object_angle_and_distance boolean uint8_t 0 UINT8_MAX float'Null float'Null
+
 include AP_RangeFinder/AP_RangeFinder.h
 
 singleton RangeFinder alias rangefinder
