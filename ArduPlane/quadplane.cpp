@@ -2940,14 +2940,19 @@ bool QuadPlane::verify_vtol_land(void)
     if (!available()) {
         return true;
     }
+    float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+    const float descent_height_ratio = 2;
     if (poscontrol.state == QPOS_POSITION2 &&
-        plane.auto_state.wp_distance < 2) {
+        (plane.auto_state.wp_distance < 2 ||
+         height_above_ground > descent_height_ratio*plane.auto_state.wp_distance)) {
         poscontrol.state = QPOS_LAND_DESCEND;
 #if LANDING_GEAR_ENABLED == ENABLED
         plane.g2.landing_gear.deploy_for_landing();
 #endif
         last_land_final_agl = plane.relative_ground_altitude(plane.g.rangefinder_landing);
-        gcs().send_text(MAV_SEVERITY_INFO,"Land descend started");
+        gcs().send_text(MAV_SEVERITY_INFO,"Land descend started d=%.1f h=%.1f",
+                        plane.auto_state.wp_distance,
+                        height_above_ground);
         if (plane.control_mode == &plane.mode_auto) {
             // set height to mission height, so we can use the mission
             // WP height for triggering land final if no rangefinder
