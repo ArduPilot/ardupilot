@@ -28,3 +28,8 @@ void ModeGuided::update()
     }
 }
 
+void ModeGuided::_navigate()
+{
+    plane.mode_loiter.navigate();
+}
+

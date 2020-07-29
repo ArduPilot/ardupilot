@@ -434,102 +434,12 @@ void Plane::update_control_mode(void)
     effective_mode->update();
 }
 
+/* 
+  call the navigate method of the active flight mode
+*/
 void Plane::update_navigation()
 {
-    // wp_distance is in ACTUAL meters, not the *100 meters we get from the GPS
-    // ------------------------------------------------------------------------
-
-    uint16_t radius = 0;
-    uint16_t qrtl_radius = abs(g.rtl_radius);
-    if (qrtl_radius == 0) {
-        qrtl_radius = abs(aparm.loiter_radius);
-    }
-    
-    switch (control_mode->mode_number()) {
-    case Mode::Number::AUTO:
-        if (ahrs.home_is_set()) {
-            mission.update();
-        }
-        break;
-            
-    case Mode::Number::RTL:
-        if (quadplane.available() && quadplane.rtl_mode == 1 &&
-            (nav_controller->reached_loiter_target() ||
-             current_loc.past_interval_finish_line(prev_WP_loc, next_WP_loc) ||
-             auto_state.wp_distance < MAX(qrtl_radius, quadplane.stopping_distance())) &&
-            AP_HAL::millis() - last_mode_change_ms > 1000) {
-            /*
-              for a quadplane in RTL mode we switch to QRTL when we
-              are within the maximum of the stopping distance and the
-              RTL_RADIUS
-             */
-            set_mode(mode_qrtl, ModeReason::RTL_COMPLETE_SWITCHING_TO_VTOL_LAND_RTL);
-            break;
-        } else if (g.rtl_autoland == 1 &&
-            !auto_state.checked_for_autoland &&
-            reached_loiter_target() && 
-            labs(altitude_error_cm) < 1000) {
-            // we've reached the RTL point, see if we have a landing sequence
-            if (mission.jump_to_landing_sequence()) {
-                // switch from RTL -> AUTO
-                mission.set_force_resume(true);
-                set_mode(mode_auto, ModeReason::RTL_COMPLETE_SWITCHING_TO_FIXEDWING_AUTOLAND);
-            }
-
-            // prevent running the expensive jump_to_landing_sequence
-            // on every loop
-            auto_state.checked_for_autoland = true;
-        }
-        else if (g.rtl_autoland == 2 &&
-            !auto_state.checked_for_autoland) {
-            // Go directly to the landing sequence
-            if (mission.jump_to_landing_sequence()) {
-                // switch from RTL -> AUTO
-                mission.set_force_resume(true);
-                set_mode(mode_auto, ModeReason::RTL_COMPLETE_SWITCHING_TO_FIXEDWING_AUTOLAND);
-            }
-
-            // prevent running the expensive jump_to_landing_sequence
-            // on every loop
-            auto_state.checked_for_autoland = true;
-        }
-        radius = abs(g.rtl_radius);
-        if (radius > 0) {
-            loiter.direction = (g.rtl_radius < 0) ? -1 : 1;
-        }
-        // fall through to LOITER
-        FALLTHROUGH;
-
-    case Mode::Number::LOITER:
-    case Mode::Number::AVOID_ADSB:
-    case Mode::Number::GUIDED:
-    case Mode::Number::TAKEOFF:
-        update_loiter(radius);
-        break;
-
-    case Mode::Number::CRUISE:
-        update_cruise();
-        break;
-
-    case Mode::Number::MANUAL:
-    case Mode::Number::STABILIZE:
-    case Mode::Number::TRAINING:
-    case Mode::Number::INITIALISING:
-    case Mode::Number::ACRO:
-    case Mode::Number::FLY_BY_WIRE_A:
-    case Mode::Number::AUTOTUNE:
-    case Mode::Number::FLY_BY_WIRE_B:
-    case Mode::Number::CIRCLE:
-    case Mode::Number::QSTABILIZE:
-    case Mode::Number::QHOVER:
-    case Mode::Number::QLOITER:
-    case Mode::Number::QLAND:
-    case Mode::Number::QRTL:
-    case Mode::Number::QAUTOTUNE:
-    case Mode::Number::QACRO:
-        // nothing to do
-        break;
-    }
+    control_mode->navigate();
 }
 
 /*

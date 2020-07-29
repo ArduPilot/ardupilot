@@ -30,6 +30,7 @@ public:
 
     friend class Mode;
     friend class ModeAuto;
+    friend class ModeRTL;
     friend class ModeAvoidADSB;
     friend class ModeGuided;
     friend class ModeQHover;

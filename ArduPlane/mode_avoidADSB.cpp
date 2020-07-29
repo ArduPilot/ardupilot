@@ -11,3 +11,8 @@ void ModeAvoidADSB::update()
     plane.mode_guided.update();
 }
 
+void ModeAvoidADSB::_navigate()
+{
+    plane.mode_loiter.navigate();
+}
+

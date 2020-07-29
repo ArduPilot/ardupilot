@@ -74,6 +74,9 @@ public:
     // true if mode can have terrain following disabled by switch
     virtual bool allows_terrain_disable() const { return false; }
 
+    // navigation
+    void navigate();
+
 protected:
 
     // subclasses override this to perform checks before entering the mode
@@ -81,6 +84,9 @@ protected:
 
     // subclasses override this to perform any required cleanup when exiting the mode
     virtual void _exit() { return; }
+
+    // subclasses override this if they require navigation.
+    virtual void _navigate() { return; }
 };
 
 
@@ -115,6 +121,7 @@ protected:
 
     bool _enter() override;
     void _exit() override;
+    void _navigate() override;
 };
 
 
@@ -149,6 +156,7 @@ public:
 protected:
 
     bool _enter() override;
+    void _navigate() override;
 };
 
 class ModeCircle: public Mode
@@ -184,6 +192,7 @@ public:
 protected:
 
     bool _enter() override;
+    void _navigate() override;
 };
 
 class ModeManual : public Mode
@@ -218,6 +227,7 @@ public:
 protected:
 
     bool _enter() override;
+    void _navigate() override;
 };
 
 class ModeStabilize : public Mode
@@ -319,6 +329,7 @@ public:
 protected:
 
     bool _enter() override;
+    void _navigate() override;
 };
 
 class ModeAvoidADSB : public Mode
@@ -335,6 +346,7 @@ public:
 protected:
 
     bool _enter() override;
+    void _navigate() override;
 };
 
 class ModeQStabilize : public Mode
@@ -498,4 +510,5 @@ protected:
     Location start_loc;
 
     bool _enter() override;
+    void _navigate() override;
 };
