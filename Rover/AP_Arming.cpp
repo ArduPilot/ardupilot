@@ -88,11 +88,11 @@ bool AP_Arming_Rover::pre_arm_checks(bool report)
     }
 
     return (AP_Arming::pre_arm_checks(report)
-            && rover.g2.motors.pre_arm_check(report)
-            && fence_checks(report)
-            && oa_check(report)
-            && parameter_checks(report)
-            && mode_checks(report));
+            & rover.g2.motors.pre_arm_check(report)
+            & fence_checks(report)
+            & oa_check(report)
+            & parameter_checks(report)
+            & mode_checks(report));
 }
 
 bool AP_Arming_Rover::arm_checks(AP_Arming::Method method)
