@@ -65,6 +65,11 @@ void SITL_State::_update_rangefinder(float range_value)
         }
     }
 
+    // if not populated also fill out the STIL rangefinder array
+    if (is_equal(_sitl->state.rangefinder_m[0],-1.0f)) {
+        _sitl->state.rangefinder_m[0] = altitude;
+    }
+
     sonar_pin_value = 1023 * (voltage / 5.0f);
 }
 
