@@ -174,6 +174,7 @@ void trace(const int trace, const char *message, ...) {
   }
 }
 
+void error(const int code, const char *message, ...) __attribute__ ((noreturn));
 void error(const int code, const char *message, ...) {
   char * fmt = malloc(strlen(message)+1024);
   if (fmt == NULL) {
