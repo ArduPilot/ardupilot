@@ -28,11 +28,12 @@
 
 #include <AP_Common/Location.h>
 #include <AP_Math/AP_Math.h>
-#include "AP_NavEKF3.h"
 #include <AP_Math/vectorN.h>
 #include <AP_NavEKF/AP_NavEKF_core_common.h>
 #include <AP_NavEKF3/AP_NavEKF3_Buffer.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+
 #include "AP_NavEKF/EKFGSF_yaw.h"
 
 // GPS pre-flight check bit locations
@@ -91,7 +92,7 @@ class NavEKF3_core : public NavEKF_core_common
 {
 public:
     // Constructor
-    NavEKF3_core(NavEKF3 *_frontend);
+    NavEKF3_core(class NavEKF3 *_frontend);
 
     // setup this core backend
     bool setup_core(uint8_t _imu_index, uint8_t _core_index);
@@ -445,7 +446,7 @@ private:
     EKFGSF_yaw *yawEstimator;
 
     // Reference to the global EKF frontend for parameters
-    NavEKF3 *frontend;
+    class NavEKF3 *frontend;
     uint8_t imu_index; // preferred IMU index
     uint8_t gyro_index_active; // active gyro index (in case preferred fails)
     uint8_t accel_index_active; // active accel index (in case preferred fails)
