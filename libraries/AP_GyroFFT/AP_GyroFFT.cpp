@@ -422,7 +422,11 @@ uint16_t AP_GyroFFT::run_cycle()
     calculate_noise(false, config);
 
     // record how we are doing
-    _output_cycle_micros = AP_HAL::micros() - now;
+    _thread_state._last_output_us[_update_axis] = AP_HAL::micros();
+    _output_cycle_micros = _thread_state._last_output_us[_update_axis] - now;
+
+    // move onto the next axis
+    _update_axis = (_update_axis + 1) % XYZ_AXIS_COUNT;
 
     // ready to receive another frame, because lock contention is so expensive we don't lock
     // around this flag but rather rely on the semaphore at the beginning of the loop to
@@ -647,6 +651,30 @@ AP_GyroFFT::FrequencyPeak AP_GyroFFT::get_tracked_noise_peak() const
     return FrequencyPeak::CENTER;
 }
 
+// center frequency slewed from previous to current value at the output rate
+float AP_GyroFFT::get_slewed_noise_center_freq_hz(FrequencyPeak peak, uint8_t axis) const
+{
+    uint32_t now = AP_HAL::micros();
+    const float slew = MIN(1.0f, (now - _global_state._last_output_us[axis])
+        * (_fft_sampling_rate_hz / _samples_per_frame) / 1e6f);
+    return (_global_state._prev_center_freq_hz_filtered[peak][axis]
+        + (_global_state._center_freq_hz_filtered[peak][axis] - _global_state._prev_center_freq_hz_filtered[peak][axis]) * slew);
+}
+
+// weighted center frequency slewed from previous to current value at the output rate
+float AP_GyroFFT::get_slewed_weighted_freq_hz(FrequencyPeak peak) const
+{
+    const Vector3f& energy = get_center_freq_energy(peak);
+    const float freq_x = get_slewed_noise_center_freq_hz(peak, 0);
+    const float freq_y = get_slewed_noise_center_freq_hz(peak, 1);
+
+    if (!energy.is_nan() && !is_zero(energy.x) && !is_zero(energy.y)) {
+        return (freq_x * energy.x + freq_y * energy.y) / (energy.x + energy.y);
+    } else {
+        return (freq_x + freq_y) * 0.5f;
+    }
+}
+
 // return an average center frequency weighted by bin energy
 // called from main thread
 float AP_GyroFFT::get_weighted_noise_center_freq_hz() const
@@ -668,14 +696,14 @@ float AP_GyroFFT::get_weighted_noise_center_freq_hz() const
     const FrequencyPeak peak = get_tracked_noise_peak();
     // pitch was good or required, roll was not, use pitch only
     if (!_rpy_health.x || _harmonic_peak == FFT_HARMONIC_FIT_TRACK_PITCH) {
-        return get_noise_center_freq_hz(peak).y;
+        return get_slewed_noise_center_freq_hz(peak, 1);    // Y-axis
     }
     // roll was good or required, pitch was not, use roll only
     if (!_rpy_health.y || _harmonic_peak == FFT_HARMONIC_FIT_TRACK_ROLL) {
-        return get_noise_center_freq_hz(peak).x;
+        return get_slewed_noise_center_freq_hz(peak, 0);    // X-axis
     }
 
-    return calculate_weighted_freq_hz(get_center_freq_energy(peak), get_noise_center_freq_hz(peak));
+    return get_slewed_weighted_freq_hz(peak);
 }
 
 // return all the center frequencies weighted by bin energy
@@ -702,20 +730,20 @@ uint8_t AP_GyroFFT::get_weighted_noise_center_frequencies_hz(uint8_t num_freqs, 
     // pitch was good or required, roll was not, use pitch only
     if (!_rpy_health.x || _harmonic_peak == FFT_HARMONIC_FIT_TRACK_PITCH) {
         for (uint8_t i = 0; i < tracked_peaks; i++) {
-            freqs[i] = get_noise_center_freq_hz(FrequencyPeak(i)).y;
+            freqs[i] = get_slewed_noise_center_freq_hz(FrequencyPeak(i), 1);    // Y-axis
         }
         return tracked_peaks;
     }
     // roll was good or required, pitch was not, use roll only
     if (!_rpy_health.y || _harmonic_peak == FFT_HARMONIC_FIT_TRACK_ROLL) {
         for (uint8_t i = 0; i < tracked_peaks; i++) {
-            freqs[i] = get_noise_center_freq_hz(FrequencyPeak(i)).x;
+            freqs[i] = get_slewed_noise_center_freq_hz(FrequencyPeak(i), 0);    // X-axis
         }
         return tracked_peaks;
     }
 
     for (uint8_t i = 0; i < tracked_peaks; i++) {
-        freqs[i] = calculate_weighted_freq_hz(get_center_freq_energy(FrequencyPeak(i)), get_noise_center_freq_hz(FrequencyPeak(i)));
+        freqs[i] = get_slewed_weighted_freq_hz(FrequencyPeak(i));
     }
     return tracked_peaks;
 }
@@ -905,7 +933,6 @@ void AP_GyroFFT::calculate_noise(bool calibrating, const EngineConfig& config)
     _debug_snr = snr;
     _debug_max_bin = _state->_peak_data[FrequencyPeak::CENTER]._bin;
 #endif
-    _update_axis = (_update_axis + 1) % XYZ_AXIS_COUNT;
 }
 
 
