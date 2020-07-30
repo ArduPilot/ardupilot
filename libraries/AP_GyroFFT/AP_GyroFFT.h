@@ -77,6 +77,9 @@ public:
     // detected peak frequency filtered at 1/3 the update rate
     const Vector3f& get_noise_center_freq_hz() const { return get_noise_center_freq_hz(FrequencyPeak::CENTER); }
     const Vector3f& get_noise_center_freq_hz(FrequencyPeak peak) const { return _global_state._center_freq_hz_filtered[peak]; }
+    // slew frequency values
+    float get_slewed_weighted_freq_hz(FrequencyPeak peak) const;
+    float get_slewed_noise_center_freq_hz(FrequencyPeak peak, uint8_t axis) const;
     // energy of the background noise at the detected center frequency
     const Vector3f& get_noise_signal_to_noise_db() const { return _global_state._center_snr; }
     // detected peak frequency weighted by energy
@@ -163,6 +166,7 @@ private:
     float get_tl_noise_center_bandwidth_hz(FrequencyPeak peak, uint8_t axis) const { return _thread_state._center_bandwidth_hz_filtered[peak][axis]; };
     // thread-local mutators of filtered state
     float update_tl_noise_center_freq_hz(FrequencyPeak peak, uint8_t axis, float value) {
+        _thread_state._prev_center_freq_hz_filtered[peak][axis] = _thread_state._center_freq_hz_filtered[peak][axis];
         return (_thread_state._center_freq_hz_filtered[peak][axis] = _center_freq_filter[peak].apply(axis, value));
     }
     float update_tl_center_freq_energy(FrequencyPeak peak, uint8_t axis, float value) {
@@ -215,10 +219,10 @@ private:
         // fit between first and second harmonics
         Vector3f _harmonic_fit;
         // bin of detected peak frequency
-        Vector3<uint16_t> _center_freq_bin;
+        Vector3ui _center_freq_bin;
         // fft engine health
         uint8_t _health;
-        Vector3<uint32_t> _health_ms;
+        Vector3ul _health_ms;
         // fft engine output rate
         uint32_t _output_cycle_ms;
         // tracked frequency peak
@@ -227,6 +231,10 @@ private:
         Vector3f _center_snr;
         // filtered version of the peak frequency
         Vector3f _center_freq_hz_filtered[FrequencyPeak::MAX_TRACKED_PEAKS];
+        // previous filtered version of the peak frequency
+        Vector3f _prev_center_freq_hz_filtered[FrequencyPeak::MAX_TRACKED_PEAKS];
+        // when we last calculated a value
+        Vector3ul _last_output_us;
         // filtered energy of the detected peak frequency
         Vector3f _center_freq_energy_filtered[FrequencyPeak::MAX_TRACKED_PEAKS];
         // filtered detected peak width
