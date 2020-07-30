@@ -1,5 +1,13 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.0.4-rc3 30-Jul-2020
+Changes from 4.0.4-rc2
+1) Bug Fixes and minor enhancements:
+    a) Compass ids from missing compasses reset after compass cal
+    b) LIS3MDL compass enabled on all boards
+    c) Lightware I2C lidar fix when out-of-range
+    d) Parameter erase fix for revo-mini and other boards that store to flash  
+------------------------------------------------------------------
 Copter 4.0.4-rc2 16-Jun-2020
 Changes from 4.0.4-rc1
 1) Bug Fixes:
