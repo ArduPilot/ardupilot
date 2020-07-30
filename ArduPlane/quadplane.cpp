@@ -1619,13 +1619,14 @@ void QuadPlane::update_transition(void)
             // update tansition state for vehicles using airspeed wait
             if (transition_state != TRANSITION_AIRSPEED_WAIT) {
                 gcs().send_text(MAV_SEVERITY_INFO, "Transition started airspeed %.1f", (double)aspeed);
-            }
-            transition_state = TRANSITION_AIRSPEED_WAIT;
+                transition_state = TRANSITION_AIRSPEED_WAIT;
 
-            // init Z controller
-            pos_control->relax_alt_hold_controllers(0);
+                // init Z controller
+                pos_control->relax_alt_hold_controllers(0);
+            }
 
             if (transition_start_ms == 0) {
+                pos_control->relax_alt_hold_controllers(0);
                 transition_start_ms = now;
             }
         }
@@ -2338,11 +2339,31 @@ void QuadPlane::vtol_position_controller(void)
                                                            plane.nav_pitch_cd,
                                                            plane.ahrs.yaw_sensor, false);
 
+
         if (distance < stop_distance) {
             gcs().send_text(MAV_SEVERITY_INFO,"VTOL position1 started v=%.1f d=%.1f",
                             (double)groundspeed, (double)plane.auto_state.wp_distance);
             poscontrol.state = QPOS_POSITION1;
         }
+
+        // cope with failure of forward thrust during approach. If we
+        // are flying slower than the VTOL navigation speed and we are
+        // assisting with VTOL motors then assume we've lost forward
+        // thrust and switch to POSITION2 state which will allow us to
+        // fly as a multi-copter to get to the destination
+        const uint32_t now = AP_HAL::millis();
+        const uint32_t approach_timeout_ms = MAX(5000, transition_failure*1000);
+        float aspeed;
+
+        if (transition_state == TRANSITION_AIRSPEED_WAIT &&
+            now - poscontrol.approach_start_ms > approach_timeout_ms &&
+            ahrs.airspeed_estimate(aspeed) &&
+            aspeed < wp_nav->get_default_speed_xy() * 0.01) {
+            gcs().send_text(MAV_SEVERITY_INFO,"Approach timeout v=%.1f d=%.1f",
+                            (double)groundspeed, (double)plane.auto_state.wp_distance);
+            poscontrol.state = QPOS_POSITION2;
+        }
+
         break;
     }
 
@@ -2481,8 +2502,11 @@ void QuadPlane::vtol_position_controller(void)
     case QPOS_APPROACH:
     case QPOS_AIRBRAKE:
         // we just want stability from the VTOL controller in these
-        // phases of landing, so relax the Z controller
-        pos_control->relax_alt_hold_controllers(0);
+        // phases of landing, so relax the Z controller, unless we air
+        // providing assistance
+        if (transition_state == TRANSITION_DONE) {
+            pos_control->relax_alt_hold_controllers(0);
+        }
         break;
 
     case QPOS_POSITION1:
