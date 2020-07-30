@@ -19,12 +19,15 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_RCProtocol/AP_RCProtocol.h>
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_RCTelemetry/AP_VideoTX.h>
 #include <stdio.h>
 
 void setup();
 void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
+static AP_VideoTX vtx; // for set_vtx functions
 
 static AP_RCProtocol *rcprot;
 
