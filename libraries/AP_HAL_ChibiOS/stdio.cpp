@@ -34,7 +34,9 @@
 #include "UARTDriver.h"
 #endif
 
+#ifndef HAL_BOOTLOADER_BUILD
 extern const AP_HAL::HAL& hal;
+#endif
 
 int __wrap_snprintf(char *str, size_t size, const char *fmt, ...)
 {
@@ -42,7 +44,11 @@ int __wrap_snprintf(char *str, size_t size, const char *fmt, ...)
    int done;
 
    va_start (arg, fmt);
+#ifdef HAL_BOOTLOADER_BUILD
+   done = chvsnprintf(str, size, fmt, arg);
+#else
    done =  hal.util->vsnprintf(str, size, fmt, arg);
+#endif
    va_end (arg);
 
    return done;
@@ -85,7 +91,7 @@ int __wrap_vprintf(const char *fmt, va_list arg)
 {
 #ifdef HAL_STDOUT_SERIAL
   return chvprintf((BaseSequentialStream*)&HAL_STDOUT_SERIAL, fmt, arg);
-#elif HAL_USE_SERIAL_USB == TRUE
+#elif HAL_USE_SERIAL_USB == TRUE && !defined(HAL_BOOTLOADER_BUILD)
   usb_initialise();
   return chvprintf((BaseSequentialStream*)&SDU1, fmt, arg);
 #else
