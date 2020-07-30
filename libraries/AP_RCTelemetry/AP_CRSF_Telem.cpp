@@ -381,9 +381,9 @@ void AP_CRSF_Telem::calc_attitude()
     AP_AHRS &_ahrs = AP::ahrs();
     WITH_SEMAPHORE(_ahrs.get_semaphore());
 
-    _telem.bcast.attitude.roll_angle =  htobe16(roundf(_ahrs.roll * 10000.0f));
-    _telem.bcast.attitude.pitch_angle =  htobe16(roundf(_ahrs.pitch * 10000.0f));
-    _telem.bcast.attitude.yaw_angle =  htobe16(roundf(_ahrs.yaw * 10000.0f));
+    _telem.bcast.attitude.roll_angle =  htobe16(roundf(wrap_2PI(_ahrs.roll) * 10000.0f));
+    _telem.bcast.attitude.pitch_angle =  htobe16(roundf(wrap_2PI(-_ahrs.pitch) * 10000.0f));
+    _telem.bcast.attitude.yaw_angle =  htobe16(roundf(wrap_2PI(_ahrs.yaw) * 10000.0f));
 
     _telem_size = sizeof(AP_CRSF_Telem::AttitudeFrame);
     _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_ATTITUDE;
