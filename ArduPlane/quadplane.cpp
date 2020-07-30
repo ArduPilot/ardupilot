@@ -1221,7 +1221,8 @@ bool QuadPlane::is_flying_vtol(void) const
         // if we are demanding more than 1% throttle then don't consider aircraft landed
         return true;
     }
-    if (plane.control_mode == &plane.mode_qacro) {
+    if (plane.control_mode->is_vtol_man_throttle() && air_mode == AirMode::ON) {
+        // in manual throttle modes with airmode on, don't consider aircraft landed
         return true;
     }
     if (plane.control_mode == &plane.mode_guided && guided_takeoff) {
@@ -1339,7 +1340,9 @@ void QuadPlane::control_loiter()
  */
 float QuadPlane::get_pilot_input_yaw_rate_cds(void) const
 {
-    if (plane.get_throttle_input() <= 0 && !plane.auto_throttle_mode &&
+    bool manual_air_mode = plane.control_mode->is_vtol_man_throttle() && (air_mode == AirMode::ON);
+    if (!manual_air_mode &&
+        plane.get_throttle_input() <= 0 && !plane.auto_throttle_mode &&
         plane.arming.get_rudder_arming_type() != AP_Arming::RudderArming::IS_DISABLED) {
         // the user may be trying to disarm
         return 0;
@@ -1373,7 +1376,8 @@ float QuadPlane::get_desired_yaw_rate_cds(void)
         // use bank angle to get desired yaw rate
         yaw_cds += desired_auto_yaw_rate_cds();
     }
-    if (plane.get_throttle_input() <= 0 && !plane.auto_throttle_mode) {
+    bool manual_air_mode = plane.control_mode->is_vtol_man_throttle() && (air_mode == AirMode::ON);
+    if (plane.get_throttle_input() <= 0 && !plane.auto_throttle_mode && !manual_air_mode) {
         // the user may be trying to disarm
         return 0;
     }
