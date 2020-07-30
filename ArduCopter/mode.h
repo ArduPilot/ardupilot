@@ -202,6 +202,8 @@ public:
                            float turn_rate_dps,
                            int8_t direction,
                            bool relative_angle);
+        
+        void check_reached_desired_yaw_angle();
 
     private:
 
