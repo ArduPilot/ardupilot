@@ -217,6 +217,7 @@ void init()
 
 void panic(const char *errormsg, ...)
 {
+#ifndef HAL_BOOTLOADER_BUILD
     va_list ap;
 
     va_start(ap, errormsg);
@@ -228,6 +229,12 @@ void panic(const char *errormsg, ...)
         vprintf(errormsg, ap);
         hal.scheduler->delay(500);
     }
+#else
+    // we don't support variable args in bootlaoder
+    chSysHalt(errormsg);
+    // we will never get here, this just to silence a warning
+    while (1) {}
+#endif
 }
 
 uint32_t micros()

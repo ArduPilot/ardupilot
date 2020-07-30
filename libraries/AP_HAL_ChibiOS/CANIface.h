@@ -96,15 +96,18 @@ class ChibiOS::CANIface : public AP_HAL::CANIface
     static const uint32_t TSR_ABRQx[NumTxMailboxes];
 
     ChibiOS::bxcan::CanType* can_;
-    uint64_t error_cnt_;
+
+    CanRxItem rx_buffer[HAL_CAN_RX_QUEUE_SIZE];
+    ByteBuffer rx_bytebuffer_;
     ObjectBuffer<CanRxItem> rx_queue_;
     CanTxItem pending_tx_[NumTxMailboxes];
-    bool irq_init_;
-    bool initialised_;
-    bool had_activity_;
+    bool irq_init_:1;
+    bool initialised_:1;
+    bool had_activity_:1;
+#ifndef HAL_BUILD_AP_PERIPH
     AP_HAL::EventHandle* event_handle_;
     static ChibiOS::EventSource evt_src_;
-
+#endif
     const uint8_t self_index_;
 
     bool computeTimings(uint32_t target_bitrate, Timings& out_timings);
@@ -132,6 +135,7 @@ class ChibiOS::CANIface : public AP_HAL::CANIface
 
     void initOnce(bool enable_irq);
 
+#if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
     struct {
         uint32_t tx_requests;
         uint32_t tx_rejected;
@@ -145,6 +149,7 @@ class ChibiOS::CANIface : public AP_HAL::CANIface
         uint32_t num_busoff_err;
         uint32_t num_events;
     } stats;
+#endif
 
 public:
     /******************************************
@@ -165,10 +170,11 @@ public:
     int16_t receive(AP_HAL::CANFrame& out_frame, uint64_t& out_timestamp_us,
                     CanIOFlags& out_flags) override;
 
+#if !defined(HAL_BOOTLOADER_BUILD)
     // Set Filters to ignore frames not to be handled by us
     bool configureFilters(const CanFilterConfig* filter_configs,
                           uint16_t num_configs) override;
-
+#endif
     // In BxCAN the Busoff error is cleared automatically,
     // so always return false
     bool is_busoff() const override
@@ -185,7 +191,9 @@ public:
     }
 
     // Get total number of Errors discovered
+#if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
     uint32_t getErrorCount() const override;
+#endif
 
     // returns true if init was successfully called
     bool is_initialized() const override
@@ -201,13 +209,14 @@ public:
                 const AP_HAL::CANFrame* const pending_tx,
                 uint64_t blocking_deadline) override;
     
+#if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
     // setup event handle for waiting on events
     bool set_event_handle(AP_HAL::EventHandle* handle) override;
 
     // fetch stats text and return the size of the same,
     // results available via @SYS/can0_stats.txt or @SYS/can1_stats.txt 
     uint32_t get_stats(char* data, uint32_t max_size) override;
-
+#endif
     /************************************
      * Methods used inside interrupt    *
      ************************************/
