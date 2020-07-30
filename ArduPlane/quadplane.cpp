@@ -1321,7 +1321,7 @@ void QuadPlane::control_loiter()
                 plane.g2.ice_control.engine_control(0, 0, 0);
             }
         }
-        float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+        const float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
         float descent_rate = (poscontrol.state == QPOS_LAND_FINAL)? land_speed_cms:landing_descent_rate_cms(height_above_ground);
         pos_control->set_alt_target_from_climb_rate(-descent_rate, plane.G_Dt, true);
         check_land_complete();
@@ -1489,7 +1489,7 @@ bool QuadPlane::assistance_needed(float aspeed, bool have_airspeed)
       optional assistance when altitude is too close to the ground
      */
     if (assist_alt > 0) {
-        float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+        const float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
         if (height_above_ground < assist_alt) {
             if (alt_error_start_ms == 0) {
                 alt_error_start_ms = now;
@@ -2311,12 +2311,7 @@ void QuadPlane::vtol_position_controller(void)
         // use nav controller roll
         plane.calc_nav_roll();
 
-        // see if we have reached the transition point
-        uint16_t qrtl_radius = abs(plane.g.rtl_radius);
-        if (qrtl_radius == 0) {
-            qrtl_radius = abs(plane.aparm.loiter_radius);
-        }
-        const float stop_distance = MAX(qrtl_radius, stopping_distance());
+        const float stop_distance = stopping_distance();
 
         /*
           see if we should start airbraking stage. For non-tailsitters
@@ -2344,6 +2339,7 @@ void QuadPlane::vtol_position_controller(void)
             gcs().send_text(MAV_SEVERITY_INFO,"VTOL position1 started v=%.1f d=%.1f",
                             (double)groundspeed, (double)plane.auto_state.wp_distance);
             poscontrol.state = QPOS_POSITION1;
+            poscontrol.pos1_initialised = false;
         }
 
         // cope with failure of forward thrust during approach. If we
@@ -2375,10 +2371,8 @@ void QuadPlane::vtol_position_controller(void)
 
         // Initialise position control to target zero velocity
         // above the waypoint.
-        if (poscontrol.stopping_distance <= 0) {
-            // Calculate stopping distance based on the current groundspeed
-            // and the transition deceleration target
-            poscontrol.stopping_distance = groundspeed.length_squared()/(2*transition_decel);
+        if (!poscontrol.pos1_initialised) {
+            poscontrol.pos1_initialised = true;
             poscontrol.pre_decel_gndspd = groundspeed.length();
             
             float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
@@ -2397,15 +2391,9 @@ void QuadPlane::vtol_position_controller(void)
         Vector2f target_speed_xy = diff_wp.normalized() * poscontrol.pre_decel_gndspd;
         float target_speed = target_speed_xy.length();
 
-        // if vehicle is within deceleration profile, update target speed
-        if (poscontrol.stopping_distance > distance) {
-            target_speed = safe_sqrt(2*transition_decel*distance);
-            target_speed_xy = diff_wp.normalized() * target_speed;
-            if (!poscontrol.started_decel_profile) {
-                vel_forward.integrator = 0;
-                poscontrol.started_decel_profile = true;
-            }
-        }
+        // update target speed based on sqrt of distance
+        target_speed = safe_sqrt(2*transition_decel*distance);
+        target_speed_xy = diff_wp.normalized() * target_speed;
 
         if (distance < 1) {
             // prevent numerical error before switching to POSITION2
@@ -2541,7 +2529,7 @@ void QuadPlane::vtol_position_controller(void)
     }
 
     case QPOS_LAND_DESCEND: {
-        float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+        const float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
         pos_control->set_alt_target_from_climb_rate(-landing_descent_rate_cms(height_above_ground),
                                                     plane.G_Dt, true);
         break;
@@ -2715,7 +2703,6 @@ void QuadPlane::init_qrtl(void)
     plane.do_RTL(plane.home.alt + qrtl_alt*100UL);
     plane.prev_WP_loc = plane.current_loc;
     poscontrol.slow_descent = (plane.current_loc.alt > plane.next_WP_loc.alt);
-    poscontrol.stopping_distance = 0;
     poscontrol.state = QPOS_APPROACH;
     poscontrol.approach_start_ms = AP_HAL::millis();
     pos_control->set_desired_accel_xy(0.0f, 0.0f);
@@ -2804,8 +2791,6 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
     plane.set_next_WP(cmd.content.location);
     // initially aim for current altitude
     plane.next_WP_loc.alt = plane.current_loc.alt;
-    poscontrol.stopping_distance = 0;
-    poscontrol.started_decel_profile = false;
     poscontrol.state = QPOS_APPROACH;
     poscontrol.approach_start_ms = AP_HAL::millis();
     pos_control->set_desired_accel_xy(0.0f, 0.0f);
@@ -2883,7 +2868,7 @@ bool QuadPlane::land_detector(uint32_t timeout_ms)
         landing_detect.land_start_ms = 0;
         return false;
     }
-    float height = inertial_nav.get_altitude()*0.01f;
+    const float height = inertial_nav.get_altitude()*0.01f;
     if (landing_detect.land_start_ms == 0) {
         landing_detect.land_start_ms = now;
         landing_detect.vpos_start_m = height;
@@ -2938,7 +2923,7 @@ bool QuadPlane::check_land_complete(void)
  */
 bool QuadPlane::check_land_final(void)
 {
-    float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+    const float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
     // we require 2 readings at 10Hz to be within 5m of each other to
     // trigger the switch to land final. This prevents a short term
     // glitch at high altitude from triggering land final
@@ -2964,7 +2949,7 @@ bool QuadPlane::verify_vtol_land(void)
     if (!available()) {
         return true;
     }
-    float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+    const float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
     const float descent_height_ratio = 2;
     if (poscontrol.state == QPOS_POSITION2 &&
         (plane.auto_state.wp_distance < 2 ||
@@ -3139,7 +3124,7 @@ int8_t QuadPlane::forward_throttle_pct()
         // If we are below alt_cutoff then scale down the effect until
         // it turns off at alt_cutoff and decay the integrator
         float alt_cutoff = MAX(0,vel_forward_alt_cutoff);
-        float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+        const float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
 
         vel_forward.last_pct = linear_interpolate(0, vel_forward.integrator,
                                                   height_above_ground, alt_cutoff, alt_cutoff+2);
@@ -3209,8 +3194,8 @@ float QuadPlane::get_weathervane_yaw_rate_cds(void)
  */
 void QuadPlane::guided_start(void)
 {
-    poscontrol.state = QPOS_POSITION1;
-    poscontrol.stopping_distance = 0;
+    poscontrol.state = QPOS_APPROACH;
+    poscontrol.approach_start_ms = AP_HAL::millis();
     guided_takeoff = false;
     setup_target_position();
     poscontrol.slow_descent = (plane.current_loc.alt > plane.next_WP_loc.alt);

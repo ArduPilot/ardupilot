@@ -425,15 +425,14 @@ private:
     };
     struct {
         enum position_control_state state;
-        float stopping_distance;
         float target_decel;
         float pre_decel_gndspd;
         Vector2f target_velocity;
         float max_speed;
         Vector3f target;
-        bool slow_descent:1;
+        bool slow_descent;
         uint32_t approach_start_ms;
-        bool started_decel_profile;
+        bool pos1_initialised;
     } poscontrol;
 
     struct {
