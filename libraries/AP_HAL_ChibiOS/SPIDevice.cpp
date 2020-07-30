@@ -125,6 +125,7 @@ SPIDevice::SPIDevice(SPIBus &_bus, SPIDesc &_device_desc)
     asprintf(&pname, "SPI:%s:%u:%u",
              device_desc.name,
              (unsigned)bus.bus, (unsigned)device_desc.device);
+    AP_HAL::SPIDevice::setup_bankselect_callback(device_desc.bank_select_cb);
     //printf("SPI device %s on %u:%u at speed %u mode %u\n",
     //       device_desc.name,
     //       (unsigned)bus.bus, (unsigned)device_desc.device,
