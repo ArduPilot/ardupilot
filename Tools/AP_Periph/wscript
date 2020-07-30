@@ -4,7 +4,7 @@
 import fnmatch
 
 def build(bld):
-    targets = ['f103-*', 'f303-*', 'CUAV_GPS', 'ZubaxGNSS*']
+    targets = ['f103-*', 'f303-*', 'CUAV_GPS', 'ZubaxGNSS*', 'CubeOrange-periph']
     valid_target = False
     for t in targets:
         if fnmatch.fnmatch(bld.env.BOARD, t):
