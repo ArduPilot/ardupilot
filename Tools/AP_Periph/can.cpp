@@ -52,6 +52,7 @@
 #include "../AP_Bootloader/app_comms.h"
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AP_Common/AP_FWVersion.h>
+#include <AP_HAL_ChibiOS/CANIface.h>
 
 #include "i2c.h"
 #include <utility>
@@ -78,6 +79,8 @@ static uint8_t transfer_id;
 #ifndef CAN_PROBE_CONTINUOUS
 #define CAN_PROBE_CONTINUOUS 0
 #endif
+
+static ChibiOS::CANIface can_iface(0);
 
 /*
  * Variables used for dynamic node ID allocation.
@@ -780,13 +783,12 @@ static void processTx(void)
 {
     static uint8_t fail_count;
     for (const CanardCANFrame* txf = NULL; (txf = canardPeekTxQueue(&canard)) != NULL;) {
-        CANTxFrame txmsg {};
-        txmsg.DLC = txf->data_len;
-        memcpy(txmsg.data8, txf->data, 8);
-        txmsg.EID = txf->id & CANARD_CAN_EXT_ID_MASK;
-        txmsg.IDE = 1;
-        txmsg.RTR = 0;
-        if (canTransmit(&CAND1, CAN_ANY_MAILBOX, &txmsg, TIME_IMMEDIATE) == MSG_OK) {
+        AP_HAL::CANFrame txmsg {};
+        txmsg.dlc = txf->data_len;
+        memcpy(txmsg.data, txf->data, 8);
+        txmsg.id = (txf->id | AP_HAL::CANFrame::FlagEFF);
+        // push message with 1s timeout
+        if (can_iface.send(txmsg, AP_HAL::micros64() + 1000000, 0) > 0) {
             canardPopTxQueue(&canard);
             fail_count = 0;
         } else {
@@ -802,41 +804,25 @@ static void processTx(void)
     }
 }
 
-static ObjectBuffer<CANRxFrame> rxbuffer{32};
-
-static void can_rxfull_cb(CANDriver *canp, uint32_t flags)
-{
-    CANRxFrame rxmsg;
-    chSysLockFromISR();
-    while (canTryReceiveI(canp, CAN_ANY_MAILBOX, &rxmsg) == false) {
-        rxbuffer.push_force(rxmsg);
-    }
-    chSysUnlockFromISR();
-}
-
 static void processRx(void)
 {
-    CANRxFrame rxmsg;
+    AP_HAL::CANFrame rxmsg;
     while (true) {
-        bool have_msg;
-        chSysLock();
-        have_msg = rxbuffer.pop(rxmsg);
-        chSysUnlock();
-        if (!have_msg) {
+        bool read_select = true;
+        bool write_select = false;
+        can_iface.select(read_select, write_select, nullptr, 0);
+        if (!read_select) {
             break;
         }
         CanardCANFrame rx_frame {};
 
         //palToggleLine(HAL_GPIO_PIN_LED);
-
-        const uint64_t timestamp = AP_HAL::micros64();
-        memcpy(rx_frame.data, rxmsg.data8, 8);
-        rx_frame.data_len = rxmsg.DLC;
-        if(rxmsg.IDE) {
-            rx_frame.id = CANARD_CAN_FRAME_EFF | rxmsg.EID;
-        } else {
-            rx_frame.id = rxmsg.SID;
-        }
+        uint64_t timestamp;
+        AP_HAL::CANIface::CanIOFlags flags;
+        can_iface.receive(rxmsg, timestamp, flags);
+        memcpy(rx_frame.data, rxmsg.data, 8);
+        rx_frame.data_len = rxmsg.dlc;
+        rx_frame.id = rxmsg.id;
         canardHandleRxFrame(&canard, &rx_frame, timestamp);
     }
 }
@@ -1030,26 +1016,7 @@ void AP_Periph_FW::can_start()
     node_status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_INITIALIZATION;
     node_status.uptime_sec = AP_HAL::millis() / 1000U;
 
-    static CANConfig cancfg = {
-        CAN_MCR_ABOM | CAN_MCR_AWUM | CAN_MCR_TXFP,
-        0
-    };
-
-    // calculate optimal CAN timings given PCLK1 and baudrate
-    CanardSTM32CANTimings timings {};
-    canardSTM32ComputeCANTimings(STM32_PCLK1, unsigned(g.can_baudrate), &timings);
-    cancfg.btr = CAN_BTR_SJW(0) |
-        CAN_BTR_TS2(timings.bit_segment_2-1) |
-        CAN_BTR_TS1(timings.bit_segment_1-1) |
-        CAN_BTR_BRP(timings.bit_rate_prescaler-1);
-    
-    if (g.can_node >= 0 && g.can_node < 128) {
-        PreferredNodeID = g.can_node;
-    }
-
-    CAND1.rxfull_cb = can_rxfull_cb;
-
-    canStart(&CAND1, &cancfg);
+    can_iface.init(1000000, AP_HAL::CANIface::NormalMode);
 
     canardInit(&canard, (uint8_t *)canard_memory_pool, sizeof(canard_memory_pool),
                onTransferReceived, shouldAcceptTransfer, NULL);
