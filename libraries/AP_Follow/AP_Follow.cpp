@@ -413,21 +413,22 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
 // @Field: LonE: Vehicle longitude
 // @Field: AltE: Vehicle absolute altitude
         AP::logger().Write("FOLL",
-                                               "TimeUS,Lat,Lon,Alt,VelN,VelE,VelD,LatE,LonE,AltE",  // labels
-                                               "sDUmnnnDUm",    // units
-                                               "F--B000--B",    // mults
-                                               "QLLifffLLi",    // fmt
-                                               AP_HAL::micros64(),
-                                               _target_location.lat,
-                                               _target_location.lng,
-                                               _target_location.alt,
-                                               (double)_target_velocity_ned.x,
-                                               (double)_target_velocity_ned.y,
-                                               (double)_target_velocity_ned.z,
-                                               loc_estimate.lat,
-                                               loc_estimate.lng,
-                                               loc_estimate.alt
-                                               );
+                           "TimeUS,Lat,Lon,Alt,VelN,VelE,VelD,LatE,LonE,AltE,Hdg",  // labels
+                           "sDUmnnnDUmd",    // units
+                           "F--B000--B0",    // mults
+                           "QLLifffLLif",    // fmt
+                           AP_HAL::micros64(),
+                           _target_location.lat,
+                           _target_location.lng,
+                           _target_location.alt,
+                           _target_velocity_ned.x,
+                           _target_velocity_ned.y,
+                           _target_velocity_ned.z,
+                           loc_estimate.lat,
+                           loc_estimate.lng,
+                           loc_estimate.alt,
+                           _target_heading
+            );
     }
 }
 
