@@ -1118,6 +1118,12 @@ private:
         CROW_DISABLED,
     };
 
+    enum class ThrFailsafe {
+        Disabled    = 0,
+        Enabled     = 1,
+        EnabledNoFS = 2
+    };
+
     CrowMode crow_mode = CrowMode::NORMAL;
 
 public:

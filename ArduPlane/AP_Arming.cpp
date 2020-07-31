@@ -58,7 +58,7 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
     }
 
     if (plane.channel_throttle->get_reverse() && 
-        plane.g.throttle_fs_enabled &&
+        Plane::ThrFailsafe(plane.g.throttle_fs_enabled.get()) != Plane::ThrFailsafe::Disabled &&
         plane.g.throttle_fs_value < 
         plane.channel_throttle->get_radio_max()) {
         check_failed(display_failure, "Invalid THR_FS_VALUE for rev throttle");
