@@ -481,7 +481,9 @@ private:
         // saved to eeprom when offsets are saved allowing ram &
         // eeprom values to be compared as consistency check
         AP_Int32    dev_id;
+        // Initialised when compass is detected
         int32_t detected_dev_id;
+        // Initialised at boot from saved devid
         int32_t expected_dev_id;
 
         // factors multiplied by throttle and added to compass outputs
@@ -525,6 +527,14 @@ private:
     // load them as they come up the first time
     Priority _update_priority_list(int32_t dev_id);
     
+    // method to check if the mag with the devid 
+    // is a replacement mag
+    bool is_replacement_mag(uint32_t dev_id);
+
+    //remove the devid from unreg compass list
+    void remove_unreg_dev_id(uint32_t devid);
+
+    void _reset_compass_id();
     //Create Arrays to be accessible by Priority only
     RestrictIDTypeArray<AP_Int8, COMPASS_MAX_INSTANCES, Priority> _use_for_yaw;
 #if COMPASS_MAX_INSTANCES > 1
@@ -560,6 +570,7 @@ private:
 #if COMPASS_MAX_UNREG_DEV
     // Put extra dev ids detected
     AP_Int32 extra_dev_id[COMPASS_MAX_UNREG_DEV];
+    uint32_t _previously_unreg_mag[COMPASS_MAX_UNREG_DEV];
 #endif
 
     AP_Int8 _filter_range;
