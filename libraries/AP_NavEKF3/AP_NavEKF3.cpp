@@ -1215,7 +1215,7 @@ void NavEKF3::getRotationBodyToNED(Matrix3f &mat) const
     }
 }
 
-// return the quaternions defining the rotation from NED to XYZ (body) axes
+// return the quaternions defining the rotation from XYZ (body) to NED axes
 void NavEKF3::getQuaternionBodyToNED(int8_t instance, Quaternion &quat) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
