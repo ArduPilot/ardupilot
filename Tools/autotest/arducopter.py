@@ -5070,8 +5070,6 @@ class AutoTestCopter(AutoTest):
 
             ("AutoTune", "Fly AUTOTUNE mode", self.fly_autotune),
 
-            ("AutoTuneSwitch", "Fly AUTOTUNE on a switch", self.fly_autotune_switch),
-
             ("ThrowMode", "Fly Throw Mode", self.fly_throw_mode),
 
             ("BrakeMode", "Fly Brake Mode", self.fly_brake_mode),
@@ -5119,6 +5117,8 @@ class AutoTestCopter(AutoTest):
             ("MaxAltFence",
              "Test Max Alt Fence",
              self.fly_alt_max_fence_test),
+
+            ("AutoTuneSwitch", "Fly AUTOTUNE on a switch", self.fly_autotune_switch),
 
             ("GPSGlitchLoiter",
              "GPS Glitch Loiter Test",
