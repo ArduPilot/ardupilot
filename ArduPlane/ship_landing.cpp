@@ -36,6 +36,7 @@ void QuadPlane::ship_landing_RTL_init(void)
     ship_landing.reached_alt = false;
     ship_landing_RTL_update();
     ship_landing.offset.zero();
+    gcs().send_text(MAV_SEVERITY_INFO, "Started ship landing");
 }
 
 
@@ -97,11 +98,11 @@ void QuadPlane::ship_landing_RTL_update(void)
                 distance > 0.25*holdoff_dist &&
                 fabsf(wrap_180(ground_bearing_deg - heading_deg)) < 2*margin) {
                 ship_landing.stage = ship_landing.APPROACH;
+                loc = loc0;
+                loc.alt += qrtl_alt * 100;
+                plane.set_mode(plane.mode_qrtl, ModeReason::RTL_COMPLETE_SWITCHING_TO_VTOL_LAND_RTL);
             }
         }
-    } else if (ship_landing.stage == ship_landing.APPROACH) {
-        // fly directly towards the ship, at QRTL_ALT
-        loc.alt += qrtl_alt * 100;
     }
 
     plane.next_WP_loc = loc;

@@ -497,7 +497,12 @@ void Plane::update_navigation()
             // on every loop
             auto_state.checked_for_autoland = true;
         }
-        radius = abs(g.rtl_radius);
+        if (quadplane.ship_landing_enabled()) {
+            // fall thru to using WP_LOITER_RAD
+            radius = 0;
+        } else {
+            radius = abs(g.rtl_radius);
+        }
         if (radius > 0) {
             loiter.direction = (g.rtl_radius < 0) ? -1 : 1;
         }
