@@ -24,6 +24,7 @@ def build(bld):
         'AP_Param',
         'StorageManager',
         'AP_FlashStorage',
+        'AP_RAMTRON',
         'AP_GPS',
         'AP_SerialManager',
         'AP_RTC',
