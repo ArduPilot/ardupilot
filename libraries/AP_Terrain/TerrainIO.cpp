@@ -164,11 +164,22 @@ void AP_Terrain::open_file(void)
         io_failure = true;
         return;        
     }
+    // our fancy templatified MIN macro get gcc 9.3.0 all confused; it
+    // thinks there are more digits than there can be so says there's
+    // a buffer overflow in the snprintf.  Constrain it long-form:
+    uint32_t lat_tmp = abs((int32_t)block.lat_degrees);
+    if (lat_tmp > 99U) {
+        lat_tmp = 99U;
+    }
+    uint32_t lon_tmp = abs((int32_t)block.lon_degrees);
+    if (lon_tmp > 999U) {
+        lon_tmp = 999;
+    }
     snprintf(p, 13, "/%c%02u%c%03u.DAT",
              block.lat_degrees<0?'S':'N',
-             (unsigned)MIN(abs((int32_t)block.lat_degrees), 99),
+             (unsigned)lat_tmp,
              block.lon_degrees<0?'W':'E',
-             (unsigned)MIN(abs((int32_t)block.lon_degrees), 999));
+             (unsigned)lon_tmp);
 
     // create directory if need be
     if (!directory_created) {
