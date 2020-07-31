@@ -696,9 +696,12 @@ void Compass::init()
         if (_priority_did_stored_list[i] != 0) {
             _priority_did_list[i] = _priority_did_stored_list[i];
         } else {
-            // Maintain a list without gaps
+            // Maintain a list without gaps and duplicates
             for (Priority j(i+1); j<COMPASS_MAX_INSTANCES; j++) {
                 int32_t temp;
+                if (_priority_did_stored_list[j] == _priority_did_stored_list[i]) {
+                    _priority_did_stored_list[j].set_and_save(0);
+                }
                 if (_priority_did_stored_list[j] == 0) {
                     continue;
                 }
@@ -722,7 +725,10 @@ void Compass::init()
     // interface for users to see unreg compasses, we actually never store it
     // in storage.
     for (uint8_t i=_unreg_compass_count; i<COMPASS_MAX_UNREG_DEV; i++) {
-        extra_dev_id[i].set(0);
+        // cache the extra devices detected in last boot
+        // for detecting replacement mag
+        _previously_unreg_mag[i] = extra_dev_id[i];
+        extra_dev_id[i].set_and_save(0);
     }
 #endif
 
@@ -732,6 +738,16 @@ void Compass::init()
         // detect available backends. Only called once
         _detect_backends();
     }
+
+#if COMPASS_MAX_UNREG_DEV
+    // We store the list of unregistered mags detected here,
+    // We don't do this during runtime, as we don't want to detect
+    // compasses connected by user as a replacement while the system
+    // is running
+    for (uint8_t i=0; i<COMPASS_MAX_UNREG_DEV; i++) {
+        extra_dev_id[i].save();
+    }
+#endif
 
     if (_compass_count != 0) {
         // get initial health status
@@ -813,6 +829,7 @@ void Compass::mag_state::copy_from(const Compass::mag_state& state)
     dev_id.set_and_save(state.dev_id);
     motor_compensation.set_and_save(state.motor_compensation);
     expected_dev_id = state.expected_dev_id;
+    detected_dev_id = state.detected_dev_id;
 }
 //  Register a new compass instance
 //
@@ -900,7 +917,7 @@ Compass::StateIndex Compass::_get_state_id(Compass::Priority priority) const
         return StateIndex(COMPASS_MAX_INSTANCES);
     }
     for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
-        if (_priority_did_list[priority] == _state[i].expected_dev_id) {
+        if (_priority_did_list[priority] == _state[i].detected_dev_id) {
             return i;
         }
     }
@@ -1251,8 +1268,68 @@ void Compass::_detect_backends(void)
             if (_uavcan_backend) {
                 _add_backend(_uavcan_backend);
             }
-            CHECK_UNREG_LIMIT_RETURN;
+#if COMPASS_MAX_UNREG_DEV > 0
+            if (_unreg_compass_count == COMPASS_MAX_UNREG_DEV)  {
+                break;
+            }
+#endif
         }
+
+#if COMPASS_MAX_UNREG_DEV > 0
+        // check if there's any uavcan compass in prio slot that's not found
+        // and replace it if there's a replacement compass
+        for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
+            if (AP_HAL::Device::devid_get_bus_type(_priority_did_list[i]) != AP_HAL::Device::BUS_TYPE_UAVCAN
+                || _get_state(i).registered) {
+                continue;
+            }
+            // There's a UAVCAN compass missing
+            // Let's check if there's a replacement
+            for (uint8_t j=0; j<COMPASS_MAX_INSTANCES; j++) {
+                uint32_t detected_devid = AP_Compass_UAVCAN::get_detected_devid(j);
+                // Check if this is a potential replacement mag
+                if (!is_replacement_mag(detected_devid)) {
+                    continue;
+                }
+                // We have found a replacement mag, let's replace the existing one
+                // with this by setting the priority to zero and calling uavcan probe 
+                gcs().send_text(MAV_SEVERITY_ALERT, "Mag: Compass #%d with DEVID %lu replaced", uint8_t(i), (unsigned long)_priority_did_list[i]);
+                _priority_did_stored_list[i].set_and_save(0);
+                _priority_did_list[i] = 0;
+
+                AP_Compass_Backend* _uavcan_backend = AP_Compass_UAVCAN::probe(j);
+                if (_uavcan_backend) {
+                    _add_backend(_uavcan_backend);
+                    // we also need to remove the id from unreg list
+                    remove_unreg_dev_id(detected_devid);
+                } else {
+                    // the mag has already been allocated,
+                    // let's begin the replacement
+                    bool found_replacement = false;
+                    for (StateIndex k(0); k<COMPASS_MAX_INSTANCES; k++) {
+                        if ((uint32_t)_state[k].dev_id == detected_devid) {
+                            if (_state[k].priority <= uint8_t(i)) {
+                                // we are already on higher priority
+                                // nothing to do
+                                break;
+                            }
+                            found_replacement = true;
+                            // reset old priority of replacement mag
+                            _priority_did_stored_list[_state[k].priority].set_and_save(0);
+                            _priority_did_list[_state[k].priority] = 0;
+                            // update new priority
+                            _state[k].priority = i;
+                        }
+                    }
+                    if (!found_replacement) {
+                        continue;
+                    }
+                    _priority_did_stored_list[i].set_and_save(detected_devid);
+                    _priority_did_list[i] = detected_devid;
+                }
+            }
+        }
+#endif
     }
 #endif
 
@@ -1260,6 +1337,79 @@ void Compass::_detect_backends(void)
         _compass_count == 0) {
         hal.console->printf("No Compass backends available\n");
     }
+}
+
+// Check if the devid is a potential replacement compass
+// Following are the checks done to ensure the compass is a replacement
+// * The compass is an UAVCAN compass
+// * The compass wasn't seen before this boot as additional unreg mag
+// * The compass might have been seen before but never setup
+bool Compass::is_replacement_mag(uint32_t devid) {
+#if COMPASS_MAX_INSTANCES > 1
+    // We only do this for UAVCAN mag
+    if (devid == 0 || (AP_HAL::Device::devid_get_bus_type(devid) != AP_HAL::Device::BUS_TYPE_UAVCAN)) {
+        return false;
+    }
+
+    // Check that its not an unused additional mag
+    for (uint8_t i = 0; i<COMPASS_MAX_UNREG_DEV; i++) {
+        if (_previously_unreg_mag[i] == devid) {
+            return false;
+        }
+    }
+
+    // Check that its not previously setup mag
+    for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
+        if ((uint32_t)_state[i].expected_dev_id == devid) {
+            return false;
+        }
+    }
+#endif
+    return true;
+}
+
+void Compass::remove_unreg_dev_id(uint32_t devid)
+{
+#if COMPASS_MAX_INSTANCES > 1
+    // We only do this for UAVCAN mag
+    if (devid == 0 || (AP_HAL::Device::devid_get_bus_type(devid) != AP_HAL::Device::BUS_TYPE_UAVCAN)) {
+        return;
+    }
+
+    for (uint8_t i = 0; i<COMPASS_MAX_UNREG_DEV; i++) {
+        if ((uint32_t)extra_dev_id[i] == devid) {
+            extra_dev_id[i].set_and_save(0);
+            return;
+        }
+    }
+#endif
+}
+
+void Compass::_reset_compass_id()
+{
+#if COMPASS_MAX_INSTANCES > 1
+    // Check if any of the registered devs are not registered
+    for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
+        if (_priority_did_stored_list[i] != _priority_did_list[i] ||
+            _priority_did_stored_list[i] == 0) {
+            //We don't touch priorities that might have been touched by the user
+            continue;
+        }
+        if (!_get_state(i).registered) {
+            _priority_did_stored_list[i].set_and_save(0);
+            gcs().send_text(MAV_SEVERITY_ALERT, "Mag: Compass #%d with DEVID %lu removed", uint8_t(i), (unsigned long)_priority_did_list[i]);
+        }
+    }
+
+    // Check if any of the old registered devs are not registered
+    // and hence can be removed
+    for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
+        if (_state[i].dev_id == 0 && _state[i].expected_dev_id != 0) {
+            // also hard reset dev_ids that are not detected
+            _state[i].dev_id.save();
+        }
+    }
+#endif
 }
 
 // Look for devices beyond initialisation
