@@ -380,4 +380,26 @@ bool Storage::healthy(void)
             (AP_HAL::millis() - _last_empty_ms < 2000u));
 }
 
+/*
+  erase all storage
+ */
+bool Storage::erase(void)
+{
+#if HAL_WITH_RAMTRON
+    if (_initialisedType == StorageBackend::FRAM) {
+        return AP_HAL::Storage::erase();
+    }
+#endif
+#ifdef USE_POSIX
+    if (_initialisedType == StorageBackend::SDCard) {
+        return AP_HAL::Storage::erase();
+    }
+#endif
+#ifdef STORAGE_FLASH_PAGE
+    return _flash.erase();
+#else
+    return false;
+#endif
+}
+
 #endif // HAL_USE_EMPTY_STORAGE
