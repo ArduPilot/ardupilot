@@ -77,7 +77,6 @@ void Mode::AutoYaw::set_mode(autopilot_yaw_mode yaw_mode)
         break;
 
     case AUTO_YAW_FIXED:
-    case AUTO_YAW_FIXED_WITH_RATE:
         // keep heading pointing in the direction held in fixed_yaw
         // caller should set the fixed_yaw
         break;
@@ -128,8 +127,6 @@ void Mode::AutoYaw::set_fixed_yaw(float angle_deg, float turn_rate_dps, int8_t d
     }
 
     set_rate(_fixed_yaw_slewrate);
-    // set yaw mode
-    set_mode(AUTO_YAW_FIXED_WITH_RATE);
 
     // TO-DO: restore support for clockwise and counter clockwise rotation held in cmd.content.yaw.direction.  1 = clockwise, -1 = counterclockwise
 }
@@ -190,7 +187,6 @@ float Mode::AutoYaw::yaw()
         return roi_yaw();
 
     case AUTO_YAW_FIXED:
-    case AUTO_YAW_FIXED_WITH_RATE:
        // keep heading pointing in the direction held in fixed_yaw
         // with no pilot input allowed
         return _fixed_yaw;

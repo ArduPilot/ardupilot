@@ -751,7 +751,7 @@ void ModeAuto::wp_run()
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
-    } else if (auto_yaw.mode() == AUTO_YAW_FIXED_WITH_RATE) {
+    } else if (auto_yaw.mode() == AUTO_YAW_RATE) {
         // check reaching desired yaw angle
         auto_yaw.check_reached_desired_yaw_angle();
         // roll & pitch from waypoint controller, yaw rate from auto_yaw
@@ -796,7 +796,7 @@ void ModeAuto::spline_run()
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
-    } else if (auto_yaw.mode() == AUTO_YAW_FIXED_WITH_RATE) {
+    } else if (auto_yaw.mode() == AUTO_YAW_RATE) {
         // check reaching desired yaw angle
         auto_yaw.check_reached_desired_yaw_angle();
         // roll & pitch from waypoint controller, yaw rate from auto_yaw
@@ -858,7 +858,7 @@ void ModeAuto::circle_run()
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(copter.circle_nav->get_roll(), copter.circle_nav->get_pitch(), target_yaw_rate);
-    } else if (auto_yaw.mode() == AUTO_YAW_FIXED_WITH_RATE) {
+    } else if (auto_yaw.mode() == AUTO_YAW_RATE) {
         // check reaching desired yaw angle
         auto_yaw.check_reached_desired_yaw_angle();
         // roll & pitch from waypoint controller, yaw rate from auto_yaw
