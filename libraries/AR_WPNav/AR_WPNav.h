@@ -112,6 +112,9 @@ private:
     // adjust speed to ensure it does not fall below value held in SPEED_MIN
     void apply_speed_min(float &desired_speed);
 
+    // calculate the crosstrack error (does not rely on L1 controller)
+    float calc_crosstrack_error(const Location& current_loc) const;
+
 private:
 
     // parameters
