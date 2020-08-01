@@ -725,6 +725,9 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
 {
     external_payload_mass = 0;
 
+    float kgPerMeter = .050; // tether weight per meter
+    external_payload_mass += hagl()*kgPerMeter;
+
     // update sprayer
     if (sprayer && sprayer->is_enabled()) {
         sprayer->update(input);
