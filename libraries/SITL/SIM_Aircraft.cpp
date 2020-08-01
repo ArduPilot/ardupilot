@@ -725,8 +725,9 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
 {
     external_payload_mass = 0;
 
-    float kgPerMeter = .050; // tether weight per meter
-    external_payload_mass += hagl()*kgPerMeter;
+    // Tether is 4 lbs per 250 feet or 1.81437 kg per 76.2 meters of tether or .0238 kg/m
+    float tetherWeightkgPerMeter = .0238;
+    external_payload_mass += hagl()*tetherWeightkgPerMeter;
 
     // update sprayer
     if (sprayer && sprayer->is_enabled()) {
