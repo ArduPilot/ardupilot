@@ -680,6 +680,10 @@ void GCS_MAVLINK_Plane::handle_change_alt_request(AP_Mission::Mission_Command &c
     plane.next_WP_loc.relative_alt = false;
     plane.next_WP_loc.terrain_alt = cmd.content.location.terrain_alt;
     plane.reset_offset_altitude();
+
+    if (plane.quadplane.ship_landing_enabled()) {
+        plane.quadplane.ship_landing_set_alt();
+    }
 }
 
 

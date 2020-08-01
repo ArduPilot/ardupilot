@@ -36,7 +36,8 @@ void QuadPlane::ship_landing_RTL_init(void)
     ship_landing.reached_alt = false;
     ship_landing_RTL_update();
     ship_landing.offset.zero();
-    gcs().send_text(MAV_SEVERITY_INFO, "Started ship landing");
+    ship_landing.have_commanded_alt = false;
+    gcs().send_text(MAV_SEVERITY_INFO, "Started ship holdoff");
 }
 
 
@@ -63,7 +64,10 @@ void QuadPlane::ship_landing_RTL_update(void)
 
     IGNORE_RETURN(plane.ahrs.set_home(loc));
 
-    if (ship_landing.stage == ship_landing.HOLDOFF) {
+    const float thr_in = get_pilot_land_throttle();
+
+    if (ship_landing.stage == ship_landing.HOLDOFF ||
+        ship_landing.stage == ship_landing.DESCEND) {
         // hold loiter behind and to one side
         const float radius = plane.aparm.loiter_radius;
         const float holdoff_dist = radius*1.5;
@@ -74,7 +78,13 @@ void QuadPlane::ship_landing_RTL_update(void)
         Vector2f ofs(-fabsf(holdoff_dist), holdoff_dist);
         ofs.rotate(radians(heading_deg));
         loc.offset(ofs.x, ofs.y);
-        loc.alt += plane.g.RTL_altitude_cm;
+        if (ship_landing.have_commanded_alt) {
+            loc.alt = ship_landing.commanded_alt;
+        } else if (ship_landing.stage == ship_landing.HOLDOFF) {
+            loc.alt += plane.g.RTL_altitude_cm;
+        } else {
+            loc.alt += qrtl_alt*100;
+        }
 
         // we consider the alt to be reached if we get below 5m above
         // the target
@@ -82,8 +92,26 @@ void QuadPlane::ship_landing_RTL_update(void)
             ship_landing.reached_alt = true;
         }
 
-        float thr_in = get_pilot_land_throttle();
-        if (thr_in <= 0) {
+        if (thr_in <= 0.2 &&
+            ship_landing.stage == ship_landing.HOLDOFF &&
+            plane.nav_controller->reached_loiter_target()) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Descending for approach");
+            ship_landing.stage = ship_landing.DESCEND;
+            ship_landing.reached_alt = false;
+            ship_landing.have_commanded_alt = false;
+        }
+
+        if (thr_in >= 0.4 &&
+            ship_landing.stage == ship_landing.DESCEND &&
+            plane.nav_controller->reached_loiter_target()) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Climbing for holdoff");
+            ship_landing.stage = ship_landing.HOLDOFF;
+            ship_landing.have_commanded_alt = false;
+        }
+        
+        if (thr_in <= 0.0 &&
+            ship_landing.reached_alt &&
+            ship_landing.stage == ship_landing.DESCEND) {
             // go to approach stage when throttle is low, we are
             // pointing at the ship and have reached target alt.
             // Also require we are within 2.5 radius of the ship, and our heading is within 20
@@ -92,14 +120,14 @@ void QuadPlane::ship_landing_RTL_update(void)
             float ground_bearing_deg = wrap_180(degrees(plane.ahrs.groundspeed_vector().angle()));
             const float margin = 10;
             const float distance = plane.current_loc.get_distance(loc0);
-            if (ship_landing.reached_alt &&
-                fabsf(wrap_180(target_bearing_deg - ground_bearing_deg)) < margin &&
+            if (fabsf(wrap_180(target_bearing_deg - ground_bearing_deg)) < margin &&
                 distance < 2.5*holdoff_dist &&
                 distance > 0.25*holdoff_dist &&
                 fabsf(wrap_180(ground_bearing_deg - heading_deg)) < 2*margin) {
                 ship_landing.stage = ship_landing.APPROACH;
                 loc = loc0;
                 loc.alt += qrtl_alt * 100;
+                gcs().send_text(MAV_SEVERITY_INFO, "Starting approach");
                 plane.set_mode(plane.mode_qrtl, ModeReason::RTL_COMPLETE_SWITCHING_TO_VTOL_LAND_RTL);
             }
         }
@@ -239,4 +267,14 @@ void QuadPlane::ship_report_beacon(void)
         gcs().send_text(MAV_SEVERITY_INFO, "Beacon lost");
     }
     ship_landing.have_beacon = ok;
+}
+
+/*
+  handler for changing target alt in ship landing RTL
+ */
+void QuadPlane::ship_landing_set_alt(void)
+{
+    ship_landing.have_commanded_alt = true;
+    ship_landing.commanded_alt = plane.next_WP_loc.alt;
+    ship_landing.reached_alt = false;
 }

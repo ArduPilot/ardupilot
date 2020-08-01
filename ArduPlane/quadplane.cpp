@@ -2601,6 +2601,7 @@ void QuadPlane::vtol_position_controller(void)
     switch (poscontrol.state) {
     case QPOS_APPROACH:
     case QPOS_AIRBRAKE:
+        ship_landing_check_abort();
         // we just want stability from the VTOL controller in these
         // phases of landing, so relax the Z controller, unless we air
         // providing assistance
@@ -3582,6 +3583,11 @@ bool QuadPlane::in_vtol_land_approach(void) const
              (plane.vtol_approach_s.approach_stage == Plane::Landing_ApproachStage::VTOL_LANDING))) {
             return true;
         }
+    }
+    if (plane.control_mode == &plane.mode_rtl &&
+        ship_landing_enabled() &&
+        ship_landing.stage == ship_landing.DESCEND) {
+        return true;
     }
     return false;
 }

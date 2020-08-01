@@ -578,12 +578,15 @@ private:
         uint32_t last_update_ms;
         enum {
             HOLDOFF,
+            DESCEND,
             APPROACH
         } stage;
         bool reached_alt;
         Vector3f offset;
         bool pilot_correction_active;
         bool have_beacon;
+        bool have_commanded_alt;
+        int32_t commanded_alt;
     } ship_landing;
 
     /*
@@ -660,10 +663,15 @@ private:
       get pilot throttle in for landing code. Return value on scale of 0 to 1
      */
     float get_pilot_land_throttle(void) const;
-    
+
+    /*
+      handler for changing target alt in ship landing RTL
+    */
+    void ship_landing_set_alt(void);
+
     // Q assist state, can be enabled, disabled or force. Default to enabled
     Q_ASSIST_STATE_ENUM q_assist_state = Q_ASSIST_STATE_ENUM::Q_ASSIST_ENABLED;
-
+    
 public:
     void motor_test_output();
     MAV_RESULT mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type,
