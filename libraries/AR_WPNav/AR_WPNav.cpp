@@ -361,7 +361,7 @@ void AR_WPNav::update_steering(const Location& current_loc, float current_speed)
 {
     // calculate desired turn rate and update desired heading
     if (_pivot_active) {
-        _cross_track_error = 0.0f;
+        _cross_track_error = calc_crosstrack_error(current_loc);
         _desired_heading_cd = _reversed ? wrap_360_cd(_oa_wp_bearing_cd + 18000) : _oa_wp_bearing_cd;;
         _desired_lat_accel = 0.0f;
         _desired_turn_rate_rads = _atc.get_turn_rate_from_heading(radians(_desired_heading_cd * 0.01f), radians(_pivot_rate));
@@ -457,4 +457,29 @@ void AR_WPNav::apply_speed_min(float &desired_speed)
     if (fabsf(desired_speed) < speed_min) {
         desired_speed = is_negative(desired_speed) ? -speed_min : speed_min;
     }
+}
+
+// calculate the crosstrack error (does not rely on L1 controller)
+float AR_WPNav::calc_crosstrack_error(const Location& current_loc) const
+{
+    if (!_orig_and_dest_valid) {
+        return 0.0f;
+    }
+
+    // calculate the NE position of destination relative to origin
+    Vector2f dest_from_origin = _oa_origin.get_distance_NE(_oa_destination);
+
+    // return distance to origin if length of track is very small
+    if (dest_from_origin.length() < 1.0e-6f) {
+        return current_loc.get_distance_NE(_oa_destination).length();
+    }
+
+    // convert to a vector indicating direction only
+    dest_from_origin.normalize();
+
+    // calculate the NE position of the vehicle relative to origin
+    const Vector2f veh_from_origin = _oa_origin.get_distance_NE(current_loc);
+
+    // calculate distance to target track, for reporting
+    return veh_from_origin % dest_from_origin;
 }
