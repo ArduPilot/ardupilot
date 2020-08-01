@@ -846,69 +846,78 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
 
         /* Solo user presses Fly button */
     case MAV_CMD_SOLO_BTN_FLY_CLICK: {
-        if (copter.failsafe.radio) {
+        if (copter.battery.get_type() == AP_BattMonitor_Params::BattMonitor_Type::BattMonitor_TYPE_SOLO) {
+            if (copter.failsafe.radio) {
+                return MAV_RESULT_ACCEPTED;
+            }
+
+            // set mode to Loiter or fall back to AltHold
+            if (!copter.set_mode(Mode::Number::LOITER, ModeReason::GCS_COMMAND)) {
+                copter.set_mode(Mode::Number::ALT_HOLD, ModeReason::GCS_COMMAND);
+            }
             return MAV_RESULT_ACCEPTED;
         }
-
-        // set mode to Loiter or fall back to AltHold
-        if (!copter.set_mode(Mode::Number::LOITER, ModeReason::GCS_COMMAND)) {
-            copter.set_mode(Mode::Number::ALT_HOLD, ModeReason::GCS_COMMAND);
-        }
-        return MAV_RESULT_ACCEPTED;
+        return MAV_RESULT_FAILED;
     }
 
         /* Solo user holds down Fly button for a couple of seconds */
     case MAV_CMD_SOLO_BTN_FLY_HOLD: {
-        if (copter.failsafe.radio) {
+        if (copter.battery.get_type() == AP_BattMonitor_Params::BattMonitor_Type::BattMonitor_TYPE_SOLO) {
+            if (copter.failsafe.radio) {
+                return MAV_RESULT_ACCEPTED;
+            }
+
+            if (!copter.motors->armed()) {
+                // if disarmed, arm motors
+                copter.arming.arm(AP_Arming::Method::MAVLINK);
+            } else if (copter.ap.land_complete) {
+                // if armed and landed, takeoff
+                if (copter.set_mode(Mode::Number::LOITER, ModeReason::GCS_COMMAND)) {
+                    copter.flightmode->do_user_takeoff(packet.param1*100, true);
+                }
+            } else {
+                // if flying, land
+                copter.set_mode(Mode::Number::LAND, ModeReason::GCS_COMMAND);
+            }
             return MAV_RESULT_ACCEPTED;
         }
-
-        if (!copter.motors->armed()) {
-            // if disarmed, arm motors
-            copter.arming.arm(AP_Arming::Method::MAVLINK);
-        } else if (copter.ap.land_complete) {
-            // if armed and landed, takeoff
-            if (copter.set_mode(Mode::Number::LOITER, ModeReason::GCS_COMMAND)) {
-                copter.flightmode->do_user_takeoff(packet.param1*100, true);
-            }
-        } else {
-            // if flying, land
-            copter.set_mode(Mode::Number::LAND, ModeReason::GCS_COMMAND);
-        }
-        return MAV_RESULT_ACCEPTED;
+        return MAV_RESULT_FAILED;        
     }
 
         /* Solo user presses pause button */
     case MAV_CMD_SOLO_BTN_PAUSE_CLICK: {
-        if (copter.failsafe.radio) {
-            return MAV_RESULT_ACCEPTED;
-        }
+        if (copter.battery.get_type() == AP_BattMonitor_Params::BattMonitor_Type::BattMonitor_TYPE_SOLO) {
+            if (copter.failsafe.radio) {
+                return MAV_RESULT_ACCEPTED;
+            }
 
-        if (copter.motors->armed()) {
-            if (copter.ap.land_complete) {
-                // if landed, disarm motors
-                copter.arming.disarm(AP_Arming::Method::SOLOPAUSEWHENLANDED);
-            } else {
-                // assume that shots modes are all done in guided.
-                // NOTE: this may need to change if we add a non-guided shot mode
-                bool shot_mode = (!is_zero(packet.param1) && (copter.control_mode == Mode::Number::GUIDED || copter.control_mode == Mode::Number::GUIDED_NOGPS));
-
-                if (!shot_mode) {
-#if MODE_BRAKE_ENABLED == ENABLED
-                    if (copter.set_mode(Mode::Number::BRAKE, ModeReason::GCS_COMMAND)) {
-                        copter.mode_brake.timeout_to_loiter_ms(2500);
-                    } else {
-                        copter.set_mode(Mode::Number::ALT_HOLD, ModeReason::GCS_COMMAND);
-                    }
-#else
-                    copter.set_mode(Mode::Number::ALT_HOLD, ModeReason::GCS_COMMAND);
-#endif
+            if (copter.motors->armed()) {
+                if (copter.ap.land_complete) {
+                    // if landed, disarm motors
+                    copter.arming.disarm(AP_Arming::Method::SOLOPAUSEWHENLANDED);
                 } else {
-                    // SoloLink is expected to handle pause in shots
+                    // assume that shots modes are all done in guided.
+                    // NOTE: this may need to change if we add a non-guided shot mode
+                    bool shot_mode = (!is_zero(packet.param1) && (copter.control_mode == Mode::Number::GUIDED || copter.control_mode == Mode::Number::GUIDED_NOGPS));
+
+                    if (!shot_mode) {
+#if MODE_BRAKE_ENABLED == ENABLED
+                        if (copter.set_mode(Mode::Number::BRAKE, ModeReason::GCS_COMMAND)) {
+                            copter.mode_brake.timeout_to_loiter_ms(2500);
+                        } else {
+                            copter.set_mode(Mode::Number::ALT_HOLD, ModeReason::GCS_COMMAND);
+                        }
+#else
+                        copter.set_mode(Mode::Number::ALT_HOLD, ModeReason::GCS_COMMAND);
+#endif
+                    } else {
+                        // SoloLink is expected to handle pause in shots
+                    }
                 }
             }
+            return MAV_RESULT_ACCEPTED;
         }
-        return MAV_RESULT_ACCEPTED;
+        return MAV_RESULT_FAILED;        
     }
 
     default:
