@@ -44,7 +44,7 @@ MultiCopter::MultiCopter(const char *frame_str) :
     } else {
         //frame->init(gross_mass(), 0.51, 15, 4*radians(360));
         //float _mass, float hover_throttle, float _terminal_velocity, float _terminal_rotation_rate
-        frame->init(gross_mass(), 0.64, 15, 4*radians(360));
+        frame->init(gross_mass(), 0.35, 15, 4*radians(360));
     }
     frame_height = 0.1;
 //    frame_height = 0.5;
