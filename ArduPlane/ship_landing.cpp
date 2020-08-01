@@ -149,7 +149,7 @@ void QuadPlane::ship_update_xy(void)
     // this assumes the time taken to achieve the maximum acceleration angle is limited by the angular acceleration rather than maximum angular rate.
     float lean_angle = wp_nav->get_wp_acceleration() / (GRAVITY_MSS * 100.0 * M_PI / 18000.0);
     float angle_accel = MIN(attitude_control->get_accel_pitch_max(), attitude_control->get_accel_roll_max());
-    float tc = 2.0 * sqrt(lean_angle / angle_accel);
+    float tc = 2.0 * sqrtf(lean_angle / angle_accel);
     pos_control->input_pos_vel_xy(pos, vel,
                                   wp_nav->get_default_speed_xy(),
                                   wp_nav->get_wp_acceleration(), tc);
