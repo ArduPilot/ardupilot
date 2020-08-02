@@ -121,7 +121,8 @@ void Motor::current_and_voltage(const struct sitl_input &input, float &voltage, 
     float motor_speed = constrain_float((input.servos[motor_offset+servo]-1100)/900.0, 0, 1);
 
     // assume 10A per motor at full speed
-    current = 10 * motor_speed * 1/.80 * 1.6438; // 60 Amps at 80% throttle
+//    current = 10 * motor_speed * 1/.80 * 1.6438; // 60 Amps at 80% throttle
+    current = 10 * motor_speed * 1/.80 * 1.409; // 60 Amps at 80% throttle, no
 
 //printf("motor speed = %f, current = %f\n",motor_speed,current);
 
@@ -131,3 +132,10 @@ void Motor::current_and_voltage(const struct sitl_input &input, float &voltage, 
         voltage = AP::sitl()->batt_voltage - motor_speed * .50; // 50.5 v on ground, 50.1 v hovering at 250'
     }
 }
+/*
+Altitude  Voltage      Current
+-------------------------------------
+2.3          50.2          37
+12.2         50.13         37.2
+24           50.16         36.62
+ */
