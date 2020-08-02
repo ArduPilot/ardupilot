@@ -437,7 +437,7 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
 
     // warn about hdop separately - to prevent user confusion with no gps lock
     if (copter.gps.get_hdop() > copter.g.gps_hdop_good) {
-        check_failed(ARMING_CHECK_GPS, display_failure, "High GPS HDOP");
+        check_failed(ARMING_CHECK_GPS, display_failure, "High GPS HDOP(%.2lf>%.2lf)", static_cast<double>(copter.gps.get_hdop()/100.0f), static_cast<double>(copter.g.gps_hdop_good/100.0f));
         AP_Notify::flags.pre_arm_gps_check = false;
         return false;
     }
