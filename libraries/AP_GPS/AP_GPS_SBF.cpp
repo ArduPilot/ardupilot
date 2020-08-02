@@ -367,7 +367,7 @@ AP_GPS_SBF::process_message(void)
         float max_variance_squared = MAX(temp.Cov_VnVn, MAX(temp.Cov_VeVe, temp.Cov_VuVu));
         if (is_positive(max_variance_squared)) {
             state.have_speed_accuracy = true;
-            state.speed_accuracy = sqrt(max_variance_squared);
+            state.speed_accuracy = safe_sqrt(max_variance_squared);
         } else {
             state.have_speed_accuracy = false;
         }
