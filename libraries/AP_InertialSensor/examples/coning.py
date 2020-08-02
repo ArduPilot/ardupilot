@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 from math import *
 from pymavlink.rotmat import Vector3, Matrix3
