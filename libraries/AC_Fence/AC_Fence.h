@@ -26,6 +26,7 @@
 #define AC_FENCE_CIRCLE_RADIUS_DEFAULT              300.0f  // default circular fence radius is 300m
 #define AC_FENCE_ALT_MAX_BACKUP_DISTANCE            20.0f   // after fence is broken we recreate the fence 20m further up
 #define AC_FENCE_CIRCLE_RADIUS_BACKUP_DISTANCE      20.0f   // after fence is broken we recreate the fence 20m further out
+#define AC_FENCE_POLY_BACKUP_DISTANCE               20.0f   //after fence is broken we recreate the fence 20m further away    
 #define AC_FENCE_MARGIN_DEFAULT                     2.0f    // default distance in meters that autopilot's should maintain from the fence to avoid a breach
 
 // give up distance
@@ -154,11 +155,13 @@ private:
     // backup fences
     float           _alt_max_backup;        // backup altitude upper limit in meters used to refire the breach if the vehicle continues to move further away
     float           _circle_radius_backup;  // backup circle fence radius in meters used to refire the breach if the vehicle continues to move further away
-
+    float           _poly_backup;           // backup distance from polygon fence in meters used to refire the breach if the vehical continues to move further away 
+   
     // breach distances
     float           _alt_max_breach_distance;   // distance above the altitude max
     float           _circle_breach_distance;    // distance beyond the circular fence
-
+    float           _poly_breach_distance;      // distance beyond the polygon fence
+   
     // other internal variables
     float           _home_distance;         // distance from home in meters (provided by main code)
     float _curr_alt;
