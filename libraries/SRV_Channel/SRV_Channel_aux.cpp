@@ -31,6 +31,9 @@ void SRV_Channel::output_ch(void)
     // take care of special function cases
     switch(function)
     {
+    case k_none: //for normal operation, the disabled output function sets the output value of the channel to the trim value
+        output_pwm = servo_trim.get();
+        break;
     case k_manual:              // manual
         passthrough_from = ch_num;
         break;
