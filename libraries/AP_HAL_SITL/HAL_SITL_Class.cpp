@@ -13,6 +13,7 @@
 #include "Scheduler.h"
 #include "AnalogIn.h"
 #include "UARTDriver.h"
+#include "I2CDevice.h"
 #include "Storage.h"
 #include "RCInput.h"
 #include "RCOutput.h"
@@ -40,7 +41,6 @@ static DSP dspDriver;
 
 
 // use the Empty HAL for hardware we don't emulate
-static Empty::I2CDeviceManager i2c_mgr_instance;
 static Empty::SPIDeviceManager emptySPI;
 static Empty::OpticalFlow emptyOpticalFlow;
 static Empty::Flash emptyFlash;
@@ -53,6 +53,8 @@ static UARTDriver sitlUart4Driver(4, &sitlState);
 static UARTDriver sitlUart5Driver(5, &sitlState);
 static UARTDriver sitlUart6Driver(6, &sitlState);
 static UARTDriver sitlUart7Driver(7, &sitlState);
+
+static I2CDeviceManager i2c_mgr_instance;
 
 static Util utilInstance(&sitlState);
 
