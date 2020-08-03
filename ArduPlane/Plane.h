@@ -395,13 +395,6 @@ private:
         int32_t locked_pitch_cd;
     } acro_state;
 
-    // CRUISE controller state
-    struct CruiseState {
-        bool locked_heading;
-        int32_t locked_heading_cd;
-        uint32_t lock_timer_ms;
-    } cruise_state;
-
     struct {
         uint32_t last_tkoff_arm_time;
         uint32_t last_check_ms;
