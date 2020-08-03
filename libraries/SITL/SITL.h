@@ -12,6 +12,7 @@
 #include "SIM_Buzzer.h"
 #include "SIM_Gripper_EPM.h"
 #include "SIM_Gripper_Servo.h"
+#include "SIM_I2C.h"
 #include "SIM_Parachute.h"
 #include "SIM_Precland.h"
 #include "SIM_Sprayer.h"
@@ -350,6 +351,10 @@ public:
     // convert a set of roll rates from body frame to earth frame
     static Vector3f convert_earth_frame(const Matrix3f &dcm, const Vector3f &gyro);
 
+    int i2c_ioctl(uint8_t i2c_operation, void *data) {
+        return i2c_sim.ioctl(i2c_operation, data);
+    }
+
     Sprayer sprayer_sim;
 
     // simulated ship takeoffs
@@ -360,6 +365,7 @@ public:
 
     Parachute parachute_sim;
     Buzzer buzzer_sim;
+    I2C i2c_sim;
     ToneAlarm tonealarm_sim;
     SIM_Precland precland_sim;
     RichenPower richenpower_sim;
