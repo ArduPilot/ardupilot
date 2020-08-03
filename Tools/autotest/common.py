@@ -3501,7 +3501,7 @@ class AutoTest(ABC):
             return self.get_distance(start, self.mav.location())
 
         def validator(value2, target2):
-            return (value2 - target2) >= accuracy
+            return math.fabs(value2 - target2) <= accuracy
 
         self.wait_and_maintain(value_name="Distance", target=distance, current_value_getter=lambda: get_distance(), validator=lambda value2, target2: validator(value2, target2), accuracy=accuracy, timeout=timeout, **kwargs)
 
