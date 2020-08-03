@@ -329,9 +329,15 @@ public:
 
     void navigate() override;
 
+    bool get_target_heading_cd(int32_t &target_heading);
+
 protected:
 
     bool _enter() override;
+
+    bool locked_heading;
+    int32_t locked_heading_cd;
+    uint32_t lock_timer_ms;
 };
 
 class ModeAvoidADSB : public Mode
