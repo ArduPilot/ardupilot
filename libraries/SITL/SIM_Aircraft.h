@@ -29,6 +29,7 @@
 #include "SIM_Parachute.h"
 #include "SIM_Precland.h"
 #include "SIM_RichenPower.h"
+#include "SIM_I2C.h"
 #include "SIM_Buzzer.h"
 #include <Filter/Filter.h>
 
@@ -144,6 +145,7 @@ public:
     void set_gripper_servo(Gripper_Servo *_gripper) { gripper = _gripper; }
     void set_gripper_epm(Gripper_EPM *_gripper_epm) { gripper_epm = _gripper_epm; }
     void set_precland(SIM_Precland *_precland);
+    void set_i2c(class I2C *_i2c) { i2c = _i2c; }
 
 protected:
     SITL *sitl;
@@ -302,6 +304,7 @@ private:
     Parachute *parachute;
     RichenPower *richenpower;
     SIM_Precland *precland;
+    class I2C *i2c;
 };
 
 } // namespace SITL
