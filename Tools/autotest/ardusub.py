@@ -147,6 +147,53 @@ class AutoTestSub(AutoTest):
 
         self.disarm_vehicle()
 
+    def test_pos_hold(self):
+        """Test POSHOLD mode"""
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        # point North
+        self.reach_heading_manual(0)
+        self.mavproxy.send('mode POSHOLD\n')
+        self.wait_mode('POSHOLD')
+
+        #dive a little 
+        self.set_rc(Joystick.Throttle, 1300)
+        self.delay_sim_time(3)
+        self.set_rc(Joystick.Throttle, 1500)
+        self.delay_sim_time(2)
+
+        # Save starting point
+        msg = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=5)
+        if msg is None:
+            raise NotAchievedException("Did not get GLOBAL_POSITION_INT")
+        start_pos = self.mav.location()
+        # Hold in perfect conditions
+        self.progress("Testing position hold in perfect conditions")
+        self.delay_sim_time(10)
+        distance_m = self.get_distance(start_pos, self.mav.location())
+        if distance_m > 1:
+            raise NotAchievedException("Position Hold was unable to keep position in calm waters within 1 meter after 10 seconds, drifted {} meters".format(distance_m))
+
+        # Hold in 1 m/s current
+        self.progress("Testing position hold in current")
+        self.set_parameter("SIM_WIND_SPD", 1)
+        self.set_parameter("SIM_WIND_T", 1)
+        self.delay_sim_time(10)
+        distance_m = self.get_distance(start_pos, self.mav.location())
+        if distance_m > 1:
+            raise NotAchievedException("Position Hold was unable to keep position in 1m/s current within 1 meter after 10 seconds, drifted {} meters".format(distance_m))
+
+        # Move forward slowly in 1 m/s current
+        start_pos = self.mav.location()
+        self.progress("Testing moving forward in position hold in 1m/s current")
+        self.set_rc(Joystick.Forward, 1600)
+        self.delay_sim_time(10)
+        distance_m = self.get_distance(start_pos, self.mav.location())
+        bearing = self.get_bearing(start_pos, self.mav.location())
+        if distance_m < 2 or (bearing > 30 and bearing < 330):
+            raise NotAchievedException("Position Hold was unable to move north 2 meters, moved {} at {} degrees instead".format(distance_m, bearing))
+        self.disarm_vehicle()
+
     def test_mot_thst_hover_ignore(self):
         """Test if we are ignoring MOT_THST_HOVER parameter
         """
@@ -299,6 +346,7 @@ class AutoTestSub(AutoTest):
             ("DiveManual", "Dive manual", self.dive_manual),
 
             ("AltitudeHold", "Test altitude holde mode", self.test_alt_hold),
+            ("PositionHold", "Test position hold mode", self.test_pos_hold),
 
             ("DiveMission",
              "Dive mission",
