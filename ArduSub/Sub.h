@@ -509,6 +509,7 @@ private:
 
     bool stabilize_init(void);
     void stabilize_run();
+    void control_depth();
     bool manual_init(void);
     void manual_run();
     void failsafe_sensors_check(void);
