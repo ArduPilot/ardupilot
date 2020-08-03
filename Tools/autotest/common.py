@@ -3274,7 +3274,7 @@ class AutoTest(ABC):
 
     def reach_heading_manual(self, heading, turn_right=True):
         """Manually direct the vehicle to the target heading."""
-        if self.is_copter():
+        if self.is_copter() or self.is_sub():
             self.mavproxy.send('rc 4 1580\n')
             self.wait_heading(heading)
             self.set_rc(4, 1500)
