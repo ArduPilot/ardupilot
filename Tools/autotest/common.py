@@ -5691,7 +5691,7 @@ switch value'''
             loaded_module = True
         self.mavproxy.send("log list\n")
         self.mavproxy.expect(["lastLog ([0-9]+)", "No logs"])
-        if self.mavproxy.match.group(1) == "No logs":
+        if self.mavproxy.match.group(0) == "No logs":
             num_log = None
         else:
             num_log = int(self.mavproxy.match.group(1))
