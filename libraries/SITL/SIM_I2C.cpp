@@ -22,6 +22,7 @@
 
 #include "SIM_I2C.h"
 #include "SIM_ToshibaLED.h"
+#include "SIM_MaxSonarI2CXL.h"
 
 #include <signal.h>
 
@@ -41,6 +42,7 @@ public:
 static IgnoredI2CDevice ignored;
 
 static ToshibaLED toshibaled;
+static MaxSonarI2CXL maxsonari2cxl;
 
 struct i2c_device_at_address {
     uint8_t bus;
@@ -51,6 +53,7 @@ struct i2c_device_at_address {
     { 1, 0x38, ignored }, // NCP5623
     { 1, 0x39, ignored }, // NCP5623C
     { 1, 0x40, ignored }, // KellerLD
+    { 1, 0x70, maxsonari2cxl },
     { 1, 0x76, ignored }, // MS56XX
 };
 
