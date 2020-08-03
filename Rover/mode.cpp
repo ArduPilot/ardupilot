@@ -105,6 +105,18 @@ void Mode::get_pilot_desired_steering_and_throttle(float &steering_out, float &t
     // do basic conversion
     get_pilot_input(steering_out, throttle_out);
 
+    // for skid steering vehicles, if pilot commands would lead to saturation
+    // we proportionally reduce steering and throttle
+    if (g2.motors.have_skid_steering()) {
+        const float steer_normalised = constrain_float(steering_out / 4500.0f, -1.0f, 1.0f);
+        const float throttle_normalised = constrain_float(throttle_out / 100.0f, -1.0f, 1.0f);
+        const float saturation_value = fabsf(steer_normalised) + fabsf(throttle_normalised);
+        if (saturation_value > 1.0f) {
+            steering_out /= saturation_value;
+            throttle_out /= saturation_value;
+        }
+    }
+
     // check for special case of input and output throttle being in opposite directions
     float throttle_out_limited = g2.motors.get_slew_limited_throttle(throttle_out, rover.G_Dt);
     if ((is_negative(throttle_out) != is_negative(throttle_out_limited)) &&
