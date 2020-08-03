@@ -12,11 +12,12 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "AP_IioSensor.h"
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
 
-#include "AP_IioSensor.h"
 
 AP_Iio_Channel::AP_Iio_Channel(const char *name) :
     _name(name)
@@ -204,3 +205,4 @@ int AP_Iio_Sensor::read()
 
     return _buf_count;
 }
+#endif

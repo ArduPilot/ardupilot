@@ -14,6 +14,8 @@
  */
 #pragma once
 
+#include <AP_HAL/AP_HAL_Boards.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <iio.h>
 #include <vector>
 
@@ -57,4 +59,4 @@ private:
     struct iio_buffer *_iio_buf;
     vector<AP_Iio_Channel> *_channels;
 };
-
+#endif
