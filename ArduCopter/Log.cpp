@@ -557,9 +557,9 @@ const struct LogStructure Copter::log_structure[] = {
 // @Field: pY: Target position relative to vehicle, Y-Axis (0 if target not found)
 // @Field: vX: Target velocity relative to vehicle, X-Axis (0 if target not found)
 // @Field: vY: Target velocity relative to vehicle, Y-Axis (0 if target not found)
-// @Field: mX: Target's relative to origin postion as 3-D Vector, X-Axis
-// @Field: mY: Target's relative to origin postion as 3-D Vector, Y-Axis
-// @Field: mZ: Target's relative to origin postion as 3-D Vector, Z-Axis
+// @Field: mX: Target's relative to origin position as 3-D Vector, X-Axis
+// @Field: mY: Target's relative to origin position as 3-D Vector, Y-Axis
+// @Field: mZ: Target's relative to origin position as 3-D Vector, Z-Axis
 // @Field: LastMeasMS: Time when target was last detected
 // @Field: EKFOutl: EKF's outlier count
 // @Field: Est: Type of estimator used
