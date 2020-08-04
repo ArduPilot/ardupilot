@@ -56,6 +56,8 @@ public:
         uint32_t timestamp_ms;
     };
 
+    // number of ESCs configured as BLHeli in channel mask
+    uint8_t get_num_motors(void) { return num_motors;};
     // get the most recent telemetry data packet for a motor
     bool get_telem_data(uint8_t esc_index, struct telem_data &td);
     // return the average motor frequency in Hz for dynamic filtering
