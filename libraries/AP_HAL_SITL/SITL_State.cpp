@@ -601,49 +601,49 @@ void SITL_State::_fdm_input_local(void)
                       attitude);
     }
     if (benewake_tf02 != nullptr) {
-        benewake_tf02->update(sitl_model->get_range());
+        benewake_tf02->update(sitl_model->rangefinder_range());
     }
     if (benewake_tf03 != nullptr) {
-        benewake_tf03->update(sitl_model->get_range());
+        benewake_tf03->update(sitl_model->rangefinder_range());
     }
     if (benewake_tfmini != nullptr) {
-        benewake_tfmini->update(sitl_model->get_range());
+        benewake_tfmini->update(sitl_model->rangefinder_range());
     }
     if (lightwareserial != nullptr) {
-        lightwareserial->update(sitl_model->get_range());
+        lightwareserial->update(sitl_model->rangefinder_range());
     }
     if (lightwareserial_binary != nullptr) {
-        lightwareserial_binary->update(sitl_model->get_range());
+        lightwareserial_binary->update(sitl_model->rangefinder_range());
     }
     if (lanbao != nullptr) {
-        lanbao->update(sitl_model->get_range());
+        lanbao->update(sitl_model->rangefinder_range());
     }
     if (blping != nullptr) {
-        blping->update(sitl_model->get_range());
+        blping->update(sitl_model->rangefinder_range());
     }
     if (leddarone != nullptr) {
-        leddarone->update(sitl_model->get_range());
+        leddarone->update(sitl_model->rangefinder_range());
     }
     if (ulanding_v0 != nullptr) {
-        ulanding_v0->update(sitl_model->get_range());
+        ulanding_v0->update(sitl_model->rangefinder_range());
     }
     if (ulanding_v1 != nullptr) {
-        ulanding_v1->update(sitl_model->get_range());
+        ulanding_v1->update(sitl_model->rangefinder_range());
     }
     if (maxsonarseriallv != nullptr) {
-        maxsonarseriallv->update(sitl_model->get_range());
+        maxsonarseriallv->update(sitl_model->rangefinder_range());
     }
     if (wasp != nullptr) {
-        wasp->update(sitl_model->get_range());
+        wasp->update(sitl_model->rangefinder_range());
     }
     if (nmea != nullptr) {
-        nmea->update(sitl_model->get_range());
+        nmea->update(sitl_model->rangefinder_range());
     }
     if (rf_mavlink != nullptr) {
-        rf_mavlink->update(sitl_model->get_range());
+        rf_mavlink->update(sitl_model->rangefinder_range());
     }
     if (gyus42v2 != nullptr) {
-        gyus42v2->update(sitl_model->get_range());
+        gyus42v2->update(sitl_model->rangefinder_range());
     }
 
     if (frsky_d != nullptr) {
