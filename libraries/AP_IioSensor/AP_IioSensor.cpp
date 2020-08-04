@@ -116,7 +116,7 @@ int AP_Iio_Channel::get_data(double *values)
     return ret;
 }
 #pragma GCC diagnostic pop
-AP_Iio_Sensor::AP_Iio_Sensor(const char *name, vector<AP_Iio_Channel> *channels,
+AP_Iio_Sensor::AP_Iio_Sensor(const char *name, vector<AP_Iio_Channel*> *channels,
                              long long sampling_freq, unsigned int buf_count)
 {
     int ret;
@@ -162,8 +162,8 @@ err:
 
 AP_Iio_Sensor::~AP_Iio_Sensor()
 {
-    for (AP_Iio_Channel chan : *_channels) {
-        chan.disable();
+    for (AP_Iio_Channel* chan : *_channels) {
+        chan->disable();
     }
     iio_buffer_destroy(_iio_buf);
     iio_context_destroy(_iio_ctx);
@@ -176,9 +176,9 @@ int AP_Iio_Sensor::init()
         return -1;
     }
 
-    for (AP_Iio_Channel chan : *_channels) {
-        if (chan.init(_iio_dev, _iio_buf) < 0) {
-            fprintf(stderr,"failed to init channel %s\n", chan.get_name());
+    for (AP_Iio_Channel* chan : *_channels) {
+        if (chan->init(_iio_dev, _iio_buf) < 0) {
+            fprintf(stderr,"failed to init channel %s\n", chan->get_name());
             return -1;
         }
     }
@@ -189,8 +189,8 @@ int AP_Iio_Sensor::init()
         return -1;
     }
 
-    for (AP_Iio_Channel chan : *_channels) {
-        chan.set_buf(_iio_buf);
+    for (AP_Iio_Channel* chan : *_channels) {
+        chan->set_buf(_iio_buf);
     }
 
     return 0;
@@ -198,7 +198,7 @@ int AP_Iio_Sensor::init()
 
 int AP_Iio_Sensor::read()
 {
-    ssize_t ret = iio_buffer_refill(_iio_buf);
+    const ssize_t ret = iio_buffer_refill(_iio_buf);
     if (ret < 0) {
         fprintf(stderr, "iio_buffer_refill error %s\n", strerror(-ret));
         return -1;

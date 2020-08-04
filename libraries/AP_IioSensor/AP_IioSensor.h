@@ -45,7 +45,7 @@ protected:
 class AP_Iio_Sensor
 {
 public:
-    AP_Iio_Sensor(const char *name, vector<AP_Iio_Channel> *channels,
+    AP_Iio_Sensor(const char *name, vector<AP_Iio_Channel*> *channels,
                   long long sampling_freq, unsigned int buf_count);
     ~AP_Iio_Sensor();
     int init();
@@ -57,6 +57,6 @@ private:
     struct iio_device *_iio_dev;
     struct iio_context *_iio_ctx;
     struct iio_buffer *_iio_buf;
-    vector<AP_Iio_Channel> *_channels;
+    vector<AP_Iio_Channel*> *_channels;
 };
 #endif
