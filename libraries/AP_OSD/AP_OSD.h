@@ -26,6 +26,7 @@
 #endif
 
 class AP_OSD_Backend;
+class AP_MSP;
 
 #define AP_OSD_NUM_SCREENS 4
 
@@ -68,6 +69,9 @@ public:
     AP_Int16 channel_max;
 
 private:
+    friend class AP_MSP;
+    friend class AP_MSP_Telem_Backend;
+
     AP_OSD_Backend *backend;
     AP_OSD *osd;
 
@@ -123,6 +127,16 @@ private:
     AP_OSD_Setting bat2_vlt{false, 0, 0};
     AP_OSD_Setting bat2used{false, 0, 0};
     AP_OSD_Setting clk{false, 0, 0};
+    
+    // MSP OSD only
+    AP_OSD_Setting sidebars{false, 0, 0};
+    AP_OSD_Setting crosshair{false, 0, 0};
+    AP_OSD_Setting home_dist{true, 1, 1};
+    AP_OSD_Setting home_dir{true, 1, 1};
+    AP_OSD_Setting power{true, 1, 1};
+    AP_OSD_Setting cell_volt{true, 1, 1};
+    AP_OSD_Setting batt_bar{true, 1, 1};
+    AP_OSD_Setting arming{true, 1, 1};
 
     bool check_option(uint32_t option);
 
@@ -194,6 +208,8 @@ class AP_OSD
 {
 public:
     friend class AP_OSD_Screen;
+    friend class AP_MSP;
+    friend class AP_MSP_Telem_Backend;
     //constructor
     AP_OSD();
 
@@ -217,6 +233,7 @@ public:
         OSD_NONE=0,
         OSD_MAX7456=1,
         OSD_SITL=2,
+        OSD_MSP=3,
     };
     enum switch_method {
         TOGGLE=0,
