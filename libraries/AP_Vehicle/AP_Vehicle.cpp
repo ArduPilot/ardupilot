@@ -32,6 +32,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Path: ../AP_RCTelemetry/AP_VideoTX.cpp
     AP_SUBGROUPINFO(vtx, "VTX_",  4, AP_Vehicle, AP_VideoTX),
 
+#if HAL_MSP_ENABLED
+    // @Group: MSP
+    // @Path: ../AP_MSP/AP_MSP.cpp
+    AP_SUBGROUPINFO(msp, "MSP",  5, AP_Vehicle, AP_MSP),
+#endif
+
     AP_GROUPEND
 };
 
@@ -108,6 +114,9 @@ void AP_Vehicle::setup()
     visual_odom.init();
 #endif
     vtx.init();
+#if HAL_MSP_ENABLED
+    msp.init();
+#endif
 
 #if AP_PARAM_KEY_DUMP
     AP_Param::show_all(hal.console, true);
