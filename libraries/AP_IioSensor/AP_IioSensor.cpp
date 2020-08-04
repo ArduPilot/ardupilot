@@ -64,7 +64,8 @@ void AP_Iio_Channel::disable()
 {
     iio_channel_disable(_iio_chan);
 }
-
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpointer-arith"
 int AP_Iio_Channel::get_data(double *values)
 {
     int ret = 0;
@@ -114,7 +115,7 @@ int AP_Iio_Channel::get_data(double *values)
 
     return ret;
 }
-
+#pragma GCC diagnostic pop
 AP_Iio_Sensor::AP_Iio_Sensor(const char *name, vector<AP_Iio_Channel> *channels,
                              long long sampling_freq, unsigned int buf_count)
 {
