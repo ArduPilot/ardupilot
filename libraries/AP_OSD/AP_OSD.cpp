@@ -25,6 +25,7 @@
 #ifdef WITH_SITL_OSD
 #include "AP_OSD_SITL.h"
 #endif
+#include "AP_OSD_MSP.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Util.h>
 #include <RC_Channel/RC_Channel.h>
@@ -218,9 +219,17 @@ void AP_OSD::init()
         break;
     }
 #endif
+    case OSD_MSP: {
+        backend = AP_OSD_MSP::probe(*this);
+        if (backend == nullptr) {
+            break;
+        }
+        hal.console->printf("Started MSP OSD\n");
+        break;
     }
-    if (backend != nullptr) {
-        // create thread as higher priority than IO
+    }
+    if (backend != nullptr && (enum osd_types)osd_type.get() != OSD_MSP) {
+        // create thread as higher priority than IO for all backends but MSP which has its own
         hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_OSD::osd_thread, void), "OSD", 1024, AP_HAL::Scheduler::PRIORITY_IO, 1);
     }
 }

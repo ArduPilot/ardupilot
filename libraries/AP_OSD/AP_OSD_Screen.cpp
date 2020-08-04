@@ -34,6 +34,7 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_RTC/AP_RTC.h>
+#include <AP_MSP/msp.h>
 
 #include <ctype.h>
 #include <GCS_MAVLink/GCS.h>
@@ -705,6 +706,136 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Range: 0 15
     AP_SUBGROUPINFO(clk, "CLK", 43, AP_OSD_Screen, AP_OSD_Setting),
     
+#if HAL_MSP_ENABLED
+    // @Param: SIDEBARS_EN
+    // @DisplayName: SIDEBARS_EN
+    // @Description: Displays artificial horizon side bars (MSP OSD only)
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: SIDEBARS_X
+    // @DisplayName: SIDEBARS_X
+    // @Description: Horizontal position on screen (MSP OSD only) 
+    // @Range: 0 29
+
+    // @Param: SIDEBARS_Y
+    // @DisplayName: SIDEBARS_Y
+    // @Description: Vertical position on screen (MSP OSD only)
+    // @Range: 0 15
+    AP_SUBGROUPINFO(sidebars, "SIDEBARS", 44, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Param: CRSSHAIR_EN
+    // @DisplayName: CRSSHAIR_EN
+    // @Description: Displays artificial horizon crosshair (MSP OSD only)
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: CRSSHAIR_X
+    // @DisplayName: CRSSHAIR_X
+    // @Description: Horizontal position on screen (MSP OSD only) 
+    // @Range: 0 29
+
+    // @Param: CRSSHAIR_Y
+    // @DisplayName: CRSSHAIR_Y
+    // @Description: Vertical position on screen (MSP OSD only)
+    // @Range: 0 15
+    AP_SUBGROUPINFO(crosshair, "CRSSHAIR", 45, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Param: HOMEDIST_EN
+    // @DisplayName: HOMEDIST_EN
+    // @Description: Displays distance from HOME (MSP OSD only)
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: HOMEDIST_X
+    // @DisplayName: HOMEDIST_X
+    // @Description: Horizontal position on screen (MSP OSD only)
+    // @Range: 0 29
+
+    // @Param: HOMEDIST_Y
+    // @DisplayName: HOMEDIST_Y
+    // @Description: Vertical position on screen (MSP OSD only)
+    // @Range: 0 15
+    AP_SUBGROUPINFO(home_dist, "HOMEDIST", 46, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Param: HOMEDIR_EN
+    // @DisplayName: HOMEDIR_EN
+    // @Description: Displays relative direction to HOME (MSP OSD only)
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: HOMEDIR_X
+    // @DisplayName: HOMEDIR_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: HOMEDIR_Y
+    // @DisplayName: HOMEDIR_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(home_dir, "HOMEDIR", 47, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Param: POWER_EN
+    // @DisplayName: POWER_EN
+    // @Description: Displays power (MSP OSD only)
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: POWER_X
+    // @DisplayName: POWER_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: POWER_Y
+    // @DisplayName: POWER_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(power, "POWER", 48, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Param: CELL_VOLT_EN
+    // @DisplayName: CELL_VOLT_EN
+    // @Description: Displays average cell voltage (MSP OSD only)
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: CELL_VOLT_X
+    // @DisplayName: CELL_VOLT_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: CELL_VOLT_Y
+    // @DisplayName: CELL_VOLT_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(cell_volt, "CELLVOLT", 49, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Param: BATT_BAR_EN
+    // @DisplayName: BATT_BAR_EN
+    // @Description: Displays battery usage bar (MSP OSD only)
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: BATT_BAR_X
+    // @DisplayName: BATT_BAR_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: BATT_BAR_Y
+    // @DisplayName: BATT_BAR_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(batt_bar, "BATTBAR", 50, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Param: ARMING_EN
+    // @DisplayName: ARMING_EN
+    // @Description: Displays arming status (MSP OSD only)
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: ARMING_X
+    // @DisplayName: ARMING_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: ARMING_Y
+    // @DisplayName: ARMING_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(arming, "ARMING", 51, AP_OSD_Screen, AP_OSD_Setting),
+#endif //HAL_MSP_ENABLED
+
     AP_GROUPEND
 };
 
