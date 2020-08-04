@@ -212,6 +212,7 @@ void ModeAuto::land_start()
 {
     // set target to stopping point
     Vector3f stopping_point;
+    loiter_nav->use_velmatch();
     loiter_nav->get_stopping_point_xy(stopping_point);
 
     // call location specific land start function
@@ -931,7 +932,7 @@ void ModeAuto::loiter_to_alt_run()
 
     // Compute a vertical velocity demand such that the vehicle
     // approaches the desired altitude.
-    float target_climb_rate = AC_AttitudeControl::sqrt_controller(
+    float target_climb_rate = sqrt_controller(
         -alt_error_cm,
         pos_control->get_pos_z_p().kP(),
         pos_control->get_max_accel_z(),

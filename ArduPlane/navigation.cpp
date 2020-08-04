@@ -156,10 +156,7 @@ void Plane::calc_airspeed_errors()
     } else if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
         // Landing airspeed target
         target_airspeed_cm = landing.get_target_airspeed_cm();
-    } else if ((control_mode == &mode_auto) &&
-               (quadplane.options & QuadPlane::OPTION_MISSION_LAND_FW_APPROACH) &&
-							 ((vtol_approach_s.approach_stage == Landing_ApproachStage::APPROACH_LINE) ||
-							  (vtol_approach_s.approach_stage == Landing_ApproachStage::VTOL_LANDING))) {
+    } else if (quadplane.in_vtol_land_approach()) {
         float land_airspeed = SpdHgt_Controller->get_land_airspeed();
         if (is_positive(land_airspeed)) {
             target_airspeed_cm = SpdHgt_Controller->get_land_airspeed() * 100;
@@ -248,7 +245,7 @@ void Plane::update_loiter(uint16_t radius)
                 (control_mode == &mode_auto || control_mode == &mode_guided) &&
                 auto_state.crosstrack &&
                 current_loc.get_distance(next_WP_loc) > radius*3) ||
-               (control_mode == &mode_rtl && quadplane.available() && quadplane.rtl_mode == 1)) {
+               (control_mode == &mode_rtl && quadplane.available() && quadplane.rtl_qrtl_enabled())) {
         /*
           if never reached loiter point and using crosstrack and somewhat far away from loiter point
           navigate to it like in auto-mode for normal crosstrack behavior

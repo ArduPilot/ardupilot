@@ -24,6 +24,7 @@ public:
     friend class AP_AdvancedFailsafe_Plane;
     friend class QAutoTune;
     friend class AP_Arming_Plane;
+    friend class RC_Channel_Plane;
 
     friend class Mode;
     friend class ModeAuto;
@@ -415,6 +416,8 @@ private:
     uint32_t last_loiter_ms;
 
     enum position_control_state {
+        QPOS_APPROACH,
+        QPOS_AIRBRAKE,
         QPOS_POSITION1,
         QPOS_POSITION2,
         QPOS_LAND_DESCEND,
@@ -423,11 +426,14 @@ private:
     };
     struct {
         enum position_control_state state;
-        float speed_scale;
+        float target_decel;
+        float pre_decel_gndspd;
         Vector2f target_velocity;
         float max_speed;
         Vector3f target;
-        bool slow_descent:1;
+        bool slow_descent;
+        uint32_t approach_start_ms;
+        bool pos1_initialised;
     } poscontrol;
 
     struct {
@@ -556,6 +562,8 @@ private:
         OPTION_IDLE_GOV_MANUAL=(1<<6),
         OPTION_Q_ASSIST_FORCE_ENABLE=(1<<7),
         OPTION_TAILSIT_Q_ASSIST_MOTORS_ONLY=(1<<8),
+        OPTION_SHIP_LANDING=(1<<9),
+        OPTION_THR_LANDING_CONTROL=(1<<10),
     };
 
     AP_Float takeoff_failure_scalar;
@@ -564,6 +572,22 @@ private:
     uint32_t takeoff_time_limit_ms;
 
     float last_land_final_agl;
+
+    struct {
+        AP_Int8 sysid;
+        uint32_t last_update_ms;
+        enum {
+            HOLDOFF,
+            DESCEND,
+            APPROACH
+        } stage;
+        bool reached_alt;
+        Vector3f offset;
+        bool pilot_correction_active;
+        bool have_beacon;
+        bool have_commanded_alt;
+        int32_t commanded_alt;
+    } ship_landing;
 
     /*
       return true if current mission item is a vtol takeoff
@@ -600,14 +624,85 @@ private:
      */
     bool in_vtol_land_sequence(void) const;
 
+    /*
+      are we in a VTOL takeoff
+     */
+    bool in_vtol_takeoff(void) const;
+
+    /*
+      update landing re-position offset
+     */
+    void update_land_positioning();
+
+    /*
+      check for a landing abort with high throttle
+    */
+    void ship_landing_check_abort(void);
+
+    /*
+      update xy controller for ship takeoff/landing
+     */
+    void ship_update_xy(void);
+
+    /*
+      get offset to ship takeoff target
+     */
+    void ship_set_takeoff_offset(void);
+
+    /*
+      return true when ship landing is active
+     */
+    bool in_ship_landing(void) const;
+
+    /*
+      return true when ship takeoff is active
+     */
+    bool in_ship_takeoff(void) const;
+
+    /*
+      get pilot throttle in for landing code. Return value on scale of 0 to 1
+     */
+    float get_pilot_land_throttle(void) const;
+
+    /*
+      handler for changing target alt in ship landing RTL
+    */
+    void ship_landing_set_alt(void);
+
     // Q assist state, can be enabled, disabled or force. Default to enabled
     Q_ASSIST_STATE_ENUM q_assist_state = Q_ASSIST_STATE_ENUM::Q_ASSIST_ENABLED;
-
+    
 public:
     void motor_test_output();
     MAV_RESULT mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type,
                                         uint16_t throttle_value, float timeout_sec,
                                         uint8_t motor_count);
+
+    /*
+      is ship landing enabled
+     */
+    bool ship_landing_enabled(void) const;
+
+    /*
+      handle RTL init for ship landing
+     */
+    void ship_landing_RTL_init(void);
+
+    /*
+      handle RTL update for ship landing
+     */
+    void ship_landing_RTL_update(void);
+
+    /*
+      should we switch to QRTL on RTL completion
+     */
+    bool rtl_qrtl_enabled(void) const;
+
+    /*
+      report beacon status
+     */
+    void ship_report_beacon(void);
+
 private:
     void motor_test_stop();
 };

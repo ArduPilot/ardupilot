@@ -37,6 +37,9 @@ const AP_Param::GroupInfo ShipSim::var_info[] = {
     AP_GROUPINFO("PSIZE",     3, ShipSim,  path_size, 1000),
     AP_GROUPINFO("SYSID",     4, ShipSim,  sys_id, 17),
     AP_GROUPINFO("DSIZE",     5, ShipSim,  deck_size, 10),
+    AP_GROUPINFO("ALT",       6, ShipSim,  deck_alt, 10),
+    AP_GROUPINFO("OFS",       7, ShipSim,  offset, 0),
+
     AP_GROUPEND
 };
 
@@ -76,17 +79,24 @@ ShipSim::ShipSim()
 }
 
 /*
-  get ground speed adjustment if we are landed on the ship
+  return true if above the ship
  */
-Vector2f ShipSim::get_ground_speed_adjustment(const Location &loc, float &yaw_rate)
+bool ShipSim::above_ship(const Location &loc) const
 {
     if (!enable) {
-        yaw_rate = 0;
-        return Vector2f(0,0);
+        return false;
     }
     Location shiploc = home;
     shiploc.offset(ship.position.x, ship.position.y);
-    if (loc.get_distance(shiploc) > deck_size) {
+    return loc.get_distance(shiploc) <= deck_size;
+}
+
+/*
+  get ground speed adjustment if we are landed on the ship
+ */
+Vector2f ShipSim::get_ground_speed_adjustment(const Location &loc, float &yaw_rate) const
+{
+    if (!above_ship(loc)) {
         yaw_rate = 0;
         return Vector2f(0,0);
     }
@@ -94,6 +104,17 @@ Vector2f ShipSim::get_ground_speed_adjustment(const Location &loc, float &yaw_ra
     vel.rotate(radians(ship.heading_deg));
     yaw_rate = ship.yaw_rate;
     return vel;
+}
+
+/*
+  get ground speed adjustment if we are landed on the ship
+ */
+float ShipSim::get_ground_alt_adjustment(const Location &loc) const
+{
+    if (!above_ship(loc)) {
+        return 0;
+    }
+    return deck_alt;
 }
 
 /*
@@ -113,6 +134,10 @@ void ShipSim::update(void)
         if (home.lat == 0 && home.lng == 0) {
             return;
         }
+        const Vector3f &ofs = offset.get();
+        home.offset(ofs.x, ofs.y);
+        home.alt -= ofs.z*100;
+
         initialised = true;
         ::printf("ShipSim home %f %f\n", home.lat*1.0e-7, home.lng*1.0e-7);
         ship.sim = this;
@@ -179,8 +204,9 @@ void ShipSim::send_report(void)
 
 #if AP_TERRAIN_AVAILABLE
     auto &terrain = AP::terrain();
+    auto *sitl = AP::sitl();
     float height;
-    if (terrain.enabled() && terrain.height_amsl(loc, height, true)) {
+    if (sitl->terrain_enable && terrain.enabled() && terrain.height_amsl(loc, height, true)) {
         alt = height * 1000;
         have_alt = true;
     }
@@ -189,6 +215,9 @@ void ShipSim::send_report(void)
         // assume home altitude
         alt = home.alt;
     }
+
+    // add deck altitude
+    alt += deck_alt*1000;
 
     Vector2f vel(ship.speed, 0);
     vel.rotate(radians(ship.heading_deg));
@@ -201,11 +230,23 @@ void ShipSim::send_report(void)
                                               loc.lat,
                                               loc.lng,
                                               alt,
-                                              0,
+                                              alt,
                                               vel.x*100,
                                               vel.y*100,
                                               0,
                                               ship.heading_deg*100);
+    len = mavlink_msg_to_send_buffer(buf, &msg);
+    if (len > 0) {
+        mav_socket.send(buf, len);
+    }
+
+    mavlink_msg_attitude_pack_chan(sys_id,
+                                   component_id,
+                                   mavlink_ch,
+                                   &msg,
+                                   now,
+                                   0, 0, radians(ship.heading_deg),
+                                   0, 0, ship.yaw_rate);
     len = mavlink_msg_to_send_buffer(buf, &msg);
     if (len > 0) {
         mav_socket.send(buf, len);

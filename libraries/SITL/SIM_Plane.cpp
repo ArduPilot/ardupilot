@@ -316,6 +316,12 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     angle_of_attack = atan2f(velocity_air_bf.z, velocity_air_bf.x);
     beta = atan2f(velocity_air_bf.y,velocity_air_bf.x);
 
+    if (velocity_air_bf.x < 0) {
+        // when flying backwards, treat as a wing the other way
+        angle_of_attack = wrap_PI(-(angle_of_attack+M_PI));
+        beta = wrap_PI(-(beta+M_PI));
+    }
+
     if (tailsitter) {
         /*
           tailsitters get 4x the control surfaces

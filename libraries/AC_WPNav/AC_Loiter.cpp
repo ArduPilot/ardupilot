@@ -95,16 +95,23 @@ void AC_Loiter::init_target(const Vector3f& position)
     _pos_control.set_max_accel_xy(_accel_cmss);
 
     // initialise desired acceleration and angles to zero to remain on station
+    _desired_accel.zero();
     _predicted_accel.zero();
-    _desired_accel = _predicted_accel;
     _predicted_euler_angle.zero();
 
     // set target position
     _pos_control.set_xy_target(position.x, position.y);
 
     // set vehicle velocity and acceleration to zero
-    _pos_control.set_desired_velocity_xy(0.0f,0.0f);
+    // add velocity velmatch
+    Vector3f vel_velmatch;
+    if (_use_velmatch) {
+        vel_velmatch = _pos_control.get_vel_velmatch();
+    }
+    _pos_control.set_desired_velocity_xy(vel_velmatch.x,vel_velmatch.y);
     _pos_control.set_desired_accel_xy(0.0f,0.0f);
+
+    _use_velmatch = false;
 
     // initialise position controller if not already active
     if (!_pos_control.is_active_xy()) {
@@ -139,6 +146,8 @@ void AC_Loiter::init_target()
     _pos_control.set_desired_accel_xy(_desired_accel.x, _desired_accel.y);
 
     // initialise position controller
+    _pos_control.init_velmatch_velocity();
+    _use_velmatch = false;
     _pos_control.init_xy_controller();
 }
 
@@ -194,7 +203,11 @@ void AC_Loiter::set_pilot_desired_acceleration(float euler_roll_angle_cd, float 
 /// get vector to stopping point based on a horizontal position and velocity
 void AC_Loiter::get_stopping_point_xy(Vector3f& stopping_point) const
 {
-    _pos_control.get_stopping_point_xy(stopping_point);
+    if (_use_velmatch) {
+        _pos_control.get_stopping_point_xy(stopping_point, _inav.get_velocity()-_pos_control.get_vel_velmatch());
+    } else {
+        _pos_control.get_stopping_point_xy(stopping_point);
+    }
 }
 
 /// get maximum lean angle when using loiter
@@ -219,6 +232,7 @@ void AC_Loiter::update()
     _pos_control.set_max_speed_xy(_speed_cms);
     _pos_control.set_max_accel_xy(_accel_cmss);
 
+    _pos_control.update_velmatch_velocity(dt);
     calc_desired_velocity(dt);
     _pos_control.update_xy_controller();
 }
@@ -253,9 +267,16 @@ void AC_Loiter::calc_desired_velocity(float nav_dt)
     _pos_control.set_max_accel_xy(_accel_cmss);
     _pos_control.set_leash_length_xy(LOITER_POS_CORRECTION_MAX);
 
+    // add velocity velmatch
+    Vector3f vel_velmatch;
+    if (_use_velmatch) {
+        vel_velmatch = _pos_control.get_vel_velmatch();
+        _use_velmatch = false;
+    }
+
     // get loiters desired velocity from the position controller where it is being stored.
     const Vector3f &desired_vel_3d = _pos_control.get_desired_velocity();
-    Vector2f desired_vel(desired_vel_3d.x,desired_vel_3d.y);
+    Vector2f desired_vel(desired_vel_3d.x - vel_velmatch.x, desired_vel_3d.y - vel_velmatch.y);
 
     // update the desired velocity using our predicted acceleration
     desired_vel.x += _predicted_accel.x * nav_dt;
@@ -279,7 +300,7 @@ void AC_Loiter::calc_desired_velocity(float nav_dt)
         if (_desired_accel.is_zero()) {
             if ((AP_HAL::millis()-_brake_timer) > _brake_delay * 1000.0f) {
                 float brake_gain = _pos_control.get_vel_xy_pid().kP() * 0.5f;
-                loiter_brake_accel = constrain_float(AC_AttitudeControl::sqrt_controller(desired_speed, brake_gain, _brake_jerk_max_cmsss, nav_dt), 0.0f, _brake_accel_cmss);
+                loiter_brake_accel = constrain_float(sqrt_controller(desired_speed, brake_gain, _brake_jerk_max_cmsss, nav_dt), 0.0f, _brake_accel_cmss);
             }
         } else {
             loiter_brake_accel = 0.0f;
@@ -312,5 +333,5 @@ void AC_Loiter::calc_desired_velocity(float nav_dt)
 
     // send adjusted feed forward acceleration and velocity back to the Position Controller
     _pos_control.set_desired_accel_xy(_desired_accel.x, _desired_accel.y);
-    _pos_control.set_desired_velocity_xy(desired_vel.x, desired_vel.y);
+    _pos_control.set_desired_velocity_xy(desired_vel.x + vel_velmatch.x, desired_vel.y + vel_velmatch.y);
 }

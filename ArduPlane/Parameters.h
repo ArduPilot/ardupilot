@@ -581,6 +581,7 @@ public:
     AC_PID guidedHeading{5000.0,  0.0,   0.0, 0 ,  10.0,   5.0,  5.0 ,  5.0  , 0.2};
 #endif
 
+    AP_Follow follow;
 
     AP_Float        fs_ekf_thresh;
 

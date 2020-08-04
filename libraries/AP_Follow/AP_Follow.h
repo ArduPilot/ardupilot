@@ -38,6 +38,11 @@ public:
     // constructor
     AP_Follow();
 
+    // enable as singleton
+    static AP_Follow *get_singleton(void) {
+        return _singleton;
+    }
+
     // returns true if library is enabled
     bool enabled() const { return _enabled; }
 
@@ -55,8 +60,11 @@ public:
     bool have_target() const;
 
     // get target's estimated location and velocity (in NED)
-    bool get_target_location_and_velocity(Location &loc, Vector3f &vel_ned) const;
+    bool get_target_location_and_velocity(Location &loc, Vector3f &vel_ned, bool force_absolute_alt=false) const;
 
+    // get target's estimated location and velocity (in NED), with offsets added, and absolute alt
+    bool get_target_location_and_velocity_ofs_abs(Location &loc, Vector3f &vel_ned) const;
+    
     // get distance vector to target (in meters), target plus offsets, and target's velocity all in NED frame
     bool get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_with_ofs, Vector3f &vel_ned);
 
@@ -86,10 +94,15 @@ public:
     // get bearing to target (including offset) in degrees (for reporting purposes)
     float get_bearing_to_target() const { return _bearing_to_target; }
 
+    // get system time of last position update
+    uint32_t get_last_update_ms() const { return _last_location_update_ms; }
+
     // parameter list
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+
+    static AP_Follow *_singleton;
 
     // get velocity estimate in m/s in NED frame using dt since last update
     bool get_velocity_ned(Vector3f &vel_ned, float dt) const;
@@ -115,13 +128,20 @@ private:
     AP_Int8     _yaw_behave;        // following vehicle's yaw/heading behaviour (see YAW_BEHAVE enum)
     AP_Int8     _alt_type;          // altitude source for follow mode
     AC_P        _p_pos;             // position error P controller
+    AP_Float    _path_tc;           // time constant used to update the path
 
     // local variables
     bool _healthy;                  // true if we are receiving mavlink messages (regardless of whether they have target position info within them)
     uint32_t _last_location_update_ms;  // system time of last position update
     Location _target_location;      // last known location of target
+    int32_t  _target_alt_cm;        // last known location of target, absolute alt
+    Vector3f _target_location_ned;  // last known velocity of target in NED frame in m
     Vector3f _target_velocity_ned;  // last known velocity of target in NED frame in m/s
     Vector3f _target_accel_ned;     // last known acceleration of target in NED frame in m/s/s
+    Vector3f _path_location_ned;    // current position of kinematically consistent path in NED frame in m
+    Vector3f _path_velocity_ned;    // current velocity of kinematically consistent path in NED frame in m/s
+    Vector3f _path_accel_ned;       // current acceleration of kinematically consistent path in NED frame in m/s/s
+    uint32_t _last_path_update_ms;  // system time of last path update
     uint32_t _last_heading_update_ms;   // system time of last heading update
     float _target_heading;          // heading in degrees
     bool _automatic_sysid;          // did we lock onto a sysid automatically?
@@ -131,4 +151,8 @@ private:
 
     // setup jitter correction with max transport lag of 3s
     JitterCorrection _jitter{3000};
+};
+
+namespace AP {
+    AP_Follow &follow();
 };

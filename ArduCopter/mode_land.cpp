@@ -12,8 +12,10 @@ bool ModeLand::init(bool ignore_checks)
     // check if we have GPS and decide which LAND we're going to do
     land_with_gps = copter.position_ok();
     if (land_with_gps) {
+        pos_control->init_velmatch_velocity();
         // set target to stopping point
         Vector3f stopping_point;
+        loiter_nav->use_velmatch();
         loiter_nav->get_stopping_point_xy(stopping_point);
         loiter_nav->init_target(stopping_point);
     }

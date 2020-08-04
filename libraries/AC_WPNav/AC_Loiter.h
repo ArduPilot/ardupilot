@@ -47,6 +47,8 @@ public:
     /// get maximum lean angle when using loiter
     float get_angle_max_cd() const;
 
+    void use_velmatch() { _use_velmatch = true; }
+
     /// run the loiter controller
     void update();
 
@@ -86,4 +88,5 @@ protected:
     Vector2f    _predicted_euler_rate;
     float       _brake_timer;
     float       _brake_accel;
+    bool        _use_velmatch;
 };

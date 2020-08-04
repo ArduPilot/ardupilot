@@ -33,6 +33,8 @@ extern const AP_HAL::HAL& hal;
 
 #define AP_FOLLOW_POS_P_DEFAULT 0.1f    // position error gain default
 
+AP_Follow *AP_Follow::_singleton;
+
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Follow::var_info[] = {
 
@@ -120,6 +122,14 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     AP_GROUPINFO("_ALT_TYPE", 10, AP_Follow, _alt_type, AP_FOLLOW_ALTITUDE_TYPE_RELATIVE),
 #endif
 
+    // @Param: _PATH_TC
+    // @DisplayName: Follow time constant
+    // @Description: Time constant used to generate the kinematically consistent path
+    // @Units: s
+    // @Range: 0.1 10
+    // @User: Standard
+    AP_GROUPINFO("_PATH_TC", 11, AP_Follow, _path_tc, 5.0f),
+
     AP_GROUPEND
 };
 
@@ -131,6 +141,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
 AP_Follow::AP_Follow() :
         _p_pos(AP_FOLLOW_POS_P_DEFAULT)
 {
+    _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
 }
 
@@ -143,16 +154,25 @@ void AP_Follow::clear_offsets_if_required()
     _offsets_were_zero = false;
 }
 
-// get target's estimated location
-bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ned) const
+// return true if we have a target
+bool AP_Follow::have_target(void) const
 {
-    // exit immediately if not enabled
     if (!_enabled) {
         return false;
     }
 
     // check for timeout
     if ((_last_location_update_ms == 0) || (AP_HAL::millis() - _last_location_update_ms > AP_FOLLOW_TIMEOUT_MS)) {
+        return false;
+    }
+    return true;
+}
+
+// get target's estimated location
+bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ned, bool force_absolute_alt) const
+{
+    // exit immediately if not enabled
+    if (!have_target()) {
         return false;
     }
 
@@ -166,6 +186,13 @@ bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ne
 
     // project the vehicle position
     Location last_loc = _target_location;
+
+    if (force_absolute_alt) {
+        // allow caller to request absolute altitude
+        last_loc.alt = _target_alt_cm;
+        last_loc.relative_alt = false;
+    }
+
     last_loc.offset(vel_ned.x * dt, vel_ned.y * dt);
     last_loc.alt -= vel_ned.z * 100.0f * dt; // convert m/s to cm/s, multiply by dt.  minus because NED
 
@@ -221,6 +248,59 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
     dist_with_offs = dist_vec + offsets;
     vel_ned = veh_vel;
 
+    Vector3f current_location_ned;
+    Vector3f target_location_ned;
+    Vector3f target_velocity_ned;
+    if (_target_location.get_vector_from_origin_NEU(target_location_ned) && current_loc.get_vector_from_origin_NEU(current_location_ned)) {
+        // calculate time since last actual position update
+        const float dt = (AP_HAL::millis() - _last_location_update_ms) * 0.001f;
+        target_location_ned *= 0.01f;
+        current_location_ned *= 0.01f;
+        target_location_ned += _target_velocity_ned * dt + _target_accel_ned * 0.5f * sq(dt) + offsets;
+        target_velocity_ned += _target_velocity_ned + _target_accel_ned * dt;
+
+        // calculate time since last path update
+        if ((_last_path_update_ms == 0) || (AP_HAL::millis() - _last_path_update_ms > MIN(_path_tc * 1000.0f, AP_FOLLOW_TIMEOUT_MS))) {
+            _path_location_ned = target_location_ned;
+            _path_velocity_ned = target_velocity_ned;
+            _path_accel_ned.zero();
+            _last_path_update_ms = AP_HAL::millis();
+        } else {
+            const float path_dt = (AP_HAL::millis() - _last_path_update_ms) * 0.001f;
+            _last_path_update_ms = AP_HAL::millis();
+
+            _path_location_ned += _path_velocity_ned * path_dt + _path_accel_ned * 0.5f * sq(path_dt);
+            _path_velocity_ned += _path_accel_ned * path_dt;
+
+            float pv = 1.0f/_path_tc;
+            float pa = 4.0f * pv;
+            Vector3f error_location_ned = target_location_ned - _path_location_ned;
+            Vector3f error_velocity_ned = error_location_ned * pv + target_velocity_ned - _path_velocity_ned;
+            _path_accel_ned = error_velocity_ned * pa;
+        }
+
+        // calculate results
+        dist_with_offs = _path_location_ned - current_location_ned;
+        dist_with_offs.z = 0.0f;
+        vel_ned = _path_velocity_ned;
+
+        AP::logger().Write("FOL2", "TimeUS,PN,PE,PD,VN,VE,VD,TN,TE,TD,N,E,D", "Qffffffffffff",
+                                               AP_HAL::micros64(),
+                                               (double)_path_location_ned.x,
+                                               (double)_path_location_ned.y,
+                                               (double)_path_location_ned.z,
+                                               (double)_path_velocity_ned.x,
+                                               (double)_path_velocity_ned.y,
+                                               (double)_path_velocity_ned.z,
+                                               (double)target_location_ned.x,
+                                               (double)target_location_ned.y,
+                                               (double)target_location_ned.z,
+                                               (double)target_velocity_ned.x,
+                                               (double)target_velocity_ned.y,
+                                               (double)target_velocity_ned.z
+                                               );
+    }
+
     // record distance and heading for reporting purposes
     if (is_zero(dist_with_offs.x) && is_zero(dist_with_offs.y)) {
         clear_dist_and_bearing_to_target();
@@ -236,12 +316,7 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
 bool AP_Follow::get_target_heading_deg(float &heading) const
 {
     // exit immediately if not enabled
-    if (!_enabled) {
-        return false;
-    }
-
-    // check for timeout
-    if ((_last_heading_update_ms == 0) || (AP_HAL::millis() - _last_heading_update_ms > AP_FOLLOW_TIMEOUT_MS)) {
+    if (!have_target()) {
         return false;
     }
 
@@ -294,7 +369,10 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
         _target_location.lat = packet.lat;
         _target_location.lng = packet.lon;
 
-        // select altitude source based on FOLL_ALT_TYPE param 
+        // remember absolute alt
+        _target_alt_cm = packet.alt / 10;
+
+        // select altitude source based on FOLL_ALT_TYPE param
         if (_alt_type == AP_FOLLOW_ALTITUDE_TYPE_RELATIVE) {
             // relative altitude
             _target_location.alt = packet.relative_alt / 10;        // convert millimeters to cm
@@ -335,21 +413,22 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
 // @Field: LonE: Vehicle longitude
 // @Field: AltE: Vehicle absolute altitude
         AP::logger().Write("FOLL",
-                                               "TimeUS,Lat,Lon,Alt,VelN,VelE,VelD,LatE,LonE,AltE",  // labels
-                                               "sDUmnnnDUm",    // units
-                                               "F--B000--B",    // mults
-                                               "QLLifffLLi",    // fmt
-                                               AP_HAL::micros64(),
-                                               _target_location.lat,
-                                               _target_location.lng,
-                                               _target_location.alt,
-                                               (double)_target_velocity_ned.x,
-                                               (double)_target_velocity_ned.y,
-                                               (double)_target_velocity_ned.z,
-                                               loc_estimate.lat,
-                                               loc_estimate.lng,
-                                               loc_estimate.alt
-                                               );
+                           "TimeUS,Lat,Lon,Alt,VelN,VelE,VelD,LatE,LonE,AltE,Hdg",  // labels
+                           "sDUmnnnDUmd",    // units
+                           "F--B000--B0",    // mults
+                           "QLLifffLLif",    // fmt
+                           AP_HAL::micros64(),
+                           _target_location.lat,
+                           _target_location.lng,
+                           _target_location.alt,
+                           _target_velocity_ned.x,
+                           _target_velocity_ned.y,
+                           _target_velocity_ned.z,
+                           loc_estimate.lat,
+                           loc_estimate.lng,
+                           loc_estimate.alt,
+                           _target_heading
+            );
     }
 }
 
@@ -419,4 +498,27 @@ void AP_Follow::clear_dist_and_bearing_to_target()
 {
     _dist_to_target = 0.0f;
     _bearing_to_target = 0.0f;
+}
+
+// get target's estimated location and velocity (in NED), with offsets added, and absolute alt
+bool AP_Follow::get_target_location_and_velocity_ofs_abs(Location &loc, Vector3f &vel_ned) const
+{
+    Vector3f ofs;
+    if (!get_offsets_ned(ofs) ||
+        !get_target_location_and_velocity(loc, vel_ned, true)) {
+        return false;
+    }
+    // apply offsets
+    loc.offset(ofs.x, ofs.y);
+    loc.alt -= ofs.z*100;
+    return true;
+}
+
+namespace AP {
+
+AP_Follow &follow()
+{
+    return *AP_Follow::get_singleton();
+}
+
 }

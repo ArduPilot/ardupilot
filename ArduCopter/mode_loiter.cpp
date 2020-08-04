@@ -23,6 +23,7 @@ bool ModeLoiter::init(bool ignore_checks)
         // clear out pilot desired acceleration in case radio failsafe event occurs and we do not switch to RTL for some reason
         loiter_nav->clear_pilot_desired_acceleration();
     }
+    pos_control->init_velmatch_velocity();
     loiter_nav->init_target();
 
     // initialise position and desired velocity
@@ -138,6 +139,7 @@ void ModeLoiter::run()
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
         // run loiter controller
+        loiter_nav->use_velmatch();
         loiter_nav->update();
 
         // call attitude controller
@@ -172,6 +174,7 @@ void ModeLoiter::run()
 #endif
 
         // run loiter controller
+        loiter_nav->use_velmatch();
         loiter_nav->update();
 
         // call attitude controller

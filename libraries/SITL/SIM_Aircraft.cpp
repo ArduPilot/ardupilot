@@ -85,6 +85,14 @@ Aircraft::Aircraft(const char *frame_str) :
     terrain = &AP::terrain();
 }
 
+/*
+  get rangefinder value
+ */
+float Aircraft::get_range() const
+{
+    return range - (sitl?sitl->shipsim.get_ground_alt_adjustment(location):0);
+}
+
 void Aircraft::set_start_location(const Location &start_loc, const float start_yaw)
 {
     home = start_loc;
@@ -109,13 +117,16 @@ void Aircraft::set_start_location(const Location &start_loc, const float start_y
 float Aircraft::ground_height_difference() const
 {
     float h1, h2;
+    float ret = 0;
     if (sitl &&
         sitl->terrain_enable && terrain &&
         terrain->height_amsl(home, h1, false) &&
         terrain->height_amsl(location, h2, false)) {
-        return h2 - h1;
+        ret += (h2 - h1);
     }
-    return 0.0f;
+    // adjust for ship landing
+    ret += sitl->shipsim.get_ground_alt_adjustment(location);
+    return ret;
 }
 
 void Aircraft::set_precland(SIM_Precland *_precland) {
