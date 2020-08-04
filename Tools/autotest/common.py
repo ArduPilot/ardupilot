@@ -3571,7 +3571,7 @@ class AutoTest(ABC):
                 raise ValueError("message (%s) has no field %s" %
                                  (str(m), channel_field))
             if comparator(m_value, value):
-                return
+                return m_value
 
     def wait_rc_channel_value(self, channel, value, timeout=2):
         """wait for channel to hit value"""

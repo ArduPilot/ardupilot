@@ -137,9 +137,9 @@ class AutoTestQuadPlane(AutoTest):
         if (spin_arm_pwm >= spin_min_pwm):
             raise PreconditionFailedException("SPIN_MIN pwm not greater than SPIN_ARM pwm")
 
-        """verify that arming with switch results in higher PWM output"""
         self.start_subtest("Test auxswitch arming with Q_OPTIONS=AirMode")
         for mode in ('QSTABILIZE', 'QACRO'):
+            """verify that arming with switch results in higher PWM output"""
             self.progress("Testing %s mode" % mode)
             self.change_mode(mode)
             self.zero_throttle()
@@ -154,8 +154,13 @@ class AutoTestQuadPlane(AutoTest):
             self.wait_servo_channel_value(5, min_pwm, comparator=operator.le)
             self.wait_ready_to_arm()
 
-        """verify that arming with switch does not result in higher PWM output"""
-        for mode in ('QLOITER', 'QHOVER'):
+        self.start_subtest("verify that arming with switch does not spin motors in other modes")
+        # introduce a large attitude error to verify that stabilization is not active
+        ahrs_trim_x = self.get_parameter("AHRS_TRIM_X")
+        self.set_parameter("AHRS_TRIM_X", math.radians(-60))
+        self.wait_roll(60, 1)
+        # test all modes except QSTABILIZE, QACRO, AUTO and QAUTOTUNE
+        for mode in ('QLOITER', 'QHOVER', 'CIRCLE', 'STABILIZE', 'TRAINING', 'ACRO', 'FBWA', 'FBWB', 'CRUISE', 'AUTOTUNE', 'RTL', 'LOITER', 'AVOID_ADSB', 'GUIDED', 'QLAND', 'QRTL'):
             self.progress("Testing %s mode" % mode)
             self.change_mode(mode)
             self.zero_throttle()
@@ -164,12 +169,17 @@ class AutoTestQuadPlane(AutoTest):
             self.progress("Waiting for Motor1 to (not) speed up")
             self.delay_sim_time(spool_delay)
             self.wait_servo_channel_value(5, spin_arm_pwm, comparator=operator.le)
+            self.wait_servo_channel_value(6, spin_arm_pwm, comparator=operator.le)
+            self.wait_servo_channel_value(7, spin_arm_pwm, comparator=operator.le)
+            self.wait_servo_channel_value(8, spin_arm_pwm, comparator=operator.le)
 
             self.progress("disarming with switch")
             self.disarm_motors_with_switch(arm_ch)
             self.progress("Waiting for Motor1 to stop")
             self.wait_servo_channel_value(5, min_pwm, comparator=operator.le)
             self.wait_ready_to_arm()
+        # remove attitude error
+        self.set_parameter("AHRS_TRIM_X", ahrs_trim_x)
 
         self.start_subtest("verify that AIRMODE auxswitch turns airmode on/off while armed")
         """set  RC7_OPTION to AIRMODE"""
