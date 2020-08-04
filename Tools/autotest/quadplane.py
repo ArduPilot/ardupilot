@@ -9,7 +9,7 @@ import math
 from pymavlink import mavutil
 
 from common import AutoTest
-from common import AutoTestTimeoutException, NotAchievedException
+from common import AutoTestTimeoutException, NotAchievedException, PreconditionFailedException
 
 from pysim import vehicleinfo
 import operator
@@ -77,6 +77,146 @@ class AutoTestQuadPlane(AutoTest):
 
     def set_autodisarm_delay(self, delay):
         self.set_parameter("LAND_DISARMDELAY", delay)
+
+    def test_airmode(self):
+        """Check that plane.air_mode turns on and off as required"""
+        self.progress("########## Testing AirMode operation")
+        self.set_parameter("AHRS_EKF_TYPE", 10)
+        self.change_mode('QSTABILIZE')
+        self.wait_ready_to_arm()
+
+        """
+        SPIN_ARM and SPIN_MIN default to 0.10 and 0.15
+        when armed with zero throttle in AirMode, motor PWM should be at SPIN_MIN
+        If AirMode is off, motor PWM will drop to SPIN_ARM
+        """
+
+        self.progress("Verify that SERVO5 is Motor1 (default)")
+        motor1_servo_function_lp = 33
+        if (self.get_parameter('SERVO5_FUNCTION') != motor1_servo_function_lp):
+            raise PreconditionFailedException("SERVO5_FUNCTION not %d" % motor1_servo_function_lp)
+
+        self.progress("Verify that flightmode channel is 5 (default)")
+        default_fltmode_ch = 5
+        if (self.get_parameter("FLTMODE_CH") != default_fltmode_ch):
+            raise PreconditionFailedException("FLTMODE_CH not %d" % default_fltmode_ch)
+
+        """When disarmed, motor PWM will drop to min_pwm"""
+        min_pwm = self.get_parameter("Q_THR_MIN_PWM")
+
+        self.progress("Verify Motor1 is ast min_pwm when disarmed")
+        self.wait_servo_channel_value(5, min_pwm, comparator=operator.eq)
+
+        """set Q_OPTIONS bit AIRMODE"""
+        airmode_option_bit = (1<<9)
+        self.set_parameter("Q_OPTIONS", airmode_option_bit)
+
+        armdisarm_option = 41
+        arm_ch = 8
+        self.set_parameter("RC%d_OPTION" % arm_ch, armdisarm_option)
+        self.progress("configured RC%d as ARMDISARM switch" % arm_ch)
+
+        """arm with GCS, record Motor1 SPIN_ARM PWM output and disarm"""
+        spool_delay = self.get_parameter("Q_M_SPOOL_TIME") + 0.25
+        self.zero_throttle()
+        self.arm_vehicle()
+        self.progress("Waiting for Motor1 to spool up to SPIN_ARM")
+        self.delay_sim_time(spool_delay)
+        spin_arm_pwm = self.wait_servo_channel_value(5, min_pwm, comparator=operator.gt)
+        self.progress("spin_arm_pwm: %d" % spin_arm_pwm)
+        self.disarm_vehicle()
+
+        """arm with switch, record Motor1 SPIN_MIN PWM output and disarm"""
+        self.set_rc(8, 2000)
+        self.delay_sim_time(spool_delay)
+        self.progress("Waiting for Motor1 to spool up to SPIN_MIN")
+        spin_min_pwm = self.wait_servo_channel_value(5, spin_arm_pwm, comparator=operator.gt)
+        self.progress("spin_min_pwm: %d" % spin_min_pwm)
+        self.set_rc(8, 1000)
+
+        if (spin_arm_pwm >= spin_min_pwm):
+            raise PreconditionFailedException("SPIN_MIN pwm not greater than SPIN_ARM pwm")
+
+        """verify that arming with switch results in higher PWM output"""
+        self.start_subtest("Test auxswitch arming with Q_OPTIONS=AirMode")
+        for mode in ('QSTABILIZE', 'QACRO'):
+            self.progress("Testing %s mode" % mode)
+            self.change_mode(mode)
+            self.zero_throttle()
+            self.progress("arming with switch at zero throttle")
+            self.arm_motors_with_switch(arm_ch)
+            self.progress("Waiting for Motor1 to speed up")
+            self.wait_servo_channel_value(5, spin_min_pwm, comparator=operator.ge)
+
+            self.progress("disarming with switch")
+            self.disarm_motors_with_switch(arm_ch)
+            self.progress("Waiting for Motor1 to stop")
+            self.wait_servo_channel_value(5, min_pwm, comparator=operator.le)
+            self.wait_ready_to_arm()
+
+        """verify that arming with switch does not result in higher PWM output"""
+        for mode in ('QLOITER', 'QHOVER'):
+            self.progress("Testing %s mode" % mode)
+            self.change_mode(mode)
+            self.zero_throttle()
+            self.progress("arming with switch at zero throttle")
+            self.arm_motors_with_switch(arm_ch)
+            self.progress("Waiting for Motor1 to (not) speed up")
+            self.delay_sim_time(spool_delay)
+            self.wait_servo_channel_value(5, spin_arm_pwm, comparator=operator.le)
+
+            self.progress("disarming with switch")
+            self.disarm_motors_with_switch(arm_ch)
+            self.progress("Waiting for Motor1 to stop")
+            self.wait_servo_channel_value(5, min_pwm, comparator=operator.le)
+            self.wait_ready_to_arm()
+
+        self.start_subtest("verify that AIRMODE auxswitch turns airmode on/off while armed")
+        """set  RC7_OPTION to AIRMODE"""
+        option_airmode = 84
+        self.set_parameter("RC7_OPTION", option_airmode)
+
+        for mode in ('QSTABILIZE', 'QACRO'):
+            self.progress("Testing %s mode" % mode)
+            self.change_mode(mode)
+            self.zero_throttle()
+            self.progress("arming with GCS at zero throttle")
+            self.arm_vehicle()
+
+            self.progress("turn airmode on with auxswitch")
+            self.set_rc(7, 2000)
+            self.progress("Waiting for Motor1 to speed up")
+            self.wait_servo_channel_value(5, spin_min_pwm, comparator=operator.ge)
+
+            self.progress("turn airmode off with auxswitch")
+            self.set_rc(7, 1000)
+            self.progress("Waiting for Motor1 to slow down")
+            self.wait_servo_channel_value(5, spin_arm_pwm, comparator=operator.le)
+            self.disarm_vehicle()
+            self.wait_ready_to_arm()
+
+        self.start_subtest("Test GCS arming")
+        for mode in ('QSTABILIZE', 'QACRO'):
+            self.progress("Testing %s mode" % mode)
+            self.change_mode(mode)
+            self.zero_throttle()
+            self.progress("arming with GCS at zero throttle")
+            self.arm_vehicle()
+
+            self.progress("turn airmode on with auxswitch")
+            self.set_rc(7, 2000)
+            self.progress("Waiting for Motor1 to speed up")
+            self.wait_servo_channel_value(5, spin_min_pwm, comparator=operator.ge)
+
+            self.progress("disarm/rearm with GCS")
+            self.disarm_vehicle()
+            self.arm_vehicle()
+
+            self.progress("verify that airmode is still on")
+            self.wait_servo_channel_value(5, spin_min_pwm, comparator=operator.ge)
+            self.disarm_vehicle()
+            self.wait_ready_to_arm()
+
 
     def test_motor_mask(self):
         """Check operation of output_motor_mask"""
@@ -483,6 +623,8 @@ class AutoTestQuadPlane(AutoTest):
 
         ret = super(AutoTestQuadPlane, self).tests()
         ret.extend([
+            ("TestAirMode", "Test airmode", self.test_airmode),
+
             ("TestMotorMask", "Test output_motor_mask", self.test_motor_mask),
 
             ("PilotYaw",
