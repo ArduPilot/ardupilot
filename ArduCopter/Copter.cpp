@@ -512,6 +512,10 @@ void Copter::one_hz_loop()
     adsb.set_is_flying(!ap.land_complete);
 #endif
 
+#if PARACHUTE == ENABLED
+    parachute.set_is_flying(!ap.land_complete);
+#endif
+    
     AP_Notify::flags.flying = !ap.land_complete;
 }
 

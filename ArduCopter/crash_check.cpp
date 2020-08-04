@@ -192,6 +192,11 @@ void Copter::parachute_check()
         return;
     }
 
+    if (parachute.release_initiated()) {
+        copter.arming.disarm(AP_Arming::Method::PARACHUTE_RELEASE);
+        return;
+    }
+
     // return immediately if we are not in an angle stabilize flight mode or we are flipping
     if (control_mode == Mode::Number::ACRO || control_mode == Mode::Number::FLIP) {
         control_loss_count = 0;
@@ -209,6 +214,9 @@ void Copter::parachute_check()
         return;
     }
 
+    // pass sink rate to parachute library
+    parachute.set_sink_rate(-inertial_nav.get_velocity_z() * 0.01);
+    
     // check for angle error over 30 degrees
     const float angle_error = attitude_control->get_att_error_angle_deg();
     if (angle_error <= CRASH_CHECK_ANGLE_DEVIATION_DEG) {
@@ -242,9 +250,6 @@ void Copter::parachute_check()
         // release parachute
         parachute_release();
     }
-
-    // pass sink rate to parachute library
-    parachute.set_sink_rate(-inertial_nav.get_velocity_z() * 0.01);
 }
 
 // parachute_release - trigger the release of the parachute, disarm the motors and notify the user
