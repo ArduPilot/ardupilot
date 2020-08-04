@@ -71,7 +71,7 @@ int AP_Iio_Channel::get_data(double *values)
     int ret = 0;
     unsigned int i;
     void *ptr;
-    unsigned int value;
+    double value;
 
     if (!_iio_buf) {
         fprintf(stderr,"AP_Iio_Channel %s: cannot get data with no buffer\n", _name);
