@@ -46,6 +46,7 @@
 #include "AP_RangeFinder_Lanbao.h"
 #include "AP_RangeFinder_LeddarVu8.h"
 #include "AP_RangeFinder_SITL.h"
+#include "AP_RangeFinder_MSP.h"
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Logger/AP_Logger.h>
@@ -541,6 +542,14 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         break;
 #endif
 
+#if HAL_MSP_ENABLED
+    case Type::MSP:
+        if (AP_RangeFinder_MSP::detect()) {
+            drivers[instance] = new AP_RangeFinder_MSP(state[instance], params[instance]);
+        }
+        break;
+#endif //HAL_MSP_ENABLED
+
     default:
         break;
     }
@@ -586,6 +595,18 @@ void RangeFinder::handle_msg(const mavlink_message_t &msg)
         }
     }
 }
+
+#if HAL_MSP_ENABLED
+void RangeFinder::handle_msp(const MSP::msp_rangefinder_sensor_t &pkt)
+{
+    uint8_t i;
+    for (i=0; i<num_instances; i++) {
+        if ((drivers[i] != nullptr) && ((Type)params[i].type.get() == Type::MSP)) {
+          drivers[i]->handle_msp(pkt);
+        }
+    }
+}
+#endif //HAL_MSP_ENABLED
 
 // return true if we have a range finder with the specified orientation
 bool RangeFinder::has_orientation(enum Rotation orientation) const
