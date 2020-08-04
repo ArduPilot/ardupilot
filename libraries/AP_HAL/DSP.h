@@ -30,7 +30,7 @@
 class AP_HAL::DSP {
 #if HAL_WITH_DSP
 public:
-    enum FrequencyPeak {
+    enum FrequencyPeak : uint8_t {
         CENTER = 0,
         LOWER_SHOULDER = 1,
         UPPER_SHOULDER = 2,
