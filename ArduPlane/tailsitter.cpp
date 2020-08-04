@@ -71,6 +71,8 @@ void QuadPlane::tailsitter_output(void)
     float tilt_left = 0.0f;
     float tilt_right = 0.0f;
 
+
+
     // handle forward flight modes and transition to VTOL modes
     if (!tailsitter_active() || in_tailsitter_vtol_transition()) {
         // get FW controller throttle demand and mask of motors enabled during forward flight
@@ -117,6 +119,7 @@ void QuadPlane::tailsitter_output(void)
     if (assisted_flight && tailsitter_transition_fw_complete()) {
         hold_stabilize(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * 0.01f);
         motors_output(true);
+
         if ((options & OPTION_TAILSIT_Q_ASSIST_MOTORS_ONLY) != 0) {
             // only use motors for Q assist, control surfaces remain under plane control
             // zero copter I terms and use plane
