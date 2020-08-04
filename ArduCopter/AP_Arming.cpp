@@ -299,6 +299,13 @@ bool AP_Arming_Copter::motor_checks(bool display_failure)
         return false;
     }
 
+	    //servo_test check
+#if FRAME_CONFIG == HELI_FRAME
+    if(copter.motors->servo_test_running()) {
+        check_failed(display_failure, "Servo Test is still running");
+        return false;
+    }
+#endif
     // further checks enabled with parameters
     if (!check_enabled(ARMING_CHECK_PARAMETERS)) {
         return true;
