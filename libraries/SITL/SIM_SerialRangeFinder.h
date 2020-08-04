@@ -41,9 +41,6 @@ public:
 private:
 
     uint32_t last_sent_ms;
-
-    uint16_t calculate_range_cm(float range_value) const;
-
 };
 
 }
