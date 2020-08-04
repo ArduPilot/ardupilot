@@ -431,6 +431,44 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     }
 }
 
+float Aircraft::rangefinder_range() const
+{
+    // swiped from sitl_rangefinder.cpp - we should unify them at some stage
+
+    float altitude = range;  // only sub appears to set this
+    if (is_equal(altitude, -1.0f)) {  // Use SITL altitude as reading by default
+        altitude = sitl->height_agl;
+    }
+
+    // sensor position offset in body frame
+    const Vector3f relPosSensorBF = sitl->rngfnd_pos_offset;
+
+    // adjust altitude for position of the sensor on the vehicle if position offset is non-zero
+    if (!relPosSensorBF.is_zero()) {
+        // get a rotation matrix following DCM conventions (body to earth)
+        Matrix3f rotmat;
+        sitl->state.quaternion.rotation_matrix(rotmat);
+        // rotate the offset into earth frame
+        const Vector3f relPosSensorEF = rotmat * relPosSensorBF;
+        // correct the altitude at the sensor
+        altitude -= relPosSensorEF.z;
+    }
+
+    // If the attidude is non reversed for SITL OR we are using rangefinder from external simulator,
+    // We adjust the reading with noise, glitch and scaler as the reading is on analog port.
+    if ((fabs(sitl->state.rollDeg) < 90.0 && fabs(sitl->state.pitchDeg) < 90.0) || !is_equal(range, -1.0f)) {
+        if (is_equal(range, -1.0f)) {  // disable for external reading that already handle this
+            // adjust for apparent altitude with roll
+            altitude /= cosf(radians(sitl->state.rollDeg)) * cosf(radians(sitl->state.pitchDeg));
+        }
+        // Add some noise on reading
+        altitude += sitl->sonar_noise * rand_float();
+    }
+
+    return altitude;
+}
+
+
 uint64_t Aircraft::get_wall_time_us() const
 {
 #if defined(__CYGWIN__) || defined(__CYGWIN64__)

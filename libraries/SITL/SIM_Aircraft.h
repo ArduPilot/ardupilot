@@ -126,7 +126,9 @@ public:
     const Location &get_location() const { return location; }
 
     const Vector3f &get_position() const { return position; }
-    const float &get_range() const { return range; }
+
+    // distance the rangefinder is perceiving
+    float rangefinder_range() const;
 
     void get_attitude(Quaternion &attitude) const {
         attitude.from_rotation_matrix(dcm);
@@ -170,7 +172,7 @@ protected:
     float rpm[12];
     uint8_t rcin_chan_count = 0;
     float rcin[12];
-    float range = -1.0f;                 // rangefinder detection in m
+    float range = -1.0f;                 // externally supplied rangefinder value, assumed to have been corrected for vehicle attitude
 
     struct {
         // data from simulated laser scanner, if available
