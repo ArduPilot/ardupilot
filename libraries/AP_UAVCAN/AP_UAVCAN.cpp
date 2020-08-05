@@ -129,6 +129,9 @@ static uavcan::Subscriber<uavcan::equipment::actuator::Status, ActuatorStatusCb>
 UC_REGISTRY_BINDER(ESCStatusCb, uavcan::equipment::esc::Status);
 static uavcan::Subscriber<uavcan::equipment::esc::Status, ESCStatusCb> *esc_status_listener[MAX_NUMBER_OF_CAN_DRIVERS];
 
+AP_UAVCAN::esc_data AP_UAVCAN::_escs_data[];
+HAL_Semaphore AP_UAVCAN::_telem_sem;
+
 
 AP_UAVCAN::AP_UAVCAN() :
     _node_allocator()
@@ -317,6 +320,77 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
 
     _initialized = true;
     debug_uavcan(2, "UAVCAN: init done\n\r");
+}
+
+// send ESC telemetry messages over MAVLink
+void AP_UAVCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
+{
+    static const uint8_t MAV_ESC_GROUPS = 3;
+    static const uint8_t MAV_ESC_PER_GROUP = 4;
+
+    for (uint8_t i = 0; i < MAV_ESC_GROUPS; i++) {
+
+        // arrays to hold output
+        uint8_t temperature[MAV_ESC_PER_GROUP] {};
+        uint16_t voltage[MAV_ESC_PER_GROUP] {};
+        uint16_t current[MAV_ESC_PER_GROUP] {};
+        uint16_t current_tot[MAV_ESC_PER_GROUP] {};
+        uint16_t rpm[MAV_ESC_PER_GROUP] {};
+        uint16_t count[MAV_ESC_PER_GROUP] {};
+
+        // if at least one of the ESCs in the group is availabe, the group
+        // is considered to be available too, and will be sent over MAVlink
+        bool group_available = false;
+
+        // fill in output arrays of ESCs sensors with available data.
+        for (uint8_t j = 0; j < MAV_ESC_PER_GROUP; j++) {
+            const uint8_t esc_idx = i * MAV_ESC_PER_GROUP + j;
+            
+            if (!is_esc_data_index_valid(esc_idx)) {
+                return;
+            }
+
+            WITH_SEMAPHORE(_telem_sem);
+            
+            if (!_escs_data[esc_idx].available) {
+                continue;
+            } 
+
+            _escs_data[esc_idx].available = false;
+
+            temperature[j] = _escs_data[esc_idx].temp;
+            voltage[j] = _escs_data[esc_idx].voltage;
+            current[j] = _escs_data[esc_idx].current;
+            current_tot[j] = 0; // currently not implemented
+            rpm[j] = _escs_data[esc_idx].rpm;
+            count[j] = _escs_data[esc_idx].count;
+
+            group_available = true;
+        }
+
+        if (!group_available) {
+            continue;
+        }
+
+        if (!HAVE_PAYLOAD_SPACE((mavlink_channel_t) mav_chan, ESC_TELEMETRY_1_TO_4)) {
+            return;
+        }
+
+        // send messages
+        switch (i) {
+            case 0:
+                mavlink_msg_esc_telemetry_1_to_4_send((mavlink_channel_t)mav_chan, temperature, voltage, current, current_tot, rpm, count);
+                break;
+            case 1:
+                mavlink_msg_esc_telemetry_5_to_8_send((mavlink_channel_t)mav_chan, temperature, voltage, current, current_tot, rpm, count);
+                break;
+            case 2:
+                mavlink_msg_esc_telemetry_9_to_12_send((mavlink_channel_t)mav_chan, temperature, voltage, current, current_tot, rpm, count);
+                break;
+            default:
+                break;
+        }
+    }
 }
 
 void AP_UAVCAN::loop(void)
@@ -751,9 +825,11 @@ void AP_UAVCAN::handle_actuator_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, co
  */
 void AP_UAVCAN::handle_ESC_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ESCStatusCb &cb)
 {
+    const uint8_t esc_index = cb.msg->esc_index;
+    
     // log as CESC message
     AP::logger().Write_ESCStatus(AP_HAL::micros64(),
-                                 cb.msg->esc_index,
+                                 esc_index,
                                  cb.msg->error_count,
                                  cb.msg->voltage,
                                  cb.msg->current,
@@ -761,6 +837,28 @@ void AP_UAVCAN::handle_ESC_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const E
                                  cb.msg->rpm,
                                  cb.msg->power_rating_pct);
 
+    WITH_SEMAPHORE(_telem_sem);
+
+    if (!is_esc_data_index_valid(esc_index)) {
+        return;
+    }
+
+    esc_data &esc = _escs_data[esc_index];
+    esc.available = true;
+    esc.temp = (cb.msg->temperature - C_TO_KELVIN);
+    esc.voltage = cb.msg->voltage*100;
+    esc.current = cb.msg->current*100;
+    esc.rpm = cb.msg->rpm;
+    esc.count++;
+
+}
+
+bool AP_UAVCAN::is_esc_data_index_valid(const uint8_t index) {
+    if (index > UAVCAN_SRV_NUMBER) {
+        // printf("UAVCAN: invalid esc index: %d. max index allowed: %d\n\r", index, UAVCAN_SRV_NUMBER);
+        return false;
+    }
+    return true;
 }
 
 #endif // HAL_WITH_UAVCAN
