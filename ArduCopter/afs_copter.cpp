@@ -34,7 +34,6 @@ void AP_AdvancedFailsafe_Copter::terminate_vehicle(void)
         SRV_Channels::set_output_limit(SRV_Channel::k_ignition, SRV_Channel::Limit::TRIM);
         SRV_Channels::set_output_limit(SRV_Channel::k_none, SRV_Channel::Limit::TRIM);
         SRV_Channels::set_output_limit(SRV_Channel::k_manual, SRV_Channel::Limit::TRIM);
-        SRV_Channels::set_output_limit(SRV_Channel::k_trim_value, SRV_Channel::Limit::TRIM);
     }
 
     SRV_Channels::output_ch_all();
@@ -49,7 +48,6 @@ void AP_AdvancedFailsafe_Copter::setup_IO_failsafe(void)
     SRV_Channels::set_failsafe_limit(SRV_Channel::k_ignition, SRV_Channel::Limit::TRIM);
     SRV_Channels::set_failsafe_limit(SRV_Channel::k_none, SRV_Channel::Limit::TRIM);
     SRV_Channels::set_failsafe_limit(SRV_Channel::k_manual, SRV_Channel::Limit::TRIM);
-    SRV_Channels::set_failsafe_limit(SRV_Channel::k_trim_value, SRV_Channel::Limit::TRIM);
 
 #if FRAME_CONFIG != HELI_FRAME
     // setup AP_Motors outputs for failsafe
