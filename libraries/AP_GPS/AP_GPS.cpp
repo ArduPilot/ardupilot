@@ -571,7 +571,8 @@ void AP_GPS::detect_instance(uint8_t instance)
         if ((_type[instance] == GPS_TYPE_AUTO ||
              _type[instance] == GPS_TYPE_UBLOX) &&
             ((!_auto_config && _baudrates[dstate->current_baud] >= 38400) ||
-             _baudrates[dstate->current_baud] == 115200) &&
+//             _baudrates[dstate->current_baud] == 115200) &&
+            _baudrates[dstate->current_baud] == 460800) &&
             AP_GPS_UBLOX::_detect(dstate->ublox_detect_state, data)) {
             new_gps = new AP_GPS_UBLOX(*this, state[instance], _port[instance], GPS_ROLE_NORMAL);
         }
