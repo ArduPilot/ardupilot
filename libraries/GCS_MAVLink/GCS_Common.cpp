@@ -65,6 +65,7 @@
   #endif
   #include <AP_ToshibaCAN/AP_ToshibaCAN.h>
   #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
+  #include <AP_UAVCAN/AP_UAVCAN.h>
 #endif
 
 #include <AP_BattMonitor/AP_BattMonitor.h>
@@ -4736,7 +4737,13 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
                     break;
                 }
 #endif
-                case AP_BoardConfig_CAN::Protocol_Type_UAVCAN:
+                case AP_BoardConfig_CAN::Protocol_Type_UAVCAN: {
+                    AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(i);
+                    if (ap_uavcan != nullptr) {
+                        ap_uavcan->send_esc_telemetry_mavlink(uint8_t(chan));
+                    }
+                    break;
+                }
                 case AP_BoardConfig_CAN::Protocol_Type_None:
                 default:
                     break;
