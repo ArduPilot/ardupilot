@@ -83,7 +83,7 @@ public:
         k_motor7                = 39,
         k_motor8                = 40,
         k_motor_tilt            = 41,            ///< tiltrotor motor tilt control
-        k_richenpower_control   = 42,            ///< state control for RichenPower
+        k_generator_control     = 42,            ///< state control for generator
         k_rcin1                 = 51,            ///< these are for pass-thru from arbitrary rc inputs
         k_rcin2                 = 52,
         k_rcin3                 = 53,
