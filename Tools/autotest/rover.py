@@ -704,7 +704,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 65535, # chan6_raw
                 65535, # chan7_raw
                 65535) # chan8_raw
-
+            self.do_timesync_roundtrip()
             m = self.mav.recv_match(type='RC_CHANNELS', blocking=True)
             self.progress("chan3=%f want=%f" % (m.chan3_raw, normal_rc_throttle))
             if m.chan3_raw == normal_rc_throttle:
