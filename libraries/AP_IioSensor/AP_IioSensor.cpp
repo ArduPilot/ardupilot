@@ -104,6 +104,14 @@ int AP_Iio_Channel::get_data(double *values)
             val = val >> 8;
 #endif
             value = val;
+        } else if ((_iio_fmt->length == 32) && _iio_fmt->is_signed &&
+                   (_iio_fmt->bits == 24)) {
+            uint32_t val;
+            iio_channel_convert(_iio_chan, &val, ptr);
+#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+            val = val >> 8;
+#endif
+            value = val;
         } else {
             fprintf(stderr,"%s: unhandled channel format length : %d, bits : %d, %s\n", _name,
                     _iio_fmt->length, _iio_fmt->bits, _iio_fmt->is_signed ? "signed" : "unsigned");
