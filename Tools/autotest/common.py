@@ -805,6 +805,7 @@ class AutoTest(ABC):
         if self.force_ahrs_type is not None:
             self.force_ahrs_type = int(self.force_ahrs_type)
         self.logs_dir = logs_dir
+        self.timesync_number = 137
 
     @staticmethod
     def progress(text):
@@ -1603,6 +1604,38 @@ class AutoTest(ABC):
             rate = "%f/s" % (count/float(tdelta),)
 
         self.progress("Drained %u messages from mav (%s)" % (count, rate))
+
+    def do_timesync_roundtrip(self):
+        self.progress("Doing timesync roundtrip")
+        tstart = self.get_sim_time()
+        self.mav.mav.timesync_send(0, self.timesync_number * 1000 + self.mav.source_system)
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > 1:
+                raise AutoTestTimeoutException("Did not get timesync response")
+            m = self.mav.recv_match(type='TIMESYNC', blocking=True, timeout=1)
+            self.progress("Received: %s" % str(m))
+            if m is None:
+                continue
+            if m.tc1 == 0:
+                self.progress("this is a timesync request, which we don't answer")
+                continue
+            if m.ts1 % 1000 != self.mav.source_system:
+                self.progress("this isn't a response to our timesync (%s)" % (m.ts1 % 1000))
+                continue
+            if int(m.ts1 / 1000) != self.timesync_number:
+                self.progress("this isn't the one we just sent")
+                continue
+            if m.get_srcSystem() != self.mav.target_system:
+                self.progress("response from system other than our target")
+                continue
+            # no component check ATM because we send broadcast...
+#            if m.get_srcComponent() != self.mav.target_component:
+#                self.progress("response from component other than our target (got=%u want=%u)" % (m.get_srcComponent(), self.mav.target_component))
+#                continue
+            self.progress("Received TIMESYNC response after %fs" % (now - tstart))
+            self.timesync_number += 1
+            break
 
     def log_filepath(self, lognum):
         '''return filepath to lognum (where lognum comes from LOG_ENTRY'''
