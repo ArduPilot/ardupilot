@@ -135,6 +135,9 @@ void SRV_Channel::aux_servo_function_setup(void)
         // fixed wing throttle
         set_range(100);
         break;
+    case k_soft_armed_out:
+        // Set to disarmed at startup
+        set_output_pwm(get_limit_pwm(SRV_Channel::Limit::MIN));
     default:
         break;
     }
