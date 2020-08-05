@@ -144,7 +144,7 @@ void SITL_State::_gps_send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size, uint8
     chk[1] += (chk[0] += hdr[3]);
     chk[1] += (chk[0] += hdr[4]);
     chk[1] += (chk[0] += hdr[5]);
-    for (uint8_t i=0; i<size; i++) {
+    for (uint16_t i=0; i<size; i++) {
         chk[1] += (chk[0] += buf[i]);
     }
     _gps_write(hdr, sizeof(hdr), instance);
