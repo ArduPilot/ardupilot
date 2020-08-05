@@ -237,7 +237,6 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
 void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
 {
     int one=1;
-    struct sockaddr_in sockaddr;
     int ret;
 
     if (_connected) {
@@ -260,17 +259,17 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
     }
 
     if (_listen_fd == -1) {
-        memset(&sockaddr,0,sizeof(sockaddr));
+        memset(&_listen_sockaddr,0,sizeof(_listen_sockaddr));
 
 #ifdef HAVE_SOCK_SIN_LEN
-        sockaddr.sin_len = sizeof(sockaddr);
+        _listen_sockaddr.sin_len = sizeof(_listen_sockaddr);
 #endif
         if (port > 1000) {
-            sockaddr.sin_port = htons(port);
+            _listen_sockaddr.sin_port = htons(port);
         } else {
-            sockaddr.sin_port = htons(_sitlState->base_port() + port);
+            _listen_sockaddr.sin_port = htons(_sitlState->base_port() + port);
         }
-        sockaddr.sin_family = AF_INET;
+        _listen_sockaddr.sin_family = AF_INET;
 
         _listen_fd = socket(AF_INET, SOCK_STREAM, 0);
         if (_listen_fd == -1) {
@@ -290,13 +289,13 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
         }
 
         fprintf(stderr, "bind port %u for %u\n",
-                (unsigned)ntohs(sockaddr.sin_port),
+                (unsigned)ntohs(_listen_sockaddr.sin_port),
                 (unsigned)_portNumber);
 
-        ret = bind(_listen_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
+        ret = bind(_listen_fd, (struct sockaddr *)&_listen_sockaddr, sizeof(_listen_sockaddr));
         if (ret == -1) {
             fprintf(stderr, "bind failed on port %u - %s\n",
-                    (unsigned)ntohs(sockaddr.sin_port),
+                    (unsigned)ntohs(_listen_sockaddr.sin_port),
                     strerror(errno));
             exit(1);
         }
@@ -308,7 +307,7 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
         }
 
         fprintf(stderr, "Serial port %u on TCP port %u\n", _portNumber,
-                (unsigned)ntohs(sockaddr.sin_port));
+                (unsigned)ntohs(_listen_sockaddr.sin_port));
         fflush(stdout);
     }
 
@@ -324,7 +323,7 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
         setsockopt(_fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
         fcntl(_fd, F_SETFD, FD_CLOEXEC);
         _connected = true;
-        fprintf(stdout, "Connection on serial port %u\n", (unsigned)ntohs(sockaddr.sin_port));
+        fprintf(stdout, "Connection on serial port %u\n", (unsigned)ntohs(_listen_sockaddr.sin_port));
     }
 }
 
