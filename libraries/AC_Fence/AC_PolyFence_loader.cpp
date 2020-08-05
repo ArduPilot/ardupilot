@@ -117,7 +117,6 @@ bool AC_PolyFence_loader::get_item(const uint16_t seq, AC_PolyFenceItem &item)
             return false;
         }
         item.radius = fence_storage.read_uint32(offset);
-        offset += 4;
         break;
     case AC_PolyFenceType::POLYGON_INCLUSION:
     case AC_PolyFenceType::POLYGON_EXCLUSION:
