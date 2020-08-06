@@ -51,7 +51,7 @@ AP_BattMonitor_UAVCAN* AP_BattMonitor_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_u
     }
     for (uint8_t i = 0; i < AP::battery()._num_instances; i++) {
         if (AP::battery().drivers[i] == nullptr ||
-            AP::battery().get_type(i) != AP_BattMonitor_Params::BattMonitor_TYPE_UAVCAN_BatteryInfo) {
+            AP::battery().get_type(i) != AP_BattMonitor::Type::UAVCAN_BatteryInfo) {
             continue;
         }
         AP_BattMonitor_UAVCAN* driver = (AP_BattMonitor_UAVCAN*)AP::battery().drivers[i];
@@ -62,7 +62,7 @@ AP_BattMonitor_UAVCAN* AP_BattMonitor_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_u
     // find empty uavcan driver
     for (uint8_t i = 0; i < AP::battery()._num_instances; i++) {
         if (AP::battery().drivers[i] != nullptr &&
-            AP::battery().get_type(i) == AP_BattMonitor_Params::BattMonitor_TYPE_UAVCAN_BatteryInfo) {
+            AP::battery().get_type(i) == AP_BattMonitor::Type::UAVCAN_BatteryInfo) {
 
             AP_BattMonitor_UAVCAN* batmon = (AP_BattMonitor_UAVCAN*)AP::battery().drivers[i];
             batmon->_ap_uavcan = ap_uavcan;
