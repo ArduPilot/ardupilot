@@ -79,7 +79,11 @@ int I2C::ioctl_rdwr(i2c_rdwr_ioctl_data *data)
             }
         }
         if (!handled) {
-            ::fprintf(stderr, "Unhandled i2c message: addr=0x%x flags=%u len=%u\n", msg.addr, msg.flags, msg.len);
+            static uint32_t lastMsg;
+            if ((AP_HAL::millis() - lastMsg) > 2000) {
+                ::fprintf(stderr, "Unhandled i2c message: addr=0x%x flags=%u len=%u\n", msg.addr, msg.flags, msg.len);
+                lastMsg = AP_HAL::millis();
+            }
             return -1;  // ?!
         }
     }
