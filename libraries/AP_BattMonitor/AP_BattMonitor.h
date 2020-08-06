@@ -62,6 +62,26 @@ public:
         BatteryFailsafe_Critical
     };
 
+    // Battery monitor driver types
+    enum class Type {
+        NONE                       = 0,
+        ANALOG_VOLTAGE_ONLY        = 3,
+        ANALOG_VOLTAGE_AND_CURRENT = 4,
+        SOLO                       = 5,
+        BEBOP                      = 6,
+        SMBus_Generic              = 7,
+        UAVCAN_BatteryInfo         = 8,
+        BLHeliESC                  = 9,
+        Sum                        = 10,
+        FuelFlow                   = 11,
+        FuelLevel_PWM              = 12,
+        SUI3                       = 13,
+        SUI6                       = 14,
+        NeoDesign                  = 15,
+        MAXELL                     = 16,
+        Generator                  = 17,
+    };
+
     FUNCTOR_TYPEDEF(battery_failsafe_handler_fn_t, void, const char *, const int8_t);
 
     AP_BattMonitor(uint32_t log_battery_bit, battery_failsafe_handler_fn_t battery_failsafe_handler_fn, const int8_t *failsafe_priorities);
@@ -145,8 +165,10 @@ public:
     int8_t get_highest_failsafe_priority(void) const { return _highest_failsafe_priority; };
 
     /// get_type - returns battery monitor type
-    enum AP_BattMonitor_Params::BattMonitor_Type get_type() const { return get_type(AP_BATT_PRIMARY_INSTANCE); }
-    enum AP_BattMonitor_Params::BattMonitor_Type get_type(uint8_t instance) const { return _params[instance].type(); }
+    enum Type get_type() const { return get_type(AP_BATT_PRIMARY_INSTANCE); }
+    enum Type get_type(uint8_t instance) const {
+        return (Type)_params[instance]._type.get();
+    }
 
     /// true when (voltage * current) > watt_max
     bool overpower_detected() const;
