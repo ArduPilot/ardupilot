@@ -51,6 +51,8 @@ int AP_Iio_Channel::init(struct iio_device *iio_dev, struct iio_buffer *iio_buf)
         fprintf(stderr,"AP_Iio_Channel : %s failed to get data format\n", _name);
         return -1;
     }
+//    printf("FMT %s: length %u, bits %u, shift %u, is_signed %d, is_be %d, with_scale %d, scale %f, repeat %d\n",
+//            _name, _iio_fmt->length, _iio_fmt->bits, _iio_fmt->shift, _iio_fmt->is_signed, _iio_fmt->is_be, _iio_fmt->with_scale, _iio_fmt->scale, _iio_fmt->repeat);
 
     iio_channel_attr_read_double(_iio_chan, "scale", &_scale);
     iio_channel_attr_read_double(_iio_chan, "offset", &_offset);
@@ -119,6 +121,7 @@ int AP_Iio_Channel::get_data(double *values)
             continue;
         }
         values[i] = (value + _offset) * _scale;
+        //printf("values[i] %f = (value %f + _offset %f) * _scale %f \n", values[i], value, _offset, _scale);
     }
 
     return ret;
