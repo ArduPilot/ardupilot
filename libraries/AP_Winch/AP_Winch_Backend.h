@@ -26,7 +26,7 @@ public:
     virtual bool healthy() const = 0;
 
     // initialise the backend
-    virtual void init() = 0;
+    virtual void init();
 
     // update - should be called at at least 10hz
     virtual void update() = 0;
@@ -41,9 +41,6 @@ public:
     virtual void write_log() = 0;
 
 protected:
-
-    // setup rc input and output
-    void init_input_and_output();
 
     // calculate the pilot desired rate (+ve deploys line, -ve retracts line, 0 stops) from rc input
     // may change the state to RATE and update config.rate_desired

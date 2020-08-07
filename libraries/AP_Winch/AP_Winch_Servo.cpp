@@ -14,12 +14,6 @@ bool AP_Winch_Servo::healthy() const
     return true;
 }
 
-void AP_Winch_Servo::init()
-{
-    // initialise rc input and output
-    init_input_and_output();
-}
-
 void AP_Winch_Servo::update()
 {
     // return immediately if no servo is assigned to control the winch
@@ -37,7 +31,7 @@ void AP_Winch_Servo::update()
 // update pwm outputs to control winch
 void AP_Winch_Servo::control_winch()
 {
-    uint32_t now_ms = AP_HAL::millis();
+    const uint32_t now_ms = AP_HAL::millis();
     float dt = (now_ms - control_update_ms) / 1000.0f;
     if (dt > 1.0f) {
         dt = 0.0f;

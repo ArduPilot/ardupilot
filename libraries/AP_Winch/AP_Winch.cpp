@@ -81,22 +81,21 @@ void AP_Winch::init()
     }
 }
 
-// release specified length of cable (in meters) at the specified rate
-// if rate is zero, the RATE_MAX parameter value will be used
+// release specified length of cable (in meters)
 void AP_Winch::release_length(float length)
 {
     if (backend == nullptr) {
         return;
     }
     config.length_desired = backend->get_current_length() + length;
-    config.control_mode = AP_Winch::ControlMode::POSITION;
+    config.control_mode = ControlMode::POSITION;
 }
 
 // deploy line at specified speed in m/s (+ve deploys line, -ve retracts line, 0 stops)
 void AP_Winch::set_desired_rate(float rate)
 {
     config.rate_desired = constrain_float(rate, -get_rate_max(), get_rate_max());
-    config.control_mode = AP_Winch::ControlMode::RATE;
+    config.control_mode = ControlMode::RATE;
 }
 
 // send status to ground station
@@ -117,7 +116,7 @@ bool AP_Winch::pre_arm_check(char *failmsg, uint8_t failmsg_len) const
 
     // fail if unhealthy
     if (!healthy()) {
-        snprintf(failmsg, failmsg_len, "winch unhealthy");
+        hal.util->snprintf(failmsg, failmsg_len, "winch unhealthy");
         return false;
     }
 
