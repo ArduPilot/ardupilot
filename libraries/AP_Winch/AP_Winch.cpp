@@ -7,7 +7,7 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo AP_Winch::var_info[] = {
     // 0 was ENABLE
 
-    // @Param: TYPE
+    // @Param: _TYPE
     // @DisplayName: Winch Type
     // @Description: Winch Type
     // @User: Standard
