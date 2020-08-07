@@ -1,10 +1,10 @@
-#include <AP_Winch/AP_Winch_Servo.h>
+#include "AP_Winch_PWM.h"
 #include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
 // true if winch is healthy
-bool AP_Winch_Servo::healthy() const
+bool AP_Winch_PWM::healthy() const
 {
     // return immediately if no servo is assigned to control the winch
     if (!SRV_Channels::function_assigned(SRV_Channel::k_winch)) {
@@ -14,7 +14,7 @@ bool AP_Winch_Servo::healthy() const
     return true;
 }
 
-void AP_Winch_Servo::update()
+void AP_Winch_PWM::update()
 {
     // return immediately if no servo is assigned to control the winch
     if (!SRV_Channels::function_assigned(SRV_Channel::k_winch)) {
@@ -29,7 +29,7 @@ void AP_Winch_Servo::update()
 }
 
 // update pwm outputs to control winch
-void AP_Winch_Servo::control_winch()
+void AP_Winch_PWM::control_winch()
 {
     const uint32_t now_ms = AP_HAL::millis();
     float dt = (now_ms - control_update_ms) / 1000.0f;
@@ -66,7 +66,7 @@ void AP_Winch_Servo::control_winch()
 }
 
 //send generator status
-void AP_Winch_Servo::send_status(const GCS_MAVLINK &channel)
+void AP_Winch_PWM::send_status(const GCS_MAVLINK &channel)
 {
     // prepare status bitmask
     uint32_t status_bitmask = 0;
@@ -88,7 +88,7 @@ void AP_Winch_Servo::send_status(const GCS_MAVLINK &channel)
 }
 
 // write log
-void AP_Winch_Servo::write_log()
+void AP_Winch_PWM::write_log()
 {
     AP::logger().Write_Winch(
             healthy(),

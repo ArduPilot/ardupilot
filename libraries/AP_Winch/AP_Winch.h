@@ -24,7 +24,7 @@ class AP_Winch_Backend;
 
 class AP_Winch {
     friend class AP_Winch_Backend;
-    friend class AP_Winch_Servo;
+    friend class AP_Winch_PWM;
     friend class AP_Winch_Daiwa;
 
 public:
@@ -75,7 +75,7 @@ private:
 
     enum class WinchType {
         NONE = 0,
-        SERVO = 1,
+        PWM = 1,
         DAIWA = 2
     };
 
