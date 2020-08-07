@@ -31,6 +31,7 @@
 #include "SIM_Precland.h"
 #include "SIM_RichenPower.h"
 #include "SIM_FETtecOneWireESC.h"
+#include "SIM_EcoEFI.h"
 #include "SIM_I2C.h"
 #include "SIM_Buzzer.h"
 #include "SIM_Battery.h"
@@ -143,6 +144,7 @@ public:
     void set_richenpower(RichenPower *_richenpower) { richenpower = _richenpower; }
     void set_fetteconewireesc(FETtecOneWireESC *_fetteconewireesc) { fetteconewireesc = _fetteconewireesc; }
     void set_ie24(IntelligentEnergy24 *_ie24) { ie24 = _ie24; }
+    void set_ecoefi(EcoEFI *_ecoefi) { ecoefi = _ecoefi; }
     void set_gripper_servo(Gripper_Servo *_gripper) { gripper = _gripper; }
     void set_gripper_epm(Gripper_EPM *_gripper_epm) { gripper_epm = _gripper_epm; }
     void set_precland(SIM_Precland *_precland);
@@ -327,6 +329,7 @@ private:
     LowPassFilterFloat servo_filter[5];
 
     Buzzer *buzzer;
+    EcoEFI *ecoefi;
     Sprayer *sprayer;
     Gripper_Servo *gripper;
     Gripper_EPM *gripper_epm;

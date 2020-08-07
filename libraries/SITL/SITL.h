@@ -12,6 +12,7 @@
 #include <AP_Compass/AP_Compass.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include "SIM_Buzzer.h"
+#include "SIM_EcoEFI.h"
 #include "SIM_Gripper_EPM.h"
 #include "SIM_Gripper_Servo.h"
 #include "SIM_I2C.h"
@@ -454,6 +455,8 @@ public:
         uint8_t num_leds[16];
         uint32_t send_counter;
     } led;
+
+    EcoEFI ecoefi_sim;
 
     AP_Int8 led_layout;
 
