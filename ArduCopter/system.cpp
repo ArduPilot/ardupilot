@@ -35,7 +35,7 @@ void Copter::init_ardupilot()
     fence.init();
 #endif
 
-    // init winch and wheel encoder
+    // init winch
 #if WINCH_ENABLED == ENABLED
     g2.winch.init();
 #endif
