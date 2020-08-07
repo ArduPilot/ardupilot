@@ -1,5 +1,5 @@
 #include "AP_Winch.h"
-#include "AP_Winch_Servo.h"
+#include "AP_Winch_PWM.h"
 #include "AP_Winch_Daiwa.h"
 
 extern const AP_HAL::HAL& hal;
@@ -11,7 +11,7 @@ const AP_Param::GroupInfo AP_Winch::var_info[] = {
     // @DisplayName: Winch Type
     // @Description: Winch Type
     // @User: Standard
-    // @Values: 0:None, 1:Servo, 2:Daiwa
+    // @Values: 0:None, 1:PWM, 2:Daiwa
     AP_GROUPINFO_FLAGS("_TYPE", 1, AP_Winch, config.type, (int8_t)WinchType::NONE, AP_PARAM_FLAG_ENABLE),
 
     // @Param: _RATE_MAX
@@ -67,8 +67,8 @@ void AP_Winch::init()
     switch ((WinchType)config.type.get()) {
     case WinchType::NONE:
         break;
-    case WinchType::SERVO:
-        backend = new AP_Winch_Servo(config);
+    case WinchType::PWM:
+        backend = new AP_Winch_PWM(config);
         break;
     case WinchType::DAIWA:
         backend = new AP_Winch_Daiwa(config);
