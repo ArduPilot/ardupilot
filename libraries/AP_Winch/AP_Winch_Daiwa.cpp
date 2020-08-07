@@ -12,8 +12,8 @@ bool AP_Winch_Daiwa::healthy() const
 
 void AP_Winch_Daiwa::init()
 {
-    // initialise rc input and output
-    init_input_and_output();
+    // call superclass init
+    AP_Winch_Backend::init();
 
     // initialise serial connection to winch
     const AP_SerialManager &serial_manager = AP::serialmanager();
@@ -109,76 +109,71 @@ void AP_Winch_Daiwa::read_data_from_winch()
             // add digits to buffer
             buff[buff_len] = b;
             buff_len++;
-            if (buff_len >= buff_len_max) {
+            if (buff_len >= ARRAY_SIZE(buff)) {
                 buff_len = 0;
                 parse_state = ParseState::WAITING_FOR_TIME;
             }
         } else if (b == ',' || b == '\r') {
             // comma or carriage return signals end of current value
+            // parse number received and empty buffer
             buff[buff_len] = '\0';
-            long int ret = (int32_t)strtol(buff, nullptr, 16);
-            if (ret >= (long)INT32_MAX || ret <= (long)INT32_MIN) {
-                // failed to get valid number, throw away packet
+            long int value = (int32_t)strtol(buff, nullptr, 16);
+            buff_len = 0;
+            switch (parse_state) {
+            case ParseState::WAITING_FOR_TIME:
+                intermediate.time_ms = (uint32_t)value;
+                parse_state = ParseState::WAITING_FOR_SPOOL;
+                break;
+            case ParseState::WAITING_FOR_SPOOL:
+                intermediate.line_length = (int32_t)value * line_length_correction_factor;
+                parse_state = ParseState::WAITING_FOR_TENSION1;
+                break;
+            case ParseState::WAITING_FOR_TENSION1:
+                intermediate.tension_uncorrected = (uint16_t)value;
+                parse_state = ParseState::WAITING_FOR_TENSION2;
+                break;
+            case ParseState::WAITING_FOR_TENSION2:
+                intermediate.tension_corrected = (uint16_t)value;
+                parse_state = ParseState::WAITING_FOR_THREAD_END;
+                break;
+            case ParseState::WAITING_FOR_THREAD_END:
+                intermediate.thread_end = (value > 0);
+                parse_state = ParseState::WAITING_FOR_MOVING;
+                break;
+            case ParseState::WAITING_FOR_MOVING:
+                intermediate.moving = constrain_int32(value, 0, UINT8_MAX);
+                parse_state = ParseState::WAITING_FOR_CLUTCH;
+                break;
+            case ParseState::WAITING_FOR_CLUTCH:
+                intermediate.clutch = constrain_int32(value, 0, UINT8_MAX);
+                parse_state = ParseState::WAITING_FOR_SPEED;
+                break;
+            case ParseState::WAITING_FOR_SPEED:
+                intermediate.speed_pct = constrain_int32(value, 0, UINT8_MAX);
+                parse_state = ParseState::WAITING_FOR_VOLTAGE;
+                break;
+            case ParseState::WAITING_FOR_VOLTAGE:
+                intermediate.voltage = (float)value * 0.1f;
+                parse_state = ParseState::WAITING_FOR_CURRENT;
+                break;
+            case ParseState::WAITING_FOR_CURRENT:
+                intermediate.current = (float)value * 0.1f;
+                parse_state = ParseState::WAITING_FOR_PCB_TEMP;
+                break;
+            case ParseState::WAITING_FOR_PCB_TEMP:
+                intermediate.pcb_temp = (float)value * 0.1f;
+                parse_state = ParseState::WAITING_FOR_MOTOR_TEMP;
+                break;
+            case ParseState::WAITING_FOR_MOTOR_TEMP:
+                intermediate.motor_temp = (float)value * 0.1f;
+                // successfully parsed a complete message
+                latest = intermediate;
+                data_update_ms = AP_HAL::millis();
                 parse_state = ParseState::WAITING_FOR_TIME;
-            } else {
-                // parse number received and empty buffer
-                buff_len = 0;
-                switch (parse_state) {
-                case ParseState::WAITING_FOR_TIME:
-                    intermediate.time_ms = (uint32_t)ret;
-                    parse_state = ParseState::WAITING_FOR_SPOOL;
-                    break;
-                case ParseState::WAITING_FOR_SPOOL:
-                    intermediate.line_length = (int32_t)ret * line_length_correction_factor;
-                    parse_state = ParseState::WAITING_FOR_TENSION1;
-                    break;
-                case ParseState::WAITING_FOR_TENSION1:
-                    intermediate.tension_uncorrected = (uint16_t)ret;
-                    parse_state = ParseState::WAITING_FOR_TENSION2;
-                    break;
-                case ParseState::WAITING_FOR_TENSION2:
-                    intermediate.tension_corrected = (uint16_t)ret;
-                    parse_state = ParseState::WAITING_FOR_THREAD_END;
-                    break;
-                case ParseState::WAITING_FOR_THREAD_END:
-                    intermediate.thread_end = (ret > 0);
-                    parse_state = ParseState::WAITING_FOR_MOVING;
-                    break;
-                case ParseState::WAITING_FOR_MOVING:
-                    intermediate.moving = constrain_int16(ret, 0, UINT8_MAX);
-                    parse_state = ParseState::WAITING_FOR_CLUTCH;
-                    break;
-                case ParseState::WAITING_FOR_CLUTCH:
-                    intermediate.clutch = constrain_int16(ret, 0, UINT8_MAX);
-                    parse_state = ParseState::WAITING_FOR_SPEED;
-                    break;
-                case ParseState::WAITING_FOR_SPEED:
-                    intermediate.speed_pct = constrain_int16(ret, 0, UINT8_MAX);
-                    parse_state = ParseState::WAITING_FOR_VOLTAGE;
-                    break;
-                case ParseState::WAITING_FOR_VOLTAGE:
-                    intermediate.voltage = (float)ret * 0.1f;
-                    parse_state = ParseState::WAITING_FOR_CURRENT;
-                    break;
-                case ParseState::WAITING_FOR_CURRENT:
-                    intermediate.current = (float)ret * 0.1f;
-                    parse_state = ParseState::WAITING_FOR_PCB_TEMP;
-                    break;
-                case ParseState::WAITING_FOR_PCB_TEMP:
-                    intermediate.pcb_temp = (float)ret * 0.1f;
-                    parse_state = ParseState::WAITING_FOR_MOTOR_TEMP;
-                    break;
-                case ParseState::WAITING_FOR_MOTOR_TEMP:
-                    intermediate.motor_temp = (float)ret * 0.1f;
-                    // successfully parsed a complete message
-                    latest = intermediate;
-                    data_update_ms = AP_HAL::millis();
-                    parse_state = ParseState::WAITING_FOR_TIME;
-                    break;
-                }
+                break;
             }
         } else {
-            // carriage return or unexpected characters
+            // line feed or unexpected characters
             buff_len = 0;
             parse_state = ParseState::WAITING_FOR_TIME;
         }
@@ -188,7 +183,7 @@ void AP_Winch_Daiwa::read_data_from_winch()
 // update pwm outputs to control winch
 void AP_Winch_Daiwa::control_winch()
 {
-    uint32_t now_ms = AP_HAL::millis();
+    const uint32_t now_ms = AP_HAL::millis();
     float dt = (now_ms - control_update_ms) / 1000.0f;
     if (dt > 1.0f) {
         dt = 0.0f;
