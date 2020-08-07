@@ -448,7 +448,7 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
 #if WINCH_ENABLED == ENABLED
             switch (ch_flag) {
                 case AuxSwitchPos::HIGH:
-                    // high switch maintains changes the winch to rate control mode
+                    // high switch position stops winch using rate control
                     copter.g2.winch.set_desired_rate(0.0f);
                     break;
                 case AuxSwitchPos::MIDDLE:
