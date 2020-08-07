@@ -886,6 +886,11 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
         richenpower->update(input);
     }
 
+    // update EcoTrons EFI
+    if (ecoefi) {
+        ecoefi->update(input);
+    }
+
     sitl->shipsim.update();
 
     // update IntelligentEnergy 2.4kW generator
