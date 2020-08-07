@@ -4,7 +4,7 @@ from xml.sax.saxutils import escape, quoteattr
 
 from emit import Emit
 from param import known_param_fields, known_units
-from lxml import etree
+from xml.etree import ElementTree as etree
 
 # Emit ArduPilot documentation in an machine readable XML format for Mission Planner
 class XmlEmitMP(Emit):
@@ -23,12 +23,12 @@ class XmlEmitMP(Emit):
         self.f.write('''</Params>\n''')
         self.f.close()
         # sort and reformat XML
-        parser = etree.XMLParser(remove_blank_text=True)
-        tree = etree.parse(self.mp_fname, parser)
+        tree = etree.parse(self.mp_fname)
         root = tree.getroot()
         vehicle = tree.find(self.gname)
         sort_xml_node(vehicle)
-        sorted_unicode = etree.tostring(root, pretty_print=True, encoding='unicode')
+        indent(root)
+        sorted_unicode = etree.tostring(root).decode()
         f = open(self.mp_fname, mode='w')
         f.write(self.preamble)
         f.write(sorted_unicode)
@@ -91,3 +91,20 @@ def sort_xml_node(node):
     # and recurse
     for child in node:
         child[:] = sorted(child, key=lambda field: field.tag)
+
+
+# taken from http://effbot.org/zone/element-lib.htm#prettyprint
+def indent(elem, level=0):
+    i = "\n" + level*"  "
+    if len(elem):
+        if not elem.text or not elem.text.strip():
+            elem.text = i + "  "
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+        for elem in elem:
+            indent(elem, level+1)
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+    else:
+        if level and (not elem.tail or not elem.tail.strip()):
+            elem.tail = i
