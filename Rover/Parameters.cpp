@@ -636,6 +636,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("FS_OPTIONS", 48, ParametersG2, fs_options, 0),
 
+    // @Param: ANGLE_MAX
+    // @DisplayName: Rover roll and pitch angle max
+    // @Description:  Rover roll and pitch angle max
+    // @Units: deg
+    // @Range: 0 45
+    // @User: Standard
+    AP_GROUPINFO("ANGLE_MAX", 49, ParametersG2, angle_max, 10),
+
+
     AP_GROUPEND
 };
 

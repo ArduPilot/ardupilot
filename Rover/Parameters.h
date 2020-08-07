@@ -399,6 +399,9 @@ public:
 
     // FS options
     AP_Int32 fs_options;
+
+    // angle max
+    AP_Float angle_max;
 };
 
 extern const AP_Param::Info var_info[];
