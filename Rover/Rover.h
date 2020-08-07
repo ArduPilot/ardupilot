@@ -276,6 +276,7 @@ private:
     bool set_target_location(const Location& target_loc) override;
     bool set_target_velocity_NED(const Vector3f& vel_ned) override;
     bool set_steering_and_throttle(float steering, float throttle) override;
+    bool get_control_output(AP_Vehicle::ControlOutput control_output, float &control_value) override;
     void stats_update();
     void ahrs_update();
     void gcs_failsafe_check(void);
