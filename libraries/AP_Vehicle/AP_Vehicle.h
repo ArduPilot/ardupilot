@@ -183,6 +183,22 @@ public:
     // set steering and throttle (-1 to +1) (for use by scripting with Rover)
     virtual bool set_steering_and_throttle(float steering, float throttle) { return false; }
 
+    // control outputs enumeration
+    enum class ControlOutput {
+        Roll = 1,
+        Pitch = 2,
+        Throttle = 3,
+        Yaw = 4,
+        Lateral = 5,
+        MainSail = 6,
+        WingSail = 7,
+        Last_ControlOutput  // place new values before this
+    };
+
+    // get control output (for use in scripting)
+    // returns true on success and control_value is set to a value in the range -1 to +1
+    virtual bool get_control_output(AP_Vehicle::ControlOutput control_output, float &control_value) { return false; }
+
     // write out harmonic notch log messages
     void write_notch_log_messages() const;
     // update the harmonic notch
