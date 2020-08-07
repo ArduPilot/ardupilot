@@ -30,6 +30,10 @@ void Rover::Log_Write_Attitude()
     // log heel to sail control for sailboats
     if (rover.g2.sailboat.sail_enabled()) {
         logger.Write_PID(LOG_PIDR_MSG, g2.attitude_control.get_sailboat_heel_pid().get_pid_info());
+
+    // log roll and pitch controller PID logs
+    logger.Write_PID(LOG_ROLL_PID2, g2.attitude_control.get_roll_pid().get_pid_info());
+    logger.Write_PID(LOG_PITCH_PID2, g2.attitude_control.get_pitch_pid().get_pid_info());
     }
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     sitl.Log_Write_SIMSTATE();
@@ -329,6 +333,10 @@ const LogStructure Rover::log_structure[] = {
     
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
       "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ", "s-mmmnnn", "F-000000" },
+    { LOG_ROLL_PID2, sizeof(log_PID),
+      "PI2R", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
+    { LOG_PITCH_PID2, sizeof(log_PID),
+      "PI2P", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
 };
 
 void Rover::log_init(void)
