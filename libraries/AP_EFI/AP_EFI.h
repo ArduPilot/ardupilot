@@ -98,6 +98,7 @@ public:
 #endif
         // Hirth      = 8 /* Reserved for future implementation */
 		MAV = 9,
+        EcoEFI     = 10,
     };
 
     static AP_EFI *get_singleton(void) {
