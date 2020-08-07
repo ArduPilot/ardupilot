@@ -45,6 +45,8 @@ void ModeAcro::update()
     }
 
     set_steering(steering_out * 4500.0f);
+
+    calc_and_set_roll_pitch();
 }
 
 bool ModeAcro::requires_velocity() const

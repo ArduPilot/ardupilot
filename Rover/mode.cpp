@@ -103,8 +103,31 @@ void Mode::get_pilot_input(float &steering_out, float &throttle_out)
 // pitch_out is in the range -100 ~ +100
 void Mode::get_pilot_desired_roll_and_pitch(float &roll_out, float &pitch_out)
 {
-    roll_out = rover.channel_roll->get_control_in();
-    pitch_out = rover.channel_pitch->get_control_in();
+    roll_out = rover.channel_roll->get_control_in() * radians(g2.angle_max) * 0.01;
+    pitch_out = rover.channel_pitch->get_control_in() * radians(g2.angle_max) * 0.01;
+}
+
+// pass target angles to attitude control and output result to motors
+void Mode::calc_roll_pitch(float target_roll, float target_pitch)
+{
+    // apply PID's
+    const float roll = g2.attitude_control.get_servo_out_from_roll(target_roll, rover.G_Dt);
+    const float pitch = g2.attitude_control.get_servo_out_from_pitch(target_pitch, rover.G_Dt);
+
+    // output to motors
+    g2.motors.set_pitch(pitch);
+    g2.motors.set_roll(roll);
+}
+
+// get desired lean angles and output to motors
+void Mode::calc_and_set_roll_pitch()
+{
+    float target_roll = 0.0f;
+    float target_pitch = 0.0f;
+
+    get_pilot_desired_roll_and_pitch(target_roll,target_pitch);
+
+    calc_roll_pitch(target_roll,target_pitch);
 }
 
 // decode pilot steering and throttle inputs and return in steer_out and throttle_out arguments
