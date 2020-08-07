@@ -13,6 +13,19 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/*
+   The Daiwa winch is produced by a Japanese company called Okaya.
+   There are two PWM controls supported:
+     - the rate control for releasing (high PWM) or retracting (low PWM) the line
+     - the clutch control has three settings:
+         - released (high PWM) lets the winch spin freely
+         - engaged soft (middle PWM) allows the rate control to work but it may slip
+           if too much tension is required.  This driver does not use this setting.
+         - engaged hard (low PWM) allows the rate control to work regardless of tension.
+   A telemetry output from the winch is connected to the autopilot and provides
+   the amount of line released, tension, clutch setting, etc.
+*/
+
 #pragma once
 
 #include <AP_Winch/AP_Winch_Backend.h>
@@ -21,8 +34,7 @@
 class AP_Winch_Daiwa : public AP_Winch_Backend {
 public:
 
-    AP_Winch_Daiwa(struct AP_Winch::Backend_Config &_config) :
-        AP_Winch_Backend(_config) { }
+    using AP_Winch_Backend::AP_Winch_Backend;
 
     // true if winch is healthy
     bool healthy() const override;
@@ -30,7 +42,7 @@ public:
     // initialise the winch
     void init() override;
 
-    // control the winch
+    // read telemetry from the winch and output controls
     void update() override;
 
     // returns current length of line deployed
