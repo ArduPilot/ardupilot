@@ -276,6 +276,36 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
             return;
         }
     }
+
+    // roll angle pid
+    if (g.gcs_pid_mask & 64) {
+        pid_info = &g2.attitude_control.get_roll_pid().get_pid_info();
+        mavlink_msg_pid_tuning_send(chan, 10,
+                                    degrees(pid_info->target),
+                                    degrees(pid_info->actual),
+                                    pid_info->FF,
+                                    pid_info->P,
+                                    pid_info->I,
+                                    pid_info->D);
+        if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
+            return;
+        }
+    }
+
+    // pitch angle pid
+    if (g.gcs_pid_mask & 128) {
+        pid_info = &g2.attitude_control.get_pitch_pid().get_pid_info();
+        mavlink_msg_pid_tuning_send(chan, 11,
+                                    degrees(pid_info->target),
+                                    degrees(pid_info->actual),
+                                    pid_info->FF,
+                                    pid_info->P,
+                                    pid_info->I,
+                                    pid_info->D);
+        if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
+            return;
+        }
+    }
 }
 
 void Rover::send_wheel_encoder_distance(const mavlink_channel_t chan)
