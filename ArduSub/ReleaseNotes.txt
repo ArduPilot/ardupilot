@@ -1,15 +1,12 @@
 APM:Sub Release Notes:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Sub 4.0.2 21-September-2020
-
- - Fix critical error on preflight calibration
- - Fix CI build
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Sub 4.0.1 17-March-2020
-
- - Do not report battery level percentage.
+Sub 4.1.0beta 3-Jan-2022
+ - Rebased on top of Copter 4.1.3
+ - Add leak detection support for Pixhawk 4
+ - No longer report battery percentage if capacity is set to 0 mAh
+ - fix issue where it was not possible to arm after testing motors
+ - Added support for the Blue Robotics Navigator Raspberry Pi hat.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub 4.0.0 4-March-2020
