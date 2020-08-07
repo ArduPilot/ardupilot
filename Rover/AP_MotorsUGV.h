@@ -60,7 +60,8 @@ public:
     float get_throttle() const { return _throttle; }
     void set_throttle(float throttle);
 
-    // set lateral input as a value from -100 to +100
+    // get or set lateral input as a value from -100 to +100
+    float get_lateral() const { return _lateral; }
     void set_lateral(float lateral);
 
     // set or get mainsail input as a value from 0 to 100
