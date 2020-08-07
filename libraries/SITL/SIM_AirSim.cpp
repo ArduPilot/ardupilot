@@ -323,9 +323,16 @@ void AirSim::recv_fdm(const sitl_input& input)
 
     scanner.points = state.lidar.points;
 
-    rcin_chan_count = state.rc.rc_channels.length < 8 ? state.rc.rc_channels.length : 8;
+    // Update RC input, max 12 channels
+    rcin_chan_count = MIN(state.rc.rc_channels.length, 12);
     for (uint8_t i=0; i < rcin_chan_count; i++) {
         rcin[i] = state.rc.rc_channels.data[i];
+    }
+
+    // Update Rangefinder data, max sensors limit as defined
+    uint8_t rng_sensor_count = MIN(state.rng.rng_distances.length, RANGEFINDER_MAX_INSTANCES);
+    for (uint8_t i=0; i<rng_sensor_count; i++) {
+        rangefinder_m[i] = state.rng.rng_distances.data[i];
     }
 
 #if 0
