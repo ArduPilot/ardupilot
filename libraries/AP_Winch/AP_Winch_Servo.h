@@ -21,14 +21,10 @@
 class AP_Winch_Servo : public AP_Winch_Backend {
 public:
 
-    AP_Winch_Servo(struct AP_Winch::Backend_Config &_config) :
-        AP_Winch_Backend(_config) { }
+    using AP_Winch_Backend::AP_Winch_Backend;
 
     // true if winch is healthy
     bool healthy() const override;
-
-    // initialise the winch
-    void init() override;
 
     // control the winch
     void update() override;

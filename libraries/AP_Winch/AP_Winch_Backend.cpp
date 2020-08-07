@@ -2,9 +2,8 @@
 #include <RC_Channel/RC_Channel.h>
 
 // setup rc input and output
-void AP_Winch_Backend::init_input_and_output()
+void AP_Winch_Backend::init()
 {
-
     // set servo output range
     SRV_Channels::set_angle(SRV_Channel::k_winch,  1000);
 
@@ -36,7 +35,7 @@ void AP_Winch_Backend::read_pilot_desired_rate()
         previous_radio_in = rc_input->get_radio_in();
     }
 
-    // check for a significant change in rc input
+    // if significant change in rc input switch to rate mode
     const int16_t radio_in = rc_input->get_radio_in();
     if (config.control_mode != AP_Winch::ControlMode::RATE_FROM_RC) {
         if (abs(radio_in - previous_radio_in) > rc_input->get_dead_zone()) {

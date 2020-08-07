@@ -47,7 +47,7 @@ public:
     void update();
 
     // relax the winch so it does not attempt to maintain length or rate
-    void relax() { config.control_mode = AP_Winch::ControlMode::RELAXED; }
+    void relax() { config.control_mode = ControlMode::RELAXED; }
 
     // release specified length of cable (in meters)
     void release_length(float length);
