@@ -304,7 +304,7 @@ bool AP_Arming_Copter::motor_checks(bool display_failure)
         return true;
     }
 
-    // 
+    // Check the number of motors in the frame and the number of motors in the servo.
     if (!motor_count_check()) {
         check_failed(display_failure, "check SERVOx_FUNCTION Motor x");
         return false;
@@ -415,7 +415,7 @@ bool AP_Arming_Copter::motor_count_check()
 
 bool AP_Arming_Copter::pilot_throttle_checks(bool display_failure)
 {
-    // check throttle is above failsafe thbarometer_checksrottle
+    // check throttle is above failsafe throttle
     // this is near the bottom to allow other failures to be displayed before checking pilot throttle
     if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_RC)) {
         if (copter.g.failsafe_throttle != FS_THR_DISABLED && copter.channel_throttle->get_radio_in() < copter.g.failsafe_throttle_value) {
