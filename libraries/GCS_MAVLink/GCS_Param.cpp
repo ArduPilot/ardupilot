@@ -291,10 +291,10 @@ void GCS_MAVLINK::handle_param_set(const mavlink_message_t &msg)
         if (strncmp(key, buf, 16) == 0) {
             if ((old_value >= 33.0f && old_value <= 40.0f) || (old_value >= 82.0f && old_value <= 85.0f)) {
                 // now motor
-                if (is_negative(packet.param_value)) {
+                if (!hal.util->get_soft_armed()) {
                     break;
                 } else {
-                    printf("### %s is motor and set value not -1\n", buf);
+                    printf("### %s is a motor and currently arming\n", buf);
                     return;
                 }
             } else {
