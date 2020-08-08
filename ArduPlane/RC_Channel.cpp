@@ -116,6 +116,56 @@ void RC_Channel_Plane::do_aux_function_soaring_3pos(AuxSwitchPos ch_flag)
     plane.g2.soaring_controller.set_pilot_desired_state(desired_state);
 #endif
 }
+
+void RC_Channel_Plane::do_aux_function_quick_tune(AuxSwitchPos ch_flag)
+{
+    const char *axis_string = nullptr;
+    AC_PID_OscillationDetector *detector = nullptr;
+    switch(plane.quick_tune_axis)
+    {
+        case AP_Vehicle::PID_AXIS::ROLL:
+            axis_string = "Roll";
+            detector = &plane.rollController.oscillationDetector;
+            break;
+        case AP_Vehicle::PID_AXIS::PITCH:
+            axis_string = "Pitch";
+            detector = &plane.pitchController.oscillationDetector;
+            break;
+        case AP_Vehicle::PID_AXIS::QROll:
+            if (plane.quadplane.attitude_control != nullptr) {
+                axis_string = "QRoll";
+                detector = &plane.quadplane.attitude_control->get_rate_roll_pid().oscillationDetector;
+            }
+            break;
+        case AP_Vehicle::PID_AXIS::QPITCH:
+            if (plane.quadplane.attitude_control != nullptr) {
+                axis_string = "QPitch";
+                detector = &plane.quadplane.attitude_control->get_rate_pitch_pid().oscillationDetector;
+            }
+            break;
+        case AP_Vehicle::PID_AXIS::QYAW:
+            if (plane.quadplane.attitude_control != nullptr) {
+                axis_string = "QYaw";
+                detector = &plane.quadplane.attitude_control->get_rate_yaw_pid().oscillationDetector;
+            }
+            break;
+        default:
+            break;
+    }
+
+    if (detector == nullptr) {
+        // dont have this axis, look for the next
+        if (plane.advance_quick_tune_axis()) {
+            do_aux_function_quick_tune(ch_flag);
+        } else {
+            gcs().send_text(MAV_SEVERITY_INFO, "Quick Tune: not enabled");
+        }
+        return;
+    }
+
+    plane.quick_tune_start_stop(ch_flag,axis_string,detector);
+}
+
 void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
                                          const RC_Channel::AuxSwitchPos ch_flag)
 {
@@ -255,6 +305,9 @@ void RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwit
             plane.quadplane.air_mode = AirMode::OFF;
             break;
         }
+
+    case AUX_FUNC::QUICK_TUNE:
+        do_aux_function_quick_tune(ch_flag);
         break;
 
     default:

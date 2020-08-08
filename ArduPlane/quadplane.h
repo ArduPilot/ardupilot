@@ -27,7 +27,6 @@ public:
     friend class AP_Arming_Plane;
     friend class RC_Channel_Plane;
     friend class RC_Channel;
-
     friend class Mode;
     friend class ModeAuto;
     friend class ModeRTL;
