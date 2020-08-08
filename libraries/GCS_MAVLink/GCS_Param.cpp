@@ -283,6 +283,26 @@ void GCS_MAVLINK::handle_param_set(const mavlink_message_t &msg)
         return;
     }
 
+    // Check SERVO1_FUNCTION - SERVO16_FUNCTION
+    for (int8_t i = 1; i <= NUM_SERVO_CHANNELS; ++i) {
+        char buf[17];
+        memset(buf, 0, sizeof(buf));
+        hal.util->snprintf(buf, sizeof(buf), "SERVO%d_FUNCTION", i);
+        if (strncmp(key, buf, 16) == 0) {
+            if ((old_value >= 33.0f && old_value <= 40.0f) || (old_value >= 82.0f && old_value <= 85.0f)) {
+                // now motor
+                if (is_negative(packet.param_value)) {
+                    break;
+                } else {
+                    printf("### %s is motor and set value not -1\n", buf);
+                    return;
+                }
+            } else {
+                break;
+            }
+        }
+    }
+
     // set the value
     vp->set_float(packet.param_value, var_type);
 
