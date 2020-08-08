@@ -46,6 +46,7 @@ protected:
     // NOTE! the following check functions *DO NOT* call into AP_Arming!
     bool parameter_checks(bool display_failure);
     bool motor_checks(bool display_failure);
+    bool motor_count_check(void);
     bool pilot_throttle_checks(bool display_failure);
     bool oa_checks(bool display_failure);
     bool mandatory_gps_checks(bool display_failure);

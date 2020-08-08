@@ -304,6 +304,12 @@ bool AP_Arming_Copter::motor_checks(bool display_failure)
         return true;
     }
 
+    // 
+    if (!motor_count_check()) {
+        check_failed(display_failure, "check SERVOx_FUNCTION Motor x");
+        return false;
+    }
+
     // if this is a multicopter using ToshibaCAN ESCs ensure MOT_PMW_MIN = 1000, MOT_PWM_MAX = 2000
 #if HAL_WITH_UAVCAN && (FRAME_CONFIG != HELI_FRAME)
     bool tcan_active = false;
@@ -352,9 +358,64 @@ bool AP_Arming_Copter::motor_checks(bool display_failure)
     return true;
 }
 
+// check Motor count
+bool AP_Arming_Copter::motor_count_check()
+{
+    // Number of motors in the frame
+    int8_t motorNum = 0;
+    switch ((AP_Motors::motor_frame_class)copter.g2.frame_class.get()) {
+    case AP_Motors::MOTOR_FRAME_HELI:
+        motorNum = 0;
+        break;
+    case AP_Motors::MOTOR_FRAME_QUAD:
+    case AP_Motors::MOTOR_FRAME_TRI:
+        motorNum = 4;
+        break;
+    case AP_Motors::MOTOR_FRAME_HEXA:
+    case AP_Motors::MOTOR_FRAME_Y6:
+    case AP_Motors::MOTOR_FRAME_SINGLE:
+    case AP_Motors::MOTOR_FRAME_COAX:
+        motorNum = 6;
+        break;
+    case AP_Motors::MOTOR_FRAME_OCTA:
+    case AP_Motors::MOTOR_FRAME_OCTAQUAD:
+        motorNum = 8;
+        break;
+    case AP_Motors::MOTOR_FRAME_DODECAHEXA:
+        motorNum = 12;
+        break;
+
+    case AP_Motors::MOTOR_FRAME_UNDEFINED:
+        break;
+    case AP_Motors::MOTOR_FRAME_TAILSITTER:
+        break;
+    case AP_Motors::MOTOR_FRAME_HELI_DUAL:
+        break;
+    case AP_Motors::MOTOR_FRAME_HELI_QUAD:
+        break;
+    default:
+        break;
+    }
+
+    // motors count
+    int8_t motorCount = 0;
+    for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
+        SRV_Channel *chan = SRV_Channels::srv_channel(i);
+        if (chan->is_motor(chan->get_function())) {
+            ++motorCount;
+        }
+    }
+
+    printf("### motorNum %d motorCount %d\n", motorNum, motorCount);
+    if (motorNum != motorCount) {
+        return false;
+    }
+    return true;
+}
+
 bool AP_Arming_Copter::pilot_throttle_checks(bool display_failure)
 {
-    // check throttle is above failsafe throttle
+    // check throttle is above failsafe thbarometer_checksrottle
     // this is near the bottom to allow other failures to be displayed before checking pilot throttle
     if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_RC)) {
         if (copter.g.failsafe_throttle != FS_THR_DISABLED && copter.channel_throttle->get_radio_in() < copter.g.failsafe_throttle_value) {
