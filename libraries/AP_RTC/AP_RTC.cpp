@@ -28,11 +28,20 @@ const AP_Param::GroupInfo AP_RTC::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_TYPES",  1, AP_RTC, allowed_types, 1),
 
+    // @Param: _TZ_MIN
+    // @DisplayName: Timezone offset from UTC
+    // @Description: Adds offset in +- minutes from UTC to calculate local time
+    // @Range: -720 +840
+    // @User: Advanced
+    AP_GROUPINFO("_TZ_MIN",  2, AP_RTC, tz_min, 0),
+    
     AP_GROUPEND
 };
 
 void AP_RTC::set_utc_usec(uint64_t time_utc_usec, source_type type)
 {
+    const uint64_t oldest_acceptable_date = 1546300800000; // 2019-01-01 0:00
+
     if (type >= rtc_source_type) {
         // e.g. system-time message when we've been set by the GPS
         return;
@@ -43,12 +52,18 @@ void AP_RTC::set_utc_usec(uint64_t time_utc_usec, source_type type)
         return;
     }
 
+    // don't allow old times
+    if (time_utc_usec < oldest_acceptable_date) {
+        return;
+    }
+
     const uint64_t now = AP_HAL::micros64();
     const int64_t tmp = int64_t(time_utc_usec) - int64_t(now);
     if (tmp < rtc_shift) {
         // can't allow time to go backwards, ever
         return;
     }
+    WITH_SEMAPHORE(rsem);
 
     rtc_shift = tmp;
 
@@ -59,8 +74,10 @@ void AP_RTC::set_utc_usec(uint64_t time_utc_usec, source_type type)
 
     rtc_source_type = type;
 
+#ifndef HAL_NO_GCS
     // update signing timestamp
     GCS_MAVLINK::update_signing_timestamp(time_utc_usec);
+#endif
 }
 
 bool AP_RTC::get_utc_usec(uint64_t &usec) const
@@ -86,6 +103,31 @@ bool AP_RTC::get_system_clock_utc(uint8_t &hour, uint8_t &min, uint8_t &sec, uin
     uint32_t sec_ms = (time_ms % (60 * 1000)) - ms;
     uint32_t min_ms = (time_ms % (60 * 60 * 1000)) - sec_ms - ms;
     uint32_t hour_ms = (time_ms % (24 * 60 * 60 * 1000)) - min_ms - sec_ms - ms;
+
+    // convert times as milliseconds into appropriate units
+    sec = sec_ms / 1000;
+    min = min_ms / (60 * 1000);
+    hour = hour_ms / (60 * 60 * 1000);
+
+    return true;
+}
+
+bool AP_RTC::get_local_time(uint8_t &hour, uint8_t &min, uint8_t &sec, uint16_t &ms)
+{
+     // get local time of day in ms
+    uint64_t time_ms = 0;
+    uint64_t ms_local = 0;
+    if (!get_utc_usec(time_ms)) {
+        return false;
+    }
+    time_ms /= 1000U;
+    ms_local = time_ms + (tz_min * 60000);
+
+    // separate time into ms, sec, min, hour and days but all expressed in milliseconds
+    ms = ms_local % 1000;
+    uint32_t sec_ms = (ms_local % (60 * 1000)) - ms;
+    uint32_t min_ms = (ms_local % (60 * 60 * 1000)) - sec_ms - ms;
+    uint32_t hour_ms = (ms_local % (24 * 60 * 60 * 1000)) - min_ms - sec_ms - ms;
 
     // convert times as milliseconds into appropriate units
     sec = sec_ms / 1000;

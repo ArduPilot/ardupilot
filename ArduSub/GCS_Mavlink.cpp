@@ -62,7 +62,7 @@ uint32_t GCS_Sub::custom_mode() const
     return sub.control_mode;
 }
 
-MAV_STATE GCS_MAVLINK_Sub::system_status() const
+MAV_STATE GCS_MAVLINK_Sub::vehicle_system_status() const
 {
     // set system as critical if any failsafe have triggered
     if (sub.any_failsafe_triggered())  {
@@ -107,7 +107,8 @@ void GCS_MAVLINK_Sub::send_scaled_pressure3()
         AP_HAL::millis(),
         0,
         0,
-        sub.celsius.temperature() * 100);
+        sub.celsius.temperature() * 100,
+        0); // TODO: use differential pressure temperature
 }
 
 bool GCS_MAVLINK_Sub::send_info()
@@ -139,6 +140,9 @@ bool GCS_MAVLINK_Sub::send_info()
 
     CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
     send_named_float("InputHold", sub.input_hold_engaged);
+
+    CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
+    send_named_float("RollPitch", sub.roll_pitch_flag);
 
     return true;
 }
@@ -350,7 +354,6 @@ static const ap_message STREAM_EXTRA1_msgs[] = {
     MSG_ATTITUDE,
     MSG_SIMSTATE,
     MSG_AHRS2,
-    MSG_AHRS3,
     MSG_PID_TUNING
 };
 static const ap_message STREAM_EXTRA2_msgs[] = {
@@ -446,11 +449,11 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_command_do_set_roi(const Location &roi_loc)
     return MAV_RESULT_ACCEPTED;
 }
 
-bool GCS_MAVLINK_Sub::set_home_to_current_location(bool lock) {
-    return sub.set_home_to_current_location(lock);
+bool GCS_MAVLINK_Sub::set_home_to_current_location(bool _lock) {
+    return sub.set_home_to_current_location(_lock);
 }
-bool GCS_MAVLINK_Sub::set_home(const Location& loc, bool lock) {
-    return sub.set_home(loc, lock);
+bool GCS_MAVLINK_Sub::set_home(const Location& loc, bool _lock) {
+    return sub.set_home(loc, _lock);
 }
 
 
@@ -458,13 +461,13 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_command_long_packet(const mavlink_command_lon
 {
     switch (packet.command) {
     case MAV_CMD_NAV_LOITER_UNLIM:
-        if (!sub.set_mode(POSHOLD, MODE_REASON_GCS_COMMAND)) {
+        if (!sub.set_mode(POSHOLD, ModeReason::GCS_COMMAND)) {
             return MAV_RESULT_FAILED;
         }
         return MAV_RESULT_ACCEPTED;
 
     case MAV_CMD_NAV_LAND:
-        if (!sub.set_mode(SURFACE, MODE_REASON_GCS_COMMAND)) {
+        if (!sub.set_mode(SURFACE, ModeReason::GCS_COMMAND)) {
             return MAV_RESULT_FAILED;
         }
         return MAV_RESULT_ACCEPTED;
@@ -494,7 +497,7 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_command_long_packet(const mavlink_command_lon
         return MAV_RESULT_FAILED;
 
     case MAV_CMD_MISSION_START:
-        if (sub.motors.armed() && sub.set_mode(AUTO, MODE_REASON_GCS_COMMAND)) {
+        if (sub.motors.armed() && sub.set_mode(AUTO, ModeReason::GCS_COMMAND)) {
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;
@@ -659,8 +662,10 @@ void GCS_MAVLINK_Sub::handleMessage(const mavlink_message_t &msg)
         mavlink_set_position_target_global_int_t packet;
         mavlink_msg_set_position_target_global_int_decode(&msg, &packet);
 
-        // exit if vehicle is not in Guided mode or Auto-Guided mode
-        if ((sub.control_mode != GUIDED) && !(sub.control_mode == AUTO && sub.auto_mode == Auto_NavGuided)) {
+        // exit if vehicle is not in Guided, Auto-Guided, or Depth Hold modes
+        if ((sub.control_mode != GUIDED)
+            && !(sub.control_mode == AUTO && sub.auto_mode == Auto_NavGuided)
+            && !(sub.control_mode == ALT_HOLD)) {
             break;
         }
 
@@ -674,6 +679,11 @@ void GCS_MAVLINK_Sub::handleMessage(const mavlink_message_t &msg)
          * bool yaw_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE;
          * bool yaw_rate_ignore = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE;
          */
+
+        if (!pos_ignore && sub.control_mode == ALT_HOLD) { // Control only target depth when in ALT_HOLD
+            sub.pos_control.set_alt_target(packet.alt*100);
+            break;
+        }
 
         Vector3f pos_neu_cm;  // position (North, East, Up coordinates) in centimeters
 
@@ -706,11 +716,6 @@ void GCS_MAVLINK_Sub::handleMessage(const mavlink_message_t &msg)
             sub.guided_set_destination(pos_neu_cm);
         }
 
-        break;
-    }
-
-    case MAVLINK_MSG_ID_DISTANCE_SENSOR: {
-        sub.rangefinder.handle_msg(msg);
         break;
     }
 
@@ -764,7 +769,6 @@ void GCS_MAVLINK_Sub::handleMessage(const mavlink_message_t &msg)
 uint64_t GCS_MAVLINK_Sub::capabilities() const
 {
     return (MAV_PROTOCOL_CAPABILITY_MISSION_FLOAT |
-            MAV_PROTOCOL_CAPABILITY_PARAM_FLOAT |
             MAV_PROTOCOL_CAPABILITY_MISSION_INT |
             MAV_PROTOCOL_CAPABILITY_SET_POSITION_TARGET_LOCAL_NED |
             MAV_PROTOCOL_CAPABILITY_SET_POSITION_TARGET_GLOBAL_INT |
@@ -784,50 +788,12 @@ void GCS_MAVLINK_Sub::handle_rc_channels_override(const mavlink_message_t &msg)
     GCS_MAVLINK::handle_rc_channels_override(msg);
 }
 
-
-/*
- *  a delay() callback that processes MAVLink packets. We set this as the
- *  callback in long running library initialisation routines to allow
- *  MAVLink to process packets while waiting for the initialisation to
- *  complete
- */
-void Sub::mavlink_delay_cb()
-{
-    static uint32_t last_1hz, last_50hz, last_5s;
-
-    logger.EnableWrites(false);
-
-    uint32_t tnow = AP_HAL::millis();
-    if (tnow - last_1hz > 1000) {
-        last_1hz = tnow;
-        gcs().send_message(MSG_HEARTBEAT);
-        gcs().send_message(MSG_SYS_STATUS);
-    }
-    if (tnow - last_50hz > 20) {
-        last_50hz = tnow;
-        gcs().update_receive();
-        gcs().update_send();
-        notify.update();
-    }
-    if (tnow - last_5s > 5000) {
-        last_5s = tnow;
-        gcs().send_text(MAV_SEVERITY_INFO, "Initialising APM");
-    }
-
-    logger.EnableWrites(true);
-}
-
 MAV_RESULT GCS_MAVLINK_Sub::handle_flight_termination(const mavlink_command_long_t &packet) {
     if (packet.param1 > 0.5f) {
-        sub.arming.disarm();
+        sub.arming.disarm(AP_Arming::Method::TERMINATION);
         return MAV_RESULT_ACCEPTED;
     }
     return MAV_RESULT_FAILED;
-}
-
-bool GCS_MAVLINK_Sub::set_mode(uint8_t mode)
-{
-    return sub.set_mode((control_mode_t)mode, MODE_REASON_GCS_COMMAND);
 }
 
 int32_t GCS_MAVLINK_Sub::global_position_int_alt() const {
@@ -842,6 +808,3 @@ int32_t GCS_MAVLINK_Sub::global_position_int_relative_alt() const {
     }
     return GCS_MAVLINK::global_position_int_relative_alt();
 }
-
-// dummy method to avoid linking AFS
-bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reason) { return false; }

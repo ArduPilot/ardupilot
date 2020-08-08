@@ -38,6 +38,11 @@ public:
     }
 
     bool on_ground() const override {return true;};
+
+protected:
+    bool motor_connected;       // true if this frame has a motor
+    float sail_area; // 1.0 for normal area
+
 private:
 
     // calculate the lift and drag as values from 0 to 1 given an apparent wind speed in m/s and angle-of-attack in degrees
@@ -69,7 +74,6 @@ private:
     Vector3f wave_gyro;         // rad/s
     float wave_heave;           // m/s/s
     float wave_phase;           // rads
-    bool motor_connected;       // true if this frame has a motor
 };
 
 } // namespace SITL

@@ -294,14 +294,10 @@ void loop(void)
     // auto-reboot for --upload
     if (hal.console->available() > 50) {
         hal.console->printf("rebooting\n");
-        while (hal.console->available()) {
-            hal.console->read();
-        }
+        hal.console->discard_input();
         hal.scheduler->reboot(false);
     }
-    while (hal.console->available()) {
-        hal.console->read();
-    }
+    hal.console->discard_input();
 }
 
 AP_HAL_MAIN();

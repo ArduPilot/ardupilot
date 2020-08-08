@@ -59,6 +59,9 @@ public:
         MOTOR_FRAME_TYPE_DJI_X = 13, // X frame, DJI ordering
         MOTOR_FRAME_TYPE_CW_X = 14, // X frame, clockwise ordering
         MOTOR_FRAME_TYPE_I = 15, // (sideways H) octo only
+        MOTOR_FRAME_TYPE_NYT_PLUS = 16, // plus frame, no differential torque for yaw
+        MOTOR_FRAME_TYPE_NYT_X = 17, // X frame, no differential torque for yaw
+        MOTOR_FRAME_TYPE_BF_X_REV = 18, // X frame, betaflight ordering, reversed motors
     };
 
     // Constructor
@@ -97,6 +100,7 @@ public:
     float               get_roll() const { return _roll_in; }
     float               get_pitch() const { return _pitch_in; }
     float               get_yaw() const { return _yaw_in; }
+    float               get_throttle_out() const { return _throttle_out; }
     float               get_throttle() const { return constrain_float(_throttle_filter.get(), 0.0f, 1.0f); }
     float               get_throttle_bidirectional() const { return constrain_float(2 * (_throttle_filter.get() - 0.5f), -1.0f, 1.0f); }
     float               get_forward() const { return _forward_in; }
@@ -181,6 +185,10 @@ public:
     // using copter motors for forward flight
     virtual float       get_roll_factor(uint8_t i) { return 0.0f; }
 
+    // This function required for tradheli. Tradheli initializes targets when going from unarmed to armed state.
+    // This function is overriden in motors_heli class.   Always true for multicopters.
+    virtual bool init_targets_on_arming() const { return true; }
+
     enum pwm_type { PWM_TYPE_NORMAL     = 0,
                     PWM_TYPE_ONESHOT    = 1,
                     PWM_TYPE_ONESHOT125 = 2,
@@ -225,6 +233,7 @@ protected:
     float               _yaw_in;                    // desired yaw control from attitude controller, -1 ~ +1
     float               _yaw_in_ff;                 // desired yaw feed forward control from attitude controller, -1 ~ +1
     float               _throttle_in;               // last throttle input from set_throttle caller
+    float               _throttle_out;              // throttle after mixing is complete
     float               _forward_in;                // last forward input from set_forward caller
     float               _lateral_in;                // last lateral input from set_lateral caller
     float               _throttle_avg_max;          // last throttle input from set_throttle_avg_max
@@ -253,4 +262,8 @@ protected:
 
 private:
     static AP_Motors *_singleton;
+};
+
+namespace AP {
+    AP_Motors *motors();
 };

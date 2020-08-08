@@ -59,6 +59,9 @@ bool Plane::auto_takeoff_check(void)
         }
     }
 
+    // let EKF know to start GSF yaw estimator before takeoff movement starts so that yaw angle is better estimated
+    plane.ahrs.setTakeoffExpected(true);
+
     // we've reached the acceleration threshold, so start the timer
     if (!takeoff_state.launchTimerStarted) {
         takeoff_state.launchTimerStarted = true;
@@ -169,7 +172,8 @@ void Plane::takeoff_calc_pitch(void)
     }
 
     if (aparm.stall_prevention != 0) {
-        if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_TAKEOFF) {
+        if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_TAKEOFF ||
+            control_mode == &mode_takeoff) {
             // during takeoff we want to prioritise roll control over
             // pitch. Apply a reduction in pitch demand if our roll is
             // significantly off. The aim of this change is to
@@ -210,7 +214,7 @@ int16_t Plane::get_takeoff_pitch_min_cd(void)
                 relative_alt_cm >= 1000 &&
                 sec_to_target <= g.takeoff_pitch_limit_reduction_sec) {
                 // make a note of that altitude to use it as a start height for scaling
-                gcs().send_text(MAV_SEVERITY_INFO, "Takeoff level-off starting at %dm", remaining_height_to_target_cm/100);
+                gcs().send_text(MAV_SEVERITY_INFO, "Takeoff level-off starting at %dm", int(remaining_height_to_target_cm/100));
                 auto_state.height_below_takeoff_to_level_off_cm = remaining_height_to_target_cm;
             }
         }
@@ -269,7 +273,7 @@ void Plane::complete_auto_takeoff(void)
 {
 #if GEOFENCE_ENABLED == ENABLED
     if (g.fence_autoenable > 0) {
-        if (! geofence_set_enabled(true, AUTO_TOGGLED)) {
+        if (! geofence_set_enabled(true)) {
             gcs().send_text(MAV_SEVERITY_NOTICE, "Enable fence failed (cannot autoenable");
         } else {
             gcs().send_text(MAV_SEVERITY_INFO, "Fence enabled (autoenabled)");

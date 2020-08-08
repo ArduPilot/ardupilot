@@ -32,6 +32,7 @@ void AP_OSD_Backend::write(uint8_t x, uint8_t y, bool blink, const char *fmt, ..
     va_list ap;
     va_start(ap, fmt);
     int res = hal.util->vsnprintf(buff, sizeof(buff), fmt, ap);
+    res = MIN(res, int(sizeof(buff)));
     if (res > 0 && check_option(AP_OSD::OPTION_DECIMAL_PACK)) {
         // automatically use packed decimal characters
         // based on fiam idea implemented in inav osd

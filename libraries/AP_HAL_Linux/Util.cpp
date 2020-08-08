@@ -199,6 +199,7 @@ int Util::read_file(const char *path, const char *fmt, ...)
 const char *Linux::Util::_hw_names[UTIL_NUM_HARDWARES] = {
     [UTIL_HARDWARE_RPI1]   = "BCM2708",
     [UTIL_HARDWARE_RPI2]   = "BCM2709",
+    [UTIL_HARDWARE_RPI4]   = "BCM2711",
     [UTIL_HARDWARE_BEBOP]  = "Mykonos3 board",
     [UTIL_HARDWARE_BEBOP2] = "Milos board",
     [UTIL_HARDWARE_DISCO]  = "Evinrude board",

@@ -170,8 +170,8 @@ private:
     /* we currently ignore requests to start a new log.  Notionally we
      * could close the currently logging session and hope the client
      * re-opens one */
-    uint16_t start_new_log(void) override {
-        return 0;
+    void start_new_log(void) override {
+        return;
     }
     // performance counters
     AP_HAL::Util::perf_counter_t  _perf_errors;

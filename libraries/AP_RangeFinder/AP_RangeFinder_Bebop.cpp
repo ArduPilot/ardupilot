@@ -123,7 +123,7 @@ unsigned short AP_RangeFinder_Bebop::get_threshold_at(int i_capture)
     case 0:
         if (i_capture < 139) {
             threshold_value = 4195;
-        ] else if (i_capture < 153) {
+        } else if (i_capture < 153) {
             threshold_value = waveform_mode0[i_capture - 139];
         } else {
             threshold_value = 1200;

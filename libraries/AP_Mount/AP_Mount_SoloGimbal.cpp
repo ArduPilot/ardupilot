@@ -1,8 +1,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
-#if AP_AHRS_NAVEKF_AVAILABLE
-
 #include "AP_Mount_SoloGimbal.h"
+#if HAL_SOLO_GIMBAL_ENABLED
+
 #include "SoloGimbal.h"
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
@@ -70,8 +70,12 @@ void AP_Mount_SoloGimbal::update()
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
             _gimbal.set_lockedToBody(false);
-            if(AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
-                calc_angle_to_location(_state._roi_target, _angle_ef_target_rad, true, true);
+            if (calc_angle_to_roi_target(_angle_ef_target_rad, true, true)) {
+            }
+            break;
+
+        case MAV_MOUNT_MODE_SYSID_TARGET:
+            if (calc_angle_to_sysid_target(_angle_ef_target_rad, true, true)) {
             }
             break;
 
@@ -154,4 +158,4 @@ void AP_Mount_SoloGimbal::send_gimbal_report(mavlink_channel_t chan)
 {
 }
 
-#endif // AP_AHRS_NAVEKF_AVAILABLE
+#endif // HAL_SOLO_GIMBAL_ENABLED

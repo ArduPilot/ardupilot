@@ -1,8 +1,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
-#if AP_AHRS_NAVEKF_AVAILABLE
-
 #include "SoloGimbal.h"
+
+#if HAL_SOLO_GIMBAL_ENABLED
 
 #include <stdio.h>
 #include <GCS_MAVLink/GCS.h>
@@ -222,7 +222,7 @@ void SoloGimbal::readVehicleDeltaAngle(uint8_t ins_index, Vector3f &dAng) {
 
     if (ins_index < ins.get_gyro_count()) {
         if (!ins.get_delta_angle(ins_index,dAng)) {
-            dAng = ins.get_gyro(ins_index) / ins.get_sample_rate();
+            dAng = ins.get_gyro(ins_index) / ins.get_loop_rate_hz();
         }
     }
 }
@@ -384,49 +384,80 @@ void SoloGimbal::update_target(const Vector3f &newTarget)
 
 void SoloGimbal::write_logs()
 {
-    AP_Logger *logger = AP_Logger::get_singleton();
-    if (logger == nullptr) {
-        return;
-    }
+    AP_Logger &logger = AP::logger();
 
-    uint32_t tstamp = AP_HAL::millis();
-    Vector3f eulerEst;
+    const uint64_t tstamp = AP_HAL::micros64();
+
+    // @LoggerMessage: GMB1
+    // @Vehicles: Copter
+    // @Description: Solo Gimbal measurements
+    // @Field: TimeUS: Time since system startup
+    // @Field: dt: sum of time across measurements in this packet
+    // @Field: dax: delta-angle sum, x-axis
+    // @Field: day: delta-angle sum, y-axis
+    // @Field: daz: delta-angle sum, z-axis
+    // @Field: dvx: delta-velocity sum, x-axis
+    // @Field: dvy: delta-velocity sum, y-axis
+    // @Field: dvz: delta-velocity sum, z-axis
+    // @Field: jx: joint angle, x
+    // @Field: jy: joint angle, y
+    // @Field: jz: joint angle, z
+    logger.Write(
+        "GMB1",
+        "TimeUS,dt,dax,day,daz,dvx,dvy,dvz,jx,jy,jz",
+        "ssrrrEEELLL",
+        "FC000000000",
+        "Qffffffffff",
+        tstamp,
+        _log_dt,
+        _log_del_ang.x,
+        _log_del_ang.y,
+        _log_del_ang.z,
+        _log_del_vel.x,
+        _log_del_vel.y,
+        _log_del_vel.z,
+        _measurement.joint_angles.x,
+        _measurement.joint_angles.y,
+        _measurement.joint_angles.z
+        );
 
     Quaternion quatEst;
     _ekf.getQuat(quatEst);
+    Vector3f eulerEst;
     quatEst.to_euler(eulerEst.x, eulerEst.y, eulerEst.z);
 
-    struct log_Gimbal1 pkt1 = {
-        LOG_PACKET_HEADER_INIT(LOG_GIMBAL1_MSG),
-        time_ms : tstamp,
-        delta_time      : _log_dt,
-        delta_angles_x  : _log_del_ang.x,
-        delta_angles_y  : _log_del_ang.y,
-        delta_angles_z  : _log_del_ang.z,
-        delta_velocity_x : _log_del_vel.x,
-        delta_velocity_y : _log_del_vel.y,
-        delta_velocity_z : _log_del_vel.z,
-        joint_angles_x  : _measurement.joint_angles.x,
-        joint_angles_y  : _measurement.joint_angles.y,
-        joint_angles_z  : _measurement.joint_angles.z
-    };
-    logger->WriteBlock(&pkt1, sizeof(pkt1));
-
-    struct log_Gimbal2 pkt2 = {
-        LOG_PACKET_HEADER_INIT(LOG_GIMBAL2_MSG),
-        time_ms : tstamp,
-        est_sta : (uint8_t) _ekf.getStatus(),
-        est_x   : eulerEst.x,
-        est_y   : eulerEst.y,
-        est_z   : eulerEst.z,
-        rate_x  : _ang_vel_dem_rads.x,
-        rate_y  : _ang_vel_dem_rads.y,
-        rate_z  : _ang_vel_dem_rads.z,
-        target_x: _att_target_euler_rad.x,
-        target_y: _att_target_euler_rad.y,
-        target_z: _att_target_euler_rad.z
-    };
-    logger->WriteBlock(&pkt2, sizeof(pkt2));
+    // @LoggerMessage: GMB2
+    // @Vehicles: Copter
+    // @Description: Solo Gimbal estimation and demands
+    // @Field: TimeUS: Time since system startup
+    // @Field: es: Solo Gimbal EKF status bits
+    // @Field: ex: Solo Gimbal EKF estimate of gimbal angle, x-axis
+    // @Field: ey: Solo Gimbal EKF estimate of gimbal angle, y-axis
+    // @Field: ez: Solo Gimbal EKF estimate of gimbal angle, y-axis
+    // @Field: rx: Angular velocity demand around x-axis
+    // @Field: ry: Angular velocity demand around y-axis
+    // @Field: rz: Angular velocity demand around z-axis
+    // @Field: tx: Angular position target around x-axis
+    // @Field: ty: Angular position target around y-axis
+    // @Field: tz: Angular position target around z-axis
+    logger.Write(
+        "GMB2",
+        "TimeUS,es,ex,ey,ez,rx,ry,rz,tx,ty,tz",
+        "s-rrrEEELLL",
+        "F-000000000",
+        "QBfffffffff",
+        tstamp,
+        (uint8_t) _ekf.getStatus(),
+        eulerEst.x,
+        eulerEst.y,
+        eulerEst.z,
+        _ang_vel_dem_rads.x,
+        _ang_vel_dem_rads.y,
+        _ang_vel_dem_rads.z,
+        _att_target_euler_rad.x,
+        _att_target_euler_rad.y,
+        _att_target_euler_rad.z
+        );
 
     _log_dt = 0;
     _log_del_ang.zero();
@@ -498,4 +529,4 @@ void SoloGimbal::joint_rates_to_gimbal_ang_vel(const Vector3f& joint_rates, Vect
     ang_vel.z = sin_theta*joint_rates.x+cos_theta*cos_phi*joint_rates.z;
 }
 
-#endif // AP_AHRS_NAVEKF_AVAILABLE
+#endif // HAL_SOLO_GIMBAL_ENABLED

@@ -96,6 +96,13 @@ private:
                             const mavlink_message_t &msg,
                             const int16_t _request_first,
                             const int16_t _request_last);
+    virtual MAV_MISSION_RESULT allocate_receive_resources(const uint16_t count) WARN_IF_UNUSED {
+        return MAV_MISSION_ACCEPTED;
+    }
+    virtual MAV_MISSION_RESULT allocate_update_resources() WARN_IF_UNUSED {
+        return MAV_MISSION_ACCEPTED;
+    }
+    virtual void free_upload_resources() { }
 
     void send_mission_ack(const mavlink_message_t &msg, MAV_MISSION_RESULT result) const;
     void send_mission_ack(const GCS_MAVLINK &link, const mavlink_message_t &msg, MAV_MISSION_RESULT result) const;
@@ -106,9 +113,19 @@ private:
     virtual MAV_MISSION_RESULT replace_item(const mavlink_mission_item_int_t &mission_item_int) = 0;
     virtual MAV_MISSION_RESULT append_item(const mavlink_mission_item_int_t &mission_item_int) = 0;
 
+    // complete - method called when transfer is complete - backends
+    // are expected to override this method to do any required tidy up.
     virtual MAV_MISSION_RESULT complete(const GCS_MAVLINK &_link) {
         return MAV_MISSION_ACCEPTED;
     };
+    // transfer_is_complete - tidy up after a transfer is complete;
+    // this method will call complete() so the backends can do their
+    // bit.
+    void transfer_is_complete(const GCS_MAVLINK &_link, const mavlink_message_t &msg);
+
+    // timeout - called if the GCS fails to continue to supply items
+    // in a transfer.  Backends are expected to tidy themselves up in
+    // this routine
     virtual void timeout() {};
 
     bool mavlink2_requirement_met(const GCS_MAVLINK &_link, const mavlink_message_t &msg) const;

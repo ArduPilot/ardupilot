@@ -38,18 +38,19 @@ private:
     char callsign[9];
     uint32_t ICAO_address;
     bool initialised = false;
+    ADSB_EMITTER_TYPE type;
 };
         
 class ADSB {
 public:
-    ADSB(const struct sitl_fdm &_fdm, const char *home_str);
+    ADSB(const struct sitl_fdm &_fdm, const Location& _home) : home(_home) {};
     void update(void);
 
 private:
     const char *target_address = "127.0.0.1";
     const uint16_t target_port = 5762;
 
-    Location home;
+    const Location& home;
     uint8_t num_vehicles = 0;
     static const uint8_t num_vehicles_MAX = 200;
     ADSB_Vehicle vehicles[num_vehicles_MAX];

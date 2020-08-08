@@ -114,6 +114,7 @@ float Airspeed_Calibration::update(float airspeed, const Vector3f &vg, int16_t m
  */
 void AP_Airspeed::update_calibration(uint8_t i, const Vector3f &vground, int16_t max_airspeed_allowed_during_cal)
 {
+#if AP_AIRSPEED_AUTOCAL_ENABLE
     if (!param[i].autocal) {
         // auto-calibration not enabled
         return;
@@ -149,6 +150,7 @@ void AP_Airspeed::update_calibration(uint8_t i, const Vector3f &vground, int16_t
     } else {
         state[i].counter++;
     }
+#endif // AP_AIRSPEED_AUTOCAL_ENABLE
 }
 
 /*
@@ -165,6 +167,7 @@ void AP_Airspeed::update_calibration(const Vector3f &vground, int16_t max_airspe
 
 void AP_Airspeed::send_airspeed_calibration(const Vector3f &vground)
 {
+#if AP_AIRSPEED_AUTOCAL_ENABLE
     const mavlink_airspeed_autocal_t packet{
         vx: vground.x,
         vy: vground.y,
@@ -181,4 +184,5 @@ void AP_Airspeed::send_airspeed_calibration(const Vector3f &vground)
     };
     gcs().send_to_active_channels(MAVLINK_MSG_ID_AIRSPEED_AUTOCAL,
                                   (const char *)&packet);
+#endif // AP_AIRSPEED_AUTOCAL_ENABLE
 }

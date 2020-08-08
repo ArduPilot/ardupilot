@@ -18,6 +18,7 @@
 #pragma once
 
 #include "AP_RCProtocol.h"
+#include <AP_HAL/utility/sparse-endian.h>
 
 class AP_RCProtocol_Backend {
     friend class AP_RCProtcol;
@@ -28,6 +29,7 @@ public:
     virtual void process_pulse(uint32_t width_s0, uint32_t width_s1) {}
     virtual void process_byte(uint8_t byte, uint32_t baudrate) {}
     uint16_t read(uint8_t chan);
+    void read(uint16_t *pwm, uint8_t n);
     bool new_input();
     uint8_t num_channels();
 
@@ -50,16 +52,66 @@ public:
     uint32_t get_rc_input_count(void) const {
         return rc_input_count;
     }
+
+    // get RSSI
+    int16_t get_RSSI(void) const {
+        return rssi;
+    }
+
+    // get UART for RCIN, if available. This will return false if we
+    // aren't getting the active RC input protocol via the uart
+    AP_HAL::UARTDriver *get_UART(void) const {
+        return frontend._detected_with_bytes?frontend.added.uart:nullptr;
+    }
+
+    // get an available uart regardless of whether we have detected a protocol via it
+    AP_HAL::UARTDriver *get_available_UART(void) const {
+        return frontend.added.uart;
+    }
+
+    // return true if we have a uart available for protocol handling.
+    bool have_UART(void) const {
+        return frontend.added.uart != nullptr;
+    }
     
 protected:
-    void add_input(uint8_t num_channels, uint16_t *values, bool in_failsafe);
+    struct Channels11Bit {
+        // 176 bits of data (11 bits per channel * 16 channels) = 22 bytes.
+#if __BYTE_ORDER != __LITTLE_ENDIAN
+#error "Only supported on little-endian architectures"
+#endif
+        uint32_t ch0 : 11;
+        uint32_t ch1 : 11;
+        uint32_t ch2 : 11;
+        uint32_t ch3 : 11;
+        uint32_t ch4 : 11;
+        uint32_t ch5 : 11;
+        uint32_t ch6 : 11;
+        uint32_t ch7 : 11;
+        uint32_t ch8 : 11;
+        uint32_t ch9 : 11;
+        uint32_t ch10 : 11;
+        uint32_t ch11 : 11;
+        uint32_t ch12 : 11;
+        uint32_t ch13 : 11;
+        uint32_t ch14 : 11;
+        uint32_t ch15 : 11;
+    } PACKED;
+
+    void add_input(uint8_t num_channels, uint16_t *values, bool in_failsafe, int16_t rssi=-1);
+    AP_RCProtocol &frontend;
+
+    void log_data(AP_RCProtocol::rcprotocol_t prot, uint32_t timestamp, const uint8_t *data, uint8_t len) const;
+
+    // decode channels from the standard 11bit format (used by CRSF and SBUS)
+    void decode_11bit_channels(const uint8_t* data, uint8_t nchannels, uint16_t *values, uint16_t mult, uint16_t div, uint16_t offset);
 
 private:
-    AP_RCProtocol &frontend;
     uint32_t rc_input_count;
     uint32_t last_rc_input_count;
     uint32_t rc_frame_count;
 
     uint16_t _pwm_values[MAX_RCIN_CHANNELS];
     uint8_t  _num_channels;
+    int16_t rssi = -1;
 };

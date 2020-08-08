@@ -41,7 +41,8 @@ namespace SITL {
 Sailboat::Sailboat(const char *frame_str) :
     Aircraft(frame_str),
     steering_angle_max(35),
-    turning_circle(1.8)
+    turning_circle(1.8),
+    sail_area(1.0)
 {
     motor_connected = (strcmp(frame_str, "sailboat-motor") == 0);
 }
@@ -68,8 +69,8 @@ void Sailboat::calc_lift_and_drag(float wind_speed, float angle_of_attack_deg, f
     }
 
     // apply scaling by wind speed
-    lift *= wind_speed;
-    drag *= wind_speed;
+    lift *= wind_speed * sail_area;
+    drag *= wind_speed * sail_area;
 }
 
 // return turning circle (diameter) in meters for steering angle proportion in the range -1 to +1
@@ -181,7 +182,7 @@ void Sailboat::update(const struct sitl_input &input)
     const float wind_apparent_dir_bf = wrap_180(wind_apparent_dir_ef - degrees(AP::ahrs().yaw));
 
     // set RPM and airspeed from wind speed, allows to test RPM and Airspeed wind vane back end in SITL
-    rpm1 = wind_apparent_speed;
+    rpm[0] = wind_apparent_speed;
     airspeed_pitot = wind_apparent_speed;
 
     // calculate angle-of-attack from wind to mainsail

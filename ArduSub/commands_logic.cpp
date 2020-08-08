@@ -216,7 +216,7 @@ void Sub::exit_mission()
 
     // Try to enter loiter, if that fails, go to depth hold
     if (!auto_loiter_start()) {
-        set_mode(ALT_HOLD, MODE_REASON_MISSION_END);
+        set_mode(ALT_HOLD, ModeReason::MISSION_END);
     }
 }
 
@@ -720,7 +720,7 @@ bool Sub::verify_yaw()
     }
 
     // check if we are within 2 degrees of the target heading
-    return (fabsf(wrap_180_cd(ahrs.yaw_sensor-yaw_look_at_heading)) <= 200);
+    return (abs(wrap_180_cd(ahrs.yaw_sensor-yaw_look_at_heading)) <= 200);
 }
 
 /********************************************************************************/
@@ -789,7 +789,7 @@ void Sub::do_roi(const AP_Mission::Mission_Command& cmd)
 // point the camera to a specified angle
 void Sub::do_mount_control(const AP_Mission::Mission_Command& cmd)
 {
-#if MOUNT == ENABLED
+#if HAL_MOUNT_ENABLED
     camera_mount.set_angle_targets(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw);
 #endif
 }

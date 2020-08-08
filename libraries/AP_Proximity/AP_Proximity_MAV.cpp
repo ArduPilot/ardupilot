@@ -15,7 +15,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Proximity_MAV.h"
-#include <AP_SerialManager/AP_SerialManager.h>
 #include <ctype.h>
 #include <stdio.h>
 
@@ -23,26 +22,15 @@ extern const AP_HAL::HAL& hal;
 
 #define PROXIMITY_MAV_TIMEOUT_MS    500 // distance messages must arrive within this many milliseconds
 
-/* 
-   The constructor also initialises the proximity sensor. Note that this
-   constructor is not called until detect() returns true, so we
-   already know that we should setup the proximity sensor
-*/
-AP_Proximity_MAV::AP_Proximity_MAV(AP_Proximity &_frontend,
-                                   AP_Proximity::Proximity_State &_state) :
-    AP_Proximity_Backend(_frontend, _state)
-{
-}
-
 // update the state of the sensor
 void AP_Proximity_MAV::update(void)
 {
     // check for timeout and set health status
     if ((_last_update_ms == 0 || (AP_HAL::millis() - _last_update_ms > PROXIMITY_MAV_TIMEOUT_MS)) &&
         (_last_upward_update_ms == 0 || (AP_HAL::millis() - _last_upward_update_ms > PROXIMITY_MAV_TIMEOUT_MS))) {
-        set_status(AP_Proximity::Proximity_NoData);
+        set_status(AP_Proximity::Status::NoData);
     } else {
-        set_status(AP_Proximity::Proximity_Good);
+        set_status(AP_Proximity::Status::Good);
     }
 }
 
@@ -101,7 +89,7 @@ void AP_Proximity_MAV::handle_msg(const mavlink_message_t &msg)
         }
 
         const float MAX_DISTANCE = 9999.0f;
-        const uint8_t total_distances = MIN(((360.0f / fabs(increment)) + 0.5f), MAVLINK_MSG_OBSTACLE_DISTANCE_FIELD_DISTANCES_LEN); // usually 72
+        const uint8_t total_distances = MIN(((360.0f / fabsf(increment)) + 0.5f), MAVLINK_MSG_OBSTACLE_DISTANCE_FIELD_DISTANCES_LEN); // usually 72
 
         // set distance min and max
         _distance_min = packet.min_distance * 0.01f;
@@ -115,16 +103,14 @@ void AP_Proximity_MAV::handle_msg(const mavlink_message_t &msg)
             increment *= -1;
         }
 
-        Location current_loc;
-        float current_vehicle_bearing;
-        const bool database_ready = database_prepare_for_push(current_loc, current_vehicle_bearing);
+        Vector3f current_pos;
+        Matrix3f body_to_ned;
+        const bool database_ready = database_prepare_for_push(current_pos, body_to_ned);
 
         // initialise updated array and proximity sector angles (to closest object) and distances
-        bool sector_updated[_num_sectors];
-        float sector_width_half[_num_sectors];
-        for (uint8_t i = 0; i < _num_sectors; i++) {
+        bool sector_updated[PROXIMITY_NUM_SECTORS];
+        for (uint8_t i = 0; i < PROXIMITY_NUM_SECTORS; i++) {
             sector_updated[i] = false;
-            sector_width_half[i] = _sector_width_deg[i] * 0.5f;
             _angle[i] = _sector_middle_deg[i];
             _distance[i] = MAX_DISTANCE;
         }
@@ -145,10 +131,10 @@ void AP_Proximity_MAV::handle_msg(const mavlink_message_t &msg)
             const float mid_angle = wrap_360((float)j * increment + yaw_correction);
 
             // iterate over proximity sectors
-            for (uint8_t i = 0; i < _num_sectors; i++) {
+            for (uint8_t i = 0; i < PROXIMITY_NUM_SECTORS; i++) {
                 float angle_diff = fabsf(wrap_180(_sector_middle_deg[i] - mid_angle));
                 // update distance array sector with shortest distance from message
-                if ((angle_diff <= sector_width_half[i]) && (packet_distance_m < _distance[i])) {
+                if ((angle_diff <= (PROXIMITY_SECTOR_WIDTH_DEG * 0.5f)) && (packet_distance_m < _distance[i])) {
                     _distance[i] = packet_distance_m;
                     _angle[i] = mid_angle;
                     sector_updated[i] = true;
@@ -157,12 +143,12 @@ void AP_Proximity_MAV::handle_msg(const mavlink_message_t &msg)
 
             // update Object Avoidance database with Earth-frame point
             if (database_ready) {
-                database_push(mid_angle, packet_distance_m, _last_update_ms, current_loc, current_vehicle_bearing);
+                database_push(mid_angle, packet_distance_m, _last_update_ms, current_pos, body_to_ned);
             }
         }
 
         // update proximity sectors validity and boundary point
-        for (uint8_t i = 0; i < _num_sectors; i++) {
+        for (uint8_t i = 0; i < PROXIMITY_NUM_SECTORS; i++) {
             _distance_valid[i] = (_distance[i] >= _distance_min) && (_distance[i] <= _distance_max);
             if (sector_updated[i]) {
                 update_boundary_for_sector(i, false);

@@ -117,6 +117,278 @@ The Pixhawk4-Mini has 4 analog inputs
  - ADC Pin10 -> ADC 5V Sense
  - ADC Pin11 -> ADC 3.3V Sense
 
+## Connectors
+
+Unless noted otherwise all connectors are JST GH
+
+### TELEM port
+
+   <table border="1" class="docutils">
+   <tbody>
+   <tr>
+   <th>Pin </th>
+   <th>Signal </th>
+   <th>Volt </th>
+   </tr>
+   <tr>
+   <td>1 (red)</td>
+   <td>VCC</td>
+   <td>+5V</td>
+   </tr>
+   <tr>
+   <td>2 (blk)</td>
+   <td>TX (OUT)</td>
+   <td>+3.3V</td>
+   </tr>
+   <tr>
+   <td>3 (blk)</td>
+   <td>RX (IN)</td>
+   <td>+3.3V</td>
+   </tr>
+   <tr>
+   <td>4 (blk)</td>
+   <td>CTS</td>
+   <td>+3.3V</td>
+   </tr>
+   <tr>
+   <td>5 (blk)</td>
+   <td>RTS</td>
+   <td>+3.3V</td>
+   </tr>
+   <tr>
+   <td>6 (blk)</td>
+   <td>GND</td>
+   <td>GND</td>
+   </tr>
+   </tbody>
+   </table>
+
+
+### GPS port
+
+   <table border="1" class="docutils">
+   <tbody>
+   <tr>
+   <th>Pin </th>
+   <th>Signal </th>
+   <th>Volt </th>
+   </tr>
+   <tr>
+   <td>1 (red)</td>
+   <td>VCC</td>
+   <td>+5V</td>
+   </tr>
+   <tr>
+   <td>2 (blk)</td>
+   <td>SERIAL3 TX (OUT)</td>
+   <td>+3.3V</td>
+   </tr>
+   <tr>
+   <td>3 (blk)</td>
+   <td>SERIAL3 RX (IN)</td>
+   <td>+3.3V</td>
+   </tr>
+   <tr>
+   <td>4 (blk)</td>
+   <td>SCL</td>
+   <td>+3.3 (pullups)</td>
+   </tr>
+   <tr>
+   <td>5 (blk)</td>
+   <td>SDA</td>
+   <td>+3.3 (pullups)</td>
+   </tr>
+   <tr>
+   <td>6 (blk)</td>
+   <td>SafetyButton</td>
+   <td>+3.3V</td>
+   </tr>
+   <tr>
+   <td>7 (blk)</td>
+   <td>SafetyLED</td>
+   <td>+3.3V</td>
+   </tr>
+   <tr>
+   <td>8 (blk)</td>
+   <td>VDD 3.3 (OUT)</td>
+   <td>+3.3V</td>
+   </tr>
+   <tr>
+   <td>9 (blk)</td>
+   <td>Buzzer</td>
+   <td>+3.3V</td>
+   </tr>
+   <tr>
+   <td>10 (blk)</td>
+   <td>GND</td>
+   <td>GND</td>
+   </tr>
+   </tbody>
+   </table>
+
+### TELEM2 & I2CB port
+
+   <table border="1" class="docutils">
+   <tbody>
+   <tr>
+   <th>Pin</th>
+   <th>Signal</th>
+   <th>Volt</th>
+   </tr>
+   <tr>
+   <td>1 (red)</td>
+   <td>VCC</td>
+   <td>+5V</td>
+   </tr>
+   <tr>
+   <td>2 (blk)</td>
+   <td>TX (OUT)</td>
+   <td>+3.3V</td>
+   </tr>
+   <tr>
+   <td>3 (blk)</td>
+   <td>RX (IN)</td>
+   <td>+3.3V</td>
+   </tr>
+   <tr>
+   <td>4 (blk)</td>
+   <td>SCL I2C2</td>
+   <td>+3.3V</td>
+   </tr>
+   <tr>
+   <td>5 (blk)</td>
+   <td>SDA I2C2</td>
+   <td>+3.3V</td>
+   </tr>
+   <tr>
+   <td>6 (blk)</td>
+   <td>GND</td>
+   <td>GND</td>
+   </tr>
+   </tbody>
+   </table>
+
+### POWER1&2
+
+   <table border="1" class="docutils">
+   <tbody>
+   <tr>
+   <th>Pin</th>
+   <th>Signal</th>
+   <th>Volt</th>
+   </tr>
+   <tr>
+   <td>1 (red)</td>
+   <td>VCC</td>
+   <td>+5V</td>
+   </tr>
+   <tr>
+   <td>2 (red)</td>
+   <td>VCC</td>
+   <td>+5V</td>
+   </tr>
+   <tr>
+   <td>3 (blk)</td>
+   <td>CURRENT</td>
+   <td>up to +3.3V</td>
+   </tr>
+   <tr>
+   <td>4 (blk)</td>
+   <td>VOLTAGE</td>
+   <td>up to +3.3V</td>
+   </tr>
+   <td>5 (blk)</td>
+   <td>GND</td>
+   <td>GND</td>
+   </tr>
+   <td>6 (blk)</td>
+   <td>GND</td>
+   <td>GND</td>
+   </tr>
+   </tbody>
+   </table>
+
+### RCIN port
+
+   <table border="1" class="docutils">
+   <tbody>
+   <tr>
+   <th>Pin </th>
+   <th>Signal </th>
+   <th>Volt </th>
+   </tr>
+   <tr>
+   <td>1 (red)</td>
+   <td>VCC</td>
+   <td>+5V</td>
+   </tr>
+   <tr>
+   <td>2 (blk)</td>
+   <td>RCIN (IN)</td>
+   <td>+3.3V</td>
+   </tr>
+   <tr>
+   <td>3 (blk)</td>
+   <td>RSSI (IN)</td>
+   <td>+3.3V</td>
+   </tr>
+   <tr>
+   <td>4 (blk)</td>
+   <td>VDD3.3</td>
+   <td>+3.3V</td>
+   </tr>
+   <tr>
+   <td>5 (blk)</td>
+   <td>GND</td>
+   <td>GND</td>
+   </tr>
+   </tbody>
+   </table>
+
+## Debug
+
+The Pixhawk4 supports SWD debugging on the debug port
+
+   <table border="1" class="docutils">
+   <tbody>
+   <tr>
+   <th>Pin </th>
+   <th>Signal </th>
+   <th>Volt </th>
+   </tr>
+   <tr>
+   <td>1 (red)</td>
+   <td>FMU VDD 3.3</td>
+   <td>+3.3V</td>
+   </tr>
+   <tr>
+   <td>2 (blk)</td>
+   <td>UART TX Debug (OUT)</td>
+   <td>+3.3V</td>
+   </tr>
+   <tr>
+   <td>3 (blk)</td>
+   <td>UART RX Debug (IN)</td>
+   <td>+3.3V</td>
+   </tr>
+   <tr>
+   <td>4 (blk)</td>
+   <td>SWDIO</td>
+   <td>+3.3V</td>
+   </tr>
+   <tr>
+   <td>5 (blk)</td>
+   <td>SWCLK</td>
+   <td>+3.3V</td>
+   </tr>
+   <tr>
+   <td>6 (blk)</td>
+   <td>GND</td>
+   <td>GND</td>
+   </tr>
+   </tbody>
+   </table>
+
 ## Loading Firmware
 
 The board comes pre-installed with an ArduPilot compatible bootloader,

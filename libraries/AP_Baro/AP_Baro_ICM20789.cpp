@@ -94,9 +94,7 @@ AP_Baro_Backend *AP_Baro_ICM20789::probe(AP_Baro &baro,
 */
 bool AP_Baro_ICM20789::imu_spi_init(void)
 {
-    if (!dev_imu->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        AP_HAL::panic("PANIC: AP_Baro_ICM20789: failed to take serial semaphore ICM");
-    }
+    dev_imu->get_semaphore()->take_blocking();
 
     dev_imu->set_read_flag(0x80);
 
@@ -172,9 +170,7 @@ bool AP_Baro_ICM20789::init()
 
     debug("Looking for 20789 baro\n");
 
-    if (!dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        AP_HAL::panic("PANIC: AP_Baro_ICM20789: failed to take serial semaphore for init");
-    }
+    dev->get_semaphore()->take_blocking();
 
     debug("Setting up IMU\n");
     if (dev_imu->bus_type() != AP_HAL::Device::BUS_TYPE_I2C) {
@@ -210,6 +206,9 @@ bool AP_Baro_ICM20789::init()
 
     instance = _frontend.register_sensor();
 
+    dev->set_device_type(DEVTYPE_BARO_ICM20789);
+    set_bus_id(instance, dev->get_bus_id());
+    
     dev->get_semaphore()->give();
 
     debug("ICM20789: startup OK\n");
@@ -343,6 +342,13 @@ void AP_Baro_ICM20789::update()
 {
 #if BARO_ICM20789_DEBUG
     // useful for debugging
+// @LoggerMessage: ICMB
+// @Description: ICM20789 diagnostics
+// @Field: TimeUS: Time since system startup
+// @Field: Traw: raw temperature from sensor
+// @Field: Praw: raw pressure from sensor
+// @Field: P: pressure
+// @Field: T: temperature
     AP::logger().Write("ICMB", "TimeUS,Traw,Praw,P,T", "QIIff",
                                            AP_HAL::micros64(),
                                            dd.Traw, dd.Praw, dd.P, dd.T);

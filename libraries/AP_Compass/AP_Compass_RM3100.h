@@ -23,15 +23,18 @@
 #include "AP_Compass_Backend.h"
 
 #ifndef HAL_COMPASS_RM3100_I2C_ADDR
-# define HAL_COMPASS_RM3100_I2C_ADDR 0x20
+# define HAL_COMPASS_RM3100_I2C_ADDR1 0x20
+# define HAL_COMPASS_RM3100_I2C_ADDR2 0x21
+# define HAL_COMPASS_RM3100_I2C_ADDR3 0x22
+# define HAL_COMPASS_RM3100_I2C_ADDR4 0x23
 #endif
 
 class AP_Compass_RM3100 : public AP_Compass_Backend
 {
 public:
     static AP_Compass_Backend *probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                                     bool force_external = false,
-                                     enum Rotation rotation = ROTATION_NONE);
+                                     bool force_external,
+                                     enum Rotation rotation);
 
     void read() override;
 

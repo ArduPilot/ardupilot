@@ -38,6 +38,9 @@ extern const AP_HAL::HAL &hal;
 
 uint16_t AP_Param::sentinal_offset;
 
+// singleton instance
+AP_Param *AP_Param::_singleton;
+
 #define ENABLE_DEBUG 1
 
 #if ENABLE_DEBUG
@@ -70,14 +73,18 @@ uint16_t AP_Param::_num_vars;
 
 // cached parameter count
 uint16_t AP_Param::_parameter_count;
+uint16_t AP_Param::_count_marker;
+uint16_t AP_Param::_count_marker_done;
+HAL_Semaphore AP_Param::_count_sem;
 
 // storage and naming information about all types that can be saved
 const AP_Param::Info *AP_Param::_var_info;
 
 struct AP_Param::param_override *AP_Param::param_overrides = nullptr;
 uint16_t AP_Param::num_param_overrides = 0;
+uint16_t AP_Param::num_read_only = 0;
 
-ObjectBuffer<AP_Param::param_save> AP_Param::save_queue{30};
+ObjectBuffer_TS<AP_Param::param_save> AP_Param::save_queue{30};
 bool AP_Param::registered_save_handler;
 
 // we need a dummy object for the parameter save callback
@@ -378,6 +385,14 @@ bool AP_Param::get_base(const struct Info &info, ptrdiff_t &base)
     return true;
 }
 
+namespace AP {
+
+AP_Param *param()
+{
+    return AP_Param::get_singleton();
+}
+
+}
 
 // find the info structure given a header and a group_info table
 // return the Info structure and a pointer to the variables storage
@@ -853,7 +868,14 @@ AP_Param::find(const char *name, enum ap_var_type *ptype, uint16_t *flags)
             AP_Param *ap = find_group(name + len, i, 0, group_info, ptype);
             if (ap != nullptr) {
                 if (flags != nullptr) {
-                    *flags = group_info->flags;
+                    uint32_t group_element = 0;
+                    const struct GroupInfo *ginfo;
+                    struct GroupNesting group_nesting {};
+                    uint8_t idx;
+                    ap->find_var_info(&group_element, ginfo, group_nesting, &idx);
+                    if (ginfo != nullptr) {
+                        *flags = ginfo->flags;
+                    }
                 }
                 return ap;
             }
@@ -954,6 +976,23 @@ bool AP_Param::find_key_by_pointer(const void *ptr, uint16_t &key)
     return false;
 }
 
+/*
+  Find key to top level group parameters by pointer
+*/
+bool AP_Param::find_top_level_key_by_pointer(const void *ptr, uint16_t &key)
+{
+    for (uint16_t i=0; i<_num_vars; i++) {
+        if (_var_info[i].type != AP_PARAM_GROUP) {
+            continue;
+        }
+        if (ptr == (void **)_var_info[i].ptr) {
+            key = _var_info[i].key;
+            return true;
+        }
+    }
+    return false;
+}
+
 
 // Find a object by name.
 //
@@ -1038,7 +1077,7 @@ void AP_Param::save_sync(bool force_save)
 
     if (phdr.type == AP_PARAM_INT8 && ginfo != nullptr && (ginfo->flags & AP_PARAM_FLAG_ENABLE)) {
         // clear cached parameter count
-        _parameter_count = 0;
+        invalidate_count();
     }
     
     char name[AP_MAX_NAME_SIZE+1];
@@ -1236,8 +1275,11 @@ bool AP_Param::configured_in_storage(void) const
     return scan(&phdr, &ofs) && (phdr.type == AP_PARAM_VECTOR3F || idx == 0);
 }
 
-bool AP_Param::configured_in_defaults_file(void) const
+bool AP_Param::configured_in_defaults_file(bool &read_only) const
 {
+    if (num_param_overrides == 0) {
+        return false;
+    }
     uint32_t group_element = 0;
     const struct GroupInfo *ginfo;
     struct GroupNesting group_nesting {};
@@ -1250,10 +1292,29 @@ bool AP_Param::configured_in_defaults_file(void) const
 
     for (uint16_t i=0; i<num_param_overrides; i++) {
         if (this == param_overrides[i].object_ptr) {
+            read_only = param_overrides[i].read_only;
             return true;
         }
     }
 
+    return false;
+}
+
+bool AP_Param::configured(void) const
+{
+    bool read_only;
+    return configured_in_defaults_file(read_only) || configured_in_storage();
+}
+
+bool AP_Param::is_read_only(void) const
+{
+    if (num_read_only == 0) {
+        return false;
+    }
+    bool read_only;
+    if (configured_in_defaults_file(read_only)) {
+        return read_only;
+    }
     return false;
 }
 
@@ -1401,7 +1462,7 @@ void AP_Param::reload_defaults_file(bool last_pass)
         if (load_defaults_file(default_file, last_pass)) {
             printf("Loaded defaults from %s\n", default_file);
         } else {
-            printf("Failed to load defaults from %s\n", default_file);
+            AP_HAL::panic("Failed to load defaults from %s\n", default_file);
         }
     }
 #endif
@@ -1418,7 +1479,7 @@ void AP_Param::load_object_from_eeprom(const void *object_pointer, const struct 
     uint16_t key;
 
     // reset cached param counter as we may be loading a dynamic var_info
-    _parameter_count = 0;
+    invalidate_count();
     
     if (!find_key_by_pointer(object_pointer, key)) {
         hal.console->printf("ERROR: Unable to find param pointer\n");
@@ -1802,6 +1863,65 @@ void AP_Param::convert_parent_class(uint8_t param_key, void *object_pointer,
     }
 }
 
+/*
+ convert width of a parameter, allowing update to wider scalar values
+ without changing the parameter indexes
+*/
+bool AP_Param::convert_parameter_width(ap_var_type old_ptype)
+{
+    if (configured_in_storage()) {
+        // already converted or set by the user
+        return false;
+    }
+
+    uint32_t group_element = 0;
+    const struct GroupInfo *ginfo;
+    struct GroupNesting group_nesting {};
+    uint8_t idx;
+    const struct AP_Param::Info *info = find_var_info(&group_element, ginfo, group_nesting, &idx);
+
+    if (info == nullptr) {
+        return false;
+    }
+
+    // remember the type
+    ap_var_type new_ptype;
+    if (ginfo != nullptr) {
+        new_ptype = (ap_var_type)ginfo->type;
+    } else {
+        new_ptype = (ap_var_type)info->type;
+    }
+    
+    // create the header we will use to scan for the variable
+    struct Param_header phdr;
+    phdr.type = old_ptype;
+    set_key(phdr, info->key);
+    phdr.group_element = group_element;
+
+    // scan EEPROM to find the right location
+    uint16_t pofs;
+    if (!scan(&phdr, &pofs)) {
+        // it isn't in storage
+        return false;
+    }
+
+    // load the old value from EEPROM
+    uint8_t old_value[type_size(old_ptype)];
+    _storage.read_block(old_value, pofs+sizeof(phdr), sizeof(old_value));
+    
+    AP_Param *old_ap = (AP_Param *)&old_value[0];
+
+    // going via float is safe as the only time we would be converting
+    // from AP_Int32 is when converting to float
+    float old_float_value = old_ap->cast_to_float(old_ptype);
+    set_value(new_ptype, this, old_float_value);
+
+    // force save as the new type
+    save(true);
+
+    return true;
+}
+
 
 /*
   set a parameter to a float value
@@ -1842,25 +1962,37 @@ void AP_Param::set_float(float value, enum ap_var_type var_type)
 /*
   parse a parameter file line
  */
-bool AP_Param::parse_param_line(char *line, char **vname, float &value)
+bool AP_Param::parse_param_line(char *line, char **vname, float &value, bool &read_only)
 {
     if (line[0] == '#') {
         return false;
     }
     char *saveptr = nullptr;
-    char *pname = strtok_r(line, ", =\t", &saveptr);
+    /*
+      note that we need the \r\n as delimiters to prevent us getting
+      strings with line termination in the results
+     */
+    char *pname = strtok_r(line, ", =\t\r\n", &saveptr);
     if (pname == nullptr) {
         return false;
     }
     if (strlen(pname) > AP_MAX_NAME_SIZE) {
         return false;
     }
-    const char *value_s = strtok_r(nullptr, ", =\t", &saveptr);
+    const char *value_s = strtok_r(nullptr, ", =\t\r\n", &saveptr);
     if (value_s == nullptr) {
         return false;
     }
-    value = atof(value_s);
+    value = strtof(value_s, NULL);
     *vname = pname;
+
+    const char *flags_s = strtok_r(nullptr, ", =\t\r\n", &saveptr);
+    if (flags_s && strcmp(flags_s, "@READONLY") == 0) {
+        read_only = true;
+    } else {
+        read_only = false;
+    }
+
     return true;
 }
 
@@ -1883,7 +2015,8 @@ bool AP_Param::count_defaults_in_file(const char *filename, uint16_t &num_defaul
     while (fgets(line, sizeof(line)-1, f)) {
         char *pname;
         float value;
-        if (!parse_param_line(line, &pname, value)) {
+        bool read_only;
+        if (!parse_param_line(line, &pname, value, read_only)) {
             continue;
         }
         enum ap_var_type var_type;
@@ -1911,7 +2044,8 @@ bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass)
     while (fgets(line, sizeof(line)-1, f)) {
         char *pname;
         float value;
-        if (!parse_param_line(line, &pname, value)) {
+        bool read_only;
+        if (!parse_param_line(line, &pname, value, read_only)) {
             continue;
         }
         enum ap_var_type var_type;
@@ -1928,6 +2062,10 @@ bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass)
         }
         param_overrides[idx].object_ptr = vp;
         param_overrides[idx].value = value;
+        param_overrides[idx].read_only = read_only;
+        if (read_only) {
+            num_read_only++;
+        }
         idx++;
         if (!vp->configured_in_storage()) {
             vp->set_float(value, var_type);
@@ -1965,6 +2103,7 @@ bool AP_Param::load_defaults_file(const char *filename, bool last_pass)
 
     delete[] param_overrides;
     num_param_overrides = 0;
+    num_read_only = 0;
 
     param_overrides = new param_override[num_defaults];
     if (param_overrides == nullptr) {
@@ -2012,6 +2151,7 @@ bool AP_Param::count_embedded_param_defaults(uint16_t &count)
         char line[100];
         char *pname;
         float value;
+        bool read_only;
         uint16_t i;
         uint16_t n = MIN(length, sizeof(line)-1);
         for (i=0;i<n;i++) {
@@ -2034,7 +2174,7 @@ bool AP_Param::count_embedded_param_defaults(uint16_t &count)
             continue;
         }
 
-        if (!parse_param_line(line, &pname, value)) {
+        if (!parse_param_line(line, &pname, value, read_only)) {
             continue;
         }
 
@@ -2058,6 +2198,7 @@ void AP_Param::load_embedded_param_defaults(bool last_pass)
     delete[] param_overrides;
     param_overrides = nullptr;
     num_param_overrides = 0;
+    num_read_only = 0;
 
     uint16_t num_defaults = 0;
     if (!count_embedded_param_defaults(num_defaults)) {
@@ -2078,6 +2219,7 @@ void AP_Param::load_embedded_param_defaults(bool last_pass)
         char line[100];
         char *pname;
         float value;
+        bool read_only;
         uint16_t i;
         uint16_t n = MIN(length, sizeof(line)-1);
         for (i=0;i<n;i++) {
@@ -2099,7 +2241,7 @@ void AP_Param::load_embedded_param_defaults(bool last_pass)
             continue;
         }
         
-        if (!parse_param_line(line, &pname, value)) {
+        if (!parse_param_line(line, &pname, value, read_only)) {
             continue;
         }
         enum ap_var_type var_type;
@@ -2116,6 +2258,10 @@ void AP_Param::load_embedded_param_defaults(bool last_pass)
         }
         param_overrides[idx].object_ptr = vp;
         param_overrides[idx].value = value;
+        param_overrides[idx].read_only = read_only;
+        if (read_only) {
+            num_read_only++;
+        }
         idx++;
         if (!vp->configured_in_storage()) {
             vp->set_float(value, var_type);
@@ -2182,19 +2328,44 @@ void AP_Param::send_parameter(const char *name, enum ap_var_type var_type, uint8
 uint16_t AP_Param::count_parameters(void)
 {
     // if we haven't cached the parameter count yet...
-    uint16_t ret = _parameter_count;
-    if (0 == ret) {
+    WITH_SEMAPHORE(_count_sem);
+    if (_parameter_count != 0 &&
+        _count_marker == _count_marker_done) {
+        return _parameter_count;
+    }
+    /*
+      cope with another thread invalidating the count while we are
+      counting
+     */
+    uint8_t limit = 4;
+    while ((_parameter_count == 0 ||
+            _count_marker != _count_marker_done) &&
+           limit--) {
         AP_Param  *vp;
         AP_Param::ParamToken token;
+        uint16_t count = 0;
+        uint16_t marker = _count_marker;
 
         for (vp = AP_Param::first(&token, nullptr);
              vp != nullptr;
              vp = AP_Param::next_scalar(&token, nullptr)) {
-            ret++;
+            count++;
         }
-        _parameter_count = ret;
+        _parameter_count = count;
+        _count_marker_done = marker;
     }
-    return ret;
+    return _parameter_count;
+}
+
+/*
+  invalidate parameter count cache
+ */
+void AP_Param::invalidate_count(void)
+{
+    // we don't take the semaphore here as we don't want to block. The
+    // not-equal test is strong enough to ensure we get the right
+    // answer
+    _count_marker++;
 }
 
 /*
@@ -2237,7 +2408,7 @@ void AP_Param::set_defaults_from_table(const struct defaults_table_struct *table
         if (!AP_Param::set_default_by_name(table[i].name, table[i].value)) {
             char *buf = nullptr;
             if (asprintf(&buf, "param deflt fail:%s", table[i].name) > 0) {
-                AP_BoardConfig::sensor_config_error(buf);
+                AP_BoardConfig::config_error(buf);
             }
         }
     }
@@ -2271,6 +2442,39 @@ bool AP_Param::set_by_name(const char *name, float value)
     }
     // not a supported type
     return false;
+}
+
+/*
+  get a value by name
+ */
+bool AP_Param::get(const char *name, float &value)
+{
+    enum ap_var_type vtype;
+    AP_Param *vp = find(name, &vtype);
+    if (vp == nullptr) {
+        return false;
+    }
+    switch (vtype) {
+    case AP_PARAM_INT8:
+        value = ((AP_Int8 *)vp)->get();
+        break;
+    case AP_PARAM_INT16:
+        value = ((AP_Int16 *)vp)->get();
+        break;
+
+    case AP_PARAM_INT32:
+        value = ((AP_Int32 *)vp)->get();
+        break;
+
+    case AP_PARAM_FLOAT:
+        value = ((AP_Float *)vp)->get();
+        break;
+
+    default:
+        // not a supported type
+        return false;
+    }
+    return true;
 }
 
 /*

@@ -128,5 +128,5 @@ private:
 
     bool _reverse = false;
     float get_yaw();
-    float get_yaw_sensor();
+    int32_t get_yaw_sensor() const;
 };

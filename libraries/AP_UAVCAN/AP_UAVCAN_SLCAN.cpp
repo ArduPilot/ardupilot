@@ -19,7 +19,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_WITH_UAVCAN && !HAL_MINIMIZE_FEATURES && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if AP_UAVCAN_SLCAN_ENABLED
 
 #include "AP_UAVCAN_SLCAN.h"
 #include <AP_SerialManager/AP_SerialManager.h>
@@ -483,7 +483,9 @@ int16_t SLCAN::CAN::receive(uavcan::CanFrame& out_frame, uavcan::MonotonicTime& 
     out_ts_monotonic = uavcan::MonotonicTime::fromUSec(AP_HAL::micros64());; // High precision is not required for monotonic timestamps
     uint64_t utc_usec;
     CanRxItem frm;
-    rx_queue_.pop(frm);
+    if (!rx_queue_.pop(frm)) {
+        return 0;
+    }
     out_frame = frm.frame;
     utc_usec = frm.utc_usec;
     out_flags = frm.flags;
@@ -568,4 +570,5 @@ void SLCAN::CANManager::reader_trampoline(void)
     }
 }
 
-#endif //HAL_WITH_UAVCAN
+#endif // AP_UAVCAN_SLCAN_ENABLED
+

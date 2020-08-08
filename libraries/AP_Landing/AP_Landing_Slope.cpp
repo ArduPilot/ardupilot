@@ -89,12 +89,13 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
     const bool below_flare_sec = (flare_sec > 0 && height <= sink_rate * flare_sec);
     const bool probably_crashed = (aparm.crash_detection_enable && fabsf(sink_rate) < 0.2f && !is_flying);
 
+    const AP_GPS &gps = AP::gps();
+
     if ((on_approach_stage && below_flare_alt) ||
         (on_approach_stage && below_flare_sec && (wp_proportion > 0.5)) ||
         (!rangefinder_state_in_range && wp_proportion >= 1) ||
         probably_crashed) {
 
-        const AP_GPS &gps = AP::gps();
         if (type_slope_stage != SLOPE_STAGE_FINAL) {
             type_slope_flags.post_stats = true;
             if (is_flying && (AP_HAL::millis()-last_flying_ms) > 3000) {
@@ -154,6 +155,17 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
     // check if we should auto-disarm after a confirmed landing
     if (type_slope_stage == SLOPE_STAGE_FINAL) {
         disarm_if_autoland_complete_fn();
+    }
+
+    if (mission.continue_after_land() &&
+        type_slope_stage == SLOPE_STAGE_FINAL &&
+        gps.status() >= AP_GPS::GPS_OK_FIX_3D &&
+        gps.ground_speed() < 1) {
+        /*
+          user has requested to continue with mission after a
+          landing. Return true to allow for continue
+         */
+        return true;
     }
 
     /*
@@ -384,7 +396,15 @@ bool AP_Landing::type_slope_is_complete(void) const
 
 void AP_Landing::type_slope_log(void) const
 {
-    // log to AP_Logger
+// @LoggerMessage: LAND
+// @Description: Slope Landing data
+// @Field: TimeUS: Time since system startup
+// @Field: stage: progress through landing sequence
+// @Field: f1: Landing flags
+// @Field: f2: Slope-specific landing flags
+// @Field: slope: Slope to landing point
+// @Field: slopeInit: Initial slope to landing point
+// @Field: altO: Rangefinder correction
     AP::logger().Write("LAND", "TimeUS,stage,f1,f2,slope,slopeInit,altO", "QBBBfff",
                                             AP_HAL::micros64(),
                                             type_slope_stage,

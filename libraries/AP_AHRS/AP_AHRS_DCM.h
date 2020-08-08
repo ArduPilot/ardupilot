@@ -92,9 +92,21 @@ public:
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
-    bool airspeed_estimate(float *airspeed_ret) const override;
+    bool airspeed_estimate(float &airspeed_ret) const override;
+
+    // return a synthetic airspeed estimate (one derived from sensors
+    // other than an actual airspeed sensor), if available. return
+    // true if we have a synthetic airspeed.  ret will not be modified
+    // on failure.
+    bool synthetic_airspeed(float &ret) const override WARN_IF_UNUSED {
+        ret = _last_airspeed;
+        return true;
+    }
 
     bool            use_compass() override;
+
+    // return the quaternion defining the rotation from NED to XYZ (body) axes
+    bool get_quaternion(Quaternion &quat) const override WARN_IF_UNUSED;
 
     bool set_home(const Location &loc) override WARN_IF_UNUSED;
     void estimate_wind(void);

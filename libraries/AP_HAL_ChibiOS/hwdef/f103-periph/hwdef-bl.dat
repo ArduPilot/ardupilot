@@ -15,14 +15,6 @@ env AP_PERIPH 1
 # crystal frequency
 OSCILLATOR_HZ 8000000
 
-define STM32_SW                            STM32_SW_PLL
-define STM32_PLLSRC                        STM32_PLLSRC_HSE
-define STM32_PLLXTPRE                      STM32_PLLXTPRE_DIV1
-define STM32_PLLMUL_VALUE                  9
-define STM32_PPRE1                         STM32_PPRE1_DIV2
-define STM32_PPRE2                         STM32_PPRE2_DIV2
-define STM32_ADCPRE                        STM32_ADCPRE_DIV4
-
 define CH_CFG_ST_FREQUENCY 1000
 
 # assume 128k flash part
@@ -31,11 +23,9 @@ FLASH_SIZE_KB 128
 STDOUT_SERIAL SD1
 STDOUT_BAUDRATE 57600
 
-# board voltage
-STM32_VDD 330U
 
 # order of UARTs
-UART_ORDER
+SERIAL_ORDER
 define HAL_USE_UART FALSE
 
 PA4 LED_BOOTLOADER OUTPUT LOW
@@ -89,13 +79,6 @@ PA12 CAN_TX CAN
 define HAL_USE_CAN TRUE
 define STM32_CAN_USE_CAN1 TRUE
 
-define CAN_APP_VERSION_MAJOR 1
-define CAN_APP_VERSION_MINOR 0
-define CAN_APP_NODE_NAME "org.ardupilot.ap_periph"
-
-# start with a fixed node ID so the board is usable without DNA
-define HAL_CAN_DEFAULT_NODE_ID 117
-
 # make bl baudrate match debug baudrate for easier debugging
 define BOOTLOADER_BAUDRATE 57600
 
@@ -107,3 +90,9 @@ define HAL_BOOTLOADER_TIMEOUT 1000
 # and look for it low then we know user has pulled it down and
 # want to stay in the bootloader
 PB6 STAY_IN_BOOTLOADER INPUT FLOATING
+
+# reserve 256 bytes for comms between app and bootloader
+RAM_RESERVE_START 256
+
+# Add CS pins to ensure they are high in bootloader
+PB0 MAG_CS CS

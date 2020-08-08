@@ -9,7 +9,6 @@ APJ_BOARD_ID 134
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
-STM32_PLLM_VALUE 8
 
 FLASH_SIZE_KB 1024
 
@@ -26,14 +25,17 @@ define HAL_LED_ON 0
 # the location where the bootloader will put the firmware
 FLASH_BOOTLOADER_LOAD_KB 64
 
-# board voltage
-STM32_VDD 330U
 
 # order of UARTs
-UART_ORDER OTG1
+SERIAL_ORDER OTG1
 
 PA11 OTG_FS_DM OTG1
 PA12 OTG_FS_DP OTG1
 
 define HAL_USE_EMPTY_STORAGE 1
 define HAL_STORAGE_SIZE 15360
+
+# Add CS pins to ensure they are high in bootloader
+PB10 MAX7456_CS CS
+PC0 FLASH_CS CS
+PB11 MPU6000_CS CS

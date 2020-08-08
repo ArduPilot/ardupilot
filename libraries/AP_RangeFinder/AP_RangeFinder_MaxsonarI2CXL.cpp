@@ -30,11 +30,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-/*
-   The constructor also initializes the rangefinder. Note that this
-   constructor is not called until detect() returns true, so we
-   already know that we should setup the rangefinder
-*/
 AP_RangeFinder_MaxsonarI2CXL::AP_RangeFinder_MaxsonarI2CXL(RangeFinder::RangeFinder_State &_state,
                                                            AP_RangeFinder_Params &_params,
                                                            AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
@@ -75,9 +70,7 @@ AP_RangeFinder_Backend *AP_RangeFinder_MaxsonarI2CXL::detect(RangeFinder::RangeF
  */
 bool AP_RangeFinder_MaxsonarI2CXL::_init(void)
 {
-    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return false;
-    }
+    _dev->get_semaphore()->take_blocking();
 
     if (!start_reading()) {
         _dev->get_semaphore()->give();
@@ -155,6 +148,6 @@ void AP_RangeFinder_MaxsonarI2CXL::update(void)
         update_status();
     } else if (AP_HAL::millis() - state.last_reading_ms > 300) {
         // if no updates for 0.3 seconds set no-data
-        set_status(RangeFinder::RangeFinder_NoData);
+        set_status(RangeFinder::Status::NoData);
     }
 }

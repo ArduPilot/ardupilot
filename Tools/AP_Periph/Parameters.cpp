@@ -2,6 +2,14 @@
 
 extern const AP_HAL::HAL &hal;
 
+#ifndef AP_PERIPH_LED_BRIGHT_DEFAULT
+#define AP_PERIPH_LED_BRIGHT_DEFAULT 100
+#endif
+
+#ifndef HAL_PERIPH_ADSB_BAUD_DEFAULT
+#define HAL_PERIPH_ADSB_BAUD_DEFAULT 57600
+#endif
+
 /*
  *  AP_Periph parameter definitions
  *
@@ -25,25 +33,70 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 
     // can node baudrate
     GSCALAR(can_baudrate,     "CAN_BAUDRATE", 1000000),
+
+#if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
+    // trigger bootloader flash
+    GSCALAR(flash_bootloader,     "FLASH_BOOTLOADER", 0),
+#endif
     
+#ifdef HAL_PERIPH_ENABLE_BUZZER
+    GSCALAR(buzz_volume,     "BUZZER_VOLUME", 100),
+#endif
+
 #ifdef HAL_PERIPH_ENABLE_GPS
     // GPS driver
     // @Group: GPS_
-    // @Path: ../libraries/AP_GPS/AP_GPS.cpp
+    // @Path: ../../libraries/AP_GPS/AP_GPS.cpp
     GOBJECT(gps, "GPS_", AP_GPS),
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_MAG
     // @Group: COMPASS_
-    // @Path: ../libraries/AP_Compass/AP_Compass.cpp
+    // @Path: ../../libraries/AP_Compass/AP_Compass.cpp
     GOBJECT(compass,         "COMPASS_",     Compass),
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_BARO
     // Baro driver
     // @Group: BARO_
-    // @Path: ../libraries/AP_Baro/AP_Baro.cpp
+    // @Path: ../../libraries/AP_Baro/AP_Baro.cpp
     GOBJECT(baro, "BARO_", AP_Baro),
+    GSCALAR(baro_enable, "BARO_ENABLE", 1),
+#endif
+
+#ifdef AP_PERIPH_HAVE_LED
+    GSCALAR(led_brightness, "LED_BRIGHTNESS", AP_PERIPH_LED_BRIGHT_DEFAULT),
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_AIRSPEED
+    // Airspeed driver
+    // @Group: ARSP
+    // @Path: ../../libraries/AP_Airspeed/AP_Airspeed.cpp
+    GOBJECT(airspeed, "ARSP", AP_Airspeed),
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_RANGEFINDER
+    GSCALAR(rangefinder_baud, "RNGFND_BAUDRATE", 115200),
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_RANGEFINDER
+    // Rangefinder driver
+    // @Group: RNGFND
+    // @Path: ../../libraries/AP_RangeFinder/Rangefinder.cpp
+    GOBJECT(rangefinder, "RNGFND", RangeFinder),
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_ADSB
+    GSCALAR(adsb_baudrate, "ADSB_BAUDRATE", HAL_PERIPH_ADSB_BAUD_DEFAULT),
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
+    GSCALAR(hardpoint_id, "HARDPOINT_ID", HAL_PWM_HARDPOINT_ID_DEFAULT),
+    GSCALAR(hardpoint_rate, "HARDPOINT_RATE", 100),
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_HWESC
+    GSCALAR(esc_number, "ESC_NUMBER", 0),
 #endif
     
     AP_VAREND

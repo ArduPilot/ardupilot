@@ -38,7 +38,7 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
 
     // @Param: _STR_RAT_IMAX
     // @DisplayName: Steering control I gain maximum
-    // @Description: Steering control I gain maximum.  Constraings the steering output (range -1 to +1) that the I term will generate
+    // @Description: Steering control I gain maximum.  Constrains the steering output (range -1 to +1) that the I term will generate
     // @Range: 0.000 1.000
     // @Increment: 0.01
     // @User: Standard
@@ -64,6 +64,24 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Increment: 0.1
     // @Units: Hz
     // @User: Standard
+
+    // @Param: _STR_RAT_FLTT
+    // @DisplayName: Steering control Target filter frequency in Hz
+    // @Description: Target filter frequency in Hz
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: _STR_RAT_FLTE
+    // @DisplayName: Steering control Error filter frequency in Hz
+    // @Description: Error filter frequency in Hz
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: _STR_RAT_FLTD
+    // @DisplayName: Steering control Derivative term filter frequency in Hz
+    // @Description: Derivative filter frequency in Hz
+    // @Units: Hz
+    // @User: Standard
     AP_SUBGROUPINFO(_steer_rate_pid, "_STR_RAT_", 1, AR_AttitudeControl, AC_PID),
 
     // @Param: _SPEED_P
@@ -81,7 +99,7 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
 
     // @Param: _SPEED_IMAX
     // @DisplayName: Speed control I gain maximum
-    // @Description: Speed control I gain maximum.  Constraings the maximum motor output (range -1 to +1) that the I term will generate
+    // @Description: Speed control I gain maximum.  Constrains the maximum motor output (range -1 to +1) that the I term will generate
     // @Range: 0.000 1.000
     // @Increment: 0.01
     // @User: Standard
@@ -105,6 +123,24 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Description: Speed control input filter.  Lower values reduce noise but add delay.
     // @Range: 0.000 100.000
     // @Increment: 0.1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: _SPEED_FLTT
+    // @DisplayName: Speed control Target filter frequency in Hz
+    // @Description: Target filter frequency in Hz
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: _SPEED_FLTE
+    // @DisplayName: Speed control Error filter frequency in Hz
+    // @Description: Error filter frequency in Hz
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: _SPEED_FLTD
+    // @DisplayName: Speed control Derivative term filter frequency in Hz
+    // @Description: Derivative filter frequency in Hz
     // @Units: Hz
     // @User: Standard
     AP_SUBGROUPINFO(_throttle_speed_pid, "_SPEED_", 2, AR_AttitudeControl, AC_PID),
@@ -210,6 +246,24 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Increment: 0.1
     // @Units: Hz
     // @User: Standard
+
+    // @Param: _BAL_FLTT
+    // @DisplayName: Pitch control Target filter frequency in Hz
+    // @Description: Target filter frequency in Hz
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: _BAL_FLTE
+    // @DisplayName: Pitch control Error filter frequency in Hz
+    // @Description: Error filter frequency in Hz
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: _BAL_FLTD
+    // @DisplayName: Pitch control Derivative term filter frequency in Hz
+    // @Description: Derivative filter frequency in Hz
+    // @Units: Hz
+    // @User: Standard
     AP_SUBGROUPINFO(_pitch_to_throttle_pid, "_BAL_", 10, AR_AttitudeControl, AC_PID),
 
     // @Param: _BAL_SPD_FF
@@ -259,6 +313,24 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Description: Sail Heel control input filter.  Lower values reduce noise but add delay.
     // @Range: 0.000 100.000
     // @Increment: 0.1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: _SAIL_FLTT
+    // @DisplayName: Sail Heel Target filter frequency in Hz
+    // @Description: Target filter frequency in Hz
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: _SAIL_FLTE
+    // @DisplayName: Sail Heel Error filter frequency in Hz
+    // @Description: Error filter frequency in Hz
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: _SAIL_FLTD
+    // @DisplayName: Sail Heel Derivative term filter frequency in Hz
+    // @Description: Derivative filter frequency in Hz
     // @Units: Hz
     // @User: Standard
     AP_SUBGROUPINFO(_sailboat_heel_pid, "_SAIL_", 12, AR_AttitudeControl, AC_PID),
@@ -601,7 +673,7 @@ bool AR_AttitudeControl::get_forward_speed(float &speed) const
     if (!_ahrs.get_velocity_NED(velocity)) {
         // use less accurate GPS, assuming entire length is along forward/back axis of vehicle
         if (AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
-            if (fabsf(wrap_180_cd(_ahrs.yaw_sensor - AP::gps().ground_course_cd())) <= 9000) {
+            if (abs(wrap_180_cd(_ahrs.yaw_sensor - AP::gps().ground_course_cd())) <= 9000) {
                 speed = AP::gps().ground_speed();
             } else {
                 speed = -AP::gps().ground_speed();

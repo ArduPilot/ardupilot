@@ -48,7 +48,7 @@ public:
 /**
  * Single non-blocking CAN interface.
  */
-class AP_HAL::CAN: public uavcan::ICanIface {
+class AP_HAL::CANHal: public uavcan::ICanIface {
 public:
     /*  CAN port open method
 

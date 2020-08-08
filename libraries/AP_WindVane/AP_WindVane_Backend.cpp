@@ -44,13 +44,14 @@ void AP_WindVane_Backend::direction_update_frontend(float apparent_angle_ef)
         // https://en.wikipedia.org/wiki/Mean_of_circular_quantities
         const float filtered_sin = _dir_sin_filt.apply(sinf(apparent_angle_ef), 0.05f);
         const float filtered_cos = _dir_cos_filt.apply(cosf(apparent_angle_ef), 0.05f);
-        _frontend._direction_apparent_ef = atan2f(filtered_sin, filtered_cos);
+        _frontend._direction_apparent_ef = wrap_PI(atan2f(filtered_sin, filtered_cos));
     } else {
-        _frontend._direction_apparent_ef = apparent_angle_ef;
+        _frontend._direction_apparent_ef = wrap_PI(apparent_angle_ef);
     }
 
-    // make sure between -pi and pi
-    _frontend._direction_apparent_ef = wrap_PI(_frontend._direction_apparent_ef);
+    // apply low pass filter for current tack, this is at a hard coded cutoff frequency
+    const float tack_direction_apparent = _tack_filt.apply(wrap_PI(apparent_angle_ef - AP::ahrs().yaw), 0.05f);
+    _frontend._current_tack = is_negative(tack_direction_apparent) ? _frontend.Sailboat_Tack::TACK_PORT : _frontend.Sailboat_Tack::TACK_STARBOARD;
 }
 
 // calibrate WindVane

@@ -125,6 +125,7 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
     init_rc_out();
     enable_motor_output();
     motors->armed(true);
+    hal.util->set_soft_armed(true);
 
     // initialise run time
     last_run_time = millis();
@@ -220,16 +221,17 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
             mavlink_msg_compassmot_status_send(gcs_chan.get_chan(),
                                                channel_throttle->get_control_in(),
                                                current,
-                                               interference_pct[compass.get_primary()],
-                                               motor_compensation[compass.get_primary()].x,
-                                               motor_compensation[compass.get_primary()].y,
-                                               motor_compensation[compass.get_primary()].z);
+                                               interference_pct[0],
+                                               motor_compensation[0].x,
+                                               motor_compensation[0].y,
+                                               motor_compensation[0].z);
         }
     }
 
     // stop motors
     motors->output_min();
     motors->armed(false);
+    hal.util->set_soft_armed(false);
 
     // set and save motor compensation
     if (updated) {
@@ -245,9 +247,6 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
         gcs_chan.send_text(MAV_SEVERITY_NOTICE, "Failed");
         compass.motor_compensation_type(AP_COMPASS_MOT_COMP_DISABLED);
     }
-
-    // display new motor offsets and save
-    report_compass();
 
     // turn off notify leds
     AP_Notify::flags.esc_calibration = false;

@@ -48,7 +48,7 @@ bool AP_Arming_Sub::pre_arm_checks(bool display_failure)
     }
     // don't allow arming unless there is a disarm button configured
     if (!has_disarm_function()) {
-        check_failed(ARMING_CHECK_NONE, display_failure, "Must assign a disarm or arm_toggle button");
+        check_failed(display_failure, "Must assign a disarm or arm_toggle button");
         return false;
     }
 
@@ -121,7 +121,7 @@ bool AP_Arming_Sub::arm(AP_Arming::Method method, bool do_arming_checks)
 
         // Always use absolute altitude for ROV
         // ahrs.resetHeightDatum();
-        // Log_Write_Event(DATA_EKF_ALT_RESET);
+        // AP::logger().Write_Event(LogEvent::EKF_ALT_RESET);
     } else if (ahrs.home_is_set() && !ahrs.home_is_locked()) {
         // Reset home position if it has already been set before (but not locked)
         if (!sub.set_home_to_current_location(false)) {
@@ -139,8 +139,6 @@ bool AP_Arming_Sub::arm(AP_Arming::Method method, bool do_arming_checks)
     // finally actually arm the motors
     sub.motors.armed(true);
 
-    AP::logger().Write_Event(DATA_ARMED);
-
     // log flight mode in case it was changed while vehicle was disarmed
     AP::logger().Write_Mode(sub.control_mode, sub.control_mode_reason);
 
@@ -157,14 +155,14 @@ bool AP_Arming_Sub::arm(AP_Arming::Method method, bool do_arming_checks)
     return true;
 }
 
-bool AP_Arming_Sub::disarm()
+bool AP_Arming_Sub::disarm(const AP_Arming::Method method)
 {
     // return immediately if we are already disarmed
     if (!sub.motors.armed()) {
         return false;
     }
 
-    if (!AP_Arming::disarm()) {
+    if (!AP_Arming::disarm(method)) {
         return false;
     }
 
@@ -183,8 +181,6 @@ bool AP_Arming_Sub::disarm()
             }
         }
     }
-
-    AP::logger().Write_Event(DATA_DISARMED);
 
     // send disarm command to motors
     sub.motors.armed(false);

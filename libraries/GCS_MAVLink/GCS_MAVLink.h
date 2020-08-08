@@ -16,8 +16,8 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 // allow extra mavlink channels in SITL for:
-//    Vicon
-#define MAVLINK_COMM_NUM_BUFFERS 6
+//    Vicon, ship
+#define MAVLINK_COMM_NUM_BUFFERS 7
 #else
 // allow five telemetry ports
 #define MAVLINK_COMM_NUM_BUFFERS 5
@@ -59,13 +59,6 @@ static inline bool valid_channel(mavlink_channel_t chan)
 }
 
 void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len);
-
-/// Check for available data on the nominated MAVLink channel
-///
-/// @param chan		Channel to check
-/// @returns		Number of bytes available
-uint16_t comm_get_available(mavlink_channel_t chan);
-
 
 /// Check for available transmit space on the nominated MAVLink channel
 ///

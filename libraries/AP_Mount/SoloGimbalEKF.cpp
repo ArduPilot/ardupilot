@@ -5,10 +5,11 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #pragma GCC optimize("O0")
 #else
-#pragma GCC optimize("O3")
+#pragma GCC optimize("O2")
 #endif
 
 #include "SoloGimbalEKF.h"
+#if HAL_SOLO_GIMBAL_ENABLED
 #include <AP_Param/AP_Param.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_NavEKF/AP_Nav_Common.h>
@@ -961,4 +962,5 @@ bool SoloGimbalEKF::getStatus() const
     float run_time = AP_HAL::millis() - StartTime_ms;
     return  YawAligned && (run_time > 15000);
 }
+#endif // HAL_SOLO_GIMBAL_ENABLED
 

@@ -69,6 +69,8 @@
 
 extern const AP_HAL::HAL& hal;
 
+static_assert(STM32_FDCANCLK <= 80U*1000U*1000U, "FDCAN clock must be max 80MHz");
+
 namespace ChibiOS_CAN
 {
 namespace
@@ -86,9 +88,9 @@ inline void handleInterrupt(uavcan::uint8_t iface_index, uavcan::uint8_t line_in
     UAVCAN_ASSERT(iface_index < UAVCAN_STM32_NUM_IFACES);
     if (ifaces[iface_index] == UAVCAN_NULLPTR) {
         //Just reset all the interrupts and return
-        ifaces[iface_index]->can_reg()->IR = FDCAN_IR_RF0N;
-        ifaces[iface_index]->can_reg()->IR = FDCAN_IR_RF1N;
-        ifaces[iface_index]->can_reg()->IR = FDCAN_IR_TEFN;
+        fdcan::Can[iface_index]->IR = FDCAN_IR_RF0N;
+        fdcan::Can[iface_index]->IR = FDCAN_IR_RF1N;
+        fdcan::Can[iface_index]->IR = FDCAN_IR_TEFN;
         UAVCAN_ASSERT(0);
         return;
     }
@@ -119,7 +121,7 @@ inline void handleInterrupt(uavcan::uint8_t iface_index, uavcan::uint8_t line_in
 } // namespace
 
 uint32_t CanIface::FDCANMessageRAMOffset_ = 0;
-#if !HAL_MINIMIZE_FEATURES
+#if AP_UAVCAN_SLCAN_ENABLED
 SLCANRouter CanIface::_slcan_router;
 #endif
 
@@ -200,7 +202,8 @@ int CanIface::computeTimings(const uavcan::uint32_t target_bitrate, Timings& out
     /*
      * Hardware configuration
      */
-    const uavcan::uint32_t pclk = STM32_PLL1_Q_CK;
+    const uavcan::uint32_t pclk = STM32_FDCANCLK;
+
 
     static const int MaxBS1 = 16;
     static const int MaxBS2 = 8;
@@ -595,7 +598,6 @@ void CanIface::setupMessageRam()
     num_elements = MIN((FDCAN_TX_FIFO_BUFFER_SIZE/FDCAN_FRAME_BUFFER_SIZE), 32U);
     if (num_elements) {
         can_->TXBC = (FDCANMessageRAMOffset_ << 2) | (num_elements << 24);
-        can_->TXBC |= 1U << 30; //Set Queue mode
         MessageRam_.TxFIFOQSA = SRAMCAN_BASE + (FDCANMessageRAMOffset_ * 4U);
         FDCANMessageRAMOffset_ += num_elements*FDCAN_FRAME_BUFFER_SIZE;
     }
@@ -695,7 +697,7 @@ bool CanIface::readRxFIFO(uavcan::uint8_t fifo_index)
      * Store with timeout into the FIFO buffer and signal update event
      */
     rx_queue_.push(frame, utc_usec, 0);
-#if !HAL_MINIMIZE_FEATURES
+#if AP_UAVCAN_SLCAN_ENABLED
     _slcan_router.route_frame_to_slcan(this, frame, utc_usec);
 #endif
     return true;
@@ -721,8 +723,6 @@ void CanIface::pollErrorFlagsFromISR()
             if (((1 << pending_tx_[i].index) & can_->TXBRP)) {
                 can_->TXBCR = 1 << pending_tx_[i].index;  // Goodnight sweet transmission
                 error_cnt_++;
-                //Wait for Cancelation to finish
-                while (!(can_->TXBCF & (1 << pending_tx_[i].index))) {}
                 served_aborts_cnt_++;
             }
         }
@@ -736,8 +736,6 @@ void CanIface::discardTimedOutTxMailboxes(uavcan::MonotonicTime current_time)
         if (((1 << pending_tx_[i].index) & can_->TXBRP) && pending_tx_[i].deadline < current_time) {
             can_->TXBCR = 1 << pending_tx_[i].index;  // Goodnight sweet transmission
             error_cnt_++;
-            //Wait for Cancelation to finish
-            while (!(can_->TXBCF & (1 << pending_tx_[i].index))) {}
         }
     }
 }

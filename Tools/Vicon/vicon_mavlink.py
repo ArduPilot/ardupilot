@@ -125,7 +125,7 @@ def main_loop():
             continue
 
         # convert to NED meters
-        pos_ned = [pos_enu[1]*0.001, pos_enu[0]*0.001, -pos_enu[2]*0.001]
+        pos_ned = [pos_enu[0]*0.001, pos_enu[1]*0.001, -pos_enu[2]*0.001]
 
         # get orientation in euler, converting to ArduPilot conventions
         if args.send_zero:
@@ -135,7 +135,7 @@ def main_loop():
         q = Quaternion([quat[3], quat[0], quat[1], quat[2]])
         euler = q.euler
         roll, pitch, yaw = euler[2], euler[1], euler[0]
-        yaw -= math.pi
+        yaw -= math.pi*0.5
 
         yaw_cd = int(mavextra.wrap_360(math.degrees(yaw)) * 100)
         if yaw_cd == 0:
@@ -163,7 +163,7 @@ def main_loop():
             '''send GPS data at the specified rate, trying to align on the given period'''
             if last_gps_pos is None:
                 last_gps_pos = pos_ned
-            gps_lat, gps_lon = mavextra.gps_offset(origin[0], origin[1], pos_ned[0], pos_ned[1])
+            gps_lat, gps_lon = mavextra.gps_offset(origin[0], origin[1], pos_ned[1], pos_ned[0])
             gps_alt = origin[2] - pos_ned[2]
 
             gps_dt = now - last_gps_send

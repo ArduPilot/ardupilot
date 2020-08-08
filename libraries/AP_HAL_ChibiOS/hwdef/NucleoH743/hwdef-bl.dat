@@ -22,11 +22,9 @@ FLASH_RESERVE_START_KB 0
 # the H743 has 128k sectors
 FLASH_BOOTLOADER_LOAD_KB 128
 
-# board voltage
-STM32_VDD 330U
 
 # order of UARTs (and USB)
-UART_ORDER OTG1
+SERIAL_ORDER OTG1
 
 # UART7 is debug
 PF6 UART7_RX UART7 NODMA
@@ -48,3 +46,7 @@ PA14 JTCK-SWCLK SWD
 
 define HAL_USE_EMPTY_STORAGE 1
 define HAL_STORAGE_SIZE 16384
+
+# Add CS pins to ensure they are high in bootloader
+PA4 MPU_CS CS
+PC7 BARO_CS CS

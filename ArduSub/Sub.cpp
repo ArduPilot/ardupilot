@@ -31,7 +31,6 @@ Sub::Sub()
           auto_mode(Auto_WP),
           guided_mode(Guided_WP),
           auto_yaw_mode(AUTO_YAW_LOOK_AT_NEXT_WP),
-          G_Dt(MAIN_LOOP_SECONDS),
           inertial_nav(ahrs),
           ahrs_view(ahrs, ROTATION_NONE),
           attitude_control(ahrs_view, aparm, motors, MAIN_LOOP_SECONDS),
@@ -51,3 +50,4 @@ Sub::Sub()
 }
 
 Sub sub;
+AP_Vehicle& vehicle = sub;

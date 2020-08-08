@@ -24,6 +24,7 @@
 #include <sys/ioctl.h>
 #include <asm/termbits.h>
 #include "RCInput_RCProtocol.h"
+#include <GCS_MAVLink/GCS.h>
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE
@@ -84,11 +85,12 @@ int RCInput_RCProtocol::open_115200(const char *path)
         return -1;
     }
 
-    tio.c_cflag &= ~(PARENB|CSTOPB|CSIZE);
-    tio.c_cflag |= CS8 | B115200;
+    tio.c_cflag &= ~(PARENB|CSTOPB|CSIZE|CBAUD);
+    tio.c_cflag |= CS8 | CREAD | CLOCAL | B115200;
 
     tio.c_lflag &= ~(ICANON|ECHO|ECHOE|ISIG);
     tio.c_iflag &= ~(IXON|IXOFF|IXANY);
+    tio.c_iflag &= ~(INLCR|ICRNL|IGNCR|IUCLC|BRKINT);
     tio.c_oflag &= ~OPOST;
 
     if (ioctl(fd, TCSETS2, &tio) != 0) {
@@ -101,56 +103,71 @@ int RCInput_RCProtocol::open_115200(const char *path)
 }
 
 // constructor
-RCInput_RCProtocol::RCInput_RCProtocol(const char *_dev_sbus, const char *_dev_115200) :
-    dev_sbus(_dev_sbus),
+RCInput_RCProtocol::RCInput_RCProtocol(const char *_dev_inverted, const char *_dev_115200) :
+    dev_inverted(_dev_inverted),
     dev_115200(_dev_115200)
 {
 }
 
 void RCInput_RCProtocol::init()
 {
-    if (dev_sbus) {
-        fd_sbus = open_sbus(dev_sbus);
+    if (dev_inverted) {
+        fd_inverted = open_sbus(dev_inverted);
     } else {
-        fd_sbus = -1;
+        fd_inverted = -1;
     }
+    inverted_is_115200 = false;
     if (dev_115200) {
         fd_115200 = open_115200(dev_115200);
     } else {
         fd_115200 = -1;
     }
-    rcp.init();
-    printf("SBUS FD %d  115200 FD %d\n", fd_sbus, fd_115200);
+    AP::RC().init();
+    printf("SBUS FD %d  115200 FD %d\n", fd_inverted, fd_115200);
 }
 
 void RCInput_RCProtocol::_timer_tick(void)
 {
-    uint8_t b[40];
+    uint8_t b[80];
 
-    if (fd_sbus != -1) {
-        ssize_t n = ::read(fd_sbus, &b[0], sizeof(b));
+    if (fd_inverted != -1) {
+        ssize_t n = ::read(fd_inverted, &b[0], sizeof(b));
         if (n > 0) {
             for (uint8_t i=0; i<n; i++) {
-                rcp.process_byte(b[i], 100000);
+                AP::RC().process_byte(b[i], inverted_is_115200?115200:100000);
             }
         }
     }
     if (fd_115200 != -1) {
         ssize_t n = ::read(fd_115200, &b[0], sizeof(b));
-        if (n > 0) {
+        if (n > 0 && !inverted_is_115200) {
             for (uint8_t i=0; i<n; i++) {
-                rcp.process_byte(b[i], 115200);
+                AP::RC().process_byte(b[i], 115200);
             }
         }
     }
 
-    if (rcp.new_input()) {
-        uint8_t n = rcp.num_channels();
+    if (AP::RC().new_input()) {
+        last_frame_ms = AP_HAL::millis();
+        uint8_t n = AP::RC().num_channels();
         for (uint8_t i=0; i<n; i++) {
-            _pwm_values[i] = rcp.read(i);
+            _pwm_values[i] = AP::RC().read(i);
         }
         _num_channels = n;
         rc_input_count++;
+    }
+
+    uint32_t now = AP_HAL::millis();
+    if (fd_inverted != -1 && now - last_frame_ms > 2000) {
+        // no inverted data for 2s, flip baudrate
+        close(fd_inverted);
+        inverted_is_115200 = !inverted_is_115200;
+        if (inverted_is_115200) {
+            fd_inverted = open_115200(dev_inverted);
+        } else {
+            fd_inverted = open_sbus(dev_inverted);
+        }
+        last_frame_ms = now;
     }
 }
 

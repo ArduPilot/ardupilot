@@ -12,6 +12,12 @@ public:
     RCMapper(const RCMapper &other) = delete;
     RCMapper &operator=(const RCMapper&) = delete;
 
+    // get singleton instance
+    static RCMapper *get_singleton()
+    {
+        return _singleton;
+    }
+
     /// roll - return input channel number for roll / aileron input
     uint8_t roll() const { return _ch_roll; }
 
@@ -40,4 +46,10 @@ private:
     AP_Int8 _ch_throttle;
     AP_Int8 _ch_forward;
     AP_Int8 _ch_lateral;
+    static RCMapper *_singleton;
+};
+
+namespace AP
+{
+RCMapper *rcmap();
 };

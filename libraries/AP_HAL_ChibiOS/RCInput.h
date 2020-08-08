@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #pragma once
@@ -23,16 +23,15 @@
 #include <AP_Radio/AP_Radio.h>
 #endif
 
+#include <AP_RCProtocol/AP_RCProtocol.h>
+
 #if HAL_USE_ICU == TRUE
 #include "SoftSigReader.h"
-#include <AP_RCProtocol/AP_RCProtocol.h>
 #endif
 
 #if HAL_USE_EICU == TRUE
 #include "SoftSigReaderInt.h"
-#include <AP_RCProtocol/AP_RCProtocol.h>
 #endif
-
 
 #ifndef RC_INPUT_MAX_CHANNELS
 #define RC_INPUT_MAX_CHANNELS 18
@@ -45,6 +44,10 @@ public:
     uint8_t num_channels() override;
     uint16_t read(uint8_t ch) override;
     uint8_t read(uint16_t* periods, uint8_t len) override;
+
+    /* enable or disable pulse input for RC input. This is used to
+       reduce load when we are decoding R/C via a UART */
+    void pulse_input_enable(bool enable) override;
 
     int16_t get_rssi(void) override {
         return _rssi;
@@ -65,6 +68,7 @@ private:
     uint32_t _rcin_timestamp_last_signal;
     bool _init;
     const char *last_protocol;
+    bool pulse_input_enabled;
 
 #if HAL_RCINPUT_WITH_AP_RADIO
     bool _radio_init;
@@ -74,12 +78,10 @@ private:
 
 #if HAL_USE_ICU == TRUE
     ChibiOS::SoftSigReader sig_reader;
-    AP_RCProtocol rcin_prot;
 #endif
 
 #if HAL_USE_EICU == TRUE
     ChibiOS::SoftSigReaderInt sig_reader;
-    AP_RCProtocol rcin_prot;
 #endif
 
 #if HAL_WITH_IO_MCU

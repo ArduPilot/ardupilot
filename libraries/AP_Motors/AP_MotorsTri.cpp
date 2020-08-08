@@ -13,11 +13,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*
- *       AP_MotorsTri.cpp - ArduCopter motors library
- *       Code by RandyMackay. DIYDrones.com
- *
- */
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
@@ -51,6 +46,13 @@ void AP_MotorsTri::init(motor_frame_class frame_class, motor_frame_type frame_ty
     // allow mapping of motor7
     add_motor_num(AP_MOTORS_CH_TRI_YAW);
 
+    SRV_Channels::set_angle(SRV_Channels::get_motor_function(AP_MOTORS_CH_TRI_YAW), _yaw_servo_angle_max_deg*100);
+
+    // check for reverse tricopter
+    if (frame_type == MOTOR_FRAME_TYPE_PLUSREV) {
+        _pitch_reversed = true;
+    }
+
     // record successful initialisation if what we setup was the desired frame_class
     _flags.initialised_ok = (frame_class == MOTOR_FRAME_TRI);
 }
@@ -58,6 +60,13 @@ void AP_MotorsTri::init(motor_frame_class frame_class, motor_frame_type frame_ty
 // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
 void AP_MotorsTri::set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type)
 {
+    // check for reverse tricopter
+    if (frame_type == MOTOR_FRAME_TYPE_PLUSREV) {
+        _pitch_reversed = true;
+    } else {
+        _pitch_reversed = false;
+    }
+
     _flags.initialised_ok = (frame_class == MOTOR_FRAME_TRI);
 }
 
@@ -83,7 +92,7 @@ void AP_MotorsTri::output_to_motors()
             rc_write(AP_MOTORS_MOT_1, output_to_pwm(0));
             rc_write(AP_MOTORS_MOT_2, output_to_pwm(0));
             rc_write(AP_MOTORS_MOT_4, output_to_pwm(0));
-            rc_write(AP_MOTORS_CH_TRI_YAW, _yaw_servo->get_trim());
+            rc_write_angle(AP_MOTORS_CH_TRI_YAW, 0);
             break;
         case SpoolState::GROUND_IDLE:
             // sends output to motors when armed but not flying
@@ -93,7 +102,7 @@ void AP_MotorsTri::output_to_motors()
             rc_write(AP_MOTORS_MOT_1, output_to_pwm(_actuator[1]));
             rc_write(AP_MOTORS_MOT_2, output_to_pwm(_actuator[2]));
             rc_write(AP_MOTORS_MOT_4, output_to_pwm(_actuator[4]));
-            rc_write(AP_MOTORS_CH_TRI_YAW, _yaw_servo->get_trim());
+            rc_write_angle(AP_MOTORS_CH_TRI_YAW, 0);
             break;
         case SpoolState::SPOOLING_UP:
         case SpoolState::THROTTLE_UNLIMITED:
@@ -105,7 +114,7 @@ void AP_MotorsTri::output_to_motors()
             rc_write(AP_MOTORS_MOT_1, output_to_pwm(_actuator[1]));
             rc_write(AP_MOTORS_MOT_2, output_to_pwm(_actuator[2]));
             rc_write(AP_MOTORS_MOT_4, output_to_pwm(_actuator[4]));
-            rc_write(AP_MOTORS_CH_TRI_YAW, calc_yaw_radio_output(_pivot_angle, radians(_yaw_servo_angle_max_deg)));
+            rc_write_angle(AP_MOTORS_CH_TRI_YAW, degrees(_pivot_angle)*100);
             break;
     }
 }
@@ -142,6 +151,8 @@ void AP_MotorsTri::output_armed_stabilizing()
     float   rpy_high = 0.0f;            // highest motor value
     float   thr_adj;                    // the difference between the pilot's desired throttle and throttle_thrust_best_rpy
 
+    SRV_Channels::set_angle(SRV_Channels::get_motor_function(AP_MOTORS_CH_TRI_YAW), _yaw_servo_angle_max_deg*100);
+
     // sanity check YAW_SV_ANGLE parameter value to avoid divide by zero
     _yaw_servo_angle_max_deg = constrain_float(_yaw_servo_angle_max_deg, AP_MOTORS_TRI_SERVO_RANGE_DEG_MIN, AP_MOTORS_TRI_SERVO_RANGE_DEG_MAX);
 
@@ -152,6 +163,11 @@ void AP_MotorsTri::output_armed_stabilizing()
     yaw_thrust = (_yaw_in + _yaw_in_ff) * compensation_gain * sinf(radians(_yaw_servo_angle_max_deg)); // we scale this so a thrust request of 1.0f will ask for full servo deflection at full rear throttle
     throttle_thrust = get_throttle() * compensation_gain;
     throttle_avg_max = _throttle_avg_max * compensation_gain;
+
+    // check for reversed pitch
+    if (_pitch_reversed) {
+        pitch_thrust *= -1.0f;
+    }
 
     // calculate angle of yaw pivot
     _pivot_angle = safe_asin(yaw_thrust);
@@ -238,10 +254,15 @@ void AP_MotorsTri::output_armed_stabilizing()
         }
     }
 
+    // determine throttle thrust for harmonic notch
+    const float throttle_thrust_best_plus_adj = throttle_thrust_best_rpy + thr_adj;
+    // compensation_gain can never be zero
+    _throttle_out = throttle_thrust_best_plus_adj / compensation_gain;
+
     // add scaled roll, pitch, constrained yaw and throttle for each motor
-    _thrust_right = throttle_thrust_best_rpy + thr_adj + rpy_scale * _thrust_right;
-    _thrust_left = throttle_thrust_best_rpy + thr_adj + rpy_scale * _thrust_left;
-    _thrust_rear = throttle_thrust_best_rpy + thr_adj + rpy_scale * _thrust_rear;
+    _thrust_right = throttle_thrust_best_plus_adj + rpy_scale * _thrust_right;
+    _thrust_left = throttle_thrust_best_plus_adj + rpy_scale * _thrust_left;
+    _thrust_rear = throttle_thrust_best_plus_adj + rpy_scale * _thrust_rear;
 
     // scale pivot thrust to account for pivot angle
     // we should not need to check for divide by zero as _pivot_angle is constrained to the 5deg ~ 80 deg range
@@ -288,24 +309,6 @@ void AP_MotorsTri::output_test_seq(uint8_t motor_seq, int16_t pwm)
     }
 }
 
-// calc_yaw_radio_output - calculate final radio output for yaw channel
-int16_t AP_MotorsTri::calc_yaw_radio_output(float yaw_input, float yaw_input_max)
-{
-    int16_t ret;
-
-    if (_yaw_servo->get_reversed()) {
-        yaw_input = -yaw_input;
-    }
-
-    if (yaw_input >= 0) {
-        ret = (_yaw_servo->get_trim() + (yaw_input / yaw_input_max * (_yaw_servo->get_output_max() - _yaw_servo->get_trim())));
-    } else {
-        ret = (_yaw_servo->get_trim() + (yaw_input / yaw_input_max * (_yaw_servo->get_trim() - _yaw_servo->get_output_min())));
-    }
-
-    return ret;
-}
-
 /*
   call vehicle supplied thrust compensation if set. This allows for
   vehicle specific thrust compensation for motor arrangements such as
@@ -336,7 +339,7 @@ void AP_MotorsTri::output_motor_mask(float thrust, uint8_t mask, float rudder_dt
     AP_MotorsMulticopter::output_motor_mask(thrust, mask, rudder_dt);
 
     // and override yaw servo
-    rc_write(AP_MOTORS_CH_TRI_YAW, _yaw_servo->get_trim());
+    rc_write_angle(AP_MOTORS_CH_TRI_YAW, 0);
 }
 
 float AP_MotorsTri::get_roll_factor(uint8_t i)

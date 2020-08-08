@@ -33,6 +33,7 @@
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
+#include <AP_RTC/AP_RTC.h>
 
 #include <ctype.h>
 #include <GCS_MAVLink/GCS.h>
@@ -606,7 +607,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(btemp, "BTEMP", 37, AP_OSD_Screen, AP_OSD_Setting),
- 
+
     // @Param: ATEMP_EN
     // @DisplayName: ATEMP_EN
     // @Description: Displays temperature reported by primary airspeed sensor
@@ -622,7 +623,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(atemp, "ATEMP", 38, AP_OSD_Screen, AP_OSD_Setting),
-    
+
     // @Param: BAT2VLT_EN
     // @DisplayName: BAT2VLT_EN
     // @Description: Displays battery2 voltage
@@ -654,8 +655,8 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(bat2used, "BAT2USED", 40, AP_OSD_Screen, AP_OSD_Setting),
-    
-    
+
+
     // @Param: ASPD2_EN
     // @DisplayName: ASPD2_EN
     // @Description: Displays airspeed reported directly from secondary airspeed sensor
@@ -671,22 +672,38 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(aspd2, "ASPD2", 41, AP_OSD_Screen, AP_OSD_Setting),
-    
+
     // @Param: ASPD1_EN
     // @DisplayName: ASPD1_EN
     // @Description: Displays airspeed reported directly from primary airspeed sensor
     // @Values: 0:Disabled,1:Enabled
-	
+
     // @Param: ASPD1_X
-	// @DisplayName: ASPD1_X
-	// @Description: Horizontal position on screen
-	// @Range: 0 29
-	
-	// @Param: ASPD1_Y
-	// @DisplayName: ASPD1_Y
-	// @Description: Vertical position on screen
-	// @Range: 0 15
+    // @DisplayName: ASPD1_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: ASPD1_Y
+    // @DisplayName: ASPD1_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
     AP_SUBGROUPINFO(aspd1, "ASPD1", 42, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Param: CLK_EN
+    // @DisplayName: CLK_EN
+    // @Description: Displays a clock panel based on AP_RTC local time
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: CLK_X
+    // @DisplayName: CLK_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: CLK_Y
+    // @DisplayName: CLK_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(clk, "CLK", 43, AP_OSD_Screen, AP_OSD_Setting),
     
     AP_GROUPEND
 };
@@ -782,6 +799,7 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_FLY       0x9C
 #define SYM_EFF       0xF2
 #define SYM_AH        0xF3
+#define SYM_CLK       0xBC
 
 void AP_OSD_Screen::set_backend(AP_OSD_Backend *_backend)
 {
@@ -924,8 +942,7 @@ void AP_OSD_Screen::draw_rssi(uint8_t x, uint8_t y)
 {
     AP_RSSI *ap_rssi = AP_RSSI::get_singleton();
     if (ap_rssi) {
-        int rssiv = ap_rssi->read_receiver_rssi_uint8();
-        rssiv = (rssiv * 99) / 255;
+        const uint8_t rssiv = ap_rssi->read_receiver_rssi() * 99;
         backend->write(x, y, rssiv < osd->warn_rssi, "%c%2d", SYM_RSSI, rssiv);
     }
 }
@@ -935,9 +952,16 @@ void AP_OSD_Screen::draw_current(uint8_t x, uint8_t y)
     AP_BattMonitor &battery = AP::battery();
     float amps;
     if (!battery.current_amps(amps)) {
-        amps = 0;
+        osd->avg_current_a = 0;
     }
-    backend->write(x, y, false, "%2.1f%c", (double)amps, SYM_AMP);
+    //filter current and display with autoranging for low values
+    osd->avg_current_a= osd->avg_current_a + (amps - osd->avg_current_a) * 0.33;
+    if (osd->avg_current_a < 10.0) {
+        backend->write(x, y, false, "%2.2f%c", osd->avg_current_a, SYM_AMP);
+    }
+    else {
+        backend->write(x, y, false, "%2.1f%c", osd->avg_current_a, SYM_AMP);
+    }
 }
 
 void AP_OSD_Screen::draw_fltmode(uint8_t x, uint8_t y)
@@ -1044,8 +1068,11 @@ void AP_OSD_Screen::draw_speed_vector(uint8_t x, uint8_t y,Vector2f v, int32_t y
         int32_t interval = 36000 / SYM_ARROW_COUNT;
         arrow = SYM_ARROW_START + ((angle + interval / 2) / interval) % SYM_ARROW_COUNT;
     }
-
-    backend->write(x, y, false, "%c%3d%c", arrow, (int)u_scale(SPEED, v_length), u_icon(SPEED));
+    if (u_scale(SPEED, v_length) < 10.0) {
+        backend->write(x, y, false, "%c%3.1f%c", arrow, u_scale(SPEED, v_length), u_icon(SPEED)); 
+    } else {
+        backend->write(x, y, false, "%c%3d%c", arrow, (int)u_scale(SPEED, v_length), u_icon(SPEED));
+    }
 }
 
 void AP_OSD_Screen::draw_gspeed(uint8_t x, uint8_t y)
@@ -1074,9 +1101,11 @@ void AP_OSD_Screen::draw_horizon(uint8_t x, uint8_t y)
     float ky = sinf(roll);
     float kx = cosf(roll);
 
+    float ratio = backend->get_aspect_ratio_correction();
+
     if (fabsf(ky) < fabsf(kx)) {
         for (int dx = -4; dx <= 4; dx++) {
-            float fy =  dx * (ky/kx) + pitch * ah_pitch_rad_to_char + 0.5f;
+            float fy = (ratio * dx) * (ky/kx) + pitch * ah_pitch_rad_to_char + 0.5f;
             int dy = floorf(fy);
             char c = (fy - dy) * SYM_AH_H_COUNT;
             //chars in font in reversed order
@@ -1087,7 +1116,7 @@ void AP_OSD_Screen::draw_horizon(uint8_t x, uint8_t y)
         }
     } else {
         for (int dy=-4; dy<=4; dy++) {
-            float fx = (dy - pitch * ah_pitch_rad_to_char) * (kx/ky) + 0.5f;
+            float fx = ((dy / ratio) - pitch * ah_pitch_rad_to_char) * (kx/ky) + 0.5f;
             int dx = floorf(fx);
             char c = (fx - dx) * SYM_AH_V_COUNT;
             c = SYM_AH_V_START + c;
@@ -1117,6 +1146,8 @@ void AP_OSD_Screen::draw_distance(uint8_t x, uint8_t y, float distance)
         } else {
             fmt = "%4.0f%c";
         }
+    } else if (distance_scaled < 10.0f) {
+        fmt = "% 3.1f%c";
     }
     backend->write(x, y, false, fmt, (double)distance_scaled, unit_icon);
 }
@@ -1205,7 +1236,7 @@ void AP_OSD_Screen::draw_aspeed(uint8_t x, uint8_t y)
     float aspd = 0.0f;
     AP_AHRS &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
-    bool have_estimate = ahrs.airspeed_estimate(&aspd);
+    bool have_estimate = ahrs.airspeed_estimate(aspd);
     if (have_estimate) {
         backend->write(x, y, false, "%c%4d%c", SYM_ASPD, (int)u_scale(SPEED, aspd), u_icon(SPEED));
     } else {
@@ -1374,7 +1405,8 @@ void AP_OSD_Screen::draw_waypoint(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_xtrack_error(uint8_t x, uint8_t y)
 {
-    backend->write(x, y, false, "%c%4d", SYM_XERR, (int)osd->nav_info.wp_xtrack_error);
+    backend->write(x, y, false, "%c", SYM_XERR);
+    draw_distance(x+1, y, osd->nav_info.wp_xtrack_error);
 }
 
 void AP_OSD_Screen::draw_stat(uint8_t x, uint8_t y)
@@ -1385,15 +1417,15 @@ void AP_OSD_Screen::draw_stat(uint8_t x, uint8_t y)
     backend->write(x, y+2, false, "%5.1f%c", (double)osd->max_current_a, SYM_AMP);
     backend->write(x, y+3, false, "%5d%c", (int)u_scale(ALTITUDE, osd->max_alt_m), u_icon(ALTITUDE));
     backend->write(x, y+4, false, "%c", SYM_HOME);
-    draw_distance(x+1, y+4, osd->max_dist_m); 
+    draw_distance(x+1, y+4, osd->max_dist_m);
     backend->write(x, y+5, false, "%c", SYM_DIST);
-    draw_distance(x+1, y+5, osd->last_distance_m);  
+    draw_distance(x+1, y+5, osd->last_distance_m);
 }
 
 void AP_OSD_Screen::draw_dist(uint8_t x, uint8_t y)
 {
     backend->write(x, y, false, "%c", SYM_DIST);
-    draw_distance(x+1, y, osd->last_distance_m);   
+    draw_distance(x+1, y, osd->last_distance_m);
 }
 
 void  AP_OSD_Screen::draw_flightime(uint8_t x, uint8_t y)
@@ -1402,18 +1434,21 @@ void  AP_OSD_Screen::draw_flightime(uint8_t x, uint8_t y)
     if (stats) {
         uint32_t t = stats->get_flight_time_s();
         backend->write(x, y, false, "%c%3u:%02u", SYM_FLY, t/60, t%60);
-    } 
+    }
 }
 
 void AP_OSD_Screen::draw_eff(uint8_t x, uint8_t y)
 {
     AP_BattMonitor &battery = AP::battery();
-    AP_AHRS &ahrs = AP::ahrs();
-    WITH_SEMAPHORE(ahrs.get_semaphore());
-    Vector2f v = ahrs.groundspeed_vector();
+    Vector2f v;
+    {
+        AP_AHRS &ahrs = AP::ahrs();
+        WITH_SEMAPHORE(ahrs.get_semaphore());
+        v = ahrs.groundspeed_vector();
+    }
     float speed = u_scale(SPEED,v.length());
     float current_amps;
-    if ((speed > 2.0) && battery.current_amps(current_amps)){
+    if ((speed > 2.0) && battery.current_amps(current_amps)) {
         backend->write(x, y, false, "%c%3d%c", SYM_EFF,int(1000.0f*current_amps/speed),SYM_MAH);
     } else {
         backend->write(x, y, false, "%c---%c", SYM_EFF,SYM_MAH);
@@ -1425,23 +1460,29 @@ void AP_OSD_Screen::draw_climbeff(uint8_t x, uint8_t y)
     char unit_icon = u_icon(DISTANCE);
     Vector3f v;
     float vspd;
-    auto &ahrs = AP::ahrs();
-    WITH_SEMAPHORE(ahrs.get_semaphore());
-    if (ahrs.get_velocity_NED(v)) {
-        vspd = -v.z;
-    } else {
+    do {
+        {
+            auto &ahrs = AP::ahrs();
+            WITH_SEMAPHORE(ahrs.get_semaphore());
+            if (ahrs.get_velocity_NED(v)) {
+                vspd = -v.z;
+                break;
+            }
+        }
         auto &baro = AP::baro();
         WITH_SEMAPHORE(baro.get_semaphore());
         vspd = baro.get_climb_rate();
+    } while (false);
+    if (vspd < 0.0) {
+        vspd = 0.0;
     }
-    if (vspd < 0.0) vspd = 0.0;
     AP_BattMonitor &battery = AP::battery();
     float amps;
     if (battery.current_amps(amps) && is_positive(amps)) {
         backend->write(x, y, false,"%c%c%3.1f%c",SYM_PTCHUP,SYM_EFF,(double)(3.6f * u_scale(VSPEED,vspd)/amps),unit_icon);
     } else {
         backend->write(x, y, false,"%c%c---%c",SYM_PTCHUP,SYM_EFF,unit_icon);
-    } 
+    }
 }
 
 void AP_OSD_Screen::draw_btemp(uint8_t x, uint8_t y)
@@ -1508,6 +1549,18 @@ void AP_OSD_Screen::draw_aspd2(uint8_t x, uint8_t y)
     }
 }
 
+void AP_OSD_Screen::draw_clk(uint8_t x, uint8_t y)
+{
+    AP_RTC &rtc = AP::rtc();
+    uint8_t hour, min, sec;
+    uint16_t ms;
+    if (!rtc.get_local_time(hour, min, sec, ms)) {
+    backend->write(x, y, false, "%c--:--%", SYM_CLK);
+    } else {
+    backend->write(x, y, false, "%c%02u:%02u", SYM_CLK, hour, min);
+    }
+}
+
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
 void AP_OSD_Screen::draw(void)
@@ -1549,6 +1602,7 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(atemp);
     DRAW_SETTING(hdop);
     DRAW_SETTING(flightime);
+    DRAW_SETTING(clk);
 
 #ifdef HAVE_AP_BLHELI_SUPPORT
     DRAW_SETTING(blh_temp);

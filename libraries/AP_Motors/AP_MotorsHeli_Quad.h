@@ -10,9 +10,6 @@
 #include "AP_MotorsHeli.h"
 #include "AP_MotorsHeli_RSC.h"
 
-// rsc function output channel
-#define AP_MOTORS_HELI_QUAD_RSC                     CH_8
-
 // default collective min, max and midpoints for the rear swashplate
 #define AP_MOTORS_HELI_QUAD_COLLECTIVE_MIN 1100
 #define AP_MOTORS_HELI_QUAD_COLLECTIVE_MAX 1900
@@ -24,8 +21,7 @@ public:
     // constructor
     AP_MotorsHeli_Quad(uint16_t loop_rate,
                        uint16_t speed_hz = AP_MOTORS_HELI_SPEED_DEFAULT) :
-        AP_MotorsHeli(loop_rate, speed_hz),
-        _rotor(SRV_Channel::k_heli_rsc, AP_MOTORS_HELI_QUAD_RSC)
+        AP_MotorsHeli(loop_rate, speed_hz)
     {
         AP_Param::setup_object_defaults(this, var_info);
     };
@@ -46,19 +42,19 @@ public:
     void set_desired_rotor_speed(float desired_speed) override;
 
     // get_estimated_rotor_speed - gets estimated rotor speed as a number from 0 ~ 1000
-    float get_main_rotor_speed() const  override { return _rotor.get_rotor_speed(); }
+    float get_main_rotor_speed() const  override { return _main_rotor.get_rotor_speed(); }
 
     // get_desired_rotor_speed - gets target rotor speed as a number from 0 ~ 1000
-    float get_desired_rotor_speed() const  override { return _rotor.get_rotor_speed(); }
+    float get_desired_rotor_speed() const  override { return _main_rotor.get_rotor_speed(); }
 
     // rotor_speed_above_critical - return true if rotor speed is above that critical for flight
-    bool rotor_speed_above_critical() const  override { return _rotor.get_rotor_speed() > _rotor.get_critical_speed(); }
+    bool rotor_speed_above_critical() const  override { return _main_rotor.get_rotor_speed() > _main_rotor.get_critical_speed(); }
     
     // get_governor_output
-    float get_governor_output() const override { return _rotor.get_governor_output(); }
+    float get_governor_output() const override { return _main_rotor.get_governor_output(); }
     
     // get_control_output
-    float get_control_output() const override { return _rotor.get_control_output(); }
+    float get_control_output() const override { return _main_rotor.get_control_output(); }
 
     // calculate_scalars - recalculates various scalars used
     void calculate_scalars() override;
@@ -94,9 +90,6 @@ protected:
 
     // move_actuators - moves swash plate to attitude of parameters passed in
     void move_actuators(float roll_out, float pitch_out, float coll_in, float yaw_out)  override;
-
-    //  objects we depend upon
-    AP_MotorsHeli_RSC           _rotor;             // main rotor controller
 
     // rate factors
     float _rollFactor[AP_MOTORS_HELI_QUAD_NUM_MOTORS];

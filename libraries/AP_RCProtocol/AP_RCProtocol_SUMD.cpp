@@ -81,7 +81,7 @@ void AP_RCProtocol_SUMD::process_pulse(uint32_t width_s0, uint32_t width_s1)
 
 void AP_RCProtocol_SUMD::_process_byte(uint32_t timestamp_us, uint8_t byte)
 {
-    if (timestamp_us - last_packet_us > 3000U) {
+    if (timestamp_us - last_packet_us > 5000U) {
         _decode_state = SUMD_DECODE_STATE_UNSYNCED;
     }
     switch (_decode_state) {
@@ -247,6 +247,8 @@ void AP_RCProtocol_SUMD::_process_byte(uint32_t timestamp_us, uint8_t byte)
                 _crcOK = true;
             }
         }
+
+        log_data(AP_RCProtocol::SUMD, timestamp_us, _rxpacket.sumd_data, _rxlen);
 
         if (_crcOK) {
 #ifdef SUMD_DEBUG

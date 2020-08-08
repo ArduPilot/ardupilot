@@ -44,6 +44,7 @@ public:
     
 
 private:
+
     const char *webots_ip = "127.0.0.1";
 
     // assume sensors are streamed on port 5599
@@ -52,7 +53,8 @@ private:
     enum {
         OUTPUT_ROVER=1,
         OUTPUT_QUAD=2,
-        OUTPUT_PWM=3
+        OUTPUT_TRICOPTER=3,
+        OUTPUT_PWM=4
     } output_type;
 
     bool connect_sockets(void);
@@ -60,6 +62,7 @@ private:
     bool sensors_receive(void);
     void output_rover(const struct sitl_input &input);
     void output_quad(const struct sitl_input &input);
+    void output_tricopter(const struct sitl_input &input);
     void output_pwm(const struct sitl_input &input);
     void report_FPS();
 
@@ -69,13 +72,7 @@ private:
 
     SocketAPM *sim_sock;
 
-    uint32_t no_data_counter;
     uint32_t connect_counter;
-
-    double initial_time_s;
-    double time_diff;
-    double extrapolated_s;
-    double average_frame_time_s;
 
     uint64_t socket_frame_counter;
     uint64_t last_socket_frame_counter;

@@ -64,15 +64,17 @@ private:
     uint16_t morse_control_port = 60001;
 
     enum {
-        OUTPUT_ROVER=1,
-        OUTPUT_QUAD=2,
-        OUTPUT_PWM=3
+        OUTPUT_ROVER_REGULAR=1,
+        OUTPUT_ROVER_SKID=2,
+        OUTPUT_QUAD=3,
+        OUTPUT_PWM=4
     } output_type;
 
     bool connect_sockets(void);
     bool parse_sensors(const char *json);
     bool sensors_receive(void);
-    void output_rover(const struct sitl_input &input);
+    void output_rover_regular(const struct sitl_input &input);
+    void output_rover_skid(const struct sitl_input &input);
     void output_quad(const struct sitl_input &input);
     void output_pwm(const struct sitl_input &input);
     void report_FPS();

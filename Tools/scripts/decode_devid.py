@@ -19,6 +19,7 @@ def num(s):
 parser = optparse.OptionParser("decode_devid.py")
 parser.add_option("-C", "--compass", action='store_true', help='decode compass IDs')
 parser.add_option("-I", "--imu", action='store_true', help='decode IMU IDs')
+parser.add_option("-B", "--baro", action='store_true', help='decode barometer IDs')
 
 opts, args = parser.parse_args()
 
@@ -56,7 +57,8 @@ compass_types = {
     0x0E : "DEVTYPE_MAG3110",
     0x0F : "DEVTYPE_SITL",
     0x10 : "DEVTYPE_IST8308",
-    0x11 : "DEVTYPE_RM3100",
+    0x11 : "DEVTYPE_RM3100_OLD",
+    0x12 : "DEVTYPE_RM3100",
 }
 
 imu_types = {
@@ -82,8 +84,25 @@ imu_types = {
     0x2E : "DEVTYPE_INS_ICM20649",
     0x2F : "DEVTYPE_INS_ICM20602",
     0x30 : "DEVTYPE_INS_ICM20601",
+    0x31 : "DEVTYPE_INS_ADIS1647x",
 }
 
+baro_types = {
+    0x01 : "DEVTYPE_BARO_SITL",
+    0x02 : "DEVTYPE_BARO_BMP085",
+    0x03 : "DEVTYPE_BARO_BMP280",
+    0x04 : "DEVTYPE_BARO_BMP388",
+    0x05 : "DEVTYPE_BARO_DPS280",
+    0x06 : "DEVTYPE_BARO_DPS310",
+    0x07 : "DEVTYPE_BARO_FBM320",
+    0x08 : "DEVTYPE_BARO_ICM20789",
+    0x09 : "DEVTYPE_BARO_KELLERLD",
+    0x0A : "DEVTYPE_BARO_LPS2XH",
+    0x0B : "DEVTYPE_BARO_MS5611",
+    0x0C : "DEVTYPE_BARO_SPL06",
+    0x0D : "DEVTYPE_BARO_UAVCAN",
+}
+    
 decoded_devname = ""
 
 if opts.compass:
@@ -92,6 +111,15 @@ if opts.compass:
 if opts.imu:
     decoded_devname = imu_types.get(devtype, "UNKNOWN")
 
-print("bus_type:%s(%u)  bus:%u address:%u(0x%x) devtype:%u(0x%x) %s" % (
-    bustypes.get(bus_type,"UNKNOWN"), bus_type,
-    bus, address, address, devtype, devtype, decoded_devname))
+if opts.baro:
+    decoded_devname = baro_types.get(devtype, "UNKNOWN")
+
+if bus_type == 3:
+    #uavcan devtype represents sensor_id
+    print("bus_type:%s(%u)  bus:%u address:%u(0x%x) sensor_id:%u(0x%x) %s" % (
+        bustypes.get(bus_type,"UNKNOWN"), bus_type,
+        bus, address, address, devtype-1, devtype-1, decoded_devname))
+else:
+    print("bus_type:%s(%u)  bus:%u address:%u(0x%x) devtype:%u(0x%x) %s" % (
+        bustypes.get(bus_type,"UNKNOWN"), bus_type,
+        bus, address, address, devtype, devtype, decoded_devname))

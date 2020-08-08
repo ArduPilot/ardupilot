@@ -142,7 +142,14 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @Group: DS_
     // @Path: AP_Landing_Deepstall.cpp
     AP_SUBGROUPINFO(deepstall, "DS_", 15, AP_Landing, AP_Landing_Deepstall),
-    
+
+    // @Param: OPTIONS
+    // @DisplayName: Landing options bitmask
+    // @Description: Bitmask of options to use with landing.
+    // @Bitmask: 0: honor min throttle during landing flare
+    // @User: Advanced
+    AP_GROUPINFO("OPTIONS", 16, AP_Landing, _options, 0),
+
     AP_GROUPEND
 };
 
@@ -604,6 +611,12 @@ bool AP_Landing::is_throttle_suppressed(void) const
     default:
         return false;
     }
+}
+
+//defaults to false, but _options bit zero enables it.
+bool AP_Landing::use_thr_min_during_flare(void) const
+{
+    return (OptionsMask::ON_LANDING_FLARE_USE_THR_MIN & _options) != 0;
 }
 
 /*

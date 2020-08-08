@@ -67,9 +67,7 @@ bool AP_Baro_KellerLD::_init()
         return false;
     }
 
-    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        AP_HAL::panic("PANIC: AP_Baro_KellerLD: failed to take serial semaphore for init");
-    }
+    _dev->get_semaphore()->take_blocking();
 
     // high retries for init
     _dev->set_retries(10);
@@ -144,6 +142,9 @@ bool AP_Baro_KellerLD::_init()
 
     _instance = _frontend.register_sensor();
 
+    _dev->set_device_type(DEVTYPE_BARO_KELLERLD);
+    set_bus_id(_instance, _dev->get_bus_id());
+    
     _frontend.set_type(_instance, AP_Baro::BARO_TYPE_WATER);
 
     // lower retries for run

@@ -109,6 +109,20 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t &msg)
                 state.have_gps_yaw = true;
             }
 
+            if (packet.fix_type >= 3 && packet.time_week > 0) {
+                /*
+                  use the millisecond timestamp from the GPS_INPUT
+                  packet into jitter correction to get a local
+                  timestamp corrected for transport jitter
+                */
+                if (first_week == 0) {
+                    first_week = packet.time_week;
+                }
+                uint32_t timestamp_ms = (packet.time_week - first_week) * AP_MSEC_PER_WEEK + packet.time_week_ms;
+                uint32_t corrected_ms = jitter.correct_offboard_timestamp_msec(timestamp_ms, AP_HAL::millis());
+                state.uart_timestamp_ms = corrected_ms;
+            }
+
             state.num_sats = packet.satellites_visible;
             state.last_gps_time_ms = AP_HAL::millis();
             _new_data = true;

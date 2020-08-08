@@ -49,7 +49,7 @@ public:
 
     virtual void PrepForArming() { }
 
-    virtual uint16_t start_new_log(void) = 0;
+    virtual void start_new_log() { };
 
     /* stop logging - close output files etc etc.
      *
@@ -83,17 +83,17 @@ public:
     uint8_t num_multipliers() const;
     const struct MultiplierStructure *multiplier(uint8_t multiplier) const;
 
-    void Write_EntireMission();
+    bool Write_EntireMission();
     bool Write_RallyPoint(uint8_t total,
                           uint8_t sequence,
                           const RallyLocation &rally_point);
-    void Write_Rally();
+    bool Write_Rally();
     bool Write_Format(const struct LogStructure *structure);
     bool Write_Message(const char *message);
     bool Write_MessageF(const char *fmt, ...);
     bool Write_Mission_Cmd(const AP_Mission &mission,
                                const AP_Mission::Mission_Command &cmd);
-    bool Write_Mode(uint8_t mode, uint8_t reason = 0);
+    bool Write_Mode(uint8_t mode, const ModeReason reason = ModeReason::UNKNOWN);
     bool Write_Parameter(const char *name, float value);
     bool Write_Parameter(const AP_Param *ap,
                              const AP_Param::ParamToken &token,

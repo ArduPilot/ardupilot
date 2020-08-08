@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
 #include "SPIDevice.h"
@@ -56,7 +56,9 @@ bool sdcard_init()
 #if HAL_USE_SDC
 
     if (SDCD1.bouncebuffer == nullptr) {
-        bouncebuffer_init(&SDCD1.bouncebuffer, 512, true);
+        // allocate 4k bouncebuffer for microSD to match size in
+        // AP_Logger
+        bouncebuffer_init(&SDCD1.bouncebuffer, 4096, true);
     }
 
     if (sdcard_running) {
@@ -97,7 +99,7 @@ bool sdcard_init()
         return false;
     }
     device->set_slowdown(sd_slowdown);
-    
+
     mmcObjectInit(&MMCD1);
 
     mmcconfig.spip =
@@ -224,4 +226,3 @@ void spiReceiveHook(SPIDriver *spip, size_t n, void *rxbuf)
 }
 
 #endif
-

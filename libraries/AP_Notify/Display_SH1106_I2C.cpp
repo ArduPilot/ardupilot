@@ -68,9 +68,10 @@ bool Display_SH1106_I2C::hw_init()
     memset(_displaybuffer, 0, SH1106_COLUMNS * SH1106_ROWS_PER_PAGE);
 
     // take i2c bus semaphore
-    if (!_dev || !_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (!_dev) {
         return false;
     }
+    _dev->get_semaphore()->take_blocking();
 
     // init display
     bool success = _dev->transfer((uint8_t *)&init_seq, sizeof(init_seq), nullptr, 0);

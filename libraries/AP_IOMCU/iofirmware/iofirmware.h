@@ -112,12 +112,10 @@ public:
 
     // true when override channel active
     bool override_active;
-    
+
     // sbus rate handling
     uint32_t sbus_last_ms;
     uint32_t sbus_interval_ms;
-
-    AP_RCProtocol *rcprotocol;
 
     uint32_t fmu_data_received_time;
     uint32_t last_heater_ms;
@@ -150,4 +148,3 @@ public:
 #define AMBER_SET(on) palWriteLine(HAL_GPIO_PIN_AMBER_LED, !(on));
 #define SPEKTRUM_POWER(on) palWriteLine(HAL_GPIO_PIN_SPEKTRUM_PWR_EN, on);
 #define SPEKTRUM_SET(on) palWriteLine(HAL_GPIO_PIN_SPEKTRUM_OUT, on);
-

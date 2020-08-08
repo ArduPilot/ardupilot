@@ -1,4 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Baro/AP_Baro.h>
 #include "AP_InertialNav.h"
 
 #if AP_AHRS_NAVEKF_AVAILABLE
@@ -12,7 +13,7 @@
 /**
    update internal state
 */
-void AP_InertialNav_NavEKF::update()
+void AP_InertialNav_NavEKF::update(bool high_vibes)
 {
     // get the NE position relative to the local earth frame origin
     Vector2f posNE;
@@ -30,6 +31,13 @@ void AP_InertialNav_NavEKF::update()
     // get the velocity relative to the local earth frame
     Vector3f velNED;
     if (_ahrs_ekf.get_velocity_NED(velNED)) {
+        // during high vibration events use vertical position change
+        if (high_vibes) {
+            float rate_z;
+            if (_ahrs_ekf.get_vert_pos_rate(rate_z)) {
+                velNED.z = rate_z;
+            }
+        }
         _velocity_cm = velNED * 100; // convert to cm/s
         _velocity_cm.z = -_velocity_cm.z; // convert from NED to NEU
     }

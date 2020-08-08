@@ -9,7 +9,7 @@
 bool AutoTune::init()
 {
     // use position hold while tuning if we were in QLOITER
-    bool position_hold = (copter.control_mode == LOITER || copter.control_mode == POSHOLD);
+    bool position_hold = (copter.control_mode == Mode::Number::LOITER || copter.control_mode == Mode::Number::POSHOLD);
 
     return init_internals(position_hold,
                           copter.attitude_control,
@@ -24,8 +24,10 @@ bool AutoTune::init()
 bool AutoTune::start()
 {
     // only allow flip from Stabilize, AltHold,  PosHold or Loiter modes
-    if (copter.control_mode != STABILIZE && copter.control_mode != ALT_HOLD &&
-        copter.control_mode != LOITER && copter.control_mode != POSHOLD) {
+    if (copter.control_mode != Mode::Number::STABILIZE &&
+        copter.control_mode != Mode::Number::ALT_HOLD &&
+        copter.control_mode != Mode::Number::LOITER &&
+        copter.control_mode != Mode::Number::POSHOLD) {
         return false;
     }
 
@@ -111,34 +113,6 @@ void AutoTune::log_pids()
     copter.logger.Write_PID(LOG_PIDR_MSG, copter.attitude_control->get_rate_roll_pid().get_pid_info());
     copter.logger.Write_PID(LOG_PIDP_MSG, copter.attitude_control->get_rate_pitch_pid().get_pid_info());
     copter.logger.Write_PID(LOG_PIDY_MSG, copter.attitude_control->get_rate_yaw_pid().get_pid_info());
-}
-
-
-/*
-  Write an event packet. This maps from AC_AutoTune event IDs to
-  copter event IDs
-*/
-void AutoTune::Log_Write_Event(enum at_event id)
-{
-    const struct {
-        enum at_event eid;
-        Log_Event id;
-    } map[] = {
-        { EVENT_AUTOTUNE_INITIALISED, DATA_AUTOTUNE_INITIALISED },
-        { EVENT_AUTOTUNE_OFF, DATA_AUTOTUNE_OFF },
-        { EVENT_AUTOTUNE_RESTART, DATA_AUTOTUNE_RESTART },
-        { EVENT_AUTOTUNE_SUCCESS, DATA_AUTOTUNE_SUCCESS },
-        { EVENT_AUTOTUNE_FAILED, DATA_AUTOTUNE_FAILED },
-        { EVENT_AUTOTUNE_REACHED_LIMIT, DATA_AUTOTUNE_REACHED_LIMIT },
-        { EVENT_AUTOTUNE_PILOT_TESTING, DATA_AUTOTUNE_PILOT_TESTING },
-        { EVENT_AUTOTUNE_SAVEDGAINS, DATA_AUTOTUNE_SAVEDGAINS },
-    };
-    for (uint8_t i=0; i<ARRAY_SIZE(map); i++) {
-        if (id == map[i].eid) {
-            copter.Log_Write_Event(map[i].id);
-            break;
-        }
-    }
 }
 
 /*

@@ -25,14 +25,6 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// FrSky telemetry support
-//
-
-#ifndef FRSKY_TELEM_ENABLED
-#define FRSKY_TELEM_ENABLED ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // Advanced Failsafe support
 //
 
@@ -128,22 +120,6 @@
  # define GROUND_START_DELAY             0
 #endif
 
-//////////////////////////////////////////////////////////////////////////////
-// ENABLE ELEVON_MIXING
-//
-#ifndef ELEVON_MIXING
- # define ELEVON_MIXING          DISABLED
-#endif
-#ifndef ELEVON_REVERSE
- # define ELEVON_REVERSE     DISABLED
-#endif
-#ifndef ELEVON_CH1_REVERSE
- # define ELEVON_CH1_REVERSE     DISABLED
-#endif
-#ifndef ELEVON_CH2_REVERSE
- # define ELEVON_CH2_REVERSE     DISABLED
-#endif
-
 #ifndef DSPOILR_RUD_RATE_DEFAULT
  #define DSPOILR_RUD_RATE_DEFAULT 100
 #endif
@@ -151,17 +127,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // CAMERA TRIGGER AND CONTROL
 //
-// uses 1182 bytes of memory
 #ifndef CAMERA
  # define CAMERA         ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// MOUNT (ANTENNA OR CAMERA)
-//
-// uses 7726 bytes of memory on 2560 chips (all options are enabled)
-#ifndef MOUNT
-#define MOUNT          ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -271,10 +238,6 @@
 #endif
 #define ALT_HOLD_HOME_CM ALT_HOLD_HOME*100
 
-#ifndef USE_CURRENT_ALT
- # define USE_CURRENT_ALT FALSE
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // Developer Items
 //
@@ -314,7 +277,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // Parachute release
 #ifndef PARACHUTE
-#define PARACHUTE ENABLED
+#define PARACHUTE HAL_PARACHUTE_ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -327,10 +290,6 @@
  # define STATS_ENABLED ENABLED
 #endif
 
-#ifndef DEVO_TELEM_ENABLED
- #define DEVO_TELEM_ENABLED !HAL_MINIMIZE_FEATURES
-#endif
-
 #ifndef OSD_ENABLED
  #define OSD_ENABLED DISABLED
 #endif
@@ -338,7 +297,16 @@
 #ifndef SOARING_ENABLED
  #define SOARING_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
+#ifndef OFFBOARD_GUIDED
+ #define OFFBOARD_GUIDED !HAL_MINIMIZE_FEATURES
+#endif
 
 #ifndef LANDING_GEAR_ENABLED
  #define LANDING_GEAR_ENABLED !HAL_MINIMIZE_FEATURES
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+//  EKF Failsafe
+#ifndef FS_EKF_THRESHOLD_DEFAULT
+ # define FS_EKF_THRESHOLD_DEFAULT      0.8f    // EKF failsafe's default compass and velocity variance threshold above which the EKF failsafe will be triggered
 #endif

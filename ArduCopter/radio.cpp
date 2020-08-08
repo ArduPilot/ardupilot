@@ -31,12 +31,6 @@ void Copter::init_rc_in()
     channel_yaw->set_angle(ROLL_PITCH_YAW_INPUT_MAX);
     channel_throttle->set_range(1000);
 
-    // set auxiliary servo ranges
-    rc().channel(CH_5)->set_range(1000);
-    rc().channel(CH_6)->set_range(1000);
-    rc().channel(CH_7)->set_range(1000);
-    rc().channel(CH_8)->set_range(1000);
-
     // set default dead zones
     default_dead_zones();
 
@@ -59,7 +53,7 @@ void Copter::init_rc_out()
 #if FRAME_CONFIG != HELI_FRAME
     motors->set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
 #else
-    // setup correct scaling for ESCs like the UAVCAN PX4ESC which
+    // setup correct scaling for ESCs like the UAVCAN ESCs which
     // take a proportion of speed.
     hal.rcout->set_esc_scaling(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
 #endif
@@ -94,11 +88,8 @@ void Copter::read_radio()
         set_throttle_and_failsafe(channel_throttle->get_radio_in());
         set_throttle_zero_flag(channel_throttle->get_control_in());
 
-        if (!ap.rc_receiver_present) {
-            // RC receiver must be attached if we've just got input and
-            // there are no overrides
-            ap.rc_receiver_present = !RC_Channels::has_active_overrides();
-        }
+        // RC receiver must be attached if we've just got input
+        ap.rc_receiver_present = true;
 
         // pass pilot input through to motors (used to allow wiggling servos while disarmed on heli, single, coax copters)
         radio_passthrough_to_motors();
@@ -189,7 +180,7 @@ void Copter::set_throttle_zero_flag(int16_t throttle_control)
     // and we are flying. Immediately set as non-zero
     if ((!ap.using_interlock && (throttle_control > 0) && !SRV_Channels::get_emergency_stop()) ||
         (ap.using_interlock && motors->get_interlock()) ||
-        ap.armed_with_switch) {
+        ap.armed_with_switch || air_mode == AirMode::AIRMODE_ENABLED) {
         last_nonzero_throttle_ms = tnow_ms;
         ap.throttle_zero = false;
     } else if (tnow_ms - last_nonzero_throttle_ms > THROTTLE_ZERO_DEBOUNCE_TIME_MS) {

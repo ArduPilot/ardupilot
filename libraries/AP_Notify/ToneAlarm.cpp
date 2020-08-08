@@ -32,7 +32,7 @@ extern const AP_HAL::HAL& hal;
 
 // Tunes follow the syntax of the Microsoft GWBasic/QBasic PLAY
 //   statement, with some exceptions and extensions.
-// See http://firmware.ardupilot.org/Tools/ToneTester/
+// See https://firmware.ardupilot.org/Tools/ToneTester/
 const AP_ToneAlarm::Tone AP_ToneAlarm::_tones[] {
 #define AP_NOTIFY_TONE_QUIET_NEG_FEEDBACK 0
     { "MFT200L4<<<B#A#2", false },
@@ -286,6 +286,23 @@ void AP_ToneAlarm::update()
     if (flags.failsafe_radio != AP_Notify::flags.failsafe_radio) {
         flags.failsafe_radio = AP_Notify::flags.failsafe_radio;
         if (flags.failsafe_radio) {
+            // armed case handled by events.failsafe_mode_change
+            if (!AP_Notify::flags.armed) {
+                play_tone(AP_NOTIFY_TONE_QUIET_NEG_FEEDBACK);
+            }
+        } else {
+            if (AP_Notify::flags.armed) {
+                play_tone(AP_NOTIFY_TONE_LOUD_POS_FEEDBACK);
+            } else {
+                play_tone(AP_NOTIFY_TONE_QUIET_POS_FEEDBACK);
+            }
+        }
+    }
+
+    // notify the user when GCS failsafe is triggered
+    if (flags.failsafe_gcs != AP_Notify::flags.failsafe_gcs) {
+        flags.failsafe_gcs = AP_Notify::flags.failsafe_gcs;
+        if (flags.failsafe_gcs) {
             // armed case handled by events.failsafe_mode_change
             if (!AP_Notify::flags.armed) {
                 play_tone(AP_NOTIFY_TONE_QUIET_NEG_FEEDBACK);

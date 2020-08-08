@@ -14,12 +14,9 @@ protected:
     uint32_t telem_delay() const override;
 
     MAV_RESULT handle_flight_termination(const mavlink_command_long_t &packet) override;
-    AP_AdvancedFailsafe *get_advanced_failsafe() const override;
 
     uint8_t sysid_my_gcs() const override;
     bool sysid_enforce() const override;
-
-    bool set_mode(uint8_t mode) override;
 
     bool params_ready() const override;
     void send_banner() override;
@@ -30,10 +27,11 @@ protected:
     void send_position_target_local_ned() override;
 
     MAV_RESULT handle_command_do_set_roi(const Location &roi_loc) override;
-
+    MAV_RESULT handle_preflight_reboot(const mavlink_command_long_t &packet) override;
     MAV_RESULT handle_command_mount(const mavlink_command_long_t &packet) override;
     MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet) override;
     MAV_RESULT handle_command_long_packet(const mavlink_command_long_t &packet) override;
+    MAV_RESULT handle_command_int_do_reposition(const mavlink_command_int_t &packet);
 
     void handle_mount_message(const mavlink_message_t &msg) override;
 
@@ -60,11 +58,12 @@ private:
                         const mavlink_message_t &msg) override;
 
     MAV_MODE base_mode() const override;
-    MAV_STATE system_status() const override;
+    MAV_STATE vehicle_system_status() const override;
 
     int16_t vfr_hud_throttle() const override;
     float vfr_hud_alt() const override;
 
     void send_pid_tuning() override;
 
+    void send_winch_status() const override;
 };

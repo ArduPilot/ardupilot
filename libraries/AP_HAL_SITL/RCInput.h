@@ -20,6 +20,7 @@ public:
 
 private:
     SITL_State *_sitlState;
+    bool using_rc_protocol;
 };
 
 #endif

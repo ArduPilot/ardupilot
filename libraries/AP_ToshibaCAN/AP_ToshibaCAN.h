@@ -41,6 +41,12 @@ public:
     // send ESC telemetry messages over MAVLink
     void send_esc_telemetry_mavlink(uint8_t mav_chan);
 
+    // return a bitmask of escs that are "present" which means they are responding to requests.  Bitmask matches RC outputs
+    uint16_t get_present_mask() const { return _esc_present_bitmask; }
+
+    // return total usage time in seconds
+    uint32_t get_usage_seconds(uint8_t esc_id) const;
+
 private:
 
     // loop to send output to ESCs in background thread
@@ -51,6 +57,9 @@ private:
 
     // read frame on CAN bus, returns true on success
     bool read_frame(uavcan::CanFrame &recv_frame, uavcan::MonotonicTime timeout);
+
+    // update esc_present_bitmask
+    void update_esc_present_bitmask();
 
     bool _initialized;
     char _thread_name[9];
@@ -69,17 +78,26 @@ private:
     // telemetry data (rpm, voltage)
     HAL_Semaphore _telem_sem;
     struct telemetry_info_t {
-        uint16_t rpm;
-        uint16_t millivolts;
-        uint16_t temperature;
-        uint16_t count;
-        bool new_data;
+        int16_t rpm;                // rpm
+        uint16_t voltage_cv;        // voltage in centi-volts
+        uint16_t current_ca;        // current in centi-amps
+        uint16_t esc_temp;          // esc temperature in degrees
+        uint16_t motor_temp;        // motor temperature in degrees
+        uint16_t count;             // total number of packets sent
+        uint32_t usage_sec;         // motor's total usage in seconds
+        uint32_t last_update_ms;    // system time telemetry was last update (used to calc total current)
+        float current_tot_mah;      // total current in mAh
+        bool new_data;              // true if new telemetry data has been filled in but not logged yet
     } _telemetry[TOSHIBACAN_MAX_NUM_ESCS];
     uint32_t _telemetry_req_ms;     // system time (in milliseconds) to request data from escs (updated at 10hz)
     uint8_t _telemetry_temp_req_counter;    // counter used to trigger temp data requests from ESCs (10x slower than other telem data)
+    uint8_t _telemetry_usage_req_counter;   // counter used to trigger usage data requests from ESCs (100x slower than other telem data)
+    const float centiamp_ms_to_mah = 1.0f / 360000.0f;  // for converting centi-amps milliseconds to mAh
 
-    // bitmask of which escs seem to be present
-    uint16_t _esc_present_bitmask;
+    // variables for updating bitmask of responsive escs
+    uint16_t _esc_present_bitmask;      // bitmask of which escs seem to be present
+    uint16_t _esc_present_bitmask_recent;   // bitmask of escs that have responded in the last second
+    uint32_t _esc_present_update_ms;    // system time _esc_present_bitmask was last updated
 
     // structure for sending motor lock command to ESC
     union motor_lock_cmd_t {
@@ -130,14 +148,18 @@ private:
         uint8_t data[6];
     };
 
+    // helper function to create motor_request_data_cmd_t
+    motor_request_data_cmd_t get_motor_request_data_cmd(uint8_t request_id) const;
+
     // structure for replies from ESC of data1 (rpm and voltage)
     union motor_reply_data1_t {
         struct PACKED {
-            uint8_t rxng:1;
-            uint8_t state:7;
-            uint16_t rpm;
-            uint16_t reserved;
-            uint16_t millivolts;
+            uint8_t rxng:1;         // RX No Good. "1" if ESC encountered error receiving a message since MOTOR_DATA1 was last sent
+            uint8_t stepout:1;      // "1" if a "step out" has occured since MOTOR_DATA1 was last sent
+            uint8_t state:6;
+            int16_t rpm;
+            uint16_t current_ma;    // current in milliamps
+            uint16_t voltage_mv;    // voltage in millivolts
             uint8_t position_est_error;
         };
         uint8_t data[8];

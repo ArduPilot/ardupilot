@@ -12,18 +12,12 @@ void Copter::landinggear_update()
     // last status (deployed or retracted) used to check for changes, initialised to startup state of landing gear
     static bool last_deploy_status = landinggear.deployed();
 
-    // if we are doing an automatic landing procedure, force the landing gear to deploy.
-    // To-Do: should we pause the auto-land procedure to give time for gear to come down?
-    if (flightmode->landing_gear_should_be_deployed()) {
-        landinggear.set_position(AP_LandingGear::LandingGear_Deploy);
-    }
-
     // send event message to datalog if status has changed
     if (landinggear.deployed() != last_deploy_status) {
         if (landinggear.deployed()) {
-            Log_Write_Event(DATA_LANDING_GEAR_DEPLOYED);
+            AP::logger().Write_Event(LogEvent::LANDING_GEAR_DEPLOYED);
         } else {
-            Log_Write_Event(DATA_LANDING_GEAR_RETRACTED);
+            AP::logger().Write_Event(LogEvent::LANDING_GEAR_RETRACTED);
         }
     }
 
@@ -34,18 +28,18 @@ void Copter::landinggear_update()
 
     // use rangefinder if available
     switch (rangefinder.status_orient(ROTATION_PITCH_270)) {
-    case RangeFinder::RangeFinder_NotConnected:
-    case RangeFinder::RangeFinder_NoData:
+    case RangeFinder::Status::NotConnected:
+    case RangeFinder::Status::NoData:
         // use altitude above home for non-functioning rangefinder
         break;
 
-    case RangeFinder::RangeFinder_OutOfRangeLow:
+    case RangeFinder::Status::OutOfRangeLow:
         // altitude is close to zero (gear should deploy)
         height_cm = 0;
         break;
 
-    case RangeFinder::RangeFinder_OutOfRangeHigh:
-    case RangeFinder::RangeFinder_Good:
+    case RangeFinder::Status::OutOfRangeHigh:
+    case RangeFinder::Status::Good:
         // use last good reading
         height_cm = rangefinder_state.alt_cm_filt.get();
         break;

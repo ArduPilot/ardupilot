@@ -15,43 +15,12 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_RangeFinder_uLanding.h"
-#include <AP_SerialManager/AP_SerialManager.h>
 #include <ctype.h>
 
 #define ULANDING_HDR 254   // Header Byte from uLanding (0xFE)
 #define ULANDING_HDR_V0 72 // Header Byte for beta V0 of uLanding (0x48)
 
-#define ULANDING_BAUD           115200
-#define ULANDING_BUFSIZE_RX     128
-#define ULANDING_BUFSIZE_TX     128
-
 extern const AP_HAL::HAL& hal;
-
-/*
-   The constructor also initialises the rangefinder. Note that this
-   constructor is not called until detect() returns true, so we
-   already know that we should setup the rangefinder
-*/
-AP_RangeFinder_uLanding::AP_RangeFinder_uLanding(RangeFinder::RangeFinder_State &_state,
-                                                 AP_RangeFinder_Params &_params,
-                                                 uint8_t serial_instance) :
-    AP_RangeFinder_Backend(_state, _params)
-{
-    uart = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);
-    if (uart != nullptr) {
-        uart->begin(ULANDING_BAUD, ULANDING_BUFSIZE_RX, ULANDING_BUFSIZE_TX);
-    }
-}
-
-/*
-   detect if a uLanding rangefinder is connected. We'll detect by
-   trying to take a reading on Serial. If we get a result the sensor is
-   there.
-*/
-bool AP_RangeFinder_uLanding::detect(uint8_t serial_instance)
-{
-    return AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance) != nullptr;
-}
 
 /*
    detect uLanding Firmware Version
@@ -203,18 +172,4 @@ bool AP_RangeFinder_uLanding::get_reading(uint16_t &reading_cm)
     }
 
     return true;
-}
-
-/*
-   update the state of the sensor
-*/
-void AP_RangeFinder_uLanding::update(void)
-{
-    if (get_reading(state.distance_cm)) {
-        state.last_reading_ms = AP_HAL::millis();
-        // update range_valid state based on distance measured
-        update_status();
-    } else if (AP_HAL::millis() - state.last_reading_ms > 200) {
-        set_status(RangeFinder::RangeFinder_NoData);
-    }
 }

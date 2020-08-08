@@ -84,4 +84,68 @@ void RCOutput::push(void)
     }
 }
 
+/*
+  Serial LED emulation
+*/
+bool RCOutput::set_serial_led_num_LEDs(const uint16_t chan, uint8_t num_leds, output_mode mode, uint16_t clock_mask)
+{
+    if (chan > 15 || num_leds > 64) {
+        return false;
+    }
+    SITL::SITL *sitl = AP::sitl();
+    if (sitl) {
+        sitl->led.num_leds[chan] = num_leds;
+        return true;
+    }
+    return false;
+}
+
+void RCOutput::set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t red, uint8_t green, uint8_t blue)
+{
+    if (chan > 15) {
+        return;
+    }
+    SITL::SITL *sitl = AP::sitl();
+    if (led == -1) {
+        for (uint8_t i=0; i < sitl->led.num_leds[chan]; i++) {
+            set_serial_led_rgb_data(chan, i, red, green, blue);
+        }
+        return;
+    }
+    if (led < -1 || led >= sitl->led.num_leds[chan]) {
+        return;
+    }
+    if (sitl) {
+        sitl->led.rgb[chan][led].rgb[0] = red;
+        sitl->led.rgb[chan][led].rgb[1] = green;
+        sitl->led.rgb[chan][led].rgb[2] = blue;
+    }
+}
+
+void RCOutput::serial_led_send(const uint16_t chan)
+{
+    SITL::SITL *sitl = AP::sitl();
+    if (sitl) {
+        sitl->led.send_counter++;
+    }
+}
+
 #endif
+
+void RCOutput::force_safety_off(void)
+{
+    SITL::SITL *sitl = AP::sitl();
+    if (sitl == nullptr) {
+        return;
+    }
+    sitl->force_safety_off();
+}
+
+bool RCOutput::force_safety_on(void)
+{
+    SITL::SITL *sitl = AP::sitl();
+    if (sitl == nullptr) {
+        return false;
+    }
+    return sitl->force_safety_on();
+}

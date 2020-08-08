@@ -16,7 +16,7 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma GCC optimize("O3")
+#pragma GCC optimize("O2")
 
 #include "AP_Math.h"
 
@@ -285,6 +285,14 @@ Vector2<T> Vector2<T>::projected(const Vector2<T> &v)
     return v * (*this * v)/(v*v);
 }
 
+// extrapolate position given bearing (in degrees) and distance
+template <typename T>
+void Vector2<T>::offset_bearing(float bearing, float distance)
+{
+    x += cosf(radians(bearing)) * distance;
+    y += sinf(radians(bearing)) * distance;
+}
+
 // given a position pos_delta and a velocity v1 produce a vector
 // perpendicular to v1 maximising distance from p1
 template <typename T>
@@ -413,6 +421,18 @@ float Vector2<T>::closest_distance_between_radial_and_point(const Vector2<T> &w,
     return sqrtf(closest_distance_between_radial_and_point_squared(w,p));
 }
 
+// rotate vector by angle in radians
+template <typename T>
+void Vector2<T>::rotate(float angle_rad)
+{
+    const float cs = cosf(angle_rad);
+    const float sn = sinf(angle_rad);
+    float rx = x * cs - y * sn;
+    float ry = x * sn + y * cs;
+    x = rx;
+    y = ry;
+}
+
 // only define for float
 template float Vector2<float>::length_squared(void) const;
 template float Vector2<float>::length(void) const;
@@ -435,6 +455,7 @@ template bool Vector2<float>::is_nan(void) const;
 template bool Vector2<float>::is_inf(void) const;
 template float Vector2<float>::angle(const Vector2<float> &v) const;
 template float Vector2<float>::angle(void) const;
+template void Vector2<float>::offset_bearing(float bearing, float distance);
 template bool Vector2<float>::segment_intersection(const Vector2<float>& seg1_start, const Vector2<float>& seg1_end, const Vector2<float>& seg2_start, const Vector2<float>& seg2_end, Vector2<float>& intersection);
 template bool Vector2<float>::circle_segment_intersection(const Vector2<float>& seg_start, const Vector2<float>& seg_end, const Vector2<float>& circle_center, float radius, Vector2<float>& intersection);
 template Vector2<float> Vector2<float>::perpendicular(const Vector2<float> &pos_delta, const Vector2<float> &v1);
@@ -444,6 +465,9 @@ template float Vector2<float>::closest_distance_between_radial_and_point(const V
 template float Vector2<float>::closest_distance_between_line_and_point(const Vector2<float> &w1, const Vector2<float> &w2, const Vector2<float> &p);
 template float Vector2<float>::closest_distance_between_line_and_point_squared(const Vector2<float> &w1, const Vector2<float> &w2, const Vector2<float> &p);
 template float Vector2<float>::closest_distance_between_lines_squared(const Vector2<float> &a1,const Vector2<float> &a2,const Vector2<float> &b1,const Vector2<float> &b2);
+template Vector2<float> Vector2<float>::projected(const Vector2<float> &v);
+template void Vector2<float>::rotate(float angle);
+
 
 template void Vector2<float>::reflect(const Vector2<float> &n);
 
@@ -451,3 +475,4 @@ template bool Vector2<long>::operator ==(const Vector2<long> &v) const;
 
 // define for int
 template bool Vector2<int>::operator ==(const Vector2<int> &v) const;
+template bool Vector2<int>::operator !=(const Vector2<int> &v) const;
