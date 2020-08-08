@@ -99,9 +99,9 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
 
     // @Param: START_PCT
     // @DisplayName: Throttle percentage for engine start
-    // @Description: This is the percentage throttle output for engine start
+    // @Description: This is the percentage throttle output for engine start. A value of -1 means to not override throttle when starting
     // @User: Standard
-    // @Range: 0 100
+    // @Range: -1 100
     AP_GROUPINFO("START_PCT", 10, AP_ICEngine, start_percent, 5),
 
     // @Param: IDLE_PCT
@@ -305,7 +305,12 @@ bool AP_ICEngine::throttle_override(uint8_t &percentage)
     }
 
     if (state == ICE_STARTING || state == ICE_START_DELAY) {
-        percentage = (uint8_t)start_percent.get();
+        int8_t pct = start_percent.get();
+        if (pct < 0) {
+            // allow for disable of use of start percentage
+            return false;
+        }
+        percentage = (uint8_t)pct;
         return true;
     }
     return false;
