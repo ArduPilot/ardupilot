@@ -406,7 +406,7 @@ bool AP_Arming_Copter::motor_count_check()
         }
     }
 
-    printf("### motorNum %d motorCount %d\n", motorNum, motorCount);
+    // printf("### motorNum %d motorCount %d\n", motorNum, motorCount); // for debug message
     if (motorNum != motorCount) {
         return false;
     }
