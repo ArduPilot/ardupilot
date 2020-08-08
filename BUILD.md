@@ -1,5 +1,13 @@
 # Building ArduPilot #
 
+## Get the Source
+
+Clone the project from GitHub:
+```sh
+git clone --recursive https://github.com/ArduPilot/ardupilot.git
+cd ardupilot
+```
+
 Ardupilot is gradually moving from the make-based build system to
 [Waf](https://waf.io/). The instructions below should be enough for you to
 build Ardupilot, but you can also read more about the build system in the
