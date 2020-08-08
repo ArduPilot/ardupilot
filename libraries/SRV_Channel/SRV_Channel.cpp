@@ -137,6 +137,17 @@ void SRV_Channel::set_output_pwm(uint16_t pwm, bool force)
     }
 }
 
+// set normalised output from -1 to 1, assuming 0 at mid point of servo_min/servo_max
+void SRV_Channel::set_output_norm(float value)
+{
+    // convert normalised value to pwm
+    if (type_angle) {
+        set_output_pwm(pwm_from_angle(value * high_out));
+    } else {
+        set_output_pwm(pwm_from_range(value * high_out));
+    }
+}
+
 // set angular range of scaled output
 void SRV_Channel::set_angle(int16_t angle)
 {
