@@ -3881,6 +3881,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_fence_not_breached()
 
     def test_fence_upload_timeouts_1(self, target_system=1, target_component=1):
+        self.start_subtest("fence_upload timeouts 1")
         self.progress("Telling victim there will be one item coming")
         self.mav.mav.mission_count_send(target_system,
                                         target_component,
@@ -3942,6 +3943,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 continue
         if rerequest_count < 3:
             raise NotAchievedException("Expected several re-requests of mission item")
+        self.end_subtest("fence upload timeouts 1")
 
     def expect_request_for_item(self, item):
         m = self.mav.recv_match(type=['MISSION_REQUEST', 'MISSION_ACK'],
@@ -3964,7 +3966,15 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
 
     def test_fence_upload_timeouts_2(self, target_system=1, target_component=1):
-        self.progress("Telling victim there will be one item coming")
+        self.start_subtest("fence upload timeouts 2")
+        self.progress("Telling victim there will be two items coming")
+        # avoid a timeout race condition where ArduPilot re-requests a
+        # fence point before we receive and respond to the first one.
+        # Since ArduPilot has a 1s timeout on re-requesting, This only
+        # requires a round-trip delay of 1/speedup seconds to trigger
+        # - and that has been seen in practise on Travis
+        old_speedup = self.get_parameter("SIM_SPEEDUP")
+        self.set_parameter("SIM_SPEEDUP", 1)
         self.mav.mav.mission_count_send(target_system,
                                         target_component,
                                         2,
@@ -3990,6 +4000,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         item.pack(self.mav.mav)
         self.mav.mav.send(item)
 
+        self.progress("Sending item with seq=1")
         item = self.mav.mav.mission_item_int_encode(
             target_system,
             target_component,
@@ -4008,6 +4019,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
 
         self.expect_request_for_item(item)
+
+        self.set_parameter("SIM_SPEEDUP", old_speedup)
 
         self.progress("Now waiting for a timeout")
         tstart = self.get_sim_time()
@@ -4049,6 +4062,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 continue
         if rerequest_count < 3:
             raise NotAchievedException("Expected several re-requests of mission item")
+        self.end_subtest("fence upload timeouts 2")
 
     def test_fence_upload_timeouts(self, target_system=1, target_component=1):
         self.test_fence_upload_timeouts_1(target_system=target_system,
