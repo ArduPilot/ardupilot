@@ -174,6 +174,9 @@ public:
     // get the output value as a pwm value
     uint16_t get_output_pwm(void) const { return output_pwm; }
 
+    // set normalised output from -1 to 1, assuming 0 at mid point of servo_min/servo_max
+    void set_output_norm(float value);
+
     // set angular range of scaled output
     void set_angle(int16_t angle);
 
@@ -340,6 +343,9 @@ public:
     // get normalised output (-1 to 1 with 0 at mid point of servo_min/servo_max)
     // Value is taken from pwm value.  Returns zero on error.
     static float get_output_norm(SRV_Channel::Aux_servo_function_t function);
+
+    // set normalised output (-1 to 1 with 0 at mid point of servo_min/servo_max) for the given function
+    static void set_output_norm(SRV_Channel::Aux_servo_function_t function, float value);
 
     // get output channel mask for a function
     static uint16_t get_output_channel_mask(SRV_Channel::Aux_servo_function_t function);

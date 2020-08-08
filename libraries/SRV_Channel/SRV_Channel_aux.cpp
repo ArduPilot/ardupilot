@@ -641,6 +641,20 @@ float SRV_Channels::get_output_norm(SRV_Channel::Aux_servo_function_t function)
     return channels[chan].get_output_norm();
 }
 
+// set normalised output (-1 to 1 with 0 at mid point of servo_min/servo_max) for the given function
+void SRV_Channels::set_output_norm(SRV_Channel::Aux_servo_function_t function, float value)
+{
+    if (!function_assigned(function)) {
+        return;
+    }
+    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
+        SRV_Channel &c = channels[i];
+        if (c.function == function) {
+            c.set_output_norm(value);
+        }
+    }
+}
+
 /*
   limit slew rate for an output function to given rate in percent per
   second. This assumes output has not yet done to the hal
