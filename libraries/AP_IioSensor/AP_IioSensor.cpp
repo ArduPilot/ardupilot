@@ -150,20 +150,21 @@ AP_Iio_Sensor::AP_Iio_Sensor(const char *name, vector<AP_Iio_Channel*> *channels
         fprintf(stderr,"AP_Iio_Sensor: couldn't find device %s\n", name);
         goto err;
     }
+    if (sampling_freq > 0) {
+        ret = iio_device_attr_write_longlong(_iio_dev, "sampling_frequency", sampling_freq);
+        if (ret < 0) {
+            fprintf(stderr,"AP_Iio_Sensor: %s failed to write sampling frequency %s\n", name, strerror(errno));
+            goto err;
+        }
 
-    ret = iio_device_attr_write_longlong(_iio_dev, "sampling_frequency", sampling_freq);
-    if (ret < 0) {
-        fprintf(stderr,"AP_Iio_Sensor: %s failed to write sampling frequency %s\n", name, strerror(errno));
-        goto err;
+        ret = iio_device_attr_read_double(_iio_dev, "sampling_frequency", &_sampling_freq);
+        if (ret < 0) {
+            fprintf(stderr,"AP_Iio_Sensor: %s failed to read sampling frequency %s\n", name, strerror(errno));
+            goto err;
+        }
+
+        printf("AP_Iio_Sensor: %s real sampling freq : %f\n", name, _sampling_freq);
     }
-
-    ret = iio_device_attr_read_double(_iio_dev, "sampling_frequency", &_sampling_freq);
-    if (ret < 0) {
-        fprintf(stderr,"AP_Iio_Sensor: %s failed to read sampling frequency %s\n", name, strerror(errno));
-        goto err;
-    }
-
-    printf("AP_Iio_Sensor: %s real sampling freq : %f\n", name, _sampling_freq);
 
     _channels = channels;
     return;
