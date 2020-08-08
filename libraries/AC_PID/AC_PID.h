@@ -20,7 +20,7 @@ class AC_PID {
 public:
 
     // Constructor for PID
-    AC_PID(float initial_p, float initial_i, float initial_d, float initial_ff, float initial_imax, float initial_filt_T_hz, float initial_filt_E_hz, float initial_filt_D_hz, float dt, float oscillation_magnitude_threshold = 0.0f, float oscillation_detector_threshold = 0.0f, float oscillation_detector_filter = 0.0f, float tune_PI_rato = 1.0f);
+    AC_PID(float initial_p, float initial_i, float initial_d, float initial_ff, float initial_imax, float initial_filt_T_hz, float initial_filt_E_hz, float initial_filt_D_hz, float dt, float oscillation_magnitude_threshold = 1.5f, float oscillation_detector_threshold = 1.0f, float oscillation_detector_filter = 0.01f, float tune_PI_rato = 1.0f);
 
     // set_dt - set time step in seconds
     void set_dt(float dt);
