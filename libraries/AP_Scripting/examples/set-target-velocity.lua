@@ -80,7 +80,8 @@ function update()
 
           -- send velocity request
           if (vehicle:set_target_velocity_NED(target_vel)) then   -- send target velocity to vehicle
-            gcs:send_text(0, "pos:" .. tostring(math.floor(dist_NE:x())) .. "," .. tostring(math.floor(dist_NE:y())) .. " sent vel x:" .. tostring(target_vel:x()) .. " y:" .. tostring(target_vel:y()))
+            gcs:send_text(0, "pos:" .. tostring(math.floor(dist_NE:x())) .. "," .. tostring(math.floor(dist_NE:y())) .. 
+              " sent vel x:" .. tostring(target_vel:x()) .. " y:" .. tostring(target_vel:y()))
           else
             gcs:send_text(0, "failed to execute velocity command")
           end
