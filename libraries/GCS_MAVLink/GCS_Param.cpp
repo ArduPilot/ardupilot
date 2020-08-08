@@ -294,7 +294,7 @@ void GCS_MAVLINK::handle_param_set(const mavlink_message_t &msg)
                 if (!hal.util->get_soft_armed()) {
                     break;
                 } else {
-                    printf("### %s is a motor and currently arming\n", buf);
+                    // printf("### %s is a motor and currently arming\n", buf);  // for debug message
                     return;
                 }
             } else {
