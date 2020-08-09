@@ -695,8 +695,8 @@ bool QuadPlane::setup(void)
             tilt.tilt_mask.set(0);
         }
         rotation = ROTATION_PITCH_90;
-        motors = new AP_MotorsMatrixTS(plane.scheduler.get_loop_rate_hz(), rc_speed);
-        motors_var_info = AP_MotorsMatrixTS::var_info;
+        motors = new AP_MotorsMatrix(plane.scheduler.get_loop_rate_hz(), rc_speed);
+        motors_var_info = AP_MotorsMatrix::var_info;
     }
 
     const static char *strUnableToAllocate = "Unable to allocate";
