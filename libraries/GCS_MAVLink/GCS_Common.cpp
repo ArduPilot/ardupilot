@@ -44,6 +44,7 @@
 #include <AP_Proximity/AP_Proximity.h>
 #include <AP_Scripting/AP_Scripting.h>
 #include <AP_Winch/AP_Winch.h>
+#include <AP_OSD/AP_OSD.h>
 
 #include <stdio.h>
 
@@ -3168,6 +3169,16 @@ void GCS_MAVLINK::handle_obstacle_distance(const mavlink_message_t &msg)
     }
 }
 
+void GCS_MAVLINK::handle_osd_param_config(const mavlink_message_t &msg)
+{
+#if OSD_ENABLED
+    AP_OSD *osd = AP::osd();
+    if (osd != nullptr) {
+        osd->handle_msg(msg, *this);
+    }
+#endif
+}
+
 /*
   handle messages which don't require vehicle specific data
  */
@@ -3354,6 +3365,10 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         handle_obstacle_distance(msg);
         break;
 
+    case MAVLINK_MSG_ID_OSD_PARAM_CONFIG:
+    case MAVLINK_MSG_ID_OSD_PARAM_SHOW_CONFIG:
+        handle_osd_param_config(msg);
+        break;
     }
 
 }
