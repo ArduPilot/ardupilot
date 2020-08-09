@@ -804,7 +804,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         // param3 : throttle (range depends upon param2)
         // param4 : timeout (in seconds)
         // param5 : num_motors (in sequence)
-        // param6 : compass learning (0: disabled, 1: enabled)
+        // param6 : motor test order
         return copter.mavlink_motor_test_start(*this,
                                                (uint8_t)packet.param1,
                                                (uint8_t)packet.param2,
