@@ -255,4 +255,31 @@ uint64_t millis64()
     return hrt_micros64() / 1000U;
 }
 
+
+uint32_t native_micros()
+{
+    return micros();
+}
+
+uint32_t native_millis()
+{
+    return millis();
+}
+
+uint16_t native_millis16()
+{
+    return millis16();
+}
+
+uint64_t native_micros64()
+{
+    return micros64();
+}
+
+uint64_t native_millis64()
+{
+    return millis64();
+}
+
+
 } // namespace AP_HAL
