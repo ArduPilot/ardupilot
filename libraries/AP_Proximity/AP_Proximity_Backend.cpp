@@ -103,7 +103,8 @@ bool AP_Proximity_Backend::get_horizontal_distances(AP_Proximity::Proximity_Dist
     for (uint8_t i=0; i<PROXIMITY_NUM_SECTORS; i++) {
         if (_distance_valid[i]) {
             // convert angle to orientation
-            int16_t orientation = static_cast<int16_t>(_angle[i] * (PROXIMITY_MAX_DIRECTION / 360.0f));
+            int16_t orientation = static_cast<int16_t>((_angle[i]+PROXIMITY_SECTOR_WIDTH_DEG*0.5) * (PROXIMITY_MAX_DIRECTION / 360.0f));
+            orientation %= PROXIMITY_MAX_DIRECTION;
             if ((orientation >= 0) && (orientation < PROXIMITY_MAX_DIRECTION) && (_distance[i] < prx_dist_array.distance[orientation])) {
                 prx_dist_array.distance[orientation] = _distance[i];
                 dist_set[orientation] = true;
