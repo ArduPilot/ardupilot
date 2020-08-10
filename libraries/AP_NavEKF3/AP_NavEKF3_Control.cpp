@@ -43,7 +43,13 @@ NavEKF3_core::MagCal NavEKF3_core::effective_magCal(void) const
         return MagCal::NEVER;
     }
 
-    return MagCal(frontend->_magCal.get());
+    // handle deprecated values
+    const int8_t magCalParamVal = frontend->_magCal.get();
+    if ((magCalParamVal == 5) || (magCalParamVal == 6)) {
+        return MagCal::NEVER;
+    }
+
+    return MagCal(magCalParamVal);
 }
 
 // Determine if learning of wind and magnetic field will be enabled and set corresponding indexing limits to
