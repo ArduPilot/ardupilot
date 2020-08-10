@@ -292,7 +292,7 @@ public:
     /// gat a value by name, used by scripting
     ///
     /// @param  name            The full name of the variable to be found.
-    /// @param  value           A refernce to the variable
+    /// @param  value           A reference to the variable
     /// @return                 true if the variable is found
     static bool get(const char *name, float &value);
 
