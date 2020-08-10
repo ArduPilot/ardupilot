@@ -127,7 +127,19 @@ void AP_RCProtocol::process_pulse_list(const uint32_t *widths, uint16_t n, bool 
     }
 }
 
-bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
+bool AP_RCProtocol::inverted_protocol(enum rcprotocol_t rcprot)
+{
+    for (uint8_t i = 0; i<ARRAY_SIZE(inv_prot); i++) {
+        if (inv_prot[i] == rcprot) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// We have inverted flag so that we don't end up pushing garbage from inverted serial
+// read to non-inverted serial read while detection.
+bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate, bool inverted)
 {
     uint32_t now = AP_HAL::millis();
     bool searching = (now - _last_input_ms >= 200);
@@ -137,6 +149,11 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
     }
     // first try current protocol
     if (_detected_protocol != AP_RCProtocol::NONE && !searching) {
+        if (inverted_protocol(AP_RCProtocol::SBUS) && !inverted) {
+            return false;
+        } else if (!inverted_protocol(AP_RCProtocol::SBUS) && inverted) {
+            return false;
+        }
         backend[_detected_protocol]->process_byte(byte, baudrate);
         if (backend[_detected_protocol]->new_input()) {
             _new_input = true;
@@ -147,6 +164,11 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
 
     // otherwise scan all protocols
     for (uint8_t i = 0; i < AP_RCProtocol::NONE; i++) {
+        if (inverted_protocol(AP_RCProtocol::SBUS) && !inverted) {
+            continue;
+        } else if (!inverted_protocol(AP_RCProtocol::SBUS) && inverted) {
+            continue;
+        }
         if (backend[i] != nullptr) {
             uint32_t frame_count = backend[i]->get_rc_frame_count();
             uint32_t input_count = backend[i]->get_rc_input_count();
@@ -182,6 +204,7 @@ void AP_RCProtocol::check_added_uart(void)
     }
     uint32_t now = AP_HAL::millis();
     bool searching = (now - _last_input_ms >= 200);
+    bool inverted_serial = false;
     if (!searching && !_detected_with_bytes) {
         // not using this uart
         return;
@@ -200,6 +223,7 @@ void AP_RCProtocol::check_added_uart(void)
             added.uart->configure_parity(0);
             added.uart->set_stop_bits(1);
             added.uart->set_options(added.uart->get_options() | AP_HAL::UARTDriver::OPTION_RXINV);
+            inverted_serial = true;
             break;
         case CONFIG_100000_8E2I:
             // assume SBUS settings, even parity, 2 stop bits
@@ -207,6 +231,7 @@ void AP_RCProtocol::check_added_uart(void)
             added.uart->configure_parity(2);
             added.uart->set_stop_bits(2);
             added.uart->set_options(added.uart->get_options() | AP_HAL::UARTDriver::OPTION_RXINV);
+            inverted_serial = true;
             break;
         case CONFIG_420000_8N1:
             added.baudrate = CRSF_BAUDRATE;
@@ -226,7 +251,11 @@ void AP_RCProtocol::check_added_uart(void)
     for (uint8_t i=0; i<n; i++) {
         int16_t b = added.uart->read();
         if (b >= 0) {
-            process_byte(uint8_t(b), added.baudrate);
+            if (!inverted_serial) {
+                process_byte(uint8_t(b), added.baudrate, false);
+            } else {
+                process_byte(uint8_t(b), added.baudrate, true);
+            }
         }
     }
     if (!_detected_with_bytes) {

@@ -50,7 +50,7 @@ public:
     }
     void process_pulse(uint32_t width_s0, uint32_t width_s1);
     void process_pulse_list(const uint32_t *widths, uint16_t n, bool need_swap);
-    bool process_byte(uint8_t byte, uint32_t baudrate);
+    bool process_byte(uint8_t byte, uint32_t baudrate, bool inverted);
     void update(void);
 
     void disable_for_pulses(enum rcprotocol_t protocol) {
@@ -89,6 +89,9 @@ private:
     enum rcprotocol_t _detected_protocol = NONE;
     uint16_t _disabled_for_pulses;
     bool _detected_with_bytes;
+
+    enum rcprotocol_t inv_prot[1] { SBUS };
+
     AP_RCProtocol_Backend *backend[NONE];
     bool _new_input;
     uint32_t _last_input_ms;
@@ -110,6 +113,8 @@ private:
         uint32_t last_baud_change_ms;
         enum config_phase phase;
     } added;
+
+    bool inverted_protocol(enum rcprotocol_t rcprot);
 };
 
 namespace AP {
