@@ -65,6 +65,9 @@ AP_BattMonitor_UAVCAN* AP_BattMonitor_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_u
             AP::battery().get_type(i) == AP_BattMonitor_Params::BattMonitor_TYPE_UAVCAN_BatteryInfo) {
 
             AP_BattMonitor_UAVCAN* batmon = (AP_BattMonitor_UAVCAN*)AP::battery().drivers[i];
+            if(batmon->_ap_uavcan != nullptr || batmon->_node_id != 0) {
+                continue;
+            }
             batmon->_ap_uavcan = ap_uavcan;
             batmon->_node_id = node_id;
             batmon->init();
