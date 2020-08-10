@@ -50,6 +50,7 @@ public:
     ~AP_Iio_Sensor();
     int init();
     int read();
+    const struct iio_device *get_device() const {return _iio_dev;};
 private:
     const char *_name;
     double _sampling_freq;
