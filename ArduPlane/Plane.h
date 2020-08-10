@@ -1056,6 +1056,12 @@ private:
     static_assert(_failsafe_priorities[ARRAY_SIZE(_failsafe_priorities) - 1] == -1,
                   "_failsafe_priorities is missing the sentinel");
 
+    enum class ThrFailsafe {
+        Disabled    = 0,
+        Enabled     = 1,
+        EnabledNoFS = 2
+    };
+
 public:
     void mavlink_delay_cb();
     void failsafe_check(void);
