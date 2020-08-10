@@ -171,7 +171,7 @@ void AP_MotorsHeli::output()
     output_logic();
 
     if (_flags.armed) {
-        //block servo_test from happening at disarm
+        // block servo_test from happening at disarm
         _servo_test_cycle_counter = 0;
         
         calculate_armed_scalars();
@@ -214,12 +214,12 @@ void AP_MotorsHeli::output_armed_zero_throttle()
 void AP_MotorsHeli::output_disarmed()
 {
     if (_servo_test_cycle_counter > 0){
-		//set servo_test_flag
+        // set servo_test_flag
         _heliflags.servo_test_running = true;
         // perform boot-up servo test cycle if enabled
         servo_test();
     } else {
-		//set servo_test flag
+        // set servo_test flag
         _heliflags.servo_test_running = false;
         // manual override (i.e. when setting up swash)
         switch (_servo_mode) {
