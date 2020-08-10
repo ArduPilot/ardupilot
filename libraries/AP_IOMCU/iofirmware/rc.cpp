@@ -103,7 +103,7 @@ void AP_IOMCU_FW::rcin_serial_update(void)
         if (sd3_config == 0) {
             rc_stats.num_dsm_bytes += n;
             for (uint8_t i=0; i<n; i++) {
-                if (AP::RC().process_byte(b[i], 115200)) {
+                if (AP::RC().process_byte(b[i], 115200, false)) {
                     rc_stats.last_good_ms = now;
                 }
             }
@@ -121,7 +121,7 @@ void AP_IOMCU_FW::rcin_serial_update(void)
             n = MIN(n, sizeof(b));
             rc_stats.num_sbus_bytes += n;
             for (uint8_t i=0; i<n; i++) {
-                if (AP::RC().process_byte(b[i], sd3_config==0?100000:115200)) {
+                if (AP::RC().process_byte(b[i], sd3_config==0?100000:115200, true)) {
                     rc_stats.last_good_ms = now;
                 }
             }
