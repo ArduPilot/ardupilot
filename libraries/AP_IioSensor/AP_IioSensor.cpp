@@ -12,11 +12,11 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "AP_IioSensor.h"
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
-#include "AP_IioSensor.h"
 
 
 AP_Iio_Channel::AP_Iio_Channel(const char *name) :
@@ -83,7 +83,11 @@ int AP_Iio_Channel::get_data(double *values)
     for (i = 0, ptr = iio_buffer_first(_iio_buf, _iio_chan);
          ptr < iio_buffer_end(_iio_buf);
          ptr += iio_buffer_step(_iio_buf), i++) {
-        if (_iio_fmt->length == 16 && _iio_fmt->is_signed) {
+        if (_iio_fmt->length == 8 && !_iio_fmt->is_signed) {
+            uint8_t val;
+            iio_channel_convert(_iio_chan, &val, ptr);
+            value = val;
+        } else if (_iio_fmt->length == 16 && _iio_fmt->is_signed) {
             int16_t val;
             iio_channel_convert(_iio_chan, &val, ptr);
             value = val;
