@@ -803,6 +803,23 @@ class AutoTestCopter(AutoTest):
 
     # Tests all actions and logic behind the battery failsafe
     def fly_battery_failsafe(self, timeout=300):
+        ex = None
+        try:
+            self.test_battery_failsafe(timeout=timeout)
+        except Exception as e:
+            ex = e
+
+        self.set_parameter('BATT_LOW_VOLT', 0)
+        self.set_parameter('BATT_CRT_VOLT', 0)
+        self.set_parameter('BATT_FS_LOW_ACT', 0)
+        self.set_parameter('BATT_FS_CRT_ACT', 0)
+        self.set_parameter('FS_OPTIONS', 0)
+        self.reboot_sitl()
+
+        if ex is not None:
+            raise ex
+
+    def test_battery_failsafe(self, timeout=300):
         self.progress("Configure battery failsafe parameters")
         self.set_parameter('SIM_SPEEDUP', 4)
         self.set_parameter('BATT_LOW_VOLT', 11.5)
@@ -917,12 +934,6 @@ class AutoTestCopter(AutoTest):
         self.end_subtest("Completed terminate failsafe test")
 
         self.progress("All Battery failsafe tests complete")
-        self.set_parameter('BATT_LOW_VOLT', 0)
-        self.set_parameter('BATT_CRT_VOLT', 0)
-        self.set_parameter('BATT_FS_LOW_ACT', 0)
-        self.set_parameter('BATT_FS_CRT_ACT', 0)
-        self.set_parameter('FS_OPTIONS', 0)
-        self.reboot_sitl()
 
     # fly_stability_patch - fly south, then hold loiter within 5m
     # position and altitude and reduce 1 motor to 60% efficiency
