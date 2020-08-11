@@ -2890,7 +2890,9 @@ class AutoTest(ABC):
             if abs(delta) < epsilon:
                 # yes, near-enough-to-equal.
                 if add_to_context:
-                    self.context_get().parameters.append((name, old_value))
+                    context_param_name_list = [p[0] for p in self.context_get().parameters]
+                    if name.upper() not in context_param_name_list:
+                        self.context_get().parameters.append((name, old_value))
                 if self.should_fetch_all_for_parameter_change(name.upper()) and value != 0:
                     self.fetch_parameters()
                 return
@@ -2929,7 +2931,6 @@ class AutoTest(ABC):
     def context_pop(self):
         """Set parameters to origin values in reverse order."""
         dead = self.contexts.pop()
-
         dead_parameters = dead.parameters
         dead_parameters.reverse()
         for p in dead_parameters:
