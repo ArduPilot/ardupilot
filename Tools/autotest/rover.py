@@ -5094,17 +5094,18 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 if expected_distance_sensor_message["orientation"] != orientation:
                     continue
                 found = True
-                self.progress("Marking message as found")
-                expected_distance_sensor_message["__found__"] = True
+                if not expected_distance_sensor_message.get("__found__", False):
+                    self.progress("Marking message as found")
+                    expected_distance_sensor_message["__found__"] = True
                 if (m.current_distance - expected_distance_sensor_message["distance"] > 1):
-                    raise NotAchievedException("Bad distance want=%u got=%u" % (expected_distance_sensor_message["distance"], m.current_distance))
+                    raise NotAchievedException("Bad distance for orient=%u want=%u got=%u" % (orientation, expected_distance_sensor_message["distance"], m.current_distance))
                 break
             if not found:
                 raise NotAchievedException("Got unexpected DISTANCE_SENSOR message")
             all_found = True
             for expected_distance_sensor_message in expect_distance_sensor_messages_copy:
                 if not expected_distance_sensor_message.get("__found__", False):
-                    self.progress("message still not found")
+                    self.progress("message still not found (orient=%u" % expected_distance_sensor_message["orientation"])
                     all_found = False
                     break
             if all_found:
@@ -5143,6 +5144,24 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                     "max_distance": 1000, # cm
                 }, [
                 { "orientation": 0, "distance": 111 },
+            ])
+
+            # lots of dense readings (e.g. vision camera:
+            distances = [0] * 72
+            for i in range(0, 72):
+                distances[i] = 1000 + 10*abs(36-i);
+
+            self.send_obstacle_distances_expect_distance_sensor_messages(
+                {
+                    "distances": distances,
+                    "increment_f": 90/72.0,
+                    "angle_offset": -45.0,
+                    "min_distance": 0,
+                    "max_distance": 2000, # cm
+                }, [
+                { "orientation": 0, "distance": 1000 },
+                { "orientation": 1, "distance": 1190 },
+                { "orientation": 7, "distance": 1190 },
             ])
 
         except Exception as e:
