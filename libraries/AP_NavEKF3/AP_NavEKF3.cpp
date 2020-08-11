@@ -1011,6 +1011,11 @@ bool NavEKF3::healthy(void) const
 // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
 bool NavEKF3::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const
 {
+    // check source configuration
+    if (!_sources.pre_arm_check(failure_msg, failure_msg_len)) {
+        return false;
+    }
+
     if (!core) {
         AP::dal().snprintf(failure_msg, failure_msg_len, "no EKF3 cores");
         return false;
