@@ -152,10 +152,13 @@ class AutoTestCopter(AutoTest):
         self.change_mode("LAND")
         self.wait_landed_and_disarmed(timeout=timeout)
 
-    def wait_landed_and_disarmed(self, min_alt=4, timeout=60):
+    def wait_landed_and_disarmed(self, min_alt=6, timeout=60):
         """Wait to be landed and disarmed"""
-        self.wait_altitude(-5, min_alt, relative=True, timeout=timeout)
-        self.progress("LANDING: ok!")
+        m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+        alt = m.relative_alt / 1000.0 # mm -> m
+        if alt > min_alt:
+            self.wait_for_alt(min_alt, timeout=timeout)
+#        self.wait_statustext("SIM Hit ground", timeout=timeout)
         self.wait_disarmed()
 
     def hover(self, hover_throttle=1500):
