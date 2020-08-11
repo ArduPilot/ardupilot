@@ -133,6 +133,7 @@ void ModeTakeoff::update()
 
 void ModeTakeoff::_navigate()
 {
-    plane.mode_loiter.navigate();
+    // Zero indicates to use WP_LOITER_RAD
+    plane.update_loiter(0);
 }
 
