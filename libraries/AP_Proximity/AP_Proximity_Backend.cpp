@@ -18,6 +18,8 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AC_Avoidance/AP_OADatabase.h>
 #include <AP_HAL/AP_HAL.h>
+#include <GCS_MAVLink/GCS.h>
+
 #include "AP_Proximity.h"
 #include "AP_Proximity_Backend.h"
 
@@ -31,6 +33,11 @@ AP_Proximity_Backend::AP_Proximity_Backend(AP_Proximity &_frontend, AP_Proximity
 {
     // initialise sector edge vector used for building the boundary fence
     init_boundary();
+
+    obstacle_distance.increment_f = 360/PROXIMITY_NUM_SECTORS;
+    obstacle_distance.increment = obstacle_distance.increment_f;
+    obstacle_distance.sensor_type = MAV_DISTANCE_SENSOR_LASER;
+    obstacle_distance.frame = MAV_FRAME_BODY_FRD;
 }
 
 // get distance and angle to closest object (used for pre-arm check)
@@ -132,6 +139,52 @@ void AP_Proximity_Backend::init_boundary()
         _sector_edge_vector[sector].y = sinf(angle_rad) * 100.0f;
         _boundary_point[sector] = _sector_edge_vector[sector] * PROXIMITY_BOUNDARY_DIST_DEFAULT;
     }
+}
+
+bool AP_Proximity_Backend::update_obstacle_distance_data()
+{
+    obstacle_distance.angle_offset = -22.5f;
+    obstacle_distance.min_distance = distance_min() * 100;
+    obstacle_distance.max_distance = distance_max() * 100;
+
+    const uint16_t invalid_marker = UINT16_MAX;
+
+    AP_Proximity::Proximity_Distance_Array prx_dist_array;
+    if (state.status != AP_Proximity::Status::Good ||
+        !get_horizontal_distances(prx_dist_array)) {
+        // fill with "invalid" marker
+        for (uint8_t i=0; i<PROXIMITY_NUM_SECTORS; i++) {
+            obstacle_distance.distances[i] = invalid_marker;
+        }
+        return true;
+    }
+
+    for (uint8_t i=0; i<PROXIMITY_NUM_SECTORS; i++) {
+        if (is_equal(prx_dist_array.distance[i], distance_max())) {
+            // distance_max() marks invalid distances in the proximity array
+            obstacle_distance.distances[i] = invalid_marker;
+            continue;
+        }
+        obstacle_distance.distances[i] = prx_dist_array.distance[i]*100;
+    }
+    return true;
+}
+
+void AP_Proximity_Backend::send_obstacle_distance_message(GCS_MAVLINK &chan)
+{
+    if (chan.txspace() < MAVLINK_MSG_ID_OBSTACLE_DISTANCE_LEN) {
+        // no space on the mavlink channel
+        return;
+    }
+
+    if (!update_obstacle_distance_data()) {
+        // failed to get data to send
+        return;
+    }
+
+    obstacle_distance.time_usec = AP_HAL::micros();
+
+    chan.send_message(MAVLINK_MSG_ID_OBSTACLE_DISTANCE, (const char*)&obstacle_distance);
 }
 
 // update boundary points used for object avoidance based on a single sector's distance changing
@@ -262,7 +315,7 @@ void AP_Proximity_Backend::database_push(float angle, float distance, uint32_t t
     }
     
     //Assume object is angle bearing and distance meters away from the vehicle 
-    Vector2f object_2D = {0.0f,0.0f};
+    Vector2f object_2D;
     object_2D.offset_bearing(wrap_180(angle), distance);	
     
     //rotate that vector to a 3D vector in NED frame

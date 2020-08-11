@@ -44,6 +44,18 @@ bool AP_Proximity_MAV::get_upward_distance(float &distance) const
     return false;
 }
 
+bool AP_Proximity_MAV::update_obstacle_distance_data()
+{
+    if (state.status != AP_Proximity::Status::Good) {
+        // fill with "invalid" marker
+        const uint16_t marker = UINT16_MAX;
+        for (uint8_t i=0; i<ARRAY_SIZE(obstacle_distance.distances); i++) {
+            obstacle_distance.distances[i] = marker;
+        }
+    }
+    return true;
+}
+
 // handle mavlink DISTANCE_SENSOR messages
 void AP_Proximity_MAV::handle_msg(const mavlink_message_t &msg)
 {
@@ -171,5 +183,8 @@ void AP_Proximity_MAV::handle_msg(const mavlink_message_t &msg)
                 update_boundary_for_sector(i, false);
             }
         }
+
+        // update the obstacle_distance message that ArduPilot can send out:
+        obstacle_distance = packet;
     }
 }

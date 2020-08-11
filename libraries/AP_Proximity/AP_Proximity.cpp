@@ -13,6 +13,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <GCS_MAVLink/GCS_MAVLink.h>
+
 #include "AP_Proximity.h"
 #include "AP_Proximity_LightWareSF40C_v09.h"
 #include "AP_Proximity_RPLidarA2.h"
@@ -363,6 +365,14 @@ bool AP_Proximity::get_horizontal_distances(Proximity_Distance_Array &prx_dist_a
     }
     // get distances from backend
     return drivers[primary_instance]->get_horizontal_distances(prx_dist_array);
+}
+
+void AP_Proximity::send_obstacle_distance_message(GCS_MAVLINK &chan)
+{
+    if (drivers[primary_instance] == nullptr) {
+        return;
+    }
+    drivers[primary_instance]->send_obstacle_distance_message(chan);
 }
 
 // get boundary points around vehicle for use by avoidance

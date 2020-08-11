@@ -23,6 +23,13 @@ public:
     // handle mavlink DISTANCE_SENSOR messages
     void handle_msg(const mavlink_message_t &msg) override;
 
+protected:
+
+    // we fill the obstacle distance data in as we get it from the
+    // sensor, but if we're not getting data may need to fill in
+    // invalid values.
+    bool update_obstacle_distance_data() override;
+
 private:
     // horizontal distance support
     uint32_t _last_update_ms;   // system time of last DISTANCE_SENSOR message received

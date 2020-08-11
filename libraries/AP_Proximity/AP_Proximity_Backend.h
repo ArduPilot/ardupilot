@@ -62,6 +62,10 @@ public:
     // get distances in 8 directions. used for sending distances to ground station
     bool get_horizontal_distances(AP_Proximity::Proximity_Distance_Array &prx_dist_array) const;
 
+    // support for sending OBSTACLE_DISTANCE message based on detected obstacles
+    virtual bool update_obstacle_distance_data() WARN_IF_UNUSED;
+    void send_obstacle_distance_message(class GCS_MAVLINK &chan);
+
 protected:
 
     // set status and update valid_count
@@ -104,4 +108,10 @@ protected:
     // fence boundary
     Vector2f _sector_edge_vector[PROXIMITY_NUM_SECTORS];    // vector for right-edge of each sector, used to speed up calculation of boundary
     Vector2f _boundary_point[PROXIMITY_NUM_SECTORS];        // bounding polygon around the vehicle calculated conservatively for object avoidance
+
+    // data suitable for plonking into an OBSTACLE_DISTANCE message.
+    // This is basically a lowest-common-denominator approach to get
+    // sensor data out to the GCS for plotting.  Data should not be
+    // cooked in any way - no interpolation!
+    mavlink_obstacle_distance_t obstacle_distance;
 };

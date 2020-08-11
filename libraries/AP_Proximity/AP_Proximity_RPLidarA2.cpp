@@ -63,6 +63,18 @@
 
 extern const AP_HAL::HAL& hal;
 
+AP_Proximity_RPLidarA2::AP_Proximity_RPLidarA2(AP_Proximity &_frontend, AP_Proximity::Proximity_State &_state) :
+    AP_Proximity_Backend_Serial(_frontend, _state)
+{
+    // we can fill in all 72 distances:
+    obstacle_distance.increment_f = 5;
+    obstacle_distance.increment = obstacle_distance.increment;
+    obstacle_distance.angle_offset = -2.5f;
+    obstacle_distance.min_distance = distance_min()*100;
+    obstacle_distance.max_distance = distance_max()*100;
+}
+
+
 // update the _rp_state of the sensor
 void AP_Proximity_RPLidarA2::update(void)
 {
@@ -271,6 +283,18 @@ void AP_Proximity_RPLidarA2::get_readings()
     }
 }
 
+bool AP_Proximity_RPLidarA2::update_obstacle_distance_data()
+{
+    if (state.status != AP_Proximity::Status::Good) {
+        // fill with "invalid" marker
+        const uint16_t marker = UINT16_MAX;
+        for (uint8_t i=0; i<ARRAY_SIZE(obstacle_distance.distances); i++) {
+            obstacle_distance.distances[i] = marker;
+        }
+    }
+    return true;
+}
+
 void AP_Proximity_RPLidarA2::parse_response_descriptor()
 {
     // check if descriptor packet is valid
@@ -316,6 +340,11 @@ void AP_Proximity_RPLidarA2::parse_response_data()
                 _last_distance_received_ms = AP_HAL::millis();
                 if (!ignore_reading(angle_deg)) {
                     const uint8_t sector = convert_angle_to_sector(angle_deg);
+                    if (distance_m > distance_min()) {
+                        obstacle_distance.distances[uint8_t(angle_deg/5)] = distance_m*100;
+                    } else {
+                        obstacle_distance.distances[uint8_t(angle_deg/5)] = distance_max()*100 +1;  // invalid according to spec
+                    }
                     if (_last_sector == sector) {
                         if (distance_m > distance_min()) {
                             if (_distance_m_last < distance_min() or

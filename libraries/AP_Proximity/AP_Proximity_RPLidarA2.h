@@ -39,7 +39,7 @@ class AP_Proximity_RPLidarA2 : public AP_Proximity_Backend_Serial
 
 public:
 
-    using AP_Proximity_Backend_Serial::AP_Proximity_Backend_Serial;
+    AP_Proximity_RPLidarA2(AP_Proximity &_frontend, AP_Proximity::Proximity_State &_state);
 
     // update state
     void update(void) override;
@@ -47,6 +47,13 @@ public:
     // get maximum and minimum distances (in meters) of sensor
     float distance_max() const override;
     float distance_min() const override;
+
+protected:
+
+    // we fill the obstacle distance data in as we get it from the
+    // sensor, but if we're not getting data may need to fill in
+    // invalid values.
+    bool update_obstacle_distance_data() override;
 
 private:
     enum rp_state {
