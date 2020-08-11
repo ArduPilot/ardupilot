@@ -6,6 +6,7 @@
 #include "AP_AutoTune.h"
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Math/AP_Math.h>
+#include <AC_PID/AC_PID_OscillationDetector.h>
 
 class AP_RollController {
 public:
@@ -17,6 +18,7 @@ public:
         AP_Param::setup_object_defaults(this, var_info);
         _slew_rate_filter.set_cutoff_frequency(10.0f);
         _slew_rate_filter.reset(0.0f);
+        oscillationDetector.reset_scale_factors();
     }
 
     /* Do not allow copies */
@@ -43,7 +45,6 @@ public:
 
 	static const struct AP_Param::GroupInfo var_info[];
 
-
     // tuning accessors
     void kP(float v) { gains.P.set(v); }
     void kI(float v) { gains.I.set(v); }
@@ -54,6 +55,8 @@ public:
     AP_Float &kI(void) { return gains.I; }
     AP_Float &kD(void) { return gains.D; }
     AP_Float &kFF(void) { return gains.FF; }
+
+    AC_PID_OscillationDetector oscillationDetector{_pid_info, gains.P, gains.I, gains.D, gains.FF, 1.0f, 2.0f, 0.01f, 1.0f}; // 1 cdeg/s magnitude threshold, 2 oscillation threshold, 0.01 filter value
 
 private:
     const AP_Vehicle::FixedWing &aparm;

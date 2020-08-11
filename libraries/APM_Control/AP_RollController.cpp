@@ -102,7 +102,6 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
     AP_GROUPEND
 };
 
-
 /*
   internal rate controller, called by attitude and rate controller
   public functions
@@ -118,10 +117,10 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
 	
 	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
     // No conversion is required for K_D
-	float ki_rate = gains.I * gains.tau;
+	float ki_rate = gains.I * gains.tau * _pid_info.Imod;
     float eas2tas = _ahrs.get_EAS2TAS();
-	float kp_ff = MAX((gains.P - gains.I * gains.tau) * gains.tau  - gains.D , 0) / eas2tas;
-    float k_ff = gains.FF / eas2tas;
+	float kp_ff = MAX(((gains.P *  _pid_info.Pmod) - (gains.I * gains.tau * _pid_info.Imod)) * gains.tau  - (gains.D *  _pid_info.Dmod), 0) / eas2tas;
+    float k_ff = (gains.FF* _pid_info.FFmod) / eas2tas;
 	float delta_time    = (float)dt * 0.001f;
     // Get body rate vector (radians/sec)
 	float omega_x = _ahrs.get_gyro().x;
@@ -170,11 +169,12 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
 	// Note the scaler is applied again. We want a 1/speed scaler applied to the feed-forward
 	// path, but want a 1/speed^2 scaler applied to the rate error path. 
 	// This is because acceleration scales with speed^2, but rate scales with speed.
-    _pid_info.D = rate_error * gains.D * scaler;
+    _pid_info.D = rate_error * gains.D * scaler * _pid_info.Dmod;
     _pid_info.P = desired_rate * kp_ff * scaler;
     _pid_info.FF = desired_rate * k_ff * scaler;
+    _pid_info.error = desired_rate - achieved_rate;
 
-    if (dt > 0 && _slew_rate_max > 0) {
+    if (dt > 0 && _slew_rate_max > 0 && !oscillationDetector.enabled()) {
         // Calculate the slew rate amplitude produced by the unmodified D term
 
         // calculate a low pass filtered slew rate
@@ -203,7 +203,9 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
     }
 
 	_last_out += _pid_info.I;
-	
+
+    oscillationDetector.update();
+
 	// Convert to centi-degrees and constrain
 	return constrain_float(_last_out * 100, -4500, 4500);
 }
