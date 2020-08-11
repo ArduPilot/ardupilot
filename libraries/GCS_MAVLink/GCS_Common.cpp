@@ -811,6 +811,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_EFI_STATUS,            MSG_EFI_STATUS},
         { MAVLINK_MSG_ID_GENERATOR_STATUS,      MSG_GENERATOR_STATUS},
         { MAVLINK_MSG_ID_WINCH_STATUS,          MSG_WINCH_STATUS},
+        { MAVLINK_MSG_ID_OBSTACLE_DISTANCE,     MSG_OBSTACLE_DISTANCE},
             };
 
     for (uint8_t i=0; i<ARRAY_SIZE(map); i++) {
@@ -4310,6 +4311,15 @@ void GCS_MAVLINK::send_sys_status()
         errors4); // errors4
 }
 
+void GCS_MAVLINK::send_obstacle_distance()
+{
+    AP_Proximity *proximity = AP::proximity();
+    if (proximity == nullptr) {
+        return;
+    }
+    proximity->send_obstacle_distance_message(*this);
+}
+
 void GCS_MAVLINK::send_extended_sys_state() const
 {
     mavlink_msg_extended_sys_state_send(chan, vtol_state(), landed_state());
@@ -4767,6 +4777,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_WINCH_STATUS:
         CHECK_PAYLOAD_SIZE(WINCH_STATUS);
         send_winch_status();
+        break;
+
+    case MSG_OBSTACLE_DISTANCE:
+        CHECK_PAYLOAD_SIZE(OBSTACLE_DISTANCE);
+        send_obstacle_distance();
         break;
 
     default:
