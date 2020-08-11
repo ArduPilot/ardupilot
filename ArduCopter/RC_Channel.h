@@ -24,6 +24,8 @@ private:
     // called when the mode switch changes position:
     void mode_switch_changed(modeswitch_pos_t new_pos) override;
 
+    void do_aux_function_quick_tune(const AuxSwitchPos ch_flag);
+
 };
 
 class RC_Channels_Copter : public RC_Channels
