@@ -285,6 +285,48 @@ bool AP_Vehicle::advance_quick_tune_axis()
     return advance_quick_tune_axis();
 }
 
+// start or stop quick tune, called by RC switch
+void AP_Vehicle::quick_tune_start_stop(const RC_Channel::AuxSwitchPos ch_flag, const char *axis_string, AC_PID_OscillationDetector *detector)
+{ 
+    // start on current axis
+    if (ch_flag == RC_Channel::AuxSwitchPos::MIDDLE) {
+        if (!get_likely_flying()) {
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+            gcs().send_text(MAV_SEVERITY_INFO, "Quick Tune: %s not flying",axis_string);
+#else
+            gcs().send_text(MAV_SEVERITY_INFO, "Quick Tune: %s not armed",axis_string);
+#endif
+            return;
+        }
+        if (detector->start_quick_tune()) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Quick Tune: %s started",axis_string);
+        } else {
+            gcs().send_text(MAV_SEVERITY_INFO, "Quick Tune: %s oscillation detector not enabled",axis_string);
+            advance_quick_tune_axis();
+        }
+        return;
+    }
+
+    // tune has not been started on this axis
+    if (!detector->quick_tune_has_run()) {
+        return;
+    }
+
+    if (ch_flag == RC_Channel::AuxSwitchPos::HIGH) {
+        float P, I, D, FF;
+        if (detector->save_PDFF_scaled(P, I, D, FF)) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Quick Tune: %s saved P %0.2f, I %0.2f, D %0.2f, FF %0.2f", axis_string, P, I, D, FF);
+        } else {
+            gcs().send_text(MAV_SEVERITY_INFO, "Quick Tune: %s not complete, gains discarded", axis_string);
+        }
+    } else { // AuxSwitchPos::LOW
+        gcs().send_text(MAV_SEVERITY_INFO, "Quick Tune: %s discarded gains", axis_string);
+    }
+
+    detector->stop_quick_tune();
+
+    advance_quick_tune_axis();
+}
 
 AP_Vehicle *AP_Vehicle::_singleton = nullptr;
 

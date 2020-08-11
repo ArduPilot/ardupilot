@@ -42,6 +42,7 @@
 #include <AP_GyroFFT/AP_GyroFFT.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_RCTelemetry/AP_VideoTX.h>
+#include <AC_PID/AC_PID_OscillationDetector.h>
 
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
 
@@ -224,6 +225,9 @@ public:
 
     // advance to the next enabled quick tune axis from bitmask param
     bool advance_quick_tune_axis();
+
+    // start or stop quick tune, called by RC switch
+    void quick_tune_start_stop(const RC_Channel::AuxSwitchPos ch_flag, const char *axis_string, AC_PID_OscillationDetector *detector);
 
 protected:
 
