@@ -7,9 +7,13 @@ class RC_Channel_Tracker : public RC_Channel
 
 public:
 
+    void do_aux_function(aux_func_t ch_option, AuxSwitchPos) override;
+
 protected:
 
 private:
+
+    void do_aux_function_quick_tune(const AuxSwitchPos ch_flag);
 
 };
 

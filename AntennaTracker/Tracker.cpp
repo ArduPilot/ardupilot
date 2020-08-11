@@ -149,6 +149,24 @@ void Tracker::stats_update(void)
     stats.update();
 }
 
+// set enable states, report tune progress
+void Tracker::update_oscillation_detector()
+{
+    const uint8_t bitmask = tracker.oscillation_detector_bitmask.get();
+
+    float P, I, D, FF;
+    tracker.g.pidPitch2Srv.oscillationDetector.set_enable((bitmask & (1 << (uint8_t)AP_Vehicle::PID_AXIS::YAW)) != 0);
+    if (tracker.g.pidPitch2Srv.oscillationDetector.quick_tune_active(P, I, D, FF)) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Quick Tune: Steer: P %0.2f, I %0.2f, D %0.2f, FF %0.2f",P,I,D,FF);
+    }
+
+    tracker.g.pidPitch2Srv.oscillationDetector.set_enable((bitmask & (1 << (uint8_t)AP_Vehicle::PID_AXIS::THROTTLE)) != 0);
+    if (tracker.g.pidPitch2Srv.oscillationDetector.quick_tune_active(P, I, D, FF)) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Quick Tune: Throttle: P %0.2f, I %0.2f, D %0.2f, FF %0.2f",P,I,D,FF);
+    }
+}
+
+
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 Tracker::Tracker(void)

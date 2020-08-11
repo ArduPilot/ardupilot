@@ -72,6 +72,7 @@ public:
     friend class ModeAuto;
     friend class ModeGuided;
     friend class Mode;
+    friend class RC_Channel_Tracker;
 
     Tracker(void);
 
@@ -170,6 +171,7 @@ private:
     void one_second_loop();
     void ten_hz_logging_loop();
     void stats_update();
+    void update_oscillation_detector() override;
 
     // GCS_Mavlink.cpp
     void send_nav_controller_output(mavlink_channel_t chan);
