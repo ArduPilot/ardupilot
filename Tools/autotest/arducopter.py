@@ -3801,7 +3801,7 @@ class AutoTestCopter(AutoTest):
                 start = self.mav.location()
                 self.progress("Moving to guided/position controller")
                 self.fly_guided_move_global_relative_alt(1, 0, 0)
-                self.guided_achieve_heading(0)
+                self.guided_achieve_heading(0, auto_direction=True)
                 (roi_lat, roi_lon) = mavextra.gps_offset(start.lat,
                                                          start.lng,
                                                          -100,
