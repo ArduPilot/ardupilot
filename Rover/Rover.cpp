@@ -393,6 +393,23 @@ void Rover::publish_osd_info()
 }
 #endif
 
+// set enable states, report tune progress
+void Rover::update_oscillation_detector()
+{
+    const uint8_t bitmask = rover.oscillation_detector_bitmask.get();
+
+    float P, I, D, FF;
+    g2.attitude_control.get_steering_rate_pid().oscillationDetector.set_enable((bitmask & (1 << (uint8_t)AP_Vehicle::PID_AXIS::YAW)) != 0);
+    if (g2.attitude_control.get_steering_rate_pid().oscillationDetector.quick_tune_active(P, I, D, FF)) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Quick Tune: Steer: P %0.2f, I %0.2f, D %0.2f, FF %0.2f",P,I,D,FF);
+    }
+
+    g2.attitude_control.get_throttle_speed_pid().oscillationDetector.set_enable((bitmask & (1 << (uint8_t)AP_Vehicle::PID_AXIS::THROTTLE)) != 0);
+    if (g2.attitude_control.get_throttle_speed_pid().oscillationDetector.quick_tune_active(P, I, D, FF)) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Quick Tune: Throttle: P %0.2f, I %0.2f, D %0.2f, FF %0.2f",P,I,D,FF);
+    }
+}
+
 Rover rover;
 AP_Vehicle& vehicle = rover;
 

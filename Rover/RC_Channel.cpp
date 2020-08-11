@@ -122,6 +122,37 @@ void RC_Channel_Rover::do_aux_function_sailboat_motor_3pos(const AuxSwitchPos ch
     }
 }
 
+void RC_Channel_Rover::do_aux_function_quick_tune(const AuxSwitchPos ch_flag)
+{
+    const char *axis_string = nullptr;
+    AC_PID_OscillationDetector *detector = nullptr;
+    switch(rover.quick_tune_axis)
+    {
+        case AP_Vehicle::PID_AXIS::YAW:
+            axis_string = "Steer";
+            detector = &rover.g2.attitude_control.get_steering_rate_pid().oscillationDetector;
+            break;
+        case AP_Vehicle::PID_AXIS::THROTTLE:
+            axis_string = "Throttle";
+            detector = &rover.g2.attitude_control.get_throttle_speed_pid().oscillationDetector;
+            break;
+        default:
+            break;
+    }
+
+    if (detector == nullptr) {
+        // dont have this axis, look for the next
+        if (rover.advance_quick_tune_axis()) {
+            do_aux_function_quick_tune(ch_flag);
+        } else {
+            gcs().send_text(MAV_SEVERITY_INFO, "Quick Tune: not enabled");
+        }
+        return;
+    }
+
+    rover.quick_tune_start_stop(ch_flag,axis_string,detector);
+}
+
 void RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos ch_flag)
 {
     switch (ch_option) {
@@ -239,6 +270,10 @@ void RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const AuxSwit
             SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_steering);
             gcs().send_text(MAV_SEVERITY_CRITICAL, "Steering trim saved!");
         }
+        break;
+
+    case AUX_FUNC::QUICK_TUNE:
+        do_aux_function_quick_tune(ch_flag);
         break;
 
     default:

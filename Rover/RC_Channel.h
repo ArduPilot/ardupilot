@@ -25,6 +25,9 @@ private:
     void add_waypoint_for_current_loc();
 
     void do_aux_function_sailboat_motor_3pos(const AuxSwitchPos ch_flag);
+
+    void do_aux_function_quick_tune(const AuxSwitchPos ch_flag);
+
 };
 
 class RC_Channels_Rover : public RC_Channels

@@ -285,6 +285,7 @@ private:
     void one_second_loop(void);
     void update_current_mode(void);
     void update_mission(void);
+    void update_oscillation_detector() override;
 
     // balance_bot.cpp
     void balancebot_pitch_control(float &throttle);
