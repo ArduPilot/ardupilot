@@ -158,6 +158,8 @@ public:
     // set alt as read from downward facing rangefinder. Tilt is already adjusted for
     void set_rangefinder_alt(bool use, bool healthy, float alt_cm);
 
+    void send_obstacle_distance_message(mavlink_channel_t);
+
 private:
     static AP_Proximity *_singleton;
     Proximity_State state[PROXIMITY_MAX_INSTANCES];

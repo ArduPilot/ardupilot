@@ -376,6 +376,11 @@ uint8_t AP_Proximity::get_num_layers() const
     return drivers[primary_instance]->get_num_layers();
 }
 
+void AP_Proximity::send_obstacle_distance_message(mavlink_channel_t chan)
+{
+    drivers[primary_instance]->send_obstacle_distance_message(chan);
+}
+
 // get vector to obstacle based on obstacle_num passed, used in GPS based Simple Avoidance
 bool AP_Proximity::get_obstacle(uint8_t obstacle_num, Vector3f& vec_to_obstacle) const
 {

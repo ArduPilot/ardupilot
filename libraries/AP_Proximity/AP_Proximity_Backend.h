@@ -67,14 +67,13 @@ public:
     // get distances in 8 directions. used for sending distances to ground station
     bool get_horizontal_distances(AP_Proximity::Proximity_Distance_Array &prx_dist_array) const;
 
-    // get raw and filtered distances in 8 directions per layer. used for logging
-    bool get_active_layer_distances(uint8_t layer, AP_Proximity::Proximity_Distance_Array &prx_dist_array, AP_Proximity::Proximity_Distance_Array &prx_filt_dist_array) const;
+    // copy location points around vehicle into a buffer owned by the caller
+    // caller should provide the buff_size which is the maximum number of locations the buffer can hold (normally PROXIMITY_MAX_DIRECTION)
+    // num_copied is updated with the number of locations copied into the buffer
+    // returns true on success, false on failure which should only happen if buff is nullptr
+    bool copy_locations(AP_Proximity::Proximity_Location* buff, uint16_t buff_size, uint16_t& num_copied);
 
-    // get number of layers
-    uint8_t get_num_layers() const { return boundary.get_num_layers(); }
-
-    // store rangefinder values
-    void set_rangefinder_alt(bool use, bool healthy, float alt_cm);
+    virtual void send_obstacle_distance_message(mavlink_channel_t chan) {};
 
 protected:
 

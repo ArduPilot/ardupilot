@@ -19,6 +19,8 @@
 #include <AP_Param/AP_Param.h>
 #include "AP_Proximity_SITL.h"
 #include <AC_Fence/AC_Fence.h>
+#include <GCS_MAVLink/GCS.h>
+
 #include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
@@ -69,6 +71,24 @@ void AP_Proximity_SITL::update(void)
     } else {
         set_status(AP_Proximity::Status::NoData);
     }
+
+    for (uint8_t i=0; i<MIN(ARRAY_SIZE(_distance), ARRAY_SIZE(send_distances)); i++) {
+        send_distances[i] = uint16_t(_distance[i]*100.0f);
+    }
+}
+
+void AP_Proximity_SITL::send_obstacle_distance_message(mavlink_channel_t chan)
+{
+    uint16_t fred[72]{1000, 200, 500, 200, 750, 200, 500, 200};
+    mavlink_msg_obstacle_distance_send(
+        mavlink_channel_t(chan),
+        AP_HAL::micros(),
+        18, // sensor type
+        fred,
+        45,
+        0,
+        65535
+        );
 }
 
 // get distance in meters to fence in a particular direction in degrees (0 is forward, angles increase in the clockwise direction)

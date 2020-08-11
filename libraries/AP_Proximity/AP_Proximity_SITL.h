@@ -35,5 +35,7 @@ private:
     // get distance in meters to fence in a particular direction in degrees (0 is forward, angles increase in the clockwise direction)
     bool get_distance_to_fence(float angle_deg, float &distance) const;
 
+    void send_obstacle_distance_message(mavlink_channel_t chan) override;
+    uint16_t send_distances[72]{};
 };
 #endif // CONFIG_HAL_BOARD
