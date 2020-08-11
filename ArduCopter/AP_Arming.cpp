@@ -509,12 +509,9 @@ bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
 {
     // always check if inertial nav has started and is ready
     const AP_AHRS_NavEKF &ahrs = AP::ahrs_navekf();
-    if (!ahrs.prearm_healthy()) {
-        const char *reason = ahrs.prearm_failure_reason();
-        if (reason == nullptr) {
-            reason = "AHRS not healthy";
-        }
-        check_failed(display_failure, "%s", reason);
+    char failure_msg[50] = {};
+    if (!ahrs.pre_arm_check(failure_msg, sizeof(failure_msg))) {
+        check_failed(display_failure, "%s", failure_msg);
         return false;
     }
 
@@ -530,7 +527,7 @@ bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
 
     if (mode_requires_gps) {
         if (!copter.position_ok()) {
-            // There is no need to call prearm_failure_reason again, because prearm_healthy sure be true if we reach here
+            // vehicle level position estimate checks
             check_failed(display_failure, "Need Position Estimate");
             return false;
         }
