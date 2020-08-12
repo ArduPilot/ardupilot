@@ -169,7 +169,7 @@ void AP_ICEngine::update(void)
 
     uint16_t cvalue = 1500;
     RC_Channel *c = rc().channel(start_chan-1);
-    if (c != nullptr) {
+    if (c != nullptr && rc().has_valid_input()) {
         // get starter control channel
         cvalue = c->get_radio_in();
 
@@ -357,7 +357,7 @@ bool AP_ICEngine::engine_control(float start_control, float cold_start, float he
         return true;
     }
     RC_Channel *c = rc().channel(start_chan-1);
-    if (c != nullptr) {
+    if (c != nullptr && rc().has_valid_input()) {
         // get starter control channel
         uint16_t cvalue = c->get_radio_in();
         if (cvalue >= start_chan_min_pwm && cvalue <= 1300) {
