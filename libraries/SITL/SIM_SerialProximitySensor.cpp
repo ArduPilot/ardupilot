@@ -41,16 +41,22 @@ void SerialProximitySensor::update(const Location &location)
     write_to_autopilot((char*)data, packetlen);
 }
 
-float SerialProximitySensor::measure_distance_at_angle(const Location &location, float angle) const
+float SerialProximitySensor::measure_distance_at_angle_bf(const Location &location, float angle) const
 {
-    // const SITL *sitl = AP::sitl();
+    const SITL *sitl = AP::sitl();
 
-    Vector2f pos1_cm;
-    if (!location.get_vector_xy_from_origin_NE(pos1_cm)) {
+    Vector2f vehicle_pos_cm;
+    if (!location.get_vector_xy_from_origin_NE(vehicle_pos_cm)) {
         // should probably use SITL variables...
         return 0.0f;
     }
     static uint64_t count = 0;
+
+    if (count == 0) {
+        unlink("/tmp/rayfile.scr");
+        unlink("/tmp/intersectionsfile.scr");
+    }
+
     count++;
 
     // the 1000 here is so the files don't grow unbounded
@@ -62,9 +68,9 @@ float SerialProximitySensor::measure_distance_at_angle(const Location &location,
     }
     // cast a ray from location out 200m...
     Location location2 = location;
-    location2.offset_bearing(wrap_180(angle), 200);
-    Vector2f pos2_cm;
-    if (!location2.get_vector_xy_from_origin_NE(pos2_cm)) {
+    location2.offset_bearing(wrap_180(angle + sitl->state.yawDeg), 200);
+    Vector2f ray_endpos_cm;
+    if (!location2.get_vector_xy_from_origin_NE(ray_endpos_cm)) {
         // should probably use SITL variables...
         return 0.0f;
     }
@@ -77,27 +83,32 @@ float SerialProximitySensor::measure_distance_at_angle(const Location &location,
     FILE *postfile = nullptr;
     FILE *intersectionsfile = nullptr;
     if (write_debug_files) {
-        postfile = fopen("/tmp/post-locations.scr", "w");
+        static bool postfile_written;
+        if (!postfile_written) {
+            ::fprintf(stderr, "Writing /tmp/post-locations.scr\n");
+            postfile_written = true;
+            postfile = fopen("/tmp/post-locations.scr", "w");
+        }
         intersectionsfile = fopen("/tmp/intersections.scr", "a");
     }
+    const float radius_cm = 100.0f;
     float min_dist_cm = 1000000.0;
     const uint8_t num_post_offset = 10;
     for (int8_t x=-num_post_offset; x<num_post_offset; x++) {
         for (int8_t y=-num_post_offset; y<num_post_offset; y++) {
             Location post_location = post_origin;
-            post_location.offset(x*10+0.5, y*10+0.5);
+            post_location.offset(x*10+3, y*10+2);
             if (postfile != nullptr) {
-                ::fprintf(postfile, "map icon %f %f hoop\n", post_location.lat*1e-7, post_location.lng*1e-7);
+                ::fprintf(postfile, "map circle %f %f %f blue\n", post_location.lat*1e-7, post_location.lng*1e-7, radius_cm/100.0);
             }
             Vector2f post_position_cm;
             if (!post_location.get_vector_xy_from_origin_NE(post_position_cm)) {
                 // should probably use SITL variables...
                 return 0.0f;
             }
-            const float radius_cm = 10.0f;
             Vector2f intersection_point_cm;
-            if (Vector2f::circle_segment_intersection(pos1_cm, pos2_cm, post_position_cm, radius_cm, intersection_point_cm)) {
-                float dist_cm = (intersection_point_cm-pos1_cm).length();
+            if (Vector2f::circle_segment_intersection(ray_endpos_cm, vehicle_pos_cm, post_position_cm, radius_cm, intersection_point_cm)) {
+                float dist_cm = (intersection_point_cm-vehicle_pos_cm).length();
                 if (intersectionsfile != nullptr) {
                     Location intersection_point = location;
                     intersection_point.offset(intersection_point_cm.x/100.0f,
