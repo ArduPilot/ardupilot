@@ -121,6 +121,10 @@ private:
         DISABLE_IGNITION_RC_FAILSAFE=(1U<<0),
     };
     AP_Int16 options;
+
+    // start_chan debounce
+    uint16_t start_chan_last_value;
+    uint32_t start_chan_last_ms;
 };
 
 
