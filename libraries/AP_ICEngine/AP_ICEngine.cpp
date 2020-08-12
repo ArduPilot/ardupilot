@@ -23,6 +23,8 @@
 
 extern const AP_HAL::HAL& hal;
 
+#define AP_ICENGINE_START_CHAN_DEBOUNCE_MS          300
+
 const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
 
     // @Param: ENABLE
@@ -163,14 +165,36 @@ void AP_ICEngine::update(void)
     if (c != nullptr) {
         // get starter control channel
         cvalue = c->get_radio_in();
+
+        // snap the input to either 1000, 1500, or 2000
+        // this is useful to compare a debounce changed value
+        // while ignoring tiny noise
+        if (cvalue >= 1700) {
+            cvalue = 2000;
+        } else if (cvalue <= 1300) {
+            cvalue = 1300;
+        } else {
+            cvalue = 1500;
+        }
     }
 
     bool should_run = false;
     uint32_t now = AP_HAL::millis();
 
-    if (state == ICE_OFF && cvalue >= 1700) {
+
+    // debounce timer to protect from spurious changes on start_chan rc input
+    // If the cached value is the same, reset timer
+    if (start_chan_last_value == cvalue) {
+        start_chan_last_ms = now;
+    } else if (now - start_chan_last_ms >= AP_ICENGINE_START_CHAN_DEBOUNCE_MS) {
+        // if it has changed, and stayed changed for the duration, then use that new value
+        start_chan_last_value = cvalue;
+    }
+
+
+    if (state == ICE_OFF && start_chan_last_value >= 1700) {
         should_run = true;
-    } else if (cvalue <= 1300) {
+    } else if (start_chan_last_value <= 1300) {
         should_run = false;
     } else if (state != ICE_OFF) {
         should_run = true;
