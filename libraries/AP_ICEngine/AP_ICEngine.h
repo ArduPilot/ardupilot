@@ -66,6 +66,9 @@ private:
     // channel for pilot to command engine start, 0 for none
     AP_Int8 start_chan;
 
+    // min pwm on start channel for engine stop
+    AP_Int16 start_chan_min_pwm;
+    
     // which RPM instance to use
     AP_Int8 rpm_instance;
     
