@@ -134,7 +134,14 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @Description: Options for ICE control
     // @Bitmask: 0:DisableIgnitionRCFailsafe
     AP_GROUPINFO("OPTIONS", 15, AP_ICEngine, options, 0),
-    
+
+    // @Param: STARTCHN_MIN
+    // @DisplayName: Input channel for engine start minimum PWM
+    // @Description: This is a minimum PWM value for engine start channel for an engine stop to be commanded. Setting this value will avoid RC input glitches with low PWM values from causing an unwanted engine stop. A value of zero means any PWM below 1300 triggers an engine stop.
+    // @User: Standard
+    // @Range: 0 1300
+    AP_GROUPINFO("STARTCHN_MIN", 16, AP_ICEngine, start_chan_min_pwm, 0),
+
     AP_GROUPEND
 };
 
@@ -165,6 +172,10 @@ void AP_ICEngine::update(void)
     if (c != nullptr) {
         // get starter control channel
         cvalue = c->get_radio_in();
+
+        if (cvalue < start_chan_min_pwm) {
+            cvalue = start_chan_last_value;
+        }
 
         // snap the input to either 1000, 1500, or 2000
         // this is useful to compare a debounce changed value
@@ -348,7 +359,8 @@ bool AP_ICEngine::engine_control(float start_control, float cold_start, float he
     RC_Channel *c = rc().channel(start_chan-1);
     if (c != nullptr) {
         // get starter control channel
-        if (c->get_radio_in() <= 1300) {
+        uint16_t cvalue = c->get_radio_in();
+        if (cvalue >= start_chan_min_pwm && cvalue <= 1300) {
             gcs().send_text(MAV_SEVERITY_INFO, "Engine: start control disabled");
             return false;
         }
