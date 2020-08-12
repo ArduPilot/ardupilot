@@ -416,7 +416,6 @@ void NavEKF3_core::InitialiseVariables()
     extNavLastPosResetTime_ms = 0;
     extNavDataToFuse = false;
     extNavUsedForPos = false;
-    extNavVelNew = {};
     extNavVelDelayed = {};
     extNavVelToFuse = false;
     useExtNavVel = false;
