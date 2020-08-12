@@ -817,7 +817,7 @@ private:
     // Calculate weighting that is applied to IMU1 accel data to blend data from IMU's 1 and 2
     void calcIMU_Weighting(float K1, float K2);
 
-    // return true if the filter is ready to start using optical flow measurements
+    // return true if the filter is ready to start using optical flow measurements for position and velocity estimation
     bool readyToUseOptFlow(void) const;
 
     // return true if the filter is ready to start using body frame odometry measurements
