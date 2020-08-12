@@ -146,6 +146,7 @@ void AP_Logger::Write_GPS(uint8_t i, uint64_t time_us)
         LOG_PACKET_HEADER_INIT((uint8_t)(LOG_GPS_MSG+i)),
         time_us       : time_us,
         status        : (uint8_t)gps.status(i),
+        yaw_status    : (uint8_t)gps.yaw_status(i),
         gps_week_ms   : gps.time_week_ms(i),
         gps_week      : gps.time_week(i),
         num_sats      : gps.num_sats(i),

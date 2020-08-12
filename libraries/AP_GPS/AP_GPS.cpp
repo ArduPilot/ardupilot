@@ -299,6 +299,15 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     AP_GROUPINFO("DRV_OPTIONS", 22, AP_GPS, _driver_options, 0),
 #endif
 
+    // @Param: YAW_OFFSET
+    // @DisplayName: Yaw offset
+    // @Description: Offset of gps yaw, rotated depend on body frame.
+    // @Units: degrees
+    // @Range: -180.0 180.0
+    // @User: Advanced
+    AP_GROUPINFO("YAW_OFFSET", 23, AP_GPS, _yaw_offset, 0.0f),
+
+
     AP_GROUPEND
 };
 
