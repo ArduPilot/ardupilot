@@ -41,7 +41,7 @@ void SerialProximitySensor::update(const Location &location)
     write_to_autopilot((char*)data, packetlen);
 }
 
-float SerialProximitySensor::measure_distance_at_angle(const Location &location, float angle) const
+float SerialProximitySensor::measure_distance_at_angle_bf(const Location &location, float angle) const
 {
     // const SITL *sitl = AP::sitl();
 

@@ -41,7 +41,7 @@ public:
                                          uint8_t buflen) = 0;
 
     // return distance to nearest object at angle
-    float measure_distance_at_angle(const Location &location, float angle) const;
+    float measure_distance_at_angle_bf(const Location &location, float angle) const;
 
 private:
 
