@@ -1036,8 +1036,10 @@ void NavEKF3_core::writeExtNavVelData(const Vector3f &vel, float err, uint32_t t
         return;
     }
 
-    extNavVelMeasTime_ms = timeStamp_ms - delay_ms;
+    extNavVelMeasTime_ms = timeStamp_ms;
     useExtNavVel = true;
+    // calculate timestamp
+    timeStamp_ms = timeStamp_ms - delay_ms;
     // Correct for the average intersampling delay due to the filter updaterate
     timeStamp_ms -= localFilterTimeStep_ms/2;
     // Prevent time delay exceeding age of oldest IMU data in the buffer
