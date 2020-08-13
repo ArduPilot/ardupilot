@@ -659,7 +659,7 @@ class uploader(object):
                 if rev in revs:
                     (label, flawed) = revs[rev]
                     if flawed and family == 0x419:
-                        print("  %x %s rev%s (flawed; 1M limit)" % (chip, mcu, label,))
+                        print("  %x %s rev%s (flawed; 1M limit, see STM32F42XX Errata sheet sec. 2.1.10)" % (chip, mcu, label,))
                     elif family == 0x419:
                         print("  %x %s rev%s (no 1M flaw)" % (chip, mcu, label,))
                     else:
