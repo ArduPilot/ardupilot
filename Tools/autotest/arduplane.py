@@ -96,17 +96,17 @@ class AutoTestPlane(AutoTest):
         self.set_rc(2, 1200)
 
         # get it moving a bit first
-        self.set_rc(3, 1300)
+        self.set_throttle(1300)
         self.wait_groundspeed(6, 100)
 
         # a bit faster again, straighten rudder
-        self.set_rc(3, 1600)
+        self.set_throttle(1600)
         self.set_rc(4, 1500)
         self.wait_groundspeed(12, 100)
 
         # hit the gas harder now, and give it some more elevator
         self.set_rc(2, 1100)
-        self.set_rc(3, 2000)
+        self.set_throttle(2000)
 
         # gain a bit of altitude
         self.wait_altitude(alt, alt_max, timeout=30, relative=relative)
@@ -120,7 +120,7 @@ class AutoTestPlane(AutoTest):
         """Fly a left circuit, 200m on a side."""
         self.mavproxy.send('switch 4\n')
         self.wait_mode('FBWA')
-        self.set_rc(3, 2000)
+        self.set_throttle(2000)
         self.wait_level_flight()
 
         self.progress("Flying left circuit")
@@ -240,7 +240,7 @@ class AutoTestPlane(AutoTest):
     def axial_left_roll(self, count=1):
         """Fly a left axial roll."""
         # full throttle!
-        self.set_rc(3, 2000)
+        self.set_throttle(2000)
         self.change_altitude(self.homeloc.alt+300)
 
         # fly the roll in manual
@@ -263,13 +263,13 @@ class AutoTestPlane(AutoTest):
         self.set_rc(1, 1500)
         self.mavproxy.send('switch 4\n')
         self.wait_mode('FBWA')
-        self.set_rc(3, 1700)
+        self.set_throttle(1700)
         return self.wait_level_flight()
 
     def inside_loop(self, count=1):
         """Fly a inside loop."""
         # full throttle!
-        self.set_rc(3, 2000)
+        self.set_throttle(2000)
         self.change_altitude(self.homeloc.alt+300)
         # fly the loop in manual
         self.mavproxy.send('switch 6\n')
@@ -286,7 +286,7 @@ class AutoTestPlane(AutoTest):
         self.set_rc(2, 1500)
         self.mavproxy.send('switch 4\n')
         self.wait_mode('FBWA')
-        self.set_rc(3, 1700)
+        self.set_throttle(1700)
         return self.wait_level_flight()
 
     def set_attitude_target(self, tolerance=10):
@@ -367,19 +367,19 @@ class AutoTestPlane(AutoTest):
         except Exception as e:
             self.mavproxy.send('mode FBWA\n')
             self.wait_mode('FBWA')
-            self.set_rc(3, 1700)
+            self.set_throttle(1700)
             raise e
 
         # back to FBWA
         self.mavproxy.send('mode FBWA\n')
         self.wait_mode('FBWA')
-        self.set_rc(3, 1700)
+        self.set_throttle(1700)
         self.wait_level_flight()
 
     def test_stabilize(self, count=1):
         """Fly stabilize mode."""
         # full throttle!
-        self.set_rc(3, 2000)
+        self.set_throttle(2000)
         self.set_rc(2, 1300)
         self.change_altitude(self.homeloc.alt+300)
         self.set_rc(2, 1500)
@@ -401,13 +401,13 @@ class AutoTestPlane(AutoTest):
         # back to FBWA
         self.mavproxy.send('mode FBWA\n')
         self.wait_mode('FBWA')
-        self.set_rc(3, 1700)
+        self.set_throttle(1700)
         return self.wait_level_flight()
 
     def test_acro(self, count=1):
         """Fly ACRO mode."""
         # full throttle!
-        self.set_rc(3, 2000)
+        self.set_throttle(2000)
         self.set_rc(2, 1300)
         self.change_altitude(self.homeloc.alt+300)
         self.set_rc(2, 1500)
@@ -446,14 +446,14 @@ class AutoTestPlane(AutoTest):
         # back to FBWA
         self.mavproxy.send('mode FBWA\n')
         self.wait_mode('FBWA')
-        self.set_rc(3, 1700)
+        self.set_throttle(1700)
         return self.wait_level_flight()
 
     def test_FBWB(self, mode='FBWB'):
         """Fly FBWB or CRUISE mode."""
         self.mavproxy.send("mode %s\n" % mode)
         self.wait_mode(mode)
-        self.set_rc(3, 1700)
+        self.set_throttle(1700)
         self.set_rc(2, 1500)
 
         # lock in the altitude by asking for an altitude change then releasing
@@ -526,7 +526,7 @@ class AutoTestPlane(AutoTest):
     def fly_do_reposition(self):
         self.progress("Takeoff")
         self.takeoff(alt=50)
-        self.set_rc(3, 1500)
+        self.set_throttle(1500)
         self.progress("Entering guided and flying somewhere constant")
         self.change_mode("GUIDED")
         loc = self.mav.location()
@@ -606,7 +606,7 @@ class AutoTestPlane(AutoTest):
 
         self.progress("Takeoff")
         self.takeoff(alt=100)
-        self.set_rc(3, 1500)
+        self.set_throttle(1500)
         # ensure we know what the airspeed is:
         self.progress("Entering guided and flying somewhere constant")
         self.change_mode("GUIDED")
@@ -952,7 +952,7 @@ class AutoTestPlane(AutoTest):
 
         self.set_parameter("FENCE_CHANNEL", 7)
         self.set_parameter("FENCE_ACTION", 4)
-        self.set_rc(3, 1000)
+        self.set_throttle(1000)
         self.set_rc(7, 2000)
 
         self.progress("Checking fence is initially OK")
@@ -1522,7 +1522,7 @@ class AutoTestPlane(AutoTest):
     def fly_do_guided_request(self, target_system=1, target_component=1):
         self.progress("Takeoff")
         self.takeoff(alt=50)
-        self.set_rc(3, 1500)
+        self.set_throttle(1500)
         self.start_subtest("Ensure command bounced outside guided mode")
         desired_relative_alt = 33
         loc = self.mav.location()
@@ -1583,7 +1583,7 @@ class AutoTestPlane(AutoTest):
 
     def LOITER(self):
         self.takeoff(alt=200)
-        self.set_rc(3, 1500)
+        self.set_throttle(1500)
         self.change_mode("LOITER")
         self.progress("Doing a bit of loitering to start with")
         tstart = self.get_sim_time()

@@ -65,7 +65,7 @@ class AutoTestBalanceBot(AutoTestRover):
             self.wait_ready_to_arm()
             self.change_mode("ACRO")
             self.arm_vehicle()
-            self.set_rc(3, 1600)
+            self.set_throttle(1600)
 
             m = self.mav.recv_match(type='WHEEL_DISTANCE', blocking=True, timeout=5)
             if m is None:

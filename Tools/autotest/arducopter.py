@@ -134,7 +134,7 @@ class AutoTestCopter(AutoTest):
             self.wait_ready_to_arm(require_absolute=require_absolute)
             self.zero_throttle()
             self.arm_vehicle()
-        self.set_rc(3, takeoff_throttle)
+        self.set_throttle(takeoff_throttle)
         self.wait_for_alt(alt_min=alt_min, timeout=timeout)
         self.hover()
         self.progress("TAKEOFF COMPLETE")
@@ -158,16 +158,16 @@ class AutoTestCopter(AutoTest):
         self.wait_disarmed()
 
     def hover(self, hover_throttle=1500):
-        self.set_rc(3, hover_throttle)
+        self.set_throttle(hover_throttle)
     
     #Climb/descend to a given altitude
     def setAlt(self, desiredAlt=50):
         pos = self.mav.location(relative_alt=True)
         if pos.alt > desiredAlt:
-            self.set_rc(3, 1300)
+            self.set_throttle(1300)
             self.wait_altitude((desiredAlt-5), desiredAlt, relative=True)
         if pos.alt < (desiredAlt-5):
-            self.set_rc(3, 1800)
+            self.set_throttle(1800)
             self.wait_altitude((desiredAlt-5), desiredAlt, relative=True)
         self.hover()
     
@@ -176,7 +176,7 @@ class AutoTestCopter(AutoTest):
         self.progress("Centering sticks")
         self.set_rc(1, 1500)
         self.set_rc(2, 1500)
-        self.set_rc(3, 1000)
+        self.set_throttle(1000)
         self.set_rc(4, 1500)
         self.takeoff(alt_min=dAlt)
         self.change_mode("ALT_HOLD")
@@ -274,9 +274,9 @@ class AutoTestCopter(AutoTest):
             if math.fabs(current_alt - target_alt) <= accuracy:
                 self.hover()
             elif current_alt < target_alt:
-                self.set_rc(3, climb_throttle)
+                self.set_throttle(climb_throttle)
             else:
-                self.set_rc(3, descend_throttle)
+                self.set_throttle(descend_throttle)
         self.wait_altitude((alt_min - 5), alt_min, relative=True, called_function=lambda current_alt, target_alt: adjust_altitude(current_alt, target_alt, 1))
         self.hover()
 
@@ -309,7 +309,7 @@ class AutoTestCopter(AutoTest):
         # ensure all sticks in the middle
         self.set_rc(1, 1500)
         self.set_rc(2, 1500)
-        self.set_rc(3, 1500)
+        self.set_throttle(1500)
         self.set_rc(4, 1500)
 
         # switch to loiter mode temporarily to stop us from rising
@@ -329,7 +329,7 @@ class AutoTestCopter(AutoTest):
         self.change_mode('STABILIZE')
 
         # increase throttle a bit because we're about to pitch:
-        self.set_rc(3, 1525)
+        self.set_throttle(1525)
 
         # pitch forward to fly north
         self.progress("Going north %u meters" % side)
@@ -372,19 +372,19 @@ class AutoTestCopter(AutoTest):
         self.save_wp()
 
         # reduce throttle again
-        self.set_rc(3, 1500)
+        self.set_throttle(1500)
 
         # descend to 10m
         self.progress("Descend to 10m in Loiter")
         self.mavproxy.send('switch 5\n')  # loiter mode
         self.wait_mode('LOITER')
-        self.set_rc(3, 1300)
+        self.set_throttle(1300)
         time_left = timeout - (self.get_sim_time() - tstart)
         self.progress("timeleft = %u" % time_left)
         if time_left < 20:
             time_left = 20
         self.wait_altitude(-10, 10, timeout=time_left, relative=True)
-        self.set_rc(3, 1500)
+        self.set_throttle(1500)
         self.save_wp()
 
         # save the stored mission to file
@@ -406,7 +406,7 @@ class AutoTestCopter(AutoTest):
     def do_RTL(self, timeout=250):
         """Return, land."""
         self.change_mode("RTL")
-        self.set_rc(3, 1500)
+        self.set_throttle(1500)
         tstart = self.get_sim_time()
         while self.get_sim_time_cached() < tstart + timeout:
             m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
@@ -453,11 +453,11 @@ class AutoTestCopter(AutoTest):
             self.mavproxy.send('mode auto\n')
             self.wait_mode('AUTO')
 
-            self.set_rc(3, 1550)
+            self.set_throttle(1550)
 
             self.wait_current_waypoint(2)
 
-            self.set_rc(3, 1500)
+            self.set_throttle(1500)
 
             self.wait_waypoint(0, num_wp-1, timeout=500)
 
@@ -1025,9 +1025,9 @@ class AutoTestCopter(AutoTest):
             raise PreconditionFailedException("Expected to be within 5m of home")
         self.zero_throttle()
         self.arm_vehicle()
-        self.set_rc(3, 1700)
+        self.set_throttle(1700)
         self.wait_altitude(10, 100, relative=True)
-        self.set_rc(3, 1500)
+        self.set_throttle(1500)
         self.set_rc(2, 1400)
         self.wait_distance_to_home(12, 20)
         tstart = self.get_sim_time()
@@ -1231,7 +1231,7 @@ class AutoTestCopter(AutoTest):
 
         # stop flying forward and start flying up:
         self.set_rc(2, 1500)
-        self.set_rc(3, 1800)
+        self.set_throttle(1800)
 
         # wait for fence to trigger
         self.wait_mode('RTL', timeout=120)
@@ -1390,7 +1390,7 @@ class AutoTestCopter(AutoTest):
         # switch into AUTO mode and raise throttle
         self.mavproxy.send('switch 4\n')  # auto mode
         self.wait_mode('AUTO')
-        self.set_rc(3, 1500)
+        self.set_throttle(1500)
 
         # wait until 100m from home
         try:
@@ -1458,7 +1458,7 @@ class AutoTestCopter(AutoTest):
         # switch to stabilize mode
         self.mavproxy.send('switch 6\n')
         self.wait_mode('STABILIZE')
-        self.set_rc(3, 1545)
+        self.set_throttle(1545)
 
         # fly south 50m
         self.progress("# Flying south %u meters" % side)
@@ -1508,7 +1508,7 @@ class AutoTestCopter(AutoTest):
 
         # switch to stabilize mode
         self.change_mode("STABILIZE")
-        self.set_rc(3, 1700)
+        self.set_throttle(1700)
 
         # start copter yawing slowly
         self.set_rc(4, 1550)
@@ -1616,7 +1616,7 @@ class AutoTestCopter(AutoTest):
 
             self.progress("Regaining altitude")
             self.change_mode('STABILIZE')
-            self.set_rc(3, 1800)
+            self.set_throttle(1800)
             self.wait_for_alt(20)
             self.hover()
 
@@ -1802,7 +1802,7 @@ class AutoTestCopter(AutoTest):
                     or rllp == self.get_parameter("ATC_RAT_RLL_P")):
                     raise NotAchievedException("AUTOTUNE gains not present in pilot testing")
                 # land without changing mode
-                self.set_rc(3, 1000)
+                self.set_throttle(1000)
                 self.wait_for_alt(0)
                 self.wait_disarmed()
                 # Check gains are still there after disarm
@@ -1843,7 +1843,7 @@ class AutoTestCopter(AutoTest):
 
         # switch into AUTO mode and raise throttle
         self.change_mode("AUTO")
-        self.set_rc(3, 1500)
+        self.set_throttle(1500)
 
         # fly the mission
         self.wait_waypoint(0, num_wp-1, timeout=500)
@@ -2101,7 +2101,7 @@ class AutoTestCopter(AutoTest):
             self.set_rc(1, 1500)
             self.progress("# Enter RTL")
             self.mavproxy.send('switch 3\n')
-            self.set_rc(3, 1500)
+            self.set_throttle(1500)
             tstart = self.get_sim_time()
             while True:
                 if self.get_sim_time_cached() - tstart > 200:
@@ -2142,7 +2142,7 @@ class AutoTestCopter(AutoTest):
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.change_mode('AUTO')
-        self.set_rc(3, 1600)
+        self.set_throttle(1600)
         self.wait_altitude(19, 25, relative=True)
         self.wait_groundspeed(wpnav_speed_ms-tolerance, wpnav_speed_ms+tolerance)
         self.monitor_groundspeed(wpnav_speed_ms, timeout=20)
@@ -2168,7 +2168,7 @@ class AutoTestCopter(AutoTest):
 
         self.arm_vehicle()
         self.change_mode("AUTO")
-        self.set_rc(3, 1600)
+        self.set_throttle(1600)
         count_start = -1
         count_stop = -1
         tstart = self.get_sim_time()
@@ -2366,7 +2366,7 @@ class AutoTestCopter(AutoTest):
             self.change_mode("LOITER")
             self.wait_ready_to_arm()
             self.arm_vehicle()
-            self.set_rc(3, 1800)
+            self.set_throttle(1800)
             self.set_rc(2, 1200)
             # wait till we get to 50m
             self.wait_altitude(50, 52, True, 60)
@@ -2421,7 +2421,7 @@ class AutoTestCopter(AutoTest):
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.change_mode('AUTO')
-        self.set_rc(3, 1600)
+        self.set_throttle(1600)
         self.mavproxy.expect('BANG')
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
@@ -2743,7 +2743,7 @@ class AutoTestCopter(AutoTest):
 
         self.arm_vehicle()
         self.change_mode("AUTO")
-        self.set_rc(3, 1600)
+        self.set_throttle(1600)
         count_stop = -1
         tstart = self.get_sim_time()
         while self.armed(): # we RTL at end of mission
@@ -2782,7 +2782,7 @@ class AutoTestCopter(AutoTest):
         self.arm_vehicle()
         self.change_mode("AUTO")
 
-        self.set_rc(3, 1600)
+        self.set_throttle(1600)
 
         # should not take off for about least 77 seconds
         tstart = self.get_sim_time()
@@ -3276,7 +3276,7 @@ class AutoTestCopter(AutoTest):
             self.wait_heartbeat()
             self.wait_mode('AUTO')
 
-            self.set_rc(3, 1500)
+            self.set_throttle(1500)
             self.wait_text("Gripper load releas", timeout=90)
 
             self.wait_disarmed()
@@ -3336,7 +3336,7 @@ class AutoTestCopter(AutoTest):
             self.arm_vehicle()
             self.mavproxy.send('mode auto\n')
             self.wait_mode('AUTO')
-            self.set_rc(3, 1500)
+            self.set_throttle(1500)
             self.mavproxy.expect("Gripper Grabbed")
             self.mavproxy.expect("Gripper Released")
         except Exception as e:
@@ -3359,7 +3359,7 @@ class AutoTestCopter(AutoTest):
             self.arm_vehicle()
             self.mavproxy.send('mode auto\n')
             self.wait_mode('AUTO')
-            self.set_rc(3, 1500)
+            self.set_throttle(1500)
             self.wait_altitude(10, 3000, relative=True)
         except Exception as e:
             self.progress("Exception caught: %s" % (
@@ -3379,7 +3379,7 @@ class AutoTestCopter(AutoTest):
         self.change_mode("ACRO")
         self.change_mode("STABILIZE")
         self.change_mode("GUIDED")
-        self.set_rc(3, 1700)
+        self.set_throttle(1700)
         self.watch_altitude_maintained(-1, 0.2) # should not take off in guided
         self.run_cmd_do_set_mode(
             "ACRO",
@@ -3390,7 +3390,7 @@ class AutoTestCopter(AutoTest):
         self.run_cmd_do_set_mode(
             "DRIFT",
             want_result=mavutil.mavlink.MAV_RESULT_UNSUPPORTED) # should fix this result code!
-        self.set_rc(3, 1000)
+        self.set_throttle(1000)
         self.run_cmd_do_set_mode("ACRO")
         self.wait_disarmed()
 
@@ -4253,10 +4253,10 @@ class AutoTestCopter(AutoTest):
                 tend = self.get_sim_time()
 
                 # fly fast forrest!
-                self.set_rc(3, 1900)
+                self.set_throttle(1900)
                 self.set_rc(2, 1200)
                 self.wait_groundspeed(5, 1000)
-                self.set_rc(3, 1500)
+                self.set_throttle(1500)
                 self.set_rc(2, 1500)
 
                 self.do_RTL()
@@ -4316,7 +4316,7 @@ class AutoTestCopter(AutoTest):
 
         self.progress("Ensuring RC inputs have no effect in brake mode")
         self.change_mode("STABILIZE")
-        self.set_rc(3, 1500)
+        self.set_throttle(1500)
         self.set_rc(2, 1200)
         self.wait_groundspeed(5, 1000)
 
@@ -4461,12 +4461,12 @@ class AutoTestCopter(AutoTest):
                                         blocking=True)
 
             self.arm_vehicle()
-            self.set_rc(3, 1800)
+            self.set_throttle(1800)
             alt_min = 10
             self.wait_altitude(alt_min,
                                (alt_min + 5),
                                relative=True)
-            self.set_rc(3, 1500)
+            self.set_throttle(1500)
             # move away a little
             self.set_rc(2, 1550)
             self.wait_distance(5, accuracy=1)
@@ -4533,7 +4533,7 @@ class AutoTestCopter(AutoTest):
             self.set_parameter("PILOT_TKOFF_ALT", 700)
             self.mavproxy.send('mode POSHOLD\n')
             self.wait_mode('POSHOLD')
-            self.set_rc(3, 1000)
+            self.set_throttle(1000)
             self.wait_ready_to_arm()
             self.arm_vehicle()
             self.delay_sim_time(2)
@@ -4543,10 +4543,10 @@ class AutoTestCopter(AutoTest):
                 raise NotAchievedException("Took off prematurely")
 
             self.progress("Pushing throttle up")
-            self.set_rc(3, 1710)
+            self.set_throttle(1710)
             self.delay_sim_time(0.5)
             self.progress("Bringing back to hover throttle")
-            self.set_rc(3, 1500)
+            self.set_throttle(1500)
 
             # make sure we haven't already reached alt:
             m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
@@ -5490,7 +5490,7 @@ class AutoTestHeli(AutoTestCopter):
         self.set_parameter("H_RSC_RUNUP_TIME", TARGET_RUNUP_TIME)
         self.progress("Initiate Runup by putting some throttle")
         self.set_rc(8, 2000)
-        self.set_rc(3, 1700)
+        self.set_throttle(1700)
         self.progress("Collective threshold PWM %u" % coll)
         tstart = self.get_sim_time()
         self.progress("Wait that collective PWM pass threshold value")
@@ -5539,7 +5539,7 @@ class AutoTestHeli(AutoTestCopter):
         # switch into AUTO mode and raise throttle
         self.mavproxy.send('switch 4\n')  # auto mode
         self.wait_mode('AUTO')
-        self.set_rc(3, 1500)
+        self.set_throttle(1500)
 
         # fly the mission
         self.wait_waypoint(0, num_wp-1, timeout=500)
@@ -5579,10 +5579,10 @@ class AutoTestHeli(AutoTestCopter):
             if abs(m.relative_alt) > 100:
                 raise NotAchievedException("Took off prematurely")
             self.progress("Pushing throttle past half-way")
-            self.set_rc(3, 1600)
+            self.set_throttle(1600)
             self.delay_sim_time(0.5)
             self.progress("Bringing back to hover throttle")
-            self.set_rc(3, 1500)
+            self.set_throttle(1500)
 
             # make sure we haven't already reached alt:
             m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
@@ -5624,7 +5624,7 @@ class AutoTestHeli(AutoTestCopter):
         ex = None
         try:
             self.change_mode('STABILIZE')
-            self.set_rc(3, 1000)
+            self.set_throttle(1000)
             self.set_rc(8, 1000)
             self.wait_ready_to_arm()
             self.arm_vehicle()
@@ -5637,7 +5637,7 @@ class AutoTestHeli(AutoTestCopter):
             if abs(m.relative_alt) > 100:
                 raise NotAchievedException("Took off prematurely")
             self.progress("Pushing throttle past half-way")
-            self.set_rc(3, 1600)
+            self.set_throttle(1600)
 
             self.progress("Monitoring takeoff")
             self.wait_altitude(6.9, 8, relative=True)
@@ -5666,7 +5666,7 @@ class AutoTestHeli(AutoTestCopter):
         self.set_rc(8, 2000)
         self.delay_sim_time(20)
         self.change_mode("AUTO")
-        self.set_rc(3, 1500)
+        self.set_throttle(1500)
         tstart = self.get_sim_time()
         while True:
             if self.get_sim_time() - tstart > timeout:
@@ -5684,7 +5684,7 @@ class AutoTestHeli(AutoTestCopter):
         self.set_parameter("PILOT_TKOFF_ALT", start_alt * 100)
         self.mavproxy.send('mode POSHOLD\n')
         self.wait_mode('POSHOLD')
-        self.set_rc(3, 1000)
+        self.set_throttle(1000)
         self.set_rc(8, 1000)
         self.wait_ready_to_arm()
         self.arm_vehicle()
@@ -5692,7 +5692,7 @@ class AutoTestHeli(AutoTestCopter):
         self.progress("wait for rotor runup to complete")
         self.wait_servo_channel_value(8, 1660, timeout=10)
         self.delay_sim_time(20)
-        self.set_rc(3, 2000)
+        self.set_throttle(2000)
         self.wait_altitude(start_alt - 1,
                            (start_alt + 5),
                            relative=True,

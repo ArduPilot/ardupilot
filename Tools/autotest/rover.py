@@ -160,7 +160,7 @@ class AutoTestRover(AutoTest):
         """Drive a left circuit, 50m on a side."""
         self.mavproxy.send('switch 6\n')
         self.wait_mode('MANUAL')
-        self.set_rc(3, 2000)
+        self.set_throttle(2000)
 
         self.progress("Driving left circuit")
         # do 4 turns
@@ -172,7 +172,7 @@ class AutoTestRover(AutoTest):
             self.set_rc(1, 1500)
             self.progress("Starting leg %u" % i)
             self.wait_distance(50, accuracy=7)
-        self.set_rc(3, 1500)
+        self.set_throttle(1500)
         self.progress("Circuit complete")
 
     # def test_throttle_failsafe(self, home, distance_min=10, side=60,
@@ -195,7 +195,7 @@ class AutoTestRover(AutoTest):
     #
     #     # pull throttle low
     #     self.progress("# Enter Failsafe")
-    #     self.mavproxy.send('rc 3 900\n')
+    #     self.set_throttle(900)
     #
     #     tstart = self.get_sim_time()
     #     success = False
@@ -211,7 +211,7 @@ class AutoTestRover(AutoTest):
     #             success = True
     #
     #     # reduce throttle
-    #     self.mavproxy.send('rc 3 1500\n')
+    #     self.set_throttle(1500)
     #     self.mavproxy.expect('APM: Failsafe ended')
     #     self.mavproxy.send('switch 2\n')  # manual mode
     #     self.wait_heartbeat()
@@ -287,7 +287,7 @@ class AutoTestRover(AutoTest):
             self.wait_servo_channel_value(pump_ch, pump_ch_min)
 
             self.progress("Testing speed-ramping")
-            self.set_rc(3, 1700) # start driving forward
+            self.set_throttle(1700) # start driving forward
 
             # this is somewhat empirical...
             self.wait_servo_channel_value(pump_ch, 1695, timeout=60)
@@ -315,7 +315,7 @@ class AutoTestRover(AutoTest):
             self.wait_ready_to_arm()
             self.arm_vehicle()
 
-            self.set_rc(3, 2000)
+            self.set_throttle(2000)
             self.set_rc(1, 1000)
 
             tstart = self.get_sim_time()
@@ -325,7 +325,7 @@ class AutoTestRover(AutoTest):
                     self.progress("Current speed: %f" % m.groundspeed)
 
             # reduce throttle
-            self.set_rc(3, 1500)
+            self.set_throttle(1500)
             self.set_rc(1, 1500)
 
         except Exception as e:
@@ -349,7 +349,7 @@ class AutoTestRover(AutoTest):
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.mavproxy.send('switch 4\n')  # auto mode
-        self.set_rc(3, 1500)
+        self.set_throttle(1500)
         self.wait_mode('AUTO')
         self.wait_waypoint(1, 4, max_dist=5)
         self.mavproxy.expect("Mission Complete")
@@ -392,7 +392,7 @@ class AutoTestRover(AutoTest):
         # at time of writing, the vehicle is only capable of 10m/s/s accel
         self.set_parameter('ATC_ACCEL_MAX', 15)
         self.change_mode("STEERING")
-        self.set_rc(3, 2000)
+        self.set_throttle(2000)
         self.wait_groundspeed(15, 100)
         initial = self.mav.location()
         initial_time = time.time()
@@ -401,7 +401,7 @@ class AutoTestRover(AutoTest):
             start = self.mav.location()
             if start != initial:
                 break
-        self.set_rc(3, 1500)
+        self.set_throttle(1500)
         self.wait_groundspeed(0, 0.2)  # why do we not stop?!
         initial = self.mav.location()
         initial_time = time.time()
@@ -515,7 +515,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             # first make sure we can breach the fence:
             self.set_rc(10, 1000)
             self.change_mode("ACRO")
-            self.set_rc(3, 1550)
+            self.set_throttle(1550)
             self.wait_distance_to_home(25, 100000, timeout=60)
             self.change_mode("RTL")
             self.mavproxy.expect("APM: Reached destination")
@@ -652,7 +652,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         throttle_override = 1900
 
         self.progress("Establishing baseline RC input")
-        self.mavproxy.send('rc 3 %u\n' % normal_rc_throttle)
+        self.set_throttle(normal_rc_throttle)
         self.drain_mav()
         tstart = self.get_sim_time()
         while True:
@@ -721,11 +721,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.mavproxy.send('switch 6\n')  # Manual mode
             self.wait_mode('MANUAL')
             self.wait_ready_to_arm()
-            self.mavproxy.send('rc 3 1500\n')  # throttle at zero
+            self.zero_throttle()
             self.arm_vehicle()
             # start moving forward a little:
             normal_rc_throttle = 1700
-            self.mavproxy.send('rc 3 %u\n' % normal_rc_throttle)
+            self.set_throttle(normal_rc_throttle)
             self.wait_groundspeed(5, 100)
 
             # allow overrides:
@@ -908,7 +908,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.arm_vehicle()
             self.progress("start moving forward a little")
             normal_rc_throttle = 1700
-            self.mavproxy.send('rc 3 %u\n' % normal_rc_throttle)
+            self.set_throttle(normal_rc_throttle)
             self.wait_groundspeed(5, 100)
 
             self.progress("allow overrides")
@@ -4399,17 +4399,17 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         # the middle of the square
         self.progress("Driving North")
         self.reach_heading_manual(0)
-        self.set_rc(3, 2000)
+        self.set_throttle(2000)
         self.delay_sim_time(5)
-        self.set_rc(3, 1000)
+        self.set_throttle(1000)
         self.wait_groundspeed(0, 1)
         loc = self.mav.location()
         self.progress("Driving East")
-        self.set_rc(3, 2000)
+        self.set_throttle(2000)
         self.reach_heading_manual(90)
-        self.set_rc(3, 2000)
+        self.set_throttle(2000)
         self.delay_sim_time(5)
-        self.set_rc(3, 1000)
+        self.set_throttle(1000)
 
         self.progress("Entering smartrtl")
         self.change_mode("SMART_RTL")
@@ -4543,7 +4543,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.wait_ready_to_arm()
             self.change_mode("MANUAL")
             self.arm_vehicle()
-            self.set_rc(3, 1600)
+            self.set_throttle(1600)
 
             m = self.mav.recv_match(type='WHEEL_DISTANCE', blocking=True, timeout=5)
             if m is None:
@@ -5096,18 +5096,18 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.progress("get a known heading to avoid worrying about wrap")
         # this is steering-type-two-paddles
         self.set_rc(1, 1400)
-        self.set_rc(3, 1500)
+        self.set_throttle(1500)
         self.wait_heading(90)
         self.progress("straighten up")
         self.set_rc(1, 1500)
-        self.set_rc(3, 1500)
+        self.set_throttle(1500)
         self.progress("steer one way")
         self.set_rc(1, 1600)
-        self.set_rc(3, 1400)
+        self.set_throttle(1400)
         self.wait_heading(120)
         self.progress("steer the other")
         self.set_rc(1, 1400)
-        self.set_rc(3, 1600)
+        self.set_throttle(1600)
         self.wait_heading(60)
 
     def tests(self):

@@ -247,11 +247,11 @@ class AutoTestQuadPlane(AutoTest):
             self.change_mode(mode)
             self.arm_vehicle()
             self.progress("Raising throttle")
-            self.set_rc(3, 1800)
+            self.set_throttle(1800)
             self.progress("Waiting for Motor1 to start")
             self.wait_servo_channel_value(5, 1100, comparator=operator.gt)
 
-            self.set_rc(3, 1000)
+            self.set_throttle(1000)
             self.disarm_vehicle()
             self.wait_ready_to_arm()
 
@@ -283,12 +283,12 @@ class AutoTestQuadPlane(AutoTest):
         self.change_mode("QHOVER")
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.set_rc(3, 1800)
+        self.set_throttle(1800)
         self.wait_altitude(30,
                            40,
                            relative=True,
                            timeout=30)
-        self.set_rc(3, 1500)
+        self.set_throttle(1500)
         self.change_mode("QAUTOTUNE")
         tstart = self.get_sim_time()
         sim_time_expected = 5000
@@ -304,7 +304,7 @@ class AutoTestQuadPlane(AutoTest):
             if "AutoTune: Success" in m.text:
                 break
         self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
-        self.set_rc(3, 1200)
+        self.set_throttle(1200)
         self.wait_altitude(-5, 1, relative=True, timeout=30)
         while self.get_sim_time_cached() < deadline:
             self.mavproxy.send('disarm\n')
@@ -320,12 +320,12 @@ class AutoTestQuadPlane(AutoTest):
         self.change_mode(mode)
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.set_rc(3, 1800)
+        self.set_throttle(1800)
         self.wait_altitude(height,
                            height+5,
                            relative=True,
                            timeout=30)
-        self.set_rc(3, 1500)
+        self.set_throttle(1500)
 
     def do_RTL(self):
         self.change_mode("QRTL")
@@ -363,7 +363,7 @@ class AutoTestQuadPlane(AutoTest):
         """Fly a left circuit, 200m on a side."""
         self.mavproxy.send('switch 4\n')
         self.change_mode('FBWA')
-        self.set_rc(3, 1700)
+        self.set_throttle(1700)
         self.wait_level_flight()
 
         self.progress("Flying left circuit")
@@ -378,11 +378,11 @@ class AutoTestQuadPlane(AutoTest):
             self.wait_distance(100, accuracy=20)
         self.progress("Circuit complete")
         self.change_mode('QHOVER')
-        self.set_rc(3, 1100)
+        self.set_throttle(1100)
         self.wait_altitude(10, 15,
                            relative=True,
                            timeout=60)
-        self.set_rc(3, 1500)
+        self.set_throttle(1500)
 
     def hover_and_check_matched_frequency(self, dblevel=-15, minhz=200, maxhz=300, fftLength=32, peakhz=None):
 
@@ -582,7 +582,7 @@ class AutoTestQuadPlane(AutoTest):
     def test_qassist(self):
         # find a motor peak
         self.takeoff(10, mode="QHOVER")
-        self.set_rc(3, 1800)
+        self.set_throttle(1800)
         self.change_mode("FBWA")
         thr_min_pwm = self.get_parameter("Q_THR_MIN_PWM")
         self.progress("Waiting for motors to stop (transition completion)")
@@ -596,17 +596,17 @@ class AutoTestQuadPlane(AutoTest):
                                       timeout=30,
                                       comparator=operator.eq)
         self.progress("Stopping forward motor to kill airspeed below limit")
-        self.set_rc(3, 1000)
+        self.set_throttle(1000)
         self.progress("Waiting for qassist to kick in")
         self.wait_servo_channel_value(5, 1400, timeout=30, comparator=operator.gt)
         self.progress("Move forward again, check qassist stops")
-        self.set_rc(3, 1800)
+        self.set_throttle(1800)
         self.progress("Checking qassist stops")
         self.wait_servo_channel_value(5,
                                       thr_min_pwm,
                                       timeout=30,
                                       comparator=operator.eq)
-        self.set_rc(3, 1500)
+        self.set_throttle(1500)
 
         self.context_push()
         self.progress("Rolling over hard")

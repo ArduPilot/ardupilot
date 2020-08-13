@@ -2550,9 +2550,9 @@ class AutoTest(ABC):
     def zero_throttle(self):
         """Set throttle to zero."""
         if self.is_rover():
-            self.set_rc(3, 1500)
+            self.set_throttle(1500)
         else:
-            self.set_rc(3, 1000)
+            self.set_throttle(1000)
 
     def set_output_to_max(self, chan):
         """Set output to max with RC Radio taking into account REVERSED parameter."""
@@ -3348,7 +3348,7 @@ class AutoTest(ABC):
             self.mavproxy.send('rc 1 %u\n' % steering_pwm)
             self.mavproxy.send('rc 3 1550\n')
             self.wait_heading(heading)
-            self.set_rc(3, 1500)
+            self.set_throttle(1500)
             self.set_rc(1, 1500)
 
     def assert_vehicle_location_is_at_startup_location(self, dist_max=1):
@@ -3382,7 +3382,7 @@ class AutoTest(ABC):
         if self.is_rover():
             self.mavproxy.send('rc 3 1700\n')
             self.wait_distance(distance, accuracy=2)
-            self.set_rc(3, 1500)
+            self.set_throttle(1500)
 
     def guided_achieve_heading(self, heading):
         tstart = self.get_sim_time()
@@ -5078,7 +5078,7 @@ Also, ignores heartbeats not from our target system'''
 
             if self.is_copter():
                 self.start_subtest("Test arming failure with throttle too high")
-                self.set_rc(3, 1800)
+                self.set_throttle(1800)
                 try:
                     if self.arm_vehicle():
                         raise NotAchievedException("Armed when throttle too high")
