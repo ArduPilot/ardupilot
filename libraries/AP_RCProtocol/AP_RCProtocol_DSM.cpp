@@ -237,6 +237,8 @@ bool AP_RCProtocol_DSM::dsm_parse_byte(uint32_t frame_time_us, uint8_t b, uint16
     if (byte_input.ofs > 0 && (frame_time_us - start_frame_time_us) > 6000U) {
         start_frame_time_us = frame_time_us;
         byte_input.ofs = 0;
+        // we need to have back to back good frames for detection
+        reset_rc_frame_count();
     }
 
     // there will be at least a 5ms gap between successive DSM frames. if we see it
@@ -250,6 +252,8 @@ bool AP_RCProtocol_DSM::dsm_parse_byte(uint32_t frame_time_us, uint8_t b, uint16
     if (byte_input.ofs >= AP_DSM_FRAME_SIZE) {
         start_frame_time_us = frame_time_us;
         byte_input.ofs = 0;
+        // we need to have back to back good frames for detection
+        reset_rc_frame_count();
     }
 
     if (byte_input.ofs == 1) {
@@ -268,6 +272,8 @@ bool AP_RCProtocol_DSM::dsm_parse_byte(uint32_t frame_time_us, uint8_t b, uint16
         } else {
             start_frame_time_us = frame_time_us;
             byte_input.ofs = 0;
+            // we need to have back to back good frames for detection
+            reset_rc_frame_count();
         }
     }
 
