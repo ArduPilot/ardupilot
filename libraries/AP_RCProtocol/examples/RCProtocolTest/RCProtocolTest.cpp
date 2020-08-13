@@ -218,6 +218,7 @@ void loop()
                                  0x39, 0x25, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
                                  0xff, 0xff, 0xff, 0xff, 0xff};
     const uint16_t dsm_output[] = {1014, 1024, 1004, 1034, 1044, 1053, 1063, 1073};
+
     // DSMX_2048_11MS
     const uint8_t dsm_bytes2[] = {0x00, 0xb2, 0x80, 0x94, 0x3c, 0x02, 0x1b, 0xfe,
                                   0x44, 0x00, 0x4c, 0x00, 0x5c, 0x00, 0xff, 0xff,
@@ -226,6 +227,14 @@ void loop()
 
     const uint16_t dsm_output2[] = {1501, 1500, 989, 1498, 1102, 1897, 1501, 1501, 1500, 1500, 1500, 1500};
 
+    // DSMX_2048_11MS, from genuine spektrum satellite, 12 channels
+    const uint8_t dsm_bytes3[] = {0x00, 0x00, 0x81, 0x56, 0x39, 0x50, 0x1C, 0x06,
+                                  0x44, 0x00, 0x4c, 0x00, 0x5c, 0x00, 0xff, 0xff,
+                                  0x00, 0x00, 0x0c, 0x06, 0x2b, 0x32, 0x14, 0x06,
+                                  0x21, 0x96, 0x31, 0x50, 0x54, 0x00, 0xff, 0xff };
+
+    const uint16_t dsm_output3[] = {1503, 1503, 1102, 1503, 1139, 1379, 1098, 1098, 1500, 1500, 1500, 1500};
+    
     const uint8_t sumd_bytes[] = {0xA8, 0x01, 0x08, 0x2F, 0x50, 0x31, 0xE8, 0x21, 0xA0,
                                   0x2F, 0x50, 0x22, 0x60, 0x22, 0x60, 0x2E, 0xE0, 0x2E,
                                   0xE0, 0x87, 0xC6};
@@ -256,7 +265,8 @@ void loop()
 
     // DSM needs 8 repeats, 5 to guess the format, then 3 to pass the RCProtocol 3 frames test
     test_protocol("DSM2",  115200, dsm_bytes, sizeof(dsm_bytes), dsm_output, ARRAY_SIZE(dsm_output), 9);
-    test_protocol("DSMX", 115200, dsm_bytes2, sizeof(dsm_bytes2), dsm_output2, ARRAY_SIZE(dsm_output2), 9, 16);
+    test_protocol("DSMX",  115200, dsm_bytes2, sizeof(dsm_bytes2), dsm_output2, ARRAY_SIZE(dsm_output2), 9, 16);
+    test_protocol("DSMX2", 115200, dsm_bytes3, sizeof(dsm_bytes3), dsm_output3, ARRAY_SIZE(dsm_output3), 9, 16);
 }
 
 AP_HAL_MAIN();
