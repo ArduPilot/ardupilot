@@ -83,8 +83,18 @@ public:
     // add a UART for RCIN
     void add_uart(AP_HAL::UARTDriver* uart);
 
+#ifdef IOMCU_FW
+    // set allowed RC protocols
+    void set_rc_protocols(uint32_t mask) {
+        rc_protocols_mask = mask;
+    }
+#endif
+
 private:
     void check_added_uart(void);
+
+    // return true if a specific protocol is enabled
+    bool protocol_enabled(enum rcprotocol_t protocol) const;
 
     enum rcprotocol_t _detected_protocol = NONE;
     uint16_t _disabled_for_pulses;
@@ -110,6 +120,9 @@ private:
         uint32_t last_baud_change_ms;
         enum config_phase phase;
     } added;
+
+    // allowed RC protocols mask (first bit means "all")
+    uint32_t rc_protocols_mask;
 };
 
 namespace AP {
