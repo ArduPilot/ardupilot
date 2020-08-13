@@ -167,9 +167,9 @@ class AutoTestRover(AutoTest):
         for i in range(0, 4):
             # hard left
             self.progress("Starting turn %u" % i)
-            self.set_rc(1, 1000)
+            self.set_roll(1000)
             self.wait_heading(270 - (90*i), accuracy=10)
-            self.set_rc(1, 1500)
+            self.set_roll(1500)
             self.progress("Starting leg %u" % i)
             self.wait_distance(50, accuracy=7)
         self.set_throttle(1500)
@@ -316,7 +316,7 @@ class AutoTestRover(AutoTest):
             self.arm_vehicle()
 
             self.set_throttle(2000)
-            self.set_rc(1, 1000)
+            self.set_roll(1000)
 
             tstart = self.get_sim_time()
             while self.get_sim_time_cached() - tstart < timeout:
@@ -326,7 +326,7 @@ class AutoTestRover(AutoTest):
 
             # reduce throttle
             self.set_throttle(1500)
-            self.set_rc(1, 1500)
+            self.set_roll(1500)
 
         except Exception as e:
             self.progress("Caught exception: %s" %
@@ -5095,18 +5095,18 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.arm_vehicle()
         self.progress("get a known heading to avoid worrying about wrap")
         # this is steering-type-two-paddles
-        self.set_rc(1, 1400)
+        self.set_roll(1400)
         self.set_throttle(1500)
         self.wait_heading(90)
         self.progress("straighten up")
-        self.set_rc(1, 1500)
+        self.set_roll(1500)
         self.set_throttle(1500)
         self.progress("steer one way")
-        self.set_rc(1, 1600)
+        self.set_roll(1600)
         self.set_throttle(1400)
         self.wait_heading(120)
         self.progress("steer the other")
-        self.set_rc(1, 1400)
+        self.set_roll(1400)
         self.set_throttle(1600)
         self.wait_heading(60)
 

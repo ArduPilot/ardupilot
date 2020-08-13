@@ -346,7 +346,7 @@ class AutoTestQuadPlane(AutoTest):
         """Wait for level flight."""
         tstart = self.get_sim_time()
         self.progress("Waiting for level flight")
-        self.set_rc(1, 1500)
+        self.set_roll(1500)
         self.set_rc(2, 1500)
         self.set_yaw(1500)
         while self.get_sim_time_cached() < tstart + timeout:
@@ -371,9 +371,9 @@ class AutoTestQuadPlane(AutoTest):
         for i in range(0, 4):
             # hard left
             self.progress("Starting turn %u" % i)
-            self.set_rc(1, 1000)
+            self.set_roll(1000)
             self.wait_heading(270 - (90*i), accuracy=10)
-            self.set_rc(1, 1500)
+            self.set_roll(1500)
             self.progress("Starting leg %u" % i)
             self.wait_distance(100, accuracy=20)
         self.progress("Circuit complete")
@@ -610,14 +610,14 @@ class AutoTestQuadPlane(AutoTest):
 
         self.context_push()
         self.progress("Rolling over hard")
-        self.set_rc(1, 1000)
+        self.set_roll(1000)
         self.wait_roll(-65, 5)
         self.progress("Killing servo outputs to force qassist to help")
         self.set_parameter("SERVO1_MIN", 1480)
         self.set_parameter("SERVO1_MAX", 1480)
         self.set_parameter("SERVO1_TRIM", 1480)
         self.progress("Trying to roll over hard the other way")
-        self.set_rc(1, 2000)
+        self.set_roll(2000)
         self.progress("Waiting for qassist (angle) to kick in")
         self.wait_servo_channel_value(5, 1100, timeout=30, comparator=operator.gt)
         self.wait_roll(85, 5)

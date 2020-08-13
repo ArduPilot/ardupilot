@@ -3349,7 +3349,7 @@ class AutoTest(ABC):
             self.set_throttle(1550)
             self.wait_heading(heading)
             self.set_throttle(1500)
-            self.set_rc(1, 1500)
+            self.set_roll(1500)
 
     def assert_vehicle_location_is_at_startup_location(self, dist_max=1):
         here = self.mav.location()

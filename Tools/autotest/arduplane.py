@@ -128,9 +128,9 @@ class AutoTestPlane(AutoTest):
         for i in range(0, 4):
             # hard left
             self.progress("Starting turn %u" % i)
-            self.set_rc(1, 1000)
+            self.set_roll(1000)
             self.wait_heading(270 - (90*i), accuracy=10)
-            self.set_rc(1, 1500)
+            self.set_roll(1500)
             self.progress("Starting leg %u" % i)
             self.wait_distance(100, accuracy=20)
         self.progress("Circuit complete")
@@ -209,7 +209,7 @@ class AutoTestPlane(AutoTest):
         """Wait for level flight."""
         tstart = self.get_sim_time()
         self.progress("Waiting for level flight")
-        self.set_rc(1, 1500)
+        self.set_roll(1500)
         self.set_rc(2, 1500)
         self.set_yaw(1500)
         while self.get_sim_time_cached() < tstart + timeout:
@@ -249,18 +249,18 @@ class AutoTestPlane(AutoTest):
 
         while count > 0:
             self.progress("Starting roll")
-            self.set_rc(1, 1000)
+            self.set_roll(1000)
             try:
                 self.wait_roll(-150, accuracy=90)
                 self.wait_roll(150, accuracy=90)
                 self.wait_roll(0, accuracy=90)
             except Exception as e:
-                self.set_rc(1, 1500)
+                self.set_roll(1500)
                 raise e
             count -= 1
 
         # back to FBWA
-        self.set_rc(1, 1500)
+        self.set_roll(1500)
         self.mavproxy.send('switch 4\n')
         self.wait_mode('FBWA')
         self.set_throttle(1700)
@@ -389,13 +389,13 @@ class AutoTestPlane(AutoTest):
 
         while count > 0:
             self.progress("Starting roll")
-            self.set_rc(1, 2000)
+            self.set_roll(2000)
             self.wait_roll(-150, accuracy=90)
             self.wait_roll(150, accuracy=90)
             self.wait_roll(0, accuracy=90)
             count -= 1
 
-        self.set_rc(1, 1500)
+        self.set_roll(1500)
         self.wait_roll(0, accuracy=5)
 
         # back to FBWA
@@ -417,12 +417,12 @@ class AutoTestPlane(AutoTest):
 
         while count > 0:
             self.progress("Starting roll")
-            self.set_rc(1, 1000)
+            self.set_roll(1000)
             self.wait_roll(-150, accuracy=90)
             self.wait_roll(150, accuracy=90)
             self.wait_roll(0, accuracy=90)
             count -= 1
-        self.set_rc(1, 1500)
+        self.set_roll(1500)
 
         # back to FBWA
         self.mavproxy.send('mode FBWA\n')
@@ -471,13 +471,13 @@ class AutoTestPlane(AutoTest):
         for i in range(0, 4):
             # hard left
             self.progress("Starting turn %u" % i)
-            self.set_rc(1, 1800)
+            self.set_roll(1800)
             try:
                 self.wait_heading(0 + (90*i), accuracy=20, timeout=60)
             except Exception as e:
-                self.set_rc(1, 1500)
+                self.set_roll(1500)
                 raise e
-            self.set_rc(1, 1500)
+            self.set_roll(1500)
             self.progress("Starting leg %u" % i)
             self.wait_distance(100, accuracy=20)
         self.progress("Circuit complete")

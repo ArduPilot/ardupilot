@@ -174,7 +174,7 @@ class AutoTestCopter(AutoTest):
     # Takeoff, climb to given altitude, and fly east for 10 seconds
     def takeoffAndMoveAway(self, dAlt=50, dDist=50):
         self.progress("Centering sticks")
-        self.set_rc(1, 1500)
+        self.set_roll(1500)
         self.set_rc(2, 1500)
         self.set_throttle(1000)
         self.set_yaw(1500)
@@ -261,10 +261,10 @@ class AutoTestCopter(AutoTest):
         self.watch_altitude_maintained(9, 11, timeout=5)
         # feed in full elevator and aileron input and make sure we
         # retain altitude:
-        self.set_rc(1, 1000)
+        self.set_roll(1000)
         self.set_rc(2, 1000)
         self.watch_altitude_maintained(9, 11, timeout=5)
-        self.set_rc(1, 1500)
+        self.set_roll(1500)
         self.set_rc(2, 1500)
         self.do_RTL()
 
@@ -307,7 +307,7 @@ class AutoTestCopter(AutoTest):
         tstart = self.get_sim_time()
 
         # ensure all sticks in the middle
-        self.set_rc(1, 1500)
+        self.set_roll(1500)
         self.set_rc(2, 1500)
         self.set_throttle(1500)
         self.set_yaw(1500)
@@ -343,9 +343,9 @@ class AutoTestCopter(AutoTest):
 
         # roll right to fly east
         self.progress("Going east %u meters" % side)
-        self.set_rc(1, 1700)
+        self.set_roll(1700)
         self.wait_distance(side)
-        self.set_rc(1, 1500)
+        self.set_roll(1500)
 
         # save top right corner of square as waypoint
         self.progress("Save WP 4")
@@ -363,9 +363,9 @@ class AutoTestCopter(AutoTest):
 
         # roll left to fly west
         self.progress("Going west %u meters" % side)
-        self.set_rc(1, 1300)
+        self.set_roll(1300)
         self.wait_distance(side)
-        self.set_rc(1, 1500)
+        self.set_roll(1500)
 
         # save bottom left corner of square (should be near home) as waypoint
         self.progress("Save WP 6")
@@ -1462,9 +1462,9 @@ class AutoTestCopter(AutoTest):
 
         # fly south 50m
         self.progress("# Flying south %u meters" % side)
-        self.set_rc(1, 1300)
+        self.set_roll(1300)
         self.wait_distance(side, 5, 60)
-        self.set_rc(1, 1500)
+        self.set_roll(1500)
 
         # fly west 8 seconds
         self.progress("# Flying west for 8 seconds")
@@ -1476,9 +1476,9 @@ class AutoTestCopter(AutoTest):
 
         # fly north 25 meters
         self.progress("# Flying north %u meters" % (side/2.0))
-        self.set_rc(1, 1700)
+        self.set_roll(1700)
         self.wait_distance(side/2, 5, 60)
-        self.set_rc(1, 1500)
+        self.set_roll(1500)
 
         # fly east 8 seconds
         self.progress("# Flying east for 8 seconds")
@@ -1516,13 +1516,13 @@ class AutoTestCopter(AutoTest):
         # roll left for timeout seconds
         self.progress("# rolling left from pilot's POV for %u seconds"
                       % timeout)
-        self.set_rc(1, 1300)
+        self.set_roll(1300)
         tstart = self.get_sim_time()
         while self.get_sim_time_cached() < (tstart + timeout):
             self.mav.recv_match(type='VFR_HUD', blocking=True)
 
         # stop rolling and yawing
-        self.set_rc(1, 1500)
+        self.set_roll(1500)
         self.set_yaw(1500)
 
         # restore simple mode parameters to default
@@ -1605,13 +1605,13 @@ class AutoTestCopter(AutoTest):
             old_speedup = self.get_parameter("SIM_SPEEDUP")
             self.set_parameter('SIM_SPEEDUP', 1)
             self.progress("Flipping in roll")
-            self.set_rc(1, 1700)
+            self.set_roll(1700)
             self.mavproxy.send('mode FLIP\n') # don't wait for heartbeat!
             self.wait_attitude(despitch=0, desroll=45, tolerance=30)
             self.wait_attitude(despitch=0, desroll=90, tolerance=30)
             self.wait_attitude(despitch=0, desroll=-45, tolerance=30)
             self.progress("Waiting for level")
-            self.set_rc(1, 1500) # can't change quickly enough!
+            self.set_roll(1500) # can't change quickly enough!
             self.wait_attitude(despitch=0, desroll=0, tolerance=5)
 
             self.progress("Regaining altitude")
@@ -2082,7 +2082,7 @@ class AutoTestCopter(AutoTest):
                     raise AutoTestTimeoutException("Did not get non-zero lat")
 
             self.takeoff()
-            self.set_rc(1, 1600)
+            self.set_roll(1600)
             tstart = self.get_sim_time()
             while True:
                 vicon_pos = self.mav.recv_match(type='VISION_POSITION_ESTIMATE',
@@ -2098,7 +2098,7 @@ class AutoTestCopter(AutoTest):
                     raise AutoTestTimeoutException("Vicon showed no movement")
 
             # recenter controls:
-            self.set_rc(1, 1500)
+            self.set_roll(1500)
             self.progress("# Enter RTL")
             self.mavproxy.send('switch 3\n')
             self.set_throttle(1500)
@@ -2829,9 +2829,9 @@ class AutoTestCopter(AutoTest):
             self.change_mode(ZIGZAG)
             self.progress("## Record Point A ##")
             self.set_rc(8, 1100)  # record point A
-            self.set_rc(1, 1700)  # fly side-way for 20m
+            self.set_roll(1700)  # fly side-way for 20m
             self.wait_distance(20)
-            self.set_rc(1, 1500)
+            self.set_roll(1500)
             self.wait_groundspeed(0, slowdown_speed)   # wait until the copter slows down
             self.progress("## Record Point A ##")
             self.set_rc(8, 1500)    # pilot always have to cross mid position when changing for low to high position
@@ -4832,10 +4832,10 @@ class AutoTestCopter(AutoTest):
             north_loc = mavutil.location(-35.362881, 149.165103, 0, 0)
             self.wait_location(north_loc, accuracy=7)
             self.set_rc(2, 1500)
-            self.set_rc(1, 1600)
+            self.set_roll(1600)
             east_loc = mavutil.location(-35.362986, 149.165227, 0, 0)
             self.wait_location(east_loc, accuracy=7)
-            self.set_rc(1, 1500)
+            self.set_roll(1500)
             self.set_rc(2, 1600)
             south_loc = mavutil.location(-35.363025, 149.165182, 0, 0)
             self.wait_location(south_loc, accuracy=7)
