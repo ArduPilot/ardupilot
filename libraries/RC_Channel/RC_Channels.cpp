@@ -224,6 +224,15 @@ bool RC_Channels::get_pwm(uint8_t c, uint16_t &pwm) const
     return true;
 }
 
+// return mask of enabled protocols.
+uint32_t RC_Channels::enabled_protocols() const
+{
+    if (_singleton == nullptr) {
+        // for example firmware
+        return 1U;
+    }
+    return uint32_t(_protocols.get());
+}
 
 // singleton instance
 RC_Channels *RC_Channels::_singleton;
