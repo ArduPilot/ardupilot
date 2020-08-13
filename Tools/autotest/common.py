@@ -807,6 +807,11 @@ class AutoTest(ABC):
         self.logs_dir = logs_dir
         self.timesync_number = 137
 
+        self.rc_throttle = 3
+        self.rc_pitch = 2
+        self.rc_roll = 1
+        self.rc_yaw = 4
+
     @staticmethod
     def progress(text):
         """Display autotest progress text."""
@@ -2462,6 +2467,29 @@ class AutoTest(ABC):
         """Setup all simulated RC control to 1500."""
         _defaults = self.rc_defaults()
         self.set_rc_from_map(_defaults)
+
+    def set_rcmap(self):
+        """Get RCMAP from vehicle and save it for further use."""
+        self.rc_throttle = int(self.get_parameter("RCMAP_THROTTLE"))
+        self.rc_pitch = int(self.get_parameter("RCMAP_PITCH"))
+        self.rc_roll = int(self.get_parameter("RCMAP_ROLL"))
+        self.rc_yaw = int(self.get_parameter("RCMAP_YAW"))
+
+    def set_throttle(self, pwm):
+        """Set RC throttle."""
+        self.set_rc(self.rc_throttle, pwm)
+
+    def set_pitch(self, pwm):
+        """Set RC pitch."""
+        self.set_rc(self.rc_pitch, pwm)
+
+    def set_roll(self, pwm):
+        """Set RC roll."""
+        self.set_rc(self.rc_roll, pwm)
+
+    def set_yaw(self, pwm):
+        """Set RC yaw."""
+        self.set_rc(self.rc_yaw, pwm)
 
     def check_rc_defaults(self):
         """Ensure all rc outputs are at defaults"""
@@ -5763,6 +5791,7 @@ switch value'''
             self.wait_heartbeat()
             self.wait_for_initial_mode()
             self.progress("Setting up RC parameters")
+            self.set_rcmap()
             self.set_rc_default()
             self.wait_for_mode_switch_poll()
             if not self.is_tracker(): # FIXME - more to the point, fix Tracker's mission handling
