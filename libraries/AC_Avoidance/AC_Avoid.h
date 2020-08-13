@@ -51,7 +51,6 @@ public:
         adjust_velocity(kP, accel_cmss, desired_vel_cms, backing_up, dt);
     }
     void adjust_velocity(float kP, float accel_cmss, Vector3f &desired_vel_cms, float dt);
-    void adjust_velocity(float kP, float accel_cmss, Vector2f &desired_vel_cms, bool &backing_up,float dt);
 
     // adjust desired horizontal speed so that the vehicle stops before the fence or object
     // accel (maximum acceleration/deceleration) is in m/s/s
@@ -92,6 +91,9 @@ public:
     // return true if limiting is active
     bool limits_active() const {return (AP_HAL::millis() - _last_limit_time) < AC_AVOID_ACTIVE_LIMIT_TIMEOUT_MS;};
 
+    // Enable or disable active proximity distance hold
+    void set_active_proximity_hold(bool state) {_active_hold = state;}
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -100,6 +102,9 @@ private:
         BEHAVIOR_SLIDE = 0,
         BEHAVIOR_STOP = 1
     };
+
+    // Adjusts the desired velocity so that the vehicle can stop, helper for public functions
+    void adjust_velocity(float kP, float accel_cmss, Vector2f &desired_vel_cms, bool &backing_up,float dt);
 
     /*
      * Adjusts the desired velocity for the circular fence.
@@ -133,7 +138,7 @@ private:
      *   margin is the distance (in meters) that the vehicle should stop short of the polygon
      *   stay_inside should be true for fences, false for exclusion polygons
      */
-    void adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &desired_vel_cms, Vector2f &backup_vel, const Vector2f* boundary, uint16_t num_points, bool earth_frame, float margin, float dt, bool stay_inside);
+    void adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &desired_vel_cms, Vector2f &backup_vel, const Vector2f* boundary, uint16_t num_points, bool earth_frame, float margin, float dt, bool stay_inside, bool active_hold = false);
 
     /*
      * Computes distance required to stop, given current speed.
@@ -177,6 +182,7 @@ private:
     bool _proximity_enabled = true; // true if proximity sensor based avoidance is enabled (used to allow pilot to enable/disable)
     uint32_t _last_limit_time;      // the last time a limit was active
     uint32_t _last_log_ms;          // the last time simple avoidance was logged
+    bool _active_hold;              // true if vehicle should actively more towards an obstacle to mantain a fixed distance
 
     static AC_Avoid *_singleton;
 };

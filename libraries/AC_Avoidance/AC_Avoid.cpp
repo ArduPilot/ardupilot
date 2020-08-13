@@ -359,14 +359,15 @@ void AC_Avoid::limit_velocity(float kP, float accel_cmss, Vector2f &desired_vel_
  * OUTPUT: The method then outputs four velocities (quad1/2/3/4_back_vel_cms), which correspond to the maximum final desired backup velocity in each quadrant
  */
 void AC_Avoid::calc_backup_velocity(float kP, float accel_cmss, Vector2f &quad1_back_vel_cms, Vector2f &quad2_back_vel_cms, Vector2f &quad3_back_vel_cms, Vector2f &quad4_back_vel_cms, float back_distance_cm, Vector2f limit_direction, float dt)
-{      
-    if (limit_direction.is_zero()) {
+{
+    if (limit_direction.is_zero() || is_zero(back_distance_cm)) {
         // protect against divide by zero
         return; 
     }
     // speed required to move away the exact distance that we have breached the margin with 
-    const float back_speed = get_max_speed(kP, 0.4f * accel_cmss, fabsf(back_distance_cm), dt);
-    
+    // only advance towards obstacles very slowly
+    const float back_speed = get_max_speed(kP, 0.4f * accel_cmss, fabsf(back_distance_cm), dt) * (is_positive(back_distance_cm)?1:-0.25);
+
     // direction to the obstacle
     limit_direction.normalize();
 
@@ -886,13 +887,13 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector2f &d
     // get boundary from proximity sensor
     uint16_t num_points = 0;
     const Vector2f *boundary = _proximity.get_boundary_points(num_points);
-    adjust_velocity_polygon(kP, accel_cmss, desired_vel_cms, backup_vel, boundary, num_points, false, _margin, dt, true);
+    adjust_velocity_polygon(kP, accel_cmss, desired_vel_cms, backup_vel, boundary, num_points, false, _margin, dt, true, true);
 }
 
 /*
  * Adjusts the desired velocity for the polygon fence.
  */
-void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &desired_vel_cms, Vector2f &backup_vel, const Vector2f* boundary, uint16_t num_points, bool earth_frame, float margin, float dt, bool stay_inside)
+void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &desired_vel_cms, Vector2f &backup_vel, const Vector2f* boundary, uint16_t num_points, bool earth_frame, float margin, float dt, bool stay_inside, bool active_hold)
 {
     // exit if there are no points
     if (boundary == nullptr || num_points == 0) {
@@ -942,7 +943,7 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
 
     // for backing away
     Vector2f quad_1_back_vel, quad_2_back_vel, quad_3_back_vel, quad_4_back_vel;
-   
+
     for (uint16_t i=0; i<num_points; i++) {
         uint16_t j = i+1;
         if (j >= num_points) {
@@ -952,11 +953,13 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
         Vector2f start = boundary[j];
         Vector2f end = boundary[i];
         Vector2f vector_to_boundary = Vector2f::closest_point(position_xy, start, end) - position_xy;
+        float back_up_dist = margin_cm - vector_to_boundary.length();
         // back away if vehicle has breached margin
-        if (is_negative(vector_to_boundary.length() - margin_cm)) {
-            calc_backup_velocity(kP, accel_cmss, quad_1_back_vel, quad_2_back_vel, quad_3_back_vel, quad_4_back_vel, margin_cm-vector_to_boundary.length(), vector_to_boundary, dt);
+        // or advance if active hold is enabled and within 1.5x the margin
+        if (is_positive(back_up_dist) || (active_hold && _active_hold && (back_up_dist > (margin_cm * -0.5f)))) {
+            calc_backup_velocity(kP, accel_cmss, quad_1_back_vel, quad_2_back_vel, quad_3_back_vel, quad_4_back_vel, back_up_dist, vector_to_boundary, dt);
         }
-        
+
         // exit immediately if no desired velocity
         if (desired_vel_cms.is_zero()) {
             continue;
