@@ -419,6 +419,9 @@ public:
         return _override_timeout.get() * 1e3f;
     }
 
+    // get mask of enabled protocols
+    uint32_t enabled_protocols() const;
+
     // returns true if we have had a direct detach RC reciever, does not include overrides
     bool has_had_rc_receiver() const { return _has_had_rc_receiver; }
 
@@ -459,6 +462,7 @@ private:
 
     AP_Float _override_timeout;
     AP_Int32  _options;
+    AP_Int32  _protocols;
 
     // flight_mode_channel_number must be overridden in vehicle specific code
     virtual int8_t flight_mode_channel_number() const = 0;
