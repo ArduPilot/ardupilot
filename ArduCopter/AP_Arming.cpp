@@ -207,7 +207,7 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
             return false;
         }
         // Ensure an Aux Channel is configured for motor interlock
-        if (rc().find_channel_for_option(RC_Channel::aux_func_t::MOTOR_INTERLOCK) == nullptr) {
+        if (copter.ap.using_interlock && rc().find_channel_for_option(RC_Channel::aux_func_t::MOTOR_INTERLOCK) == nullptr) {
             check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Motor Interlock not configured");
             return false;
         }

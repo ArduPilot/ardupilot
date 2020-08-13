@@ -8,6 +8,10 @@
  #define HELI_DYNAMIC_FLIGHT_SPEED_MIN      500     // we are in "dynamic flight" when the speed is over 5m/s for 2 seconds
 #endif
 
+#ifndef HELI_USING_INTERLOCK
+ #define HELI_USING_INTERLOCK               true
+#endif
+
 // counter to control dynamic flight profile
 static int8_t heli_dynamic_flight_counter;
 

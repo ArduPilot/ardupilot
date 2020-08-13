@@ -84,7 +84,7 @@ void Copter::update_using_interlock()
 {
 #if FRAME_CONFIG == HELI_FRAME
     // helicopters are always using motor interlock
-    ap.using_interlock = true;
+    ap.using_interlock = HELI_USING_INTERLOCK;
 #else
     // check if we are using motor interlock control on an aux switch or are in throw mode
     // which uses the interlock to stop motors while the copter is being thrown
