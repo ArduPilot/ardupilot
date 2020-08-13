@@ -48,6 +48,11 @@ public:
         return rc_frame_count;
     }
 
+    // reset valid rc frame count
+    void reset_rc_frame_count(void) {
+        rc_frame_count = 0;
+    }
+
     // get number of frames, honoring failsafe
     uint32_t get_rc_input_count(void) const {
         return rc_input_count;
