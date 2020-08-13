@@ -99,17 +99,21 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
             if (!protocol_enabled(rcprotocol_t(i))) {
                 continue;
             }
-            uint32_t frame_count = backend[i]->get_rc_frame_count();
-            uint32_t input_count = backend[i]->get_rc_input_count();
+            const uint32_t frame_count = backend[i]->get_rc_frame_count();
+            const uint32_t input_count = backend[i]->get_rc_input_count();
             backend[i]->process_pulse(width_s0, width_s1);
-            if (frame_count != backend[i]->get_rc_frame_count()) {
-                _good_frames[i]++;
-                if (requires_3_frames((rcprotocol_t)i) && _good_frames[i] < 3) {
+            const uint32_t frame_count2 = backend[i]->get_rc_frame_count();
+            if (frame_count2 > frame_count) {
+                if (requires_3_frames((rcprotocol_t)i) && frame_count2 < 3) {
                     continue;
                 }
                 _new_input = (input_count != backend[i]->get_rc_input_count());
                 _detected_protocol = (enum AP_RCProtocol::rcprotocol_t)i;
-                memset(_good_frames, 0, sizeof(_good_frames));
+                for (uint8_t j = 0; j < AP_RCProtocol::NONE; j++) {
+                    if (backend[j]) {
+                        backend[j]->reset_rc_frame_count();
+                    }
+                }
                 _last_input_ms = now;
                 _detected_with_bytes = false;
                 break;
@@ -175,20 +179,23 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
             if (!protocol_enabled(rcprotocol_t(i))) {
                 continue;
             }
-            uint32_t frame_count = backend[i]->get_rc_frame_count();
-            uint32_t input_count = backend[i]->get_rc_input_count();
+            const uint32_t frame_count = backend[i]->get_rc_frame_count();
+            const uint32_t input_count = backend[i]->get_rc_input_count();
             backend[i]->process_byte(byte, baudrate);
-            if (frame_count != backend[i]->get_rc_frame_count()) {
-                _good_frames[i]++;
-                if (requires_3_frames((rcprotocol_t)i) && _good_frames[i] < 3) {
+            const uint32_t frame_count2 = backend[i]->get_rc_frame_count();
+            if (frame_count2 > frame_count) {
+                if (requires_3_frames((rcprotocol_t)i) && frame_count2 < 3) {
                     continue;
                 }
                 _new_input = (input_count != backend[i]->get_rc_input_count());
                 _detected_protocol = (enum AP_RCProtocol::rcprotocol_t)i;
-                memset(_good_frames, 0, sizeof(_good_frames));
                 _last_input_ms = now;
                 _detected_with_bytes = true;
-
+                for (uint8_t j = 0; j < AP_RCProtocol::NONE; j++) {
+                    if (backend[j]) {
+                        backend[j]->reset_rc_frame_count();
+                    }
+                }
                 // stop decoding pulses to save CPU
                 hal.rcin->pulse_input_enable(false);
                 break;

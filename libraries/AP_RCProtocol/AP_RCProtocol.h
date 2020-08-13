@@ -103,7 +103,6 @@ private:
     bool _new_input;
     uint32_t _last_input_ms;
     bool _valid_serial_prot;
-    uint8_t _good_frames[NONE];
 
     enum config_phase {
         CONFIG_115200_8N1 = 0,
