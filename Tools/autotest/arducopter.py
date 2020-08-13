@@ -175,7 +175,7 @@ class AutoTestCopter(AutoTest):
     def takeoffAndMoveAway(self, dAlt=50, dDist=50):
         self.progress("Centering sticks")
         self.set_roll(1500)
-        self.set_rc(2, 1500)
+        self.set_pitch(1500)
         self.set_throttle(1000)
         self.set_yaw(1500)
         self.takeoff(alt_min=dAlt)
@@ -187,9 +187,9 @@ class AutoTestCopter(AutoTest):
         self.set_yaw(1500)
 
         self.progress("Fly eastbound away from home")
-        self.set_rc(2, 1800)
+        self.set_pitch(1800)
         self.delay_sim_time(10)
-        self.set_rc(2, 1500)
+        self.set_pitch(1500)
         self.hover()
         self.progress("Cotper staging 50 meters east of home at 50 meters altitude In mode Alt Hold")
 
@@ -209,9 +209,9 @@ class AutoTestCopter(AutoTest):
         self.set_yaw(1500)
 
         # fly south east 50m
-        self.set_rc(2, 1100)
+        self.set_pitch(1100)
         self.wait_distance(50)
-        self.set_rc(2, 1500)
+        self.set_pitch(1500)
 
         # wait for copter to slow moving
         self.wait_groundspeed(0, 2)
@@ -262,10 +262,10 @@ class AutoTestCopter(AutoTest):
         # feed in full elevator and aileron input and make sure we
         # retain altitude:
         self.set_roll(1000)
-        self.set_rc(2, 1000)
+        self.set_pitch(1000)
         self.watch_altitude_maintained(9, 11, timeout=5)
         self.set_roll(1500)
-        self.set_rc(2, 1500)
+        self.set_pitch(1500)
         self.do_RTL()
 
     def change_alt(self, alt_min, climb_throttle=1920, descend_throttle=1080):
@@ -308,7 +308,7 @@ class AutoTestCopter(AutoTest):
 
         # ensure all sticks in the middle
         self.set_roll(1500)
-        self.set_rc(2, 1500)
+        self.set_pitch(1500)
         self.set_throttle(1500)
         self.set_yaw(1500)
 
@@ -333,9 +333,9 @@ class AutoTestCopter(AutoTest):
 
         # pitch forward to fly north
         self.progress("Going north %u meters" % side)
-        self.set_rc(2, 1300)
+        self.set_pitch(1300)
         self.wait_distance(side)
-        self.set_rc(2, 1500)
+        self.set_pitch(1500)
 
         # save top left corner of square as waypoint
         self.progress("Save WP 3")
@@ -353,9 +353,9 @@ class AutoTestCopter(AutoTest):
 
         # pitch back to fly south
         self.progress("Going south %u meters" % side)
-        self.set_rc(2, 1700)
+        self.set_pitch(1700)
         self.wait_distance(side)
-        self.set_rc(2, 1500)
+        self.set_pitch(1500)
 
         # save bottom right corner of square as waypoint
         self.progress("Save WP 5")
@@ -951,9 +951,9 @@ class AutoTestCopter(AutoTest):
         self.set_yaw(1500)
 
         # fly west 80m
-        self.set_rc(2, 1100)
+        self.set_pitch(1100)
         self.wait_distance(80)
-        self.set_rc(2, 1500)
+        self.set_pitch(1500)
 
         # wait for copter to slow moving
         self.wait_groundspeed(0, 2)
@@ -1028,7 +1028,7 @@ class AutoTestCopter(AutoTest):
         self.set_throttle(1700)
         self.wait_altitude(10, 100, relative=True)
         self.set_throttle(1500)
-        self.set_rc(2, 1400)
+        self.set_pitch(1400)
         self.wait_distance_to_home(12, 20)
         tstart = self.get_sim_time()
         push_time = 70 # push against barrier for 60 seconds
@@ -1061,7 +1061,7 @@ class AutoTestCopter(AutoTest):
             raise NotAchievedException("Failed min")
         if failed_max:
             raise NotAchievedException("Failed max")
-        self.set_rc(2, 1500)
+        self.set_pitch(1500)
         self.do_RTL()
 
     def fly_fence_avoid_test(self, timeout=180):
@@ -1161,7 +1161,7 @@ class AutoTestCopter(AutoTest):
 
         self.progress("flying forward (east) until we hit fence")
         pitching_forward = True
-        self.set_rc(2, 1100)
+        self.set_pitch(1100)
 
         self.progress("Waiting for fence breach")
         tstart = self.get_sim_time()
@@ -1186,7 +1186,7 @@ class AutoTestCopter(AutoTest):
             # recenter pitch sticks once we're home so we don't fly off again
             if pitching_forward and home_distance < 50:
                 pitching_forward = False
-                self.set_rc(2, 1475)
+                self.set_pitch(1475)
                 # disable fence
                 self.set_parameter("FENCE_ENABLE", 0)
             if (alt <= 1 and home_distance < 10) or (not self.armed() and home_distance < 10):
@@ -1226,11 +1226,11 @@ class AutoTestCopter(AutoTest):
         self.set_yaw(1500)
 
         # fly forward (east) at least 20m
-        self.set_rc(2, 1100)
+        self.set_pitch(1100)
         self.wait_distance(20)
 
         # stop flying forward and start flying up:
-        self.set_rc(2, 1500)
+        self.set_pitch(1500)
         self.set_throttle(1800)
 
         # wait for fence to trigger
@@ -1278,9 +1278,9 @@ class AutoTestCopter(AutoTest):
             self.wait_heading(150)
             self.set_yaw(1500)
             # fly forward (south east) at least 60m
-            self.set_rc(2, 1100)
+            self.set_pitch(1100)
             self.wait_distance(60)
-            self.set_rc(2, 1500)
+            self.set_pitch(1500)
             # wait for copter to slow down
         except Exception as e:
             if self.use_map:
@@ -1468,11 +1468,11 @@ class AutoTestCopter(AutoTest):
 
         # fly west 8 seconds
         self.progress("# Flying west for 8 seconds")
-        self.set_rc(2, 1300)
+        self.set_pitch(1300)
         tstart = self.get_sim_time()
         while self.get_sim_time_cached() < (tstart + 8):
             self.mav.recv_match(type='VFR_HUD', blocking=True)
-        self.set_rc(2, 1500)
+        self.set_pitch(1500)
 
         # fly north 25 meters
         self.progress("# Flying north %u meters" % (side/2.0))
@@ -1482,11 +1482,11 @@ class AutoTestCopter(AutoTest):
 
         # fly east 8 seconds
         self.progress("# Flying east for 8 seconds")
-        self.set_rc(2, 1700)
+        self.set_pitch(1700)
         tstart = self.get_sim_time()
         while self.get_sim_time_cached() < (tstart + 8):
             self.mav.recv_match(type='VFR_HUD', blocking=True)
-        self.set_rc(2, 1500)
+        self.set_pitch(1500)
 
         # hover in place
         self.hover()
@@ -1499,9 +1499,9 @@ class AutoTestCopter(AutoTest):
 
         # fly forward 20m
         self.progress("# Flying forward 20 meters")
-        self.set_rc(2, 1300)
+        self.set_pitch(1300)
         self.wait_distance(20, 5, 60)
-        self.set_rc(2, 1500)
+        self.set_pitch(1500)
 
         # set SUPER SIMPLE mode for all flight modes
         self.set_parameter("SUPER_SIMPLE", 63)
@@ -1552,10 +1552,10 @@ class AutoTestCopter(AutoTest):
         self.set_parameter("CIRCLE_RADIUS", 3000)
 
         # fly forward (east) at least 100m
-        self.set_rc(2, 1100)
+        self.set_pitch(1100)
         self.wait_distance(100)
         # return pitch stick back to middle
-        self.set_rc(2, 1500)
+        self.set_pitch(1500)
 
         # set CIRCLE mode
         self.mavproxy.send('switch 1\n')  # circle mode
@@ -1621,14 +1621,14 @@ class AutoTestCopter(AutoTest):
             self.hover()
 
             self.progress("Flipping in pitch")
-            self.set_rc(2, 1700)
+            self.set_pitch(1700)
             self.mavproxy.send('mode FLIP\n') # don't wait for heartbeat!
             self.wait_attitude(despitch=45, desroll=0, tolerance=30)
             # can't check roll here as it flips from 0 to -180..
             self.wait_attitude(despitch=90, tolerance=30)
             self.wait_attitude(despitch=-45, tolerance=30)
             self.progress("Waiting for level")
-            self.set_rc(2, 1500) # can't change quickly enough!
+            self.set_pitch(1500) # can't change quickly enough!
             self.wait_attitude(despitch=0, desroll=0, tolerance=5)
             self.set_parameter('SIM_SPEEDUP', old_speedup)
             self.change_mode('RTL')
@@ -1663,7 +1663,7 @@ class AutoTestCopter(AutoTest):
             self.wait_mode('LOITER')
 
             # speed should be limited to <10m/s
-            self.set_rc(2, 1000)
+            self.set_pitch(1000)
 
             tstart = self.get_sim_time()
             timeout = 60
@@ -1686,7 +1686,7 @@ class AutoTestCopter(AutoTest):
         except Exception as e:
             ex = e
 
-        self.set_rc(2, 1500)
+        self.set_pitch(1500)
         self.context_pop()
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
@@ -2317,7 +2317,7 @@ class AutoTestCopter(AutoTest):
             self.progress("Original alt: absolute=%f" % orig_absolute_alt_mm)
 
             self.progress("Flying somewhere which surface is known lower compared to takeoff point")
-            self.set_rc(2, 1450)
+            self.set_pitch(1450)
             tstart = self.get_sim_time()
             while True:
                 if self.get_sim_time() - tstart > 200:
@@ -2334,7 +2334,7 @@ class AutoTestCopter(AutoTest):
                         raise NotAchievedException("Did not dip in altitude as expected")
                     break
 
-            self.set_rc(2, 1500)
+            self.set_pitch(1500)
             self.do_RTL()
 
         except Exception as e:
@@ -2367,7 +2367,7 @@ class AutoTestCopter(AutoTest):
             self.wait_ready_to_arm()
             self.arm_vehicle()
             self.set_throttle(1800)
-            self.set_rc(2, 1200)
+            self.set_pitch(1200)
             # wait till we get to 50m
             self.wait_altitude(50, 52, True, 60)
 
@@ -2376,7 +2376,7 @@ class AutoTestCopter(AutoTest):
             self.wait_altitude(25, 27, True, 120)
 
             # level up
-            self.set_rc(2, 1500)
+            self.set_pitch(1500)
             self.wait_altitude(14, 15, relative=True)
 
             tstart = self.get_sim_time()
@@ -2841,9 +2841,9 @@ class AutoTestCopter(AutoTest):
             while i < 2:
                 self.start_subtest("Run zigzag A->B and B->A (i=%d)" % i)
                 self.progress("## fly forward for 10 meter ##")
-                self.set_rc(2, 1300)
+                self.set_pitch(1300)
                 self.wait_distance(10)
-                self.set_rc(2, 1500)    # re-centre pitch rc control
+                self.set_pitch(1500)    # re-centre pitch rc control
                 self.wait_groundspeed(0, slowdown_speed)   # wait until the copter slows down
                 self.set_rc(8, 1500)    # switch to mid position
                 self.progress("## auto execute vector BA ##")
@@ -2852,9 +2852,9 @@ class AutoTestCopter(AutoTest):
                 self.wait_groundspeed(0, slowdown_speed)   # wait until the copter slows down
 
                 self.progress("## fly forward for 10 meter ##")
-                self.set_rc(2, 1300)    # fly forward for 10 meter
+                self.set_pitch(1300)    # fly forward for 10 meter
                 self.wait_distance(10)
-                self.set_rc(2, 1500)    # re-centre pitch rc control
+                self.set_pitch(1500)    # re-centre pitch rc control
                 self.wait_groundspeed(0, slowdown_speed)   # wait until the copter slows down
                 self.set_rc(8, 1500)    # switch to mid position
                 self.progress("## auto execute vector AB ##")
@@ -2865,9 +2865,9 @@ class AutoTestCopter(AutoTest):
             # test the case when pilot switch to manual control during the auto flight
             self.start_subtest("test the case when pilot switch to manual control during the auto flight")
             self.progress("## fly forward for 10 meter ##")
-            self.set_rc(2, 1300)    # fly forward for 10 meter
+            self.set_pitch(1300)    # fly forward for 10 meter
             self.wait_distance(10)
-            self.set_rc(2, 1500)    # re-centre pitch rc control
+            self.set_pitch(1500)    # re-centre pitch rc control
             self.wait_groundspeed(0, 0.3)   # wait until the copter slows down
             self.set_rc(8, 1500)    # switch to mid position
             self.progress("## auto execute vector BA ##")
@@ -2876,9 +2876,9 @@ class AutoTestCopter(AutoTest):
             self.set_rc(8, 1500)
             self.wait_groundspeed(0, slowdown_speed)   # copter should slow down here
             self.progress("## Manual control to fly forward ##")
-            self.set_rc(2, 1300)    # manual control to fly forward
+            self.set_pitch(1300)    # manual control to fly forward
             self.wait_distance(8)
-            self.set_rc(2, 1500)    # re-centre pitch rc control
+            self.set_pitch(1500)    # re-centre pitch rc control
             self.wait_groundspeed(0, slowdown_speed)   # wait until the copter slows down
             self.progress("## continue vector BA ##")
             self.set_rc(8, 1100)    # copter should continue mission here
@@ -4254,10 +4254,10 @@ class AutoTestCopter(AutoTest):
 
                 # fly fast forrest!
                 self.set_throttle(1900)
-                self.set_rc(2, 1200)
+                self.set_pitch(1200)
                 self.wait_groundspeed(5, 1000)
                 self.set_throttle(1500)
-                self.set_rc(2, 1500)
+                self.set_pitch(1500)
 
                 self.do_RTL()
                 psd = self.mavfft_fttd(1, 0, tstart * 1.0e6, tend * 1.0e6)
@@ -4317,13 +4317,13 @@ class AutoTestCopter(AutoTest):
         self.progress("Ensuring RC inputs have no effect in brake mode")
         self.change_mode("STABILIZE")
         self.set_throttle(1500)
-        self.set_rc(2, 1200)
+        self.set_pitch(1200)
         self.wait_groundspeed(5, 1000)
 
         self.change_mode("BRAKE")
         self.wait_groundspeed(0, 1)
 
-        self.set_rc(2, 1500)
+        self.set_pitch(1500)
 
         self.do_RTL()
         self.progress("Ran brake  mode")
@@ -4468,9 +4468,9 @@ class AutoTestCopter(AutoTest):
                                relative=True)
             self.set_throttle(1500)
             # move away a little
-            self.set_rc(2, 1550)
+            self.set_pitch(1550)
             self.wait_distance(5, accuracy=1)
-            self.set_rc(2, 1500)
+            self.set_pitch(1500)
             self.mavproxy.send('mode loiter\n')
             self.wait_mode('LOITER')
 
@@ -4633,7 +4633,7 @@ class AutoTestCopter(AutoTest):
 
     def check_avoidance_corners(self):
             self.takeoff(10, mode="LOITER")
-            self.set_rc(2, 1400)
+            self.set_pitch(1400)
             west_loc = mavutil.location(-35.363007,
 	                                    149.164911,
                                         0,
@@ -4653,7 +4653,7 @@ class AutoTestCopter(AutoTest):
             self.wait_location(east_loc, accuracy=6)
             self.reach_heading_manual(225);
             self.wait_location(west_loc, accuracy=6, timeout =200)
-            self.set_rc(2, 1500)
+            self.set_pitch(1500)
             self.do_RTL()
 
     def fly_proximity_avoidance_test(self):
@@ -4793,9 +4793,9 @@ class AutoTestCopter(AutoTest):
 
             self.progress("Moving to ensure location is tracked")
             self.takeoff(10, mode="LOITER")
-            self.set_rc(2, 1400)
+            self.set_pitch(1400)
             self.delay_sim_time(5)
-            self.set_rc(2, 1500)
+            self.set_pitch(1500)
             self.wait_groundspeed(0, 0.1)
             pos_delta = self.get_distance(self.sim_location(), self.mav.location)
             if pos_delta > max_delta:
@@ -4825,21 +4825,21 @@ class AutoTestCopter(AutoTest):
             self.reboot_sitl()
 
             self.takeoff(10, mode="LOITER")
-            self.set_rc(2, 1400)
+            self.set_pitch(1400)
             west_loc = mavutil.location(-35.362919, 149.165055, 0, 0)
             self.wait_location(west_loc, accuracy=7)
             self.reach_heading_manual(0)
             north_loc = mavutil.location(-35.362881, 149.165103, 0, 0)
             self.wait_location(north_loc, accuracy=7)
-            self.set_rc(2, 1500)
+            self.set_pitch(1500)
             self.set_roll(1600)
             east_loc = mavutil.location(-35.362986, 149.165227, 0, 0)
             self.wait_location(east_loc, accuracy=7)
             self.set_roll(1500)
-            self.set_rc(2, 1600)
+            self.set_pitch(1600)
             south_loc = mavutil.location(-35.363025, 149.165182, 0, 0)
             self.wait_location(south_loc, accuracy=7)
-            self.set_rc(2, 1500)
+            self.set_pitch(1500)
             self.do_RTL()
 
         except Exception as e:

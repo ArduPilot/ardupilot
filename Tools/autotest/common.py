@@ -3374,9 +3374,9 @@ class AutoTest(ABC):
     def reach_distance_manual(self, distance):
         """Manually direct the vehicle to the target distance from home."""
         if self.is_copter():
-            self.set_rc(2, 1350)
+            self.set_pitch(1350)
             self.wait_distance(distance, accuracy=5, timeout=60)
-            self.set_rc(2, 1500)
+            self.set_pitch(1500)
         if self.is_plane():
             self.progress("NOT IMPLEMENTED")
         if self.is_rover():

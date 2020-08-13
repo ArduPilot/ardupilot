@@ -93,7 +93,7 @@ class AutoTestPlane(AutoTest):
         self.set_yaw(1700)
 
         # some up elevator to keep the tail down
-        self.set_rc(2, 1200)
+        self.set_pitch(1200)
 
         # get it moving a bit first
         self.set_throttle(1300)
@@ -105,14 +105,14 @@ class AutoTestPlane(AutoTest):
         self.wait_groundspeed(12, 100)
 
         # hit the gas harder now, and give it some more elevator
-        self.set_rc(2, 1100)
+        self.set_pitch(1100)
         self.set_throttle(2000)
 
         # gain a bit of altitude
         self.wait_altitude(alt, alt_max, timeout=30, relative=relative)
 
         # level off
-        self.set_rc(2, 1500)
+        self.set_pitch(1500)
 
         self.progress("TAKEOFF COMPLETE")
 
@@ -210,7 +210,7 @@ class AutoTestPlane(AutoTest):
         tstart = self.get_sim_time()
         self.progress("Waiting for level flight")
         self.set_roll(1500)
-        self.set_rc(2, 1500)
+        self.set_pitch(1500)
         self.set_yaw(1500)
         while self.get_sim_time_cached() < tstart + timeout:
             m = self.mav.recv_match(type='ATTITUDE', blocking=True)
@@ -228,11 +228,11 @@ class AutoTestPlane(AutoTest):
         self.wait_mode('FBWA')
         alt_error = self.mav.messages['VFR_HUD'].alt - altitude
         if alt_error > 0:
-            self.set_rc(2, 2000)
+            self.set_pitch(2000)
         else:
-            self.set_rc(2, 1000)
+            self.set_pitch(1000)
         self.wait_altitude(altitude-accuracy/2, altitude+accuracy/2)
-        self.set_rc(2, 1500)
+        self.set_pitch(1500)
         self.progress("Reached target altitude at %u" %
                       self.mav.messages['VFR_HUD'].alt)
         return self.wait_level_flight()
@@ -277,13 +277,13 @@ class AutoTestPlane(AutoTest):
 
         while count > 0:
             self.progress("Starting loop")
-            self.set_rc(2, 1000)
+            self.set_pitch(1000)
             self.wait_pitch(-60, accuracy=20)
             self.wait_pitch(0, accuracy=20)
             count -= 1
 
         # back to FBWA
-        self.set_rc(2, 1500)
+        self.set_pitch(1500)
         self.mavproxy.send('switch 4\n')
         self.wait_mode('FBWA')
         self.set_throttle(1700)
@@ -380,9 +380,9 @@ class AutoTestPlane(AutoTest):
         """Fly stabilize mode."""
         # full throttle!
         self.set_throttle(2000)
-        self.set_rc(2, 1300)
+        self.set_pitch(1300)
         self.change_altitude(self.homeloc.alt+300)
-        self.set_rc(2, 1500)
+        self.set_pitch(1500)
 
         self.mavproxy.send("mode STABILIZE\n")
         self.wait_mode('STABILIZE')
@@ -408,9 +408,9 @@ class AutoTestPlane(AutoTest):
         """Fly ACRO mode."""
         # full throttle!
         self.set_throttle(2000)
-        self.set_rc(2, 1300)
+        self.set_pitch(1300)
         self.change_altitude(self.homeloc.alt+300)
-        self.set_rc(2, 1500)
+        self.set_pitch(1500)
 
         self.mavproxy.send("mode ACRO\n")
         self.wait_mode('ACRO')
@@ -436,12 +436,12 @@ class AutoTestPlane(AutoTest):
         count = 2
         while count > 0:
             self.progress("Starting loop")
-            self.set_rc(2, 1000)
+            self.set_pitch(1000)
             self.wait_pitch(-60, accuracy=20)
             self.wait_pitch(0, accuracy=20)
             count -= 1
 
-        self.set_rc(2, 1500)
+        self.set_pitch(1500)
 
         # back to FBWA
         self.mavproxy.send('mode FBWA\n')
@@ -454,12 +454,12 @@ class AutoTestPlane(AutoTest):
         self.mavproxy.send("mode %s\n" % mode)
         self.wait_mode(mode)
         self.set_throttle(1700)
-        self.set_rc(2, 1500)
+        self.set_pitch(1500)
 
         # lock in the altitude by asking for an altitude change then releasing
-        self.set_rc(2, 1000)
+        self.set_pitch(1000)
         self.wait_distance(50, accuracy=20)
-        self.set_rc(2, 1500)
+        self.set_pitch(1500)
         self.wait_distance(50, accuracy=20)
 
         m = self.mav.recv_match(type='VFR_HUD', blocking=True)
@@ -1259,7 +1259,7 @@ class AutoTestPlane(AutoTest):
         self.takeoff(alt=300)
 
         self.progress("Diving")
-        self.set_rc(2, 2000)
+        self.set_pitch(2000)
         self.mavproxy.expect("BANG")
 
         self.disarm_vehicle(force=True)
@@ -1609,7 +1609,7 @@ class AutoTestPlane(AutoTest):
         self.progress("Initial throttle: %u" % initial_throttle)
         # pitch down, ensure throttle decreases:
         rc2_max = self.get_parameter("RC2_MAX")
-        self.set_rc(2, rc2_max)
+        self.set_pitch(rc2_max)
         tstart = self.get_sim_time()
         while True:
             now = self.get_sim_time_cached()
@@ -1633,7 +1633,7 @@ class AutoTestPlane(AutoTest):
                 self.progress("Throttle delta achieved")
                 break
         self.progress("Centering elevator and ensuring we get back to loiter altitude")
-        self.set_rc(2, 1500)
+        self.set_pitch(1500)
         self.wait_altitude(initial_alt-1, initial_alt+1)
         self.fly_home_land_and_disarm()
 

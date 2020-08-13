@@ -347,7 +347,7 @@ class AutoTestQuadPlane(AutoTest):
         tstart = self.get_sim_time()
         self.progress("Waiting for level flight")
         self.set_roll(1500)
-        self.set_rc(2, 1500)
+        self.set_pitch(1500)
         self.set_yaw(1500)
         while self.get_sim_time_cached() < tstart + timeout:
             m = self.mav.recv_match(type='ATTITUDE', blocking=True)
