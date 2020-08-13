@@ -42,6 +42,7 @@ extern const AP_HAL::HAL& hal;
 #define DSM2_2048_11MS      0x12
 #define DSMX_2048_22MS      0xa2
 #define DSMX_2048_11MS      0xb2
+#define DSMX_2048_SAT       0x00
 #define SPEKTRUM_VTX_CONTROL_FRAME_MASK 0xf000f000
 #define SPEKTRUM_VTX_CONTROL_FRAME      0xe000e000
 
@@ -256,7 +257,9 @@ bool AP_RCProtocol_DSM::dsm_parse_byte(uint32_t frame_time_us, uint8_t b, uint16
 
     if (byte_input.ofs == 1) {
         // saw a beginning of frame marker
-        if (b == DSM2_1024_22MS || b == DSM2_2048_11MS || b == DSMX_2048_22MS || b == DSMX_2048_11MS) {
+        if (b == DSM2_1024_22MS || b == DSM2_2048_11MS ||
+            b == DSMX_2048_22MS || b == DSMX_2048_11MS ||
+            b == DSMX_2048_SAT) {
             if (b == DSM2_1024_22MS) {
                 // 10 bit frames
                 channel_shift = 2;
