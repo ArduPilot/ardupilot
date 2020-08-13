@@ -4052,6 +4052,42 @@ Also, ignores heartbeats not from our target system'''
             exit(1)
         self.progress("PASSED: Check for syntax mistake in autotest lambda")
 
+    def check_forbidden_syntax(self, test_file):
+        """Check forbiddent used functions on autotest."""
+        self.start_test("Check for forbidden functions in autotest")
+        if not os.path.isfile(test_file):
+            self.progress("File %s does not exist" % test_file)
+        test_file = test_file.rstrip('c')
+
+        def search_multiple_strings_in_file(file_name, list_of_strings):
+            """Get line from the file along with line numbers, which contains any string from the list"""
+            line_number = 0
+            list_of_results = []
+            # Open the file in read only mode
+            with open(file_name, "r""") as f:
+                # Read all lines in the file one by one
+                for line in f:
+                    line_number += 1
+                    # For each line, check if line contains any string from the list of strings
+                    for string_to_search in list_of_strings:
+                        if string_to_search in line:
+                            # If any string is found in line, then append that line along with line number in list
+                            list_of_results.append((string_to_search, line_number, line.rstrip()))
+            # Return list of tuples containing matched string, line numbers and lines where string is found
+            return list_of_results
+        forbidden_list = []
+        for i in range(1, 5):
+            forbidden_list.append("mavproxy.send(\'rc %d" % i)
+            forbidden_list.append("self.set_rc(%d," % i)
+        found_functions = search_multiple_strings_in_file(test_file, forbidden_list)
+        if len(found_functions) > 0:
+            self.progress("Total forbidden functions : %d" % len(found_functions))
+            for elem in found_functions:
+                self.progress("In file %s" % test_file)
+                self.progress("Functions = %s  :: Line Number = %d  :: Line = %s" % (elem[0], elem[1], elem[2].strip()))
+            exit(1)
+        self.progress("PASSED: Check for forbidden functions in autotest")
+
     def uses_vicon(self):
         return False
 
@@ -4101,6 +4137,7 @@ Also, ignores heartbeats not from our target system'''
     def init(self):
         """Initilialize autotest feature."""
         self.check_test_syntax(test_file=self.test_filepath())
+        self.check_forbidden_syntax(test_file=self.test_filepath())
 
         self.mavproxy_logfile = self.open_mavproxy_logfile()
 
