@@ -3309,7 +3309,7 @@ class AutoTest(ABC):
     def reach_heading_manual(self, heading, turn_right=True):
         """Manually direct the vehicle to the target heading."""
         if self.is_copter() or self.is_sub():
-            self.mavproxy.send('rc 4 1580\n')
+            self.set_rc(4, 1580)
             self.wait_heading(heading)
             self.set_rc(4, 1500)
         if self.is_plane():
@@ -3318,8 +3318,8 @@ class AutoTest(ABC):
             steering_pwm = 1700
             if not turn_right:
                 steering_pwm = 1300
-            self.mavproxy.send('rc 1 %u\n' % steering_pwm)
-            self.mavproxy.send('rc 3 1550\n')
+            self.set_rc(1, steering_pwm)
+            self.set_rc(3, 1550)
             self.wait_heading(heading)
             self.set_rc(3, 1500)
             self.set_rc(1, 1500)
@@ -3353,7 +3353,7 @@ class AutoTest(ABC):
         if self.is_plane():
             self.progress("NOT IMPLEMENTED")
         if self.is_rover():
-            self.mavproxy.send('rc 3 1700\n')
+            self.set_rc(3, 1700)
             self.wait_distance(distance, accuracy=2)
             self.set_rc(3, 1500)
 
