@@ -3338,7 +3338,7 @@ class AutoTest(ABC):
         if self.is_copter() or self.is_sub():
             self.mavproxy.send('rc 4 1580\n')
             self.wait_heading(heading)
-            self.set_rc(4, 1500)
+            self.set_yaw(1500)
         if self.is_plane():
             self.progress("NOT IMPLEMENTED")
         if self.is_rover():

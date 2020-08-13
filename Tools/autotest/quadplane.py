@@ -348,7 +348,7 @@ class AutoTestQuadPlane(AutoTest):
         self.progress("Waiting for level flight")
         self.set_rc(1, 1500)
         self.set_rc(2, 1500)
-        self.set_rc(4, 1500)
+        self.set_yaw(1500)
         while self.get_sim_time_cached() < tstart + timeout:
             m = self.mav.recv_match(type='ATTITUDE', blocking=True)
             roll = math.degrees(m.roll)
@@ -566,13 +566,13 @@ class AutoTestQuadPlane(AutoTest):
     def test_pilot_yaw(self):
         self.takeoff(10, mode="QLOITER")
         self.set_parameter("STICK_MIXING", 0)
-        self.set_rc(4, 1700)
+        self.set_yaw(1700)
         for mode in "QLOITER", "QHOVER":
             self.wait_heading(45)
             self.wait_heading(90)
             self.wait_heading(180)
             self.wait_heading(275)
-        self.set_rc(4, 1500)
+        self.set_yaw(1500)
         self.do_RTL()
 
     def CPUFailsafe(self):

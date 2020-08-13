@@ -177,14 +177,14 @@ class AutoTestCopter(AutoTest):
         self.set_rc(1, 1500)
         self.set_rc(2, 1500)
         self.set_throttle(1000)
-        self.set_rc(4, 1500)
+        self.set_yaw(1500)
         self.takeoff(alt_min=dAlt)
         self.change_mode("ALT_HOLD")
 
         self.progress("Yaw to east")
-        self.set_rc(4, 1580)
+        self.set_yaw(1580)
         self.wait_heading(90)
-        self.set_rc(4, 1500)
+        self.set_yaw(1500)
 
         self.progress("Fly eastbound away from home")
         self.set_rc(2, 1800)
@@ -204,9 +204,9 @@ class AutoTestCopter(AutoTest):
 
         # first aim south east
         self.progress("turn south east")
-        self.set_rc(4, 1580)
+        self.set_yaw(1580)
         self.wait_heading(170)
-        self.set_rc(4, 1500)
+        self.set_yaw(1500)
 
         # fly south east 50m
         self.set_rc(2, 1100)
@@ -310,16 +310,16 @@ class AutoTestCopter(AutoTest):
         self.set_rc(1, 1500)
         self.set_rc(2, 1500)
         self.set_throttle(1500)
-        self.set_rc(4, 1500)
+        self.set_yaw(1500)
 
         # switch to loiter mode temporarily to stop us from rising
         self.change_mode('LOITER')
 
         # first aim north
         self.progress("turn right towards north")
-        self.set_rc(4, 1580)
+        self.set_yaw(1580)
         self.wait_heading(10)
-        self.set_rc(4, 1500)
+        self.set_yaw(1500)
 
         # save bottom left corner of box as waypoint
         self.progress("Save WP 1 & 2")
@@ -946,9 +946,9 @@ class AutoTestCopter(AutoTest):
 
         # first south
         self.progress("turn south")
-        self.set_rc(4, 1580)
+        self.set_yaw(1580)
         self.wait_heading(180)
-        self.set_rc(4, 1500)
+        self.set_yaw(1500)
 
         # fly west 80m
         self.set_rc(2, 1100)
@@ -1153,9 +1153,9 @@ class AutoTestCopter(AutoTest):
 
         # first east
         self.progress("turn east")
-        self.set_rc(4, 1580)
+        self.set_yaw(1580)
         self.wait_heading(160)
-        self.set_rc(4, 1500)
+        self.set_yaw(1500)
 
         fence_radius = self.get_parameter("FENCE_RADIUS")
 
@@ -1221,9 +1221,9 @@ class AutoTestCopter(AutoTest):
 
         # first east
         self.progress("turn east")
-        self.set_rc(4, 1580)
+        self.set_yaw(1580)
         self.wait_heading(160)
-        self.set_rc(4, 1500)
+        self.set_yaw(1500)
 
         # fly forward (east) at least 20m
         self.set_rc(2, 1100)
@@ -1273,10 +1273,10 @@ class AutoTestCopter(AutoTest):
 
         # turn south east
         self.progress("turn south east")
-        self.set_rc(4, 1580)
+        self.set_yaw(1580)
         try:
             self.wait_heading(150)
-            self.set_rc(4, 1500)
+            self.set_yaw(1500)
             # fly forward (south east) at least 60m
             self.set_rc(2, 1100)
             self.wait_distance(60)
@@ -1511,7 +1511,7 @@ class AutoTestCopter(AutoTest):
         self.set_throttle(1700)
 
         # start copter yawing slowly
-        self.set_rc(4, 1550)
+        self.set_yaw(1550)
 
         # roll left for timeout seconds
         self.progress("# rolling left from pilot's POV for %u seconds"
@@ -1523,7 +1523,7 @@ class AutoTestCopter(AutoTest):
 
         # stop rolling and yawing
         self.set_rc(1, 1500)
-        self.set_rc(4, 1500)
+        self.set_yaw(1500)
 
         # restore simple mode parameters to default
         self.set_parameter("SUPER_SIMPLE", 0)
@@ -1544,9 +1544,9 @@ class AutoTestCopter(AutoTest):
 
         # face west
         self.progress("turn west")
-        self.set_rc(4, 1580)
+        self.set_yaw(1580)
         self.wait_heading(270)
-        self.set_rc(4, 1500)
+        self.set_yaw(1500)
 
         # set CIRCLE radius
         self.set_parameter("CIRCLE_RADIUS", 3000)
@@ -2823,9 +2823,9 @@ class AutoTestCopter(AutoTest):
         while j < 4:
             self.progress("## Align heading with the run-way (j=%d)##" % j)
             self.set_rc(8, 1500)
-            self.set_rc(4, 1420)
+            self.set_yaw(1420)
             self.wait_heading(352-j*90)
-            self.set_rc(4, 1500)
+            self.set_yaw(1500)
             self.change_mode(ZIGZAG)
             self.progress("## Record Point A ##")
             self.set_rc(8, 1100)  # record point A

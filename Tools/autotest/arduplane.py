@@ -90,7 +90,7 @@ class AutoTestPlane(AutoTest):
         self.arm_vehicle()
 
         # some rudder to counteract the prop torque
-        self.set_rc(4, 1700)
+        self.set_yaw(1700)
 
         # some up elevator to keep the tail down
         self.set_rc(2, 1200)
@@ -101,7 +101,7 @@ class AutoTestPlane(AutoTest):
 
         # a bit faster again, straighten rudder
         self.set_throttle(1600)
-        self.set_rc(4, 1500)
+        self.set_yaw(1500)
         self.wait_groundspeed(12, 100)
 
         # hit the gas harder now, and give it some more elevator
@@ -211,7 +211,7 @@ class AutoTestPlane(AutoTest):
         self.progress("Waiting for level flight")
         self.set_rc(1, 1500)
         self.set_rc(2, 1500)
-        self.set_rc(4, 1500)
+        self.set_yaw(1500)
         while self.get_sim_time_cached() < tstart + timeout:
             m = self.mav.recv_match(type='ATTITUDE', blocking=True)
             roll = math.degrees(m.roll)
@@ -487,13 +487,13 @@ class AutoTestPlane(AutoTest):
         for i in range(0, 4):
             # hard left
             self.progress("Starting turn %u" % i)
-            self.set_rc(4, 1900)
+            self.set_yaw(1900)
             try:
                 self.wait_heading(360 - (90*i), accuracy=20, timeout=60)
             except Exception as e:
-                self.set_rc(4, 1500)
+                self.set_yaw(1500)
                 raise e
-            self.set_rc(4, 1500)
+            self.set_yaw(1500)
             self.progress("Starting leg %u" % i)
             self.wait_distance(100, accuracy=20)
         self.progress("Circuit complete")
