@@ -30,6 +30,7 @@
 #include "AP_RCProtocol_ST24.h"
 #include "AP_RCProtocol_FPort.h"
 #include <AP_Math/AP_Math.h>
+#include <RC_Channel/RC_Channel.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -64,6 +65,16 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
 {
     uint32_t now = AP_HAL::millis();
     bool searching = (now - _last_input_ms >= 200);
+
+#ifndef IOMCU_FW
+    rc_protocols_mask = rc().enabled_protocols();
+#endif
+
+    if (_detected_protocol != AP_RCProtocol::NONE &&
+        !protocol_enabled(_detected_protocol)) {
+        _detected_protocol = AP_RCProtocol::NONE;
+    }
+    
     if (_detected_protocol != AP_RCProtocol::NONE && _detected_with_bytes && !searching) {
         // we're using byte inputs, discard pulses
         return;
@@ -85,6 +96,9 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
             continue;
         }
         if (backend[i] != nullptr) {
+            if (!protocol_enabled(rcprotocol_t(i))) {
+                continue;
+            }
             uint32_t frame_count = backend[i]->get_rc_frame_count();
             uint32_t input_count = backend[i]->get_rc_input_count();
             backend[i]->process_pulse(width_s0, width_s1);
@@ -131,6 +145,16 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
 {
     uint32_t now = AP_HAL::millis();
     bool searching = (now - _last_input_ms >= 200);
+
+#ifndef IOMCU_FW
+    rc_protocols_mask = rc().enabled_protocols();
+#endif
+
+    if (_detected_protocol != AP_RCProtocol::NONE &&
+        !protocol_enabled(_detected_protocol)) {
+        _detected_protocol = AP_RCProtocol::NONE;
+    }
+
     if (_detected_protocol != AP_RCProtocol::NONE && !_detected_with_bytes && !searching) {
         // we're using pulse inputs, discard bytes
         return false;
@@ -148,6 +172,9 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
     // otherwise scan all protocols
     for (uint8_t i = 0; i < AP_RCProtocol::NONE; i++) {
         if (backend[i] != nullptr) {
+            if (!protocol_enabled(rcprotocol_t(i))) {
+                continue;
+            }
             uint32_t frame_count = backend[i]->get_rc_frame_count();
             uint32_t input_count = backend[i]->get_rc_input_count();
             backend[i]->process_byte(byte, baudrate);
@@ -356,6 +383,16 @@ void AP_RCProtocol::add_uart(AP_HAL::UARTDriver* uart)
     added.uart = uart;
     // start with DSM
     added.baudrate = 115200U;
+}
+
+// return true if a specific protocol is enabled
+bool AP_RCProtocol::protocol_enabled(rcprotocol_t protocol) const
+{
+    if ((rc_protocols_mask & 1) != 0) {
+        // all protocols enabled
+        return true;
+    }
+    return ((1U<<(uint8_t(protocol)+1)) & rc_protocols_mask) != 0;
 }
 
 namespace AP {
