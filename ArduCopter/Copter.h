@@ -607,6 +607,7 @@ private:
         RC_CONTINUE_IF_GUIDED           = (1<<2),   // 4
         CONTINUE_IF_LANDING             = (1<<3),   // 8
         GCS_CONTINUE_IF_PILOT_CONTROL   = (1<<4),   // 16
+        RELEASE_GRIPPER                 = (1<<5),   // 32
     };
 
     static constexpr int8_t _failsafe_priorities[] = {
