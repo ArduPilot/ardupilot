@@ -74,10 +74,12 @@ PA14 JTCK-SWCLK SWD
 # PWM output for buzzer
 PA15 TIM2_CH1 TIM2 GPIO(77) ALARM
 
-# This defines a couple of general purpose outputs, mapped to GPIO
-# numbers 1 and 2 for users.
-PB0 EXTERN_GPIO1 OUTPUT GPIO(1)
-PB1 EXTERN_GPIO2 OUTPUT GPIO(2)
+# Map the EXTERN_DRDY and !EXTERN_CS as analog inputs in
+PB0 PB0_ADC ADC1 SCALE(1)
+PB1 PB1_ADC ADC1 SCALE(1)
+# also keep them available as a GPIO alt config
+PB0 EXTERN_GPIO1 OUTPUT GPIO(1) ALT(2)
+PB1 EXTERN_GPIO2 OUTPUT GPIO(2) ALT(2)
 
 # This defines some input pins, currently unused.
 PB2 BOOT1 INPUT
