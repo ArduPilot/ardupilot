@@ -6180,9 +6180,9 @@ switch value'''
     def tf_encode_gps_latitude(self,lat):
         value = 0
         if lat < 0:
-            value = ((abs(lat)/100)*6) | 0x40000000
+            value = ((abs(lat)//100)*6) | 0x40000000
         else:
-            value = ((abs(lat)/100)*6)
+            value = ((abs(lat)//100)*6)
         return value
 
     def tf_validate_gps(self, value): # shared by proto 4 and proto 10
