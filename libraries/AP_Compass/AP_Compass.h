@@ -96,6 +96,18 @@ public:
 
     bool enabled() const { return _enabled; }
 
+    // used to disable Compass for Compass failure testing in flight
+    void set_disabled_mask(uint8_t mask) {
+        _disabled_mask = mask;
+    }
+    void set_compass_disabled(uint8_t num, bool value) {
+        if (value) {
+            _disabled_mask |= (1 << num);
+        } else {
+            _disabled_mask &= ~(1 << num);
+        }
+    }
+
     /// Calculate the tilt-compensated heading_ variables.
     ///
     /// @param dcm_matrix			The current orientation rotation matrix
@@ -595,6 +607,9 @@ private:
     bool _initial_location_set;
 
     bool _cal_thread_started;
+
+    // used for flight testing with Compass loss
+    bool _disabled_mask;
 };
 
 namespace AP {
