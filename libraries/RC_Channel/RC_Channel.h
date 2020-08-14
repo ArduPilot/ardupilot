@@ -195,6 +195,9 @@ public:
         EKF_LANE_SWITCH =    103, // trigger lane switch attempt
         EKF_YAW_RESET =      104, // trigger yaw reset attempt
         GPS_DISABLE_YAW =    105, // disable GPS yaw for testing
+        KILL_MAGS =          106, // disable all magnetometers
+        KILL_MAG1 =          107, // disable first magnetometer
+        KILL_MAG2 =          108, // disable second magnetometer
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
         // also, if you add an option >255, you will need to fix duplicate_options_exist
 

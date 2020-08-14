@@ -34,6 +34,7 @@ extern const AP_HAL::HAL& hal;
 #include <AP_Camera/AP_Camera.h>
 #include <AP_Camera/AP_RunCam.h>
 #include <AP_Generator/AP_Generator_RichenPower.h>
+#include <AP_Compass/AP_Compass.h>
 #include <AP_Gripper/AP_Gripper.h>
 #include <AP_ADSB/AP_ADSB.h>
 #include <AP_LandingGear/AP_LandingGear.h>
@@ -486,6 +487,9 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const AuxSwitchPo
         break;
     case AUX_FUNC::AVOID_ADSB:
     case AUX_FUNC::AVOID_PROXIMITY:
+    case AUX_FUNC::KILL_MAGS:
+    case AUX_FUNC::KILL_MAG1:
+    case AUX_FUNC::KILL_MAG2:
     case AUX_FUNC::FENCE:
     case AUX_FUNC::GPS_DISABLE:
     case AUX_FUNC::GPS_DISABLE_YAW:
@@ -975,6 +979,18 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
 
     case AUX_FUNC::GPS_DISABLE_YAW:
         AP::gps().set_force_disable_yaw(ch_flag == AuxSwitchPos::HIGH);
+        break;
+
+    case AUX_FUNC::KILL_MAGS:
+        AP::compass().set_disabled_mask(ch_flag == AuxSwitchPos::HIGH ? 0xff : 0);
+        break;
+
+    case AUX_FUNC::KILL_MAG1:
+        AP::compass().set_compass_disabled(0, ch_flag == AuxSwitchPos::HIGH);
+        break;
+
+    case AUX_FUNC::KILL_MAG2:
+        AP::compass().set_compass_disabled(1, ch_flag == AuxSwitchPos::HIGH);
         break;
 
     case AUX_FUNC::MOTOR_ESTOP:
