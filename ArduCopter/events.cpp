@@ -378,5 +378,11 @@ void Copter::do_failsafe_action(Failsafe_Action action, ModeReason reason){
             arming.disarm(AP_Arming::Method::FAILSAFE_ACTION_TERMINATE);
 #endif
     }
+
+#if GRIPPER_ENABLED == ENABLED
+    if (failsafe_option(FailsafeOption::RELEASE_GRIPPER)) {
+        copter.g2.gripper.release();
+    }
+#endif
 }
 
