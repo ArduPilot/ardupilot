@@ -3516,7 +3516,7 @@ class AutoTest(ABC):
         count_of_achieved_values = 0
         called_function = kwargs.get("called_function", None)
         minimum_duration = kwargs.get("minimum_duration", 0)
-        self.progress("Waiting for %s %.02f with accuracy %.02f" % (value_name, target, accuracy))
+        self.progress("Waiting for %s=%.02f with accuracy %.02f" % (value_name, target, accuracy))
         last_print_time = 0
         while self.get_sim_time_cached() < tstart + timeout:  # if we failed to received message with the getter the sim time isn't updated
             last_value = current_value_getter()
@@ -3542,7 +3542,7 @@ class AutoTest(ABC):
                 achieving_duration_start = None
                 sum_of_achieved_values = 0.0
                 count_of_achieved_values = 0
-        raise AutoTestTimeoutException("Failed to attain %s %f, reach %f" % (value_name, target, (sum_of_achieved_values / count_of_achieved_values) if count_of_achieved_values != 0 else last_value))
+        raise AutoTestTimeoutException("Failed to attain %s want %s, reach %f" % (value_name, str(target), (sum_of_achieved_values / count_of_achieved_values) if count_of_achieved_values != 0 else last_value))
 
     def wait_heading(self, heading, accuracy=5, timeout=30, **kwargs):
         """Wait for a given heading."""
@@ -3660,7 +3660,7 @@ class AutoTest(ABC):
                 return False
         debug_text = "Distance to Location (%.4f, %.4f) " % (loc.lat, loc.lng)
         if target_altitude is not None:
-            debug_text += "at altitude %.1f height_accuracy=%.1f" % (target_altitude, height_accuracy)
+            debug_text += ",at altitude %.1f height_accuracy=%.1f, d" % (target_altitude, height_accuracy)
         self.wait_and_maintain(value_name=debug_text, target=0, current_value_getter=lambda: get_distance_to_loc(), accuracy=accuracy, validator=lambda value2, target2: validator(value2, None), timeout=timeout, **kwargs)
 
     def wait_current_waypoint(self, wpnum, timeout=60):
