@@ -13,6 +13,7 @@
 #include "AP_BattMonitor_FuelFlow.h"
 #include "AP_BattMonitor_FuelLevel_PWM.h"
 #include "AP_BattMonitor_Generator.h"
+#include "AP_BattMonitor_INA3221.h"
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -196,6 +197,30 @@ AP_BattMonitor::init()
                 drivers[instance] = new AP_BattMonitor_Generator_FuelLevel(*this, state[instance], _params[instance]);
                 break;
 #endif // GENERATOR_ENABLED
+            case Type::INA3221_CH1:
+//                _params[instance]._i2c_bus.set_default(AP_BATTMONITOR_SMBUS_BUS_INTERNAL),
+                drivers[instance] = new AP_BattMonitor_INA3221(
+                    *this,
+                    state[instance],
+                    _params[instance],
+                    Type::INA3221_CH1);
+                break;
+            case Type::INA3221_CH2:
+//                _params[instance]._i2c_bus.set_default(AP_BATTMONITOR_SMBUS_BUS_INTERNAL),
+                drivers[instance] = new AP_BattMonitor_INA3221(
+                    *this,
+                    state[instance],
+                    _params[instance],
+                    Type::INA3221_CH2);
+                break;
+            case Type::INA3221_CH3:
+//                _params[instance]._i2c_bus.set_default(AP_BATTMONITOR_SMBUS_BUS_INTERNAL),
+                drivers[instance] = new AP_BattMonitor_INA3221(
+                    *this,
+                    state[instance],
+                    _params[instance],
+                    Type::INA3221_CH3);
+                break;
             case Type::NONE:
             default:
                 break;
