@@ -704,6 +704,8 @@ class uploader(object):
                     if adir is None:
                         continue
                     filepath = os.path.join(hwdef_dir, adir, "hwdef.dat")
+                    if not os.path.exists(filepath):
+                        continue
                     fh = open(filepath)
                     if fh is None:
 #                        print("Failed to open (%s)" % filepath)
