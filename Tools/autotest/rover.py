@@ -652,7 +652,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         throttle_override = 1900
 
         self.progress("Establishing baseline RC input")
-        self.mavproxy.send('rc 3 %u\n' % normal_rc_throttle)
+        self.set_rc(3, normal_rc_throttle)
         self.drain_mav()
         tstart = self.get_sim_time()
         while True:
@@ -721,11 +721,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.mavproxy.send('switch 6\n')  # Manual mode
             self.wait_mode('MANUAL')
             self.wait_ready_to_arm()
-            self.mavproxy.send('rc 3 1500\n')  # throttle at zero
+            self.set_rc(3, 1500)  # throttle at zero
             self.arm_vehicle()
             # start moving forward a little:
             normal_rc_throttle = 1700
-            self.mavproxy.send('rc 3 %u\n' % normal_rc_throttle)
+            self.set_rc(3, normal_rc_throttle)
             self.wait_groundspeed(5, 100)
 
             # allow overrides:
@@ -908,7 +908,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.arm_vehicle()
             self.progress("start moving forward a little")
             normal_rc_throttle = 1700
-            self.mavproxy.send('rc 3 %u\n' % normal_rc_throttle)
+            self.set_rc(3, normal_rc_throttle)
             self.wait_groundspeed(5, 100)
 
             self.progress("allow overrides")
