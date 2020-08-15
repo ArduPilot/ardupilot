@@ -185,6 +185,12 @@ protected:
     // Rangefinder
     float rangefinder_m[RANGEFINDER_MAX_INSTANCES];
 
+    // Windvane apparent wind
+    struct {
+        float speed;
+        float direction;
+    } wind_vane_apparent;
+
     // Wind Turbulence simulated Data
     float turbulence_azimuth = 0.0f;
     float turbulence_horizontal_speed = 0.0f;  // m/s
