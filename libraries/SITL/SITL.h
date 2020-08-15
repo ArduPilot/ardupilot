@@ -70,6 +70,11 @@ struct sitl_fdm {
     } scanner;
 
     float rangefinder_m[RANGEFINDER_MAX_INSTANCES];
+
+    struct {
+        float speed;
+        float direction;
+    } wind_vane_apparent;
 };
 
 // number of rc output channels
@@ -403,6 +408,9 @@ public:
     // get the rangefinder reading for the desired instance, returns -1 for no data
     float get_rangefinder(uint8_t instance);
 
+    // get the apparent wind speed and direction as set by external physics backend
+    float get_apparent_wind_dir(){return state.wind_vane_apparent.direction;}
+    float get_apparent_wind_spd(){return state.wind_vane_apparent.speed;}
 };
 
 } // namespace SITL

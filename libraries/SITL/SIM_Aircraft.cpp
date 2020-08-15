@@ -384,6 +384,9 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     // copy rangefinder
     memcpy(fdm.rangefinder_m, rangefinder_m, sizeof(fdm.rangefinder_m));
 
+    fdm.wind_vane_apparent.direction = wind_vane_apparent.direction;
+    fdm.wind_vane_apparent.speed = wind_vane_apparent.speed;
+
     if (is_smoothed) {
         fdm.xAccel = smoothing.accel_body.x;
         fdm.yAccel = smoothing.accel_body.y;
