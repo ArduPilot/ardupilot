@@ -165,10 +165,12 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
 {
     switch(ch_option) {
         case AUX_FUNC::FLIP:
+#if MODE_FLIP_ENABLED == ENABLED
             // flip if switch is on, positive throttle and we're actually flying
             if (ch_flag == AuxSwitchPos::HIGH) {
                 copter.set_mode(Mode::Number::FLIP, ModeReason::RC_COMMAND);
             }
+#endif
             break;
 
         case AUX_FUNC::SIMPLE_MODE:
@@ -306,15 +308,21 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
             break;
 
         case AUX_FUNC::GUIDED:
+#if MODE_GUIDED_ENABLED == ENABLED
             do_aux_function_change_mode(Mode::Number::GUIDED, ch_flag);
+#endif
             break;
 
         case AUX_FUNC::LOITER:
+#if MODE_LOITER_ENABLED == ENABLED
             do_aux_function_change_mode(Mode::Number::LOITER, ch_flag);
+#endif
             break;
 
         case AUX_FUNC::FOLLOW:
+#if MODE_FOLLOW_ENABLED == ENABLED
             do_aux_function_change_mode(Mode::Number::FOLLOW, ch_flag);
+#endif
             break;
 
         case AUX_FUNC::PARACHUTE_ENABLE:
