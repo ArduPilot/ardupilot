@@ -82,6 +82,10 @@ private:
         Quaternion quaternion;
         Vector3f velocity;
         float rng[6];
+        struct {
+            float direction;
+            float speed;
+        } wind_vane_apparent;
     } state;
 
     // table to aid parsing of JSON sensor data
@@ -91,7 +95,7 @@ private:
         void *ptr;
         enum data_type type;
         bool required;
-    } keytable[13] = {
+    } keytable[15] = {
         { "", "timestamp", &state.timestamp_s, DATA_DOUBLE, true },
         { "imu", "gyro",    &state.imu.gyro, DATA_VECTOR3F, true },
         { "imu", "accel_body", &state.imu.accel_body, DATA_VECTOR3F, true },
@@ -105,6 +109,8 @@ private:
         { "", "rng_4", &state.rng[3], DATA_FLOAT, false },
         { "", "rng_5", &state.rng[4], DATA_FLOAT, false },
         { "", "rng_6", &state.rng[5], DATA_FLOAT, false },
+        {"windvane","direction", &state.wind_vane_apparent.direction, DATA_FLOAT, false},
+        {"windvane","speed", &state.wind_vane_apparent.speed, DATA_FLOAT, false},
     };
 
     // Enum coresponding to the ordering of keys in the keytable.
@@ -122,6 +128,8 @@ private:
         RNG_4       = 1U << 10,
         RNG_5       = 1U << 11,
         RNG_6       = 1U << 12,
+        WIND_DIR    = 1U << 13,
+        WIND_SPD    = 1U << 14,
     };
     uint16_t last_received_bitmask;
 };
