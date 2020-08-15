@@ -145,7 +145,8 @@ private:
         WINDVANE_PWM_PIN        = 2,
         WINDVANE_ANALOG_PIN     = 3,
         WINDVANE_NMEA           = 4,
-        WINDVANE_SITL           = 10
+        WINDVANE_SITL_TRUE      = 10,
+        WINDVANE_SITL_APPARENT  = 11,
     };
 
     enum Speed_type {
@@ -154,7 +155,8 @@ private:
         WINDVANE_WIND_SENSOR_REV_P   = 2,
         WINDSPEED_RPM                = 3,
         WINDSPEED_NMEA               = 4,
-        WINDSPEED_SITL               = 10
+        WINDSPEED_SITL_TRUE          = 10,
+        WINDSPEED_SITL_APPARENT      = 11,
     };
 
     static AP_WindVane *_singleton;
