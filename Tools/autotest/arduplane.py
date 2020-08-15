@@ -1327,6 +1327,75 @@ class AutoTestPlane(AutoTest):
         self.wait_waypoint(7, num_wp-1, timeout=500)
         self.wait_disarmed(timeout=120)
 
+    def deadreckoning_main(self, disable_airspeed_sensor=False):
+        self.gpi = None
+        self.simstate = None
+        self.last_print = 0
+        self.max_divergence = 0
+        def validate_global_position_int_against_simstate(mav, m):
+            if m.get_type() == 'GLOBAL_POSITION_INT':
+                self.gpi = m
+            elif m.get_type() == 'SIMSTATE':
+                self.simstate = m
+            if self.gpi is None:
+                return
+            if self.simstate is None:
+                return
+            divergence = self.get_distance_int(self.gpi, self.simstate)
+            max_allowed_divergence = 200
+            if time.time() - self.last_print > 1:
+                self.progress("position-estimate-divergence=%fm" % (divergence,))
+                self.last_print = time.time()
+            if divergence > max_allowed_divergence:
+                raise NotAchievedException("global-position-int diverged from simstate by >%fm" % (max_allowed_divergence,))
+            if divergence > self.max_divergence:
+                self.max_divergence = divergence
+
+        self.install_message_hook(validate_global_position_int_against_simstate)
+
+        try:
+            # wind is from the West:
+            self.set_parameter("SIM_WIND_DIR", 270)
+            # light winds:
+            self.set_parameter("SIM_WIND_SPD", 10)
+            if disable_airspeed_sensor:
+                self.set_parameter("ARSPD_USE", 0)
+
+            self.takeoff(50)
+            loc = self.mav.location()
+            loc.lat = -35.35690712
+            loc.lng = 149.17083386
+            self.run_cmd_int(
+                mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+                0,
+                mavutil.mavlink.MAV_DO_REPOSITION_FLAGS_CHANGE_MODE,
+                0,
+                0,
+                int(loc.lat*1e7),
+                int(loc.lng*1e7),
+                100,    # alt
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+            )
+            self.wait_location(loc, accuracy=100)
+            self.progress("Stewing")
+            self.delay_sim_time(20)
+            self.set_parameter("SIM_GPS_DISABLE", 1)
+            self.progress("Roasting")
+            self.delay_sim_time(20)
+            self.change_mode("RTL")
+            self.wait_distance_to_home(100, 200, timeout=200)
+            self.set_parameter("SIM_GPS_DISABLE", 0)
+            self.delay_sim_time(10)
+            self.set_rc(3, 1000)
+            self.fly_home_land_and_disarm()
+            self.progress("max-divergence: %fm" % (self.max_divergence,))
+        finally:
+            self.remove_message_hook(validate_global_position_int_against_simstate)
+
+    def deadreckoning(self):
+        self.deadreckoning_main()
+        self.deadreckoning_main(disable_airspeed_sensor=True)
+
     def sample_enable_parameter(self):
         return "Q_ENABLE"
 
@@ -1877,6 +1946,10 @@ class AutoTestPlane(AutoTest):
             ("Terrain",
              "Test terrain following in mission",
              self.fly_terrain_mission),
+
+            ("Deadreckoning",
+             "Test deadreckoning support",
+             self.deadreckoning),
 
             ("LogUpload",
              "Log upload",
