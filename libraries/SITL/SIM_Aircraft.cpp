@@ -279,12 +279,14 @@ void Aircraft::sync_frame_time(void)
     uint32_t now_ms = last_wall_time_us / 1000ULL;
     float dt_wall = (now_ms - last_fps_report_ms) * 0.001;
     if (dt_wall > 2.0) {
+#if 0
         const float achieved_rate_hz = (frame_counter - last_frame_count) / dt_wall;
-        last_frame_count = frame_counter;
-        last_fps_report_ms = now_ms;
         ::printf("Rate: target:%.1f achieved:%.1f speedup %.1f/%.1f\n",
                  rate_hz*target_speedup, achieved_rate_hz,
                  achieved_rate_hz/rate_hz, target_speedup);
+#endif
+        last_frame_count = frame_counter;
+        last_fps_report_ms = now_ms;
     }
 }
 
