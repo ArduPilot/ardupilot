@@ -124,4 +124,8 @@ private:
     static constexpr float LOCATION_SCALING_FACTOR = 0.011131884502145034f;
     // inverse of LOCATION_SCALING_FACTOR
     static constexpr float LOCATION_SCALING_FACTOR_INV = 89.83204953368922f;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    void _sitl_validate_latlng() const;
+#endif
 };

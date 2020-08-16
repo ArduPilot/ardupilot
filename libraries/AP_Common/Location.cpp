@@ -99,6 +99,26 @@ Location::AltFrame Location::get_alt_frame() const
     return AltFrame::ABSOLUTE;
 }
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+
+void Location::_sitl_validate_latlng() const
+{
+    if (lat > 90*1e7 || lat < -90*1e7) {
+        AP_HAL::panic("Invalid latitude (%d)", lat);
+    }
+    if (lng > 180*1e7 || lat < -180*1e7) {
+        AP_HAL::panic("Invalid longitude (%d)", lng);
+    }
+}
+
+#define SITL_VALIDATE_LATLNG _sitl_validate_latlng
+
+#else
+
+#define SITL_VALIDATE_LATLNG void
+
+#endif
+
 /// get altitude in desired frame
 bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
 {
@@ -186,6 +206,7 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
 
 bool Location::get_vector_xy_from_origin_NE(Vector2f &vec_ne) const
 {
+    SITL_VALIDATE_LATLNG();
     Location ekf_origin;
     if (!AP::ahrs().get_origin(ekf_origin)) {
         return false;
@@ -197,6 +218,7 @@ bool Location::get_vector_xy_from_origin_NE(Vector2f &vec_ne) const
 
 bool Location::get_vector_from_origin_NEU(Vector3f &vec_neu) const
 {
+    SITL_VALIDATE_LATLNG();
     // convert lat, lon
     Vector2f vec_ne;
     if (!get_vector_xy_from_origin_NE(vec_ne)) {
@@ -218,6 +240,7 @@ bool Location::get_vector_from_origin_NEU(Vector3f &vec_neu) const
 // return distance in meters between two locations
 float Location::get_distance(const struct Location &loc2) const
 {
+    SITL_VALIDATE_LATLNG();
     float dlat = (float)(loc2.lat - lat);
     float dlng = ((float)(loc2.lng - lng)) * loc2.longitude_scale();
     return norm(dlat, dlng) * LOCATION_SCALING_FACTOR;
@@ -230,6 +253,7 @@ float Location::get_distance(const struct Location &loc2) const
  */
 Vector2f Location::get_distance_NE(const Location &loc2) const
 {
+    SITL_VALIDATE_LATLNG();
     return Vector2f((loc2.lat - lat) * LOCATION_SCALING_FACTOR,
                     (loc2.lng - lng) * LOCATION_SCALING_FACTOR * longitude_scale());
 }
@@ -237,6 +261,7 @@ Vector2f Location::get_distance_NE(const Location &loc2) const
 // return the distance in meters in North/East/Down plane as a N/E/D vector to loc2
 Vector3f Location::get_distance_NED(const Location &loc2) const
 {
+    SITL_VALIDATE_LATLNG();
     return Vector3f((loc2.lat - lat) * LOCATION_SCALING_FACTOR,
                     (loc2.lng - lng) * LOCATION_SCALING_FACTOR * longitude_scale(),
                     (alt - loc2.alt) * 0.01f);
@@ -249,6 +274,7 @@ void Location::offset(float ofs_north, float ofs_east)
     const int32_t dlng = (ofs_east * LOCATION_SCALING_FACTOR_INV) / longitude_scale();
     lat += dlat;
     lng += dlng;
+    SITL_VALIDATE_LATLNG();
 }
 
 /*
@@ -263,10 +289,12 @@ void Location::offset_bearing(float bearing, float distance)
     const float ofs_north = cosf(radians(bearing)) * distance;
     const float ofs_east  = sinf(radians(bearing)) * distance;
     offset(ofs_north, ofs_east);
+    SITL_VALIDATE_LATLNG();
 }
 
 float Location::longitude_scale() const
 {
+    SITL_VALIDATE_LATLNG();
     float scale = cosf(lat * (1.0e-7f * DEG_TO_RAD));
     return MAX(scale, 0.01f);
 }
@@ -308,6 +336,7 @@ assert_storage_size<Location, 16> _assert_storage_size_Location;
 // return bearing in centi-degrees from location to loc2
 int32_t Location::get_bearing_to(const struct Location &loc2) const
 {
+    SITL_VALIDATE_LATLNG();
     const int32_t off_x = loc2.lng - lng;
     const int32_t off_y = (loc2.lat - lat) / loc2.longitude_scale();
     int32_t bearing = 9000 + atan2f(-off_y, off_x) * DEGX100;
@@ -322,6 +351,7 @@ int32_t Location::get_bearing_to(const struct Location &loc2) const
  */
 bool Location::same_latlon_as(const Location &loc2) const
 {
+    SITL_VALIDATE_LATLNG();
     return (lat == loc2.lat) && (lng == loc2.lng);
 }
 
@@ -338,6 +368,7 @@ bool Location::check_latlng() const
 // the target waypoint
 bool Location::past_interval_finish_line(const Location &point1, const Location &point2) const
 {
+    SITL_VALIDATE_LATLNG();
     return this->line_path_proportion(point1, point2) >= 1.0f;
 }
 
