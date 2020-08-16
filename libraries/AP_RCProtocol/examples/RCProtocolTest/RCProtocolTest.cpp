@@ -212,12 +212,12 @@ void loop()
                                   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     const uint16_t sbus_output[] = {1562, 1496, 1000, 1531, 1806, 2006, 1495, 1495, 875,
                                     875, 875, 875, 875, 875, 875, 875};
-    // DSM2_2048_11MS
-    const uint8_t dsm_bytes[] = {0x00, 0x12, 0x00, 0xae, 0x08, 0xbf, 0x10, 0xd0, 0x18,
-                                 0xe1, 0x20, 0xf2, 0x29, 0x03, 0x31, 0x14, 0x00, 0x12,
+
+    const uint8_t dsm_bytes[] = {0x00, 0xab, 0x00, 0xae, 0x08, 0xbf, 0x10, 0xd0, 0x18,
+                                 0xe1, 0x20, 0xf2, 0x29, 0x03, 0x31, 0x14, 0x00, 0xab,
                                  0x39, 0x25, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
                                  0xff, 0xff, 0xff, 0xff, 0xff};
-    const uint16_t dsm_output[] = {1014, 1024, 1004, 1034, 1044, 1053, 1063, 1073};
+    const uint16_t dsm_output[] = {1010, 1020, 1000, 1030, 1040, 1050, 1060, 1070};
 
     // DSMX_2048_11MS
     const uint8_t dsm_bytes2[] = {0x00, 0xb2, 0x80, 0x94, 0x3c, 0x02, 0x1b, 0xfe,
@@ -225,7 +225,7 @@ void loop()
                                   0x00, 0xb2, 0x0c, 0x03, 0x2e, 0xaa, 0x14, 0x00,
                                   0x21, 0x56, 0x34, 0x02, 0x54, 0x00, 0xff, 0xff };
 
-    const uint16_t dsm_output2[] = {1501, 1500, 989, 1498, 1102, 1897, 1501, 1501, 1500, 1500, 1500, 1500};
+    const uint16_t dsm_output2[] = {1501, 1500, 985, 1499, 1099, 1901, 1501, 1501, 1500, 1500, 1500, 1500};
 
     // DSMX_2048_11MS, from genuine spektrum satellite, 12 channels
     const uint8_t dsm_bytes3[] = {0x00, 0x00, 0x81, 0x56, 0x39, 0x50, 0x1C, 0x06,
@@ -233,7 +233,7 @@ void loop()
                                   0x00, 0x00, 0x0c, 0x06, 0x2b, 0x32, 0x14, 0x06,
                                   0x21, 0x96, 0x31, 0x50, 0x54, 0x00, 0xff, 0xff };
 
-    const uint16_t dsm_output3[] = {1503, 1503, 1102, 1503, 1139, 1379, 1098, 1098, 1500, 1500, 1500, 1500};
+    const uint16_t dsm_output3[] = {1503, 1503, 1099, 1503, 1137, 1379, 1096, 1096, 1500, 1500, 1500, 1500};
 
     // DSMX_2048_22MS, from genuine spektrum satellite, 12 channels
     const uint8_t dsm_bytes4[] = {0x00, 0x5a, 0x81, 0x7a, 0x39, 0x50, 0x1C, 0x06,
@@ -241,8 +241,13 @@ void loop()
                                   0x00, 0x5a, 0x0c, 0x06, 0x2b, 0x32, 0x14, 0x06,
                                   0x21, 0x96, 0x31, 0x50, 0x54, 0x00, 0xff, 0xff };
 
-    const uint16_t dsm_output4[] = {1503, 1503, 1123, 1503, 1139, 1379, 1098, 1098, 1500, 1500, 1500, 1500};
-    
+    const uint16_t dsm_output4[] = {1503, 1503, 1120, 1503, 1137, 1379, 1096, 1096, 1500, 1500, 1500, 1500};
+
+    const uint8_t dsm_bytes5[] = {0x03, 0xB2, 0x05, 0xFE, 0x17, 0x55, 0x13, 0x55,
+                                  0x09, 0xFC, 0x18, 0xAB, 0x00, 0x56, 0x0D, 0xFD};
+
+    const uint16_t dsm_output5[] = {1498, 1496, 999, 1497, 1901, 1901, 1099};
+
     const uint8_t sumd_bytes[] = {0xA8, 0x01, 0x08, 0x2F, 0x50, 0x31, 0xE8, 0x21, 0xA0,
                                   0x2F, 0x50, 0x22, 0x60, 0x22, 0x60, 0x2E, 0xE0, 0x2E,
                                   0xE0, 0x87, 0xC6};
@@ -272,10 +277,11 @@ void loop()
     test_protocol("SBUS", 100000, sbus_bytes, sizeof(sbus_bytes), sbus_output, ARRAY_SIZE(sbus_output), 3);
 
     // DSM needs 8 repeats, 5 to guess the format, then 3 to pass the RCProtocol 3 frames test
-    test_protocol("DSM2",  115200, dsm_bytes, sizeof(dsm_bytes), dsm_output, ARRAY_SIZE(dsm_output), 9);
-    test_protocol("DSMX",  115200, dsm_bytes2, sizeof(dsm_bytes2), dsm_output2, ARRAY_SIZE(dsm_output2), 9, 16);
-    test_protocol("DSMX2", 115200, dsm_bytes3, sizeof(dsm_bytes3), dsm_output3, ARRAY_SIZE(dsm_output3), 9, 16);
-    test_protocol("DSMX3", 115200, dsm_bytes4, sizeof(dsm_bytes4), dsm_output4, ARRAY_SIZE(dsm_output4), 9, 16);
+    test_protocol("DSM1", 115200, dsm_bytes,  sizeof(dsm_bytes),  dsm_output,  ARRAY_SIZE(dsm_output), 9);
+    test_protocol("DSM2", 115200, dsm_bytes2, sizeof(dsm_bytes2), dsm_output2, ARRAY_SIZE(dsm_output2), 9, 16);
+    test_protocol("DSM3", 115200, dsm_bytes3, sizeof(dsm_bytes3), dsm_output3, ARRAY_SIZE(dsm_output3), 9, 16);
+    test_protocol("DSM4", 115200, dsm_bytes4, sizeof(dsm_bytes4), dsm_output4, ARRAY_SIZE(dsm_output4), 9, 16);
+    test_protocol("DSM5", 115200, dsm_bytes5, sizeof(dsm_bytes5), dsm_output5, ARRAY_SIZE(dsm_output5), 9);
 }
 
 AP_HAL_MAIN();
