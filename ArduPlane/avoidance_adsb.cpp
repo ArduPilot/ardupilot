@@ -123,11 +123,13 @@ void AP_Avoidance_Plane::handle_recovery(RecoveryAction recovery_action)
             case RecoveryAction::RESUME_IF_AUTO_ELSE_LOITER:
                 if (prev_control_mode_number == Mode::Number::AUTO) {
                     plane.set_mode(plane.mode_auto, ModeReason::AVOIDANCE_RECOVERY);
+                } else {
+                    plane.set_mode(plane.mode_loiter, ModeReason::AVOIDANCE_RECOVERY);
                 }
-                // else do nothing, same as RecoveryAction::LOITER
                 break;
 
             default:
+                plane.set_mode(plane.mode_loiter, ModeReason::AVOIDANCE_RECOVERY);
                 break;
             } // switch
         }
