@@ -27,12 +27,6 @@
 
 #include <AP_ADSB/AP_ADSB.h>
 
-// F_RCVRY possible parameter values
-#define AP_AVOIDANCE_RECOVERY_REMAIN_IN_AVOID_ADSB                  0
-#define AP_AVOIDANCE_RECOVERY_RESUME_PREVIOUS_FLIGHTMODE            1
-#define AP_AVOIDANCE_RECOVERY_RTL                                   2
-#define AP_AVOIDANCE_RECOVERY_RESUME_IF_AUTO_ELSE_LOITER            3
-
 #define AP_AVOIDANCE_STATE_RECOVERY_TIME_MS                 2000    // we will not downgrade state any faster than this (2 seconds)
 
 #define AP_AVOIDANCE_ESCAPE_TIME_SEC                        2       // vehicle runs from thread for 2 seconds
@@ -51,6 +45,14 @@ public:
     static AP_Avoidance *get_singleton() {
         return _singleton;
     }
+
+    // F_RCVRY possible parameter values:
+    enum class RecoveryAction {
+        REMAIN_IN_AVOID_ADSB       = 0,
+        RESUME_PREVIOUS_FLIGHTMODE = 1,
+        RTL                        = 2,
+        RESUME_IF_AUTO_ELSE_LOITER = 3,
+    };
 
     // obstacle class to hold latest information for a known obstacles
     class Obstacle {
@@ -114,7 +116,7 @@ protected:
 
     // recover after all threats have cleared.  child classes must override this method
     // recovery_action is from F_RCVRY parameter
-    virtual void handle_recovery(uint8_t recovery_action) = 0;
+    virtual void handle_recovery(RecoveryAction recovery_action) = 0;
 
     uint32_t _last_state_change_ms = 0;
     MAV_COLLISION_THREAT_LEVEL _threat_level = MAV_COLLISION_THREAT_LEVEL_NONE;
