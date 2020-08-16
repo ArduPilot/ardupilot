@@ -732,7 +732,9 @@ void Compass::init()
     }
 #endif
 
+#if COMPASS_MAX_INSTANCES > 1
     _reorder_compass_params();
+#endif
 
     if (_compass_count == 0) {
         // detect available backends. Only called once
@@ -801,6 +803,7 @@ Compass::Priority Compass::_update_priority_list(int32_t dev_id)
 #endif
 
 
+#if COMPASS_MAX_INSTANCES > 1
 // This method reorganises devid list to match
 // priority list, only call before detection at boot
 void Compass::_reorder_compass_params()
@@ -808,7 +811,16 @@ void Compass::_reorder_compass_params()
     mag_state swap_state;
     StateIndex curr_state_id;
     for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
-        curr_state_id = _get_state_id(i);
+        if (_priority_did_list[i] == 0) {
+            continue;
+        }
+        curr_state_id = COMPASS_MAX_INSTANCES;
+        for (StateIndex j(0); j<COMPASS_MAX_INSTANCES; j++) {
+            if (_priority_did_list[i] == _state[j].dev_id) {
+                curr_state_id = j;
+                break;
+            }
+        }
         if (curr_state_id != COMPASS_MAX_INSTANCES && uint8_t(curr_state_id) != uint8_t(i)) {
             //let's swap
             swap_state.copy_from(_state[curr_state_id]);
@@ -817,6 +829,7 @@ void Compass::_reorder_compass_params()
         }
     }
 }
+#endif
 
 void Compass::mag_state::copy_from(const Compass::mag_state& state)
 {
