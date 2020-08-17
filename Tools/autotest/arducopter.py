@@ -80,9 +80,6 @@ class AutoTestCopter(AutoTest):
     def default_frame(self):
         return "+"
 
-    def uses_vicon(self):
-        return True
-
     def wait_disarmed_default_wait_time(self):
         return 120
 
@@ -2044,6 +2041,7 @@ class AutoTestCopter(AutoTest):
         """Disable GPS navigation, enable Vicon input."""
         # scribble down a location we can set origin to:
 
+        self.customise_SITL_commandline(["--uartF=sim:vicon:"])
         self.progress("Waiting for location")
         self.mavproxy.send('switch 6\n')  # stabilize mode
         self.wait_heartbeat()
