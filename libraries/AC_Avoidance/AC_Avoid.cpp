@@ -236,7 +236,7 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
 
     // calculate distance below fence
     AC_Fence *fence = AP::fence();
-    if ((_enabled & AC_AVOID_STOP_AT_FENCE) > 0 && fence && (fence->get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) > 0) {
+    if ((_enabled & AC_AVOID_STOP_AT_FENCE) > 0 && fence && (fence->get_enabled_fences() & AC_Fence::Type::ALT_MAX) != 0) {
         // calculate distance from vehicle to safe altitude
         float veh_alt;
         _ahrs.get_relative_position_D_home(veh_alt);
@@ -431,12 +431,12 @@ void AC_Avoid::adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f
     AC_Fence &_fence = *fence;
 
     // exit if circular fence is not enabled
-    if ((_fence.get_enabled_fences() & AC_FENCE_TYPE_CIRCLE) == 0) {
+    if ((_fence.get_enabled_fences() & AC_Fence::Type::CIRCLE) == 0) {
         return;
     }
 
     // exit if the circular fence has already been breached
-    if ((_fence.get_breaches() & AC_FENCE_TYPE_CIRCLE) != 0) {
+    if ((_fence.get_breaches() & AC_Fence::Type::CIRCLE) != 0) {
         return;
     }
 
@@ -543,7 +543,7 @@ void AC_Avoid::adjust_velocity_inclusion_and_exclusion_polygons(float kP, float 
     }
 
     // exit if polygon fences are not enabled
-    if ((fence->get_enabled_fences() & AC_FENCE_TYPE_POLYGON) == 0) {
+    if ((fence->get_enabled_fences() & AC_Fence::Type::POLYGON) == 0) {
         return;
     }
 
@@ -592,7 +592,7 @@ void AC_Avoid::adjust_velocity_inclusion_circles(float kP, float accel_cmss, Vec
     }
 
     // exit if polygon fences are not enabled
-    if ((fence->get_enabled_fences() & AC_FENCE_TYPE_POLYGON) == 0) {
+    if ((fence->get_enabled_fences() & AC_Fence::Type::POLYGON) == 0) {
         return;
     }
 
@@ -729,7 +729,7 @@ void AC_Avoid::adjust_velocity_exclusion_circles(float kP, float accel_cmss, Vec
     }
 
     // exit if polygon fences are not enabled
-    if ((fence->get_enabled_fences() & AC_FENCE_TYPE_POLYGON) == 0) {
+    if ((fence->get_enabled_fences() & AC_Fence::Type::POLYGON) == 0) {
         return;
     }
 
