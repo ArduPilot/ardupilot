@@ -190,7 +190,7 @@ SoaringController::LoiterStatus SoaringController::check_cruise_criteria(Vector2
 {
     ActiveStatus status = active_state();
 
-    if (status != ActiveStatus::AUTO_MODE_CHANGE) {
+    if (status == ActiveStatus::SOARING_DISABLED) {
         _cruise_criteria_msg_last = LoiterStatus::DISABLED;
         return LoiterStatus::DISABLED;
     }
