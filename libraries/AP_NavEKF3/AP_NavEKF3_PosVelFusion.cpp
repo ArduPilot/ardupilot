@@ -1782,13 +1782,17 @@ void NavEKF3_core::SelectBodyOdomFusion()
         bodyVelFusionDelayed = false;
     }
 
-    // Check for data at the fusion time horizon
-    if (storedBodyOdm.recall(bodyOdmDataDelayed, imuDataDelayed.time_ms)) {
+    // Check for body odometry data (aka visual position delta) at the fusion time horizon
+    const bool bodyOdomDataToFuse = storedBodyOdm.recall(bodyOdmDataDelayed, imuDataDelayed.time_ms);
+    if (bodyOdomDataToFuse && (frontend->_sources.getVelXYSource() == AP_NavEKF_Source::SourceXY::EXTNAV)) {
 
         // Fuse data into the main filter
         FuseBodyVel();
+    }
 
-    } else if (storedWheelOdm.recall(wheelOdmDataDelayed, imuDataDelayed.time_ms)) {
+    // Check for wheel encoder data at the fusion time horizon
+    const bool wheelOdomDataToFuse = storedWheelOdm.recall(wheelOdmDataDelayed, imuDataDelayed.time_ms);
+    if (wheelOdomDataToFuse && (frontend->_sources.getVelXYSource() == AP_NavEKF_Source::SourceXY::WHEEL_ENCODER)) {
 
         // check if the delta time is too small to calculate a velocity
         if (wheelOdmDataDelayed.delTime > EKF_TARGET_DT) {
