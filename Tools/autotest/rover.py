@@ -5044,11 +5044,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def mavlink_time_boot_ms(self):
         '''returns a time suitable for putting into the time_boot_ms entry in mavlink packets'''
-        return time.time() * 1000000
+        return int(time.time() * 1000000)
 
     def mavlink_time_boot_us(self):
         '''returns a time suitable for putting into the time_boot_ms entry in mavlink packets'''
-        return time.time() * 1000000000
+        return int(time.time() * 1000000000)
 
     def ap_proximity_mav_obstacle_distance_send(self, data):
         increment = data.get("increment", 0)
