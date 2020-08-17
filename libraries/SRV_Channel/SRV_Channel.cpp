@@ -171,7 +171,7 @@ float SRV_Channel::get_output_norm(void)
         ret = 0;
     }
     if (get_reversed()) {
-           ret = -ret;
+        ret = -ret;
     }
     return ret;
 }
