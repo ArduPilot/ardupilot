@@ -316,26 +316,29 @@ void AP_Proximity_RPLidarA2::parse_response_data()
                 _last_distance_received_ms = AP_HAL::millis();
                 if (!ignore_reading(angle_deg)) {
                     const uint8_t sector = convert_angle_to_sector(angle_deg);
-                    if (distance_m > distance_min()) {
-                        if (_last_sector == sector) {
-                            if (_distance_m_last > distance_m) {
+                    if (_last_sector == sector) {
+                        if (distance_m > distance_min()) {
+                            if (_distance_m_last < distance_min() or
+                                _distance_m_last > distance_m) {
                                 _distance_m_last = distance_m;
                                 _angle_deg_last  = angle_deg;
                             }
-                        } else {
-                            // a new sector started, the previous one can be updated now
+                        }
+                    } else {
+                        // a new sector started, the previous one can be updated now
+                        if (_distance_m_last > distance_min()) {
                             _angle[_last_sector] = _angle_deg_last;
                             _distance[_last_sector] = _distance_m_last;
                             _distance_valid[_last_sector] = true;
-                            // update boundary used for avoidance
-                            update_boundary_for_sector(_last_sector, true);
-                            // initialize the new sector
-                            _last_sector     = sector;
-                            _distance_m_last = distance_m;
-                            _angle_deg_last  = angle_deg;
+                        } else {
+                            _distance_valid[_last_sector] = false;
                         }
-                    } else {
-                        _distance_valid[sector] = false;
+                        // update boundary used for avoidance
+                        update_boundary_for_sector(_last_sector, true);
+                        // initialize the new sector
+                        _last_sector     = sector;
+                        _distance_m_last = distance_m;
+                        _angle_deg_last  = angle_deg;
                     }
                 }
             } else {
