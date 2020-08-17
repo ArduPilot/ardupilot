@@ -4025,9 +4025,6 @@ Also, ignores heartbeats not from our target system'''
             exit(1)
         self.progress("PASSED: Check for syntax mistake in autotest lambda")
 
-    def uses_vicon(self):
-        return False
-
     def defaults_filepath(self):
         return None
 
@@ -4055,7 +4052,6 @@ Also, ignores heartbeats not from our target system'''
             "home": self.sitl_home(),
             "speedup": self.speedup,
             "valgrind": self.valgrind,
-            "vicon": self.uses_vicon(),
             "wipe": True,
         }
         start_sitl_args.update(**sitl_args)
