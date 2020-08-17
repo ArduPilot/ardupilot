@@ -14,16 +14,16 @@ void NavEKF3_core::SelectRngBcnFusion()
     // Determine if we need to fuse range beacon data on this time step
     if (rngBcnDataToFuse) {
         if (PV_AidingMode == AID_ABSOLUTE) {
-            if (!filterStatus.flags.using_gps && rngBcnAlignmentCompleted) {
+            if ((frontend->_sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::BEACON) && rngBcnAlignmentCompleted) {
                 if (!bcnOriginEstInit) {
                     bcnOriginEstInit = true;
                     bcnPosOffsetNED.x = receiverPos.x - stateStruct.position.x;
                     bcnPosOffsetNED.y = receiverPos.y - stateStruct.position.y;
                 }
-                // If we aren't using GPS, then the beacons are used as the primary means of position reference
+                // beacons are used as the primary means of position reference
                 FuseRngBcn();
             } else {
-                // If we are using GPS, then GPS is the primary reference, but we continue to use the beacon data
+                // If another source (i.e. GPS, ExtNav) is the primary reference, we continue to use the beacon data
                 // to calculate an independent position that is used to update the beacon position offset if we need to
                 // start using beacon data as the primary reference.
                 FuseRngBcnStatic();
