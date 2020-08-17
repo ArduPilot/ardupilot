@@ -13,16 +13,16 @@ void Sub::fence_check()
         return;
     }
 
-    const uint8_t orig_breaches = fence.get_breaches();
+    const AC_Fence::TypeMask orig_breaches = fence.get_breaches();
 
     // check for new breaches; new_breaches is bitmask of fence types breached
-    const uint8_t new_breaches = fence.check();
+    const AC_Fence::TypeMask new_breaches = fence.check();
 
     // if there is a new breach take action
     if (new_breaches) {
 
         // if the user wants some kind of response and motors are armed
-        if (fence.get_action() != AC_FENCE_ACTION_REPORT_ONLY) {
+        if (fence.get_action() != AC_Fence::Action::REPORT_ONLY) {
             //
             //            // disarm immediately if we think we are on the ground or in a manual flight mode with zero throttle
             //            // don't disarm if the high-altitude fence has been broken because it's likely the user has pulled their throttle to zero to bring it down
