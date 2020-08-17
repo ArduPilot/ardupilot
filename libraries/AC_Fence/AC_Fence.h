@@ -8,18 +8,6 @@
 #include <AC_Fence/AC_PolyFence_loader.h>
 #include <AP_Common/Location.h>
 
-// bit masks for enabled fence types.  Used for TYPE parameter
-#define AC_FENCE_TYPE_ALT_MAX                       1       // high alt fence which usually initiates an RTL
-#define AC_FENCE_TYPE_CIRCLE                        2       // circular horizontal fence (usually initiates an RTL)
-#define AC_FENCE_TYPE_POLYGON                       4       // polygon horizontal fence
-
-// valid actions should a fence be breached
-#define AC_FENCE_ACTION_REPORT_ONLY                 0       // report to GCS that boundary has been breached but take no further action
-#define AC_FENCE_ACTION_RTL_AND_LAND                1       // return to launch and, if that fails, land
-#define AC_FENCE_ACTION_ALWAYS_LAND                 2       // always land
-#define AC_FENCE_ACTION_SMART_RTL                   3       // smartRTL, if that fails, RTL, it that still fails, land
-#define AC_FENCE_ACTION_BRAKE                       4       // brake, if that fails, land
-
 // default boundaries
 #define AC_FENCE_ALT_MAX_DEFAULT                    100.0f  // default max altitude is 100m
 #define AC_FENCE_ALT_MIN_DEFAULT                    -10.0f  // default maximum depth in meters
@@ -36,6 +24,30 @@ class AC_Fence
 {
 public:
     AC_Fence();
+
+    enum class Type : uint8_t {
+        // bit masks for enabled fence types.  Used for TYPE parameter
+        ALT_MAX  = 1, // high alt fence which usually initiates an RTL
+        CIRCLE   = 2, // circular horizontal fence (usually initiates an RTL)
+        POLYGON  = 4, // polygon horizontal fence
+    };
+    typedef uint8_t TypeMask;
+        // Type operator |(Type lhs, Type rhs)
+        // {
+        //     return static_cast<Type> (
+        //         static_cast<uint8_t>(lhs) |
+        //         static_cast<uint8_t>(rhs)
+        //         );
+        // }
+
+    enum class Action : uint8_t {
+        // valid actions should a fence be breached
+        REPORT_ONLY  = 0, // report to GCS that boundary has been breached but take no further action
+        RTL_AND_LAND = 1, // return to launch and, if that fails, land
+        ALWAYS_LAND  = 2, // always land
+        SMART_RTL    = 3, // smartRTL, if that fails, RTL, it that still fails, land
+        BRAKE        = 4, // brake, if that fails, land
+    };
 
     /* Do not allow copies */
     AC_Fence(const AC_Fence &other) = delete;
@@ -55,7 +67,7 @@ public:
     bool enabled() const { return _enabled; }
 
     /// get_enabled_fences - returns bitmask of enabled fences
-    uint8_t get_enabled_fences() const;
+    TypeMask get_enabled_fences() const;
 
     // should be called @10Hz to handle loading from eeprom
     void update() {
@@ -76,7 +88,7 @@ public:
     bool check_destination_within_fence(const Location& loc);
 
     /// get_breaches - returns bit mask of the fence types that have been breached
-    uint8_t get_breaches() const { return _breached_fences; }
+    TypeMask get_breaches() const { return _breached_fences; }
 
     /// get_breach_time - returns time the fence was breached
     uint32_t get_breach_time() const { return _breach_time; }
@@ -89,7 +101,7 @@ public:
     float get_breach_distance(uint8_t fence_type) const;
 
     /// get_action - getter for user requested action on limit breach
-    uint8_t get_action() const { return _action.get(); }
+    Action get_action() const { return (Action)_action.get(); }
 
     /// get_safe_alt - returns maximum safe altitude (i.e. alt_max - margin)
     float get_safe_alt_max() const { return _alt_max - _margin; }
@@ -131,10 +143,11 @@ private:
     bool check_fence_circle();
 
     /// record_breach - update breach bitmask, time and count
-    void record_breach(uint8_t fence_type);
+    void record_breach(Type fence_type);
 
     /// clear_breach - update breach bitmask, time and count
-    void clear_breach(uint8_t fence_type);
+    void clear_breach(Type fence_type) { clear_breach((TypeMask)fence_type); }
+    void clear_breach(TypeMask fence_type);
 
     // additional checks for the different fence types:
     bool pre_arm_check_polygon(const char* &fail_msg) const;
@@ -165,7 +178,7 @@ private:
 
 
     // breach information
-    uint8_t         _breached_fences;       // bitmask holding the fence type that was breached (i.e. AC_FENCE_TYPE_ALT_MIN, AC_FENCE_TYPE_CIRCLE)
+    TypeMask         _breached_fences;       // bitmask holding the fence type that was breached (i.e. AC_FENCE_TYPE_ALT_MIN, AC_FENCE_TYPE_CIRCLE)
     uint32_t        _breach_time;           // time of last breach in milliseconds
     uint16_t        _breach_count;          // number of times we have breached the fence
 
@@ -173,6 +186,36 @@ private:
 
     AC_PolyFence_loader _poly_loader{_total}; // polygon fence
 };
+
+inline std::underlying_type<AC_Fence::Type>::type operator & (AC_Fence::TypeMask lhs, AC_Fence::Type rhs)
+{
+    return static_cast<std::underlying_type<AC_Fence::Type>::type> (
+        lhs &
+        static_cast<std::underlying_type<AC_Fence::Type>::type>(rhs)
+        );
+}
+
+inline AC_Fence::TypeMask operator | (AC_Fence::Type lhs, AC_Fence::Type rhs)
+{
+    return static_cast<AC_Fence::TypeMask> (
+        static_cast<std::underlying_type<AC_Fence::Type>::type>(lhs) |
+        static_cast<std::underlying_type<AC_Fence::Type>::type>(rhs)
+        );
+}
+
+inline AC_Fence::TypeMask operator | (AC_Fence::TypeMask lhs, AC_Fence::Type rhs)
+{
+    return static_cast<AC_Fence::TypeMask> (
+        lhs |
+        static_cast<std::underlying_type<AC_Fence::Type>::type>(rhs)
+        );
+}
+
+inline AC_Fence::TypeMask operator |= (AC_Fence::TypeMask &lhs, AC_Fence::Type rhs)
+{
+    lhs |= static_cast<std::underlying_type<AC_Fence::Type>::type>(rhs);
+    return lhs;
+}
 
 namespace AP {
     AC_Fence *fence();
