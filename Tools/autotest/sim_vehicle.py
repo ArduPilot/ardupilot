@@ -549,13 +549,19 @@ def start_antenna_tracker(opts):
     oldpwd = os.getcwd()
     os.chdir(vehicledir)
     tracker_uarta = "tcp:127.0.0.1:" + str(5760 + 10 * tracker_instance)
-    exe = os.path.join(vehicledir, "AntennaTracker.elf")
+    if cmd_opts.build_system == "waf":
+        binary_basedir = "build/sitl"
+        exe = os.path.join(root_dir,
+                           binary_basedir,
+                           "bin/antennatracker")
+    else:
+        exe = os.path.join(vehicledir, "AntennaTracker.elf")
     run_in_terminal_window("AntennaTracker",
                            ["nice",
                             exe,
                             "-I" + str(tracker_instance),
                             "--model=tracker",
-                            "--home=" + tracker_home])
+                            "--home=" + ",".join([str(x) for x in tracker_home])])
     os.chdir(oldpwd)
 
 
