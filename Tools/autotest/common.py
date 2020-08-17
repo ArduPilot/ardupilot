@@ -1101,7 +1101,7 @@ class AutoTest(ABC):
         return htree
 
     def test_parameter_documentation_get_all_parameters(self):
-        xml_filepath = os.path.join(self.rootdir(), "apm.pdef.xml")
+        xml_filepath = os.path.join(self.buildlogs_dirpath(), "apm.pdef.xml")
         param_parse_filepath = os.path.join(self.rootdir(), 'Tools', 'autotest', 'param_metadata', 'param_parse.py')
         try:
             os.unlink(xml_filepath)
@@ -1113,9 +1113,8 @@ class AutoTest(ABC):
         if vehicle == "QuadPlane":
             vehicle = "ArduPlane"
         cmd = [param_parse_filepath, '--vehicle', vehicle]
-#        cmd.append("--verbose")
-        if util.run_cmd(cmd,
-                        directory=util.reltopdir('.')) != 0:
+        # cmd.append("--verbose")
+        if util.run_cmd(cmd, directory=self.buildlogs_dirpath()) != 0:
             self.progress("Failed param_parse.py (%s)" % vehicle)
             return False
         htree = self.htree_from_xml(xml_filepath)
@@ -1394,7 +1393,7 @@ class AutoTest(ABC):
 
     def test_onboard_logging_generation(self):
         '''just generates, as we can't do a lot of testing'''
-        xml_filepath = os.path.join(self.rootdir(), "LogMessages.xml")
+        xml_filepath = os.path.join(self.buildlogs_dirpath(), "LogMessages.xml")
         parse_filepath = os.path.join(self.rootdir(), 'Tools', 'autotest', 'logger_metadata', 'parse.py')
         try:
             os.unlink(xml_filepath)
@@ -1414,8 +1413,7 @@ class AutoTest(ABC):
 
         cmd = [parse_filepath, '--vehicle', vehicle]
 #        cmd.append("--verbose")
-        if util.run_cmd(cmd,
-                        directory=util.reltopdir('.')) != 0:
+        if util.run_cmd(cmd, directory=self.buildlogs_dirpath()) != 0:
             self.progress("Failed parse.py (%s)" % vehicle)
             return False
         length = os.path.getsize(xml_filepath)
