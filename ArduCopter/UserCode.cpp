@@ -148,10 +148,6 @@ void Copter::userhook_MediumLoop()
 		return;
 	}
 
-	if(RC_Channels::rc_channel(CH_8)->get_radio_in() < 1500){
-		killswitch_counter = 0;
-		return;
-	}
 	///// KILL SWITCH ///////
 
 	if(RC_Channels::rc_channel(CH_8)->get_radio_in() < 1700){
@@ -166,7 +162,7 @@ void Copter::userhook_MediumLoop()
 
 	 if(killswitch_activate) {
 
-			 if(killswitch_counter >= 3){
+			 if(killswitch_counter >= 2){
 				 copter.arming.disarm();
 				 killswitch_counter = 0;
 				 gcs().send_text(MAV_SEVERITY_CRITICAL,"User: Disarm");
