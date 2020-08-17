@@ -260,7 +260,6 @@ def start_SITL(binary,
                gdbserver=False,
                breakpoints=[],
                disable_breakpoints=False,
-               vicon=False,
                customisations=[],
                lldb=False):
 
@@ -349,8 +348,6 @@ def start_SITL(binary,
         cmd.extend(['--defaults', defaults_filepath])
     if unhide_parameters:
         cmd.extend(['--unhide-groups'])
-    if vicon:
-        cmd.extend(["--uartF=sim:vicon:"])
     cmd.extend(customisations)
 
     if (gdb or lldb) and sys.platform == "darwin" and os.getenv('DISPLAY'):
