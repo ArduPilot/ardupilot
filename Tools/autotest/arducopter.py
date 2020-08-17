@@ -138,13 +138,10 @@ class AutoTestCopter(AutoTest):
 
     def wait_for_alt(self, alt_min=30, timeout=30):
         """Wait for altitude to be reached."""
-        m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
-        alt = m.relative_alt / 1000.0 # mm -> m
-        if alt < alt_min:
-            self.wait_altitude(alt_min - 1,
-                               (alt_min + 5),
-                               relative=True,
-                               timeout=timeout)
+        self.wait_altitude(alt_min - 1,
+                           (alt_min + 5),
+                           relative=True,
+                           timeout=timeout)
 
     def land_and_disarm(self, timeout=60):
         """Land the quad."""
