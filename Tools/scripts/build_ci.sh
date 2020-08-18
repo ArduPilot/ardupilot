@@ -154,7 +154,7 @@ for t in $CI_BUILD_TARGET; do
 
     if [ "$t" == "stm32f7" ]; then
         echo "Building mRoX21-777/"
-        $waf configure --board mRoX21-777
+        $waf configure --Werror --board mRoX21-777
         $waf clean
         $waf plane
         continue
