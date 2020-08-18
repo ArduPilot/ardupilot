@@ -94,6 +94,10 @@ public:
     // if we have an estimate
     bool airspeed_estimate(float &airspeed_ret) const override;
 
+    // return an airspeed estimate if available. return true
+    // if we have an estimate from a specific sensor index
+    bool airspeed_estimate(uint8_t airspeed_index, float &airspeed_ret) const;
+
     // return a synthetic airspeed estimate (one derived from sensors
     // other than an actual airspeed sensor), if available. return
     // true if we have a synthetic airspeed.  ret will not be modified

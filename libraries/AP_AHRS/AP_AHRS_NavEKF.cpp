@@ -543,8 +543,8 @@ Vector3f AP_AHRS_NavEKF::wind_estimate(void) const
 // return an airspeed estimate if available. return true
 // if we have an estimate
 bool AP_AHRS_NavEKF::airspeed_estimate(float &airspeed_ret) const
-{
-    return AP_AHRS_DCM::airspeed_estimate(airspeed_ret);
+{    
+    return AP_AHRS_DCM::airspeed_estimate(get_active_airspeed_index(), airspeed_ret);
 }
 
 // true if compass is being used
@@ -2158,6 +2158,22 @@ bool AP_AHRS_NavEKF::have_ekf_logging(void) const
     }
     // since there is no default case above, this is unreachable
     return false;
+}
+
+//get the index of the active airspeed sensor, wrt the primary core
+uint8_t AP_AHRS_NavEKF::get_active_airspeed_index() const
+{
+// we only have affinity for EKF3 as of now
+#if HAL_NAVEKF3_AVAILABLE
+    if (active_EKF_type() == EKFType::THREE) {
+        return EKF3.getActiveAirspeed(get_primary_core_index());   
+    }
+#endif
+    // for the rest, let the primary airspeed sensor be used
+    if (_airspeed != nullptr) {
+        return _airspeed->get_primary();
+    }
+    return 0;
 }
 
 // get the index of the current primary IMU
