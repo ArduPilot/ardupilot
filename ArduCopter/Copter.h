@@ -863,6 +863,7 @@ private:
     bool position_ok() const;
     bool ekf_position_ok() const;
     bool optflow_position_ok() const;
+    bool ekf_alt_ok() const;
     void update_auto_armed();
     bool should_log(uint32_t mask);
     MAV_TYPE get_frame_mav_type();
