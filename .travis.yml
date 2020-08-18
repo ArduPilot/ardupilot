@@ -1,13 +1,9 @@
 language: cpp
 sudo: false
 
-dist: xenial
+dist: focal
 addons:
   apt:
-    sources:
-      - ubuntu-toolchain-r-test
-      - sourceline: 'deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-7 main'
-        key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
     packages:
       - build-essential
       - gawk
@@ -15,8 +11,8 @@ addons:
       - libc6-i386
       - libxml2-dev
       - libxslt1-dev
-      - python-pip
-      - python-dev
+      - python3-pip
+      - python3-dev
       - zlib1g-dev
       - gdb
       - cmake
@@ -65,8 +61,8 @@ matrix:
       compiler: "gcc"
       env: CI_BUILD_TARGET="sitltest-tracker sitltest-quadplane sitltest-plane"
     - if: type != cron
-      compiler: "clang-7"
+      compiler: "clang"
       env: CI_BUILD_TARGET="sitltest-rover sitltest-sub sitltest-balancebot"
     - if: type != cron
-      compiler: "clang-7"
+      compiler: "clang"
       env: CI_BUILD_TARGET="revo-bootloader periph-build CubeOrange-bootloader navigator iofirmware stm32f7 stm32h7 fmuv2-plane unit-tests sitl"
