@@ -515,6 +515,11 @@ void UARTDriver::_uart_start_connection(void)
     if (!_connected) {
         _fd = ::open(_uart_path, O_RDWR | O_CLOEXEC);
         if (_fd == -1) {
+            static uint32_t last_error_print_ms;
+            if (AP_HAL::millis() - last_error_print_ms > 5000) {
+                ::printf("Failed to open (%s): %s\n", _uart_path, strerror(errno));
+                last_error_print_ms = AP_HAL::millis();
+            }
             return;
         }
         // use much smaller buffer sizes on real UARTs
