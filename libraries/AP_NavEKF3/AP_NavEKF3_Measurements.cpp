@@ -173,7 +173,6 @@ void NavEKF3_core::writeWheelOdom(float delAng, float delTime, uint32_t timeStam
     wheelOdmDataNew.time_ms = timeStamp_ms - (uint32_t)(500.0f * delTime);
 
     storedWheelOdm.push(wheelOdmDataNew);
-
 }
 
 // write the raw optical flow measurements
