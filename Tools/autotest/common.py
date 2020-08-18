@@ -2910,8 +2910,8 @@ class AutoTest(ABC):
                 if self.should_fetch_all_for_parameter_change(name.upper()) and value != 0:
                     self.fetch_parameters()
                 return
-        raise ValueError("Param fetch returned incorrect value (%s) vs (%s)"
-                         % (returned_value, value))
+        raise ValueError("Param fetch returned incorrect value for (%s): (%s) vs (%s)"
+                         % (name, returned_value, value))
 
     def get_parameter(self, name, attempts=1, timeout=60):
         """Get parameters from vehicle."""
@@ -4857,6 +4857,163 @@ Also, ignores heartbeats not from our target system'''
             ex = e
             self.mavproxy_unload_module("relay")
             self.mavproxy_unload_module("sitl_calibration")
+        if ex is not None:
+            raise ex
+
+
+    def test_mag_reordering_assert_mag_transform(self, values, transforms):
+        '''transforms ought to be read as, "take all the parameter values from
+        the first compass parameters and shove them into the second indicating
+        compass parameters'''
+                               # create a set of mappings from one
+                               # parameter name to another
+                               # e.g. COMPASS_OFS_X => COMPASS_OFS2_X
+                               # if the transform is [(1,2)].
+                               # [(1,2),(2,1)] should swap the compass
+                               # values
+
+        parameter_mappings = {}
+        for key in values.keys():
+            parameter_mappings[key] = key
+        for (old_compass_num, new_compass_num) in transforms:
+            old_key_compass_bit = str(old_compass_num)
+            if old_key_compass_bit == "1":
+                old_key_compass_bit = ""
+            new_key_compass_bit = str(new_compass_num)
+            if new_key_compass_bit == "1":
+                new_key_compass_bit = ""
+            # vectors first:
+            for key_vector_bit in ["OFS", "DIA", "ODI", "MOT"]:
+                for axis in "X", "Y", "Z":
+                    old_key = "COMPASS_%s%s_%s" % (key_vector_bit,
+                                                   old_key_compass_bit,
+                                                   axis)
+                    new_key = "COMPASS_%s%s_%s" % (key_vector_bit,
+                                                   new_key_compass_bit,
+                                                   axis)
+                    parameter_mappings[old_key] = new_key
+            # then non-vectorey bits:
+            for key_bit in "SCALE", "ORIENT":
+                old_key = "COMPASS_%s%s" % (key_bit, old_key_compass_bit)
+                new_key = "COMPASS_%s%s" % (key_bit, new_key_compass_bit)
+                parameter_mappings[old_key] = new_key
+            # then a sore thumb:
+            if old_key_compass_bit == "":
+                old_key = "COMPASS_EXTERNAL"
+            else:
+                old_key = "COMPASS_EXTERN%s" % old_key_compass_bit
+            if new_key_compass_bit == "":
+                new_key = "COMPASS_EXTERNAL"
+            else:
+                new_key = "COMPASS_EXTERN%s" % new_key_compass_bit
+            parameter_mappings[old_key] = new_key
+
+        for key in values.keys():
+            newkey = parameter_mappings[key]
+            current_value = self.get_parameter(newkey)
+            expected_value = values[key]
+            if abs(current_value - expected_value) > 0.001:
+                raise NotAchievedException("%s has wrong value; want=%f got=%f transforms=%s (old parameter name=%s)" %
+                                           (newkey, expected_value, current_value, str(transforms), key))
+
+    def test_mag_reordering(self):
+        self.context_push()
+        ex = None
+        try:
+            originals = {
+                "COMPASS_OFS_X": 1.1,
+                "COMPASS_OFS_Y": 1.2,
+                "COMPASS_OFS_Z": 1.3,
+                "COMPASS_DIA_X": 1.4,
+                "COMPASS_DIA_Y": 1.5,
+                "COMPASS_DIA_Z": 1.6,
+                "COMPASS_ODI_X": 1.7,
+                "COMPASS_ODI_Y": 1.8,
+                "COMPASS_ODI_Z": 1.9,
+                "COMPASS_MOT_X": 1.91,
+                "COMPASS_MOT_Y": 1.92,
+                "COMPASS_MOT_Z": 1.93,
+                "COMPASS_SCALE": 1.94,
+                "COMPASS_ORIENT": 1,
+                "COMPASS_EXTERNAL": 2,
+
+                "COMPASS_OFS2_X": 2.1,
+                "COMPASS_OFS2_Y": 2.2,
+                "COMPASS_OFS2_Z": 2.3,
+                "COMPASS_DIA2_X": 2.4,
+                "COMPASS_DIA2_Y": 2.5,
+                "COMPASS_DIA2_Z": 2.6,
+                "COMPASS_ODI2_X": 2.7,
+                "COMPASS_ODI2_Y": 2.8,
+                "COMPASS_ODI2_Z": 2.9,
+                "COMPASS_MOT2_X": 2.91,
+                "COMPASS_MOT2_Y": 2.92,
+                "COMPASS_MOT2_Z": 2.93,
+                "COMPASS_SCALE2": 2.94,
+                "COMPASS_ORIENT2": 3,
+                "COMPASS_EXTERN2": 4,
+
+                "COMPASS_OFS3_X": 3.1,
+                "COMPASS_OFS3_Y": 3.2,
+                "COMPASS_OFS3_Z": 3.3,
+                "COMPASS_DIA3_X": 3.4,
+                "COMPASS_DIA3_Y": 3.5,
+                "COMPASS_DIA3_Z": 3.6,
+                "COMPASS_ODI3_X": 3.7,
+                "COMPASS_ODI3_Y": 3.8,
+                "COMPASS_ODI3_Z": 3.9,
+                "COMPASS_MOT3_X": 3.91,
+                "COMPASS_MOT3_Y": 3.92,
+                "COMPASS_MOT3_Z": 3.93,
+                "COMPASS_SCALE3": 3.94,
+                "COMPASS_ORIENT3": 5,
+                "COMPASS_EXTERN3": 6,
+            }
+
+            # quick sanity check to ensure all values are unique:
+            if len(originals.values()) != len(set(originals.values())):
+                raise NotAchievedException("Values are not all unique!")
+
+            self.progress("Setting parameters")
+            for param in originals.keys():
+                self.set_parameter(param, originals[param])
+
+            self.reboot_sitl()
+
+            # no transforms means our originals should be our finals:
+            self.test_mag_reordering_assert_mag_transform(originals, [])
+
+            self.start_subtest("Pushing 1st mag to 3rd")
+            ey = None
+            self.context_push()
+            try:
+                # now try reprioritising compass 1 to be higher than compass 0:
+                prio1_id = self.get_parameter("COMPASS_PRIO1_ID")
+                prio2_id = self.get_parameter("COMPASS_PRIO2_ID")
+                prio3_id = self.get_parameter("COMPASS_PRIO3_ID")
+                self.set_parameter("COMPASS_PRIO1_ID", prio2_id)
+                self.set_parameter("COMPASS_PRIO2_ID", prio3_id)
+                self.set_parameter("COMPASS_PRIO3_ID", prio1_id)
+
+                self.reboot_sitl()
+
+                self.test_mag_reordering_assert_mag_transform(originals, [(2,1),(3,2),(1,3)])
+
+            except Exception as e:
+                self.progress("Caught exception: %s" %
+                              self.get_exception_stacktrace(e))
+                ey = e
+            self.context_pop()
+            self.reboot_sitl()
+            if ey is not None:
+                raise ey
+
+        except Exception as e:
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
+            ex = e
+        self.context_pop()
+        self.reboot_sitl()
         if ex is not None:
             raise ex
 
