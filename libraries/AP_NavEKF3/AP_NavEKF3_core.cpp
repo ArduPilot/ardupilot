@@ -402,7 +402,6 @@ void NavEKF3_core::InitialiseVariables()
     bodyOdmMeasTime_ms = 0;
     bodyVelFusionDelayed = false;
     bodyVelFusionActive = false;
-    usingWheelSensors = false;
     wheelOdmMeasTime_ms = 0;
 
     // yaw sensor fusion
