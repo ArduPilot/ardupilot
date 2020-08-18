@@ -5413,6 +5413,10 @@ class AutoTestCopter(AutoTest):
              "Test SITL onboard compass calibration",
              self.test_mag_calibration),
 
+            ("CompassReordering",
+             "Test Compass reordering when priorities are changed",
+             self.test_mag_reordering),
+
             ("CRSF",
              "Test RC CRSF",
              self.test_crsf),
