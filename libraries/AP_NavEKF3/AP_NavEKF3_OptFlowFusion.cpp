@@ -31,7 +31,7 @@ void NavEKF3_core::SelectFlowFusion()
     }
 
     // Check for data at the fusion time horizon
-    flowDataToFuse = storedOF.recall(ofDataDelayed, imuDataDelayed.time_ms);
+    const bool flowDataToFuse = storedOF.recall(ofDataDelayed, imuDataDelayed.time_ms);
 
     // Perform Data Checks
     // Check if the optical flow data is still valid
@@ -63,8 +63,6 @@ void NavEKF3_core::SelectFlowFusion()
             // Fuse the optical flow X and Y axis data into the main filter sequentially
             FuseOptFlow();
         }
-        // reset flag to indicate that no new flow data is available for fusion
-        flowDataToFuse = false;
     }
 
     // stop the performance timer
