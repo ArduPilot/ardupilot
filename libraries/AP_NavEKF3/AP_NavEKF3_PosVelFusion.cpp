@@ -1804,8 +1804,6 @@ void NavEKF3_core::SelectBodyOdomFusion()
         // start performance timer
         hal.util->perf_begin(_perf_FuseBodyOdom);
 
-        usingWheelSensors = false;
-
         // Fuse data into the main filter
         FuseBodyVel();
 
@@ -1832,7 +1830,6 @@ void NavEKF3_core::SelectBodyOdomFusion()
 
             // This is a hack to enable use of the existing body frame velocity fusion method
             // TODO write a dedicated observation model for wheel encoders
-            usingWheelSensors = true;
             bodyOdmDataDelayed.vel = prevTnb * velNED;
             bodyOdmDataDelayed.body_offset = wheelOdmDataDelayed.hub_offset;
             bodyOdmDataDelayed.velErr = frontend->_wencOdmVelErr;
