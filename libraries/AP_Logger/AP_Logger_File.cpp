@@ -135,7 +135,7 @@ bool AP_Logger_File::log_exists(const uint16_t lognum) const
 
 void AP_Logger_File::periodic_1Hz()
 {
-    if (_rotate_pending && !logging_enabled()) {
+    if (_rotate_pending && !(hal.util->get_soft_armed() || _front.log_arm_persist())) {
         _rotate_pending = false;
         // handle log rotation once we stop logging
         stop_logging();
