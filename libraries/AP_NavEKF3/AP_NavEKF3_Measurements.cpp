@@ -167,7 +167,6 @@ void NavEKF3_core::writeWheelOdom(float delAng, float delTime, uint32_t timeStam
     wheelOdmDataNew.delAng = delAng;
     wheelOdmDataNew.radius = radius;
     wheelOdmDataNew.delTime = delTime;
-    wheelOdmMeasTime_ms = timeStamp_ms;
 
     // because we are currently converting to an equivalent velocity measurement before fusing
     // the measurement time is moved back to the middle of the sampling period
