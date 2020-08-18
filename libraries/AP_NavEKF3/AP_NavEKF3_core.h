@@ -1260,7 +1260,6 @@ private:
     bool bodyVelFusionActive;           // true when body frame velocity fusion is active
 
     // wheel sensor fusion
-    uint32_t wheelOdmMeasTime_ms;       // time wheel odometry measurements were accepted for input to the data buffer (msec)
     obs_ring_buffer_t<wheel_odm_elements> storedWheelOdm;    // body velocity data buffer
     wheel_odm_elements wheelOdmDataDelayed;   // Body  frame odometry data at the fusion time horizon
 
