@@ -96,6 +96,7 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const AuxS
     case AUX_FUNC::ZIGZAG:
     case AUX_FUNC::ZIGZAG_Auto:
     case AUX_FUNC::ZIGZAG_SaveWP:
+    case AUX_FUNC::ACRO:
         break;
     case AUX_FUNC::ACRO_TRAINER:
     case AUX_FUNC::ATTCON_ACCEL_LIM:
