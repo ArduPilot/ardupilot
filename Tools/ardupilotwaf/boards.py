@@ -106,7 +106,6 @@ class Board:
             '-Werror=format',
             '-Wpointer-arith',
             '-Wcast-align',
-            '-Wundef',
             '-Wno-missing-field-initializers',
             '-Wno-unused-parameter',
             '-Wno-redundant-decls',
@@ -122,6 +121,7 @@ class Board:
             '-Werror=parentheses',
             '-Werror=format-extra-args',
             '-Werror=ignored-qualifiers',
+            '-Werror=undef',
             '-DARDUPILOT_BUILD',
         ]
 
@@ -180,7 +180,6 @@ class Board:
             '-Wall',
             '-Wextra',
             '-Wpointer-arith',
-            '-Wundef',
             '-Wno-unused-parameter',
             '-Wno-missing-field-initializers',
             '-Wno-reorder',
@@ -201,6 +200,7 @@ class Board:
             '-Werror=switch',
             '-Werror=sign-compare',
             '-Werror=type-limits',
+            '-Werror=undef',
             '-Werror=unused-result',
             '-Werror=shadow',
             '-Werror=unused-value',
