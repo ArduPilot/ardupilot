@@ -86,6 +86,7 @@ void ModeSmartRTL::path_follow_run()
 
     // if we are close to current target point, switch the next point to be our target.
     if (wp_nav->reached_wp_destination()) {
+        // check to see if any more valid waypoints; if not, we're at home and move to PreLandPosition
         if (g2.smart_rtl.get_num_points() != 0) {
             Vector3f next_point;
             if (g2.smart_rtl.pop_point(next_point)) {
@@ -99,10 +100,10 @@ void ModeSmartRTL::path_follow_run()
                 // send target to waypoint controller
                 wp_nav->set_wp_destination_NED(next_point);
                 wp_nav->set_fast_waypoint(fast_waypoint);
-            } else {
-                // this can only happen if we have no points left to get
-                smart_rtl_state = SmartRTL_PreLandPosition;
             }
+        } else {
+            // this can only happen if we have no points left to get
+            smart_rtl_state = SmartRTL_PreLandPosition;
         }
     }
 
