@@ -4764,12 +4764,13 @@ class AutoTestCopter(AutoTest):
             self.set_parameter("BCN_LATITUDE", SITL_START_LOCATION.lat)
             self.set_parameter("BCN_LONGITUDE", SITL_START_LOCATION.lng)
             self.set_parameter("BCN_ALT", SITL_START_LOCATION.alt)
-            self.set_parameter("BCN_ORIENT_YAW", 45)
+            self.set_parameter("BCN_ORIENT_YAW", 0)
             self.set_parameter("AVOID_ENABLE", 4)
             self.set_parameter("GPS_TYPE", 0)
-            self.set_parameter("EK3_GPS_TYPE", 3) # NOGPS
             self.set_parameter("EK3_ENABLE", 1)
+            self.set_parameter("EK3_GPS_TYPE", 3) # NOGPS
             self.set_parameter("EK2_ENABLE", 0)
+            self.set_parameter("AHRS_EKF_TYPE", 3)
 
             self.reboot_sitl()
 
