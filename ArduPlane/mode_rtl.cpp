@@ -34,7 +34,7 @@ void ModeRTL::update()
     }
 }
 
-void ModeRTL::_navigate()
+void ModeRTL::navigate()
 {
     uint16_t qrtl_radius = abs(plane.g.rtl_radius);
     if (qrtl_radius == 0) {

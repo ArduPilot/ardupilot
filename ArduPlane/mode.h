@@ -74,8 +74,8 @@ public:
     // true if mode can have terrain following disabled by switch
     virtual bool allows_terrain_disable() const { return false; }
 
-    // navigation
-    void navigate();
+    // subclasses override this if they require navigation.
+    virtual void navigate() { return; }
 
 protected:
 
@@ -84,9 +84,6 @@ protected:
 
     // subclasses override this to perform any required cleanup when exiting the mode
     virtual void _exit() { return; }
-
-    // subclasses override this if they require navigation.
-    virtual void _navigate() { return; }
 };
 
 
@@ -117,11 +114,12 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
+    void navigate() override;
+
 protected:
 
     bool _enter() override;
     void _exit() override;
-    void _navigate() override;
 };
 
 
@@ -153,10 +151,11 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
+    void navigate() override;
+
 protected:
 
     bool _enter() override;
-    void _navigate() override;
 };
 
 class ModeCircle: public Mode
@@ -186,13 +185,14 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
+    void navigate() override;
+
     bool isHeadingLinedUp(const Location loiterCenterLoc, const Location targetLoc);
     bool isHeadingLinedUp_cd(const int32_t bearing_cd);
 
 protected:
 
     bool _enter() override;
-    void _navigate() override;
 };
 
 class ModeManual : public Mode
@@ -224,10 +224,11 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
+    void navigate() override;
+
 protected:
 
     bool _enter() override;
-    void _navigate() override;
 };
 
 class ModeStabilize : public Mode
@@ -326,10 +327,11 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
+    void navigate() override;
+
 protected:
 
     bool _enter() override;
-    void _navigate() override;
 };
 
 class ModeAvoidADSB : public Mode
@@ -343,10 +345,10 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
+    void navigate() override;
 protected:
 
     bool _enter() override;
-    void _navigate() override;
 };
 
 class ModeQStabilize : public Mode
@@ -497,6 +499,8 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
+    void navigate() override;
+
     // var_info for holding parameter information
     static const struct AP_Param::GroupInfo var_info[];
     
@@ -510,5 +514,4 @@ protected:
     Location start_loc;
 
     bool _enter() override;
-    void _navigate() override;
 };
