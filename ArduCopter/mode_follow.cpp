@@ -13,35 +13,33 @@
  * TODO: ensure AC_AVOID_ENABLED is true because we rely on it velocity limiting functions
  */
 
-#if 1
-#define Debug(fmt, args ...)  do {                                      \
-        gcs().send_text(MAV_SEVERITY_WARNING, fmt, ## args);            \
-    } while(0)
-#elif 0
-#define Debug(fmt, args ...)  do {                                      \
-    ::fprintf(stderr, "%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args);
-#else
-#define Debug(fmt, args ...)
-#endif
-
 // initialise follow mode
-bool Copter::ModeFollow::init(const bool ignore_checks)
+bool ModeFollow::init(const bool ignore_checks)
 {
-    // re-use guided mode
-    gcs().send_text(MAV_SEVERITY_WARNING, "Follow-mode init");
     if (!g2.follow.enabled()) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Set FOLL_ENABLE = 1");
         return false;
     }
-    return Copter::ModeGuided::init(ignore_checks);
+    // re-use guided mode
+    return ModeGuided::init(ignore_checks);
 }
 
-void Copter::ModeFollow::run()
+// perform cleanup required when leaving follow mode
+void ModeFollow::exit()
 {
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
-        zero_throttle_and_relax_ac();
+    g2.follow.clear_offsets_if_required();
+}
+
+void ModeFollow::run()
+{
+    // if not armed set throttle to zero and exit immediately
+    if (is_disarmed_or_landed()) {
+        make_safe_spool_down();
         return;
     }
+
+    // set motors to full range
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // re-use guided mode's velocity controller
     // Note: this is safe from interference from GCSs and companion computer's whose guided mode
@@ -56,14 +54,6 @@ void Copter::ModeFollow::run()
     Vector3f dist_vec_offs;  // vector to lead vehicle + offset
     Vector3f vel_of_target;  // velocity of lead vehicle
     if (g2.follow.get_target_dist_and_vel_ned(dist_vec, dist_vec_offs, vel_of_target)) {
-        // debug
-        static uint16_t counter = 0;
-        counter++;
-        if (counter >= 400) {
-            counter = 0;
-            Debug("dist to veh: %f %f %f", (double)dist_vec.x, (double)dist_vec.y, (double)dist_vec.z);
-        }
-
         // convert dist_vec_offs to cm in NEU
         const Vector3f dist_vec_offs_neu(dist_vec_offs.x * 100.0f, dist_vec_offs.y * 100.0f, -dist_vec_offs.z * 100.0f);
 
@@ -75,15 +65,15 @@ void Copter::ModeFollow::run()
 
         // scale desired velocity to stay within horizontal speed limit
         float desired_speed_xy = safe_sqrt(sq(desired_velocity_neu_cms.x) + sq(desired_velocity_neu_cms.y));
-        if (!is_zero(desired_speed_xy) && (desired_speed_xy > pos_control->get_speed_xy())) {
-            const float scalar_xy = pos_control->get_speed_xy() / desired_speed_xy;
+        if (!is_zero(desired_speed_xy) && (desired_speed_xy > pos_control->get_max_speed_xy())) {
+            const float scalar_xy = pos_control->get_max_speed_xy() / desired_speed_xy;
             desired_velocity_neu_cms.x *= scalar_xy;
             desired_velocity_neu_cms.y *= scalar_xy;
-            desired_speed_xy = pos_control->get_speed_xy();
+            desired_speed_xy = pos_control->get_max_speed_xy();
         }
 
         // limit desired velocity to be between maximum climb and descent rates
-        desired_velocity_neu_cms.z = constrain_float(desired_velocity_neu_cms.z, -fabsf(pos_control->get_speed_down()), pos_control->get_speed_up());
+        desired_velocity_neu_cms.z = constrain_float(desired_velocity_neu_cms.z, -fabsf(pos_control->get_max_speed_down()), pos_control->get_max_speed_up());
 
         // unit vector towards target position (i.e. vector to lead vehicle + offset)
         Vector3f dir_to_target_neu = dist_vec_offs_neu;
@@ -103,17 +93,17 @@ void Copter::ModeFollow::run()
 
         // slow down horizontally as we approach target (use 1/2 of maximum deceleration for gentle slow down)
         const float dist_to_target_xy = Vector2f(dist_vec_offs_neu.x, dist_vec_offs_neu.y).length();
-        copter.avoid.limit_velocity(pos_control->get_pos_xy_p().kP().get(), pos_control->get_accel_xy() * 0.5f, desired_velocity_xy_cms, dir_to_target_xy, dist_to_target_xy, copter.G_Dt);
+        copter.avoid.limit_velocity(pos_control->get_pos_xy_p().kP().get(), pos_control->get_max_accel_xy() * 0.5f, desired_velocity_xy_cms, dir_to_target_xy, dist_to_target_xy, copter.G_Dt);
 
         // limit the horizontal velocity to prevent fence violations
-        copter.avoid.adjust_velocity(pos_control->get_pos_xy_p().kP().get(), pos_control->get_accel_xy(), desired_velocity_xy_cms, G_Dt);
+        copter.avoid.adjust_velocity(pos_control->get_pos_xy_p().kP().get(), pos_control->get_max_accel_xy(), desired_velocity_xy_cms, G_Dt);
 
         // copy horizontal velocity limits back to 3d vector
         desired_velocity_neu_cms.x = desired_velocity_xy_cms.x;
         desired_velocity_neu_cms.y = desired_velocity_xy_cms.y;
 
         // limit vertical desired_velocity_neu_cms to slow as we approach target (we use 1/2 of maximum deceleration for gentle slow down)
-        const float des_vel_z_max = copter.avoid.get_max_speed(pos_control->get_pos_z_p().kP().get(), pos_control->get_accel_z() * 0.5f, fabsf(dist_vec_offs_neu.z), copter.G_Dt);
+        const float des_vel_z_max = copter.avoid.get_max_speed(pos_control->get_pos_z_p().kP().get(), pos_control->get_max_accel_z() * 0.5f, fabsf(dist_vec_offs_neu.z), copter.G_Dt);
         desired_velocity_neu_cms.z = constrain_float(desired_velocity_neu_cms.z, -des_vel_z_max, des_vel_z_max);
 
         // get avoidance adjusted climb rate
@@ -132,7 +122,7 @@ void Copter::ModeFollow::run()
 
             case AP_Follow::YAW_BEHAVE_SAME_AS_LEAD_VEHICLE: {
                 float target_hdg = 0.0f;
-                if (g2.follow.get_target_heading(target_hdg)) {
+                if (g2.follow.get_target_heading_deg(target_hdg)) {
                     yaw_cd = target_hdg * 100.0f;
                     use_yaw = true;
                 }
@@ -164,9 +154,31 @@ void Copter::ModeFollow::run()
         last_log_ms = now;
     }
     // re-use guided mode's velocity controller (takes NEU)
-    Copter::ModeGuided::set_velocity(desired_velocity_neu_cms, use_yaw, yaw_cd, false, 0.0f, false, log_request);
+    ModeGuided::set_velocity(desired_velocity_neu_cms, use_yaw, yaw_cd, false, 0.0f, false, log_request);
 
-    Copter::ModeGuided::run();
+    ModeGuided::run();
+}
+
+uint32_t ModeFollow::wp_distance() const
+{
+    return g2.follow.get_distance_to_target() * 100;
+}
+
+int32_t ModeFollow::wp_bearing() const
+{
+    return g2.follow.get_bearing_to_target() * 100;
+}
+
+/*
+  get target position for mavlink reporting
+ */
+bool ModeFollow::get_wp(Location &loc)
+{
+    float dist = g2.follow.get_distance_to_target();
+    float bearing = g2.follow.get_bearing_to_target();
+    loc = copter.current_loc;
+    loc.offset_bearing(bearing, dist);
+    return true;
 }
 
 #endif // MODE_FOLLOW_ENABLED == ENABLED

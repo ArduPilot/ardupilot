@@ -18,7 +18,12 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
 
+// very crude debounce method
+#define DEBOUNCE_MS 50
+
 extern const AP_HAL::HAL& hal;
+
+AP_Button *AP_Button::_singleton;
 
 const AP_Param::GroupInfo AP_Button::var_info[] = {
 
@@ -33,28 +38,28 @@ const AP_Param::GroupInfo AP_Button::var_info[] = {
     // @DisplayName: First button Pin
     // @Description: Digital pin number for first button input. 
     // @User: Standard
-    // @Values: -1:Disabled,50:Pixhawk AUXOUT1,51:Pixhawk AUXOUT2,52:Pixhawk AUXOUT3,53:Pixhawk AUXOUT4,54:Pixhawk AUXOUT5,55:Pixhawk AUXOUT6,111:PX4 FMU Relay1,112:PX4 FMU Relay2,113:PX4IO Relay1,114:PX4IO Relay2,115:PX4IO ACC1,116:PX4IO ACC2
+    // @Values: -1:Disabled,50:AUXOUT1,51:AUXOUT2,52:AUXOUT3,53:AUXOUT4,54:AUXOUT5,55:AUXOUT6
     AP_GROUPINFO("PIN1",  1, AP_Button, pin[0], -1),
 
     // @Param: PIN2
     // @DisplayName: Second button Pin
     // @Description: Digital pin number for second button input. 
     // @User: Standard
-    // @Values: -1:Disabled,50:Pixhawk AUXOUT1,51:Pixhawk AUXOUT2,52:Pixhawk AUXOUT3,53:Pixhawk AUXOUT4,54:Pixhawk AUXOUT5,55:Pixhawk AUXOUT6,111:PX4 FMU Relay1,112:PX4 FMU Relay2,113:PX4IO Relay1,114:PX4IO Relay2,115:PX4IO ACC1,116:PX4IO ACC2
+    // @Values: -1:Disabled,50:AUXOUT1,51:AUXOUT2,52:AUXOUT3,53:AUXOUT4,54:AUXOUT5,55:AUXOUT6
     AP_GROUPINFO("PIN2",  2, AP_Button, pin[1], -1),
 
     // @Param: PIN3
     // @DisplayName: Third button Pin
     // @Description: Digital pin number for third button input. 
     // @User: Standard
-    // @Values: -1:Disabled,50:Pixhawk AUXOUT1,51:Pixhawk AUXOUT2,52:Pixhawk AUXOUT3,53:Pixhawk AUXOUT4,54:Pixhawk AUXOUT5,55:Pixhawk AUXOUT6,111:PX4 FMU Relay1,112:PX4 FMU Relay2,113:PX4IO Relay1,114:PX4IO Relay2,115:PX4IO ACC1,116:PX4IO ACC2
+    // @Values: -1:Disabled,50:AUXOUT1,51:AUXOUT2,52:AUXOUT3,53:AUXOUT4,54:AUXOUT5,55:AUXOUT6
     AP_GROUPINFO("PIN3",  3, AP_Button, pin[2], -1),
 
     // @Param: PIN4
     // @DisplayName: Fourth button Pin
     // @Description: Digital pin number for fourth button input. 
     // @User: Standard
-    // @Values: -1:Disabled,50:Pixhawk AUXOUT1,51:Pixhawk AUXOUT2,52:Pixhawk AUXOUT3,53:Pixhawk AUXOUT4,54:Pixhawk AUXOUT5,55:Pixhawk AUXOUT6,111:PX4 FMU Relay1,112:PX4 FMU Relay2,113:PX4IO Relay1,114:PX4IO Relay2,115:PX4IO ACC1,116:PX4IO ACC2
+    // @Values: -1:Disabled,50:AUXOUT1,51:AUXOUT2,52:AUXOUT3,53:AUXOUT4,54:AUXOUT5,55:AUXOUT6
     AP_GROUPINFO("PIN4",  4, AP_Button, pin[3], -1),
 
     // @Param: REPORT_SEND
@@ -72,6 +77,11 @@ const AP_Param::GroupInfo AP_Button::var_info[] = {
 AP_Button::AP_Button(void)
 {
     AP_Param::setup_object_defaults(this, var_info);
+
+    if (_singleton != nullptr) {
+        AP_HAL::panic("AP_Button must be singleton");
+    }
+    _singleton = this;
 }
 
 /*
@@ -91,6 +101,7 @@ void AP_Button::update(void)
 
         // get initial mask
         last_mask = get_mask();
+        debounce_mask = last_mask;
 
         // register 1kHz timer callback
         hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Button::timer_update, void));        
@@ -106,6 +117,18 @@ void AP_Button::update(void)
         send_report();
     }
 }
+
+// get state of a button
+// used by scripting
+bool AP_Button::get_button_state(uint8_t number)
+{
+    // pins params are 1 indexed not zero
+    if (number == 0 || number > AP_BUTTON_NUM_PINS) {
+        return false;
+    }
+    
+    return ( ((1 << (number - 1)) & debounce_mask) != 0);
+};
 
 /*
   get current mask
@@ -131,9 +154,14 @@ void AP_Button::timer_update(void)
         return;
     }
     uint8_t mask = get_mask();
+    uint64_t now = AP_HAL::millis64();
     if (mask != last_mask) {
         last_mask = mask;
-        last_change_time_ms = AP_HAL::millis64();
+        last_change_time_ms = now;
+    }
+    if ((now - last_change_time_ms) > DEBOUNCE_MS) {
+        // crude de-bouncing, debounces all buttons as one, not individually
+        debounce_mask = last_mask;
     }
 }
 
@@ -142,21 +170,13 @@ void AP_Button::timer_update(void)
  */
 void AP_Button::send_report(void)
 {
-    uint8_t chan_mask = GCS_MAVLINK::active_channel_mask();
-    uint32_t now = AP_HAL::millis();
-    for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
-        if ((chan_mask & (1U<<i)) == 0) {
-            // not active
-            continue;
-        }
-        mavlink_channel_t chan = (mavlink_channel_t)i;
-        if (HAVE_PAYLOAD_SPACE(chan, BUTTON_CHANGE)) {
-            mavlink_msg_button_change_send(chan,
-                                           now,
-                                           (uint32_t)last_change_time_ms,
-                                           last_mask);
-        }
-    }
+    const mavlink_button_change_t packet{
+            time_boot_ms: AP_HAL::millis(),
+            last_change_ms: uint32_t(last_change_time_ms),
+            state: last_mask
+    };
+    gcs().send_to_active_channels(MAVLINK_MSG_ID_BUTTON_CHANGE,
+                                  (const char *)&packet);
 }
 
 /*
@@ -173,4 +193,13 @@ void AP_Button::setup_pins(void)
         // setup pullup
         hal.gpio->write(pin[i], 1);
     }
+}
+
+namespace AP {
+
+AP_Button &button()
+{
+    return *AP_Button::get_singleton();
+}
+
 }

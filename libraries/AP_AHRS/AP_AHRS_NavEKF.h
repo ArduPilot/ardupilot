@@ -22,18 +22,28 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
+
+#ifndef HAL_NAVEKF2_AVAILABLE
+// only default to EK2 enabled on boards with over 1M flash
+#define HAL_NAVEKF2_AVAILABLE (BOARD_FLASH_SIZE>1024)
+#endif
+
+#ifndef HAL_NAVEKF3_AVAILABLE
+#define HAL_NAVEKF3_AVAILABLE 1
+#endif
+
+#define AP_AHRS_NAVEKF_AVAILABLE 1
 #include "AP_AHRS.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 #endif
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
 #include <AP_NavEKF2/AP_NavEKF2.h>
 #include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_NavEKF/AP_Nav_Common.h>              // definitions shared by inertial and ekf nav filters
 
-#define AP_AHRS_NAVEKF_AVAILABLE 1
+
 #define AP_AHRS_NAVEKF_SETTLE_TIME_MS 20000     // time in milliseconds the ekf needs to settle after being started
 
 class AP_AHRS_NavEKF : public AP_AHRS_DCM {
@@ -44,7 +54,10 @@ public:
     };
 
     // Constructor
-    AP_AHRS_NavEKF(NavEKF2 &_EKF2, NavEKF3 &_EKF3, Flags flags = FLAG_NONE);
+    AP_AHRS_NavEKF(uint8_t flags = FLAG_NONE);
+
+    // initialise
+    void init(void) override;
 
     /* Do not allow copies */
     AP_AHRS_NavEKF(const AP_AHRS_NavEKF &other) = delete;
@@ -82,32 +95,39 @@ public:
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
-    bool airspeed_estimate(float *airspeed_ret) const override;
+    bool airspeed_estimate(float &airspeed_ret) const override;
 
     // true if compass is being used
     bool use_compass() override;
 
     // we will need to remove these to fully hide which EKF we are using
+#if HAL_NAVEKF2_AVAILABLE
     NavEKF2 &get_NavEKF2(void) {
         return EKF2;
     }
     const NavEKF2 &get_NavEKF2_const(void) const {
         return EKF2;
     }
+#endif
 
+#if HAL_NAVEKF3_AVAILABLE
     NavEKF3 &get_NavEKF3(void) {
         return EKF3;
     }
     const NavEKF3 &get_NavEKF3_const(void) const {
         return EKF3;
     }
-    
+#endif
+
+    // return the quaternion defining the rotation from NED to XYZ (body) axes
+    bool get_quaternion(Quaternion &quat) const override WARN_IF_UNUSED;
+
     // return secondary attitude solution if available, as eulers in radians
     bool get_secondary_attitude(Vector3f &eulers) const override;
 
     // return secondary attitude solution if available, as quaternion
     bool get_secondary_quaternion(Quaternion &quat) const override;
-    
+
     // return secondary position solution if available
     bool get_secondary_position(struct Location &loc) const override;
 
@@ -122,9 +142,6 @@ public:
 
     // blended accelerometer values in the earth frame in m/s/s
     const Vector3f &get_accel_ef_blended() const override;
-
-    // set home location
-    void set_home(const Location &loc) override;
 
     // set the EKF's origin location in 10e7 degrees.  This should only
     // be called when the EKF has no absolute position reference (i.e. GPS)
@@ -158,10 +175,19 @@ public:
     bool get_vert_pos_rate(float &velocity) const;
 
     // write optical flow measurements to EKF
-    void writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, const Vector3f &posOffset);
+    void writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset);
 
     // write body odometry measurements to the EKF
-    void writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset);
+    void writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, uint16_t delay_ms, const Vector3f &posOffset);
+
+    // Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
+    void writeDefaultAirSpeed(float airspeed);
+
+    // Write position and quaternion data from an external navigation system
+    void writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint16_t delay_ms, uint32_t resetTime_ms) override;
+
+    // Write velocity data from an external navigation system
+    void writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms) override;
 
     // inhibit GPS usage
     uint8_t setInhibitGPS(void);
@@ -173,6 +199,8 @@ public:
 
     // is the AHRS subsystem healthy?
     bool healthy() const override;
+
+    bool prearm_healthy() const override;
 
     // true if the AHRS has completed initialisation
     bool initialised() const override;
@@ -187,13 +215,16 @@ public:
     // report any reason for why the backend is refusing to initialise
     const char *prearm_failure_reason(void) const override;
 
+    // check all cores providing consistent attitudes for prearm checks
+    bool attitudes_consistent(char *failure_msg, const uint8_t failure_msg_len) const override;
+
     // return the amount of yaw angle change due to the last yaw angle reset in radians
     // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
-    uint32_t getLastYawResetAngle(float &yawAng) const override;
+    uint32_t getLastYawResetAngle(float &yawAng) override;
 
     // return the amount of NE position change in meters due to the last reset
     // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastPosNorthEastReset(Vector2f &pos) const override;
+    uint32_t getLastPosNorthEastReset(Vector2f &pos) override;
 
     // return the amount of NE velocity change in meters/sec due to the last reset
     // returns the time of the last reset or 0 if no reset has ever occurred
@@ -201,7 +232,7 @@ public:
 
     // return the amount of vertical position change due to the last reset in meters
     // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastPosDownReset(float &posDelta) const override;
+    uint32_t getLastPosDownReset(float &posDelta) override;
 
     // Resets the baro so that it reads zero at the current height
     // Resets the EKF height to zero
@@ -212,17 +243,25 @@ public:
 
     // send a EKF_STATUS_REPORT for current EKF
     void send_ekf_status_report(mavlink_channel_t chan) const;
-    
+
     // get_hgt_ctrl_limit - get maximum height to be observed by the control loops in meters and a validity flag
     // this is used to limit height during optical flow navigation
     // it will return invalid when no limiting is required
     bool get_hgt_ctrl_limit(float &limit) const override;
+
+    // Set to true if the terrain underneath is stable enough to be used as a height reference
+    // this is not related to terrain following
+    void set_terrain_hgt_stable(bool stable) override;
 
     // get_location - updates the provided location with the latest
     // calculated location including absolute altitude
     // returns true on success (i.e. the EKF knows it's latest
     // position), false on failure
     bool get_location(struct Location &loc) const;
+
+    // return the innovations for the specified instance
+    // An out of range instance (eg -1) returns data for the primary instance
+    bool get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const override;
 
     // get_variances - provides the innovations normalised using the innovation variance where a value of 0
     // indicates perfect consistency between the measurement and the EKF solution and a value of of 1 is the maximum
@@ -247,53 +286,87 @@ public:
     // is the EKF backend doing its own sensor logging?
     bool have_ekf_logging(void) const override;
 
+    // return the index of the primary core or -1 if no primary core selected
+    int8_t get_primary_core_index() const override;
+
     // get the index of the current primary accelerometer sensor
     uint8_t get_primary_accel_index(void) const override;
 
     // get the index of the current primary gyro sensor
     uint8_t get_primary_gyro_index(void) const override;
 
+    // see if EKF lane switching is possible to avoid EKF failsafe
+    void check_lane_switch(void) override;
+
+    // request EKF yaw reset to try and avoid the need for an EKF lane switch or failsafe
+    void request_yaw_reset(void) override;
+
+    void Log_Write();
+
+    // check whether external navigation is providing yaw.  Allows compass pre-arm checks to be bypassed
+    bool is_ext_nav_used_for_yaw(void) const override;
+
+    // set and save the ALT_M_NSE parameter value
+    void set_alt_measurement_noise(float noise) override;
+
+    // these are only out here so vehicles can reference them for parameters
+#if HAL_NAVEKF2_AVAILABLE
+    NavEKF2 EKF2;
+#endif
+#if HAL_NAVEKF3_AVAILABLE
+    NavEKF3 EKF3;
+#endif
+
 private:
-    enum EKF_TYPE {EKF_TYPE_NONE=0,
-                   EKF_TYPE3=3,
-                   EKF_TYPE2=2
+    enum class EKFType {
+        NONE = 0
+#if HAL_NAVEKF3_AVAILABLE
+        ,THREE = 3
+#endif
+#if HAL_NAVEKF2_AVAILABLE
+        ,TWO = 2
+#endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-                   ,EKF_TYPE_SITL=10
+        ,SITL = 10
 #endif
     };
-    EKF_TYPE active_EKF_type(void) const;
+    EKFType active_EKF_type(void) const;
 
     bool always_use_EKF() const {
         return _ekf_flags & FLAG_ALWAYS_USE_EKF;
     }
 
-    NavEKF2 &EKF2;
-    NavEKF3 &EKF3;
+#if HAL_NAVEKF2_AVAILABLE
+    void update_EKF2(void);
     bool _ekf2_started;
+#endif
+#if HAL_NAVEKF3_AVAILABLE
     bool _ekf3_started;
+    void update_EKF3(void);
+#endif
     bool _force_ekf;
+    
+    // rotation from vehicle body to NED frame
     Matrix3f _dcm_matrix;
     Vector3f _dcm_attitude;
+    
     Vector3f _gyro_drift;
     Vector3f _gyro_estimate;
     Vector3f _accel_ef_ekf[INS_MAX_INSTANCES];
     Vector3f _accel_ef_ekf_blended;
     const uint16_t startup_delay_ms = 1000;
     uint32_t start_time_ms = 0;
-    Flags _ekf_flags;
+    uint8_t _ekf_flags; // bitmask from Flags enumeration
 
-    uint8_t ekf_type(void) const;
+    EKFType ekf_type(void) const;
     void update_DCM(bool skip_ins_update);
-    void update_EKF2(void);
-    void update_EKF3(void);
 
     // get the index of the current primary IMU
     uint8_t get_primary_IMU_index(void) const;
-    
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL *_sitl;
     uint32_t _last_body_odm_update_ms = 0;
     void update_SITL(void);
 #endif    
 };
-#endif

@@ -36,10 +36,10 @@ public:
 
 class OpticalFlow_Onboard : public AP_HAL::OpticalFlow {
 public:
-    void init();
-    bool read(AP_HAL::OpticalFlow::Data_Frame& frame);
-    void push_gyro(float gyro_x, float gyro_y, float dt);
-    void push_gyro_bias(float gyro_bias_x, float gyro_bias_y);
+    void init() override;
+    bool read(AP_HAL::OpticalFlow::Data_Frame& frame) override;
+    void push_gyro(float gyro_x, float gyro_y, float dt) override;
+    void push_gyro_bias(float gyro_bias_x, float gyro_bias_y) override;
 
 private:
     void _run_optflow();

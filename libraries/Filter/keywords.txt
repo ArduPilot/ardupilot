@@ -1,9 +1,0 @@
-Filter				KEYWORD1
-FilterWithBuffer	KEYWORD1
-ModeFilter			KEYWORD1
-AverageFilter		KEYWORD1
-apply				KEYWORD2
-reset				KEYWORD2
-get_filter_size		KEYWORD2
-samples				KEYWORD2
-sample_index		KEYWORD2

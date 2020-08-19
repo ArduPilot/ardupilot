@@ -64,9 +64,7 @@
 #if FRAME_CONFIG == HELI_FRAME
   # define RC_FAST_SPEED                        125
   # define WP_YAW_BEHAVIOR_DEFAULT              WP_YAW_BEHAVIOR_LOOK_AHEAD
-  # define THR_MIN_DEFAULT                      0
   # define AUTOTUNE_ENABLED                     DISABLED
-  # define ACCEL_Z_P                            0.30f
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -88,16 +86,20 @@
  # define RANGEFINDER_HEALTH_MAX 3          // number of good reads that indicates a healthy rangefinder
 #endif
 
+#ifndef RANGEFINDER_TIMEOUT_MS
+# define RANGEFINDER_TIMEOUT_MS 1000        // rangefinder filter reset if no updates from sensor in 1 second
+#endif
+
 #ifndef RANGEFINDER_GAIN_DEFAULT
  # define RANGEFINDER_GAIN_DEFAULT 0.8f     // gain for controlling how quickly rangefinder range adjusts target altitude (lower means slower reaction)
 #endif
 
-#ifndef THR_SURFACE_TRACKING_VELZ_MAX
- # define THR_SURFACE_TRACKING_VELZ_MAX 150 // max vertical speed change while surface tracking with rangefinder
+#ifndef SURFACE_TRACKING_VELZ_MAX
+ # define SURFACE_TRACKING_VELZ_MAX 150     // max vertical speed change while surface tracking with rangefinder
 #endif
 
-#ifndef RANGEFINDER_TIMEOUT_MS
- # define RANGEFINDER_TIMEOUT_MS  1000      // desired rangefinder alt will reset to current rangefinder alt after this many milliseconds without a good rangefinder alt
+#ifndef SURFACE_TRACKING_TIMEOUT_MS
+ # define SURFACE_TRACKING_TIMEOUT_MS  1000 // surface tracking target alt will reset to current rangefinder alt after this many milliseconds without a good rangefinder alt
 #endif
 
 #ifndef RANGEFINDER_WPNAV_FILT_HZ
@@ -131,14 +133,6 @@
 //////////////////////////////////////////////////////////////////////////////
 // Battery monitoring
 //
-#ifndef FS_BATT_VOLTAGE_DEFAULT
- # define FS_BATT_VOLTAGE_DEFAULT       10.5f       // default battery voltage below which failsafe will be triggered
-#endif
-
-#ifndef FS_BATT_MAH_DEFAULT
- # define FS_BATT_MAH_DEFAULT             0         // default battery capacity (in mah) below which failsafe will be triggered
-#endif
-
 #ifndef BOARD_VOLTAGE_MIN
  # define BOARD_VOLTAGE_MIN             4.3f        // min board voltage in volts for pre-arm checks
 #endif
@@ -167,7 +161,7 @@
 
 // Radio failsafe
 #ifndef FS_RADIO_TIMEOUT_MS
- #define FS_RADIO_TIMEOUT_MS            500     // RC Radio Failsafe triggers after 500 miliseconds with No RC Input
+ #define FS_RADIO_TIMEOUT_MS            500     // RC Radio Failsafe triggers after 500 milliseconds with No RC Input
 #endif
 
 // missing terrain data failsafe
@@ -211,12 +205,9 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-//  OPTICAL_FLOW & VISUAL ODOMETRY
+//  OPTICAL_FLOW
 #ifndef OPTFLOW
  # define OPTFLOW       ENABLED
-#endif
-#ifndef VISUAL_ODOMETRY_ENABLED
-# define VISUAL_ODOMETRY_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -227,8 +218,8 @@
 
 //////////////////////////////////////////////////////////////////////////////
 //  Crop Sprayer - enabled only on larger firmwares
-#ifndef SPRAYER
- # define SPRAYER  !HAL_MINIMIZE_FEATURES
+#ifndef SPRAYER_ENABLED
+ # define SPRAYER_ENABLED  HAL_SPRAYER_ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -244,15 +235,21 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// winch support - enabled only on larger firmwares
+// winch support
 #ifndef WINCH_ENABLED
 # define WINCH_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// rotations per minute sensor support
+#ifndef RPM_ENABLED
+ # define RPM_ENABLED !HAL_MINIMIZE_FEATURES
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // Parachute release
 #ifndef PARACHUTE
- # define PARACHUTE ENABLED
+ # define PARACHUTE HAL_PARACHUTE_ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -298,6 +295,12 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// flip - fly vehicle in flip in pitch and roll direction mode
+#ifndef MODE_FLIP_ENABLED
+# define MODE_FLIP_ENABLED ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // Follow - follow another vehicle or GCS
 #ifndef MODE_FOLLOW_ENABLED
 # define MODE_FOLLOW_ENABLED !HAL_MINIMIZE_FEATURES
@@ -312,7 +315,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // GuidedNoGPS mode - control vehicle's angles from GCS
 #ifndef MODE_GUIDED_NOGPS_ENABLED
-# define MODE_GUIDED_NOGPS_ENABLED ENABLED
+# define MODE_GUIDED_NOGPS_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -342,7 +345,13 @@
 //////////////////////////////////////////////////////////////////////////////
 // Sport - fly vehicle in rate-controlled (earth-frame) mode
 #ifndef MODE_SPORT_ENABLED
-# define MODE_SPORT_ENABLED ENABLED
+# define MODE_SPORT_ENABLED !HAL_MINIMIZE_FEATURES
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// System ID - conduct system identification tests on vehicle
+#ifndef MODE_SYSTEMID_ENABLED
+# define MODE_SYSTEMID_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -352,9 +361,37 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// ZigZag - allow vehicle to fly in a zigzag manner with predefined point A B
+#ifndef MODE_ZIGZAG_ENABLED
+# define MODE_ZIGZAG_ENABLED !HAL_MINIMIZE_FEATURES
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////////
+// Autorotate - autonomous auto-rotation - helicopters only
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    #if FRAME_CONFIG == HELI_FRAME
+        #ifndef MODE_AUTOROTATE_ENABLED
+        # define MODE_AUTOROTATE_ENABLED !HAL_MINIMIZE_FEATURES
+        #endif
+    #else
+        # define MODE_AUTOROTATE_ENABLED DISABLED
+    #endif
+#else
+    # define MODE_AUTOROTATE_ENABLED DISABLED
+#endif
+//////////////////////////////////////////////////////////////////////////////
+
 // Beacon support - support for local positioning systems
 #ifndef BEACON_ENABLED
 # define BEACON_ENABLED !HAL_MINIMIZE_FEATURES
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Button - Enable the button connected to AUX1-6
+#ifndef BUTTON_ENABLED
+ # define BUTTON_ENABLED ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -368,22 +405,22 @@
 //
 
 #ifndef FLIGHT_MODE_1
- # define FLIGHT_MODE_1                  STABILIZE
+ # define FLIGHT_MODE_1                  Mode::Number::STABILIZE
 #endif
 #ifndef FLIGHT_MODE_2
- # define FLIGHT_MODE_2                  STABILIZE
+ # define FLIGHT_MODE_2                  Mode::Number::STABILIZE
 #endif
 #ifndef FLIGHT_MODE_3
- # define FLIGHT_MODE_3                  STABILIZE
+ # define FLIGHT_MODE_3                  Mode::Number::STABILIZE
 #endif
 #ifndef FLIGHT_MODE_4
- # define FLIGHT_MODE_4                  STABILIZE
+ # define FLIGHT_MODE_4                  Mode::Number::STABILIZE
 #endif
 #ifndef FLIGHT_MODE_5
- # define FLIGHT_MODE_5                  STABILIZE
+ # define FLIGHT_MODE_5                  Mode::Number::STABILIZE
 #endif
 #ifndef FLIGHT_MODE_6
- # define FLIGHT_MODE_6                  STABILIZE
+ # define FLIGHT_MODE_6                  Mode::Number::STABILIZE
 #endif
 
 
@@ -445,14 +482,6 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// MOUNT (ANTENNA OR CAMERA)
-//
-#ifndef MOUNT
- # define MOUNT         ENABLED
-#endif
-
-
-//////////////////////////////////////////////////////////////////////////////
 // Flight mode definitions
 //
 
@@ -495,7 +524,7 @@
 #endif
 
 #ifndef RTL_ALT
- # define RTL_ALT 				    1500    // default alt to return to home in cm, 0 = Maintain current altitude
+ # define RTL_ALT                   1500    // default alt to return to home in cm, 0 = Maintain current altitude
 #endif
 
 #ifndef RTL_ALT_MIN
@@ -613,7 +642,7 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Dataflash logging control
+// Logging control
 //
 #ifndef LOGGING_ENABLED
  # define LOGGING_ENABLED                ENABLED
@@ -663,11 +692,19 @@
  #define AC_AVOID_ENABLED   ENABLED
 #endif
 
+#ifndef AC_OAPATHPLANNER_ENABLED
+ #define AC_OAPATHPLANNER_ENABLED   !HAL_MINIMIZE_FEATURES
+#endif
+
 #if AC_AVOID_ENABLED && !PROXIMITY_ENABLED
   #error AC_Avoidance relies on PROXIMITY_ENABLED which is disabled
 #endif
 #if AC_AVOID_ENABLED && !AC_FENCE
   #error AC_Avoidance relies on AC_FENCE which is disabled
+#endif
+
+#if MODE_FOLLOW_ENABLED && !AC_AVOID_ENABLED
+  #error Follow Mode relies on AC_AVOID which is disabled
 #endif
 
 #if MODE_AUTO_ENABLED && !MODE_GUIDED_ENABLED
@@ -688,6 +725,22 @@
 
 #if FRAME_CONFIG == HELI_FRAME && !MODE_ACRO_ENABLED
   #error Helicopter frame requires acro mode support which is disabled
+#endif
+
+#if MODE_SMARTRTL_ENABLED && !MODE_RTL_ENABLED
+  #error SmartRTL requires ModeRTL which is disabled
+#endif
+
+#if ADSB_ENABLED && !MODE_GUIDED_ENABLED
+  #error ADSB requires ModeGuided which is disabled
+#endif
+
+#if MODE_FOLLOW_ENABLED && !MODE_GUIDED_ENABLED
+  #error Follow requires ModeGuided which is disabled
+#endif
+
+#if MODE_GUIDED_NOGPS_ENABLED && !MODE_GUIDED_ENABLED
+  #error ModeGuided-NoGPS requires ModeGuided which is disabled
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -717,4 +770,12 @@
 
 #ifndef STATS_ENABLED
  # define STATS_ENABLED ENABLED
+#endif
+
+#ifndef OSD_ENABLED
+ #define OSD_ENABLED DISABLED
+#endif
+
+#ifndef HAL_FRAME_TYPE_DEFAULT
+#define HAL_FRAME_TYPE_DEFAULT AP_Motors::MOTOR_FRAME_TYPE_X
 #endif

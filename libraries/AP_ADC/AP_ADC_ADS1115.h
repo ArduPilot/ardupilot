@@ -4,8 +4,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/I2CDevice.h>
 
-#include "AP_ADC.h"
-
 struct adc_report_s
 {
     uint8_t id;

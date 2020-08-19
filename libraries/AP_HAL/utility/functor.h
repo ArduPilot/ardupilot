@@ -60,6 +60,10 @@ public:
     {
         return _obj == rhs._obj && _method == rhs._method;
     }
+    inline bool operator!=(const Functor<RetType, Args...>& rhs)
+    {
+        return _obj != rhs._obj || _method != rhs._method;
+    }
 
     // Allow to check if there's a method set in the Functor
     explicit operator bool() const

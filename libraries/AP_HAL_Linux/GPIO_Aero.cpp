@@ -18,8 +18,6 @@
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_AERO
 
-#include <AP_Common/AP_Common.h>
-
 #include "GPIO_Aero.h"
 
 const unsigned Linux::GPIO_Sysfs::pin_table[] = {

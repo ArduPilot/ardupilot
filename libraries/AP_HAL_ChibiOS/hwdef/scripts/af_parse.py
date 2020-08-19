@@ -15,7 +15,7 @@ def is_pin(str):
         return False
     if str[0] != 'P':
         return False
-    if str[1] not in "ABCDEFGH":
+    if str[1] not in "ABCDEFGHIJK":
         return False
     try:
         p = int(str[2:])
@@ -25,8 +25,29 @@ def is_pin(str):
     except ValueError:
         return False
 
+def pin_compare(p1, p2):
+    '''control pin sort order'''
+    (p1,f1) = p1.split(':')
+    (p2,f2) = p2.split(':')
+    port1 = p1[:2]
+    port2 = p2[:2]
+    pin1 = int(p1[2:])
+    pin2 = int(p2[2:])
+    #print(port1, pin1, port2, pin2)
+    if port1 == port2:
+        if pin1 == pin2:
+            if f1 < f2:
+                return -1
+            return 1
+        if pin1 < pin2:
+            return -1
+        return 1
+    if port1 < port2:
+        return -1
+    return 1
+
 def parse_af_table(fname, table):
-    csvt = csv.reader(open(fname,'rb'))
+    csvt = csv.reader(open(fname,'r'))
     i = 0
     aflist = []
     for row in csvt:
@@ -37,9 +58,13 @@ def parse_af_table(fname, table):
                 if s:
                     aflist.append(int(s[2:]))
         if not is_pin(row[0]):
-            continue
+            if len(row) < 2 or not is_pin(row[1]):
+                continue
+            row = row[1:]
         pin = row[0]
         for i in range(len(aflist)):
+            if len(row) <= i+1:
+                break
             af = aflist[i]
             s = row[i+1]
             s = s.replace('_\r', '_')
@@ -63,7 +88,7 @@ parse_af_table(sys.argv[1], table)
 sys.stdout.write("AltFunction_map = {\n");
 sys.stdout.write('\t# format is PIN:FUNCTION : AFNUM\n')
 sys.stdout.write('\t# extracted from %s\n' % os.path.basename(sys.argv[1]))
-for k in sorted(table.keys()):
+for k in sorted(table.keys(), cmp=pin_compare):
     s = '"' + k + '"'
     sys.stdout.write('\t%-20s\t:\t%s,\n' % (s, table[k]))
 sys.stdout.write("}\n");

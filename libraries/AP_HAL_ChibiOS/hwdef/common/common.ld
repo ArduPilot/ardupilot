@@ -68,8 +68,11 @@ SECTIONS
         __fini_array_end = .;
     } > flash
 
-    .text : ALIGN(16) SUBALIGN(16)
+    .text : ALIGN(4) SUBALIGN(4)
     {
+        /* we want app_descriptor near the start of flash so a false
+           positive isn't found by the bootloader (eg. ROMFS) */
+        KEEP(*(.app_descriptor));
         *(.text)
         *(.text.*)
         *(.rodata)

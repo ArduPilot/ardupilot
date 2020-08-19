@@ -22,8 +22,8 @@
 
 namespace SITL {
 
-Balloon::Balloon(const char *home_str, const char *frame_str) :
-    Aircraft(home_str, frame_str)
+Balloon::Balloon(const char *frame_str) :
+    Aircraft(frame_str)
 {
     mass = 5.0f;
 }

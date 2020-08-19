@@ -3,7 +3,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Vehicle/AP_Vehicle.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 
 class AP_SteerController {
 public:
@@ -46,7 +46,7 @@ public:
 
 	static const struct AP_Param::GroupInfo var_info[];
 
-    const DataFlash_Class::PID_Info& get_pid_info(void) const { return _pid_info; }
+    const AP_Logger::PID_Info& get_pid_info(void) const { return _pid_info; }
 
     void set_reverse(bool reverse) {
         _reverse = reverse;
@@ -67,7 +67,7 @@ private:
 	AP_Float _deratefactor;
 	AP_Float _mindegree;
 
-    DataFlash_Class::PID_Info _pid_info {};
+    AP_Logger::PID_Info _pid_info {};
 
 	AP_AHRS &_ahrs;
 

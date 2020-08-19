@@ -5,30 +5,10 @@
 
 // Libraries
 #include <AP_Common/AP_Common.h>
-#include <AP_Param/AP_Param.h>
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
+#include <AP_BattMonitor/AP_BattMonitor.h>
 #include <RC_Channel/RC_Channel.h>     // RC Channel Library
 #include <AP_Motors/AP_Motors.h>
-#include <AP_Notify/AP_Notify.h>
-#include <AP_GPS/AP_GPS.h>
-#include <DataFlash/DataFlash.h>
-#include <AP_InertialSensor/AP_InertialSensor.h>
-#include <AP_ADC/AP_ADC.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AP_Baro/AP_Baro.h>
-#include <Filter/Filter.h>
-#include <AP_AHRS/AP_AHRS.h>
-#include <AP_Compass/AP_Compass.h>
-#include <AP_Declination/AP_Declination.h>
-#include <AP_Airspeed/AP_Airspeed.h>
-#include <AP_Vehicle/AP_Vehicle.h>
-#include <AP_Mission/AP_Mission.h>
-#include <StorageManager/StorageManager.h>
-#include <AP_Terrain/AP_Terrain.h>
-#include <AP_BattMonitor/AP_BattMonitor.h>
-#include <AP_RangeFinder/AP_RangeFinder.h>
-#include <AP_Scheduler/AP_Scheduler.h>
 #include <RC_Channel/RC_Channel.h>
 #include <SRV_Channel/SRV_Channel.h>
 
@@ -47,11 +27,13 @@ void update_motors();
 SRV_Channels srvs;
 
 // uncomment the row below depending upon what frame you are using
-//AP_MotorsTri	motors(400);
+//AP_MotorsTri  motors(400);
 AP_MotorsMatrix   motors(400);
 //AP_MotorsHeli_Single motors(rc7, rsc, h1, h2, h3, h4, 400);
 //AP_MotorsSingle motors(400);
 //AP_MotorsCoax motors(400);
+
+AP_BattMonitor _battmonitor{0, nullptr, nullptr};
 
 // setup
 void setup()
@@ -112,9 +94,9 @@ void motor_order_test()
     motors.armed(true);
     for (int8_t i=1; i <= AP_MOTORS_MAX_NUM_MOTORS; i++) {
         hal.console->printf("Motor %d\n",(int)i);
-        motors.output_test(i, 1150);
+        motors.output_test_seq(i, 1150);
         hal.scheduler->delay(300);
-        motors.output_test(i, 1000);
+        motors.output_test_seq(i, 1000);
         hal.scheduler->delay(2000);
     }
     motors.armed(false);
@@ -161,16 +143,16 @@ void stability_test()
                     motors.set_pitch(pitch_in/4500.0f);
                     motors.set_yaw(yaw_in/4500.0f);
                     motors.set_throttle(throttle_in);
-                    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+                    motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
                     update_motors();
                     avg_out = ((hal.rcout->read(0) + hal.rcout->read(1) + hal.rcout->read(2) + hal.rcout->read(3))/4);
                     // display input and output
 #if NUM_OUTPUTS <= 4
-                    hal.console->printf("%d,%d,%d,%3.1f,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",                // quad
+                    hal.console->printf("%d,%d,%d,%3.1f,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",                // quad
 #elif NUM_OUTPUTS <= 6
-                    hal.console->printf("%d,%d,%d,%3.1f,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",          // hexa
+                    hal.console->printf("%d,%d,%d,%3.1f,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",          // hexa
 #else
-                    hal.console->printf("%d,%d,%d,%3.1f,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",    // octa
+                    hal.console->printf("%d,%d,%d,%3.1f,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",    // octa
 #endif
                             (int)roll_in,
                             (int)pitch_in,
@@ -189,7 +171,8 @@ void stability_test()
                             (int)hal.rcout->read(7),
 #endif
                             (int)avg_out,
-                            (int)motors.limit.roll_pitch,
+                            (int)motors.limit.roll,
+                            (int)motors.limit.pitch,
                             (int)motors.limit.yaw,
                             (int)motors.limit.throttle_lower,
                             (int)motors.limit.throttle_upper);

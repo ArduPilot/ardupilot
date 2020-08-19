@@ -19,6 +19,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_Common/Location.h>
 
 class AP_Beacon_Backend;
 
@@ -32,6 +33,9 @@ public:
     friend class AP_Beacon_Backend;
 
     AP_Beacon(AP_SerialManager &_serial_manager);
+
+    // get singleton instance
+    static AP_Beacon *get_singleton() { return _singleton; }
 
     // external position backend types (used by _TYPE parameter)
     enum AP_BeaconType {
@@ -101,6 +105,8 @@ public:
 
 private:
 
+    static AP_Beacon *_singleton;
+
     // check if device is ready
     bool device_ready(void) const;
 
@@ -136,4 +142,8 @@ private:
     Vector2f boundary[AP_BEACON_MAX_BEACONS+1]; // array of boundary points (used for fence)
     uint8_t boundary_num_points;                // number of points in boundary
     uint8_t boundary_num_beacons;               // total number of beacon points consumed while building boundary
+};
+
+namespace AP {
+    AP_Beacon *beacon();
 };

@@ -26,7 +26,7 @@ public:
     void throttle_adjust(float &throttle_control);
 
     // handle mavlink message
-    void handle_message(mavlink_message_t *msg);
+    void handle_message(const mavlink_message_t &msg);
 
     void load_test_run(void);
     
@@ -38,7 +38,7 @@ private:
     void action_arm(void);
     void blink_update(void);
     void send_named_int(const char *name, int32_t value);
-    bool set_and_remember_mode(control_mode_t mode, mode_reason_t reason);
+    bool set_and_remember_mode(Mode::Number mode, ModeReason reason);
 
     void thrust_limiting(float *thrust, uint8_t num_motors);
     void arm_check_compass(void);
@@ -156,7 +156,7 @@ private:
     uint8_t motor_log_counter;
 
     // remember the last mode we set
-    control_mode_t last_set_mode = LOITER;
+    Mode::Number last_set_mode = Mode::Number::LOITER;
 
     struct load_data {
         uint16_t m[4];

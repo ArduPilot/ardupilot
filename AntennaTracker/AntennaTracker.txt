@@ -106,7 +106,7 @@ mounting, servos and other hardware in your tracker. Unless you do this IT
 WILL PROBABLY NOT WORK AS EXPECTED. CAUTION: It might even oscillate or flap
 around. It might even damage itself.
 
-AntennaTracker (like other ardupilot software such as ArduPlane, APMRover2
+AntennaTracker (like other ardupilot software such as ArduPlane, ArduRover
 etc) has configuration values that control and tailor its operation, and which
 are stored in EEPROM on the processor. The configuration is restored from
 EEPROM every time the processsor starts.

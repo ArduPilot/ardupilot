@@ -1,19 +1,20 @@
 #pragma once
 
-#include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include "AC_PrecLand_Backend.h"
 
 /*
  * AC_PrecLand_Companion - implements precision landing using target vectors provided
  *                         by a companion computer (i.e. Odroid) communicating via MAVLink
+ *                         The companion computer must provide "Line-Of-Sight" measurements
+ *                         in the form of LANDING_TARGET mavlink messages.
  */
 
 class AC_PrecLand_Companion : public AC_PrecLand_Backend
 {
 public:
     // Constructor
-    AC_PrecLand_Companion(const AC_PrecLand& frontend, AC_PrecLand::precland_state& state);
+    using AC_PrecLand_Backend::AC_PrecLand_Backend;
 
     // perform any required initialisation of backend
     void init() override;
@@ -35,7 +36,7 @@ public:
     float distance_to_target() override;
 
     // parses a mavlink message from the companion computer
-    void handle_msg(mavlink_message_t* msg) override;
+    void handle_msg(const mavlink_message_t &msg) override;
 
 private:
     uint64_t            _timestamp_us;          // timestamp from message

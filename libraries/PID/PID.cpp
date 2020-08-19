@@ -105,7 +105,7 @@ float PID::get_pid(float error, float scaler)
         output                          += _integrator;
     }
 
-    _pid_info.desired = output;
+    _pid_info.target = output;
     return output;
 }
 

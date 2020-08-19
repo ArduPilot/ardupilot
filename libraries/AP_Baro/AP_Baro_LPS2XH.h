@@ -7,7 +7,10 @@
 #include "AP_Baro_Backend.h"
 
 #define HAL_BARO_LPS25H_I2C_BUS 0
-#define HAL_BARO_LPS25H_I2C_ADDR 0x5D
+
+#ifndef HAL_BARO_LPS25H_I2C_ADDR
+# define HAL_BARO_LPS25H_I2C_ADDR 0x5D
+#endif
 
 
 class AP_Baro_LPS2XH : public AP_Baro_Backend
@@ -21,7 +24,7 @@ public:
     AP_Baro_LPS2XH(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
 
     /* AP_Baro public interface: */
-    void update();
+    void update() override;
 
     static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
     static AP_Baro_Backend *probe_InvensenseIMU(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev, uint8_t imu_address);

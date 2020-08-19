@@ -19,7 +19,9 @@
 
 // show all status on only 2 leds
 
-#if defined(HAL_GPIO_A_LED_PIN) && defined(HAL_GPIO_B_LED_PIN) 
+#if defined(HAL_GPIO_A_LED_PIN) && defined(HAL_GPIO_B_LED_PIN)
+
+static_assert((HAL_GPIO_A_LED_PIN != HAL_GPIO_B_LED_PIN), "Duplicate LED assignments detected");
 
 extern const AP_HAL::HAL& hal;
 
@@ -169,7 +171,7 @@ void AP_BoardLED2::update(void)
                 if ((counter2 & 0x7) == 0) {
                     hal.gpio->toggle(HAL_GPIO_A_LED_PIN);
                 }
-            }else if(AP_Notify::flags.failsafe_radio){//   blink fast (around 4Hz)
+            }else if(AP_Notify::flags.failsafe_radio || AP_Notify::flags.failsafe_gcs){//   blink fast (around 4Hz)
                 if ((counter2 & 0x3) == 0) {
                     hal.gpio->toggle(HAL_GPIO_A_LED_PIN);
                 }

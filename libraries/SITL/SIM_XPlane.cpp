@@ -26,14 +26,17 @@
 #include <sys/types.h>
 
 #include <AP_HAL/AP_HAL.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
+
+// ignore cast errors in this case to keep complexity down
+#pragma GCC diagnostic ignored "-Wcast-align"
 
 extern const AP_HAL::HAL& hal;
 
 namespace SITL {
 
-XPlane::XPlane(const char *home_str, const char *frame_str) :
-    Aircraft(home_str, frame_str)
+XPlane::XPlane(const char *frame_str) :
+    Aircraft(frame_str)
 {
     use_time_sync = false;
     const char *colon = strchr(frame_str, ':');
@@ -42,6 +45,7 @@ XPlane::XPlane(const char *home_str, const char *frame_str) :
     }
 
     heli_frame = (strstr(frame_str, "-heli") != nullptr);
+    num_motors = 2;
 
     socket_in.bind("0.0.0.0", bind_port);
     printf("Waiting for XPlane data on UDP port %u and sending to port %u\n",
@@ -240,11 +244,14 @@ bool XPlane::receive_data(void)
                  * input from XPlane10
                  */
                 bool has_magic = ((uint32_t)(data[1] * throttle_magic_scale) % 1000U) == (uint32_t)(throttle_magic * throttle_magic_scale);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
                 if (data[1] < 0 ||
                     data[1] == throttle_sent ||
                     has_magic) {
                     break;
                 }
+#pragma GCC diagnostic pop
                 rcin[2] = data[1];
             }
             break;
@@ -255,11 +262,11 @@ bool XPlane::receive_data(void)
         }
 
         case EngineRPM:
-            rpm1 = data[1];
+            rpm[0] = data[1];
             break;
 
         case PropRPM:
-            rpm2 = data[1];
+            rpm[1] = data[1];
             break;
             
         case Joystick2:
@@ -303,11 +310,11 @@ bool XPlane::receive_data(void)
     accel_earth.z += GRAVITY_MSS;
     
     // the position may slowly deviate due to float accuracy and longitude scaling
-    if (get_distance(loc, location) > 4 || abs(loc.alt - location.alt)*0.01f > 2.0f) {
+    if (loc.get_distance(location) > 4 || abs(loc.alt - location.alt)*0.01f > 2.0f) {
         printf("X-Plane home reset dist=%f alt=%.1f/%.1f\n",
-               get_distance(loc, location), loc.alt*0.01f, location.alt*0.01f);
+               loc.get_distance(location), loc.alt*0.01f, location.alt*0.01f);
         // reset home location
-        position_zero(-pos.x, -pos.y, -pos.z);
+        position_zero = {-pos.x, -pos.y, -pos.z};
         home.lat = loc.lat;
         home.lng = loc.lng;
         home.alt = loc.alt;
@@ -387,7 +394,7 @@ void XPlane::send_data(const struct sitl_input &input)
     if (SRV_Channels::find_channel(SRV_Channel::k_flap, flap_chan) ||
         SRV_Channels::find_channel(SRV_Channel::k_flap_auto, flap_chan)) {
         float flap = (input.servos[flap_chan]-1000)/1000.0;
-        if (flap != last_flap) {
+        if (!is_equal(flap, last_flap)) {
             send_dref("sim/flightmodel/controls/flaprqst", flap);
             send_dref("sim/aircraft/overflow/acf_flap_arm", flap>0?1:0);
         }

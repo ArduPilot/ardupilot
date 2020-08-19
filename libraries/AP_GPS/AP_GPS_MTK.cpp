@@ -28,9 +28,7 @@
 const char AP_GPS_MTK::_initialisation_blob[] = MTK_OUTPUT_5HZ SBAS_ON WAAS_ON MTK_NAVTHRES_OFF;
 
 AP_GPS_MTK::AP_GPS_MTK(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
-    AP_GPS_Backend(_gps, _state, _port),
-    _step(0),
-    _payload_counter(0)
+    AP_GPS_Backend(_gps, _state, _port)
 {
     gps.send_blob_start(state.instance, _initialisation_blob, sizeof(_initialisation_blob));
 }

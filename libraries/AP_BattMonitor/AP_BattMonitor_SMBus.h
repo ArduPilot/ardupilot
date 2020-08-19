@@ -3,6 +3,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_HAL/I2CDevice.h>
 #include "AP_BattMonitor_Backend.h"
 #include <utility>
 
@@ -22,6 +23,7 @@ public:
         BATTMONITOR_SMBUS_CURRENT = 0x0A,              // Current
         BATTMONITOR_SMBUS_REMAINING_CAPACITY = 0x0F,   // Remaining Capacity
         BATTMONITOR_SMBUS_FULL_CHARGE_CAPACITY = 0x10, // Full Charge Capacity
+        BATTMONITOR_SMBUS_CYCLE_COUNT = 0x17,          // Cycle Count
         BATTMONITOR_SMBUS_SPECIFICATION_INFO = 0x1A,   // Specification Info
         BATTMONITOR_SMBUS_SERIAL = 0x1C,               // Serial Number
         BATTMONITOR_SMBUS_MANUFACTURE_NAME = 0x20,     // Manufacture Name
@@ -42,7 +44,13 @@ public:
     // all smart batteries are expected to provide current
     bool has_current() const override { return true; }
 
-    void init(void) override;
+    // don't allow reset of remaining capacity for SMBus
+    bool reset_remaining(float percentage) override { return false; }
+
+    // return true if cycle count can be provided and fills in cycles argument
+    bool get_cycle_count(uint16_t &cycles) const override;
+
+    virtual void init(void) override;
 
 protected:
 
@@ -53,9 +61,12 @@ protected:
     bool read_full_charge_capacity(void);
 
     // reads the remaining capacity
-    // returns true if the read was succesful, which is only considered to be the
+    // returns true if the read was successful, which is only considered to be the
     // we know the full charge capacity
     bool read_remaining_capacity(void);
+
+    // return a scaler that should be multiplied by the battery's reported capacity numbers to arrive at the actual capacity in mAh
+    virtual uint16_t get_capacity_scaler() const { return 1; }
 
     // reads the temperature word from the battery
     // returns true if the read was successful
@@ -64,6 +75,9 @@ protected:
     // reads the serial number if it's not already known
     // returns true if the read was successful, or the number was already known
     bool read_serial_number(void);
+
+    // reads the battery's cycle count
+    void read_cycle_count();
 
      // read word from register
      // returns true if read was successful, false if failed
@@ -78,13 +92,11 @@ protected:
 
     int32_t _serial_number = -1;    // battery serial number
     uint16_t _full_charge_capacity; // full charge capacity, used to stash the value before setting the parameter
-
-    bool _has_cell_voltages;        // smbus backends flag this as true once they have recieved a valid cell voltage report
+    bool _has_cell_voltages;        // smbus backends flag this as true once they have received a valid cell voltage report
+    uint16_t _cycle_count = 0;      // number of cycles the battery has experienced. An amount of discharge approximately equal to the value of DesignCapacity.
+    bool _has_cycle_count;          // true if cycle count has been retrieved from the battery
 
     virtual void timer(void) = 0;   // timer function to read from the battery
 
+    AP_HAL::Device::PeriodicHandle timer_handle;
 };
-
-// include specific implementations
-#include "AP_BattMonitor_SMBus_Solo.h"
-#include "AP_BattMonitor_SMBus_Maxell.h"

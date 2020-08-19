@@ -15,6 +15,8 @@
 
 #include "AP_WheelEncoder.h"
 #include "WheelEncoder_Quadrature.h"
+#include "WheelEncoder_SITL_Quadrature.h"
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -23,7 +25,7 @@ const AP_Param::GroupInfo AP_WheelEncoder::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: WheelEncoder type
     // @Description: What type of WheelEncoder is connected
-    // @Values: 0:None,1:Quadrature
+    // @Values: 0:None,1:Quadrature,10:SITL Quadrature
     // @User: Standard
     AP_GROUPINFO_FLAGS("_TYPE", 0, AP_WheelEncoder, _type[0], 0, AP_PARAM_FLAG_ENABLE),
 
@@ -35,8 +37,9 @@ const AP_Param::GroupInfo AP_WheelEncoder::var_info[] = {
     AP_GROUPINFO("_CPR",     1, AP_WheelEncoder, _counts_per_revolution[0], WHEELENCODER_CPR_DEFAULT),
 
     // @Param: _RADIUS
-    // @DisplayName: Wheel radius in meters
-    // @Description: Wheel radius in meters
+    // @DisplayName: Wheel radius
+    // @Description: Wheel radius
+    // @Units: m
     // @Increment: 0.001
     // @User: Standard
     AP_GROUPINFO("_RADIUS",  2, AP_WheelEncoder, _wheel_radius[0], WHEELENCODER_RADIUS_DEFAULT),
@@ -45,22 +48,25 @@ const AP_Param::GroupInfo AP_WheelEncoder::var_info[] = {
     // @DisplayName: Wheel's X position offset
     // @Description: X position of the center of the wheel in body frame. Positive X is forward of the origin.
     // @Units: m
+    // @Range: -5 5
     // @Increment: 0.01
-    // @User: Advanced
+    // @User: Standard
 
     // @Param: _POS_Y
     // @DisplayName: Wheel's Y position offset
     // @Description: Y position of the center of the wheel in body frame. Positive Y is to the right of the origin.
     // @Units: m
+    // @Range: -5 5
     // @Increment: 0.01
-    // @User: Advanced
+    // @User: Standard
 
     // @Param: _POS_Z
     // @DisplayName: Wheel's Z position offset
     // @Description: Z position of the center of the wheel in body frame. Positive Z is down from the origin.
     // @Units: m
+    // @Range: -5 5
     // @Increment: 0.01
-    // @User: Advanced
+    // @User: Standard
     AP_GROUPINFO("_POS",     3, AP_WheelEncoder, _pos_offset[0], 0.0f),
 
     // @Param: _PINA
@@ -81,7 +87,7 @@ const AP_Param::GroupInfo AP_WheelEncoder::var_info[] = {
     // @Param: 2_TYPE
     // @DisplayName: Second WheelEncoder type
     // @Description: What type of WheelEncoder sensor is connected
-    // @Values: 0:None,1:Quadrature
+    // @Values: 0:None,1:Quadrature,10:SITL Quadrature
     // @User: Standard
     AP_GROUPINFO("2_TYPE",   6, AP_WheelEncoder, _type[1], 0),
 
@@ -93,8 +99,9 @@ const AP_Param::GroupInfo AP_WheelEncoder::var_info[] = {
     AP_GROUPINFO("2_CPR",     7, AP_WheelEncoder, _counts_per_revolution[1], WHEELENCODER_CPR_DEFAULT),
 
     // @Param: 2_RADIUS
-    // @DisplayName: Wheel2's radius in meters
-    // @Description: Wheel2's radius in meters
+    // @DisplayName: Wheel2's radius
+    // @Description: Wheel2's radius
+    // @Units: m
     // @Increment: 0.001
     // @User: Standard
     AP_GROUPINFO("2_RADIUS", 8, AP_WheelEncoder, _wheel_radius[1], WHEELENCODER_RADIUS_DEFAULT),
@@ -103,22 +110,25 @@ const AP_Param::GroupInfo AP_WheelEncoder::var_info[] = {
     // @DisplayName: Wheel2's X position offset
     // @Description: X position of the center of the second wheel in body frame. Positive X is forward of the origin.
     // @Units: m
+    // @Range: -5 5
     // @Increment: 0.01
-    // @User: Advanced
+    // @User: Standard
 
     // @Param: 2_POS_Y
     // @DisplayName: Wheel2's Y position offset
     // @Description: Y position of the center of the second wheel in body frame. Positive Y is to the right of the origin.
     // @Units: m
+    // @Range: -5 5
     // @Increment: 0.01
-    // @User: Advanced
+    // @User: Standard
 
     // @Param: 2_POS_Z
     // @DisplayName: Wheel2's Z position offset
     // @Description: Z position of the center of the second wheel in body frame. Positive Z is down from the origin.
     // @Units: m
+    // @Range: -5 5
     // @Increment: 0.01
-    // @User: Advanced
+    // @User: Standard
     AP_GROUPINFO("2_POS",    9, AP_WheelEncoder, _pos_offset[1], 0.0f),
 
     // @Param: 2_PINA
@@ -139,14 +149,9 @@ const AP_Param::GroupInfo AP_WheelEncoder::var_info[] = {
     AP_GROUPEND
 };
 
-AP_WheelEncoder::AP_WheelEncoder(void) :
-    num_instances(0)
+AP_WheelEncoder::AP_WheelEncoder(void)
 {
     AP_Param::setup_object_defaults(this, var_info);
-
-    // init state and drivers
-    memset(state, 0, sizeof(state));
-    memset(drivers, 0, sizeof(drivers));
 }
 
 // initialise the AP_WheelEncoder class.
@@ -157,20 +162,29 @@ void AP_WheelEncoder::init(void)
         return;
     }
     for (uint8_t i=0; i<WHEELENCODER_MAX_INSTANCES; i++) {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-        uint8_t type = _type[num_instances];
-        uint8_t instance = num_instances;
+        switch ((WheelEncoder_Type)_type[i].get()) {
 
-        if (type == WheelEncoder_TYPE_QUADRATURE) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_WheelEncoder_Quadrature(*this, instance, state[instance]);
-        }
+        case WheelEncoder_TYPE_QUADRATURE:
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+            drivers[i] = new AP_WheelEncoder_Quadrature(*this, i, state[i]);
 #endif
+            break;
+
+        case WheelEncoder_TYPE_SITL_QUADRATURE:
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            drivers[i] = new AP_WheelEncoder_SITL_Qaudrature(*this, i, state[i]);
+#endif
+            break;
+            
+        case WheelEncoder_TYPE_NONE:
+            break;
+        }
+
 
         if (drivers[i] != nullptr) {
             // we loaded a driver for this instance, so it must be
             // present (although it may not be healthy)
-            num_instances = i+1;
+            num_instances = i+1;  // num_instances is a high-water-mark
         }
     }
 }
@@ -183,6 +197,25 @@ void AP_WheelEncoder::update(void)
             drivers[i]->update();
         }
     }
+}
+
+// log wheel encoder information
+void AP_WheelEncoder::Log_Write()
+{
+    // return immediately if no wheel encoders are enabled
+    if (!enabled(0) && !enabled(1)) {
+        return;
+    }
+
+    struct log_WheelEncoder pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_WHEELENCODER_MSG),
+        time_us     : AP_HAL::micros64(),
+        distance_0  : get_distance(0),
+        quality_0   : (uint8_t)get_signal_quality(0),
+        distance_1  : get_distance(1),
+        quality_1   : (uint8_t)get_signal_quality(1),
+    };
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
 
 // check if an instance is healthy
@@ -227,12 +260,12 @@ float AP_WheelEncoder::get_wheel_radius(uint8_t instance) const
     return _wheel_radius[instance];
 }
 
-// get the total distance travelled in meters
-Vector3f AP_WheelEncoder::get_position(uint8_t instance) const
+// return a 3D vector defining the position offset of the center of the wheel in meters relative to the body frame origin
+const Vector3f &AP_WheelEncoder::get_pos_offset(uint8_t instance) const
 {
     // for invalid instances return zero vector
     if (instance >= WHEELENCODER_MAX_INSTANCES) {
-        return Vector3f();
+        return pos_offset_zero;
     }
     return _pos_offset[instance];
 }
@@ -256,6 +289,23 @@ float AP_WheelEncoder::get_distance(uint8_t instance) const
 {
     // for invalid instances return zero
     return get_delta_angle(instance) * _wheel_radius[instance];
+}
+
+// get the instantaneous rate in radians/second
+float AP_WheelEncoder::get_rate(uint8_t instance) const
+{
+    // for invalid instances return zero
+    if (instance >= WHEELENCODER_MAX_INSTANCES) {
+        return 0.0f;
+    }
+
+    // protect against divide by zero
+    if ((state[instance].dt_ms == 0) || _counts_per_revolution[instance] == 0) {
+        return 0;
+    }
+
+    // calculate delta_angle (in radians) per second
+    return M_2PI * (state[instance].dist_count_change / ((float)_counts_per_revolution[instance])) / (state[instance].dt_ms * 1e-3f);
 }
 
 // get the total number of sensor reading from the encoder

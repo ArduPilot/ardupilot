@@ -8,33 +8,30 @@
 class AP_Arming_Plane : public AP_Arming
 {
 public:
-    AP_Arming_Plane(const AP_AHRS &ahrs_ref, Compass &compass,
-                    const AP_BattMonitor &battery)
-        : AP_Arming(ahrs_ref, compass, battery)
+    AP_Arming_Plane()
+        : AP_Arming()
     {
         AP_Param::setup_object_defaults(this, var_info);
     }
-
-    enum ArmingRudder {
-        ARMING_RUDDER_DISABLED  = 0,
-        ARMING_RUDDER_ARMONLY   = 1,
-        ARMING_RUDDER_ARMDISARM = 2
-    };
 
     /* Do not allow copies */
     AP_Arming_Plane(const AP_Arming_Plane &other) = delete;
     AP_Arming_Plane &operator=(const AP_Arming_Plane&) = delete;
 
-    bool pre_arm_checks(bool report);
-
-    ArmingRudder rudder_arming() const { return (ArmingRudder)rudder_arming_value.get(); }
+    bool pre_arm_checks(bool report) override;
+    bool arm_checks(AP_Arming::Method method) override;
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
-protected:
-    bool ins_checks(bool report);
+    bool disarm(AP_Arming::Method method) override;
+    bool arm(AP_Arming::Method method, bool do_arming_checks=true) override;
 
-    // parameters
-    AP_Int8                 rudder_arming_value;
+    void update_soft_armed();
+
+protected:
+    bool ins_checks(bool report) override;
+
+private:
+    void change_arm_state(void);
 };

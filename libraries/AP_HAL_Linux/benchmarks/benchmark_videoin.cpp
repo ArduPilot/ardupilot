@@ -1,8 +1,7 @@
 #include <AP_gbenchmark.h>
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP ||\
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 
 #include <AP_HAL_Linux/VideoIn.h>
 
@@ -23,6 +22,7 @@ static void BM_Crop8bpp(benchmark::State& state)
     new_buffer = (uint8_t *)malloc(state.range_x() * state.range_y());
     if (!new_buffer) {
         fprintf(stderr, "error: couldn't malloc new_buffer\n");
+        free(buffer);
         return;
     }
 
@@ -50,6 +50,7 @@ static void BM_YuyvToGrey(benchmark::State& state)
     new_buffer = (uint8_t *)malloc(state.range_x() / 2);
     if (!new_buffer) {
         fprintf(stderr, "error: couldn't malloc new_buffer\n");
+        free(buffer);
         return;
     }
 

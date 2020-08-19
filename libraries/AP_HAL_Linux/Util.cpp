@@ -17,7 +17,6 @@ using namespace Linux;
 
 extern const AP_HAL::HAL& hal;
 
-static int state;
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
 ToneAlarm_Disco Util::_toneAlarm;
 #else
@@ -63,42 +62,13 @@ void Util::commandline_arguments(uint8_t &argc, char * const *&argv)
     argv = saved_argv;
 }
 
-bool Util::toneAlarm_init()
-{
-    return _toneAlarm.init();
-}
-
-void Util::toneAlarm_set_tune(uint8_t tone)
-{
-    _toneAlarm.set_tune(tone);
-}
-
-void Util::_toneAlarm_timer_tick() {
-    if(state == 0) {
-        state = state + _toneAlarm.init_tune();
-    } else if (state == 1) {
-        state = state + _toneAlarm.set_note();
-    }
-    if (state == 2) {
-        state = state + _toneAlarm.play();
-    } else if (state == 3) {
-        state = 1;
-    }
-    
-    if (_toneAlarm.is_tune_comp()) {
-        state = 0;
-    }
-    
-}
-
-void Util::set_system_clock(uint64_t time_utc_usec)
+void Util::set_hw_rtc(uint64_t time_utc_usec)
 {
 #if CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
-    timespec ts;
-    ts.tv_sec = time_utc_usec/1000000ULL;
-    ts.tv_nsec = (time_utc_usec % 1000000ULL) * 1000ULL;
-    clock_settime(CLOCK_REALTIME, &ts);    
-#endif    
+    // call superclass method to set time.  We've guarded this so we
+    // don't reset the HW clock time on people's laptops.
+    AP_HAL::Util::set_hw_rtc(time_utc_usec);
+#endif
 }
 
 bool Util::is_chardev_node(const char *path)
@@ -122,6 +92,59 @@ uint32_t Util::available_memory(void)
 {
     return 256*1024;
 }
+
+#ifndef HAL_LINUX_DEFAULT_SYSTEM_ID
+#define HAL_LINUX_DEFAULT_SYSTEM_ID "linux-unknown"
+#endif
+
+/*
+  get a (hopefully unique) machine ID
+ */
+bool Util::get_system_id_unformatted(uint8_t buf[], uint8_t &len)
+{
+    char *cbuf = (char *)buf;
+
+    // try first to use machine-id file. Most systems will have this
+    const char *paths[] = { "/etc/machine-id", "/var/lib/dbus/machine-id" };
+    for (uint8_t i=0; i<ARRAY_SIZE(paths); i++) {
+        int fd = open(paths[i], O_RDONLY);
+        if (fd == -1) {
+            continue;
+        }
+        ssize_t ret = read(fd, buf, len);
+        close(fd);
+        if (ret <= 0) {
+            continue;
+        }
+        len = ret;
+        char *p = strchr(cbuf, '\n');
+        if (p) {
+            *p = 0;
+        }
+        len = strnlen(cbuf, len);
+        return true;
+    }
+
+    // fallback to hostname
+    if (gethostname(cbuf, len) != 0) {
+        // use a default name so this always succeeds. Without it we can't
+        // implement some features (such as UAVCAN)
+        strncpy(cbuf, HAL_LINUX_DEFAULT_SYSTEM_ID, len);
+    }
+    len = strnlen(cbuf, len);
+    return true;
+}
+
+/*
+  as get_system_id_unformatted will already be ascii, we use the same
+  ID here
+ */
+bool Util::get_system_id(char buf[40])
+{
+    uint8_t len = 40;
+    return get_system_id_unformatted((uint8_t *)buf, len);
+}
+
 
 int Util::write_file(const char *path, const char *fmt, ...)
 {
@@ -176,6 +199,7 @@ int Util::read_file(const char *path, const char *fmt, ...)
 const char *Linux::Util::_hw_names[UTIL_NUM_HARDWARES] = {
     [UTIL_HARDWARE_RPI1]   = "BCM2708",
     [UTIL_HARDWARE_RPI2]   = "BCM2709",
+    [UTIL_HARDWARE_RPI4]   = "BCM2711",
     [UTIL_HARDWARE_BEBOP]  = "Mykonos3 board",
     [UTIL_HARDWARE_BEBOP2] = "Milos board",
     [UTIL_HARDWARE_DISCO]  = "Evinrude board",
@@ -206,3 +230,60 @@ int Util::get_hw_arm32()
     fclose(f);
     return -ENOENT;
 }
+
+#ifdef ENABLE_HEAP
+void *Util::allocate_heap_memory(size_t size)
+{
+    struct heap *new_heap = (struct heap*)malloc(sizeof(struct heap));
+    if (new_heap != nullptr) {
+        new_heap->max_heap_size = size;
+        new_heap->current_heap_usage = 0;
+    }
+    return (void *)new_heap;
+}
+
+void *Util::heap_realloc(void *h, void *ptr, size_t new_size)
+{
+    if (h == nullptr) {
+        return nullptr;
+    }
+
+    struct heap *heapp = (struct heap*)h;
+
+    // extract appropriate headers
+    size_t old_size = 0;
+    heap_allocation_header *old_header = nullptr;
+    if (ptr != nullptr) {
+        old_header = ((heap_allocation_header *)ptr) - 1;
+        old_size = old_header->allocation_size;
+    }
+
+    if ((heapp->current_heap_usage + new_size - old_size) > heapp->max_heap_size) {
+        // fail the allocation as we don't have the memory. Note that we don't simulate fragmentation
+        return nullptr;
+    }
+
+    heapp->current_heap_usage -= old_size;
+    if (new_size == 0) {
+       free(old_header);
+       return nullptr;
+    }
+
+    heap_allocation_header *new_header = (heap_allocation_header *)malloc(new_size + sizeof(heap_allocation_header));
+    if (new_header == nullptr) {
+        // total failure to allocate, this is very surprising in SITL
+        return nullptr;
+    }
+    heapp->current_heap_usage += new_size;
+    new_header->allocation_size = new_size;
+    void *new_mem = new_header + 1;
+
+    if (ptr == nullptr) {
+        return new_mem;
+    }
+    memcpy(new_mem, ptr, old_size > new_size ? new_size : old_size);
+    free(old_header);
+    return new_mem;
+}
+
+#endif // ENABLE_HEAP

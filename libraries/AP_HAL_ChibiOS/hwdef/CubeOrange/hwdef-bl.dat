@@ -1,0 +1,58 @@
+# hw definition file for processing by chibios_hwdef.py
+# for H743 bootloader
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# USB setup
+USB_VENDOR 0x2DAE # ONLY FOR USE BY HEX! NOBODY ELSE
+USB_PRODUCT 0x1016
+USB_STRING_MANUFACTURER "Hex/ProfiCNC"
+USB_STRING_PRODUCT "CubeOrange-BL"
+USB_STRING_SERIAL  "%SERIAL%"
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+
+# board ID for firmware load
+APJ_BOARD_ID 140
+
+FLASH_SIZE_KB 2048
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+# the H743 has 128k sectors
+FLASH_BOOTLOADER_LOAD_KB 128
+
+define HAL_LED_ON 0
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 UART7
+
+# UART7 maps to uartF in the HAL (serial5 in SERIALn_ parameters).
+PE7 UART7_RX UART7
+PE8 UART7_TX UART7
+
+# Pin for PWM Voltage Selection
+PB4 PWM_VOLT_SEL OUTPUT HIGH
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+define HAL_USE_EMPTY_STORAGE 1
+define HAL_STORAGE_SIZE 16384
+
+# Add CS pins to ensure they are high in bootloader
+PC1 MAG_CS CS
+PC2 MPU_CS CS
+PC13 GYRO_EXT_CS CS
+PC14 BARO_EXT_CS CS
+PC15 ACCEL_EXT_CS CS
+PD7 BARO_CS CS
+PE4 MPU_EXT_CS CS
+PD10 FRAM_CS CS SPEED_VERYLOW

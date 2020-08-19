@@ -1,0 +1,102 @@
+# this file lists all board types for boards that use the bootloader
+# protocol implemented in this bootloader.
+
+TARGET_HW_PX4_FMU_V1                    5
+TARGET_HW_PX4_FMU_V2                    9
+TARGET_HW_PX4_FMU_V3                    9 # same as FMU_V2
+TARGET_HW_PX4_FMU_V4                   11
+TARGET_HW_PX4_FMU_V4_PRO               13
+TARGET_HW_UVIFY_CORE		       20
+TARGET_HW_PX4_FMU_V5                   50
+TARGET_HW_PX4_FMU_V5X                  51
+TARGET_HW_PX4_FMU_V6                   52
+TARGET_HW_PX4_FMU_V6X                  53
+TARGET_HW_MINDPX_V2                    88
+TARGET_HW_PX4_FLOW_V1                   6
+TARGET_HW_PX4_DISCOVERY_V1             99
+TARGET_HW_PX4_PIO_V1                   10
+TARGET_HW_PX4_PIO_V2                   10 # same as PIO_V1
+TARGET_HW_PX4_PIO_V3                   13
+TARGET_HW_PX4_AEROCORE_V1              98
+TARGET_HW_TAP_V1                       64
+TARGET_HW_CRAZYFLIE                    12
+TARGET_HW_OMNIBUSF4SD                  42
+TARGET_HW_AUAV_X2V1                    33
+TARGET_HW_AEROFC_V1                    65
+TARGET_HW_CUBE_F4                       9
+TARGET_HW_AV_V1                        29
+TARGET_HW_KAKUTEF7                    123
+TARGET_HW_SMARTAP_PRO                  32
+TARGET_HW_MODALAI_FC_V1             41775
+TARGET_HW_HOLYBRO_PIX32_V5                  78
+
+Reserved  PX4 [BL] FMU v5X.x           51
+Reserved "PX4 [BL] FMU v6.x"           52
+Reserved "PX4 [BL] FMU v6X.x"          53
+
+# values from external vendors
+EXT_HW_RADIOLINK_MINI_PIX               3
+
+# NOTE: the full range from 1000 to 1999 (inclusive) is reserved for
+# use by the ArduPilot bootloader. Do not allocate IDs in this range
+# except via changes to the ArduPilot code
+
+# Do not allocate IDs in the range 1000 to 1999 except via a PR
+# against this file in https://github.com/ArduPilot/ardupilot/tree/master/Tools/AP_Bootloader/board_types.txt
+
+# values starting with AP_ are implemented in the ArduPilot bootloader
+# https://github.com/ArduPilot/ardupilot/tree/master/Tools/AP_Bootloader
+# the values come from the APJ_BOARD_ID in the hwdef files here:
+# https://github.com/ArduPilot/ardupilot/tree/master/libraries/AP_HAL_ChibiOS/hwdef
+AP_HW_CUBEYELLOW                      120
+AP_HW_OMNIBUSF7V2                     121
+AP_HW_KAKUTEF4                        122
+AP_HW_REVOLUTION                      124
+AP_HW_MATEKF405                       125
+AP_HW_NUCLEOF767ZI                    126
+AP_HW_MATEKF405_WING                  127
+AP_HW_AIRBOTF4                        128
+AP_HW_SPARKYV2                        130
+AP_HW_OMNIBUSF4PRO                    131
+AP_HW_ANYFCF7                         132
+AP_HW_OMNIBUSNANOV6                   133
+AP_HW_SPEEDYBEEF4                     134
+AP_HW_F35LIGHTNING                    135
+AP_HW_MRO_X2V1_777                    136
+AP_HW_OMNIBUSF4V6                     137
+AP_HW_HELIOSPRING                     138
+AP_HW_DURANDAL                        139
+AP_HW_CUBEORANGE                      140
+AP_HW_MRO_CONTROL_ZERO                141
+AP_HW_MRO_CONTROL_ZERO_OEM            142
+AP_HW_MATEKF765_WING                  143
+AP_HW_JDMINIF405                      144
+AP_HW_KAKUTEF7_MINI                   145
+AP_HW_F4BY                             20 # value due to previous release by vendor
+AP_HW_VRBRAIN_V51                    1151
+AP_HW_VRBRAIN_V52                    1152
+AP_HW_VRBRAIN_V54                    1154
+AP_HW_VRCORE_V10                     1910
+AP_HW_VRUBRAIN_V51                   1351
+AP_HW_F103_PERIPH                    1000
+AP_HW_CUAV_GPS                       1001
+AP_HW_OMNIBUSF4                      1002
+AP_HW_CUBEBLACK+                     1003
+AP_HW_F303_PERIPH                    1004
+AP_HW_ZUBAXGNSS                      1005
+AP_HW_NIGHTCRAWLER                   1006
+AP_HW_SKYBOT                         1007
+AP_HW_FRSKY_R9                       1008
+AP_HW_CUAV_NORA                      1009
+AP_HW_CUAV_X7_PRO                    1010
+AP_HW_SUCCEXF4                       1011
+AP_HW_LIGHTSPARKMINI                 1012
+AP_HW_MATEKH743                      1013
+AP_HW_MRO_CONTROL_ZERO_PR            1014
+AP_HW_MRO_NEXUS                      1015
+AP_HW_HITEC_MOSAIC                   1016
+AP_HW_MRO_PIXRACER_PRO               1017
+AP_HW_TWD_H7                         1018
+AP_HW_MAMBA405                       1019
+AP_HW_H31_PIXC4                      1020
+

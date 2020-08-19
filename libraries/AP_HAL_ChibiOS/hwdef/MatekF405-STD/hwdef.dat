@@ -1,0 +1,7 @@
+# adds default support for board versions with ICM20602 
+
+include ../MatekF405/hwdef.dat
+
+# different IMU orientation
+undef IMU
+IMU Invensense SPI:mpu6000 ROTATION_YAW_90

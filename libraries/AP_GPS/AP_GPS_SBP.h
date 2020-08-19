@@ -29,12 +29,12 @@ class AP_GPS_SBP : public AP_GPS_Backend
 public:
     AP_GPS_SBP(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
 
-    AP_GPS::GPS_Status highest_supported_status(void) { return AP_GPS::GPS_OK_FIX_3D_RTK_FIXED; }
+    AP_GPS::GPS_Status highest_supported_status(void) override { return AP_GPS::GPS_OK_FIX_3D_RTK_FIXED; }
 
-    bool supports_mavlink_gps_rtk_message() { return true; }
+    bool supports_mavlink_gps_rtk_message() override { return true; }
 
     // Methods
-    bool read();
+    bool read() override;
 
     void inject_data(const uint8_t *data, uint16_t len) override;
 
@@ -177,7 +177,7 @@ private:
     uint32_t crc_error_counter;
 
     // ************************************************************************
-    // Logging to DataFlash
+    // Logging to AP_Logger
     // ************************************************************************
 
     void logging_log_full_update();

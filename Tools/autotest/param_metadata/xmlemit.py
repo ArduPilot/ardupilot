@@ -31,7 +31,7 @@ class XmlEmit(Emit):
         self.f.write('</vehicles>')
         self.f.write('<libraries>')
 
-    def emit(self, g, f):
+    def emit(self, g):
         t = '''<parameters name=%s>\n''' % quoteattr(g.name)  # i.e. ArduPlane
 
         for param in g.params:
@@ -45,6 +45,9 @@ class XmlEmit(Emit):
                 t += ' documentation=%s' % quoteattr(param.Description)  # i.e. parameter docs
             if hasattr(param, 'User'):
                 t += ' user=%s' % quoteattr(param.User)  # i.e. Standard or Advanced
+
+            if hasattr(param, 'Calibration'):
+                t += ' calibration=%s' % quoteattr(param.Calibration)  # i.e. Standard or Advanced
 
             t += ">\n"
 

@@ -1,0 +1,12 @@
+#!/bin/bash
+#make debug
+#make test
+if [ ! -L /sys/class/gpio/gpio80 ] || [ ! -e /sys/class/gpio/gpio80 ] ; then
+        /bin/echo 80 >/sys/class/gpio/export
+	/bin/sleep 1
+	/bin/echo out >/sys/class/gpio/gpio80/direction
+fi
+/bin/echo 1 >/sys/class/gpio/gpio80/value
+#/bin/echo 0 >/sys/class/gpio/gpio80/value
+/bin/echo pruecapin_pu >/sys/devices/platform/ocp/ocp:P8_15_pinmux/state
+sudo ./RcAioPRUTest

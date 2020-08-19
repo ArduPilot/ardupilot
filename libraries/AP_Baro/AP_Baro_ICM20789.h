@@ -15,7 +15,7 @@
 class AP_Baro_ICM20789 : public AP_Baro_Backend
 {
 public:
-    void update();
+    void update() override;
 
     static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev, AP_HAL::OwnPtr<AP_HAL::Device> dev_imu);
     

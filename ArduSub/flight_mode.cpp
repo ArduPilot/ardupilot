@@ -2,7 +2,7 @@
 
 // change flight mode and perform any necessary initialisation
 // returns true if mode was successfully set
-bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
+bool Sub::set_mode(control_mode_t mode, ModeReason reason)
 {
     // boolean to record if flight mode could be set
     bool success = false;
@@ -55,6 +55,10 @@ bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
         success = manual_init();
         break;
 
+    case MOTOR_DETECT:
+        success = motordetect_init();
+        break;
+
     default:
         success = false;
         break;
@@ -70,7 +74,8 @@ bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
 
         control_mode = mode;
         control_mode_reason = reason;
-        DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
+        logger.Write_Mode(control_mode, control_mode_reason);
+        gcs().send_message(MSG_HEARTBEAT);
 
         // update notify object
         notify_flight_mode(control_mode);
@@ -87,20 +92,23 @@ bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
 #endif
     } else {
         // Log error that we failed to enter desired flight mode
-        Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
+        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
     }
 
     // return success or failure
     return success;
 }
 
+bool Sub::set_mode(const uint8_t new_mode, const ModeReason reason)
+{
+    static_assert(sizeof(control_mode_t) == sizeof(new_mode), "The new mode can't be mapped to the vehicles mode number");
+    return sub.set_mode((control_mode_t)new_mode, reason);
+}
+
 // update_flight_mode - calls the appropriate attitude controllers based on flight mode
 // called at 100hz or more
 void Sub::update_flight_mode()
 {
-    // Update EKF speed limit - used to limit speed when we are using optical flow
-    ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
-
     switch (control_mode) {
     case ACRO:
         acro_run();
@@ -140,6 +148,10 @@ void Sub::update_flight_mode()
         manual_run();
         break;
 
+    case MOTOR_DETECT:
+        motordetect_run();
+        break;
+
     default:
         break;
     }
@@ -153,9 +165,9 @@ void Sub::exit_mode(control_mode_t old_control_mode, control_mode_t new_control_
         if (mission.state() == AP_Mission::MISSION_RUNNING) {
             mission.stop();
         }
-#if MOUNT == ENABLED
+#if HAL_MOUNT_ENABLED
         camera_mount.set_mode_to_default();
-#endif  // MOUNT == ENABLED
+#endif  // HAL_MOUNT_ENABLED
     }
 }
 
@@ -194,10 +206,11 @@ bool Sub::mode_has_manual_throttle(control_mode_t mode)
 //  arming_from_gcs should be set to true if the arming request comes from the ground station
 bool Sub::mode_allows_arming(control_mode_t mode, bool arming_from_gcs)
 {
-    if (mode_has_manual_throttle(mode) || mode == ALT_HOLD || mode == POSHOLD || (arming_from_gcs && mode == GUIDED)) {
-        return true;
-    }
-    return false;
+    return (mode_has_manual_throttle(mode)
+        || mode == ALT_HOLD
+        || mode == POSHOLD
+        || (arming_from_gcs&& mode == GUIDED)
+    );
 }
 
 // notify_flight_mode - sets notify object based on flight mode.  Only used for OreoLED notify device

@@ -133,7 +133,7 @@ float Sub::get_surface_tracking_climb_rate(int16_t target_rate, float current_al
     float velocity_correction;
     float current_alt = inertial_nav.get_altitude();
 
-    uint32_t now = millis();
+    uint32_t now = AP_HAL::millis();
 
     // reset target altitude if this controller has just been engaged
     if (now - last_call_ms > RANGEFINDER_TIMEOUT_MS) {
@@ -199,7 +199,6 @@ uint16_t Sub::get_pilot_speed_dn()
 {
     if (g.pilot_speed_dn == 0) {
         return abs(g.pilot_speed_up);
-    } else {
-        return abs(g.pilot_speed_dn);
     }
+    return abs(g.pilot_speed_dn);
 }

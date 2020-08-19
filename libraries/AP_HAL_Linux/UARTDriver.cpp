@@ -22,10 +22,10 @@
 #include "ConsoleDevice.h"
 #include "TCPServerDevice.h"
 #include "UARTDevice.h"
-#include "UARTQFlight.h"
 #include "UDPDevice.h"
 
 #include <GCS_MAVLink/GCS.h>
+#include <AP_HAL/utility/packetise.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -79,7 +79,9 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 
     if (!_connected) {
         _connected = _device->open();
-        _device->set_blocking(false);
+        if (_connected) {
+            _device->set_blocking(false);
+        }
     }
     _initialised = false;
 
@@ -87,7 +89,20 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 
     _device->set_speed(b);
 
+    bool clear_buffers = false;
+    if (b != 0) {
+        if (_baudrate != b && hal.console != this) {
+            clear_buffers = true;
+        }
+        _baudrate = b;
+    }
+
     _allocate_buffers(rxS, txS);
+
+    if (clear_buffers) {
+        _readbuf.clear();
+        _writebuf.clear();
+    }
 }
 
 void UARTDriver::_allocate_buffers(uint16_t rxS, uint16_t txS)
@@ -127,10 +142,6 @@ AP_HAL::OwnPtr<SerialDevice> UARTDriver::_parseDevicePath(const char *arg)
 
     if (stat(arg, &st) == 0 && S_ISCHR(st.st_mode)) {
         return AP_HAL::OwnPtr<SerialDevice>(new UARTDevice(arg));
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
-    } else if (strncmp(arg, "qflight:", 8) == 0) {
-        return AP_HAL::OwnPtr<SerialDevice>(new QFLIGHTDevice(device_path));
-#endif
     } else if (strncmp(arg, "tcp:", 4) != 0 &&
                strncmp(arg, "udp:", 4) != 0 &&
                strncmp(arg, "udpin:", 6)) {
@@ -282,20 +293,35 @@ int16_t UARTDriver::read()
     return byte;
 }
 
+bool UARTDriver::discard_input()
+{
+    if (!_initialised) {
+        return false;
+    }
+    _readbuf.clear();
+    return true;
+}
+
 /* Linux implementations of Print virtual methods */
 size_t UARTDriver::write(uint8_t c)
 {
     if (!_initialised) {
         return 0;
     }
+    if (!_write_mutex.take_nonblocking()) {
+        return 0;
+    }
 
     while (_writebuf.space() == 0) {
         if (_nonblocking_writes) {
+            _write_mutex.give();
             return 0;
         }
         hal.scheduler->delay(1);
     }
-    return _writebuf.write(&c, 1);
+    size_t ret = _writebuf.write(&c, 1);
+    _write_mutex.give();
+    return ret;
 }
 
 /*
@@ -306,10 +332,14 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
     if (!_initialised) {
         return 0;
     }
+    if (!_write_mutex.take_nonblocking()) {
+        return 0;
+    }
     if (!_nonblocking_writes) {
         /*
           use the per-byte delay loop in write() above for blocking writes
          */
+        _write_mutex.give();
         size_t ret = 0;
         while (size--) {
             if (write(*buffer++) != 1) break;
@@ -318,7 +348,9 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
         return ret;
     }
 
-    return _writebuf.write(buffer, size);
+    size_t ret = _writebuf.write(buffer, size);
+    _write_mutex.give();
+    return ret;
 }
 
 /*
@@ -358,58 +390,10 @@ bool UARTDriver::_write_pending_bytes(void)
     // write any pending bytes
     uint32_t available_bytes = _writebuf.available();
     uint16_t n = available_bytes;
-    int16_t b = _writebuf.peek(0);
-    if (_packetise && n > 0 &&
-        b != MAVLINK_STX_MAVLINK1 && b != MAVLINK_STX) {
-        /*
-          we have a non-mavlink packet at the start of the
-          buffer. Look ahead for a MAVLink start byte, up to 256 bytes
-          ahead
-         */
-        uint16_t limit = n>256?256:n;
-        uint16_t i;
-        for (i=0; i<limit; i++) {
-            b = _writebuf.peek(i);
-            if (b == MAVLINK_STX_MAVLINK1 || b == MAVLINK_STX) {
-                n = i;
-                break;
-            }
-        }
-        // if we didn't find a MAVLink marker then limit the send size to 256
-        if (i == limit) {
-            n = limit;
-        }
-    }
-    b = _writebuf.peek(0);
-    if (_packetise && n > 0 &&
-        (b == MAVLINK_STX_MAVLINK1 || b == MAVLINK_STX)) {
-        uint8_t min_length = (b == MAVLINK_STX_MAVLINK1)?8:12;
-        // this looks like a MAVLink packet - try to write on
-        // packet boundaries when possible
-        if (n < min_length) {
-            // we need to wait for more data to arrive
-            n = 0;
-        } else {
-            // the length of the packet is the 2nd byte, and mavlink
-            // packets have a 6 byte header plus 2 byte checksum,
-            // giving len+8 bytes
-            int16_t len = _writebuf.peek(1);
-            if (b == MAVLINK_STX) {
-                // check for signed packet with extra 13 bytes
-                int16_t incompat_flags = _writebuf.peek(2);
-                if (incompat_flags & MAVLINK_IFLAG_SIGNED) {
-                    min_length += MAVLINK_SIGNATURE_BLOCK_LEN;
-                }
-            }
-            if (n < len+min_length) {
-                // we don't have a full packet yet
-                n = 0;
-            } else if (n > len+min_length) {
-                // send just 1 packet at a time (so MAVLink packets
-                // are aligned on UDP boundaries)
-                n = len+min_length;
-            }
-        }
+
+    if (_packetise && n > 0) {
+        // send on MAVLink packet boundaries if possible
+        n = mavlink_packetise(_writebuf, n);
     }
 
     if (n > 0) {
@@ -471,6 +455,10 @@ void UARTDriver::_timer_tick(void)
         }
         _readbuf.commit((unsigned)ret);
 
+        // update receive timestamp
+        _receive_timestamp[_receive_timestamp_idx^1] = AP_HAL::micros64();
+        _receive_timestamp_idx ^= 1;
+        
         /* stop reading as we read less than we asked for */
         if ((unsigned)ret < vec[i].len) {
             break;
@@ -478,4 +466,32 @@ void UARTDriver::_timer_tick(void)
     }
 
     _in_timer = false;
+}
+
+void UARTDriver::configure_parity(uint8_t v) {
+    _device->set_parity(v);
+}
+
+/*
+  return timestamp estimate in microseconds for when the start of
+  a nbytes packet arrived on the uart. This should be treated as a
+  time constraint, not an exact time. It is guaranteed that the
+  packet did not start being received after this time, but it
+  could have been in a system buffer before the returned time.
+  
+  This takes account of the baudrate of the link. For transports
+  that have no baudrate (such as USB) the time estimate may be
+  less accurate.
+  
+  A return value of zero means the HAL does not support this API
+*/
+uint64_t UARTDriver::receive_time_constraint_us(uint16_t nbytes)
+{
+    uint64_t last_receive_us = _receive_timestamp[_receive_timestamp_idx];
+    if (_baudrate > 0) {
+        // assume 10 bits per byte.
+        uint32_t transport_time_us = (1000000UL * 10UL / _baudrate) * (nbytes+available());
+        last_receive_us -= transport_time_us;
+    }
+    return last_receive_us;
 }

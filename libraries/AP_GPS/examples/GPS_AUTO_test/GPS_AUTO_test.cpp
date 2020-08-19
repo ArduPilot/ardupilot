@@ -1,34 +1,27 @@
-//
-// Test for AP_GPS_AUTO
-//
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
 
-#include <stdlib.h>
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-#include <AP_Common/AP_Common.h>
-#include <AP_Param/AP_Param.h>
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+/*
+     Test for AP_GPS_AUTO
+*/
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_GPS/AP_GPS.h>
-#include <DataFlash/DataFlash.h>
-#include <AP_InertialSensor/AP_InertialSensor.h>
-#include <AP_ADC/AP_ADC.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AP_Baro/AP_Baro.h>
-#include <Filter/Filter.h>
-#include <AP_AHRS/AP_AHRS.h>
-#include <AP_Compass/AP_Compass.h>
-#include <AP_Declination/AP_Declination.h>
-#include <AP_Airspeed/AP_Airspeed.h>
-#include <AP_Vehicle/AP_Vehicle.h>
-#include <AP_Mission/AP_Mission.h>
-#include <StorageManager/StorageManager.h>
-#include <AP_Terrain/AP_Terrain.h>
-#include <AP_Math/AP_Math.h>
+#include <GCS_MAVLink/GCS_Dummy.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Notify/AP_BoardLED.h>
-#include <AP_Scheduler/AP_Scheduler.h>
-#include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_SerialManager/AP_SerialManager.h>
-#include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 void setup();
@@ -41,12 +34,19 @@ static AP_BoardConfig board_config;
 // create board led object
 AP_BoardLED board_led;
 
+// create fake gcs object
+GCS_Dummy _gcs;
+
+const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
+        AP_GROUPEND
+};
+
 // This example uses GPS system. Create it.
 static AP_GPS gps;
-// Serial manager is needed for UART comunications
+// Serial manager is needed for UART communications
 static AP_SerialManager serial_manager;
 
-
+//to be called only once on boot for initializing objects
 void setup()
 {
     hal.console->printf("GPS AUTO library test\n");
@@ -61,6 +61,30 @@ void setup()
     gps.init(serial_manager);
 }
 
+
+/*
+  print a int32_t lat/long in decimal degrees
+ */
+void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon);
+void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon)
+{
+    int32_t dec_portion, frac_portion;
+    int32_t abs_lat_or_lon = labs(lat_or_lon);
+
+    // extract decimal portion (special handling of negative numbers to ensure we round towards zero)
+    dec_portion = abs_lat_or_lon / 10000000UL;
+
+    // extract fractional portion
+    frac_portion = abs_lat_or_lon - dec_portion*10000000UL;
+
+    // print output including the minus sign
+    if( lat_or_lon < 0 ) {
+        s->printf("-");
+    }
+    s->printf("%ld.%07ld",(long)dec_portion,(long)frac_portion);
+}
+
+// loop
 void loop()
 {
     static uint32_t last_msg_ms;

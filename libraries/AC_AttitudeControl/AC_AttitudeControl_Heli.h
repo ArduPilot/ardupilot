@@ -36,13 +36,9 @@ public:
                         AP_MotorsHeli& motors,
                         float dt) :
         AC_AttitudeControl(ahrs, aparm, motors, dt),
-        _passthrough_roll(0), _passthrough_pitch(0), _passthrough_yaw(0),
-        _pid_rate_roll(AC_ATC_HELI_RATE_RP_P, AC_ATC_HELI_RATE_RP_I, AC_ATC_HELI_RATE_RP_D, AC_ATC_HELI_RATE_RP_IMAX, AC_ATC_HELI_RATE_RP_FILT_HZ, dt, AC_ATC_HELI_RATE_RP_FF),
-        _pid_rate_pitch(AC_ATC_HELI_RATE_RP_P, AC_ATC_HELI_RATE_RP_I, AC_ATC_HELI_RATE_RP_D, AC_ATC_HELI_RATE_RP_IMAX, AC_ATC_HELI_RATE_RP_FILT_HZ, dt, AC_ATC_HELI_RATE_RP_FF),
-        _pid_rate_yaw(AC_ATC_HELI_RATE_YAW_P, AC_ATC_HELI_RATE_YAW_I, AC_ATC_HELI_RATE_YAW_D, AC_ATC_HELI_RATE_YAW_IMAX, AC_ATC_HELI_RATE_YAW_FILT_HZ, dt, AC_ATC_HELI_RATE_YAW_FF),
-        pitch_feedforward_filter(AC_ATTITUDE_HELI_RATE_RP_FF_FILTER),
-        roll_feedforward_filter(AC_ATTITUDE_HELI_RATE_RP_FF_FILTER),
-        yaw_velocity_feedforward_filter(AC_ATTITUDE_HELI_RATE_Y_VFF_FILTER)
+        _pid_rate_roll(AC_ATC_HELI_RATE_RP_P, AC_ATC_HELI_RATE_RP_I, AC_ATC_HELI_RATE_RP_D, AC_ATC_HELI_RATE_RP_FF, AC_ATC_HELI_RATE_RP_IMAX, AC_ATTITUDE_HELI_RATE_RP_FF_FILTER, AC_ATC_HELI_RATE_RP_FILT_HZ, 0.0f, dt),
+        _pid_rate_pitch(AC_ATC_HELI_RATE_RP_P, AC_ATC_HELI_RATE_RP_I, AC_ATC_HELI_RATE_RP_D, AC_ATC_HELI_RATE_RP_FF, AC_ATC_HELI_RATE_RP_IMAX, AC_ATTITUDE_HELI_RATE_RP_FF_FILTER, AC_ATC_HELI_RATE_RP_FILT_HZ, 0.0f, dt),
+        _pid_rate_yaw(AC_ATC_HELI_RATE_YAW_P, AC_ATC_HELI_RATE_YAW_I, AC_ATC_HELI_RATE_YAW_D, AC_ATC_HELI_RATE_YAW_FF, AC_ATC_HELI_RATE_YAW_IMAX, AC_ATTITUDE_HELI_RATE_Y_VFF_FILTER, AC_ATC_HELI_RATE_YAW_FILT_HZ, 0.0f, dt)
         {
             AP_Param::setup_object_defaults(this, var_info);
 
@@ -57,9 +53,9 @@ public:
         }
 
     // pid accessors
-    AC_PID& get_rate_roll_pid() { return _pid_rate_roll; }
-    AC_PID& get_rate_pitch_pid() { return _pid_rate_pitch; }
-    AC_PID& get_rate_yaw_pid() { return _pid_rate_yaw; }
+    AC_PID& get_rate_roll_pid() override { return _pid_rate_roll; }
+    AC_PID& get_rate_pitch_pid() override { return _pid_rate_pitch; }
+    AC_PID& get_rate_yaw_pid() override { return _pid_rate_yaw; }
 
     // passthrough_bf_roll_pitch_rate_yaw - roll and pitch are passed through directly, body-frame rate target for yaw
     void passthrough_bf_roll_pitch_rate_yaw(float roll_passthrough, float pitch_passthrough, float yaw_rate_bf_cds) override;
@@ -72,7 +68,7 @@ public:
 
 	// rate_controller_run - run lowest level body-frame rate controller and send outputs to the motors
 	// should be called at 100hz or more
-	virtual void rate_controller_run();
+	virtual void rate_controller_run() override;
 
     // Update Alt_Hold angle maximum
     void update_althold_lean_angle_max(float throttle_in) override;
@@ -129,21 +125,21 @@ private:
 	// rate_bf_to_motor_roll_pitch - ask the rate controller to calculate the motor outputs to achieve the target body-frame rate (in radians/sec) for roll, pitch and yaw
     // outputs are sent directly to motor class
     void rate_bf_to_motor_roll_pitch(const Vector3f &rate_rads, float rate_roll_target_rads, float rate_pitch_target_rads);
-    float rate_target_to_motor_yaw(float rate_yaw_actual_rads, float rate_yaw_rads) override;
+    float rate_target_to_motor_yaw(float rate_yaw_actual_rads, float rate_yaw_rads);
 
     //
     // throttle methods
     //
     
     // pass through for roll and pitch
-    int16_t _passthrough_roll;
-    int16_t _passthrough_pitch;
+    float _passthrough_roll;
+    float _passthrough_pitch;
 
     // pass through for yaw if tail_passthrough is set
-    int16_t _passthrough_yaw;
+    float _passthrough_yaw;
 
     // get_roll_trim - angle in centi-degrees to be added to roll angle. Used by helicopter to counter tail rotor thrust in hover
-    float get_roll_trim_rad() { return constrain_float(radians(_hover_roll_trim_scalar * _hover_roll_trim * 0.01f), -radians(10.0f),radians(10.0f));}
+    float get_roll_trim_rad() override { return constrain_float(radians(_hover_roll_trim_scalar * _hover_roll_trim * 0.01f), -radians(10.0f),radians(10.0f));}
 
     // internal variables
     float _hover_roll_trim_scalar = 0;              // scalar used to suppress Hover Roll Trim
@@ -161,12 +157,4 @@ private:
     AC_HELI_PID     _pid_rate_pitch;
     AC_HELI_PID     _pid_rate_yaw;
     
-    // LPF filters to act on Rate Feedforward terms to linearize output.
-    // Due to complicated aerodynamic effects, feedforwards acting too fast can lead
-    // to jerks on rate change requests.
-    LowPassFilterFloat pitch_feedforward_filter;
-    LowPassFilterFloat roll_feedforward_filter;
-    LowPassFilterFloat yaw_velocity_feedforward_filter;
-    LowPassFilterFloat yaw_acceleration_feedforward_filter;
-
 };

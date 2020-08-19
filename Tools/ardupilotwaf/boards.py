@@ -5,6 +5,7 @@ from collections import OrderedDict
 import sys, os
 
 import waflib
+from waflib import Utils
 from waflib.Configure import conf
 
 _board_classes = {}
@@ -31,15 +32,36 @@ class Board:
     abstract = True
 
     def __init__(self):
-        self.with_uavcan = False
+        self.with_can = False
 
     def configure(self, cfg):
-        cfg.env.TOOLCHAIN = self.toolchain
+        cfg.env.TOOLCHAIN = cfg.options.toolchain or self.toolchain
+        cfg.env.ROMFS_FILES = []
         cfg.load('toolchain')
         cfg.load('cxx_checks')
 
         env = waflib.ConfigSet.ConfigSet()
         self.configure_env(cfg, env)
+
+        # Setup scripting, had to defer this to allow checking board size
+        if ((not cfg.options.disable_scripting) and
+            (not cfg.env.DISABLE_SCRIPTING) and
+            ((cfg.env.BOARD_FLASH_SIZE is None) or
+             (cfg.env.BOARD_FLASH_SIZE == []) or
+             (cfg.env.BOARD_FLASH_SIZE > 1024))):
+
+            env.DEFINES.update(
+                ENABLE_SCRIPTING = 1,
+                LUA_32BITS = 1,
+                )
+
+            env.AP_LIBRARIES += [
+                'AP_Scripting',
+                'AP_Scripting/lua/src',
+                ]
+
+        else:
+            cfg.options.disable_scripting = True
 
         d = env.get_merged_dict()
         # Always prepend so that arguments passed in the command line get
@@ -64,6 +86,11 @@ class Board:
             cfg.srcnode.find_dir('libraries/AP_Common/missing').abspath()
         ])
 
+    def cc_version_gte(self, cfg, want_major, want_minor):
+        (major, minor, patchlevel) = cfg.env.CC_VERSION
+        return (int(major) > want_major or
+                (int(major) == want_major and int(minor) >= want_minor))
+
     def configure_env(self, cfg, env):
         # Use a dictionary instead of the convetional list for definitions to
         # make easy to override them. Convert back to list before consumption.
@@ -76,17 +103,32 @@ class Board:
 
             '-Wall',
             '-Wextra',
-            '-Wformat',
-            '-Wshadow',
+            '-Werror=format',
             '-Wpointer-arith',
             '-Wcast-align',
-            '-Wundef',
             '-Wno-missing-field-initializers',
             '-Wno-unused-parameter',
             '-Wno-redundant-decls',
             '-Wno-unknown-pragmas',
             '-Wno-trigraphs',
+            '-Werror=shadow',
+            '-Werror=return-type',
+            '-Werror=unused-result',
+            '-Werror=unused-variable',
+            '-Werror=narrowing',
+            '-Werror=attributes',
+            '-Werror=overflow',
+            '-Werror=parentheses',
+            '-Werror=format-extra-args',
+            '-Werror=ignored-qualifiers',
+            '-Werror=undef',
+            '-DARDUPILOT_BUILD',
         ]
+
+        if cfg.options.scripting_checks:
+            env.DEFINES.update(
+                AP_SCRIPTING_CHECKS = 1,
+                )
 
         if 'clang' in cfg.env.COMPILER_CC:
             env.CFLAGS += [
@@ -96,14 +138,36 @@ class Board:
                 '-Wno-inconsistent-missing-override',
                 '-Wno-mismatched-tags',
                 '-Wno-gnu-variable-sized-type-not-at-end',
-                '-Wno-c++11-narrowing'
+                '-Werror=implicit-fallthrough',
             ]
+        else:
+            env.CFLAGS += [
+                '-Wno-format-contains-nul',
+            ]
+            if self.cc_version_gte(cfg, 7, 4):
+                env.CXXFLAGS += [
+                    '-Werror=implicit-fallthrough',
+                ]
 
         if cfg.env.DEBUG:
             env.CFLAGS += [
                 '-g',
                 '-O0',
             ]
+            env.DEFINES.update(
+                HAL_DEBUG_BUILD = 1,
+            )
+
+        if cfg.options.bootloader:
+            # don't let bootloaders try and pull scripting in
+            cfg.options.disable_scripting = True
+        else:
+            env.DEFINES.update(
+                ENABLE_HEAP = 1,
+            )
+
+        if cfg.options.enable_math_check_indexes:
+            env.CXXFLAGS += ['-DMATH_CHECK_INDEXES']
 
         env.CXXFLAGS += [
             '-std=gnu++11',
@@ -115,39 +179,89 @@ class Board:
 
             '-Wall',
             '-Wextra',
-            '-Wformat',
-            '-Wshadow',
             '-Wpointer-arith',
-            '-Wcast-align',
-            '-Wundef',
             '-Wno-unused-parameter',
             '-Wno-missing-field-initializers',
             '-Wno-reorder',
             '-Wno-redundant-decls',
             '-Wno-unknown-pragmas',
+            '-Wno-expansion-to-defined',
+            '-Werror=cast-align',
+            '-Werror=attributes',
             '-Werror=format-security',
+            '-Werror=format-extra-args',
+            '-Werror=enum-compare',
+            '-Werror=format',
             '-Werror=array-bounds',
             '-Werror=uninitialized',
             '-Werror=init-self',
+            '-Werror=narrowing',
+            '-Werror=return-type',
             '-Werror=switch',
+            '-Werror=sign-compare',
+            '-Werror=type-limits',
+            '-Werror=undef',
+            '-Werror=unused-result',
+            '-Werror=shadow',
+            '-Werror=unused-value',
+            '-Werror=unused-variable',
+            '-Werror=delete-non-virtual-dtor',
             '-Wfatal-errors',
             '-Wno-trigraphs',
+            '-Werror=parentheses',
+            '-DARDUPILOT_BUILD',
         ]
 
         if 'clang++' in cfg.env.COMPILER_CXX:
             env.CXXFLAGS += [
                 '-fcolor-diagnostics',
 
+                '-Werror=address-of-packed-member',
+
+                '-Werror=inconsistent-missing-override',
+                '-Werror=overloaded-virtual',
+
+                # catch conversion issues:
+                '-Werror=bitfield-enum-conversion',
+                '-Werror=bool-conversion',
+                '-Werror=constant-conversion',
+                '-Werror=enum-conversion',
+                '-Werror=int-conversion',
+                '-Werror=literal-conversion',
+                '-Werror=non-literal-null-conversion',
+                '-Werror=null-conversion',
+                '-Werror=objc-literal-conversion',
+#                '-Werror=shorten-64-to-32',  # ARRAY_SIZE() creates this all over the place as the caller typically takes a uint32_t not a size_t
+                '-Werror=string-conversion',
+                #    '-Werror=sign-conversion', # can't use as we assign into AP_Int8 from uint8_ts
+
                 '-Wno-gnu-designator',
-                '-Wno-inconsistent-missing-override',
                 '-Wno-mismatched-tags',
                 '-Wno-gnu-variable-sized-type-not-at-end',
-                '-Wno-c++11-narrowing'
+                '-Werror=implicit-fallthrough',
             ]
         else:
             env.CXXFLAGS += [
+                '-Wno-format-contains-nul',
                 '-Werror=unused-but-set-variable'
             ]
+            if self.cc_version_gte(cfg, 5, 2):
+                env.CXXFLAGS += [
+                    '-Werror=suggest-override',
+                ]
+            if self.cc_version_gte(cfg, 7, 4):
+                env.CXXFLAGS += [
+                    '-Werror=implicit-fallthrough',
+                ]
+
+        if cfg.options.Werror:
+            errors = ['-Werror',
+                      '-Werror=missing-declarations',
+                      '-Werror=float-equal',
+                      '-Werror=undef',
+                    ]
+            env.CFLAGS += errors
+            env.CXXFLAGS += errors
 
         if cfg.env.DEBUG:
             env.CXXFLAGS += [
@@ -164,7 +278,7 @@ class Board:
                 '-Wl,--gc-sections',
             ]
 
-        if self.with_uavcan:
+        if self.with_can:
             env.AP_LIBRARIES += [
                 'AP_UAVCAN',
                 'modules/uavcan/libuavcan/src/**/*.cpp'
@@ -173,7 +287,7 @@ class Board:
             env.CXXFLAGS += [
                 '-Wno-error=cast-align',
             ]
-            
+
             env.DEFINES.update(
                 UAVCAN_CPP_VERSION = 'UAVCAN_CPP03',
                 UAVCAN_NO_ASSERTIONS = 1,
@@ -184,21 +298,38 @@ class Board:
                 cfg.srcnode.find_dir('modules/uavcan/libuavcan/include').abspath()
             ]
 
+        if cfg.options.build_dates:
+            env.build_dates = True
+
         # We always want to use PRI format macros
         cfg.define('__STDC_FORMAT_MACROS', 1)
 
+        if cfg.options.disable_ekf2:
+            env.CXXFLAGS += ['-DHAL_NAVEKF2_AVAILABLE=0']
+
+        if cfg.options.disable_ekf3:
+            env.CXXFLAGS += ['-DHAL_NAVEKF3_AVAILABLE=0']
 
     def pre_build(self, bld):
         '''pre-build hook that gets called before dynamic sources'''
-        pass
+        if bld.env.ROMFS_FILES:
+            self.embed_ROMFS_files(bld)
 
     def build(self, bld):
         bld.ap_version_append_str('GIT_VERSION', bld.git_head_hash(short=True))
         import time
         ltime = time.localtime()
-        bld.ap_version_append_int('BUILD_DATE_YEAR', ltime.tm_year)
-        bld.ap_version_append_int('BUILD_DATE_MONTH', ltime.tm_mon)
-        bld.ap_version_append_int('BUILD_DATE_DAY', ltime.tm_mday)
+        if bld.env.build_dates:
+            bld.ap_version_append_int('BUILD_DATE_YEAR', ltime.tm_year)
+            bld.ap_version_append_int('BUILD_DATE_MONTH', ltime.tm_mon)
+            bld.ap_version_append_int('BUILD_DATE_DAY', ltime.tm_mday)
+
+    def embed_ROMFS_files(self, ctx):
+        '''embed some files using AP_ROMFS'''
+        import embed
+        header = ctx.bldnode.make_node('ap_romfs_embedded.h').abspath()
+        if not embed.create_embedded_h(header, ctx.env.ROMFS_FILES, ctx.env.ROMFS_UNCOMPRESSED):
+            ctx.fatal("Failed to created ap_romfs_embedded.h")
 
 Board = BoardMeta('Board', Board.__bases__, dict(Board.__dict__))
 
@@ -214,13 +345,12 @@ def add_dynamic_boards():
 
 def get_boards_names():
     add_dynamic_boards()
-    ret = sorted(list(_board_classes.keys()))
-    # some board types should not be selected
-    hidden = ['chibios']
-    for h in hidden:
-        if h in ret:
-            ret.remove(h)
-    return ret        
+
+    return sorted(list(_board_classes.keys()), key=str.lower)
+
+def get_removed_boards():
+    '''list of boards which have been removed'''
+    return sorted(['px4-v1', 'px4-v2', 'px4-v3', 'px4-v4', 'px4-v4pro'])
 
 @conf
 def get_board(ctx):
@@ -228,6 +358,21 @@ def get_board(ctx):
     if not _board:
         if not ctx.env.BOARD:
             ctx.fatal('BOARD environment variable must be set before first call to get_board()')
+        if ctx.env.BOARD in get_removed_boards():
+            ctx.fatal('''
+The board target %s has been removed from ArduPilot with the removal of NuttX support and HAL_PX4.
+
+Please use a replacement build as follows:
+
+ px4-v2     Use Pixhawk1 build
+ px4-v3     Use Pixhawk1 or CubeBlack builds
+ px4-v4     Use Pixracer build
+ px4-v4pro  Use DrotekP3Pro build
+''' % ctx.env.BOARD)
+
+        boards = _board_classes.keys()
+        if not ctx.env.BOARD in boards:
+            ctx.fatal("Invalid board '%s': choices are %s" % (ctx.env.BOARD, ', '.join(sorted(boards, key=str.lower))))
         _board = _board_classes[ctx.env.BOARD]()
     return _board
 
@@ -236,17 +381,39 @@ def get_board(ctx):
 # be worthy to keep board definitions in files of their own.
 
 class sitl(Board):
+
+    def __init__(self):
+        if Utils.unversioned_sys_platform().startswith("linux"):
+            self.with_can = True
+        else:
+            self.with_can = False
+
     def configure_env(self, cfg, env):
         super(sitl, self).configure_env(cfg, env)
-
         env.DEFINES.update(
             CONFIG_HAL_BOARD = 'HAL_BOARD_SITL',
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_NONE',
+            AP_SCRIPTING_CHECKS = 1, # SITL should always do runtime scripting checks
         )
+
+
+        if self.with_can:
+            cfg.define('HAL_NUM_CAN_IFACES', 2)
+            cfg.define('UAVCAN_EXCEPTIONS', 0)
+
+        env.CXXFLAGS += [
+            '-Werror=float-equal'
+        ]
 
         if not cfg.env.DEBUG:
             env.CXXFLAGS += [
                 '-O3',
+            ]
+
+        if 'clang++' in cfg.env.COMPILER_CXX and cfg.options.asan:
+            env.CXXFLAGS += [
+                '-fsanitize=address',
+                '-fno-omit-frame-pointer',
             ]
 
         env.LIB += [
@@ -254,19 +421,56 @@ class sitl(Board):
         ]
 
         cfg.check_librt(env)
+        cfg.check_feenableexcept()
 
         env.LINKFLAGS += ['-pthread',]
+
+        if cfg.env.DEBUG and 'clang++' in cfg.env.COMPILER_CXX and cfg.options.asan:
+             env.LINKFLAGS += ['-fsanitize=address']
+
         env.AP_LIBRARIES += [
             'AP_HAL_SITL',
             'SITL',
         ]
 
-        if sys.platform == 'cygwin':
+        if cfg.options.enable_sfml:
+            if not cfg.check_SFML(env):
+                cfg.fatal("Failed to find SFML libraries")
+
+        import fnmatch
+        if cfg.options.sitl_osd:
+            env.CXXFLAGS += ['-DWITH_SITL_OSD','-DOSD_ENABLED=1']
+            for f in os.listdir('libraries/AP_OSD/fonts'):
+                if fnmatch.fnmatch(f, "font*bin"):
+                    env.ROMFS_FILES += [(f,'libraries/AP_OSD/fonts/'+f)]
+
+        # embed any scripts from ROMFS/scripts
+        if os.path.exists('ROMFS/scripts'):
+            for f in os.listdir('ROMFS/scripts'):
+                if fnmatch.fnmatch(f, "*.lua"):
+                    env.ROMFS_FILES += [('scripts/'+f,'ROMFS/scripts/'+f)]
+
+        if len(env.ROMFS_FILES) > 0:
+            env.CXXFLAGS += ['-DHAL_HAVE_AP_ROMFS_EMBEDDED_H']
+
+        if cfg.options.sitl_rgbled:
+            env.CXXFLAGS += ['-DWITH_SITL_RGBLED']
+
+        if cfg.options.enable_sfml_audio:
+            if not cfg.check_SFML_Audio(env):
+                cfg.fatal("Failed to find SFML Audio libraries")
+            env.CXXFLAGS += ['-DWITH_SITL_TONEALARM']
+
+        if cfg.options.sitl_flash_storage:
+            env.CXXFLAGS += ['-DSTORAGE_USE_FLASH=1']
+
+        if cfg.env.DEST_OS == 'cygwin':
             env.LIB += [
                 'winmm',
             ]
-            env.CXXFLAGS += ['-DCYGWIN_BUILD']
 
+        if Utils.unversioned_sys_platform() == 'cygwin':
+            env.CXXFLAGS += ['-DCYGWIN_BUILD']
 
         if 'clang++' in cfg.env.COMPILER_CXX:
             print("Disabling SLP for clang++")
@@ -274,19 +478,20 @@ class sitl(Board):
                 '-fno-slp-vectorize' # compiler bug when trying to use SLP
             ]
 
-
 class chibios(Board):
+    abstract = True
     toolchain = 'arm-none-eabi'
 
     def configure_env(self, cfg, env):
         super(chibios, self).configure_env(cfg, env)
 
+        cfg.load('chibios')
         env.BOARD = self.name
 
         env.DEFINES.update(
             CONFIG_HAL_BOARD = 'HAL_BOARD_CHIBIOS',
-            HAVE_OCLOEXEC = 0,
             HAVE_STD_NULLPTR_T = 0,
+            USE_LIBC_REALLOC = 0,
         )
 
         env.AP_LIBRARIES += [
@@ -295,21 +500,13 @@ class chibios(Board):
 
         # make board name available for USB IDs
         env.CHIBIOS_BOARD_NAME = 'HAL_BOARD_NAME="%s"' % self.name
-
-        env.CXXFLAGS += [
+        env.CFLAGS += cfg.env.CPU_FLAGS + [
+            '-Wno-cast-align',
             '-Wlogical-op',
             '-Wframe-larger-than=1300',
             '-fsingle-precision-constant',
             '-Wno-attributes',
-            '-Wno-error=double-promotion',
-            '-Wno-error=missing-declarations',
-            '-Wno-error=float-equal',
-            '-Wno-error=undef',
-            '-Wno-error=cpp',
-            '-Wno-cast-align',
             '-fno-exceptions',
-            '-fno-rtti',
-            '-fno-threadsafe-statics',
             '-Wall',
             '-Wextra',
             '-Wno-sign-compare',
@@ -319,15 +516,12 @@ class chibios(Board):
             '-Wno-unused-parameter',
             '-Werror=array-bounds',
             '-Wfatal-errors',
-            '-Werror=unused-variable',
             '-Werror=uninitialized',
             '-Werror=init-self',
             '-Wframe-larger-than=1024',
             '-Werror=unused-but-set-variable',
             '-Wno-missing-field-initializers',
             '-Wno-trigraphs',
-            '-Os',
-            '-g',
             '-fno-strict-aliasing',
             '-fomit-frame-pointer',
             '-falign-functions=16',
@@ -339,23 +533,37 @@ class chibios(Board):
             '-fno-builtin-vprintf',
             '-fno-builtin-vfprintf',
             '-fno-builtin-puts',
-            '-mcpu=cortex-m4',
             '-mno-thumb-interwork',
             '-mthumb',
-            '-mfpu=fpv4-sp-d16',
-            '-mfloat-abi=hard'
+            '--specs=nano.specs',
+            '-specs=nosys.specs',
+            '-DCHIBIOS_BOARD_NAME="%s"' % self.name,
+            '-D__USE_CMSIS',
+            '-Werror=deprecated-declarations'
+        ]
+        if not cfg.options.Werror:
+            env.CFLAGS += [
+            '-Wno-error=double-promotion',
+            '-Wno-error=missing-declarations',
+            '-Wno-error=float-equal',
+            '-Wno-error=undef',
+            '-Wno-error=cpp',
+            ]
+
+        env.CXXFLAGS += env.CFLAGS + [
+            '-fno-rtti',
+            '-fno-threadsafe-statics',
+        ]
+        env.CFLAGS += [
+            '-std=c11'
         ]
 
-        if sys.platform == 'cygwin':
+        if Utils.unversioned_sys_platform() == 'cygwin':
             env.CXXFLAGS += ['-DCYGWIN_BUILD']
 
         bldnode = cfg.bldnode.make_node(self.name)
         env.BUILDROOT = bldnode.make_node('').abspath()
-
-        env.LINKFLAGS = [
-            '-mcpu=cortex-m4',
-            '-Os',
-            '-g',
+        env.LINKFLAGS = cfg.env.CPU_FLAGS + [
             '-fomit-frame-pointer',
             '-falign-functions=16',
             '-ffunction-sections',
@@ -367,28 +575,56 @@ class chibios(Board):
             '-u_getpid',
             '-u_errno',
             '-uchThdExit',
-            '-u_printf_float',
             '-fno-common',
             '-nostartfiles',
-            '-mfloat-abi=hard',
-            '-mfpu=fpv4-sp-d16',
             '-mno-thumb-interwork',
             '-mthumb',
+            '-specs=nano.specs',
+            '-specs=nosys.specs',
             '-L%s' % env.BUILDROOT,
             '-L%s' % cfg.srcnode.make_node('modules/ChibiOS/os/common/startup/ARMCMx/compilers/GCC/ld/').abspath(),
             '-L%s' % cfg.srcnode.make_node('libraries/AP_HAL_ChibiOS/hwdef/common/').abspath(),
-            '-Wl,--gc-sections,--no-warn-mismatch,--library-path=/ld,--script=ldscript.ld,--defsym=__process_stack_size__=0x400,--defsym=__main_stack_size__=0x400',
+            '-Wl,--gc-sections,--no-warn-mismatch,--library-path=/ld,--script=ldscript.ld,--defsym=__process_stack_size__=%s,--defsym=__main_stack_size__=%s' % (cfg.env.PROCESS_STACK, cfg.env.MAIN_STACK)
         ]
+
+        if cfg.env.DEBUG:
+            env.CFLAGS += [
+                '-gdwarf-4',
+                '-g3',
+            ]
+            env.LINKFLAGS += [
+                '-gdwarf-4',
+                '-g3',
+            ]
+
+        if cfg.env.ENABLE_ASSERTS:
+            cfg.msg("Enabling ChibiOS asserts", "yes")
+            env.CFLAGS += [ '-DHAL_CHIBIOS_ENABLE_ASSERTS' ]
+            env.CXXFLAGS += [ '-DHAL_CHIBIOS_ENABLE_ASSERTS' ]
+        else:
+            cfg.msg("Enabling ChibiOS asserts", "no")
 
         env.LIB += ['gcc', 'm']
 
         env.GIT_SUBMODULES += [
             'ChibiOS',
         ]
-        cfg.load('chibios')
+
+        env.INCLUDES += [
+            cfg.srcnode.find_dir('libraries/AP_GyroFFT/CMSIS_5/include').abspath()
+        ]
+
+        try:
+            import intelhex
+            env.HAVE_INTEL_HEX = True
+            cfg.msg("Checking for intelhex module:", 'OK')
+        except Exception:
+            cfg.msg("Checking for intelhex module:", 'disabled', color='YELLOW')
+            env.HAVE_INTEL_HEX = False
 
     def build(self, bld):
         super(chibios, self).build(bld)
+        bld.ap_version_append_str('CHIBIOS_GIT_VERSION', bld.git_submodule_head_hash('ChibiOS', short=True))
         bld.load('chibios')
 
     def pre_build(self, bld):
@@ -398,12 +634,11 @@ class chibios(Board):
         fun = getattr(module, 'pre_build', None)
         if fun:
             fun(bld)
+        super(chibios, self).pre_build(bld)
 
 class linux(Board):
     def configure_env(self, cfg, env):
         super(linux, self).configure_env(cfg, env)
-
-        cfg.find_toolchain_program('pkg-config', var='PKGCONFIG')
 
         env.DEFINES.update(
             CONFIG_HAL_BOARD = 'HAL_BOARD_LINUX',
@@ -429,9 +664,12 @@ class linux(Board):
             'AP_HAL_Linux',
         ]
 
-        if self.with_uavcan:
+        if self.with_can:
             cfg.define('UAVCAN_EXCEPTIONS', 0)
-    
+
+        if cfg.options.apstatedir:
+            cfg.define('AP_STATEDIR', cfg.options.apstatedir)
+
     def build(self, bld):
         super(linux, self).build(bld)
         if bld.options.upload:
@@ -439,14 +677,15 @@ class linux(Board):
             # Avoid infinite recursion
             bld.options.upload = False
 
-class minlure(linux):
+class navigator(linux):
+    toolchain = 'arm-linux-gnueabihf'
+
     def configure_env(self, cfg, env):
-        super(minlure, self).configure_env(cfg, env)
+        super(navigator, self).configure_env(cfg, env)
 
         env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_MINLURE',
+            CONFIG_HAL_BOARD_SUBTYPE='HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR',
         )
-
 
 class erleboard(linux):
     toolchain = 'arm-linux-gnueabihf'
@@ -482,7 +721,7 @@ class edge(linux):
     toolchain = 'arm-linux-gnueabihf'
 
     def __init__(self):
-        self.with_uavcan = True
+        self.with_can = True
 
     def configure_env(self, cfg, env):
         super(edge, self).configure_env(cfg, env)
@@ -514,6 +753,9 @@ class ocpoc_zynq(linux):
 class bbbmini(linux):
     toolchain = 'arm-linux-gnueabihf'
 
+    def __init__(self):
+        self.with_can = True
+
     def configure_env(self, cfg, env):
         super(bbbmini, self).configure_env(cfg, env)
 
@@ -524,6 +766,9 @@ class bbbmini(linux):
 class blue(linux):
     toolchain = 'arm-linux-gnueabihf'
 
+    def __init__(self):
+        self.with_can = True
+
     def configure_env(self, cfg, env):
         super(blue, self).configure_env(cfg, env)
 
@@ -533,6 +778,9 @@ class blue(linux):
 
 class pocket(linux):
     toolchain = 'arm-linux-gnueabihf'
+
+    def __init__(self):
+        self.with_can = True
 
     def configure_env(self, cfg, env):
         super(pocket, self).configure_env(cfg, env)
@@ -612,6 +860,9 @@ class pxfmini(linux):
         )
 
 class aero(linux):
+    def __init__(self):
+        self.with_can = True
+
     def configure_env(self, cfg, env):
         super(aero, self).configure_env(cfg, env)
 
@@ -628,172 +879,14 @@ class rst_zynq(linux):
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ',
         )
-        
-class px4(Board):
-    abstract = True
-    toolchain = 'arm-none-eabi'
 
-    def __init__(self):
-        # bootloader name: a file with that name will be used and installed
-        # on ROMFS
-        super(px4, self).__init__()
-
-        self.bootloader_name = None
-
-        # board name: it's the name of this board that's also used as path
-        # in ROMFS: don't add spaces
-        self.board_name = None
-
-        # px4io binary name: this is the name of the IO binary to be installed
-        # in ROMFS
-        self.px4io_name = None
-
-        # board-specific init script: if True a file with `board_name` name will
-        # be searched for in sources and installed in ROMFS as rc.board. This
-        # init script is used to change the init behavior among different boards.
-        self.board_rc = False
-
-        # Path relative to the ROMFS directory where to find a file with default
-        # parameters. If set this file will be copied to /etc/defaults.parm
-        # inside the ROMFS
-        self.param_defaults = None
-
-        self.ROMFS_EXCLUDE = []
-
-    def configure(self, cfg):
-        if not self.bootloader_name:
-            cfg.fatal('configure: px4: bootloader name is required')
-        if not self.board_name:
-            cfg.fatal('configure: px4: board name is required')
-
-        super(px4, self).configure(cfg)
-        cfg.load('px4')
-
+class SITL_static(sitl):
     def configure_env(self, cfg, env):
-        super(px4, self).configure_env(cfg, env)
+        super(SITL_static, self).configure_env(cfg, env)
+        cfg.env.STATIC_LINKING = True
 
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD = 'HAL_BOARD_PX4',
-            HAVE_OCLOEXEC = 0,
-            HAVE_STD_NULLPTR_T = 0,
-        )
-        env.CXXFLAGS += [
-            '-Wlogical-op',
-            '-Wframe-larger-than=1300',
-            '-fsingle-precision-constant',
-            '-Wno-attributes',
-            '-Wno-error=double-promotion',
-            '-Wno-error=missing-declarations',
-            '-Wno-error=float-equal',
-            '-Wno-error=undef',
-            '-Wno-error=cpp',
-        ]
-        env.AP_LIBRARIES += [
-            'AP_HAL_PX4',
-        ]
-        env.GIT_SUBMODULES += [
-            'PX4Firmware',
-            'PX4NuttX',
-            'uavcan',
-        ]
+class SITL_x86_64_linux_gnu(SITL_static):
+    toolchain = 'x86_64-linux-gnu'
 
-        if sys.platform == 'cygwin':
-            env.CXXFLAGS += ['-DCYGWIN_BUILD']
-
-        env.ROMFS_EXCLUDE = self.ROMFS_EXCLUDE
-
-        env.PX4_BOOTLOADER_NAME = self.bootloader_name
-        env.PX4_BOARD_NAME = self.board_name
-        env.PX4_BOARD_RC = self.board_rc
-        env.PX4_PX4IO_NAME = self.px4io_name
-        env.PX4_PARAM_DEFAULTS = self.param_defaults
-        env.PX4_RC_S_SCRIPT = 'init.d/rcS'
-
-        env.AP_PROGRAM_AS_STLIB = True
-
-    def build(self, bld):
-        super(px4, self).build(bld)
-        bld.ap_version_append_str('NUTTX_GIT_VERSION', bld.git_submodule_head_hash('PX4NuttX', short=True))
-        bld.ap_version_append_str('PX4_GIT_VERSION', bld.git_submodule_head_hash('PX4Firmware', short=True))
-        bld.load('px4')
-
-    def romfs_exclude(self, exclude):
-        self.ROMFS_EXCLUDE += exclude
-
-class px4_v1(px4):
-    name = 'px4-v1'
-    def __init__(self):
-        super(px4_v1, self).__init__()
-        self.bootloader_name = 'px4fmu_bl.bin'
-        self.board_name = 'px4fmu-v1'
-        self.px4io_name = 'px4io-v1'
-        self.romfs_exclude(['oreoled.bin'])
-
-class px4_v2(px4):
-    name = 'px4-v2'
-    def __init__(self):
-        super(px4_v2, self).__init__()
-        self.bootloader_name = 'px4fmuv2_bl.bin'
-        self.board_name = 'px4fmu-v2'
-        self.px4io_name = 'px4io-v2'
-        self.romfs_exclude(['oreoled.bin'])
-        self.with_uavcan = True
-
-class px4_v3(px4):
-    name = 'px4-v3'
-    def __init__(self):
-        super(px4_v3, self).__init__()
-        self.bootloader_name = 'px4fmuv2_bl.bin'
-        self.board_name = 'px4fmu-v3'
-        self.px4io_name = 'px4io-v2'
-        self.with_uavcan = True
-
-class skyviper_v2450_px4(px4_v3):
-    name = 'skyviper-v2450-px4'
-    def __init__(self):
-        super(skyviper_v2450_px4, self).__init__()
-        self.px4io_name = None
-        self.param_defaults = '../../../Tools/Frame_params/SkyViper-2450GPS/defaults.parm'
-
-    def configure_env(self, cfg, env):
-        super(skyviper_v2450_px4, self).configure_env(cfg, env)
-
-        env.DEFINES.update(
-            TOY_MODE_ENABLED = 'ENABLED',
-            USE_FLASH_STORAGE = 1,
-            ARMING_DELAY_SEC = 0,
-            LAND_START_ALT = 700,
-            HAL_RCINPUT_WITH_AP_RADIO = 1,
-            LAND_DETECTOR_ACCEL_MAX = 2
-        )
-        env.PX4_RC_S_SCRIPT = 'init.d/rcS_no_microSD'
-        env.BUILD_ABIN = True
-
-class px4_v4(px4):
-    name = 'px4-v4'
-    def __init__(self):
-        super(px4_v4, self).__init__()
-        self.bootloader_name = 'px4fmuv4_bl.bin'
-        self.board_name = 'px4fmu-v4'
-        self.romfs_exclude(['oreoled.bin'])
-        self.with_uavcan = True
-
-class px4_v4pro(px4):
-    name = 'px4-v4pro'
-    def __init__(self):
-        super(px4_v4pro, self).__init__()
-        self.bootloader_name = 'px4fmuv4pro_bl.bin'
-        self.board_name = 'px4fmu-v4pro'
-        self.px4io_name = 'px4io-v2'
-        self.romfs_exclude(['oreoled.bin'])
-        self.with_uavcan = True		
-		
-class aerofc_v1(px4):
-    name = 'aerofc-v1'
-    def __init__(self):
-        super(aerofc_v1, self).__init__()
-        self.bootloader_name = 'aerofcv1_bl.bin'
-        self.board_name = 'aerofc-v1'
-        self.romfs_exclude(['oreoled.bin'])
-        self.board_rc = True
-        self.param_defaults = '../../../Tools/Frame_params/intel-aero-rtf.param'
+class SITL_arm_linux_gnueabihf(SITL_static):
+    toolchain = 'arm-linux-gnueabihf'

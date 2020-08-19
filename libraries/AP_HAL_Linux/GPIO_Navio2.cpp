@@ -1,4 +1,4 @@
-#include <AP_Common/AP_Common.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 
 #include "GPIO_Navio2.h"
 
@@ -29,6 +29,6 @@ const unsigned Linux::GPIO_Sysfs::pin_table[] = {
 const uint8_t Linux::GPIO_Sysfs::n_pins = _NAVIO2_GPIO_MAX;
 
 static_assert(ARRAY_SIZE(Linux::GPIO_Sysfs::pin_table) == _NAVIO2_GPIO_MAX,
-              "GPIO pin_table must have the same size of entries in enum gpio_minnow");
+              "GPIO pin_table must have the same size of entries in enum gpio_navio2");
 
 #endif

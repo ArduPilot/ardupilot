@@ -2,6 +2,8 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include "RCInput.h"
+#include <SITL/SITL.h>
+#include <AP_RCProtocol/AP_RCProtocol.h>
 
 using namespace HALSITL;
 
@@ -9,11 +11,19 @@ extern const AP_HAL::HAL& hal;
 
 void RCInput::init()
 {
-    clear_overrides();
+    AP::RC().init();
 }
 
 bool RCInput::new_input()
 {
+    if (!using_rc_protocol) {
+        if (AP::RC().new_input()) {
+            using_rc_protocol = true;
+        }
+    }
+    if (using_rc_protocol) {
+        return AP::RC().new_input();
+    }
     if (_sitlState->new_rc_input) {
         _sitlState->new_rc_input = false;
         return true;
@@ -23,19 +33,19 @@ bool RCInput::new_input()
 
 uint16_t RCInput::read(uint8_t ch)
 {
-    if (ch >= SITL_RC_INPUT_CHANNELS) {
-        return 0;
+    if (using_rc_protocol) {
+        return AP::RC().read(ch);
     }
-    if (_override[ch]) {
-        return _override[ch];
+    if (ch >= num_channels()) {
+        return 0;
     }
     return _sitlState->pwm_input[ch];
 }
 
 uint8_t RCInput::read(uint16_t* periods, uint8_t len)
 {
-    if (len > SITL_RC_INPUT_CHANNELS) {
-        len = SITL_RC_INPUT_CHANNELS;
+    if (len > num_channels()) {
+        len = num_channels();
     }
     for (uint8_t i=0; i < len; i++) {
         periods[i] = read(i);
@@ -43,34 +53,16 @@ uint8_t RCInput::read(uint16_t* periods, uint8_t len)
     return len;
 }
 
-bool RCInput::set_overrides(int16_t *overrides, uint8_t len)
+uint8_t RCInput::num_channels()
 {
-    bool res = false;
-    if (len > SITL_RC_INPUT_CHANNELS) {
-        len = SITL_RC_INPUT_CHANNELS;
+    if (using_rc_protocol) {
+        return AP::RC().num_channels();
     }
-    for (uint8_t i = 0; i < len; i++) {
-        res |= set_override(i, overrides[i]);
+    SITL::SITL *_sitl = AP::sitl();
+    if (_sitl) {
+        return MIN(_sitl->rc_chancount.get(), SITL_RC_INPUT_CHANNELS);
     }
-    return res;
+    return SITL_RC_INPUT_CHANNELS;
 }
 
-bool RCInput::set_override(uint8_t channel, int16_t override)
-{
-    if (override < 0) {
-        return false;  /* -1: no change. */
-    }
-    if (channel < SITL_RC_INPUT_CHANNELS) {
-        _override[channel] = static_cast<uint16_t>(override);
-        if (override != 0) {
-            return true;
-        }
-    }
-    return false;
-}
-
-void RCInput::clear_overrides()
-{
-    memset(_override, 0, sizeof(_override));
-}
 #endif

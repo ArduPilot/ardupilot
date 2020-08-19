@@ -2,11 +2,14 @@
 // Simple test for the AP_AHRS interface
 //
 
-#include <AP_ADC/AP_ADC.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <GCS_MAVLink/GCS_Dummy.h>
+#include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_Logger/AP_Logger.h>
+#include <AP_GPS/AP_GPS.h>
+#include <AP_Baro/AP_Baro.h>
 
 void setup();
 void loop();
@@ -22,14 +25,12 @@ static Compass compass;
 static AP_GPS gps;
 static AP_Baro barometer;
 static AP_SerialManager serial_manager;
+AP_Int32 logger_bitmask;
+static AP_Logger logger{logger_bitmask};
 
 class DummyVehicle {
 public:
-    RangeFinder sonar{serial_manager, ROTATION_PITCH_270};
-    NavEKF2 EKF2{&ahrs, sonar};
-    NavEKF3 EKF3{&ahrs, sonar};
-    AP_AHRS_NavEKF ahrs{EKF2, EKF3,
-            AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
+    AP_AHRS_NavEKF ahrs{AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
 };
 
 static DummyVehicle vehicle;
@@ -45,7 +46,8 @@ void setup(void)
     ahrs.init();
     serial_manager.init();
 
-    if( compass.init() ) {
+    compass.init();
+    if(compass.read()) {
         hal.console->printf("Enabling compass\n");
         ahrs.set_compass(&compass);
     } else {
@@ -95,7 +97,7 @@ void loop(void)
     }
 }
 
-const struct AP_Param::GroupInfo        GCS_MAVLINK::var_info[] = {
+const struct AP_Param::GroupInfo        GCS_MAVLINK_Parameters::var_info[] = {
     AP_GROUPEND
 };
 GCS_Dummy _gcs;

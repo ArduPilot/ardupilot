@@ -1,9 +1,13 @@
 #pragma once
 
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include "VehicleType.h"
 
 #include <stdio.h>
+
+// ignore cast errors in this case to keep complexity down
+// on x86 where replay is run we don't care about cast alignment
+#pragma GCC diagnostic ignored "-Wcast-align"
 
 #define LOGREADER_MAX_FIELDS 30
 

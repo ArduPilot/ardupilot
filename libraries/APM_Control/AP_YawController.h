@@ -3,7 +3,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Vehicle/AP_Vehicle.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include <cmath>
 
 class AP_YawController {
@@ -13,7 +13,7 @@ public:
         , _ahrs(ahrs)
     {
         AP_Param::setup_object_defaults(this, var_info);
-        _pid_info.desired = 0;
+        _pid_info.target = 0;
         _pid_info.FF = 0;
         _pid_info.P = 0;
     }
@@ -26,7 +26,15 @@ public:
 
 	void reset_I();
 
-	const DataFlash_Class::PID_Info& get_pid_info(void) const {return _pid_info; }
+    /*
+      reduce the integrator, used when we have a low scale factor in a quadplane hover
+    */
+    void decay_I() {
+        // this reduces integrator by 95% over 2s
+        _pid_info.I *= 0.995f;
+    }
+    
+	const AP_Logger::PID_Info& get_pid_info(void) const {return _pid_info; }
 
 	static const struct AP_Param::GroupInfo var_info[];
 
@@ -45,7 +53,7 @@ private:
 
 	float _integrator;
 
-	DataFlash_Class::PID_Info _pid_info;
+	AP_Logger::PID_Info _pid_info;
 
 	AP_AHRS &_ahrs;
 };

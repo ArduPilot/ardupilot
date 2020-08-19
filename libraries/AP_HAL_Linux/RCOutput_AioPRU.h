@@ -11,22 +11,28 @@
 #pragma once
 
 #include "AP_HAL_Linux.h"
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET
+#define RCOUT_PRUSS_RAM_BASE 0x4a300000
+#define RCOUT_PRUSS_CTRL_BASE 0x4a322000
+#define RCOUT_PRUSS_IRAM_BASE 0x4a334000
+#else
 #define RCOUT_PRUSS_RAM_BASE 0x4a302000
 #define RCOUT_PRUSS_CTRL_BASE 0x4a324000
 #define RCOUT_PRUSS_IRAM_BASE 0x4a338000
+#endif
 #define PWM_CHAN_COUNT 12
 
 namespace Linux {
 
 class RCOutput_AioPRU : public AP_HAL::RCOutput {
-    void     init();
-    void     set_freq(uint32_t chmask, uint16_t freq_hz);
-    uint16_t get_freq(uint8_t ch);
-    void     enable_ch(uint8_t ch);
-    void     disable_ch(uint8_t ch);
-    void     write(uint8_t ch, uint16_t period_us);
-    uint16_t read(uint8_t ch);
-    void     read(uint16_t* period_us, uint8_t len);
+    void     init() override;
+    void     set_freq(uint32_t chmask, uint16_t freq_hz) override;
+    uint16_t get_freq(uint8_t ch) override;
+    void     enable_ch(uint8_t ch) override;
+    void     disable_ch(uint8_t ch) override;
+    void     write(uint8_t ch, uint16_t period_us) override;
+    uint16_t read(uint8_t ch) override;
+    void     read(uint16_t* period_us, uint8_t len) override;
     void     cork(void) override;
     void     push(void) override;
 

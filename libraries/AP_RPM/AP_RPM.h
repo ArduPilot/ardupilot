@@ -38,8 +38,10 @@ public:
     // RPM driver types
     enum RPM_Type {
         RPM_TYPE_NONE    = 0,
-        RPM_TYPE_PX4_PWM = 1,
-        RPM_TYPE_PIN     = 2
+        RPM_TYPE_PWM     = 1,
+        RPM_TYPE_PIN     = 2,
+        RPM_TYPE_EFI     = 3,
+        RPM_TYPE_HNTCH   = 4
     };
 
     // The RPM_State structure is filled in by the backend driver
@@ -74,12 +76,7 @@ public:
     /*
       return RPM for a sensor. Return -1 if not healthy
      */
-    float get_rpm(uint8_t instance) const {
-        if (!healthy(instance)) {
-            return -1;
-        }
-        return state[instance].rate_rpm;
-    }
+    bool get_rpm(uint8_t instance, float &rpm_value) const;
 
     /*
       return signal quality for a sensor.
@@ -92,11 +89,18 @@ public:
 
     bool enabled(uint8_t instance) const;
 
+    static AP_RPM *get_singleton() { return _singleton; }
+
 private:
+    static AP_RPM *_singleton;
+
     RPM_State state[RPM_MAX_INSTANCES];
     AP_RPM_Backend *drivers[RPM_MAX_INSTANCES];
     uint8_t num_instances:2;
 
     void detect_instance(uint8_t instance);
-    void update_instance(uint8_t instance);
+};
+
+namespace AP {
+    AP_RPM *rpm();
 };

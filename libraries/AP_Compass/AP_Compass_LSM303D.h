@@ -11,9 +11,8 @@
 class AP_Compass_LSM303D : public AP_Compass_Backend
 {
 public:
-    static AP_Compass_Backend *probe(Compass &compass,
-                                     AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                                     enum Rotation = ROTATION_NONE);
+    static AP_Compass_Backend *probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                                     enum Rotation rotation);
 
     static constexpr const char *name = "LSM303D";
 
@@ -22,7 +21,7 @@ public:
     virtual ~AP_Compass_LSM303D() { }
 
 private:
-    AP_Compass_LSM303D(Compass &compass, AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    AP_Compass_LSM303D(AP_HAL::OwnPtr<AP_HAL::Device> dev);
 
     bool init(enum Rotation rotation);
     uint8_t _register_read(uint8_t reg);
@@ -43,13 +42,9 @@ private:
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
 
     float _mag_range_scale;
-    float _mag_x_accum;
-    float _mag_y_accum;
-    float _mag_z_accum;
     int16_t _mag_x;
     int16_t _mag_y;
     int16_t _mag_z;
-    uint8_t _accum_count;
 
     uint8_t _compass_instance;
     bool _initialised;

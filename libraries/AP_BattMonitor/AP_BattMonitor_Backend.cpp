@@ -35,7 +35,7 @@ uint8_t AP_BattMonitor_Backend::capacity_remaining_pct() const
 {
     float mah_remaining = _params._pack_capacity - _state.consumed_mah;
     if ( _params._pack_capacity > 10 ) { // a very very small battery
-        return (100 * (mah_remaining) / _params._pack_capacity);
+        return MIN(MAX((100 * (mah_remaining) / _params._pack_capacity), 0), UINT8_MAX);
     } else {
         return 0;
     }
@@ -90,4 +90,158 @@ void AP_BattMonitor_Backend::update_resistance_estimate()
 
     // update estimated voltage without sag
     _state.voltage_resting_estimate = _state.voltage + _state.current_amps * _state.resistance;
+}
+
+float AP_BattMonitor_Backend::voltage_resting_estimate() const
+{
+    // resting voltage should always be greater than or equal to the raw voltage
+    return MAX(_state.voltage, _state.voltage_resting_estimate);
+}
+
+AP_BattMonitor::BatteryFailsafe AP_BattMonitor_Backend::update_failsafes(void)
+{
+    const uint32_t now = AP_HAL::millis();
+
+    bool low_voltage, low_capacity, critical_voltage, critical_capacity;
+    check_failsafe_types(low_voltage, low_capacity, critical_voltage, critical_capacity);
+
+    if (critical_voltage) {
+        // this is the first time our voltage has dropped below minimum so start timer
+        if (_state.critical_voltage_start_ms == 0) {
+            _state.critical_voltage_start_ms = now;
+        } else if (_params._low_voltage_timeout > 0 &&
+                   now - _state.critical_voltage_start_ms > uint32_t(_params._low_voltage_timeout)*1000U) {
+            return AP_BattMonitor::BatteryFailsafe_Critical;
+        }
+    } else {
+        // acceptable voltage so reset timer
+        _state.critical_voltage_start_ms = 0;
+    }
+
+    if (critical_capacity) {
+        return AP_BattMonitor::BatteryFailsafe_Critical;
+    }
+
+    if (low_voltage) {
+        // this is the first time our voltage has dropped below minimum so start timer
+        if (_state.low_voltage_start_ms == 0) {
+            _state.low_voltage_start_ms = now;
+        } else if (_params._low_voltage_timeout > 0 &&
+                   now - _state.low_voltage_start_ms > uint32_t(_params._low_voltage_timeout)*1000U) {
+            return AP_BattMonitor::BatteryFailsafe_Low;
+        }
+    } else {
+        // acceptable voltage so reset timer
+        _state.low_voltage_start_ms = 0;
+    }
+
+    if (low_capacity) {
+        return AP_BattMonitor::BatteryFailsafe_Low;
+    }
+
+    // if we've gotten this far then battery is ok
+    return AP_BattMonitor::BatteryFailsafe_None;
+}
+
+static bool update_check(size_t buflen, char *buffer, bool failed, const char *message)
+{
+    if (failed) {
+        strncpy(buffer, message, buflen);
+        return false;
+    }
+    return true;
+}
+
+bool AP_BattMonitor_Backend::arming_checks(char * buffer, size_t buflen) const
+{
+    bool low_voltage, low_capacity, critical_voltage, critical_capacity;
+    check_failsafe_types(low_voltage, low_capacity, critical_voltage, critical_capacity);
+
+    bool below_arming_voltage = is_positive(_params._arming_minimum_voltage) &&
+                                (_state.voltage < _params._arming_minimum_voltage);
+    bool below_arming_capacity = (_params._arming_minimum_capacity > 0) &&
+                                 ((_params._pack_capacity - _state.consumed_mah) < _params._arming_minimum_capacity);
+    bool fs_capacity_inversion = is_positive(_params._critical_capacity) &&
+                                 is_positive(_params._low_capacity) &&
+                                 (_params._low_capacity < _params._critical_capacity);
+    bool fs_voltage_inversion = is_positive(_params._critical_voltage) &&
+                                is_positive(_params._low_voltage) &&
+                                (_params._low_voltage < _params._critical_voltage);
+
+    bool result =      update_check(buflen, buffer, below_arming_voltage, "below minimum arming voltage");
+    result = result && update_check(buflen, buffer, below_arming_capacity, "below minimum arming capacity");
+    result = result && update_check(buflen, buffer, low_voltage,  "low voltage failsafe");
+    result = result && update_check(buflen, buffer, low_capacity, "low capacity failsafe");
+    result = result && update_check(buflen, buffer, critical_voltage, "critical voltage failsafe");
+    result = result && update_check(buflen, buffer, critical_capacity, "critical capacity failsafe");
+    result = result && update_check(buflen, buffer, fs_capacity_inversion, "capacity failsafe critical > low");
+    result = result && update_check(buflen, buffer, fs_voltage_inversion, "voltage failsafe critical > low");
+
+    return result;
+}
+
+void AP_BattMonitor_Backend::check_failsafe_types(bool &low_voltage, bool &low_capacity, bool &critical_voltage, bool &critical_capacity) const
+{
+    // use voltage or sag compensated voltage
+    float voltage_used;
+    switch (_params.failsafe_voltage_source()) {
+        case AP_BattMonitor_Params::BattMonitor_LowVoltageSource_Raw:
+        default:
+            voltage_used = _state.voltage;
+            break;
+        case AP_BattMonitor_Params::BattMonitor_LowVoltageSource_SagCompensated:
+            voltage_used = voltage_resting_estimate();
+            break;
+    }
+
+    // check critical battery levels
+    if ((voltage_used > 0) && (_params._critical_voltage > 0) && (voltage_used < _params._critical_voltage)) {
+        critical_voltage = true;
+    } else {
+        critical_voltage = false;
+    }
+
+    // check capacity failsafe if current monitoring is enabled
+    if (has_current() && (_params._critical_capacity > 0) &&
+        ((_params._pack_capacity - _state.consumed_mah) < _params._critical_capacity)) {
+        critical_capacity = true;
+    } else {
+        critical_capacity = false;
+    }
+
+    if ((voltage_used > 0) && (_params._low_voltage > 0) && (voltage_used < _params._low_voltage)) {
+        low_voltage = true;
+    } else {
+        low_voltage = false;
+    }
+
+    // check capacity if current monitoring is enabled
+    if (has_current() && (_params._low_capacity > 0) &&
+        ((_params._pack_capacity - _state.consumed_mah) < _params._low_capacity)) {
+        low_capacity = true;
+    } else {
+        low_capacity = false;
+    }
+}
+
+/*
+  default implementation for reset_remaining(). This sets consumed_wh
+  and consumed_mah based on the given percentage. Use percentage=100
+  for a full battery
+*/
+bool AP_BattMonitor_Backend::reset_remaining(float percentage)
+{
+    percentage = constrain_float(percentage, 0, 100);
+    const float used_proportion = (100 - percentage) * 0.01;
+    _state.consumed_mah = used_proportion * _params._pack_capacity;
+    // without knowing the history we can't do consumed_wh
+    // accurately. Best estimate is based on current voltage. This
+    // will be good when resetting the battery to a value close to
+    // full charge
+    _state.consumed_wh = _state.consumed_mah * 1000 * _state.voltage;
+
+    // reset failsafe state for this backend
+    _state.failsafe = update_failsafes();
+
+    return true;
 }

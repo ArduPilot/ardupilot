@@ -30,26 +30,23 @@
 #pragma once
 
 #include "AP_Proximity.h"
-#include "AP_Proximity_Backend.h"
+#include "AP_Proximity_Backend_Serial.h"
 #include <AP_HAL/AP_HAL.h>                   ///< for UARTDriver
 
 
-class AP_Proximity_RPLidarA2 : public AP_Proximity_Backend
+class AP_Proximity_RPLidarA2 : public AP_Proximity_Backend_Serial
 {
 
 public:
-    // constructor
-    AP_Proximity_RPLidarA2(AP_Proximity &_frontend, AP_Proximity::Proximity_State &_state, AP_SerialManager &serial_manager);
 
-    // static detection function
-    static bool detect(AP_SerialManager &serial_manager);
+    using AP_Proximity_Backend_Serial::AP_Proximity_Backend_Serial;
 
     // update state
-    void update(void);
+    void update(void) override;
 
     // get maximum and minimum distances (in meters) of sensor
-    float distance_max() const;
-    float distance_min() const;
+    float distance_max() const override;
+    float distance_min() const override;
 
 private:
     enum rp_state {
@@ -69,7 +66,6 @@ private:
 
     // initialise sensor (returns true if sensor is successfully initialised)
     bool initialise();
-    void init_sectors();
     void set_scan_mode();
 
     // send request for something from sensor
@@ -80,14 +76,12 @@ private:
     void reset_rplidar();
 
     // reply related variables
-    AP_HAL::UARTDriver *_uart;
     uint8_t _descriptor[7];
     char _rp_systeminfo[63];
     bool _descriptor_data;
     bool _information_data;
     bool _resetted;
     bool _initialised;
-    bool _sector_initialised;
 
     uint8_t _payload_length;
     uint8_t _cnt;

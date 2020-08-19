@@ -71,7 +71,7 @@ uint32_t ByteBuffer::space(void) const
     return ret;
 }
 
-bool ByteBuffer::empty(void) const
+bool ByteBuffer::is_empty(void) const
 {
     return head == tail;
 }
@@ -134,6 +134,13 @@ uint8_t ByteBuffer::peekiovec(ByteBuffer::IoVec iovec[2], uint32_t len)
     }
 
     auto b = readptr(n);
+    if (n == 0) {
+        iovec[0].data = buf;
+        iovec[0].len = len;
+        iovec[1].data = nullptr;
+        iovec[1].len = 0;
+        return 1;
+    }
     if (n > len) {
         n = len;
     }

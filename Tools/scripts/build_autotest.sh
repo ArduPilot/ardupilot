@@ -1,8 +1,7 @@
 #!/bin/bash
 
-export PATH=$HOME/.local/bin:/usr/local/bin:$HOME/prefix/bin:$HOME/APM/px4/gcc-arm-none-eabi-4_9-2015q3/bin:$PATH
+export PATH=$HOME/.local/bin:/usr/local/bin:$HOME/prefix/bin:$HOME/gcc/active/bin:$PATH
 export PYTHONUNBUFFERED=1
-export PYTHONPATH=$HOME/APM
 
 cd $HOME/APM || exit 1
 
@@ -60,7 +59,7 @@ report() {
     cat <<EOF | mail -s 'build failed' drones-discuss@googlegroups.com
 A build of $d failed at `date`
 
-You can view the build logs at http://autotest.ardupilot.org/
+You can view the build logs at https://autotest.ardupilot.org/
 
 A log of the commits since the last attempted build is below
 
@@ -90,12 +89,6 @@ popd
 
 rsync -a APM/Tools/autotest/web-firmware/ buildlogs/binaries/
 
-echo "Updating pymavlink"
-pushd APM/modules/mavlink/pymavlink
-git show
-python setup.py build install --user
-popd
-
 echo "Updating MAVProxy"
 pushd MAVProxy
 git fetch origin
@@ -104,30 +97,18 @@ git show
 python setup.py build install --user
 popd
 
+echo "Updating pymavlink"
+pushd APM/modules/mavlink/pymavlink
+git show
+python setup.py build install --user
+popd
+
 githash=$(cd APM && git rev-parse HEAD)
 hdate=$(date +"%Y-%m-%d-%H:%m")
 
-for d in ArduPlane ArduCopter APMrover2 AntennaTracker; do
-    pushd APM/$d
-    rm -rf ../../buildlogs/$d.build
-    (date && TMPDIR=../../buildlogs make) > ../../buildlogs/$d.txt 2>&1
-    status=$?
-    if [ $status != 0 ]; then
-	report $d $oldhash $newhash
-    fi
-    popd
-    APM/Tools/scripts/frame_sizes.py buildlogs/$d.build > buildlogs/$d.framesizes.txt
-    (
-	avr-size buildlogs/$d.build/$d.elf 
-	avr-nm --size-sort --print-size -C buildlogs/$d.build/$d.elf 
-    ) > buildlogs/$d.sizes.txt
-done
-
-mkdir -p "buildlogs/history/$hdate"
-(cd buildlogs && cp -f *.txt *.flashlog *.tlog *.km[lz] *.gpx *.html *.png *.bin *.BIN *.elf "history/$hdate/")
-echo $githash > "buildlogs/history/$hdate/githash.txt"
-
 (cd APM && Tools/scripts/build_parameters.sh)
+
+(cd APM && Tools/scripts/build_log_message_documentation.sh)
 
 (cd APM && Tools/scripts/build_docs.sh)
 
@@ -136,7 +117,18 @@ killall -9 JSBSim || /bin/true
 # raise core limit
 ulimit -c 10000000
 
+# build in home dir, as on faster storage
+export BUILD_BINARIES_PATH=$HOME/build/tmp
+
+# exit on panic so we don't waste time waiting around
+export SITL_PANIC_EXIT=1
+
 timelimit 32000 APM/Tools/autotest/autotest.py --timeout=30000 > buildlogs/autotest-output.txt 2>&1
+
+mkdir -p "buildlogs/history/$hdate"
+
+(cd buildlogs && cp -f *.txt *.flashlog *.tlog *.km[lz] *.gpx *.html *.png *.bin *.BIN *.elf "history/$hdate/")
+echo $githash > "buildlogs/history/$hdate/githash.txt"
 
 ) >> build.log 2>&1
 

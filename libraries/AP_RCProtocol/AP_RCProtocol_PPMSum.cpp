@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 
@@ -22,6 +22,11 @@
  */
 void AP_RCProtocol_PPMSum::process_pulse(uint32_t width_s0, uint32_t width_s1)
 {
+    if (width_s0 == 0 || width_s1 == 0) {
+        //invalid data: reset frame
+        ppm_state._channel_counter = -1;
+        return;
+    }
     uint32_t width_usec = width_s0 + width_s1;
     if (width_usec >= 2700) {
         // a long pulse indicates the end of a frame. Reset the
