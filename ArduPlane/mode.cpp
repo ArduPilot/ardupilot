@@ -85,8 +85,3 @@ bool Mode::enter()
     return enter_result;
 }
 
-void Mode::navigate()
-{
-    _navigate();
-}
-
