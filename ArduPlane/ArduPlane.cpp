@@ -434,14 +434,6 @@ void Plane::update_control_mode(void)
     effective_mode->update();
 }
 
-/* 
-  call the navigate method of the active flight mode
-*/
-void Plane::update_navigation()
-{
-    control_mode->navigate();
-}
-
 /*
   set the flight stage
  */
