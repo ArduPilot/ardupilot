@@ -448,6 +448,9 @@ private:
 
     bool _armed;
 
+    // state to help us not log unneccesary RCIN values:
+    bool seen_nonzero_rcin15_or_rcin16;
+
     void Write_Baro_instance(uint64_t time_us, uint8_t baro_instance, enum LogMessages type);
     void Write_IMU_instance(uint64_t time_us,
                                 uint8_t imu_instance,

@@ -304,6 +304,13 @@ struct PACKED log_RCIN {
     uint16_t chan14;
 };
 
+struct PACKED log_RCIN2 {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint16_t chan15;
+    uint16_t chan16;
+};
+
 struct PACKED log_RCOUT {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -2450,6 +2457,8 @@ struct PACKED log_Winch {
       "MSG",  "QZ",     "TimeUS,Message", "s-", "F-"}, \
     { LOG_RCIN_MSG, sizeof(log_RCIN), \
       "RCIN",  "QHHHHHHHHHHHHHH",     "TimeUS,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14", "sYYYYYYYYYYYYYY", "F--------------" }, \
+    { LOG_RCIN2_MSG, sizeof(log_RCIN2), \
+      "RCI2",  "QHH",     "TimeUS,C15,C16", "sYY", "F--" }, \
     { LOG_RCOUT_MSG, sizeof(log_RCOUT), \
       "RCOU",  "QHHHHHHHHHHHHHH",     "TimeUS,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14", "sYYYYYYYYYYYYYY", "F--------------"  }, \
     { LOG_RSSI_MSG, sizeof(log_RSSI), \
@@ -2693,6 +2702,7 @@ enum LogMessages : uint8_t {
     LOG_IMU_MSG,
     LOG_MESSAGE_MSG,
     LOG_RCIN_MSG,
+    LOG_RCIN2_MSG,
     LOG_RCOUT_MSG,
     LOG_RSSI_MSG,
     LOG_IMU2_MSG,

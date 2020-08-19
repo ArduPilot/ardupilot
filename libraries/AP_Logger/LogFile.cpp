@@ -185,7 +185,7 @@ void AP_Logger::Write_GPS(uint8_t i, uint64_t time_us)
 // Write an RCIN packet
 void AP_Logger::Write_RCIN(void)
 {
-    uint16_t values[14] = {};
+    uint16_t values[16] = {};
     rc().get_radio_in(values, ARRAY_SIZE(values));
     const struct log_RCIN pkt{
         LOG_PACKET_HEADER_INIT(LOG_RCIN_MSG),
@@ -206,6 +206,23 @@ void AP_Logger::Write_RCIN(void)
         chan14        : values[13]
     };
     WriteBlock(&pkt, sizeof(pkt));
+
+    // don't waste logging bandwidth if we haven't seen non-zero
+    // channels 15/16:
+    if (!seen_nonzero_rcin15_or_rcin16) {
+        if (!values[14] && !values[15]) {
+            return;
+        }
+        seen_nonzero_rcin15_or_rcin16 = true;
+    }
+
+    const struct log_RCIN2 pkt2{
+        LOG_PACKET_HEADER_INIT(LOG_RCIN2_MSG),
+        time_us       : AP_HAL::micros64(),
+        chan15         : values[14],
+        chan16         : values[15]
+    };
+    WriteBlock(&pkt2, sizeof(pkt2));
 }
 
 // Write an SERVO packet
