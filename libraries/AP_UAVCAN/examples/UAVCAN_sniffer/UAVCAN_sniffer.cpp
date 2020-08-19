@@ -4,11 +4,9 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && HAL_WITH_UAVCAN
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS
 
-#include <AP_HAL/CAN.h>
 #include <AP_HAL/Semaphores.h>
-#include <AP_HAL_ChibiOS/CAN.h>
 
 #include <AP_UAVCAN/AP_UAVCAN.h>
 
@@ -37,6 +35,14 @@
 
 #include <com/hex/equipment/flow/Measurement.hpp>
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#include <AP_HAL_Linux/CANSocketIface.h>
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <AP_HAL_SITL/CANSocketIface.h>
+#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#include <AP_HAL_ChibiOS/CANIface.h>
+#endif
+
 void setup();
 void loop();
 
@@ -61,45 +67,7 @@ public:
 
 private:
     uint8_t driver_index = 0;
-
-    class SystemClock: public uavcan::ISystemClock, uavcan::Noncopyable {
-        SystemClock()
-        {
-        }
-
-        uavcan::UtcDuration utc_adjustment;
-        virtual void adjustUtc(uavcan::UtcDuration adjustment) override
-        {
-            utc_adjustment = adjustment;
-        }
-
-    public:
-        virtual uavcan::MonotonicTime getMonotonic() const override
-        {
-            uavcan::uint64_t usec = 0;
-            usec = AP_HAL::micros64();
-            return uavcan::MonotonicTime::fromUSec(usec);
-        }
-        virtual uavcan::UtcTime getUtc() const override
-        {
-            uavcan::UtcTime utc;
-            uavcan::uint64_t usec = 0;
-            usec = AP_HAL::micros64();
-            utc.fromUSec(usec);
-            utc += utc_adjustment;
-            return utc;
-        }
-
-        static SystemClock& instance()
-        {
-            static SystemClock inst;
-            return inst;
-        }
-    };
-
     uavcan::Node<0> *_node;
-
-    uavcan::ISystemClock& get_system_clock();
 
     // This will be needed to implement if UAVCAN is used with multithreading
     // Such cases will be firmware update, etc.
@@ -115,6 +83,8 @@ private:
     };
 
     uavcan::HeapBasedPoolAllocator<UAVCAN_NODE_POOL_BLOCK_SIZE, UAVCAN_sniffer::RaiiSynchronizer> _node_allocator;
+
+    AP_CANManager can_mgr;
 };
 
 static struct {
@@ -155,28 +125,30 @@ MSG_CB(com::hex::equipment::flow::Measurement, Measurement);
 
 void UAVCAN_sniffer::init(void)
 {
-    uint8_t interface = 0;
-    AP_HAL::CANManager* can_mgr = new ChibiOS::CANManager;
+    const_cast <AP_HAL::HAL&> (hal).can[driver_index] = new HAL_CANIface(driver_index);
     
-    if (can_mgr == nullptr) {
+    if (hal.can[driver_index] == nullptr) {
         AP_HAL::panic("Couldn't allocate CANManager, something is very wrong");
     }
 
-    const_cast <AP_HAL::HAL&> (hal).can_mgr[driver_index] = can_mgr;
-    can_mgr->begin(1000000, interface);
-    can_mgr->initialized(true);
+    hal.can[driver_index]->init(1000000, AP_HAL::CANIface::NormalMode);
 
-    if (!can_mgr->is_initialized()) {
+    if (!hal.can[driver_index]->is_initialized()) {
         debug_uavcan("Can not initialised\n");
         return;
     }
+    uavcan::CanIfaceMgr *_uavcan_iface_mgr = new uavcan::CanIfaceMgr;
 
-    uavcan::ICanDriver* driver = can_mgr->get_driver();
-    if (driver == nullptr) {
+    if (_uavcan_iface_mgr == nullptr) {
         return;
     }
 
-    _node = new uavcan::Node<0>(*driver, get_system_clock(), _node_allocator);
+    if (!_uavcan_iface_mgr->add_interface(hal.can[driver_index])) {
+        debug_uavcan("Failed to add iface");
+        return;
+    }
+
+    _node = new uavcan::Node<0>(*_uavcan_iface_mgr,  uavcan::SystemClock::instance(), _node_allocator);
 
     if (_node == nullptr) {
         return;
@@ -237,11 +209,6 @@ void UAVCAN_sniffer::init(void)
     debug_uavcan("UAVCAN: init done\n\r");
 }
 
-uavcan::ISystemClock & UAVCAN_sniffer::get_system_clock()
-{
-    return SystemClock::instance();
-}
-
 void UAVCAN_sniffer::loop(void)
 {
     if (_node == nullptr) {
@@ -253,7 +220,7 @@ void UAVCAN_sniffer::loop(void)
 
 void UAVCAN_sniffer::print_stats(void)
 {
-    hal.console->printf("%lu\n", AP_HAL::micros());
+    hal.console->printf("%lu\n", (unsigned long)AP_HAL::micros());
     for (uint16_t i=0;i<100;i++) {
         if (counters[i].msg_name == nullptr) {
             break;
