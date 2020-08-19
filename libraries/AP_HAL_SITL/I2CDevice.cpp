@@ -101,6 +101,9 @@ I2CBus I2CDeviceManager::buses[NUM_SITL_I2C_BUSES] {};
 
 I2CDeviceManager::I2CDeviceManager()
 {
+    for (uint8_t i=0; i<ARRAY_SIZE(buses); i++) {
+        buses[i].bus = i;
+    }
 }
 
 AP_HAL::OwnPtr<AP_HAL::I2CDevice>
@@ -132,6 +135,7 @@ I2CDevice::I2CDevice(I2CBus &bus, uint8_t address)
     : _bus(bus)
     , _address(address)
 {
+    ::fprintf(stderr, "bus.bus=%u address=0x%02x\n", bus.bus, address);
     set_device_bus(bus.bus);
     set_device_address(address);
 }
@@ -159,6 +163,7 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
     unsigned nmsgs = 0;
 
     if (send && send_len != 0) {
+        msgs[nmsgs].bus = _bus.bus;
         msgs[nmsgs].addr = _address;
         msgs[nmsgs].flags = 0;
         msgs[nmsgs].buf = const_cast<uint8_t*>(send);
