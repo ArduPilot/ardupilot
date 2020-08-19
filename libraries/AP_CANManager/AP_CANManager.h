@@ -36,6 +36,9 @@ public:
 
     static AP_CANManager* get_singleton()
     {
+        if (_singleton == nullptr) {
+            AP_HAL::panic("CANManager used before allocation.");
+        }
         return _singleton;
     }
 
