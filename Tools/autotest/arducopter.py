@@ -5574,8 +5574,10 @@ class AutoTestHeli(AutoTestCopter):
             self.delay_sim_time(20)
             # check we are still on the ground...
             m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
-            if abs(m.relative_alt) > 100:
-                raise NotAchievedException("Took off prematurely")
+            max_relalt = 100
+            if abs(m.relative_alt) > max_relalt:
+                raise NotAchievedException("Took off prematurely (abs(%f)>%f)" %
+                (m.relative_alt, max_relalt))
             self.progress("Pushing throttle past half-way")
             self.set_rc(3, 1600)
             self.delay_sim_time(0.5)
