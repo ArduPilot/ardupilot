@@ -830,11 +830,11 @@ void NavEKF3_core::readRngBcnData()
     N_beacons = beacon->count();
 
     // search through all the beacons for new data and if we find it stop searching and push the data into the observation buffer
-    bool newDataToPush = false;
+    bool newDataPushed = false;
     uint8_t numRngBcnsChecked = 0;
     // start the search one index up from where we left it last time
     uint8_t index = lastRngBcnChecked;
-    while (!newDataToPush && numRngBcnsChecked < N_beacons) {
+    while (!newDataPushed && (numRngBcnsChecked < N_beacons)) {
         // track the number of beacons checked
         numRngBcnsChecked++;
 
@@ -845,9 +845,9 @@ void NavEKF3_core::readRngBcnData()
         }
 
         // check that the beacon is healthy and has new data
-        if (beacon->beacon_healthy(index) &&
-                beacon->beacon_last_update_ms(index) != lastTimeRngBcn_ms[index])
-        {
+        if (beacon->beacon_healthy(index) && beacon->beacon_last_update_ms(index) != lastTimeRngBcn_ms[index]) {
+            rng_bcn_elements rngBcnDataNew = {};
+
             // set the timestamp, correcting for measurement delay and average intersampling delay due to the filter update rate
             lastTimeRngBcn_ms[index] = beacon->beacon_last_update_ms(index);
             rngBcnDataNew.time_ms = lastTimeRngBcn_ms[index] - frontend->_rngBcnDelay_ms - localFilterTimeStep_ms/2;
@@ -866,10 +866,13 @@ void NavEKF3_core::readRngBcnData()
             rngBcnDataNew.beacon_ID = index;
 
             // indicate we have new data to push to the buffer
-            newDataToPush = true;
+            newDataPushed = true;
 
             // update the last checked index
             lastRngBcnChecked = index;
+
+            // Save data into the buffer to be fused when the fusion time horizon catches up with it
+            storedRangeBeacon.push(rngBcnDataNew);
         }
     }
 
@@ -905,11 +908,6 @@ void NavEKF3_core::readRngBcnData()
         }
     } else {
         rngBcnGoodToAlign = false;
-    }
-
-    // Save data into the buffer to be fused when the fusion time horizon catches up with it
-    if (newDataToPush) {
-        storedRangeBeacon.push(rngBcnDataNew);
     }
 
     // Check the buffer for measurements that have been overtaken by the fusion time horizon and need to be fused
