@@ -882,14 +882,14 @@ void NavEKF3_core::readRngBcnData()
     }
 
     // Check if the range beacon data can be used to align the vehicle position
-    if (imuSampleTime_ms - rngBcnLast3DmeasTime_ms < 250 && beaconVehiclePosErr < 1.0f && rngBcnAlignmentCompleted) {
+    if ((imuSampleTime_ms - rngBcnLast3DmeasTime_ms < 250) && (beaconVehiclePosErr < 1.0f) && rngBcnAlignmentCompleted) {
         // check for consistency between the position reported by the beacon and the position from the 3-State alignment filter
         const float posDiffSq = sq(receiverPos.x - beaconVehiclePosNED.x) + sq(receiverPos.y - beaconVehiclePosNED.y);
         const float posDiffVar = sq(beaconVehiclePosErr) + receiverPosCov[0][0] + receiverPosCov[1][1];
         if (posDiffSq < 9.0f * posDiffVar) {
             rngBcnGoodToAlign = true;
             // Set the EKF origin and magnetic field declination if not previously set
-            if (!validOrigin && PV_AidingMode != AID_ABSOLUTE) {
+            if (!validOrigin && (PV_AidingMode != AID_ABSOLUTE)) {
                 // get origin from beacon system
                 Location origin_loc;
                 if (beacon->get_origin(origin_loc)) {
