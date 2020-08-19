@@ -265,3 +265,28 @@ bool Tracker::should_log(uint32_t mask)
     }
     return true;
 }
+
+
+#include <AP_Camera/AP_Camera.h>
+#include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
+
+/* dummy methods to avoid having to link against AP_Camera */
+void AP_Camera::control_msg(const mavlink_message_t &) {}
+void AP_Camera::configure(float, float, float, float, float, float, float) {}
+void AP_Camera::control(float, float, float, float, float, float) {}
+void AP_Camera::send_feedback(mavlink_channel_t chan) {}
+void AP_Camera::take_picture() {}
+void AP_Camera::cam_mode_toggle() {}
+void AP_Camera::handle_message(mavlink_channel_t chan, const mavlink_message_t &msg) {}
+AP_Camera *AP_Camera::_singleton;
+namespace AP {
+    AP_Camera *camera() {
+        return nullptr;
+    }
+};
+
+/* end dummy methods to avoid having to link against AP_Camera */
+
+// dummy method to avoid linking AFS
+bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reason) {return false;}
+AP_AdvancedFailsafe *AP::advancedfailsafe() { return nullptr; }

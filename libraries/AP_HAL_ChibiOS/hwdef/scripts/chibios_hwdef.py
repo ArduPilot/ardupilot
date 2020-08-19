@@ -2034,8 +2034,8 @@ print("Setup for MCU %s" % mcu_type)
 # build a list for peripherals for DMA resolver
 periph_list = build_peripheral_list()
 
-# write out hw.dat for ROMFS
-write_all_lines(os.path.join(outdir, "hw.dat"))
+# write out hw.dat for ROMFS (disabled for 4.0 release)
+# write_all_lines(os.path.join(outdir, "hw.dat"))
 
 # write out hwdef.h
 write_hwdef_header(os.path.join(outdir, "hwdef.h"))

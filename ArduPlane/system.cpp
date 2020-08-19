@@ -179,6 +179,9 @@ void Plane::init_ardupilot()
     g2.gripper.init();
 #endif
 
+    // call AP_Vehicle setup code
+    vehicle_setup();
+
     // disable safety if requested
     BoardConfig.init_safety();
 

@@ -267,6 +267,14 @@ bool AP_Arming_Copter::motor_checks(bool display_failure)
         return false;
     }
 
+	    //servo_test check
+#if FRAME_CONFIG == HELI_FRAME
+    if(copter.motors->servo_test_running()) {
+        check_failed(display_failure, "Servo Test is still running");
+        return false;
+    }
+#endif
+
     // if this is a multicopter using ToshibaCAN ESCs ensure MOT_PMW_MIN = 1000, MOT_PWM_MAX = 2000
 #if HAL_WITH_UAVCAN && (FRAME_CONFIG != HELI_FRAME)
     bool tcan_active = false;

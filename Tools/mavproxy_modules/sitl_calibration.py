@@ -300,8 +300,8 @@ class MagcalController(CalController):
         if m.get_type() == 'MAG_CAL_REPORT':
             # NOTE: This may be not the ideal way to handle it
             if m.compass_id in self.last_progress:
-                del self.last_progress[m.compass_id]
-            if not self.last_progress:
+                self.last_progress[m.compass_id] = None
+            if len(self.last_progress.values()) and all(progress == None for progress in self.last_progress.values()):
                 self.stop()
             return
 

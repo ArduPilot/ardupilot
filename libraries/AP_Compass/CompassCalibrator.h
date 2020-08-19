@@ -7,7 +7,7 @@
 #define COMPASS_CAL_NUM_SAMPLES             300     // number of samples required before fitting begins
 
 #define COMPASS_MIN_SCALE_FACTOR 0.85
-#define COMPASS_MAX_SCALE_FACTOR 1.3
+#define COMPASS_MAX_SCALE_FACTOR 1.4
 
 class CompassCalibrator {
 public:

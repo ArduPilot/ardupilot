@@ -33,6 +33,7 @@
 #include <AP_RSSI/AP_RSSI.h>                        // RSSI Library
 #include <AP_SerialManager/AP_SerialManager.h>      // Serial manager library
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
+#include <AP_Hott_Telem/AP_Hott_Telem.h>
 
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
 
@@ -135,6 +136,13 @@ protected:
     // notification object for LEDs, buzzers etc (parameter set to
     // false disables external leds)
     AP_Notify notify;
+
+#if HAL_HOTT_TELEM_ENABLED
+    AP_Hott_Telem hott_telem;
+#endif
+
+    // called from each vehicle
+    void vehicle_setup(void);
 
 private:
 
