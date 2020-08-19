@@ -108,7 +108,6 @@ void AP_Beacon_SITL::update(void)
     set_beacon_distance(beacon_id, beac_veh_offset.length());
     set_vehicle_position(veh_pos3d, 0.5f);
     last_update_ms = now;
-
 }
 
 #endif // CONFIG_HAL_BOARD

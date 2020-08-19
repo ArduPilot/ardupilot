@@ -31,14 +31,16 @@ public:
     // update
     virtual void update() = 0;
 
-    // set vehicle position, pos should be in the beacon's local frame
+    // set vehicle position
+    // pos should be in meters in NED frame from the beacon's local origin
+    // accuracy_estimate is also in meters
     void set_vehicle_position(const Vector3f& pos, float accuracy_estimate);
 
-    // set individual beacon distance in meters
+    // set individual beacon distance from vehicle in meters in NED frame
     void set_beacon_distance(uint8_t beacon_instance, float distance);
 
-    // configure beacon's position in meters from origin
-    // pos should be in the beacon's local frame
+    // set beacon's position
+    // pos should be in meters in NED from the beacon's local origin
     void set_beacon_position(uint8_t beacon_instance, const Vector3f& pos);
 
     float get_beacon_origin_lat(void) const { return _frontend.origin_lat; }
