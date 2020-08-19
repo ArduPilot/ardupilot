@@ -44,7 +44,7 @@ void ModeCruise::update()
   handle CRUISE mode, locking heading to GPS course when we have
   sufficient ground speed, and no aileron or rudder input
  */
-void ModeCruise::_navigate()
+void ModeCruise::navigate()
 {
     if (!plane.cruise_state.locked_heading &&
         plane.channel_roll->get_control_in() == 0 &&
