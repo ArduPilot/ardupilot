@@ -82,6 +82,7 @@ class LoggerDocco(object):
     def search_for_files(self, dirs_to_search):
         _next = []
         for _dir in dirs_to_search:
+            _dir = os.path.join(topdir, _dir)
             for entry in os.listdir(_dir):
                 filepath = os.path.join(_dir, entry)
                 if os.path.isdir(filepath):
