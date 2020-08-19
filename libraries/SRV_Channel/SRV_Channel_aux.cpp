@@ -124,6 +124,22 @@ void SRV_Channel::aux_servo_function_setup(void)
     case k_elevon_right:
     case k_vtail_left:
     case k_vtail_right:
+    case k_scripting1:
+    case k_scripting2:
+    case k_scripting3:
+    case k_scripting4:
+    case k_scripting5:
+    case k_scripting6:
+    case k_scripting7:
+    case k_scripting8:
+    case k_scripting9:
+    case k_scripting10:
+    case k_scripting11:
+    case k_scripting12:
+    case k_scripting13:
+    case k_scripting14:
+    case k_scripting15:
+    case k_scripting16:
     case k_roll_out:
     case k_pitch_out:
     case k_yaw_out:
