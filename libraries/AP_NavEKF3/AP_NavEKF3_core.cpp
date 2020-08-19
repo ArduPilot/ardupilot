@@ -151,7 +151,7 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
         return false;
     }
     // Note: range beacon data is read one beacon at a time and can arrive at a high rate
-    if(!storedRangeBeacon.init(imu_buffer_length)) {
+    if(!storedRangeBeacon.init(imu_buffer_length+1)) {
         return false;
     }
     if (!storedExtNav.init(extnav_buffer_length)) {
