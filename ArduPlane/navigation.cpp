@@ -95,7 +95,7 @@ void Plane::navigate()
 
     // control mode specific updates to navigation demands
     // ---------------------------------------------------
-    update_navigation();
+    control_mode->navigate();
 }
 
 void Plane::calc_airspeed_errors()

@@ -969,7 +969,6 @@ private:
     void update_logging2(void);
     void update_control_mode(void);
     void update_flight_stage();
-    void update_navigation();
     void set_flight_stage(AP_Vehicle::FixedWing::FlightStage fs);
 #if OSD_ENABLED == ENABLED
     void publish_osd_info();
