@@ -66,7 +66,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @Units: s
     // @Range: 0 600
     // @User: Advanced
-    AP_GROUPINFO("MIN_CRSE_S", 8, SoaringController, min_cruise_s, 30),
+    AP_GROUPINFO("MIN_CRSE_S", 8, SoaringController, min_cruise_s, 10),
 
     // @Param: POLAR_CD0
     // @DisplayName: Zero lift drag coef.
