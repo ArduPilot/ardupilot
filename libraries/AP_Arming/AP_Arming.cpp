@@ -122,6 +122,22 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("CHECK",        8,     AP_Arming,  checks_to_perform,       ARMING_CHECK_ALL),
 
+    // @Param: OPE_TMIN
+    // @DisplayName: operating min temperature 
+    // @Description: Guaranteed minimum operating temperature
+    // @Range: -100.0 100.0
+    // @Units: degC
+    // @User: Advanced
+    AP_GROUPINFO("OPE_TMIN",        9,     AP_Arming, _operating_temperature_min,   -100.0f),
+
+    // @Param: OPE_T
+    // @DisplayName: operating maximum temperature 
+    // @Description: Guaranteed maximum operating temperature
+    // @Range: -100.0 100.0
+    // @Units: degC
+    // @User: Advanced
+    AP_GROUPINFO("OPE_TMAX",        10,     AP_Arming, _operating_temperature_max,  100.0f),
+
     AP_GROUPEND
 };
 
@@ -204,6 +220,12 @@ bool AP_Arming::barometer_checks(bool report)
         (checks_to_perform & ARMING_CHECK_BARO)) {
         if (!AP::baro().all_healthy()) {
             check_failed(ARMING_CHECK_BARO, report, "Barometer not healthy");
+            return false;
+        }
+
+        // operating temperature
+        if (AP::baro().get_temperature() < _operating_temperature_min || AP::baro().get_temperature() > _operating_temperature_max) {
+            check_failed(ARMING_CHECK_BARO, report, "Not operating temp(%.1lfC,%.1lfC,%.1lfC)", static_cast<double>(AP::baro().get_temperature()), static_cast<double>(_operating_temperature_min), static_cast<double>(_operating_temperature_max));
             return false;
         }
     }
