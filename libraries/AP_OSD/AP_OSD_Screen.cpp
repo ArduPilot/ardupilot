@@ -706,22 +706,6 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Range: 0 15
     AP_SUBGROUPINFO(clk, "CLK", 43, AP_OSD_Screen, AP_OSD_Setting),
     
-    // @Param: PLUSCODE_EN
-    // @DisplayName: PLUSCODE_EN
-    // @Description: Displays total flight time
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: PLUSCODE_X
-    // @DisplayName: PLUSCODE_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: PLUSCODE_Y
-    // @DisplayName: PLUSCODE_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
-    AP_SUBGROUPINFO(pluscode, "PLUSCODE", 44, AP_OSD_Screen, AP_OSD_Setting),
-    
 #if HAL_MSP_ENABLED
     // @Param: SIDEBARS_EN
     // @DisplayName: SIDEBARS_EN
@@ -852,6 +836,21 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     AP_SUBGROUPINFO(arming, "ARMING", 51, AP_OSD_Screen, AP_OSD_Setting),
 #endif //HAL_MSP_ENABLED
 
+    // @Param: PLUSCODE_EN
+    // @DisplayName: PLUSCODE_EN
+    // @Description: Displays pluscode (OLC) element 
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: PLUSCODE_X
+    // @DisplayName: PLUSCODE_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: PLUSCODE_Y
+    // @DisplayName: PLUSCODE_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(pluscode, "PLUSCODE", 52, AP_OSD_Screen, AP_OSD_Setting),
     AP_GROUPEND
 };
 
