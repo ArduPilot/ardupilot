@@ -5144,7 +5144,7 @@ Also, ignores heartbeats not from our target system'''
                 if mode in self.get_not_disarmed_settable_modes_list():
                     self.progress("Not settable mode : %s" % mode)
                     try:
-                        self.change_mode(mode)
+                        self.change_mode(mode, timeout=15)
                     except AutoTestTimeoutException:
                         self.progress("PASS not able to set mode : %s disarmed" % mode)
                     except ValueError:
@@ -5193,7 +5193,7 @@ Also, ignores heartbeats not from our target system'''
                 self.wait_ekf_happy()
                 self.wait_gps_disable()
                 try:
-                    self.change_mode(mode)
+                    self.change_mode(mode, timeout=15)
                 except AutoTestTimeoutException:
                     self.set_parameter("SIM_GPS_DISABLE", 0)
                     self.progress("PASS not able to set mode without Position : %s" % mode)
