@@ -3168,6 +3168,14 @@ void GCS_MAVLINK::handle_obstacle_distance(const mavlink_message_t &msg)
     }
 }
 
+void GCS_MAVLINK::handle_viso_obstacle_distance(const mavlink_message_t &msg)
+{
+    AP_Proximity *proximity = AP::proximity();
+    if (proximity != nullptr) {
+        proximity->handle_msg(msg);
+    }
+}
+
 /*
   handle messages which don't require vehicle specific data
  */
@@ -3353,7 +3361,10 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_OBSTACLE_DISTANCE:
         handle_obstacle_distance(msg);
         break;
-
+    
+    case MAVLINK_MSG_ID_VISO_OBSTACLE_DISTANCE:
+        handle_viso_obstacle_distance(msg);
+        break;
     }
 
 }

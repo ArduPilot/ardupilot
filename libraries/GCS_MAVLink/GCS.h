@@ -393,6 +393,7 @@ protected:
 
     void handle_distance_sensor(const mavlink_message_t &msg);
     void handle_obstacle_distance(const mavlink_message_t &msg);
+    void handle_viso_obstacle_distance(const mavlink_message_t &msg);
 
     void handle_common_param_message(const mavlink_message_t &msg);
     void handle_param_set(const mavlink_message_t &msg);
