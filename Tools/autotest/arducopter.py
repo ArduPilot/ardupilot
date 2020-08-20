@@ -5148,6 +5148,29 @@ class AutoTestCopter(AutoTest):
         self.drain_mav()
         self.assert_prearm_failure("Check MOT_PWM_MIN/MAX")
 
+    def test_alt_estimate_prearm(self):
+        self.context_push()
+        ex = None
+        try:
+            self.set_parameter("EK2_ALT_SOURCE", 2)
+            self.wait_gps_disable()
+            self.change_mode("ALT_HOLD")
+            self.assert_prearm_failure("Need Alt Estimate")
+            self.change_mode("STABILIZE")
+            self.arm_vehicle()
+            self.takeoff()
+            try:
+                self.change_mode("ALT_HOLD", timeout=10)
+            except AutoTestTimeoutException:
+                self.progress("PASS not able to set mode without Position : %s" % "ALT_HOLD")
+        except Exception as e:
+            ex = e
+        self.context_pop()
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+        if ex is not None:
+            raise ex
+
     def tests1(self):
         '''return list of all tests'''
         ret = super(AutoTestCopter, self).tests()
@@ -5420,6 +5443,10 @@ class AutoTestCopter(AutoTest):
             ("MotorTest",
              "Run Motor Tests",
              self.test_motortest),
+
+            ("AltEstimation",
+             "Test that Alt Estimation is mandatory for ALT_HOLD",
+             self.test_alt_estimate_prearm),
 
             ("LogUpload",
              "Log upload",
