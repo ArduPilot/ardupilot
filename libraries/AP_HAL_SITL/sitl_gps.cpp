@@ -330,8 +330,8 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
     pos.latitude  = d->latitude * 1.0e7;
     pos.altitude_ellipsoid = d->altitude * 1000.0f;
     pos.altitude_msl = d->altitude * 1000.0f;
-    pos.horizontal_accuracy = 1500;
-    pos.vertical_accuracy = 2000;
+    pos.horizontal_accuracy = _sitl->gps_accuracy[instance]*1000;
+    pos.vertical_accuracy = _sitl->gps_accuracy[instance]*1000;
 
     status.time = time_week_ms;
     status.fix_type = d->have_lock?3:0;
@@ -388,8 +388,8 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
     pvt.lat  = d->latitude * 1.0e7;
     pvt.height = d->altitude * 1000.0f;
     pvt.h_msl = d->altitude * 1000.0f;
-    pvt.h_acc = 200;
-    pvt.v_acc = 200; 
+    pvt.h_acc = _sitl->gps_accuracy[instance] * 1000;
+    pvt.v_acc = _sitl->gps_accuracy[instance] * 1000;
     pvt.velN = 1000.0f * d->speedN;
     pvt.velE = 1000.0f * d->speedE;
     pvt.velD = 1000.0f * d->speedD;
@@ -838,8 +838,8 @@ void SITL_State::_update_gps_sbp(const struct gps_data *d, uint8_t instance)
     pos.lon = d->longitude;
     pos.lat= d->latitude;
     pos.height = d->altitude;
-    pos.h_accuracy = 5e3;
-    pos.v_accuracy = 10e3;
+    pos.h_accuracy = _sitl->gps_accuracy[instance]*1000;
+    pos.v_accuracy = _sitl->gps_accuracy[instance]*1000;
     pos.n_sats = _sitl->gps_numsats[instance];
 
     // Send single point position solution
@@ -955,8 +955,8 @@ void SITL_State::_update_gps_sbp2(const struct gps_data *d, uint8_t instance)
     pos.lon = d->longitude;
     pos.lat= d->latitude;
     pos.height = d->altitude;
-    pos.h_accuracy = 5e3;
-    pos.v_accuracy = 10e3;
+    pos.h_accuracy = _sitl->gps_accuracy[instance]*1000;
+    pos.v_accuracy = _sitl->gps_accuracy[instance]*1000;
     pos.n_sats = _sitl->gps_numsats[instance];
 
     // Send single point position solution
