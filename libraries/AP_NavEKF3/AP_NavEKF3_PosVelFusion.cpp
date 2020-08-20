@@ -29,7 +29,7 @@ void NavEKF3_core::ResetVelocity(resetDataSource velResetSource)
     if (PV_AidingMode != AID_ABSOLUTE) {
         stateStruct.velocity.zero();
         // set the variances using the measurement noise parameter
-        P[5][5] = P[4][4] = sq(frontend->_gpsHorizVelNoise);
+        Pdiag(velocity.y) = Pdiag(velocity.x) = sq(frontend->_gpsHorizVelNoise);
     } else {
         // reset horizontal velocity states to the GPS velocity if available
         if ((imuSampleTime_ms - lastTimeGpsReceived_ms < 250 && velResetSource == resetDataSource::DEFAULT) || velResetSource == resetDataSource::GPS) {
@@ -39,7 +39,7 @@ void NavEKF3_core::ResetVelocity(resetDataSource velResetSource)
             stateStruct.velocity.x  = gps_corrected.vel.x;
             stateStruct.velocity.y  = gps_corrected.vel.y;
             // set the variances using the reported GPS speed accuracy
-            P[5][5] = P[4][4] = sq(MAX(frontend->_gpsHorizVelNoise,gpsSpdAccuracy));
+            Pdiag(velocity.y) = Pdiag(velocity.x) = sq(MAX(frontend->_gpsHorizVelNoise,gpsSpdAccuracy));
             // clear the timeout flags and counters
             velTimeout = false;
             lastVelPassTime_ms = imuSampleTime_ms;
@@ -48,14 +48,14 @@ void NavEKF3_core::ResetVelocity(resetDataSource velResetSource)
             // already corrected for sensor position
             stateStruct.velocity.x = extNavVelDelayed.vel.x;
             stateStruct.velocity.y = extNavVelDelayed.vel.y;
-            P[5][5] = P[4][4] = sq(extNavVelDelayed.err);
+            Pdiag(velocity.y) = Pdiag(velocity.x) = sq(extNavVelDelayed.err);
             velTimeout = false;
             lastVelPassTime_ms = imuSampleTime_ms;
         } else {
             stateStruct.velocity.x  = 0.0f;
             stateStruct.velocity.y  = 0.0f;
             // set the variances using the likely speed range
-            P[5][5] = P[4][4] = sq(25.0f);
+            Pdiag(velocity.y) = Pdiag(velocity.x) = sq(25.0f);
             // clear the timeout flags and counters
             velTimeout = false;
             lastVelPassTime_ms = imuSampleTime_ms;
@@ -94,7 +94,7 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
         stateStruct.position.x = lastKnownPositionNE.x;
         stateStruct.position.y = lastKnownPositionNE.y;
         // set the variances using the position measurement noise parameter
-        P[7][7] = P[8][8] = sq(frontend->_gpsHorizPosNoise);
+        Pdiag(position.x) = Pdiag(position.y) = sq(frontend->_gpsHorizPosNoise);
     } else  {
         // Use GPS data as first preference if fresh data is available
         if ((imuSampleTime_ms - lastTimeGpsReceived_ms < 250 && posResetSource == resetDataSource::DEFAULT) || posResetSource == resetDataSource::GPS) {
@@ -107,7 +107,7 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
             stateStruct.position.x = gps_corrected.pos.x  + 0.001f*gps_corrected.vel.x*(float(imuDataDelayed.time_ms) - float(gps_corrected.time_ms));
             stateStruct.position.y = gps_corrected.pos.y  + 0.001f*gps_corrected.vel.y*(float(imuDataDelayed.time_ms) - float(gps_corrected.time_ms));
             // set the variances using the position measurement noise parameter
-            P[7][7] = P[8][8] = sq(MAX(gpsPosAccuracy,frontend->_gpsHorizPosNoise));
+            Pdiag(position.x) = Pdiag(position.y) = sq(MAX(gpsPosAccuracy,frontend->_gpsHorizPosNoise));
             // clear the timeout flags and counters
             posTimeout = false;
             lastPosPassTime_ms = imuSampleTime_ms;
@@ -116,8 +116,8 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
             stateStruct.position.x = receiverPos.x;
             stateStruct.position.y = receiverPos.y;
             // set the variances from the beacon alignment filter
-            P[7][7] = receiverPosCov[0][0];
-            P[8][8] = receiverPosCov[1][1];
+            Pdiag(position.x) = receiverPosCov[0][0];
+            Pdiag(position.y) = receiverPosCov[1][1];
             // clear the timeout flags and counters
             rngBcnTimeout = false;
             lastRngBcnPassTime_ms = imuSampleTime_ms;
@@ -128,7 +128,7 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
             stateStruct.position.x = extNavCorrected.pos.x;
             stateStruct.position.y = extNavCorrected.pos.y;
             // set the variances as received from external nav system data
-            P[7][7] = P[8][8] = sq(extNavDataDelayed.posErr);
+            Pdiag(position.x) = Pdiag(position.y) = sq(extNavDataDelayed.posErr);
             // clear the timeout flags and counters
             posTimeout = false;
             lastPosPassTime_ms = imuSampleTime_ms;
@@ -248,7 +248,7 @@ void NavEKF3_core::ResetHeight(void)
     zeroCols(P,9,9);
 
     // set the variances to the measurement variance
-    P[9][9] = posDownObsNoise;
+    Pdiag(position.z) = posDownObsNoise;
 
     // Reset the vertical velocity state using GPS vertical velocity if we are airborne
     // Check that GPS vertical velocity data is available and can be used
@@ -272,9 +272,9 @@ void NavEKF3_core::ResetHeight(void)
 
     // set the variances to the measurement variance
     if (useExtNavVel) {
-        P[6][6] = sq(extNavVelDelayed.err);
+        Pdiag(velocity.z) = sq(extNavVelDelayed.err);
     } else {
-        P[6][6] = sq(frontend->_gpsVertVelNoise);
+        Pdiag(velocity.z) = sq(frontend->_gpsVertVelNoise);
     }
 }
 
@@ -666,7 +666,7 @@ void NavEKF3_core::FuseVelPosNED()
             const float hgtErr  = stateStruct.position.z - velPosObs[5];
             const float velDErr = stateStruct.velocity.z - velPosObs[2];
             // check if they are the same sign and both more than 3-sigma out of bounds
-            if ((hgtErr*velDErr > 0.0f) && (sq(hgtErr) > 9.0f * (P[9][9] + R_OBS_DATA_CHECKS[5])) && (sq(velDErr) > 9.0f * (P[6][6] + R_OBS_DATA_CHECKS[2]))) {
+            if ((hgtErr*velDErr > 0.0f) && (sq(hgtErr) > 9.0f * (Pdiag(position.z) + R_OBS_DATA_CHECKS[5])) && (sq(velDErr) > 9.0f * (Pdiag(velocity.z) + R_OBS_DATA_CHECKS[2]))) {
                 badIMUdata = true;
             } else {
                 badIMUdata = false;
@@ -679,8 +679,8 @@ void NavEKF3_core::FuseVelPosNED()
             // test horizontal position measurements
             innovVelPos[3] = stateStruct.position.x - velPosObs[3];
             innovVelPos[4] = stateStruct.position.y - velPosObs[4];
-            varInnovVelPos[3] = P[7][7] + R_OBS_DATA_CHECKS[3];
-            varInnovVelPos[4] = P[8][8] + R_OBS_DATA_CHECKS[4];
+            varInnovVelPos[3] = Pdiag(position.x) + R_OBS_DATA_CHECKS[3];
+            varInnovVelPos[4] = Pdiag(position.y) + R_OBS_DATA_CHECKS[4];
             // apply an innovation consistency threshold test, but don't fail if bad IMU data
             float maxPosInnov2 = sq(MAX(0.01f * (float)frontend->_gpsPosInnovGate, 1.0f))*(varInnovVelPos[3] + varInnovVelPos[4]);
             posTestRatio = (sq(innovVelPos[3]) + sq(innovVelPos[4])) / maxPosInnov2;
@@ -693,7 +693,7 @@ void NavEKF3_core::FuseVelPosNED()
                 posHealth = true;
                 lastPosPassTime_ms = imuSampleTime_ms;
                 // if timed out or outside the specified uncertainty radius, reset to the external sensor
-                if (posTimeout || ((P[8][8] + P[7][7]) > sq(float(frontend->_gpsGlitchRadiusMax)))) {
+                if (posTimeout || ((Pdiag(position.y) + Pdiag(position.x)) > sq(float(frontend->_gpsGlitchRadiusMax)))) {
                     // reset the position to the current external sensor position
                     ResetPosition(resetDataSource::DEFAULT);
                     // reset the velocity to the external sensor velocity
@@ -704,8 +704,8 @@ void NavEKF3_core::FuseVelPosNED()
                     // Reset the position variances and corresponding covariances to a value that will pass the checks
                     zeroRows(P,7,8);
                     zeroCols(P,7,8);
-                    P[7][7] = sq(float(0.5f*frontend->_gpsGlitchRadiusMax));
-                    P[8][8] = P[7][7];
+                    Pdiag(position.x) = sq(float(0.5f*frontend->_gpsGlitchRadiusMax));
+                    Pdiag(position.y) = Pdiag(position.x);
                     // Reset the normalised innovation to avoid failing the bad fusion tests
                     posTestRatio = 0.0f;
                     velTestRatio = 0.0f;
@@ -764,7 +764,7 @@ void NavEKF3_core::FuseVelPosNED()
         if (fuseHgtData) {
             // calculate height innovations
             innovVelPos[5] = stateStruct.position.z - velPosObs[5];
-            varInnovVelPos[5] = P[9][9] + R_OBS_DATA_CHECKS[5];
+            varInnovVelPos[5] = Pdiag(position.z) + R_OBS_DATA_CHECKS[5];
             // calculate the innovation consistency test ratio
             hgtTestRatio = sq(innovVelPos[5]) / (sq(MAX(0.01f * (float)frontend->_hgtInnovGate, 1.0f)) * varInnovVelPos[5]);
 
@@ -1229,7 +1229,7 @@ void NavEKF3_core::FuseBodyVel()
             float t29 = P[0][0]*t14;
             float t30 = P[1][1]*t18;
             float t31 = P[4][5]*t9;
-            float t32 = P[5][5]*t4;
+            float t32 = Pdiag(velocity.y)*t4;
             float t33 = P[0][5]*t14;
             float t34 = P[1][5]*t18;
             float t35 = P[3][5]*t24;
@@ -1242,7 +1242,7 @@ void NavEKF3_core::FuseBodyVel()
             float t40 = P[0][6]*t14;
             float t41 = P[1][6]*t18;
             float t42 = P[3][6]*t24;
-            float t81 = P[6][6]*t11;
+            float t81 = Pdiag(velocity.z)*t11;
             float t82 = P[2][6]*t21;
             float t43 = t38+t39+t40+t41+t42-t81-t82;
             float t44 = P[4][0]*t9;
@@ -1278,7 +1278,7 @@ void NavEKF3_core::FuseBodyVel()
             float t91 = P[2][3]*t21;
             float t67 = t62+t63+t64+t65+t66-t90-t91;
             float t68 = t24*t67;
-            float t69 = P[4][4]*t9;
+            float t69 = Pdiag(velocity.x)*t9;
             float t70 = P[5][4]*t4;
             float t71 = P[0][4]*t14;
             float t72 = P[1][4]*t18;
@@ -1405,11 +1405,11 @@ void NavEKF3_core::FuseBodyVel()
             float t33 = P[0][4]*t15;
             float t34 = P[1][4]*t18;
             float t35 = P[2][4]*t22;
-            float t78 = P[4][4]*t3;
+            float t78 = Pdiag(velocity.x)*t3;
             float t79 = P[3][4]*t25;
             float t36 = t31+t32+t33+t34+t35-t78-t79;
             float t37 = P[5][6]*t8;
-            float t38 = P[6][6]*t12;
+            float t38 = Pdiag(velocity.z)*t12;
             float t39 = P[0][6]*t15;
             float t40 = P[1][6]*t18;
             float t41 = P[2][6]*t22;
@@ -1450,7 +1450,7 @@ void NavEKF3_core::FuseBodyVel()
             float t89 = P[4][3]*t3;
             float t90 = P[3][3]*t25;
             float t68 = t63+t64+t65+t66+t67-t89-t90;
-            float t69 = P[5][5]*t8;
+            float t69 = Pdiag(velocity.y)*t8;
             float t70 = P[6][5]*t12;
             float t71 = P[0][5]*t15;
             float t72 = P[1][5]*t18;
@@ -1572,7 +1572,7 @@ void NavEKF3_core::FuseBodyVel()
             float t24 = t21+t22+t23;
             float t29 = P[0][0]*t14;
             float t30 = P[6][4]*t9;
-            float t31 = P[4][4]*t4;
+            float t31 = Pdiag(velocity.x)*t4;
             float t32 = P[0][4]*t14;
             float t33 = P[2][4]*t20;
             float t34 = P[3][4]*t24;
@@ -1585,7 +1585,7 @@ void NavEKF3_core::FuseBodyVel()
             float t39 = P[0][5]*t14;
             float t40 = P[2][5]*t20;
             float t41 = P[3][5]*t24;
-            float t80 = P[5][5]*t11;
+            float t80 = Pdiag(velocity.y)*t11;
             float t81 = P[1][5]*t17;
             float t42 = t37+t38+t39+t40+t41-t80-t81;
             float t43 = P[6][0]*t9;
@@ -1622,7 +1622,7 @@ void NavEKF3_core::FuseBodyVel()
             float t91 = P[1][3]*t17;
             float t67 = t62+t63+t64+t65+t66-t90-t91;
             float t68 = t24*t67;
-            float t69 = P[6][6]*t9;
+            float t69 = Pdiag(velocity.z)*t9;
             float t70 = P[4][6]*t4;
             float t71 = P[0][6]*t14;
             float t72 = P[2][6]*t20;

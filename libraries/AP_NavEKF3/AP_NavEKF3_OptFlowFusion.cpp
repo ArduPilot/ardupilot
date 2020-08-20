@@ -110,7 +110,7 @@ void NavEKF3_core::EstimateTerrainOffset()
 
         // in addition to a terrain gradient error model, we also have the growth in uncertainty due to the copters vertical velocity
         float timeLapsed = MIN(0.001f * (imuSampleTime_ms - timeAtLastAuxEKF_ms), 1.0f);
-        float Pincrement = (distanceTravelledSq * sq(frontend->_terrGradMax)) + sq(timeLapsed)*P[6][6];
+        float Pincrement = (distanceTravelledSq * sq(frontend->_terrGradMax)) + sq(timeLapsed)*Pdiag(velocity.z);
         Popt += Pincrement;
         timeAtLastAuxEKF_ms = imuSampleTime_ms;
 
@@ -418,7 +418,7 @@ void NavEKF3_core::FuseOptFlow()
             float t58 = P[0][5]*t2*t5;
             float t59 = P[1][5]*t2*t15;
             float t60 = P[2][5]*t2*t19;
-            float t61 = P[5][5]*t2*t27;
+            float t61 = Pdiag(velocity.y)*t2*t27;
             float t88 = P[4][5]*t2*t7;
             float t89 = P[3][5]*t2*t22;
             float t62 = t57+t58+t59+t60+t61-t88-t89;
@@ -428,10 +428,10 @@ void NavEKF3_core::FuseOptFlow()
             float t66 = P[1][4]*t2*t15;
             float t67 = P[2][4]*t2*t19;
             float t68 = P[5][4]*t2*t27;
-            float t90 = P[4][4]*t2*t7;
+            float t90 = Pdiag(velocity.x)*t2*t7;
             float t91 = P[3][4]*t2*t22;
             float t69 = t64+t65+t66+t67+t68-t90-t91;
-            float t70 = P[6][6]*t2*t10;
+            float t70 = Pdiag(velocity.z)*t2*t10;
             float t71 = P[0][6]*t2*t5;
             float t72 = P[1][6]*t2*t15;
             float t73 = P[2][6]*t2*t19;
@@ -589,12 +589,12 @@ void NavEKF3_core::FuseOptFlow()
             float t58 = P[0][4]*t2*t5;
             float t59 = P[1][4]*t2*t16;
             float t60 = P[3][4]*t2*t22;
-            float t61 = P[4][4]*t2*t27;
+            float t61 = Pdiag(velocity.x)*t2*t27;
             float t88 = P[6][4]*t2*t10;
             float t89 = P[2][4]*t2*t19;
             float t62 = t57+t58+t59+t60+t61-t88-t89;
             float t63 = t2*t27*t62;
-            float t64 = P[5][5]*t2*t8;
+            float t64 = Pdiag(velocity.y)*t2*t8;
             float t65 = P[0][5]*t2*t5;
             float t66 = P[1][5]*t2*t16;
             float t67 = P[3][5]*t2*t22;
@@ -608,7 +608,7 @@ void NavEKF3_core::FuseOptFlow()
             float t73 = P[1][6]*t2*t16;
             float t74 = P[3][6]*t2*t22;
             float t75 = P[4][6]*t2*t27;
-            float t92 = P[6][6]*t2*t10;
+            float t92 = Pdiag(velocity.z)*t2*t10;
             float t93 = P[2][6]*t2*t19;
             float t76 = t71+t72+t73+t74+t75-t92-t93;
             float t85 = t2*t19*t49;
