@@ -524,7 +524,9 @@ void Display::update_ekf(uint8_t r)
 void Display::update_battery(uint8_t r)
 {
     char msg [DISPLAY_MESSAGE_SIZE];
-    snprintf(msg, DISPLAY_MESSAGE_SIZE, "BAT1: %4.2fV", (double)AP::battery().voltage()) ;
+    AP_BattMonitor &battery = AP::battery();
+    uint8_t pct = battery.capacity_remaining_pct();
+    snprintf(msg, DISPLAY_MESSAGE_SIZE, "BAT:%4.2fV %2d%% ", (double)battery.voltage(), pct) ;
     draw_text(COLUMN(0), ROW(r), msg);
  }
 

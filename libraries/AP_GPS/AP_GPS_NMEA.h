@@ -122,6 +122,7 @@ private:
     uint8_t _term_offset;                                       ///< character offset with the term being received
     uint16_t _sentence_length;
     bool _gps_data_good;                                        ///< set when the sentence indicates data is good
+    bool _sentence_done;                                        ///< set when a sentence has been fully decoded
 
     // The result of parsing terms within a message is stored temporarily until
     // the message is completely processed and the checksum validated.

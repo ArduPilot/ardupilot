@@ -1,4 +1,7 @@
 #include "AP_Parachute.h"
+
+#if HAL_PARACHUTE_ENABLED
+
 #include <AP_Relay/AP_Relay.h>
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
@@ -83,7 +86,7 @@ void AP_Parachute::enabled(bool on_off)
     // clear release_time
     _release_time = 0;
 
-    AP::logger().Write_Event(_enabled ? DATA_PARACHUTE_ENABLED : DATA_PARACHUTE_DISABLED);
+    AP::logger().Write_Event(_enabled ? LogEvent::PARACHUTE_ENABLED : LogEvent::PARACHUTE_DISABLED);
 }
 
 /// release - release parachute
@@ -95,7 +98,7 @@ void AP_Parachute::release()
     }
 
     gcs().send_text(MAV_SEVERITY_INFO,"Parachute: Released");
-    AP::logger().Write_Event(DATA_PARACHUTE_RELEASED);
+    AP::logger().Write_Event(LogEvent::PARACHUTE_RELEASED);
 
     // set release time to current system time
     if (_release_time == 0) {
@@ -172,3 +175,4 @@ AP_Parachute *parachute()
 }
 
 }
+#endif // HAL_PARACHUTE_ENABLED

@@ -24,10 +24,13 @@
 extern const AP_HAL::HAL &hal;
 
 // parameter defaults
-const float OA_LOOKAHEAD_DEFAULT = 15;
 const float OA_MARGIN_MAX_DEFAULT = 5;
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
+    const int16_t OA_OPTIONS_DEFAULT = 1;
+#endif
 
-const int16_t OA_TIMEOUT_MS = 2000;             // avoidance results over 2 seconds old are ignored
+const int16_t OA_UPDATE_MS = 1000;      // path planning updates run at 1hz
+const int16_t OA_TIMEOUT_MS = 3000;     // results over 3 seconds old are ignored
 
 const AP_Param::GroupInfo AP_OAPathPlanner::var_info[] = {
 
@@ -38,14 +41,8 @@ const AP_Param::GroupInfo AP_OAPathPlanner::var_info[] = {
     // @User: Standard
     AP_GROUPINFO_FLAGS("TYPE", 1,  AP_OAPathPlanner, _type, OA_PATHPLAN_DISABLED, AP_PARAM_FLAG_ENABLE),
 
-    // @Param: LOOKAHEAD
-    // @DisplayName: Object Avoidance look ahead distance maximum
-    // @Description: Object Avoidance will look this many meters ahead of vehicle
-    // @Units: m
-    // @Range: 1 100
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("LOOKAHEAD", 2, AP_OAPathPlanner, _lookahead, OA_LOOKAHEAD_DEFAULT),
+    // Note: Do not use Index "2" for any new parameter
+    //       It was being used by _LOOKAHEAD which was later moved to AP_OABendyRuler 
 
     // @Param: MARGIN_MAX
     // @DisplayName: Object Avoidance wide margin distance
@@ -56,11 +53,23 @@ const AP_Param::GroupInfo AP_OAPathPlanner::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("MARGIN_MAX", 3, AP_OAPathPlanner, _margin_max, OA_MARGIN_MAX_DEFAULT),
 
-#if !HAL_MINIMIZE_FEATURES
     // @Group: DB_
     // @Path: AP_OADatabase.cpp
     AP_SUBGROUPINFO(_oadatabase, "DB_", 4, AP_OAPathPlanner, AP_OADatabase),
+
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
+    // @Param: OPTIONS
+    // @DisplayName: Options while recovering from Object Avoidance
+    // @Description: Bitmask which will govern vehicles behaviour while recovering from Obstacle Avoidance (i.e Avoidance is turned off after the path ahead is clear).   
+    // @Values: 0:Vehicle will return to its original waypoint trajectory, 1:Reset the origin of the waypoint to the present location
+    // @Bitmask: 0: Reset the origin of the waypoint to the present location
+    // @User: Standard
+    AP_GROUPINFO("OPTIONS", 5, AP_OAPathPlanner, _options, OA_OPTIONS_DEFAULT),
 #endif
+    
+    // @Group: BR_
+    // @Path: AP_OABendyRuler.cpp
+    AP_SUBGROUPPTR(_oabendyruler, "BR_", 6, AP_OAPathPlanner, AP_OABendyRuler),
 
     AP_GROUPEND
 };
@@ -84,6 +93,7 @@ void AP_OAPathPlanner::init()
     case OA_PATHPLAN_BENDYRULER:
         if (_oabendyruler == nullptr) {
             _oabendyruler = new AP_OABendyRuler();
+            AP_Param::load_object_from_eeprom(_oabendyruler, AP_OABendyRuler::var_info);
         }
         break;
     case OA_PATHPLAN_DIJKSTRA:
@@ -192,9 +202,19 @@ AP_OAPathPlanner::OA_RetState AP_OAPathPlanner::mission_avoidance(const Location
 
 // avoidance thread that continually updates the avoidance_result structure based on avoidance_request
 void AP_OAPathPlanner::avoidance_thread()
-{
+{   
+    // require ekf origin to have been set
+    bool origin_set = false;
+    while (!origin_set) {
+        hal.scheduler->delay(500);
+        struct Location ekf_origin {};
+        {
+            WITH_SEMAPHORE(AP::ahrs().get_semaphore());
+            origin_set = AP::ahrs().get_origin(ekf_origin);    
+        }
+    }
+
     while (true) {
-#if !HAL_MINIMIZE_FEATURES
 
         // if database queue needs attention, service it faster
         if (_oadatabase.process_queue()) {
@@ -204,16 +224,12 @@ void AP_OAPathPlanner::avoidance_thread()
         }
 
         const uint32_t now = AP_HAL::millis();
-        if (now - avoidance_latest_ms < 100) {
+        if (now - avoidance_latest_ms < OA_UPDATE_MS) {
             continue;
         }
         avoidance_latest_ms = now;
 
         _oadatabase.update();
-#else
-        hal.scheduler->delay(100);
-        const uint32_t now = AP_HAL::millis();
-#endif
 
         Location origin_new;
         Location destination_new;
@@ -241,7 +257,7 @@ void AP_OAPathPlanner::avoidance_thread()
             if (_oabendyruler == nullptr) {
                 continue;
             }
-            _oabendyruler->set_config(_lookahead, _margin_max);
+            _oabendyruler->set_config(_margin_max);
             if (_oabendyruler->update(avoidance_request2.current_loc, avoidance_request2.destination, avoidance_request2.ground_speed_vec, origin_new, destination_new)) {
                 res = OA_SUCCESS;
             }

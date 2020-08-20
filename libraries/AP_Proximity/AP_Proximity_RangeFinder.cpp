@@ -15,27 +15,18 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Proximity_RangeFinder.h"
-#include <AP_SerialManager/AP_SerialManager.h>
 #include <ctype.h>
 #include <stdio.h>
-#include <AP_RangeFinder/RangeFinder_Backend.h>
-
-extern const AP_HAL::HAL& hal;
-
-AP_Proximity_RangeFinder::AP_Proximity_RangeFinder(AP_Proximity &_frontend,
-                                   AP_Proximity::Proximity_State &_state) :
-    AP_Proximity_Backend(_frontend, _state),
-    _distance_upward(-1)
-{
-}
+#include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_RangeFinder/AP_RangeFinder_Backend.h>
 
 // update the state of the sensor
 void AP_Proximity_RangeFinder::update(void)
 {
     // exit immediately if no rangefinder object
-    const RangeFinder *rngfnd = frontend.get_rangefinder();
+    const RangeFinder *rngfnd = AP::rangefinder();
     if (rngfnd == nullptr) {
-        set_status(AP_Proximity::Proximity_NoData);
+        set_status(AP_Proximity::Status::NoData);
         return;
     }
 
@@ -76,9 +67,9 @@ void AP_Proximity_RangeFinder::update(void)
 
     // check for timeout and set health status
     if ((_last_update_ms == 0) || (now - _last_update_ms > PROXIMITY_RANGEFIDER_TIMEOUT_MS)) {
-        set_status(AP_Proximity::Proximity_NoData);
+        set_status(AP_Proximity::Status::NoData);
     } else {
-        set_status(AP_Proximity::Proximity_Good);
+        set_status(AP_Proximity::Status::Good);
     }
 }
 

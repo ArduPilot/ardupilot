@@ -9,6 +9,7 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include "AP_Mount_Backend.h"
+#if HAL_MOUNT_ENABLED
 
 class AP_Mount_Servo : public AP_Mount_Backend
 {
@@ -70,3 +71,4 @@ private:
 
     uint32_t _last_check_servo_map_ms;  // system time of latest call to check_servo_map function
 };
+#endif // HAL_MOUNT_ENABLED

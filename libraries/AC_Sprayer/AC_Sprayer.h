@@ -1,5 +1,5 @@
-/// @file	AC_Sprayer.h
-/// @brief	Crop sprayer library
+/// @file   AC_Sprayer.h
+/// @brief  Crop sprayer library
 
 /**
     The crop spraying functionality can be enabled in ArduCopter by doing the following:
@@ -24,6 +24,12 @@
 #define AC_SPRAYER_DEFAULT_SPEED_MIN        100     ///< we must be travelling at least 1m/s to begin spraying
 #define AC_SPRAYER_DEFAULT_TURN_ON_DELAY    100     ///< delay between when we reach the minimum speed and we begin spraying.  This reduces the likelihood of constantly turning on/off the pump
 #define AC_SPRAYER_DEFAULT_SHUT_OFF_DELAY   1000    ///< shut-off delay in milli seconds.  This reduces the likelihood of constantly turning on/off the pump
+
+#ifndef HAL_SPRAYER_ENABLED
+#define HAL_SPRAYER_ENABLED !HAL_MINIMIZE_FEATURES
+#endif
+
+#if HAL_SPRAYER_ENABLED
 
 /// @class  AC_Sprayer
 /// @brief  Object managing a crop sprayer comprised of a spinner and a pump both controlled by pwm
@@ -86,3 +92,4 @@ private:
 namespace AP {
     AC_Sprayer *sprayer();
 };
+#endif // HAL_SPRAYER_ENABLED

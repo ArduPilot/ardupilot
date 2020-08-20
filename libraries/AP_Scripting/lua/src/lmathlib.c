@@ -18,6 +18,10 @@
 #include "lauxlib.h"
 #include "lualib.h"
 
+#if defined(ARDUPILOT_BUILD)
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
+
 
 #undef PI
 #define PI	(l_mathop(3.141592653589793238462643383279502884))

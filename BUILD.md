@@ -1,5 +1,13 @@
 # Building ArduPilot #
 
+## Get the Source
+
+Clone the project from GitHub:
+```sh
+git clone --recursive https://github.com/ArduPilot/ardupilot.git
+cd ardupilot
+```
+
 Ardupilot is gradually moving from the make-based build system to
 [Waf](https://waf.io/). The instructions below should be enough for you to
 build Ardupilot, but you can also read more about the build system in the
@@ -41,7 +49,7 @@ list some basic and more used commands as example.
     ./waf copter
     ```    
 
-    The "arducopter" and "arducopter-heli" binaries should appear in the `build/<board-name>/bin` directory.
+    The "arducopter" binary should appear in the `build/<board-name>/bin` directory.
 
 * **List available boards**
 
@@ -60,7 +68,6 @@ list some basic and more used commands as example.
     ./waf configure --board bebop --static # Bebop or Bebop2
     ./waf configure --board edge           # emlid edge
     ./waf configure --board fmuv3          # Pixhawk2/Cube using ChibiOS
-    ./waf configure --board fmuv4          # Pixracer using ChibiOS
     ./waf configure --board navio2         # emlid navio2
     ./waf configure --board Pixhawk1       # Pixhawk1
     ./waf configure --board CubeBlack      # Pixhawk2
@@ -69,6 +76,20 @@ list some basic and more used commands as example.
     ./waf configure --board sitl           # software-in-the-loop simulator
     ./waf configure --board sitl --debug   # software-in-the-loop simulator with debug symbols
 
+    ```
+
+* **List of available vehicle types**
+
+    Here is a list of the most common vehicle build targets:
+
+    ```sh
+    ./waf copter                            # All multirotor types
+    ./waf heli                              # Helicopter types
+    ./waf plane                             # Fixed wing airplanes including VTOL
+    ./waf rover                             # Ground-based rovers and surface boats
+    ./waf sub                               # ROV and other submarines
+    ./waf antennatracker                    # Antenna trackers
+    
     ```
 
 * **Clean the build**

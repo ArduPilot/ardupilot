@@ -64,7 +64,11 @@ uint16_t MissionItemProtocol_Fence::item_count() const
 static MAV_MISSION_RESULT convert_MISSION_ITEM_INT_to_AC_PolyFenceItem(const mavlink_mission_item_int_t &mission_item_int, AC_PolyFenceItem &ret)
 {
     if (mission_item_int.frame != MAV_FRAME_GLOBAL &&
-        mission_item_int.frame != MAV_FRAME_GLOBAL_INT) {
+        mission_item_int.frame != MAV_FRAME_GLOBAL_INT &&
+        mission_item_int.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT &&
+        mission_item_int.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT_INT &&
+        mission_item_int.frame != MAV_FRAME_GLOBAL_TERRAIN_ALT &&
+        mission_item_int.frame != MAV_FRAME_GLOBAL_TERRAIN_ALT_INT) {
         return MAV_MISSION_UNSUPPORTED_FRAME;
     }
 
@@ -99,7 +103,7 @@ static MAV_MISSION_RESULT convert_MISSION_ITEM_INT_to_AC_PolyFenceItem(const mav
 MAV_MISSION_RESULT MissionItemProtocol_Fence::replace_item(const mavlink_mission_item_int_t &mission_item_int)
 {
     if (_new_items == nullptr) {
-        AP::internalerror().error(AP_InternalError::error_t::flow_of_control);
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         return MAV_MISSION_ERROR;
     }
     if (mission_item_int.seq >= _new_items_count) {
@@ -176,12 +180,11 @@ MAV_MISSION_RESULT MissionItemProtocol_Fence::allocate_receive_resources(const u
     if (_new_items != nullptr) {
         // this is an error - the base class should have called
         // free_upload_resources first
-        AP::internalerror().error(AP_InternalError::error_t::flow_of_control);
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         return MAV_MISSION_ERROR;
     }
 
     const uint16_t allocation_size = count * sizeof(AC_PolyFenceItem);
-    gcs().send_text(MAV_SEVERITY_DEBUG, "Allocating %u bytes for fence upload", allocation_size);
     if (allocation_size != 0) {
         _new_items = (AC_PolyFenceItem*)malloc(allocation_size);
         if (_new_items == nullptr) {

@@ -87,6 +87,9 @@ bool AP_GPS_NMEA::_decode(char c)
     case '\r':
     case '\n':
     case '*':
+        if (_sentence_done) {
+            return false;
+        }
         if (_term_offset < sizeof(_term)) {
             _term[_term_offset] = 0;
             valid_sentence = _term_complete();
@@ -103,6 +106,7 @@ bool AP_GPS_NMEA::_decode(char c)
         _is_checksum_term = false;
         _gps_data_good = false;
         _sentence_length = 1;
+        _sentence_done = false;
         return valid_sentence;
     }
 
@@ -227,6 +231,7 @@ bool AP_GPS_NMEA::_term_complete()
 {
     // handle the last term in a message
     if (_is_checksum_term) {
+        _sentence_done = true;
         uint8_t nibble_high = 0;
         uint8_t nibble_low  = 0;
         if (!hex_to_uint8(_term[0], nibble_high) || !hex_to_uint8(_term[1], nibble_low)) {
@@ -295,6 +300,11 @@ bool AP_GPS_NMEA::_term_complete()
                     _last_HDT_ms = now;
                     state.gps_yaw = wrap_360(_new_gps_yaw*0.01f);
                     state.have_gps_yaw = true;
+                    // remember that we are setup to provide yaw. With
+                    // a NMEA GPS we can only tell if the GPS is
+                    // configured to provide yaw when it first sends a
+                    // HDT sentence.
+                    state.gps_yaw_configured = true;
                     break;
                 }
             } else {

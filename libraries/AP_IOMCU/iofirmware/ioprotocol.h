@@ -123,6 +123,7 @@ struct page_rc_input {
     uint8_t flags_rc_ok:1;
     uint8_t rc_protocol;
     uint16_t pwm[IOMCU_MAX_CHANNELS];
+    int16_t rssi;
 };
 
 /*

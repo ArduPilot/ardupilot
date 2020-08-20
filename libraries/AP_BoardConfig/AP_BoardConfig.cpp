@@ -16,19 +16,15 @@
  *   AP_BoardConfig - board specific configuration
  */
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_Common/AP_Common.h>
-#include <GCS_MAVLink/GCS.h>
 #include "AP_BoardConfig.h"
-#include <stdio.h>
-#include <AP_RTC/AP_RTC.h>
 
-#if HAL_WITH_UAVCAN
-#include <AP_UAVCAN/AP_UAVCAN.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-#include <AP_HAL_Linux/CAN.h>
-#endif
-#endif
+#include <AP_Common/AP_Common.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_RTC/AP_RTC.h>
+#include <AP_Vehicle/AP_Vehicle.h>
+#include <GCS_MAVLink/GCS.h>
+
+#include <stdio.h>
 
 #ifndef BOARD_TYPE_DEFAULT
 #define BOARD_TYPE_DEFAULT PX4_BOARD_AUTO
@@ -138,10 +134,10 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 
 #if HAL_HAVE_SAFETY_SWITCH
     // @Param: SAFETY_MASK
-    // @DisplayName: Channels which ignore the safety switch state
-    // @Description: A bitmask which controls what channels can move while the safety switch has not been pressed
+    // @DisplayName: Outputs which ignore the safety switch state
+    // @Description: A bitmask which controls what outputs can move while the safety switch has not been pressed
     // @Values: 0:Disabled,1:Enabled
-    // @Bitmask: 0:Ch1,1:Ch2,2:Ch3,3:Ch4,4:Ch5,5:Ch6,6:Ch7,7:Ch8,8:Ch9,9:Ch10,10:Ch11,11:Ch12,12:Ch13,13:Ch14
+    // @Bitmask: 0:Output1,1:Output2,2:Output3,3:Output4,4:Output5,5:Output6,6:Output7,7:Output8,8:Output9,9:Output10,10:Output11,11:Output12,12:Output13,13:Output14
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("SAFETY_MASK", 7, AP_BoardConfig, state.ignore_safety_channels, 0),
@@ -154,7 +150,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Range: -1 80
     // @Units: degC
     // @User: Advanced
-    AP_GROUPINFO("IMU_TARGTEMP", 8, AP_BoardConfig, _imu_target_temperature, HAL_IMU_TEMP_DEFAULT),
+    AP_GROUPINFO("IMU_TARGTEMP", 8, AP_BoardConfig, heater.imu_target_temperature, HAL_IMU_TEMP_DEFAULT),
 #endif
 
 #if AP_FEATURE_BOARD_DETECT
@@ -167,8 +163,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_GROUPINFO("TYPE", 9, AP_BoardConfig, state.board_type, BOARD_TYPE_DEFAULT),
 #endif
 
-#if AP_FEATURE_BOARD_DETECT
-#if HAL_PX4_HAVE_PX4IO || HAL_WITH_IO_MCU
+#if HAL_WITH_IO_MCU
     // @Param: IO_ENABLE
     // @DisplayName: Enable IO co-processor
     // @Description: This allows for the IO co-processor on FMUv1 and FMUv2 to be disabled
@@ -176,7 +171,6 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("IO_ENABLE", 10, AP_BoardConfig, state.io_enable, 1),
-#endif
 #endif
 
 #if HAL_RCINPUT_WITH_AP_RADIO
@@ -252,6 +246,39 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Units: ms
     // @User: Advanced
     AP_GROUPINFO("BOOT_DELAY", 20, AP_BoardConfig, _boot_delay_ms, HAL_DEFAULT_BOOT_DELAY),
+
+#if HAL_HAVE_IMU_HEATER
+    // @Param: IMUHEAT_P
+    // @DisplayName: IMU Heater P gain
+    // @Description: IMU Heater P gain
+    // @Range: 1 500
+    // @Increment: 1
+    // @User: Advanced
+
+    // @Param: IMUHEAT_I
+    // @DisplayName: IMU Heater I gain
+    // @Description: IMU Heater integrator gain
+    // @Range: 0 1
+    // @Increment: 0.1
+    // @User: Advanced
+
+    // @Param: IMUHEAT_IMAX
+    // @DisplayName: IMU Heater IMAX
+    // @Description: IMU Heater integrator maximum
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Advanced
+    AP_SUBGROUPINFO(heater.pi_controller, "IMUHEAT_",  21, AP_BoardConfig, AC_PI),
+#endif
+
+    // @Param: ALT_CONFIG
+    // @DisplayName: Alternative HW config
+    // @Description: Select an alternative hardware configuration. A value of zero selects the default configuration for this board. Other values are board specific. Please see the documentation for your board for details on any alternative configuration values that may be available.
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("ALT_CONFIG", 22, AP_BoardConfig, _alt_config, 0),
     
     AP_GROUPEND
 };
@@ -259,13 +286,6 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 void AP_BoardConfig::init()
 {
     board_setup();
-
-#if HAL_HAVE_IMU_HEATER
-    // let the HAL know the target temperature. We pass a pointer as
-    // we want the user to be able to change the parameter without
-    // rebooting
-    hal.util->set_imu_target_temp((int8_t *)&_imu_target_temperature);
-#endif
 
     AP::rtc().set_utc_usec(hal.util->get_hw_rtc(), AP_RTC::SOURCE_HW);
 
@@ -315,7 +335,7 @@ void AP_BoardConfig::init_safety()
 */
 bool AP_BoardConfig::_in_sensor_config_error;
 
-void AP_BoardConfig::sensor_config_error(const char *reason)
+void AP_BoardConfig::config_error(const char *fmt, ...)
 {
     _in_sensor_config_error = true;
     /*
@@ -329,9 +349,18 @@ void AP_BoardConfig::sensor_config_error(const char *reason)
         uint32_t now = AP_HAL::millis();
         if (now - last_print_ms >= 3000) {
             last_print_ms = now;
-            printf("Sensor failure: %s\n", reason);
+            va_list arg_list;
+            char printfmt[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+2];
+            hal.util->snprintf(printfmt, sizeof(printfmt), "Config error: %s\n", fmt);
+            va_start(arg_list, fmt);
+            vprintf(printfmt, arg_list);
+            va_end(arg_list);
 #if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN) && !defined(HAL_BUILD_AP_PERIPH)
-            gcs().send_text(MAV_SEVERITY_ERROR, "Check BRD_TYPE: %s", reason);
+            char taggedfmt[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+            hal.util->snprintf(taggedfmt, sizeof(taggedfmt), "Config error: %s", fmt);
+            va_start(arg_list, fmt);
+            gcs().send_textv(MAV_SEVERITY_CRITICAL, taggedfmt, arg_list);
+            va_end(arg_list);
 #endif
         }
 #if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN) && !defined(HAL_BUILD_AP_PERIPH)
@@ -370,3 +399,9 @@ bool AP_BoardConfig::safety_button_handle_pressed(uint8_t press_count)
     }
     return true;
 }
+
+namespace AP {
+    AP_BoardConfig *boardConfig(void) {
+        return AP_BoardConfig::get_singleton();
+    }
+};

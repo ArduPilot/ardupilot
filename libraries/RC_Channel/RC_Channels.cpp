@@ -68,11 +68,15 @@ uint8_t RC_Channels::get_radio_in(uint16_t *chans, const uint8_t num_channels)
 // update all the input channels
 bool RC_Channels::read_input(void)
 {
-    if (!hal.rcin->new_input() && !has_new_overrides) {
+    if (hal.rcin->new_input()) {
+        _has_had_rc_receiver = true;
+    } else if (!has_new_overrides) {
         return false;
     }
 
     has_new_overrides = false;
+
+    last_update_ms = AP_HAL::millis();
 
     bool success = false;
     for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
@@ -199,6 +203,25 @@ void RC_Channels::read_mode_switch()
         return;
     }
     c->read_mode_switch();
+}
+
+/*
+  get the RC input PWM value given a channel number.  Note that
+  channel numbers start at 1, as this API is designed for use in
+  LUA
+*/
+bool RC_Channels::get_pwm(uint8_t c, uint16_t &pwm) const
+{
+    RC_Channel *chan = rc_channel(c-1);
+    if (chan == nullptr) {
+        return false;
+    }
+    int16_t pwm_signed = chan->get_radio_in();
+    if (pwm_signed < 0) {
+        return false;
+    }
+    pwm = (uint16_t)pwm_signed;
+    return true;
 }
 
 

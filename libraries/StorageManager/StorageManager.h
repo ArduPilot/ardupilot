@@ -1,5 +1,5 @@
 /*
-   Please contribute your ideas! See http://dev.ardupilot.org for details
+   Please contribute your ideas! See https://dev.ardupilot.org for details
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@
   storage. Use larger areas for other boards
  */
 #if HAL_STORAGE_SIZE >= 16384
-#define STORAGE_NUM_AREAS 14
+#define STORAGE_NUM_AREAS 15
 #elif HAL_STORAGE_SIZE >= 15360
 #define STORAGE_NUM_AREAS 11
 #elif HAL_STORAGE_SIZE >= 8192
@@ -52,14 +52,12 @@ public:
         StorageRally   = 2,
         StorageMission = 3,
         StorageKeys    = 4,
-        StorageBindInfo= 5
+        StorageBindInfo= 5,
+        StorageCANDNA  = 6
     };
 
     // erase whole of storage
     static void erase(void);
-
-    // setup for copter layout of storage
-    static void set_layout_copter(void) { layout = layout_copter; }
 
 private:
     struct StorageArea {
@@ -69,9 +67,7 @@ private:
     };
 
     // available layouts
-    static const StorageArea layout_copter[STORAGE_NUM_AREAS];
-    static const StorageArea layout_default[STORAGE_NUM_AREAS];
-    static const StorageArea *layout;
+    static const StorageArea layout[STORAGE_NUM_AREAS];
 };
 
 /*

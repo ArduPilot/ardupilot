@@ -23,7 +23,10 @@
 #include "AP_Compass_Backend.h"
 
 #ifndef HAL_COMPASS_RM3100_I2C_ADDR
-# define HAL_COMPASS_RM3100_I2C_ADDR 0x20
+# define HAL_COMPASS_RM3100_I2C_ADDR1 0x20
+# define HAL_COMPASS_RM3100_I2C_ADDR2 0x21
+# define HAL_COMPASS_RM3100_I2C_ADDR3 0x22
+# define HAL_COMPASS_RM3100_I2C_ADDR4 0x23
 #endif
 
 class AP_Compass_RM3100 : public AP_Compass_Backend

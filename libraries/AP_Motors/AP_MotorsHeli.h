@@ -122,8 +122,17 @@ public:
     float get_throttle_hover() const override { return 0.5f; }
 
     // support passing init_targets_on_arming flag to greater code
-    bool init_targets_on_arming() const { return _heliflags.init_targets_on_arming; }
+    bool init_targets_on_arming() const override { return _heliflags.init_targets_on_arming; }
 
+    // set_in_autorotation - allows main code to set when aircraft is in autorotation.
+    void set_in_autorotation(bool autorotation) { _heliflags.in_autorotation = autorotation; }
+
+    // set_enable_bailout - allows main code to set when RSC can immediately ramp engine instantly
+    void set_enable_bailout(bool bailout) { _heliflags.enable_bailout = bailout; }
+
+    // return true if the servo test is still running/pending
+    bool servo_test_running() const { return _heliflags.servo_test_running; }
+    
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -191,6 +200,9 @@ protected:
         uint8_t inverted_flight         : 1;    // true for inverted flight
         uint8_t init_targets_on_arming  : 1;    // 0 if targets were initialized, 1 if targets were not initialized after arming
         uint8_t save_rsc_mode           : 1;    // used to determine the rsc mode needs to be saved while disarmed
+        uint8_t in_autorotation         : 1;    // true if aircraft is in autorotation
+        uint8_t enable_bailout          : 1;    // true if allowing RSC to quickly ramp up engine
+        uint8_t servo_test_running      : 1;    // true if servo_test is running
     } _heliflags;
 
     // parameters

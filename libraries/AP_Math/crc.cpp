@@ -90,6 +90,26 @@ uint8_t crc_crc8(const uint8_t *p, uint8_t len)
 	return crc & 0xFF;
 }
 
+// crc8 from betaflight
+uint8_t crc8_dvb_s2(uint8_t crc, uint8_t a)
+{
+    return crc8_dvb(crc, a, 0xD5);
+}
+
+// crc8 from betaflight
+uint8_t crc8_dvb(uint8_t crc, uint8_t a, uint8_t seed)
+{
+    crc ^= a;
+    for (uint8_t i = 0; i < 8; ++i) {
+        if (crc & 0x80) {
+            crc = (crc << 1) ^ seed;
+        } else {
+            crc = crc << 1;
+        }
+    }
+    return crc;
+}
+
 /*
   xmodem CRC thanks to avr-liberty
   https://github.com/dreamiurg/avr-liberty
@@ -167,6 +187,7 @@ static const uint32_t crc32_tab[] = {
     0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d
 };
 
+
 uint32_t crc_crc32(uint32_t crc, const uint8_t *buf, uint32_t size)
 {
 	for (uint32_t i=0; i<size; i++) {
@@ -174,6 +195,21 @@ uint32_t crc_crc32(uint32_t crc, const uint8_t *buf, uint32_t size)
 	}
 
 	return crc;
+}
+
+// smaller (and slower) crc32 for bootloader
+uint32_t crc32_small(uint32_t crc, const uint8_t *buf, uint32_t size)
+{
+    while (size--) {
+        const uint8_t byte = *buf++;
+        crc ^= byte;
+        for (uint8_t i=0; i<8; i++) {
+            const uint32_t mask = -(crc & 1);
+            crc >>= 1;
+            crc ^= (0xEDB88320 & mask);
+        }
+    }
+    return crc;
 }
 
 /*
@@ -254,4 +290,15 @@ uint16_t calc_crc_modbus(uint8_t *buf, uint16_t len)
         }
     }
     return crc;
+}
+
+// FNV-1a implementation
+#define FNV_1_PRIME_64 1099511628211UL
+void hash_fnv_1a(uint32_t len, const uint8_t* buf, uint64_t* hash)
+{
+    uint32_t i;
+    for (i=0; i<len; i++) {
+        *hash ^= (uint64_t)buf[i];
+        *hash *= FNV_1_PRIME_64;
+    }
 }

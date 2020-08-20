@@ -301,11 +301,10 @@ void AP_IOMCU_FW::rcin_update()
     if (hal.rcin->new_input()) {
         rc_input.count = hal.rcin->num_channels();
         rc_input.flags_rc_ok = true;
-        for (uint8_t i = 0; i < IOMCU_MAX_CHANNELS; i++) {
-            rc_input.pwm[i] = hal.rcin->read(i);
-        }
+        hal.rcin->read(rc_input.pwm, IOMCU_MAX_CHANNELS);
         rc_last_input_ms = last_ms;
         rc_input.rc_protocol = (uint16_t)AP::RC().protocol_detected();
+        rc_input.rssi = AP::RC().get_RSSI();
     } else if (last_ms - rc_last_input_ms > 200U) {
         rc_input.flags_rc_ok = false;
     }
@@ -315,6 +314,7 @@ void AP_IOMCU_FW::rcin_update()
     }
     if (update_default_rate) {
         hal.rcout->set_default_rate(reg_setup.pwm_defaultrate);
+        update_default_rate = false;
     }
 
     bool old_override = override_active;
@@ -557,7 +557,7 @@ bool AP_IOMCU_FW::handle_code_write()
                 dsm_bind_state = 1;
             }
             break;
-            
+
         default:
             break;
         }
@@ -642,7 +642,7 @@ void AP_IOMCU_FW::calculate_fw_crc(void)
 
     for (unsigned p = 0; p < APP_SIZE_MAX; p += 4) {
         uint32_t bytes = *(uint32_t *)(p + APP_LOAD_ADDRESS);
-        sum = crc_crc32(sum, (const uint8_t *)&bytes, sizeof(bytes));
+        sum = crc32_small(sum, (const uint8_t *)&bytes, sizeof(bytes));
     }
 
     reg_setup.crc[0] = sum & 0xFFFF;
@@ -749,6 +749,3 @@ void AP_IOMCU_FW::fill_failsafe_pwm(void)
 }
 
 AP_HAL_MAIN();
-
-
-

@@ -8,6 +8,7 @@ Manages the estimation of aircraft total energy, drag and vertical air velocity.
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_SpdHgtControl/AP_SpdHgtControl.h>
+#include <Filter/AverageFilter.h>
 
 #define ASPD_FILT 0.05
 #define TE_FILT 0.03
@@ -15,29 +16,50 @@ Manages the estimation of aircraft total energy, drag and vertical air velocity.
 
 class Variometer {
 
-    AP_AHRS &_ahrs;
     const AP_Vehicle::FixedWing &_aparm;
 
     // store time of last update
-    unsigned long _prev_update_time;
+    uint64_t _prev_update_time;
 
     float _last_alt;
 
     float _aspd_filt;
+    float _aspd_filt_constrained;
+
     float _last_aspd;
     float _last_roll;
     float _last_total_E;
+    float _expected_thermalling_sink;
+
+    // declares a 5point average filter using floats
+    AverageFilterFloat_Size5 _vdot_filter;
+
+    AverageFilterFloat_Size5 _sp_filter;
+
+    // low pass filter @ 30s time constant
+    LowPassFilter<float> _climb_filter;
+
+    LowPassFilter<float> _vdot_filter2;
 
 public:
-    Variometer(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms);
+    Variometer(const AP_Vehicle::FixedWing &parms);
     float alt;
     float reading;
     float filtered_reading;
     float displayed_reading;
-    bool new_data;
+    float raw_climb_rate;
+    float smoothed_climb_rate;
+    float tau;
 
     void update(const float polar_K, const float polar_CD0, const float polar_B);
-    float correct_netto_rate(float climb_rate, float phi, float aspd, const float polar_K, const float polar_CD0, const float polar_B);
+    float calculate_aircraft_sinkrate(float phi, const float polar_K, const float polar_CD0, const float polar_B);
 
+    void reset_filter(float value) { _climb_filter.reset(value);}
+
+    float get_airspeed(void) {return _aspd_filt;};
+
+    float get_exp_thermalling_sink(void) {return _expected_thermalling_sink;};
+
+    float calculate_circling_time_constant();
 };
 

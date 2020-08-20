@@ -2,6 +2,7 @@
 #include "AP_InertialSensor.h"
 #include "AP_InertialSensor_Backend.h"
 #include <AP_Logger/AP_Logger.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 #if AP_MODULE_SUPPORTED
 #include <AP_Module/AP_Module.h>
 #include <stdio.h>
@@ -63,8 +64,8 @@ void AP_InertialSensor_Backend::_update_sensor_rate(uint16_t &count, uint32_t &s
         count++;
         if (now - start_us > 1000000UL) {
             float observed_rate_hz = count * 1.0e6f / (now - start_us);
-#if SENSOR_RATE_DEBUG
-            printf("RATE: %.1f should be %.1f\n", observed_rate_hz, rate_hz);
+#if 0
+            printf("IMU RATE: %.1f should be %.1f\n", observed_rate_hz, rate_hz);
 #endif
             float filter_constant = 0.98f;
             float upper_limit = 1.05f;
@@ -176,6 +177,7 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
 
         dt = 1.0f / _imu._gyro_raw_sample_rates[instance];
         _imu._gyro_last_sample_us[instance] = AP_HAL::micros64();
+        sample_us = _imu._gyro_last_sample_us[instance];
     }
 
 #if AP_MODULE_SUPPORTED
@@ -223,9 +225,16 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
         // save previous delta angle for coning correction
         _imu._last_delta_angle[instance] = delta_angle;
         _imu._last_raw_gyro[instance] = gyro;
-
-        // apply the low pass filter
-        Vector3f gyro_filtered = _imu._gyro_filter[instance].apply(gyro);
+#if HAL_WITH_DSP
+        // capture gyro window for FFT analysis
+        if (_imu._gyro_window_size > 0) {
+            const Vector3f& scaled_gyro = gyro * _imu._gyro_raw_sampling_multiplier[instance];
+            _imu._gyro_window[instance][0].push(scaled_gyro.x);
+            _imu._gyro_window[instance][1].push(scaled_gyro.y);
+            _imu._gyro_window[instance][2].push(scaled_gyro.z);
+        }
+#endif
+        Vector3f gyro_filtered = gyro;
 
         // apply the notch filter
         if (_gyro_notch_enabled()) {
@@ -236,6 +245,9 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
         if (gyro_harmonic_notch_enabled()) {
             gyro_filtered = _imu._gyro_harmonic_notch_filter[instance].apply(gyro_filtered);
         }
+
+        // apply the low pass filter last to attentuate any notch induced noise
+        gyro_filtered = _imu._gyro_filter[instance].apply(gyro_filtered);
 
         // if the filtering failed in any way then reset the filters and keep the old value
         if (gyro_filtered.is_nan() || gyro_filtered.is_inf()) {
@@ -352,6 +364,7 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
 
         dt = 1.0f / _imu._accel_raw_sample_rates[instance];
         _imu._accel_last_sample_us[instance] = AP_HAL::micros64();
+        sample_us = _imu._accel_last_sample_us[instance];
     }
 
 #if AP_MODULE_SUPPORTED
@@ -466,11 +479,11 @@ void AP_InertialSensor_Backend::_inc_gyro_error_count(uint8_t instance)
     _imu._gyro_error_count[instance]++;
 }
 
-// return the requested sample rate in Hz
-uint16_t AP_InertialSensor_Backend::get_sample_rate_hz(void) const
+// return the requested loop rate at which samples will be made available in Hz
+uint16_t AP_InertialSensor_Backend::get_loop_rate_hz(void) const
 {
     // enum can be directly cast to Hz
-    return (uint16_t)_imu._sample_rate;
+    return (uint16_t)_imu._loop_rate;
 }
 
 /*
@@ -483,10 +496,15 @@ void AP_InertialSensor_Backend::_publish_temperature(uint8_t instance, float tem
     }
     _imu._temperature[instance] = temperature;
 
+#if HAL_HAVE_IMU_HEATER
     /* give the temperature to the control loop in order to keep it constant*/
     if (instance == 0) {
-        hal.util->set_imu_temp(temperature);
+        AP_BoardConfig *bc = AP::boardConfig();
+        if (bc) {
+            bc->set_imu_temp(temperature);
+        }
     }
+#endif
 }
 
 /*
@@ -501,6 +519,10 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance)
     }
     if (_imu._new_gyro_data[instance]) {
         _publish_gyro(instance, _imu._gyro_filtered[instance]);
+        // copy the gyro samples from the backend to the frontend window
+#if HAL_WITH_DSP
+        _imu._gyro_raw[instance] = _imu._last_raw_gyro[instance] * _imu._gyro_raw_sampling_multiplier[instance];
+#endif
         _imu._new_gyro_data[instance] = false;
     }
 
@@ -519,7 +541,11 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance)
         _last_harmonic_notch_bandwidth_hz = gyro_harmonic_notch_bandwidth_hz();
         _last_harmonic_notch_attenuation_dB = gyro_harmonic_notch_attenuation_dB();
     } else if (!is_equal(_last_harmonic_notch_center_freq_hz, gyro_harmonic_notch_center_freq_hz())) {
-        _imu._gyro_harmonic_notch_filter[instance].update(gyro_harmonic_notch_center_freq_hz());
+        if (num_gyro_harmonic_notch_center_frequencies() > 1) {
+            _imu._gyro_harmonic_notch_filter[instance].update(num_gyro_harmonic_notch_center_frequencies(), gyro_harmonic_notch_center_frequencies_hz());
+        } else {
+            _imu._gyro_harmonic_notch_filter[instance].update(gyro_harmonic_notch_center_freq_hz());
+        }
         _last_harmonic_notch_center_freq_hz = gyro_harmonic_notch_center_freq_hz();
     }
     // possily update the notch filter parameters

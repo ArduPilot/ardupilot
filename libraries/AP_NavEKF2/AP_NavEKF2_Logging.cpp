@@ -3,7 +3,7 @@
 #include <AP_HAL/HAL.h>
 #include <AP_Logger/AP_Logger.h>
 
-void NavEKF2::Log_Write_EKF1(uint8_t _core, LogMessages msg_id, uint64_t time_us) const
+void NavEKF2::Log_Write_NKF1(uint8_t _core, uint64_t time_us) const
 {
     // Write first EKF packet
     Vector3f euler;
@@ -23,8 +23,9 @@ void NavEKF2::Log_Write_EKF1(uint8_t _core, LogMessages msg_id, uint64_t time_us
         originLLH.alt = 0;
     }
     const struct log_EKF1 pkt{
-        LOG_PACKET_HEADER_INIT(msg_id),
+        LOG_PACKET_HEADER_INIT(LOG_NKF1_MSG),
         time_us : time_us,
+        core    : _core,
         roll    : (int16_t)(100*degrees(euler.x)), // roll angle (centi-deg, displayed as deg due to format string)
         pitch   : (int16_t)(100*degrees(euler.y)), // pitch angle (centi-deg, displayed as deg due to format string)
         yaw     : (uint16_t)wrap_360_cd(100*degrees(euler.z)), // yaw angle (centi-deg, displayed as deg due to format string)
@@ -43,7 +44,7 @@ void NavEKF2::Log_Write_EKF1(uint8_t _core, LogMessages msg_id, uint64_t time_us
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
 
-void NavEKF2::Log_Write_NKF2(uint8_t _core, LogMessages msg_id, uint64_t time_us) const
+void NavEKF2::Log_Write_NKF2(uint8_t _core, uint64_t time_us) const
 {
     // Write second EKF packet
     float azbias = 0;
@@ -58,8 +59,9 @@ void NavEKF2::Log_Write_NKF2(uint8_t _core, LogMessages msg_id, uint64_t time_us
     getMagXYZ(_core,magXYZ);
     getGyroScaleErrorPercentage(_core,gyroScaleFactor);
     const struct log_NKF2 pkt2{
-        LOG_PACKET_HEADER_INIT(msg_id),
+        LOG_PACKET_HEADER_INIT(LOG_NKF2_MSG),
         time_us : time_us,
+        core    : _core,
         AZbias  : (int8_t)(100*azbias),
         scaleX  : (int16_t)(100*gyroScaleFactor.x),
         scaleY  : (int16_t)(100*gyroScaleFactor.y),
@@ -77,7 +79,7 @@ void NavEKF2::Log_Write_NKF2(uint8_t _core, LogMessages msg_id, uint64_t time_us
     AP::logger().WriteBlock(&pkt2, sizeof(pkt2));
 }
 
-void NavEKF2::Log_Write_NKF3(uint8_t _core, LogMessages msg_id, uint64_t time_us) const
+void NavEKF2::Log_Write_NKF3(uint8_t _core, uint64_t time_us) const
 {
     // Write third EKF packet
     Vector3f velInnov;
@@ -87,8 +89,9 @@ void NavEKF2::Log_Write_NKF3(uint8_t _core, LogMessages msg_id, uint64_t time_us
     float yawInnov = 0;
     getInnovations(_core,velInnov, posInnov, magInnov, tasInnov, yawInnov);
     const struct log_NKF3 pkt3{
-        LOG_PACKET_HEADER_INIT(msg_id),
+        LOG_PACKET_HEADER_INIT(LOG_NKF3_MSG),
         time_us : time_us,
+        core    : _core,
         innovVN : (int16_t)(100*velInnov.x),
         innovVE : (int16_t)(100*velInnov.y),
         innovVD : (int16_t)(100*velInnov.z),
@@ -104,7 +107,7 @@ void NavEKF2::Log_Write_NKF3(uint8_t _core, LogMessages msg_id, uint64_t time_us
     AP::logger().WriteBlock(&pkt3, sizeof(pkt3));
 }
 
-void NavEKF2::Log_Write_NKF4(uint8_t _core, LogMessages msg_id, uint64_t time_us) const
+void NavEKF2::Log_Write_NKF4(uint8_t _core, uint64_t time_us) const
 {
     // Write fourth EKF packet
     float velVar = 0;
@@ -127,8 +130,9 @@ void NavEKF2::Log_Write_NKF4(uint8_t _core, LogMessages msg_id, uint64_t time_us
     getTiltError(_core,tiltError);
     int8_t primaryIndex = getPrimaryCoreIndex();
     const struct log_NKF4 pkt4{
-        LOG_PACKET_HEADER_INIT(msg_id),
+        LOG_PACKET_HEADER_INIT(LOG_NKF4_MSG),
         time_us : time_us,
+        core    : _core,
         sqrtvarV : (int16_t)(100*velVar),
         sqrtvarP : (int16_t)(100*posVar),
         sqrtvarH : (int16_t)(100*hgtVar),
@@ -139,7 +143,7 @@ void NavEKF2::Log_Write_NKF4(uint8_t _core, LogMessages msg_id, uint64_t time_us
         offsetEast : (int8_t)(offset.y),
         faults : (uint16_t)(faultStatus),
         timeouts : (uint8_t)(timeoutStatus),
-        solution : (uint16_t)(solutionStatus.value),
+        solution : (uint32_t)(solutionStatus.value),
         gps : (uint16_t)(gpsStatus.value),
         primary : (int8_t)primaryIndex
     };
@@ -179,14 +183,15 @@ void NavEKF2::Log_Write_NKF5(uint64_t time_us) const
     AP::logger().WriteBlock(&pkt5, sizeof(pkt5));
 }
 
-void NavEKF2::Log_Write_Quaternion(uint8_t _core, LogMessages msg_id, uint64_t time_us) const
+void NavEKF2::Log_Write_Quaternion(uint8_t _core, uint64_t time_us) const
 {
     // log quaternion
     Quaternion quat;
     getQuaternion(_core, quat);
     const struct log_Quaternion pktq1{
-        LOG_PACKET_HEADER_INIT(msg_id),
+        LOG_PACKET_HEADER_INIT(LOG_NKQ_MSG),
         time_us : time_us,
+        core    : _core,
         q1 : quat.q1,
         q2 : quat.q2,
         q3 : quat.q3,
@@ -240,29 +245,15 @@ void NavEKF2::Log_Write()
 
     const uint64_t time_us = AP_HAL::micros64();
 
-    Log_Write_EKF1(0, LOG_NKF1_MSG, time_us);
-    Log_Write_NKF2(0, LOG_NKF2_MSG, time_us);
-    Log_Write_NKF3(0, LOG_NKF3_MSG, time_us);
-    Log_Write_NKF4(0, LOG_NKF4_MSG, time_us);
     Log_Write_NKF5(time_us);
-    Log_Write_Quaternion(0, LOG_NKQ1_MSG, time_us);
 
-    // log EKF state info for the second EFK core if enabled
-    if (activeCores() >= 2) {
-        Log_Write_EKF1(1, LOG_NKF6_MSG, time_us);
-        Log_Write_NKF2(1, LOG_NKF7_MSG, time_us);
-        Log_Write_NKF3(1, LOG_NKF8_MSG, time_us);
-        Log_Write_NKF4(1, LOG_NKF9_MSG, time_us);
-        Log_Write_Quaternion(1, LOG_NKQ2_MSG, time_us);
-    }
-
-    // log EKF state info for the third EFK core if enabled
-    if (activeCores() >= 3) {
-        Log_Write_EKF1(2, LOG_NKF11_MSG, time_us);
-        Log_Write_NKF2(2, LOG_NKF12_MSG, time_us);
-        Log_Write_NKF3(2, LOG_NKF13_MSG, time_us);
-        Log_Write_NKF4(2, LOG_NKF14_MSG, time_us);
-        Log_Write_Quaternion(2, LOG_NKQ3_MSG, time_us);
+    for (uint8_t i=0; i<activeCores(); i++) {
+        Log_Write_NKF1(i, time_us);
+        Log_Write_NKF2(i, time_us);
+        Log_Write_NKF3(i, time_us);
+        Log_Write_NKF4(i, time_us);
+        Log_Write_Quaternion(i, time_us);
+        Log_Write_GSF(i, time_us);
     }
 
     // write range beacon fusion debug packet if the range value is non-zero
@@ -275,13 +266,89 @@ void NavEKF2::Log_Write()
         struct ekf_timing timing;
         for (uint8_t i=0; i<activeCores(); i++) {
             getTimingStatistics(i, timing);
-            if (i == 0) {
-                Log_EKF_Timing("NKT1", time_us, timing);
-            } else if (i == 1) {
-                Log_EKF_Timing("NKT2", time_us, timing);
-            } else if (i == 2) {
-                Log_EKF_Timing("NKT3", time_us, timing);
-            }
+            Log_EKF_Timing("NKT", i, time_us, timing);
         }
+    }
+}
+
+void NavEKF2::Log_Write_GSF(uint8_t _core, uint64_t time_us) const
+{
+    float yaw_composite;
+    float yaw_composite_variance;
+    float yaw[N_MODELS_EKFGSF];
+    float ivn[N_MODELS_EKFGSF];
+    float ive[N_MODELS_EKFGSF];
+    float wgt[N_MODELS_EKFGSF];
+
+        // @LoggerMessage: NKY0
+        // @Description: EKF2 Yaw Estimator States
+        // @Field: TimeUS: Time since system startup
+        // @Field: C: EKF2 core this data is for
+        // @Field: YC: GSF yaw estimate (rad)
+        // @Field: YCS: GSF yaw estimate 1-Sigma uncertainty (rad)
+        // @Field: Y0: Yaw estimate from individual EKF filter 0 (rad)
+        // @Field: Y1: Yaw estimate from individual EKF filter 1 (rad)
+        // @Field: Y2: Yaw estimate from individual EKF filter 2 (rad)
+        // @Field: Y3: Yaw estimate from individual EKF filter 3 (rad)
+        // @Field: Y4: Yaw estimate from individual EKF filter 4 (rad)
+        // @Field: W0: Weighting applied to yaw estimate from individual EKF filter 0
+        // @Field: W1: Weighting applied to yaw estimate from individual EKF filter 1
+        // @Field: W2: Weighting applied to yaw estimate from individual EKF filter 2
+        // @Field: W3: Weighting applied to yaw estimate from individual EKF filter 3
+        // @Field: W4: Weighting applied to yaw estimate from individual EKF filter 4
+
+    if (getDataEKFGSF(_core, yaw_composite, yaw_composite_variance, yaw, ivn, ive, wgt)) {
+        AP::logger().Write("NKY0",
+                        "TimeUS,C,YC,YCS,Y0,Y1,Y2,Y3,Y4,W0,W1,W2,W3,W4",
+                        "s#rrrrrrr-----",
+                        "F-000000000000",
+                        "QBffffffffffff",
+                        time_us,
+                        _core,
+                        yaw_composite,
+                        sqrtf(MAX(yaw_composite_variance, 0.0f)),
+                        yaw[0],
+                        yaw[1],
+                        yaw[2],
+                        yaw[3],
+                        yaw[4],
+                        wgt[0],
+                        wgt[1],
+                        wgt[2],
+                        wgt[3],
+                        wgt[4]);
+
+        // @LoggerMessage: NKY1
+        // @Description: EKF2 Yaw Estimator Innovations
+        // @Field: TimeUS: Time since system startup
+        // @Field: C: EKF2 core this data is for
+        // @Field: IVN0: North velocity innovation from individual EKF filter 0 (m/s)
+        // @Field: IVN1: North velocity innovation from individual EKF filter 1 (m/s)
+        // @Field: IVN2: North velocity innovation from individual EKF filter 2 (m/s)
+        // @Field: IVN3: North velocity innovation from individual EKF filter 3 (m/s)
+        // @Field: IVN4: North velocity innovation from individual EKF filter 4 (m/s)
+        // @Field: IVE0: East velocity innovation from individual EKF filter 0 (m/s)
+        // @Field: IVE1: East velocity innovation from individual EKF filter 1 (m/s)
+        // @Field: IVE2: East velocity innovation from individual EKF filter 2 (m/s)
+        // @Field: IVE3: East velocity innovation from individual EKF filter 3 (m/s)
+        // @Field: IVE4: East velocity innovation from individual EKF filter 4 (m/s)
+
+        AP::logger().Write("NKY1",
+                        "TimeUS,C,IVN0,IVN1,IVN2,IVN3,IVN4,IVE0,IVE1,IVE2,IVE3,IVE4",
+                        "s#nnnnnnnnnn",
+                        "F-0000000000",
+                        "QBffffffffff",
+                        time_us,
+                        _core,
+                        ivn[0],
+                        ivn[1],
+                        ivn[2],
+                        ivn[3],
+                        ivn[4],
+                        ive[0],
+                        ive[1],
+                        ive[2],
+                        ive[3],
+                        ive[4]);
     }
 }

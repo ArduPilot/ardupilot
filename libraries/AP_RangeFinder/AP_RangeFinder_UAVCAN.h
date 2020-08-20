@@ -1,8 +1,8 @@
 #pragma once
 
-#include "RangeFinder_Backend.h"
+#include "AP_RangeFinder_Backend.h"
 
-#if HAL_WITH_UAVCAN
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
 #include <AP_UAVCAN/AP_UAVCAN.h>
 
 class MeasurementCb;
@@ -25,7 +25,7 @@ protected:
     }
 private:
     uint8_t _instance;
-    RangeFinder::RangeFinder_Status _status;
+    RangeFinder::Status _status;
     uint16_t _distance_cm;
     uint32_t _last_reading_ms;
     AP_UAVCAN* _ap_uavcan;
@@ -33,4 +33,4 @@ private:
     bool new_data;
     MAV_DISTANCE_SENSOR _sensor_type;
 };
-#endif //HAL_WITH_UAVCAN
+#endif //HAL_ENABLE_LIBUAVCAN_DRIVERS

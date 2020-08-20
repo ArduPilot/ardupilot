@@ -8,9 +8,8 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
-#if AP_AHRS_NAVEKF_AVAILABLE
-
 #include "AP_Mount.h"
+#if HAL_SOLO_GIMBAL_ENABLED
 #include "SoloGimbalEKF.h"
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
@@ -146,4 +145,4 @@ private:
     Vector3f _log_del_vel;
 };
 
-#endif // AP_AHRS_NAVEKF_AVAILABLE
+#endif // HAL_SOLO_GIMBAL_ENABLED

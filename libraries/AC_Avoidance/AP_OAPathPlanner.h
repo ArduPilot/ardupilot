@@ -54,6 +54,14 @@ public:
         OA_PATHPLAN_DIJKSTRA = 2
     };
 
+    // enumeration for _OPTION parameter
+    enum OARecoveryOptions {
+        OA_OPTION_DISABLED = 0,
+        OA_OPTION_WP_RESET = (1 << 0),
+    };
+
+    uint16_t get_options() const { return _options;}
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -81,19 +89,17 @@ private:
     } avoidance_result;
 
     // parameters
-    AP_Int8 _type;                  // avoidance algorith to be used
-    AP_Float _lookahead;            // object avoidance will look this many meters ahead of vehicle
+    AP_Int8 _type;                  // avoidance algorithm to be used
     AP_Float _margin_max;           // object avoidance will ignore objects more than this many meters from vehicle
-
+    AP_Int16 _options;              // Bitmask for options while recovering from Object Avoidance
+    
     // internal variables used by front end
-    HAL_Semaphore_Recursive _rsem;  // semaphore for multi-thread use of avoidance_request and avoidance_result
+    HAL_Semaphore _rsem;            // semaphore for multi-thread use of avoidance_request and avoidance_result
     bool _thread_created;           // true once background thread has been created
     AP_OABendyRuler *_oabendyruler; // Bendy Ruler algorithm
     AP_OADijkstra *_oadijkstra;     // Dijkstra's algorithm
     AP_OADatabase _oadatabase;      // Database of dynamic objects to avoid
-#if !HAL_MINIMIZE_FEATURES
     uint32_t avoidance_latest_ms;   // last time Dijkstra's or BendyRuler algorithms ran
-#endif
 
     static AP_OAPathPlanner *_singleton;
 };

@@ -26,12 +26,14 @@ namespace AP_HAL {
     class RCInput;
     class RCOutput;
     class Scheduler;
+    class EventHandle;
+    class EventSource;
     class Semaphore;
     class OpticalFlow;
+    class DSP;
 
-    class CANProtocol;
-    class CANManager;
-    class CAN;
+    class CANIface;
+    class CANFrame;
 
     class Util;
     class Flash;

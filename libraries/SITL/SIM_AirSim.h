@@ -43,12 +43,21 @@ public:
     void set_interface_ports(const char* address, const int port_in, const int port_out) override;
 
 private:
-	/*
-		rotor control packet sent by Ardupilot
-	*/
-	static const int kArduCopterRotorControlCount = 11;
+    enum class OutputType {
+        Copter = 1,
+        Rover = 2
+    } output_type;
 
-	struct servo_packet {
+    // Control packet for Rover
+    struct rover_packet {
+        float throttle;     // -1 to 1
+        float steering;     // -1 to 1
+    };
+
+    // rotor control packet sent by Ardupilot
+    static const int kArduCopterRotorControlCount = 11;
+
+    struct servo_packet {
 		uint16_t pwm[kArduCopterRotorControlCount];
 	};
 
@@ -68,8 +77,9 @@ private:
     uint64_t last_frame_count;
     uint64_t last_timestamp;
 
-	void send_servos(const struct sitl_input &input);
-	void recv_fdm();
+    void output_copter(const struct sitl_input &input);
+    void output_rover(const struct sitl_input &input);
+    void recv_fdm();
     void report_FPS(void);
 
 	bool parse_sensors(const char *json);
@@ -94,7 +104,7 @@ private:
             Vector3f linear_acceleration;
         } imu;
         struct {
-            float lat, lon, alt;
+            double lat, lon, alt;
         } gps;
         struct {
             float roll, pitch, yaw;
@@ -120,9 +130,9 @@ private:
         { "", "timestamp", &state.timestamp, DATA_UINT64 },
         { "imu", "angular_velocity",    &state.imu.angular_velocity, DATA_VECTOR3F },
         { "imu", "linear_acceleration", &state.imu.linear_acceleration, DATA_VECTOR3F },
-        { "gps", "lat", &state.gps.lat, DATA_FLOAT },
-        { "gps", "lon", &state.gps.lon, DATA_FLOAT },
-        { "gps", "alt", &state.gps.alt, DATA_FLOAT },
+        { "gps", "lat", &state.gps.lat, DATA_DOUBLE },
+        { "gps", "lon", &state.gps.lon, DATA_DOUBLE },
+        { "gps", "alt", &state.gps.alt, DATA_DOUBLE },
         { "pose", "roll",  &state.pose.roll, DATA_FLOAT },
         { "pose", "pitch", &state.pose.pitch, DATA_FLOAT },
         { "pose", "yaw",   &state.pose.yaw, DATA_FLOAT },

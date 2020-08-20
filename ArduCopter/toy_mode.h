@@ -38,7 +38,7 @@ private:
     void action_arm(void);
     void blink_update(void);
     void send_named_int(const char *name, int32_t value);
-    bool set_and_remember_mode(Mode::Number mode, mode_reason_t reason);
+    bool set_and_remember_mode(Mode::Number mode, ModeReason reason);
 
     void thrust_limiting(float *thrust, uint8_t num_motors);
     void arm_check_compass(void);

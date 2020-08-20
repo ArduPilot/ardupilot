@@ -2,10 +2,11 @@
 
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
-#if APM_BUILD_TYPE(APM_BUILD_APMrover2)
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
 #define AC_FENCE_TYPE_DEFAULT AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON
 #else
 #define AC_FENCE_TYPE_DEFAULT AC_FENCE_TYPE_ALT_MAX | AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON
@@ -31,11 +32,12 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @DisplayName: Fence Action
     // @Description: What action should be taken when fence is breached
     // @Values{Copter}: 0:Report Only,1:RTL or Land,2:Always Land,3:SmartRTL or RTL or Land,4:Brake or Land
+    // @Values{Rover}: 0:Report Only,1:RTL,2:Hold,3:SmartRTL,4:SmartRTL or Hold
     // @Values: 0:Report Only,1:RTL or Land
     // @User: Standard
     AP_GROUPINFO("ACTION",      2,  AC_Fence,   _action,        AC_FENCE_ACTION_RTL_AND_LAND),
 
-    // @Param: ALT_MAX
+    // @Param{Copter, Sub}: ALT_MAX
     // @DisplayName: Fence Maximum Altitude
     // @Description: Maximum altitude allowed before geofence triggers
     // @Units: m
@@ -94,6 +96,11 @@ AC_Fence::AC_Fence()
 /// enable the Fence code generally; a master switch for all fences
 void AC_Fence::enable(bool value)
 {
+    if (_enabled && !value) {
+        AP::logger().Write_Event(LogEvent::FENCE_DISABLE);
+    } else if (!_enabled && value) {
+        AP::logger().Write_Event(LogEvent::FENCE_ENABLE);
+    }
     _enabled = value;
     if (!value) {
         clear_breach(AC_FENCE_TYPE_ALT_MAX | AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON);
@@ -122,6 +129,11 @@ bool AC_Fence::pre_arm_check_polygon(const char* &fail_msg) const
         return false;
     }
 
+    if (!_poly_loader.check_inclusion_circle_margin(_margin)) {
+        fail_msg = "Margin is less than inclusion circle radius";
+        return false;
+    }
+
     return true;
 }
 
@@ -132,6 +144,11 @@ bool AC_Fence::pre_arm_check_circle(const char* &fail_msg) const
         fail_msg = "Invalid FENCE_RADIUS value";
         return false;
     }
+    if (_circle_radius < _margin) {
+        fail_msg = "FENCE_MARGIN is less than FENCE_RADIUS";
+        return false;
+    }
+
     return true;
 }
 
@@ -162,7 +179,7 @@ bool AC_Fence::pre_arm_check(const char* &fail_msg) const
         (_enabled_fences & AC_FENCE_TYPE_POLYGON)) {
         Vector2f position;
         if (!AP::ahrs().get_relative_position_NE_home(position)) {
-            fail_msg = "fence requires position";
+            fail_msg = "Fence requires position";
             return false;
         }
     }
@@ -316,6 +333,9 @@ uint8_t AC_Fence::check()
         return 0;
     }
 
+    // clear any breach from a non-enabled fence
+    clear_breach(~_enabled_fences);
+
     // check if pilot is attempting to recover manually
     if (_manual_recovery_start_ms != 0) {
         // we ignore any fence breaches during the manual recovery period which is about 10 seconds
@@ -452,30 +472,6 @@ bool AC_Fence::sys_status_failed() const
     if (get_breaches() != 0) {
         return true;
     }
-    if (_enabled_fences & AC_FENCE_TYPE_POLYGON) {
-        if (!_poly_loader.inclusion_boundary_available()) {
-            return true;
-        }
-    }
-    if (_enabled_fences & AC_FENCE_TYPE_CIRCLE) {
-        if (_circle_radius < 0) {
-            return true;
-        }
-    }
-    if (_enabled_fences & AC_FENCE_TYPE_ALT_MAX) {
-        if (_alt_max < 0.0f) {
-            return true;
-        }
-    }
-    if ((_enabled_fences & AC_FENCE_TYPE_CIRCLE) ||
-        (_enabled_fences & AC_FENCE_TYPE_POLYGON)) {
-        Vector2f position;
-        if (!AP::ahrs().get_relative_position_NE_home(position)) {
-            // both these fence types require position
-            return true;
-        }
-    }
-
     return false;
 }
 

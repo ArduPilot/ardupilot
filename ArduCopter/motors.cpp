@@ -52,7 +52,9 @@ void Copter::arm_motors_check()
 
         // arm the motors and configure for flight
         if (arming_counter == AUTO_TRIM_DELAY && motors->armed() && control_mode == Mode::Number::STABILIZE) {
+            gcs().send_text(MAV_SEVERITY_INFO, "AutoTrim start");
             auto_trim_counter = 250;
+            auto_trim_started = false;
             // ensure auto-disarm doesn't trigger immediately
             auto_disarm_begin = millis();
         }
@@ -71,7 +73,7 @@ void Copter::arm_motors_check()
 
         // disarm the motors
         if (arming_counter == DISARM_DELAY && motors->armed()) {
-            arming.disarm();
+            arming.disarm(AP_Arming::Method::RUDDER);
         }
 
     // Yaw is centered so reset arming counter
@@ -124,7 +126,7 @@ void Copter::auto_disarm_check()
 
     // disarm once timer expires
     if ((tnow_ms-auto_disarm_begin) >= disarm_delay_ms) {
-        arming.disarm();
+        arming.disarm(AP_Arming::Method::DISARMDELAY);
         auto_disarm_begin = tnow_ms;
     }
 }
@@ -166,10 +168,10 @@ void Copter::motors_output()
         bool interlock = motors->armed() && !ap.in_arming_delay && (!ap.using_interlock || ap.motor_interlock_switch) && !SRV_Channels::get_emergency_stop();
         if (!motors->get_interlock() && interlock) {
             motors->set_interlock(true);
-            Log_Write_Event(DATA_MOTORS_INTERLOCK_ENABLED);
+            AP::logger().Write_Event(LogEvent::MOTORS_INTERLOCK_ENABLED);
         } else if (motors->get_interlock() && !interlock) {
             motors->set_interlock(false);
-            Log_Write_Event(DATA_MOTORS_INTERLOCK_DISABLED);
+            AP::logger().Write_Event(LogEvent::MOTORS_INTERLOCK_DISABLED);
         }
 
         // send output signals to motors

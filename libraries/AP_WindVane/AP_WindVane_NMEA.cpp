@@ -86,6 +86,10 @@ bool AP_WindVane_NMEA::decode(char c)
     case '\n':
     case '*':
     {
+        if (_sentence_done) {
+            return false;
+        }
+
         // null terminate and decode latest term
         _term[_term_offset] = 0;
         bool valid_sentence = decode_latest_term();
@@ -105,6 +109,7 @@ bool AP_WindVane_NMEA::decode(char c)
         _term_is_checksum = false;
         _wind_dir_deg = -1.0f;
         _speed_ms = -1.0f;
+        _sentence_done = false;
         return false;
     }
 
@@ -125,6 +130,7 @@ bool AP_WindVane_NMEA::decode_latest_term()
 {
     // handle the last term in a message
     if (_term_is_checksum) {
+        _sentence_done = true;
         uint8_t checksum = 16 * char_to_hex(_term[0]) + char_to_hex(_term[1]);
         return ((checksum == _checksum) && _sentence_valid);
     }
@@ -153,7 +159,7 @@ bool AP_WindVane_NMEA::decode_latest_term()
 
     switch (_term_number) {
         case 1:
-            _wind_dir_deg = atof(_term);
+            _wind_dir_deg = strtof(_term, NULL);
             // check for sensible value
             if (is_negative(_wind_dir_deg) || _wind_dir_deg > 360.0f) {
                 _sentence_valid = false;
@@ -169,7 +175,7 @@ bool AP_WindVane_NMEA::decode_latest_term()
             break;
 
         case 3:
-            _speed_ms = atof(_term);
+            _speed_ms = strtof(_term, NULL);
             break;
 
         case 4:

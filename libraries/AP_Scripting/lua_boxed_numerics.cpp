@@ -4,20 +4,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-int new_uint32_t(lua_State *L) {
-    luaL_checkstack(L, 2, "Out of stack");
-    *static_cast<uint32_t *>(lua_newuserdata(L, sizeof(uint32_t))) = 0; // allocated memory is already zerod, no need to manipulate this
-    luaL_getmetatable(L, "uint32_t");
-    lua_setmetatable(L, -2);
-    return 1;
-}
-
-uint32_t * check_uint32_t(lua_State *L, int arg) {
-    void *data = luaL_checkudata(L, arg, "uint32_t");
-    return static_cast<uint32_t *>(data);
-}
-
-static uint32_t coerce_to_uint32_t(lua_State *L, int arg) {
+uint32_t coerce_to_uint32_t(lua_State *L, int arg) {
     { // userdata
         const uint32_t * ud = static_cast<uint32_t *>(luaL_testudata(L, arg, "uint32_t"));
         if (ud != nullptr) {
@@ -45,6 +32,35 @@ static uint32_t coerce_to_uint32_t(lua_State *L, int arg) {
     }
     // failure
     return luaL_argerror(L, arg, "Unable to coerce to uint32_t");
+}
+
+// creates a new userdata for a uint32_t
+int new_uint32_t(lua_State *L) {
+    luaL_checkstack(L, 2, "Out of stack");
+
+    *static_cast<uint32_t *>(lua_newuserdata(L, sizeof(uint32_t))) = 0;
+    luaL_getmetatable(L, "uint32_t");
+    lua_setmetatable(L, -2);
+    return 1;
+}
+
+// the exposed constructor to lua calls to create a uint32_t
+int lua_new_uint32_t(lua_State *L);
+int lua_new_uint32_t(lua_State *L) {
+    const int args = lua_gettop(L);
+    if (args > 1) {
+        return luaL_argerror(L, args, "too many arguments");
+    }
+
+    *static_cast<uint32_t *>(lua_newuserdata(L, sizeof(uint32_t))) = (args == 1) ? coerce_to_uint32_t(L, 1) : 0;
+    luaL_getmetatable(L, "uint32_t");
+    lua_setmetatable(L, -2);
+    return 1;
+}
+
+uint32_t * check_uint32_t(lua_State *L, int arg) {
+    void *data = luaL_checkudata(L, arg, "uint32_t");
+    return static_cast<uint32_t *>(data);
 }
 
 #define UINT32_T_BOX_OP(name, sym) \
@@ -93,7 +109,7 @@ UINT32_T_BOX_OP(shr, >>)
         return 1; \
     }
 
-UINT32_T_BOX_OP_BOOL(eq, =)
+UINT32_T_BOX_OP_BOOL(eq, ==)
 UINT32_T_BOX_OP_BOOL(lt, <)
 UINT32_T_BOX_OP_BOOL(le, <=)
 
@@ -193,6 +209,6 @@ void load_boxed_numerics(lua_State *L) {
 void load_boxed_numerics_sandbox(lua_State *L) {
     // if there are ever more drivers then move to a table based solution
     lua_pushstring(L, "uint32_t");
-    lua_pushcfunction(L, new_uint32_t);
+    lua_pushcfunction(L, lua_new_uint32_t);
     lua_settable(L, -3);
 }

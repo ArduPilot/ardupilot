@@ -54,11 +54,11 @@ void GCS_MAVLINK::handle_device_op_read(const mavlink_message_t &msg)
     }
     if (regstart == 0xff) {
         // assume raw transfer, non-register interface
-        ret = dev->transfer(nullptr, 0, data, packet.count);
+        ret = dev->transfer_bank(packet.bank, nullptr, 0, data, packet.count);
         // reply using register start 0 for display purposes
         regstart = 0;
     } else {
-        ret = dev->read_registers(packet.regstart, data, packet.count);
+        ret = dev->read_bank_registers(packet.bank, packet.regstart, data, packet.count);
     }
     dev->get_semaphore()->give();
     if (!ret) {
@@ -71,7 +71,8 @@ void GCS_MAVLINK::handle_device_op_read(const mavlink_message_t &msg)
         retcode,
         regstart,
         packet.count,
-        data);
+        data,
+        packet.bank);
     return;
 
 fail:
@@ -81,7 +82,8 @@ fail:
         retcode,
         packet.regstart,
         0,
-        nullptr);
+        nullptr,
+        packet.bank);
 }
 
 /*
@@ -112,12 +114,12 @@ void GCS_MAVLINK::handle_device_op_write(const mavlink_message_t &msg)
     }
     if (packet.regstart == 0xff) {
         // assume raw transfer, non-register interface
-        if (!dev->transfer(packet.data, packet.count, nullptr, 0)) {
+        if (!dev->transfer_bank(packet.bank, packet.data, packet.count, nullptr, 0)) {
             retcode = 4;
         }
     } else {
         for (uint8_t i=0; i<packet.count; i++) {
-            if (!dev->write_register(packet.regstart+i, packet.data[i])) {
+            if (!dev->write_bank_register(packet.bank, packet.regstart+i, packet.data[i])) {
                 retcode = 4;
                 break;
             }

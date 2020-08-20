@@ -327,4 +327,11 @@ void AC_PID::set_integrator(float target, float measurement, float i)
 void AC_PID::set_integrator(float error, float i)
 {
     _integrator = constrain_float(i - error * _kp, -_kimax, _kimax);
+    _pid_info.I = _integrator;
+}
+
+void AC_PID::set_integrator(float i)
+{
+    _integrator = constrain_float(i, -_kimax, _kimax);
+    _pid_info.I = _integrator;
 }

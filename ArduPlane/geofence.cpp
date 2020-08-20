@@ -160,6 +160,11 @@ bool Plane::geofence_present(void)
  */
 void Plane::geofence_update_pwm_enabled_state() 
 {
+    if (rc_failsafe_active()) {
+        // do nothing based on the radio channel value as it may be at bind value
+        return;
+    }
+
     bool is_pwm_enabled;
     if (g.fence_channel == 0) {
         is_pwm_enabled = false;
@@ -336,7 +341,7 @@ void Plane::geofence_check(bool altitude_check_only)
             guided_WP_loc.lat == geofence_state->guided_lat &&
             guided_WP_loc.lng == geofence_state->guided_lng) {
             geofence_state->old_switch_position = 254;
-            set_mode(*previous_mode, MODE_REASON_GCS_COMMAND);
+            set_mode(*previous_mode, ModeReason::GCS_COMMAND);
         }
         return;
     }
@@ -424,9 +429,9 @@ void Plane::geofence_check(bool altitude_check_only)
         int8_t saved_auto_trim = g.auto_trim;
         g.auto_trim.set(0);
         if (g.fence_action == FENCE_ACTION_RTL) {
-            set_mode(mode_rtl, MODE_REASON_FENCE_BREACH);
+            set_mode(mode_rtl, ModeReason::FENCE_BREACHED);
         } else {
-            set_mode(mode_guided, MODE_REASON_FENCE_BREACH);
+            set_mode(mode_guided, ModeReason::FENCE_BREACHED);
         }
         g.auto_trim.set(saved_auto_trim);
 
@@ -494,7 +499,8 @@ void Plane::geofence_send_status(mavlink_channel_t chan)
                                       (int8_t)geofence_state->fence_triggered,
                                       geofence_state->breach_count,
                                       geofence_state->breach_type,
-                                      geofence_state->breach_time);
+                                      geofence_state->breach_time,
+                                      FENCE_MITIGATE_NONE);
     }
 }
 

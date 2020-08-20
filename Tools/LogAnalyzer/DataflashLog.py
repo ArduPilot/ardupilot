@@ -146,15 +146,19 @@ class BinaryFormat(ctypes.LittleEndianStructure):
         return "<{cls} {data}>".format(cls=self.__class__.__name__, data = ' '.join(["{}:{}".format(k,getattr(self,k)) for (k,_) in self._fields_[1:]]))
 
     def to_class(self):
+        labels = self.labels.decode('ascii') if self.labels else ""
         members = dict(
-            NAME = self.name,
+            NAME = self.name.decode('ascii'),
             MSG = self.type,
             SIZE = self.length,
-            labels = self.labels.split(",") if self.labels else [],
+            labels = labels.split(","),
             _pack_ = True)
 
-        fieldtypes = [i for i in self.types]
-        fieldlabels = self.labels.split(",")
+        if type(self.types[0]) == str:
+            fieldtypes = [i for i in self.types]
+        else:
+            fieldtypes = [chr(i) for i in self.types]
+        fieldlabels = members["labels"]
         if self.labels and (len(fieldtypes) != len(fieldlabels)):
             print("Broken FMT message for {} .. ignoring".format(self.name), file=sys.stderr)
             return None
@@ -169,7 +173,12 @@ class BinaryFormat(ctypes.LittleEndianStructure):
                 propertyname = name
                 attributename = '_' + name
                 scale = BinaryFormat.FIELD_SCALE.get(format, None)
-                p = property(lambda x:getattr(x, attributename))
+                def get_message_attribute(x):
+                    ret = getattr(x, attributename)
+                    if str(format) in ['Z','n','N']:
+                        ret = ret.decode('ascii')
+                    return ret
+                p = property(get_message_attribute)
                 if scale is not None:
                     p = property(lambda x:getattr(x, attributename) / scale) 
                 members[propertyname] = p
@@ -186,7 +195,7 @@ class BinaryFormat(ctypes.LittleEndianStructure):
 
         # finally, create the class
         cls = type(\
-            'Log__{:s}'.format(self.name),
+            'Log__%s' % self.name,
             (ctypes.LittleEndianStructure,),
             members
         )
@@ -213,7 +222,7 @@ class Channel(object):
     def getSegment(self, startLine, endLine):
         '''returns a segment of this data (from startLine to endLine, inclusive) as a new Channel instance'''
         segment = Channel()
-        segment.dictData = {k:v for k,v in self.dictData.iteritems() if k >= startLine and k <= endLine}
+        segment.dictData = {k:v for k,v in self.dictData.items() if k >= startLine and k <= endLine}
         return segment
     def min(self):
         return min(self.dictData.values())
@@ -406,12 +415,9 @@ class DataflashLogHelper:
 
 
 class DataflashLog(object):
-    '''APM Dataflash log file reader and container class. Keep this simple, add more advanced or specific functions to DataflashLogHelper class'''
-    
+    '''ArduPilot Dataflash log file reader and container class. Keep this simple, add more advanced or specific functions to DataflashLogHelper class'''
+
     knownHardwareTypes = ["APM", "PX4", "MPNG"]
-    intTypes   = "bBhHiIM"
-    floatTypes = "fcCeEL"
-    charTypes  = "nNZ"    
 
     def __init__(self, logfile=None, format="auto", ignoreBadlines=False):
         self.filename = None
@@ -477,14 +483,15 @@ class DataflashLog(object):
     def read(self, logfile, format="auto", ignoreBadlines=False):
         '''returns on successful log read (including bad lines if ignoreBadlines==True), will throw an Exception otherwise'''
         # TODO: dataflash log parsing code is pretty hacky, should re-write more methodically
+        df_header = bytearray([0xa3, 0x95, 0x80, 0x80])
         self.filename = logfile
         if self.filename == '<stdin>':
             f = sys.stdin
         else:
-            f = open(self.filename, 'r')
+            f = open(self.filename, 'rb')
 
-        if format == 'bin':
-            head = '\xa3\x95\x80\x80'
+        if format.lower() == 'bin':
+            head = df_header
         elif format == 'log':
             head = ""
         elif format == 'auto':
@@ -498,7 +505,7 @@ class DataflashLog(object):
         else:
             raise ValueError("Unknown log format for {}: {}".format(self.filename, format))
 
-        if head == '\xa3\x95\x80\x80':
+        if head == df_header:
             numBytes, lineNumber = self.read_binary(f, ignoreBadlines)
             pass
         else:
@@ -697,7 +704,7 @@ class DataflashLog(object):
                     e = self.formats[tokens[0]](*tokens[1:])
                     self.process(lineNumber, e)
             except Exception as e:
-                print("BAD LINE: " + line, file=sys.stderr)
+                print("BAD LINE: " + str(line), file=sys.stderr)
                 if not ignoreBadlines:
                     raise Exception("Error parsing line %d of log file %s - %s" % (lineNumber,self.filename,e.args[0]))
         return (numBytes,lineNumber)

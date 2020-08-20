@@ -40,7 +40,7 @@
 #define floor(x) DO_NOT_USE_DOUBLE_MATHS()
 #define round(x) DO_NOT_USE_DOUBLE_MATHS()
 #define fmax(x,y) DO_NOT_USE_DOUBLE_MATHS()
-#if !HAL_WITH_UAVCAN
+#if !HAL_NUM_CAN_IFACES
 // we should do log() and fabs() as well, but can't because of a conflict in uavcan
 #define log(x) DO_NOT_USE_DOUBLE_MATHS()
 #define fabs(x) DO_NOT_USE_DOUBLE_MATHS()

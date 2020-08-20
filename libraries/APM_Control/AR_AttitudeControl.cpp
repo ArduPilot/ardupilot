@@ -38,7 +38,7 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
 
     // @Param: _STR_RAT_IMAX
     // @DisplayName: Steering control I gain maximum
-    // @Description: Steering control I gain maximum.  Constraings the steering output (range -1 to +1) that the I term will generate
+    // @Description: Steering control I gain maximum.  Constrains the steering output (range -1 to +1) that the I term will generate
     // @Range: 0.000 1.000
     // @Increment: 0.01
     // @User: Standard
@@ -99,7 +99,7 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
 
     // @Param: _SPEED_IMAX
     // @DisplayName: Speed control I gain maximum
-    // @Description: Speed control I gain maximum.  Constraings the maximum motor output (range -1 to +1) that the I term will generate
+    // @Description: Speed control I gain maximum.  Constrains the maximum motor output (range -1 to +1) that the I term will generate
     // @Range: 0.000 1.000
     // @Increment: 0.01
     // @User: Standard

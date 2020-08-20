@@ -1,12 +1,13 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include "AP_HAL_SITL.h"
+#include <AP_HAL_SITL/I2CDevice.h>
 #include "Scheduler.h"
 #include "UARTDriver.h"
 #include <sys/time.h>
 #include <fenv.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
-#if defined (__clang__)
+#if defined (__clang__) || (defined (__APPLE__) && defined (__MACH__))
 #include <stdlib.h>
 #else
 #include <malloc.h>
@@ -17,6 +18,13 @@ using namespace HALSITL;
 
 extern const AP_HAL::HAL& hal;
 
+#ifndef SITL_STACK_CHECKING_ENABLED
+//#define SITL_STACK_CHECKING_ENABLED !defined(__CYGWIN__) && !defined(__CYGWIN64__)
+// stack checking is disabled until the memory corruption issues are
+// fixed with pthread_attr_setstack.  These may be due to
+// changes in the way guard pages are handled.
+#define SITL_STACK_CHECKING_ENABLED 0
+#endif
 
 AP_HAL::Proc Scheduler::_failsafe = nullptr;
 
@@ -163,7 +171,7 @@ void Scheduler::sitl_end_atomic() {
 
 void Scheduler::reboot(bool hold_in_bootloader)
 {
-    if (AP_BoardConfig::in_sensor_config_error()) {
+    if (AP_BoardConfig::in_config_error()) {
         // the _should_reboot flag set below is not checked by the
         // sensor-config-error loop, so force the reboot here:
         HAL_SITL::actually_reboot();
@@ -233,7 +241,12 @@ void Scheduler::_run_io_procs()
     hal.uartH->_timer_tick();
     hal.storage->_timer_tick();
 
+    // in lieu of a thread-per-bus:
+    ((HALSITL::I2CDeviceManager*)(hal.i2c_mgr))->_timer_tick();
+
+#if SITL_STACK_CHECKING_ENABLED
     check_thread_stacks();
+#endif
 
     AP::RC().update();
 }
@@ -314,9 +327,11 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
     a->stack_size = stack_size;
     a->f[0] = proc;
     a->name = name;
-    
-    pthread_attr_init(&a->attr);
-#if !defined(__CYGWIN__) && !defined(__CYGWIN64__)
+
+    if (pthread_attr_init(&a->attr) != 0) {
+        goto failed;
+    }
+#if SITL_STACK_CHECKING_ENABLED
     if (pthread_attr_setstack(&a->attr, a->stack, alloc_stack) != 0) {
         AP_HAL::panic("Failed to set stack of size %u for thread %s", alloc_stack, name);
     }

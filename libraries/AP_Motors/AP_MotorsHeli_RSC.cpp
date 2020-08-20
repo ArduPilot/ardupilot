@@ -39,7 +39,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     AP_GROUPINFO("MODE", 2, AP_MotorsHeli_RSC, _rsc_mode, (int8_t)ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH),
 
     // @Param: RAMP_TIME
-    // @DisplayName: RSC Throttle Output Ramp Time
+    // @DisplayName: Throttle Ramp Time
     // @Description: Time in seconds for throttle output (HeliRSC servo) to ramp from ground idle (RSC_IDLE) to flight idle throttle setting when motor interlock is enabled (throttle hold off).
     // @Range: 0 60
     // @Units: s
@@ -64,7 +64,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     AP_GROUPINFO("CRITICAL", 5, AP_MotorsHeli_RSC, _critical_speed, AP_MOTORS_HELI_RSC_CRITICAL),
 
     // @Param: IDLE
-    // @DisplayName: RSC Throttle Output at Idle
+    // @DisplayName: Throttle Output at Idle
     // @Description: Throttle output (HeliRSC Servo) in percent while armed but motor interlock is disabled (throttle hold on). FOR COMBUSTION ENGINES. Sets the engine ground idle throttle percentage with clutch disengaged. This must be set to zero for electric helicopters under most situations. If the ESC has an autorotation window this can be set to keep the autorotation window open in the ESC. Consult the operating manual for your ESC to set it properly for this purpose
     // @Range: 0 50
     // @Units: %
@@ -73,7 +73,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     AP_GROUPINFO("IDLE", 6, AP_MotorsHeli_RSC, _idle_output, AP_MOTORS_HELI_RSC_IDLE_DEFAULT),
 
     // @Param: SLEWRATE
-    // @DisplayName: RSC Throttle Output Slew Rate
+    // @DisplayName: Throttle Slew Rate
     // @Description: This controls the maximum rate at which the throttle output (HeliRSC servo) can change, as a percentage per second. A value of 100 means the throttle can change over its full range in one second. A value of zero gives unlimited slew rate.
     // @Range: 0 500
     // @Increment: 10
@@ -81,7 +81,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     AP_GROUPINFO("SLEWRATE", 7, AP_MotorsHeli_RSC, _power_slewrate, 0),
 
     // @Param: THRCRV_0
-    // @DisplayName: RSC Throttle Output at 0% collective
+    // @DisplayName: Throttle Curve at 0% Coll
     // @Description: Sets the throttle output (HeliRSC servo) in percent for the throttle curve at the minimum collective pitch position. The 0 percent collective is defined by H_COL_MIN. Example: if the setup has -2 degree to +10 degree collective pitch setup, this setting would correspond to -2 degree of pitch.
     // @Range: 0 100
     // @Units: %
@@ -90,7 +90,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     AP_GROUPINFO("THRCRV_0", 8, AP_MotorsHeli_RSC, _thrcrv[0], AP_MOTORS_HELI_RSC_THRCRV_0_DEFAULT),
 
     // @Param: THRCRV_25
-    // @DisplayName: RSC Throttle Output at 25% collective
+    // @DisplayName: Throttle Curve at 25% Coll
     // @Description: Sets the throttle output (HeliRSC servo) in percent for the throttle curve at 25% of full collective travel where he 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.  Example: if the setup has -2 degree to +10 degree collective pitch setup, the total range is 12 degrees. 25% of 12 degrees is 3 degrees, so this setting would correspond to +1 degree of pitch.
     // @Range: 0 100
     // @Units: %
@@ -99,7 +99,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     AP_GROUPINFO("THRCRV_25", 9, AP_MotorsHeli_RSC, _thrcrv[1], AP_MOTORS_HELI_RSC_THRCRV_25_DEFAULT),
 
     // @Param: THRCRV_50
-    // @DisplayName: RSC Throttle Output at 50% collective
+    // @DisplayName: Throttle Curve at 50% Coll
     // @Description: Sets the throttle output (HeliRSC servo) in percent for the throttle curve at 50% of full collective travel where he 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.  Example: if the setup has -2 degree to +10 degree collective pitch setup, the total range is 12 degrees. 50% of 12 degrees is 6 degrees, so this setting would correspond to +4 degree of pitch.
     // @Range: 0 100
     // @Units: %
@@ -108,7 +108,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     AP_GROUPINFO("THRCRV_50", 10, AP_MotorsHeli_RSC, _thrcrv[2], AP_MOTORS_HELI_RSC_THRCRV_50_DEFAULT),
 
     // @Param: THRCRV_75
-    // @DisplayName: RSC Throttle Output at 75% collective
+    // @DisplayName: Throttle Curve at 75% Coll
     // @Description: Sets the throttle output (HeliRSC servo) in percent for the throttle curve at 75% of full collective travel where he 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.  Example: if the setup has -2 degree to +10 degree collective pitch setup, the total range is 12 degrees. 75% of 12 degrees is 9 degrees, so this setting would correspond to +7 degree of pitch.
     // @Range: 0 100
     // @Units: %
@@ -117,7 +117,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     AP_GROUPINFO("THRCRV_75", 11, AP_MotorsHeli_RSC, _thrcrv[3], AP_MOTORS_HELI_RSC_THRCRV_75_DEFAULT),
 
     // @Param: THRCRV_100
-    // @DisplayName: RSC Throttle Output at 100% collective
+    // @DisplayName: Throttle Curve at 100% Coll
     // @Description: Sets the throttle output (HeliRSC servo) in percent for the throttle curve at the minimum collective pitch position. The 100 percent collective is defined by H_COL_MAX.  Example: if the setup has -2 degree to +10 degree collective pitch setup, this setting would correspond to +10 degree of pitch.
     // @Range: 0 100
     // @Units: %
@@ -126,7 +126,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     AP_GROUPINFO("THRCRV_100", 12, AP_MotorsHeli_RSC, _thrcrv[4], AP_MOTORS_HELI_RSC_THRCRV_100_DEFAULT),
 
     // @Param: GOV_SETPNT
-    // @DisplayName: Main Rotor Governor RPM Setpoint
+    // @DisplayName: Rotor Governor Setpoint
     // @Description: Main rotor rpm setting that governor maintains when engaged.  Set to the rotor rpm your helicopter runs in flight. When a speed sensor is installed the rotor governor maintains this speed. For governor operation this should be set 10 rpm higher than the actual desired headspeed to allow for governor droop
     // @Range: 800 3500
     // @Units: RPM
@@ -135,7 +135,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     AP_GROUPINFO("GOV_SETPNT", 13, AP_MotorsHeli_RSC, _governor_reference, AP_MOTORS_HELI_RSC_GOVERNOR_SETPNT_DEFAULT),
 
     // @Param: GOV_DISGAG
-    // @DisplayName: Throttle Percentage for Governor Disengage
+    // @DisplayName: Governor Disengage Throttle
     // @Description: Percentage of throttle where the governor will disengage to allow return to flight idle power. Typically should be set to the same value as flight idle throttle (the very lowest throttle setting on the throttle curve). The governor disengage can be disabled by setting this value to zero and using the pull-down from the governor TCGAIN to reduce power to flight idle with the collective at it's lowest throttle setting on the throttle curve.
     // @Range: 0 50
     // @Units: %
@@ -144,7 +144,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     AP_GROUPINFO("GOV_DISGAG", 14, AP_MotorsHeli_RSC, _governor_disengage, AP_MOTORS_HELI_RSC_GOVERNOR_DISENGAGE_DEFAULT),
 
     // @Param: GOV_DROOP
-    // @DisplayName: Governor Droop Response Setting
+    // @DisplayName: Governor Droop Response
     // @Description: Governor droop response under load, normal settings of 0-100%. Higher value is quicker response but may cause surging. Setting to zero disables the governor. Adjust this to be as aggressive as possible without getting surging or over-run on headspeed when the governor engages. Setting over 100% is allowable for some two-stage turbine engines to provide scheduling of the gas generator for proper torque response of the N2 spool
     // @Range: 0 150
     // @Units: %
@@ -169,6 +169,17 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     // @Increment: 10
     // @User: Standard
     AP_GROUPINFO("GOV_RANGE", 17, AP_MotorsHeli_RSC, _governor_range, AP_MOTORS_HELI_RSC_GOVERNOR_RANGE_DEFAULT),
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // @Param: AROT_PCT
+    // @DisplayName: Autorotation Throttle Percentage for External Governor
+    // @Description: The throttle percentage sent to external governors, signaling to enable fast spool-up, when bailing out of an autorotation.  Set 0 to disable. If also using a tail rotor of type DDVP with external governor then this value must lie within the autorotation window of both governors.
+    // @Range: 0 40
+    // @Units: %
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("AROT_PCT", 18, AP_MotorsHeli_RSC, _ext_gov_arot_pct, 0),
+#endif
 
     AP_GROUPEND
 };
@@ -226,8 +237,13 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
             // set rotor ramp to decrease speed to zero
             update_rotor_ramp(0.0f, dt);
 
-            // set rotor control speed to idle speed parameter, this happens instantly and ignore ramping
-            _control_output = get_idle_output();
+            if (_in_autorotaion) {
+                // if in autorotation and using an external governor, set the output to tell the governor to use bailout ramp
+                _control_output = constrain_float( _rsc_arot_bailout_pct/100.0f , 0.0f, 0.4f);
+            } else {
+                // set rotor control speed to idle speed parameter, this happens instantly and ignores ramping
+                _control_output = get_idle_output();
+            }
             break;
 
         case ROTOR_CONTROL_ACTIVE:
@@ -294,9 +310,12 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
 // update_rotor_ramp - slews rotor output scalar between 0 and 1, outputs float scalar to _rotor_ramp_output
 void AP_MotorsHeli_RSC::update_rotor_ramp(float rotor_ramp_input, float dt)
 {
-    // sanity check ramp time
-    if (_ramp_time <= 0) {
-        _ramp_time = 1;
+    int8_t ramp_time;
+    // sanity check ramp time and enable bailout if set
+    if (_use_bailout_ramp || _ramp_time <= 0) {
+        ramp_time = 1;
+    } else {
+        ramp_time = _ramp_time;
     }
 
     // ramp output upwards towards target
@@ -306,7 +325,7 @@ void AP_MotorsHeli_RSC::update_rotor_ramp(float rotor_ramp_input, float dt)
             _rotor_ramp_output = _rotor_runup_output;
         }
         // ramp up slowly to target
-        _rotor_ramp_output += (dt / _ramp_time);
+        _rotor_ramp_output += (dt / ramp_time);
         if (_rotor_ramp_output > rotor_ramp_input) {
             _rotor_ramp_output = rotor_ramp_input;
         }
@@ -319,16 +338,21 @@ void AP_MotorsHeli_RSC::update_rotor_ramp(float rotor_ramp_input, float dt)
 // update_rotor_runup - function to slew rotor runup scalar, outputs float scalar to _rotor_runup_ouptut
 void AP_MotorsHeli_RSC::update_rotor_runup(float dt)
 {
+    int8_t runup_time = _runup_time;
     // sanity check runup time
-    if (_runup_time < _ramp_time) {
-        _runup_time = _ramp_time;
-    }
-    if (_runup_time <= 0 ) {
-        _runup_time = 1;
+    runup_time = MAX(_ramp_time+1,runup_time);
+
+    // adjust rotor runup when bailing out
+    if (_use_bailout_ramp) {
+        // maintain same delta as set in parameters
+        runup_time = _runup_time-_ramp_time+1;
     }
 
+    // protect against divide by zero
+    runup_time = MAX(1,runup_time);
+
     // ramp speed estimate towards control out
-    float runup_increment = dt / _runup_time;
+    float runup_increment = dt / runup_time;
     if (_rotor_runup_output < _rotor_ramp_output) {
         _rotor_runup_output += runup_increment;
         if (_rotor_runup_output > _rotor_ramp_output) {

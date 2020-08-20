@@ -3,9 +3,7 @@
 #include "AP_NavEKF2.h"
 #include "AP_NavEKF2_core.h"
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
-#include <AP_GPS/AP_GPS.h>
 
 #include <stdio.h>
 
@@ -209,14 +207,17 @@ void NavEKF2_core::setAidingMode()
         bool posUsed = (imuSampleTime_ms - lastPosPassTime_ms <= minTestTime_ms);
         bool gpsVelUsed = (imuSampleTime_ms - lastVelPassTime_ms <= minTestTime_ms);
 
+        // Check if external nav is being used
+        bool extNavUsed = (imuSampleTime_ms - lastExtNavPassTime_ms <= minTestTime_ms);
+
         // Check if attitude drift has been constrained by a measurement source
-        bool attAiding = posUsed || gpsVelUsed || optFlowUsed || airSpdUsed || rngBcnUsed;
+        bool attAiding = posUsed || gpsVelUsed || optFlowUsed || airSpdUsed || rngBcnUsed || extNavUsed;
 
         // check if velocity drift has been constrained by a measurement source
         bool velAiding = gpsVelUsed || airSpdUsed || optFlowUsed;
 
         // check if position drift has been constrained by a measurement source
-        bool posAiding = posUsed || rngBcnUsed;
+        bool posAiding = posUsed || rngBcnUsed || extNavUsed;
 
         // Check if the loss of attitude aiding has become critical
         bool attAidLossCritical = false;
@@ -225,6 +226,7 @@ void NavEKF2_core::setAidingMode()
                    (imuSampleTime_ms - lastTasPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
                    (imuSampleTime_ms - lastRngBcnPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
                    (imuSampleTime_ms - lastPosPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
+                   (imuSampleTime_ms - lastExtNavPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
                    (imuSampleTime_ms - lastVelPassTime_ms > frontend->tiltDriftTimeMax_ms);
         }
 
@@ -238,7 +240,8 @@ void NavEKF2_core::setAidingMode()
                 maxLossTime_ms = frontend->posRetryTimeUseVel_ms;
             }
             posAidLossCritical = (imuSampleTime_ms - lastRngBcnPassTime_ms > maxLossTime_ms) &&
-                   (imuSampleTime_ms - lastPosPassTime_ms > maxLossTime_ms);
+                                 (imuSampleTime_ms - lastExtNavPassTime_ms > maxLossTime_ms) &&
+                                 (imuSampleTime_ms - lastPosPassTime_ms > maxLossTime_ms);
         }
 
         if (attAidLossCritical) {
@@ -250,6 +253,9 @@ void NavEKF2_core::setAidingMode()
             tasTimeout = true;
             gpsNotAvailable = true;
         } else if (posAidLossCritical) {
+            if ((frontend->_flowUse == FLOW_USE_NAV) && optFlowDataPresent() && (imuSampleTime_ms - rngValidMeaTime_ms < 500)) {
+                PV_AidingMode = AID_NONE;
+            }
             // if the loss of position is critical, declare all sources of position aiding as being timed out
             posTimeout = true;
             velTimeout = true;
@@ -314,9 +320,11 @@ void NavEKF2_core::setAidingMode()
             if (canUseExtNav) {
                 gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u is using external nav data",(unsigned)imu_index);
                 gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u initial pos NED = %3.1f,%3.1f,%3.1f (m)",(unsigned)imu_index,(double)extNavDataDelayed.pos.x,(double)extNavDataDelayed.pos.y,(double)extNavDataDelayed.pos.z);
-                // handle yaw reset as special case
-                extNavYawResetRequest = true;
-                controlMagYawReset();
+                //handle yaw reset as special case only if compass is disabled
+                if (!use_compass()) {
+                    extNavYawResetRequest = true;
+                    controlMagYawReset();
+                }
                 // handle height reset as special case
                 hgtMea = -extNavDataDelayed.pos.z;
                 posDownObsNoise = sq(constrain_float(extNavDataDelayed.posErr, 0.1f, 10.0f));
@@ -326,6 +334,7 @@ void NavEKF2_core::setAidingMode()
             lastPosPassTime_ms = imuSampleTime_ms;
             lastVelPassTime_ms = imuSampleTime_ms;
             lastRngBcnPassTime_ms = imuSampleTime_ms;
+            lastExtNavPassTime_ms = imuSampleTime_ms;
             }
             break;
         }
@@ -462,9 +471,18 @@ bool NavEKF2_core::checkGyroCalStatus(void)
 {
     // check delta angle bias variances
     const float delAngBiasVarMax = sq(radians(0.15f * dtEkfAvg));
-    delAngBiasLearned =  (P[9][9] <= delAngBiasVarMax) &&
-                            (P[10][10] <= delAngBiasVarMax) &&
-                            (P[11][11] <= delAngBiasVarMax);
+    if (!use_compass()) {
+        // rotate the variances into earth frame and evaluate horizontal terms only as yaw component is poorly observable without a compass
+        // which can make this check fail
+        Vector3f delAngBiasVarVec = Vector3f(P[9][9],P[10][10],P[11][11]);
+        Vector3f temp = prevTnb * delAngBiasVarVec;
+        delAngBiasLearned = (fabsf(temp.x) < delAngBiasVarMax) &&
+                            (fabsf(temp.y) < delAngBiasVarMax);
+    } else {
+        delAngBiasLearned =  (P[9][9] <= delAngBiasVarMax) &&
+                             (P[10][10] <= delAngBiasVarMax) &&
+                             (P[11][11] <= delAngBiasVarMax);
+    }
     return delAngBiasLearned;
 }
 
@@ -493,7 +511,7 @@ void  NavEKF2_core::updateFilterStatus(void)
     bool doingFlowNav = (PV_AidingMode == AID_RELATIVE) && flowDataValid;
     bool doingWindRelNav = !tasTimeout && assume_zero_sideslip();
     bool doingNormalGpsNav = !posTimeout && (PV_AidingMode == AID_ABSOLUTE);
-    bool someVertRefData = (!velTimeout && useGpsVertVel) || !hgtTimeout;
+    bool someVertRefData = (!velTimeout && (useGpsVertVel || useExtNavVel)) || !hgtTimeout;
     bool someHorizRefData = !(velTimeout && posTimeout && tasTimeout) || doingFlowNav;
     bool optFlowNavPossible = flowDataValid && delAngBiasLearned;
     bool gpsNavPossible = !gpsNotAvailable && gpsGoodToAlign && delAngBiasLearned;
@@ -518,5 +536,46 @@ void  NavEKF2_core::updateFilterStatus(void)
     filterStatus.flags.using_gps = ((imuSampleTime_ms - lastPosPassTime_ms) < 4000) && (PV_AidingMode == AID_ABSOLUTE);
     filterStatus.flags.gps_glitching = !gpsAccuracyGood && (PV_AidingMode == AID_ABSOLUTE) && !extNavUsedForPos; // GPS glitching is affecting navigation accuracy
     filterStatus.flags.gps_quality_good = gpsGoodToAlign;
+    filterStatus.flags.initalized = filterStatus.flags.initalized || healthy();
 }
 
+void NavEKF2_core::runYawEstimatorPrediction()
+{
+    if (yawEstimator != nullptr && frontend->_fusionModeGPS <= 1) {
+        float trueAirspeed;
+        if (is_positive(defaultAirSpeed) && assume_zero_sideslip()) {
+            if (imuDataDelayed.time_ms - tasDataDelayed.time_ms < 5000) {
+                trueAirspeed = tasDataDelayed.tas;
+            } else {
+                trueAirspeed = defaultAirSpeed * AP::ahrs().get_EAS2TAS();
+            }
+        } else {
+            trueAirspeed = 0.0f;
+        }
+
+        yawEstimator->update(imuDataDelayed.delAng, imuDataDelayed.delVel, imuDataDelayed.delAngDT, imuDataDelayed.delVelDT, EKFGSF_run_filterbank, trueAirspeed);
+    }
+}
+
+void NavEKF2_core::runYawEstimatorCorrection()
+{
+    if (yawEstimator != nullptr && frontend->_fusionModeGPS <= 1) {
+        if (gpsDataToFuse) {
+            Vector2f gpsVelNE = Vector2f(gpsDataDelayed.vel.x, gpsDataDelayed.vel.y);
+            float gpsVelAcc = fmaxf(gpsSpdAccuracy, frontend->_gpsHorizVelNoise);
+            yawEstimator->fuseVelData(gpsVelNE, gpsVelAcc);
+        }
+
+        // action an external reset request
+        if (EKFGSF_yaw_reset_request_ms > 0 && imuSampleTime_ms - EKFGSF_yaw_reset_request_ms < YAW_RESET_TO_GSF_TIMEOUT_MS) {
+            EKFGSF_resetMainFilterYaw();
+        }
+    }
+}
+
+// request a reset the yaw to the GSF estimate
+// request times out after YAW_RESET_TO_GSF_TIMEOUT_MS if it cannot be actioned
+void NavEKF2_core::EKFGSF_requestYawReset()
+{
+    EKFGSF_yaw_reset_request_ms = imuSampleTime_ms;
+}

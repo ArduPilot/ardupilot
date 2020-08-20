@@ -7,11 +7,6 @@
 *
 *****************************************************************************/
 
-static void mavlink_delay_cb_static()
-{
-    sub.mavlink_delay_cb();
-}
-
 static void failsafe_check_static()
 {
     sub.mainloop_failsafe_check();
@@ -19,20 +14,9 @@ static void failsafe_check_static()
 
 void Sub::init_ardupilot()
 {
-    // initialise serial port
-    serial_manager.init_console();
-
-    hal.console->printf("\n\nInit %s"
-                        "\n\nFree RAM: %u\n",
-                        AP::fwversion().fw_string,
-                        (unsigned)hal.util->available_memory());
-
-    // load parameters from EEPROM
-    load_parameters();
-
     BoardConfig.init();
-#if HAL_WITH_UAVCAN
-    BoardConfig_CAN.init();
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+    can_mgr.init();
 #endif
 
 #if AP_FEATURE_BOARD_DETECT
@@ -52,21 +36,14 @@ void Sub::init_ardupilot()
     celsius.init(1);
 #endif
 
-    // identify ourselves correctly with the ground station
-    mavlink_system.sysid = g.sysid_this_mav;
-    
-    // initialise serial port
-    serial_manager.init();
-
-    // setup first port early to allow BoardConfig to report errors
-    gcs().setup_console();
-
     // init cargo gripper
 #if GRIPPER_ENABLED == ENABLED
     g2.gripper.init();
 #endif
 
+#if AC_FENCE == ENABLED
     fence.init();
+#endif
 
     // initialise notify system
     notify.init();
@@ -75,11 +52,6 @@ void Sub::init_ardupilot()
     battery.init();
 
     barometer.init();
-
-    // Register the mavlink service callback. This will run
-    // anytime there are more than 5ms remaining in a call to
-    // hal.scheduler->delay.
-    hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
 
     // setup telem slots with serial ports
     gcs().setup_uarts();
@@ -128,9 +100,13 @@ void Sub::init_ardupilot()
     init_optflow();
 #endif
 
-#if MOUNT == ENABLED
+#if HAL_MOUNT_ENABLED
     // initialise camera mount
     camera_mount.init();
+    // This step ncessary so the servo is properly initialized
+    camera_mount.set_angle_targets(0, 0, 0);
+    // for some reason the call to set_angle_targets changes the mode to mavlink targeting!
+    camera_mount.set_mode(MAV_MOUNT_MODE_RC_TARGETING);
 #endif
 
 #ifdef USERHOOK_INIT
@@ -156,11 +132,9 @@ void Sub::init_ardupilot()
         // We only have onboard baro
         // No external underwater depth sensor detected
         barometer.set_primary_baro(0);
-        EKF2.set_baro_alt_noise(10.0f); // Readings won't correspond with rest of INS
-        EKF3.set_baro_alt_noise(10.0f);
+        ahrs.set_alt_measurement_noise(10.0f);  // Readings won't correspond with rest of INS
     } else {
-        EKF2.set_baro_alt_noise(0.1f);
-        EKF3.set_baro_alt_noise(0.1f);
+        ahrs.set_alt_measurement_noise(0.1f);
     }
 
     leak_detector.init();
@@ -188,9 +162,7 @@ void Sub::init_ardupilot()
     startup_INS_ground();
 
 #ifdef ENABLE_SCRIPTING
-    if (!g2.scripting.init()) {
-        gcs().send_text(MAV_SEVERITY_ERROR, "Scripting failed to start");
-    }
+    g2.scripting.init();
 #endif // ENABLE_SCRIPTING
 
     // we don't want writes to the serial port to cause us to pause
@@ -210,10 +182,6 @@ void Sub::init_ardupilot()
 
     // flag that initialisation has completed
     ap.initialised = true;
-
-#if AP_PARAM_KEY_DUMP
-    AP_Param::show_all(hal.console, true);
-#endif
 }
 
 
@@ -269,11 +237,24 @@ bool Sub::ekf_position_ok()
 // optflow_position_ok - returns true if optical flow based position estimate is ok
 bool Sub::optflow_position_ok()
 {
-#if OPTFLOW != ENABLED
-    return false;
-#else
-    // return immediately if optflow is not enabled or EKF not used
-    if (!optflow.enabled() || !ahrs.have_inertial_nav()) {
+    // return immediately if EKF not used
+    if (!ahrs.have_inertial_nav()) {
+        return false;
+    }
+
+    // return immediately if neither optflow nor visual odometry is enabled
+    bool enabled = false;
+#if OPTFLOW == ENABLED
+    if (optflow.enabled()) {
+        enabled = true;
+    }
+#endif
+#if HAL_VISUALODOM_ENABLED
+    if (visual_odom.enabled()) {
+        enabled = true;
+    }
+#endif
+    if (!enabled) {
         return false;
     }
 
@@ -285,7 +266,6 @@ bool Sub::optflow_position_ok()
         return (filt_status.flags.pred_horiz_pos_rel);
     }
     return (filt_status.flags.horiz_pos_rel && !filt_status.flags.const_pos_mode);
-#endif
 }
 
 /*
@@ -300,3 +280,14 @@ bool Sub::should_log(uint32_t mask)
     return false;
 #endif
 }
+
+#include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
+#include <AP_Avoidance/AP_Avoidance.h>
+#include <AP_ADSB/AP_ADSB.h>
+
+// dummy method to avoid linking AFS
+bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reason) { return false; }
+AP_AdvancedFailsafe *AP::advancedfailsafe() { return nullptr; }
+
+// dummy method to avoid linking AP_Avoidance
+AP_Avoidance *AP::ap_avoidance() { return nullptr; }

@@ -25,10 +25,10 @@ public:
     AP_InertialNav() {}
 
     /**
-     * update - updates velocity and position estimates using latest info from accelerometers
-     * augmented with gps and baro readings
+     * updates velocity and position estimates pulling data from EKF
+     * high_vibes should be set to true if high vibration have been detected
      */
-    virtual void update(void) = 0;
+    virtual void update(bool high_vibes = false) = 0;
 
     /**
      * get_filter_status : returns filter status as a series of flags

@@ -73,7 +73,7 @@ bool Sub::set_home(const Location& loc, bool lock)
         // update navigation scalers.  used to offset the shrinking longitude as we go towards the poles
         scaleLongDown = loc.longitude_scale();
         // record home is set
-        Log_Write_Event(DATA_SET_HOME);
+        AP::logger().Write_Event(LogEvent::SET_HOME);
 
         // log new home position which mission library will pull from ahrs
         if (should_log(MASK_LOG_CMD)) {

@@ -28,12 +28,27 @@ public:
     // constructor
     AP_Button(void);
 
+    /* Do not allow copies */
+    AP_Button(const AP_Button &other) = delete;
+    AP_Button &operator=(const AP_Button&) = delete;
+
     static const struct AP_Param::GroupInfo var_info[];
 
     // update button state and send messages, called periodically by main loop
     void update(void);
-    
+
+    static AP_Button *get_singleton(void) {
+        return _singleton;
+    }
+
+    // get state of a button
+    // used by scripting
+    bool get_button_state(uint8_t number);
+
 private:
+
+    static AP_Button *_singleton;
+
     AP_Int8 enable;
     AP_Int8 pin[AP_BUTTON_NUM_PINS];
 
@@ -42,6 +57,9 @@ private:
 
     // last button press mask
     uint8_t last_mask;
+
+    // debounced button press mask
+    uint8_t debounce_mask;
 
     // when the mask last changed
     uint64_t last_change_time_ms;
@@ -65,3 +83,6 @@ private:
     void setup_pins();
 };
 
+namespace AP {
+    AP_Button &button();
+};

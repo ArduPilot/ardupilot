@@ -26,6 +26,7 @@
 #include "PerfInfo.h"       // loop perf monitoring
 
 #define AP_SCHEDULER_NAME_INITIALIZER(_name) .name = #_name,
+#define LOOP_RATE 0
 
 /*
   useful macro for creating scheduler task table
@@ -48,7 +49,6 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Vehicle/AP_Vehicle.h>
 
 class AP_Scheduler
 {
@@ -145,6 +145,8 @@ public:
         return extra_loop_us;
     }
 
+    HAL_Semaphore &get_semaphore(void) { return _rsem; }
+
     static const struct AP_Param::GroupInfo var_info[];
 
     // loop performance monitoring:
@@ -172,8 +174,14 @@ private:
     // progmem list of tasks to run
     const struct Task *_tasks;
 
-    // number of tasks in _tasks list
+    // progmem list of common tasks to run
+    const struct Task *_common_tasks;
+
+    // total number of tasks in _tasks and _common_tasks list
     uint8_t _num_tasks;
+
+    // number of tasks in _tasks list
+    uint8_t _num_unshared_tasks;
 
     // number of 'ticks' that have passed (number of times that
     // tick() has been called
@@ -218,6 +226,10 @@ private:
     // extra time available for each loop - used to dynamically adjust
     // the loop rate in case we are well over budget
     uint32_t extra_loop_us;
+
+
+    // semaphore that is held while not waiting for ins samples
+    HAL_Semaphore _rsem;
 };
 
 namespace AP {

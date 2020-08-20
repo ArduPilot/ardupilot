@@ -24,7 +24,6 @@ const uint8_t SERVO_CHAN_1 = 9; // Pixhawk Aux1
 const uint8_t SERVO_CHAN_2 = 10; // Pixhawk Aux2
 const uint8_t SERVO_CHAN_3 = 11; // Pixhawk Aux3
 
-uint8_t roll_pitch_flag = false; // Flag to adjust roll/pitch instead of forward/lateral
 bool controls_reset_since_input_hold = true;
 }
 
@@ -35,7 +34,7 @@ void Sub::init_joystick()
     lights1 = RC_Channels::rc_channel(8)->get_radio_min();
     lights2 = RC_Channels::rc_channel(9)->get_radio_min();
 
-    set_mode(MANUAL, MODE_REASON_TX_COMMAND); // Initialize flight mode
+    set_mode(MANUAL, ModeReason::RC_COMMAND); // Initialize flight mode
 
     if (g.numGainSettings < 1) {
         g.numGainSettings.set_and_save(1);
@@ -139,13 +138,13 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
     z_last = z;
 }
 
-void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
+void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
 {
     // Act based on the function assigned to this button
-    switch (get_button(button)->function(shift)) {
+    switch (get_button(_button)->function(shift)) {
     case JSButton::button_function_t::k_arm_toggle:
         if (motors.armed()) {
-            arming.disarm();
+            arming.disarm(AP_Arming::Method::MAVLINK);
         } else {
             arming.arm(AP_Arming::Method::MAVLINK);
         }
@@ -154,36 +153,36 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
         arming.arm(AP_Arming::Method::MAVLINK);
         break;
     case JSButton::button_function_t::k_disarm:
-        arming.disarm();
+        arming.disarm(AP_Arming::Method::MAVLINK);
         break;
 
     case JSButton::button_function_t::k_mode_manual:
-        set_mode(MANUAL, MODE_REASON_TX_COMMAND);
+        set_mode(MANUAL, ModeReason::RC_COMMAND);
         break;
     case JSButton::button_function_t::k_mode_stabilize:
-        set_mode(STABILIZE, MODE_REASON_TX_COMMAND);
+        set_mode(STABILIZE, ModeReason::RC_COMMAND);
         break;
     case JSButton::button_function_t::k_mode_depth_hold:
-        set_mode(ALT_HOLD, MODE_REASON_TX_COMMAND);
+        set_mode(ALT_HOLD, ModeReason::RC_COMMAND);
         break;
     case JSButton::button_function_t::k_mode_auto:
-        set_mode(AUTO, MODE_REASON_TX_COMMAND);
+        set_mode(AUTO, ModeReason::RC_COMMAND);
         break;
     case JSButton::button_function_t::k_mode_guided:
-        set_mode(GUIDED, MODE_REASON_TX_COMMAND);
+        set_mode(GUIDED, ModeReason::RC_COMMAND);
         break;
     case JSButton::button_function_t::k_mode_circle:
-        set_mode(CIRCLE, MODE_REASON_TX_COMMAND);
+        set_mode(CIRCLE, ModeReason::RC_COMMAND);
         break;
     case JSButton::button_function_t::k_mode_acro:
-        set_mode(ACRO, MODE_REASON_TX_COMMAND);
+        set_mode(ACRO, ModeReason::RC_COMMAND);
         break;
     case JSButton::button_function_t::k_mode_poshold:
-        set_mode(POSHOLD, MODE_REASON_TX_COMMAND);
+        set_mode(POSHOLD, ModeReason::RC_COMMAND);
         break;
 
     case JSButton::button_function_t::k_mount_center:
-#if MOUNT == ENABLED
+#if HAL_MOUNT_ENABLED
         camera_mount.set_angle_targets(0, 0, 0);
         // for some reason the call to set_angle_targets changes the mode to mavlink targeting!
         camera_mount.set_mode(MAV_MOUNT_MODE_RC_TARGETING);
@@ -562,6 +561,12 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
     case JSButton::button_function_t::k_roll_pitch_toggle:
         if (!held) {
             roll_pitch_flag = !roll_pitch_flag;
+            if (roll_pitch_flag) {
+                gcs().send_text(MAV_SEVERITY_INFO, "#Attitude Control");
+            }
+            else {
+                gcs().send_text(MAV_SEVERITY_INFO, "#Movement Control");
+            }
         }
         break;
 
@@ -586,10 +591,10 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
     }
 }
 
-void Sub::handle_jsbutton_release(uint8_t button, bool shift) {
+void Sub::handle_jsbutton_release(uint8_t _button, bool shift) {
 
     // Act based on the function assigned to this button
-    switch (get_button(button)->function(shift)) {
+    switch (get_button(_button)->function(shift)) {
     case JSButton::button_function_t::k_relay_1_momentary:
         relay.off(0);
         break;
@@ -702,10 +707,6 @@ void Sub::set_neutral_controls()
 
     for (uint8_t i = 0; i < 6; i++) {
         RC_Channels::set_override(i, 1500, tnow);
-    }
-
-    for (uint8_t i = 6; i < 11; i++) {
-        RC_Channels::set_override(i, 0xffff, tnow);
     }
 
     // Clear pitch/roll trim settings

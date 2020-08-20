@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #include <AP_HAL/AP_HAL.h>
@@ -91,12 +91,21 @@ static ChibiOS::Scheduler schedulerInstance;
 static ChibiOS::Util utilInstance;
 static Empty::OpticalFlow opticalFlowDriver;
 
+#if HAL_WITH_DSP
+static ChibiOS::DSP dspDriver;
+#else
+static Empty::DSP dspDriver;
+#endif
+
 #ifndef HAL_NO_FLASH_SUPPORT
 static ChibiOS::Flash flashDriver;
 #else
 static Empty::Flash flashDriver;
 #endif
 
+#if HAL_NUM_CAN_IFACES > 0
+static ChibiOS::CANIface* canDrivers[HAL_NUM_CAN_IFACES];
+#endif
 
 #if HAL_WITH_IO_MCU
 HAL_UART_IO_DRIVER;
@@ -126,7 +135,12 @@ HAL_ChibiOS::HAL_ChibiOS() :
         &utilInstance,
         &opticalFlowDriver,
         &flashDriver,
+        &dspDriver,
+#if HAL_NUM_CAN_IFACES
+        (AP_HAL::CANIface**)canDrivers
+#else
         nullptr
+#endif
         )
 {}
 
@@ -159,8 +173,6 @@ thread_t* get_main_thread()
 
 static AP_HAL::HAL::Callbacks* g_callbacks;
 
-static AP_HAL::Util::PersistentData last_persistent_data;
-
 static void main_loop()
 {
     daemon_task = chThdGetSelfX();
@@ -178,13 +190,13 @@ static void main_loop()
 
     ChibiOS::Shared_DMA::init();
     peripheral_power_enable();
-        
+
     hal.uartA->begin(115200);
 
 #ifdef HAL_SPI_CHECK_CLOCK_FREQ
     // optional test of SPI clock frequencies
     ChibiOS::SPIDevice::test_clock_freq();
-#endif 
+#endif
 
     hal.uartB->begin(38400);
     hal.uartC->begin(57600);
@@ -200,7 +212,7 @@ static void main_loop()
     if (stm32_was_watchdog_reset()) {
         // load saved watchdog data
         stm32_watchdog_load((uint32_t *)&utilInstance.persistent_data, (sizeof(utilInstance.persistent_data)+3)/4);
-        last_persistent_data = utilInstance.persistent_data;
+        utilInstance.last_persistent_data = utilInstance.persistent_data;
     }
 
     schedulerInstance.hal_initialized();
@@ -217,21 +229,7 @@ static void main_loop()
 
 #ifndef HAL_NO_LOGGING
     if (hal.util->was_watchdog_reset()) {
-        AP::internalerror().error(AP_InternalError::error_t::watchdog_reset);
-        const AP_HAL::Util::PersistentData &pd = last_persistent_data;
-        AP::logger().WriteCritical("WDOG", "TimeUS,Task,IErr,IErrCnt,MavMsg,MavCmd,SemLine,FL,FT,FA,FP,ICSR", "QbIIHHHHHIBI",
-                                   AP_HAL::micros64(),
-                                   pd.scheduler_task,
-                                   pd.internal_errors,
-                                   pd.internal_error_count,
-                                   pd.last_mavlink_msgid,
-                                   pd.last_mavlink_cmd,
-                                   pd.semaphore_line,
-                                   pd.fault_line,
-                                   pd.fault_type,
-                                   pd.fault_addr,
-                                   pd.fault_thd_prio,
-                                   pd.fault_icsr);
+        INTERNAL_ERROR(AP_InternalError::error_t::watchdog_reset);
     }
 #endif // HAL_NO_LOGGING
 #endif // IOMCU_FW
@@ -242,7 +240,7 @@ static void main_loop()
 
     thread_running = true;
     chRegSetThreadName(SKETCHNAME);
-    
+
     /*
       switch to high priority for main loop
      */
@@ -279,10 +277,10 @@ void HAL_ChibiOS::run(int argc, char * const argv[], Callbacks* callbacks) const
      *   RTOS is active.
      */
 
-#ifdef HAL_USB_PRODUCT_ID
-  setup_usb_strings();
+#if HAL_USE_SERIAL_USB == TRUE
+    usb_initialise();
 #endif
-    
+
 #ifdef HAL_STDOUT_SERIAL
     //STDOUT Initialistion
     SerialConfig stdoutcfg =

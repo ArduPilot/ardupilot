@@ -58,7 +58,7 @@ const AP_Param::GroupInfo AP_AdvancedFailsafe::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("WP_COMMS",    2, AP_AdvancedFailsafe, _wp_comms_hold, 0),
 
-    // @Param: GPS_LOSS
+    // @Param: WP_GPS_LOSS
     // @DisplayName: GPS Loss Waypoint
     // @Description: Waypoint number to navigate to on GPS lock loss
     // @User: Advanced
@@ -100,7 +100,7 @@ const AP_Param::GroupInfo AP_AdvancedFailsafe::var_info[] = {
     // @Param: QNH_PRESSURE
     // @DisplayName: QNH pressure
     // @Description: This sets the QNH pressure in millibars to be used for pressure altitude in the altitude limit. A value of zero disables the altitude limit.
-    // @Units: mbar
+    // @Units: hPa
     // @User: Advanced
     AP_GROUPINFO("QNH_PRESSURE", 10, AP_AdvancedFailsafe, _qnh_pressure,    0),
 

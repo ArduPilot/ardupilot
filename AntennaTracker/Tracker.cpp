@@ -1,7 +1,7 @@
 /*
    Lead developers: Matthew Ridley and Andrew Tridgell
  
-   Please contribute your ideas! See http://dev.ardupilot.org for details
+   Please contribute your ideas! See https://dev.ardupilot.org for details
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -55,32 +55,13 @@ const AP_Scheduler::Task Tracker::scheduler_tasks[] = {
     SCHED_TASK(accel_cal_update,       10,    100)
 };
 
-/**
-  setup the sketch - called once on startup
- */
-void Tracker::setup() 
+void Tracker::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
+                                uint8_t &task_count,
+                                uint32_t &log_bit)
 {
-    // load the default values of variables listed in var_info[]
-    AP_Param::setup_sketch_defaults();
-
-    init_tracker();
-
-    // initialise the main loop scheduler
-    scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks), (uint32_t)-1);
-}
-
-/**
-   loop() is called continuously 
- */
-void Tracker::loop()
-{
-    // wait for an INS sample
-    ins.wait_for_sample();
-
-    // tell the scheduler one tick has passed
-    scheduler.tick();
-
-    scheduler.run(19900UL);
+    tasks = &scheduler_tasks[0];
+    task_count = ARRAY_SIZE(scheduler_tasks);
+    log_bit = (uint32_t)-1;
 }
 
 void Tracker::one_second_loop()
@@ -109,7 +90,7 @@ void Tracker::one_second_loop()
 
     // need to set "likely flying" when armed to allow for compass
     // learning to run
-    ahrs.set_likely_flying(hal.util->get_soft_armed());
+    set_likely_flying(hal.util->get_soft_armed());
 
     AP_Notify::flags.flying = hal.util->get_soft_armed();
 }
@@ -130,6 +111,35 @@ void Tracker::ten_hz_logging_loop()
     }
 }
 
+Mode *Tracker::mode_from_mode_num(const Mode::Number num)
+{
+    Mode *ret = nullptr;
+    switch (num) {
+    case Mode::Number::MANUAL:
+        ret = &mode_manual;
+        break;
+    case Mode::Number::STOP:
+        ret = &mode_stop;
+        break;
+    case Mode::Number::SCAN:
+        ret = &mode_scan;
+        break;
+    case Mode::Number::GUIDED:
+        ret = &mode_guided;
+        break;
+    case Mode::Number::SERVOTEST:
+        ret = &mode_servotest;
+        break;
+    case Mode::Number::AUTO:
+        ret = &mode_auto;
+        break;
+    case Mode::Number::INITIALISING:
+        ret = &mode_initialising;
+        break;
+    }
+    return ret;
+}
+
 /*
   update AP_Stats
 */
@@ -147,5 +157,6 @@ Tracker::Tracker(void)
 }
 
 Tracker tracker;
+AP_Vehicle& vehicle = tracker;
 
 AP_HAL_MAIN_CALLBACKS(&tracker);

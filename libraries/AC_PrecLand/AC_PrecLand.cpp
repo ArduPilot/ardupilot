@@ -72,18 +72,24 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @DisplayName: Camera X position offset
     // @Description: X position of the camera in body frame. Positive X is forward of the origin.
     // @Units: m
+    // @Range: -5 5
+    // @Increment: 0.01
     // @User: Advanced
 
     // @Param: CAM_POS_Y
     // @DisplayName: Camera Y position offset
     // @Description: Y position of the camera in body frame. Positive Y is to the right of the origin.
     // @Units: m
+    // @Range: -5 5
+    // @Increment: 0.01
     // @User: Advanced
 
     // @Param: CAM_POS_Z
     // @DisplayName: Camera Z position offset
     // @Description: Z position of the camera in body frame. Positive Z is down from the origin.
     // @Units: m
+    // @Range: -5 5
+    // @Increment: 0.01
     // @User: Advanced
     AP_GROUPINFO("CAM_POS", 7, AC_PrecLand, _cam_offset, 0.0f),
 

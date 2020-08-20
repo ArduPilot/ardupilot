@@ -214,7 +214,7 @@ void MissionItemProtocol::handle_mission_write_partial_list(GCS_MAVLINK &_link,
 void MissionItemProtocol::handle_mission_item(const mavlink_message_t &msg, const mavlink_mission_item_int_t &cmd)
 {
     if (link == nullptr) {
-        AP::internalerror().error(AP_InternalError::error_t::gcs_bad_missionprotocol_link);
+        INTERNAL_ERROR(AP_InternalError::error_t::gcs_bad_missionprotocol_link);
         return;
     }
 
@@ -283,7 +283,7 @@ void MissionItemProtocol::send_mission_ack(const mavlink_message_t &msg,
                                            MAV_MISSION_RESULT result) const
 {
     if (link == nullptr) {
-        AP::internalerror().error(AP_InternalError::error_t::gcs_bad_missionprotocol_link);
+        INTERNAL_ERROR(AP_InternalError::error_t::gcs_bad_missionprotocol_link);
         return;
     }
     send_mission_ack(*link, msg, result);
@@ -312,7 +312,7 @@ void MissionItemProtocol::queued_request_send()
         return;
     }
     if (link == nullptr) {
-        AP::internalerror().error(AP_InternalError::error_t::gcs_bad_missionprotocol_link);
+        INTERNAL_ERROR(AP_InternalError::error_t::gcs_bad_missionprotocol_link);
         return;
     }
     mavlink_msg_mission_request_send(
@@ -331,7 +331,7 @@ void MissionItemProtocol::update()
         return;
     }
     if (link == nullptr) {
-        AP::internalerror().error(AP_InternalError::error_t::gcs_bad_missionprotocol_link);
+        INTERNAL_ERROR(AP_InternalError::error_t::gcs_bad_missionprotocol_link);
         return;
     }
     // stop waypoint receiving if timeout
@@ -349,7 +349,7 @@ void MissionItemProtocol::update()
         return;
     }
     // resend request if we haven't gotten one:
-    const uint32_t wp_recv_timeout_ms = 1000U + (link->get_stream_slowdown_ms()*20);
+    const uint32_t wp_recv_timeout_ms = 1000U + link->get_stream_slowdown_ms();
     if (tnow - timelast_request_ms > wp_recv_timeout_ms) {
         timelast_request_ms = tnow;
         link->send_message(next_item_ap_message_id());

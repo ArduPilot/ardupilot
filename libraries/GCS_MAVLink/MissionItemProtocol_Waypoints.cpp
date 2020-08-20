@@ -26,7 +26,7 @@
 MAV_MISSION_RESULT MissionItemProtocol_Waypoints::append_item(const mavlink_mission_item_int_t &mission_item_int)
 {
     // sanity check for DO_JUMP command
-    AP_Mission::Mission_Command cmd;
+    AP_Mission::Mission_Command cmd {};
 
     const MAV_MISSION_RESULT res = AP_Mission::mavlink_int_to_mission_cmd(mission_item_int, cmd);
     if (res != MAV_MISSION_ACCEPTED) {
@@ -94,8 +94,6 @@ MAV_MISSION_RESULT MissionItemProtocol_Waypoints::get_item(const GCS_MAVLINK &_l
     // set auto continue to 1
     ret_packet.autocontinue = 1;     // 1 (true), 0 (false)
 
-    ret_packet.command = cmd.id;
-
     return MAV_MISSION_ACCEPTED;
 }
 
@@ -109,7 +107,7 @@ uint16_t MissionItemProtocol_Waypoints::max_items() const {
 
 MAV_MISSION_RESULT MissionItemProtocol_Waypoints::replace_item(const mavlink_mission_item_int_t &mission_item_int)
 {
-    AP_Mission::Mission_Command cmd;
+    AP_Mission::Mission_Command cmd {};
 
     const MAV_MISSION_RESULT res = AP_Mission::mavlink_int_to_mission_cmd(mission_item_int, cmd);
     if (res != MAV_MISSION_ACCEPTED) {

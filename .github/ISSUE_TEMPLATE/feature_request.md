@@ -9,7 +9,7 @@ Questions and user problems should be directed at the forum (http://discuss.ardu
 _**Please do a careful search before opening this, there are already a lot of feature requests**_
 If there was a previous discussion in the forum, link to it
 
-### Feature request
+## Feature request
 
 **Is your feature request related to a problem? Please describe.**
 _A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]_

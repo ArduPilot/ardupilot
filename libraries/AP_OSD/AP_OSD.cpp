@@ -18,6 +18,9 @@
  */
 
 #include "AP_OSD.h"
+
+#if OSD_ENABLED
+
 #include "AP_OSD_MAX7456.h"
 #ifdef WITH_SITL_OSD
 #include "AP_OSD_SITL.h"
@@ -163,8 +166,14 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
 
 extern const AP_HAL::HAL& hal;
 
+// singleton instance
+AP_OSD *AP_OSD::_singleton;
+
 AP_OSD::AP_OSD()
 {
+    if (_singleton != nullptr) {
+        AP_HAL::panic("AP_OSD must be singleton");
+    }
     AP_Param::setup_object_defaults(this, var_info);
     // default first screen enabled
     screen[0].enabled = 1;
@@ -176,6 +185,7 @@ AP_OSD::AP_OSD()
     osd_type.set_default(HAL_OSD_TYPE_DEFAULT);
 #endif
     previous_pwm_screen = -1;
+    _singleton = this;
 }
 
 void AP_OSD::init()
@@ -226,11 +236,14 @@ void AP_OSD::osd_thread()
 void AP_OSD::update_osd()
 {
     backend->clear();
-    stats();
-    update_current_screen();
 
-    screen[current_screen].set_backend(backend);
-    screen[current_screen].draw();
+    if (!_disable) {
+        stats();
+        update_current_screen();
+
+        screen[current_screen].set_backend(backend);
+        screen[current_screen].draw();
+    }
 
     backend->flush();
 }
@@ -386,3 +399,9 @@ void AP_OSD::set_nav_info(NavInfo &navinfo)
     // do this without a lock for now
     nav_info = navinfo;
 }
+
+AP_OSD *AP::osd() {
+    return AP_OSD::get_singleton();
+}
+
+#endif // OSD_ENABLED

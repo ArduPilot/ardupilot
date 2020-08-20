@@ -7,9 +7,9 @@ float Copter::SurfaceTracking::adjust_climb_rate(float target_rate)
 {
 #if RANGEFINDER_ENABLED == ENABLED
     // check tracking state and that range finders are healthy
-    if ((tracking_state == SurfaceTrackingState::SURFACE_TRACKING_DISABLED) ||
-        ((tracking_state == SurfaceTrackingState::SURFACE_TRACKING_GROUND) && (!copter.rangefinder_alt_ok() || (copter.rangefinder_state.glitch_count != 0))) ||
-        ((tracking_state == SurfaceTrackingState::SURFACE_TRACKING_CEILING) && !copter.rangefinder_up_ok()) || (copter.rangefinder_up_state.glitch_count != 0)) {
+    if ((surface == Surface::NONE) ||
+        ((surface == Surface::GROUND) && (!copter.rangefinder_alt_ok() || (copter.rangefinder_state.glitch_count != 0))) ||
+        ((surface == Surface::CEILING) && !copter.rangefinder_up_ok()) || (copter.rangefinder_up_state.glitch_count != 0)) {
         return target_rate;
     }
 
@@ -17,8 +17,8 @@ float Copter::SurfaceTracking::adjust_climb_rate(float target_rate)
     const float current_alt_error = copter.pos_control->get_alt_target() - copter.inertial_nav.get_altitude();
 
     // init based on tracking direction/state
-    RangeFinderState &rf_state = (tracking_state == SurfaceTrackingState::SURFACE_TRACKING_GROUND) ? copter.rangefinder_state : copter.rangefinder_up_state;
-    const float dir = (tracking_state == SurfaceTrackingState::SURFACE_TRACKING_GROUND) ? 1.0f : -1.0f;
+    RangeFinderState &rf_state = (surface == Surface::GROUND) ? copter.rangefinder_state : copter.rangefinder_up_state;
+    const float dir = (surface == Surface::GROUND) ? 1.0f : -1.0f;
 
     // reset target altitude if this controller has just been engaged
     // target has been changed between upwards vs downwards
@@ -39,11 +39,13 @@ float Copter::SurfaceTracking::adjust_climb_rate(float target_rate)
     }
     valid_for_logging = true;
 
+#if AC_AVOID_ENABLED == ENABLED
     // upward facing terrain following never gets closer than avoidance margin
-    if (tracking_state == SurfaceTrackingState::SURFACE_TRACKING_CEILING) {
+    if (surface == Surface::CEILING) {
         const float margin_cm = copter.avoid.enabled() ? copter.avoid.get_margin() * 100.0f : 0.0f;
         target_dist_cm = MAX(target_dist_cm, margin_cm);
     }
+#endif
 
     // calc desired velocity correction from target rangefinder alt vs actual rangefinder alt (remove the error already passed to Altitude controller to avoid oscillations)
     const float distance_error = (target_dist_cm - rf_state.alt_cm) - (dir * current_alt_error);
@@ -62,7 +64,7 @@ float Copter::SurfaceTracking::adjust_climb_rate(float target_rate)
 bool Copter::SurfaceTracking::get_target_alt_cm(float &_target_alt_cm) const
 {
     // fail if we are not tracking downwards
-    if (tracking_state != SurfaceTrackingState::SURFACE_TRACKING_GROUND) {
+    if (surface != Surface::GROUND) {
         return false;
     }
     // check target has been updated recently
@@ -77,40 +79,45 @@ bool Copter::SurfaceTracking::get_target_alt_cm(float &_target_alt_cm) const
 void Copter::SurfaceTracking::set_target_alt_cm(float _target_alt_cm)
 {
     // fail if we are not tracking downwards
-    if (tracking_state != SurfaceTrackingState::SURFACE_TRACKING_GROUND) {
+    if (surface != Surface::GROUND) {
         return;
     }
     target_dist_cm = _target_alt_cm;
     last_update_ms = AP_HAL::millis();
 }
 
-bool Copter::SurfaceTracking::get_dist_for_logging(float &target_dist, float &actual_dist) const
+bool Copter::SurfaceTracking::get_target_dist_for_logging(float &target_dist) const
 {
-    if (!valid_for_logging || (tracking_state == SurfaceTrackingState::SURFACE_TRACKING_DISABLED)) {
+    if (!valid_for_logging || (surface == Surface::NONE)) {
         return false;
     }
+
     target_dist = target_dist_cm * 0.01f;
-    actual_dist = ((tracking_state == SurfaceTrackingState::SURFACE_TRACKING_GROUND) ? copter.rangefinder_state.alt_cm : copter.rangefinder_up_state.alt_cm) * 0.01f;
     return true;
 }
 
-// set direction
-void Copter::SurfaceTracking::set_state(SurfaceTrackingState state)
+float Copter::SurfaceTracking::get_dist_for_logging() const
 {
-    if (tracking_state == state) {
+    return ((surface == Surface::CEILING) ? copter.rangefinder_up_state.alt_cm : copter.rangefinder_state.alt_cm) * 0.01f;
+}
+
+// set direction
+void Copter::SurfaceTracking::set_surface(Surface new_surface)
+{
+    if (surface == new_surface) {
         return;
     }
     // check we have a range finder in the correct direction
-    if ((state == SurfaceTrackingState::SURFACE_TRACKING_GROUND) && !copter.rangefinder.has_orientation(ROTATION_PITCH_270)) {
+    if ((new_surface == Surface::GROUND) && !copter.rangefinder.has_orientation(ROTATION_PITCH_270)) {
         copter.gcs().send_text(MAV_SEVERITY_WARNING, "SurfaceTracking: no downward rangefinder");
         AP_Notify::events.user_mode_change_failed = 1;
         return;
     }
-    if ((state == SurfaceTrackingState::SURFACE_TRACKING_CEILING) && !copter.rangefinder.has_orientation(ROTATION_PITCH_90)) {
+    if ((new_surface == Surface::CEILING) && !copter.rangefinder.has_orientation(ROTATION_PITCH_90)) {
         copter.gcs().send_text(MAV_SEVERITY_WARNING, "SurfaceTracking: no upward rangefinder");
         AP_Notify::events.user_mode_change_failed = 1;
         return;
     }
-    tracking_state = state;
+    surface = new_surface;
     reset_target = true;
 }

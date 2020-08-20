@@ -29,6 +29,19 @@ namespace SITL {
  */
 
 
+class Thruster {
+public:
+    Thruster(int8_t _servo, float roll_fac, float pitch_fac, float yaw_fac, float throttle_fac, float forward_fac, float lat_fac) :
+        servo(_servo)
+    {
+        linear = Vector3f(forward_fac, lat_fac, -throttle_fac);
+        rotational = Vector3f(roll_fac, pitch_fac, yaw_fac);
+    };
+    int8_t servo;
+    Vector3f linear;
+    Vector3f rotational;
+};
+
 class Submarine : public Aircraft {
 public:
     Submarine(const char *frame_str);
@@ -50,17 +63,21 @@ protected:
         float width  = 0.338; // y direction (meters)
         float height = 0.254; // z direction (meters)
         float weight = 10.5;  // (kg)
-        float net_buoyancy = 2.0; // (N)
-
-        float buoyancy_acceleration = GRAVITY_MSS + net_buoyancy/weight;
+        float thrust = 51.48; // (N)
+        float thruster_mount_radius = 0.25; // distance in meters from thrusters to center of mass. Used to calculate torque.
+        float equivalent_sphere_radius = 0.2;
+        // volume = 4.pi.r³/3
+        float volume = 4 * M_PI * pow(equivalent_sphere_radius, 3) / 3;
+        float density = 500;
+        float mass = volume * density; // 16.75 kg
+        // Moment of Inertia (I)(kg.m²) approximated with a sphere with a 25 cm radius (r) and same density as water
+        // I = 2.m.r²/5
+        float moment_of_inertia =  2 * (mass * pow(equivalent_sphere_radius, 2) / 5);
 
         // Frame drag coefficient
-        const Vector3f linear_drag_coefficient = Vector3f(0.2, 0.3, 0.4);
-        const Vector3f angular_drag_coefficient = Vector3f(1, 1, 1);
-        // Calculate total volume from water buoyancy
-        // $ V = F_b / (rho * g) $
-        // V = volume (m^3), rho = water density (kg/m^3), g = gravity (m/s^2), F_b = force (N)
-        float volume = buoyancy_acceleration * weight / (GRAVITY_MSS * 1023.6f);
+        const Vector3f linear_drag_coefficient = Vector3f(1.4, 1.8, 2.0);
+        // Angular drag coefficient CD for a cube is 1.05. This is subject to change based on experimentation.
+        const Vector3f angular_drag_coefficient = Vector3f(1.05, 1.05, 1.05);
         // Calculate equivalent sphere area for drag force
         // $ A = pi * r^2 / 4 $
         // $ V = 4 * pi * r^3 / 3 $
@@ -72,26 +89,21 @@ protected:
 
     bool on_ground() const override;
 
+    // calculate sea floor depth based for terrain follow
+    float calculate_sea_floor_depth(const Vector3f &/*position*/);
     // calculate rotational and linear accelerations
     void calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel);
     // calculate buoyancy
     float calculate_buoyancy_acceleration();
     // calculate drag from velocity and drag coefficient
     void calculate_drag_force(const Vector3f &velocity, const Vector3f &drag_coefficient, Vector3f &force);
+    // calculate torque water resistance
+    void calculate_angular_drag_torque(const Vector3f &angular_velocity, const Vector3f &drag_coefficient, Vector3f &torque);
+    // calculate torque induced by buoyancy foams
+    void calculate_buoyancy_torque(Vector3f &torque);
 
     Frame *frame;
-};
-
-class Thruster {
-public:
-    Thruster(int8_t _servo, float roll_fac, float pitch_fac, float yaw_fac, float throttle_fac, float forward_fac, float lat_fac) :
-        servo(_servo)
-    {
-        linear = Vector3f(forward_fac, lat_fac, -throttle_fac);
-        rotational = Vector3f(roll_fac, pitch_fac, yaw_fac);
-    };
-    int8_t servo;
-    Vector3f linear;
-    Vector3f rotational;
+    Thruster* thrusters;
+    uint8_t n_thrusters;
 };
 }

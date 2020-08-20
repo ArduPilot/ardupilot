@@ -57,5 +57,5 @@ AP_BattMonitor_Analog::read()
 /// return true if battery provides current info
 bool AP_BattMonitor_Analog::has_current() const
 {
-    return (_params.type() == AP_BattMonitor_Params::BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT);
+    return ((AP_BattMonitor::Type)_params._type.get() == AP_BattMonitor::Type::ANALOG_VOLTAGE_AND_CURRENT);
 }

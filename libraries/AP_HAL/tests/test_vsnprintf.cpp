@@ -36,7 +36,10 @@ TEST(vsnprintf_Test, Basic)
     }
     { // ensure rest of buffer survives
         memset(output, 'A', 10);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-truncation"
         const int bytes_required = snprintf(output, 5, "012345678");
+#pragma GCC diagnostic pop
         EXPECT_TRUE(streq(output, "0123"));
         EXPECT_EQ(bytes_required, 9);
         EXPECT_EQ(output[6], 'A');

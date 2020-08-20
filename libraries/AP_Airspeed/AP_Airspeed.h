@@ -8,7 +8,13 @@
 
 class AP_Airspeed_Backend;
 
+#ifndef AIRSPEED_MAX_SENSORS
 #define AIRSPEED_MAX_SENSORS 2
+#endif
+
+#ifndef AP_AIRSPEED_AUTOCAL_ENABLE
+#define AP_AIRSPEED_AUTOCAL_ENABLE !defined(HAL_BUILD_AP_PERIPH)
+#endif
 
 class Airspeed_Calibration {
 public:
@@ -106,7 +112,11 @@ public:
 
     // return health status of sensor
     bool healthy(uint8_t i) const {
-        return state[i].healthy && (fabsf(param[i].offset) > 0 || state[i].use_zero_offset) && enabled(i);
+        bool ok = state[i].healthy && enabled(i);
+#ifndef HAL_BUILD_AP_PERIPH
+        ok &= (fabsf(param[i].offset) > 0 || state[i].use_zero_offset);
+#endif
+        return ok;
     }
     bool healthy(void) const { return healthy(primary); }
 
@@ -143,12 +153,23 @@ public:
         TYPE_I2C_DLVR_5IN=7,
         TYPE_UAVCAN=8,
         TYPE_I2C_DLVR_10IN=9,
+        TYPE_I2C_DLVR_20IN=10,
+        TYPE_I2C_DLVR_30IN=11,
+        TYPE_I2C_DLVR_60IN=12,
     };
 
     // get current primary sensor
     uint8_t get_primary(void) const { return primary; }
 
     static AP_Airspeed *get_singleton() { return _singleton; }
+
+    // return the current corrected pressure, public for AP_Periph
+    float get_corrected_pressure(uint8_t i) const {
+        return state[i].corrected_pressure;
+    }
+    float get_corrected_pressure(void) const {
+        return get_corrected_pressure(primary);
+    }
     
 private:
     static AP_Airspeed *_singleton;
@@ -175,23 +196,25 @@ private:
         float	last_pressure;
         float   filtered_pressure;
         float	corrected_pressure;
-        bool	healthy:1;
-        bool	hil_set:1;
         float   hil_pressure;
         uint32_t last_update_ms;
         bool use_zero_offset;
-        
+        bool	healthy;
+        bool	hil_set;
+
         // state of runtime calibration
         struct {
             uint32_t start_ms;
-            uint16_t count;
             float    sum;
+            uint16_t count;
             uint16_t read_count;
         } cal;
 
+#if AP_AIRSPEED_AUTOCAL_ENABLE
         Airspeed_Calibration calibration;
         float last_saved_ratio;
         uint8_t counter;
+#endif // AP_AIRSPEED_AUTOCAL_ENABLE
 
         struct {
             uint32_t last_check_ms;
@@ -208,13 +231,7 @@ private:
     // return the differential pressure in Pascal for the last airspeed reading for the requested instance
     // returns 0 if the sensor is not enabled
     float get_pressure(uint8_t i);
-    // return the current corrected pressure
-    float get_corrected_pressure(uint8_t i) const {
-        return state[i].corrected_pressure;
-    }
-    float get_corrected_pressure(void) const {
-        return get_corrected_pressure(primary);
-    }
+
     // get the failure health probability
     float get_health_failure_probability(uint8_t i) const {
         return state[i].failures.health_probability;

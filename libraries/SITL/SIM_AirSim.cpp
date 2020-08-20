@@ -34,7 +34,16 @@ AirSim::AirSim(const char *frame_str) :
 	Aircraft(frame_str),
 	sock(true)
 {
-	printf("Starting SITL Airsim\n");
+    if (strstr(frame_str, "-copter")) {
+        output_type = OutputType::Copter;
+    } else if (strstr(frame_str, "-rover")) {
+        output_type = OutputType::Rover;
+    } else {
+        // default to copter
+        output_type = OutputType::Copter;
+    }
+
+	printf("Starting SITL Airsim type %u\n", (unsigned)output_type);
 }
 
 /*
@@ -61,9 +70,9 @@ void AirSim::set_interface_ports(const char* address, const int port_in, const i
 /*
 	Decode and send servos
 */
-void AirSim::send_servos(const struct sitl_input &input)
+void AirSim::output_copter(const struct sitl_input &input)
 {
-	servo_packet pkt{0};
+    servo_packet pkt;
 
 	for (uint8_t i=0; i<kArduCopterRotorControlCount; i++) {
 		pkt.pwm[i] = input.servos[i];
@@ -73,11 +82,29 @@ void AirSim::send_servos(const struct sitl_input &input)
 	if (send_ret != sizeof(pkt)) {
 		if (send_ret <= 0) {
 			printf("Unable to send servo output to %s:%u - Error: %s, Return value: %ld\n",
-					 airsim_ip, airsim_control_port, strerror(errno), send_ret);
+                   airsim_ip, airsim_control_port, strerror(errno), (long)send_ret);
 		} else {
-			printf("Sent %ld bytes instead of %ld bytes\n", send_ret, sizeof(pkt));
+			printf("Sent %ld bytes instead of %lu bytes\n", (long)send_ret, (unsigned long)sizeof(pkt));
 		}
 	}
+}
+
+void AirSim::output_rover(const struct sitl_input &input)
+{
+    rover_packet pkt;
+
+    pkt.steering = 2*((input.servos[0]-1000)/1000.0f - 0.5f);
+    pkt.throttle = 2*((input.servos[2]-1000)/1000.0f - 0.5f);
+
+    ssize_t send_ret = sock.sendto(&pkt, sizeof(pkt), airsim_ip, airsim_control_port);
+    if (send_ret != sizeof(pkt)) {
+        if (send_ret <= 0) {
+            printf("Unable to send control output to %s:%u - Error: %s, Return value: %ld\n",
+                     airsim_ip, airsim_control_port, strerror(errno), (long)send_ret);
+        } else {
+            printf("Sent %ld bytes instead of %lu bytes\n", (long)send_ret, (unsigned long)sizeof(pkt));
+        }
+    }
 }
 
 /*
@@ -254,7 +281,7 @@ void AirSim::recv_fdm()
 
     velocity_ef = Vector3f(state.velocity.world_linear_velocity[0],
                            state.velocity.world_linear_velocity[1],
-                           state.velocity.world_linear_velocity[0]);
+                           state.velocity.world_linear_velocity[2]);
 
     location.lat = state.gps.lat * 1.0e7;
     location.lng = state.gps.lon * 1.0e7;
@@ -282,6 +309,16 @@ void AirSim::recv_fdm()
     }
 
 #if 0
+// @LoggerMessage: ASM1
+// @Description: AirSim simulation data
+// @Field: TimeUS: Time since system startup
+// @Field: TUS: Simulation's timestamp
+// @Field: R: Simulation's roll
+// @Field: P: Simulation's pitch
+// @Field: Y: Simulation's yaw
+// @Field: GX: Simulated gyroscope, X-axis
+// @Field: GY: Simulated gyroscope, Y-axis
+// @Field: GZ: Simulated gyroscope, Z-axis
     AP::logger().Write("ASM1", "TimeUS,TUS,R,P,Y,GX,GY,GZ",
                        "QQffffff",
                        AP_HAL::micros64(),
@@ -296,6 +333,20 @@ void AirSim::recv_fdm()
     Vector3f velocity_bf = dcm.transposed() * velocity_ef;
     position = home.get_distance_NED(location);
 
+// @LoggerMessage: ASM2
+// @Description: More AirSim simulation data
+// @Field: TimeUS: Time since system startup
+// @Field: AX: simulation's acceleration, X-axis
+// @Field: AY: simulation's acceleration, Y-axis
+// @Field: AZ: simulation's acceleration, Z-axis
+// @Field: VX: simulation's velocity, X-axis
+// @Field: VY: simulation's velocity, Y-axis
+// @Field: VZ: simulation's velocity, Z-axis
+// @Field: PX: simulation's position, X-axis
+// @Field: PY: simulation's position, Y-axis
+// @Field: PZ: simulation's position, Z-axis
+// @Field: Alt: simulation's gps altitude
+// @Field: SD: simulation's earth-frame speed-down
     AP::logger().Write("ASM2", "TimeUS,AX,AY,AZ,VX,VY,VZ,PX,PY,PZ,Alt,SD",
                        "Qfffffffffff",
                        AP_HAL::micros64(),
@@ -320,7 +371,16 @@ void AirSim::recv_fdm()
 */
 void AirSim::update(const struct sitl_input &input)
 {
-	send_servos(input);
+    switch (output_type) {
+        case OutputType::Copter:
+            output_copter(input);
+            break;
+
+        case OutputType::Rover:
+            output_rover(input);
+            break;
+    }
+
     recv_fdm();
 
     // update magnetic field

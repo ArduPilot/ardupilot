@@ -37,6 +37,12 @@ GCS_MAVLINK::queued_param_send()
     // send parameter async replies
     uint8_t async_replies_sent_count = send_parameter_async_replies();
 
+    // now send the streaming parameters (from PARAM_REQUEST_LIST)
+    if (_queued_parameter == nullptr) {
+        // .... or not....
+        return;
+    }
+
     const uint32_t tnow = AP_HAL::millis();
     const uint32_t tstart = AP_HAL::micros();
 
@@ -49,8 +55,8 @@ GCS_MAVLINK::queued_param_send()
     if (bytes_allowed < size_for_one_param_value_msg) {
         bytes_allowed = size_for_one_param_value_msg;
     }
-    if (bytes_allowed > comm_get_txspace(chan)) {
-        bytes_allowed = comm_get_txspace(chan);
+    if (bytes_allowed > txspace()) {
+        bytes_allowed = txspace();
     }
     uint32_t count = bytes_allowed / size_for_one_param_value_msg;
 
@@ -63,10 +69,6 @@ GCS_MAVLINK::queued_param_send()
         return;
     }
     count -= async_replies_sent_count;
-
-    if (_queued_parameter == nullptr) {
-        return;
-    }
 
     while (count && _queued_parameter != nullptr) {
         char param_name[AP_MAX_NAME_SIZE];
@@ -268,7 +270,7 @@ void GCS_MAVLINK::handle_param_set(const mavlink_message_t &msg)
     // find existing param so we can get the old value
     uint16_t parameter_flags = 0;
     vp = AP_Param::find(key, &var_type, &parameter_flags);
-    if (vp == nullptr) {
+    if (vp == nullptr || isnan(packet.param_value) || isinf(packet.param_value)) {
         return;
     }
 
@@ -276,10 +278,7 @@ void GCS_MAVLINK::handle_param_set(const mavlink_message_t &msg)
 
     if ((parameter_flags & AP_PARAM_FLAG_INTERNAL_USE_ONLY) || vp->is_read_only()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Param write denied (%s)", key);
-        // echo back the incorrect value so that we fulfull the
-        // parameter state machine requirements:
-        send_parameter_value(key, var_type, packet.param_value);
-        // and then announce what the correct value is:
+        // send the readonly value
         send_parameter_value(key, var_type, old_value);
         return;
     }
@@ -299,6 +298,10 @@ void GCS_MAVLINK::handle_param_set(const mavlink_message_t &msg)
     // save the change
     vp->save(force_save);
 
+    if (force_save && (parameter_flags & AP_PARAM_FLAG_ENABLE)) {
+        AP_Param::invalidate_count();
+    }
+    
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger != nullptr) {
         logger->Write_Parameter(key, vp->cast_to_float(var_type));
@@ -400,8 +403,8 @@ uint8_t GCS_MAVLINK::send_parameter_async_replies()
     uint8_t async_replies_sent_count = 0;
 
     while (async_replies_sent_count < 5) {
-        if (param_replies.empty()) {
-            // nothing to do
+        struct pending_param_reply reply;
+        if (!param_replies.peek(reply)) {
             return async_replies_sent_count;
         }
 
@@ -411,17 +414,11 @@ uint8_t GCS_MAVLINK::send_parameter_async_replies()
         */
         uint32_t saved_reserve_param_space_start_ms = reserve_param_space_start_ms;
         reserve_param_space_start_ms = 0; // bypass packet_overhead_chan reservation checking
-        if (!HAVE_PAYLOAD_SPACE(chan, PARAM_VALUE)) {
+        if (!HAVE_PAYLOAD_SPACE(reply.chan, PARAM_VALUE)) {
             reserve_param_space_start_ms = AP_HAL::millis();
             return async_replies_sent_count;
         }
         reserve_param_space_start_ms = saved_reserve_param_space_start_ms;
-
-        struct pending_param_reply reply;
-        if (!param_replies.pop(reply)) {
-            // internal error
-            return async_replies_sent_count;
-        }
 
         mavlink_msg_param_value_send(
             reply.chan,
@@ -433,6 +430,11 @@ uint8_t GCS_MAVLINK::send_parameter_async_replies()
 
         _queued_parameter_send_time_ms = AP_HAL::millis();
         async_replies_sent_count++;
+
+        if (!param_replies.pop()) {
+            // internal error...
+            return async_replies_sent_count;
+        }
     }
     return async_replies_sent_count;
 }

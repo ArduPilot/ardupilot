@@ -30,7 +30,7 @@ void Sub::read_rangefinder()
 #if RANGEFINDER_ENABLED == ENABLED
     rangefinder.update();
 
-    rangefinder_state.alt_healthy = ((rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::RangeFinder_Good) && (rangefinder.range_valid_count_orient(ROTATION_PITCH_270) >= RANGEFINDER_HEALTH_MAX));
+    rangefinder_state.alt_healthy = ((rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::Status::Good) && (rangefinder.range_valid_count_orient(ROTATION_PITCH_270) >= RANGEFINDER_HEALTH_MAX));
 
     int16_t temp_alt = rangefinder.distance_cm_orient(ROTATION_PITCH_270);
 
@@ -56,6 +56,7 @@ void Sub::read_rangefinder()
 
     // send rangefinder altitude and health to waypoint navigation library
     wp_nav.set_rangefinder_alt(rangefinder_state.enabled, rangefinder_state.alt_healthy, rangefinder_state.alt_cm_filt.get());
+    circle_nav.set_rangefinder_alt(rangefinder_state.enabled && wp_nav.rangefinder_used(), rangefinder_state.alt_healthy, rangefinder_state.alt_cm_filt.get());
 
 #else
     rangefinder_state.enabled = false;

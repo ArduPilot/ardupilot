@@ -942,8 +942,7 @@ void AP_OSD_Screen::draw_rssi(uint8_t x, uint8_t y)
 {
     AP_RSSI *ap_rssi = AP_RSSI::get_singleton();
     if (ap_rssi) {
-        int rssiv = ap_rssi->read_receiver_rssi_uint8();
-        rssiv = (rssiv * 99) / 255;
+        const uint8_t rssiv = ap_rssi->read_receiver_rssi() * 99;
         backend->write(x, y, rssiv < osd->warn_rssi, "%c%2d", SYM_RSSI, rssiv);
     }
 }
@@ -1102,9 +1101,11 @@ void AP_OSD_Screen::draw_horizon(uint8_t x, uint8_t y)
     float ky = sinf(roll);
     float kx = cosf(roll);
 
+    float ratio = backend->get_aspect_ratio_correction();
+
     if (fabsf(ky) < fabsf(kx)) {
         for (int dx = -4; dx <= 4; dx++) {
-            float fy =  dx * (ky/kx) + pitch * ah_pitch_rad_to_char + 0.5f;
+            float fy = (ratio * dx) * (ky/kx) + pitch * ah_pitch_rad_to_char + 0.5f;
             int dy = floorf(fy);
             char c = (fy - dy) * SYM_AH_H_COUNT;
             //chars in font in reversed order
@@ -1115,7 +1116,7 @@ void AP_OSD_Screen::draw_horizon(uint8_t x, uint8_t y)
         }
     } else {
         for (int dy=-4; dy<=4; dy++) {
-            float fx = (dy - pitch * ah_pitch_rad_to_char) * (kx/ky) + 0.5f;
+            float fx = ((dy / ratio) - pitch * ah_pitch_rad_to_char) * (kx/ky) + 0.5f;
             int dx = floorf(fx);
             char c = (fx - dx) * SYM_AH_V_COUNT;
             c = SYM_AH_V_START + c;
@@ -1235,7 +1236,7 @@ void AP_OSD_Screen::draw_aspeed(uint8_t x, uint8_t y)
     float aspd = 0.0f;
     AP_AHRS &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
-    bool have_estimate = ahrs.airspeed_estimate(&aspd);
+    bool have_estimate = ahrs.airspeed_estimate(aspd);
     if (have_estimate) {
         backend->write(x, y, false, "%c%4d%c", SYM_ASPD, (int)u_scale(SPEED, aspd), u_icon(SPEED));
     } else {
@@ -1439,9 +1440,12 @@ void  AP_OSD_Screen::draw_flightime(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_eff(uint8_t x, uint8_t y)
 {
     AP_BattMonitor &battery = AP::battery();
-    AP_AHRS &ahrs = AP::ahrs();
-    WITH_SEMAPHORE(ahrs.get_semaphore());
-    Vector2f v = ahrs.groundspeed_vector();
+    Vector2f v;
+    {
+        AP_AHRS &ahrs = AP::ahrs();
+        WITH_SEMAPHORE(ahrs.get_semaphore());
+        v = ahrs.groundspeed_vector();
+    }
     float speed = u_scale(SPEED,v.length());
     float current_amps;
     if ((speed > 2.0) && battery.current_amps(current_amps)) {
@@ -1456,15 +1460,19 @@ void AP_OSD_Screen::draw_climbeff(uint8_t x, uint8_t y)
     char unit_icon = u_icon(DISTANCE);
     Vector3f v;
     float vspd;
-    auto &ahrs = AP::ahrs();
-    WITH_SEMAPHORE(ahrs.get_semaphore());
-    if (ahrs.get_velocity_NED(v)) {
-        vspd = -v.z;
-    } else {
+    do {
+        {
+            auto &ahrs = AP::ahrs();
+            WITH_SEMAPHORE(ahrs.get_semaphore());
+            if (ahrs.get_velocity_NED(v)) {
+                vspd = -v.z;
+                break;
+            }
+        }
         auto &baro = AP::baro();
         WITH_SEMAPHORE(baro.get_semaphore());
         vspd = baro.get_climb_rate();
-    }
+    } while (false);
     if (vspd < 0.0) {
         vspd = 0.0;
     }

@@ -40,7 +40,7 @@ public:
     }
 
     struct state {
-        double rcin[8];
+        double rcin[12];
         double m_airspeed_MPS;
         double m_altitudeASL_MTR;
         double m_altitudeAGL_MTR;
@@ -103,6 +103,10 @@ public:
         { "item", state.rcin[5] },
         { "item", state.rcin[6] },
         { "item", state.rcin[7] },
+        { "item", state.rcin[8] },
+        { "item", state.rcin[9] },
+        { "item", state.rcin[10] },
+        { "item", state.rcin[11] },
         { "m-airspeed-MPS", state.m_airspeed_MPS },
         { "m-altitudeASL-MTR", state.m_altitudeASL_MTR },
         { "m-altitudeAGL-MTR", state.m_altitudeAGL_MTR },

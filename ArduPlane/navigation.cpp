@@ -95,7 +95,7 @@ void Plane::navigate()
 
     // control mode specific updates to navigation demands
     // ---------------------------------------------------
-    update_navigation();
+    control_mode->navigate();
 }
 
 void Plane::calc_airspeed_errors()
@@ -104,7 +104,7 @@ void Plane::calc_airspeed_errors()
     
     // we use the airspeed estimate function not direct sensor as TECS
     // may be using synthetic airspeed
-    ahrs.airspeed_estimate(&airspeed_measured);
+    ahrs.airspeed_estimate(airspeed_measured);
 
     // FBW_B/cruise airspeed target
     if (!failsafe.rc_failsafe && (control_mode == &mode_fbwb || control_mode == &mode_cruise)) {
@@ -136,7 +136,23 @@ void Plane::calc_airspeed_errors()
             target_airspeed_cm = ((int32_t)(aparm.airspeed_max - aparm.airspeed_min) *
                                   get_throttle_input()) + ((int32_t)aparm.airspeed_min * 100);
         }
+#if OFFBOARD_GUIDED == ENABLED
+    } else if (control_mode == &mode_guided && !is_zero(guided_state.target_airspeed_cm)) {
+        // offboard airspeed demanded
+        uint32_t now = AP_HAL::millis();
+        float delta = 1e-3f * (now - guided_state.target_airspeed_time_ms);
+        guided_state.target_airspeed_time_ms = now;
+        float delta_amt = 100 * delta * guided_state.target_airspeed_accel;
+        target_airspeed_cm += delta_amt;
 
+        //target_airspeed_cm recalculated then clamped to between MIN airspeed and MAX airspeed by constrain_float
+        if (is_positive(guided_state.target_airspeed_accel)) {
+            target_airspeed_cm = constrain_float(MIN(guided_state.target_airspeed_cm, target_airspeed_cm), aparm.airspeed_min *100, aparm.airspeed_max *100);
+        } else {
+            target_airspeed_cm = constrain_float(MAX(guided_state.target_airspeed_cm, target_airspeed_cm), aparm.airspeed_min *100, aparm.airspeed_max *100);
+        }
+
+#endif // OFFBOARD_GUIDED == ENABLED
     } else if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
         // Landing airspeed target
         target_airspeed_cm = landing.get_target_airspeed_cm();
@@ -144,9 +160,9 @@ void Plane::calc_airspeed_errors()
                (quadplane.options & QuadPlane::OPTION_MISSION_LAND_FW_APPROACH) &&
 							 ((vtol_approach_s.approach_stage == Landing_ApproachStage::APPROACH_LINE) ||
 							  (vtol_approach_s.approach_stage == Landing_ApproachStage::VTOL_LANDING))) {
-        float land_airspeed = SpdHgt_Controller->get_land_airspeed();
+        const float land_airspeed = SpdHgt_Controller->get_land_airspeed();
         if (is_positive(land_airspeed)) {
-            target_airspeed_cm = SpdHgt_Controller->get_land_airspeed() * 100;
+            target_airspeed_cm = land_airspeed * 100;
         } else {
             // fallover to normal airspeed
             target_airspeed_cm = aparm.airspeed_cruise_cm;
@@ -167,6 +183,13 @@ void Plane::calc_airspeed_errors()
             target_airspeed_cm = min_gnd_target_airspeed;
         }
     }
+
+    // when using the special GUIDED mode features for slew control, don't allow airspeed nudging as it doesn't play nicely.
+#if OFFBOARD_GUIDED == ENABLED
+    if (control_mode == &mode_guided && !is_zero(guided_state.target_airspeed_cm) && (airspeed_nudge_cm != 0)) { 
+        airspeed_nudge_cm = 0; //airspeed_nudge_cm forced to zero
+    }
+#endif
 
     // Bump up the target airspeed based on throttle nudging
     if (throttle_allows_nudging && airspeed_nudge_cm > 0) {
@@ -256,39 +279,6 @@ void Plane::update_loiter(uint16_t radius)
 }
 
 /*
-  handle CRUISE mode, locking heading to GPS course when we have
-  sufficient ground speed, and no aileron or rudder input
- */
-void Plane::update_cruise()
-{
-    if (!cruise_state.locked_heading &&
-        channel_roll->get_control_in() == 0 &&
-        rudder_input() == 0 &&
-        gps.status() >= AP_GPS::GPS_OK_FIX_2D &&
-        gps.ground_speed() >= 3 &&
-        cruise_state.lock_timer_ms == 0) {
-        // user wants to lock the heading - start the timer
-        cruise_state.lock_timer_ms = millis();
-    }
-    if (cruise_state.lock_timer_ms != 0 &&
-        (millis() - cruise_state.lock_timer_ms) > 500) {
-        // lock the heading after 0.5 seconds of zero heading input
-        // from user
-        cruise_state.locked_heading = true;
-        cruise_state.lock_timer_ms = 0;
-        cruise_state.locked_heading_cd = gps.ground_course_cd();
-        prev_WP_loc = current_loc;
-    }
-    if (cruise_state.locked_heading) {
-        next_WP_loc = prev_WP_loc;
-        // always look 1km ahead
-        next_WP_loc.offset_bearing(cruise_state.locked_heading_cd*0.01f, prev_WP_loc.get_distance(current_loc) + 1000);
-        nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
-    }
-}
-
-
-/*
   handle speed and height control in FBWB or CRUISE mode. 
   In this mode the elevator is used to change target altitude. The
   throttle is used to change target airspeed or throttle
@@ -318,6 +308,13 @@ void Plane::update_fbwb_speed_height(void)
             // the current altitude
             set_target_altitude_current();
         }
+
+#if SOARING_ENABLED == ENABLED
+        if (g2.soaring_controller.is_active() && g2.soaring_controller.get_throttle_suppressed()) {
+            // we're in soaring mode with throttle suppressed
+            set_target_altitude_current();;
+        }
+#endif
         
         target_altitude.last_elevator_input = elevator_input;
     }

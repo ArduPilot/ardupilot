@@ -161,7 +161,7 @@ bool AP_OSD_MAX7456::update_font()
     char fontname[] = "font0.bin";
     last_font = get_font_num();
     fontname[4] = last_font + '0';
-    uint8_t *font_data = AP_ROMFS::find_decompress(fontname, font_size);
+    const uint8_t *font_data = AP_ROMFS::find_decompress(fontname, font_size);
     if (font_data == nullptr || font_size != NVM_RAM_SIZE * 256) {
         return false;
     }
@@ -173,7 +173,7 @@ bool AP_OSD_MAX7456::update_font()
             //update char inside max7456 NVM
             if (!update_font_char(chr, chr_font_data)) {
                 hal.console->printf("AP_OSD: error during font char update\n");
-                free(font_data);
+                AP_ROMFS::free(font_data);
                 return false;
             }
             updated_chars++;
@@ -183,7 +183,7 @@ bool AP_OSD_MAX7456::update_font()
         hal.console->printf("AP_OSD: updated %d symbols.\n", updated_chars);
     }
     hal.console->printf("AP_OSD: osd font is up to date.\n");
-    free(font_data);
+    AP_ROMFS::free(font_data);
     return true;
 }
 
@@ -322,9 +322,11 @@ void AP_OSD_MAX7456::reinit()
     if (VIN_IS_PAL(sense)) {
         video_signal_reg = VIDEO_MODE_PAL | OSD_ENABLE;
         video_lines = video_lines_pal;
+        _format = FORMAT_PAL;
     } else {
         video_signal_reg = VIDEO_MODE_NTSC | OSD_ENABLE;
         video_lines = video_lines_ntsc;
+        _format = FORMAT_NTSC;
     }
 
     // set all rows to same character black/white level
@@ -460,4 +462,19 @@ void AP_OSD_MAX7456::write(uint8_t x, uint8_t y, const char* text)
         ++text;
         ++x;
     }
+}
+
+// return a correction factor used to display angles correctly
+float AP_OSD_MAX7456::get_aspect_ratio_correction() const
+{
+    switch (_format) {
+    case FORMAT_NTSC:
+        return 12.0f/18.46f;
+
+    case FORMAT_PAL:
+        return 12.0f/15.0f;
+
+    default:
+        return 1.0f;
+    };
 }

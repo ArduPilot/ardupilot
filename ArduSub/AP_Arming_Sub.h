@@ -15,7 +15,7 @@ public:
     bool pre_arm_checks(bool display_failure) override;
     bool has_disarm_function() const;
 
-    bool disarm() override;
+    bool disarm(AP_Arming::Method method) override;
     bool arm(AP_Arming::Method method, bool do_arming_checks=true) override;
 
 protected:

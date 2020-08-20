@@ -39,6 +39,11 @@ bool HALSITL::Util::get_system_id_unformatted(uint8_t buf[], uint8_t &len)
         if (ret <= 0) {
             continue;
         }
+        if (ret == len) {
+            cbuf[len-1] = '\0';
+        } else {
+            cbuf[ret] = '\0';
+        }
         len = ret;
         char *p = strchr(cbuf, '\n');
         if (p) {
@@ -124,3 +129,12 @@ void *HALSITL::Util::heap_realloc(void *heap_ptr, void *ptr, size_t new_size)
 }
 
 #endif // ENABLE_HEAP
+
+enum AP_HAL::Util::safety_state HALSITL::Util::safety_switch_state(void)
+{
+    const SITL::SITL *sitl = AP::sitl();
+    if (sitl == nullptr) {
+        return AP_HAL::Util::SAFETY_NONE;
+    }
+    return sitl->safety_switch_state();
+}

@@ -25,6 +25,8 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_Baro',
     'AP_BattMonitor',
     'AP_BoardConfig',
+    'AP_Camera',
+    'AP_CANManager',
     'AP_Common',
     'AP_Compass',
     'AP_Declination',
@@ -68,6 +70,8 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_SBusOut',
     'AP_IOMCU',
     'AP_Parachute',
+    'AP_PiccoloCAN',
+    'AP_PiccoloCAN/piccolo_protocol',
     'AP_RAMTRON',
     'AP_RCProtocol',
     'AP_Radio',
@@ -86,6 +90,16 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_ToshibaCAN',
     'AP_NMEA_Output',
     'AP_Filesystem',
+    'AP_ADSB',
+    'AC_PID',
+    'AP_SerialLED',
+    'AP_EFI',
+    'AP_Hott_Telem',
+    'AP_ESC_Telem',
+    'AP_Stats',
+    'AP_GyroFFT',
+    'AP_RCTelemetry',
+    'AP_Generator',
 ]
 
 def get_legacy_defines(sketch_name):
@@ -530,6 +544,13 @@ information across clean commands, so that that information is changed
 only when really necessary. Also, some tasks that don't really produce
 files persist their signature. This option avoids that behavior when
 cleaning the build.
+''')
+
+    g.add_option('--asan',
+        action='store_true',
+        help='''Build using the macOS clang Address Sanitizer. In order to run with
+Address Sanitizer support llvm-symbolizer is required to be on the PATH.
+This option is only supported on macOS versions of clang.
 ''')
 
 def build(bld):

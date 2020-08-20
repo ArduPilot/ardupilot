@@ -59,6 +59,9 @@ bool Plane::auto_takeoff_check(void)
         }
     }
 
+    // let EKF know to start GSF yaw estimator before takeoff movement starts so that yaw angle is better estimated
+    plane.ahrs.setTakeoffExpected(true);
+
     // we've reached the acceleration threshold, so start the timer
     if (!takeoff_state.launchTimerStarted) {
         takeoff_state.launchTimerStarted = true;
@@ -169,7 +172,8 @@ void Plane::takeoff_calc_pitch(void)
     }
 
     if (aparm.stall_prevention != 0) {
-        if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_TAKEOFF) {
+        if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_TAKEOFF ||
+            control_mode == &mode_takeoff) {
             // during takeoff we want to prioritise roll control over
             // pitch. Apply a reduction in pitch demand if our roll is
             // significantly off. The aim of this change is to

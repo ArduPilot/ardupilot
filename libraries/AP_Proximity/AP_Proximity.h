@@ -18,8 +18,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_SerialManager/AP_SerialManager.h>
-#include <AP_RangeFinder/AP_RangeFinder.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 #define PROXIMITY_MAX_INSTANCES             1   // Maximum number of proximity sensor instances available on this platform
 #define PROXIMITY_MAX_IGNORE                6   // up to six areas can be ignored
@@ -33,29 +32,32 @@ class AP_Proximity
 public:
     friend class AP_Proximity_Backend;
 
-    AP_Proximity(AP_SerialManager &_serial_manager);
+    AP_Proximity();
 
     AP_Proximity(const AP_Proximity &other) = delete;
     AP_Proximity &operator=(const AP_Proximity) = delete;
 
     // Proximity driver types
-    enum Proximity_Type {
-        Proximity_Type_None    = 0,
-        Proximity_Type_SF40C   = 1,
-        Proximity_Type_MAV     = 2,
-        Proximity_Type_TRTOWER = 3,
-        Proximity_Type_RangeFinder = 4,
-        Proximity_Type_RPLidarA2 = 5,
-        Proximity_Type_TRTOWEREVO = 6,
-        Proximity_Type_SITL    = 10,
-        Proximity_Type_MorseSITL = 11,
-        Proximity_Type_AirSimSITL = 12,
+    enum class Type {
+        None    = 0,
+        SF40C_v09 = 1,
+        MAV     = 2,
+        TRTOWER = 3,
+        RangeFinder = 4,
+        RPLidarA2 = 5,
+        TRTOWEREVO = 6,
+        SF40C = 7,
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        SITL    = 10,
+        MorseSITL = 11,
+        AirSimSITL = 12,
+#endif
     };
 
-    enum Proximity_Status {
-        Proximity_NotConnected = 0,
-        Proximity_NoData,
-        Proximity_Good
+    enum class Status {
+        NotConnected = 0,
+        NoData,
+        Good
     };
 
     // structure holding distances in PROXIMITY_MAX_DIRECTION directions. used for sending distances to ground station
@@ -70,27 +72,18 @@ public:
     // update state of all proximity sensors. Should be called at high rate from main loop
     void update(void);
 
-    // set pointer to rangefinder object
-    void set_rangefinder(const RangeFinder *rangefinder) { _rangefinder = rangefinder; }
-    const RangeFinder *get_rangefinder() const { return _rangefinder; }
-
     // return sensor orientation and yaw correction
     uint8_t get_orientation(uint8_t instance) const;
     int16_t get_yaw_correction(uint8_t instance) const;
 
     // return sensor health
-    Proximity_Status get_status(uint8_t instance) const;
-    Proximity_Status get_status() const;
+    Status get_status(uint8_t instance) const;
+    Status get_status() const;
 
     // Return the number of proximity sensors
     uint8_t num_sensors(void) const {
         return num_instances;
     }
-
-    // get distance in meters in a particular direction in degrees (0 is forward, clockwise)
-    // returns true on successful read and places distance in distance
-    bool get_horizontal_distance(uint8_t instance, float angle_deg, float &distance) const;
-    bool get_horizontal_distance(float angle_deg, float &distance) const;
 
     // get distances in PROXIMITY_MAX_DIRECTION directions. used for sending distances to ground station
     bool get_horizontal_distances(Proximity_Distance_Array &prx_dist_array) const;
@@ -118,7 +111,7 @@ public:
     // The Proximity_State structure is filled in by the backend driver
     struct Proximity_State {
         uint8_t                 instance;   // the instance number of this proximity sensor
-        enum Proximity_Status   status;     // sensor status
+        Status   status;     // sensor status
     };
 
     //
@@ -129,7 +122,7 @@ public:
     bool get_upward_distance(uint8_t instance, float &distance) const;
     bool get_upward_distance(float &distance) const;
 
-    Proximity_Type get_type(uint8_t instance) const;
+    Type get_type(uint8_t instance) const;
 
     // parameter list
     static const struct AP_Param::GroupInfo var_info[];
@@ -146,10 +139,15 @@ private:
     static AP_Proximity *_singleton;
     Proximity_State state[PROXIMITY_MAX_INSTANCES];
     AP_Proximity_Backend *drivers[PROXIMITY_MAX_INSTANCES];
-    const RangeFinder *_rangefinder;
     uint8_t primary_instance;
     uint8_t num_instances;
-    AP_SerialManager &serial_manager;
+
+    bool valid_instance(uint8_t i) const {
+        if (drivers[i] == nullptr) {
+            return false;
+        }
+        return (Type)_type[i].get() != Type::None;
+    }
 
     // parameters for all instances
     AP_Int8  _type[PROXIMITY_MAX_INSTANCES];

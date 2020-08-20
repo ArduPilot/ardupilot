@@ -1,7 +1,7 @@
 #pragma once
 
-#include "RangeFinder.h"
-#include "RangeFinder_Backend.h"
+#include "AP_RangeFinder.h"
+#include "AP_RangeFinder_Backend.h"
 #include <AP_HAL/I2CDevice.h>
 
 #define NUM_SF20_DATA_STREAMS 1
