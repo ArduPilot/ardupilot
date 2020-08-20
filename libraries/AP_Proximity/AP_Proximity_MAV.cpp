@@ -172,4 +172,31 @@ void AP_Proximity_MAV::handle_msg(const mavlink_message_t &msg)
             }
         }
     }
+    if (msg.msgid == MAVLINK_MSG_ID_VISO_OBSTACLE_DISTANCE) {
+        mavlink_viso_obstacle_distance_t packet;
+        mavlink_msg_viso_obstacle_distance_decode(&msg, &packet);
+        _last_update_ms = AP_HAL::millis();
+        
+        Vector3f current_pos;
+        Matrix3f body_to_ned;
+        const bool database_ready = database_prepare_for_push(current_pos, body_to_ned);
+        for (uint8_t i = 0; i<9; i++) {
+            float x = packet.x[i];
+            float y = packet.y[i];
+            float z = packet.z[i];
+            if (is_equal(x,65535.0f)) {
+                continue;
+            }
+            Vector3f obstacle(x,y,z); 
+            float dist_min = packet.min_distances;
+            float dist_max = packet.max_distances;
+            if (obstacle.length() < dist_min || obstacle.length() > dist_max || obstacle.is_zero()) {
+                // message isn't healthy
+                continue;
+            }
+            if (database_ready) {
+                database_push_3D_obstacle( obstacle,_last_update_ms, current_pos, body_to_ned);
+            }
+        }
+    }
 }

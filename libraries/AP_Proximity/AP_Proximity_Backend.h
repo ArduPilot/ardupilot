@@ -87,6 +87,7 @@ protected:
     bool database_prepare_for_push(Vector3f &current_pos, Matrix3f &body_to_ned);
     void database_push(float angle, float distance);
     void database_push(float angle, float distance, uint32_t timestamp_ms, const Vector3f &current_pos, const Matrix3f &body_to_ned);
+    void database_push_3D_obstacle(const Vector3f &obstacle, uint32_t timestamp_ms, const Vector3f &current_pos, const Matrix3f &body_to_ned);
     AP_Proximity &frontend;
     AP_Proximity::Proximity_State &state;   // reference to this instances state
 

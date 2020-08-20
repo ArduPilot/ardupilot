@@ -299,3 +299,18 @@ void AP_Proximity_Backend::database_push(float angle, float distance, uint32_t t
     
     oaDb->queue_push(temp_pos, timestamp_ms, distance);
 }
+
+void AP_Proximity_Backend::database_push_3D_obstacle(const Vector3f &obstacle, uint32_t timestamp_ms, const Vector3f &current_pos, const Matrix3f &body_to_ned) 
+{
+    AP_OADatabase *oaDb = AP::oadatabase();
+    if (oaDb == nullptr || !oaDb->healthy()) {
+        return;
+    }
+
+    const Vector3f rotated_object_3D = body_to_ned * obstacle;
+    //Calculate the position vector from origin
+    Vector3f temp_pos = current_pos + rotated_object_3D;
+    //Convert the vector to a NEU frame from NED
+    temp_pos.z = temp_pos.z * -1.0f;
+    oaDb->queue_push(temp_pos, timestamp_ms, obstacle.length());
+}
