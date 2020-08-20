@@ -89,6 +89,7 @@ private:
     AP_Float        _beam_width;                            // beam width used when converting lidar readings to object radius
     AP_Float        _radius_min;                            // objects minimum radius (in meters)
     AP_Float        _dist_max;                              // objects maximum distance (in meters)
+    AP_Float        _min_alt;                               // OADatabase minimum vehicle height check (in meters)
 
     struct {
         ObjectBuffer<OA_DbItem> *items;                     // thread safe incoming queue of points from proximity sensor to be put into database

@@ -31,6 +31,9 @@ extern const AP_HAL::HAL& hal;
     #define AP_OADATABASE_QUEUE_SIZE_DEFAULT 80
 #endif
 
+#ifndef AP_OADATABASE_DISTANCE_FROM_HOME
+    #define AP_OADATABASE_DISTANCE_FROM_HOME 3
+#endif
 
 const AP_Param::GroupInfo AP_OADatabase::var_info[] = {
 
@@ -91,6 +94,14 @@ const AP_Param::GroupInfo AP_OADatabase::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DIST_MAX", 7, AP_OADatabase, _dist_max, 0.0f),
 
+    // @Param{Copter}: ALT_MIN
+    // @DisplayName: OADatabase minimum altitude above home before storing obstacles
+    // @Description: OADatabase will reject obstacle's if vehicle's altitude above home is below this parameter, in a 3 meter radius around home. Set 0 to disable this feature.
+    // @Units: m
+    // @Range: 0 4
+    // @User: Advanced
+    AP_GROUPINFO_FRAME("ALT_MIN", 8, AP_OADatabase, _min_alt, 2.0f, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
+
     AP_GROUPEND
 };
 
@@ -137,6 +148,26 @@ void AP_OADatabase::queue_push(const Vector3f &pos, uint32_t timestamp_ms, float
         return;
     }
 
+    // check if this obstacle needs to be rejected from DB because of low altitude near home
+    #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+    if (!is_zero(_min_alt)) { 
+        Vector2f current_pos;
+        if (!AP::ahrs().get_relative_position_NE_home(current_pos)) {
+            // we do not know where the vehicle is
+            return;
+        }
+        if (current_pos.length() < AP_OADATABASE_DISTANCE_FROM_HOME) {
+            // vehicle is within a small radius of home 
+            float height_above_home;
+            AP::ahrs().get_relative_position_D_home(height_above_home);
+            if (-height_above_home < _min_alt) {
+                // vehicle is below the minimum alt
+                return;
+            }
+        }
+    }
+    #endif
+    
     // ignore objects that are far away
     if ((_dist_max > 0.0f) && (distance > _dist_max)) {
         return;
