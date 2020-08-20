@@ -35,7 +35,7 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_RTC/AP_RTC.h>
 #include <AP_MSP/msp.h>
-
+#include <AP_OLC/AP_OLC.h>
 #include <ctype.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -705,6 +705,22 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(clk, "CLK", 43, AP_OSD_Screen, AP_OSD_Setting),
+    
+    // @Param: PLUSCODE_EN
+    // @DisplayName: PLUSCODE_EN
+    // @Description: Displays total flight time
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: PLUSCODE_X
+    // @DisplayName: PLUSCODE_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: PLUSCODE_Y
+    // @DisplayName: PLUSCODE_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(pluscode, "PLUSCODE", 44, AP_OSD_Screen, AP_OSD_Setting),
     
 #if HAL_MSP_ENABLED
     // @Param: SIDEBARS_EN
@@ -1690,6 +1706,19 @@ void AP_OSD_Screen::draw_clk(uint8_t x, uint8_t y)
     }
 }
 
+void AP_OSD_Screen::draw_pluscode(uint8_t x, uint8_t y)
+{
+    AP_GPS & gps = AP::gps();
+    const Location &loc = gps.location();
+    char buff[16];
+    if (gps.status() == AP_GPS::NO_GPS || gps.status() == AP_GPS::NO_FIX){
+        backend->write(x, y, false, "--------+--");
+    } else {
+        AP_OLC::olc_encode(loc.lat, loc.lng, 10, buff, sizeof(buff));
+        backend->write(x, y, false, buff);
+    }
+}
+
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
 #if HAL_WITH_OSD_BITMAP
@@ -1742,6 +1771,7 @@ void AP_OSD_Screen::draw(void)
 
     DRAW_SETTING(gps_latitude);
     DRAW_SETTING(gps_longitude);
+    DRAW_SETTING(pluscode);
     DRAW_SETTING(dist);
     DRAW_SETTING(stat);
     DRAW_SETTING(climbeff);
