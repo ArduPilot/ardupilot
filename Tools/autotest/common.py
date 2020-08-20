@@ -3195,6 +3195,7 @@ class AutoTest(ABC):
 
     def change_mode(self, mode, timeout=60):
         '''change vehicle flightmode'''
+        self.wait_heartbeat()
         self.progress("Changing mode to %s" % mode)
         self.mavproxy.send('mode %s\n' % mode)
         tstart = self.get_sim_time()
