@@ -171,6 +171,8 @@ void trace(const int trace, const char *message, ...) {
     va_start(args, message);
     vfprintf(stderr, fmt, args);
     va_end(args);
+    free(fmt);
+    fmt = NULL;
   }
 }
 
@@ -191,7 +193,8 @@ void error(const int code, const char *message, ...) {
   va_start(args, message);
   vfprintf(stderr, fmt, args);
   va_end(args);
-
+  free(fmt);
+  fmt = NULL;
   exit(code);
 }
 
