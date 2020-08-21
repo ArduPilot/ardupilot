@@ -148,6 +148,7 @@ public:
         SerialProtocol_MSP = 32,
         SerialProtocol_DJI_FPV = 33,
         SerialProtocol_AirSpeed = 34,
+        SerialProtocol_ADSB = 35,
 
         SerialProtocol_NumProtocols                    // must be the last value
     };
