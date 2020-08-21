@@ -508,6 +508,9 @@ private:
     void update_dynamic_notch_at_specified_rate();
 #endif  // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 
+    // let uart write data out to onboard logs
+    void update_uart_logging();
+
     // decimation for 1Hz update
     uint8_t one_Hz_counter;
     void one_Hz_update();
