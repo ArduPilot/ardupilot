@@ -800,12 +800,11 @@ void AP_UAVCAN::handle_traffic_report(AP_UAVCAN* ap_uavcan, uint8_t node_id, con
     if (msg.simulated_report) {
         pkt.flags |= ADSB_FLAGS_SIMULATED;
     }
-    // flags not in common.xml yet
     if (msg.vertical_velocity_valid) {
-        pkt.flags |= 0x80;
+        pkt.flags |= ADSB_FLAGS_VERTICAL_VELOCITY_VALID;
     }
     if (msg.baro_valid) {
-        pkt.flags |= 0x100;
+        pkt.flags |= ADSB_FLAGS_BARO_VALID;
     }
 
     vehicle.last_update_ms = AP_HAL::native_millis() - (vehicle.info.tslc * 1000);
