@@ -76,6 +76,14 @@ void AP_Baro_SITL::_timer()
         if (_store_index > _buffer_length - 1) {  // reset buffer index if index greater than size of buffer
             _store_index = 0;
         }
+
+        // if freezed barometer, report altitude to last recorded altitude
+        if (_sitl->baro_freeze[_instance] == 1) {
+            sim_alt = _last_altitude;
+        } else {
+            _last_altitude = sim_alt;
+        }
+
         _buffer[_store_index].data = sim_alt;  // add data to current index
         _buffer[_store_index].time = _last_store_time;  // add time_stamp to current index
         _store_index = _store_index + 1;  // increment index
