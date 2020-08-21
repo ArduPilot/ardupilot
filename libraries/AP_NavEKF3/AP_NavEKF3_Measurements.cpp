@@ -827,7 +827,7 @@ void NavEKF3_core::readRngBcnData()
     }
 
     // get the number of beacons in use
-    N_beacons = beacon->count();
+    N_beacons = MIN(beacon->count(), ARRAY_SIZE(lastTimeRngBcn_ms));
 
     // search through all the beacons for new data and if we find it stop searching and push the data into the observation buffer
     bool newDataPushed = false;
