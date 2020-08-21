@@ -100,6 +100,7 @@ static const eventmask_t EVT_TRANSMIT_UNBUFFERED = EVENT_MASK(3);
 #endif
 
 UARTDriver::UARTDriver(uint8_t _serial_num) :
+    AP_HAL::UARTDriver(_serial_num),
 serial_num(_serial_num),
 sdef(_serial_tab[_serial_num]),
 _baudrate(57600)
@@ -706,6 +707,7 @@ bool UARTDriver::_discard_input()
     }
 
     _readbuf.clear();
+    update_readbuf_stats();
 
     if (!_rts_is_active) {
         update_rts_line();
@@ -732,7 +734,32 @@ ssize_t UARTDriver::_read(uint8_t *buffer, uint16_t count)
         update_rts_line();
     }
 
+#if HAL_LOG_UART_STATS
+    {
+        WITH_SEMAPHORE(_stats.sem);
+        _stats.rx_bytes += count;
+        update_readbuf_stats();
+    }
+#endif
+
     return ret;
+}
+
+void UARTDriver::update_writebuf_stats()
+{
+    const uint32_t space = _writebuf.space();
+    _stats.tx_buffer_min = MIN(_stats.tx_buffer_min, space);
+    _stats.tx_buffer_max = MAX(_stats.tx_buffer_max, space);
+    _stats.tx_buffer_bytes_space_sum += space;
+    _stats.tx_buffer_bytes_space_count++;
+}
+void UARTDriver::update_readbuf_stats()
+{
+    const uint32_t available = _readbuf.available();
+    _stats.rx_buffer_min = MIN(_stats.rx_buffer_min, available);
+    _stats.rx_buffer_max = MAX(_stats.rx_buffer_max, available);
+    _stats.rx_buffer_bytes_available_sum += available;
+    _stats.rx_buffer_bytes_available_count++;
 }
 
 /* write a block of bytes to the port */
@@ -748,6 +775,13 @@ size_t UARTDriver::_write(const uint8_t *buffer, size_t size)
     if (unbuffered_writes) {
         chEvtSignal(uart_thread_ctx, EVT_TRANSMIT_DATA_READY);
     }
+
+    {
+        WITH_SEMAPHORE(_stats.sem);
+        _stats.tx_bytes += ret;
+        update_writebuf_stats();
+    }
+
     return ret;
 }
 
