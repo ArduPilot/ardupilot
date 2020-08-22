@@ -98,7 +98,7 @@ def esp32_firmware(self):
 
     if str(self.link_task.outputs[0]).endswith('libardurover.a'):
         #build final image
-        src_in = [self.bld.bldnode.find_or_declare('lib/libAPMrover2_libs.a'),
+        src_in = [self.bld.bldnode.find_or_declare('lib/libRover_libs.a'),
                   self.bld.bldnode.find_or_declare('lib/bin/libardurover.a')]
         img_out = self.bld.bldnode.find_or_declare('idf-rover/ardurover.elf')
         generate_bin_task = self.create_task('build_esp32_image_rover', src=src_in, tgt=img_out)

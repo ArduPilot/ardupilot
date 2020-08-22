@@ -20,7 +20,10 @@
 #include <AP_HAL_ESP32/AP_HAL_ESP32.h>
 #include <AP_HAL_ESP32/Semaphores.h>
 
+#include "driver/gpio.h"
 #include "driver/uart.h"
+
+namespace ESP32 {
 
 struct UARTDesc {
     uart_port_t port;
@@ -28,9 +31,17 @@ struct UARTDesc {
     gpio_num_t tx;
 };
 
-class ESP32::UARTDriver : public AP_HAL::UARTDriver {
+class UARTDriver : public AP_HAL::UARTDriver {
 public:
-    UARTDriver(uint8_t serial_num);
+
+	UARTDriver(uint8_t serial_num)
+		: AP_HAL::UARTDriver()
+	{
+		_initialized = false;
+		uart_num = serial_num;
+	}
+
+	virtual ~UARTDriver() = default;
 
     void begin(uint32_t b) override;
     void begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
@@ -41,12 +52,24 @@ public:
     bool tx_pending() override;
 
     uint32_t available() override;
+    //uint32_t available_locked(uint32_t key) override;
+
     uint32_t txspace() override;
+
     int16_t read() override;
+    //ssize_t read(uint8_t *buffer, uint16_t count) override;
+    //int16_t read_locked(uint32_t key) override;
+
     void _timer_tick(void) override;
 
     size_t write(uint8_t c) override;
     size_t write(const uint8_t *buffer, size_t size) override;
+
+    bool discard_input() override; // discard all bytes available for reading
+
+    //bool lock_port(uint32_t write_key, uint32_t read_key) override;
+
+    //size_t write_locked(const uint8_t *buffer, size_t size, uint32_t key) override;
 private:
     bool _initialized;
     const size_t TX_BUF_SIZE = 1024;
@@ -60,3 +83,5 @@ private:
 
     uint8_t uart_num;
 };
+
+}

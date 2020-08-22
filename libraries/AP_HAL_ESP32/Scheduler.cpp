@@ -399,7 +399,7 @@ void Scheduler::set_position(void* arg)
 
     if (ahrs.set_origin(ekf_origin)) {
 		printf("Set ekf origin");
-		gcs().send_text(MAV_SEVERITY_INFO, "Set ekf origin to 0");
+		//gcs().send_text(MAV_SEVERITY_INFO, "Set ekf origin to 0");
 	}
 
 	while (true)

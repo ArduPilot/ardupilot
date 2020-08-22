@@ -1375,7 +1375,7 @@ AP_GPS_UBLOX::_parse_gps(void)
                 float rotation_offset_rad;
                 const Vector3f diff = offset1 - offset0;
                 rotation_offset_rad = Vector2f(diff.x, diff.y).angle();
-                state.gps_yaw = wrap_360(_buffer.relposned.relPosHeading * 1e-5 - degrees(rotation_offset_rad));
+                state.gps_yaw = wrap_360((float)(_buffer.relposned.relPosHeading * 1e-5 - degrees(rotation_offset_rad)));
                 state.have_gps_yaw = true;
                 state.gps_yaw_accuracy = _buffer.relposned.accHeading * 1e-5;
                 state.have_gps_yaw_accuracy = true;

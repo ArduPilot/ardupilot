@@ -68,7 +68,7 @@ int AP_Filesystem::fsync(int fd)
     return ::fsync(fd);
 }
 
-off_t AP_Filesystem::lseek(int fd, off_t offset, int seek_from)
+int32_t AP_Filesystem::lseek(int fd, int32_t offset, int seek_from)
 {
 #if DEBUG
 	printf("DO lseek \n");
@@ -100,28 +100,31 @@ int AP_Filesystem::mkdir(const char *pathname)
     return ::mkdir(pathname, 0775);
 }
 
-DIR *AP_Filesystem::opendir(const char *pathname)
+AP_Filesystem::DirHandle *AP_Filesystem::opendir(const char *pathname)
 {
 #if DEBUG
 	printf("DO opendir %s \n", pathname);
 #endif
-    return ::opendir(pathname);
+    //return ::opendir(pathname);
+	return NULL;
 }
 
-struct dirent *AP_Filesystem::readdir(DIR *dirp)
+struct dirent *AP_Filesystem::readdir(AP_Filesystem::DirHandle *dirp)
 {
 #if DEBUG
 	printf("DO readdir \n");
 #endif
-    return ::readdir(dirp);
+    //return ::readdir(dirp);
+	return NULL;
 }
 
-int AP_Filesystem::closedir(DIR *dirp)
+int AP_Filesystem::closedir(AP_Filesystem::DirHandle *dirp)
 {
 #if DEBUG
 	printf("DO closedir \n");
 #endif
-    return ::closedir(dirp);
+    //return ::closedir(dirp);
+	return 0;
 }
 
 // return free disk space in bytes
@@ -174,7 +177,7 @@ int64_t AP_Filesystem::disk_space(const char *path)
 /*
   set mtime on a file
  */
-bool AP_Filesystem::set_mtime(const char *filename, const time_t mtime_sec)
+bool AP_Filesystem::set_mtime(const char *filename, const uint32_t mtime_sec)
 {
 
 #if DEBUG

@@ -2630,9 +2630,11 @@ void GCS_MAVLINK::zero_rc_outputs()
  */
 MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &packet)
 {
+/*
     if (is_equal(packet.param1, 42.0f) &&
         is_equal(packet.param2, 24.0f) &&
         is_equal(packet.param3, 71.0f)) {
+
         if (is_equal(packet.param4, 93.0f)) {
             // this is a magic sequence to force the main loop to
             // lockup. This is for testing the stm32 watchdog
@@ -2655,6 +2657,7 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
             return MAV_RESULT_FAILED;
         }
     }
+	*/
 
     if (hal.util->get_soft_armed()) {
         // refuse reboot when armed

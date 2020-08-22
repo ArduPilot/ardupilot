@@ -27,6 +27,13 @@ int errno;
 #endif // HAVE_FILESYSTEM_SUPPORT
 #endif // HAL_BOARD_CHIBIOS
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+static AP_Filesystem_Backend fs_local;
+int errno;
+#endif // HAL_BOARD_CHIBIOS
+
+
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "AP_Filesystem_posix.h"
 static AP_Filesystem_Posix fs_local;

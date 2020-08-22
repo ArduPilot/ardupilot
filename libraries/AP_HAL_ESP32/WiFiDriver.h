@@ -44,6 +44,9 @@ public:
         return 1000;
     }
 
+
+	bool discard_input() override;
+
     bool _more_data;
 private:
     enum ConnectionState {

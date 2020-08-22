@@ -21,7 +21,7 @@
 #include "I2CDevice.h"
 #include "SPIDevice.h"
 #include "I2CDevice.h"
-#include "UARTDriver.h"
+#include <AP_HAL_ESP32/UARTDriver.h>
 #include "WiFiDriver.h"
 #include "RCInput.h"
 #include "RCOutput.h"
@@ -89,6 +89,7 @@ HAL_ESP32::HAL_ESP32() :
         &utilInstance,
         &opticalFlowDriver,
         &flashDriver,
+        nullptr,
         nullptr
     )
 {}

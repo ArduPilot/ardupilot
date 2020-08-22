@@ -18,20 +18,15 @@
 
 #include "esp_log.h"
 
-using namespace ESP32;
+namespace ESP32 {
 
 UARTDesc uart_desc[] = {HAL_ESP32_UART_DEVICES};
-
-UARTDriver::UARTDriver(uint8_t serial_num)
-{
-    _initialized = false;
-    uart_num = serial_num;
-}
 
 void UARTDriver::begin(uint32_t b)
 {
     begin(b, 0, 0);
 }
+
 
 void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
@@ -100,6 +95,7 @@ bool UARTDriver::tx_pending()
     return (_writebuf.available() > 0);
 }
 
+
 uint32_t UARTDriver::available()
 {
     if (!_initialized) {
@@ -107,6 +103,7 @@ uint32_t UARTDriver::available()
     }
     return _readbuf.available();
 }
+
 
 uint32_t UARTDriver::txspace()
 {
@@ -185,3 +182,9 @@ size_t IRAM_ATTR UARTDriver::write(const uint8_t *buffer, size_t size)
     return ret;
 }
 
+bool UARTDriver::discard_input()
+{
+	return false;
+}
+
+}
