@@ -129,7 +129,7 @@ class Board:
             '-Werror=parentheses',
             '-Werror=format-extra-args',
             '-Werror=ignored-qualifiers',
-            '-Werror=undef',
+            #'-Werror=undef',
             '-DARDUPILOT_BUILD',
         ]
 
@@ -208,7 +208,7 @@ class Board:
             '-Werror=switch',
             '-Werror=sign-compare',
             '-Werror=type-limits',
-            '-Werror=undef',
+            #'-Werror=undef',
             '-Werror=unused-result',
             '-Werror=shadow',
             '-Werror=unused-value',
@@ -266,7 +266,7 @@ class Board:
             errors = ['-Werror',
                       '-Werror=missing-declarations',
                       '-Werror=float-equal',
-                      '-Werror=undef',
+                      #'-Werror=undef',
                     ]
             env.CFLAGS += errors
             env.CXXFLAGS += errors
@@ -511,7 +511,7 @@ class esp32(Board):
                          '-nostdlib',
                          '-fstrict-volatile-bitfields',
                          '-DCYGWIN_BUILD']
-        env.CXXFLAGS.remove('-Wundef')
+        #env.CXXFLAGS.remove('-Wundef')
         env.CXXFLAGS.remove('-Werror=shadow')
         env.INCLUDES += [
                 cfg.srcnode.find_dir('libraries/AP_HAL_ESP32/boards').abspath(),
@@ -606,7 +606,7 @@ class chibios(Board):
             '-Wno-error=double-promotion',
             '-Wno-error=missing-declarations',
             '-Wno-error=float-equal',
-            '-Wno-error=undef',
+            #'-Wno-error=undef',
             '-Wno-error=cpp',
             ]
 
