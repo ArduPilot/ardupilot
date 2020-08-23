@@ -68,6 +68,7 @@ public:
 #endif
     }
 
+    void set_cmdline_parameters() override;
 private:
     SITL_State *sitlState;
 
