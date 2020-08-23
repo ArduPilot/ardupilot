@@ -162,7 +162,7 @@ void GPIO_RPI::init()
     const int rpi_version = UtilRPI::from(hal.util)->get_rpi_version();
 
     GPIO_RPI::Address peripheral_base;
-    if(rpi_version == 1) {
+    if(rpi_version <= 1) {
         peripheral_base = Address::BCM2708_PERIPHERAL_BASE;
     } else if (rpi_version == 2) {
         peripheral_base = Address::BCM2709_PERIPHERAL_BASE;
