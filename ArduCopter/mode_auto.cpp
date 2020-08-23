@@ -31,6 +31,11 @@ bool ModeAuto::init(bool ignore_checks)
             return false;
         }
 
+        if (AP::fence()->enabled() == 0 || (AP::fence()->get_enabled_fences() & 0x1) == 0 || (AP::fence()->get_enabled_fences() & 0x6) == 0) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "Auto: The fence is disabled.");
+            return false;
+        }
+
         // stop ROI from carrying over from previous runs of the mission
         // To-Do: reset the yaw as part of auto_wp_start when the previous command was not a wp command to remove the need for this special ROI check
         if (auto_yaw.mode() == AUTO_YAW_ROI) {
