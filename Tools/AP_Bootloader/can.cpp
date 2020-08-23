@@ -593,6 +593,12 @@ bool can_check_firmware(void)
 
     const uint8_t desc_len = offsetof(app_descriptor, version_major) - offsetof(app_descriptor, image_crc1);
     uint32_t len1 = ((const uint8_t *)&ad->image_crc1) - flash;
+    if ((len1 + desc_len) > ad->image_size) {
+        node_status.vendor_specific_status_code = FAIL_REASON_BAD_LENGTH;
+        printf("Bad fw length %u\n", ad->image_size);
+        return false;
+    }
+
     uint32_t len2 = ad->image_size - (len1 + desc_len);
     uint32_t crc1 = crc32_small(0, flash, len1);
     uint32_t crc2 = crc32_small(0, (const uint8_t *)&ad->version_major, len2);
