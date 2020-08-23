@@ -33,6 +33,9 @@
 #include <StorageManager/StorageManager.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <stdio.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    #include <SITL/SITL.h>
+#endif
 
 extern const AP_HAL::HAL &hal;
 
@@ -1485,6 +1488,9 @@ void AP_Param::reload_defaults_file(bool last_pass)
             AP_HAL::panic("Failed to load defaults from %s\n", default_file);
         }
     }
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    hal.util->set_cmdline_parameters();
 #endif
 }
 
