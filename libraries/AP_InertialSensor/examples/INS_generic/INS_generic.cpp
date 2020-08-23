@@ -24,7 +24,12 @@ void setup(void)
     // setup any board specific drivers
     BoardConfig.init();
 
-    hal.console->printf("AP_InertialSensor startup...\n");
+    bool using_watchdog = AP_BoardConfig::watchdog_enabled();
+    for ( int x =0 ; x < 5 ; x++) {
+        hal.scheduler->watchdog_pat();
+        hal.console->printf("AP_InertialSensor startup... using watchdog?:%d\n",using_watchdog);
+        hal.scheduler->delay(500);  
+    }
 
     ins.init(100);
 
@@ -54,10 +59,13 @@ void loop(void)
     // wait for user input
     while (!hal.console->available()) {
         hal.scheduler->delay(20);
+        hal.scheduler->watchdog_pat();
     }
 
     // read in user input
     while (hal.console->available()) {
+        hal.scheduler->watchdog_pat();
+
         user_input = hal.console->read();
 
         if (user_input == 'd' || user_input == 'D') {
@@ -107,6 +115,7 @@ static void run_test()
     // flush any user input
     while (hal.console->available()) {
         hal.console->read();
+        hal.scheduler->watchdog_pat();
     }
 
     // clear out any existing samples from ins
@@ -114,6 +123,8 @@ static void run_test()
 
     // loop as long as user does not press a key
     while (!hal.console->available()) {
+        hal.scheduler->watchdog_pat();
+
         // wait until we have a sample
         ins.wait_for_sample();
 
@@ -169,6 +180,7 @@ static void run_test()
     // clear user input
     while (hal.console->available()) {
         hal.console->read();
+        hal.scheduler->watchdog_pat();
     }
 }
 
