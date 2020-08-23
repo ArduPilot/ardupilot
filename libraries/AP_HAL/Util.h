@@ -37,6 +37,9 @@ public:
         return HAL_PARAM_DEFAULTS_PATH;
     }
 
+    // set command line parameters to the eeprom on start
+    virtual void set_cmdline_parameters() {};
+
     // run a debug shall on the given stream if possible. This is used
     // to support dropping into a debug shell to run firmware upgrade
     // commands
