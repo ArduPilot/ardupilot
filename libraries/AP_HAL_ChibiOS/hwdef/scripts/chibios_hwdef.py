@@ -689,6 +689,8 @@ def write_mcu_config(f):
     if args.bootloader:
         f.write('#define FLASH_BOOTLOADER_LOAD_KB %u\n' % get_config('FLASH_BOOTLOADER_LOAD_KB', type=int))
         f.write('#define FLASH_RESERVE_END_KB %u\n' % get_config('FLASH_RESERVE_END_KB', default=0, type=int))
+        f.write('#define APP_START_OFFSET_KB %u\n' % get_config('APP_START_OFFSET_KB', default=0, type=int))
+
     f.write('\n')
 
     ram_map = get_mcu_config('RAM_MAP', True)
