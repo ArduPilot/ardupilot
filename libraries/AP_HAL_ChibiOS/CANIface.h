@@ -48,7 +48,7 @@
 #include "bxcan.hpp"
 #include "EventSource.h"
 
-#ifndef HAL_CAN_RX_STORAGE_SIZE
+#ifndef HAL_CAN_RX_QUEUE_SIZE
 #define HAL_CAN_RX_QUEUE_SIZE 128
 #endif
 
