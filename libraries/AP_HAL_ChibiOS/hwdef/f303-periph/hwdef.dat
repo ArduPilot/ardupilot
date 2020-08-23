@@ -3,7 +3,7 @@ g# hw definition file for processing by chibios_pins.py
 # MCU class and specific type
 MCU STM32F303 STM32F303xC
 
-# bootloader starts firmware at 26k
+# bootloader starts firmware at 22k + 4k (STORAGE_FLASH)
 FLASH_RESERVE_START_KB 26
 
 # store parameters in pages 11 and 12

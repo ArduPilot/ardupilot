@@ -3,7 +3,7 @@
 # MCU class and specific type
 MCU STM32F103 STM32F103xB
 
-# bootloader starts firmware at 25k
+# bootloader starts firmware at 23k + 2k (STORAGE_FLASH_PAGES)
 FLASH_RESERVE_START_KB 25
 
 # store parameters in pages 23 and 24
