@@ -14,6 +14,7 @@
 #include <netinet/in.h>
 #include <netinet/udp.h>
 #include <arpa/inet.h>
+#include <vector>
 
 #include <AP_Baro/AP_Baro.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
@@ -105,6 +106,7 @@ public:
         "tcp:5",
         "tcp:6",
     };
+    std::vector<struct AP_Param::defaults_table_struct> cmdline_param;
 
     /* parse a home location string */
     static bool parse_home(const char *home_str,
