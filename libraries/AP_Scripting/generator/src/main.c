@@ -22,6 +22,10 @@ char keyword_semaphore[]           = "semaphore";
 char keyword_singleton[]           = "singleton";
 char keyword_userdata[]            = "userdata";
 char keyword_write[]               = "write";
+char keyword_metadata_description[]= "@Description:";
+char keyword_metadata_link[]       = "@Link:";
+char keyword_metadata_return[]     = "@Return:";
+char keyword_metadata_field[]      = "@Field:";
 
 // attributes (should include the leading ' )
 char keyword_attr_enum[]    = "'enum";
@@ -49,6 +53,7 @@ enum error_codes {
   ERROR_GENERAL         = 6, // general error
   ERROR_SINGLETON       = 7, // singletons
   ERROR_DEPENDS         = 8, // dependencies
+  ERROR_METADATA        = 10, // metadata
 };
 
 struct header {
@@ -62,11 +67,13 @@ struct generator_state {
   int line_num; // current line read in
   int token_num; // current token on the current line
   char *token;
+  char metadata[1<<14]; // metadata found so far, should be consumed by next type
 };
 
 FILE *description;
 FILE *header;
 FILE *source;
+FILE *metadata_file;
 
 static struct generator_state state;
 static struct header * headers;
@@ -78,6 +85,7 @@ enum trace_level {
   TRACE_USERDATA  = (1 << 3),
   TRACE_SINGLETON = (1 << 4),
   TRACE_DEPENDS   = (1 << 5),
+  TRACE_METADATA  = (1 << 6),
 };
 
 enum access_flags {
@@ -156,7 +164,7 @@ struct type {
   } data;
 };
 
-int TRACE_LEVEL = 0;
+int TRACE_LEVEL = TRACE_METADATA | TRACE_GENERAL;
 
 void trace(const int trace, const char *message, ...) {
   if (trace & TRACE_LEVEL) {
@@ -212,6 +220,13 @@ char * start_line(void) {
   while (fgets(state.line, sizeof(state.line)/sizeof(state.line[0]), description) != NULL) {//state.line = readline(NULL))) {
       state.line_num++;
     
+      // look for metadata
+      if (state.line[0] == '@') {
+        strcpy(state.metadata,strcat(state.metadata, state.line));
+        trace(TRACE_METADATA, "Found metadata on line %i : %s", state.line_num,state.line);
+        continue;
+      }
+
       const size_t length = strlen(state.line);
       if (length > 1 && state.line[length - 2] == '\r') {
         trace(TRACE_TOKENS, "Discarding carriage return");
@@ -252,6 +267,10 @@ void *allocate(const size_t size) {
 
 void handle_header(void) {
   trace(TRACE_HEADER, "Parsing a header");
+
+  if (strlen(state.metadata) != 0) {
+    error(ERROR_METADATA, "Headers do not support metadata");
+  }
 
   // find the new header
   char * name = next_token();
@@ -634,7 +653,7 @@ void handle_method(char *parent_name, struct method **methods) {
     method = method-> next;
   }
   if (method != NULL) {
-    error(ERROR_USERDATA, "Method %s already exsists for %s (declared on %d)", name, parent_name, method->line);
+    error(ERROR_USERDATA, "Method %s already exists for %s (declared on %d)", name, parent_name, method->line);
   }
 
   trace(TRACE_USERDATA, "Adding method %s", name);
@@ -645,6 +664,51 @@ void handle_method(char *parent_name, struct method **methods) {
   method->line = state.line_num;
 
   parse_type(&(method->return_type), TYPE_RESTRICTION_NONE, RANGE_CHECK_NONE);
+
+  // deal with meta data
+  char metadata[1<<14];
+  char *saveptr; // have to use strtok_r to avoid conflict with exting strtok usage
+  char* metadata_token;
+  int has_metadata = FALSE;
+  if (strlen(state.metadata) == 0) {
+      // coment this in to enforce metadata
+      //error(ERROR_USERDATA, "Please add metadata to method %s",name);
+  } else {
+    has_metadata = TRUE;
+    trace(TRACE_METADATA, "method %s metadata:\n%s",name,state.metadata);
+
+    // add name to metadata
+    char metadata[1<<14];
+    sprintf(metadata,"//@Name: %s\n",name);
+
+    // next should be defintion
+    metadata_token = __strtok_r(state.metadata, "\n",&saveptr);
+    if (metadata_token == NULL || (strstr(metadata_token,keyword_metadata_description) == NULL)) {
+      error(ERROR_METADATA, "%s metadata should start with %s",name,keyword_metadata_description);
+    }
+    sprintf(metadata,"%s//%s\n",metadata,metadata_token);
+
+    // followed by link
+    metadata_token = __strtok_r(NULL, "\n",&saveptr);
+    if (metadata_token == NULL || (strstr(metadata_token,keyword_metadata_link) == NULL)) {
+      error(ERROR_METADATA, "%s metadata should start with %s",name,keyword_metadata_link);
+    }
+    sprintf(metadata,"%s//%s\n",metadata,metadata_token);
+
+    metadata_token = __strtok_r(NULL, "\n",&saveptr);
+    if (metadata_token == NULL) {  
+      error(ERROR_METADATA,"metadata length does not match method");
+    }
+
+    if (strstr(metadata_token,keyword_metadata_return) != NULL) {
+        sprintf(metadata,"%s//%s type:%s\n",metadata,metadata_token,type_labels[method->return_type.type]);
+        metadata_token = __strtok_r(NULL, "\n",&saveptr);
+        if (metadata_token == NULL) {
+          error(ERROR_METADATA,"metadata length does not match method");
+        }
+    }
+    trace(TRACE_METADATA, "method %s metadata:\n%s\n",name,metadata);
+  }
 
   // iterate the arguments
   struct type arg_type = {};
@@ -672,9 +736,41 @@ void handle_method(char *parent_name, struct method **methods) {
       tail->next = arg;
     }
 
+    if (has_metadata) {
+        if (metadata_token == NULL) {  
+          error(ERROR_METADATA,"metadata length does not match method");
+        }
+        trace(TRACE_METADATA, "method metadata token: %s",metadata_token);
+
+        if ((strstr(metadata_token,keyword_metadata_return) != NULL) && (arg_type.flags & TYPE_FLAGS_NULLABLE)) {
+          // return type metadata, must be the single return or a nullable argument
+          sprintf(metadata,"%s//%s type:nullable %s\n",metadata,metadata_token,type_labels[arg_type.type]);
+
+        } else if (strstr(metadata_token,keyword_metadata_field) != NULL) {
+          // input field
+          sprintf(metadata,"%s//%s type:%s range:%s %s\n",metadata,metadata_token,type_labels[arg_type.type],arg_type.range->low,arg_type.range->high);
+
+        } else {
+          error(ERROR_METADATA,"metadata unexpected type %s",metadata_token);
+        }
+
+        metadata_token = __strtok_r(NULL, "\n",&saveptr);
+    }
+
     // reset the stack arg_type
     memset(&arg_type, 0, sizeof(struct type));
   }
+
+  if (has_metadata) {
+    if (metadata_token != NULL) {  
+      error(ERROR_METADATA,"metadata length does not match method");
+    }
+    trace(TRACE_METADATA, "method %s metadata:\n%s",name,metadata);
+    fprintf(metadata_file, "%s\n",metadata);
+  }
+  // clear consumend meta data
+  state.metadata[0] = '\0';
+
 }
 
 void handle_operator(struct userdata *data) {
@@ -717,6 +813,10 @@ void handle_operator(struct userdata *data) {
 
 void handle_userdata(void) {
   trace(TRACE_USERDATA, "Adding a userdata");
+
+  if (strlen(state.metadata) != 0) {
+    error(ERROR_METADATA, "userdata does not support metadata");
+  }
 
   char *name = next_token();
   if (name == NULL) {
@@ -820,10 +920,18 @@ void handle_singleton(void) {
   if (next_token()) {
     error(ERROR_HEADER, "Singleton contained an unexpected extra token: %s", state.token);
   }
+
+  if (strlen(state.metadata) != 0) {
+    error(ERROR_METADATA, "None method singletones do not support metadata");
+  }
 }
 
 void handle_ap_object(void) {
   trace(TRACE_SINGLETON, "Adding a ap_object");
+
+  if (strlen(state.metadata) != 0) {
+    error(ERROR_METADATA, "ap_object does not support metadata");
+  }
 
   char *name = next_token();
   if (name == NULL) {
@@ -886,6 +994,10 @@ void handle_ap_object(void) {
 
 void handle_depends(void) {
   trace(TRACE_DEPENDS, "Adding a dependency");
+
+  if (strlen(state.metadata) != 0) {
+    error(ERROR_METADATA, "dependency does not support metadata");
+  }
 
   char *symbol = next_token();
   if (symbol == NULL) {
@@ -1905,6 +2017,7 @@ void emit_argcheck_helper(void) {
 
 
 char * output_path = NULL;
+char * metadata_path = NULL;
 
 int main(int argc, char **argv) {
   state.line_num = -1;
@@ -1921,6 +2034,7 @@ int main(int argc, char **argv) {
         if (description == NULL) {
           error(ERROR_GENERAL, "Unable to load the description file: %s", optarg);
         }
+        metadata_path = optarg;
         break;
       case 'o':
         if (output_path != NULL) {
@@ -1937,6 +2051,22 @@ int main(int argc, char **argv) {
   }
 
   state.line_num = 0;
+
+  // create auto generate metadata file
+  size_t max_length = strlen(metadata_path);
+  if (strlen(output_path) > max_length) {
+    max_length = strlen(output_path);
+  }
+  char *file_name = (char *)allocate(max_length + 25);
+  metadata_path[(strrchr(metadata_path, '/') - metadata_path)+1] = 0;
+
+  sprintf(file_name, "%sscripting_metadata.cpp", metadata_path);
+  metadata_file = fopen(file_name, "w");
+  if (metadata_file == NULL) {
+    error(ERROR_GENERAL, "Unable to open the output metadata file: %s", file_name);
+  }
+  fprintf(metadata_file, "// auto generated binding metadata, don't manually edit.\n\n");
+
 
   while (start_line()) {
 
@@ -1968,7 +2098,10 @@ int main(int argc, char **argv) {
 
   state.line_num = -1;
 
-  char *file_name = (char *)allocate(strlen(output_path) + 5);
+  fprintf(metadata_file, "// auto generated binding metadata, don't manually edit.\n");
+  fclose(metadata_file);
+  metadata_file = NULL;
+
   sprintf(file_name, "%s.cpp", output_path);
   source = fopen(file_name, "w");
   if (source == NULL) {
