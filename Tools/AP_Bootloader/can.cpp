@@ -569,8 +569,8 @@ bool can_check_firmware(void)
         return false;
     }
     const uint8_t sig[8] = { 0x40, 0xa2, 0xe4, 0xf1, 0x64, 0x68, 0x91, 0x06 };
-    const uint8_t *flash = (const uint8_t *)(FLASH_LOAD_ADDRESS + FLASH_BOOTLOADER_LOAD_KB*1024);
-    const uint32_t flash_size = (BOARD_FLASH_SIZE - FLASH_BOOTLOADER_LOAD_KB)*1024;
+    const uint8_t *flash = (const uint8_t *)(FLASH_LOAD_ADDRESS + (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB)*1024);
+    const uint32_t flash_size = (BOARD_FLASH_SIZE - (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB))*1024;
     const app_descriptor *ad = (const app_descriptor *)memmem(flash, flash_size-sizeof(app_descriptor), sig, sizeof(sig));
     if (ad == nullptr) {
         // no application signature

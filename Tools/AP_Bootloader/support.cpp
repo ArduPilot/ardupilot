@@ -71,7 +71,7 @@ void cout(uint8_t *data, uint32_t len)
 
 static uint32_t flash_base_page;
 static uint8_t num_pages;
-static const uint8_t *flash_base = (const uint8_t *)(0x08000000 + FLASH_BOOTLOADER_LOAD_KB*1024U);
+static const uint8_t *flash_base = (const uint8_t *)(0x08000000 + (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB)*1024U);
 
 /*
   initialise flash_base_page and num_pages
@@ -81,9 +81,9 @@ void flash_init(void)
     uint32_t reserved = 0;
     num_pages = stm32_flash_getnumpages();
     /*
-      advance flash_base_page to account for FLASH_BOOTLOADER_LOAD_KB
+      advance flash_base_page to account for (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB)
      */
-    while (reserved < FLASH_BOOTLOADER_LOAD_KB * 1024U &&
+    while (reserved < (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB) * 1024U &&
            flash_base_page < num_pages) {
         reserved += stm32_flash_getpagesize(flash_base_page);
         flash_base_page++;
@@ -104,7 +104,7 @@ void flash_set_keep_unlocked(bool set)
 }
 
 /*
-  read a word at offset relative to FLASH_BOOTLOADER_LOAD_KB
+  read a word at offset relative to flash base
  */
 uint32_t flash_func_read_word(uint32_t offset)
 {
