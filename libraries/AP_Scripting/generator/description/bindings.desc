@@ -272,8 +272,17 @@ userdata mavlink_mission_item_int_t field current uint8_t read write  0 UINT8_MA
 
 include AP_RPM/AP_RPM.h
 singleton AP_RPM alias RPM
+
+@Description: get the rpm from a RPM sensor backend
+@Link: https://github.com/ArduPilot/ardupilot/blob/afa153fb6fb569419455eb37384a1889971bd5bf/libraries/AP_RPM/AP_RPM.cpp#L200
+@Field: instance
+@Return: value
 singleton AP_RPM method get_rpm boolean uint8_t 0 RPM_MAX_INSTANCES float'Null
 
 include AP_Button/AP_Button.h
 singleton AP_Button alias button
+@Description: Get the state of buttons from AP_Button
+@Link: https://github.com/ArduPilot/ardupilot/blob/afa153fb6fb569419455eb37384a1889971bd5bf/libraries/AP_Button/AP_Button.cpp#L123
+@Return: valid reading
+@Field: button number
 singleton AP_Button method get_button_state boolean uint8_t 1 AP_BUTTON_NUM_PINS
