@@ -8,6 +8,7 @@
 #include "UARTDriver.h"
 #include <AP_HAL/utility/getopt_cpp.h>
 #include <AP_Logger/AP_Logger_SITL.h>
+#include <AP_Param/AP_Param.h>
 
 #include <SITL/SIM_Multicopter.h>
 #include <SITL/SIM_Helicopter.h>
@@ -201,6 +202,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     uint16_t simulator_port_in = SIM_IN_PORT;
     uint16_t simulator_port_out = SIM_OUT_PORT;
     _irlock_port = IRLOCK_PORT;
+    struct AP_Param::defaults_table_struct temp_cmdline_param{};
 
     // Set default start time to the real system time.
     // This will be overwritten if argument provided.
@@ -280,7 +282,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 
     GetOptLong gopt(argc, argv, "hwus:r:CI:P:SO:M:F:c:",
                     options);
-
     while ((opt = gopt.getoption()) != -1) {
         switch (opt) {
         case 'w':
@@ -292,9 +293,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             break;
         case 's':
             speedup = strtof(gopt.optarg, nullptr);
-            char speedup_string[18];
-            snprintf(speedup_string, sizeof(speedup_string), "SIM_SPEEDUP=%s", gopt.optarg);
-            _set_param_default(speedup_string);
+            temp_cmdline_param = {"SIM_SPEEDUP", speedup};
+            cmdline_param.push_back(temp_cmdline_param);
+            printf("Setting SIM_SPEEDUP=%f\n", speedup);
             break;
         case 'r':
             _framerate = (unsigned)atoi(gopt.optarg);
@@ -394,9 +395,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
                 fprintf(stderr, "You must specify a SYSID greater than 0 and less than 256\n");
                 exit(1);
             }
-            char sysid_string[18];
-            snprintf(sysid_string, sizeof(sysid_string), "SYSID_THISMAV=%s", gopt.optarg);
-            _set_param_default(sysid_string);
+            temp_cmdline_param = {"SYSID_THISMAV", static_cast<float>(sysid)};
+            cmdline_param.push_back(temp_cmdline_param);
+            printf("Setting SYSID_THISMAV=%d\n", sysid);
             break;
         }
         default:
