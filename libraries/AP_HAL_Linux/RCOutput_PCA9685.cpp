@@ -225,16 +225,11 @@ void RCOutput_PCA9685::push()
         *d++ = length >> 8;
     }
 
-    if (!_dev || !_dev->get_semaphore()->take_nonblocking()) {
-        return;
-    }
-
     pwm_values.reg = PCA9685_RA_LED0_ON_L + 4 * (_channel_offset + min_ch);
     /* reg + all the channels we are going to write */
     size_t payload_size = 1 + (max_ch - min_ch) * 4;
 
     _dev->transfer((uint8_t *)&pwm_values, payload_size, nullptr, 0);
-    _dev->get_semaphore()->give();
     _pending_write_mask = 0;
 }
 
