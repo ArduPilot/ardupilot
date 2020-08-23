@@ -45,7 +45,7 @@
 
 #if HAL_NUM_CAN_IFACES
 
-#ifndef HAL_CAN_RX_STORAGE_SIZE
+#ifndef HAL_CAN_RX_QUEUE_SIZE
 #define HAL_CAN_RX_QUEUE_SIZE 128
 #endif
 
