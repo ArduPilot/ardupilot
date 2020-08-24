@@ -1599,6 +1599,7 @@ void AP_GPS::calc_blended_state(void)
 
     timing[GPS_BLENDED_INSTANCE].last_fix_time_ms = 0;
     timing[GPS_BLENDED_INSTANCE].last_message_time_ms = 0;
+    bool data_should_be_logged = false;
 
     // combine the states into a blended solution
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
@@ -1654,6 +1655,7 @@ void AP_GPS::calc_blended_state(void)
         }
         if (timing[i].last_message_time_ms > timing[GPS_BLENDED_INSTANCE].last_message_time_ms) {
             timing[GPS_BLENDED_INSTANCE].last_message_time_ms = timing[i].last_message_time_ms;
+            data_should_be_logged = true;
         }
 
     }
@@ -1739,6 +1741,13 @@ void AP_GPS::calc_blended_state(void)
     }
     timing[GPS_BLENDED_INSTANCE].last_fix_time_ms = (uint32_t)temp_time_1;
     timing[GPS_BLENDED_INSTANCE].last_message_time_ms = (uint32_t)temp_time_2;
+
+#ifndef HAL_BUILD_AP_PERIPH
+    if (data_should_be_logged &&
+        (should_log() || AP::ahrs().have_ekf_logging())) {
+        AP::logger().Write_GPS(GPS_BLENDED_INSTANCE);
+    }
+#endif
 }
 #endif // GPS_BLENDED_INSTANCE
 
