@@ -51,7 +51,8 @@ public:
     enum OAPathPlanTypes {
         OA_PATHPLAN_DISABLED = 0,
         OA_PATHPLAN_BENDYRULER = 1,
-        OA_PATHPLAN_DIJKSTRA = 2
+        OA_PATHPLAN_DIJKSTRA = 2,
+        OA_PATHPLAN_DJIKSTRA_BENDYRULER = 3,
     };
 
     // enumeration for _OPTION parameter
@@ -104,6 +105,7 @@ private:
     AP_OADatabase _oadatabase;      // Database of dynamic objects to avoid
     uint32_t avoidance_latest_ms;   // last time Dijkstra's or BendyRuler algorithms ran
 
+    bool proximity_only = true;
     static AP_OAPathPlanner *_singleton;
 };
 
