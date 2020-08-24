@@ -1230,8 +1230,7 @@ AP_AHRS_NavEKF::EKFType AP_AHRS_NavEKF::active_EKF_type(void) const
       wing and rover
      */
     if (ret != EKFType::NONE &&
-        (_vehicle_class == AHRS_VEHICLE_FIXED_WING ||
-         _vehicle_class == AHRS_VEHICLE_GROUND) &&
+        (_vehicle_class == AHRS_VEHICLE_FIXED_WING) &&
         (_flags.fly_forward || !hal.util->get_soft_armed())) {
         nav_filter_status filt_state;
 #if HAL_NAVEKF2_AVAILABLE
@@ -1251,7 +1250,7 @@ AP_AHRS_NavEKF::EKFType AP_AHRS_NavEKF::active_EKF_type(void) const
 #endif
         if (hal.util->get_soft_armed() && !filt_state.flags.using_gps && AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
             // if the EKF is not fusing GPS and we have a 3D lock, then
-            // plane and rover would prefer to use the GPS position from
+            // plane would prefer to use the GPS position from
             // DCM. This is a safety net while some issues with the EKF
             // get sorted out
             return EKFType::NONE;
