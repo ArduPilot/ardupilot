@@ -75,12 +75,12 @@ static bool test_byte_protocol(const char *name, uint32_t baudrate,
                                const uint8_t *bytes, uint8_t nbytes,
                                const uint16_t *values, uint8_t nvalues,
                                uint8_t repeats,
-                               int8_t pause_at)
+                               uint8_t pause_at)
 {
     bool ret = true;
     for (uint8_t repeat=0; repeat<repeats+4; repeat++) {
         for (uint8_t i=0; i<nbytes; i++) {
-            if (pause_at >= 0 && i == pause_at) {
+            if (pause_at > 0 && i > 0 && ((i % pause_at) == 0)) {
                 hal.scheduler->delay(10);
             }
             rcprot->process_byte(bytes[i], baudrate);
@@ -157,13 +157,13 @@ static void send_pause(uint8_t b, uint32_t baudrate, uint32_t pause_us)
 static bool test_pulse_protocol(const char *name, uint32_t baudrate,
                                 const uint8_t *bytes, uint8_t nbytes,
                                 const uint16_t *values, uint8_t nvalues,
-                                uint8_t repeats, int8_t pause_at)
+                                uint8_t repeats, uint8_t pause_at)
 {
     bool ret = true;
     for (uint8_t repeat=0; repeat<repeats+4; repeat++) {
         send_pause(1, baudrate, 6000);
         for (uint8_t i=0; i<nbytes; i++) {
-            if (pause_at >= 0 && i == pause_at) {
+            if (pause_at > 0 && i > 0 && ((i % pause_at) == 0)) {
                 send_pause(1, baudrate, 10000);
             }
             send_byte(bytes[i], baudrate);
@@ -248,6 +248,55 @@ void loop()
 
     const uint16_t dsm_output5[] = {1498, 1496, 999, 1497, 1901, 1901, 1099};
 
+    // DSMX 22ms D6G3 and SPM4648 autobound
+    const uint8_t dsmx22ms_bytes[] = {
+        0x00, 0xB2, 0x0C, 0x00, 0x29, 0x56, 0x14, 0x00,
+        0x25, 0xF8, 0x34, 0x00, 0x54, 0x00, 0xFF, 0xFF,
+        0x00, 0xB2, 0x81, 0x50, 0x3C, 0x00, 0x1B, 0xFD,
+        0x44, 0x00, 0x4C, 0x00, 0x5C, 0x00, 0xFF, 0xFF
+    };
+    const uint16_t dsmx22ms_output[] = {
+        1500, 1500, 1096, 1499, 1796, 1099, 1500, 1500, 1500, 1500, 1500, 1500
+    };
+
+    // DSMX 22ms D6G3 and SPM4648 autobound VTX frame Ch1, B1, Pw25, Race
+    const uint8_t dsmx22ms_vtx_bytes[] = {
+        // two normal frames to satisfy the format guesser
+        0x00, 0xB2, 0x0C, 0x00, 0x29, 0x56, 0x14, 0x00,
+        0x25, 0xF8, 0x34, 0x00, 0x54, 0x00, 0xFF, 0xFF,
+        0x00, 0xB2, 0x81, 0x50, 0x3C, 0x00, 0x1B, 0xFD,
+        0x44, 0x00, 0x4C, 0x00, 0x5C, 0x00, 0xFF, 0xFF,
+        // This is channels 1, 5, 2, 4, 6
+        0x00, 0xB2, 0x0C, 0x00, 0x29, 0x56, 0x14, 0x00,
+        0x25, 0xF8, 0x34, 0x00, 0xE0, 0x00, 0xE0, 0x0A
+    };
+    const uint16_t dsmx22ms_vtx_output[] = {
+        1500, 1500, 1096, 1499, 1796, 1099, 1500, 1500, 1500, 1500, 1500, 1500
+    };
+    // DSMX 11ms D6G3 and SPM4648 autobound
+    const uint8_t dsmx11ms_bytes[] = {
+        0x01, 0xB2, 0x0C, 0x00, 0x29, 0x56, 0x14, 0x00,
+        0x1B, 0xFC, 0x25, 0xF8, 0x44, 0x00, 0x4C, 0x00,
+        0x01, 0xB2, 0x8C, 0x00, 0x29, 0x56, 0x14, 0x00,
+        0x1B, 0xFC, 0x01, 0x50, 0x3C, 0x00, 0x34, 0x00
+    };
+    const uint16_t dsmx11ms_output[] = {
+        1500, 1500, 1096, 1498, 1796, 1099, 1500, 1500, 1500, 1500
+    };
+
+    // DSMX 11ms D6G3 and SPM4648 autobound VTX frame Ch1, B1, Pw25, Race
+    const uint8_t dsmx11ms_vtx_bytes[] = {
+        0x01, 0xB2, 0x0C, 0x00, 0x29, 0x56, 0x14, 0x00,
+        0x1B, 0xFD, 0x25, 0xF8, 0x44, 0x00, 0x4C, 0x00,
+        0x01, 0xB2, 0x8C, 0x00, 0x29, 0x56, 0x14, 0x00,
+        0x1B, 0xFD, 0x01, 0x50, 0x3C, 0x00, 0x34, 0x00,
+        0x00, 0xB2, 0x0C, 0x00, 0x29, 0x56, 0x14, 0x00,
+        0x1B, 0xFD, 0x25, 0xF8, 0xE0, 0x00, 0xE0, 0x0A
+    };
+    const uint16_t dsmx11ms_vtx_output[] = {
+        1500, 1500, 1096, 1499, 1796, 1099, 1500, 1500, 1500, 1500
+    };
+
     const uint8_t sumd_bytes[] = {0xA8, 0x01, 0x08, 0x2F, 0x50, 0x31, 0xE8, 0x21, 0xA0,
                                   0x2F, 0x50, 0x22, 0x60, 0x22, 0x60, 0x2E, 0xE0, 0x2E,
                                   0xE0, 0x87, 0xC6};
@@ -282,6 +331,10 @@ void loop()
     test_protocol("DSM3", 115200, dsm_bytes3, sizeof(dsm_bytes3), dsm_output3, ARRAY_SIZE(dsm_output3), 9, 16);
     test_protocol("DSM4", 115200, dsm_bytes4, sizeof(dsm_bytes4), dsm_output4, ARRAY_SIZE(dsm_output4), 9, 16);
     test_protocol("DSM5", 115200, dsm_bytes5, sizeof(dsm_bytes5), dsm_output5, ARRAY_SIZE(dsm_output5), 9);
+    test_protocol("DSMX22", 115200, dsmx22ms_bytes, sizeof(dsmx22ms_bytes), dsmx22ms_output, ARRAY_SIZE(dsmx22ms_output), 9, 16);
+    test_protocol("DSMX22_VTX", 115200, dsmx22ms_vtx_bytes, sizeof(dsmx22ms_vtx_bytes), dsmx22ms_vtx_output, ARRAY_SIZE(dsmx22ms_vtx_output), 9, 16);
+    test_protocol("DSMX11", 115200, dsmx11ms_bytes, sizeof(dsmx11ms_bytes), dsmx11ms_output, ARRAY_SIZE(dsmx11ms_output), 9, 16);
+    test_protocol("DSMX11_VTX", 115200, dsmx11ms_vtx_bytes, sizeof(dsmx11ms_vtx_bytes), dsmx11ms_vtx_output, ARRAY_SIZE(dsmx11ms_vtx_output), 9, 16);
 }
 
 AP_HAL_MAIN();

@@ -17,12 +17,17 @@
 /*
   with thanks to PX4 dsm.c for DSM decoding approach
  */
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 #include "AP_RCProtocol_DSM.h"
+#if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
+#include "AP_RCProtocol_SRXL2.h"
+#endif
 
 extern const AP_HAL::HAL& hal;
 
 // #define DSM_DEBUG
 #ifdef DSM_DEBUG
+#include <stdio.h>
 # define debug(fmt, args...)	printf(fmt "\n", ##args)
 #else
 # define debug(fmt, args...)	do {} while(0)
@@ -31,6 +36,18 @@ extern const AP_HAL::HAL& hal;
 
 #define DSM_FRAME_SIZE		16		/**<DSM frame size in bytes*/
 #define DSM_FRAME_CHANNELS	7		/**<Max supported DSM channels*/
+#define SPEKTRUM_VTX_CONTROL_FRAME_MASK 0xf000f000
+#define SPEKTRUM_VTX_CONTROL_FRAME      0xe000e000
+
+#define SPEKTRUM_VTX_BAND_MASK          0x00e00000
+#define SPEKTRUM_VTX_CHANNEL_MASK       0x000f0000
+#define SPEKTRUM_VTX_PIT_MODE_MASK      0x00000010
+#define SPEKTRUM_VTX_POWER_MASK         0x00000007
+
+#define SPEKTRUM_VTX_BAND_SHIFT         21
+#define SPEKTRUM_VTX_CHANNEL_SHIFT      16
+#define SPEKTRUM_VTX_PIT_MODE_SHIFT     4
+#define SPEKTRUM_VTX_POWER_SHIFT        0
 
 void AP_RCProtocol_DSM::process_pulse(uint32_t width_s0, uint32_t width_s1)
 {
@@ -87,7 +104,7 @@ bool AP_RCProtocol_DSM::dsm_decode_channel(uint16_t raw, unsigned shift, unsigne
  *
  * @param[in] reset true=reset the 10/11 bit state to unknown
  */
-void AP_RCProtocol_DSM::dsm_guess_format(bool reset, const uint8_t dsm_frame[16])
+void AP_RCProtocol_DSM::dsm_guess_format(bool reset, const uint8_t dsm_frame[16], unsigned frame_channels)
 {
     /* reset the 10/11 bit sniffed channel masks */
     if (reset) {
@@ -99,18 +116,18 @@ void AP_RCProtocol_DSM::dsm_guess_format(bool reset, const uint8_t dsm_frame[16]
     }
 
     /* scan the channels in the current dsm_frame in both 10- and 11-bit mode */
-    for (unsigned i = 0; i < DSM_FRAME_CHANNELS; i++) {
+    for (unsigned i = 0; i < frame_channels; i++) {
 
         const uint8_t *dp = &dsm_frame[2 + (2 * i)];
         uint16_t raw = (dp[0] << 8) | dp[1];
         unsigned channel, value;
 
         /* if the channel decodes, remember the assigned number */
-        if (dsm_decode_channel(raw, 10, &channel, &value) && (channel < 31)) {
+        if (dsm_decode_channel(raw, 10, &channel, &value) && (channel < 16)) {
             cs10 |= (1 << channel);
         }
 
-        if (dsm_decode_channel(raw, 11, &channel, &value) && (channel < 31)) {
+        if (dsm_decode_channel(raw, 11, &channel, &value) && (channel < 16)) {
             cs11 |= (1 << channel);
         }
 
@@ -134,15 +151,18 @@ void AP_RCProtocol_DSM::dsm_guess_format(bool reset, const uint8_t dsm_frame[16]
      *     of this issue.
      */
     static const uint32_t masks[] = {
+        0x1f,	/* 5 channels (DX6 VTX frame) */
         0x3f,	/* 6 channels (DX6) */
         0x7f,	/* 7 channels (DX7) */
         0xff,	/* 8 channels (DX8) */
         0x1ff,	/* 9 channels (DX9, etc.) */
         0x3ff,	/* 10 channels (DX10) */
-        0x7ff,	/* 11 channels DX8 22ms */
-        0xfff,	/* 12 channels DX8 22ms */
-        0x1fff,	/* 13 channels (DX10t) */
-        0x3fff	/* 18 channels (DX10) */
+        0x7ff,	/* 11 channels */
+        0xfff,	/* 12 channels */
+        0x1fff,	/* 13 channels */
+        0x3fff,	/* 14 channels */
+        0x7fff,	/* 15 channels */
+        0xffff	/* 16 channels */   // the remote receiver protocol supports max 16 channels
     };
     unsigned votes10 = 0;
     unsigned votes11 = 0;
@@ -172,7 +192,7 @@ void AP_RCProtocol_DSM::dsm_guess_format(bool reset, const uint8_t dsm_frame[16]
 
     /* call ourselves to reset our state ... we have to try again */
     debug("DSM: format detect fail, 10: 0x%08x %u 11: 0x%08x %u", cs10, votes10, cs11, votes11);
-    dsm_guess_format(true, dsm_frame);
+    dsm_guess_format(true, dsm_frame, frame_channels);
 }
 
 /**
@@ -187,16 +207,42 @@ bool AP_RCProtocol_DSM::dsm_decode(uint32_t frame_time_ms, const uint8_t dsm_fra
      * format guessing heuristic.
      */
     if (((frame_time_ms - last_frame_time_ms) > 200U) && (channel_shift != 0)) {
-        dsm_guess_format(true, dsm_frame);
+        dsm_guess_format(true, dsm_frame, DSM_FRAME_CHANNELS);
     }
 
     /* we have received something we think is a dsm_frame */
     last_frame_time_ms = frame_time_ms;
 
+    // Get the VTX control bytes in a frame
+    uint32_t vtxControl = ((dsm_frame[DSM_FRAME_SIZE-4] << 24)
+        | (dsm_frame[DSM_FRAME_SIZE-3] << 16)
+        | (dsm_frame[DSM_FRAME_SIZE-2] <<  8)
+        | (dsm_frame[DSM_FRAME_SIZE-1] <<  0));
+    const bool haveVtxControl =
+        ((vtxControl & SPEKTRUM_VTX_CONTROL_FRAME_MASK) == SPEKTRUM_VTX_CONTROL_FRAME &&
+        (dsm_frame[2] & 0x80) == 0);
+
+    unsigned frame_channels = DSM_FRAME_CHANNELS;
+    // Handle VTX control frame.
+    if (haveVtxControl)  {
+        frame_channels = DSM_FRAME_CHANNELS - 2;
+    }
+
     /* if we don't know the dsm_frame format, update the guessing state machine */
     if (channel_shift == 0) {
-        dsm_guess_format(false, dsm_frame);
+        dsm_guess_format(false, dsm_frame, frame_channels);
         return false;
+    }
+
+    // Handle VTX control frame.
+    if (haveVtxControl) {
+#if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
+        AP_RCProtocol_SRXL2::configure_vtx(
+            (vtxControl & SPEKTRUM_VTX_BAND_MASK)     >> SPEKTRUM_VTX_BAND_SHIFT,
+            (vtxControl & SPEKTRUM_VTX_CHANNEL_MASK)  >> SPEKTRUM_VTX_CHANNEL_SHIFT,
+            (vtxControl & SPEKTRUM_VTX_POWER_MASK)    >> SPEKTRUM_VTX_POWER_SHIFT,
+            (vtxControl & SPEKTRUM_VTX_PIT_MODE_MASK) >> SPEKTRUM_VTX_PIT_MODE_SHIFT);
+#endif
     }
 
     /*
@@ -210,7 +256,7 @@ bool AP_RCProtocol_DSM::dsm_decode(uint32_t frame_time_ms, const uint8_t dsm_fra
      * seven channels are being transmitted.
      */
 
-    for (unsigned i = 0; i < DSM_FRAME_CHANNELS; i++) {
+    for (unsigned i = 0; i < frame_channels; i++) {
 
         const uint8_t *dp = &dsm_frame[2 + (2 * i)];
         uint16_t raw = (dp[0] << 8) | dp[1];
@@ -431,6 +477,8 @@ bool AP_RCProtocol_DSM::dsm_parse_byte(uint32_t frame_time_ms, uint8_t b, uint16
          * Great, it looks like we might have a frame.  Go ahead and
          * decode it.
          */
+        log_data(AP_RCProtocol::DSM, frame_time_ms * 1000, byte_input.buf, byte_input.ofs);
+
         decode_ret = dsm_decode(frame_time_ms, byte_input.buf, values, &chan_count, max_channels);
 
         /* we consumed the partial frame, reset */
