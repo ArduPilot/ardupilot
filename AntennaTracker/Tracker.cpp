@@ -23,6 +23,7 @@
 #include "version.h"
 #undef FORCE_VERSION_H_INCLUDE
 
+#define SCHED_TASK_PRIO(func, _interval_ticks, _max_time_micros, _prio) SCHED_TASK_CLASS_PRIO(Tracker, &tracker, func, _interval_ticks, _max_time_micros, _prio)
 #define SCHED_TASK(func, _interval_ticks, _max_time_micros) SCHED_TASK_CLASS(Tracker, &tracker, func, _interval_ticks, _max_time_micros)
 
 /*
@@ -32,7 +33,7 @@
   microseconds)
  */
 const AP_Scheduler::Task Tracker::scheduler_tasks[] = {
-    SCHED_TASK(update_ahrs,            50,   1000),
+    SCHED_TASK_PRIO(update_ahrs,            50,   1000, 5),
     SCHED_TASK(read_radio,             50,    200),
     SCHED_TASK(update_tracking,        50,   1000),
     SCHED_TASK(update_GPS,             10,   4000),

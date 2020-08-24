@@ -98,16 +98,17 @@ void AP_Scheduler::init(const AP_Scheduler::Task *tasks, uint8_t num_tasks, uint
     }
     _last_loop_time_s = 1.0 / _loop_rate_hz;
 
+    _vehicle_tasks = tasks;
+    _num_vehicle_tasks = num_tasks;
+
     AP_Vehicle* vehicle = AP::vehicle();
     if (vehicle != nullptr) {
-        vehicle->get_common_scheduler_tasks(_common_tasks, _num_tasks);
+        vehicle->get_common_scheduler_tasks(_common_tasks, _num_common_tasks);
     }
-    _num_tasks += num_tasks;
-    _tasks = tasks;
-    _num_unshared_tasks = num_tasks;
 
-    _last_run = new uint16_t[_num_tasks];
-    memset(_last_run, 0, sizeof(_last_run[0]) * _num_tasks);
+    _num_tasks = _num_vehicle_tasks + _num_common_tasks;
+
+   _last_run = new uint16_t[_num_tasks];
     _tick_counter = 0;
 
     // setup initial performance counters
@@ -147,17 +148,54 @@ void AP_Scheduler::run(uint32_t time_available)
     if (_debug > 1 && _perf_counters == nullptr) {
         _perf_counters = new AP_HAL::Util::perf_counter_t[_num_tasks];
         if (_perf_counters != nullptr) {
-            for (uint8_t i=0; i<_num_unshared_tasks; i++) {
-                _perf_counters[i] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, _tasks[i].name);
+            uint8_t j = 0;
+            for (uint8_t i=0; i<_num_vehicle_tasks; i++) {
+                _perf_counters[j++] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, _vehicle_tasks[i].name);
             }
-            for (uint8_t i=_num_unshared_tasks; i<_num_tasks; i++) {
-                _perf_counters[i] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, _common_tasks[i].name);
+            for (uint8_t i=0; i<_num_common_tasks; i++) {
+                _perf_counters[j++] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, _common_tasks[i].name);
             }
         }
     }
-    
+
+    uint8_t vehicle_priority = 0;
+    uint8_t common_priority = 0;
+    uint8_t vehicle_tasks_offset = 0;
+    uint8_t common_tasks_offset = 0;
+
     for (uint8_t i=0; i<_num_tasks; i++) {
-        const AP_Scheduler::Task& task = (i < _num_unshared_tasks) ? _tasks[i] : _common_tasks[i - _num_unshared_tasks];
+        // determine which of the common task / vehicle task to run
+        bool run_vehicle_task = false;
+        if (vehicle_tasks_offset < _num_vehicle_tasks &&
+            common_tasks_offset < _num_common_tasks) {
+            // still have entries on both lists; compare the
+            // priorities.  In case of a tie the vehicle-specific
+            // entry wins.
+            const Task &vehicle_task = _vehicle_tasks[vehicle_tasks_offset];
+            const Task &common_task = _common_tasks[common_tasks_offset];
+            if (vehicle_priority + vehicle_task.priority_delta <= common_priority + common_task.priority_delta) {
+                run_vehicle_task = true;
+            }
+        } else if (vehicle_tasks_offset < _num_vehicle_tasks) {
+            // out of common tasks to run
+            run_vehicle_task = true;
+        } else if (common_tasks_offset < _num_common_tasks) {
+            // out of vehicle tasks to run
+            run_vehicle_task = false;
+        } else {
+            // this is an error; the outside loop should have terminated
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+            break;
+        }
+
+        const AP_Scheduler::Task &task = run_vehicle_task ? _vehicle_tasks[vehicle_tasks_offset] : _common_tasks[common_tasks_offset];
+        if (run_vehicle_task) {
+            vehicle_priority += _vehicle_tasks[vehicle_tasks_offset].priority_delta;
+            vehicle_tasks_offset++;
+        } else {
+            common_priority += _common_tasks[common_tasks_offset].priority_delta;
+            common_tasks_offset++;
+        }
 
         uint32_t dt = _tick_counter - _last_run[i];
         // we allow 0 to mean loop rate
