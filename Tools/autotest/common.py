@@ -170,12 +170,20 @@ class MAVProxyLogFile(object):
             sys.stdout.flush()
 
 class Telem(object):
-    def __init__(self, destination_address):
+    def __init__(self, destination_address, progress_function=None):
         self.destination_address = destination_address
 
         self.buffer = bytes()
         self.connected = False
         self.port = None
+        self.progress_function = progress_function
+
+    def progress(self, message):
+        message = "%s: %s" % (self.progress_tag(), message)
+        if self.progress_function is not None:
+            self.progress_function(message)
+            return
+        print(message)
 
     def connect(self):
         try:
@@ -262,8 +270,8 @@ class LTM(Telem):
     def s(self):
         return self.frames.get(self.FRAME_S, None)
 
-    def progress(self, message):
-        print("LTM: %s" % message)
+    def progress_tag(self):
+        return "LTM"
 
     def handle_data(self, dataid, value):
         self.progress("%u=%u" % (dataid, value))
@@ -297,7 +305,7 @@ class LTM(Telem):
             def intn(self, offset, count):
                 ret = 0
                 for i in range(offset, offset+count):
-                    print("byte: %02x" % ord(self.buffer[i]))
+#                    print("byte: %02x" % ord(self.buffer[i]))
                     ret = ret | (ord(self.buffer[i]) << ((i-offset)*8))
                 return ret
             def int32(self, offset):
@@ -413,8 +421,8 @@ class CRSF(Telem):
     def write_data_id(self, dataid):
         self.do_write(self.data_id_map[dataid])
 
-    def progress(self, message):
-        print("CRSF: %s" % message)
+    def progress_tag(self):
+        return "CRSF"
 
 class FRSky(Telem):
     def __init__(self, destination_address):
@@ -456,8 +464,8 @@ class FRSkyD(FRSky):
         self.data_by_id = {}
         self.bad_chars = 0
 
-    def progress(self, message):
-        print("FRSkyD: %s" % message)
+    def progress_tag(self):
+        return "FRSkyD"
 
     def handle_data(self, dataid, value):
         self.progress("%u=%u" % (dataid, value))
@@ -585,8 +593,8 @@ class FRSkySPort(FRSky):
         ]
         self.next_sensor_id_to_poll = 0 # offset into sensors_to_poll
 
-    def progress(self, message):
-        print("FRSkySPort: %s" % message)
+    def progress_tag(self):
+        return "FRSkySPort"
 
     def handle_data(self, dataid, value):
         self.progress("%s (0x%x)=%u" % (self.id_descriptions[dataid], dataid, value))
@@ -742,8 +750,8 @@ class FRSkyPassThrough(FRSkySPort):
 
         self.sensors_to_poll = [self.SENSOR_ID_27]
 
-    def progress(self, message):
-        print("FRSkyPassthrough: %s" % message)
+    def progress_tag(self):
+        return "FRSkyPassthrough"
 
 class AutoTest(ABC):
     """Base abstract class.
@@ -808,8 +816,7 @@ class AutoTest(ABC):
         self.logs_dir = logs_dir
         self.timesync_number = 137
 
-    @staticmethod
-    def progress(text):
+    def progress(self, text):
         """Display autotest progress text."""
         global __autotest__
         delta_time = time.time() - __autotest__.start_time
@@ -835,7 +842,7 @@ class AutoTest(ABC):
         if os.getenv("AUTOTEST_FORCE_MAVPROXY_VERSION", None) is not None:
             return True
         (got_major, got_minor, got_point) = self.mavproxy_version()
-        print("Got: %s.%s.%s" % (got_major, got_minor, got_point))
+        self.progress("Got: %s.%s.%s" % (got_major, got_minor, got_point))
         if got_major > major:
             return True
         elif got_major < major:
@@ -1047,7 +1054,7 @@ class AutoTest(ABC):
             except pexpect.TIMEOUT:
                 continue
             rate = self.mavproxy.match.group(1)
-            print("rate: %s" % str(rate))
+#            self.progress("rate: %s" % str(rate))
             if int(rate) == int(streamrate):
                 break
 
@@ -1102,7 +1109,7 @@ class AutoTest(ABC):
 #        cmd.append("--verbose")
         if util.run_cmd(cmd,
                         directory=util.reltopdir('.')) != 0:
-            print("Failed param_parse.py (%s)" % vehicle)
+            self.progress("Failed param_parse.py (%s)" % vehicle)
             return False
         htree = self.htree_from_xml(xml_filepath)
 
@@ -1120,7 +1127,7 @@ class AutoTest(ABC):
                 # too many of these to worry about
                 continue
             if param not in htree:
-                print("%s not in XML" % param)
+                self.progress("%s not in XML" % param)
                 fail = True
         if fail:
             raise NotAchievedException("Downloaded parameters missing in XML")
@@ -1402,7 +1409,7 @@ class AutoTest(ABC):
 #        cmd.append("--verbose")
         if util.run_cmd(cmd,
                         directory=util.reltopdir('.')) != 0:
-            print("Failed parse.py (%s)" % vehicle)
+            self.progress("Failed parse.py (%s)" % vehicle)
             return False
         length = os.path.getsize(xml_filepath)
         min_length = 1024
@@ -1430,8 +1437,8 @@ class AutoTest(ABC):
                 docco_ids[name]["labels"].append(fieldname)
 
         code_ids = self.all_log_format_ids()
-        print("Code ids: (%s)" % str(sorted(code_ids.keys())))
-        print("Docco ids: (%s)" % str(sorted(docco_ids.keys())))
+        self.progress("Code ids: (%s)" % str(sorted(code_ids.keys())))
+        self.progress("Docco ids: (%s)" % str(sorted(docco_ids.keys())))
 
         for name in sorted(code_ids.keys()):
             if name not in docco_ids:
@@ -1684,7 +1691,7 @@ class AutoTest(ABC):
             m = self.mav.recv_match(type='LOG_ENTRY',
                                     blocking=True,
                                     timeout=1)
-            print("Received (%s)" % str(m))
+            self.progress("Received (%s)" % str(m))
             if m is None:
                 continue
             logs.append(m)
@@ -2118,7 +2125,7 @@ class AutoTest(ABC):
             flist = glob.glob("logs/*.BIN")
             for e in ['BIN', 'bin', 'tlog']:
                 flist += glob.glob(os.path.join(logdir, '*.%s' % e))
-            print("Uploading %u logs to https://firmware.ardupilot.org/CI-Logs/%s" % (len(flist), datedir))
+            self.progress("Uploading %u logs to https://firmware.ardupilot.org/CI-Logs/%s" % (len(flist), datedir))
             cmd = ['rsync', '-avz'] + flist + ['cilogs@autotest.ardupilot.org::CI-Logs/%s/' % datedir]
             subprocess.call(cmd)
 
