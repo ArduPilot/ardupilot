@@ -475,7 +475,7 @@ bool AP_OABendyRuler::calc_margin_from_alt_fence(const Location &start, const Lo
     if (fence == nullptr) {
         return false;
     }
-    if ((fence->get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) == 0) {
+    if ((fence->get_enabled_fences() & AC_Fence::Type::ALT_MAX) == 0) {
         return false;
     }
 
