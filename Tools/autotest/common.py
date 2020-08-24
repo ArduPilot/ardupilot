@@ -5298,18 +5298,30 @@ Also, ignores heartbeats not from our target system'''
                      0,
                      0)
 
+    def send_get_message_interval(self, victim_message_id):
+        if False:
+            self.mavproxy.send("long GET_MESSAGE_INTERVAL %u\n" %
+                               (victim_message_id))
+        else:
+            self.mav.mav.command_long_send(
+                1,
+                1,
+                mavutil.mavlink.MAV_CMD_GET_MESSAGE_INTERVAL,
+                1,  # confirmation
+                float(victim_message_id),
+                0,
+                0,
+                0,
+                0,
+                0,
+                0)
+
     def test_rate(self, desc, in_rate, expected_rate):
         self.progress("###### %s" % desc)
         self.progress("Setting rate to %u" % in_rate)
-        # SET_MESSAGE_INTERVAL rates are given in microseconds
-        if in_rate == 0 or in_rate == -1:
-            set_interval = in_rate
-        else:
-            set_interval = self.rate_to_interval_us(in_rate)
 
-        self.mavproxy.send("long SET_MESSAGE_INTERVAL %u %d\n" %
-                           (self.victim_message_id, set_interval))
-        self.mav.recv_match(type='COMMAND_ACK', blocking=True)
+        self.set_message_rate_hz(self.victim_message_id, in_rate)
+
         new_measured_rate = self.get_message_rate(self.victim_message, 10)
         self.progress("Measured rate: %f (want %u)" %
                       (new_measured_rate, expected_rate))
@@ -5318,12 +5330,16 @@ Also, ignores heartbeats not from our target system'''
                                        (new_measured_rate, expected_rate))
 
         # make sure get_message_interval works:
-        self.mavproxy.send("long GET_MESSAGE_INTERVAL %u\n" %
-                           (self.victim_message_id))
+        self.send_get_message_interval(self.victim_message_id)
+
         m = self.mav.recv_match(type='MESSAGE_INTERVAL', blocking=True)
-        want = set_interval
-        if set_interval == 0:
+
+        if in_rate == 0:
             want = self.rate_to_interval_us(expected_rate)
+        elif in_rate == -1:
+            want = in_rate
+        else:
+            want = self.rate_to_interval_us(in_rate)
 
         if m.interval_us != want:
             raise NotAchievedException("Did not read same interval back from autopilot: want=%d got=%d)" %
@@ -5355,10 +5371,8 @@ Also, ignores heartbeats not from our target system'''
                 raise PreconditionFailedException("Already getting CAMERA_FEEDBACK")
             self.progress("try various message rates")
             for want_rate in range(5, 14):
-                self.mavproxy.send(
-                    "long SET_MESSAGE_INTERVAL %u %d\n" %
-                    (mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_FEEDBACK,
-                     self.rate_to_interval_us(want_rate)))
+                self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_FEEDBACK,
+                                         want_rate)
                 self.drain_mav()
                 rate = round(self.get_message_rate("CAMERA_FEEDBACK", 20))
                 self.progress("Want=%u got=%u" % (want_rate, rate))
@@ -5372,9 +5386,8 @@ Also, ignores heartbeats not from our target system'''
             self.set_parameter("SIM_SPEEDUP", 1.0)
             # ArduPilot currently limits message rate to 80% of main loop rate:
             want_rate = self.get_parameter("SCHED_LOOP_RATE") * 0.8
-            self.mavproxy.send("long SET_MESSAGE_INTERVAL %u %d\n" %
-                               (mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_FEEDBACK,
-                                self.rate_to_interval_us(want_rate)))
+            self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_FEEDBACK,
+                                     want_rate)
             rate = round(self.get_message_rate("CAMERA_FEEDBACK", 20))
             self.set_parameter("SIM_SPEEDUP", old_speedup)
             self.progress("Want=%f got=%f" % (want_rate, rate))
@@ -5387,8 +5400,7 @@ Also, ignores heartbeats not from our target system'''
             self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_FEEDBACK, -1)
 
             non_existant_id = 145
-            self.mavproxy.send("long GET_MESSAGE_INTERVAL %u\n" %
-                               (non_existant_id))
+            self.send_get_message_interval(non_existant_id)
             m = self.mav.recv_match(type='MESSAGE_INTERVAL', blocking=True)
             if m.interval_us != 0:
                 raise NotAchievedException("Supposed to get 0 back for unsupported stream")
