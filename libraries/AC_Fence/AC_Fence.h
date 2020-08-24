@@ -45,8 +45,10 @@ public:
         REPORT_ONLY  = 0, // report to GCS that boundary has been breached but take no further action
         RTL_AND_LAND = 1, // return to launch and, if that fails, land
         ALWAYS_LAND  = 2, // always land
+        HOLD         = 2, // for Rover
         SMART_RTL    = 3, // smartRTL, if that fails, RTL, it that still fails, land
         BRAKE        = 4, // brake, if that fails, land
+        SMART_RTL_HOLD = 4, // for Rover
     };
 
     /* Do not allow copies */
