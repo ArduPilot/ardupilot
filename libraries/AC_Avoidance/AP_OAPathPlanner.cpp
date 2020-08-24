@@ -37,7 +37,7 @@ const AP_Param::GroupInfo AP_OAPathPlanner::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Object Avoidance Path Planning algorithm to use
     // @Description: Enabled/disable path planning around obstacles
-    // @Values: 0:Disabled,1:BendyRuler,2:Dijkstra
+    // @Values: 0:Disabled,1:BendyRuler,2:Dijkstra,3:Dijkstra with BendyRuler
     // @User: Standard
     AP_GROUPINFO_FLAGS("TYPE", 1,  AP_OAPathPlanner, _type, OA_PATHPLAN_DISABLED, AP_PARAM_FLAG_ENABLE),
 
@@ -101,6 +101,15 @@ void AP_OAPathPlanner::init()
             _oadijkstra = new AP_OADijkstra();
         }
         break;
+    case OA_PATHPLAN_DJIKSTRA_BENDYRULER:
+        if (_oadijkstra == nullptr) {
+            _oadijkstra = new AP_OADijkstra();
+        }
+        if (_oabendyruler == nullptr) {
+            _oabendyruler = new AP_OABendyRuler();
+            AP_Param::load_object_from_eeprom(_oabendyruler, AP_OABendyRuler::var_info);
+        }
+        break;
     }
 
     _oadatabase.init();
@@ -133,6 +142,12 @@ bool AP_OAPathPlanner::pre_arm_check(char *failure_msg, uint8_t failure_msg_len)
     case OA_PATHPLAN_DIJKSTRA:
         if (_oadijkstra == nullptr) {
             hal.util->snprintf(failure_msg, failure_msg_len, "Dijkstra OA requires reboot");
+            return false;
+        }
+        break;
+    case OA_PATHPLAN_DJIKSTRA_BENDYRULER:
+        if(_oadijkstra == nullptr || _oabendyruler == nullptr) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "OA requires reboot");
             return false;
         }
         break;
@@ -267,12 +282,12 @@ void AP_OAPathPlanner::avoidance_thread()
                 continue;
             }
             _oabendyruler->set_config(_margin_max);
-            if (_oabendyruler->update(avoidance_request2.current_loc, avoidance_request2.destination, avoidance_request2.ground_speed_vec, origin_new, destination_new)) {
+            if (_oabendyruler->update(avoidance_request2.current_loc, avoidance_request2.destination, avoidance_request2.ground_speed_vec, origin_new, destination_new, false)) {
                 res = OA_SUCCESS;
             }
             break;
 
-        case OA_PATHPLAN_DIJKSTRA:
+        case OA_PATHPLAN_DIJKSTRA: {
             if (_oadijkstra == nullptr) {
                 continue;
             }
@@ -290,6 +305,42 @@ void AP_OAPathPlanner::avoidance_thread()
                 break;
             }
             break;
+        }
+
+        case OA_PATHPLAN_DJIKSTRA_BENDYRULER: {
+            if ((_oabendyruler == nullptr) || _oadijkstra == nullptr) {
+                continue;
+            } 
+            _oabendyruler->set_config(_margin_max);
+            if (_oabendyruler->update(avoidance_request2.current_loc, avoidance_request2.destination, avoidance_request2.ground_speed_vec, origin_new, destination_new, proximity_only)) {
+                // detected a obstacle by vehicle's proximity sensor. Switch avoidance to BendyRuler till obstacle is out of the way
+                proximity_only = false;
+                res = OA_SUCCESS;
+                break;
+            } else {
+                // cleared all obstacles, trigger Dijkstra's to calculate path based on current deviated position  
+                if (proximity_only == false) {
+                    _oadijkstra->recalculate_path();
+                }
+                // only use proximity avoidance now for BendyRuler
+                proximity_only = true;
+            }
+            _oadijkstra->set_fence_margin(_margin_max);
+            const AP_OADijkstra::AP_OADijkstra_State dijkstra_state = _oadijkstra->update(avoidance_request2.current_loc, avoidance_request2.destination, origin_new, destination_new);
+            switch (dijkstra_state) {
+            case AP_OADijkstra::DIJKSTRA_STATE_NOT_REQUIRED:
+                res = OA_NOT_REQUIRED;
+                break;
+            case AP_OADijkstra::DIJKSTRA_STATE_ERROR:
+                res = OA_ERROR;
+                break;
+            case AP_OADijkstra::DIJKSTRA_STATE_SUCCESS:
+                res = OA_SUCCESS;
+                break;
+            }
+            break;
+        }
+
         }
 
         {
