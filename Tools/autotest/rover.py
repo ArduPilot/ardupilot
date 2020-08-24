@@ -367,7 +367,20 @@ class AutoTestRover(AutoTest):
         self.disarm_vehicle()
 
     def do_get_banner(self):
-        self.mavproxy.send("long DO_SEND_BANNER 1\n")
+        target_sysid = self.sysid_thismav()
+        target_compid = 1
+        self.mav.mav.command_long_send(
+            target_sysid,
+            target_compid,
+            mavutil.mavlink.MAV_CMD_DO_SEND_BANNER,
+            1, # confirmation
+            1, # send it
+            0,
+            0,
+            0,
+            0,
+            0,
+            0)
         start = time.time()
         while True:
             m = self.mav.recv_match(type='STATUSTEXT',
