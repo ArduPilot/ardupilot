@@ -5335,6 +5335,7 @@ Also, ignores heartbeats not from our target system'''
     def test_set_message_interval(self):
         self.victim_message = 'VFR_HUD'
         self.victim_message_id = mavutil.mavlink.MAVLINK_MSG_ID_VFR_HUD
+        ex = None
         try:
             # tell MAVProxy to stop stuffing around with the rates:
             self.mavproxy.send("set streamrate -1\n")
@@ -5395,16 +5396,17 @@ Also, ignores heartbeats not from our target system'''
             if m.result != mavutil.mavlink.MAV_RESULT_FAILED:
                 raise NotAchievedException("Getting rate of unsupported message is a failure")
 
-            sr = self.sitl_streamrate()
-            self.mavproxy.send("set streamrate %u\n" % sr)
-
         except Exception as e:
             self.progress("Caught exception: %s" %
                           self.get_exception_stacktrace(e))
-            # tell MAVProxy to start stuffing around with the rates:
-            sr = self.sitl_streamrate()
-            self.mavproxy.send("set streamrate %u\n" % sr)
-            raise e
+            ex = e
+
+        # tell MAVProxy to start stuffing around with the rates:
+        sr = self.sitl_streamrate()
+        self.mavproxy.send("set streamrate %u\n" % sr)
+
+        if ex is not None:
+            raise ex
 
     def test_request_message(self, timeout=60):
         rate = round(self.get_message_rate("CAMERA_FEEDBACK", 10))
