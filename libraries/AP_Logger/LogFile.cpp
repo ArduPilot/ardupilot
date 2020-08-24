@@ -142,6 +142,10 @@ void AP_Logger::Write_GPS(uint8_t i, uint64_t time_us)
     float yaw_deg=0, yaw_accuracy_deg=0;
     gps.gps_yaw_deg(i, yaw_deg, yaw_accuracy_deg);
 
+#if defined(GPS_BLENDED_INSTANCE)
+    static_assert((uint8_t)LOG_GPS_MSG+GPS_BLENDED_INSTANCE == (uint8_t)LOG_GPSB_MSG,
+                  "enum value of LOG_GPSB_MSG must directly follow the last supported instance of LOG_GPS_MSG");
+#endif
     const struct log_GPS pkt = {
         LOG_PACKET_HEADER_INIT((uint8_t)(LOG_GPS_MSG+i)),
         time_us       : time_us,
@@ -166,6 +170,10 @@ void AP_Logger::Write_GPS(uint8_t i, uint64_t time_us)
     gps.horizontal_accuracy(i, hacc);
     gps.vertical_accuracy(i, vacc);
     gps.speed_accuracy(i, sacc);
+#if defined(GPS_BLENDED_INSTANCE)
+    static_assert((uint8_t)LOG_GPA_MSG+GPS_BLENDED_INSTANCE == (uint8_t)LOG_GPAB_MSG,
+                  "enum value of LOG_GPAB_MSG must directly follow the last supported instance of LOG_GPA_MSG");
+#endif
     struct log_GPA pkt2{
         LOG_PACKET_HEADER_INIT((uint8_t)(LOG_GPA_MSG+i)),
         time_us       : time_us,
