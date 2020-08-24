@@ -812,7 +812,7 @@ void AP_GPS::update_instance(uint8_t instance)
         AP::logger().Write_GPS(instance);
     }
 
-    if (state[instance].status >= GPS_OK_FIX_3D) {
+    if (state[instance].status >= GPS_OK_FIX_3D && instance == 0) {
         const uint64_t now = time_epoch_usec(instance);
         if (now != 0) {
             AP::rtc().set_utc_usec(now, AP_RTC::SOURCE_GPS);
