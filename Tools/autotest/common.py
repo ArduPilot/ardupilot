@@ -830,12 +830,19 @@ class AutoTest(ABC):
             self.force_ahrs_type = int(self.force_ahrs_type)
         self.logs_dir = logs_dir
         self.timesync_number = 137
+        self.last_progress_sent_as_statustext = None
 
-    def progress(self, text):
+    def progress(self, text, send_statustext=True):
         """Display autotest progress text."""
         global __autotest__
         delta_time = time.time() - __autotest__.start_time
-        print("AT-%06.1f: %s" % (delta_time,text))
+        formatted_text = "AT-%06.1f: %s" % (delta_time,text)
+        print(formatted_text)
+        if (send_statustext and
+            self.mav is not None and
+            self.last_progress_sent_as_statustext != text):
+                self.send_statustext(formatted_text)
+                self.last_progress_sent_as_statustext = text
 
     # following two functions swiped from autotest.py:
     @staticmethod
@@ -1082,7 +1089,7 @@ class AutoTest(ABC):
                 raise AutoTestTimeoutException("Did not detect reboot")
             try:
                 current_bootcount = self.get_parameter('STAT_BOOTCNT', timeout=1, attempts=3)
-                print("current=%s required=%u" % (str(current_bootcount), required_bootcount))
+                self.progress("current=%s required=%u" % (str(current_bootcount), required_bootcount))
                 if current_bootcount == required_bootcount:
                     break
             except NotAchievedException:
@@ -1654,7 +1661,7 @@ class AutoTest(ABC):
             rate = "instantly"
         else:
             rate = "%f/s" % (count/float(tdelta),)
-        self.progress("Drained %u bytes from mav (%s).  These were unparsed." % (count, rate))
+        self.progress("Drained %u bytes from mav (%s).  These were unparsed." % (count, rate), send_statustext=False)
         if freshen_sim_time:
             self.get_sim_time()
 
@@ -1673,7 +1680,7 @@ class AutoTest(ABC):
         else:
             rate = "%f/s" % (count/float(tdelta),)
 
-        self.progress("Drained %u messages from mav (%s)" % (count, rate))
+        self.progress("Drained %u messages from mav (%s)" % (count, rate), send_statustext=False)
 
     def do_timesync_roundtrip(self):
         self.progress("Doing timesync roundtrip")
@@ -4167,7 +4174,6 @@ Also, ignores heartbeats not from our target system'''
         tee = TeeBoth(test_output_filename, 'w', self.mavproxy_logfile)
 
         prettyname = "%s (%s)" % (name, desc)
-        self.send_statustext(prettyname)
         self.start_test(prettyname)
         self.set_current_test_name(name)
         old_contexts_length = len(self.contexts)
