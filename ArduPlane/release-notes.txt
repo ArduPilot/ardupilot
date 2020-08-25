@@ -1,3 +1,31 @@
+Release 4.0.6beta5, 25th August 2020
+------------------------------------
+
+This should be the final beta for 4.0.6. Several important fixes are
+included:
+
+ - fixed disable of throttle nudge during a RC failsafe
+
+ - added support for a wider range of DLVR airspeed sensors
+
+ - fixed RC input processing for out of range RC channels
+
+ - added THR_FAILSAFE=2 option for flying BVLOS with only GCS
+   failsafes enabled
+
+ - fixed reordering of compasses on boot based on compass priorities
+
+ - fixed use of minimum accuracy for GPS data in EKF2 and EKF3, fixing
+   an issue with RTK GPS modules that report overly optimistic
+   accuracy values
+
+ - fixed handling of RC_OPTION bit for disabling receiver failsafe
+   handling
+
+ - fixed LOITER_TO_ALT with terrain altitude target
+
+Happy flying!
+
 Release 4.0.6beta4, 27th July 2020
 ----------------------------------
 
