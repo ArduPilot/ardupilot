@@ -1,4 +1,24 @@
--- quadruped robot script 
+-- Lua "motor driver" for a four legged (aka quadruped) walking robot
+-- 
+-- This script consumes controller outputs (i.e. roll, pitch, yaw/steering, throttle, lateral) from
+-- the vehicle code and then calculates the outputs for 12 servos controlling four legs
+--
+-- AutoPilot servo connections:
+-- Output1: front right coxa (hip) servo
+-- Output2: front right femur (thigh) servo
+-- Output3: front right tibia (shin) servo
+-- Output4: front left coxa (hip) servo
+-- Output5: front left femur (thigh) servo
+-- Output6: front left tibia (shin) servo
+-- Output7: back right coxa (hip) servo
+-- Output8: back right femur (thigh) servo
+-- Output9: back right tibia (shin) servo
+-- Output10: back left coxa (hip) servo
+-- Output11: back left femur (thigh) servo
+-- Output12: back left tibia (shin) servo
+--
+-- CAUTION: This script should only be used with ArduPilot Rover's firmware
+
 
 local FRAME_LEN = 80    -- frame length in mm
 local FRAME_WIDTH = 150 -- frame width in mm
@@ -17,10 +37,10 @@ local body_pos_y = 0    -- body position in the Y axis (i.e. right, left).  shou
 local body_pos_z = 0    -- body position in the Z axis (i.e. up, down).  should be -40mm to +40mm
 
 -- starting positions of the legs
-local endpoints1 = {math.cos(45/180*math.pi)*(COXA_LEN + FEMUR_LEN), math.sin(45/180*math.pi)*(COXA_LEN + FEMUR_LEN), TIBIA_LEN }
-local endpoints2 = {math.cos(45/180*math.pi)*(COXA_LEN + FEMUR_LEN), math.sin(-45/180*math.pi)*(COXA_LEN + FEMUR_LEN), TIBIA_LEN }
-local endpoints3 = {-math.cos(45/180*math.pi)*(COXA_LEN + FEMUR_LEN), math.sin(-45/180*math.pi)*(COXA_LEN + FEMUR_LEN), TIBIA_LEN }
-local endpoints4 = {-math.cos(45/180*math.pi)*(COXA_LEN + FEMUR_LEN), math.sin(45/180*math.pi)*(COXA_LEN + FEMUR_LEN), TIBIA_LEN }
+local endpoints1 = {math.cos(math.rad(45))*(COXA_LEN + FEMUR_LEN), math.sin(math.rad(45))*(COXA_LEN + FEMUR_LEN), TIBIA_LEN}
+local endpoints2 = {math.cos(math.rad(45))*(COXA_LEN + FEMUR_LEN), math.sin(math.rad(-45))*(COXA_LEN + FEMUR_LEN), TIBIA_LEN}
+local endpoints3 = {-math.cos(math.rad(45))*(COXA_LEN + FEMUR_LEN), math.sin(math.rad(-45))*(COXA_LEN + FEMUR_LEN), TIBIA_LEN}
+local endpoints4 = {-math.cos(math.rad(45))*(COXA_LEN + FEMUR_LEN), math.sin(math.rad(45))*(COXA_LEN + FEMUR_LEN), TIBIA_LEN}
 
 -- control input enum
 local control_input_roll = 1
@@ -57,7 +77,6 @@ local last_angle = {0,0,0,0,0,0,0,0,0,0,0,0}
 local current = {0,0,0,0,0,0,0,0,0,0,0,0}
 local start_time = 0
 local curr_target = 0
-local pwm = {1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500}
 
 function Gaitselect()
     if (gait_type == 0) then
@@ -133,21 +152,21 @@ function update_leg(moving_leg)
         gait_rot_z[moving_leg] = yaw_speed/gait_lift_divisor
 
     elseif (((gait_lifted_steps==5 and (leg_step==-2 ))) and move_requested) then
-        gait_pos_x[moving_leg] = -x_speed/2
-        gait_pos_z[moving_leg] = -leg_lift_height/2
-        gait_pos_y[moving_leg] = -y_speed/2
-        gait_rot_z[moving_leg] = -yaw_speed/2
+        gait_pos_x[moving_leg] = -x_speed * 0.5
+        gait_pos_z[moving_leg] = -leg_lift_height * 0.5
+        gait_pos_y[moving_leg] = -y_speed * 0.5
+        gait_rot_z[moving_leg] = -yaw_speed * 0.5
 
     elseif ((gait_lifted_steps==5) and (leg_step==2 or leg_step==-(gait_step_total-2)) and move_requested) then
-        gait_pos_x[moving_leg] = x_speed/2
-        gait_pos_z[moving_leg] = -leg_lift_height/2
-        gait_pos_y[moving_leg] = y_speed/2
-        gait_rot_z[moving_leg] = yaw_speed/2
+        gait_pos_x[moving_leg] = x_speed * 0.5
+        gait_pos_z[moving_leg] = -leg_lift_height * 0.5
+        gait_pos_y[moving_leg] = y_speed * 0.5
+        gait_rot_z[moving_leg] = yaw_speed * 0.5
 
     elseif ((leg_step==gait_down_steps or leg_step==-(gait_step_total-gait_down_steps)) and gait_pos_y[moving_leg]<0) then
-        gait_pos_x[moving_leg] = x_speed/2
-        gait_pos_z[moving_leg] = y_speed/2
-        gait_pos_y[moving_leg] = yaw_speed/2
+        gait_pos_x[moving_leg] = x_speed * 0.5
+        gait_pos_z[moving_leg] = y_speed * 0.5
+        gait_pos_y[moving_leg] = yaw_speed * 0.5
         gait_rot_z[moving_leg] = 0
 
     else
@@ -167,38 +186,36 @@ function body_forward_kinematics(X, Y, Z, Xdist, Ydist, Zrot)
     local totaldist = {X + Xdist + body_pos_x, Y + Ydist + body_pos_y}
     local distBodyCenterFeet = math.sqrt(totaldist[1]^2 + totaldist[2]^2)
     local AngleBodyCenter = math.atan(totaldist[2], totaldist[1])
-    local rolly = math.tan(body_rot_y * math.pi/180) * totaldist[1]
-    local pitchy = math.tan(body_rot_x * math.pi/180) * totaldist[2]
+    local rolly = math.tan(math.rad(body_rot_y)) * totaldist[1]
+    local pitchy = math.tan(math.rad(body_rot_x)) * totaldist[2]
 
-    local ansx = math.cos(AngleBodyCenter + ((body_rot_z+Zrot)  * math.pi/180)) * distBodyCenterFeet - totaldist[1] + body_pos_x
-    local ansy = math.sin(AngleBodyCenter + ((body_rot_z+Zrot) * math.pi/180)) * distBodyCenterFeet - totaldist[2] + body_pos_y
+    local ansx = math.cos(AngleBodyCenter + math.rad(body_rot_z+Zrot)) * distBodyCenterFeet - totaldist[1] + body_pos_x
+    local ansy = math.sin(AngleBodyCenter + math.rad(body_rot_z+Zrot)) * distBodyCenterFeet - totaldist[2] + body_pos_y
     local ansz = rolly + pitchy + body_pos_z
-    local ans = {ansx, ansy, ansz}
-    return ans
+    return {ansx, ansy, ansz}
 end
 
 -- Leg Inverse Kinematics calculates the angles for each servo of each joint using the output of the
 -- body_forward_kinematics() function which gives the origin of each leg on the body frame
-function leg_inverse_kinematics(X , Y , Z)
-    local coxa = math.atan(X,Y)* 180/math.pi
-    local trueX = math.sqrt(X^2+ Y^2 ) - COXA_LEN
-    local im = math.sqrt(trueX^2 + Z^2)
+function leg_inverse_kinematics(x, y, z)
+    local coxa = math.deg(math.atan(x, y))
+    local trueX = math.sqrt(x^2 + y^2) - COXA_LEN
+    local im = math.sqrt(trueX^2 + z^2)
 
-    local q1 = -math.atan(Z,trueX)
+    local q1 = -math.atan(z, trueX)
     local d1 = FEMUR_LEN^2 - TIBIA_LEN^2 + im^2
     local d2 = 2*FEMUR_LEN*im
     local q2 = math.acos(d1/d2)
-    local femur = (q1+q2) * 180/math.pi
+    local femur = math.deg(q1+q2)
 
-    local d1 = FEMUR_LEN^2 - im^2 + TIBIA_LEN^2
-    local d2 = 2*TIBIA_LEN*FEMUR_LEN
-    local tibia = (math.acos(d1/d2)-1.57) * 180/math.pi
-    local ang = { coxa, -femur ,-tibia}
-    return ang
+    d1 = FEMUR_LEN^2 - im^2 + TIBIA_LEN^2
+    d2 = 2*TIBIA_LEN*FEMUR_LEN
+    local tibia = math.deg(math.acos(d1/d2)-math.rad(90))
+    return {coxa, -femur, -tibia}
 end
 
--- checks if the servo has moved to its expected postion 
-function servo_estimate(start_time,current,last_angle)
+-- checks if the servo has moved to its expected position 
+function servo_estimate()
     local target = 0
     for j = 1, 12 do
         curr_target = math.abs(current[j] - last_angle[j])
@@ -207,37 +224,31 @@ function servo_estimate(start_time,current,last_angle)
         end
     end
     local target_time = target * (0.24/60) * 1000
-    local now = millis()
-
-    if (target_time + start_time) <= now then
-        return true
-    else
-        return false
-    end
+    return (target_time + start_time) <= millis()
 end
 
 -- main_inverse_kinematics produces the inverse kinematic solution for each
 -- leg joint servo by taking into consideration the initial_pos, gait offset and the body inverse kinematic values.
 function main_inverse_kinematics()
-    local ans1 = body_forward_kinematics(endpoints1[1]+gait_pos_x[1], endpoints1[2]+gait_pos_y[1], endpoints1[3]+gait_pos_z[1], FRAME_LEN/2, FRAME_WIDTH/2,gait_rot_z[1])
+    local ans1 = body_forward_kinematics(endpoints1[1]+gait_pos_x[1], endpoints1[2]+gait_pos_y[1], endpoints1[3]+gait_pos_z[1], FRAME_LEN*0.5, FRAME_WIDTH*0.5, gait_rot_z[1])
     local angles1 = leg_inverse_kinematics(endpoints1[1]+ans1[1]+gait_pos_x[1],endpoints1[2]+ans1[2]+gait_pos_y[1], endpoints1[3]+ans1[3]+gait_pos_z[1])
     angles1 = {-45 + angles1[1],angles1[2],angles1[3]}
 
-    local ans2 = body_forward_kinematics(endpoints2[1]+gait_pos_x[2], endpoints2[2]+gait_pos_y[2], endpoints2[3]+gait_pos_z[2], FRAME_LEN/2, -FRAME_WIDTH/2,gait_rot_z[2])
+    local ans2 = body_forward_kinematics(endpoints2[1]+gait_pos_x[2], endpoints2[2]+gait_pos_y[2], endpoints2[3]+gait_pos_z[2], FRAME_LEN*0.5, -FRAME_WIDTH*0.5, gait_rot_z[2])
     local angles2 = leg_inverse_kinematics(endpoints2[1]+ans2[1]+gait_pos_x[2],endpoints2[2]+ans2[2]+gait_pos_y[2], endpoints2[3]+ans2[3]+gait_pos_z[2])
     angles2 = {-135 + angles2[1],angles2[2],angles2[3]}
 
-    local ans3 = body_forward_kinematics(endpoints3[1]+gait_pos_x[3], endpoints3[2]+gait_pos_y[3], endpoints3[3]+gait_pos_z[3], -FRAME_LEN/2, -FRAME_WIDTH/2,gait_rot_z[3])
+    local ans3 = body_forward_kinematics(endpoints3[1]+gait_pos_x[3], endpoints3[2]+gait_pos_y[3], endpoints3[3]+gait_pos_z[3], -FRAME_LEN*0.5, -FRAME_WIDTH*0.5, gait_rot_z[3])
     local angles3 = leg_inverse_kinematics(endpoints3[1]+ans3[1]+gait_pos_x[3],endpoints3[2]+ans3[2]+gait_pos_y[3], endpoints3[3]+ans3[3]+gait_pos_z[3])
     angles3 = {135 + angles3[1],angles3[2],angles3[3]}
 
-    local ans4 = body_forward_kinematics(endpoints4[1]+gait_pos_x[4], endpoints4[2]+gait_pos_y[4], endpoints4[3]+gait_pos_z[4], -FRAME_LEN/2, FRAME_WIDTH/2,gait_rot_z[4])
+    local ans4 = body_forward_kinematics(endpoints4[1]+gait_pos_x[4], endpoints4[2]+gait_pos_y[4], endpoints4[3]+gait_pos_z[4], -FRAME_LEN*0.5, FRAME_WIDTH*0.5, gait_rot_z[4])
     local angles4 = leg_inverse_kinematics(endpoints4[1]+ans4[1]+gait_pos_x[4],endpoints4[2]+ans4[2]+gait_pos_y[4], endpoints4[3]+ans4[3]+gait_pos_z[4])
     angles4 = {45 + angles4[1],angles4[2],angles4[3]}
     Gaitselect()
     current = {angles1[1],angles1[2],angles1[3],angles2[1],angles2[2],angles2[3],angles3[1],angles3[2],angles3[3],angles4[1],angles4[2],angles4[3]}
 
-    if servo_estimate(start_time, current, last_angle) then
+    if servo_estimate() then
         start_time = millis()
         calc_gait_sequence()
         last_angle = current
@@ -266,17 +277,13 @@ function update()
 
     if arming:is_armed() then
         FR_angles, BL_angles, BR_angles, FL_angles = main_inverse_kinematics()
-        angles = { FR_angles[1],FR_angles[2],FR_angles[3] , FL_angles[1],FL_angles[2],FL_angles[3],BR_angles[1],BR_angles[2],BR_angles[3], BL_angles[1],BL_angles[2],BL_angles[3]}
+        angles = {FR_angles[1], FR_angles[2], FR_angles[3], FL_angles[1], FL_angles[2], FL_angles[3], BR_angles[1], BR_angles[2], BR_angles[3], BL_angles[1], BL_angles[2], BL_angles[3]}
     else
         angles = rest_angles
     end
 
-    for j = 1, 12 do
-        pwm[j] = math.floor(((angles[j] * servo_direction[j] * 1000)/90) + 1500)
-    end
-
     for i = 1, 12 do
-        SRV_Channels:set_output_pwm_chan_timeout(i-1, pwm[i], 1000)
+        SRV_Channels:set_output_pwm_chan_timeout(i-1, math.floor(((angles[i] * servo_direction[i] * 1000)/90) + 1500), 1000)
     end
 
     return update,10
