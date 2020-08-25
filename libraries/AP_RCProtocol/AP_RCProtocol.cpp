@@ -25,8 +25,8 @@
 #include "AP_RCProtocol_SRXL.h"
 #if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
 #include "AP_RCProtocol_SRXL2.h"
-#endif
 #include "AP_RCProtocol_CRSF.h"
+#endif
 #include "AP_RCProtocol_ST24.h"
 #include "AP_RCProtocol_FPort.h"
 #include <AP_Math/AP_Math.h>
@@ -243,6 +243,7 @@ void AP_RCProtocol::check_added_uart(void)
             added.uart->set_options(added.uart->get_options() | AP_HAL::UARTDriver::OPTION_RXINV);
             break;
         case CONFIG_420000_8N1:
+#if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
             added.baudrate = CRSF_BAUDRATE;
             added.uart->configure_parity(0);
             added.uart->set_stop_bits(1);
@@ -250,6 +251,7 @@ void AP_RCProtocol::check_added_uart(void)
             added.uart->set_unbuffered_writes(true);
             added.uart->set_blocking_writes(false);
             added.uart->set_options(added.uart->get_options() & ~AP_HAL::UARTDriver::OPTION_RXINV);
+#endif
             break;
         }
         added.uart->begin(added.baudrate, 128, 128);
