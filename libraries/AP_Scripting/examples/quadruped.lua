@@ -1,212 +1,200 @@
 -- quadruped robot script 
 
-local L = 80  -- length of frame
-local W = 150  -- width of frame 
+local FRAME_LEN = 80    -- frame length in mm
+local FRAME_WIDTH = 150 -- frame width in mm
 
-local L_COXA = 30 --distance from coxa servo to femur servo
-local L_FEMUR = 85    --distance from femur servo to tibia servo
-local L_TIBIA = 125   --distance from tibia servo to foot
+local COXA_LEN = 30     -- distance (in mm) from coxa (aka hip) servo to femur servo
+local FEMUR_LEN = 85    -- distance (in mm) from femur servo to tibia servo
+local TIBIA_LEN = 125   -- distance (in mm) from tibia servo to foot
 
 --body position and rotation parameters
-local bodyRotX = 0
-local bodyRotY = 0         
-local bodyRotZ = 0    
-local bodyPosX = 0     
-local bodyPosY = 0            
-local bodyPosZ = 0
+local body_rot_max = 10 -- body rotation maximum for any individual axis
+local body_rot_x = 0    -- body rotation about the X axis (i.e. roll rotation)
+local body_rot_y = 0    -- body rotation about the Y axis (i.e. pitch rotation)
+local body_rot_z = 0    -- body rotation about the Z axis (i.e. yaw rotation)
+local body_pos_x = 0    -- body position in the X axis (i.e. forward, back).  should be -40mm to +40mm
+local body_pos_y = 0    -- body position in the Y axis (i.e. right, left).  should be -40mm to +40mm
+local body_pos_z = 0    -- body position in the Z axis (i.e. up, down).  should be -40mm to +40mm
 
 -- starting positions of the legs
-local endpoints1 = {math.cos(45/180*math.pi)*(L_COXA + L_FEMUR), math.sin(45/180*math.pi)*(L_COXA + L_FEMUR),      L_TIBIA }
-local endpoints2 = {math.cos(45/180*math.pi)*(L_COXA + L_FEMUR), math.sin(-45/180*math.pi)*(L_COXA + L_FEMUR),      L_TIBIA }
-local endpoints3 = {-math.cos(45/180*math.pi)*(L_COXA + L_FEMUR), math.sin(-45/180*math.pi)*(L_COXA + L_FEMUR),      L_TIBIA }
-local endpoints4 = {-math.cos(45/180*math.pi)*(L_COXA + L_FEMUR), math.sin(45/180*math.pi)*(L_COXA + L_FEMUR),      L_TIBIA }
+local endpoints1 = {math.cos(45/180*math.pi)*(COXA_LEN + FEMUR_LEN), math.sin(45/180*math.pi)*(COXA_LEN + FEMUR_LEN), TIBIA_LEN }
+local endpoints2 = {math.cos(45/180*math.pi)*(COXA_LEN + FEMUR_LEN), math.sin(-45/180*math.pi)*(COXA_LEN + FEMUR_LEN), TIBIA_LEN }
+local endpoints3 = {-math.cos(45/180*math.pi)*(COXA_LEN + FEMUR_LEN), math.sin(-45/180*math.pi)*(COXA_LEN + FEMUR_LEN), TIBIA_LEN }
+local endpoints4 = {-math.cos(45/180*math.pi)*(COXA_LEN + FEMUR_LEN), math.sin(45/180*math.pi)*(COXA_LEN + FEMUR_LEN), TIBIA_LEN }
 
---select a gait pattern(default gait = 0)
-local GaitType = 0
---lift height while walking 
-local LegLiftHeight = 50  
---gait step in exectution 
-local GaitStep = 0   
---initial position of the leg
-local GaitLegNr = {0,0,0,0}  
-local TLDivFactor = 0       
-local NrLiftedPos = 0    
-local LiftDivFactor = 0    
-local HalfLiftHeigth = 0     
-local FrontDownPos = 0			
-local TravelRequest = false       
---Number of steps in gait     
-local StepsInGait = 0 
-local GaitStep = 0         
-local GaitPosX = {0,0,0,0}         
-local GaitPosY = {0,0,0,0}            
-local GaitPosZ = {0,0,0,0}             
-local GaitRotZ = {0,0,0,0}      
-local LegIndex = 0   
-local Walking = false
-local X_speed = 0
-local Yaw_speed = 0
-local Y_speed = 0
-local DeadZone = 5
+-- control input enum
+local control_input_roll = 1
+local control_input_pitch = 2
+local control_input_throttle = 3
+local control_input_yaw = 4
+
+local xy_speed_max = 40     -- x and y axis speed max (used to convert control input) in mm
+local yaw_speed_max = 10    -- yaw speed maximum (used to convert control input)
+local speed_dz = 5          -- speed deadzone.  x, y and yaw speed requests are ignored if their absolute value is less than this number
+local x_speed = 0           -- forward speed target
+local y_speed = 0           -- lateral speed target (right is positive, left is negative)
+local yaw_speed = 0         -- yaw rotation speed target
+
+local leg_lift_height = 50  -- leg lift height (in mm) while walking
+
+-- gait definition parameters
+local gait_type = 0         -- gait pattern.  0 = alternating gait, 1 = wave gait.
+local gait_step = 0         -- gait step in execution
+local gait_step_total = 0   -- number of steps in gait
+local gait_step_leg_start = {0,0,0,0} -- leg starts moving on this gait step (front-right, front-left, back-left, back-right)
+local gait_lifted_steps = 0 -- number of steps that a leg is lifted for
+local gait_down_steps = 0   -- number of steps that the leg lifted needs to be put down for
+local gait_lift_divisor = 0 -- when a leg is lifted and brought back down the action is divided into 2 or multiple steps, so the travel distance also need to be split in between the steps to make the transition natural
+local gait_half_lift_height = 0 -- used to split lift across two steps
+local gait_speed_divisor = 0    -- number of steps in the gait the leg is touching the floor, this is used as a factor to split the travel distance between the steps
+
+local gait_pos_x = {0,0,0,0}    -- X-axis position for each leg (front-right, front-left, back-right, back-left)
+local gait_pos_y = {0,0,0,0}    -- Y-axis position for each leg (front-right, front-left, back-right, back-left)
+local gait_pos_z = {0,0,0,0}    -- Z-axis position for each leg (front-right, front-left, back-right, back-left)
+local gait_rot_z = {0,0,0,0}    -- Z-axis rotation for each leg (front-right, front-left, back-right, back-left)
+local leg_index = 0
 local last_angle = {0,0,0,0,0,0,0,0,0,0,0,0}
 local current = {0,0,0,0,0,0,0,0,0,0,0,0}
 local start_time = 0
 local curr_target = 0
-local throttle = 3
-local yaw = 4
-local roll = 1
-local pitch = 2
-local gait = 5
-local mode = 6
-local max_step_factor = 40
-local max_rotation_factor = 10
-local max_yaw_factor = 10
-local pwm = { 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500}
--- turn off rudder based arming/disarming
-param:set_and_save('ARMING_RUDDER',0)
+local pwm = {1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500}
+
 function Gaitselect()
-    --Alternating gait
-    if (GaitType == 0) then
-        GaitLegNr = {1,4,1,4}
-        NrLiftedPos = 2
-        FrontDownPos = 1	
-        LiftDivFactor = 2
-        HalfLiftHeigth = 1
-        TLDivFactor = 4   
-        StepsInGait = 6    
-    elseif (GaitType == 1) then
-    -- wave gait with 28 steps
-        GaitLegNr = {8,15,1,22}
-        NrLiftedPos = 3
-        FrontDownPos = 2	
-        LiftDivFactor = 2
-        HalfLiftHeigth = 3
-        TLDivFactor = 24 
-        StepsInGait = 28
-    end 
+    if (gait_type == 0) then
+        -- alternating gait
+        gait_step_total = 6
+        gait_step_leg_start = {1,4,1,4}
+        gait_lifted_steps = 2
+        gait_down_steps = 1
+        gait_lift_divisor = 2
+        gait_half_lift_height = 1
+        gait_speed_divisor = 4
+    elseif (gait_type == 1) then
+        -- wave gait with 28 steps
+        gait_step_total = 28
+        gait_step_leg_start = {8,15,1,22}
+        gait_lifted_steps = 3
+        gait_down_steps = 2
+        gait_lift_divisor = 2
+        gait_half_lift_height = 3
+        gait_speed_divisor = 24
+    end
 end
 
 -- Calculate Gait sequence
-function Sequence_Gen()
-    TravelRequest =(math.abs(X_speed) > DeadZone) or (math.abs(Y_speed) > DeadZone) or (math.abs(Yaw_speed) > DeadZone) 
-    
-    if TravelRequest then
-        for LegIndex=1,4,1 
-        do 
-            Gaitgen(LegIndex)
+function calc_gait_sequence()
+    local move_requested = (math.abs(x_speed) > speed_dz) or (math.abs(y_speed) > speed_dz) or (math.abs(yaw_speed) > speed_dz)
+
+    if move_requested then
+        for leg_index=1, 4 do
+            update_leg(leg_index)
         end
 
-        GaitStep = GaitStep + 1
-        if (GaitStep>StepsInGait) then
-            GaitStep = 1
-        end 
+        gait_step = gait_step + 1
+        if (gait_step>gait_step_total) then
+            gait_step = 1
+        end
     else
-        GaitPosX = {0,0,0,0}         
-        GaitPosY = {0,0,0,0}            
-        GaitPosZ = {0,0,0,0}             
-        GaitRotZ = {0,0,0,0}  
+        gait_pos_x = {0,0,0,0}
+        gait_pos_y = {0,0,0,0}
+        gait_pos_z = {0,0,0,0}
+        gait_rot_z = {0,0,0,0}
     end
 end
 
--- In order for the bot to move forward it needs to move its legs in a
--- specific order and this is repeated over and over to attain linear motion . when a
--- specific leg number is passed the Gaitgen() produces the set off values for the
--- given leg at that step , for each cycle of the gait each leg will move to a set
--- distance which is decided by the X_speed,Yaw_speed,Y_speed
-function Gaitgen(moving_leg)
-    local LegStep = GaitStep - GaitLegNr[moving_leg]
+-- in order for the robot to move forward it needs to move its legs in a
+-- specific order and this is repeated over and over to attain linear motion. when a
+-- specific leg number is passed the update_leg() produces the set of values for the
+-- given leg at that step, for each cycle of the gait each leg will move to a set
+-- distance which is decided by the x_speed, yaw_speed, y_speed
+function update_leg(moving_leg)
+    local leg_step = gait_step - gait_step_leg_start[moving_leg]
+    local move_requested = (math.abs(x_speed) > speed_dz) or (math.abs(y_speed) > speed_dz) or (math.abs(yaw_speed) > speed_dz)
 
-    if ((TravelRequest and (NrLiftedPos and 1) and 
-    LegStep==0) or 
-    (not TravelRequest and LegStep==0 and ((GaitPosX[moving_leg]>2) or 
-    (GaitPosZ[moving_leg]>2) or (GaitRotZ[moving_leg] >2)))) 
-    then
-        GaitPosX[moving_leg] = 0
-        GaitPosZ[moving_leg] = -LegLiftHeight
-        GaitPosY[moving_leg] = 0
-        GaitRotZ[moving_leg] = 0
+    if ((move_requested and (gait_lifted_steps and 1) and leg_step==0) or
+        (not move_requested and leg_step==0 and ((gait_pos_x[moving_leg]>2) or
+        (gait_pos_z[moving_leg]>2) or (gait_rot_z[moving_leg] >2)))) then
+        gait_pos_x[moving_leg] = 0
+        gait_pos_z[moving_leg] = -leg_lift_height
+        gait_pos_y[moving_leg] = 0
+        gait_rot_z[moving_leg] = 0
 
-    elseif (((NrLiftedPos==2 and LegStep==0) or (NrLiftedPos>=3 and 
-    (LegStep==-1 or LegStep==(StepsInGait-1))))
-    and TravelRequest)
-    then
-        GaitPosX[moving_leg] = -X_speed/LiftDivFactor
-        GaitPosZ[moving_leg] = -3*LegLiftHeight/(3+HalfLiftHeigth)  
-        GaitPosY[moving_leg] = -Y_speed/LiftDivFactor
-        GaitRotZ[moving_leg] = -Yaw_speed/LiftDivFactor
+    elseif (((gait_lifted_steps==2 and leg_step==0) or (gait_lifted_steps>=3 and
+            (leg_step==-1 or leg_step==(gait_step_total-1)))) and move_requested) then
+        gait_pos_x[moving_leg] = -x_speed/gait_lift_divisor
+        gait_pos_z[moving_leg] = -3*leg_lift_height/(3+gait_half_lift_height)
+        gait_pos_y[moving_leg] = -y_speed/gait_lift_divisor
+        gait_rot_z[moving_leg] = -yaw_speed/gait_lift_divisor
 
-    elseif ((NrLiftedPos>=2) and (LegStep==1 or LegStep==-(StepsInGait-1)) and TravelRequest)
-    then
-        GaitPosX[moving_leg] = X_speed/LiftDivFactor
-        GaitPosZ[moving_leg] = -3*LegLiftHeight/(3+HalfLiftHeigth)  
-        GaitPosY[moving_leg] = Y_speed/LiftDivFactor
-        GaitRotZ[moving_leg] = Yaw_speed/LiftDivFactor
+    elseif ((gait_lifted_steps>=2) and (leg_step==1 or leg_step==-(gait_step_total-1)) and move_requested) then
+        gait_pos_x[moving_leg] = x_speed/gait_lift_divisor
+        gait_pos_z[moving_leg] = -3*leg_lift_height/(3+gait_half_lift_height)
+        gait_pos_y[moving_leg] = y_speed/gait_lift_divisor
+        gait_rot_z[moving_leg] = yaw_speed/gait_lift_divisor
 
-    elseif (((NrLiftedPos==5 and (LegStep==-2 ))) and TravelRequest)
-    then
-        GaitPosX[moving_leg] = -X_speed/2
-        GaitPosZ[moving_leg] = -LegLiftHeight/2 
-        GaitPosY[moving_leg] = -Y_speed/2
-        GaitRotZ[moving_leg] = -Yaw_speed/2
+    elseif (((gait_lifted_steps==5 and (leg_step==-2 ))) and move_requested) then
+        gait_pos_x[moving_leg] = -x_speed/2
+        gait_pos_z[moving_leg] = -leg_lift_height/2
+        gait_pos_y[moving_leg] = -y_speed/2
+        gait_rot_z[moving_leg] = -yaw_speed/2
 
-    elseif ((NrLiftedPos==5) and (LegStep==2 or LegStep==-(StepsInGait-2)) and TravelRequest)
-    then
-        GaitPosX[moving_leg] = X_speed/2
-        GaitPosZ[moving_leg] = -LegLiftHeight/2 
-        GaitPosY[moving_leg] = Y_speed/2
-        GaitRotZ[moving_leg] = Yaw_speed/2
+    elseif ((gait_lifted_steps==5) and (leg_step==2 or leg_step==-(gait_step_total-2)) and move_requested) then
+        gait_pos_x[moving_leg] = x_speed/2
+        gait_pos_z[moving_leg] = -leg_lift_height/2
+        gait_pos_y[moving_leg] = y_speed/2
+        gait_rot_z[moving_leg] = yaw_speed/2
 
-    elseif ((LegStep==FrontDownPos or LegStep==-(StepsInGait-FrontDownPos)) and GaitPosY[moving_leg]<0)
-    then
-        GaitPosX[moving_leg] = X_speed/2
-        GaitPosZ[moving_leg] = Y_speed/2
-        GaitPosY[moving_leg] = Yaw_speed/2   
-        GaitRotZ[moving_leg] = 0
+    elseif ((leg_step==gait_down_steps or leg_step==-(gait_step_total-gait_down_steps)) and gait_pos_y[moving_leg]<0) then
+        gait_pos_x[moving_leg] = x_speed/2
+        gait_pos_z[moving_leg] = y_speed/2
+        gait_pos_y[moving_leg] = yaw_speed/2
+        gait_rot_z[moving_leg] = 0
 
-    else 
-        GaitPosX[moving_leg] = GaitPosX[moving_leg] - (X_speed/TLDivFactor)
-        GaitPosZ[moving_leg] = 0
-        GaitPosY[moving_leg] = GaitPosZ[moving_leg] - (Y_speed/TLDivFactor)
-        GaitRotZ[moving_leg] = GaitRotZ[moving_leg] - (Yaw_speed/TLDivFactor)
+    else
+        gait_pos_x[moving_leg] = gait_pos_x[moving_leg] - (x_speed/gait_speed_divisor)
+        gait_pos_z[moving_leg] = 0
+        gait_pos_y[moving_leg] = gait_pos_z[moving_leg] - (y_speed/gait_speed_divisor)
+        gait_rot_z[moving_leg] = gait_rot_z[moving_leg] - (yaw_speed/gait_speed_divisor)
     end
 end
 
--- This function determines where each leg should be.
--- To calculate each legs pose this takes pose of the body
--- as input bodyRotX, bodyRotY, bodyRotZ - rotation of and body ,bodyPosX,
--- bodyPosY - offset of the center of body
-function Body_FK(X , Y , Z,   Xdist, Ydist,Zrot)
-    local totaldist = { X + Xdist + bodyPosX, Y + Ydist + bodyPosY }
+-- Body Forward Kinematics calculates where each leg should be.
+-- inputs are
+--   a) body rotations: body_rot_x, body_rot_y, body_rot_z
+--   b) body position: body_pos_x, body_pos_y, body_pos_z
+--   c) offset of the center of body
+function body_forward_kinematics(X, Y, Z, Xdist, Ydist, Zrot)
+    local totaldist = {X + Xdist + body_pos_x, Y + Ydist + body_pos_y}
     local distBodyCenterFeet = math.sqrt(totaldist[1]^2 + totaldist[2]^2)
     local AngleBodyCenter = math.atan(totaldist[2], totaldist[1])
-    local rolly = math.tan(bodyRotY * math.pi/180) * totaldist[1]
-    local pitchy = math.tan(bodyRotX * math.pi/180) * totaldist[2]
+    local rolly = math.tan(body_rot_y * math.pi/180) * totaldist[1]
+    local pitchy = math.tan(body_rot_x * math.pi/180) * totaldist[2]
 
-    local ansx = math.cos(AngleBodyCenter + ((bodyRotZ+Zrot)  * math.pi/180)) * distBodyCenterFeet - totaldist[1] + bodyPosX
-    local ansy = math.sin(AngleBodyCenter + ((bodyRotZ+Zrot) * math.pi/180)) * distBodyCenterFeet - totaldist[2] + bodyPosY
-    local ansz = rolly+pitchy + bodyPosZ
-    local ans = {ansx, ansy ,ansz}
-    return ans 
-end 
+    local ansx = math.cos(AngleBodyCenter + ((body_rot_z+Zrot)  * math.pi/180)) * distBodyCenterFeet - totaldist[1] + body_pos_x
+    local ansy = math.sin(AngleBodyCenter + ((body_rot_z+Zrot) * math.pi/180)) * distBodyCenterFeet - totaldist[2] + body_pos_y
+    local ansz = rolly + pitchy + body_pos_z
+    local ans = {ansx, ansy, ansz}
+    return ans
+end
 
--- Calculates the angles of servos of each joint using the output of the
--- Body_FK() function which gives the origin of each leg on the body frame
-function Leg_IK(X , Y , Z)
+-- Leg Inverse Kinematics calculates the angles for each servo of each joint using the output of the
+-- body_forward_kinematics() function which gives the origin of each leg on the body frame
+function leg_inverse_kinematics(X , Y , Z)
     local coxa = math.atan(X,Y)* 180/math.pi
-    local trueX = math.sqrt(X^2+ Y^2 ) - L_COXA
+    local trueX = math.sqrt(X^2+ Y^2 ) - COXA_LEN
     local im = math.sqrt(trueX^2 + Z^2)
 
     local q1 = -math.atan(Z,trueX)
-    local d1 = L_FEMUR^2 - L_TIBIA^2 + im^2
-    local d2 = 2*L_FEMUR*im
+    local d1 = FEMUR_LEN^2 - TIBIA_LEN^2 + im^2
+    local d2 = 2*FEMUR_LEN*im
     local q2 = math.acos(d1/d2)
     local femur = (q1+q2) * 180/math.pi
 
-    local d1 = L_FEMUR^2 - im^2 + L_TIBIA^2
-    local d2 = 2*L_TIBIA*L_FEMUR
+    local d1 = FEMUR_LEN^2 - im^2 + TIBIA_LEN^2
+    local d2 = 2*TIBIA_LEN*FEMUR_LEN
     local tibia = (math.acos(d1/d2)-1.57) * 180/math.pi
     local ang = { coxa, -femur ,-tibia}
-    return ang 
+    return ang
 end
 
 -- checks if the servo has moved to its expected postion 
@@ -217,67 +205,67 @@ function servo_estimate(start_time,current,last_angle)
         if curr_target > target then
             target = curr_target
         end
-    end    
-    local target_time = target * (0.24/60) * 1000 
+    end
+    local target_time = target * (0.24/60) * 1000
     local now = millis()
 
     if (target_time + start_time) <= now then
         return true
     else
         return false
-    end   
+    end
 end
 
--- main_IK produces the IK solution for each
--- leg joint servos by taking into consideration the initial_pos, gait offset and the
--- bodyIK values.
-function main_IK()
-    local ans1 = Body_FK(endpoints1[1]+GaitPosX[1], endpoints1[2]+GaitPosY[1], endpoints1[3]+GaitPosZ[1], L/2, W/2,GaitRotZ[1])
-    local angles1 = Leg_IK(endpoints1[1]+ans1[1]+GaitPosX[1],endpoints1[2]+ans1[2]+GaitPosY[1], endpoints1[3]+ans1[3]+GaitPosZ[1])
+-- main_inverse_kinematics produces the inverse kinematic solution for each
+-- leg joint servo by taking into consideration the initial_pos, gait offset and the body inverse kinematic values.
+function main_inverse_kinematics()
+    local ans1 = body_forward_kinematics(endpoints1[1]+gait_pos_x[1], endpoints1[2]+gait_pos_y[1], endpoints1[3]+gait_pos_z[1], FRAME_LEN/2, FRAME_WIDTH/2,gait_rot_z[1])
+    local angles1 = leg_inverse_kinematics(endpoints1[1]+ans1[1]+gait_pos_x[1],endpoints1[2]+ans1[2]+gait_pos_y[1], endpoints1[3]+ans1[3]+gait_pos_z[1])
     angles1 = {-45 + angles1[1],angles1[2],angles1[3]}
 
-    local ans2 = Body_FK(endpoints2[1]+GaitPosX[2], endpoints2[2]+GaitPosY[2], endpoints2[3]+GaitPosZ[2], L/2, -W/2,GaitRotZ[2])
-    local angles2 = Leg_IK(endpoints2[1]+ans2[1]+GaitPosX[2],endpoints2[2]+ans2[2]+GaitPosY[2], endpoints2[3]+ans2[3]+GaitPosZ[2])
+    local ans2 = body_forward_kinematics(endpoints2[1]+gait_pos_x[2], endpoints2[2]+gait_pos_y[2], endpoints2[3]+gait_pos_z[2], FRAME_LEN/2, -FRAME_WIDTH/2,gait_rot_z[2])
+    local angles2 = leg_inverse_kinematics(endpoints2[1]+ans2[1]+gait_pos_x[2],endpoints2[2]+ans2[2]+gait_pos_y[2], endpoints2[3]+ans2[3]+gait_pos_z[2])
     angles2 = {-135 + angles2[1],angles2[2],angles2[3]}
 
-    local ans3 = Body_FK(endpoints3[1]+GaitPosX[3], endpoints3[2]+GaitPosY[3], endpoints3[3]+GaitPosZ[3], -L/2, -W/2,GaitRotZ[3])
-    local angles3 = Leg_IK(endpoints3[1]+ans3[1]+GaitPosX[3],endpoints3[2]+ans3[2]+GaitPosY[3], endpoints3[3]+ans3[3]+GaitPosZ[3])
+    local ans3 = body_forward_kinematics(endpoints3[1]+gait_pos_x[3], endpoints3[2]+gait_pos_y[3], endpoints3[3]+gait_pos_z[3], -FRAME_LEN/2, -FRAME_WIDTH/2,gait_rot_z[3])
+    local angles3 = leg_inverse_kinematics(endpoints3[1]+ans3[1]+gait_pos_x[3],endpoints3[2]+ans3[2]+gait_pos_y[3], endpoints3[3]+ans3[3]+gait_pos_z[3])
     angles3 = {135 + angles3[1],angles3[2],angles3[3]}
 
-    local ans4 = Body_FK(endpoints4[1]+GaitPosX[4], endpoints4[2]+GaitPosY[4], endpoints4[3]+GaitPosZ[4], -L/2, W/2,GaitRotZ[4])
-    local angles4 = Leg_IK(endpoints4[1]+ans4[1]+GaitPosX[4],endpoints4[2]+ans4[2]+GaitPosY[4], endpoints4[3]+ans4[3]+GaitPosZ[4])
+    local ans4 = body_forward_kinematics(endpoints4[1]+gait_pos_x[4], endpoints4[2]+gait_pos_y[4], endpoints4[3]+gait_pos_z[4], -FRAME_LEN/2, FRAME_WIDTH/2,gait_rot_z[4])
+    local angles4 = leg_inverse_kinematics(endpoints4[1]+ans4[1]+gait_pos_x[4],endpoints4[2]+ans4[2]+gait_pos_y[4], endpoints4[3]+ans4[3]+gait_pos_z[4])
     angles4 = {45 + angles4[1],angles4[2],angles4[3]}
     Gaitselect()
     current = {angles1[1],angles1[2],angles1[3],angles2[1],angles2[2],angles2[3],angles3[1],angles3[2],angles3[3],angles4[1],angles4[2],angles4[3]}
-  
-    if servo_estimate(start_time,current,last_angle) then
+
+    if servo_estimate(start_time, current, last_angle) then
         start_time = millis()
-        Sequence_Gen()
+        calc_gait_sequence()
         last_angle = current
     end
 
-    return angles1,angles4,angles3,angles2
+    return angles1, angles4, angles3, angles2
 end
 
-local rest_angles = { 45, -90, 40,
-                -45, -90, 40,
-                45, -90, 40,
-                -45, -90, 40}
-local servo_direction = { 1,1,1,
-                        -1,-1,-1,
-                        -1,-1,1,
-                        1,1,-1} 
+-- servo angles when robot is disarmed and resting body on the ground
+local rest_angles = { 45, -90, 40,      -- front right leg (coxa, femur, tibia)
+                     -45, -90, 40,      -- front left leg (coxa, femur, tibia)
+                      45, -90, 40,      -- back right leg (coxa, femur, tibia)
+                     -45, -90, 40}      -- back left leg (coxa, femur, tibia)
+
+local servo_direction = { 1,  1,  1,    -- front right leg (coxa, femur, tibia)
+                         -1, -1, -1,    -- front left leg (coxa, femur, tibia)
+                         -1, -1,  1,    -- back right leg (coxa, femur, tibia)
+                          1,  1, -1}    -- back left leg (coxa, femur, tibia)
 
 function update()
-    X_speed = vehicle:get_control_output(throttle) * max_step_factor
-    Yaw_speed = vehicle:get_control_output(yaw) * max_yaw_factor
+    x_speed = vehicle:get_control_output(control_input_throttle) * xy_speed_max
+    yaw_speed = vehicle:get_control_output(control_input_yaw) * yaw_speed_max
 
-    bodyRotX = -(vehicle:get_control_output(roll) * 10)
-    bodyRotY = -(vehicle:get_control_output(pitch) * 10)
+    body_rot_x = -vehicle:get_control_output(control_input_roll) * body_rot_max
+    body_rot_y = -vehicle:get_control_output(control_input_pitch) * body_rot_max
 
     if arming:is_armed() then
-        FR_angles ,  BL_angles, BR_angles, FL_angles = main_IK()
-
+        FR_angles, BL_angles, BR_angles, FL_angles = main_inverse_kinematics()
         angles = { FR_angles[1],FR_angles[2],FR_angles[3] , FL_angles[1],FL_angles[2],FL_angles[3],BR_angles[1],BR_angles[2],BR_angles[3], BL_angles[1],BL_angles[2],BL_angles[3]}
     else
         angles = rest_angles
@@ -292,8 +280,9 @@ function update()
     end
 
     return update,10
-
 end
 
+-- turn off rudder based arming/disarming
+param:set_and_save('ARMING_RUDDER', 0)
 gcs:send_text(0, "quadruped simulation")
 return update()
