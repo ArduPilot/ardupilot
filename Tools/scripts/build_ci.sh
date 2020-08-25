@@ -184,6 +184,13 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "navigator" ]; then
+        echo "Building navigator"
+        $waf configure --board navigator --toolchain=arm-linux-musleabihf
+        $waf sub --static
+        continue
+    fi
+
     if [ "$t" == "configure-all" ]; then
         echo "Checking configure of all boards"
         ./Tools/scripts/configure_all.py
