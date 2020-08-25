@@ -207,6 +207,7 @@ singleton SRV_Channels method set_range void SRV_Channel::Aux_servo_function_t'e
 
 ap_object RC_Channel method norm_input float
 ap_object RC_Channel method get_aux_switch_pos uint8_t
+ap_object RC_Channel method norm_input_ignore_trim float
 
 include RC_Channel/RC_Channel.h
 singleton RC_Channels alias rc
