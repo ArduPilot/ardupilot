@@ -28,7 +28,15 @@ enum class LedLayout {
     ROWS=0,
     LUMINOUSBEE=1,
 };
-    
+
+// struct for calculated airspeed fault
+struct arspd_data {
+    int8_t fault_type;
+    float fault;
+    float clogged_fault;
+    uint32_t time_previos_call;
+};
+
 struct vector3f_array {
     uint16_t length;
     Vector3f *data;
@@ -227,6 +235,20 @@ public:
         WIND_TYPE_NO_LIMIT = 1,
         WIND_TYPE_COEF = 2,
     };
+
+    enum AirspeedFault {
+        ARSPD_FAULT_ENABLE = 0,
+        ARSPD_FAULT_CONST,
+        ARSPD_FAULT_ADD,
+        ARSPD_FAULT_CLOGGED,
+        ARSPD_FAULT_MULTIPLY,
+    };
+
+    //airspeed fault
+    AP_Int8 arspd_fault_type; // enum AirspeedFault
+    AP_Float arspd_fault_value;
+    AP_Int8 arspd2_fault_type;
+    AP_Float arspd2_fault_value;
     
     float wind_speed_active;
     float wind_direction_active;
