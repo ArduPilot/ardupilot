@@ -146,7 +146,8 @@ public:
         SerialProtocol_Generator = 30,
         SerialProtocol_Winch = 31,
         SerialProtocol_MSP = 32,
-        SerialProtocol_DJI_FPV = 33
+        SerialProtocol_DJI_FPV = 33,
+        SerialProtocol_NumProtocols                    // must be the last value
     };
 
     // get singleton instance
