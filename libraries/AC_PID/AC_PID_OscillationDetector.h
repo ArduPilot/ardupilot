@@ -49,10 +49,10 @@ private:
     } action;
 
     // filtered values of gains, target and actual
-    float P_filt, I_filt, D_filt, ff_filt, target_filt, actual_filt;
+    float target_filt, actual_filt;
 
     // filtered evelope of gains, target and actual relative to the unfiltered values
-    float P_env, I_env, D_env, ff_env, target_env, actual_env;
+    float target_env, actual_env;
 
     // minimum magnitude of target and actual to enable detection
     float magnitude_threshold;
@@ -70,7 +70,7 @@ private:
     uint16_t tune_count;
 
     // current and last states of the quick tune
-        enum class TUNE_STATE : uint8_t {
+    enum class TUNE_STATE : uint8_t {
         NONE,
         FF,
         P1,
