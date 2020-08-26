@@ -71,6 +71,8 @@ void AP_Proximity_RangeFinder::update(void)
     } else {
         set_status(AP_Proximity::Status::Good);
     }
+
+    update_closest_object();
 }
 
 // get distance upwards in meters. returns true on success
@@ -83,3 +85,55 @@ bool AP_Proximity_RangeFinder::get_upward_distance(float &distance) const
     }
     return false;
 }
+
+void AP_Proximity_RangeFinder::update_closest_object()
+{
+    _closest.valid = false;
+    uint8_t sector = 0;
+
+    // check all sectors for shorter distance
+    for (uint8_t i=0; i<PROXIMITY_NUM_SECTORS; i++) {
+        if (_distance_valid[i]) {
+            if (_distance[i] <= _distance[sector]) {
+                sector = i;
+                _closest.valid = true;
+            }
+        }
+    }
+
+    if (!_closest.valid) {
+        return;
+    }
+
+    _closest.angle = _angle[sector];
+    _closest.dist = _distance[sector];
+
+    // maitain closest distance, but move angle based on readings from adjacent sectors
+    // adjacent sectors will always be larger than closest
+    // as adjacent distance approaches closest offset approaches 45/2 (half way between the two)
+    // a similar reading in both adjacent sectors will cancel out
+
+    uint8_t next_sector = (sector == (PROXIMITY_NUM_SECTORS - 1)) ? 0 : sector - 1;
+    uint8_t prev_sector = (sector == 0) ? PROXIMITY_NUM_SECTORS - 1 : sector - 1;
+
+    if (_distance_valid[next_sector]) {
+        _closest.angle += (_closest.dist / _distance[next_sector]) * 0.5f * 45.0f;
+    }
+
+    if (_distance_valid[prev_sector]) {
+        _closest.angle -= (_closest.dist / _distance[prev_sector]) * 0.5f * 45.0f;
+    }
+
+    _closest.angle = wrap_360(_closest.angle);
+}
+
+bool AP_Proximity_RangeFinder::get_closest_object(float& angle_deg, float &distance) const
+{
+    if (!_closest.valid) {
+        return false;
+    }
+    angle_deg = _closest.angle;
+    distance = _closest.dist;
+    return true;
+}
+

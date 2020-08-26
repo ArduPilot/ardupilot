@@ -22,7 +22,11 @@ public:
     // get distance upwards in meters. returns true on success
     bool get_upward_distance(float &distance) const override;
 
+    bool get_closest_object(float& angle_deg, float &distance) const override;
+
 private:
+
+    void update_closest_object();
 
     // horizontal distance support
     uint32_t _last_update_ms;   // system time of last RangeFinder reading
@@ -32,4 +36,12 @@ private:
     // upward distance support
     uint32_t _last_upward_update_ms;    // system time of last update distance
     float _distance_upward = -1;        // upward distance in meters, negative if the last reading was out of range
+
+    // closest object
+    struct {
+        float angle;
+        float dist;
+        bool valid;
+    } _closest;
+
 };

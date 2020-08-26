@@ -53,7 +53,7 @@ public:
 
     // get distance and angle to closest object (used for pre-arm check)
     //   returns true on success, false if no valid readings
-    bool get_closest_object(float& angle_deg, float &distance) const;
+    virtual bool get_closest_object(float& angle_deg, float &distance) const;
 
     // get number of objects, angle and distance - used for non-GPS avoidance
     uint8_t get_object_count() const;
