@@ -130,7 +130,7 @@ function update_leg(moving_leg)
     local leg_step = gait_step - gait_step_leg_start[moving_leg]
     local move_requested = (math.abs(x_speed) > speed_dz) or (math.abs(y_speed) > speed_dz) or (math.abs(yaw_speed) > speed_dz)
 
-    if ((move_requested and (gait_lifted_steps and 1) and leg_step==0) or
+    if ((move_requested and (gait_lifted_steps > 0) and leg_step==0) or
         (not move_requested and leg_step==0 and ((gait_pos_x[moving_leg]>2) or
         (gait_pos_z[moving_leg]>2) or (gait_rot_z[moving_leg] >2)))) then
         gait_pos_x[moving_leg] = 0
