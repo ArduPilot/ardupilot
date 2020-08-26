@@ -3839,7 +3839,7 @@ Also, ignores heartbeats not from our target system'''
         raise AutoTestTimeoutException("Failed to get EKF.flags=%u" %
                                        required_value)
 
-    def wait_gps_disable(self, timeout=30):
+    def wait_gps_disable(self, position_horizontal=True, position_vertical=False, timeout=30):
         """Disable GPS and wait for EKF to report the end of assistance from GPS."""
         self.set_parameter("SIM_GPS_DISABLE", 1)
         tstart = self.get_sim_time()
@@ -3850,7 +3850,11 @@ Also, ignores heartbeats not from our target system'''
             return 
 
         # all of these must NOT be set for arming NOT to happen:
-        not_required_value = mavutil.mavlink.ESTIMATOR_POS_HORIZ_REL
+        not_required_value = 0
+        if position_horizontal:
+            not_required_value |= mavutil.mavlink.ESTIMATOR_POS_HORIZ_REL
+        if position_vertical:
+            not_required_value |= mavutil.mavlink.ESTIMATOR_POS_VERT_AGL
         self.progress("Waiting for EKF not having bits %u" % not_required_value)
         last_print_time = 0
         while timeout is None or self.get_sim_time_cached() < tstart + timeout:
