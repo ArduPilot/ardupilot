@@ -887,6 +887,23 @@ public:
         save(force);
     }
 
+    /// Combined set and save, but only does the save if the value is
+    /// different from the current ram value, thus saving us a
+    /// scan(). This should only be used where we have not set() the
+    /// value separately, as otherwise the value in EEPROM won't be
+    /// updated correctly.
+    void set_and_save_ifchanged(const T &v) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+        if (_value == v) {
+#pragma GCC diagnostic pop
+            return;
+        }
+        set(v);
+        save(true);
+    }
+
+
     /// Conversion to T returns a reference to the value.
     ///
     /// This allows the class to be used in many situations where the value would be legal.
