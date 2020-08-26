@@ -6366,14 +6366,20 @@ switch value'''
         self.drain_mav_seconds(15)
 
         self.set_parameter("SIM_PIN_MASK", 0)
-        m3 = self.mav.recv_match(type='BUTTON_CHANGE', blocking=True, timeout=1)
-        self.progress("m3: %s" % str(m3))
-        if m3 is None:
-            raise NotAchievedException("Did not get new message")
-        if m.last_change_ms == m3.last_change_ms:
-            raise NotAchievedException("last_change_ms same as first message")
-        if m3.state != 0:
-            raise NotAchievedException("Didn't get expected mask back in message (mask=0 state=%u" % (m3.state))
+        while True:
+            m3 = self.mav.recv_match(type='BUTTON_CHANGE', blocking=True, timeout=1)
+            self.progress("m3: %s" % str(m3))
+            if m3 is None:
+                self.progress("Did not get new message")
+                continue
+            if m.last_change_ms == m3.last_change_ms:
+                self.progress("last_change_ms same as first message")
+                continue
+            if m3.state != 0:
+                 self.progress("Didn't get expected mask back in message (want=0 got=%u)" % (m3.state))
+                 continue
+            self.progress("correct BUTTON_CHANGE event received")
+            break
 
     def compare_number_percent(self, num1, num2, percent):
         if num1 == 0 and num2 == 0:
