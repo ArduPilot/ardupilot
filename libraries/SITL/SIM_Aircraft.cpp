@@ -432,6 +432,11 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
             fdm.quaternion.from_rotation_matrix(m);
         }
     }
+
+    // in the first call here, if a speedup option is specified, overwrite it
+    if (is_equal(last_speedup, -1.0f) && !is_equal(get_speedup(), 1.0f)) {
+        sitl->speedup = get_speedup();
+    }
     
     if (!is_equal(last_speedup, float(sitl->speedup)) && sitl->speedup > 0) {
         set_speedup(sitl->speedup);
