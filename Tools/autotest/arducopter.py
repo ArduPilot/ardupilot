@@ -2204,14 +2204,11 @@ class AutoTestCopter(AutoTest):
     def test_rangefinder(self):
         ex = None
         self.context_push()
+
         self.progress("Making sure we don't ordinarily get RANGEFINDER")
-        try:
-            m = self.mav.recv_match(type='RANGEFINDER',
-                                    blocking=True,
-                                    timeout=5)
-        except Exception as e:
-            self.progress("Caught exception: %s" %
-                          self.get_exception_stacktrace(e))
+        m = self.mav.recv_match(type='RANGEFINDER',
+                                blocking=True,
+                                timeout=5)
 
         if m is not None:
             raise NotAchievedException("Received unexpected RANGEFINDER msg")
@@ -2219,6 +2216,7 @@ class AutoTestCopter(AutoTest):
         # may need to force a rotation if some other test has used the
         # rangefinder...
         self.progress("Ensure no RFND messages in log")
+        self.set_parameter("LOG_DISARMED", 1)
         if self.current_onboard_log_contains_message("RFND"):
             raise NotAchievedException("Found unexpected RFND message")
 
