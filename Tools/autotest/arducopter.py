@@ -5185,7 +5185,7 @@ class AutoTestCopter(AutoTest):
         ex = None
         try:
             self.set_parameter("EK2_ALT_SOURCE", 2)
-            self.wait_gps_disable()
+            self.wait_gps_disable(position_vertical=True)
             self.change_mode("ALT_HOLD")
             self.assert_prearm_failure("Need Alt Estimate")
             self.change_mode("STABILIZE")
