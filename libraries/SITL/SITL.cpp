@@ -249,6 +249,9 @@ const AP_Param::GroupInfo SITL::var_info3[] = {
     // user settable common airspeed parameters
     AP_GROUPINFO("ARSPD_SIGN",    62, SITL,  arspd_signflip, 0),
 
+    // count of simulated IMUs
+    AP_GROUPINFO("IMU_COUNT",    36, SITL,  imu_count,  2),
+
     AP_GROUPEND
 };
 
