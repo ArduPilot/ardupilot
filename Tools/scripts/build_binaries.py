@@ -14,6 +14,7 @@ import os
 import re
 import shutil
 import time
+import string
 import subprocess
 import sys
 import gzip
@@ -84,7 +85,9 @@ class build_binaries(object):
                 time.sleep(0.1)
                 continue
             if running_python3:
-                x = x.decode('ascii')
+                x = bytearray(x)
+                x = filter(lambda x : chr(x) in string.printable, x)
+                x = "".join([chr(c) for c in x])
             output += x
             x = x.rstrip()
             if show_output:
