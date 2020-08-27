@@ -81,7 +81,7 @@ class CANIface: public AP_HAL::CANIface
     uint32_t _last_had_activity;
     AP_HAL::CANIface* _can_iface; // Can interface to be used for interaction by SLCAN interface
     HAL_Semaphore port_sem;
-
+    bool _set_by_sermgr;
 public:
     CANIface():
         rx_queue_(HAL_CAN_RX_QUEUE_SIZE)

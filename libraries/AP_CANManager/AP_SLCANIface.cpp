@@ -465,6 +465,17 @@ inline void SLCAN::CANIface::addByte(const uint8_t byte)
 
 void SLCAN::CANIface::update_slcan_port()
 {
+    if (_set_by_sermgr) {
+        // Once we pick SerialManager path we hold on 
+        // to that until reboot
+        return;
+    }
+    _port = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_SLCAN, 0);
+    if (_port != nullptr) {
+        _port->lock_port(_serial_lock_key, _serial_lock_key);
+        _set_by_sermgr = true;
+        return;
+    }
     if (_prev_ser_port != _slcan_ser_port) {
         if (!_slcan_start_req) {
             _slcan_start_req_time = AP_HAL::native_millis();
