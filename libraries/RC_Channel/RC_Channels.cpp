@@ -32,7 +32,8 @@ extern const AP_HAL::HAL& hal;
 /*
   channels group object constructor
  */
-RC_Channels::RC_Channels(void)
+RC_Channels::RC_Channels(void) :
+    _log_bit(-1)
 {
     // set defaults from the parameter table
     AP_Param::setup_object_defaults(this, var_info);
@@ -65,6 +66,27 @@ uint8_t RC_Channels::get_radio_in(uint16_t *chans, const uint8_t num_channels)
     return read_channels;
 }
 
+void RC_Channels::log_rc_consumption()
+{
+    // -1 means always log; Rover always logs, for example.
+    if (_log_bit != (unsigned)-1 &&
+        !AP::logger().should_log(_log_bit)) {
+        return;
+    }
+
+    const uint32_t now = AP_HAL::millis();
+
+    // log RC input at 10Hz or at at full consumption rate if that
+    // option is set
+    if (!option_is_set(Option::LOG_RC_CONSUMPTION) &&
+        (now - _last_log_write_ms < 100)) {
+        return;
+    }
+
+    _last_log_write_ms = now;
+    AP::logger().Write_RCIN();
+}
+
 // update all the input channels
 bool RC_Channels::read_input(void)
 {
@@ -82,6 +104,8 @@ bool RC_Channels::read_input(void)
     for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
         success |= channel(i)->update();
     }
+
+    log_rc_consumption();
 
     return success;
 }
@@ -150,7 +174,7 @@ void RC_Channels::read_aux_all()
         }
         need_log |= c->read_aux();
     }
-    if (need_log) {
+    if (need_log && !option_is_set(Option::LOG_RC_CONSUMPTION)) {
         // guarantee that we log when a switch changes
         AP::logger().Write_RCIN();
     }

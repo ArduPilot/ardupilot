@@ -434,6 +434,8 @@ public:
 
     uint32_t last_input_ms() const { return last_update_ms; };
 
+    void set_log_bit(uint32_t log_bit) { _log_bit = log_bit; }
+
 protected:
 
     enum class Option {
@@ -445,7 +447,11 @@ protected:
         ARMING_CHECK_THROTTLE = (1 << 5), // run an arming check for neutral throttle
         ARMING_SKIP_CHECK_RPY = (1 << 6), // skip the an arming checks for the roll/pitch/yaw channels
         ALLOW_SWITCH_REV      = (1 << 7), // honor the reversed flag on switches
+        LOG_RC_CONSUMPTION    = (1 << 8), // log RC as we copy it from the HAL
     };
+    inline bool option_is_set(Option option) const {
+        return _options & uint32_t(option);
+    }
 
     void new_override_received() {
         has_new_overrides = true;
@@ -470,6 +476,10 @@ private:
 
     // Allow override by default at start
     bool _gcs_overrides_enabled = true;
+
+    uint32_t _log_bit;
+    uint32_t _last_log_write_ms;
+    void log_rc_consumption();
 };
 
 RC_Channels &rc();
