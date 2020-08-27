@@ -79,7 +79,7 @@ int main(void)
         try_boot = true;
         timeout = 0;
     }
-#if HAL_USE_CAN == TRUE
+#if HAL_USE_CAN == TRUE || HAL_NUM_CAN_IFACES
     else if ((m & 0xFFFFFF00) == RTC_BOOT_CANBL) {
         try_boot = false;
         timeout = 10000;
@@ -125,7 +125,7 @@ int main(void)
 #if defined(BOOTLOADER_DEV_LIST)
     init_uarts();
 #endif
-#if HAL_USE_CAN == TRUE
+#if HAL_USE_CAN == TRUE || HAL_NUM_CAN_IFACES
     can_start();
 #endif
     flash_init();

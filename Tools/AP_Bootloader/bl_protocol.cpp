@@ -233,7 +233,7 @@ jump_to_app()
         return;
     }
 
-#if HAL_USE_CAN == TRUE
+#if HAL_USE_CAN == TRUE ||  HAL_NUM_CAN_IFACES
     // for CAN firmware we start the watchdog before we run the
     // application code, to ensure we catch a bad firmare. If we get a
     // watchdog reset and the firmware hasn't changed the RTC flag to
@@ -481,7 +481,7 @@ bootloader(unsigned timeout)
 
             /* try to get a byte from the host */
             c = cin(0);
-#if HAL_USE_CAN == TRUE
+#if HAL_USE_CAN == TRUE || HAL_NUM_CAN_IFACES
             if (c < 0) {
                 can_update();
             }
