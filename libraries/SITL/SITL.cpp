@@ -233,6 +233,9 @@ const AP_Param::GroupInfo SITL::var_info3[] = {
     AP_GROUPINFO("BARO2_DISABL", 34, SITL,  baro_disable[1], 0),
     AP_GROUPINFO("BARO2_GLITCH", 35, SITL,  baro_glitch[1], 0),
 
+    // count of simulated IMUs
+    AP_GROUPINFO("IMU_COUNT",    36, SITL,  imu_count,  2),
+
     AP_GROUPEND
 };
 
