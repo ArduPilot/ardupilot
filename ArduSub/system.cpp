@@ -61,6 +61,7 @@ void Sub::init_ardupilot()
 #endif
 
     // initialise rc channels including setting mode
+    rc().set_log_bit(MASK_LOG_RCIN);
     rc().init();
 
     init_rc_in();               // sets up rc channels from radio

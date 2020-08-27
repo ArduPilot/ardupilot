@@ -188,9 +188,6 @@ void Sub::ten_hz_logging_loop()
     if (should_log(MASK_LOG_MOTBATT)) {
         Log_Write_MotBatt();
     }
-    if (should_log(MASK_LOG_RCIN)) {
-        logger.Write_RCIN();
-    }
     if (should_log(MASK_LOG_RCOUT)) {
         logger.Write_RCOUT();
     }
