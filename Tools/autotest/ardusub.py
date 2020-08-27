@@ -72,7 +72,7 @@ class AutoTestSub(AutoTest):
     def is_sub(self):
         return True
 
-    def watch_altitude_maintained(self, delta=0.5, timeout=5.0):
+    def watch_altitude_maintained(self, delta=1, timeout=5.0):
         """Watch and wait for the actual altitude to be maintained
 
         Keyword Arguments:
