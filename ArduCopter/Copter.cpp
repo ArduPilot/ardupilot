@@ -400,7 +400,6 @@ void Copter::ten_hz_logging_loop()
         Log_Write_MotBatt();
     }
     if (should_log(MASK_LOG_RCIN)) {
-        logger.Write_RCIN();
         if (rssi.enabled()) {
             logger.Write_RSSI();
         }

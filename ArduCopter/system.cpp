@@ -84,6 +84,7 @@ void Copter::init_ardupilot()
     allocate_motors();
 
     // initialise rc channels including setting mode
+    rc().set_log_bit(MASK_LOG_RCIN);
     rc().init();
 
     // sets up motors and output to escs
