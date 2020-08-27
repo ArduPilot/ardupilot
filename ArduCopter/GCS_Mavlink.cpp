@@ -1101,16 +1101,6 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
                 packet.coordinate_frame == MAV_FRAME_BODY_NED ||
                 packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
                 pos_vector += copter.inertial_nav.get_position();
-            } else {
-                // convert from alt-above-home to alt-above-ekf-origin
-                if (!AP::ahrs().home_is_set()) {
-                    break;
-                }
-                Location origin;
-                pos_vector.z += AP::ahrs().get_home().alt;
-                if (copter.ahrs.get_origin(origin)) {
-                    pos_vector.z -= origin.alt;
-                }
             }
         }
 
