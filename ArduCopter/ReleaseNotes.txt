@@ -1,5 +1,13 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.0.4-rc4 28-Aug-2020
+Changes from 4.0.4-rc3
+1) Bug fixes:
+    a) Compass startup reordering based on compass priorities fix
+    b) TradHeli servo test fix
+    c) Precision landing logging fix
+    d) Mavlink commands ignored after reboot request
+------------------------------------------------------------------
 Copter 4.0.4-rc3 30-Jul-2020
 Changes from 4.0.4-rc2
 1) Bug Fixes and minor enhancements:
