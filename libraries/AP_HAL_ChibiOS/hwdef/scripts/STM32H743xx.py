@@ -694,6 +694,7 @@ AltFunction_map = {
 	"PE2:SAI4_MCLK_A"   	:	8,
 	"PE2:SPI4_SCK"      	:	5,
 	"PE2:TRACECLK"      	:	0,
+	"PE2:TIM1_CH2"      	:	1,
 	"PE3:EVENT-OUT"     	:	15,
 	"PE3:FMC_A19"       	:	12,
 	"PE3:SAI1_SD_B"     	:	6,
