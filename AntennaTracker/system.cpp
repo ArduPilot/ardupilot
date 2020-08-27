@@ -59,6 +59,7 @@ void Tracker::init_ardupilot()
     serial_manager.set_blocking_writes_all(false);
 
     // initialise rc channels including setting mode
+    rc().set_log_bit(MASK_LOG_RCIN);
     rc().init();
 
     // initialise servos
