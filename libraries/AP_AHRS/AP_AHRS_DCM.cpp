@@ -1048,30 +1048,7 @@ bool AP_AHRS_DCM::get_position(struct Location &loc) const
 // return an airspeed estimate if available
 bool AP_AHRS_DCM::airspeed_estimate(float &airspeed_ret) const
 {
-    if (airspeed_sensor_enabled()) {
-        airspeed_ret = _airspeed->get_airspeed();
-    } else if (_flags.wind_estimation && have_gps()) {
-        // estimate it via GPS speed and wind
-        airspeed_ret = _last_airspeed;
-    } else {
-        // give the last estimate, but return false. This is used by
-        // dead-reckoning code
-        airspeed_ret = _last_airspeed;
-        return false;
-    }
-
-    if (_wind_max > 0 && AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
-        // constrain the airspeed by the ground speed
-        // and AHRS_WIND_MAX
-        const float gnd_speed = AP::gps().ground_speed();
-        float true_airspeed = airspeed_ret * get_EAS2TAS();
-        true_airspeed = constrain_float(true_airspeed,
-                                        gnd_speed - _wind_max,
-                                        gnd_speed + _wind_max);
-        airspeed_ret = true_airspeed / get_EAS2TAS();
-    }
-
-    return true;
+    return airspeed_estimate(_airspeed?_airspeed->get_primary():0, airspeed_ret);
 }
 
 // return an airspeed estimate from a specific airspeed sensor instance if available

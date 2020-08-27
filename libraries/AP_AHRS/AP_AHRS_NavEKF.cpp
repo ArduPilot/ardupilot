@@ -543,7 +543,7 @@ Vector3f AP_AHRS_NavEKF::wind_estimate(void) const
 // return an airspeed estimate if available. return true
 // if we have an estimate
 bool AP_AHRS_NavEKF::airspeed_estimate(float &airspeed_ret) const
-{    
+{
     return AP_AHRS_DCM::airspeed_estimate(get_active_airspeed_index(), airspeed_ret);
 }
 
