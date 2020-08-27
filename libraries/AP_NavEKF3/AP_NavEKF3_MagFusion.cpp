@@ -246,7 +246,8 @@ void NavEKF3_core::SelectMagFusion()
             }
 
             float yawEKFGSF, yawVarianceEKFGSF;
-            bool canUseEKFGSF = yawEstimator->getYawData(yawEKFGSF, yawVarianceEKFGSF) &&
+            bool canUseEKFGSF = yawEstimator != nullptr &&
+                                yawEstimator->getYawData(yawEKFGSF, yawVarianceEKFGSF) &&
                                 is_positive(yawVarianceEKFGSF) && yawVarianceEKFGSF < sq(radians(GSF_YAW_ACCURACY_THRESHOLD_DEG));
             if (yawAlignComplete && canUseEKFGSF && !assume_zero_sideslip()) {
                 // use the EKF-GSF yaw estimator output as this is more robust than the EKF can achieve without a yaw measurement
