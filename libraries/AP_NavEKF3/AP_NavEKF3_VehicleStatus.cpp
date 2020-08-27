@@ -410,7 +410,7 @@ void NavEKF3_core::detectFlight()
     if (!prevOnGround && onGround) {
         // landed so disable filter bank
         EKFGSF_run_filterbank = false;
-    } else if (!EKFGSF_run_filterbank && ((!prevInFlight && inFlight) || expectTakeoff)) {
+    } else if (yawEstimator && !EKFGSF_run_filterbank && ((!prevInFlight && inFlight) || expectTakeoff)) {
         // started flying so reset counters and enable filter bank
         EKFGSF_yaw_reset_ms = 0;
         EKFGSF_yaw_reset_request_ms = 0;
