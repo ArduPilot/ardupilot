@@ -532,7 +532,7 @@ private:
     Bitmask<MSG_LAST> bucket_message_ids_to_send;
 
     //Last time we sent a planck_stateinfo
-    uint16_t last_planck_stateinfo_sent_ms = 0;
+    uint64_t last_planck_stateinfo_sent_ms = 0;
 
     ap_message next_deferred_bucket_message_to_send();
     void find_next_bucket_to_send();

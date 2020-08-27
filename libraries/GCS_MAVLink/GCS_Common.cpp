@@ -2168,15 +2168,15 @@ void GCS::send_planck_stateinfo()
 void GCS_MAVLINK::send_planck_stateinfo()
 {
     //Sanity check
-    uint16_t now = AP_HAL::millis16();
+    uint64_t now = AP_HAL::millis64();
     if(now <= last_planck_stateinfo_sent_ms) {
         last_planck_stateinfo_sent_ms = now;
         return;
     }
 
     //Don't send if its too soon
-    uint16_t interval = get_interval_for_stream(STREAM_PLANCK);
-    uint16_t dt = now - last_planck_stateinfo_sent_ms;
+    uint64_t interval = get_interval_for_stream(STREAM_PLANCK);
+    uint64_t dt = now - last_planck_stateinfo_sent_ms;
     if((interval == 0) || (dt < (interval - interval/10))) { //within 10%
         return;
     }
