@@ -328,6 +328,8 @@ def configure(cfg):
         cfg.end_msg('enabled')
         cfg.recurse('libraries/AP_Scripting')
 
+    cfg.recurse('libraries/AP_GPS')
+
     cfg.start_msg('Scripting runtime checks')
     if cfg.options.scripting_checks:
         cfg.end_msg('enabled')
