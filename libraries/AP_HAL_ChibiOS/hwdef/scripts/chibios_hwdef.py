@@ -645,7 +645,7 @@ def write_mcu_config(f):
         f.write('#define HAL_USE_SERIAL_USB TRUE\n')
     if 'OTG2' in bytype:
         f.write('#define STM32_USB_USE_OTG2                  TRUE\n')
-    if have_type_prefix('CAN') and 'AP_PERIPH' not in env_vars:
+    if have_type_prefix('CAN') and not args.bootloader:
         if 'CAN1' in bytype and 'CAN2' in bytype:
             enable_can(f, 2)
         else:
