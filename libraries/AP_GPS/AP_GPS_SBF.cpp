@@ -18,8 +18,6 @@
 //  Code by Michael Oborne
 //
 
-#define ALLOW_DOUBLE_MATH_FUNCTIONS
-
 #include "AP_GPS.h"
 #include "AP_GPS_SBF.h"
 #include <GCS_MAVLink/GCS.h>
