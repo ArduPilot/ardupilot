@@ -246,7 +246,6 @@ void Rover::Log_Write_Throttle()
 
 void Rover::Log_Write_RC(void)
 {
-    logger.Write_RCIN();
     logger.Write_RCOUT();
     if (rssi.enabled()) {
         logger.Write_RSSI();
