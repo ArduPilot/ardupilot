@@ -17,7 +17,7 @@
  */
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_USE_CAN == TRUE
+#if HAL_USE_CAN == TRUE || HAL_NUM_CAN_IFACES
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/crc.h>
 #include <canard.h>
@@ -35,6 +35,7 @@
 #include "app_comms.h"
 #include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
 #include <stdio.h>
+#include <AP_HAL_ChibiOS/CANIface.h>
 
 
 static CanardInstance canard;
@@ -47,10 +48,14 @@ static uint8_t initial_node_id = HAL_CAN_DEFAULT_NODE_ID;
 // can config for 1MBit
 static uint32_t baudrate = 1000000U;
 
+#if HAL_USE_CAN
 static CANConfig cancfg = {
     CAN_MCR_ABOM | CAN_MCR_AWUM | CAN_MCR_TXFP,
     0 // filled in below
 };
+#else
+static ChibiOS::CANIface can_iface(0);
+#endif
 
 #ifndef CAN_APP_VERSION_MAJOR
 #define CAN_APP_VERSION_MAJOR                                           1
@@ -425,6 +430,7 @@ static bool shouldAcceptTransfer(const CanardInstance* ins,
     return false;
 }
 
+#if HAL_USE_CAN
 static void processTx(void)
 {
     static uint8_t fail_count;
@@ -457,8 +463,9 @@ static void processRx(void)
     while (canReceive(&CAND1, CAN_ANY_MAILBOX, &rxmsg, TIME_IMMEDIATE) == MSG_OK) {
         CanardCANFrame rx_frame {};
 
+#ifdef HAL_GPIO_PIN_LED_BOOTLOADER
         palToggleLine(HAL_GPIO_PIN_LED_BOOTLOADER);
-
+#endif
         const uint64_t timestamp = AP_HAL::micros64();
         memcpy(rx_frame.data, rxmsg.data8, 8);
         rx_frame.data_len = rxmsg.DLC;
@@ -470,6 +477,59 @@ static void processRx(void)
         canardHandleRxFrame(&canard, &rx_frame, timestamp);
     }
 }
+#else
+// Use HAL CAN interface
+static void processTx(void)
+{
+    static uint8_t fail_count;
+    for (const CanardCANFrame* txf = NULL; (txf = canardPeekTxQueue(&canard)) != NULL;) {
+        AP_HAL::CANFrame txmsg {};
+        txmsg.dlc = txf->data_len;
+        memcpy(txmsg.data, txf->data, 8);
+        txmsg.id = (txf->id | AP_HAL::CANFrame::FlagEFF);
+        // push message with 1s timeout
+        if (can_iface.send(txmsg, AP_HAL::micros64() + 1000000, 0) > 0) {
+            canardPopTxQueue(&canard);
+            fail_count = 0;
+        } else {
+            // just exit and try again later. If we fail 8 times in a row
+            // then start discarding to prevent the pool filling up
+            if (fail_count < 8) {
+                fail_count++;
+            } else {
+                canardPopTxQueue(&canard);
+            }
+            return;
+        }
+    }
+}
+
+static void processRx(void)
+{
+    AP_HAL::CANFrame rxmsg;
+    while (true) {
+        bool read_select = true;
+        bool write_select = false;
+        can_iface.select(read_select, write_select, nullptr, 0);
+        if (!read_select) {
+            break;
+        }
+#ifdef HAL_GPIO_PIN_LED_BOOTLOADER
+        palToggleLine(HAL_GPIO_PIN_LED_BOOTLOADER);
+#endif
+        CanardCANFrame rx_frame {};
+
+        //palToggleLine(HAL_GPIO_PIN_LED);
+        uint64_t timestamp;
+        AP_HAL::CANIface::CanIOFlags flags;
+        can_iface.receive(rxmsg, timestamp, flags);
+        memcpy(rx_frame.data, rxmsg.data, 8);
+        rx_frame.data_len = rxmsg.dlc;
+        rx_frame.id = rxmsg.id;
+        canardHandleRxFrame(&canard, &rx_frame, timestamp);
+    }
+}
+#endif //#if HAL_USE_CAN
 
 /*
   handle waiting for a node ID
@@ -630,6 +690,7 @@ void can_start()
 {
     node_status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_MAINTENANCE;
 
+#if HAL_USE_CAN
     // calculate optimal CAN timings given PCLK1 and baudrate
     CanardSTM32CANTimings timings {};
     canardSTM32ComputeCANTimings(STM32_PCLK1, baudrate, &timings);
@@ -638,7 +699,9 @@ void can_start()
         CAN_BTR_TS1(timings.bit_segment_1-1) |
         CAN_BTR_BRP(timings.bit_rate_prescaler-1);
     canStart(&CAND1, &cancfg);
-
+#else
+    can_iface.init(baudrate, AP_HAL::CANIface::NormalMode);
+#endif
     canardInit(&canard, (uint8_t *)canard_memory_pool, sizeof(canard_memory_pool),
                onTransferReceived, shouldAcceptTransfer, NULL);
 
