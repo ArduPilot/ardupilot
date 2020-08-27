@@ -766,6 +766,12 @@ void GCS_MAVLINK_Rover::handleMessage(const mavlink_message_t &msg)
                 break;
             }
 
+            // need ekf origin
+            Location ekf_origin;
+            if (!rover.ahrs.get_origin(ekf_origin)) {
+                break;
+            }
+
             // check for supported coordinate frames
             if (packet.coordinate_frame != MAV_FRAME_LOCAL_NED &&
                 packet.coordinate_frame != MAV_FRAME_LOCAL_OFFSET_NED &&
@@ -799,9 +805,10 @@ void GCS_MAVLINK_Rover::handleMessage(const mavlink_message_t &msg)
                     target_loc.offset(packet.x, packet.y);
                     break;
 
+                case MAV_FRAME_LOCAL_NED:
                 default:
-                    // MAV_FRAME_LOCAL_NED interpret as an offset from home
-                    target_loc = rover.ahrs.get_home();
+                    // MAV_FRAME_LOCAL_NED is interpreted as an offset from EKF origin
+                    target_loc = ekf_origin;
                     target_loc.offset(packet.x, packet.y);
                     break;
                 }
