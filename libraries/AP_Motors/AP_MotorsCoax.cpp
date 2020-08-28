@@ -191,9 +191,9 @@ void AP_MotorsCoax::output_to_motors()
 
 				_aft_rotor_start += (1.0f/(_spool_up_time * (float)_loop_rate)) * _spin_arm;
 
-				if(_aft_rotor_start >= _spin_min){
+				if(_aft_rotor_start >= _spin_arm){
 					_spool_up_complete = true;
-					_aft_rotor_start = _spin_min;
+					_aft_rotor_start = _spin_arm;
 				}
 
 				  rc_write(AP_MOTORS_MOT_3,  (int16_t)((float)get_pwm_output_min() + _aft_rotor_start * (float)(get_pwm_output_max()-get_pwm_output_min())) );
@@ -238,11 +238,8 @@ void AP_MotorsCoax::output_armed_stabilizing()
     yaw_thrust = (_yaw_in + _yaw_in_ff);// * compensation_gain;
     throttle_thrust = get_throttle();
 
-
     _pitch_FF_total_log = pitch_thrust;
 	_roll_FF_total_log = roll_thrust;
-
-
 
     // sanity check throttle is above zero and below current limited throttle
     if (throttle_thrust <= 0.0f) {

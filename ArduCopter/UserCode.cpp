@@ -6,15 +6,19 @@ void Copter::userhook_init()
     // put your initialisation code here
     // this will be called once at start-up
 
+	//Servo Voltage Watcher
+	AP_Notify::flags.low_servo_voltage = false;
 
+
+	//Killswitch Variables
 	killswitch_counter = 0;
 
 
+	//Herelink Variables
 	ap.gimbal_control_active = false;
 	speed_setting = 1;
 	function_counter = 0;
 	cam_button_debounce_timer = 0;
-	AP_Notify::flags.low_servo_voltage = false;
 
 	ch9_button_pressed = false;
 	ch10_button_pressed = false;
@@ -49,81 +53,7 @@ void Copter::userhook_FastLoop()
 {
     // put your 100Hz code here
 
-	if(g.herelink_enable){
-		if(RC_Channels::rc_channel(CH_9)->get_radio_in() > 1800){
-			if(!ch9_button_hold){
-				if(!ch9_button_pressed){
-					ch9_button_pressed = true;
-					ch9_timer = millis();
-				}else{
-					if( (millis() - ch9_timer) > 750 ){
-						long_press_flag_ch9 = true;  //these are reset in the 10Hz loop
-						function_counter = 0;
-						ch9_button_hold = true;
-					}
-				}
-			}
-		}else{
-			if(ch9_button_pressed){
-				if(!ch9_button_hold){  //if hold was active don't do a short_press
-					short_press_flag_ch9 = true;//these are reset in the 10Hz loop
-					function_counter = 0;
-				}
-				ch9_button_hold = false;
-				ch9_button_pressed = false; //reset button press flag
-			}
-		}
 
-
-	if(RC_Channels::rc_channel(CH_10)->get_radio_in() > 1800){
-				if(!ch10_button_hold){
-					if(!ch10_button_pressed){
-						ch10_button_pressed = true;
-						ch10_timer = millis();
-					}else{
-						if( (millis() - ch10_timer) > 750 ){
-							long_press_flag_ch10 = true;  //these are reset in the 10Hz loop
-							function_counter = 0;
-							ch10_button_hold = true;
-						}
-					}
-				}
-			}else{
-				if(ch10_button_pressed){
-					if(!ch10_button_hold){  //if hold was active don't do a short_press
-						short_press_flag_ch10 = true;//these are reset in the 10Hz loop
-						function_counter = 0;
-					}
-					ch10_button_hold = false;
-					ch10_button_pressed = false; //reset button press flag
-				}
-			}
-
-
-if(RC_Channels::rc_channel(CH_11)->get_radio_in() > 1800){
-			if(!ch11_button_hold){
-				if(!ch11_button_pressed){
-					ch11_button_pressed = true;
-					ch11_timer = millis();
-				}else{
-					if( (millis() - ch11_timer) > 750 ){
-						long_press_flag_ch11 = true;  //these are reset in the 10Hz loop
-						function_counter = 0;
-						ch11_button_hold = true;
-					}
-				}
-			}
-		}else{
-			if(ch11_button_pressed){
-				if(!ch11_button_hold){  //if hold was active don't do a short_press
-					short_press_flag_ch11 = true;//these are reset in the 10Hz loop
-					function_counter = 0;
-				}
-				ch11_button_hold = false;
-				ch11_button_pressed = false; //reset button press flag
-			}
-		}
-	}
 }
 
 
@@ -133,22 +63,29 @@ if(RC_Channels::rc_channel(CH_11)->get_radio_in() > 1800){
 #ifdef USERHOOK_50HZLOOP
 void Copter::userhook_50Hz()
 {
-    // put your 50Hz code here
+	if(g.herelink_enable){
+		Detect_Buttons();
+	}
+
+
+	//zero out dynamic trim for now
 	motors->set_dynamic_trim(0.0, 0.0);
+
+
+
 	////Servo Voltage Watcher///////////
 
 	if(ap.land_complete and motors->armed() and !hal.gpio->usb_connected()){
 
 	 const float servo_voltage = hal.analogin->servorail_voltage();
 
-	 if(servo_voltage < 5.0 ){
+	 if(servo_voltage < 4.0 ){
 		 copter.arming.disarm();
 		 AP_Notify::flags.low_servo_voltage = true;
 		 gcs().send_text(MAV_SEVERITY_CRITICAL,"LOW SERVO VOLTAGE");
 		}
 	}
 
-	//////////////////////////
 }
 #endif
 
@@ -157,36 +94,8 @@ void Copter::userhook_MediumLoop()
 {
     // put your 10Hz code here
 
+	Killswitch();
 
-
-	if(!motors->armed()){
-		return;
-	}
-
-	///// KILL SWITCH ///////
-
-	if(RC_Channels::rc_channel(CH_8)->get_radio_in() < 1700){
-			killswitch_counter = 0;
-			return;
-	}
-
-	bool killswitch_activate = {
-			ap.throttle_zero or
-			ap.land_complete or
-			fabsf(attitude_control->get_att_error_angle_deg()) > 45.0f};
-
-	 if(killswitch_activate) {
-
-			 if(killswitch_counter >= 2){
-				 copter.arming.disarm();
-				 killswitch_counter = 0;
-				 gcs().send_text(MAV_SEVERITY_CRITICAL,"User: Disarm");
-
-			 }else{ killswitch_counter++;  }
-
-	 }else{   killswitch_counter = 0;  }
-
-	 ///// KILL SWITCH ///////
 
 }
 #endif
@@ -251,6 +160,124 @@ int16_t  gimbal_pan, gimbal_tilt, gimbal_zoom, gimbal_focus;
 		SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_focus, gimbal_focus);
 }
 
+
+
+
+void Copter::Killswitch(){
+
+	if(!motors->armed()){
+		killswitch_counter = 0;
+		return;
+	}
+
+	///// KILL SWITCH ///////
+
+	if(RC_Channels::rc_channel(CH_8)->get_radio_in() < 1700){
+			killswitch_counter = 0;
+			return;
+	}
+
+
+	//todo: killswitch activation time dependent on particular condition (ie flying versus toppling)
+
+	bool killswitch_activate = {
+			ap.throttle_zero or
+			ap.land_complete or
+			fabsf(attitude_control->get_att_error_angle_deg()) > 45.0f};
+
+	 if(killswitch_activate) {
+
+			 if(killswitch_counter >= 2){
+				 copter.arming.disarm();
+				 killswitch_counter = 0;
+				 gcs().send_text(MAV_SEVERITY_CRITICAL,"User: Disarm");
+
+			 }else{ killswitch_counter++;  }
+
+	 }else{   killswitch_counter = 0;  }
+
+}
+
+
+
+
+void Copter::Detect_Buttons(){
+
+
+	if(RC_Channels::rc_channel(CH_9)->get_radio_in() > 1800){
+				if(!ch9_button_hold){
+					if(!ch9_button_pressed){
+						ch9_button_pressed = true;
+						ch9_timer = millis();
+					}else{
+						if( (millis() - ch9_timer) > 750 ){
+							long_press_flag_ch9 = true;  //these are reset in the 10Hz loop
+							function_counter = 0;
+							ch9_button_hold = true;
+						}
+					}
+				}
+			}else{
+				if(ch9_button_pressed){
+					if(!ch9_button_hold){  //if hold was active don't do a short_press
+						short_press_flag_ch9 = true;//these are reset in the 10Hz loop
+						function_counter = 0;
+					}
+					ch9_button_hold = false;
+					ch9_button_pressed = false; //reset button press flag
+				}
+			}
+
+
+		if(RC_Channels::rc_channel(CH_10)->get_radio_in() > 1800){
+					if(!ch10_button_hold){
+						if(!ch10_button_pressed){
+							ch10_button_pressed = true;
+							ch10_timer = millis();
+						}else{
+							if( (millis() - ch10_timer) > 750 ){
+								long_press_flag_ch10 = true;  //these are reset in the 10Hz loop
+								function_counter = 0;
+								ch10_button_hold = true;
+							}
+						}
+					}
+				}else{
+					if(ch10_button_pressed){
+						if(!ch10_button_hold){  //if hold was active don't do a short_press
+							short_press_flag_ch10 = true;//these are reset in the 10Hz loop
+							function_counter = 0;
+						}
+						ch10_button_hold = false;
+						ch10_button_pressed = false; //reset button press flag
+					}
+				}
+
+
+	if(RC_Channels::rc_channel(CH_11)->get_radio_in() > 1800){
+				if(!ch11_button_hold){
+					if(!ch11_button_pressed){
+						ch11_button_pressed = true;
+						ch11_timer = millis();
+					}else{
+						if( (millis() - ch11_timer) > 750 ){
+							long_press_flag_ch11 = true;  //these are reset in the 10Hz loop
+							function_counter = 0;
+							ch11_button_hold = true;
+						}
+					}
+				}
+			}else{
+				if(ch11_button_pressed){
+					if(!ch11_button_hold){  //if hold was active don't do a short_press
+						short_press_flag_ch11 = true;//these are reset in the 10Hz loop
+						function_counter = 0;
+					}
+					ch11_button_hold = false;
+					ch11_button_pressed = false; //reset button press flag
+				}
+			}
+		}
 
 
 

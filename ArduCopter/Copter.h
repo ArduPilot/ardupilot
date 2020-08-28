@@ -778,6 +778,8 @@ private:
 
     void Spirit_Gimbal_Control_Auto();
     void Decode_Buttons();
+    void Detect_Buttons();
+    void Killswitch();
     // landing_gear.cpp
     void landinggear_update();
 
