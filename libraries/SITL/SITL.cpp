@@ -303,7 +303,7 @@ const AP_Param::GroupInfo SITL::var_mag[] = {
     AP_GROUPINFO("MAG_DIA",        7, SITL,  mag_diag[0], 0),
     AP_GROUPINFO("MAG_ODI",        8, SITL,  mag_offdiag[0], 0),
     AP_GROUPINFO("MAG_ORIENT",     9, SITL,  mag_orient[0], 0),
-    AP_GROUPINFO("MAG_SCALING",   10, SITL,  mag_scaling, 1),
+    AP_GROUPINFO("MAG1_SCALING",  10, SITL,  mag_scaling[0], 1),
     AP_GROUPINFO("MAG1_DEVID",    11, SITL,  mag_devid[0], 97539),
     AP_GROUPINFO("MAG2_DEVID",    12, SITL,  mag_devid[1], 131874),
     AP_GROUPINFO("MAG3_DEVID",    13, SITL,  mag_devid[2], 263178),
@@ -311,17 +311,22 @@ const AP_Param::GroupInfo SITL::var_mag[] = {
     AP_GROUPINFO("MAG5_DEVID",    15, SITL,  mag_devid[4], 97795),
     AP_GROUPINFO("MAG6_DEVID",    16, SITL,  mag_devid[5], 98051),
     AP_GROUPINFO("MAG7_DEVID",    17, SITL,  mag_devid[6], 0),
-    AP_GROUPINFO("MAG8_DEVID",    18, SITL, mag_devid[7], 0),
+    AP_GROUPINFO("MAG8_DEVID",    18, SITL,  mag_devid[7], 0),
+    AP_GROUPINFO("MAG1_FAIL",     26, SITL,  mag_fail[0], 0),
 #if HAL_COMPASS_MAX_SENSORS > 1
     AP_GROUPINFO("MAG2_OFS",      19, SITL,  mag_ofs[1], 0),
     AP_GROUPINFO("MAG2_DIA",      20, SITL,  mag_diag[1], 0),
     AP_GROUPINFO("MAG2_ODI",      21, SITL,  mag_offdiag[1], 0),
     AP_GROUPINFO("MAG2_ORIENT",   22, SITL,  mag_orient[1], 0),
+    AP_GROUPINFO("MAG2_FAIL",     27, SITL,  mag_fail[1], 0),
+    AP_GROUPINFO("MAG2_SCALING",  28, SITL,  mag_scaling[1], 1),
 #endif
 #if HAL_COMPASS_MAX_SENSORS > 2
     AP_GROUPINFO("MAG3_OFS",      23, SITL,  mag_ofs[2], 0),
     AP_GROUPINFO("MAG3_DIA",      24, SITL,  mag_diag[2], 0),
     AP_GROUPINFO("MAG3_ODI",      25, SITL,  mag_offdiag[2], 0),
+    AP_GROUPINFO("MAG3_FAIL",     29, SITL,  mag_fail[2], 0),
+    AP_GROUPINFO("MAG3_SCALING",  30, SITL,  mag_scaling[2], 1),
     AP_GROUPINFO("MAG3_ORIENT",   36, SITL,  mag_orient[2], 0),
 #endif
     AP_GROUPEND
