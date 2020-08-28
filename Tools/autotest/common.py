@@ -3865,7 +3865,7 @@ class AutoTest(ABC):
                 continue
             if (not (m.onboard_control_sensors_present & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_GPS)):
                 self.progress("GPS not present")
-                if now > 5:
+                if now > 20:
                     # it's had long enough to be detected....
                     return
                 continue
@@ -3878,14 +3878,14 @@ class AutoTest(ABC):
             self.progress("GPS healthy")
             return
 
-    def wait_ready_to_arm(self, timeout=None, require_absolute=True):
+    def wait_ready_to_arm(self, timeout=120, require_absolute=True):
         # wait for EKF checks to pass
         self.progress("Waiting for ready to arm")
         start = self.get_sim_time()
         self.wait_ekf_happy(timeout=timeout, require_absolute=require_absolute)
         if require_absolute:
             self.wait_gps_sys_status_not_present_or_enabled_and_healthy()
-        armable_time = (self.get_sim_time()-start)
+        armable_time = self.get_sim_time() - start
         self.progress("Took %u seconds to become armable" % armable_time)
         self.total_waiting_to_arm_time += armable_time
         self.waiting_to_arm_count += 1
