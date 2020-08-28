@@ -68,6 +68,10 @@ public:
     float get_pitch() const { return _pitch; }
     void set_pitch(float pitch);
 
+    // get or set walking_height as a value from -1 to 1
+    float get_walking_height() const { return _walking_height; }
+    void set_walking_height(float walking_height);
+
     // get or set lateral input as a value from -100 to +100
     float get_lateral() const { return _lateral; }
     void set_lateral(float lateral);
@@ -192,6 +196,7 @@ protected:
     float   _lateral;  // requested lateral input as a value from -100 to +100
     float   _roll;      // requested roll as a value from -1 to +1
     float   _pitch;     // requested pitch as a value from -1 to +1
+    float   _walking_height; // requested height as a value from -1 to +1   
     float   _mainsail;  // requested mainsail input as a value from 0 to 100
     float   _wingsail;  // requested wing sail input as a value in the range +- 100
 
