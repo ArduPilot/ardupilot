@@ -1622,6 +1622,50 @@ class AutoTestCopter(AutoTest):
 
         self.do_RTL()
 
+    # test_mag_fail - test failover of compass in EKF
+    def test_mag_fail(self):
+        # we want both EK2 and EK3
+        self.set_parameter("EK2_ENABLE", 1)
+        self.set_parameter("EK3_ENABLE", 1)
+
+        self.takeoff(10, mode="LOITER")
+
+        self.mavproxy.send('mode CIRCLE\n')
+        self.wait_mode('CIRCLE')
+
+        self.delay_sim_time(20)
+
+        self.progress("Failing first compass")
+        self.set_parameter("SIM_MAG1_FAIL", 1)
+
+        # we want for the message twice, one for EK2 and again for EK3
+        self.wait_statustext("IMU0 switching to compass 1")
+        self.wait_statustext("IMU0 switching to compass 1")
+        self.progress("compass switch 1 OK")
+
+        self.delay_sim_time(2)
+
+        self.progress("Failing 2nd compass")
+        self.set_parameter("SIM_MAG2_FAIL", 1)
+
+        self.wait_statustext("IMU0 switching to compass 2")
+        self.wait_statustext("IMU0 switching to compass 2")
+
+        self.progress("compass switch 2 OK")
+
+        self.delay_sim_time(2)
+
+        self.progress("Failing 3rd compass")
+        self.set_parameter("SIM_MAG3_FAIL", 1)
+        self.delay_sim_time(2)
+        self.set_parameter("SIM_MAG1_FAIL", 0)
+
+        self.wait_statustext("IMU0 switching to compass 0")
+        self.wait_statustext("IMU0 switching to compass 0")
+        self.progress("compass switch 0 OK")
+
+        self.do_RTL()
+        
     def wait_attitude(self, desroll=None, despitch=None, timeout=2, tolerance=10):
         '''wait for an attitude (degrees)'''
         if desroll is None and despitch is None:
@@ -5360,6 +5404,10 @@ class AutoTestCopter(AutoTest):
             ("ModeCircle",
              "Fly CIRCLE mode",
              self.fly_circle),
+
+            ("MagFail",
+             "Test magnetometer failure",
+             self.test_mag_fail),
 
             ("OpticalFlowLimits",
              "Fly Optical Flow limits",
