@@ -197,6 +197,10 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
 
     AP_GROUPINFO("MAG_SCALING",    60, SITL,  mag_scaling, 1),
 
+    AP_GROUPINFO("MAG1_FAIL",     61, SITL,  mag_fail[0], 0),
+    AP_GROUPINFO("MAG2_FAIL",     62, SITL,  mag_fail[1], 0),
+    AP_GROUPINFO("MAG3_FAIL",     63, SITL,  mag_fail[2], 0),
+
     AP_GROUPEND
 
 };
