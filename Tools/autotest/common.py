@@ -2748,13 +2748,18 @@ class AutoTest(ABC):
         self.progress("Waiting for DISARM")
         if tstart is None:
             tstart = self.get_sim_time()
+        last_print_time = 0
         while True:
-            delta = self.get_sim_time_cached() - tstart
+            now = self.get_sim_time_cached()
+            delta = now - tstart
             if delta > timeout:
                 raise AutoTestTimeoutException("Failed to DISARM within %fs" %
                                                (timeout,))
-            self.wait_heartbeat()
-            self.progress("Got heartbeat")
+            if now - last_print_time > 1:
+                self.progress("Waiting for disarm (%.2fs so far of allowed %.2f)" % (delta, timeout))
+                last_print_time = now
+            self.wait_heartbeat(quiet=True)
+#            self.progress("Got heartbeat")
             if not self.mav.motors_armed():
                 self.progress("DISARMED after %.2f seconds (allowed=%.2f)" %
                               (delta, timeout))
@@ -3894,11 +3899,11 @@ class AutoTest(ABC):
         self.total_waiting_to_arm_time += armable_time
         self.waiting_to_arm_count += 1
 
-    def wait_heartbeat(self, drain_mav=True, *args, **x):
+    def wait_heartbeat(self, drain_mav=True, quiet=False, *args, **x):
         '''as opposed to mav.wait_heartbeat, raises an exception on timeout.
 Also, ignores heartbeats not from our target system'''
         if drain_mav:
-            self.drain_mav()
+            self.drain_mav(quiet=quiet)
         orig_timeout = x.get("timeout", 10)
         x["timeout"] = 1
         tstart = time.time()
