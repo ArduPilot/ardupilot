@@ -44,6 +44,7 @@ void RC_Channel_Rover::init_aux_function(const aux_func_t ch_option, const AuxSw
     case AUX_FUNC::MANUAL:
     case AUX_FUNC::PITCH:
     case AUX_FUNC::ROLL:
+    case AUX_FUNC::WALKING_HEIGHT:
     case AUX_FUNC::RTL:
     case AUX_FUNC::SAILBOAT_TACK:
     case AUX_FUNC::SAVE_TRIM:
@@ -243,6 +244,7 @@ void RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const AuxSwit
     case AUX_FUNC::MAINSAIL:
     case AUX_FUNC::PITCH:
     case AUX_FUNC::ROLL:
+    case AUX_FUNC::WALKING_HEIGHT:
         break;
 
     default:
