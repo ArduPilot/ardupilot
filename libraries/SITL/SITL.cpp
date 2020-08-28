@@ -211,6 +211,9 @@ const AP_Param::GroupInfo SITL::var_info3[] = {
 
     AP_GROUPINFO("RATE_HZ",  22, SITL,  loop_rate_hz, 1200),
 
+    // count of simulated IMUs
+    AP_GROUPINFO("IMU_COUNT",    23, SITL,  imu_count,  2),
+
     // @Path: ./SIM_RichenPower.cpp
     AP_SUBGROUPINFO(richenpower_sim, "RICH_", 31, SITL, RichenPower),
 
@@ -248,9 +251,6 @@ const AP_Param::GroupInfo SITL::var_info3[] = {
 
     // user settable common airspeed parameters
     AP_GROUPINFO("ARSPD_SIGN",    62, SITL,  arspd_signflip, 0),
-
-    // count of simulated IMUs
-    AP_GROUPINFO("IMU_COUNT",    36, SITL,  imu_count,  2),
 
     AP_GROUPEND
 };
