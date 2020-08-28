@@ -38,7 +38,10 @@ p.changeDynamics(FixedBase,-1,lateralFriction=1.,
 
 last_angles = [0.0] * 12
 force = [500] * 12
-servo_direction = [1,1,1,-1,-1,-1,-1,-1,1,1,1,-1]
+servo_direction = [1,-1, 1,
+                   1, 1,-1,
+                   1,-1, 1,
+                   1, 1,-1]
 def control_joints(pwm):
     '''control a joint based bot'''
     global last_angles
