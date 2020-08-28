@@ -157,6 +157,10 @@ protected:
     // outputs are in the range -1 to +1
     void get_pilot_desired_roll_and_pitch(float &roll_out, float &pitch_out);
 
+    // decode pilot height inputs and return in height_out arguments
+    // outputs are in the range -1 to +1
+    void get_pilot_desired_walking_height(float &walking_height_out);
+
     // high level call to navigate to waypoint
     void navigate_to_waypoint();
 
@@ -203,6 +207,7 @@ protected:
     class RC_Channel *&channel_lateral;
     class RC_Channel *&channel_roll;
     class RC_Channel *&channel_pitch;
+    class RC_Channel *&channel_walking_height;
     class AR_AttitudeControl &attitude_control;
 
     // private members for waypoint navigation

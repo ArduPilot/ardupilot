@@ -193,6 +193,7 @@ public:
         Lateral = 5,
         MainSail = 6,
         WingSail = 7,
+        Walking_Height = 8,
         Last_ControlOutput  // place new values before this
     };
 

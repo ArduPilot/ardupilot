@@ -10,6 +10,7 @@ Mode::Mode() :
     channel_lateral(rover.channel_lateral),
     channel_roll(rover.channel_roll),
     channel_pitch(rover.channel_pitch),
+    channel_walking_height(rover.channel_walking_height),
     attitude_control(rover.g2.attitude_control)
 { }
 
@@ -186,6 +187,17 @@ void Mode::get_pilot_desired_roll_and_pitch(float &roll_out, float &pitch_out)
         pitch_out = channel_pitch->norm_input();
     } else {
         pitch_out = 0.0f;
+    }
+}
+
+// decode pilot walking_height inputs and return in walking_height_out arguments
+// outputs are in the range -1 to +1
+void Mode::get_pilot_desired_walking_height(float &walking_height_out)
+{
+    if (channel_walking_height != nullptr) {
+        walking_height_out = channel_walking_height->norm_input();
+    } else {
+        walking_height_out = 0.0f;
     }
 }
 
