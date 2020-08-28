@@ -1483,8 +1483,10 @@ Compass::read(void)
         _backends[i]->read();
     }
     uint32_t time = AP_HAL::millis();
+    bool any_healthy = false;
     for (StateIndex i(0); i < COMPASS_MAX_INSTANCES; i++) {
         _state[i].healthy = (time - _state[i].last_update_ms < 500);
+        any_healthy |= _state[i].healthy;
     }
 #if COMPASS_LEARN_ENABLED
     if (_learn == LEARN_INFLIGHT && !learn_allocated) {
@@ -1494,14 +1496,13 @@ Compass::read(void)
     if (_learn == LEARN_INFLIGHT && learn != nullptr) {
         learn->update();
     }
-    bool ret = healthy();
-    if (ret && _log_bit != (uint32_t)-1 && AP::logger().should_log(_log_bit) && !AP::ahrs().have_ekf_logging()) {
+#endif
+#ifndef HAL_NO_LOGGING
+    if (any_healthy && _log_bit != (uint32_t)-1 && AP::logger().should_log(_log_bit) && !AP::ahrs().have_ekf_logging()) {
         AP::logger().Write_Compass();
     }
-    return ret;
-#else
-    return healthy();
 #endif
+    return healthy();
 }
 
 uint8_t
