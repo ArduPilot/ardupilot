@@ -467,13 +467,24 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         '''maximum distance allowed from home at end'''
         return 6.5
 
-    def drive_rtl_mission(self):
+    def drive_rtl_mission(self, timeout=120):
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
         self.load_mission("rtl.txt")
         self.change_mode("AUTO")
-        self.mavproxy.expect('Mission: 3 RTL')
+
+        tstart = self.get_sim_time()
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > timeout:
+                raise AutoTestTimeoutException("Didn't see wp 3")
+            m = self.mav.recv_match(type='MISSION_CURRENT',
+                                    blocking=True,
+                                    timeout=1)
+            self.progress("MISSION_CURRENT: %s" % str(m))
+            if m.seq == 3:
+                break
 
         self.drain_mav();
 
