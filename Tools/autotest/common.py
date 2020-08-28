@@ -3886,6 +3886,10 @@ class AutoTest(ABC):
         if require_absolute:
             self.wait_gps_sys_status_not_present_or_enabled_and_healthy()
         armable_time = self.get_sim_time() - start
+        if require_absolute:
+            m = self.poll_home_position()
+            if m is None:
+                raise NotAchievedException("Did not receive a home position")
         self.progress("Took %u seconds to become armable" % armable_time)
         self.total_waiting_to_arm_time += armable_time
         self.waiting_to_arm_count += 1
