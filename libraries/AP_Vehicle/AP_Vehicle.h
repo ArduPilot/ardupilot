@@ -44,6 +44,10 @@
 #include <AP_RCTelemetry/AP_VideoTX.h>
 #include <AP_MSP/AP_MSP.h>
 
+#if SMARTAUDIO_ENABLED == ENABLED
+#include <AP_SmartAudio/AP_SmartAudio.h>
+#endif
+
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
 
 public:
@@ -82,7 +86,7 @@ public:
      */
     struct FixedWing {
         AP_Int8 throttle_min;
-        AP_Int8 throttle_max;	
+        AP_Int8 throttle_max;
         AP_Int8 throttle_slewrate;
         AP_Int8 throttle_cruise;
         AP_Int8 takeoff_throttle_max;
@@ -93,7 +97,7 @@ public:
         AP_Int8  crash_detection_enable;
         AP_Int16 roll_limit_cd;
         AP_Int16 pitch_limit_max_cd;
-        AP_Int16 pitch_limit_min_cd;        
+        AP_Int16 pitch_limit_min_cd;
         AP_Int8  autotune_level;
         AP_Int8  stall_prevention;
         AP_Int16 loiter_radius;
@@ -284,6 +288,10 @@ protected:
 
 #if GENERATOR_ENABLED
     AP_Generator_RichenPower generator;
+#endif
+
+#if SMARTAUDIO_ENABLED
+    AP_SmartAudio smartaudio;
 #endif
 
     static const struct AP_Param::GroupInfo var_info[];
