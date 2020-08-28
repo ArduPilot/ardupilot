@@ -6483,11 +6483,14 @@ switch value'''
         # but it *will* end up as 1<<btn immediately afterwards.  Thus
         # not attempting to fetch the value back here:
         self.send_set_parameter("SIM_PIN_MASK", 0)
+        tstart = self.get_sim_time_cached()
         while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > 10:
+                raise AutoTestTimeoutException("No BUTTON_CHANGE received")
             m3 = self.mav.recv_match(type='BUTTON_CHANGE', blocking=True, timeout=1)
             self.progress("m3: %s" % str(m3))
             if m3 is None:
-                self.progress("Did not get new message")
                 continue
             if m.last_change_ms == m3.last_change_ms:
                 self.progress("last_change_ms same as first message")
