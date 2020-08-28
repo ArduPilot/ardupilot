@@ -38,6 +38,14 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(msp, "MSP",  5, AP_Vehicle, AP_MSP),
 #endif
 
+#if SMARTAUDIO_ENABLED
+    // @Group: VTX_SM
+    // @DisplayName:
+    // @Path: ../libraries/AP_SmartAudio/AP_SmartAudio.cpp
+    // @User: Standard
+    AP_SUBGROUPINFO(smartaudio, "VTX_SM_",  40, AP_Vehicle, AP_SmartAudio),
+#endif
+
     AP_GROUPEND
 };
 
