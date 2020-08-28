@@ -475,7 +475,7 @@ void Sub::do_nav_delay(const AP_Mission::Mission_Command& cmd)
 {
     nav_delay_time_start_ms = AP_HAL::millis();
 
-    if (cmd.content.nav_delay.seconds > 0) {
+    if (cmd.content.nav_delay.seconds >= 0) {
         // relative delay
         nav_delay_time_max_ms = cmd.content.nav_delay.seconds * 1000; // convert seconds to milliseconds
     } else {
