@@ -5492,6 +5492,7 @@ class AutoTestCopter(AutoTest):
         return {
             "Parachute": "See https://github.com/ArduPilot/ardupilot/issues/4702",
             "HorizontalAvoidFence": "See https://github.com/ArduPilot/ardupilot/issues/11525",
+            "AltEstimation": "See https://github.com/ArduPilot/ardupilot/issues/15191",
         }
 
 class AutoTestHeli(AutoTestCopter):
