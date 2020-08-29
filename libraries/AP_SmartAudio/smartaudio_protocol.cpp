@@ -62,10 +62,10 @@ static void smartaudioUnpackOperationMode(smartaudioSettings_t *settings, const 
 
 static void smartaudioUnpackFrequency(smartaudioSettings_t *settings, const uint16_t frequency)
 {
-    if (frequency & SMARTAUDIO_GET_PITMODE_FREQ) {
-        settings->pitmodeFrequency = U16BIGENDIAN(frequency & SMARTAUDIO_FREQUENCY_MASK);
+    if (applyBigEndian16(frequency) & SMARTAUDIO_GET_PITMODE_FREQ) {
+        settings->pitmodeFrequency = applyBigEndian16(frequency);
     } else {
-        settings->frequency = U16BIGENDIAN(frequency & SMARTAUDIO_FREQUENCY_MASK);
+        settings->frequency = applyBigEndian16(frequency);
     }
 }
 
@@ -173,21 +173,37 @@ size_t smartaudioFrameSetOperationMode(smartaudioFrame_t *smartaudioFrame, const
     return sizeof(smartaudioU8Frame_t);
 }
 
+ /**
+     *
+     * */
+    void static print_bytes_to_hex_string(uint8_t buf[],uint8_t x)
+    {
+        int i;
+        for (i = 0; i < x; i++) {
+            if (i > 0) {
+                printf(":");
+            }
+            printf("%02X", buf[i]);
+        }
+        printf("\n");
+    }
+
 bool smartaudioParseResponseBuffer(smartaudioSettings_t *settings, const uint8_t *buffer)
 {
+    print_bytes_to_hex_string(const_cast <uint8_t*>(buffer),16);
+
     const smartaudioFrameHeader_t *header = (const smartaudioFrameHeader_t *)buffer;
     const uint8_t fullFrameLength = sizeof(smartaudioFrameHeader_t) + header->length;
     const uint8_t headerPayloadLength = fullFrameLength - 1; // subtract crc byte from length
-
     const uint8_t *startPtr = buffer + 2;
-    const uint8_t *endPtr = buffer + fullFrameLength;
+    const uint8_t *endPtr = buffer + headerPayloadLength;
     // Todo: DELETE DEAD CODE
     // printf (" Full Frame Lenght:%d\n",fullFrameLength);
     // printf (" HEADER PAYLOAD LEGHTH:%d\n",headerPayloadLength);
-    // printf("  CRC BYTE:%02X",endPtr[0]);
-    // printf(" CRC CHECK:%02X\n",crc8_dvb_s2_update(*endPtr, startPtr, headerPayloadLength-2));
+    // printf(" CRC BYTE:%02X",*endPtr);
+    // printf(" CRC CHECK:%02X\n",crc8_dvb_s2_update(0x00,startPtr, headerPayloadLength-2));
     // printf(" CHECK HEADER START:%d",header->headerByte != SMARTAUDIO_HEADER_BYTE);
-    if (crc8_dvb_s2_update(*endPtr, startPtr, headerPayloadLength-2)!=*(endPtr-1) || header->headerByte != SMARTAUDIO_HEADER_BYTE || header->syncByte!=SMARTAUDIO_SYNC_BYTE) {
+    if (crc8_dvb_s2_update(0x00, startPtr, headerPayloadLength-2)!=*(endPtr) || header->headerByte != SMARTAUDIO_HEADER_BYTE || header->syncByte!=SMARTAUDIO_SYNC_BYTE) {
         return false;
     }
     /* TODO REMOVE THIS*/
@@ -197,14 +213,23 @@ bool smartaudioParseResponseBuffer(smartaudioSettings_t *settings, const uint8_t
     switch (header->command) {
     case SMARTAUDIO_RSP_GET_SETTINGS_V1: {
         const smartaudioSettingsResponseFrame_t *resp = (const smartaudioSettingsResponseFrame_t *)buffer;
-        settings->version = 1;
+        settings->version = SMARTAUDIO_SPEC_PROTOCOL_v1;
         smartaudioUnpackSettings(settings, resp);
+        settings->overall_updated(true);
     }
     break;
     case SMARTAUDIO_RSP_GET_SETTINGS_V2: {
         const smartaudioSettingsResponseFrame_t *resp = (const smartaudioSettingsResponseFrame_t *)buffer;
-        settings->version = 2;
+        settings->version = SMARTAUDIO_SPEC_PROTOCOL_v2;
         smartaudioUnpackSettings(settings, resp);
+        settings->overall_updated(true);
+    }
+    break;
+    case SMARTAUDIO_RSP_GET_SETTINGS_V21: {
+        const smartaudioSettingsResponseFrame_t *resp = (const smartaudioSettingsResponseFrame_t *)buffer;
+        settings->version = SMARTAUDIO_SPEC_PROTOCOL_v21;
+        smartaudioUnpackSettings(settings, resp);
+        settings->overall_updated(true);
     }
     break;
     case SMARTAUDIO_RSP_SET_POWER: {
@@ -216,11 +241,13 @@ bool smartaudioParseResponseBuffer(smartaudioSettings_t *settings, const uint8_t
     case SMARTAUDIO_RSP_SET_CHANNEL: {
         const smartaudioU8ResponseFrame_t *resp = (const smartaudioU8ResponseFrame_t *)buffer;
         settings->channel = resp->payload;
+        settings->channel_updated=true;
     }
     break;
     case SMARTAUDIO_RSP_SET_FREQUENCY: {
         const smartaudioU16ResponseFrame_t *resp = (const smartaudioU16ResponseFrame_t *)buffer;
         smartaudioUnpackFrequency(settings, resp->payload);
+        settings->frequency_updated=true;
     }
     break;
     case SMARTAUDIO_RSP_SET_MODE: {

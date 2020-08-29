@@ -27,6 +27,7 @@
 #include <stdio.h>
 
 
+
 #define SMARTAUDIO_SERIAL_OPTIONS   SERIAL_NOT_INVERTED | SERIAL_BIDIR_NOPULL | SERIAL_STOPBITS_2
 #define SMARTAUDIO_DEFAULT_BAUD     4900
 #define SMARTAUDIO_MIN_BAUD         4800
@@ -59,17 +60,38 @@
 #define SMARTAUDIO_SPEC_PROTOCOL_v2  1
 #define SMARTAUDIO_SPEC_PROTOCOL_v21 2
 
+// POWER LEVELS: 3 protocols, 4 readings for output in mw
+const uint16_t POWER_LEVELS[3][4] =
+{
+//   25      200   500   800  mw
+//   14      23     27    29  dbm
+    { 7 , 16, 25, 40}, /* Version 1 */
+    { 0 , 1 , 2 , 3 }, /* Version 2 */
+};
+
 typedef struct smartaudioSettings_s {
-    uint8_t version;
-    uint8_t unlocked;
-    uint8_t channel;
-    uint8_t power;
-    uint16_t frequency;
-    uint16_t pitmodeFrequency;
-    bool userFrequencyMode;     // user is setting freq
-    bool pitmodeDisabled;
-    bool pitmodeInRangeActive;
-    bool pitmodeOutRangeActive;
+    uint8_t version=0;
+    uint8_t unlocked=0;
+    uint8_t channel=0;
+    uint8_t power=0;
+    uint16_t frequency=0;
+    uint8_t band=0;
+
+    uint16_t pitmodeFrequency=0;
+    bool userFrequencyMode=false;     // user is setting freq
+    bool pitmodeDisabled=false;
+    bool pitmodeInRangeActive=false;
+    bool pitmodeOutRangeActive=false;
+
+    bool frequency_updated=false;
+    bool channel_updated=false;
+    // true when settings are from parsing response.
+    void overall_updated(bool value){
+        if(value){
+            frequency_updated=true;
+            }
+    }
+
 } smartaudioSettings_t;
 
 typedef struct smartaudioFrameHeader_s {
@@ -119,6 +141,9 @@ typedef struct smartaudioSettingsResponseFrame_s {
     uint16_t frequency;
     uint8_t crc;
 } __attribute__((packed)) smartaudioSettingsResponseFrame_t;
+
+// v 2.1 additions to response frame
+//0x0E (current power in dBm) 0x03 (amount of power levels) 0x00(dBm level 1) 0x0E (dBm level 2) 0x14 (dBm level 3) 0x1A (dBm level 4) 0x01(CRC8)
 
 typedef union smartaudioFrame_u {
     smartaudioCommandOnlyFrame_t commandOnlyFrame;

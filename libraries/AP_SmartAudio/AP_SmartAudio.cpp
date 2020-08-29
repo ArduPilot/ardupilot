@@ -18,29 +18,26 @@ const char *TAG="VTX-SMARTAUDIO ";
 // table of user settable parameters
 const AP_Param::GroupInfo AP_SmartAudio::var_info[] = {
 
-    // @Param: LOW_RACE
-    // @DisplayName: Use Low Race band
-    // @Description: Use low race band
+    // @Param: ENABLED
+    // @DisplayName: Enable SmartAudio protocol on VTX
+    // @Description: Enable SmartAudio protocol on VTX
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    AP_GROUPINFO("LOW_RACE",     11, AP_SmartAudio, setting_low_race, 0),
-
-    // @Param: ENABLED
-    // @DisplayName: Enable protocol settings override
-    // @Description: Override the info from vtx to work with custom data
-    // @Values: 0:Disabled,1:Enabled, 3:V2.1
-    // @User: Advanced
-    AP_GROUPINFO_FLAGS("ENABLED",     1, AP_SmartAudio, ov_settings_enable, 0,AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("ENABLED",     1, AP_SmartAudio::configured_smartaudio_params, enabled, 0,AP_PARAM_FLAG_ENABLE),
 
     // @Param: VERSION
-    // @DisplayName: Overrided protocol version
-    // @Description: Override the info from vtx to work with this version.
-    // @Values: 1:V1,2:V2, 3:V2.1
+    // @DisplayName: SmartAudio version
+    // @Description: SmartAudio version
+    // @Values: 0: Version 1,1:Version 2, 3: Version 2.1
     // @User: Advanced
-    AP_GROUPINFO("VERSION",     2, AP_SmartAudio, ov_version, 1),
+    AP_GROUPINFO("VERSION",     2, AP_SmartAudio::configured_smartaudio_params, protocol_version, 0),
 
-
-
+    // @Param: DEFAULTS
+    // @DisplayName: VTX will be configured with VTX params defined by default.
+    // @Description: VTX will be configured with VTX params defined by default.
+    // @Values: 0: Disabled,1: Enabled
+    // @User: Advanced
+    AP_GROUPINFO("DEFAULTS",     3, AP_SmartAudio::configured_smartaudio_params, setup_defaults, 0),
 
 };
 /**
@@ -58,13 +55,19 @@ AP_SmartAudio *AP_SmartAudio::singleton;
 // initialization start making a request settings to the vtx
 bool AP_SmartAudio::init()
 {
+
+    if(smartaudio_params.enabled.get()==0){
+        debug("SmartAudio protocol it's not active");
+        return false;
+    }
+
     // init uart
     _port = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_SmartAudio, 0);
     if(_port!=nullptr){
 
           if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_SmartAudio::loop, void),
                                           "SmartAudio",
-                                          1024, AP_HAL::Scheduler::PRIORITY_UART, 60)) {
+                                          1024, AP_HAL::Scheduler::PRIORITY_IO, 60)) {
             return false;
             }
 
@@ -72,93 +75,284 @@ bool AP_SmartAudio::init()
         _port->set_stop_bits(AP_SERIALMANAGER_SMARTAUDIO_STOP_BITS);
         _port->set_flow_control(AP_SERIALMANAGER_SMARTAUDIO_FLOW_CONTROL);
         _port->set_options(AP_SERIALMANAGER_SMARTAUDIO_OPTIONS);
+
         return true;
     }
     return false;
-    this->backend=new AP_SmartAudioBackend(vtx_state,params,0);
-    backend->init();
-    request_settings();
 }
 
 void AP_SmartAudio::loop(){
+
     // initialise uart (this must be called from within tick b/c the UART begin must be called from the same thread as it is used from)
-    //_port->begin(AP_SERIALMANAGER_SMARTAUDIO_BAUD, AP_SERIALMANAGER_SMARTAUDIO_BUFSIZE_RX, AP_SERIALMANAGER_SMARTAUDIO_BUFSIZE_TX);
+    _port->begin(AP_SERIALMANAGER_SMARTAUDIO_BAUD, AP_SERIALMANAGER_SMARTAUDIO_BUFSIZE_RX, AP_SERIALMANAGER_SMARTAUDIO_BUFSIZE_TX);
+
+    // initialize AP_VideoTx settings
+        request_settings();
+        if(!smartaudio_params.setup_defaults){
+            get_readings(AP_VideoTX::get_singleton());
+        }else{
+            // setup values defined in vtx params
+            set_frequency(AP_VideoTX::get_frequency_mhz(AP_VideoTX::get_singleton()->get_band()
+            ,AP_VideoTX::get_singleton()->get_channel()),AP_VideoTX::get_singleton()->get_options()==0);
+        }
+
      while (true) {
-         // spec says that
-        hal.scheduler->delay(100);
-        printf("b %d",AP_HAL::millis());
+        // now time to control loop switching
+        uint32_t _now=AP_HAL::millis();
+        // when one packet is processed in the iteration will be true.
+        bool packet_processed=false;
+        monkey_testing();
+        // setup a queue polling delay of 20 ms.
+        hal.scheduler->delay(20);
+        // command to process
+        packet _current_command;
+        // printf(" time-passed-since-last-request:%d %20s %d ",now-last_request_sended_at,"packet-processed:",packet_processed);
+
+        // Proccess response in the next 200 milis from the request are sent.
+        if(_now-last_request_sended_at<=200 && is_waiting_response){
+            printf("%20s %d and %d ms more","I'M WAITING RESPONSE SINCE",last_request_sended_at,200-(_now-last_request_sended_at));
+            // allocate response buffer
+            uint8_t _response_buffer[AP_SERIALMANAGER_SMARTAUDIO_BUFSIZE_RX];
+            // setup to zero because the
+            uint8_t _inline_buffer_length=0;
+            // setup sheduler delay to 20 ms again after response processes
+            read_response(_response_buffer,_inline_buffer_length);
+            hal.scheduler->delay(20);
+            // prevent to proccess any queued request from the ring buffer
+            packet_processed=true;
+        }
+
+        // when pending request and last request sended is timeout, take another packet to send
+        if(!packet_processed && requests_queue.pop(_current_command)){
+            send_request(_current_command.frame,_current_command.frame_size);
+            _current_command.sended_at=AP_HAL::millis();
+            last_request_sended_at=AP_HAL::millis();
+            is_waiting_response=true;
+            // spec says: The Unify Pro response frame is usually send <100ms after a frame is successfully received from the host MCU
+            printf(" delay: %d",100);
+            hal.scheduler->delay(100);
+        }
      }
-
 }
-
 
 /**
-  *    |io_status        |vtx_status     |main loop action|
-  *    | idle            | idle          | exit           |
-  *    | idle            | processing    | error          |
-  *    | idle            | unsynced      | resync         |
-  *    | idle            | not_connected | exit           |
-  *
-  *    | requesting      | idle          | error          |
-  *    | requesting      | processing    | sending_request|
-  *    | requesting      | unsynced      | sending_request|
-  *    | requesting      | not_connected | error          |
-  *
-  *    | waiting response| idle          | error          |
-  *    | waiting response| processing    | read_response  |
-  *    | waiting response| unsynced      | error          |
-  *    | waiting response| not_connected | error          |
-  *
-  *    | reading response| idle          | error          |
-  *    | reading response| processing    | read_response  |
-  *    | reading response| unsynced      | error          |
-  *    | reading response| not_connected | exit           |
- *
- * */
-
-void AP_SmartAudio::update()
+ * Sends an SmartAudio Command to the vtx, waits response on the update event
+ * @param frameBuffer frameBuffer to send over the wire
+ * @param size  size of the framebuffer wich needs to be sended
+ */
+void AP_SmartAudio::send_request(smartaudioFrame_t requestFrame,uint8_t size)
 {
-#ifdef AP_VTX_DEV_MODE
-    monkey_testing();
-#endif
-    /// NOT CONNECTED FREE MAIN LOOP
-    if (backend->status()==AP_Vtx_Backend::Status::not_connected) {
+
+    if (size<=0) {
+        debug("%s HW: %s",TAG,"CANNOT SEND REQUEST, REQUEST IS EMPTY");
+        printf("ERROR - %s HW: %s",TAG,"CANNOT SEND REQUEST, REQUEST IS EMPTY");
+    }
+    if (_port==nullptr) {
+        debug("%s HW: %s",TAG,"CANNOT SEND REQUEST, UART NOT CONNECTED");
+        printf("ERROR - %s HW: %s",TAG,"CANNOT SEND REQUEST, UART NOT CONNECTED");
         return;
     }
 
-    // NO IO ACTIVITY, NO VTX ACTIVITY OR SINCRO STABLISHED
-    if (backend->get_io_status()==AP_Vtx_SerialBackend::RqStatus::idle  && backend->status()==AP_Vtx_Backend::Status::idle) {
-        printf("\n DO NOTHING:%d ms ",AP_HAL::millis());
-        return;
+    uint8_t *request=reinterpret_cast<uint8_t*>(&requestFrame.u8RequestFrame);
+    // pull line low
+    _port->write((uint8_t)0);
+    // write request
+    for (int i = 0; i < size; ++i) {
+        _port->write(request[i]);
     }
-
-    // When Unsynced try to resync data
-    if (backend->status()==AP_Vtx_Backend::Status::desynchronized) {
-        printf("\nUNSYNCED:%d  ",AP_HAL::millis());
-        backend->set_io_status(AP_Vtx_SerialBackend::RqStatus::idle);
-        this->request_settings();
-    }
-
-    // SLOT TIME FINISHED FREE THE MAIN LOOP
-    if (backend->is_io_timeout() && backend->get_io_status()!=AP_Vtx_SerialBackend::RqStatus::idle) {
-        printf("\nTIMEOUT CONSUMED:%d milliseconds ",AP_HAL::millis());
-        backend->set_status(AP_Vtx_Backend::Status::desynchronized);    // DO SYNCRO IN THE NEXT LOOP KEEP AN EYE TO SOURCE BLOCK POSITION UNDER RESYNC
-        return;
-    }
-
-    // IF RESPONSE IS PENDING OR IN PROCESS BECAUSE LOOP IS BREAKED READ_RESPONSE
-    if (backend->status()==AP_Vtx_Backend::Status::processing
-        && (backend->get_io_status()==AP_Vtx_SerialBackend::RqStatus::waiting_response
-            ||
-            backend->get_io_status()==AP_Vtx_SerialBackend::RqStatus::reading_response
-           )
-       ) {
-        printf("\nREADING RESPONSE IN :%d milliseconds ",AP_HAL::millis());
-        backend->read_response();
-    }
-
-    printf("\nBACKEND->STATE LAST I/O: %d-%d ms",backend->get_read_time(),backend->get_write_time());
+    print_bytes_to_hex_string(request,size);
 }
+
+/**
+ * Reads the response from vtx in the wire
+ * - response_buffer, response buffer to fill in
+ * - inline_buffer_length , used to passthrought the response lenght in case the response where splitted
+ **/
+void AP_SmartAudio::read_response(uint8_t *response_buffer,uint8_t inline_buffer_length)
+{
+    int16_t _incoming_bytes_count = _port->available();
+    uint8_t _response_header_size= sizeof(smartaudioFrameHeader_t);
+
+    // check if it is a response in the wire
+    if (_incoming_bytes_count < 1) {
+        debug("%s HW: %s",TAG,"EMPTY WIRE");
+        printf(" WARNING - %s HW: %s",TAG,"EMPTY WIRE");
+        return;
+    }
+
+
+    for (int i = 0; i < _incoming_bytes_count; ++i) {
+        uint8_t _response_in_bytes = _port->read();
+
+        if ((inline_buffer_length == 0 && _response_in_bytes != SMARTAUDIO_SYNC_BYTE)
+            || (inline_buffer_length == 1 && _response_in_bytes != SMARTAUDIO_HEADER_BYTE)) {
+            inline_buffer_length = 0;
+        } else if (inline_buffer_length < AP_SERIALMANAGER_SMARTAUDIO_BUFSIZE_RX) {
+            response_buffer[inline_buffer_length++] = _response_in_bytes;
+        }
+    }
+
+    //last_io_time = AP_HAL::millis();
+
+    if (inline_buffer_length < _response_header_size) {
+        is_waiting_response=false;
+        return;
+    }
+
+    uint8_t payload_len = response_buffer[3];
+
+    if (inline_buffer_length < payload_len + _response_header_size) {
+        // Not all response bytes received yet, splitted response is incoming
+        return;
+    } else {
+        inline_buffer_length = payload_len + _response_header_size;
+    }
+    is_waiting_response=false;
+
+    uint8_t crc = response_buffer[inline_buffer_length-1];
+    if (crc != crc8_dvb_s2(*response_buffer, inline_buffer_length-1)) {
+        // crc missmatch
+        debug("%s HW: %s",TAG,"BAD CRC CHECK IN RESPONSE");
+        printf(" ERROR - %s HW: %s",TAG,"BAD CRC CHECK IN RESPONSE");
+
+    } else {
+        parse_frame_response(response_buffer);
+    }
+    response_buffer=nullptr;
+}
+
+/**
+ * This method parse the frame response and match the current device configuration  *
+ * */
+bool AP_SmartAudio::parse_frame_response(const uint8_t *buffer)
+{
+    if (buffer!=nullptr) {
+        smartaudioSettings_t _vtx_settings;
+        if(!smartaudioParseResponseBuffer(&_vtx_settings,buffer)){
+            return false;
+        }
+
+        // update bands and channels accordily when frequency changes
+        if(_vtx_settings.frequency_updated && _vtx_settings.userFrequencyMode){
+            AP_VideoTX::VideoBand video_band;
+            AP_VideoTX::get_band_and_channel(_vtx_settings.frequency,video_band,_vtx_settings.channel);
+            _vtx_settings.band=(int)video_band;
+            // update channel index to start in 1 not at 0
+            _vtx_settings.channel++;
+        }
+        // update band and frecuency accorly when channel updates
+        if(_vtx_settings.channel_updated && !_vtx_settings.userFrequencyMode){
+            _vtx_settings.frequency=AP_VideoTX::get_frequency_mhz(_vtx_settings.band,_vtx_settings.channel);
+        }
+
+
+        if(vtx_states_queue.is_empty()){
+            vtx_states_queue.push_force(_vtx_settings);
+        }else{
+            vtx_states_queue.push_force(_vtx_settings);
+            // advance to last element pushed
+            vtx_states_queue.advance(1);
+        }
+
+
+        return true;
+    }
+
+    debug("%s HW: %s",TAG,"EMPTY RESPONSE");
+    printf("%s HW: %s",TAG,"EMPTY RESPONSE");
+
+    return false;
+}
+
+// Main query method in the frontend to get the readings from the vtx.
+bool AP_SmartAudio::get_readings(AP_VideoTX *vtx_dest)
+{
+    // take the first register from the output buffer
+   smartaudioSettings_t _current_state;
+
+    // peek from buffer
+   vtx_states_queue.peek(&_current_state,1);
+
+   // setting frecuency
+    vtx_dest->set_frequency_mhz(_current_state.frequency);
+    // set channel
+    vtx_dest->set_band((AP_VideoTX::VideoBand)((int)_current_state.band));
+    // setting channel 0 -> 40
+    vtx_dest->set_channel(_current_state.channel);
+
+   // define vtx options TODO: Review this after define policies
+
+   //  pitmode disabled
+   if(_current_state.pitmodeDisabled){
+       vtx_dest->set_options(0);
+   }
+   // pitmode types
+   if(_current_state.pitmodeInRangeActive){
+       vtx_dest->set_options(1);
+   }else{
+         if(_current_state.pitmodeOutRangeActive){
+             vtx_dest->set_options(2);
+         }
+   }
+   // pitmode is enabled after boot if using this way of disabling it
+   if(_current_state.pitmodeDisabled && (_current_state.pitmodeInRangeActive || _current_state.pitmodeOutRangeActive)){
+       vtx_dest->set_options(3);
+   }
+
+   // locking status
+   vtx_dest->set_locking(!_current_state.unlocked);
+
+
+   // transform power levels in dbm
+   uint8_t _power_in_dbm=0;
+
+   // spec 2.1 power-levels in dbm
+   vtx_dest->set_power_dbm(_current_state.power);
+
+   // specs 1 and 2 power-levels need transformation to dbm power
+   if(_current_state.version!=SMARTAUDIO_SPEC_PROTOCOL_v21){
+       // search in power tables
+        if(_get_power_in_dbm_from_vtx_power_level(_current_state.power,_current_state.version,_power_in_dbm)){
+            vtx_dest->set_power_dbm(_power_in_dbm);
+        }else{
+            _get_power_in_dbm_from_vtx_power_level(POWER_LEVELS[_current_state.version][0],_current_state.version,_power_in_dbm);
+            vtx_dest->set_power_dbm(_power_in_dbm);
+        }
+   }
+
+   return !vtx_states_queue.is_empty();
+}
+
+// returns the dbs associated by power-level input
+bool AP_SmartAudio::_get_power_in_dbm_from_vtx_power_level(uint8_t power_level, uint8_t& protocol_version, uint8_t& power_in_dbm)
+{
+
+    for (uint8_t j = 0; j < 4; j++) {
+        if (POWER_LEVELS[protocol_version][j] == power_level) {
+            switch (j)
+            {
+            case 0:
+                power_in_dbm=14;
+                break;
+            case 1:
+                power_in_dbm=23;
+                break;
+            case 2:
+                power_in_dbm=27;
+                break;
+            case 3:
+                power_in_dbm=29;
+                break;
+            default:
+                return false;
+            }
+
+            return true;
+        }
+    }
+    return false;
+}
+
 
 /**
  * Sends get settings command.
@@ -167,9 +361,13 @@ void AP_SmartAudio::request_settings()
 {
     printf("%80s::request_settings()\t",TAG);
     smartaudioFrame_t request;
-    uint8_t frameSize=smartaudioFrameGetSettings(&request);
-    backend->send_request(request,frameSize);
+    uint8_t frame_size=smartaudioFrameGetSettings(&request);
+    packet command;
+    command.frame=request;
+    command.frame_size=frame_size;
+    requests_queue.push_force(command);
 }
+
 
 /**
  * Set operation mode.
@@ -182,16 +380,17 @@ void AP_SmartAudio::request_settings()
  */
 void AP_SmartAudio::set_operation_mode(OperationMode mode,bool locked)
 {
+     // take the first register from the output buffer
+   smartaudioSettings_t _current_state;
+
+    // peek from buffer
+   vtx_states_queue.peek(&_current_state,1);
+
     printf("%80s::set_operation_mode(%d,%d)\t",TAG,mode,locked);
-    if (ov_settings_enable.get()==1 && ov_version.get()<2) {
-        debug("%s HW: %s Device can't change operation mode. Spec protocol not supported",TAG,"set_operation_mode");
-        return;
-    } else {
-        if (backend->version()<2) {
-            debug("%s HW: %s",TAG,"Device can't change operation mode. Spec protocol not supported");
-            AP::logger().Write_MessageF("%s HW: %s Device can't change operation mode. Spec protocol not supported",TAG,"set_operation_mode");
-        }
+    if (_current_state.version<2) {
+        debug("%s HW: %s",TAG,"Device can't change operation mode. Spec protocol not supported");
     }
+
 
 
     smartaudioSettings_t settings;
@@ -228,13 +427,15 @@ void AP_SmartAudio::set_operation_mode(OperationMode mode,bool locked)
         settings.unlocked=true;
         break;
     default:
-        AP::logger().Write_MessageF("%s HW: %s",TAG,"Operation mode not supported");
         debug("%s HW: %s",TAG,"Operation mode not supported");
         return;
     };
     smartaudioFrame_t request;
-    uint8_t frameSize=smartaudioFrameSetOperationMode(&request,&settings);
-    backend->send_request(request,frameSize);
+    uint8_t frame_size=smartaudioFrameSetOperationMode(&request,&settings);
+    packet command;
+    command.frame=request;
+    command.frame_size=frame_size;
+    requests_queue.push_force(command);
 }
 
 
@@ -246,8 +447,11 @@ void AP_SmartAudio::set_frequency(uint16_t frecuency,bool isPitModeFreq)
 {
     printf("%80s::set_frequency(%d,%d)\t",TAG,frecuency,isPitModeFreq);
     smartaudioFrame_t request;
-    uint8_t frameSize=smartaudioFrameSetFrequency(&request,frecuency,isPitModeFreq);
-    backend->send_request(request,frameSize);
+    uint8_t frame_size=smartaudioFrameSetFrequency(&request,frecuency,isPitModeFreq);
+    packet command;
+    command.frame=request;
+    command.frame_size=frame_size;
+    requests_queue.push_force(command);
 }
 
 /**
@@ -258,15 +462,22 @@ void AP_SmartAudio::set_frequency(uint16_t frecuency,bool isPitModeFreq)
     */
 void AP_SmartAudio::set_power_dbm(uint8_t power)
 {
+      // take the first register from the output buffer
+   smartaudioSettings_t _current_state;
+
+    // peek from buffer
+   vtx_states_queue.peek(&_current_state,1);
+    smartaudioFrame_t request;
+    uint8_t frame_size=0;
+
     printf("%80s::set_power_dbm(%d)\t",TAG,power);
     uint16_t powerLevel=0x00;
-    if (backend->version()!=0 && backend->version()!=1 && backend->version()!=2) {
+    if (_current_state.version!=SMARTAUDIO_SPEC_PROTOCOL_v1 && _current_state.version!=SMARTAUDIO_SPEC_PROTOCOL_v2 && _current_state.version!=SMARTAUDIO_SPEC_PROTOCOL_v21) {
         return;
     }
-    smartaudioFrame_t request;
-    uint8_t frameSize=0;
+
     // version 1
-    if (backend->version()==0) {
+    if (_current_state.version==SMARTAUDIO_SPEC_PROTOCOL_v1) {
         if (power==14) {
             powerLevel=7;
         }
@@ -279,10 +490,10 @@ void AP_SmartAudio::set_power_dbm(uint8_t power)
         if (power==29) {
             powerLevel=40;
         }
-        frameSize=smartaudioFrameSetPower(&request,powerLevel);
+        frame_size=smartaudioFrameSetPower(&request,powerLevel);
     }
     // hardcoded protocol version 2
-    if (backend->version()==1) {
+    if (_current_state.version==SMARTAUDIO_SPEC_PROTOCOL_v2) {
         if (power==14) {
             powerLevel=0;
         }
@@ -295,10 +506,10 @@ void AP_SmartAudio::set_power_dbm(uint8_t power)
         if (power==29) {
             powerLevel=3;
         }
-        frameSize=smartaudioFrameSetPower(&request,powerLevel);
+        frame_size=smartaudioFrameSetPower(&request,powerLevel);
     }
     // hardcoded protocol version 2.1
-    if (backend->version()==2) {
+    if (_current_state.version==SMARTAUDIO_SPEC_PROTOCOL_v21) {
         if (power==14) {
             powerLevel=14;
         }
@@ -311,38 +522,13 @@ void AP_SmartAudio::set_power_dbm(uint8_t power)
         if (power==29) {
             powerLevel=29;
         }
-        frameSize=smartaudioFrameSetPower(&request,powerLevel|=128);
+        frame_size=smartaudioFrameSetPower(&request,powerLevel|=128);
     }
 
-    //poweLevel activating the MSB to represent the command
-
-    backend->send_request(request,frameSize);
-
-}
-
-
-//Takes the backend reading data and set it into the frontend state datas structure
-void AP_SmartAudio::update_readings()
-{
-    vtx_state.current_channel=backend->channel();
-    vtx_state.current_band=backend->band();
-    vtx_state.current_frequency=backend->frecuency();
-    vtx_state.current_power_db=backend->power();
-    vtx_state.current_power_mw=backend->power();
-    vtx_state.is_in_range_pit_mode=backend->is_in_range_pit_mode();
-    vtx_state.is_out_range_pit_mode=backend->is_out_range_pit_mode();
-    vtx_state.is_locked=!backend->is_unlocked();
-    vtx_state.is_pit_mode_disabled=backend->is_in_pit_mode_disabled();
-}
-
-// Main query method in the frontend to get the readings from the vtx, prior to get it, at least one get_settings must be called and well responsed
-AP_SmartAudio::SmartAudioState AP_SmartAudio::get_readings()
-{
-    SmartAudioState currentState;
-    if (backend->has_data()) {
-        update_readings();
-        memcpy(&vtx_state,&currentState,sizeof(vtx_state));
-    }
-    return currentState;
+   packet command;
+   command.frame=request;
+   command.frame_size=frame_size;
+   requests_queue.push_force(command);
 
 }
+
