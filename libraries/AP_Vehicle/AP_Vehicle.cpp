@@ -172,7 +172,7 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_VideoTX,   &vehicle.vtx,            update,                    2, 100),
     SCHED_TASK(send_watchdog_reset_statustext,         0.1,     20),
 #if SMARTAUDIO_ENABLED
-    SCHED_TASK_CLASS(AP_SmartAudio,         &vehicle.smartaudio,        update,         5,  75),
+    //SCHED_TASK_CLASS(AP_SmartAudio,         &vehicle.smartaudio,        update,         5,  75),
 #endif
 };
 
