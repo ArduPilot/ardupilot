@@ -1543,7 +1543,9 @@ class AutoTest(ABC):
 
     def stop_SITL(self):
         self.progress("Stopping SITL")
+        self.expect_list_remove(self.sitl)
         util.pexpect_close(self.sitl)
+        self.sitl = None
 
     def close(self):
         """Tidy up after running all tests."""
@@ -1597,6 +1599,16 @@ class AutoTest(ABC):
         """Extend the expect list."""
         global expect_list
         expect_list.extend(list_to_add)
+
+    def expect_list_add(self, item):
+        """Extend the expect list."""
+        global expect_list
+        expect_list.extend([item])
+
+    def expect_list_remove(self, item):
+        """Remove item from the expect list."""
+        global expect_list
+        expect_list.remove(item)
 
     def drain_all_pexpects(self):
         global expect_list
@@ -2786,6 +2798,7 @@ class AutoTest(ABC):
         # looks at whether its *motors* are armed as part of its
         # disarm process.
         self.stop_SITL()
+        self.start_SITL(wipe=False)
 
     def cpufailsafe_wait_servo_channel_value(self, channel, value, timeout=30):
         '''we get restricted messages while doing cpufailsafe, this working then'''
@@ -3036,11 +3049,6 @@ class AutoTest(ABC):
     def get_parameter_mavproxy(self, name, attempts=1, timeout=60):
         """Get parameters from vehicle."""
         for i in range(0, attempts):
-            # we call get_parameter while the vehicle is rebooting.
-            # We need to read out the SITL binary's STDOUT or the
-            # process blocks writing to it.
-            if self.sitl is not None:
-                util.pexpect_drain(self.sitl)
             self.mavproxy.send("param fetch %s\n" % name)
             try:
                 self.mavproxy.expect("%s = ([-0-9.]*)\r\n" % (name,), timeout=timeout/attempts)
@@ -4234,6 +4242,7 @@ Also, ignores heartbeats not from our target system'''
             start_sitl_args["model"] = self.frame
         self.progress("Starting SITL")
         self.sitl = util.start_SITL(self.binary, **start_sitl_args)
+        self.expect_list_add(self.sitl)
 
     def sitl_is_running(self):
         return self.sitl.is_alive()
