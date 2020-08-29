@@ -95,7 +95,8 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if OPTFLOW == ENABLED
     SCHED_TASK_CLASS(OpticalFlow,          &copter.optflow,             update,         200, 160),
 #endif
-    SCHED_TASK(update_batt_compass,   10,    120),
+    SCHED_TASK(update_battery,        10,    120),
+    SCHED_TASK(update_compass,        10,    120),
     SCHED_TASK_CLASS(RC_Channels,          (RC_Channels*)&copter.g2.rc_channels,      read_aux_all,    10,     50),
     SCHED_TASK(arm_motors_check,      10,     50),
 #if TOY_MODE_ENABLED == ENABLED
@@ -360,17 +361,25 @@ void Copter::throttle_loop()
     update_ekf_terrain_height_stable();
 }
 
-// update_batt_compass - read battery and compass
+// update_battery - read battery
 // should be called at 10hz
-void Copter::update_batt_compass(void)
+void Copter::update_battery(void)
 {
     // read battery before compass because it may be used for motor interference compensation
     battery.read();
 
     if(AP::compass().enabled()) {
+        compass.set_voltage(battery.voltage());
+    }
+}
+
+// update_compass - read compass
+// should be called at 10hz
+void Copter::update_compass(void)
+{
+    if(AP::compass().enabled()) {
         // update compass with throttle value - used for compassmot
         compass.set_throttle(motors->get_throttle());
-        compass.set_voltage(battery.voltage());
         compass.read();
     }
 }
