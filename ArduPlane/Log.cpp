@@ -227,6 +227,7 @@ struct PACKED log_AETR {
     int16_t throttle;
     int16_t rudder;
     int16_t flap;
+    float speed_scaler;
 };
 
 void Plane::Log_Write_AETR()
@@ -239,6 +240,7 @@ void Plane::Log_Write_AETR()
         ,throttle : SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)
         ,rudder   : SRV_Channels::get_output_scaled(SRV_Channel::k_rudder)
         ,flap     : SRV_Channels::get_output_scaled(SRV_Channel::k_flap_auto)
+        ,speed_scaler : get_speed_scaler(),
         };
 
     logger.WriteBlock(&pkt, sizeof(pkt));
@@ -426,8 +428,9 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: Thr: Pre-mixer value for throttle output (between -4500 to 4500)
 // @Field: Rudd: Pre-mixer value for rudder output (between -4500 to 4500)
 // @Field: Flap: Pre-mixer value for flaps output (between -4500 to 4500)
+// @Field: SS: Surface movement / airspeed scaling value
     { LOG_AETR_MSG, sizeof(log_AETR),
-      "AETR", "Qhhhhh",  "TimeUS,Ail,Elev,Thr,Rudd,Flap", "s-----", "F-----" },
+      "AETR", "Qhhhhhf",  "TimeUS,Ail,Elev,Thr,Rudd,Flap,SS", "s------", "F------" },
 
 // @LoggerMessage: OFG
 // @Description: OFfboard-Guided - an advanced version of GUIDED for companion computers that includes rate/s.  
