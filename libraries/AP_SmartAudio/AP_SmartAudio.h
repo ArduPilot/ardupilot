@@ -8,11 +8,13 @@
 #endif
 
 #if SMARTAUDIO_ENABLED
-
+#define SMARTAUDIO_REQUEST_BUFFER_CAPACITY 5
 
 #include "smartaudio_protocol.h"
 #include "AP_Vtx_Params.h"
 #include "AP_SmartAudioBackend.h"
+#include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_HAL/utility/RingBuffer.h>
 
 
 class AP_SmartAudio
@@ -64,7 +66,12 @@ public:
 
     AP_Vtx_Params params;
 
-    void init();
+    bool init();
+    // looping over
+    void loop();
+    // RingBuffer to store incoming request, which will be consumed when the response is received or the timeout is triggered
+    ObjectBuffer<smartaudioCommandOnlyFrame_t> queue{SMARTAUDIO_REQUEST_BUFFER_CAPACITY};
+
     void update();
     SmartAudioState get_readings();
     void update_readings();
@@ -122,6 +129,7 @@ protected:
     SmartAudioState vtx_state;
     AP_SmartAudioBackend *backend;
 private:
+    AP_HAL::UARTDriver *_port;                  // UART used to send data to SmartAudio VTX
     //Pointer to singleton
     static AP_SmartAudio* singleton;
 

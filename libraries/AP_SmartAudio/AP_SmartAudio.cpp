@@ -56,12 +56,42 @@ AP_SmartAudio::AP_SmartAudio()
 AP_SmartAudio *AP_SmartAudio::singleton;
 
 // initialization start making a request settings to the vtx
-void AP_SmartAudio::init()
+bool AP_SmartAudio::init()
 {
+    // init uart
+    _port = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_SmartAudio, 0);
+    if(_port!=nullptr){
+
+          if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_SmartAudio::loop, void),
+                                          "SmartAudio",
+                                          1024, AP_HAL::Scheduler::PRIORITY_UART, 60)) {
+            return false;
+            }
+
+        // setup port options
+        _port->set_stop_bits(AP_SERIALMANAGER_SMARTAUDIO_STOP_BITS);
+        _port->set_flow_control(AP_SERIALMANAGER_SMARTAUDIO_FLOW_CONTROL);
+        _port->set_options(AP_SERIALMANAGER_SMARTAUDIO_OPTIONS);
+        return true;
+    }
+    return false;
     this->backend=new AP_SmartAudioBackend(vtx_state,params,0);
     backend->init();
     request_settings();
 }
+
+void AP_SmartAudio::loop(){
+    // initialise uart (this must be called from within tick b/c the UART begin must be called from the same thread as it is used from)
+    //_port->begin(AP_SERIALMANAGER_SMARTAUDIO_BAUD, AP_SERIALMANAGER_SMARTAUDIO_BUFSIZE_RX, AP_SERIALMANAGER_SMARTAUDIO_BUFSIZE_TX);
+     while (true) {
+         // spec says that
+        hal.scheduler->delay(100);
+        printf("b %d",AP_HAL::millis());
+     }
+
+}
+
+
 /**
   *    |io_status        |vtx_status     |main loop action|
   *    | idle            | idle          | exit           |
