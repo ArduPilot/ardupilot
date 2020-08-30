@@ -185,28 +185,20 @@ void AP_MSP_Telem_Backend::update_home_pos(home_state_t &home_state)
 void AP_MSP_Telem_Backend::update_gps_state(gps_state_t &gps_state)
 {
     AP_GPS& gps = AP::gps();
+
+    memset(&gps_state, 0, sizeof(gps_state));
+
     WITH_SEMAPHORE(gps.get_semaphore());
-    gps_state.gps_fix_type = gps.status();
+    gps_state.fix_type = gps.status() >= AP_GPS::GPS_Status::GPS_OK_FIX_3D? 2:0;
+    gps_state.num_sats = gps.num_sats();
 
-    if (gps_state.gps_fix_type >= AP_GPS::GPS_Status::GPS_OK_FIX_2D) {
-        gps_state.gps_num_sats = gps.num_sats();
-    } else {
-        gps_state.gps_num_sats = 0;
-    }
-
-    if (gps_state.gps_fix_type >= AP_GPS::GPS_Status::GPS_OK_FIX_3D) {
+    if (gps_state.fix_type > 0) {
         const Location &loc = AP::gps().location(); //get gps instance 0
-        gps_state.gps_latitude = loc.lat;
-        gps_state.gps_longitude = loc.lng;
-        gps_state.gps_altitude_cm = loc.alt;
-        gps_state.gps_speed_ms = gps.ground_speed();
-        gps_state.gps_ground_course_cd = gps.ground_course_cd();
-    } else {
-        gps_state.gps_latitude = 0;
-        gps_state.gps_longitude = 0;
-        gps_state.gps_altitude_cm = 0;
-        gps_state.gps_speed_ms = 0;
-        gps_state.gps_ground_course_cd = 0;
+        gps_state.lat = loc.lat;
+        gps_state.lon = loc.lng;
+        gps_state.alt_m = loc.alt/100; // 1m resolution
+        gps_state.speed_cms = gps.ground_speed() * 100;
+        gps_state.ground_course_cd = gps.ground_course_cd();
     }
 }
 
@@ -505,11 +497,6 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_raw_gps(sbuf_t *dst)
     gps_state_t gps_state;
     update_gps_state(gps_state);
 
-    sbuf_write_u8(dst, gps_state.gps_fix_type >= 3 ? 2 : 0);   // bitmask 1 << 1 is GPS FIX
-    sbuf_write_u8(dst, gps_state.gps_num_sats);
-    sbuf_write_u32(dst, gps_state.gps_latitude);
-    sbuf_write_u32(dst, gps_state.gps_longitude);
-    sbuf_write_u16(dst, (uint16_t)constrain_int32(gps_state.gps_altitude_cm / 100, 0, UINT16_MAX));   // alt changed from 1m to 0.01m per lsb since MSP API 1.39 by RTH. To maintain backwards compatibility compensate to 1m per lsb in MSP again.
     // handle airspeed override
     bool airspeed_en = false;
 #if OSD_ENABLED
@@ -518,11 +505,10 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_raw_gps(sbuf_t *dst)
     if (airspeed_en) {
         airspeed_state_t airspeed_state;
         update_airspeed(airspeed_state);
-        sbuf_write_u16(dst, airspeed_state.airspeed_estimate_ms * 100);           // airspeed in cm/s
-    } else {
-        sbuf_write_u16(dst, (uint16_t)roundf(gps_state.gps_speed_ms * 100));      // speed in cm/s
+        gps_state.speed_cms = airspeed_state.airspeed_estimate_ms * 100;           // airspeed in cm/s
     }
-    sbuf_write_u16(dst, gps_state.gps_ground_course_cd * 1000);                   // degrees * 10 == centideg * 1000
+
+    sbuf_write_data(dst, &gps_state, sizeof(gps_state));
     return MSP_RESULT_ACK;
 }
 
@@ -538,9 +524,18 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_comp_gps(sbuf_t *dst)
         home_angle_deg = 0;
     }
 
-    sbuf_write_u16(dst, home_state.home_distance_m);
-    sbuf_write_u16(dst, (uint16_t)home_angle_deg); //deg
-    sbuf_write_u8(dst, 1); // 1 is toggle GPS position update
+    struct PACKED {
+        uint16_t dist_home_m;
+        uint16_t home_angle_deg;
+        uint8_t toggle_gps;
+    } p;
+
+    p.dist_home_m = home_state.home_distance_m;
+    p.home_angle_deg = home_angle_deg;
+    p.toggle_gps = 1;
+
+    sbuf_write_data(dst, &p, sizeof(p));
+
     return MSP_RESULT_ACK;
 }
 
@@ -903,7 +898,7 @@ void AP_MSP_Telem_Backend::hide_osd_items(void)
         // flash satcount when no 3D Fix
         gps_state_t gps_state;
         update_gps_state(gps_state);
-        if (gps_state.gps_fix_type < AP_GPS::GPS_Status::GPS_OK_FIX_3D) {
+        if (gps_state.fix_type == 0) {
             BIT_SET(osd_hidden_items_bitmask, OSD_GPS_SATS);
         }
         // flash home dir and distance if home is not set
