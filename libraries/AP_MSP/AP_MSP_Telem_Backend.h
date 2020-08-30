@@ -47,14 +47,14 @@ public:
         battery_state_e batt_state;
     } battery_state_t;
 
-    typedef struct gps_state_s {
-        int32_t gps_latitude;
-        int32_t gps_longitude;
-        uint8_t gps_num_sats;
-        int32_t gps_altitude_cm;
-        float gps_speed_ms;
-        uint16_t gps_ground_course_cd;
-        uint8_t gps_fix_type;
+    typedef struct PACKED gps_state_s {
+        uint8_t fix_type;
+        uint8_t num_sats;
+        int32_t lat;
+        int32_t lon;
+        uint16_t alt_m;
+        uint16_t speed_cms;
+        int16_t ground_course_cd;
     } gps_state_t;
 
     typedef struct airspeed_state_s {
