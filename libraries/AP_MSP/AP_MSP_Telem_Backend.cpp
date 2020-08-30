@@ -822,7 +822,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rtc(sbuf_t *dst)
     sbuf_write_u8(dst, localtime_tm.tm_hour);
     sbuf_write_u8(dst, localtime_tm.tm_min);
     sbuf_write_u8(dst, localtime_tm.tm_sec);
-    sbuf_write_u16(dst, 0);
+    sbuf_write_u16(dst, (time_usec / 1000U) % 1000U);
     return MSP_RESULT_ACK;
 }
 
