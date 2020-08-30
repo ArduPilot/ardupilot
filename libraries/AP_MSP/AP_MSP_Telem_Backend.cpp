@@ -62,7 +62,9 @@ void AP_MSP_Telem_Backend::setup_wfq_scheduler(void)
     set_scheduler_entry(ALTITUDE, 250, 250);          // 4Hz  altitude(cm) and velocity(cm/s)
     set_scheduler_entry(ANALOG, 250, 250);            // 4Hz  rssi + batt
     set_scheduler_entry(BATTERY_STATE, 500, 500);     // 2Hz  battery
+#ifdef HAVE_AP_BLHELI_SUPPORT
     set_scheduler_entry(ESC_SENSOR_DATA, 500, 500);   // 2Hz  ESC telemetry
+#endif
     set_scheduler_entry(RTC_DATETIME, 1000, 1000);    // 1Hz  RTC
 }
 
@@ -108,7 +110,9 @@ bool AP_MSP_Telem_Backend::is_packet_ready(uint8_t idx, bool queue_empty)
         case ALTITUDE:          // Altitude and Vario
         case ANALOG:            // Rssi, Battery, mAh, Current
         case BATTERY_STATE:     // voltage, capacity, current, mAh
+#ifdef HAVE_AP_BLHELI_SUPPORT
         case ESC_SENSOR_DATA:   // esc temp + rpm
+#endif
         case RTC_DATETIME:      // RTC
             return true;
         default:
