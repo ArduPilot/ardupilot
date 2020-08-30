@@ -96,13 +96,13 @@ def display_text(item, message):
 
 def display_all():
     '''display all items'''
-    display_text(msp.OSD_CURRENT_DRAW, "%.2fA" % (msp.msp_battery_state['current']*0.001))
-    display_text(msp.OSD_MAIN_BATT_VOLTAGE, "%.2fV" % (msp.msp_battery_state['voltage']*0.001))
-    display_text(msp.OSD_GPS_SPEED, "%.1fm/s" % (msp.msp_raw_gps['GPS_speed']*0.01))
-    display_text(msp.OSD_GPS_SATS, "%uS" % (msp.msp_raw_gps['GPS_numSat']))
-    display_text(msp.OSD_ALTITUDE, "%.1fm" % (msp.msp_altitude['alt']*0.01))
-    display_text(msp.OSD_ROLL_ANGLE, "Roll:%.1f" % (msp.msp_attitude['roll']*0.1))
-    display_text(msp.OSD_PITCH_ANGLE, "Pitch:%.1f" % (msp.msp_attitude['pitch']*0.1))
+    display_text(msp.OSD_GPS_SPEED, "%.1fm/s" % (msp.get('RAW_GPS.Speed')*0.01))
+    display_text(msp.OSD_GPS_SATS, "%uS" % msp.get("RAW_GPS.numSat"))
+    display_text(msp.OSD_ROLL_ANGLE, "Roll:%.1f" % (msp.get("ATTITUDE.roll")*0.1))
+    display_text(msp.OSD_PITCH_ANGLE, "Pitch:%.1f" % (msp.get("ATTITUDE.pitch")*0.1))
+    display_text(msp.OSD_CURRENT_DRAW, "%.2fA" % (msp.get('BATTERY_STATE.current')*0.01))
+    display_text(msp.OSD_MAIN_BATT_VOLTAGE, "%.2fV" % (msp.get('BATTERY_STATE.voltage')*0.1))
+    display_text(msp.OSD_ALTITUDE, "%.1fm" % (msp.get("ALTITUDE.alt")*0.01))
     display_text(msp.OSD_CRAFT_NAME, "%s" % (msp.msp_name['name']))
 
 def receive_data():

@@ -9,6 +9,24 @@
 import struct
 import time
 
+class MSPItem:
+    def __init__(self, name, fmt, fields):
+        self.name = name
+        self.format = fmt
+        self.fields = fields.split(',')
+        self.values = {}
+        self.fmt_size = struct.calcsize(self.format)
+
+    def parse(self, msp, dataSize):
+        '''parse data'''
+        if dataSize < self.fmt_size:
+            raise Exception("Format %s needs %u bytes got %u" % (self.name, self.fmt_size, dataSize))
+        values = list(struct.unpack(self.format, msp.inBuf[msp.p:msp.p+self.fmt_size]))
+        for i in range(len(self.fields)):
+            self.values[self.fields[i]] = values[i]
+        msp.by_name[self.name] = self
+        #print("Got %s" % self.name)
+
 class PyMSP:
     """ Multiwii Serial Protocol """
     OSD_RSSI_VALUE              = 0
@@ -90,8 +108,27 @@ class PyMSP:
     MSP_MOTOR_PINS           =115
     MSP_BOXNAMES             =116
     MSP_PIDNAMES             =117
+    MSP_WP                   =118
+    MSP_BOXIDS               =119
     MSP_SERVO_CONF           =120
+    MSP_NAV_STATUS           =121
+    MSP_NAV_CONFIG           =122
+    MSP_MOTOR_3D_CONFIG      =124
+    MSP_RC_DEADBAND          =125
+    MSP_SENSOR_ALIGNMENT     =126
+    MSP_LED_STRIP_MODECOLOR  =127
+    MSP_VOLTAGE_METERS       =128
+    MSP_CURRENT_METERS       =129
     MSP_BATTERY_STATE        =130
+    MSP_MOTOR_CONFIG         =131
+    MSP_GPS_CONFIG           =132
+    MSP_COMPASS_CONFIG       =133
+    MSP_ESC_SENSOR_DATA      =134
+    MSP_GPS_RESCUE           =135
+    MSP_GPS_RESCUE_PIDS      =136
+    MSP_VTXTABLE_BAND        =137
+    MSP_VTXTABLE_POWERLEVEL  =138
+    MSP_MOTOR_TELEMETRY      =139
 
     MSP_SET_RAW_RC           =200
     MSP_SET_RAW_GPS          =201
@@ -102,19 +139,33 @@ class PyMSP:
     MSP_MAG_CALIBRATION      =206
     MSP_SET_MISC             =207
     MSP_RESET_CONF           =208
+    MSP_SET_WP               =209
     MSP_SELECT_SETTING       =210
     MSP_SET_HEAD             =211
     MSP_SET_SERVO_CONF       =212
     MSP_SET_MOTOR            =214
+    MSP_SET_NAV_CONFIG       =215
+    MSP_SET_MOTOR_3D_CONFIG  =217
+    MSP_SET_RC_DEADBAND      =218
+    MSP_SET_RESET_CURR_PID   =219
+    MSP_SET_SENSOR_ALIGNMENT =220
+    MSP_SET_LED_STRIP_MODECOLOR=221
+    MSP_SET_MOTOR_CONFIG     =222
+    MSP_SET_GPS_CONFIG       =223
+    MSP_SET_COMPASS_CONFIG   =224
+    MSP_SET_GPS_RESCUE       =225
+    MSP_SET_GPS_RESCUE_PIDS  =226
+    MSP_SET_VTXTABLE_BAND    =227
+    MSP_SET_VTXTABLE_POWERLEVEL=228
 
 
     MSP_BIND                 =241
+    MSP_RTC                  =247
 
     MSP_EEPROM_WRITE         =250
 
     MSP_DEBUGMSG             =253
     MSP_DEBUG                =254
-
 
     IDLE = 0
     HEADER_START = 1
@@ -126,75 +177,26 @@ class PyMSP:
 
     PIDITEMS = 10
 
+    MESSAGES = {
+        MSP_RAW_GPS:   MSPItem('RAW_GPS', "<BBiihH", "fix,numSat,Lat,Lon,Alt,Speed"),
+        MSP_IDENT:     MSPItem('IDENT', "<BBBI", "version,multiType,MSPVersion,multiCapability"),
+        MSP_STATUS:    MSPItem('STATUS', "<HHHI", "cycleTime,i2cError,present,mode"),
+        MSP_RAW_IMU:   MSPItem('RAW_IMU', "<hhhhhhhhh", "AccX,AccY,AccZ,GyrX,GyrY,GyrZ,MagX,MagY,MagZ"),
+        MSP_SERVO:     MSPItem('SERVO', "<8h", "servo"),
+        MSP_MOTOR:     MSPItem('MOTOR', "<8h", "motor"),
+        MSP_RC:        MSPItem('RC', "<8h", "rc"),
+        MSP_COMP_GPS:  MSPItem('COMP_GPS', "<HhB", "distanceToHome,directionToHome,update"),
+        MSP_ATTITUDE:  MSPItem('ATTITUDE', "<hhh", "roll,pitch,yaw"),
+        MSP_ALTITUDE:  MSPItem('ALTITUDE', "<ih", "alt,vspeed"),
+        MSP_RC_TUNING: MSPItem('RC_TUNING', "<BBBBBBB", "RC_Rate,RC_Expo,RollPitchRate,YawRate,DynThrPID,ThrottleMID,ThrottleExpo"),
+        MSP_BATTERY_STATE: MSPItem('BATTERY_STATE', "<BHBHh", "cellCount,capacity,voltage,mah,current"),
+        MSP_RTC:       MSPItem('RTC', "<HBBBBBH", "year,mon,mday,hour,min,sec,millis"),
+        }
 
     def __init__(self):
 
         self.msp_name = {
             'name':None 
-            }
-        self.msp_ident = {
-            'version':None,
-            'multiType':None,
-            'multiCapability':None
-            }
-        self.msp_status = {
-            'cycleTime':None, 
-            'i2cError':None, 
-            'present':None, 
-            'mode':None
-            }
-        self.msp_raw_imu = {
-            'size':0, 
-            'accx':0.0, 
-            'accy':0.0, 
-            'accz':0.0, 
-            'gyrx':0.0, 
-            'gyry':0.0, 
-            'gyrz':0.0
-            }
-        self.msp_set_rc = {
-            'roll':0, 
-            'pitch':0, 
-            'yaw':0, 
-            'throttle':0, 
-            'aux1':0, 
-            'aux2':0, 
-            'aux3':0, 
-            'aux4':0
-            }
-        self.msp_raw_gps = {
-            'GPS_fix':0,
-            'GPS_numSat':0,
-            'GPS_latitude':0,
-            'GPS_longitude':0,
-            'GPS_altitude':0,
-            'GPS_speed':0
-            }
-        self.msp_comp_gps = {
-            'GPS_distanceToHome':0, 
-            'GPS_directionToHome':0, 
-            'GPS_update':0
-            }
-        self.msp_attitude = {
-            'roll':0, 
-            'pitch':0, 
-            'yaw':0
-            }
-        self.msp_altitude = {
-            'alt':0,
-            'vspeed':0
-            }
-        self.msp_rc_tuning = {
-            'byteRC_RATE':0, 
-            'byteRC_EXPO':0, 
-            'byteRollPitchRate':0, 
-            'byteYawRate':0, 
-            'byteDynThrPID':0, 
-            'byteThrottle_MID':0, 
-            'byteThrottle_EXPO':0
-            }
-        self.msp_misc = {
-            'intPowerTrigger': 0
             }
         self.msp_osd_config = {
             'feature':None,                # 8
@@ -216,13 +218,6 @@ class PyMSP:
             'profiles':None,               # 8
             'selected_profile':None,       # 8
             'osd_overlay':None,            # 8   
-        }
-        self.msp_battery_state = {
-            'cellCount':0, 
-            'capacity':0, 
-            'voltage':0, 
-            'mah':0, 
-            'current':0
         }
 
         self.inBuf = bytearray([0] * 255)
@@ -246,6 +241,21 @@ class PyMSP:
         self.confI = []
         self.confD = []
 
+        # parsed messages, indexed by name
+        self.by_name = {}
+
+    def get(self, fieldname):
+        '''get a field from a parsed message by Message.Field name'''
+        a = fieldname.split('.')
+        msgName = a[0]
+        fieldName = a[1]
+        if not msgName in self.by_name:
+            # default to zero for simplicty of display
+            return 0
+        msg = self.by_name[msgName]
+        if not fieldName in msg.values:
+            raise Exception("Unknown field %s" % fieldName)
+        return msg.values[fieldName]
 
     def read32(self):
         '''signed 32 bit number'''
@@ -299,13 +309,14 @@ class PyMSP:
                     checksum ^= (ord(c) & 0xFF)
         bf = bf + payload
         bf.append(checksum)
-        #print "here in requesrMSP"
-        #print bf
         return bf
 
 
     def evaluateCommand(self, cmd, dataSize):
-        if cmd == self.MSP_NAME:
+        if cmd in self.MESSAGES:
+            # most messages are parsed from the MESSAGES list
+            self.MESSAGES[cmd].parse(self, dataSize)
+        elif cmd == self.MSP_NAME:
             s = ''
             for i in range(0,dataSize,1):
                 b = self.read8()
@@ -313,75 +324,9 @@ class PyMSP:
                     break
                 s += chr(b)
             self.msp_name['name'] = s
-        elif cmd == self.MSP_IDENT:
-            self.msp_ident['version'] = self.read8()
-            self.msp_ident['multiType'] = self.read8()
-            self.read8() # MSP version
-            self.msp_ident['multiCapability'] = self.read32u()
-
-        elif cmd == self.MSP_STATUS:
-            self.msp_status['cycleTime'] = self.read16u()
-            self.msp_status['i2cError'] = self.read16u()
-            self.msp_status['present'] = self.read16u()
-            self.msp_status['mode'] = self.read32u()
-
-        elif cmd == self.MSP_RAW_IMU:
-            self.msp_raw_imu['accx'] = float(self.read16())
-            self.msp_raw_imu['accy'] = float(self.read16())
-            self.msp_raw_imu['accz'] = float(self.read16())
-            self.msp_raw_imu['gyrx'] = float(self.read16())
-            self.msp_raw_imu['gyry'] = float(self.read16())
-            self.msp_raw_imu['gyrz'] = float(self.read16())
-            self.msp_raw_imu['magx'] = float(self.read16())
-            self.msp_raw_imu['magy'] = float(self.read16())
-            self.msp_raw_imu['magz'] = float(self.read16())
-            self.msp_raw_imu['size'] = dataSize
-
-        elif cmd == self.MSP_SERVO:
-            for i in range(0,8,1):
-                self.servo.append(self.read16())
-
-        elif cmd == self.MSP_MOTOR:
-            for i in range(0, 8, 1):
-                self.mot.append(self.read16())
-
-        elif cmd == self.MSP_RC:
-            for i in range(0, 8, 1):
-                self.RCChan.append(self.read16())
-
-        elif cmd == self.MSP_RAW_GPS:
-            self.msp_raw_gps['GPS_fix'] = self.read8()
-            self.msp_raw_gps['GPS_numSat'] = self.read8()
-            self.msp_raw_gps['GPS_latitude'] = self.read32()
-            self.msp_raw_gps['GPS_longitude'] = self.read32()
-            self.msp_raw_gps['GPS_altitude'] = self.read16()
-            self.msp_raw_gps['GPS_speed'] = self.read16()
-
-        elif cmd == self.MSP_COMP_GPS:
-            self.msp_comp_gps['GPS_distanceToHome'] = self.read16()
-            self.msp_comp_gps['GPS_directionToHome'] = self.read16()
-            self.msp_comp_gps['GPS_update'] = self.read8()
-
-        elif cmd == self.MSP_ATTITUDE:
-            self.msp_attitude['roll'] = self.read16()
-            self.msp_attitude['pitch'] = self.read16()
-            self.msp_attitude['yaw'] = self.read16()
-
-        elif cmd == self.MSP_ALTITUDE:
-            self.msp_altitude['alt'] = self.read32()
-            self.msp_altitude['vspeed'] = self.read16()
 
         elif cmd == self.MSP_ANALOG:
             x = None
-
-        elif cmd == self.MSP_RC_TUNING:
-            self.msp_rc_tuning['byteRC_RATE'] = self.read8()
-            self.msp_rc_tuning['byteRC_EXPO'] = self.read8()
-            self.msp_rc_tuning['byteRollPitchRate'] = self.read8()
-            self.msp_rc_tuning['byteYawRate'] = self.read8()
-            self.msp_rc_tuning['byteDynThrPID'] = self.read8()
-            self.msp_rc_tuning['byteThrottle_MID'] = self.read8()
-            self.msp_rc_tuning['byteThrottle_EXPO'] = self.read8()
 
         elif cmd == self.MSP_ACC_CALIBRATION:
             x = None
@@ -458,12 +403,8 @@ class PyMSP:
             self.msp_osd_config['selected_profile'] = self.read8()       # 8
             self.msp_osd_config['osd_overlay'] = self.read8()
                         # 8
-        elif cmd == self.MSP_BATTERY_STATE:
-            self.msp_battery_state['cellCount'] = self.read8()
-            self.msp_battery_state['capacity'] =  self.read16u()
-            self.msp_battery_state['voltage'] = self.read8()
-            self.msp_battery_state['mah'] = self.read16u()
-            self.msp_battery_state['current'] = self.read16()  
+        else:
+            print("Unhandled command ", cmd, dataSize)
 
     def parseMspData(self, buf):
         for c in buf:
