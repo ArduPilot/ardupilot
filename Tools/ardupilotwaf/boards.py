@@ -3,6 +3,7 @@
 
 from collections import OrderedDict
 import sys, os
+import fnmatch
 
 import waflib
 from waflib import Utils
@@ -310,6 +311,12 @@ class Board:
         if cfg.options.disable_ekf3:
             env.CXXFLAGS += ['-DHAL_NAVEKF3_AVAILABLE=0']
 
+        if cfg.options.osd:
+            env.CXXFLAGS += ['-DOSD_ENABLED=1']
+            for f in os.listdir('libraries/AP_OSD/fonts'):
+                if fnmatch.fnmatch(f, "font*bin"):
+                    env.ROMFS_FILES += [(f,'libraries/AP_OSD/fonts/'+f)]
+            
     def pre_build(self, bld):
         '''pre-build hook that gets called before dynamic sources'''
         if bld.env.ROMFS_FILES:
@@ -437,7 +444,6 @@ class sitl(Board):
             if not cfg.check_SFML(env):
                 cfg.fatal("Failed to find SFML libraries")
 
-        import fnmatch
         if cfg.options.sitl_osd:
             env.CXXFLAGS += ['-DWITH_SITL_OSD','-DOSD_ENABLED=1']
             for f in os.listdir('libraries/AP_OSD/fonts'):
