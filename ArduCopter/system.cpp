@@ -516,6 +516,46 @@ const char* Copter::get_frame_string()
     }
 }
 
+// return string corresponding to frame_type
+const char* Copter::get_type_string()
+{
+    switch ((AP_Motors::motor_frame_type)int8_t(g.frame_type)) {
+    case AP_Motors::MOTOR_FRAME_TYPE_PLUS:
+        return "Plus";
+    case AP_Motors::MOTOR_FRAME_TYPE_X:
+        return "X";
+    case AP_Motors::MOTOR_FRAME_TYPE_V:
+        return "V";
+    case AP_Motors::MOTOR_FRAME_TYPE_H:
+        return "H";
+    case AP_Motors::MOTOR_FRAME_TYPE_VTAIL:
+        return "V-Tail";
+    case AP_Motors::MOTOR_FRAME_TYPE_ATAIL:
+        return "A-Tail";
+    case AP_Motors::MOTOR_FRAME_TYPE_PLUSREV:
+        return "PlusReversed";
+    case AP_Motors::MOTOR_FRAME_TYPE_Y6B:
+        return "Y6B";
+    case AP_Motors::MOTOR_FRAME_TYPE_Y6F:
+        return "Y6F";
+    case AP_Motors::MOTOR_FRAME_TYPE_BF_X:
+        return "BetaFlightX";
+    case AP_Motors::MOTOR_FRAME_TYPE_DJI_X:
+        return "DJIX";
+    case AP_Motors::MOTOR_FRAME_TYPE_CW_X:
+        return "ClockwiseX";
+    case AP_Motors::MOTOR_FRAME_TYPE_I:
+        return "I";
+    case AP_Motors::MOTOR_FRAME_TYPE_NYT_PLUS:
+        return "NoYawTorquePlus";
+    case AP_Motors::MOTOR_FRAME_TYPE_NYT_X:
+        return "NoYawTorqueX";
+    case AP_Motors::MOTOR_FRAME_TYPE_BF_X_REV:
+        return "BetaFlightXReversed";
+    }
+    return "UNKNOWN";
+}
+
 /*
   allocate the motors class
  */
