@@ -6416,6 +6416,18 @@ switch value'''
             self.drain_mav();
             self.delay_sim_time(0.5)
 
+    def wait_gps_fix_type_gte(self, fix_type, timeout=30):
+        tstart = self.get_sim_time()
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > timeout:
+                raise AutoTestTimeoutException("Did not get good GPS lock")
+            m = self.mav.recv_match(type="GPS_RAW_INT", blocking=True, timeout=0.1)
+            if m is None:
+                continue
+            if m.fix_type >= fix_type:
+                break
+
     def nmea_output(self):
         self.set_parameter("SERIAL5_PROTOCOL", 20) # serial5 is NMEA output
         self.set_parameter("GPS_TYPE2", 5) # GPS2 is NMEA
@@ -6423,6 +6435,8 @@ switch value'''
             "--uartE=tcp:6735", # GPS2 is NMEA....
             "--uartF=tcpclient:127.0.0.1:6735", # serial5 spews to localhost:6735
         ])
+        self.drain_mav_unparsed()
+        self.wait_gps_fix_type_gte(3)
         gps1 = self.mav.recv_match(type="GPS_RAW_INT", blocking=True, timeout=10)
         self.progress("gps1=(%s)" % str(gps1))
         if gps1 is None:
@@ -6438,8 +6452,11 @@ switch value'''
                 continue
             if gps2.time_usec != 0:
                 break
-        if self.get_distance_int(gps1, gps2) > 1:
-            raise NotAchievedException("NMEA output inaccurate")
+        max_distance = 1
+        distance = self.get_distance_int(gps1, gps2)
+        if distance > max_distance:
+            raise NotAchievedException("NMEA output inaccurate (dist=%f want<%f)" %
+                                       (distance, max_distance))
 
     def mavproxy_load_module(self, module):
         self.mavproxy.send("module load %s\n" % module)
