@@ -188,6 +188,10 @@ configuration in order to save typing.
                  default=False,
                  help="Enable SFML audio library")
 
+    g.add_option('--osd', action='store_true',
+                 default=False,
+                 help="Enable OSD support")
+    
     g.add_option('--sitl-osd', action='store_true',
                  default=False,
                  help="Enable SITL OSD")
