@@ -940,7 +940,7 @@ void AP_OSD_Screen::set_backend(AP_OSD_Backend *_backend)
 
 bool AP_OSD_Screen::check_option(uint32_t option)
 {
-    return (osd->options & option) != 0;
+    return osd?(osd->options & option) != 0 : false;
 }
 
 /*
