@@ -9,22 +9,49 @@
 import struct
 import time
 import sys
+import re
 
 class MSPItem:
     def __init__(self, name, fmt, fields):
         self.name = name
         self.format = fmt
-        self.fields = fields.split(',')
+        self.fields = fields
+        if not isinstance(self.format, list):
+            self.format = [self.format]
+            self.fields = [self.fields]
         self.values = {}
-        self.fmt_size = struct.calcsize(self.format)
 
     def parse(self, msp, dataSize):
         '''parse data'''
-        if dataSize < self.fmt_size:
-            raise Exception("Format %s needs %u bytes got %u" % (self.name, self.fmt_size, dataSize))
-        values = list(struct.unpack(self.format, msp.inBuf[msp.p:msp.p+self.fmt_size]))
-        for i in range(len(self.fields)):
-            self.values[self.fields[i]] = values[i]
+        ofs = msp.p
+        for i in range(len(self.format)):
+            fmt = self.format[i]
+            fields = self.fields[i].split(',')
+            if fmt[0] == '{':
+                # we have a repeat count from an earlier variable
+                right = fmt.find('}')
+                vname = fmt[1:right]
+                count = self.values[vname]
+                fmt = "%u%s" % (count, fmt[right+1:])
+            if fmt[0].isdigit():
+                repeat = int(re.search(r'\d+', fmt).group())
+            else:
+                repeat = None
+            fmt = "<" + fmt
+            fmt_size = struct.calcsize(fmt)
+            if dataSize < fmt_size:
+                raise Exception("Format %s needs %u bytes got %u for %s" % (self.name, fmt_size, dataSize, fmt))
+            values = list(struct.unpack(fmt, msp.inBuf[ofs:ofs+fmt_size]))
+            if repeat is not None:
+                for i in range(len(fields)):
+                    self.values[fields[i]] = []
+                    for j in range(repeat):
+                        self.values[fields[i]].append(values[j*len(fields)])
+            else:
+                for i in range(len(fields)):
+                    self.values[fields[i]] = values[i]
+            dataSize -= fmt_size
+            ofs += fmt_size
         msp.by_name[self.name] = self
         #print("Got %s" % self.name)
 
@@ -179,19 +206,34 @@ class PyMSP:
     PIDITEMS = 10
 
     MESSAGES = {
-        MSP_RAW_GPS:   MSPItem('RAW_GPS', "<BBiihH", "fix,numSat,Lat,Lon,Alt,Speed"),
-        MSP_IDENT:     MSPItem('IDENT', "<BBBI", "version,multiType,MSPVersion,multiCapability"),
-        MSP_STATUS:    MSPItem('STATUS', "<HHHI", "cycleTime,i2cError,present,mode"),
-        MSP_RAW_IMU:   MSPItem('RAW_IMU', "<hhhhhhhhh", "AccX,AccY,AccZ,GyrX,GyrY,GyrZ,MagX,MagY,MagZ"),
-        MSP_SERVO:     MSPItem('SERVO', "<8h", "servo"),
-        MSP_MOTOR:     MSPItem('MOTOR', "<8h", "motor"),
-        MSP_RC:        MSPItem('RC', "<8h", "rc"),
-        MSP_COMP_GPS:  MSPItem('COMP_GPS', "<HhB", "distanceToHome,directionToHome,update"),
-        MSP_ATTITUDE:  MSPItem('ATTITUDE', "<hhh", "roll,pitch,yaw"),
-        MSP_ALTITUDE:  MSPItem('ALTITUDE', "<ih", "alt,vspeed"),
-        MSP_RC_TUNING: MSPItem('RC_TUNING', "<BBBBBBB", "RC_Rate,RC_Expo,RollPitchRate,YawRate,DynThrPID,ThrottleMID,ThrottleExpo"),
-        MSP_BATTERY_STATE: MSPItem('BATTERY_STATE', "<BHBHh", "cellCount,capacity,voltage,mah,current"),
-        MSP_RTC:       MSPItem('RTC', "<HBBBBBH", "year,mon,mday,hour,min,sec,millis"),
+        MSP_RAW_GPS:   MSPItem('RAW_GPS', "BBiihH", "fix,numSat,Lat,Lon,Alt,Speed"),
+        MSP_IDENT:     MSPItem('IDENT', "BBBI", "version,multiType,MSPVersion,multiCapability"),
+        MSP_STATUS:    MSPItem('STATUS', "HHHI", "cycleTime,i2cError,present,mode"),
+        MSP_RAW_IMU:   MSPItem('RAW_IMU', "hhhhhhhhh", "AccX,AccY,AccZ,GyrX,GyrY,GyrZ,MagX,MagY,MagZ"),
+        MSP_SERVO:     MSPItem('SERVO', "8h", "servo"),
+        MSP_MOTOR:     MSPItem('MOTOR', "8h", "motor"),
+        MSP_RC:        MSPItem('RC', "8h", "rc"),
+        MSP_COMP_GPS:  MSPItem('COMP_GPS', "HhB", "distanceToHome,directionToHome,update"),
+        MSP_ATTITUDE:  MSPItem('ATTITUDE', "hhh", "roll,pitch,yaw"),
+        MSP_ALTITUDE:  MSPItem('ALTITUDE', "ih", "alt,vspeed"),
+        MSP_RC_TUNING: MSPItem('RC_TUNING', "BBBBBBB", "RC_Rate,RC_Expo,RollPitchRate,YawRate,DynThrPID,ThrottleMID,ThrottleExpo"),
+        MSP_BATTERY_STATE: MSPItem('BATTERY_STATE', "BHBHh", "cellCount,capacity,voltage,mah,current"),
+        MSP_RTC:       MSPItem('RTC', "HBBBBBH", "year,mon,mday,hour,min,sec,millis"),
+        MSP_OSD_CONFIG: MSPItem("OSD_CONFIG",
+                                ["BBBBHBBH",
+                                 "{osd_item_count}H",
+                                 "B", "{stats_item_count}H",
+                                 "B", "{timer_count}H",
+                                 "HBIBBB"],
+                                ["feature,video_system,units,rssi_alarm,cap_alarm,unused1,osd_item_count,alt_alarm",
+                                 "osd_items",
+                                 "stats_item_count", "stats_items",
+                                 "timer_count", "timer_items",
+                                 "legacy_warnings,warnings_count,enabled_warnings,profiles,selected_profile,osd_overlay"]),
+        MSP_PID:       MSPItem("PID", "8PID", "P,I,D"),
+        MSP_MISC:      MSPItem("MISC", "HHHHHII","intPowerTrigger,conf1,conf2,conf3,conf4,conf5,conf6"),
+        MSP_MOTOR_PINS: MSPItem("MOTOR_PINS", "8H","MP"),
+        MSP_ANALOG:    MSPItem("ANALOG", "BHHHH", "dV,consumed_mah,rssi,current,volt"),
         }
 
     def __init__(self):
@@ -306,87 +348,22 @@ class PyMSP:
                 s += chr(b)
             self.msp_name['name'] = s
 
-        elif cmd == self.MSP_ANALOG:
-            x = None
-
         elif cmd == self.MSP_ACC_CALIBRATION:
             x = None
-
         elif cmd == self.MSP_MAG_CALIBRATION:
             x = None
-
-        elif cmd == self.MSP_PID:
-            for i in range(0, 8, 1):
-                self.byteP[i] = (self.read8())
-                self.byteI[i] = (self.read8())
-                self.byteD[i] = (self.read8())
-                if (i != 4) and (i != 5) and (i != 6):
-                    self.confP[i] = (float(self.byteP[i])/10.0)
-                    self.confI[i] = (float(self.byteI[i])/1000.0)
-                    self.confD[i] = (float(self.byteD[i]))
-            self.confP[4] = (float(self.byteP[4]) / 100.0)
-            self.confI[4] = (float(self.byteI[4]) / 100.0)
-            self.confD[4] = (float(self.byteD[4]) / 1000.0)
-            self.confP[5] = (float(self.byteP[5]) / 10.0)
-            self.confI[5] = (float(self.byteI[5]) / 100.0)
-            self.confD[5] = (float(self.byteD[5]) / 1000.0)
-            self.confP[6] = (float(self.byteP[6]) / 10.0)
-            self.confI[6] = (float(self.byteI[6]) / 100.0)
-            self.confD[6] = (float(self.byteD[6]) / 1000.0)
         elif cmd == self.MSP_BOX:
             x = None
-
         elif cmd == self.MSP_BOXNAMES:
             x = None
-
         elif cmd == self.MSP_PIDNAMES:
             x = None
-
         elif cmd == self.MSP_SERVO_CONF:
             x = None
-
-        elif cmd == self.MSP_MISC:
-            self.msp_misc['intPowerTrigger'] = self.read16u()
-            for i in range(0,4,1):
-                self.MConf[i] = self.read16u()
-            self.MConf[4] = self.read32u()
-            self.MConf[5] = self.read32u()
-
-        elif cmd == self.MSP_MOTOR_PINS:
-            for i in range(0, 8, 1):
-                self.byteMP.append(self.read16())
-
         elif cmd == self.MSP_DEBUGMSG:
             x = None
         elif cmd == self.MSP_DEBUG:
             x = None
-        elif cmd == self.MSP_OSD_CONFIG:
-            self.msp_osd_config['feature'] = int(self.read8())                # 8
-            self.msp_osd_config['video_system'] = self.read8()           # 8
-            self.msp_osd_config['units'] = self.read8()                  # 8
-            self.msp_osd_config['rssi_alarm'] = self.read8()             # 8
-            self.msp_osd_config['cap_alarm'] = self.read16()             # 16
-            self.msp_osd_config['unusaed_1'] = self.read8()              # 8
-            self.msp_osd_config['osd_item_count'] = self.read8()         # 8
-            self.msp_osd_config['alt_alarm'] = self.read16()             # 16
-            self.msp_osd_config['osd_items'] = [0] * self.msp_osd_config['osd_item_count']
-            for i in range(self.msp_osd_config['osd_item_count']):
-                self.msp_osd_config['osd_items'][i] = self.read16u()      # x 16
-            self.msp_osd_config['stats_item_count'] = self.read8()       # 8
-            self.msp_osd_config['stats_items'] = [0] * self.msp_osd_config['stats_item_count']
-            for i in range(self.msp_osd_config['stats_item_count']):
-                self.msp_osd_config['stats_items'][i] = self.read16u()    # x 16
-            self.msp_osd_config['timer_count'] = self.read8()            # 8
-            self.msp_osd_config['timer_items'] = [0] * self.msp_osd_config['timer_count']
-            for i in range(self.msp_osd_config['timer_count']):
-                self.msp_osd_config['timer_items'][i] = self.read16u()    # x 16
-            self.msp_osd_config['legacy_warnings'] = self.read16u()       # 16
-            self.msp_osd_config['warnings_count'] = self.read8()         # 8
-            self.msp_osd_config['enabled_warnings'] = self.read32u()      # 32
-            self.msp_osd_config['profiles'] = self.read8()               # 8
-            self.msp_osd_config['selected_profile'] = self.read8()       # 8
-            self.msp_osd_config['osd_overlay'] = self.read8()
-                        # 8
         else:
             print("Unhandled command ", cmd, dataSize)
 
