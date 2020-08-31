@@ -1417,6 +1417,7 @@ void AP_BLHeli::read_telemetry_packet(void)
 
     last_telem[last_telem_esc] = td;
     last_telem[last_telem_esc].count++;
+    received_telem_data = true;
 
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger && logger->logging_enabled()
