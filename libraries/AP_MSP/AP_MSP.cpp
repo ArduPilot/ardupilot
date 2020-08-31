@@ -33,7 +33,7 @@ const AP_Param::GroupInfo AP_MSP::var_info[] = {
     // @Param: _OSD_NCELLS
     // @DisplayName: Cell count override
     // @Description: Used for average cell voltage calculation
-    // @Values: 0:Auto, 1-12
+    // @Values: 0:Auto,1:1,2:2,3:3,4:4,5:5,6:6,7:7,8:8,9:9,10:10,11:11,12:12,13:13,14:14
     // @User: Standard
     AP_GROUPINFO("_OSD_NCELLS", 1, AP_MSP, _cellcount, 0),
 
