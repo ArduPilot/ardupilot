@@ -183,14 +183,15 @@ end
 --   b) body position: body_pos_x, body_pos_y, body_pos_z
 --   c) offset of the center of body
 function body_forward_kinematics(X, Y, Z, Xdist, Ydist, Zrot)
-    local totaldist = {X + Xdist + body_pos_x, Y + Ydist + body_pos_y}
-    local distBodyCenterFeet = math.sqrt(totaldist[1]^2 + totaldist[2]^2)
-    local AngleBodyCenter = math.atan(totaldist[2], totaldist[1])
-    local rolly = math.tan(math.rad(body_rot_y)) * totaldist[1]
-    local pitchy = math.tan(math.rad(body_rot_x)) * totaldist[2]
+    local totaldist_x = X + Xdist + body_pos_x
+    local totaldist_y = Y + Ydist + body_pos_y
+    local distBodyCenterFeet = math.sqrt(totaldist_x^2 + totaldist_y^2)
+    local AngleBodyCenter = math.atan(totaldist_y, totaldist_x)
+    local rolly = math.tan(math.rad(body_rot_y)) * totaldist_x
+    local pitchy = math.tan(math.rad(body_rot_x)) * totaldist_y
 
-    local ansx = math.cos(AngleBodyCenter + math.rad(body_rot_z+Zrot)) * distBodyCenterFeet - totaldist[1] + body_pos_x
-    local ansy = math.sin(AngleBodyCenter + math.rad(body_rot_z+Zrot)) * distBodyCenterFeet - totaldist[2] + body_pos_y
+    local ansx = math.cos(AngleBodyCenter + math.rad(body_rot_z+Zrot)) * distBodyCenterFeet - totaldist_x + body_pos_x
+    local ansy = math.sin(AngleBodyCenter + math.rad(body_rot_z+Zrot)) * distBodyCenterFeet - totaldist_y + body_pos_y
     local ansz = rolly + pitchy + body_pos_z
     return {ansx, ansy, ansz}
 end
@@ -224,7 +225,7 @@ function servo_estimate()
         end
     end
     local target_time = target * (0.24/60) * 1000
-    return (target_time + start_time) <= millis()
+    return (millis() - start_time) > target_time
 end
 
 -- main_inverse_kinematics produces the inverse kinematic solution for each
@@ -232,19 +233,19 @@ end
 function main_inverse_kinematics()
     local ans1 = body_forward_kinematics(endpoints1[1]+gait_pos_x[1], endpoints1[2]+gait_pos_y[1], endpoints1[3]+gait_pos_z[1], FRAME_LEN*0.5, FRAME_WIDTH*0.5, gait_rot_z[1])
     local angles1 = leg_inverse_kinematics(endpoints1[1]+ans1[1]+gait_pos_x[1],endpoints1[2]+ans1[2]+gait_pos_y[1], endpoints1[3]+ans1[3]+gait_pos_z[1])
-    angles1 = {-45 + angles1[1],angles1[2],angles1[3]}
+    angles1[1] = -45 + angles1[1]
 
     local ans2 = body_forward_kinematics(endpoints2[1]+gait_pos_x[2], endpoints2[2]+gait_pos_y[2], endpoints2[3]+gait_pos_z[2], FRAME_LEN*0.5, -FRAME_WIDTH*0.5, gait_rot_z[2])
     local angles2 = leg_inverse_kinematics(endpoints2[1]+ans2[1]+gait_pos_x[2],endpoints2[2]+ans2[2]+gait_pos_y[2], endpoints2[3]+ans2[3]+gait_pos_z[2])
-    angles2 = {-135 + angles2[1],angles2[2],angles2[3]}
+    angles2[1] = -135 + angles2[1]
 
     local ans3 = body_forward_kinematics(endpoints3[1]+gait_pos_x[3], endpoints3[2]+gait_pos_y[3], endpoints3[3]+gait_pos_z[3], -FRAME_LEN*0.5, -FRAME_WIDTH*0.5, gait_rot_z[3])
     local angles3 = leg_inverse_kinematics(endpoints3[1]+ans3[1]+gait_pos_x[3],endpoints3[2]+ans3[2]+gait_pos_y[3], endpoints3[3]+ans3[3]+gait_pos_z[3])
-    angles3 = {135 + angles3[1],angles3[2],angles3[3]}
+    angles3[1] = 135 + angles3[1]
 
     local ans4 = body_forward_kinematics(endpoints4[1]+gait_pos_x[4], endpoints4[2]+gait_pos_y[4], endpoints4[3]+gait_pos_z[4], -FRAME_LEN*0.5, FRAME_WIDTH*0.5, gait_rot_z[4])
     local angles4 = leg_inverse_kinematics(endpoints4[1]+ans4[1]+gait_pos_x[4],endpoints4[2]+ans4[2]+gait_pos_y[4], endpoints4[3]+ans4[3]+gait_pos_z[4])
-    angles4 = {45 + angles4[1],angles4[2],angles4[3]}
+    angles4[1] = 45 + angles4[1]
     Gaitselect()
     current = {angles1[1],angles1[2],angles1[3],angles2[1],angles2[2],angles2[3],angles3[1],angles3[2],angles3[3],angles4[1],angles4[2],angles4[3]}
 
@@ -254,7 +255,7 @@ function main_inverse_kinematics()
         last_angle = current
     end
 
-    return angles1, angles4, angles3, angles2
+    return current
 end
 
 -- servo angles when robot is disarmed and resting body on the ground
@@ -276,8 +277,7 @@ function update()
     body_rot_y = -vehicle:get_control_output(control_input_pitch) * body_rot_max
 
     if arming:is_armed() then
-        FR_angles, BL_angles, BR_angles, FL_angles = main_inverse_kinematics()
-        angles = {FR_angles[1], FR_angles[2], FR_angles[3], FL_angles[1], FL_angles[2], FL_angles[3], BR_angles[1], BR_angles[2], BR_angles[3], BL_angles[1], BL_angles[2], BL_angles[3]}
+        angles = main_inverse_kinematics()
     else
         angles = rest_angles
     end
