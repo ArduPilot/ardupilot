@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 '''
 A tool to view MSP telemetry, simulating a DJI FPV display
 This is used for testing changes to the ArduPilot implementation of MSP telemetry for FPV
@@ -57,7 +58,7 @@ black = (0, 0 ,0)
 FontWidth = 25
 FontHeight = 25
 
-WindowWidth = 32 * FontWidth
+WindowWidth = 27 * FontWidth
 WindowHeight = 16 * FontHeight
   
 # create the display surface object 
@@ -96,16 +97,57 @@ def display_text(item, message):
 
 def display_all():
     '''display all items'''
+    
+    '''
+    _osd_item_settings[OSD_RSSI_VALUE] = &osd->screen[0].rssi;
+    _osd_item_settings[OSD_MAIN_BATT_VOLTAGE] = &osd->screen[0].bat_volt;
+    _osd_item_settings[OSD_CROSSHAIRS] = &osd->screen[0].crosshair;
+    _osd_item_settings[OSD_ARTIFICIAL_HORIZON] = &osd->screen[0].horizon;
+    _osd_item_settings[OSD_HORIZON_SIDEBARS] = &osd->screen[0].sidebars;
+    _osd_item_settings[OSD_CRAFT_NAME] = &osd->screen[0].message;
+    _osd_item_settings[OSD_FLYMODE] = &osd->screen[0].fltmode;
+    _osd_item_settings[OSD_CURRENT_DRAW] = &osd->screen[0].current;
+    _osd_item_settings[OSD_MAH_DRAWN] = &osd->screen[0].batused;
+    _osd_item_settings[OSD_GPS_SPEED] = &osd->screen[0].gspeed;
+    _osd_item_settings[OSD_GPS_SATS] = &osd->screen[0].sats;
+    _osd_item_settings[OSD_ALTITUDE] = &osd->screen[0].altitude;
+    _osd_item_settings[OSD_POWER] = &osd->screen[0].power;
+    _osd_item_settings[OSD_AVG_CELL_VOLTAGE] = &osd->screen[0].cell_volt;
+    _osd_item_settings[OSD_GPS_LON] = &osd->screen[0].gps_longitude;
+    _osd_item_settings[OSD_GPS_LAT] = &osd->screen[0].gps_latitude;
+    _osd_item_settings[OSD_PITCH_ANGLE] = &osd->screen[0].pitch_angle;
+    _osd_item_settings[OSD_ROLL_ANGLE] = &osd->screen[0].roll_angle;
+    _osd_item_settings[OSD_MAIN_BATT_USAGE] = &osd->screen[0].batt_bar;
+    _osd_item_settings[OSD_DISARMED] = &osd->screen[0].arming;
+    _osd_item_settings[OSD_HOME_DIR] = &osd->screen[0].home_dir;
+    _osd_item_settings[OSD_HOME_DIST] = &osd->screen[0].home_dist;
+    _osd_item_settings[OSD_NUMERICAL_HEADING] = &osd->screen[0].heading;
+    _osd_item_settings[OSD_NUMERICAL_VARIO] = &osd->screen[0].vspeed;
+    _osd_item_settings[OSD_ESC_TMP] = &osd->screen[0].blh_temp;
+    _osd_item_settings[OSD_RTC_DATETIME] = &osd->screen[0].clk;
+    '''
+
+    display_text(msp.OSD_POWER, "%03dW" % (0 if msp.get('BATTERY_STATE.voltage')==0 or msp.get('BATTERY_STATE.current')==0 else 0.1*msp.get('BATTERY_STATE.voltage')/msp.get('BATTERY_STATE.voltage')*msp.get('BATTERY_STATE.current')))
+    display_text(msp.OSD_MAIN_BATT_USAGE, "Batt%%:%d" % (100 if msp.get('BATTERY_STATE.capacity')==0 else (100-(msp.get('BATTERY_STATE.mah')/msp.get('BATTERY_STATE.capacity')))))
+    display_text(msp.OSD_AVG_CELL_VOLTAGE, "VCell:%.02fV" % (0 if msp.get('BATTERY_STATE.cellCount')==0 else msp.get('BATTERY_STATE.voltage')/msp.get('BATTERY_STATE.cellCount')*0.1))
+    display_text(msp.OSD_GPS_LAT, "Lat:%.07f" % (msp.get('RAW_GPS.Lat')*0.0000001))
+    display_text(msp.OSD_GPS_LON, "Lon:%.07f" % (msp.get('RAW_GPS.Lon')*0.0000001))
+    display_text(msp.OSD_RTC_DATETIME, "%04d-%02d-%02d %02d:%02d:%02d" % (msp.get('RTC.year'),msp.get('RTC.mon'),msp.get('RTC.mday'),msp.get('RTC.hour'),msp.get('RTC.min'),msp.get('RTC.sec')))
+    display_text(msp.OSD_DISARMED, "%s" % ("ARMED" if msp.get('STATUS.mode_flags')&0X01==1 else "DISARMED"))
+    display_text(msp.OSD_HOME_DIR, "Hdir:%d" % (msp.get('COMP_GPS.directionToHome')))
+    display_text(msp.OSD_HOME_DIST, "Hdist:%d" % (msp.get('COMP_GPS.distanceToHome')))
+    display_text(msp.OSD_RSSI_VALUE, "Rssi:%02d" % (msp.get('ANALOG.rssi')))
     display_text(msp.OSD_GPS_SPEED, "%.1fm/s" % (msp.get('RAW_GPS.Speed')*0.01))
-    display_text(msp.OSD_GPS_SATS, "%uS" % msp.get("RAW_GPS.numSat"))
+    display_text(msp.OSD_GPS_SATS, "Sats:%u" % msp.get("RAW_GPS.numSat"))
     display_text(msp.OSD_ROLL_ANGLE, "Roll:%.1f" % (msp.get("ATTITUDE.roll")*0.1))
     display_text(msp.OSD_PITCH_ANGLE, "Pitch:%.1f" % (msp.get("ATTITUDE.pitch")*0.1))
-    display_text(msp.OSD_CURRENT_DRAW, "%.2fA" % (msp.get('BATTERY_STATE.current')*0.01))
+    display_text(msp.OSD_CURRENT_DRAW, "%02.2fA" % (msp.get('BATTERY_STATE.current')*0.01))
     display_text(msp.OSD_MAIN_BATT_VOLTAGE, "%.2fV" % (msp.get('BATTERY_STATE.voltage')*0.1))
     display_text(msp.OSD_ALTITUDE, "%.1fm" % (msp.get("ALTITUDE.alt")*0.01))
-    display_text(msp.OSD_MAIN_BATT_USAGE, "%umAh" % (msp.get('ANALOG.consumed_mah')))
+    display_text(msp.OSD_NUMERICAL_VARIO, u"↕ %.01fm/s" % (msp.get('ALTITUDE.vspeed')*0.01))
+    display_text(msp.OSD_MAH_DRAWN, "%umAh" % (msp.get('BATTERY_STATE.mah')))
     display_text(msp.OSD_CRAFT_NAME, "%s" % (msp.msp_name['name']))
-
+    
 def receive_data():
     '''receive any data from socket'''
     global recv_func, last_read_s

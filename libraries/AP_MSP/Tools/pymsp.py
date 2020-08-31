@@ -234,6 +234,7 @@ class PyMSP:
         MSP_MISC:      MSPItem("MISC", "HHHHHII","intPowerTrigger,conf1,conf2,conf3,conf4,conf5,conf6"),
         MSP_MOTOR_PINS: MSPItem("MOTOR_PINS", "8H","MP"),
         MSP_ANALOG:    MSPItem("ANALOG", "BHHHH", "dV,consumed_mah,rssi,current,volt"),
+        MSP_STATUS:    MSPItem("STATUS", "HHHIBHHBBIB", "task_delta,i2c_err_count,sensor_status,mode_flags,nop_1,system_load,gyro_time,nop_2,nop_3,armed,extra"),
         }
 
     def __init__(self):
