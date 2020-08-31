@@ -140,8 +140,12 @@ void AP_MSP_Telem_Backend::process_packet(uint8_t idx)
     uint8_t *out_buf_head = reply.buf.ptr;
 
     msp_process_out_command(msp_packet_type_map[idx], &reply.buf);
+    uint32_t len = reply.buf.ptr - &out_buf[0];
     sbuf_switch_to_reader(&reply.buf, out_buf_head); // change streambuf direction
-    msp_serial_encode(&_msp_port, &reply, _msp_port.msp_version);
+    if (len > 0) {
+        // don't send zero length packets
+        msp_serial_encode(&_msp_port, &reply, _msp_port.msp_version);
+    }
 
     _msp_port.c_state = MSP_IDLE;
 }
