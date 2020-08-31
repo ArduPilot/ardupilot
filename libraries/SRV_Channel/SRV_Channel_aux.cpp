@@ -633,17 +633,6 @@ void SRV_Channels::set_output_to_trim(SRV_Channel::Aux_servo_function_t function
     }
 }
 
-// set output pwm to for first matching channel
-void SRV_Channels::set_output_pwm_first(SRV_Channel::Aux_servo_function_t function, uint16_t pwm)
-{
-    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
-        if (channels[i].function == function) {
-            channels[i].set_output_pwm(pwm);
-            break;
-        }
-    }
-}
-
 /*
   get the normalised output for a channel function from the pwm value
   of the first matching channel
