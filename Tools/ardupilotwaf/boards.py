@@ -312,7 +312,7 @@ class Board:
             env.CXXFLAGS += ['-DHAL_NAVEKF3_AVAILABLE=0']
 
         if cfg.options.osd or cfg.options.osd_fonts:
-            env.CXXFLAGS += ['-DOSD_ENABLED=1']
+            env.CXXFLAGS += ['-DOSD_ENABLED=1', '-DHAL_MSP_ENABLED=1']
 
         if cfg.options.osd_fonts:
             for f in os.listdir('libraries/AP_OSD/fonts'):
