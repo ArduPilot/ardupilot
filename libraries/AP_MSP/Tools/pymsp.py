@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 """
  author: Alex Apostoli
@@ -335,19 +336,18 @@ class PyMSP:
         bf.append(checksum)
         return bf
 
-
     def evaluateCommand(self, cmd, dataSize):
         if cmd in self.MESSAGES:
             # most messages are parsed from the MESSAGES list
             self.MESSAGES[cmd].parse(self, dataSize)
         elif cmd == self.MSP_NAME:
-            s = ''
+            s = bytearray()
             for i in range(0,dataSize,1):
                 b = self.read8()
                 if b == 0:
                     break
-                s += chr(b)
-            self.msp_name['name'] = s
+                s.append(b)
+            self.msp_name['name'] = s.decode("utf-8")
 
         elif cmd == self.MSP_ACC_CALIBRATION:
             x = None
