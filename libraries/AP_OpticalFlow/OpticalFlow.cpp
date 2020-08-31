@@ -136,11 +136,11 @@ void OpticalFlow::init(uint32_t log_bit)
         backend = new AP_OpticalFlow_HereFlow(*this);
 #endif
         break;
-#if HAL_MSP_ENABLED        
     case OpticalFlowType::MSP:
+#if HAL_MSP_ENABLED
         backend = AP_OpticalFlow_MSP::detect(*this);
-        break;
 #endif //HAL_MSP_ENABLED
+        break;
     case OpticalFlowType::SITL:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         backend = new AP_OpticalFlow_SITL(*this);
