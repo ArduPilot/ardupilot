@@ -253,7 +253,13 @@ void AP_OSD::update_osd()
         update_current_screen();
 
         screen[current_screen].set_backend(backend);
+
+        // skip the drawing if we are not using a font based backend. This saves a lot of flash space when
+        // using the MSP OSD system on boards that don't have a MAX7456
+#if defined(WITH_SITL_OSD) || defined(HAL_WITH_SPI_OSD)
         screen[current_screen].draw();
+#endif
+
     }
 
     backend->flush();
