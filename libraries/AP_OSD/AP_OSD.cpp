@@ -197,6 +197,7 @@ void AP_OSD::init()
         break;
 
     case OSD_MAX7456: {
+#ifdef HAL_WITH_SPI_OSD
         AP_HAL::OwnPtr<AP_HAL::Device> spi_dev = std::move(hal.spi->get_device("osd"));
         if (!spi_dev) {
             break;
@@ -206,6 +207,7 @@ void AP_OSD::init()
             break;
         }
         hal.console->printf("Started MAX7456 OSD\n");
+#endif
         break;
     }
 
