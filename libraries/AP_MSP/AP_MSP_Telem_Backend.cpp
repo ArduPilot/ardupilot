@@ -794,14 +794,14 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_esc_sensor_data(sbuf_t *d
 {
 #ifdef HAVE_AP_BLHELI_SUPPORT
     AP_BLHeli *blheli = AP_BLHeli::get_singleton();
-    if (blheli) {
-        AP_BLHeli::telem_data td;
-        sbuf_write_u8(dst, blheli->get_num_motors());
-        for (uint8_t i = 0; i < blheli->get_num_motors(); i++) {
-            if (blheli->get_telem_data(i, td)) {
-                sbuf_write_u8(dst, td.temperature);        // deg
-                sbuf_write_u16(dst, td.rpm * 0.01);        // eRpm to 0.01 eRpm
-            }
+    if (blheli && blheli->have_telem_data()) {
+        const uint8_t num_motors = blheli->get_num_motors();
+        sbuf_write_u8(dst, num_motors);
+        for (uint8_t i = 0; i < num_motors; i++) {
+            AP_BLHeli::telem_data td {};
+            blheli->get_telem_data(i, td);
+            sbuf_write_u8(dst, td.temperature);        // deg
+            sbuf_write_u16(dst, td.rpm / 100);
         }
     }
 #endif
