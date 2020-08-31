@@ -69,7 +69,7 @@ pygame.display.set_caption('MSP Display')
 
 def item_to_pos(item):
     '''map MSP item to a X,Y tuple or None'''
-    if item >= msp.msp_osd_config['osd_item_count']:
+    if item is None or item >= msp.msp_osd_config.get('osd_item_count',0):
         return None
     pos = msp.msp_osd_config['osd_items'][item]
     if pos < 2048:
@@ -91,7 +91,7 @@ def display_text(item, message):
     slen = len(message)
     px = X * FontWidth
     py = Y * FontHeight
-    textRect.center = (px+textRect.width/2, py+textRect.height/2)
+    textRect.center = (px+textRect.width//2, py+textRect.height//2)
     display_surface.blit(text, textRect)
 
 def display_all():
