@@ -34,6 +34,10 @@
 #define RANGEFINDER_PREARM_REQUIRED_CHANGE_CM   50
 #endif
 
+#ifndef HAL_MSP_RANGEFINDER_ENABLED
+#define HAL_MSP_RANGEFINDER_ENABLED HAL_MSP_ENABLED && !HAL_MINIMIZE_FEATURES
+#endif
+
 class AP_RangeFinder_Backend;
 
 class RangeFinder
@@ -136,10 +140,10 @@ public:
     // Handle an incoming DISTANCE_SENSOR message (from a MAVLink enabled range finder)
     void handle_msg(const mavlink_message_t &msg);
 
-#if HAL_MSP_ENABLED
+#if HAL_MSP_RANGEFINDER_ENABLED
     // Handle an incoming DISTANCE_SENSOR message (from a MSP enabled range finder)
     void handle_msp(const MSP::msp_rangefinder_sensor_t &pkt);
-#endif //HAL_MSP_ENABLED
+#endif //HAL_MSP_RANGEFINDER_ENABLED
     // return true if we have a range finder with the specified orientation
     bool has_orientation(enum Rotation orientation) const;
 
