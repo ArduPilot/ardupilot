@@ -69,9 +69,9 @@ pygame.display.set_caption('MSP Display')
 
 def item_to_pos(item):
     '''map MSP item to a X,Y tuple or None'''
-    if item is None or item >= msp.msp_osd_config.get('osd_item_count',0):
+    if item is None or item >= msp.get('OSD_CONFIG.osd_item_count'):
         return None
-    pos = msp.msp_osd_config['osd_items'][item]
+    pos = msp.get("OSD_CONFIG.osd_items")[item]
     if pos < 2048:
         return None
     pos_y = (pos-2048) // 32
@@ -103,6 +103,7 @@ def display_all():
     display_text(msp.OSD_CURRENT_DRAW, "%.2fA" % (msp.get('BATTERY_STATE.current')*0.01))
     display_text(msp.OSD_MAIN_BATT_VOLTAGE, "%.2fV" % (msp.get('BATTERY_STATE.voltage')*0.1))
     display_text(msp.OSD_ALTITUDE, "%.1fm" % (msp.get("ALTITUDE.alt")*0.01))
+    display_text(msp.OSD_MAIN_BATT_USAGE, "%umAh" % (msp.get('ANALOG.consumed_mah')))
     display_text(msp.OSD_CRAFT_NAME, "%s" % (msp.msp_name['name']))
 
 def receive_data():
