@@ -8,6 +8,7 @@
 
 import struct
 import time
+import sys
 
 class MSPItem:
     def __init__(self, name, fmt, fields):
@@ -198,27 +199,7 @@ class PyMSP:
         self.msp_name = {
             'name':None 
             }
-        self.msp_osd_config = {
-            'feature':None,                # 8
-            'video_system':None,           # 8
-            'units':None,                  # 8
-            'rssi_alarm':None,             # 8
-            'cap_alarm':None,              # 16
-            'unusaed_1':None,              # 8
-            'osd_item_count':None,         # 8
-            'alt_alarm':None,              # 16
-            'osd_items': [None] * 60,   # x16
-            'stats_item_count':None,       # 8
-            'stats_items': [None] * 30, # x16
-            'timer_count':None,            # 8
-            'timer_items': [None] * 10, # 16
-            'legacy_warnings':None,        # 16
-            'warnings_count':None,         # 8
-            'enabled_warnings':None,       # 32
-            'profiles':None,               # 8
-            'selected_profile':None,       # 8
-            'osd_overlay':None,            # 8   
-        }
+        self.msp_osd_config = {}
 
         self.inBuf = bytearray([0] * 255)
         self.p = 0
@@ -271,19 +252,19 @@ class PyMSP:
     
     def read16(self):
         '''signed 16 bit number'''
-        value, = struct.unpack("<h", str(self.inBuf[self.p:self.p+2]))
+        value, = struct.unpack("<h", self.inBuf[self.p:self.p+2])
         self.p += 2
         return value
 
     def read16u(self):
         '''unsigned 16 bit number'''
-        value, = struct.unpack("<H", str(self.inBuf[self.p:self.p+2]))
+        value, = struct.unpack("<H", self.inBuf[self.p:self.p+2])
         self.p += 2
         return value
     
     def read8(self):
         '''unsigned 8 bit number'''
-        value, = struct.unpack("<B", str(self.inBuf[self.p:self.p+1]))
+        value, = struct.unpack("<B", self.inBuf[self.p:self.p+1])
         self.p += 1
         return value
 
@@ -388,13 +369,16 @@ class PyMSP:
             self.msp_osd_config['unusaed_1'] = self.read8()              # 8
             self.msp_osd_config['osd_item_count'] = self.read8()         # 8
             self.msp_osd_config['alt_alarm'] = self.read16()             # 16
-            for i in range(0, self.msp_osd_config['osd_item_count'], 1):
+            self.msp_osd_config['osd_items'] = [0] * self.msp_osd_config['osd_item_count']
+            for i in range(self.msp_osd_config['osd_item_count']):
                 self.msp_osd_config['osd_items'][i] = self.read16u()      # x 16
             self.msp_osd_config['stats_item_count'] = self.read8()       # 8
-            for i in range(0, self.msp_osd_config['stats_item_count'], 1):
+            self.msp_osd_config['stats_items'] = [0] * self.msp_osd_config['stats_item_count']
+            for i in range(self.msp_osd_config['stats_item_count']):
                 self.msp_osd_config['stats_items'][i] = self.read16u()    # x 16
             self.msp_osd_config['timer_count'] = self.read8()            # 8
-            for i in range(0, self.msp_osd_config['timer_count'], 1):
+            self.msp_osd_config['timer_items'] = [0] * self.msp_osd_config['timer_count']
+            for i in range(self.msp_osd_config['timer_count']):
                 self.msp_osd_config['timer_items'][i] = self.read16u()    # x 16
             self.msp_osd_config['legacy_warnings'] = self.read16u()       # 16
             self.msp_osd_config['warnings_count'] = self.read8()         # 8
@@ -411,20 +395,26 @@ class PyMSP:
             self.parseMspByte(c)
 
     def parseMspByte(self, c):
+        if sys.version_info.major >= 3:
+            cc = chr(c)
+            ci = c
+        else:
+            cc = c
+            ci = ord(c)
         if self.c_state == self.IDLE:
-            if c == '$':
+            if cc == '$':
                 self.c_state = self.HEADER_START
             else:
                 self.c_state = self.IDLE
         elif self.c_state == self.HEADER_START:
-            if c == 'M':
+            if cc == 'M':
                 self.c_state = self.HEADER_M
             else:
                 self.c_state = self.IDLE
         elif self.c_state == self.HEADER_M:
-            if c == '>':
+            if cc == '>':
                 self.c_state = self.HEADER_ARROW
-            elif c == '!':
+            elif cc == '!':
                 self.c_state = self.HEADER_ERR
             else:
                 self.c_state = self.IDLE
@@ -432,34 +422,33 @@ class PyMSP:
         elif self.c_state == self.HEADER_ARROW or self.c_state == self.HEADER_ERR:
             self.err_rcvd = (self.c_state == self.HEADER_ERR)
             #print (struct.unpack('<B',c)[0])
-            self.dataSize = ((struct.unpack('<B',c)[0])&0xFF)
+            self.dataSize = ci
             # reset index variables
             self.p = 0
             self.offset = 0
             self.checksum = 0
-            self.checksum ^= ((struct.unpack('<B',c)[0])&0xFF)
+            self.checksum ^= ci
             # the command is to follow
             self.c_state = self.HEADER_SIZE
         elif self.c_state == self.HEADER_SIZE:
             #print (struct.unpack('<B',c)[0])
-            self.cmd = ((struct.unpack('<B',c)[0])&0xFF)
-            self.checksum ^= ((struct.unpack('<B',c)[0])&0xFF)
+            self.cmd = ci
+            self.checksum ^= ci
             self.c_state = self.HEADER_CMD
         elif self.c_state == self.HEADER_CMD and self.offset < self.dataSize:
             #print (struct.unpack('<B',c)[0])
-            self.checksum ^= ((struct.unpack('<B',c)[0])&0xFF)
-            self.inBuf[self.offset] = c
+            self.checksum ^= ci
+            self.inBuf[self.offset] = ci
             self.offset += 1
         elif self.c_state == self.HEADER_CMD and self.offset >= self.dataSize:
             # compare calculated and transferred checksum
-            #print "Final step..."
-            if ((self.checksum&0xFF) == ((struct.unpack('<B',c)[0])&0xFF)):
+            if ((self.checksum&0xFF) == ci):
                 if self.err_rcvd:
-                    print "Copter didn't understand the request type"
+                    print("Vehicle didn't understand the request type")
                 else:
                     self.evaluateCommand(self.cmd, self.dataSize)
             else:
-                print '"invalid checksum for command "+((int)(cmd&0xFF))+": "+(checksum&0xFF)+" expected, got "+(int)(c&0xFF))'
+                print('"invalid checksum for command "+((int)(cmd&0xFF))+": "+(checksum&0xFF)+" expected, got "+(int)(c&0xFF))')
 
             self.c_state = self.IDLE
 
@@ -490,8 +479,6 @@ class PyMSP:
             payload.append(self.byteP[i])
             payload.append(self.byteI[i])
             payload.append(self.byteD[i])
-        print "Payload:..."
-        print payload
         self.sendRequestMSP(self.requestMSP(self.MSP_SET_PID, payload, True), True)
 
 
@@ -534,7 +521,7 @@ class PyMSP:
                 self.msp_raw_imu['gyry'] -= 65536
             if self.msp_raw_imu['gyrz'] > 32768:
                 self.msp_raw_imu['gyrz'] -= 65536
-            print "size: %d, accx: %f, accy: %f, accz: %f, gyrx: %f, gyry: %f, gyrz: %f  " %(self.msp_raw_imu['size'], self.msp_raw_imu['accx'], self.msp_raw_imu['accy'], self.msp_raw_imu['accz'], self.msp_raw_imu['gyrx'], self.msp_raw_imu['gyry'], self.msp_raw_imu['gyrz'])
+            print("size: %d, accx: %f, accy: %f, accz: %f, gyrx: %f, gyry: %f, gyrz: %f  " %(self.msp_raw_imu['size'], self.msp_raw_imu['accx'], self.msp_raw_imu['accy'], self.msp_raw_imu['accz'], self.msp_raw_imu['gyrx'], self.msp_raw_imu['gyry'], self.msp_raw_imu['gyrz']))
             time.sleep(0.04)
             timer = timer + (time.time() - start)
             start = time.time()
