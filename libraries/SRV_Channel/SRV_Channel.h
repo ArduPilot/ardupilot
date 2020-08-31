@@ -322,9 +322,6 @@ public:
     // set output value for a function channel as a pwm value
     static void set_output_pwm(SRV_Channel::Aux_servo_function_t function, uint16_t value);
 
-    // set output value for a function channel as a pwm value on the first matching channel
-    static void set_output_pwm_first(SRV_Channel::Aux_servo_function_t function, uint16_t value);
-
     // set output value for a specific function channel as a pwm value
     static void set_output_pwm_chan(uint8_t chan, uint16_t value);
 
