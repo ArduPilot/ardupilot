@@ -212,6 +212,8 @@ void AP_MSP_Telem_Backend::update_gps_state(gps_state_t &gps_state)
 
 void AP_MSP_Telem_Backend::update_battery_state(battery_state_t &battery_state)
 {
+    memset(&battery_state, 0, sizeof(battery_state));
+
     const AP_BattMonitor &_battery = AP::battery();
     if (!_battery.current_amps(battery_state.batt_current_a)) {
         battery_state.batt_current_a = 0;
