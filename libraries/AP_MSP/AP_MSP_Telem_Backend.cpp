@@ -489,11 +489,13 @@ void AP_MSP_Telem_Backend::msp_handle_opflow(const msp_opflow_sensor_t &pkt)
 
 void AP_MSP_Telem_Backend::msp_handle_rangefinder(const msp_rangefinder_sensor_t &pkt)
 {
+#if HAL_MSP_RANGEFINDER_ENABLED
     RangeFinder *rangefinder = AP::rangefinder();
     if (rangefinder == nullptr) {
         return;
     }
     rangefinder->handle_msp(pkt);
+#endif
 }
 
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_raw_gps(sbuf_t *dst)
