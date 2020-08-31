@@ -761,10 +761,10 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_analog(sbuf_t *dst)
     battery_state_t battery_state;
     update_battery_state(battery_state);
     sbuf_write_u8(dst,  (uint8_t)constrain_int16(battery_state.batt_voltage_v * 10, 0, 255));     // battery voltage V to dV
-    sbuf_write_u16(dst, constrain_int16(battery_state.batt_consumed_mah, 0, 0xFFFF));             // milliamp hours drawn from battery
+    sbuf_write_u16(dst, constrain_int32(battery_state.batt_consumed_mah, 0, 0xFFFF));             // milliamp hours drawn from battery
     sbuf_write_u16(dst, rssi->enabled() ? rssi->read_receiver_rssi() * 1023 : 0);                     // rssi 0-1 to 0-1023
-    sbuf_write_u16(dst, constrain_int16(battery_state.batt_current_a * 100, -0x8000, 0x7FFF));    // current A to cA (0.01 steps, range is -320A to 320A)
-    sbuf_write_u16(dst, constrain_int16(battery_state.batt_voltage_v * 100,0,0xFFFF));            // battery voltage in 0.01V steps
+    sbuf_write_u16(dst, constrain_int32(battery_state.batt_current_a * 100, -0x8000, 0x7FFF));    // current A to cA (0.01 steps, range is -320A to 320A)
+    sbuf_write_u16(dst, constrain_int32(battery_state.batt_voltage_v * 100,0,0xFFFF));            // battery voltage in 0.01V steps
 
     return MSP_RESULT_ACK;
 }
@@ -785,12 +785,12 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_battery_state(sbuf_t *dst
     // battery state
     sbuf_write_u8(dst,  (uint8_t)constrain_int16(battery_state.batt_voltage_v * 10, 0, 255));    // battery voltage V to dV
     sbuf_write_u16(dst, (uint16_t)MIN(battery_state.batt_consumed_mah, 0xFFFF));                 // milliamp hours drawn from battery
-    sbuf_write_u16(dst, constrain_int16(battery_state.batt_current_a * 100, -0x8000, 0x7FFF));   // current A to cA (0.01 steps, range is -320A to 320A)
+    sbuf_write_u16(dst, constrain_int32(battery_state.batt_current_a * 100, -0x8000, 0x7FFF));   // current A to cA (0.01 steps, range is -320A to 320A)
 
     // battery alerts
     sbuf_write_u8(dst, battery_state.batt_state);  // BATTERY: OK=0, CRITICAL=2
 
-    sbuf_write_u16(dst, constrain_int16(battery_state.batt_voltage_v * 100, 0, 0x7FFF));         // battery voltage in 0.01V steps
+    sbuf_write_u16(dst, constrain_int32(battery_state.batt_voltage_v * 100, 0, 0x7FFF));         // battery voltage in 0.01V steps
     return MSP_RESULT_ACK;
 }
 
