@@ -184,6 +184,7 @@ class Context(object):
         self.collections = {}
         self.heartbeat_interval_ms = 1000
         self.original_heartbeat_interval_ms = None
+        self.reboot_occured = False
 
 
 # https://stackoverflow.com/questions/616645/how-do-i-duplicate-sys-stdout-to-a-log-file-in-python
@@ -1615,12 +1616,14 @@ class AutoTest(ABC):
                                        0,
                                        0)
 
-    def reboot_sitl(self, required_bootcount=None):
+    def reboot_sitl(self, required_bootcount=None, add_to_context=True):
         """Reboot SITL instance and wait for it to reconnect."""
         self.progress("Rebooting SITL")
         self.reboot_sitl_mav(required_bootcount=required_bootcount)
         self.do_heartbeats(force=True)
         self.assert_simstate_location_is_at_startup_location()
+        if add_to_context:
+            self.context_get().reboot_occured = True
 
     def reboot_sitl_mavproxy(self, required_bootcount=None):
         """Reboot SITL instance using MAVProxy and wait for it to reconnect."""
@@ -4165,6 +4168,10 @@ class AutoTest(ABC):
         self.set_parameters(dead_parameters_dict, add_to_context=False)
         for hook in dead.message_hooks:
             self.remove_message_hook(hook)
+        if dead.sitl_commandline_customised:
+            self.reset_SITL_commandline()
+        elif dead.reboot_occured:
+            self.reboot_sitl(add_to_context=False)
 
     class Context(object):
         def __init__(self, testsuite):
@@ -5778,9 +5785,6 @@ Also, ignores heartbeats not from our target system'''
             if interact:
                 self.progress("Starting MAVProxy interaction as directed")
                 self.mavproxy.interact()
-
-        if reset_needed:
-            self.reset_SITL_commandline()
 
         if not self.is_tracker(): # FIXME - more to the point, fix Tracker's mission handling
             self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_ALL)
