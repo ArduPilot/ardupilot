@@ -65,6 +65,11 @@ public:
     // return all of the motor frequencies in Hz for dynamic filtering
     uint8_t get_motor_frequencies_hz(uint8_t nfreqs, float* freqs) const;
 
+    // return true if we have received any telemetry data
+    bool have_telem_data(void) const {
+        return received_telem_data;
+    }
+
     static AP_BLHeli *get_singleton(void) {
         return _singleton;
     }
@@ -228,6 +233,8 @@ private:
     uint8_t num_motors;
 
     struct telem_data last_telem[max_motors];
+    uint32_t received_telem_data;
+
     // last log output to avoid beat frequencies
     uint32_t last_log_ms[max_motors];
 
