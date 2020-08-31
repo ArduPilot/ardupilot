@@ -908,7 +908,9 @@ def write_SPI_table(f):
                mode, lowspeed, highspeed))
         devlist.append('HAL_SPI_DEVICE%u' % devidx)
     f.write('#define HAL_SPI_DEVICE_LIST %s\n\n' % ','.join(devlist))
-
+    for dev in spidev:
+        f.write("#define HAL_WITH_SPI_%s 1\n" % dev[0].upper().replace("-","_"))
+    f.write("\n")
 
 def write_SPI_config(f):
     '''write SPI config defines'''
