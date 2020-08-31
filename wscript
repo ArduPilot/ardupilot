@@ -191,6 +191,10 @@ configuration in order to save typing.
     g.add_option('--osd', action='store_true',
                  default=False,
                  help="Enable OSD support")
+
+    g.add_option('--osd-fonts', action='store_true',
+                 default=False,
+                 help="Enable OSD support with fonts")
     
     g.add_option('--sitl-osd', action='store_true',
                  default=False,
