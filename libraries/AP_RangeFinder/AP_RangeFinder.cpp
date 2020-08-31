@@ -542,13 +542,13 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         break;
 #endif
 
-#if HAL_MSP_ENABLED
+#if HAL_MSP_RANGEFINDER_ENABLED
     case Type::MSP:
         if (AP_RangeFinder_MSP::detect()) {
             drivers[instance] = new AP_RangeFinder_MSP(state[instance], params[instance]);
         }
         break;
-#endif //HAL_MSP_ENABLED
+#endif // HAL_MSP_RANGEFINDER_ENABLED
 
     default:
         break;
@@ -596,7 +596,7 @@ void RangeFinder::handle_msg(const mavlink_message_t &msg)
     }
 }
 
-#if HAL_MSP_ENABLED
+#if HAL_MSP_RANGEFINDER_ENABLED
 void RangeFinder::handle_msp(const MSP::msp_rangefinder_sensor_t &pkt)
 {
     uint8_t i;
@@ -606,7 +606,7 @@ void RangeFinder::handle_msp(const MSP::msp_rangefinder_sensor_t &pkt)
         }
     }
 }
-#endif //HAL_MSP_ENABLED
+#endif // HAL_MSP_RANGEFINDER_ENABLED
 
 // return true if we have a range finder with the specified orientation
 bool RangeFinder::has_orientation(enum Rotation orientation) const
