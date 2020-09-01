@@ -82,8 +82,8 @@ bool AP_MSP_Telem_Backend::init()
 bool AP_MSP_Telem_Backend::init_uart()
 {
     if (_msp_port.uart != nullptr)  {
-        _msp_port.uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-        _msp_port.uart->begin(AP_SERIALMANAGER_MSP_BAUD, AP_SERIALMANAGER_MSP_BUFSIZE_RX, AP_SERIALMANAGER_MSP_BUFSIZE_TX);
+        // re-init port here for use in this thread
+        _msp_port.uart->begin(0);
         return true;
     }
     return false;
@@ -821,7 +821,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_esc_sensor_data(sbuf_t *d
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rtc(sbuf_t *dst)
 {
     tm localtime_tm {}; // year is relative to 1900
-    uint64_t time_usec;
+    uint64_t time_usec = 0;
     if (AP::rtc().get_utc_usec(time_usec)) { // may fail, leaving time_unix at 0
         const time_t time_sec = time_usec / 1000000;
         localtime_tm = *gmtime(&time_sec);
