@@ -40,10 +40,10 @@ AP_RangeFinder_HC_SR04::AP_RangeFinder_HC_SR04(RangeFinder::RangeFinder_State &_
     set_status(RangeFinder::Status::NoData);
 }
 
-void AP_RangeFinder_HC_SR04::check_pins()
+bool AP_RangeFinder_HC_SR04::check_pins()
 {
-    check_echo_pin();
     check_trigger_pin();
+    return check_echo_pin() && trigger_pin > 0;
 }
 
 void AP_RangeFinder_HC_SR04::check_trigger_pin()
@@ -55,46 +55,9 @@ void AP_RangeFinder_HC_SR04::check_trigger_pin()
     trigger_pin = params.stop_pin;
 }
 
-void AP_RangeFinder_HC_SR04::check_echo_pin()
+bool AP_RangeFinder_HC_SR04::check_echo_pin()
 {
-    if (params.pin == echo_pin) {
-        // no change
-        return;
-    }
-
-    // detach last one
-    if (echo_pin) {
-        if (!hal.gpio->detach_interrupt(echo_pin)) {
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
-                          "HC_SR04: Failed to detach from pin %u",
-                          echo_pin);
-            // ignore this failure or the user may be stuck
-        }
-    }
-
-    echo_pin = params.pin;
-
-    if (!params.pin) {
-        // don't need to install handler
-        return;
-    }
-
-    // install interrupt handler on rising and falling edge
-    hal.gpio->pinMode(params.pin, HAL_GPIO_INPUT);
-    if (!hal.gpio->attach_interrupt(
-            params.pin,
-            FUNCTOR_BIND_MEMBER(&AP_RangeFinder_HC_SR04::irq_handler,
-                                void,
-                                uint8_t,
-                                bool,
-                                uint32_t),
-            AP_HAL::GPIO::INTERRUPT_BOTH)) {
-        // failed to attach interrupt
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
-                      "HC_SR04: Failed to attach to pin %u",
-                      (unsigned int)params.pin);
-        return;
-    }
+    return pwm_source.set_pin(params.pin, "HC_SR04");
 }
 
 
@@ -116,35 +79,19 @@ bool AP_RangeFinder_HC_SR04::detect(AP_RangeFinder_Params &_params)
 }
 
 
-// interrupt handler for reading distance-proportional time interval
-void AP_RangeFinder_HC_SR04::irq_handler(uint8_t pin, bool pin_high, uint32_t timestamp_us)
-{
-    if (pin_high) {
-        pulse_start_us = timestamp_us;
-    } else {
-        irq_value_us = timestamp_us - pulse_start_us;
-    }
-}
-
 /*
   update distance_cm
  */
 void AP_RangeFinder_HC_SR04::update(void)
 {
     // check if pin has changed and configure interrupt handlers if required:
-    check_pins();
-
-    if (!echo_pin || ! trigger_pin || echo_pin == -1 || trigger_pin == -1) {
+    if (!check_pins()) {
         // disabled (either by configuration or failure to attach interrupt)
         state.distance_cm = 0.0f;
         return;
     }
 
-    // disable interrupts and grab state
-    void *irqstate = hal.scheduler->disable_interrupts_save();
-    const uint32_t value_us = irq_value_us;
-    irq_value_us = 0;
-    hal.scheduler->restore_interrupts(irqstate);
+    const uint32_t value_us = pwm_source.get_pwm_us();
 
     const uint32_t now = AP_HAL::millis();
     if (value_us == 0) {
