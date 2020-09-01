@@ -4185,7 +4185,7 @@ class AutoTest(ABC):
         self.wait_and_maintain(value_name="Distance", target=distance_min, current_value_getter=lambda: get_distance(), validator=lambda value2, target2: validator(value2, target2), accuracy=(distance_max - distance_min), timeout=timeout, **kwargs)
 
     def wait_distance_to_home(self, distance_min, distance_max, timeout=10, use_cached_home=True, **kwargs):
-        """Wait for flight of home."""
+        """Wait for distance to home to be within specified bounds."""
         assert distance_min <= distance_max, "Distance min should be less than distance max."
 
         def get_distance():
