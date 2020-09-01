@@ -11,11 +11,19 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_fence_enable(const mavlink_command_lon
     }
 
     switch ((uint16_t)packet.param1) {
-    case 0:
+    case 0: // disable fence
         fence->enable(false);
         return MAV_RESULT_ACCEPTED;
-    case 1:
+    case 1: // enable fence
+        if (!fence->present())
+        {
+            return MAV_RESULT_FAILED;
+        }
+    
         fence->enable(true);
+        return MAV_RESULT_ACCEPTED;
+    case 2: // disable fence floor only
+        fence->disable_floor();
         return MAV_RESULT_ACCEPTED;
     default:
         return MAV_RESULT_FAILED;
@@ -56,6 +64,9 @@ void GCS_MAVLINK::send_fence_status() const
     // traslate fence library breach types to mavlink breach types
     uint8_t mavlink_breach_type = FENCE_BREACH_NONE;
     const uint8_t breaches = fence->get_breaches();
+    if ((breaches & AC_FENCE_TYPE_ALT_MIN) != 0) {
+        mavlink_breach_type = FENCE_BREACH_MINALT;
+    }
     if ((breaches & AC_FENCE_TYPE_ALT_MAX) != 0) {
         mavlink_breach_type = FENCE_BREACH_MAXALT;
     }
