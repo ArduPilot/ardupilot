@@ -52,7 +52,7 @@ public:
     AC_PID& get_rate_yaw_pid() override { return _pid_rate_yaw; }
 
     // Update Alt_Hold angle maximum
-    void update_althold_lean_angle_max(float throttle_in) override;
+    void update_althold_lean_angle_max(float hover_throttle) override;
 
     // Set output throttle
     void set_throttle_out(float throttle_in, bool apply_angle_boost, float filt_cutoff) override;

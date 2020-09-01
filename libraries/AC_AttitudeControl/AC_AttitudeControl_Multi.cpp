@@ -225,7 +225,7 @@ AC_AttitudeControl_Multi::AC_AttitudeControl_Multi(AP_AHRS_View &ahrs, const AP_
 }
 
 // Update Alt_Hold angle maximum
-void AC_AttitudeControl_Multi::update_althold_lean_angle_max(float throttle_in)
+void AC_AttitudeControl_Multi::update_althold_lean_angle_max(float hover_throttle)
 {
     // calc maximum tilt angle based on throttle
     float thr_max = _motors_multi.get_throttle_thrust_max();
@@ -236,14 +236,14 @@ void AC_AttitudeControl_Multi::update_althold_lean_angle_max(float throttle_in)
         return;
     }
 
-    float althold_lean_angle_max = acosf(constrain_float(throttle_in / (AC_ATTITUDE_CONTROL_ANGLE_LIMIT_THROTTLE_MAX * thr_max), 0.0f, 1.0f));
+    float althold_lean_angle_max = acosf(constrain_float(hover_throttle / (AC_ATTITUDE_CONTROL_ANGLE_LIMIT_THROTTLE_MAX * thr_max), 0.0f, 1.0f));
     _althold_lean_angle_max = _althold_lean_angle_max + (_dt / (_dt + _angle_limit_tc)) * (althold_lean_angle_max - _althold_lean_angle_max);
 }
 
 void AC_AttitudeControl_Multi::set_throttle_out(float throttle_in, bool apply_angle_boost, float filter_cutoff)
 {
     _throttle_in = throttle_in;
-    update_althold_lean_angle_max(throttle_in);
+    update_althold_lean_angle_max(_motors_multi.get_throttle_hover());
     _motors.set_throttle_filter_cutoff(filter_cutoff);
     if (apply_angle_boost) {
         // Apply angle boost
