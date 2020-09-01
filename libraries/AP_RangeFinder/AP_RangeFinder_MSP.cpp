@@ -16,7 +16,7 @@
 #include "AP_RangeFinder_MSP.h"
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_MSP_ENABLED
+#if HAL_MSP_RANGEFINDER_ENABLED
 
 extern const AP_HAL::HAL& hal;
 
@@ -68,4 +68,5 @@ void AP_RangeFinder_MSP::update(void)
     }
 }
 
-#endif //HAL_MSP_ENABLED
+#endif //HAL_MSP_RANGEFINDER_ENABLED
+
