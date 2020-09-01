@@ -247,7 +247,6 @@ def ap_program(bld,
     if use_legacy_defines:
         kw['defines'].extend(get_legacy_defines(bld.path.name))
 
-    kw['cxxflags'] = kw.get('cxxflags', []) + ['-include', 'ap_config.h']
     kw['features'] = kw.get('features', []) + bld.env.AP_PROGRAM_FEATURES
 
     program_groups = Utils.to_list(program_groups)
