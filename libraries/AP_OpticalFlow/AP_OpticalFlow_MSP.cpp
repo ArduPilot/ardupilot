@@ -17,11 +17,13 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include "AP_OpticalFlow_MSP.h"
 
-#if HAL_MSP_ENABLED
+#if HAL_MSP_OPTICALFLOW_ENABLED
 
 #define OPTFLOW_MSP_TIMEOUT_SEC 0.5f // 2Hz
 
 extern const AP_HAL::HAL& hal;
+
+using namespace MSP;
 
 // detect the device
 AP_OpticalFlow_MSP *AP_OpticalFlow_MSP::detect(OpticalFlow &_frontend)
@@ -89,7 +91,7 @@ void AP_OpticalFlow_MSP::update(void)
 }
 
 // handle OPTICAL_FLOW msp messages
-void AP_OpticalFlow_MSP::handle_msp(const msp_opflow_sensor_t &pkt)
+void AP_OpticalFlow_MSP::handle_msp(const MSP::msp_opflow_sensor_t &pkt)
 {
     // record time message was received
     // ToDo: add jitter correction
@@ -102,4 +104,5 @@ void AP_OpticalFlow_MSP::handle_msp(const msp_opflow_sensor_t &pkt)
     count++;
 }
 
-#endif //HAL_MSP_ENABLED
+#endif // HAL_MSP_OPTICALFLOW_ENABLED
+
