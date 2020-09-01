@@ -38,6 +38,8 @@
 extern const AP_HAL::HAL& hal;
 constexpr uint8_t AP_MSP_Telem_Backend::arrows[8];
 
+using namespace MSP;
+
 AP_MSP_Telem_Backend::AP_MSP_Telem_Backend(AP_HAL::UARTDriver *uart) : AP_RCTelemetry(MSP_TIME_SLOT_MAX)
 {
     _msp_port.uart = uart;
@@ -464,12 +466,12 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_sensor_command(uint16_t cmd_m
 
     switch (cmd_msp) {
         case MSP2_SENSOR_RANGEFINDER: {
-            const msp_rangefinder_sensor_t pkt = *(const msp_rangefinder_sensor_t *)src->ptr;
+            const MSP::msp_rangefinder_sensor_t pkt = *(const MSP::msp_rangefinder_sensor_t *)src->ptr;
             msp_handle_rangefinder(pkt);
         }
         break;
         case MSP2_SENSOR_OPTIC_FLOW: {
-            const msp_opflow_sensor_t pkt = *(const msp_opflow_sensor_t *)src->ptr;
+            const MSP::msp_opflow_sensor_t pkt = *(const MSP::msp_opflow_sensor_t *)src->ptr;
             msp_handle_opflow(pkt);
         }
         break;
@@ -478,7 +480,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_sensor_command(uint16_t cmd_m
     return MSP_RESULT_NO_REPLY;
 }
 
-void AP_MSP_Telem_Backend::msp_handle_opflow(const msp_opflow_sensor_t &pkt)
+void AP_MSP_Telem_Backend::msp_handle_opflow(const MSP::msp_opflow_sensor_t &pkt)
 {
     OpticalFlow *optflow = AP::opticalflow();
     if (optflow == nullptr) {
@@ -487,7 +489,7 @@ void AP_MSP_Telem_Backend::msp_handle_opflow(const msp_opflow_sensor_t &pkt)
     optflow->handle_msp(pkt);
 }
 
-void AP_MSP_Telem_Backend::msp_handle_rangefinder(const msp_rangefinder_sensor_t &pkt)
+void AP_MSP_Telem_Backend::msp_handle_rangefinder(const MSP::msp_rangefinder_sensor_t &pkt)
 {
 #if HAL_MSP_RANGEFINDER_ENABLED
     RangeFinder *rangefinder = AP::rangefinder();

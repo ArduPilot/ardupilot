@@ -29,8 +29,6 @@
 #define MSP_TXT_BUFFER_SIZE     15U // 11 + 3 utf8 chars + terminator
 #define MSP_TXT_VISIBLE_CHARS   11U
 
-using namespace MSP;
-
 class AP_MSP;
 
 class AP_MSP_Telem_Backend : AP_RCTelemetry
@@ -44,7 +42,7 @@ public:
         float batt_voltage_v;
         int32_t batt_capacity_mah;
         uint8_t batt_cellcount;
-        battery_state_e batt_state;
+        MSP::battery_state_e batt_state;
     } battery_state_t;
 
     typedef struct PACKED gps_state_s {
@@ -133,17 +131,17 @@ protected:
     uint64_t osd_hidden_items_bitmask;
 
     // MSP decoder status
-    msp_port_t _msp_port;
+    MSP::msp_port_t _msp_port;
 
     // passthrough WFQ scheduler
     bool is_packet_ready(uint8_t idx, bool queue_empty) override;
     void process_packet(uint8_t idx) override;
-    void adjust_packet_weight(bool queue_empty) override {};
+    void adjust_packet_weight(bool queue_empty) override {}
     void setup_wfq_scheduler(void) override;
     bool get_next_msg_chunk(void) override
     {
         return true;
-    };
+    }
 
     // telemetry helpers
     uint8_t calc_cell_count(float battery_voltage);
@@ -156,40 +154,42 @@ protected:
 
     // MSP parsing
     void msp_process_received_command();
-    MSPCommandResult msp_process_command(msp_packet_t *cmd, msp_packet_t *reply);
-    MSPCommandResult msp_process_sensor_command(uint16_t cmd_msp, sbuf_t *src);
-    MSPCommandResult msp_process_out_command(uint16_t cmd_msp, sbuf_t *dst);
+    MSP::MSPCommandResult msp_process_command(MSP::msp_packet_t *cmd, MSP::msp_packet_t *reply);
+    MSP::MSPCommandResult msp_process_sensor_command(uint16_t cmd_msp, MSP::sbuf_t *src);
+    MSP::MSPCommandResult msp_process_out_command(uint16_t cmd_msp, MSP::sbuf_t *dst);
 
     // MSP sensor command processing
-    void msp_handle_opflow(const msp_opflow_sensor_t &pkt);
-    void msp_handle_rangefinder(const msp_rangefinder_sensor_t &pkt);
+    void msp_handle_opflow(const MSP::msp_opflow_sensor_t &pkt);
+    void msp_handle_rangefinder(const MSP::msp_rangefinder_sensor_t &pkt);
 
     // implementation specific helpers
+    // custom masks are needed for vendor specific settings
     virtual uint32_t get_osd_flight_mode_bitmask(void)
     {
         return 0;
-    };    // custom masks are needed for vendor specific settings
+    }
+
     virtual bool is_scheduler_enabled() = 0;                            // only osd backends should allow a push type telemetry
 
     // implementation specific MSP out command processing
-    virtual MSPCommandResult msp_process_out_api_version(sbuf_t *dst) = 0;
-    virtual MSPCommandResult msp_process_out_fc_version(sbuf_t *dst) = 0;
-    virtual MSPCommandResult msp_process_out_fc_variant(sbuf_t *dst) = 0;
-    virtual MSPCommandResult msp_process_out_uid(sbuf_t *dst);
-    virtual MSPCommandResult msp_process_out_board_info(sbuf_t *dst);
-    virtual MSPCommandResult msp_process_out_build_info(sbuf_t *dst);
-    virtual MSPCommandResult msp_process_out_name(sbuf_t *dst);
-    virtual MSPCommandResult msp_process_out_status(sbuf_t *dst);
-    virtual MSPCommandResult msp_process_out_osd_config(sbuf_t *dst);
-    virtual MSPCommandResult msp_process_out_raw_gps(sbuf_t *dst);
-    virtual MSPCommandResult msp_process_out_comp_gps(sbuf_t *dst);
-    virtual MSPCommandResult msp_process_out_attitude(sbuf_t *dst);
-    virtual MSPCommandResult msp_process_out_altitude(sbuf_t *dst);
-    virtual MSPCommandResult msp_process_out_analog(sbuf_t *dst);
-    virtual MSPCommandResult msp_process_out_battery_state(sbuf_t *dst);
-    virtual MSPCommandResult msp_process_out_esc_sensor_data(sbuf_t *dst);
-    virtual MSPCommandResult msp_process_out_rtc(sbuf_t *dst);
-    virtual MSPCommandResult msp_process_out_rc(sbuf_t *dst);
+    virtual MSP::MSPCommandResult msp_process_out_api_version(MSP::sbuf_t *dst) = 0;
+    virtual MSP::MSPCommandResult msp_process_out_fc_version(MSP::sbuf_t *dst) = 0;
+    virtual MSP::MSPCommandResult msp_process_out_fc_variant(MSP::sbuf_t *dst) = 0;
+    virtual MSP::MSPCommandResult msp_process_out_uid(MSP::sbuf_t *dst);
+    virtual MSP::MSPCommandResult msp_process_out_board_info(MSP::sbuf_t *dst);
+    virtual MSP::MSPCommandResult msp_process_out_build_info(MSP::sbuf_t *dst);
+    virtual MSP::MSPCommandResult msp_process_out_name(MSP::sbuf_t *dst);
+    virtual MSP::MSPCommandResult msp_process_out_status(MSP::sbuf_t *dst);
+    virtual MSP::MSPCommandResult msp_process_out_osd_config(MSP::sbuf_t *dst);
+    virtual MSP::MSPCommandResult msp_process_out_raw_gps(MSP::sbuf_t *dst);
+    virtual MSP::MSPCommandResult msp_process_out_comp_gps(MSP::sbuf_t *dst);
+    virtual MSP::MSPCommandResult msp_process_out_attitude(MSP::sbuf_t *dst);
+    virtual MSP::MSPCommandResult msp_process_out_altitude(MSP::sbuf_t *dst);
+    virtual MSP::MSPCommandResult msp_process_out_analog(MSP::sbuf_t *dst);
+    virtual MSP::MSPCommandResult msp_process_out_battery_state(MSP::sbuf_t *dst);
+    virtual MSP::MSPCommandResult msp_process_out_esc_sensor_data(MSP::sbuf_t *dst);
+    virtual MSP::MSPCommandResult msp_process_out_rtc(MSP::sbuf_t *dst);
+    virtual MSP::MSPCommandResult msp_process_out_rc(MSP::sbuf_t *dst);
 };
 
 #endif  //HAL_MSP_ENABLED
