@@ -3,7 +3,7 @@
 #include "OpticalFlow.h"
 #include <AP_HAL/utility/OwnPtr.h>
 
-#if HAL_MSP_ENABLED
+#if HAL_MSP_OPTICALFLOW_ENABLED
 
 class AP_OpticalFlow_MSP : public OpticalFlow_backend
 {
@@ -18,7 +18,7 @@ public:
     void update(void) override;
 
     // get update from msp
-    void handle_msp(const msp_opflow_sensor_t &pkt) override;
+    void handle_msp(const MSP::msp_opflow_sensor_t &pkt) override;
 
     // detect if the sensor is available
     static AP_OpticalFlow_MSP *detect(OpticalFlow &_frontend);
@@ -34,4 +34,4 @@ private:
     uint16_t gyro_sum_count;            // number of gyro sensor values in sum
 };
 
-#endif //HAL_MSP_ENABLED
+#endif // HAL_MSP_OPTICALFLOW_ENABLED
