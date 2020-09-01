@@ -57,7 +57,7 @@ public:
 
 private:
 
-    enum msp_option_e : uint8_t{
+    enum msp_option_e : uint8_t {
         OPTION_TELEMETRY_MODE = 1U<<0,
     };
 
