@@ -488,8 +488,12 @@ void AP_SerialManager::init()
 #if HAL_MSP_ENABLED                    
                 case SerialProtocol_MSP:
                 case SerialProtocol_DJI_FPV:
-                    // Note baudrate is hardcoded to 115200
-                    state[i].baud = AP_SERIALMANAGER_MSP_BAUD/1000; // update baud param in case user looks at it
+                    // baudrate defaults to 115200
+                    state[i].baud.set_default(AP_SERIALMANAGER_MSP_BAUD/1000);
+                    state[i].uart->begin(map_baudrate(state[i].baud),
+                                         AP_SERIALMANAGER_MSP_BUFSIZE_RX,
+                                         AP_SERIALMANAGER_MSP_BUFSIZE_TX);
+                    state[i].uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
                     // Note init is handled by AP_MSP
                     break;
 #endif
