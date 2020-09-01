@@ -1135,7 +1135,8 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  osd_checks(report)
         &  visodom_checks(report)
         &  aux_auth_checks(report)
-        &  disarm_switch_checks(report);
+        &  disarm_switch_checks(report)
+        &  fence_checks(report);
 }
 
 bool AP_Arming::arm_checks(AP_Arming::Method method)
@@ -1159,6 +1160,14 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
         (checks_to_perform & ARMING_CHECK_GPS_CONFIG)) {
         if (!AP::gps().prepare_for_arming()) {
             return false;
+        }
+    }
+
+    AC_Fence *fence = AP::fence();
+    if (fence != nullptr) {
+        // If a fence is set to auto-enable, turn on the fence
+        if(fence->auto_enabled() == AC_Fence::AutoEnable::ONLY_WHEN_ARMED) {
+            fence->enable(true);
         }
     }
     
@@ -1228,6 +1237,13 @@ bool AP_Arming::disarm(const AP_Arming::Method method)
         fft->save_params_on_disarm();
     }
 #endif
+
+    AC_Fence *fence = AP::fence();
+    if (fence != nullptr) {
+        if(fence->auto_enabled() == AC_Fence::AutoEnable::ONLY_WHEN_ARMED) {
+            fence->enable(false);
+        }
+    }
 
     return true;
 }
