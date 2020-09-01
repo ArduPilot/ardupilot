@@ -22,6 +22,8 @@
 #if HAL_MSP_ENABLED
 extern const AP_HAL::HAL& hal;
 
+using namespace MSP;
+
 bool AP_MSP_Telem_DJI::init_uart()
 {
     if (_msp_port.uart != nullptr)  {

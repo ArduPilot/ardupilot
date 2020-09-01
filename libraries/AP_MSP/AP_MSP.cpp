@@ -28,6 +28,8 @@
 const uint16_t  OSD_FLIGHT_MODE_FOCUS_TIME = 2000;
 extern const AP_HAL::HAL& hal;
 
+using namespace MSP;
+
 const AP_Param::GroupInfo AP_MSP::var_info[] = {
 
     // @Param: _OSD_NCELLS
