@@ -160,7 +160,7 @@ void AP_SmartAudio::send_request(smartaudioFrame_t requestFrame,uint8_t size)
     for (int i = 0; i < size; ++i) {
         _port->write(request[i]);
     }
-    print_bytes_to_hex_string(request,size);
+    printf("-------------->");print_bytes_to_hex_string(request,size);
 }
 
 /**
@@ -223,33 +223,90 @@ void AP_SmartAudio::read_response(uint8_t *response_buffer,uint8_t inline_buffer
 
 /**
  * This method parse the frame response and match the current device configuration  *
+ *
+ * This method only changes the internal state vtx buffer. Using response parser and then updating the internal buffer.
  * */
 bool AP_SmartAudio::parse_frame_response(const uint8_t *buffer)
 {
     if (buffer!=nullptr) {
+
         smartaudioSettings_t _vtx_settings;
+        // process response buffer
         if(!smartaudioParseResponseBuffer(&_vtx_settings,buffer)){
             return false;
         }
 
+        // if partial updates because setters method to vtx.
+        if(_vtx_settings.update_flags!=0x0F){
+            smartaudioSettings_t _current_vtx_settings;
+
+            // take the current vtx info
+            vtx_states_queue.peek(&_current_vtx_settings,1);
+
+            // get update flags from the parsed response_buffer
+            _current_vtx_settings.update_flags=_vtx_settings.update_flags;
+
+
+            if( _vtx_settings.update_flags & (1 << 0)){ // freq has changed
+                _current_vtx_settings.frequency=_vtx_settings.frequency;
+                _current_vtx_settings.userFrequencyMode=_vtx_settings.userFrequencyMode;
+            }
+
+            if( _vtx_settings.update_flags & (1 << 1)){ // channel has changed
+                _current_vtx_settings.frequency=_vtx_settings.frequency;
+                _current_vtx_settings.userFrequencyMode=_vtx_settings.userFrequencyMode;
+            }
+
+
+            if( _vtx_settings.update_flags & (1 << 2)){ // power has changed
+                _current_vtx_settings.power=_vtx_settings.power;
+
+                if(_current_vtx_settings.version==SMARTAUDIO_SPEC_PROTOCOL_v21){
+                    _current_vtx_settings.power_in_dbm=_vtx_settings.power;
+                }
+
+            }
+
+
+            if( _vtx_settings.update_flags & (1 << 3)){ // mode has changed
+                _current_vtx_settings.pitmodeDisabled=_vtx_settings.pitmodeDisabled;
+                _current_vtx_settings.pitmodeInRangeActive=_vtx_settings.pitmodeInRangeActive;
+                _current_vtx_settings.pitmodeOutRangeActive=_vtx_settings.pitmodeOutRangeActive;
+                _current_vtx_settings.unlocked=_vtx_settings.unlocked;
+            }
+
+            _vtx_settings=_current_vtx_settings;
+
+        }
+
         // update bands and channels accordily when frequency changes
-        if(_vtx_settings.frequency_updated && _vtx_settings.userFrequencyMode){
+        if((_vtx_settings.update_flags & 1<<0) && _vtx_settings.userFrequencyMode){
+
             AP_VideoTX::VideoBand video_band;
+
             AP_VideoTX::get_band_and_channel(_vtx_settings.frequency,video_band,_vtx_settings.channel);
+
             _vtx_settings.band=(int)video_band;
-            // update channel index to start in 1 not at 0
-            _vtx_settings.channel++;
         }
         // update band and frecuency accorly when channel updates
-        if(_vtx_settings.channel_updated && !_vtx_settings.userFrequencyMode){
+        if( (_vtx_settings.update_flags & 1<<1) && !_vtx_settings.userFrequencyMode){
+
             _vtx_settings.frequency=AP_VideoTX::get_frequency_mhz(_vtx_settings.band,_vtx_settings.channel);
+
         }
 
 
+        // reset vtx_settings_change_control variables
+        _vtx_settings.update_flags=0x00;
+
         if(vtx_states_queue.is_empty()){
+
             vtx_states_queue.push_force(_vtx_settings);
+
         }else{
+
             vtx_states_queue.push_force(_vtx_settings);
+
             // advance to last element pushed
             vtx_states_queue.advance(1);
         }
@@ -264,7 +321,10 @@ bool AP_SmartAudio::parse_frame_response(const uint8_t *buffer)
     return false;
 }
 
-// Main query method in the frontend to get the readings from the vtx.
+/**
+ *  This method parses the internal vtx current state stored in internal buffer, transforming the state values into the AP_VideoTx passed as argument.
+ *   @DependsOn: AP_VideoTX, AP_VideoTX::VideoBand
+ * */
 bool AP_SmartAudio::get_readings(AP_VideoTX *vtx_dest)
 {
     // take the first register from the output buffer
@@ -275,48 +335,40 @@ bool AP_SmartAudio::get_readings(AP_VideoTX *vtx_dest)
 
    // setting frecuency
     vtx_dest->set_frequency_mhz(_current_state.frequency);
+
     // set channel
     vtx_dest->set_band((AP_VideoTX::VideoBand)((int)_current_state.band));
+
     // setting channel 0 -> 40
     vtx_dest->set_channel(_current_state.channel);
 
    // define vtx options TODO: Review this after define policies
+   // setup default value for options
+    vtx_dest->set_options(0);
 
-   //  pitmode disabled
+      // pitmode enabled
+   if(_current_state.pitmodeOutRangeActive ||  _current_state.pitmodeInRangeActive || !_current_state.pitmodeDisabled){
+       vtx_dest->set_options(1);
+   }
+    // pitmode disabled only by this option
    if(_current_state.pitmodeDisabled){
        vtx_dest->set_options(0);
    }
-   // pitmode types
-   if(_current_state.pitmodeInRangeActive){
-       vtx_dest->set_options(1);
-   }else{
-         if(_current_state.pitmodeOutRangeActive){
-             vtx_dest->set_options(2);
-         }
-   }
-   // pitmode is enabled after boot if using this way of disabling it
-   if(_current_state.pitmodeDisabled && (_current_state.pitmodeInRangeActive || _current_state.pitmodeOutRangeActive)){
-       vtx_dest->set_options(3);
-   }
 
    // locking status
-   vtx_dest->set_locking(!_current_state.unlocked);
-
-
-   // transform power levels in dbm
-   uint8_t _power_in_dbm=0;
+   vtx_dest->set_locking(_current_state.unlocked==0?1:0);
 
    // spec 2.1 power-levels in dbm
-   vtx_dest->set_power_dbm(_current_state.power);
+   vtx_dest->set_power_dbm(_current_state.power_in_dbm);
 
    // specs 1 and 2 power-levels need transformation to dbm power
    if(_current_state.version!=SMARTAUDIO_SPEC_PROTOCOL_v21){
        // search in power tables
-        if(_get_power_in_dbm_from_vtx_power_level(_current_state.power,_current_state.version,_power_in_dbm)){
-            vtx_dest->set_power_dbm(_power_in_dbm);
+        if(_get_power_in_dbm_from_vtx_power_level(_current_state.power,_current_state.version,_current_state.power_in_dbm)){
+            vtx_dest->set_power_dbm(_current_state.power_in_dbm);
         }else{
-            _get_power_in_dbm_from_vtx_power_level(POWER_LEVELS[_current_state.version][0],_current_state.version,_power_in_dbm);
-            vtx_dest->set_power_dbm(_power_in_dbm);
+            _get_power_in_dbm_from_vtx_power_level(POWER_LEVELS[_current_state.version][0],_current_state.version,_current_state.power_in_dbm);
+            vtx_dest->set_power_dbm(_current_state.power_in_dbm);
         }
    }
 
@@ -438,6 +490,32 @@ void AP_SmartAudio::set_operation_mode(OperationMode mode,bool locked)
     requests_queue.push_force(command);
 }
 
+void AP_SmartAudio::set_operation_mode(uint8_t mode){
+     // take the first register from the output buffer
+   smartaudioSettings_t _current_state;
+
+    // peek from buffer
+   vtx_states_queue.peek(&_current_state,1);
+
+    printf("\n%80s::set_operation_mode(%02X)\t",TAG,mode);
+    if (_current_state.version<2) {
+        debug("%s HW: %s",TAG,"Device can't change operation mode. Spec protocol not supported");
+    }
+    smartaudioSettings_t settings;
+    settings.pitmodeInRangeActive=mode & 1<<0;
+    settings.pitmodeOutRangeActive=mode & 1<<1;
+    settings.pitmodeDisabled=mode & 1<<2;
+    settings.unlocked=(mode & 1<<3)!=0?1:0;
+
+    smartaudioFrame_t request;
+    uint8_t frame_size=smartaudioFrameSetOperationMode(&request,&settings);
+    packet command;
+    command.frame=request;
+    command.frame_size=frame_size;
+    requests_queue.push_force(command);
+
+}
+
 
 /**
      * Sets the frecuency to transmit in the vtx.
@@ -455,11 +533,20 @@ void AP_SmartAudio::set_frequency(uint16_t frecuency,bool isPitModeFreq)
 }
 
 /**
-    * Set the power to the vtx device returning the dbm.
-    *
-    *
-    *
-    */
+ * Request pitMode Frequency setted into the vtx hardware
+ * */
+void AP_SmartAudio::get_pit_mode_frequency(){
+    printf("%80s::","get_pit_mode_frequency()\t");
+    smartaudioFrame_t request;
+    uint8_t frame_size=smartaudioFrameGetPitmodeFrequency(&request);
+    packet command;
+    command.frame=request;
+    command.frame_size=frame_size;
+    requests_queue.push_force(command);
+}
+
+
+// send vtx request to set power defined in dbm
 void AP_SmartAudio::set_power_dbm(uint8_t power)
 {
       // take the first register from the output buffer
@@ -470,14 +557,23 @@ void AP_SmartAudio::set_power_dbm(uint8_t power)
     smartaudioFrame_t request;
     uint8_t frame_size=0;
 
-    printf("%80s::set_power_dbm(%d)\t",TAG,power);
+    printf("\n%80s::set_power_dbm(%d)\t",TAG,power);
+    frame_size=smartaudioFrameSetPower(&request,_get_power_level_from_dbm(_current_state.version,power));
+     packet command;
+     command.frame=request;
+     command.frame_size=frame_size;
+     requests_queue.push_force(command);
+}
+
+// returns the power_level applicable when request set power, version 2.1 return the MSB power bit masked at 1
+uint8_t AP_SmartAudio::_get_power_level_from_dbm(uint8_t sma_version,uint8_t power){
     uint16_t powerLevel=0x00;
-    if (_current_state.version!=SMARTAUDIO_SPEC_PROTOCOL_v1 && _current_state.version!=SMARTAUDIO_SPEC_PROTOCOL_v2 && _current_state.version!=SMARTAUDIO_SPEC_PROTOCOL_v21) {
-        return;
+    if (sma_version!=SMARTAUDIO_SPEC_PROTOCOL_v1 && sma_version!=SMARTAUDIO_SPEC_PROTOCOL_v2 && sma_version!=SMARTAUDIO_SPEC_PROTOCOL_v21) {
+        return 0;
     }
 
     // version 1
-    if (_current_state.version==SMARTAUDIO_SPEC_PROTOCOL_v1) {
+    if (sma_version==SMARTAUDIO_SPEC_PROTOCOL_v1) {
         if (power==14) {
             powerLevel=7;
         }
@@ -490,10 +586,10 @@ void AP_SmartAudio::set_power_dbm(uint8_t power)
         if (power==29) {
             powerLevel=40;
         }
-        frame_size=smartaudioFrameSetPower(&request,powerLevel);
+       return powerLevel;
     }
     // hardcoded protocol version 2
-    if (_current_state.version==SMARTAUDIO_SPEC_PROTOCOL_v2) {
+    if (sma_version==SMARTAUDIO_SPEC_PROTOCOL_v2) {
         if (power==14) {
             powerLevel=0;
         }
@@ -506,10 +602,10 @@ void AP_SmartAudio::set_power_dbm(uint8_t power)
         if (power==29) {
             powerLevel=3;
         }
-        frame_size=smartaudioFrameSetPower(&request,powerLevel);
+       return powerLevel;
     }
     // hardcoded protocol version 2.1
-    if (_current_state.version==SMARTAUDIO_SPEC_PROTOCOL_v21) {
+    if (sma_version==SMARTAUDIO_SPEC_PROTOCOL_v21) {
         if (power==14) {
             powerLevel=14;
         }
@@ -522,13 +618,9 @@ void AP_SmartAudio::set_power_dbm(uint8_t power)
         if (power==29) {
             powerLevel=29;
         }
-        frame_size=smartaudioFrameSetPower(&request,powerLevel|=128);
+        return powerLevel|=128;
     }
-
-   packet command;
-   command.frame=request;
-   command.frame_size=frame_size;
-   requests_queue.push_force(command);
+     return 0;
 
 }
 

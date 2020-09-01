@@ -70,12 +70,16 @@ const uint16_t POWER_LEVELS[3][4] =
 };
 
 typedef struct smartaudioSettings_s {
-    uint8_t version=0;
-    uint8_t unlocked=0;
-    uint8_t channel=0;
-    uint8_t power=0;
+    uint8_t  version=0;
+    uint8_t  unlocked=0;
+    uint8_t  channel=0;
+    uint8_t  power=0;
     uint16_t frequency=0;
-    uint8_t band=0;
+    uint8_t  band=0;
+
+    uint8_t* power_levels=nullptr;
+    uint8_t  power_in_dbm=0;
+
 
     uint16_t pitmodeFrequency=0;
     bool userFrequencyMode=false;     // user is setting freq
@@ -83,12 +87,20 @@ typedef struct smartaudioSettings_s {
     bool pitmodeInRangeActive=false;
     bool pitmodeOutRangeActive=false;
 
-    bool frequency_updated=false;
-    bool channel_updated=false;
+
+    //  |0 0 0 0 1 1 1 1|    // overall updated
+    //  |0 0 0 0 0 0 0 1|    // freq updated    1 << 0
+    //  |0 0 0 0 0 0 1 0|    // channel updated 1 << 1
+    //  |0 0 0 0 0 1 0 0|    // power updated 1 << 2
+    //  |0 0 0 0 1 0 0 0|    // mode updated 1 << 3
+
+    uint8_t update_flags=0X00;
+
+
     // true when settings are from parsing response.
     void overall_updated(bool value){
         if(value){
-            frequency_updated=true;
+            update_flags=0x0F;
             }
     }
 
@@ -141,6 +153,18 @@ typedef struct smartaudioSettingsResponseFrame_s {
     uint16_t frequency;
     uint8_t crc;
 } __attribute__((packed)) smartaudioSettingsResponseFrame_t;
+
+typedef struct smartaudioSettingsExtendedResponseFrame_s{
+    smartaudioFrameHeader_t header;
+    uint8_t channel;
+    uint8_t power;
+    uint8_t operationMode;
+    uint16_t frequency;
+    uint8_t power_dbm;
+    uint8_t power_levels_len;
+    uint8_t* power_dbm_levels;
+    uint8_t crc;
+} __attribute__((packed)) smartaudioSettingsExtendedResponseFrame_t;
 
 // v 2.1 additions to response frame
 //0x0E (current power in dBm) 0x03 (amount of power levels) 0x00(dBm level 1) 0x0E (dBm level 2) 0x14 (dBm level 3) 0x1A (dBm level 4) 0x01(CRC8)
