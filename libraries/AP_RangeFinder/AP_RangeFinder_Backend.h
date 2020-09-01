@@ -32,7 +32,7 @@ public:
     virtual void update() = 0;
 
     virtual void handle_msg(const mavlink_message_t &msg) { return; }
-#if HAL_MSP_ENABLED
+#if HAL_MSP_RANGEFINDER_ENABLED
     virtual void handle_msp(const MSP::msp_rangefinder_sensor_t &pkt) { return; }
 #endif
 

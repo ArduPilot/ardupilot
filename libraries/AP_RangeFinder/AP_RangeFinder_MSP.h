@@ -3,7 +3,7 @@
 #include "AP_RangeFinder.h"
 #include "AP_RangeFinder_Backend.h"
 
-#if HAL_MSP_ENABLED
+#if HAL_MSP_RANGEFINDER_ENABLED
 
 // Data timeout
 #define AP_RANGEFINDER_MSP_TIMEOUT_MS 500
@@ -38,4 +38,5 @@ private:
     static bool get_reading(uint16_t &reading_cm);
 };
 
-#endif  //HAL_MSP_ENABLED
+#endif  //HAL_MSP_RANGEFINDER_ENABLED
+
