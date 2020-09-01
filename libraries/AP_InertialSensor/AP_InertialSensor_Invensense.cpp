@@ -22,6 +22,7 @@
 #include <stdio.h>
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 #include "AP_InertialSensor_Invensense.h"
 
@@ -147,8 +148,21 @@ bool AP_InertialSensor_Invensense::_init()
     return success;
 }
 
-void AP_InertialSensor_Invensense::_fifo_reset()
+void AP_InertialSensor_Invensense::_fifo_reset(bool log_error)
 {
+    uint32_t now = AP_HAL::millis();
+    if (log_error &&
+        !hal.scheduler->in_expected_delay() &&
+        now - last_reset_ms < 10000) {
+        reset_count++;
+        if (reset_count == 10) {
+            // 10 resets, each happening within 10s, triggers an internal error
+            INTERNAL_ERROR(AP_InternalError::error_t::imu_reset);
+            reset_count = 0;
+        }
+    }
+    last_reset_ms = now;
+
     uint8_t user_ctrl = _last_stat_user_ctrl;
     user_ctrl &= ~(BIT_USER_CTRL_FIFO_RESET | BIT_USER_CTRL_FIFO_EN);
 
@@ -184,7 +198,7 @@ void AP_InertialSensor_Invensense::start()
     hal.scheduler->delay(1);
 
     // always use FIFO
-    _fifo_reset();
+    _fifo_reset(false);
 
     // grab the used instances
     enum DevTypes gdev, adev;
@@ -433,7 +447,7 @@ bool AP_InertialSensor_Invensense::_accumulate(uint8_t *samples, uint8_t n_sampl
             if (!hal.scheduler->in_expected_delay()) {
                 debug("temp reset IMU[%u] %d %d", _accel_instance, _raw_temp, t2);
             }
-            _fifo_reset();
+            _fifo_reset(true);
             return false;
         }
         float temp = t2 * temp_sensitivity + temp_zero;
@@ -478,7 +492,7 @@ bool AP_InertialSensor_Invensense::_accumulate_sensor_rate_sampling(uint8_t *sam
             if (!hal.scheduler->in_expected_delay()) {
                 debug("temp reset IMU[%u] %d %d", _accel_instance, _raw_temp, t2);
             }
-            _fifo_reset();
+            _fifo_reset(true);
             ret = false;
             break;
         }
@@ -625,7 +639,7 @@ void AP_InertialSensor_Invensense::_read_fifo()
 
     if (need_reset) {
         //debug("fifo reset n_samples %u", bytes_read/MPU_SAMPLE_SIZE);
-        _fifo_reset();
+        _fifo_reset(false);
     }
     
 check_registers:
