@@ -364,6 +364,9 @@ def configure(cfg):
 
     cfg.write_config_header(os.path.join(cfg.variant, 'ap_config.h'))
 
+    # add in generated flags
+    cfg.env.CXXFLAGS += ['-include', 'ap_config.h']
+
     _collect_autoconfig_files(cfg)
 
 def collect_dirs_to_recurse(bld, globs, **kw):
