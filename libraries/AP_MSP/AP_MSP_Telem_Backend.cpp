@@ -879,9 +879,10 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_build_info(sbuf_t *dst)
 
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_uid(sbuf_t *dst)
 {
-    sbuf_write_u32(dst, 0xAABBCCDD);
-    sbuf_write_u32(dst, 0xAABBCCDD);
-    sbuf_write_u32(dst, 0xAABBCCDD);
+    uint8_t id[12] {};
+    uint8_t len = sizeof(id);
+    hal.util->get_system_id_unformatted(id, len);
+    sbuf_write_data(dst, id, sizeof(id));
     return MSP_RESULT_ACK;
 }
 
