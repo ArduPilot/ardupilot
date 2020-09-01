@@ -39,79 +39,24 @@ bool AP_RangeFinder_PWM::detect()
     return true;
 }
 
-// interrupt handler for reading pwm value
-void AP_RangeFinder_PWM::irq_handler(uint8_t pin, bool pin_high, uint32_t timestamp_us)
-{
-    if (pin_high) {
-        irq_pulse_start_us = timestamp_us;
-    } else {
-        if (irq_pulse_start_us != 0) {
-            irq_value_us += timestamp_us - irq_pulse_start_us;
-            irq_pulse_start_us = 0;
-            irq_sample_count++;
-        }
-    }
-}
-
 // read - return last value measured by sensor
 bool AP_RangeFinder_PWM::get_reading(uint16_t &reading_cm)
 {
-    // disable interrupts and grab state
-    void *irqstate = hal.scheduler->disable_interrupts_save();
-    const uint32_t value_us = irq_value_us;
-    const uint16_t sample_count = irq_sample_count;
-    irq_value_us = 0;
-    irq_sample_count = 0;
-    hal.scheduler->restore_interrupts(irqstate);
-
-    if (value_us == 0 || sample_count == 0) {
+    const uint32_t value_us = pwm_source.get_pwm_avg_us();
+    if (value_us == 0) {
         return false;
     }
-    reading_cm = value_us/(sample_count * 10); // correct for LidarLite.  Parameter needed?  Converts from decimetres -> cm here
+
+    reading_cm = value_us/10; // correct for LidarLite.  Parameter needed?  Converts from decimetres -> cm here
     return true;
 }
 
-void AP_RangeFinder_PWM::check_pin()
+bool AP_RangeFinder_PWM::check_pin()
 {
-    if (params.pin == last_pin) {
-        return;
+    if (!pwm_source.set_pin(params.pin, "RangeFinder_PWM")) {
+        return false;
     }
-
-    // detach last one
-    if (last_pin > 0) {
-        if (!hal.gpio->detach_interrupt(last_pin)) {
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
-                            "RangeFinder_PWM: Failed to detach from pin %u",
-                            last_pin);
-            // ignore this failure or the user may be stuck
-        }
-    }
-
-    // set last pin to params.pin so we don't continually try to attach
-    // to it if the attach is failing
-    last_pin = params.pin;
-
-    if (params.pin <= 0) {
-        // don't need to install handler
-        return;
-    }
-
-    // install interrupt handler on rising and falling edge
-    hal.gpio->pinMode(params.pin, HAL_GPIO_INPUT);
-    if (!hal.gpio->attach_interrupt(
-            params.pin,
-            FUNCTOR_BIND_MEMBER(&AP_RangeFinder_PWM::irq_handler,
-                                void,
-                                uint8_t,
-                                bool,
-                                uint32_t),
-            AP_HAL::GPIO::INTERRUPT_BOTH)) {
-        // failed to attach interrupt
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
-                        "RangeFinder_PWM: Failed to attach to pin %u",
-                        (unsigned int)params.pin);
-        return;
-    }
+    return true;
 }
 
 void AP_RangeFinder_PWM::check_stop_pin()
@@ -125,10 +70,10 @@ void AP_RangeFinder_PWM::check_stop_pin()
     last_stop_pin = params.stop_pin;
 }
 
-void AP_RangeFinder_PWM::check_pins()
+bool AP_RangeFinder_PWM::check_pins()
 {
-    check_pin();
     check_stop_pin();
+    return check_pin();
 }
 
 
@@ -138,10 +83,7 @@ void AP_RangeFinder_PWM::check_pins()
 void AP_RangeFinder_PWM::update(void)
 {
     // check if pin has changed and configure interrupt handlers if required:
-    check_pins();
-
-    if (last_pin <= 0) {
-        // disabled (by configuration)
+    if (!check_pins()) {
         return;
     }
 
