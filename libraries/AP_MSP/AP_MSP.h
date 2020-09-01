@@ -31,8 +31,6 @@
 #define MSP_OSD_STEP_Y 32
 #define MSP_OSD_POS(osd_setting) (MSP_OSD_START + osd_setting->xpos*MSP_OSD_STEP_X + osd_setting->ypos*MSP_OSD_STEP_Y)
 
-using namespace MSP;
-
 class AP_MSP
 {
     friend class AP_MSP_Telem_Generic;
@@ -71,8 +69,8 @@ private:
     AP_Int8 _cellcount;
 
     // these are the osd items we support for MSP OSD
-    AP_OSD_Setting* _osd_item_settings[OSD_ITEM_COUNT];
-    osd_config_t _osd_config;
+    AP_OSD_Setting* _osd_item_settings[MSP::OSD_ITEM_COUNT];
+    MSP::osd_config_t _osd_config;
 
     struct {
         bool flashing_on;                                       // OSD item flashing support

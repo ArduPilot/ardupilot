@@ -27,10 +27,10 @@ public:
     bool is_scheduler_enabled() override
     {
         return false;
-    };
-    MSPCommandResult msp_process_out_api_version(sbuf_t *dst) override;
-    MSPCommandResult msp_process_out_fc_version(sbuf_t *dst) override;
-    MSPCommandResult msp_process_out_fc_variant(sbuf_t *dst) override;
+    }
+    MSP::MSPCommandResult msp_process_out_api_version(MSP::sbuf_t *dst) override;
+    MSP::MSPCommandResult msp_process_out_fc_version(MSP::sbuf_t *dst) override;
+    MSP::MSPCommandResult msp_process_out_fc_variant(MSP::sbuf_t *dst) override;
 };
 
 #endif //HAL_MSP_ENABLED

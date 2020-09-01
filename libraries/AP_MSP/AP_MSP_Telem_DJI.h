@@ -54,9 +54,9 @@ public:
     bool is_scheduler_enabled() override;
     uint32_t get_osd_flight_mode_bitmask(void) override;
     void hide_osd_items(void) override;
-    MSPCommandResult msp_process_out_api_version(sbuf_t *dst) override;
-    MSPCommandResult msp_process_out_fc_version(sbuf_t *dst) override;
-    MSPCommandResult msp_process_out_fc_variant(sbuf_t *dst) override;
+    MSP::MSPCommandResult msp_process_out_api_version(MSP::sbuf_t *dst) override;
+    MSP::MSPCommandResult msp_process_out_fc_version(MSP::sbuf_t *dst) override;
+    MSP::MSPCommandResult msp_process_out_fc_variant(MSP::sbuf_t *dst) override;
 
     enum : uint8_t {
         DJI_FLAG_ARM = 0,

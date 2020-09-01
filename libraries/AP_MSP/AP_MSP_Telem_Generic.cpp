@@ -23,6 +23,8 @@
 
 extern const AP_HAL::HAL& hal;
 
+using namespace MSP;
+
 MSPCommandResult AP_MSP_Telem_Generic::msp_process_out_api_version(sbuf_t *dst)
 {
     sbuf_write_u8(dst, MSP_PROTOCOL_VERSION);
