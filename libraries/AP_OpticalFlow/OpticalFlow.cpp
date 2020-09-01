@@ -137,9 +137,9 @@ void OpticalFlow::init(uint32_t log_bit)
 #endif
         break;
     case OpticalFlowType::MSP:
-#if HAL_MSP_ENABLED
+#if HAL_MSP_OPTICALFLOW_ENABLED
         backend = AP_OpticalFlow_MSP::detect(*this);
-#endif //HAL_MSP_ENABLED
+#endif
         break;
     case OpticalFlowType::SITL:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -179,8 +179,8 @@ void OpticalFlow::handle_msg(const mavlink_message_t &msg)
     }
 }
 
-#if HAL_MSP_ENABLED
-void OpticalFlow::handle_msp(const msp_opflow_sensor_t &pkt)
+#if HAL_MSP_OPTICALFLOW_ENABLED
+void OpticalFlow::handle_msp(const MSP::msp_opflow_sensor_t &pkt)
 {
     // exit immediately if not enabled
     if (!enabled()) {
@@ -191,7 +191,7 @@ void OpticalFlow::handle_msp(const msp_opflow_sensor_t &pkt)
         backend->handle_msp(pkt);
     }
 }
-#endif //HAL_MSP_ENABLED
+#endif //HAL_MSP_OPTICALFLOW_ENABLED
 
 void OpticalFlow::update_state(const OpticalFlow_state &state)
 {
