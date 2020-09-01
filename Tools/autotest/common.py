@@ -4839,7 +4839,7 @@ Also, ignores heartbeats not from our target system'''
                         if new_pct < reached_pct[cid]:
                             raise NotAchievedException("Mag calibration restart when it shouldn't")
                         reached_pct[cid] = new_pct
-                        self.progress("Calibration progress compass ID %d: %s" % (cid, str(reached_pct[cid])))
+                        self.progress("Calibration progress compass ID %d: %s%%" % (cid, str(reached_pct[cid])))
                         if cid == 0 and 13 <= reached_pct[0] <= 15:
                             self.progress("Request again to start calibration, it shouldn't restart from 0")
                             self.run_cmd(mavutil.mavlink.MAV_CMD_DO_START_MAG_CAL,
@@ -4902,7 +4902,7 @@ Also, ignores heartbeats not from our target system'''
                     new_pct = int(m.completion_pct)
                     if new_pct != reached_pct[cid]:
                         reached_pct[cid] = new_pct
-                        self.progress("Calibration progress compass ID %d: %s" % (cid, str(reached_pct[cid])))
+                        self.progress("Calibration progress compass ID %d: %s%%" % (cid, str(reached_pct[cid])))
                         if cid == 0 and 49 <= reached_pct[0] <= 50:
                             self.progress("Try arming during calibration, should failed")
                             self.try_arm(False, "Compass calibration running")
@@ -4926,6 +4926,11 @@ Also, ignores heartbeats not from our target system'''
                 if m.get_type() == "MAG_CAL_REPORT":
                     if report_get[m.compass_id] == 0:
                         self.progress("Report: %s" % self.dump_message_verbose(m))
+                        param_names = ["SIM_MAG_ORIENT"]
+                        for i in range(2, compass_tnumber+1):
+                            param_names.append("SIM_MAG%u_ORIENT" % i)
+                        for param_name in param_names:
+                            self.progress("%s=%f" % (param_name, self.get_parameter(param_name)))
                         if m.cal_status == mavutil.mavlink.MAG_CAL_SUCCESS:
                             if reached_pct[m.compass_id] < 99:
                                 raise NotAchievedException("Mag calibration report SUCCESS without 100%% completion")
