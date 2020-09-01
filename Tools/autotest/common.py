@@ -40,6 +40,11 @@ if sys.version_info[0] >= 3 and sys.version_info[1] >= 4:
 else:
     ABC = abc.ABCMeta('ABC', (), {})
 
+if sys.version_info[0] >= 3:
+    import io as StringIO  # srsly, we just did that.
+else:
+    import StringIO
+
 try:
     from itertools import izip as zip
 except ImportError:
@@ -4418,6 +4423,13 @@ Also, ignores heartbeats not from our target system'''
             next_to_request += 1
             remaining_to_receive.discard(m.seq)
 
+    def dump_message_verbose(self, m):
+        '''return verbose dump of m.  Wraps the pymavlink routine which
+        inconveniently takes a filehandle'''
+        f = StringIO.StringIO()
+        mavutil.dump_message_verbose(f, m)
+        return f.getvalue()
+
     def poll_home_position(self, quiet=False, timeout=30):
         old = self.mav.messages.get("HOME_POSITION", None)
         tstart = self.get_sim_time()
@@ -4913,7 +4925,7 @@ Also, ignores heartbeats not from our target system'''
                 m = self.mav.recv_match(type=["MAG_CAL_PROGRESS", "MAG_CAL_REPORT"], blocking=True, timeout=5)
                 if m.get_type() == "MAG_CAL_REPORT":
                     if report_get[m.compass_id] == 0:
-                        self.progress("Report: %s" % str(m))
+                        self.progress("Report: %s" % self.dump_message_verbose(m))
                         if m.cal_status == mavutil.mavlink.MAG_CAL_SUCCESS:
                             if reached_pct[m.compass_id] < 99:
                                 raise NotAchievedException("Mag calibration report SUCCESS without 100%% completion")
