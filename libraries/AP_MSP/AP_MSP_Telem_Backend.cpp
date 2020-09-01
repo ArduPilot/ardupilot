@@ -102,23 +102,23 @@ void AP_MSP_Telem_Backend::process_outgoing_data()
 bool AP_MSP_Telem_Backend::is_packet_ready(uint8_t idx, bool queue_empty)
 {
     switch (idx) {
-        case EMPTY_SLOT:        // empty slot
-        case NAME:              // used for status_text messages
-        case STATUS:            // flightmode
-        case CONFIG:            // OSD config
-        case RAW_GPS:           // lat,lon, speed
-        case COMP_GPS:          // home dir,dist
-        case ATTITUDE:          // Attitude
-        case ALTITUDE:          // Altitude and Vario
-        case ANALOG:            // Rssi, Battery, mAh, Current
-        case BATTERY_STATE:     // voltage, capacity, current, mAh
+    case EMPTY_SLOT:        // empty slot
+    case NAME:              // used for status_text messages
+    case STATUS:            // flightmode
+    case CONFIG:            // OSD config
+    case RAW_GPS:           // lat,lon, speed
+    case COMP_GPS:          // home dir,dist
+    case ATTITUDE:          // Attitude
+    case ALTITUDE:          // Altitude and Vario
+    case ANALOG:            // Rssi, Battery, mAh, Current
+    case BATTERY_STATE:     // voltage, capacity, current, mAh
 #ifdef HAVE_AP_BLHELI_SUPPORT
-        case ESC_SENSOR_DATA:   // esc temp + rpm
+    case ESC_SENSOR_DATA:   // esc temp + rpm
 #endif
-        case RTC_DATETIME:      // RTC
-            return true;
-        default:
-            return false;
+    case RTC_DATETIME:      // RTC
+        return true;
+    default:
+        return false;
     }
 }
 
@@ -251,7 +251,7 @@ void AP_MSP_Telem_Backend::update_airspeed(airspeed_state_t &airspeed_state)
 
 /*
     MSP OSDs can display up to MSP_TXT_VISIBLE_CHARS chars (UTF8 characters are supported)
-    We display the flight mode string either with or without wind state 
+    We display the flight mode string either with or without wind state
 */
 void AP_MSP_Telem_Backend::update_flight_mode_str(char *flight_mode_str, bool wind_enabled)
 {
@@ -416,47 +416,47 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_command(msp_packet_t *cmd, ms
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_command(uint16_t cmd_msp, sbuf_t *dst)
 {
     switch (cmd_msp) {
-        case MSP_API_VERSION:
-            return msp_process_out_api_version(dst);
-        case MSP_FC_VARIANT:
-            return msp_process_out_fc_variant(dst);
-        case MSP_FC_VERSION:
-            return msp_process_out_fc_version(dst);
-        case MSP_BOARD_INFO:
-            return msp_process_out_board_info(dst);
-        case MSP_BUILD_INFO:
-            return msp_process_out_build_info(dst);
-        case MSP_NAME:
-            return msp_process_out_name(dst);
-        case MSP_OSD_CONFIG:
-            return msp_process_out_osd_config(dst);
-        case MSP_STATUS:
-        case MSP_STATUS_EX:
-            return msp_process_out_status(dst);
-        case MSP_RAW_GPS:
-            return msp_process_out_raw_gps(dst);
-        case MSP_COMP_GPS:
-            return msp_process_out_comp_gps(dst);
-        case MSP_ATTITUDE:
-            return msp_process_out_attitude(dst);
-        case MSP_ALTITUDE:
-            return msp_process_out_altitude(dst);
-        case MSP_ANALOG:
-            return msp_process_out_analog(dst);
-        case MSP_BATTERY_STATE:
-            return msp_process_out_battery_state(dst);
-        case MSP_UID:
-            return msp_process_out_uid(dst);
+    case MSP_API_VERSION:
+        return msp_process_out_api_version(dst);
+    case MSP_FC_VARIANT:
+        return msp_process_out_fc_variant(dst);
+    case MSP_FC_VERSION:
+        return msp_process_out_fc_version(dst);
+    case MSP_BOARD_INFO:
+        return msp_process_out_board_info(dst);
+    case MSP_BUILD_INFO:
+        return msp_process_out_build_info(dst);
+    case MSP_NAME:
+        return msp_process_out_name(dst);
+    case MSP_OSD_CONFIG:
+        return msp_process_out_osd_config(dst);
+    case MSP_STATUS:
+    case MSP_STATUS_EX:
+        return msp_process_out_status(dst);
+    case MSP_RAW_GPS:
+        return msp_process_out_raw_gps(dst);
+    case MSP_COMP_GPS:
+        return msp_process_out_comp_gps(dst);
+    case MSP_ATTITUDE:
+        return msp_process_out_attitude(dst);
+    case MSP_ALTITUDE:
+        return msp_process_out_altitude(dst);
+    case MSP_ANALOG:
+        return msp_process_out_analog(dst);
+    case MSP_BATTERY_STATE:
+        return msp_process_out_battery_state(dst);
+    case MSP_UID:
+        return msp_process_out_uid(dst);
 #ifdef HAVE_AP_BLHELI_SUPPORT
-        case MSP_ESC_SENSOR_DATA:
-            return msp_process_out_esc_sensor_data(dst);
+    case MSP_ESC_SENSOR_DATA:
+        return msp_process_out_esc_sensor_data(dst);
 #endif
-        case MSP_RTC:
-            return msp_process_out_rtc(dst);
-        case MSP_RC:
-            return msp_process_out_rc(dst);
-        default:
-            return MSP_RESULT_ERROR;
+    case MSP_RTC:
+        return msp_process_out_rtc(dst);
+    case MSP_RC:
+        return msp_process_out_rc(dst);
+    default:
+        return MSP_RESULT_ERROR;
     }
 }
 
@@ -465,16 +465,16 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_sensor_command(uint16_t cmd_m
     MSP_UNUSED(src);
 
     switch (cmd_msp) {
-        case MSP2_SENSOR_RANGEFINDER: {
-            const MSP::msp_rangefinder_sensor_t pkt = *(const MSP::msp_rangefinder_sensor_t *)src->ptr;
-            msp_handle_rangefinder(pkt);
-        }
-        break;
-        case MSP2_SENSOR_OPTIC_FLOW: {
-            const MSP::msp_opflow_sensor_t pkt = *(const MSP::msp_opflow_sensor_t *)src->ptr;
-            msp_handle_opflow(pkt);
-        }
-        break;
+    case MSP2_SENSOR_RANGEFINDER: {
+        const MSP::msp_rangefinder_sensor_t pkt = *(const MSP::msp_rangefinder_sensor_t *)src->ptr;
+        msp_handle_rangefinder(pkt);
+    }
+    break;
+    case MSP2_SENSOR_OPTIC_FLOW: {
+        const MSP::msp_opflow_sensor_t pkt = *(const MSP::msp_opflow_sensor_t *)src->ptr;
+        msp_handle_opflow(pkt);
+    }
+    break;
     }
 
     return MSP_RESULT_NO_REPLY;
