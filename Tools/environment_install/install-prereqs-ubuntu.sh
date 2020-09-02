@@ -250,6 +250,7 @@ grep -Fxq "$exportline2" ~/$SHELL_LOGIN 2>/dev/null || {
     fi
 }
 
+if [[ $SKIP_AP_COMPLETION_ENV -ne 1 ]]; then
 exportline3="source $ARDUPILOT_ROOT/Tools/completion/completion.bash";
 grep -Fxq "$exportline3" ~/$SHELL_LOGIN 2>/dev/null || {
     if maybe_prompt_user "Add ArduPilot Bash Completion to your bash shell [N/y]?" ; then
@@ -259,7 +260,7 @@ grep -Fxq "$exportline3" ~/$SHELL_LOGIN 2>/dev/null || {
         echo "Skipping adding ArduPilot Bash Completion."
     fi
 }
-
+fi
 
 exportline4="export PATH=/usr/lib/ccache:\$PATH";
 grep -Fxq "$exportline4" ~/$SHELL_LOGIN 2>/dev/null || {
