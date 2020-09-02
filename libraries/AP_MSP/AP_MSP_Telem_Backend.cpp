@@ -482,11 +482,13 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_sensor_command(uint16_t cmd_m
 
 void AP_MSP_Telem_Backend::msp_handle_opflow(const MSP::msp_opflow_sensor_t &pkt)
 {
+#if HAL_MSP_OPTICALFLOW_ENABLED
     OpticalFlow *optflow = AP::opticalflow();
     if (optflow == nullptr) {
         return;
     }
     optflow->handle_msp(pkt);
+#endif
 }
 
 void AP_MSP_Telem_Backend::msp_handle_rangefinder(const MSP::msp_rangefinder_sensor_t &pkt)
