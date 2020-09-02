@@ -50,14 +50,15 @@ const AP_Param::GroupInfo AP_PiccoloCAN::var_info[] = {
     // @Description: Bitmask defining which ESC (motor) channels are to be transmitted over Piccolo CAN
     // @Bitmask: 0: ESC 1, 1: ESC 2, 2: ESC 3, 3: ESC 4, 4: ESC 5, 5: ESC 6, 6: ESC 7, 7: ESC 8, 8: ESC 9, 9: ESC 10, 10: ESC 11, 11: ESC 12, 12: ESC 13, 13: ESC 14, 14: ESC 15, 15: ESC 16
     // @User: Advanced
-    AP_GROUPINFO("ESC_BM", 1, AP_PiccoloCAN, _esc_bm, 0),
+    AP_GROUPINFO("ESC_BM", 1, AP_PiccoloCAN, _esc_bm, 0xFFFF),
 
-    // @Param: ESC_MS
-    // @DisplayName: ESC command rate
+    // @Param: ESC_RT
+    // @DisplayName: ESC output rate
     // @Description: Output rate of ESC command messages
-    // @Units: ms
-    // @Range: 2 100
-    AP_GROUPINFO("ESC_MS", 2, AP_PiccoloCAN, _esc_ms, PICCOLO_MSG_RATE_MS_DEFAULT),
+    // @Units: Hz
+    // @User: Advanced
+    // @Range: 1 500
+    AP_GROUPINFO("ESC_RT", 2, AP_PiccoloCAN, _esc_hz, PICCOLO_MSG_RATE_HZ_DEFAULT),
 
     AP_GROUPEND
 };
@@ -134,9 +135,6 @@ void AP_PiccoloCAN::loop()
     AP_HAL::CANFrame txFrame;
     AP_HAL::CANFrame rxFrame;
 
-    // How often to transmit CAN messages (milliseconds)
-#define CMD_TX_PERIOD 10
-
     uint16_t esc_tx_counter = 0;
 
     // CAN Frame ID components
@@ -145,7 +143,20 @@ void AP_PiccoloCAN::loop()
 
     uint64_t timeout;
 
+    uint16_t escCmdRateMs;
+
     while (true) {
+
+        // Calculate the output rate (in ms) based on the configured rate (in Hz)
+        if (_esc_hz < PICCOLO_MSG_RATE_HZ_MIN) {
+            _esc_hz = PICCOLO_MSG_RATE_HZ_MIN;
+        }
+
+        if (_esc_hz > PICCOLO_MSG_RATE_HZ_MAX) {
+            _esc_hz = PICCOLO_MSG_RATE_HZ_MAX;
+        }
+
+        escCmdRateMs = (uint16_t) ((float) 1000 / _esc_hz);
 
         if (!_initialized) {
             debug_can(AP_CANManager::LOG_ERROR, "PiccoloCAN: not initialized\n\r");
@@ -159,12 +170,10 @@ void AP_PiccoloCAN::loop()
         hal.scheduler->delay_microseconds(1 * 1000);
 
         // Transmit ESC commands at regular intervals
-        if (esc_tx_counter++ > _esc_ms) {
+        if (esc_tx_counter++ > escCmdRateMs) {
             esc_tx_counter = 0;
 
-            if (_esc_ms >= PICCOLO_MSG_RATE_MS_MIN) {
-                send_esc_messages();
-            }
+            send_esc_messages();
         }
 
         // Look for any message responses on the CAN bus
