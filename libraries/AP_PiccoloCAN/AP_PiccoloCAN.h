@@ -35,8 +35,9 @@
 
 #if HAL_PICCOLO_CAN_ENABLE
 
-#define PICCOLO_MSG_RATE_MS_MIN 2
-#define PICCOLO_MSG_RATE_MS_DEFAULT 20
+#define PICCOLO_MSG_RATE_HZ_MIN 1
+#define PICCOLO_MSG_RATE_HZ_MAX 500
+#define PICCOLO_MSG_RATE_HZ_DEFAULT 50
 
 class AP_PiccoloCAN : public AP_CANDriver
 {
@@ -137,7 +138,7 @@ private:
 
     // Piccolo CAN parameters
     AP_Int32 _esc_bm;       //! ESC selection bitmask
-    AP_Int32 _esc_ms;       //! ESC update rate (ms)
+    AP_Int32 _esc_hz;       //! ESC update rate (Hz)
 
 };
 
