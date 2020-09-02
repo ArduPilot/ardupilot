@@ -288,7 +288,7 @@ void Copter::Decode_Buttons(){
 		copter.ap.gimbal_control_active = true;
 		cam_button_pressed = true;
 	}else if(cam_button_pressed){
-		if(cam_button_debounce_timer >= 2){
+		if(cam_button_debounce_timer >= 1){
 			cam_button_pressed = false;
 			cam_button_debounce_timer = 0;
 		}else{
