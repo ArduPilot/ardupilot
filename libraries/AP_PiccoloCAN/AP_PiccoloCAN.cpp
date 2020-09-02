@@ -23,6 +23,7 @@
 
 #if HAL_PICCOLO_CAN_ENABLE
 
+#include <AP_Param/AP_Param.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_Common/AP_Common.h>
@@ -37,13 +38,48 @@
 #include <AP_PiccoloCAN/piccolo_protocol/ESCVelocityProtocol.h>
 #include <AP_PiccoloCAN/piccolo_protocol/ESCPackets.h>
 
-
 extern const AP_HAL::HAL& hal;
 
 #define debug_can(level_debug, fmt, args...) do { AP::can().log_text(level_debug, "PiccoloCAN", fmt, ##args); } while (0)
 
+// table of user-configurable Piccolo CAN bus parameters
+const AP_Param::GroupInfo AP_PiccoloCAN::var_info[] = {
+
+    // @Param: ESC_BM
+    // @DisplayName: ESC channels
+    // @Description: Bitmask defining which ESC (motor) channels are to be transmitted over Piccolo CAN
+    // @Bitmask: 0: ESC 1, 1: ESC 2, 2: ESC 3, 3: ESC 4, 4: ESC 5, 5: ESC 6, 6: ESC 7, 7: ESC 8, 8: ESC 9, 9: ESC 10, 10: ESC 11, 11: ESC 12, 12: ESC 13, 13: ESC 14, 14: ESC 15, 15: ESC 16
+    // @User: Advanced
+    AP_GROUPINFO("ESC_BM", 1, AP_PiccoloCAN, _esc_bm, 0),
+
+    // @Param: ESC_MS
+    // @DisplayName: ESC command rate
+    // @Description: Output rate of ESC command messages
+    // @Units: ms
+    // @Range: 2 100
+    AP_GROUPINFO("ESC_MS", 2, AP_PiccoloCAN, _esc_ms, PICCOLO_MSG_RATE_MS_DEFAULT),
+
+    // @Param: SRV_BM
+    // @DisplayName: Servo channels
+    // @Description: Bitmask defining which servo channels are to be transmitted over PiccoloCAN
+    // @Bitmask: 0: Servo 1, 1: Servo 2, 2: Servo 3, 3: Servo 4, 4: Servo 5, 5: Servo 6, 6: Servo 7, 7: Servo 8, 8: Servo 9, 9: Servo 10, 10: Servo 11, 11: Servo 12, 12: Servo 13, 13: Servo 14, 14: Servo 15, 15: Servo 16
+    // @User: Advanced
+    AP_GROUPINFO("SRV_BM", 3, AP_PiccoloCAN, _srv_bm, 0),
+
+    // @Param: SRV_MS
+    // @DisplayName: Servo command rate
+    // @Description: Output rate of servo command messages
+    // @Units: ms
+    // @Range: 2 100
+    AP_GROUPINFO("SRV_MS", 4, AP_PiccoloCAN, _srv_ms, PICCOLO_MSG_RATE_MS_DEFAULT),
+
+    AP_GROUPEND
+};
+
 AP_PiccoloCAN::AP_PiccoloCAN()
 {
+    AP_Param::setup_object_defaults(this, var_info);
+
     debug_can(AP_CANManager::LOG_INFO, "PiccoloCAN: constructed\n\r");
 }
 
