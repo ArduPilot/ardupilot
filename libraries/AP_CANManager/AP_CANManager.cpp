@@ -213,12 +213,14 @@ void AP_CANManager::init()
             }
         } else if (drv_type == Driver_Type_PiccoloCAN) {
 #if HAL_PICCOLO_CAN_ENABLE
-            _drivers[drv_num] = new AP_PiccoloCAN;
+            _drivers[drv_num] = _drv_param[drv_num]._piccolocan = new AP_PiccoloCAN;
 
             if (_drivers[drv_num] == nullptr) {
                 AP_BoardConfig::config_error("Failed to allocate PiccoloCAN %d\n\r", drv_num + 1);
                 continue;
             }
+
+            AP_Param::load_object_from_eeprom((AP_PiccoloCAN*)_drivers[drv_num], AP_PiccoloCAN::var_info);
 #endif
         } else if (drv_type == Driver_Type_CANTester) {
 #if HAL_NUM_CAN_IFACES > 1 && !HAL_MINIMIZE_FEATURES
