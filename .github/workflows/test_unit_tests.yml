@@ -1,0 +1,93 @@
+name: test unit tests
+
+on: [push, pull_request]
+# paths:
+# - "*"
+# - "!README.md" <-- don't rebuild on doc change
+
+jobs:
+  build-gcc:
+    runs-on: ubuntu-20.04
+    container: khancyr/ardupilot-dev-base:latest
+    strategy:
+      matrix:
+        config: [
+            unit-tests
+        ]
+    steps:
+      # git checkout the PR
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+      # Put ccache into github cache for faster build
+      - name: Prepare ccache timestamp
+        id: ccache_cache_timestamp
+        run: |
+          NOW=$(date -u +"%F-%T")
+          echo "::set-output name=timestamp::${NOW}"
+      - name: ccache cache files
+        uses: actions/cache@v2
+        with:
+          path: ~/.ccache
+          key: ${{github.workflow}}-ccache-${{steps.ccache_cache_timestamp.outputs.timestamp}}
+          restore-keys: ${{github.workflow}}-ccache-  # restore ccache from either previous build on this branch or on master
+      - name: setup ccache
+        run: |
+          mkdir -p ~/.ccache
+          echo "base_dir = ${GITHUB_WORKSPACE}" > ~/.ccache/ccache.conf
+          echo "compression = true" >> ~/.ccache/ccache.conf
+          echo "compression_level = 6" >> ~/.ccache/ccache.conf
+          echo "max_size = 400M" >> ~/.ccache/ccache.conf
+          ccache -s
+          ccache -z
+      - name: test ${{matrix.config}} gcc
+        env:
+          CI_BUILD_TARGET: ${{matrix.config}}
+        shell: bash
+        run: |
+          PATH="/github/home/.local/bin:$PATH"
+          Tools/scripts/build_ci.sh
+
+  build-clang:
+    runs-on: ubuntu-20.04
+    container: khancyr/ardupilot-dev-clang:latest
+    strategy:
+      matrix:
+        config: [
+            unit-tests
+        ]
+    steps:
+      # git checkout the PR
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+      # Put ccache into github cache for faster build
+      - name: Prepare ccache timestamp
+        id: ccache_cache_timestamp
+        run: |
+          NOW=$(date -u +"%F-%T")
+          echo "::set-output name=timestamp::${NOW}"
+      - name: ccache cache files
+        uses: actions/cache@v2
+        with:
+          path: ~/.ccache
+          key: ${{github.workflow}}-ccache-clang-${{steps.ccache_cache_timestamp.outputs.timestamp}}
+          restore-keys: ${{github.workflow}}-ccache-clang-  # restore ccache from either previous build on this branch or on master
+      - name: setup ccache
+        run: |
+          mkdir -p ~/.ccache
+          echo "base_dir = ${GITHUB_WORKSPACE}" > ~/.ccache/ccache.conf
+          echo "compression = true" >> ~/.ccache/ccache.conf
+          echo "compression_level = 6" >> ~/.ccache/ccache.conf
+          echo "max_size = 400M" >> ~/.ccache/ccache.conf
+          ccache -s
+          ccache -z
+      - name: test ${{matrix.config}} clang
+        env:
+          CI_BUILD_TARGET: ${{matrix.config}}
+        shell: bash
+        run: |
+          export CC=clang-7
+          export CXX=clang++-7
+          PATH="/github/home/.local/bin:$PATH"
+          Tools/scripts/build_ci.sh
