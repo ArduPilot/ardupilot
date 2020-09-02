@@ -744,9 +744,18 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_attitude(sbuf_t *dst)
 {
     AP_AHRS &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
-    sbuf_write_u16(dst, (int16_t)(ahrs.roll_sensor * 0.1));                // centidegress to decidegrees
-    sbuf_write_u16(dst, (int16_t)(ahrs.pitch_sensor * 0.1));               // centidegress to decidegrees
-    sbuf_write_u16(dst, (int16_t)ahrs.yaw_sensor * 0.01);                  // centidegrees to degrees
+
+    struct PACKED {
+        int16_t roll;
+        int16_t pitch;
+        int16_t yaw;
+    } attitude;
+
+    attitude.roll = ahrs.roll_sensor * 0.1;     // centidegress to decidegrees
+    attitude.pitch = ahrs.pitch_sensor * 0.1;   // centidegress to decidegrees
+    attitude.yaw = ahrs.yaw_sensor * 0.01;      // centidegress to degrees
+
+    sbuf_write_data(dst, &attitude, sizeof(attitude));
     return MSP_RESULT_ACK;
 }
 
@@ -755,8 +764,8 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_altitude(sbuf_t *dst)
     home_state_t home_state;
     update_home_pos(home_state);
 
-    sbuf_write_u32(dst, home_state.rel_altitude_cm);                   // relative altitude cm
-    sbuf_write_u16(dst, (int16_t)get_vspeed_ms() * 100);          // climb rate cm/s
+    sbuf_write_u32(dst, home_state.rel_altitude_cm);                // relative altitude cm
+    sbuf_write_u16(dst, (int16_t)get_vspeed_ms() * 100);            // climb rate cm/s
     return MSP_RESULT_ACK;
 }
 
@@ -768,12 +777,22 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_analog(sbuf_t *dst)
     }
     battery_state_t battery_state;
     update_battery_state(battery_state);
-    sbuf_write_u8(dst,  (uint8_t)constrain_int16(battery_state.batt_voltage_v * 10, 0, 255));     // battery voltage V to dV
-    sbuf_write_u16(dst, constrain_int32(battery_state.batt_consumed_mah, 0, 0xFFFF));             // milliamp hours drawn from battery
-    sbuf_write_u16(dst, rssi->enabled() ? rssi->read_receiver_rssi() * 1023 : 0);                     // rssi 0-1 to 0-1023
-    sbuf_write_u16(dst, constrain_int32(battery_state.batt_current_a * 100, -0x8000, 0x7FFF));    // current A to cA (0.01 steps, range is -320A to 320A)
-    sbuf_write_u16(dst, constrain_int32(battery_state.batt_voltage_v * 100,0,0xFFFF));            // battery voltage in 0.01V steps
 
+    struct PACKED {
+        uint8_t voltage_dv;
+        uint16_t mah;
+        uint16_t rssi;
+        int16_t current_ca;
+        uint16_t voltage_cv;
+    } battery;
+
+    battery.voltage_dv = constrain_int16(battery_state.batt_voltage_v * 10, 0, 255);            // battery voltage V to dV
+    battery.mah = constrain_int32(battery_state.batt_consumed_mah, 0, 0xFFFF);                  // milliamp hours drawn from battery
+    battery.rssi = rssi->enabled() ? rssi->read_receiver_rssi() * 1023 : 0;                     // rssi 0-1 to 0-1023
+    battery.current_ca = constrain_int32(battery_state.batt_current_a * 100, -0x8000, 0x7FFF);  // current A to cA (0.01 steps, range is -320A to 320A)
+    battery.voltage_cv = constrain_int32(battery_state.batt_voltage_v * 100,0,0xFFFF);          // battery voltage in 0.01V steps
+
+    sbuf_write_data(dst, &battery, sizeof(battery));
     return MSP_RESULT_ACK;
 }
 
@@ -786,19 +805,25 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_battery_state(sbuf_t *dst
     battery_state_t battery_state;
     update_battery_state(battery_state);
 
-    // battery characteristics
-    sbuf_write_u8(dst, (uint8_t)constrain_int16((msp->_cellcount > 0 ? msp->_cellcount : battery_state.batt_cellcount), 0, 255)); // cell count 0 indicates battery not detected.
-    sbuf_write_u16(dst, battery_state.batt_capacity_mah); // in mAh
+    struct PACKED {
+        uint8_t cellcount;
+        uint16_t capacity_mah;
+        uint8_t voltage_dv;
+        uint16_t mah;
+        int16_t current_ca;
+        uint8_t state;
+        uint16_t voltage_cv;
+    } battery;
 
-    // battery state
-    sbuf_write_u8(dst,  (uint8_t)constrain_int16(battery_state.batt_voltage_v * 10, 0, 255));    // battery voltage V to dV
-    sbuf_write_u16(dst, (uint16_t)MIN(battery_state.batt_consumed_mah, 0xFFFF));                 // milliamp hours drawn from battery
-    sbuf_write_u16(dst, constrain_int32(battery_state.batt_current_a * 100, -0x8000, 0x7FFF));   // current A to cA (0.01 steps, range is -320A to 320A)
+    battery.cellcount = constrain_int16((msp->_cellcount > 0 ? msp->_cellcount : battery_state.batt_cellcount), 0, 255);    // cell count 0 indicates battery not detected.
+    battery.mah = battery_state.batt_capacity_mah;                                                                          // in mAh
+    battery.voltage_dv = constrain_int16(battery_state.batt_voltage_v * 10, 0, 255);                                        // battery voltage V to dV
+    battery.mah = MIN(battery_state.batt_consumed_mah, 0xFFFF);                                                             // milliamp hours drawn from battery
+    battery.current_ca = constrain_int32(battery_state.batt_current_a * 100, -0x8000, 0x7FFF);                              // current A to cA (0.01 steps, range is -320A to 320A)
+    battery.state = battery_state.batt_state;                                                                               // BATTERY: OK=0, CRITICAL=2
+    battery.voltage_cv = constrain_int32(battery_state.batt_voltage_v * 100, 0, 0x7FFF);                                    // battery voltage in 0.01V steps
 
-    // battery alerts
-    sbuf_write_u8(dst, battery_state.batt_state);  // BATTERY: OK=0, CRITICAL=2
-
-    sbuf_write_u16(dst, constrain_int32(battery_state.batt_voltage_v * 100, 0, 0x7FFF));         // battery voltage in 0.01V steps
+    sbuf_write_data(dst, &battery, sizeof(battery));
     return MSP_RESULT_ACK;
 }
 
@@ -828,13 +853,25 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rtc(sbuf_t *dst)
         const time_t time_sec = time_usec / 1000000;
         localtime_tm = *gmtime(&time_sec);
     }
-    sbuf_write_u16(dst, localtime_tm.tm_year + 1900);   // tm_year is relative to year 1900
-    sbuf_write_u8(dst, localtime_tm.tm_mon + 1);        // MSP requires [1-12] months
-    sbuf_write_u8(dst, localtime_tm.tm_mday);
-    sbuf_write_u8(dst, localtime_tm.tm_hour);
-    sbuf_write_u8(dst, localtime_tm.tm_min);
-    sbuf_write_u8(dst, localtime_tm.tm_sec);
-    sbuf_write_u16(dst, (time_usec / 1000U) % 1000U);
+    struct PACKED {
+        uint16_t year;
+        uint8_t mon;
+        uint8_t mday;
+        uint8_t hour;
+        uint8_t min;
+        uint8_t sec;
+        uint16_t millis;
+    } rtc;
+
+    rtc.year = localtime_tm.tm_year + 1900;   // tm_year is relative to year 1900
+    rtc.mon = localtime_tm.tm_mon + 1;        // MSP requires [1-12] months
+    rtc.mday = localtime_tm.tm_mday;
+    rtc.hour = localtime_tm.tm_hour;
+    rtc.min = localtime_tm.tm_min;
+    rtc.sec = localtime_tm.tm_sec;
+    rtc.millis = (time_usec / 1000U) % 1000U;
+
+    sbuf_write_data(dst, &rtc, sizeof(rtc));
     return MSP_RESULT_ACK;
 }
 
@@ -847,12 +884,20 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rc(sbuf_t *dst)
     uint16_t values[16] = {};
     rc().get_radio_in(values, ARRAY_SIZE(values));
 
-    // send only 4 channels, MSP order is AERT
-    sbuf_write_u16(dst, values[rcmap->roll()]);     // A
-    sbuf_write_u16(dst, values[rcmap->pitch()]);    // E
-    sbuf_write_u16(dst, values[rcmap->yaw()]);      // R
-    sbuf_write_u16(dst, values[rcmap->throttle()]); // T
+    struct PACKED {
+        uint16_t a;
+        uint16_t e;
+        uint16_t r;
+        uint16_t t;
+    } rc;
 
+    // send only 4 channels, MSP order is AERT
+    rc.a = values[rcmap->roll()];       // A
+    rc.e = values[rcmap->pitch()];      // E
+    rc.r = values[rcmap->yaw()];        // R
+    rc.t = values[rcmap->throttle()];   // T
+
+    sbuf_write_data(dst, &rc, sizeof(rc));
     return MSP_RESULT_ACK;
 }
 
