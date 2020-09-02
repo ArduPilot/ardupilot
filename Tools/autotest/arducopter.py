@@ -192,7 +192,7 @@ class AutoTestCopter(AutoTest):
         self.delay_sim_time(10)
         self.set_rc(2, 1500)
         self.hover()
-        self.progress("Cotper staging 50 meters east of home at 50 meters altitude In mode Alt Hold")
+        self.progress("Copter staging 50 meters east of home at 50 meters altitude In mode Alt Hold")
 
     # Start and stop the GCS heartbeat for GCS failsafe testing
     def set_heartbeat_rate(self, rate):
@@ -693,6 +693,43 @@ class AutoTestCopter(AutoTest):
             raise ex
 
     def test_gcs_failsafe(self, side=60, timeout=360):
+        # Test double-SmartRTL; ensure we do SmarRTL twice rather than
+        # landing (tests fix for actual bug)
+        self.context_push()
+        self.start_subtest("GCS failsafe SmartRTL twice")
+        self.setGCSfailsafe(3)
+        self.set_parameter('FS_OPTIONS', 8)
+        self.takeoffAndMoveAway()
+        self.set_heartbeat_rate(0)
+        self.wait_mode("SMART_RTL")
+        self.wait_disarmed()
+        self.set_heartbeat_rate(self.speedup)
+        self.mavproxy.expect("GCS Failsafe Cleared")
+
+        self.takeoffAndMoveAway()
+        self.set_heartbeat_rate(0)
+        self.wait_statustext("GCS Failsafe")
+        def ensure_smartrtl(mav, m):
+            if m.get_type() != "HEARTBEAT":
+                return
+            # can't use mode_is here because we're in the message hook
+            print("Mode: %s" % self.mav.flightmode)
+            if self.mav.flightmode != "SMART_RTL":
+                raise NotAchievedException("Not in SMART_RTL")
+        self.install_message_hook_context(ensure_smartrtl)
+
+        self.set_heartbeat_rate(self.speedup)
+        self.mavproxy.expect("GCS Failsafe Cleared")
+        self.set_heartbeat_rate(0)
+        self.wait_statustext("GCS Failsafe")
+
+        self.wait_disarmed()
+
+        self.end_subtest("GCS failsafe SmartRTL twice")
+        self.set_heartbeat_rate(self.speedup)
+        self.mavproxy.expect("GCS Failsafe Cleared")
+        self.context_pop()
+
         # Trigger telemety loss with failsafe disabled. Verify no action taken.
         self.start_subtest("GCS failsafe disabled test: FS_GCS_ENABLE=0 should take no failsafe action")
         self.setGCSfailsafe(0)
