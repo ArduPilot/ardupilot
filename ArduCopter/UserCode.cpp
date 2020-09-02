@@ -152,7 +152,7 @@ int16_t  gimbal_pan, gimbal_tilt, gimbal_zoom, gimbal_focus;
 		gimbal_zoom = RC_Channels::rc_channel(CH_3)->get_radio_in();
 		gimbal_focus = RC_Channels::rc_channel(CH_4)->get_radio_in();
 
-		gimbal_tilt = ((1500 - gimbal_tilt) + 1500);  //reverse input
+	//	gimbal_tilt = ((1500 - gimbal_tilt) + 1500);  //reverse input
 
 		SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_tilt, gimbal_tilt);
 		SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_pan, gimbal_pan);
