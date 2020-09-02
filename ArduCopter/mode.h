@@ -1104,9 +1104,9 @@ private:
 
     // return target alt type
     enum class ReturnTargetAltType {
-        RETURN_TARGET_ALTTYPE_RELATIVE = 0,
-        RETURN_TARGET_ALTTYPE_RANGEFINDER = 1,
-        RETURN_TARGET_ALTTYPE_TERRAINDATABASE = 2
+        RELATIVE = 0,
+        RANGEFINDER = 1,
+        TERRAINDATABASE = 2
     };
 
     // Loiter timer - Records how long we have been in loiter
