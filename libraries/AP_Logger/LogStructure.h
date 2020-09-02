@@ -765,6 +765,7 @@ struct PACKED log_Current {
     float    consumed_wh;
     int16_t  temperature; // degrees C * 100
     float    resistance;
+    float	 power;
 };
 
 struct PACKED log_WheelEncoder {
@@ -1043,6 +1044,9 @@ struct PACKED log_Rate {
     float   control_accel;
     float   accel;
     float   accel_out;
+
+    float pitch_in_FF;
+    float pitch_in_delta_FF;
 };
 
 struct PACKED log_SbpLLH {
@@ -1297,10 +1301,10 @@ struct PACKED log_Arm_Disarm {
 #define QUAT_UNITS  "s????"
 #define QUAT_MULTS  "F????"
 
-#define CURR_LABELS "TimeUS,Volt,VoltR,Curr,CurrTot,EnrgTot,Temp,Res"
-#define CURR_FMT    "Qfffffcf"
-#define CURR_UNITS  "svvA?JOw"
-#define CURR_MULTS  "F000?/?0"
+#define CURR_LABELS "TimeUS,Volt,VoltR,Curr,CurrTot,EnrgTot,Temp,Res,Pow"
+#define CURR_FMT    "Qfffffcff"
+#define CURR_UNITS  "svvA?JOw-"
+#define CURR_MULTS  "F000?/?0-"
 
 #define CURR_CELL_LABELS "TimeUS,Volt,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10"
 #define CURR_CELL_FMT    "QfHHHHHHHHHH"
@@ -1596,7 +1600,7 @@ struct PACKED log_Arm_Disarm {
     { LOG_GIMBAL3_MSG, sizeof(log_Gimbal3), \
       "GMB3", "Ihhh", "TimeMS,rl_torque_cmd,el_torque_cmd,az_torque_cmd", "s???", "C???" }, \
     { LOG_RATE_MSG, sizeof(log_Rate), \
-      "RATE", "Qffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut", "skk-kk-kk-oo-", "F?????????BB-" }, \
+      "RATE", "Qffffffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut", "skk-kk-kk-o--", "F?????????B--" }, \
     { LOG_RALLY_MSG, sizeof(log_Rally), \
       "RALY", "QBBLLh", "TimeUS,Tot,Seq,Lat,Lng,Alt", "s--DUm", "F--GGB" },  \
     { LOG_MAV_MSG, sizeof(log_MAV),   \

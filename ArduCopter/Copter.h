@@ -776,6 +776,7 @@ private:
     void set_land_complete_maybe(bool b);
     void update_throttle_thr_mix();
 
+    void Spirit_Land_Detector();
     void Spirit_Gimbal_Control_Auto();
     void Decode_Buttons();
     void Detect_Buttons();
@@ -810,6 +811,8 @@ private:
     void Log_Write_Vehicle_Startup_Messages();
     void log_init(void);
 
+    void Log_Write_Vehicle_State(float Adv_x, float Adv_y, float hov_rpm, float thrust);
+   // void Log_Write_Land_Detect(bool home, bool motor_low, bool accel_stationary, bool speed, bool accel_TD, bool TD, bool TOP);
     // mode.cpp
     bool set_mode(Mode::Number mode, ModeReason reason);
     bool set_mode(const uint8_t new_mode, const ModeReason reason) override;

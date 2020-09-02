@@ -669,6 +669,8 @@ void AP_Logger::Write_Current_instance(const uint64_t time_us,
         consumed_wh         : consumed_wh,
         temperature         : (int16_t)(has_temp ? (temp * 100) : 0),
         resistance          : battery.get_resistance(battery_instance)
+        resistance          : battery.get_resistance(battery_instance),
+		power				: current*battery.voltage(battery_instance)
     };
     WriteBlock(&pkt, sizeof(pkt));
 

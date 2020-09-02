@@ -6,6 +6,7 @@ void Copter::userhook_init()
     // put your initialisation code here
     // this will be called once at start-up
 
+
 	//Servo Voltage Watcher
 	AP_Notify::flags.low_servo_voltage = false;
 
@@ -45,6 +46,15 @@ void Copter::userhook_init()
 	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_zoom, 1500);
 	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_tilt, 1500);
 	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_pan, 1500);
+
+
+	//hal.gpio->pinMode(53, 1);
+	//hal.gpio->write(53, true);
+
+	//hal.gpio->pinMode(52, 1);
+	//hal.gpio->write(52, false);
+
+
 }
 #endif
 
@@ -63,6 +73,7 @@ void Copter::userhook_FastLoop()
 #ifdef USERHOOK_50HZLOOP
 void Copter::userhook_50Hz()
 {
+
 	if(g.herelink_enable){
 		Detect_Buttons();
 	}
@@ -70,7 +81,6 @@ void Copter::userhook_50Hz()
 
 	//zero out dynamic trim for now
 	motors->set_dynamic_trim(0.0, 0.0);
-
 
 
 	////Servo Voltage Watcher///////////
@@ -86,6 +96,108 @@ void Copter::userhook_50Hz()
 		}
 	}
 
+
+	//////////////////////////
+
+
+
+	//Spirit_Land_Detector();
+/*
+	if( motors->get_throttle() >= motors->get_throttle_hover() ){
+		take_off_complete = true;
+	}
+*/
+
+	//////   ADVANCE RATIO CALC   ///////////
+
+
+	if(rpm_sensor.healthy(0)){
+	_fwd_rpm = rpm_sensor.get_rpm(0);
+	}
+
+	if(rpm_sensor.healthy(1)){
+	_aft_rpm = rpm_sensor.get_rpm(1);
+	}
+
+/*
+if(copter.position_ok()){
+
+		Vector3f _vel = inertial_nav.get_velocity();
+		float vel_fw = (_vel.x*ahrs.cos_yaw() + _vel.y*ahrs.sin_yaw())/100;
+		float vel_right = (-_vel.x*ahrs.sin_yaw() + _vel.y*ahrs.cos_yaw())/100;
+
+
+		float trim_ff_pitch, trim_ff_roll;
+
+
+		if(vel_fw > 2.0f){
+			trim_ff_pitch = (vel_fw/HIGH_POINT)*MAX_PARAMETER;
+		}
+		if(vel_fw > HIGH_POINT){
+			trim_ff_pitch =- ((vel_fw - HIGH_POINT) / 20.0f)*0.5*MAX_PARAMETER;
+		}else{
+			trim_ff_pitch = 0;
+		}
+
+
+		if(rpm_sensor.healthy(1)){
+
+			float rad_per_s_aft = (_aft_rpm/60.0f)*2.0f*3.1415f;
+
+			adv_ratio.x = -2.0f*(ahrs.cos_pitch()) * ( vel_fw / (rad_per_s_aft*0.3048) )  ;
+			adv_ratio.y = 2.0f*(ahrs.cos_roll())  * ( vel_right / (rad_per_s_aft*0.3048) ) ;
+
+			adv_ratio.x = constrain_float(adv_ratio.x, -0.30f, 0.30f);
+			adv_ratio.y = constrain_float(adv_ratio.y, -0.30f, 0.30f);
+
+		}else{
+
+			//adv_ratio.x = -((ahrs.cos_pitch()) * ( vel_fw / (100.0f) ))  ;
+			//adv_ratio.y = ((ahrs.cos_roll())  * ( vel_right / (100.0f) )) ;
+
+			//adv_ratio.x = constrain_float(adv_ratio.x, -0.20f, 0.20f);
+			//adv_ratio.y = constrain_float(adv_ratio.y, -0.20f, 0.20f);
+
+			adv_ratio.x = 0.001;
+			adv_ratio.y = 0.001;
+
+		}
+
+		if((RC_Channels::rc_channel(CH_7)->get_radio_in() > 1700) and (g.herelink_enable == 0)){
+			motors->set_dynamic_trim(adv_ratio.x, adv_ratio.y);
+		}else{
+			motors->set_dynamic_trim(0.0, 0.0);
+		}
+
+	}else{
+
+		adv_ratio.x = 0.0;
+		adv_ratio.y = 0.0;
+		motors->set_dynamic_trim(0.0, 0.0);
+	}
+*/
+
+	motors->set_dynamic_trim(0.0, 0.0);
+
+	///////  	DETERMINE HOVER RPM		/////
+/*
+	 if (fabsf(inertial_nav.get_velocity_z()) < 60  and  labs(ahrs.roll_sensor) < 500 and labs(ahrs.pitch_sensor) < 500) {
+
+		 float ave_rpm = ((_aft_rpm + _fwd_rpm)/2.0f);
+		 hover_rpm.apply(ave_rpm);
+	 }
+*/
+
+	 ////   THRUST CALC   //////
+
+	 float accel = copter.ins.get_accel().z + GRAVITY_MSS;
+
+	 float thrust = -accel*(g.vec_weight/32.2);
+
+	 Log_Write_Vehicle_State(adv_ratio.x, adv_ratio.y, 0, thrust);//hover_rpm.get() 0, thrust);
+
+	//motors->set_dynamic_trim(0.0, 0.0);
+
 }
 #endif
 
@@ -97,6 +209,11 @@ void Copter::userhook_MediumLoop()
 	Killswitch();
 
 
+	if(!motors->armed()){
+		return;
+	}
+
+
 }
 #endif
 
@@ -105,11 +222,13 @@ void Copter::userhook_SlowLoop()
 {
     // put your 3.3Hz code here
 
+
 	if(g.herelink_enable){
 		Decode_Buttons();
 	}else{
 		copter.ap.gimbal_control_active = false;
 	}
+
 
 }
 #endif
@@ -118,6 +237,8 @@ void Copter::userhook_SlowLoop()
 void Copter::userhook_SuperSlowLoop()
 {
     // put your 1Hz code here
+
+
 }
 #endif
 
@@ -152,14 +273,11 @@ int16_t  gimbal_pan, gimbal_tilt, gimbal_zoom, gimbal_focus;
 		gimbal_zoom = RC_Channels::rc_channel(CH_3)->get_radio_in();
 		gimbal_focus = RC_Channels::rc_channel(CH_4)->get_radio_in();
 
-	//	gimbal_tilt = ((1500 - gimbal_tilt) + 1500);  //reverse input
-
 		SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_tilt, gimbal_tilt);
 		SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_pan, gimbal_pan);
 		SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_zoom, gimbal_zoom);
 		SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_focus, gimbal_focus);
 }
-
 
 
 
@@ -197,7 +315,6 @@ void Copter::Killswitch(){
 	 }else{   killswitch_counter = 0;  }
 
 }
-
 
 
 
@@ -282,7 +399,6 @@ void Copter::Detect_Buttons(){
 
 
 void Copter::Decode_Buttons(){
-
 
 	if(RC_Channels::rc_channel(CH_7)->get_radio_in() >= 1700){
 		copter.ap.gimbal_control_active = true;
@@ -384,3 +500,128 @@ void Copter::Decode_Buttons(){
 }
 
 
+
+
+
+/*
+//void Copter::Spirit_Land_Detector()
+{
+
+	//////// LAND DETECTOR ////////
+
+	bool near_home;
+	bool touchdown_accel;
+	bool hover_speed;
+	bool touchdown;
+	bool topple;
+
+
+
+
+	if(!motors->armed()){
+		return;
+	}
+
+
+
+	if(!take_off_complete){
+
+		near_home = false;
+		touchdown_accel = false;
+		hover_speed = false;
+		touchdown = false;
+		topple = false;
+
+		return;
+
+	}
+
+
+	bool motors_low = ( motors->get_throttle() <= (motors->get_throttle_hover()/2.0f) );
+	bool accel_stationary = (land_accel_ef_filter.get().length() <= 1.00f);
+	float altitude = inertial_nav.get_position().z;
+
+	if(position_ok()){
+
+		Location current_position;
+		ahrs.get_position(current_position);
+
+		if(current_position.get_distance(ahrs.get_home()) < 10){
+			near_home = true;
+		}else{
+			near_home = false;
+		}
+
+		hover_speed = (inertial_nav.get_speed_xy() <= 100.0f);
+
+	}else{
+		hover_speed = false;
+		near_home = false;
+	}
+
+
+	if( (motors->get_throttle() < motors->get_throttle_hover()) and (ahrs.get_accel_ef_blended().z <= -15.0f) ){
+
+			touchdown_accel_counter = 0;
+			touchdown_accel = true;
+		}
+
+
+	if(touchdown_accel_counter > 50){
+
+		touchdown_accel_counter = 0;
+		touchdown_accel = false;
+
+	}else{
+
+		touchdown_accel_counter++;
+	}
+
+
+	if(motors_low and accel_stationary){
+		touchdown = true;
+	}else if(near_home and (altitude <= 3.00f) and touchdown_accel and hover_speed){
+		touchdown = true;
+	}else if( touchdown_accel and (inertial_nav.get_velocity_z() - pos_control->get_vel_target_z()) > 200.0f  ){
+		touchdown = true;
+	}
+
+	if(fabsf(attitude_control->get_att_error_angle_deg()) > 25.0f){
+
+		topple = true;
+
+	}else{
+
+		topple = false;
+	}
+
+
+	bool const a1a = near_home;
+	bool const a1b = motors_low;
+	bool const a1c = accel_stationary;
+	bool const a1d = hover_speed;
+	bool const a1e = touchdown_accel;
+	bool const a1f = touchdown;
+	bool const a1g = topple;
+
+
+
+
+	        AP::logger().Write(
+	            "LAND",
+	            "TimeUS,hom,low,acc,speed,TD_ac,TD,top",
+	            "s-------",
+	            "F-------",
+	            "Qbbbbbbb",
+	            AP_HAL::micros64(),
+				a1a,
+				a1b,
+				a1c,
+				a1d,
+				a1e,
+				a1f,
+				a1g
+	        );
+}
+
+*/

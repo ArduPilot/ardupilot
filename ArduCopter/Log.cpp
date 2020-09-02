@@ -1,4 +1,4 @@
-#include "Copter.h"
+	#include "Copter.h"
 
 #if LOGGING_ENABLED == ENABLED
 
@@ -230,6 +230,70 @@ void Copter::Log_Write_Data(uint8_t id, float value)
         logger.WriteCriticalBlock(&pkt, sizeof(pkt));
     }
 }
+
+
+////////////RPM Logging /////////////////
+
+struct PACKED log_vehicle_state {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float adv_ratio_x;
+    float adv_ratio_y;
+    float hover_rpm;
+    float thrust;
+};
+
+
+
+void Copter::Log_Write_Vehicle_State(float Adv_Ratio_X, float Adv_Ratio_Y, float Hover_RPM, float Rotor_Thrust)
+{
+        struct log_vehicle_state vec_state_pkt = {
+            LOG_PACKET_HEADER_INIT(LOG_DATA_VEC_STATE),
+            time_us      : AP_HAL::micros64(),
+			adv_ratio_x  : Adv_Ratio_X,
+			adv_ratio_y  : Adv_Ratio_Y,
+			hover_rpm	 : Hover_RPM,
+			thrust       : Rotor_Thrust
+        };
+        logger.WriteBlock(&vec_state_pkt, sizeof(vec_state_pkt));
+
+}
+
+/*
+struct PACKED log_land_detect {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    bool dis_home;
+    bool low_motor;
+    bool stat_accel;
+    bool velo_hover;
+    bool acc_td;
+    bool touchdown;
+    bool topple;
+};
+
+
+
+void Copter::Log_Write_Land_Detect(bool home, bool motor_low, bool accel_stationary, bool speed, bool accel_TD, bool td, bool top)
+{
+        struct log_land_detect vec_land_detect = {
+            LOG_PACKET_HEADER_INIT(LOG_DATA_VEC_STATE),
+            time_us    		 : AP_HAL::micros64(),
+			dis_home  		: home,
+			low_motor   	: motor_low,
+			stat_accel	 	: accel_stationary,
+			velo_hover      : speed,
+			acc_td       	: accel_TD,
+			touchdown      	: td,
+			topple       	: top
+        };
+        logger.WriteBlock(&vec_land_detect, sizeof(vec_land_detect));
+
+}
+*/
+
+////////////////////////////////
+
 
 struct PACKED log_ParameterTuning {
     LOG_PACKET_HEADER;
@@ -475,6 +539,19 @@ const struct LogStructure Copter::log_structure[] = {
       "DU32",  "QBI",         "TimeUS,Id,Value", "s--", "F--" },
     { LOG_DATA_FLOAT_MSG, sizeof(log_Data_Float),         
       "DFLT",  "QBf",         "TimeUS,Id,Value", "s--", "F--" },
+
+	  //////////////////////////////
+	  { LOG_DATA_VEC_STATE, sizeof(log_vehicle_state),
+	       "STATE",  "Qffff",         "TimeUS,advR_x,advR_y,H_RPM,Fz", "s----", "F----" },
+
+
+
+	//  { Log_Write_Land_Detect, sizeof(log_land_detect),
+	//	   "LAND",  "QBBBBBBB",         "TimeUS,home,motor,acc_s,hover,ac_TD, TD, TOP", "s-------", "F-------" },
+
+
+	  ///////////////////////////////////
+
 #if FRAME_CONFIG == HELI_FRAME
     { LOG_HELI_MSG, sizeof(log_Heli),
       "HELI",  "Qffff",        "TimeUS,DRRPM,ERRPM,Gov,Throt", "s----", "F----" },

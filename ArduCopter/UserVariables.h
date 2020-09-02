@@ -7,6 +7,17 @@
 
 uint8_t killswitch_counter;
 
+float _aft_rpm;
+float _fwd_rpm;
+
+float vehicle_weight;
+
+//uint8_t touchdown_accel_counter;
+
+//bool take_off_complete;
+
+Vector2f adv_ratio;
+
 uint32_t ch9_timer;
 uint32_t ch10_timer;
 uint32_t ch11_timer;

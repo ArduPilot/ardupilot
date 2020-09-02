@@ -469,10 +469,25 @@ const AP_Param::Info Copter::var_info[] = {
     // @Param: VEHICLE_WEIGHT
     // @DisplayName:
     // @Description:
+
+    // @Values:
+    // @Range:
+    // @User:
+    GSCALAR(vec_weight,  "VEC_WEIGHT",    10.0),
+
+
+
+    // @Param: VEHICLE_WEIGHT
+    // @DisplayName:
+    // @Description:
     // @Values:
     // @Range:
     // @User:
     GSCALAR(herelink_enable,  "EN_HERELINK",    0),
+
+
+
+
 
 
 
