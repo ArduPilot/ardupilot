@@ -296,11 +296,9 @@ void Plane::airbrake_update(void)
 {
     // Calculate any manual airbrake input from RC channel option.
     int8_t manual_airbrake_percent = 0;
-    
-    RC_Channel *airbrake_in_ch = rc().find_channel_for_option(RC_Channel::AUX_FUNC::AIRBRAKE);
-    
-    if (airbrake_in_ch != nullptr && !failsafe.rc_failsafe && failsafe.throttle_counter == 0) {
-        manual_airbrake_percent = airbrake_in_ch->percent_input();
+
+    if (channel_airbrake != nullptr && !failsafe.rc_failsafe && failsafe.throttle_counter == 0) {
+        manual_airbrake_percent = channel_airbrake->percent_input();
     }
 
     // Calculate auto airbrake from negative throttle.
