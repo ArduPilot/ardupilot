@@ -245,7 +245,11 @@ void AP_CANManager::init()
         if (_drivers[drv_num] == nullptr) {
             continue;
         }
-        if (_slcan_interface.get_drv_num() != drv_num) {
+        if (_slcan_interface.get_iface_num() >= HAL_NUM_CAN_IFACES ||
+            _slcan_interface.get_iface_num() < 0) {
+            continue;
+        }
+        if (_interfaces[_slcan_interface.get_iface_num()]._driver_number != drv_num + 1) {
             _drivers[drv_num]->init(drv_num, true);
         } else {
             _drivers[drv_num]->init(drv_num, false);

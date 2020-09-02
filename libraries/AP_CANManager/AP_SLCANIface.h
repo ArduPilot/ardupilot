@@ -77,7 +77,7 @@ class CANIface: public AP_HAL::CANIface
     bool _slcan_start_req;
     uint32_t _slcan_start_req_time;
     int8_t _prev_ser_port;
-    int8_t _drv_num = -1;
+    int8_t _iface_num = -1;
     uint32_t _last_had_activity;
     AP_HAL::CANIface* _can_iface; // Can interface to be used for interaction by SLCAN interface
     HAL_Semaphore port_sem;
@@ -103,9 +103,9 @@ public:
     int set_port(AP_HAL::UARTDriver* port);
 
     void reset_params();
-    int8_t get_drv_num() const
+    int8_t get_iface_num() const
     {
-        return _drv_num;
+        return _iface_num;
     }
 
     // Overriden methods
