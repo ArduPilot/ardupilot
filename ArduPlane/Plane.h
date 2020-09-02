@@ -177,6 +177,7 @@ private:
     RC_Channel *channel_pitch;
     RC_Channel *channel_throttle;
     RC_Channel *channel_rudder;
+    RC_Channel *channel_airbrake;
 
     AP_Logger logger;
 
