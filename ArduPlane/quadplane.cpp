@@ -1975,7 +1975,8 @@ void QuadPlane::update_throttle_hover()
     }
 
     // do not update if quadplane forward motor is running (wing may be generating lift)
-    if (!is_tailsitter() && (SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) != 0)) {
+    // we use the THR_MIN value to account for petrol motors idling at THR_MIN
+    if (!is_tailsitter() && (SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) > MAX(0,plane.aparm.throttle_min+10))) {
         return;
     }
 
