@@ -1052,7 +1052,7 @@ public:
     // this should probably not be exposed
     bool state_complete() { return _state_complete; }
 
-    bool is_landing() const override;
+    virtual bool is_landing() const override;
 
     void restart_without_terrain();
 
@@ -1132,6 +1132,8 @@ public:
 
     void save_position();
     void exit();
+
+    bool is_landing() const override;
 
 protected:
 
