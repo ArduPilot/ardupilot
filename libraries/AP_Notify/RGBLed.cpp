@@ -220,11 +220,11 @@ void RGBLed::update()
 
     const uint8_t colour = (current_colour_sequence >> (step*3)) & 7;
 
-    _red_des = (colour & RED) ? brightness : _led_off;
-    _green_des = (colour & GREEN) ? brightness : _led_off;
-    _blue_des = (colour & BLUE) ? brightness : _led_off;
+    uint8_t red_des = (colour & RED) ? brightness : _led_off;
+    uint8_t green_des = (colour & GREEN) ? brightness : _led_off;
+    uint8_t blue_des = (colour & BLUE) ? brightness : _led_off;
 
-    set_rgb(_red_des, _green_des, _blue_des);
+    set_rgb(red_des, green_des, blue_des);
 }
 
 /*
