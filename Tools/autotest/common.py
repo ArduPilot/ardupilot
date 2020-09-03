@@ -6520,7 +6520,7 @@ switch value'''
         if m2 is None:
             raise NotAchievedException("Did not get repeat message")
         # wait for messages to stop coming:
-        self.drain_mav_seconds(15)
+        self.drain_mav_seconds(20)
 
         # NOTE: SIM_PIN_MASK is *magic*.  You might set it to zero,
         # but it *will* end up as 1<<btn immediately afterwards.  Thus
