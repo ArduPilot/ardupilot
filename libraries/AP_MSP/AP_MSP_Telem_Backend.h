@@ -161,6 +161,9 @@ protected:
     // MSP sensor command processing
     void msp_handle_opflow(const MSP::msp_opflow_sensor_t &pkt);
     void msp_handle_rangefinder(const MSP::msp_rangefinder_sensor_t &pkt);
+    void msp_handle_gps(const MSP::msp_gps_data_message_t &pkt);
+    void msp_handle_compass(const MSP::msp_compass_data_message_t &pkt);
+    void msp_handle_baro(const MSP::msp_baro_data_message_t &pkt);
 
     // implementation specific helpers
     // custom masks are needed for vendor specific settings

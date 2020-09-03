@@ -2,7 +2,7 @@
 
 namespace MSP
 {
-// inav/src/main/io/rangefinder_msp.c    
+// inav/src/main/io/rangefinder_msp.c
 typedef struct PACKED {
     uint8_t quality;    // [0;255]
     int32_t distance_mm; // Negative value for out of range

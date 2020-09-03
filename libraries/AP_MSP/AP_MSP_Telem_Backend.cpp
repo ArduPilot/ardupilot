@@ -468,13 +468,28 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_sensor_command(uint16_t cmd_m
 
     switch (cmd_msp) {
     case MSP2_SENSOR_RANGEFINDER: {
-        const MSP::msp_rangefinder_sensor_t pkt = *(const MSP::msp_rangefinder_sensor_t *)src->ptr;
-        msp_handle_rangefinder(pkt);
+        const MSP::msp_rangefinder_sensor_t *pkt = (const MSP::msp_rangefinder_sensor_t *)src->ptr;
+        msp_handle_rangefinder(*pkt);
     }
     break;
     case MSP2_SENSOR_OPTIC_FLOW: {
-        const MSP::msp_opflow_sensor_t pkt = *(const MSP::msp_opflow_sensor_t *)src->ptr;
-        msp_handle_opflow(pkt);
+        const MSP::msp_opflow_sensor_t *pkt = (const MSP::msp_opflow_sensor_t *)src->ptr;
+        msp_handle_opflow(*pkt);
+    }
+    break;
+    case MSP2_SENSOR_GPS: {
+        const MSP::msp_gps_data_message_t *pkt = (const MSP::msp_gps_data_message_t *)src->ptr;
+        msp_handle_gps(*pkt);
+    }
+    break;
+    case MSP2_SENSOR_COMPASS: {
+        const MSP::msp_compass_data_message_t *pkt = (const MSP::msp_compass_data_message_t *)src->ptr;
+        msp_handle_compass(*pkt);
+    }
+    break;
+    case MSP2_SENSOR_BAROMETER: {
+        const MSP::msp_baro_data_message_t *pkt = (const MSP::msp_baro_data_message_t *)src->ptr;
+        msp_handle_baro(*pkt);
     }
     break;
     }
@@ -501,6 +516,27 @@ void AP_MSP_Telem_Backend::msp_handle_rangefinder(const MSP::msp_rangefinder_sen
         return;
     }
     rangefinder->handle_msp(pkt);
+#endif
+}
+
+void AP_MSP_Telem_Backend::msp_handle_gps(const MSP::msp_gps_data_message_t &pkt)
+{
+#if HAL_MSP_GPS_ENABLED
+    AP::gps().handle_msp(pkt);
+#endif
+}
+
+void AP_MSP_Telem_Backend::msp_handle_compass(const MSP::msp_compass_data_message_t &pkt)
+{
+#if HAL_MSP_COMPASS_ENABLED
+    AP::compass().handle_msp(pkt);
+#endif
+}
+
+void AP_MSP_Telem_Backend::msp_handle_baro(const MSP::msp_baro_data_message_t &pkt)
+{
+#if HAL_MSP_BARO_ENABLED
+    AP::baro().handle_msp(pkt);
 #endif
 }
 
