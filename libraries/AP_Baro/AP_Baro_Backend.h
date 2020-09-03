@@ -24,6 +24,10 @@ public:
     bool pressure_ok(float press);
     uint32_t get_error_count() const { return _error_count; }
 
+#if HAL_MSP_BARO_ENABLED
+    virtual void handle_msp(const MSP::msp_baro_data_message_t &pkt) {}
+#endif 
+
     /*
       device driver IDs. These are used to fill in the devtype field
       of the device ID, which shows up as GND_BARO_ID* parameters to
@@ -43,6 +47,7 @@ public:
         DEVTYPE_BARO_MS5611   = 0x0B,
         DEVTYPE_BARO_SPL06    = 0x0C,
         DEVTYPE_BARO_UAVCAN   = 0x0D,
+        DEVTYPE_BARO_MSP      = 0x0E,
     };
     
 protected:
