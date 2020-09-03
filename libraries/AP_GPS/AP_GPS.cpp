@@ -35,6 +35,7 @@
 #include "AP_GPS_SIRF.h"
 #include "AP_GPS_UBLOX.h"
 #include "AP_GPS_MAV.h"
+#include "AP_GPS_MSP.h"
 #include "GPS_Backend.h"
 
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
@@ -73,7 +74,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: TYPE
     // @DisplayName: GPS type
     // @Description: GPS type
-    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:UAVCAN,10:SBF,11:GSOF,13:ERB,14:MAV,15:NOVA,16:HemisphereNMEA,17:uBlox-MovingBaseline-Base,18:uBlox-MovingBaseline-Rover
+    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:UAVCAN,10:SBF,11:GSOF,13:ERB,14:MAV,15:NOVA,16:HemisphereNMEA,17:uBlox-MovingBaseline-Base,18:uBlox-MovingBaseline-Rover,19:MSP
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("TYPE",    0, AP_GPS, _type[0], HAL_GPS_TYPE_DEFAULT),
@@ -82,7 +83,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: TYPE2
     // @DisplayName: 2nd GPS type
     // @Description: GPS type of 2nd GPS
-    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:UAVCAN,10:SBF,11:GSOF,13:ERB,14:MAV,15:NOVA,16:HemisphereNMEA,17:uBlox-MovingBaseline-Base,18:uBlox-MovingBaseline-Rover
+    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:UAVCAN,10:SBF,11:GSOF,13:ERB,14:MAV,15:NOVA,16:HemisphereNMEA,17:uBlox-MovingBaseline-Base,18:uBlox-MovingBaseline-Rover,19:MSP
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("TYPE2",   1, AP_GPS, _type[1], 0),
@@ -344,6 +345,7 @@ bool AP_GPS::needs_uart(GPS_Type type) const
     case GPS_TYPE_HIL:
     case GPS_TYPE_UAVCAN:
     case GPS_TYPE_MAV:
+    case GPS_TYPE_MSP:
         return false;
     default:
         break;
@@ -515,6 +517,12 @@ void AP_GPS::detect_instance(uint8_t instance)
         goto found_gps;
 #endif
         return; // We don't do anything here if UAVCAN is not supported
+#if HAL_MSP_GPS_ENABLED
+    case GPS_TYPE_MSP:
+        dstate->auto_detected_baud = false; // specified, not detected
+        new_gps = new AP_GPS_MSP(*this, state[instance], nullptr);
+        goto found_gps;
+#endif
     default:
         break;
     }
@@ -1019,6 +1027,17 @@ void AP_GPS::handle_msg(const mavlink_message_t &msg)
     }
     }
 }
+
+#if HAL_MSP_GPS_ENABLED
+void AP_GPS::handle_msp(const MSP::msp_gps_data_message_t &pkt)
+{
+    for (uint8_t i=0; i<num_instances; i++) {
+        if (drivers[i] != nullptr && _type[i] == GPS_TYPE_MSP) {
+            drivers[i]->handle_msp(pkt);
+        }
+    }
+}
+#endif // HAL_MSP_GPS_ENABLED
 
 /*
   set HIL (hardware in the loop) status for a GPS instance
