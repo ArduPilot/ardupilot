@@ -48,14 +48,22 @@ uint32_t MSP::msp_serial_send_frame(msp_port_t *msp, const uint8_t * hdr, uint32
 /*
  ported from betaflight/src/main/msp/msp_serial.c
  */
-uint32_t MSP::msp_serial_encode(msp_port_t *msp, msp_packet_t *packet, msp_version_e msp_version)
+uint32_t MSP::msp_serial_encode(msp_port_t *msp, msp_packet_t *packet, msp_version_e msp_version, bool is_request)
 {
     static const uint8_t msp_magic[MSP_VERSION_COUNT] = MSP_VERSION_MAGIC_INITIALIZER;
     /*
         Note: after calling sbuf_switch_to_reader() sbuf_bytes_remaining() returns the size of the packet
     */
     const uint16_t data_len = sbuf_bytes_remaining(&packet->buf);
-    const uint8_t hdr_buf[16] = { '$', msp_magic[msp_version], static_cast<uint8_t>(packet->result == MSP_RESULT_ERROR ? '!' : '>')};
+    uint8_t code;
+    if (is_request) {
+        code = '<';
+    } else if (packet->result == MSP_RESULT_ERROR) {
+        code = '!';
+    } else {
+        code = '>';
+    }
+    const uint8_t hdr_buf[16] = { '$', msp_magic[msp_version], code };
     uint8_t crc_buf[2];
     uint32_t hdr_len = 3;
     uint32_t crc_len = 0;
