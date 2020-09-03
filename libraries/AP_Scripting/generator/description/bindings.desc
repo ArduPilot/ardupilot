@@ -280,3 +280,8 @@ singleton AP_RPM method get_rpm boolean uint8_t 0 RPM_MAX_INSTANCES float'Null
 include AP_Button/AP_Button.h
 singleton AP_Button alias button
 singleton AP_Button method get_button_state boolean uint8_t 1 AP_BUTTON_NUM_PINS
+
+
+include AP_Notify/ScriptingLED.h
+singleton ScriptingLED alias LED
+singleton ScriptingLED method get_rgb void uint8_t'Ref uint8_t'Ref uint8_t'Ref
