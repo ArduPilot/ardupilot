@@ -111,6 +111,9 @@ public:
     // Ensure attitude controller have zero errors to relax rate controller output
     void relax_attitude_controllers();
 
+    // Relax only the roll and yaw rate controllers
+    void relax_roll_and_yaw_controllers();
+
     // reset rate controller I terms
     void reset_rate_controller_I_terms();
 
