@@ -482,6 +482,9 @@ public:
         return instance>=GPS_MAX_RECEIVERS? GPS_Type::GPS_TYPE_NONE : GPS_Type(_type[instance].get());
     }
 
+    // get iTOW, if supported, zero otherwie
+    uint32_t get_itow(uint8_t instance) const;
+
 protected:
 
     // configuration parameters
