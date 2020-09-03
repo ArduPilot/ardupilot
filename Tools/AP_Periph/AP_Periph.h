@@ -5,6 +5,8 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_MSP/AP_MSP.h>
+#include <AP_MSP/msp.h>
 #include "../AP_Bootloader/app_comms.h"
 #include "hwing_esc.h"
 
@@ -51,6 +53,16 @@ public:
     AP_Baro baro;
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_MSP
+    struct {
+        AP_MSP msp;
+        MSP::msp_port_t port;
+        uint32_t last_gps_ms;
+    } msp;
+    void msp_init(AP_HAL::UARTDriver *_uart);
+    void can_msp_update(void);
+#endif
+    
 #ifdef HAL_PERIPH_ENABLE_ADSB
     void adsb_init();
     void adsb_update();
