@@ -95,6 +95,10 @@ public:
     // calibrate camera attitude to align with vehicle's AHRS/EKF attitude
     void align_sensor_to_vehicle();
 
+    // update position offsets to align to AHRS position
+    // should only be called when this library is not being used as the position source
+    void align_position_to_ahrs(bool align_xy, bool align_z);
+
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
     bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const;
 
