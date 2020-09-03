@@ -100,7 +100,7 @@ bool AC_WPNav_OA::update_wpnav()
                 Vector3f stopping_point;
                 get_wp_stopping_point(stopping_point);
                 _oa_destination = Location(stopping_point);
-                if (set_wp_destination(stopping_point, false)) {
+                if (set_wp_destination(stopping_point, _terrain_alt)) {
                     _oa_state = oa_retstate;
                 }
             }
