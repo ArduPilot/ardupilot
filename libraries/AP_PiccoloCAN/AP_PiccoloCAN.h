@@ -138,7 +138,7 @@ private:
 
     // Piccolo CAN parameters
     AP_Int32 _esc_bm;       //! ESC selection bitmask
-    AP_Int32 _esc_hz;       //! ESC update rate (Hz)
+    AP_Int16 _esc_hz;       //! ESC update rate (Hz)
 
 };
 
