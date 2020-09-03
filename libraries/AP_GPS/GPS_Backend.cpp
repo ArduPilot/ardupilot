@@ -252,7 +252,12 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
         const uint32_t gps_min_period_ms = 50;
 
         // get the time the packet arrived on the UART
-        uint64_t uart_us = port->receive_time_constraint_us(msg_length);
+        uint64_t uart_us;
+        if (port) {
+            uart_us = port->receive_time_constraint_us(msg_length);
+        } else {
+            uart_us = AP_HAL::micros64();
+        }
 
         uint32_t now = AP_HAL::millis();
         uint32_t dt_ms = now - _last_ms;

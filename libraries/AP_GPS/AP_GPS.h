@@ -21,6 +21,7 @@
 #include <AP_Param/AP_Param.h>
 #include "GPS_detect_state.h"
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_MSP/msp.h>
 
 /**
    maximum number of GPS instances available on this platform. If more
@@ -46,6 +47,10 @@
 #define GPS_UBLOX_MOVING_BASELINE !HAL_MINIMIZE_FEATURES && GPS_MAX_RECEIVERS>1
 #endif
 
+#ifndef HAL_MSP_GPS_ENABLED
+#define HAL_MSP_GPS_ENABLED HAL_MSP_ENABLED && !HAL_MINIMIZE_FEATURES
+#endif
+
 class AP_GPS_Backend;
 
 /// @class AP_GPS
@@ -55,6 +60,7 @@ class AP_GPS
     friend class AP_GPS_ERB;
     friend class AP_GPS_GSOF;
     friend class AP_GPS_MAV;
+    friend class AP_GPS_MSP;
     friend class AP_GPS_MTK;
     friend class AP_GPS_MTK19;
     friend class AP_GPS_NMEA;
@@ -103,6 +109,7 @@ public:
         GPS_TYPE_HEMI = 16, // hemisphere NMEA
         GPS_TYPE_UBLOX_RTK_BASE = 17,
         GPS_TYPE_UBLOX_RTK_ROVER = 18,
+        GPS_TYPE_MSP = 19,
     };
 
     /// GPS status codes
@@ -198,6 +205,9 @@ public:
 
     // Pass mavlink data to message handlers (for MAV type)
     void handle_msg(const mavlink_message_t &msg);
+#if HAL_MSP_GPS_ENABLED
+    void handle_msp(const MSP::msp_gps_data_message_t &pkt);
+#endif
 
     // Accessor functions
 
