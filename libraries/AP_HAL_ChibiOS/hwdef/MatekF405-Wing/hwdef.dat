@@ -147,8 +147,9 @@ SPIDEV sdcard SPI3 DEVID3 SDCARD_CS MODE0 400*KHZ 25*MHZ
 # one IMU
 IMU Invensense SPI:mpu6000 ROTATION_YAW_180
 
-# one baro
+# one baro, multiple possible choices for different board varients
 BARO BMP280 I2C:0:0x76
+BARO DPS280 I2C:0:0x76
 
 define HAL_OS_FATFS_IO 1
 define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
