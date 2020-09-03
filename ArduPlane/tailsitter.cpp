@@ -32,12 +32,21 @@ bool QuadPlane::is_tailsitter(void) const
 }
 
 /*
-  return true when flying a control surface only tailsitter tailsitter
+  return true when flying a control surface only tailsitter
  */
-bool QuadPlane::is_contol_surface_tailsitter(void) const
+bool QuadPlane::is_control_surface_tailsitter(void) const
 {
     return frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER
            && ( is_zero(tailsitter.vectored_hover_gain) || !SRV_Channels::function_assigned(SRV_Channel::k_tiltMotorLeft));
+}
+
+/*
+  return true when flying a tilt-vectored tailsitter
+ */
+bool QuadPlane::is_vectored_tailsitter(void) const
+{
+    return frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER
+           && ( !is_zero(tailsitter.vectored_hover_gain) && SRV_Channels::function_assigned(SRV_Channel::k_tiltMotorLeft));
 }
 
 /*
