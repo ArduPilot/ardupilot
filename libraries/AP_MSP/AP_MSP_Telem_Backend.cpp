@@ -310,6 +310,7 @@ void AP_MSP_Telem_Backend::update_flight_mode_str(char *flight_mode_str, bool wi
                 MANU [S]
                 MANU [SS]
         */
+#ifndef HAL_NO_GCS
         const bool simple_mode = gcs().simple_input_active();
         const bool supersimple_mode = gcs().supersimple_input_active();
         const char* simple_mode_str = simple_mode ? " [S]" : (supersimple_mode ? " [SS]" : "");
@@ -320,6 +321,7 @@ void AP_MSP_Telem_Backend::update_flight_mode_str(char *flight_mode_str, bool wi
         // left pad
         uint8_t left_padded_len = MSP_TXT_VISIBLE_CHARS - (MSP_TXT_VISIBLE_CHARS - used)/2;
         snprintf(flight_mode_str, MSP_TXT_BUFFER_SIZE, "%*s", left_padded_len, buffer);
+#endif
     }
 }
 
