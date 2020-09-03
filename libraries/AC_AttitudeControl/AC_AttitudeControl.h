@@ -135,10 +135,6 @@ public:
     // Command an euler roll, pitch and yaw angle with angular velocity feedforward and smoothing
     virtual void input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw);
 
-    // Command euler yaw rate and pitch angle with roll angle specified in body frame
-    // (used only by tailsitter quadplanes)
-    virtual void input_euler_rate_yaw_euler_angle_pitch_bf_roll(bool plane_controls, float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds);
-
     // Command an euler roll, pitch, and yaw rate with angular velocity feedforward and smoothing
     void input_euler_rate_roll_pitch_yaw(float euler_roll_rate_cds, float euler_pitch_rate_cds, float euler_yaw_rate_cds);
 
@@ -174,8 +170,25 @@ public:
     // same result with the fewest multiplications. Even though it may look like a bug, it is intentional. See issue 4895.
     Vector3f get_att_target_euler_cd() const { return _attitude_target_euler_angle * degrees(100.0f); }
 
-    // Return the body-to-NED target attitude used by the quadplane-specific attitude control input methods
+    // Get and set the body-to-NED target attitude used by the quadplane-specific attitude control input methods.
     Quaternion get_attitude_target_quat() const { return _attitude_target_quat; }
+    void set_attitude_target_quat(const Quaternion &q) { _attitude_target_quat = q; }
+
+    // Get and set target euler angles.
+    const Vector3f& get_attitude_target_euler_angle() const { return _attitude_target_euler_angle; }
+    void set_attitude_target_euler_angle(const Vector3f &target) { _attitude_target_euler_angle = target; }
+
+    // Set angular error quaternion.
+    void set_attitude_ang_error(const Quaternion &q) {_attitude_ang_error = q; }
+
+    // Set angular velocity target.
+    void set_attitude_target_ang_vel(const Vector3f &v) {
+        _attitude_target_ang_vel = v;
+        ang_vel_to_euler_rate(_attitude_target_euler_angle, _attitude_target_ang_vel, _attitude_target_euler_rate);
+    }
+
+    // Set rate target angular velocity.
+    void set_rate_target_ang_vel(const Vector3f &v) { _rate_target_ang_vel = v; }
 
     // Return the angle between the target thrust vector and the current thrust vector.
     float get_att_error_angle_deg() const { return degrees(_thrust_error_angle); }
@@ -327,10 +340,10 @@ public:
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
-protected:
-
     // Update rate_target_ang_vel using attitude_error_rot_vec_rad
     Vector3f update_ang_vel_target_from_att_error(const Vector3f &attitude_error_rot_vec_rad);
+
+protected:
 
     // Return angle in radians to be added to roll angle. Used by heli to counteract
     // tail rotor thrust in hover. Overloaded by AC_Attitude_Heli to return angle.
