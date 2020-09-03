@@ -26,6 +26,9 @@
 #include "AP_Compass_MMC3416.h"
 #include "AP_Compass_MAG3110.h"
 #include "AP_Compass_RM3100.h"
+#if HAL_MSP_COMPASS_ENABLED
+#include "AP_Compass_MSP.h"
+#endif
 #include "AP_Compass.h"
 #include "Compass_learn.h"
 #include <stdio.h>
@@ -774,6 +777,8 @@ void Compass::init()
 #ifndef HAL_BUILD_AP_PERIPH
     AP::ahrs().set_compass(this);
 #endif
+
+    init_done = true;
 }
 
 #if COMPASS_MAX_INSTANCES > 1 || COMPASS_MAX_UNREG_DEV
@@ -1170,6 +1175,14 @@ void Compass::_detect_backends(void)
     // allow boards to ask for external probing of all i2c compass types in hwdef.dat
     _probe_external_i2c_compasses();
     CHECK_UNREG_LIMIT_RETURN;
+#endif
+
+#if HAL_MSP_COMPASS_ENABLED
+    for (uint8_t i=0; i<8; i++) {
+        if (msp_instance_mask & (1U<<i)) {
+            ADD_BACKEND(DRIVER_MSP, new AP_Compass_MSP(i));
+        }
+    }
 #endif
 
 #if defined(HAL_MAG_PROBE_LIST)
@@ -1941,6 +1954,23 @@ bool Compass::have_scale_factor(uint8_t i) const
     return true;
 }
 
+#if HAL_MSP_COMPASS_ENABLED
+void Compass::handle_msp(const MSP::msp_compass_data_message_t &pkt)
+{
+    if (!_driver_enabled(DRIVER_MSP)) {
+        return;
+    }
+    if (!init_done) {
+        if (pkt.instance < 8) {
+            msp_instance_mask |= 1U<<pkt.instance;
+        }
+    } else {
+        for (uint8_t i=0; i<_backend_count; i++) {
+            _backends[i]->handle_msp(pkt);
+        }
+    }
+}
+#endif // HAL_MSP_COMPASS_ENABLED
 
 // singleton instance
 Compass *Compass::_singleton;
