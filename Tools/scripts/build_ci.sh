@@ -47,7 +47,7 @@ function run_autotest() {
         popd
         mavproxy_installed=1
         # now uninstall the version of pymavlink pulled in by MAVProxy deps:
-        pip uninstall -y pymavlink
+        python -m pip uninstall -y pymavlink
     fi
     if [ $pymavlink_installed -eq 0 ]; then
         echo "Installing pymavlink"
