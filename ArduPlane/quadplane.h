@@ -115,8 +115,11 @@ public:
     // return true when tailsitter frame configured
     bool is_tailsitter(void) const;
 
-    // return true when flying a control surface only tailsitter tailsitter
-    bool is_contol_surface_tailsitter(void) const;
+    // return true when flying a control surface only tailsitter
+    bool is_control_surface_tailsitter(void) const;
+
+    // true when flying a tilt-vectored tailsitter
+    bool _is_vectored;
 
     // return true when flying a tailsitter in VTOL
     bool tailsitter_active(void);
@@ -250,6 +253,8 @@ private:
     void control_qacro(void);
     void init_hover(void);
     void control_hover(void);
+    void relax_attitude_control();
+
 
     void init_loiter(void);
     void init_qland(void);

@@ -1,4 +1,5 @@
 #include "Plane.h"
+#include "AC_AttitudeControl/AC_AttitudeControl_TS.h"
 
 const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
@@ -708,10 +709,16 @@ bool QuadPlane::setup(void)
         AP_BoardConfig::config_error("Unable to allocate %s", "ahrs_view");
     }
 
-    attitude_control = new AC_AttitudeControl_Multi(*ahrs_view, aparm, *motors, loop_delta_t);
+    if (((frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) || (tailsitter.motor_mask != 0))
+        && (tilt.tilt_type != TILT_TYPE_BICOPTER)) {
+        attitude_control = new AC_AttitudeControl_TS(*ahrs_view, aparm, *motors, loop_delta_t);
+    } else {
+        attitude_control = new AC_AttitudeControl_Multi(*ahrs_view, aparm, *motors, loop_delta_t);
+    }
     if (!attitude_control) {
         AP_BoardConfig::config_error("Unable to allocate %s", "attitude_control");
     }
+
     AP_Param::load_object_from_eeprom(attitude_control, attitude_control->var_info);
     pos_control = new AC_PosControl(*ahrs_view, inertial_nav, *motors, *attitude_control);
     if (!pos_control) {
@@ -749,6 +756,13 @@ bool QuadPlane::setup(void)
     motors->set_interlock(true);
     pos_control->set_dt(loop_delta_t);
     attitude_control->parameter_sanity_check();
+
+    // TODO: update this if servo function assignments change
+    // used by relax_attitude_control() to control special behavior for vectored tailsitters
+    _is_vectored = (motor_class == AP_Motors::MOTOR_FRAME_TAILSITTER) &&
+                   (!is_zero(tailsitter.vectored_hover_gain) &&
+                    (SRV_Channels::function_assigned(SRV_Channel::k_tiltMotorLeft) ||
+                     SRV_Channels::function_assigned(SRV_Channel::k_tiltMotorRight)));
 
     // setup the trim of any motors used by AP_Motors so I/O board
     // failsafe will disable motors
@@ -976,10 +990,7 @@ void QuadPlane::hold_stabilize(float throttle_in)
     if ((throttle_in <= 0) && (air_mode == AirMode::OFF)) {
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control->set_throttle_out(0, true, 0);
-        if (!is_tailsitter()) {
-            // always stabilize with tailsitters so we can do belly takeoffs
-            attitude_control->relax_attitude_controllers();
-        }
+        relax_attitude_control();
     } else {
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
         bool should_boost = true;
@@ -1044,6 +1055,13 @@ void QuadPlane::run_z_controller(void)
     pos_control->update_z_controller();    
 }
 
+void QuadPlane::relax_attitude_control()
+{
+    // disable roll and yaw control for vectored tailsitters
+    // if not a vectored tailsitter completely disable attitude control
+    attitude_control->relax_attitude_controllers(_is_vectored);
+}
+
 /*
   check if we should relax the attitude controllers
 
@@ -1054,7 +1072,7 @@ void QuadPlane::check_attitude_relax(void)
 {
     uint32_t now = AP_HAL::millis();
     if (now - last_att_control_ms > 100) {
-        attitude_control->relax_attitude_controllers();
+        relax_attitude_control();
     }
     last_att_control_ms = now;
 }
@@ -1185,7 +1203,7 @@ void QuadPlane::control_qacro(void)
     if (throttle_wait) {
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control->set_throttle_out(0, true, 0);
-        attitude_control->relax_attitude_controllers();
+        relax_attitude_control();
     } else {
         check_attitude_relax();
 
@@ -1226,7 +1244,7 @@ void QuadPlane::control_hover(void)
     if (throttle_wait) {
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control->set_throttle_out(0, true, 0);
-        attitude_control->relax_attitude_controllers();
+        relax_attitude_control();
         pos_control->relax_alt_hold_controllers(0);
     } else {
         hold_hover(get_pilot_desired_climb_rate_cms());
@@ -1361,7 +1379,7 @@ void QuadPlane::control_loiter()
     if (throttle_wait) {
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control->set_throttle_out(0, true, 0);
-        attitude_control->relax_attitude_controllers();
+        relax_attitude_control();
         pos_control->relax_alt_hold_controllers(0);
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
@@ -1575,7 +1593,7 @@ float QuadPlane::desired_auto_yaw_rate_cds(void) const
  */
 bool QuadPlane::assistance_needed(float aspeed, bool have_airspeed)
 {
-    if (assist_speed <= 0 || is_contol_surface_tailsitter()) {
+    if (assist_speed <= 0 || is_control_surface_tailsitter()) {
         // assistance disabled
         in_angle_assist = false;
         angle_error_start_ms = 0;
