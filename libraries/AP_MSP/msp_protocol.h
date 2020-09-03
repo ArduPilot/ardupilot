@@ -344,6 +344,7 @@
 #define MSP_SET_SIGNATURE        249    //in message          Sets the signature of the board and serial number
 
 // V2 commands
+#define MSP2_SENSOR_RANGEFINDER     0x1F01
 #define MSP2_SENSOR_OPTIC_FLOW      0x1F02
 #define MSP2_SENSOR_GPS             0x1F03
 #define MSP2_SENSOR_COMPASS         0x1F04

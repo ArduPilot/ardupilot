@@ -11,6 +11,7 @@
 #include "msp_protocol.h"
 #include "msp_sbuf.h"
 #include "msp_version.h"
+#include "msp_sensors.h"
 
 #if HAL_MSP_ENABLED
 
@@ -25,10 +26,8 @@
 #define MSP_PORT_INBUF_SIZE 192
 #define MSP_PORT_OUTBUF_SIZE 512
 #define MSP_MAX_HEADER_SIZE     9
-// betaflight/src/main/msp/msp_protocol_v2_sensor.h
+// inav/src/main/msp/msp_protocol_v2_sensor.h
 #define MSP2_IS_SENSOR_MESSAGE(x)   ((x) >= 0x1F00U && (x) <= 0x1FFFU)
-#define MSP2_SENSOR_RANGEFINDER     0x1F01
-#define MSP2_SENSOR_OPTIC_FLOW      0x1F02
 
 class AP_MSP_Telem_Backend;
 
@@ -107,17 +106,6 @@ typedef struct msp_port_s {
     uint8_t checksum1;
     uint8_t checksum2;
 } msp_port_t;
-
-typedef struct PACKED {
-    uint8_t quality;    // [0;255]
-    int32_t distance_mm; // Negative value for out of range
-} msp_rangefinder_sensor_t;
-
-typedef struct PACKED {
-    uint8_t quality;    // [0;255]
-    int32_t motion_x;
-    int32_t motion_y;
-} msp_opflow_sensor_t;
 
 // betaflight/src/main/sensors/battery.h
 typedef enum : uint8_t {
