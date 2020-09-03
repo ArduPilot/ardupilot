@@ -383,6 +383,14 @@ def ap_find_benchmarks(bld, use=[]):
         return
 
     includes = [bld.srcnode.abspath() + '/benchmarks/']
+    to_remove = '-Werror=suggest-override'
+    if to_remove in bld.env.CXXFLAGS:
+        need_remove = True
+    else:
+        need_remove = False
+    if need_remove:
+        while to_remove in bld.env.CXXFLAGS:
+            bld.env.CXXFLAGS.remove(to_remove)
 
     for f in bld.path.ant_glob(incl='*.cpp'):
         ap_program(
