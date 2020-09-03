@@ -19,4 +19,4 @@ static void BM_MatrixMultiplication(benchmark::State& state)
 
 BENCHMARK(BM_MatrixMultiplication);
 
-BENCHMARK_MAIN()
+BENCHMARK_MAIN();
