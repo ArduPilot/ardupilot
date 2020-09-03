@@ -421,6 +421,9 @@ protected:
     Vector2f    _vehicle_horiz_vel;     // velocity to use if _flags.vehicle_horiz_vel_override is set
     LowPassFilterFloat _vel_error_filter;   // low-pass-filter on z-axis velocity error
 
+    // XY PID terms for logging
+    Vector2f _vel_xy_p, _vel_xy_i, _vel_xy_d;
+
     LowPassFilterVector2f _accel_target_filter; // acceleration target filter
 
     // ekf reset handling
