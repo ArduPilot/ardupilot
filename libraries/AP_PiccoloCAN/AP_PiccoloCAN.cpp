@@ -147,14 +147,7 @@ void AP_PiccoloCAN::loop()
 
     while (true) {
 
-        // Calculate the output rate (in ms) based on the configured rate (in Hz)
-        if (_esc_hz < PICCOLO_MSG_RATE_HZ_MIN) {
-            _esc_hz = PICCOLO_MSG_RATE_HZ_MIN;
-        }
-
-        if (_esc_hz > PICCOLO_MSG_RATE_HZ_MAX) {
-            _esc_hz = PICCOLO_MSG_RATE_HZ_MAX;
-        }
+        _esc_hz = constrain_int16(_esc_hz, PICCOLO_MSG_RATE_HZ_MIN, PICCOLO_MSG_RATE_HZ_MAX);
 
         escCmdRateMs = (uint16_t) ((float) 1000 / _esc_hz);
 
