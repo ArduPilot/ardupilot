@@ -229,6 +229,20 @@ void AP_VisualOdom::align_sensor_to_vehicle()
     }
 }
 
+// update position offsets to align to AHRS position.  Should only be called when this library is not being used as the position source
+void AP_VisualOdom::align_position_to_ahrs(bool align_xy, bool align_z)
+{
+    // exit immediately if not enabled
+    if (!enabled()) {
+        return;
+    }
+
+    // call backend
+    if (_driver != nullptr) {
+        _driver->align_position_to_ahrs(align_xy, align_z);
+    }
+}
+
 // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
 bool AP_VisualOdom::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const
 {

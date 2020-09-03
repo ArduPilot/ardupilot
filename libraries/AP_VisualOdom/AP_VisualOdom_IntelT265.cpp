@@ -38,6 +38,11 @@ void AP_VisualOdom_IntelT265::handle_vision_position_estimate(uint64_t remote_ti
             _align_camera = false;
         }
     }
+    if (_align_posxy || _align_posz) {
+        if (align_position_to_ahrs(pos, _align_posxy, _align_posz)) {
+            _align_posxy = _align_posz = false;
+        }
+    }
 
     // rotate position and attitude to align with vehicle
     rotate_and_correct_position(pos);
@@ -183,6 +188,32 @@ bool AP_VisualOdom_IntelT265::align_sensor_to_vehicle(const Vector3f &position, 
 
     // update position correction to remove change due to rotation
     _pos_correction += (pos_orig - pos_new);
+
+    return true;
+}
+
+// align position with ahrs position by updating _pos_correction
+// sensor_pos should be the position directly from the sensor with only scaling applied (i.e. no yaw or position corrections)
+bool AP_VisualOdom_IntelT265::align_position_to_ahrs(const Vector3f &sensor_pos, bool align_xy, bool align_z)
+{
+    // fail immediately if ahrs cannot provide position
+    Vector3f ahrs_pos_ned;
+    if (!AP::ahrs().get_relative_position_NED_origin(ahrs_pos_ned)) {
+        return false;
+    }
+
+    // calculate position with current rotation and correction
+    Vector3f pos_orig = sensor_pos;
+    rotate_and_correct_position(pos_orig);
+
+    // update position correction
+    if (align_xy) {
+        _pos_correction.x += (ahrs_pos_ned.x - pos_orig.x);
+        _pos_correction.y += (ahrs_pos_ned.y - pos_orig.y);
+    }
+    if (align_z) {
+        _pos_correction.z += (ahrs_pos_ned.z - pos_orig.z);
+    }
 
     return true;
 }
