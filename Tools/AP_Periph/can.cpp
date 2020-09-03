@@ -1180,6 +1180,9 @@ void AP_Periph_FW::can_update()
 #ifdef HAL_PERIPH_ENABLE_HWESC
     hwesc_telem_update();
 #endif
+#ifdef HAL_PERIPH_ENABLE_MSP
+    msp_sensor_update();
+#endif
 
     processTx();
     processRx();
