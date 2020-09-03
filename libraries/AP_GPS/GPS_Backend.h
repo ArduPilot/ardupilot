@@ -71,6 +71,11 @@ public:
     virtual bool get_RTCMV3(const uint8_t *&bytes, uint16_t &len) { return false; }
     virtual void clear_RTCMV3(void) {};
 
+    // return iTOW of last message, or zero if not supported
+    uint32_t get_last_itow(void) const {
+        return _last_itow;
+    }
+
 protected:
     AP_HAL::UARTDriver *port;           ///< UART we are attached to
     AP_GPS &gps;                        ///< access to frontend (for parameters)

@@ -1795,6 +1795,15 @@ bool AP_GPS::logging_failed(void) const {
     return false;
 }
 
+// get iTOW, if supported, zero otherwie
+uint32_t AP_GPS::get_itow(uint8_t instance) const
+{
+    if (instance >= GPS_MAX_RECEIVERS || drivers[instance] == nullptr) {
+        return 0;
+    }
+    return drivers[instance]->get_last_itow();
+}
+
 namespace AP {
 
 AP_GPS &gps()
