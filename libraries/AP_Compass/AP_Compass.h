@@ -8,6 +8,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_MSP/msp.h>
 
 #include "AP_Compass_Backend.h"
 #include "Compass_PerMotor.h"
@@ -345,6 +346,10 @@ public:
     MAV_RESULT mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
                                  float lat_deg, float lon_deg);
 
+#if HAL_MSP_COMPASS_ENABLED
+    void handle_msp(const MSP::msp_compass_data_message_t &pkt);
+#endif
+
 private:
     static Compass *_singleton;
 
@@ -416,8 +421,9 @@ private:
         DRIVER_QMC5883L =12,
         DRIVER_SITL     =13,
         DRIVER_MAG3110  =14,
-        DRIVER_IST8308  = 15,
+        DRIVER_IST8308  =15,
 		DRIVER_RM3100   =16,
+        DRIVER_MSP      =17,
     };
 
     bool _driver_enabled(enum DriverType driver_type);
@@ -597,6 +603,11 @@ private:
     bool _initial_location_set;
 
     bool _cal_thread_started;
+
+#if HAL_MSP_COMPASS_ENABLED
+    uint8_t msp_instance_mask;
+#endif
+    bool init_done;
 };
 
 namespace AP {
