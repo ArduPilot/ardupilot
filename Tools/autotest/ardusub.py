@@ -152,9 +152,21 @@ class AutoTestSub(AutoTest):
 
         # let the vehicle settle (momentum / stopping point shenanigans....)
         self.delay_sim_time(1)
-
         self.watch_altitude_maintained()
 
+        # Make sure the code can handle buoyancy changes
+        self.set_parameter("SIM_BUOYANCY", 10)
+        self.watch_altitude_maintained()
+        self.set_parameter("SIM_BUOYANCY", -10)
+        self.watch_altitude_maintained()
+
+        # Make sure that the ROV will dive with a small input down even if there is a 10N buoyancy force upwards
+        self.set_parameter("SIM_BUOYANCY", 10)
+        self.set_rc(Joystick.Throttle, 1450)
+        self.wait_altitude(altitude_min=-6, altitude_max=-5.5)
+
+        self.set_rc(Joystick.Throttle, 1500)
+        self.watch_altitude_maintained()
         self.disarm_vehicle()
 
     def test_pos_hold(self):
