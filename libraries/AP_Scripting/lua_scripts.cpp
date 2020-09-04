@@ -246,6 +246,7 @@ void lua_scripts::run_next_script(lua_State *L) {
 }
 
 void lua_scripts::remove_script(lua_State *L, script_info *script) {
+    WITH_SEMAPHORE(sem);
     if (script == nullptr) {
         return;
     }
@@ -273,6 +274,7 @@ void lua_scripts::remove_script(lua_State *L, script_info *script) {
 }
 
 void lua_scripts::reschedule_script(script_info *script) {
+    WITH_SEMAPHORE(sem);
     if (script == nullptr) {
 #if defined(AP_SCRIPTING_CHECKS) && AP_SCRIPTING_CHECKS >= 1
        AP_HAL::panic("Lua: Attempted to schedule a null pointer");
@@ -385,14 +387,17 @@ void lua_scripts::run(void) {
 
         if (scripts != nullptr) {
 #if defined(AP_SCRIPTING_CHECKS) && AP_SCRIPTING_CHECKS >= 1
-              // Sanity check that the scripts list is ordered correctly
-              script_info *sanity = scripts;
-              while (sanity->next != nullptr) {
-                  if (sanity->next_run_ms > sanity->next->next_run_ms) {
-                      AP_HAL::panic("Lua: Script tasking order has been violated");
-                  }
-                  sanity = sanity->next;
-              }
+            {
+                WITH_SEMAPHORE(sem);
+                // Sanity check that the scripts list is ordered correctly
+                script_info *sanity = scripts;
+                while (sanity->next != nullptr) {
+                    if (sanity->next_run_ms > sanity->next->next_run_ms) {
+                        AP_HAL::panic("Lua: Script tasking order has been violated");
+                    }
+                    sanity = sanity->next;
+                }
+            }
 #endif // defined(AP_SCRIPTING_CHECKS) && AP_SCRIPTING_CHECKS >= 1
 
             // compute delay time
@@ -430,4 +435,47 @@ void lua_scripts::run(void) {
         }
 
     }
+}
+
+bool lua_scripts::script_running(const char *filename)
+{
+    WITH_SEMAPHORE(sem);
+    script_info *test = scripts;
+    while (test != nullptr) {
+        if (strcmp(test->name,filename) == 0) {
+            return true;
+        }
+        test = test->next;
+    }
+    return false;
+}
+
+bool lua_scripts::script_stop(const char *filename)
+{
+    WITH_SEMAPHORE(sem);
+    script_info *test = scripts;
+    while (test != nullptr) {
+        if (strcmp(test->name,filename) == 0) {
+            remove_script(lua_state, test);
+            return true;
+        }
+        test = test->next;
+    }
+    return false;
+}
+
+bool lua_scripts::script_start(const char *filename)
+{
+    script_stop(filename);
+    size_t size = strlen(filename) + 1;
+    char * name = (char *) hal.util->heap_realloc(_heap, nullptr, strlen(filename) + 1);
+    snprintf(name, size, "%s", filename);
+    script_info * script = load_script(lua_state, name);
+    if (script == nullptr) {
+        hal.util->heap_realloc(_heap, name, 0);
+        return false;
+    }
+    WITH_SEMAPHORE(sem);
+    reschedule_script(script);
+    return true;
 }

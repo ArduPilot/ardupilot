@@ -21,6 +21,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Filesystem/AP_Filesystem.h>
 
+class lua_scripts;
 class AP_Scripting
 {
 public:
@@ -50,12 +51,17 @@ public:
         bool session;
     } terminal;
 
+    // start, stop and check on scripts
+    bool script_start(const char *filename);
+    bool script_stop(const char *filename);
+    bool script_running(const char *filename);
+
 private:
+
+    lua_scripts* lua;
 
     bool repl_start(void);
     void repl_stop(void);
-
-    void load_script(const char *filename); // load a script from a file
 
     void thread(void); // main script execution thread
 
