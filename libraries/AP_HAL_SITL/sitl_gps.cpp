@@ -116,7 +116,7 @@ static void simulation_timeval(struct timeval *tv)
     static struct timeval first_tv;
     if (first_usec == 0) {
         first_usec = now;
-        gettimeofday(&first_tv, nullptr);
+        first_tv.tv_sec = AP::sitl()->start_time_UTC;
     }
     *tv = first_tv;
     tv->tv_sec += now / 1000000ULL;
