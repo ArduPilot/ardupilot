@@ -255,6 +255,7 @@ singleton AP_Mission method get_current_do_cmd_id uint16_t
 singleton AP_Mission method num_commands uint16_t
 singleton AP_Mission method get_item boolean uint16_t 0 UINT16_MAX mavlink_mission_item_int_t'Null
 singleton AP_Mission method set_item boolean uint16_t 0 UINT16_MAX mavlink_mission_item_int_t
+singleton AP_Mission method clear boolean
 
 userdata mavlink_mission_item_int_t field param1 float read write -FLT_MAX FLT_MAX
 userdata mavlink_mission_item_int_t field param2 float read write -FLT_MAX FLT_MAX
