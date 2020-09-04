@@ -19,8 +19,8 @@ public:
     /// init_target to a position in cm from ekf origin
     void init_target(const Vector3f& position);
 
-    /// initialize's position and feed-forward velocity from current pos and velocity
-    void init_target();
+    /// initializes position and feed-forward velocity from current pos and velocity
+    void init_target(bool init_I_terms=true);
 
     /// reduce response for landing
     void soften_for_landing();

@@ -112,8 +112,8 @@ void AC_Loiter::init_target(const Vector3f& position)
     }
 }
 
-/// initialize's position and feed-forward velocity from current pos and velocity
-void AC_Loiter::init_target()
+/// initializes position and feed-forward velocity from current pos and velocity
+void AC_Loiter::init_target(bool init_I_terms)
 {
     const Vector3f& curr_pos = _inav.get_position();
     const Vector3f& curr_vel = _inav.get_velocity();
@@ -139,7 +139,7 @@ void AC_Loiter::init_target()
     _pos_control.set_desired_accel_xy(_desired_accel.x, _desired_accel.y);
 
     // initialise position controller
-    _pos_control.init_xy_controller();
+    _pos_control.init_xy_controller(init_I_terms);
 }
 
 /// reduce response for landing
