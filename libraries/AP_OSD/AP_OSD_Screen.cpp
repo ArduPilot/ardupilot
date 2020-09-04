@@ -975,7 +975,7 @@ char AP_OSD_Screen::u_icon(enum unit_type unit)
     static const char icons_aviation[UNIT_TYPE_LAST] {
         (char)SYM_ALT_FT,   //ALTITUDE Ft
         (char)SYM_KN,       //SPEED Knots
-        (char)SYM_FS,       //VSPEED
+        (char)SYM_FTMIN,    //VSPEED
         (char)SYM_FT,       //DISTANCE
         (char)SYM_NM,       //DISTANCE_LONG Nm
         (char)SYM_DEGREES_C //TEMPERATURE
