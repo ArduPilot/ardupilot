@@ -1,6 +1,5 @@
 -- example of logging to a file on the SD card and to data flash
 local file_name = "AHRS_DATA.csv"
-local file
 
 -- index for the data and table
 local roll = 1
@@ -10,16 +9,10 @@ local interesting_data = {}
 
 local function write_to_file()
 
-  if not file then
-    error("Could not open file")
-  end
-
   -- write data
-  -- separate with comas and add a carriage return
-  file:write(tostring(millis()) .. ", " .. table.concat(interesting_data,", ") .. "\n")
-
-  -- make sure file is upto date
-  file:flush()
+  local file = io.open(file_name, "a")
+  file:write(tostring(millis()), ", ", table.concat(interesting_data,", "), "\n")
+  file:close()
 
 end
 
@@ -50,15 +43,13 @@ function update()
 end
 
 -- make a file
--- note that this appends to the same the file each time, you will end up with a very big file
--- you may want to make a new file each time using a unique name
-file = io.open(file_name, "a")
+local file = io.open(file_name, "w")
 if not file then
   error("Could not make file")
 end
 
 -- write the CSV header
 file:write('Time Stamp(ms), roll(deg), pitch(deg), yaw(deg)\n')
-file:flush()
+file:close()
 
 return update, 10000
