@@ -170,6 +170,10 @@ public:
     ///     this does not update the xy target
     void init_xy_controller();
 
+    /// init_xy_controller - initialise the xy controller
+    ///     Implemented by child class AC_PosControl_TS to support tailsitter quadplanes
+    virtual void init_xy_controller(bool init_I_terms) {};
+
     /// standby_xyz_reset - resets I terms and removes position error
     ///     This function will let Loiter and Alt Hold continue to operate
     ///     in the event that the flight controller is in control of the
