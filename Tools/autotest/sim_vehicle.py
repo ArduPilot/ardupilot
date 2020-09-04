@@ -26,6 +26,9 @@ import binascii
 from pymavlink import mavextra
 from pysim import vehicleinfo
 
+import time
+import datetime
+
 # List of open terminal windows for macosx
 windowID = []
 
@@ -656,6 +659,16 @@ def start_vehicle(binary, opts, stuff, spawns=None):
     if opts.mcast:
         cmd.extend(["--uartA mcast:"])
 
+    if cmd_opts.start_time is not None:
+        # Parse start_time into a double precision number specifying seconds since 1900.
+        try:
+            start_time_UTC = time.mktime(datetime.datetime.strptime(cmd_opts.start_time, '%Y-%m-%d-%H:%M').timetuple())
+        except:
+            print("Incorrect start time format - require YYYY-MM-DD-HH:MM (given %s)" % cmd_opts.start_time)
+            sys.exit(1)
+
+        cmd.append("--start-time=%d" % start_time_UTC)
+
     old_dir = os.getcwd()
     for i, i_dir in zip(instances, instance_dir):
         c = ["-I" + str(i)]
@@ -1041,6 +1054,10 @@ group_sim.add_option("--disable-ekf2",
 group_sim.add_option("--disable-ekf3",
                      action='store_true',
                      help="disable EKF3 in build")
+group_sim.add_option("", "--start-time",
+                     default=None,
+                     type='string',
+                     help="specify simulation start time in format YYYY-MM-DD-HH:MM in your local time zone")
 parser.add_option_group(group_sim)
 
 
