@@ -22,7 +22,6 @@
 
 #include <stdint.h>
 #include <stdlib.h>
-#include <type_traits>
 
 // used to pack structures
 #define PACKED __attribute__((__packed__))
@@ -72,44 +71,6 @@
 #define DEFINE_BYTE_ARRAY_METHODS                                                                   \
     inline uint8_t &operator[](size_t i) { return reinterpret_cast<uint8_t *>(this)[i]; }           \
     inline uint8_t operator[](size_t i) const { return reinterpret_cast<const uint8_t *>(this)[i]; }
-
-/**
- * Check if bit bitnumber is set in value, returned as a
- * bool. Bitnumber starts at 0 for the first bit
- * @tparam T the variable type. It should be an integer type
- * @param value the variable
- * @param bitnumber bit number to be checked
- * @return true if the bit is setted, false otherwise
- */
-template <typename T>
-bool BIT_IS_SET(T value, uint8_t bitnumber) noexcept {
-    static_assert(std::is_integral<T>::value, "Integral required.");
-    return (value & (1U<<(bitnumber))) != 0;
-}
-
-/**
- * Get low byte from 2 bytes integer
- * @tparam T the variable type. It will be checked to be uint16_t
- * @param i the variable
- * @return the low byte
- */
-template <typename T>
-uint8_t LOWBYTE (T const& i) noexcept {
-    static_assert(std::is_same<T, uint16_t>::value, "type must be `uint16_t`");
-    return static_cast<uint8_t>(i);
-}
-
-/**
- * Get high byte from 2 bytes integer
- * @tparam T the variable type. It will be checked to be uint16_t
- * @param i the variable
- * @return the high byte
- */
-template <typename T>
-uint8_t HIGHBYTE (T const& i) noexcept {
-    static_assert(std::is_same<T, uint16_t>::value, "type must be `uint16_t`");
-    return static_cast<uint8_t>(i>>8);
-}
 
 #define ARRAY_SIZE(_arr) (sizeof(_arr) / sizeof(_arr[0]))
 
@@ -173,17 +134,3 @@ bool hex_to_uint8(uint8_t a, uint8_t &res);  // return the uint8 value of an asc
   strncpy without the warning for not leaving room for nul termination
  */
 void strncpy_noterm(char *dest, const char *src, size_t n);
-
-/*
-  Bit manipulation
- */
-//#define BIT_SET(value, bitnumber) ((value) |= (((typeof(value))1U) << (bitnumber)))
-template <typename T> void BIT_SET (T& value, uint8_t bitnumber) noexcept {
-     static_assert(std::is_integral<T>::value, "Integral required.");
-     ((value) |= ((T)(1U) << (bitnumber)));
- }
-//#define BIT_CLEAR(value, bitnumber) ((value) &= ~(((typeof(value))1U) << (bitnumber)))
-template <typename T> void BIT_CLEAR (T& value, uint8_t bitnumber) noexcept {
-     static_assert(std::is_integral<T>::value, "Integral required.");
-     ((value) &= ~((T)(1U) << (bitnumber)));
- }
