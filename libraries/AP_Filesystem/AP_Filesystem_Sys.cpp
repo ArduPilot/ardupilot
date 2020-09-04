@@ -21,6 +21,7 @@
 #include "AP_Filesystem_Sys.h"
 #include <AP_Math/AP_Math.h>
 #include <AP_CANManager/AP_CANManager.h>
+#include <AP_Scheduler/AP_Scheduler.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -51,6 +52,17 @@ int AP_Filesystem_Sys::open(const char *fname, int flags)
         r.data->data = (char *)malloc(max_size);
         if (r.data->data) {
             r.data->length = hal.util->thread_info(r.data->data, max_size);
+        }
+    }
+    if (strcmp(fname, "tasks.txt") == 0) {
+        const uint32_t max_size = 6144;
+        r.data->data = (char *)malloc(max_size);
+        if (r.data->data) {
+            r.data->length = AP::scheduler().task_info(r.data->data, max_size);
+            if (r.data->length == 0) { // the feature may be disabled
+                free(r.data->data);
+                r.data->data = nullptr;
+            }
         }
     }
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
