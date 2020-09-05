@@ -6648,20 +6648,19 @@ switch value'''
     def test_button(self):
         self.set_parameter("SIM_PIN_MASK", 0)
         self.set_parameter("BTN_ENABLE", 1)
-        btn = 2
+        btn = 4
         pin = 3
         self.drain_mav()
         self.set_parameter("BTN_PIN%u" % btn, pin)
         m = self.mav.recv_match(type='BUTTON_CHANGE', blocking=True, timeout=1)
-        self.progress("m: %s" % str(m))
+        self.progress("### m: %s" % str(m))
         if m is None:
             raise NotAchievedException("Did not get BUTTON_CHANGE event")
-        mask = 1<<btn
-        if m.state & mask:
-            raise NotAchievedException("Bit incorrectly set in mask (got=%u dontwant=%u)" % (m.state, mask))
-        # SITL instantly reverts the pin to its old value
+        mask = 1<<pin
+        if not (m.state & mask):
+            raise NotAchievedException("Bit not set in mask (got=%u want=%u)" % (m.state, mask))
         m2 = self.mav.recv_match(type='BUTTON_CHANGE', blocking=True, timeout=1)
-        self.progress("m2: %s" % str(m2))
+        self.progress("### m2: %s" % str(m2))
         if m2 is None:
             raise NotAchievedException("Did not get repeat message")
         # wait for messages to stop coming:
@@ -6670,22 +6669,23 @@ switch value'''
         # NOTE: SIM_PIN_MASK is *magic*.  You might set it to zero,
         # but it *will* end up as 1<<btn immediately afterwards.  Thus
         # not attempting to fetch the value back here:
-        self.send_set_parameter("SIM_PIN_MASK", 0)
+        new_mask = 0
+        self.send_set_parameter("SIM_PIN_MASK", new_mask)
         tstart = self.get_sim_time_cached()
         while True:
             now = self.get_sim_time_cached()
             if now - tstart > 10:
                 raise AutoTestTimeoutException("No BUTTON_CHANGE received")
             m3 = self.mav.recv_match(type='BUTTON_CHANGE', blocking=True, timeout=1)
-            self.progress("m3: %s" % str(m3))
+            self.progress("### m3: %s" % str(m3))
             if m3 is None:
                 continue
             if m.last_change_ms == m3.last_change_ms:
                 self.progress("last_change_ms same as first message")
                 continue
-            if m3.state != 0:
-                 self.progress("Didn't get expected mask back in message (want=0 got=%u)" % (m3.state))
-                 continue
+            if m3.state != new_mask:
+                raise NotAchievedException("Unexpected mask (want=%u got=%u)" %
+                                           (new_mask, m3.state))
             self.progress("correct BUTTON_CHANGE event received")
             break
 
