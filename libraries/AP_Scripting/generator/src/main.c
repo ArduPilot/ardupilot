@@ -22,6 +22,7 @@ char keyword_semaphore[]           = "semaphore";
 char keyword_singleton[]           = "singleton";
 char keyword_userdata[]            = "userdata";
 char keyword_write[]               = "write";
+char keyword_manual[]              = "manual";
 
 // attributes (should include the leading ' )
 char keyword_attr_enum[]    = "'enum";
@@ -309,6 +310,13 @@ struct method {
   uint32_t flags; // filled out with TYPE_FLAGS
 };
 
+struct manual_method {
+  struct manual_method * next;
+  char *lua_name;
+  char *cpp_name;
+  int line; // line declared on
+};
+
 struct userdata_field {
   struct userdata_field * next;
   char * name;
@@ -334,6 +342,7 @@ struct userdata {
   char *alias; // (optional) used for scripting access
   struct userdata_field *fields;
   struct method *methods;
+  struct manual_method *manual_methods;
   struct userdata_enum *enums;
   enum userdata_type ud_type;
   uint32_t operations; // bitset of enum operation_types
@@ -609,7 +618,7 @@ void handle_userdata_field(struct userdata *data) {
     field = field-> next;
   }
   if (field != NULL) {
-    error(ERROR_USERDATA, "Field %s already exsists in userdata %s (declared on %d)", field_name, data->name, field->line);
+    error(ERROR_USERDATA, "Field %s already exists in userdata %s (declared on %d)", field_name, data->name, field->line);
   }
 
   trace(TRACE_USERDATA, "Adding field %s", field_name);
@@ -623,7 +632,7 @@ void handle_userdata_field(struct userdata *data) {
   field->access_flags = parse_access_flags(&(field->type));
 }
 
-void handle_method(char *parent_name, struct method **methods) {
+void handle_method(char *parent_name, struct method **methods, struct manual_method **manual_methods) {
   trace(TRACE_USERDATA, "Adding a method");
 
   // find the field name
@@ -637,8 +646,17 @@ void handle_method(char *parent_name, struct method **methods) {
     method = method-> next;
   }
   if (method != NULL) {
-    error(ERROR_USERDATA, "Method %s already exsists for %s (declared on %d)", name, parent_name, method->line);
+    error(ERROR_USERDATA, "Method %s already exists for %s (declared on %d)", name, parent_name, method->line);
   }
+
+  struct manual_method * manual_method = *manual_methods;
+  while (manual_method != NULL && strcmp(manual_method->lua_name, name)) {
+    manual_method = manual_method-> next;
+  }
+  if (manual_method != NULL) {
+    error(ERROR_USERDATA, "Method %s already exists for %s (declared on %d)", name, parent_name, manual_method->line);
+  }
+
 
   trace(TRACE_USERDATA, "Adding method %s", name);
   method = allocate(sizeof(struct method));
@@ -678,6 +696,47 @@ void handle_method(char *parent_name, struct method **methods) {
     // reset the stack arg_type
     memset(&arg_type, 0, sizeof(struct type));
   }
+}
+
+void handle_manual_method(char *parent_name, struct manual_method **methods, struct method **auto_methods) {
+  trace(TRACE_USERDATA, "Adding a manual method");
+
+  // find the lua fuction name
+  char * lua_name = next_token();
+  if (lua_name == NULL) {
+    error(ERROR_USERDATA, "Missing lua name for %s", parent_name);
+  }
+
+  // find the c++ fuction name
+  char * cpp_name = next_token();
+  if (cpp_name == NULL) {
+    error(ERROR_USERDATA, "Missing c++ name for %s", parent_name);
+  }
+
+  struct method * auto_method = *auto_methods;
+  while (auto_method != NULL && strcmp(auto_method->name, lua_name)) {
+    auto_method = auto_method-> next;
+  }
+  if (auto_method != NULL) {
+    error(ERROR_USERDATA, "Method %s already exists for %s (declared on %d)", lua_name, parent_name, auto_method->line);
+  }
+
+  struct manual_method * method = *methods;
+  while (method != NULL && strcmp(method->lua_name, lua_name)) {
+    method = method-> next;
+  }
+  if (method != NULL) {
+    error(ERROR_USERDATA, "Method %s already exists for %s (declared on %d)", lua_name, parent_name, method->line);
+  }
+
+  trace(TRACE_USERDATA, "Adding manual method %s", lua_name);
+  method = allocate(sizeof(struct manual_method));
+  method->next = *methods;
+  *methods = method;
+  string_copy(&(method->lua_name), lua_name);
+  string_copy(&(method->cpp_name), cpp_name);
+  method->line = state.line_num;
+
 }
 
 void handle_operator(struct userdata *data) {
@@ -755,7 +814,7 @@ void handle_userdata(void) {
   } else if (strcmp(type, keyword_operator) == 0) {
     handle_operator(node);
   } else if (strcmp(type, keyword_method) == 0) {
-    handle_method(node->name, &(node->methods));
+    handle_method(node->name, &(node->methods), &(node->manual_methods));
   } else if (strcmp(type, keyword_enum) == 0) {
     handle_userdata_enum(node);
   } else {
@@ -812,11 +871,13 @@ void handle_singleton(void) {
   } else if (strcmp(type, keyword_scheduler_semaphore) == 0) {
     node->flags |= UD_FLAG_SCHEDULER_SEMAPHORE;
   } else if (strcmp(type, keyword_method) == 0) {
-    handle_method(node->name, &(node->methods));
+    handle_method(node->name, &(node->methods), &(node->manual_methods));
   } else if (strcmp(type, keyword_enum) == 0) {
     handle_userdata_enum(node);
+  } else if (strcmp(type, keyword_manual) == 0) {
+    handle_manual_method(node->name, &(node->manual_methods), &(node->methods));
   } else {
-    error(ERROR_SINGLETON, "Singletons only support aliases, methods or semaphore keyowrds (got %s)", type);
+    error(ERROR_SINGLETON, "Singletons only support aliases, methods, semaphore or maunal keyowrds (got %s)", type);
   }
 
   // ensure no more tokens on the line
@@ -871,7 +932,7 @@ void handle_ap_object(void) {
   } else if (strcmp(type, keyword_scheduler_semaphore) == 0) {
     node->flags |= UD_FLAG_SCHEDULER_SEMAPHORE;
   } else if (strcmp(type, keyword_method) == 0) {
-    handle_method(node->name, &(node->methods));
+    handle_method(node->name, &(node->methods), &(node->manual_methods));
   } else {
     error(ERROR_SINGLETON, "AP_Objects only support aliases, methods or semaphore keyowrds (got %s)", type);
   }
@@ -1736,6 +1797,12 @@ void emit_singleton_metatables(struct userdata *head) {
       method = method->next;
     }
 
+    struct manual_method *manual_method = node->manual_methods;
+    while (manual_method) {
+      fprintf(source, "    {\"%s\", %s},\n", manual_method->lua_name, manual_method->cpp_name);
+      manual_method = manual_method->next;
+    }
+
     fprintf(source, "    {NULL, NULL}\n");
     fprintf(source, "};\n\n");
 
@@ -1986,6 +2053,7 @@ int main(int argc, char **argv) {
 
   fprintf(source, "#include \"lua_generated_bindings.h\"\n");
   fprintf(source, "#include <AP_Scripting/lua_boxed_numerics.h>\n");
+  fprintf(source, "#include <AP_Scripting/lua_bindings.h>\n");
 
   trace(TRACE_GENERAL, "Starting emission");
 

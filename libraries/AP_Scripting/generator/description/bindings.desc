@@ -277,3 +277,11 @@ singleton AP_RPM method get_rpm boolean uint8_t 0 RPM_MAX_INSTANCES float'Null
 include AP_Button/AP_Button.h
 singleton AP_Button alias button
 singleton AP_Button method get_button_state boolean uint8_t 1 AP_BUTTON_NUM_PINS
+
+include AP_Logger/AP_Logger.h
+singleton AP_Logger alias logger
+singleton AP_Logger manual write AP_Logger_Write
+singleton AP_Logger method logging_present boolean
+singleton AP_Logger method logging_enabled boolean
+singleton AP_Logger method logging_failed boolean
+
