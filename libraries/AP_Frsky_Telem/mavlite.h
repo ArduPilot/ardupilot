@@ -24,7 +24,7 @@
 
 #define MAVLITE_MAX_PAYLOAD_LEN                 31 // 7 float params + cmd_id + options
 #define MAVLITE_MSG_SPORT_PACKETS_COUNT(LEN)    ((uint8_t)(1 + ceilf((LEN-2)/5.0f))) // number of sport packets required to transport a message with LEN payload
-#define SPORT_PACKET_QUEUE_LENGTH               ((uint8_t)30U*MAVLITE_MSG_SPORT_PACKETS_COUNT(MAVLITE_MAX_PAYLOAD_LEN))
+const uint8_t SPORT_PACKET_QUEUE_LENGTH            = ((uint8_t)30U*MAVLITE_MSG_SPORT_PACKETS_COUNT(MAVLITE_MAX_PAYLOAD_LEN));
 
 namespace MAVLITE
 {
