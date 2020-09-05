@@ -38,7 +38,8 @@ bustypes = {
     1: "I2C",
     2: "SPI",
     3: "UAVCAN",
-    4: "SITL"
+    4: "SITL",
+    5: "MSP"
 }
 
 compass_types = {
