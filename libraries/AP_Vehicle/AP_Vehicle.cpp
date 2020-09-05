@@ -96,6 +96,11 @@ void AP_Vehicle::setup()
     // more than 5ms remaining in your call to hal.scheduler->delay
     hal.scheduler->register_delay_callback(scheduler_delay_callback, 5);
 
+#if HAL_MSP_ENABLED
+    // call MSP init before init_ardupilot to allow for MSP sensors
+    msp.init();
+#endif
+
     // init_ardupilot is where the vehicle does most of its initialisation.
     init_ardupilot();
 
@@ -114,9 +119,6 @@ void AP_Vehicle::setup()
     visual_odom.init();
 #endif
     vtx.init();
-#if HAL_MSP_ENABLED
-    msp.init();
-#endif
 
 #if AP_PARAM_KEY_DUMP
     AP_Param::show_all(hal.console, true);
