@@ -31,7 +31,8 @@ public:
         BUS_TYPE_I2C     = 1,
         BUS_TYPE_SPI     = 2,
         BUS_TYPE_UAVCAN  = 3,
-        BUS_TYPE_SITL    = 4
+        BUS_TYPE_SITL    = 4,
+        BUS_TYPE_MSP     = 5,
     };
 
     enum Speed {
