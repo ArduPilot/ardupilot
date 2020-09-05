@@ -5386,7 +5386,7 @@ Also, ignores heartbeats not from our target system'''
         class Capturing(list):
             def __enter__(self):
                 self._stderr = sys.stderr
-                sys.stderr = self._stringio = StringIO()
+                sys.stderr = self._stringio = StringIO.StringIO()
                 return self
             def __exit__(self, *args):
                 self.extend(self._stringio.getvalue().splitlines())
