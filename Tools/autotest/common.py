@@ -4785,12 +4785,13 @@ Also, ignores heartbeats not from our target system'''
                 self.set_parameter("FRAME_CLASS", 1)
             self.drain_mav()
             self.progress("Setting SITL Magnetometer model value")
-            MAG_ORIENT = 4
-            self.set_parameter("SIM_MAG_ORIENT", MAG_ORIENT)
-            for count in range(2, compass_count + 1):
-                self.set_parameter("SIM_MAG%d_ORIENT" % count, MAG_ORIENT * (count % 41))
-                # set compass external to check that orientation is found and auto set
-                self.set_parameter("COMPASS_EXTERN%d" % count, 1)
+            self.set_parameter("COMPASS_AUTO_ROT", 0)
+            # MAG_ORIENT = 4
+            # self.set_parameter("SIM_MAG_ORIENT", MAG_ORIENT)
+            # for count in range(2, compass_count + 1):
+            #     self.set_parameter("SIM_MAG%d_ORIENT" % count, MAG_ORIENT * (count % 41))
+            #     # set compass external to check that orientation is found and auto set
+            #     self.set_parameter("COMPASS_EXTERN%d" % count, 1)
             for param_set in params:
                 for param in param_set:
                     (_in, _out, value) = param
