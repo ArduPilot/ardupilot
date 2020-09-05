@@ -530,7 +530,7 @@ bool AP_Logger_Backend::logging_enabled() const
 
 void AP_Logger_Backend::Write_AP_Logger_Stats_File(const struct df_stats &_stats)
 {
-    struct log_DSF pkt = {
+    const struct log_DSF pkt {
         LOG_PACKET_HEADER_INIT(LOG_DF_FILE_STATS),
         time_us         : AP_HAL::micros64(),
         dropped         : _dropped,
@@ -543,7 +543,8 @@ void AP_Logger_Backend::Write_AP_Logger_Stats_File(const struct df_stats &_stats
     WriteBlock(&pkt, sizeof(pkt));
 }
 
-void AP_Logger_Backend::df_stats_gather(const uint16_t bytes_written, uint32_t space_remaining) {
+void AP_Logger_Backend::df_stats_gather(const uint16_t bytes_written, uint32_t space_remaining)
+{
     if (space_remaining < stats.buf_space_min) {
         stats.buf_space_min = space_remaining;
     }

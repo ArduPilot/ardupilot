@@ -126,10 +126,11 @@ bool AP_Logger_Block::_WritePrioritisedBlock(const void *pBuffer, uint16_t size,
     }
 
     if (!write_sem.take(1)) {
+         _dropped++;
         return false;
     }
 
-    uint32_t space = writebuf.space();
+    const uint32_t space = writebuf.space();
 
     if (_writing_startup_messages &&
         _startup_messagewriter->fmt_done()) {
