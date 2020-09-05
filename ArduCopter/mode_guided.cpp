@@ -51,39 +51,47 @@ bool ModeGuided::init(bool ignore_checks)
 // do_user_takeoff_start - initialises waypoint controller to implement take-off
 bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
 {
-    guided_mode = Guided_TakeOff;
 
-    // initialise wpnav destination
-    Location target_loc = copter.current_loc;
-    Location::AltFrame frame = Location::AltFrame::ABOVE_HOME;
-    if (wp_nav->rangefinder_used_and_healthy() &&
-            wp_nav->get_terrain_source() == AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER &&
-            takeoff_alt_cm < copter.rangefinder.max_distance_cm_orient(ROTATION_PITCH_270)) {
-        // can't takeoff downwards
-        if (takeoff_alt_cm <= copter.rangefinder_state.alt_cm) {
+    if (motors->get_spool_state() != AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
+        guided_mode = Guided_PreTakeOff;
+        _takeoff_alt_cm = takeoff_alt_cm;
+        return true;
+    } else {
+
+        guided_mode = Guided_TakeOff;
+
+        // initialise wpnav destination
+        Location target_loc = copter.current_loc;
+        Location::AltFrame frame = Location::AltFrame::ABOVE_HOME;
+        if (wp_nav->rangefinder_used_and_healthy() &&
+                wp_nav->get_terrain_source() == AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER &&
+                takeoff_alt_cm < copter.rangefinder.max_distance_cm_orient(ROTATION_PITCH_270)) {
+            // can't takeoff downwards
+            if (takeoff_alt_cm <= copter.rangefinder_state.alt_cm) {
+                return false;
+            }
+            frame = Location::AltFrame::ABOVE_TERRAIN;
+        }
+        target_loc.set_alt_cm(takeoff_alt_cm, frame);
+
+        if (!wp_nav->set_wp_destination(target_loc)) {
+            // failure to set destination can only be because of missing terrain data
+            AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_TO_SET_DESTINATION);
+            // failure is propagated to GCS with NAK
             return false;
         }
-        frame = Location::AltFrame::ABOVE_TERRAIN;
+
+        // initialise yaw
+        auto_yaw.set_mode(AUTO_YAW_HOLD);
+
+        // clear i term when we're taking off
+        set_throttle_takeoff();
+
+        // get initial alt for WP_NAVALT_MIN
+        auto_takeoff_set_start_alt();
+
+        return true;
     }
-    target_loc.set_alt_cm(takeoff_alt_cm, frame);
-
-    if (!wp_nav->set_wp_destination(target_loc)) {
-        // failure to set destination can only be because of missing terrain data
-        AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_TO_SET_DESTINATION);
-        // failure is propagated to GCS with NAK
-        return false;
-    }
-
-    // initialise yaw
-    auto_yaw.set_mode(AUTO_YAW_HOLD);
-
-    // clear i term when we're taking off
-    set_throttle_takeoff();
-
-    // get initial alt for WP_NAVALT_MIN
-    auto_takeoff_set_start_alt();
-
-    return true;
 }
 
 // initialise guided mode's position controller
@@ -357,6 +365,11 @@ void ModeGuided::run()
     // call the correct auto controller
     switch (guided_mode) {
 
+    case Guided_PreTakeOff:
+        // allow aircraft to spool up
+        pretakeoff_run();
+        break;
+
     case Guided_TakeOff:
         // run takeoff controller
         takeoff_run();
@@ -383,6 +396,28 @@ void ModeGuided::run()
         break;
     }
  }
+
+// guided_pretakeoff_run - pretakeoff in guided mode
+//      called by guided_run at 100hz or more
+void ModeGuided::pretakeoff_run()
+{
+
+    if (motors->get_spool_state() != AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
+        // set motors to full range
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+        attitude_control->set_yaw_target_to_current_heading();
+        attitude_control->reset_rate_controller_I_terms();
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
+        pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
+        pos_control->update_z_controller();
+
+    } else {
+        if (do_user_takeoff_start(_takeoff_alt_cm)) {
+            guided_mode = Guided_TakeOff;
+        }
+    }
+
+}
 
 // guided_takeoff_run - takeoff in guided mode
 //      called by guided_run at 100hz or more

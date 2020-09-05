@@ -824,11 +824,14 @@ protected:
     int32_t wp_bearing() const override;
     float crosstrack_error() const override;
 
+    float _takeoff_alt_cm;
+
 private:
 
     void pos_control_start();
     void vel_control_start();
     void posvel_control_start();
+    void pretakeoff_run();
     void takeoff_run();
     void pos_control_run();
     void vel_control_run();
