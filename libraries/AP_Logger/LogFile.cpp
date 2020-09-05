@@ -294,10 +294,10 @@ void AP_Logger::Write_Baro(uint64_t time_us)
     }
     const AP_Baro &baro = AP::baro();
     Write_Baro_instance(time_us, 0, LOG_BARO_MSG);
-    if (baro.num_instances() > 1 && baro.healthy(1)) {
+    if (baro.num_instances() > 1) {
         Write_Baro_instance(time_us, 1, LOG_BAR2_MSG);
     }
-    if (baro.num_instances() > 2 && baro.healthy(2)) {
+    if (baro.num_instances() > 2) {
         Write_Baro_instance(time_us, 2, LOG_BAR3_MSG);
     }
 }
