@@ -754,6 +754,32 @@ bool NavEKF2::InitialiseFilter(void)
     return ret;
 }
 
+/*
+  return true if a new core index has a better score than the current
+  core
+ */
+bool NavEKF2::coreBetterScore(uint8_t new_core, uint8_t current_core)
+{
+    const NavEKF2_core &oldCore = core[current_core];
+    const NavEKF2_core &newCore = core[new_core];
+    if (!newCore.healthy()) {
+        // never consider a new core that isn't healthy
+        return false;
+    }
+    if (newCore.have_aligned_tilt() != oldCore.have_aligned_tilt()) {
+        // tilt alignment is most critical, if one is tilt aligned and
+        // the other isn't then use the tilt aligned lane
+        return newCore.have_aligned_tilt();
+    }
+    if (newCore.have_aligned_yaw() != oldCore.have_aligned_yaw()) {
+        // yaw alignment is next most critical, if one is yaw aligned
+        // and the other isn't then use the yaw aligned lane
+        return newCore.have_aligned_yaw();
+    }
+    // if both cores are aligned then look at error scores
+    return newCore.errorScore() < oldCore.errorScore();
+}
+
 // Update Filter States - this should be called whenever new IMU data is available
 void NavEKF2::UpdateFilter(void)
 {
@@ -798,7 +824,7 @@ void NavEKF2::UpdateFilter(void)
 
             if (coreIndex != primary) {
                 // an alternative core is available for selection only if healthy and if states have been updated on this time step
-                bool altCoreAvailable = core[coreIndex].healthy() && statePredictEnabled[coreIndex];
+                bool altCoreAvailable = statePredictEnabled[coreIndex] && coreBetterScore(coreIndex, newPrimaryIndex);
 
                 // If the primary core is unhealthy and another core is available, then switch now
                 // If the primary core is still healthy,then switching is optional and will only be done if
@@ -848,19 +874,14 @@ void NavEKF2::checkLaneSwitch(void)
         // don't switch twice in 5 seconds
         return;
     }
-    float primaryErrorScore = core[primary].errorScore();
-    float lowestErrorScore = primaryErrorScore;
     uint8_t newPrimaryIndex = primary;
     for (uint8_t coreIndex=0; coreIndex<num_cores; coreIndex++) {
         if (coreIndex != primary) {
+            const NavEKF2_core &newCore = core[coreIndex];
             // an alternative core is available for selection only if healthy and if states have been updated on this time step
-            bool altCoreAvailable = core[coreIndex].healthy();
-            float altErrorScore = core[coreIndex].errorScore();
-            if (altCoreAvailable &&
-                altErrorScore < lowestErrorScore &&
-                altErrorScore < 0.9) {
+            bool altCoreAvailable = coreBetterScore(coreIndex, newPrimaryIndex);
+            if (altCoreAvailable && newCore.errorScore() < 0.9) {
                 newPrimaryIndex = coreIndex;
-                lowestErrorScore = altErrorScore;
             }
         }
     }
