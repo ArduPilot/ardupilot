@@ -98,7 +98,7 @@ def display_text(item, message, x_offset=0):
 def draw_gauge(x, y, width, height, perc):
     '''draw an horizontal gauge'''
     pygame.draw.rect(display_surface, (255, 255, 255), (x, y, width, height), 1)
-    pygame.draw.rect(display_surface, (255, 255, 255), (x+2, y+2, (width-4)*perc/100, height-4))
+    pygame.draw.rect(display_surface, (255, 255, 255), (x+2, y+2, int((width-4)*perc/100), height-4))
 
 def draw_batt_icon(x, y):
     pygame.draw.rect(display_surface, (255, 255, 255), (x+1, y, 6, 3))
@@ -107,20 +107,20 @@ def draw_batt_icon(x, y):
 def draw_triangle(x, y, r, angle):
     a = angle -90 
     ra = math.radians(a)
-    x1 = x + r * math.cos(ra)
-    y1 = y + r * math.sin(ra)
+    x1 = int(x + r * math.cos(ra))
+    y1 = int(y + r * math.sin(ra))
 
     ra = math.radians(a + 140)
-    x2 = x + r * math.cos(ra)
-    y2 = y + r * math.sin(ra)
+    x2 = int(x + r * math.cos(ra))
+    y2 = int(y + r * math.sin(ra))
 
     ra = math.radians(a - 140)
-    x3 = x + r * math.cos(ra)
-    y3 = y + r * math.sin(ra)
+    x3 = int(x + r * math.cos(ra))
+    y3 = int(y + r * math.sin(ra))
 
     ra = math.radians(angle - 270)
-    x4 = x + r * 0.5 * math.cos(ra)
-    y4 = y + r * 0.5 *math.sin(ra)
+    x4 = int(x + r * 0.5 * math.cos(ra))
+    y4 = int(y + r * 0.5 *math.sin(ra))
 
     pygame.draw.line(display_surface, (255, 255, 255), (x1, y1), (x2, y2), 2)
     pygame.draw.line(display_surface, (255, 255, 255), (x1, y1), (x3, y3), 2)
