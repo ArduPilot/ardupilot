@@ -816,7 +816,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_battery_state(sbuf_t *dst
     } battery;
 
     battery.cellcount = constrain_int16((msp->_cellcount > 0 ? msp->_cellcount : battery_state.batt_cellcount), 0, 255);    // cell count 0 indicates battery not detected.
-    battery.mah = battery_state.batt_capacity_mah;                                                                          // in mAh
+    battery.capacity_mah = battery_state.batt_capacity_mah;                                                                          // in mAh
     battery.voltage_dv = constrain_int16(battery_state.batt_voltage_v * 10, 0, 255);                                        // battery voltage V to dV
     battery.mah = MIN(battery_state.batt_consumed_mah, 0xFFFF);                                                             // milliamp hours drawn from battery
     battery.current_ca = constrain_int32(battery_state.batt_current_a * 100, -0x8000, 0x7FFF);                              // current A to cA (0.01 steps, range is -320A to 320A)
