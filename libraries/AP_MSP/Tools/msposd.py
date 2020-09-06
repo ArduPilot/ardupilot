@@ -246,22 +246,28 @@ def receive_data():
 
 font = pygame.font.Font('freesansbold.ttf', 12)
 
-last_display_t = time.time()
+def run():
+    last_display_t = time.time()
 
-# infinite loop 
-while True:
-    receive_data()
-    now = time.time()
+    while True:
+        receive_data()
+        now = time.time()
 
-    if now - last_display_t > 0.1:
-        # display at 10Hz
-        last_display_t = now
-        display_surface.fill(black)
-        display_all()
-        pygame.display.update()
-        time.sleep(0.01)
+        if now - last_display_t > 0.1:
+            # display at 10Hz
+            last_display_t = now
+            display_surface.fill(black)
+            display_all()
+            pygame.display.update()
+            time.sleep(0.01)
     
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT : 
-            pygame.quit()
-            quit() 
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+
+try:
+    run()
+except KeyboardInterrupt:
+    pass
+
