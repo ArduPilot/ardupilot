@@ -614,6 +614,10 @@ private:
     // old_primary - index of the ekf instance that we are currently using as the primary
     void updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_primary);
 
+    // return true if a new core has a better score than an existing core, including
+    // checks for alignment
+    bool coreBetterScore(uint8_t new_core, uint8_t current_core);
+
     // logging functions shared by cores:
     void Log_Write_XKF1(uint8_t core, uint64_t time_us) const;
     void Log_Write_XKF2(uint8_t core, uint64_t time_us) const;

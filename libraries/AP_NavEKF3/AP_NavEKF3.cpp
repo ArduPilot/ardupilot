@@ -800,6 +800,32 @@ bool NavEKF3::InitialiseFilter(void)
     return ret;
 }
 
+/*
+  return true if a new core index has a better score than the current
+  core
+ */
+bool NavEKF3::coreBetterScore(uint8_t new_core, uint8_t current_core)
+{
+    const NavEKF3_core &oldCore = core[current_core];
+    const NavEKF3_core &newCore = core[new_core];
+    if (!newCore.healthy()) {
+        // never consider a new core that isn't healthy
+        return false;
+    }
+    if (newCore.have_aligned_tilt() != oldCore.have_aligned_tilt()) {
+        // tilt alignment is most critical, if one is tilt aligned and
+        // the other isn't then use the tilt aligned lane
+        return newCore.have_aligned_tilt();
+    }
+    if (newCore.have_aligned_yaw() != oldCore.have_aligned_yaw()) {
+        // yaw alignment is next most critical, if one is yaw aligned
+        // and the other isn't then use the yaw aligned lane
+        return newCore.have_aligned_yaw();
+    }
+    // if both cores are aligned then look at relative error scores
+    return coreRelativeErrors[new_core] < coreRelativeErrors[current_core];
+}
+
 /* 
   Update Filter States - this should be called whenever new IMU data is available
   Execution speed governed by SCHED_LOOP_RATE
@@ -852,7 +878,6 @@ void NavEKF3::UpdateFilter(void)
 
         bool betterCore = false;
         bool altCoreAvailable = false;
-        float bestCoreError = 0; // looking for cores that have error lower than the current primary
         uint8_t newPrimaryIndex = primary;
 
         // loop through all available cores to find if an alternative core is available
@@ -864,15 +889,13 @@ void NavEKF3::UpdateFilter(void)
                 // 1. healthy and states have been updated on this time step
                 // 2. has relative error less than primary core error
                 // 3. not been the primary core for at least 10 seconds
-                altCoreAvailable = core[coreIndex].healthy() && 
-                                   altCoreError < bestCoreError &&
-                                   (imuSampleTime_us - coreLastTimePrimary_us[coreIndex] > 1E7);
+                altCoreAvailable = coreBetterScore(coreIndex, newPrimaryIndex) &&
+                    imuSampleTime_us - coreLastTimePrimary_us[coreIndex] > 1E7;
 
                 if (altCoreAvailable) {
                     // if this core has a significantly lower relative error to the active primary, we consider it as a 
                     // better core and would like to switch to it even if the current primary is healthy
                     betterCore = altCoreError <= -BETTER_THRESH; // a better core if its relative error is below a substantial level than the primary's
-                    bestCoreError = altCoreError;
                     newPrimaryIndex = coreIndex;
                 }
             }
@@ -930,9 +953,10 @@ void NavEKF3::checkLaneSwitch(void)
     uint8_t newPrimaryIndex = primary;
     for (uint8_t coreIndex=0; coreIndex<num_cores; coreIndex++) {
         if (coreIndex != primary) {
+            const NavEKF3_core &newCore = core[coreIndex];
             // an alternative core is available for selection only if healthy and if states have been updated on this time step
-            bool altCoreAvailable = core[coreIndex].healthy();
-            float altErrorScore = core[coreIndex].errorScore();
+            bool altCoreAvailable = newCore.healthy() && newCore.have_aligned_yaw() && newCore.have_aligned_tilt();
+            float altErrorScore = newCore.errorScore();
             if (altCoreAvailable && altErrorScore < lowestErrorScore && altErrorScore < 0.9) {
                 newPrimaryIndex = coreIndex;
                 lowestErrorScore = altErrorScore;

@@ -445,6 +445,16 @@ public:
     // request a reset the yaw to the EKF-GSF value
     void EKFGSF_requestYawReset();
 
+    // return true if we are tilt aligned
+    bool have_aligned_tilt(void) const {
+        return tiltAlignComplete;
+    }
+
+    // return true if we are yaw aligned
+    bool have_aligned_yaw(void) const {
+        return yawAlignComplete;
+    }
+    
 private:
     EKFGSF_yaw *yawEstimator;
 
