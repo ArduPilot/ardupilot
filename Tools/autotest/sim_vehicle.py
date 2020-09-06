@@ -295,6 +295,9 @@ def do_build_waf(opts, frame_options):
         cmd_configure.append("--enable-sfml")
         cmd_configure.append("--sitl-osd")
 
+    if opts.OSDMSP:
+        cmd_configure.append("--osd")
+        
     if opts.rgbled:
         cmd_configure.append("--enable-sfml")
         cmd_configure.append("--sitl-rgbled")
@@ -643,6 +646,11 @@ def start_vehicle(binary, opts, stuff, spawns=None):
             sys.exit(1)
         path += "," + str(opts.add_param_file)
         progress("Adding parameters from (%s)" % (str(opts.add_param_file),))
+    if opts.OSDMSP:
+        path += "," + os.path.join(root_dir, "libraries/AP_MSP/Tools/osdtest.parm")
+        path += "," + os.path.join(autotest_dir, "default_params/msposd.parm")
+        subprocess.Popen([os.path.join(root_dir, "libraries/AP_MSP/Tools/msposd.py")])
+
     if path is not None:
         cmd.extend(["--defaults", path])
     if opts.mcast:
@@ -996,6 +1004,11 @@ group_sim.add_option("", "--osd",
                      dest='OSD',
                      default=False,
                      help="Enable SITL OSD")
+group_sim.add_option("", "--osdmsp",
+                     action='store_true',
+                     dest='OSDMSP',
+                     default=False,
+                     help="Enable SITL OSD using MSP")
 group_sim.add_option("", "--tonealarm",
                      action='store_true',
                      dest='tonealarm',
