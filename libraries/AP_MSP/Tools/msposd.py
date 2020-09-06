@@ -21,6 +21,8 @@ import math
 
 parser = argparse.ArgumentParser(description='ArduPilot MSP FPV viewer')
 parser.add_argument('--port', default="tcp:localhost:5763", help="port to listen on, can be serial port or tcp:IP:port")
+parser.add_argument('--font', help="font to use", default="freesans")
+parser.add_argument('--list-fonts', action="store_true", default=False, help="show list of system fonts")
 
 args = parser.parse_args()
 
@@ -244,7 +246,9 @@ def receive_data():
         return
     msp.parseMspData(buf)
 
-font = pygame.font.Font('freesansbold.ttf', 12)
+if args.list_fonts:
+    print(sorted(pygame.font.get_fonts()))
+font = pygame.font.SysFont(args.font, 12)
 
 def run():
     last_display_t = time.time()
